@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752984Ab2K1IMj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 03:12:39 -0500
-Received: from shrek-wifi.podlesie.net ([93.179.225.50]:50736 "EHLO
-	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752630Ab2K1IMi (ORCPT
+	id S1753006Ab2K1IPd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 03:15:33 -0500
+Received: from www.linutronix.de ([62.245.132.108]:39036 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752760Ab2K1IPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 03:12:38 -0500
-Date: Wed, 28 Nov 2012 09:12:37 +0100
-From: Krzysztof Mazur <krzysiek@podlesie.net>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net
-Subject: Re: [PATCH v3 8/7] pppoatm: fix missing wakeup in pppoatm_send()
-Message-ID: <20121128081237.GA30488@shrek.podlesie.net>
-References: <201211112257.qABMvhP4021769@thirdoffive.cmf.nrl.navy.mil>
- <1354022867.26346.334.camel@shinybook.infradead.org>
- <20121127102333.68ac3234@thirdoffive.cmf.nrl.navy.mil>
- <1354063697.21562.4.camel@shinybook.infradead.org>
+	Wed, 28 Nov 2012 03:15:31 -0500
+Message-ID: <50B5C821.4000406@linutronix.de>
+Date: Wed, 28 Nov 2012 09:15:29 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354063697.21562.4.camel@shinybook.infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michal Nazarewicz <mina86@mina86.com>
+CC: Andrzej Pietrasiewicz <andrzej.p@samsung.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Felipe Balbi'" <balbi@ti.com>,
+        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
+        "'Joel Becker'" <jlbec@evilplan.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [RFC][PATCH] fs: configfs: programmatically create config groups
+References: <1353918910-12381-1-git-send-email-andrzej.p@samsung.com> <50B39921.6090308@linutronix.de> <008101cdcc7d$2d499df0$87dcd9d0$%p@samsung.com> <50B4E364.8030704@linutronix.de> <xa1tip8ruia5.fsf@mina86.com>
+In-Reply-To: <xa1tip8ruia5.fsf@mina86.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 12:48:17AM +0000, David Woodhouse wrote:
-> On Tue, 2012-11-27 at 10:23 -0500, chas williams - CONTRACTOR wrote:
-> > yes, but dont call it 8/7 since that doesnt make sense.
-> 
-> It made enough sense when it was a single patch appended to a thread of
-> 7 other patches from Krzysztof. But now it's all got a little more
-> complex, so I've tried to collect together the latest version of
-> everything we've discussed:
+On 11/27/2012 05:23 PM, Michal Nazarewicz wrote:
+> On Tue, Nov 27 2012, Sebastian Andrzej Siewior wrote:
+>> I don't want to push python on anyone but the removal magic is simply
+>> straight forward: unlink the disk ports, rmdir luns, tpgt,…
+>
+> How should a generic tool know what kind of actions are needed for given
+> function to be removed?  If you ask me, there should be a way to unbind
+> gadget and unload all modules without any specific knowledge of the
+> functions.  If there is no such mechanism, then it's a bad user
+> interface.
 
-There was also discussion about patch 9/7 "pppoatm: wakeup after ATM
-unlock only when it's needed".
+Well. You need only to remove the directories you created. An unbind
+would be simply an unlink of the gadget which is linked to the udc.
+All configurations remain so you can link it at a later point without
+touching the configuration because it is as it was.
 
-> 
->  http://git.infradead.org/users/dwmw2/atm.git
->   git://git.infradead.org/users/dwmw2/atm.git
-> 
-> David Woodhouse (5):
->       atm: Add release_cb() callback to vcc
->       pppoatm: fix missing wakeup in pppoatm_send()
->       br2684: fix module_put() race
+>> I understand the need for things that pop later like interfaceXX but
+>> couldn't the user manually create them if he needs them?
+>
+> I think the question is of information flow direction.  If user gives
+> some information to the kernel, she should be the one creating any
+> necessary directories.  But if the information comes from kernel to the
+> user, the kernel should create the structure.
 
-for the three patches above:
+Yes that is a point. But the "name" can go away if we use it in the
+directory name. That is what other configfs user do. The same is true
+for luns for instance. I just want to avoid adding features because we
+do something different compared to every other configfs user.
 
-Acked-by: Krzysztof Mazur <krzysiek@podlesie.net>
-
-Krzysiek
+Sebastian
