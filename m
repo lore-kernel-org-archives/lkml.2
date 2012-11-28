@@ -1,124 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755159Ab2K1NFW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 08:05:22 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:64560 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755045Ab2K1NFU (ORCPT
+	id S1755192Ab2K1NFa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 08:05:30 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:41573 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754901Ab2K1NF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 08:05:20 -0500
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Andrzej Pietrasiewicz <andrzej.p@samsung.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Felipe Balbi'" <balbi@ti.com>,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        "'Joel Becker'" <jlbec@evilplan.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [RFC][PATCH] fs: configfs: programmatically create config groups
-In-Reply-To: <50B5C821.4000406@linutronix.de>
-Organization: http://mina86.com/
-References: <1353918910-12381-1-git-send-email-andrzej.p@samsung.com> <50B39921.6090308@linutronix.de> <008101cdcc7d$2d499df0$87dcd9d0$%p@samsung.com> <50B4E364.8030704@linutronix.de> <xa1tip8ruia5.fsf@mina86.com> <50B5C821.4000406@linutronix.de>
-User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.2.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-Date: Wed, 28 Nov 2012 14:05:07 +0100
-Message-ID: <xa1ta9u1naik.fsf@mina86.com>
+	Wed, 28 Nov 2012 08:05:27 -0500
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+In-Reply-To: <50B5CC5A.8060607@kernel.dk>
+References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com>
+	<20121120180949.GG1408@quack.suse.cz>
+	<CAAJw_ZsQdLO5qLdGPzmPf+N2D6CZw+S-4mvRGnxfARL71LuRaw@mail.gmail.com>
+	<CAAJw_ZsAyB0z0TF1mqPz1Z+H+tg7W6LVzNLKf0BkuF3u8TTMuQ@mail.gmail.com>
+	<CA+55aFyvT3R3kgwJzp9mY5eE1fwMnzXnmBpHSbqjd-eJRVDkJw@mail.gmail.com>
+	<50AF7901.20401@kernel.dk>
+	<CAAJw_ZvXGKcjfOAS_tRdXJ9SjpCKw1t7rNt+Q=ieCkVJwN2qcg@mail.gmail.com>
+	<Pine.LNX.4.64.1211241555470.4300@file.rdu.redhat.com>
+	<CAAJw_ZvUqRmCCQ5-2PdFPRyfdzZMuphGU=hgAjUOHGk=n9Mheg@mail.gmail.com>
+	<CAAJw_ZuJXnAz1ukBwQa3xNbQaL1KUBSrbQMK2hn-7D6Ar1p3fQ@mail.gmail.com>
+	<50B46E05.70906@kernel.dk>
+	<CAAJw_ZsYuLCwCTc6U=ELO_PvyjnVKQdkPke2enfzm6zOeWAqjA@mail.gmail.com>
+	<50B4B313.3030707@kernel.dk>
+	<Pine.LNX.4.64.1211272252260.18338@file.rdu.redhat.com>
+	<50B5CC5A.8060607@kernel.dk>
+Date: Wed, 28 Nov 2012 21:05:26 +0800
+Message-ID: <CAAJw_ZsHBLmWiJGy1z5E7RGcmbPoW3iS7fW7H3mTaR=G4PYzNg@mail.gmail.com>
+Subject: Re: Recent kernel "mount" slow
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jan Kara <jack@suse.cz>, lkml <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+On Wed, Nov 28, 2012 at 4:33 PM, Jens Axboe <axboe@kernel.dk> wrote:
+> On 2012-11-28 04:57, Mikulas Patocka wrote:
+>>
+>>
+>> On Tue, 27 Nov 2012, Jens Axboe wrote:
+>>
+>>> On 2012-11-27 11:06, Jeff Chua wrote:
+>>>> On Tue, Nov 27, 2012 at 3:38 PM, Jens Axboe <axboe@kernel.dk> wrote:
+>>>>> On 2012-11-27 06:57, Jeff Chua wrote:
+>>>>>> On Sun, Nov 25, 2012 at 7:23 AM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
+>>>>>>> On Sun, Nov 25, 2012 at 5:09 AM, Mikulas Patocka <mpatocka@redhat.com> wrote:
+>>>>>>>> So it's better to slow down mount.
+>>>>>>>
+>>>>>>> I am quite proud of the linux boot time pitting against other OS. Even
+>>>>>>> with 10 partitions. Linux can boot up in just a few seconds, but now
+>>>>>>> you're saying that we need to do this semaphore check at boot up. By
+>>>>>>> doing so, it's inducing additional 4 seconds during boot up.
+>>>>>>
+>>>>>> By the way, I'm using a pretty fast SSD (Samsung PM830) and fast CPU
+>>>>>> (2.8GHz). I wonder if those on slower hard disk or slower CPU, what
+>>>>>> kind of degradation would this cause or just the same?
+>>>>>
+>>>>> It'd likely be the same slow down time wise, but as a percentage it
+>>>>> would appear smaller on a slower disk.
+>>>>>
+>>>>> Could you please test Mikulas' suggestion of changing
+>>>>> synchronize_sched() in include/linux/percpu-rwsem.h to
+>>>>> synchronize_sched_expedited()?
+>>>>
+>>>> Tested. It seems as fast as before, but may be a "tick" slower. Just
+>>>> perception. I was getting pretty much 0.012s with everything reverted.
+>>>> With synchronize_sched_expedited(), it seems to be 0.012s ~ 0.013s.
+>>>> So, it's good.
+>>>
+>>> Excellent
+>>>
+>>>>> linux-next also has a re-write of the per-cpu rw sems, out of Andrews
+>>>>> tree. It would be a good data point it you could test that, too.
+>>>>
+>>>> Tested. It's slower. 0.350s. But still faster than 0.500s without the patch.
+>>>
+>>> Makes sense, it's 2 synchronize_sched() instead of 3. So it doesn't fix
+>>> the real issue, which is having to do synchronize_sched() in the first
+>>> place.
+>>>
+>>>> # time mount /dev/sda1 /mnt; sync; sync; umount /mnt
+>>>>
+>>>>
+>>>> So, here's the comparison ...
+>>>>
+>>>> 0.500s     3.7.0-rc7
+>>>> 0.168s     3.7.0-rc2
+>>>> 0.012s     3.6.0
+>>>> 0.013s     3.7.0-rc7 + synchronize_sched_expedited()
+>>>> 0.350s     3.7.0-rc7 + Oleg's patch.
+>>>
+>>> I wonder how many of them are due to changing to the same block size.
+>>> Does the below patch make a difference?
+>>
+>> This patch is wrong because you must check if the device is mapped while
+>> holding bdev->bd_block_size_semaphore (because
+>> bdev->bd_block_size_semaphore prevents new mappings from being created)
+>
+> No it doesn't. If you read the patch, that was moved to i_mmap_mutex.
+>
+>> I'm sending another patch that has the same effect.
+>>
+>>
+>> Note that ext[234] filesystems set blocksize to 1024 temporarily during
+>> mount, so it doesn't help much (it only helps for other filesystems, such
+>> as jfs). For ext[234], you have a device with default block size 4096, the
+>> filesystem sets block size to 1024 during mount, reads the super block and
+>> sets it back to 4096.
+>
+> That is true, hence I was hesitant to think it'll actually help. In any
+> case, basically any block device will have at least one blocksize
+> transitioned when being mounted for the first time. I wonder if we just
+> shouldn't default to having a 4kb soft block size to avoid that one,
+> though it is working around the issue to some degree.
 
-> On 11/27/2012 05:23 PM, Michal Nazarewicz wrote:
->> How should a generic tool know what kind of actions are needed for given
->> function to be removed?  If you ask me, there should be a way to unbind
->> gadget and unload all modules without any specific knowledge of the
->> functions.  If there is no such mechanism, then it's a bad user
->> interface.
+I tested on reiserfs. It helped. 0.012s as in 3.6.0, but as Mikulas
+mentioned, it didn't really improve much for ext2.
 
-On Wed, Nov 28 2012, Sebastian Andrzej Siewior wrote:
-> Well. You need only to remove the directories you created.
-
-My point is that there should be a way to write a script that is unaware
-of the way function is configured, ie. which directories were created
-and which were not.
-
-Besides, if you rmdir lun0, is the function still supposed to work with
-all LUNs present?  In my opinion, while gadget is bound, it should not
-be possible to modify such things.
-
-> An unbind would be  simply an unlink of the gadget  which is linked to
-> the udc.   All configurations  remain so  you can link  it at  a later
-> point without touching the configuration because it is as it was.
-
-Yes, but that's not my concern.  My concern is that I should be able to
-put a relatively simple code in my shutdown script (or whatever) which
-unbinds all gadgets, without knowing what kind of functions are used.
-
-And I'm proposing that this could be done by allowing user to just do:
-
-	cd /cfs/...
-	rmdir gadgets/*		# unbind and remove all gadgets
-	rmdir functions/*/*	# unbind and remove all function instances
-	rmdir functions/*	# unload all functions
-	rmdir udcs/*		# unload all UDCs
-=20=20=20=20=20=20=20=20
->> I think the question is of information flow direction.  If user gives
->> some information to the kernel, she should be the one creating any
->> necessary directories.  But if the information comes from kernel to the
->> user, the kernel should create the structure.
-
-> Yes that is a point. But the "name" can go away if we use it in the
-> directory name. That is what other configfs user do. The same is true
-> for luns for instance. I just want to avoid adding features because we
-> do something different compared to every other configfs user.
-
-You've lost me here.  What are we talking about again?  What =E2=80=9Cname=
-=E2=80=9D are
-you referring to?
-
---=20
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
-..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
- (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
---=-=-=
-Content-Type: multipart/signed; boundary="==-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
-
---==-=-=
-Content-Type: text/plain
-
-
---==-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQtgwDAAoJECBgQBJQdR/0TTQP/RWO/HJ/1BakyE5gTgUWidDX
-gLoyCVsPTUYh7RzrdB/CxOq1SPz0OXkWB2ZqYp53RiF0buO0OUi6dJEREGwCvwMY
-F9RUSltaeITfFr/bXXS+xoo7SBuPWGFQ3IvEJ01tucQcatRMuPfib7Os66uRx1YV
-J1nnBhttU+kFwAjdJATV7cbTB8xs1lKNtYMOu8CEmscDtp7lhSLesUxGzBsqNi+g
-rrb/WbPQlo5C/TRqHzTmDF82JRE4cY6aliccOCZ8nvr1mpv5/Tfj/j8fz2/oC5YC
-PtUpSO0h5OqFFoxO+HlXh5DunDQQ7aJf1SHaAZksPFsK+kPxI2DVnHdKNioT4JSj
-yhpf5xZx1efd8U+LZjp0p0x9piSzZUtUg9TmdlT4L9X/Qap1MNPWqsHuUvuXbprb
-XyPqtZzj0XgK0bP+UGCUOeSXZbR9zMdaFH7PBR/HCPHq00j4Vj5GFbxwAgaHQYnT
-h8heawhnLtDUeG0/raL+WlNI/csPTJ1djgCbCHR2K4hBWIdaYGTzQQh0u6SURtnR
-yOEty4SOQ6IUqbYxJDBJMVhE12rqzAe45c/iZKVRVEARBFnG/un9aVvFeuM+TghE
-bp4E7/1PHD8kH8FF/omlPvGplW5KQEWbLUqdXZ4ZyUvrNJY0gegeagnSs1nbnynq
-mAZmSyEas0mLTwj71Iv0
-=Buxh
------END PGP SIGNATURE-----
---==-=-=--
-
---=-=-=--
+Jeff.
