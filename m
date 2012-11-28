@@ -1,213 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752450Ab2K1HEp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 02:04:45 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:23809 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317Ab2K1HEn (ORCPT
+	id S1751758Ab2K1HI0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 02:08:26 -0500
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:41744 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117Ab2K1HIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 02:04:43 -0500
-Message-ID: <50B5B754.1090003@huawei.com>
-Date: Wed, 28 Nov 2012 15:03:48 +0800
-From: Jiang Liu <jiang.liu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	Wed, 28 Nov 2012 02:08:25 -0500
+Message-ID: <50B5B738.50700@linux.vnet.ibm.com>
+Date: Wed, 28 Nov 2012 12:33:20 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Tang Chen <tangchen@cn.fujitsu.com>
-CC: Bob Liu <lliubbo@gmail.com>, <hpa@zytor.com>, <akpm@linux-foundation.org>,
-        <rob@landley.net>, <isimatu.yasuaki@jp.fujitsu.com>,
-        <laijs@cn.fujitsu.com>, <wency@cn.fujitsu.com>,
-        <linfeng@cn.fujitsu.com>, <yinghai@kernel.org>,
-        <kosaki.motohiro@jp.fujitsu.com>, <minchan.kim@gmail.com>,
-        <mgorman@suse.de>, <rientjes@google.com>, <rusty@rustcorp.com.au>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-doc@vger.kernel.org>, <m.szyprowski@samsung.com>
-Subject: Re: [PATCH v2 0/5] Add movablecore_map boot option
-References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <CAA_GA1d7CxHvmZELvD_DO6u5tu1WBqfmLiuEzeFo=xMzuW50Tg@mail.gmail.com> <50B479FA.6010307@cn.fujitsu.com> <CAA_GA1ezZJyqVL=Dp5U2zzNw6bkfMKJY_STkt3E7TXkUYcv+jQ@mail.gmail.com> <50B4B6BE.3000902@cn.fujitsu.com> <CAA_GA1fE0fhLVs50rRZ6OsTw7DV0hyVC2EuRyUrbzxLztPLoeg@mail.gmail.com> <50B58E30.9060804@huawei.com> <50B5AC38.9060207@cn.fujitsu.com>
-In-Reply-To: <50B5AC38.9060207@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
+To: habanero@linux.vnet.ibm.com
+CC: Andrew Jones <drjones@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Gleb Natapov <gleb@redhat.com>, Chegu Vinod <chegu_vinod@hp.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
+Subject: Re: [PATCH V3 RFC 1/2] sched: Bail out of yield_to when source and
+ target runqueue has one task
+References: <20121126120740.2595.33651.sendpatchset@codeblue> <20121126120754.2595.37316.sendpatchset@codeblue> <20121126133501.GA9830@turtle.usersys.redhat.com> <50B49658.7080507@linux.vnet.ibm.com> <1354025096.31820.886.camel@oc6622382223.ibm.com>
+In-Reply-To: <1354025096.31820.886.camel@oc6622382223.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.108.108.229]
-X-CFilter-Loop: Reflected
+x-cbid: 12112807-2000-0000-0000-00000A0BB2C5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chen,
-
-If a pageblock's migration type is movable, it may be converted to
-reclaimable under memory pressure. CMA is introduced to guarantee
-that pages of CMA won't be converted to other migratetypes.
-
-And we are trying to avoid allocating kernel/DMA memory from specific
-memory ranges, so we could easily reclaim pages when hot-removing
-memory devices. 
-
-I think the idea is not to directly reuse CMA for hotplug, but to 
-reuse the mechanism to reserve specific memory ranges from bootmem
-allocator. So CMA and hotplug could use the same code.
-Basically we may try to reuse dma_declare_contiguous(), so that
-we don't need to add special logic into bootmem allocator.
-
-Regards!
-Gerry
-
-On 2012-11-28 14:16, Tang Chen wrote:
-> Hi Bob, Liu Jiang,
-> 
-> About CMA, could you give me more info ?
-> Thanks for your patent and nice advice. :)
-> 
-> 
-> 1) I saw the following on http://lwn.net/Articles/447405/:
-> 
-> The "CMA" type is sticky; pages which are marked as being for CMA
-> should never have their migration type changed by the kernel.
-> 
-> As Wen said, we now support a user interface to change movable memory
-> into kernel memory. But seeing from above, the memory specified as
-> CMA will not be able to be changed, right ?  If so, I don't think
-> using CMA is a good idea.
-> 
-> 
-> 2) Is CMA just implemented on ARM platform ?  I found the following in
-> kernel-parameters.txt.
-> 
-> cma=nn[MG]      [ARM,KNL]
->         Sets the size of kernel global memory area for contiguous
->         memory allocations. For more information, see
->         include/linux/dma-contiguous.h
-> 
-> We are developing on x86. Could we use it ?
-> 
-> 
-> 3) Is CMA just used for DMA ? I am a little confused here. :)
-> I found the main code of CMA is implemented in dma-contiguous.c.
-> 
-> 
-> 4) The boot options cma=xxx and movablecore_map=xxx have different
-> meanings for user. Reusing CMA could make user confused, I'm afraid.
-> 
-> And, even if we reuse "cma=" option, we still need to do the work
-> in patch 3~5, right ?
-> 
-> 
-> Thanks. :)
-> 
-> 
-> 
-> On 11/28/2012 12:08 PM, Jiang Liu wrote:
->> On 2012-11-28 11:24, Bob Liu wrote:
->>> On Tue, Nov 27, 2012 at 8:49 PM, Tang Chen<tangchen@cn.fujitsu.com>  wrote:
->>>> On 11/27/2012 08:09 PM, Bob Liu wrote:
->>>>>
->>>>> On Tue, Nov 27, 2012 at 4:29 PM, Tang Chen<tangchen@cn.fujitsu.com>
->>>>> wrote:
->>>>>>
->>>>>> Hi Liu,
->>>>>>
->>>>>>
->>>>>> This feature is used in memory hotplug.
->>>>>>
->>>>>> In order to implement a whole node hotplug, we need to make sure the
->>>>>> node contains no kernel memory, because memory used by kernel could
->>>>>> not be migrated. (Since the kernel memory is directly mapped,
->>>>>> VA = PA + __PAGE_OFFSET. So the physical address could not be changed.)
->>>>>>
->>>>>> User could specify all the memory on a node to be movable, so that the
->>>>>> node could be hot-removed.
->>>>>>
->>>>>
->>>>> Thank you for your explanation. It's reasonable.
->>>>>
->>>>> But i think it's a bit duplicated with CMA, i'm not sure but maybe we
->>>>> can combine it with CMA which already in mainline?
->>>>>
->>>> Hi Liu,
+On 11/27/2012 07:34 PM, Andrew Theurer wrote:
+> On Tue, 2012-11-27 at 16:00 +0530, Raghavendra K T wrote:
+>> On 11/26/2012 07:05 PM, Andrew Jones wrote:
+>>> On Mon, Nov 26, 2012 at 05:37:54PM +0530, Raghavendra K T wrote:
+>>>> From: Peter Zijlstra <peterz@infradead.org>
 >>>>
->>>> Thanks for your advice. :)
+>>>> In case of undercomitted scenarios, especially in large guests
+>>>> yield_to overhead is significantly high. when run queue length of
+>>>> source and target is one, take an opportunity to bail out and return
+>>>> -ESRCH. This return condition can be further exploited to quickly come
+>>>> out of PLE handler.
 >>>>
->>>> CMA is Contiguous Memory Allocator, right?  What I'm trying to do is
->>>> controlling where is the start of ZONE_MOVABLE of each node. Could
->>>> CMA do this job ?
->>>
->>> cma will not control the start of ZONE_MOVABLE of each node, but it
->>> can declare a memory that always movable
->>> and all non movable allocate request will not happen on that area.
->>>
->>> Currently cma use a boot parameter "cma=" to declare a memory size
->>> that always movable.
->>> I think it might fulfill your requirement if extending the boot
->>> parameter with a start address.
->>>
->>> more info at http://lwn.net/Articles/468044/
+>>>> (History: Raghavendra initially worked on break out of kvm ple handler upon
+>>>>    seeing source runqueue length = 1, but it had to export rq length).
+>>>>    Peter came up with the elegant idea of return -ESRCH in scheduler core.
 >>>>
->>>> And also, after a short investigation, CMA seems need to base on
->>>> memblock. But we need to limit memblock not to allocate memory on
->>>> ZONE_MOVABLE. As a result, we need to know the ranges before memblock
->>>> could be used. I'm afraid we still need an approach to get the ranges,
->>>> such as a boot option, or from static ACPI tables such as SRAT/MPST.
+>>>> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+>>>> Raghavendra, Checking the rq length of target vcpu condition added.(thanks Avi)
+>>>> Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+>>>> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+>>>> ---
+>>>>
+>>>>    kernel/sched/core.c |   25 +++++++++++++++++++------
+>>>>    1 file changed, 19 insertions(+), 6 deletions(-)
+>>>>
+>>>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+>>>> index 2d8927f..fc219a5 100644
+>>>> --- a/kernel/sched/core.c
+>>>> +++ b/kernel/sched/core.c
+>>>> @@ -4289,7 +4289,10 @@ EXPORT_SYMBOL(yield);
+>>>>     * It's the caller's job to ensure that the target task struct
+>>>>     * can't go away on us before we can do any checks.
+>>>>     *
+>>>> - * Returns true if we indeed boosted the target task.
+>>>> + * Returns:
+>>>> + *	true (>0) if we indeed boosted the target task.
+>>>> + *	false (0) if we failed to boost the target.
+>>>> + *	-ESRCH if there's no task to yield to.
+>>>>     */
+>>>>    bool __sched yield_to(struct task_struct *p, bool preempt)
+>>>>    {
+>>>> @@ -4303,6 +4306,15 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
+>>>>
+>>>>    again:
+>>>>    	p_rq = task_rq(p);
+>>>> +	/*
+>>>> +	 * If we're the only runnable task on the rq and target rq also
+>>>> +	 * has only one task, there's absolutely no point in yielding.
+>>>> +	 */
+>>>> +	if (rq->nr_running == 1 && p_rq->nr_running == 1) {
+>>>> +		yielded = -ESRCH;
+>>>> +		goto out_irq;
+>>>> +	}
+>>>> +
+>>>>    	double_rq_lock(rq, p_rq);
+>>>>    	while (task_rq(p) != p_rq) {
+>>>>    		double_rq_unlock(rq, p_rq);
+>>>> @@ -4310,13 +4322,13 @@ again:
+>>>>    	}
+>>>>
+>>>>    	if (!curr->sched_class->yield_to_task)
+>>>> -		goto out;
+>>>> +		goto out_unlock;
+>>>>
+>>>>    	if (curr->sched_class != p->sched_class)
+>>>> -		goto out;
+>>>> +		goto out_unlock;
+>>>>
+>>>>    	if (task_running(p_rq, p) || p->state)
+>>>> -		goto out;
+>>>> +		goto out_unlock;
+>>>>
+>>>>    	yielded = curr->sched_class->yield_to_task(rq, p, preempt);
+>>>>    	if (yielded) {
+>>>> @@ -4329,11 +4341,12 @@ again:
+>>>>    			resched_task(p_rq->curr);
+>>>>    	}
+>>>>
+>>>> -out:
+>>>> +out_unlock:
+>>>>    	double_rq_unlock(rq, p_rq);
+>>>> +out_irq:
+>>>>    	local_irq_restore(flags);
+>>>>
+>>>> -	if (yielded)
+>>>> +	if (yielded > 0)
+>>>>    		schedule();
+>>>>
+>>>>    	return yielded;
 >>>>
 >>>
->>> Yes, it's based on memblock and with boot option.
->>> In setup_arch32()
->>>      dma_contiguous_reserve(0);   =>  will declare a cma area using
->>> memblock_reserve()
+>>> Acked-by: Andrew Jones <drjones@redhat.com>
 >>>
->>>> I'm don't know much about CMA for now. So if you have any better idea,
->>>> please share with us, thanks. :)
->>>
->>> My idea is reuse cma like below patch(even not compiled) and boot with
->>> "cma=size@start_address".
->>> I don't know whether it can work and whether suitable for your
->>> requirement, if not forgive me for this noises.
->>>
->>> diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
->>> index 612afcc..564962a 100644
->>> --- a/drivers/base/dma-contiguous.c
->>> +++ b/drivers/base/dma-contiguous.c
->>> @@ -59,11 +59,18 @@ struct cma *dma_contiguous_default_area;
->>>    */
->>>   static const unsigned long size_bytes = CMA_SIZE_MBYTES * SZ_1M;
->>>   static long size_cmdline = -1;
->>> +static long cma_start_cmdline = -1;
->>>
->>>   static int __init early_cma(char *p)
->>>   {
->>> +       char *oldp;
->>>          pr_debug("%s(%s)\n", __func__, p);
->>> +       oldp = p;
->>>          size_cmdline = memparse(p,&p);
->>> +
->>> +       if (*p == '@')
->>> +               cma_start_cmdline = memparse(p+1,&p);
->>> +       printk("cma start:0x%x, size: 0x%x\n", size_cmdline, cma_start_cmdline);
->>>          return 0;
->>>   }
->>>   early_param("cma", early_cma);
->>> @@ -127,8 +134,10 @@ void __init dma_contiguous_reserve(phys_addr_t limit)
->>>          if (selected_size) {
->>>                  pr_debug("%s: reserving %ld MiB for global area\n", __func__,
->>>                           selected_size / SZ_1M);
->>> -
->>> -               dma_declare_contiguous(NULL, selected_size, 0, limit);
->>> +               if (cma_size_cmdline != -1)
->>> +                       dma_declare_contiguous(NULL, selected_size,
->>> cma_start_cmdline, limit);
->>> +               else
->>> +                       dma_declare_contiguous(NULL, selected_size, 0, limit);
->>>          }
->>>   };
->> Seems a good idea to reserve memory by reusing CMA logic, though need more
->> investigation here. One of CMA goal is to ensure pages in CMA are really
->> movable, and this patchset tries to achieve the same goal at a first glance.
 >>
+>> Thank you Drew.
 >>
+>> Marcelo Gleb.. Please let me know if you have comments / concerns on the
+>> patches..
 >>
->>
->>
-> 
-> 
-> .
-> 
+>> Andrew, Vinod, IMO, the patch set looks good for undercommit scenarios
+>> especially for large guests where we do have overhead of vcpu iteration
+>> of ple handler..
+>
+> I agree, looks fine for undercommit scenarios.  I do wonder what happens
+> with 1.5x overcommit, where we might see 1/2 the host cpus with runqueue
+> of 2 and 1/2 of the host cpus with a runqueue of 1.  Even with this
+> change that scenario still might be fine, but it would be nice to see a
+> comparison.
+>
 
+Hi Andrew, yes thanks for pointing out 1.5x case which should have
+theoretical  worst case..
+I tried with 2 24 vcpu guests and the same 32 core machine.. Here is
+the result..
+
+Ebizzy (rec/sec higher is better)
+x base
++ patched
+     N       Avg        Stddev
+x  10     2688.6     347.55917
++  10     2707.6     260.93728
+
+improvement 0.706%
+
+dbench (Throughput MB/sec higher is better)
+x base
++ patched
+     N         Avg        Stddev
+x  10    3164.712     140.24468
++  10    3244.021     185.92434
+
+Improvement 2.5%
+
+So there is no significant improvement / degradation seen in
+1.5x.
 
