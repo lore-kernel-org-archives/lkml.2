@@ -1,66 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932208Ab2K1NQL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 08:16:11 -0500
-Received: from smtp145.dfw.emailsrvr.com ([67.192.241.145]:41032 "EHLO
-	smtp145.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932163Ab2K1NQJ (ORCPT
+	id S1754855Ab2K1NTR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 08:19:17 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:48591 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752858Ab2K1NTN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 08:16:09 -0500
-Message-ID: <50B60E9C.9000405@calxeda.com>
-Date: Wed, 28 Nov 2012 07:16:12 -0600
-From: Mark Langsdorf <mark.langsdorf@calxeda.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH 6/6 v6] cpufreq, highbank: add support for highbank cpufreq
-References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com> <1354046672-7392-1-git-send-email-mark.langsdorf@calxeda.com> <1354046672-7392-7-git-send-email-mark.langsdorf@calxeda.com> <20121128023240.GA28170@S2100-06.ap.freescale.net>
-In-Reply-To: <20121128023240.GA28170@S2100-06.ap.freescale.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Nov 2012 08:19:13 -0500
+From: YAMANE Toshiaki <yamanetoshi@gmail.com>
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
+Subject: [PATCH 2/8] staging/rtl8187se: Fix spacing coding style in ieee80211/ieee80211_rx.c
+Date: Wed, 28 Nov 2012 22:19:05 +0900
+Message-Id: <1354108745-17592-1-git-send-email-yamanetoshi@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1354108550-17553-1-git-send-email-yamanetoshi@gmail.com>
+References: <1354108550-17553-1-git-send-email-yamanetoshi@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2012 08:32 PM, Shawn Guo wrote:
-> On Tue, Nov 27, 2012 at 02:04:32PM -0600, Mark Langsdorf wrote:
->> Highbank processors depend on the external ECME to perform voltage
->> management based on a requested frequency. Communication between the
->> A9 cores and the ECME happens over the pl320 IPC channel.
-> 
-> ...
-> 
->> +static int hb_voltage_change(unsigned int freq)
->> +{
->> +	int i;
->> +	u32 msg[7];
->> +
->> +	msg[0] = HB_CPUFREQ_CHANGE_NOTE;
->> +	msg[1] = freq / 1000;
->> +	for (i = 2; i < 7; i++)
->> +		msg[i] = 0;
->> +
->> +	return pl320_ipc_transmit(msg);
-> 
-> Is it possible to have this handled inside clk_set_rate() call of cpu
-> clock?
+The following warnings fixed.
+- WARNING: suspect code indent for conditional statements
 
-Standard practice is to have cpufreq_set_target() handle voltage
-transitions and leave clk_set_rate() handle the frequency changes. I'd
-have to move most of the logic of hb_set_target() into
-clk_highbank.c:clk_pll_set_rate() and then add extra logic for when
-cpufreq is not enabled/loaded. I don't think the clk maintainers would
-take that patch, either.
+Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
+---
+ drivers/staging/rtl8187se/ieee80211/ieee80211_rx.c |   56 ++++++++++----------
+ 1 file changed, 28 insertions(+), 28 deletions(-)
 
-So no.
-
---Mark Langsdorf
-Calxeda, Inc.
+diff --git a/drivers/staging/rtl8187se/ieee80211/ieee80211_rx.c b/drivers/staging/rtl8187se/ieee80211/ieee80211_rx.c
+index ef8bfab..c932e31 100644
+--- a/drivers/staging/rtl8187se/ieee80211/ieee80211_rx.c
++++ b/drivers/staging/rtl8187se/ieee80211/ieee80211_rx.c
+@@ -108,17 +108,17 @@ ieee80211_frag_cache_get(struct ieee80211_device *ieee,
+ 	u8 tid;
+ 
+ 	if (((fc & IEEE80211_FCTL_DSTODS) == IEEE80211_FCTL_DSTODS)&&IEEE80211_QOS_HAS_SEQ(fc)) {
+-	  hdr_4addrqos = (struct ieee80211_hdr_4addrqos *)hdr;
+-	  tid = le16_to_cpu(hdr_4addrqos->qos_ctl) & IEEE80211_QOS_TID;
+-	  tid = UP2AC(tid);
+-	  tid ++;
++		hdr_4addrqos = (struct ieee80211_hdr_4addrqos *)hdr;
++		tid = le16_to_cpu(hdr_4addrqos->qos_ctl) & IEEE80211_QOS_TID;
++		tid = UP2AC(tid);
++		tid ++;
+ 	} else if (IEEE80211_QOS_HAS_SEQ(fc)) {
+-	  hdr_3addrqos = (struct ieee80211_hdr_3addrqos *)hdr;
+-	  tid = le16_to_cpu(hdr_3addrqos->qos_ctl) & IEEE80211_QOS_TID;
+-	  tid = UP2AC(tid);
+-	  tid ++;
++		hdr_3addrqos = (struct ieee80211_hdr_3addrqos *)hdr;
++		tid = le16_to_cpu(hdr_3addrqos->qos_ctl) & IEEE80211_QOS_TID;
++		tid = UP2AC(tid);
++		tid ++;
+ 	} else {
+-	  tid = 0;
++		tid = 0;
+ 	}
+ 
+ 	if (frag == 0) {
+@@ -175,17 +175,17 @@ static int ieee80211_frag_cache_invalidate(struct ieee80211_device *ieee,
+ 	u8 tid;
+ 
+ 	if(((fc & IEEE80211_FCTL_DSTODS) == IEEE80211_FCTL_DSTODS)&&IEEE80211_QOS_HAS_SEQ(fc)) {
+-	  hdr_4addrqos = (struct ieee80211_hdr_4addrqos *)hdr;
+-	  tid = le16_to_cpu(hdr_4addrqos->qos_ctl) & IEEE80211_QOS_TID;
+-	  tid = UP2AC(tid);
+-	  tid ++;
++		hdr_4addrqos = (struct ieee80211_hdr_4addrqos *)hdr;
++		tid = le16_to_cpu(hdr_4addrqos->qos_ctl) & IEEE80211_QOS_TID;
++		tid = UP2AC(tid);
++		tid ++;
+ 	} else if (IEEE80211_QOS_HAS_SEQ(fc)) {
+-	  hdr_3addrqos = (struct ieee80211_hdr_3addrqos *)hdr;
+-	  tid = le16_to_cpu(hdr_3addrqos->qos_ctl) & IEEE80211_QOS_TID;
+-	  tid = UP2AC(tid);
+-	  tid ++;
++		hdr_3addrqos = (struct ieee80211_hdr_3addrqos *)hdr;
++		tid = le16_to_cpu(hdr_3addrqos->qos_ctl) & IEEE80211_QOS_TID;
++		tid = UP2AC(tid);
++		tid ++;
+ 	} else {
+-	  tid = 0;
++		tid = 0;
+ 	}
+ 
+ 	entry = ieee80211_frag_cache_find(ieee, seq, -1, tid,hdr->addr2,
+@@ -382,17 +382,17 @@ static int is_duplicate_packet(struct ieee80211_device *ieee,
+ 
+ 	//TO2DS and QoS
+ 	if(((fc & IEEE80211_FCTL_DSTODS) == IEEE80211_FCTL_DSTODS)&&IEEE80211_QOS_HAS_SEQ(fc)) {
+-	  hdr_4addrqos = (struct ieee80211_hdr_4addrqos *)header;
+-	  tid = le16_to_cpu(hdr_4addrqos->qos_ctl) & IEEE80211_QOS_TID;
+-	  tid = UP2AC(tid);
+-	  tid ++;
++		hdr_4addrqos = (struct ieee80211_hdr_4addrqos *)header;
++		tid = le16_to_cpu(hdr_4addrqos->qos_ctl) & IEEE80211_QOS_TID;
++		tid = UP2AC(tid);
++		tid ++;
+ 	} else if(IEEE80211_QOS_HAS_SEQ(fc)) { //QoS
+-	  hdr_3addrqos = (struct ieee80211_hdr_3addrqos *)header;
+-	  tid = le16_to_cpu(hdr_3addrqos->qos_ctl) & IEEE80211_QOS_TID;
+-	  tid = UP2AC(tid);
+-	  tid ++;
++		hdr_3addrqos = (struct ieee80211_hdr_3addrqos *)header;
++		tid = le16_to_cpu(hdr_3addrqos->qos_ctl) & IEEE80211_QOS_TID;
++		tid = UP2AC(tid);
++		tid ++;
+ 	} else { // no QoS
+-	  tid = 0;
++		tid = 0;
+ 	}
+ 	switch (ieee->iw_mode) {
+ 	case IW_MODE_ADHOC:
+@@ -1309,7 +1309,7 @@ inline void update_network(struct ieee80211_network *dst,
+ 	   src->wmm_param[1].ac_aci_acm_aifsn|| \
+ 	   src->wmm_param[2].ac_aci_acm_aifsn|| \
+ 	   src->wmm_param[3].ac_aci_acm_aifsn) {
+-	  memcpy(dst->wmm_param, src->wmm_param, WME_AC_PRAM_LEN);
++		memcpy(dst->wmm_param, src->wmm_param, WME_AC_PRAM_LEN);
+ 	}
+ 	dst->QoS_Enable = src->QoS_Enable;
+ #else
+-- 
+1.7.9.5
 
