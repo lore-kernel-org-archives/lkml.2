@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755487Ab2K1Ow6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 09:52:58 -0500
-Received: from co9ehsobe005.messaging.microsoft.com ([207.46.163.28]:54157
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753233Ab2K1Owz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 09:52:55 -0500
-X-Greylist: delayed 45971 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Nov 2012 09:52:55 EST
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1de0h1202h1d1ah1d2ahzzz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Wed, 28 Nov 2012 23:17:44 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Mark Langsdorf <mark.langsdorf@calxeda.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH 6/6 v6] cpufreq, highbank: add support for highbank
- cpufreq
-Message-ID: <20121128151741.GC28170@S2100-06.ap.freescale.net>
-References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com>
- <1354046672-7392-1-git-send-email-mark.langsdorf@calxeda.com>
- <1354046672-7392-7-git-send-email-mark.langsdorf@calxeda.com>
- <20121128023240.GA28170@S2100-06.ap.freescale.net>
- <50B60E9C.9000405@calxeda.com>
- <20121128145759.GB28170@S2100-06.ap.freescale.net>
+	id S1755539Ab2K1OzV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 09:55:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40867 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754538Ab2K1OzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 09:55:19 -0500
+Date: Wed, 28 Nov 2012 09:55:15 -0500
+From: Dave Jones <davej@redhat.com>
+To: linux-mm@kvack.org
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: livelock in __writeback_inodes_wb ?
+Message-ID: <20121128145515.GA26564@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>, linux-mm@kvack.org,
+	Linux Kernel <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121128145759.GB28170@S2100-06.ap.freescale.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 10:58:02PM +0800, Shawn Guo wrote:
-> On Wed, Nov 28, 2012 at 07:16:12AM -0600, Mark Langsdorf wrote:
-> > I'd
-> > have to move most of the logic of hb_set_target() into
-> > clk_highbank.c:clk_pll_set_rate() and then add extra logic for when
-> > cpufreq is not enabled/loaded.
-> 
-> You only need to move hb_voltage_change() into cpu clock's .set_rate()
-> hook with no need of checking if cpufreq is enabled or not.
-> 
-Need to also check whether frequency or voltage should be changed first
-in .set_rate() though.
+We had a user report the soft lockup detector kicked after 22
+seconds of no progress, with this trace..
 
-Shawn
+:BUG: soft lockup - CPU#1 stuck for 22s! [flush-8:16:3137]
+:Pid: 3137, comm: flush-8:16 Not tainted 3.6.7-4.fc17.x86_64 #1
+:RIP: 0010:[<ffffffff812eeb8c>]  [<ffffffff812eeb8c>] __list_del_entry+0x2c/0xd0
+:Call Trace:
+: [<ffffffff811b783e>] redirty_tail+0x5e/0x80
+: [<ffffffff811b8212>] __writeback_inodes_wb+0x72/0xd0
+: [<ffffffff811b980b>] wb_writeback+0x23b/0x2d0
+: [<ffffffff811b9b5c>] wb_do_writeback+0xac/0x1f0
+: [<ffffffff8106c0e0>] ? __internal_add_timer+0x130/0x130
+: [<ffffffff811b9d2b>] bdi_writeback_thread+0x8b/0x230
+: [<ffffffff811b9ca0>] ? wb_do_writeback+0x1f0/0x1f0
+: [<ffffffff8107fde3>] kthread+0x93/0xa0
+: [<ffffffff81627e04>] kernel_thread_helper+0x4/0x10
+: [<ffffffff8107fd50>] ? kthread_freezable_should_stop+0x70/0x70
+: [<ffffffff81627e00>] ? gs_change+0x13/0x13
+
+Looking over the code, is it possible that something could be
+dirtying pages faster than writeback can get them written out,
+keeping us in this loop indefitely ?
+
+Should there be something in this loop periodically poking
+the watchdog perhaps ?
+
+	Dave
 
