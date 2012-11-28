@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756242Ab2K1Vsp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 16:48:45 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:36928 "EHLO
+	id S932724Ab2K1V4w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 16:56:52 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:37038 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755752Ab2K1Vsk (ORCPT
+	with ESMTP id S1755752Ab2K1Vsq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 16:48:40 -0500
+	Wed, 28 Nov 2012 16:48:46 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
@@ -14,9 +14,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v9 37/46] x86, mm: use pfn instead of pos in split_mem_range
-Date: Wed, 28 Nov 2012 13:47:48 -0800
-Message-Id: <1354139277-17376-38-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v9 10/46] x86, mm: if kernel .text .data .bss are not marked as E820_RAM, complain and fix
+Date: Wed, 28 Nov 2012 13:47:21 -0800
+Message-Id: <1354139277-17376-11-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
 References: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
@@ -25,105 +25,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-could save some bit shifting operations.
+From: Jacob Shin <jacob.shin@amd.com>
 
+There could be cases where user supplied memmap=exactmap memory
+mappings do not mark the region where the kernel .text .data and
+.bss reside as E820_RAM, as reported here:
+
+https://lkml.org/lkml/2012/8/14/86
+
+Handle it by complaining, and adding the range back into the e820.
+
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
 Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/mm/init.c |   29 ++++++++++++++---------------
- 1 files changed, 14 insertions(+), 15 deletions(-)
+ arch/x86/kernel/setup.c |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 15fdaba..dd4e98d 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -204,12 +204,11 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
- 				     unsigned long end)
- {
- 	unsigned long start_pfn, end_pfn;
--	unsigned long pos;
-+	unsigned long pfn;
- 	int i;
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 4bd8921..d85cbd9 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -832,6 +832,20 @@ void __init setup_arch(char **cmdline_p)
+ 	insert_resource(&iomem_resource, &data_resource);
+ 	insert_resource(&iomem_resource, &bss_resource);
  
- 	/* head if not big page alignment ? */
--	start_pfn = PFN_DOWN(start);
--	pos = PFN_PHYS(start_pfn);
-+	pfn = start_pfn = PFN_DOWN(start);
++	/*
++	 * Complain if .text .data and .bss are not marked as E820_RAM and
++	 * attempt to fix it by adding the range. We may have a confused BIOS,
++	 * or the user may have incorrectly supplied it via memmap=exactmap. If
++	 * we really are running on top non-RAM, we will crash later anyways.
++	 */
++	if (!e820_all_mapped(code_resource.start, __pa(__brk_limit), E820_RAM)) {
++		pr_warn(".text .data .bss are not marked as E820_RAM!\n");
++
++		e820_add_region(code_resource.start,
++				__pa(__brk_limit) - code_resource.start + 1,
++				E820_RAM);
++	}
++
+ 	trim_bios_range();
  #ifdef CONFIG_X86_32
- 	/*
- 	 * Don't use a large page for the first 2/4MB of memory
-@@ -217,26 +216,26 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
- 	 * and overlapping MTRRs into large pages can cause
- 	 * slowdowns.
- 	 */
--	if (pos == 0)
-+	if (pfn == 0)
- 		end_pfn = PFN_DOWN(PMD_SIZE);
- 	else
--		end_pfn = PFN_DOWN(round_up(pos, PMD_SIZE));
-+		end_pfn = round_up(pfn, PFN_DOWN(PMD_SIZE));
- #else /* CONFIG_X86_64 */
--	end_pfn = PFN_DOWN(round_up(pos, PMD_SIZE));
-+	end_pfn = round_up(pfn, PFN_DOWN(PMD_SIZE));
- #endif
- 	if (end_pfn > PFN_DOWN(end))
- 		end_pfn = PFN_DOWN(end);
- 	if (start_pfn < end_pfn) {
- 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn, 0);
--		pos = PFN_PHYS(end_pfn);
-+		pfn = end_pfn;
- 	}
- 
- 	/* big page (2M) range */
--	start_pfn = PFN_DOWN(round_up(pos, PMD_SIZE));
-+	start_pfn = round_up(pfn, PFN_DOWN(PMD_SIZE));
- #ifdef CONFIG_X86_32
- 	end_pfn = PFN_DOWN(round_down(end, PMD_SIZE));
- #else /* CONFIG_X86_64 */
--	end_pfn = PFN_DOWN(round_up(pos, PUD_SIZE));
-+	end_pfn = round_up(pfn, PFN_DOWN(PUD_SIZE));
- 	if (end_pfn > PFN_DOWN(round_down(end, PMD_SIZE)))
- 		end_pfn = PFN_DOWN(round_down(end, PMD_SIZE));
- #endif
-@@ -244,32 +243,32 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
- 	if (start_pfn < end_pfn) {
- 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
- 				page_size_mask & (1<<PG_LEVEL_2M));
--		pos = PFN_PHYS(end_pfn);
-+		pfn = end_pfn;
- 	}
- 
- #ifdef CONFIG_X86_64
- 	/* big page (1G) range */
--	start_pfn = PFN_DOWN(round_up(pos, PUD_SIZE));
-+	start_pfn = round_up(pfn, PFN_DOWN(PUD_SIZE));
- 	end_pfn = PFN_DOWN(round_down(end, PUD_SIZE));
- 	if (start_pfn < end_pfn) {
- 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
- 				page_size_mask &
- 				 ((1<<PG_LEVEL_2M)|(1<<PG_LEVEL_1G)));
--		pos = PFN_PHYS(end_pfn);
-+		pfn = end_pfn;
- 	}
- 
- 	/* tail is not big page (1G) alignment */
--	start_pfn = PFN_DOWN(round_up(pos, PMD_SIZE));
-+	start_pfn = round_up(pfn, PFN_DOWN(PMD_SIZE));
- 	end_pfn = PFN_DOWN(round_down(end, PMD_SIZE));
- 	if (start_pfn < end_pfn) {
- 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
- 				page_size_mask & (1<<PG_LEVEL_2M));
--		pos = PFN_PHYS(end_pfn);
-+		pfn = end_pfn;
- 	}
- #endif
- 
- 	/* tail is not big page (2M) alignment */
--	start_pfn = PFN_DOWN(pos);
-+	start_pfn = pfn;
- 	end_pfn = PFN_DOWN(end);
- 	nr_range = save_mr(mr, nr_range, start_pfn, end_pfn, 0);
- 
+ 	if (ppro_with_ram_bug()) {
 -- 
 1.7.7
 
