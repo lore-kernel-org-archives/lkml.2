@@ -1,60 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755416Ab2K1OZN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 09:25:13 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:44628 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754906Ab2K1OZI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 09:25:08 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121128135345.GG928@redhat.com>
-References: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
-	<CAFTL4hx0fc_Jo8wkuRZedW4DVEeQceiHMrWVqTqB5k065Wsg8Q@mail.gmail.com>
-	<1354090704.3054.13.camel@ThinkPad-T5421.cn.ibm.com>
-	<CAFTL4hxPSp1fs4=2g0yFs0d5nFisfUsfDAA9bHWcu+-+tO_ySw@mail.gmail.com>
-	<20121128135345.GG928@redhat.com>
-Date: Wed, 28 Nov 2012 15:25:07 +0100
-Message-ID: <CAFTL4hxoFBLNQCABBpJRBgV-r-Mg5GSq7HbPfWJRraSvtviz4A@mail.gmail.com>
-Subject: Re: [RFC PATCH v2] Add rcu user eqs exception hooks for async page fault
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>,
-        linux-next list <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
-        sasha.levin@oracle.com, avi@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755356Ab2K1O2P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 09:28:15 -0500
+Received: from mga09.intel.com ([134.134.136.24]:64356 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753842Ab2K1O2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 09:28:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,179,1355126400"; 
+   d="scan'208";a="225791932"
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alan Cox <alan@linux.intel.com>, Jamie Iles <jamie@jamieiles.com>,
+        linux-serial@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 5/5] serial: 8250_dw: Set FIFO size dynamically
+Date: Wed, 28 Nov 2012 16:29:30 +0200
+Message-Id: <1354112970-30325-1-git-send-email-heikki.krogerus@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <20121128133704.GB14698@as23.pp.htv.fi>
+References: <20121128133704.GB14698@as23.pp.htv.fi>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/11/28 Gleb Natapov <gleb@redhat.com>:
-> On Wed, Nov 28, 2012 at 01:55:42PM +0100, Frederic Weisbecker wrote:
->> Yes but if rcu_irq_*() calls are fine to be called there, and I
->> believe they are because exception_enter() exits the user mode, we
->> should start to protect there right now instead of waiting for a
->> potential future warning of illegal RCU use.
->>
-> Async page not present is not much different from regular page fault
-> exception when it happens not on idle task (regular #PF cannot happen
-> on idle task), but code have a special handling for idle task. So why
-> do you think rcu_irq_*() is required here, but not in page fault
-> handler?
+Designware UART provides optional Component Parameter
+Register that lists most of the capabilities of the UART,
+including FIFO size. This uses that register to set FIFO
+size for the port before registering it.
 
-Because we are not supposed to fault in idle, at least I hope there
-are no case around. Except on cases like here with KVM I guess but we
-have that special async handler for that.
+Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+---
+ drivers/tty/serial/8250/8250_dw.c |   57 ++++++++++++++++++++++++++++++++++---
+ 1 file changed, 53 insertions(+), 4 deletions(-)
 
-Note exception_enter() only takes cares of RCU user mode, not idle. If
-the need arise in the future we can extend it to handle idle.
+diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
+index bfbfb07..2041220 100644
+--- a/drivers/tty/serial/8250/8250_dw.c
++++ b/drivers/tty/serial/8250/8250_dw.c
+@@ -25,6 +25,28 @@
+ #include <linux/platform_device.h>
+ #include <linux/slab.h>
+ 
++/* Offsets for the DesignWare specific registers */
++#define DW_UART_USR	0x1f /* UART Status Register */
++#define DW_UART_CPR	0xf4 /* Component Parameter Register */
++#define DW_UART_UCV	0xf8 /* UART Component Version */
++
++/* Component Parameter Register bits */
++#define DW_UART_CPR_ABP_DATA_WIDTH	(3 << 0)
++#define DW_UART_CPR_AFCE_MODE		(1 << 4)
++#define DW_UART_CPR_THRE_MODE		(1 << 5)
++#define DW_UART_CPR_SIR_MODE		(1 << 6)
++#define DW_UART_CPR_SIR_LP_MODE		(1 << 7)
++#define DW_UART_CPR_ADDITIONAL_FEATURES	(1 << 8)
++#define DW_UART_CPR_FIFO_ACCESS		(1 << 9)
++#define DW_UART_CPR_FIFO_STAT		(1 << 10)
++#define DW_UART_CPR_SHADOW		(1 << 11)
++#define DW_UART_CPR_ENCODED_PARMS	(1 << 12)
++#define DW_UART_CPR_DMA_EXTRA		(1 << 13)
++#define DW_UART_CPR_FIFO_MODE		(0xff << 16)
++/* Helper for fifo size calculation */
++#define DW_UART_CPR_FIFO_SIZE(a)	(((a >> 16) & 0xff) * 16)
++
++
+ struct dw8250_data {
+ 	int	last_lcr;
+ 	int	line;
+@@ -66,9 +88,6 @@ static unsigned int dw8250_serial_in32(struct uart_port *p, int offset)
+ 	return readl(p->membase + offset);
+ }
+ 
+-/* Offset for the DesignWare's UART Status Register. */
+-#define UART_USR	0x1f
+-
+ static int dw8250_handle_irq(struct uart_port *p)
+ {
+ 	struct dw8250_data *d = p->private_data;
+@@ -78,7 +97,7 @@ static int dw8250_handle_irq(struct uart_port *p)
+ 		return 1;
+ 	} else if ((iir & UART_IIR_BUSY) == UART_IIR_BUSY) {
+ 		/* Clear the USR and write the LCR again. */
+-		(void)p->serial_in(p, UART_USR);
++		(void)p->serial_in(p, DW_UART_USR);
+ 		p->serial_out(p, d->last_lcr, UART_LCR);
+ 
+ 		return 1;
+@@ -119,6 +138,34 @@ static int __devinit dw8250_probe_of(struct uart_port *p)
+ 	return 0;
+ }
+ 
++static void __devinit dw8250_setup_port(struct uart_8250_port *up)
++{
++	struct uart_port	*p = &up->port;
++	u32			reg = readl(p->membase + DW_UART_UCV);
++
++	/*
++	 * If the Component Version Register returns zero, we know that
++	 * ADDITIONAL_FEATURES are not enabled. No need to go any further.
++	 */
++	if (!reg)
++		return;
++
++	dev_dbg_ratelimited(p->dev, "Designware UART version %c.%c%c\n",
++		(reg >> 24) & 0xff, (reg >> 16) & 0xff, (reg >> 8) & 0xff);
++
++	reg = readl(p->membase + DW_UART_CPR);
++	if (!reg)
++		return;
++
++	/* Select the type based on fifo */
++	if (reg & DW_UART_CPR_FIFO_MODE) {
++		p->type = PORT_16550A;
++		p->flags |= UPF_FIXED_TYPE;
++		p->fifosize = DW_UART_CPR_FIFO_SIZE(reg);
++		up->tx_loadsz = p->fifosize;
++	}
++}
++
+ static int __devinit dw8250_probe(struct platform_device *pdev)
+ {
+ 	struct uart_8250_port uart = {};
+@@ -156,6 +203,8 @@ static int __devinit dw8250_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
+ 
++	dw8250_setup_port(&uart);
++
+ 	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
+ 	if (!data)
+ 		return -ENOMEM;
+-- 
+1.7.10.4
 
->> >
->> > I think we still need Gleb's patch about the idle check in
->> > kvm_async_pf_task_wait(), and maybe another patch for the
->> > exit_idle()/enter_idle() issue.
->>
->> Right.
->>
-> Done.
-
- Thanks!
