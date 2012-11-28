@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755406Ab2K1Qob (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 11:44:31 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:46348 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755338Ab2K1Qo1 (ORCPT
+	id S1755466Ab2K1Qog (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 11:44:36 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46820 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755393Ab2K1Qob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 11:44:27 -0500
+	Wed, 28 Nov 2012 11:44:31 -0500
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
         linux-fsdevel@vger.kernel.org
 Cc: zab@redhat.com, bcrl@kvack.org, jmoyer@redhat.com, axboe@kernel.dk,
         viro@zeniv.linux.org.uk, Kent Overstreet <koverstreet@google.com>
-Subject: [PATCH 20/25] aio: reqs_active -> reqs_available
-Date: Wed, 28 Nov 2012 08:43:44 -0800
-Message-Id: <1354121029-1376-21-git-send-email-koverstreet@google.com>
+Subject: [PATCH 23/25] aio: Percpu ioctx refcount
+Date: Wed, 28 Nov 2012 08:43:47 -0800
+Message-Id: <1354121029-1376-24-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1354121029-1376-1-git-send-email-koverstreet@google.com>
 References: <1354121029-1376-1-git-send-email-koverstreet@google.com>
@@ -22,141 +22,119 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The number of outstanding kiocbs is one of the few shared things left
-that has to be touched for every kiocb - it'd be nice to make it percpu.
-
-We can make it per cpu by treating it like an allocation problem: we
-have a maximum number of kiocbs that can be outstanding (i.e. slots) -
-then we just allocate and free slots, and we know how to write per cpu
-allocators.
-
-So as prep work for that, we convert reqs_active to reqs_available.
+This just converts the ioctx refcount to the new generic dynamic percpu
+refcount code.
 
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 ---
- fs/aio.c | 29 ++++++++++++++---------------
- 1 file changed, 14 insertions(+), 15 deletions(-)
+ fs/aio.c | 30 +++++++++++++-----------------
+ 1 file changed, 13 insertions(+), 17 deletions(-)
 
 diff --git a/fs/aio.c b/fs/aio.c
-index 7dee3aa..e6f29dc 100644
+index 94218b7..0975675 100644
 --- a/fs/aio.c
 +++ b/fs/aio.c
-@@ -79,7 +79,7 @@ struct kioctx {
- 	long			nr_pages;
+@@ -36,6 +36,7 @@
+ #include <linux/eventfd.h>
+ #include <linux/blkdev.h>
+ #include <linux/compat.h>
++#include <linux/percpu-refcount.h>
  
- 	struct {
--		atomic_t	reqs_active;
-+		atomic_t	reqs_available;
- 	} ____cacheline_aligned;
+ #include <asm/kmap_types.h>
+ #include <asm/uaccess.h>
+@@ -65,7 +66,7 @@ struct kioctx_cpu {
+ };
  
- 	struct {
-@@ -301,17 +301,17 @@ static void free_ioctx(struct kioctx *ctx)
- 	head = ring->head;
- 	kunmap_atomic(ring);
+ struct kioctx {
+-	atomic_t		users;
++	struct percpu_ref	users;
+ 	atomic_t		dead;
  
--	while (atomic_read(&ctx->reqs_active) > 0) {
-+	while (atomic_read(&ctx->reqs_available) < ctx->nr) {
- 		wait_event(ctx->wait, head != ctx->tail);
+ 	/* This needs improving */
+@@ -297,6 +298,8 @@ static void free_ioctx(struct kioctx *ctx)
+ 	struct io_event res;
+ 	unsigned cpu, head, avail;
  
- 		avail = (head < ctx->tail ? ctx->tail : ctx->nr) - head;
- 
--		atomic_sub(avail, &ctx->reqs_active);
-+		atomic_add(avail, &ctx->reqs_available);
- 		head += avail;
- 		head %= ctx->nr;
- 	}
- 
--	WARN_ON(atomic_read(&ctx->reqs_active) < 0);
-+	WARN_ON(atomic_read(&ctx->reqs_available) > ctx->nr);
- 
- 	aio_free_ring(ctx);
- 
-@@ -368,6 +368,8 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
- 	if (aio_setup_ring(ctx) < 0)
- 		goto out_freectx;
- 
-+	atomic_set(&ctx->reqs_available, ctx->nr);
++	pr_debug("freeing %p\n", ctx);
 +
- 	/* limit the number of system wide aios */
- 	spin_lock(&aio_nr_lock);
- 	if (aio_nr + nr_events > aio_max_nr ||
-@@ -448,7 +450,7 @@ void exit_aio(struct mm_struct *mm)
- 				"exit_aio:ioctx still alive: %d %d %d\n",
- 				atomic_read(&ctx->users),
- 				atomic_read(&ctx->dead),
--				atomic_read(&ctx->reqs_active));
-+				atomic_read(&ctx->reqs_available));
+ 	spin_lock_irq(&ctx->ctx_lock);
+ 
+ 	while (!list_empty(&ctx->active_reqs)) {
+@@ -341,14 +344,14 @@ static void free_ioctx(struct kioctx *ctx)
+ 
+ 	synchronize_rcu();
+ 
+-	pr_debug("freeing %p\n", ctx);
++	pr_debug("freed %p\n", ctx);
+ 	free_percpu(ctx->cpu);
+ 	kmem_cache_free(kioctx_cachep, ctx);
+ }
+ 
+ static void put_ioctx(struct kioctx *ctx)
+ {
+-	if (unlikely(atomic_dec_and_test(&ctx->users)))
++	if (percpu_ref_put(&ctx->users))
+ 		free_ioctx(ctx);
+ }
+ 
+@@ -377,7 +380,10 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
+ 
+ 	ctx->max_reqs = nr_events;
+ 
+-	atomic_set(&ctx->users, 2);
++	percpu_ref_init(&ctx->users);
++	rcu_read_lock();
++	percpu_ref_get(&ctx->users);
++	rcu_read_unlock();
+ 	spin_lock_init(&ctx->ctx_lock);
+ 	spin_lock_init(&ctx->completion_lock);
+ 	mutex_init(&ctx->ring_lock);
+@@ -433,12 +439,9 @@ out_freectx:
+  */
+ static void kill_ioctx(struct kioctx *ctx)
+ {
+-	if (!atomic_xchg(&ctx->dead, 1)) {
++	if (percpu_ref_kill(&ctx->users)) {
+ 		hlist_del_rcu(&ctx->list);
+ 		synchronize_rcu();
+-
+-		wake_up_all(&ctx->wait);
+-
+ 		put_ioctx(ctx);
+ 	}
+ }
+@@ -473,12 +476,6 @@ void exit_aio(struct mm_struct *mm)
+ 	struct hlist_node *p, *n;
+ 
+ 	hlist_for_each_entry_safe(ctx, p, n, &mm->ioctx_list, list) {
+-		if (1 != atomic_read(&ctx->users))
+-			printk(KERN_DEBUG
+-				"exit_aio:ioctx still alive: %d %d %d\n",
+-				atomic_read(&ctx->users),
+-				atomic_read(&ctx->dead),
+-				atomic_read(&ctx->reqs_available));
  		/*
  		 * We don't need to bother with munmap() here -
  		 * exit_mmap(mm) is coming and it'll unmap everything.
-@@ -476,12 +478,9 @@ static inline struct kiocb *aio_get_req(struct kioctx *ctx)
- {
- 	struct kiocb *req;
+@@ -597,8 +594,7 @@ static struct kioctx *lookup_ioctx(unsigned long ctx_id)
  
--	if (atomic_read(&ctx->reqs_active) >= ctx->nr)
-+	if (atomic_dec_if_positive(&ctx->reqs_available) <= 0)
- 		return NULL;
- 
--	if (atomic_inc_return(&ctx->reqs_active) > ctx->nr)
--		goto out_put;
--
- 	req = kmem_cache_alloc(kiocb_cachep, GFP_KERNEL|__GFP_ZERO);
- 	if (unlikely(!req))
- 		goto out_put;
-@@ -491,7 +490,7 @@ static inline struct kiocb *aio_get_req(struct kioctx *ctx)
- 
- 	return req;
- out_put:
--	atomic_dec(&ctx->reqs_active);
-+	atomic_inc(&ctx->reqs_available);
- 	return NULL;
- }
- 
-@@ -565,7 +564,7 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
- 
- 	/*
- 	 * Take rcu_read_lock() in case the kioctx is being destroyed, as we
--	 * need to issue a wakeup after decrementing reqs_active.
-+	 * need to issue a wakeup after incrementing reqs_available.
- 	 */
- 	rcu_read_lock();
- 
-@@ -582,7 +581,7 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
- 	 * when the event got cancelled.
- 	 */
- 	if (test_and_set_bit(KIF_CANCELLED, &iocb->ki_flags)) {
--		atomic_dec(&ctx->reqs_active);
-+		atomic_inc(&ctx->reqs_available);
- 		/* Still need the wake_up in case free_ioctx is waiting */
- 		goto put_rq;
- 	}
-@@ -707,7 +706,7 @@ static int aio_read_events(struct kioctx *ctx, struct io_event __user *event,
- 	ring->head = head;
- 	kunmap_atomic(ring);
- 
--	atomic_sub(ret, &ctx->reqs_active);
-+	atomic_add(ret, &ctx->reqs_available);
- 
- 	pr_debug("%d  h%u t%u\n", ret, head, ctx->tail);
- out:
-@@ -770,7 +769,7 @@ static int read_events(struct kioctx *ctx,
+ 	hlist_for_each_entry_rcu(ctx, n, &mm->ioctx_list, list)
+ 		if (ctx->user_id == ctx_id){
+-			BUG_ON(atomic_read(&ctx->dead));
+-			atomic_inc(&ctx->users);
++			percpu_ref_get(&ctx->users);
+ 			ret = ctx;
  			break;
- 
- 		/* Try to only show up in io wait if there are ops in flight */
--		if (atomic_read(&ctx->reqs_active))
-+		if (atomic_read(&ctx->reqs_available) != ctx->nr)
- 			io_schedule();
- 		else
- 			schedule();
-@@ -1161,7 +1160,7 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
- 	return 0;
- 
- out_put_req:
--	atomic_dec(&ctx->reqs_active);
-+	atomic_inc(&ctx->reqs_available);
- 	aio_put_req(req);	/* drop extra ref to req */
- 	aio_put_req(req);	/* drop i/o ref to req */
- 	return ret;
+ 		}
+@@ -838,7 +834,7 @@ static int read_events(struct kioctx *ctx,
+ 		i += ret;
+ 		if (i >= min_nr)
+ 			break;
+-		if (unlikely(atomic_read(&ctx->dead))) {
++		if (unlikely(percpu_ref_dead(&ctx->users))) {
+ 			ret = -EINVAL;
+ 			break;
+ 		}
 -- 
 1.7.12
 
