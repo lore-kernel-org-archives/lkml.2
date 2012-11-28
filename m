@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557Ab2K1O7q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 09:59:46 -0500
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:37917 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755392Ab2K1O7p (ORCPT
+	id S932249Ab2K1PBP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 10:01:15 -0500
+Received: from smtp181.dfw.emailsrvr.com ([67.192.241.181]:36999 "EHLO
+	smtp181.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755501Ab2K1PBN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 09:59:45 -0500
-Message-ID: <50B626D7.7070608@linux.vnet.ibm.com>
-Date: Wed, 28 Nov 2012 22:59:35 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	Wed, 28 Nov 2012 10:01:13 -0500
+Message-ID: <50B6273B.1000007@calxeda.com>
+Date: Wed, 28 Nov 2012 09:01:15 -0600
+From: Mark Langsdorf <mark.langsdorf@calxeda.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 3/3] KVM: x86: improve reexecute_instruction
-References: <50AAC77C.8040505@linux.vnet.ibm.com> <50AAC7F9.7050305@linux.vnet.ibm.com> <20121126224105.GB10634@amt.cnet> <50B433D0.8060107@linux.vnet.ibm.com> <20121128141230.GI928@redhat.com>
-In-Reply-To: <20121128141230.GI928@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH 6/6 v6] cpufreq, highbank: add support for highbank cpufreq
+References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com> <1354046672-7392-1-git-send-email-mark.langsdorf@calxeda.com> <1354046672-7392-7-git-send-email-mark.langsdorf@calxeda.com> <20121128023240.GA28170@S2100-06.ap.freescale.net> <50B60E9C.9000405@calxeda.com> <20121128145759.GB28170@S2100-06.ap.freescale.net> <20121128151741.GC28170@S2100-06.ap.freescale.net>
+In-Reply-To: <20121128151741.GC28170@S2100-06.ap.freescale.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-x-cbid: 12112814-3864-0000-0000-000005C2595A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28/2012 10:12 PM, Gleb Natapov wrote:
-> On Tue, Nov 27, 2012 at 11:30:24AM +0800, Xiao Guangrong wrote:
->> On 11/27/2012 06:41 AM, Marcelo Tosatti wrote:
+On 11/28/2012 09:17 AM, Shawn Guo wrote:
+> On Wed, Nov 28, 2012 at 10:58:02PM +0800, Shawn Guo wrote:
+>> On Wed, Nov 28, 2012 at 07:16:12AM -0600, Mark Langsdorf wrote:
+>>> I'd
+>>> have to move most of the logic of hb_set_target() into
+>>> clk_highbank.c:clk_pll_set_rate() and then add extra logic for when
+>>> cpufreq is not enabled/loaded.
 >>
->>>>
->>>> -	return false;
->>>> +again:
->>>> +	page_fault_count = ACCESS_ONCE(vcpu->kvm->arch.page_fault_count);
->>>> +
->>>> +	/*
->>>> +	 * if emulation was due to access to shadowed page table
->>>> +	 * and it failed try to unshadow page and re-enter the
->>>> +	 * guest to let CPU execute the instruction.
->>>> +	 */
->>>> +	kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa));
->>>> +	emulate = vcpu->arch.mmu.page_fault(vcpu, cr3, PFERR_WRITE_MASK, false);
->>>
->>> Can you explain what is the objective here?
->>>
+>> You only need to move hb_voltage_change() into cpu clock's .set_rate()
+>> hook with no need of checking if cpufreq is enabled or not.
 >>
->> Sure. :)
->>
->> The instruction emulation is caused by fault access on cr3. After unprotect
->> the target page, we call vcpu->arch.mmu.page_fault to fix the mapping of cr3.
->> if it return 1, mmu can not fix the mapping, we should report the error,
->> otherwise it is good to return to guest and let it re-execute the instruction
->> again.
->>
->> page_fault_count is used to avoid the race on other vcpus, since after we
->> unprotect the target page, other cpu can enter page fault path and let the
->> page be write-protected again.
->>
->> This way can help us to detect all the case that mmu can not be fixed.
->>
-> Can you write this in a comment above vcpu->arch.mmu.page_fault()?
+> Need to also check whether frequency or voltage should be changed first
+> in .set_rate() though.
 
-Okay, if Marcelo does not object this way. :)
+Yes, that's entirely what I meant when I said that I would need to move
+most of the hb_set_target() logic into .set_rate(). I would also need to
+account for retries if the voltage set operation fails, which it
+sometimes does.
+
+The ECME handles changing the voltage but doesn't look like a voltage
+regulator. Amongst other things, by design it doesn't export meaningful
+voltage information to Linux. I tried to get cpufreq-clk0 to work with
+the Highbank design and it ended up being much easier and more sane to
+create a separate driver.
+
+--Mark Langsdorf
+Calxeda, Inc.
 
