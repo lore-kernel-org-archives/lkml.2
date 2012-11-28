@@ -1,60 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752377Ab2K1DuU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 22:50:20 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:36537 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751497Ab2K1DuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 22:50:17 -0500
-X-IronPort-AV: E=Sophos;i="4.83,331,1352044800"; 
-   d="scan'208";a="6289196"
-Message-ID: <50B58965.7040703@cn.fujitsu.com>
-Date: Wed, 28 Nov 2012 11:47:49 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752586Ab2K1D5Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 22:57:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:56271 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751171Ab2K1D5W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 22:57:22 -0500
 MIME-Version: 1.0
-To: wujianguo <wujianguo106@gmail.com>
-CC: hpa@zytor.com, akpm@linux-foundation.org, rob@landley.net,
-        isimatu.yasuaki@jp.fujitsu.com, laijs@cn.fujitsu.com,
-        wency@cn.fujitsu.com, linfeng@cn.fujitsu.com, jiang.liu@huawei.com,
-        yinghai@kernel.org, kosaki.motohiro@jp.fujitsu.com,
-        minchan.kim@gmail.com, mgorman@suse.de, rientjes@google.com,
-        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH v2 0/5] Add movablecore_map boot option
-References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <50B42F32.4050107@gmail.com>
-In-Reply-To: <50B42F32.4050107@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/28 11:48:24,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/11/28 11:48:31,
-	Serialize complete at 2012/11/28 11:48:31
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+In-Reply-To: <5434404.G1ERYjuorE@vostro.rjw.lan>
+References: <1353761958-12810-1-git-send-email-ming.lei@canonical.com>
+	<1353761958-12810-3-git-send-email-ming.lei@canonical.com>
+	<5434404.G1ERYjuorE@vostro.rjw.lan>
+Date: Wed, 28 Nov 2012 11:57:19 +0800
+Message-ID: <CACVXFVP=3s3pawyEbogjb=PfbSeD1B+LFk7g04FAMkGuXDQUbQ@mail.gmail.com>
+Subject: Re: [PATCH v6 2/6] PM / Runtime: introduce pm_runtime_set_memalloc_noio()
+From: Ming Lei <ming.lei@canonical.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oneukum@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jens Axboe <axboe@kernel.dk>, "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2012 11:10 AM, wujianguo wrote:
+On Wed, Nov 28, 2012 at 5:19 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Saturday, November 24, 2012 08:59:14 PM Ming Lei wrote:
+>> The patch introduces the flag of memalloc_noio in 'struct dev_pm_info'
+>> to help PM core to teach mm not allocating memory with GFP_KERNEL
+>> flag for avoiding probable deadlock.
+>>
+>> As explained in the comment, any GFP_KERNEL allocation inside
+>> runtime_resume() or runtime_suspend() on any one of device in
+>> the path from one block or network device to the root device
+>> in the device tree may cause deadlock, the introduced
+>> pm_runtime_set_memalloc_noio() sets or clears the flag on
+>> device in the path recursively.
+>>
+>> Cc: Alan Stern <stern@rowland.harvard.edu>
+>> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+>> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+>> ---
+>> v5:
+>>       - fix code style error
+>>       - add comment on clear the device memalloc_noio flag
+>> v4:
+>>       - rename memalloc_noio_resume as memalloc_noio
+>>       - remove pm_runtime_get_memalloc_noio()
+>>       - add comments on pm_runtime_set_memalloc_noio
+>> v3:
+>>       - introduce pm_runtime_get_memalloc_noio()
+>>       - hold one global lock on pm_runtime_set_memalloc_noio
+>>       - hold device power lock when accessing memalloc_noio_resume
+>>         flag suggested by Alan Stern
+>>       - implement pm_runtime_set_memalloc_noio without recursion
+>>         suggested by Alan Stern
+>> v2:
+>>       - introduce pm_runtime_set_memalloc_noio()
+>> ---
+>>  drivers/base/power/runtime.c |   60 ++++++++++++++++++++++++++++++++++++++++++
+>>  include/linux/pm.h           |    1 +
+>>  include/linux/pm_runtime.h   |    3 +++
+>>  3 files changed, 64 insertions(+)
+>>
+>> diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
+>> index 3148b10..3e198a0 100644
+>> --- a/drivers/base/power/runtime.c
+>> +++ b/drivers/base/power/runtime.c
+>> @@ -124,6 +124,66 @@ unsigned long pm_runtime_autosuspend_expiration(struct device *dev)
+>>  }
+>>  EXPORT_SYMBOL_GPL(pm_runtime_autosuspend_expiration);
+>>
+>> +static int dev_memalloc_noio(struct device *dev, void *data)
+>> +{
+>> +     return dev->power.memalloc_noio;
+>> +}
+>> +
+>> +/*
+>> + * pm_runtime_set_memalloc_noio - Set a device's memalloc_noio flag.
+>> + * @dev: Device to handle.
+>> + * @enable: True for setting the flag and False for clearing the flag.
+>> + *
+>> + * Set the flag for all devices in the path from the device to the
+>> + * root device in the device tree if @enable is true, otherwise clear
+>> + * the flag for devices in the path whose siblings don't set the flag.
+>> + *
 >
-> Hi Tang,
-> 	DMA address can't be set as movable, if some one boot kernel with
-> movablecore_map=4G@0xa00000 or other memory region that contains DMA address,
-> system maybe boot failed. Should this case be handled or mentioned
-> in the change log and kernel-parameters.txt?
+> Please use counters instead of walking the whole path every time.  Ie. in
+> addition to the flag add a counter to store the number of the device's
+> children having that flag set.
 
-Hi Wu,
+Thanks for your review.
 
-I think we can use MAX_DMA_PFN and MAX_DMA32_PFN to prevent setting DMA
-address as movable. Just ignore the address lower than them, and set
-the rest as movable. How do you think ?
+IMO, pm_runtime_set_memalloc_noio() is only called in
+probe() and release() of block device and network device, which is
+in a very infrequent path, so I am wondering if it is worthy of introducing
+another counter for all devices.
 
-And, since we cannot figure out the minimum of memory kernel needs, I
-think for now, we can just add some warning into kernel-parameters.txt.
+Also looks the current implementation of pm_runtime_set_memalloc_noio()
+is simple and clean enough with the flag, IMO.
 
-Thanks. :)
+> I would use the flag only to store the information that
+> pm_runtime_set_memalloc_noio(dev, true) has been run for this device directly
+> and I'd use a counter for everything else.
+>
+> That is, have power.memalloc_count that would be incremented when (1)
+> pm_runtime_set_memalloc_noio(dev, true) is called for that device and (2) when
+> power.memalloc_count for one of its children changes from 0 to 1 (and
+> analogously for decrementation).  Then, check the counter in rpm_callback().
+
+Sorry, could you explain in a bit detail why we need the counter? Looks only
+checking the flag in rpm_callback() is enough, doesn't it?
 
 >
-> Thanks,
-> Jianguo Wu
+> Besides, don't you need to check children for the arg device itself?
+
+It isn't needed since the children of network/block device can't be
+involved of the deadlock in runtime PM path.
+
+Also, the function is only called by network device or block device
+subsystem, both the two kind of device are class device and should
+have no children.
+
 >
+>> + * The function should only be called by block device, or network
+>> + * device driver for solving the deadlock problem during runtime
+>> + * resume/suspend:
+>> + *
+>> + *     If memory allocation with GFP_KERNEL is called inside runtime
+>> + *     resume/suspend callback of any one of its ancestors(or the
+>> + *     block device itself), the deadlock may be triggered inside the
+>> + *     memory allocation since it might not complete until the block
+>> + *     device becomes active and the involed page I/O finishes. The
+>> + *     situation is pointed out first by Alan Stern. Network device
+>> + *     are involved in iSCSI kind of situation.
+>> + *
+>> + * The lock of dev_hotplug_mutex is held in the function for handling
+>> + * hotplug race because pm_runtime_set_memalloc_noio() may be called
+>> + * in async probe().
+>> + *
+>> + * The function should be called between device_add() and device_del()
+>> + * on the affected device(block/network device).
+>> + */
+>> +void pm_runtime_set_memalloc_noio(struct device *dev, bool enable)
+>> +{
+>> +     static DEFINE_MUTEX(dev_hotplug_mutex);
+>
+> What's the mutex for?
+
+It is for avoiding hotplug race, for example, without the mutex,
+another child may set the flag between the time device_for_each_child()
+runs and the next loop iteration in pm_runtime_set_memalloc_noio(false).
+
+Thanks,
+--
+Ming Lei
