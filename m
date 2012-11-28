@@ -1,153 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753515Ab2K1IzY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 03:55:24 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:59168 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752876Ab2K1IzW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 03:55:22 -0500
-Message-ID: <50B5D161.6010200@ti.com>
-Date: Wed, 28 Nov 2012 09:54:57 +0100
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121105 Thunderbird/16.0.1
+	id S1753559Ab2K1Iz2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 03:55:28 -0500
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:42446 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752876Ab2K1IzZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 03:55:25 -0500
+From: Mathias LEBLANC <Mathias.LEBLANC@st.com>
+To: Kent Yoder <shpedoikal@gmail.com>
+Cc: Kent Yoder <key@linux.vnet.ibm.com>,
+        Jean-Luc BLANC <jean-luc.blanc@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rajiv Andrade <mail@srajiv.net>,
+        "tpmdd-devel@lists.sourceforge.net" 
+	<tpmdd-devel@lists.sourceforge.net>,
+        Sirrix AG <tpmdd@sirrix.com>
+Date: Wed, 28 Nov 2012 09:54:49 +0100
+Subject: RE: [tpmdd-devel] [PATCH 1/1] TPM: STMicroelectronics ST33 I2C
+ KERNEL 3.x.x
+Thread-Topic: [tpmdd-devel] [PATCH 1/1] TPM: STMicroelectronics ST33 I2C
+ KERNEL 3.x.x
+Thread-Index: Ac3MrljUGX81b0swSKuuA0hCbSF5RwAlfUnQ
+Message-ID: <35286B1AE75A7C47BFF0870081A31B4B3A9B501755@SAFEX1MAIL4.st.com>
+References: <1353363322-2923-1-git-send-email-mathias.leblanc@st.com>
+	<20121126174632.GA12737@ennui.austin.ibm.com>
+	<35286B1AE75A7C47BFF0870081A31B4B3A9B501754@SAFEX1MAIL4.st.com>,<CAM0nabFLeW+1krAQxk=FPBAjSag7Jbwgkh=6vVWV_iXy2ULm0Q@mail.gmail.com>
+In-Reply-To: <CAM0nabFLeW+1krAQxk=FPBAjSag7Jbwgkh=6vVWV_iXy2ULm0Q@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-GB
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Thierry Reding <thierry.reding@avionic-design.de>
-CC: Linus Walleij <linus.walleij@linaro.org>, Rob Landley <rob@landley.net>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] gpio: New driver for GPO emulation using PWM generators
-References: <1353591723-25233-1-git-send-email-peter.ujfalusi@ti.com> <20121123075537.A14713E0A91@localhost> <50AF3E21.4000009@ti.com> <50AF4584.7020604@ti.com> <20121126154600.765E03E1AFD@localhost>
-In-Reply-To: <20121126154600.765E03E1AFD@localhost>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant, Lars, Thierry,
+Hi Kent,
 
-On 11/26/2012 04:46 PM, Grant Likely wrote:
-> You're effectively asking the pwm layer to behave like a gpio (which
-> is completely reasonable). Having a completely separate translation node
-> really doesn't make sense because it is entirely a software construct.
-> In fact, the way your using it is *entirely* to make the Linux driver
-> model instantiate the translation code. It has *nothing* to do with the
-> structure of the hardware. It makes complete sense that if a PWM is
-> going to be used as a GPIO, then the PWM node should conform to the GPIO
-> binding.
+I have been tried the patch on your linux branch and indeed, i have an error about tpm_continue_seftest.
+What is the kernel I should use to test officially my patch? Because i saw a lot of different version of linux kernel with the tpm_continue_seftest function.
+I used this repo git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6 for my tests.
 
-I understand your point around this. I might say I agree with it as well...
-I spent yesterday with prototyping and I'm not really convinced that it is a
-good approach from C code point of view. I got it working, yes.
-In essence this is what I have on top of the slightly modified gpio-pwm.c
-driver I have submitted:
+Matthias Leblanc
 
-DTS files:
-twl_pwm: pwm {
-	/* provides two PWMs (id 0, 1 for PWM1 and PWM2) */
-	compatible = "ti,twl6030-pwm";
-	#pwm-cells = <2>;
+________________________________________From: Kent Yoder [shpedoikal@gmail.com]
+Sent: 27 November 2012 15:48
+To: Mathias LEBLANC
+Cc: Kent Yoder; Jean-Luc BLANC; linux-kernel@vger.kernel.org; Rajiv Andrade; tpmdd-devel@lists.sourceforge.net; Sirrix AG
+Subject: Re: [tpmdd-devel] [PATCH 1/1] TPM: STMicroelectronics ST33 I2C KERNEL 3.x.x
 
-	/* Enable GPIO us of the PWMs */
-	gpio-controller = <1>;
-	#gpio-cells = <2>;
-	pwm,period_ns = <7812500>;
-};
+On Tue, Nov 27, 2012 at 2:44 AM, Mathias LEBLANC <Mathias.LEBLANC@st.com> wrote:
+> Hi Kent,
+>
+> What's version of the kernel do you compiled?
+> I don't understand why you have some problem with formating, i have send you the patch with no error and warning of code formating.
+> The tpm_continue_selftest_nocheck()  (in kernel 3.x.x) and tpm_continue_selftest() (in kernel 2.6.x) is called to have the tpm ready.
+> If the tpm_continue_selftest is not called by the driver, it will be use in the applications.
 
-leds {
-	compatible = "gpio-leds";
-	backlight {
-		label = "omap4::backlight";
-		gpios = <&twl_pwm 1 0>; /* PWM1 of twl6030 */
-	};
+Apply against this tree's "next" branch.
 
-	keypad {
-		label = "omap4::keypad";
-		gpios = <&twl_pwm 0 0>; /* PWM0 of twl6030 */
-	};
-};
+git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git
 
-The bulk of the code in drivers/pwm/core.c to create the pwm-gpo device when
-it is requested going to look something like this. I have removed the error
-checks for now and I still don't have the code to clean up the allocated
-memory for the created device on error, or in case the module is unloaded. We
-should also prevent the pwm core from removal when the pwm-gpo driver is loaded.
-We need to create the platform device for gpo-pwm, create the pdata structure
-for it and fill it in. We also need to hand craft the pwm_lookup table so we
-can use pwm_get() to request the PWM. I have other minor changes around this
-to get things working when we booted with DT.
-So the function to do the heavy lifting is something like this:
-static void of_pwmchip_as_gpio(struct pwm_chip *chip)
-{
-	struct platform_device *pdev;
-	struct gpio_pwm *gpos;
-	struct gpio_pwm_pdata *pdata;
-	struct pwm_lookup *lookup;
-	char gpodev_name[15];
-	int i;
-	u32 gpio_mode = 0;
-	u32 period_ns = 0;
+Thanks,
+Kent
 
-	of_property_read_u32(chip->dev->of_node, "gpio-controller",
-			     &gpio_mode);
-	if (!gpio_mode)
-		return;
+> Regards,
+>
+> Matthias Leblanc
+> ________________________________________
+> From: Kent Yoder [key@linux.vnet.ibm.com]
+> Sent: 26 November 2012 18:46
+> To: Mathias LEBLANC
+> Cc: Rajiv Andrade; Marcel Selhorst; Sirrix AG; tpmdd-devel@lists.sourceforge.net; Debora Velarde; linux-kernel@vger.kernel.org; Jean-Luc BLANC
+> Subject: Re: [PATCH 1/1] TPM: STMicroelectronics ST33 I2C KERNEL 3.x.x
+>
+> Hi Mathias,
+>
+> On Mon, Nov 19, 2012 at 11:15:21PM +0100, Mathias Leblanc wrote:
+>>  * STMicroelectronics version 1.2.0, Copyright (C) 2010
+>>  * STMicroelectronics comes with ABSOLUTELY NO WARRANTY.
+>>  * This is free software, and you are welcome to redistribute it
+>>  * under certain conditions.
+>
+>> This is the driver for TPM chip from ST Microelectronics.
+>>
+>> If you have a TPM security chip from STMicroelectronics working with
+>> an I2C, in menuconfig or .config choose the tpm driver on
+>> device --> tpm and activate the protocol of your choice before compiling
+>> the kernel.
+>> The driver will be accessible from within Linux.
+>>
+>> Tested on linux x86/x64, beagleboard REV B & XM REV C and CHROMIUM OS
+>> on kernel 3.x.x
+>>
+>> Signed-off-by: Mathias Leblanc <mathias.leblanc@st.com>
+>> ---
+>>  drivers/char/tpm/tpm_stm_st33_i2c.c  |  903 ++++++++++++++++++++++++++++++++++
+>>  drivers/char/tpm/tpm_stm_st33_i2c.h  |   81 +++
+>>  include/linux/i2c/tpm_stm_st33_i2c.h |   47 ++
+>>  3 files changed, 1031 insertions(+)
+>>  create mode 100644 drivers/char/tpm/tpm_stm_st33_i2c.c
+>>  create mode 100644 drivers/char/tpm/tpm_stm_st33_i2c.h
+>>  create mode 100644 include/linux/i2c/tpm_stm_st33_i2c.h
+>
+>   I'm still getting the compiler errors I mentioned earlier. I've fixed
+> them up with the patch below (plus some formatting), all except for the
+> tpm_continue_selftest_nocheck() problem. Do you really need to call
+> continue selftest on resume?  That strikes me as out of place here.
+> What's making the call to the TPM to start the self test in that case?
+>
+> Please test with the patch below.
+>
+> Thanks,
+> Kent
+>
+>
+> diff --git a/drivers/char/tpm/tpm_stm_st33_i2c.c b/drivers/char/tpm/tpm_stm_st33_i2c.c
+> index 52f3380..67f81b6 100644
+> --- a/drivers/char/tpm/tpm_stm_st33_i2c.c
+> +++ b/drivers/char/tpm/tpm_stm_st33_i2c.c
+> @@ -722,7 +722,7 @@ tpm_st33_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
+>                         goto _irq_set;
+>
+>                 intmask = TPM_GLOBAL_INT_ENABLE;
+> -               err = I2C_WRITE_DATA(client, TPM_INT_ENABLE + 3, &intmask, 1);
+> +               err = I2C_WRITE_DATA(client, (TPM_INT_ENABLE + 3), &intmask, 1);
+>                 if (err < 0)
+>                         goto _irq_set;
+>
+> @@ -820,10 +820,10 @@ static int tpm_st33_i2c_pm_suspend(struct i2c_client *client, pm_message_t mesg)
+>
+>         if (power_mgt)
+>                 gpio_set_value(pin_infos->io_lpcpd, 0);
+> -       else{
+> +       else {
+>                 if (chip->data_buffer == NULL)
+>                         chip->data_buffer = pin_infos->tpm_i2c_buffer[0];
+> -               ret = tpm_pm_suspend(&client->dev, mesg);
+> +               ret = tpm_pm_suspend(&client->dev);
+>         }
+>         return ret;
+>  }                              /* tpm_st33_i2c_suspend() */
+> @@ -848,12 +848,12 @@ static int tpm_st33_i2c_pm_resume(struct i2c_client *client)
+>                                           (chip->vendor.status(chip) &&
+>                                           TPM_STS_VALID) == TPM_STS_VALID,
+>                                           chip->vendor.timeout_b);
+> -       } else{
+> -       if (chip->data_buffer == NULL)
+> -               chip->data_buffer = pin_infos->tpm_i2c_buffer[0];
+> -       ret = tpm_pm_resume(&client->dev);
+> -       if (!ret)
+> -               tpm_continue_selftest_nocheck(chip);
+> +       } else {
+> +               if (chip->data_buffer == NULL)
+> +                       chip->data_buffer = pin_infos->tpm_i2c_buffer[0];
+> +               ret = tpm_pm_resume(&client->dev);
+> +               if (!ret)
+> +                       tpm_continue_selftest_nocheck(chip);
+>         }
+>         return ret;
+>  }                              /* tpm_st33_i2c_pm_resume() */
+>
+> ------------------------------------------------------------------------------
+> Monitor your physical, virtual and cloud infrastructure from a single
+> web console. Get in-depth insight into apps, servers, databases, vmware,
+> SAP, cloud infrastructure, etc. Download 30-day Free Trial.
+> Pricing starts from $795 for 25 servers or applications!
+> http://p.sf.net/sfu/zoho_dev2dev_nov
+> _______________________________________________
+> tpmdd-devel mailing list
+> tpmdd-devel@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/tpmdd-devel
 
-	of_property_read_u32(chip->dev->of_node, "pwm,period_ns", &period_ns);
-	if (!period_ns) {
-		dev_err(chip->dev,
-			"period_ns is not specified for GPIO use\n");
-		return;
-	}
 
-	lookup = devm_kzalloc(chip->dev, sizeof(*lookup) * chip->npwm,
-			      GFP_KERNEL);
-	pdata = devm_kzalloc(chip->dev, sizeof(*pdata), GFP_KERNEL);
-	gpos = devm_kzalloc(chip->dev, sizeof(*gpos) * chip->npwm,
-			    GFP_KERNEL);
 
-	pdata->gpos = gpos;
-	pdata->num_gpos = chip->npwm;
-	pdata->gpio_base = -1;
-
-	pdev = platform_device_alloc("pwm-gpo", chip->base);
-	pdev->dev.parent = chip->dev;
-
-	sprintf(gpodev_name, "pwm-gpo.%d", chip->base);
-	for (i = 0; i < chip->npwm; i++) {
-		struct gpio_pwm *gpo = &gpos[i];
-		struct pwm_lookup *pl = &lookup[i];
-		char con_id[15];
-
-		sprintf(con_id, "pwm-gpo.%d", chip->base + i);
-
-		/* prepare GPO information */
-		gpo->pwm_period_ns = period_ns;
-		gpo->name = kmemdup(con_id, sizeof(con_id), GFP_KERNEL);;
-
-		/* prepare pwm lookup table */
-		pl->provider = dev_name(chip->dev);
-		pl->index = i;
-		pl->dev_id = kmemdup(gpodev_name, sizeof(gpodev_name),
-				     GFP_KERNEL);
-		pl->con_id = kmemdup(con_id, sizeof(con_id), GFP_KERNEL);
-	}
-
-	platform_device_add_data(pdev, pdata, sizeof(*pdata));
-	pwm_add_table(lookup, chip->npwm);
-	platform_device_add(pdev);
-}
-
-PS: as I have said I have removed the error check just to make the code
-snippet more readable and yes we need to do some memory cleanup as well at the
-right time.
-
-Is this something you would like to see?
-
--- 
-Péter
+--
+IBM LTC Security
