@@ -1,95 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755954Ab2K1TaU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 14:30:20 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:51049 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752508Ab2K1TaN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 14:30:13 -0500
-From: "Rajanikanth H.V" <rajanikanth.hv@linaro.org>
-To: anton.vorontsov@linaro.org
-Cc: francescolavra.fl@gmail.com, rob.herring@calxeda.com, lee.jones@linaro.org,
-        arnd@arndb.de, linus.walleij@stericsson.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        STEricsson_nomadik_linux@list.st.com, rajanikanth.hv@stericsson.com
-Subject: [PATCH] ab8500: remove explicit handling of battery type
-Date: Thu, 29 Nov 2012 00:57:45 +0530
-Message-Id: <1354130865-6148-1-git-send-email-rajanikanth.hv@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
+	id S1755982Ab2K1Ta0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 14:30:26 -0500
+Received: from mail.kernel.org ([198.145.19.201]:59312 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755962Ab2K1TaX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 14:30:23 -0500
+Date: Wed, 28 Nov 2012 11:30:21 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: devel@driverdev.osuosl.org,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Prabhakar Lad <prabhakar.lad@ti.com>,
+        Hans Verkuil <hansverk@cisco.com>,
+        Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        LMML <linux-media@vger.kernel.org>
+Subject: Re: [PATCH v3 0/9] Media Controller capture driver for DM365
+Message-ID: <20121128193021.GA4174@kroah.com>
+References: <1354099329-20722-1-git-send-email-prabhakar.lad@ti.com>
+ <20121128101802.0eafb6e7@redhat.com>
+ <20121128172248.GA32286@kroah.com>
+ <201211282018.20832.hverkuil@xs4all.nl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201211282018.20832.hverkuil@xs4all.nl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Rajanikanth H.V" <rajanikanth.hv@stericsson.com>
+On Wed, Nov 28, 2012 at 08:18:20PM +0100, Hans Verkuil wrote:
+> On Wed November 28 2012 18:22:48 Greg Kroah-Hartman wrote:
+> > On Wed, Nov 28, 2012 at 10:18:02AM -0200, Mauro Carvalho Chehab wrote:
+> > > Em Wed, 28 Nov 2012 12:56:10 +0100
+> > > Hans Verkuil <hansverk@cisco.com> escreveu:
+> > > 
+> > > > On Wed 28 November 2012 12:45:37 Dan Carpenter wrote:
+> > > > > I wish people wouldn't submit big patches right before the merge
+> > > > > window opens...  :/ It's better to let it sit in linux-next for a
+> > > > > couple weeks so people can mess with it a bit.
+> > > > 
+> > > > It's been under review for quite some time now, and the main change since
+> > > > the last posted version is that this is now moved to staging/media.
+> > > > 
+> > > > So it is not yet ready for prime time, but we do want it in to simplify
+> > > > the last remaining improvements needed to move it to drivers/media.
+> > > 
+> > > "last remaining improvements"? I didn't review the patchset, but
+> > > the TODO list seems to have several pending stuff there:
+> > > 
+> > > +- User space interface refinement
+> > > +        - Controls should be used when possible rather than private ioctl
+> > > +        - No enums should be used
+> > > +        - Use of MC and V4L2 subdev APIs when applicable
+> > > +        - Single interface header might suffice
+> > > +        - Current interface forces to configure everything at once
+> > > +- Get rid of the dm365_ipipe_hw.[ch] layer
+> > > +- Active external sub-devices defined by link configuration; no strcmp
+> > > +  needed
+> > > +- More generic platform data (i2c adapters)
+> > > +- The driver should have no knowledge of possible external subdevs; see
+> > > +  struct vpfe_subdev_id
+> > > +- Some of the hardware control should be refactorede
+> > > +- Check proper serialisation (through mutexes and spinlocks)
+> > > +- Names that are visible in kernel global namespace should have a common
+> > > +  prefix (or a few)
+> > > 
+> > > From the above comments, both Kernelspace and Userspace APIs require 
+> > > lots of work.
+> 
+> And that's why it is in staging. Should a long TODO list now suddenly
+> prevent staging from being used? In Barcelona we discussed this and the
+> only requirement we came up was was that it should compile.
 
-property, battery-type shall be one of supported technology type
-instead blank
-- refer: Documentation/devicetree/bindings/power_supply/ab8500/fg.txt
-	for the list supported types
-- this patch appends to ab8500 bm devs DT binding patch set
-	ref: commit-id e0f1abeba5c2d8a2183566717d99294fd1a29c2e
-		git://git.infradead.org/battery-2.6.git
-- promote ab8500_fg probe to happen before ab8500_btemp probe as
-	btemp driver depends on fuelgauge list,
-	ref: ab8500_fg_get(...)
+Yes, that's all I care about in staging, but as I stated, I don't
+maintain drivers/staging/media/ that area is under Mauro's control
+(MAINTAINERS even says this), and I'm a bit leery of going against the
+wishes of an existing subsystem maintainer for adding staging drivers
+that tie into their subsystem.
 
-Signed-off-by: Rajanikanth H.V <rajanikanth.hv@stericsson.com>
----
- drivers/power/Makefile        |    2 +-
- drivers/power/ab8500_bmdata.c |   10 +++-------
- 2 files changed, 4 insertions(+), 8 deletions(-)
+So if you get Mauro's approval, I'll be glad to queue it up.
 
-diff --git a/drivers/power/Makefile b/drivers/power/Makefile
-index 696e3a9..070c73d 100644
---- a/drivers/power/Makefile
-+++ b/drivers/power/Makefile
-@@ -38,7 +38,7 @@ obj-$(CONFIG_CHARGER_PCF50633)	+= pcf50633-charger.o
- obj-$(CONFIG_BATTERY_JZ4740)	+= jz4740-battery.o
- obj-$(CONFIG_BATTERY_INTEL_MID)	+= intel_mid_battery.o
- obj-$(CONFIG_BATTERY_RX51)	+= rx51_battery.o
--obj-$(CONFIG_AB8500_BM)		+= ab8500_bmdata.o ab8500_charger.o ab8500_btemp.o ab8500_fg.o abx500_chargalg.o
-+obj-$(CONFIG_AB8500_BM)		+= ab8500_bmdata.o ab8500_charger.o ab8500_fg.o ab8500_btemp.o abx500_chargalg.o
- obj-$(CONFIG_CHARGER_ISP1704)	+= isp1704_charger.o
- obj-$(CONFIG_CHARGER_MAX8903)	+= max8903_charger.o
- obj-$(CONFIG_CHARGER_TWL4030)	+= twl4030_charger.o
-diff --git a/drivers/power/ab8500_bmdata.c b/drivers/power/ab8500_bmdata.c
-index 03cc528..f16b60c 100644
---- a/drivers/power/ab8500_bmdata.c
-+++ b/drivers/power/ab8500_bmdata.c
-@@ -461,7 +461,6 @@ bmdevs_of_probe(struct device *dev,
- 	struct  device_node *np_bat_supply;
- 	struct	abx500_bm_data *bat;
- 	const char *btech;
--	char bat_tech[8];
- 	int i, thermistor;
- 
- 	*battery = &ab8500_bm_data;
-@@ -488,12 +487,9 @@ bmdevs_of_probe(struct device *dev,
- 		"stericsson,battery-type", NULL);
- 	if (!btech) {
- 		dev_warn(dev, "missing property battery-name/type\n");
--		strcpy(bat_tech, "UNKNOWN");
--	} else {
--		strcpy(bat_tech, btech);
-+		return -EINVAL;
- 	}
--
--	if (strncmp(bat_tech, "LION", 4) == 0) {
-+	if (strncmp(btech, "LION", 4) == 0) {
- 		bat->no_maintenance  = true;
- 		bat->chg_unknown_bat = true;
- 		bat->bat_type[BATTERY_UNKNOWN].charge_full_design = 2600;
-@@ -508,7 +504,7 @@ bmdevs_of_probe(struct device *dev,
- 		if (thermistor == NTC_EXTERNAL) {
- 			btype->batres_tbl =
- 				temp_to_batres_tbl_ext_thermistor;
--		} else if (strncmp(bat_tech, "LION", 4) == 0) {
-+		} else if (strncmp(btech, "LION", 4) == 0) {
- 			btype->batres_tbl =
- 				temp_to_batres_tbl_9100;
- 		} else {
--- 
-1.7.10.4
+thanks,
 
+greg k-h
