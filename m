@@ -1,55 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932654Ab2K1V4W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 16:56:22 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:44971 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756178Ab2K1Vsq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 16:48:46 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v9 09/46] x86, mm: Set memblock initial limit to 1M
-Date: Wed, 28 Nov 2012 13:47:20 -0800
-Message-Id: <1354139277-17376-10-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
-References: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	id S932692Ab2K1V4a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 16:56:30 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:35504 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932657Ab2K1V40 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 16:56:26 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: linux-acpi@vger.kernel.org,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Wen Congyang <wencongyang@gmail.com>, isimatu.yasuaki@jp.fujitsu.com,
+        lenb@kernel.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on rebind scenario
+Date: Wed, 28 Nov 2012 23:01:11 +0100
+Message-ID: <7694340.3kLrC1FvE4@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <1354138809.26955.330.camel@misato.fc.hp.com>
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com> <2080453.Ry9A79n0aE@vostro.rjw.lan> <1354138809.26955.330.camel@misato.fc.hp.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-memblock_x86_fill() could double memory array.
-If we set memblock.current_limit to 512M, so memory array could be around 512M.
-So kdump will not get big range (like 512M) under 1024M.
+On Wednesday, November 28, 2012 02:40:09 PM Toshi Kani wrote:
+> On Wed, 2012-11-28 at 22:40 +0100, Rafael J. Wysocki wrote:
+> > On Wednesday, November 28, 2012 02:02:48 PM Toshi Kani wrote:
+> > > > > > > > > > Consider the following case:
+> > > > > > > > > > 
+> > > > > > > > > > We hotremove the memory device by SCI and unbind it from the driver at the same time:
+> > > > > > > > > > 
+> > > > > > > > > > CPUa                                                  CPUb
+> > > > > > > > > > acpi_memory_device_notify()
+> > > > > > > > > >                                        unbind it from the driver
+> > > > > > > > > >     acpi_bus_hot_remove_device()
+> > > > > > > > > 
+> > > > > > > > > Can we make acpi_bus_remove() to fail if a given acpi_device is not
+> > > > > > > > > bound with a driver?  If so, can we make the unbind operation to perform
+> > > > > > > > > unbind only?
+> > > > > > > > 
+> > > > > > > > acpi_bus_remove_device could check if the driver is present, and return -ENODEV
+> > > > > > > > if it's not present (dev->driver == NULL).
+> > > > > > > > 
+> > > > > > > > But there can still be a race between an eject and an unbind operation happening
+> > > > > > > > simultaneously. This seems like a general problem to me i.e. not specific to an
+> > > > > > > > acpi memory device. How do we ensure an eject does not race with a driver unbind
+> > > > > > > > for other acpi devices?
+> > > > > > > > 
+> > > > > > > > Is there a per-device lock in acpi-core or device-core that can prevent this from
+> > > > > > > > happening? Driver core does a device_lock(dev) on all operations, but this is
+> > > > > > > > probably not grabbed on SCI-initiated acpi ejects.
+> > > > > > > 
+> > > > > > > Since driver_unbind() calls device_lock(dev->parent) before calling
+> > > > > > > device_release_driver(), I am wondering if we can call
+> > > > > > > device_lock(dev->dev->parent) at the beginning of acpi_bus_remove()
+> > > > > > > (i.e. before calling pre_remove) and fails if dev->driver is NULL.  The
+> > > > > > > parent lock is otherwise released after device_release_driver() is done.
+> > > > > > 
+> > > > > > I would be careful.  You may introduce some subtle locking-related issues
+> > > > > > this way.
+> > > > > 
+> > > > > Right.  This requires careful inspection and testing.  As far as the
+> > > > > locking is concerned, I am not keen on using fine grained locking for
+> > > > > hot-plug.  It is much simpler and solid if we serialize such operations.
+> > > > > 
+> > > > > > Besides, there may be an alternative approach to all this.  For example,
+> > > > > > what if we don't remove struct device objects on eject?  The ACPI handles
+> > > > > > associated with them don't go away in that case after all, do they?
+> > > > > 
+> > > > > Umm...  Sorry, I am not getting your point.  The issue is that we need
+> > > > > to be able to fail a request when memory range cannot be off-lined.
+> > > > > Otherwise, we end up ejecting online memory range.
+> > > > 
+> > > > Yes, this is the major one.  The minor issue, however, is a race condition
+> > > > between unbinding a driver from a device and removing the device if I
+> > > > understand it correctly.  Which will go away automatically if the device is
+> > > > not removed in the first place.  Or so I would think. :-)
+> > > 
+> > > I see.  I do not think whether or not the device is removed on eject
+> > > makes any difference here.  The issue is that after driver_unbind() is
+> > > done, acpi_bus_hot_remove_device() no longer calls the ACPI memory
+> > > driver (hence, it cannot fail in prepare_remove), and goes ahead to call
+> > > _EJ0.  If driver_unbind() did off-line the memory, this is OK.  However,
+> > > it cannot off-line kernel memory ranges.  So, we basically need to
+> > > either 1) serialize acpi_bus_hot_remove_device() and driver_unbind(), or
+> > > 2) make acpi_bus_hot_remove_device() to fail if driver_unbind() is run
+> > > during the operation.
+> > 
+> > OK, I see the problem now.
+> > 
+> > What exactly is triggering the driver_unbind() in this scenario?
+> 
+> User can request driver_unbind() from sysfs as follows.  I do not see
+> much reason why user has to do for memory, though.
+> 
+> echo "PNP0C80:XX" > /sys/bus/acpi/drivers/acpi_memhotplug/unbind
 
-Try to put it down under 1M, it would use about 4k or so, and that is limited.
+This is wrong.  Even if we want to permit user space to forcibly unbind
+drivers from anything like this, we should at least check for some
+situations in which it is plain dangerous.  Like in this case.  So I think
+the above should fail unless we know that the driver won't be necessary
+to handle hot-removal of memory.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/kernel/setup.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Alternatively, this may actually try to carry out the hot-removal and only
+call driver_unbind() if that succeeds.  Whichever is preferable, I'd say.
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 23b079f..4bd8921 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -890,7 +890,7 @@ void __init setup_arch(char **cmdline_p)
- 
- 	cleanup_highmap();
- 
--	memblock.current_limit = get_max_mapped();
-+	memblock.current_limit = ISA_END_ADDRESS;
- 	memblock_x86_fill();
- 
- 	/*
+Thanks,
+Rafael
+
+
 -- 
-1.7.7
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
