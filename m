@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752651Ab2K1JAg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 04:00:36 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:47451 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751670Ab2K1JAe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 04:00:34 -0500
-Date: Wed, 28 Nov 2012 09:00:28 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Rabin Vincent <rabin@rab.in>, Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>, sameo@linux.intel.com,
-        devicetree-discuss@lists.ozlabs.org, spear-devel@list.st.com,
-        linux-kernel@vger.kernel.org, l.fu@pengutronix.de
-Subject: Re: [PATCH V3 3/3] mfd: stmpe: Update DT support in stmpe driver
-Message-ID: <20121128090028.GJ2013@gmail.com>
-References: <7a48ae364663ab3a336251fada9aee07ccd728b8.1353610437.git.viresh.kumar@linaro.org>
- <20121123094132.EFCB73E07BE@localhost>
- <CAKohpomAM2pw9kgB6khtHzQ2WCXKZ9_pi1_sOH2dQToVS8ep4w@mail.gmail.com>
- <20121126184015.784993E091F@localhost>
- <CAKohpo=dHz-fJRdwovOWesAZJwibgrNk-+2t--JK+T_sBsu9Tw@mail.gmail.com>
- <CAKohpomOxfLhpZqpk3aymdNa7UAGRcex7d+N5srkFDnrhtULTw@mail.gmail.com>
- <20121127084007.GA7897@gmail.com>
- <CAKohpomPMYU5H_tx1BF7TD6F7a5rp5O=xDf3r-TGZ-r9SBp3yA@mail.gmail.com>
- <CAH+eYFCshghQauBdn1rLQ-sKG=Bxa_0XpJsry60TAD3mibNOFA@mail.gmail.com>
- <CAKohpok6=O_TMaApYQGKbzHmJ8tkST5VAHDnLYgHb0g3gSPwbQ@mail.gmail.com>
+	id S1753538Ab2K1JRv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 04:17:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60232 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752569Ab2K1JRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 04:17:49 -0500
+Date: Wed, 28 Nov 2012 10:17:45 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
+        Tejun Heo <htejun@gmail.com>, Glauber Costa <glommer@parallels.com>,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: [patch v2 3/6] memcg: rework mem_cgroup_iter to use cgroup
+ iterators
+Message-ID: <20121128091745.GC12309@dhcp22.suse.cz>
+References: <1353955671-14385-1-git-send-email-mhocko@suse.cz>
+ <1353955671-14385-4-git-send-email-mhocko@suse.cz>
+ <50B5CFBF.2090100@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAKohpok6=O_TMaApYQGKbzHmJ8tkST5VAHDnLYgHb0g3gSPwbQ@mail.gmail.com>
+In-Reply-To: <50B5CFBF.2090100@jp.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Nov 2012, Viresh Kumar wrote:
-
-> On 28 November 2012 01:25, Rabin Vincent <rabin@rab.in> wrote:
-> > 2012/11/27 Viresh Kumar <viresh.kumar@linaro.org>:
-> >> On 27 November 2012 14:10, Lee Jones <lee.jones@linaro.org> wrote:
-> >> I haven't seen this in any of SPEAr boards i have worked on. Maybe Rabin
-> >> would have, that's why he added that part of code :)
-> >>
-> >> @Rabin/Linus: Do you remember why have you added this in stmpe driver:
-> >>
-> >> +       if (stmpe->pdata->irq_invert_polarity)
-> >> +               icr ^= STMPE_ICR_LSB_HIGH;
-> >> +
-> >>
-> >> Does somebody actually need it?
-> >
-> > It was (as irq_rev_pol) part of Luotao Fu's proposed STMPE811 patchset
-> > (https://patchwork.kernel.org/patch/106173/) which I integrated into my
-> > version of the STMPE driver, which didn't have it in its initial version
-> > (https://patchwork.kernel.org/patch/103273/).
-> >
-> > It's not something _I_ ever used.
+On Wed 28-11-12 17:47:59, KAMEZAWA Hiroyuki wrote:
+> (2012/11/27 3:47), Michal Hocko wrote:
+[...]
+> > +		/*
+> > +		 * Even if we found a group we have to make sure it is alive.
+> > +		 * css && !memcg means that the groups should be skipped and
+> > +		 * we should continue the tree walk.
+> > +		 * last_visited css is safe to use because it is protected by
+> > +		 * css_get and the tree walk is rcu safe.
+> > +		 */
+> > +		if (css == &root->css || (css && css_tryget(css)))
+> > +			memcg = mem_cgroup_from_css(css);
 > 
-> I grep'd kernel and nobody is using it there, so lets get rid of it
-> completely :)
-> I will patch it.
+> Could you note that this iterator will never visit dangling(removed)
+> memcg, somewhere ?
 
-Great. :)
+OK, I can add it to the function comment but the behavior hasn't changed
+so I wouldn't like to confuse anybody.
 
+> Hmm, I'm not sure but it may be trouble at shrkinking dangling
+> kmem_cache(slab).
+
+We do not shrink slab at all. Those objects that are in a dead memcg
+wait for their owner tho release them which will make the dangling group
+eventually go away
+
+> 
+> Costa, how do you think ?
+> 
+> I guess there is no problem with swap and not against the way you go.
+
+Yes, swap should be OK. Pages charged against removed memcg will
+fallback to the the current's mm (try_get_mem_cgroup_from_page and
+__mem_cgroup_try_charge_swapin)
+
+[...]
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Michal Hocko
+SUSE Labs
