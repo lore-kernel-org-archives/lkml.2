@@ -1,48 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756021Ab2K1Uad (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 15:30:33 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:59361 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755811Ab2K1Uac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 15:30:32 -0500
-Date: Wed, 28 Nov 2012 21:30:28 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mario Gzuk <mariogzuk@technikz.de>
-Subject: Re: [PATCH 3/8] x86, 386 removal: Remove CONFIG_XADD
-Message-ID: <20121128203028.GB14635@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"H. Peter Anvin" <hpa@linux.intel.com>,
-	"H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Mario Gzuk <mariogzuk@technikz.de>
-References: <1354132230-21854-1-git-send-email-hpa@linux.intel.com>
- <1354132230-21854-4-git-send-email-hpa@linux.intel.com>
+	id S1756064Ab2K1Ubr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 15:31:47 -0500
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:32541 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755863Ab2K1Ubp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 15:31:45 -0500
+From: "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linasvepstas@gmail.com" <linasvepstas@gmail.com>,
+        Myron Stowe <myron.stowe@gmail.com>,
+        "Ortiz, Lance E" <lance.oritz@hp.com>,
+        Huang Ying <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        "Patterson, Andrew D (LeftHand Networks)" <andrew.patterson@hp.com>,
+        "Zhang Yanmin" <yanmin.zhang@intel.com>
+Subject: RE: [PATCH v3] PCI-AER: Do not report successful error recovery for
+ devices with AER-unaware drivers
+Thread-Topic: [PATCH v3] PCI-AER: Do not report successful error recovery
+ for devices with AER-unaware drivers
+Thread-Index: AQHNxLlMB2gqX9CkQEKNBgETX4uTyJf/wLyAgAAEIrA=
+Date: Wed, 28 Nov 2012 20:30:48 +0000
+Message-ID: <F9E001219150CB45BEDC82A650F360C90147919A@G9W0717.americas.hpqcorp.net>
+References: <F9E001219150CB45BEDC82A650F360C90146A2F8@G9W0717.americas.hpqcorp.net>
+ <CAErSpo7VvWreoTj7MUE3cMGaM1dVMfZymO=1P-m8E-joRSgE7g@mail.gmail.com>
+In-Reply-To: <CAErSpo7VvWreoTj7MUE3cMGaM1dVMfZymO=1P-m8E-joRSgE7g@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [15.201.58.18]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1354132230-21854-4-git-send-email-hpa@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 11:50:25AM -0800, H. Peter Anvin wrote:
-> From: "H. Peter Anvin" <hpa@linux.intel.com>
+Looks correct.
+
+Vijay
+
+> -----Original Message-----
+> From: Bjorn Helgaas [mailto:bhelgaas@google.com]
+> Sent: Wednesday, November 28, 2012 12:15 PM
+> To: Pandarathil, Vijaymohan R
+> Cc: linux-kernel@vger.kernel.org; linux-pci@vger.kernel.org;
+> linasvepstas@gmail.com; Myron Stowe; Ortiz, Lance E; Huang Ying; Hidetoshi
+> Seto; Patterson, Andrew D (LeftHand Networks); Zhang Yanmin
+> Subject: Re: [PATCH v3] PCI-AER: Do not report successful error recovery
+> for devices with AER-unaware drivers
 > 
-> All 486+ CPUs support CMPXCHG, so remove the fallback 386 support
-> code.
-
-This commit message should say something about XADD and not about
-CMPXCHG, right?
-
--- 
-Regards/Gruss,
-    Boris.
+> On Sat, Nov 17, 2012 at 4:47 AM, Pandarathil, Vijaymohan R
+> <vijaymohan.pandarathil@hp.com> wrote:
+> > When an error is detected on a PCIe device which does not have an
+> > AER-aware driver, prevent AER infrastructure from reporting
+> > successful error recovery.
+> >
+> > This is because the report_error_detected() function that gets
+> > called in the first phase of recovery process allows forward
+> > progress even when the driver for the device does not have AER
+> > capabilities. It seems that all callbacks (in pci_error_handlers
+> > structure) registered by drivers that gets called during error
+> > recovery are not mandatory. So the intention of the infrastructure
+> > design seems to be to allow forward progress even when a specific
+> > callback has not been registered by a driver. However, if error
+> > handler structure itself has not been registered, it doesn't make
+> > sense to allow forward progress.
+> >
+> > As a result of the current design, in the case of a single device
+> > having an AER-unaware driver or in the case of any function in a
+> > multi-function card having an AER-unaware driver, a successful
+> > recovery is reported.
+> >
+> > Typical scenario this happens is when a PCI device is detached
+> > from a KVM host and the pci-stub driver on the host claims the
+> > device. The pci-stub driver does not have error handling capabilities
+> > but the AER infrastructure still reports that the device recovered
+> > successfully.
+> >
+> > The changes proposed here leaves the device(s)in an unrecovered state
+> > if the driver for the device or for any device in the subtree
+> > does not have error handler structure registered. This reflects
+> > the true state of the device and prevents any partial recovery (or no
+> > recovery at all) reported as successful.
+> >
+> >
+> > v3:
+> >   - Fixed a checkpatch/build issue
+> >
+> > v2:
+> >   - Made changes so that all devices in the subtree have the error
+> >     state set correctly.
+> >
+> >
+> > Reviewed-by: Linas Vepstas <linasvepstas <at> gmail.com>
+> > Reviewed-by: Myron Stowe <mstowe <at> redhat.com>
+> > Reviewed-by: Bjorn Helgaas <bhelgaas <at> google.com>
+> > Signed-off-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
+> 
+> I added this to my -next branch, which will be merged for v3.8.
+> 
+> Please double-check that I resolved the merge conflict correctly.  It
+> should show up here in the next few minutes:
+> 
+> http://git.kernel.org/?p=linux/kernel/git/helgaas/pci.git;a=shortlog;h=refs
+> /heads/next
+> 
+> >  drivers/pci/pcie/aer/aerdrv.h      |  5 ++++-
+> >  drivers/pci/pcie/aer/aerdrv_core.c | 21 ++++++++++++++++++---
+> >  include/linux/pci.h                |  3 +++
+> >  3 files changed, 25 insertions(+), 4 deletions(-)
+> >
+> > diff --git a/drivers/pci/pcie/aer/aerdrv.h
+> b/drivers/pci/pcie/aer/aerdrv.h
+> > index 94a7598..22f840f 100644
+> > --- a/drivers/pci/pcie/aer/aerdrv.h
+> > +++ b/drivers/pci/pcie/aer/aerdrv.h
+> > @@ -87,6 +87,9 @@ struct aer_broadcast_data {
+> >  static inline pci_ers_result_t merge_result(enum pci_ers_result orig,
+> >                 enum pci_ers_result new)
+> >  {
+> > +       if (new == PCI_ERS_RESULT_NO_AER_DRIVER)
+> > +               return PCI_ERS_RESULT_NO_AER_DRIVER;
+> > +
+> >         if (new == PCI_ERS_RESULT_NONE)
+> >                 return orig;
+> >
+> > @@ -97,7 +100,7 @@ static inline pci_ers_result_t merge_result(enum
+> pci_ers_result orig,
+> >                 break;
+> >         case PCI_ERS_RESULT_DISCONNECT:
+> >                 if (new == PCI_ERS_RESULT_NEED_RESET)
+> > -                       orig = new;
+> > +                       orig = PCI_ERS_RESULT_NEED_RESET;
+> >                 break;
+> >         default:
+> >                 break;
+> > diff --git a/drivers/pci/pcie/aer/aerdrv_core.c
+> b/drivers/pci/pcie/aer/aerdrv_core.c
+> > index 9f80cb0..b67f91a 100644
+> > --- a/drivers/pci/pcie/aer/aerdrv_core.c
+> > +++ b/drivers/pci/pcie/aer/aerdrv_core.c
+> > @@ -232,11 +232,26 @@ static int report_error_detected(struct pci_dev
+> *dev, void *data)
+> >                                    dev->driver ?
+> >                                    "no AER-aware driver" : "no driver");
+> >                 }
+> > -               return 0;
+> > +
+> > +               /*
+> > +                * If there's any device in the subtree that does not
+> > +                * have an error_detected callback, returning
+> > +                * PCI_ERS_RESULT_NO_AER_DRIVER prevents calling of
+> > +                * the subsequent mmio_enabled/slot_reset/resume
+> > +                * callbacks of "any" device in the subtree. All the
+> > +                * devices in the subtree are left in the error state
+> > +                * without recovery.
+> > +                */
+> > +
+> > +               if (!(dev->hdr_type & PCI_HEADER_TYPE_BRIDGE))
+> > +                       vote = PCI_ERS_RESULT_NO_AER_DRIVER;
+> > +               else
+> > +                       vote = PCI_ERS_RESULT_NONE;
+> > +       } else {
+> > +               err_handler = dev->driver->err_handler;
+> > +               vote = err_handler->error_detected(dev, result_data-
+> >state);
+> >         }
+> >
+> > -       err_handler = dev->driver->err_handler;
+> > -       vote = err_handler->error_detected(dev, result_data->state);
+> >         result_data->result = merge_result(result_data->result, vote);
+> >         return 0;
+> >  }
+> > diff --git a/include/linux/pci.h b/include/linux/pci.h
+> > index ab17a08..c458602 100644
+> > --- a/include/linux/pci.h
+> > +++ b/include/linux/pci.h
+> > @@ -540,6 +540,9 @@ enum pci_ers_result {
+> >
+> >         /* Device driver is fully recovered and operational */
+> >         PCI_ERS_RESULT_RECOVERED = (__force pci_ers_result_t) 5,
+> > +
+> > +       /* No AER capabilities registered for the driver */
+> > +       PCI_ERS_RESULT_NO_AER_DRIVER = (__force pci_ers_result_t) 6,
+> >  };
+> >
+> >  /* PCI bus error event callbacks */
+> > --
+> > 1.7.11.3
+> >
