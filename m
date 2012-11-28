@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755790Ab2K1SXu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 13:23:50 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:35326 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754957Ab2K1SXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 13:23:49 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: linux-acpi@vger.kernel.org, lenb@kernel.org, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com
-Subject: Re: [PATCH v3 1/4] ACPI: Support system notify handler via .sys_notify
-Date: Wed, 28 Nov 2012 19:28:33 +0100
-Message-ID: <4411201.YLQBH7zWSI@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <1354121683.26955.243.camel@misato.fc.hp.com>
-References: <1352406227-32629-1-git-send-email-toshi.kani@hp.com> <6997894.YrZx7D73oL@vostro.rjw.lan> <1354121683.26955.243.camel@misato.fc.hp.com>
+	id S1755893Ab2K1S3T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 13:29:19 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:36948 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755870Ab2K1S3Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 13:29:16 -0500
+Date: Wed, 28 Nov 2012 10:29:11 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Greg Thelen <gthelen@google.com>
+Cc: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cgroup: avoid creating degenerate allcg_list
+Message-ID: <20121128182911.GA24683@htj.dyndns.org>
+References: <1354127192-22153-1-git-send-email-gthelen@google.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354127192-22153-1-git-send-email-gthelen@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 28, 2012 09:54:43 AM Toshi Kani wrote:
-> > > > > > By using acpi_install_notify_handler(), each driver needs to walk
-> > > > > > through the entire ACPI namespace to find its associated ACPI devices
-> > > > > > and call it to register one by one.  I think this is more work for
-> > > > > > non-ACPI drivers than defining acpi_driver.
-> > > > > 
-> > > > > I'm not really sure what you mean.  The drivers in question already know
-> > > > > what the relevant ACPI device nodes are (because they need them anyway
-> > > > > for other purposes), so they don't need to look for them specifically and
-> > > > > acpi_install_notify_handler() doesn't do any namespace walking.  So what
-> > > > > you said above simply doesn't make sense from this viewpoint.
-> > > > 
-> > > > Yes, if drivers already know the relevant ACPI devices, then walking the
-> > > > ACPI namespace is not necessary.  I was referring the case like
-> > > > processor_driver.c, acpi_memhotplug.c, and container.c in my statement. 
-> > > 
-> > > BTW, when an ACPI device is marked as non-present, which is the case
-> > > before hot-add, we do not create an acpi_device object and therefore do
-> > > not bind it with a driver.  This is why these drivers walk the ACPI
-> > > namespace and install their notify handlers regardless of device status.
-> > 
-> > So maybe we should create struct acpi_device objects in that case too?
+Hey, Greg.
+
+On Wed, Nov 28, 2012 at 10:26:32AM -0800, Greg Thelen wrote:
+> Before this patch init_cgroup_root() created a degenerate list by
+> first inserting a element into allcg_list and then initializing the
+> inserted list element.  The initialization reset the element's
+> prev/next fields forming a degenerate list where allcg_list pointed to
+> element, but element pointed to itself.  This problem was introduced
+> in 2243076ad128 "cgroup: initialize cgrp->allcg_node in
+> init_cgroup_housekeeping()".  CONFIG_DEBUG_LIST reported a list_add
+> corruption in cgroup_mkdir() running next-20121127 (ce2931a).
 > 
-> I think it has some challenge as well.  We bind an ACPI driver with
-> device_register(), which calls device_add()-> kobject_add().  So, all
-> non-present ACPI device objects will show up in sysfs, unless we can
-> change the core.  This will change user interface.  There can be quite
-> many non-present devices in ACPI namespace depending on FW
-> implementation.
+> This patch fixes the problem by performing element initialization
+> before insertion.
 
-If additional devices appear in sysfs, that's not a problem.  If there
-were fewer of them, that would be a real one. :-)
+You're beaten by Li Zhong by 9 hrs.  :)
 
-Thanks,
-Rafael
-
+ http://thread.gmane.org/gmane.linux.kernel.next/25096
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+tejun
