@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831Ab2K1DUm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 22:20:42 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:35159 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751468Ab2K1DUk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 22:20:40 -0500
-Date: Wed, 28 Nov 2012 14:20:32 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>
-Subject: linux-next: manual merge of the mfd tree with Linus' tree
-Message-Id: <20121128142032.2c9eebbceb93a3c2bf2d391f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__28_Nov_2012_14_20_32_+1100_0sp1rbC6KJbb72M2"
+	id S1752888Ab2K1DXH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 22:23:07 -0500
+Received: from trent.utfs.org ([94.185.90.103]:45023 "EHLO trent.utfs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751121Ab2K1DXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 22:23:06 -0500
+Date: Tue, 27 Nov 2012 19:22:56 -0800 (PST)
+From: Christian Kujau <lists@nerdbynature.de>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: linuxppc-dev@lists.ozlabs.org, paulus@samba.org, zhong@linux.vnet.ibm.com
+Subject: Re: 3.7-rc7: BUG: MAX_STACK_TRACE_ENTRIES too low!
+In-Reply-To: <alpine.DEB.2.01.1211271824120.7378@trent.utfs.org>
+Message-ID: <alpine.DEB.2.01.1211271916160.7378@trent.utfs.org>
+References: <alpine.DEB.2.01.1211271824120.7378@trent.utfs.org>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__28_Nov_2012_14_20_32_+1100_0sp1rbC6KJbb72M2
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 27 Nov 2012 at 19:06, Christian Kujau wrote:
+> the same thing[0] happened again in 3.7-rc7, after ~20h uptime:
 
-Hi Samuel,
+I found the following on patchwork, but this seems to deal with powerpc64 
+only, while this PowerBook G4 of mine is powerpc32:
 
-Today's linux-next merge of the mfd tree got a conflict in
-drivers/mfd/twl-core.c between commit 78a3c5ab1749 ("mfd: twl-core: Fix
-chip ID for the twl6030-pwm module") from Linus' tree and commit
-afc45898f62c ("mfd: twl-core: Support for proper PWM drivers") from the
-mfd tree.
+  http://patchwork.ozlabs.org/patch/193414/
 
-I fixed it up (using the version from the mfd tree) and can carry the fix
-as necessary (no action is required).
+It looks related, but then again, I fail to parse assember...
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Christian.
 
---Signature=_Wed__28_Nov_2012_14_20_32_+1100_0sp1rbC6KJbb72M2
-Content-Type: application/pgp-signature
+> [40007.339487] [sched_delayed] sched: RT throttling activated
+> [69731.388717] BUG: MAX_STACK_TRACE_ENTRIES too low!
+> [69731.390371] turning off the locking correctness validator.
+> [69731.391942] Call Trace:
+> [69731.393525] [c9a61c10] [c0009064] show_stack+0x70/0x1bc (unreliable)
+> [69731.395152] [c9a61c50] [c0077460] save_trace+0xfc/0x114
+> [69731.396735] [c9a61c60] [c007be20] __lock_acquire+0x1568/0x19b8
+> [69731.398296] [c9a61d00] [c007c2c0] lock_acquire+0x50/0x70
+> [69731.399857] [c9a61d20] [c0550e28] _raw_spin_lock_irq+0x5c/0x78
+> [69731.401419] [c9a61d40] [c054fb58] __schedule+0xd8/0x534
+> [69731.402972] [c9a61da0] [c0550094] _cond_resched+0x50/0x68
+> [69731.404527] [c9a61db0] [c0479908] dst_gc_task+0xbc/0x258
+> [69731.406070] [c9a61e40] [c004eeb8] process_one_work+0x1f4/0x49c
+> [69731.407585] [c9a61e80] [c004f644] worker_thread+0x14c/0x400
+> [69731.409075] [c9a61eb0] [c0057634] kthread+0xbc/0xc0
+> [69731.410521] [c9a61f40] [c0011ad4] ret_from_kernel_thread+0x5c/0x64
+> [...repeated 54 times...]
+> 
+> Anyone knows what this is about?
+> 
+> Thanks,
+> Christian.
+> 
+> [0] http://lkml.indiana.edu/hypermail/linux/kernel/1211.0/03025.html
+-- 
+BOFH excuse #191:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQtYMAAAoJEECxmPOUX5FEfP8P/juodLjPRMEmmIi+kRAFq8Yi
-wZFxuix445L43nyIJLlqnQL9d0xF4CO0zR4mccSJyD1AdEqpyGYijYR99RB8jpAR
-zj+Hzq3YHG+pvFraJfFaogUHzlx7C0lwTRiJQQfTlmE2GrKRhymRBhK/6VK2tTby
-8LGAlNooTU6BRD+Fx0P8M701bBJPCpq3IawT0ipfdn+2FhQvzNcmDXniJOGZcPSa
-UOxTQ8bn7ZwY/lAVUi3TL3TlucUX9q4RcvSCS9ubE1L3ME77ygkRMdRSXLrl7YtW
-u1CaGdUqlPvg5lp9kzzf4hWCIBK+uv2+Me2gx6oWHn8+CWN7xIo2lrkNAB4t17wA
-69Bm4s5rzaV2XQ5CPvf8BxIU879wK3Jdds9iPlqj2mAbQfR+E3tsbHB0AYF2uNMY
-TRi1timLecNm4ohgA4GqrGN5bNXShx0Ox9GHxmUgtm5Mfpj2D7oUyOPrWrn7cJ07
-RD6sxZ8y+E1iofWcEa6mwPBBZIe0C750orRemILMrfh6pr1MMdVvw7DK6KCznz1+
-FuJMl2ld5mQSsGdWU4bWDVjqQRZCZI+wBiT/6a+dgInWGBTqMKIMdk5dBjXNau5Y
-wQEgt+dduIiZOS/h/mDB2WKRUIZOAKZzG5nK+28ZFOLQWaSv/Y4RmLidvO9IWo1u
-zkU9PD1dWIlh5Vg/OmhF
-=6xM8
------END PGP SIGNATURE-----
-
---Signature=_Wed__28_Nov_2012_14_20_32_+1100_0sp1rbC6KJbb72M2--
+Just type 'mv * /dev/null'.
