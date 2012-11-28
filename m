@@ -1,57 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756195Ab2K1X0P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 18:26:15 -0500
-Received: from mail.vapor.com ([83.220.149.2]:39867 "EHLO nitrogen.vapor.com"
+	id S1756344Ab2K1X0U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 18:26:20 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:35595 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752836Ab2K1X0O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 18:26:14 -0500
-X-Greylist: delayed 353 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Nov 2012 18:26:13 EST
-Message-ID: <1354144802.5396.3.camel@pi>
-Subject: [BUG] NULL pointer dereference in 3.7-rc7 (syscall_trace_enter)
-From: Ian Kumlien <pomac@vapor.com>
-Reply-To: pomac@vapor.com
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 29 Nov 2012 00:20:02 +0100
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-tGEKt0HHKgB39h6TQ4N4"
-X-Mailer: Evolution 3.4.4 
-Mime-Version: 1.0
+	id S1756232Ab2K1X0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 18:26:18 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Toshi Kani <toshi.kani@hp.com>, linux-acpi@vger.kernel.org,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Wen Congyang <wencongyang@gmail.com>, isimatu.yasuaki@jp.fujitsu.com,
+        lenb@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on rebind scenario
+Date: Thu, 29 Nov 2012 00:31:02 +0100
+Message-ID: <2363618.GHMYUtrpGK@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <20121128231046.GA15416@kroah.com>
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com> <4960597.PcG7YIEMVH@vostro.rjw.lan> <20121128231046.GA15416@kroah.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday, November 28, 2012 03:10:46 PM Greg KH wrote:
+> On Thu, Nov 29, 2012 at 12:05:20AM +0100, Rafael J. Wysocki wrote:
+> > On Wednesday, November 28, 2012 02:46:33 PM Greg KH wrote:
+> > > > So, it looks like the driver core wants us to handle driver unbinding no
+> > > > matter what.
+> > > 
+> > > Yes.  Well, the driver core does the unbinding no matter what, if it was
+> > > told, by a user, to do so.  Why is that a problem?  The user then is
+> > > responsible for any bad things (i.e. not able to control the device any
+> > > more), if they do so.
+> > 
+> > I don't really agree with that, because the user may simply not know what
+> > the consequences of that will be.  In my not so humble opinion any interface
+> > allowing user space to crash the kernel is a bad one.  And this is an example
+> > of that.
+> 
+> This has been in place since 2005, over 7 years now, and I have never
+> heard any problems with it being used to crash the kernel, despite the
+> easy ability for people to unbind all of their devices from drivers and
+> instantly cause a system hang.  So really doubt this is a problem in
+> real life :)
+> 
+> > > > This pretty much means that it is a bad idea to have a driver that is
+> > > > exposed as a "device driver" in sysfs for memory hotplugging.
+> > > 
+> > > Again, why?  All this means is that the driver is now not connected to
+> > > the device (memory in this case.)  The memory is still there, still
+> > > operates as before, only difference is, the driver can't touch it
+> > > anymore.
+> > > 
+> > > This is the same for any ACPI driver, and has been for years.
+> > 
+> > Except that if this driver has been unbound and the removal is triggered by
+> > an SCI, the core will just go on and remove the memory, although it may
+> > be killing the kernel this way.
+> 
+> Why would memory go away if a driver is unbound from a device?  The
+> device didn't go away.  It's the same if the driver was a module and it
+> was unloaded, you should not turn memory off in that situation, right?
 
---=-tGEKt0HHKgB39h6TQ4N4
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Right.  It looks like there's some confusion about the role of .remove()
+in the ACPI subsystem, but I need to investigate it a bit more.
 
-Hi,=20
+> Are you also going to prevent module unloading of this driver?
 
-Due to unexplained dns problems, I'll be using google plus to post the
-photo of the bug output.
+I'm not sure what I'm going to do with that driver at the moment to be honest. :-)
 
-https://plus.google.com/photos/110698868656495230656/albums/581600585448273=
-5041
+> > Arguably, this may be considered as the core's fault, but the only way to
+> > fix that would be to move the code from that driver into the core and not to
+> > register it as a "driver" any more.  Which was my point. :-)
+> 
+> No, I think people are totally overreacting to the unbind/bind files,
+> which are there to aid in development, and in adding new device ids to
+> drivers, as well as sometimes doing a hacky revoke() call.
+> 
+> > > Please don't confuse unbind with any "normal" system operation, it is
+> > > not to be used for memory hotplug, or anything else like this.
+> > > 
+> > > Also, if you really do not want to do this, turn off the ability to
+> > > unbind/bind for these devices, that is under your control in your bus
+> > > logic.
+> > 
+> > OK, but how?  I'm looking at driver_unbind() and not seeing any way to do
+> > that actually.
+> 
+> See the suppress_bind_attrs field in struct device_driver.  It's even
+> documented in device.h, but sadly, no one reads documentation :)
 
-I'm sorry but my knowledge is limited and current caffeine level is low,
-so I'm offloading to someone who has these things handled ;)
+That's good to know, thanks. :-)
 
---=20
-Ian Kumlien  -- http://demius.net || http://pomac.netswarm.net
+And if I knew I could find that information in device.h, I'd look in there.
 
---=-tGEKt0HHKgB39h6TQ4N4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+> I recommend you set this field if you don't want the bind/unbind files
+> to show up for your memory driver, although I would argue that the
+> driver needs to be fixed up to not do foolish things like removing
+> memory from a system unless it really does go away...
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+Quite frankly, I need to look at that driver and how things are supposed to
+work more thoroughly, because I don't seem to see a reason to do various
+things the way they are done.  Well, maybe it's just me.
 
-iEYEABECAAYFAlC2nCcACgkQ7F3Euyc51N8wZwCgi62ad2KV4A9bVwHzC1Ce7vBA
-y5kAn0f7Lv/fQQ/x0gIjE5A7CqYXhIz2
-=8d7J
------END PGP SIGNATURE-----
+Thanks,
+Rafael
 
---=-tGEKt0HHKgB39h6TQ4N4--
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
