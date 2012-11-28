@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139Ab2K1VhS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 16:37:18 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:32786 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932586Ab2K1Veq (ORCPT
+	id S932566Ab2K1Vel (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 16:34:41 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:47858 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932543Ab2K1Vei (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 16:34:46 -0500
+	Wed, 28 Nov 2012 16:34:38 -0500
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com, paul@paulmenage.org, glommer@parallels.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         peterz@infradead.org, mhocko@suse.cz, bsingharora@gmail.com,
         hannes@cmpxchg.org, kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 07/13] cpuset: drop async_rebuild_sched_domains()
-Date: Wed, 28 Nov 2012 13:34:14 -0800
-Message-Id: <1354138460-19286-8-git-send-email-tj@kernel.org>
+Subject: [PATCH 04/13] cpuset: introduce CS_ONLINE
+Date: Wed, 28 Nov 2012 13:34:11 -0800
+Message-Id: <1354138460-19286-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1354138460-19286-1-git-send-email-tj@kernel.org>
 References: <1354138460-19286-1-git-send-email-tj@kernel.org>
@@ -23,183 +23,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-get_online_cpus() is already nested inside cgroup_mutex from memcg
-when it's registering cpu notifiers.  Also, in generall, we want to
-make cgroup_mutex one of the outermost locks and be able to use
-get_online_cpus() and friends from cgroup methods.
-
-Currently, cpuset avoids nesting get_online_cpus() inside cgroup_mutex
-by bouncing sched_domain rebuilding to a work item.  As such nesting
-is gonna be allowed, remove the workqueue bouncing code and always
-rebuild sched_domains synchronously.  This also nests
-sched_domains_mutex inside cgroup_mutex, which should be okay.
-
-Note that the CPU / memory hotplug path still grabs the two locks in
-the reverse order and thus this is a deadlock hazard; however, the two
-locks are already deadlock-prone and the hotplug path will be updated
-by further patches.
+Add CS_ONLINE which is set from css_online() and cleared from
+css_offline().  This will enable using generic cgroup iterator while
+allowing decoupling cpuset from cgroup internal locking.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- kernel/cpuset.c | 76 ++++++++++++---------------------------------------------
- 1 file changed, 16 insertions(+), 60 deletions(-)
+ kernel/cpuset.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
 diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 8bdd983..2049504 100644
+index 70197ba..22b521d 100644
 --- a/kernel/cpuset.c
 +++ b/kernel/cpuset.c
-@@ -61,14 +61,6 @@
- #include <linux/cgroup.h>
+@@ -138,6 +138,7 @@ static inline bool task_has_mempolicy(struct task_struct *task)
+ 
+ /* bits in struct cpuset flags field */
+ typedef enum {
++	CS_ONLINE,
+ 	CS_CPU_EXCLUSIVE,
+ 	CS_MEM_EXCLUSIVE,
+ 	CS_MEM_HARDWALL,
+@@ -154,6 +155,11 @@ enum hotplug_event {
+ };
+ 
+ /* convenient tests for these bits */
++static inline bool is_cpuset_online(const struct cpuset *cs)
++{
++	return test_bit(CS_ONLINE, &cs->flags);
++}
++
+ static inline int is_cpu_exclusive(const struct cpuset *cs)
+ {
+ 	return test_bit(CS_CPU_EXCLUSIVE, &cs->flags);
+@@ -190,7 +196,8 @@ static inline int is_spread_slab(const struct cpuset *cs)
+ }
+ 
+ static struct cpuset top_cpuset = {
+-	.flags = ((1 << CS_CPU_EXCLUSIVE) | (1 << CS_MEM_EXCLUSIVE)),
++	.flags = ((1 << CS_ONLINE) | (1 << CS_CPU_EXCLUSIVE) |
++		  (1 << CS_MEM_EXCLUSIVE)),
+ };
  
  /*
-- * Workqueue for cpuset related tasks.
-- *
-- * Using kevent workqueue may cause deadlock when memory_migrate
-- * is set. So we create a separate workqueue thread for cpuset.
-- */
--static struct workqueue_struct *cpuset_wq;
--
--/*
-  * Tracks how many cpusets are currently defined in system.
-  * When there is only one cpuset (the root cpuset) we can
-  * short circuit some hooks.
-@@ -752,25 +744,25 @@ done:
- /*
-  * Rebuild scheduler domains.
-  *
-- * Call with neither cgroup_mutex held nor within get_online_cpus().
-- * Takes both cgroup_mutex and get_online_cpus().
-+ * If the flag 'sched_load_balance' of any cpuset with non-empty
-+ * 'cpus' changes, or if the 'cpus' allowed changes in any cpuset
-+ * which has that flag enabled, or if any cpuset with a non-empty
-+ * 'cpus' is removed, then call this routine to rebuild the
-+ * scheduler's dynamic sched domains.
-  *
-- * Cannot be directly called from cpuset code handling changes
-- * to the cpuset pseudo-filesystem, because it cannot be called
-- * from code that already holds cgroup_mutex.
-+ * Call with cgroup_mutex held.  Takes get_online_cpus().
-  */
--static void do_rebuild_sched_domains(struct work_struct *unused)
-+static void rebuild_sched_domains_locked(void)
- {
- 	struct sched_domain_attr *attr;
- 	cpumask_var_t *doms;
- 	int ndoms;
+@@ -1822,6 +1829,7 @@ static int cpuset_css_online(struct cgroup *cgrp)
+ 	if (!parent)
+ 		return 0;
  
-+	WARN_ON_ONCE(!cgroup_lock_is_held());
- 	get_online_cpus();
++	set_bit(CS_ONLINE, &cs->flags);
+ 	if (is_spread_page(parent))
+ 		set_bit(CS_SPREAD_PAGE, &cs->flags);
+ 	if (is_spread_slab(parent))
+@@ -1871,6 +1879,7 @@ static void cpuset_css_offline(struct cgroup *cgrp)
+ 		update_flag(CS_SCHED_LOAD_BALANCE, cs, 0);
  
- 	/* Generate domain masks and attrs */
--	cgroup_lock();
- 	ndoms = generate_sched_domains(&doms, &attr);
--	cgroup_unlock();
+ 	number_of_cpusets--;
++	clear_bit(CS_ONLINE, &cs->flags);
  
- 	/* Have scheduler rebuild the domains */
- 	partition_sched_domains(ndoms, doms, attr);
-@@ -778,7 +770,7 @@ static void do_rebuild_sched_domains(struct work_struct *unused)
- 	put_online_cpus();
+ 	cgroup_unlock();
  }
- #else /* !CONFIG_SMP */
--static void do_rebuild_sched_domains(struct work_struct *unused)
-+static void rebuild_sched_domains_locked(void)
- {
- }
- 
-@@ -790,44 +782,11 @@ static int generate_sched_domains(cpumask_var_t **domains,
- }
- #endif /* CONFIG_SMP */
- 
--static DECLARE_WORK(rebuild_sched_domains_work, do_rebuild_sched_domains);
--
--/*
-- * Rebuild scheduler domains, asynchronously via workqueue.
-- *
-- * If the flag 'sched_load_balance' of any cpuset with non-empty
-- * 'cpus' changes, or if the 'cpus' allowed changes in any cpuset
-- * which has that flag enabled, or if any cpuset with a non-empty
-- * 'cpus' is removed, then call this routine to rebuild the
-- * scheduler's dynamic sched domains.
-- *
-- * The rebuild_sched_domains() and partition_sched_domains()
-- * routines must nest cgroup_lock() inside get_online_cpus(),
-- * but such cpuset changes as these must nest that locking the
-- * other way, holding cgroup_lock() for much of the code.
-- *
-- * So in order to avoid an ABBA deadlock, the cpuset code handling
-- * these user changes delegates the actual sched domain rebuilding
-- * to a separate workqueue thread, which ends up processing the
-- * above do_rebuild_sched_domains() function.
-- */
--static void async_rebuild_sched_domains(void)
--{
--	queue_work(cpuset_wq, &rebuild_sched_domains_work);
--}
--
--/*
-- * Accomplishes the same scheduler domain rebuild as the above
-- * async_rebuild_sched_domains(), however it directly calls the
-- * rebuild routine synchronously rather than calling it via an
-- * asynchronous work thread.
-- *
-- * This can only be called from code that is not holding
-- * cgroup_mutex (not nested in a cgroup_lock() call.)
-- */
- void rebuild_sched_domains(void)
- {
--	do_rebuild_sched_domains(NULL);
-+	cgroup_lock();
-+	rebuild_sched_domains_locked();
-+	cgroup_unlock();
- }
- 
- /**
-@@ -947,7 +906,7 @@ static int update_cpumask(struct cpuset *cs, struct cpuset *trialcs,
- 	heap_free(&heap);
- 
- 	if (is_load_balanced)
--		async_rebuild_sched_domains();
-+		rebuild_sched_domains_locked();
- 	return 0;
- }
- 
-@@ -1195,7 +1154,7 @@ static int update_relax_domain_level(struct cpuset *cs, s64 val)
- 		cs->relax_domain_level = val;
- 		if (!cpumask_empty(cs->cpus_allowed) &&
- 		    is_sched_load_balance(cs))
--			async_rebuild_sched_domains();
-+			rebuild_sched_domains_locked();
- 	}
- 
- 	return 0;
-@@ -1287,7 +1246,7 @@ static int update_flag(cpuset_flagbits_t bit, struct cpuset *cs,
- 	mutex_unlock(&callback_mutex);
- 
- 	if (!cpumask_empty(trialcs->cpus_allowed) && balance_flag_changed)
--		async_rebuild_sched_domains();
-+		rebuild_sched_domains_locked();
- 
- 	if (spread_flag_changed)
- 		update_tasks_flags(cs, &heap);
-@@ -1905,7 +1864,7 @@ static void cpuset_css_offline(struct cgroup *cgrp)
- /*
-  * If the cpuset being removed has its flag 'sched_load_balance'
-  * enabled, then simulate turning sched_load_balance off, which
-- * will call async_rebuild_sched_domains().
-+ * will call rebuild_sched_domains_locked().
-  */
- 
- static void cpuset_css_free(struct cgroup *cont)
-@@ -2210,9 +2169,6 @@ void __init cpuset_init_smp(void)
- 	top_cpuset.mems_allowed = node_states[N_HIGH_MEMORY];
- 
- 	hotplug_memory_notifier(cpuset_track_online_nodes, 10);
--
--	cpuset_wq = create_singlethread_workqueue("cpuset");
--	BUG_ON(!cpuset_wq);
- }
- 
- /**
 -- 
 1.7.11.7
 
