@@ -1,82 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755831Ab2K1Rof (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 12:44:35 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:35821 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755811Ab2K1Rod convert rfc822-to-8bit (ORCPT
+	id S1755762Ab2K1RoR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 12:44:17 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:39487 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754070Ab2K1RoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 12:44:33 -0500
-Date: Wed, 28 Nov 2012 17:44:26 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Michal Marek <mmarek@suse.cz>, Grant Likely <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Sam Ravnborg <sam@ravnborg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
-        Jonas Bonn <jonas@southpole.se>,
-        "linux@openrisc.net" <linux@openrisc.net>,
-        Aurelien Jacquiot <a-jacquiot@ti.com>,
-        "linux-c6x-dev@linux-c6x.org" <linux-c6x-dev@linux-c6x.org>,
-        "msalter@redhat.com" <msalter@redhat.com>,
-        Michal Simek <monstr@monstr.eu>,
-        "microblaze-uclinux@itee.uq.edu.au" 
-	<microblaze-uclinux@itee.uq.edu.au>,
-        Chris Zankel <chris@zankel.net>,
-        "linux-xtensa@linux-xtensa.org" <linux-xtensa@linux-xtensa.org>,
-        Max Filippov <jcmvbkbc@gmail.com>, Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: [PATCH V7 1/7] kbuild: centralize .dts->.dtb rule
-Message-ID: <20121128174426.GD17405@arm.com>
-References: <1354058956-7199-1-git-send-email-swarren@wwwdotorg.org>
+	Wed, 28 Nov 2012 12:44:10 -0500
+Message-ID: <50B64D67.3080202@pobox.com>
+Date: Wed, 28 Nov 2012 12:44:07 -0500
+From: Jeff Garzik <jgarzik@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <1354058956-7199-1-git-send-email-swarren@wwwdotorg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-MC-Unique: 112112817443100701
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+To: Olaf Hering <olaf@aepfle.de>
+CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        KY Srinivasan <kys@microsoft.com>
+Subject: Re: [PATCH] ata_piix: reenable MS Virtual PC guests
+References: <1347983281-15422-1-git-send-email-olaf@aepfle.de>
+In-Reply-To: <1347983281-15422-1-git-send-email-olaf@aepfle.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 27, 2012 at 11:29:10PM +0000, Stephen Warren wrote:
-> From: Stephen Warren <swarren@nvidia.com>
-> 
-> All architectures that use cmd_dtc do so in almost the same way. Create
-> a central build rule to avoid duplication. The one difference is that
-> most current uses of dtc build $(obj)/%.dtb from $(src)/dts/%.dts rather
-> than building the .dtb in the same directory as the .dts file. This
-> difference will be eliminated arch-by-arch in future patches.
-> 
-> MIPS is the exception here; it already uses the exact same rule as the
-> new common rule, so the duplicate is removed in this patch to avoid any
-> conflict. arch/mips changes courtesy of Ralf Baechle.
-> 
-> Update Documentation/kbuild to remove the explicit call to cmd_dtc from
-> the example, now that the rule exists in a centralized location.
-> 
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: Olof Johansson <olof@lixom.net>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Jonas Bonn <jonas@southpole.se>
-> Cc: linux@lists.openrisc.net
-> Cc: Aurelien Jacquiot <a-jacquiot@ti.com>
-> Cc: linux-c6x-dev@linux-c6x.org
-> Cc: Mark Salter <msalter@redhat.com>
-> Cc: Michal Simek <monstr@monstr.eu>
-> Cc: microblaze-uclinux@itee.uq.edu.au
-> Cc: Chris Zankel <chris@zankel.net>
-> Cc: linux-xtensa@linux-xtensa.org
-> Cc: Max Filippov <jcmvbkbc@gmail.com>
-> Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+On 09/18/2012 11:48 AM, Olaf Hering wrote:
+> An earlier commit cd006086fa5d91414d8ff9ff2b78fbb593878e3c ("ata_piix:
+> defer disks to the Hyper-V drivers by default") broke MS Virtual PC
+> guests. Hyper-V guests and Virtual PC guests have nearly identical DMI
+> info. As a result the driver does currently ignore the emulated hardware
+> in Virtual PC guests and defers the handling to hv_blkvsc. Since Virtual
+> PC does not offer paravirtualized drivers no disks will be found in the
+> guest.
+>
+> One difference in the DMI info is the product version. This patch adds a
+> match for MS Virtual PC 2007 and "unignores" the emulated hardware.
+>
+> This was reported for openSuSE 12.1 in bugzilla:
+> https://bugzilla.novell.com/show_bug.cgi?id=737532
+>
+> Here is a detailed list of DMI info from example guests:
+>
+> hwinfo --bios:
+>
+> virtual pc guest:
+>
+>    System Info: #1
+>      Manufacturer: "Microsoft Corporation"
+>      Product: "Virtual Machine"
+>      Version: "VS2005R2"
+>      Serial: "3178-9905-1533-4840-9282-0569-59"
+>      UUID: undefined, but settable
+>      Wake-up: 0x06 (Power Switch)
+>    Board Info: #2
+>      Manufacturer: "Microsoft Corporation"
+>      Product: "Virtual Machine"
+>      Version: "5.0"
+>      Serial: "3178-9905-1533-4840-9282-0569-59"
+>    Chassis Info: #3
+>      Manufacturer: "Microsoft Corporation"
+>      Version: "5.0"
+>      Serial: "3178-9905-1533-4840-9282-0569-59"
+>      Asset Tag: "7188-3705-6309-9738-9645-0364-00"
+>      Type: 0x03 (Desktop)
+>      Bootup State: 0x03 (Safe)
+>      Power Supply State: 0x03 (Safe)
+>      Thermal State: 0x01 (Other)
+>      Security Status: 0x01 (Other)
+>
+> win2k8 guest:
+>
+>    System Info: #1
+>      Manufacturer: "Microsoft Corporation"
+>      Product: "Virtual Machine"
+>      Version: "7.0"
+>      Serial: "9106-3420-9819-5495-1514-2075-48"
+>      UUID: undefined, but settable
+>      Wake-up: 0x06 (Power Switch)
+>    Board Info: #2
+>      Manufacturer: "Microsoft Corporation"
+>      Product: "Virtual Machine"
+>      Version: "7.0"
+>      Serial: "9106-3420-9819-5495-1514-2075-48"
+>    Chassis Info: #3
+>      Manufacturer: "Microsoft Corporation"
+>      Version: "7.0"
+>      Serial: "9106-3420-9819-5495-1514-2075-48"
+>      Asset Tag: "7076-9522-6699-1042-9501-1785-77"
+>      Type: 0x03 (Desktop)
+>      Bootup State: 0x03 (Safe)
+>      Power Supply State: 0x03 (Safe)
+>      Thermal State: 0x01 (Other)
+>      Security Status: 0x01 (Other)
+>
+> win2k12 guest:
+>
+>    System Info: #1
+>      Manufacturer: "Microsoft Corporation"
+>      Product: "Virtual Machine"
+>      Version: "7.0"
+>      Serial: "8179-1954-0187-0085-3868-2270-14"
+>      UUID: undefined, but settable
+>      Wake-up: 0x06 (Power Switch)
+>    Board Info: #2
+>      Manufacturer: "Microsoft Corporation"
+>      Product: "Virtual Machine"
+>      Version: "7.0"
+>      Serial: "8179-1954-0187-0085-3868-2270-14"
+>    Chassis Info: #3
+>      Manufacturer: "Microsoft Corporation"
+>      Version: "7.0"
+>      Serial: "8179-1954-0187-0085-3868-2270-14"
+>      Asset Tag: "8374-0485-4557-6331-0620-5845-25"
+>      Type: 0x03 (Desktop)
+>      Bootup State: 0x03 (Safe)
+>      Power Supply State: 0x03 (Safe)
+>      Thermal State: 0x01 (Other)
+>      Security Status: 0x01 (Other)
+>
+> Signed-off-by: Olaf Hering <olaf@aepfle.de>
 
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+applied.  Apologies for missing this one.  It was accidentally shifting 
+into the low-priority pile.
+
+
 
