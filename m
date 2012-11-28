@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754792Ab2K1QoK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 11:44:10 -0500
+	id S1755644Ab2K1Qww (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 11:52:52 -0500
 Received: from mail-pa0-f46.google.com ([209.85.220.46]:45503 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754667Ab2K1QoG (ORCPT
+	with ESMTP id S1754698Ab2K1QoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 11:44:06 -0500
+	Wed, 28 Nov 2012 11:44:09 -0500
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
         linux-fsdevel@vger.kernel.org
 Cc: zab@redhat.com, bcrl@kvack.org, jmoyer@redhat.com, axboe@kernel.dk,
         viro@zeniv.linux.org.uk, Kent Overstreet <koverstreet@google.com>
-Subject: [PATCH 05/25] char: add aio_{read,write} to /dev/{null,zero}
-Date: Wed, 28 Nov 2012 08:43:29 -0800
-Message-Id: <1354121029-1376-6-git-send-email-koverstreet@google.com>
+Subject: [PATCH 07/25] aio: kiocb_cancel()
+Date: Wed, 28 Nov 2012 08:43:31 -0800
+Message-Id: <1354121029-1376-8-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1354121029-1376-1-git-send-email-koverstreet@google.com>
 References: <1354121029-1376-1-git-send-email-koverstreet@google.com>
@@ -22,90 +22,126 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zach Brown <zab@redhat.com>
+Minor refactoring, to get rid of some duplicated code
 
-These are handy for measuring the cost of the aio infrastructure with
-operations that do very little and complete immediately.
-
-Signed-off-by: Zach Brown <zab@redhat.com>
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 ---
- drivers/char/mem.c | 35 +++++++++++++++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
+ fs/aio.c | 72 +++++++++++++++++++++++++++++++++++-----------------------------
+ 1 file changed, 39 insertions(+), 33 deletions(-)
 
-diff --git a/drivers/char/mem.c b/drivers/char/mem.c
-index 0537903..968ae6e 100644
---- a/drivers/char/mem.c
-+++ b/drivers/char/mem.c
-@@ -627,6 +627,18 @@ static ssize_t write_null(struct file *file, const char __user *buf,
- 	return count;
+diff --git a/fs/aio.c b/fs/aio.c
+index 91879d4..a993234 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -217,6 +217,29 @@ static inline void put_ioctx(struct kioctx *kioctx)
+ 		__put_ioctx(kioctx);
  }
  
-+static ssize_t aio_read_null(struct kiocb *iocb, const struct iovec *iov,
-+			     unsigned long nr_segs, loff_t pos)
++static int kiocb_cancel(struct kioctx *ctx, struct kiocb *kiocb,
++			struct io_event *res)
 +{
-+	return 0;
-+}
++	int (*cancel)(struct kiocb *, struct io_event *);
++	int ret = -EINVAL;
 +
-+static ssize_t aio_write_null(struct kiocb *iocb, const struct iovec *iov,
-+			      unsigned long nr_segs, loff_t pos)
-+{
-+	return iov_length(iov, nr_segs);
-+}
++	cancel = kiocb->ki_cancel;
++	kiocbSetCancelled(kiocb);
++	if (cancel) {
++		kiocb->ki_users++;
++		spin_unlock_irq(&ctx->ctx_lock);
 +
- static int pipe_to_null(struct pipe_inode_info *info, struct pipe_buffer *buf,
- 			struct splice_desc *sd)
- {
-@@ -670,6 +682,24 @@ static ssize_t read_zero(struct file *file, char __user *buf,
- 	return written ? written : -EFAULT;
- }
- 
-+static ssize_t aio_read_zero(struct kiocb *iocb, const struct iovec *iov,
-+			     unsigned long nr_segs, loff_t pos)
-+{
-+	size_t written = 0;
-+	unsigned long i;
-+	ssize_t ret;
++		memset(res, 0, sizeof(*res));
++		res->obj = (u64) kiocb->ki_obj.user;
++		res->data = kiocb->ki_user_data;
++		ret = cancel(kiocb, res);
 +
-+	for (i = 0; i < nr_segs; i++) {
-+		ret = read_zero(iocb->ki_filp, iov[i].iov_base, iov[i].iov_len,
-+				&pos);
-+		if (ret < 0)
-+			break;
-+		written += ret;
++		spin_lock_irq(&ctx->ctx_lock);
 +	}
 +
-+	return written ? written : -EFAULT;
++	return ret;
 +}
 +
- static int mmap_zero(struct file *file, struct vm_area_struct *vma)
+ /* ioctx_alloc
+  *	Allocates and initializes an ioctx.  Returns an ERR_PTR if it failed.
+  */
+@@ -287,7 +310,6 @@ out_freectx:
+  */
+ static void kill_ctx(struct kioctx *ctx)
  {
- #ifndef CONFIG_MMU
-@@ -738,6 +768,7 @@ static int open_port(struct inode * inode, struct file * filp)
- #define full_lseek      null_lseek
- #define write_zero	write_null
- #define read_full       read_zero
-+#define aio_write_zero	aio_write_null
- #define open_mem	open_port
- #define open_kmem	open_mem
- #define open_oldmem	open_mem
-@@ -766,6 +797,8 @@ static const struct file_operations null_fops = {
- 	.llseek		= null_lseek,
- 	.read		= read_null,
- 	.write		= write_null,
-+	.aio_read	= aio_read_null,
-+	.aio_write	= aio_write_null,
- 	.splice_write	= splice_write_null,
- };
+-	int (*cancel)(struct kiocb *, struct io_event *);
+ 	struct task_struct *tsk = current;
+ 	DECLARE_WAITQUEUE(wait, tsk);
+ 	struct io_event res;
+@@ -298,14 +320,8 @@ static void kill_ctx(struct kioctx *ctx)
+ 		struct list_head *pos = ctx->active_reqs.next;
+ 		struct kiocb *iocb = list_kiocb(pos);
+ 		list_del_init(&iocb->ki_list);
+-		cancel = iocb->ki_cancel;
+-		kiocbSetCancelled(iocb);
+-		if (cancel) {
+-			iocb->ki_users++;
+-			spin_unlock_irq(&ctx->ctx_lock);
+-			cancel(iocb, &res);
+-			spin_lock_irq(&ctx->ctx_lock);
+-		}
++
++		kiocb_cancel(ctx, iocb, &res);
+ 	}
  
-@@ -782,6 +815,8 @@ static const struct file_operations zero_fops = {
- 	.llseek		= zero_lseek,
- 	.read		= read_zero,
- 	.write		= write_zero,
-+	.aio_read	= aio_read_zero,
-+	.aio_write	= aio_write_zero,
- 	.mmap		= mmap_zero,
- };
+ 	if (!ctx->reqs_active)
+@@ -1411,7 +1427,7 @@ static struct kiocb *lookup_kiocb(struct kioctx *ctx, struct iocb __user *iocb,
+ SYSCALL_DEFINE3(io_cancel, aio_context_t, ctx_id, struct iocb __user *, iocb,
+ 		struct io_event __user *, result)
+ {
+-	int (*cancel)(struct kiocb *iocb, struct io_event *res);
++	struct io_event res;
+ 	struct kioctx *ctx;
+ 	struct kiocb *kiocb;
+ 	u32 key;
+@@ -1426,32 +1442,22 @@ SYSCALL_DEFINE3(io_cancel, aio_context_t, ctx_id, struct iocb __user *, iocb,
+ 		return -EINVAL;
+ 
+ 	spin_lock_irq(&ctx->ctx_lock);
+-	ret = -EAGAIN;
++
+ 	kiocb = lookup_kiocb(ctx, iocb, key);
+-	if (kiocb && kiocb->ki_cancel) {
+-		cancel = kiocb->ki_cancel;
+-		kiocb->ki_users ++;
+-		kiocbSetCancelled(kiocb);
+-	} else
+-		cancel = NULL;
++	if (kiocb)
++		ret = kiocb_cancel(ctx, kiocb, &res);
++	else
++		ret = -EAGAIN;
++
+ 	spin_unlock_irq(&ctx->ctx_lock);
+ 
+-	if (NULL != cancel) {
+-		struct io_event tmp;
+-		pr_debug("calling cancel\n");
+-		memset(&tmp, 0, sizeof(tmp));
+-		tmp.obj = (u64)(unsigned long)kiocb->ki_obj.user;
+-		tmp.data = kiocb->ki_user_data;
+-		ret = cancel(kiocb, &tmp);
+-		if (!ret) {
+-			/* Cancellation succeeded -- copy the result
+-			 * into the user's buffer.
+-			 */
+-			if (copy_to_user(result, &tmp, sizeof(tmp)))
+-				ret = -EFAULT;
+-		}
+-	} else
+-		ret = -EINVAL;
++	if (!ret) {
++		/* Cancellation succeeded -- copy the result
++		 * into the user's buffer.
++		 */
++		if (copy_to_user(result, &res, sizeof(res)))
++			ret = -EFAULT;
++	}
+ 
+ 	put_ioctx(ctx);
  
 -- 
 1.7.12
