@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932755Ab2K1WHI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 17:07:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29183 "EHLO mx1.redhat.com"
+	id S932797Ab2K1WH3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 17:07:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23680 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755663Ab2K1WHF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 17:07:05 -0500
-Date: Wed, 28 Nov 2012 20:07:00 -0200
+	id S932454Ab2K1WHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 17:07:07 -0500
+Date: Wed, 28 Nov 2012 19:57:50 -0200
 From: Marcelo Tosatti <mtosatti@redhat.com>
 To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 Cc: Gleb Natapov <gleb@redhat.com>, Avi Kivity <avi@redhat.com>,
         LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 2/3] KVM: x86: let reexecute_instruction work for tdp
-Message-ID: <20121128220700.GB10039@amt.cnet>
+Subject: Re: [PATCH 3/3] KVM: x86: improve reexecute_instruction
+Message-ID: <20121128215750.GA10039@amt.cnet>
 References: <50AAC77C.8040505@linux.vnet.ibm.com>
- <50AAC7CE.2050506@linux.vnet.ibm.com>
- <20121126223712.GA10634@amt.cnet>
- <50B42FC7.2080805@linux.vnet.ibm.com>
- <20121127233246.GB8295@amt.cnet>
- <50B581C1.2050406@linux.vnet.ibm.com>
- <20121128140155.GH928@redhat.com>
- <50B625DE.5070001@linux.vnet.ibm.com>
+ <50AAC7F9.7050305@linux.vnet.ibm.com>
+ <20121126224105.GB10634@amt.cnet>
+ <50B433D0.8060107@linux.vnet.ibm.com>
+ <20121128141230.GI928@redhat.com>
+ <50B626D7.7070608@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50B625DE.5070001@linux.vnet.ibm.com>
+In-Reply-To: <50B626D7.7070608@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 10:55:26PM +0800, Xiao Guangrong wrote:
-> On 11/28/2012 10:01 PM, Gleb Natapov wrote:
-> > On Wed, Nov 28, 2012 at 11:15:13AM +0800, Xiao Guangrong wrote:
-> >> On 11/28/2012 07:32 AM, Marcelo Tosatti wrote:
-> >>> On Tue, Nov 27, 2012 at 11:13:11AM +0800, Xiao Guangrong wrote:
-> >>>>>> +static bool reexecute_instruction(struct kvm_vcpu *vcpu, unsigned long cr2)
-> >>>>>>  {
-> >>>>>> -	gpa_t gpa;
-> >>>>>> +	gpa_t gpa = cr2;
-> >>>>>>  	pfn_t pfn;
-> >>>>>>
-> >>>>>> -	if (tdp_enabled)
-> >>>>>> +	if (!ACCESS_ONCE(vcpu->kvm->arch.indirect_shadow_pages))
-> >>>>>>  		return false;
-> >>>>>
-> >>>>> How is indirect_shadow_pages protected? Why is ACCESS_ONCE() being used
-> >>>>> to read it?
-> >>>>
-> >>>> Hi Marcelo,
-> >>>>
-> >>>> It is protected by mmu-lock for it only be changed when mmu-lock is hold. And
-> >>>> ACCESS_ONCE is used on read path avoiding magic optimization from compiler.
-> >>>
-> >>> Please switch to mmu_lock protection, there is no reason to have access
-> >>> to this variable locklessly - not performance critical.
-> >>>
-> >>> For example, there is no use of barriers when modifying the variable.
+On Wed, Nov 28, 2012 at 10:59:35PM +0800, Xiao Guangrong wrote:
+> On 11/28/2012 10:12 PM, Gleb Natapov wrote:
+> > On Tue, Nov 27, 2012 at 11:30:24AM +0800, Xiao Guangrong wrote:
+> >> On 11/27/2012 06:41 AM, Marcelo Tosatti wrote:
 > >>
-> >> This is not bad, the worst case is, the direct mmu failed to unprotect the shadow
-> >> pages, (meet indirect_shadow_pages = 0, but there has shadow pages being shadowed.),
-> >> after enter to guest, we will go into reexecute_instruction again, then it will
-> >> remove shadow pages.
+> >>>>
+> >>>> -	return false;
+> >>>> +again:
+> >>>> +	page_fault_count = ACCESS_ONCE(vcpu->kvm->arch.page_fault_count);
+> >>>> +
+> >>>> +	/*
+> >>>> +	 * if emulation was due to access to shadowed page table
+> >>>> +	 * and it failed try to unshadow page and re-enter the
+> >>>> +	 * guest to let CPU execute the instruction.
+> >>>> +	 */
+> >>>> +	kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa));
+> >>>> +	emulate = vcpu->arch.mmu.page_fault(vcpu, cr3, PFERR_WRITE_MASK, false);
+> >>>
+> >>> Can you explain what is the objective here?
+> >>>
 > >>
-> > Isn't the same scenario can happen even with mmu lock around
-> > indirect_shadow_pages access?
+> >> Sure. :)
+> >>
+> >> The instruction emulation is caused by fault access on cr3. After unprotect
+> >> the target page, we call vcpu->arch.mmu.page_fault to fix the mapping of cr3.
+> >> if it return 1, mmu can not fix the mapping, we should report the error,
+> >> otherwise it is good to return to guest and let it re-execute the instruction
+> >> again.
+> >>
+> >> page_fault_count is used to avoid the race on other vcpus, since after we
+> >> unprotect the target page, other cpu can enter page fault path and let the
+> >> page be write-protected again.
+> >>
+> >> This way can help us to detect all the case that mmu can not be fixed.
+> >>
+> > Can you write this in a comment above vcpu->arch.mmu.page_fault()?
 > 
-> Hmm..., i also think it is no different. Even using mmu-lock, we can not
-> prevent the target pfn can not be write-protected later. Marcelo?
+> Okay, if Marcelo does not object this way. :)
 
-In this particular case, it appears to be harmless (unsure if
-kvm_mmu_pte_write one is safe). The point is, lockless access should not
-be special.
+I do object, since it is possible to detect precisely the condition by 
+storing which gfns have been cached.
 
-Lockless access must be carefully documented (access protocol to
-variables documented, all possible cases listed), and done when
-necessary due to performance. Otherwise, don't do it.
-
-On this case, its not necessary.
+Then, Xiao, you need a way to handle large read-only sptes.
 
