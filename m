@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756321Ab2K1Vsv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 16:48:51 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:37059 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756264Ab2K1Vsr (ORCPT
+	id S1756343Ab2K1VtH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 16:49:07 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:45029 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756324Ab2K1Vsw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 16:48:47 -0500
+	Wed, 28 Nov 2012 16:48:52 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
@@ -14,69 +14,167 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v9 12/46] x86, mm: use pfn_range_is_mapped() with CPA
-Date: Wed, 28 Nov 2012 13:47:23 -0800
-Message-Id: <1354139277-17376-13-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v9 26/46] x86, mm, Xen: Remove mapping_pagetable_reserve()
+Date: Wed, 28 Nov 2012 13:47:37 -0800
+Message-Id: <1354139277-17376-27-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
 References: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We are going to map ram only in patch:
-	x86, mm: Only direct map addresses that are marked as E820_RAM
+Page table area are pre-mapped now after
+	x86, mm: setup page table in top-down
+	x86, mm: Remove early_memremap workaround for page table accessing on 64bit
 
-so range under max_low_pfn_mapped, ranges between 4g and max_pfn_mapped
-could have holes in them and the holes will not be mapped.
+mapping_pagetable_reserve is not used anymore, so remove it.
 
-Use pfn_range_is_mapped() to check if the range is mapped.
+Also remove operation in mask_rw_pte(), as modified allow_low_page
+always return pages that are already mapped, moreover
+xen_alloc_pte_init, xen_alloc_pmd_init, etc, will mark the page RO
+before hooking it into the pagetable automatically.
+
+-v2: add changelog about mask_rw_pte() from Stefano.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/mm/pageattr.c |   16 +++-------------
- 1 files changed, 3 insertions(+), 13 deletions(-)
+ arch/x86/include/asm/pgtable_types.h |    1 -
+ arch/x86/include/asm/x86_init.h      |   12 ------------
+ arch/x86/kernel/x86_init.c           |    4 ----
+ arch/x86/mm/init.c                   |    4 ----
+ arch/x86/xen/mmu.c                   |   28 ----------------------------
+ 5 files changed, 0 insertions(+), 49 deletions(-)
 
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index a718e0d..44acfcd 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -551,16 +551,10 @@ static int split_large_page(pte_t *kpte, unsigned long address)
- 	for (i = 0; i < PTRS_PER_PTE; i++, pfn += pfninc)
- 		set_pte(&pbase[i], pfn_pte(pfn, ref_prot));
+diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
+index ec8a1fc..79738f2 100644
+--- a/arch/x86/include/asm/pgtable_types.h
++++ b/arch/x86/include/asm/pgtable_types.h
+@@ -301,7 +301,6 @@ int phys_mem_access_prot_allowed(struct file *file, unsigned long pfn,
+ /* Install a pte for a particular vaddr in kernel space. */
+ void set_pte_vaddr(unsigned long vaddr, pte_t pte);
  
--	if (address >= (unsigned long)__va(0) &&
--		address < (unsigned long)__va(max_low_pfn_mapped << PAGE_SHIFT))
-+	if (pfn_range_is_mapped(PFN_DOWN(__pa(address)),
-+				PFN_DOWN(__pa(address)) + 1))
- 		split_page_count(level);
+-extern void native_pagetable_reserve(u64 start, u64 end);
+ #ifdef CONFIG_X86_32
+ extern void native_pagetable_init(void);
+ #else
+diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
+index 5769349..3b2ce8f 100644
+--- a/arch/x86/include/asm/x86_init.h
++++ b/arch/x86/include/asm/x86_init.h
+@@ -69,17 +69,6 @@ struct x86_init_oem {
+ };
  
--#ifdef CONFIG_X86_64
--	if (address >= (unsigned long)__va(1UL<<32) &&
--		address < (unsigned long)__va(max_pfn_mapped << PAGE_SHIFT))
--		split_page_count(level);
--#endif
+ /**
+- * struct x86_init_mapping - platform specific initial kernel pagetable setup
+- * @pagetable_reserve:	reserve a range of addresses for kernel pagetable usage
+- *
+- * For more details on the purpose of this hook, look in
+- * init_memory_mapping and the commit that added it.
+- */
+-struct x86_init_mapping {
+-	void (*pagetable_reserve)(u64 start, u64 end);
+-};
 -
- 	/*
- 	 * Install the new, split up pagetable.
- 	 *
-@@ -729,13 +723,9 @@ static int cpa_process_alias(struct cpa_data *cpa)
- 	unsigned long vaddr;
- 	int ret;
+-/**
+  * struct x86_init_paging - platform specific paging functions
+  * @pagetable_init:	platform specific paging initialization call to setup
+  *			the kernel pagetables and prepare accessors functions.
+@@ -136,7 +125,6 @@ struct x86_init_ops {
+ 	struct x86_init_mpparse		mpparse;
+ 	struct x86_init_irqs		irqs;
+ 	struct x86_init_oem		oem;
+-	struct x86_init_mapping		mapping;
+ 	struct x86_init_paging		paging;
+ 	struct x86_init_timers		timers;
+ 	struct x86_init_iommu		iommu;
+diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
+index 7a3d075..50cf83e 100644
+--- a/arch/x86/kernel/x86_init.c
++++ b/arch/x86/kernel/x86_init.c
+@@ -62,10 +62,6 @@ struct x86_init_ops x86_init __initdata = {
+ 		.banner			= default_banner,
+ 	},
  
--	if (cpa->pfn >= max_pfn_mapped)
-+	if (!pfn_range_is_mapped(cpa->pfn, cpa->pfn + 1))
- 		return 0;
+-	.mapping = {
+-		.pagetable_reserve		= native_pagetable_reserve,
+-	},
+-
+ 	.paging = {
+ 		.pagetable_init		= native_pagetable_init,
+ 	},
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index a80b112..cf02168 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -112,10 +112,6 @@ static void __init probe_page_size_mask(void)
+ 		__supported_pte_mask |= _PAGE_GLOBAL;
+ 	}
+ }
+-void __init native_pagetable_reserve(u64 start, u64 end)
+-{
+-	memblock_reserve(start, end - start);
+-}
  
--#ifdef CONFIG_X86_64
--	if (cpa->pfn >= max_low_pfn_mapped && cpa->pfn < (1UL<<(32-PAGE_SHIFT)))
--		return 0;
--#endif
- 	/*
- 	 * No need to redo, when the primary call touched the direct
- 	 * mapping already:
+ #ifdef CONFIG_X86_32
+ #define NR_RANGE_MR 3
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index dcf5f2d..bbb883f 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1178,20 +1178,6 @@ static void xen_exit_mmap(struct mm_struct *mm)
+ 
+ static void xen_post_allocator_init(void);
+ 
+-static __init void xen_mapping_pagetable_reserve(u64 start, u64 end)
+-{
+-	/* reserve the range used */
+-	native_pagetable_reserve(start, end);
+-
+-	/* set as RW the rest */
+-	printk(KERN_DEBUG "xen: setting RW the range %llx - %llx\n", end,
+-			PFN_PHYS(pgt_buf_top));
+-	while (end < PFN_PHYS(pgt_buf_top)) {
+-		make_lowmem_page_readwrite(__va(end));
+-		end += PAGE_SIZE;
+-	}
+-}
+-
+ #ifdef CONFIG_X86_64
+ static void __init xen_cleanhighmap(unsigned long vaddr,
+ 				    unsigned long vaddr_end)
+@@ -1503,19 +1489,6 @@ static pte_t __init mask_rw_pte(pte_t *ptep, pte_t pte)
+ #else /* CONFIG_X86_64 */
+ static pte_t __init mask_rw_pte(pte_t *ptep, pte_t pte)
+ {
+-	unsigned long pfn = pte_pfn(pte);
+-
+-	/*
+-	 * If the new pfn is within the range of the newly allocated
+-	 * kernel pagetable, and it isn't being mapped into an
+-	 * early_ioremap fixmap slot as a freshly allocated page, make sure
+-	 * it is RO.
+-	 */
+-	if (((!is_early_ioremap_ptep(ptep) &&
+-			pfn >= pgt_buf_start && pfn < pgt_buf_top)) ||
+-			(is_early_ioremap_ptep(ptep) && pfn != (pgt_buf_end - 1)))
+-		pte = pte_wrprotect(pte);
+-
+ 	return pte;
+ }
+ #endif /* CONFIG_X86_64 */
+@@ -2197,7 +2170,6 @@ static const struct pv_mmu_ops xen_mmu_ops __initconst = {
+ 
+ void __init xen_init_mmu_ops(void)
+ {
+-	x86_init.mapping.pagetable_reserve = xen_mapping_pagetable_reserve;
+ 	x86_init.paging.pagetable_init = xen_pagetable_init;
+ 	pv_mmu_ops = xen_mmu_ops;
+ 
 -- 
 1.7.7
 
