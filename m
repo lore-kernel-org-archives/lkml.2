@@ -1,99 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753636Ab2K1Jxk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 04:53:40 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:43079 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752748Ab2K1Jxi (ORCPT
+	id S1753118Ab2K1J6l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 04:58:41 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:33895 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751713Ab2K1J6i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 04:53:38 -0500
-From: Zheng Li <zheng.x.li@oracle.com>
-To: netdev@vger.kernel.org, fubar@us.ibm.com, andy@greyhouse.net
-Cc: linux-kernel@vger.kernel.org, davem@davemloft.net, joe.jin@oracle.com,
-        zheng.x.li@oracle.com
-Subject: [PATCH] bonding: rlb mode of bond should not alter ARP originating via bridge
-Date: Wed, 28 Nov 2012 17:57:04 +0800
-Message-Id: <1354096624-22380-1-git-send-email-zheng.x.li@oracle.com>
-X-Mailer: git-send-email 1.7.6.5
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Wed, 28 Nov 2012 04:58:38 -0500
+Message-ID: <50B5E03E.2080308@ti.com>
+Date: Wed, 28 Nov 2012 09:58:22 +0000
+From: Liam Girdwood <lrg@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Oskar Schirmer <oskar@scara.com>
+CC: Wolfram Sang <w.sang@pengutronix.de>, <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Zeng Zhaoming <zengzm.kernel@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH] sound/sgtl5000: fix initial setting for DAC data source
+References: <1354094459-32466-1-git-send-email-oskar@scara.com>
+In-Reply-To: <1354094459-32466-1-git-send-email-oskar@scara.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do not modify or load balance ARP packets passing through balance-alb
-mode (wherein the ARP did not originate locally, and arrived via a bridge).
+On 28/11/12 09:20, Oskar Schirmer wrote:
+> According to documentation bit 3:2 in register SSS_CTRL are
+> reserved and zero, so the setting of 0x0008 does not make much sense.
+> Instead, bit 4 should be set as is with power up, to reflect
+> routing of I2S_IN to DAC correctly.
+>
+> Looks much like an off by one error.
 
-Modifying pass-through ARP replies causes an incorrect MAC address 
-to be placed into the ARP packet, rendering peers unable to communicate 
-with the actual destination from which the ARP reply originated.
+Could you resend this to alsa-devel and CC maintainers.
 
-Load balancing pass-through ARP requests causes an entry to be
-created for the peer in the rlb table, and bond_alb_monitor will
-occasionally issue ARP updates to all peers in the table instrucing them
-as to which MAC address they should communicate with; this occurs when
-some event sets rx_ntt.  In the bridged case, however, the MAC address
-used for the update would be the MAC of the slave, not the actual source
-MAC of the originating destination.  This would render peers unable to
-communicate with the destinations beyond the bridge.
+Thanks
 
-Signed-off-by: Zheng Li <zheng.x.li@oracle.com>
-Cc: Jay Vosburgh <fubar@us.ibm.com>
-Cc: Andy Gospodarek <andy@greyhouse.net>
-Cc: "David S. Miller" <davem@davemloft.net>
-
----
- drivers/net/bonding/bond_alb.c |    6 ++++++
- drivers/net/bonding/bonding.h  |   13 +++++++++++++
- 2 files changed, 19 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/net/bonding/bond_alb.c b/drivers/net/bonding/bond_alb.c
-index e15cc11..6fecb52 100644
---- a/drivers/net/bonding/bond_alb.c
-+++ b/drivers/net/bonding/bond_alb.c
-@@ -694,6 +694,12 @@ static struct slave *rlb_arp_xmit(struct sk_buff *skb, struct bonding *bond)
- 	struct arp_pkt *arp = arp_pkt(skb);
- 	struct slave *tx_slave = NULL;
- 
-+	/* Don't modify or load balance ARPs that do not originate locally
-+	 * (e.g.,arrive via a bridge).
-+	 */
-+	if (!bond_slave_has_mac(bond, arp->mac_src))
-+		return NULL;
-+
- 	if (arp->op_code == htons(ARPOP_REPLY)) {
- 		/* the arp must be sent on the selected
- 		* rx channel
-diff --git a/drivers/net/bonding/bonding.h b/drivers/net/bonding/bonding.h
-index f8af2fc..6dded56 100644
---- a/drivers/net/bonding/bonding.h
-+++ b/drivers/net/bonding/bonding.h
-@@ -22,6 +22,7 @@
- #include <linux/in6.h>
- #include <linux/netpoll.h>
- #include <linux/inetdevice.h>
-+#include <linux/etherdevice.h>
- #include "bond_3ad.h"
- #include "bond_alb.h"
- 
-@@ -450,6 +451,18 @@ static inline void bond_destroy_proc_dir(struct bond_net *bn)
- }
- #endif
- 
-+static inline struct slave *bond_slave_has_mac(struct bonding *bond,
-+					       const u8 *mac)
-+{
-+	int i = 0;
-+	struct slave *tmp;
-+
-+	bond_for_each_slave(bond, tmp, i)
-+		if (ether_addr_equal_64bits(mac, tmp->dev->dev_addr))
-+			return tmp;
-+
-+	return NULL;
-+}
- 
- /* exported from bond_main.c */
- extern int bond_net_id;
--- 
-1.7.6.5
+Liam
 
