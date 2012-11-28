@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932575Ab2K1VuW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 16:50:22 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:45194 "EHLO
+	id S932636Ab2K1Vvs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 16:51:48 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:45164 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030211Ab2K1VtG (ORCPT
+	with ESMTP id S1030194Ab2K1VtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 16:49:06 -0500
+	Wed, 28 Nov 2012 16:49:04 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
@@ -14,9 +14,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v9 35/46] x86, mm: use round_up/down in split_mem_range()
-Date: Wed, 28 Nov 2012 13:47:46 -0800
-Message-Id: <1354139277-17376-36-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v9 39/46] x86, mm: Unifying after_bootmem for 32bit and 64bit
+Date: Wed, 28 Nov 2012 13:47:50 -0800
+Message-Id: <1354139277-17376-40-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
 References: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
@@ -25,80 +25,104 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-to replace own inline version for those roundup and rounddown.
+after_bootmem has different meaning in 32bit and 64bit.
+        32bit: after bootmem is ready
+        64bit: after bootmem is distroyed
+Let's merget them make 32bit the same as 64bit.
+
+for 32bit, it is mixing alloc_bootmem_pages, and alloc_low_page under
+after_bootmem is set or not set.
+
+alloc_bootmem is just wrapper for memblock for x86.
+
+Now we have alloc_low_page() with memblock too. We can drop bootmem path
+now, and only alloc_low_page only.
+
+At the same time, we make alloc_low_page could handle real after_bootmem
+for 32bit, because alloc_bootmem_pages could fallback to use slab too.
+
+At last move after_bootmem set position for 32bit the same as 64bit.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/mm/init.c |   30 ++++++++++++------------------
- 1 files changed, 12 insertions(+), 18 deletions(-)
+ arch/x86/mm/init.c    |    2 --
+ arch/x86/mm/init_32.c |   21 ++++-----------------
+ 2 files changed, 4 insertions(+), 19 deletions(-)
 
 diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index ed7e3e6..d3fa476 100644
+index 079dce4..1b8e80b 100644
 --- a/arch/x86/mm/init.c
 +++ b/arch/x86/mm/init.c
-@@ -218,13 +218,11 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
- 	 * slowdowns.
- 	 */
- 	if (pos == 0)
--		end_pfn = 1<<(PMD_SHIFT - PAGE_SHIFT);
-+		end_pfn = PMD_SIZE >> PAGE_SHIFT;
- 	else
--		end_pfn = ((pos + (PMD_SIZE - 1))>>PMD_SHIFT)
--				 << (PMD_SHIFT - PAGE_SHIFT);
-+		end_pfn = round_up(pos, PMD_SIZE) >> PAGE_SHIFT;
- #else /* CONFIG_X86_64 */
--	end_pfn = ((pos + (PMD_SIZE - 1)) >> PMD_SHIFT)
--			<< (PMD_SHIFT - PAGE_SHIFT);
-+	end_pfn = round_up(pos, PMD_SIZE) >> PAGE_SHIFT;
- #endif
- 	if (end_pfn > (end >> PAGE_SHIFT))
- 		end_pfn = end >> PAGE_SHIFT;
-@@ -234,15 +232,13 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+@@ -39,7 +39,6 @@ __ref void *alloc_low_pages(unsigned int num)
+ 	unsigned long pfn;
+ 	int i;
+ 
+-#ifdef CONFIG_X86_64
+ 	if (after_bootmem) {
+ 		unsigned int order;
+ 
+@@ -47,7 +46,6 @@ __ref void *alloc_low_pages(unsigned int num)
+ 		return (void *)__get_free_pages(GFP_ATOMIC | __GFP_NOTRACK |
+ 						__GFP_ZERO, order);
  	}
+-#endif
  
- 	/* big page (2M) range */
--	start_pfn = ((pos + (PMD_SIZE - 1))>>PMD_SHIFT)
--			 << (PMD_SHIFT - PAGE_SHIFT);
-+	start_pfn = round_up(pos, PMD_SIZE) >> PAGE_SHIFT;
- #ifdef CONFIG_X86_32
--	end_pfn = (end>>PMD_SHIFT) << (PMD_SHIFT - PAGE_SHIFT);
-+	end_pfn = round_down(end, PMD_SIZE) >> PAGE_SHIFT;
- #else /* CONFIG_X86_64 */
--	end_pfn = ((pos + (PUD_SIZE - 1))>>PUD_SHIFT)
--			 << (PUD_SHIFT - PAGE_SHIFT);
--	if (end_pfn > ((end>>PMD_SHIFT)<<(PMD_SHIFT - PAGE_SHIFT)))
--		end_pfn = ((end>>PMD_SHIFT)<<(PMD_SHIFT - PAGE_SHIFT));
-+	end_pfn = round_up(pos, PUD_SIZE) >> PAGE_SHIFT;
-+	if (end_pfn > (round_down(end, PMD_SIZE) >> PAGE_SHIFT))
-+		end_pfn = round_down(end, PMD_SIZE) >> PAGE_SHIFT;
- #endif
+ 	if ((pgt_buf_end + num) >= pgt_buf_top) {
+ 		unsigned long ret;
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index 6f3ab45..953ab5c 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -73,10 +73,7 @@ static pmd_t * __init one_md_table_init(pgd_t *pgd)
  
- 	if (start_pfn < end_pfn) {
-@@ -253,9 +249,8 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ #ifdef CONFIG_X86_PAE
+ 	if (!(pgd_val(*pgd) & _PAGE_PRESENT)) {
+-		if (after_bootmem)
+-			pmd_table = (pmd_t *)alloc_bootmem_pages(PAGE_SIZE);
+-		else
+-			pmd_table = (pmd_t *)alloc_low_page();
++		pmd_table = (pmd_t *)alloc_low_page();
+ 		paravirt_alloc_pmd(&init_mm, __pa(pmd_table) >> PAGE_SHIFT);
+ 		set_pgd(pgd, __pgd(__pa(pmd_table) | _PAGE_PRESENT));
+ 		pud = pud_offset(pgd, 0);
+@@ -98,17 +95,7 @@ static pmd_t * __init one_md_table_init(pgd_t *pgd)
+ static pte_t * __init one_page_table_init(pmd_t *pmd)
+ {
+ 	if (!(pmd_val(*pmd) & _PAGE_PRESENT)) {
+-		pte_t *page_table = NULL;
+-
+-		if (after_bootmem) {
+-#if defined(CONFIG_DEBUG_PAGEALLOC) || defined(CONFIG_KMEMCHECK)
+-			page_table = (pte_t *) alloc_bootmem_pages(PAGE_SIZE);
+-#endif
+-			if (!page_table)
+-				page_table =
+-				(pte_t *)alloc_bootmem_pages(PAGE_SIZE);
+-		} else
+-			page_table = (pte_t *)alloc_low_page();
++		pte_t *page_table = (pte_t *)alloc_low_page();
  
- #ifdef CONFIG_X86_64
- 	/* big page (1G) range */
--	start_pfn = ((pos + (PUD_SIZE - 1))>>PUD_SHIFT)
--			 << (PUD_SHIFT - PAGE_SHIFT);
--	end_pfn = (end >> PUD_SHIFT) << (PUD_SHIFT - PAGE_SHIFT);
-+	start_pfn = round_up(pos, PUD_SIZE) >> PAGE_SHIFT;
-+	end_pfn = round_down(end, PUD_SIZE) >> PAGE_SHIFT;
- 	if (start_pfn < end_pfn) {
- 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
- 				page_size_mask &
-@@ -264,9 +259,8 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
- 	}
+ 		paravirt_alloc_pte(&init_mm, __pa(page_table) >> PAGE_SHIFT);
+ 		set_pmd(pmd, __pmd(__pa(page_table) | _PAGE_TABLE));
+@@ -709,8 +696,6 @@ void __init setup_bootmem_allocator(void)
+ 	printk(KERN_INFO "  mapped low ram: 0 - %08lx\n",
+ 		 max_pfn_mapped<<PAGE_SHIFT);
+ 	printk(KERN_INFO "  low ram: 0 - %08lx\n", max_low_pfn<<PAGE_SHIFT);
+-
+-	after_bootmem = 1;
+ }
  
- 	/* tail is not big page (1G) alignment */
--	start_pfn = ((pos + (PMD_SIZE - 1))>>PMD_SHIFT)
--			 << (PMD_SHIFT - PAGE_SHIFT);
--	end_pfn = (end >> PMD_SHIFT) << (PMD_SHIFT - PAGE_SHIFT);
-+	start_pfn = round_up(pos, PMD_SIZE) >> PAGE_SHIFT;
-+	end_pfn = round_down(end, PMD_SIZE) >> PAGE_SHIFT;
- 	if (start_pfn < end_pfn) {
- 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
- 				page_size_mask & (1<<PG_LEVEL_2M));
+ /*
+@@ -796,6 +781,8 @@ void __init mem_init(void)
+ 		if (page_is_ram(tmp) && PageReserved(pfn_to_page(tmp)))
+ 			reservedpages++;
+ 
++	after_bootmem = 1;
++
+ 	codesize =  (unsigned long) &_etext - (unsigned long) &_text;
+ 	datasize =  (unsigned long) &_edata - (unsigned long) &_etext;
+ 	initsize =  (unsigned long) &__init_end - (unsigned long) &__init_begin;
 -- 
 1.7.7
 
