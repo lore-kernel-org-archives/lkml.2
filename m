@@ -1,83 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756381Ab2K1Wov (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 17:44:51 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:35559 "EHLO hydra.sisk.pl"
+	id S1756310Ab2K1Wqi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 17:46:38 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40093 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756180Ab2K1Wos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 17:44:48 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: linux-acpi@vger.kernel.org, lenb@kernel.org, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com
-Subject: Re: [PATCH v3 1/4] ACPI: Support system notify handler via .sys_notify
-Date: Wed, 28 Nov 2012 23:49:26 +0100
-Message-ID: <3029765.Ar5pUvjdNX@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <1354142007.26955.352.camel@misato.fc.hp.com>
-References: <1352406227-32629-1-git-send-email-toshi.kani@hp.com> <12655874.tBYV6dRMny@vostro.rjw.lan> <1354142007.26955.352.camel@misato.fc.hp.com>
+	id S1755990Ab2K1Wqg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 17:46:36 -0500
+Date: Wed, 28 Nov 2012 14:46:33 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Toshi Kani <toshi.kani@hp.com>, linux-acpi@vger.kernel.org,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Wen Congyang <wencongyang@gmail.com>, isimatu.yasuaki@jp.fujitsu.com,
+        lenb@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on
+ rebind scenario
+Message-ID: <20121128224633.GA14555@kroah.com>
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
+ <1451747.3VlxbhJES4@vostro.rjw.lan>
+ <1354140982.26955.341.camel@misato.fc.hp.com>
+ <11009650.oKuHEgoNWB@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <11009650.oKuHEgoNWB@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 28, 2012 03:33:27 PM Toshi Kani wrote:
-> > > > > > > I think it has some challenge as well.  We bind an ACPI driver with
-> > > > > > > device_register(), which calls device_add()-> kobject_add().  So, all
-> > > > > > > non-present ACPI device objects will show up in sysfs, unless we can
-> > > > > > > change the core.  This will change user interface.  There can be quite
-> > > > > > > many non-present devices in ACPI namespace depending on FW
-> > > > > > > implementation.
+On Wed, Nov 28, 2012 at 11:39:22PM +0100, Rafael J. Wysocki wrote:
+> On Wednesday, November 28, 2012 03:16:22 PM Toshi Kani wrote:
+> > > > > > > > I see.  I do not think whether or not the device is removed on eject
+> > > > > > > > makes any difference here.  The issue is that after driver_unbind() is
+> > > > > > > > done, acpi_bus_hot_remove_device() no longer calls the ACPI memory
+> > > > > > > > driver (hence, it cannot fail in prepare_remove), and goes ahead to call
+> > > > > > > > _EJ0.  If driver_unbind() did off-line the memory, this is OK.  However,
+> > > > > > > > it cannot off-line kernel memory ranges.  So, we basically need to
+> > > > > > > > either 1) serialize acpi_bus_hot_remove_device() and driver_unbind(), or
+> > > > > > > > 2) make acpi_bus_hot_remove_device() to fail if driver_unbind() is run
+> > > > > > > > during the operation.
+> > > > > > > 
+> > > > > > > OK, I see the problem now.
+> > > > > > > 
+> > > > > > > What exactly is triggering the driver_unbind() in this scenario?
 > > > > > > 
-> > > > > > If additional devices appear in sysfs, that's not a problem.  If there
-> > > > > > were fewer of them, that would be a real one. :-)
+> > > > > > User can request driver_unbind() from sysfs as follows.  I do not see
+> > > > > > much reason why user has to do for memory, though.
+> > > > > > 
+> > > > > > echo "PNP0C80:XX" > /sys/bus/acpi/drivers/acpi_memhotplug/unbind
 > > > > > 
-> > > > > I see.  I guess this means that once we expose all non-present devices
-> > > > > in sysfs, we cannot go back to the current way.  So, we need to be very
-> > > > > careful.  Anyway, this model requires separate handling for static ACPI
-> > > > > [1] and dynamic ACPI [2], which may make the state model complicated.
-> > > > > 
-> > > > > 1. Static ACPI - No creation / deletion of acpi_device at hot-plug.
-> > > > > 2. Dynamic ACPI - Create acpi_device at hot-add, delete at hot-remove.
+> > > > > This is wrong.  Even if we want to permit user space to forcibly unbind
+> > > > > drivers from anything like this, we should at least check for some
+> > > > > situations in which it is plain dangerous.  Like in this case.  So I think
+> > > > > the above should fail unless we know that the driver won't be necessary
+> > > > > to handle hot-removal of memory.
 > > > > 
-> > > > Sure.  The complication here is that we'll need to handle the removal of
-> > > > a bunch of struct acpi_device objects when a whole table goes away.
-> > > > 
-> > > > However, first, we don't seem to handle table unloading now.  At least
-> > > > acpi_unload_parent_table() is not called from anywhere as far as I can
-> > > > say.  Second, we'll need to handle the removal of struct acpi_device objects
-> > > > _anyway_ on table unload, this way or another.
+> > > > Well, we tried twice already... :)
+> > > > https://lkml.org/lkml/2012/11/16/649
 > > > 
-> > > AML is the one that requests loading/unloading of SSDT for dynamic ACPI.
-> > > In hot-add, _Lxx method executes AML_LOAD_OP or AML_LOAD_TABLE_OP to
-> > > load SSDT and then sends a notification to the OS.  In hot-remove, _EJ0
-> > > method executes AML_UNLOAD_OP to unload SSDT.  Of course, ACPICA does
-> > > the actual work on behalf of AML.  But this is not visible to ACPI core
-> > > or drivers, unless it checks ACPI namespace to see if any device objects
-> > > disappeared after _EJ0.
+> > > I didn't mean driver_unbind() should fail.  The code path that executes
+> > > driver_unbind() eventually should fail _before_ executing it.
 > > 
-> > Oh, we have a handler for that event, but we don't really use it. :-)
-> > 
-> > And I wonder what happens to the struct acpi_device objects associated with
-> > the ACPI handles in the table being unloaded?
+> > driver_unbind() is the handler, so it is called directly from this
+> > unbind interface.
 > 
-> If we use an ACPI handle that does not associate with a device object,
-> ACPICA returns AE_NOT_FOUND or AE_NOT_EXIST.  But, we should remove
-> acpi_device that does not have its associated ACPI object.  Currently,
-> we create acpi_device on hot-add and remove it on hot-remove, so it is
-> OK.  But if we start creating acpi_device objects for non-present
-> devices, we need to worry about if acpi_device objects indeed have their
-> associated ACPI objects.  That's the complication I mentioned above.
+> Yes, sorry for the confusion.
+> 
+> So, it looks like the driver core wants us to handle driver unbinding no
+> matter what.
 
-My question was about something different.  Is it actually guaranteed
-that all struct device objects associated with the given ACPI table will
-be removed before that table is unloaded?
+Yes.  Well, the driver core does the unbinding no matter what, if it was
+told, by a user, to do so.  Why is that a problem?  The user then is
+responsible for any bad things (i.e. not able to control the device any
+more), if they do so.
 
-Rafael
+> This pretty much means that it is a bad idea to have a driver that is
+> exposed as a "device driver" in sysfs for memory hotplugging.
 
+Again, why?  All this means is that the driver is now not connected to
+the device (memory in this case.)  The memory is still there, still
+operates as before, only difference is, the driver can't touch it
+anymore.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+This is the same for any ACPI driver, and has been for years.
+
+Please don't confuse unbind with any "normal" system operation, it is
+not to be used for memory hotplug, or anything else like this.
+
+Also, if you really do not want to do this, turn off the ability to
+unbind/bind for these devices, that is under your control in your bus
+logic.
+
+thanks,
+
+greg k-h
