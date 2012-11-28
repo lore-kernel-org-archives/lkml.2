@@ -1,208 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755951Ab2K1Sfw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 13:35:52 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:40807 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755268Ab2K1Sfs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 13:35:48 -0500
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: sameo@linux.intel.com, grant.likely@secretlab.ca,
-        rabin.vincent@stericsson.com, shiraz.hashim@st.com
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, lee.jones@linaro.org,
-        linus.walleij@linaro.org, Vipul Kumar Samar <vipulkumar.samar@st.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V4 3/3] mfd: stmpe: Update DT support in stmpe driver
-Date: Thu, 29 Nov 2012 00:05:22 +0530
-Message-Id: <d3668fc1bd4c964a0a827ef14892b03180843d5e.1354127005.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <ed0ae069e49728a4c17f16e1735d8ffd6b1e0060.1354127005.git.viresh.kumar@linaro.org>
-References: <ed0ae069e49728a4c17f16e1735d8ffd6b1e0060.1354127005.git.viresh.kumar@linaro.org>
-In-Reply-To: <ed0ae069e49728a4c17f16e1735d8ffd6b1e0060.1354127005.git.viresh.kumar@linaro.org>
-References: <ed0ae069e49728a4c17f16e1735d8ffd6b1e0060.1354127005.git.viresh.kumar@linaro.org>
+	id S1755960Ab2K1SgM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 13:36:12 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:35344 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754841Ab2K1SgK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 13:36:10 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: linux-acpi@vger.kernel.org,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Wen Congyang <wencongyang@gmail.com>, isimatu.yasuaki@jp.fujitsu.com,
+        lenb@kernel.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on rebind scenario
+Date: Wed, 28 Nov 2012 19:40:54 +0100
+Message-ID: <9212118.3s2xH6uJDI@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <1354118473.26955.208.camel@misato.fc.hp.com>
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com> <2804331.4p7pU4ARvy@vostro.rjw.lan> <1354118473.26955.208.camel@misato.fc.hp.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vipul Kumar Samar <vipulkumar.samar@st.com>
+On Wednesday, November 28, 2012 09:01:13 AM Toshi Kani wrote:
+> On Wed, 2012-11-28 at 00:41 +0100, Rafael J. Wysocki wrote:
+> > On Tuesday, November 27, 2012 03:03:47 PM Toshi Kani wrote:
+> > > On Tue, 2012-11-27 at 19:32 +0100, Vasilis Liaskovitis wrote:
+> > > > On Mon, Nov 26, 2012 at 05:19:01PM -0700, Toshi Kani wrote:
+> > > > > > >> Consider the following sequence of operations for a hotplugged memory
+> > > > > > >> device:
+> > > > > > >>
+> > > > > > >> 1. echo "PNP0C80:XX" > /sys/bus/acpi/drivers/acpi_memhotplug/unbind
+> > > > > > >> 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
+> > > > > > >>
+> > > > > > >> If we don't offline/remove the memory, we have no chance to do it in
+> > > > > > >> step 2. After
+> > > > > > >> step2, the memory is used by the kernel, but we have powered off it. It
+> > > > > > >> is very
+> > > > > > >> dangerous.
+> > > > > > > 
+> > > > > > > How does power-off happen after unbind? acpi_eject_store checks for existing
+> > > > > > > driver before taking any action:
+> > > > > > > 
+> > > > > > > #ifndef FORCE_EJECT
+> > > > > > > 	if (acpi_device->driver == NULL) {
+> > > > > > > 		ret = -ENODEV;
+> > > > > > > 		goto err;
+> > > > > > > 	}
+> > > > > > > #endif
+> > > > > > > 
+> > > > > > > FORCE_EJECT is not defined afaict, so the function returns without scheduling
+> > > > > > > acpi_bus_hot_remove_device. Is there another code path that calls power-off?
+> > > > > > 
+> > > > > > Consider the following case:
+> > > > > > 
+> > > > > > We hotremove the memory device by SCI and unbind it from the driver at the same time:
+> > > > > > 
+> > > > > > CPUa                                                  CPUb
+> > > > > > acpi_memory_device_notify()
+> > > > > >                                        unbind it from the driver
+> > > > > >     acpi_bus_hot_remove_device()
+> > > > > 
+> > > > > Can we make acpi_bus_remove() to fail if a given acpi_device is not
+> > > > > bound with a driver?  If so, can we make the unbind operation to perform
+> > > > > unbind only?
+> > > > 
+> > > > acpi_bus_remove_device could check if the driver is present, and return -ENODEV
+> > > > if it's not present (dev->driver == NULL).
+> > > > 
+> > > > But there can still be a race between an eject and an unbind operation happening
+> > > > simultaneously. This seems like a general problem to me i.e. not specific to an
+> > > > acpi memory device. How do we ensure an eject does not race with a driver unbind
+> > > > for other acpi devices?
+> > > > 
+> > > > Is there a per-device lock in acpi-core or device-core that can prevent this from
+> > > > happening? Driver core does a device_lock(dev) on all operations, but this is
+> > > > probably not grabbed on SCI-initiated acpi ejects.
+> > > 
+> > > Since driver_unbind() calls device_lock(dev->parent) before calling
+> > > device_release_driver(), I am wondering if we can call
+> > > device_lock(dev->dev->parent) at the beginning of acpi_bus_remove()
+> > > (i.e. before calling pre_remove) and fails if dev->driver is NULL.  The
+> > > parent lock is otherwise released after device_release_driver() is done.
+> > 
+> > I would be careful.  You may introduce some subtle locking-related issues
+> > this way.
+> 
+> Right.  This requires careful inspection and testing.  As far as the
+> locking is concerned, I am not keen on using fine grained locking for
+> hot-plug.  It is much simpler and solid if we serialize such operations.
+> 
+> > Besides, there may be an alternative approach to all this.  For example,
+> > what if we don't remove struct device objects on eject?  The ACPI handles
+> > associated with them don't go away in that case after all, do they?
+> 
+> Umm...  Sorry, I am not getting your point.  The issue is that we need
+> to be able to fail a request when memory range cannot be off-lined.
+> Otherwise, we end up ejecting online memory range.
 
-This patch extends existing DT support for stmpe devices. This updates:
-- DT support from stmpe SPI and I2C drivers
-- missing header files in stmpe.c
-- stmpe_of_probe() with pwm, rotator and new bindings.
-- Bindings are updated in binding document.
+Yes, this is the major one.  The minor issue, however, is a race condition
+between unbinding a driver from a device and removing the device if I
+understand it correctly.  Which will go away automatically if the device is
+not removed in the first place.  Or so I would think. :-)
 
-Signed-off-by: Vipul Kumar Samar <vipulkumar.samar@st.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
-V3->V4:
-- Remove need to pass irq type and polarity from DT.
-- Remove need to pass id from platform data.
+Thanks,
+Rafael
 
- Documentation/devicetree/bindings/mfd/stmpe.txt |  9 ++++++---
- drivers/mfd/stmpe-i2c.c                         | 15 +++++++++++++++
- drivers/mfd/stmpe-spi.c                         | 15 +++++++++++++++
- drivers/mfd/stmpe.c                             | 22 ++++++++++++++++------
- 4 files changed, 52 insertions(+), 9 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/mfd/stmpe.txt b/Documentation/devicetree/bindings/mfd/stmpe.txt
-index 8f0aeda..d2d88d9 100644
---- a/Documentation/devicetree/bindings/mfd/stmpe.txt
-+++ b/Documentation/devicetree/bindings/mfd/stmpe.txt
-@@ -1,8 +1,11 @@
--* STMPE Multi-Functional Device
-+* ST Microelectronics STMPE Multi-Functional Device
-+
-+STMPE is an MFD device which may expose following inbuilt devices: gpio, keypad,
-+touchscreen, adc, pwm, rotator.
- 
- Required properties:
-- - compatible                   : "st,stmpe[811|1601|2401|2403]"
-- - reg                          : I2C address of the device
-+ - compatible                   : "st,stmpe[610|801|811|1601|2401|2403]"
-+ - reg                          : I2C/SPI address of the device
- 
- Optional properties:
-  - interrupts                   : The interrupt outputs from the controller
-diff --git a/drivers/mfd/stmpe-i2c.c b/drivers/mfd/stmpe-i2c.c
-index c734dc3..003c49b 100644
---- a/drivers/mfd/stmpe-i2c.c
-+++ b/drivers/mfd/stmpe-i2c.c
-@@ -13,6 +13,7 @@
- #include <linux/interrupt.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
-+#include <linux/of.h>
- #include <linux/types.h>
- #include "stmpe.h"
- 
-@@ -81,6 +82,19 @@ static const struct i2c_device_id stmpe_i2c_id[] = {
- };
- MODULE_DEVICE_TABLE(i2c, stmpe_id);
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id stmpe_dt_ids[] = {
-+	{ .compatible = "st,stmpe610", .data = &stmpe_i2c_id[0], },
-+	{ .compatible = "st,stmpe801", .data = &stmpe_i2c_id[1], },
-+	{ .compatible = "st,stmpe811", .data = &stmpe_i2c_id[2], },
-+	{ .compatible = "st,stmpe1601", .data = &stmpe_i2c_id[3], },
-+	{ .compatible = "st,stmpe2401", .data = &stmpe_i2c_id[4], },
-+	{ .compatible = "st,stmpe2403", .data = &stmpe_i2c_id[5], },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, stmpe_dt_ids);
-+#endif
-+
- static struct i2c_driver stmpe_i2c_driver = {
- 	.driver = {
- 		.name = "stmpe-i2c",
-@@ -88,6 +102,7 @@ static struct i2c_driver stmpe_i2c_driver = {
- #ifdef CONFIG_PM
- 		.pm = &stmpe_dev_pm_ops,
- #endif
-+		.of_match_table = of_match_ptr(stmpe_dt_ids),
- 	},
- 	.probe		= stmpe_i2c_probe,
- 	.remove		= __devexit_p(stmpe_i2c_remove),
-diff --git a/drivers/mfd/stmpe-spi.c b/drivers/mfd/stmpe-spi.c
-index f86e3fc..e482f5f 100644
---- a/drivers/mfd/stmpe-spi.c
-+++ b/drivers/mfd/stmpe-spi.c
-@@ -10,6 +10,7 @@
- #include <linux/interrupt.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
-+#include <linux/of.h>
- #include <linux/spi/spi.h>
- #include <linux/types.h>
- #include "stmpe.h"
-@@ -119,6 +120,19 @@ static const struct spi_device_id stmpe_spi_id[] = {
- };
- MODULE_DEVICE_TABLE(spi, stmpe_id);
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id stmpe_dt_ids[] = {
-+	{ .compatible = "st,stmpe610", .data = (void *)STMPE610, },
-+	{ .compatible = "st,stmpe801", .data = (void *)STMPE801, },
-+	{ .compatible = "st,stmpe811", .data = (void *)STMPE811, },
-+	{ .compatible = "st,stmpe1601", .data = (void *)STMPE1601, },
-+	{ .compatible = "st,stmpe2401", .data = (void *)STMPE2401, },
-+	{ .compatible = "st,stmpe2403", .data = (void *)STMPE2403, },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, stmpe_dt_ids);
-+#endif
-+
- static struct spi_driver stmpe_spi_driver = {
- 	.driver = {
- 		.name	= "stmpe-spi",
-@@ -126,6 +140,7 @@ static struct spi_driver stmpe_spi_driver = {
- #ifdef CONFIG_PM
- 		.pm	= &stmpe_dev_pm_ops,
- #endif
-+		.of_match_table = of_match_ptr(stmpe_dt_ids),
- 	},
- 	.probe		= stmpe_spi_probe,
- 	.remove		= __devexit_p(stmpe_spi_remove),
-diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
-index fa22ef4..d3771ba 100644
---- a/drivers/mfd/stmpe.c
-+++ b/drivers/mfd/stmpe.c
-@@ -7,6 +7,7 @@
-  * Author: Rabin Vincent <rabin.vincent@stericsson.com> for ST-Ericsson
-  */
- 
-+#include <linux/err.h>
- #include <linux/export.h>
- #include <linux/gpio.h>
- #include <linux/interrupt.h>
-@@ -14,6 +15,8 @@
- #include <linux/irqdomain.h>
- #include <linux/kernel.h>
- #include <linux/mfd/core.h>
-+#include <linux/of.h>
-+#include <linux/of_gpio.h>
- #include <linux/pm.h>
- #include <linux/slab.h>
- #include "stmpe.h"
-@@ -1019,6 +1022,12 @@ void __devinit stmpe_of_probe(struct stmpe_platform_data *pdata,
- {
- 	struct device_node *child;
- 
-+	/*
-+	 * Distinct names of same cell-type within multiple instances of stmpe
-+	 * will be guaranteed by DT.
-+	 */
-+	pdata->id = -1;
-+
- 	of_property_read_u32(np, "st,autosleep-timeout",
- 			&pdata->autosleep_timeout);
- 
-@@ -1027,15 +1036,16 @@ void __devinit stmpe_of_probe(struct stmpe_platform_data *pdata,
- 	for_each_child_of_node(np, child) {
- 		if (!strcmp(child->name, "stmpe_gpio")) {
- 			pdata->blocks |= STMPE_BLOCK_GPIO;
--		}
--		if (!strcmp(child->name, "stmpe_keypad")) {
-+		} else if (!strcmp(child->name, "stmpe_keypad")) {
- 			pdata->blocks |= STMPE_BLOCK_KEYPAD;
--		}
--		if (!strcmp(child->name, "stmpe_touchscreen")) {
-+		} else if (!strcmp(child->name, "stmpe_touchscreen")) {
- 			pdata->blocks |= STMPE_BLOCK_TOUCHSCREEN;
--		}
--		if (!strcmp(child->name, "stmpe_adc")) {
-+		} else if (!strcmp(child->name, "stmpe_adc")) {
- 			pdata->blocks |= STMPE_BLOCK_ADC;
-+		} else if (!strcmp(child->name, "stmpe_pwm")) {
-+			pdata->blocks |= STMPE_BLOCK_PWM;
-+		} else if (!strcmp(child->name, "stmpe_rotator")) {
-+			pdata->blocks |= STMPE_BLOCK_ROTATOR;
- 		}
- 	}
- }
 -- 
-1.7.12.rc2.18.g61b472e
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
