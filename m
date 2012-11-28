@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755641Ab2K1TkV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 14:40:21 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:64505 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754928Ab2K1TkU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 14:40:20 -0500
+	id S1755722Ab2K1Tmh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 14:42:37 -0500
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:43246 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755453Ab2K1Tmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 14:42:35 -0500
+Message-ID: <50B66922.9090209@linux.vnet.ibm.com>
+Date: Wed, 28 Nov 2012 13:42:26 -0600
+From: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
 MIME-Version: 1.0
-In-Reply-To: <20121128170856.GL21266@phenom.dumpdata.com>
-References: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
-	<1353123563-3103-15-git-send-email-yinghai@kernel.org>
-	<20121128170856.GL21266@phenom.dumpdata.com>
-Date: Wed, 28 Nov 2012 11:40:19 -0800
-X-Google-Sender-Auth: 261TaWYUyGmsB3lMqqW_nYp2-tU
-Message-ID: <CAE9FiQWGKdfxceWF9yrtk5K+9bqNmWk=CaWGwffpOq0aZzJWrg@mail.gmail.com>
-Subject: Re: [PATCH v8 14/46] x86, mm: use pfn_range_is_mapped() with reserve_initrd
-From: Yinghai Lu <yinghai@kernel.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        linux-kernel@vger.kernel.org
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: [PATCH] export of_reconfig_notifier_[register,unregister]
+References: <20121128140308.abb21ec8f61553a2ed077fe3@canb.auug.org.au>
+In-Reply-To: <20121128140308.abb21ec8f61553a2ed077fe3@canb.auug.org.au>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12112819-5930-0000-0000-00000EC07E46
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 9:08 AM, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com> wrote:
-> On Fri, Nov 16, 2012 at 07:38:51PM -0800, Yinghai Lu wrote:
->> We are going to map ram only, so under max_low_pfn_mapped,
->> between 4g and max_pfn_mapped does not mean mapped at all.
->>
->> Use pfn_range_is_mapped() to find out if range is mapped for initrd.
->>
->> That could happen bootloader put initrd in range but user could
->                    ^- 'if the'                              ^^^^^-'used'
->
->> use memmap to carve some of range out.
->   ^^^-> get rid of that.       ^^^^->'ranges'
->
->>
->> Also during copying need to use early_memmap to map original initrd
->> for accessing.
+The of reconfiguration notification chains should be exported for use
+by modules.
 
-===>
+Signed-off-by:Nathan Fontenot <nfont@linux.vnet.ibm.com>
 ---
-We are going to map ram only in patch:
-        x86, mm: Only direct map addresses that are marked as E820_RAM
+Index: linux-next/drivers/of/base.c
+===================================================================
+--- linux-next.orig/drivers/of/base.c	2012-11-28 09:18:02.000000000 -0600
++++ linux-next/drivers/of/base.c	2012-11-28 11:05:00.000000000 -0600
+@@ -1282,11 +1282,13 @@
+ {
+ 	return blocking_notifier_chain_register(&of_reconfig_chain, nb);
+ }
++EXPORT_SYMBOL_GPL(of_reconfig_notifier_register);
+ 
+ int of_reconfig_notifier_unregister(struct notifier_block *nb)
+ {
+ 	return blocking_notifier_chain_unregister(&of_reconfig_chain, nb);
+ }
++EXPORT_SYMBOL_GPL(of_reconfig_notifier_unregister);
+ 
+ int of_reconfig_notify(unsigned long action, void *p)
+ {
 
-so range under max_low_pfn_mapped, ranges between 4g and max_pfn_mapped
-could have holes in them and the holes will not be mapped.
-
-Use pfn_range_is_mapped() to check if range is mapped for initrd.
-
-That could happen if the bootloader put initrd in range but user used
-"memmap=" to carve some of ranges out.
-
-Also during copying need to use early_memmap to map original initrd
-for accessing.
----
