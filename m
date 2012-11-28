@@ -1,87 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756124Ab2K1VFO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 16:05:14 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:35455 "EHLO hydra.sisk.pl"
+	id S1756142Ab2K1VFj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 16:05:39 -0500
+Received: from www.hansjkoch.de ([178.63.77.200]:51427 "EHLO www.hansjkoch.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755458Ab2K1VFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 16:05:10 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: linux-acpi@vger.kernel.org, lenb@kernel.org, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com
-Subject: Re: [PATCH v3 1/4] ACPI: Support system notify handler via .sys_notify
-Date: Wed, 28 Nov 2012 22:09:54 +0100
-Message-ID: <5550104.xSe1fX9Ich@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <1354134699.26955.290.camel@misato.fc.hp.com>
-References: <1352406227-32629-1-git-send-email-toshi.kani@hp.com> <4411201.YLQBH7zWSI@vostro.rjw.lan> <1354134699.26955.290.camel@misato.fc.hp.com>
+	id S1756077Ab2K1VFL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 16:05:11 -0500
+Date: Wed, 28 Nov 2012 22:05:10 +0100
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Vitalii Demianets <vitas@nppfactor.kiev.ua>
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] uio.c: Fix warning: 'ret' might be used uninitialized
+Message-ID: <20121128210509.GA2590@local>
+References: <201211271348.14603.vitas@nppfactor.kiev.ua>
+ <20121127224341.GA2605@local>
+ <201211281058.33185.vitas@nppfactor.kiev.ua>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201211281058.33185.vitas@nppfactor.kiev.ua>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 28, 2012 01:31:39 PM Toshi Kani wrote:
-> On Wed, 2012-11-28 at 19:28 +0100, Rafael J. Wysocki wrote:
-> > On Wednesday, November 28, 2012 09:54:43 AM Toshi Kani wrote:
-> > > > > > > > By using acpi_install_notify_handler(), each driver needs to walk
-> > > > > > > > through the entire ACPI namespace to find its associated ACPI devices
-> > > > > > > > and call it to register one by one.  I think this is more work for
-> > > > > > > > non-ACPI drivers than defining acpi_driver.
-> > > > > > > 
-> > > > > > > I'm not really sure what you mean.  The drivers in question already know
-> > > > > > > what the relevant ACPI device nodes are (because they need them anyway
-> > > > > > > for other purposes), so they don't need to look for them specifically and
-> > > > > > > acpi_install_notify_handler() doesn't do any namespace walking.  So what
-> > > > > > > you said above simply doesn't make sense from this viewpoint.
-> > > > > > 
-> > > > > > Yes, if drivers already know the relevant ACPI devices, then walking the
-> > > > > > ACPI namespace is not necessary.  I was referring the case like
-> > > > > > processor_driver.c, acpi_memhotplug.c, and container.c in my statement. 
-> > > > > 
-> > > > > BTW, when an ACPI device is marked as non-present, which is the case
-> > > > > before hot-add, we do not create an acpi_device object and therefore do
-> > > > > not bind it with a driver.  This is why these drivers walk the ACPI
-> > > > > namespace and install their notify handlers regardless of device status.
-> > > > 
-> > > > So maybe we should create struct acpi_device objects in that case too?
-> > > 
-> > > I think it has some challenge as well.  We bind an ACPI driver with
-> > > device_register(), which calls device_add()-> kobject_add().  So, all
-> > > non-present ACPI device objects will show up in sysfs, unless we can
-> > > change the core.  This will change user interface.  There can be quite
-> > > many non-present devices in ACPI namespace depending on FW
-> > > implementation.
+On Wed, Nov 28, 2012 at 10:58:32AM +0200, Vitalii Demianets wrote:
+> On Wednesday 28 November 2012 00:43:41 Hans J. Koch wrote:
 > > 
-> > If additional devices appear in sysfs, that's not a problem.  If there
-> > were fewer of them, that would be a real one. :-)
+> > Thanks, good catch, but why don't you simply do this:
+> > 
 > 
-> I see.  I guess this means that once we expose all non-present devices
-> in sysfs, we cannot go back to the current way.  So, we need to be very
-> careful.  Anyway, this model requires separate handling for static ACPI
-> [1] and dynamic ACPI [2], which may make the state model complicated.
-> 
-> 1. Static ACPI - No creation / deletion of acpi_device at hot-plug.
-> 2. Dynamic ACPI - Create acpi_device at hot-add, delete at hot-remove.
+> Just a matter of personal preference.
 
-Sure.  The complication here is that we'll need to handle the removal of
-a bunch of struct acpi_device objects when a whole table goes away.
+Your patch: 1 files changed, 12 insertions(+), 4 deletions(-)
+My patch: 1 files changed, 1 insertions(+), 1 deletions(-)
 
-However, first, we don't seem to handle table unloading now.  At least
-acpi_unload_parent_table() is not called from anywhere as far as I can
-say.  Second, we'll need to handle the removal of struct acpi_device objects
-_anyway_ on table unload, this way or another.
+Both achieve exactly the same. That's not a matter of personal
+preference, that's the difference between a working solution and
+a good solution. In the kernel, we want the latter.
 
-> [1] ACPI namespace is static and contains the maximum possible config. 
-> [2] ACPI namespace is dynamic. SSDT is loaded at hot-add, and unloaded
-> at hot-remove.
+> As a maintainer you can apply either 
+> patch you want. I guess you would prefer your approach and I have no 
+> objections to that :)
+
+That's not the right kind of comment. Don't make it a habit.
 
 Thanks,
-Rafael
+Hans
 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> 
+> > 
+> > >From 228445996bb75a44d16b6237eca6a0916d9b2d7e Mon Sep 17 00:00:00 2001
+> > From: "Hans J. Koch" <hjk@hansjkoch.de>
+> > Date: Tue, 27 Nov 2012 23:38:00 +0100
+> > Subject: [PATCH] uio: Fix warning: 'ret' might be used uninitialized
+> > 
+> > In two cases, the return value variable "ret" can be undefined.
+> > 
+> > Signed-off-by: Hans J. Koch <hjk@hansjkoch.de>
+> > ---
+> >  drivers/uio/uio.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+> > index 5110f36..fc60e35 100644
+> > --- a/drivers/uio/uio.c
+> > +++ b/drivers/uio/uio.c
+> > @@ -263,7 +263,7 @@ static struct class uio_class = {
+> >   */
+> >  static int uio_dev_add_attributes(struct uio_device *idev)
+> >  {
+> > -	int ret;
+> > +	int ret = -ENOMEM;
+> >  	int mi, pi;
+> >  	int map_found = 0;
+> >  	int portio_found = 0;
+> 
+> 
+> 
+> -- 
+> With Best Regards,
+> Vitalii Demianets
+> 
+> 
