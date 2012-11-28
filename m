@@ -1,141 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754721Ab2K1BQT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 20:16:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64624 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753425Ab2K1BQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 20:16:17 -0500
-Date: Tue, 27 Nov 2012 23:12:28 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        Chegu Vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Andrew Jones <drjones@redhat.com>
-Subject: Re: [PATCH V3 RFC 2/2] kvm: Handle yield_to failure return code for
- potential undercommit case
-Message-ID: <20121128011228.GH8295@amt.cnet>
-References: <20121126120740.2595.33651.sendpatchset@codeblue>
- <20121126120804.2595.20280.sendpatchset@codeblue>
+	id S1754922Ab2K1BSC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 20:18:02 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:63419 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754020Ab2K1BSA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 20:18:00 -0500
+Message-ID: <50B5663D.2020003@gmail.com>
+Date: Tue, 27 Nov 2012 19:17:49 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121126120804.2595.20280.sendpatchset@codeblue>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: 3.6.8: dmar: DRHD: handling fault status reg 602
+References: <00e001cdccb2$1c4dfb10$54e9f130$@lucidpixels.com>
+In-Reply-To: <00e001cdccb2$1c4dfb10$54e9f130$@lucidpixels.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/27/2012 09:16 AM, Justin Piszcz wrote:
+> Hello,
+>
+> Any idea why this is happening (e.g. why is PTE Read Access not set?)
+>
+> [   13.204560] dmar: DRHD: handling fault status reg 602
+> [   13.208078] dmar: DMAR:[DMA Read] Request device [04:00.0] fault addr 0
+> [   13.208078] DMAR:[fault reason 06] PTE Read access is not set
+> [   15.777874] dmar: DRHD: handling fault status reg 702
+> [   15.777879] dmar: DMAR:[DMA Read] Request device [04:00.0] fault addr 0
+> [   15.777879] DMAR:[fault reason 06] PTE Read access is not set
+> [   16.100453] dmar: DRHD: handling fault status reg 2
+> [   16.100458] dmar: DMAR:[DMA Read] Request device [04:00.0] fault addr 0
+> [   16.100458] DMAR:[fault reason 06] PTE Read access is not set
+> [   16.141058] dmar: DRHD: handling fault status reg 102
+> [   16.141062] dmar: DMAR:[DMA Read] Request device [04:00.0] fault addr 0
+> [   16.141062] DMAR:[fault reason 06] PTE Read access is not set
+> [   16.210102] dmar: DRHD: handling fault status reg 202
+> [   16.210111] dmar: DMAR:[DMA Read] Request device [04:00.0] fault addr 0
+> [   16.210111] DMAR:[fault reason 06] PTE Read access is not set
+> [   16.918149] ixgbe 0000:86:00.0: eth2: NIC Link is Up 10 Gbps, Flow
+> Control: RX/TX
+>
+> This is from:
+> http://lkml.org/lkml/2012/11/27/263
+>
+> Justin.
+>
 
-Don't understand the reasoning behind why 3 is a good choice.
+ From the dmesg you posted (and some comments on that thread) it might 
+have something to do with CONFIG_PCI_MMCONFIG being disabled. If so, try 
+enabling that.
 
-On Mon, Nov 26, 2012 at 05:38:04PM +0530, Raghavendra K T wrote:
-> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> 
-> yield_to returns -ESRCH, When source and target of yield_to
-> run queue length is one. When we see three successive failures of
-> yield_to we assume we are in potential undercommit case and abort
-> from PLE handler.
-> The assumption is backed by low probability of wrong decision
-> for even worst case scenarios such as average runqueue length
-> between 1 and 2.
-> 
-> note that we do not update last boosted vcpu in failure cases.
-> Thank Avi for raising question on aborting after first fail from yield_to.
-> 
-> Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-> ---
->  virt/kvm/kvm_main.c |   26 ++++++++++++++++----------
->  1 file changed, 16 insertions(+), 10 deletions(-)
-> 
-> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> index be70035..053f494 100644
-> --- a/virt/kvm/kvm_main.c
-> +++ b/virt/kvm/kvm_main.c
-> @@ -1639,6 +1639,7 @@ bool kvm_vcpu_yield_to(struct kvm_vcpu *target)
->  {
->  	struct pid *pid;
->  	struct task_struct *task = NULL;
-> +	bool ret = false;
->  
->  	rcu_read_lock();
->  	pid = rcu_dereference(target->pid);
-> @@ -1646,17 +1647,15 @@ bool kvm_vcpu_yield_to(struct kvm_vcpu *target)
->  		task = get_pid_task(target->pid, PIDTYPE_PID);
->  	rcu_read_unlock();
->  	if (!task)
-> -		return false;
-> +		return ret;
->  	if (task->flags & PF_VCPU) {
->  		put_task_struct(task);
-> -		return false;
-> -	}
-> -	if (yield_to(task, 1)) {
-> -		put_task_struct(task);
-> -		return true;
-> +		return ret;
->  	}
-> +	ret = yield_to(task, 1);
->  	put_task_struct(task);
-> -	return false;
-> +
-> +	return ret;
->  }
->  EXPORT_SYMBOL_GPL(kvm_vcpu_yield_to);
->  
-> @@ -1697,12 +1696,14 @@ bool kvm_vcpu_eligible_for_directed_yield(struct kvm_vcpu *vcpu)
->  	return eligible;
->  }
->  #endif
-> +
->  void kvm_vcpu_on_spin(struct kvm_vcpu *me)
->  {
->  	struct kvm *kvm = me->kvm;
->  	struct kvm_vcpu *vcpu;
->  	int last_boosted_vcpu = me->kvm->last_boosted_vcpu;
->  	int yielded = 0;
-> +	int try = 3;
->  	int pass;
->  	int i;
->  
-> @@ -1714,7 +1715,7 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
->  	 * VCPU is holding the lock that we need and will release it.
->  	 * We approximate round-robin by starting at the last boosted VCPU.
->  	 */
-> -	for (pass = 0; pass < 2 && !yielded; pass++) {
-> +	for (pass = 0; pass < 2 && !yielded && try; pass++) {
->  		kvm_for_each_vcpu(i, vcpu, kvm) {
->  			if (!pass && i <= last_boosted_vcpu) {
->  				i = last_boosted_vcpu;
-> @@ -1727,10 +1728,15 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
->  				continue;
->  			if (!kvm_vcpu_eligible_for_directed_yield(vcpu))
->  				continue;
-> -			if (kvm_vcpu_yield_to(vcpu)) {
-> +
-> +			yielded = kvm_vcpu_yield_to(vcpu);
-> +			if (yielded > 0) {
->  				kvm->last_boosted_vcpu = i;
-> -				yielded = 1;
->  				break;
-> +			} else if (yielded < 0) {
-> +				try--;
-> +				if (!try)
-> +					break;
->  			}
->  		}
->  	}
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Of course the DMAR stuff should be recovering from that more gracefully 
+if that's the problem.
