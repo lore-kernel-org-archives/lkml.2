@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753093Ab2K1Hwx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 02:52:53 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:40374 "EHLO
+	id S1753050Ab2K1Hww (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 02:52:52 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:40375 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751519Ab2K1Hv0 (ORCPT
+	with ESMTP id S1751601Ab2K1Hv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 28 Nov 2012 02:51:26 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -12,79 +12,130 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
         Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v5 08/13] x86, boot: update cmd_line_ptr to unsigned long
-Date: Tue, 27 Nov 2012 23:50:37 -0800
-Message-Id: <1354089042-10023-9-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v5 04/13] x86: Merge early_reserve_initrd for 32bit and 64bit
+Date: Tue, 27 Nov 2012 23:50:33 -0800
+Message-Id: <1354089042-10023-5-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1354089042-10023-1-git-send-email-yinghai@kernel.org>
 References: <1354089042-10023-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-boot/compressed/misc.c could be with 64 bit, and cmd_line_ptr could
-above 4g.
+They are the same, could move them out from head32/64.c to setup.c.
 
-So change to unsigned long instead, that will be 64bit in 64bit path
-and 32bit in 32bit path.
+We are using memblock, and it could handle overlapping properly, so
+we don't need to reserve some at first to hold the location, and just
+need to make sure we reserve them before we are using memblock to find
+free mem to use.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
 ---
- arch/x86/boot/boot.h    |    8 ++++----
- arch/x86/boot/cmdline.c |    4 ++--
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ arch/x86/kernel/head32.c |   11 -----------
+ arch/x86/kernel/head64.c |   11 -----------
+ arch/x86/kernel/setup.c  |   22 ++++++++++++++++++----
+ 3 files changed, 18 insertions(+), 26 deletions(-)
 
-diff --git a/arch/x86/boot/boot.h b/arch/x86/boot/boot.h
-index 7fadf80..5b75319 100644
---- a/arch/x86/boot/boot.h
-+++ b/arch/x86/boot/boot.h
-@@ -285,11 +285,11 @@ struct biosregs {
- void intcall(u8 int_no, const struct biosregs *ireg, struct biosregs *oreg);
+diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
+index c18f59d..4c52efc 100644
+--- a/arch/x86/kernel/head32.c
++++ b/arch/x86/kernel/head32.c
+@@ -33,17 +33,6 @@ void __init i386_start_kernel(void)
+ 	memblock_reserve(__pa_symbol(&_text),
+ 			 __pa_symbol(&__bss_stop) - __pa_symbol(&_text));
  
- /* cmdline.c */
--int __cmdline_find_option(u32 cmdline_ptr, const char *option, char *buffer, int bufsize);
--int __cmdline_find_option_bool(u32 cmdline_ptr, const char *option);
-+int __cmdline_find_option(unsigned long cmdline_ptr, const char *option, char *buffer, int bufsize);
-+int __cmdline_find_option_bool(unsigned long cmdline_ptr, const char *option);
- static inline int cmdline_find_option(const char *option, char *buffer, int bufsize)
- {
--	u32 cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
-+	unsigned long cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
+-#ifdef CONFIG_BLK_DEV_INITRD
+-	/* Reserve INITRD */
+-	if (boot_params.hdr.type_of_loader && boot_params.hdr.ramdisk_image) {
+-		/* Assume only end is not page aligned */
+-		u64 ramdisk_image = boot_params.hdr.ramdisk_image;
+-		u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
+-		u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+-		memblock_reserve(ramdisk_image, ramdisk_end - ramdisk_image);
+-	}
+-#endif
+-
+ 	/* Call the subarch specific early setup function */
+ 	switch (boot_params.hdr.hardware_subarch) {
+ 	case X86_SUBARCH_MRST:
+diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+index 037df57..00e612a 100644
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -100,17 +100,6 @@ void __init x86_64_start_reservations(char *real_mode_data)
+ 	memblock_reserve(__pa_symbol(&_text),
+ 			 __pa_symbol(&__bss_stop) - __pa_symbol(&_text));
  
- 	if (cmd_line_ptr >= 0x100000)
- 		return -1;      /* inaccessible */
-@@ -299,7 +299,7 @@ static inline int cmdline_find_option(const char *option, char *buffer, int bufs
+-#ifdef CONFIG_BLK_DEV_INITRD
+-	/* Reserve INITRD */
+-	if (boot_params.hdr.type_of_loader && boot_params.hdr.ramdisk_image) {
+-		/* Assume only end is not page aligned */
+-		unsigned long ramdisk_image = boot_params.hdr.ramdisk_image;
+-		unsigned long ramdisk_size  = boot_params.hdr.ramdisk_size;
+-		unsigned long ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+-		memblock_reserve(ramdisk_image, ramdisk_end - ramdisk_image);
+-	}
+-#endif
+-
+ 	reserve_ebda_region();
  
- static inline int cmdline_find_option_bool(const char *option)
- {
--	u32 cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
-+	unsigned long cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
+ 	/*
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 6d29d1f..ee6d267 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -364,6 +364,19 @@ static u64 __init get_mem_size(unsigned long limit_pfn)
  
- 	if (cmd_line_ptr >= 0x100000)
- 		return -1;      /* inaccessible */
-diff --git a/arch/x86/boot/cmdline.c b/arch/x86/boot/cmdline.c
-index 768f00f..625d21b 100644
---- a/arch/x86/boot/cmdline.c
-+++ b/arch/x86/boot/cmdline.c
-@@ -27,7 +27,7 @@ static inline int myisspace(u8 c)
-  * Returns the length of the argument (regardless of if it was
-  * truncated to fit in the buffer), or -1 on not found.
-  */
--int __cmdline_find_option(u32 cmdline_ptr, const char *option, char *buffer, int bufsize)
-+int __cmdline_find_option(unsigned long cmdline_ptr, const char *option, char *buffer, int bufsize)
+ 	return mapped_pages << PAGE_SHIFT;
+ }
++static void __init early_reserve_initrd(void)
++{
++	/* Assume only end is not page aligned */
++	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
++	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
++	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
++
++	if (!boot_params.hdr.type_of_loader ||
++	    !ramdisk_image || !ramdisk_size)
++		return;		/* No initrd provided by bootloader */
++
++	memblock_reserve(ramdisk_image, ramdisk_end - ramdisk_image);
++}
+ static void __init reserve_initrd(void)
  {
- 	addr_t cptr;
- 	char c;
-@@ -99,7 +99,7 @@ int __cmdline_find_option(u32 cmdline_ptr, const char *option, char *buffer, int
-  * Returns the position of that option (starts counting with 1)
-  * or 0 on not found
-  */
--int __cmdline_find_option_bool(u32 cmdline_ptr, const char *option)
-+int __cmdline_find_option_bool(unsigned long cmdline_ptr, const char *option)
+ 	/* Assume only end is not page aligned */
+@@ -390,10 +403,6 @@ static void __init reserve_initrd(void)
+ 	if (pfn_range_is_mapped(PFN_DOWN(ramdisk_image),
+ 				PFN_DOWN(ramdisk_end))) {
+ 		/* All are mapped, easy case */
+-		/*
+-		 * don't need to reserve again, already reserved early
+-		 * in i386_start_kernel
+-		 */
+ 		initrd_start = ramdisk_image + PAGE_OFFSET;
+ 		initrd_end = initrd_start + ramdisk_size;
+ 		return;
+@@ -404,6 +413,9 @@ static void __init reserve_initrd(void)
+ 	memblock_free(ramdisk_image, ramdisk_end - ramdisk_image);
+ }
+ #else
++static void __init early_reserve_initrd(void)
++{
++}
+ static void __init reserve_initrd(void)
  {
- 	addr_t cptr;
- 	char c;
+ }
+@@ -665,6 +677,8 @@ early_param("reservelow", parse_reservelow);
+ 
+ void __init setup_arch(char **cmdline_p)
+ {
++	early_reserve_initrd();
++
+ #ifdef CONFIG_X86_32
+ 	memcpy(&boot_cpu_data, &new_cpu_data, sizeof(new_cpu_data));
+ 	visws_early_detect();
 -- 
 1.7.7
 
