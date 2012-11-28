@@ -1,108 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754083Ab2K1BPx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 20:15:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50404 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753213Ab2K1BPw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 20:15:52 -0500
-Date: Tue, 27 Nov 2012 17:15:44 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Rafael Aquini <aquini@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <levinsasha928@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH] mm: fix balloon_page_movable() page->flags check
-Message-Id: <20121127171544.8bbb702a.akpm@linux-foundation.org>
-In-Reply-To: <20121128003409.GB7401@t510.redhat.com>
-References: <20121127145708.c7173d0d.akpm@linux-foundation.org>
-	<1ccb1c95a52185bcc6009761cb2829197e2737ea.1354058194.git.aquini@redhat.com>
-	<20121127155201.ddfea7e1.akpm@linux-foundation.org>
-	<20121128003409.GB7401@t510.redhat.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754721Ab2K1BQT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 20:16:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64624 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753425Ab2K1BQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 20:16:17 -0500
+Date: Tue, 27 Nov 2012 23:12:28 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH V3 RFC 2/2] kvm: Handle yield_to failure return code for
+ potential undercommit case
+Message-ID: <20121128011228.GH8295@amt.cnet>
+References: <20121126120740.2595.33651.sendpatchset@codeblue>
+ <20121126120804.2595.20280.sendpatchset@codeblue>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121126120804.2595.20280.sendpatchset@codeblue>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Nov 2012 22:34:10 -0200 Rafael Aquini <aquini@redhat.com> wrote:
 
-> Do you want me to resubmit this patch with the changes you suggested?
+Don't understand the reasoning behind why 3 is a good choice.
 
-oh, I think I can reach that far.  How's this look?
-
-From: Andrew Morton <akpm@linux-foundation.org>
-Subject: mm-introduce-a-common-interface-for-balloon-pages-mobility-mm-fix-balloon_page_movable-page-flags-check-fix
-
-use PAGE_FLAGS_CHECK_AT_PREP, s/__balloon_page_flags/page_flags_cleared/, small cleanups
-
-Cc: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: Rafael Aquini <aquini@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- include/linux/balloon_compaction.h |   21 ++++++++++-----------
- 1 file changed, 10 insertions(+), 11 deletions(-)
-
-diff -puN include/linux/balloon_compaction.h~mm-introduce-a-common-interface-for-balloon-pages-mobility-mm-fix-balloon_page_movable-page-flags-check-fix include/linux/balloon_compaction.h
---- a/include/linux/balloon_compaction.h~mm-introduce-a-common-interface-for-balloon-pages-mobility-mm-fix-balloon_page_movable-page-flags-check-fix
-+++ a/include/linux/balloon_compaction.h
-@@ -41,6 +41,7 @@
- #ifndef _LINUX_BALLOON_COMPACTION_H
- #define _LINUX_BALLOON_COMPACTION_H
- #include <linux/pagemap.h>
-+#include <linux/page-flags.h>
- #include <linux/migrate.h>
- #include <linux/gfp.h>
- #include <linux/err.h>
-@@ -109,18 +110,16 @@ static inline void balloon_mapping_free(
- /*
-  * __balloon_page_flags - helper to perform balloon @page ->flags tests.
-  *
-- * As balloon pages are got from Buddy, and we do not play with page->flags
-+ * As balloon pages are obtained from buddy and we do not play with page->flags
-  * at driver level (exception made when we get the page lock for compaction),
-- * therefore we can safely identify a ballooned page by checking if the
-- * NR_PAGEFLAGS rightmost bits from the page->flags are all cleared.
-- * This approach also helps on skipping ballooned pages that are locked for
-- * compaction or release, thus mitigating their racy check at
-- * balloon_page_movable()
-+ * we can safely identify a ballooned page by checking if the
-+ * PAGE_FLAGS_CHECK_AT_PREP page->flags are all cleared.  This approach also
-+ * helps us skip ballooned pages that are locked for compaction or release, thus
-+ * mitigating their racy check at balloon_page_movable()
-  */
--#define BALLOON_PAGE_FLAGS_MASK       ((1UL << NR_PAGEFLAGS) - 1)
--static inline bool __balloon_page_flags(struct page *page)
-+static inline bool page_flags_cleared(struct page *page)
- {
--	return page->flags & BALLOON_PAGE_FLAGS_MASK ? false : true;
-+	return !(page->flags & PAGE_FLAGS_CHECK_AT_PREP);
- }
- 
- /*
-@@ -149,10 +148,10 @@ static inline bool __is_movable_balloon_
- static inline bool balloon_page_movable(struct page *page)
- {
- 	/*
--	 * Before dereferencing and testing mapping->flags, lets make sure
-+	 * Before dereferencing and testing mapping->flags, let's make sure
- 	 * this is not a page that uses ->mapping in a different way
- 	 */
--	if (__balloon_page_flags(page) && !page_mapped(page) &&
-+	if (page_flags_cleared(page) && !page_mapped(page) &&
- 	    page_count(page) == 1)
- 		return __is_movable_balloon_page(page);
- 
-_
-
+On Mon, Nov 26, 2012 at 05:38:04PM +0530, Raghavendra K T wrote:
+> From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+> 
+> yield_to returns -ESRCH, When source and target of yield_to
+> run queue length is one. When we see three successive failures of
+> yield_to we assume we are in potential undercommit case and abort
+> from PLE handler.
+> The assumption is backed by low probability of wrong decision
+> for even worst case scenarios such as average runqueue length
+> between 1 and 2.
+> 
+> note that we do not update last boosted vcpu in failure cases.
+> Thank Avi for raising question on aborting after first fail from yield_to.
+> 
+> Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+> ---
+>  virt/kvm/kvm_main.c |   26 ++++++++++++++++----------
+>  1 file changed, 16 insertions(+), 10 deletions(-)
+> 
+> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> index be70035..053f494 100644
+> --- a/virt/kvm/kvm_main.c
+> +++ b/virt/kvm/kvm_main.c
+> @@ -1639,6 +1639,7 @@ bool kvm_vcpu_yield_to(struct kvm_vcpu *target)
+>  {
+>  	struct pid *pid;
+>  	struct task_struct *task = NULL;
+> +	bool ret = false;
+>  
+>  	rcu_read_lock();
+>  	pid = rcu_dereference(target->pid);
+> @@ -1646,17 +1647,15 @@ bool kvm_vcpu_yield_to(struct kvm_vcpu *target)
+>  		task = get_pid_task(target->pid, PIDTYPE_PID);
+>  	rcu_read_unlock();
+>  	if (!task)
+> -		return false;
+> +		return ret;
+>  	if (task->flags & PF_VCPU) {
+>  		put_task_struct(task);
+> -		return false;
+> -	}
+> -	if (yield_to(task, 1)) {
+> -		put_task_struct(task);
+> -		return true;
+> +		return ret;
+>  	}
+> +	ret = yield_to(task, 1);
+>  	put_task_struct(task);
+> -	return false;
+> +
+> +	return ret;
+>  }
+>  EXPORT_SYMBOL_GPL(kvm_vcpu_yield_to);
+>  
+> @@ -1697,12 +1696,14 @@ bool kvm_vcpu_eligible_for_directed_yield(struct kvm_vcpu *vcpu)
+>  	return eligible;
+>  }
+>  #endif
+> +
+>  void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+>  {
+>  	struct kvm *kvm = me->kvm;
+>  	struct kvm_vcpu *vcpu;
+>  	int last_boosted_vcpu = me->kvm->last_boosted_vcpu;
+>  	int yielded = 0;
+> +	int try = 3;
+>  	int pass;
+>  	int i;
+>  
+> @@ -1714,7 +1715,7 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+>  	 * VCPU is holding the lock that we need and will release it.
+>  	 * We approximate round-robin by starting at the last boosted VCPU.
+>  	 */
+> -	for (pass = 0; pass < 2 && !yielded; pass++) {
+> +	for (pass = 0; pass < 2 && !yielded && try; pass++) {
+>  		kvm_for_each_vcpu(i, vcpu, kvm) {
+>  			if (!pass && i <= last_boosted_vcpu) {
+>  				i = last_boosted_vcpu;
+> @@ -1727,10 +1728,15 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
+>  				continue;
+>  			if (!kvm_vcpu_eligible_for_directed_yield(vcpu))
+>  				continue;
+> -			if (kvm_vcpu_yield_to(vcpu)) {
+> +
+> +			yielded = kvm_vcpu_yield_to(vcpu);
+> +			if (yielded > 0) {
+>  				kvm->last_boosted_vcpu = i;
+> -				yielded = 1;
+>  				break;
+> +			} else if (yielded < 0) {
+> +				try--;
+> +				if (!try)
+> +					break;
+>  			}
+>  		}
+>  	}
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
