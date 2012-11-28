@@ -1,41 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932278Ab2K1PKK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 10:10:10 -0500
-Received: from fieldses.org ([174.143.236.118]:47396 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932071Ab2K1PKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 10:10:08 -0500
-Date: Wed, 28 Nov 2012 10:10:06 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH 2/2] nfsd: make NFSv4 grace time per net
-Message-ID: <20121128151006.GG11651@fieldses.org>
-References: <20121127111007.10271.54338.stgit@localhost.localdomain>
- <20121127111149.10271.51541.stgit@localhost.localdomain>
+	id S932290Ab2K1PMV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 10:12:21 -0500
+Received: from relay.parallels.com ([195.214.232.42]:57454 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755550Ab2K1PMT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 10:12:19 -0500
+Message-ID: <50B629C3.4050903@parallels.com>
+Date: Wed, 28 Nov 2012 19:12:03 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121127111149.10271.51541.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: <linux-nfs@vger.kernel.org>, <Trond.Myklebust@netapp.com>,
+        <linux-kernel@vger.kernel.org>, <devel@openvz.org>
+Subject: Re: [PATCH 1/2] nfsd: make NFSv4 lease time per net
+References: <20121127111007.10271.54338.stgit@localhost.localdomain> <20121127111144.10271.97169.stgit@localhost.localdomain> <20121128150941.GF11651@fieldses.org>
+In-Reply-To: <20121128150941.GF11651@fieldses.org>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [10.30.20.135]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 27, 2012 at 02:11:49PM +0300, Stanislav Kinsbursky wrote:
-> diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
-> index 4930981..7e41bd1 100644
-> --- a/fs/nfsd/nfsctl.c
-> +++ b/fs/nfsd/nfsctl.c
-> @@ -928,7 +928,8 @@ static ssize_t write_leasetime(struct file *file, char *buf, size_t size)
->   */
->  static ssize_t write_gracetime(struct file *file, char *buf, size_t size)
->  {
-> -	return nfsd4_write_time(file, buf, size, &nfsd4_grace);
-> +	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
-> +	return nfsd4_write_time(file, buf, size, &nn->nfsd4_grace);
->  }
+28.11.2012 19:09, J. Bruce Fields пишет:
+> On Tue, Nov 27, 2012 at 02:11:44PM +0300, Stanislav Kinsbursky wrote:
+>> diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
+>> index dab350d..4930981 100644
+>> --- a/fs/nfsd/nfsctl.c
+>> +++ b/fs/nfsd/nfsctl.c
+>> @@ -912,7 +912,8 @@ static ssize_t nfsd4_write_time(struct file *file, char *buf, size_t size, time_
+>>    */
+>>   static ssize_t write_leasetime(struct file *file, char *buf, size_t size)
+>>   {
+>> -	return nfsd4_write_time(file, buf, size, &nfsd4_lease);
+>> +	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
+>> +	return nfsd4_write_time(file, buf, size, &nn->nfsd4_lease);
+>
+> This is called in the context of whatever process writes to
+> nfsv4leasetime, so should be using its network namespace, right?
+>
 
-Same comment as for lease time.--b.
+This is, actually, a interim solution to preserve existent logic.
+I.e. I'm going to convert "nfsd" filesystem into per-net one (like rpc_pipefs). I, actually, already done it in my tree.
+Thus proper network namespace will be taken from nfsd superblock.
+
+> --b.
+>
+
+
+-- 
+Best regards,
+Stanislav Kinsbursky
