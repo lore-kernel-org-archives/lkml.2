@@ -1,470 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754106Ab2K1Kcb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 05:32:31 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:38815 "EHLO
+	id S1754152Ab2K1Kmd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 05:42:33 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:64935 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753572Ab2K1Kc3 (ORCPT
+	with ESMTP id S1753495Ab2K1Kmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 05:32:29 -0500
-Date: Wed, 28 Nov 2012 02:29:08 -0800
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: [RFC] Add mempressure cgroup
-Message-ID: <20121128102908.GA15415@lizard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 28 Nov 2012 05:42:31 -0500
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
+To: LMML <linux-media@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        Prabhakar Lad <prabhakar.lad@ti.com>, <devel@driverdev.osuosl.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Subject: [PATCH v3 0/9] Media Controller capture driver for DM365
+Date: Wed, 28 Nov 2012 16:12:00 +0530
+Message-Id: <1354099329-20722-1-git-send-email-prabhakar.lad@ti.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an attempt to implement David Rientjes' idea of mempressure
-cgroup.
+From: Manjunath Hadli <manjunath.hadli@ti.com>
 
-The main characteristics are the same to what I've tried to add to vmevent
-API:
+Mauro/Greg,
+ The below series of patches have gone through good amount of reviews, and
+agreed by Laurent, Hans and Sakari to be part of the staging tree. I am combining
+the patchs with the pull request so we can get them into the 3.8 kernel.
+Please pull these patches.If you want a seperate pull request, please let me
+know.
 
-  Internally, it uses Mel Gorman's idea of scanned/reclaimed ratio for
-  pressure index calculation. But we don't expose the index to the
-  userland. Instead, there are three levels of the pressure:
+This patch set adds media controller based capture driver for
+DM365.
 
-  o low (just reclaiming, e.g. caches are draining);
-  o medium (allocation cost becomes high, e.g. swapping);
-  o oom (about to oom very soon).
+This driver bases its design on Laurent Pinchart's Media Controller Design
+whose patches for Media Controller and subdev enhancements form the base.
+The driver also takes copious elements taken from Laurent Pinchart and
+others' OMAP ISP driver based on Media Controller. So thank you all the
+people who are responsible for the Media Controller and the OMAP ISP driver.
 
-  The rationale behind exposing levels and not the raw pressure index
-  described here: http://lkml.org/lkml/2012/11/16/675
+Also, the core functionality of the driver comes from the arago vpfe capture
+driver of which the isif capture was based on V4L2, with other drivers like
+ipipe, ipipeif and Resizer.
 
-The API uses standard cgroups eventfd notifications:
+Changes for v2:
+1: Migrated the driver for videobuf2 usage pointed Hans.
+2: Changed the design as pointed by Laurent, Exposed one more subdevs
+   ipipeif and split the resizer subdev into three subdevs.
+3: Rearrganed the patch sequence and changed the commit messages.
+4: Changed the file architecture as pointed by Laurent.
 
-  $ gcc Documentation/cgroups/cgroup_event_listener.c -o \
-	cgroup_event_listener
-  $ cd /sys/fs/cgroup/
-  $ mkdir mempressure
-  $ mount -t cgroup cgroup ./mempressure -o mempressure
-  $ cd mempressure
-  $ cgroup_event_listener ./mempressure.level low
-  ("low", "medium", "oom" are permitted values.)
+Changes for v3:
+1: Rebased on staging.
+2: Seprated out patches which would go into staging.
 
-  Upon hitting the threshold, you should see "/sys/fs/cgroup/mempressure
-  low: crossed" messages.
+The following changes since commit c6c22955f80f2db9614b01fe5a3d1cfcd8b3d848:
 
-To test that it actually works on per-cgroup basis, I did a small trick: I
-moved all kswapd into a separate cgroup, and hooked the listener onto
-another (non-root) cgroup. The listener no longer received global reclaim
-pressure, which is expected.
+  [media] dma-mapping: fix dma_common_get_sgtable() conditional compilation (2012-11-27 09:42:31 -0200)
 
-For a task it is possible to be in both cpusets, memcg and mempressure
-cgroups, so by rearranging the tasks it should be possible to watch a
-specific pressure.
+are available in the git repository at:
+  git://linuxtv.org/mhadli/v4l-dvb-davinci_devices.git vpfe_driver_staging
 
-Note that while this adds the cgroups support, the code is well separated
-and eventually we might add a lightweight, non-cgroups API, i.e. vmevent.
-But this is another story.
+Manjunath Hadli (9):
+      davinci: vpfe: add v4l2 capture driver with media interface
+      davinci: vpfe: add v4l2 video driver support
+      davinci: vpfe: dm365: add IPIPEIF driver based on media framework
+      davinci: vpfe: dm365: add ISIF driver based on media framework
+      davinci: vpfe: dm365: add IPIPE support for media controller driver
+      davinci: vpfe: dm365: add IPIPE hardware layer support
+      davinci: vpfe: dm365: resizer driver based on media framework
+      davinci: vpfe: dm365: add build infrastructure for capture driver
+      davinci: vpfe: Add documentation and TODO
 
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
----
- include/linux/cgroup_subsys.h |   6 +
- include/linux/vmstat.h        |   8 ++
- init/Kconfig                  |   5 +
- mm/Makefile                   |   1 +
- mm/mempressure.c              | 287 ++++++++++++++++++++++++++++++++++++++++++
- mm/vmscan.c                   |   3 +
- 6 files changed, 310 insertions(+)
- create mode 100644 mm/mempressure.c
+ drivers/staging/media/Kconfig                      |    2 +
+ drivers/staging/media/Makefile                     |    1 +
+ drivers/staging/media/davinci_vpfe/Kconfig         |    9 +
+ drivers/staging/media/davinci_vpfe/Makefile        |    3 +
+ drivers/staging/media/davinci_vpfe/TODO            |   34 +
+ .../staging/media/davinci_vpfe/davinci-vpfe-mc.txt |  154 ++
+ .../staging/media/davinci_vpfe/davinci_vpfe_user.h | 1290 ++++++++++++
+ drivers/staging/media/davinci_vpfe/dm365_ipipe.c   | 1863 +++++++++++++++++
+ drivers/staging/media/davinci_vpfe/dm365_ipipe.h   |  179 ++
+ .../staging/media/davinci_vpfe/dm365_ipipe_hw.c    | 1048 ++++++++++
+ .../staging/media/davinci_vpfe/dm365_ipipe_hw.h    |  559 ++++++
+ drivers/staging/media/davinci_vpfe/dm365_ipipeif.c | 1071 ++++++++++
+ drivers/staging/media/davinci_vpfe/dm365_ipipeif.h |  233 +++
+ .../media/davinci_vpfe/dm365_ipipeif_user.h        |   93 +
+ drivers/staging/media/davinci_vpfe/dm365_isif.c    | 2104 ++++++++++++++++++++
+ drivers/staging/media/davinci_vpfe/dm365_isif.h    |  203 ++
+ .../staging/media/davinci_vpfe/dm365_isif_regs.h   |  294 +++
+ drivers/staging/media/davinci_vpfe/dm365_resizer.c | 1999 +++++++++++++++++++
+ drivers/staging/media/davinci_vpfe/dm365_resizer.h |  244 +++
+ drivers/staging/media/davinci_vpfe/vpfe.h          |   86 +
+ .../staging/media/davinci_vpfe/vpfe_mc_capture.c   |  740 +++++++
+ .../staging/media/davinci_vpfe/vpfe_mc_capture.h   |   97 +
+ drivers/staging/media/davinci_vpfe/vpfe_video.c    | 1620 +++++++++++++++
+ drivers/staging/media/davinci_vpfe/vpfe_video.h    |  155 ++
+ 24 files changed, 14081 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/media/davinci_vpfe/Kconfig
+ create mode 100644 drivers/staging/media/davinci_vpfe/Makefile
+ create mode 100644 drivers/staging/media/davinci_vpfe/TODO
+ create mode 100644 drivers/staging/media/davinci_vpfe/davinci-vpfe-mc.txt
+ create mode 100644 drivers/staging/media/davinci_vpfe/davinci_vpfe_user.h
+ create mode 100644 drivers/staging/media/davinci_vpfe/dm365_ipipe.c
+ create mode 100644 drivers/staging/media/davinci_vpfe/dm365_ipipe.h
+ create mode 100644 drivers/staging/media/davinci_vpfe/dm365_ipipe_hw.c
+ create mode 100644 drivers/staging/media/davinci_vpfe/dm365_ipipe_hw.h
+ create mode 100644 drivers/staging/media/davinci_vpfe/dm365_ipipeif.c
+ create mode 100644 drivers/staging/media/davinci_vpfe/dm365_ipipeif.h
+ create mode 100644 drivers/staging/media/davinci_vpfe/dm365_ipipeif_user.h
+ create mode 100644 drivers/staging/media/davinci_vpfe/dm365_isif.c
+ create mode 100644 drivers/staging/media/davinci_vpfe/dm365_isif.h
+ create mode 100644 drivers/staging/media/davinci_vpfe/dm365_isif_regs.h
+ create mode 100644 drivers/staging/media/davinci_vpfe/dm365_resizer.c
+ create mode 100644 drivers/staging/media/davinci_vpfe/dm365_resizer.h
+ create mode 100644 drivers/staging/media/davinci_vpfe/vpfe.h
+ create mode 100644 drivers/staging/media/davinci_vpfe/vpfe_mc_capture.c
+ create mode 100644 drivers/staging/media/davinci_vpfe/vpfe_mc_capture.h
+ create mode 100644 drivers/staging/media/davinci_vpfe/vpfe_video.c
+ create mode 100644 drivers/staging/media/davinci_vpfe/vpfe_video.h
 
-diff --git a/include/linux/cgroup_subsys.h b/include/linux/cgroup_subsys.h
-index f204a7a..b9802e2 100644
---- a/include/linux/cgroup_subsys.h
-+++ b/include/linux/cgroup_subsys.h
-@@ -37,6 +37,12 @@ SUBSYS(mem_cgroup)
- 
- /* */
- 
-+#if IS_SUBSYS_ENABLED(CONFIG_CGROUP_MEMPRESSURE)
-+SUBSYS(mpc_cgroup)
-+#endif
-+
-+/* */
-+
- #if IS_SUBSYS_ENABLED(CONFIG_CGROUP_DEVICE)
- SUBSYS(devices)
- #endif
-diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
-index 92a86b2..7698341 100644
---- a/include/linux/vmstat.h
-+++ b/include/linux/vmstat.h
-@@ -10,6 +10,14 @@
- 
- extern int sysctl_stat_interval;
- 
-+#ifdef CONFIG_CGROUP_MEMPRESSURE
-+extern void vmpressure(ulong scanned, ulong reclaimed);
-+extern void vmpressure_prio(int prio);
-+#else
-+static inline void vmpressure(ulong scanned, ulong reclaimed) {}
-+static inline void vmpressure_prio(int prio) {}
-+#endif
-+
- #ifdef CONFIG_VM_EVENT_COUNTERS
- /*
-  * Light weight per cpu counter implementation.
-diff --git a/init/Kconfig b/init/Kconfig
-index 6fdd6e3..7065e44 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -826,6 +826,11 @@ config MEMCG_KMEM
- 	  the kmem extension can use it to guarantee that no group of processes
- 	  will ever exhaust kernel resources alone.
- 
-+config CGROUP_MEMPRESSURE
-+	bool "Memory pressure monitor for Control Groups"
-+	help
-+	  TODO
-+
- config CGROUP_HUGETLB
- 	bool "HugeTLB Resource Controller for Control Groups"
- 	depends on RESOURCE_COUNTERS && HUGETLB_PAGE && EXPERIMENTAL
-diff --git a/mm/Makefile b/mm/Makefile
-index 6b025f8..40cee19 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -50,6 +50,7 @@ obj-$(CONFIG_MIGRATION) += migrate.o
- obj-$(CONFIG_QUICKLIST) += quicklist.o
- obj-$(CONFIG_TRANSPARENT_HUGEPAGE) += huge_memory.o
- obj-$(CONFIG_MEMCG) += memcontrol.o page_cgroup.o
-+obj-$(CONFIG_CGROUP_MEMPRESSURE) += mempressure.o
- obj-$(CONFIG_CGROUP_HUGETLB) += hugetlb_cgroup.o
- obj-$(CONFIG_MEMORY_FAILURE) += memory-failure.o
- obj-$(CONFIG_HWPOISON_INJECT) += hwpoison-inject.o
-diff --git a/mm/mempressure.c b/mm/mempressure.c
-new file mode 100644
-index 0000000..5c85bbe
---- /dev/null
-+++ b/mm/mempressure.c
-@@ -0,0 +1,287 @@
-+/*
-+ * Linux VM pressure notifications
-+ *
-+ * Copyright 2012 Linaro Ltd.
-+ *		  Anton Vorontsov <anton.vorontsov@linaro.org>
-+ *
-+ * Based on ideas from David Rientjes, KOSAKI Motohiro, Leonid Moiseichuk,
-+ * Mel Gorman, Minchan Kim and Pekka Enberg.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published
-+ * by the Free Software Foundation.
-+ */
-+
-+#include <linux/cgroup.h>
-+#include <linux/fs.h>
-+#include <linux/sched.h>
-+#include <linux/mm.h>
-+#include <linux/vmstat.h>
-+#include <linux/atomic.h>
-+#include <linux/eventfd.h>
-+#include <linux/swap.h>
-+#include <linux/printk.h>
-+
-+static void mpc_vmpressure(ulong scanned, ulong reclaimed);
-+
-+/*
-+ * Generic VM Pressure routines (no cgroups or any other API details)
-+ */
-+
-+/* These are defaults. Might make them configurable one day. */
-+static const uint vmpressure_win = SWAP_CLUSTER_MAX * 16;
-+static const uint vmpressure_level_med = 60;
-+static const uint vmpressure_level_oom = 99;
-+static const uint vmpressure_level_oom_prio = 4;
-+
-+enum vmpressure_levels {
-+	VMPRESSURE_LOW = 0,
-+	VMPRESSURE_MEDIUM,
-+	VMPRESSURE_OOM,
-+	VMPRESSURE_NUM_LEVELS,
-+};
-+
-+static const char const *vmpressure_str_levels[] = {
-+	[VMPRESSURE_LOW] = "low",
-+	[VMPRESSURE_MEDIUM] = "medium",
-+	[VMPRESSURE_OOM] = "oom",
-+};
-+
-+static enum vmpressure_levels vmpressure_level(uint pressure)
-+{
-+	if (pressure >= vmpressure_level_oom)
-+		return VMPRESSURE_OOM;
-+	else if (pressure >= vmpressure_level_med)
-+		return VMPRESSURE_MEDIUM;
-+	return VMPRESSURE_LOW;
-+}
-+
-+static ulong vmpressure_calc_level(uint win, uint s, uint r)
-+{
-+	ulong p;
-+
-+	if (!s)
-+		return 0;
-+
-+	/*
-+	 * We calculate the ratio (in percents) of how many pages were
-+	 * scanned vs. reclaimed in a given time frame (window). Note that
-+	 * time is in VM reclaimer's "ticks", i.e. number of pages
-+	 * scanned. This makes it possible to set desired reaction time
-+	 * and serves as a ratelimit.
-+	 */
-+	p = win - (r * win / s);
-+	p = p * 100 / win;
-+
-+	pr_debug("%s: %3lu  (s: %6u  r: %6u)\n", __func__, p, s, r);
-+
-+	return vmpressure_level(p);
-+}
-+
-+void vmpressure(ulong scanned, ulong reclaimed)
-+{
-+	if (!scanned)
-+		return;
-+	mpc_vmpressure(scanned, reclaimed);
-+}
-+
-+void vmpressure_prio(int prio)
-+{
-+	if (prio > vmpressure_level_oom_prio)
-+		return;
-+
-+	/* OK, the prio is below the threshold, send the pre-OOM event. */
-+	vmpressure(vmpressure_win, 0);
-+}
-+
-+/*
-+ * Memory pressure cgroup code
-+ */
-+
-+struct mpc_state {
-+	struct cgroup_subsys_state css;
-+	uint scanned;
-+	uint reclaimed;
-+	struct mutex lock;
-+	struct eventfd_ctx *eventfd;
-+	enum vmpressure_levels thres;
-+};
-+
-+static struct mpc_state *css2mpc(struct cgroup_subsys_state *css)
-+{
-+	return container_of(css, struct mpc_state, css);
-+}
-+
-+static struct mpc_state *tsk2mpc(struct task_struct *tsk)
-+{
-+	return css2mpc(task_subsys_state(tsk, mpc_cgroup_subsys_id));
-+}
-+
-+static struct mpc_state *cg2mpc(struct cgroup *cg)
-+{
-+	return css2mpc(cgroup_subsys_state(cg, mpc_cgroup_subsys_id));
-+}
-+
-+static void __mpc_vmpressure(ulong scanned, ulong reclaimed)
-+{
-+	struct mpc_state *mpc = tsk2mpc(current);
-+	int level;
-+
-+	mpc->scanned += scanned;
-+	mpc->reclaimed += reclaimed;
-+
-+	if (mpc->scanned < vmpressure_win)
-+		return;
-+
-+	level = vmpressure_calc_level(vmpressure_win,
-+			mpc->scanned, mpc->reclaimed);
-+	if (level >= mpc->thres) {
-+		mutex_lock(&mpc->lock);
-+		if (mpc->eventfd)
-+			eventfd_signal(mpc->eventfd, 1);
-+		mutex_unlock(&mpc->lock);
-+	}
-+}
-+
-+static void mpc_vmpressure(ulong scanned, ulong reclaimed)
-+{
-+	/*
-+	 * There are two options for implementing cgroup pressure
-+	 * notifications:
-+	 *
-+	 * - Store pressure counter atomically in the task struct. Upon
-+	 *   hitting 'window' wake up a workqueue that will walk every
-+	 *   task and sum per-thread pressure into cgroup pressure (to
-+	 *   which the task belongs). The cons are obvious: bloats task
-+	 *   struct, have to walk all processes and makes pressue less
-+	 *   accurate (the window becomes per-thread);
-+	 *
-+	 * - Store pressure counters in per-cgroup state. This is easy and
-+	 *   straighforward, and that's how we do things here. But this
-+	 *   requires us to not put the vmpressure hooks into hotpath,
-+	 *   since we have to grab some locks.
-+	 */
-+	task_lock(current);
-+	__mpc_vmpressure(scanned, reclaimed);
-+	task_unlock(current);
-+}
-+
-+static struct cgroup_subsys_state *mpc_create(struct cgroup *cg)
-+{
-+	struct mpc_state *mpc;
-+
-+	mpc = kzalloc(sizeof(*mpc), GFP_KERNEL);
-+	if (!mpc)
-+		return ERR_PTR(-ENOMEM);
-+
-+	mutex_init(&mpc->lock);
-+
-+	return &mpc->css;
-+}
-+
-+static int mpc_pre_destroy(struct cgroup *cg)
-+{
-+	struct mpc_state *mpc = cg2mpc(cg);
-+	int ret = 0;
-+
-+	mutex_lock(&mpc->lock);
-+
-+	if (mpc->eventfd)
-+		ret = -EBUSY;
-+
-+	mutex_unlock(&mpc->lock);
-+
-+	return ret;
-+}
-+
-+static void mpc_destroy(struct cgroup *cg)
-+{
-+	struct mpc_state *mpc = cg2mpc(cg);
-+
-+	kfree(mpc);
-+}
-+
-+static ssize_t mpc_read_level(struct cgroup *cg, struct cftype *cft,
-+			      struct file *file, char __user *buf,
-+			      size_t sz, loff_t *ppos)
-+{
-+	struct mpc_state *mpc = cg2mpc(cg);
-+	uint level;
-+	const char *str;
-+
-+	mutex_lock(&mpc->lock);
-+
-+	level = vmpressure_calc_level(vmpressure_win,
-+			mpc->scanned, mpc->reclaimed);
-+	mpc->scanned = 0;
-+	mpc->reclaimed = 0;
-+
-+	mutex_unlock(&mpc->lock);
-+
-+	str = vmpressure_str_levels[level];
-+	return simple_read_from_buffer(buf, sz, ppos, str, strlen(str));
-+}
-+
-+static int mpc_register_level_event(struct cgroup *cg, struct cftype *cft,
-+				    struct eventfd_ctx *eventfd,
-+				    const char *args)
-+{
-+	struct mpc_state *mpc = cg2mpc(cg);
-+	int i;
-+	int ret;
-+
-+	mutex_lock(&mpc->lock);
-+
-+	/*
-+	 * It's easy to implement multiple thresholds, but so far we don't
-+	 * need it.
-+	 */
-+	if (mpc->eventfd) {
-+		ret = -EBUSY;
-+		goto out_unlock;
-+	}
-+
-+	ret = -EINVAL;
-+	for (i = 0; i < VMPRESSURE_NUM_LEVELS; i++) {
-+		if (strcmp(vmpressure_str_levels[i], args))
-+			continue;
-+		mpc->eventfd = eventfd;
-+		mpc->thres = i;
-+		ret = 0;
-+		break;
-+	}
-+out_unlock:
-+	mutex_unlock(&mpc->lock);
-+
-+	return ret;
-+}
-+
-+static void mpc_unregister_level_event(struct cgroup *cg, struct cftype *cft,
-+				       struct eventfd_ctx *eventfd)
-+{
-+	struct mpc_state *mpc = cg2mpc(cg);
-+
-+	mutex_lock(&mpc->lock);
-+	BUG_ON(mpc->eventfd != eventfd);
-+	mpc->eventfd = NULL;
-+	mutex_unlock(&mpc->lock);
-+}
-+
-+static struct cftype mpc_files[] = {
-+	{
-+		.name = "level",
-+		.read = mpc_read_level,
-+		.register_event = mpc_register_level_event,
-+		.unregister_event = mpc_unregister_level_event,
-+	},
-+	{},
-+};
-+
-+struct cgroup_subsys mpc_cgroup_subsys = {
-+	.name = "mempressure",
-+	.subsys_id = mpc_cgroup_subsys_id,
-+	.create = mpc_create,
-+	.pre_destroy = mpc_pre_destroy,
-+	.destroy = mpc_destroy,
-+	.base_cftypes = mpc_files,
-+};
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 48550c6..430d8a5 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1877,6 +1877,8 @@ restart:
- 		shrink_active_list(SWAP_CLUSTER_MAX, lruvec,
- 				   sc, LRU_ACTIVE_ANON);
- 
-+	vmpressure(sc->nr_scanned - nr_scanned, nr_reclaimed);
-+
- 	/* reclaim/compaction might need reclaim to continue */
- 	if (should_continue_reclaim(lruvec, nr_reclaimed,
- 				    sc->nr_scanned - nr_scanned, sc))
-@@ -2099,6 +2101,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
- 		count_vm_event(ALLOCSTALL);
- 
- 	do {
-+		vmpressure_prio(sc->priority);
- 		sc->nr_scanned = 0;
- 		aborted_reclaim = shrink_zones(zonelist, sc);
- 
 -- 
-1.8.0
+1.7.4.1
+
