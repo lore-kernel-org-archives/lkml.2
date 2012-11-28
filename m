@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753793Ab2K1KKX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 05:10:23 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:35053 "EHLO hydra.sisk.pl"
+	id S1753873Ab2K1KLO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 05:11:14 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:45368 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752437Ab2K1KKV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 05:10:21 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Ming Lei <ming.lei@canonical.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oneukum@suse.de>, Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jens Axboe <axboe@kernel.dk>, "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH v6 2/6] PM / Runtime: introduce pm_runtime_set_memalloc_noio()
-Date: Wed, 28 Nov 2012 11:15:05 +0100
-Message-ID: <2662154.Tcp7v84XkT@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <CACVXFVOk45wr8jv3w=KO7uTThGSTSkq0FRsPD6p_AyQZLWGQJg@mail.gmail.com>
-References: <1353761958-12810-1-git-send-email-ming.lei@canonical.com> <1408044.6czCGhbHJH@vostro.rjw.lan> <CACVXFVOk45wr8jv3w=KO7uTThGSTSkq0FRsPD6p_AyQZLWGQJg@mail.gmail.com>
+	id S1752437Ab2K1KLM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 05:11:12 -0500
+From: "Navada Kanyana, Mukund" <navada@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 1/1] regmap: Add support for continously numbered pages
+ across regmap range
+Thread-Topic: [PATCH 1/1] regmap: Add support for continously numbered pages
+ across regmap range
+Thread-Index: AQHNzUn3sp+aSR+ZB0iEZwLUiY4GmZf+nu6AgABlseA=
+Date: Wed, 28 Nov 2012 10:11:05 +0000
+Message-ID: <6817C817C9581447825BFB369EAC42163E959AED@DBDE01.ent.ti.com>
+References: <n> <1354094577-14967-1-git-send-email-navada@ti.com>
+ <20121128092924.GJ32691@opensource.wolfsonmicro.com>
+In-Reply-To: <20121128092924.GJ32691@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.132.232]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 28, 2012 05:47:18 PM Ming Lei wrote:
-> On Wed, Nov 28, 2012 at 5:29 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >
-> > But it doesn't have to walk the children.  Moreover, with counters it only
-> 
-> Yeah, I got it, it is the advantage of counter, but with extra 'int'
-> field introduced
-> in 'struct device'.
-> 
-> > needs to walk the whole path if all devices in it need to be updated.  For
-> > example, if you call pm_runtime_set_memalloc_noio(dev, true) for a device
-> > whose parent's counter is greater than zero already, you don't need to
-> > walk the path above the parent.
-> 
-> We still can do it with the flag only, pm_runtime_set_memalloc_noio(dev, true)
-> can return immediately if one parent or the 'dev' flag is true.
-> 
-> But considered that the pm_runtime_set_memalloc_noio(dev, false) is only
-> called in a very infrequent path(network/block device->remove()), looks the
-> introduced cost isn't worthy of the obtained advantage.
-> 
-> So could you accept not introducing counter? and I will update with the
-> above improvement you suggested.
-
-Well, please see my other message I sent a while ago. :-)
-
-Thanks,
-Rafael
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> -----Original Message-----
+> From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
+> Sent: Wednesday, November 28, 2012 2:59 PM
+> To: Navada Kanyana, Mukund
+> Cc: Greg Kroah-Hartman; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 1/1] regmap: Add support for continously numbered
+> pages across regmap range
+> 
+> On Wed, Nov 28, 2012 at 02:52:57PM +0530, Mukund Navada wrote:
+> >   Page number in some devices increases across regmap ranges since the
+> > selector register to choose the page remains the same. So in order to
+> > write correct page number, the start_page_num is stored in
+> > regmap_range_cfg.
+> 
+> I'm sorry but I can't understand what this is supposed to do.  The
+> current paging code expects pages to be numbered continuously with no
+> gaps.  Can you please clarify?
+But the page number is expected to increase only till end of range. But in devices like TLV320AIC3256, the page number increases beyond range.
+
+Example:
+
+Pages 0 through Page 1 --> first register range for device configuration. Page 8 through Page 16 --> second range for DSP1 coefficient memory
+Page 26 through Page 34 --> third range for DSP2 coefficient memory
+
+Window length of each page is 128. So if we need to correctly write the page number in selector register for second range, start_page_num would be 8. If we did not have start_page_num, it would write 0 to selector register. 
