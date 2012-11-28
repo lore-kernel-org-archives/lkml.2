@@ -1,237 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755348Ab2K1QvL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 11:51:11 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:46348 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754867Ab2K1QoL (ORCPT
+	id S1755297Ab2K1QvY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 11:51:24 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:45261 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750713Ab2K1QvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 11:44:11 -0500
-From: Kent Overstreet <koverstreet@google.com>
-To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org
-Cc: zab@redhat.com, bcrl@kvack.org, jmoyer@redhat.com, axboe@kernel.dk,
-        viro@zeniv.linux.org.uk, Kent Overstreet <koverstreet@google.com>
-Subject: [PATCH 09/25] aio: dprintk() -> pr_debug()
-Date: Wed, 28 Nov 2012 08:43:33 -0800
-Message-Id: <1354121029-1376-10-git-send-email-koverstreet@google.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1354121029-1376-1-git-send-email-koverstreet@google.com>
-References: <1354121029-1376-1-git-send-email-koverstreet@google.com>
+	Wed, 28 Nov 2012 11:51:19 -0500
+Date: Wed, 28 Nov 2012 11:50:17 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 04/46] x86, mm: Move init_memory_mapping calling out
+ of setup.c
+Message-ID: <20121128165017.GG21266@phenom.dumpdata.com>
+References: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
+ <1353123563-3103-5-git-send-email-yinghai@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353123563-3103-5-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Kent Overstreet <koverstreet@google.com>
----
- fs/aio.c | 57 ++++++++++++++++++++++++---------------------------------
- 1 file changed, 24 insertions(+), 33 deletions(-)
+On Fri, Nov 16, 2012 at 07:38:41PM -0800, Yinghai Lu wrote:
+> Now init_memory_mapping is called two times, later will be called for every
+> ram ranges.
 
-diff --git a/fs/aio.c b/fs/aio.c
-index 4dcc02f..0ed14e8 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -8,6 +8,8 @@
-  *
-  *	See ../COPYING for licensing terms.
-  */
-+#define pr_fmt(fmt) "%s: " fmt, __func__
-+
- #include <linux/kernel.h>
- #include <linux/init.h>
- #include <linux/errno.h>
-@@ -18,8 +20,6 @@
- #include <linux/backing-dev.h>
- #include <linux/uio.h>
- 
--#define DEBUG 0
--
- #include <linux/sched.h>
- #include <linux/fs.h>
- #include <linux/file.h>
-@@ -39,12 +39,6 @@
- #include <asm/kmap_types.h>
- #include <asm/uaccess.h>
- 
--#if DEBUG > 1
--#define dprintk		printk
--#else
--#define dprintk(x...)	do { ; } while (0)
--#endif
--
- #define AIO_RING_MAGIC			0xa10a10a1
- #define AIO_RING_COMPAT_FEATURES	1
- #define AIO_RING_INCOMPAT_FEATURES	0
-@@ -124,7 +118,7 @@ static int __init aio_setup(void)
- 	kiocb_cachep = KMEM_CACHE(kiocb, SLAB_HWCACHE_ALIGN|SLAB_PANIC);
- 	kioctx_cachep = KMEM_CACHE(kioctx,SLAB_HWCACHE_ALIGN|SLAB_PANIC);
- 
--	pr_debug("aio_setup: sizeof(struct page) = %d\n", (int)sizeof(struct page));
-+	pr_debug("sizeof(struct page) = %zu\n", sizeof(struct page));
- 
- 	return 0;
- }
-@@ -178,7 +172,7 @@ static int aio_setup_ring(struct kioctx *ctx)
- 	}
- 
- 	info->mmap_size = nr_pages * PAGE_SIZE;
--	dprintk("attempting mmap of %lu bytes\n", info->mmap_size);
-+	pr_debug("attempting mmap of %lu bytes\n", info->mmap_size);
- 	down_write(&mm->mmap_sem);
- 	info->mmap_base = do_mmap_pgoff(NULL, 0, info->mmap_size, 
- 					PROT_READ|PROT_WRITE,
-@@ -190,7 +184,7 @@ static int aio_setup_ring(struct kioctx *ctx)
- 		return -EAGAIN;
- 	}
- 
--	dprintk("mmap address: 0x%08lx\n", info->mmap_base);
-+	pr_debug("mmap address: 0x%08lx\n", info->mmap_base);
- 	info->nr_pages = get_user_pages(current, mm, info->mmap_base, nr_pages, 
- 					1, 0, info->ring_pages, NULL);
- 	up_write(&mm->mmap_sem);
-@@ -262,7 +256,7 @@ static void __put_ioctx(struct kioctx *ctx)
- 		aio_nr -= nr_events;
- 		spin_unlock(&aio_nr_lock);
- 	}
--	pr_debug("__put_ioctx: freeing %p\n", ctx);
-+	pr_debug("freeing %p\n", ctx);
- 	call_rcu(&ctx->rcu_head, ctx_rcu_free);
- }
- 
-@@ -351,7 +345,7 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
- 	hlist_add_head_rcu(&ctx->list, &mm->ioctx_list);
- 	spin_unlock(&mm->ioctx_lock);
- 
--	dprintk("aio: allocated ioctx %p[%ld]: mm=%p mask=0x%x\n",
-+	pr_debug("allocated ioctx %p[%ld]: mm=%p mask=0x%x\n",
- 		ctx, ctx->user_id, mm, ctx->ring_info.nr);
- 	return ctx;
- 
-@@ -360,7 +354,7 @@ out_cleanup:
- 	aio_free_ring(ctx);
- out_freectx:
- 	kmem_cache_free(kioctx_cachep, ctx);
--	dprintk("aio: error allocating ioctx %d\n", err);
-+	pr_debug("error allocating ioctx %d\n", err);
- 	return ERR_PTR(err);
- }
- 
-@@ -607,8 +601,8 @@ static inline void really_put_req(struct kioctx *ctx, struct kiocb *req)
-  */
- static void __aio_put_req(struct kioctx *ctx, struct kiocb *req)
- {
--	dprintk(KERN_DEBUG "aio_put(%p): f_count=%ld\n",
--		req, atomic_long_read(&req->ki_filp->f_count));
-+	pr_debug("(%p): f_count=%ld\n",
-+		 req, atomic_long_read(&req->ki_filp->f_count));
- 
- 	assert_spin_locked(&ctx->ctx_lock);
- 
-@@ -721,9 +715,9 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
- 	event->res = res;
- 	event->res2 = res2;
- 
--	dprintk("aio_complete: %p[%lu]: %p: %p %Lx %lx %lx\n",
--		ctx, tail, iocb, iocb->ki_obj.user, iocb->ki_user_data,
--		res, res2);
-+	pr_debug("%p[%lu]: %p: %p %Lx %lx %lx\n",
-+		 ctx, tail, iocb, iocb->ki_obj.user, iocb->ki_user_data,
-+		 res, res2);
- 
- 	/* after flagging the request as done, we
- 	 * must never even look at it again
-@@ -779,9 +773,7 @@ static int aio_read_evt(struct kioctx *ioctx, struct io_event *ent)
- 	int ret = 0;
- 
- 	ring = kmap_atomic(info->ring_pages[0]);
--	dprintk("in aio_read_evt h%lu t%lu m%lu\n",
--		 (unsigned long)ring->head, (unsigned long)ring->tail,
--		 (unsigned long)ring->nr);
-+	pr_debug("h%u t%u m%u\n", ring->head, ring->tail, ring->nr);
- 
- 	if (ring->head == ring->tail)
- 		goto out;
-@@ -802,8 +794,7 @@ static int aio_read_evt(struct kioctx *ioctx, struct io_event *ent)
- 
- out:
- 	kunmap_atomic(ring);
--	dprintk("leaving aio_read_evt: %d  h%lu t%lu\n", ret,
--		 (unsigned long)ring->head, (unsigned long)ring->tail);
-+	pr_debug("%d  h%u t%u\n", ret, ring->head, ring->tail);
- 	return ret;
- }
- 
-@@ -866,13 +857,13 @@ static int read_events(struct kioctx *ctx,
- 		if (unlikely(ret <= 0))
- 			break;
- 
--		dprintk("read event: %Lx %Lx %Lx %Lx\n",
--			ent.data, ent.obj, ent.res, ent.res2);
-+		pr_debug("%Lx %Lx %Lx %Lx\n",
-+			 ent.data, ent.obj, ent.res, ent.res2);
- 
- 		/* Could we split the check in two? */
- 		ret = -EFAULT;
- 		if (unlikely(copy_to_user(event, &ent, sizeof(ent)))) {
--			dprintk("aio: lost an event due to EFAULT.\n");
-+			pr_debug("lost an event due to EFAULT.\n");
- 			break;
- 		}
- 		ret = 0;
-@@ -935,7 +926,7 @@ static int read_events(struct kioctx *ctx,
- 
- 		ret = -EFAULT;
- 		if (unlikely(copy_to_user(event, &ent, sizeof(ent)))) {
--			dprintk("aio: lost an event due to EFAULT.\n");
-+			pr_debug("lost an event due to EFAULT.\n");
- 			break;
- 		}
- 
-@@ -966,7 +957,7 @@ static void io_destroy(struct kioctx *ioctx)
- 	hlist_del_rcu(&ioctx->list);
- 	spin_unlock(&mm->ioctx_lock);
- 
--	dprintk("aio_release(%p)\n", ioctx);
-+	pr_debug("(%p)\n", ioctx);
- 	if (likely(!was_dead))
- 		put_ioctx(ioctx);	/* twice for the list */
- 
-@@ -1259,7 +1250,7 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb, bool compat)
- 			kiocb->ki_retry = aio_fsync;
- 		break;
- 	default:
--		dprintk("EINVAL: io_submit: no operation provided\n");
-+		pr_debug("EINVAL: no operation provided\n");
- 		ret = -EINVAL;
- 	}
- 
-@@ -1279,7 +1270,7 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
- 
- 	/* enforce forwards compatibility on users */
- 	if (unlikely(iocb->aio_reserved1 || iocb->aio_reserved2)) {
--		pr_debug("EINVAL: io_submit: reserve field set\n");
-+		pr_debug("EINVAL: reserve field set\n");
- 		return -EINVAL;
- 	}
- 
-@@ -1320,7 +1311,7 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
- 
- 	ret = put_user(req->ki_key, &user_iocb->aio_key);
- 	if (unlikely(ret)) {
--		dprintk("EFAULT: aio_key\n");
-+		pr_debug("EFAULT: aio_key\n");
- 		goto out_put_req;
- 	}
- 
-@@ -1401,7 +1392,7 @@ long do_io_submit(aio_context_t ctx_id, long nr,
- 
- 	ctx = lookup_ioctx(ctx_id);
- 	if (unlikely(!ctx)) {
--		pr_debug("EINVAL: io_submit: invalid context id\n");
-+		pr_debug("EINVAL: invalid context id\n");
- 		return -EINVAL;
- 	}
- 
--- 
-1.7.12
+What is 'later'? Can you say in which of the patches it will
+be called for every RAM range?
 
+> 
+> Could put all related init_mem calling together and out of setup.c.
+
+That looks like a stray comment.
+
+> 
+> Actually, it reverts commit 1bbbbe7
+>     x86: Exclude E820_RESERVED regions and memory holes above 4 GB from direct mapping.
+> will address that later with complete solution include handling hole under 4g.
+
+.. I presume that the later is one of the patches. Can you say:
+'will address that in patch XYZ' ?
+
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Reviewed-by: Pekka Enberg <penberg@kernel.org>
+> ---
+>  arch/x86/include/asm/init.h    |    1 -
+>  arch/x86/include/asm/pgtable.h |    2 +-
+>  arch/x86/kernel/setup.c        |   27 +--------------------------
+>  arch/x86/mm/init.c             |   19 ++++++++++++++++++-
+>  4 files changed, 20 insertions(+), 29 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/init.h b/arch/x86/include/asm/init.h
+> index adcc0ae..4f13998 100644
+> --- a/arch/x86/include/asm/init.h
+> +++ b/arch/x86/include/asm/init.h
+> @@ -12,7 +12,6 @@ kernel_physical_mapping_init(unsigned long start,
+>  			     unsigned long end,
+>  			     unsigned long page_size_mask);
+>  
+> -
+
+Stray whitespace.
+
+>  extern unsigned long __initdata pgt_buf_start;
+>  extern unsigned long __meminitdata pgt_buf_end;
+>  extern unsigned long __meminitdata pgt_buf_top;
+> diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
+> index 98ac76d..dd1a888 100644
+> --- a/arch/x86/include/asm/pgtable.h
+> +++ b/arch/x86/include/asm/pgtable.h
+> @@ -602,7 +602,7 @@ static inline int pgd_none(pgd_t pgd)
+>  #ifndef __ASSEMBLY__
+>  
+>  extern int direct_gbpages;
+> -void probe_page_size_mask(void);
+> +void init_mem_mapping(void);
+>  
+>  /* local pte updates need not use xchg for locking */
+>  static inline pte_t native_local_ptep_get_and_clear(pte_t *ptep)
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index 01fb5f9..23b079f 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -913,34 +913,9 @@ void __init setup_arch(char **cmdline_p)
+>  	setup_real_mode();
+>  
+>  	init_gbpages();
+> -	probe_page_size_mask();
+>  
+> -	/* max_pfn_mapped is updated here */
+> -	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
+> -	max_pfn_mapped = max_low_pfn_mapped;
+> +	init_mem_mapping();
+>  
+> -#ifdef CONFIG_X86_64
+> -	if (max_pfn > max_low_pfn) {
+> -		int i;
+> -		unsigned long start, end;
+> -		unsigned long start_pfn, end_pfn;
+> -
+> -		for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn,
+> -							 NULL) {
+> -
+> -			end = PFN_PHYS(end_pfn);
+> -			if (end <= (1UL<<32))
+> -				continue;
+> -
+> -			start = PFN_PHYS(start_pfn);
+> -			max_pfn_mapped = init_memory_mapping(
+> -						max((1UL<<32), start), end);
+> -		}
+> -
+> -		/* can we preseve max_low_pfn ?*/
+> -		max_low_pfn = max_pfn;
+> -	}
+> -#endif
+>  	memblock.current_limit = get_max_mapped();
+>  	dma_contiguous_reserve(0);
+>  
+> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+> index 701abbc..9e17f9e 100644
+> --- a/arch/x86/mm/init.c
+> +++ b/arch/x86/mm/init.c
+> @@ -37,7 +37,7 @@ struct map_range {
+>  
+>  static int page_size_mask;
+>  
+> -void probe_page_size_mask(void)
+> +static void __init probe_page_size_mask(void)
+>  {
+>  #if !defined(CONFIG_DEBUG_PAGEALLOC) && !defined(CONFIG_KMEMCHECK)
+>  	/*
+> @@ -315,6 +315,23 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+>  	return ret >> PAGE_SHIFT;
+>  }
+>  
+> +void __init init_mem_mapping(void)
+> +{
+> +	probe_page_size_mask();
+> +
+> +	/* max_pfn_mapped is updated here */
+> +	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
+> +	max_pfn_mapped = max_low_pfn_mapped;
+> +
+> +#ifdef CONFIG_X86_64
+> +	if (max_pfn > max_low_pfn) {
+> +		max_pfn_mapped = init_memory_mapping(1UL<<32,
+> +						     max_pfn<<PAGE_SHIFT);
+> +		/* can we preseve max_low_pfn ?*/
+> +		max_low_pfn = max_pfn;
+> +	}
+> +#endif
+> +}
+>  
+>  /*
+>   * devmem_is_allowed() checks to see if /dev/mem access to a certain address
+> -- 
+> 1.7.7
