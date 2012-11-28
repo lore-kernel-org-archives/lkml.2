@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932817Ab2K1V6D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 16:58:03 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:44929 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756210Ab2K1Vso (ORCPT
+	id S1756216Ab2K1V6A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 16:58:00 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:36996 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756212Ab2K1Vso (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 28 Nov 2012 16:48:44 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -14,125 +14,87 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v9 07/46] x86, mm: Find early page table buffer together
-Date: Wed, 28 Nov 2012 13:47:18 -0800
-Message-Id: <1354139277-17376-8-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v9 46/46] x86, mm: Let "memmap=" take more entries one time
+Date: Wed, 28 Nov 2012 13:47:57 -0800
+Message-Id: <1354139277-17376-47-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
 References: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should not do that in every calling of init_memory_mapping.
+Current "memmap=" only can take one entry every time.
+when we have more entries, we have to use memmap= for each of them.
 
-At the same time need to move down early_memtest, and could remove the
-after_bootmem checking.
+For pxe booting, we have command line length limitation, those extra
+"memmap=" would waste too much space.
 
--v2: fix one early_memtest with 32bit by passing max_pfn_mapped instead.
+This patch make memmap= could take several entries one time,
+and those entries will be split with ','
+
+-v2: add doc in kernel-parameters.txt according to Konard.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/mm/init.c |   66 ++++++++++++++++++++++++++-------------------------
- 1 files changed, 34 insertions(+), 32 deletions(-)
+ Documentation/kernel-parameters.txt |    7 +++++++
+ arch/x86/kernel/e820.c              |   16 +++++++++++++++-
+ 2 files changed, 22 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 51f919f..c618e4f 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -274,16 +274,6 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 	memset(mr, 0, sizeof(mr));
- 	nr_range = split_mem_range(mr, 0, start, end);
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 9776f06..11c4125 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1514,6 +1514,13 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			         or
+ 			         memmap=0x10000$0x18690000
  
--	/*
--	 * Find space for the kernel direct mapping tables.
--	 *
--	 * Later we should allocate these tables in the local node of the
--	 * memory mapped. Unfortunately this is done currently before the
--	 * nodes are discovered.
--	 */
--	if (!after_bootmem)
--		find_early_table_space(start, end);
--
- 	for (i = 0; i < nr_range; i++)
- 		ret = kernel_physical_mapping_init(mr[i].start, mr[i].end,
- 						   mr[i].page_size_mask);
-@@ -296,6 +286,36 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 
- 	__flush_tlb_all();
- 
-+	return ret >> PAGE_SHIFT;
-+}
++	memmap=option[,option...]  [KNL,X86] various options together
++			option could be
++				exactmap
++				nn[KMG]@ss[KMG]
++				nn[KMG]#ss[KMG]
++				nn[KMG]$ss[KMG]
 +
-+void __init init_mem_mapping(void)
-+{
-+	probe_page_size_mask();
-+
-+	/*
-+	 * Find space for the kernel direct mapping tables.
-+	 *
-+	 * Later we should allocate these tables in the local node of the
-+	 * memory mapped. Unfortunately this is done currently before the
-+	 * nodes are discovered.
-+	 */
-+#ifdef CONFIG_X86_64
-+	find_early_table_space(0, max_pfn<<PAGE_SHIFT);
-+#else
-+	find_early_table_space(0, max_low_pfn<<PAGE_SHIFT);
-+#endif
-+	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
-+	max_pfn_mapped = max_low_pfn_mapped;
-+
-+#ifdef CONFIG_X86_64
-+	if (max_pfn > max_low_pfn) {
-+		max_pfn_mapped = init_memory_mapping(1UL<<32,
-+						     max_pfn<<PAGE_SHIFT);
-+		/* can we preseve max_low_pfn ?*/
-+		max_low_pfn = max_pfn;
-+	}
-+#endif
- 	/*
- 	 * Reserve the kernel pagetable pages we used (pgt_buf_start -
- 	 * pgt_buf_end) and free the other ones (pgt_buf_end - pgt_buf_top)
-@@ -311,32 +331,14 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 	 * RO all the pagetable pages, including the ones that are beyond
- 	 * pgt_buf_end at that time.
- 	 */
--	if (!after_bootmem && pgt_buf_end > pgt_buf_start)
-+	if (pgt_buf_end > pgt_buf_start)
- 		x86_init.mapping.pagetable_reserve(PFN_PHYS(pgt_buf_start),
- 				PFN_PHYS(pgt_buf_end));
- 
--	if (!after_bootmem)
--		early_memtest(start, end);
-+	/* stop early pgtable allocating after we conclude it */
-+	pgt_buf_top = 0;
- 
--	return ret >> PAGE_SHIFT;
--}
--
--void __init init_mem_mapping(void)
--{
--	probe_page_size_mask();
--
--	/* max_pfn_mapped is updated here */
--	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
--	max_pfn_mapped = max_low_pfn_mapped;
--
--#ifdef CONFIG_X86_64
--	if (max_pfn > max_low_pfn) {
--		max_pfn_mapped = init_memory_mapping(1UL<<32,
--						     max_pfn<<PAGE_SHIFT);
--		/* can we preseve max_low_pfn ?*/
--		max_low_pfn = max_pfn;
--	}
--#endif
-+	early_memtest(0, max_pfn_mapped << PAGE_SHIFT);
+ 	memory_corruption_check=0/1 [X86]
+ 			Some BIOSes seem to corrupt the first 64k of
+ 			memory when doing things like suspend/resume.
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index df06ade..d32abea 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -835,7 +835,7 @@ static int __init parse_memopt(char *p)
  }
+ early_param("mem", parse_memopt);
  
- /*
+-static int __init parse_memmap_opt(char *p)
++static int __init parse_memmap_one(char *p)
+ {
+ 	char *oldp;
+ 	u64 start_at, mem_size;
+@@ -877,6 +877,20 @@ static int __init parse_memmap_opt(char *p)
+ 
+ 	return *p == '\0' ? 0 : -EINVAL;
+ }
++static int __init parse_memmap_opt(char *str)
++{
++	while (str) {
++		char *k = strchr(str, ',');
++
++		if (k)
++			*k++ = 0;
++
++		parse_memmap_one(str);
++		str = k;
++	}
++
++	return 0;
++}
+ early_param("memmap", parse_memmap_opt);
+ 
+ void __init finish_e820_parsing(void)
 -- 
 1.7.7
 
