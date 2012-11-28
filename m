@@ -1,43 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751864Ab2K1QI3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 11:08:29 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:39059 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750734Ab2K1QI2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 11:08:28 -0500
+	id S1752159Ab2K1QIw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 11:08:52 -0500
+Received: from fieldses.org ([174.143.236.118]:36054 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751546Ab2K1QIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 11:08:51 -0500
+Date: Wed, 28 Nov 2012 11:08:47 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Subject: Re: [PATCH 1/2] nfsd: make NFSv4 lease time per net
+Message-ID: <20121128160847.GJ11651@fieldses.org>
+References: <20121127111007.10271.54338.stgit@localhost.localdomain>
+ <20121127111144.10271.97169.stgit@localhost.localdomain>
+ <20121128150941.GF11651@fieldses.org>
+ <50B629C3.4050903@parallels.com>
+ <20121128151542.GI11651@fieldses.org>
+ <50B62F38.4010205@parallels.com>
 MIME-Version: 1.0
-In-Reply-To: <1353683310-23654-6-git-send-email-ciminaghi@gnudd.com>
-References: <1353683310-23654-1-git-send-email-ciminaghi@gnudd.com>
-	<1353683310-23654-6-git-send-email-ciminaghi@gnudd.com>
-Date: Wed, 28 Nov 2012 17:08:27 +0100
-Message-ID: <CACRpkdaWNC0ayN4JbEq63W+KLUdYfH5SmSu8=CNucQNixvmPUw@mail.gmail.com>
-Subject: Re: [PATCH 5/8] mmci: replace readsl/writesl with ioread32_rep/iowrite32_rep
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Davide Ciminaghi <ciminaghi@gnudd.com>
-Cc: linux@arm.linux.org.uk, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, djbw@fb.com, vinod.koul@intel.com,
-        grant.likely@secretlab.ca, rubini@gnudd.com, wim@iguana.be,
-        cjb@laptop.org, davidb@codeaurora.org, nico@fluxnic.net,
-        ben-linux@fluff.org, viresh.linux@gmail.com, rajeev-dlh.kumar@st.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        giancarlo.asnaghi@st.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <50B62F38.4010205@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 23, 2012 at 4:08 PM, Davide Ciminaghi <ciminaghi@gnudd.com> wrote:
+On Wed, Nov 28, 2012 at 07:35:20PM +0400, Stanislav Kinsbursky wrote:
+> 28.11.2012 19:15, J. Bruce Fields пишет:
+> >On Wed, Nov 28, 2012 at 07:12:03PM +0400, Stanislav Kinsbursky wrote:
+> >>28.11.2012 19:09, J. Bruce Fields пишет:
+> >>>On Tue, Nov 27, 2012 at 02:11:44PM +0300, Stanislav Kinsbursky wrote:
+> >>>>diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
+> >>>>index dab350d..4930981 100644
+> >>>>--- a/fs/nfsd/nfsctl.c
+> >>>>+++ b/fs/nfsd/nfsctl.c
+> >>>>@@ -912,7 +912,8 @@ static ssize_t nfsd4_write_time(struct file *file, char *buf, size_t size, time_
+> >>>>   */
+> >>>>  static ssize_t write_leasetime(struct file *file, char *buf, size_t size)
+> >>>>  {
+> >>>>-	return nfsd4_write_time(file, buf, size, &nfsd4_lease);
+> >>>>+	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
+> >>>>+	return nfsd4_write_time(file, buf, size, &nn->nfsd4_lease);
+> >>>
+> >>>This is called in the context of whatever process writes to
+> >>>nfsv4leasetime, so should be using its network namespace, right?
+> >>>
+> >>
+> >>This is, actually, a interim solution to preserve existent logic.
+> >>I.e. I'm going to convert "nfsd" filesystem into per-net one (like rpc_pipefs). I, actually, already done it in my tree.
+> >>Thus proper network namespace will be taken from nfsd superblock.
+> >
+> >OK, remind me how that works?  It's mounted just once, but each network
+> >namespace gets a different view of the filesystem?
+> >
+> 
+> Nope. It's a single mount point, but per-namespace (network, in our case) - not globally.
+> Pointer to namespace will be placed on sb->s_fs_info.
 
-> Not all the architectures have readsl/writesl,
-> use the more portable ioread32_rep/iowrite32_rep functions instead.
->
-> Signed-off-by: Davide Ciminaghi <ciminaghi@gnudd.com>
+OK, anyway, applying these.
 
-Can't think of anything better, put it in Russell's patch tracker when
-you think you're finished with it.
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-
-Yours,
-Linus Walleij
+--b.
