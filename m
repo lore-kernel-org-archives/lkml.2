@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754822Ab2K1RZl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 12:25:41 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33054 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752399Ab2K1RZi (ORCPT
+	id S1755558Ab2K1RZw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 12:25:52 -0500
+Received: from leviathan.tchmachines.com ([208.76.85.180]:49248 "EHLO
+	leviathan.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752331Ab2K1RZv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 12:25:38 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Liam Girdwood <lrg@ti.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 2/4] regulator: arizona-ldo1: Support DVFS in default constraints
-Date: Wed, 28 Nov 2012 17:25:32 +0000
-Message-Id: <1354123534-6927-2-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1354123534-6927-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1354123534-6927-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Wed, 28 Nov 2012 12:25:51 -0500
+From: Eli Billauer <eli.billauer@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: arnd@arndb.de, gregkh@linuxfoundation.org,
+        Eli Billauer <eli.billauer@gmail.com>
+Subject: [PATCH 1/2] pci_ids: Added FPGA-related entries
+Date: Wed, 28 Nov 2012 17:41:32 +0200
+Message-Id: <1354117293-13632-1-git-send-email-eli.billauer@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - leviathan.tchmachines.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - billauer.co.il
+X-Get-Message-Sender-Via: leviathan.tchmachines.com: authenticated_id: billaue/sender_address_domain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some Arizona devices such as the WM5102 can use DVFS on their digital core,
-for these devices allow the voltage range to vary in the default setup.
+These entries are referred to by the Xillybus driver.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Signed-off-by: Eli Billauer <eli.billauer@gmail.com>
 ---
- drivers/regulator/arizona-ldo1.c |   20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
+ include/linux/pci_ids.h |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/regulator/arizona-ldo1.c b/drivers/regulator/arizona-ldo1.c
-index 908996a..a1e0451 100644
---- a/drivers/regulator/arizona-ldo1.c
-+++ b/drivers/regulator/arizona-ldo1.c
-@@ -61,6 +61,16 @@ static const struct regulator_desc arizona_ldo1 = {
- 	.owner = THIS_MODULE,
- };
+diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+index 9d36b82..9f2c724 100644
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -1320,6 +1320,12 @@
+ #define PCI_DEVICE_ID_REALTEK_8139	0x8139
  
-+static const struct regulator_init_data arizona_ldo1_dvfs = {
-+	.constraints = {
-+		.min_uV = 1200000,
-+		.max_uV = 1800000,
-+		.valid_ops_mask = REGULATOR_CHANGE_STATUS |
-+				  REGULATOR_CHANGE_VOLTAGE,
-+	},
-+	.num_consumer_supplies = 1,
-+};
+ #define PCI_VENDOR_ID_XILINX		0x10ee
++#define PCI_VENDOR_ID_ALTERA		0x1172
++#define PCI_VENDOR_ID_ACTEL		0x11aa
++#define PCI_VENDOR_ID_LATTICE		0x1204
 +
- static const struct regulator_init_data arizona_ldo1_default = {
- 	.constraints = {
- 		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-@@ -88,7 +98,15 @@ static int arizona_ldo1_probe(struct platform_device *pdev)
- 	 * default init_data for it.  This will be overridden with
- 	 * platform data if provided.
- 	 */
--	ldo1->init_data = arizona_ldo1_default;
-+	switch (arizona->type) {
-+	case WM5102:
-+		ldo1->init_data = arizona_ldo1_dvfs;
-+		break;
-+	default:
-+		ldo1->init_data = arizona_ldo1_default;
-+		break;
-+	}
++#define PCI_DEVICE_ID_XILLYBUS		0xebeb
 +
- 	ldo1->init_data.consumer_supplies = &ldo1->supply;
- 	ldo1->supply.supply = "DCVDD";
- 	ldo1->supply.dev_name = dev_name(arizona->dev);
+ #define PCI_DEVICE_ID_RME_DIGI96	0x3fc0
+ #define PCI_DEVICE_ID_RME_DIGI96_8	0x3fc1
+ #define PCI_DEVICE_ID_RME_DIGI96_8_PRO	0x3fc2
 -- 
-1.7.10.4
+1.7.2.3
 
