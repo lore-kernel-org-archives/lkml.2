@@ -1,138 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051Ab2K1DYi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 22:24:38 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:37770 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751326Ab2K1DYg (ORCPT
+	id S1752150Ab2K1D0Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 22:26:16 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:44075 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751308Ab2K1D0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 22:24:36 -0500
-MIME-Version: 1.0
-In-Reply-To: <50B4B6BE.3000902@cn.fujitsu.com>
-References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com>
-	<CAA_GA1d7CxHvmZELvD_DO6u5tu1WBqfmLiuEzeFo=xMzuW50Tg@mail.gmail.com>
-	<50B479FA.6010307@cn.fujitsu.com>
-	<CAA_GA1ezZJyqVL=Dp5U2zzNw6bkfMKJY_STkt3E7TXkUYcv+jQ@mail.gmail.com>
-	<50B4B6BE.3000902@cn.fujitsu.com>
-Date: Wed, 28 Nov 2012 11:24:34 +0800
-Message-ID: <CAA_GA1fE0fhLVs50rRZ6OsTw7DV0hyVC2EuRyUrbzxLztPLoeg@mail.gmail.com>
-Subject: Re: [PATCH v2 0/5] Add movablecore_map boot option
-From: Bob Liu <lliubbo@gmail.com>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: hpa@zytor.com, akpm@linux-foundation.org, rob@landley.net,
-        isimatu.yasuaki@jp.fujitsu.com, laijs@cn.fujitsu.com,
-        wency@cn.fujitsu.com, linfeng@cn.fujitsu.com, jiang.liu@huawei.com,
-        yinghai@kernel.org, kosaki.motohiro@jp.fujitsu.com,
-        minchan.kim@gmail.com, mgorman@suse.de, rientjes@google.com,
-        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-doc@vger.kernel.org,
-        m.szyprowski@samsung.com
-Content-Type: text/plain; charset=UTF-8
+	Tue, 27 Nov 2012 22:26:15 -0500
+Date: Wed, 28 Nov 2012 14:26:10 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
+        Vipul Kumar Samar <vipulkumar.samar@st.com>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the slave-dma
+ tree
+Message-Id: <20121128142610.9fdfaf75a98ef83a12c32d9b@canb.auug.org.au>
+In-Reply-To: <CAKohpo=K2kX-M4NM9onrn-Rr4otJwcQ1HxN5cKPYvj+Tza_0Ug@mail.gmail.com>
+References: <20121127154430.36e87542081a7cc50f80d0f6@canb.auug.org.au>
+	<CAKohpo=K2kX-M4NM9onrn-Rr4otJwcQ1HxN5cKPYvj+Tza_0Ug@mail.gmail.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__28_Nov_2012_14_26_10_+1100_63N0AWW5OgRqPlPO"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 27, 2012 at 8:49 PM, Tang Chen <tangchen@cn.fujitsu.com> wrote:
-> On 11/27/2012 08:09 PM, Bob Liu wrote:
->>
->> On Tue, Nov 27, 2012 at 4:29 PM, Tang Chen<tangchen@cn.fujitsu.com>
->> wrote:
->>>
->>> Hi Liu,
->>>
->>>
->>> This feature is used in memory hotplug.
->>>
->>> In order to implement a whole node hotplug, we need to make sure the
->>> node contains no kernel memory, because memory used by kernel could
->>> not be migrated. (Since the kernel memory is directly mapped,
->>> VA = PA + __PAGE_OFFSET. So the physical address could not be changed.)
->>>
->>> User could specify all the memory on a node to be movable, so that the
->>> node could be hot-removed.
->>>
->>
->> Thank you for your explanation. It's reasonable.
->>
->> But i think it's a bit duplicated with CMA, i'm not sure but maybe we
->> can combine it with CMA which already in mainline?
->>
-> Hi Liu,
+--Signature=_Wed__28_Nov_2012_14_26_10_+1100_63N0AWW5OgRqPlPO
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi,
+
+On Tue, 27 Nov 2012 11:08:36 +0530 Viresh Kumar <viresh.kumar@linaro.org> w=
+rote:
 >
-> Thanks for your advice. :)
->
-> CMA is Contiguous Memory Allocator, right?  What I'm trying to do is
-> controlling where is the start of ZONE_MOVABLE of each node. Could
-> CMA do this job ?
+> On 27 November 2012 10:14, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > Today's linux-next merge of the arm-soc tree got a conflict in
+> > arch/arm/mach-spear13xx/spear1310.c between commit b47394911c26 ("ARM:
+> > SPEAr13xx: Pass DW DMAC platform data from DT") from the slave-dma tree
+> > and commit 300a6856324a ("ARM: SPEAr1310: Fix AUXDATA for compact flash
+> > controller") from the arm-soc tree.
+> >
+> > I have no idea how to fix this up, so I just effectively dropped the
+> > arm-doc tree patch.
+>=20
+> So sorry for that, Can you please take arm-soc version here? Patch 300a68=
+56324a
+> is doing the correct thing. i.e. we need
+>=20
+> +       OF_DEV_AUXDATA("arasan,cf-spear1340", MCIF_CF_BASE, NULL, &cf_pda=
+ta),
+>=20
+> instead of
+>=20
+> +       OF_DEV_AUXDATA("arasan,cf-spear1340", MCIF_CF_BASE, NULL, "cf"),
 
-cma will not control the start of ZONE_MOVABLE of each node, but it
-can declare a memory that always movable
-and all non movable allocate request will not happen on that area.
+Done, it should be correct on today's linux-next.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Currently cma use a boot parameter "cma=" to declare a memory size
-that always movable.
-I think it might fulfill your requirement if extending the boot
-parameter with a start address.
+--Signature=_Wed__28_Nov_2012_14_26_10_+1100_63N0AWW5OgRqPlPO
+Content-Type: application/pgp-signature
 
-more info at http://lwn.net/Articles/468044/
->
-> And also, after a short investigation, CMA seems need to base on
-> memblock. But we need to limit memblock not to allocate memory on
-> ZONE_MOVABLE. As a result, we need to know the ranges before memblock
-> could be used. I'm afraid we still need an approach to get the ranges,
-> such as a boot option, or from static ACPI tables such as SRAT/MPST.
->
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Yes, it's based on memblock and with boot option.
-In setup_arch32()
-    dma_contiguous_reserve(0);   => will declare a cma area using
-memblock_reserve()
+iQIcBAEBCAAGBQJQtYRSAAoJEECxmPOUX5FEZT8P/12x7/C3h4ayWzgOmpiaY6l1
+iKkAfiw6t/8p1/lIO1sSLVgUqVVKiSb12l1xzMRUV1hGsN4/glS0lSf8JlIoYczj
+j283JHUOn7IThcskdykYl0xlhrs1FWkTLvfPKsml2zc0yb1Fmumqkazx7WPaWNfN
+Frp8xV8mbKbEa7W7xv471yKPCc2TfhlzT+TSD8WLH7KqRIg760fVsmzQfdh9yuJ5
+1GSqTbBE4eTqFFAAZXJPH2u8bwobFHHWQJs8itmz2uWNUnjkjO5PFbUu+kQr578R
+CkmzOVviOX/efTvkuDC8qcwZ9lKFvH17W/uZtTN+lAobgOpTy6wYvFhSTY5O2Bdu
+SyxmbEPHz2ahYLd3EpA4/kOdHl8Lj2VcCegsSRcotrJlxoaVaXGgres+He7LeLCl
+ak9IEaqwCuhH5y91avETO21r81OGt5bWbPlf5WY+7RDf3OFvuzu0GVwxrBy7H8Zm
+Mv/m1mUxv+W+9vs9/sExjkujcr4HYtCNX3c0MMlS8PHyYfdjf/m0gh/kka13pAOt
+B5p2X8vDWFbedg4pDrWkjPlUJLIl6SH9CdvUXsSORee30H+mopJpApL3hLgyM7mW
+SCT0n6j5bXKCPhFPTiehzvxNOV3i3ETLtJ9V/XV1UBHhmPLSr3LgXjYXBLcvs0rR
+xby4Qrp/npxXCw9MLlrH
+=e7QG
+-----END PGP SIGNATURE-----
 
-> I'm don't know much about CMA for now. So if you have any better idea,
-> please share with us, thanks. :)
-
-My idea is reuse cma like below patch(even not compiled) and boot with
-"cma=size@start_address".
-I don't know whether it can work and whether suitable for your
-requirement, if not forgive me for this noises.
-
-diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
-index 612afcc..564962a 100644
---- a/drivers/base/dma-contiguous.c
-+++ b/drivers/base/dma-contiguous.c
-@@ -59,11 +59,18 @@ struct cma *dma_contiguous_default_area;
-  */
- static const unsigned long size_bytes = CMA_SIZE_MBYTES * SZ_1M;
- static long size_cmdline = -1;
-+static long cma_start_cmdline = -1;
-
- static int __init early_cma(char *p)
- {
-+       char *oldp;
-        pr_debug("%s(%s)\n", __func__, p);
-+       oldp = p;
-        size_cmdline = memparse(p, &p);
-+
-+       if (*p == '@')
-+               cma_start_cmdline = memparse(p+1, &p);
-+       printk("cma start:0x%x, size: 0x%x\n", size_cmdline, cma_start_cmdline);
-        return 0;
- }
- early_param("cma", early_cma);
-@@ -127,8 +134,10 @@ void __init dma_contiguous_reserve(phys_addr_t limit)
-        if (selected_size) {
-                pr_debug("%s: reserving %ld MiB for global area\n", __func__,
-                         selected_size / SZ_1M);
--
--               dma_declare_contiguous(NULL, selected_size, 0, limit);
-+               if (cma_size_cmdline != -1)
-+                       dma_declare_contiguous(NULL, selected_size,
-cma_start_cmdline, limit);
-+               else
-+                       dma_declare_contiguous(NULL, selected_size, 0, limit);
-        }
- };
-
--- 
-Regards,
---Bob
+--Signature=_Wed__28_Nov_2012_14_26_10_+1100_63N0AWW5OgRqPlPO--
