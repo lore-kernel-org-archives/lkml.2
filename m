@@ -1,105 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753164Ab2K1ECy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 23:02:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29529 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752926Ab2K1ECi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 23:02:38 -0500
-Date: Tue, 27 Nov 2012 23:01:48 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Jeff Chua <jeff.chua.linux@gmail.com>, Jens Axboe <axboe@kernel.dk>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: [PATCH 2/2] block_dev: don't take the write lock if block size
- doesn't change
-In-Reply-To: <Pine.LNX.4.64.1211272257140.18338@file.rdu.redhat.com>
-Message-ID: <Pine.LNX.4.64.1211272300000.18338@file.rdu.redhat.com>
-References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com>
- <20121120180949.GG1408@quack.suse.cz> <CAAJw_ZsQdLO5qLdGPzmPf+N2D6CZw+S-4mvRGnxfARL71LuRaw@mail.gmail.com>
- <CAAJw_ZsAyB0z0TF1mqPz1Z+H+tg7W6LVzNLKf0BkuF3u8TTMuQ@mail.gmail.com>
- <CA+55aFyvT3R3kgwJzp9mY5eE1fwMnzXnmBpHSbqjd-eJRVDkJw@mail.gmail.com>
- <50AF7901.20401@kernel.dk> <CAAJw_ZvXGKcjfOAS_tRdXJ9SjpCKw1t7rNt+Q=ieCkVJwN2qcg@mail.gmail.com>
- <Pine.LNX.4.64.1211241555470.4300@file.rdu.redhat.com>
- <CAAJw_ZvUqRmCCQ5-2PdFPRyfdzZMuphGU=hgAjUOHGk=n9Mheg@mail.gmail.com>
- <CAAJw_ZuJXnAz1ukBwQa3xNbQaL1KUBSrbQMK2hn-7D6Ar1p3fQ@mail.gmail.com>
- <50B46E05.70906@kernel.dk> <CAAJw_ZsYuLCwCTc6U=ELO_PvyjnVKQdkPke2enfzm6zOeWAqjA@mail.gmail.com>
- <Pine.LNX.4.64.1211272257140.18338@file.rdu.redhat.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752653Ab2K1ECe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 23:02:34 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:42819 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751171Ab2K1ECd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 23:02:33 -0500
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: target-devel <target-devel@vger.kernel.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Christoph Hellwig <hch@lst.de>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>
+Subject: [PATCH] target: Make spc_get_write_same_sectors return sector_t
+Date: Wed, 28 Nov 2012 03:55:25 +0000
+Message-Id: <1354074925-12647-1-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-block_dev: don't take the write lock if block size doesn't change
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Taking the write lock has a big performance impact on the whole system
-(because of synchronize_sched_expedited). This patch avoids taking the
-write lock if the block size doesn't change (i.e. when mounting
-filesystem with block size equal to the default block size).
+We already expect TFO->get_blocks() to return sector_t for zero value case
+when doing WRITE_SAME to the end of the backend device, so go ahead and return
+sector_t from spc_get_write_same_sectors() to handle this case properly.
 
-The logic to test if the block device is mapped was moved to a separate
-function is_bdev_mapped to avoid code duplication.
+Also, update the single iblock_execute_write_same() caller of this code.
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Martin K. Petersen <martin.petersen@oracle.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 ---
- fs/block_dev.c |   25 ++++++++++++++++++-------
- 1 file changed, 18 insertions(+), 7 deletions(-)
+ drivers/target/target_core_iblock.c  |    2 +-
+ drivers/target/target_core_sbc.c     |    2 +-
+ include/target/target_core_backend.h |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-Index: linux-3.7-rc7/fs/block_dev.c
-===================================================================
---- linux-3.7-rc7.orig/fs/block_dev.c	2012-11-28 04:09:01.000000000 +0100
-+++ linux-3.7-rc7/fs/block_dev.c	2012-11-28 04:13:53.000000000 +0100
-@@ -114,10 +114,18 @@ void invalidate_bdev(struct block_device
+diff --git a/drivers/target/target_core_iblock.c b/drivers/target/target_core_iblock.c
+index 42cc3fb..cfdb949 100644
+--- a/drivers/target/target_core_iblock.c
++++ b/drivers/target/target_core_iblock.c
+@@ -483,7 +483,7 @@ iblock_execute_write_same(struct se_cmd *cmd)
+ 	struct bio *bio;
+ 	struct bio_list list;
+ 	sector_t block_lba = cmd->t_task_lba;
+-	unsigned int sectors = spc_get_write_same_sectors(cmd);
++	sector_t sectors = spc_get_write_same_sectors(cmd);
+ 
+ 	sg = &cmd->t_data_sg[0];
+ 
+diff --git a/drivers/target/target_core_sbc.c b/drivers/target/target_core_sbc.c
+index 4fd22cd..8be5bd7 100644
+--- a/drivers/target/target_core_sbc.c
++++ b/drivers/target/target_core_sbc.c
+@@ -109,7 +109,7 @@ sbc_emulate_readcapacity_16(struct se_cmd *cmd)
+ 	return 0;
  }
- EXPORT_SYMBOL(invalidate_bdev);
  
--int set_blocksize(struct block_device *bdev, int size)
-+static int is_bdev_mapped(struct block_device *bdev)
+-int spc_get_write_same_sectors(struct se_cmd *cmd)
++sector_t spc_get_write_same_sectors(struct se_cmd *cmd)
  {
--	struct address_space *mapping;
-+	int ret_val;
-+	struct address_space *mapping = bdev->bd_inode->i_mapping;
-+	mutex_lock(&mapping->i_mmap_mutex);
-+	ret_val = mapping_mapped(mapping);
-+	mutex_unlock(&mapping->i_mmap_mutex);
-+	return ret_val;
-+}
+ 	u32 num_blocks;
  
-+int set_blocksize(struct block_device *bdev, int size)
-+{
- 	/* Size must be a power of two, and between 512 and PAGE_SIZE */
- 	if (size > PAGE_SIZE || size < 512 || !is_power_of_2(size))
- 		return -EINVAL;
-@@ -126,18 +134,21 @@ int set_blocksize(struct block_device *b
- 	if (size < bdev_logical_block_size(bdev))
- 		return -EINVAL;
+diff --git a/include/target/target_core_backend.h b/include/target/target_core_backend.h
+index 3393ab1..5079109 100644
+--- a/include/target/target_core_backend.h
++++ b/include/target/target_core_backend.h
+@@ -52,7 +52,7 @@ void	target_complete_cmd(struct se_cmd *, u8);
  
-+	/*
-+	 * If the block size doesn't change, don't take the write lock.
-+	 * We check for is_bdev_mapped anyway, for consistent behavior.
-+	 */
-+	if (size == bdev->bd_block_size)
-+		return is_bdev_mapped(bdev) ? -EBUSY : 0;
-+
- 	/* Prevent starting I/O or mapping the device */
- 	percpu_down_write(&bdev->bd_block_size_semaphore);
+ sense_reason_t	spc_parse_cdb(struct se_cmd *cmd, unsigned int *size);
+ sense_reason_t	spc_emulate_report_luns(struct se_cmd *cmd);
+-int	spc_get_write_same_sectors(struct se_cmd *cmd);
++sector_t	spc_get_write_same_sectors(struct se_cmd *cmd);
  
- 	/* Check that the block device is not memory mapped */
--	mapping = bdev->bd_inode->i_mapping;
--	mutex_lock(&mapping->i_mmap_mutex);
--	if (mapping_mapped(mapping)) {
--		mutex_unlock(&mapping->i_mmap_mutex);
-+	if (is_bdev_mapped(bdev)) {
- 		percpu_up_write(&bdev->bd_block_size_semaphore);
- 		return -EBUSY;
- 	}
--	mutex_unlock(&mapping->i_mmap_mutex);
- 
- 	/* Don't change the size if it is same as current */
- 	if (bdev->bd_block_size != size) {
+ sense_reason_t	sbc_parse_cdb(struct se_cmd *cmd, struct sbc_ops *ops);
+ u32	sbc_get_device_rev(struct se_device *dev);
+-- 
+1.7.2.5
 
