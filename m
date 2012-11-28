@@ -1,99 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910Ab2K1QXE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 11:23:04 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:38633 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475Ab2K1QXC (ORCPT
+	id S1752905Ab2K1QX1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 11:23:27 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:14953 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752989Ab2K1QXY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 11:23:02 -0500
+	Wed, 28 Nov 2012 11:23:24 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 28 Nov 2012 08:23:05 -0800
+Message-ID: <50B63A70.8020107@nvidia.com>
+Date: Wed, 28 Nov 2012 18:23:12 +0200
+From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <CAHO5Pa2_D_L6wKPWccaYH2BYWYFc=4Khe0Om5GWU3D-tcAH0OQ@mail.gmail.com>
-References: <1336004953.4240.9.camel@mop> <CAHO5Pa2_D_L6wKPWccaYH2BYWYFc=4Khe0Om5GWU3D-tcAH0OQ@mail.gmail.com>
-From: Kay Sievers <kay@vrfy.org>
-Date: Wed, 28 Nov 2012 17:22:39 +0100
-Message-ID: <CAPXgP12jXOJzTTgwQkm7XK_ig2iEKAbhgNkF+MRR6_S49Tqx_A@mail.gmail.com>
-Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to variable-length
- record buffer
-To: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Greg Kroah-Hartmann <greg@kroah.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Lucas Stach <dev@lynxeye.de>
+CC: Dave Airlie <airlied@gmail.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arto Merilainen <amerilainen@nvidia.com>
+Subject: Re: [RFC v2 8/8] drm: tegra: Add gr2d device
+References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com>    <1353935954-13763-9-git-send-email-tbergstrom@nvidia.com>    <CAPM=9tzvt3J6D3zLPV97w629q62CNhAxX8V+_JZ6kmXxxz5fVg@mail.gmail.com>    <50B46336.8030605@nvidia.com>    <CAPM=9txCuPJcFAfD7Hu5o2BVFK=pVah7B8HhG0ctLCyFPwNEnA@mail.gmail.com>    <50B476E1.4070403@nvidia.com>    <CAPM=9tysiK6LgnQdAwGSYfxnQfgcfRm0+X2tPSAEDxUPt-QZGA@mail.gmail.com>    <50B47DA8.60609@nvidia.com>	<1354011776.1479.31.camel@tellur>    <20121127103739.GA3329@avionic-0098.adnet.avionic-design.de>    <50B4A483.8030305@nvidia.com>    <CAPM=9tz=_0Drx3=Me3EQdPgBvYVGzs6Gnqaw6RBaTLsCG24RAg@mail.gmail.com>    <50B60EFF.1050703@nvidia.com> <1354109602.1479.66.camel@tellur>   <50B61845.6060102@nvidia.com> <1354111565.1479.73.camel@tellur>  <50B6237B.8010808@nvidia.com> <1354115609.1479.91.camel@tellur>
+In-Reply-To: <1354115609.1479.91.camel@tellur>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 2:33 PM, Michael Kerrisk <mtk.manpages@gmail.com> wrote:
-> On Thu, May 3, 2012 at 2:29 AM, Kay Sievers <kay@vrfy.org> wrote:
->> From: Kay Sievers <kay@vrfy.org>
-> [...]
->>         case SYSLOG_ACTION_SIZE_UNREAD:
->> -               error = log_end - log_start;
->> +               raw_spin_lock_irq(&logbuf_lock);
->> +               if (syslog_seq < log_first_seq) {
->> +                       /* messages are gone, move to first one */
->> +                       syslog_seq = log_first_seq;
->> +                       syslog_idx = log_first_idx;
->> +               }
->> +               if (from_file) {
->> +                       /*
->> +                        * Short-cut for poll(/"proc/kmsg") which simply checks
->> +                        * for pending data, not the size; return the count of
->> +                        * records, not the length.
->> +                        */
->> +                       error = log_next_idx - syslog_idx;
->> +               } else {
->> +                       u64 seq;
->> +                       u32 idx;
->> +
->> +                       error = 0;
->> +                       seq = syslog_seq;
->> +                       idx = syslog_idx;
->> +                       while (seq < log_next_seq) {
->> +                               error += syslog_print_line(idx, NULL, 0);
->> +                               idx = log_next(idx);
->> +                               seq++;
->> +                       }
->> +               }
->> +               raw_spin_unlock_irq(&logbuf_lock);
->>                 break;
-> [...]
->
-> It looks as though the changes here have broken SYSLOG_ACTION_SIZE_UNREAD.
+On 28.11.2012 17:13, Lucas Stach wrote:
+> To be honest I still don't grok all of this, but nonetheless I try my
+> best.
 
-Any specifics that it causes actual problems we need to address?
+Sorry. I promised in another thread a write-up explaining the design. I
+still owe you guys that.
 
-> On a 2.6.31 system, immediately after SYSLOG_ACTION_READ_CLEAR, a
-> SYSLOG_ACTION_SIZE_UNREAD returns 0.
+> Anyway, shouldn't nvhost be something like an allocator used by host1x
+> clients? With the added ability to do relocs/binding of buffers into
+> client address spaces, refcounting buffers and import/export dma-bufs?
+> In this case nvhost objects would just be used to back DRM GEM objects.
+> If using GEM objects in the DRM driver introduces any cross dependencies
+> with nvhost, you should take a step back and ask yourself if the current
+> design is the right way to go.
 
-Hmm, sounds like the right thing to do.
+tegradrm has the GEM allocator, and tegradrm contains the 2D kernel
+interface. tegradrm contains a dma-buf exporter for the tegradrm GEM
+objects.
 
-We have read everything, even cleared the buffer for later queries. So
-there is nothing to read anymore for later calls, and they will
-actually never return anything if they are called, so returning 0 here
-sounds like the right thing. The current SYSLOG_ACTION_SIZE_UNREAD
-seems to match properly the expectations one can make for
-SYSLOG_ACTION_READ_ALL.
+nvhost accepts jobs from tegradrm's 2D driver. nvhost increments
+refcounts and maps the command stream and target memories to devices,
+maps the command streams to kernel memory, replaces the placeholders in
+command streams with addresses with device virtual addresses, and unmaps
+the buffer from kernel memory. nvhost uses dma buf APIs for all of the
+memory operations, and relies on dmabuf for refcounting. After all this
+the command streams are pushed to host1x push buffer as GATHER (kind of
+a "gosub") opcodes, which reference to the command streams.
 
-> On 3.5, immediately after SYSLOG_ACTION_READ_CLEAR, the value returned
-> by SYSLOG_ACTION_SIZE_UNREAD is unchanged
->
-> (i.e., assuming that the
-> value returned was non-zero before SYSLOG_ACTION_SIZE_UNREAD, it is
-> still nonzero afterward), even though a subsequent
-> SYSLOG_ACTION_READ_CLEAR indicates that there are zero bytes to read.
+Once the job is done, nvhost decrements refcounts and updates pushbuffer
+pointers.
 
-Which sounds at least like weird behaviour, if not "broken".
+The design is done so that nvhost won't be DRM specific. I want to
+enable creating V4L2 etc interfaces that talk to other host1x clients.
+V4L2 (yeah, I know nothing of V4L2) could pass frames via nvhost to EPP
+for pixel format conversion or 2D for rotation and write result to frame
+buffer.
 
-Any indication that we need to restore the old behaviour to fix some
-weird assumptions? To me the current one sounds like the better and
-more correct option, and what one would expect from it. But maybe we
-cannot get away with it ...
+Do you think there's some fundamental problem with this design?
 
-(I hope I understood what you explained correctly, I'm a bit confused
-by the issue.)
+>> Taking a step back - 2D streams are actually very short, in the order of
+>> <100 bytes. Just copying them to kernel space would actually be faster
+>> than doing MMU operations.
+>>
+> Is this always the case because of the limited abilities of the gr2d
+> engine, or is it just your current driver flushing the stream very
+> often?
 
+It's because of limited abilities of the hardware. It just doesn't take
+that many operations to invoke 2D.
 
-Thanks,
-Kay
+The libdrm user space we're created flushes probably a bit too often
+now, but even in downstream the streams are not much longer.  It takes
+still at least a week to get the user space code out for you to look at.
+
+> In which way is it a good design choice to let the CPU happily alter
+> _any_ buffer the GPU is busy processing without getting the concurrency
+> right?
+
+Concurrency is handled with sync points. User space will know when a
+command stream is processed and can be reused by comparing the current
+sync point value, and the fence that 2D driver returned to user space.
+User space can have a pool of buffers and can recycle when it knows it
+can do so. But, this is not enforced by kernel.
+
+The difference with your proposal and what I posted is the level of
+control user space has over its command stream management. But as said,
+2D streams are so short that my guess is that there's not too much
+penalty copying it to kernel managed host1x push buffer directly instead
+of inserting a GATHER reference.
+
+> Please keep in mind that the interfaces you are now trying to introduce
+> have to be supported for virtually unlimited time. You might not be able
+> to scrub your mistakes later on without going through a lot of hassles.
+> 
+> To avoid a lot of those mistakes it might be a good idea to look at how
+> other drivers use the DRM infrastructure and only part from those proven
+> schemes where really necessary/worthwhile.
+
+Yep, as the owner of this driver downstream, I'm also leveraging my
+experience with the graphics stack in our downstream software stack that
+is accessible via f.ex. L4T.
+
+This is exactly the discussion we should be having, and I'm learning all
+the time, so let's continue tossing around ideas until we're both happy
+with the result.
+
+Terje
