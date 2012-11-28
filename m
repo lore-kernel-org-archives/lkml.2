@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754921Ab2K1Xis (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 18:38:48 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41745 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753115Ab2K1Xir (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 18:38:47 -0500
-Date: Wed, 28 Nov 2012 15:38:45 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Kurachkin Michail <Michail.Kurachkin@promwad.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kuten Ivan <Ivan.Kuten@promwad.com>,
-        Josh Triplett <josh@joshtriplett.org>
-Subject: Re: TDM bus support in Linux Kernel
-Message-ID: <20121128233845.GA16396@kroah.com>
-References: <CAKa7sPRgROFY2RfeVW0G_1EWzWXakuWu50tGQ2QuzrvEimU3FQ@mail.gmail.com>
- <20120203110036.GA7732@leaf>
- <F7F628C32E67B04DAECC5CA53521253E5F9D9350@sv-exmb01-lo1.promwad.corp>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <F7F628C32E67B04DAECC5CA53521253E5F9D9350@sv-exmb01-lo1.promwad.corp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755863Ab2K1XmJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 18:42:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60927 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754287Ab2K1XmH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 18:42:07 -0500
+Date: Wed, 28 Nov 2012 15:42:06 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ed Cashin <ecashin@coraid.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/8] aoe: miscellaneous fixes follow-up recent patch
+ submissions
+Message-Id: <20121128154206.813a54f6.akpm@linux-foundation.org>
+In-Reply-To: <cover.1353518444.git.ecashin@coraid.com>
+References: <cover.1353518444.git.ecashin@coraid.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 19, 2012 at 11:00:12AM +0000, Kurachkin Michail wrote:
-> Hi Greg,
+On Wed, 21 Nov 2012 19:52:41 -0500
+Ed Cashin <ecashin@coraid.com> wrote:
+
+> This patch series applies to today's linux-next/akpm, commit
+> d3faae60d84f586ff8937b77c8476bca1b5f8ec6.
 > 
-> During the work on developing VoIP network router I designed TDM bus subsystem and wrote SLIC driver for si3226x. This code was developed for the commercial project, and now I am willing to release it under GPL.
-> Please review my sources (or give me a clue on what to do next) and give some feedback on my work.
-> https://github.com/stelhs/slic_tdm.git
+> Ed L. Cashin (8):
+>   aoe: copy fallback timing information on destination failover
+>   aoe: remove vestigial request queue allocation
+>   aoe: increase default cap on outstanding AoE commands in the network
+>   aoe: cleanup: correct comment for aoetgt nout
+>   aoe: remove call to request handler from I/O completion
+>   aoe: make error messages more specific in static minor allocation
+>   aoe: initialize sysminor to avoid compiler warning
+>   aoe: return real minor number for static minors
 
-It's really hard to review a random git tree somewhere, and having it in
-this form doesn't make it easy to add to the kernel tree itself.
-
-So, could you take your git tree and convert it to a patch (or patches)
-to be applied to the kernel.org tree and send it in email so we can see
-what it looks like that way?
-
-I'd recommend putting everything under drivers/staging/ for now, to make
-it easier to accept at the moment, and it makes it easier to clean up
-and fix up any issues in-kernel, instead of having to keep huge patches
-outside of the tree.
-
-Take a look at the file, Documentation/SubmittingPatches for how to
-create a patch and what I need in order for it to be able to be applied.
-
-thanks,
-
-greg k-h
+This series didn't contain your usual
+aoe-update-driver-internal-version-number-to-xx.patch
