@@ -1,173 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751758Ab2K1HI0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 02:08:26 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:41744 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751117Ab2K1HIZ (ORCPT
+	id S1752320Ab2K1HIb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 02:08:31 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:58956 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117Ab2K1HI2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 02:08:25 -0500
-Message-ID: <50B5B738.50700@linux.vnet.ibm.com>
-Date: Wed, 28 Nov 2012 12:33:20 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: habanero@linux.vnet.ibm.com
-CC: Andrew Jones <drjones@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Gleb Natapov <gleb@redhat.com>, Chegu Vinod <chegu_vinod@hp.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>
-Subject: Re: [PATCH V3 RFC 1/2] sched: Bail out of yield_to when source and
- target runqueue has one task
-References: <20121126120740.2595.33651.sendpatchset@codeblue> <20121126120754.2595.37316.sendpatchset@codeblue> <20121126133501.GA9830@turtle.usersys.redhat.com> <50B49658.7080507@linux.vnet.ibm.com> <1354025096.31820.886.camel@oc6622382223.ibm.com>
-In-Reply-To: <1354025096.31820.886.camel@oc6622382223.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Wed, 28 Nov 2012 02:08:28 -0500
+Subject: Re: [RFC][PATCH] fs: configfs: programmatically create config
+ groups
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Michal Nazarewicz <mina86@mina86.com>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Joel Becker <jlbec@evilplan.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        target-devel <target-devel@vger.kernel.org>
+In-Reply-To: <50B4DA4E.3020900@linutronix.de>
+References: <1353918910-12381-1-git-send-email-andrzej.p@samsung.com>
+	 <50B39921.6090308@linutronix.de> <xa1ty5hogv6j.fsf@mina86.com>
+	 <50B3A1A0.2000607@linutronix.de> <xa1ttxscgsht.fsf@mina86.com>
+	 <50B4DA4E.3020900@linutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 27 Nov 2012 23:08:16 -0800
+Message-ID: <1354086496.18984.16.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-x-cbid: 12112807-2000-0000-0000-00000A0BB2C5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2012 07:34 PM, Andrew Theurer wrote:
-> On Tue, 2012-11-27 at 16:00 +0530, Raghavendra K T wrote:
->> On 11/26/2012 07:05 PM, Andrew Jones wrote:
->>> On Mon, Nov 26, 2012 at 05:37:54PM +0530, Raghavendra K T wrote:
->>>> From: Peter Zijlstra <peterz@infradead.org>
->>>>
->>>> In case of undercomitted scenarios, especially in large guests
->>>> yield_to overhead is significantly high. when run queue length of
->>>> source and target is one, take an opportunity to bail out and return
->>>> -ESRCH. This return condition can be further exploited to quickly come
->>>> out of PLE handler.
->>>>
->>>> (History: Raghavendra initially worked on break out of kvm ple handler upon
->>>>    seeing source runqueue length = 1, but it had to export rq length).
->>>>    Peter came up with the elegant idea of return -ESRCH in scheduler core.
->>>>
->>>> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
->>>> Raghavendra, Checking the rq length of target vcpu condition added.(thanks Avi)
->>>> Reviewed-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
->>>> Signed-off-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
->>>> ---
->>>>
->>>>    kernel/sched/core.c |   25 +++++++++++++++++++------
->>>>    1 file changed, 19 insertions(+), 6 deletions(-)
->>>>
->>>> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
->>>> index 2d8927f..fc219a5 100644
->>>> --- a/kernel/sched/core.c
->>>> +++ b/kernel/sched/core.c
->>>> @@ -4289,7 +4289,10 @@ EXPORT_SYMBOL(yield);
->>>>     * It's the caller's job to ensure that the target task struct
->>>>     * can't go away on us before we can do any checks.
->>>>     *
->>>> - * Returns true if we indeed boosted the target task.
->>>> + * Returns:
->>>> + *	true (>0) if we indeed boosted the target task.
->>>> + *	false (0) if we failed to boost the target.
->>>> + *	-ESRCH if there's no task to yield to.
->>>>     */
->>>>    bool __sched yield_to(struct task_struct *p, bool preempt)
->>>>    {
->>>> @@ -4303,6 +4306,15 @@ bool __sched yield_to(struct task_struct *p, bool preempt)
->>>>
->>>>    again:
->>>>    	p_rq = task_rq(p);
->>>> +	/*
->>>> +	 * If we're the only runnable task on the rq and target rq also
->>>> +	 * has only one task, there's absolutely no point in yielding.
->>>> +	 */
->>>> +	if (rq->nr_running == 1 && p_rq->nr_running == 1) {
->>>> +		yielded = -ESRCH;
->>>> +		goto out_irq;
->>>> +	}
->>>> +
->>>>    	double_rq_lock(rq, p_rq);
->>>>    	while (task_rq(p) != p_rq) {
->>>>    		double_rq_unlock(rq, p_rq);
->>>> @@ -4310,13 +4322,13 @@ again:
->>>>    	}
->>>>
->>>>    	if (!curr->sched_class->yield_to_task)
->>>> -		goto out;
->>>> +		goto out_unlock;
->>>>
->>>>    	if (curr->sched_class != p->sched_class)
->>>> -		goto out;
->>>> +		goto out_unlock;
->>>>
->>>>    	if (task_running(p_rq, p) || p->state)
->>>> -		goto out;
->>>> +		goto out_unlock;
->>>>
->>>>    	yielded = curr->sched_class->yield_to_task(rq, p, preempt);
->>>>    	if (yielded) {
->>>> @@ -4329,11 +4341,12 @@ again:
->>>>    			resched_task(p_rq->curr);
->>>>    	}
->>>>
->>>> -out:
->>>> +out_unlock:
->>>>    	double_rq_unlock(rq, p_rq);
->>>> +out_irq:
->>>>    	local_irq_restore(flags);
->>>>
->>>> -	if (yielded)
->>>> +	if (yielded > 0)
->>>>    		schedule();
->>>>
->>>>    	return yielded;
->>>>
->>>
->>> Acked-by: Andrew Jones <drjones@redhat.com>
->>>
->>
->> Thank you Drew.
->>
->> Marcelo Gleb.. Please let me know if you have comments / concerns on the
->> patches..
->>
->> Andrew, Vinod, IMO, the patch set looks good for undercommit scenarios
->> especially for large guests where we do have overhead of vcpu iteration
->> of ple handler..
->
-> I agree, looks fine for undercommit scenarios.  I do wonder what happens
-> with 1.5x overcommit, where we might see 1/2 the host cpus with runqueue
-> of 2 and 1/2 of the host cpus with a runqueue of 1.  Even with this
-> change that scenario still might be fine, but it would be nice to see a
-> comparison.
->
+Hi Sebastian & Co,
 
-Hi Andrew, yes thanks for pointing out 1.5x case which should have
-theoretical  worst case..
-I tried with 2 24 vcpu guests and the same 32 core machine.. Here is
-the result..
+On Tue, 2012-11-27 at 16:20 +0100, Sebastian Andrzej Siewior wrote:
+> On 11/26/2012 06:54 PM, Michal Nazarewicz wrote:
+> > On Mon, Nov 26 2012, Sebastian Andrzej Siewior wrote:
+> >> Wouldn't say that. It may adds complexity on another level. The target
+> >> subsystem has the same problem with adding luns and there seems nothing
+> >> wrong with having lun3 and 4 and leaving 0 and 1 unsued.
+> >
+> > That's not what Wikipedia claims though (from
+> > <http://en.wikipedia.org/wiki/Logical_Unit_Number>):
+> >
+> > 	LUN 0: There is one LUN which is required to exist in every
+> > 	target: zero. The logical unit with LUN zero is special in that
+> > 	it must implement a few specific commands, most notably Report
+> > 	LUNs, which is how an initiator can find out all the other LUNs
+> > 	in the target. But LUN zero need not provide any other services,
+> > 	such as a storage volume.
+> >
+> > That's why I proposed solution where one needs to have continuous
+> > numbering of LUNs.  I'm not an expert on SCSI though.
+> 
+> Let me quote "4.6.4 Minimum LUN addressing requirements" of SAM4:
+> 
+> | All SCSI target devices shall support LUN 0 (i.e., 00000000
+> | 00000000h) or the REPORT LUNS well-known logical unit. For SCSI
+> | target devices that support the hierarchical addressing model the LUN
+> | 0 or the REPORT LUNS well-known logical unit shall be the logical
+> | unit that an application client addresses to determine
+> | information about the SCSI target device and the logical units
+> | contained within the SCSI target device.
+> 
+> Nab, I think not having LUN0 configured as long as REPORT LUNS says
+> which luns are available is fine. Target seems to work on linux without
+> it and SAM4 does no claim otherwise unless I miss interpret it. Any
+> opinion on this from your side?
+> 
 
-Ebizzy (rec/sec higher is better)
-x base
-+ patched
-     N       Avg        Stddev
-x  10     2688.6     347.55917
-+  10     2707.6     260.93728
+So we use a special RAMDISK-MCP @ target_core_device.c:g_lun0_dev along
+with a se_lun (located @ se_portal_group->tpg_virt_lun0) to always
+service REPORT_LUNS to LUN=0, regardless of LUN=0 configfs fabric
+endpoint layout.
 
-improvement 0.706%
+Note this happens within target_core_device.c:transport_lookup_cmd_lun()
+once no active se_node_acl->device_list[unpacked_lun] entry can be
+located.
 
-dbench (Throughput MB/sec higher is better)
-x base
-+ patched
-     N         Avg        Stddev
-x  10    3164.712     140.24468
-+  10    3244.021     185.92434
+> >
+> >> With the tcm gadget I get:
+> >>
+> >> |scsi 0:0:0:2: Direct-Access     LIO-ORG  RAMDISK-MCP      4.0  PQ: 0
+> >> ANSI: 5
+> >> |scsi 0:0:0:3: Direct-Access     LIO-ORG  FILEIO           4.0  PQ: 0
+> >> ANSI: 5
+> >>
+> >> You notice :2 and :3 instead :0 and :1. While should be there something
+> >> wrong with this?
+> >
+> > It may be that it works on Linux but fails on some other systems (or
+> > even older Linux kernels).  Like I've said, I'm not SCSI expert, so my
+> > knowledge of it is (embarrassingly) minimal.
+> 
+> Sure but still. You limit the user to create lunX folders where X can
+> be 0..255 for instance. If the user chooses not create lun0, why force
+> him?
+> 
 
-Improvement 2.5%
+It's certainly easier for the user if REPORT_LUNS always 'just works' to
+LUN=0.
 
-So there is no significant improvement / degradation seen in
-1.5x.
+--nab
+
 
