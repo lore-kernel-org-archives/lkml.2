@@ -1,82 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817Ab2K1Mzp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 07:55:45 -0500
-Received: from mail-vb0-f46.google.com ([209.85.212.46]:61096 "EHLO
-	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754232Ab2K1Mzn (ORCPT
+	id S1754916Ab2K1M7Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 07:59:16 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:37073 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754588Ab2K1M7O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 07:55:43 -0500
+	Wed, 28 Nov 2012 07:59:14 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        LMML <linux-media@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        Prabhakar Lad <prabhakar.lad@ti.com>, devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Subject: Re: [PATCH v3 9/9] davinci: vpfe: Add documentation and TODO
+Date: Wed, 28 Nov 2012 14:00:14 +0100
+Message-ID: <1555450.K4uAzFNhY7@avalon>
+User-Agent: KMail/4.9.2 (Linux/3.5.7-gentoo; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <20121128092213.4bd0870f@redhat.com>
+References: <1354099329-20722-1-git-send-email-prabhakar.lad@ti.com> <1354099329-20722-10-git-send-email-prabhakar.lad@ti.com> <20121128092213.4bd0870f@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1354090704.3054.13.camel@ThinkPad-T5421.cn.ibm.com>
-References: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
-	<CAFTL4hx0fc_Jo8wkuRZedW4DVEeQceiHMrWVqTqB5k065Wsg8Q@mail.gmail.com>
-	<1354090704.3054.13.camel@ThinkPad-T5421.cn.ibm.com>
-Date: Wed, 28 Nov 2012 13:55:42 +0100
-Message-ID: <CAFTL4hxPSp1fs4=2g0yFs0d5nFisfUsfDAA9bHWcu+-+tO_ySw@mail.gmail.com>
-Subject: Re: [RFC PATCH v2] Add rcu user eqs exception hooks for async page fault
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: linux-next list <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
-        sasha.levin@oracle.com, gleb@redhat.com, avi@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/11/28 Li Zhong <zhong@linux.vnet.ibm.com>:
-> Thank you all for the review and education.
->
-> Below are my current understandings and an update version. Would you
-> please help to review it again and give your comments?
->
-> Thanks, Zhong
->
-> Now it seems to me that it is legal to call rcu_irq_exit/enter() without
-> a matching rcu_irq_enter/exit() if the cpu is in non rcu idle state.
->
-> As opposite, it is illegal to call rcu_irq_exit() without a matching
-> rcu_irq_enter() if the cpu is in rcu idle state.
->
-> But it seems legal to call rcu_irq_enter() without a matching
-> rcu_irq_exit() if the cpu is in rcu idle state, regarding the
-> dynticks_nesting value.   However, it seems not good to exit the rcu
-> idle state, if we are actually entering into idle mode, so maybe it's
-> better to call a matching rcu_irq_exit() before actually idle?
->
-> As Frederic pointed out, we need a rcu_user_exit() to exit the user eqs
-> (if we are in this state) in the beginning. But after some more
-> thinking, I guess we might also need to call rcu_user_enter() after the
-> waiting, if we get this page fault from user space. So maybe it's better
-> to use rcu user eqs exception hooks here?
+Hi Mauro,
 
-Makes sense.
+Please see below.
 
+On Wednesday 28 November 2012 09:22:13 Mauro Carvalho Chehab wrote:
+> Hi Prabhakar,
+> 
+> Em Wed, 28 Nov 2012 16:12:09 +0530
+> 
+> Prabhakar Lad <prabhakar.csengg@gmail.com> escreveu:
+> > +Introduction
+> > +============
+> > +
+> > + This file documents the Texas Instruments Davinci Video processing Front
+> > + End (VPFE) driver located under drivers/media/platform/davinci. The
+> > + original driver exists for Davinci VPFE, which is now being changed to
+> > + Media Controller Framework.
+> 
+> Hmm... please correct me if I'm wrong, but are you wanting to replace an
+> existing driver at drivers/media/platform/davinci, by another one at
+> staging that has lots of known issues, as pointed at your TODO????
+> 
+> If so, please don't do that. Replacing a driver by some other one is
+> generally a very bad idea, especially in this case, where the new driver
+> has clearly several issues, the main one being to define its own proprietary
+> and undocumented API:
 >
-> With rcu_user_exit() at the beginning, now rcu_irq_enter() only protects
-> the cpu idle eqs, but it's not good to call rcu_irq_exit() after the cpu
-> halt and the page ready.
-
-Hmm, why is it not good?
-
+> > +As of now since the interface will undergo few changes all the include
+> > +files are present in staging itself, to build for dm365 follow below
+> > +steps,
+> > +
+> > +- copy vpfe.h from drivers/staging/media/davinci_vpfe/ to
+> > +  include/media/davinci/ folder for building the uImage.
+> > +- copy davinci_vpfe_user.h from drivers/staging/media/davinci_vpfe/ to
+> > +  include/uapi/linux/davinci_vpfe.h, and add a entry in Kbuild (required
+> > +  for building application).
+> > +- copy dm365_ipipeif_user.h from drivers/staging/media/davinci_vpfe/ to
+> > +  include/uapi/linux/dm365_ipipeif.h and a entry in Kbuild (required
+> > +  for building application).
+> 
+> Among other things, with those ugly and very likely mandatory API calls:
 >
-> So I still want to remove it. And later if it shows that we really needs
-> rcu somewhere in this code path, maybe we could use RCU_NONIDLE() to
-> protect it. ( The suspicious RCU usage reported in commit
-> c5e015d4949aa665 seems related to schedule(), which is not in the code
-> path if we are in cpu idle eqs )
+> >+/*
+> >+ * Private IOCTL
+> >+ * VIDIOC_VPFE_IPIPEIF_S_CONFIG: Set IPIEIF configuration
+> >+ * VIDIOC_VPFE_IPIPEIF_G_CONFIG: Get IPIEIF configuration
+> >+ */
+> >+#define VIDIOC_VPFE_IPIPEIF_S_CONFIG \
+> >+	_IOWR('I', BASE_VIDIOC_PRIVATE + 1, struct ipipeif_params)
+> >+#define VIDIOC_VPFE_IPIPEIF_G_CONFIG \
+> >+	_IOWR('I', BASE_VIDIOC_PRIVATE + 2, struct ipipeif_params)
+> >+
+> >+#endif
+> 
+> I remember we rejected already drivers like that with obscure "S_CONFIG"
+> private ioctl that were suspect to send a big initialization undocumented
+> blob to the driver, as only the vendor's application would be able to use
+> such driver.
 
-Yes but if rcu_irq_*() calls are fine to be called there, and I
-believe they are because exception_enter() exits the user mode, we
-should start to protect there right now instead of waiting for a
-potential future warning of illegal RCU use.
+That's correct, and that's why the driver is going to staging. From there it 
+will be incrementally fixed and then moved to drivers/media/, or dropped if 
+not maintained.
 
->
-> I think we still need Gleb's patch about the idle check in
-> kvm_async_pf_task_wait(), and maybe another patch for the
-> exit_idle()/enter_idle() issue.
+> So, instead, of submitting it to staging, you should be sending incremental
+> patches for the existing driver, adding newer functionality there, and
+> using the proper V4L2 API, with makes life easier for reviewers and
+> application developers.
 
-Right.
+I agree that it would be the best thing to do, but I don't think it's going to 
+happen. We need to decide between two options.
 
-Thanks.
+- Push back now and insist in incremental patches for the existing driver, and 
+get nothing back as TI will very likely give up completely.
+- Accept the driver in staging, get it fixed incrementally, and finally move 
+it to drivers/media/
+
+There's a political side to this issue, we need to decide whether we want to 
+insist vendors getting everything right before any code reaches mainline, in 
+which case I believe we will lose some of them in the process, including major 
+vendors such as TI, or if we can make the mainline learning curve and 
+experience a bit more smooth by accepting such code in staging.
+
+I would vote for the second option, with a very clear rule that getting the 
+driver in staging is only one step in the journey: if the development effort 
+stops there, the driver *will* be removed.
+
+-- 
+Regards,
+
+Laurent Pinchart
+
