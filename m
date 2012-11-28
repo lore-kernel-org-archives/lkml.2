@@ -1,110 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753257Ab2K1IfF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 03:35:05 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:37592 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753081Ab2K1IfC (ORCPT
+	id S1753312Ab2K1Iim (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 03:38:42 -0500
+Received: from www.linutronix.de ([62.245.132.108]:39119 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753081Ab2K1Iil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 03:35:02 -0500
-Message-ID: <50B5CC5A.8060607@kernel.dk>
-Date: Wed, 28 Nov 2012 09:33:30 +0100
-From: Jens Axboe <axboe@kernel.dk>
+	Wed, 28 Nov 2012 03:38:41 -0500
+Message-ID: <50B5CD8C.9060902@linutronix.de>
+Date: Wed, 28 Nov 2012 09:38:36 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
 MIME-Version: 1.0
-To: Mikulas Patocka <mpatocka@redhat.com>
-CC: Jeff Chua <jeff.chua.linux@gmail.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jan Kara <jack@suse.cz>, lkml <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: Recent kernel "mount" slow
-References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com> <20121120180949.GG1408@quack.suse.cz> <CAAJw_ZsQdLO5qLdGPzmPf+N2D6CZw+S-4mvRGnxfARL71LuRaw@mail.gmail.com> <CAAJw_ZsAyB0z0TF1mqPz1Z+H+tg7W6LVzNLKf0BkuF3u8TTMuQ@mail.gmail.com> <CA+55aFyvT3R3kgwJzp9mY5eE1fwMnzXnmBpHSbqjd-eJRVDkJw@mail.gmail.com> <50AF7901.20401@kernel.dk> <CAAJw_ZvXGKcjfOAS_tRdXJ9SjpCKw1t7rNt+Q=ieCkVJwN2qcg@mail.gmail.com> <Pine.LNX.4.64.1211241555470.4300@file.rdu.redhat.com> <CAAJw_ZvUqRmCCQ5-2PdFPRyfdzZMuphGU=hgAjUOHGk=n9Mheg@mail.gmail.com> <CAAJw_ZuJXnAz1ukBwQa3xNbQaL1KUBSrbQMK2hn-7D6Ar1p3fQ@mail.gmail.com> <50B46E05.70906@kernel.dk> <CAAJw_ZsYuLCwCTc6U=ELO_PvyjnVKQdkPke2enfzm6zOeWAqjA@mail.gmail.com> <50B4B313.3030707@kernel.dk> <Pine.LNX.4.64.1211272252260.18338@file.rdu.redhat.com>
-In-Reply-To: <Pine.LNX.4.64.1211272252260.18338@file.rdu.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Felipe Balbi'" <balbi@ti.com>,
+        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
+        "'Joel Becker'" <jlbec@evilplan.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        "'Michal Nazarewicz'" <mina86@mina86.com>
+Subject: Re: [RFC][PATCH] fs: configfs: programmatically create config groups
+References: <1353918910-12381-1-git-send-email-andrzej.p@samsung.com> <50B39921.6090308@linutronix.de> <008101cdcc7d$2d499df0$87dcd9d0$%p@samsung.com> <50B4E364.8030704@linutronix.de> <002901cdcd3f$e7288ac0$b579a040$%p@samsung.com>
+In-Reply-To: <002901cdcd3f$e7288ac0$b579a040$%p@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-11-28 04:57, Mikulas Patocka wrote:
-> 
-> 
-> On Tue, 27 Nov 2012, Jens Axboe wrote:
-> 
->> On 2012-11-27 11:06, Jeff Chua wrote:
->>> On Tue, Nov 27, 2012 at 3:38 PM, Jens Axboe <axboe@kernel.dk> wrote:
->>>> On 2012-11-27 06:57, Jeff Chua wrote:
->>>>> On Sun, Nov 25, 2012 at 7:23 AM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
->>>>>> On Sun, Nov 25, 2012 at 5:09 AM, Mikulas Patocka <mpatocka@redhat.com> wrote:
->>>>>>> So it's better to slow down mount.
->>>>>>
->>>>>> I am quite proud of the linux boot time pitting against other OS. Even
->>>>>> with 10 partitions. Linux can boot up in just a few seconds, but now
->>>>>> you're saying that we need to do this semaphore check at boot up. By
->>>>>> doing so, it's inducing additional 4 seconds during boot up.
->>>>>
->>>>> By the way, I'm using a pretty fast SSD (Samsung PM830) and fast CPU
->>>>> (2.8GHz). I wonder if those on slower hard disk or slower CPU, what
->>>>> kind of degradation would this cause or just the same?
->>>>
->>>> It'd likely be the same slow down time wise, but as a percentage it
->>>> would appear smaller on a slower disk.
->>>>
->>>> Could you please test Mikulas' suggestion of changing
->>>> synchronize_sched() in include/linux/percpu-rwsem.h to
->>>> synchronize_sched_expedited()?
->>>
->>> Tested. It seems as fast as before, but may be a "tick" slower. Just
->>> perception. I was getting pretty much 0.012s with everything reverted.
->>> With synchronize_sched_expedited(), it seems to be 0.012s ~ 0.013s.
->>> So, it's good.
+On 11/28/2012 09:10 AM, Andrzej Pietrasiewicz wrote:
+>> Here I understand it. This is to some point a limitation of the gadget
+>> framework. We do know the number of interface that will be available
+>> before we bind. We simply don't know the endpoint number. There are two
+>> exceptions to what I just wrote:
+>> - g_zero drops the ISO endpoints if the UDC has no UDC support for it.
+>>     This should not happen on-the-fly.
+>> - UAC2 may want to make the number interfaces (and therefore configure
+>>     able) and function (play / record) configurable.
 >>
->> Excellent
+>
+> So do we know everything before bind or we don't?
+
+After some sleep I think we do.
+
+>> That was wrong. Pushing it into configs is better but I am not sure we
+>> need it. I understand the need for things that pop later like interfaceXX
+>> but couldn't the user manually create them if he needs them?
 >>
->>>> linux-next also has a re-write of the per-cpu rw sems, out of Andrews
->>>> tree. It would be a good data point it you could test that, too.
->>>
->>> Tested. It's slower. 0.350s. But still faster than 0.500s without the patch.
->>
->> Makes sense, it's 2 synchronize_sched() instead of 3. So it doesn't fix
->> the real issue, which is having to do synchronize_sched() in the first
->> place.
->>
->>> # time mount /dev/sda1 /mnt; sync; sync; umount /mnt
->>>
->>>
->>> So, here's the comparison ...
->>>
->>> 0.500s     3.7.0-rc7
->>> 0.168s     3.7.0-rc2
->>> 0.012s     3.6.0
->>> 0.013s     3.7.0-rc7 + synchronize_sched_expedited()
->>> 0.350s     3.7.0-rc7 + Oleg's patch.
->>
->> I wonder how many of them are due to changing to the same block size.
->> Does the below patch make a difference?
-> 
-> This patch is wrong because you must check if the device is mapped while 
-> holding bdev->bd_block_size_semaphore (because 
-> bdev->bd_block_size_semaphore prevents new mappings from being created)
+>
+> What name shall the user use? How to know which user-created directory
+> should correspond to which actual interface? If there are, say,
+> 3 interfaces, what would:
+>
+> $ mkdir interface873246
+>
+> mean?
+>
+> And in general, what would
+>
+> $ mkdir rykcq1234
+>
+> mean?
+>
+> Let's go one directory deeper in the hierarchy and suppose there is
+> no programmatic directories creation. So we
+>
+> $ cd interface<something>
+>
+> so that we can create the endpoint directories.
+> And now what? What names shall the user use for the endpoint
+> directories? Oh, that's simple: just see what the endpoint
+> directories' names are. But wait, aren't we just creating them?
+>
+> Please also see Micha³'s point about user interface.
 
-No it doesn't. If you read the patch, that was moved to i_mmap_mutex.
+Yeah I did. Now I'm okay with creating new directories but we should
+keep this to a minimum and encode as much information possible in
+directory's name.
 
-> I'm sending another patch that has the same effect.
-> 
-> 
-> Note that ext[234] filesystems set blocksize to 1024 temporarily during 
-> mount, so it doesn't help much (it only helps for other filesystems, such 
-> as jfs). For ext[234], you have a device with default block size 4096, the 
-> filesystem sets block size to 1024 during mount, reads the super block and 
-> sets it back to 4096.
+>
+> Andrzej
 
-That is true, hence I was hesitant to think it'll actually help. In any
-case, basically any block device will have at least one blocksize
-transitioned when being mounted for the first time. I wonder if we just
-shouldn't default to having a 4kb soft block size to avoid that one,
-though it is working around the issue to some degree.
-
--- 
-Jens Axboe
-
+Sebastian
