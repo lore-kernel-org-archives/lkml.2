@@ -1,58 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753926Ab2K1JrY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 04:47:24 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:57280 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752059Ab2K1JrW (ORCPT
+	id S1753738Ab2K1JvA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 04:51:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33803 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751601Ab2K1Ju6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 04:47:22 -0500
-MIME-Version: 1.0
-In-Reply-To: <1408044.6czCGhbHJH@vostro.rjw.lan>
-References: <1353761958-12810-1-git-send-email-ming.lei@canonical.com>
-	<5434404.G1ERYjuorE@vostro.rjw.lan>
-	<CACVXFVODD9fRqQc3kR58OJm3ERgBWojnx=790xGwu=MPGaSmMA@mail.gmail.com>
-	<1408044.6czCGhbHJH@vostro.rjw.lan>
-Date: Wed, 28 Nov 2012 17:47:18 +0800
-Message-ID: <CACVXFVOk45wr8jv3w=KO7uTThGSTSkq0FRsPD6p_AyQZLWGQJg@mail.gmail.com>
-Subject: Re: [PATCH v6 2/6] PM / Runtime: introduce pm_runtime_set_memalloc_noio()
-From: Ming Lei <ming.lei@canonical.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oneukum@suse.de>, Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jens Axboe <axboe@kernel.dk>, "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 28 Nov 2012 04:50:58 -0500
+Date: Wed, 28 Nov 2012 10:50:51 +0100
+From: Petr Tesarik <ptesarik@suse.cz>
+To: ebiederm@xmission.com (Eric W. Biederman)
+Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: Save PG_compound or PG_head value in VMCOREINFO
+Message-ID: <20121128105051.6c1585c1@azariah.suse.cz>
+In-Reply-To: <87ehjeivqo.fsf@xmission.com>
+References: <3774326.lMtTTFYZT3@azariah.suse.cz>
+	<87ehjeivqo.fsf@xmission.com>
+Organization: SUSE Linux, s.r.o.
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 5:29 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->
-> But it doesn't have to walk the children.  Moreover, with counters it only
+V Tue, 27 Nov 2012 15:25:35 -0600
+ebiederm@xmission.com (Eric W. Biederman) napsáno:
 
-Yeah, I got it, it is the advantage of counter, but with extra 'int'
-field introduced
-in 'struct device'.
+> Petr Tesarik <ptesarik@suse.cz> writes:
+> 
+> > To allow filtering of huge pages, makedumpfile must be able to
+> > identify them in the dump. This can be done by checking for the
+> > appropriate page flag, so communicate its value to makedumpfile
+> > through the VMCOREINFO interface.
+> 
+> I don't have any siginificant problems with exporting this
+> information. However that #ifddef looks nasty and confusing.
+> 
+> Does that #ifdef exist in the huge page code as well?
 
-> needs to walk the whole path if all devices in it need to be updated.  For
-> example, if you call pm_runtime_set_memalloc_noio(dev, true) for a device
-> whose parent's counter is greater than zero already, you don't need to
-> walk the path above the parent.
+For the huge page code, the #ifdef is constrained to
+include/linux/page-flags.h, which has two sets of functions depending
+on CONFIG_PAGEFLAGS_EXTENDED.
 
-We still can do it with the flag only, pm_runtime_set_memalloc_noio(dev, true)
-can return immediately if one parent or the 'dev' flag is true.
+The page flag which does exist in a given configuration is implemented
+directly using the standard page flag definitions, and the flags that do
+not exist are emulated with inline functions of the corresponding name.
 
-But considered that the pm_runtime_set_memalloc_noio(dev, false) is only
-called in a very infrequent path(network/block device->remove()), looks the
-introduced cost isn't worthy of the obtained advantage.
+> Can we always export both?  Can we only export one?
 
-So could you accept not introducing counter? and I will update with the
-above improvement you suggested.
+Neither. Their existence is mutually exclusive, i.e.:
 
-Thanks,
---
-Ming Lei
+CONFIG_PAGEFLAGS_EXTENDED  -> PG_head, PG_tail, no PG_compound
+!CONFIG_PAGEFLAGS_EXTENDED -> PG_compound, no PG_head, no PG_tail
+
+All I can do is create a "virtual" page flag mask (e.g.
+PG_hugepage_mask), which is initialized either to 1L << PG_compound or
+to (1L << PG_head) | (1L << PG_tail). Such definition could then be
+kept in <linux/page-flags.h>. I'm not sure it's worth it, because there
+would be only one in-tree user of this new macro.
+
+> What is the purpose of the #ifdef?
+> 
+> As it stands that looks like code that will figure out how to bitrot
+> if we just leave it sitting there.
+
+It cannot simply bitrot and be silently wrong. If it ever gets out of
+sync with page-flags.h, this code won't even compile, because one or
+the other page flag is always missing.
+
+Petr Tesarik
+
+> > Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
+> >
+> > ---
+> >  kernel/kexec.c |    5 +++++
+> >  1 file changed, 5 insertions(+)
+> >
+> > --- a/kernel/kexec.c
+> > +++ b/kernel/kexec.c
+> > @@ -1511,6 +1511,11 @@ static int __init crash_save_vmcoreinfo_
+> >  	VMCOREINFO_NUMBER(NR_FREE_PAGES);
+> >  	VMCOREINFO_NUMBER(PG_lru);
+> >  	VMCOREINFO_NUMBER(PG_private);
+> > +#ifdef CONFIG_PAGEFLAGS_EXTENDED
+> > +	VMCOREINFO_NUMBER(PG_head);
+> > +#else
+> > +	VMCOREINFO_NUMBER(PG_compound);
+> > +#endif
+> >  	VMCOREINFO_NUMBER(PG_swapcache);
+> >  
+> >  	arch_crash_save_vmcoreinfo();
+
