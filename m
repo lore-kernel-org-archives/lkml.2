@@ -1,187 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379Ab2K1Ah5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 19:37:57 -0500
-Received: from www.hansjkoch.de ([178.63.77.200]:51423 "EHLO www.hansjkoch.de"
+	id S1754194Ab2K1Ahz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 19:37:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46735 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754214Ab2K1Ah4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 19:37:56 -0500
-Date: Wed, 28 Nov 2012 01:37:50 +0100
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Cong Ding <dinggnu@gmail.com>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>,
-        Vitalii Demianets <vitas@nppfactor.kiev.ua>,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] drivers/uio/uio_pdrv_genirq.c: Fix memory leak &
- confusing labels
-Message-ID: <20121128003750.GD2605@local>
-References: <201211271929.32315.vitas@nppfactor.kiev.ua>
- <20121127230747.GB2605@local>
- <CAP9qxA-ZmhZLVujmdM0YLqXony-s8oZggKZxTU6oYmtcuO5erQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAP9qxA-ZmhZLVujmdM0YLqXony-s8oZggKZxTU6oYmtcuO5erQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752668Ab2K1Ahy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 19:37:54 -0500
+Date: Wed, 28 Nov 2012 11:37:40 +1100
+From: NeilBrown <neilb@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux RAID <linux-raid@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Torsten Kaiser <just.for.lkml@googlemail.com>,
+        Peter Maloney <peter.maloney@brockmann-consult.de>
+Subject: [PULL REQUEST] one bugfix for md in 3.7-rc
+Message-ID: <20121128113740.71bc0927@notabene.brown>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/mAEfAr9c3k.a_ceNLlUU=zJ"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 01:07:26AM +0100, Cong Ding wrote:
-> On Wed, Nov 28, 2012 at 12:07 AM, Hans J. Koch <hjk@hansjkoch.de> wrote:
-> > On Tue, Nov 27, 2012 at 07:29:32PM +0200, Vitalii Demianets wrote:
-> >> Memory leak was caused by jumping to the wrong exit label. So, it is good time
-> >> to improve misleading label names too.
-> >
-> > I agree that bad0, bad1, and bad2 are not the best choice for label names...
-> > I don't have any objections to your renaming.
-> >
-> > But there's a more serious bug, maybe you can fix that as well while you're
-> > at it? (See below)
-> >
-> > Thanks,
-> > Hans
-> >
-> >>
-> >> Signed-off-by: Vitalii Demianets <vitas@nppfactor.kiev.ua>
-> >> ---
-> >>  drivers/uio/uio_pdrv_genirq.c |   21 +++++++++++----------
-> >>  1 files changed, 11 insertions(+), 10 deletions(-)
-> >>
-> >> diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
-> >> index 42202cd..b88cf7b 100644
-> >> --- a/drivers/uio/uio_pdrv_genirq.c
-> >> +++ b/drivers/uio/uio_pdrv_genirq.c
-> >> @@ -110,7 +110,7 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
-> >>               if (!uioinfo) {
-> >>                       ret = -ENOMEM;
-> >>                       dev_err(&pdev->dev, "unable to kmalloc\n");
-> >> -                     goto bad2;
-> >> +                     goto out;
-> >>               }
-> >>               uioinfo->name = pdev->dev.of_node->name;
-> >>               uioinfo->version = "devicetree";
-> >> @@ -125,20 +125,20 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
-> >>
-> >>       if (!uioinfo || !uioinfo->name || !uioinfo->version) {
-> >>               dev_err(&pdev->dev, "missing platform_data\n");
-> >> -             goto bad0;
-> >> +             goto out_uioinfo;
-> >>       }
-> >>
-> >>       if (uioinfo->handler || uioinfo->irqcontrol ||
-> >>           uioinfo->irq_flags & IRQF_SHARED) {
-> >>               dev_err(&pdev->dev, "interrupt configuration error\n");
-> >> -             goto bad0;
-> >> +             goto out_uioinfo;
-> >>       }
-> >>
-> >>       priv = kzalloc(sizeof(*priv), GFP_KERNEL);
-> >>       if (!priv) {
-> >>               ret = -ENOMEM;
-> >>               dev_err(&pdev->dev, "unable to kmalloc\n");
-> >> -             goto bad0;
-> >> +             goto out_uioinfo;
-> >>       }
-> >>
-> >>       priv->uioinfo = uioinfo;
-> >> @@ -150,7 +150,7 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
-> >>               ret = platform_get_irq(pdev, 0);
-> >>               if (ret < 0) {
-> >>                       dev_err(&pdev->dev, "failed to get IRQ\n");
-> >> -                     goto bad0;
-> >> +                     goto out_priv;
-> >>               }
-> >>               uioinfo->irq = ret;
-> >>       }
-> >> @@ -205,19 +205,20 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
-> >>       ret = uio_register_device(&pdev->dev, priv->uioinfo);
-> >>       if (ret) {
-> >>               dev_err(&pdev->dev, "unable to register uio device\n");
-> >> -             goto bad1;
-> >> +             goto out_pm;
-> >>       }
-> >>
-> >>       platform_set_drvdata(pdev, priv);
-> >>       return 0;
-> >> - bad1:
-> >> -     kfree(priv);
-> >> +out_pm:
-> >>       pm_runtime_disable(&pdev->dev);
-> >> - bad0:
-> >> +out_priv:
-> >> +     kfree(priv);
-> >> +out_uioinfo:
-> >>       /* kfree uioinfo for OF */
-> >>       if (pdev->dev.of_node)
-> >>               kfree(uioinfo);
-> >
-> > The free() depends on pdev->dev.of_node, while the allocation doesn't!!!!
-> > That's another source of memory leaks.
-> I don't agree. In line 99, it is
-> struct uio_info *uioinfo = pdev->dev.platform_data;
-> if uioinfo doesn't equal to NULL, it will run to line 126,
-> if (!uioinfo || !uioinfo->name || !uioinfo->version) {
-> and then if uioinfo->name equals to NULL, it runs to line 127 and 128,
-> and then goto bad0. If in this flow, we have to check
-> pdev->dev.of_node before free(uioinfo), right?
+--Sig_/mAEfAr9c3k.a_ceNLlUU=zJ
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Hmmm. The idea is that uioinfo==NULL means OF. In that case,
-a struct uio_info is allocated and filled with the necessary values (name,
-version, irq). It is assumed (without check...) that pdev->dev.of_node
-is not NULL. If it were NULL we would crash here when dereferencing
- pdev->dev.of_node->name, leaving a memory leak.
 
-After bad0 it is also assumed that pdev->dev.of_node is an indicator for
-OF or not OF.
+Hi Linus,
+ another md bugfix ... and it isn't even Friday!
 
-In other words, the case of uioinfo AND pdev->dev.of_node both being NULL
-is not handled properly and will have ugly results.
+Thanks,
+NeilBrown
 
-> 
-> btw, I think in line 126 it is not necessary to check (!uioinfo),
-> because if uioinfo equals to NULL, it will go to line 109, and if the
-> alloc fails, it will go to bad2. uioinfo has no chance to be NULL when
-> runs to line 126. So I'd like to suggest a patch to avoid unnecessary
-> check like this
-> 
-> diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
->  index 42202cd..3eb4fa2 100644
->  --- a/drivers/uio/uio_pdrv_genirq.c
->  +++ b/drivers/uio/uio_pdrv_genirq.c
->  @@ -123,7 +123,7 @@ static int uio_pdrv_genirq_probe(struct
-> platform_device *pdev)
->              uioinfo->irq = irq;
->      }
-> 
->  -   if (!uioinfo || !uioinfo->name || !uioinfo->version) {
->  +   if (!uioinfo->name || !uioinfo->version) {
 
-That's wrong. We need a valid uioinfo at this point.
+The following changes since commit 884162df2aadd7414bef4935e1a54976fd4e3988:
 
->          dev_err(&pdev->dev, "missing platform_data\n");
->          goto bad0;
->      }
-> 
-> 
-> >
-> >> - bad2:
-> >> +out:
-> >>       return ret;
-> >>  }
-> >>
-> >> --
-> >> 1.7.8.6
-> >>
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+  md/raid10: decrement correct pending counter when writing to replacement.=
+ (2012-11-22 15:12:42 +1100)
+
+are available in the git repository at:
+
+  git://neil.brown.name/md/ tags/md-3.7-fixes
+
+for you to fetch changes up to 874807a83139abc094f939e93623c5623573d543:
+
+  md/raid1{,0}: fix deadlock in bitmap_unplug. (2012-11-27 12:14:40 +1100)
+
+----------------------------------------------------------------
+Single bugfix for raid1/raid10.
+
+Fixes a recently introduced deadlock.
+
+----------------------------------------------------------------
+NeilBrown (1):
+      md/raid1{,0}: fix deadlock in bitmap_unplug.
+
+ drivers/md/raid1.c  | 2 +-
+ drivers/md/raid10.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
+index 636bae0..a0f7309 100644
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -963,7 +963,7 @@ static void raid1_unplug(struct blk_plug_cb *cb, bool f=
+rom_schedule)
+ 	struct r1conf *conf =3D mddev->private;
+ 	struct bio *bio;
+=20
+-	if (from_schedule) {
++	if (from_schedule || current->bio_list) {
+ 		spin_lock_irq(&conf->device_lock);
+ 		bio_list_merge(&conf->pending_bio_list, &plug->pending);
+ 		conf->pending_count +=3D plug->pending_cnt;
+diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
+index 0d5d0ff..c9acbd7 100644
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -1069,7 +1069,7 @@ static void raid10_unplug(struct blk_plug_cb *cb, boo=
+l from_schedule)
+ 	struct r10conf *conf =3D mddev->private;
+ 	struct bio *bio;
+=20
+-	if (from_schedule) {
++	if (from_schedule || current->bio_list) {
+ 		spin_lock_irq(&conf->device_lock);
+ 		bio_list_merge(&conf->pending_bio_list, &plug->pending);
+ 		conf->pending_count +=3D plug->pending_cnt;
+
+--Sig_/mAEfAr9c3k.a_ceNLlUU=zJ
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIVAwUBULVc1Dnsnt1WYoG5AQKxiBAAruj4cGCnZMTMFU3tcD5RHg21MKyBwpIf
+KKJ00taVHZCY9vd16dwyBUYd+U7kQPyKD88zkQM+M1uNZp3sm/0dQlkUD1FdQiYM
+fOnxZc4SixnneMi7uWqSzxG4zeK4xRfL0k5ueXuRLDko/zZa1opaLjbLqcLvKENd
+gD8sbGfSJZhzQvwYba331Kc8lOBwFOUXk/WY+ZkABZlnChkmnBbVrNSHmuZTBXnX
+S5kHcIZHhYhVKbqi79VgsfVvFUi39IGcb6wEE6lY7Qds5sHvjWAMHCXPeLZWYxtV
+VgTdcl4AZQA+FUgSGFm0ewDgHHE2au1L1BG1QLtmeK0IA/7DWR0hxeOuFrNGshSm
+EVZTZ+cyaNXTYYvAHmYGMgPmytQx5HlzuXTmRgBKhMgsrGMMv1Dr8wityPqYuuZl
+rWu8hAvPWqjDgcPHzAnkOzrwpmcHPV8jy8GbYIRE/DnJqZx1sF8uOvdnpi1EHPIV
+eW7MBFtcBiqFLhw8YUXomYRZIJQ9A3XEChMJQ755fqsbGo2fQyapbmoXd6U4v6y6
+WaSOVnYmaMoLa+iPPV/02r7k+erCz+YlnOe/0kLXkgCeAb1BcP2tohvibrQQ1RP5
+r6T1qOsDyrBKzapUE+37SAJ3yNnL1NAgbdhvBaMOwz0QYd0rAWp1QCz2nuCPd6YB
+kHnBa6f63vs=
+=pOeF
+-----END PGP SIGNATURE-----
+
+--Sig_/mAEfAr9c3k.a_ceNLlUU=zJ--
