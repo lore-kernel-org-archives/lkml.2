@@ -1,252 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756011Ab2K1Tww (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 14:52:52 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:38781 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754928Ab2K1Tuz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 14:50:55 -0500
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mario Gzuk <mariogzuk@technikz.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 1/8] x86, 386 removal: Remove CONFIG_M386 from Kconfig
-Date: Wed, 28 Nov 2012 11:50:23 -0800
-Message-Id: <1354132230-21854-2-git-send-email-hpa@linux.intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1354132230-21854-1-git-send-email-hpa@linux.intel.com>
-References: <1354132230-21854-1-git-send-email-hpa@linux.intel.com>
+	id S932286Ab2K1Txz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 14:53:55 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:49868 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755589Ab2K1Txw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 14:53:52 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121128194314.GF4939@ZenIV.linux.org.uk>
+References: <CAAJw_ZvUqRmCCQ5-2PdFPRyfdzZMuphGU=hgAjUOHGk=n9Mheg@mail.gmail.com>
+ <CAAJw_ZuJXnAz1ukBwQa3xNbQaL1KUBSrbQMK2hn-7D6Ar1p3fQ@mail.gmail.com>
+ <50B46E05.70906@kernel.dk> <CAAJw_ZsYuLCwCTc6U=ELO_PvyjnVKQdkPke2enfzm6zOeWAqjA@mail.gmail.com>
+ <50B4B313.3030707@kernel.dk> <Pine.LNX.4.64.1211272252260.18338@file.rdu.redhat.com>
+ <50B5CC5A.8060607@kernel.dk> <Pine.LNX.4.64.1211281222410.11599@file.rdu.redhat.com>
+ <CA+55aFx4zYnEsUyGJurBjB0XZ0AgmyKqW-+KWVDvma3w6csnHQ@mail.gmail.com> <20121128194314.GF4939@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 28 Nov 2012 11:53:31 -0800
+X-Google-Sender-Auth: _PllgQYRuL5ZjeOk2Lks8MLDnnI
+Message-ID: <CA+55aFzfvQNtaS-B+A-vLk6jwOPy67n823Hua3kiR0sCTCw0yQ@mail.gmail.com>
+Subject: Re: [PATCH] Introduce a method to catch mmap_region (was: Recent
+ kernel "mount" slow)
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Jeff Chua <jeff.chua.linux@gmail.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+On Wed, Nov 28, 2012 at 11:43 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>                     Have a
+> private vm_operations - a copy of generic_file_vm_ops with ->open()/->close()
+> added to it.
 
-Remove the CONFIG_M386 symbol from Kconfig so that it cannot be
-selected.
+That sounds more reasonable.
 
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/Kconfig                 |  6 ++---
- arch/x86/Kconfig.cpu             | 58 ++++++++++++++++------------------------
- arch/x86/Makefile_32.cpu         |  1 -
- arch/x86/include/asm/module.h    |  2 --
- arch/x86/include/asm/processor.h |  2 +-
- 5 files changed, 27 insertions(+), 42 deletions(-)
+However, I suspect the *most* reasonable thing to do is to just remove
+the whole damn thing. We really shouldn't care about mmap. If somebody
+does a mmap on a block device, and somebody else then changes the
+block size, why-ever should we bother to go through any contortions at
+*all* to make that kind of insane behavior do anything sane at all.
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 46c3bff..a1a6627 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -69,8 +69,8 @@ config X86
- 	select HAVE_PERF_USER_STACK_DUMP
- 	select HAVE_DEBUG_KMEMLEAK
- 	select ANON_INODES
--	select HAVE_ALIGNED_STRUCT_PAGE if SLUB && !M386
--	select HAVE_CMPXCHG_LOCAL if !M386
-+	select HAVE_ALIGNED_STRUCT_PAGE if SLUB
-+	select HAVE_CMPXCHG_LOCAL
- 	select HAVE_CMPXCHG_DOUBLE
- 	select HAVE_ARCH_KMEMCHECK
- 	select HAVE_USER_RETURN_NOTIFIER
-@@ -1100,7 +1100,7 @@ config HIGHMEM4G
- 
- config HIGHMEM64G
- 	bool "64GB"
--	depends on !M386 && !M486
-+	depends on !M486
- 	select X86_PAE
- 	---help---
- 	  Select this if you have a 32-bit processor and more than 4
-diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
-index f3b86d0..36a07eb 100644
---- a/arch/x86/Kconfig.cpu
-+++ b/arch/x86/Kconfig.cpu
-@@ -4,23 +4,24 @@ choice
- 	default M686 if X86_32
- 	default GENERIC_CPU if X86_64
- 
--config M386
--	bool "386"
--	depends on X86_32 && !UML
-+config M486
-+	bool "486"
-+	depends on X86_32
- 	---help---
--	  This is the processor type of your CPU. This information is used for
--	  optimizing purposes. In order to compile a kernel that can run on
--	  all x86 CPU types (albeit not optimally fast), you can specify
--	  "386" here.
-+	  This is the processor type of your CPU. This information is
-+	  used for optimizing purposes. In order to compile a kernel
-+	  that can run on all supported x86 CPU types (albeit not
-+	  optimally fast), you can specify "486" here.
-+
-+	  Note that the 386 is no longer supported, this includes
-+	  AMD/Cyrix/Intel 386DX/DXL/SL/SLC/SX, Cyrix/TI 486DLC/DLC2,
-+	  and UMC 486SX-S.
- 
- 	  The kernel will not necessarily run on earlier architectures than
- 	  the one you have chosen, e.g. a Pentium optimized kernel will run on
- 	  a PPro, but not necessarily on a i486.
- 
- 	  Here are the settings recommended for greatest speed:
--	  - "386" for the AMD/Cyrix/Intel 386DX/DXL/SL/SLC/SX, Cyrix/TI
--	  486DLC/DLC2, and UMC 486SX-S.  Only "386" kernels will run on a 386
--	  class machine.
- 	  - "486" for the AMD/Cyrix/IBM/Intel 486DX/DX2/DX4 or
- 	  SL/SLC/SLC2/SLC3/SX/SX2 and UMC U5D or U5S.
- 	  - "586" for generic Pentium CPUs lacking the TSC
-@@ -43,16 +44,7 @@ config M386
- 	  - "VIA C3-2" for VIA C3-2 "Nehemiah" (model 9 and above).
- 	  - "VIA C7" for VIA C7.
- 
--	  If you don't know what to do, choose "386".
--
--config M486
--	bool "486"
--	depends on X86_32
--	---help---
--	  Select this for a 486 series processor, either Intel or one of the
--	  compatible processors from AMD, Cyrix, IBM, or Intel.  Includes DX,
--	  DX2, and DX4 variants; also SL/SLC/SLC2/SLC3/SX/SX2 and UMC U5D or
--	  U5S.
-+	  If you don't know what to do, choose "486".
- 
- config M586
- 	bool "586/K5/5x86/6x86/6x86MX"
-@@ -307,22 +299,20 @@ config X86_INTERNODE_CACHE_SHIFT
- 
- config X86_CMPXCHG
- 	def_bool y
--	depends on X86_64 || (X86_32 && !M386)
- 
- config X86_L1_CACHE_SHIFT
- 	int
- 	default "7" if MPENTIUM4 || MPSC
- 	default "6" if MK7 || MK8 || MPENTIUMM || MCORE2 || MATOM || MVIAC7 || X86_GENERIC || GENERIC_CPU
--	default "4" if MELAN || M486 || M386 || MGEODEGX1
-+	default "4" if MELAN || M486 || MGEODEGX1
- 	default "5" if MWINCHIP3D || MWINCHIPC6 || MCRUSOE || MEFFICEON || MCYRIXIII || MK6 || MPENTIUMIII || MPENTIUMII || M686 || M586MMX || M586TSC || M586 || MVIAC3_2 || MGEODE_LX
- 
- config X86_XADD
- 	def_bool y
--	depends on !M386
- 
- config X86_PPRO_FENCE
- 	bool "PentiumPro memory ordering errata workaround"
--	depends on M686 || M586MMX || M586TSC || M586 || M486 || M386 || MGEODEGX1
-+	depends on M686 || M586MMX || M586TSC || M586 || M486 || MGEODEGX1
- 	---help---
- 	  Old PentiumPro multiprocessor systems had errata that could cause
- 	  memory operations to violate the x86 ordering standard in rare cases.
-@@ -335,27 +325,26 @@ config X86_PPRO_FENCE
- 
- config X86_F00F_BUG
- 	def_bool y
--	depends on M586MMX || M586TSC || M586 || M486 || M386
-+	depends on M586MMX || M586TSC || M586 || M486
- 
- config X86_INVD_BUG
- 	def_bool y
--	depends on M486 || M386
-+	depends on M486
- 
- config X86_WP_WORKS_OK
- 	def_bool y
--	depends on !M386
- 
- config X86_INVLPG
- 	def_bool y
--	depends on X86_32 && !M386
-+	depends on X86_32
- 
- config X86_BSWAP
- 	def_bool y
--	depends on X86_32 && !M386
-+	depends on X86_32
- 
- config X86_POPAD_OK
- 	def_bool y
--	depends on X86_32 && !M386
-+	depends on X86_32
- 
- config X86_ALIGNMENT_16
- 	def_bool y
-@@ -412,12 +401,11 @@ config X86_MINIMUM_CPU_FAMILY
- 	default "64" if X86_64
- 	default "6" if X86_32 && X86_P6_NOP
- 	default "5" if X86_32 && X86_CMPXCHG64
--	default "4" if X86_32 && (X86_XADD || X86_CMPXCHG || X86_BSWAP || X86_WP_WORKS_OK)
--	default "3"
-+	default "4"
- 
- config X86_DEBUGCTLMSR
- 	def_bool y
--	depends on !(MK6 || MWINCHIPC6 || MWINCHIP3D || MCYRIXIII || M586MMX || M586TSC || M586 || M486 || M386) && !UML
-+	depends on !(MK6 || MWINCHIPC6 || MWINCHIP3D || MCYRIXIII || M586MMX || M586TSC || M586 || M486) && !UML
- 
- menuconfig PROCESSOR_SELECT
- 	bool "Supported processor vendors" if EXPERT
-@@ -441,7 +429,7 @@ config CPU_SUP_INTEL
- config CPU_SUP_CYRIX_32
- 	default y
- 	bool "Support Cyrix processors" if PROCESSOR_SELECT
--	depends on M386 || M486 || M586 || M586TSC || M586MMX || (EXPERT && !64BIT)
-+	depends on M486 || M586 || M586TSC || M586MMX || (EXPERT && !64BIT)
- 	---help---
- 	  This enables detection, tunings and quirks for Cyrix processors
- 
-@@ -495,7 +483,7 @@ config CPU_SUP_TRANSMETA_32
- config CPU_SUP_UMC_32
- 	default y
- 	bool "Support UMC processors" if PROCESSOR_SELECT
--	depends on M386 || M486 || (EXPERT && !64BIT)
-+	depends on M486 || (EXPERT && !64BIT)
- 	---help---
- 	  This enables detection, tunings and quirks for UMC processors
- 
-diff --git a/arch/x86/Makefile_32.cpu b/arch/x86/Makefile_32.cpu
-index 86cee7b..6647ed4 100644
---- a/arch/x86/Makefile_32.cpu
-+++ b/arch/x86/Makefile_32.cpu
-@@ -10,7 +10,6 @@ tune		= $(call cc-option,-mcpu=$(1),$(2))
- endif
- 
- align := $(cc-option-align)
--cflags-$(CONFIG_M386)		+= -march=i386
- cflags-$(CONFIG_M486)		+= -march=i486
- cflags-$(CONFIG_M586)		+= -march=i586
- cflags-$(CONFIG_M586TSC)	+= -march=i586
-diff --git a/arch/x86/include/asm/module.h b/arch/x86/include/asm/module.h
-index 9eae775..e3b7819 100644
---- a/arch/x86/include/asm/module.h
-+++ b/arch/x86/include/asm/module.h
-@@ -5,8 +5,6 @@
- 
- #ifdef CONFIG_X86_64
- /* X86_64 does not define MODULE_PROC_FAMILY */
--#elif defined CONFIG_M386
--#define MODULE_PROC_FAMILY "386 "
- #elif defined CONFIG_M486
- #define MODULE_PROC_FAMILY "486 "
- #elif defined CONFIG_M586
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index ad1fc85..9a4ee46 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -672,7 +672,7 @@ static inline void sync_core(void)
- {
- 	int tmp;
- 
--#if defined(CONFIG_M386) || defined(CONFIG_M486)
-+#ifdef CONFIG_M486
- 	if (boot_cpu_data.x86 < 5)
- 		/* There is no speculative execution.
- 		 * jmp is a barrier to prefetching. */
--- 
-1.7.11.7
+Just let people mmap things. Then just let the normal page cache
+invalidation work right. In fact, it is entirely possible that we
+could/should just not even invalidate the page cache at all, just make
+sure that the buffer heads attached to any pages get disconnected. No?
 
+                                  Linus
