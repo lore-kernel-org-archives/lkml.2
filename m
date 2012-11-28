@@ -1,128 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756190Ab2K1WKp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 17:10:45 -0500
-Received: from shrek-wifi.podlesie.net ([93.179.225.50]:36837 "EHLO
-	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755683Ab2K1WKo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 17:10:44 -0500
-Date: Wed, 28 Nov 2012 23:10:40 +0100
-From: Krzysztof Mazur <krzysiek@podlesie.net>
-To: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
-Cc: David Woodhouse <dwmw2@infradead.org>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] atm: introduce vcc_pop()
-Message-ID: <20121128221040.GA24035@shrek.podlesie.net>
-References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
- <1350926091-12642-3-git-send-email-krzysiek@podlesie.net>
- <1354036592.2534.6.camel@shinybook.infradead.org>
- <20121127173906.GA11390@shrek.podlesie.net>
- <1354039349.2534.11.camel@shinybook.infradead.org>
- <20121127182843.GA11597@shrek.podlesie.net>
- <20121128201837.GA912@shrek.podlesie.net>
- <20121128162001.3f326720@thirdoffive.cmf.nrl.navy.mil>
- <20121128214533.GA25486@shrek.podlesie.net>
- <20121128165906.05ef5e2b@thirdoffive.cmf.nrl.navy.mil>
+	id S932767Ab2K1WLk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 17:11:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56426 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932533Ab2K1WLh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 17:11:37 -0500
+Date: Wed, 28 Nov 2012 17:10:47 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file.rdu.redhat.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Jens Axboe <axboe@kernel.dk>, Jeff Chua <jeff.chua.linux@gmail.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH] Introduce a method to catch mmap_region (was: Recent
+ kernel "mount" slow)
+In-Reply-To: <CA+55aFwzEs3F6-n-Q=DrJgCScYwQ29PVZdCrGAO2y+FPC3Eq=Q@mail.gmail.com>
+Message-ID: <Pine.LNX.4.64.1211281705020.5283@file.rdu.redhat.com>
+References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com>
+ <Pine.LNX.4.64.1211241555470.4300@file.rdu.redhat.com>
+ <CAAJw_ZvUqRmCCQ5-2PdFPRyfdzZMuphGU=hgAjUOHGk=n9Mheg@mail.gmail.com>
+ <CAAJw_ZuJXnAz1ukBwQa3xNbQaL1KUBSrbQMK2hn-7D6Ar1p3fQ@mail.gmail.com>
+ <50B46E05.70906@kernel.dk> <CAAJw_ZsYuLCwCTc6U=ELO_PvyjnVKQdkPke2enfzm6zOeWAqjA@mail.gmail.com>
+ <50B4B313.3030707@kernel.dk> <Pine.LNX.4.64.1211272252260.18338@file.rdu.redhat.com>
+ <50B5CC5A.8060607@kernel.dk> <Pine.LNX.4.64.1211281222410.11599@file.rdu.redhat.com>
+ <CA+55aFx4zYnEsUyGJurBjB0XZ0AgmyKqW-+KWVDvma3w6csnHQ@mail.gmail.com>
+ <Pine.LNX.4.64.1211281422360.26389@file.rdu.redhat.com>
+ <CA+55aFyXdtVJ=SG9bU4qfggCR6DPvz4vOFYxKJZx_WdyFv+3Fw@mail.gmail.com>
+ <CA+55aFyXS0nkDB95c3pcdg1ctrNnUGO8aDuRNhKSEg3JrOqWhA@mail.gmail.com>
+ <CA+55aFw+9FRKZRe4-eSE3m9rGNfiUMM4-QETHizwYCRso_=bsg@mail.gmail.com>
+ <CA+55aFwzEs3F6-n-Q=DrJgCScYwQ29PVZdCrGAO2y+FPC3Eq=Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121128165906.05ef5e2b@thirdoffive.cmf.nrl.navy.mil>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 04:59:06PM -0500, chas williams - CONTRACTOR wrote:
-> On Wed, 28 Nov 2012 22:45:34 +0100
-> Krzysztof Mazur <krzysiek@podlesie.net> wrote:
+
+
+On Wed, 28 Nov 2012, Linus Torvalds wrote:
+
+> On Wed, Nov 28, 2012 at 12:32 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > Here is a *COMPLETELY* untested patch. Caveat emptor. It will probably
+> > do unspeakable things to your family and pets.
 > 
-> > On Wed, Nov 28, 2012 at 04:20:01PM -0500, chas williams - CONTRACTOR wrote:
-> > > i dont like the vcc->pop() implementation and at one point i had the
-> > > crazy idea of using skb->destructors to handle it.  however, i think it
-> > > would be necessary to clone the skb's so any existing destructor is
-> > > preserved.
-> > 
-> > With this patch we will kill vcc->pop() in drivers and in future
-> > we can do that without changes in drivers.
+> Btw, *if* this approach works, I suspect we could just switch the
+> bd_block_size_semaphore semaphore to be a regular rw-sem.
 > 
-> ok
+> Why? Because now it's no longer ever gotten in the cached IO paths, we
+> only get it when we're doing much more expensive things (ie actual IO,
+> and buffer head allocations etc etc). As long as we just work with the
+> page cache, we never get to the whole lock at all.
 > 
-> > > 
-> > > > +#define vcc_pop(vcc, skb) vcc_pop_any(vcc, skb)
-> > > > +#define vcc_pop_irq(vcc, skb) vcc_pop_any(vcc, skb)
-> > > 
-> > > don't define these if you dont plan on using them anway.
-> > 
-> > I removed them. I also added check if vcc is NULL, as David Woodhouse
-> > suggested, some drivers use that.
-> 
-> it should probably be if (likely(vcc) && likely(vcc->pop)) since it
-> will almost always be the case.
+> Which means that the whole percpu-optimized thing is likely no longer
+> all that relevant.
 
-Thanks,
+Using normal semaphore degrades direct-IO performance on raw devices, I 
+measured that (45.1s with normal rw-semaphore vs. 42.8s with 
+percpu-rw-semaphore). It could be measured on ramdisk or high-performance 
+SSDs.
 
-Krzysiek
--- >8 --
-Subject: [PATCH v3] atm: introduce vcc_pop()
-
-The atm drivers to free skb, that they got from ->send(), cannot just use
-dev_kfree_skb*(), but they must use something like:
-
-	if (vcc->pop)
-		vcc->pop(vcc, skb);
-	else
-		dev_kfree_skb_any(skb);
-
-When vcc->pop() is non-NULL, but they must in such case call vcc->pop().
-This causes duplicated code in many drivers, and some drivers even forgot
-to call vcc->pop() in some error handling code.
-
-Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
----
- include/linux/atmdev.h | 8 ++++++++
- net/atm/common.c       | 9 +++++++++
- 2 files changed, 17 insertions(+)
-
-diff --git a/include/linux/atmdev.h b/include/linux/atmdev.h
-index c1da539..57bd93f 100644
---- a/include/linux/atmdev.h
-+++ b/include/linux/atmdev.h
-@@ -283,6 +283,14 @@ int atm_pcr_goal(const struct atm_trafprm *tp);
- 
- void vcc_release_async(struct atm_vcc *vcc, int reply);
- 
-+/**
-+ * vcc_pop - free transmitted ATM skb
-+ *
-+ * vcc_pop() should be used by ATM driver to free skbs, that were sent
-+ * to driver by atmdev_opt->send() function.
-+ */
-+void vcc_pop(struct atm_vcc *vcc, struct sk_buff *skb);
-+
- struct atm_ioctl {
- 	struct module *owner;
- 	/* A module reference is kept if appropriate over this call.
-diff --git a/net/atm/common.c b/net/atm/common.c
-index 806fc0a..c42ff62 100644
---- a/net/atm/common.c
-+++ b/net/atm/common.c
-@@ -654,6 +654,15 @@ out:
- 	return error;
- }
- 
-+void vcc_pop(struct atm_vcc *vcc, struct sk_buff *skb)
-+{
-+	if (likely(vcc) && likely(vcc->pop))
-+		vcc->pop(vcc, skb);
-+	else
-+		dev_kfree_skb_any(skb);
-+}
-+EXPORT_SYMBOL(vcc_pop);
-+
- unsigned int vcc_poll(struct file *file, struct socket *sock, poll_table *wait)
- {
- 	struct sock *sk = sock->sk;
--- 
-1.8.0.411.g71a7da8
-
+Mikulas
