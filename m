@@ -1,131 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932661Ab2K1WRR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 17:17:17 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:35522 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755683Ab2K1WRP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 17:17:15 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: linux-acpi@vger.kernel.org,
-        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Wen Congyang <wencongyang@gmail.com>, isimatu.yasuaki@jp.fujitsu.com,
-        lenb@kernel.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on rebind scenario
-Date: Wed, 28 Nov 2012 23:21:59 +0100
-Message-ID: <1451747.3VlxbhJES4@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <1354140292.26955.337.camel@misato.fc.hp.com>
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com> <7694340.3kLrC1FvE4@vostro.rjw.lan> <1354140292.26955.337.camel@misato.fc.hp.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1945901Ab2K1WSy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 17:18:54 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:52816 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755683Ab2K1WSw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 17:18:52 -0500
+Message-ID: <1354141115.21562.101.camel@shinybook.infradead.org>
+Subject: Re: [PATCH v2 3/3] pppoatm: protect against freeing of vcc
+From: David Woodhouse <dwmw2@infradead.org>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>,
+        Krzysztof Mazur <krzysiek@podlesie.net>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nathan@traverse.com.au
+Date: Wed, 28 Nov 2012 22:18:35 +0000
+In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6026B70C9@saturn3.aculab.com>
+References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
+	<1350926091-12642-3-git-send-email-krzysiek@podlesie.net>
+	<1354036592.2534.6.camel@shinybook.infradead.org>
+	<20121127173906.GA11390@shrek.podlesie.net>
+	<1354039349.2534.11.camel@shinybook.infradead.org>
+	 <20121127135434.0728cd4f@thirdoffive.cmf.nrl.navy.mil>
+	 <AE90C24D6B3A694183C094C60CF0A2F6026B70C9@saturn3.aculab.com>
+Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature";
+	boundary="=-ryZREWFFG2mw3rg+3Nli"
+X-Mailer: Evolution 3.6.1 (3.6.1-1.fc18) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 28, 2012 03:04:52 PM Toshi Kani wrote:
-> On Wed, 2012-11-28 at 23:01 +0100, Rafael J. Wysocki wrote:
-> > On Wednesday, November 28, 2012 02:40:09 PM Toshi Kani wrote:
-> > > On Wed, 2012-11-28 at 22:40 +0100, Rafael J. Wysocki wrote:
-> > > > On Wednesday, November 28, 2012 02:02:48 PM Toshi Kani wrote:
-> > > > > > > > > > > > Consider the following case:
-> > > > > > > > > > > > 
-> > > > > > > > > > > > We hotremove the memory device by SCI and unbind it from the driver at the same time:
-> > > > > > > > > > > > 
-> > > > > > > > > > > > CPUa                                                  CPUb
-> > > > > > > > > > > > acpi_memory_device_notify()
-> > > > > > > > > > > >                                        unbind it from the driver
-> > > > > > > > > > > >     acpi_bus_hot_remove_device()
-> > > > > > > > > > > 
-> > > > > > > > > > > Can we make acpi_bus_remove() to fail if a given acpi_device is not
-> > > > > > > > > > > bound with a driver?  If so, can we make the unbind operation to perform
-> > > > > > > > > > > unbind only?
-> > > > > > > > > > 
-> > > > > > > > > > acpi_bus_remove_device could check if the driver is present, and return -ENODEV
-> > > > > > > > > > if it's not present (dev->driver == NULL).
-> > > > > > > > > > 
-> > > > > > > > > > But there can still be a race between an eject and an unbind operation happening
-> > > > > > > > > > simultaneously. This seems like a general problem to me i.e. not specific to an
-> > > > > > > > > > acpi memory device. How do we ensure an eject does not race with a driver unbind
-> > > > > > > > > > for other acpi devices?
-> > > > > > > > > > 
-> > > > > > > > > > Is there a per-device lock in acpi-core or device-core that can prevent this from
-> > > > > > > > > > happening? Driver core does a device_lock(dev) on all operations, but this is
-> > > > > > > > > > probably not grabbed on SCI-initiated acpi ejects.
-> > > > > > > > > 
-> > > > > > > > > Since driver_unbind() calls device_lock(dev->parent) before calling
-> > > > > > > > > device_release_driver(), I am wondering if we can call
-> > > > > > > > > device_lock(dev->dev->parent) at the beginning of acpi_bus_remove()
-> > > > > > > > > (i.e. before calling pre_remove) and fails if dev->driver is NULL.  The
-> > > > > > > > > parent lock is otherwise released after device_release_driver() is done.
-> > > > > > > > 
-> > > > > > > > I would be careful.  You may introduce some subtle locking-related issues
-> > > > > > > > this way.
-> > > > > > > 
-> > > > > > > Right.  This requires careful inspection and testing.  As far as the
-> > > > > > > locking is concerned, I am not keen on using fine grained locking for
-> > > > > > > hot-plug.  It is much simpler and solid if we serialize such operations.
-> > > > > > > 
-> > > > > > > > Besides, there may be an alternative approach to all this.  For example,
-> > > > > > > > what if we don't remove struct device objects on eject?  The ACPI handles
-> > > > > > > > associated with them don't go away in that case after all, do they?
-> > > > > > > 
-> > > > > > > Umm...  Sorry, I am not getting your point.  The issue is that we need
-> > > > > > > to be able to fail a request when memory range cannot be off-lined.
-> > > > > > > Otherwise, we end up ejecting online memory range.
-> > > > > > 
-> > > > > > Yes, this is the major one.  The minor issue, however, is a race condition
-> > > > > > between unbinding a driver from a device and removing the device if I
-> > > > > > understand it correctly.  Which will go away automatically if the device is
-> > > > > > not removed in the first place.  Or so I would think. :-)
-> > > > > 
-> > > > > I see.  I do not think whether or not the device is removed on eject
-> > > > > makes any difference here.  The issue is that after driver_unbind() is
-> > > > > done, acpi_bus_hot_remove_device() no longer calls the ACPI memory
-> > > > > driver (hence, it cannot fail in prepare_remove), and goes ahead to call
-> > > > > _EJ0.  If driver_unbind() did off-line the memory, this is OK.  However,
-> > > > > it cannot off-line kernel memory ranges.  So, we basically need to
-> > > > > either 1) serialize acpi_bus_hot_remove_device() and driver_unbind(), or
-> > > > > 2) make acpi_bus_hot_remove_device() to fail if driver_unbind() is run
-> > > > > during the operation.
-> > > > 
-> > > > OK, I see the problem now.
-> > > > 
-> > > > What exactly is triggering the driver_unbind() in this scenario?
-> > > 
-> > > User can request driver_unbind() from sysfs as follows.  I do not see
-> > > much reason why user has to do for memory, though.
-> > > 
-> > > echo "PNP0C80:XX" > /sys/bus/acpi/drivers/acpi_memhotplug/unbind
-> > 
-> > This is wrong.  Even if we want to permit user space to forcibly unbind
-> > drivers from anything like this, we should at least check for some
-> > situations in which it is plain dangerous.  Like in this case.  So I think
-> > the above should fail unless we know that the driver won't be necessary
-> > to handle hot-removal of memory.
-> 
-> Well, we tried twice already... :)
-> https://lkml.org/lkml/2012/11/16/649
 
-I didn't mean driver_unbind() should fail.  The code path that executes
-driver_unbind() eventually should fail _before_ executing it.
+--=-ryZREWFFG2mw3rg+3Nli
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> > Alternatively, this may actually try to carry out the hot-removal and only
-> > call driver_unbind() if that succeeds.  Whichever is preferable, I'd say.
-> 
-> Greg clarified in the above link that this interface is "unbind", not
-> remove.
+On Wed, 2012-11-28 at 09:21 +0000, David Laight wrote:
+> Even when it might make sense to sleep in close until tx drains
+> there needs to be a finite timeout before it become abortive.
 
-OK, so that's clear.
+You are, of course, right. We should never wait for hardware for ever.
+And just to serve me right, I seem to have hit a bug in the latest Solos
+firmware (1.11) which makes it sometimes lock up when I reboot. So it
+never responds to the PKT_PCLOSE packet... and thus it deadlocks when I
+try to kill pppd and unload the module to reset it :)
 
-Thanks,
-Rafael
+New version...
+
+=46rom 53dd01c08fec5b26006a009b25e4210127fdb27a Mon Sep 17 00:00:00 2001
+From: David Woodhouse <David.Woodhouse@intel.com>
+Date: Tue, 27 Nov 2012 23:49:24 +0000
+Subject: [PATCH] solos-pci: Wait for pending TX to complete when releasing
+ vcc
+
+We should no longer be calling the old pop routine for the vcc, after
+vcc_release() has completed. Make sure we wait for any pending TX skbs
+to complete, by waiting for our own PKT_PCLOSE control skb to be sent.
+
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+---
+ drivers/atm/solos-pci.c | 17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/atm/solos-pci.c b/drivers/atm/solos-pci.c
+index 9851093..3720670 100644
+--- a/drivers/atm/solos-pci.c
++++ b/drivers/atm/solos-pci.c
+@@ -92,6 +92,7 @@ struct pkt_hdr {
+ };
+=20
+ struct solos_skb_cb {
++	struct completion c;
+ 	struct atm_vcc *vcc;
+ 	uint32_t dma_addr;
+ };
+@@ -881,11 +882,18 @@ static void pclose(struct atm_vcc *vcc)
+ 	header->vci =3D cpu_to_le16(vcc->vci);
+ 	header->type =3D cpu_to_le16(PKT_PCLOSE);
+=20
++	init_completion(&SKB_CB(skb)->c);
++
+ 	fpga_queue(card, SOLOS_CHAN(vcc->dev), skb, NULL);
+=20
+ 	clear_bit(ATM_VF_ADDR, &vcc->flags);
+ 	clear_bit(ATM_VF_READY, &vcc->flags);
+=20
++	if (!wait_for_completion_timeout(&SKB_CB(skb)->c,
++					 jiffies + msecs_to_jiffies(5000)))
++		dev_warn(&card->dev->dev, "Timeout waiting for VCC close on port %d\n",
++			 SOLOS_CHAN(vcc->dev));
++
+ 	/* Hold up vcc_destroy_socket() (our caller) until solos_bh() in the
+ 	   tasklet has finished processing any incoming packets (and, more to
+ 	   the point, using the vcc pointer). */
+@@ -1011,9 +1019,12 @@ static uint32_t fpga_tx(struct solos_card *card)
+ 			if (vcc) {
+ 				atomic_inc(&vcc->stats->tx);
+ 				solos_pop(vcc, oldskb);
+-			} else
++			} else {
++				struct pkt_hdr *header =3D (void *)oldskb->data;
++				if (le16_to_cpu(header->type) =3D=3D PKT_PCLOSE)
++					complete(&SKB_CB(oldskb)->c);
+ 				dev_kfree_skb_irq(oldskb);
+-
++			}
+ 		}
+ 	}
+ 	/* For non-DMA TX, write the 'TX start' bit for all four ports simultaneo=
+usly */
+@@ -1345,6 +1356,8 @@ static struct pci_driver fpga_driver =3D {
+=20
+ static int __init solos_pci_init(void)
+ {
++	BUILD_BUG_ON(sizeof(struct solos_skb_cb) > sizeof(((struct sk_buff *)0)->=
+cb));
++
+ 	printk(KERN_INFO "Solos PCI Driver Version %s\n", VERSION);
+ 	return pci_register_driver(&fpga_driver);
+ }
+--=20
+1.8.0
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+--=20
+dwmw2
+
+
+--=-ryZREWFFG2mw3rg+3Nli
+Content-Type: application/x-pkcs7-signature; name="smime.p7s"
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Transfer-Encoding: base64
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIUbjCCBjQw
+ggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
+Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAn
+BgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3MTAyNDIxMDE1NVoX
+DTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSsw
+KQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFy
+dENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTCCASIwDQYJKoZIhvcN
+AQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOrlr6KMoOMpohBllVHrdRvEg/q6r8jR+EK
+75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSMzR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC
++y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxD
+z2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSDkOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr
+/+N2JLKutIxMYqQOJebr/f/h5t95m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0w
+ggGpMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFc
+fH6WNU7y1LhRgjAfBgNVHSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRa
+MFgwJwYIKwYBBQUHMAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYh
+aHR0cDovL3d3dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6
+Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5j
+b20vc2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
+dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
+c3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqDCH14qywG
+XLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy6QMVQjbbMXlt
+UfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPIzKKR9tQW8gGK+2+R
+HxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKfKSETEPrHh7p5shuuNktv
+sv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HORz9v3vQwR4e3ksLc2JZOAFK+s
+sS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9sIPP7ON0fz095HdThKjiVJe6vofq
++n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCieuoBJ9OlqmsVWQvifIYf40dJPZkk9YgGT
+zWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7tw1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGq
+Up/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQG2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb1
+9mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIHFzCCBf+g
+AwIBAgIDBCZ6MA0GCSqGSIb3DQEBBQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
+b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYG
+A1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcN
+MTIwNTAxMTI1ODI3WhcNMTMwNTAzMTEzNzIwWjBdMRkwFwYDVQQNExA4Y1VOSzUzMTc0ODRYRjk3
+MRwwGgYDVQQDDBNkd213MkBpbmZyYWRlYWQub3JnMSIwIAYJKoZIhvcNAQkBFhNkd213MkBpbmZy
+YWRlYWQub3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyYe7wo6MrtrB4uIGGbrY
+4IifY/Xsq22pSv605yganL0+uyUdd8rCjrYlH6Q/ra5TVJCQFTgzaepkuqPQc79DC/Cxmzm6Qo+s
+wLZy868oFsccsVokL2bPAWIPaRXfNPJKkYR1FTWQfZpWJVQmT+sPf1XFUullVBAK+d9RztopyacI
+xWoZ/W/Cmv7mseQbttYTtGKJa0btX73nsQRWl6SgErWXo59zg9friCLTy1GXMXJYB8H+PtnuwX0w
+MrAvWDdX1ABgIlA17W3FraCn0eW15ZM46eyu0/amGzJZNtemCWF73P7BAijzeV1jNmiJFXdZ0DT0
+w+hmtMO9PxdDUyt78QIDAQABo4IDrjCCA6owCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0l
+BBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1UdDgQWBBTkfe5UOr3PcirsjApibyyUEfsyRzAf
+BgNVHSMEGDAWgBRTcu2SnODaywFcfH6WNU7y1LhRgjAeBgNVHREEFzAVgRNkd213MkBpbmZyYWRl
+YWQub3JnMIICIQYDVR0gBIICGDCCAhQwggIQBgsrBgEEAYG1NwECAjCCAf8wLgYIKwYBBQUHAgEW
+Imh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
+d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwgfcGCCsGAQUFBwICMIHqMCcWIFN0YXJ0
+Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5UaGlzIGNlcnRpZmljYXRlIHdhcyBp
+c3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZhbGlkYXRpb24gcmVxdWlyZW1lbnRzIG9m
+IHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlhbmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRlZCBw
+dXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhlIHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMuMIGc
+BggrBgEFBQcCAjCBjzAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgECGmRM
+aWFiaWxpdHkgYW5kIHdhcnJhbnRpZXMgYXJlIGxpbWl0ZWQhIFNlZSBzZWN0aW9uICJMZWdhbCBh
+bmQgTGltaXRhdGlvbnMiIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3kuMDYGA1UdHwQvMC0wK6Ap
+oCeGJWh0dHA6Ly9jcmwuc3RhcnRzc2wuY29tL2NydHUxLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGB
+MH8wOQYIKwYBBQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MxL2NsaWVu
+dC9jYTBCBggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNz
+MS5jbGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkq
+hkiG9w0BAQUFAAOCAQEAqDU1FKifNtCFJbLnvOi1BLRfk7mut55PMtPSZLJ4/AnG7AjmJnbBI4U5
+DELwvVq3mIpwUpGqZUkqkZMEfBPIbfq517UZB3h4iANtqif+ULfTLhg5XgcK5eF8/T6EtX2c3epq
+ylARdleCbj/0FwiUDvPlTsA6PIN4SCekjRLgjKERrL3heFz+Hteq1rtMAvMkNuyL0/0ijyyg2y45
+NASAl2Afl9SLes/fnoh9nBwzfNQfb6qDYUFpnglfpGrq/0b1NtaOUb2z1SR+H1tKlb8bVJJIdvpu
+mEi27kSRIhzk3h30uTfKkKetgy++ouyldxZ7KZ0PuoLQrBy465EoQLosETCCBxcwggX/oAMCAQIC
+AwQmejANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0
+ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMT
+L1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBMB4XDTEyMDUw
+MTEyNTgyN1oXDTEzMDUwMzExMzcyMFowXTEZMBcGA1UEDRMQOGNVTks1MzE3NDg0WEY5NzEcMBoG
+A1UEAwwTZHdtdzJAaW5mcmFkZWFkLm9yZzEiMCAGCSqGSIb3DQEJARYTZHdtdzJAaW5mcmFkZWFk
+Lm9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMmHu8KOjK7aweLiBhm62OCIn2P1
+7KttqUr+tOcoGpy9PrslHXfKwo62JR+kP62uU1SQkBU4M2nqZLqj0HO/QwvwsZs5ukKPrMC2cvOv
+KBbHHLFaJC9mzwFiD2kV3zTySpGEdRU1kH2aViVUJk/rD39VxVLpZVQQCvnfUc7aKcmnCMVqGf1v
+wpr+5rHkG7bWE7RiiWtG7V+957EEVpekoBK1l6Ofc4PX64gi08tRlzFyWAfB/j7Z7sF9MDKwL1g3
+V9QAYCJQNe1txa2gp9HlteWTOOnsrtP2phsyWTbXpglhe9z+wQIo83ldYzZoiRV3WdA09MPoZrTD
+vT8XQ1Mre/ECAwEAAaOCA64wggOqMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgSwMB0GA1UdJQQWMBQG
+CCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQU5H3uVDq9z3Iq7IwKYm8slBH7MkcwHwYDVR0j
+BBgwFoAUU3Ltkpzg2ssBXHx+ljVO8tS4UYIwHgYDVR0RBBcwFYETZHdtdzJAaW5mcmFkZWFkLm9y
+ZzCCAiEGA1UdIASCAhgwggIUMIICEAYLKwYBBAGBtTcBAgIwggH/MC4GCCsGAQUFBwIBFiJodHRw
+Oi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMDQGCCsGAQUFBwIBFihodHRwOi8vd3d3LnN0
+YXJ0c3NsLmNvbS9pbnRlcm1lZGlhdGUucGRmMIH3BggrBgEFBQcCAjCB6jAnFiBTdGFydENvbSBD
+ZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0aWZpY2F0ZSB3YXMgaXNzdWVk
+IGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJlcXVpcmVtZW50cyBvZiB0aGUg
+U3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0aGUgaW50ZW5kZWQgcHVycG9z
+ZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5IG9ibGlnYXRpb25zLjCBnAYIKwYB
+BQUHAgIwgY8wJxYgU3RhcnRDb20gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwAwIBAhpkTGlhYmls
+aXR5IGFuZCB3YXJyYW50aWVzIGFyZSBsaW1pdGVkISBTZWUgc2VjdGlvbiAiTGVnYWwgYW5kIExp
+bWl0YXRpb25zIiBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LjA2BgNVHR8ELzAtMCugKaAnhiVo
+dHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkG
+CCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFydHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2Ew
+QgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3RhcnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xp
+ZW50LmNhLmNydDAjBgNVHRIEHDAahhhodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcN
+AQEFBQADggEBAKg1NRSonzbQhSWy57zotQS0X5O5rreeTzLT0mSyePwJxuwI5iZ2wSOFOQxC8L1a
+t5iKcFKRqmVJKpGTBHwTyG36ude1GQd4eIgDbaon/lC30y4YOV4HCuXhfP0+hLV9nN3qaspQEXZX
+gm4/9BcIlA7z5U7AOjyDeEgnpI0S4IyhEay94Xhc/h7Xqta7TALzJDbsi9P9Io8soNsuOTQEgJdg
+H5fUi3rP356IfZwcM3zUH2+qg2FBaZ4JX6Rq6v9G9TbWjlG9s9Ukfh9bSpW/G1SSSHb6bphItu5E
+kSIc5N4d9Lk3ypCnrYMvvqLspXcWeymdD7qC0KwcuOuRKEC6LBExggNvMIIDawIBATCBlDCBjDEL
+MAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdp
+dGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFy
+eSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMEJnowCQYFKw4DAhoFAKCCAa8wGAYJKoZIhvcNAQkD
+MQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTIxMTI4MjIxODM1WjAjBgkqhkiG9w0BCQQx
+FgQUebhEPrXGk2k00aVURzk4VvXSVJ0wgaUGCSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMC
+SUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRp
+ZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1l
+ZGlhdGUgQ2xpZW50IENBAgMEJnowgacGCyqGSIb3DQEJEAILMYGXoIGUMIGMMQswCQYDVQQGEwJJ
+TDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlm
+aWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVk
+aWF0ZSBDbGllbnQgQ0ECAwQmejANBgkqhkiG9w0BAQEFAASCAQA4u21htUviSei9TZdtLkMY7nHJ
+3w37oYLOP/m9aqGMY47tqvVASIyR+eAlHbf7h38AbmL9kR0ZOwbDhOKe0vP8paogkK+jsqJzvMW4
+PbJgV4vpDfXBxP54NgOwxuEYCNDTNgxKSuPpMTPK+HNeTEwJ68UJS1edqkaxEJ67eqxEY3kCyd2F
+GmdIg2wIg5QzeunYl0VJPIvixX8X9uR7/9oMYm6C2KQha5v4yk8JXDfXfJcXuWYiHSVsU6RFf3q6
+xMlVzeaoUOVEpd3pzcwVKKmxLH3C0F2yB/Y+cMK4UN/dhL0+S/v8alIYOq3qZfJMpwuTC2zVh8gV
+xnktls9QCR8rAAAAAAAA
+
+
+--=-ryZREWFFG2mw3rg+3Nli--
+
