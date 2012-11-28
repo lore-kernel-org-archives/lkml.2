@@ -1,101 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932441Ab2K1XpG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 18:45:06 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:35616 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754468Ab2K1XpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 18:45:03 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: linux-acpi@vger.kernel.org
-Cc: Toshi Kani <toshi.kani@hp.com>,
-        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Wen Congyang <wencongyang@gmail.com>, isimatu.yasuaki@jp.fujitsu.com,
-        lenb@kernel.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on rebind scenario
-Date: Thu, 29 Nov 2012 00:49:47 +0100
-Message-ID: <4042591.gpFk7OYmph@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <1354136568.26955.312.camel@misato.fc.hp.com>
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com> <9212118.3s2xH6uJDI@vostro.rjw.lan> <1354136568.26955.312.camel@misato.fc.hp.com>
+	id S1756349Ab2K1Xrr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 18:47:47 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:44559 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754215Ab2K1Xrp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 18:47:45 -0500
+Message-ID: <50B6A29D.9050004@gmail.com>
+Date: Thu, 29 Nov 2012 00:47:41 +0100
+From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Sylwester Nawrocki <s.nawrocki@samsung.com>, devel@driverdev.osuosl.org,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Prabhakar Lad <prabhakar.lad@ti.com>,
+        Hans Verkuil <hansverk@cisco.com>,
+        Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        LMML <linux-media@vger.kernel.org>
+Subject: Re: [PATCH v3 0/9] Media Controller capture driver for DM365
+References: <1354099329-20722-1-git-send-email-prabhakar.lad@ti.com> <20121128114537.GN11248@mwanda> <201211281256.10839.hansverk@cisco.com> <20121128122227.GX6186@mwanda> <50B6663C.6080800@samsung.com> <20121128212952.GP11248@mwanda>
+In-Reply-To: <20121128212952.GP11248@mwanda>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 28, 2012 02:02:48 PM Toshi Kani wrote:
-> > > > > > > > Consider the following case:
-> > > > > > > > 
-> > > > > > > > We hotremove the memory device by SCI and unbind it from the driver at the same time:
-> > > > > > > > 
-> > > > > > > > CPUa                                                  CPUb
-> > > > > > > > acpi_memory_device_notify()
-> > > > > > > >                                        unbind it from the driver
-> > > > > > > >     acpi_bus_hot_remove_device()
-> > > > > > > 
-> > > > > > > Can we make acpi_bus_remove() to fail if a given acpi_device is not
-> > > > > > > bound with a driver?  If so, can we make the unbind operation to perform
-> > > > > > > unbind only?
-> > > > > > 
-> > > > > > acpi_bus_remove_device could check if the driver is present, and return -ENODEV
-> > > > > > if it's not present (dev->driver == NULL).
-> > > > > > 
-> > > > > > But there can still be a race between an eject and an unbind operation happening
-> > > > > > simultaneously. This seems like a general problem to me i.e. not specific to an
-> > > > > > acpi memory device. How do we ensure an eject does not race with a driver unbind
-> > > > > > for other acpi devices?
-> > > > > > 
-> > > > > > Is there a per-device lock in acpi-core or device-core that can prevent this from
-> > > > > > happening? Driver core does a device_lock(dev) on all operations, but this is
-> > > > > > probably not grabbed on SCI-initiated acpi ejects.
-> > > > > 
-> > > > > Since driver_unbind() calls device_lock(dev->parent) before calling
-> > > > > device_release_driver(), I am wondering if we can call
-> > > > > device_lock(dev->dev->parent) at the beginning of acpi_bus_remove()
-> > > > > (i.e. before calling pre_remove) and fails if dev->driver is NULL.  The
-> > > > > parent lock is otherwise released after device_release_driver() is done.
-> > > > 
-> > > > I would be careful.  You may introduce some subtle locking-related issues
-> > > > this way.
-> > > 
-> > > Right.  This requires careful inspection and testing.  As far as the
-> > > locking is concerned, I am not keen on using fine grained locking for
-> > > hot-plug.  It is much simpler and solid if we serialize such operations.
-> > > 
-> > > > Besides, there may be an alternative approach to all this.  For example,
-> > > > what if we don't remove struct device objects on eject?  The ACPI handles
-> > > > associated with them don't go away in that case after all, do they?
-> > > 
-> > > Umm...  Sorry, I am not getting your point.  The issue is that we need
-> > > to be able to fail a request when memory range cannot be off-lined.
-> > > Otherwise, we end up ejecting online memory range.
-> > 
-> > Yes, this is the major one.  The minor issue, however, is a race condition
-> > between unbinding a driver from a device and removing the device if I
-> > understand it correctly.  Which will go away automatically if the device is
-> > not removed in the first place.  Or so I would think. :-)
-> 
-> I see.  I do not think whether or not the device is removed on eject
-> makes any difference here.  The issue is that after driver_unbind() is
-> done, acpi_bus_hot_remove_device() no longer calls the ACPI memory
-> driver (hence, it cannot fail in prepare_remove), and goes ahead to call
-> _EJ0.
+On 11/28/2012 10:29 PM, Dan Carpenter wrote:
+> On Wed, Nov 28, 2012 at 08:30:04PM +0100, Sylwester Nawrocki wrote:
+>> On 11/28/2012 01:22 PM, Dan Carpenter wrote:
+>>> In the end this is just a driver, and I don't especially care.  But
+>>> it's like not just this one which makes me frustrated.  I really
+>>> believe in linux-next and I think everything should spend a couple
+>>> weeks there before being merged.
+>>
+>> Couple of weeks in linux-next plus a couple of weeks of final patch
+>> series version awaiting to being reviewed and picked up by a maintainer
+>> makes almost entire kernel development cycle. These are huge additional
+>> delays, especially in the embedded world. Things like these certainly
+>> aren't encouraging for moving over from out-of-tree to the mainline
+>> development process. And in this case we are talking only about merging
+>> driver to the staging tree...
+>
+> Yeah.  A couple weeks is probably too long.  But I think a week is
+> totally reasonable.
 
-I see two reasons for calling acpi_bus_hot_remove_device() for memory (correct
-me if I'm wrong): (1) from the memhotplug driver's notify handler and (2) from
-acpi_eject_store() which is exposed through sysfs.  If we disabled exposing
-acpi_eject_store() for memory devices, then the only way would be from the
-notify handler.  So I wonder if driver_unbind() shouldn't just uninstall the
-notify handler for memory (so that memory eject events are simply dropped on
-the floor after unbinding the driver)?
+Agreed, exactly that couple weeks requirement seemed a bit long to me.
 
-Rafael
+> You have the process wrong.  The maintainer reviews it first, merges
+> it into his -next git tree.  It sits in linux-next for a bit.  The
+> merge window opens up.  It is merged.  It gets tested for 3 months.
+> It is released.
 
+I believe what you're describing is true for most subsystems.  At
+linux-media the process looks roughly that you prepare a patch and post
+it to the mailing list for review.  Regular developers review it, you
+address the comments and submit again.  Repeat these steps until
+everyone's happy.  Then, when the patch looks like it is ready for
+merging it is preferred to send the maintainer a pull request.
+Now there can be a delay of up to couple weeks.  Afterwards the patch
+in most cases gets merged, with a few possible change requests. However
+it may happen the maintainer has different views on what's has been
+agreed before and you start everything again.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+With a few sub-maintainers recently appointed hopefully there can be
+seen some improvement.
+
+> It should work as a continuous even flow.  It shouldn't be a rush to
+> submit drivers right before the merge window opens.  It's not hard,
+> you can submit a driver to linux-next at any time.  It magically
+> flows through the process and is released some months later.
+>
+> It does suck to add a 3 month delay for people who miss the cut off.
+> Don't wait until the last minute.  In the embedded world you can
+> use git cherry-pick to get the driver from linux-next.
+
+Yeah, it's not unusual to work with specific -rc tree with multiple
+subsystem -next branches on top of it.
+
+It's just those cases where you're told to get feature A in the kernel
+release X and it is already late in the development cycle... But it
+might just be a matter of planning the work adequately with proper
+understanding of the whole process.
+
+--
+
+Thanks,
+Sylwester
