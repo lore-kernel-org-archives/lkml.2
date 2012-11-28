@@ -1,62 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137Ab2K1A2S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 19:28:18 -0500
-Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:50044 "EHLO
-	95-31-19-74.broadband.corbina.ru" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753060Ab2K1A2Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 19:28:16 -0500
-Message-ID: <50B55A93.4090900@ilyx.ru>
-Date: Wed, 28 Nov 2012 04:28:03 +0400
-From: Ilya Zykov <ilya@ilyx.ru>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	id S1753953Ab2K1AeY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 19:34:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64431 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753327Ab2K1AeX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 19:34:23 -0500
+Date: Tue, 27 Nov 2012 22:34:10 -0200
+From: Rafael Aquini <aquini@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <levinsasha928@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH] mm: fix balloon_page_movable() page->flags check
+Message-ID: <20121128003409.GB7401@t510.redhat.com>
+References: <20121127145708.c7173d0d.akpm@linux-foundation.org>
+ <1ccb1c95a52185bcc6009761cb2829197e2737ea.1354058194.git.aquini@redhat.com>
+ <20121127155201.ddfea7e1.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        ilya@ilyx.ru
-Subject: [PATCH] tty: Correct tty buffer flushing.
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121127155201.ddfea7e1.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CANCEL - [PATCH] tty: hold lock across tty buffer finding and buffer filling.
-commit f8f72f047b96c6c8b13f6e3ba53fa6feb4266813
-
-The commit above very dirty, has many degradation on SMP systems, because take
-spinlock on long time, and not resolve problem with tty_prepare_string*()(Jiri Slaby).
-We lose all advantage from the use of flip buffer.
-
-The root of problem it use carelessly buffer flushing, then another thread can write to it.
-This patch resolve this problem and doesn't let lose advantage from flip buffer use.
-Before use need REVERT commit f8f72f047b96c6c8b13f6e3ba53fa6feb4266813.
-
-Signed-off-by: Ilya Zykov <ilya@ilyx.ru>
----
-diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
-index 6c9b7cd..4f02f9c 100644
---- a/drivers/tty/tty_buffer.c
-+++ b/drivers/tty/tty_buffer.c
-@@ -114,11 +114,14 @@ static void __tty_buffer_flush(struct tty_struct *tty)
- {
- 	struct tty_buffer *thead;
+On Tue, Nov 27, 2012 at 03:52:01PM -0800, Andrew Morton wrote:
+> On Tue, 27 Nov 2012 21:31:10 -0200
+> Rafael Aquini <aquini@redhat.com> wrote:
+> 
+> > This patch fixes the following crash by fixing and enhancing the way 
+> > page->flags are tested to identify a ballooned page.
+> > 
+> > ---8<---
+> > BUG: unable to handle kernel NULL pointer dereference at 0000000000000194
+> > IP: [<ffffffff8122b354>] isolate_migratepages_range+0x344/0x7b0
+> > --->8---
+> > 
+> > The NULL pointer deref was taking place because balloon_page_movable()
+> > page->flags tests were incomplete and we ended up 
+> > inadvertently poking at private pages.
+> > 
+> > ....
+> >
+> >  /*
+> > + * __balloon_page_flags - helper to perform balloon @page ->flags tests.
+> > + *
+> > + * As balloon pages are got from Buddy, and we do not play with page->flags
+> > + * at driver level (exception made when we get the page lock for compaction),
+> > + * therefore we can safely identify a ballooned page by checking if the
+> > + * NR_PAGEFLAGS rightmost bits from the page->flags are all cleared.
+> > + * This approach also helps on skipping ballooned pages that are locked for
+> > + * compaction or release, thus mitigating their racy check at
+> > + * balloon_page_movable()
+> > + */
+> > +#define BALLOON_PAGE_FLAGS_MASK       ((1UL << NR_PAGEFLAGS) - 1)
+> 
+> hm, this seems a bit fragile.
+> 
+> What's actually going on here?  You're assuming that a page fresh from
+> buddy has all flags 0..NR_PAGEFLAGS cleared?
+>
  
--	while ((thead = tty->buf.head) != NULL) {
--		tty->buf.head = thead->next;
--		tty_buffer_free(tty, thead);
-+	if (tty->buf.head == NULL)
-+		return;
-+	while ((thead = tty->buf.head->next) != NULL) {
-+		tty_buffer_free(tty, tty->buf.head);
-+		tty->buf.head = thead;
- 	}
--	tty->buf.tail = NULL;
-+	WARN_ON(tty->buf.head != tty->buf.tail);
-+	tty->buf.head->read = tty->buf.head->commit;
- }
- 
- /**
+Yes, thats the idea, as when we get pages from freelists, they are all checked 
+by prep_new_page()->check_new_page() before buffered_rmqueue() returns them.
+By the path we use to get balloon pages, if the page has any of 0..NR_PAGEFLAGS
+flags set at the alloc time it's regarded as bad_page by check_new_page(),
+and we go after another victim.
 
+
+> That may be true, I'm unsure.  Please take a look at
+> PAGE_FLAGS_CHECK_AT_FREE and PAGE_FLAGS_CHECK_AT_PREP and work out why
+> the heck these aren't the same thing!
+
+Humm, I can't think of why, either... As I've followed the prep path, I didn't
+notice that difference. I'll look at it closer, though.
+
+
+>
+> Either way around, doing
+> 
+> 	#define BALLOON_PAGE_FLAGS_MASK PAGE_FLAGS_CHECK_AT_PREP
+> 
+> seems rather more maintainable.
+
+As usual, your suggestion is far way better than my orinal proposal :)
+
+
+> 
+> > +static inline bool __balloon_page_flags(struct page *page)
+> > +{
+> > +	return page->flags & BALLOON_PAGE_FLAGS_MASK ? false : true;
+> 
+> We have a neater way of doing the scalar-to-boolean conversion:
+> 
+> 	return !(page->flags & BALLOON_PAGE_FLAGS_MASK);
+> 
+
+ditto! :)
+
+
+Do you want me to resubmit this patch with the changes you suggested?
+
+
+Cheers!
+Rafael
+
+> > +}
+> > +
+> > +/*
+> >   * __is_movable_balloon_page - helper to perform @page mapping->flags tests
+> >   */
+> >  static inline bool __is_movable_balloon_page(struct page *page)
+> > @@ -135,8 +152,8 @@ static inline bool balloon_page_movable(struct page *page)
+> >  	 * Before dereferencing and testing mapping->flags, lets make sure
+> >  	 * this is not a page that uses ->mapping in a different way
+> >  	 */
+> > -	if (!PageSlab(page) && !PageSwapCache(page) && !PageAnon(page) &&
+> > -	    !page_mapped(page))
+> > +	if (__balloon_page_flags(page) && !page_mapped(page) &&
+> > +	    page_count(page) == 1)
+> >  		return __is_movable_balloon_page(page);
+> >  
+> >  	return false;
+> >
+> > ...
+> >
