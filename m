@@ -1,125 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755723Ab2K1SHw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 13:07:52 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:48378 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754443Ab2K1SHv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 13:07:51 -0500
-Message-ID: <50B652F2.5050407@wwwdotorg.org>
-Date: Wed, 28 Nov 2012 11:07:46 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-CC: "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "James.Bottomley@HansenPartnership.com" 
-	<James.Bottomley@HansenPartnership.com>,
-        "arnd@arndb.de" <arnd@arndb.de>, Krishna Reddy <vdumpa@nvidia.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "minchan@kernel.org" <minchan@kernel.org>,
-        "chunsang.jeong@linaro.org" <chunsang.jeong@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "subashrp@gmail.com" <subashrp@gmail.com>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "pullip.cho@samsung.com" <pullip.cho@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/1] ARM: tegra: bus_notifier registers IOMMU devices(was:
- How to specify IOMMU'able devices in DT)
-References: <20120924124452.41070ed2ee9944d930cffffc@nvidia.com><054901cd9a45$db1a7ea0$914f7be0$%szyprowski@samsung.com><20120924.145014.1452596970914043018.hdoyu@nvidia.com> <20121128.154832.539666140149950229.hdoyu@nvidia.com>
-In-Reply-To: <20121128.154832.539666140149950229.hdoyu@nvidia.com>
-X-Enigmail-Version: 1.4.5
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755799Ab2K1SJy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 13:09:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24403 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755556Ab2K1SJw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 13:09:52 -0500
+Message-ID: <1354126140.1694.0.camel@t520.localdomain>
+Subject: Re: [PATCH V7 5/7] c6x: use new common dtc rule
+From: Mark Salter <msalter@redhat.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Michal Marek <mmarek@suse.cz>, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Sam Ravnborg <sam@ravnborg.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Aurelien Jacquiot <a-jacquiot@ti.com>, linux-c6x-dev@linux-c6x.org
+Date: Wed, 28 Nov 2012 13:09:00 -0500
+In-Reply-To: <1354058956-7199-5-git-send-email-swarren@wwwdotorg.org>
+References: <1354058956-7199-1-git-send-email-swarren@wwwdotorg.org>
+	 <1354058956-7199-5-git-send-email-swarren@wwwdotorg.org>
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="us-ascii"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28/2012 06:48 AM, Hiroshi Doyu wrote:
-> Hiroshi Doyu <hdoyu@nvidia.com> wrote @ Mon, 24 Sep 2012 14:50:14 +0300 (EEST):
-> ...
->>>>> On Mon, 2012-09-24 at 12:04 +0300, Hiroshi Doyu wrote:
->>>>>> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
->>>>>> index a1a7225..9eae3be 100644
->>>>>> --- a/drivers/base/platform.c
->>>>>> +++ b/drivers/base/platform.c
->>>>>> @@ -21,6 +21,8 @@
->>>>>>  #include <linux/slab.h>
->>>>>>  #include <linux/pm_runtime.h>
->>>>>>
->>>>>> +#include <asm/dma-iommu.h>
->>>>>> +
->>>>>>  #include "base.h"
->>>>>>
->>>>>>  #define to_platform_driver(drv)        (container_of((drv), struct
->>>>>> platform_driver, \
->>>>>> @@ -305,8 +307,19 @@ int platform_device_add(struct platform_device
->>>>>> *pdev)
->>>>>>                  dev_name(&pdev->dev), dev_name(pdev->dev.parent));
->>>>>>
->>>>>>         ret = device_add(&pdev->dev);
->>>>>> -       if (ret == 0)
->>>>>> -               return ret;
->>>>>> +       if (ret)
->>>>>> +               goto failed;
->>>>>> +
->>>>>> +#ifdef CONFIG_PLATFORM_ENABLE_IOMMU
->>>>>> +       if (platform_bus_type.map && !pdev->dev.archdata.mapping) {
->>>>>> +               ret = arm_iommu_attach_device(&pdev->dev,
->>>>>> +                                             platform_bus_type.map);
->>>>>> +               if (ret)
->>>>>> +                       goto failed;
->>>>>
->>>>> This is horrible ... you're adding an architecture specific callback
->>>>> into our generic code; that's really a no-no.  If the concept of
->>>>> CONFIG_PLATFORM_ENABE_IOMMU is useful to more than just arm, then this
->>>>> could become a generic callback.
->>>>
->>>> As mentioned in the original, this is a heck to explain what is
->>>> needed. I am looking for some generic solution for how to specify
->>>> IOMMU info for each platform devices. I'm guessing that some other SoC
->>>> may have the similar requirements on the above. As you mentioned, this
->>>> solution should be a generic, not arch specific.
->>>
->>> Please read more about bus notifiers. IMHO a good example is provided in 
->>> the following thread:
->>> http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg12238.html
->>
->> This bus notifier seems enough flexible to afford the variation of
->> IOMMU map info, like Tegra ASID, which could be platform-specific, and
->> the other could be common too. There's already iommu_bus_notifier
->> too. I'll try to implement something base on this.
+On Tue, 2012-11-27 at 16:29 -0700, Stephen Warren wrote:
+> From: Stephen Warren <swarren@nvidia.com>
 > 
-> Experimentally implemented as below. With the followig patch, each
-> device could specify its own map in DT, and automatically the device
-> would be attached to the map.
+> The current rules have the .dtb files build in a different directory
+> from the .dts files. This patch changes c6x to use the generic dtb
+> rule which builds .dtb files in the same directory as the source .dts.
 > 
-> There is a case that some devices share a map. This patch doesn't
-> suppor such case yet.
+> This requires moving parts of arch/c6x/boot/Makefile into newly created
+> arch/c6x/boot/dts/Makefile, and updating arch/c6x/Makefile to call the
+> new Makefile. linked_dtb.S is also moved into boot/dts/ since it's used
+> by rules that were moved.
 > 
-> From 8cb75bb6f3a8535a077e0e85265f87c1f1289bfd Mon Sep 17 00:00:00 2001
-> From: Hiroshi Doyu <hdoyu@nvidia.com>
-> Date: Wed, 28 Nov 2012 14:47:04 +0200
-> Subject: [PATCH 1/1] ARM: tegra: bus_notifier registers IOMMU devices
-> 
-> platform_bus notifier registers IOMMU devices if dma-window is
-> specified.
-> 
-> Its format is:
->   dma-window = <"start" "size">;
-> ex)
->   dma-window = <0x12345000 0x8000>;
-> 
-> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+> Cc: Mark Salter <msalter@redhat.com>
+> Cc: Aurelien Jacquiot <a-jacquiot@ti.com>
+> Cc: linux-c6x-dev@linux-c6x.org
+> Signed-off-by: Stephen Warren <swarren@nvidia.com>
 > ---
->  arch/arm/mach-tegra/board-dt-tegra30.c |   40 ++++++++++++++++++++++++++++++++
 
-Shouldn't this patch be to the IOMMU driver itself, not the core Tegra code?
+Acked-by: Mark Salter <msalter@redhat.com>
+
 
