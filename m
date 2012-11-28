@@ -1,95 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753640Ab2K1JXM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 04:23:12 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:58694 "EHLO bear.ext.ti.com"
+	id S1753627Ab2K1JYO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 04:24:14 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:35421 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753619Ab2K1JXK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 04:23:10 -0500
-From: Mukund Navada <navada@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>, Mukund Navada <navada@ti.com>
-Subject: [PATCH 1/1] regmap: Add support for continously numbered pages across regmap range
-Date: Wed, 28 Nov 2012 14:52:57 +0530
-Message-ID: <1354094577-14967-1-git-send-email-navada@ti.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <n>
-References: <n>
+	id S1752569Ab2K1JYM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 04:24:12 -0500
+Message-ID: <50B5D82D.6010109@parallels.com>
+Date: Wed, 28 Nov 2012 13:23:57 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Michal Hocko <mhocko@suse.cz>
+CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        Ying Han <yinghan@google.com>, Tejun Heo <htejun@gmail.com>,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: [patch v2 3/6] memcg: rework mem_cgroup_iter to use cgroup iterators
+References: <1353955671-14385-1-git-send-email-mhocko@suse.cz> <1353955671-14385-4-git-send-email-mhocko@suse.cz> <50B5CFBF.2090100@jp.fujitsu.com> <20121128091745.GC12309@dhcp22.suse.cz>
+In-Reply-To: <20121128091745.GC12309@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Page number in some devices increases across regmap ranges since the
-selector register to choose the page remains the same. So in order to
-write correct page number, the start_page_num is stored in
-regmap_range_cfg.
+On 11/28/2012 01:17 PM, Michal Hocko wrote:
+> On Wed 28-11-12 17:47:59, KAMEZAWA Hiroyuki wrote:
+>> (2012/11/27 3:47), Michal Hocko wrote:
+> [...]
+>>> +		/*
+>>> +		 * Even if we found a group we have to make sure it is alive.
+>>> +		 * css && !memcg means that the groups should be skipped and
+>>> +		 * we should continue the tree walk.
+>>> +		 * last_visited css is safe to use because it is protected by
+>>> +		 * css_get and the tree walk is rcu safe.
+>>> +		 */
+>>> +		if (css == &root->css || (css && css_tryget(css)))
+>>> +			memcg = mem_cgroup_from_css(css);
+>>
+>> Could you note that this iterator will never visit dangling(removed)
+>> memcg, somewhere ?
+> 
+> OK, I can add it to the function comment but the behavior hasn't changed
+> so I wouldn't like to confuse anybody.
+> 
+>> Hmm, I'm not sure but it may be trouble at shrkinking dangling
+>> kmem_cache(slab).
+> 
+> We do not shrink slab at all. 
 
-Signed-off-by: Mukund Navada <navada@ti.com>
----
- drivers/base/regmap/internal.h |    2 ++
- drivers/base/regmap/regmap.c   |    2 ++
- include/linux/regmap.h         |    5 +++++
- 3 files changed, 9 insertions(+), 0 deletions(-)
+yet. However...
 
-diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
-index 288e135..fd31f5d 100644
---- a/drivers/base/regmap/internal.h
-+++ b/drivers/base/regmap/internal.h
-@@ -134,6 +134,8 @@ struct regmap_range_node {
- 
- 	unsigned int window_start;
- 	unsigned int window_len;
-+
-+	unsigned int start_page_num;
- };
- 
- #ifdef CONFIG_DEBUG_FS
-diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index 42d5cb0..39e37a4 100644
---- a/drivers/base/regmap/regmap.c
-+++ b/drivers/base/regmap/regmap.c
-@@ -645,6 +645,7 @@ struct regmap *regmap_init(struct device *dev,
- 		new->selector_shift = range_cfg->selector_shift;
- 		new->window_start = range_cfg->window_start;
- 		new->window_len = range_cfg->window_len;
-+		new->start_page_num = range_cfg->start_page_num;
- 
- 		if (_regmap_range_add(map, new) == false) {
- 			dev_err(map->dev, "Failed to add range %d\n", i);
-@@ -833,6 +834,7 @@ static int _regmap_select_page(struct regmap *map, unsigned int *reg,
- 
- 	win_offset = (*reg - range->range_min) % range->window_len;
- 	win_page = (*reg - range->range_min) / range->window_len;
-+	win_page += range->start_page_num;
- 
- 	if (val_num > 1) {
- 		/* Bulk write shouldn't cross range boundary */
-diff --git a/include/linux/regmap.h b/include/linux/regmap.h
-index b7e95bf..96f029e 100644
---- a/include/linux/regmap.h
-+++ b/include/linux/regmap.h
-@@ -217,6 +217,8 @@ struct regmap_config {
-  *
-  * @window_start: Address of first (lowest) register in data window.
-  * @window_len: Number of registers in data window.
-+ *
-+ * @start_page_num: Start page number for the range
-  */
- struct regmap_range_cfg {
- 	const char *name;
-@@ -233,6 +235,9 @@ struct regmap_range_cfg {
- 	/* Data window (per each page) */
- 	unsigned int window_start;
- 	unsigned int window_len;
-+
-+	/* Starting page number when it increases across range */
-+	unsigned int start_page_num;
- };
- 
- typedef int (*regmap_hw_write)(void *context, const void *data,
--- 
-1.7.1
+> Those objects that are in a dead memcg
+> wait for their owner tho release them which will make the dangling group
+> eventually go away
+> 
+>>
+>> Costa, how do you think ?
+>>
+
+In general, I particularly believe it is a good idea to skip dead memcgs
+in the iterator. I don't anticipate any problems with shrinking at all.
+
+Basically, we will only ever actively shrink when the memcg is dying, at
+which point it is still alive.
+
+After this, it's better to just leave it to vmscan. Whenever there is
+pressure, it will go away.
 
