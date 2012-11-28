@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756108Ab2K1VYm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 16:24:42 -0500
-Received: from shrek-wifi.podlesie.net ([93.179.225.50]:55439 "EHLO
-	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753080Ab2K1VYl (ORCPT
+	id S1756135Ab2K1V04 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 16:26:56 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:64316 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754831Ab2K1V0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 16:24:41 -0500
-Date: Wed, 28 Nov 2012 22:24:38 +0100
-From: Krzysztof Mazur <krzysiek@podlesie.net>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/3] pppoatm: protect against freeing of vcc
-Message-ID: <20121128212438.GA941@shrek.podlesie.net>
-References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
- <1350926091-12642-3-git-send-email-krzysiek@podlesie.net>
- <1354036592.2534.6.camel@shinybook.infradead.org>
- <20121127173906.GA11390@shrek.podlesie.net>
- <1354039349.2534.11.camel@shinybook.infradead.org>
- <20121127182843.GA11597@shrek.podlesie.net>
- <20121128201837.GA912@shrek.podlesie.net>
- <1354135481.21562.98.camel@shinybook.infradead.org>
+	Wed, 28 Nov 2012 16:26:54 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354135481.21562.98.camel@shinybook.infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOh2x=mTzMVykRymid_TKG8Y87GpuD9V1KZ0YyzmfY4GHtqydg@mail.gmail.com>
+References: <1354103571-27394-1-git-send-email-rabin.vincent@stericsson.com>
+ <CAOh2x=kw11+fGK6G_fKm2CA3TNGnG_mFq1eHeNxQ-B97-Wd_NA@mail.gmail.com> <CAOh2x=mTzMVykRymid_TKG8Y87GpuD9V1KZ0YyzmfY4GHtqydg@mail.gmail.com>
+From: Rabin Vincent <rabin@rab.in>
+Date: Wed, 28 Nov 2012 22:26:12 +0100
+X-Google-Sender-Auth: Sd0R5Zyk-puOyRUF6O9-_NJUtKc
+Message-ID: <CAH+eYFBkroHY2dEv_fL_Ai-r8H9wR6njrsDvPEGRdfoGEzN7wA@mail.gmail.com>
+Subject: Re: [RFC 1/2] clk: use struct clk only for external API
+To: viresh kumar <viresh.kumar@linaro.org>
+Cc: Mike Turquette <mturquette@ti.com>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 08:44:41PM +0000, David Woodhouse wrote:
-> On Wed, 2012-11-28 at 21:18 +0100, Krzysztof Mazur wrote:
-> > 
-> > +void vcc_pop_any(struct atm_vcc *vcc, struct sk_buff *skb)
-> > +{
-> > +       if (vcc->pop)
-> > +               vcc->pop(vcc, skb);
-> 
-> if (vcc && vcc->pop) perhaps? 
-> 
+2012/11/28 viresh kumar <viresh.kumar@linaro.org>:
+> On Wed, Nov 28, 2012 at 9:31 PM, viresh kumar <viresh.kumar@linaro.org> wrote:
+>> On Wed, Nov 28, 2012 at 5:22 PM, Rabin Vincent
+>> Isn't something wrong here? For common clk case shouldn't
+>> this be:
+>>
+>>> +#define clk_to_clk_core(clk)  (&clk->clk)
+>>> +#define clk_core_to_clk(core) (container_of(clk, ...))  //not getting into the exact format here
+>>
+>> Sorry, if i am missing basics.
+>
+> Ok. I saw these getting updated in 2/2. But it means this individual patch
+> is broken and this is not allowed i believe.
 
-yes, we can do that, at least "he" and "nicstar" use that in some cases.
-
-Krzysiek
+It would be better to use container_of / &clk->clk, yes.  I wouldn't
+really describe it as "broken" though since it works fine as it is,
+since it's the first and only element.  I will change it anyway.
