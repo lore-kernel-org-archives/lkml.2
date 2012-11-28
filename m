@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753672Ab2K1JZy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 04:25:54 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:6333
+	id S1753765Ab2K1J0A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 04:26:00 -0500
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:22651
 	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753507Ab2K1JZw (ORCPT
+	by vger.kernel.org with ESMTP id S1753507Ab2K1JZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 04:25:52 -0500
+	Wed, 28 Nov 2012 04:25:56 -0500
 X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
 X-SpamScore: -3
 X-BigFish: VPS-3(zz98dI9371I936eI1432Izz1de0h1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631hbe9i1155h)
@@ -22,8 +22,8 @@ References: <1349952025.9228.3.camel@dhruva>
 	 <1350986593.23353.3.camel@dhruva> <1353665463.1760.3000.camel@dhruva>
 	 <20121127142358.9a4bc20d.akpm@linux-foundation.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Nov 2012 14:54:40 +0530
-Message-ID: <1354094680.10949.1.camel@dhruva>
+Date: Wed, 28 Nov 2012 14:54:41 +0530
+Message-ID: <1354094681.10949.2.camel@dhruva>
 MIME-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -71,6 +71,8 @@ On Tue, 2012-11-27 at 14:23 -0800, Andrew Morton wrote:
 > : > > +	.poweroff = da9055_rtc_suspend,
 > : > > +};
 > : > You may want to use simple dev pm ops
-To support generic PM ops these additional ops were supported.
+> 
+> 
+> 
 
 
