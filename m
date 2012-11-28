@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932329Ab2K1NyZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 08:54:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45416 "EHLO mx1.redhat.com"
+	id S932308Ab2K1NyY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 08:54:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26530 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932210Ab2K1NyT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 08:54:19 -0500
+	id S932228Ab2K1NyV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 08:54:21 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>,
@@ -15,20 +15,17 @@ Cc: Jiri Olsa <jolsa@redhat.com>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Namhyung Kim <namhyung@kernel.org>
-Subject: [PATCH 13/14] perf diff: Display zero calculation results
-Date: Wed, 28 Nov 2012 14:52:48 +0100
-Message-Id: <1354110769-2998-14-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 14/14] perf diff: Add generic order option for compute sorting
+Date: Wed, 28 Nov 2012 14:52:49 +0100
+Message-Id: <1354110769-2998-15-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1354110769-2998-1-git-send-email-jolsa@redhat.com>
 References: <1354110769-2998-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Forcing zero calculation outputs to appear in final output,
-so we can differ between zero output calculation result and
-empty space for missing pair of baseline hist_entry.
-
-Also skipping the compute and period output for dummy entries.
+Adding option 'o' to allow sorting based on the
+input file number.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -39,115 +36,121 @@ Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/builtin-diff.c | 24 +++++++++++++++---------
- tools/perf/util/hist.c    |  1 +
- tools/perf/util/sort.h    |  3 +++
- 3 files changed, 19 insertions(+), 9 deletions(-)
+ tools/perf/Documentation/perf-diff.txt |  4 +++
+ tools/perf/builtin-diff.c              | 53 +++++++++++++++-------------------
+ 2 files changed, 28 insertions(+), 29 deletions(-)
 
+diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
+index ab5b79e..1402e14 100644
+--- a/tools/perf/Documentation/perf-diff.txt
++++ b/tools/perf/Documentation/perf-diff.txt
+@@ -91,6 +91,10 @@ OPTIONS
+ --formula::
+         Show formula for given computation.
+ 
++-o::
++--order::
++       Specify compute sorting column number.
++
+ COMPARISON
+ ----------
+ The comparison is governed by the baseline file. The baseline perf.data
 diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 50e1ea3..b801d0c 100644
+index b801d0c..1f98786 100644
 --- a/tools/perf/builtin-diff.c
 +++ b/tools/perf/builtin-diff.c
-@@ -779,13 +779,15 @@ static int hpp__color_baseline(struct perf_hpp_fmt *fmt __maybe_unused,
- 		container_of(fmt, struct diff_data__fmt, fmt);
- 	char pfmt[20] = " ";
+@@ -65,7 +65,7 @@ static bool show_displacement;
+ static bool show_period;
+ static bool show_formula;
+ static bool show_baseline_only;
+-static bool sort_compute;
++static unsigned int sort_compute;
  
--	if (percent) {
-+	if (!he->dummy) {
- 		scnprintf(pfmt, 20, "%%%d.2f%%%%", dfmt->header_width - 1);
- 		return percent_color_snprintf(hpp->buf, hpp->size,
- 					      pfmt, percent);
- 	} else
- 		return scnprintf(hpp->buf, hpp->size, "%*s",
- 				 dfmt->header_width, pfmt);
+ static s64 compute_wdiff_w1;
+ static s64 compute_wdiff_w2;
+@@ -191,13 +191,6 @@ static int setup_compute(const struct option *opt, const char *str,
+ 		return 0;
+ 	}
+ 
+-	if (*str == '+') {
+-		sort_compute = true;
+-		cstr = (char *) ++str;
+-		if (!*str)
+-			return 0;
+-	}
+-
+ 	option = strchr(str, ':');
+ 	if (option) {
+ 		unsigned len = option++ - str;
+@@ -533,31 +526,27 @@ static int64_t
+ hist_entry__cmp_compute(struct hist_entry *left, struct hist_entry *right,
+ 			int c)
+ {
+-	int i;
++	struct hist_entry **pairs_left  = left->pairs;
++	struct hist_entry **pairs_right = right->pairs;
++	struct hist_entry *p_right, *p_left;
++	static int64_t cmp;
+ 
+-	for (i = 0; i < data_cnt; i++) {
+-		struct hist_entry **pairs_left  = left->pairs;
+-		struct hist_entry **pairs_right = right->pairs;
+-		struct hist_entry *p_right, *p_left;
+-		static int64_t cmp;
++	if (!pairs_left || !pairs_right)
++		return pairs_left ? -1 : 1;
+ 
+-		if (!pairs_left || !pairs_right)
+-			return pairs_right - pairs_left;
++	p_right = pairs_right[sort_compute];
++	p_left  = pairs_left[sort_compute];
+ 
+-		p_right = pairs_right[i];
+-		p_left  = pairs_left[i];
++	if (!p_left || !p_right)
++		return p_left ? -1 : 1;
+ 
+-		if (!p_left || !p_right)
+-			return p_right - p_left;
+-
+-		/*
+-		 * If we differ, we are done, otherwise continue until all
+-		 * is processed or we find a difference.
+-		 */
+-		cmp = __hist_entry__cmp_compute(p_left, p_right, c);
+-		if (cmp)
+-			return cmp;
+-	}
++	/*
++	 * If we differ, we are done, otherwise continue until all
++	 * is processed or we find a difference.
++	 */
++	cmp = __hist_entry__cmp_compute(p_left, p_right, c);
++	if (cmp)
++		return cmp;
+ 
+ 	return 0;
+ }
+@@ -759,6 +748,7 @@ static const struct option options[] = {
+ 		   "columns '.' is reserved."),
+ 	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
+ 		    "Look for files with symbols relative to this directory"),
++	OPT_UINTEGER('o', "order", &sort_compute, "Specify compute sorting."),
+ 	OPT_END()
+ };
+ 
+@@ -1087,6 +1077,11 @@ static int data_init(int argc, const char **argv)
+ 		d->idx  = i;
+ 	}
+ 
++	if (sort_compute >= (unsigned int) data_cnt) {
++		pr_err("Order option out of limit.\n");
++		return -EINVAL;
++	}
 +
-+	return percent_color_snprintf(hpp->buf, hpp->size, pfmt, percent);
+ 	return 0;
  }
  
- static int hpp__entry_baseline(struct perf_hpp_fmt *_fmt, struct perf_hpp *hpp,
-@@ -797,7 +799,7 @@ static int hpp__entry_baseline(struct perf_hpp_fmt *_fmt, struct perf_hpp *hpp,
- 	const char *fmt = symbol_conf.field_sep ? "%.2f" : " %6.2f%%";
- 	char buf[32] = " ";
- 
--	if ((percent && he->pairs) || symbol_conf.field_sep)
-+	if ((he->pairs) || symbol_conf.field_sep)
- 		return scnprintf(hpp->buf, hpp->size, fmt, percent);
- 	else
- 		return scnprintf(hpp->buf, hpp->size, "%*s",
-@@ -828,7 +830,8 @@ hpp__entry_unpair(struct hist_entry *he, int idx, char *buf, size_t size)
- {
- 	switch (idx) {
- 	case PERF_HPP_DIFF__PERIOD_BASELINE:
--		scnprintf(buf, size, "%" PRIu64, he->stat.period);
-+		if (!he->dummy)
-+			scnprintf(buf, size, "%" PRIu64, he->stat.period);
- 		break;
- 
- 	default:
-@@ -852,28 +855,31 @@ hpp__entry_pair(struct hist_entry *he, struct hist_entry *pair,
- 		else
- 			diff = compute_delta(he, pair);
- 
--		if (fabs(diff) >= 0.01)
--			scnprintf(buf, size, "%+4.2F%%", diff);
-+		scnprintf(buf, size, "%+4.2F%%", diff);
- 		break;
- 
- 	case PERF_HPP_DIFF__RATIO:
-+		if (he->dummy)
-+			break;
-+
- 		if (pair->diff.computed)
- 			ratio = pair->diff.period_ratio;
- 		else
- 			ratio = compute_ratio(he, pair);
- 
--		if (ratio > 0.0)
--			scnprintf(buf, size, "%14.6F", ratio);
-+		scnprintf(buf, size, "%14.6F", ratio);
- 		break;
- 
- 	case PERF_HPP_DIFF__WEIGHTED_DIFF:
-+		if (he->dummy)
-+			break;
-+
- 		if (pair->diff.computed)
- 			wdiff = pair->diff.wdiff;
- 		else
- 			wdiff = compute_wdiff(he, pair);
- 
--		if (wdiff != 0)
--			scnprintf(buf, size, "%14ld", wdiff);
-+		scnprintf(buf, size, "%14ld", wdiff);
- 		break;
- 
- 	case PERF_HPP_DIFF__DISPL:
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 25f94a4..531b5dc 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -745,6 +745,7 @@ static struct hist_entry *hists__add_dummy_entry(struct hists *hists,
- 		rb_link_node(&he->rb_node, parent, p);
- 		rb_insert_color(&he->rb_node, &hists->entries);
- 		hists__inc_nr_entries(hists, he);
-+		he->dummy = true;
- 	}
- out:
- 	return he;
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 377b144..0e06872 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -93,6 +93,9 @@ struct hist_entry {
- 	unsigned long		position;
- 	struct rb_root		sorted_chain;
- 
-+	/* Added by hists__add_dummy_entry via hists__link */
-+	bool			dummy;
-+
- 	/* diff related */
- 	union {
- 		struct hist_entry	**pairs;
 -- 
 1.7.11.7
 
