@@ -1,123 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756390Ab2K1XPt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 18:15:49 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:52141 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756254Ab2K1XPj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 18:15:39 -0500
-Date: Wed, 28 Nov 2012 15:15:28 -0800
-From: Kees Cook <keescook@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-        Jeff Layton <jlayton@redhat.com>, Kees Cook <keescook@chromium.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Julien Tinnes <jln@google.com>, Will Drewry <wad@google.com>,
-        linux-audit@redhat.com
-Subject: [PATCH v2] audit: create explicit AUDIT_SECCOMP event type
-Message-ID: <20121128231528.GA12506@www.outflux.net>
+	id S1756269Ab2K1XRA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 18:17:00 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:56587 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754215Ab2K1XQ7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 18:16:59 -0500
+Message-ID: <50B69B62.6010202@linux.vnet.ibm.com>
+Date: Thu, 29 Nov 2012 07:16:50 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-HELO: www.outflux.net
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 3/3] KVM: x86: improve reexecute_instruction
+References: <50AAC77C.8040505@linux.vnet.ibm.com> <50AAC7F9.7050305@linux.vnet.ibm.com> <20121126224105.GB10634@amt.cnet> <50B433D0.8060107@linux.vnet.ibm.com> <20121128141230.GI928@redhat.com> <50B626D7.7070608@linux.vnet.ibm.com> <20121128215750.GA10039@amt.cnet> <50B692F3.4000408@linux.vnet.ibm.com>
+In-Reply-To: <50B692F3.4000408@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12112823-5816-0000-0000-00000597A966
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The seccomp path was using AUDIT_ANOM_ABEND from when seccomp mode 1
-could only kill a process. While we still want to make sure an audit
-record is forced on a kill, this should use a separate record type since
-seccomp mode 2 introduces other behaviors. In the case of "handled"
-behaviors (process wasn't killed), only emit a record if the process is
-under inspection. This change also fixes userspace examination of seccomp
-audit events, since it was considered malformed due to missing fields of
-the AUDIT_ANOM_ABEND event type.
+On 11/29/2012 06:40 AM, Xiao Guangrong wrote:
+> On 11/29/2012 05:57 AM, Marcelo Tosatti wrote:
+>> On Wed, Nov 28, 2012 at 10:59:35PM +0800, Xiao Guangrong wrote:
+>>> On 11/28/2012 10:12 PM, Gleb Natapov wrote:
+>>>> On Tue, Nov 27, 2012 at 11:30:24AM +0800, Xiao Guangrong wrote:
+>>>>> On 11/27/2012 06:41 AM, Marcelo Tosatti wrote:
+>>>>>
+>>>>>>>
+>>>>>>> -	return false;
+>>>>>>> +again:
+>>>>>>> +	page_fault_count = ACCESS_ONCE(vcpu->kvm->arch.page_fault_count);
+>>>>>>> +
+>>>>>>> +	/*
+>>>>>>> +	 * if emulation was due to access to shadowed page table
+>>>>>>> +	 * and it failed try to unshadow page and re-enter the
+>>>>>>> +	 * guest to let CPU execute the instruction.
+>>>>>>> +	 */
+>>>>>>> +	kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa));
+>>>>>>> +	emulate = vcpu->arch.mmu.page_fault(vcpu, cr3, PFERR_WRITE_MASK, false);
+>>>>>>
+>>>>>> Can you explain what is the objective here?
+>>>>>>
+>>>>>
+>>>>> Sure. :)
+>>>>>
+>>>>> The instruction emulation is caused by fault access on cr3. After unprotect
+>>>>> the target page, we call vcpu->arch.mmu.page_fault to fix the mapping of cr3.
+>>>>> if it return 1, mmu can not fix the mapping, we should report the error,
+>>>>> otherwise it is good to return to guest and let it re-execute the instruction
+>>>>> again.
+>>>>>
+>>>>> page_fault_count is used to avoid the race on other vcpus, since after we
+>>>>> unprotect the target page, other cpu can enter page fault path and let the
+>>>>> page be write-protected again.
+>>>>>
+>>>>> This way can help us to detect all the case that mmu can not be fixed.
+>>>>>
+>>>> Can you write this in a comment above vcpu->arch.mmu.page_fault()?
+>>>
+>>> Okay, if Marcelo does not object this way. :)
+>>
+>> I do object, since it is possible to detect precisely the condition by 
+>> storing which gfns have been cached.
+>>
+>> Then, Xiao, you need a way to handle large read-only sptes.
+> 
+> Sorry, Marcelo, i am still confused why read-only sptes can not work
+> under this patch?
+> 
+> The code after read-only large spte is is:
+> 
+> +		if ((level > PT_PAGE_TABLE_LEVEL &&
+> +		   has_wrprotected_page(vcpu->kvm, gfn, level)) ||
+> +		      mmu_need_write_protect(vcpu, gfn, can_unsync)) {
+>  			pgprintk("%s: found shadow page for %llx, marking ro\n",
+>  				 __func__, gfn);
+>  			ret = 1;
+> 
+> It return 1, then reexecute_instruction return 0. It is the same as without
+> readonly large-spte.
 
-Cc: Julien Tinnes <jln@google.com>
-Cc: Will Drewry <wad@google.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Acked-by: Steve Grubb <sgrubb@redhat.com>
----
-v2:
- - update commit message and add Cc to stable, suggested by Steve Grubb
+Ah, wait, There is a case, the large page located at 0-2M, the 0-4K is used as a
+page-table (e.g. PDE), and the guest want to write the memory located at 5K which
+should be freely written. This patch can return 0 for both current code and readonly
+large spte.
 
----
- include/linux/audit.h      |    3 ++-
- include/uapi/linux/audit.h |    1 +
- kernel/auditsc.c           |   14 +++++++++++---
- 3 files changed, 14 insertions(+), 4 deletions(-)
+I need to think it more.
 
-diff --git a/include/linux/audit.h b/include/linux/audit.h
-index bce729a..9d5104d 100644
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -157,7 +157,8 @@ void audit_core_dumps(long signr);
- 
- static inline void audit_seccomp(unsigned long syscall, long signr, int code)
- {
--	if (unlikely(!audit_dummy_context()))
-+	/* Force a record to be reported if a signal was delivered. */
-+	if (signr || unlikely(!audit_dummy_context()))
- 		__audit_seccomp(syscall, signr, code);
- }
- 
-diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
-index 76352ac..09a2d94 100644
---- a/include/uapi/linux/audit.h
-+++ b/include/uapi/linux/audit.h
-@@ -106,6 +106,7 @@
- #define AUDIT_MMAP		1323	/* Record showing descriptor and flags in mmap */
- #define AUDIT_NETFILTER_PKT	1324	/* Packets traversing netfilter chains */
- #define AUDIT_NETFILTER_CFG	1325	/* Netfilter chain modifications */
-+#define AUDIT_SECCOMP		1326	/* Secure Computing event */
- 
- #define AUDIT_AVC		1400	/* SE Linux avc denial or grant */
- #define AUDIT_SELINUX_ERR	1401	/* Internal SE Linux Errors */
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index 2f186ed..157e989 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -2735,7 +2735,7 @@ void __audit_mmap_fd(int fd, int flags)
- 	context->type = AUDIT_MMAP;
- }
- 
--static void audit_log_abend(struct audit_buffer *ab, char *reason, long signr)
-+static void audit_log_task(struct audit_buffer *ab)
- {
- 	kuid_t auid, uid;
- 	kgid_t gid;
-@@ -2753,6 +2753,11 @@ static void audit_log_abend(struct audit_buffer *ab, char *reason, long signr)
- 	audit_log_task_context(ab);
- 	audit_log_format(ab, " pid=%d comm=", current->pid);
- 	audit_log_untrustedstring(ab, current->comm);
-+}
-+
-+static void audit_log_abend(struct audit_buffer *ab, char *reason, long signr)
-+{
-+	audit_log_task(ab);
- 	audit_log_format(ab, " reason=");
- 	audit_log_string(ab, reason);
- 	audit_log_format(ab, " sig=%ld", signr);
-@@ -2783,8 +2788,11 @@ void __audit_seccomp(unsigned long syscall, long signr, int code)
- {
- 	struct audit_buffer *ab;
- 
--	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_ANOM_ABEND);
--	audit_log_abend(ab, "seccomp", signr);
-+	ab = audit_log_start(NULL, GFP_KERNEL, AUDIT_SECCOMP);
-+	if (unlikely(!ab))
-+		return;
-+	audit_log_task(ab);
-+	audit_log_format(ab, " sig=%ld", signr);
- 	audit_log_format(ab, " syscall=%ld", syscall);
- 	audit_log_format(ab, " compat=%d", is_compat_task());
- 	audit_log_format(ab, " ip=0x%lx", KSTK_EIP(current));
--- 
-1.7.9.5
-
-
--- 
-Kees Cook
-Chrome OS Security
