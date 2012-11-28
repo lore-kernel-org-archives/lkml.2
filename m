@@ -1,69 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753018Ab2K1ECk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 23:02:40 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:5206 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751836Ab2K1ECh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 23:02:37 -0500
-Message-ID: <50B58CA9.9010606@huawei.com>
-Date: Wed, 28 Nov 2012 12:01:45 +0800
-From: Jiang Liu <jiang.liu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	id S1753164Ab2K1ECy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 23:02:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29529 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752926Ab2K1ECi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 23:02:38 -0500
+Date: Tue, 27 Nov 2012 23:01:48 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file.rdu.redhat.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Jeff Chua <jeff.chua.linux@gmail.com>, Jens Axboe <axboe@kernel.dk>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH 2/2] block_dev: don't take the write lock if block size
+ doesn't change
+In-Reply-To: <Pine.LNX.4.64.1211272257140.18338@file.rdu.redhat.com>
+Message-ID: <Pine.LNX.4.64.1211272300000.18338@file.rdu.redhat.com>
+References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com>
+ <20121120180949.GG1408@quack.suse.cz> <CAAJw_ZsQdLO5qLdGPzmPf+N2D6CZw+S-4mvRGnxfARL71LuRaw@mail.gmail.com>
+ <CAAJw_ZsAyB0z0TF1mqPz1Z+H+tg7W6LVzNLKf0BkuF3u8TTMuQ@mail.gmail.com>
+ <CA+55aFyvT3R3kgwJzp9mY5eE1fwMnzXnmBpHSbqjd-eJRVDkJw@mail.gmail.com>
+ <50AF7901.20401@kernel.dk> <CAAJw_ZvXGKcjfOAS_tRdXJ9SjpCKw1t7rNt+Q=ieCkVJwN2qcg@mail.gmail.com>
+ <Pine.LNX.4.64.1211241555470.4300@file.rdu.redhat.com>
+ <CAAJw_ZvUqRmCCQ5-2PdFPRyfdzZMuphGU=hgAjUOHGk=n9Mheg@mail.gmail.com>
+ <CAAJw_ZuJXnAz1ukBwQa3xNbQaL1KUBSrbQMK2hn-7D6Ar1p3fQ@mail.gmail.com>
+ <50B46E05.70906@kernel.dk> <CAAJw_ZsYuLCwCTc6U=ELO_PvyjnVKQdkPke2enfzm6zOeWAqjA@mail.gmail.com>
+ <Pine.LNX.4.64.1211272257140.18338@file.rdu.redhat.com>
 MIME-Version: 1.0
-To: Tang Chen <tangchen@cn.fujitsu.com>
-CC: wujianguo <wujianguo106@gmail.com>, <hpa@zytor.com>,
-        <akpm@linux-foundation.org>, <rob@landley.net>,
-        <isimatu.yasuaki@jp.fujitsu.com>, <laijs@cn.fujitsu.com>,
-        <wency@cn.fujitsu.com>, <linfeng@cn.fujitsu.com>, <yinghai@kernel.org>,
-        <kosaki.motohiro@jp.fujitsu.com>, <minchan.kim@gmail.com>,
-        <mgorman@suse.de>, <rientjes@google.com>, <rusty@rustcorp.com.au>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH v2 0/5] Add movablecore_map boot option
-References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <50B42F32.4050107@gmail.com> <50B58965.7040703@cn.fujitsu.com>
-In-Reply-To: <50B58965.7040703@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.108.108.229]
-X-CFilter-Loop: Reflected
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-11-28 11:47, Tang Chen wrote:
-> On 11/27/2012 11:10 AM, wujianguo wrote:
->>
->> Hi Tang,
->>     DMA address can't be set as movable, if some one boot kernel with
->> movablecore_map=4G@0xa00000 or other memory region that contains DMA address,
->> system maybe boot failed. Should this case be handled or mentioned
->> in the change log and kernel-parameters.txt?
-> 
-> Hi Wu,
-> 
-> I think we can use MAX_DMA_PFN and MAX_DMA32_PFN to prevent setting DMA
-> address as movable. Just ignore the address lower than them, and set
-> the rest as movable. How do you think ?
-> 
-> And, since we cannot figure out the minimum of memory kernel needs, I
-> think for now, we can just add some warning into kernel-parameters.txt.
-> 
-> Thanks. :)
-On one other OS, there is a mechanism to dynamically convert pages from
-movable zones into normal zones.
+block_dev: don't take the write lock if block size doesn't change
 
-Regards!
-Gerry
+Taking the write lock has a big performance impact on the whole system
+(because of synchronize_sched_expedited). This patch avoids taking the
+write lock if the block size doesn't change (i.e. when mounting
+filesystem with block size equal to the default block size).
 
-> 
->>
->> Thanks,
->> Jianguo Wu
->>
-> 
-> .
-> 
+The logic to test if the block device is mapped was moved to a separate
+function is_bdev_mapped to avoid code duplication.
 
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+
+---
+ fs/block_dev.c |   25 ++++++++++++++++++-------
+ 1 file changed, 18 insertions(+), 7 deletions(-)
+
+Index: linux-3.7-rc7/fs/block_dev.c
+===================================================================
+--- linux-3.7-rc7.orig/fs/block_dev.c	2012-11-28 04:09:01.000000000 +0100
++++ linux-3.7-rc7/fs/block_dev.c	2012-11-28 04:13:53.000000000 +0100
+@@ -114,10 +114,18 @@ void invalidate_bdev(struct block_device
+ }
+ EXPORT_SYMBOL(invalidate_bdev);
+ 
+-int set_blocksize(struct block_device *bdev, int size)
++static int is_bdev_mapped(struct block_device *bdev)
+ {
+-	struct address_space *mapping;
++	int ret_val;
++	struct address_space *mapping = bdev->bd_inode->i_mapping;
++	mutex_lock(&mapping->i_mmap_mutex);
++	ret_val = mapping_mapped(mapping);
++	mutex_unlock(&mapping->i_mmap_mutex);
++	return ret_val;
++}
+ 
++int set_blocksize(struct block_device *bdev, int size)
++{
+ 	/* Size must be a power of two, and between 512 and PAGE_SIZE */
+ 	if (size > PAGE_SIZE || size < 512 || !is_power_of_2(size))
+ 		return -EINVAL;
+@@ -126,18 +134,21 @@ int set_blocksize(struct block_device *b
+ 	if (size < bdev_logical_block_size(bdev))
+ 		return -EINVAL;
+ 
++	/*
++	 * If the block size doesn't change, don't take the write lock.
++	 * We check for is_bdev_mapped anyway, for consistent behavior.
++	 */
++	if (size == bdev->bd_block_size)
++		return is_bdev_mapped(bdev) ? -EBUSY : 0;
++
+ 	/* Prevent starting I/O or mapping the device */
+ 	percpu_down_write(&bdev->bd_block_size_semaphore);
+ 
+ 	/* Check that the block device is not memory mapped */
+-	mapping = bdev->bd_inode->i_mapping;
+-	mutex_lock(&mapping->i_mmap_mutex);
+-	if (mapping_mapped(mapping)) {
+-		mutex_unlock(&mapping->i_mmap_mutex);
++	if (is_bdev_mapped(bdev)) {
+ 		percpu_up_write(&bdev->bd_block_size_semaphore);
+ 		return -EBUSY;
+ 	}
+-	mutex_unlock(&mapping->i_mmap_mutex);
+ 
+ 	/* Don't change the size if it is same as current */
+ 	if (bdev->bd_block_size != size) {
 
