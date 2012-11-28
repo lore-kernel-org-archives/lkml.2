@@ -1,127 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932531Ab2K1WEY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 17:04:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4859 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755763Ab2K1WEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 17:04:22 -0500
-Date: Wed, 28 Nov 2012 17:03:33 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Jan Kara <jack@suse.cz>, lkml <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] block_dev: don't take the write lock if block size
- doesn't change
-In-Reply-To: <CAAJw_Zs+fM4Tj1CJxW_60opEKHXgdsYn4xxGRewbP0AdcriyNA@mail.gmail.com>
-Message-ID: <Pine.LNX.4.64.1211281702200.5283@file.rdu.redhat.com>
-References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com>
- <20121120180949.GG1408@quack.suse.cz> <CAAJw_ZsQdLO5qLdGPzmPf+N2D6CZw+S-4mvRGnxfARL71LuRaw@mail.gmail.com>
- <CAAJw_ZsAyB0z0TF1mqPz1Z+H+tg7W6LVzNLKf0BkuF3u8TTMuQ@mail.gmail.com>
- <CA+55aFyvT3R3kgwJzp9mY5eE1fwMnzXnmBpHSbqjd-eJRVDkJw@mail.gmail.com>
- <50AF7901.20401@kernel.dk> <CAAJw_ZvXGKcjfOAS_tRdXJ9SjpCKw1t7rNt+Q=ieCkVJwN2qcg@mail.gmail.com>
- <Pine.LNX.4.64.1211241555470.4300@file.rdu.redhat.com>
- <CAAJw_ZvUqRmCCQ5-2PdFPRyfdzZMuphGU=hgAjUOHGk=n9Mheg@mail.gmail.com>
- <CAAJw_ZuJXnAz1ukBwQa3xNbQaL1KUBSrbQMK2hn-7D6Ar1p3fQ@mail.gmail.com>
- <50B46E05.70906@kernel.dk> <CAAJw_ZsYuLCwCTc6U=ELO_PvyjnVKQdkPke2enfzm6zOeWAqjA@mail.gmail.com>
- <Pine.LNX.4.64.1211272257140.18338@file.rdu.redhat.com>
- <Pine.LNX.4.64.1211272300000.18338@file.rdu.redhat.com>
- <CAAJw_Zs+fM4Tj1CJxW_60opEKHXgdsYn4xxGRewbP0AdcriyNA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932712Ab2K1WEi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 17:04:38 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:60141 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755978Ab2K1WEX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 17:04:23 -0500
+Date: Thu, 29 Nov 2012 09:04:12 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Bill Pemberton <wfp5p@virginia.edu>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus <torvalds@linux-foundation.org>
+Subject: HOTPLUG replated patches
+Message-Id: <20121129090412.4fc1a6e5a41f9bc24b827c7c@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__29_Nov_2012_09_04_12_+1100_ZtYQIWhQalne9RtJ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Thu__29_Nov_2012_09_04_12_+1100_ZtYQIWhQalne9RtJ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi all,
 
-On Wed, 28 Nov 2012, Jeff Chua wrote:
+I haven't been closely following things, but is there any reason that a
+large number of these CONFIG_HOTPLUG and __dev* patches are being merged
+via the driver-core tree rather than through the relevant maintainers
+trees? They aren't particularly urgent as far as I can see.  And they
+already have, and probably will, cause unnecessary conflicts between
+trees.
 
-> On Wed, Nov 28, 2012 at 12:01 PM, Mikulas Patocka <mpatocka@redhat.com> wrote:
-> > block_dev: don't take the write lock if block size doesn't change
-> >
-> > Taking the write lock has a big performance impact on the whole system
-> > (because of synchronize_sched_expedited). This patch avoids taking the
-> > write lock if the block size doesn't change (i.e. when mounting
-> > filesystem with block size equal to the default block size).
-> >
-> > The logic to test if the block device is mapped was moved to a separate
-> > function is_bdev_mapped to avoid code duplication.
-> >
-> > Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-> >
-> > ---
-> >  fs/block_dev.c |   25 ++++++++++++++++++-------
-> >  1 file changed, 18 insertions(+), 7 deletions(-)
-> >
-> > Index: linux-3.7-rc7/fs/block_dev.c
-> > ===================================================================
-> > --- linux-3.7-rc7.orig/fs/block_dev.c   2012-11-28 04:09:01.000000000 +0100
-> > +++ linux-3.7-rc7/fs/block_dev.c        2012-11-28 04:13:53.000000000 +0100
-> > @@ -114,10 +114,18 @@ void invalidate_bdev(struct block_device
-> >  }
-> >  EXPORT_SYMBOL(invalidate_bdev);
-> >
-> > -int set_blocksize(struct block_device *bdev, int size)
-> > +static int is_bdev_mapped(struct block_device *bdev)
-> >  {
-> > -       struct address_space *mapping;
-> > +       int ret_val;
-> > +       struct address_space *mapping = bdev->bd_inode->i_mapping;
-> > +       mutex_lock(&mapping->i_mmap_mutex);
-> > +       ret_val = mapping_mapped(mapping);
-> > +       mutex_unlock(&mapping->i_mmap_mutex);
-> > +       return ret_val;
-> > +}
-> >
-> > +int set_blocksize(struct block_device *bdev, int size)
-> > +{
-> >         /* Size must be a power of two, and between 512 and PAGE_SIZE */
-> >         if (size > PAGE_SIZE || size < 512 || !is_power_of_2(size))
-> >                 return -EINVAL;
-> > @@ -126,18 +134,21 @@ int set_blocksize(struct block_device *b
-> >         if (size < bdev_logical_block_size(bdev))
-> >                 return -EINVAL;
-> >
-> > +       /*
-> > +        * If the block size doesn't change, don't take the write lock.
-> > +        * We check for is_bdev_mapped anyway, for consistent behavior.
-> > +        */
-> > +       if (size == bdev->bd_block_size)
-> > +               return is_bdev_mapped(bdev) ? -EBUSY : 0;
-> > +
-> >         /* Prevent starting I/O or mapping the device */
-> >         percpu_down_write(&bdev->bd_block_size_semaphore);
-> >
-> >         /* Check that the block device is not memory mapped */
-> > -       mapping = bdev->bd_inode->i_mapping;
-> > -       mutex_lock(&mapping->i_mmap_mutex);
-> > -       if (mapping_mapped(mapping)) {
-> > -               mutex_unlock(&mapping->i_mmap_mutex);
-> > +       if (is_bdev_mapped(bdev)) {
-> >                 percpu_up_write(&bdev->bd_block_size_semaphore);
-> >                 return -EBUSY;
-> >         }
-> > -       mutex_unlock(&mapping->i_mmap_mutex);
-> >
-> >         /* Don't change the size if it is same as current */
-> >         if (bdev->bd_block_size != size) {
-> 
-> 
-> This patch didn't really make any difference for ext2/3/4 but for
-> reiserfs it does.
-> 
-> With the synchronize_sched_expedited() patch applied, it didn't make
-> any difference.
-> 
-> Thanks,
-> Jeff
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-It could make difference for computers with many cores - 
-synchronize_sched_expedited() is expensive there because it synchronizes 
-all active cores, so if we can avoid it, just do it.
+--Signature=_Thu__29_Nov_2012_09_04_12_+1100_ZtYQIWhQalne9RtJ
+Content-Type: application/pgp-signature
 
-Mikulas
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQtopcAAoJEECxmPOUX5FEaIgP/AoDyFf00JXt8rAPButquh9s
+TJv8ZWDBakGmTcycwTCLbsNO/8l3c1IBQ4bvkr4JkBkWqcZPq+hTuugRnLqNTn4w
+sdot4fS6SJ9BK320VM5USDwC7GL8dChoNDsPtMnepvT651LxFjvbL8KnEv84MiIx
+FfIuzLsbMZnbAARELIMcla/VEeB5UIjbjXmzKas2dUI7rGARRP6sTsNz7ol1NHoX
+extRgshBDbM39WcSnOOUd9gRwv3kYMa3Li9NlqTnRbKrs63g/W2QRJyUpNtVxeiX
+ePq1hVExpVuQgWiWoc47ikrXiDBWYqAnSRTzZQRprmJTKEAShcaMxokij4JwNSCc
+dXBUE9Yd608VYVUWrorcMWRWyIRIv9eclSY3xtQlQYSFSYuOubFKhSVLnQYS3OPl
+ITCyPNJJuMIvZh2MrLrd4Tb738xmH+QSfxM/0wS2C1ky5xPat1wMJyXDtsWBE6rj
+qYPsRq4VXUwN7ZAS0RXU1inQ4LmvmS/u3JJWR8hnkUF6nI+9kQ49BjvNMzG+WVa1
++oiGIxnyMRbXXWabNTB/5WqWKN4txgrvS+nrkOaQeFvKLbAFBq9lrG7RQBUYY4go
+MoLLE/intc7EL5QZ55xvqV8fU4Fb4Z3h3kdmwD56jp3brgfqp5xjuuHi/nGoSmw3
+zubmSnNfbpxKdoQKBIO+
+=UyiP
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__29_Nov_2012_09_04_12_+1100_ZtYQIWhQalne9RtJ--
