@@ -1,62 +1,415 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755810Ab2K1TVt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 14:21:49 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59049 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752896Ab2K1TVs (ORCPT
+	id S1755937Ab2K1TVw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 14:21:52 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:58134 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752896Ab2K1TVu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 14:21:48 -0500
-Date: Wed, 28 Nov 2012 19:21:46 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
+	Wed, 28 Nov 2012 14:21:50 -0500
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] regulator: tps51632: Use linear_min_sel and
- regulator_[map|list]_voltage_linear
-Message-ID: <20121128192146.GE32691@opensource.wolfsonmicro.com>
-References: <1354058574.6138.1.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SqEuGDw53xMPnx3c"
-Content-Disposition: inline
-In-Reply-To: <1354058574.6138.1.camel@phoenix>
-X-Cookie: Your ignorance cramps my conversation.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: [PATCH v2] rtc: Add NXP PCF8523 support
+Date: Wed, 28 Nov 2012 20:21:26 +0100
+Message-Id: <1354130486-24693-1-git-send-email-thierry.reding@avionic-design.de>
+X-Mailer: git-send-email 1.8.0.1
+X-Provags-ID: V02:K0:UdNmjuOD4dsDSS9h+J8kt9i7MHHHoRpEkPyonmnY0Sq
+ /2Yq/pjEm4ISzfSdaWOYhE14ErA1UYuKd3RqHcr5hDayvyhK4j
+ yw6JiVCWwbNN7qXCq6rC4nFHcwjYGj6bEZJbyfH1uo808MhSjC
+ dKO1AuGIlnlf4MgEHWdX5BrsNbXkIOHbR8R4HJIN5q+PrV6hKi
+ kHoUNrPV+e3EB9yK9mTsFflmfGiawv0+xBFFlT4qms58c3i7Vp
+ cO/hbr+hIDURRtyrGyWezdb9pdn93r1czOCEGSgHiWGZpE3H+2
+ bg67ZVIyiIWUThUFH9ZIpJD9p0U509QTtFVrSujP/BTzeeNTwM
+ 6MoXrIH000v4HBTXw7JahTr1QG/tit4XdmbV/wws0LvLOaBqNf
+ XYYA/uPYXWD0T26WYM1UodONqYvJ9QrPO2OUE4A3qV43su0S7x
+ ZTqdQ
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This commit adds an RTC driver for PCF8523 chips by NXP Semiconductors.
+No support is currently provided for the alarm and interrupt functions.
+Only the time and date functionality is implemented.
 
---SqEuGDw53xMPnx3c
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+---
+Changes in v2:
+- return an error if the OS flag cannot be cleared
+- add comment as to why we clear the OS flag
+- restart RTC if setting the time fails
 
-On Wed, Nov 28, 2012 at 07:22:54AM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+ drivers/rtc/Kconfig       |   9 ++
+ drivers/rtc/Makefile      |   1 +
+ drivers/rtc/rtc-pcf8523.c | 326 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 336 insertions(+)
+ create mode 100644 drivers/rtc/rtc-pcf8523.c
 
-Applied, thanks.
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index 608a7b1..5bb0314 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -269,6 +269,15 @@ config RTC_DRV_X1205
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called rtc-x1205.
+ 
++config RTC_DRV_PCF8523
++	tristate "NXP PCF8523"
++	help
++	  If you say yes here you get support for the NXP PCF8523 RTC
++	  chips.
++
++	  This driver can also be built as a module. If so, the module
++	  will be called rtc-pcf8523.
++
+ config RTC_DRV_PCF8563
+ 	tristate "Philips PCF8563/Epson RTC8564"
+ 	help
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index 56297f0..59e2132 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -76,6 +76,7 @@ obj-$(CONFIG_RTC_DRV_MV)	+= rtc-mv.o
+ obj-$(CONFIG_RTC_DRV_NUC900)	+= rtc-nuc900.o
+ obj-$(CONFIG_RTC_DRV_OMAP)	+= rtc-omap.o
+ obj-$(CONFIG_RTC_DRV_PCAP)	+= rtc-pcap.o
++obj-$(CONFIG_RTC_DRV_PCF8523)	+= rtc-pcf8523.o
+ obj-$(CONFIG_RTC_DRV_PCF8563)	+= rtc-pcf8563.o
+ obj-$(CONFIG_RTC_DRV_PCF8583)	+= rtc-pcf8583.o
+ obj-$(CONFIG_RTC_DRV_PCF2123)	+= rtc-pcf2123.o
+diff --git a/drivers/rtc/rtc-pcf8523.c b/drivers/rtc/rtc-pcf8523.c
+new file mode 100644
+index 0000000..be05a64
+--- /dev/null
++++ b/drivers/rtc/rtc-pcf8523.c
+@@ -0,0 +1,326 @@
++/*
++ * Copyright (C) 2012 Avionic Design GmbH
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/bcd.h>
++#include <linux/i2c.h>
++#include <linux/module.h>
++#include <linux/rtc.h>
++#include <linux/of.h>
++
++#define DRIVER_NAME "rtc-pcf8523"
++
++#define REG_CONTROL1 0x00
++#define REG_CONTROL1_CAP_SEL (1 << 7)
++#define REG_CONTROL1_STOP    (1 << 5)
++
++#define REG_CONTROL3 0x02
++#define REG_CONTROL3_PM_BLD (1 << 7) /* battery low detection disabled */
++#define REG_CONTROL3_PM_VDD (1 << 6) /* switch-over disabled */
++#define REG_CONTROL3_PM_DSM (1 << 5) /* direct switching mode */
++#define REG_CONTROL3_PM_MASK 0xe0
++
++#define REG_SECONDS  0x03
++#define REG_SECONDS_OS (1 << 7)
++
++#define REG_MINUTES  0x04
++#define REG_HOURS    0x05
++#define REG_DAYS     0x06
++#define REG_WEEKDAYS 0x07
++#define REG_MONTHS   0x08
++#define REG_YEARS    0x09
++
++struct pcf8523 {
++	struct rtc_device *rtc;
++};
++
++static int pcf8523_read(struct i2c_client *client, u8 reg, u8 *valuep)
++{
++	struct i2c_msg msgs[2];
++	u8 value = 0;
++	int err;
++
++	msgs[0].addr = client->addr;
++	msgs[0].flags = 0;
++	msgs[0].len = sizeof(reg);
++	msgs[0].buf = &reg;
++
++	msgs[1].addr = client->addr;
++	msgs[1].flags = I2C_M_RD;
++	msgs[1].len = sizeof(value);
++	msgs[1].buf = &value;
++
++	err = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
++	if (err < 0)
++		return err;
++
++	*valuep = value;
++
++	return 0;
++}
++
++static int pcf8523_write(struct i2c_client *client, u8 reg, u8 value)
++{
++	u8 buffer[2] = { reg, value };
++	struct i2c_msg msg;
++	int err;
++
++	msg.addr = client->addr;
++	msg.flags = 0;
++	msg.len = sizeof(buffer);
++	msg.buf = buffer;
++
++	err = i2c_transfer(client->adapter, &msg, 1);
++	if (err < 0)
++		return err;
++
++	return 0;
++}
++
++static int pcf8523_select_capacitance(struct i2c_client *client, bool high)
++{
++	u8 value;
++	int err;
++
++	err = pcf8523_read(client, REG_CONTROL1, &value);
++	if (err < 0)
++		return err;
++
++	if (!high)
++		value &= ~REG_CONTROL1_CAP_SEL;
++	else
++		value |= REG_CONTROL1_CAP_SEL;
++
++	err = pcf8523_write(client, REG_CONTROL1, value);
++	if (err < 0)
++		return err;
++
++	return err;
++}
++
++static int pcf8523_set_pm(struct i2c_client *client, u8 pm)
++{
++	u8 value;
++	int err;
++
++	err = pcf8523_read(client, REG_CONTROL3, &value);
++	if (err < 0)
++		return err;
++
++	value = (value & ~REG_CONTROL3_PM_MASK) | pm;
++
++	err = pcf8523_write(client, REG_CONTROL3, value);
++	if (err < 0)
++		return err;
++
++	return 0;
++}
++
++static int pcf8523_stop_rtc(struct i2c_client *client)
++{
++	u8 value;
++	int err;
++
++	err = pcf8523_read(client, REG_CONTROL1, &value);
++	if (err < 0)
++		return err;
++
++	value |= REG_CONTROL1_STOP;
++
++	err = pcf8523_write(client, REG_CONTROL1, value);
++	if (err < 0)
++		return err;
++
++	return 0;
++}
++
++static int pcf8523_start_rtc(struct i2c_client *client)
++{
++	u8 value;
++	int err;
++
++	err = pcf8523_read(client, REG_CONTROL1, &value);
++	if (err < 0)
++		return err;
++
++	value &= ~REG_CONTROL1_STOP;
++
++	err = pcf8523_write(client, REG_CONTROL1, value);
++	if (err < 0)
++		return err;
++
++	return 0;
++}
++
++static int pcf8523_rtc_read_time(struct device *dev, struct rtc_time *tm)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	u8 start = REG_SECONDS, regs[7];
++	struct i2c_msg msgs[2];
++	int err;
++
++	msgs[0].addr = client->addr;
++	msgs[0].flags = 0;
++	msgs[0].len = 1;
++	msgs[0].buf = &start;
++
++	msgs[1].addr = client->addr;
++	msgs[1].flags = I2C_M_RD;
++	msgs[1].len = sizeof(regs);
++	msgs[1].buf = regs;
++
++	err = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
++	if (err < 0)
++		return err;
++
++	if (regs[0] & REG_SECONDS_OS) {
++		/*
++		 * If the oscillator was stopped, try to clear the flag. Upon
++		 * power-up the flag is always set, but if we cannot clear it
++		 * the oscillator isn't running properly for some reason. The
++		 * sensible thing therefore is to return an error, signalling
++		 * that the clock cannot be assumed to be correct.
++		 */
++
++		regs[0] &= ~REG_SECONDS_OS;
++
++		err = pcf8523_write(client, REG_SECONDS, regs[0]);
++		if (err < 0)
++			return err;
++
++		err = pcf8523_read(client, REG_SECONDS, &regs[0]);
++		if (err < 0)
++			return err;
++
++		if (regs[0] & REG_SECONDS_OS)
++			return -EAGAIN;
++	}
++
++	tm->tm_sec = bcd2bin(regs[0] & 0x7f);
++	tm->tm_min = bcd2bin(regs[1] & 0x7f);
++	tm->tm_hour = bcd2bin(regs[2] & 0x3f);
++	tm->tm_mday = bcd2bin(regs[3] & 0x3f);
++	tm->tm_wday = regs[4] & 0x7;
++	tm->tm_mon = bcd2bin(regs[5] & 0x1f);
++	tm->tm_year = bcd2bin(regs[6]) + 100;
++
++	return rtc_valid_tm(tm);
++}
++
++static int pcf8523_rtc_set_time(struct device *dev, struct rtc_time *tm)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct i2c_msg msg;
++	u8 regs[8];
++	int err;
++
++	err = pcf8523_stop_rtc(client);
++	if (err < 0)
++		return err;
++
++	regs[0] = REG_SECONDS;
++	regs[1] = bin2bcd(tm->tm_sec);
++	regs[2] = bin2bcd(tm->tm_min);
++	regs[3] = bin2bcd(tm->tm_hour);
++	regs[4] = bin2bcd(tm->tm_mday);
++	regs[5] = tm->tm_wday;
++	regs[6] = bin2bcd(tm->tm_mon);
++	regs[7] = bin2bcd(tm->tm_year - 100);
++
++	msg.addr = client->addr;
++	msg.flags = 0;
++	msg.len = sizeof(regs);
++	msg.buf = regs;
++
++	err = i2c_transfer(client->adapter, &msg, 1);
++	if (err < 0) {
++		/*
++		 * If the time cannot be set, restart the RTC anyway. Note
++		 * that errors are ignored if the RTC cannot be started so
++		 * that we have a chance to propagate the original error.
++		 */
++		pcf8523_start_rtc(client);
++		return err;
++	}
++
++	return pcf8523_start_rtc(client);
++}
++
++static const struct rtc_class_ops pcf8523_rtc_ops = {
++	.read_time = pcf8523_rtc_read_time,
++	.set_time = pcf8523_rtc_set_time,
++};
++
++static int pcf8523_probe(struct i2c_client *client,
++			 const struct i2c_device_id *id)
++{
++	struct pcf8523 *pcf;
++	int err;
++
++	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C))
++		return -ENODEV;
++
++	pcf = devm_kzalloc(&client->dev, sizeof(*pcf), GFP_KERNEL);
++	if (!pcf)
++		return -ENOMEM;
++
++	err = pcf8523_select_capacitance(client, true);
++	if (err < 0)
++		return err;
++
++	err = pcf8523_set_pm(client, 0);
++	if (err < 0)
++		return err;
++
++	pcf->rtc = rtc_device_register(DRIVER_NAME, &client->dev,
++				       &pcf8523_rtc_ops, THIS_MODULE);
++	if (IS_ERR(pcf->rtc))
++		return PTR_ERR(pcf->rtc);
++
++	i2c_set_clientdata(client, pcf);
++
++	return 0;
++}
++
++static int pcf8523_remove(struct i2c_client *client)
++{
++	struct pcf8523 *pcf = i2c_get_clientdata(client);
++
++	rtc_device_unregister(pcf->rtc);
++
++	return 0;
++}
++
++static const struct i2c_device_id pcf8523_id[] = {
++	{ "pcf8523", 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, pcf8523_id);
++
++#ifdef CONFIG_OF
++static const struct of_device_id pcf8523_of_match[] = {
++	{ .compatible = "nxp,pcf8523" },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, pcf8523_of_match);
++#endif
++
++static struct i2c_driver pcf8523_driver = {
++	.driver = {
++		.name = DRIVER_NAME,
++		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(pcf8523_of_match),
++	},
++	.probe = pcf8523_probe,
++	.remove = pcf8523_remove,
++	.id_table = pcf8523_id,
++};
++module_i2c_driver(pcf8523_driver);
++
++MODULE_AUTHOR("Thierry Reding <thierry.reding@avionic-design.de>");
++MODULE_DESCRIPTION("NXP PCF8523 RTC driver");
++MODULE_LICENSE("GPL v2");
+-- 
+1.8.0.1
 
---SqEuGDw53xMPnx3c
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQtmRDAAoJELSic+t+oim9sNUP/jzvNLWSkw9niZSlJw4Cr9Zc
-Y97W4pdc4FBJAJa4RPhsKKzWnv1b2iqXq0Jo05X0aLIi3y/dxHJmOFfIRceUBZyB
-C3RyaZh1KBA7EVGXNqnP3V9sGyTAHsI/Gl3EW7F8ZVYHeKCRTDII/WwoEWZ0kR4u
-YvlwPqXndxcW/2/whY0vQE+5MyJd3EJgPaGPpVMkt+qcBabb0btLPnV6gFgbWbQD
-De/2tL0lZ/LapmtLl2+M0sAg4rFCpqI51onyUq9HdxBGaUq0Wti2S+p1pxz2SDLA
-YbmBJwm/pwYJZ9puhdjzD7xCEu1I+u9cA+wh+9W8lwRu0vPqvEyygJotfHL+pYXD
-jqVcfQG3/OvfVNHy7uksxZE4E8BT0gsqoOM90KZ0CoJJY27RkXZ3FLgwQFy2H2w1
-JeZ4FqYkFirnB7Zj2YhFMJgNfGPK/ZgBJPU2ezU3zHIzXpwyCX9i7A2eZB4FiJWi
-HXDrke3aelnw5HxdSMf96wespYOyye6Fo283zfMZZuiJ3yVJzeFrj3Oz3FlA+sit
-jVLiqbo8v28n/qqf7MplxAKuyzuvgNaTFQk2h8lMuNO5tMR4Xqg0Uw0VjvQBwBuv
-ZufbZVFnGet3sX9QSfuEpO3zxYZnqUSjIY5cXMfLPER6j5jdzFi58CtdFZM/nhsQ
-ZV+2vlsvn7CO/soHMybB
-=ok5U
------END PGP SIGNATURE-----
-
---SqEuGDw53xMPnx3c--
