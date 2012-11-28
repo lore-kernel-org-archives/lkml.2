@@ -1,114 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468Ab2K1Ip5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 03:45:57 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:33703 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753158Ab2K1Ipz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 03:45:55 -0500
-Message-ID: <50B5CF32.9030603@parallels.com>
-Date: Wed, 28 Nov 2012 12:45:38 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
+	id S1753427Ab2K1IsW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 03:48:22 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:56628 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752709Ab2K1IsV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 03:48:21 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <50B5CFBF.2090100@jp.fujitsu.com>
+Date: Wed, 28 Nov 2012 17:47:59 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Michael Wolf <mjw@linux.vnet.ibm.com>
-CC: <linux-kernel@vger.kernel.org>, <riel@redhat.com>, <kvm@vger.kernel.org>,
-        <peterz@infradead.org>, <mtosatti@redhat.com>, <mingo@redhat.com>,
-        <anthony@codemonkey.ws>,
-        "gleb@redhat.com >> Gleb Natapov" <gleb@redhat.com>
-Subject: Re: [PATCH 0/5] Alter steal time reporting in KVM
-References: <20121126203603.28840.38736.stgit@lambeau> <50B47E40.5030805@parallels.com> <50B4D7E8.9020306@linux.vnet.ibm.com>
-In-Reply-To: <50B4D7E8.9020306@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
+To: Michal Hocko <mhocko@suse.cz>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
+        Tejun Heo <htejun@gmail.com>, Glauber Costa <glommer@parallels.com>,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: [patch v2 3/6] memcg: rework mem_cgroup_iter to use cgroup iterators
+References: <1353955671-14385-1-git-send-email-mhocko@suse.cz> <1353955671-14385-4-git-send-email-mhocko@suse.cz>
+In-Reply-To: <1353955671-14385-4-git-send-email-mhocko@suse.cz>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2012 07:10 PM, Michael Wolf wrote:
-> On 11/27/2012 02:48 AM, Glauber Costa wrote:
->> Hi,
->>
->> On 11/27/2012 12:36 AM, Michael Wolf wrote:
->>> In the case of where you have a system that is running in a
->>> capped or overcommitted environment the user may see steal time
->>> being reported in accounting tools such as top or vmstat.  This can
->>> cause confusion for the end user.  To ease the confusion this patch set
->>> adds the idea of consigned (expected steal) time.  The host will
->>> separate
->>> the consigned time from the steal time.  The consignment limit passed
->>> to the
->>> host will be the amount of steal time expected within a fixed period of
->>> time.  Any other steal time accruing during that period will show as the
->>> traditional steal time.
->> If you submit this again, please include a version number in your series.
-> Will do.  The patchset was sent twice yesterday by mistake.  Got an
-> error the first time and didn't
-> think the patches went out.  This has been corrected.
->>
->> It would also be helpful to include a small changelog about what changed
->> between last version and this version, so we could focus on that.
-> yes, will do that.  When I took the RFC off the patches I was looking at
-> it as a new patchset which was
-> a mistake.  I will make sure to add a changelog when I submit again.
->>
->> As for the rest, I answered your previous two submissions saying I don't
->> agree with the concept. If you hadn't changed anything, resending it
->> won't change my mind.
->>
->> I could of course, be mistaken or misguided. But I had also not seen any
->> wave of support in favor of this previously, so basically I have no new
->> data to make me believe I should see it any differently.
->>
->> Let's try this again:
->>
->> * Rik asked you in your last submission how does ppc handle this. You
->> said, and I quote: "In the case of lpar on POWER systems they simply
->> report steal time and do not alter it in any way.
->> They do however report how much processor is assigned to the partition
->> and that information is in /proc/ppc64/lparcfg."
-> Yes, but we still get questions from users asking what is steal time?
-> why am I seeing this?
->>
->> Now, that is a *way* more sensible thing to do. Much more. "Confusing
->> users" is something extremely subjective. This is specially true about
->> concepts that are know for quite some time, like steal time. If you out
->> of a sudden change the meaning of this, it is sure to confuse a lot more
->> users than it would clarify.
-> Something like this could certainly be done.  But when I was submitting
-> the patch set as
-> an RFC then qemu was passing a cpu percentage that would be used by the
-> guest kernel
-> to adjust the steal time. This percentage was being stored on the guest
-> as a sysctl value.
-> Avi stated he didn't like that kind of coupling, and that the value
-> could get out of sync.  Anthony stated "The guest shouldn't need to know
-> it's entitlement. Or at least, it's up to a management tool to report
-> that in a way that's meaningful for the guest."
+(2012/11/27 3:47), Michal Hocko wrote:
+> mem_cgroup_iter curently relies on css->id when walking down a group
+> hierarchy tree. This is really awkward because the tree walk depends on
+> the groups creation ordering. The only guarantee is that a parent node
+> is visited before its children.
+> Example
+>   1) mkdir -p a a/d a/b/c
+>   2) mkdir -a a/b/c a/d
+> Will create the same trees but the tree walks will be different:
+>   1) a, d, b, c
+>   2) a, b, c, d
 > 
-> So perhaps I misunderstood what they were suggesting, but I took it to
-> mean that they did not
-> want the guest to know what the entitlement was.  That the host should
-> take care of it and just
-> report the already adjusted data to the guest.  So in this version of
-> the code the host would use a set
-> period for a timer and be passed essentially a number of ticks of
-> expected steal time.  The host
-> would then use the timer to break out the steal time into consigned and
-> steal buckets which would be
-> reported to the guest.
+> 574bd9f7 (cgroup: implement generic child / descendant walk macros) has
+> introduced generic cgroup tree walkers which provide either pre-order
+> or post-order tree walk. This patch converts css->id based iteration
+> to pre-order tree walk to keep the semantic with the original iterator
+> where parent is always visited before its subtree.
 > 
-> Both the consigned and the steal would be reported via /proc/stat. So
-> anyone needing to see total
-> time away could add the two fields together.  The user, however, when
-> using tools like top or vmstat
-> would see the usage based on what the guest is entitled to.
+> cgroup_for_each_descendant_pre suggests using post_create and
+> pre_destroy for proper synchronization with groups addidition resp.
+> removal. This implementation doesn't use those because a new memory
+> cgroup is fully initialized in mem_cgroup_create and css reference
+> counting enforces that the group is alive for both the last seen cgroup
+> and the found one resp. it signals that the group is dead and it should
+> be skipped.
 > 
-> Do you have suggestions for how I can build consensus around one of the
-> two approaches?
+> If the reclaim cookie is used we need to store the last visited group
+> into the iterator so we have to be careful that it doesn't disappear in
+> the mean time. Elevated reference count on the css keeps it alive even
+> though the group have been removed (parked waiting for the last dput so
+> that it can be freed).
+> 
+> V2
+> - use css_{get,put} for iter->last_visited rather than
+>    mem_cgroup_{get,put} because it is stronger wrt. cgroup life cycle
+> - cgroup_next_descendant_pre expects NULL pos for the first iterartion
+>    otherwise it might loop endlessly for intermediate node without any
+>    children.
+> 
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> ---
+>   mm/memcontrol.c |   74 ++++++++++++++++++++++++++++++++++++++++++-------------
+>   1 file changed, 57 insertions(+), 17 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 1f5528d..6bcc97b 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -144,8 +144,8 @@ struct mem_cgroup_stat_cpu {
+>   };
+>   
+>   struct mem_cgroup_reclaim_iter {
+> -	/* css_id of the last scanned hierarchy member */
+> -	int position;
+> +	/* last scanned hierarchy member with elevated css ref count */
+> +	struct mem_cgroup *last_visited;
+>   	/* scan generation, increased every round-trip */
+>   	unsigned int generation;
+>   	/* lock to protect the position and generation */
+> @@ -1066,7 +1066,7 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+>   				   struct mem_cgroup_reclaim_cookie *reclaim)
+>   {
+>   	struct mem_cgroup *memcg = NULL;
+> -	int id = 0;
+> +	struct mem_cgroup *last_visited = NULL;
+>   
+>   	if (mem_cgroup_disabled())
+>   		return NULL;
+> @@ -1075,7 +1075,7 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+>   		root = root_mem_cgroup;
+>   
+>   	if (prev && !reclaim)
+> -		id = css_id(&prev->css);
+> +		last_visited = prev;
+>   
+>   	if (!root->use_hierarchy && root != root_mem_cgroup) {
+>   		if (prev)
+> @@ -1083,9 +1083,10 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+>   		return root;
+>   	}
+>   
+> +	rcu_read_lock();
+>   	while (!memcg) {
+>   		struct mem_cgroup_reclaim_iter *uninitialized_var(iter);
+> -		struct cgroup_subsys_state *css;
+> +		struct cgroup_subsys_state *css = NULL;
+>   
+>   		if (reclaim) {
+>   			int nid = zone_to_nid(reclaim->zone);
+> @@ -1095,34 +1096,73 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+>   			mz = mem_cgroup_zoneinfo(root, nid, zid);
+>   			iter = &mz->reclaim_iter[reclaim->priority];
+>   			spin_lock(&iter->iter_lock);
+> +			last_visited = iter->last_visited;
+>   			if (prev && reclaim->generation != iter->generation) {
+> +				if (last_visited) {
+> +					css_put(&last_visited->css);
+> +					iter->last_visited = NULL;
+> +				}
+>   				spin_unlock(&iter->iter_lock);
+> -				goto out_css_put;
+> +				goto out_unlock;
+>   			}
+> -			id = iter->position;
+>   		}
+>   
+> -		rcu_read_lock();
+> -		css = css_get_next(&mem_cgroup_subsys, id + 1, &root->css, &id);
+> -		if (css) {
+> -			if (css == &root->css || css_tryget(css))
+> -				memcg = mem_cgroup_from_css(css);
+> -		} else
+> -			id = 0;
+> -		rcu_read_unlock();
+> +		/*
+> +		 * Root is not visited by cgroup iterators so it needs an
+> +		 * explicit visit.
+> +		 */
+> +		if (!last_visited) {
+> +			css = &root->css;
+> +		} else {
+> +			struct cgroup *prev_cgroup, *next_cgroup;
+> +
+> +			prev_cgroup = (last_visited == root) ? NULL
+> +				: last_visited->css.cgroup;
+> +			next_cgroup = cgroup_next_descendant_pre(prev_cgroup,
+> +					root->css.cgroup);
+> +			if (next_cgroup)
+> +				css = cgroup_subsys_state(next_cgroup,
+> +						mem_cgroup_subsys_id);
+> +		}
+> +
+> +		/*
+> +		 * Even if we found a group we have to make sure it is alive.
+> +		 * css && !memcg means that the groups should be skipped and
+> +		 * we should continue the tree walk.
+> +		 * last_visited css is safe to use because it is protected by
+> +		 * css_get and the tree walk is rcu safe.
+> +		 */
+> +		if (css == &root->css || (css && css_tryget(css)))
+> +			memcg = mem_cgroup_from_css(css);
+
+Could you note that this iterator will never visit dangling(removed) memcg, somewhere ?
+Hmm, I'm not sure but it may be trouble at shrkinking dangling kmem_cache(slab).
+
+Costa, how do you think ?
+
+I guess there is no problem with swap and not against the way you go.
+
+
+Thanks,
+-Kame
+
+
+>   
+>   		if (reclaim) {
+> -			iter->position = id;
+> +			struct mem_cgroup *curr = memcg;
+> +
+> +			if (last_visited)
+> +				css_put(&last_visited->css);
+> +
+> +			if (css && !memcg)
+> +				curr = mem_cgroup_from_css(css);
+> +
+> +			/* make sure that the cached memcg is not removed */
+> +			if (curr)
+> +				css_get(&curr->css);
+> +			iter->last_visited = curr;
+> +
+>   			if (!css)
+>   				iter->generation++;
+>   			else if (!prev && memcg)
+>   				reclaim->generation = iter->generation;
+>   			spin_unlock(&iter->iter_lock);
+> +		} else if (css && !memcg) {
+> +			last_visited = mem_cgroup_from_css(css);
+>   		}
+>   
+>   		if (prev && !css)
+> -			goto out_css_put;
+> +			goto out_unlock;
+>   	}
+> +out_unlock:
+> +	rcu_read_unlock();
+>   out_css_put:
+>   	if (prev && prev != root)
+>   		css_put(&prev->css);
 > 
 
-Before I answer this, can you please detail which mechanism are you
-using to enforce the entitlement? Is it the cgroup cpu controller, or
-something else?
 
