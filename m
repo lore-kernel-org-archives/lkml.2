@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756316Ab2K1WAb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 17:00:31 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:44904 "EHLO
+	id S1756247Ab2K1WA3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 17:00:29 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:44900 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756195Ab2K1Vsn (ORCPT
+	with ESMTP id S1756196Ab2K1Vsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 28 Nov 2012 16:48:43 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -14,64 +14,66 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v9 06/46] x86, mm: Change find_early_table_space() paramters
-Date: Wed, 28 Nov 2012 13:47:17 -0800
-Message-Id: <1354139277-17376-7-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v9 41/46] x86, mm: Use clamp_t() in init_range_memory_mapping
+Date: Wed, 28 Nov 2012 13:47:52 -0800
+Message-Id: <1354139277-17376-42-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
 References: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-call split_mem_range inside the function, that will make us call
-split_mem_range two times. Following patch:
-
-	x86, mm: Find early page table buffer together
-
-tidies this up so we do not end up calling split_mem_range twice.
+save some lines, and make code more readable.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/mm/init.c |   12 +++++++++---
- 1 files changed, 9 insertions(+), 3 deletions(-)
+ arch/x86/mm/init.c |   21 +++++----------------
+ 1 files changed, 5 insertions(+), 16 deletions(-)
 
 diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index dbef4ff..51f919f 100644
+index 1b8e80b..c8daa79 100644
 --- a/arch/x86/mm/init.c
 +++ b/arch/x86/mm/init.c
-@@ -196,12 +196,18 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
-  * mr[0].start to mr[nr_range - 1].end, while accounting for possible 2M and 1GB
-  * pages. Then find enough contiguous space for those page tables.
+@@ -367,31 +367,20 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+  * will be mapped in init_range_memory_mapping.
   */
--static void __init find_early_table_space(struct map_range *mr, int nr_range)
-+static void __init find_early_table_space(unsigned long start, unsigned long end)
+ static unsigned long __init init_range_memory_mapping(
+-					   unsigned long range_start,
+-					   unsigned long range_end)
++					   unsigned long r_start,
++					   unsigned long r_end)
  {
+ 	unsigned long start_pfn, end_pfn;
+ 	unsigned long mapped_ram_size = 0;
  	int i;
- 	unsigned long puds = 0, pmds = 0, ptes = 0, tables;
--	unsigned long start = 0, good_end;
-+	unsigned long good_end;
- 	phys_addr_t base;
-+	struct map_range mr[NR_RANGE_MR];
-+	int nr_range;
-+
-+	memset(mr, 0, sizeof(mr));
-+	nr_range = 0;
-+	nr_range = split_mem_range(mr, nr_range, start, end);
  
- 	for (i = 0; i < nr_range; i++) {
- 		unsigned long range, extra;
-@@ -276,7 +282,7 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
- 	 * nodes are discovered.
- 	 */
- 	if (!after_bootmem)
--		find_early_table_space(mr, nr_range);
-+		find_early_table_space(start, end);
+ 	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, NULL) {
+-		u64 start = (u64)start_pfn << PAGE_SHIFT;
+-		u64 end = (u64)end_pfn << PAGE_SHIFT;
+-
+-		if (end <= range_start)
+-			continue;
+-
+-		if (start < range_start)
+-			start = range_start;
+-
+-		if (start >= range_end)
++		u64 start = clamp_val(PFN_PHYS(start_pfn), r_start, r_end);
++		u64 end = clamp_val(PFN_PHYS(end_pfn), r_start, r_end);
++		if (start >= end)
+ 			continue;
  
- 	for (i = 0; i < nr_range; i++)
- 		ret = kernel_physical_mapping_init(mr[i].start, mr[i].end,
+-		if (end > range_end)
+-			end = range_end;
+-
+ 		init_memory_mapping(start, end);
+-
+ 		mapped_ram_size += end - start;
+ 	}
+ 
 -- 
 1.7.7
 
