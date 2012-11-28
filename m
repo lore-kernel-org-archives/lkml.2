@@ -1,390 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751404Ab2K1FUZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 00:20:25 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:58581 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751126Ab2K1FUX (ORCPT
+	id S1751415Ab2K1FXN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 00:23:13 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:19669 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845Ab2K1FXL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 00:20:23 -0500
-X-AuditID: 9c930179-b7c9dae000000e53-6f-50b59f15d345
-Date: Wed, 28 Nov 2012 14:20:26 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Jerome Marchand <jmarchan@redhat.com>
-Cc: Nitin Gupta <ngupta@vflare.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: Lockdep complain for zram
-Message-ID: <20121128052026.GA17195@bbox>
-References: <20121121083737.GB5121@bbox>
- <50AE08D4.7040602@redhat.com>
- <20121122233444.GE5121@bbox>
- <50AF8C47.6010306@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50AF8C47.6010306@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 28 Nov 2012 00:23:11 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-a4-50b59fbdaa4a
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Olof Johansson'" <olof@lixom.net>
+Cc: "'Doug Anderson'" <dianders@chromium.org>,
+        "'Arnd Bergmann'" <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org
+References: <1354045994-8977-1-git-send-email-dianders@chromium.org>
+ <CAOesGMjyXZwKjycyVcEV0ty0LCM_i61QxykYPhAvXxx2rhgP+A@mail.gmail.com>
+ <50B53E37.40303@samsung.com>
+ <CAOesGMivs=NA6hcTYWO-MWUeUjVGZ0h258z1MpeexXGtVf9h-g@mail.gmail.com>
+In-reply-to: <CAOesGMivs=NA6hcTYWO-MWUeUjVGZ0h258z1MpeexXGtVf9h-g@mail.gmail.com>
+Subject: RE: [PATCH] ARM: EXYNOS: Avoid early use of of_machine_is_compatible()
+Date: Wed, 28 Nov 2012 14:23:09 +0900
+Message-id: <18d701cdcd28$74198d70$5c4ca850$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac3M78/Zev9PNB8vTUSwvwHdOKHh8wANoFjQ
+Content-language: ko
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHIsWRmVeSWpSXmKPExsVy+t8zA92987cGGKy+r2BxedccNosZ5/cx
+	OTB5fN4kF8AYxWWTkpqTWZZapG+XwJUx83w7Y8FN2Yrln/tZGxg/SHQxcnJICJhILHh7hx3C
+	FpO4cG89WxcjF4eQwDJGiY6J25hhim4cXMkMkZjOKDF18T5GCOcvo8TpYzeYQKrYBDQkDr9/
+	BjZKREBV4smTLlaQImaBB4wSU9rPMkF0fGSUOLL6FBtIFadAsMT///fBOoQF/CWmn1sLZrMA
+	da9YuAGshlfAVuJqw1cWCFtQ4sfke2A2s4CWxPqdx5kgbHmJzWveAt3HAXSrusSjv7oQRxhJ
+	/DzxEapERGLfi3eMEOMFJL5NPsQCUS4rsekA2GcSAqvYJXqevmCEeFlS4uCKGywTGCVmIdk8
+	C8nmWUg2z0KyYgEjyypG0dSC5ILipPRcI73ixNzi0rx0veT83E2MkEiT3sG4qsHiEKMAB6MS
+	D6+D49YAIdbEsuLK3EOMEhzMSiK8PG1AId6UxMqq1KL8+KLSnNTiQ4w+QJdPZJYSTc4HJoG8
+	knhDY2MTMxNTE3NLU3NTHMJK4rzNHikBQgLpiSWp2ampBalFMOOYODilGhg3hS71WNQecMU3
+	8v4W9yyLGStj2OwO21jpa9tqVuQ8enP2sunrlLjIJka7WXcXO6VFrlJaYKSmeF5585NDE3zZ
+	Nq1ZMe/K5U3ZOR9Xq/Qu1hYKLBee2hVzuGLvn8Vs1/r/1Skpn+56ulA97PJ304v1ZU80/8or
+	h3EV/jr9JnqFRWrik0vBSoxKLMUZiYZazEXFiQCUhahz4QIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLIsWRmVeSWpSXmKPExsVy+t9jQd2987cGGExYLmNxedccNosZ5/cx
+	OTB5fN4kF8AY1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIT
+	oOuWmQM0WkmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeYMfN8O2PBTdmK
+	5Z/7WRsYP0h0MXJySAiYSNw4uJIZwhaTuHBvPVsXIxeHkMB0Rompi/cxQjh/GSVOH7vBBFLF
+	JqAhcfj9M3YQW0RAVeLJky5WkCJmgQeMElPazzJBdHxklDiy+hQbSBWnQLDE///3wTqEBfwl
+	pp9bC2azAHWvWLgBrIZXwFbiasNXFghbUOLH5HtgNrOAlsT6nceZIGx5ic1r3gLdygF0q7rE
+	o7+6EEcYSfw88RGqRERi34t3jBMYhWYhmTQLyaRZSCbNQtKygJFlFaNoakFyQXFSeq6RXnFi
+	bnFpXrpecn7uJkZwHD+T3sG4qsHiEKMAB6MSD6+D49YAIdbEsuLK3EOMEhzMSiK8PG1AId6U
+	xMqq1KL8+KLSnNTiQ4w+QI9OZJYSTc4Hppi8knhDYxMzI0sjMwsjE3NzHMJK4rzNHikBQgLp
+	iSWp2ampBalFMOOYODilGhg1ys6cDNzhqxeRfm2K+Jn8tCUMbB0fXwifW/xq8QvbjSWviy5Z
+	6D7NTfmj32pUFiO0ruFQ87zpEcfiJ86S8JlafcWgxczgXJYL89b1pvueW4qv065afdX3UbVH
+	bLxE255JjsuVVxiUnXKv1P1c3fuknLnA+t59H968r6Il/Dvfdk9RmfTTPUuJpTgj0VCLuag4
+	EQAr0M4tEAMAAA==
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 23, 2012 at 03:46:31PM +0100, Jerome Marchand wrote:
-> On 11/23/2012 12:34 AM, Minchan Kim wrote:
-> > On Thu, Nov 22, 2012 at 12:13:24PM +0100, Jerome Marchand wrote:
-> >> On 11/21/2012 09:37 AM, Minchan Kim wrote:
-> >>> Hi alls,
+Olof Johansson wrote:
+> 
+> On Tue, Nov 27, 2012 at 2:27 PM, Kukjin Kim <kgene.kim@samsung.com> wrote:
+> > On 11/28/12 07:11, Olof Johansson wrote:
+> >>
+> >> On Tue, Nov 27, 2012 at 11:53 AM, Doug Anderson<dianders@chromium.org>
+> >> wrote:
 > >>>
-> >>> Today, I saw below complain of lockdep.
-> >>> As a matter of fact, I knew it long time ago but forgot that.
-> >>> The reason lockdep complains is that now zram uses GFP_KERNEL
-> >>> in reclaim path(ex, __zram_make_request) :(
-> >>> I can fix it via replacing GFP_KERNEL with GFP_NOIO.
-> >>> But more big problem is vzalloc in zram_init_device which calls GFP_KERNEL.
-> >>> Of course, I can change it with __vmalloc which can receive gfp_t.
-> >>> But still we have a problem. Althoug __vmalloc can handle gfp_t, it calls
-> >>> allocation of GFP_KERNEL. That's why I sent the patch.
-> >>> https://lkml.org/lkml/2012/4/23/77
-> >>> Since then, I forgot it, saw the bug today and poped the question again.
+> >>> The recent commit "ARM: EXYNOS: add support for EXYNOS5440 SoC" broke
+> >>> support for exynos5250 because of_machine_is_compatible() was used too
+> >>> early in the boot process.  It also probably meant that the exynos5440
+> >>> failed to use the proper iotable.  Switch to use
+> >>> of_flat_dt_is_compatible() in both of these cases.
 > >>>
-> >>> Yes. Fundamental problem is utter crap API vmalloc.
-> >>> If we can fix it, everyone would be happy. But life isn't simple like seeing
-> >>> my thread of the patch.
+> >>> The failure I was seeing in exynos5250 because of this was:
+> >>>    Division by zero in kernel.
+> >>>    [<80015ed4>] (unwind_backtrace+0x0/0xec) from [<8045c7a4>]
+> >>> (dump_stack+0x20/0x24)
+> >>>    [<8045c7a4>] (dump_stack+0x20/0x24) from [<80012990>]
+> >>> (__div0+0x20/0x28)
+> >>>    [<80012990>] (__div0+0x20/0x28) from [<8021ab04>]
+(Ldiv0_64+0x8/0x18)
+> >>>    [<8021ab04>] (Ldiv0_64+0x8/0x18) from [<80068560>]
+> >>> (__clocksource_updatefreq_scale+0x54/0x134)
+> >>>    [<80068560>] (__clocksource_updatefreq_scale+0x54/0x134) from
+> >>> [<8006865c>] (__clocksource_register_scale+0x1c/0x54)
+> >>>    [<8006865c>] (__clocksource_register_scale+0x1c/0x54) from
+> >>> [<80612a18>] (exynos_timer_init+0x100/0x1e8)
+> >>>    [<80612a18>] (exynos_timer_init+0x100/0x1e8) from [<8060d184>]
+> >>> (time_init+0x28/0x38)
+> >>>    [<8060d184>] (time_init+0x28/0x38) from [<8060a754>]
+> >>> (start_kernel+0x1e0/0x3c8)
+> >>>    [<8060a754>] (start_kernel+0x1e0/0x3c8) from [<40008078>]
+> (0x40008078)
 > >>>
-> >>> So next option is to move zram_init_device into setting disksize time.
-> >>> But it makes unnecessary metadata waste until zram is used really(That's why
-> >>> Nitin move zram_init_device from disksize setting time to make_request) and
-> >>> it makes user should set the disksize before using, which are behavior change.
-> >>>
-> >>> I would like to clean up this issue before promoting because it might change
-> >>> usage behavior.
-> >>>
-> >>> Do you have any idea?
+> >>> Signed-off-by: Doug Anderson<dianders@chromium.org>
 > >>
-> >> This is a false positive due to the memory allocation in
-> >> zram_init_device() called from zram_make_request(). It appears to
-> >> lockdep that the allocation might trigger a request on the device that
-> >> would try to take init_lock again, but in fact it doesn't. The device
-> >> is not initialized yet, even less swapped on.
-> > 
-> > That's not a only swap case.
-> > Let's think following usecase.
-> > 
-> > 1) Booting
-> > 2) echo $((DISKSIZE)) > /sys/block/zram0/disksize
-> > 3) dd if=/dev/zero of=/dev/zram0 bs=4K count=1
-> > 4) Written 4K page(page-A) is still page cache and isn't submitted
-> >    to zram block device.
-> > 5) Memory pressure happen by some memory hogger.
-> > 6) VM start to reclaim and write page-A to zram0.
-> > 7) zram_init_device is called at last.
-> > 8) allocate GFP_KERNEL in zram_init_device
-> > 9) goto reclaim path again.
-> > 10) deadlock.
-> > 
-> > So I think it's not false positive.
+> >>
+> >> Thanks Doug.
+> >>
+> >> Kukjin, I'll apply this directly on top of the previous branch in
+> >> arm-soc, if that's OK with you.
+> >>
+> > Sure, go ahead with my ack if you want,
+> >
+> > Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+> >
+> > Note, actually there was a fix which uses soc_is_exynos5440() in my
+> local
+> > :-) I'm not sure which one is better at this moment, but I'm OK on this.
 > 
-> I guess you're right. That's a scenario I haven't imagined. At any rate, my
-> patch fixes that.
+> Ok, applied. Thanks all.
 > 
-> > Even if it is, I think lock split isn't a good idea to just avoid
-> > lockdep warn. It makes code unnecessary complicated and it would be more
-> > error-prone. Let's not add another lock without performance trouble report
-> > by the lock.
-> > 
-> > As I discussed with Nitin in this thread, lazy initialization don't have
-> > much point and disksize setting option isn't consistent for user behavior.
-> > And I expect Nitin will send patch "diet of table" soonish.
-> > 
-> > So just moving the initialzation part from reclaim context to process's one
-> > is simple and clear solution, I believe.
-> 
-> Although that would avoid deadlocks (I guess, I'm not sure anymore...), it
-> won't stop lockdep from complaining. It still makes an allocation while
+Olof, just note, happens build error with exynos4_defconfig because of
+non-DT.
 
-Argh, I sent it by mistake anyway, It's false-positive by this patch now.
-Anyway we need more patch to shut lockdep up. I just sent patchset.
+Following can resolve it or we should create null function for
+of_get_flat_dt_root() and of_flat_dt_is_compatible()...
 
-> holding a lock that is also taken in a reclaim context.
-> Anyway, I like the idea to removes the lazy initialization. It makes things
-> more complicated without any actual advantage.
+8<---------------------------------------
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: ARM: EXYNOS: fix a build error with non-DT for exynos4
 
-Thanks for the review, Jerome.
+This fixes following in case of non-DT:
+arch/arm/mach-exynos/common.c: In function 'exynos_init_io':
+arch/arm/mach-exynos/common.c:339: error: implicit declaration of function
+'of_get_flat_dt_root'
+arch/arm/mach-exynos/common.c:342: error: implicit declaration of function
+'of_flat_dt_is_compatible'
+make[1]: *** [arch/arm/mach-exynos/common.o] Error 1
 
-> 
-> Jerome
-> 
-> > 
-> >>
-> >> The following (quickly tested) patch should prevent lockdep complain.  
-> >>
-> >> Jerome
-> >>
-> >> ---
-> >> >From ebb3514c4ee18276da7c5ca08025991b493ac204 Mon Sep 17 00:00:00 2001
-> >> From: Jerome Marchand <jmarchan@redhat.com>
-> >> Date: Thu, 22 Nov 2012 09:07:40 +0100
-> >> Subject: [PATCH] staging: zram: Avoid lockdep warning
-> >>
-> >> zram triggers a lockdep warning. The cause of it is the call to
-> >> zram_init_device() from zram_make_request(). The memory allocation in
-> >> zram_init_device() could start a memory reclaim which in turn could
-> >> cause swapout and (as it appears to lockdep) a call to
-> >> zram_make_request(). However this is a false positive: an
-> >> unititialized device can't be used as swap.
-> >> A solution is to split init_lock in two lock. One mutex that protects
-> >> init, reset and size setting and a rw_semaphore that protects requests
-> >> and reset. Thus init and request would be protected by different locks
-> >> and lockdep will be happy.
-> >>
-> >> Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
-> >> ---
-> >>  drivers/staging/zram/zram_drv.c   |   41 +++++++++++++++++++-----------------
-> >>  drivers/staging/zram/zram_drv.h   |   16 ++++++++++---
-> >>  drivers/staging/zram/zram_sysfs.c |   20 +++++++++---------
-> >>  3 files changed, 44 insertions(+), 33 deletions(-)
-> >>
-> >> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-> >> index fb4a7c9..b3bc3c4 100644
-> >> --- a/drivers/staging/zram/zram_drv.c
-> >> +++ b/drivers/staging/zram/zram_drv.c
-> >> @@ -470,11 +470,11 @@ static void zram_make_request(struct request_queue *queue, struct bio *bio)
-> >>  {
-> >>  	struct zram *zram = queue->queuedata;
-> >>  
-> >> -	if (unlikely(!zram->init_done) && zram_init_device(zram))
-> >> +	if (unlikely(!is_initialized(zram)) && zram_init_device(zram))
-> >>  		goto error;
-> >>  
-> >> -	down_read(&zram->init_lock);
-> >> -	if (unlikely(!zram->init_done))
-> >> +	down_read(&zram->req_lock);
-> >> +	if (unlikely(!is_initialized(zram)))
-> >>  		goto error_unlock;
-> >>  
-> >>  	if (!valid_io_request(zram, bio)) {
-> >> @@ -483,12 +483,12 @@ static void zram_make_request(struct request_queue *queue, struct bio *bio)
-> >>  	}
-> >>  
-> >>  	__zram_make_request(zram, bio, bio_data_dir(bio));
-> >> -	up_read(&zram->init_lock);
-> >> +	up_read(&zram->req_lock);
-> >>  
-> >>  	return;
-> >>  
-> >>  error_unlock:
-> >> -	up_read(&zram->init_lock);
-> >> +	up_read(&zram->req_lock);
-> >>  error:
-> >>  	bio_io_error(bio);
-> >>  }
-> >> @@ -497,7 +497,7 @@ void __zram_reset_device(struct zram *zram)
-> >>  {
-> >>  	size_t index;
-> >>  
-> >> -	zram->init_done = 0;
-> >> +	atomic_set(&zram->init_done, 0);
-> >>  
-> >>  	/* Free various per-device buffers */
-> >>  	kfree(zram->compress_workmem);
-> >> @@ -529,9 +529,12 @@ void __zram_reset_device(struct zram *zram)
-> >>  
-> >>  void zram_reset_device(struct zram *zram)
-> >>  {
-> >> -	down_write(&zram->init_lock);
-> >> -	__zram_reset_device(zram);
-> >> -	up_write(&zram->init_lock);
-> >> +	mutex_lock(&zram->init_lock);
-> >> +	down_write(&zram->req_lock);
-> >> +	if (is_initialized(zram))
-> >> +		__zram_reset_device(zram);
-> >> +	up_write(&zram->req_lock);
-> >> +	mutex_unlock(&zram->init_lock);
-> >>  }
-> >>  
-> >>  int zram_init_device(struct zram *zram)
-> >> @@ -539,10 +542,10 @@ int zram_init_device(struct zram *zram)
-> >>  	int ret;
-> >>  	size_t num_pages;
-> >>  
-> >> -	down_write(&zram->init_lock);
-> >> +	mutex_lock(&zram->init_lock);
-> >>  
-> >> -	if (zram->init_done) {
-> >> -		up_write(&zram->init_lock);
-> >> +	if (is_initialized(zram)) {
-> >> +		mutex_unlock(&zram->init_lock);
-> >>  		return 0;
-> >>  	}
-> >>  
-> >> @@ -583,8 +586,8 @@ int zram_init_device(struct zram *zram)
-> >>  		goto fail;
-> >>  	}
-> >>  
-> >> -	zram->init_done = 1;
-> >> -	up_write(&zram->init_lock);
-> >> +	atomic_set(&zram->init_done, 1);
-> >> +	mutex_unlock(&zram->init_lock);
-> >>  
-> >>  	pr_debug("Initialization done!\n");
-> >>  	return 0;
-> >> @@ -594,7 +597,7 @@ fail_no_table:
-> >>  	zram->disksize = 0;
-> >>  fail:
-> >>  	__zram_reset_device(zram);
-> >> -	up_write(&zram->init_lock);
-> >> +	mutex_unlock(&zram->init_lock);
-> >>  	pr_err("Initialization failed: err=%d\n", ret);
-> >>  	return ret;
-> >>  }
-> >> @@ -619,7 +622,8 @@ static int create_device(struct zram *zram, int device_id)
-> >>  	int ret = 0;
-> >>  
-> >>  	init_rwsem(&zram->lock);
-> >> -	init_rwsem(&zram->init_lock);
-> >> +	mutex_init(&zram->init_lock);
-> >> +	init_rwsem(&zram->req_lock);
-> >>  	spin_lock_init(&zram->stat64_lock);
-> >>  
-> >>  	zram->queue = blk_alloc_queue(GFP_KERNEL);
-> >> @@ -672,7 +676,7 @@ static int create_device(struct zram *zram, int device_id)
-> >>  		goto out;
-> >>  	}
-> >>  
-> >> -	zram->init_done = 0;
-> >> +	atomic_set(&zram->init_done, 0);
-> >>  
-> >>  out:
-> >>  	return ret;
-> >> @@ -755,8 +759,7 @@ static void __exit zram_exit(void)
-> >>  		zram = &zram_devices[i];
-> >>  
-> >>  		destroy_device(zram);
-> >> -		if (zram->init_done)
-> >> -			zram_reset_device(zram);
-> >> +		zram_reset_device(zram);
-> >>  	}
-> >>  
-> >>  	unregister_blkdev(zram_major, "zram");
-> >> diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-> >> index df2eec4..f6bcead 100644
-> >> --- a/drivers/staging/zram/zram_drv.h
-> >> +++ b/drivers/staging/zram/zram_drv.h
-> >> @@ -96,9 +96,12 @@ struct zram {
-> >>  				   * against concurrent read and writes */
-> >>  	struct request_queue *queue;
-> >>  	struct gendisk *disk;
-> >> -	int init_done;
-> >> -	/* Prevent concurrent execution of device init, reset and R/W request */
-> >> -	struct rw_semaphore init_lock;
-> >> +	atomic_t init_done;
-> >> +	/* Prevent concurrent execution of device init, reset and
-> >> +	 * disksize_store */
-> >> +	struct mutex init_lock;
-> >> +	/* Prevent concurent execution device reset and R/W requests */
-> >> +	struct rw_semaphore req_lock;
-> >>  	/*
-> >>  	 * This is the limit on amount of *uncompressed* worth of data
-> >>  	 * we can store in a disk.
-> >> @@ -108,6 +111,11 @@ struct zram {
-> >>  	struct zram_stats stats;
-> >>  };
-> >>  
-> >> +static inline int is_initialized(struct zram *zram)
-> >> +{
-> >> +	return atomic_read(&zram->init_done);
-> >> +}
-> >> +
-> >>  extern struct zram *zram_devices;
-> >>  unsigned int zram_get_num_devices(void);
-> >>  #ifdef CONFIG_SYSFS
-> >> @@ -115,6 +123,6 @@ extern struct attribute_group zram_disk_attr_group;
-> >>  #endif
-> >>  
-> >>  extern int zram_init_device(struct zram *zram);
-> >> -extern void __zram_reset_device(struct zram *zram);
-> >> +extern void zram_reset_device(struct zram *zram);
-> >>  
-> >>  #endif
-> >> diff --git a/drivers/staging/zram/zram_sysfs.c b/drivers/staging/zram/zram_sysfs.c
-> >> index de1eacf..b300881 100644
-> >> --- a/drivers/staging/zram/zram_sysfs.c
-> >> +++ b/drivers/staging/zram/zram_sysfs.c
-> >> @@ -62,16 +62,19 @@ static ssize_t disksize_store(struct device *dev,
-> >>  	if (!disksize)
-> >>  		return -EINVAL;
-> >>  
-> >> -	down_write(&zram->init_lock);
-> >> -	if (zram->init_done) {
-> >> -		up_write(&zram->init_lock);
-> >> +	mutex_lock(&zram->init_lock);
-> >> +	down_write(&zram->req_lock);
-> >> +	if (is_initialized(zram)) {
-> >> +		up_write(&zram->req_lock);
-> >> +		mutex_unlock(&zram->init_lock);
-> >>  		pr_info("Cannot change disksize for initialized device\n");
-> >>  		return -EBUSY;
-> >>  	}
-> >>  
-> >>  	zram->disksize = PAGE_ALIGN(disksize);
-> >>  	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
-> >> -	up_write(&zram->init_lock);
-> >> +	up_write(&zram->req_lock);
-> >> +	mutex_unlock(&zram->init_lock);
-> >>  
-> >>  	return len;
-> >>  }
-> >> @@ -81,7 +84,7 @@ static ssize_t initstate_show(struct device *dev,
-> >>  {
-> >>  	struct zram *zram = dev_to_zram(dev);
-> >>  
-> >> -	return sprintf(buf, "%u\n", zram->init_done);
-> >> +	return sprintf(buf, "%u\n", atomic_read(&zram->init_done));
-> >>  }
-> >>  
-> >>  static ssize_t reset_store(struct device *dev,
-> >> @@ -110,10 +113,7 @@ static ssize_t reset_store(struct device *dev,
-> >>  	if (bdev)
-> >>  		fsync_bdev(bdev);
-> >>  
-> >> -	down_write(&zram->init_lock);
-> >> -	if (zram->init_done)
-> >> -		__zram_reset_device(zram);
-> >> -	up_write(&zram->init_lock);
-> >> +	zram_reset_device(zram);
-> >>  
-> >>  	return len;
-> >>  }
-> >> @@ -186,7 +186,7 @@ static ssize_t mem_used_total_show(struct device *dev,
-> >>  	u64 val = 0;
-> >>  	struct zram *zram = dev_to_zram(dev);
-> >>  
-> >> -	if (zram->init_done)
-> >> +	if (is_initialized(zram))
-> >>  		val = zs_get_total_size_bytes(zram->mem_pool);
-> >>  
-> >>  	return sprintf(buf, "%llu\n", val);
-> >> -- 
-> >> 1.7.7.6
-> >>
-> >> --
-> >> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> >> the body to majordomo@kvack.org.  For more info on Linux MM,
-> >> see: http://www.linux-mm.org/ .
-> >> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> > 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+---
+diff --git a/arch/arm/mach-exynos/common.c b/arch/arm/mach-exynos/common.c
+index b919f5f..2110091 100644
+--- a/arch/arm/mach-exynos/common.c
++++ b/arch/arm/mach-exynos/common.c
+@@ -336,12 +336,14 @@ void __init exynos_init_late(void)
 
--- 
-Kind regards,
-Minchan Kim
+ void __init exynos_init_io(struct map_desc *mach_desc, int size)
+ {
++#ifdef CONFIG_OF
+ 	unsigned long root = of_get_flat_dt_root();
+
+ 	/* initialize the io descriptors we need for initialization */
+ 	if (of_flat_dt_is_compatible(root, "samsung,exynos5440"))
+ 		iotable_init(exynos5440_iodesc,
+ARRAY_SIZE(exynos5440_iodesc));
+ 	else
++#endif
+ 		iotable_init(exynos_iodesc, ARRAY_SIZE(exynos_iodesc));
+
+ 	if (mach_desc)
+8<---------------------------------------
+
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
+
