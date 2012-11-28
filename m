@@ -1,95 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932143Ab2K1OKG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 09:10:06 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:61655 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755091Ab2K1OKE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 09:10:04 -0500
-From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-To: "'Sebastian Andrzej Siewior'" <bigeasy@linutronix.de>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Felipe Balbi'" <balbi@ti.com>,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        "'Joel Becker'" <jlbec@evilplan.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        "'Michal Nazarewicz'" <mina86@mina86.com>
-References: <1353918910-12381-1-git-send-email-andrzej.p@samsung.com>
- <50B39921.6090308@linutronix.de>
- <008101cdcc7d$2d499df0$87dcd9d0$%p@samsung.com>
- <50B4E364.8030704@linutronix.de>
- <002901cdcd3f$e7288ac0$b579a040$%p@samsung.com>
- <50B5CD8C.9060902@linutronix.de>
-In-reply-to: <50B5CD8C.9060902@linutronix.de>
-Subject: RE: [RFC][PATCH] fs: configfs: programmatically create config groups
-Date: Wed, 28 Nov 2012 15:09:54 +0100
-Message-id: <001201cdcd72$0c424d50$24c6e7f0$%p@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=iso-8859-2
-Content-transfer-encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac3NQ8oNqlaOJU5lRyahj04VuKZdlAAKmnkw
-Content-language: pl
-X-TM-AS-MML: No
+	id S1755332Ab2K1OMz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 09:12:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34543 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755104Ab2K1OMy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 09:12:54 -0500
+Date: Wed, 28 Nov 2012 16:12:30 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 3/3] KVM: x86: improve reexecute_instruction
+Message-ID: <20121128141230.GI928@redhat.com>
+References: <50AAC77C.8040505@linux.vnet.ibm.com>
+ <50AAC7F9.7050305@linux.vnet.ibm.com>
+ <20121126224105.GB10634@amt.cnet>
+ <50B433D0.8060107@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50B433D0.8060107@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 28, 2012 9:39 AM Sebastian Andrzej Siewior wrote:
-
-<snip>
-
-> >
-> > so that we can create the endpoint directories.
-> > And now what? What names shall the user use for the endpoint
-> > directories? Oh, that's simple: just see what the endpoint
-> > directories' names are. But wait, aren't we just creating them?
-> >
-> > Please also see Micha³'s point about user interface.
+On Tue, Nov 27, 2012 at 11:30:24AM +0800, Xiao Guangrong wrote:
+> On 11/27/2012 06:41 AM, Marcelo Tosatti wrote:
 > 
-> Yeah I did. Now I'm okay with creating new directories but we should keep
-> this to a minimum and encode as much information possible in directory's
-> name.
+> >>
+> >> -	return false;
+> >> +again:
+> >> +	page_fault_count = ACCESS_ONCE(vcpu->kvm->arch.page_fault_count);
+> >> +
+> >> +	/*
+> >> +	 * if emulation was due to access to shadowed page table
+> >> +	 * and it failed try to unshadow page and re-enter the
+> >> +	 * guest to let CPU execute the instruction.
+> >> +	 */
+> >> +	kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa));
+> >> +	emulate = vcpu->arch.mmu.page_fault(vcpu, cr3, PFERR_WRITE_MASK, false);
+> > 
+> > Can you explain what is the objective here?
+> > 
 > 
+> Sure. :)
+> 
+> The instruction emulation is caused by fault access on cr3. After unprotect
+> the target page, we call vcpu->arch.mmu.page_fault to fix the mapping of cr3.
+> if it return 1, mmu can not fix the mapping, we should report the error,
+> otherwise it is good to return to guest and let it re-execute the instruction
+> again.
+> 
+> page_fault_count is used to avoid the race on other vcpus, since after we
+> unprotect the target page, other cpu can enter page fault path and let the
+> page be write-protected again.
+> 
+> This way can help us to detect all the case that mmu can not be fixed.
+> 
+Can you write this in a comment above vcpu->arch.mmu.page_fault()?
 
-I think I've identified one more case where programmatic creation/removal
-of configfs directories is required. There is a general agreement that
-binding/unbinding the gadgets will be achieved with using symlinks between
-configfs representations of udcs and gadgets. So we need to represent
-udcs in configfs. Suppose that the udc driver for user's platform
-is modular, e.g. s3c-hsotg.ko. Now, after:
-
-$ modprobe s3c-hsotg
-
-I would _very_ much like the s3c-hsotg or something similar to appear
-_automatically_ under $CONFIGFS_ROOT/udcs, e.g.:
-
-$ ls $CONFIGFS_ROOT/udcs
-
-s3c-hsotg
-
-If there can be more instances than 1, then probably I would want
-
-s3c-hsotg.0 	s3c-hsotg.1 ....
-
-or something like that.
-
-It would be _very_ frustrating for the user to have to guess
-what name to use _if_ the relevant directory were to be
-created manually with mkdir. Conversely, what would
-
-$ rmdir s3c-hsotg
-
-mean? Should it cause the s3c-hsotg.ko to unload?
-
-All the above problems are elegantly solved with programmatic
-creation and removal of configfs directories: in the udcs
-config_group there is no make_item nor make_group, so mkdir
-is not allowed, but instead the directories appear and
-disappear as udcs come and go.
-
-Andrzej
-
-
+--
+			Gleb.
