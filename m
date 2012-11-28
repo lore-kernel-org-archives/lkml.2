@@ -1,44 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755863Ab2K1XmJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 18:42:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60927 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754287Ab2K1XmH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 18:42:07 -0500
-Date: Wed, 28 Nov 2012 15:42:06 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Ed Cashin <ecashin@coraid.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/8] aoe: miscellaneous fixes follow-up recent patch
- submissions
-Message-Id: <20121128154206.813a54f6.akpm@linux-foundation.org>
-In-Reply-To: <cover.1353518444.git.ecashin@coraid.com>
-References: <cover.1353518444.git.ecashin@coraid.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932441Ab2K1XpG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 18:45:06 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:35616 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754468Ab2K1XpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 18:45:03 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: linux-acpi@vger.kernel.org
+Cc: Toshi Kani <toshi.kani@hp.com>,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Wen Congyang <wencongyang@gmail.com>, isimatu.yasuaki@jp.fujitsu.com,
+        lenb@kernel.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on rebind scenario
+Date: Thu, 29 Nov 2012 00:49:47 +0100
+Message-ID: <4042591.gpFk7OYmph@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <1354136568.26955.312.camel@misato.fc.hp.com>
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com> <9212118.3s2xH6uJDI@vostro.rjw.lan> <1354136568.26955.312.camel@misato.fc.hp.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Nov 2012 19:52:41 -0500
-Ed Cashin <ecashin@coraid.com> wrote:
-
-> This patch series applies to today's linux-next/akpm, commit
-> d3faae60d84f586ff8937b77c8476bca1b5f8ec6.
+On Wednesday, November 28, 2012 02:02:48 PM Toshi Kani wrote:
+> > > > > > > > Consider the following case:
+> > > > > > > > 
+> > > > > > > > We hotremove the memory device by SCI and unbind it from the driver at the same time:
+> > > > > > > > 
+> > > > > > > > CPUa                                                  CPUb
+> > > > > > > > acpi_memory_device_notify()
+> > > > > > > >                                        unbind it from the driver
+> > > > > > > >     acpi_bus_hot_remove_device()
+> > > > > > > 
+> > > > > > > Can we make acpi_bus_remove() to fail if a given acpi_device is not
+> > > > > > > bound with a driver?  If so, can we make the unbind operation to perform
+> > > > > > > unbind only?
+> > > > > > 
+> > > > > > acpi_bus_remove_device could check if the driver is present, and return -ENODEV
+> > > > > > if it's not present (dev->driver == NULL).
+> > > > > > 
+> > > > > > But there can still be a race between an eject and an unbind operation happening
+> > > > > > simultaneously. This seems like a general problem to me i.e. not specific to an
+> > > > > > acpi memory device. How do we ensure an eject does not race with a driver unbind
+> > > > > > for other acpi devices?
+> > > > > > 
+> > > > > > Is there a per-device lock in acpi-core or device-core that can prevent this from
+> > > > > > happening? Driver core does a device_lock(dev) on all operations, but this is
+> > > > > > probably not grabbed on SCI-initiated acpi ejects.
+> > > > > 
+> > > > > Since driver_unbind() calls device_lock(dev->parent) before calling
+> > > > > device_release_driver(), I am wondering if we can call
+> > > > > device_lock(dev->dev->parent) at the beginning of acpi_bus_remove()
+> > > > > (i.e. before calling pre_remove) and fails if dev->driver is NULL.  The
+> > > > > parent lock is otherwise released after device_release_driver() is done.
+> > > > 
+> > > > I would be careful.  You may introduce some subtle locking-related issues
+> > > > this way.
+> > > 
+> > > Right.  This requires careful inspection and testing.  As far as the
+> > > locking is concerned, I am not keen on using fine grained locking for
+> > > hot-plug.  It is much simpler and solid if we serialize such operations.
+> > > 
+> > > > Besides, there may be an alternative approach to all this.  For example,
+> > > > what if we don't remove struct device objects on eject?  The ACPI handles
+> > > > associated with them don't go away in that case after all, do they?
+> > > 
+> > > Umm...  Sorry, I am not getting your point.  The issue is that we need
+> > > to be able to fail a request when memory range cannot be off-lined.
+> > > Otherwise, we end up ejecting online memory range.
+> > 
+> > Yes, this is the major one.  The minor issue, however, is a race condition
+> > between unbinding a driver from a device and removing the device if I
+> > understand it correctly.  Which will go away automatically if the device is
+> > not removed in the first place.  Or so I would think. :-)
 > 
-> Ed L. Cashin (8):
->   aoe: copy fallback timing information on destination failover
->   aoe: remove vestigial request queue allocation
->   aoe: increase default cap on outstanding AoE commands in the network
->   aoe: cleanup: correct comment for aoetgt nout
->   aoe: remove call to request handler from I/O completion
->   aoe: make error messages more specific in static minor allocation
->   aoe: initialize sysminor to avoid compiler warning
->   aoe: return real minor number for static minors
+> I see.  I do not think whether or not the device is removed on eject
+> makes any difference here.  The issue is that after driver_unbind() is
+> done, acpi_bus_hot_remove_device() no longer calls the ACPI memory
+> driver (hence, it cannot fail in prepare_remove), and goes ahead to call
+> _EJ0.
 
-This series didn't contain your usual
-aoe-update-driver-internal-version-number-to-xx.patch
+I see two reasons for calling acpi_bus_hot_remove_device() for memory (correct
+me if I'm wrong): (1) from the memhotplug driver's notify handler and (2) from
+acpi_eject_store() which is exposed through sysfs.  If we disabled exposing
+acpi_eject_store() for memory devices, then the only way would be from the
+notify handler.  So I wonder if driver_unbind() shouldn't just uninstall the
+notify handler for memory (so that memory eject events are simply dropped on
+the floor after unbinding the driver)?
+
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
