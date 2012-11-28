@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568Ab2K1MEi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 07:04:38 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:43919 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754033Ab2K1MEh (ORCPT
+	id S1754618Ab2K1MGJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 07:06:09 -0500
+Received: from ams-iport-2.cisco.com ([144.254.224.141]:2007 "EHLO
+	ams-iport-2.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754492Ab2K1MGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 07:04:37 -0500
-Date: Wed, 28 Nov 2012 12:08:55 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Yangbin (Robin)" <robin.yb@huawei.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fs@vger.kernel.org" <linux-fs@vger.kernel.org>
-Subject: Re: A question about proc file system
-Message-ID: <20121128120855.53181bb2@pyramind.ukuu.org.uk>
-In-Reply-To: <27C64424A5A15E448C64C14B9C9BC079112E05A3@szxeml526-mbx.china.huawei.com>
-References: <27C64424A5A15E448C64C14B9C9BC079112E05A3@szxeml526-mbx.china.huawei.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 28 Nov 2012 07:06:07 -0500
+X-Greylist: delayed 583 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Nov 2012 07:06:07 EST
+X-IronPort-AV: E=McAfee;i="5400,1158,6909"; a="78637398"
+From: Hans Verkuil <hansverk@cisco.com>
+Organization: Cisco Systems Norway
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: [PATCH v3 0/9] Media Controller capture driver for DM365
+Date: Wed, 28 Nov 2012 12:56:10 +0100
+User-Agent: KMail/1.13.7 (Linux/3.6-7.slh.1-aptosid-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        LMML <linux-media@vger.kernel.org>, devel@driverdev.osuosl.org,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Prabhakar Lad <prabhakar.lad@ti.com>,
+        "Sakari Ailus" <sakari.ailus@iki.fi>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>
+References: <1354099329-20722-1-git-send-email-prabhakar.lad@ti.com> <20121128114537.GN11248@mwanda>
+In-Reply-To: <20121128114537.GN11248@mwanda>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201211281256.10839.hansverk@cisco.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Nov 2012 02:55:30 +0000
-"Yangbin (Robin)" <robin.yb@huawei.com> wrote:
+On Wed 28 November 2012 12:45:37 Dan Carpenter wrote:
+> I wish people wouldn't submit big patches right before the merge
+> window opens...  :/ It's better to let it sit in linux-next for a
+> couple weeks so people can mess with it a bit.
 
-> Hi all:
-> 
-> 	I write a kernel module which make a dir and create a file in proc file system. 
-> I use proc_mkdir() and create_proc_entry() in init and use remove_proc_entry() in exit.
-> Now I got a problem during my test:
-> 1. open terminal A, insmod and cd into the dir the module created in proc
-> 2. open terminal B. rmmod and insmod angain.
-> Then I cannot see the file which should be created by the module, unless terminal A quit the dir.
-> 
-> This will be ok with regale file system like ext3, one teminal's operation will not affert others.
-> Is this a bug or not?
+It's been under review for quite some time now, and the main change since
+the last posted version is that this is now moved to staging/media.
 
-It's not. You are doing the same as this
+So it is not yet ready for prime time, but we do want it in to simplify
+the last remaining improvements needed to move it to drivers/media.
 
+I'm happy with this going in given the circumstances.
 
-	mkdir /tmp/example
-	cd /tmp/example
-	rmdir /tmp/example
+Regards,
 
-	mkdir /tmp/example
-
-in Unix like systems the file handles and current directory references
-apply to the object itself not to the path.
-
-When yo reload the driver you create a new and different directory that
-has the same name but is not the same thing.
-
+	Hans
