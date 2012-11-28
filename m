@@ -1,421 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932500Ab2K1VbA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 16:31:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39562 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932404Ab2K1Va5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 16:30:57 -0500
-Message-ID: <1354138245.1809.226.camel@bling.home>
-Subject: Re: [PATCH] vfio powerpc: enabled on powernv platform
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org,
-        David Gibson <david@gibson.dropbear.id.au>
-Date: Wed, 28 Nov 2012 14:30:45 -0700
-In-Reply-To: <1354087113-26733-1-git-send-email-aik@ozlabs.ru>
-References: <1353991269.1809.155.camel@bling.home>
-	 <1354087113-26733-1-git-send-email-aik@ozlabs.ru>
+	id S932474Ab2K1Vbw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 16:31:52 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:15243 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932209Ab2K1Vbv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 16:31:51 -0500
+Message-ID: <1354137803.26955.325.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v3 1/4] ACPI: Support system notify handler via
+ .sys_notify
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org, lenb@kernel.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com
+Date: Wed, 28 Nov 2012 14:23:23 -0700
+In-Reply-To: <5550104.xSe1fX9Ich@vostro.rjw.lan>
+References: <1352406227-32629-1-git-send-email-toshi.kani@hp.com>
+	 <4411201.YLQBH7zWSI@vostro.rjw.lan>
+	 <1354134699.26955.290.camel@misato.fc.hp.com>
+	 <5550104.xSe1fX9Ich@vostro.rjw.lan>
 Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-11-28 at 18:18 +1100, Alexey Kardashevskiy wrote:
-> This patch initializes IOMMU groups based on the IOMMU
-> configuration discovered during the PCI scan on POWERNV
-> (POWER non virtualized) platform. The IOMMU groups are
-> to be used later by VFIO driver (PCI pass through).
+On Wed, 2012-11-28 at 22:09 +0100, Rafael J. Wysocki wrote:
+> On Wednesday, November 28, 2012 01:31:39 PM Toshi Kani wrote:
+> > On Wed, 2012-11-28 at 19:28 +0100, Rafael J. Wysocki wrote:
+> > > On Wednesday, November 28, 2012 09:54:43 AM Toshi Kani wrote:
+> > > > > > > > > By using acpi_install_notify_handler(), each driver needs to walk
+> > > > > > > > > through the entire ACPI namespace to find its associated ACPI devices
+> > > > > > > > > and call it to register one by one.  I think this is more work for
+> > > > > > > > > non-ACPI drivers than defining acpi_driver.
+> > > > > > > > 
+> > > > > > > > I'm not really sure what you mean.  The drivers in question already know
+> > > > > > > > what the relevant ACPI device nodes are (because they need them anyway
+> > > > > > > > for other purposes), so they don't need to look for them specifically and
+> > > > > > > > acpi_install_notify_handler() doesn't do any namespace walking.  So what
+> > > > > > > > you said above simply doesn't make sense from this viewpoint.
+> > > > > > > 
+> > > > > > > Yes, if drivers already know the relevant ACPI devices, then walking the
+> > > > > > > ACPI namespace is not necessary.  I was referring the case like
+> > > > > > > processor_driver.c, acpi_memhotplug.c, and container.c in my statement. 
+> > > > > > 
+> > > > > > BTW, when an ACPI device is marked as non-present, which is the case
+> > > > > > before hot-add, we do not create an acpi_device object and therefore do
+> > > > > > not bind it with a driver.  This is why these drivers walk the ACPI
+> > > > > > namespace and install their notify handlers regardless of device status.
+> > > > > 
+> > > > > So maybe we should create struct acpi_device objects in that case too?
+> > > > 
+> > > > I think it has some challenge as well.  We bind an ACPI driver with
+> > > > device_register(), which calls device_add()-> kobject_add().  So, all
+> > > > non-present ACPI device objects will show up in sysfs, unless we can
+> > > > change the core.  This will change user interface.  There can be quite
+> > > > many non-present devices in ACPI namespace depending on FW
+> > > > implementation.
+> > > 
+> > > If additional devices appear in sysfs, that's not a problem.  If there
+> > > were fewer of them, that would be a real one. :-)
+> > 
+> > I see.  I guess this means that once we expose all non-present devices
+> > in sysfs, we cannot go back to the current way.  So, we need to be very
+> > careful.  Anyway, this model requires separate handling for static ACPI
+> > [1] and dynamic ACPI [2], which may make the state model complicated.
+> > 
+> > 1. Static ACPI - No creation / deletion of acpi_device at hot-plug.
+> > 2. Dynamic ACPI - Create acpi_device at hot-add, delete at hot-remove.
 > 
-> It also implements an API for mapping/unmapping pages for
-> guest PCI drivers and providing DMA window properties.
-> This API is going to be used later by QEMU-VFIO to handle
-> h_put_tce hypercalls from the KVM guest.
+> Sure.  The complication here is that we'll need to handle the removal of
+> a bunch of struct acpi_device objects when a whole table goes away.
 > 
-> Although this driver has been tested only on the POWERNV
-> platform, it should work on any platform which supports
-> TCE tables.
-> 
-> To enable VFIO on POWER, enable SPAPR_TCE_IOMMU config
-> option and configure VFIO as required.
-> 
-> Cc: David Gibson <david@gibson.dropbear.id.au>
-> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
-> ---
->  arch/powerpc/include/asm/iommu.h     |    9 +++
->  arch/powerpc/kernel/iommu.c          |  147 ++++++++++++++++++++++++++++++++++
->  arch/powerpc/platforms/powernv/pci.c |  135 +++++++++++++++++++++++++++++++
->  drivers/iommu/Kconfig                |    8 ++
->  4 files changed, 299 insertions(+)
-> 
-> diff --git a/arch/powerpc/include/asm/iommu.h b/arch/powerpc/include/asm/iommu.h
-> index cbfe678..5c7087a 100644
-> --- a/arch/powerpc/include/asm/iommu.h
-> +++ b/arch/powerpc/include/asm/iommu.h
-> @@ -76,6 +76,9 @@ struct iommu_table {
->  	struct iommu_pool large_pool;
->  	struct iommu_pool pools[IOMMU_NR_POOLS];
->  	unsigned long *it_map;       /* A simple allocation bitmap for now */
-> +#ifdef CONFIG_IOMMU_API
-> +	struct iommu_group *it_group;
-> +#endif
->  };
->  
->  struct scatterlist;
-> @@ -147,5 +150,11 @@ static inline void iommu_restore(void)
->  }
->  #endif
->  
-> +extern long iommu_clear_tces(struct iommu_table *tbl, unsigned long entry,
-> +		unsigned long pages);
-> +extern long iommu_put_tces(struct iommu_table *tbl, unsigned long entry,
-> +		uint64_t tce, enum dma_data_direction direction,
-> +		unsigned long pages);
-> +
->  #endif /* __KERNEL__ */
->  #endif /* _ASM_IOMMU_H */
-> diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
-> index ff5a6ce..1456b6e 100644
-> --- a/arch/powerpc/kernel/iommu.c
-> +++ b/arch/powerpc/kernel/iommu.c
-> @@ -44,6 +44,7 @@
->  #include <asm/kdump.h>
->  #include <asm/fadump.h>
->  #include <asm/vio.h>
-> +#include <asm/tce.h>
->  
->  #define DBG(...)
->  
-> @@ -856,3 +857,149 @@ void iommu_free_coherent(struct iommu_table *tbl, size_t size,
->  		free_pages((unsigned long)vaddr, get_order(size));
->  	}
->  }
-> +
-> +#ifdef CONFIG_IOMMU_API
-> +/*
-> + * SPAPR TCE API
-> + */
-> +static void tce_flush(struct iommu_table *tbl)
-> +{
-> +	/* Flush/invalidate TLB caches if necessary */
-> +	if (ppc_md.tce_flush)
-> +		ppc_md.tce_flush(tbl);
-> +
-> +	/* Make sure updates are seen by hardware */
-> +	mb();
-> +}
-> +
-> +/*
-> + * iommu_clear_tces clears tces and returned the number of pages
-> + * which it called put_page() on.
-> + */
-> +static long clear_tces_nolock(struct iommu_table *tbl, unsigned long entry,
-> +		unsigned long pages)
-> +{
-> +	int i, pages_put = 0;
-> +	unsigned long oldtce;
-> +	struct page *page;
-> +
-> +	for (i = 0; i < pages; ++i) {
-> +		oldtce = ppc_md.tce_get(tbl, entry + i);
-> +		ppc_md.tce_free(tbl, entry + i, 1);
-> +
-> +		if (!(oldtce & (TCE_PCI_WRITE | TCE_PCI_READ)))
-> +			continue;
-> +
-> +		page = pfn_to_page(oldtce >> PAGE_SHIFT);
-> +
-> +		WARN_ON(!page);
-> +		if (!page)
-> +			continue;
-> +
-> +		if (oldtce & TCE_PCI_WRITE)
-> +			SetPageDirty(page);
-> +
-> +		++pages_put;
-> +		put_page(page);
-> +	}
-> +
-> +	return pages_put;
-> +}
-> +
-> +/*
-> + * iommu_clear_tces clears tces and returned the number of released pages
-> + */
-> +long iommu_clear_tces(struct iommu_table *tbl, unsigned long entry,
-> +		unsigned long pages)
-> +{
-> +	int ret;
-> +	struct iommu_pool *pool = get_pool(tbl, entry);
-> +
-> +	spin_lock(&(pool->lock));
-> +	ret = clear_tces_nolock(tbl, entry, pages);
-> +	tce_flush(tbl);
-> +	spin_unlock(&(pool->lock));
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(iommu_clear_tces);
-> +
-> +static int put_tce(struct iommu_table *tbl, unsigned long entry,
-> +		uint64_t tce, enum dma_data_direction direction)
-> +{
-> +	int ret;
-> +	struct page *page = NULL;
-> +	unsigned long kva, offset;
-> +
-> +	/* Map new TCE */
-> +	offset = (tce & IOMMU_PAGE_MASK) - (tce & PAGE_MASK);
-> +
-> +	ret = get_user_pages_fast(tce & PAGE_MASK, 1,
-> +			direction != DMA_TO_DEVICE, &page);
-> +	if (ret < 1) {
-> +		printk(KERN_ERR "tce_vfio: get_user_pages_fast failed tce=%llx ioba=%lx ret=%d\n",
-> +				tce, entry << IOMMU_PAGE_SHIFT, ret);
-> +		if (!ret)
-> +			ret = -EFAULT;
-> +		return ret;
-> +	}
-> +
-> +	kva = (unsigned long) page_address(page);
-> +	kva += offset;
-> +
-> +	/* tce_build receives a virtual address */
-> +	entry += tbl->it_offset; /* Offset into real TCE table */
-> +	ret = ppc_md.tce_build(tbl, entry, 1, kva, direction, NULL);
-> +
-> +	/* tce_build() only returns non-zero for transient errors */
-> +	if (unlikely(ret)) {
-> +		printk(KERN_ERR "tce_vfio: tce_put failed on tce=%llx ioba=%lx kva=%lx ret=%d\n",
-> +				tce, entry << IOMMU_PAGE_SHIFT, kva, ret);
-> +		put_page(page);
-> +		return -EIO;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +/*
-> + * iommu_put_tces builds tces and returned the number of actually locked pages
-> + */
-> +long iommu_put_tces(struct iommu_table *tbl, unsigned long entry,
-> +		uint64_t tce, enum dma_data_direction direction,
-> +		unsigned long pages)
-> +{
-> +	int i, ret = 0;
-> +	struct iommu_pool *pool = get_pool(tbl, entry);
-> +
-> +	BUILD_BUG_ON(PAGE_SIZE < IOMMU_PAGE_SIZE);
-> +	BUG_ON(direction == DMA_NONE);
-> +
-> +	spin_lock(&(pool->lock));
-> +
-> +	/* Check if any is in use */
-> +	for (i = 0; i < pages; ++i) {
-> +		unsigned long oldtce = ppc_md.tce_get(tbl, entry + i);
-> +		if (oldtce & (TCE_PCI_WRITE | TCE_PCI_READ)) {
-> +			spin_unlock(&(pool->lock));
-> +			return -EBUSY;
-> +		}
-> +	}
-> +
-> +	/* Put tces to the table */
-> +	for (i = 0; (i < pages) && !ret; ++i, tce += IOMMU_PAGE_SIZE)
-> +		ret = put_tce(tbl, entry + i, tce, direction);
-> +
-> +	/* If failed, release locked pages, otherwise return the number of pages */
-> +	if (ret)
-> +		clear_tces_nolock(tbl, entry, i);
-> +	else
-> +		ret = pages;
-> +
-> +	tce_flush(tbl);
-> +	spin_unlock(&(pool->lock));
-> +
-> +	return ret;
-> +}
+> However, first, we don't seem to handle table unloading now.  At least
+> acpi_unload_parent_table() is not called from anywhere as far as I can
+> say.  Second, we'll need to handle the removal of struct acpi_device objects
+> _anyway_ on table unload, this way or another.
 
-Nice, no more kmalloc!  I'm still concerned about the IOMMU page size
-mismatch here.  If nothing else, the comment is misleading since we're
-locking system pages, but returning tce pages.  The user would therefore
-need to multiply their locked memory limit by (PAGE_SHIFT -
-IOMMU_PAGE_SHIFT).  Thanks,
+AML is the one that requests loading/unloading of SSDT for dynamic ACPI.
+In hot-add, _Lxx method executes AML_LOAD_OP or AML_LOAD_TABLE_OP to
+load SSDT and then sends a notification to the OS.  In hot-remove, _EJ0
+method executes AML_UNLOAD_OP to unload SSDT.  Of course, ACPICA does
+the actual work on behalf of AML.  But this is not visible to ACPI core
+or drivers, unless it checks ACPI namespace to see if any device objects
+disappeared after _EJ0.
 
-Alex
+Thanks,
+-Toshi
 
-> +EXPORT_SYMBOL_GPL(iommu_put_tces);
-> +#endif /* CONFIG_IOMMU_API */
-> diff --git a/arch/powerpc/platforms/powernv/pci.c b/arch/powerpc/platforms/powernv/pci.c
-> index 05205cf..21250ef 100644
-> --- a/arch/powerpc/platforms/powernv/pci.c
-> +++ b/arch/powerpc/platforms/powernv/pci.c
-> @@ -20,6 +20,7 @@
->  #include <linux/irq.h>
->  #include <linux/io.h>
->  #include <linux/msi.h>
-> +#include <linux/iommu.h>
->  
->  #include <asm/sections.h>
->  #include <asm/io.h>
-> @@ -613,3 +614,137 @@ void __init pnv_pci_init(void)
->  	ppc_md.teardown_msi_irqs = pnv_teardown_msi_irqs;
->  #endif
->  }
-> +
-> +#ifdef CONFIG_IOMMU_API
-> +/*
-> + * IOMMU groups support required by VFIO
-> + */
-> +static int add_device(struct device *dev)
-> +{
-> +	struct iommu_table *tbl;
-> +	int ret = 0;
-> +
-> +	if (WARN_ON(dev->iommu_group)) {
-> +		printk(KERN_WARNING "tce_vfio: device %s is already in iommu group %d, skipping\n",
-> +				dev_name(dev),
-> +				iommu_group_id(dev->iommu_group));
-> +		return -EBUSY;
-> +	}
-> +
-> +	tbl = get_iommu_table_base(dev);
-> +	if (!tbl) {
-> +		pr_debug("tce_vfio: skipping device %s with no tbl\n",
-> +				dev_name(dev));
-> +		return 0;
-> +	}
-> +
-> +	pr_debug("tce_vfio: adding %s to iommu group %d\n",
-> +			dev_name(dev), iommu_group_id(tbl->it_group));
-> +
-> +	ret = iommu_group_add_device(tbl->it_group, dev);
-> +	if (ret < 0)
-> +		printk(KERN_ERR "tce_vfio: %s has not been added, ret=%d\n",
-> +				dev_name(dev), ret);
-> +
-> +	return ret;
-> +}
-> +
-> +static void del_device(struct device *dev)
-> +{
-> +	iommu_group_remove_device(dev);
-> +}
-> +
-> +static int iommu_bus_notifier(struct notifier_block *nb,
-> +			      unsigned long action, void *data)
-> +{
-> +	struct device *dev = data;
-> +
-> +	switch (action) {
-> +	case BUS_NOTIFY_ADD_DEVICE:
-> +		return add_device(dev);
-> +	case BUS_NOTIFY_DEL_DEVICE:
-> +		del_device(dev);
-> +		return 0;
-> +	default:
-> +		return 0;
-> +	}
-> +}
-> +
-> +static struct notifier_block tce_iommu_bus_nb = {
-> +	.notifier_call = iommu_bus_notifier,
-> +};
-> +
-> +static void group_release(void *iommu_data)
-> +{
-> +	struct iommu_table *tbl = iommu_data;
-> +	tbl->it_group = NULL;
-> +}
-> +
-> +static int __init tce_iommu_init(void)
-> +{
-> +	struct pci_dev *pdev = NULL;
-> +	struct iommu_table *tbl;
-> +	struct iommu_group *grp;
-> +
-> +	/* Allocate and initialize IOMMU groups */
-> +	for_each_pci_dev(pdev) {
-> +		tbl = get_iommu_table_base(&pdev->dev);
-> +		if (!tbl)
-> +			continue;
-> +
-> +		/* Skip already initialized */
-> +		if (tbl->it_group)
-> +			continue;
-> +
-> +		grp = iommu_group_alloc();
-> +		if (IS_ERR(grp)) {
-> +			printk(KERN_INFO "tce_vfio: cannot create "
-> +					"new IOMMU group, ret=%ld\n",
-> +					PTR_ERR(grp));
-> +			return PTR_ERR(grp);
-> +		}
-> +		tbl->it_group = grp;
-> +		iommu_group_set_iommudata(grp, tbl, group_release);
-> +	}
-> +
-> +	bus_register_notifier(&pci_bus_type, &tce_iommu_bus_nb);
-> +
-> +	/* Add PCI devices to VFIO groups */
-> +	for_each_pci_dev(pdev)
-> +		add_device(&pdev->dev);
-> +
-> +	return 0;
-> +}
-> +
-> +static void __exit tce_iommu_cleanup(void)
-> +{
-> +	struct pci_dev *pdev = NULL;
-> +	struct iommu_table *tbl;
-> +	struct iommu_group *grp = NULL;
-> +
-> +	bus_unregister_notifier(&pci_bus_type, &tce_iommu_bus_nb);
-> +
-> +	/* Delete PCI devices from VFIO groups */
-> +	for_each_pci_dev(pdev)
-> +		del_device(&pdev->dev);
-> +
-> +	/* Release VFIO groups */
-> +	for_each_pci_dev(pdev) {
-> +		tbl = get_iommu_table_base(&pdev->dev);
-> +		if (!tbl)
-> +			continue;
-> +		grp = tbl->it_group;
-> +
-> +		/* Skip (already) uninitialized */
-> +		if (!grp)
-> +			continue;
-> +
-> +		/* Do actual release, group_release() is expected to work */
-> +		iommu_group_put(grp);
-> +		BUG_ON(tbl->it_group);
-> +	}
-> +}
-> +
-> +module_init(tce_iommu_init);
-> +module_exit(tce_iommu_cleanup);
-> +#endif /* CONFIG_IOMMU_API */
-> diff --git a/drivers/iommu/Kconfig b/drivers/iommu/Kconfig
-> index 9f69b56..29d11dc 100644
-> --- a/drivers/iommu/Kconfig
-> +++ b/drivers/iommu/Kconfig
-> @@ -187,4 +187,12 @@ config EXYNOS_IOMMU_DEBUG
->  
->  	  Say N unless you need kernel log message for IOMMU debugging
->  
-> +config SPAPR_TCE_IOMMU
-> +	bool "sPAPR TCE IOMMU Support"
-> +	depends on PPC_POWERNV
-> +	select IOMMU_API
-> +	help
-> +	  Enables bits of IOMMU API required by VFIO. The iommu_ops is
-> +	  still not implemented.
-> +
->  endif # IOMMU_SUPPORT
 
+> > [1] ACPI namespace is static and contains the maximum possible config. 
+> > [2] ACPI namespace is dynamic. SSDT is loaded at hot-add, and unloaded
+> > at hot-remove.
+> 
+> Thanks,
+> Rafael
+> 
+> 
 
 
