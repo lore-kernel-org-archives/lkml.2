@@ -1,94 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755599Ab2K1Sne (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 13:43:34 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:51085 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754669Ab2K1Snd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 13:43:33 -0500
-Message-ID: <50B65B4A.50508@linux.vnet.ibm.com>
-Date: Wed, 28 Nov 2012 12:43:22 -0600
-From: Michael Wolf <mjw@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755756Ab2K1Sot (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 13:44:49 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:35302 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754712Ab2K1Soq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 13:44:46 -0500
+Date: Wed, 28 Nov 2012 13:44:33 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        azurIt <azurit@pobox.sk>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, cgroups mailinglist <cgroups@vger.kernel.org>
+Subject: Re: [PATCH -v2 -mm] memcg: do not trigger OOM from
+ add_to_page_cache_locked
+Message-ID: <20121128184433.GH2301@cmpxchg.org>
+References: <20121126131837.GC17860@dhcp22.suse.cz>
+ <50B403CA.501@jp.fujitsu.com>
+ <20121127194813.GP24381@cmpxchg.org>
+ <20121127205431.GA2433@dhcp22.suse.cz>
+ <20121127205944.GB2433@dhcp22.suse.cz>
+ <20121128152631.GT24381@cmpxchg.org>
+ <20121128160447.GH12309@dhcp22.suse.cz>
+ <20121128163736.GV24381@cmpxchg.org>
+ <20121128164640.GB22201@dhcp22.suse.cz>
+ <20121128164824.GC22201@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: linux-kernel@vger.kernel.org, riel@redhat.com, kvm@vger.kernel.org,
-        peterz@infradead.org, glommer@parallels.com, mingo@redhat.com
-Subject: Re: [PATCH 0/5] Alter steal time reporting in KVM
-References: <20121126203603.28840.38736.stgit@lambeau> <20121127232442.GA8295@amt.cnet>
-In-Reply-To: <20121127232442.GA8295@amt.cnet>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12112818-2000-0000-0000-00000A0EC66B
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121128164824.GC22201@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2012 05:24 PM, Marcelo Tosatti wrote:
-> On Mon, Nov 26, 2012 at 02:36:24PM -0600, Michael Wolf wrote:
->> In the case of where you have a system that is running in a
->> capped or overcommitted environment the user may see steal time
->> being reported in accounting tools such as top or vmstat.
-> The definition of stolen time is 'time during which the virtual CPU is
-> runnable to not running'. Overcommit is the main scenario which steal
-> time helps to detect.
->
-> Can you describe the 'capped' case?
-In the capped case, the time that the guest spends waiting due to it 
-having used its full allottment of time shows up as steal time.  The way 
-my patchset currently stands is that you would set up the
-bandwidth control and you would have to pass it a  matching value from 
-qemu.  In the future, it would
-be possible to have something parse the bandwidth setting and 
-automatically adjust the setting in the
-host used for steal time reporting.
->
->>   This can
->> cause confusion for the end user.  To ease the confusion this patch set
->> adds the idea of consigned (expected steal) time.  The host will separate
->> the consigned time from the steal time.  The consignment limit passed to the
->> host will be the amount of steal time expected within a fixed period of
->> time.  Any other steal time accruing during that period will show as the
->> traditional steal time.
->>
->> ---
->>
->> Michael Wolf (5):
->>        Alter the amount of steal time reported by the guest.
->>        Expand the steal time msr to also contain the consigned time.
->>        Add the code to send the consigned time from the host to the guest
->>        Add a timer to allow the separation of consigned from steal time.
->>        Add an ioctl to communicate the consign limit to the host.
->>
->>
->>   arch/x86/include/asm/kvm_host.h       |   11 +++++++
->>   arch/x86/include/asm/kvm_para.h       |    3 +-
->>   arch/x86/include/asm/paravirt.h       |    4 +--
->>   arch/x86/include/asm/paravirt_types.h |    2 +
->>   arch/x86/kernel/kvm.c                 |    8 ++---
->>   arch/x86/kernel/paravirt.c            |    4 +--
->>   arch/x86/kvm/x86.c                    |   50 ++++++++++++++++++++++++++++++++-
->>   fs/proc/stat.c                        |    9 +++++-
->>   include/linux/kernel_stat.h           |    2 +
->>   include/linux/kvm_host.h              |    2 +
->>   include/uapi/linux/kvm.h              |    2 +
->>   kernel/sched/core.c                   |   10 ++++++-
->>   kernel/sched/cputime.c                |   21 +++++++++++++-
->>   kernel/sched/sched.h                  |    2 +
->>   virt/kvm/kvm_main.c                   |    7 +++++
->>   15 files changed, 120 insertions(+), 17 deletions(-)
->>
->> -- 
->> Signature
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe kvm" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+On Wed, Nov 28, 2012 at 05:48:24PM +0100, Michal Hocko wrote:
+> On Wed 28-11-12 17:46:40, Michal Hocko wrote:
+> > On Wed 28-11-12 11:37:36, Johannes Weiner wrote:
+> > > On Wed, Nov 28, 2012 at 05:04:47PM +0100, Michal Hocko wrote:
+> > > > diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> > > > index 095d2b4..5abe441 100644
+> > > > --- a/include/linux/memcontrol.h
+> > > > +++ b/include/linux/memcontrol.h
+> > > > @@ -57,13 +57,14 @@ extern int mem_cgroup_newpage_charge(struct page *page, struct mm_struct *mm,
+> > > >  				gfp_t gfp_mask);
+> > > >  /* for swap handling */
+> > > >  extern int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
+> > > > -		struct page *page, gfp_t mask, struct mem_cgroup **memcgp);
+> > > > +		struct page *page, gfp_t mask, struct mem_cgroup **memcgp,
+> > > > +		bool oom);
+> > > 
+> > > Ok, now I feel almost bad for asking, but why the public interface,
+> > > too?
+> > 
+> > Would it work out if I tell it was to double check that your review
+> > quality is not decreased after that many revisions? :P
 
+Deal.
+
+> >From e21bb704947e9a477ec1df9121575c606dbfcb52 Mon Sep 17 00:00:00 2001
+> From: Michal Hocko <mhocko@suse.cz>
+> Date: Wed, 28 Nov 2012 17:46:32 +0100
+> Subject: [PATCH] memcg: do not trigger OOM from add_to_page_cache_locked
+> 
+> memcg oom killer might deadlock if the process which falls down to
+> mem_cgroup_handle_oom holds a lock which prevents other task to
+> terminate because it is blocked on the very same lock.
+> This can happen when a write system call needs to allocate a page but
+> the allocation hits the memcg hard limit and there is nothing to reclaim
+> (e.g. there is no swap or swap limit is hit as well and all cache pages
+> have been reclaimed already) and the process selected by memcg OOM
+> killer is blocked on i_mutex on the same inode (e.g. truncate it).
+> 
+> Process A
+> [<ffffffff811109b8>] do_truncate+0x58/0xa0		# takes i_mutex
+> [<ffffffff81121c90>] do_last+0x250/0xa30
+> [<ffffffff81122547>] path_openat+0xd7/0x440
+> [<ffffffff811229c9>] do_filp_open+0x49/0xa0
+> [<ffffffff8110f7d6>] do_sys_open+0x106/0x240
+> [<ffffffff8110f950>] sys_open+0x20/0x30
+> [<ffffffff815b5926>] system_call_fastpath+0x18/0x1d
+> [<ffffffffffffffff>] 0xffffffffffffffff
+> 
+> Process B
+> [<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
+> [<ffffffff8110b5ab>] T.1146+0x5ab/0x5c0
+> [<ffffffff8110c22e>] mem_cgroup_cache_charge+0xbe/0xe0
+> [<ffffffff810ca28c>] add_to_page_cache_locked+0x4c/0x140
+> [<ffffffff810ca3a2>] add_to_page_cache_lru+0x22/0x50
+> [<ffffffff810ca45b>] grab_cache_page_write_begin+0x8b/0xe0
+> [<ffffffff81193a18>] ext3_write_begin+0x88/0x270
+> [<ffffffff810c8fc6>] generic_file_buffered_write+0x116/0x290
+> [<ffffffff810cb3cc>] __generic_file_aio_write+0x27c/0x480
+> [<ffffffff810cb646>] generic_file_aio_write+0x76/0xf0           # takes ->i_mutex
+> [<ffffffff8111156a>] do_sync_write+0xea/0x130
+> [<ffffffff81112183>] vfs_write+0xf3/0x1f0
+> [<ffffffff81112381>] sys_write+0x51/0x90
+> [<ffffffff815b5926>] system_call_fastpath+0x18/0x1d
+> [<ffffffffffffffff>] 0xffffffffffffffff
+> 
+> This is not a hard deadlock though because administrator can still
+> intervene and increase the limit on the group which helps the writer to
+> finish the allocation and release the lock.
+> 
+> This patch heals the problem by forbidding OOM from page cache charges
+> (namely add_ro_page_cache_locked). mem_cgroup_cache_charge grows oom
+> argument which is pushed down the call chain.
+> 
+> As a possibly visible result add_to_page_cache_lru might fail more often
+> with ENOMEM but this is to be expected if the limit is set and it is
+> preferable than OOM killer IMO.
+> 
+> Changes since v1
+> - do not abuse gfp_flags and rather use oom parameter directly as per
+>   Johannes
+> - handle also shmem write fauls resp. fallocate properly as per Johannes
+> 
+> Reported-by: azurIt <azurit@pobox.sk>
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+
+Thanks, Michal!
