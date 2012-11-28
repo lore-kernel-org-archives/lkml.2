@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882Ab2K1QbR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 11:31:17 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:37289 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753746Ab2K1QbO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 11:31:14 -0500
-Date: Wed, 28 Nov 2012 16:31:09 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        arnd@arndb.de, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com
-Subject: Re: [PATCH 3/3] Input: bu21013_ts - Add support for Device Tree
- booting
-Message-ID: <20121128163105.GA28698@sirena.org.uk>
-References: <1354021990-16978-1-git-send-email-lee.jones@linaro.org>
- <1354021990-16978-4-git-send-email-lee.jones@linaro.org>
- <20121128070332.GC23378@core.coreip.homeip.net>
- <20121128085731.GH2013@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753740Ab2K1QeX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 11:34:23 -0500
+Received: from mail2.gnudd.com ([213.203.150.91]:45011 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753259Ab2K1QeW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 11:34:22 -0500
+Date: Wed, 28 Nov 2012 17:33:12 +0100
+From: Davide Ciminaghi <ciminaghi@gnudd.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux@arm.linux.org.uk, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, djbw@fb.com, vinod.koul@intel.com,
+        grant.likely@secretlab.ca, rubini@gnudd.com, wim@iguana.be,
+        cjb@laptop.org, davidb@codeaurora.org, nico@fluxnic.net,
+        ben-linux@fluff.org, viresh.linux@gmail.com, rajeev-dlh.kumar@st.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        giancarlo.asnaghi@st.com
+Subject: Re: [PATCH 5/8] mmci: replace readsl/writesl with ioread32_rep/iowrite32_rep
+Message-ID: <20121128163312.GC16612@mail.gnudd.com>
+References: <1353683310-23654-1-git-send-email-ciminaghi@gnudd.com> <1353683310-23654-6-git-send-email-ciminaghi@gnudd.com> <CACRpkdaWNC0ayN4JbEq63W+KLUdYfH5SmSu8=CNucQNixvmPUw@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20121128085731.GH2013@gmail.com>
-X-Cookie: Drive defensively.  Buy a tank.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <CACRpkdaWNC0ayN4JbEq63W+KLUdYfH5SmSu8=CNucQNixvmPUw@mail.gmail.com>
+X-Face: #Q;A)@_4.#>0+_%y]7aBr:c"ndLp&#+2?]J;lkse\^)FP^Lr5@O0{)J;'nny4%74.fM'n)M
+	>ISCj.KmsL/HTxz!:Ju'pnj'Gz&.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 08:57:31AM +0000, Lee Jones wrote:
+On Wed, Nov 28, 2012 at 05:08:27PM +0100, Linus Walleij wrote:
+> On Fri, Nov 23, 2012 at 4:08 PM, Davide Ciminaghi <ciminaghi@gnudd.com> wrote:
+> 
+> > Not all the architectures have readsl/writesl,
+> > use the more portable ioread32_rep/iowrite32_rep functions instead.
+> >
+> > Signed-off-by: Davide Ciminaghi <ciminaghi@gnudd.com>
+> 
+> Can't think of anything better, put it in Russell's patch tracker when
+> you think you're finished with it.
 
-> > I applied these 3 patches, but for DT we also need to specify compatible
-> > ID and set up of_match_table pointer. 
+ok, will do that.
 
-> Why do you need a compatible string?
-
-The I2C subsystem guesses at a compatible string by default but it's
-much better to explicitly set one as conflicts do arise from time to
-time (eg, Wolfson parts are called WMxxxx but the WM prefix is also used
-by at least WonderMedia).
+Thanks and regards
+Davide
