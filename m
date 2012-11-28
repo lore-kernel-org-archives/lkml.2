@@ -1,53 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754043Ab2K1Qh0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 11:37:26 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:64137 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752071Ab2K1QhZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 11:37:25 -0500
+	id S1754257Ab2K1QiA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 11:38:00 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:35293 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754117Ab2K1Qh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 11:37:57 -0500
+Date: Wed, 28 Nov 2012 11:37:36 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        azurIt <azurit@pobox.sk>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, cgroups mailinglist <cgroups@vger.kernel.org>
+Subject: Re: [PATCH -v2 -mm] memcg: do not trigger OOM from
+ add_to_page_cache_locked
+Message-ID: <20121128163736.GV24381@cmpxchg.org>
+References: <20121125120524.GB10623@dhcp22.suse.cz>
+ <20121125135542.GE10623@dhcp22.suse.cz>
+ <20121126013855.AF118F5E@pobox.sk>
+ <20121126131837.GC17860@dhcp22.suse.cz>
+ <50B403CA.501@jp.fujitsu.com>
+ <20121127194813.GP24381@cmpxchg.org>
+ <20121127205431.GA2433@dhcp22.suse.cz>
+ <20121127205944.GB2433@dhcp22.suse.cz>
+ <20121128152631.GT24381@cmpxchg.org>
+ <20121128160447.GH12309@dhcp22.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <CAPXgP12jXOJzTTgwQkm7XK_ig2iEKAbhgNkF+MRR6_S49Tqx_A@mail.gmail.com>
-References: <1336004953.4240.9.camel@mop> <CAHO5Pa2_D_L6wKPWccaYH2BYWYFc=4Khe0Om5GWU3D-tcAH0OQ@mail.gmail.com>
- <CAPXgP12jXOJzTTgwQkm7XK_ig2iEKAbhgNkF+MRR6_S49Tqx_A@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 28 Nov 2012 08:37:03 -0800
-X-Google-Sender-Auth: 4bb5BEQuWA2vJusYil4GD3vw4vo
-Message-ID: <CA+55aFxVyqScRU_c6RWVVub-tteuwjSq5JmThUtoxU-arBuh1w@mail.gmail.com>
-Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to variable-length
- record buffer
-To: Kay Sievers <kay@vrfy.org>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>,
-        Greg Kroah-Hartmann <greg@kroah.com>, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121128160447.GH12309@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 8:22 AM, Kay Sievers <kay@vrfy.org> wrote:
-> On Wed, Nov 28, 2012 at 2:33 PM, Michael Kerrisk <mtk.manpages@gmail.com> wrote:
->
->> On a 2.6.31 system, immediately after SYSLOG_ACTION_READ_CLEAR, a
->> SYSLOG_ACTION_SIZE_UNREAD returns 0.
->
-> Hmm, sounds like the right thing to do.
+On Wed, Nov 28, 2012 at 05:04:47PM +0100, Michal Hocko wrote:
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index 095d2b4..5abe441 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -57,13 +57,14 @@ extern int mem_cgroup_newpage_charge(struct page *page, struct mm_struct *mm,
+>  				gfp_t gfp_mask);
+>  /* for swap handling */
+>  extern int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
+> -		struct page *page, gfp_t mask, struct mem_cgroup **memcgp);
+> +		struct page *page, gfp_t mask, struct mem_cgroup **memcgp,
+> +		bool oom);
 
-Right.
+Ok, now I feel almost bad for asking, but why the public interface,
+too?  You only ever pass "true" in there and this is unlikely to
+change anytime soon, no?
 
-And that's the *OLD* behavior (2.6.31).
+> @@ -3754,7 +3753,8 @@ int mem_cgroup_newpage_charge(struct page *page,
+>  static int __mem_cgroup_try_charge_swapin(struct mm_struct *mm,
+>  					  struct page *page,
+>  					  gfp_t mask,
+> -					  struct mem_cgroup **memcgp)
+> +					  struct mem_cgroup **memcgp,
+> +					  bool oom)
+>  {
+>  	struct mem_cgroup *memcg;
+>  	struct page_cgroup *pc;
+> @@ -3776,20 +3776,21 @@ static int __mem_cgroup_try_charge_swapin(struct mm_struct *mm,
+>  	if (!memcg)
+>  		goto charge_cur_mm;
+>  	*memcgp = memcg;
+> -	ret = __mem_cgroup_try_charge(NULL, mask, 1, memcgp, true);
+> +	ret = __mem_cgroup_try_charge(NULL, mask, 1, memcgp, oom);
+>  	css_put(&memcg->css);
+>  	if (ret == -EINTR)
+>  		ret = 0;
+>  	return ret;
+>  charge_cur_mm:
+> -	ret = __mem_cgroup_try_charge(mm, mask, 1, memcgp, true);
+> +	ret = __mem_cgroup_try_charge(mm, mask, 1, memcgp, oom);
+>  	if (ret == -EINTR)
+>  		ret = 0;
+>  	return ret;
+>  }
 
->> On 3.5, immediately after SYSLOG_ACTION_READ_CLEAR, the value returned
->> by SYSLOG_ACTION_SIZE_UNREAD is unchanged
+Only this one is needed...
 
-And this is the *NEW* behavior, and as you say:
+> @@ -3851,7 +3852,7 @@ void mem_cgroup_commit_charge_swapin(struct page *page,
+>  }
+>  
+>  int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+> -				gfp_t gfp_mask)
+> +				gfp_t gfp_mask, bool oom)
+>  {
+>  	struct mem_cgroup *memcg = NULL;
+>  	enum charge_type type = MEM_CGROUP_CHARGE_TYPE_CACHE;
+> @@ -3863,10 +3864,10 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
+>  		return 0;
+>  
+>  	if (!PageSwapCache(page))
+> -		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type);
+> +		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type, oom);
+>  	else { /* page is swapcache/shmem */
+>  		ret = __mem_cgroup_try_charge_swapin(mm, page,
+> -						     gfp_mask, &memcg);
+> +						     gfp_mask, &memcg, oom);
+>  		if (!ret)
+>  			__mem_cgroup_commit_charge_swapin(page, memcg, type);
+>  	}
 
-> Which sounds at least like weird behaviour, if not "broken".
+...for this site.
 
-So the new behavior is insane and different. Let's fix it.
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 6891d3b..afad903 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -2991,7 +2991,7 @@ static int do_swap_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  		}
+>  	}
+>  
+> -	if (mem_cgroup_try_charge_swapin(mm, page, GFP_KERNEL, &ptr)) {
+> +	if (mem_cgroup_try_charge_swapin(mm, page, GFP_KERNEL, &ptr, true)) {
+>  		ret = VM_FAULT_OOM;
+>  		goto out_page;
+>  	}
 
-It looks like it is because the new SYSLOG_ACTION_SIZE_UNREAD code
-does not take the new clear_seq code into account. Hmm?
+Can not happen for shmem, the fault handler uses vma->vm_ops->fault.
 
-                 Linus
+> diff --git a/mm/swapfile.c b/mm/swapfile.c
+> index 2f8e429..8ec511e 100644
+> --- a/mm/swapfile.c
+> +++ b/mm/swapfile.c
+> @@ -828,7 +828,7 @@ static int unuse_pte(struct vm_area_struct *vma, pmd_t *pmd,
+>  	int ret = 1;
+>  
+>  	if (mem_cgroup_try_charge_swapin(vma->vm_mm, page,
+> -					 GFP_KERNEL, &memcg)) {
+> +					 GFP_KERNEL, &memcg, true)) {
+>  		ret = -ENOMEM;
+>  		goto out_nolock;
+>  	}
+
+Can not happen for shmem, uses shmem_unuse() instead.
