@@ -1,86 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756142Ab2K1VFj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 16:05:39 -0500
-Received: from www.hansjkoch.de ([178.63.77.200]:51427 "EHLO www.hansjkoch.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756077Ab2K1VFL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 16:05:11 -0500
-Date: Wed, 28 Nov 2012 22:05:10 +0100
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Vitalii Demianets <vitas@nppfactor.kiev.ua>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] uio.c: Fix warning: 'ret' might be used uninitialized
-Message-ID: <20121128210509.GA2590@local>
-References: <201211271348.14603.vitas@nppfactor.kiev.ua>
- <20121127224341.GA2605@local>
- <201211281058.33185.vitas@nppfactor.kiev.ua>
+	id S1756161Ab2K1VGQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 16:06:16 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:46125 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756003Ab2K1VGO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 16:06:14 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201211281058.33185.vitas@nppfactor.kiev.ua>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+To: Mark Langsdorf <mark.langsdorf@calxeda.com>
+From: Mike Turquette <mturquette@ti.com>
+In-Reply-To: <50B6395B.806@calxeda.com>
+CC: Shawn Guo <shawn.guo@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com>
+ <1354046672-7392-1-git-send-email-mark.langsdorf@calxeda.com>
+ <1354046672-7392-7-git-send-email-mark.langsdorf@calxeda.com>
+ <20121128023240.GA28170@S2100-06.ap.freescale.net>
+ <50B60E9C.9000405@calxeda.com>
+ <20121128145759.GB28170@S2100-06.ap.freescale.net>
+ <20121128151741.GC28170@S2100-06.ap.freescale.net>
+ <20121128160115.21126.3841@nucleus> <50B6395B.806@calxeda.com>
+Message-ID: <20121128210552.21126.90710@nucleus>
+User-Agent: alot/0.3.2+
+Subject: Re: [PATCH 6/6 v6] cpufreq, highbank: add support for highbank cpufreq
+Date: Wed, 28 Nov 2012 13:05:52 -0800
+X-Originating-IP: [10.188.36.112]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 10:58:32AM +0200, Vitalii Demianets wrote:
-> On Wednesday 28 November 2012 00:43:41 Hans J. Koch wrote:
+Quoting Mark Langsdorf (2012-11-28 08:18:35)
+> On 11/28/2012 10:01 AM, Mike Turquette wrote:
+> > Quoting Shawn Guo (2012-11-28 07:17:44)
+> >> On Wed, Nov 28, 2012 at 10:58:02PM +0800, Shawn Guo wrote:
+> >>> On Wed, Nov 28, 2012 at 07:16:12AM -0600, Mark Langsdorf wrote:
+> >>>> I'd
+> >>>> have to move most of the logic of hb_set_target() into
+> >>>> clk_highbank.c:clk_pll_set_rate() and then add extra logic for when
+> >>>> cpufreq is not enabled/loaded.
+> >>>
+> >>> You only need to move hb_voltage_change() into cpu clock's .set_rate()
+> >>> hook with no need of checking if cpufreq is enabled or not.
+> >>>
+> >> Need to also check whether frequency or voltage should be changed first
+> >> in .set_rate() though.
+> >>
+> >> Shawn
+> >>
 > > 
-> > Thanks, good catch, but why don't you simply do this:
-> > 
+> > The notifiers in the clk framework might be a better place for this than
+> > just simply hacking the logic into the .set_rate callback.
 > 
-> Just a matter of personal preference.
+> Unless the clk notifiers are different than the cpufreq notifiers, they
+> don't handle returning error conditions very well. And given that the
+> voltage change operation can fail (though it almost always succeeds on a
+> retry) I need to be able to handle and detect that error condition.
+> 
 
-Your patch: 1 files changed, 12 insertions(+), 4 deletions(-)
-My patch: 1 files changed, 1 insertions(+), 1 deletions(-)
+The notifier handler can handle the case where the transition fails (and
+needs to be retried).
 
-Both achieve exactly the same. That's not a matter of personal
-preference, that's the difference between a working solution and
-a good solution. In the kernel, we want the latter.
+Also you should check out the clk notifiers.  I think they handle
+failure decently.  If a notifer returns an error code then everything
+unrolls and the clk_set_rate operation aborts.
 
-> As a maintainer you can apply either 
-> patch you want. I guess you would prefer your approach and I have no 
-> objections to that :)
+Regards,
+Mike
 
-That's not the right kind of comment. Don't make it a habit.
-
-Thanks,
-Hans
-
+> > I haven't looked at the definition of hb_voltage_change but does the
+> > call graph make any clk api calls?  Are you talking over i2c to a
+> > regulator?  If so then you'll probably hit the same reentrancy problem I
+> > hit when trying to make a general solution.
 > 
-> > 
-> > >From 228445996bb75a44d16b6237eca6a0916d9b2d7e Mon Sep 17 00:00:00 2001
-> > From: "Hans J. Koch" <hjk@hansjkoch.de>
-> > Date: Tue, 27 Nov 2012 23:38:00 +0100
-> > Subject: [PATCH] uio: Fix warning: 'ret' might be used uninitialized
-> > 
-> > In two cases, the return value variable "ret" can be undefined.
-> > 
-> > Signed-off-by: Hans J. Koch <hjk@hansjkoch.de>
-> > ---
-> >  drivers/uio/uio.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
-> > index 5110f36..fc60e35 100644
-> > --- a/drivers/uio/uio.c
-> > +++ b/drivers/uio/uio.c
-> > @@ -263,7 +263,7 @@ static struct class uio_class = {
-> >   */
-> >  static int uio_dev_add_attributes(struct uio_device *idev)
-> >  {
-> > -	int ret;
-> > +	int ret = -ENOMEM;
-> >  	int mi, pi;
-> >  	int map_found = 0;
-> >  	int portio_found = 0;
+> I'm talking over a pl320 Interprocessor Communication Mailbox to a
+> separate core running it's own RTOS. The RTOS might speak i2c to a
+> regulator but it's a black box to me.
 > 
+> hb_voltage_change() doesn't make any clk api calls. It changes the
+> voltages, and then hb_set_target() makes clk api calls to change the
+> frequency.
 > 
-> 
-> -- 
-> With Best Regards,
-> Vitalii Demianets
-> 
-> 
+> --Mark Langsdorf
+> Calxeda, Inc.
