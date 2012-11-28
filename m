@@ -1,83 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072Ab2K1TbQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 14:31:16 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:54438 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755855Ab2K1TbL (ORCPT
+	id S1755899Ab2K1Td1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 14:33:27 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:50888 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754501Ab2K1TdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 14:31:11 -0500
-Date: Wed, 28 Nov 2012 20:31:06 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Dave Airlie <airlied@redhat.com>, Joe Perches <joe@perches.com>,
-        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] drm: tegra: Add maintainers entry
-Message-ID: <20121128193106.GC23444@avionic-0098.adnet.avionic-design.de>
-References: <1354130322-24509-1-git-send-email-thierry.reding@avionic-design.de>
- <50B66477.1070202@wwwdotorg.org>
+	Wed, 28 Nov 2012 14:33:25 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0lnxQi9hkpPO77W3"
-Content-Disposition: inline
-In-Reply-To: <50B66477.1070202@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:/jCTGhKGUD4yt5Pr+UX0wiJXd8Rqc4pkYSAnlUGoQhJ
- Do9vzGPpn0f28N8lQPmldLMRF7kRQlHs4BjJL0Q4En1el3igIS
- +vrhuIR0YEansJ95H+suJhGBwDi1thAiwIdSovl4Tq4UzFmSO+
- PcSzFijfwN1nqFzqVQthHQs3FYehw6HkrLlvP/dj/OZBL67CLg
- NxAmt+K1+GQvy7LsGBibEXQUBtt8By/zNj6mXk57RJFAuaqiqF
- vk9iA1kpZMPFZIrodfLji/0k0CH/zPaXkSi+6eJmj/CiSY283O
- gqc94+E1c/aBd+CoGRYnu+yt0xQwWTWcbYJQeEtRXelyPA7qWX
- Lq6id6EzJUV2O3oMhCzA+FOdNi3D/IVjedgaKoilW5XXRH5a1C
- df0S7mUO2aIilICAOCOixCIMFvdzY2G4xA=
+In-Reply-To: <20121128170625.GJ21266@phenom.dumpdata.com>
+References: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
+	<1353123563-3103-13-git-send-email-yinghai@kernel.org>
+	<20121128170625.GJ21266@phenom.dumpdata.com>
+Date: Wed, 28 Nov 2012 11:33:24 -0800
+X-Google-Sender-Auth: bhIic1X7Ywlw9jzLIRnRo_m_T4g
+Message-ID: <CAE9FiQVCf1u86VyuWhD+u2YyGfY6W1V7QjNXKyAU3Vuqi3mR6A@mail.gmail.com>
+Subject: Re: [PATCH v8 12/46] x86, mm: use pfn_range_is_mapped() with CPA
+From: Yinghai Lu <yinghai@kernel.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Nov 28, 2012 at 9:06 AM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+> On Fri, Nov 16, 2012 at 07:38:49PM -0800, Yinghai Lu wrote:
+>> We are going to map ram only, so under max_low_pfn_mapped,
+>> between 4g and max_pfn_mapped does not mean mapped at all.
+>
+> I think I know what you are saying but I am having a hard
+> time parsing it. Is this what you mean?
+>
+> "We check to see if the PFNs are under max_low_pfn_mapped or
+> between 4G and max_pfn_mapped. If they are not: then we
+> map them."  ?
 
---0lnxQi9hkpPO77W3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+No
 
-On Wed, Nov 28, 2012 at 12:22:31PM -0700, Stephen Warren wrote:
-> On 11/28/2012 12:18 PM, Thierry Reding wrote:
-> > Add myself as the maintainer of the NVIDIA Tegra DRM driver.
->=20
-> Aside from one comment below,
->=20
-> Acked-by: Stephen Warren <swarren@nvidia.com>
->=20
-> > +L:	dri-devel@lists.freedesktop.org
->=20
-> Should linux-tegra@vger.kernel.org also be CC'd so that everything
-> Tegra-related goes to one place?
+---
+We are going to map ram only in patch:
+        x86, mm: Only direct map addresses that are marked as E820_RAM
 
-Yes, good idea. I shall add it.
+so range under max_low_pfn_mapped, ranges between 4g and max_pfn_mapped
+could have holes in them and the holes will not be mapped.
 
-Thierry
-
---0lnxQi9hkpPO77W3
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQtmZ6AAoJEN0jrNd/PrOh2P4P/iyGzxhJWjzdac7nQw0bnXf1
-R7WMkqYOUGQNEbcKIEbiOmUFCBiYqAVIXdikEBfRWFbcrE3xlmWJ/aGQu2xg/SlD
-voMCIkmq8FOgMbGawtlRL9NMeJ59jqrMteZaKSbA3lf+d5UokMFzvLoZZp4lRE9p
-JmNUe8sSy0sCtCV9hZObhvbHcCwaPjgRGoDDCgKHEUiqH554u6+csljQVdYCpFhB
-CRsdK14RsFnOIxAPfZ2MZC0tzbuliRyJK/Gy4fLmEYBDem/9D6A6RuYQA/Rgyiln
-OlTJgURcTz9fWKP8me8YdJR3lFbLShnRDJHfA7I5ON/Jo9xhqXICm2dxCbftGujd
-DEBBu8BU9F8u4L/4JK8/RQV+tlYg5jIlD9KqnHaGoGvfLr6Lkf+AIb/3fMxkYv+J
-cJtzvx5IdSAUKA93Ph/1NaUU7C8GWtWkxJ46fiNqS7a/V606zWVk0Vy7EsB7zWht
-jovd/Bv3EdKJwAebYR24arEHwRuglPHCKOlc/7bFVO1pknidyO33rOEB0c+ZOtI/
-r8QO0iIlaPUTJJcLx734OdLalxfIhiAMjpCiZ9Zu8r/9GhZQuxJL+t3HKLk5Hzsa
-4qv5bVRvLxtaiemG16hBy3ScnlGmRHpy9PknTFpoouDMMNCbc3DUtg4pkaqHsLCN
-Mx5u89UiGRPSynjfkCza
-=Kuyo
------END PGP SIGNATURE-----
-
---0lnxQi9hkpPO77W3--
+Use pfn_range_is_mapped() to check if the range is mapped.
+---
