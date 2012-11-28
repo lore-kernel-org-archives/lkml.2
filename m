@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932232Ab2K1Nx5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 08:53:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49585 "EHLO mx1.redhat.com"
+	id S932287Ab2K1NyM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 08:54:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51318 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932109Ab2K1Nxw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 08:53:52 -0500
+	id S932228Ab2K1NyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 08:54:09 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@redhat.com>,
@@ -15,17 +15,18 @@ Cc: Jiri Olsa <jolsa@redhat.com>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Namhyung Kim <namhyung@kernel.org>
-Subject: [PATCH 09/14] perf diff: Update perf diff documentation for multiple data comparison
-Date: Wed, 28 Nov 2012 14:52:44 +0100
-Message-Id: <1354110769-2998-10-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 12/14] perf diff: Display data file info ahead of the diff output
+Date: Wed, 28 Nov 2012 14:52:47 +0100
+Message-Id: <1354110769-2998-13-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1354110769-2998-1-git-send-email-jolsa@redhat.com>
 References: <1354110769-2998-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Updating perf diff documentation to include multiple perf data
-files comparison.
+Data files are referenced through the index of the file
+on the command line. Adding list of data files for each
+index to ease up navigation.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
@@ -36,135 +37,43 @@ Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/Documentation/perf-diff.txt | 73 +++++++++++++++++++++++++++++-----
- 1 file changed, 64 insertions(+), 9 deletions(-)
+ tools/perf/builtin-diff.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
-index 194f37d..ab5b79e 100644
---- a/tools/perf/Documentation/perf-diff.txt
-+++ b/tools/perf/Documentation/perf-diff.txt
-@@ -3,17 +3,17 @@ perf-diff(1)
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index 81f7529..50e1ea3 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -632,6 +632,19 @@ static void hists__process(struct hists *hists)
+ 	hists__fprintf(hists, true, 0, 0, stdout);
+ }
  
- NAME
- ----
--perf-diff - Read two perf.data files and display the differential profile
-+perf-diff - Read perf.data files and display the differential profile
- 
- SYNOPSIS
- --------
- [verse]
--'perf diff' [oldfile] [newfile]
-+'perf diff' [baseline file] [data file1] [[data file2] ... ]
- 
- DESCRIPTION
- -----------
--This command displays the performance difference amongst two perf.data files
--captured via perf record.
-+This command displays the performance difference amongst two or more perf.data
-+files captured via perf record.
- 
- If no parameters are passed it will assume perf.data.old and perf.data.
- 
-@@ -91,6 +91,59 @@ OPTIONS
- --formula::
-         Show formula for given computation.
- 
-+COMPARISON
-+----------
-+The comparison is governed by the baseline file. The baseline perf.data
-+file is iterated for samples. All other perf.data files specified on
-+the command line are searched for the baseline sample pair. If the pair
-+is found, specified computation is made and result is displayed.
++static void data_fprintf(void)
++{
++	struct diff_data *d;
++	int i;
 +
-+All samples from non-baseline perf.data files, that do not match any
-+baseline entry, are displayed with empty space within baseline column
-+and possible computation results (delta) in their related column.
++	fprintf(stdout, "# Data files:\n");
 +
-+Example files samples:
-+- file A with samples f1, f2, f3, f4,    f6
-+- file B with samples     f2,     f4, f5
-+- file C with samples f1, f2,         f5
++	for_each_data(i, d)
++		fprintf(stdout, "#  [%d] %s\n", d->idx, d->file);
 +
-+Example output:
-+  x - computation takes place for pair
-+  b - baseline sample percentage
++	fprintf(stdout, "#\n");
++}
 +
-+- perf diff A B C
+ static int data_process(void)
+ {
+ 	struct perf_evlist *evlist_base = data[0].session->evlist;
+@@ -662,6 +675,9 @@ static int data_process(void)
+ 		fprintf(stdout, "%s# Event '%s'\n#\n", first ? "" : "\n",
+ 			perf_evsel__name(evsel_base));
+ 
++		if (data_cnt > 2)
++			data_fprintf();
 +
-+  baseline/A compute/B compute/C  samples
-+  ---------------------------------------
-+  b                    x          f1
-+  b          x         x          f2
-+  b                               f3
-+  b          x                    f4
-+  b                               f6
-+             x         x          f5
-+
-+- perf diff B A C
-+
-+  baseline/B compute/A compute/C  samples
-+  ---------------------------------------
-+  b          x         x          f2
-+  b          x                    f4
-+  b                    x          f5
-+             x         x          f1
-+             x                    f3
-+             x                    f6
-+
-+- perf diff C B A
-+
-+  baseline/C compute/B compute/A  samples
-+  ---------------------------------------
-+  b                    x          f1
-+  b          x         x          f2
-+  b          x                    f5
-+                       x          f3
-+             x         x          f4
-+                       x          f6
-+
- COMPARISON METHODS
- ------------------
- delta
-@@ -100,7 +153,7 @@ If specified the 'Delta' column is displayed with value 'd' computed as:
-   d = A->period_percent - B->period_percent
+ 		hists__process(&evsel_base->hists);
  
- with:
--  - A/B being matching hist entry from first/second file specified
-+  - A/B being matching hist entry from data/baseline file specified
-     (or perf.data/perf.data.old) respectively.
- 
-   - period_percent being the % of the hist entry period value within
-@@ -113,24 +166,26 @@ If specified the 'Ratio' column is displayed with value 'r' computed as:
-   r = A->period / B->period
- 
- with:
--  - A/B being matching hist entry from first/second file specified
-+  - A/B being matching hist entry from data/baseline file specified
-     (or perf.data/perf.data.old) respectively.
- 
-   - period being the hist entry period value
- 
--wdiff
--~~~~~
-+wdiff:WEIGHT-B,WEIGHT-A
-+~~~~~~~~~~~~~~~~~~~~~~~
- If specified the 'Weighted diff' column is displayed with value 'd' computed as:
- 
-    d = B->period * WEIGHT-A - A->period * WEIGHT-B
- 
--  - A/B being matching hist entry from first/second file specified
-+  - A/B being matching hist entry from data/baseline file specified
-     (or perf.data/perf.data.old) respectively.
- 
-   - period being the hist entry period value
- 
-   - WEIGHT-A/WEIGHT-B being user suplied weights in the the '-c' option
-     behind ':' separator like '-c wdiff:1,2'.
-+    - WIEGHT-A being the weight of the data file
-+    - WIEGHT-B being the weight of the baseline data file
- 
- SEE ALSO
- --------
+ 		first = false;
 -- 
 1.7.11.7
 
