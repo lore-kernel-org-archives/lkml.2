@@ -1,77 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932399Ab2K1Vaj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 16:30:39 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:39740 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754831Ab2K1Vah (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 16:30:37 -0500
-Date: Thu, 29 Nov 2012 00:29:52 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: devel@driverdev.osuosl.org,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Prabhakar Lad <prabhakar.lad@ti.com>,
-        Hans Verkuil <hansverk@cisco.com>,
-        Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        LMML <linux-media@vger.kernel.org>
-Subject: Re: [PATCH v3 0/9] Media Controller capture driver for DM365
-Message-ID: <20121128212952.GP11248@mwanda>
-References: <1354099329-20722-1-git-send-email-prabhakar.lad@ti.com>
- <20121128114537.GN11248@mwanda>
- <201211281256.10839.hansverk@cisco.com>
- <20121128122227.GX6186@mwanda>
- <50B6663C.6080800@samsung.com>
+	id S932470Ab2K1Vaw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 16:30:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46365 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932404Ab2K1Vat (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 16:30:49 -0500
+Date: Wed, 28 Nov 2012 16:29:40 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file.rdu.redhat.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Jens Axboe <axboe@kernel.dk>, Jeff Chua <jeff.chua.linux@gmail.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH] Introduce a method to catch mmap_region (was: Recent
+ kernel "mount" slow)
+In-Reply-To: <CA+55aFyXS0nkDB95c3pcdg1ctrNnUGO8aDuRNhKSEg3JrOqWhA@mail.gmail.com>
+Message-ID: <Pine.LNX.4.64.1211281540200.5283@file.rdu.redhat.com>
+References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com>
+ <CA+55aFyvT3R3kgwJzp9mY5eE1fwMnzXnmBpHSbqjd-eJRVDkJw@mail.gmail.com>
+ <50AF7901.20401@kernel.dk> <CAAJw_ZvXGKcjfOAS_tRdXJ9SjpCKw1t7rNt+Q=ieCkVJwN2qcg@mail.gmail.com>
+ <Pine.LNX.4.64.1211241555470.4300@file.rdu.redhat.com>
+ <CAAJw_ZvUqRmCCQ5-2PdFPRyfdzZMuphGU=hgAjUOHGk=n9Mheg@mail.gmail.com>
+ <CAAJw_ZuJXnAz1ukBwQa3xNbQaL1KUBSrbQMK2hn-7D6Ar1p3fQ@mail.gmail.com>
+ <50B46E05.70906@kernel.dk> <CAAJw_ZsYuLCwCTc6U=ELO_PvyjnVKQdkPke2enfzm6zOeWAqjA@mail.gmail.com>
+ <50B4B313.3030707@kernel.dk> <Pine.LNX.4.64.1211272252260.18338@file.rdu.redhat.com>
+ <50B5CC5A.8060607@kernel.dk> <Pine.LNX.4.64.1211281222410.11599@file.rdu.redhat.com>
+ <CA+55aFx4zYnEsUyGJurBjB0XZ0AgmyKqW-+KWVDvma3w6csnHQ@mail.gmail.com>
+ <Pine.LNX.4.64.1211281422360.26389@file.rdu.redhat.com>
+ <CA+55aFyXdtVJ=SG9bU4qfggCR6DPvz4vOFYxKJZx_WdyFv+3Fw@mail.gmail.com>
+ <CA+55aFyXS0nkDB95c3pcdg1ctrNnUGO8aDuRNhKSEg3JrOqWhA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50B6663C.6080800@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 08:30:04PM +0100, Sylwester Nawrocki wrote:
-> On 11/28/2012 01:22 PM, Dan Carpenter wrote:
-> > In the end this is just a driver, and I don't especially care.  But
-> > it's like not just this one which makes me frustrated.  I really
-> > believe in linux-next and I think everything should spend a couple
-> > weeks there before being merged.
+
+
+On Wed, 28 Nov 2012, Linus Torvalds wrote:
+
+> On Wed, Nov 28, 2012 at 12:03 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > mmap() is in *no* way special. The exact same thing happens for
+> > regular read/write. Yet somehow the mmap code is special-cased, while
+> > the normal read-write code is not.
 > 
-> Couple of weeks in linux-next plus a couple of weeks of final patch
-> series version awaiting to being reviewed and picked up by a maintainer
-> makes almost entire kernel development cycle. These are huge additional
-> delays, especially in the embedded world. Things like these certainly
-> aren't encouraging for moving over from out-of-tree to the mainline
-> development process. And in this case we are talking only about merging
-> driver to the staging tree...
+> I just double-checked, because it's been a long time since I actually
+> looked at the code.
+> 
+> But yeah, block device read/write uses the pure page cache functions.
+> IOW, it has the *exact* same IO engine as mmap() would have.
+> 
+> So here's my suggestion:
+> 
+>  - get rid of *all* the locking in aio_read/write and the splice paths
+>  - get rid of all the stupid mmap games
+> 
+>  - instead, add them to the functions that actually use
+> "blkdev_get_block()" and "blkdev_get_blocks()" and nowhere else.
+> 
+>    That's a fairly limited number of functions:
+> blkdev_{read,write}page(), blkdev_direct_IO() and
+> blkdev_write_{begin,end}()
+> 
+> Doesn't that sounds simpler? And more logical: it protects the actual
+> places that use the block size of the device.
+> 
+> I dunno. Maybe there is some fundamental reason why the above is
+> broken, but it seems to be a much simpler approach. Sure, you need to
+> guarantee that the people who get the write-lock cannot possibly cause
+> IO while holding it, but since the only reason to get the write lock
+> would be to change the block size, that should be pretty simple, no?
+> 
+> Yeah, yeah, I'm probably missing something fundamental, but the above
+> sounds like the simple approach to fixing things. Aiming for having
+> the block size read-lock be taken by the things that pass in the
+> block-size itself.
+> 
+> It would be nice for things to be logical and straightforward.
+> 
+>                    Linus
 
-Yeah.  A couple weeks is probably too long.  But I think a week is
-totally reasonable.
 
-You have the process wrong.  The maintainer reviews it first, merges
-it into his -next git tree.  It sits in linux-next for a bit.  The
-merge window opens up.  It is merged.  It gets tested for 3 months.
-It is released.
+The problem with this approach is that it is very easy to miss points 
+where it is assumed that the block size doesn't change - and if you miss a 
+point, it results in a hidden bug that has a little possibility of being 
+found.
 
-It should work as a continuous even flow.  It shouldn't be a rush to
-submit drivers right before the merge window opens.  It's not hard,
-you can submit a driver to linux-next at any time.  It magically
-flows through the process and is released some months later.
+For example, __block_write_full_page and __block_write_begin do
+	if (!page_has_buffers(page)) { create_empty_buffers... }
+and then they do
+	WARN_ON(bh->b_size != blocksize)
+	err = get_block(inode, block, bh, 1)
 
-It does suck to add a 3 month delay for people who miss the cut off.
-Don't wait until the last minute.  In the embedded world you can
-use git cherry-pick to get the driver from linux-next.
+... so if the buffers were left over from some previous call to 
+create_empty_buffers with a different blocksize, that WARN_ON is trigged. 
+And it's not only a harmless warning - now bh->b_size is left set to the 
+old block size, but bh->b_blocknr is set to a number, that was calculated 
+according to the new block size - and when you submit that buffer with 
+submit_bh, it is written to the wrong place!
 
-regards,
-dan carpenter
+Now, prove that there are no more bugs like this.
 
+
+Locking the whole read/write/mmap operations is crude, but at least it can 
+be done without thorough review of all the memory management code.
+
+Mikulas
