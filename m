@@ -1,88 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756317Ab2K1WlC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 17:41:02 -0500
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:39024 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755996Ab2K1WlA (ORCPT
+	id S1756356Ab2K1Wly (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 17:41:54 -0500
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:44749 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754897Ab2K1Wlv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 17:41:00 -0500
-Message-ID: <50B692F3.4000408@linux.vnet.ibm.com>
-Date: Thu, 29 Nov 2012 06:40:51 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Gleb Natapov <gleb@redhat.com>, Avi Kivity <avi@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 3/3] KVM: x86: improve reexecute_instruction
-References: <50AAC77C.8040505@linux.vnet.ibm.com> <50AAC7F9.7050305@linux.vnet.ibm.com> <20121126224105.GB10634@amt.cnet> <50B433D0.8060107@linux.vnet.ibm.com> <20121128141230.GI928@redhat.com> <50B626D7.7070608@linux.vnet.ibm.com> <20121128215750.GA10039@amt.cnet>
-In-Reply-To: <20121128215750.GA10039@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 28 Nov 2012 17:41:51 -0500
+Message-ID: <1354142007.26955.352.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v3 1/4] ACPI: Support system notify handler via
+ .sys_notify
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org, lenb@kernel.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com
+Date: Wed, 28 Nov 2012 15:33:27 -0700
+In-Reply-To: <12655874.tBYV6dRMny@vostro.rjw.lan>
+References: <1352406227-32629-1-git-send-email-toshi.kani@hp.com>
+	 <5550104.xSe1fX9Ich@vostro.rjw.lan>
+	 <1354137803.26955.325.camel@misato.fc.hp.com>
+	 <12655874.tBYV6dRMny@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-x-cbid: 12112822-1396-0000-0000-0000023A57A6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2012 05:57 AM, Marcelo Tosatti wrote:
-> On Wed, Nov 28, 2012 at 10:59:35PM +0800, Xiao Guangrong wrote:
->> On 11/28/2012 10:12 PM, Gleb Natapov wrote:
->>> On Tue, Nov 27, 2012 at 11:30:24AM +0800, Xiao Guangrong wrote:
->>>> On 11/27/2012 06:41 AM, Marcelo Tosatti wrote:
->>>>
->>>>>>
->>>>>> -	return false;
->>>>>> +again:
->>>>>> +	page_fault_count = ACCESS_ONCE(vcpu->kvm->arch.page_fault_count);
->>>>>> +
->>>>>> +	/*
->>>>>> +	 * if emulation was due to access to shadowed page table
->>>>>> +	 * and it failed try to unshadow page and re-enter the
->>>>>> +	 * guest to let CPU execute the instruction.
->>>>>> +	 */
->>>>>> +	kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa));
->>>>>> +	emulate = vcpu->arch.mmu.page_fault(vcpu, cr3, PFERR_WRITE_MASK, false);
->>>>>
->>>>> Can you explain what is the objective here?
->>>>>
->>>>
->>>> Sure. :)
->>>>
->>>> The instruction emulation is caused by fault access on cr3. After unprotect
->>>> the target page, we call vcpu->arch.mmu.page_fault to fix the mapping of cr3.
->>>> if it return 1, mmu can not fix the mapping, we should report the error,
->>>> otherwise it is good to return to guest and let it re-execute the instruction
->>>> again.
->>>>
->>>> page_fault_count is used to avoid the race on other vcpus, since after we
->>>> unprotect the target page, other cpu can enter page fault path and let the
->>>> page be write-protected again.
->>>>
->>>> This way can help us to detect all the case that mmu can not be fixed.
->>>>
->>> Can you write this in a comment above vcpu->arch.mmu.page_fault()?
->>
->> Okay, if Marcelo does not object this way. :)
+> > > > > > I think it has some challenge as well.  We bind an ACPI driver with
+> > > > > > device_register(), which calls device_add()-> kobject_add().  So, all
+> > > > > > non-present ACPI device objects will show up in sysfs, unless we can
+> > > > > > change the core.  This will change user interface.  There can be quite
+> > > > > > many non-present devices in ACPI namespace depending on FW
+> > > > > > implementation.
+> > > > > 
+> > > > > If additional devices appear in sysfs, that's not a problem.  If there
+> > > > > were fewer of them, that would be a real one. :-)
+> > > > 
+> > > > I see.  I guess this means that once we expose all non-present devices
+> > > > in sysfs, we cannot go back to the current way.  So, we need to be very
+> > > > careful.  Anyway, this model requires separate handling for static ACPI
+> > > > [1] and dynamic ACPI [2], which may make the state model complicated.
+> > > > 
+> > > > 1. Static ACPI - No creation / deletion of acpi_device at hot-plug.
+> > > > 2. Dynamic ACPI - Create acpi_device at hot-add, delete at hot-remove.
+> > > 
+> > > Sure.  The complication here is that we'll need to handle the removal of
+> > > a bunch of struct acpi_device objects when a whole table goes away.
+> > > 
+> > > However, first, we don't seem to handle table unloading now.  At least
+> > > acpi_unload_parent_table() is not called from anywhere as far as I can
+> > > say.  Second, we'll need to handle the removal of struct acpi_device objects
+> > > _anyway_ on table unload, this way or another.
+> > 
+> > AML is the one that requests loading/unloading of SSDT for dynamic ACPI.
+> > In hot-add, _Lxx method executes AML_LOAD_OP or AML_LOAD_TABLE_OP to
+> > load SSDT and then sends a notification to the OS.  In hot-remove, _EJ0
+> > method executes AML_UNLOAD_OP to unload SSDT.  Of course, ACPICA does
+> > the actual work on behalf of AML.  But this is not visible to ACPI core
+> > or drivers, unless it checks ACPI namespace to see if any device objects
+> > disappeared after _EJ0.
 > 
-> I do object, since it is possible to detect precisely the condition by 
-> storing which gfns have been cached.
+> Oh, we have a handler for that event, but we don't really use it. :-)
 > 
-> Then, Xiao, you need a way to handle large read-only sptes.
+> And I wonder what happens to the struct acpi_device objects associated with
+> the ACPI handles in the table being unloaded?
 
-Sorry, Marcelo, i am still confused why read-only sptes can not work
-under this patch?
+If we use an ACPI handle that does not associate with a device object,
+ACPICA returns AE_NOT_FOUND or AE_NOT_EXIST.  But, we should remove
+acpi_device that does not have its associated ACPI object.  Currently,
+we create acpi_device on hot-add and remove it on hot-remove, so it is
+OK.  But if we start creating acpi_device objects for non-present
+devices, we need to worry about if acpi_device objects indeed have their
+associated ACPI objects.  That's the complication I mentioned above.
 
-The code after read-only large spte is is:
-
-+		if ((level > PT_PAGE_TABLE_LEVEL &&
-+		   has_wrprotected_page(vcpu->kvm, gfn, level)) ||
-+		      mmu_need_write_protect(vcpu, gfn, can_unsync)) {
- 			pgprintk("%s: found shadow page for %llx, marking ro\n",
- 				 __func__, gfn);
- 			ret = 1;
-
-It return 1, then reexecute_instruction return 0. It is the same as without
-readonly large-spte.
-
+Thanks,
+-Toshi
 
