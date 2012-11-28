@@ -1,81 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755741Ab2K1UNv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 15:13:51 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:36797 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754882Ab2K1UNt (ORCPT
+	id S932174Ab2K1UPq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 15:15:46 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:56181 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753466Ab2K1UPn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 15:13:49 -0500
+	Wed, 28 Nov 2012 15:15:43 -0500
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFyXdtVJ=SG9bU4qfggCR6DPvz4vOFYxKJZx_WdyFv+3Fw@mail.gmail.com>
-References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com>
- <20121120180949.GG1408@quack.suse.cz> <CAAJw_ZsQdLO5qLdGPzmPf+N2D6CZw+S-4mvRGnxfARL71LuRaw@mail.gmail.com>
- <CAAJw_ZsAyB0z0TF1mqPz1Z+H+tg7W6LVzNLKf0BkuF3u8TTMuQ@mail.gmail.com>
- <CA+55aFyvT3R3kgwJzp9mY5eE1fwMnzXnmBpHSbqjd-eJRVDkJw@mail.gmail.com>
- <50AF7901.20401@kernel.dk> <CAAJw_ZvXGKcjfOAS_tRdXJ9SjpCKw1t7rNt+Q=ieCkVJwN2qcg@mail.gmail.com>
- <Pine.LNX.4.64.1211241555470.4300@file.rdu.redhat.com> <CAAJw_ZvUqRmCCQ5-2PdFPRyfdzZMuphGU=hgAjUOHGk=n9Mheg@mail.gmail.com>
- <CAAJw_ZuJXnAz1ukBwQa3xNbQaL1KUBSrbQMK2hn-7D6Ar1p3fQ@mail.gmail.com>
- <50B46E05.70906@kernel.dk> <CAAJw_ZsYuLCwCTc6U=ELO_PvyjnVKQdkPke2enfzm6zOeWAqjA@mail.gmail.com>
- <50B4B313.3030707@kernel.dk> <Pine.LNX.4.64.1211272252260.18338@file.rdu.redhat.com>
- <50B5CC5A.8060607@kernel.dk> <Pine.LNX.4.64.1211281222410.11599@file.rdu.redhat.com>
- <CA+55aFx4zYnEsUyGJurBjB0XZ0AgmyKqW-+KWVDvma3w6csnHQ@mail.gmail.com>
- <Pine.LNX.4.64.1211281422360.26389@file.rdu.redhat.com> <CA+55aFyXdtVJ=SG9bU4qfggCR6DPvz4vOFYxKJZx_WdyFv+3Fw@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 28 Nov 2012 12:13:27 -0800
-X-Google-Sender-Auth: sDql_9u7sYM3Asa5ELsQiRObqr8
-Message-ID: <CA+55aFyXS0nkDB95c3pcdg1ctrNnUGO8aDuRNhKSEg3JrOqWhA@mail.gmail.com>
-Subject: Re: [PATCH] Introduce a method to catch mmap_region (was: Recent
- kernel "mount" slow)
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Jeff Chua <jeff.chua.linux@gmail.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+In-Reply-To: <F9E001219150CB45BEDC82A650F360C90146A2F8@G9W0717.americas.hpqcorp.net>
+References: <F9E001219150CB45BEDC82A650F360C90146A2F8@G9W0717.americas.hpqcorp.net>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 28 Nov 2012 13:15:21 -0700
+Message-ID: <CAErSpo7VvWreoTj7MUE3cMGaM1dVMfZymO=1P-m8E-joRSgE7g@mail.gmail.com>
+Subject: Re: [PATCH v3] PCI-AER: Do not report successful error recovery for
+ devices with AER-unaware drivers
+To: "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linasvepstas@gmail.com" <linasvepstas@gmail.com>,
+        Myron Stowe <myron.stowe@gmail.com>,
+        "Ortiz, Lance E" <lance.oritz@hp.com>,
+        Huang Ying <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        "Patterson, Andrew D (LeftHand Networks)" <andrew.patterson@hp.com>,
+        Zhang Yanmin <yanmin.zhang@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 12:03 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+On Sat, Nov 17, 2012 at 4:47 AM, Pandarathil, Vijaymohan R
+<vijaymohan.pandarathil@hp.com> wrote:
+> When an error is detected on a PCIe device which does not have an
+> AER-aware driver, prevent AER infrastructure from reporting
+> successful error recovery.
 >
-> mmap() is in *no* way special. The exact same thing happens for
-> regular read/write. Yet somehow the mmap code is special-cased, while
-> the normal read-write code is not.
+> This is because the report_error_detected() function that gets
+> called in the first phase of recovery process allows forward
+> progress even when the driver for the device does not have AER
+> capabilities. It seems that all callbacks (in pci_error_handlers
+> structure) registered by drivers that gets called during error
+> recovery are not mandatory. So the intention of the infrastructure
+> design seems to be to allow forward progress even when a specific
+> callback has not been registered by a driver. However, if error
+> handler structure itself has not been registered, it doesn't make
+> sense to allow forward progress.
+>
+> As a result of the current design, in the case of a single device
+> having an AER-unaware driver or in the case of any function in a
+> multi-function card having an AER-unaware driver, a successful
+> recovery is reported.
+>
+> Typical scenario this happens is when a PCI device is detached
+> from a KVM host and the pci-stub driver on the host claims the
+> device. The pci-stub driver does not have error handling capabilities
+> but the AER infrastructure still reports that the device recovered
+> successfully.
+>
+> The changes proposed here leaves the device(s)in an unrecovered state
+> if the driver for the device or for any device in the subtree
+> does not have error handler structure registered. This reflects
+> the true state of the device and prevents any partial recovery (or no
+> recovery at all) reported as successful.
+>
+>
+> v3:
+>   - Fixed a checkpatch/build issue
+>
+> v2:
+>   - Made changes so that all devices in the subtree have the error
+>     state set correctly.
+>
+>
+> Reviewed-by: Linas Vepstas <linasvepstas <at> gmail.com>
+> Reviewed-by: Myron Stowe <mstowe <at> redhat.com>
+> Reviewed-by: Bjorn Helgaas <bhelgaas <at> google.com>
+> Signed-off-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
 
-I just double-checked, because it's been a long time since I actually
-looked at the code.
+I added this to my -next branch, which will be merged for v3.8.
 
-But yeah, block device read/write uses the pure page cache functions.
-IOW, it has the *exact* same IO engine as mmap() would have.
+Please double-check that I resolved the merge conflict correctly.  It
+should show up here in the next few minutes:
 
-So here's my suggestion:
+http://git.kernel.org/?p=linux/kernel/git/helgaas/pci.git;a=shortlog;h=refs/heads/next
 
- - get rid of *all* the locking in aio_read/write and the splice paths
- - get rid of all the stupid mmap games
-
- - instead, add them to the functions that actually use
-"blkdev_get_block()" and "blkdev_get_blocks()" and nowhere else.
-
-   That's a fairly limited number of functions:
-blkdev_{read,write}page(), blkdev_direct_IO() and
-blkdev_write_{begin,end}()
-
-Doesn't that sounds simpler? And more logical: it protects the actual
-places that use the block size of the device.
-
-I dunno. Maybe there is some fundamental reason why the above is
-broken, but it seems to be a much simpler approach. Sure, you need to
-guarantee that the people who get the write-lock cannot possibly cause
-IO while holding it, but since the only reason to get the write lock
-would be to change the block size, that should be pretty simple, no?
-
-Yeah, yeah, I'm probably missing something fundamental, but the above
-sounds like the simple approach to fixing things. Aiming for having
-the block size read-lock be taken by the things that pass in the
-block-size itself.
-
-It would be nice for things to be logical and straightforward.
-
-                   Linus
+>  drivers/pci/pcie/aer/aerdrv.h      |  5 ++++-
+>  drivers/pci/pcie/aer/aerdrv_core.c | 21 ++++++++++++++++++---
+>  include/linux/pci.h                |  3 +++
+>  3 files changed, 25 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/pci/pcie/aer/aerdrv.h b/drivers/pci/pcie/aer/aerdrv.h
+> index 94a7598..22f840f 100644
+> --- a/drivers/pci/pcie/aer/aerdrv.h
+> +++ b/drivers/pci/pcie/aer/aerdrv.h
+> @@ -87,6 +87,9 @@ struct aer_broadcast_data {
+>  static inline pci_ers_result_t merge_result(enum pci_ers_result orig,
+>                 enum pci_ers_result new)
+>  {
+> +       if (new == PCI_ERS_RESULT_NO_AER_DRIVER)
+> +               return PCI_ERS_RESULT_NO_AER_DRIVER;
+> +
+>         if (new == PCI_ERS_RESULT_NONE)
+>                 return orig;
+>
+> @@ -97,7 +100,7 @@ static inline pci_ers_result_t merge_result(enum pci_ers_result orig,
+>                 break;
+>         case PCI_ERS_RESULT_DISCONNECT:
+>                 if (new == PCI_ERS_RESULT_NEED_RESET)
+> -                       orig = new;
+> +                       orig = PCI_ERS_RESULT_NEED_RESET;
+>                 break;
+>         default:
+>                 break;
+> diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
+> index 9f80cb0..b67f91a 100644
+> --- a/drivers/pci/pcie/aer/aerdrv_core.c
+> +++ b/drivers/pci/pcie/aer/aerdrv_core.c
+> @@ -232,11 +232,26 @@ static int report_error_detected(struct pci_dev *dev, void *data)
+>                                    dev->driver ?
+>                                    "no AER-aware driver" : "no driver");
+>                 }
+> -               return 0;
+> +
+> +               /*
+> +                * If there's any device in the subtree that does not
+> +                * have an error_detected callback, returning
+> +                * PCI_ERS_RESULT_NO_AER_DRIVER prevents calling of
+> +                * the subsequent mmio_enabled/slot_reset/resume
+> +                * callbacks of "any" device in the subtree. All the
+> +                * devices in the subtree are left in the error state
+> +                * without recovery.
+> +                */
+> +
+> +               if (!(dev->hdr_type & PCI_HEADER_TYPE_BRIDGE))
+> +                       vote = PCI_ERS_RESULT_NO_AER_DRIVER;
+> +               else
+> +                       vote = PCI_ERS_RESULT_NONE;
+> +       } else {
+> +               err_handler = dev->driver->err_handler;
+> +               vote = err_handler->error_detected(dev, result_data->state);
+>         }
+>
+> -       err_handler = dev->driver->err_handler;
+> -       vote = err_handler->error_detected(dev, result_data->state);
+>         result_data->result = merge_result(result_data->result, vote);
+>         return 0;
+>  }
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index ab17a08..c458602 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -540,6 +540,9 @@ enum pci_ers_result {
+>
+>         /* Device driver is fully recovered and operational */
+>         PCI_ERS_RESULT_RECOVERED = (__force pci_ers_result_t) 5,
+> +
+> +       /* No AER capabilities registered for the driver */
+> +       PCI_ERS_RESULT_NO_AER_DRIVER = (__force pci_ers_result_t) 6,
+>  };
+>
+>  /* PCI bus error event callbacks */
+> --
+> 1.7.11.3
+>
