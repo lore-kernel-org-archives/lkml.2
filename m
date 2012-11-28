@@ -1,160 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755024Ab2K1NvR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 08:51:17 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58474 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754698Ab2K1NvP (ORCPT
+	id S1754986Ab2K1Nxi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 08:53:38 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19251 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753375Ab2K1Nxg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 08:51:15 -0500
+	Wed, 28 Nov 2012 08:53:36 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 28 Nov 2012 05:53:25 -0800
+Message-ID: <50B61845.6060102@nvidia.com>
+Date: Wed, 28 Nov 2012 15:57:25 +0200
+From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <2254856.YsOm9y7BK1@vostro.rjw.lan>
-References: <1353761958-12810-1-git-send-email-ming.lei@canonical.com>
-	<5434404.G1ERYjuorE@vostro.rjw.lan>
-	<CACVXFVP=3s3pawyEbogjb=PfbSeD1B+LFk7g04FAMkGuXDQUbQ@mail.gmail.com>
-	<2254856.YsOm9y7BK1@vostro.rjw.lan>
-Date: Wed, 28 Nov 2012 21:51:13 +0800
-Message-ID: <CACVXFVN9RSU+j48cDVqc5mL=++y0BLc58BBRSxa_OWysysqQeg@mail.gmail.com>
-Subject: Re: [PATCH v6 2/6] PM / Runtime: introduce pm_runtime_set_memalloc_noio()
-From: Ming Lei <ming.lei@canonical.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oneukum@suse.de>, Minchan Kim <minchan@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jens Axboe <axboe@kernel.dk>, "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Lucas Stach <dev@lynxeye.de>
+CC: Dave Airlie <airlied@gmail.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arto Merilainen <amerilainen@nvidia.com>
+Subject: Re: [RFC v2 8/8] drm: tegra: Add gr2d device
+References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com>  <1353935954-13763-9-git-send-email-tbergstrom@nvidia.com>  <CAPM=9tzvt3J6D3zLPV97w629q62CNhAxX8V+_JZ6kmXxxz5fVg@mail.gmail.com>  <50B46336.8030605@nvidia.com>  <CAPM=9txCuPJcFAfD7Hu5o2BVFK=pVah7B8HhG0ctLCyFPwNEnA@mail.gmail.com>  <50B476E1.4070403@nvidia.com>  <CAPM=9tysiK6LgnQdAwGSYfxnQfgcfRm0+X2tPSAEDxUPt-QZGA@mail.gmail.com>  <50B47DA8.60609@nvidia.com>	<1354011776.1479.31.camel@tellur>  <20121127103739.GA3329@avionic-0098.adnet.avionic-design.de>  <50B4A483.8030305@nvidia.com>  <CAPM=9tz=_0Drx3=Me3EQdPgBvYVGzs6Gnqaw6RBaTLsCG24RAg@mail.gmail.com>  <50B60EFF.1050703@nvidia.com> <1354109602.1479.66.camel@tellur>
+In-Reply-To: <1354109602.1479.66.camel@tellur>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 6:06 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->
-> Well, it may be unfrequent, but does it mean it has to do things that may
-> be avoided (ie. walking the children of every node in the path in some cases)?
+On 28.11.2012 15:33, Lucas Stach wrote:
+> So this is obviously wrong. Userspace has to allocate a pushbuffer from
+> the kernel just as every other buffer, then map it into it's own address
+> space to push in commands. At submit time of the pushbuf kernel has to
+> make sure that userspace is not able to access the memory any more, i.e.
+> kernel shoots down the vma or pagetable of the vma. To keep overhead low
+> and not do any blocking you can just keep some pushbufs around for one
+> channel and switch over the pagetable entries to the next free buffer,
+> just make sure that userspace is never able to tamper with a buffer as
+> long as the gpu isn't done with it.
 
-I agree so without introducing extra cost, :-)
+That's really not something dma-buf APIs are equipped to handle. We need
+something to ensure user space doesn't have the buffer mapped (either
+return error if has, or zap the mapping), something to ensure user space
+cannot mmap the buffer, and something to revert this all once we're done.
 
-> I don't really think that the counters would cost us that much anyway.
+We could add these as special ops to tegradrm dmabuf code for now, and
+assume that command streams are always allocated by tegradrm. Now we
+allow any dmabuf to be used as buffers for command streams.
 
-On ARM v7, sizeof(struct device) becomes 376 from 368 after introducing
-'unsigned int            noio_cnt;' to 'struct dev_pm_info', and total memory
-increases about 3752bytes in a small configuration(about 494 device instance).
-The actual memory increase should be more than the data because 'struct device'
-is generally embedded into other concrete device structure.
+And, with IOMMU I don't think we would need any of this. I guess we need
+to press the gas pedal on figuring out how to enable that for tegradrm
+on Tegra30.
 
->> Also looks the current implementation of pm_runtime_set_memalloc_noio()
->> is simple and clean enough with the flag, IMO.
->
-> I know you always know better. :-)
+We already allocate multiple buffers to be able to fill in the next
+buffer once we've send one to kernel, so that part is ok. We reuse only
+once we know that the operations contained are done.
 
-We still need to consider cost and the function calling frequency, :-)
-
->
->> > I would use the flag only to store the information that
->> > pm_runtime_set_memalloc_noio(dev, true) has been run for this device directly
->> > and I'd use a counter for everything else.
->> >
->> > That is, have power.memalloc_count that would be incremented when (1)
->> > pm_runtime_set_memalloc_noio(dev, true) is called for that device and (2) when
->> > power.memalloc_count for one of its children changes from 0 to 1 (and
->> > analogously for decrementation).  Then, check the counter in rpm_callback().
->>
->> Sorry, could you explain in a bit detail why we need the counter? Looks only
->> checking the flag in rpm_callback() is enough, doesn't it?
->
-> Why would I want to use power.memalloc_count in addition to the
-> power.memalloc_noio flag?
->
-> Consider this:
->
-> pm_runtime_set_memalloc_noio(dev):
->         return if power.memalloc_noio is set
->         set power.memalloc_noio
->   loop:
->         increment power.memalloc_count
->         if power.memalloc_count is 1 now switch to parent and go to loop
-
-I am wondering if the above should be changed to below because the child
-count of memalloc_noio device need to be recorded.
-
-pm_runtime_set_memalloc_noio(dev):
-         return if power.memalloc_noio is set
-         set power.memalloc_noio
-loop:
-         increment power.memalloc_count
-         switch to parent and go to loop
-
-So pm_runtime_set_memalloc_noio(dev) will become worse than
-the improved pm_runtime_set_memalloc_noio(dev, true), which
-can return immediately if one dev or parent's flag is true.
-
-> pm_runtime_clear_memalloc_noio(dev):
->         return if power.memalloc_noio is unset
->         unset power.memalloc_noio
->   loop:
->         decrement power.memalloc_count
->         if power.memalloc_count is 0 now switch to parent and go to loop
-
-The above will perform well than pm_runtime_set_memalloc_noio(dev, false),
-because the above avoids to walk children of device.
-
-So one becomes worse and another becomes better, :-)
-
-Also the children count of one device is generally very small, less than
-10 for most devices, see the data obtained in one common x86 pc(thinkpad
-t410) from below link:
-
-        http://kernel.ubuntu.com/~ming/up/t410-dev-child-cnt.log
-
-- about 8 devices whose child count is more than 10, top three are 18, 17 ,12,
-and all the three are root devices.
-
-- about 117 devices whose child count is between 1 and 9
-
-- other 501 devices whose child count is zero
-
->From above data, walking device children should have not much effect on
-performance of pm_runtime_set_memalloc_noio(), which is also called in
-very infrequent path.
-
-> Looks kind of simpler, doesn't it?
-
-Looks simpler, but more code lines than single
-pm_runtime_set_memalloc_noio(), :-)
-
->
-> And why rpm_callback() should check power.memalloc_count instead of the count?
-> Because power.memalloc_noio will only be set for devices that
-> pm_runtime_set_memalloc_noio(dev) was called for directly (not necessarily for
-> the parents).
->
-> And that works even if someone calls any of them twice in a row for the same
-> device (presumably by mistake) and doesn't have to make any assumptions
-> about devices it is called for.
-
-IMO, we can ignore the mistake usage because the function is called only
-in network/block core code currently, not by individual driver.
-
->
->> > Besides, don't you need to check children for the arg device itself?
->>
->> It isn't needed since the children of network/block device can't be
->> involved of the deadlock in runtime PM path.
->>
->> Also, the function is only called by network device or block device
->> subsystem, both the two kind of device are class device and should
->> have no children.
->
-> OK, so not walking the arg device's children is an optimization related to
-> some assumptions regarding who's supposed to use this routine.  That should
-> be clearly documented.
-
-I think the patch already documents it in the comment of
-pm_runtime_set_memalloc_noio().
-
-Thanks,
---
-Ming Lei
+Terje
