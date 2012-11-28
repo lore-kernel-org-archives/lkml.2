@@ -1,124 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754916Ab2K1M7Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 07:59:16 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:37073 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754588Ab2K1M7O (ORCPT
+	id S1755159Ab2K1NFW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 08:05:22 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:64560 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755045Ab2K1NFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 07:59:14 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        LMML <linux-media@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        Prabhakar Lad <prabhakar.lad@ti.com>, devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Subject: Re: [PATCH v3 9/9] davinci: vpfe: Add documentation and TODO
-Date: Wed, 28 Nov 2012 14:00:14 +0100
-Message-ID: <1555450.K4uAzFNhY7@avalon>
-User-Agent: KMail/4.9.2 (Linux/3.5.7-gentoo; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <20121128092213.4bd0870f@redhat.com>
-References: <1354099329-20722-1-git-send-email-prabhakar.lad@ti.com> <1354099329-20722-10-git-send-email-prabhakar.lad@ti.com> <20121128092213.4bd0870f@redhat.com>
+	Wed, 28 Nov 2012 08:05:20 -0500
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Andrzej Pietrasiewicz <andrzej.p@samsung.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Felipe Balbi'" <balbi@ti.com>,
+        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
+        "'Joel Becker'" <jlbec@evilplan.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [RFC][PATCH] fs: configfs: programmatically create config groups
+In-Reply-To: <50B5C821.4000406@linutronix.de>
+Organization: http://mina86.com/
+References: <1353918910-12381-1-git-send-email-andrzej.p@samsung.com> <50B39921.6090308@linutronix.de> <008101cdcc7d$2d499df0$87dcd9d0$%p@samsung.com> <50B4E364.8030704@linutronix.de> <xa1tip8ruia5.fsf@mina86.com> <50B5C821.4000406@linutronix.de>
+User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.2.50.1 (x86_64-unknown-linux-gnu)
+X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
+X-PGP: 50751FF4
+X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
+Date: Wed, 28 Nov 2012 14:05:07 +0100
+Message-ID: <xa1ta9u1naik.fsf@mina86.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/mixed; boundary="=-=-="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mauro,
+--=-=-=
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
-Please see below.
+> On 11/27/2012 05:23 PM, Michal Nazarewicz wrote:
+>> How should a generic tool know what kind of actions are needed for given
+>> function to be removed?  If you ask me, there should be a way to unbind
+>> gadget and unload all modules without any specific knowledge of the
+>> functions.  If there is no such mechanism, then it's a bad user
+>> interface.
 
-On Wednesday 28 November 2012 09:22:13 Mauro Carvalho Chehab wrote:
-> Hi Prabhakar,
-> 
-> Em Wed, 28 Nov 2012 16:12:09 +0530
-> 
-> Prabhakar Lad <prabhakar.csengg@gmail.com> escreveu:
-> > +Introduction
-> > +============
-> > +
-> > + This file documents the Texas Instruments Davinci Video processing Front
-> > + End (VPFE) driver located under drivers/media/platform/davinci. The
-> > + original driver exists for Davinci VPFE, which is now being changed to
-> > + Media Controller Framework.
-> 
-> Hmm... please correct me if I'm wrong, but are you wanting to replace an
-> existing driver at drivers/media/platform/davinci, by another one at
-> staging that has lots of known issues, as pointed at your TODO????
-> 
-> If so, please don't do that. Replacing a driver by some other one is
-> generally a very bad idea, especially in this case, where the new driver
-> has clearly several issues, the main one being to define its own proprietary
-> and undocumented API:
->
-> > +As of now since the interface will undergo few changes all the include
-> > +files are present in staging itself, to build for dm365 follow below
-> > +steps,
-> > +
-> > +- copy vpfe.h from drivers/staging/media/davinci_vpfe/ to
-> > +  include/media/davinci/ folder for building the uImage.
-> > +- copy davinci_vpfe_user.h from drivers/staging/media/davinci_vpfe/ to
-> > +  include/uapi/linux/davinci_vpfe.h, and add a entry in Kbuild (required
-> > +  for building application).
-> > +- copy dm365_ipipeif_user.h from drivers/staging/media/davinci_vpfe/ to
-> > +  include/uapi/linux/dm365_ipipeif.h and a entry in Kbuild (required
-> > +  for building application).
-> 
-> Among other things, with those ugly and very likely mandatory API calls:
->
-> >+/*
-> >+ * Private IOCTL
-> >+ * VIDIOC_VPFE_IPIPEIF_S_CONFIG: Set IPIEIF configuration
-> >+ * VIDIOC_VPFE_IPIPEIF_G_CONFIG: Get IPIEIF configuration
-> >+ */
-> >+#define VIDIOC_VPFE_IPIPEIF_S_CONFIG \
-> >+	_IOWR('I', BASE_VIDIOC_PRIVATE + 1, struct ipipeif_params)
-> >+#define VIDIOC_VPFE_IPIPEIF_G_CONFIG \
-> >+	_IOWR('I', BASE_VIDIOC_PRIVATE + 2, struct ipipeif_params)
-> >+
-> >+#endif
-> 
-> I remember we rejected already drivers like that with obscure "S_CONFIG"
-> private ioctl that were suspect to send a big initialization undocumented
-> blob to the driver, as only the vendor's application would be able to use
-> such driver.
+On Wed, Nov 28 2012, Sebastian Andrzej Siewior wrote:
+> Well. You need only to remove the directories you created.
 
-That's correct, and that's why the driver is going to staging. From there it 
-will be incrementally fixed and then moved to drivers/media/, or dropped if 
-not maintained.
+My point is that there should be a way to write a script that is unaware
+of the way function is configured, ie. which directories were created
+and which were not.
 
-> So, instead, of submitting it to staging, you should be sending incremental
-> patches for the existing driver, adding newer functionality there, and
-> using the proper V4L2 API, with makes life easier for reviewers and
-> application developers.
+Besides, if you rmdir lun0, is the function still supposed to work with
+all LUNs present?  In my opinion, while gadget is bound, it should not
+be possible to modify such things.
 
-I agree that it would be the best thing to do, but I don't think it's going to 
-happen. We need to decide between two options.
+> An unbind would be  simply an unlink of the gadget  which is linked to
+> the udc.   All configurations  remain so  you can link  it at  a later
+> point without touching the configuration because it is as it was.
 
-- Push back now and insist in incremental patches for the existing driver, and 
-get nothing back as TI will very likely give up completely.
-- Accept the driver in staging, get it fixed incrementally, and finally move 
-it to drivers/media/
+Yes, but that's not my concern.  My concern is that I should be able to
+put a relatively simple code in my shutdown script (or whatever) which
+unbinds all gadgets, without knowing what kind of functions are used.
 
-There's a political side to this issue, we need to decide whether we want to 
-insist vendors getting everything right before any code reaches mainline, in 
-which case I believe we will lose some of them in the process, including major 
-vendors such as TI, or if we can make the mainline learning curve and 
-experience a bit more smooth by accepting such code in staging.
+And I'm proposing that this could be done by allowing user to just do:
 
-I would vote for the second option, with a very clear rule that getting the 
-driver in staging is only one step in the journey: if the development effort 
-stops there, the driver *will* be removed.
+	cd /cfs/...
+	rmdir gadgets/*		# unbind and remove all gadgets
+	rmdir functions/*/*	# unbind and remove all function instances
+	rmdir functions/*	# unload all functions
+	rmdir udcs/*		# unload all UDCs
+=20=20=20=20=20=20=20=20
+>> I think the question is of information flow direction.  If user gives
+>> some information to the kernel, she should be the one creating any
+>> necessary directories.  But if the information comes from kernel to the
+>> user, the kernel should create the structure.
 
--- 
-Regards,
+> Yes that is a point. But the "name" can go away if we use it in the
+> directory name. That is what other configfs user do. The same is true
+> for luns for instance. I just want to avoid adding features because we
+> do something different compared to every other configfs user.
 
-Laurent Pinchart
+You've lost me here.  What are we talking about again?  What =E2=80=9Cname=
+=E2=80=9D are
+you referring to?
 
+--=20
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
+..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
+ (o o)
+ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+--=-=-=
+Content-Type: multipart/signed; boundary="==-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
+
+--==-=-=
+Content-Type: text/plain
+
+
+--==-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQtgwDAAoJECBgQBJQdR/0TTQP/RWO/HJ/1BakyE5gTgUWidDX
+gLoyCVsPTUYh7RzrdB/CxOq1SPz0OXkWB2ZqYp53RiF0buO0OUi6dJEREGwCvwMY
+F9RUSltaeITfFr/bXXS+xoo7SBuPWGFQ3IvEJ01tucQcatRMuPfib7Os66uRx1YV
+J1nnBhttU+kFwAjdJATV7cbTB8xs1lKNtYMOu8CEmscDtp7lhSLesUxGzBsqNi+g
+rrb/WbPQlo5C/TRqHzTmDF82JRE4cY6aliccOCZ8nvr1mpv5/Tfj/j8fz2/oC5YC
+PtUpSO0h5OqFFoxO+HlXh5DunDQQ7aJf1SHaAZksPFsK+kPxI2DVnHdKNioT4JSj
+yhpf5xZx1efd8U+LZjp0p0x9piSzZUtUg9TmdlT4L9X/Qap1MNPWqsHuUvuXbprb
+XyPqtZzj0XgK0bP+UGCUOeSXZbR9zMdaFH7PBR/HCPHq00j4Vj5GFbxwAgaHQYnT
+h8heawhnLtDUeG0/raL+WlNI/csPTJ1djgCbCHR2K4hBWIdaYGTzQQh0u6SURtnR
+yOEty4SOQ6IUqbYxJDBJMVhE12rqzAe45c/iZKVRVEARBFnG/un9aVvFeuM+TghE
+bp4E7/1PHD8kH8FF/omlPvGplW5KQEWbLUqdXZ4ZyUvrNJY0gegeagnSs1nbnynq
+mAZmSyEas0mLTwj71Iv0
+=Buxh
+-----END PGP SIGNATURE-----
+--==-=-=--
+
+--=-=-=--
