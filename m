@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754285Ab2K1Knw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 05:43:52 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:53280 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753389Ab2K1Knt (ORCPT
+	id S1754347Ab2K1KoD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 05:44:03 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:46101 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754291Ab2K1Kn7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 05:43:49 -0500
+	Wed, 28 Nov 2012 05:43:59 -0500
 From: Prabhakar Lad <prabhakar.csengg@gmail.com>
 To: LMML <linux-media@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -18,9 +18,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Sakari Ailus <sakari.ailus@iki.fi>,
         Hans Verkuil <hans.verkuil@cisco.com>
-Subject: [PATCH v3 4/9] davinci: vpfe: dm365: add ISIF driver based on media framework
-Date: Wed, 28 Nov 2012 16:12:04 +0530
-Message-Id: <1354099329-20722-5-git-send-email-prabhakar.lad@ti.com>
+Subject: [PATCH v3 5/9] davinci: vpfe: dm365: add IPIPE support for media controller driver
+Date: Wed, 28 Nov 2012 16:12:05 +0530
+Message-Id: <1354099329-20722-6-git-send-email-prabhakar.lad@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1354099329-20722-1-git-send-email-prabhakar.lad@ti.com>
 References: <1354099329-20722-1-git-send-email-prabhakar.lad@ti.com>
@@ -30,29 +30,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Manjunath Hadli <manjunath.hadli@ti.com>
 
-add support for ISIF as a subdevice for dm365 vpfe capture driver.
-ISIF is responsible for capturing video data both in raw bayer format
-on sync seperate signals and YUV through BT656/1120 interfaces.
-ISIF is exposed as a subdev for the vpfe driver and allows users to
-use the driver through standard media controller interface.
+Add the IPIPE subdevice to the DM365 vpfe driver. The IPIPE is the
+major sub IP in the DM365 capture VPFE hardware and implements
+black clamping, color space conversion, edge enhancements etc.
+the block is exposed as a subdevice and implements media controller
+based setup and a private IOCTL for fine grain control.
 
 Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
 Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
 ---
- drivers/staging/media/davinci_vpfe/dm365_isif.c    | 2104 ++++++++++++++++++++
- drivers/staging/media/davinci_vpfe/dm365_isif.h    |  203 ++
- .../staging/media/davinci_vpfe/dm365_isif_regs.h   |  294 +++
- 3 files changed, 2601 insertions(+), 0 deletions(-)
- create mode 100644 drivers/staging/media/davinci_vpfe/dm365_isif.c
- create mode 100644 drivers/staging/media/davinci_vpfe/dm365_isif.h
- create mode 100644 drivers/staging/media/davinci_vpfe/dm365_isif_regs.h
+ drivers/staging/media/davinci_vpfe/dm365_ipipe.c | 1863 ++++++++++++++++++++++
+ drivers/staging/media/davinci_vpfe/dm365_ipipe.h |  179 +++
+ 2 files changed, 2042 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/media/davinci_vpfe/dm365_ipipe.c
+ create mode 100644 drivers/staging/media/davinci_vpfe/dm365_ipipe.h
 
-diff --git a/drivers/staging/media/davinci_vpfe/dm365_isif.c b/drivers/staging/media/davinci_vpfe/dm365_isif.c
+diff --git a/drivers/staging/media/davinci_vpfe/dm365_ipipe.c b/drivers/staging/media/davinci_vpfe/dm365_ipipe.c
 new file mode 100644
-index 0000000..ebeea72
+index 0000000..9285353
 --- /dev/null
-+++ b/drivers/staging/media/davinci_vpfe/dm365_isif.c
-@@ -0,0 +1,2104 @@
++++ b/drivers/staging/media/davinci_vpfe/dm365_ipipe.c
+@@ -0,0 +1,1863 @@
 +/*
 + * Copyright (C) 2012 Texas Instruments Inc
 + *
@@ -72,624 +70,1346 @@ index 0000000..ebeea72
 + * Contributors:
 + *      Manjunath Hadli <manjunath.hadli@ti.com>
 + *      Prabhakar Lad <prabhakar.lad@ti.com>
++ *
++ *
++ * IPIPE allows fine tuning of the input image using different
++ * tuning modules in IPIPE. Some examples :- Noise filter, Defect
++ * pixel correction etc. It essentially operate on Bayer Raw data
++ * or YUV raw data. To do image tuning, application call,
++ *
 + */
 +
-+#include "dm365_isif.h"
++#include <linux/slab.h>
++
++#include "dm365_ipipe.h"
++#include "dm365_ipipe_hw.h"
 +#include "vpfe_mc_capture.h"
 +
-+#define MAX_WIDTH	4096
-+#define MAX_HEIGHT	4096
++#define MIN_OUT_WIDTH	32
++#define MIN_OUT_HEIGHT	32
 +
-+static const unsigned int isif_fmts[] = {
-+	V4L2_MBUS_FMT_YUYV8_2X8,
++/* ipipe input format's */
++static const unsigned int ipipe_input_fmts[] = {
 +	V4L2_MBUS_FMT_UYVY8_2X8,
-+	V4L2_MBUS_FMT_YUYV8_1X16,
-+	V4L2_MBUS_FMT_YUYV10_1X20,
 +	V4L2_MBUS_FMT_SGRBG12_1X12,
-+	V4L2_MBUS_FMT_SGRBG10_ALAW8_1X8,
 +	V4L2_MBUS_FMT_SGRBG10_DPCM8_1X8,
++	V4L2_MBUS_FMT_SGRBG10_ALAW8_1X8,
 +};
 +
-+#define ISIF_COLPTN_R_Ye	0x0
-+#define ISIF_COLPTN_Gr_Cy	0x1
-+#define ISIF_COLPTN_Gb_G	0x2
-+#define ISIF_COLPTN_B_Mg	0x3
++/* ipipe output format's */
++static const unsigned int ipipe_output_fmts[] = {
++	V4L2_MBUS_FMT_UYVY8_2X8,
++};
 +
-+#define ISIF_CCOLP_CP01_0	0
-+#define ISIF_CCOLP_CP03_2	2
-+#define ISIF_CCOLP_CP05_4	4
-+#define ISIF_CCOLP_CP07_6	6
-+#define ISIF_CCOLP_CP11_0	8
-+#define ISIF_CCOLP_CP13_2	10
-+#define ISIF_CCOLP_CP15_4	12
-+#define ISIF_CCOLP_CP17_6	14
-+
-+static const u32 isif_sgrbg_pattern =
-+	ISIF_COLPTN_Gr_Cy <<  ISIF_CCOLP_CP01_0 |
-+	ISIF_COLPTN_R_Ye  << ISIF_CCOLP_CP03_2 |
-+	ISIF_COLPTN_B_Mg  << ISIF_CCOLP_CP05_4 |
-+	ISIF_COLPTN_Gb_G  << ISIF_CCOLP_CP07_6 |
-+	ISIF_COLPTN_Gr_Cy << ISIF_CCOLP_CP11_0 |
-+	ISIF_COLPTN_R_Ye  << ISIF_CCOLP_CP13_2 |
-+	ISIF_COLPTN_B_Mg  << ISIF_CCOLP_CP15_4 |
-+	ISIF_COLPTN_Gb_G  << ISIF_CCOLP_CP17_6;
-+
-+static const u32 isif_srggb_pattern =
-+	ISIF_COLPTN_R_Ye  << ISIF_CCOLP_CP01_0 |
-+	ISIF_COLPTN_Gr_Cy << ISIF_CCOLP_CP03_2 |
-+	ISIF_COLPTN_Gb_G  << ISIF_CCOLP_CP05_4 |
-+	ISIF_COLPTN_B_Mg  << ISIF_CCOLP_CP07_6 |
-+	ISIF_COLPTN_R_Ye  << ISIF_CCOLP_CP11_0 |
-+	ISIF_COLPTN_Gr_Cy << ISIF_CCOLP_CP13_2 |
-+	ISIF_COLPTN_Gb_G  << ISIF_CCOLP_CP15_4 |
-+	ISIF_COLPTN_B_Mg  << ISIF_CCOLP_CP17_6;
-+
-+static inline u32 isif_read(void *__iomem base_addr, u32 offset)
++static int ipipe_validate_lutdpc_params(struct vpfe_ipipe_lutdpc *lutdpc)
 +{
-+	return readl(base_addr + offset);
++	int i;
++
++	if (lutdpc->en > 1 || lutdpc->repl_white > 1 ||
++	    lutdpc->dpc_size > LUT_DPC_MAX_SIZE)
++		return -EINVAL;
++
++	if (lutdpc->en && !lutdpc->table)
++		return -EINVAL;
++
++	for (i = 0; i < lutdpc->dpc_size; i++)
++		if (lutdpc->table[i].horz_pos > LUT_DPC_H_POS_MASK ||
++		   lutdpc->table[i].vert_pos > LUT_DPC_V_POS_MASK)
++			return -EINVAL;
++
++	return 0;
 +}
 +
-+static inline void isif_write(void *__iomem base_addr, u32 val, u32 offset)
++static int ipipe_set_lutdpc_params(struct vpfe_ipipe_device *ipipe, void *param)
 +{
-+	writel(val, base_addr + offset);
++	struct vpfe_ipipe_lutdpc *lutdpc = &ipipe->config.lutdpc;
++	struct vpfe_ipipe_lutdpc *dpc_param;
++	struct device *dev;
++
++	if (!param) {
++		memset((void *)lutdpc, 0, sizeof(struct vpfe_ipipe_lutdpc));
++		goto success;
++	}
++
++	dev = ipipe->subdev.v4l2_dev->dev;
++	dpc_param = (struct vpfe_ipipe_lutdpc *)param;
++	lutdpc->en = dpc_param->en;
++	lutdpc->repl_white = dpc_param->repl_white;
++	lutdpc->dpc_size = dpc_param->dpc_size;
++	memcpy(&lutdpc->table, &dpc_param->table,
++	       (dpc_param->dpc_size * sizeof(struct vpfe_ipipe_lutdpc_entry)));
++	if (ipipe_validate_lutdpc_params(lutdpc) < 0)
++		return -EINVAL;
++
++success:
++	ipipe_set_lutdpc_regs(ipipe->base_addr, ipipe->isp5_base_addr, lutdpc);
++
++	return 0;
 +}
 +
-+static inline u32 isif_merge(void *__iomem base_addr, u32 mask, u32 val,
-+			     u32 offset)
++static int ipipe_get_lutdpc_params(struct vpfe_ipipe_device *ipipe, void *param)
 +{
-+	u32 new_val = (isif_read(base_addr, offset) & ~mask) | (val & mask);
++	struct vpfe_ipipe_lutdpc *lut_param = (struct vpfe_ipipe_lutdpc *)param;
++	struct vpfe_ipipe_lutdpc *lutdpc = &ipipe->config.lutdpc;
 +
-+	isif_write(base_addr, new_val, offset);
++	lut_param->en = lutdpc->en;
++	lut_param->repl_white = lutdpc->repl_white;
++	lut_param->dpc_size = lutdpc->dpc_size;
++	memcpy(&lut_param->table, &lutdpc->table,
++	   (lutdpc->dpc_size * sizeof(struct vpfe_ipipe_lutdpc_entry)));
 +
-+	return new_val;
++	return 0;
 +}
 +
-+static void isif_enable_output_to_sdram(struct vpfe_isif_device *isif, int en)
++static int ipipe_set_input_config(struct vpfe_ipipe_device *ipipe, void *param)
 +{
-+	isif_merge(isif->isif_cfg.base_addr, ISIF_SYNCEN_WEN_MASK,
-+		   en << ISIF_SYNCEN_WEN_SHIFT, SYNCEN);
-+}
++	struct vpfe_ipipe_input_config *config = &ipipe->config.input_config;
 +
-+static inline void
-+isif_regw_lin_tbl(struct vpfe_isif_device *isif, u32 val, u32 offset, int i)
-+{
-+	if (!i)
-+		writel(val, isif->isif_cfg.linear_tbl0_addr + offset);
++	if (!param)
++		memset(config, 0, sizeof(struct vpfe_ipipe_input_config));
 +	else
-+		writel(val, isif->isif_cfg.linear_tbl1_addr + offset);
++		memcpy(config, param, sizeof(struct vpfe_ipipe_input_config));
++	return 0;
 +}
 +
-+static void isif_disable_all_modules(struct vpfe_isif_device *isif)
++static int ipipe_get_input_config(struct vpfe_ipipe_device *ipipe, void *param)
 +{
-+	/* disable BC */
-+	isif_write(isif->isif_cfg.base_addr, 0, CLAMPCFG);
-+	/* disable vdfc */
-+	isif_write(isif->isif_cfg.base_addr, 0, DFCCTL);
-+	/* disable CSC */
-+	isif_write(isif->isif_cfg.base_addr, 0, CSCCTL);
-+	/* disable linearization */
-+	isif_write(isif->isif_cfg.base_addr, 0, LINCFG0);
++	struct vpfe_ipipe_input_config *config = &ipipe->config.input_config;
++
++	if (!param)
++		return -EINVAL;
++
++	memcpy(param, config, sizeof(struct vpfe_ipipe_input_config));
++
++	return 0;
 +}
 +
-+static void isif_enable(struct vpfe_isif_device *isif, int en)
++static int ipipe_validate_otfdpc_params(struct vpfe_ipipe_otfdpc *dpc_param)
 +{
-+	if (!en)
-+		/* Before disable isif, disable all ISIF modules */
-+		isif_disable_all_modules(isif);
++	struct vpfe_ipipe_otfdpc_2_0_cfg *dpc_2_0;
++	struct vpfe_ipipe_otfdpc_3_0_cfg *dpc_3_0;
 +
-+	/*
-+	 * wait for next VD. Assume lowest scan rate is 12 Hz. So
-+	 * 100 msec delay is good enough
-+	 */
-+	msleep(100);
-+	isif_merge(isif->isif_cfg.base_addr, ISIF_SYNCEN_VDHDEN_MASK,
-+		   en, SYNCEN);
++	if (dpc_param->en > 1)
++		return -EINVAL;
++
++	if (dpc_param->alg == VPFE_IPIPE_OTFDPC_2_0) {
++		dpc_2_0 = &dpc_param->alg_cfg.dpc_2_0;
++		if (dpc_2_0->det_thr.r > OTFDPC_DPC2_THR_MASK ||
++		    dpc_2_0->det_thr.gr > OTFDPC_DPC2_THR_MASK ||
++		    dpc_2_0->det_thr.gb > OTFDPC_DPC2_THR_MASK ||
++		    dpc_2_0->det_thr.b > OTFDPC_DPC2_THR_MASK ||
++		    dpc_2_0->corr_thr.r > OTFDPC_DPC2_THR_MASK ||
++		    dpc_2_0->corr_thr.gr > OTFDPC_DPC2_THR_MASK ||
++		    dpc_2_0->corr_thr.gb > OTFDPC_DPC2_THR_MASK ||
++		    dpc_2_0->corr_thr.b > OTFDPC_DPC2_THR_MASK)
++			return -EINVAL;
++		return 0;
++	}
++
++	dpc_3_0 = &dpc_param->alg_cfg.dpc_3_0;
++
++	if (dpc_3_0->act_adj_shf > OTF_DPC3_0_SHF_MASK ||
++	    dpc_3_0->det_thr > OTF_DPC3_0_DET_MASK ||
++	    dpc_3_0->det_slp > OTF_DPC3_0_SLP_MASK ||
++	    dpc_3_0->det_thr_min > OTF_DPC3_0_DET_MASK ||
++	    dpc_3_0->det_thr_max > OTF_DPC3_0_DET_MASK ||
++	    dpc_3_0->corr_thr > OTF_DPC3_0_CORR_MASK ||
++	    dpc_3_0->corr_slp > OTF_DPC3_0_SLP_MASK ||
++	    dpc_3_0->corr_thr_min > OTF_DPC3_0_CORR_MASK ||
++	    dpc_3_0->corr_thr_max > OTF_DPC3_0_CORR_MASK)
++		return -EINVAL;
++
++	return 0;
++}
++
++static int ipipe_set_otfdpc_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	struct vpfe_ipipe_otfdpc *dpc_param = (struct vpfe_ipipe_otfdpc *)param;
++	struct vpfe_ipipe_otfdpc *otfdpc = &ipipe->config.otfdpc;
++	struct device *dev;
++
++	if (!param) {
++		memset((void *)otfdpc, 0, sizeof(struct ipipe_otfdpc_2_0));
++		goto success;
++	}
++	dev = ipipe->subdev.v4l2_dev->dev;
++	memcpy(otfdpc, dpc_param, sizeof(struct vpfe_ipipe_otfdpc));
++	if (ipipe_validate_otfdpc_params(otfdpc) < 0) {
++		dev_err(dev, "Invalid otfdpc params\n");
++		return -EINVAL;
++	}
++
++success:
++	ipipe_set_otfdpc_regs(ipipe->base_addr, otfdpc);
++
++	return 0;
++}
++
++static int ipipe_get_otfdpc_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	struct vpfe_ipipe_otfdpc *dpc_param = (struct vpfe_ipipe_otfdpc *)param;
++	struct vpfe_ipipe_otfdpc *otfdpc = &ipipe->config.otfdpc;
++
++	memcpy(dpc_param, otfdpc, sizeof(struct vpfe_ipipe_otfdpc));
++	return 0;
++}
++
++static int ipipe_validate_nf_params(struct vpfe_ipipe_nf *nf_param)
++{
++	int i;
++
++	if (nf_param->en > 1 || nf_param->shft_val > D2F_SHFT_VAL_MASK ||
++	    nf_param->spread_val > D2F_SPR_VAL_MASK ||
++	    nf_param->apply_lsc_gain > 1 ||
++	    nf_param->edge_det_min_thr > D2F_EDGE_DET_THR_MASK ||
++	    nf_param->edge_det_max_thr > D2F_EDGE_DET_THR_MASK)
++		return -EINVAL;
++
++	for (i = 0; i < VPFE_IPIPE_NF_THR_TABLE_SIZE; i++)
++		if (nf_param->thr[i] > D2F_THR_VAL_MASK)
++			return -EINVAL;
++
++	for (i = 0; i < VPFE_IPIPE_NF_STR_TABLE_SIZE; i++)
++		if (nf_param->str[i] > D2F_STR_VAL_MASK)
++			return -EINVAL;
++
++	return 0;
++}
++
++static int ipipe_set_nf_params(struct vpfe_ipipe_device *ipipe,
++			       unsigned int id, void *param)
++{
++	struct vpfe_ipipe_nf *nf_param = (struct vpfe_ipipe_nf *)param;
++	struct vpfe_ipipe_nf *nf = &ipipe->config.nf1;
++	struct device *dev;
++
++	if (id == IPIPE_D2F_2ND)
++		nf = &ipipe->config.nf2;
++
++	if (!nf_param) {
++		memset((void *)nf, 0, sizeof(struct vpfe_ipipe_nf));
++		goto success;
++	}
++
++	dev = ipipe->subdev.v4l2_dev->dev;
++	memcpy(nf, nf_param, sizeof(struct vpfe_ipipe_nf));
++	if (ipipe_validate_nf_params(nf) < 0) {
++		dev_err(dev, "Invalid nf params\n");
++		return -EINVAL;
++	}
++
++success:
++	ipipe_set_d2f_regs(ipipe->base_addr, id, nf);
++
++	return 0;
++}
++
++static int ipipe_set_nf1_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	return ipipe_set_nf_params(ipipe, IPIPE_D2F_1ST, param);
++}
++
++static int ipipe_set_nf2_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	return ipipe_set_nf_params(ipipe, IPIPE_D2F_2ND, param);
++}
++
++static int ipipe_get_nf_params(struct vpfe_ipipe_device *ipipe,
++			       unsigned int id, void *param)
++{
++	struct vpfe_ipipe_nf *nf_param = (struct vpfe_ipipe_nf *)param;
++	struct vpfe_ipipe_nf *nf = &ipipe->config.nf1;
++
++	if (id == IPIPE_D2F_2ND)
++		nf = &ipipe->config.nf2;
++
++	memcpy(nf_param, nf, sizeof(struct vpfe_ipipe_nf));
++
++	return 0;
++}
++
++static int ipipe_get_nf1_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	return ipipe_get_nf_params(ipipe, IPIPE_D2F_1ST, param);
++}
++
++static int ipipe_get_nf2_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	return ipipe_get_nf_params(ipipe, IPIPE_D2F_2ND, param);
++}
++
++static int ipipe_validate_gic_params(struct vpfe_ipipe_gic *gic)
++{
++	if (gic->en > 1 || gic->gain > GIC_GAIN_MASK ||
++	    gic->thr > GIC_THR_MASK || gic->slope > GIC_SLOPE_MASK ||
++	    gic->apply_lsc_gain > 1 ||
++	    gic->nf2_thr_gain.integer > GIC_NFGAN_INT_MASK ||
++	    gic->nf2_thr_gain.decimal > GIC_NFGAN_DECI_MASK)
++		return -EINVAL;
++
++	return 0;
++}
++
++static int ipipe_set_gic_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	struct vpfe_ipipe_gic *gic_param = (struct vpfe_ipipe_gic *)param;
++	struct device *dev = ipipe->subdev.v4l2_dev->dev;
++	struct vpfe_ipipe_gic *gic = &ipipe->config.gic;
++
++	if (!gic_param) {
++		memset((void *)gic, 0, sizeof(struct vpfe_ipipe_gic));
++		goto success;
++	}
++
++	memcpy(gic, gic_param, sizeof(struct vpfe_ipipe_gic));
++	if (ipipe_validate_gic_params(gic) < 0) {
++		dev_err(dev, "Invalid gic params\n");
++		return -EINVAL;
++	}
++
++success:
++	ipipe_set_gic_regs(ipipe->base_addr, gic);
++
++	return 0;
++}
++
++static int ipipe_get_gic_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	struct vpfe_ipipe_gic *gic_param = (struct vpfe_ipipe_gic *)param;
++	struct vpfe_ipipe_gic *gic = &ipipe->config.gic;
++
++	memcpy(gic_param, gic, sizeof(struct vpfe_ipipe_gic));
++
++	return 0;
++}
++
++static int ipipe_validate_wb_params(struct vpfe_ipipe_wb *wbal)
++{
++	if (wbal->ofst_r > WB_OFFSET_MASK ||
++	    wbal->ofst_gr > WB_OFFSET_MASK ||
++	    wbal->ofst_gb > WB_OFFSET_MASK ||
++	    wbal->ofst_b > WB_OFFSET_MASK ||
++	    wbal->gain_r.integer > WB_GAIN_INT_MASK ||
++	    wbal->gain_r.decimal > WB_GAIN_DECI_MASK ||
++	    wbal->gain_gr.integer > WB_GAIN_INT_MASK ||
++	    wbal->gain_gr.decimal > WB_GAIN_DECI_MASK ||
++	    wbal->gain_gb.integer > WB_GAIN_INT_MASK ||
++	    wbal->gain_gb.decimal > WB_GAIN_DECI_MASK ||
++	    wbal->gain_b.integer > WB_GAIN_INT_MASK ||
++	    wbal->gain_b.decimal > WB_GAIN_DECI_MASK)
++		return -EINVAL;
++
++	return 0;
++}
++
++static int ipipe_set_wb_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	struct vpfe_ipipe_wb *wb_param = (struct vpfe_ipipe_wb *)param;
++	struct vpfe_ipipe_wb *wbal = &ipipe->config.wbal;
++
++	if (!wb_param) {
++		const struct vpfe_ipipe_wb wb_defaults = {
++			.gain_r  = {2, 0x0},
++			.gain_gr = {2, 0x0},
++			.gain_gb = {2, 0x0},
++			.gain_b  = {2, 0x0}
++		};
++		memcpy(wbal, &wb_defaults, sizeof(struct vpfe_ipipe_wb));
++		goto success;
++	}
++
++	memcpy(wbal, wb_param, sizeof(struct vpfe_ipipe_wb));
++	if (ipipe_validate_wb_params(wbal) < 0)
++		return -EINVAL;
++
++success:
++	ipipe_set_wb_regs(ipipe->base_addr, wbal);
++
++	return 0;
++}
++
++static int ipipe_get_wb_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	struct vpfe_ipipe_wb *wb_param = (struct vpfe_ipipe_wb *)param;
++	struct vpfe_ipipe_wb *wbal = &ipipe->config.wbal;
++
++	memcpy(wb_param, wbal, sizeof(struct vpfe_ipipe_wb));
++	return 0;
++}
++
++static int ipipe_validate_cfa_params(struct vpfe_ipipe_cfa *cfa)
++{
++	if (cfa->hpf_thr_2dir > CFA_HPF_THR_2DIR_MASK ||
++	    cfa->hpf_slp_2dir > CFA_HPF_SLOPE_2DIR_MASK ||
++	    cfa->hp_mix_thr_2dir > CFA_HPF_MIX_THR_2DIR_MASK ||
++	    cfa->hp_mix_slope_2dir > CFA_HPF_MIX_SLP_2DIR_MASK ||
++	    cfa->dir_thr_2dir > CFA_DIR_THR_2DIR_MASK ||
++	    cfa->dir_slope_2dir > CFA_DIR_SLP_2DIR_MASK ||
++	    cfa->nd_wt_2dir > CFA_ND_WT_2DIR_MASK ||
++	    cfa->hue_fract_daa > CFA_DAA_HUE_FRA_MASK ||
++	    cfa->edge_thr_daa > CFA_DAA_EDG_THR_MASK ||
++	    cfa->thr_min_daa > CFA_DAA_THR_MIN_MASK ||
++	    cfa->thr_slope_daa > CFA_DAA_THR_SLP_MASK ||
++	    cfa->slope_min_daa > CFA_DAA_SLP_MIN_MASK ||
++	    cfa->slope_slope_daa > CFA_DAA_SLP_SLP_MASK ||
++	    cfa->lp_wt_daa > CFA_DAA_LP_WT_MASK)
++		return -EINVAL;
++
++	return 0;
++}
++
++static int ipipe_set_cfa_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	struct vpfe_ipipe_cfa *cfa_param = (struct vpfe_ipipe_cfa *)param;
++	struct vpfe_ipipe_cfa *cfa = &ipipe->config.cfa;
++
++	if (!cfa_param) {
++		memset(cfa, 0, sizeof(struct vpfe_ipipe_cfa));
++		cfa->alg = VPFE_IPIPE_CFA_ALG_2DIRAC;
++		goto success;
++	}
++
++	memcpy(cfa, cfa_param, sizeof(struct vpfe_ipipe_cfa));
++	if (ipipe_validate_cfa_params(cfa) < 0)
++		return -EINVAL;
++
++success:
++	ipipe_set_cfa_regs(ipipe->base_addr, cfa);
++
++	return 0;
++}
++
++static int ipipe_get_cfa_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	struct vpfe_ipipe_cfa *cfa_param = (struct vpfe_ipipe_cfa *)param;
++	struct vpfe_ipipe_cfa *cfa = &ipipe->config.cfa;
++
++	memcpy(cfa_param, cfa, sizeof(struct vpfe_ipipe_cfa));
++	return 0;
++}
++
++static int
++ipipe_validate_rgb2rgb_params(struct vpfe_ipipe_rgb2rgb *rgb2rgb,
++			      unsigned int id)
++{
++	u32 gain_int_upper = RGB2RGB_1_GAIN_INT_MASK;
++	u32 offset_upper = RGB2RGB_1_OFST_MASK;
++
++	if (id == IPIPE_RGB2RGB_2) {
++		offset_upper = RGB2RGB_2_OFST_MASK;
++		gain_int_upper = RGB2RGB_2_GAIN_INT_MASK;
++	}
++
++	if (rgb2rgb->coef_rr.decimal > RGB2RGB_GAIN_DECI_MASK ||
++	    rgb2rgb->coef_rr.integer > gain_int_upper)
++		return -EINVAL;
++
++	if (rgb2rgb->coef_gr.decimal > RGB2RGB_GAIN_DECI_MASK ||
++	    rgb2rgb->coef_gr.integer > gain_int_upper)
++		return -EINVAL;
++
++	if (rgb2rgb->coef_br.decimal > RGB2RGB_GAIN_DECI_MASK ||
++	    rgb2rgb->coef_br.integer > gain_int_upper)
++		return -EINVAL;
++
++	if (rgb2rgb->coef_rg.decimal > RGB2RGB_GAIN_DECI_MASK ||
++	    rgb2rgb->coef_rg.integer > gain_int_upper)
++		return -EINVAL;
++
++	if (rgb2rgb->coef_gg.decimal > RGB2RGB_GAIN_DECI_MASK ||
++	    rgb2rgb->coef_gg.integer > gain_int_upper)
++		return -EINVAL;
++
++	if (rgb2rgb->coef_bg.decimal > RGB2RGB_GAIN_DECI_MASK ||
++	    rgb2rgb->coef_bg.integer > gain_int_upper)
++		return -EINVAL;
++
++	if (rgb2rgb->coef_rb.decimal > RGB2RGB_GAIN_DECI_MASK ||
++	    rgb2rgb->coef_rb.integer > gain_int_upper)
++		return -EINVAL;
++
++	if (rgb2rgb->coef_gb.decimal > RGB2RGB_GAIN_DECI_MASK ||
++	    rgb2rgb->coef_gb.integer > gain_int_upper)
++		return -EINVAL;
++
++	if (rgb2rgb->coef_bb.decimal > RGB2RGB_GAIN_DECI_MASK ||
++	    rgb2rgb->coef_bb.integer > gain_int_upper)
++		return -EINVAL;
++
++	if (rgb2rgb->out_ofst_r > offset_upper ||
++	    rgb2rgb->out_ofst_g > offset_upper ||
++	    rgb2rgb->out_ofst_b > offset_upper)
++		return -EINVAL;
++
++	return 0;
++}
++
++static int ipipe_set_rgb2rgb_params(struct vpfe_ipipe_device *ipipe,
++			      unsigned int id, void *param)
++{
++	struct vpfe_ipipe_rgb2rgb *rgb2rgb = &ipipe->config.rgb2rgb1;
++	struct device *dev = ipipe->subdev.v4l2_dev->dev;
++	struct vpfe_ipipe_rgb2rgb *rgb2rgb_param;
++
++	rgb2rgb_param = (struct vpfe_ipipe_rgb2rgb *)param;
++
++	if (id == IPIPE_RGB2RGB_2)
++		rgb2rgb = &ipipe->config.rgb2rgb2;
++
++	if (!rgb2rgb_param) {
++		const struct vpfe_ipipe_rgb2rgb rgb2rgb_defaults = {
++			.coef_rr = {1, 0},	/* 256 */
++			.coef_gr = {0, 0},
++			.coef_br = {0, 0},
++			.coef_rg = {0, 0},
++			.coef_gg = {1, 0},	/* 256 */
++			.coef_bg = {0, 0},
++			.coef_rb = {0, 0},
++			.coef_gb = {0, 0},
++			.coef_bb = {1, 0},	/* 256 */
++		};
++		/* Copy defaults for rgb2rgb conversion */
++		memcpy(rgb2rgb, &rgb2rgb_defaults,
++		       sizeof(struct vpfe_ipipe_rgb2rgb));
++		goto success;
++	}
++
++	memcpy(rgb2rgb, rgb2rgb_param, sizeof(struct vpfe_ipipe_rgb2rgb));
++	if (ipipe_validate_rgb2rgb_params(rgb2rgb, id) < 0) {
++		dev_err(dev, "Invalid rgb2rgb params\n");
++		return -EINVAL;
++	}
++
++success:
++	ipipe_set_rgb2rgb_regs(ipipe->base_addr, id, rgb2rgb);
++
++	return 0;
++}
++
++static int
++ipipe_set_rgb2rgb_1_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	return ipipe_set_rgb2rgb_params(ipipe, IPIPE_RGB2RGB_1, param);
++}
++
++static int
++ipipe_set_rgb2rgb_2_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	return ipipe_set_rgb2rgb_params(ipipe, IPIPE_RGB2RGB_2, param);
++}
++
++static int ipipe_get_rgb2rgb_params(struct vpfe_ipipe_device *ipipe,
++			      unsigned int id, void *param)
++{
++	struct vpfe_ipipe_rgb2rgb *rgb2rgb = &ipipe->config.rgb2rgb1;
++	struct vpfe_ipipe_rgb2rgb *rgb2rgb_param;
++
++	rgb2rgb_param = (struct vpfe_ipipe_rgb2rgb *)param;
++
++	if (id == IPIPE_RGB2RGB_2)
++		rgb2rgb = &ipipe->config.rgb2rgb2;
++
++	memcpy(rgb2rgb_param, rgb2rgb, sizeof(struct vpfe_ipipe_rgb2rgb));
++
++	return 0;
++}
++
++static int
++ipipe_get_rgb2rgb_1_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	return ipipe_get_rgb2rgb_params(ipipe, IPIPE_RGB2RGB_1, param);
++}
++
++static int
++ipipe_get_rgb2rgb_2_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	return ipipe_get_rgb2rgb_params(ipipe, IPIPE_RGB2RGB_2, param);
++}
++
++static int
++ipipe_validate_gamma_entry(struct vpfe_ipipe_gamma_entry *table, int size)
++{
++	int i;
++
++	if (!table)
++		return -EINVAL;
++
++	for (i = 0; i < size; i++)
++		if (table[i].slope > GAMMA_MASK ||
++		    table[i].offset > GAMMA_MASK)
++			return -EINVAL;
++
++	return 0;
++}
++
++static int
++ipipe_validate_gamma_params(struct vpfe_ipipe_gamma *gamma, struct device *dev)
++{
++	int table_size;
++	int err;
++
++	if (gamma->bypass_r > 1 ||
++	    gamma->bypass_b > 1 ||
++	    gamma->bypass_g > 1)
++		return -EINVAL;
++
++	if (gamma->tbl_sel != VPFE_IPIPE_GAMMA_TBL_RAM)
++		return 0;
++
++	table_size = gamma->tbl_size;
++	if (!gamma->bypass_r) {
++		err = ipipe_validate_gamma_entry(gamma->table_r, table_size);
++		if (err) {
++			dev_err(dev, "GAMMA R - table entry invalid\n");
++			return err;
++		}
++	}
++
++	if (!gamma->bypass_b) {
++		err = ipipe_validate_gamma_entry(gamma->table_b, table_size);
++		if (err) {
++			dev_err(dev, "GAMMA B - table entry invalid\n");
++			return err;
++		}
++	}
++
++	if (!gamma->bypass_g) {
++		err = ipipe_validate_gamma_entry(gamma->table_g, table_size);
++		if (err) {
++			dev_err(dev, "GAMMA G - table entry invalid\n");
++			return err;
++		}
++	}
++
++	return 0;
++}
++
++static int
++ipipe_set_gamma_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	struct vpfe_ipipe_gamma *gamma_param = (struct vpfe_ipipe_gamma *)param;
++	struct vpfe_ipipe_gamma *gamma = &ipipe->config.gamma;
++	struct device *dev = ipipe->subdev.v4l2_dev->dev;
++	int table_size;
++
++	if (!gamma_param) {
++		memset(gamma, 0, sizeof(struct vpfe_ipipe_gamma));
++		gamma->tbl_sel = VPFE_IPIPE_GAMMA_TBL_ROM;
++		goto success;
++	}
++
++	gamma->bypass_r = gamma_param->bypass_r;
++	gamma->bypass_b = gamma_param->bypass_b;
++	gamma->bypass_g = gamma_param->bypass_g;
++	gamma->tbl_sel = gamma_param->tbl_sel;
++	gamma->tbl_size = gamma_param->tbl_size;
++
++	if (ipipe_validate_gamma_params(gamma, dev) < 0)
++		return -EINVAL;
++
++	if (gamma_param->tbl_sel != VPFE_IPIPE_GAMMA_TBL_RAM)
++		goto success;
++
++	table_size = gamma->tbl_size;
++	if (!gamma_param->bypass_r)
++		memcpy(&gamma->table_r, &gamma_param->table_r,
++		       (table_size * sizeof(struct vpfe_ipipe_gamma_entry)));
++
++	if (!gamma_param->bypass_b)
++		memcpy(&gamma->table_b, &gamma_param->table_b,
++		       (table_size * sizeof(struct vpfe_ipipe_gamma_entry)));
++
++	if (!gamma_param->bypass_g)
++		memcpy(&gamma->table_g, &gamma_param->table_g,
++		       (table_size * sizeof(struct vpfe_ipipe_gamma_entry)));
++
++success:
++	ipipe_set_gamma_regs(ipipe->base_addr, ipipe->isp5_base_addr, gamma);
++
++	return 0;
++}
++
++static int ipipe_get_gamma_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	struct vpfe_ipipe_gamma *gamma_param = (struct vpfe_ipipe_gamma *)param;
++	struct vpfe_ipipe_gamma *gamma = &ipipe->config.gamma;
++	struct device *dev = ipipe->subdev.v4l2_dev->dev;
++	int table_size;
++
++	gamma_param->bypass_r = gamma->bypass_r;
++	gamma_param->bypass_g = gamma->bypass_g;
++	gamma_param->bypass_b = gamma->bypass_b;
++	gamma_param->tbl_sel = gamma->tbl_sel;
++	gamma_param->tbl_size = gamma->tbl_size;
++
++	if (gamma->tbl_sel != VPFE_IPIPE_GAMMA_TBL_RAM)
++		return 0;
++
++	table_size = gamma->tbl_size;
++
++	if (!gamma->bypass_r && !gamma_param->table_r) {
++		dev_err(dev,
++			"ipipe_get_gamma_params: table ptr empty for R\n");
++		return -EINVAL;
++	}
++	memcpy(gamma_param->table_r, gamma->table_r,
++	       (table_size * sizeof(struct vpfe_ipipe_gamma_entry)));
++
++	if (!gamma->bypass_g && !gamma_param->table_g) {
++		dev_err(dev, "ipipe_get_gamma_params: table ptr empty for G\n");
++		return -EINVAL;
++	}
++	memcpy(gamma_param->table_g, gamma->table_g,
++	       (table_size * sizeof(struct vpfe_ipipe_gamma_entry)));
++
++	if (!gamma->bypass_b && !gamma_param->table_b) {
++		dev_err(dev, "ipipe_get_gamma_params: table ptr empty for B\n");
++		return -EINVAL;
++	}
++	memcpy(gamma_param->table_b, gamma->table_b,
++	       (table_size * sizeof(struct vpfe_ipipe_gamma_entry)));
++
++	return 0;
++}
++
++static int ipipe_validate_3d_lut_params(struct vpfe_ipipe_3d_lut *lut)
++{
++	int i;
++
++	if (!lut->en)
++		return 0;
++
++	for (i = 0; i < VPFE_IPIPE_MAX_SIZE_3D_LUT; i++)
++		if (lut->table[i].r > D3_LUT_ENTRY_MASK ||
++		    lut->table[i].g > D3_LUT_ENTRY_MASK ||
++		    lut->table[i].b > D3_LUT_ENTRY_MASK)
++			return -EINVAL;
++
++	return 0;
++}
++
++static int ipipe_get_3d_lut_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	struct vpfe_ipipe_3d_lut *lut_param = (struct vpfe_ipipe_3d_lut *)param;
++	struct vpfe_ipipe_3d_lut *lut = &ipipe->config.lut;
++	struct device *dev = ipipe->subdev.v4l2_dev->dev;
++
++	lut_param->en = lut->en;
++	if (!lut_param->table) {
++		dev_err(dev, "ipipe_get_3d_lut_params: Invalid table ptr\n");
++		return -EINVAL;
++	}
++
++	memcpy(lut_param->table, &lut->table,
++	       (VPFE_IPIPE_MAX_SIZE_3D_LUT *
++	       sizeof(struct vpfe_ipipe_3d_lut_entry)));
++
++	return 0;
++}
++
++static int
++ipipe_set_3d_lut_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	struct vpfe_ipipe_3d_lut *lut_param = (struct vpfe_ipipe_3d_lut *)param;
++	struct vpfe_ipipe_3d_lut *lut = &ipipe->config.lut;
++	struct device *dev = ipipe->subdev.v4l2_dev->dev;
++
++	if (!lut_param) {
++		memset(lut, 0, sizeof(struct vpfe_ipipe_3d_lut));
++		goto success;
++	}
++
++	memcpy(lut, lut_param, sizeof(struct vpfe_ipipe_3d_lut));
++	if (ipipe_validate_3d_lut_params(lut) < 0) {
++		dev_err(dev, "Invalid 3D-LUT Params\n");
++		return -EINVAL;
++	}
++
++success:
++	ipipe_set_3d_lut_regs(ipipe->base_addr, ipipe->isp5_base_addr, lut);
++
++	return 0;
++}
++
++static int ipipe_validate_rgb2yuv_params(struct vpfe_ipipe_rgb2yuv *rgb2yuv)
++{
++	if (rgb2yuv->coef_ry.decimal > RGB2YCBCR_COEF_DECI_MASK ||
++	   rgb2yuv->coef_ry.integer > RGB2YCBCR_COEF_INT_MASK)
++		return -EINVAL;
++
++	if (rgb2yuv->coef_gy.decimal > RGB2YCBCR_COEF_DECI_MASK ||
++	   rgb2yuv->coef_gy.integer > RGB2YCBCR_COEF_INT_MASK)
++		return -EINVAL;
++
++	if (rgb2yuv->coef_by.decimal > RGB2YCBCR_COEF_DECI_MASK ||
++	   rgb2yuv->coef_by.integer > RGB2YCBCR_COEF_INT_MASK)
++		return -EINVAL;
++
++	if (rgb2yuv->coef_rcb.decimal > RGB2YCBCR_COEF_DECI_MASK ||
++	   rgb2yuv->coef_rcb.integer > RGB2YCBCR_COEF_INT_MASK)
++		return -EINVAL;
++
++	if (rgb2yuv->coef_gcb.decimal > RGB2YCBCR_COEF_DECI_MASK ||
++	   rgb2yuv->coef_gcb.integer > RGB2YCBCR_COEF_INT_MASK)
++		return -EINVAL;
++
++	if (rgb2yuv->coef_bcb.decimal > RGB2YCBCR_COEF_DECI_MASK ||
++	   rgb2yuv->coef_bcb.integer > RGB2YCBCR_COEF_INT_MASK)
++		return -EINVAL;
++
++	if (rgb2yuv->coef_rcr.decimal > RGB2YCBCR_COEF_DECI_MASK ||
++	   rgb2yuv->coef_rcr.integer > RGB2YCBCR_COEF_INT_MASK)
++		return -EINVAL;
++
++	if (rgb2yuv->coef_gcr.decimal > RGB2YCBCR_COEF_DECI_MASK ||
++	   rgb2yuv->coef_gcr.integer > RGB2YCBCR_COEF_INT_MASK)
++		return -EINVAL;
++
++	if (rgb2yuv->coef_bcr.decimal > RGB2YCBCR_COEF_DECI_MASK ||
++	   rgb2yuv->coef_bcr.integer > RGB2YCBCR_COEF_INT_MASK)
++		return -EINVAL;
++
++	if (rgb2yuv->out_ofst_y > RGB2YCBCR_OFST_MASK ||
++	   rgb2yuv->out_ofst_cb > RGB2YCBCR_OFST_MASK ||
++	   rgb2yuv->out_ofst_cr > RGB2YCBCR_OFST_MASK)
++		return -EINVAL;
++
++	return 0;
++}
++
++static int
++ipipe_set_rgb2yuv_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	struct vpfe_ipipe_rgb2yuv *rgb2yuv = &ipipe->config.rgb2yuv;
++	struct device *dev = ipipe->subdev.v4l2_dev->dev;
++	struct vpfe_ipipe_rgb2yuv *rgb2yuv_param;
++
++	rgb2yuv_param = (struct vpfe_ipipe_rgb2yuv *)param;
++	if (!rgb2yuv_param) {
++		/* Defaults for rgb2yuv conversion */
++		const struct vpfe_ipipe_rgb2yuv rgb2yuv_defaults = {
++			.coef_ry  = {0, 0x4d},
++			.coef_gy  = {0, 0x96},
++			.coef_by  = {0, 0x1d},
++			.coef_rcb = {0xf, 0xd5},
++			.coef_gcb = {0xf, 0xab},
++			.coef_bcb = {0, 0x80},
++			.coef_rcr = {0, 0x80},
++			.coef_gcr = {0xf, 0x95},
++			.coef_bcr = {0xf, 0xeb},
++			.out_ofst_cb = 0x80,
++			.out_ofst_cr = 0x80,
++		};
++		/* Copy defaults for rgb2yuv conversion  */
++		memcpy(rgb2yuv, &rgb2yuv_defaults,
++		       sizeof(struct vpfe_ipipe_rgb2yuv));
++		goto success;
++	}
++
++	memcpy(rgb2yuv, rgb2yuv_param, sizeof(struct vpfe_ipipe_rgb2yuv));
++	if (ipipe_validate_rgb2yuv_params(rgb2yuv) < 0) {
++		dev_err(dev, "Invalid rgb2yuv params\n");
++		return -EINVAL;
++	}
++
++success:
++	ipipe_set_rgb2ycbcr_regs(ipipe->base_addr, rgb2yuv);
++
++	return 0;
++}
++
++static int
++ipipe_get_rgb2yuv_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	struct vpfe_ipipe_rgb2yuv *rgb2yuv = &ipipe->config.rgb2yuv;
++	struct vpfe_ipipe_rgb2yuv *rgb2yuv_param;
++
++	rgb2yuv_param = (struct vpfe_ipipe_rgb2yuv *)param;
++	memcpy(rgb2yuv_param, rgb2yuv, sizeof(struct vpfe_ipipe_rgb2yuv));
++	return 0;
++}
++
++static int ipipe_validate_gbce_params(struct vpfe_ipipe_gbce *gbce)
++{
++	u32 max = GBCE_Y_VAL_MASK;
++	int i;
++
++	if (!gbce->en)
++		return 0;
++
++	if (gbce->type == VPFE_IPIPE_GBCE_GAIN_TBL)
++		max = GBCE_GAIN_VAL_MASK;
++
++	for (i = 0; i < VPFE_IPIPE_MAX_SIZE_GBCE_LUT; i++)
++		if (gbce->table[i] > max)
++			return -EINVAL;
++
++	return 0;
++}
++
++static int ipipe_set_gbce_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	struct vpfe_ipipe_gbce *gbce_param = (struct vpfe_ipipe_gbce *)param;
++	struct vpfe_ipipe_gbce *gbce = &ipipe->config.gbce;
++	struct device *dev = ipipe->subdev.v4l2_dev->dev;
++
++	if (!gbce_param) {
++		memset(gbce, 0 , sizeof(struct vpfe_ipipe_gbce));
++	} else {
++		memcpy(gbce, gbce_param, sizeof(struct vpfe_ipipe_gbce));
++		if (ipipe_validate_gbce_params(gbce) < 0) {
++			dev_err(dev, "Invalid gbce params\n");
++			return -EINVAL;
++		}
++	}
++
++	ipipe_set_gbce_regs(ipipe->base_addr, ipipe->isp5_base_addr, gbce);
++
++	return 0;
++}
++
++static int ipipe_get_gbce_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	struct vpfe_ipipe_gbce *gbce_param = (struct vpfe_ipipe_gbce *)param;
++	struct vpfe_ipipe_gbce *gbce = &ipipe->config.gbce;
++	struct device *dev = ipipe->subdev.v4l2_dev->dev;
++
++	gbce_param->en = gbce->en;
++	gbce_param->type = gbce->type;
++	if (!gbce_param->table) {
++		dev_err(dev, "ipipe_get_gbce_params: Invalid table ptr\n");
++		return -EINVAL;
++	}
++
++	memcpy(gbce_param->table, gbce->table,
++		(VPFE_IPIPE_MAX_SIZE_GBCE_LUT * sizeof(unsigned short)));
++
++	return 0;
++}
++
++static int
++ipipe_validate_yuv422_conv_params(struct vpfe_ipipe_yuv422_conv *yuv422_conv)
++{
++	if (yuv422_conv->en_chrom_lpf > 1)
++		return -EINVAL;
++
++	return 0;
++}
++
++static int
++ipipe_set_yuv422_conv_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	struct vpfe_ipipe_yuv422_conv *yuv422_conv = &ipipe->config.yuv422_conv;
++	struct vpfe_ipipe_yuv422_conv *yuv422_conv_param;
++	struct device *dev = ipipe->subdev.v4l2_dev->dev;
++
++	yuv422_conv_param = (struct vpfe_ipipe_yuv422_conv *)param;
++	if (!yuv422_conv_param) {
++		memset(yuv422_conv, 0, sizeof(struct vpfe_ipipe_yuv422_conv));
++		yuv422_conv->chrom_pos = VPFE_IPIPE_YUV422_CHR_POS_COSITE;
++	} else {
++		memcpy(yuv422_conv, yuv422_conv_param,
++			sizeof(struct vpfe_ipipe_yuv422_conv));
++		if (ipipe_validate_yuv422_conv_params(yuv422_conv) < 0) {
++			dev_err(dev, "Invalid yuv422 params\n");
++			return -EINVAL;
++		}
++	}
++
++	ipipe_set_yuv422_conv_regs(ipipe->base_addr, yuv422_conv);
++
++	return 0;
++}
++
++static int
++ipipe_get_yuv422_conv_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	struct vpfe_ipipe_yuv422_conv *yuv422_conv = &ipipe->config.yuv422_conv;
++	struct vpfe_ipipe_yuv422_conv *yuv422_conv_param;
++
++	yuv422_conv_param = (struct vpfe_ipipe_yuv422_conv *)param;
++	memcpy(yuv422_conv_param, yuv422_conv,
++	       sizeof(struct vpfe_ipipe_yuv422_conv));
++
++	return 0;
++}
++
++static int ipipe_validate_yee_params(struct vpfe_ipipe_yee *yee)
++{
++	int i;
++
++	if (yee->en > 1 ||
++	    yee->en_halo_red > 1 ||
++	    yee->hpf_shft > YEE_HPF_SHIFT_MASK)
++		return -EINVAL;
++
++	if (yee->hpf_coef_00 > YEE_COEF_MASK ||
++	    yee->hpf_coef_01 > YEE_COEF_MASK ||
++	    yee->hpf_coef_02 > YEE_COEF_MASK ||
++	    yee->hpf_coef_10 > YEE_COEF_MASK ||
++	    yee->hpf_coef_11 > YEE_COEF_MASK ||
++	    yee->hpf_coef_12 > YEE_COEF_MASK ||
++	    yee->hpf_coef_20 > YEE_COEF_MASK ||
++	    yee->hpf_coef_21 > YEE_COEF_MASK ||
++	    yee->hpf_coef_22 > YEE_COEF_MASK)
++		return -EINVAL;
++
++	if (yee->yee_thr > YEE_THR_MASK ||
++	    yee->es_gain > YEE_ES_GAIN_MASK ||
++	    yee->es_thr1 > YEE_ES_THR1_MASK ||
++	    yee->es_thr2 > YEE_THR_MASK ||
++	    yee->es_gain_grad > YEE_THR_MASK ||
++	    yee->es_ofst_grad > YEE_THR_MASK)
++		return -EINVAL;
++
++	for (i = 0; i < VPFE_IPIPE_MAX_SIZE_YEE_LUT ; i++)
++		if (yee->table[i] > YEE_ENTRY_MASK)
++			return -EINVAL;
++
++	return 0;
++}
++
++static int ipipe_set_yee_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	struct vpfe_ipipe_yee *yee_param = (struct vpfe_ipipe_yee *)param;
++	struct device *dev = ipipe->subdev.v4l2_dev->dev;
++	struct vpfe_ipipe_yee *yee = &ipipe->config.yee;
++
++	if (!yee_param) {
++		memset(yee, 0, sizeof(struct vpfe_ipipe_yee));
++	} else {
++		memcpy(yee, yee_param, sizeof(struct vpfe_ipipe_yee));
++		if (ipipe_validate_yee_params(yee) < 0) {
++			dev_err(dev, "Invalid yee params\n");
++			return -EINVAL;
++		}
++	}
++
++	ipipe_set_ee_regs(ipipe->base_addr, ipipe->isp5_base_addr, yee);
++
++	return 0;
++}
++
++static int ipipe_get_yee_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	struct vpfe_ipipe_yee *yee_param = (struct vpfe_ipipe_yee *)param;
++	struct vpfe_ipipe_yee *yee = &ipipe->config.yee;
++
++	yee_param->en = yee->en;
++	yee_param->en_halo_red = yee->en_halo_red;
++	yee_param->merge_meth = yee->merge_meth;
++	yee_param->hpf_shft = yee->hpf_shft;
++	yee_param->hpf_coef_00 = yee->hpf_coef_00;
++	yee_param->hpf_coef_01 = yee->hpf_coef_01;
++	yee_param->hpf_coef_02 = yee->hpf_coef_02;
++	yee_param->hpf_coef_10 = yee->hpf_coef_10;
++	yee_param->hpf_coef_11 = yee->hpf_coef_11;
++	yee_param->hpf_coef_12 = yee->hpf_coef_12;
++	yee_param->hpf_coef_20 = yee->hpf_coef_20;
++	yee_param->hpf_coef_21 = yee->hpf_coef_21;
++	yee_param->hpf_coef_22 = yee->hpf_coef_22;
++	yee_param->yee_thr = yee->yee_thr;
++	yee_param->es_gain = yee->es_gain;
++	yee_param->es_thr1 = yee->es_thr1;
++	yee_param->es_thr2 = yee->es_thr2;
++	yee_param->es_gain_grad = yee->es_gain_grad;
++	yee_param->es_ofst_grad = yee->es_ofst_grad;
++	memcpy(yee_param->table, &yee->table,
++	       (VPFE_IPIPE_MAX_SIZE_YEE_LUT * sizeof(short)));
++
++	return 0;
++}
++
++static int ipipe_validate_car_params(struct vpfe_ipipe_car *car)
++{
++	if (car->en > 1 || car->hpf_shft > CAR_HPF_SHIFT_MASK ||
++	    car->gain1.shft > CAR_GAIN1_SHFT_MASK ||
++	    car->gain1.gain_min > CAR_GAIN_MIN_MASK ||
++	    car->gain2.shft > CAR_GAIN2_SHFT_MASK ||
++	    car->gain2.gain_min > CAR_GAIN_MIN_MASK)
++		return -EINVAL;
++
++	return 0;
++}
++
++static int ipipe_set_car_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	struct vpfe_ipipe_car *car_param = (struct vpfe_ipipe_car *)param;
++	struct device *dev = ipipe->subdev.v4l2_dev->dev;
++	struct vpfe_ipipe_car *car = &ipipe->config.car;
++
++	if (!car_param) {
++		memset(car , 0, sizeof(struct vpfe_ipipe_car));
++	} else {
++		memcpy(car, car_param, sizeof(struct vpfe_ipipe_car));
++		if (ipipe_validate_car_params(car) < 0) {
++			dev_err(dev, "Invalid car params\n");
++			return -EINVAL;
++		}
++	}
++
++	ipipe_set_car_regs(ipipe->base_addr, car);
++
++	return 0;
++}
++
++static int ipipe_get_car_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	struct vpfe_ipipe_car *car_param = (struct vpfe_ipipe_car *)param;
++	struct vpfe_ipipe_car *car = &ipipe->config.car;
++
++	memcpy(car_param, car, sizeof(struct vpfe_ipipe_car));
++	return 0;
++}
++
++static int ipipe_validate_cgs_params(struct vpfe_ipipe_cgs *cgs)
++{
++	if (cgs->en > 1 || cgs->h_shft > CAR_SHIFT_MASK)
++		return -EINVAL;
++
++	return 0;
++}
++
++static int ipipe_set_cgs_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	struct vpfe_ipipe_cgs *cgs_param = (struct vpfe_ipipe_cgs *)param;
++	struct device *dev = ipipe->subdev.v4l2_dev->dev;
++	struct vpfe_ipipe_cgs *cgs = &ipipe->config.cgs;
++
++	if (!cgs_param) {
++		memset(cgs, 0, sizeof(struct vpfe_ipipe_cgs));
++	} else {
++		memcpy(cgs, cgs_param, sizeof(struct vpfe_ipipe_cgs));
++		if (ipipe_validate_cgs_params(cgs) < 0) {
++			dev_err(dev, "Invalid cgs params\n");
++			return -EINVAL;
++		}
++	}
++
++	ipipe_set_cgs_regs(ipipe->base_addr, cgs);
++
++	return 0;
++}
++
++static int ipipe_get_cgs_params(struct vpfe_ipipe_device *ipipe, void *param)
++{
++	struct vpfe_ipipe_cgs *cgs_param = (struct vpfe_ipipe_cgs *)param;
++	struct vpfe_ipipe_cgs *cgs = &ipipe->config.cgs;
++
++	memcpy(cgs_param, cgs, sizeof(struct vpfe_ipipe_cgs));
++
++	return 0;
++}
++
++static const struct ipipe_module_if ipipe_modules[VPFE_IPIPE_MAX_MODULES] = {
++	/* VPFE_IPIPE_INPUT_CONFIG */ {
++		offsetof(struct ipipe_module_params, input_config),
++		FIELD_SIZEOF(struct ipipe_module_params, input_config),
++		offsetof(struct vpfe_ipipe_config, input_config),
++		ipipe_set_input_config,
++		ipipe_get_input_config,
++	}, /* VPFE_IPIPE_LUTDPC */ {
++		offsetof(struct ipipe_module_params, lutdpc),
++		FIELD_SIZEOF(struct ipipe_module_params, lutdpc),
++		offsetof(struct vpfe_ipipe_config, lutdpc),
++		ipipe_set_lutdpc_params,
++		ipipe_get_lutdpc_params,
++	}, /* VPFE_IPIPE_OTFDPC */ {
++		offsetof(struct ipipe_module_params, otfdpc),
++		FIELD_SIZEOF(struct ipipe_module_params, otfdpc),
++		offsetof(struct vpfe_ipipe_config, otfdpc),
++		ipipe_set_otfdpc_params,
++		ipipe_get_otfdpc_params,
++	}, /* VPFE_IPIPE_NF1 */ {
++		offsetof(struct ipipe_module_params, nf1),
++		FIELD_SIZEOF(struct ipipe_module_params, nf1),
++		offsetof(struct vpfe_ipipe_config, nf1),
++		ipipe_set_nf1_params,
++		ipipe_get_nf1_params,
++	}, /* VPFE_IPIPE_NF2 */ {
++		offsetof(struct ipipe_module_params, nf2),
++		FIELD_SIZEOF(struct ipipe_module_params, nf2),
++		offsetof(struct vpfe_ipipe_config, nf2),
++		ipipe_set_nf2_params,
++		ipipe_get_nf2_params,
++	}, /* VPFE_IPIPE_WB */ {
++		offsetof(struct ipipe_module_params, wbal),
++		FIELD_SIZEOF(struct ipipe_module_params, wbal),
++		offsetof(struct vpfe_ipipe_config, wbal),
++		ipipe_set_wb_params,
++		ipipe_get_wb_params,
++	}, /* VPFE_IPIPE_RGB2RGB_1 */ {
++		offsetof(struct ipipe_module_params, rgb2rgb1),
++		FIELD_SIZEOF(struct ipipe_module_params, rgb2rgb1),
++		offsetof(struct vpfe_ipipe_config, rgb2rgb1),
++		ipipe_set_rgb2rgb_1_params,
++		ipipe_get_rgb2rgb_1_params,
++	}, /* VPFE_IPIPE_RGB2RGB_2 */ {
++		offsetof(struct ipipe_module_params, rgb2rgb2),
++		FIELD_SIZEOF(struct ipipe_module_params, rgb2rgb2),
++		offsetof(struct vpfe_ipipe_config, rgb2rgb2),
++		ipipe_set_rgb2rgb_2_params,
++		ipipe_get_rgb2rgb_2_params,
++	}, /* VPFE_IPIPE_GAMMA */ {
++		offsetof(struct ipipe_module_params, gamma),
++		FIELD_SIZEOF(struct ipipe_module_params, gamma),
++		offsetof(struct vpfe_ipipe_config, gamma),
++		ipipe_set_gamma_params,
++		ipipe_get_gamma_params,
++	}, /* VPFE_IPIPE_3D_LUT */ {
++		offsetof(struct ipipe_module_params, lut),
++		FIELD_SIZEOF(struct ipipe_module_params, lut),
++		offsetof(struct vpfe_ipipe_config, lut),
++		ipipe_set_3d_lut_params,
++		ipipe_get_3d_lut_params,
++	}, /* VPFE_IPIPE_RGB2YUV */ {
++		offsetof(struct ipipe_module_params, rgb2yuv),
++		FIELD_SIZEOF(struct ipipe_module_params, rgb2yuv),
++		offsetof(struct vpfe_ipipe_config, rgb2yuv),
++		ipipe_set_rgb2yuv_params,
++		ipipe_get_rgb2yuv_params,
++	}, /* VPFE_IPIPE_YUV422_CONV */ {
++		offsetof(struct ipipe_module_params, yuv422_conv),
++		FIELD_SIZEOF(struct ipipe_module_params, yuv422_conv),
++		offsetof(struct vpfe_ipipe_config, yuv422_conv),
++		ipipe_set_yuv422_conv_params,
++		ipipe_get_yuv422_conv_params,
++	}, /* VPFE_IPIPE_YEE */ {
++		offsetof(struct ipipe_module_params, yee),
++		FIELD_SIZEOF(struct ipipe_module_params, yee),
++		offsetof(struct vpfe_ipipe_config, yee),
++		ipipe_set_yee_params,
++		ipipe_get_yee_params,
++	}, /* VPFE_IPIPE_GIC */ {
++		offsetof(struct ipipe_module_params, gic),
++		FIELD_SIZEOF(struct ipipe_module_params, gic),
++		offsetof(struct vpfe_ipipe_config, gic),
++		ipipe_set_gic_params,
++		ipipe_get_gic_params,
++	}, /* VPFE_IPIPE_CFA */ {
++		offsetof(struct ipipe_module_params, cfa),
++		FIELD_SIZEOF(struct ipipe_module_params, cfa),
++		offsetof(struct vpfe_ipipe_config, cfa),
++		ipipe_set_cfa_params,
++		ipipe_get_cfa_params,
++	}, /* VPFE_IPIPE_CAR */ {
++		offsetof(struct ipipe_module_params, car),
++		FIELD_SIZEOF(struct ipipe_module_params, car),
++		offsetof(struct vpfe_ipipe_config, car),
++		ipipe_set_car_params,
++		ipipe_get_car_params,
++	}, /* VPFE_IPIPE_CGS */ {
++		offsetof(struct ipipe_module_params, cgs),
++		FIELD_SIZEOF(struct ipipe_module_params, cgs),
++		offsetof(struct vpfe_ipipe_config, cgs),
++		ipipe_set_cgs_params,
++		ipipe_get_cgs_params,
++	}, /* VPFE_IPIPE_GBCE */ {
++		offsetof(struct ipipe_module_params, gbce),
++		FIELD_SIZEOF(struct ipipe_module_params, gbce),
++		offsetof(struct vpfe_ipipe_config, gbce),
++		ipipe_set_gbce_params,
++		ipipe_get_gbce_params,
++	},
++};
++
++static int ipipe_s_config(struct v4l2_subdev *sd, struct vpfe_ipipe_config *cfg)
++{
++	struct vpfe_ipipe_device *ipipe = v4l2_get_subdevdata(sd);
++	unsigned int i;
++	int rval = 0;
++
++	for (i = 0; i < ARRAY_SIZE(ipipe_modules); i++) {
++		unsigned int bit = 1 << i;
++		if (cfg->flag & bit) {
++			const struct ipipe_module_if *module_if =
++						&ipipe_modules[i];
++			struct ipipe_module_params *params;
++			void __user *from = *(void * __user *)
++				((void *)cfg + module_if->config_offset);
++			size_t size;
++			void *to;
++
++			params = kmalloc(sizeof(struct ipipe_module_params),
++					 GFP_KERNEL);
++			to = (void *)params + module_if->param_offset;
++			size = module_if->param_size;
++
++			if (to && from && size) {
++				if (copy_from_user(to, from, size)) {
++					rval = -EFAULT;
++					break;
++				}
++				rval = module_if->set(ipipe, to);
++				if (rval)
++					goto error;
++			} else if (to && !from && size) {
++				rval = module_if->set(ipipe, NULL);
++				if (rval)
++					goto error;
++			}
++			kfree(params);
++		}
++	}
++error:
++	return rval;
++}
++
++static int ipipe_g_config(struct v4l2_subdev *sd, struct vpfe_ipipe_config *cfg)
++{
++	struct vpfe_ipipe_device *ipipe = v4l2_get_subdevdata(sd);
++	unsigned int i;
++	int rval = 0;
++
++	for (i = 1; i < ARRAY_SIZE(ipipe_modules); i++) {
++		unsigned int bit = 1 << i;
++		if (cfg->flag & bit) {
++			const struct ipipe_module_if *module_if =
++						&ipipe_modules[i];
++			struct ipipe_module_params *params;
++			void __user *to = *(void * __user *)
++				((void *)cfg + module_if->config_offset);
++			size_t size;
++			void *from;
++
++			params =  kmalloc(sizeof(struct ipipe_module_params),
++						GFP_KERNEL);
++			from = (void *)params + module_if->param_offset;
++			size = module_if->param_size;
++
++			if (to && from && size) {
++				rval = module_if->get(ipipe, from);
++				if (rval)
++					goto error;
++				if (copy_to_user(to, from, size)) {
++					rval = -EFAULT;
++					break;
++				}
++			}
++			kfree(params);
++		}
++	}
++error:
++	return rval;
 +}
 +
 +/*
-+ * ISIF helper functions
++ * ipipe_ioctl() - Handle ipipe module private ioctl's
++ * @sd: pointer to v4l2 subdev structure
++ * @cmd: configuration command
++ * @arg: configuration argument
 + */
-+
-+#define DM365_ISIF_MDFS_OFFSET		15
-+#define DM365_ISIF_MDFS_MASK		0x1
-+
-+/* get field id in isif hardware */
-+enum v4l2_field vpfe_isif_get_fid(struct vpfe_device *vpfe_dev)
++static long ipipe_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 +{
-+	struct vpfe_isif_device *isif = &vpfe_dev->vpfe_isif;
-+	u32 field_status;
-+
-+	field_status = isif_read(isif->isif_cfg.base_addr, MODESET);
-+	field_status = (field_status >> DM365_ISIF_MDFS_OFFSET) &
-+			DM365_ISIF_MDFS_MASK;
-+	return field_status;
-+}
-+
-+static int
-+isif_set_pixel_format(struct vpfe_isif_device *isif, unsigned int pixfmt)
-+{
-+	if (isif->formats[ISIF_PAD_SINK].code == V4L2_MBUS_FMT_SGRBG12_1X12) {
-+		if (pixfmt == V4L2_PIX_FMT_SBGGR16)
-+			isif->isif_cfg.data_pack = ISIF_PACK_16BIT;
-+		else if ((pixfmt == V4L2_PIX_FMT_SGRBG10DPCM8) ||
-+				(pixfmt == V4L2_PIX_FMT_SGRBG10ALAW8))
-+			isif->isif_cfg.data_pack = ISIF_PACK_8BIT;
-+		else
-+			return -EINVAL;
-+
-+		isif->isif_cfg.bayer.pix_fmt = ISIF_PIXFMT_RAW;
-+		isif->isif_cfg.bayer.v4l2_pix_fmt = pixfmt;
-+	} else {
-+		if (pixfmt == V4L2_PIX_FMT_YUYV)
-+			isif->isif_cfg.ycbcr.pix_order = ISIF_PIXORDER_YCBYCR;
-+		else if (pixfmt == V4L2_PIX_FMT_UYVY)
-+			isif->isif_cfg.ycbcr.pix_order = ISIF_PIXORDER_CBYCRY;
-+		else
-+			return -EINVAL;
-+
-+		isif->isif_cfg.data_pack = ISIF_PACK_8BIT;
-+		isif->isif_cfg.ycbcr.v4l2_pix_fmt = pixfmt;
-+	}
-+
-+	return 0;
-+}
-+
-+static int
-+isif_set_frame_format(struct vpfe_isif_device *isif,
-+		      enum isif_frmfmt frm_fmt)
-+{
-+	if (isif->formats[ISIF_PAD_SINK].code == V4L2_MBUS_FMT_SGRBG12_1X12)
-+		isif->isif_cfg.bayer.frm_fmt = frm_fmt;
-+	else
-+		isif->isif_cfg.ycbcr.frm_fmt = frm_fmt;
-+
-+	return 0;
-+}
-+
-+static int isif_set_image_window(struct vpfe_isif_device *isif)
-+{
-+	struct v4l2_rect *win = &isif->crop;
-+
-+	if (isif->formats[ISIF_PAD_SINK].code == V4L2_MBUS_FMT_SGRBG12_1X12) {
-+		isif->isif_cfg.bayer.win.top = win->top;
-+		isif->isif_cfg.bayer.win.left = win->left;
-+		isif->isif_cfg.bayer.win.width = win->width;
-+		isif->isif_cfg.bayer.win.height = win->height;
-+		return 0;
-+	}
-+	isif->isif_cfg.ycbcr.win.top = win->top;
-+	isif->isif_cfg.ycbcr.win.left = win->left;
-+	isif->isif_cfg.ycbcr.win.width = win->width;
-+	isif->isif_cfg.ycbcr.win.height = win->height;
-+
-+	return 0;
-+}
-+
-+static int
-+isif_set_buftype(struct vpfe_isif_device *isif, enum isif_buftype buf_type)
-+{
-+	if (isif->formats[ISIF_PAD_SINK].code == V4L2_MBUS_FMT_SGRBG12_1X12)
-+		isif->isif_cfg.bayer.buf_type = buf_type;
-+	else
-+		isif->isif_cfg.ycbcr.buf_type = buf_type;
-+
-+	return 0;
-+}
-+
-+/* configure format in isif hardware */
-+static int
-+isif_config_format(struct vpfe_device *vpfe_dev, unsigned int pad)
-+{
-+	struct vpfe_isif_device *vpfe_isif = &vpfe_dev->vpfe_isif;
-+	enum isif_frmfmt frm_fmt = ISIF_FRMFMT_INTERLACED;
-+	struct v4l2_pix_format format;
 +	int ret = 0;
 +
-+	v4l2_fill_pix_format(&format, &vpfe_dev->vpfe_isif.formats[pad]);
-+	mbus_to_pix(&vpfe_dev->vpfe_isif.formats[pad], &format);
-+
-+	if (isif_set_pixel_format(vpfe_isif, format.pixelformat) < 0) {
-+		v4l2_err(&vpfe_dev->v4l2_dev,
-+			 "Failed to set pixel format in isif\n");
-+		return -EINVAL;
-+	}
-+
-+	/* call for s_crop will override these values */
-+	vpfe_isif->crop.left = 0;
-+	vpfe_isif->crop.top = 0;
-+	vpfe_isif->crop.width = format.width;
-+	vpfe_isif->crop.height = format.height;
-+
-+	/* configure the image window */
-+	isif_set_image_window(vpfe_isif);
-+
-+	switch (vpfe_dev->vpfe_isif.formats[pad].field) {
-+	case V4L2_FIELD_INTERLACED:
-+		/* do nothing, since it is default */
-+		ret = isif_set_buftype(vpfe_isif, ISIF_BUFTYPE_FLD_INTERLEAVED);
-+		break;
-+
-+	case V4L2_FIELD_NONE:
-+		frm_fmt = ISIF_FRMFMT_PROGRESSIVE;
-+		/* buffer type only applicable for interlaced scan */
-+		break;
-+
-+	case V4L2_FIELD_SEQ_TB:
-+		ret = isif_set_buftype(vpfe_isif, ISIF_BUFTYPE_FLD_SEPARATED);
-+		break;
-+
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	/* set the frame format */
-+	if (!ret)
-+		ret = isif_set_frame_format(vpfe_isif, frm_fmt);
-+
-+	return ret;
-+}
-+
-+/*
-+ * isif_try_format() - Try video format on a pad
-+ * @isif: VPFE isif device
-+ * @fh: V4L2 subdev file handle
-+ * @fmt: pointer to v4l2 subdev format structure
-+ */
-+static void
-+isif_try_format(struct vpfe_isif_device *isif, struct v4l2_subdev_fh *fh,
-+		struct v4l2_subdev_format *fmt)
-+{
-+	unsigned int width = fmt->format.width;
-+	unsigned int height = fmt->format.height;
-+	unsigned int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(isif_fmts); i++) {
-+		if (fmt->format.code == isif_fmts[i])
-+			break;
-+	}
-+
-+	/* If not found, use YUYV8_2x8 as default */
-+	if (i >= ARRAY_SIZE(isif_fmts))
-+		fmt->format.code = V4L2_MBUS_FMT_YUYV8_2X8;
-+
-+	/* Clamp the size. */
-+	fmt->format.width = clamp_t(u32, width, 32, MAX_WIDTH);
-+	fmt->format.height = clamp_t(u32, height, 32, MAX_HEIGHT);
-+
-+	/* The data formatter truncates the number of horizontal output
-+	 * pixels to a multiple of 16. To avoid clipping data, allow
-+	 * callers to request an output size bigger than the input size
-+	 * up to the nearest multiple of 16.
-+	 */
-+	if (fmt->pad == ISIF_PAD_SOURCE)
-+		fmt->format.width &= ~15;
-+}
-+
-+/*
-+ * vpfe_isif_buffer_isr() - isif module non-progressive buffer scheduling isr
-+ * @isif: Pointer to isif subdevice.
-+ */
-+void vpfe_isif_buffer_isr(struct vpfe_isif_device *isif)
-+{
-+	struct vpfe_device *vpfe_dev = to_vpfe_device(isif);
-+	struct vpfe_video_device *video = &isif->video_out;
-+	enum v4l2_field field;
-+	int fid;
-+
-+	if (!video->started)
-+		return;
-+
-+	field = video->fmt.fmt.pix.field;
-+
-+	if (field == V4L2_FIELD_NONE) {
-+		/* handle progressive frame capture */
-+		if (video->cur_frm != video->next_frm)
-+			vpfe_video_process_buffer_complete(video);
-+		return;
-+	}
-+
-+	/* interlaced or TB capture check which field we
-+	 * are in hardware
-+	 */
-+	fid = vpfe_isif_get_fid(vpfe_dev);
-+
-+	/* switch the software maintained field id */
-+	video->field_id ^= 1;
-+	if (fid == video->field_id) {
-+		/* we are in-sync here,continue */
-+		if (fid == 0) {
-+			/*
-+			 * One frame is just being captured. If the
-+			 * next frame is available, release the current
-+			 * frame and move on
-+			 */
-+			if (video->cur_frm != video->next_frm)
-+				vpfe_video_process_buffer_complete(video);
-+			/*
-+			 * based on whether the two fields are stored
-+			 * interleavely or separately in memory,
-+			 * reconfigure the ISIF memory address
-+			 */
-+			if (field == V4L2_FIELD_SEQ_TB)
-+				vpfe_video_schedule_bottom_field(video);
-+			return;
-+		}
-+		/*
-+		 * if one field is just being captured configure
-+		 * the next frame get the next frame from the
-+		 * empty queue if no frame is available hold on
-+		 * to the current buffer
-+		 */
-+		spin_lock(&video->dma_queue_lock);
-+		if (!list_empty(&video->dma_queue) &&
-+		video->cur_frm == video->next_frm)
-+			vpfe_video_schedule_next_buffer(video);
-+		spin_unlock(&video->dma_queue_lock);
-+	} else if (fid == 0) {
-+		/*
-+		 * out of sync. Recover from any hardware out-of-sync.
-+		 * May loose one frame
-+		 */
-+		video->field_id = fid;
-+	}
-+}
-+
-+/*
-+ * vpfe_isif_vidint1_isr() - ISIF module progressive buffer scheduling isr
-+ * @isif: Pointer to isif subdevice.
-+ */
-+void vpfe_isif_vidint1_isr(struct vpfe_isif_device *isif)
-+{
-+	struct vpfe_video_device *video = &isif->video_out;
-+
-+	if (!video->started)
-+		return;
-+
-+	spin_lock(&video->dma_queue_lock);
-+	if (video->fmt.fmt.pix.field == V4L2_FIELD_NONE &&
-+	    !list_empty(&video->dma_queue) && video->cur_frm == video->next_frm)
-+		vpfe_video_schedule_next_buffer(video);
-+
-+	spin_unlock(&video->dma_queue_lock);
-+}
-+
-+/*
-+ * VPFE video operations
-+ */
-+
-+static int isif_video_queue(struct vpfe_device *vpfe_dev, unsigned long addr)
-+{
-+	struct vpfe_isif_device *isif = &vpfe_dev->vpfe_isif;
-+
-+	isif_write(isif->isif_cfg.base_addr, (addr >> 21) &
-+		ISIF_CADU_BITS, CADU);
-+	isif_write(isif->isif_cfg.base_addr, (addr >> 5) &
-+		ISIF_CADL_BITS, CADL);
-+
-+	return 0;
-+}
-+
-+static const struct vpfe_video_operations isif_video_ops = {
-+	.queue = isif_video_queue,
-+};
-+
-+/*
-+ * V4L2 subdev operations
-+ */
-+
-+/* Parameter operations */
-+static int isif_get_params(struct v4l2_subdev *sd, void *params)
-+{
-+	struct vpfe_isif_device *isif = v4l2_get_subdevdata(sd);
-+
-+	/* only raw module parameters can be set through the IOCTL */
-+	if (isif->formats[ISIF_PAD_SINK].code != V4L2_MBUS_FMT_SGRBG12_1X12)
-+		return -EINVAL;
-+	memcpy(params, &isif->isif_cfg.bayer.config_params,
-+			sizeof(isif->isif_cfg.bayer.config_params));
-+	return 0;
-+}
-+
-+static int isif_validate_df_csc_params(struct vpfe_isif_df_csc *df_csc)
-+{
-+	struct vpfe_isif_color_space_conv *csc;
-+	int err = -EINVAL;
-+	int csc_df_en;
-+	int i;
-+
-+	if (!df_csc->df_or_csc) {
-+		/* csc configuration */
-+		csc = &df_csc->csc;
-+		if (csc->en) {
-+			csc_df_en = 1;
-+			for (i = 0; i < VPFE_ISIF_CSC_NUM_COEFF; i++)
-+				if (csc->coeff[i].integer >
-+				    ISIF_CSC_COEF_INTEG_MASK ||
-+				    csc->coeff[i].decimal >
-+				    ISIF_CSC_COEF_DECIMAL_MASK) {
-+					pr_err("Invalid CSC coefficients\n");
-+					return err;
-+				}
-+		}
-+	}
-+	if (df_csc->start_pix > ISIF_DF_CSC_SPH_MASK) {
-+		pr_err("Invalid df_csc start pix value\n");
-+		return err;
-+	}
-+
-+	if (df_csc->num_pixels > ISIF_DF_NUMPIX) {
-+		pr_err("Invalid df_csc num pixels value\n");
-+		return err;
-+	}
-+
-+	if (df_csc->start_line > ISIF_DF_CSC_LNH_MASK) {
-+		pr_err("Invalid df_csc start_line value\n");
-+		return err;
-+	}
-+
-+	if (df_csc->num_lines > ISIF_DF_NUMLINES) {
-+		pr_err("Invalid df_csc num_lines value\n");
-+		return err;
-+	}
-+
-+	return 0;
-+}
-+
-+#define DM365_ISIF_MAX_VDFLSFT		4
-+#define DM365_ISIF_MAX_VDFSLV		4095
-+#define DM365_ISIF_MAX_DFCMEM0		0x1fff
-+#define DM365_ISIF_MAX_DFCMEM1		0x1fff
-+
-+static int isif_validate_dfc_params(struct vpfe_isif_dfc *dfc)
-+{
-+	int err = -EINVAL;
-+	int i;
-+
-+	if (!dfc->en)
-+		return 0;
-+
-+	if (dfc->corr_whole_line > 1) {
-+		pr_err("Invalid corr_whole_line value\n");
-+		return err;
-+	}
-+
-+	if (dfc->def_level_shift > DM365_ISIF_MAX_VDFLSFT) {
-+		pr_err("Invalid def_level_shift value\n");
-+		return err;
-+	}
-+
-+	if (dfc->def_sat_level > DM365_ISIF_MAX_VDFSLV) {
-+		pr_err("Invalid def_sat_level value\n");
-+		return err;
-+	}
-+
-+	if (!dfc->num_vdefects ||
-+	    dfc->num_vdefects > VPFE_ISIF_VDFC_TABLE_SIZE) {
-+		pr_err("Invalid num_vdefects value\n");
-+		return err;
-+	}
-+
-+	for (i = 0; i < VPFE_ISIF_VDFC_TABLE_SIZE; i++) {
-+		if (dfc->table[i].pos_vert > DM365_ISIF_MAX_DFCMEM0) {
-+			pr_err("Invalid pos_vert value\n");
-+			return err;
-+		}
-+		if (dfc->table[i].pos_horz > DM365_ISIF_MAX_DFCMEM1) {
-+			pr_err("Invalid pos_horz value\n");
-+			return err;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+#define DM365_ISIF_MAX_CLVRV			0xfff
-+#define DM365_ISIF_MAX_CLDC			0x1fff
-+#define DM365_ISIF_MAX_CLHSH			0x1fff
-+#define DM365_ISIF_MAX_CLHSV			0x1fff
-+#define DM365_ISIF_MAX_CLVSH			0x1fff
-+#define DM365_ISIF_MAX_CLVSV			0x1fff
-+#define DM365_ISIF_MAX_HEIGHT_BLACK_REGION	0x1fff
-+
-+static int isif_validate_bclamp_params(struct vpfe_isif_black_clamp *bclamp)
-+{
-+	int err = -EINVAL;
-+
-+	if (bclamp->dc_offset > DM365_ISIF_MAX_CLDC) {
-+		pr_err("Invalid bclamp dc_offset value\n");
-+		return err;
-+	}
-+	if (!bclamp->en)
-+		return 0;
-+	if (bclamp->horz.clamp_pix_limit > 1) {
-+		pr_err("Invalid bclamp horz clamp_pix_limit value\n");
-+		return err;
-+	}
-+	if (bclamp->horz.win_count_calc < 1 ||
-+			bclamp->horz.win_count_calc > 32) {
-+		pr_err("Invalid bclamp horz win_count_calc value\n");
-+		return err;
-+	}
-+	if (bclamp->horz.win_start_h_calc > DM365_ISIF_MAX_CLHSH) {
-+		pr_err("Invalid bclamp win_start_v_calc value\n");
-+		return err;
-+	}
-+
-+	if (bclamp->horz.win_start_v_calc > DM365_ISIF_MAX_CLHSV) {
-+		pr_err("Invalid bclamp win_start_v_calc value\n");
-+		return err;
-+	}
-+	if (bclamp->vert.reset_clamp_val > DM365_ISIF_MAX_CLVRV) {
-+		pr_err("Invalid bclamp reset_clamp_val value\n");
-+		return err;
-+	}
-+	if (bclamp->vert.ob_v_sz_calc > DM365_ISIF_MAX_HEIGHT_BLACK_REGION) {
-+		pr_err("Invalid bclamp ob_v_sz_calc value\n");
-+		return err;
-+	}
-+	if (bclamp->vert.ob_start_h > DM365_ISIF_MAX_CLVSH) {
-+		pr_err("Invalid bclamp ob_start_h value\n");
-+		return err;
-+	}
-+	if (bclamp->vert.ob_start_v > DM365_ISIF_MAX_CLVSV) {
-+		pr_err("Invalid bclamp ob_start_h value\n");
-+		return err;
-+	}
-+	return 0;
-+}
-+
-+static int
-+isif_validate_raw_params(struct vpfe_isif_raw_config *params)
-+{
-+	int ret;
-+
-+	ret = isif_validate_df_csc_params(&params->df_csc);
-+	if (ret)
-+		return ret;
-+	ret = isif_validate_dfc_params(&params->dfc);
-+	if (ret)
-+		return ret;
-+	ret = isif_validate_bclamp_params(&params->bclamp);
-+	return ret;
-+}
-+
-+static int isif_set_params(struct v4l2_subdev *sd, void *params)
-+{
-+	struct vpfe_isif_device *isif = v4l2_get_subdevdata(sd);
-+	struct vpfe_isif_raw_config isif_raw_params;
-+	int ret = -EINVAL;
-+
-+	/* only raw module parameters can be set through the IOCTL */
-+	if (isif->formats[ISIF_PAD_SINK].code != V4L2_MBUS_FMT_SGRBG12_1X12)
-+		return ret;
-+
-+	memcpy(&isif_raw_params, params, sizeof(isif_raw_params));
-+	if (!isif_validate_raw_params(&isif_raw_params)) {
-+		memcpy(&isif->isif_cfg.bayer.config_params, &isif_raw_params,
-+			sizeof(isif_raw_params));
-+		ret = 0;
-+	}
-+	return ret;
-+}
-+/*
-+ * isif_ioctl() - isif module private ioctl's
-+ * @sd: VPFE isif V4L2 subdevice
-+ * @cmd: ioctl command
-+ * @arg: ioctl argument
-+ *
-+ * Return 0 on success or a negative error code otherwise.
-+ */
-+static long isif_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
-+{
-+	int ret;
-+
 +	switch (cmd) {
-+	case VIDIOC_VPFE_ISIF_S_RAW_PARAMS:
-+		ret = isif_set_params(sd, arg);
++	case VIDIOC_VPFE_IPIPE_S_CONFIG:
++		ret = ipipe_s_config(sd, arg);
 +		break;
 +
-+	case VIDIOC_VPFE_ISIF_G_RAW_PARAMS:
-+		ret = isif_get_params(sd, arg);
++	case VIDIOC_VPFE_IPIPE_G_CONFIG:
++		ret = ipipe_g_config(sd, arg);
 +		break;
 +
 +	default:
@@ -698,889 +1418,227 @@ index 0000000..ebeea72
 +	return ret;
 +}
 +
-+static void isif_config_gain_offset(struct vpfe_isif_device *isif)
++void vpfe_ipipe_enable(struct vpfe_device *vpfe_dev, int en)
 +{
-+	struct vpfe_isif_gain_offsets_adj *gain_off_ptr =
-+		&isif->isif_cfg.bayer.config_params.gain_offset;
-+	void *__iomem base = isif->isif_cfg.base_addr;
-+	u32 val;
++	struct vpfe_ipipeif_device *ipipeif = &vpfe_dev->vpfe_ipipeif;
++	struct vpfe_ipipe_device *ipipe = &vpfe_dev->vpfe_ipipe;
++	unsigned char val;
 +
-+	val = ((gain_off_ptr->gain_sdram_en & 1) << GAIN_SDRAM_EN_SHIFT) |
-+	      ((gain_off_ptr->gain_ipipe_en & 1) << GAIN_IPIPE_EN_SHIFT) |
-+	      ((gain_off_ptr->gain_h3a_en & 1) << GAIN_H3A_EN_SHIFT) |
-+	      ((gain_off_ptr->offset_sdram_en & 1) << OFST_SDRAM_EN_SHIFT) |
-+	      ((gain_off_ptr->offset_ipipe_en & 1) << OFST_IPIPE_EN_SHIFT) |
-+	      ((gain_off_ptr->offset_h3a_en & 1) << OFST_H3A_EN_SHIFT);
-+	isif_merge(base, GAIN_OFFSET_EN_MASK, val, CGAMMAWD);
-+
-+	isif_write(base, isif->isif_cfg.isif_gain_params.cr_gain, CRGAIN);
-+	isif_write(base, isif->isif_cfg.isif_gain_params.cgr_gain, CGRGAIN);
-+	isif_write(base, isif->isif_cfg.isif_gain_params.cgb_gain, CGBGAIN);
-+	isif_write(base, isif->isif_cfg.isif_gain_params.cb_gain, CBGAIN);
-+	isif_write(base, isif->isif_cfg.isif_gain_params.offset & OFFSET_MASK,
-+		   COFSTA);
-+
-+}
-+
-+static void isif_config_bclamp(struct vpfe_isif_device *isif,
-+		   struct vpfe_isif_black_clamp *bc)
-+{
-+	u32 val;
-+
-+	/**
-+	 * DC Offset is always added to image data irrespective of bc enable
-+	 * status
-+	 */
-+	val = bc->dc_offset & ISIF_BC_DCOFFSET_MASK;
-+	isif_write(isif->isif_cfg.base_addr, val, CLDCOFST);
-+
-+	if (!bc->en)
++	if (ipipe->input == IPIPE_INPUT_NONE)
 +		return;
 +
-+	val = (bc->bc_mode_color & ISIF_BC_MODE_COLOR_MASK) <<
-+		ISIF_BC_MODE_COLOR_SHIFT;
-+
-+	/* Enable BC and horizontal clamp caculation paramaters */
-+	val = val | 1 | ((bc->horz.mode & ISIF_HORZ_BC_MODE_MASK) <<
-+	      ISIF_HORZ_BC_MODE_SHIFT);
-+
-+	isif_write(isif->isif_cfg.base_addr, val, CLAMPCFG);
-+
-+	if (bc->horz.mode != VPFE_ISIF_HORZ_BC_DISABLE) {
-+		/*
-+		 * Window count for calculation
-+		 * Base window selection
-+		 * pixel limit
-+		 * Horizontal size of window
-+		 * vertical size of the window
-+		 * Horizontal start position of the window
-+		 * Vertical start position of the window
++	/* ipipe is set to single shot */
++	if (ipipeif->input == IPIPEIF_INPUT_MEMORY && en) {
++		/* for single-shot mode, need to wait for h/w to
++		 * reset many register bits
 +		 */
-+		val = (bc->horz.win_count_calc & ISIF_HORZ_BC_WIN_COUNT_MASK) |
-+		      ((bc->horz.base_win_sel_calc & 1) <<
-+		      ISIF_HORZ_BC_WIN_SEL_SHIFT) |
-+		      ((bc->horz.clamp_pix_limit & 1) <<
-+		      ISIF_HORZ_BC_PIX_LIMIT_SHIFT) |
-+		      ((bc->horz.win_h_sz_calc &
-+		      ISIF_HORZ_BC_WIN_H_SIZE_MASK) <<
-+		      ISIF_HORZ_BC_WIN_H_SIZE_SHIFT) |
-+		      ((bc->horz.win_v_sz_calc &
-+		      ISIF_HORZ_BC_WIN_V_SIZE_MASK) <<
-+		      ISIF_HORZ_BC_WIN_V_SIZE_SHIFT);
-+
-+		isif_write(isif->isif_cfg.base_addr, val, CLHWIN0);
-+
-+		val = bc->horz.win_start_h_calc & ISIF_HORZ_BC_WIN_START_H_MASK;
-+		isif_write(isif->isif_cfg.base_addr, val, CLHWIN1);
-+
-+		val = bc->horz.win_start_v_calc & ISIF_HORZ_BC_WIN_START_V_MASK;
-+		isif_write(isif->isif_cfg.base_addr, val, CLHWIN2);
++		do {
++			val = regr_ip(vpfe_dev->vpfe_ipipe.base_addr,
++				      IPIPE_SRC_EN);
++		} while (val);
 +	}
-+
-+	/* vertical clamp caculation paramaters */
-+	/* OB H Valid */
-+	val = bc->vert.ob_h_sz_calc & ISIF_VERT_BC_OB_H_SZ_MASK;
-+
-+	/* Reset clamp value sel for previous line */
-+	val |= (bc->vert.reset_val_sel & ISIF_VERT_BC_RST_VAL_SEL_MASK) <<
-+				ISIF_VERT_BC_RST_VAL_SEL_SHIFT;
-+
-+	/* Line average coefficient */
-+	val |= bc->vert.line_ave_coef << ISIF_VERT_BC_LINE_AVE_COEF_SHIFT;
-+	isif_write(isif->isif_cfg.base_addr, val, CLVWIN0);
-+
-+	/* Configured reset value */
-+	if (bc->vert.reset_val_sel == VPFE_ISIF_VERT_BC_USE_CONFIG_CLAMP_VAL) {
-+		val = bc->vert.reset_clamp_val & ISIF_VERT_BC_RST_VAL_MASK;
-+		isif_write(isif->isif_cfg.base_addr, val, CLVRV);
-+	}
-+
-+	/* Optical Black horizontal start position */
-+	val = bc->vert.ob_start_h & ISIF_VERT_BC_OB_START_HORZ_MASK;
-+	isif_write(isif->isif_cfg.base_addr, val, CLVWIN1);
-+
-+	/* Optical Black vertical start position */
-+	val = bc->vert.ob_start_v & ISIF_VERT_BC_OB_START_VERT_MASK;
-+	isif_write(isif->isif_cfg.base_addr, val, CLVWIN2);
-+
-+	val = bc->vert.ob_v_sz_calc & ISIF_VERT_BC_OB_VERT_SZ_MASK;
-+	isif_write(isif->isif_cfg.base_addr, val, CLVWIN3);
-+
-+	/* Vertical start position for BC subtraction */
-+	val = bc->vert_start_sub & ISIF_BC_VERT_START_SUB_V_MASK;
-+	isif_write(isif->isif_cfg.base_addr, val, CLSV);
-+}
-+
-+/* This function will configure the window size to be capture in ISIF reg */
-+static void
-+isif_setwin(struct vpfe_isif_device *isif, struct v4l2_rect *image_win,
-+	    enum isif_frmfmt frm_fmt, int ppc, int mode)
-+{
-+	int horz_nr_pixels;
-+	int vert_nr_lines;
-+	int horz_start;
-+	int vert_start;
-+	int mid_img;
-+
-+	/*
-+	 * ppc - per pixel count. indicates how many pixels per cell
-+	 * output to SDRAM. example, for ycbcr, it is one y and one c, so 2.
-+	 * raw capture this is 1
-+	 */
-+	horz_start = image_win->left << (ppc - 1);
-+	horz_nr_pixels = (image_win->width << (ppc - 1)) - 1;
-+
-+	/* Writing the horizontal info into the registers */
-+	isif_write(isif->isif_cfg.base_addr,
-+		   horz_start & START_PX_HOR_MASK, SPH);
-+	isif_write(isif->isif_cfg.base_addr,
-+		   horz_nr_pixels & NUM_PX_HOR_MASK, LNH);
-+	vert_start = image_win->top;
-+
-+	if (frm_fmt == ISIF_FRMFMT_INTERLACED) {
-+		vert_nr_lines = (image_win->height >> 1) - 1;
-+		vert_start >>= 1;
-+		/* To account for VD since line 0 doesn't have any data */
-+		vert_start += 1;
-+	} else {
-+		/* To account for VD since line 0 doesn't have any data */
-+		vert_start += 1;
-+		vert_nr_lines = image_win->height - 1;
-+		/* configure VDINT0 and VDINT1 */
-+		mid_img = vert_start + (image_win->height / 2);
-+		isif_write(isif->isif_cfg.base_addr, mid_img, VDINT1);
-+	}
-+
-+	if (!mode)
-+		isif_write(isif->isif_cfg.base_addr, 0, VDINT0);
-+	else
-+		isif_write(isif->isif_cfg.base_addr, vert_nr_lines, VDINT0);
-+	isif_write(isif->isif_cfg.base_addr,
-+		   vert_start & START_VER_ONE_MASK, SLV0);
-+	isif_write(isif->isif_cfg.base_addr,
-+		   vert_start & START_VER_TWO_MASK, SLV1);
-+	isif_write(isif->isif_cfg.base_addr,
-+		   vert_nr_lines & NUM_LINES_VER, LNV);
-+}
-+
-+#define DM365_ISIF_DFCMWR_MEMORY_WRITE		1
-+#define DM365_ISIF_DFCMRD_MEMORY_READ		0x2
-+
-+static void
-+isif_config_dfc(struct vpfe_isif_device *isif, struct vpfe_isif_dfc *vdfc)
-+{
-+#define DFC_WRITE_WAIT_COUNT	1000
-+	u32 count = DFC_WRITE_WAIT_COUNT;
-+	u32 val;
-+	int i;
-+
-+	if (!vdfc->en)
-+		return;
-+
-+	/* Correction mode */
-+	val = (vdfc->corr_mode & ISIF_VDFC_CORR_MOD_MASK) <<
-+	       ISIF_VDFC_CORR_MOD_SHIFT;
-+
-+	/* Correct whole line or partial */
-+	if (vdfc->corr_whole_line)
-+		val |= 1 << ISIF_VDFC_CORR_WHOLE_LN_SHIFT;
-+
-+	/* level shift value */
-+	val |= (vdfc->def_level_shift & ISIF_VDFC_LEVEL_SHFT_MASK) <<
-+		ISIF_VDFC_LEVEL_SHFT_SHIFT;
-+
-+	isif_write(isif->isif_cfg.base_addr, val, DFCCTL);
-+
-+	/* Defect saturation level */
-+	val = vdfc->def_sat_level & ISIF_VDFC_SAT_LEVEL_MASK;
-+	isif_write(isif->isif_cfg.base_addr, val, VDFSATLV);
-+
-+	isif_write(isif->isif_cfg.base_addr, vdfc->table[0].pos_vert &
-+		   ISIF_VDFC_POS_MASK, DFCMEM0);
-+	isif_write(isif->isif_cfg.base_addr, vdfc->table[0].pos_horz &
-+		   ISIF_VDFC_POS_MASK, DFCMEM1);
-+	if (vdfc->corr_mode == VPFE_ISIF_VDFC_NORMAL ||
-+	    vdfc->corr_mode == VPFE_ISIF_VDFC_HORZ_INTERPOL_IF_SAT) {
-+		isif_write(isif->isif_cfg.base_addr,
-+			   vdfc->table[0].level_at_pos, DFCMEM2);
-+		isif_write(isif->isif_cfg.base_addr,
-+			   vdfc->table[0].level_up_pixels, DFCMEM3);
-+		isif_write(isif->isif_cfg.base_addr,
-+			   vdfc->table[0].level_low_pixels, DFCMEM4);
-+	}
-+
-+	val = isif_read(isif->isif_cfg.base_addr, DFCMEMCTL);
-+	/* set DFCMARST and set DFCMWR */
-+	val |= 1 << ISIF_DFCMEMCTL_DFCMARST_SHIFT;
-+	val |= 1;
-+	isif_write(isif->isif_cfg.base_addr, val, DFCMEMCTL);
-+
-+	while (count && (isif_read(isif->isif_cfg.base_addr, DFCMEMCTL) & 0x01))
-+		count--;
-+
-+	val = isif_read(isif->isif_cfg.base_addr, DFCMEMCTL);
-+	if (!count) {
-+		pr_debug("defect table write timeout !!\n");
-+		return;
-+	}
-+
-+	for (i = 1; i < vdfc->num_vdefects; i++) {
-+		isif_write(isif->isif_cfg.base_addr, vdfc->table[i].pos_vert &
-+			ISIF_VDFC_POS_MASK, DFCMEM0);
-+
-+		isif_write(isif->isif_cfg.base_addr, vdfc->table[i].pos_horz &
-+			ISIF_VDFC_POS_MASK, DFCMEM1);
-+
-+		if (vdfc->corr_mode == VPFE_ISIF_VDFC_NORMAL ||
-+		    vdfc->corr_mode == VPFE_ISIF_VDFC_HORZ_INTERPOL_IF_SAT) {
-+			isif_write(isif->isif_cfg.base_addr,
-+				   vdfc->table[i].level_at_pos, DFCMEM2);
-+			isif_write(isif->isif_cfg.base_addr,
-+				   vdfc->table[i].level_up_pixels, DFCMEM3);
-+			isif_write(isif->isif_cfg.base_addr,
-+				   vdfc->table[i].level_low_pixels, DFCMEM4);
-+		}
-+		val = isif_read(isif->isif_cfg.base_addr, DFCMEMCTL);
-+		/* clear DFCMARST and set DFCMWR */
-+		val &= ~(1 << ISIF_DFCMEMCTL_DFCMARST_SHIFT);
-+		val |= 1;
-+		isif_write(isif->isif_cfg.base_addr, val, DFCMEMCTL);
-+
-+		count = DFC_WRITE_WAIT_COUNT;
-+		while (count && (isif_read(isif->isif_cfg.base_addr,
-+			DFCMEMCTL) & 0x01))
-+			count--;
-+
-+		val = isif_read(isif->isif_cfg.base_addr, DFCMEMCTL);
-+		if (!count) {
-+			pr_debug("defect table write timeout !!\n");
-+			return;
-+		}
-+	}
-+	if (vdfc->num_vdefects < VPFE_ISIF_VDFC_TABLE_SIZE) {
-+		/* Extra cycle needed */
-+		isif_write(isif->isif_cfg.base_addr, 0, DFCMEM0);
-+		isif_write(isif->isif_cfg.base_addr,
-+			   DM365_ISIF_MAX_DFCMEM1, DFCMEM1);
-+		isif_write(isif->isif_cfg.base_addr,
-+			   DM365_ISIF_DFCMWR_MEMORY_WRITE, DFCMEMCTL);
-+	}
-+	/* enable VDFC */
-+	isif_merge(isif->isif_cfg.base_addr, (1 << ISIF_VDFC_EN_SHIFT),
-+		   (1 << ISIF_VDFC_EN_SHIFT), DFCCTL);
-+
-+	isif_merge(isif->isif_cfg.base_addr, (1 << ISIF_VDFC_EN_SHIFT),
-+		   (0 << ISIF_VDFC_EN_SHIFT), DFCCTL);
-+
-+	isif_write(isif->isif_cfg.base_addr, 0x6, DFCMEMCTL);
-+	for (i = 0 ; i < vdfc->num_vdefects; i++) {
-+		count = DFC_WRITE_WAIT_COUNT;
-+		while (count &&
-+			(isif_read(isif->isif_cfg.base_addr, DFCMEMCTL) & 0x2))
-+			count--;
-+		val = isif_read(isif->isif_cfg.base_addr, DFCMEMCTL);
-+		if (!count) {
-+			pr_debug("defect table write timeout !!\n");
-+			return;
-+		}
-+		isif_write(isif->isif_cfg.base_addr,
-+			   DM365_ISIF_DFCMRD_MEMORY_READ, DFCMEMCTL);
-+	}
-+}
-+
-+static void
-+isif_config_csc(struct vpfe_isif_device *isif, struct vpfe_isif_df_csc *df_csc)
-+{
-+	u32 val1;
-+	u32 val2;
-+	u32 i;
-+
-+	if (!df_csc->csc.en) {
-+		isif_write(isif->isif_cfg.base_addr, 0, CSCCTL);
-+		return;
-+	}
-+	/* initialize all bits to 0 */
-+	val1 = 0;
-+	for (i = 0; i < VPFE_ISIF_CSC_NUM_COEFF; i++) {
-+		if ((i % 2) == 0) {
-+			/* CSCM - LSB */
-+			val1 = ((df_csc->csc.coeff[i].integer &
-+				ISIF_CSC_COEF_INTEG_MASK) <<
-+				ISIF_CSC_COEF_INTEG_SHIFT) |
-+				((df_csc->csc.coeff[i].decimal &
-+				ISIF_CSC_COEF_DECIMAL_MASK));
-+		} else {
-+
-+			/* CSCM - MSB */
-+			val2 = ((df_csc->csc.coeff[i].integer &
-+				ISIF_CSC_COEF_INTEG_MASK) <<
-+				ISIF_CSC_COEF_INTEG_SHIFT) |
-+				((df_csc->csc.coeff[i].decimal &
-+				ISIF_CSC_COEF_DECIMAL_MASK));
-+			val2 <<= ISIF_CSCM_MSB_SHIFT;
-+			val2 |= val1;
-+			isif_write(isif->isif_cfg.base_addr, val2,
-+				   (CSCM0 + ((i-1) << 1)));
-+		}
-+	}
-+	/* program the active area */
-+	isif_write(isif->isif_cfg.base_addr, df_csc->start_pix &
-+		ISIF_DF_CSC_SPH_MASK, FMTSPH);
-+	/*
-+	 * one extra pixel as required for CSC. Actually number of
-+	 * pixel - 1 should be configured in this register. So we
-+	 * need to subtract 1 before writing to FMTSPH, but we will
-+	 * not do this since csc requires one extra pixel
-+	 */
-+	isif_write(isif->isif_cfg.base_addr, df_csc->num_pixels &
-+		ISIF_DF_CSC_SPH_MASK, FMTLNH);
-+	isif_write(isif->isif_cfg.base_addr, df_csc->start_line &
-+		ISIF_DF_CSC_SPH_MASK, FMTSLV);
-+	/*
-+	 * one extra line as required for CSC. See reason documented for
-+	 * num_pixels
-+	 */
-+	isif_write(isif->isif_cfg.base_addr, df_csc->num_lines &
-+		ISIF_DF_CSC_SPH_MASK, FMTLNV);
-+	/* Enable CSC */
-+	isif_write(isif->isif_cfg.base_addr, 1, CSCCTL);
-+}
-+
-+static void
-+isif_config_linearization(struct vpfe_isif_device *isif,
-+			  struct vpfe_isif_linearize *linearize)
-+{
-+	u32 val;
-+	u32 i;
-+
-+	if (!linearize->en) {
-+		isif_write(isif->isif_cfg.base_addr, 0, LINCFG0);
-+		return;
-+	}
-+	/* shift value for correction */
-+	val = (linearize->corr_shft & ISIF_LIN_CORRSFT_MASK) <<
-+	      ISIF_LIN_CORRSFT_SHIFT;
-+	/* enable */
-+	val |= 1;
-+	isif_write(isif->isif_cfg.base_addr, val, LINCFG0);
-+	/* Scale factor */
-+	val = (linearize->scale_fact.integer & 1) <<
-+	      ISIF_LIN_SCALE_FACT_INTEG_SHIFT;
-+	val |= linearize->scale_fact.decimal & ISIF_LIN_SCALE_FACT_DECIMAL_MASK;
-+	isif_write(isif->isif_cfg.base_addr, val, LINCFG1);
-+
-+	for (i = 0; i < VPFE_ISIF_LINEAR_TAB_SIZE; i++) {
-+		val = linearize->table[i] & ISIF_LIN_ENTRY_MASK;
-+		if (i%2)
-+			isif_regw_lin_tbl(isif, val, ((i >> 1) << 2), 1);
-+		else
-+			isif_regw_lin_tbl(isif, val, ((i >> 1) << 2), 0);
-+	}
-+}
-+
-+static void
-+isif_config_culling(struct vpfe_isif_device *isif, struct vpfe_isif_cul *cul)
-+{
-+	u32 val;
-+
-+	/* Horizontal pattern */
-+	val = cul->hcpat_even << CULL_PAT_EVEN_LINE_SHIFT;
-+	val |= cul->hcpat_odd;
-+	isif_write(isif->isif_cfg.base_addr, val, CULH);
-+	/* vertical pattern */
-+	isif_write(isif->isif_cfg.base_addr, cul->vcpat, CULV);
-+	/* LPF */
-+	isif_merge(isif->isif_cfg.base_addr, ISIF_LPF_MASK << ISIF_LPF_SHIFT,
-+		   cul->en_lpf << ISIF_LPF_SHIFT, MODESET);
-+}
-+
-+static int isif_get_pix_fmt(u32 mbus_code)
-+{
-+	switch (mbus_code) {
-+	case V4L2_MBUS_FMT_SGRBG10_ALAW8_1X8:
-+	case V4L2_MBUS_FMT_SGRBG10_DPCM8_1X8:
-+	case V4L2_MBUS_FMT_SGRBG12_1X12:
-+		return ISIF_PIXFMT_RAW;
-+
-+	case V4L2_MBUS_FMT_YUYV8_2X8:
-+	case V4L2_MBUS_FMT_UYVY8_2X8:
-+	case V4L2_MBUS_FMT_YUYV10_2X10:
-+	case V4L2_MBUS_FMT_Y8_1X8:
-+		return ISIF_PIXFMT_YCBCR_8BIT;
-+
-+	case V4L2_MBUS_FMT_YUYV8_1X16:
-+	case V4L2_MBUS_FMT_YUYV10_1X20:
-+		return ISIF_PIXFMT_YCBCR_16BIT;
-+
-+	default:
-+		break;
-+	}
-+	return -EINVAL;
-+}
-+
-+#define ISIF_INTERLACE_INVERSE_MODE		0x4b6d
-+#define ISIF_INTERLACE_NON_INVERSE_MODE		0x0b6d
-+#define ISIF_PROGRESSIVE_INVERSE_MODE		0x4000
-+#define ISIF_PROGRESSIVE_NON_INVERSE_MODE	0x0000
-+
-+static int isif_config_raw(struct v4l2_subdev *sd, int mode)
-+{
-+	struct vpfe_isif_device *isif = v4l2_get_subdevdata(sd);
-+	struct isif_params_raw *params = &isif->isif_cfg.bayer;
-+	struct vpfe_isif_raw_config *module_params =
-+				&isif->isif_cfg.bayer.config_params;
-+	struct v4l2_mbus_framefmt *format;
-+	int pix_fmt;
-+	u32 val;
-+
-+	format = &isif->formats[ISIF_PAD_SINK];
-+
-+	/* In case of user has set BT656IF earlier, it should be reset
-+	 * when configuring for raw input.
-+	 */
-+	isif_write(isif->isif_cfg.base_addr, 0, REC656IF);
-+	/* Configure CCDCFG register
-+	 * Set CCD Not to swap input since input is RAW data
-+	 * Set FID detection function to Latch at V-Sync
-+	 * Set WENLOG - isif valid area
-+	 * Set TRGSEL
-+	 * Set EXTRG
-+	 * Packed to 8 or 16 bits
-+	 */
-+	val = ISIF_YCINSWP_RAW | ISIF_CCDCFG_FIDMD_LATCH_VSYNC |
-+	      ISIF_CCDCFG_WENLOG_AND | ISIF_CCDCFG_TRGSEL_WEN |
-+	      ISIF_CCDCFG_EXTRG_DISABLE | (isif->isif_cfg.data_pack &
-+	      ISIF_DATA_PACK_MASK);
-+	isif_write(isif->isif_cfg.base_addr, val, CCDCFG);
-+
-+	pix_fmt = isif_get_pix_fmt(format->code);
-+	if (pix_fmt < 0) {
-+		pr_debug("Invalid pix_fmt(input mode)\n");
-+		return -EINVAL;
-+	}
-+	/*
-+	 * Configure the vertical sync polarity(MODESET.VDPOL)
-+	 * Configure the horizontal sync polarity (MODESET.HDPOL)
-+	 * Configure frame id polarity (MODESET.FLDPOL)
-+	 * Configure data polarity
-+	 * Configure External WEN Selection
-+	 * Configure frame format(progressive or interlace)
-+	 * Configure pixel format (Input mode)
-+	 * Configure the data shift
-+	 */
-+	val = ISIF_VDHDOUT_INPUT | ((params->vd_pol & ISIF_VD_POL_MASK) <<
-+	      ISIF_VD_POL_SHIFT) | ((params->hd_pol & ISIF_HD_POL_MASK) <<
-+	      ISIF_HD_POL_SHIFT) | ((params->fid_pol & ISIF_FID_POL_MASK) <<
-+	      ISIF_FID_POL_SHIFT) | ((ISIF_DATAPOL_NORMAL &
-+	      ISIF_DATAPOL_MASK) << ISIF_DATAPOL_SHIFT) | ((ISIF_EXWEN_DISABLE &
-+	      ISIF_EXWEN_MASK) << ISIF_EXWEN_SHIFT) | ((params->frm_fmt &
-+	      ISIF_FRM_FMT_MASK) << ISIF_FRM_FMT_SHIFT) | ((pix_fmt &
-+	      ISIF_INPUT_MASK) << ISIF_INPUT_SHIFT);
-+
-+	/* currently only V4L2_MBUS_FMT_SGRBG12_1X12 is
-+	 * supported. shift appropriately depending on
-+	 * different MBUS fmt's added
-+	 */
-+	if (format->code == V4L2_MBUS_FMT_SGRBG12_1X12)
-+		val |= ((VPFE_ISIF_NO_SHIFT &
-+			ISIF_DATASFT_MASK) << ISIF_DATASFT_SHIFT);
-+
-+	isif_write(isif->isif_cfg.base_addr, val, MODESET);
-+	/*
-+	 * Configure GAMMAWD register
-+	 * CFA pattern setting
-+	 */
-+	val = (params->cfa_pat & ISIF_GAMMAWD_CFA_MASK) <<
-+		ISIF_GAMMAWD_CFA_SHIFT;
-+	/* Gamma msb */
-+	if (params->v4l2_pix_fmt == V4L2_PIX_FMT_SGRBG10ALAW8)
-+		val = val | ISIF_ALAW_ENABLE;
-+
-+	val = val | ((params->data_msb & ISIF_ALAW_GAMA_WD_MASK) <<
-+			ISIF_ALAW_GAMA_WD_SHIFT);
-+
-+	isif_write(isif->isif_cfg.base_addr, val, CGAMMAWD);
-+	/* Configure DPCM compression settings */
-+	if (params->v4l2_pix_fmt == V4L2_PIX_FMT_SGRBG10DPCM8) {
-+		val =  1 << ISIF_DPCM_EN_SHIFT;
-+		val |= (params->dpcm_predictor &
-+			ISIF_DPCM_PREDICTOR_MASK) << ISIF_DPCM_PREDICTOR_SHIFT;
-+	}
-+	isif_write(isif->isif_cfg.base_addr, val, MISC);
-+	/* Configure Gain & Offset */
-+	isif_config_gain_offset(isif);
-+	/* Configure Color pattern */
-+	if (format->code == V4L2_MBUS_FMT_SGRBG12_1X12)
-+		val = isif_sgrbg_pattern;
-+	else
-+		/* default set to rggb */
-+		val = isif_srggb_pattern;
-+
-+	isif_write(isif->isif_cfg.base_addr, val, CCOLP);
-+
-+	/* Configure HSIZE register  */
-+	val = (params->horz_flip_en & ISIF_HSIZE_FLIP_MASK) <<
-+	      ISIF_HSIZE_FLIP_SHIFT;
-+
-+	/* calculate line offset in 32 bytes based on pack value */
-+	if (isif->isif_cfg.data_pack == ISIF_PACK_8BIT)
-+		val |= ((params->win.width + 31) >> 5) & ISIF_LINEOFST_MASK;
-+	else if (isif->isif_cfg.data_pack == ISIF_PACK_12BIT)
-+		val |= ((((params->win.width + (params->win.width >> 2)) +
-+			31) >> 5) & ISIF_LINEOFST_MASK);
-+	else
-+		val |= (((params->win.width * 2) + 31) >> 5) &
-+			ISIF_LINEOFST_MASK;
-+	isif_write(isif->isif_cfg.base_addr, val, HSIZE);
-+	/* Configure SDOFST register  */
-+	if (params->frm_fmt == ISIF_FRMFMT_INTERLACED) {
-+		if (params->image_invert_en)
-+			/* For interlace inverse mode */
-+			isif_write(isif->isif_cfg.base_addr,
-+				   ISIF_INTERLACE_INVERSE_MODE, SDOFST);
-+		else
-+			/* For interlace non inverse mode */
-+			isif_write(isif->isif_cfg.base_addr,
-+				   ISIF_INTERLACE_NON_INVERSE_MODE, SDOFST);
-+	} else if (params->frm_fmt == ISIF_FRMFMT_PROGRESSIVE) {
-+		if (params->image_invert_en)
-+			isif_write(isif->isif_cfg.base_addr,
-+				   ISIF_PROGRESSIVE_INVERSE_MODE, SDOFST);
-+		else
-+			/* For progessive non inverse mode */
-+			isif_write(isif->isif_cfg.base_addr,
-+				   ISIF_PROGRESSIVE_NON_INVERSE_MODE, SDOFST);
-+	}
-+	/* Configure video window */
-+	isif_setwin(isif, &params->win, params->frm_fmt, 1, mode);
-+	/* Configure Black Clamp */
-+	isif_config_bclamp(isif, &module_params->bclamp);
-+	/* Configure Vertical Defection Pixel Correction */
-+	isif_config_dfc(isif, &module_params->dfc);
-+	if (!module_params->df_csc.df_or_csc)
-+		/* Configure Color Space Conversion */
-+		isif_config_csc(isif, &module_params->df_csc);
-+
-+	isif_config_linearization(isif, &module_params->linearize);
-+	/* Configure Culling */
-+	isif_config_culling(isif, &module_params->culling);
-+	/* Configure Horizontal and vertical offsets(DFC,LSC,Gain) */
-+	val = module_params->horz_offset & ISIF_DATA_H_OFFSET_MASK;
-+	isif_write(isif->isif_cfg.base_addr, val, DATAHOFST);
-+
-+	val = module_params->vert_offset & ISIF_DATA_V_OFFSET_MASK;
-+	isif_write(isif->isif_cfg.base_addr, val, DATAVOFST);
-+
-+	return 0;
-+}
-+
-+#define DM365_ISIF_HSIZE_MASK		0xffffffe0
-+#define DM365_ISIF_SDOFST_2_LINES	0x00000249
-+
-+/* This function will configure ISIF for YCbCr parameters. */
-+static int isif_config_ycbcr(struct v4l2_subdev *sd, int mode)
-+{
-+	struct vpfe_isif_device *isif = v4l2_get_subdevdata(sd);
-+	struct isif_ycbcr_config *params = &isif->isif_cfg.ycbcr;
-+	struct v4l2_mbus_framefmt *format;
-+	int pix_fmt;
-+	u32 modeset;
-+	u32 ccdcfg;
-+
-+	format = &isif->formats[ISIF_PAD_SINK];
-+	/*
-+	 * first reset the ISIF
-+	 * all registers have default values after reset
-+	 * This is important since we assume default values to be set in
-+	 * a lot of registers that we didn't touch
-+	 */
-+	/* start with all bits zero */
-+	ccdcfg = modeset = 0;
-+	pix_fmt = isif_get_pix_fmt(format->code);
-+	if (pix_fmt < 0) {
-+		pr_debug("Invalid pix_fmt(input mode)\n");
-+		return -EINVAL;
-+	}
-+	/* configure pixel format or input mode */
-+	modeset = modeset | ((pix_fmt & ISIF_INPUT_MASK) <<
-+		  ISIF_INPUT_SHIFT) | ((params->frm_fmt & ISIF_FRM_FMT_MASK) <<
-+		  ISIF_FRM_FMT_SHIFT) | (((params->fid_pol &
-+		  ISIF_FID_POL_MASK) << ISIF_FID_POL_SHIFT)) |
-+		  (((params->hd_pol & ISIF_HD_POL_MASK) << ISIF_HD_POL_SHIFT)) |
-+		  (((params->vd_pol & ISIF_VD_POL_MASK) << ISIF_VD_POL_SHIFT));
-+	/* pack the data to 8-bit CCDCCFG */
-+	switch (format->code) {
-+	case V4L2_MBUS_FMT_YUYV8_2X8:
-+	case V4L2_MBUS_FMT_UYVY8_2X8:
-+		if (pix_fmt != ISIF_PIXFMT_YCBCR_8BIT) {
-+			pr_debug("Invalid pix_fmt(input mode)\n");
-+			return -EINVAL;
-+		}
-+		modeset |= ((VPFE_PINPOL_NEGATIVE & ISIF_VD_POL_MASK) <<
-+				ISIF_VD_POL_SHIFT);
-+		isif_write(isif->isif_cfg.base_addr, 3, REC656IF);
-+		ccdcfg = ccdcfg | ISIF_PACK_8BIT | ISIF_YCINSWP_YCBCR;
-+		break;
-+
-+	case V4L2_MBUS_FMT_YUYV10_2X10:
-+		if (pix_fmt != ISIF_PIXFMT_YCBCR_8BIT) {
-+			pr_debug("Invalid pix_fmt(input mode)\n");
-+			return -EINVAL;
-+		}
-+		/* setup BT.656, embedded sync  */
-+		isif_write(isif->isif_cfg.base_addr, 3, REC656IF);
-+		/* enable 10 bit mode in ccdcfg */
-+		ccdcfg = ccdcfg | ISIF_PACK_8BIT | ISIF_YCINSWP_YCBCR |
-+			ISIF_BW656_ENABLE;
-+		break;
-+
-+	case V4L2_MBUS_FMT_YUYV10_1X20:
-+		if (pix_fmt != ISIF_PIXFMT_YCBCR_16BIT) {
-+			pr_debug("Invalid pix_fmt(input mode)\n");
-+			return -EINVAL;
-+		}
-+		isif_write(isif->isif_cfg.base_addr, 3, REC656IF);
-+		break;
-+
-+	case V4L2_MBUS_FMT_Y8_1X8:
-+		ccdcfg |= ISIF_PACK_8BIT;
-+		ccdcfg |= ISIF_YCINSWP_YCBCR;
-+		if (pix_fmt != ISIF_PIXFMT_YCBCR_8BIT) {
-+			pr_debug("Invalid pix_fmt(input mode)\n");
-+			return -EINVAL;
-+		}
-+		break;
-+
-+	case V4L2_MBUS_FMT_YUYV8_1X16:
-+		if (pix_fmt != ISIF_PIXFMT_YCBCR_16BIT) {
-+			pr_debug("Invalid pix_fmt(input mode)\n");
-+			return -EINVAL;
-+		}
-+		break;
-+
-+	default:
-+		/* should never come here */
-+		pr_debug("Invalid interface type\n");
-+		return -EINVAL;
-+	}
-+	isif_write(isif->isif_cfg.base_addr, modeset, MODESET);
-+	/* Set up pix order */
-+	ccdcfg |= (params->pix_order & ISIF_PIX_ORDER_MASK) <<
-+		ISIF_PIX_ORDER_SHIFT;
-+	isif_write(isif->isif_cfg.base_addr, ccdcfg, CCDCFG);
-+	/* configure video window */
-+	if (format->code == V4L2_MBUS_FMT_YUYV10_1X20 ||
-+			format->code == V4L2_MBUS_FMT_YUYV8_1X16)
-+		isif_setwin(isif, &params->win, params->frm_fmt, 1, mode);
-+	else
-+		isif_setwin(isif, &params->win, params->frm_fmt, 2, mode);
-+
-+	/*
-+	 * configure the horizontal line offset
-+	 * this is done by rounding up width to a multiple of 16 pixels
-+	 * and multiply by two to account for y:cb:cr 4:2:2 data
-+	 */
-+	isif_write(isif->isif_cfg.base_addr,
-+		   ((((params->win.width * 2) + 31) &
-+		   DM365_ISIF_HSIZE_MASK) >> 5), HSIZE);
-+
-+	/* configure the memory line offset */
-+	if (params->frm_fmt == ISIF_FRMFMT_INTERLACED &&
-+	    params->buf_type == ISIF_BUFTYPE_FLD_INTERLEAVED)
-+		/* two fields are interleaved in memory */
-+		isif_write(isif->isif_cfg.base_addr,
-+			   DM365_ISIF_SDOFST_2_LINES, SDOFST);
-+	return 0;
-+}
-+
-+static int isif_configure(struct v4l2_subdev *sd, int mode)
-+{
-+	struct vpfe_isif_device *isif = v4l2_get_subdevdata(sd);
-+	struct v4l2_mbus_framefmt *format;
-+
-+	format = &isif->formats[ISIF_PAD_SINK];
-+
-+	switch (format->code) {
-+	case V4L2_MBUS_FMT_SGRBG10_ALAW8_1X8:
-+	case V4L2_MBUS_FMT_SGRBG10_DPCM8_1X8:
-+	case V4L2_MBUS_FMT_SGRBG12_1X12:
-+		return isif_config_raw(sd, mode);
-+
-+	case V4L2_MBUS_FMT_YUYV8_2X8:
-+	case V4L2_MBUS_FMT_UYVY8_2X8:
-+	case V4L2_MBUS_FMT_YUYV10_2X10:
-+	case V4L2_MBUS_FMT_Y8_1X8:
-+	case V4L2_MBUS_FMT_YUYV8_1X16:
-+	case V4L2_MBUS_FMT_YUYV10_1X20:
-+		return isif_config_ycbcr(sd, mode);
-+
-+	default:
-+		break;
-+	}
-+	return -EINVAL;
++	regw_ip(vpfe_dev->vpfe_ipipe.base_addr, en, IPIPE_SRC_EN);
 +}
 +
 +/*
-+ * isif_set_stream() - Enable/Disable streaming on the ISIF module
-+ * @sd: VPFE ISIF V4L2 subdevice
-+ * @enable: Enable/disable stream
++ * ipipe_set_stream() - Enable/Disable streaming on the ipipe subdevice
++ * @sd: pointer to v4l2 subdev structure
++ * @enable: 1 == Enable, 0 == Disable
 + */
-+static int isif_set_stream(struct v4l2_subdev *sd, int enable)
++static int ipipe_set_stream(struct v4l2_subdev *sd, int enable)
 +{
-+	struct vpfe_isif_device *isif = v4l2_get_subdevdata(sd);
-+	int ret;
++	struct vpfe_ipipe_device *ipipe = v4l2_get_subdevdata(sd);
++	struct vpfe_device *vpfe_dev = to_vpfe_device(ipipe);
 +
-+	if (enable) {
-+		ret = isif_configure(sd,
-+			(isif->output == ISIF_OUTPUT_MEMORY) ? 0 : 1);
-+		if (ret)
-+			return ret;
-+		if (isif->output == ISIF_OUTPUT_MEMORY)
-+			isif_enable_output_to_sdram(isif, 1);
-+		isif_enable(isif, 1);
-+	} else {
-+		isif_enable(isif, 0);
-+		isif_enable_output_to_sdram(isif, 0);
++	if (enable && ipipe->input != IPIPE_INPUT_NONE &&
++		ipipe->output != IPIPE_OUTPUT_NONE) {
++		if (config_ipipe_hw(ipipe) < 0)
++			return -EINVAL;
 +	}
++
++	vpfe_ipipe_enable(vpfe_dev, enable);
 +
 +	return 0;
 +}
 +
 +/*
-+ * __isif_get_format() - helper function for getting isif format
-+ * @isif: pointer to isif private structure.
++ * __ipipe_get_format() - helper function for getting ipipe format
++ * @ipipe: pointer to ipipe private structure.
 + * @pad: pad number.
 + * @fh: V4L2 subdev file handle.
 + * @which: wanted subdev format.
++ *
 + */
 +static struct v4l2_mbus_framefmt *
-+__isif_get_format(struct vpfe_isif_device *isif, struct v4l2_subdev_fh *fh,
-+		  unsigned int pad, enum v4l2_subdev_format_whence which)
++__ipipe_get_format(struct vpfe_ipipe_device *ipipe,
++		       struct v4l2_subdev_fh *fh, unsigned int pad,
++		       enum v4l2_subdev_format_whence which)
 +{
-+	if (which == V4L2_SUBDEV_FORMAT_TRY) {
-+		struct v4l2_subdev_format fmt;
-+
-+		fmt.pad = pad;
-+		fmt.which = which;
-+
++	if (which == V4L2_SUBDEV_FORMAT_TRY)
 +		return v4l2_subdev_get_try_format(fh, pad);
-+	}
-+	return &isif->formats[pad];
++
++	return &ipipe->formats[pad];
 +}
 +
 +/*
-+* isif_set_format() - set format on pad
-+* @sd    : VPFE ISIF device
-+* @fh    : V4L2 subdev file handle
-+* @fmt   : pointer to v4l2 subdev format structure
-+*
-+* Return 0 on success or -EINVAL if format or pad is invalid
-+*/
-+static int
-+isif_set_format(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
-+		struct v4l2_subdev_format *fmt)
++ * ipipe_try_format() - Handle try format by pad subdev method
++ * @ipipe: VPFE ipipe device.
++ * @fh: V4L2 subdev file handle.
++ * @pad: pad num.
++ * @fmt: pointer to v4l2 format structure.
++ * @which : wanted subdev format
++ */
++static void
++ipipe_try_format(struct vpfe_ipipe_device *ipipe,
++		   struct v4l2_subdev_fh *fh, unsigned int pad,
++		   struct v4l2_mbus_framefmt *fmt,
++		   enum v4l2_subdev_format_whence which)
 +{
-+	struct vpfe_isif_device *isif = v4l2_get_subdevdata(sd);
-+	struct vpfe_device *vpfe_dev = to_vpfe_device(isif);
++	unsigned int max_out_height;
++	unsigned int max_out_width;
++	unsigned int i;
++
++	max_out_width = IPIPE_MAX_OUTPUT_WIDTH_A;
++	max_out_height = IPIPE_MAX_OUTPUT_HEIGHT_A;
++
++	if (pad == IPIPE_PAD_SINK) {
++		for (i = 0; i < ARRAY_SIZE(ipipe_input_fmts); i++)
++			if (fmt->code == ipipe_input_fmts[i])
++				break;
++
++		/* If not found, use SBGGR10 as default */
++		if (i >= ARRAY_SIZE(ipipe_input_fmts))
++			fmt->code = V4L2_MBUS_FMT_SGRBG12_1X12;
++	} else if (pad == IPIPE_PAD_SOURCE) {
++		for (i = 0; i < ARRAY_SIZE(ipipe_output_fmts); i++)
++			if (fmt->code == ipipe_output_fmts[i])
++				break;
++
++		/* If not found, use UYVY as default */
++		if (i >= ARRAY_SIZE(ipipe_output_fmts))
++			fmt->code = V4L2_MBUS_FMT_UYVY8_2X8;
++	}
++
++	fmt->width = clamp_t(u32, fmt->width, MIN_OUT_HEIGHT, max_out_width);
++	fmt->height = clamp_t(u32, fmt->height, MIN_OUT_WIDTH, max_out_height);
++}
++
++/*
++ * ipipe_set_format() - Handle set format by pads subdev method
++ * @sd: pointer to v4l2 subdev structure
++ * @fh: V4L2 subdev file handle
++ * @fmt: pointer to v4l2 subdev format structure
++ * return -EINVAL or zero on success
++ */
++static int
++ipipe_set_format(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
++		     struct v4l2_subdev_format *fmt)
++{
++	struct vpfe_ipipe_device *ipipe = v4l2_get_subdevdata(sd);
 +	struct v4l2_mbus_framefmt *format;
 +
-+	format = __isif_get_format(isif, fh, fmt->pad, fmt->which);
++	format = __ipipe_get_format(ipipe, fh, fmt->pad, fmt->which);
 +	if (format == NULL)
 +		return -EINVAL;
 +
-+	isif_try_format(isif, fh, fmt);
-+	memcpy(format, &fmt->format, sizeof(*format));
++	ipipe_try_format(ipipe, fh, fmt->pad, &fmt->format, fmt->which);
++	*format = fmt->format;
 +
 +	if (fmt->which == V4L2_SUBDEV_FORMAT_TRY)
 +		return 0;
 +
-+	if (fmt->pad == ISIF_PAD_SOURCE)
-+		return isif_config_format(vpfe_dev, fmt->pad);
-+
-+	return 0;
-+}
-+
-+/*
-+ * isif_get_format() - Retrieve the video format on a pad
-+ * @sd: VPFE ISIF V4L2 subdevice
-+ * @fh: V4L2 subdev file handle
-+ * @fmt: pointer to v4l2 subdev format structure
-+ *
-+ * Return 0 on success or -EINVAL if the pad is invalid or doesn't correspond
-+ * to the format type.
-+ */
-+static int
-+isif_get_format(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
-+		struct v4l2_subdev_format *fmt)
-+{
-+	struct vpfe_isif_device *vpfe_isif = v4l2_get_subdevdata(sd);
-+	struct v4l2_mbus_framefmt *format;
-+
-+	format = __isif_get_format(vpfe_isif, fh, fmt->pad, fmt->which);
-+	if (format == NULL)
++	if (fmt->pad == IPIPE_PAD_SINK &&
++	   (ipipe->input == IPIPE_INPUT_CCDC ||
++	    ipipe->input == IPIPE_INPUT_MEMORY))
++		ipipe->formats[fmt->pad] = fmt->format;
++	else if (fmt->pad == IPIPE_PAD_SOURCE &&
++		ipipe->output == IPIPE_OUTPUT_RESIZER)
++		ipipe->formats[fmt->pad] = fmt->format;
++	else
 +		return -EINVAL;
 +
-+	memcpy(&fmt->format, format, sizeof(fmt->format));
++	return 0;
++}
++
++/*
++ * ipipe_get_format() - Handle get format by pads subdev method.
++ * @sd: pointer to v4l2 subdev structure.
++ * @fh: V4L2 subdev file handle.
++ * @fmt: pointer to v4l2 subdev format structure.
++ */
++static int
++ipipe_get_format(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
++		     struct v4l2_subdev_format *fmt)
++{
++	struct vpfe_ipipe_device *ipipe = v4l2_get_subdevdata(sd);
++
++	if (fmt->which == V4L2_SUBDEV_FORMAT_ACTIVE)
++		fmt->format = ipipe->formats[fmt->pad];
++	else
++		fmt->format = *(v4l2_subdev_get_try_format(fh, fmt->pad));
 +
 +	return 0;
 +}
 +
 +/*
-+ * isif_enum_frame_size() - enum frame sizes on pads
-+ * @sd: VPFE isif V4L2 subdevice
-+ * @fh: V4L2 subdev file handle
-+ * @code: pointer to v4l2_subdev_frame_size_enum structure
++ * ipipe_enum_frame_size() - enum frame sizes on pads
++ * @sd: pointer to v4l2 subdev structure.
++ * @fh: V4L2 subdev file handle.
++ * @fse: pointer to v4l2_subdev_frame_size_enum structure.
 + */
 +static int
-+isif_enum_frame_size(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
-+		     struct v4l2_subdev_frame_size_enum *fse)
++ipipe_enum_frame_size(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
++			  struct v4l2_subdev_frame_size_enum *fse)
 +{
-+	struct vpfe_isif_device *isif = v4l2_get_subdevdata(sd);
-+	struct v4l2_subdev_format format;
++	struct vpfe_ipipe_device *ipipe = v4l2_get_subdevdata(sd);
++	struct v4l2_mbus_framefmt format;
 +
 +	if (fse->index != 0)
 +		return -EINVAL;
 +
-+	format.pad = fse->pad;
-+	format.format.code = fse->code;
-+	format.format.width = 1;
-+	format.format.height = 1;
-+	format.which = V4L2_SUBDEV_FORMAT_TRY;
-+	isif_try_format(isif, fh, &format);
-+	fse->min_width = format.format.width;
-+	fse->min_height = format.format.height;
++	format.code = fse->code;
++	format.width = 1;
++	format.height = 1;
++	ipipe_try_format(ipipe, fh, fse->pad, &format,
++			   V4L2_SUBDEV_FORMAT_TRY);
++	fse->min_width = format.width;
++	fse->min_height = format.height;
 +
-+	if (format.format.code != fse->code)
++	if (format.code != fse->code)
 +		return -EINVAL;
 +
-+	format.pad = fse->pad;
-+	format.format.code = fse->code;
-+	format.format.width = -1;
-+	format.format.height = -1;
-+	format.which = V4L2_SUBDEV_FORMAT_TRY;
-+	isif_try_format(isif, fh, &format);
-+	fse->max_width = format.format.width;
-+	fse->max_height = format.format.height;
++	format.code = fse->code;
++	format.width = -1;
++	format.height = -1;
++	ipipe_try_format(ipipe, fh, fse->pad, &format,
++			   V4L2_SUBDEV_FORMAT_TRY);
++	fse->max_width = format.width;
++	fse->max_height = format.height;
 +
 +	return 0;
 +}
 +
 +/*
-+ * isif_enum_mbus_code() - enum mbus codes for pads
-+ * @sd: VPFE isif V4L2 subdevice
++ * ipipe_enum_mbus_code() - enum mbus codes for pads
++ * @sd: pointer to v4l2 subdev structure.
 + * @fh: V4L2 subdev file handle
 + * @code: pointer to v4l2_subdev_mbus_code_enum structure
 + */
 +static int
-+isif_enum_mbus_code(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
-+		    struct v4l2_subdev_mbus_code_enum *code)
++ipipe_enum_mbus_code(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
++		     struct v4l2_subdev_mbus_code_enum *code)
 +{
 +	switch (code->pad) {
-+	case ISIF_PAD_SINK:
-+	case ISIF_PAD_SOURCE:
-+		if (code->index >= ARRAY_SIZE(isif_fmts))
++	case IPIPE_PAD_SINK:
++		if (code->index >= ARRAY_SIZE(ipipe_input_fmts))
 +			return -EINVAL;
-+		code->code = isif_fmts[code->index];
++		code->code = ipipe_input_fmts[code->index];
++		break;
++
++	case IPIPE_PAD_SOURCE:
++		if (code->index >= ARRAY_SIZE(ipipe_output_fmts))
++			return -EINVAL;
++		code->code = ipipe_output_fmts[code->index];
 +		break;
 +
 +	default:
@@ -1591,85 +1649,36 @@ index 0000000..ebeea72
 +}
 +
 +/*
-+ * isif_pad_set_crop() - set crop rectangle on pad
-+ * @sd: VPFE isif V4L2 subdevice
-+ * @fh: V4L2 subdev file handle
-+ * @code: pointer to v4l2_subdev_mbus_code_enum structure
-+ *
-+ * Return 0 on success, -EINVAL if pad is invalid
++ * ipipe_s_ctrl() - Handle set control subdev method
++ * @ctrl: pointer to v4l2 control structure
 + */
-+static int
-+isif_pad_set_crop(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
-+		  struct v4l2_subdev_crop *crop)
++static int ipipe_s_ctrl(struct v4l2_ctrl *ctrl)
 +{
-+	struct vpfe_isif_device *vpfe_isif = v4l2_get_subdevdata(sd);
-+	struct v4l2_mbus_framefmt *format;
++	struct vpfe_ipipe_device *ipipe =
++	     container_of(ctrl->handler, struct vpfe_ipipe_device, ctrls);
++	struct ipipe_lum_adj *lum_adj = &ipipe->config.lum_adj;
 +
-+	/* check wether its a valid pad */
-+	if (crop->pad != ISIF_PAD_SINK)
++	switch (ctrl->id) {
++	case V4L2_CID_BRIGHTNESS:
++		lum_adj->brightness = ctrl->val;
++		ipipe_set_lum_adj_regs(ipipe->base_addr, lum_adj);
++		break;
++
++	case V4L2_CID_CONTRAST:
++		lum_adj->contrast = ctrl->val;
++		ipipe_set_lum_adj_regs(ipipe->base_addr, lum_adj);
++		break;
++
++	default:
 +		return -EINVAL;
-+
-+	format = __isif_get_format(vpfe_isif, fh, crop->pad, crop->which);
-+	if (format == NULL)
-+		return -EINVAL;
-+
-+	/* check wether crop rect is within limits */
-+	if (crop->rect.top < 0 || crop->rect.left < 0 ||
-+		(crop->rect.left + crop->rect.width >
-+		vpfe_isif->formats[ISIF_PAD_SINK].width) ||
-+		(crop->rect.top + crop->rect.height >
-+			vpfe_isif->formats[ISIF_PAD_SINK].height)) {
-+		crop->rect.left = 0;
-+		crop->rect.top = 0;
-+		crop->rect.width = format->width;
-+		crop->rect.height = format->height;
-+	}
-+	/* adjust the width to 16 pixel boundry */
-+	crop->rect.width = ((crop->rect.width + 15) & ~0xf);
-+	vpfe_isif->crop = crop->rect;
-+	if (crop->which == V4L2_SUBDEV_FORMAT_ACTIVE) {
-+		isif_set_image_window(vpfe_isif);
-+	} else {
-+		struct v4l2_rect *rect;
-+
-+		rect = v4l2_subdev_get_try_crop(fh, ISIF_PAD_SINK);
-+		memcpy(rect, &vpfe_isif->crop, sizeof(*rect));
-+	}
-+	return 0;
-+}
-+
-+/*
-+ * isif_pad_get_crop() - get crop rectangle on pad
-+ * @sd: VPFE isif V4L2 subdevice
-+ * @fh: V4L2 subdev file handle
-+ * @code: pointer to v4l2_subdev_mbus_code_enum structure
-+ *
-+ * Return 0 on success, -EINVAL if pad is invalid
-+ */
-+static int
-+isif_pad_get_crop(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
-+		  struct v4l2_subdev_crop *crop)
-+{
-+	struct vpfe_isif_device *vpfe_isif = v4l2_get_subdevdata(sd);
-+
-+	/* check wether its a valid pad */
-+	if (crop->pad != ISIF_PAD_SINK)
-+		return -EINVAL;
-+
-+	if (crop->which == V4L2_SUBDEV_FORMAT_TRY) {
-+		struct v4l2_rect *rect;
-+		rect = v4l2_subdev_get_try_crop(fh, ISIF_PAD_SINK);
-+		memcpy(&crop->rect, rect, sizeof(*rect));
-+	} else {
-+		crop->rect = vpfe_isif->crop;
 +	}
 +
 +	return 0;
 +}
 +
 +/*
-+ * isif_init_formats() - Initialize formats on all pads
-+ * @sd: VPFE isif V4L2 subdevice
++ * ipipe_init_formats() - Initialize formats on all pads
++ * @sd: pointer to v4l2 subdev structure.
 + * @fh: V4L2 subdev file handle
 + *
 + * Initialize all pad formats with default values. If fh is not NULL, try
@@ -1677,68 +1686,61 @@ index 0000000..ebeea72
 + * initialized on the device.
 + */
 +static int
-+isif_init_formats(struct v4l2_subdev *sd,
-+		  struct v4l2_subdev_fh *fh)
++ipipe_init_formats(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 +{
 +	struct v4l2_subdev_format format;
-+	struct v4l2_subdev_crop crop;
 +
 +	memset(&format, 0, sizeof(format));
-+	format.pad = ISIF_PAD_SINK;
++	format.pad = IPIPE_PAD_SINK;
 +	format.which = fh ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
 +	format.format.code = V4L2_MBUS_FMT_SGRBG12_1X12;
-+	format.format.width = MAX_WIDTH;
-+	format.format.height = MAX_HEIGHT;
-+	isif_set_format(sd, fh, &format);
++	format.format.width = IPIPE_MAX_OUTPUT_WIDTH_A;
++	format.format.height = IPIPE_MAX_OUTPUT_HEIGHT_A;
++	ipipe_set_format(sd, fh, &format);
 +
 +	memset(&format, 0, sizeof(format));
-+	format.pad = ISIF_PAD_SOURCE;
++	format.pad = IPIPE_PAD_SOURCE;
 +	format.which = fh ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
-+	format.format.code = V4L2_MBUS_FMT_SGRBG12_1X12;
-+	format.format.width = MAX_WIDTH;
-+	format.format.height = MAX_HEIGHT;
-+	isif_set_format(sd, fh, &format);
-+
-+	memset(&crop, 0, sizeof(crop));
-+	crop.pad = ISIF_PAD_SINK;
-+	crop.which = fh ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
-+	crop.rect.width = MAX_WIDTH;
-+	crop.rect.height = MAX_HEIGHT;
-+	isif_pad_set_crop(sd, fh, &crop);
++	format.format.code = V4L2_MBUS_FMT_UYVY8_2X8;
++	format.format.width = IPIPE_MAX_OUTPUT_WIDTH_A;
++	format.format.height = IPIPE_MAX_OUTPUT_HEIGHT_A;
++	ipipe_set_format(sd, fh, &format);
 +
 +	return 0;
 +}
 +
 +/* subdev core operations */
-+static const struct v4l2_subdev_core_ops isif_v4l2_core_ops = {
-+	.ioctl = isif_ioctl,
++static const struct v4l2_subdev_core_ops ipipe_v4l2_core_ops = {
++	.ioctl = ipipe_ioctl,
++};
++
++static const struct v4l2_ctrl_ops ipipe_ctrl_ops = {
++	.s_ctrl = ipipe_s_ctrl,
 +};
 +
 +/* subdev file operations */
-+static const struct v4l2_subdev_internal_ops isif_v4l2_internal_ops = {
-+	.open = isif_init_formats,
++static const struct  v4l2_subdev_internal_ops ipipe_v4l2_internal_ops = {
++	.open = ipipe_init_formats,
 +};
 +
 +/* subdev video operations */
-+static const struct v4l2_subdev_video_ops isif_v4l2_video_ops = {
-+	.s_stream = isif_set_stream,
++static const struct v4l2_subdev_video_ops ipipe_v4l2_video_ops = {
++	.s_stream = ipipe_set_stream,
 +};
 +
 +/* subdev pad operations */
-+static const struct v4l2_subdev_pad_ops isif_v4l2_pad_ops = {
-+	.enum_mbus_code = isif_enum_mbus_code,
-+	.enum_frame_size = isif_enum_frame_size,
-+	.get_fmt = isif_get_format,
-+	.set_fmt = isif_set_format,
-+	.set_crop = isif_pad_set_crop,
-+	.get_crop = isif_pad_get_crop,
++static const struct v4l2_subdev_pad_ops ipipe_v4l2_pad_ops = {
++	.enum_mbus_code = ipipe_enum_mbus_code,
++	.enum_frame_size = ipipe_enum_frame_size,
++	.get_fmt = ipipe_get_format,
++	.set_fmt = ipipe_set_format,
 +};
 +
-+/* subdev operations */
-+static const struct v4l2_subdev_ops isif_v4l2_ops = {
-+	.core = &isif_v4l2_core_ops,
-+	.video = &isif_v4l2_video_ops,
-+	.pad = &isif_v4l2_pad_ops,
++/* v4l2 subdev operation */
++static const struct v4l2_subdev_ops ipipe_v4l2_ops = {
++	.core = &ipipe_v4l2_core_ops,
++	.video = &ipipe_v4l2_video_ops,
++	.pad = &ipipe_v4l2_pad_ops,
 +};
 +
 +/*
@@ -1746,8 +1748,8 @@ index 0000000..ebeea72
 + */
 +
 +/*
-+ * isif_link_setup() - Setup isif connections
-+ * @entity: isif media entity
++ * ipipe_link_setup() - Setup ipipe connections
++ * @entity: ipipe media entity
 + * @local: Pad at the local end of the link
 + * @remote: Pad at the remote end of the link
 + * @flags: Link flags
@@ -1755,37 +1757,34 @@ index 0000000..ebeea72
 + * return -EINVAL or zero on success
 + */
 +static int
-+isif_link_setup(struct media_entity *entity, const struct media_pad *local,
-+		const struct media_pad *remote, u32 flags)
++ipipe_link_setup(struct media_entity *entity, const struct media_pad *local,
++		     const struct media_pad *remote, u32 flags)
 +{
 +	struct v4l2_subdev *sd = media_entity_to_v4l2_subdev(entity);
-+	struct vpfe_isif_device *isif = v4l2_get_subdevdata(sd);
++	struct vpfe_ipipe_device *ipipe = v4l2_get_subdevdata(sd);
++	struct vpfe_device *vpfe_dev = to_vpfe_device(ipipe);
++	u16 ipipeif_sink = vpfe_dev->vpfe_ipipeif.input;
 +
 +	switch (local->index | media_entity_type(remote->entity)) {
-+	case ISIF_PAD_SINK | MEDIA_ENT_T_V4L2_SUBDEV:
-+		/* read from decoder/sensor */
++	case IPIPE_PAD_SINK | MEDIA_ENT_T_V4L2_SUBDEV:
 +		if (!(flags & MEDIA_LNK_FL_ENABLED)) {
-+			isif->input = ISIF_INPUT_NONE;
++			ipipe->input = IPIPE_INPUT_NONE;
 +			break;
 +		}
-+		if (isif->input != ISIF_INPUT_NONE)
++		if (ipipe->input != IPIPE_INPUT_NONE)
 +			return -EBUSY;
-+		isif->input = ISIF_INPUT_PARALLEL;
++		if (ipipeif_sink == IPIPEIF_INPUT_MEMORY)
++			ipipe->input = IPIPE_INPUT_MEMORY;
++		else
++			ipipe->input = IPIPE_INPUT_CCDC;
 +		break;
 +
-+	case ISIF_PAD_SOURCE | MEDIA_ENT_T_DEVNODE:
-+		/* write to memory */
++	case IPIPE_PAD_SOURCE | MEDIA_ENT_T_V4L2_SUBDEV:
++		/* out to RESIZER */
 +		if (flags & MEDIA_LNK_FL_ENABLED)
-+			isif->output = ISIF_OUTPUT_MEMORY;
++			ipipe->output = IPIPE_OUTPUT_RESIZER;
 +		else
-+			isif->output = ISIF_OUTPUT_NONE;
-+		break;
-+
-+	case ISIF_PAD_SOURCE | MEDIA_ENT_T_V4L2_SUBDEV:
-+		if (flags & MEDIA_LNK_FL_ENABLED)
-+			isif->output = ISIF_OUTPUT_IPIPEIF;
-+		else
-+			isif->output = ISIF_OUTPUT_NONE;
++			ipipe->output = IPIPE_OUTPUT_NONE;
 +		break;
 +
 +	default:
@@ -1794,375 +1793,133 @@ index 0000000..ebeea72
 +
 +	return 0;
 +}
-+static const struct media_entity_operations isif_media_ops = {
-+	.link_setup = isif_link_setup,
++
++static const struct media_entity_operations ipipe_media_ops = {
++	.link_setup = ipipe_link_setup,
 +};
 +
 +/*
-+ * vpfe_isif_unregister_entities() - isif unregister entity
-+ * @isif - pointer to isif subdevice structure.
++ * vpfe_ipipe_unregister_entities() - ipipe unregister entity
++ * @vpfe_ipipe: pointer to ipipe subdevice structure.
 + */
-+void vpfe_isif_unregister_entities(struct vpfe_isif_device *isif)
++void vpfe_ipipe_unregister_entities(struct vpfe_ipipe_device *vpfe_ipipe)
 +{
-+	vpfe_video_unregister(&isif->video_out);
 +	/* cleanup entity */
-+	media_entity_cleanup(&isif->subdev.entity);
++	media_entity_cleanup(&vpfe_ipipe->subdev.entity);
 +	/* unregister subdev */
-+	v4l2_device_unregister_subdev(&isif->subdev);
-+}
-+
-+static void isif_restore_defaults(struct vpfe_isif_device *isif)
-+{
-+	enum vpss_ccdc_source_sel source = VPSS_CCDCIN;
-+	int i;
-+
-+	memset(&isif->isif_cfg.bayer.config_params, 0,
-+	       sizeof(struct vpfe_isif_raw_config));
-+
-+	isif->isif_cfg.bayer.config_params.linearize.corr_shft =
-+					VPFE_ISIF_NO_SHIFT;
-+	isif->isif_cfg.bayer.config_params.linearize.scale_fact.integer = 1;
-+	isif->isif_cfg.bayer.config_params.culling.hcpat_odd =
-+			ISIF_CULLING_HCAPT_ODD;
-+	isif->isif_cfg.bayer.config_params.culling.hcpat_even =
-+			ISIF_CULLING_HCAPT_EVEN;
-+	isif->isif_cfg.bayer.config_params.culling.vcpat = ISIF_CULLING_VCAPT;
-+	/* Enable clock to ISIF, IPIPEIF and BL */
-+	vpss_enable_clock(VPSS_CCDC_CLOCK, 1);
-+	vpss_enable_clock(VPSS_IPIPEIF_CLOCK, 1);
-+	vpss_enable_clock(VPSS_BL_CLOCK, 1);
-+
-+	/* set all registers to default value */
-+	for (i = 0; i <= 0x1f8; i += 4)
-+		isif_write(isif->isif_cfg.base_addr, 0, i);
-+	/* no culling support */
-+	isif_write(isif->isif_cfg.base_addr, 0xffff, CULH);
-+	isif_write(isif->isif_cfg.base_addr, 0xff, CULV);
-+
-+	/* Set default offset and gain */
-+	isif_config_gain_offset(isif);
-+	vpss_select_ccdc_source(source);
++	v4l2_device_unregister_subdev(&vpfe_ipipe->subdev);
 +}
 +
 +/*
-+ * vpfe_isif_register_entities() - isif register entity
-+ * @isif - pointer to isif subdevice structure.
++ * vpfe_ipipe_register_entities() - ipipe register entity
++ * @ipipe: pointer to ipipe subdevice structure.
 + * @vdev: pointer to v4l2 device structure.
 + */
-+int vpfe_isif_register_entities(struct vpfe_isif_device *isif,
-+			    struct v4l2_device *vdev)
++int
++vpfe_ipipe_register_entities(struct vpfe_ipipe_device *ipipe,
++				 struct v4l2_device *vdev)
 +{
-+	struct vpfe_device *vpfe_dev = to_vpfe_device(isif);
-+	unsigned int flags;
 +	int ret;
 +
 +	/* Register the subdev */
-+	ret = v4l2_device_register_subdev(vdev, &isif->subdev);
-+	if (ret < 0)
-+		return ret;
-+
-+	isif_restore_defaults(isif);
-+	ret = vpfe_video_register(&isif->video_out, vdev);
++	ret = v4l2_device_register_subdev(vdev, &ipipe->subdev);
 +	if (ret) {
-+		pr_err("Failed to register isif video out device\n");
-+		goto out_video_register;
++		pr_err("Failed to register ipipe as v4l2 subdevice\n");
++		return ret;
 +	}
-+	isif->video_out.vpfe_dev = vpfe_dev;
-+	flags = 0;
-+	/* connect isif to video node */
-+	ret = media_entity_create_link(&isif->subdev.entity, 1,
-+				       &isif->video_out.video_dev.entity,
-+				       0, flags);
-+	if (ret < 0)
-+		goto out_create_link;
-+	return 0;
-+out_create_link:
-+	vpfe_video_unregister(&isif->video_out);
-+out_video_register:
-+	v4l2_device_unregister_subdev(&isif->subdev);
++
 +	return ret;
 +}
 +
-+/* -------------------------------------------------------------------
-+ * V4L2 subdev control operations
++#define IPIPE_CONTRAST_HIGH		0xff
++#define IPIPE_BRIGHT_HIGH		0xff
++
++/*
++ * vpfe_ipipe_init() - ipipe module initialization.
++ * @ipipe: pointer to ipipe subdevice structure.
++ * @pdev: platform device pointer.
 + */
-+
-+static int vpfe_isif_s_ctrl(struct v4l2_ctrl *ctrl)
++int
++vpfe_ipipe_init(struct vpfe_ipipe_device *ipipe, struct platform_device *pdev)
 +{
-+	struct vpfe_isif_device *isif =
-+	     container_of(ctrl->handler, struct vpfe_isif_device, ctrls);
-+	struct isif_oper_config *config = &isif->isif_cfg;
++	struct media_pad *pads = &ipipe->pads[0];
++	struct v4l2_subdev *sd = &ipipe->subdev;
++	struct media_entity *me = &sd->entity;
++	static resource_size_t  res_len;
++	struct resource *res;
 +
-+	switch (ctrl->id) {
-+	case VPFE_CID_DPCM_PREDICTOR:
-+		config->bayer.dpcm_predictor = ctrl->val;
-+		break;
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 4);
++	if (!res)
++		return -ENOENT;
 +
-+	case VPFE_ISIF_CID_CRGAIN:
-+		config->isif_gain_params.cr_gain = ctrl->val;
-+		break;
++	res_len = resource_size(res);
++	res = request_mem_region(res->start, res_len, res->name);
++	if (!res)
++		return -EBUSY;
++	ipipe->base_addr = ioremap_nocache(res->start, res_len);
++	if (!ipipe->base_addr)
++		return -EBUSY;
 +
-+	case VPFE_ISIF_CID_CGRGAIN:
-+		config->isif_gain_params.cgr_gain = ctrl->val;
-+		break;
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 6);
++	if (!res)
++		return -ENOENT;
++	ipipe->isp5_base_addr = ioremap_nocache(res->start, res_len);
++	if (!ipipe->isp5_base_addr)
++		return -EBUSY;
 +
-+	case VPFE_ISIF_CID_CGBGAIN:
-+		config->isif_gain_params.cgb_gain = ctrl->val;
-+		break;
++	v4l2_subdev_init(sd, &ipipe_v4l2_ops);
++	sd->internal_ops = &ipipe_v4l2_internal_ops;
++	strlcpy(sd->name, "DAVINCI IPIPE", sizeof(sd->name));
++	sd->grp_id = 1 << 16;	/* group ID for davinci subdevs */
++	v4l2_set_subdevdata(sd, ipipe);
++	sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 +
-+	case VPFE_ISIF_CID_CBGAIN:
-+		config->isif_gain_params.cb_gain = ctrl->val;
-+		break;
++	pads[IPIPE_PAD_SINK].flags = MEDIA_PAD_FL_SINK;
++	pads[IPIPE_PAD_SOURCE].flags = MEDIA_PAD_FL_SOURCE;
 +
-+	case VPFE_ISIF_CID_GAIN_OFFSET:
-+		config->isif_gain_params.offset = ctrl->val;
-+		break;
++	ipipe->input = IPIPE_INPUT_NONE;
++	ipipe->output = IPIPE_OUTPUT_NONE;
 +
-+	default:
-+		return -EINVAL;
-+	}
-+	return 0;
++	me->ops = &ipipe_media_ops;
++	v4l2_ctrl_handler_init(&ipipe->ctrls, 2);
++	v4l2_ctrl_new_std(&ipipe->ctrls, &ipipe_ctrl_ops,
++			  V4L2_CID_BRIGHTNESS, 0,
++			  IPIPE_BRIGHT_HIGH, 1, 16);
++	v4l2_ctrl_new_std(&ipipe->ctrls, &ipipe_ctrl_ops,
++			  V4L2_CID_CONTRAST, 0,
++			  IPIPE_CONTRAST_HIGH, 1, 16);
++
++
++	v4l2_ctrl_handler_setup(&ipipe->ctrls);
++	sd->ctrl_handler = &ipipe->ctrls;
++
++	return media_entity_init(me, IPIPE_PADS_NUM, pads, 0);
 +}
 +
-+static const struct v4l2_ctrl_ops vpfe_isif_ctrl_ops = {
-+	.s_ctrl = vpfe_isif_s_ctrl,
-+};
-+
-+static const struct v4l2_ctrl_config vpfe_isif_dpcm_pred = {
-+	.ops = &vpfe_isif_ctrl_ops,
-+	.id = VPFE_CID_DPCM_PREDICTOR,
-+	.name = "DPCM Predictor",
-+	.type = V4L2_CTRL_TYPE_INTEGER,
-+	.min = 0,
-+	.max = 1,
-+	.step = 1,
-+	.def = 0,
-+};
-+
-+static const struct v4l2_ctrl_config vpfe_isif_crgain = {
-+	.ops = &vpfe_isif_ctrl_ops,
-+	.id = VPFE_ISIF_CID_CRGAIN,
-+	.name = "CRGAIN",
-+	.type = V4L2_CTRL_TYPE_INTEGER,
-+	.min = 0,
-+	.max = (1 << 12) - 1,
-+	.step = 1,
-+	.def = 0,
-+};
-+
-+static const struct v4l2_ctrl_config vpfe_isif_cgrgain = {
-+	.ops = &vpfe_isif_ctrl_ops,
-+	.id = VPFE_ISIF_CID_CGRGAIN,
-+	.name = "CGRGAIN",
-+	.type = V4L2_CTRL_TYPE_INTEGER,
-+	.min = 0,
-+	.max = (1 << 12) - 1,
-+	.step = 1,
-+	.def = 0,
-+};
-+
-+static const struct v4l2_ctrl_config vpfe_isif_cgbgain = {
-+	.ops = &vpfe_isif_ctrl_ops,
-+	.id = VPFE_ISIF_CID_CGBGAIN,
-+	.name = "CGBGAIN",
-+	.type = V4L2_CTRL_TYPE_INTEGER,
-+	.min = 0,
-+	.max = (1 << 12) - 1,
-+	.step = 1,
-+	.def = 0,
-+};
-+
-+static const struct v4l2_ctrl_config vpfe_isif_cbgain = {
-+	.ops = &vpfe_isif_ctrl_ops,
-+	.id = VPFE_ISIF_CID_CBGAIN,
-+	.name = "CBGAIN",
-+	.type = V4L2_CTRL_TYPE_INTEGER,
-+	.min = 0,
-+	.max = (1 << 12) - 1,
-+	.step = 1,
-+	.def = 0,
-+};
-+
-+static const struct v4l2_ctrl_config vpfe_isif_gain_offset = {
-+	.ops = &vpfe_isif_ctrl_ops,
-+	.id = VPFE_ISIF_CID_GAIN_OFFSET,
-+	.name = "Gain Offset",
-+	.type = V4L2_CTRL_TYPE_INTEGER,
-+	.min = 0,
-+	.max = (1 << 12) - 1,
-+	.step = 1,
-+	.def = 0,
-+};
-+
-+static void isif_remove(struct vpfe_isif_device *isif,
++/*
++ * vpfe_ipipe_cleanup() - ipipe subdevice cleanup.
++ * @ipipe: pointer to ipipe subdevice
++ * @dev: pointer to platform device
++ */
++void vpfe_ipipe_cleanup(struct vpfe_ipipe_device *ipipe,
 +			struct platform_device *pdev)
 +{
 +	struct resource *res;
-+	int i = 0;
 +
-+	iounmap(isif->isif_cfg.base_addr);
-+	iounmap(isif->isif_cfg.linear_tbl0_addr);
-+	iounmap(isif->isif_cfg.linear_tbl1_addr);
++	v4l2_ctrl_handler_free(&ipipe->ctrls);
 +
-+	while (i < 3) {
-+		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
-+		if (res)
-+			release_mem_region(res->start,
-+					   res->end - res->start + 1);
-+		i++;
-+	}
++	iounmap(ipipe->base_addr);
++	iounmap(ipipe->isp5_base_addr);
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 4);
++	if (res)
++		release_mem_region(res->start, res->end - res->start + 1);
 +}
-+
-+static void isif_config_defaults(struct vpfe_isif_device *isif)
-+{
-+	isif->isif_cfg.ycbcr.v4l2_pix_fmt = V4L2_PIX_FMT_UYVY;
-+	isif->isif_cfg.ycbcr.pix_fmt = ISIF_PIXFMT_YCBCR_8BIT;
-+	isif->isif_cfg.ycbcr.frm_fmt = ISIF_FRMFMT_INTERLACED;
-+	isif->isif_cfg.ycbcr.fid_pol = VPFE_PINPOL_POSITIVE;
-+	isif->isif_cfg.ycbcr.vd_pol = VPFE_PINPOL_POSITIVE;
-+	isif->isif_cfg.ycbcr.hd_pol = VPFE_PINPOL_POSITIVE;
-+	isif->isif_cfg.ycbcr.pix_order = ISIF_PIXORDER_CBYCRY;
-+	isif->isif_cfg.ycbcr.buf_type = ISIF_BUFTYPE_FLD_INTERLEAVED;
-+
-+	isif->isif_cfg.bayer.v4l2_pix_fmt = V4L2_PIX_FMT_SGRBG10ALAW8;
-+	isif->isif_cfg.bayer.pix_fmt = ISIF_PIXFMT_RAW;
-+	isif->isif_cfg.bayer.frm_fmt = ISIF_FRMFMT_PROGRESSIVE;
-+	isif->isif_cfg.bayer.fid_pol = VPFE_PINPOL_POSITIVE;
-+	isif->isif_cfg.bayer.vd_pol = VPFE_PINPOL_POSITIVE;
-+	isif->isif_cfg.bayer.hd_pol = VPFE_PINPOL_POSITIVE;
-+	isif->isif_cfg.bayer.cfa_pat = ISIF_CFA_PAT_MOSAIC;
-+	isif->isif_cfg.bayer.data_msb = ISIF_BIT_MSB_11;
-+	isif->isif_cfg.data_pack = ISIF_PACK_8BIT;
-+}
-+/*
-+ * vpfe_isif_init() - Initialize V4L2 subdev and media entity
-+ * @isif: VPFE isif module
-+ * @pdev: Pointer to platform device structure.
-+ * Return 0 on success and a negative error code on failure.
-+ */
-+int vpfe_isif_init(struct vpfe_isif_device *isif, struct platform_device *pdev)
-+{
-+	struct v4l2_subdev *sd = &isif->subdev;
-+	struct media_pad *pads = &isif->pads[0];
-+	struct media_entity *me = &sd->entity;
-+	static resource_size_t res_len;
-+	struct resource *res;
-+	void *__iomem addr;
-+	int status;
-+	int i = 0;
-+
-+	/* Get the ISIF base address, linearization table0 and table1 addr. */
-+	while (i < 3) {
-+		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
-+		if (!res) {
-+			status = -ENOENT;
-+			goto fail_nobase_res;
-+		}
-+		res_len = res->end - res->start + 1;
-+		res = request_mem_region(res->start, res_len, res->name);
-+		if (!res) {
-+			status = -EBUSY;
-+			goto fail_nobase_res;
-+		}
-+		addr = ioremap_nocache(res->start, res_len);
-+		if (!addr) {
-+			status = -EBUSY;
-+			goto fail_base_iomap;
-+		}
-+		switch (i) {
-+		case 0:
-+			/* ISIF base address */
-+			isif->isif_cfg.base_addr = addr;
-+			break;
-+		case 1:
-+			/* ISIF linear tbl0 address */
-+			isif->isif_cfg.linear_tbl0_addr = addr;
-+			break;
-+		default:
-+			/* ISIF linear tbl0 address */
-+			isif->isif_cfg.linear_tbl1_addr = addr;
-+			break;
-+		}
-+		i++;
-+	}
-+	davinci_cfg_reg(DM365_VIN_CAM_WEN);
-+	davinci_cfg_reg(DM365_VIN_CAM_VD);
-+	davinci_cfg_reg(DM365_VIN_CAM_HD);
-+	davinci_cfg_reg(DM365_VIN_YIN4_7_EN);
-+	davinci_cfg_reg(DM365_VIN_YIN0_3_EN);
-+
-+	/* queue ops */
-+	isif->video_out.ops = &isif_video_ops;
-+	v4l2_subdev_init(sd, &isif_v4l2_ops);
-+	sd->internal_ops = &isif_v4l2_internal_ops;
-+	strlcpy(sd->name, "DAVINCI ISIF", sizeof(sd->name));
-+	sd->grp_id = 1 << 16;	/* group ID for davinci subdevs */
-+	v4l2_set_subdevdata(sd, isif);
-+	sd->flags |= V4L2_SUBDEV_FL_HAS_EVENTS | V4L2_SUBDEV_FL_HAS_DEVNODE;
-+	pads[ISIF_PAD_SINK].flags = MEDIA_PAD_FL_SINK;
-+	pads[ISIF_PAD_SOURCE].flags = MEDIA_PAD_FL_SOURCE;
-+
-+	isif->input = ISIF_INPUT_NONE;
-+	isif->output = ISIF_OUTPUT_NONE;
-+	me->ops = &isif_media_ops;
-+	status = media_entity_init(me, ISIF_PADS_NUM, pads, 0);
-+	if (status)
-+		goto isif_fail;
-+	isif->video_out.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-+	status = vpfe_video_init(&isif->video_out, "ISIF");
-+	if (status) {
-+		pr_err("Failed to init isif-out video device\n");
-+		goto isif_fail;
-+	}
-+	v4l2_ctrl_handler_init(&isif->ctrls, 6);
-+	v4l2_ctrl_new_custom(&isif->ctrls, &vpfe_isif_crgain, NULL);
-+	v4l2_ctrl_new_custom(&isif->ctrls, &vpfe_isif_cgrgain, NULL);
-+	v4l2_ctrl_new_custom(&isif->ctrls, &vpfe_isif_cgbgain, NULL);
-+	v4l2_ctrl_new_custom(&isif->ctrls, &vpfe_isif_cbgain, NULL);
-+	v4l2_ctrl_new_custom(&isif->ctrls, &vpfe_isif_gain_offset, NULL);
-+	v4l2_ctrl_new_custom(&isif->ctrls, &vpfe_isif_dpcm_pred, NULL);
-+
-+	v4l2_ctrl_handler_setup(&isif->ctrls);
-+	sd->ctrl_handler = &isif->ctrls;
-+	isif_config_defaults(isif);
-+	return 0;
-+fail_base_iomap:
-+	release_mem_region(res->start, res_len);
-+	i--;
-+fail_nobase_res:
-+	if (isif->isif_cfg.base_addr)
-+		iounmap(isif->isif_cfg.base_addr);
-+	if (isif->isif_cfg.linear_tbl0_addr)
-+		iounmap(isif->isif_cfg.linear_tbl0_addr);
-+
-+	while (i >= 0) {
-+		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
-+		release_mem_region(res->start, res_len);
-+		i--;
-+	}
-+	return status;
-+isif_fail:
-+	v4l2_ctrl_handler_free(&isif->ctrls);
-+	isif_remove(isif, pdev);
-+	return status;
-+}
-+
-+/*
-+ * vpfe_isif_cleanup - isif module cleanup
-+ * @isif: pointer to isif subdevice
-+ * @dev: pointer to platform device structure
-+ */
-+void
-+vpfe_isif_cleanup(struct vpfe_isif_device *isif, struct platform_device *pdev)
-+{
-+	isif_remove(isif, pdev);
-+}
-diff --git a/drivers/staging/media/davinci_vpfe/dm365_isif.h b/drivers/staging/media/davinci_vpfe/dm365_isif.h
+diff --git a/drivers/staging/media/davinci_vpfe/dm365_ipipe.h b/drivers/staging/media/davinci_vpfe/dm365_ipipe.h
 new file mode 100644
-index 0000000..473fd2c
+index 0000000..cf42046
 --- /dev/null
-+++ b/drivers/staging/media/davinci_vpfe/dm365_isif.h
-@@ -0,0 +1,203 @@
++++ b/drivers/staging/media/davinci_vpfe/dm365_ipipe.h
+@@ -0,0 +1,179 @@
 +/*
 + * Copyright (C) 2012 Texas Instruments Inc
 + *
@@ -2184,488 +1941,164 @@ index 0000000..473fd2c
 + *      Prabhakar Lad <prabhakar.lad@ti.com>
 + */
 +
-+#ifndef _DAVINCI_VPFE_DM365_ISIF_H
-+#define _DAVINCI_VPFE_DM365_ISIF_H
++#ifndef _DAVINCI_VPFE_DM365_IPIPE_H
++#define _DAVINCI_VPFE_DM365_IPIPE_H
 +
 +#include <linux/platform_device.h>
 +
-+#include <mach/mux.h>
-+
-+#include <media/davinci/vpfe_types.h>
 +#include <media/v4l2-ctrls.h>
-+#include <media/v4l2-device.h>
++#include <media/v4l2-subdev.h>
 +
 +#include "davinci_vpfe_user.h"
-+#include "dm365_isif_regs.h"
 +#include "vpfe_video.h"
 +
-+#define ISIF_CULLING_HCAPT_ODD		0xff
-+#define ISIF_CULLING_HCAPT_EVEN		0xff
-+#define ISIF_CULLING_VCAPT		0xff
++#define CEIL(a, b)	(((a) + (b-1)) / (b))
 +
-+#define ISIF_CADU_BITS			0x07ff
-+#define ISIF_CADL_BITS			0x0ffff
-+
-+enum isif_pixfmt {
-+	ISIF_PIXFMT_RAW = 0,
-+	ISIF_PIXFMT_YCBCR_16BIT = 1,
-+	ISIF_PIXFMT_YCBCR_8BIT = 2,
++enum ipipe_noise_filter {
++	IPIPE_D2F_1ST = 0,
++	IPIPE_D2F_2ND = 1,
 +};
 +
-+enum isif_frmfmt {
-+	ISIF_FRMFMT_PROGRESSIVE = 0,
-+	ISIF_FRMFMT_INTERLACED = 1,
++/* Used for driver storage */
++struct ipipe_otfdpc_2_0 {
++	/* 0 - disable, 1 - enable */
++	unsigned char en;
++	/* defect detection method */
++	enum vpfe_ipipe_otfdpc_det_meth det_method;
++	/* Algorithm used. Applicable only when IPIPE_DPC_OTF_MIN_MAX2 is
++	 * used
++	 */
++	enum vpfe_ipipe_otfdpc_alg alg;
++	struct vpfe_ipipe_otfdpc_2_0_cfg otfdpc_2_0;
 +};
 +
-+/* PIXEL ORDER IN MEMORY from LSB to MSB */
-+/* only applicable for 8-bit input mode  */
-+enum isif_pixorder {
-+	ISIF_PIXORDER_YCBYCR = 0,
-+	ISIF_PIXORDER_CBYCRY = 1,
++struct ipipe_otfdpc_3_0 {
++	/* 0 - disable, 1 - enable */
++	unsigned char en;
++	/* defect detection method */
++	enum vpfe_ipipe_otfdpc_det_meth det_method;
++	/* Algorithm used. Applicable only when IPIPE_DPC_OTF_MIN_MAX2 is
++	 * used
++	 */
++	enum vpfe_ipipe_otfdpc_alg alg;
++	struct vpfe_ipipe_otfdpc_3_0_cfg otfdpc_3_0;
 +};
 +
-+enum isif_buftype {
-+	ISIF_BUFTYPE_FLD_INTERLEAVED = 0,
-+	ISIF_BUFTYPE_FLD_SEPARATED = 1,
++/* Structure for configuring Luminance Adjustment module */
++struct ipipe_lum_adj {
++	/* Brightness adjustments */
++	unsigned char brightness;
++	/* contrast adjustments */
++	unsigned char contrast;
 +};
 +
-+struct isif_ycbcr_config {
-+	/* v4l2 pixel format */
-+	unsigned long v4l2_pix_fmt;
-+	/* isif pixel format */
-+	enum isif_pixfmt pix_fmt;
-+	/* isif frame format */
-+	enum isif_frmfmt frm_fmt;
-+	/* isif crop window */
-+	struct v4l2_rect win;
-+	/* field polarity */
-+	enum vpfe_pin_pol fid_pol;
-+	/* interface VD polarity */
-+	enum vpfe_pin_pol vd_pol;
-+	/* interface HD polarity */
-+	enum vpfe_pin_pol hd_pol;
-+	/* isif pix order. Only used for ycbcr capture */
-+	enum isif_pixorder pix_order;
-+	/* isif buffer type. Only used for ycbcr capture */
-+	enum isif_buftype buf_type;
++enum ipipe_rgb2rgb {
++	IPIPE_RGB2RGB_1 = 0,
++	IPIPE_RGB2RGB_2 = 1,
 +};
 +
-+enum isif_cfa_pattern {
-+	ISIF_CFA_PAT_MOSAIC = 0,
-+	ISIF_CFA_PAT_STRIPE = 1,
++struct ipipe_module_params {
++	__u32 flag;
++	struct vpfe_ipipe_input_config input_config;
++	struct vpfe_ipipe_lutdpc lutdpc;
++	struct vpfe_ipipe_otfdpc otfdpc;
++	struct vpfe_ipipe_nf nf1;
++	struct vpfe_ipipe_nf nf2;
++	struct vpfe_ipipe_gic gic;
++	struct vpfe_ipipe_wb wbal;
++	struct vpfe_ipipe_cfa cfa;
++	struct vpfe_ipipe_rgb2rgb rgb2rgb1;
++	struct vpfe_ipipe_rgb2rgb rgb2rgb2;
++	struct vpfe_ipipe_gamma gamma;
++	struct vpfe_ipipe_3d_lut lut;
++	struct vpfe_ipipe_rgb2yuv rgb2yuv;
++	struct vpfe_ipipe_gbce gbce;
++	struct vpfe_ipipe_yuv422_conv yuv422_conv;
++	struct vpfe_ipipe_yee yee;
++	struct vpfe_ipipe_car car;
++	struct vpfe_ipipe_cgs cgs;
++	struct ipipe_lum_adj lum_adj;
 +};
 +
-+enum isif_data_msb {
-+	/* MSB b15 */
-+	ISIF_BIT_MSB_15 = 0,
-+	/* MSB b14 */
-+	ISIF_BIT_MSB_14 = 1,
-+	/* MSB b13 */
-+	ISIF_BIT_MSB_13 = 2,
-+	/* MSB b12 */
-+	ISIF_BIT_MSB_12 = 3,
-+	/* MSB b11 */
-+	ISIF_BIT_MSB_11 = 4,
-+	/* MSB b10 */
-+	ISIF_BIT_MSB_10 = 5,
-+	/* MSB b9 */
-+	ISIF_BIT_MSB_9 = 6,
-+	/* MSB b8 */
-+	ISIF_BIT_MSB_8 = 7,
-+	/* MSB b7 */
-+	ISIF_BIT_MSB_7 = 8,
++#define IPIPE_PAD_SINK			0
++#define IPIPE_PAD_SOURCE		1
++
++#define IPIPE_PADS_NUM			2
++
++#define IPIPE_OUTPUT_NONE		0
++#define IPIPE_OUTPUT_RESIZER		(1 << 0)
++
++enum ipipe_input_entity {
++	IPIPE_INPUT_NONE = 0,
++	IPIPE_INPUT_MEMORY = 1,
++	IPIPE_INPUT_CCDC = 2,
 +};
 +
-+struct isif_params_raw {
-+	/* v4l2 pixel format */
-+	unsigned long v4l2_pix_fmt;
-+	/* isif pixel format */
-+	enum isif_pixfmt pix_fmt;
-+	/* isif frame format */
-+	enum isif_frmfmt frm_fmt;
-+	/* video window */
-+	struct v4l2_rect win;
-+	/* field polarity */
-+	enum vpfe_pin_pol fid_pol;
-+	/* interface VD polarity */
-+	enum vpfe_pin_pol vd_pol;
-+	/* interface HD polarity */
-+	enum vpfe_pin_pol hd_pol;
-+	/* buffer type. Applicable for interlaced mode */
-+	enum isif_buftype buf_type;
-+	/* cfa pattern */
-+	enum isif_cfa_pattern cfa_pat;
-+	/* Data MSB position */
-+	enum isif_data_msb data_msb;
-+	/* Enable horizontal flip */
-+	unsigned char horz_flip_en;
-+	/* Enable image invert vertically */
-+	unsigned char image_invert_en;
-+	unsigned char dpcm_predictor;
-+	struct vpfe_isif_raw_config config_params;
-+};
 +
-+enum isif_data_pack {
-+	ISIF_PACK_16BIT = 0,
-+	ISIF_PACK_12BIT = 1,
-+	ISIF_PACK_8BIT = 2,
-+};
-+
-+struct isif_gain_values {
-+	unsigned int cr_gain;
-+	unsigned int cgr_gain;
-+	unsigned int cgb_gain;
-+	unsigned int cb_gain;
-+	unsigned int offset;
-+};
-+
-+struct isif_oper_config {
-+	struct isif_ycbcr_config ycbcr;
-+	struct isif_params_raw bayer;
-+	enum isif_data_pack data_pack;
-+	struct isif_gain_values isif_gain_params;
++struct vpfe_ipipe_device {
++	struct v4l2_subdev subdev;
++	struct media_pad pads[IPIPE_PADS_NUM];
++	struct v4l2_mbus_framefmt formats[IPIPE_PADS_NUM];
++	enum ipipe_input_entity input;
++	unsigned int output;
++	struct v4l2_ctrl_handler ctrls;
 +	void *__iomem base_addr;
-+	void *__iomem linear_tbl0_addr;
-+	void *__iomem linear_tbl1_addr;
++	void *__iomem isp5_base_addr;
++	struct ipipe_module_params config;
 +};
 +
-+#define ISIF_PAD_SINK      0
-+#define ISIF_PAD_SOURCE    1
-+
-+#define ISIF_PADS_NUM      2
-+
-+enum isif_input_entity {
-+	ISIF_INPUT_NONE = 0,
-+	ISIF_INPUT_PARALLEL = 1,
++struct ipipe_module_if {
++	unsigned int param_offset;
++	unsigned int param_size;
++	unsigned int config_offset;
++	int (*set)(struct vpfe_ipipe_device *ipipe, void *param);
++	int (*get)(struct vpfe_ipipe_device *ipipe, void *param);
 +};
 +
-+#define ISIF_OUTPUT_NONE	(0)
-+#define ISIF_OUTPUT_MEMORY	(1 << 0)
-+#define ISIF_OUTPUT_IPIPEIF	(1 << 1)
-+
-+struct vpfe_isif_device {
-+	struct v4l2_subdev		subdev;
-+	struct media_pad		pads[ISIF_PADS_NUM];
-+	struct v4l2_mbus_framefmt	formats[ISIF_PADS_NUM];
-+	enum isif_input_entity		input;
-+	unsigned int			output;
-+	struct v4l2_ctrl_handler        ctrls;
-+	struct v4l2_rect		crop;
-+	struct isif_oper_config		isif_cfg;
-+	struct vpfe_video_device	video_out;
++/* data paths */
++enum ipipe_data_paths {
++	IPIPE_RAW2YUV,
++	/* Bayer RAW input to YCbCr output */
++	IPIPE_RAW2RAW,
++	/* Bayer Raw to Bayer output */
++	IPIPE_RAW2BOX,
++	/* Bayer Raw to Boxcar output */
++	IPIPE_YUV2YUV
++	/* YUV Raw to YUV Raw output */
 +};
 +
-+enum v4l2_field vpfe_isif_get_fid(struct vpfe_device *vpfe_dev);
-+void vpfe_isif_unregister_entities(struct vpfe_isif_device *isif);
-+int vpfe_isif_register_entities(struct vpfe_isif_device *isif,
-+				struct v4l2_device *dev);
-+int vpfe_isif_init(struct vpfe_isif_device *isif, struct platform_device *pdev);
-+void vpfe_isif_cleanup(struct vpfe_isif_device *vpfe_isif,
-+		       struct platform_device *pdev);
-+void vpfe_isif_vidint1_isr(struct vpfe_isif_device *isif);
-+void vpfe_isif_buffer_isr(struct vpfe_isif_device *isif);
++#define IPIPE_COLPTN_R_Ye	0x0
++#define IPIPE_COLPTN_Gr_Cy	0x1
++#define IPIPE_COLPTN_Gb_G	0x2
++#define IPIPE_COLPTN_B_Mg	0x3
 +
-+#endif		/* _DAVINCI_VPFE_DM365_ISIF_H */
-diff --git a/drivers/staging/media/davinci_vpfe/dm365_isif_regs.h b/drivers/staging/media/davinci_vpfe/dm365_isif_regs.h
-new file mode 100644
-index 0000000..8aceabb
---- /dev/null
-+++ b/drivers/staging/media/davinci_vpfe/dm365_isif_regs.h
-@@ -0,0 +1,294 @@
-+/*
-+ * Copyright (C) 2012 Texas Instruments Inc
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-+ *
-+ * Contributors:
-+ *      Manjunath Hadli <manjunath.hadli@ti.com>
-+ *      Prabhakar Lad <prabhakar.lad@ti.com>
-+ */
++#define COLPAT_EE_SHIFT		0
++#define COLPAT_EO_SHIFT		2
++#define COLPAT_OE_SHIFT		4
++#define COLPAT_OO_SHIFT		6
 +
-+#ifndef _DAVINCI_VPFE_DM365_ISIF_REGS_H
-+#define _DAVINCI_VPFE_DM365_ISIF_REGS_H
++#define ipipe_sgrbg_pattern \
++	(IPIPE_COLPTN_Gr_Cy <<  COLPAT_EE_SHIFT | \
++	IPIPE_COLPTN_R_Ye  << COLPAT_EO_SHIFT | \
++	IPIPE_COLPTN_B_Mg  << COLPAT_OE_SHIFT | \
++	IPIPE_COLPTN_Gb_G  << COLPAT_OO_SHIFT)
 +
-+/* ISIF registers relative offsets */
-+#define SYNCEN					0x00
-+#define MODESET					0x04
-+#define HDW					0x08
-+#define VDW					0x0c
-+#define PPLN					0x10
-+#define LPFR					0x14
-+#define SPH					0x18
-+#define LNH					0x1c
-+#define SLV0					0x20
-+#define SLV1					0x24
-+#define LNV					0x28
-+#define CULH					0x2c
-+#define CULV					0x30
-+#define HSIZE					0x34
-+#define SDOFST					0x38
-+#define CADU					0x3c
-+#define CADL					0x40
-+#define LINCFG0					0x44
-+#define LINCFG1					0x48
-+#define CCOLP					0x4c
-+#define CRGAIN					0x50
-+#define CGRGAIN					0x54
-+#define CGBGAIN					0x58
-+#define CBGAIN					0x5c
-+#define COFSTA					0x60
-+#define FLSHCFG0				0x64
-+#define FLSHCFG1				0x68
-+#define FLSHCFG2				0x6c
-+#define VDINT0					0x70
-+#define VDINT1					0x74
-+#define VDINT2					0x78
-+#define MISC					0x7c
-+#define CGAMMAWD				0x80
-+#define REC656IF				0x84
-+#define CCDCFG					0x88
-+/*****************************************************
-+* Defect Correction registers
-+*****************************************************/
-+#define DFCCTL					0x8c
-+#define VDFSATLV				0x90
-+#define DFCMEMCTL				0x94
-+#define DFCMEM0					0x98
-+#define DFCMEM1					0x9c
-+#define DFCMEM2					0xa0
-+#define DFCMEM3					0xa4
-+#define DFCMEM4					0xa8
-+/****************************************************
-+* Black Clamp registers
-+****************************************************/
-+#define CLAMPCFG				0xac
-+#define CLDCOFST				0xb0
-+#define CLSV					0xb4
-+#define CLHWIN0					0xb8
-+#define CLHWIN1					0xbc
-+#define CLHWIN2					0xc0
-+#define CLVRV					0xc4
-+#define CLVWIN0					0xc8
-+#define CLVWIN1					0xcc
-+#define CLVWIN2					0xd0
-+#define CLVWIN3					0xd4
-+/****************************************************
-+* Lense Shading Correction
-+****************************************************/
-+#define DATAHOFST				0xd8
-+#define DATAVOFST				0xdc
-+#define LSCHVAL					0xe0
-+#define LSCVVAL					0xe4
-+#define TWODLSCCFG				0xe8
-+#define TWODLSCOFST				0xec
-+#define TWODLSCINI				0xf0
-+#define TWODLSCGRBU				0xf4
-+#define TWODLSCGRBL				0xf8
-+#define TWODLSCGROF				0xfc
-+#define TWODLSCORBU				0x100
-+#define TWODLSCORBL				0x104
-+#define TWODLSCOROF				0x108
-+#define TWODLSCIRQEN				0x10c
-+#define TWODLSCIRQST				0x110
-+/****************************************************
-+* Data formatter
-+****************************************************/
-+#define FMTCFG					0x114
-+#define FMTPLEN					0x118
-+#define FMTSPH					0x11c
-+#define FMTLNH					0x120
-+#define FMTSLV					0x124
-+#define FMTLNV					0x128
-+#define FMTRLEN					0x12c
-+#define FMTHCNT					0x130
-+#define FMTAPTR_BASE				0x134
-+/* Below macro for addresses FMTAPTR0 - FMTAPTR15 */
-+#define FMTAPTR(i)			(FMTAPTR_BASE + (i * 4))
-+#define FMTPGMVF0				0x174
-+#define FMTPGMVF1				0x178
-+#define FMTPGMAPU0				0x17c
-+#define FMTPGMAPU1				0x180
-+#define FMTPGMAPS0				0x184
-+#define FMTPGMAPS1				0x188
-+#define FMTPGMAPS2				0x18c
-+#define FMTPGMAPS3				0x190
-+#define FMTPGMAPS4				0x194
-+#define FMTPGMAPS5				0x198
-+#define FMTPGMAPS6				0x19c
-+#define FMTPGMAPS7				0x1a0
-+/************************************************
-+* Color Space Converter
-+************************************************/
-+#define CSCCTL					0x1a4
-+#define CSCM0					0x1a8
-+#define CSCM1					0x1ac
-+#define CSCM2					0x1b0
-+#define CSCM3					0x1b4
-+#define CSCM4					0x1b8
-+#define CSCM5					0x1bc
-+#define CSCM6					0x1c0
-+#define CSCM7					0x1c4
-+#define OBWIN0					0x1c8
-+#define OBWIN1					0x1cc
-+#define OBWIN2					0x1d0
-+#define OBWIN3					0x1d4
-+#define OBVAL0					0x1d8
-+#define OBVAL1					0x1dc
-+#define OBVAL2					0x1e0
-+#define OBVAL3					0x1e4
-+#define OBVAL4					0x1e8
-+#define OBVAL5					0x1ec
-+#define OBVAL6					0x1f0
-+#define OBVAL7					0x1f4
-+#define CLKCTL					0x1f8
++#define ipipe_srggb_pattern \
++	(IPIPE_COLPTN_R_Ye <<  COLPAT_EE_SHIFT | \
++	IPIPE_COLPTN_Gr_Cy  << COLPAT_EO_SHIFT | \
++	IPIPE_COLPTN_Gb_G  << COLPAT_OE_SHIFT | \
++	IPIPE_COLPTN_B_Mg  << COLPAT_OO_SHIFT)
 +
-+/* Masks & Shifts below */
-+#define START_PX_HOR_MASK			0x7fff
-+#define NUM_PX_HOR_MASK				0x7fff
-+#define START_VER_ONE_MASK			0x7fff
-+#define START_VER_TWO_MASK			0x7fff
-+#define NUM_LINES_VER				0x7fff
++int vpfe_ipipe_register_entities(struct vpfe_ipipe_device *ipipe,
++		struct v4l2_device *v4l2_dev);
++int vpfe_ipipe_init(struct vpfe_ipipe_device *ipipe,
++		struct platform_device *pdev);
++void vpfe_ipipe_unregister_entities(struct vpfe_ipipe_device *ipipe);
++void vpfe_ipipe_cleanup(struct vpfe_ipipe_device *ipipe,
++		struct platform_device *pdev);
++void vpfe_ipipe_enable(struct vpfe_device *vpfe_dev, int en);
 +
-+/* gain - offset masks */
-+#define OFFSET_MASK				0xfff
-+#define GAIN_SDRAM_EN_SHIFT			12
-+#define GAIN_IPIPE_EN_SHIFT			13
-+#define GAIN_H3A_EN_SHIFT			14
-+#define OFST_SDRAM_EN_SHIFT			8
-+#define OFST_IPIPE_EN_SHIFT			9
-+#define OFST_H3A_EN_SHIFT			10
-+#define GAIN_OFFSET_EN_MASK			0x7700
-+
-+/* Culling */
-+#define CULL_PAT_EVEN_LINE_SHIFT		8
-+
-+/* CCDCFG register */
-+#define ISIF_YCINSWP_RAW			(0x00 << 4)
-+#define ISIF_YCINSWP_YCBCR			(0x01 << 4)
-+#define ISIF_CCDCFG_FIDMD_LATCH_VSYNC		(0x00 << 6)
-+#define ISIF_CCDCFG_WENLOG_AND			(0x00 << 8)
-+#define ISIF_CCDCFG_TRGSEL_WEN			(0x00 << 9)
-+#define ISIF_CCDCFG_EXTRG_DISABLE		(0x00 << 10)
-+#define ISIF_LATCH_ON_VSYNC_DISABLE		(0x01 << 15)
-+#define ISIF_LATCH_ON_VSYNC_ENABLE		(0x00 << 15)
-+#define ISIF_DATA_PACK_MASK			0x03
-+#define ISIF_PIX_ORDER_SHIFT			11
-+#define ISIF_PIX_ORDER_MASK			0x01
-+#define ISIF_BW656_ENABLE			(0x01 << 5)
-+
-+/* MODESET registers */
-+#define ISIF_VDHDOUT_INPUT			(0x00 << 0)
-+#define ISIF_INPUT_MASK				0x03
-+#define ISIF_INPUT_SHIFT			12
-+#define ISIF_FID_POL_MASK			0x01
-+#define ISIF_FID_POL_SHIFT			4
-+#define ISIF_HD_POL_MASK			0x01
-+#define ISIF_HD_POL_SHIFT			3
-+#define ISIF_VD_POL_MASK			0x01
-+#define ISIF_VD_POL_SHIFT			2
-+#define ISIF_DATAPOL_NORMAL			0x00
-+#define ISIF_DATAPOL_MASK			0x01
-+#define ISIF_DATAPOL_SHIFT			6
-+#define ISIF_EXWEN_DISABLE			0x00
-+#define ISIF_EXWEN_MASK				0x01
-+#define ISIF_EXWEN_SHIFT			5
-+#define ISIF_FRM_FMT_MASK			0x01
-+#define ISIF_FRM_FMT_SHIFT			7
-+#define ISIF_DATASFT_MASK			0x07
-+#define ISIF_DATASFT_SHIFT			8
-+#define ISIF_LPF_SHIFT				14
-+#define ISIF_LPF_MASK				0x1
-+
-+/* GAMMAWD registers */
-+#define ISIF_ALAW_GAMA_WD_MASK			0xf
-+#define ISIF_ALAW_GAMA_WD_SHIFT			1
-+#define ISIF_ALAW_ENABLE			0x01
-+#define ISIF_GAMMAWD_CFA_MASK			0x01
-+#define ISIF_GAMMAWD_CFA_SHIFT			5
-+
-+/* HSIZE registers */
-+#define ISIF_HSIZE_FLIP_MASK			0x01
-+#define ISIF_HSIZE_FLIP_SHIFT			12
-+#define ISIF_LINEOFST_MASK			0xfff
-+
-+/* MISC registers */
-+#define ISIF_DPCM_EN_SHIFT			12
-+#define ISIF_DPCM_PREDICTOR_SHIFT		13
-+#define ISIF_DPCM_PREDICTOR_MASK		1
-+
-+/* Black clamp related */
-+#define ISIF_BC_DCOFFSET_MASK			0x1fff
-+#define ISIF_BC_MODE_COLOR_MASK			1
-+#define ISIF_BC_MODE_COLOR_SHIFT		4
-+#define ISIF_HORZ_BC_MODE_MASK			3
-+#define ISIF_HORZ_BC_MODE_SHIFT			1
-+#define ISIF_HORZ_BC_WIN_COUNT_MASK		0x1f
-+#define ISIF_HORZ_BC_WIN_SEL_SHIFT		5
-+#define ISIF_HORZ_BC_PIX_LIMIT_SHIFT		6
-+#define ISIF_HORZ_BC_WIN_H_SIZE_MASK		3
-+#define ISIF_HORZ_BC_WIN_H_SIZE_SHIFT		8
-+#define ISIF_HORZ_BC_WIN_V_SIZE_MASK		3
-+#define ISIF_HORZ_BC_WIN_V_SIZE_SHIFT		12
-+#define ISIF_HORZ_BC_WIN_START_H_MASK		0x1fff
-+#define ISIF_HORZ_BC_WIN_START_V_MASK		0x1fff
-+#define ISIF_VERT_BC_OB_H_SZ_MASK		7
-+#define ISIF_VERT_BC_RST_VAL_SEL_MASK		3
-+#define ISIF_VERT_BC_RST_VAL_SEL_SHIFT		4
-+#define ISIF_VERT_BC_LINE_AVE_COEF_SHIFT	8
-+#define ISIF_VERT_BC_OB_START_HORZ_MASK		0x1fff
-+#define ISIF_VERT_BC_OB_START_VERT_MASK		0x1fff
-+#define ISIF_VERT_BC_OB_VERT_SZ_MASK		0x1fff
-+#define ISIF_VERT_BC_RST_VAL_MASK		0xfff
-+#define ISIF_BC_VERT_START_SUB_V_MASK		0x1fff
-+
-+/* VDFC registers */
-+#define ISIF_VDFC_EN_SHIFT			4
-+#define ISIF_VDFC_CORR_MOD_MASK			3
-+#define ISIF_VDFC_CORR_MOD_SHIFT		5
-+#define ISIF_VDFC_CORR_WHOLE_LN_SHIFT		7
-+#define ISIF_VDFC_LEVEL_SHFT_MASK		7
-+#define ISIF_VDFC_LEVEL_SHFT_SHIFT		8
-+#define ISIF_VDFC_SAT_LEVEL_MASK		0xfff
-+#define ISIF_VDFC_POS_MASK			0x1fff
-+#define ISIF_DFCMEMCTL_DFCMARST_SHIFT		2
-+
-+/* CSC registers */
-+#define ISIF_CSC_COEF_INTEG_MASK		7
-+#define ISIF_CSC_COEF_DECIMAL_MASK		0x1f
-+#define ISIF_CSC_COEF_INTEG_SHIFT		5
-+#define ISIF_CSCM_MSB_SHIFT			8
-+#define ISIF_DF_CSC_SPH_MASK			0x1fff
-+#define ISIF_DF_CSC_LNH_MASK			0x1fff
-+#define ISIF_DF_CSC_SLV_MASK			0x1fff
-+#define ISIF_DF_CSC_LNV_MASK			0x1fff
-+#define ISIF_DF_NUMLINES			0x7fff
-+#define ISIF_DF_NUMPIX				0x1fff
-+
-+/* Offsets for LSC/DFC/Gain */
-+#define ISIF_DATA_H_OFFSET_MASK			0x1fff
-+#define ISIF_DATA_V_OFFSET_MASK			0x1fff
-+
-+/* Linearization */
-+#define ISIF_LIN_CORRSFT_MASK			7
-+#define ISIF_LIN_CORRSFT_SHIFT			4
-+#define ISIF_LIN_SCALE_FACT_INTEG_SHIFT		10
-+#define ISIF_LIN_SCALE_FACT_DECIMAL_MASK	0x3ff
-+#define ISIF_LIN_ENTRY_MASK			0x3ff
-+
-+/* masks and shifts*/
-+#define ISIF_SYNCEN_VDHDEN_MASK			(1 << 0)
-+#define ISIF_SYNCEN_WEN_MASK			(1 << 1)
-+#define ISIF_SYNCEN_WEN_SHIFT			1
-+
-+#endif		/* _DAVINCI_VPFE_DM365_ISIF_REGS_H */
++#endif		/* _DAVINCI_VPFE_DM365_IPIPE_H */
 -- 
 1.7.4.1
 
