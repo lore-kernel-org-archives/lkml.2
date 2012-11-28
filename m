@@ -1,106 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853Ab2K1Hwr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 02:52:47 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:31122 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751958Ab2K1Hv0 (ORCPT
+	id S1752857Ab2K1III (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 03:08:08 -0500
+Received: from shrek-wifi.podlesie.net ([93.179.225.50]:49898 "EHLO
+	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752630Ab2K1IIH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 02:51:26 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v5 05/13] x86: add get_ramdisk_image/size()
-Date: Tue, 27 Nov 2012 23:50:34 -0800
-Message-Id: <1354089042-10023-6-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.7
-In-Reply-To: <1354089042-10023-1-git-send-email-yinghai@kernel.org>
-References: <1354089042-10023-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Wed, 28 Nov 2012 03:08:07 -0500
+Date: Wed, 28 Nov 2012 09:08:04 +0100
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nathan@traverse.com.au
+Subject: Re: [PATCH] br2684: don't send frames on not-ready vcc
+Message-ID: <20121128080804.GA23175@shrek.podlesie.net>
+References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
+ <1350926091-12642-3-git-send-email-krzysiek@podlesie.net>
+ <1354036592.2534.6.camel@shinybook.infradead.org>
+ <20121127173906.GA11390@shrek.podlesie.net>
+ <1354039349.2534.11.camel@shinybook.infradead.org>
+ <20121127135434.0728cd4f@thirdoffive.cmf.nrl.navy.mil>
+ <1354055783.2534.18.camel@shinybook.infradead.org>
+ <1354058916.2534.25.camel@shinybook.infradead.org>
+ <20121127235129.GA20080@shrek.podlesie.net>
+ <1354064086.21562.10.camel@shinybook.infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354064086.21562.10.camel@shinybook.infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There several places to find ramdisk information early for reserving
-and relocating.
+On Wed, Nov 28, 2012 at 12:54:46AM +0000, David Woodhouse wrote:
+> On Wed, 2012-11-28 at 00:51 +0100, Krzysztof Mazur wrote:
+> > If you do this actually it's better to don't use patch 1/7 because
+> > it introduces race condition that you found earlier.
+> 
+> Right. I've omitted that from the git tree I just pushed out.
+> 
+> > With this patch you have still theoretical race that was fixed in patches
+> > 5 and 8 in pppoatm series, but I never seen that in practice.
+> 
+> And I think it's even less likely for br2684. At least with pppoatm you
+> might have had pppd sending frames. But for br2684 they *only* come from
+> its start_xmit function... which is serialised anyway.
+> 
+> I do get strange oopses when I try to add BQL to br2684, but that's not
+> something to be looking at at 1am...
+> 
+> I *do* need the equivalent of your patch 4, which is the module_put
+> race.
+> 
 
-Use functions to make code more readable and consistent.
+I think you might need also an equivalent of
+"[PATCH v3 3/7] pppoatm: allow assign only on a connected socket".
 
-Later will add ext_ramdisk_image/size in those functions to support
-loading ramdisk above 4g.
+I'm not sure yet. In will test if I can trigger that Oops on pppoatm
+without that patch. Testing vcc flags might be sufficient - that's
+what I did in the first patch, but you asked what about SOCK_CONNECTED,
+and I think it was really needed.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Krzysiek
+-- >8 --
+Subject: [PATCH] br2684: allow assign only on a connected socket
+
+The br2684 does not check if used vcc is in connected state,
+causing potential Oops in pppoatm_send() when vcc->send() is called
+on not fully connected socket.
+
+Now br2684 can be assigned only on connected sockets; otherwise
+-EINVAL error is returned.
+
+Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
 ---
- arch/x86/kernel/setup.c |   29 +++++++++++++++++++++--------
- 1 files changed, 21 insertions(+), 8 deletions(-)
+ net/atm/br2684.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index ee6d267..194e151 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -298,12 +298,25 @@ static void __init reserve_brk(void)
- 
- #ifdef CONFIG_BLK_DEV_INITRD
- 
-+static u64 __init get_ramdisk_image(void)
-+{
-+	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
-+
-+	return ramdisk_image;
-+}
-+static u64 __init get_ramdisk_size(void)
-+{
-+	u64 ramdisk_size = boot_params.hdr.ramdisk_size;
-+
-+	return ramdisk_size;
-+}
-+
- #define MAX_MAP_CHUNK	(NR_FIX_BTMAPS << PAGE_SHIFT)
- static void __init relocate_initrd(void)
- {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
--	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	u64 ramdisk_image = get_ramdisk_image();
-+	u64 ramdisk_size  = get_ramdisk_size();
- 	u64 area_size     = PAGE_ALIGN(ramdisk_size);
- 	u64 ramdisk_here;
- 	unsigned long slop, clen, mapaddr;
-@@ -342,8 +355,8 @@ static void __init relocate_initrd(void)
- 		ramdisk_size  -= clen;
- 	}
- 
--	ramdisk_image = boot_params.hdr.ramdisk_image;
--	ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	ramdisk_image = get_ramdisk_image();
-+	ramdisk_size  = get_ramdisk_size();
- 	printk(KERN_INFO "Move RAMDISK from [mem %#010llx-%#010llx] to"
- 		" [mem %#010llx-%#010llx]\n",
- 		ramdisk_image, ramdisk_image + ramdisk_size - 1,
-@@ -367,8 +380,8 @@ static u64 __init get_mem_size(unsigned long limit_pfn)
- static void __init early_reserve_initrd(void)
- {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
--	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	u64 ramdisk_image = get_ramdisk_image();
-+	u64 ramdisk_size  = get_ramdisk_size();
- 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
- 
- 	if (!boot_params.hdr.type_of_loader ||
-@@ -380,8 +393,8 @@ static void __init early_reserve_initrd(void)
- static void __init reserve_initrd(void)
- {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
--	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	u64 ramdisk_image = get_ramdisk_image();
-+	u64 ramdisk_size  = get_ramdisk_size();
- 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
- 	u64 mapped_size;
- 
+diff --git a/net/atm/br2684.c b/net/atm/br2684.c
+index 59e8edb..e88998c 100644
+--- a/net/atm/br2684.c
++++ b/net/atm/br2684.c
+@@ -704,10 +704,13 @@ static int br2684_ioctl(struct socket *sock, unsigned int cmd,
+ 			return -ENOIOCTLCMD;
+ 		if (!capable(CAP_NET_ADMIN))
+ 			return -EPERM;
+-		if (cmd == ATM_SETBACKEND)
++		if (cmd == ATM_SETBACKEND) {
++			if (sock->state != SS_CONNECTED)
++				return -EINVAL;
+ 			return br2684_regvcc(atmvcc, argp);
+-		else
++		} else {
+ 			return br2684_create(argp);
++		}
+ #ifdef CONFIG_ATM_BR2684_IPFILTER
+ 	case BR2684_SETFILT:
+ 		if (atmvcc->push != br2684_push)
 -- 
-1.7.7
+1.8.0.411.g71a7da8
 
