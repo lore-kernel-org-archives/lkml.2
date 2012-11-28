@@ -1,41 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755838Ab2K1SrG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 13:47:06 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56112 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751236Ab2K1SrF (ORCPT
+	id S1755907Ab2K1Sr1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 13:47:27 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:33085 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752321Ab2K1SrZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 13:47:05 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linx.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: wm5102: Correct default for LDO1_CONTROL_2
-Date: Wed, 28 Nov 2012 18:47:01 +0000
-Message-Id: <1354128421-12620-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 28 Nov 2012 13:47:25 -0500
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: sameo@linux.intel.com, grant.likely@secretlab.ca,
+        rabin.vincent@stericsson.com, shiraz.hashim@st.com
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, lee.jones@linaro.org,
+        linus.walleij@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V4 Resend 1/3] mfd: stmpe: Get rid of irq_invert_polarity
+Date: Thu, 29 Nov 2012 00:17:15 +0530
+Message-Id: <d1f012d7bb2835f696fc100073f2eb16d9f6204d.1354128258.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/mfd/wm5102-tables.c |    1 +
- 1 file changed, 1 insertion(+)
+Since the very first patch, stmpe core driver is using irq_invert_polarity as
+part of platform data. But, nobody is actually using it in kernel till now.
 
-diff --git a/drivers/mfd/wm5102-tables.c b/drivers/mfd/wm5102-tables.c
-index 50bbe15..065ffd3 100644
---- a/drivers/mfd/wm5102-tables.c
-+++ b/drivers/mfd/wm5102-tables.c
-@@ -307,6 +307,7 @@ static const struct reg_default wm5102_reg_default[] = {
- 	{ 0x000001AA, 0x0004 },   /* R426   - FLL2 GPIO Clock */ 
- 	{ 0x00000200, 0x0006 },   /* R512   - Mic Charge Pump 1 */ 
- 	{ 0x00000210, 0x00D4 },   /* R528   - LDO1 Control 1 */ 
-+	{ 0x00000212, 0x0001 },   /* R530   - LDO1 Control 2 */ 
- 	{ 0x00000213, 0x0344 },   /* R531   - LDO2 Control 1 */ 
- 	{ 0x00000218, 0x01A6 },   /* R536   - Mic Bias Ctrl 1 */ 
- 	{ 0x00000219, 0x01A6 },   /* R537   - Mic Bias Ctrl 2 */ 
+Also, this is not something part of hardware specs, but is included to cater
+some board mistakes or quirks.
+
+So, better get rid of it. This is earlier discussed here:
+
+https://lkml.org/lkml/2012/11/27/636
+
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+This is actually V1 of this patch.
+
+ drivers/mfd/stmpe.c       | 7 -------
+ include/linux/mfd/stmpe.h | 2 --
+ 2 files changed, 9 deletions(-)
+
+diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
+index 6175aa4..34408b4 100644
+--- a/drivers/mfd/stmpe.c
++++ b/drivers/mfd/stmpe.c
+@@ -960,13 +960,6 @@ static int __devinit stmpe_chip_init(struct stmpe *stmpe)
+ 			else
+ 				icr |= STMPE_ICR_LSB_HIGH;
+ 		}
+-
+-		if (stmpe->pdata->irq_invert_polarity) {
+-			if (id == STMPE801_ID)
+-				icr ^= STMPE801_REG_SYS_CTRL_INT_HI;
+-			else
+-				icr ^= STMPE_ICR_LSB_HIGH;
+-		}
+ 	}
+ 
+ 	if (stmpe->pdata->autosleep) {
+diff --git a/include/linux/mfd/stmpe.h b/include/linux/mfd/stmpe.h
+index 15dac79..383ac15 100644
+--- a/include/linux/mfd/stmpe.h
++++ b/include/linux/mfd/stmpe.h
+@@ -190,7 +190,6 @@ struct stmpe_ts_platform_data {
+  * @id: device id to distinguish between multiple STMPEs on the same board
+  * @blocks: bitmask of blocks to enable (use STMPE_BLOCK_*)
+  * @irq_trigger: IRQ trigger to use for the interrupt to the host
+- * @irq_invert_polarity: IRQ line is connected with reversed polarity
+  * @autosleep: bool to enable/disable stmpe autosleep
+  * @autosleep_timeout: inactivity timeout in milliseconds for autosleep
+  * @irq_base: base IRQ number.  %STMPE_NR_IRQS irqs will be used, or
+@@ -207,7 +206,6 @@ struct stmpe_platform_data {
+ 	unsigned int blocks;
+ 	int irq_base;
+ 	unsigned int irq_trigger;
+-	bool irq_invert_polarity;
+ 	bool autosleep;
+ 	bool irq_over_gpio;
+ 	int irq_gpio;
 -- 
-1.7.10.4
+1.7.12.rc2.18.g61b472e
 
