@@ -1,78 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756246Ab2K1XJE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 18:09:04 -0500
-Received: from toccata.ens-lyon.fr ([140.77.166.68]:51606 "EHLO
-	toccata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751793Ab2K1XJB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 18:09:01 -0500
-X-Greylist: delayed 598 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Nov 2012 18:09:01 EST
-Date: Wed, 28 Nov 2012 23:06:37 +0100
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, akpm@linux-foundation.org,
-        jslaby@suse.cz, rpurdie@rpsys.net, linux-kernel@vger.kernel.org,
-        Evan Broder <evan@ebroder.net>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>
-Subject: Re: [patch 20/35] leds: route kbd LEDs through the generic LEDs layer
-Message-ID: <20121128220637.GA6174@type>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Pavel Machek <pavel@ucw.cz>,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	akpm@linux-foundation.org, jslaby@suse.cz, rpurdie@rpsys.net,
-	linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
-	Arnaud Patard <arnaud.patard@rtp-net.org>
-References: <201011112205.oABM5KVJ005298@imap1.linux-foundation.org>
- <201011111440.07882.dmitry.torokhov@gmail.com>
- <20110102090935.GV32469@atrey.karlin.mff.cuni.cz>
- <20110102103210.GA25662@core.coreip.homeip.net>
- <20110102225741.GX5480@const.famille.thibault.fr>
- <20110112182702.GA9168@core.coreip.homeip.net>
- <20111114040613.GA4992@type.famille.thibault.fr>
- <20120206141923.GE25434@elf.ucw.cz>
+	id S1755674Ab2K1XKv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 18:10:51 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41053 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751705Ab2K1XKt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 18:10:49 -0500
+Date: Wed, 28 Nov 2012 15:10:46 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Toshi Kani <toshi.kani@hp.com>, linux-acpi@vger.kernel.org,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Wen Congyang <wencongyang@gmail.com>, isimatu.yasuaki@jp.fujitsu.com,
+        lenb@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on
+ rebind scenario
+Message-ID: <20121128231046.GA15416@kroah.com>
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
+ <11009650.oKuHEgoNWB@vostro.rjw.lan>
+ <20121128224633.GA14555@kroah.com>
+ <4960597.PcG7YIEMVH@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120206141923.GE25434@elf.ucw.cz>
-User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
+In-Reply-To: <4960597.PcG7YIEMVH@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pavel Machek, le Mon 06 Feb 2012 15:19:23 +0100, a écrit :
-> On Mon 2011-11-14 05:06:13, Samuel Thibault wrote:
-> > Dmitry Torokhov, le Wed 12 Jan 2011 10:27:02 -0800, a écrit :
-> > > > --- a/drivers/char/Kconfig
-> > > > +++ b/drivers/char/Kconfig
-> > > > @@ -8,6 +8,7 @@ config VT
-> > > >  	bool "Virtual terminal" if EMBEDDED
-> > > >  	depends on !S390
-> > > >  	select INPUT
-> > > > +	select LEDS_INPUT
-> > > 
-> > > This will not work as LEDS_INPUT is itself depends and selects other
-> > > symbols and "select" statement does not propagate dependencies.
-> > > 
-> > > Anyway, I was looking at the patch this way and that and I convinced
-> > > myself that while input should be integrated with LED subsystem doing it
-> > > via an input handler is not the right way. Input handler is, by it's
-> > > nature, an optional operation or an interface that exists to transform
-> > > the input core data stream into some other form. Here OTOH we have a
-> > > piece of hardware that we want to manage. I think the proper conversion
-> > > would involve attaching led_classdev structures directly to input_dev
-> > > objects and controlling them at the core level.
+On Thu, Nov 29, 2012 at 12:05:20AM +0100, Rafael J. Wysocki wrote:
+> On Wednesday, November 28, 2012 02:46:33 PM Greg KH wrote:
+> > > So, it looks like the driver core wants us to handle driver unbinding no
+> > > matter what.
 > > 
-> > Here is (at last!) an updated & tested patch. It actually makes things
-> > simpler, which is a good sign :)
-> > 
-> > I however don't know how to fix the issue about VT selecting
-> > INPUT_LEDS.
+> > Yes.  Well, the driver core does the unbinding no matter what, if it was
+> > told, by a user, to do so.  Why is that a problem?  The user then is
+> > responsible for any bad things (i.e. not able to control the device any
+> > more), if they do so.
 > 
-> Any news about this one? Having keyboard leds in the common framework
-> seems very welcome to me.	
+> I don't really agree with that, because the user may simply not know what
+> the consequences of that will be.  In my not so humble opinion any interface
+> allowing user space to crash the kernel is a bad one.  And this is an example
+> of that.
 
-Do you perhaps have an idea about the issue of VT selecting INPUT_LEDS?
+This has been in place since 2005, over 7 years now, and I have never
+heard any problems with it being used to crash the kernel, despite the
+easy ability for people to unbind all of their devices from drivers and
+instantly cause a system hang.  So really doubt this is a problem in
+real life :)
 
-Samuel
+> > > This pretty much means that it is a bad idea to have a driver that is
+> > > exposed as a "device driver" in sysfs for memory hotplugging.
+> > 
+> > Again, why?  All this means is that the driver is now not connected to
+> > the device (memory in this case.)  The memory is still there, still
+> > operates as before, only difference is, the driver can't touch it
+> > anymore.
+> > 
+> > This is the same for any ACPI driver, and has been for years.
+> 
+> Except that if this driver has been unbound and the removal is triggered by
+> an SCI, the core will just go on and remove the memory, although it may
+> be killing the kernel this way.
+
+Why would memory go away if a driver is unbound from a device?  The
+device didn't go away.  It's the same if the driver was a module and it
+was unloaded, you should not turn memory off in that situation, right?
+Are you also going to prevent module unloading of this driver?
+
+> Arguably, this may be considered as the core's fault, but the only way to
+> fix that would be to move the code from that driver into the core and not to
+> register it as a "driver" any more.  Which was my point. :-)
+
+No, I think people are totally overreacting to the unbind/bind files,
+which are there to aid in development, and in adding new device ids to
+drivers, as well as sometimes doing a hacky revoke() call.
+
+> > Please don't confuse unbind with any "normal" system operation, it is
+> > not to be used for memory hotplug, or anything else like this.
+> > 
+> > Also, if you really do not want to do this, turn off the ability to
+> > unbind/bind for these devices, that is under your control in your bus
+> > logic.
+> 
+> OK, but how?  I'm looking at driver_unbind() and not seeing any way to do
+> that actually.
+
+See the suppress_bind_attrs field in struct device_driver.  It's even
+documented in device.h, but sadly, no one reads documentation :)
+
+I recommend you set this field if you don't want the bind/unbind files
+to show up for your memory driver, although I would argue that the
+driver needs to be fixed up to not do foolish things like removing
+memory from a system unless it really does go away...
+
+hope this helps,
+
+greg k-h
