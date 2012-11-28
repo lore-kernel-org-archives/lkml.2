@@ -1,98 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756409Ab2K1VtQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 16:49:16 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:45267 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756233Ab2K1VtM (ORCPT
+	id S1030210Ab2K1VtF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 16:49:05 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:37133 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756327Ab2K1Vsw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 16:49:12 -0500
+	Wed, 28 Nov 2012 16:48:52 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: [PATCH v9 44/46] sparc, mm: Remove calling of free_all_bootmem_node()
-Date: Wed, 28 Nov 2012 13:47:55 -0800
-Message-Id: <1354139277-17376-45-git-send-email-yinghai@kernel.org>
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v9 27/46] x86, mm: Add alloc_low_pages(num)
+Date: Wed, 28 Nov 2012 13:47:38 -0800
+Message-Id: <1354139277-17376-28-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
 References: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now NO_BOOTMEM version free_all_bootmem_node() does not really
-do free_bootmem at all, and it only call
-register_page_bootmem_info_node instead.
+32bit kmap mapping needs pages to be used for low to high.
+At this point those pages are still from pgt_buf_* from BRK, so it is
+ok now.
+But we want to move early_ioremap_page_table_range_init() out of
+init_memory_mapping() and only call it one time later, that will
+make page_table_range_init/page_table_kmap_check/alloc_low_page to
+use memblock to get page.
 
-That is confusing, try to kill that free_all_bootmem_node().
+memblock allocation for pages are from high to low.
+So will get panic from page_table_kmap_check() that has BUG_ON to do
+ordering checking.
 
-Before that, this patch will remove calling of free_all_bootmem_node()
-
-We add register_page_bootmem_info() to call register_page_bootmem_info_node
-directly.
-
-Also could use free_all_bootmem() for numa case, and it is just
-the same as free_low_memory_core_early().
+This patch add alloc_low_pages to make it possible to allocate serveral
+pages at first, and hand out pages one by one from low to high.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: "David S. Miller" <davem@davemloft.net>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: sparclinux@vger.kernel.org
-Acked-by: "David S. Miller" <davem@davemloft.net>
 Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/sparc/mm/init_64.c |   24 +++++++++++-------------
- 1 files changed, 11 insertions(+), 13 deletions(-)
+ arch/x86/mm/init.c        |   33 +++++++++++++++++++++------------
+ arch/x86/mm/mm_internal.h |    6 +++++-
+ 2 files changed, 26 insertions(+), 13 deletions(-)
 
-diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
-index 9e28a11..b24bac2 100644
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -2021,6 +2021,16 @@ static void __init patch_tlb_miss_handler_bitmap(void)
- 	flushi(&valid_addr_bitmap_insn[0]);
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index cf02168..daff14c 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -25,36 +25,45 @@ unsigned long __meminitdata pgt_buf_top;
+ 
+ static unsigned long min_pfn_mapped;
+ 
+-__ref void *alloc_low_page(void)
++__ref void *alloc_low_pages(unsigned int num)
+ {
+ 	unsigned long pfn;
+-	void *adr;
++	int i;
+ 
+ #ifdef CONFIG_X86_64
+ 	if (after_bootmem) {
+-		adr = (void *)get_zeroed_page(GFP_ATOMIC | __GFP_NOTRACK);
++		unsigned int order;
+ 
+-		return adr;
++		order = get_order((unsigned long)num << PAGE_SHIFT);
++		return (void *)__get_free_pages(GFP_ATOMIC | __GFP_NOTRACK |
++						__GFP_ZERO, order);
+ 	}
+ #endif
+ 
+-	if ((pgt_buf_end + 1) >= pgt_buf_top) {
++	if ((pgt_buf_end + num) >= pgt_buf_top) {
+ 		unsigned long ret;
+ 		if (min_pfn_mapped >= max_pfn_mapped)
+ 			panic("alloc_low_page: ran out of memory");
+ 		ret = memblock_find_in_range(min_pfn_mapped << PAGE_SHIFT,
+ 					max_pfn_mapped << PAGE_SHIFT,
+-					PAGE_SIZE, PAGE_SIZE);
++					PAGE_SIZE * num , PAGE_SIZE);
+ 		if (!ret)
+ 			panic("alloc_low_page: can not alloc memory");
+-		memblock_reserve(ret, PAGE_SIZE);
++		memblock_reserve(ret, PAGE_SIZE * num);
+ 		pfn = ret >> PAGE_SHIFT;
+-	} else
+-		pfn = pgt_buf_end++;
++	} else {
++		pfn = pgt_buf_end;
++		pgt_buf_end += num;
++	}
++
++	for (i = 0; i < num; i++) {
++		void *adr;
++
++		adr = __va((pfn + i) << PAGE_SHIFT);
++		clear_page(adr);
++	}
+ 
+-	adr = __va(pfn * PAGE_SIZE);
+-	clear_page(adr);
+-	return adr;
++	return __va(pfn << PAGE_SHIFT);
  }
  
-+static void __init register_page_bootmem_info(void)
+ /* need 4 4k for initial PMD_SIZE, 4k for 0-ISA_END_ADDRESS */
+diff --git a/arch/x86/mm/mm_internal.h b/arch/x86/mm/mm_internal.h
+index b3f993a..7e3b88e 100644
+--- a/arch/x86/mm/mm_internal.h
++++ b/arch/x86/mm/mm_internal.h
+@@ -1,6 +1,10 @@
+ #ifndef __X86_MM_INTERNAL_H
+ #define __X86_MM_INTERNAL_H
+ 
+-void *alloc_low_page(void);
++void *alloc_low_pages(unsigned int num);
++static inline void *alloc_low_page(void)
 +{
-+#ifdef CONFIG_NEED_MULTIPLE_NODES
-+	int i;
-+
-+	for_each_online_node(i)
-+		if (NODE_DATA(i)->node_spanned_pages)
-+			register_page_bootmem_info_node(NODE_DATA(i));
-+#endif
++	return alloc_low_pages(1);
 +}
- void __init mem_init(void)
- {
- 	unsigned long codepages, datapages, initpages;
-@@ -2038,20 +2048,8 @@ void __init mem_init(void)
  
- 	high_memory = __va(last_valid_pfn << PAGE_SHIFT);
- 
--#ifdef CONFIG_NEED_MULTIPLE_NODES
--	{
--		int i;
--		for_each_online_node(i) {
--			if (NODE_DATA(i)->node_spanned_pages != 0) {
--				totalram_pages +=
--					free_all_bootmem_node(NODE_DATA(i));
--			}
--		}
--		totalram_pages += free_low_memory_core_early(MAX_NUMNODES);
--	}
--#else
-+	register_page_bootmem_info();
- 	totalram_pages = free_all_bootmem();
--#endif
- 
- 	/* We subtract one to account for the mem_map_zero page
- 	 * allocated below.
+ #endif	/* __X86_MM_INTERNAL_H */
 -- 
 1.7.7
 
