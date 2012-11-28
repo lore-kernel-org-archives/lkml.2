@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932724Ab2K1V4w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 16:56:52 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:37038 "EHLO
+	id S932778Ab2K1V47 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 16:56:59 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:37027 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755752Ab2K1Vsq (ORCPT
+	with ESMTP id S1756235Ab2K1Vsp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 16:48:46 -0500
+	Wed, 28 Nov 2012 16:48:45 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
@@ -14,60 +14,126 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v9 10/46] x86, mm: if kernel .text .data .bss are not marked as E820_RAM, complain and fix
-Date: Wed, 28 Nov 2012 13:47:21 -0800
-Message-Id: <1354139277-17376-11-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v9 23/46] x86, mm: Remove parameter in alloc_low_page for 64bit
+Date: Wed, 28 Nov 2012 13:47:34 -0800
+Message-Id: <1354139277-17376-24-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
 References: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jacob Shin <jacob.shin@amd.com>
+Now all page table buf are pre-mapped, and we can use virtual address
+directly.  So don't need to remember physical address anymore.
 
-There could be cases where user supplied memmap=exactmap memory
-mappings do not mark the region where the kernel .text .data and
-.bss reside as E820_RAM, as reported here:
+Remove that phys pointer in alloc_low_page(), and that will allow us to
+merge alloc_low_page between 64bit and 32bit.
 
-https://lkml.org/lkml/2012/8/14/86
-
-Handle it by complaining, and adding the range back into the e820.
-
-Signed-off-by: Jacob Shin <jacob.shin@amd.com>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/kernel/setup.c |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
+ arch/x86/mm/init_64.c |   19 +++++++------------
+ 1 files changed, 7 insertions(+), 12 deletions(-)
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 4bd8921..d85cbd9 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -832,6 +832,20 @@ void __init setup_arch(char **cmdline_p)
- 	insert_resource(&iomem_resource, &data_resource);
- 	insert_resource(&iomem_resource, &bss_resource);
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 5ee9242..1960820 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -314,14 +314,13 @@ void __init cleanup_highmap(void)
+ 	}
+ }
  
-+	/*
-+	 * Complain if .text .data and .bss are not marked as E820_RAM and
-+	 * attempt to fix it by adding the range. We may have a confused BIOS,
-+	 * or the user may have incorrectly supplied it via memmap=exactmap. If
-+	 * we really are running on top non-RAM, we will crash later anyways.
-+	 */
-+	if (!e820_all_mapped(code_resource.start, __pa(__brk_limit), E820_RAM)) {
-+		pr_warn(".text .data .bss are not marked as E820_RAM!\n");
-+
-+		e820_add_region(code_resource.start,
-+				__pa(__brk_limit) - code_resource.start + 1,
-+				E820_RAM);
-+	}
-+
- 	trim_bios_range();
- #ifdef CONFIG_X86_32
- 	if (ppro_with_ram_bug()) {
+-static __ref void *alloc_low_page(unsigned long *phys)
++static __ref void *alloc_low_page(void)
+ {
+ 	unsigned long pfn;
+ 	void *adr;
+ 
+ 	if (after_bootmem) {
+ 		adr = (void *)get_zeroed_page(GFP_ATOMIC | __GFP_NOTRACK);
+-		*phys = __pa(adr);
+ 
+ 		return adr;
+ 	}
+@@ -342,7 +341,6 @@ static __ref void *alloc_low_page(unsigned long *phys)
+ 
+ 	adr = __va(pfn * PAGE_SIZE);
+ 	clear_page(adr);
+-	*phys  = pfn * PAGE_SIZE;
+ 	return adr;
+ }
+ 
+@@ -401,7 +399,6 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
+ 	int i = pmd_index(address);
+ 
+ 	for (; i < PTRS_PER_PMD; i++, address = next) {
+-		unsigned long pte_phys;
+ 		pmd_t *pmd = pmd_page + pmd_index(address);
+ 		pte_t *pte;
+ 		pgprot_t new_prot = prot;
+@@ -456,11 +453,11 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
+ 			continue;
+ 		}
+ 
+-		pte = alloc_low_page(&pte_phys);
++		pte = alloc_low_page();
+ 		last_map_addr = phys_pte_init(pte, address, end, new_prot);
+ 
+ 		spin_lock(&init_mm.page_table_lock);
+-		pmd_populate_kernel(&init_mm, pmd, __va(pte_phys));
++		pmd_populate_kernel(&init_mm, pmd, pte);
+ 		spin_unlock(&init_mm.page_table_lock);
+ 	}
+ 	update_page_count(PG_LEVEL_2M, pages);
+@@ -476,7 +473,6 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
+ 	int i = pud_index(addr);
+ 
+ 	for (; i < PTRS_PER_PUD; i++, addr = next) {
+-		unsigned long pmd_phys;
+ 		pud_t *pud = pud_page + pud_index(addr);
+ 		pmd_t *pmd;
+ 		pgprot_t prot = PAGE_KERNEL;
+@@ -530,12 +526,12 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
+ 			continue;
+ 		}
+ 
+-		pmd = alloc_low_page(&pmd_phys);
++		pmd = alloc_low_page();
+ 		last_map_addr = phys_pmd_init(pmd, addr, end, page_size_mask,
+ 					      prot);
+ 
+ 		spin_lock(&init_mm.page_table_lock);
+-		pud_populate(&init_mm, pud, __va(pmd_phys));
++		pud_populate(&init_mm, pud, pmd);
+ 		spin_unlock(&init_mm.page_table_lock);
+ 	}
+ 	__flush_tlb_all();
+@@ -560,7 +556,6 @@ kernel_physical_mapping_init(unsigned long start,
+ 
+ 	for (; start < end; start = next) {
+ 		pgd_t *pgd = pgd_offset_k(start);
+-		unsigned long pud_phys;
+ 		pud_t *pud;
+ 
+ 		next = (start + PGDIR_SIZE) & PGDIR_MASK;
+@@ -574,12 +569,12 @@ kernel_physical_mapping_init(unsigned long start,
+ 			continue;
+ 		}
+ 
+-		pud = alloc_low_page(&pud_phys);
++		pud = alloc_low_page();
+ 		last_map_addr = phys_pud_init(pud, __pa(start), __pa(next),
+ 						 page_size_mask);
+ 
+ 		spin_lock(&init_mm.page_table_lock);
+-		pgd_populate(&init_mm, pgd, __va(pud_phys));
++		pgd_populate(&init_mm, pgd, pud);
+ 		spin_unlock(&init_mm.page_table_lock);
+ 		pgd_changed = true;
+ 	}
 -- 
 1.7.7
 
