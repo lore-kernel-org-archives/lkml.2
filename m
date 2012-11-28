@@ -1,81 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932316Ab2K1UkI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 15:40:08 -0500
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:35792 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932085Ab2K1UkF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 15:40:05 -0500
-Message-ID: <1354134699.26955.290.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v3 1/4] ACPI: Support system notify handler via
- .sys_notify
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org, lenb@kernel.org, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com
-Date: Wed, 28 Nov 2012 13:31:39 -0700
-In-Reply-To: <4411201.YLQBH7zWSI@vostro.rjw.lan>
-References: <1352406227-32629-1-git-send-email-toshi.kani@hp.com>
-	 <6997894.YrZx7D73oL@vostro.rjw.lan>
-	 <1354121683.26955.243.camel@misato.fc.hp.com>
-	 <4411201.YLQBH7zWSI@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932320Ab2K1UmE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 15:42:04 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:43450 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754866Ab2K1UmC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 15:42:02 -0500
+Date: Wed, 28 Nov 2012 21:41:58 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mario Gzuk <mariogzuk@technikz.de>
+Subject: Re: [PATCH 8/8] x86, cleanups: Simplify sync_core() in the case of
+ no CPUID
+Message-ID: <20121128204158.GC14635@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"H. Peter Anvin" <hpa@linux.intel.com>,
+	"H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Mario Gzuk <mariogzuk@technikz.de>
+References: <1354132230-21854-1-git-send-email-hpa@linux.intel.com>
+ <1354132230-21854-9-git-send-email-hpa@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1354132230-21854-9-git-send-email-hpa@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-11-28 at 19:28 +0100, Rafael J. Wysocki wrote:
-> On Wednesday, November 28, 2012 09:54:43 AM Toshi Kani wrote:
-> > > > > > > By using acpi_install_notify_handler(), each driver needs to walk
-> > > > > > > through the entire ACPI namespace to find its associated ACPI devices
-> > > > > > > and call it to register one by one.  I think this is more work for
-> > > > > > > non-ACPI drivers than defining acpi_driver.
-> > > > > > 
-> > > > > > I'm not really sure what you mean.  The drivers in question already know
-> > > > > > what the relevant ACPI device nodes are (because they need them anyway
-> > > > > > for other purposes), so they don't need to look for them specifically and
-> > > > > > acpi_install_notify_handler() doesn't do any namespace walking.  So what
-> > > > > > you said above simply doesn't make sense from this viewpoint.
-> > > > > 
-> > > > > Yes, if drivers already know the relevant ACPI devices, then walking the
-> > > > > ACPI namespace is not necessary.  I was referring the case like
-> > > > > processor_driver.c, acpi_memhotplug.c, and container.c in my statement. 
-> > > > 
-> > > > BTW, when an ACPI device is marked as non-present, which is the case
-> > > > before hot-add, we do not create an acpi_device object and therefore do
-> > > > not bind it with a driver.  This is why these drivers walk the ACPI
-> > > > namespace and install their notify handlers regardless of device status.
-> > > 
-> > > So maybe we should create struct acpi_device objects in that case too?
-> > 
-> > I think it has some challenge as well.  We bind an ACPI driver with
-> > device_register(), which calls device_add()-> kobject_add().  So, all
-> > non-present ACPI device objects will show up in sysfs, unless we can
-> > change the core.  This will change user interface.  There can be quite
-> > many non-present devices in ACPI namespace depending on FW
-> > implementation.
+On Wed, Nov 28, 2012 at 11:50:30AM -0800, H. Peter Anvin wrote:
+> From: "H. Peter Anvin" <hpa@linux.intel.com>
 > 
-> If additional devices appear in sysfs, that's not a problem.  If there
-> were fewer of them, that would be a real one. :-)
+> Simplify the implementation of sync_core() for the case where we may
+> not have the CPUID instruction available.
+> 
+> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+> ---
+>  arch/x86/include/asm/processor.h | 27 +++++++++++++++++----------
+>  1 file changed, 17 insertions(+), 10 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+> index 9a4ee46..b381df7 100644
+> --- a/arch/x86/include/asm/processor.h
+> +++ b/arch/x86/include/asm/processor.h
+> @@ -673,17 +673,24 @@ static inline void sync_core(void)
+>  	int tmp;
+>  
+>  #ifdef CONFIG_M486
+> -	if (boot_cpu_data.x86 < 5)
+> -		/* There is no speculative execution.
+> -		 * jmp is a barrier to prefetching. */
+> -		asm volatile("jmp 1f\n1:\n" ::: "memory");
+> -	else
+> +	/*
+> +	 * Do a CPUID if available, otherwise do a jump.  The jump
+> +	 * can conveniently enough be the jump around CPUID.
+> +	 */
+> +	asm volatile("cmpl %2,%1\n\t"
+> +		     "jl 1f\n\t"
+> +		     "cpuid\n"
+> +		     "1:"
+> +		     : "=a" (tmp)
+> +		     : "rm" (boot_cpu_data.cpuid_level), "ri" (0), "0" (1)
+> +		     : "ebx", "ecx", "edx", "memory");
+> +#else
+> +	/* cpuid is a barrier to speculative execution.
+> +	 * Prefetched instructions are automatically
+> +	 * invalidated when modified. */
 
-I see.  I guess this means that once we expose all non-present devices
-in sysfs, we cannot go back to the current way.  So, we need to be very
-careful.  Anyway, this model requires separate handling for static ACPI
-[1] and dynamic ACPI [2], which may make the state model complicated.
+While at it, you could correct this comment to adhere to kernel coding
+style:
 
-1. Static ACPI - No creation / deletion of acpi_device at hot-plug.
-2. Dynamic ACPI - Create acpi_device at hot-add, delete at hot-remove.
+	/*
+	 * cpuid is a barrier...
+	 * ...
+	 */
 
+> +	asm volatile("cpuid" : "=a" (tmp) : "0" (1)
+> +		     : "ebx", "ecx", "edx", "memory");
 
-Thanks,
--Toshi
+... and then write this in its shorter form:
 
-[1] ACPI namespace is static and contains the maximum possible config. 
-[2] ACPI namespace is dynamic. SSDT is loaded at hot-add, and unloaded
-at hot-remove.
+	tmp = cpuid_eax(1);
 
+to have it a bit easier on the eyes.
 
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
