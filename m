@@ -1,98 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755646Ab2K1PJT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 10:09:19 -0500
-Received: from relay.ams1.hosting.nl ([82.197.222.253]:51484 "EHLO
-	relay.ams1.hosting.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755620Ab2K1PJR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 10:09:17 -0500
-X-Greylist: delayed 2703 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Nov 2012 10:09:17 EST
-X-Originating-IP: 127.0.0.1
-Message-ID: <20121128152403.45224dvyaufb1j7n@62.129.139.42>
-Date: Wed, 28 Nov 2012 15:24:03 +0100
-From: "sander van ginkel" <sander@van-ginkel.eu>
-To: linux-kernel@vger.kernel.org
-Cc: kernel@pengutronix.de, shawn.guo@linaro.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] add hardware I2C support for ARM IMX23
+	id S1755665Ab2K1PJo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 10:09:44 -0500
+Received: from fieldses.org ([174.143.236.118]:47393 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755543Ab2K1PJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 10:09:43 -0500
+Date: Wed, 28 Nov 2012 10:09:41 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Subject: Re: [PATCH 1/2] nfsd: make NFSv4 lease time per net
+Message-ID: <20121128150941.GF11651@fieldses.org>
+References: <20121127111007.10271.54338.stgit@localhost.localdomain>
+ <20121127111144.10271.97169.stgit@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII;
-	DelSp=Yes	format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 7BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.6)
+In-Reply-To: <20121127111144.10271.97169.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The I2C hardware in the IMX233 is currently not supported,
-however the i2c-mxs driver seems to be suitable.
-To use the i2c-mxs driver it has to be added to the devicetree
-for the IMX23.
+On Tue, Nov 27, 2012 at 02:11:44PM +0300, Stanislav Kinsbursky wrote:
+> diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
+> index dab350d..4930981 100644
+> --- a/fs/nfsd/nfsctl.c
+> +++ b/fs/nfsd/nfsctl.c
+> @@ -912,7 +912,8 @@ static ssize_t nfsd4_write_time(struct file *file, char *buf, size_t size, time_
+>   */
+>  static ssize_t write_leasetime(struct file *file, char *buf, size_t size)
+>  {
+> -	return nfsd4_write_time(file, buf, size, &nfsd4_lease);
+> +	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
+> +	return nfsd4_write_time(file, buf, size, &nn->nfsd4_lease);
 
+This is called in the context of whatever process writes to
+nfsv4leasetime, so should be using its network namespace, right?
 
-Signed-off-by: Sander van Ginkel <sander@van-ginkel.eu>
----
-diff -Naur linux-3.7-rc6/arch/arm/boot/dts/imx23-olinuxino.dts  
-linux-3.7-rc6-i2c/arch/arm/boot/dts/imx23-olinuxino.dts
---- linux-3.7-rc6/arch/arm/boot/dts/imx23-olinuxino.dts	2012-11-17  
-01:42:40.000000000 +0000
-+++ linux-3.7-rc6-i2c/arch/arm/boot/dts/imx23-olinuxino.dts	2012-11-24  
-22:40:51.000000000 +0000
-@@ -50,6 +50,13 @@
-		};
-
-		apbx@80040000 {
-+
-+			i2c0: i2c@80058000 {
-+				pinctrl-names = "default";
-+				pinctrl-0 = <&i2c0_pins_a>;
-+				status = "okay";
-+			};
-+
-			duart: serial@80070000 {
-				pinctrl-names = "default";
-				pinctrl-0 = <&duart_pins_a>;
-diff -Naur linux-3.7-rc6/arch/arm/boot/dts/imx23.dtsi  
-linux-3.7-rc6-i2c/arch/arm/boot/dts/imx23.dtsi
---- linux-3.7-rc6/arch/arm/boot/dts/imx23.dtsi	2012-11-17  
-01:42:40.000000000 +0000
-+++ linux-3.7-rc6-i2c/arch/arm/boot/dts/imx23.dtsi	2012-11-24  
-22:40:51.000000000 +0000
-@@ -144,6 +144,17 @@
-					fsl,pull-up = <0>;
-				};
-
-+				i2c0_pins_a: i2c0@0 {
-+					reg = <0>;
-+					fsl,pinmux-ids = <
-+						0x1171 /* MX23_PAD_LCD_ENABLE__I2C_SCL */
-+						0x1181 /* MX23_PAD_LCD_HSYNC__I2C_SDA */
-+					>;
-+					fsl,drive-strength = <1>;
-+					fsl,voltage = <1>;
-+					fsl,pull-up = <1>;
-+				};
-+
-				auart0_2pins_a: auart0-2pins@0 {
-					reg = <0>;
-					fsl,pinmux-ids = <
-@@ -387,9 +398,15 @@
-				status = "disabled";
-			};
-
--			i2c@80058000 {
-+			i2c0: i2c@80058000 {
-+				#address-cells = <2>;
-+				#size-cells = <1>;
-+				compatible = "fsl,imx28-i2c";
-				reg = <0x80058000 0x2000>;
-+				interrupts = <26 27>;
-+				clock-frequency = <100000>;
-				status = "disabled";
-+				fsl,i2c-dma-channel = <3>;
-			};
-
-			rtc@8005c000 {
-
+--b.
