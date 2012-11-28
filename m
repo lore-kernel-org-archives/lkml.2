@@ -1,74 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932797Ab2K1WH3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 17:07:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23680 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932454Ab2K1WHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 17:07:07 -0500
-Date: Wed, 28 Nov 2012 19:57:50 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Gleb Natapov <gleb@redhat.com>, Avi Kivity <avi@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 3/3] KVM: x86: improve reexecute_instruction
-Message-ID: <20121128215750.GA10039@amt.cnet>
-References: <50AAC77C.8040505@linux.vnet.ibm.com>
- <50AAC7F9.7050305@linux.vnet.ibm.com>
- <20121126224105.GB10634@amt.cnet>
- <50B433D0.8060107@linux.vnet.ibm.com>
- <20121128141230.GI928@redhat.com>
- <50B626D7.7070608@linux.vnet.ibm.com>
+	id S1756190Ab2K1WKp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 17:10:45 -0500
+Received: from shrek-wifi.podlesie.net ([93.179.225.50]:36837 "EHLO
+	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755683Ab2K1WKo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 17:10:44 -0500
+Date: Wed, 28 Nov 2012 23:10:40 +0100
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
+Cc: David Woodhouse <dwmw2@infradead.org>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] atm: introduce vcc_pop()
+Message-ID: <20121128221040.GA24035@shrek.podlesie.net>
+References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
+ <1350926091-12642-3-git-send-email-krzysiek@podlesie.net>
+ <1354036592.2534.6.camel@shinybook.infradead.org>
+ <20121127173906.GA11390@shrek.podlesie.net>
+ <1354039349.2534.11.camel@shinybook.infradead.org>
+ <20121127182843.GA11597@shrek.podlesie.net>
+ <20121128201837.GA912@shrek.podlesie.net>
+ <20121128162001.3f326720@thirdoffive.cmf.nrl.navy.mil>
+ <20121128214533.GA25486@shrek.podlesie.net>
+ <20121128165906.05ef5e2b@thirdoffive.cmf.nrl.navy.mil>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50B626D7.7070608@linux.vnet.ibm.com>
+In-Reply-To: <20121128165906.05ef5e2b@thirdoffive.cmf.nrl.navy.mil>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 10:59:35PM +0800, Xiao Guangrong wrote:
-> On 11/28/2012 10:12 PM, Gleb Natapov wrote:
-> > On Tue, Nov 27, 2012 at 11:30:24AM +0800, Xiao Guangrong wrote:
-> >> On 11/27/2012 06:41 AM, Marcelo Tosatti wrote:
-> >>
-> >>>>
-> >>>> -	return false;
-> >>>> +again:
-> >>>> +	page_fault_count = ACCESS_ONCE(vcpu->kvm->arch.page_fault_count);
-> >>>> +
-> >>>> +	/*
-> >>>> +	 * if emulation was due to access to shadowed page table
-> >>>> +	 * and it failed try to unshadow page and re-enter the
-> >>>> +	 * guest to let CPU execute the instruction.
-> >>>> +	 */
-> >>>> +	kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa));
-> >>>> +	emulate = vcpu->arch.mmu.page_fault(vcpu, cr3, PFERR_WRITE_MASK, false);
-> >>>
-> >>> Can you explain what is the objective here?
-> >>>
-> >>
-> >> Sure. :)
-> >>
-> >> The instruction emulation is caused by fault access on cr3. After unprotect
-> >> the target page, we call vcpu->arch.mmu.page_fault to fix the mapping of cr3.
-> >> if it return 1, mmu can not fix the mapping, we should report the error,
-> >> otherwise it is good to return to guest and let it re-execute the instruction
-> >> again.
-> >>
-> >> page_fault_count is used to avoid the race on other vcpus, since after we
-> >> unprotect the target page, other cpu can enter page fault path and let the
-> >> page be write-protected again.
-> >>
-> >> This way can help us to detect all the case that mmu can not be fixed.
-> >>
-> > Can you write this in a comment above vcpu->arch.mmu.page_fault()?
+On Wed, Nov 28, 2012 at 04:59:06PM -0500, chas williams - CONTRACTOR wrote:
+> On Wed, 28 Nov 2012 22:45:34 +0100
+> Krzysztof Mazur <krzysiek@podlesie.net> wrote:
 > 
-> Okay, if Marcelo does not object this way. :)
+> > On Wed, Nov 28, 2012 at 04:20:01PM -0500, chas williams - CONTRACTOR wrote:
+> > > i dont like the vcc->pop() implementation and at one point i had the
+> > > crazy idea of using skb->destructors to handle it.  however, i think it
+> > > would be necessary to clone the skb's so any existing destructor is
+> > > preserved.
+> > 
+> > With this patch we will kill vcc->pop() in drivers and in future
+> > we can do that without changes in drivers.
+> 
+> ok
+> 
+> > > 
+> > > > +#define vcc_pop(vcc, skb) vcc_pop_any(vcc, skb)
+> > > > +#define vcc_pop_irq(vcc, skb) vcc_pop_any(vcc, skb)
+> > > 
+> > > don't define these if you dont plan on using them anway.
+> > 
+> > I removed them. I also added check if vcc is NULL, as David Woodhouse
+> > suggested, some drivers use that.
+> 
+> it should probably be if (likely(vcc) && likely(vcc->pop)) since it
+> will almost always be the case.
 
-I do object, since it is possible to detect precisely the condition by 
-storing which gfns have been cached.
+Thanks,
 
-Then, Xiao, you need a way to handle large read-only sptes.
+Krzysiek
+-- >8 --
+Subject: [PATCH v3] atm: introduce vcc_pop()
+
+The atm drivers to free skb, that they got from ->send(), cannot just use
+dev_kfree_skb*(), but they must use something like:
+
+	if (vcc->pop)
+		vcc->pop(vcc, skb);
+	else
+		dev_kfree_skb_any(skb);
+
+When vcc->pop() is non-NULL, but they must in such case call vcc->pop().
+This causes duplicated code in many drivers, and some drivers even forgot
+to call vcc->pop() in some error handling code.
+
+Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
+---
+ include/linux/atmdev.h | 8 ++++++++
+ net/atm/common.c       | 9 +++++++++
+ 2 files changed, 17 insertions(+)
+
+diff --git a/include/linux/atmdev.h b/include/linux/atmdev.h
+index c1da539..57bd93f 100644
+--- a/include/linux/atmdev.h
++++ b/include/linux/atmdev.h
+@@ -283,6 +283,14 @@ int atm_pcr_goal(const struct atm_trafprm *tp);
+ 
+ void vcc_release_async(struct atm_vcc *vcc, int reply);
+ 
++/**
++ * vcc_pop - free transmitted ATM skb
++ *
++ * vcc_pop() should be used by ATM driver to free skbs, that were sent
++ * to driver by atmdev_opt->send() function.
++ */
++void vcc_pop(struct atm_vcc *vcc, struct sk_buff *skb);
++
+ struct atm_ioctl {
+ 	struct module *owner;
+ 	/* A module reference is kept if appropriate over this call.
+diff --git a/net/atm/common.c b/net/atm/common.c
+index 806fc0a..c42ff62 100644
+--- a/net/atm/common.c
++++ b/net/atm/common.c
+@@ -654,6 +654,15 @@ out:
+ 	return error;
+ }
+ 
++void vcc_pop(struct atm_vcc *vcc, struct sk_buff *skb)
++{
++	if (likely(vcc) && likely(vcc->pop))
++		vcc->pop(vcc, skb);
++	else
++		dev_kfree_skb_any(skb);
++}
++EXPORT_SYMBOL(vcc_pop);
++
+ unsigned int vcc_poll(struct file *file, struct socket *sock, poll_table *wait)
+ {
+ 	struct sock *sk = sock->sk;
+-- 
+1.8.0.411.g71a7da8
 
