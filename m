@@ -1,78 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932625Ab2K1Vet (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 16:34:49 -0500
-Received: from mga09.intel.com ([134.134.136.24]:45161 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932565Ab2K1Vep convert rfc822-to-8bit (ORCPT
+	id S932668Ab2K1VfA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 16:35:00 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:32786 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932565Ab2K1Ve4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 16:34:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,180,1355126400"; 
-   d="scan'208";a="226038160"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Jiang Liu <jiang.liu@huawei.com>, Tang Chen <tangchen@cn.fujitsu.com>
-CC: "hpa@zytor.com" <hpa@zytor.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "isimatu.yasuaki@jp.fujitsu.com" <isimatu.yasuaki@jp.fujitsu.com>,
-        "laijs@cn.fujitsu.com" <laijs@cn.fujitsu.com>,
-        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
-        "linfeng@cn.fujitsu.com" <linfeng@cn.fujitsu.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
-        "mgorman@suse.de" <mgorman@suse.de>,
-        "rientjes@google.com" <rientjes@google.com>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, "Wang, Frank" <frank.wang@intel.com>
-Subject: RE: [PATCH v2 0/5] Add movablecore_map boot option
-Thread-Topic: [PATCH v2 0/5] Add movablecore_map boot option
-Thread-Index: AQHNzUWLbzufafl3KEuH3pSKrF3YJJf/w9zA
-Date: Wed, 28 Nov 2012 21:34:43 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F1C95EDCE@ORSMSX108.amr.corp.intel.com>
-References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com>
- <50B5CFAE.80103@huawei.com>
-In-Reply-To: <50B5CFAE.80103@huawei.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 28 Nov 2012 16:34:56 -0500
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com, paul@paulmenage.org, glommer@parallels.com
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        peterz@infradead.org, mhocko@suse.cz, bsingharora@gmail.com,
+        hannes@cmpxchg.org, kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 11/13] cpuset: pin down cpus and mems while a task is being attached
+Date: Wed, 28 Nov 2012 13:34:18 -0800
+Message-Id: <1354138460-19286-12-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1354138460-19286-1-git-send-email-tj@kernel.org>
+References: <1354138460-19286-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 1. use firmware information
->   According to ACPI spec 5.0, SRAT table has memory affinity structure
->   and the structure has Hot Pluggable Filed. See "5.2.16.2 Memory
->   Affinity Structure". If we use the information, we might be able to
->   specify movable memory by firmware. For example, if Hot Pluggable
->   Filed is enabled, Linux sets the memory as movable memory.
-> 
-> 2. use boot option
->   This is our proposal. New boot option can specify memory range to use
->   as movable memory.
+cpuset is scheduled to be decoupled from cgroup_lock which will make
+configuration updates race with task migration.  Any config update
+will be allowed to happen between ->can_attach() and ->attach().  If
+such config update removes either all cpus or mems, by the time
+->attach() is called, the condition verified by ->can_attach(), that
+the cpuset is capable of hosting the tasks, is no longer true.
 
-Isn't this just moving the work to the user? To pick good values for the
-movable areas, they need to know how the memory lines up across
-node boundaries ... because they need to make sure to allow some
-non-movable memory allocations on each node so that the kernel can
-take advantage of node locality.
+This patch adds cpuset->attach_in_progress which is incremented from
+->can_attach() and decremented when the attach operation finishes
+either successfully or not.  validate_change() treats cpusets w/
+non-zero ->attach_in_progress like cpusets w/ tasks and refuses to
+remove all cpus or mems from it.
 
-So the user would have to read at least the SRAT table, and perhaps
-more, to figure out what to provide as arguments.
+This currently doesn't make any functional difference as everything is
+protected by cgroup_mutex but enables decoupling the locking.
 
-Since this is going to be used on a dynamic system where nodes might
-be added an removed - the right values for these arguments might
-change from one boot to the next. So even if the user gets them right
-on day 1, a month later when a new node has been added, or a broken
-node removed the values would be stale.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ kernel/cpuset.c | 28 ++++++++++++++++++++++++++--
+ 1 file changed, 26 insertions(+), 2 deletions(-)
 
--Tony
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 3558250..68a0906 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -91,6 +91,12 @@ struct cpuset {
+ 
+ 	struct fmeter fmeter;		/* memory_pressure filter */
+ 
++	/*
++	 * Tasks are being attached to this cpuset.  Used to prevent
++	 * zeroing cpus/mems_allowed between ->can_attach() and ->attach().
++	 */
++	int attach_in_progress;
++
+ 	/* partition number for rebuild_sched_domains() */
+ 	int pn;
+ 
+@@ -468,9 +474,12 @@ static int validate_change(const struct cpuset *cur, const struct cpuset *trial)
+ 			goto out;
+ 	}
+ 
+-	/* Cpusets with tasks can't have empty cpus_allowed or mems_allowed */
++	/*
++	 * Cpusets with tasks - existing or newly being attached - can't
++	 * have empty cpus_allowed or mems_allowed.
++	 */
+ 	ret = -ENOSPC;
+-	if (cgroup_task_count(cur->css.cgroup) &&
++	if ((cgroup_task_count(cur->css.cgroup) || cur->attach_in_progress) &&
+ 	    (cpumask_empty(trial->cpus_allowed) ||
+ 	     nodes_empty(trial->mems_allowed)))
+ 		goto out;
+@@ -1386,9 +1395,21 @@ static int cpuset_can_attach(struct cgroup *cgrp, struct cgroup_taskset *tset)
+ 			return ret;
+ 	}
+ 
++	/*
++	 * Mark attach is in progress.  This makes validate_change() fail
++	 * changes which zero cpus/mems_allowed.
++	 */
++	cs->attach_in_progress++;
++
+ 	return 0;
+ }
+ 
++static void cpuset_cancel_attach(struct cgroup *cgrp,
++				 struct cgroup_taskset *tset)
++{
++	cgroup_cs(cgrp)->attach_in_progress--;
++}
++
+ static void cpuset_attach(struct cgroup *cgrp, struct cgroup_taskset *tset)
+ {
+ 	/* static bufs protected by cgroup_mutex */
+@@ -1435,6 +1456,8 @@ static void cpuset_attach(struct cgroup *cgrp, struct cgroup_taskset *tset)
+ 					  &cpuset_attach_nodemask_to);
+ 		mmput(mm);
+ 	}
++
++	cs->attach_in_progress--;
+ }
+ 
+ /* The various types of files and directories in a cpuset file system */
+@@ -1902,6 +1925,7 @@ struct cgroup_subsys cpuset_subsys = {
+ 	.css_offline = cpuset_css_offline,
+ 	.css_free = cpuset_css_free,
+ 	.can_attach = cpuset_can_attach,
++	.cancel_attach = cpuset_cancel_attach,
+ 	.attach = cpuset_attach,
+ 	.subsys_id = cpuset_subsys_id,
+ 	.base_cftypes = files,
+-- 
+1.7.11.7
+
