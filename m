@@ -1,112 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932288Ab2K1UQU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 15:16:20 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:35334 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932136Ab2K1UQS (ORCPT
+	id S1755942Ab2K1USL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 15:18:11 -0500
+Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:44391 "EHLO
+	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752896Ab2K1USJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 15:16:18 -0500
+	Wed, 28 Nov 2012 15:18:09 -0500
+Date: Wed, 28 Nov 2012 22:18:04 +0200
+From: Sakari Ailus <sakari.ailus@iki.fi>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: LMML <linux-media@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        Prabhakar Lad <prabhakar.lad@ti.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Subject: Re: [PATCH v3 2/3] davinci: vpss: dm365: set vpss clk ctrl
+Message-ID: <20121128201804.GI31879@valkosipuli.retiisi.org.uk>
+References: <1354100134-21095-1-git-send-email-prabhakar.lad@ti.com>
+ <1354100134-21095-3-git-send-email-prabhakar.lad@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20121128175007.GN21266@phenom.dumpdata.com>
-References: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
-	<1353123563-3103-22-git-send-email-yinghai@kernel.org>
-	<20121128175007.GN21266@phenom.dumpdata.com>
-Date: Wed, 28 Nov 2012 12:16:16 -0800
-X-Google-Sender-Auth: x_lvEpVHKWpUMrL3WHlEbkzzP4o
-Message-ID: <CAE9FiQWVL3mq7dCP1g_euK_7PK2gUE+1XXNoZPsqt+wnFdtFhw@mail.gmail.com>
-Subject: Re: [PATCH v8 21/46] x86, mm: setup page table in top-down
-From: Yinghai Lu <yinghai@kernel.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354100134-21095-3-git-send-email-prabhakar.lad@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 9:50 AM, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com> wrote:
->>  /*
->> - * Iterate through E820 memory map and create direct mappings for only E820_RAM
->> - * regions. We cannot simply create direct mappings for all pfns from
->> - * [0 to max_low_pfn) and [4GB to max_pfn) because of possible memory holes in
->> - * high addresses that cannot be marked as UC by fixed/variable range MTRRs.
->> - * Depending on the alignment of E820 ranges, this may possibly result in using
->> - * smaller size (i.e. 4K instead of 2M or 1G) page tables.
->> + * would have hole in the middle or ends, and only ram parts will be mapped.
->
->
-> What? What is the 'would' refering to? Why remove a good comment that explains
-> the function. Why not just modify it a bit please?
->
+Hi Prabhakar,
 
-==> update to
+On Wed, Nov 28, 2012 at 04:25:33PM +0530, Prabhakar Lad wrote:
+> From: Manjunath Hadli <manjunath.hadli@ti.com>
+> 
+> request_mem_region for VPSS_CLK_CTRL register and ioremap.
+> and enable clocks appropriately.
+> 
+> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+> ---
+>  drivers/media/platform/davinci/vpss.c |   14 ++++++++++++++
+>  1 files changed, 14 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/media/platform/davinci/vpss.c b/drivers/media/platform/davinci/vpss.c
+> index 34ad7bd..a36d694 100644
+> --- a/drivers/media/platform/davinci/vpss.c
+> +++ b/drivers/media/platform/davinci/vpss.c
+> @@ -103,6 +103,7 @@ struct vpss_hw_ops {
+>  struct vpss_oper_config {
+>  	__iomem void *vpss_regs_base0;
+>  	__iomem void *vpss_regs_base1;
+> +	resource_size_t *vpss_regs_base2;
+>  	enum vpss_platform_type platform;
+>  	spinlock_t vpss_lock;
+>  	struct vpss_hw_ops hw_ops;
+> @@ -484,11 +485,24 @@ static struct platform_driver vpss_driver = {
+>  
+>  static void vpss_exit(void)
+>  {
+> +	iounmap(oper_cfg.vpss_regs_base2);
+> +	release_mem_region(*oper_cfg.vpss_regs_base2, 4);
 
-/*
- * We need to iterate through E820 memory map and create direct mappings
- * for only E820_RAM and E820_KERN_RESERVED regions. We cannot simply
- * create direct mappings for all pfns from [0 to max_low_pfn) and
- * [4GB to max_pfn) because of possible memory holes in high addresses
- * that cannot be marked as UC by fixed/variable range MTRRs.
- * Depending on the alignment of E820 ranges, this may possibly result
- * in using smaller size (i.e. 4K instead of 2M or 1G) page tables.
- *
- * init_mem_mapping call init_range_memory_mapping with big range.
- * That range would have hole in the middle or ends, and only ram parts
- * will be mapped in init_range_memory_mapping.
- */
+release_mem_region(VPSS_CLK_CTRL, 4);?
 
+>  	platform_driver_unregister(&vpss_driver);
+>  }
+>  
+> +#define VPSS_CLK_CTRL			0x01c40044
+> +#define VPSS_CLK_CTRL_VENCCLKEN		BIT(3)
+> +#define VPSS_CLK_CTRL_DACCLKEN		BIT(4)
+> +
+>  static int __init vpss_init(void)
+>  {
+> +	if (request_mem_region(VPSS_CLK_CTRL, 4, "vpss_clock_control")) {
 
+if (!request_mem_region())
+	return -EBUSY;
 
->> -     max_pfn_mapped = 0; /* will get exact value next */
->>       /* the ISA range is always mapped regardless of memory holes */
->>       init_memory_mapping(0, ISA_END_ADDRESS);
->> -     init_range_memory_mapping(ISA_END_ADDRESS, end);
->> +
->> +     /* xen has big range in reserved near end of ram, skip it at first */
->
-> I am not seeing the logic for doing it? The loop is quite generic
-> in doing it in reverse order, and the memblock_find_in_range
-> gets a nice PMD_SIZE region from the end of the memory.
->
-> If the memory at the end is reserved, then it looks like it won't
-> be even considered in the loop, but it does get included in the fallback:
->
->         if (real_end < end)
->                 init_range_memory_mapping(real_end, end);
+...
 
-that reserved in in memblock.reserved and it is not in e820.
+> +		oper_cfg.vpss_regs_base2 = ioremap(VPSS_CLK_CTRL, 4);
+> +		__raw_writel(VPSS_CLK_CTRL_VENCCLKEN |
+> +			     VPSS_CLK_CTRL_DACCLKEN, oper_cfg.vpss_regs_base2);
+> +	} else {
+> +		return -EBUSY;
+> +	}
+>  	return platform_driver_register(&vpss_driver);
+>  }
+>  subsys_initcall(vpss_init);
 
-so memblock.memory will have that range too. then if we use all of
-first 2M to map
-
-those reserved range, we would not have enough mapped pages to be used
-as new page tables.
-
->
->
->
->> +     addr = memblock_find_in_range(ISA_END_ADDRESS, end, PMD_SIZE,
->> +                      PAGE_SIZE);
->> +     real_end = addr + PMD_SIZE;
->> +
->> +     /* step_size need to be small so pgt_buf from BRK could cover it */
->> +     step_size = PMD_SIZE;
->> +     max_pfn_mapped = 0; /* will get exact value next */
->> +     min_pfn_mapped = real_end >> PAGE_SHIFT;
->> +     last_start = start = real_end;
->
-> Everytime I look at this loop, I keep on forgetting that it goes in reverse.
-> I am not sure if it is just me, but it might be useful for other
-> folks who are going to look at this in a year or so to have
-> a little hint:
->
-> N.B. We start from the top (end of memory) and go to the bottom. The
-> memblock_find_in_range gets us a block of RAM from the end
-> of RAM.
-
-put the that in the comments.
+-- 
+Sakari Ailus
+e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
