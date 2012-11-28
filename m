@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755549Ab2K1RC7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 12:02:59 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:46566 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752248Ab2K1RC4 (ORCPT
+	id S1755686Ab2K1RDK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 12:03:10 -0500
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:38699 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752364Ab2K1RDH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 12:02:56 -0500
-MIME-Version: 1.0
-In-Reply-To: <50B63A04.9010901@redhat.com>
-References: <50A513A8.9010404@redhat.com> <CA+55aFyLMmKuEvY6T2=vSHp_R4=ndqFEFNJsc3Axze2vYknKhg@mail.gmail.com>
- <50B63A04.9010901@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 28 Nov 2012 09:02:35 -0800
-X-Google-Sender-Auth: vw_SRWJddLJUvzuI1RpxvvoHBUI
-Message-ID: <CA+55aFy7hxayPzr3MiV1xc0bvLcd+-7b52iA3CYhbPZuWXr9yA@mail.gmail.com>
-Subject: Re: Acpi deadlocks with 3.7.0-rc4
-To: Zdenek Kabelac <zkabelac@redhat.com>
-Cc: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 28 Nov 2012 12:03:07 -0500
+Message-ID: <1354121683.26955.243.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v3 1/4] ACPI: Support system notify handler via
+ .sys_notify
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org, lenb@kernel.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com
+Date: Wed, 28 Nov 2012 09:54:43 -0700
+In-Reply-To: <6997894.YrZx7D73oL@vostro.rjw.lan>
+References: <1352406227-32629-1-git-send-email-toshi.kani@hp.com>
+	 <1353964194.26955.153.camel@misato.fc.hp.com>
+	 <1353965049.26955.159.camel@misato.fc.hp.com>
+	 <6997894.YrZx7D73oL@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 8:21 AM, Zdenek Kabelac <zkabelac@redhat.com> wrote:
->
-> I've opened  https://bugzilla.kernel.org/show_bug.cgi?id=51071
-> and attached picture there which is all I have.
->
-> I'll try to decode exact code line.
+> > > > > By using acpi_install_notify_handler(), each driver needs to walk
+> > > > > through the entire ACPI namespace to find its associated ACPI devices
+> > > > > and call it to register one by one.  I think this is more work for
+> > > > > non-ACPI drivers than defining acpi_driver.
+> > > > 
+> > > > I'm not really sure what you mean.  The drivers in question already know
+> > > > what the relevant ACPI device nodes are (because they need them anyway
+> > > > for other purposes), so they don't need to look for them specifically and
+> > > > acpi_install_notify_handler() doesn't do any namespace walking.  So what
+> > > > you said above simply doesn't make sense from this viewpoint.
+> > > 
+> > > Yes, if drivers already know the relevant ACPI devices, then walking the
+> > > ACPI namespace is not necessary.  I was referring the case like
+> > > processor_driver.c, acpi_memhotplug.c, and container.c in my statement. 
+> > 
+> > BTW, when an ACPI device is marked as non-present, which is the case
+> > before hot-add, we do not create an acpi_device object and therefore do
+> > not bind it with a driver.  This is why these drivers walk the ACPI
+> > namespace and install their notify handlers regardless of device status.
+> 
+> So maybe we should create struct acpi_device objects in that case too?
 
-Uhhuh. It's missing much of the relevant parts of the code line, in
-particular the actual oopsing instruction. But what is there decodes
-to
+I think it has some challenge as well.  We bind an ACPI driver with
+device_register(), which calls device_add()-> kobject_add().  So, all
+non-present ACPI device objects will show up in sysfs, unless we can
+change the core.  This will change user interface.  There can be quite
+many non-present devices in ACPI namespace depending on FW
+implementation.
 
-        41 b8 10 00 00 00       mov    $0x10,%r8d
-        48 c7 c1 88 52 64 81    mov    $0xffffffff81645288,%rcx
-        31 c0                   xor    %eax,%eax
-        48 c7 c2 98 52 64 81    mov    $0xffffffff81645298,%rdx
-        bf 00 04 00 0.          mov    $0x0.00400,%edi
+Thanks,
+-Toshi
 
-    .. oops in here ..
-
-        74 33                   je     0x50
-        48 89 df                mov    %rbx,%rdi
-        e8 4d c9 00 00          callq  ? <offset 0xc972>
-        48 89 d9                mov    %rbx,%rcx
-        48 c7 c2 0a .. .. ..    mov    $0x......0a,%rdx
-
-which isn't really very obvious. Do you have that kernel around (or at
-least the same compiler and configuration)? Doing a
-
-  objdump --disassemble  drivers/acpi/acpica/nsaccess.o
-
-might help pinpoint where that is..
-
-> It's probably not a regression from 3.6 - since this problem was there for
-> much longer - but now it has just become much more visible.
-
-Ok.
-
-           Linus
