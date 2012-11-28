@@ -1,54 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755722Ab2K1Tmh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 14:42:37 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:43246 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755453Ab2K1Tmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 14:42:35 -0500
-Message-ID: <50B66922.9090209@linux.vnet.ibm.com>
-Date: Wed, 28 Nov 2012 13:42:26 -0600
-From: Nathan Fontenot <nfont@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.28) Gecko/20120313 Thunderbird/3.1.20
+	id S1755904Ab2K1TnF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 14:43:05 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:52881 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755046Ab2K1TnD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 14:43:03 -0500
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH] export of_reconfig_notifier_[register,unregister]
-References: <20121128140308.abb21ec8f61553a2ed077fe3@canb.auug.org.au>
-In-Reply-To: <20121128140308.abb21ec8f61553a2ed077fe3@canb.auug.org.au>
+In-Reply-To: <20121128171558.GM21266@phenom.dumpdata.com>
+References: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
+	<1353123563-3103-16-git-send-email-yinghai@kernel.org>
+	<20121128171558.GM21266@phenom.dumpdata.com>
+Date: Wed, 28 Nov 2012 11:43:01 -0800
+X-Google-Sender-Auth: rzTpiQRxAPJzPLXbl8ztZr0X66U
+Message-ID: <CAE9FiQXrfviUbV28ZoGkNYv7HPf+e_j-z7+-E+weuRfpJmq+4g@mail.gmail.com>
+Subject: Re: [PATCH v8 15/46] x86, mm: Only direct map addresses that are
+ marked as E820_RAM
+From: Yinghai Lu <yinghai@kernel.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12112819-5930-0000-0000-00000EC07E46
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The of reconfiguration notification chains should be exported for use
-by modules.
+On Wed, Nov 28, 2012 at 9:15 AM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+>> -v4: fix add_pfn_range_mapped() to get correct max_low_pfn_mapped when
+>>      mem map does have hole under 4g that is found by Konard on xen
+>                                                         ^^^^^^-> Konrad
 
-Signed-off-by:Nathan Fontenot <nfont@linux.vnet.ibm.com>
----
-Index: linux-next/drivers/of/base.c
-===================================================================
---- linux-next.orig/drivers/of/base.c	2012-11-28 09:18:02.000000000 -0600
-+++ linux-next/drivers/of/base.c	2012-11-28 11:05:00.000000000 -0600
-@@ -1282,11 +1282,13 @@
- {
- 	return blocking_notifier_chain_register(&of_reconfig_chain, nb);
- }
-+EXPORT_SYMBOL_GPL(of_reconfig_notifier_register);
- 
- int of_reconfig_notifier_unregister(struct notifier_block *nb)
- {
- 	return blocking_notifier_chain_unregister(&of_reconfig_chain, nb);
- }
-+EXPORT_SYMBOL_GPL(of_reconfig_notifier_unregister);
- 
- int of_reconfig_notify(unsigned long action, void *p)
- {
+===>
 
+-v4: fix add_pfn_range_mapped() to get correct max_low_pfn_mapped when
+     mem map does not have hole under 4g that is found by Konrad on xen
+     domU with 8g ram. - Yinghai
