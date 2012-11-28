@@ -1,66 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756060Ab2K1VFG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 16:05:06 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:18824 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754344Ab2K1VFE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 16:05:04 -0500
-Date: Thu, 29 Nov 2012 00:04:19 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Prabhakar Lad <prabhakar.lad@ti.com>,
-        Hans Verkuil <hansverk@cisco.com>,
-        Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        LMML <linux-media@vger.kernel.org>
-Subject: Re: [PATCH v3 0/9] Media Controller capture driver for DM365
-Message-ID: <20121128210419.GO11248@mwanda>
-References: <1354099329-20722-1-git-send-email-prabhakar.lad@ti.com>
- <20121128101802.0eafb6e7@redhat.com>
- <20121128172248.GA32286@kroah.com>
- <201211282018.20832.hverkuil@xs4all.nl>
+	id S1756124Ab2K1VFO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 16:05:14 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:35455 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755458Ab2K1VFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 16:05:10 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: linux-acpi@vger.kernel.org, lenb@kernel.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com
+Subject: Re: [PATCH v3 1/4] ACPI: Support system notify handler via .sys_notify
+Date: Wed, 28 Nov 2012 22:09:54 +0100
+Message-ID: <5550104.xSe1fX9Ich@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <1354134699.26955.290.camel@misato.fc.hp.com>
+References: <1352406227-32629-1-git-send-email-toshi.kani@hp.com> <4411201.YLQBH7zWSI@vostro.rjw.lan> <1354134699.26955.290.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201211282018.20832.hverkuil@xs4all.nl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 08:18:20PM +0100, Hans Verkuil wrote:
-> but in this case it just seems to introduce a second
-> merge window before the 'real' merge window.
+On Wednesday, November 28, 2012 01:31:39 PM Toshi Kani wrote:
+> On Wed, 2012-11-28 at 19:28 +0100, Rafael J. Wysocki wrote:
+> > On Wednesday, November 28, 2012 09:54:43 AM Toshi Kani wrote:
+> > > > > > > > By using acpi_install_notify_handler(), each driver needs to walk
+> > > > > > > > through the entire ACPI namespace to find its associated ACPI devices
+> > > > > > > > and call it to register one by one.  I think this is more work for
+> > > > > > > > non-ACPI drivers than defining acpi_driver.
+> > > > > > > 
+> > > > > > > I'm not really sure what you mean.  The drivers in question already know
+> > > > > > > what the relevant ACPI device nodes are (because they need them anyway
+> > > > > > > for other purposes), so they don't need to look for them specifically and
+> > > > > > > acpi_install_notify_handler() doesn't do any namespace walking.  So what
+> > > > > > > you said above simply doesn't make sense from this viewpoint.
+> > > > > > 
+> > > > > > Yes, if drivers already know the relevant ACPI devices, then walking the
+> > > > > > ACPI namespace is not necessary.  I was referring the case like
+> > > > > > processor_driver.c, acpi_memhotplug.c, and container.c in my statement. 
+> > > > > 
+> > > > > BTW, when an ACPI device is marked as non-present, which is the case
+> > > > > before hot-add, we do not create an acpi_device object and therefore do
+> > > > > not bind it with a driver.  This is why these drivers walk the ACPI
+> > > > > namespace and install their notify handlers regardless of device status.
+> > > > 
+> > > > So maybe we should create struct acpi_device objects in that case too?
+> > > 
+> > > I think it has some challenge as well.  We bind an ACPI driver with
+> > > device_register(), which calls device_add()-> kobject_add().  So, all
+> > > non-present ACPI device objects will show up in sysfs, unless we can
+> > > change the core.  This will change user interface.  There can be quite
+> > > many non-present devices in ACPI namespace depending on FW
+> > > implementation.
+> > 
+> > If additional devices appear in sysfs, that's not a problem.  If there
+> > were fewer of them, that would be a real one. :-)
 > 
+> I see.  I guess this means that once we expose all non-present devices
+> in sysfs, we cannot go back to the current way.  So, we need to be very
+> careful.  Anyway, this model requires separate handling for static ACPI
+> [1] and dynamic ACPI [2], which may make the state model complicated.
+> 
+> 1. Static ACPI - No creation / deletion of acpi_device at hot-plug.
+> 2. Dynamic ACPI - Create acpi_device at hot-add, delete at hot-remove.
 
-I don't care about this driver, but I mean yes.  That's the point of
-linux-next.
+Sure.  The complication here is that we'll need to handle the removal of
+a bunch of struct acpi_device objects when a whole table goes away.
 
-I would say the standard rule is that it should sit in linux-next
-for a week.  If I submitted a one line bugfix, normally that sits in
-linux-next for a week before going upstream.
+However, first, we don't seem to handle table unloading now.  At least
+acpi_unload_parent_table() is not called from anywhere as far as I can
+say.  Second, we'll need to handle the removal of struct acpi_device objects
+_anyway_ on table unload, this way or another.
 
-What frustrates me is that last merge window someone merged a driver
-into linux-next for one day.  I submitted a memory corruption fix
-the very next day but the maintainer said my fix arrived too late
-for the 3.7 release.  What's the point of sending it to linux-next
-if you don't have time to take feedback?  So yes, this thread is
-mostly me still being cross about that.  :P
+> [1] ACPI namespace is static and contains the maximum possible config. 
+> [2] ACPI namespace is dynamic. SSDT is loaded at hot-add, and unloaded
+> at hot-remove.
 
-We were all expecting Linus to release the kernel last week so no
-one should have expected to merge new drivers this week anyway.
+Thanks,
+Rafael
 
-regards,
-dan carpenter
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
