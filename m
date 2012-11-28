@@ -1,109 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755004Ab2K1NuT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 08:50:19 -0500
-Received: from www.linutronix.de ([62.245.132.108]:40768 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754747Ab2K1NuR (ORCPT
+	id S1755024Ab2K1NvR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 08:51:17 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58474 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754698Ab2K1NvP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 08:50:17 -0500
-Message-ID: <50B61695.50207@linutronix.de>
-Date: Wed, 28 Nov 2012 14:50:13 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
+	Wed, 28 Nov 2012 08:51:15 -0500
 MIME-Version: 1.0
-To: Michal Nazarewicz <mina86@mina86.com>
-CC: Andrzej Pietrasiewicz <andrzej.p@samsung.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Felipe Balbi'" <balbi@ti.com>,
-        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
-        "'Joel Becker'" <jlbec@evilplan.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [RFC][PATCH] fs: configfs: programmatically create config groups
-References: <1353918910-12381-1-git-send-email-andrzej.p@samsung.com> <50B39921.6090308@linutronix.de> <008101cdcc7d$2d499df0$87dcd9d0$%p@samsung.com> <50B4E364.8030704@linutronix.de> <xa1tip8ruia5.fsf@mina86.com> <50B5C821.4000406@linutronix.de> <xa1ta9u1naik.fsf@mina86.com>
-In-Reply-To: <xa1ta9u1naik.fsf@mina86.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <2254856.YsOm9y7BK1@vostro.rjw.lan>
+References: <1353761958-12810-1-git-send-email-ming.lei@canonical.com>
+	<5434404.G1ERYjuorE@vostro.rjw.lan>
+	<CACVXFVP=3s3pawyEbogjb=PfbSeD1B+LFk7g04FAMkGuXDQUbQ@mail.gmail.com>
+	<2254856.YsOm9y7BK1@vostro.rjw.lan>
+Date: Wed, 28 Nov 2012 21:51:13 +0800
+Message-ID: <CACVXFVN9RSU+j48cDVqc5mL=++y0BLc58BBRSxa_OWysysqQeg@mail.gmail.com>
+Subject: Re: [PATCH v6 2/6] PM / Runtime: introduce pm_runtime_set_memalloc_noio()
+From: Ming Lei <ming.lei@canonical.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oneukum@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jens Axboe <axboe@kernel.dk>, "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28/2012 02:05 PM, Michal Nazarewicz wrote:
->> On 11/27/2012 05:23 PM, Michal Nazarewicz wrote:
->>> How should a generic tool know what kind of actions are needed for given
->>> function to be removed?  If you ask me, there should be a way to unbind
->>> gadget and unload all modules without any specific knowledge of the
->>> functions.  If there is no such mechanism, then it's a bad user
->>> interface.
+On Wed, Nov 28, 2012 at 6:06 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
 >
-> On Wed, Nov 28 2012, Sebastian Andrzej Siewior wrote:
->> Well. You need only to remove the directories you created.
+> Well, it may be unfrequent, but does it mean it has to do things that may
+> be avoided (ie. walking the children of every node in the path in some cases)?
+
+I agree so without introducing extra cost, :-)
+
+> I don't really think that the counters would cost us that much anyway.
+
+On ARM v7, sizeof(struct device) becomes 376 from 368 after introducing
+'unsigned int            noio_cnt;' to 'struct dev_pm_info', and total memory
+increases about 3752bytes in a small configuration(about 494 device instance).
+The actual memory increase should be more than the data because 'struct device'
+is generally embedded into other concrete device structure.
+
+>> Also looks the current implementation of pm_runtime_set_memalloc_noio()
+>> is simple and clean enough with the flag, IMO.
 >
-> My point is that there should be a way to write a script that is unaware
-> of the way function is configured, ie. which directories were created
-> and which were not.
+> I know you always know better. :-)
 
-I get this. If you recursively rmdir each directory then you clean it
-up.
+We still need to consider cost and the function calling frequency, :-)
 
-> Besides, if you rmdir lun0, is the function still supposed to work with
-> all LUNs present?  In my opinion, while gadget is bound, it should not
-> be possible to modify such things.
-
-That is correct. The configuration should remain frozen as long as the
-gadget is active because in most cases you can't propagate the change.
-
->> An unbind would be  simply an unlink of the gadget  which is linked to
->> the udc.   All configurations  remain so  you can link  it at  a later
->> point without touching the configuration because it is as it was.
 >
-> Yes, but that's not my concern.  My concern is that I should be able to
-> put a relatively simple code in my shutdown script (or whatever) which
-> unbinds all gadgets, without knowing what kind of functions are used.
+>> > I would use the flag only to store the information that
+>> > pm_runtime_set_memalloc_noio(dev, true) has been run for this device directly
+>> > and I'd use a counter for everything else.
+>> >
+>> > That is, have power.memalloc_count that would be incremented when (1)
+>> > pm_runtime_set_memalloc_noio(dev, true) is called for that device and (2) when
+>> > power.memalloc_count for one of its children changes from 0 to 1 (and
+>> > analogously for decrementation).  Then, check the counter in rpm_callback().
+>>
+>> Sorry, could you explain in a bit detail why we need the counter? Looks only
+>> checking the flag in rpm_callback() is enough, doesn't it?
 >
-> And I'm proposing that this could be done by allowing user to just do:
+> Why would I want to use power.memalloc_count in addition to the
+> power.memalloc_noio flag?
 >
-> 	cd /cfs/...
-> 	rmdir gadgets/*		# unbind and remove all gadgets
-> 	rmdir functions/*/*	# unbind and remove all function instances
-> 	rmdir functions/*	# unload all functions
-
-Yes, you push for simple rmdir API. That would avoid the need for an
-user land tool at some point and you end up in shell scripts.
-I'm not against it but others do have user tools to handle such things.
-Anyway, for this to work we have to go through Joel.
-
-> 	rmdir udcs/*		# unload all UDCs
-
-No, for this you still have to rmmod :)
-
-
->>> I think the question is of information flow direction.  If user gives
->>> some information to the kernel, she should be the one creating any
->>> necessary directories.  But if the information comes from kernel to the
->>> user, the kernel should create the structure.
+> Consider this:
 >
->> Yes that is a point. But the "name" can go away if we use it in the
->> directory name. That is what other configfs user do. The same is true
->> for luns for instance. I just want to avoid adding features because we
->> do something different compared to every other configfs user.
+> pm_runtime_set_memalloc_noio(dev):
+>         return if power.memalloc_noio is set
+>         set power.memalloc_noio
+>   loop:
+>         increment power.memalloc_count
+>         if power.memalloc_count is 1 now switch to parent and go to loop
+
+I am wondering if the above should be changed to below because the child
+count of memalloc_noio device need to be recorded.
+
+pm_runtime_set_memalloc_noio(dev):
+         return if power.memalloc_noio is set
+         set power.memalloc_noio
+loop:
+         increment power.memalloc_count
+         switch to parent and go to loop
+
+So pm_runtime_set_memalloc_noio(dev) will become worse than
+the improved pm_runtime_set_memalloc_noio(dev, true), which
+can return immediately if one dev or parent's flag is true.
+
+> pm_runtime_clear_memalloc_noio(dev):
+>         return if power.memalloc_noio is unset
+>         unset power.memalloc_noio
+>   loop:
+>         decrement power.memalloc_count
+>         if power.memalloc_count is 0 now switch to parent and go to loop
+
+The above will perform well than pm_runtime_set_memalloc_noio(dev, false),
+because the above avoids to walk children of device.
+
+So one becomes worse and another becomes better, :-)
+
+Also the children count of one device is generally very small, less than
+10 for most devices, see the data obtained in one common x86 pc(thinkpad
+t410) from below link:
+
+        http://kernel.ubuntu.com/~ming/up/t410-dev-child-cnt.log
+
+- about 8 devices whose child count is more than 10, top three are 18, 17 ,12,
+and all the three are root devices.
+
+- about 117 devices whose child count is between 1 and 9
+
+- other 501 devices whose child count is zero
+
+>From above data, walking device children should have not much effect on
+performance of pm_runtime_set_memalloc_noio(), which is also called in
+very infrequent path.
+
+> Looks kind of simpler, doesn't it?
+
+Looks simpler, but more code lines than single
+pm_runtime_set_memalloc_noio(), :-)
+
 >
-> You've lost me here.  What are we talking about again?  What “name” are
-> you referring to?
+> And why rpm_callback() should check power.memalloc_count instead of the count?
+> Because power.memalloc_noio will only be set for devices that
+> pm_runtime_set_memalloc_noio(dev) was called for directly (not necessarily for
+> the parents).
+>
+> And that works even if someone calls any of them twice in a row for the same
+> device (presumably by mistake) and doesn't have to make any assumptions
+> about devices it is called for.
 
-            <function_name>-<common_name>
-/functions/acm-function/
+IMO, we can ignore the mistake usage because the function is called only
+in network/block core code currently, not by individual driver.
 
-instead of
-            <common_name>
-/functions/function1/
-                      +name
-with attribute file named "name" which contains the name of the
-function (i.e. acm). My point is to keep "name" in the directory name
-instead having an extra attribute.
+>
+>> > Besides, don't you need to check children for the arg device itself?
+>>
+>> It isn't needed since the children of network/block device can't be
+>> involved of the deadlock in runtime PM path.
+>>
+>> Also, the function is only called by network device or block device
+>> subsystem, both the two kind of device are class device and should
+>> have no children.
+>
+> OK, so not walking the arg device's children is an optimization related to
+> some assumptions regarding who's supposed to use this routine.  That should
+> be clearly documented.
 
-Sebastian
+I think the patch already documents it in the comment of
+pm_runtime_set_memalloc_noio().
+
+Thanks,
+--
+Ming Lei
