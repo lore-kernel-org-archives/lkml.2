@@ -1,206 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932703Ab2K1W0Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 17:26:24 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:55692 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755909Ab2K1W0V (ORCPT
+	id S932678Ab2K1W1O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 17:27:14 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:33613 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755909Ab2K1W1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 17:26:21 -0500
-MIME-Version: 1.0
-In-Reply-To: <1353398902-21253-1-git-send-email-ying.huang@intel.com>
-References: <1353398902-21253-1-git-send-email-ying.huang@intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 28 Nov 2012 15:25:59 -0700
-Message-ID: <CAErSpo6CPSMXjq1eSTX41vtwOcd5rQOdC0-9ye5NZhds9U1B8A@mail.gmail.com>
-Subject: Re: [PATCH] PCI/PM: Keep runtime PM enabled for unbound PCI devices
-To: Huang Ying <ying.huang@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 28 Nov 2012 17:27:12 -0500
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com, paul@paulmenage.org, glommer@parallels.com
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        peterz@infradead.org, mhocko@suse.cz, linux-kernel@vger.kernel.org
+Subject: [PATCHSET cgroup/for-3.8] cpuset: drop cpuset->stack_list and ->parent
+Date: Wed, 28 Nov 2012 14:26:58 -0800
+Message-Id: <1354141621-11906-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 20, 2012 at 1:08 AM, Huang Ying <ying.huang@intel.com> wrote:
-> For unbound PCI devices, what we need is:
->
->  - Always in D0 state, because some devices does not work again after
->    being put into D3 by the PCI bus.
->
->  - In SUSPENDED state if allowed, so that the parent devices can still
->    be put into low power state.
->
-> To satisfy these requirement, the runtime PM for the unbound PCI
-> devices are disabled and set to SUSPENDED state.  One issue of this
-> solution is that the PCI devices will be put into SUSPENDED state even
-> if the SUSPENDED state is forbidden via the sysfs interface
-> (.../power/control) of the device.  This is not an issue for most
-> devices, because most PCI devices are not used at all if unbounded.
-> But there are exceptions.  For example, unbound VGA card can be used
-> for display, but suspend its parents make it stop working.
->
-> To fix the issue, we keep the runtime PM enabled when the PCI devices
-> are unbound.  But the runtime PM callbacks will do nothing if the PCI
-> devices are unbound.  This way, we can put the PCI devices into
-> SUSPENDED state without put the PCI devices into D3 state.
+Hello, guys.
 
-Does this fix a reported problem?  Is there a bug report URL?  What
-problem would a user notice?
+cpuset implements its own descendant iteration using
+cpuset->stack_list and has its own ->parent pointer.  There's nothing
+cpuset specific about descendant walking or finding the parent.  This
+patchset makes cpuset use cgroup generic API instead.
 
-This doesn't look critical enough to try to put in v3.7 (correct me if
-I'm wrong).  It's getting pretty late for the v3.8 merge window, but
-it looks like it qualifies as a bug fix that we would merge even after
-the merge window, so I'll put it in my -next branch headed for v3.8.
-Then it can be backported to v3.6 and v3.7.
+ 0001-cpuset-implement-cgroup_rightmost_descendant.patch
+ 0002-cpuset-replace-cpuset-stack_list-with-cpuset_for_eac.patch
+ 0003-cpuset-remove-cpuset-parent.patch
 
-> Signed-off-by: Huang Ying <ying.huang@intel.com>
-> Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Cc: Alan Stern <stern@rowland.harvard.edu>
-> CC: stable@vger.kernel.org          # v3.6+
-> ---
->  drivers/pci/pci-driver.c |   69 +++++++++++++++++++++++++++--------------------
->  drivers/pci/pci.c        |    2 +
->  2 files changed, 43 insertions(+), 28 deletions(-)
->
-> --- a/drivers/pci/pci.c
-> +++ b/drivers/pci/pci.c
-> @@ -1900,6 +1900,8 @@ void pci_pm_init(struct pci_dev *dev)
->         u16 pmc;
->
->         pm_runtime_forbid(&dev->dev);
-> +       pm_runtime_set_active(&dev->dev);
-> +       pm_runtime_enable(&dev->dev);
->         device_enable_async_suspend(&dev->dev);
->         dev->wakeup_prepared = false;
->
-> --- a/drivers/pci/pci-driver.c
-> +++ b/drivers/pci/pci-driver.c
-> @@ -256,31 +256,26 @@ struct drv_dev_and_id {
->  static long local_pci_probe(void *_ddi)
->  {
->         struct drv_dev_and_id *ddi = _ddi;
-> -       struct device *dev = &ddi->dev->dev;
-> -       struct device *parent = dev->parent;
-> +       struct pci_dev *pci_dev = ddi->dev;
-> +       struct pci_driver *pci_drv = ddi->drv;
-> +       struct device *dev = &pci_dev->dev;
->         int rc;
->
-> -       /* The parent bridge must be in active state when probing */
-> -       if (parent)
-> -               pm_runtime_get_sync(parent);
-> -       /* Unbound PCI devices are always set to disabled and suspended.
-> -        * During probe, the device is set to enabled and active and the
-> -        * usage count is incremented.  If the driver supports runtime PM,
-> -        * it should call pm_runtime_put_noidle() in its probe routine and
-> -        * pm_runtime_get_noresume() in its remove routine.
-> -        */
-> -       pm_runtime_get_noresume(dev);
-> -       pm_runtime_set_active(dev);
-> -       pm_runtime_enable(dev);
-> -
-> -       rc = ddi->drv->probe(ddi->dev, ddi->id);
-> +       /*
-> +        * Unbound PCI devices are always put in D0, regardless of
-> +        * runtime PM status.  During probe, the device is set to
-> +        * active and the usage count is incremented.  If the driver
-> +        * supports runtime PM, it should call pm_runtime_put_noidle()
-> +        * in its probe routine and pm_runtime_get_noresume() in its
-> +        * remove routine.
-> +        */
-> +       pm_runtime_get_sync(dev);
-> +       pci_dev->driver = pci_drv;
-> +       rc = pci_drv->probe(pci_dev, ddi->id);
->         if (rc) {
-> -               pm_runtime_disable(dev);
-> -               pm_runtime_set_suspended(dev);
-> -               pm_runtime_put_noidle(dev);
-> +               pci_dev->driver = NULL;
-> +               pm_runtime_put_sync(dev);
->         }
-> -       if (parent)
-> -               pm_runtime_put(parent);
->         return rc;
->  }
->
-> @@ -330,10 +325,8 @@ __pci_device_probe(struct pci_driver *dr
->                 id = pci_match_device(drv, pci_dev);
->                 if (id)
->                         error = pci_call_probe(drv, pci_dev, id);
-> -               if (error >= 0) {
-> -                       pci_dev->driver = drv;
-> +               if (error >= 0)
->                         error = 0;
-> -               }
->         }
->         return error;
->  }
-> @@ -369,9 +362,7 @@ static int pci_device_remove(struct devi
->         }
->
->         /* Undo the runtime PM settings in local_pci_probe() */
-> -       pm_runtime_disable(dev);
-> -       pm_runtime_set_suspended(dev);
-> -       pm_runtime_put_noidle(dev);
-> +       pm_runtime_put_sync(dev);
->
->         /*
->          * If the device is still on, set the power state as "unknown",
-> @@ -994,6 +985,13 @@ static int pci_pm_runtime_suspend(struct
->         pci_power_t prev = pci_dev->current_state;
->         int error;
->
-> +       /*
-> +        * If pci_dev->driver is not set (unbound), the device should
-> +        * always remain in D0 regardless of the runtime PM status
-> +        */
-> +       if (!pci_dev->driver)
-> +               return 0;
-> +
->         if (!pm || !pm->runtime_suspend)
->                 return -ENOSYS;
->
-> @@ -1029,6 +1027,13 @@ static int pci_pm_runtime_resume(struct
->         struct pci_dev *pci_dev = to_pci_dev(dev);
->         const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
->
-> +       /*
-> +        * If pci_dev->driver is not set (unbound), the device should
-> +        * always remain in D0 regardless of the runtime PM status
-> +        */
-> +       if (!pci_dev->driver)
-> +               return 0;
-> +
->         if (!pm || !pm->runtime_resume)
->                 return -ENOSYS;
->
-> @@ -1046,8 +1051,16 @@ static int pci_pm_runtime_resume(struct
->
->  static int pci_pm_runtime_idle(struct device *dev)
->  {
-> +       struct pci_dev *pci_dev = to_pci_dev(dev);
->         const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
->
-> +       /*
-> +        * If pci_dev->driver is not set (unbound), the device should
-> +        * always remain in D0 regardless of the runtime PM status
-> +        */
-> +       if (!pci_dev->driver)
-> +               goto out;
-> +
->         if (!pm)
->                 return -ENOSYS;
->
-> @@ -1057,8 +1070,8 @@ static int pci_pm_runtime_idle(struct de
->                         return ret;
->         }
->
-> +out:
->         pm_runtime_suspend(dev);
-> -
->         return 0;
->  }
->
+0001 implements cgroup_rightmost_descendant() which can be used to
+skip subtree during pre-order tree walk.  Michal, maybe memcg can use
+it too?
+
+0002 replaces cpuset->stack_list with generic
+for_each_descendasnt_pre().
+
+0003 replaces cpuset->parent with cgroup->parent.
+
+This patchset is on top of
+
+cgroup/for-3.8 fddfb02ad0 ("cgroup: move list add after list head initilization")
++ [1] "[PATCHSET cgroup/for-3.8] cpuset: decouple cpuset locking from cgroup core"
+
+and available in the following git branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-cpuset-iter
+
+ include/linux/cgroup.h |    1
+ kernel/cgroup.c        |   26 ++++++++
+ kernel/cpuset.c        |  151 +++++++++++++++++++++----------------------------
+ 3 files changed, 92 insertions(+), 86 deletions(-)
+
+Thanks.
+
+--
+tejun
+
+[1] http://thread.gmane.org/gmane.linux.kernel.cgroups/5251
