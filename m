@@ -1,57 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755824Ab2K1TaJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 14:30:09 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:38005 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752508Ab2K1TaH (ORCPT
+	id S1755954Ab2K1TaU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 14:30:20 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:51049 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752508Ab2K1TaN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 14:30:07 -0500
-Message-id: <50B6663C.6080800@samsung.com>
-Date: Wed, 28 Nov 2012 20:30:04 +0100
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Hans Verkuil <hansverk@cisco.com>, devel@driverdev.osuosl.org,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Prabhakar Lad <prabhakar.lad@ti.com>,
-        Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        LMML <linux-media@vger.kernel.org>
-Subject: Re: [PATCH v3 0/9] Media Controller capture driver for DM365
-References: <1354099329-20722-1-git-send-email-prabhakar.lad@ti.com>
- <20121128114537.GN11248@mwanda> <201211281256.10839.hansverk@cisco.com>
- <20121128122227.GX6186@mwanda>
-In-reply-to: <20121128122227.GX6186@mwanda>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-TM-AS-MML: No
+	Wed, 28 Nov 2012 14:30:13 -0500
+From: "Rajanikanth H.V" <rajanikanth.hv@linaro.org>
+To: anton.vorontsov@linaro.org
+Cc: francescolavra.fl@gmail.com, rob.herring@calxeda.com, lee.jones@linaro.org,
+        arnd@arndb.de, linus.walleij@stericsson.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        STEricsson_nomadik_linux@list.st.com, rajanikanth.hv@stericsson.com
+Subject: [PATCH] ab8500: remove explicit handling of battery type
+Date: Thu, 29 Nov 2012 00:57:45 +0530
+Message-Id: <1354130865-6148-1-git-send-email-rajanikanth.hv@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28/2012 01:22 PM, Dan Carpenter wrote:
-> In the end this is just a driver, and I don't especially care.  But
-> it's like not just this one which makes me frustrated.  I really
-> believe in linux-next and I think everything should spend a couple
-> weeks there before being merged.
+From: "Rajanikanth H.V" <rajanikanth.hv@stericsson.com>
 
-Couple of weeks in linux-next plus a couple of weeks of final patch
-series version awaiting to being reviewed and picked up by a maintainer
-makes almost entire kernel development cycle. These are huge additional
-delays, especially in the embedded world. Things like these certainly
-aren't encouraging for moving over from out-of-tree to the mainline
-development process. And in this case we are talking only about merging
-driver to the staging tree...
+property, battery-type shall be one of supported technology type
+instead blank
+- refer: Documentation/devicetree/bindings/power_supply/ab8500/fg.txt
+	for the list supported types
+- this patch appends to ab8500 bm devs DT binding patch set
+	ref: commit-id e0f1abeba5c2d8a2183566717d99294fd1a29c2e
+		git://git.infradead.org/battery-2.6.git
+- promote ab8500_fg probe to happen before ab8500_btemp probe as
+	btemp driver depends on fuelgauge list,
+	ref: ab8500_fg_get(...)
 
---
+Signed-off-by: Rajanikanth H.V <rajanikanth.hv@stericsson.com>
+---
+ drivers/power/Makefile        |    2 +-
+ drivers/power/ab8500_bmdata.c |   10 +++-------
+ 2 files changed, 4 insertions(+), 8 deletions(-)
 
-Thanks,
-Sylwester
+diff --git a/drivers/power/Makefile b/drivers/power/Makefile
+index 696e3a9..070c73d 100644
+--- a/drivers/power/Makefile
++++ b/drivers/power/Makefile
+@@ -38,7 +38,7 @@ obj-$(CONFIG_CHARGER_PCF50633)	+= pcf50633-charger.o
+ obj-$(CONFIG_BATTERY_JZ4740)	+= jz4740-battery.o
+ obj-$(CONFIG_BATTERY_INTEL_MID)	+= intel_mid_battery.o
+ obj-$(CONFIG_BATTERY_RX51)	+= rx51_battery.o
+-obj-$(CONFIG_AB8500_BM)		+= ab8500_bmdata.o ab8500_charger.o ab8500_btemp.o ab8500_fg.o abx500_chargalg.o
++obj-$(CONFIG_AB8500_BM)		+= ab8500_bmdata.o ab8500_charger.o ab8500_fg.o ab8500_btemp.o abx500_chargalg.o
+ obj-$(CONFIG_CHARGER_ISP1704)	+= isp1704_charger.o
+ obj-$(CONFIG_CHARGER_MAX8903)	+= max8903_charger.o
+ obj-$(CONFIG_CHARGER_TWL4030)	+= twl4030_charger.o
+diff --git a/drivers/power/ab8500_bmdata.c b/drivers/power/ab8500_bmdata.c
+index 03cc528..f16b60c 100644
+--- a/drivers/power/ab8500_bmdata.c
++++ b/drivers/power/ab8500_bmdata.c
+@@ -461,7 +461,6 @@ bmdevs_of_probe(struct device *dev,
+ 	struct  device_node *np_bat_supply;
+ 	struct	abx500_bm_data *bat;
+ 	const char *btech;
+-	char bat_tech[8];
+ 	int i, thermistor;
+ 
+ 	*battery = &ab8500_bm_data;
+@@ -488,12 +487,9 @@ bmdevs_of_probe(struct device *dev,
+ 		"stericsson,battery-type", NULL);
+ 	if (!btech) {
+ 		dev_warn(dev, "missing property battery-name/type\n");
+-		strcpy(bat_tech, "UNKNOWN");
+-	} else {
+-		strcpy(bat_tech, btech);
++		return -EINVAL;
+ 	}
+-
+-	if (strncmp(bat_tech, "LION", 4) == 0) {
++	if (strncmp(btech, "LION", 4) == 0) {
+ 		bat->no_maintenance  = true;
+ 		bat->chg_unknown_bat = true;
+ 		bat->bat_type[BATTERY_UNKNOWN].charge_full_design = 2600;
+@@ -508,7 +504,7 @@ bmdevs_of_probe(struct device *dev,
+ 		if (thermistor == NTC_EXTERNAL) {
+ 			btype->batres_tbl =
+ 				temp_to_batres_tbl_ext_thermistor;
+-		} else if (strncmp(bat_tech, "LION", 4) == 0) {
++		} else if (strncmp(btech, "LION", 4) == 0) {
+ 			btype->batres_tbl =
+ 				temp_to_batres_tbl_9100;
+ 		} else {
+-- 
+1.7.10.4
+
