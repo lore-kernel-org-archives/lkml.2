@@ -1,83 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754001Ab2K1ARi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 19:17:38 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:50751 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752413Ab2K1ARg (ORCPT
+	id S1753714Ab2K1AXE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 19:23:04 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:22376 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751406Ab2K1AXC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 19:17:36 -0500
-Date: Tue, 27 Nov 2012 16:17:29 -0800
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-To: JBottomley@parallels.com
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] sd: Don't incorrectly "promote" DIF type0 into DIF type1
- disks.
-Message-ID: <20121128001729.GB4321@blackbox.djwong.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Tue, 27 Nov 2012 19:23:02 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-56-50b559648ad3
+Message-id: <1354062153.15731.15.camel@kjgkr>
+Subject: Re: [PATCH 1/1] f2fs: remove unneeded version.h header file from f2fs.h
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, chur.lee@samsung.com, patches@linaro.org,
+        linux-f2fs-devel@lists.sourceforge.net
+Date: Wed, 28 Nov 2012 09:22:33 +0900
+In-reply-to: <1354012336-32089-1-git-send-email-sachin.kamat@linaro.org>
+References: <1354012336-32089-1-git-send-email-sachin.kamat@linaro.org>
+Organization: samsung
+Content-type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature"; boundary="=-q2SqjEyuLuAlCdxmXtZA"
+X-Mailer: Evolution 3.2.3-0ubuntu6
+MIME-version: 1.0
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkleLIzCtJLcpLzFFi42I5/e+ZgW5K5NYAg2v/+C0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGhoOX2Aua+Ss+vF7E3MC4ibeLkZNDQsBE4vHVaewQtpjEhXvr
+	2boYuTiEBJYxSuxc08ncxcgBVvTjmhBEfDqjxJ4nfewQTg+TxLv2+2DdvAK6Eq9b7rGC2MIC
+	ARJnNv9iAWlmE9CW2LzfACQsJKAo8Xb/XbASEQEtiZfdy5lAbGaBEom38xaCjWERUJX49v8P
+	WJxTwENi1ekfLBC97hJTbx9nBrH5BUQlTrZ+YoTorZJ49vQ6M8QDShK72zuhzhGU+DH5HgvE
+	TAGJb5MPsUD8Iiux6QAzyPkSApfYJXZ0/mWD6JWUOLjiBssERvFZSMbOQjIKIq4p0br9NzuE
+	rS2xbOFrZgjbVmLduvdQNTYSm64uYISw5SW2v53DvICRfRWjaGpBckFxUnqukV5xYm5xaV66
+	XnJ+7iZGSCRK72Bc1WBxiFGAg1GJh9fBcWuAEGtiWXFl7iFGFaA5jzasvsAoxZKXn5eqJMKb
+	oAmU5k1JrKxKLcqPLyrNSS0+xJgM9OlEZinR5Hxg8sgriTc0NjYxMzE1Mbc0NTclTVhJnLfZ
+	IyVASCA9sSQ1OzW1ILUIZgsTB6dUA6NE8OWNzqF/7niWb5++fLHm0XVG4ovu1Ukc5KvsmDuP
+	88qxPOGOaU2N8goicQVa02sVF1lpRfbLGZ1YO2H32ksvRb6GK+zh2Pht/777fzwDVUR8a9oK
+	nuQe/WJeEVO/Rtrjtp7Vf+M/s/X/HG75HvVb/vkzn3XyL+57NemdEJ+uWXVd84PAHUYlluKM
+	REMt5qLiRAByWyy7FAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAKsWRmVeSWpSXmKPExsVy+t9jQd2UyK0BBhv6uC0u75rD5sDo8XmT
+	XABjVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7Q
+	VCWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxoaDl9gLmvkrPrxexNzA
+	uIm3i5GDQ0LAROLHNaEuRk4gU0ziwr31bF2MXBxCAtMZJfY86WOHcHqYJN6132cHqeIV0JV4
+	3XKPFcQWFgiQOLP5FwvIIDYBbYnN+w1AwkICihJv998FKxER0JJ42b2cCcRmFiiReDtvIdgY
+	FgFViW///4DFOQU8JFad/sEC0esuMfX2cWYQm19AVOJk6ydGiN4qiWdPrzNDHKoksbu9E+oc
+	QYkfk++xTGAUnIWkbBaSFERcU6J1+292CFtbYtnC18wQtq3EunXvoWpsJDZdXcAIYctLbH87
+	h3kBI/sqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxNjOA4fya9g3FVg8UhRgEORiUeXgfHrQFC
+	rIllxZW5hxhVgOY82rD6AqMUS15+XqqSCG+CJlCaNyWxsiq1KD++qDQntfgQYzIwNCYyS4km
+	5wNTU15JvKGxiZmRpZGZhZGJuTlpwkrivM0eKQFCAumJJanZqakFqUUwW5g4OKUaGEtEj8YK
+	PK5UFGHzbK3oK0v7q3aM+//diI1fL56fEdwSOTNQdhrLt/mX6q82eU9yfn4sWuOY0QaNyBxm
+	0QMJrN0XLzuUhhyy+1W95tveNYedOia+a2V59EcgX3kXpw3Lnx+9MQKJfi/3G55TWRQ70fLN
+	0vXcB/96S62Lj45OlmG/Njsq8cT+1UosxRmJhlrMRcWJAHfLGapDAwAA
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If I run the following command:
-# modprobe scsi_debug dev_size_mb=64 ato=1 dix=1 dif=0
 
-then I see the following in the dmesg log:
+--=-q2SqjEyuLuAlCdxmXtZA
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-[   25.859145] scsi_debug: host protection DIX0
 
-Ok, DIX0, which means "no integrity extensions at all", and no DIF support at all.
-I'm not sure why you'd advertise DIX0 at all, but so far so good.
+Add CC: linux-f2fs-devel@lists.sourceforge.net
 
-(DIX is the mechanism by which the OS sends integrity data to the disk in
-whatever format DIF specifies.  You need DIF for DIX to do anything.)
+Thanks for contributing.
 
-[   25.860214] scsi0 : scsi_debug, version 1.82 [20100324], dev_size_mb=64, opts=0x0
-[   25.863418] scsi 0:0:0:0: Direct-Access     Linux    scsi_debug       0004 PQ: 0 ANSI: 5
-[   25.880079] sd 0:0:0:0: [sda] 131072 512-byte logical blocks: (67.1 MB/64.0 MiB)
-[   25.884133] sd 0:0:0:0: [sda] Write Protect is off
-[   25.892205] sd 0:0:0:0: [sda] Write cache: enabled, read cache: enabled, supports DPO and FUA
-[   25.920344]  sda: unknown partition table
-[   25.926704] sd_dif_config_host: type=0 dif=0 dix=8
-[   25.931651] sd 0:0:0:0: [sda] Enabling DIX T10-DIF-TYPE1-CRC protection
+2012-11-27 (=ED=99=94), 16:02 +0530, Sachin Kamat:
+> Including <linux/version.h> is not necessary.
+>=20
+> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> ---
+>  fs/f2fs/f2fs.h |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+>=20
+> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+> index 7aa70b5..d3f5a70 100644
+> --- a/fs/f2fs/f2fs.h
+> +++ b/fs/f2fs/f2fs.h
+> @@ -14,7 +14,6 @@
+>  #include <linux/types.h>
+>  #include <linux/page-flags.h>
+>  #include <linux/buffer_head.h>
+> -#include <linux/version.h>
+>  #include <linux/slab.h>
+>  #include <linux/crc32.h>
+>  #include <linux/magic.h>
 
-Huh??  Here we are turning on DIX support as if the disk supports DIF type1.
-This seems strange to me because we didn't advertise any DIF support at all.
+--=20
+Jaegeuk Kim
+Samsung
 
-[   25.952208] sd 0:0:0:0: [sda] Attached SCSI disk
-[   25.977977] BUG: unable to handle kernel paging request at 00000000000ffc02
-[   25.980262] IP: [<ffffffffa01ebaa5>] resp_read.part.38+0x145/0x420 [scsi_debug]
+--=-q2SqjEyuLuAlCdxmXtZA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-Uhoh, that shouldn't happen.  The SCSI layer sent along what looks like a type1
-read request even though the disk wasn't really prepared to handle it, and
-kaboom.  I don't think this particular combination is terribly common, but we
-could at least not misprogram the disk when we see it.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-If the disk advertises DIF type 0, we can skip the rest of the DIF setup.
-Right now, the SCSI layer "promotes" a DIF type 0 disk into a DIF type 1 disk,
-which seems incorrect.
+iQIcBAABAgAGBQJQtVlJAAoJEEAUqH6CSFDSkgUP/254MEuxQACAWtYlRoGhSTGV
+WlaOGd7idpm1qMJLhxujL2J1COOG7vUaot8Op5bI71FzJ1UfJMfePCpj/66iPeDc
+NAlsxueqi3FiWHm5CNELrZRsxZSRLQ5vqwm3LU883WmQFKEGQzju/LJ4JEOjh8gN
+/Be5LJbaF60DdehaCx5mhEnU2inX1O/XpswiCJddENnPs/oPikaGva5FBc4k2IZH
+qxG/x4SN0JpQecU7XAc3+c38ZxaMIliNpvFF2DrLAYv2/pG7+mryDTyTBXy5OBgA
+dcfgM13cM186eSum4/5dydCIfEdPrDUYg182qKHfAnILhfR2lg+w50a91popVImc
+CDJcVxqd9sJGC+c1JZjdWjMRabZAlOLq42EssqA6P6XUlkTNs7baIt7sdtS3B0DP
+56m5aQhxrp/RJmJp4Hn65JJr/Ti6M5L5HxmgONYMjCsbNz+foaFqovBqh9p8YizX
+t9YDOqm02DVfFJCTh+97rnvA8n2xtZaFAPQ7pYjBnWANeeurfgL4gtsmRzCK75rL
+2RiiyQRYN6exNbS6tBvZzgsbFkmBfKYqIcRlW2N4heLFE8Cs5yFJgyxQ9H6rypmo
++PsDRxwQEY4RRCX0ZaxCjCA9PU1l+wcdghwYLxYxuijd16fP9KB4bxQOs8FZ1G0F
+dh/k9fmVcyW7oldcGmvq
+=+M8y
+-----END PGP SIGNATURE-----
 
-Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
----
- drivers/scsi/sd_dif.c |    4 ++++
- 1 file changed, 4 insertions(+)
+--=-q2SqjEyuLuAlCdxmXtZA--
 
-diff --git a/drivers/scsi/sd_dif.c b/drivers/scsi/sd_dif.c
-index 04998f3..ede5b7b 100644
---- a/drivers/scsi/sd_dif.c
-+++ b/drivers/scsi/sd_dif.c
-@@ -313,6 +313,10 @@ void sd_dif_config_host(struct scsi_disk *sdkp)
- 	u8 type = sdkp->protection_type;
- 	int dif, dix;
- 
-+	/* Don't promote DIF type0 into type1 support. */
-+	if (type == SD_DIF_TYPE0_PROTECTION)
-+		return;
-+
- 	dif = scsi_host_dif_capable(sdp->host, type);
- 	dix = scsi_host_dix_capable(sdp->host, type);
- 
