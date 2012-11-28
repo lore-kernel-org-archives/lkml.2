@@ -1,118 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753714Ab2K1AXE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 19:23:04 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:22376 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751406Ab2K1AXC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 19:23:02 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-56-50b559648ad3
-Message-id: <1354062153.15731.15.camel@kjgkr>
-Subject: Re: [PATCH 1/1] f2fs: remove unneeded version.h header file from f2fs.h
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Reply-to: jaegeuk.kim@samsung.com
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, chur.lee@samsung.com, patches@linaro.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Date: Wed, 28 Nov 2012 09:22:33 +0900
-In-reply-to: <1354012336-32089-1-git-send-email-sachin.kamat@linaro.org>
-References: <1354012336-32089-1-git-send-email-sachin.kamat@linaro.org>
-Organization: samsung
-Content-type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature"; boundary="=-q2SqjEyuLuAlCdxmXtZA"
-X-Mailer: Evolution 3.2.3-0ubuntu6
-MIME-version: 1.0
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpkleLIzCtJLcpLzFFi42I5/e+ZgW5K5NYAg2v/+C0u75rD5sDo8XmT
-	XABjFJdNSmpOZllqkb5dAlfGhoOX2Aua+Ss+vF7E3MC4ibeLkZNDQsBE4vHVaewQtpjEhXvr
-	2boYuTiEBJYxSuxc08ncxcgBVvTjmhBEfDqjxJ4nfewQTg+TxLv2+2DdvAK6Eq9b7rGC2MIC
-	ARJnNv9iAWlmE9CW2LzfACQsJKAo8Xb/XbASEQEtiZfdy5lAbGaBEom38xaCjWERUJX49v8P
-	WJxTwENi1ekfLBC97hJTbx9nBrH5BUQlTrZ+YoTorZJ49vQ6M8QDShK72zuhzhGU+DH5HgvE
-	TAGJb5MPsUD8Iiux6QAzyPkSApfYJXZ0/mWD6JWUOLjiBssERvFZSMbOQjIKIq4p0br9NzuE
-	rS2xbOFrZgjbVmLduvdQNTYSm64uYISw5SW2v53DvICRfRWjaGpBckFxUnqukV5xYm5xaV66
-	XnJ+7iZGSCRK72Bc1WBxiFGAg1GJh9fBcWuAEGtiWXFl7iFGFaA5jzasvsAoxZKXn5eqJMKb
-	oAmU5k1JrKxKLcqPLyrNSS0+xJgM9OlEZinR5Hxg8sgriTc0NjYxMzE1Mbc0NTclTVhJnLfZ
-	IyVASCA9sSQ1OzW1ILUIZgsTB6dUA6NE8OWNzqF/7niWb5++fLHm0XVG4ovu1Ukc5KvsmDuP
-	88qxPOGOaU2N8goicQVa02sVF1lpRfbLGZ1YO2H32ksvRb6GK+zh2Pht/777fzwDVUR8a9oK
-	nuQe/WJeEVO/Rtrjtp7Vf+M/s/X/HG75HvVb/vkzn3XyL+57NemdEJ+uWXVd84PAHUYlluKM
-	REMt5qLiRAByWyy7FAMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAKsWRmVeSWpSXmKPExsVy+t9jQd2UyK0BBhv6uC0u75rD5sDo8XmT
-	XABjVAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7Q
-	VCWFssScUqBQQGJxsZK+HaYJoSFuuhYwjRG6viFBcD1GBmggYR1jxoaDl9gLmvkrPrxexNzA
-	uIm3i5GDQ0LAROLHNaEuRk4gU0ziwr31bF2MXBxCAtMZJfY86WOHcHqYJN6132cHqeIV0JV4
-	3XKPFcQWFgiQOLP5FwvIIDYBbYnN+w1AwkICihJv998FKxER0JJ42b2cCcRmFiiReDtvIdgY
-	FgFViW///4DFOQU8JFad/sEC0esuMfX2cWYQm19AVOJk6ydGiN4qiWdPrzNDHKoksbu9E+oc
-	QYkfk++xTGAUnIWkbBaSFERcU6J1+292CFtbYtnC18wQtq3EunXvoWpsJDZdXcAIYctLbH87
-	h3kBI/sqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxNjOA4fya9g3FVg8UhRgEORiUeXgfHrQFC
-	rIllxZW5hxhVgOY82rD6AqMUS15+XqqSCG+CJlCaNyWxsiq1KD++qDQntfgQYzIwNCYyS4km
-	5wNTU15JvKGxiZmRpZGZhZGJuTlpwkrivM0eKQFCAumJJanZqakFqUUwW5g4OKUaGEtEj8YK
-	PK5UFGHzbK3oK0v7q3aM+//diI1fL56fEdwSOTNQdhrLt/mX6q82eU9yfn4sWuOY0QaNyBxm
-	0QMJrN0XLzuUhhyy+1W95tveNYedOia+a2V59EcgX3kXpw3Lnx+9MQKJfi/3G55TWRQ70fLN
-	0vXcB/96S62Lj45OlmG/Njsq8cT+1UosxRmJhlrMRcWJAHfLGapDAwAA
-X-CFilter-Loop: Reflected
+	id S1754132Ab2K1AYh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 19:24:37 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:34771 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752359Ab2K1AYf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Nov 2012 19:24:35 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: linux-acpi@vger.kernel.org
+Cc: Toshi Kani <toshi.kani@hp.com>, lenb@kernel.org,
+        linux-kernel@vger.kernel.org, bhelgaas@google.com,
+        isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com
+Subject: Re: [PATCH v3 1/4] ACPI: Support system notify handler via .sys_notify
+Date: Wed, 28 Nov 2012 01:29:18 +0100
+Message-ID: <4386143.a25EdxFGm5@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <1353951848.26955.73.camel@misato.fc.hp.com>
+References: <1352406227-32629-1-git-send-email-toshi.kani@hp.com> <1534747.XBnkTFzSlv@vostro.rjw.lan> <1353951848.26955.73.camel@misato.fc.hp.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Monday, November 26, 2012 10:44:08 AM Toshi Kani wrote:
+> Hi Rafael,
+> 
+> Thanks for reviewing!  My comments are in-line.
+> 
+> On Sat, 2012-11-24 at 23:01 +0100, Rafael J. Wysocki wrote:
+> > On Thursday, November 08, 2012 01:23:44 PM Toshi Kani wrote:
+> > > Added a new .sys_notify interface, which allows ACPI drivers to
+> > > register their system-level (ex. hotplug) notify handlers through
+> > > their acpi_driver table.  This removes redundant ACPI namespace
+> > > walks from ACPI drivers for faster booting.
+> > > 
+> > > The global notify handler acpi_bus_notify() is called for all
+> > > system-level ACPI notifications, which then calls an appropriate
+> > > driver's handler if any.  ACPI drivers no longer need to register
+> > > or unregister driver's handler to each ACPI device object.  It also
+> > > supports dynamic ACPI namespace with LoadTable & Unload opcode
+> > > without any modification in ACPI drivers.
+> > > 
+> > > Added a common system notify handler acpi_bus_sys_notify(), which
+> > > allows ACPI drivers to set it to .sys_notify when this function is
+> > > fully implemented.
+> > 
+> > I don't really understand this.
+> 
+> Currently, acpi_bus_notify() is partially implemented as the common
+> notify handler, but it may not be fully implemented under the current
+> design.  When a notify event is sent, ACPICA calls both
+> acpi_bus_notify() and driver's handler registered through
+> acpi_install_notify_handler().  However, a same event cannot be handled
+> by both handlers.
 
---=-q2SqjEyuLuAlCdxmXtZA
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Yes, it can, as long as they don't do conflicting things. :-)
+
+Usually, the event will be discarded by one of them.
+
+> Since acpi_bus_notify() may not know if an event has
+> already been handled by driver's handler, it cannot do anything that may
+> conflict with the driver's handler.
+
+Not really.  acpi_bus_notify() is always called first, so it actually
+knows that no one has done anything with that event before.  However,
+it doesn't know who else will be called for the same event going
+forward.
+
+But I agree, acpi_bus_notify() shouldn't register for the same types of
+events that are handled by drivers individually.  And we may not need
+acpi_bus_notify() at all as far as I can say at the moment.
+
+> Therefore, the partially implemented common handler code in
+> acpi_bus_notify() is moved to a separate function acpi_bus_sys_notify()
+> in this patchset.  This function can now be fully implemented as
+> necessary.
+
+Not really, because notifiers that don't use it may be called for the
+same events.
+
+> > > It removes functional conflict between driver's
+> > > notify handler and the global notify handler acpi_bus_notify().
+> > > 
+> > > Note that the changes maintain backward compatibility for ACPI
+> > > drivers.  Any drivers registered their hotplug handler through the
+> > > existing interfaces, such as acpi_install_notify_handler() and
+> > > register_acpi_bus_notifier(), will continue to work as before.
+> > 
+> > I really wouldn't like to add new callbacks to struct acpi_device_ops, because
+> > I'd like that whole thing to go away entirely eventually, along with struct
+> > acpi_driver.
+> 
+> acpi_device may need to be changed, but I think ACPI drivers are still
+> necessary to support vendor-unique PNPIDs in an extendable way, which is
+> currently done by adding drivers, such as asus_acpi_driver,
+> cmpc_accel_acpi_driver, eeepc_acpi_driver, acpi_fujitsu_driver,
+> lis3lv02d_driver, etc...
+
+Well, not really.  Handling different PNPIDs has nothing to do with ACPI
+drivers.  You only need a way for drivers in general to specify the ACPI
+device IDs they can handle.  And after som changes that are waiting for the
+v3.8 merge windown you'll be able to add a list of ACPI device IDs to other
+types of drivers too (like platform drivers for one example).
+
+[...]
+
+> > > +
+> > > +/* callback args for acpi_match_drv_notify() */
+> > > +struct acpi_notify_args {
+> > > +	struct acpi_device	*device;
+> > > +	acpi_handle		handle;
+> > > +	u32			event;
+> > > +	void			*data;
+> > > +};
+> > > +
+> > > +static int acpi_match_drv_notify(struct device_driver *drv, void *data)
+> > > +{
+> > > +	struct acpi_driver *driver = to_acpi_driver(drv);
+> > > +	struct acpi_notify_args *args = (struct acpi_notify_args *) data;
+> > > +
+> > > +	/* check if this driver matches with the device */
+> > > +	if (acpi_match_device_ids(args->device, driver->ids))
+> > > +		return 0;
+> > > +
+> > > +	/* call the driver's notify handler */
+> > > +	acpi_bus_drv_notify(driver, NULL, args->handle,
+> > > +					args->event, args->data);
+> > > +
+> > > +	return 1;
+> > > +}
+> > > +
+> > > +/**
+> > > + * acpi_lookup_drv_notify: Look up and call driver's notify handler
+> > > + * @handle: ACPI handle of the notified device object
+> > > + * @event: Notify event
+> > > + * @data: Context
+> > > + *
+> > > + * Look up and call the associated driver's notify handler for the ACPI
+> > > + * device object by walking through the list of ACPI drivers.
+> > 
+> > What exactly is the purpose of this?
+> 
+> For hot-add, an acpi_device object is not created for the notified
+> object yet.  Therefore, acpi_bus_notify() calls this function to find an
+> associated driver for the device.  It walks thru the ACPI driver list to
+> find a matching driver.  
+
+This is just broken and not only because you're creating a struct acpi_device
+object on the fly in there.
+
+> > > + */
+> > > +void acpi_lookup_drv_notify(acpi_handle handle, u32 event, void *data)
+> > > +{
+> > > +	struct acpi_notify_args args;
+> > > +	struct acpi_device *device;
+> > > +	unsigned long long sta;
+> > > +	int type;
+> > > +	int ret;
+> > > +
+> > > +	/* allocate a temporary device object */
+> > > +	device = kzalloc(sizeof(struct acpi_device), GFP_KERNEL);
+> > > +	if (!device) {
+> > > +		pr_err(PREFIX "No memory to allocate a tmp device\n");
+> > > +		return;
+> > > +	}
+> > > +	INIT_LIST_HEAD(&device->pnp.ids);
+> > > +
+> > > +	/* obtain device type */
+> > > +	ret = acpi_bus_type_and_status(handle, &type, &sta);
+> > > +	if (ret) {
+> > > +		pr_err(PREFIX "Failed to get device type\n");
+> > > +		goto out;
+> > > +	}
+> > > +
+> > > +	/* setup this temporary device object */
+> > > +	device->device_type = type;
+> > > +	device->handle = handle;
+> > > +	device->parent = acpi_bus_get_parent(handle);
+> > > +	device->dev.bus = &acpi_bus_type;
+> > > +	device->driver = NULL;
+> > > +	STRUCT_TO_INT(device->status) = sta;
+> > > +	device->status.present = 1;
+> > > +
+> > > +	/* set HID to this device object */
+> > > +	acpi_device_set_id(device);
+> > > +
+> > > +	/* set args */
+> > > +	args.device = device;
+> > > +	args.handle = handle;
+> > > +	args.event = event;
+> > > +	args.data = data;
+> > > +
+> > > +	/* call a matched driver's notify handler */
+> > > +	(void) bus_for_each_drv(device->dev.bus, NULL,
+> > > +					&args, acpi_match_drv_notify);
+> > 
+> > Excuse me?  What makes you think I would accept anything like this?
+> 
+> Sorry, I admit that allocating a temporary acpi_device object is a hack
+> since acpi_device_set_id() requires it.  I tried to change
+> acpi_device_set_id(), but it needed more changes than I expected.  I can
+> try to clean this up, if the overall design still makes sense.
+
+No, it doesn't.  It is not correct to look for a random driver that happens to
+match your handle from within a notification handler and call a notify method
+from it.  It's just bad design and please don't do that.
+
+Thanks,
+Rafael
 
 
-Add CC: linux-f2fs-devel@lists.sourceforge.net
-
-Thanks for contributing.
-
-2012-11-27 (=ED=99=94), 16:02 +0530, Sachin Kamat:
-> Including <linux/version.h> is not necessary.
->=20
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-> ---
->  fs/f2fs/f2fs.h |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
->=20
-> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-> index 7aa70b5..d3f5a70 100644
-> --- a/fs/f2fs/f2fs.h
-> +++ b/fs/f2fs/f2fs.h
-> @@ -14,7 +14,6 @@
->  #include <linux/types.h>
->  #include <linux/page-flags.h>
->  #include <linux/buffer_head.h>
-> -#include <linux/version.h>
->  #include <linux/slab.h>
->  #include <linux/crc32.h>
->  #include <linux/magic.h>
-
---=20
-Jaegeuk Kim
-Samsung
-
---=-q2SqjEyuLuAlCdxmXtZA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJQtVlJAAoJEEAUqH6CSFDSkgUP/254MEuxQACAWtYlRoGhSTGV
-WlaOGd7idpm1qMJLhxujL2J1COOG7vUaot8Op5bI71FzJ1UfJMfePCpj/66iPeDc
-NAlsxueqi3FiWHm5CNELrZRsxZSRLQ5vqwm3LU883WmQFKEGQzju/LJ4JEOjh8gN
-/Be5LJbaF60DdehaCx5mhEnU2inX1O/XpswiCJddENnPs/oPikaGva5FBc4k2IZH
-qxG/x4SN0JpQecU7XAc3+c38ZxaMIliNpvFF2DrLAYv2/pG7+mryDTyTBXy5OBgA
-dcfgM13cM186eSum4/5dydCIfEdPrDUYg182qKHfAnILhfR2lg+w50a91popVImc
-CDJcVxqd9sJGC+c1JZjdWjMRabZAlOLq42EssqA6P6XUlkTNs7baIt7sdtS3B0DP
-56m5aQhxrp/RJmJp4Hn65JJr/Ti6M5L5HxmgONYMjCsbNz+foaFqovBqh9p8YizX
-t9YDOqm02DVfFJCTh+97rnvA8n2xtZaFAPQ7pYjBnWANeeurfgL4gtsmRzCK75rL
-2RiiyQRYN6exNbS6tBvZzgsbFkmBfKYqIcRlW2N4heLFE8Cs5yFJgyxQ9H6rypmo
-+PsDRxwQEY4RRCX0ZaxCjCA9PU1l+wcdghwYLxYxuijd16fP9KB4bxQOs8FZ1G0F
-dh/k9fmVcyW7oldcGmvq
-=+M8y
------END PGP SIGNATURE-----
-
---=-q2SqjEyuLuAlCdxmXtZA--
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
