@@ -1,77 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756171Ab2K1XOP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 18:14:15 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:64081 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753464Ab2K1XOO (ORCPT
+	id S1161000Ab2K1XOf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 18:14:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60814 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755990Ab2K1XOe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 18:14:14 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFwbnQsvpsOLS6w_G35d4w+Ezv5tOx2SE7dShJhX4iP_0Q@mail.gmail.com>
-References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com>
- <CA+55aFyvT3R3kgwJzp9mY5eE1fwMnzXnmBpHSbqjd-eJRVDkJw@mail.gmail.com>
- <50AF7901.20401@kernel.dk> <CAAJw_ZvXGKcjfOAS_tRdXJ9SjpCKw1t7rNt+Q=ieCkVJwN2qcg@mail.gmail.com>
- <Pine.LNX.4.64.1211241555470.4300@file.rdu.redhat.com> <CAAJw_ZvUqRmCCQ5-2PdFPRyfdzZMuphGU=hgAjUOHGk=n9Mheg@mail.gmail.com>
- <CAAJw_ZuJXnAz1ukBwQa3xNbQaL1KUBSrbQMK2hn-7D6Ar1p3fQ@mail.gmail.com>
- <50B46E05.70906@kernel.dk> <CAAJw_ZsYuLCwCTc6U=ELO_PvyjnVKQdkPke2enfzm6zOeWAqjA@mail.gmail.com>
- <50B4B313.3030707@kernel.dk> <Pine.LNX.4.64.1211272252260.18338@file.rdu.redhat.com>
- <50B5CC5A.8060607@kernel.dk> <Pine.LNX.4.64.1211281222410.11599@file.rdu.redhat.com>
- <CA+55aFx4zYnEsUyGJurBjB0XZ0AgmyKqW-+KWVDvma3w6csnHQ@mail.gmail.com>
- <Pine.LNX.4.64.1211281422360.26389@file.rdu.redhat.com> <CA+55aFyXdtVJ=SG9bU4qfggCR6DPvz4vOFYxKJZx_WdyFv+3Fw@mail.gmail.com>
- <CA+55aFyXS0nkDB95c3pcdg1ctrNnUGO8aDuRNhKSEg3JrOqWhA@mail.gmail.com>
- <Pine.LNX.4.64.1211281540200.5283@file.rdu.redhat.com> <CA+55aFwbnQsvpsOLS6w_G35d4w+Ezv5tOx2SE7dShJhX4iP_0Q@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 28 Nov 2012 15:13:52 -0800
-X-Google-Sender-Auth: HXJUXJWQ1SX9ci0ltEK_G-NpdFw
-Message-ID: <CA+55aFy_i2HzrXoKsLwuvUbF6=GSGsWxHDczi_grZ7u022xYJw@mail.gmail.com>
-Subject: Re: [PATCH] Introduce a method to catch mmap_region (was: Recent
- kernel "mount" slow)
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Jeff Chua <jeff.chua.linux@gmail.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 28 Nov 2012 18:14:34 -0500
+Date: Wed, 28 Nov 2012 15:14:32 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Glauber Costa <glommer@parallels.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Greg Thelen <gthelen@google.com>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [RFC] Add mempressure cgroup
+Message-Id: <20121128151432.3e29d830.akpm@linux-foundation.org>
+In-Reply-To: <20121128102908.GA15415@lizard>
+References: <20121128102908.GA15415@lizard>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 2:52 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
->> For example, __block_write_full_page and __block_write_begin do
->>         if (!page_has_buffers(page)) { create_empty_buffers... }
->> and then they do
->>         WARN_ON(bh->b_size != blocksize)
->>         err = get_block(inode, block, bh, 1)
->
-> Right. And none of this is new.
+On Wed, 28 Nov 2012 02:29:08 -0800
+Anton Vorontsov <anton.vorontsov@linaro.org> wrote:
 
-.. which, btw, is not to say that *other* things aren't new. They are.
+> The main characteristics are the same to what I've tried to add to vmevent
+> API:
+> 
+>   Internally, it uses Mel Gorman's idea of scanned/reclaimed ratio for
+>   pressure index calculation. But we don't expose the index to the
+>   userland. Instead, there are three levels of the pressure:
+> 
+>   o low (just reclaiming, e.g. caches are draining);
+>   o medium (allocation cost becomes high, e.g. swapping);
+>   o oom (about to oom very soon).
+> 
+>   The rationale behind exposing levels and not the raw pressure index
+>   described here: http://lkml.org/lkml/2012/11/16/675
 
-The change to actually change the block device buffer size before then
-calling "sync_bdev()" is definitely a real change, and as mentioned, I
-have not tested the patch in any way. If any block device driver were
-to actually compare the IO size they get against the bdev->block_size
-thing, they'd see very different behavior (ie they'd see the new block
-size as they are asked to write old the old blocks with the old block
-size).
+This rationale is central to the overall design (and is hence central
+to the review).  It would be better to include it in the changelogs
+where it can be maintained, understood and discussed.
 
-So it does change semantics, no question about that. I don't think any
-block device does it, though.
 
-A bigger issue is for things that emulate what blkdev.c does, and
-doesn't do the locking. I see code in md/bitmap.c that seems a bit
-suspicious, for example. That said, it's not *new* breakage, and the
-"lock at mmap/read/write() time" approach doesn't fix it either (since
-the mapping will be different for the underlying MD device). So I do
-think that we should take a look at all the users of
-"alloc_page_buffers()" and "create_empty_buffers()" to see what *they*
-do to protect the block-size, but I think that's an independent issue
-from the raw device access case in fs/block_dev.c..
+I see a problem with it:
 
-I guess I have to actually test my patch. I don't have very
-interesting test-cases, though.
 
-                       Linus
+It blurs the question of "who is in control".  We tell userspace "hey,
+we're getting a bit tight here, please do something".  And userspace
+makes the decision about what "something" is.  So userspace is in
+control of part of the reclaim function and the kernel is in control of
+another part.  Strange interactions are likely.
+
+Also, the system as a whole is untestable by kernel developers - it
+puts the onus onto each and every userspace developer to develop, test
+and tune his application against a particular kernel version.
+
+And the more carefully the userspace developer tunes his application,
+the more vulnerable he becomes to regressions which were caused by
+subtle changes in the kernel's behaviour.
+
+
+Compare this with the shrink_slab() shrinkers.  With these, the VM can
+query and then control the clients.  If something goes wrong or is out
+of balance, it's the VM's problem to solve.
+
+So I'm thinking that a better design would be one which puts the kernel
+VM in control of userspace scanning and freeing.  Presumably with a
+query-and-control interface similar to the slab shrinkers.
+
+IOW, we make the kernel smarter and make userspace dumber.  Userspace
+just sits there and does what the kernel tells it to do.
+
+This gives the kernel developers the ability to tune and tweak (ie:
+alter) userspace's behaviour *years* after that userspace code was
+written.
+
+Probably most significantly, this approach has a really big advantage:
+we can test it.  Once we have defined that userspace query/control
+interface we can write a compliant userspace test application then fire
+it up and observe the overall system behaviour.  We can fix bugs and we
+can tune it.  This cannot be done with your proposed interface because
+we just don't know what userspace will do in response to changes in the
+exposed metric.
+
