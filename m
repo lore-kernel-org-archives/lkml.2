@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932354Ab2K1VOM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 16:14:12 -0500
-Received: from www.hansjkoch.de ([178.63.77.200]:51438 "EHLO www.hansjkoch.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932209Ab2K1VOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 16:14:10 -0500
-Date: Wed, 28 Nov 2012 22:14:07 +0100
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Vitalii Demianets <vitas@nppfactor.kiev.ua>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Cong Ding <dinggnu@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] drivers/uio/uio_pdrv_genirq.c: Fix memory leak &
- confusing labels
-Message-ID: <20121128211407.GC2590@local>
-References: <201211271929.32315.vitas@nppfactor.kiev.ua>
- <CAP9qxA-ZmhZLVujmdM0YLqXony-s8oZggKZxTU6oYmtcuO5erQ@mail.gmail.com>
- <20121128003750.GD2605@local>
- <201211281137.23623.vitas@nppfactor.kiev.ua>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201211281137.23623.vitas@nppfactor.kiev.ua>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932422Ab2K1VVA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 16:21:00 -0500
+Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:36411 "EHLO
+	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932347Ab2K1VU6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 16:20:58 -0500
+Date: Wed, 28 Nov 2012 16:20:01 -0500
+From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
+To: Krzysztof Mazur <krzysiek@podlesie.net>
+Cc: David Woodhouse <dwmw2@infradead.org>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 3/3] pppoatm: protect against freeing of vcc
+Message-ID: <20121128162001.3f326720@thirdoffive.cmf.nrl.navy.mil>
+In-Reply-To: <20121128201837.GA912@shrek.podlesie.net>
+References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
+	<1350926091-12642-3-git-send-email-krzysiek@podlesie.net>
+	<1354036592.2534.6.camel@shinybook.infradead.org>
+	<20121127173906.GA11390@shrek.podlesie.net>
+	<1354039349.2534.11.camel@shinybook.infradead.org>
+	<20121127182843.GA11597@shrek.podlesie.net>
+	<20121128201837.GA912@shrek.podlesie.net>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 11:37:23AM +0200, Vitalii Demianets wrote:
-> On Wednesday 28 November 2012 02:37:50 Hans J. Koch wrote:
-> >
-> > In other words, the case of uioinfo AND pdev->dev.of_node both being NULL
-> > is not handled properly and will have ugly results.
-> >
+On Wed, 28 Nov 2012 21:18:37 +0100
+Krzysztof Mazur <krzysiek@podlesie.net> wrote:
+
+> On Tue, Nov 27, 2012 at 07:28:43PM +0100, Krzysztof Mazur wrote:
+> > I think that we should add atm_pop() function that does that and fix all
+> > drivers.
+> > 
 > 
-> Moreover, the case of (uioinfo != NULL) && (pdev->dev.of_node != NULL) leads 
-> to equally ugly results too (freeing uoinfo when it is statically allocated).
-
-You're right. That wants to be fixed as well.
-
+> I'm sending a patch that implements that idea.
 > 
-> I think, we should sort out these problems, but in another patch. It is 
-> totally unrelated to the problem solved by the original patch (memory leak 
-> caused by not freeing priv in case platform_get_irq() fails).
+> Currently we need two arguments vcc and skb. However, we have reserved
+> ATM_SKB(skb)->vcc in skb control block for keeping vcc
+> and we can create single argument version vcc_pop(skb). In that case
+> we need to move:
+> 
+> 	ATM_SKB(skb)->vcc = vcc;
+> 
+> from ATM drivers to functions that call atmdev_ops->send().
 
-So far, no patch was applied. I don't mind if all fixes for uio_pdrv_genirq
-are in one patch as long as only this one file is altered.
+i dont like the vcc->pop() implementation and at one point i had the
+crazy idea of using skb->destructors to handle it.  however, i think it
+would be necessary to clone the skb's so any existing destructor is
+preserved.
 
-Thanks,
-Hans
+> +#define vcc_pop(vcc, skb) vcc_pop_any(vcc, skb)
+> +#define vcc_pop_irq(vcc, skb) vcc_pop_any(vcc, skb)
+
+don't define these if you dont plan on using them anway.
