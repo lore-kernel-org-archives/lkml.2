@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756386Ab2K1VtM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 16:49:12 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:45187 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030206Ab2K1VtF (ORCPT
+	id S1756362Ab2K1VtK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 16:49:10 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:37123 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756264Ab2K1Vsw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 16:49:05 -0500
+	Wed, 28 Nov 2012 16:48:52 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
@@ -14,96 +14,186 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v9 38/46] x86, mm: use limit_pfn for end pfn
-Date: Wed, 28 Nov 2012 13:47:49 -0800
-Message-Id: <1354139277-17376-39-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v9 24/46] x86, mm: Merge alloc_low_page between 64bit and 32bit
+Date: Wed, 28 Nov 2012 13:47:35 -0800
+Message-Id: <1354139277-17376-25-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
 References: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-instead of shifting end to get that.
+They are almost same except 64 bit need to handle after_bootmem case.
+
+Add mm_internal.h to make that alloc_low_page() only to be accessible
+from arch/x86/mm/init*.c
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/mm/init.c |   20 +++++++++++---------
- 1 files changed, 11 insertions(+), 9 deletions(-)
+ arch/x86/mm/init.c        |   34 ++++++++++++++++++++++++++++++++++
+ arch/x86/mm/init_32.c     |   26 ++------------------------
+ arch/x86/mm/init_64.c     |   32 ++------------------------------
+ arch/x86/mm/mm_internal.h |    6 ++++++
+ 4 files changed, 44 insertions(+), 54 deletions(-)
+ create mode 100644 arch/x86/mm/mm_internal.h
 
 diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index dd4e98d..079dce4 100644
+index 2e18522..20db3fd 100644
 --- a/arch/x86/mm/init.c
 +++ b/arch/x86/mm/init.c
-@@ -203,10 +203,12 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
- 				     unsigned long start,
- 				     unsigned long end)
- {
--	unsigned long start_pfn, end_pfn;
-+	unsigned long start_pfn, end_pfn, limit_pfn;
- 	unsigned long pfn;
- 	int i;
+@@ -17,10 +17,44 @@
+ #include <asm/proto.h>
+ #include <asm/dma.h>		/* for MAX_DMA_PFN */
  
-+	limit_pfn = PFN_DOWN(end);
++#include "mm_internal.h"
 +
- 	/* head if not big page alignment ? */
- 	pfn = start_pfn = PFN_DOWN(start);
- #ifdef CONFIG_X86_32
-@@ -223,8 +225,8 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
- #else /* CONFIG_X86_64 */
- 	end_pfn = round_up(pfn, PFN_DOWN(PMD_SIZE));
- #endif
--	if (end_pfn > PFN_DOWN(end))
--		end_pfn = PFN_DOWN(end);
-+	if (end_pfn > limit_pfn)
-+		end_pfn = limit_pfn;
- 	if (start_pfn < end_pfn) {
- 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn, 0);
- 		pfn = end_pfn;
-@@ -233,11 +235,11 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
- 	/* big page (2M) range */
- 	start_pfn = round_up(pfn, PFN_DOWN(PMD_SIZE));
- #ifdef CONFIG_X86_32
--	end_pfn = PFN_DOWN(round_down(end, PMD_SIZE));
-+	end_pfn = round_down(limit_pfn, PFN_DOWN(PMD_SIZE));
- #else /* CONFIG_X86_64 */
- 	end_pfn = round_up(pfn, PFN_DOWN(PUD_SIZE));
--	if (end_pfn > PFN_DOWN(round_down(end, PMD_SIZE)))
--		end_pfn = PFN_DOWN(round_down(end, PMD_SIZE));
-+	if (end_pfn > round_down(limit_pfn, PFN_DOWN(PMD_SIZE)))
-+		end_pfn = round_down(limit_pfn, PFN_DOWN(PMD_SIZE));
- #endif
+ unsigned long __initdata pgt_buf_start;
+ unsigned long __meminitdata pgt_buf_end;
+ unsigned long __meminitdata pgt_buf_top;
  
- 	if (start_pfn < end_pfn) {
-@@ -249,7 +251,7 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
- #ifdef CONFIG_X86_64
- 	/* big page (1G) range */
- 	start_pfn = round_up(pfn, PFN_DOWN(PUD_SIZE));
--	end_pfn = PFN_DOWN(round_down(end, PUD_SIZE));
-+	end_pfn = round_down(limit_pfn, PFN_DOWN(PUD_SIZE));
- 	if (start_pfn < end_pfn) {
- 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
- 				page_size_mask &
-@@ -259,7 +261,7 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
++__ref void *alloc_low_page(void)
++{
++	unsigned long pfn;
++	void *adr;
++
++#ifdef CONFIG_X86_64
++	if (after_bootmem) {
++		adr = (void *)get_zeroed_page(GFP_ATOMIC | __GFP_NOTRACK);
++
++		return adr;
++	}
++#endif
++
++	if ((pgt_buf_end + 1) >= pgt_buf_top) {
++		unsigned long ret;
++		if (min_pfn_mapped >= max_pfn_mapped)
++			panic("alloc_low_page: ran out of memory");
++		ret = memblock_find_in_range(min_pfn_mapped << PAGE_SHIFT,
++					max_pfn_mapped << PAGE_SHIFT,
++					PAGE_SIZE, PAGE_SIZE);
++		if (!ret)
++			panic("alloc_low_page: can not alloc memory");
++		memblock_reserve(ret, PAGE_SIZE);
++		pfn = ret >> PAGE_SHIFT;
++	} else
++		pfn = pgt_buf_end++;
++
++	adr = __va(pfn * PAGE_SIZE);
++	clear_page(adr);
++	return adr;
++}
++
+ /* need 4 4k for initial PMD_SIZE, 4k for 0-ISA_END_ADDRESS */
+ #define INIT_PGT_BUF_SIZE	(5 * PAGE_SIZE)
+ RESERVE_BRK(early_pgt_alloc, INIT_PGT_BUF_SIZE);
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index 7bb1106..a7f2df1 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -53,36 +53,14 @@
+ #include <asm/page_types.h>
+ #include <asm/init.h>
  
- 	/* tail is not big page (1G) alignment */
- 	start_pfn = round_up(pfn, PFN_DOWN(PMD_SIZE));
--	end_pfn = PFN_DOWN(round_down(end, PMD_SIZE));
-+	end_pfn = round_down(limit_pfn, PFN_DOWN(PMD_SIZE));
- 	if (start_pfn < end_pfn) {
- 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
- 				page_size_mask & (1<<PG_LEVEL_2M));
-@@ -269,7 +271,7 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
++#include "mm_internal.h"
++
+ unsigned long highstart_pfn, highend_pfn;
  
- 	/* tail is not big page (2M) alignment */
- 	start_pfn = pfn;
--	end_pfn = PFN_DOWN(end);
-+	end_pfn = limit_pfn;
- 	nr_range = save_mr(mr, nr_range, start_pfn, end_pfn, 0);
+ static noinline int do_test_wp_bit(void);
  
- 	/* try to merge same page size and continuous */
+ bool __read_mostly __vmalloc_start_set = false;
+ 
+-static __init void *alloc_low_page(void)
+-{
+-	unsigned long pfn;
+-	void *adr;
+-
+-	if ((pgt_buf_end + 1) >= pgt_buf_top) {
+-		unsigned long ret;
+-		if (min_pfn_mapped >= max_pfn_mapped)
+-			panic("alloc_low_page: ran out of memory");
+-		ret = memblock_find_in_range(min_pfn_mapped << PAGE_SHIFT,
+-					max_pfn_mapped << PAGE_SHIFT,
+-					PAGE_SIZE, PAGE_SIZE);
+-		if (!ret)
+-			panic("alloc_low_page: can not alloc memory");
+-		memblock_reserve(ret, PAGE_SIZE);
+-		pfn = ret >> PAGE_SHIFT;
+-	} else
+-		pfn = pgt_buf_end++;
+-
+-	adr = __va(pfn * PAGE_SIZE);
+-	clear_page(adr);
+-	return adr;
+-}
+-
+ /*
+  * Creates a middle page table and puts a pointer to it in the
+  * given global directory entry. This only returns the gd entry
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 1960820..1d53def 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -54,6 +54,8 @@
+ #include <asm/uv/uv.h>
+ #include <asm/setup.h>
+ 
++#include "mm_internal.h"
++
+ static int __init parse_direct_gbpages_off(char *arg)
+ {
+ 	direct_gbpages = 0;
+@@ -314,36 +316,6 @@ void __init cleanup_highmap(void)
+ 	}
+ }
+ 
+-static __ref void *alloc_low_page(void)
+-{
+-	unsigned long pfn;
+-	void *adr;
+-
+-	if (after_bootmem) {
+-		adr = (void *)get_zeroed_page(GFP_ATOMIC | __GFP_NOTRACK);
+-
+-		return adr;
+-	}
+-
+-	if ((pgt_buf_end + 1) >= pgt_buf_top) {
+-		unsigned long ret;
+-		if (min_pfn_mapped >= max_pfn_mapped)
+-			panic("alloc_low_page: ran out of memory");
+-		ret = memblock_find_in_range(min_pfn_mapped << PAGE_SHIFT,
+-					max_pfn_mapped << PAGE_SHIFT,
+-					PAGE_SIZE, PAGE_SIZE);
+-		if (!ret)
+-			panic("alloc_low_page: can not alloc memory");
+-		memblock_reserve(ret, PAGE_SIZE);
+-		pfn = ret >> PAGE_SHIFT;
+-	} else
+-		pfn = pgt_buf_end++;
+-
+-	adr = __va(pfn * PAGE_SIZE);
+-	clear_page(adr);
+-	return adr;
+-}
+-
+ static unsigned long __meminit
+ phys_pte_init(pte_t *pte_page, unsigned long addr, unsigned long end,
+ 	      pgprot_t prot)
+diff --git a/arch/x86/mm/mm_internal.h b/arch/x86/mm/mm_internal.h
+new file mode 100644
+index 0000000..b3f993a
+--- /dev/null
++++ b/arch/x86/mm/mm_internal.h
+@@ -0,0 +1,6 @@
++#ifndef __X86_MM_INTERNAL_H
++#define __X86_MM_INTERNAL_H
++
++void *alloc_low_page(void);
++
++#endif	/* __X86_MM_INTERNAL_H */
 -- 
 1.7.7
 
