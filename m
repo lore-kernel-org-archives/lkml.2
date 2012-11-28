@@ -1,295 +1,673 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803Ab2K1JiB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 04:38:01 -0500
-Received: from zimbra.linbit.com ([212.69.161.123]:48008 "EHLO
-	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409Ab2K1Jh4 (ORCPT
+	id S1753285Ab2K1Jkt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 04:40:49 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:46757 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752797Ab2K1Jkm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 04:37:56 -0500
-Date: Wed, 28 Nov 2012 10:37:54 +0100
-From: Lars Ellenberg <lars.ellenberg@linbit.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [RFC] [PATCH] fix infinite loop; increase robustness of
- debugfs_remove_recursive [attached test module]
-Message-ID: <20121128093754.GA674@soda.linbit>
-References: <20121123171547.GB23670@soda.linbit>
- <1354072588.6276.101.camel@gandalf.local.home>
+	Wed, 28 Nov 2012 04:40:42 -0500
+Message-ID: <50B5DC00.20103@huawei.com>
+Date: Wed, 28 Nov 2012 17:40:16 +0800
+From: Jianguo Wu <wujianguo@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="dDRMvlgZJXvWKvBx"
-Content-Disposition: inline
-In-Reply-To: <1354072588.6276.101.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: <x86@kernel.org>, <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>,
+        <linux-s390@vger.kernel.org>, <linux-sh@vger.kernel.org>,
+        <linux-ia64@vger.kernel.org>, <cmetcalf@tilera.com>,
+        <sparclinux@vger.kernel.org>, David Rientjes <rientjes@google.com>,
+        Jiang Liu <liuj97@gmail.com>, Len Brown <len.brown@intel.com>,
+        <benh@kernel.crashing.org>, <paulus@samba.org>,
+        Christoph Lameter <cl@linux.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: Re: [Patch v4 08/12] memory-hotplug: remove memmap of sparse-vmemmap
+References: <1354010422-19648-1-git-send-email-wency@cn.fujitsu.com> <1354010422-19648-9-git-send-email-wency@cn.fujitsu.com>
+In-Reply-To: <1354010422-19648-9-git-send-email-wency@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.216]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Congyang,
 
---dDRMvlgZJXvWKvBx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I think vmemmap's pgtable pages should be freed after all entries are cleared, I have a patch to do this.
+The code logic is the same as [Patch v4 09/12] memory-hotplug: remove page table of x86_64 architecture.
 
-On Tue, Nov 27, 2012 at 10:16:28PM -0500, Steven Rostedt wrote:
-> On Fri, 2012-11-23 at 18:15 +0100, Lars Ellenberg wrote:
-> > When toying around with debugfs, intentionally trying to break things,
-> > I managed to get it into a reproducible endless loop when cleaning up.
-> > 
-> > debugfs_remove_recursive() completely ignores that entries found
-> > on ->d_subdirs may already be d_delete()d, but not yet d_kill()ed.
-> > 
-> > In this case, the first two entries found have both been such dentries
-> > (d_iname = ".", btw), while later in the list there was still a real,
-> > not yet deleted entry.
-> > 
-> > That way, the "goto next_sibling;" did not catch this case,
-> > the "break the infinit loop if we fail to remove something"
-> > did not catch it either.
-> > 
-> > 
-> > Disclaimer: I'm not a dentries and inodes guy...
+How do you think about this?
+
+Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+---
+ include/linux/mm.h  |    1 +
+ mm/sparse-vmemmap.c |  214 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ mm/sparse.c         |    5 +-
+ 3 files changed, 218 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 5657670..1f26af5 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1642,6 +1642,7 @@ int vmemmap_populate(struct page *start_page, unsigned long pages, int node);
+ void vmemmap_populate_print_last(void);
+ void register_page_bootmem_memmap(unsigned long section_nr, struct page *map,
+ 				  unsigned long size);
++void vmemmap_free(struct page *memmap, unsigned long nr_pages);
+ 
+ enum mf_flags {
+ 	MF_COUNT_INCREASED = 1 << 0,
+diff --git a/mm/sparse-vmemmap.c b/mm/sparse-vmemmap.c
+index 1b7e22a..242cb28 100644
+--- a/mm/sparse-vmemmap.c
++++ b/mm/sparse-vmemmap.c
+@@ -29,6 +29,10 @@
+ #include <asm/pgalloc.h>
+ #include <asm/pgtable.h>
+ 
++#ifdef CONFIG_MEMORY_HOTREMOVE
++#include <asm/tlbflush.h>
++#endif
++
+ /*
+  * Allocate a block of memory to be used to back the virtual memory map
+  * or to back the page tables that are used to create the mapping.
+@@ -224,3 +228,213 @@ void __init sparse_mem_maps_populate_node(struct page **map_map,
+ 		vmemmap_buf_end = NULL;
+ 	}
+ }
++
++#ifdef CONFIG_MEMORY_HOTREMOVE
++static void vmemmap_free_pages(struct page *page, int order)
++{
++	struct zone *zone;
++	unsigned long magic;
++
++	magic = (unsigned long) page->lru.next;
++	if (magic == SECTION_INFO || magic == MIX_SECTION_INFO) {
++		put_page_bootmem(page);
++
++		zone = page_zone(page);
++		zone_span_writelock(zone);
++		zone->present_pages++;
++		zone_span_writeunlock(zone);
++		totalram_pages++;
++	} else {
++		if (is_vmalloc_addr(page_address(page)))
++			vfree(page_address(page));
++		else
++			free_pages((unsigned long)page_address(page), order);
++	}
++}
++
++static void free_pte_table(pmd_t *pmd)
++{
++	pte_t *pte, *pte_start;
++	int i;
++
++	pte_start = (pte_t *)pmd_page_vaddr(*pmd);
++	for (i = 0; i < PTRS_PER_PTE; i++) {
++		pte = pte_start + i;
++		if (pte_val(*pte))
++			return;
++	}
++
++	/* free a pte talbe */
++	vmemmap_free_pages(pmd_page(*pmd), 0);
++	spin_lock(&init_mm.page_table_lock);
++	pmd_clear(pmd);
++	spin_unlock(&init_mm.page_table_lock);
++}
++
++static void free_pmd_table(pud_t *pud)
++{
++	pmd_t *pmd, *pmd_start;
++	int i;
++
++	pmd_start = (pmd_t *)pud_page_vaddr(*pud);
++	for (i = 0; i < PTRS_PER_PMD; i++) {
++		pmd = pmd_start + i;
++		if (pmd_val(*pmd))
++			return;
++	}
++
++	/* free a pmd talbe */
++	vmemmap_free_pages(pud_page(*pud), 0);
++	spin_lock(&init_mm.page_table_lock);
++	pud_clear(pud);
++	spin_unlock(&init_mm.page_table_lock);
++}
++
++static void free_pud_table(pgd_t *pgd)
++{
++	pud_t *pud, *pud_start;
++	int i;
++
++	pud_start = (pud_t *)pgd_page_vaddr(*pgd);
++	for (i = 0; i < PTRS_PER_PUD; i++) {
++		pud = pud_start + i;
++		if (pud_val(*pud))
++			return;
++	}
++
++	/* free a pud table */
++	vmemmap_free_pages(pgd_page(*pgd), 0);
++	spin_lock(&init_mm.page_table_lock);
++	pgd_clear(pgd);
++	spin_unlock(&init_mm.page_table_lock);
++}
++
++static int split_large_page(pte_t *kpte, unsigned long address, pte_t *pbase)
++{
++	struct page *page = pmd_page(*(pmd_t *)kpte);
++	int i = 0;
++	unsigned long magic;
++	unsigned long section_nr;
++
++	__split_large_page(kpte, address, pbase);
++	__flush_tlb_all();
++
++	magic = (unsigned long) page->lru.next;
++	if (magic == SECTION_INFO) {
++		section_nr = pfn_to_section_nr(page_to_pfn(page));
++		while (i < PTRS_PER_PMD) {
++			page++;
++			i++;
++			get_page_bootmem(section_nr, page, SECTION_INFO);
++		}
++	}
++
++	return 0;
++}
++
++static void vmemmap_pte_remove(pmd_t *pmd, unsigned long addr, unsigned long end)
++{
++	pte_t *pte;
++	unsigned long next;
++
++	pte = pte_offset_kernel(pmd, addr);
++	for (; addr < end; pte++, addr += PAGE_SIZE) {
++		next = (addr + PAGE_SIZE) & PAGE_MASK;
++		if (next > end)
++			next = end;
++
++		if (pte_none(*pte))
++			continue;
++		if (IS_ALIGNED(addr, PAGE_SIZE) &&
++		    IS_ALIGNED(end, PAGE_SIZE)) {
++			vmemmap_free_pages(pte_page(*pte), 0);
++			spin_lock(&init_mm.page_table_lock);
++			pte_clear(&init_mm, addr, pte);
++			spin_unlock(&init_mm.page_table_lock);
++		}
++	}
++
++	free_pte_table(pmd);
++	__flush_tlb_all();
++}
++
++static void vmemmap_pmd_remove(pud_t *pud, unsigned long addr, unsigned long end)
++{
++	unsigned long next;
++	pmd_t *pmd;
++
++	pmd = pmd_offset(pud, addr);
++	for (; addr < end; addr = next, pmd++) {
++		next = pmd_addr_end(addr, end);
++		if (pmd_none(*pmd))
++			continue;
++
++		if (cpu_has_pse) {
++			unsigned long pte_base;
++
++			if (IS_ALIGNED(addr, PMD_SIZE) &&
++			    IS_ALIGNED(next, PMD_SIZE)) {
++				vmemmap_free_pages(pmd_page(*pmd),
++						   get_order(PMD_SIZE));
++				spin_lock(&init_mm.page_table_lock);
++				pmd_clear(pmd);
++				spin_unlock(&init_mm.page_table_lock);
++				continue;
++			}
++
++			/*
++			 * We use 2M page, but we need to remove part of them,
++			 * so split 2M page to 4K page.
++			 */
++			pte_base = get_zeroed_page(GFP_ATOMIC | __GFP_NOTRACK);
++			split_large_page((pte_t *)pmd, addr, (pte_t *)pte_base);
++			__flush_tlb_all();
++
++			spin_lock(&init_mm.page_table_lock);
++			pmd_populate_kernel(&init_mm, pmd, (pte_t *)pte_base);
++			spin_unlock(&init_mm.page_table_lock);
++		}
++
++		vmemmap_pte_remove(pmd, addr, next);
++	}
++
++	free_pmd_table(pud);
++	__flush_tlb_all();
++}
++
++static void vmemmap_pud_remove(pgd_t *pgd, unsigned long addr, unsigned long end)
++{
++	unsigned long next;
++	pud_t *pud;
++
++	pud = pud_offset(pgd, addr);
++	for (; addr < end; addr = next, pud++) {
++		next = pud_addr_end(addr, end);
++		if (pud_none(*pud))
++			continue;
++
++		vmemmap_pmd_remove(pud, addr, next);
++	}
++
++	free_pud_table(pgd);
++	__flush_tlb_all();
++}
++
++void vmemmap_free(struct page *memmap, unsigned long nr_pages)
++{
++	unsigned long addr = (unsigned long)memmap;
++	unsigned long end = (unsigned long)(memmap + nr_pages);
++	unsigned long next;
++
++	for (; addr < end; addr = next) {
++		pgd_t *pgd = pgd_offset_k(addr);
++
++		next = pgd_addr_end(addr, end);
++		if (!pgd_present(*pgd))
++			continue;
++
++		vmemmap_pud_remove(pgd, addr, next);
++		sync_global_pgds(addr, next);
++	}
++}
++#endif
+diff --git a/mm/sparse.c b/mm/sparse.c
+index fac95f2..3a16d68 100644
+--- a/mm/sparse.c
++++ b/mm/sparse.c
+@@ -613,12 +613,13 @@ static inline struct page *kmalloc_section_memmap(unsigned long pnum, int nid,
+ 	/* This will make the necessary allocations eventually. */
+ 	return sparse_mem_map_populate(pnum, nid);
+ }
+-static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
++static void __kfree_section_memmap(struct page *page, unsigned long nr_pages)
+ {
+-	return; /* XXX: Not implemented yet */
++	vmemmap_free(page, nr_pages);
+ }
+ static void free_map_bootmem(struct page *page, unsigned long nr_pages)
+ {
++	vmemmap_free(page, nr_pages);
+ }
+ #else
+ static struct page *__kmalloc_section_memmap(unsigned long nr_pages)
+-- 
+1.7.6.1
+
+
+On 2012/11/27 18:00, Wen Congyang wrote:
+
+> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 > 
-> I'm not a dentries or inodes guy either, so I wont comment on the actual
-> merits of this patch.
-
-Though you submitted the "next_sibling" code back in 2009, right?
-That's why you ended up on Cc.
-I suspect that even back then, the real problem was
-"already dead but still linked" dentries, as below:
-
-> > Still, I think the "is this child a non-empty subdir" check
-> > was just wrong. This is my fix:
-> > -	if (list_empty(&child->d_subdirs)) 
-> > +	if (!simple_emty(child))
+> All pages of virtual mapping in removed memory cannot be freed, since some pages
+> used as PGD/PUD includes not only removed memory but also other memory. So the
+> patch checks whether page can be freed or not.
 > 
-> "simple_empty"
-
-Of course. I mistyped both lines in the email body :-/
-In the patch below it was correct:
--               if (!list_empty(&child->d_subdirs)) {
-+               if (!simple_empty(child)) {
-
-> > Also, always trying to __debugfs_remove() the first entry found from
-> > parent->d_subdirs.next is wrong, we need to skip over any already
-> > deleted children. I introduced the debugfs_find_next_positive_child()
-> > helper for this.
-> > 
-> > If I understand it correctly, if we do it this way, it can never fail.
-> > That is, as long as we can be sure that no new dentries will be created
-> > while we are in debugfs_remove_recursive().
-> > So the 
-> > 		if (debugfs_positive(child)) {
-> >  			/*
-> >  			 * Avoid infinite loop if we fail to remove
-> >  			 * one dentry.
-> > is probably dead code now?
-> > 
-> > 
-> > As an additional fix, to prevent an access after free and resulting Oops,
-> > I serialize dereferencing of attr->get/set and attr->data with d_delete(),
-> > using the file->f_dentry->d_parent->d_inode->i_mutex.
-> > 
-> > If this file->f_dentry meanwhile has been deleted, simple_attr_read()
-> > and simple_attr_write() now returns -ESTALE. (Any other error code preferences?)
-> > 
-> > 
-> > With this patch, I was able to
-> > cd /sys/debugfs/test-module/some/dir
-> > exec 7< some-file
-> > rmmod test-module
-> > cat <&7
+> How to check whether page can be freed or not?
+>  1. When removing memory, the page structs of the revmoved memory are filled
+>     with 0FD.
+>  2. All page structs are filled with 0xFD on PT/PMD, PT/PMD can be cleared.
+>     In this case, the page used as PT/PMD can be freed.
 > 
-> I saw this and thought "hmm, I wonder if the trace_events have issues,
-> as they create debugfs directories and files via modules too". I went
-> and tried to reproduce but couldn't get passed the rmmod, as the module
-> count gets incremented for any open files that the module creates.
-
-Is that so.
-
-> I take it that you didn't add that feature to your test module.
-
-If you use the "debugfs_create_u32" (and similar "_<simple attribute>")
-wrappers, you don't get a chance to do so from the attribute callbacks,
-all callbacks are predefined, you just submit a pointer.
-
-You mean something like this, or am I missing something?
-  __module_get();
-  debugfs_create_u32();
-And later
-  debugfs_remove_recursive();
-  module_put();
-
-You still have the race between someone opening some attribute file,
-you removing the attribute and releasing your refcount, then the other
-guy dereferencing that pointer in the read() call.
-
-I think you can only deal with that race,
-if you provide your own file_operations for all your attributes.
-
-I'm about to add some such debugfs entries for our driver, and would
-like to avoid re-implementing all of the simple_attribute fops.
-
-> > without any infinite loops, hangs, oopses or other problems,
-> > and as expected get an ESTALE for the cat.
-> > 
-> > Without the patch, I'll get either an infinite loop and rmmod never
-> > terminates, or cat oopses.
-> > 
-> > 
-> > If you think this is correct, please comment on the FIXME
-> > below, and help me write a nice commit message.
-> > 
-> > If you think this is still wrong or even makes things worse,
-> > please help me with a proper fix ;-)
-> > 
-> > 
-> > Patch is against upstream as of yesterday,
-> > but looks like it still applies way back into 2009, 2.6.3x,
-> > so if it is correct, it may even qualify for the stable branches?
-> > 
+> Applying patch, __remove_section() of CONFIG_SPARSEMEM_VMEMMAP is integrated
+> into one. So __remove_section() of CONFIG_SPARSEMEM_VMEMMAP is deleted.
 > 
-> Now, is there any current user of debugfs that is susceptible for this
-> bug?
+> Note:  vmemmap_kfree() and vmemmap_free_bootmem() are not implemented for ia64,
+> ppc, s390, and sparc.
+> 
+> CC: David Rientjes <rientjes@google.com>
+> CC: Jiang Liu <liuj97@gmail.com>
+> CC: Len Brown <len.brown@intel.com>
+> CC: Christoph Lameter <cl@linux.com>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+> ---
+>  arch/ia64/mm/discontig.c  |   8 ++++
+>  arch/powerpc/mm/init_64.c |   8 ++++
+>  arch/s390/mm/vmem.c       |   8 ++++
+>  arch/sparc/mm/init_64.c   |   8 ++++
+>  arch/x86/mm/init_64.c     | 119 ++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/mm.h        |   2 +
+>  mm/memory_hotplug.c       |  17 +------
+>  mm/sparse.c               |  19 ++++----
+>  8 files changed, 165 insertions(+), 24 deletions(-)
+> 
+> diff --git a/arch/ia64/mm/discontig.c b/arch/ia64/mm/discontig.c
+> index 33943db..0d23b69 100644
+> --- a/arch/ia64/mm/discontig.c
+> +++ b/arch/ia64/mm/discontig.c
+> @@ -823,6 +823,14 @@ int __meminit vmemmap_populate(struct page *start_page,
+>  	return vmemmap_populate_basepages(start_page, size, node);
+>  }
+>  
+> +void vmemmap_kfree(struct page *memmap, unsigned long nr_pages)
+> +{
+> +}
+> +
+> +void vmemmap_free_bootmem(struct page *memmap, unsigned long nr_pages)
+> +{
+> +}
+> +
+>  void register_page_bootmem_memmap(unsigned long section_nr,
+>  				  struct page *start_page, unsigned long size)
+>  {
+> diff --git a/arch/powerpc/mm/init_64.c b/arch/powerpc/mm/init_64.c
+> index 6466440..df7d155 100644
+> --- a/arch/powerpc/mm/init_64.c
+> +++ b/arch/powerpc/mm/init_64.c
+> @@ -298,6 +298,14 @@ int __meminit vmemmap_populate(struct page *start_page,
+>  	return 0;
+>  }
+>  
+> +void vmemmap_kfree(struct page *memmap, unsigned long nr_pages)
+> +{
+> +}
+> +
+> +void vmemmap_free_bootmem(struct page *memmap, unsigned long nr_pages)
+> +{
+> +}
+> +
+>  void register_page_bootmem_memmap(unsigned long section_nr,
+>  				  struct page *start_page, unsigned long size)
+>  {
+> diff --git a/arch/s390/mm/vmem.c b/arch/s390/mm/vmem.c
+> index 4f4803a..ab69c34 100644
+> --- a/arch/s390/mm/vmem.c
+> +++ b/arch/s390/mm/vmem.c
+> @@ -236,6 +236,14 @@ out:
+>  	return ret;
+>  }
+>  
+> +void vmemmap_kfree(struct page *memmap, unsigned long nr_pages)
+> +{
+> +}
+> +
+> +void vmemmap_free_bootmem(struct page *memmap, unsigned long nr_pages)
+> +{
+> +}
+> +
+>  void register_page_bootmem_memmap(unsigned long section_nr,
+>  				  struct page *start_page, unsigned long size)
+>  {
+> diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
+> index 75a984b..546855d 100644
+> --- a/arch/sparc/mm/init_64.c
+> +++ b/arch/sparc/mm/init_64.c
+> @@ -2232,6 +2232,14 @@ void __meminit vmemmap_populate_print_last(void)
+>  	}
+>  }
+>  
+> +void vmemmap_kfree(struct page *memmap, unsigned long nr_pages)
+> +{
+> +}
+> +
+> +void vmemmap_free_bootmem(struct page *memmap, unsigned long nr_pages)
+> +{
+> +}
+> +
+>  void register_page_bootmem_memmap(unsigned long section_nr,
+>  				  struct page *start_page, unsigned long size)
+>  {
+> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+> index 795dae3..e85626d 100644
+> --- a/arch/x86/mm/init_64.c
+> +++ b/arch/x86/mm/init_64.c
+> @@ -998,6 +998,125 @@ vmemmap_populate(struct page *start_page, unsigned long size, int node)
+>  	return 0;
+>  }
+>  
+> +#define PAGE_INUSE 0xFD
+> +
+> +unsigned long find_and_clear_pte_page(unsigned long addr, unsigned long end,
+> +			    struct page **pp, int *page_size)
+> +{
+> +	pgd_t *pgd;
+> +	pud_t *pud;
+> +	pmd_t *pmd;
+> +	pte_t *pte = NULL;
+> +	void *page_addr;
+> +	unsigned long next;
+> +
+> +	*pp = NULL;
+> +
+> +	pgd = pgd_offset_k(addr);
+> +	if (pgd_none(*pgd))
+> +		return pgd_addr_end(addr, end);
+> +
+> +	pud = pud_offset(pgd, addr);
+> +	if (pud_none(*pud))
+> +		return pud_addr_end(addr, end);
+> +
+> +	if (!cpu_has_pse) {
+> +		next = (addr + PAGE_SIZE) & PAGE_MASK;
+> +		pmd = pmd_offset(pud, addr);
+> +		if (pmd_none(*pmd))
+> +			return next;
+> +
+> +		pte = pte_offset_kernel(pmd, addr);
+> +		if (pte_none(*pte))
+> +			return next;
+> +
+> +		*page_size = PAGE_SIZE;
+> +		*pp = pte_page(*pte);
+> +	} else {
+> +		next = pmd_addr_end(addr, end);
+> +
+> +		pmd = pmd_offset(pud, addr);
+> +		if (pmd_none(*pmd))
+> +			return next;
+> +
+> +		*page_size = PMD_SIZE;
+> +		*pp = pmd_page(*pmd);
+> +	}
+> +
+> +	/*
+> +	 * Removed page structs are filled with 0xFD.
+> +	 */
+> +	memset((void *)addr, PAGE_INUSE, next - addr);
+> +
+> +	page_addr = page_address(*pp);
+> +
+> +	/*
+> +	 * Check the page is filled with 0xFD or not.
+> +	 * memchr_inv() returns the address. In this case, we cannot
+> +	 * clear PTE/PUD entry, since the page is used by other.
+> +	 * So we cannot also free the page.
+> +	 *
+> +	 * memchr_inv() returns NULL. In this case, we can clear
+> +	 * PTE/PUD entry, since the page is not used by other.
+> +	 * So we can also free the page.
+> +	 */
+> +	if (memchr_inv(page_addr, PAGE_INUSE, *page_size)) {
+> +		*pp = NULL;
+> +		return next;
+> +	}
+> +
+> +	if (!cpu_has_pse)
+> +		pte_clear(&init_mm, addr, pte);
+> +	else
+> +		pmd_clear(pmd);
+> +
+> +	return next;
+> +}
+> +
+> +void vmemmap_kfree(struct page *memmap, unsigned long nr_pages)
+> +{
+> +	unsigned long addr = (unsigned long)memmap;
+> +	unsigned long end = (unsigned long)(memmap + nr_pages);
+> +	unsigned long next;
+> +	struct page *page;
+> +	int page_size;
+> +
+> +	for (; addr < end; addr = next) {
+> +		page = NULL;
+> +		page_size = 0;
+> +		next = find_and_clear_pte_page(addr, end, &page, &page_size);
+> +		if (!page)
+> +			continue;
+> +
+> +		free_pages((unsigned long)page_address(page),
+> +			    get_order(page_size));
+> +		__flush_tlb_one(addr);
+> +	}
+> +}
+> +
+> +void vmemmap_free_bootmem(struct page *memmap, unsigned long nr_pages)
+> +{
+> +	unsigned long addr = (unsigned long)memmap;
+> +	unsigned long end = (unsigned long)(memmap + nr_pages);
+> +	unsigned long next;
+> +	struct page *page;
+> +	int page_size;
+> +	unsigned long magic;
+> +
+> +	for (; addr < end; addr = next) {
+> +		page = NULL;
+> +		page_size = 0;
+> +		next = find_and_clear_pte_page(addr, end, &page, &page_size);
+> +		if (!page)
+> +			continue;
+> +
+> +		magic = (unsigned long) page->lru.next;
+> +		if (magic == SECTION_INFO)
+> +			put_page_bootmem(page);
+> +		flush_tlb_kernel_range(addr, end);
+> +	}
+> +}
+> +
+>  void register_page_bootmem_memmap(unsigned long section_nr,
+>  				  struct page *start_page, unsigned long size)
+>  {
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index 5657670..94d5ccd 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -1642,6 +1642,8 @@ int vmemmap_populate(struct page *start_page, unsigned long pages, int node);
+>  void vmemmap_populate_print_last(void);
+>  void register_page_bootmem_memmap(unsigned long section_nr, struct page *map,
+>  				  unsigned long size);
+> +void vmemmap_kfree(struct page *memmpa, unsigned long nr_pages);
+> +void vmemmap_free_bootmem(struct page *memmpa, unsigned long nr_pages);
+>  
+>  enum mf_flags {
+>  	MF_COUNT_INCREASED = 1 << 0,
+> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+> index ccc11b6..7797e91 100644
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -301,19 +301,6 @@ static int __meminit __add_section(int nid, struct zone *zone,
+>  	return register_new_memory(nid, __pfn_to_section(phys_start_pfn));
+>  }
+>  
+> -#ifdef CONFIG_SPARSEMEM_VMEMMAP
+> -static int __remove_section(struct zone *zone, struct mem_section *ms)
+> -{
+> -	int ret = -EINVAL;
+> -
+> -	if (!valid_section(ms))
+> -		return ret;
+> -
+> -	ret = unregister_memory_section(ms);
+> -
+> -	return ret;
+> -}
+> -#else
+>  static int __remove_section(struct zone *zone, struct mem_section *ms)
+>  {
+>  	unsigned long flags;
+> @@ -330,9 +317,9 @@ static int __remove_section(struct zone *zone, struct mem_section *ms)
+>  	pgdat_resize_lock(pgdat, &flags);
+>  	sparse_remove_one_section(zone, ms);
+>  	pgdat_resize_unlock(pgdat, &flags);
+> -	return 0;
+> +
+> +	return ret;
+>  }
+> -#endif
+>  
+>  /*
+>   * Reasonably generic function for adding memory.  It is
+> diff --git a/mm/sparse.c b/mm/sparse.c
+> index fac95f2..c723bc2 100644
+> --- a/mm/sparse.c
+> +++ b/mm/sparse.c
+> @@ -613,12 +613,13 @@ static inline struct page *kmalloc_section_memmap(unsigned long pnum, int nid,
+>  	/* This will make the necessary allocations eventually. */
+>  	return sparse_mem_map_populate(pnum, nid);
+>  }
+> -static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
+> +static void __kfree_section_memmap(struct page *page, unsigned long nr_pages)
+>  {
+> -	return; /* XXX: Not implemented yet */
+> +	vmemmap_kfree(page, nr_pages);
+>  }
+> -static void free_map_bootmem(struct page *page, unsigned long nr_pages)
+> +static void free_map_bootmem(struct page *page)
+>  {
+> +	vmemmap_free_bootmem(page, PAGES_PER_SECTION);
+>  }
+>  #else
+>  static struct page *__kmalloc_section_memmap(unsigned long nr_pages)
+> @@ -658,10 +659,14 @@ static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
+>  			   get_order(sizeof(struct page) * nr_pages));
+>  }
+>  
+> -static void free_map_bootmem(struct page *page, unsigned long nr_pages)
+> +static void free_map_bootmem(struct page *page)
+>  {
+>  	unsigned long maps_section_nr, removing_section_nr, i;
+>  	unsigned long magic;
+> +	unsigned long nr_pages;
+> +
+> +	nr_pages = PAGE_ALIGN(PAGES_PER_SECTION * sizeof(struct page))
+> +		>> PAGE_SHIFT;
+>  
+>  	for (i = 0; i < nr_pages; i++, page++) {
+>  		magic = (unsigned long) page->lru.next;
+> @@ -688,7 +693,6 @@ static void free_map_bootmem(struct page *page, unsigned long nr_pages)
+>  static void free_section_usemap(struct page *memmap, unsigned long *usemap)
+>  {
+>  	struct page *usemap_page;
+> -	unsigned long nr_pages;
+>  
+>  	if (!usemap)
+>  		return;
+> @@ -713,10 +717,7 @@ static void free_section_usemap(struct page *memmap, unsigned long *usemap)
+>  		struct page *memmap_page;
+>  		memmap_page = virt_to_page(memmap);
+>  
+> -		nr_pages = PAGE_ALIGN(PAGES_PER_SECTION * sizeof(struct page))
+> -			>> PAGE_SHIFT;
+> -
+> -		free_map_bootmem(memmap_page, nr_pages);
+> +		free_map_bootmem(memmap_page);
+>  	}
+>  }
+>  
 
-I'm unsure. Grepping for debugfs_create_u32, I suspect that some of the
-crypto or wifi modules may be affected.
-
-> I'm not saying that these issues shouldn't be fixed. But I'm also
-> concerned about exploits and other things that just a root user may
-> accidentally cause harm.
-
-I'm concerned about monitoring/statistic gathering stuff (running as any
-user) may hold some debugfs file open,
-and race with removal of dynamic debugfs entries.
-
-> If there's current problem then maybe this
-> isn't needed for stable. But should probably be fixed for the future.
-
-I attach my "hello-debugfs" module.
-# make -C /lib/modules/`uname -r`/build M=$PWD modules
-
-Test case1:
-	cd /sys/kernel/debug/hello-debugfs/dir1/dir3/
-	rmmod
-will unload the module, but give up on removing
-/sys/kernel/debug/hello-debugfs/dir1
-You won't be able to insmod a second time.
-
-Test case 2:
-	cd /sys/kernel/debug/hello-debugfs/dir1/dir3/
-	exec 7< file7
-	rmmod
-	cat <&7
-As described above, depending on I don't know what exactly,
-the outcome was either some infinite loop, or cat will oops/panic.
-
-Note that all but rmmod may be done as normal user,
-e.g. some monitoring or statistics gathering tool,
-and the rmmod is just a placeholder for
-"any event that triggers removal of dynamic debugfs entries".
-
-	Lars
 
 
---dDRMvlgZJXvWKvBx
-Content-Type: text/x-csrc; charset=us-ascii
-Content-Disposition: attachment; filename="hello-debugfs.c"
-
-/*
- * test module to try and submit one single 4K bio
- * with multiple bvecs
- */
-
-#define pr_fmt(fmt) "hello-debugfs: " fmt
-
-#include <linux/kernel.h>
-#include <linux/module.h>
-#include <linux/debugfs.h>
-#include <linux/stat.h>
-
-#define MODULE_NAME "hello-debugfs"
-MODULE_VERSION("1.0");
-
-MODULE_AUTHOR("Lars Ellenberg <lars@linbit.com>");
-MODULE_DESCRIPTION("hello-debugfs - to excercise debugfs_remove_recursive");
-MODULE_LICENSE("GPL");
-
-static struct dentry *debug_dir;
-
-struct hello_entry {
-	int s_ifmt;
-	char *d_iname;
-	u32 value;
-};
-
-struct hello_entry tree[] = {
-	{ S_IFDIR, "dir1" },
-	{ S_IFREG, "file1", 1 },
-	{ S_IFREG, "file2", 2 },
-	{ S_IFREG, "file3", 3 },
-	{ S_IFREG, "file4", 4 },
-	{ S_IFDIR, "dir2" },
-	{ S_IFREG, "file5", 5 },
-	{ S_IFDIR, /* .. */ },
-	{ S_IFDIR, "dir3" },
-	{ S_IFREG, "file6", 6 },
-	{ S_IFREG, "file7", 7 },
-	{ S_IFREG, "file8", 8 },
-	{ S_IFREG, "file9", 9 },
-};
-
-int __init hello_debugfs(void)
-{
-	struct dentry *dir;
-	int i;
-
-	debug_dir = debugfs_create_dir("hello-debugfs", NULL);
-	if (IS_ERR_OR_NULL(debug_dir)) {
-		pr_info("sorry, failed to create my top level dir\n");
-		if (debug_dir)
-			return PTR_ERR(debug_dir);
-		else
-			return -EINVAL;
-	}
-
-	dir = debug_dir;
-	for (i = 0; i < ARRAY_SIZE(tree); i++) {
-		struct hello_entry *e = tree+i;
-		switch(e->s_ifmt & S_IFMT) {
-		default:
-			continue;
-		case S_IFDIR:
-			if (!e->d_iname) {
-				if (dir != debug_dir)
-					dir = dir->d_parent;
-			} else
-				dir = debugfs_create_dir(e->d_iname, dir);
-			break;
-		case S_IFREG:
-			debugfs_create_u32(e->d_iname, 0444, dir, &e->value);
-			break;
-		}
-	}
-
-	return 0;
-}
-
-static void good_bye_debugfs(void)
-{
-	debugfs_remove_recursive(debug_dir);
-}
-
-module_init(hello_debugfs)
-module_exit(good_bye_debugfs)
-
---dDRMvlgZJXvWKvBx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename=Kbuild
-
-hello_debugfs-obj  :=	hello-debugfs
-
-obj-m += hello-debugfs.o
-
---dDRMvlgZJXvWKvBx--
