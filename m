@@ -1,207 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965Ab2K1Srm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 13:47:42 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:51846 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752982Ab2K1Srk (ORCPT
+	id S1754438Ab2K1SuG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 13:50:06 -0500
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:8424 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751121Ab2K1SuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 13:47:40 -0500
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: sameo@linux.intel.com, grant.likely@secretlab.ca,
-        rabin.vincent@stericsson.com, shiraz.hashim@st.com
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, lee.jones@linaro.org,
-        linus.walleij@linaro.org, Vipul Kumar Samar <vipulkumar.samar@st.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V4 Resend 3/3] mfd: stmpe: Update DT support in stmpe driver
-Date: Thu, 29 Nov 2012 00:17:17 +0530
-Message-Id: <eb65ded18560f902b0713d9df57c43e07704b5ec.1354128258.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <d1f012d7bb2835f696fc100073f2eb16d9f6204d.1354128258.git.viresh.kumar@linaro.org>
-References: <d1f012d7bb2835f696fc100073f2eb16d9f6204d.1354128258.git.viresh.kumar@linaro.org>
-In-Reply-To: <d1f012d7bb2835f696fc100073f2eb16d9f6204d.1354128258.git.viresh.kumar@linaro.org>
-References: <d1f012d7bb2835f696fc100073f2eb16d9f6204d.1354128258.git.viresh.kumar@linaro.org>
+	Wed, 28 Nov 2012 13:50:04 -0500
+Message-ID: <1354128096.26955.276.camel@misato.fc.hp.com>
+Subject: Re: [RFC PATCH v3 0/3] acpi: Introduce prepare_remove device
+ operation
+From: Toshi Kani <toshi.kani@hp.com>
+To: Hanjun Guo <guohanjun@huawei.com>
+Cc: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
+        wency@cn.fujitsu.com, rjw@sisk.pl, lenb@kernel.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Tang Chen <tangchen@cn.fujitsu.com>
+Date: Wed, 28 Nov 2012 11:41:36 -0700
+In-Reply-To: <50B5EFE9.3040206@huawei.com>
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
+	 <50B5EFE9.3040206@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vipul Kumar Samar <vipulkumar.samar@st.com>
+On Wed, 2012-11-28 at 19:05 +0800, Hanjun Guo wrote:
+> On 2012/11/24 1:50, Vasilis Liaskovitis wrote:
+> > As discussed in https://patchwork.kernel.org/patch/1581581/
+> > the driver core remove function needs to always succeed. This means we need
+> > to know that the device can be successfully removed before acpi_bus_trim / 
+> > acpi_bus_hot_remove_device are called. This can cause panics when OSPM-initiated
+> > or SCI-initiated eject of memory devices fail e.g with:
+> > echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
+> > 
+> > since the ACPI core goes ahead and ejects the device regardless of whether the
+> > the memory is still in use or not.
+> > 
+> > For this reason a new acpi_device operation called prepare_remove is introduced.
+> > This operation should be registered for acpi devices whose removal (from kernel
+> > perspective) can fail.  Memory devices fall in this category.
+> > 
+> > acpi_bus_remove() is changed to handle removal in 2 steps:
+> > - preparation for removal i.e. perform part of removal that can fail. Should
+> >   succeed for device and all its children.
+> > - if above step was successfull, proceed to actual device removal
+> 
+> Hi Vasilis,
+> We met the same problem when we doing computer node hotplug, It is a good idea
+> to introduce prepare_remove before actual device removal.
+> 
+> I think we could do more in prepare_remove, such as rollback. In most cases, we can
+> offline most of memory sections except kernel used pages now, should we rollback
+> and online the memory sections when prepare_remove failed ?
 
-This patch extends existing DT support for stmpe devices. This updates:
-- DT support from stmpe SPI and I2C drivers
-- missing header files in stmpe.c
-- stmpe_of_probe() with pwm, rotator and new bindings.
-- Bindings are updated in binding document.
+I think hot-plug operation should have all-or-nothing semantics.  That
+is, an operation should either complete successfully, or rollback to the
+original state.
 
-Signed-off-by: Vipul Kumar Samar <vipulkumar.samar@st.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
-V3->V4:
-- Remove need to pass irq type and polarity from DT.
-- Remove need to pass id from platform data.
+> As you may know, the ACPI based hotplug framework we are working on already addressed
+> this problem, and the way we slove this problem is a bit like yours.
+> 
+> We introduce hp_ops in struct acpi_device_ops:
+> struct acpi_device_ops {
+> 	acpi_op_add add;
+> 	acpi_op_remove remove;
+> 	acpi_op_start start;
+> 	acpi_op_bind bind;
+> 	acpi_op_unbind unbind;
+> 	acpi_op_notify notify;
+> #ifdef	CONFIG_ACPI_HOTPLUG
+> 	struct acpihp_dev_ops *hp_ops;
+> #endif	/* CONFIG_ACPI_HOTPLUG */
+> };
+> 
+> in hp_ops, we divide the prepare_remove into six small steps, that is:
+> 1) pre_release(): optional step to mark device going to be removed/busy
+> 2) release(): reclaim device from running system
+> 3) post_release(): rollback if cancelled by user or error happened
+> 4) pre_unconfigure(): optional step to solve possible dependency issue
+> 5) unconfigure(): remove devices from running system
+> 6) post_unconfigure(): free resources used by devices
+> 
+> In this way, we can easily rollback if error happens.
+> How do you think of this solution, any suggestion ? I think we can achieve
+> a better way for sharing ideas. :)
 
- Documentation/devicetree/bindings/mfd/stmpe.txt |  9 ++++++---
- drivers/mfd/stmpe-i2c.c                         | 15 +++++++++++++++
- drivers/mfd/stmpe-spi.c                         | 15 +++++++++++++++
- drivers/mfd/stmpe.c                             | 22 ++++++++++++++++------
- 4 files changed, 52 insertions(+), 9 deletions(-)
+Yes, sharing idea is good. :)  I do not know if we need all 6 steps (I
+have not looked at all your changes yet..), but in my mind, a hot-plug
+operation should be composed with the following 3 phases.
 
-diff --git a/Documentation/devicetree/bindings/mfd/stmpe.txt b/Documentation/devicetree/bindings/mfd/stmpe.txt
-index 8f0aeda..d2d88d9 100644
---- a/Documentation/devicetree/bindings/mfd/stmpe.txt
-+++ b/Documentation/devicetree/bindings/mfd/stmpe.txt
-@@ -1,8 +1,11 @@
--* STMPE Multi-Functional Device
-+* ST Microelectronics STMPE Multi-Functional Device
-+
-+STMPE is an MFD device which may expose following inbuilt devices: gpio, keypad,
-+touchscreen, adc, pwm, rotator.
- 
- Required properties:
-- - compatible                   : "st,stmpe[811|1601|2401|2403]"
-- - reg                          : I2C address of the device
-+ - compatible                   : "st,stmpe[610|801|811|1601|2401|2403]"
-+ - reg                          : I2C/SPI address of the device
- 
- Optional properties:
-  - interrupts                   : The interrupt outputs from the controller
-diff --git a/drivers/mfd/stmpe-i2c.c b/drivers/mfd/stmpe-i2c.c
-index c734dc3..003c49b 100644
---- a/drivers/mfd/stmpe-i2c.c
-+++ b/drivers/mfd/stmpe-i2c.c
-@@ -13,6 +13,7 @@
- #include <linux/interrupt.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
-+#include <linux/of.h>
- #include <linux/types.h>
- #include "stmpe.h"
- 
-@@ -81,6 +82,19 @@ static const struct i2c_device_id stmpe_i2c_id[] = {
- };
- MODULE_DEVICE_TABLE(i2c, stmpe_id);
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id stmpe_dt_ids[] = {
-+	{ .compatible = "st,stmpe610", .data = &stmpe_i2c_id[0], },
-+	{ .compatible = "st,stmpe801", .data = &stmpe_i2c_id[1], },
-+	{ .compatible = "st,stmpe811", .data = &stmpe_i2c_id[2], },
-+	{ .compatible = "st,stmpe1601", .data = &stmpe_i2c_id[3], },
-+	{ .compatible = "st,stmpe2401", .data = &stmpe_i2c_id[4], },
-+	{ .compatible = "st,stmpe2403", .data = &stmpe_i2c_id[5], },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, stmpe_dt_ids);
-+#endif
-+
- static struct i2c_driver stmpe_i2c_driver = {
- 	.driver = {
- 		.name = "stmpe-i2c",
-@@ -88,6 +102,7 @@ static struct i2c_driver stmpe_i2c_driver = {
- #ifdef CONFIG_PM
- 		.pm = &stmpe_dev_pm_ops,
- #endif
-+		.of_match_table = of_match_ptr(stmpe_dt_ids),
- 	},
- 	.probe		= stmpe_i2c_probe,
- 	.remove		= __devexit_p(stmpe_i2c_remove),
-diff --git a/drivers/mfd/stmpe-spi.c b/drivers/mfd/stmpe-spi.c
-index 9edfe86..1e2bff0 100644
---- a/drivers/mfd/stmpe-spi.c
-+++ b/drivers/mfd/stmpe-spi.c
-@@ -11,6 +11,7 @@
- #include <linux/interrupt.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
-+#include <linux/of.h>
- #include <linux/types.h>
- #include "stmpe.h"
- 
-@@ -119,6 +120,19 @@ static const struct spi_device_id stmpe_spi_id[] = {
- };
- MODULE_DEVICE_TABLE(spi, stmpe_id);
- 
-+#ifdef CONFIG_OF
-+static const struct of_device_id stmpe_dt_ids[] = {
-+	{ .compatible = "st,stmpe610", .data = (void *)STMPE610, },
-+	{ .compatible = "st,stmpe801", .data = (void *)STMPE801, },
-+	{ .compatible = "st,stmpe811", .data = (void *)STMPE811, },
-+	{ .compatible = "st,stmpe1601", .data = (void *)STMPE1601, },
-+	{ .compatible = "st,stmpe2401", .data = (void *)STMPE2401, },
-+	{ .compatible = "st,stmpe2403", .data = (void *)STMPE2403, },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, stmpe_dt_ids);
-+#endif
-+
- static struct spi_driver stmpe_spi_driver = {
- 	.driver = {
- 		.name	= "stmpe-spi",
-@@ -126,6 +140,7 @@ static struct spi_driver stmpe_spi_driver = {
- #ifdef CONFIG_PM
- 		.pm	= &stmpe_dev_pm_ops,
- #endif
-+		.of_match_table = of_match_ptr(stmpe_dt_ids),
- 	},
- 	.probe		= stmpe_spi_probe,
- 	.remove		= __devexit_p(stmpe_spi_remove),
-diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
-index 10819e6..88cd8e5 100644
---- a/drivers/mfd/stmpe.c
-+++ b/drivers/mfd/stmpe.c
-@@ -7,12 +7,15 @@
-  * Author: Rabin Vincent <rabin.vincent@stericsson.com> for ST-Ericsson
-  */
- 
-+#include <linux/err.h>
- #include <linux/gpio.h>
- #include <linux/export.h>
- #include <linux/kernel.h>
- #include <linux/interrupt.h>
- #include <linux/irq.h>
- #include <linux/irqdomain.h>
-+#include <linux/of.h>
-+#include <linux/of_gpio.h>
- #include <linux/pm.h>
- #include <linux/slab.h>
- #include <linux/mfd/core.h>
-@@ -1021,6 +1024,12 @@ void __devinit stmpe_of_probe(struct stmpe_platform_data *pdata,
- {
- 	struct device_node *child;
- 
-+	/*
-+	 * Distinct names of same cell-type within multiple instances of stmpe
-+	 * will be guaranteed by DT.
-+	 */
-+	pdata->id = -1;
-+
- 	of_property_read_u32(np, "st,autosleep-timeout",
- 			&pdata->autosleep_timeout);
- 
-@@ -1029,15 +1038,16 @@ void __devinit stmpe_of_probe(struct stmpe_platform_data *pdata,
- 	for_each_child_of_node(np, child) {
- 		if (!strcmp(child->name, "stmpe_gpio")) {
- 			pdata->blocks |= STMPE_BLOCK_GPIO;
--		}
--		if (!strcmp(child->name, "stmpe_keypad")) {
-+		} else if (!strcmp(child->name, "stmpe_keypad")) {
- 			pdata->blocks |= STMPE_BLOCK_KEYPAD;
--		}
--		if (!strcmp(child->name, "stmpe_touchscreen")) {
-+		} else if (!strcmp(child->name, "stmpe_touchscreen")) {
- 			pdata->blocks |= STMPE_BLOCK_TOUCHSCREEN;
--		}
--		if (!strcmp(child->name, "stmpe_adc")) {
-+		} else if (!strcmp(child->name, "stmpe_adc")) {
- 			pdata->blocks |= STMPE_BLOCK_ADC;
-+		} else if (!strcmp(child->name, "stmpe_pwm")) {
-+			pdata->blocks |= STMPE_BLOCK_PWM;
-+		} else if (!strcmp(child->name, "stmpe_rotator")) {
-+			pdata->blocks |= STMPE_BLOCK_ROTATOR;
- 		}
- 	}
- }
--- 
-1.7.12.rc2.18.g61b472e
+1. Validate phase - Verify if the request is a supported operation.  All
+known restrictions are verified at this phase.  For instance, if a
+hot-remove request involves kernel memory, it is failed in this phase.
+Since this phase makes no change, no rollback is necessary to fail.  
+
+2. Execute phase - Perform hot-add / hot-remove operation that can be
+rolled-back in case of error or cancel.
+
+3. Commit phase - Perform the final hot-add / hot-remove operation that
+cannot be rolled-back.  No error / cancel is allowed in this phase.  For
+instance, eject operation is performed at this phase.  
+
+
+Thanks,
+-Toshi
+
+
+
 
