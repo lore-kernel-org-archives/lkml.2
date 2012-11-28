@@ -1,52 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab2K1KBO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 05:01:14 -0500
-Received: from skyrme.org ([193.175.80.135]:45657 "EHLO skyrme.org"
+	id S1753514Ab2K1KCR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 05:02:17 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:35039 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751972Ab2K1KBN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 05:01:13 -0500
-X-Greylist: delayed 2408 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Nov 2012 05:01:12 EST
-Date: 28 Nov 2012 09:20:59 +0000
-Message-Id: <1354094459-32466-1-git-send-email-oskar@scara.com>
-From: "Oskar Schirmer" <oskar@scara.com>
-To: "Wolfram Sang" <w.sang@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, "Andrew Morton" <akpm@linux-foundation.org>,
-        "Liam Girdwood" <lrg@ti.com>,
-        "Fabio Estevam" <fabio.estevam@freescale.com>,
-        "Zeng Zhaoming" <zengzm.kernel@gmail.com>,
-        "Oskar Schirmer" <oskar@scara.com>
-Subject: [PATCH] sound/sgtl5000: fix initial setting for DAC data source
-X-Mailer: git-send-email 1.6.0.3
+	id S1751720Ab2K1KCN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 05:02:13 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oneukum@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jens Axboe <axboe@kernel.dk>, "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v6 2/6] PM / Runtime: introduce pm_runtime_set_memalloc_noio()
+Date: Wed, 28 Nov 2012 11:06:56 +0100
+Message-ID: <2254856.YsOm9y7BK1@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <CACVXFVP=3s3pawyEbogjb=PfbSeD1B+LFk7g04FAMkGuXDQUbQ@mail.gmail.com>
+References: <1353761958-12810-1-git-send-email-ming.lei@canonical.com> <5434404.G1ERYjuorE@vostro.rjw.lan> <CACVXFVP=3s3pawyEbogjb=PfbSeD1B+LFk7g04FAMkGuXDQUbQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to documentation bit 3:2 in register SSS_CTRL are
-reserved and zero, so the setting of 0x0008 does not make much sense.
-Instead, bit 4 should be set as is with power up, to reflect
-routing of I2S_IN to DAC correctly.
+On Wednesday, November 28, 2012 11:57:19 AM Ming Lei wrote:
+> On Wed, Nov 28, 2012 at 5:19 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Saturday, November 24, 2012 08:59:14 PM Ming Lei wrote:
+> >> The patch introduces the flag of memalloc_noio in 'struct dev_pm_info'
+> >> to help PM core to teach mm not allocating memory with GFP_KERNEL
+> >> flag for avoiding probable deadlock.
+> >>
+> >> As explained in the comment, any GFP_KERNEL allocation inside
+> >> runtime_resume() or runtime_suspend() on any one of device in
+> >> the path from one block or network device to the root device
+> >> in the device tree may cause deadlock, the introduced
+> >> pm_runtime_set_memalloc_noio() sets or clears the flag on
+> >> device in the path recursively.
+> >>
+> >> Cc: Alan Stern <stern@rowland.harvard.edu>
+> >> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> >> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+> >> ---
+> >> v5:
+> >>       - fix code style error
+> >>       - add comment on clear the device memalloc_noio flag
+> >> v4:
+> >>       - rename memalloc_noio_resume as memalloc_noio
+> >>       - remove pm_runtime_get_memalloc_noio()
+> >>       - add comments on pm_runtime_set_memalloc_noio
+> >> v3:
+> >>       - introduce pm_runtime_get_memalloc_noio()
+> >>       - hold one global lock on pm_runtime_set_memalloc_noio
+> >>       - hold device power lock when accessing memalloc_noio_resume
+> >>         flag suggested by Alan Stern
+> >>       - implement pm_runtime_set_memalloc_noio without recursion
+> >>         suggested by Alan Stern
+> >> v2:
+> >>       - introduce pm_runtime_set_memalloc_noio()
+> >> ---
+> >>  drivers/base/power/runtime.c |   60 ++++++++++++++++++++++++++++++++++++++++++
+> >>  include/linux/pm.h           |    1 +
+> >>  include/linux/pm_runtime.h   |    3 +++
+> >>  3 files changed, 64 insertions(+)
+> >>
+> >> diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
+> >> index 3148b10..3e198a0 100644
+> >> --- a/drivers/base/power/runtime.c
+> >> +++ b/drivers/base/power/runtime.c
+> >> @@ -124,6 +124,66 @@ unsigned long pm_runtime_autosuspend_expiration(struct device *dev)
+> >>  }
+> >>  EXPORT_SYMBOL_GPL(pm_runtime_autosuspend_expiration);
+> >>
+> >> +static int dev_memalloc_noio(struct device *dev, void *data)
+> >> +{
+> >> +     return dev->power.memalloc_noio;
+> >> +}
+> >> +
+> >> +/*
+> >> + * pm_runtime_set_memalloc_noio - Set a device's memalloc_noio flag.
+> >> + * @dev: Device to handle.
+> >> + * @enable: True for setting the flag and False for clearing the flag.
+> >> + *
+> >> + * Set the flag for all devices in the path from the device to the
+> >> + * root device in the device tree if @enable is true, otherwise clear
+> >> + * the flag for devices in the path whose siblings don't set the flag.
+> >> + *
+> >
+> > Please use counters instead of walking the whole path every time.  Ie. in
+> > addition to the flag add a counter to store the number of the device's
+> > children having that flag set.
+> 
+> Thanks for your review.
+> 
+> IMO, pm_runtime_set_memalloc_noio() is only called in
+> probe() and release() of block device and network device, which is
+> in a very infrequent path, so I am wondering if it is worthy of introducing
+> another counter for all devices.
 
-Looks much like an off by one error.
+Well, it may be unfrequent, but does it mean it has to do things that may
+be avoided (ie. walking the children of every node in the path in some cases)?
 
-Signed-off-by: Oskar Schirmer <oskar@scara.com>
----
- sound/soc/codecs/sgtl5000.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I don't really think that the counters would cost us that much anyway.
 
-diff --git a/sound/soc/codecs/sgtl5000.c b/sound/soc/codecs/sgtl5000.c
-index df2f99d..5b37891 100644
---- a/sound/soc/codecs/sgtl5000.c
-+++ b/sound/soc/codecs/sgtl5000.c
-@@ -37,7 +37,7 @@
- static const u16 sgtl5000_regs[SGTL5000_MAX_REG_OFFSET] =  {
- 	[SGTL5000_CHIP_CLK_CTRL] = 0x0008,
- 	[SGTL5000_CHIP_I2S_CTRL] = 0x0010,
--	[SGTL5000_CHIP_SSS_CTRL] = 0x0008,
-+	[SGTL5000_CHIP_SSS_CTRL] = 0x0010,
- 	[SGTL5000_CHIP_DAC_VOL] = 0x3c3c,
- 	[SGTL5000_CHIP_PAD_STRENGTH] = 0x015f,
- 	[SGTL5000_CHIP_ANA_HP_CTRL] = 0x1818,
+> Also looks the current implementation of pm_runtime_set_memalloc_noio()
+> is simple and clean enough with the flag, IMO.
+
+I know you always know better. :-)
+
+> > I would use the flag only to store the information that
+> > pm_runtime_set_memalloc_noio(dev, true) has been run for this device directly
+> > and I'd use a counter for everything else.
+> >
+> > That is, have power.memalloc_count that would be incremented when (1)
+> > pm_runtime_set_memalloc_noio(dev, true) is called for that device and (2) when
+> > power.memalloc_count for one of its children changes from 0 to 1 (and
+> > analogously for decrementation).  Then, check the counter in rpm_callback().
+> 
+> Sorry, could you explain in a bit detail why we need the counter? Looks only
+> checking the flag in rpm_callback() is enough, doesn't it?
+
+Why would I want to use power.memalloc_count in addition to the
+power.memalloc_noio flag?
+
+Consider this:
+
+pm_runtime_set_memalloc_noio(dev):
+	return if power.memalloc_noio is set
+	set power.memalloc_noio
+  loop:
+	increment power.memalloc_count
+	if power.memalloc_count is 1 now switch to parent and go to loop
+
+pm_runtime_clear_memalloc_noio(dev):
+	return if power.memalloc_noio is unset
+	unset power.memalloc_noio
+  loop:
+	decrement power.memalloc_count
+	if power.memalloc_count is 0 now switch to parent and go to loop
+
+Looks kind of simpler, doesn't it?
+
+And why rpm_callback() should check power.memalloc_count instead of the count?
+Because power.memalloc_noio will only be set for devices that
+pm_runtime_set_memalloc_noio(dev) was called for directly (not necessarily for
+the parents).
+
+And that works even if someone calls any of them twice in a row for the same
+device (presumably by mistake) and doesn't have to make any assumptions
+about devices it is called for.
+
+> > Besides, don't you need to check children for the arg device itself?
+> 
+> It isn't needed since the children of network/block device can't be
+> involved of the deadlock in runtime PM path.
+> 
+> Also, the function is only called by network device or block device
+> subsystem, both the two kind of device are class device and should
+> have no children.
+
+OK, so not walking the arg device's children is an optimization related to
+some assumptions regarding who's supposed to use this routine.  That should
+be clearly documented.
+
+However, I'd prefer it not to make such assumptions in the first place.
+
+> >> + * The function should only be called by block device, or network
+> >> + * device driver for solving the deadlock problem during runtime
+> >> + * resume/suspend:
+> >> + *
+> >> + *     If memory allocation with GFP_KERNEL is called inside runtime
+> >> + *     resume/suspend callback of any one of its ancestors(or the
+> >> + *     block device itself), the deadlock may be triggered inside the
+> >> + *     memory allocation since it might not complete until the block
+> >> + *     device becomes active and the involed page I/O finishes. The
+> >> + *     situation is pointed out first by Alan Stern. Network device
+> >> + *     are involved in iSCSI kind of situation.
+> >> + *
+> >> + * The lock of dev_hotplug_mutex is held in the function for handling
+> >> + * hotplug race because pm_runtime_set_memalloc_noio() may be called
+> >> + * in async probe().
+> >> + *
+> >> + * The function should be called between device_add() and device_del()
+> >> + * on the affected device(block/network device).
+> >> + */
+> >> +void pm_runtime_set_memalloc_noio(struct device *dev, bool enable)
+> >> +{
+> >> +     static DEFINE_MUTEX(dev_hotplug_mutex);
+> >
+> > What's the mutex for?
+> 
+> It is for avoiding hotplug race, for example, without the mutex,
+> another child may set the flag between the time device_for_each_child()
+> runs and the next loop iteration in pm_runtime_set_memalloc_noio(false).
+
+OK
+
+Thanks,
+Rafael
+
+
 -- 
-1.7.9.5
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
