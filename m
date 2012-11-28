@@ -1,145 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755944Ab2K1S65 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 13:58:57 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:32961 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753582Ab2K1S64 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 13:58:56 -0500
-Date: Wed, 28 Nov 2012 13:57:59 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 23/46] x86, mm: Remove parameter in alloc_low_page for
- 64bit
-Message-ID: <20121128185759.GQ21266@phenom.dumpdata.com>
-References: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
- <1353123563-3103-24-git-send-email-yinghai@kernel.org>
+	id S1755177Ab2K1S7w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 13:59:52 -0500
+Received: from trent.utfs.org ([94.185.90.103]:50511 "EHLO trent.utfs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753817Ab2K1S7u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 13:59:50 -0500
+Date: Wed, 28 Nov 2012 10:59:35 -0800 (PST)
+From: Christian Kujau <lists@nerdbynature.de>
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+cc: LKML <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org,
+        paulus@samba.org
+Subject: Re: 3.7-rc7: BUG: MAX_STACK_TRACE_ENTRIES too low!
+In-Reply-To: <1354092082.3054.19.camel@ThinkPad-T5421.cn.ibm.com>
+Message-ID: <alpine.DEB.2.01.1211281051000.7378@trent.utfs.org>
+References: <alpine.DEB.2.01.1211271824120.7378@trent.utfs.org>  <alpine.DEB.2.01.1211271916160.7378@trent.utfs.org> <1354092082.3054.19.camel@ThinkPad-T5421.cn.ibm.com>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353123563-3103-24-git-send-email-yinghai@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 07:39:00PM -0800, Yinghai Lu wrote:
-> Now all page table buf are pre-mapped, and could use virtual address directly.
-                                         ^^^^^^^^^-> we can
+On Wed, 28 Nov 2012 at 16:41, Li Zhong wrote:
+> Would you please help to try the following fix? I don't have a powerpc32
+> machine for test...
 
-> So don't need to remember physical address anymore.
-> 
-> Remove that phys pointer in alloc_low_page(), and that will allow us to merge
-> alloc_low_page between 64bit and 32bit.
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> ---
->  arch/x86/mm/init_64.c |   19 +++++++------------
->  1 files changed, 7 insertions(+), 12 deletions(-)
-> 
-> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-> index 5ee9242..1960820 100644
-> --- a/arch/x86/mm/init_64.c
-> +++ b/arch/x86/mm/init_64.c
-> @@ -314,14 +314,13 @@ void __init cleanup_highmap(void)
->  	}
->  }
->  
-> -static __ref void *alloc_low_page(unsigned long *phys)
-> +static __ref void *alloc_low_page(void)
->  {
->  	unsigned long pfn;
->  	void *adr;
->  
->  	if (after_bootmem) {
->  		adr = (void *)get_zeroed_page(GFP_ATOMIC | __GFP_NOTRACK);
-> -		*phys = __pa(adr);
->  
->  		return adr;
->  	}
-> @@ -342,7 +341,6 @@ static __ref void *alloc_low_page(unsigned long *phys)
->  
->  	adr = __va(pfn * PAGE_SIZE);
->  	clear_page(adr);
-> -	*phys  = pfn * PAGE_SIZE;
->  	return adr;
->  }
->  
-> @@ -401,7 +399,6 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
->  	int i = pmd_index(address);
->  
->  	for (; i < PTRS_PER_PMD; i++, address = next) {
-> -		unsigned long pte_phys;
->  		pmd_t *pmd = pmd_page + pmd_index(address);
->  		pte_t *pte;
->  		pgprot_t new_prot = prot;
-> @@ -456,11 +453,11 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
->  			continue;
->  		}
->  
-> -		pte = alloc_low_page(&pte_phys);
-> +		pte = alloc_low_page();
->  		last_map_addr = phys_pte_init(pte, address, end, new_prot);
->  
->  		spin_lock(&init_mm.page_table_lock);
-> -		pmd_populate_kernel(&init_mm, pmd, __va(pte_phys));
-> +		pmd_populate_kernel(&init_mm, pmd, pte);
->  		spin_unlock(&init_mm.page_table_lock);
->  	}
->  	update_page_count(PG_LEVEL_2M, pages);
-> @@ -476,7 +473,6 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
->  	int i = pud_index(addr);
->  
->  	for (; i < PTRS_PER_PUD; i++, addr = next) {
-> -		unsigned long pmd_phys;
->  		pud_t *pud = pud_page + pud_index(addr);
->  		pmd_t *pmd;
->  		pgprot_t prot = PAGE_KERNEL;
-> @@ -530,12 +526,12 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
->  			continue;
->  		}
->  
-> -		pmd = alloc_low_page(&pmd_phys);
-> +		pmd = alloc_low_page();
->  		last_map_addr = phys_pmd_init(pmd, addr, end, page_size_mask,
->  					      prot);
->  
->  		spin_lock(&init_mm.page_table_lock);
-> -		pud_populate(&init_mm, pud, __va(pmd_phys));
-> +		pud_populate(&init_mm, pud, pmd);
->  		spin_unlock(&init_mm.page_table_lock);
->  	}
->  	__flush_tlb_all();
-> @@ -560,7 +556,6 @@ kernel_physical_mapping_init(unsigned long start,
->  
->  	for (; start < end; start = next) {
->  		pgd_t *pgd = pgd_offset_k(start);
-> -		unsigned long pud_phys;
->  		pud_t *pud;
->  
->  		next = (start + PGDIR_SIZE) & PGDIR_MASK;
-> @@ -574,12 +569,12 @@ kernel_physical_mapping_init(unsigned long start,
->  			continue;
->  		}
->  
-> -		pud = alloc_low_page(&pud_phys);
-> +		pud = alloc_low_page();
->  		last_map_addr = phys_pud_init(pud, __pa(start), __pa(next),
->  						 page_size_mask);
->  
->  		spin_lock(&init_mm.page_table_lock);
-> -		pgd_populate(&init_mm, pgd, __va(pud_phys));
-> +		pgd_populate(&init_mm, pgd, pud);
->  		spin_unlock(&init_mm.page_table_lock);
->  		pgd_changed = true;
->  	}
-> -- 
-> 1.7.7
+I've just applied this to 3.7-rc7 and booted the machine. I don't know how 
+to trigger this bug, so it might take a while until it happens again - or 
+not, now with your patch applied.
+
+It happened only 2 times so far, after ~8h and after ~20h:
+
+Nov  5 13:28:20 alice kernel: [    0.000000] Linux version 3.7.0-rc4 
+Nov  5 21:00:26 alice kernel: [27148.965634] BUG: MAX_STACK_TRACE_ENTRIES too low!
+Nov 26 21:53:43 alice kernel: [    0.000000] Linux version 3.7.0-rc7 
+Nov 27 17:15:29 alice kernel: [69731.388717] BUG: MAX_STACK_TRACE_ENTRIES too low!
+
+Thanks,
+Christian.
+-- 
+BOFH excuse #86:
+
+Runt packets
