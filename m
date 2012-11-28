@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755168Ab2K1AwR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 19:52:17 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5455 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754852Ab2K1Av7 (ORCPT
+	id S1755212Ab2K1AwZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 19:52:25 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:57623 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754852Ab2K1AwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 19:51:59 -0500
-X-Authority-Analysis: v=2.0 cv=f9bK9ZOM c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=j9wofRDAjcQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=M7XXC4kVkb4A:10 a=n-PutXYuR5WLD03W_GQA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1354063916.6276.91.camel@gandalf.local.home>
-Subject: Re: [PATCH 2/3] cputime: Rename thread_group_times to
- thread_group_cputime_adjusted
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Tue, 27 Nov 2012 19:51:56 -0500
-In-Reply-To: <CAFTL4hzRmngv+RY0VWfOONCig-Gdvn-2XFVp0fzkc_a83PNO_w@mail.gmail.com>
-References: <1353680484-7302-1-git-send-email-fweisbec@gmail.com>
-	 <1353680484-7302-3-git-send-email-fweisbec@gmail.com>
-	 <1353956163.6276.46.camel@gandalf.local.home>
-	 <CAFTL4hxxE8Ggw4Ae-VfgBZ8rtoOMpUQnmSGUado1gxeruwQ9rg@mail.gmail.com>
-	 <1353958423.6276.54.camel@gandalf.local.home>
-	 <CAFTL4hzRmngv+RY0VWfOONCig-Gdvn-2XFVp0fzkc_a83PNO_w@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 27 Nov 2012 19:52:21 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121128081514.84c71b8eb965a7d11cb1ff07@canb.auug.org.au>
+References: <20121127172548.cd502ebfb903face1dc98554@canb.auug.org.au>
+	<50B5072F.6090708@infradead.org>
+	<20121128081514.84c71b8eb965a7d11cb1ff07@canb.auug.org.au>
+Date: Wed, 28 Nov 2012 09:52:19 +0900
+X-Google-Sender-Auth: gdl6exfYAtsL5pimmB8BMiFdCTw
+Message-ID: <CAH9JG2WfpNttdthgZEAM+W5T8rrZwOULSBGaSB8XdVDVMhC1FA@mail.gmail.com>
+Subject: Re: linux-next: Tree for Nov 27 (media/v4l2-core/videobuf2-dma-contig.c)
+From: Kyungmin Park <kyungmin.park@samsung.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Randy Dunlap <rdunlap@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        linux-media <linux-media@vger.kernel.org>,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-11-28 at 00:51 +0100, Frederic Weisbecker wrote:
+Hi,
 
-> To fix this we apply the above monotonicity fixup.
+It's fixed already and you will check it at Nov 28 tree
+http://www.spinics.net/lists/linux-media/msg56830.html
 
-Thanks for the explanation, although I kind of figured it out
-already ;-)
+Thank you,
+Kyungmin Park
 
-> 
-> I can add these explanations on comments in a new patch.
-
-Comments are always good.
-
--- Steve
-
-
+On 11/28/12, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> [Just adding some cc's]
+>
+> On Tue, 27 Nov 2012 10:32:15 -0800 Randy Dunlap <rdunlap@infradead.org>
+> wrote:
+>>
+>> On 11/26/2012 10:25 PM, Stephen Rothwell wrote:
+>>
+>> > Hi all,
+>> >
+>> > Changes since 20121126:
+>> >
+>>
+>>
+>> on i386:
+>>
+>> drivers/media/v4l2-core/videobuf2-dma-contig.c:743:16: error:
+>> 'vb2_dc_get_dmabuf' undeclared here (not in a function)
+>>
+>>
+>> Full randconfig file is attached.
+>>
+>> --
+>> ~Randy
+>
+>
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+>
