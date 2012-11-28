@@ -1,138 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754257Ab2K1QiA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 11:38:00 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:35293 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754117Ab2K1Qh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 11:37:57 -0500
-Date: Wed, 28 Nov 2012 11:37:36 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        azurIt <azurit@pobox.sk>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, cgroups mailinglist <cgroups@vger.kernel.org>
-Subject: Re: [PATCH -v2 -mm] memcg: do not trigger OOM from
- add_to_page_cache_locked
-Message-ID: <20121128163736.GV24381@cmpxchg.org>
-References: <20121125120524.GB10623@dhcp22.suse.cz>
- <20121125135542.GE10623@dhcp22.suse.cz>
- <20121126013855.AF118F5E@pobox.sk>
- <20121126131837.GC17860@dhcp22.suse.cz>
- <50B403CA.501@jp.fujitsu.com>
- <20121127194813.GP24381@cmpxchg.org>
- <20121127205431.GA2433@dhcp22.suse.cz>
- <20121127205944.GB2433@dhcp22.suse.cz>
- <20121128152631.GT24381@cmpxchg.org>
- <20121128160447.GH12309@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121128160447.GH12309@dhcp22.suse.cz>
+	id S1754281Ab2K1Ql6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 11:41:58 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:50320 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753930Ab2K1Ql4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 11:41:56 -0500
+Date: Wed, 28 Nov 2012 11:41:53 -0500 (EST)
+Message-Id: <20121128.114153.737074131307295783.davem@davemloft.net>
+To: dwmw2@infradead.org
+Cc: chas@cmf.nrl.navy.mil, krzysiek@podlesie.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, nathan@traverse.com.au
+Subject: Re: [PATCH] br2684: don't send frames on not-ready vcc
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1354058916.2534.25.camel@shinybook.infradead.org>
+References: <20121127135434.0728cd4f@thirdoffive.cmf.nrl.navy.mil>
+	<1354055783.2534.18.camel@shinybook.infradead.org>
+	<1354058916.2534.25.camel@shinybook.infradead.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 05:04:47PM +0100, Michal Hocko wrote:
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index 095d2b4..5abe441 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -57,13 +57,14 @@ extern int mem_cgroup_newpage_charge(struct page *page, struct mm_struct *mm,
->  				gfp_t gfp_mask);
->  /* for swap handling */
->  extern int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
-> -		struct page *page, gfp_t mask, struct mem_cgroup **memcgp);
-> +		struct page *page, gfp_t mask, struct mem_cgroup **memcgp,
-> +		bool oom);
+From: David Woodhouse <dwmw2@infradead.org>
+Date: Tue, 27 Nov 2012 23:28:36 +0000
 
-Ok, now I feel almost bad for asking, but why the public interface,
-too?  You only ever pass "true" in there and this is unlikely to
-change anytime soon, no?
+> +	if (test_bit(ATM_VF_RELEASED, &atmvcc->flags)
+> +	    || test_bit(ATM_VF_CLOSE, &atmvcc->flags)
+> +	    || !test_bit(ATM_VF_READY, &atmvcc->flags)) {
 
-> @@ -3754,7 +3753,8 @@ int mem_cgroup_newpage_charge(struct page *page,
->  static int __mem_cgroup_try_charge_swapin(struct mm_struct *mm,
->  					  struct page *page,
->  					  gfp_t mask,
-> -					  struct mem_cgroup **memcgp)
-> +					  struct mem_cgroup **memcgp,
-> +					  bool oom)
->  {
->  	struct mem_cgroup *memcg;
->  	struct page_cgroup *pc;
-> @@ -3776,20 +3776,21 @@ static int __mem_cgroup_try_charge_swapin(struct mm_struct *mm,
->  	if (!memcg)
->  		goto charge_cur_mm;
->  	*memcgp = memcg;
-> -	ret = __mem_cgroup_try_charge(NULL, mask, 1, memcgp, true);
-> +	ret = __mem_cgroup_try_charge(NULL, mask, 1, memcgp, oom);
->  	css_put(&memcg->css);
->  	if (ret == -EINTR)
->  		ret = 0;
->  	return ret;
->  charge_cur_mm:
-> -	ret = __mem_cgroup_try_charge(mm, mask, 1, memcgp, true);
-> +	ret = __mem_cgroup_try_charge(mm, mask, 1, memcgp, oom);
->  	if (ret == -EINTR)
->  		ret = 0;
->  	return ret;
->  }
+Please:
 
-Only this one is needed...
+	if (X ||
+	    Y ||
+	    Z)
 
-> @@ -3851,7 +3852,7 @@ void mem_cgroup_commit_charge_swapin(struct page *page,
->  }
->  
->  int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
-> -				gfp_t gfp_mask)
-> +				gfp_t gfp_mask, bool oom)
->  {
->  	struct mem_cgroup *memcg = NULL;
->  	enum charge_type type = MEM_CGROUP_CHARGE_TYPE_CACHE;
-> @@ -3863,10 +3864,10 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
->  		return 0;
->  
->  	if (!PageSwapCache(page))
-> -		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type);
-> +		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type, oom);
->  	else { /* page is swapcache/shmem */
->  		ret = __mem_cgroup_try_charge_swapin(mm, page,
-> -						     gfp_mask, &memcg);
-> +						     gfp_mask, &memcg, oom);
->  		if (!ret)
->  			__mem_cgroup_commit_charge_swapin(page, memcg, type);
->  	}
+not:
 
-...for this site.
+	if (X
+	    || Y
+	    || Z)
 
-> diff --git a/mm/memory.c b/mm/memory.c
-> index 6891d3b..afad903 100644
-> --- a/mm/memory.c
-> +++ b/mm/memory.c
-> @@ -2991,7 +2991,7 @@ static int do_swap_page(struct mm_struct *mm, struct vm_area_struct *vma,
->  		}
->  	}
->  
-> -	if (mem_cgroup_try_charge_swapin(mm, page, GFP_KERNEL, &ptr)) {
-> +	if (mem_cgroup_try_charge_swapin(mm, page, GFP_KERNEL, &ptr, true)) {
->  		ret = VM_FAULT_OOM;
->  		goto out_page;
->  	}
-
-Can not happen for shmem, the fault handler uses vma->vm_ops->fault.
-
-> diff --git a/mm/swapfile.c b/mm/swapfile.c
-> index 2f8e429..8ec511e 100644
-> --- a/mm/swapfile.c
-> +++ b/mm/swapfile.c
-> @@ -828,7 +828,7 @@ static int unuse_pte(struct vm_area_struct *vma, pmd_t *pmd,
->  	int ret = 1;
->  
->  	if (mem_cgroup_try_charge_swapin(vma->vm_mm, page,
-> -					 GFP_KERNEL, &memcg)) {
-> +					 GFP_KERNEL, &memcg, true)) {
->  		ret = -ENOMEM;
->  		goto out_nolock;
->  	}
-
-Can not happen for shmem, uses shmem_unuse() instead.
+Thanks.
