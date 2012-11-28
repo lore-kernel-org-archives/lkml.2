@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932733Ab2K1WA1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 17:00:27 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:44908 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756204Ab2K1Vsn (ORCPT
+	id S932683Ab2K1WAY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 17:00:24 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:36983 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755788Ab2K1Vsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 28 Nov 2012 16:48:43 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -14,102 +14,134 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v9 43/46] x86, mm: kill numa_64.h
-Date: Wed, 28 Nov 2012 13:47:54 -0800
-Message-Id: <1354139277-17376-44-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v9 22/46] x86, mm: Remove early_memremap workaround for page table accessing on 64bit
+Date: Wed, 28 Nov 2012 13:47:33 -0800
+Message-Id: <1354139277-17376-23-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
 References: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We try to put page table high to make room for kdump, and at that time
+those ranges were not mapped yet, and had to use ioremap to access it.
+
+Now after patch that pre-map page table top down.
+	x86, mm: setup page table in top-down
+We do not need that workaround anymore.
+
+Just use __va to return directly mapping address.
+
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/include/asm/numa.h    |    2 --
- arch/x86/include/asm/numa_64.h |    4 ----
- arch/x86/kernel/acpi/boot.c    |    1 -
- arch/x86/kernel/cpu/amd.c      |    1 -
- arch/x86/kernel/cpu/intel.c    |    1 -
- arch/x86/kernel/setup.c        |    3 ---
- 6 files changed, 0 insertions(+), 12 deletions(-)
- delete mode 100644 arch/x86/include/asm/numa_64.h
+ arch/x86/mm/init_64.c |   38 ++++----------------------------------
+ 1 files changed, 4 insertions(+), 34 deletions(-)
 
-diff --git a/arch/x86/include/asm/numa.h b/arch/x86/include/asm/numa.h
-index 49119fc..52560a2 100644
---- a/arch/x86/include/asm/numa.h
-+++ b/arch/x86/include/asm/numa.h
-@@ -54,8 +54,6 @@ static inline int numa_cpu_node(int cpu)
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index eefaea6..5ee9242 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -340,36 +340,12 @@ static __ref void *alloc_low_page(unsigned long *phys)
+ 	} else
+ 		pfn = pgt_buf_end++;
  
- #ifdef CONFIG_X86_32
- # include <asm/numa_32.h>
--#else
--# include <asm/numa_64.h>
- #endif
+-	adr = early_memremap(pfn * PAGE_SIZE, PAGE_SIZE);
++	adr = __va(pfn * PAGE_SIZE);
+ 	clear_page(adr);
+ 	*phys  = pfn * PAGE_SIZE;
+ 	return adr;
+ }
  
- #ifdef CONFIG_NUMA
-diff --git a/arch/x86/include/asm/numa_64.h b/arch/x86/include/asm/numa_64.h
-deleted file mode 100644
-index fe4d2d4..0000000
---- a/arch/x86/include/asm/numa_64.h
-+++ /dev/null
-@@ -1,4 +0,0 @@
--#ifndef _ASM_X86_NUMA_64_H
--#define _ASM_X86_NUMA_64_H
+-static __ref void *map_low_page(void *virt)
+-{
+-	void *adr;
+-	unsigned long phys, left;
 -
--#endif /* _ASM_X86_NUMA_64_H */
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index e651f7a..4b23aa1 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -51,7 +51,6 @@ EXPORT_SYMBOL(acpi_disabled);
+-	if (after_bootmem)
+-		return virt;
+-
+-	phys = __pa(virt);
+-	left = phys & (PAGE_SIZE - 1);
+-	adr = early_memremap(phys & PAGE_MASK, PAGE_SIZE);
+-	adr = (void *)(((unsigned long)adr) | left);
+-
+-	return adr;
+-}
+-
+-static __ref void unmap_low_page(void *adr)
+-{
+-	if (after_bootmem)
+-		return;
+-
+-	early_iounmap((void *)((unsigned long)adr & PAGE_MASK), PAGE_SIZE);
+-}
+-
+ static unsigned long __meminit
+ phys_pte_init(pte_t *pte_page, unsigned long addr, unsigned long end,
+ 	      pgprot_t prot)
+@@ -442,10 +418,9 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
+ 		if (pmd_val(*pmd)) {
+ 			if (!pmd_large(*pmd)) {
+ 				spin_lock(&init_mm.page_table_lock);
+-				pte = map_low_page((pte_t *)pmd_page_vaddr(*pmd));
++				pte = (pte_t *)pmd_page_vaddr(*pmd);
+ 				last_map_addr = phys_pte_init(pte, address,
+ 								end, prot);
+-				unmap_low_page(pte);
+ 				spin_unlock(&init_mm.page_table_lock);
+ 				continue;
+ 			}
+@@ -483,7 +458,6 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
  
- #ifdef	CONFIG_X86_64
- # include <asm/proto.h>
--# include <asm/numa_64.h>
- #endif				/* X86 */
+ 		pte = alloc_low_page(&pte_phys);
+ 		last_map_addr = phys_pte_init(pte, address, end, new_prot);
+-		unmap_low_page(pte);
  
- #define BAD_MADT_ENTRY(entry, end) (					    \
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 9619ba6..913f94f 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -12,7 +12,6 @@
- #include <asm/pci-direct.h>
+ 		spin_lock(&init_mm.page_table_lock);
+ 		pmd_populate_kernel(&init_mm, pmd, __va(pte_phys));
+@@ -518,10 +492,9 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
  
- #ifdef CONFIG_X86_64
--# include <asm/numa_64.h>
- # include <asm/mmconfig.h>
- # include <asm/cacheflush.h>
- #endif
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index 198e019..3b547cc 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -17,7 +17,6 @@
+ 		if (pud_val(*pud)) {
+ 			if (!pud_large(*pud)) {
+-				pmd = map_low_page(pmd_offset(pud, 0));
++				pmd = pmd_offset(pud, 0);
+ 				last_map_addr = phys_pmd_init(pmd, addr, end,
+ 							 page_size_mask, prot);
+-				unmap_low_page(pmd);
+ 				__flush_tlb_all();
+ 				continue;
+ 			}
+@@ -560,7 +533,6 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
+ 		pmd = alloc_low_page(&pmd_phys);
+ 		last_map_addr = phys_pmd_init(pmd, addr, end, page_size_mask,
+ 					      prot);
+-		unmap_low_page(pmd);
  
- #ifdef CONFIG_X86_64
- #include <linux/topology.h>
--#include <asm/numa_64.h>
- #endif
+ 		spin_lock(&init_mm.page_table_lock);
+ 		pud_populate(&init_mm, pud, __va(pmd_phys));
+@@ -596,17 +568,15 @@ kernel_physical_mapping_init(unsigned long start,
+ 			next = end;
  
- #include "cpu.h"
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 85b62f1..6d29d1f 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -108,9 +108,6 @@
- #include <asm/topology.h>
- #include <asm/apicdef.h>
- #include <asm/amd_nb.h>
--#ifdef CONFIG_X86_64
--#include <asm/numa_64.h>
--#endif
- #include <asm/mce.h>
- #include <asm/alternative.h>
- #include <asm/prom.h>
+ 		if (pgd_val(*pgd)) {
+-			pud = map_low_page((pud_t *)pgd_page_vaddr(*pgd));
++			pud = (pud_t *)pgd_page_vaddr(*pgd);
+ 			last_map_addr = phys_pud_init(pud, __pa(start),
+ 						 __pa(end), page_size_mask);
+-			unmap_low_page(pud);
+ 			continue;
+ 		}
+ 
+ 		pud = alloc_low_page(&pud_phys);
+ 		last_map_addr = phys_pud_init(pud, __pa(start), __pa(next),
+ 						 page_size_mask);
+-		unmap_low_page(pud);
+ 
+ 		spin_lock(&init_mm.page_table_lock);
+ 		pgd_populate(&init_mm, pgd, __va(pud_phys));
 -- 
 1.7.7
 
