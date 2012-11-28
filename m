@@ -1,35 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754225Ab2K1Qfl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 11:35:41 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:50221 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753259Ab2K1Qfj (ORCPT
+	id S1754043Ab2K1Qh0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 11:37:26 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:64137 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752071Ab2K1QhZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 11:35:39 -0500
-Date: Wed, 28 Nov 2012 11:35:36 -0500 (EST)
-Message-Id: <20121128.113536.1823117656563756543.davem@davemloft.net>
-To: pebolle@tiscali.nl
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        richard.weinberger@gmail.com
-Subject: Re: [PATCH 2/2] ewrk3: remove outdated comment
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1354009714.1420.52.camel@x61.thuisdomein>
-References: <1354009714.1420.52.camel@x61.thuisdomein>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Nov 2012 11:37:25 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAPXgP12jXOJzTTgwQkm7XK_ig2iEKAbhgNkF+MRR6_S49Tqx_A@mail.gmail.com>
+References: <1336004953.4240.9.camel@mop> <CAHO5Pa2_D_L6wKPWccaYH2BYWYFc=4Khe0Om5GWU3D-tcAH0OQ@mail.gmail.com>
+ <CAPXgP12jXOJzTTgwQkm7XK_ig2iEKAbhgNkF+MRR6_S49Tqx_A@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 28 Nov 2012 08:37:03 -0800
+X-Google-Sender-Auth: 4bb5BEQuWA2vJusYil4GD3vw4vo
+Message-ID: <CA+55aFxVyqScRU_c6RWVVub-tteuwjSq5JmThUtoxU-arBuh1w@mail.gmail.com>
+Subject: Re: [PATCH RESEND 1/3] printk: convert byte-buffer to variable-length
+ record buffer
+To: Kay Sievers <kay@vrfy.org>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>,
+        Greg Kroah-Hartmann <greg@kroah.com>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul Bolle <pebolle@tiscali.nl>
-Date: Tue, 27 Nov 2012 10:48:34 +0100
+On Wed, Nov 28, 2012 at 8:22 AM, Kay Sievers <kay@vrfy.org> wrote:
+> On Wed, Nov 28, 2012 at 2:33 PM, Michael Kerrisk <mtk.manpages@gmail.com> wrote:
+>
+>> On a 2.6.31 system, immediately after SYSLOG_ACTION_READ_CLEAR, a
+>> SYSLOG_ACTION_SIZE_UNREAD returns 0.
+>
+> Hmm, sounds like the right thing to do.
 
-> Remove an outdated comment, that should have been removed in the
-> patch named "MODULE_PARM conversions" from early 2005.
-> 
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+Right.
 
-Applied.
+And that's the *OLD* behavior (2.6.31).
+
+>> On 3.5, immediately after SYSLOG_ACTION_READ_CLEAR, the value returned
+>> by SYSLOG_ACTION_SIZE_UNREAD is unchanged
+
+And this is the *NEW* behavior, and as you say:
+
+> Which sounds at least like weird behaviour, if not "broken".
+
+So the new behavior is insane and different. Let's fix it.
+
+It looks like it is because the new SYSLOG_ACTION_SIZE_UNREAD code
+does not take the new clear_seq code into account. Hmm?
+
+                 Linus
