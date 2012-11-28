@@ -1,56 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754103Ab2K1LCW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 06:02:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40832 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753591Ab2K1LCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 06:02:19 -0500
-Date: Wed, 28 Nov 2012 12:02:00 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Johannes Berg <johannes.berg@intel.com>,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: linux-next: build failure after merge of the modules tree
-Message-ID: <20121128110145.GA3701@redhat.com>
-References: <20121126151046.1b5b09762b8361b1f202c6e2@canb.auug.org.au>
+	id S1754144Ab2K1LFc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 06:05:32 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:61385 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753288Ab2K1LF3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 06:05:29 -0500
+Message-ID: <50B5EFE9.3040206@huawei.com>
+Date: Wed, 28 Nov 2012 19:05:13 +0800
+From: Hanjun Guo <guohanjun@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121126151046.1b5b09762b8361b1f202c6e2@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+CC: <linux-acpi@vger.kernel.org>, <isimatu.yasuaki@jp.fujitsu.com>,
+        <wency@cn.fujitsu.com>, <rjw@sisk.pl>, <lenb@kernel.org>,
+        <toshi.kani@hp.com>, <gregkh@linuxfoundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        Tang Chen <tangchen@cn.fujitsu.com>
+Subject: Re: [RFC PATCH v3 0/3] acpi: Introduce prepare_remove device operation
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
+In-Reply-To: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.69.25]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 26, 2012 at 03:10:46PM +1100, Stephen Rothwell wrote:
-> After merging the modules tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
+On 2012/11/24 1:50, Vasilis Liaskovitis wrote:
+> As discussed in https://patchwork.kernel.org/patch/1581581/
+> the driver core remove function needs to always succeed. This means we need
+> to know that the device can be successfully removed before acpi_bus_trim / 
+> acpi_bus_hot_remove_device are called. This can cause panics when OSPM-initiated
+> or SCI-initiated eject of memory devices fail e.g with:
+> echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
 > 
-> drivers/net/wireless/iwlwifi/iwl-drv.c:1196:1: error: invalid suffix "n_disabletype__8" on integer constant
-> drivers/net/wireless/iwlwifi/iwl-drv.c:1196:1: error: expected identifier or '(' before numeric constant
-> drivers/net/wireless/iwlwifi/iwl-drv.c:1198:1: error: invalid suffix "n_disable__9" on integer constant
-> drivers/net/wireless/iwlwifi/iwl-drv.c:1198:1: error: expected identifier or '(' before numeric constant
-> drivers/net/wireless/iwlwifi/iwl-drv.c:1263:1: error: invalid suffix "ghz_disabletype__32" on integer constant
-> drivers/net/wireless/iwlwifi/iwl-drv.c:1263:1: error: expected identifier or '(' before numeric constant
-> drivers/net/wireless/iwlwifi/iwl-drv.c:1264:1: error: invalid suffix "ghz_disable__33" on integer constant
-> drivers/net/wireless/iwlwifi/iwl-drv.c:1264:1: error: expected identifier or '(' before numeric constant
-> drivers/net/wireless/iwlegacy/4965-mac.c:6825:1: error: invalid suffix "n_disabletype__11" on integer constant
-> drivers/net/wireless/iwlegacy/4965-mac.c:6825:1: error: expected identifier or '(' before numeric constant
-> drivers/net/wireless/iwlegacy/4965-mac.c:6826:1: error: invalid suffix "n_disable__12" on integer constant
-> drivers/net/wireless/iwlegacy/4965-mac.c:6826:1: error: expected identifier or '(' before numeric constant
+> since the ACPI core goes ahead and ejects the device regardless of whether the
+> the memory is still in use or not.
 > 
-> Presumably caused by commit 58876af0436e ("moduleparam: use __UNIQUE_ID
-> ()").  This commit removed the "__mod_" prefix that used to be added to
-> the front of the "name" passed to module_param_named().  Admittedly, the
-> documentation says that "name" must be "a valid C identifier which is the
-> parameter name", but the (ab)usage here used to work (the name starts
-> with a number).
+> For this reason a new acpi_device operation called prepare_remove is introduced.
+> This operation should be registered for acpi devices whose removal (from kernel
+> perspective) can fail.  Memory devices fall in this category.
+> 
+> acpi_bus_remove() is changed to handle removal in 2 steps:
+> - preparation for removal i.e. perform part of removal that can fail. Should
+>   succeed for device and all its children.
+> - if above step was successfull, proceed to actual device removal
 
-I prefer not to change module parameters name, since there are users
-who use current name in they modprobe config.
+Hi Vasilis,
+We met the same problem when we doing computer node hotplug, It is a good idea
+to introduce prepare_remove before actual device removal.
 
-Stanislaw
+I think we could do more in prepare_remove, such as rollback. In most cases, we can
+offline most of memory sections except kernel used pages now, should we rollback
+and online the memory sections when prepare_remove failed ?
+
+As you may know, the ACPI based hotplug framework we are working on already addressed
+this problem, and the way we slove this problem is a bit like yours.
+
+We introduce hp_ops in struct acpi_device_ops:
+struct acpi_device_ops {
+	acpi_op_add add;
+	acpi_op_remove remove;
+	acpi_op_start start;
+	acpi_op_bind bind;
+	acpi_op_unbind unbind;
+	acpi_op_notify notify;
+#ifdef	CONFIG_ACPI_HOTPLUG
+	struct acpihp_dev_ops *hp_ops;
+#endif	/* CONFIG_ACPI_HOTPLUG */
+};
+
+in hp_ops, we divide the prepare_remove into six small steps, that is:
+1) pre_release(): optional step to mark device going to be removed/busy
+2) release(): reclaim device from running system
+3) post_release(): rollback if cancelled by user or error happened
+4) pre_unconfigure(): optional step to solve possible dependency issue
+5) unconfigure(): remove devices from running system
+6) post_unconfigure(): free resources used by devices
+
+In this way, we can easily rollback if error happens.
+How do you think of this solution, any suggestion ? I think we can achieve
+a better way for sharing ideas. :)
+
+Thanks
+Hanjun Guo
+
+> 
+> With this patchset, only acpi memory devices use the new prepare_remove
+> device operation. The actual memory removal (VM-related offline and other memory
+> cleanups) is moved to prepare_remove. The old remove operation just cleans up
+> the acpi structures. Directly ejecting PNP0C80 memory devices works safely. I
+> haven't tested yet with an ACPI container which contains memory devices.
+> 
+> Note that unbinding the acpi driver from a memory device with:
+> echo "PNP0C80:XX" > /sys/bus/acpi/drivers/acpi_memhotplug/unbind
+> 
+> will no longer try to remove the memory. This is in compliance with normal
+> unbind driver core semantics, see the discussion in v2 of this patchset:
+> https://lkml.org/lkml/2012/11/16/649
+> 
+> After a successful unbind of the driver:
+> - OSPM ejects of the memory device cannot proceed, as acpi_eject_store will
+> return -ENODEV on missing driver.
+> - SCI ejects of the memory device also cannot proceed, as they will also get
+> a "driver data is NULL" error.
+> So the memory can continue to be used safely after unbind.
+> 
+> Patchset based on Rafael's linux-pm/linux-next (commit 78c38651).
+> Comments welcome.
+> 
+> v2->v3:
+> - remove driver core changes. Only acpi core changes needed. Unbind semantics
+> follow driver core rules. Unbind does not remove memory.
+> - new patch to set enable bit in order to proceed with ejects on driver
+> re-binding scenario.
+> 
+> v1->v2:
+> - new patch to introduce bus_type prepare_remove callback. Needed to prepare
+> removal on driver unbinding from device-driver core.
+> - v1 patches 1 and 2 simplified and merged in one. acpi_bus_trim does not require
+> argument changes.
+> 
+> Vasilis Liaskovitis (3):
+>   acpi: Introduce prepare_remove operation in acpi_device_ops
+>   acpi_memhotplug: Add prepare_remove operation
+>   acpi_memhotplug: Allow eject to proceed on rebind scenario
+> 
+>  drivers/acpi/acpi_memhotplug.c |   21 +++++++++++++++++----
+>  drivers/acpi/scan.c            |    9 ++++++++-
+>  include/acpi/acpi_bus.h        |    2 ++
+>  3 files changed, 27 insertions(+), 5 deletions(-)
+> 
+
 
