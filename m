@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932778Ab2K1V47 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 16:56:59 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:37027 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756235Ab2K1Vsp (ORCPT
+	id S932763Ab2K1V44 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 16:56:56 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:44951 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756230Ab2K1Vsp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 28 Nov 2012 16:48:45 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -13,10 +13,11 @@ To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v9 23/46] x86, mm: Remove parameter in alloc_low_page for 64bit
-Date: Wed, 28 Nov 2012 13:47:34 -0800
-Message-Id: <1354139277-17376-24-git-send-email-yinghai@kernel.org>
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: [PATCH v9 02/46] x86, mm: Split out split_mem_range from init_memory_mapping
+Date: Wed, 28 Nov 2012 13:47:13 -0800
+Message-Id: <1354139277-17376-3-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
 References: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
@@ -25,115 +26,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now all page table buf are pre-mapped, and we can use virtual address
-directly.  So don't need to remember physical address anymore.
+So make init_memory_mapping smaller and readable.
 
-Remove that phys pointer in alloc_low_page(), and that will allow us to
-merge alloc_low_page between 64bit and 32bit.
+-v2: use 0 instead of nr_range as input parameter found by Yasuaki Ishimatsu.
 
+Suggested-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
 Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 ---
- arch/x86/mm/init_64.c |   19 +++++++------------
- 1 files changed, 7 insertions(+), 12 deletions(-)
+ arch/x86/mm/init.c |   41 +++++++++++++++++++++++++----------------
+ 1 files changed, 25 insertions(+), 16 deletions(-)
 
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 5ee9242..1960820 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -314,14 +314,13 @@ void __init cleanup_highmap(void)
- 	}
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index aa5b0da..6368b86 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -146,25 +146,13 @@ static int __meminit save_mr(struct map_range *mr, int nr_range,
+ 	return nr_range;
  }
  
--static __ref void *alloc_low_page(unsigned long *phys)
-+static __ref void *alloc_low_page(void)
+-/*
+- * Setup the direct mapping of the physical memory at PAGE_OFFSET.
+- * This runs before bootmem is initialized and gets pages directly from
+- * the physical memory. To access them they are temporarily mapped.
+- */
+-unsigned long __init_refok init_memory_mapping(unsigned long start,
+-					       unsigned long end)
++static int __meminit split_mem_range(struct map_range *mr, int nr_range,
++				     unsigned long start,
++				     unsigned long end)
  {
- 	unsigned long pfn;
- 	void *adr;
+ 	unsigned long start_pfn, end_pfn;
+-	unsigned long ret = 0;
+ 	unsigned long pos;
+-	struct map_range mr[NR_RANGE_MR];
+-	int nr_range, i;
+-
+-	printk(KERN_INFO "init_memory_mapping: [mem %#010lx-%#010lx]\n",
+-	       start, end - 1);
+-
+-	memset(mr, 0, sizeof(mr));
+-	nr_range = 0;
++	int i;
  
- 	if (after_bootmem) {
- 		adr = (void *)get_zeroed_page(GFP_ATOMIC | __GFP_NOTRACK);
--		*phys = __pa(adr);
+ 	/* head if not big page alignment ? */
+ 	start_pfn = start >> PAGE_SHIFT;
+@@ -258,6 +246,27 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+ 			(mr[i].page_size_mask & (1<<PG_LEVEL_1G))?"1G":(
+ 			 (mr[i].page_size_mask & (1<<PG_LEVEL_2M))?"2M":"4k"));
  
- 		return adr;
- 	}
-@@ -342,7 +341,6 @@ static __ref void *alloc_low_page(unsigned long *phys)
- 
- 	adr = __va(pfn * PAGE_SIZE);
- 	clear_page(adr);
--	*phys  = pfn * PAGE_SIZE;
- 	return adr;
- }
- 
-@@ -401,7 +399,6 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
- 	int i = pmd_index(address);
- 
- 	for (; i < PTRS_PER_PMD; i++, address = next) {
--		unsigned long pte_phys;
- 		pmd_t *pmd = pmd_page + pmd_index(address);
- 		pte_t *pte;
- 		pgprot_t new_prot = prot;
-@@ -456,11 +453,11 @@ phys_pmd_init(pmd_t *pmd_page, unsigned long address, unsigned long end,
- 			continue;
- 		}
- 
--		pte = alloc_low_page(&pte_phys);
-+		pte = alloc_low_page();
- 		last_map_addr = phys_pte_init(pte, address, end, new_prot);
- 
- 		spin_lock(&init_mm.page_table_lock);
--		pmd_populate_kernel(&init_mm, pmd, __va(pte_phys));
-+		pmd_populate_kernel(&init_mm, pmd, pte);
- 		spin_unlock(&init_mm.page_table_lock);
- 	}
- 	update_page_count(PG_LEVEL_2M, pages);
-@@ -476,7 +473,6 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
- 	int i = pud_index(addr);
- 
- 	for (; i < PTRS_PER_PUD; i++, addr = next) {
--		unsigned long pmd_phys;
- 		pud_t *pud = pud_page + pud_index(addr);
- 		pmd_t *pmd;
- 		pgprot_t prot = PAGE_KERNEL;
-@@ -530,12 +526,12 @@ phys_pud_init(pud_t *pud_page, unsigned long addr, unsigned long end,
- 			continue;
- 		}
- 
--		pmd = alloc_low_page(&pmd_phys);
-+		pmd = alloc_low_page();
- 		last_map_addr = phys_pmd_init(pmd, addr, end, page_size_mask,
- 					      prot);
- 
- 		spin_lock(&init_mm.page_table_lock);
--		pud_populate(&init_mm, pud, __va(pmd_phys));
-+		pud_populate(&init_mm, pud, pmd);
- 		spin_unlock(&init_mm.page_table_lock);
- 	}
- 	__flush_tlb_all();
-@@ -560,7 +556,6 @@ kernel_physical_mapping_init(unsigned long start,
- 
- 	for (; start < end; start = next) {
- 		pgd_t *pgd = pgd_offset_k(start);
--		unsigned long pud_phys;
- 		pud_t *pud;
- 
- 		next = (start + PGDIR_SIZE) & PGDIR_MASK;
-@@ -574,12 +569,12 @@ kernel_physical_mapping_init(unsigned long start,
- 			continue;
- 		}
- 
--		pud = alloc_low_page(&pud_phys);
-+		pud = alloc_low_page();
- 		last_map_addr = phys_pud_init(pud, __pa(start), __pa(next),
- 						 page_size_mask);
- 
- 		spin_lock(&init_mm.page_table_lock);
--		pgd_populate(&init_mm, pgd, __va(pud_phys));
-+		pgd_populate(&init_mm, pgd, pud);
- 		spin_unlock(&init_mm.page_table_lock);
- 		pgd_changed = true;
- 	}
++	return nr_range;
++}
++
++/*
++ * Setup the direct mapping of the physical memory at PAGE_OFFSET.
++ * This runs before bootmem is initialized and gets pages directly from
++ * the physical memory. To access them they are temporarily mapped.
++ */
++unsigned long __init_refok init_memory_mapping(unsigned long start,
++					       unsigned long end)
++{
++	struct map_range mr[NR_RANGE_MR];
++	unsigned long ret = 0;
++	int nr_range, i;
++
++	pr_info("init_memory_mapping: [mem %#010lx-%#010lx]\n",
++	       start, end - 1);
++
++	memset(mr, 0, sizeof(mr));
++	nr_range = split_mem_range(mr, 0, start, end);
++
+ 	/*
+ 	 * Find space for the kernel direct mapping tables.
+ 	 *
 -- 
 1.7.7
 
