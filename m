@@ -1,104 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932474Ab2K1Vbw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 16:31:52 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:15243 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932209Ab2K1Vbv (ORCPT
+	id S932479Ab2K1VdR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 16:33:17 -0500
+Received: from mail-wg0-f74.google.com ([74.125.82.74]:45600 "EHLO
+	mail-wg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754414Ab2K1VdO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 16:31:51 -0500
-Message-ID: <1354137803.26955.325.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v3 1/4] ACPI: Support system notify handler via
- .sys_notify
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org, lenb@kernel.org, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com, isimatu.yasuaki@jp.fujitsu.com, liuj97@gmail.com
-Date: Wed, 28 Nov 2012 14:23:23 -0700
-In-Reply-To: <5550104.xSe1fX9Ich@vostro.rjw.lan>
-References: <1352406227-32629-1-git-send-email-toshi.kani@hp.com>
-	 <4411201.YLQBH7zWSI@vostro.rjw.lan>
-	 <1354134699.26955.290.camel@misato.fc.hp.com>
-	 <5550104.xSe1fX9Ich@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Nov 2012 16:33:14 -0500
+From: Greg Thelen <gthelen@google.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Aaron Durbin <adurbin@google.com>
+Subject: Re: [PATCH] cgroup: fix lockdep warning for event_control
+References: <1354133742-22175-1-git-send-email-gthelen@google.com>
+	<20121128210719.GB24683@htj.dyndns.org>
+Date: Wed, 28 Nov 2012 13:33:11 -0800
+In-Reply-To: <20121128210719.GB24683@htj.dyndns.org> (Tejun Heo's message of
+	"Wed, 28 Nov 2012 13:07:19 -0800")
+Message-ID: <xr93hao9ifag.fsf@gthelen.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-11-28 at 22:09 +0100, Rafael J. Wysocki wrote:
-> On Wednesday, November 28, 2012 01:31:39 PM Toshi Kani wrote:
-> > On Wed, 2012-11-28 at 19:28 +0100, Rafael J. Wysocki wrote:
-> > > On Wednesday, November 28, 2012 09:54:43 AM Toshi Kani wrote:
-> > > > > > > > > By using acpi_install_notify_handler(), each driver needs to walk
-> > > > > > > > > through the entire ACPI namespace to find its associated ACPI devices
-> > > > > > > > > and call it to register one by one.  I think this is more work for
-> > > > > > > > > non-ACPI drivers than defining acpi_driver.
-> > > > > > > > 
-> > > > > > > > I'm not really sure what you mean.  The drivers in question already know
-> > > > > > > > what the relevant ACPI device nodes are (because they need them anyway
-> > > > > > > > for other purposes), so they don't need to look for them specifically and
-> > > > > > > > acpi_install_notify_handler() doesn't do any namespace walking.  So what
-> > > > > > > > you said above simply doesn't make sense from this viewpoint.
-> > > > > > > 
-> > > > > > > Yes, if drivers already know the relevant ACPI devices, then walking the
-> > > > > > > ACPI namespace is not necessary.  I was referring the case like
-> > > > > > > processor_driver.c, acpi_memhotplug.c, and container.c in my statement. 
-> > > > > > 
-> > > > > > BTW, when an ACPI device is marked as non-present, which is the case
-> > > > > > before hot-add, we do not create an acpi_device object and therefore do
-> > > > > > not bind it with a driver.  This is why these drivers walk the ACPI
-> > > > > > namespace and install their notify handlers regardless of device status.
-> > > > > 
-> > > > > So maybe we should create struct acpi_device objects in that case too?
-> > > > 
-> > > > I think it has some challenge as well.  We bind an ACPI driver with
-> > > > device_register(), which calls device_add()-> kobject_add().  So, all
-> > > > non-present ACPI device objects will show up in sysfs, unless we can
-> > > > change the core.  This will change user interface.  There can be quite
-> > > > many non-present devices in ACPI namespace depending on FW
-> > > > implementation.
-> > > 
-> > > If additional devices appear in sysfs, that's not a problem.  If there
-> > > were fewer of them, that would be a real one. :-)
-> > 
-> > I see.  I guess this means that once we expose all non-present devices
-> > in sysfs, we cannot go back to the current way.  So, we need to be very
-> > careful.  Anyway, this model requires separate handling for static ACPI
-> > [1] and dynamic ACPI [2], which may make the state model complicated.
-> > 
-> > 1. Static ACPI - No creation / deletion of acpi_device at hot-plug.
-> > 2. Dynamic ACPI - Create acpi_device at hot-add, delete at hot-remove.
-> 
-> Sure.  The complication here is that we'll need to handle the removal of
-> a bunch of struct acpi_device objects when a whole table goes away.
-> 
-> However, first, we don't seem to handle table unloading now.  At least
-> acpi_unload_parent_table() is not called from anywhere as far as I can
-> say.  Second, we'll need to handle the removal of struct acpi_device objects
-> _anyway_ on table unload, this way or another.
+On Wed, Nov 28 2012, Tejun Heo wrote:
 
-AML is the one that requests loading/unloading of SSDT for dynamic ACPI.
-In hot-add, _Lxx method executes AML_LOAD_OP or AML_LOAD_TABLE_OP to
-load SSDT and then sends a notification to the OS.  In hot-remove, _EJ0
-method executes AML_UNLOAD_OP to unload SSDT.  Of course, ACPICA does
-the actual work on behalf of AML.  But this is not visible to ACPI core
-or drivers, unless it checks ACPI namespace to see if any device objects
-disappeared after _EJ0.
+> Hello, Greg.
+>
+> On Wed, Nov 28, 2012 at 12:15:42PM -0800, Greg Thelen wrote:
+>> @@ -4276,6 +4276,7 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
+>>  	DEFINE_WAIT(wait);
+>>  	struct cgroup_event *event, *tmp;
+>>  	struct cgroup_subsys *ss;
+>> +	struct list_head tmp_list;
+>
+> LIST_HEAD(tmp_list);
+>
+>>  
+>>  	lockdep_assert_held(&d->d_inode->i_mutex);
+>>  	lockdep_assert_held(&cgroup_mutex);
+>> @@ -4330,16 +4331,20 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
+>>  	/*
+>>  	 * Unregister events and notify userspace.
+>>  	 * Notify userspace about cgroup removing only after rmdir of cgroup
+>> -	 * directory to avoid race between userspace and kernelspace
+>> +	 * directory to avoid race between userspace and kernelspace. Use
+>> +	 * a temporary list to avoid a deadlock with cgroup_event_wake(). Since
+>> +	 * cgroup_event_wake() is called with the wait queue head locked,
+>> +	 * remove_wait_queue() cannot be called while holding event_list_lock.
+>>  	 */
+>>  	spin_lock(&cgrp->event_list_lock);
+>> -	list_for_each_entry_safe(event, tmp, &cgrp->event_list, list) {
+>> +	list_replace_init(&cgrp->event_list, &tmp_list);
+>
+> list_splice_init();
+>
+> would be more conventional, I think.
 
-Thanks,
--Toshi
+I used list_replace_init() because it avoided unnecessary init of
+tmp_list.  But I have no objection to list_splice_init().  I'll repost
+with list_splice_init().
 
+>> +	spin_unlock(&cgrp->event_list_lock);
+>> +	list_for_each_entry_safe(event, tmp, &tmp_list, list) {
+>>  		list_del(&event->list);
+>
+> Maybe convert this to list_del_init() while at it?
 
-> > [1] ACPI namespace is static and contains the maximum possible config. 
-> > [2] ACPI namespace is dynamic. SSDT is loaded at hot-add, and unloaded
-> > at hot-remove.
-> 
-> Thanks,
-> Rafael
-> 
-> 
+I assume this isn't technically required, but defensive.  Seems like we
+should also convert the list_del(&event->list) in cgroup_event_wake()
+for consistency.  I'll send these in separate patch.
 
-
+>>  		remove_wait_queue(event->wqh, &event->wait);
+>>  		eventfd_signal(event->eventfd, 1);
+>>  		schedule_work(&event->remove);
+>>  	}
+>> -	spin_unlock(&cgrp->event_list_lock);
+>
+> Thanks.
