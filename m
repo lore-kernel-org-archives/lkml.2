@@ -1,87 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964777Ab2K1WwS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 17:52:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60690 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932427Ab2K1WwR (ORCPT
+	id S1945898Ab2K1WxA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 17:53:00 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:51247 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932509Ab2K1Ww6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 17:52:17 -0500
-Date: Wed, 28 Nov 2012 14:52:15 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        George Spelvin <linux@horizon.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        Tomas Racek <tracek@redhat.com>, Jan Kara <jack@suse.cz>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Josh Boyer <jwboyer@gmail.com>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Jiri Slaby <jslaby@suse.cz>, Thorsten Leemhuis <fedora@leemhuis.info>,
-        Zdenek Kabelac <zkabelac@redhat.com>, Bruno Wolff III <bruno@wolff.to>,
-        linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: kswapd craziness in 3.7
-Message-Id: <20121128145215.d23aeb1b.akpm@linux-foundation.org>
-In-Reply-To: <20121128101359.GT8218@suse.de>
-References: <1354049315-12874-1-git-send-email-hannes@cmpxchg.org>
-	<CA+55aFywygqWUBNWtZYa+vk8G0cpURZbFdC7+tOzyWk6tLi=WA@mail.gmail.com>
-	<50B52DC4.5000109@redhat.com>
-	<20121127214928.GA20253@cmpxchg.org>
-	<50B5387C.1030005@redhat.com>
-	<20121127222637.GG2301@cmpxchg.org>
-	<CA+55aFyrNRF8nWyozDPi4O1bdjzO189YAgMukyhTOZ9fwKqOpA@mail.gmail.com>
-	<20121128101359.GT8218@suse.de>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Nov 2012 17:52:58 -0500
+MIME-Version: 1.0
+In-Reply-To: <Pine.LNX.4.64.1211281540200.5283@file.rdu.redhat.com>
+References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com>
+ <CA+55aFyvT3R3kgwJzp9mY5eE1fwMnzXnmBpHSbqjd-eJRVDkJw@mail.gmail.com>
+ <50AF7901.20401@kernel.dk> <CAAJw_ZvXGKcjfOAS_tRdXJ9SjpCKw1t7rNt+Q=ieCkVJwN2qcg@mail.gmail.com>
+ <Pine.LNX.4.64.1211241555470.4300@file.rdu.redhat.com> <CAAJw_ZvUqRmCCQ5-2PdFPRyfdzZMuphGU=hgAjUOHGk=n9Mheg@mail.gmail.com>
+ <CAAJw_ZuJXnAz1ukBwQa3xNbQaL1KUBSrbQMK2hn-7D6Ar1p3fQ@mail.gmail.com>
+ <50B46E05.70906@kernel.dk> <CAAJw_ZsYuLCwCTc6U=ELO_PvyjnVKQdkPke2enfzm6zOeWAqjA@mail.gmail.com>
+ <50B4B313.3030707@kernel.dk> <Pine.LNX.4.64.1211272252260.18338@file.rdu.redhat.com>
+ <50B5CC5A.8060607@kernel.dk> <Pine.LNX.4.64.1211281222410.11599@file.rdu.redhat.com>
+ <CA+55aFx4zYnEsUyGJurBjB0XZ0AgmyKqW-+KWVDvma3w6csnHQ@mail.gmail.com>
+ <Pine.LNX.4.64.1211281422360.26389@file.rdu.redhat.com> <CA+55aFyXdtVJ=SG9bU4qfggCR6DPvz4vOFYxKJZx_WdyFv+3Fw@mail.gmail.com>
+ <CA+55aFyXS0nkDB95c3pcdg1ctrNnUGO8aDuRNhKSEg3JrOqWhA@mail.gmail.com> <Pine.LNX.4.64.1211281540200.5283@file.rdu.redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 28 Nov 2012 14:52:36 -0800
+X-Google-Sender-Auth: ofyVYOviIjyq2yV87LnltoCPf8s
+Message-ID: <CA+55aFwbnQsvpsOLS6w_G35d4w+Ezv5tOx2SE7dShJhX4iP_0Q@mail.gmail.com>
+Subject: Re: [PATCH] Introduce a method to catch mmap_region (was: Recent
+ kernel "mount" slow)
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Jeff Chua <jeff.chua.linux@gmail.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Nov 2012 10:13:59 +0000
-Mel Gorman <mgorman@suse.de> wrote:
+On Wed, Nov 28, 2012 at 1:29 PM, Mikulas Patocka <mpatocka@redhat.com> wrote:
+>
+> The problem with this approach is that it is very easy to miss points
+> where it is assumed that the block size doesn't change - and if you miss a
+> point, it results in a hidden bug that has a little possibility of being
+> found.
 
-> Based on the reports I've seen I expect the following to work for 3.7
-> 
-> Keep
->   96710098 mm: revert "mm: vmscan: scale number of pages reclaimed by reclaim/compaction based on failures"
->   ef6c5be6 fix incorrect NR_FREE_PAGES accounting (appears like memory leak)
-> 
-> Revert
->   82b212f4 Revert "mm: remove __GFP_NO_KSWAPD"
-> 
-> Merge
->   mm: vmscan: fix kswapd endless loop on higher order allocation
->   mm: Avoid waking kswapd for THP allocations when compaction is deferred or contended
+Umm. Mikulas, *your* approach has resulted in bugs. So let's not throw
+stones in glass houses, shall we?
 
-"mm: Avoid waking kswapd for THP ..." is marked "I have not tested it
-myself" and when Zdenek tested it he hit an unexplained oom.
+The whole reason for this long thread (and several threads before it)
+is that your model isn't working and is causing problems. I already
+pointed out how bogus your arguments about mmap() locking were, and
+then you have the gall to talk about potential bugs, when I have
+pointed you to *actual* bugs, and actual mistakes.
 
-> Johannes' patch should remove the necessity for __GFP_NO_KSWAPD revert but I
-> think we should also avoid waking kswapd for THP allocations if compaction
-> is deferred. Johannes' patch might mean that kswapd goes quickly go back
-> to sleep but it's still busy work.
-> 
-> 3.6 is still known to be screwed in terms of THP because of the amount of
-> time it can spend in compaction after lumpy reclaim was removed. This is
-> my old list of patches I felt needed to be backported after 3.7 came out.
-> They are not tagged -stable, I'll be sending it to Greg manually.
-> 
-> e64c523 mm: compaction: abort compaction loop if lock is contended or run too long
-> 3cc668f mm: compaction: move fatal signal check out of compact_checklock_irqsave
-> 661c4cb mm: compaction: Update try_to_compact_pages()kerneldoc comment
-> 2a1402a mm: compaction: acquire the zone->lru_lock as late as possible
-> f40d1e4 mm: compaction: acquire the zone->lock as late as possible
-> 753341a revert "mm: have order > 0 compaction start off where it left"
-> bb13ffe mm: compaction: cache if a pageblock was scanned and no pages were isolated
-> c89511a mm: compaction: Restart compaction from near where it left off
-> 6299702 mm: compaction: clear PG_migrate_skip based on compaction and reclaim activity
-> 0db63d7 mm: compaction: correct the nr_strict va isolated check for CMA
-> 
-> Only Johannes' patch needs to be added to this list. kswapd is not woken
-> for THP in 3.6 but as it calls compaction for other high-order allocations
-> it still makes sense.
+> For example, __block_write_full_page and __block_write_begin do
+>         if (!page_has_buffers(page)) { create_empty_buffers... }
+> and then they do
+>         WARN_ON(bh->b_size != blocksize)
+>         err = get_block(inode, block, bh, 1)
 
-Please identify "Johannes' patch"?
+Right. And none of this is new.
+
+> ... so if the buffers were left over from some previous call to
+> create_empty_buffers with a different blocksize, that WARN_ON is trigged.
+
+None of this can happen.
+
+> Locking the whole read/write/mmap operations is crude, but at least it can
+> be done without thorough review of all the memory management code.
+
+Umm. Which you clearly didn't do, and raised totally crap arguments for.
+
+In contrast, I have a very simple argument for the correctness of my
+patch: every single user of the "get_block[s]()" interface now takes
+the lock for as long as get_block[s]() is passed off to somebody else.
+And since get_block[s]() is the only way to create those empty
+buffers, I think I pretty much proved exactly what you ask for.
+
+And THAT is the whole point and advantage of making locking sane. Sane
+locking you can actually *think* about!
+
+In contrast, locking around "mmap()" is absolutely *guaranteed* to be
+insane, because mmap() doesn't actually do any of the IO that the lock
+is supposed to protect against!
+
+So Mikulas, quite frankly, your arguments argue against you. When you
+say "Locking the whole read/write/mmap operations is crude, but at
+least it can
+be done without thorough", you are doubly correct: it *is* crude, and
+it clearly *was* done without thought, since it's a f*cking idiotic
+AND INCORRECT thing to do.
+
+Seriously. Locking around "mmap()" is insane. It leads to insane
+semantics (the whole EBUSY thing is purely because of that problem)
+and it leads to bad code (your "let's add a new "mmap_region" hook is
+just disgusting, and while Al's idea of doing it in the existing
+"->open" method is at least not nasty, it's definitely extra code and
+complexity).
+
+There are serious *CORRECTNESS* advantages to simplicity and
+directness. And locking at the right point is definitely very much
+part of that.
+
+Anyway, as far as block size goes, we have exactly two cases:
+
+ - random IO that does not care about the block size, and will just do
+whatever the current block size is (ie normal anonymous accesses to
+the block device).  This is the case that needs the locking - but it
+only needs it around the individual page operations, ie exactly where
+I put it. In fact, they can happily deal with different block sizes
+for different pages, they don't really care.
+
+ - mounted filesystems etc that require a particular block size and
+set it at mount time, and they have exclusivity rules
+
+The second case is the case that actually calls set_blocksize(), and
+if "kill_bdev()" doesn't get rid of the old blocksizes, then they have
+always been in trouble, and would always _continue_ to be in trouble,
+regardless of locking.
+
+                    Linus
