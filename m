@@ -1,112 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab2K1JpW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 04:45:22 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33510 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753302Ab2K1JpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 04:45:19 -0500
-Date: Wed, 28 Nov 2012 09:45:11 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        George Spelvin <linux@horizon.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        Thorsten Leemhuis <fedora@leemhuis.info>,
-        Tomas Racek <tracek@redhat.com>, Jan Kara <jack@suse.cz>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Josh Boyer <jwboyer@gmail.com>,
-        Valdis.Kletnieks@vt.edu, Jiri Slaby <jslaby@suse.cz>,
-        Zdenek Kabelac <zkabelac@redhat.com>, Bruno Wolff III <bruno@wolff.to>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: kswapd craziness in 3.7
-Message-ID: <20121128094511.GS8218@suse.de>
-References: <1354049315-12874-1-git-send-email-hannes@cmpxchg.org>
+	id S1753926Ab2K1JrY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 04:47:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57280 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752059Ab2K1JrW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 04:47:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1354049315-12874-1-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1408044.6czCGhbHJH@vostro.rjw.lan>
+References: <1353761958-12810-1-git-send-email-ming.lei@canonical.com>
+	<5434404.G1ERYjuorE@vostro.rjw.lan>
+	<CACVXFVODD9fRqQc3kR58OJm3ERgBWojnx=790xGwu=MPGaSmMA@mail.gmail.com>
+	<1408044.6czCGhbHJH@vostro.rjw.lan>
+Date: Wed, 28 Nov 2012 17:47:18 +0800
+Message-ID: <CACVXFVOk45wr8jv3w=KO7uTThGSTSkq0FRsPD6p_AyQZLWGQJg@mail.gmail.com>
+Subject: Re: [PATCH v6 2/6] PM / Runtime: introduce pm_runtime_set_memalloc_noio()
+From: Ming Lei <ming.lei@canonical.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oneukum@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jens Axboe <axboe@kernel.dk>, "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Adding Thorsten to cc)
+On Wed, Nov 28, 2012 at 5:29 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>
+> But it doesn't have to walk the children.  Moreover, with counters it only
 
-On Tue, Nov 27, 2012 at 03:48:34PM -0500, Johannes Weiner wrote:
-> Hi everyone,
-> 
-> I hope I included everybody that participated in the various threads
-> on kswapd getting stuck / exhibiting high CPU usage.  We were looking
-> at at least three root causes as far as I can see, so it's not really
-> clear who observed which problem.  Please correct me if the
-> reported-by, tested-by, bisected-by tags are incomplete.
-> 
-> One problem was, as it seems, overly aggressive reclaim due to scaling
-> up reclaim goals based on compaction failures.  This one was reverted
-> in 9671009 mm: revert "mm: vmscan: scale number of pages reclaimed by
-> reclaim/compaction based on failures".
-> 
+Yeah, I got it, it is the advantage of counter, but with extra 'int'
+field introduced
+in 'struct device'.
 
-This particular one would have been made worse by the accounting bug and
-if kswapd was staying awake longer than necessary. As scaling the amount
-of reclaim only for direct reclaim helped this problem a lot, I strongly
-suspect the accounting bug was a factor.
+> needs to walk the whole path if all devices in it need to be updated.  For
+> example, if you call pm_runtime_set_memalloc_noio(dev, true) for a device
+> whose parent's counter is greater than zero already, you don't need to
+> walk the path above the parent.
 
-However the benefit for this is marginal -- it primarily affects how
-many THP pages we can allocate under stress. There is already a graceful
-fallback path and a system under heavy reclaim pressure is not going to
-notice the performance benefit of THP.
+We still can do it with the flag only, pm_runtime_set_memalloc_noio(dev, true)
+can return immediately if one parent or the 'dev' flag is true.
 
-> Another one was an accounting problem where a freed higher order page
-> was underreported, and so kswapd had trouble restoring watermarks.
-> This one was fixed in ef6c5be fix incorrect NR_FREE_PAGES accounting
-> (appears like memory leak).
-> 
+But considered that the pm_runtime_set_memalloc_noio(dev, false) is only
+called in a very infrequent path(network/block device->remove()), looks the
+introduced cost isn't worthy of the obtained advantage.
 
-This almost certainly also requires the follow-on fix at
-https://lkml.org/lkml/2012/11/26/225 for reasons I explained in
-https://lkml.org/lkml/2012/11/27/190 .
+So could you accept not introducing counter? and I will update with the
+above improvement you suggested.
 
-> The third one is a problem with small zones, like the DMA zone, where
-> the high watermark is lower than the low watermark plus compaction gap
-> (2 * allocation size).  The zonelist reclaim in kswapd would do
-> nothing because all high watermarks are met, but the compaction logic
-> would find its own requirements unmet and loop over the zones again.
-> Indefinitely, until some third party would free enough memory to help
-> meet the higher compaction watermark.  The problematic code has been
-> there since the 3.4 merge window for non-THP higher order allocations
-> but has been more prominent since the 3.7 merge window, where kswapd
-> is also woken up for the much more common THP allocations.
-> 
-
-Yes. 
-
-> The following patch should fix the third issue by making both reclaim
-> and compaction code in kswapd use the same predicate to determine
-> whether a zone is balanced or not.
-> 
-> Hopefully, the sum of all three fixes should tame kswapd enough for
-> 3.7.
-> 
-
-Not exactly sure of that. With just those patches it is possible for
-allocations for THP entering the slow path to keep kswapd continually awake
-doing busy work. This was an alternative to the revert that covered that
-https://lkml.org/lkml/2012/11/12/151 but it was not enough because kswapd
-would stay awake due to the bug you identified and fixed.
-
-I went with the __GFP_NO_KSWAPD patch in this cycle because 3.6 was/is
-very poor in how it handles THP after the removal of lumpy reclaim. 3.7
-was shaping up to be even worse with multiple root causes too close to the
-release date.  Taking kswapd out of the equation covered some of the
-problems (yes, by hiding them) so it could be revisited but Johannes may
-have finally squashed it.
-
-However, if we revert the revert then I strongly recommend that it be
-replaced with "Avoid waking kswapd for THP allocations when compaction is
-deferred or contended".
-
--- 
-Mel Gorman
-SUSE Labs
+Thanks,
+--
+Ming Lei
