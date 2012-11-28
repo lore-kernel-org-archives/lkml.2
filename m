@@ -1,39 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753727Ab2K1KGC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 05:06:02 -0500
-Received: from zimbra.linbit.com ([212.69.161.123]:49021 "EHLO
-	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752845Ab2K1KF7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 05:05:59 -0500
-Date: Wed, 28 Nov 2012 11:05:57 +0100
-From: Lars Ellenberg <lars.ellenberg@linbit.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [RFC] [PATCH] fix infinite loop; increase robustness of
- debugfs_remove_recursive [attached test module]
-Message-ID: <20121128100557.GB674@soda.linbit>
-References: <20121123171547.GB23670@soda.linbit>
- <1354072588.6276.101.camel@gandalf.local.home>
- <20121128093754.GA674@soda.linbit>
+	id S1753793Ab2K1KKX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 05:10:23 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:35053 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752437Ab2K1KKV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 05:10:21 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oneukum@suse.de>, Minchan Kim <minchan@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jens Axboe <axboe@kernel.dk>, "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>, netdev@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH v6 2/6] PM / Runtime: introduce pm_runtime_set_memalloc_noio()
+Date: Wed, 28 Nov 2012 11:15:05 +0100
+Message-ID: <2662154.Tcp7v84XkT@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <CACVXFVOk45wr8jv3w=KO7uTThGSTSkq0FRsPD6p_AyQZLWGQJg@mail.gmail.com>
+References: <1353761958-12810-1-git-send-email-ming.lei@canonical.com> <1408044.6czCGhbHJH@vostro.rjw.lan> <CACVXFVOk45wr8jv3w=KO7uTThGSTSkq0FRsPD6p_AyQZLWGQJg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121128093754.GA674@soda.linbit>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 10:37:54AM +0100, Lars Ellenberg wrote:
-> Note that all but rmmod may be done as normal user,
+On Wednesday, November 28, 2012 05:47:18 PM Ming Lei wrote:
+> On Wed, Nov 28, 2012 at 5:29 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >
+> > But it doesn't have to walk the children.  Moreover, with counters it only
+> 
+> Yeah, I got it, it is the advantage of counter, but with extra 'int'
+> field introduced
+> in 'struct device'.
+> 
+> > needs to walk the whole path if all devices in it need to be updated.  For
+> > example, if you call pm_runtime_set_memalloc_noio(dev, true) for a device
+> > whose parent's counter is greater than zero already, you don't need to
+> > walk the path above the parent.
+> 
+> We still can do it with the flag only, pm_runtime_set_memalloc_noio(dev, true)
+> can return immediately if one parent or the 'dev' flag is true.
+> 
+> But considered that the pm_runtime_set_memalloc_noio(dev, false) is only
+> called in a very infrequent path(network/block device->remove()), looks the
+> introduced cost isn't worthy of the obtained advantage.
+> 
+> So could you accept not introducing counter? and I will update with the
+> above improvement you suggested.
 
-Ok, that is not exactly correct,
-I forgot about debugfs being mounted 0700 ;-)
+Well, please see my other message I sent a while ago. :-)
 
-Still...
+Thanks,
+Rafael
 
-	Lars
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
