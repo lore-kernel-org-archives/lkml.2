@@ -1,67 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755966Ab2K1U0z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 15:26:55 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:35435 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752896Ab2K1U0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 15:26:53 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Zdenek Kabelac <zkabelac@redhat.com>
-Cc: linux-acpi@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Len Brown <lenb@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Acpi deadlocks with 3.7.0-rc4
-Date: Wed, 28 Nov 2012 21:31:38 +0100
-Message-ID: <6072715.FoXSX1UJhO@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <50B64996.1010709@redhat.com>
-References: <50A513A8.9010404@redhat.com> <CA+55aFy7hxayPzr3MiV1xc0bvLcd+-7b52iA3CYhbPZuWXr9yA@mail.gmail.com> <50B64996.1010709@redhat.com>
+	id S1756025Ab2K1U1H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 15:27:07 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:57549 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755640Ab2K1U1D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 15:27:03 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <1353716453-9693-1-git-send-email-acme@infradead.org>
+References: <1353716453-9693-1-git-send-email-acme@infradead.org>
+Date: Wed, 28 Nov 2012 15:27:02 -0500
+Message-ID: <CA+5PVA4dMd8ZfN6OgDQXvFxSPSN3+Cim27ZypWni3ihErSE7tQ@mail.gmail.com>
+Subject: Re: [GIT PULL 0/8] perf/urgent fixes
+From: Josh Boyer <jwboyer@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Blanchard <anton@au1.ibm.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Borislav Petkov <bp@alien8.de>, David Ahern <dsahern@gmail.com>,
+        David Howells <dhowells@redhat.com>,
+        Dong Hao <haodong@linux.vnet.ibm.com>, linux-arch@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Robert Richter <robert.richter@amd.com>,
+        Runzhen Wang <runzhen@linux.vnet.ibm.com>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>, x86@kernel.org,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 28, 2012 06:27:50 PM Zdenek Kabelac wrote:
-> Dne 28.11.2012 18:02, Linus Torvalds napsal(a):
-> > On Wed, Nov 28, 2012 at 8:21 AM, Zdenek Kabelac <zkabelac@redhat.com> wrote:
-> >>
-> >> I've opened  https://bugzilla.kernel.org/show_bug.cgi?id=51071
-> >> and attached picture there which is all I have.
+On Fri, Nov 23, 2012 at 7:20 PM, Arnaldo Carvalho de Melo
+<acme@ghostprotocols.net> wrote:
+> Hi Ingo,
+>
+>         Tested using a cross-compiler and directly on a Raspberry pi (ARM) with
+> raspbian.
+>
+>         Please consider pulling.
+>
+> - Arnaldo
+>
+> The following changes since commit 18423d3562f396206e0928a71177eeb2edfed077:
+>
+>   Merge tag 'perf-urgent-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/urgent (2012-11-13 18:51:51 +0100)
+>
+> are available in the git repository at:
+>
+>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-urgent-for-mingo
+>
+> for you to fetch changes up to 7321090f6751c9987c26a8c81c63680d16a614d7:
+>
+>   perf kvm: Fix building perf kvm on non x86 arches (2012-11-23 20:40:17 -0300)
+>
+> ----------------------------------------------------------------
+> perf/urgent fixes
+>
+> . Don't build 'perf kvm stat" on non-x86 arches, fix from Xiao Guangrong.
+>
+> . UAPI fixes to get perf building again in non-x86 arches, from David Howells.
+>
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+>
+> ----------------------------------------------------------------
+> Arnaldo Carvalho de Melo (1):
+>       Merge tag 'perf-uapi-20121119' of git://git.infradead.org/users/dhowells/linux-headers into perf/urgent
+>
+> David Howells (6):
+>       x86: Export asm/{svm.h,vmx.h,perf_regs.h}
+>       Merge branch 'x86-pre-uapi' into perf-uapi
+>       tools: Define a Makefile function to do subdir processing
+>       tools: Honour the O= flag when tool build called from a higher Makefile
+>       tools: Pass the target in descend
+>       perf: Make perf build for x86 with UAPI disintegration applied
+>
+> Sukadev Bhattiprolu (1):
+>       perf powerpc: Use uapi/unistd.h to fix build error
+>
+> Xiao Guangrong (2):
+>       perf kvm: Rename perf_kvm to perf_kvm_stat
+>       perf kvm: Fix building perf kvm on non x86 arches
 
-I wonder if you can try to apply the patch below and see if that makes any
-difference?
+I probably sound like a broken record at this point, but I've not seen
+this go into any tip branch, nor is it in Linus' tree.  Hopefully this
+gets pulled before 3.7 is released.
 
-Rafael
-
-
----
- drivers/pnp/pnpacpi/rsparser.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
-
-Index: linux/drivers/pnp/pnpacpi/rsparser.c
-===================================================================
---- linux.orig/drivers/pnp/pnpacpi/rsparser.c
-+++ linux/drivers/pnp/pnpacpi/rsparser.c
-@@ -610,6 +610,14 @@ int pnpacpi_build_resource_template(stru
- 	struct acpi_resource *resource;
- 	int res_cnt = 0;
- 	acpi_status status;
-+	int ret;
-+
-+	/* Sanity check. */
-+	ret = acpi_bus_get_device(handle, &acpi_dev);
-+	if (ret) {
-+		dev_err(&dev->dev, "ACPI node is invalid in %s\n", __func__);
-+		return ret;
-+	}
- 
- 	status = acpi_walk_resources(handle, METHOD_NAME__CRS,
- 				     pnpacpi_count_resources, &res_cnt);
-
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+josh
