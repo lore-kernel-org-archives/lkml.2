@@ -1,138 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266Ab2K1NVR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 08:21:17 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54423 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754943Ab2K1NVM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 08:21:12 -0500
-From: YAMANE Toshiaki <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
-Subject: [PATCH 8/8] staging/rtl8187se: Fix spacing coding style in ieee80211/ieee80211_rx.c
-Date: Wed, 28 Nov 2012 22:21:07 +0900
-Message-Id: <1354108867-17796-1-git-send-email-yamanetoshi@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1354108550-17553-1-git-send-email-yamanetoshi@gmail.com>
-References: <1354108550-17553-1-git-send-email-yamanetoshi@gmail.com>
+	id S1755133Ab2K1NXM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 08:23:12 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:57823 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754936Ab2K1NXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 08:23:11 -0500
+Message-ID: <50B6101C.30502@ti.com>
+Date: Wed, 28 Nov 2012 18:52:36 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Mike Turquette <mturquette@linaro.org>
+CC: Murali Karicheri <m-karicheri2@ti.com>, <arnd@arndb.de>,
+        <akpm@linux-foundation.org>, <shawn.guo@linaro.org>,
+        <rob.herring@calxeda.com>, <linus.walleij@linaro.org>,
+        <viresh.linux@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <khilman@ti.com>, <linux@arm.linux.org.uk>, <sshtylyov@mvista.com>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-keystone@list.ti.com>
+Subject: Re: [PATCH v3 02/11] clk: davinci - add PSC clock driver
+References: <1351181518-11882-1-git-send-email-m-karicheri2@ti.com> <1351181518-11882-3-git-send-email-m-karicheri2@ti.com> <50950908.1060302@ti.com> <5097D6FC.7040202@ti.com> <20121110022254.18014.31873@nucleus> <50B4D6B1.3000903@ti.com> <20121127172900.21126.89528@nucleus>
+In-Reply-To: <20121127172900.21126.89528@nucleus>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following warnings fixed.
-- WARNING: please, no spaces at the start of a line
-- WARNING: please, no space before tabs
+On 11/27/2012 10:59 PM, Mike Turquette wrote:
+> Quoting Sekhar Nori (2012-11-27 07:05:21)
+>> Hi Mike,
+>>
+>> On 11/10/2012 7:52 AM, Mike Turquette wrote:
+>>> Quoting Murali Karicheri (2012-11-05 07:10:52)
+>>>> On 11/03/2012 08:07 AM, Sekhar Nori wrote:
+>>>>> On 10/25/2012 9:41 PM, Murali Karicheri wrote:
+>>>>>> This is the driver for the Power Sleep Controller (PSC) hardware
+>>>>>> found on DM SoCs as well Keystone SoCs (c6x). This driver borrowed
+>>>>>> code from arch/arm/mach-davinci/psc.c and implemented the driver
+>>>>>> as per common clock provider API. The PSC module is responsible for
+>>>>>> enabling/disabling the Power Domain and Clock domain for different IPs
+>>>>>> present in the SoC. The driver is configured through the clock data
+>>>>>> passed to the driver through struct clk_psc_data.
+>>>>>>
+>>>>>> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+>>>>>> ---
+>>>>>> +/**
+>>>>>> + * struct clk_psc - DaVinci PSC clock driver data
+>>>>>> + *
+>>>>>> + * @hw: clk_hw for the psc
+>>>>>> + * @psc_data: Driver specific data
+>>>>>> + */
+>>>>>> +struct clk_psc {
+>>>>>> +    struct clk_hw hw;
+>>>>>> +    struct clk_psc_data *psc_data;
+>>>>>> +    spinlock_t *lock;
+>>>>> Unused member? I don't see this being used.
+>>>>
+>>>> OK. Will remove.
+>>>
+>>> Those locks are only used for the case where a register might contain
+>>> bits for several clocks.  Thus RMW operations are protected.  On OMAP
+>>> this isn't necessary due to a very generous register layout (typically
+>>> one 32-bit reg per module) controlling clocks.  Seems tha tmaybe this is
+>>> not needed for PSC module either?
+>>
+>> Sorry about the late reply. The above is not totally true for PSC. There
+>> are some registers (like PTCMD) which are common for all clocks.
+>>
+>> There is an enable_lock used in drivers/clk/clk.c which serializes all
+>> enable/disable calls across the clock tree. Since that is done, further
+>> locking at clk-psc level is not really needed, no?
+>>
+> 
+> I haven't finished looking through the PSC design document yet, but my
+> answer to your question is this:
+> 
+> If a register is only used for clk_enable/disable calls (not touched by
 
-Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
----
- drivers/staging/rtl8187se/ieee80211/ieee80211_rx.c |   34 ++++++++++----------
- 1 file changed, 17 insertions(+), 17 deletions(-)
+This is right, all PSC registers are only touched in clk_enable/disable
+calls. clk-psc.c also populates .is_enabled, but that's only a regsiter
+read anyway. Plus looks like even that is always accessed under enable_lock.
 
-diff --git a/drivers/staging/rtl8187se/ieee80211/ieee80211_rx.c b/drivers/staging/rtl8187se/ieee80211/ieee80211_rx.c
-index 7534d20..446f15e 100644
---- a/drivers/staging/rtl8187se/ieee80211/ieee80211_rx.c
-+++ b/drivers/staging/rtl8187se/ieee80211/ieee80211_rx.c
-@@ -793,7 +793,7 @@ static inline int ieee80211_is_ofdm_rate(u8 rate)
- 	case IEEE80211_OFDM_RATE_54MB:
- 		return 1;
- 	}
--        return 0;
-+	return 0;
- }
- 
- static inline int ieee80211_SignalStrengthTranslate(
-@@ -884,7 +884,7 @@ inline int ieee80211_network_init(
- 	char *p;
- #endif
- 	struct ieee80211_info_element *info_element;
-- 	u16 left;
-+	u16 left;
- 	u8 i;
- 	short offset;
- 	u8 curRate = 0, hOpRate = 0, curRate_ex = 0;
-@@ -917,10 +917,10 @@ inline int ieee80211_network_init(
- 	} else
- 		network->flags |= NETWORK_HAS_CCK;
- 
-- 	network->wpa_ie_len = 0;
-- 	network->rsn_ie_len = 0;
-+	network->wpa_ie_len = 0;
-+	network->rsn_ie_len = 0;
- 
-- 	info_element = &beacon->info_element;
-+	info_element = &beacon->info_element;
- 	left = stats->len - ((void *)info_element - (void *)beacon);
- 	while (left >= sizeof(struct ieee80211_info_element_hdr)) {
- 		if (sizeof(struct ieee80211_info_element_hdr) + info_element->len > left) {
-@@ -928,7 +928,7 @@ inline int ieee80211_network_init(
- 					     info_element->len + sizeof(struct ieee80211_info_element),
- 					     left);
- 			return 1;
--               	}
-+		}
- 
- 		switch (info_element->id) {
- 		case MFIE_TYPE_SSID:
-@@ -941,8 +941,8 @@ inline int ieee80211_network_init(
- 			network->ssid_len = min(info_element->len,
- 						(u8)IW_ESSID_MAX_SIZE);
- 			memcpy(network->ssid, info_element->data, network->ssid_len);
--        		if (network->ssid_len < IW_ESSID_MAX_SIZE)
--                		memset(network->ssid + network->ssid_len, 0,
-+			if (network->ssid_len < IW_ESSID_MAX_SIZE)
-+				memset(network->ssid + network->ssid_len, 0,
- 				       IW_ESSID_MAX_SIZE - network->ssid_len);
- 
- 			IEEE80211_DEBUG_SCAN("MFIE_TYPE_SSID: '%s' len=%d.\n",
-@@ -1002,14 +1002,14 @@ inline int ieee80211_network_init(
- 			break;
- 
- 		case MFIE_TYPE_DS_SET:
--  			IEEE80211_DEBUG_SCAN("MFIE_TYPE_DS_SET: %d\n",
-+			IEEE80211_DEBUG_SCAN("MFIE_TYPE_DS_SET: %d\n",
- 					     info_element->data[0]);
- 			if (stats->freq == IEEE80211_24GHZ_BAND)
- 				network->channel = info_element->data[0];
- 			break;
- 
--	 	case MFIE_TYPE_FH_SET:
--  			IEEE80211_DEBUG_SCAN("MFIE_TYPE_FH_SET: ignored\n");
-+		case MFIE_TYPE_FH_SET:
-+			IEEE80211_DEBUG_SCAN("MFIE_TYPE_FH_SET: ignored\n");
- 			break;
- 
- 		case MFIE_TYPE_CF_SET:
-@@ -1137,14 +1137,14 @@ inline int ieee80211_network_init(
- 		default:
- 			IEEE80211_DEBUG_SCAN("unsupported IE %d\n",
- 					     info_element->id);
--                        break;
--  		}
-+			break;
-+		}
- 
- 		left -= sizeof(struct ieee80211_info_element_hdr) +
- 			info_element->len;
- 		info_element = (struct ieee80211_info_element *)
--                	&info_element->data[info_element->len];
--  	}
-+			&info_element->data[info_element->len];
-+	}
- //by amy 080312
- 	network->HighestOperaRate = hOpRate;
- //by amy 080312
-@@ -1204,8 +1204,8 @@ inline void update_network(struct ieee80211_network *dst,
- 	unsigned char quality = src->stats.signalstrength;
- 	unsigned char signal = 0;
- 	unsigned char noise = 0;
--        if (dst->stats.signalstrength > 0)
--                quality = (dst->stats.signalstrength * 5 + src->stats.signalstrength + 5)/6;
-+	if (dst->stats.signalstrength > 0)
-+		quality = (dst->stats.signalstrength * 5 + src->stats.signalstrength + 5)/6;
- 	signal = ieee80211_TranslateToDbm(quality);
- 	//noise = signal - src->stats.noise;
- 	if (dst->stats.noise > 0)
--- 
-1.7.9.5
+> anything held under the prepare_lock mutex) and if that register isn't
 
+The requirement that these registers should not be touched when held
+under prepare_lock mutex is not met because functions like
+clk_disabled_unused_subtree() which are called under prepare_lock mutex
+will end up calling clk_disable() anyway.
+
+Perhaps you meant: not touched by anything under 'prepare_lock' mutex
+while being outside of the 'enable_lock' spinlock?
+
+> used anywhere else in the code (outside of the clk framework) then yes,
+> the enable_lock spinlock is enough for you.
+
+No, they are not accessed out side of clk framework. At least currently.
+PSC can also be used to provide a "reset" to some IPs, but there is no
+"reset framework" which uses this feature.
+
+> Also have you looked into regmap?  Since you are defining your own clock
+> type that might be something nice for you.
+
+No, haven't looked at regmap yet. Will look at that.
+
+Thanks,
+Sekhar
