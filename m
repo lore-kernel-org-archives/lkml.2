@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030192Ab2K1VtD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 16:49:03 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:37149 "EHLO
+	id S932551Ab2K1VtA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 16:49:00 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:37161 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756332Ab2K1Vsy (ORCPT
+	with ESMTP id S1756336Ab2K1Vsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 28 Nov 2012 16:48:54 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -14,9 +14,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v9 32/46] x86, mm: change low/hignmem_pfn_init to static on 32bit
-Date: Wed, 28 Nov 2012 13:47:43 -0800
-Message-Id: <1354139277-17376-33-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v9 30/46] x86, mm: Move back pgt_buf_* to mm/init.c
+Date: Wed, 28 Nov 2012 13:47:41 -0800
+Message-Id: <1354139277-17376-31-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
 References: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
@@ -25,33 +25,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Also change them to static.
+
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/mm/init_32.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/init.h |    4 ----
+ arch/x86/mm/init.c          |    6 +++---
+ 2 files changed, 3 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index 0ae1ba8..322ee56 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -575,7 +575,7 @@ early_param("highmem", parse_highmem);
-  * artificially via the highmem=x boot parameter then create
-  * it:
-  */
--void __init lowmem_pfn_init(void)
-+static void __init lowmem_pfn_init(void)
- {
- 	/* max_low_pfn is 0, we already have early_res support */
- 	max_low_pfn = max_pfn;
-@@ -611,7 +611,7 @@ void __init lowmem_pfn_init(void)
-  * We have more RAM than fits into lowmem - we try to put it into
-  * highmem, also taking the highmem=x boot parameter into account:
-  */
--void __init highmem_pfn_init(void)
-+static void __init highmem_pfn_init(void)
- {
- 	max_low_pfn = MAXMEM_PFN;
+diff --git a/arch/x86/include/asm/init.h b/arch/x86/include/asm/init.h
+index 4f13998..626ea8d 100644
+--- a/arch/x86/include/asm/init.h
++++ b/arch/x86/include/asm/init.h
+@@ -12,8 +12,4 @@ kernel_physical_mapping_init(unsigned long start,
+ 			     unsigned long end,
+ 			     unsigned long page_size_mask);
+ 
+-extern unsigned long __initdata pgt_buf_start;
+-extern unsigned long __meminitdata pgt_buf_end;
+-extern unsigned long __meminitdata pgt_buf_top;
+-
+ #endif /* _ASM_X86_INIT_32_H */
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 6e4502b..5bdec27 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -19,9 +19,9 @@
+ 
+ #include "mm_internal.h"
+ 
+-unsigned long __initdata pgt_buf_start;
+-unsigned long __meminitdata pgt_buf_end;
+-unsigned long __meminitdata pgt_buf_top;
++static unsigned long __initdata pgt_buf_start;
++static unsigned long __initdata pgt_buf_end;
++static unsigned long __initdata pgt_buf_top;
+ 
+ static unsigned long min_pfn_mapped;
  
 -- 
 1.7.7
