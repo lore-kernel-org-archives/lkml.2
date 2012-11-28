@@ -1,79 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754955Ab2K1PlP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 10:41:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9669 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754136Ab2K1PlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 10:41:12 -0500
-Date: Wed, 28 Nov 2012 10:42:42 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Chuansheng Liu <chuansheng.liu@intel.com>
-Cc: akpm@linux-foundation.org, mingo@kernel.org, rjw@sisk.pl,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] watchdog: optimizing the hrtimer interval for power
- saving
-Message-ID: <20121128154242.GS14805@redhat.com>
-References: <1353602906.15558.1695.camel@cliu38-desktop-build>
- <1354101892.15558.1699.camel@cliu38-desktop-build>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354101892.15558.1699.camel@cliu38-desktop-build>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754896Ab2K1PnA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 10:43:00 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:57591 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753270Ab2K1Pm7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 10:42:59 -0500
+From: Masanari Iida <standby24x7@gmail.com>
+To: trivial@kernel.org, linux-kernel@vger.kernel.org
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] [trivial] messages: i2o: Fix typo in messages/i2o
+Date: Thu, 29 Nov 2012 00:42:51 +0900
+Message-Id: <1354117371-5452-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.8.0.1.244.g77b598b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 07:24:52PM +0800, Chuansheng Liu wrote:
-> 
-> By default, the watchdog threshold is 10, it means every 4s
-> every CPU will receive one hrtimer interrupt, for low power
-> device, it will cause 4-5mV power impact when device is deep
-> sleep.
-> 
-> So here want to optimize it as below:
-> 4s + 4s + 4s + 4s + 4s
-> == >
-> 1s + 9s + 9s ...
-> Or
-> 1s + 1s..+ 9s + 9s ....
-> 
-> For soft lockup detection, it will have more than 5 chances to
-> hit, once one chance is successful, we will start 9s hrtimer
-> instead of 1s;
-> 
-> For hard lockup dection, it will have more than 2 chances to hit,
-> As Don said, the min window is 10s just when CPU is always running
-> as MAX frequency. In most case, the window is 60s, so we should
-> have much more than 2 chances.
-> 
-> With this patch, in most cases the hrtimer will be 9s instead
-> of 4s averagely. It can save the device power indeed.
-> 
-> Change log:
-> Since V1: In V1, Don pointed out, "12 seconds will miss the window
->           repeatedly." So here set the long period < min window 10s.
+Correct spelling typo in messages/i2o.
 
-Hmm.  My only concern is if you are solving this the right way.  The
-Chrome folks wanted this threshold to be smaller like 2 seconds, which
-would defeat the whole point of this patch.
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ drivers/message/i2o/README.ioctl | 12 ++++++------
+ drivers/message/i2o/i2o_block.c  |  2 +-
+ drivers/message/i2o/i2o_config.c |  2 +-
+ 3 files changed, 8 insertions(+), 8 deletions(-)
 
-It seems like a better approach would be to adjust the timer somehow when
-you change c-states.  The whole point of the hard and softlockup is to
-detect if scheduled code is either deadlock or hogging the cpu for too long.
+diff --git a/drivers/message/i2o/README.ioctl b/drivers/message/i2o/README.ioctl
+index 5fb195af4..4a7d2eb 100644
+--- a/drivers/message/i2o/README.ioctl
++++ b/drivers/message/i2o/README.ioctl
+@@ -138,7 +138,7 @@ VI. Setting Parameters
+ 
+    The return value is the size in bytes of the data written into
+    ops->resbuf if no errors occur.  If an error occurs, -1 is returned 
+-   and errno is set appropriatly:
++   and errno is set appropriately:
+ 
+       EFAULT      Invalid user space pointer was passed
+       ENXIO       Invalid IOP number
+@@ -222,7 +222,7 @@ VIII. Downloading Software
+    RETURNS
+ 
+    This function returns 0 no errors occur. If an error occurs, -1 
+-   is returned and errno is set appropriatly:
++   is returned and errno is set appropriately:
+ 
+       EFAULT      Invalid user space pointer was passed
+       ENXIO       Invalid IOP number
+@@ -264,7 +264,7 @@ IX. Uploading Software
+    RETURNS
+ 
+    This function returns 0 if no errors occur.  If an error occurs, -1
+-   is returned and errno is set appropriatly:
++   is returned and errno is set appropriately:
+ 
+       EFAULT      Invalid user space pointer was passed
+       ENXIO       Invalid IOP number
+@@ -301,7 +301,7 @@ X. Removing Software
+    RETURNS
+ 
+    This function returns 0 if no errors occur.  If an error occurs, -1
+-   is returned and errno is set appropriatly:
++   is returned and errno is set appropriately:
+ 
+       EFAULT      Invalid user space pointer was passed
+       ENXIO       Invalid IOP number
+@@ -325,7 +325,7 @@ X. Validating Configuration
+    RETURNS
+ 
+    This function returns 0 if no erro occur.  If an error occurs, -1 is
+-   returned and errno is set appropriatly:
++   returned and errno is set appropriately:
+ 
+       ETIMEDOUT   Timeout waiting for reply message
+       ENXIO       Invalid IOP number
+@@ -360,7 +360,7 @@ XI. Configuration Dialog
+    RETURNS
+ 
+    This function returns 0 if no error occur. If an error occurs, -1
+-   is returned and errno is set appropriatly:
++   is returned and errno is set appropriately:
+ 
+       EFAULT      Invalid user space pointer was passed
+       ENXIO       Invalid IOP number
+diff --git a/drivers/message/i2o/i2o_block.c b/drivers/message/i2o/i2o_block.c
+index 4796bbf..49e86ae 100644
+--- a/drivers/message/i2o/i2o_block.c
++++ b/drivers/message/i2o/i2o_block.c
+@@ -609,7 +609,7 @@ static int i2o_block_release(struct gendisk *disk, fmode_t mode)
+ 	u8 operation;
+ 
+ 	/*
+-	 * This is to deail with the case of an application
++	 * This is to deal with the case of an application
+ 	 * opening a device and then the device disappears while
+ 	 * it's in use, and then the application tries to release
+ 	 * it.  ex: Unmounting a deleted RAID volume at reboot.
+diff --git a/drivers/message/i2o/i2o_config.c b/drivers/message/i2o/i2o_config.c
+index 9a49c24..5451bef 100644
+--- a/drivers/message/i2o/i2o_config.c
++++ b/drivers/message/i2o/i2o_config.c
+@@ -189,7 +189,7 @@ static int i2o_cfg_parms(unsigned long arg, unsigned int type)
+ 		return -ENXIO;
+ 
+ 	/*
+-	 * Stop users being able to try and allocate arbitary amounts
++	 * Stop users being able to try and allocate arbitrary amounts
+ 	 * of DMA space. 64K is way more than sufficient for this.
+ 	 */
+ 	if (kcmd.oplen > 65536)
+-- 
+1.8.0.1.244.g77b598b
 
-If the cpu is in a deep sleep, then nothing is running, right?  Which
-means nothing can deadlock or hog the cpu.  In those cases you can
-probably temporarily disable the lockup detector until the cpu wakes up
-from that c-state and starts scheduling code again.
-
-In that case you can really maximize your power savings (and probably get
-powerTop to stop telling everyone to disable the nmi_watchdog :-) ).
-
-Ideally in a deep sleep you don't want any soft interrupts running, no?
-
-Just a thought.
-
-Cheers,
-Don
