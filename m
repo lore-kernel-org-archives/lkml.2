@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932422Ab2K1VVA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 16:21:00 -0500
-Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:36411 "EHLO
-	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932347Ab2K1VU6 (ORCPT
+	id S932419Ab2K1VWx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 16:22:53 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:51276 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932307Ab2K1VWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 16:20:58 -0500
-Date: Wed, 28 Nov 2012 16:20:01 -0500
-From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
-To: Krzysztof Mazur <krzysiek@podlesie.net>
-Cc: David Woodhouse <dwmw2@infradead.org>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/3] pppoatm: protect against freeing of vcc
-Message-ID: <20121128162001.3f326720@thirdoffive.cmf.nrl.navy.mil>
-In-Reply-To: <20121128201837.GA912@shrek.podlesie.net>
-References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
-	<1350926091-12642-3-git-send-email-krzysiek@podlesie.net>
-	<1354036592.2534.6.camel@shinybook.infradead.org>
-	<20121127173906.GA11390@shrek.podlesie.net>
-	<1354039349.2534.11.camel@shinybook.infradead.org>
-	<20121127182843.GA11597@shrek.podlesie.net>
-	<20121128201837.GA912@shrek.podlesie.net>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Nov 2012 16:22:52 -0500
+Date: Wed, 28 Nov 2012 16:22:05 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
+        Yinghai Lu <yinghai@kernel.org>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Subject: Re: [PATCH 00/19 v4] Improve IRQ remapping abstraction in x86 core
+ code
+Message-ID: <20121128212205.GD13915@phenom.dumpdata.com>
+References: <1353417176-18945-1-git-send-email-joro@8bytes.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353417176-18945-1-git-send-email-joro@8bytes.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Nov 2012 21:18:37 +0100
-Krzysztof Mazur <krzysiek@podlesie.net> wrote:
-
-> On Tue, Nov 27, 2012 at 07:28:43PM +0100, Krzysztof Mazur wrote:
-> > I think that we should add atm_pop() function that does that and fix all
-> > drivers.
-> > 
+On Tue, Nov 20, 2012 at 02:12:37PM +0100, Joerg Roedel wrote:
+> Hi,
 > 
-> I'm sending a patch that implements that idea.
+> here is the fourth version of the patch-set to improve the abstraction
+> of interrupt remapping in the x86 core code. A more detailed description
+> can be found in the original post at:
 > 
-> Currently we need two arguments vcc and skb. However, we have reserved
-> ATM_SKB(skb)->vcc in skb control block for keeping vcc
-> and we can create single argument version vcc_pop(skb). In that case
-> we need to move:
+>         https://lkml.org/lkml/2012/8/7/317
+>
+
+I looked at the patches and you can also add
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+
+If you have a git tree I would like to test them as well. Thx.
+ 
+> Changes from v3->v4:
 > 
-> 	ATM_SKB(skb)->vcc = vcc;
+> 	* Rebased to v3.7-rc6
+> 	* Added Acked-bys
+> 	* Fixed problems with AMD IRQ remapping code that came up
+> 	  in testing
 > 
-> from ATM drivers to functions that call atmdev_ops->send().
-
-i dont like the vcc->pop() implementation and at one point i had the
-crazy idea of using skb->destructors to handle it.  however, i think it
-would be necessary to clone the skb's so any existing destructor is
-preserved.
-
-> +#define vcc_pop(vcc, skb) vcc_pop_any(vcc, skb)
-> +#define vcc_pop_irq(vcc, skb) vcc_pop_any(vcc, skb)
-
-don't define these if you dont plan on using them anway.
+> Changes from v2->v3:
+> 
+>         * Rebased to v3.6-rc7
+>         * Worked in most comments on v2 by Sebastian Andrzej Siewior
+> 
+> Changes from v1->v2:
+> 
+>         * Fixed a couple of compile issues on i386 (reported by
+>           Fengguang Wu, thanks a lot)
+>         * Rebased to Linux v3.6-rc2
+> 
+> Please review.
+> 
+> Cheers, 
+> 
+>         Joerg
+> 
+> 
+> _______________________________________________
+> iommu mailing list
+> iommu@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/iommu
