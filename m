@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755297Ab2K1QvY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 11:51:24 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:45261 "EHLO
+	id S1755585Ab2K1Qvj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 11:51:39 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:45334 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750713Ab2K1QvT (ORCPT
+	with ESMTP id S1754159Ab2K1QvX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 11:51:19 -0500
-Date: Wed, 28 Nov 2012 11:50:17 -0500
+	Wed, 28 Nov 2012 11:51:23 -0500
+Date: Wed, 28 Nov 2012 11:50:26 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: Yinghai Lu <yinghai@kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
@@ -15,141 +15,81 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 04/46] x86, mm: Move init_memory_mapping calling out
- of setup.c
-Message-ID: <20121128165017.GG21266@phenom.dumpdata.com>
+Subject: Re: [PATCH v8 07/46] x86, mm: Find early page table buffer together
+Message-ID: <20121128165026.GH21266@phenom.dumpdata.com>
 References: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
- <1353123563-3103-5-git-send-email-yinghai@kernel.org>
+ <1353123563-3103-8-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1353123563-3103-5-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1353123563-3103-8-git-send-email-yinghai@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 07:38:41PM -0800, Yinghai Lu wrote:
-> Now init_memory_mapping is called two times, later will be called for every
-> ram ranges.
+On Fri, Nov 16, 2012 at 07:38:44PM -0800, Yinghai Lu wrote:
+> We should not do that in every calling of init_memory_mapping.
 
-What is 'later'? Can you say in which of the patches it will
-be called for every RAM range?
-
+Right. 
 > 
-> Could put all related init_mem calling together and out of setup.c.
+> At the same time need to move down early_memtest, and could remove after_bootmem
+                                                        ^^^^^^^^^^^^->'remove the'
 
-That looks like a stray comment.
-
+> checking.
 > 
-> Actually, it reverts commit 1bbbbe7
->     x86: Exclude E820_RESERVED regions and memory holes above 4 GB from direct mapping.
-> will address that later with complete solution include handling hole under 4g.
-
-.. I presume that the later is one of the patches. Can you say:
-'will address that in patch XYZ' ?
-
+> -v2: fix one early_memtest with 32bit by passing max_pfn_mapped instead.
 > 
 > Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Reviewed-by: Pekka Enberg <penberg@kernel.org>
 > ---
->  arch/x86/include/asm/init.h    |    1 -
->  arch/x86/include/asm/pgtable.h |    2 +-
->  arch/x86/kernel/setup.c        |   27 +--------------------------
->  arch/x86/mm/init.c             |   19 ++++++++++++++++++-
->  4 files changed, 20 insertions(+), 29 deletions(-)
+>  arch/x86/mm/init.c |   66 ++++++++++++++++++++++++++-------------------------
+>  1 files changed, 34 insertions(+), 32 deletions(-)
 > 
-> diff --git a/arch/x86/include/asm/init.h b/arch/x86/include/asm/init.h
-> index adcc0ae..4f13998 100644
-> --- a/arch/x86/include/asm/init.h
-> +++ b/arch/x86/include/asm/init.h
-> @@ -12,7 +12,6 @@ kernel_physical_mapping_init(unsigned long start,
->  			     unsigned long end,
->  			     unsigned long page_size_mask);
->  
-> -
-
-Stray whitespace.
-
->  extern unsigned long __initdata pgt_buf_start;
->  extern unsigned long __meminitdata pgt_buf_end;
->  extern unsigned long __meminitdata pgt_buf_top;
-> diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-> index 98ac76d..dd1a888 100644
-> --- a/arch/x86/include/asm/pgtable.h
-> +++ b/arch/x86/include/asm/pgtable.h
-> @@ -602,7 +602,7 @@ static inline int pgd_none(pgd_t pgd)
->  #ifndef __ASSEMBLY__
->  
->  extern int direct_gbpages;
-> -void probe_page_size_mask(void);
-> +void init_mem_mapping(void);
->  
->  /* local pte updates need not use xchg for locking */
->  static inline pte_t native_local_ptep_get_and_clear(pte_t *ptep)
-> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-> index 01fb5f9..23b079f 100644
-> --- a/arch/x86/kernel/setup.c
-> +++ b/arch/x86/kernel/setup.c
-> @@ -913,34 +913,9 @@ void __init setup_arch(char **cmdline_p)
->  	setup_real_mode();
->  
->  	init_gbpages();
-> -	probe_page_size_mask();
->  
-> -	/* max_pfn_mapped is updated here */
-> -	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
-> -	max_pfn_mapped = max_low_pfn_mapped;
-> +	init_mem_mapping();
->  
-> -#ifdef CONFIG_X86_64
-> -	if (max_pfn > max_low_pfn) {
-> -		int i;
-> -		unsigned long start, end;
-> -		unsigned long start_pfn, end_pfn;
-> -
-> -		for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn,
-> -							 NULL) {
-> -
-> -			end = PFN_PHYS(end_pfn);
-> -			if (end <= (1UL<<32))
-> -				continue;
-> -
-> -			start = PFN_PHYS(start_pfn);
-> -			max_pfn_mapped = init_memory_mapping(
-> -						max((1UL<<32), start), end);
-> -		}
-> -
-> -		/* can we preseve max_low_pfn ?*/
-> -		max_low_pfn = max_pfn;
-> -	}
-> -#endif
->  	memblock.current_limit = get_max_mapped();
->  	dma_contiguous_reserve(0);
->  
 > diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-> index 701abbc..9e17f9e 100644
+> index 51f919f..1ce0d03 100644
 > --- a/arch/x86/mm/init.c
 > +++ b/arch/x86/mm/init.c
-> @@ -37,7 +37,7 @@ struct map_range {
+> @@ -274,16 +274,6 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+>  	memset(mr, 0, sizeof(mr));
+>  	nr_range = split_mem_range(mr, 0, start, end);
 >  
->  static int page_size_mask;
+> -	/*
+> -	 * Find space for the kernel direct mapping tables.
+> -	 *
+> -	 * Later we should allocate these tables in the local node of the
+> -	 * memory mapped. Unfortunately this is done currently before the
+> -	 * nodes are discovered.
+> -	 */
+> -	if (!after_bootmem)
+> -		find_early_table_space(start, end);
+> -
+>  	for (i = 0; i < nr_range; i++)
+>  		ret = kernel_physical_mapping_init(mr[i].start, mr[i].end,
+>  						   mr[i].page_size_mask);
+> @@ -296,6 +286,36 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
 >  
-> -void probe_page_size_mask(void)
-> +static void __init probe_page_size_mask(void)
->  {
->  #if !defined(CONFIG_DEBUG_PAGEALLOC) && !defined(CONFIG_KMEMCHECK)
->  	/*
-> @@ -315,6 +315,23 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
->  	return ret >> PAGE_SHIFT;
->  }
+>  	__flush_tlb_all();
 >  
+> +	return ret >> PAGE_SHIFT;
+> +}
+> +
 > +void __init init_mem_mapping(void)
 > +{
 > +	probe_page_size_mask();
 > +
-> +	/* max_pfn_mapped is updated here */
+> +	/*
+> +	 * Find space for the kernel direct mapping tables.
+> +	 *
+> +	 * Later we should allocate these tables in the local node of the
+> +	 * memory mapped. Unfortunately this is done currently before the
+> +	 * nodes are discovered.
+> +	 */
+> +#ifdef CONFIG_X86_64
+> +	find_early_table_space(0, max_pfn<<PAGE_SHIFT);
+> +#else
+> +	find_early_table_space(0, max_low_pfn<<PAGE_SHIFT);
+> +#endif
 > +	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
 > +	max_pfn_mapped = max_low_pfn_mapped;
 > +
@@ -161,9 +101,48 @@ Stray whitespace.
 > +		max_low_pfn = max_pfn;
 > +	}
 > +#endif
-> +}
+>  	/*
+>  	 * Reserve the kernel pagetable pages we used (pgt_buf_start -
+>  	 * pgt_buf_end) and free the other ones (pgt_buf_end - pgt_buf_top)
+> @@ -311,32 +331,14 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+>  	 * RO all the pagetable pages, including the ones that are beyond
+>  	 * pgt_buf_end at that time.
+>  	 */
+> -	if (!after_bootmem && pgt_buf_end > pgt_buf_start)
+> +	if (pgt_buf_end > pgt_buf_start)
+>  		x86_init.mapping.pagetable_reserve(PFN_PHYS(pgt_buf_start),
+>  				PFN_PHYS(pgt_buf_end));
+>  
+> -	if (!after_bootmem)
+> -		early_memtest(start, end);
+> +	/* stop the wrong using */
+
+Huh? Can you clarify that comment please?
+
+> +	pgt_buf_top = 0;
+>  
+> -	return ret >> PAGE_SHIFT;
+> -}
+> -
+> -void __init init_mem_mapping(void)
+> -{
+> -	probe_page_size_mask();
+> -
+> -	/* max_pfn_mapped is updated here */
+> -	max_low_pfn_mapped = init_memory_mapping(0, max_low_pfn<<PAGE_SHIFT);
+> -	max_pfn_mapped = max_low_pfn_mapped;
+> -
+> -#ifdef CONFIG_X86_64
+> -	if (max_pfn > max_low_pfn) {
+> -		max_pfn_mapped = init_memory_mapping(1UL<<32,
+> -						     max_pfn<<PAGE_SHIFT);
+> -		/* can we preseve max_low_pfn ?*/
+> -		max_low_pfn = max_pfn;
+> -	}
+> -#endif
+> +	early_memtest(0, max_pfn_mapped << PAGE_SHIFT);
+>  }
 >  
 >  /*
->   * devmem_is_allowed() checks to see if /dev/mem access to a certain address
 > -- 
 > 1.7.7
