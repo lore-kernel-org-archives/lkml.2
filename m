@@ -1,157 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813Ab2K1DRZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 22:17:25 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:10725 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751272Ab2K1DRX (ORCPT
+	id S1752831Ab2K1DUm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Nov 2012 22:20:42 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:35159 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468Ab2K1DUk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 22:17:23 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AscEAJiBtVB5LIZ7gWdsb2JhbABFuiGGARcOAQEWJieCHgEBBAEOGRMcDw0HEAgDGBUZFCUDIROIBwW/OhSMJoEOgzMDlgCTSQ
-Date: Wed, 28 Nov 2012 14:17:19 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: glommer@parallels.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org, xfs@oss.sgi.com
-Subject: Re: [PATCH 17/19] drivers: convert shrinkers to new count/scan API
-Message-ID: <20121128031719.GR6434@dastard>
-References: <1354058086-27937-1-git-send-email-david@fromorbit.com>
- <1354058086-27937-18-git-send-email-david@fromorbit.com>
- <b94cdc$7i2bv3@fmsmga001.fm.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <b94cdc$7i2bv3@fmsmga001.fm.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 27 Nov 2012 22:20:40 -0500
+Date: Wed, 28 Nov 2012 14:20:32 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>
+Subject: linux-next: manual merge of the mfd tree with Linus' tree
+Message-Id: <20121128142032.2c9eebbceb93a3c2bf2d391f@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__28_Nov_2012_14_20_32_+1100_0sp1rbC6KJbb72M2"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 01:13:11AM +0000, Chris Wilson wrote:
-> On Wed, 28 Nov 2012 10:14:44 +1100, Dave Chinner <david@fromorbit.com> wrote:
-> > +/*
-> > + * XXX: (dchinner) This is one of the worst cases of shrinker abuse I've seen.
-> > + *
-> > + * i915_gem_purge() expects a byte count to be passed, and the minimum object
-> > + * size is PAGE_SIZE.
-> 
-> No, purge() expects a count of pages to be freed. Each pass of the
-> shrinker therefore tries to free a minimum of 128 pages.
+--Signature=_Wed__28_Nov_2012_14_20_32_+1100_0sp1rbC6KJbb72M2
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ah, I got the shifts mixed up. I'd been looking at way too much crap
-already when I saw this. But the fact this can be misunderstood says
-something about the level of documentation that the code has (i.e.
-none).
+Hi Samuel,
 
-> > The shrinker doesn't work on bytes - it works on
-> > + * *objects*.
-> 
-> And I thought you were reviewing the shrinker API to be useful where a
-> single object may range between 4K and 4G.
+Today's linux-next merge of the mfd tree got a conflict in
+drivers/mfd/twl-core.c between commit 78a3c5ab1749 ("mfd: twl-core: Fix
+chip ID for the twl6030-pwm module") from Linus' tree and commit
+afc45898f62c ("mfd: twl-core: Support for proper PWM drivers") from the
+mfd tree.
 
-Which requires rewriting all the algorithms to not be dependent on
-the subsystems using a fixed size object. The shrinker control
-function is called shrink_slab() for a reason - it was expected to
-be used to shrink caches of fixed sized objects allocated from slab
-memory.
+I fixed it up (using the version from the mfd tree) and can carry the fix
+as necessary (no action is required).
 
-It has no concept of the amount of memory that each object consumes,
-just an idea of how much *IO* it takes to replace the object in
-memory once it's been reclaimed. The DEFAULT_SEEKS is design to
-encode the fact it generally takes 2 IOs to replace either a LRU
-page or a filesystem slab object, and so balances the scanning based
-on that value. i.e. the shrinker algorithms are solidly based around
-fixed sized objects that have some relationship to the cost of
-physical IO operations to replace them in the cache.
-
-The API change is the first step in the path to removing these built
-in assumptions. The current API is just insane and any attempt to
-build on it is going to be futile. The way I see this developing is
-this:
-
-	- make the shrink_slab count -> scan algorithm per node
-
-	- add information about size of objects in the cache for
-	  fixed size object caches.
-		- the shrinker now has some idea of how many objects
-		  need to be freed to be able to free a page of
-		  memory, as well as the relative penalty for
-		  replacing them.
-		- tells the shrinker the size of the cache
-		  in bytes so overall memory footprint of the caches
-		  can be taken into account
-
-	- add new count and scan operations for caches that are
-	  based on memory used, not object counts
-		- allows us to use the same count/scan algorithm for
-		  calculating how much pressure to put on caches
-		  with variable size objects.
-
-My care factor mostly ends here, as it will allow XFS to corectly
-balance the metadata buffer cache (variable size objects) against the
-inode, dentry and dquot caches which are object based. The next
-steps that I'm about to give you are based on some discussions with
-some MM people over bottles of red wine, so take it with a grain of
-salt...
-
-	- calculate a "pressure" value for each cache controlled by a
-	  shrinker so that the relative memory pressure between
-	  caches can be compared. This allows the shrinkers to bias
-	  reclaim based on where the memory pressure is being
-	  generated
-
-	- start grouping shrinkers into a heirarchy, allowing
-	  related shrinkers (e.g. all the caches in a memcg) to be
-	  shrunk according resource limits that can be placed on the
-	  group. i.e. memory pressure is proportioned across
-	  groups rather than many individual shrinkers.
-
-	- comments have been made to the extent that with generic
-	  per-node lists and a node aware shrinker, all of the page
-	  scanning could be driven by the shrinker infrastructure,
-	  rather than the shrinkers being driven by how many pages
-	  in the page cache just got scanned for reclaim.
-
-	  IOWs, the main memory reclaim algorithm walks all the
-	  shrinkers groups to calculate overall memory pressure,
-	  calculate how much reclaim is necessary, and then
-	  proportion reclaim across all the shrinker groups. i.e.
-	  everything is a shrinker.
-
-This patch set is really just the start of a long process. balance
-between the page cache and VFS/filesystem shrinkers is critical to
-the efficient operation of the OS under many, many workloads, so I'm
-not about to change more than oe little thing at a time. This API
-change is just one little step. You'll get what you want eventually,
-but you're not going to get it as a first step.
-
-> > + * But the craziest part comes when i915_gem_purge() has walked all the objects
-> > + * and can't free any memory. That results in i915_gem_shrink_all() being
-> > + * called, which idles the GPU and frees everything the driver has in it's
-> > + * active and inactive lists. It's basically hitting the driver with a great big
-> > + * hammer because it was busy doing stuff when something else generated memory
-> > + * pressure. This doesn't seem particularly wise...
-> > + */
-> 
-> As opposed to triggering an OOM? The choice was between custom code for
-> a hopefully rare code path in a situation of last resort, or first
-> implementing the simplest code that stopped i915 from starving the
-> system of memory.
-
-And when it's something else that is causing the memory pressue?
-The shrinker gets called whenever somethign runs low on memory - it
-might be called thousands of times a second so there's a very good
-chance you have very little to free after the first purge has
-occurred. After than you're going to idle the GPU and purge all the
-memory on every single shrinker call, even though the GPU is not
-generating memory pressure and not causing the shrinkers to run.
-That's why it's crazy - it's got close to worst case behaviour when
-the GPU is already using as little memory as possible.
-
+--=20
 Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+--Signature=_Wed__28_Nov_2012_14_20_32_+1100_0sp1rbC6KJbb72M2
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQtYMAAAoJEECxmPOUX5FEfP8P/juodLjPRMEmmIi+kRAFq8Yi
+wZFxuix445L43nyIJLlqnQL9d0xF4CO0zR4mccSJyD1AdEqpyGYijYR99RB8jpAR
+zj+Hzq3YHG+pvFraJfFaogUHzlx7C0lwTRiJQQfTlmE2GrKRhymRBhK/6VK2tTby
+8LGAlNooTU6BRD+Fx0P8M701bBJPCpq3IawT0ipfdn+2FhQvzNcmDXniJOGZcPSa
+UOxTQ8bn7ZwY/lAVUi3TL3TlucUX9q4RcvSCS9ubE1L3ME77ygkRMdRSXLrl7YtW
+u1CaGdUqlPvg5lp9kzzf4hWCIBK+uv2+Me2gx6oWHn8+CWN7xIo2lrkNAB4t17wA
+69Bm4s5rzaV2XQ5CPvf8BxIU879wK3Jdds9iPlqj2mAbQfR+E3tsbHB0AYF2uNMY
+TRi1timLecNm4ohgA4GqrGN5bNXShx0Ox9GHxmUgtm5Mfpj2D7oUyOPrWrn7cJ07
+RD6sxZ8y+E1iofWcEa6mwPBBZIe0C750orRemILMrfh6pr1MMdVvw7DK6KCznz1+
+FuJMl2ld5mQSsGdWU4bWDVjqQRZCZI+wBiT/6a+dgInWGBTqMKIMdk5dBjXNau5Y
+wQEgt+dduIiZOS/h/mDB2WKRUIZOAKZzG5nK+28ZFOLQWaSv/Y4RmLidvO9IWo1u
+zkU9PD1dWIlh5Vg/OmhF
+=6xM8
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__28_Nov_2012_14_20_32_+1100_0sp1rbC6KJbb72M2--
