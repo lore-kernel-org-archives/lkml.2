@@ -1,178 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932735Ab2K1VgJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 16:36:09 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53082 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932630Ab2K1Vex (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 16:34:53 -0500
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com, paul@paulmenage.org, glommer@parallels.com
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        peterz@infradead.org, mhocko@suse.cz, bsingharora@gmail.com,
-        hannes@cmpxchg.org, kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 10/13] cpuset: make CPU / memory hotplug propagation asynchronous
-Date: Wed, 28 Nov 2012 13:34:17 -0800
-Message-Id: <1354138460-19286-11-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1354138460-19286-1-git-send-email-tj@kernel.org>
-References: <1354138460-19286-1-git-send-email-tj@kernel.org>
+	id S932716Ab2K1VgH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 16:36:07 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:35479 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932374Ab2K1VgF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 16:36:05 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: linux-acpi@vger.kernel.org,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Wen Congyang <wencongyang@gmail.com>, isimatu.yasuaki@jp.fujitsu.com,
+        lenb@kernel.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on rebind scenario
+Date: Wed, 28 Nov 2012 22:40:47 +0100
+Message-ID: <2080453.Ry9A79n0aE@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <1354136568.26955.312.camel@misato.fc.hp.com>
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com> <9212118.3s2xH6uJDI@vostro.rjw.lan> <1354136568.26955.312.camel@misato.fc.hp.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cpuset_hotplug_workfn() has been invoking cpuset_propagate_hotplug()
-directly to propagate hotplug updates to !root cpusets; however, this
-has the following problems.
+On Wednesday, November 28, 2012 02:02:48 PM Toshi Kani wrote:
+> > > > > > > > Consider the following case:
+> > > > > > > > 
+> > > > > > > > We hotremove the memory device by SCI and unbind it from the driver at the same time:
+> > > > > > > > 
+> > > > > > > > CPUa                                                  CPUb
+> > > > > > > > acpi_memory_device_notify()
+> > > > > > > >                                        unbind it from the driver
+> > > > > > > >     acpi_bus_hot_remove_device()
+> > > > > > > 
+> > > > > > > Can we make acpi_bus_remove() to fail if a given acpi_device is not
+> > > > > > > bound with a driver?  If so, can we make the unbind operation to perform
+> > > > > > > unbind only?
+> > > > > > 
+> > > > > > acpi_bus_remove_device could check if the driver is present, and return -ENODEV
+> > > > > > if it's not present (dev->driver == NULL).
+> > > > > > 
+> > > > > > But there can still be a race between an eject and an unbind operation happening
+> > > > > > simultaneously. This seems like a general problem to me i.e. not specific to an
+> > > > > > acpi memory device. How do we ensure an eject does not race with a driver unbind
+> > > > > > for other acpi devices?
+> > > > > > 
+> > > > > > Is there a per-device lock in acpi-core or device-core that can prevent this from
+> > > > > > happening? Driver core does a device_lock(dev) on all operations, but this is
+> > > > > > probably not grabbed on SCI-initiated acpi ejects.
+> > > > > 
+> > > > > Since driver_unbind() calls device_lock(dev->parent) before calling
+> > > > > device_release_driver(), I am wondering if we can call
+> > > > > device_lock(dev->dev->parent) at the beginning of acpi_bus_remove()
+> > > > > (i.e. before calling pre_remove) and fails if dev->driver is NULL.  The
+> > > > > parent lock is otherwise released after device_release_driver() is done.
+> > > > 
+> > > > I would be careful.  You may introduce some subtle locking-related issues
+> > > > this way.
+> > > 
+> > > Right.  This requires careful inspection and testing.  As far as the
+> > > locking is concerned, I am not keen on using fine grained locking for
+> > > hot-plug.  It is much simpler and solid if we serialize such operations.
+> > > 
+> > > > Besides, there may be an alternative approach to all this.  For example,
+> > > > what if we don't remove struct device objects on eject?  The ACPI handles
+> > > > associated with them don't go away in that case after all, do they?
+> > > 
+> > > Umm...  Sorry, I am not getting your point.  The issue is that we need
+> > > to be able to fail a request when memory range cannot be off-lined.
+> > > Otherwise, we end up ejecting online memory range.
+> > 
+> > Yes, this is the major one.  The minor issue, however, is a race condition
+> > between unbinding a driver from a device and removing the device if I
+> > understand it correctly.  Which will go away automatically if the device is
+> > not removed in the first place.  Or so I would think. :-)
+> 
+> I see.  I do not think whether or not the device is removed on eject
+> makes any difference here.  The issue is that after driver_unbind() is
+> done, acpi_bus_hot_remove_device() no longer calls the ACPI memory
+> driver (hence, it cannot fail in prepare_remove), and goes ahead to call
+> _EJ0.  If driver_unbind() did off-line the memory, this is OK.  However,
+> it cannot off-line kernel memory ranges.  So, we basically need to
+> either 1) serialize acpi_bus_hot_remove_device() and driver_unbind(), or
+> 2) make acpi_bus_hot_remove_device() to fail if driver_unbind() is run
+> during the operation.
 
-* cpuset locking is scheduled to be decoupled from cgroup_mutex,
-  cgroup_mutex will be unexported, and cgroup_attach_task() will do
-  cgroup locking internally, so propagation can't synchronously move
-  tasks to a parent cgroup while walking the hierarchy.
+OK, I see the problem now.
 
-* We can't use cgroup generic tree iterator because propagation to
-  each cpuset may sleep.  With propagation done asynchronously, we can
-  lose the rather ugly cpuset specific iteration.
+What exactly is triggering the driver_unbind() in this scenario?
 
-Convert cpuset_propagate_hotplug() to
-cpuset_propagate_hotplug_workfn() and execute it from newly added
-cpuset->hotplug_work.  The work items are run on an ordered workqueue,
-so the propagation order is preserved.  cpuset_hotplug_workfn()
-schedules all propagations while holding cgroup_mutex and waits for
-completion without cgroup_mutex.  Each in-flight propagation holds a
-reference to the cpuset->css.
+Rafael
 
-This patch doesn't cause any functional difference.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- kernel/cpuset.c | 54 ++++++++++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 48 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index b530fba..3558250 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -99,6 +99,8 @@ struct cpuset {
- 
- 	/* used for walking a cpuset hierarchy */
- 	struct list_head stack_list;
-+
-+	struct work_struct hotplug_work;
- };
- 
- /* Retrieve the cpuset for a cgroup */
-@@ -254,7 +256,10 @@ static DEFINE_SPINLOCK(cpuset_buffer_lock);
- /*
-  * CPU / memory hotplug is handled asynchronously.
-  */
-+static struct workqueue_struct *cpuset_propagate_hotplug_wq;
-+
- static void cpuset_hotplug_workfn(struct work_struct *work);
-+static void cpuset_propagate_hotplug_workfn(struct work_struct *work);
- 
- static DECLARE_WORK(cpuset_hotplug_work, cpuset_hotplug_workfn);
- 
-@@ -1802,6 +1807,7 @@ static struct cgroup_subsys_state *cpuset_css_alloc(struct cgroup *cont)
- 	cpumask_clear(cs->cpus_allowed);
- 	nodes_clear(cs->mems_allowed);
- 	fmeter_init(&cs->fmeter);
-+	INIT_WORK(&cs->hotplug_work, cpuset_propagate_hotplug_workfn);
- 	cs->relax_domain_level = -1;
- 	cs->parent = cgroup_cs(cont->parent);
- 
-@@ -2024,21 +2030,20 @@ static struct cpuset *cpuset_next(struct list_head *queue)
- }
- 
- /**
-- * cpuset_propagate_hotplug - propagate CPU/memory hotplug to a cpuset
-+ * cpuset_propagate_hotplug_workfn - propagate CPU/memory hotplug to a cpuset
-  * @cs: cpuset in interest
-  *
-  * Compare @cs's cpu and mem masks against top_cpuset and if some have gone
-  * offline, update @cs accordingly.  If @cs ends up with no CPU or memory,
-  * all its tasks are moved to the nearest ancestor with both resources.
-- *
-- * Should be called with cgroup_mutex held.
-  */
--static void cpuset_propagate_hotplug(struct cpuset *cs)
-+static void cpuset_propagate_hotplug_workfn(struct work_struct *work)
- {
- 	static cpumask_t off_cpus;
- 	static nodemask_t off_mems, tmp_mems;
-+	struct cpuset *cs = container_of(work, struct cpuset, hotplug_work);
- 
--	WARN_ON_ONCE(!cgroup_lock_is_held());
-+	cgroup_lock();
- 
- 	cpumask_andnot(&off_cpus, cs->cpus_allowed, top_cpuset.cpus_allowed);
- 	nodes_andnot(off_mems, cs->mems_allowed, top_cpuset.mems_allowed);
-@@ -2062,6 +2067,36 @@ static void cpuset_propagate_hotplug(struct cpuset *cs)
- 
- 	if (cpumask_empty(cs->cpus_allowed) || nodes_empty(cs->mems_allowed))
- 		remove_tasks_in_empty_cpuset(cs);
-+
-+	cgroup_unlock();
-+
-+	/* the following may free @cs, should be the last operation */
-+	css_put(&cs->css);
-+}
-+
-+/**
-+ * schedule_cpuset_propagate_hotplug - schedule hotplug propagation to a cpuset
-+ * @cs: cpuset of interest
-+ *
-+ * Schedule cpuset_propagate_hotplug_workfn() which will update CPU and
-+ * memory masks according to top_cpuset.
-+ */
-+static void schedule_cpuset_propagate_hotplug(struct cpuset *cs)
-+{
-+	/*
-+	 * Pin @cs.  The refcnt will be released when the work item
-+	 * finishes executing.
-+	 */
-+	if (!css_tryget(&cs->css))
-+		return;
-+
-+	/*
-+	 * Queue @cs->empty_cpuset_work.  If already pending, lose the css
-+	 * ref.  cpuset_propagate_hotplug_wq is ordered and propagation
-+	 * will happen in the order this function is called.
-+	 */
-+	if (!queue_work(cpuset_propagate_hotplug_wq, &cs->hotplug_work))
-+		css_put(&cs->css);
- }
- 
- /**
-@@ -2126,11 +2161,14 @@ static void cpuset_hotplug_workfn(struct work_struct *work)
- 		list_add_tail(&top_cpuset.stack_list, &queue);
- 		while ((cs = cpuset_next(&queue)))
- 			if (cs != &top_cpuset)
--				cpuset_propagate_hotplug(cs);
-+				schedule_cpuset_propagate_hotplug(cs);
- 	}
- 
- 	cgroup_unlock();
- 
-+	/* wait for propagations to finish */
-+	flush_workqueue(cpuset_propagate_hotplug_wq);
-+
- 	/* rebuild sched domains if cpus_allowed has changed */
- 	if (cpus_updated) {
- 		struct sched_domain_attr *attr;
-@@ -2176,6 +2214,10 @@ void __init cpuset_init_smp(void)
- 	top_cpuset.mems_allowed = node_states[N_HIGH_MEMORY];
- 
- 	hotplug_memory_notifier(cpuset_track_online_nodes, 10);
-+
-+	cpuset_propagate_hotplug_wq =
-+		alloc_ordered_workqueue("cpuset_hotplug", 0);
-+	BUG_ON(!cpuset_propagate_hotplug_wq);
- }
- 
- /**
 -- 
-1.7.11.7
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
