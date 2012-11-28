@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755727Ab2K1Rwj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 12:52:39 -0500
+	id S1755846Ab2K1Rw7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 12:52:59 -0500
 Received: from mail-qc0-f174.google.com ([209.85.216.174]:57921 "EHLO
 	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754416Ab2K1Rwf (ORCPT
+	with ESMTP id S1755651Ab2K1Rwi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 12:52:35 -0500
+	Wed, 28 Nov 2012 12:52:38 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
@@ -14,9 +14,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Steven Rostedt <rostedt@goodmis.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH 3/4] cputime: Consolidate cputime adjustment code
-Date: Wed, 28 Nov 2012 18:52:19 +0100
-Message-Id: <1354125140-9294-4-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 4/4] cputime: Comment cputime's adjusting code
+Date: Wed, 28 Nov 2012 18:52:20 +0100
+Message-Id: <1354125140-9294-5-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1354125140-9294-1-git-send-email-fweisbec@gmail.com>
 References: <1354125140-9294-1-git-send-email-fweisbec@gmail.com>
@@ -24,20 +24,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-task_cputime_adjusted() and thread_group_cputime_adjusted()
-essentially share the same code. They just don't use the same
-source:
+The reason for the scaling and monotonicity correction performed
+by cputime_adjust() may not be immediately clear to the reviewer.
 
-* The first function uses the cputime in the task struct and the
-previous adjusted snapshot that ensures monotonicity.
-
-* The second adds the cputime of all tasks in the group and the
-previous adjusted snapshot of the whole group from the signal
-structure.
-
-Just consolidate the common code that does the adjustment. These
-functions just need to fetch the values from the appropriate
-source.
+Add some comments to explain what happens there.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@kernel.org>
@@ -46,156 +36,53 @@ Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- include/linux/sched.h  |   23 +++++++++++++++++++----
- kernel/fork.c          |    2 +-
- kernel/sched/cputime.c |   46 +++++++++++++++++++++++-----------------------
- 3 files changed, 43 insertions(+), 28 deletions(-)
+ kernel/sched/cputime.c |   18 ++++++++++++++++--
+ 1 files changed, 16 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index e75cab5..5dafac36 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -434,13 +434,28 @@ struct cpu_itimer {
- };
- 
- /**
-+ * struct cputime - snaphsot of system and user cputime
-+ * @utime: time spent in user mode
-+ * @stime: time spent in system mode
-+ *
-+ * Gathers a generic snapshot of user and system time.
-+ */
-+struct cputime {
-+	cputime_t utime;
-+	cputime_t stime;
-+};
-+
-+/**
-  * struct task_cputime - collected CPU time counts
-  * @utime:		time spent in user mode, in &cputime_t units
-  * @stime:		time spent in kernel mode, in &cputime_t units
-  * @sum_exec_runtime:	total time spent on the CPU, in nanoseconds
-  *
-- * This structure groups together three kinds of CPU time that are
-- * tracked for threads and thread groups.  Most things considering
-+ * This is an extension of struct cputime that includes the total runtime
-+ * spent by the task from the scheduler point of view.
-+ *
-+ * As a result, this structure groups together three kinds of CPU time
-+ * that are tracked for threads and thread groups.  Most things considering
-  * CPU time want to group these counts together and treat all three
-  * of them in parallel.
-  */
-@@ -581,7 +596,7 @@ struct signal_struct {
- 	cputime_t gtime;
- 	cputime_t cgtime;
- #ifndef CONFIG_VIRT_CPU_ACCOUNTING
--	cputime_t prev_utime, prev_stime;
-+	struct cputime prev_cputime;
- #endif
- 	unsigned long nvcsw, nivcsw, cnvcsw, cnivcsw;
- 	unsigned long min_flt, maj_flt, cmin_flt, cmaj_flt;
-@@ -1340,7 +1355,7 @@ struct task_struct {
- 	cputime_t utime, stime, utimescaled, stimescaled;
- 	cputime_t gtime;
- #ifndef CONFIG_VIRT_CPU_ACCOUNTING
--	cputime_t prev_utime, prev_stime;
-+	struct cputime prev_cputime;
- #endif
- 	unsigned long nvcsw, nivcsw; /* context switch counts */
- 	struct timespec start_time; 		/* monotonic time */
-diff --git a/kernel/fork.c b/kernel/fork.c
-index 8b20ab7..0e7cdb9 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1222,7 +1222,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 	p->utime = p->stime = p->gtime = 0;
- 	p->utimescaled = p->stimescaled = 0;
- #ifndef CONFIG_VIRT_CPU_ACCOUNTING
--	p->prev_utime = p->prev_stime = 0;
-+	p->prev_cputime.utime = p->prev_cputime.stime = 0;
- #endif
- #if defined(SPLIT_RSS_COUNTING)
- 	memset(&p->rss_stat, 0, sizeof(p->rss_stat));
 diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 7dc1553..220fdc4 100644
+index 220fdc4..b7f7317 100644
 --- a/kernel/sched/cputime.c
 +++ b/kernel/sched/cputime.c
-@@ -516,14 +516,18 @@ static cputime_t scale_utime(cputime_t utime, cputime_t rtime, cputime_t total)
+@@ -516,6 +516,10 @@ static cputime_t scale_utime(cputime_t utime, cputime_t rtime, cputime_t total)
  	return (__force cputime_t) temp;
  }
  
--void task_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
-+static void cputime_adjust(struct task_cputime *curr,
-+			   struct cputime *prev,
-+			   cputime_t *ut, cputime_t *st)
- {
--	cputime_t rtime, utime = p->utime, total = utime + p->stime;
-+	cputime_t rtime, utime, total;
++/*
++ * Adjust tick based cputime random precision against scheduler
++ * runtime accounting.
++ */
+ static void cputime_adjust(struct task_cputime *curr,
+ 			   struct cputime *prev,
+ 			   cputime_t *ut, cputime_t *st)
+@@ -524,8 +528,16 @@ static void cputime_adjust(struct task_cputime *curr,
  
-+	utime = curr->utime;
-+	total = utime + curr->stime;
- 	/*
- 	 * Use CFS's precise accounting:
- 	 */
--	rtime = nsecs_to_cputime(p->se.sum_exec_runtime);
-+	rtime = nsecs_to_cputime(curr->sum_exec_runtime);
- 
- 	if (total)
- 		utime = scale_utime(utime, rtime, total);
-@@ -533,11 +537,22 @@ void task_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
- 	/*
- 	 * Compare with previous values, to keep monotonicity:
- 	 */
--	p->prev_utime = max(p->prev_utime, utime);
--	p->prev_stime = max(p->prev_stime, rtime - p->prev_utime);
-+	prev->utime = max(prev->utime, utime);
-+	prev->stime = max(prev->stime, rtime - prev->utime);
+ 	utime = curr->utime;
+ 	total = utime + curr->stime;
 +
-+	*ut = prev->utime;
-+	*st = prev->stime;
-+}
+ 	/*
+-	 * Use CFS's precise accounting:
++	 * Tick based cputime accounting depend on random scheduling
++	 * timeslices of a task to be interrupted or not by the timer.
++	 * Depending on these circumstances, the number of these interrupts
++	 * may be over or under-optimistic, matching the real user and system
++	 * cputime with a variable precision.
++	 *
++	 * Fix this by scaling these tick based values against the total
++	 * runtime accounted by the CFS scheduler.
+ 	 */
+ 	rtime = nsecs_to_cputime(curr->sum_exec_runtime);
  
--	*ut = p->prev_utime;
--	*st = p->prev_stime;
-+void task_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
-+{
-+	struct task_cputime cputime = {
-+		.utime = p->utime,
-+		.stime = p->stime,
-+		.sum_exec_runtime = p->se.sum_exec_runtime,
-+	};
-+
-+	cputime_adjust(&cputime, &p->prev_cputime, ut, st);
- }
+@@ -535,7 +547,9 @@ static void cputime_adjust(struct task_cputime *curr,
+ 		utime = rtime;
  
- /*
-@@ -545,24 +560,9 @@ void task_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
-  */
- void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
- {
--	struct signal_struct *sig = p->signal;
- 	struct task_cputime cputime;
--	cputime_t rtime, utime, total;
- 
- 	thread_group_cputime(p, &cputime);
--
--	total = cputime.utime + cputime.stime;
--	rtime = nsecs_to_cputime(cputime.sum_exec_runtime);
--
--	if (total)
--		utime = scale_utime(cputime.utime, rtime, total);
--	else
--		utime = rtime;
--
--	sig->prev_utime = max(sig->prev_utime, utime);
--	sig->prev_stime = max(sig->prev_stime, rtime - sig->prev_utime);
--
--	*ut = sig->prev_utime;
--	*st = sig->prev_stime;
-+	cputime_adjust(&cputime, &p->signal->prev_cputime, ut, st);
- }
- #endif
+ 	/*
+-	 * Compare with previous values, to keep monotonicity:
++	 * If the tick based count grows faster than the scheduler one,
++	 * the result of the scaling may go backward.
++	 * Let's enforce monotonicity.
+ 	 */
+ 	prev->utime = max(prev->utime, utime);
+ 	prev->stime = max(prev->stime, rtime - prev->utime);
 -- 
 1.7.5.4
 
