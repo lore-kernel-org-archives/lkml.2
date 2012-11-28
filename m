@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755891Ab2K1SbM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 13:31:12 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:35336 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755335Ab2K1SbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 13:31:10 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Zdenek Kabelac <zkabelac@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Len Brown <lenb@kernel.org>, Linux ACPI <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Acpi deadlocks with 3.7.0-rc4
-Date: Wed, 28 Nov 2012 19:35:55 +0100
-Message-ID: <3710302.uqU5A5H9mI@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <50B63A04.9010901@redhat.com>
-References: <50A513A8.9010404@redhat.com> <CA+55aFyLMmKuEvY6T2=vSHp_R4=ndqFEFNJsc3Axze2vYknKhg@mail.gmail.com> <50B63A04.9010901@redhat.com>
+	id S1755657Ab2K1Sdq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 13:33:46 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:35758 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753284Ab2K1Sdn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 13:33:43 -0500
+Message-ID: <50B65903.1050400@wwwdotorg.org>
+Date: Wed, 28 Nov 2012 11:33:39 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+CC: Michal Marek <mmarek@suse.cz>, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH V7 1/7] kbuild: centralize .dts->.dtb rule
+References: <1354058956-7199-1-git-send-email-swarren@wwwdotorg.org>
+In-Reply-To: <1354058956-7199-1-git-send-email-swarren@wwwdotorg.org>
+X-Enigmail-Version: 1.4.5
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 28, 2012 05:21:24 PM Zdenek Kabelac wrote:
-> Dne 28.11.2012 17:01, Linus Torvalds napsal(a):
-> > Adding more people (and the acpi list) to this report.
-> >
-> > I'm seeing *very* few changes to the core suspend/resume path in 3.7,
-> > and while there are some acpia updates, they seem to be pretty mild
-> > too.
-> >
-> > I think the acpi_os_wait_semaphore thing is a red herring - that's
-> > just stale on the stack.
-> >
-> > Do you have the register state from the oops? Or at least the "Code:"
-> > line? It would be nice to see exactly where the oops happens, and I
-> > cannot line up your "acpi_ns_lookup  + 0xa1/0x5b9" with any code due
-> > to different compilers (and configurations etc).
-> >
-> >                 Linus
-> >
+On 11/27/2012 04:29 PM, Stephen Warren wrote:
+> All architectures that use cmd_dtc do so in almost the same way. Create
+> a central build rule to avoid duplication. The one difference is that
+> most current uses of dtc build $(obj)/%.dtb from $(src)/dts/%.dts rather
+> than building the .dtb in the same directory as the .dts file. This
+> difference will be eliminated arch-by-arch in future patches.
 > 
+> MIPS is the exception here; it already uses the exact same rule as the
+> new common rule, so the duplicate is removed in this patch to avoid any
+> conflict. arch/mips changes courtesy of Ralf Baechle.
 > 
-> I've opened  https://bugzilla.kernel.org/show_bug.cgi?id=51071
-> and attached picture there which is all I have.
-> 
-> I'll try to decode exact code line.
-> 
-> 
-> In all cases - I've played even with 3.4 kernel - which also does not survive 
-> multiple resumes in docking station - though it just leaves black screen - so 
-> this oops is rather 'progress' and it also could be false path.
-> 
-> It's probably not a regression from 3.6 - since this problem was there for 
-> much longer - but now it has just become much more visible.
-> 
-> As I usually do not have reason to make multiple suspend/resumes in dock I've 
-> not noticed it until now when I've tried to capture this ACPI trace.
+> Update Documentation/kbuild to remove the explicit call to cmd_dtc from
+> the example, now that the rule exists in a centralized location.
 
-Well, if ACPI PNP devices are involved, and it looks like they are, that
-definitely is not a new problem.
+Ben, Paul,
 
-We're now in the process of reworking this area quite a bit and we'll do our
-best to address this issue too in the process.
+Following this patch (http://lkml.org/lkml/2012/11/27/555), I posted a
+series of patches to convert almost all architectures to using the
+centralized rule. The one architecture I didn't convert was PowerPC.
 
-Thanks,
-Rafael 
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+I didn't convert it because arch/powerpc/boot/Makefile contains a large
+number of rules (to generate *Image.% where % is a board name) that
+depend on %.dtb, which is expected to be in arch/powerpc/boot rather
+than arch/powerpc/boot/dts. Now, I guess it's possible to convert them
+all to expect the .dtb files to be in dts/ and also have
+arch/powerpc/boot/Makefile call make in boot/dts/ to make each required
+.dtb file. However, the patch would be a bit larger than all the other
+architecture patches. Do you want me to do that conversion, or would you
+rather I leave PowerPC alone? Thanks for any feedback.
