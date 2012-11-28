@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932290Ab2K1PMV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 10:12:21 -0500
-Received: from relay.parallels.com ([195.214.232.42]:57454 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755550Ab2K1PMT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 10:12:19 -0500
-Message-ID: <50B629C3.4050903@parallels.com>
-Date: Wed, 28 Nov 2012 19:12:03 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	id S932387Ab2K1PM2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 10:12:28 -0500
+Received: from fieldses.org ([174.143.236.118]:47400 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932301Ab2K1PMZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 10:12:25 -0500
+Date: Wed, 28 Nov 2012 10:12:23 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Subject: Re: [PATCH] nfsd: remove redundant declarations
+Message-ID: <20121128151223.GH11651@fieldses.org>
+References: <20121127114220.13915.21738.stgit@localhost.localdomain>
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: <linux-nfs@vger.kernel.org>, <Trond.Myklebust@netapp.com>,
-        <linux-kernel@vger.kernel.org>, <devel@openvz.org>
-Subject: Re: [PATCH 1/2] nfsd: make NFSv4 lease time per net
-References: <20121127111007.10271.54338.stgit@localhost.localdomain> <20121127111144.10271.97169.stgit@localhost.localdomain> <20121128150941.GF11651@fieldses.org>
-In-Reply-To: <20121128150941.GF11651@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [10.30.20.135]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121127114220.13915.21738.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-28.11.2012 19:09, J. Bruce Fields пишет:
-> On Tue, Nov 27, 2012 at 02:11:44PM +0300, Stanislav Kinsbursky wrote:
->> diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
->> index dab350d..4930981 100644
->> --- a/fs/nfsd/nfsctl.c
->> +++ b/fs/nfsd/nfsctl.c
->> @@ -912,7 +912,8 @@ static ssize_t nfsd4_write_time(struct file *file, char *buf, size_t size, time_
->>    */
->>   static ssize_t write_leasetime(struct file *file, char *buf, size_t size)
->>   {
->> -	return nfsd4_write_time(file, buf, size, &nfsd4_lease);
->> +	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
->> +	return nfsd4_write_time(file, buf, size, &nn->nfsd4_lease);
->
-> This is called in the context of whatever process writes to
-> nfsv4leasetime, so should be using its network namespace, right?
->
+On Tue, Nov 27, 2012 at 02:42:20PM +0300, Stanislav Kinsbursky wrote:
+> This is a cleanup patch. Functions nfsd_pool_stats_open() and
+> nfsd_pool_stats_release() are declared in fs/nfsd/nfsd.h.
 
-This is, actually, a interim solution to preserve existent logic.
-I.e. I'm going to convert "nfsd" filesystem into per-net one (like rpc_pipefs). I, actually, already done it in my tree.
-Thus proper network namespace will be taken from nfsd superblock.
+OK, applying.
 
-> --b.
->
+--b.
 
-
--- 
-Best regards,
-Stanislav Kinsbursky
+> 
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> ---
+>  fs/nfsd/nfsctl.c |    3 ---
+>  1 files changed, 0 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
+> index 7e41bd1..d902f83 100644
+> --- a/fs/nfsd/nfsctl.c
+> +++ b/fs/nfsd/nfsctl.c
+> @@ -186,9 +186,6 @@ static struct file_operations supported_enctypes_ops = {
+>  };
+>  #endif /* CONFIG_SUNRPC_GSS or CONFIG_SUNRPC_GSS_MODULE */
+>  
+> -extern int nfsd_pool_stats_open(struct inode *inode, struct file *file);
+> -extern int nfsd_pool_stats_release(struct inode *inode, struct file *file);
+> -
+>  static const struct file_operations pool_stats_operations = {
+>  	.open		= nfsd_pool_stats_open,
+>  	.read		= seq_read,
+> 
