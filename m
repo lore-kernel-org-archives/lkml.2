@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754998Ab2K1NOM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 08:14:12 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:16599 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754284Ab2K1NOL (ORCPT
+	id S932171Ab2K1NPo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 08:15:44 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51985 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932079Ab2K1NPn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 08:14:11 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 28 Nov 2012 05:13:55 -0800
-Message-ID: <50B60EFF.1050703@nvidia.com>
-Date: Wed, 28 Nov 2012 15:17:51 +0200
-From: =?ISO-8859-1?Q?Terje_Bergstr=F6m?= <tbergstrom@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Wed, 28 Nov 2012 08:15:43 -0500
+Date: Wed, 28 Nov 2012 13:15:40 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Navada Kanyana, Mukund" <navada@ti.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] regmap: Add support for continously numbered pages
+ across regmap range
+Message-ID: <20121128131539.GP32691@opensource.wolfsonmicro.com>
+References: <n>
+ <1354094577-14967-1-git-send-email-navada@ti.com>
+ <20121128092924.GJ32691@opensource.wolfsonmicro.com>
+ <6817C817C9581447825BFB369EAC42163E959AED@DBDE01.ent.ti.com>
+ <20121128113443.GM32691@opensource.wolfsonmicro.com>
+ <6817C817C9581447825BFB369EAC42163E959B6C@DBDE01.ent.ti.com>
+ <20121128115638.GO32691@opensource.wolfsonmicro.com>
+ <6817C817C9581447825BFB369EAC42163E959B84@DBDE01.ent.ti.com>
 MIME-Version: 1.0
-To: Dave Airlie <airlied@gmail.com>
-CC: Thierry Reding <thierry.reding@avionic-design.de>,
-        Lucas Stach <dev@lynxeye.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arto Merilainen <amerilainen@nvidia.com>
-Subject: Re: [RFC v2 8/8] drm: tegra: Add gr2d device
-References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com> <1353935954-13763-9-git-send-email-tbergstrom@nvidia.com> <CAPM=9tzvt3J6D3zLPV97w629q62CNhAxX8V+_JZ6kmXxxz5fVg@mail.gmail.com> <50B46336.8030605@nvidia.com> <CAPM=9txCuPJcFAfD7Hu5o2BVFK=pVah7B8HhG0ctLCyFPwNEnA@mail.gmail.com> <50B476E1.4070403@nvidia.com> <CAPM=9tysiK6LgnQdAwGSYfxnQfgcfRm0+X2tPSAEDxUPt-QZGA@mail.gmail.com> <50B47DA8.60609@nvidia.com>	<1354011776.1479.31.camel@tellur> <20121127103739.GA3329@avionic-0098.adnet.avionic-design.de> <50B4A483.8030305@nvidia.com> <CAPM=9tz=_0Drx3=Me3EQdPgBvYVGzs6Gnqaw6RBaTLsCG24RAg@mail.gmail.com>
-In-Reply-To: <CAPM=9tz=_0Drx3=Me3EQdPgBvYVGzs6Gnqaw6RBaTLsCG24RAg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1LW0Rr0Uq98qh6Rv"
+Content-Disposition: inline
+In-Reply-To: <6817C817C9581447825BFB369EAC42163E959B84@DBDE01.ent.ti.com>
+X-Cookie: Your ignorance cramps my conversation.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28.11.2012 01:00, Dave Airlie wrote:
-> We  generally aim for the first, to stop the gpu from reading/writing
-> any memory it hasn't been granted access to,
-> the second is nice to have though, but really requires a GPU with VM
-> to implement properly.
 
-I wonder if we should aim at root only access on Tegra20, and force
-IOMMU on Tegra30 and fix the remaining issues we have with IOMMU. The
-firewall turns out to be more complicated than I wished.
+--1LW0Rr0Uq98qh6Rv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Biggest problem is that we aim at zero-copy for everything possible,
-including command streams. Kernel gets a handle to a command stream, but
-the command stream is allocated by the user space process. So the user
-space can tamper with the stream once it's been written to the host1x 2D
-channel.
+On Wed, Nov 28, 2012 at 12:10:21PM +0000, Navada Kanyana, Mukund wrote:
 
-Copying with firewall is one option, but that would again kill the
-performance. One option would be user space unmapping the command buffer
-when it's sent to kernel, and kernel checking that it's unmapped before
-it agrees to send the stream to hardware.
+To repeat, fix your mailer to word wrap within paragraphs.
 
-On Tegra30 with IOMMU turned on things are ok without any checks,
-because all access would go via MMU, which makes kernel memory inaccessible.
+> > You appear to have two different ranges with the same selector and
+> > window.  I'm really not sure why you expect this to work...  what
+> > happens when someone reads from the two different ranges simultaneously?
 
-Of course, better ideas are welcome.
+> The selector register has to written appropriate page number. Two
+> different ranges cannot be accessed simultaneously without changing
+> the page number in the selector register.
 
-Terje
+This would be exactly the problem, yes.  In any case, this looks like
+user error.  You shouldn't be using the same window twice.
+
+--1LW0Rr0Uq98qh6Rv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQtg5dAAoJELSic+t+oim9NG0QAJledBSKL6EnhkSyvc/Ha8Vd
+9aMGrqsM88wByK0g6QRuELQsWwdJsleHRsSlXghX1EE/hMPw2F1iYSjhxKHB/fD0
+lqBw/KgyZ96r/CMHl3gklIqliwP1DmPQwKFhAJ65pnHbc+0l4g1lHJQWT6jBftT0
+YLv/y7oeT75nFCxLs33qzHS34mENtU7Z1MDjxT/j8IUVFU9zrLguHAx3f+J+5Omk
+6su3IMEgyHG/6zadBNb4715IEyspcT2g3uxPocFWfdYuAjXuTEgI74/ou1TnzA8R
+8MLtqvf4U7tvVzpbkWTa6jiP1OBY6Kf/ZYv8EGXvstoVrITrX50Tx+aBFlHENLr6
+DbOfJFcSeB5QDCCUtZIIfFav3ZG+6We4FmbgxhCgrejrqXXqcWppN4Aj+zEXY9DZ
+6HJfi3y4yhOjsZtkjrxnXWSjWKp7lWPsg8vp1v45wE659TEeqbJinLcsUCEMq9eA
+KZmxmZjk8F7a/XVmogg1poiCWKDNLSA6FtYqIcXMKynBTptlQrPw7luVYbysbFO7
+NBuRWFt6jnaeA5YB1mLffNeHK3xU/eOzzaK7sGdODQ31Q2ht7W7nNFSWXyXygxOM
+H+GCJ3wnMGKI9gI7UuxwgPqVxdCbFP8K2cs18l4vMN/wSFWyey/2fuN6ULbXDni6
+QfMpwRSd8n4m+y5mmues
+=yKw2
+-----END PGP SIGNATURE-----
+
+--1LW0Rr0Uq98qh6Rv--
