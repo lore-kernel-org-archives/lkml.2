@@ -1,66 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752159Ab2K1QIw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 11:08:52 -0500
-Received: from fieldses.org ([174.143.236.118]:36054 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751546Ab2K1QIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 11:08:51 -0500
-Date: Wed, 28 Nov 2012 11:08:47 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Subject: Re: [PATCH 1/2] nfsd: make NFSv4 lease time per net
-Message-ID: <20121128160847.GJ11651@fieldses.org>
-References: <20121127111007.10271.54338.stgit@localhost.localdomain>
- <20121127111144.10271.97169.stgit@localhost.localdomain>
- <20121128150941.GF11651@fieldses.org>
- <50B629C3.4050903@parallels.com>
- <20121128151542.GI11651@fieldses.org>
- <50B62F38.4010205@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <50B62F38.4010205@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752068Ab2K1QJm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 11:09:42 -0500
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:13084 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187Ab2K1QJk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 11:09:40 -0500
+Message-ID: <1354118473.26955.208.camel@misato.fc.hp.com>
+Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on
+ rebind scenario
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Wen Congyang <wencongyang@gmail.com>, isimatu.yasuaki@jp.fujitsu.com,
+        lenb@kernel.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Date: Wed, 28 Nov 2012 09:01:13 -0700
+In-Reply-To: <2804331.4p7pU4ARvy@vostro.rjw.lan>
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
+	 <20121127183245.GA4674@dhcp-192-168-178-175.profitbricks.localdomain>
+	 <1354053827.26955.196.camel@misato.fc.hp.com>
+	 <2804331.4p7pU4ARvy@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 07:35:20PM +0400, Stanislav Kinsbursky wrote:
-> 28.11.2012 19:15, J. Bruce Fields пишет:
-> >On Wed, Nov 28, 2012 at 07:12:03PM +0400, Stanislav Kinsbursky wrote:
-> >>28.11.2012 19:09, J. Bruce Fields пишет:
-> >>>On Tue, Nov 27, 2012 at 02:11:44PM +0300, Stanislav Kinsbursky wrote:
-> >>>>diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
-> >>>>index dab350d..4930981 100644
-> >>>>--- a/fs/nfsd/nfsctl.c
-> >>>>+++ b/fs/nfsd/nfsctl.c
-> >>>>@@ -912,7 +912,8 @@ static ssize_t nfsd4_write_time(struct file *file, char *buf, size_t size, time_
-> >>>>   */
-> >>>>  static ssize_t write_leasetime(struct file *file, char *buf, size_t size)
-> >>>>  {
-> >>>>-	return nfsd4_write_time(file, buf, size, &nfsd4_lease);
-> >>>>+	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
-> >>>>+	return nfsd4_write_time(file, buf, size, &nn->nfsd4_lease);
-> >>>
-> >>>This is called in the context of whatever process writes to
-> >>>nfsv4leasetime, so should be using its network namespace, right?
-> >>>
-> >>
-> >>This is, actually, a interim solution to preserve existent logic.
-> >>I.e. I'm going to convert "nfsd" filesystem into per-net one (like rpc_pipefs). I, actually, already done it in my tree.
-> >>Thus proper network namespace will be taken from nfsd superblock.
-> >
-> >OK, remind me how that works?  It's mounted just once, but each network
-> >namespace gets a different view of the filesystem?
-> >
+On Wed, 2012-11-28 at 00:41 +0100, Rafael J. Wysocki wrote:
+> On Tuesday, November 27, 2012 03:03:47 PM Toshi Kani wrote:
+> > On Tue, 2012-11-27 at 19:32 +0100, Vasilis Liaskovitis wrote:
+> > > On Mon, Nov 26, 2012 at 05:19:01PM -0700, Toshi Kani wrote:
+> > > > > >> Consider the following sequence of operations for a hotplugged memory
+> > > > > >> device:
+> > > > > >>
+> > > > > >> 1. echo "PNP0C80:XX" > /sys/bus/acpi/drivers/acpi_memhotplug/unbind
+> > > > > >> 2. echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
+> > > > > >>
+> > > > > >> If we don't offline/remove the memory, we have no chance to do it in
+> > > > > >> step 2. After
+> > > > > >> step2, the memory is used by the kernel, but we have powered off it. It
+> > > > > >> is very
+> > > > > >> dangerous.
+> > > > > > 
+> > > > > > How does power-off happen after unbind? acpi_eject_store checks for existing
+> > > > > > driver before taking any action:
+> > > > > > 
+> > > > > > #ifndef FORCE_EJECT
+> > > > > > 	if (acpi_device->driver == NULL) {
+> > > > > > 		ret = -ENODEV;
+> > > > > > 		goto err;
+> > > > > > 	}
+> > > > > > #endif
+> > > > > > 
+> > > > > > FORCE_EJECT is not defined afaict, so the function returns without scheduling
+> > > > > > acpi_bus_hot_remove_device. Is there another code path that calls power-off?
+> > > > > 
+> > > > > Consider the following case:
+> > > > > 
+> > > > > We hotremove the memory device by SCI and unbind it from the driver at the same time:
+> > > > > 
+> > > > > CPUa                                                  CPUb
+> > > > > acpi_memory_device_notify()
+> > > > >                                        unbind it from the driver
+> > > > >     acpi_bus_hot_remove_device()
+> > > > 
+> > > > Can we make acpi_bus_remove() to fail if a given acpi_device is not
+> > > > bound with a driver?  If so, can we make the unbind operation to perform
+> > > > unbind only?
+> > > 
+> > > acpi_bus_remove_device could check if the driver is present, and return -ENODEV
+> > > if it's not present (dev->driver == NULL).
+> > > 
+> > > But there can still be a race between an eject and an unbind operation happening
+> > > simultaneously. This seems like a general problem to me i.e. not specific to an
+> > > acpi memory device. How do we ensure an eject does not race with a driver unbind
+> > > for other acpi devices?
+> > > 
+> > > Is there a per-device lock in acpi-core or device-core that can prevent this from
+> > > happening? Driver core does a device_lock(dev) on all operations, but this is
+> > > probably not grabbed on SCI-initiated acpi ejects.
+> > 
+> > Since driver_unbind() calls device_lock(dev->parent) before calling
+> > device_release_driver(), I am wondering if we can call
+> > device_lock(dev->dev->parent) at the beginning of acpi_bus_remove()
+> > (i.e. before calling pre_remove) and fails if dev->driver is NULL.  The
+> > parent lock is otherwise released after device_release_driver() is done.
 > 
-> Nope. It's a single mount point, but per-namespace (network, in our case) - not globally.
-> Pointer to namespace will be placed on sb->s_fs_info.
+> I would be careful.  You may introduce some subtle locking-related issues
+> this way.
 
-OK, anyway, applying these.
+Right.  This requires careful inspection and testing.  As far as the
+locking is concerned, I am not keen on using fine grained locking for
+hot-plug.  It is much simpler and solid if we serialize such operations.
 
---b.
+> Besides, there may be an alternative approach to all this.  For example,
+> what if we don't remove struct device objects on eject?  The ACPI handles
+> associated with them don't go away in that case after all, do they?
+
+Umm...  Sorry, I am not getting your point.  The issue is that we need
+to be able to fail a request when memory range cannot be off-lined.
+Otherwise, we end up ejecting online memory range.
+
+Thanks,
+-Toshi
+
