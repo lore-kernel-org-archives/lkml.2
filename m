@@ -1,115 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754438Ab2K1SuG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 13:50:06 -0500
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:8424 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751121Ab2K1SuE (ORCPT
+	id S1755602Ab2K1Swe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 13:52:34 -0500
+Received: from www.linutronix.de ([62.245.132.108]:42124 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753730Ab2K1Swd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 13:50:04 -0500
-Message-ID: <1354128096.26955.276.camel@misato.fc.hp.com>
-Subject: Re: [RFC PATCH v3 0/3] acpi: Introduce prepare_remove device
- operation
-From: Toshi Kani <toshi.kani@hp.com>
-To: Hanjun Guo <guohanjun@huawei.com>
-Cc: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com, rjw@sisk.pl, lenb@kernel.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Tang Chen <tangchen@cn.fujitsu.com>
-Date: Wed, 28 Nov 2012 11:41:36 -0700
-In-Reply-To: <50B5EFE9.3040206@huawei.com>
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
-	 <50B5EFE9.3040206@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	Wed, 28 Nov 2012 13:52:33 -0500
+Message-ID: <50B65D6D.1000303@linutronix.de>
+Date: Wed, 28 Nov 2012 19:52:29 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
+MIME-Version: 1.0
+To: Michal Nazarewicz <mina86@mina86.com>
+CC: Andrzej Pietrasiewicz <andrzej.p@samsung.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Felipe Balbi'" <balbi@ti.com>,
+        "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>,
+        "'Joel Becker'" <jlbec@evilplan.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [RFC][PATCH] fs: configfs: programmatically create config groups
+References: <1353918910-12381-1-git-send-email-andrzej.p@samsung.com> <50B39921.6090308@linutronix.de> <008101cdcc7d$2d499df0$87dcd9d0$%p@samsung.com> <50B4E364.8030704@linutronix.de> <xa1tip8ruia5.fsf@mina86.com> <50B5C821.4000406@linutronix.de> <xa1ta9u1naik.fsf@mina86.com> <50B61695.50207@linutronix.de> <xa1t1ufdn6tu.fsf@mina86.com>
+In-Reply-To: <xa1t1ufdn6tu.fsf@mina86.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-11-28 at 19:05 +0800, Hanjun Guo wrote:
-> On 2012/11/24 1:50, Vasilis Liaskovitis wrote:
-> > As discussed in https://patchwork.kernel.org/patch/1581581/
-> > the driver core remove function needs to always succeed. This means we need
-> > to know that the device can be successfully removed before acpi_bus_trim / 
-> > acpi_bus_hot_remove_device are called. This can cause panics when OSPM-initiated
-> > or SCI-initiated eject of memory devices fail e.g with:
-> > echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
-> > 
-> > since the ACPI core goes ahead and ejects the device regardless of whether the
-> > the memory is still in use or not.
-> > 
-> > For this reason a new acpi_device operation called prepare_remove is introduced.
-> > This operation should be registered for acpi devices whose removal (from kernel
-> > perspective) can fail.  Memory devices fall in this category.
-> > 
-> > acpi_bus_remove() is changed to handle removal in 2 steps:
-> > - preparation for removal i.e. perform part of removal that can fail. Should
-> >   succeed for device and all its children.
-> > - if above step was successfull, proceed to actual device removal
-> 
-> Hi Vasilis,
-> We met the same problem when we doing computer node hotplug, It is a good idea
-> to introduce prepare_remove before actual device removal.
-> 
-> I think we could do more in prepare_remove, such as rollback. In most cases, we can
-> offline most of memory sections except kernel used pages now, should we rollback
-> and online the memory sections when prepare_remove failed ?
+On 11/28/2012 03:24 PM, Michal Nazarewicz wrote:
+> On Wed, Nov 28 2012, Sebastian Andrzej Siewior wrote:
+>>              <function_name>-<common_name>
+>> /functions/acm-function/
+>>
+>> instead of
+>>              <common_name>
+>> /functions/function1/
+>>                        +name
+>> with attribute file named "name" which contains the name of the
+>> function (i.e. acm). My point is to keep "name" in the directory name
+>> instead having an extra attribute.
+>
+> Right.  But as I've suggested:
+>
+> 	mkdir functions/<function-name>
+> 	mkdir functions/<function-name>/<common-name>
+>
+> which IMO is easier to handle in kernel (no parsing) and looks nicer in
+> user space.
 
-I think hot-plug operation should have all-or-nothing semantics.  That
-is, an operation should either complete successfully, or rollback to the
-original state.
+Just posted an example. Please tell me what you think.
 
-> As you may know, the ACPI based hotplug framework we are working on already addressed
-> this problem, and the way we slove this problem is a bit like yours.
-> 
-> We introduce hp_ops in struct acpi_device_ops:
-> struct acpi_device_ops {
-> 	acpi_op_add add;
-> 	acpi_op_remove remove;
-> 	acpi_op_start start;
-> 	acpi_op_bind bind;
-> 	acpi_op_unbind unbind;
-> 	acpi_op_notify notify;
-> #ifdef	CONFIG_ACPI_HOTPLUG
-> 	struct acpihp_dev_ops *hp_ops;
-> #endif	/* CONFIG_ACPI_HOTPLUG */
-> };
-> 
-> in hp_ops, we divide the prepare_remove into six small steps, that is:
-> 1) pre_release(): optional step to mark device going to be removed/busy
-> 2) release(): reclaim device from running system
-> 3) post_release(): rollback if cancelled by user or error happened
-> 4) pre_unconfigure(): optional step to solve possible dependency issue
-> 5) unconfigure(): remove devices from running system
-> 6) post_unconfigure(): free resources used by devices
-> 
-> In this way, we can easily rollback if error happens.
-> How do you think of this solution, any suggestion ? I think we can achieve
-> a better way for sharing ideas. :)
-
-Yes, sharing idea is good. :)  I do not know if we need all 6 steps (I
-have not looked at all your changes yet..), but in my mind, a hot-plug
-operation should be composed with the following 3 phases.
-
-1. Validate phase - Verify if the request is a supported operation.  All
-known restrictions are verified at this phase.  For instance, if a
-hot-remove request involves kernel memory, it is failed in this phase.
-Since this phase makes no change, no rollback is necessary to fail.  
-
-2. Execute phase - Perform hot-add / hot-remove operation that can be
-rolled-back in case of error or cancel.
-
-3. Commit phase - Perform the final hot-add / hot-remove operation that
-cannot be rolled-back.  No error / cancel is allowed in this phase.  For
-instance, eject operation is performed at this phase.  
-
-
-Thanks,
--Toshi
-
-
-
-
+Sebastian
