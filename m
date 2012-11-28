@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752638Ab2K1Eyj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Nov 2012 23:54:39 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:7833 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752280Ab2K1Eyh (ORCPT
+	id S1751032Ab2K1FOn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 00:14:43 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:59285 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699Ab2K1FOm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Nov 2012 23:54:37 -0500
-Message-ID: <50B598E7.6090506@huawei.com>
-Date: Wed, 28 Nov 2012 12:53:59 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Tang Chen <tangchen@cn.fujitsu.com>
-CC: wujianguo <wujianguo106@gmail.com>, <hpa@zytor.com>,
-        <akpm@linux-foundation.org>, <rob@landley.net>,
-        <isimatu.yasuaki@jp.fujitsu.com>, <laijs@cn.fujitsu.com>,
-        <wency@cn.fujitsu.com>, <linfeng@cn.fujitsu.com>,
-        <jiang.liu@huawei.com>, <yinghai@kernel.org>,
-        <kosaki.motohiro@jp.fujitsu.com>, <minchan.kim@gmail.com>,
-        <mgorman@suse.de>, <rientjes@google.com>, <rusty@rustcorp.com.au>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH v2 0/5] Add movablecore_map boot option
-References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <50B42F32.4050107@gmail.com> <50B58965.7040703@cn.fujitsu.com>
-In-Reply-To: <50B58965.7040703@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.216]
-X-CFilter-Loop: Reflected
+	Wed, 28 Nov 2012 00:14:42 -0500
+Date: Wed, 28 Nov 2012 16:14:30 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bill Pemberton <wfp5p@virginia.edu>,
+        Kumar Amit Mehta <gmate.amit@gmail.com>
+Subject: linux-next: manual merge of the staging tree with the tty tree
+Message-Id: <20121128161430.e6719a4c3f55f12074b6cfc4@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__28_Nov_2012_16_14_30_+1100_.W.wuFjhYPCg=p/u"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/11/28 11:47, Tang Chen wrote:
+--Signature=_Wed__28_Nov_2012_16_14_30_+1100_.W.wuFjhYPCg=p/u
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On 11/27/2012 11:10 AM, wujianguo wrote:
->>
->> Hi Tang,
->>     DMA address can't be set as movable, if some one boot kernel with
->> movablecore_map=4G@0xa00000 or other memory region that contains DMA address,
->> system maybe boot failed. Should this case be handled or mentioned
->> in the change log and kernel-parameters.txt?
-> 
-> Hi Wu,
-> 
-> I think we can use MAX_DMA_PFN and MAX_DMA32_PFN to prevent setting DMA
-> address as movable. Just ignore the address lower than them, and set
-> the rest as movable. How do you think ?
-> 
+Hi Greg,
 
-I think it's OK for now.
+Today's linux-next merge of the staging tree got a conflict in
+drivers/staging/dgrp/dgrp_tty.c between commit 3ba89e96610b ("staging:
+dgrp: dgrp_tty.c: Remove the TIOCSSOFTCAR ioctl handler from dgrp
+driver") from the tty tree and commit 8fdefcb0ab74 ("staging: dgrp:
+remove TIOCGSOFTCAR and TIOCSSOFTCAR handling") from the staging tree.
 
-> And, since we cannot figure out the minimum of memory kernel needs, I
-> think for now, we can just add some warning into kernel-parameters.txt.
-> 
-> Thanks. :)
-> 
->>
->> Thanks,
->> Jianguo Wu
->>
-> 
-> .
-> 
+I fixed it up (using the staging tree version - since it is a superset of
+the tty tree version) and can carry the fix as necessary (no action is
+required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Wed__28_Nov_2012_16_14_30_+1100_.W.wuFjhYPCg=p/u
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQtZ22AAoJEECxmPOUX5FEvckP/1QEtrGb0N3w7e2kCFkeO3nP
+IsG9AZtkysNglrW+oL8G0NX+brvMbtXvBQqhEyHGI4eiB5pwAc6vY5yyRgyt/DpZ
+/gnUXJl9a+AZgu/nVpjbWXCpExkLvTJ+dFWDPeDf/KZfFuy2ZwdNwyxPMOTI+g/G
+ZYGj2xthMQ/bPHfS++qv89SpyeKURb9IHwfS7F4kstLU58YiIhMNuHXyYTNIR1mC
+73+iFups3GIL6RSwt2KS2JHV7cMiFmyOMX12KPxj3kSXiFwBBik5o3QCricpNWwB
+FNB4kVhu7TSJqWV6yY4K23khRnYNABrVArFwHW/nPU++E8QaZaEZb1qgnmHCh3i+
+yahw3o2MdpuaymhWIkIA2fK5trZjoFWqhowbugZEwECXy8cp2GdL4VVMbrEdArg/
+b7WI7z+Xg7uHmcXgvRyE4e5OAnkVNl+k0akjJPRgPtankGsg4ixwn/Z8xeKqcBks
+YIB2JFXmZkKkqwhR9iqRpZz0l2E7ne5AZCNKhkg6EnZL3XN18lIeEnKobtLP9XGd
+kWcAOEcei6n6JlqK+DaLuenxJCyqmc5FgmFC498W9Z/boIgBI5srToV8NGHv/Ms0
+c+SVJjq6avdsnHNY3oXhPY8NM+/Abd/RbDhqKJeMv5tnTL2k9xcTmJEfbcp3jSUQ
+sciLAj8pMTx/DuCRghOn
+=Wnjt
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__28_Nov_2012_16_14_30_+1100_.W.wuFjhYPCg=p/u--
