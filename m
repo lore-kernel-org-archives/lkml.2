@@ -1,78 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753765Ab2K1J0A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 04:26:00 -0500
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:22651
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753507Ab2K1JZ4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 04:25:56 -0500
-X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:KCHJEXHC01.kpit.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dI9371I936eI1432Izz1de0h1202h1d1ah1d2ahzz8275bhz2dh2a8h668h839h93fhd24hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631hbe9i1155h)
-Subject: Re: [Patch v3 3/7] rtc: DA9055 RTC driver
-From: Ashish Jangam <ashish.jangam@kpitcummins.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <sameo@linux.intel.com>,
-        <p_gortmaker@yahoo.com>, <dchen@diasemi.com>,
-        <rtc-linux@googlegroups.com>, Alessandro Zummo <a.zummo@towertech.it>,
-        shubhro <omaplinuxkernel@gmail.com>
-In-Reply-To: <20121127142358.9a4bc20d.akpm@linux-foundation.org>
-References: <1349952025.9228.3.camel@dhruva>
-	 <1350986593.23353.3.camel@dhruva> <1353665463.1760.3000.camel@dhruva>
-	 <20121127142358.9a4bc20d.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 28 Nov 2012 14:54:41 +0530
-Message-ID: <1354094681.10949.2.camel@dhruva>
+	id S1753734Ab2K1J1d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 04:27:33 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:35018 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752569Ab2K1J1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 04:27:31 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rajagopal Venkat <rajagopal.venkat@linaro.org>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: linux-next: build failure after merge of the pm tree
+Date: Wed, 28 Nov 2012 10:32:15 +0100
+Message-ID: <2225929.p7BcZduhEL@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <20121128150218.5d30531231f7b24e3b398643@canb.auug.org.au>
+References: <20121128150218.5d30531231f7b24e3b398643@canb.auug.org.au>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.10.38.47]
-X-OriginatorOrg: kpitcummins.com
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-11-27 at 14:23 -0800, Andrew Morton wrote:
-> On Fri, 23 Nov 2012 15:41:03 +0530
-> Ashish Jangam <ashish.jangam@kpitcummins.com> wrote:
+On Wednesday, November 28, 2012 03:02:18 PM Stephen Rothwell wrote:
+> Hi Rafael,
 > 
-> > On Tue, 2012-10-23 at 15:33 +0530, Ashish Jangam wrote:
-> > > Does this patch looks good?
-> > > On Thu, 2012-10-11 at 16:10 +0530, Ashish Jangam wrote:
-> > > > This is the RTC patch for the DA9055 PMIC. This patch has got dependency on
-> > > > the DA9055 MFD core.
-> > > > 
-> > > > This patch is functionally tested on Samsung SMDKV6410.
-> > > > 
-> > >
+> After merging the pm tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
 > 
-> (Top-posting repaired. Please don't top-post).
+> ERROR: "devfreq_monitor_resume" [drivers/devfreq/governor_simpleondemand.ko] undefined!
+> ERROR: "devfreq_monitor_suspend" [drivers/devfreq/governor_simpleondemand.ko] undefined!
+> ERROR: "devfreq_interval_update" [drivers/devfreq/governor_simpleondemand.ko] undefined!
+> ERROR: "devfreq_monitor_stop" [drivers/devfreq/governor_simpleondemand.ko] undefined!
+> ERROR: "devfreq_monitor_start" [drivers/devfreq/governor_simpleondemand.ko] undefined!
 > 
-> > Any comments on this patch.
+> Caused by commit 206c30cfeb7c ("PM / devfreq: Add suspend and resume apis").
 > 
-> "shubhro <omaplinuxkernel@gmail.com>" made a comment, but it was ignored:
-> 
-> : On Thu, 11 Oct 2012 16:53:34 +0530
-> : shubhro <omaplinuxkernel@gmail.com> wrote:
-> : 
-> : > On Thursday 11 October 2012 04:10 PM, Ashish Jangam wrote:
-> : > > +#define da9055_rtc_freeze NULL
-> : > > +#endif
-> : > > +
-> : > > +static const struct dev_pm_ops da9055_rtc_pm_ops = {
-> : > > +	.suspend = da9055_rtc_suspend,
-> : > > +	.resume = da9055_rtc_resume,
-> : > > +
-> : > > +	.freeze = da9055_rtc_freeze,
-> : > > +	.thaw = da9055_rtc_resume,
-> : > > +	.restore = da9055_rtc_resume,
-> : > > +
-> : > > +	.poweroff = da9055_rtc_suspend,
-> : > > +};
-> : > You may want to use simple dev pm ops
-> 
-> 
-> 
+> I have used the pm tree from next-20121127 for today.
+
+Sorry about this, I dropped the devfreq tree from my linux-next branch for now,
+but that was after you had pulled from it.
+
+Thanks,
+Rafael
 
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
