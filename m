@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932712Ab2K1WEi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 17:04:38 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:60141 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755978Ab2K1WEX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 17:04:23 -0500
-Date: Thu, 29 Nov 2012 09:04:12 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Bill Pemberton <wfp5p@virginia.edu>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus <torvalds@linux-foundation.org>
-Subject: HOTPLUG replated patches
-Message-Id: <20121129090412.4fc1a6e5a41f9bc24b827c7c@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__29_Nov_2012_09_04_12_+1100_ZtYQIWhQalne9RtJ"
+	id S932755Ab2K1WHI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 17:07:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29183 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755663Ab2K1WHF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 17:07:05 -0500
+Date: Wed, 28 Nov 2012 20:07:00 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Gleb Natapov <gleb@redhat.com>, Avi Kivity <avi@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 2/3] KVM: x86: let reexecute_instruction work for tdp
+Message-ID: <20121128220700.GB10039@amt.cnet>
+References: <50AAC77C.8040505@linux.vnet.ibm.com>
+ <50AAC7CE.2050506@linux.vnet.ibm.com>
+ <20121126223712.GA10634@amt.cnet>
+ <50B42FC7.2080805@linux.vnet.ibm.com>
+ <20121127233246.GB8295@amt.cnet>
+ <50B581C1.2050406@linux.vnet.ibm.com>
+ <20121128140155.GH928@redhat.com>
+ <50B625DE.5070001@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50B625DE.5070001@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__29_Nov_2012_09_04_12_+1100_ZtYQIWhQalne9RtJ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Nov 28, 2012 at 10:55:26PM +0800, Xiao Guangrong wrote:
+> On 11/28/2012 10:01 PM, Gleb Natapov wrote:
+> > On Wed, Nov 28, 2012 at 11:15:13AM +0800, Xiao Guangrong wrote:
+> >> On 11/28/2012 07:32 AM, Marcelo Tosatti wrote:
+> >>> On Tue, Nov 27, 2012 at 11:13:11AM +0800, Xiao Guangrong wrote:
+> >>>>>> +static bool reexecute_instruction(struct kvm_vcpu *vcpu, unsigned long cr2)
+> >>>>>>  {
+> >>>>>> -	gpa_t gpa;
+> >>>>>> +	gpa_t gpa = cr2;
+> >>>>>>  	pfn_t pfn;
+> >>>>>>
+> >>>>>> -	if (tdp_enabled)
+> >>>>>> +	if (!ACCESS_ONCE(vcpu->kvm->arch.indirect_shadow_pages))
+> >>>>>>  		return false;
+> >>>>>
+> >>>>> How is indirect_shadow_pages protected? Why is ACCESS_ONCE() being used
+> >>>>> to read it?
+> >>>>
+> >>>> Hi Marcelo,
+> >>>>
+> >>>> It is protected by mmu-lock for it only be changed when mmu-lock is hold. And
+> >>>> ACCESS_ONCE is used on read path avoiding magic optimization from compiler.
+> >>>
+> >>> Please switch to mmu_lock protection, there is no reason to have access
+> >>> to this variable locklessly - not performance critical.
+> >>>
+> >>> For example, there is no use of barriers when modifying the variable.
+> >>
+> >> This is not bad, the worst case is, the direct mmu failed to unprotect the shadow
+> >> pages, (meet indirect_shadow_pages = 0, but there has shadow pages being shadowed.),
+> >> after enter to guest, we will go into reexecute_instruction again, then it will
+> >> remove shadow pages.
+> >>
+> > Isn't the same scenario can happen even with mmu lock around
+> > indirect_shadow_pages access?
+> 
+> Hmm..., i also think it is no different. Even using mmu-lock, we can not
+> prevent the target pfn can not be write-protected later. Marcelo?
 
-Hi all,
+In this particular case, it appears to be harmless (unsure if
+kvm_mmu_pte_write one is safe). The point is, lockless access should not
+be special.
 
-I haven't been closely following things, but is there any reason that a
-large number of these CONFIG_HOTPLUG and __dev* patches are being merged
-via the driver-core tree rather than through the relevant maintainers
-trees? They aren't particularly urgent as far as I can see.  And they
-already have, and probably will, cause unnecessary conflicts between
-trees.
+Lockless access must be carefully documented (access protocol to
+variables documented, all possible cases listed), and done when
+necessary due to performance. Otherwise, don't do it.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+On this case, its not necessary.
 
---Signature=_Thu__29_Nov_2012_09_04_12_+1100_ZtYQIWhQalne9RtJ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQtopcAAoJEECxmPOUX5FEaIgP/AoDyFf00JXt8rAPButquh9s
-TJv8ZWDBakGmTcycwTCLbsNO/8l3c1IBQ4bvkr4JkBkWqcZPq+hTuugRnLqNTn4w
-sdot4fS6SJ9BK320VM5USDwC7GL8dChoNDsPtMnepvT651LxFjvbL8KnEv84MiIx
-FfIuzLsbMZnbAARELIMcla/VEeB5UIjbjXmzKas2dUI7rGARRP6sTsNz7ol1NHoX
-extRgshBDbM39WcSnOOUd9gRwv3kYMa3Li9NlqTnRbKrs63g/W2QRJyUpNtVxeiX
-ePq1hVExpVuQgWiWoc47ikrXiDBWYqAnSRTzZQRprmJTKEAShcaMxokij4JwNSCc
-dXBUE9Yd608VYVUWrorcMWRWyIRIv9eclSY3xtQlQYSFSYuOubFKhSVLnQYS3OPl
-ITCyPNJJuMIvZh2MrLrd4Tb738xmH+QSfxM/0wS2C1ky5xPat1wMJyXDtsWBE6rj
-qYPsRq4VXUwN7ZAS0RXU1inQ4LmvmS/u3JJWR8hnkUF6nI+9kQ49BjvNMzG+WVa1
-+oiGIxnyMRbXXWabNTB/5WqWKN4txgrvS+nrkOaQeFvKLbAFBq9lrG7RQBUYY4go
-MoLLE/intc7EL5QZ55xvqV8fU4Fb4Z3h3kdmwD56jp3brgfqp5xjuuHi/nGoSmw3
-zubmSnNfbpxKdoQKBIO+
-=UyiP
------END PGP SIGNATURE-----
-
---Signature=_Thu__29_Nov_2012_09_04_12_+1100_ZtYQIWhQalne9RtJ--
