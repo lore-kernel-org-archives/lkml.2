@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752291Ab2K1GtN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 01:49:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13921 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751999Ab2K1GtL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 01:49:11 -0500
-Message-ID: <50B5B3D4.1070106@redhat.com>
-Date: Wed, 28 Nov 2012 14:48:52 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752366Ab2K1Gtv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 01:49:51 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:54382 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752001Ab2K1Gtt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 01:49:49 -0500
+Date: Wed, 28 Nov 2012 07:49:47 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: linux-kernel@vger.kernel.org
+cc: linux-sh@vger.kernel.org,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        "Koul, Vinod" <vinod.koul@intel.com>
+Subject: [PATCH 3.7] dma: sh: Don't use ENODEV for failing slave lookup
+Message-ID: <Pine.LNX.4.64.1211280740190.32652@axis700.grange>
 MIME-Version: 1.0
-To: Stephen Hemminger <shemminger@vyatta.com>
-CC: rusty@rustcorp.com.au, mst@redhat.com, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [net-next RFC] pktgen: don't wait for the device who doesn't
- free skb immediately after sent
-References: <1353916612-6357-1-git-send-email-jasowang@redhat.com> <20121126093728.0a10f97f@nehalam.linuxnetplumber.net> <50B46179.4040809@redhat.com> <20121127084919.1587c647@nehalam.linuxnetplumber.net>
-In-Reply-To: <20121127084919.1587c647@nehalam.linuxnetplumber.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:M5FNSPNrLGxZn+6nR50pbuOBpLlZaiWTKgJzddjkufG
+ Hzx9kA48Bvtx8qMwSKxokYummttH8HbxxnfqMdf9xhy69RBulw
+ 6SVtumyXepzWhDSWQXBFYUP8qoEtjofrYSdlkGdNCnOAcXphcn
+ T/g9San4GNJVI7YOZUodS462lvfMZc+wIDtLu5doHCynoXtuIk
+ j9Omh9WzYMNFC46dU66io7WVw1eWd8ePpa5nJhdVunlnpuJKGB
+ ireSHD8U+dHlFBvvEM38AGsRQV0d4arZ/lcmgCUt0/YHKIcxyG
+ tyl4ttV5JNkBAHxTC8p6QOn5DbUbfrOihM/DnhislvnCs4lVX2
+ ckX93iVTT65IaHxA0zW2JySfQNIB+zrPwRYxqpIycax7e8F/7t
+ GnbIW5Ku6TwAg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28/2012 12:49 AM, Stephen Hemminger wrote:
-> On Tue, 27 Nov 2012 14:45:13 +0800
-> Jason Wang <jasowang@redhat.com> wrote:
->
->> On 11/27/2012 01:37 AM, Stephen Hemminger wrote:
->>> On Mon, 26 Nov 2012 15:56:52 +0800
->>> Jason Wang <jasowang@redhat.com> wrote:
->>>
->>>> Some deivces do not free the old tx skbs immediately after it has been sent
->>>> (usually in tx interrupt). One such example is virtio-net which optimizes for
->>>> virt and only free the possible old tx skbs during the next packet sending. This
->>>> would lead the pktgen to wait forever in the refcount of the skb if no other
->>>> pakcet will be sent afterwards.
->>>>
->>>> Solving this issue by introducing a new flag IFF_TX_SKB_FREE_DELAY which could
->>>> notify the pktgen that the device does not free skb immediately after it has
->>>> been sent and let it not to wait for the refcount to be one.
->>>>
->>>> Signed-off-by: Jason Wang <jasowang@redhat.com>
->>> Another alternative would be using skb_orphan() and skb->destructor.
->>> There are other cases where skb's are not freed right away.
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe netdev" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Hi Stephen:
->>
->> Do you mean registering a skb->destructor for pktgen then set and check
->> bits in skb->tx_flag?
-> Yes. Register a destructor that does something like update a counter (number of packets pending),
-> then just spin while number of packets pending is over threshold.
-> --
+If dmaengine driver's .device_alloc_chan_resources() method returns -ENODEV,
+dma_request_channel() will decide, that the driver has been removed and will
+remove the device from its list. To prevent this use ENXIO if a slave lookup
+fails.
 
-Not sure this is the best method, since pktgen was used to test the tx 
-process of the device driver and NIC. If we use skb_orhpan(), we would 
-miss the test of tx completion part.
+Reported-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+---
+
+Hi Vinod
+
+Could you please push this patch to Linus for 3.7 ASAP? I think, it should 
+also go to "stable."
+
+Thanks
+Guennadi
+
+ drivers/dma/sh/shdma.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/dma/sh/shdma.c b/drivers/dma/sh/shdma.c
+index f41bcc5..910d878 100644
+--- a/drivers/dma/sh/shdma.c
++++ b/drivers/dma/sh/shdma.c
+@@ -326,7 +326,7 @@ static int sh_dmae_set_slave(struct shdma_chan *schan,
+ 						    shdma_chan);
+ 	const struct sh_dmae_slave_config *cfg = dmae_find_slave(sh_chan, slave_id);
+ 	if (!cfg)
+-		return -ENODEV;
++		return -ENXIO;
+ 
+ 	if (!try)
+ 		sh_chan->config = cfg;
+-- 
+1.7.2.5
+
