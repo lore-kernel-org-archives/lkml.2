@@ -1,57 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932697Ab2K1Vuw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 16:50:52 -0500
-Received: from mail-ea0-f202.google.com ([209.85.215.202]:50816 "EHLO
-	mail-ea0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932658Ab2K1Vuu (ORCPT
+	id S932575Ab2K1VuW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 16:50:22 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:45194 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030211Ab2K1VtG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 16:50:50 -0500
-From: Greg Thelen <gthelen@google.com>
-To: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Greg Thelen <gthelen@google.com>
-Subject: [PATCH 2/2] cgroup: list_del_init() on removed events
-Date: Wed, 28 Nov 2012 13:50:45 -0800
-Message-Id: <1354139445-6685-2-git-send-email-gthelen@google.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1354139445-6685-1-git-send-email-gthelen@google.com>
-References: <1354139445-6685-1-git-send-email-gthelen@google.com>
+	Wed, 28 Nov 2012 16:49:06 -0500
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v9 35/46] x86, mm: use round_up/down in split_mem_range()
+Date: Wed, 28 Nov 2012 13:47:46 -0800
+Message-Id: <1354139277-17376-36-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.7.7
+In-Reply-To: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
+References: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use list_del_init() rather than list_del() to remove events from
-cgrp->event_list.  No functional change.  This is just defensive
-coding.
+to replace own inline version for those roundup and rounddown.
 
-Signed-off-by: Greg Thelen <gthelen@google.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- kernel/cgroup.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/mm/init.c |   30 ++++++++++++------------------
+ 1 files changed, 12 insertions(+), 18 deletions(-)
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index a0d75bb..44c319d 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -3766,7 +3766,7 @@ static int cgroup_event_wake(wait_queue_t *wait, unsigned mode,
- 	if (flags & POLLHUP) {
- 		__remove_wait_queue(event->wqh, &event->wait);
- 		spin_lock(&cgrp->event_list_lock);
--		list_del(&event->list);
-+		list_del_init(&event->list);
- 		spin_unlock(&cgrp->event_list_lock);
- 		/*
- 		 * We are in atomic context, but cgroup_event_remove() may
-@@ -4340,7 +4340,7 @@ static int cgroup_destroy_locked(struct cgroup *cgrp)
- 	list_splice_init(&cgrp->event_list, &tmp_list);
- 	spin_unlock(&cgrp->event_list_lock);
- 	list_for_each_entry_safe(event, tmp, &tmp_list, list) {
--		list_del(&event->list);
-+		list_del_init(&event->list);
- 		remove_wait_queue(event->wqh, &event->wait);
- 		eventfd_signal(event->eventfd, 1);
- 		schedule_work(&event->remove);
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index ed7e3e6..d3fa476 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -218,13 +218,11 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ 	 * slowdowns.
+ 	 */
+ 	if (pos == 0)
+-		end_pfn = 1<<(PMD_SHIFT - PAGE_SHIFT);
++		end_pfn = PMD_SIZE >> PAGE_SHIFT;
+ 	else
+-		end_pfn = ((pos + (PMD_SIZE - 1))>>PMD_SHIFT)
+-				 << (PMD_SHIFT - PAGE_SHIFT);
++		end_pfn = round_up(pos, PMD_SIZE) >> PAGE_SHIFT;
+ #else /* CONFIG_X86_64 */
+-	end_pfn = ((pos + (PMD_SIZE - 1)) >> PMD_SHIFT)
+-			<< (PMD_SHIFT - PAGE_SHIFT);
++	end_pfn = round_up(pos, PMD_SIZE) >> PAGE_SHIFT;
+ #endif
+ 	if (end_pfn > (end >> PAGE_SHIFT))
+ 		end_pfn = end >> PAGE_SHIFT;
+@@ -234,15 +232,13 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ 	}
+ 
+ 	/* big page (2M) range */
+-	start_pfn = ((pos + (PMD_SIZE - 1))>>PMD_SHIFT)
+-			 << (PMD_SHIFT - PAGE_SHIFT);
++	start_pfn = round_up(pos, PMD_SIZE) >> PAGE_SHIFT;
+ #ifdef CONFIG_X86_32
+-	end_pfn = (end>>PMD_SHIFT) << (PMD_SHIFT - PAGE_SHIFT);
++	end_pfn = round_down(end, PMD_SIZE) >> PAGE_SHIFT;
+ #else /* CONFIG_X86_64 */
+-	end_pfn = ((pos + (PUD_SIZE - 1))>>PUD_SHIFT)
+-			 << (PUD_SHIFT - PAGE_SHIFT);
+-	if (end_pfn > ((end>>PMD_SHIFT)<<(PMD_SHIFT - PAGE_SHIFT)))
+-		end_pfn = ((end>>PMD_SHIFT)<<(PMD_SHIFT - PAGE_SHIFT));
++	end_pfn = round_up(pos, PUD_SIZE) >> PAGE_SHIFT;
++	if (end_pfn > (round_down(end, PMD_SIZE) >> PAGE_SHIFT))
++		end_pfn = round_down(end, PMD_SIZE) >> PAGE_SHIFT;
+ #endif
+ 
+ 	if (start_pfn < end_pfn) {
+@@ -253,9 +249,8 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ 
+ #ifdef CONFIG_X86_64
+ 	/* big page (1G) range */
+-	start_pfn = ((pos + (PUD_SIZE - 1))>>PUD_SHIFT)
+-			 << (PUD_SHIFT - PAGE_SHIFT);
+-	end_pfn = (end >> PUD_SHIFT) << (PUD_SHIFT - PAGE_SHIFT);
++	start_pfn = round_up(pos, PUD_SIZE) >> PAGE_SHIFT;
++	end_pfn = round_down(end, PUD_SIZE) >> PAGE_SHIFT;
+ 	if (start_pfn < end_pfn) {
+ 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
+ 				page_size_mask &
+@@ -264,9 +259,8 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+ 	}
+ 
+ 	/* tail is not big page (1G) alignment */
+-	start_pfn = ((pos + (PMD_SIZE - 1))>>PMD_SHIFT)
+-			 << (PMD_SHIFT - PAGE_SHIFT);
+-	end_pfn = (end >> PMD_SHIFT) << (PMD_SHIFT - PAGE_SHIFT);
++	start_pfn = round_up(pos, PMD_SIZE) >> PAGE_SHIFT;
++	end_pfn = round_down(end, PMD_SIZE) >> PAGE_SHIFT;
+ 	if (start_pfn < end_pfn) {
+ 		nr_range = save_mr(mr, nr_range, start_pfn, end_pfn,
+ 				page_size_mask & (1<<PG_LEVEL_2M));
 -- 
-1.7.7.3
+1.7.7
 
