@@ -1,97 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755942Ab2K1USL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 15:18:11 -0500
-Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:44391 "EHLO
-	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752896Ab2K1USJ (ORCPT
+	id S1756005Ab2K1USo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 15:18:44 -0500
+Received: from shrek-wifi.podlesie.net ([93.179.225.50]:34684 "EHLO
+	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755042Ab2K1USm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 15:18:09 -0500
-Date: Wed, 28 Nov 2012 22:18:04 +0200
-From: Sakari Ailus <sakari.ailus@iki.fi>
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Cc: LMML <linux-media@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        Prabhakar Lad <prabhakar.lad@ti.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Subject: Re: [PATCH v3 2/3] davinci: vpss: dm365: set vpss clk ctrl
-Message-ID: <20121128201804.GI31879@valkosipuli.retiisi.org.uk>
-References: <1354100134-21095-1-git-send-email-prabhakar.lad@ti.com>
- <1354100134-21095-3-git-send-email-prabhakar.lad@ti.com>
+	Wed, 28 Nov 2012 15:18:42 -0500
+Date: Wed, 28 Nov 2012 21:18:37 +0100
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: David Woodhouse <dwmw2@infradead.org>,
+        chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 3/3] pppoatm: protect against freeing of vcc
+Message-ID: <20121128201837.GA912@shrek.podlesie.net>
+References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
+ <1350926091-12642-3-git-send-email-krzysiek@podlesie.net>
+ <1354036592.2534.6.camel@shinybook.infradead.org>
+ <20121127173906.GA11390@shrek.podlesie.net>
+ <1354039349.2534.11.camel@shinybook.infradead.org>
+ <20121127182843.GA11597@shrek.podlesie.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1354100134-21095-3-git-send-email-prabhakar.lad@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20121127182843.GA11597@shrek.podlesie.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prabhakar,
-
-On Wed, Nov 28, 2012 at 04:25:33PM +0530, Prabhakar Lad wrote:
-> From: Manjunath Hadli <manjunath.hadli@ti.com>
+On Tue, Nov 27, 2012 at 07:28:43PM +0100, Krzysztof Mazur wrote:
 > 
-> request_mem_region for VPSS_CLK_CTRL register and ioremap.
-> and enable clocks appropriately.
+> While reviewing your br2684 patch I also found that some ATM drivers does
+> not call ->pop() when ->send() fails, they should do:
 > 
-> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-> ---
->  drivers/media/platform/davinci/vpss.c |   14 ++++++++++++++
->  1 files changed, 14 insertions(+), 0 deletions(-)
+> 	if (vcc->pop)
+> 		vcc->pop(vcc, skb);
+> 	else
+> 		dev_kfree_skb(skb);
 > 
-> diff --git a/drivers/media/platform/davinci/vpss.c b/drivers/media/platform/davinci/vpss.c
-> index 34ad7bd..a36d694 100644
-> --- a/drivers/media/platform/davinci/vpss.c
-> +++ b/drivers/media/platform/davinci/vpss.c
-> @@ -103,6 +103,7 @@ struct vpss_hw_ops {
->  struct vpss_oper_config {
->  	__iomem void *vpss_regs_base0;
->  	__iomem void *vpss_regs_base1;
-> +	resource_size_t *vpss_regs_base2;
->  	enum vpss_platform_type platform;
->  	spinlock_t vpss_lock;
->  	struct vpss_hw_ops hw_ops;
-> @@ -484,11 +485,24 @@ static struct platform_driver vpss_driver = {
->  
->  static void vpss_exit(void)
->  {
-> +	iounmap(oper_cfg.vpss_regs_base2);
-> +	release_mem_region(*oper_cfg.vpss_regs_base2, 4);
+> but some drivers just call dev_kfree_skb(skb).
+> 
+> I think that we should add atm_pop() function that does that and fix all
+> drivers.
+> 
 
-release_mem_region(VPSS_CLK_CTRL, 4);?
+I'm sending a patch that implements that idea.
 
->  	platform_driver_unregister(&vpss_driver);
->  }
->  
-> +#define VPSS_CLK_CTRL			0x01c40044
-> +#define VPSS_CLK_CTRL_VENCCLKEN		BIT(3)
-> +#define VPSS_CLK_CTRL_DACCLKEN		BIT(4)
-> +
->  static int __init vpss_init(void)
->  {
-> +	if (request_mem_region(VPSS_CLK_CTRL, 4, "vpss_clock_control")) {
+Currently we need two arguments vcc and skb. However, we have reserved
+ATM_SKB(skb)->vcc in skb control block for keeping vcc
+and we can create single argument version vcc_pop(skb). In that case
+we need to move:
 
-if (!request_mem_region())
-	return -EBUSY;
+	ATM_SKB(skb)->vcc = vcc;
 
-...
+from ATM drivers to functions that call atmdev_ops->send().
 
-> +		oper_cfg.vpss_regs_base2 = ioremap(VPSS_CLK_CTRL, 4);
-> +		__raw_writel(VPSS_CLK_CTRL_VENCCLKEN |
-> +			     VPSS_CLK_CTRL_DACCLKEN, oper_cfg.vpss_regs_base2);
-> +	} else {
-> +		return -EBUSY;
-> +	}
->  	return platform_driver_register(&vpss_driver);
->  }
->  subsys_initcall(vpss_init);
+Krzysiek
+-- >8 --
+Subject: [PATCH] atm: introduce vcc_pop_*()
 
+The atm drivers to free skb, that they got from ->send(), cannot just use
+dev_kfree_skb*(), but they must use something like:
+
+	if (vcc->pop)
+		vcc->pop(vcc, skb);
+	else
+		dev_kfree_skb_any(skb);
+
+When vcc->pop is non-NULL, but they must in such case call vcc->pop().
+This causes duplicated code in many drivers, and some drivers even forgot
+to call vcc->pop() in some error handling code.
+
+The new vcc_pop_*() functions are equivalent to dev_kfree_skb*().
+Currently we always use dev_kfree_skb_any() to free, because using
+other versions it's probably worthless optimization - in ->pop() we
+already use only dev_kfree_skb_any(). The other functions we added
+only to not loose information from converting existing code that
+uses some non-any dev_kfree_skb*() variants.
+
+Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
+---
+ include/linux/atmdev.h | 11 +++++++++++
+ net/atm/common.c       |  9 +++++++++
+ 2 files changed, 20 insertions(+)
+
+diff --git a/include/linux/atmdev.h b/include/linux/atmdev.h
+index c1da539..dedccad 100644
+--- a/include/linux/atmdev.h
++++ b/include/linux/atmdev.h
+@@ -283,6 +283,17 @@ int atm_pcr_goal(const struct atm_trafprm *tp);
+ 
+ void vcc_release_async(struct atm_vcc *vcc, int reply);
+ 
++/*
++ * vcc_pop_*() functions should be used by ATM driver to free transmitted
++ * skbs - skbs that were sent to driver by atmdev_opt->send() function.
++ *
++ * We provide three functions that can be used in different contexts.
++ * See dev_kfree_skb*() documentation for details.
++ */
++void vcc_pop_any(struct atm_vcc *vcc, struct sk_buff *skb);
++#define vcc_pop(vcc, skb) vcc_pop_any(vcc, skb)
++#define vcc_pop_irq(vcc, skb) vcc_pop_any(vcc, skb)
++
+ struct atm_ioctl {
+ 	struct module *owner;
+ 	/* A module reference is kept if appropriate over this call.
+diff --git a/net/atm/common.c b/net/atm/common.c
+index 806fc0a..ad9c77d 100644
+--- a/net/atm/common.c
++++ b/net/atm/common.c
+@@ -654,6 +654,15 @@ out:
+ 	return error;
+ }
+ 
++void vcc_pop_any(struct atm_vcc *vcc, struct sk_buff *skb)
++{
++	if (vcc->pop)
++		vcc->pop(vcc, skb);
++	else
++		dev_kfree_skb_any(skb);
++}
++EXPORT_SYMBOL(vcc_pop_any);
++
+ unsigned int vcc_poll(struct file *file, struct socket *sock, poll_table *wait)
+ {
+ 	struct sock *sk = sock->sk;
 -- 
-Sakari Ailus
-e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
+1.8.0.411.g71a7da8
+
