@@ -1,301 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755047Ab2K1Qs2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 11:48:28 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55830 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753857Ab2K1Qs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 11:48:26 -0500
-Date: Wed, 28 Nov 2012 17:48:24 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        azurIt <azurit@pobox.sk>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, cgroups mailinglist <cgroups@vger.kernel.org>
-Subject: Re: [PATCH -v2 -mm] memcg: do not trigger OOM from
- add_to_page_cache_locked
-Message-ID: <20121128164824.GC22201@dhcp22.suse.cz>
-References: <20121126013855.AF118F5E@pobox.sk>
- <20121126131837.GC17860@dhcp22.suse.cz>
- <50B403CA.501@jp.fujitsu.com>
- <20121127194813.GP24381@cmpxchg.org>
- <20121127205431.GA2433@dhcp22.suse.cz>
- <20121127205944.GB2433@dhcp22.suse.cz>
- <20121128152631.GT24381@cmpxchg.org>
- <20121128160447.GH12309@dhcp22.suse.cz>
- <20121128163736.GV24381@cmpxchg.org>
- <20121128164640.GB22201@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121128164640.GB22201@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755186Ab2K1QoV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 11:44:21 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:35969 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755040Ab2K1QoR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 11:44:17 -0500
+From: Kent Overstreet <koverstreet@google.com>
+To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org
+Cc: zab@redhat.com, bcrl@kvack.org, jmoyer@redhat.com, axboe@kernel.dk,
+        viro@zeniv.linux.org.uk, Kent Overstreet <koverstreet@google.com>
+Subject: [PATCH 13/25] aio: Convert read_events() to hrtimers
+Date: Wed, 28 Nov 2012 08:43:37 -0800
+Message-Id: <1354121029-1376-14-git-send-email-koverstreet@google.com>
+X-Mailer: git-send-email 1.7.12
+In-Reply-To: <1354121029-1376-1-git-send-email-koverstreet@google.com>
+References: <1354121029-1376-1-git-send-email-koverstreet@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 28-11-12 17:46:40, Michal Hocko wrote:
-> On Wed 28-11-12 11:37:36, Johannes Weiner wrote:
-> > On Wed, Nov 28, 2012 at 05:04:47PM +0100, Michal Hocko wrote:
-> > > diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> > > index 095d2b4..5abe441 100644
-> > > --- a/include/linux/memcontrol.h
-> > > +++ b/include/linux/memcontrol.h
-> > > @@ -57,13 +57,14 @@ extern int mem_cgroup_newpage_charge(struct page *page, struct mm_struct *mm,
-> > >  				gfp_t gfp_mask);
-> > >  /* for swap handling */
-> > >  extern int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
-> > > -		struct page *page, gfp_t mask, struct mem_cgroup **memcgp);
-> > > +		struct page *page, gfp_t mask, struct mem_cgroup **memcgp,
-> > > +		bool oom);
-> > 
-> > Ok, now I feel almost bad for asking, but why the public interface,
-> > too?
-> 
-> Would it work out if I tell it was to double check that your review
-> quality is not decreased after that many revisions? :P
-> 
-> Incremental update and the full patch in the reply
+Converting read_events() to prepare_to_wait_exclusive() and
+hrtimers simplifies it quite a bit.
+
+Signed-off-by: Kent Overstreet <koverstreet@google.com>
 ---
->From e21bb704947e9a477ec1df9121575c606dbfcb52 Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Wed, 28 Nov 2012 17:46:32 +0100
-Subject: [PATCH] memcg: do not trigger OOM from add_to_page_cache_locked
+ fs/aio.c | 78 +++++++++++++++++-----------------------------------------------
+ 1 file changed, 21 insertions(+), 57 deletions(-)
 
-memcg oom killer might deadlock if the process which falls down to
-mem_cgroup_handle_oom holds a lock which prevents other task to
-terminate because it is blocked on the very same lock.
-This can happen when a write system call needs to allocate a page but
-the allocation hits the memcg hard limit and there is nothing to reclaim
-(e.g. there is no swap or swap limit is hit as well and all cache pages
-have been reclaimed already) and the process selected by memcg OOM
-killer is blocked on i_mutex on the same inode (e.g. truncate it).
-
-Process A
-[<ffffffff811109b8>] do_truncate+0x58/0xa0		# takes i_mutex
-[<ffffffff81121c90>] do_last+0x250/0xa30
-[<ffffffff81122547>] path_openat+0xd7/0x440
-[<ffffffff811229c9>] do_filp_open+0x49/0xa0
-[<ffffffff8110f7d6>] do_sys_open+0x106/0x240
-[<ffffffff8110f950>] sys_open+0x20/0x30
-[<ffffffff815b5926>] system_call_fastpath+0x18/0x1d
-[<ffffffffffffffff>] 0xffffffffffffffff
-
-Process B
-[<ffffffff8110a9c1>] mem_cgroup_handle_oom+0x241/0x3b0
-[<ffffffff8110b5ab>] T.1146+0x5ab/0x5c0
-[<ffffffff8110c22e>] mem_cgroup_cache_charge+0xbe/0xe0
-[<ffffffff810ca28c>] add_to_page_cache_locked+0x4c/0x140
-[<ffffffff810ca3a2>] add_to_page_cache_lru+0x22/0x50
-[<ffffffff810ca45b>] grab_cache_page_write_begin+0x8b/0xe0
-[<ffffffff81193a18>] ext3_write_begin+0x88/0x270
-[<ffffffff810c8fc6>] generic_file_buffered_write+0x116/0x290
-[<ffffffff810cb3cc>] __generic_file_aio_write+0x27c/0x480
-[<ffffffff810cb646>] generic_file_aio_write+0x76/0xf0           # takes ->i_mutex
-[<ffffffff8111156a>] do_sync_write+0xea/0x130
-[<ffffffff81112183>] vfs_write+0xf3/0x1f0
-[<ffffffff81112381>] sys_write+0x51/0x90
-[<ffffffff815b5926>] system_call_fastpath+0x18/0x1d
-[<ffffffffffffffff>] 0xffffffffffffffff
-
-This is not a hard deadlock though because administrator can still
-intervene and increase the limit on the group which helps the writer to
-finish the allocation and release the lock.
-
-This patch heals the problem by forbidding OOM from page cache charges
-(namely add_ro_page_cache_locked). mem_cgroup_cache_charge grows oom
-argument which is pushed down the call chain.
-
-As a possibly visible result add_to_page_cache_lru might fail more often
-with ENOMEM but this is to be expected if the limit is set and it is
-preferable than OOM killer IMO.
-
-Changes since v1
-- do not abuse gfp_flags and rather use oom parameter directly as per
-  Johannes
-- handle also shmem write fauls resp. fallocate properly as per Johannes
-
-Reported-by: azurIt <azurit@pobox.sk>
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- include/linux/memcontrol.h |    5 +++--
- mm/filemap.c               |    9 +++++++--
- mm/memcontrol.c            |   20 ++++++++++----------
- mm/shmem.c                 |   17 ++++++++++++++---
- 4 files changed, 34 insertions(+), 17 deletions(-)
-
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 095d2b4..8f48d5e 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -63,7 +63,7 @@ extern void mem_cgroup_commit_charge_swapin(struct page *page,
- extern void mem_cgroup_cancel_charge_swapin(struct mem_cgroup *memcg);
- 
- extern int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
--					gfp_t gfp_mask);
-+					gfp_t gfp_mask, bool oom);
- 
- struct lruvec *mem_cgroup_zone_lruvec(struct zone *, struct mem_cgroup *);
- struct lruvec *mem_cgroup_page_lruvec(struct page *, struct zone *);
-@@ -210,7 +210,8 @@ static inline int mem_cgroup_newpage_charge(struct page *page,
- }
- 
- static inline int mem_cgroup_cache_charge(struct page *page,
--					struct mm_struct *mm, gfp_t gfp_mask)
-+					struct mm_struct *mm, gfp_t gfp_mask,
-+					bool oom)
- {
- 	return 0;
- }
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 83efee7..ef8fbd5 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -447,8 +447,13 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
- 	VM_BUG_ON(!PageLocked(page));
- 	VM_BUG_ON(PageSwapBacked(page));
- 
--	error = mem_cgroup_cache_charge(page, current->mm,
--					gfp_mask & GFP_RECLAIM_MASK);
-+	/*
-+	 * Cannot trigger OOM even if gfp_mask would allow that normally
-+	 * because we might be called from a locked context and that
-+	 * could lead to deadlocks if the killed process is waiting for
-+	 * the same lock.
-+	 */
-+	error = mem_cgroup_cache_charge(page, current->mm, gfp_mask, false);
- 	if (error)
- 		goto out;
- 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 02ee2f7..3c9b1c5 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3709,11 +3709,10 @@ out:
-  * < 0 if the cgroup is over its limit
-  */
- static int mem_cgroup_charge_common(struct page *page, struct mm_struct *mm,
--				gfp_t gfp_mask, enum charge_type ctype)
-+				gfp_t gfp_mask, enum charge_type ctype, bool oom)
- {
- 	struct mem_cgroup *memcg = NULL;
- 	unsigned int nr_pages = 1;
--	bool oom = true;
- 	int ret;
- 
- 	if (PageTransHuge(page)) {
-@@ -3742,7 +3741,7 @@ int mem_cgroup_newpage_charge(struct page *page,
- 	VM_BUG_ON(page->mapping && !PageAnon(page));
- 	VM_BUG_ON(!mm);
- 	return mem_cgroup_charge_common(page, mm, gfp_mask,
--					MEM_CGROUP_CHARGE_TYPE_ANON);
-+					MEM_CGROUP_CHARGE_TYPE_ANON, true);
- }
- 
- /*
-@@ -3754,7 +3753,8 @@ int mem_cgroup_newpage_charge(struct page *page,
- static int __mem_cgroup_try_charge_swapin(struct mm_struct *mm,
- 					  struct page *page,
- 					  gfp_t mask,
--					  struct mem_cgroup **memcgp)
-+					  struct mem_cgroup **memcgp,
-+					  bool oom)
- {
- 	struct mem_cgroup *memcg;
- 	struct page_cgroup *pc;
-@@ -3776,13 +3776,13 @@ static int __mem_cgroup_try_charge_swapin(struct mm_struct *mm,
- 	if (!memcg)
- 		goto charge_cur_mm;
- 	*memcgp = memcg;
--	ret = __mem_cgroup_try_charge(NULL, mask, 1, memcgp, true);
-+	ret = __mem_cgroup_try_charge(NULL, mask, 1, memcgp, oom);
- 	css_put(&memcg->css);
- 	if (ret == -EINTR)
- 		ret = 0;
+diff --git a/fs/aio.c b/fs/aio.c
+index 9d27508..7961f60 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -743,54 +743,16 @@ out:
  	return ret;
- charge_cur_mm:
--	ret = __mem_cgroup_try_charge(mm, mask, 1, memcgp, true);
-+	ret = __mem_cgroup_try_charge(mm, mask, 1, memcgp, oom);
- 	if (ret == -EINTR)
- 		ret = 0;
- 	return ret;
-@@ -3808,7 +3808,7 @@ int mem_cgroup_try_charge_swapin(struct mm_struct *mm, struct page *page,
- 			ret = 0;
- 		return ret;
- 	}
--	return __mem_cgroup_try_charge_swapin(mm, page, gfp_mask, memcgp);
-+	return __mem_cgroup_try_charge_swapin(mm, page, gfp_mask, memcgp, true);
  }
  
- void mem_cgroup_cancel_charge_swapin(struct mem_cgroup *memcg)
-@@ -3851,7 +3851,7 @@ void mem_cgroup_commit_charge_swapin(struct page *page,
- }
- 
- int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
--				gfp_t gfp_mask)
-+				gfp_t gfp_mask, bool oom)
+-struct aio_timeout {
+-	struct timer_list	timer;
+-	int			timed_out;
+-	struct task_struct	*p;
+-};
+-
+-static void timeout_func(unsigned long data)
+-{
+-	struct aio_timeout *to = (struct aio_timeout *)data;
+-
+-	to->timed_out = 1;
+-	wake_up_process(to->p);
+-}
+-
+-static inline void init_timeout(struct aio_timeout *to)
+-{
+-	setup_timer_on_stack(&to->timer, timeout_func, (unsigned long) to);
+-	to->timed_out = 0;
+-	to->p = current;
+-}
+-
+-static inline void set_timeout(long start_jiffies, struct aio_timeout *to,
+-			       const struct timespec *ts)
+-{
+-	to->timer.expires = start_jiffies + timespec_to_jiffies(ts);
+-	if (time_after(to->timer.expires, jiffies))
+-		add_timer(&to->timer);
+-	else
+-		to->timed_out = 1;
+-}
+-
+-static inline void clear_timeout(struct aio_timeout *to)
+-{
+-	del_singleshot_timer_sync(&to->timer);
+-}
+-
+ static int read_events(struct kioctx *ctx,
+ 			long min_nr, long nr,
+ 			struct io_event __user *event,
+ 			struct timespec __user *timeout)
  {
- 	struct mem_cgroup *memcg = NULL;
- 	enum charge_type type = MEM_CGROUP_CHARGE_TYPE_CACHE;
-@@ -3863,10 +3863,10 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
- 		return 0;
+-	long			start_jiffies = jiffies;
+-	struct task_struct	*tsk = current;
+-	DECLARE_WAITQUEUE(wait, tsk);
+-	int			ret;
+-	int			i = 0;
++	DEFINE_WAIT(wait);
++	struct hrtimer_sleeper t;
++	size_t i = 0;
++	int ret;
+ 	struct io_event		ent;
+-	struct aio_timeout	to;
  
- 	if (!PageSwapCache(page))
--		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type);
-+		ret = mem_cgroup_charge_common(page, mm, gfp_mask, type, oom);
- 	else { /* page is swapcache/shmem */
- 		ret = __mem_cgroup_try_charge_swapin(mm, page,
--						     gfp_mask, &memcg);
-+						     gfp_mask, &memcg, oom);
- 		if (!ret)
- 			__mem_cgroup_commit_charge_swapin(page, memcg, type);
+ 	/* needed to zero any padding within an entry (there shouldn't be 
+ 	 * any, but C is fun!
+@@ -825,20 +787,26 @@ static int read_events(struct kioctx *ctx,
+ 
+ 	/* End fast path */
+ 
+-	init_timeout(&to);
++	hrtimer_init_on_stack(&t.timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
++	hrtimer_init_sleeper(&t, current);
++
+ 	if (timeout) {
+ 		struct timespec	ts;
+-		ret = -EFAULT;
+-		if (unlikely(copy_from_user(&ts, timeout, sizeof(ts))))
++
++		if (unlikely(copy_from_user(&ts, timeout, sizeof(ts)))) {
++			ret = -EFAULT;
+ 			goto out;
++		}
+ 
+-		set_timeout(start_jiffies, &to, &ts);
++		hrtimer_start_range_ns(&t.timer, timespec_to_ktime(ts),
++				       current->timer_slack_ns, HRTIMER_MODE_REL);
  	}
-diff --git a/mm/shmem.c b/mm/shmem.c
-index 55054a7..3b27db4 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -760,7 +760,7 @@ int shmem_unuse(swp_entry_t swap, struct page *page)
- 	 * the shmem_swaplist_mutex which might hold up shmem_writepage().
- 	 * Charged back to the user (not to caller) when swap account is used.
- 	 */
--	error = mem_cgroup_cache_charge(page, current->mm, GFP_KERNEL);
-+	error = mem_cgroup_cache_charge(page, current->mm, GFP_KERNEL, true);
- 	if (error)
- 		goto out;
- 	/* No radix_tree_preload: swap entry keeps a place for page in tree */
-@@ -1152,8 +1152,17 @@ repeat:
- 				goto failed;
- 		}
  
-+		 /*
-+		  * Cannot trigger OOM even if gfp_mask would allow that
-+		  * normally because we might be called from a locked
-+		  * context (i_mutex held) if this is a write lock or
-+		  * fallocate and that could lead to deadlocks if the
-+		  * killed process is waiting for the same lock.
-+		  */
- 		error = mem_cgroup_cache_charge(page, current->mm,
--						gfp & GFP_RECLAIM_MASK);
-+						gfp & GFP_RECLAIM_MASK,
-+						sgp != SGP_WRITE &&
-+						sgp != SGP_FALLOC);
- 		if (!error) {
- 			error = shmem_add_to_page_cache(page, mapping, index,
- 						gfp, swp_to_radix_entry(swap));
-@@ -1209,7 +1218,9 @@ repeat:
- 		SetPageSwapBacked(page);
- 		__set_page_locked(page);
- 		error = mem_cgroup_cache_charge(page, current->mm,
--						gfp & GFP_RECLAIM_MASK);
-+						gfp & GFP_RECLAIM_MASK,
-+						sgp != SGP_WRITE &&
-+						sgp != SGP_FALLOC);
- 		if (error)
- 			goto decused;
- 		error = radix_tree_preload(gfp & GFP_RECLAIM_MASK);
+ 	while (likely(i < nr)) {
+-		add_wait_queue_exclusive(&ctx->wait, &wait);
++		prepare_to_wait_exclusive(&ctx->wait, &wait,
++					  TASK_INTERRUPTIBLE);
++
+ 		do {
+-			set_task_state(tsk, TASK_INTERRUPTIBLE);
+ 			ret = aio_read_evt(ctx, &ent);
+ 			if (ret)
+ 				break;
+@@ -848,7 +816,7 @@ static int read_events(struct kioctx *ctx,
+ 				ret = -EINVAL;
+ 				break;
+ 			}
+-			if (to.timed_out)	/* Only check after read evt */
++			if (!t.task)	/* Only check after read evt */
+ 				break;
+ 			/* Try to only show up in io wait if there are ops
+ 			 *  in flight */
+@@ -856,16 +824,13 @@ static int read_events(struct kioctx *ctx,
+ 				io_schedule();
+ 			else
+ 				schedule();
+-			if (signal_pending(tsk)) {
++			if (signal_pending(current)) {
+ 				ret = -EINTR;
+ 				break;
+ 			}
+ 			/*ret = aio_read_evt(ctx, &ent);*/
+ 		} while (1) ;
+ 
+-		set_task_state(tsk, TASK_RUNNING);
+-		remove_wait_queue(&ctx->wait, &wait);
+-
+ 		if (unlikely(ret <= 0))
+ 			break;
+ 
+@@ -879,11 +844,10 @@ static int read_events(struct kioctx *ctx,
+ 		event ++;
+ 		i ++;
+ 	}
+-
+-	if (timeout)
+-		clear_timeout(&to);
+ out:
+-	destroy_timer_on_stack(&to.timer);
++	hrtimer_cancel(&t.timer);
++	destroy_hrtimer_on_stack(&t.timer);
++	finish_wait(&ctx->wait, &wait);
+ 	return i ? i : ret;
+ }
+ 
 -- 
-1.7.10.4
+1.7.12
 
--- 
-Michal Hocko
-SUSE Labs
