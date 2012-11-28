@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753592Ab2K1I6g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 03:58:36 -0500
-Received: from mx3.cyfra.ua ([62.80.160.182]:48086 "EHLO mx3.cyfra.ua"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752720Ab2K1I6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 03:58:36 -0500
-From: Vitalii Demianets <vitas@nppfactor.kiev.ua>
-Organization: Factor-SPE
-To: "Hans J. Koch" <hjk@hansjkoch.de>
-Subject: Re: [PATCH] uio.c: Fix warning: 'ret' might be used uninitialized
-Date: Wed, 28 Nov 2012 10:58:32 +0200
-User-Agent: KMail/1.9.10
-Cc: linux-kernel@vger.kernel.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-References: <201211271348.14603.vitas@nppfactor.kiev.ua> <20121127224341.GA2605@local>
-In-Reply-To: <20121127224341.GA2605@local>
+	id S1752651Ab2K1JAg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 04:00:36 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:47451 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751670Ab2K1JAe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 04:00:34 -0500
+Date: Wed, 28 Nov 2012 09:00:28 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Rabin Vincent <rabin@rab.in>, Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>, sameo@linux.intel.com,
+        devicetree-discuss@lists.ozlabs.org, spear-devel@list.st.com,
+        linux-kernel@vger.kernel.org, l.fu@pengutronix.de
+Subject: Re: [PATCH V3 3/3] mfd: stmpe: Update DT support in stmpe driver
+Message-ID: <20121128090028.GJ2013@gmail.com>
+References: <7a48ae364663ab3a336251fada9aee07ccd728b8.1353610437.git.viresh.kumar@linaro.org>
+ <20121123094132.EFCB73E07BE@localhost>
+ <CAKohpomAM2pw9kgB6khtHzQ2WCXKZ9_pi1_sOH2dQToVS8ep4w@mail.gmail.com>
+ <20121126184015.784993E091F@localhost>
+ <CAKohpo=dHz-fJRdwovOWesAZJwibgrNk-+2t--JK+T_sBsu9Tw@mail.gmail.com>
+ <CAKohpomOxfLhpZqpk3aymdNa7UAGRcex7d+N5srkFDnrhtULTw@mail.gmail.com>
+ <20121127084007.GA7897@gmail.com>
+ <CAKohpomPMYU5H_tx1BF7TD6F7a5rp5O=xDf3r-TGZ-r9SBp3yA@mail.gmail.com>
+ <CAH+eYFCshghQauBdn1rLQ-sKG=Bxa_0XpJsry60TAD3mibNOFA@mail.gmail.com>
+ <CAKohpok6=O_TMaApYQGKbzHmJ8tkST5VAHDnLYgHb0g3gSPwbQ@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201211281058.33185.vitas@nppfactor.kiev.ua>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAKohpok6=O_TMaApYQGKbzHmJ8tkST5VAHDnLYgHb0g3gSPwbQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 28 November 2012 00:43:41 Hans J. Koch wrote:
-> 
-> Thanks, good catch, but why don't you simply do this:
-> 
+On Wed, 28 Nov 2012, Viresh Kumar wrote:
 
-Just a matter of personal preference. As a maintainer you can apply either 
-patch you want. I guess you would prefer your approach and I have no 
-objections to that :)
+> On 28 November 2012 01:25, Rabin Vincent <rabin@rab.in> wrote:
+> > 2012/11/27 Viresh Kumar <viresh.kumar@linaro.org>:
+> >> On 27 November 2012 14:10, Lee Jones <lee.jones@linaro.org> wrote:
+> >> I haven't seen this in any of SPEAr boards i have worked on. Maybe Rabin
+> >> would have, that's why he added that part of code :)
+> >>
+> >> @Rabin/Linus: Do you remember why have you added this in stmpe driver:
+> >>
+> >> +       if (stmpe->pdata->irq_invert_polarity)
+> >> +               icr ^= STMPE_ICR_LSB_HIGH;
+> >> +
+> >>
+> >> Does somebody actually need it?
+> >
+> > It was (as irq_rev_pol) part of Luotao Fu's proposed STMPE811 patchset
+> > (https://patchwork.kernel.org/patch/106173/) which I integrated into my
+> > version of the STMPE driver, which didn't have it in its initial version
+> > (https://patchwork.kernel.org/patch/103273/).
+> >
+> > It's not something _I_ ever used.
+> 
+> I grep'd kernel and nobody is using it there, so lets get rid of it
+> completely :)
+> I will patch it.
 
-> 
-> >From 228445996bb75a44d16b6237eca6a0916d9b2d7e Mon Sep 17 00:00:00 2001
-> From: "Hans J. Koch" <hjk@hansjkoch.de>
-> Date: Tue, 27 Nov 2012 23:38:00 +0100
-> Subject: [PATCH] uio: Fix warning: 'ret' might be used uninitialized
-> 
-> In two cases, the return value variable "ret" can be undefined.
-> 
-> Signed-off-by: Hans J. Koch <hjk@hansjkoch.de>
-> ---
->  drivers/uio/uio.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
-> index 5110f36..fc60e35 100644
-> --- a/drivers/uio/uio.c
-> +++ b/drivers/uio/uio.c
-> @@ -263,7 +263,7 @@ static struct class uio_class = {
->   */
->  static int uio_dev_add_attributes(struct uio_device *idev)
->  {
-> -	int ret;
-> +	int ret = -ENOMEM;
->  	int mi, pi;
->  	int map_found = 0;
->  	int portio_found = 0;
-
-
+Great. :)
 
 -- 
-With Best Regards,
-Vitalii Demianets
-
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
