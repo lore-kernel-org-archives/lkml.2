@@ -1,122 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754845Ab2K1Nhk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 08:37:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63131 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754509Ab2K1Nhj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 08:37:39 -0500
-Message-ID: <50B6131E.2020805@redhat.com>
-Date: Wed, 28 Nov 2012 14:35:26 +0100
-From: Zdenek Kabelac <zkabelac@redhat.com>
-Organization: Red Hat
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1754857Ab2K1NtA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 08:49:00 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:18827 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754698Ab2K1Ns6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 08:48:58 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 28 Nov 2012 05:48:32 -0800
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "joro@8bytes.org" <joro@8bytes.org>
+CC: "James.Bottomley@HansenPartnership.com" 
+	<James.Bottomley@HansenPartnership.com>,
+        "arnd@arndb.de" <arnd@arndb.de>, Krishna Reddy <vdumpa@nvidia.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "minchan@kernel.org" <minchan@kernel.org>,
+        "chunsang.jeong@linaro.org" <chunsang.jeong@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "subashrp@gmail.com" <subashrp@gmail.com>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
+        "pullip.cho@samsung.com" <pullip.cho@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Wed, 28 Nov 2012 14:48:32 +0100
+Subject: [PATCH 1/1] ARM: tegra: bus_notifier registers IOMMU devices(was:
+ How to specify IOMMU'able devices in DT)
+Thread-Topic: [PATCH 1/1] ARM: tegra: bus_notifier registers IOMMU
+ devices(was: How to specify IOMMU'able devices in DT)
+Thread-Index: Ac3NbxH+3Q6ZzkhrT4agOL343SIi9g==
+Message-ID: <20121128.154832.539666140149950229.hdoyu@nvidia.com>
+References: <20120924124452.41070ed2ee9944d930cffffc@nvidia.com><054901cd9a45$db1a7ea0$914f7be0$%szyprowski@samsung.com><20120924.145014.1452596970914043018.hdoyu@nvidia.com>
+In-Reply-To: <20120924.145014.1452596970914043018.hdoyu@nvidia.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-nvconfidentiality: public
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        George Spelvin <linux@horizon.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        Tomas Racek <tracek@redhat.com>, Jan Kara <jack@suse.cz>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Josh Boyer <jwboyer@gmail.com>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Jiri Slaby <jslaby@suse.cz>, Thorsten Leemhuis <fedora@leemhuis.info>,
-        Bruno Wolff III <bruno@wolff.to>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: kswapd craziness in 3.7
-References: <1354049315-12874-1-git-send-email-hannes@cmpxchg.org> <CA+55aFywygqWUBNWtZYa+vk8G0cpURZbFdC7+tOzyWk6tLi=WA@mail.gmail.com>
-In-Reply-To: <CA+55aFywygqWUBNWtZYa+vk8G0cpURZbFdC7+tOzyWk6tLi=WA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 27.11.2012 21:58, Linus Torvalds napsal(a):
-> Note that in the meantime, I've also applied (through Andrew) the
-> patch that reverts commit c654345924f7 (see commit 82b212f40059
-> 'Revert "mm: remove __GFP_NO_KSWAPD"').
->
-> I wonder if that revert may be bogus, and a result of this same issue.
-> Maybe that revert should be reverted, and replaced with your patch?
->
-> Mel? Zdenek? What's the status here?
->
+Hiroshi Doyu <hdoyu@nvidia.com> wrote @ Mon, 24 Sep 2012 14:50:14 +0300 (EEST):
+...
+> > > > On Mon, 2012-09-24 at 12:04 +0300, Hiroshi Doyu wrote:
+> > > > > diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+> > > > > index a1a7225..9eae3be 100644
+> > > > > --- a/drivers/base/platform.c
+> > > > > +++ b/drivers/base/platform.c
+> > > > > @@ -21,6 +21,8 @@
+> > > > >  #include <linux/slab.h>
+> > > > >  #include <linux/pm_runtime.h>
+> > > > >
+> > > > > +#include <asm/dma-iommu.h>
+> > > > > +
+> > > > >  #include "base.h"
+> > > > >
+> > > > >  #define to_platform_driver(drv)        (container_of((drv), struct
+> > > > > platform_driver, \
+> > > > > @@ -305,8 +307,19 @@ int platform_device_add(struct platform_device
+> > > > > *pdev)
+> > > > >                  dev_name(&pdev->dev), dev_name(pdev->dev.parent));
+> > > > >
+> > > > >         ret = device_add(&pdev->dev);
+> > > > > -       if (ret == 0)
+> > > > > -               return ret;
+> > > > > +       if (ret)
+> > > > > +               goto failed;
+> > > > > +
+> > > > > +#ifdef CONFIG_PLATFORM_ENABLE_IOMMU
+> > > > > +       if (platform_bus_type.map && !pdev->dev.archdata.mapping) {
+> > > > > +               ret = arm_iommu_attach_device(&pdev->dev,
+> > > > > +                                             platform_bus_type.map);
+> > > > > +               if (ret)
+> > > > > +                       goto failed;
+> > > >
+> > > > This is horrible ... you're adding an architecture specific callback
+> > > > into our generic code; that's really a no-no.  If the concept of
+> > > > CONFIG_PLATFORM_ENABE_IOMMU is useful to more than just arm, then this
+> > > > could become a generic callback.
+> > > 
+> > > As mentioned in the original, this is a heck to explain what is
+> > > needed. I am looking for some generic solution for how to specify
+> > > IOMMU info for each platform devices. I'm guessing that some other SoC
+> > > may have the similar requirements on the above. As you mentioned, this
+> > > solution should be a generic, not arch specific.
+> > 
+> > Please read more about bus notifiers. IMHO a good example is provided in 
+> > the following thread:
+> > http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg12238.html
+> 
+> This bus notifier seems enough flexible to afford the variation of
+> IOMMU map info, like Tegra ASID, which could be platform-specific, and
+> the other could be common too. There's already iommu_bus_notifier
+> too. I'll try to implement something base on this.
 
+Experimentally implemented as below. With the followig patch, each
+device could specify its own map in DT, and automatically the device
+would be attached to the map.
 
-I've tried for longer term:
+There is a case that some devices share a map. This patch doesn't
+suppor such case yet.
 
-https://lkml.org/lkml/2012/11/5/308
-https://lkml.org/lkml/2012/11/12/113
+>From 8cb75bb6f3a8535a077e0e85265f87c1f1289bfd Mon Sep 17 00:00:00 2001
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+Date: Wed, 28 Nov 2012 14:47:04 +0200
+Subject: [PATCH 1/1] ARM: tegra: bus_notifier registers IOMMU devices
 
-these 2 seems to be now merge in -rc7
-(since they disappeared after my git rebase)
+platform_bus notifier registers IOMMU devices if dma-window is
+specified.
 
+Its format is:
+  dma-window = <"start" "size">;
+ex)
+  dma-window = <0x12345000 0x8000>;
 
-and added slightly modified patch from Jiri
-(https://lkml.org/lkml/2012/11/15/950
-(Unsure where it still applies for -rc7??)
+Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+---
+ arch/arm/mach-tegra/board-dt-tegra30.c |   40 ++++++++++++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
 
-Also I've Jan Kara <jack@suse.cz>
-fs: Fix imbalance in freeze protection in mark_files_ro()
-(which is still not applied to upstream)
-
-And I think I'm NOT seeing huge load from kswapd0.
-(At least related to my not really long uptimes)
-
-
-But also I'm now  frequent victim of my other report:
-
-https://lkml.org/lkml/2012/11/15/369
-
-Which turns into a problem, that if my T61 docking station
-has enabled support for 'old hw' for docking in BIOS - i.e. serial output'
-it becomes unstable and either 1st. or 2nd. resume deadlocks
-machine - and serial port gives just garbage)
-
-Zdenek
-
-
->                   Linus
->
-> On Tue, Nov 27, 2012 at 12:48 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
->> Hi everyone,
->>
->> I hope I included everybody that participated in the various threads
->> on kswapd getting stuck / exhibiting high CPU usage.  We were looking
->> at at least three root causes as far as I can see, so it's not really
->> clear who observed which problem.  Please correct me if the
->> reported-by, tested-by, bisected-by tags are incomplete.
->>
->> One problem was, as it seems, overly aggressive reclaim due to scaling
->> up reclaim goals based on compaction failures.  This one was reverted
->> in 9671009 mm: revert "mm: vmscan: scale number of pages reclaimed by
->> reclaim/compaction based on failures".
->>
->> Another one was an accounting problem where a freed higher order page
->> was underreported, and so kswapd had trouble restoring watermarks.
->> This one was fixed in ef6c5be fix incorrect NR_FREE_PAGES accounting
->> (appears like memory leak).
->>
->> The third one is a problem with small zones, like the DMA zone, where
->> the high watermark is lower than the low watermark plus compaction gap
->> (2 * allocation size).  The zonelist reclaim in kswapd would do
->> nothing because all high watermarks are met, but the compaction logic
->> would find its own requirements unmet and loop over the zones again.
->> Indefinitely, until some third party would free enough memory to help
->> meet the higher compaction watermark.  The problematic code has been
->> there since the 3.4 merge window for non-THP higher order allocations
->> but has been more prominent since the 3.7 merge window, where kswapd
->> is also woken up for the much more common THP allocations.
->>
->> The following patch should fix the third issue by making both reclaim
->> and compaction code in kswapd use the same predicate to determine
->> whether a zone is balanced or not.
->>
->> Hopefully, the sum of all three fixes should tame kswapd enough for
->> 3.7.
->>
->> Johannes
->>
-
+diff --git a/arch/arm/mach-tegra/board-dt-tegra30.c b/arch/arm/mach-tegra/board-dt-tegra30.c
+index a2b6cf1..570d718 100644
+--- a/arch/arm/mach-tegra/board-dt-tegra30.c
++++ b/arch/arm/mach-tegra/board-dt-tegra30.c
+@@ -30,9 +30,11 @@
+ #include <linux/of_fdt.h>
+ #include <linux/of_irq.h>
+ #include <linux/of_platform.h>
++#include <linux/of_iommu.h>
+ 
+ #include <asm/mach/arch.h>
+ #include <asm/hardware/gic.h>
++#include <asm/dma-iommu.h>
+ 
+ #include "board.h"
+ #include "clock.h"
+@@ -86,10 +88,48 @@ static __initdata struct tegra_clk_init_table tegra_dt_clk_init_table[] = {
+ 	{ NULL,		NULL,		0,		0},
+ };
+ 
++#ifdef CONFIG_ARM_DMA_USE_IOMMU
++static int tegra_iommu_device_notifier(struct notifier_block *nb,
++				       unsigned long event, void *_dev)
++{
++	struct dma_iommu_mapping *map = NULL;
++	struct device *dev = _dev;
++	dma_addr_t base;
++	size_t size;
++	int err;
++
++	switch (event) {
++	case BUS_NOTIFY_ADD_DEVICE:
++		err = of_get_dma_window(dev->of_node, NULL, 0, NULL, &base,
++					&size);
++		if (!err)
++			map = arm_iommu_create_mapping(&platform_bus_type,
++						       base, size, 0);
++		if (IS_ERR_OR_NULL(map))
++			break;
++		if (arm_iommu_attach_device(dev, map))
++			dev_err(dev, "Failed to attach %s\n", dev_name(dev));
++		dev_dbg(dev, "Attached %s to map %p\n", dev_name(dev), map);
++		break;
++	}
++	return NOTIFY_DONE;
++}
++#else
++#define tegra_iommu_device_notifier NULL
++#endif
++
++static struct notifier_block tegra_iommu_device_nb = {
++	.notifier_call = tegra_iommu_device_notifier,
++};
++
+ static void __init tegra30_dt_init(void)
+ {
+ 	tegra_clk_init_from_table(tegra_dt_clk_init_table);
+ 
++	if (IS_ENABLED(CONFIG_ARM_DMA_USE_IOMMU))
++		bus_register_notifier(&platform_bus_type,
++				      &tegra_iommu_device_nb);
++
+ 	of_platform_populate(NULL, of_default_bus_match_table,
+ 				tegra30_auxdata_lookup, NULL);
+ }
+-- 
+1.7.9.5
