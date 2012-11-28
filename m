@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932618Ab2K1Vx6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 16:53:58 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:37179 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932362Ab2K1Vsz (ORCPT
+	id S1756303Ab2K1Vsu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 16:48:50 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:44981 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756208Ab2K1Vsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 16:48:55 -0500
+	Wed, 28 Nov 2012 16:48:47 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>
@@ -14,91 +14,100 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v9 31/46] x86, mm: Move init_gbpages() out of setup.c
-Date: Wed, 28 Nov 2012 13:47:42 -0800
-Message-Id: <1354139277-17376-32-git-send-email-yinghai@kernel.org>
+Subject: [PATCH v9 11/46] x86, mm: Fixup code testing if a pfn is direct mapped
+Date: Wed, 28 Nov 2012 13:47:22 -0800
+Message-Id: <1354139277-17376-12-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.7
 In-Reply-To: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
 References: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Put it in mm/init.c, and call it from probe_page_mask().
-init_mem_mapping is calling probe_page_mask at first.
-So calling sequence is not changed.
+From: Jacob Shin <jacob.shin@amd.com>
 
+Update code that previously assumed pfns [ 0 - max_low_pfn_mapped ) and
+[ 4GB - max_pfn_mapped ) were always direct mapped, to now look up
+pfn_mapped ranges instead.
+
+-v2: change applying sequence to keep git bisecting working.
+     so add dummy pfn_range_is_mapped(). - Yinghai Lu
+
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/kernel/setup.c |   15 +--------------
- arch/x86/mm/init.c      |   12 ++++++++++++
- 2 files changed, 13 insertions(+), 14 deletions(-)
+ arch/x86/include/asm/page_types.h |    8 ++++++++
+ arch/x86/kernel/cpu/amd.c         |    8 +++-----
+ arch/x86/platform/efi/efi.c       |    7 +++----
+ 3 files changed, 14 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 2015194..85b62f1 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -282,18 +282,7 @@ void * __init extend_brk(size_t size, size_t align)
- 	return ret;
+diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
+index e21fdd1..45aae6e 100644
+--- a/arch/x86/include/asm/page_types.h
++++ b/arch/x86/include/asm/page_types.h
+@@ -51,6 +51,14 @@ static inline phys_addr_t get_max_mapped(void)
+ 	return (phys_addr_t)max_pfn_mapped << PAGE_SHIFT;
  }
  
--#ifdef CONFIG_X86_64
--static void __init init_gbpages(void)
--{
--	if (direct_gbpages && cpu_has_gbpages)
--		printk(KERN_INFO "Using GB pages for direct mapping\n");
--	else
--		direct_gbpages = 0;
--}
--#else
--static inline void init_gbpages(void)
--{
--}
-+#ifdef CONFIG_X86_32
- static void __init cleanup_highmap(void)
- {
- }
-@@ -933,8 +922,6 @@ void __init setup_arch(char **cmdline_p)
- 
- 	setup_real_mode();
- 
--	init_gbpages();
--
- 	init_mem_mapping();
- 
- 	memblock.current_limit = get_max_mapped();
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 5bdec27..ed7e3e6 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -98,6 +98,16 @@ int direct_gbpages
- #endif
- ;
- 
-+static void __init init_gbpages(void)
++static inline bool pfn_range_is_mapped(unsigned long start_pfn,
++					unsigned long end_pfn)
 +{
-+#ifdef CONFIG_X86_64
-+	if (direct_gbpages && cpu_has_gbpages)
-+		printk(KERN_INFO "Using GB pages for direct mapping\n");
-+	else
-+		direct_gbpages = 0;
-+#endif
++	return end_pfn <= max_low_pfn_mapped ||
++	       (end_pfn > (1UL << (32 - PAGE_SHIFT)) &&
++		end_pfn <= max_pfn_mapped);
 +}
 +
- struct map_range {
- 	unsigned long start;
- 	unsigned long end;
-@@ -108,6 +118,8 @@ static int page_size_mask;
+ extern unsigned long init_memory_mapping(unsigned long start,
+ 					 unsigned long end);
  
- static void __init probe_page_size_mask(void)
- {
-+	init_gbpages();
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index f7e98a2..9619ba6 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -676,12 +676,10 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 		 * benefit in doing so.
+ 		 */
+ 		if (!rdmsrl_safe(MSR_K8_TSEG_ADDR, &tseg)) {
++			unsigned long pfn = tseg >> PAGE_SHIFT;
 +
- #if !defined(CONFIG_DEBUG_PAGEALLOC) && !defined(CONFIG_KMEMCHECK)
- 	/*
- 	 * For CONFIG_DEBUG_PAGEALLOC, identity mapping will use small pages.
+ 			printk(KERN_DEBUG "tseg: %010llx\n", tseg);
+-			if ((tseg>>PMD_SHIFT) <
+-				(max_low_pfn_mapped>>(PMD_SHIFT-PAGE_SHIFT)) ||
+-				((tseg>>PMD_SHIFT) <
+-				(max_pfn_mapped>>(PMD_SHIFT-PAGE_SHIFT)) &&
+-				(tseg>>PMD_SHIFT) >= (1ULL<<(32 - PMD_SHIFT))))
++			if (pfn_range_is_mapped(pfn, pfn + 1))
+ 				set_memory_4k((unsigned long)__va(tseg), 1);
+ 		}
+ 	}
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index ad44391..36e53f0 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -835,7 +835,7 @@ void __init efi_enter_virtual_mode(void)
+ 	efi_memory_desc_t *md, *prev_md = NULL;
+ 	efi_status_t status;
+ 	unsigned long size;
+-	u64 end, systab, end_pfn;
++	u64 end, systab, start_pfn, end_pfn;
+ 	void *p, *va, *new_memmap = NULL;
+ 	int count = 0;
+ 
+@@ -888,10 +888,9 @@ void __init efi_enter_virtual_mode(void)
+ 		size = md->num_pages << EFI_PAGE_SHIFT;
+ 		end = md->phys_addr + size;
+ 
++		start_pfn = PFN_DOWN(md->phys_addr);
+ 		end_pfn = PFN_UP(end);
+-		if (end_pfn <= max_low_pfn_mapped
+-		    || (end_pfn > (1UL << (32 - PAGE_SHIFT))
+-			&& end_pfn <= max_pfn_mapped)) {
++		if (pfn_range_is_mapped(start_pfn, end_pfn)) {
+ 			va = __va(md->phys_addr);
+ 
+ 			if (!(md->attribute & EFI_MEMORY_WB))
 -- 
 1.7.7
 
