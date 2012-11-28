@@ -1,72 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628Ab2K1MKa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 07:10:30 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:58874 "EHLO arroyo.ext.ti.com"
+	id S1754666Ab2K1MS0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 07:18:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34245 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754538Ab2K1MK3 convert rfc822-to-8bit (ORCPT
+	id S1754510Ab2K1MSZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 07:10:29 -0500
-From: "Navada Kanyana, Mukund" <navada@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/1] regmap: Add support for continously numbered pages
- across regmap range
-Thread-Topic: [PATCH 1/1] regmap: Add support for continously numbered pages
- across regmap range
-Thread-Index: AQHNzUn3sp+aSR+ZB0iEZwLUiY4GmZf+nu6AgAB/Pg2AAAYlEYAAA0sQ
-Date: Wed, 28 Nov 2012 12:10:21 +0000
-Message-ID: <6817C817C9581447825BFB369EAC42163E959B84@DBDE01.ent.ti.com>
-References: <n> <1354094577-14967-1-git-send-email-navada@ti.com>
- <20121128092924.GJ32691@opensource.wolfsonmicro.com>
- <6817C817C9581447825BFB369EAC42163E959AED@DBDE01.ent.ti.com>
- <20121128113443.GM32691@opensource.wolfsonmicro.com>
- <6817C817C9581447825BFB369EAC42163E959B6C@DBDE01.ent.ti.com>
- <20121128115638.GO32691@opensource.wolfsonmicro.com>
-In-Reply-To: <20121128115638.GO32691@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.132.232]
-Content-Type: text/plain; charset="us-ascii"
+	Wed, 28 Nov 2012 07:18:25 -0500
+Date: Wed, 28 Nov 2012 10:18:02 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Hans Verkuil <hansverk@cisco.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        LMML <linux-media@vger.kernel.org>, devel@driverdev.osuosl.org,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Prabhakar Lad <prabhakar.lad@ti.com>,
+        "Sakari Ailus" <sakari.ailus@iki.fi>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>
+Subject: Re: [PATCH v3 0/9] Media Controller capture driver for DM365
+Message-ID: <20121128101802.0eafb6e7@redhat.com>
+In-Reply-To: <201211281256.10839.hansverk@cisco.com>
+References: <1354099329-20722-1-git-send-email-prabhakar.lad@ti.com>
+	<20121128114537.GN11248@mwanda>
+	<201211281256.10839.hansverk@cisco.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Em Wed, 28 Nov 2012 12:56:10 +0100
+Hans Verkuil <hansverk@cisco.com> escreveu:
 
+> On Wed 28 November 2012 12:45:37 Dan Carpenter wrote:
+> > I wish people wouldn't submit big patches right before the merge
+> > window opens...  :/ It's better to let it sit in linux-next for a
+> > couple weeks so people can mess with it a bit.
+> 
+> It's been under review for quite some time now, and the main change since
+> the last posted version is that this is now moved to staging/media.
+> 
+> So it is not yet ready for prime time, but we do want it in to simplify
+> the last remaining improvements needed to move it to drivers/media.
 
-> -----Original Message-----
-> From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
-> Sent: Wednesday, November 28, 2012 5:27 PM
-> To: Navada Kanyana, Mukund
-> Cc: Greg Kroah-Hartman; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 1/1] regmap: Add support for continously numbered
-> pages across regmap range
+"last remaining improvements"? I didn't review the patchset, but
+the TODO list seems to have several pending stuff there:
+
++- User space interface refinement
++        - Controls should be used when possible rather than private ioctl
++        - No enums should be used
++        - Use of MC and V4L2 subdev APIs when applicable
++        - Single interface header might suffice
++        - Current interface forces to configure everything at once
++- Get rid of the dm365_ipipe_hw.[ch] layer
++- Active external sub-devices defined by link configuration; no strcmp
++  needed
++- More generic platform data (i2c adapters)
++- The driver should have no knowledge of possible external subdevs; see
++  struct vpfe_subdev_id
++- Some of the hardware control should be refactorede
++- Check proper serialisation (through mutexes and spinlocks)
++- Names that are visible in kernel global namespace should have a common
++  prefix (or a few)
+
+>From the above comments, both Kernelspace and Userspace APIs require 
+lots of work.
+
+Also, it is not clear at all if this is a fork of the existing davinci
+driver, or if it is a completely new driver for an already-supported
+hardware, making very hard (if not impossible) to review it, and, if it
+is yet-another-driver for the same hardware, moving it out of staging
+will be a big issue, as it won't be trivial to check for regressions
+introduced by a different driver.
+
 > 
-> On Wed, Nov 28, 2012 at 11:52:22AM +0000, Navada Kanyana, Mukund wrote:
-> 
-> > static const struct regmap_range_cfg aic325x_ranges[] = {
-> >         { .name = "CONF", .range_min = 128,
-> >           .range_max = 383,
-> >           .selector_reg = 0x0,
-> >           .selector_mask = 0xff,
-> >           .selector_shift = 0,
-> >           .window_start = 0, .window_len =128,
-> >         },
-> >         { .name = "MINIDSP_A_CM_A", .range_min = AIC325X_ADSP_CM_A_BASE,
-> >           .range_max = AIC325X_ADSP_CM_A_BASE + 1152,
-> >           .selector_reg = 0x0,
-> >           .selector_mask = 0xff,
-> >           .selector_shift = 0,
-> >           .window_start = 0, .window_len =128,
-> >         },
-> > };
-> 
-> You appear to have two different ranges with the same selector and
-> window.  I'm really not sure why you expect this to work...  what
-> happens when someone reads from the two different ranges simultaneously?
-The selector register has to written appropriate page number. Two different ranges cannot be accessed simultaneously without changing the page number in the selector register.
+> I'm happy with this going in given the circumstances.
+
+Well, I'm not.
+
+-- 
+Regards,
+Mauro
