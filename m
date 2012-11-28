@@ -1,98 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932494Ab2K1Veb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 16:34:31 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53082 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755968Ab2K1Ve3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 16:34:29 -0500
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com, paul@paulmenage.org, glommer@parallels.com
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        peterz@infradead.org, mhocko@suse.cz, bsingharora@gmail.com,
-        hannes@cmpxchg.org, kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCHSET cgroup/for-3.8] cpuset: decouple cpuset locking from cgroup core
-Date: Wed, 28 Nov 2012 13:34:07 -0800
-Message-Id: <1354138460-19286-1-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
+	id S1756153Ab2K1VkA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 16:40:00 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40403 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754726Ab2K1Vj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 16:39:58 -0500
+Message-ID: <50B68467.5020008@zytor.com>
+Date: Wed, 28 Nov 2012 13:38:47 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: "Luck, Tony" <tony.luck@intel.com>
+CC: Jiang Liu <jiang.liu@huawei.com>, Tang Chen <tangchen@cn.fujitsu.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "isimatu.yasuaki@jp.fujitsu.com" <isimatu.yasuaki@jp.fujitsu.com>,
+        "laijs@cn.fujitsu.com" <laijs@cn.fujitsu.com>,
+        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
+        "linfeng@cn.fujitsu.com" <linfeng@cn.fujitsu.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
+        "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
+        "mgorman@suse.de" <mgorman@suse.de>,
+        "rientjes@google.com" <rientjes@google.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, "Wang, Frank" <frank.wang@intel.com>
+Subject: Re: [PATCH v2 0/5] Add movablecore_map boot option
+References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <50B5CFAE.80103@huawei.com> <3908561D78D1C84285E8C5FCA982C28F1C95EDCE@ORSMSX108.amr.corp.intel.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F1C95EDCE@ORSMSX108.amr.corp.intel.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, guys.
+On 11/28/2012 01:34 PM, Luck, Tony wrote:
+>>
+>> 2. use boot option
+>>   This is our proposal. New boot option can specify memory range to use
+>>   as movable memory.
+> 
+> Isn't this just moving the work to the user? To pick good values for the
+> movable areas, they need to know how the memory lines up across
+> node boundaries ... because they need to make sure to allow some
+> non-movable memory allocations on each node so that the kernel can
+> take advantage of node locality.
+> 
+> So the user would have to read at least the SRAT table, and perhaps
+> more, to figure out what to provide as arguments.
+> 
+> Since this is going to be used on a dynamic system where nodes might
+> be added an removed - the right values for these arguments might
+> change from one boot to the next. So even if the user gets them right
+> on day 1, a month later when a new node has been added, or a broken
+> node removed the values would be stale.
+> 
 
-Depending on cgroup core locking - cgroup_mutex - is messy and makes
-cgroup prone to locking dependency problems.  The current code already
-has lock dependency loop - memcg nests get_online_cpus() inside
-cgroup_mutex.  cpuset the other way around.
+I gave this feedback in person at LCE: I consider the kernel
+configuration option to be useless for anything other than debugging.
+Trying to promote it as an actual solution, to be used by end users in
+the field, is ridiculous at best.
 
-Regardless of the locking details, whatever is protecting cgroup has
-inherently to be something outer to most other locking constructs.
-cgroup calls into a lot of major subsystems which in turn have to
-perform subsystem-specific locking.  Trying to nest cgroup
-synchronization inside other locks isn't something which can work
-well.
+	-hpa
 
-cgroup now has enough API to allow subsystems to implement their own
-locking and cgroup_mutex is scheduled to be made private to cgroup
-core.  This patchset makes cpuset implement its own locking instead of
-relying on cgroup_mutex.
-
-cpuset is rather nasty in this respect.  Some of it seems to have come
-from the implementation history - cgroup core grew out of cpuset - but
-big part stems from cpuset's need to migrate tasks to an ancestor
-cgroup when an hotunplug event makes a cpuset empty (w/o any cpu or
-memory).
-
-This patchset decouples cpuset locking from cgroup_mutex.  After the
-patchset, cpuset uses cpuset-specific cpuset_mutex instead of
-cgroup_mutex.  This also removes the lockdep warning triggered during
-cpu offlining (see 0009).
-
-Note that this leaves memcg as the only external user of cgroup_mutex.
-Michal, Kame, can you guys please convert memcg to use its own locking
-too?
-
-This patchset contains the following thirteen patches.
-
- 0001-cpuset-remove-unused-cpuset_unlock.patch
- 0002-cpuset-remove-fast-exit-path-from-remove_tasks_in_em.patch
- 0003-cpuset-introduce-css_on-offline.patch
- 0004-cpuset-introduce-CS_ONLINE.patch
- 0005-cpuset-introduce-cpuset_for_each_child.patch
- 0006-cpuset-cleanup-cpuset-_can-_attach.patch
- 0007-cpuset-drop-async_rebuild_sched_domains.patch
- 0008-cpuset-reorganize-CPU-memory-hotplug-handling.patch
- 0009-cpuset-don-t-nest-cgroup_mutex-inside-get_online_cpu.patch
- 0010-cpuset-make-CPU-memory-hotplug-propagation-asynchron.patch
- 0011-cpuset-pin-down-cpus-and-mems-while-a-task-is-being-.patch
- 0012-cpuset-schedule-hotplug-propagation-from-cpuset_atta.patch
- 0013-cpuset-replace-cgroup_mutex-locking-with-cpuset-inte.patch
-
-0001-0006 are prep patches.
-
-0007-0009 make cpuset nest get_online_cpus() inside cgroup_mutex, not
-the other way around.
-
-0010-0012 plug holes which would be exposed by switching to
-cpuset-specific locking.
-
-0013 replaces cgroup_mutex with cpuset_mutex.
-
-This patchset is on top of cgroup/for-3.8 (fddfb02ad0) and also
-available in the following git branch.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-cpuset-locking
-
-diffstat follows.
-
- kernel/cpuset.c |  750 +++++++++++++++++++++++++++++++-------------------------
- 1 file changed, 423 insertions(+), 327 deletions(-)
-
-Thanks.
-
---
-tejun
 
