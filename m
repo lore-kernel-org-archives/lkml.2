@@ -1,131 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972Ab2K2EUO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 23:20:14 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:47409 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752435Ab2K2EUM (ORCPT
+	id S1754036Ab2K2EUy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 23:20:54 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:54922 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751039Ab2K2EUw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 23:20:12 -0500
-Date: Thu, 29 Nov 2012 15:20:08 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bill Pemberton <wfp5p@virginia.edu>, Qing Xu <qingx@marvell.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>
-Subject: linux-next: manual merge of the driver-core tree with the battery
- tree
-Message-Id: <20121129152008.5a74394e46746fa83e70b8ff@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__29_Nov_2012_15_20_08_+1100_Fo1CjAd7Rr1WWsEf"
+	Wed, 28 Nov 2012 23:20:52 -0500
+Date: Wed, 28 Nov 2012 20:17:12 -0800
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Glauber Costa <glommer@parallels.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [RFC] Add mempressure cgroup
+Message-ID: <20121129041711.GA31883@lizard>
+References: <20121128102908.GA15415@lizard>
+ <20121128162924.GA22201@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20121128162924.GA22201@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__29_Nov_2012_15_20_08_+1100_Fo1CjAd7Rr1WWsEf
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello Michal,
 
-Hi Greg,
+Thanks a lot for taking a look into this!
 
-Today's linux-next merge of the driver-core tree got a conflict in
-drivers/power/max8925_power.c between commit eba3b670a916
-("max8925_power: Add support for device-tree initialization") from the
-battery tree and commit c8afa6406e60 ("power: remove use of __devinit")
-from the driver-core tree.
+On Wed, Nov 28, 2012 at 05:29:24PM +0100, Michal Hocko wrote:
+> On Wed 28-11-12 02:29:08, Anton Vorontsov wrote:
+> > This is an attempt to implement David Rientjes' idea of mempressure
+> > cgroup.
+> > 
+> > The main characteristics are the same to what I've tried to add to vmevent
+> > API:
+> > 
+> >   Internally, it uses Mel Gorman's idea of scanned/reclaimed ratio for
+> >   pressure index calculation. But we don't expose the index to the
+> >   userland. Instead, there are three levels of the pressure:
+> > 
+> >   o low (just reclaiming, e.g. caches are draining);
+> >   o medium (allocation cost becomes high, e.g. swapping);
+> >   o oom (about to oom very soon).
+> > 
+> >   The rationale behind exposing levels and not the raw pressure index
+> >   described here: http://lkml.org/lkml/2012/11/16/675
+> > 
+> > The API uses standard cgroups eventfd notifications:
+> > 
+> >   $ gcc Documentation/cgroups/cgroup_event_listener.c -o \
+> > 	cgroup_event_listener
+> >   $ cd /sys/fs/cgroup/
+> >   $ mkdir mempressure
+> >   $ mount -t cgroup cgroup ./mempressure -o mempressure
+> >   $ cd mempressure
+> >   $ cgroup_event_listener ./mempressure.level low
+> >   ("low", "medium", "oom" are permitted values.)
+> > 
+> >   Upon hitting the threshold, you should see "/sys/fs/cgroup/mempressure
+> >   low: crossed" messages.
+> > 
+> > To test that it actually works on per-cgroup basis, I did a small trick: I
+> > moved all kswapd into a separate cgroup, and hooked the listener onto
+> > another (non-root) cgroup. The listener no longer received global reclaim
+> > pressure, which is expected.
+> 
+> Is this really expected? So you want to be notified only about the
+> direct reclaim?
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+I didn't try to put much meaning into assinging a task to a non-global
+reclaim watchers, I just mentioned this as an easiest way to test that we
+actually can account things on per-thread basis. :)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> I am not sure how much useful is that. If you co-mount with e.g. memcg then
+> the picture is different because even global memory pressure is spread
+> among groups so it would be just a matter of the proper accounting
+> (which can be handled similar to lruvec when your code doesn't have to
+> care about memcg internally).
+> Co-mounting with cpusets makes sense as well because then you get a
+> pressure notification based on the placement policy.
+> 
+> So does it make much sense to mount mempressure on its own without
+> co-mounting with other controllers?
 
-diff --cc drivers/power/max8925_power.c
-index b5a3ccb,1a075f1..0000000
---- a/drivers/power/max8925_power.c
-+++ b/drivers/power/max8925_power.c
-@@@ -427,55 -426,7 +427,55 @@@ static int max8925_deinit_charger(struc
-  	return 0;
-  }
- =20
- +#ifdef CONFIG_OF
- +static struct max8925_power_pdata *
- +max8925_power_dt_init(struct platform_device *pdev)
- +{
- +	struct device_node *nproot =3D pdev->dev.parent->of_node;
- +	struct device_node *np;
- +	int batt_detect;
- +	int topoff_threshold;
- +	int fast_charge;
- +	int no_temp_support;
- +	int no_insert_detect;
- +	struct max8925_power_pdata *pdata;
- +
- +	if (!nproot)
- +		return pdev->dev.platform_data;
- +
- +	np =3D of_find_node_by_name(nproot, "charger");
- +	if (!np) {
- +		dev_err(&pdev->dev, "failed to find charger node\n");
- +		return NULL;
- +	}
- +
- +	pdata =3D devm_kzalloc(&pdev->dev,
- +			sizeof(struct max8925_power_pdata),
- +			GFP_KERNEL);
- +
- +	of_property_read_u32(np, "topoff-threshold", &topoff_threshold);
- +	of_property_read_u32(np, "batt-detect", &batt_detect);
- +	of_property_read_u32(np, "fast-charge", &fast_charge);
- +	of_property_read_u32(np, "no-insert-detect", &no_insert_detect);
- +	of_property_read_u32(np, "no-temp-support", &no_temp_support);
- +
- +	pdata->batt_detect =3D batt_detect;
- +	pdata->fast_charge =3D fast_charge;
- +	pdata->topoff_threshold =3D topoff_threshold;
- +	pdata->no_insert_detect =3D no_insert_detect;
- +	pdata->no_temp_support =3D no_temp_support;
- +
- +	return pdata;
- +}
- +#else
- +static struct max8925_power_pdata *
- +max8925_power_dt_init(struct platform_device *pdev)
- +{
- +	return pdev->dev.platform_data;
- +}
- +#endif
- +
-- static __devinit int max8925_power_probe(struct platform_device *pdev)
-+ static int max8925_power_probe(struct platform_device *pdev)
-  {
-  	struct max8925_chip *chip =3D dev_get_drvdata(pdev->dev.parent);
-  	struct max8925_power_pdata *pdata =3D NULL;
+Android does not actually need any of these (memcg or cpusets), but we
+still want to get notifications (for a root cgroup would be enough for us
+-- but I'm trying to make things generic, of course).
 
---Signature=_Thu__29_Nov_2012_15_20_08_+1100_Fo1CjAd7Rr1WWsEf
-Content-Type: application/pgp-signature
+> > For a task it is possible to be in both cpusets, memcg and mempressure
+> > cgroups, so by rearranging the tasks it should be possible to watch a
+> > specific pressure.
+> 
+> Could you be more specific what you mean by rearranging? Creating a same
+> hierarchy? Co-mounting?
+> 
+> > Note that while this adds the cgroups support, the code is well separated
+> > and eventually we might add a lightweight, non-cgroups API, i.e. vmevent.
+> > But this is another story.
+> 
+> I think it would be nice to follow freezer and split this into 2 files.
+> Generic and cgroup spefici.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Yeah, this is surely an option, but so far it's only a few hundrends lines
+of code, plus we don't have any other users for the "internals". So, for
+the time being, I'd rather keep it in one file.
 
-iQIcBAEBCAAGBQJQtuJ4AAoJEECxmPOUX5FEBC8P/1s38Pofor6mgwk8NQiXg2/G
-vrQ+KYl3lK9fWxUVqSo7SVLVBWBWd1nCtBYXQqOBXl5vL7IPXQp6hyVtVKJ8OIY+
-/L6DZWZRzZK3BZLV0J5eOb2RlvLMFofPiZXSmFpkIL+h1CIE9lraa9awMlB0Ph1l
-IpsK15ODzSfpqruRo6IihxyFKyzVnIC+s21rCwhK6PQF1z6afx/1JoZtb4UGOM+K
-SMBLhmdEPb44k4AxuMHlMSdJLrMEZyurjYvEGYQP5UcJm6xKZ8vXJGeVPvxQrxk5
-A5lZcCzgAsjBvCobXsKgVqErDeZOBb0/c1JVyRggPvXANXZkt2bKR5+zELEVjou6
-i7Nqjis/Xkh0B/mP2aE5HYzzrQCMuSGFGdy1ocOc5BaZQQWmDZHHIl9EVqgVwoLF
-vw8K3vq9Rr0iA6ai0VUJIP4LjfSZRDZ5F2C0G8bOrpPIroUhcew8W0zLehgJt30k
-U0TwUabuiH75an6SMb9nuuulWXyrdlfkPtVZzzBfDiMzdSZsj/QSuHJ/LO7vcvUE
-AFlyf3r2wDrVgJjOfutjQcquJAu6K3oB4l8mjGpg0h9yBQSHIvJuj+m6SsHYPGxQ
-73mcD13REtk4AS+M9z73FSkH8GcLTwsKmJsFwc6DZ8TM29q99UcN2ZV+GzmSxcvW
-IvfKgs+grzckDW0TRhRS
-=aPxK
------END PGP SIGNATURE-----
+> > Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+> > ---
+> [...]
+> > +/* These are defaults. Might make them configurable one day. */
+> > +static const uint vmpressure_win = SWAP_CLUSTER_MAX * 16;
+> 
+> I realize this is just an RFC but could you be more specific what is the
+> meaning of vmpressure_win?
 
---Signature=_Thu__29_Nov_2012_15_20_08_+1100_Fo1CjAd7Rr1WWsEf--
+Sure, let me just copy the text from the previous RFC, to which you were
+not Cc'ed:
+
+ When the system is short on idle pages, the new memory is allocated by
+ reclaiming least recently used resources: kernel scans pages to be
+ reclaimed (e.g. from file caches, mmap(2) volatile ranges, etc.; and
+ potentially swapping some pages out). The index shows the relative time
+ spent by the kernel uselessly scanning pages, or, in other words, the
+ percentage of scans of pages (vmpressure_window) that were not reclaimed.
+ ...
+ Window size is used as a rate-limit tunable for VMPRESSURE_LOW
+ notifications and for averaging for VMPRESSURE_{MEDIUM,OOM} levels. So,
+ using small window sizes can cause lot of false positives for _MEDIUM and
+ _OOM levels, but too big window size may delay notifications. By default
+ the window size equals to 256 pages (1MB).
+
+You can find more about the tunables in the previus RFC:
+
+	http://lkml.org/lkml/2012/11/7/169 
+
+> > +static const uint vmpressure_level_med = 60;
+> > +static const uint vmpressure_level_oom = 99;
+> > +static const uint vmpressure_level_oom_prio = 4;
+> > +
+> > +enum vmpressure_levels {
+> > +	VMPRESSURE_LOW = 0,
+> > +	VMPRESSURE_MEDIUM,
+> > +	VMPRESSURE_OOM,
+> > +	VMPRESSURE_NUM_LEVELS,
+> > +};
+> > +
+> > +static const char const *vmpressure_str_levels[] = {
+> > +	[VMPRESSURE_LOW] = "low",
+> > +	[VMPRESSURE_MEDIUM] = "medium",
+> > +	[VMPRESSURE_OOM] = "oom",
+> > +};
+> > +
+> > +static enum vmpressure_levels vmpressure_level(uint pressure)
+> > +{
+> > +	if (pressure >= vmpressure_level_oom)
+> > +		return VMPRESSURE_OOM;
+> > +	else if (pressure >= vmpressure_level_med)
+> > +		return VMPRESSURE_MEDIUM;
+> > +	return VMPRESSURE_LOW;
+> > +}
+> > +
+> > +static ulong vmpressure_calc_level(uint win, uint s, uint r)
+> > +{
+> > +	ulong p;
+> > +
+> > +	if (!s)
+> > +		return 0;
+> > +
+> > +	/*
+> > +	 * We calculate the ratio (in percents) of how many pages were
+> > +	 * scanned vs. reclaimed in a given time frame (window). Note that
+> > +	 * time is in VM reclaimer's "ticks", i.e. number of pages
+> > +	 * scanned. This makes it possible to set desired reaction time
+> > +	 * and serves as a ratelimit.
+> > +	 */
+> > +	p = win - (r * win / s);
+> > +	p = p * 100 / win;
+> 
+> Do we need the win at all?
+> 	p = 100 - (100 * r / s);
+
+Other than for me being pedant, pretty much no. :) It's just less
+"precise" (try s=1000, r=9). (But in return, my version is prone to
+misbehave when window is too large.)
+
+> > +
+> > +	pr_debug("%s: %3lu  (s: %6u  r: %6u)\n", __func__, p, s, r);
+> > +
+> > +	return vmpressure_level(p);
+> > +}
+> > +
+> [...]
+> > +static int mpc_pre_destroy(struct cgroup *cg)
+> > +{
+> > +	struct mpc_state *mpc = cg2mpc(cg);
+> > +	int ret = 0;
+> > +
+> > +	mutex_lock(&mpc->lock);
+> > +
+> > +	if (mpc->eventfd)
+> > +		ret = -EBUSY;
+> 
+> The current cgroup's core doesn't allow pre_destroy to fail anymore. The
+> code is marked for 3.8
+
+Sure, I can rebase. (Currently, the code is based on the v3.7-rc6, which
+isn't even released but seems way too old already, heh. :)
+
+> [...]
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index 48550c6..430d8a5 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -1877,6 +1877,8 @@ restart:
+> >  		shrink_active_list(SWAP_CLUSTER_MAX, lruvec,
+> >  				   sc, LRU_ACTIVE_ANON);
+> >  
+> > +	vmpressure(sc->nr_scanned - nr_scanned, nr_reclaimed);
+> > +
+> 
+> I think this should already report to a proper group otherwise all the
+> global reclaim would go to a group where kswapd sits rather than to the
+> target group as I mentioned above (so it at least wouldn't work with a
+> co-mounted cases).
+
+Um. Yeah, I guess I was too optimistic here, relying on the things to
+"just work". I guess I still need to pass memcg pointer to the
+vmpressure() and check if the process is also part of the
+sc->target_mem_cgroup.
+
+> >  	/* reclaim/compaction might need reclaim to continue */
+> >  	if (should_continue_reclaim(lruvec, nr_reclaimed,
+> >  				    sc->nr_scanned - nr_scanned, sc))
+> > @@ -2099,6 +2101,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+> >  		count_vm_event(ALLOCSTALL);
+> >  
+> >  	do {
+> > +		vmpressure_prio(sc->priority);
+> 
+> Shouldn't this go into shrink_lruvec or somewhere at that level to catch
+> also kswapd low priorities? If you insist on the direct reclaim then you
+> should hook into __zone_reclaim as well.
+
+Probably... Thanks for pointing out, I'll take a closer look once we
+resolve the global/design issues.
+
+Thanks!
+Anton.
