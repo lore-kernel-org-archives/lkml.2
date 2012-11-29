@@ -1,46 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156Ab2K2TUF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 14:20:05 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:60980 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003Ab2K2TUE (ORCPT
+	id S1754286Ab2K2TZA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 14:25:00 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:6192 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003Ab2K2TY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 14:20:04 -0500
-Date: Thu, 29 Nov 2012 20:20:03 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org, zab@redhat.com,
-        bcrl@kvack.org, jmoyer@redhat.com, axboe@kernel.dk,
-        viro@zeniv.linux.org.uk
-Subject: Re: [PATCH 22/25] Generic dynamic per cpu refcounting
-Message-ID: <20121129192003.GX16230@one.firstfloor.org>
-References: <1354121029-1376-1-git-send-email-koverstreet@google.com> <1354121029-1376-23-git-send-email-koverstreet@google.com> <m28v9kgsen.fsf@firstfloor.org> <20121129185720.GE15094@google.com> <20121129185953.GW16230@one.firstfloor.org> <20121129191214.GG15094@google.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121129191214.GG15094@google.com>
-User-Agent: Mutt/1.4.2.2i
+	Thu, 29 Nov 2012 14:24:59 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 29 Nov 2012 11:24:55 -0800
+Message-ID: <50B7B686.4010700@nvidia.com>
+Date: Fri, 30 Nov 2012 00:54:54 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: "Kim, Milo" <Milo.Kim@ti.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] mfd: tps65910: fix wrong ack_base register
+References: <A874F61F95741C4A9BA573A70FE3998F6418F154@DQHE02.ent.ti.com>
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F6418F154@DQHE02.ent.ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The trick is that we don't watch for the refcount hitting 0 until we're
-> shutting down - so this only works if you keep track of your initial
-> refcount. As long as we're not shutting down, we know the refcount can't
-> hit 0 because we haven't released the initial refcount.
+On Thursday 29 November 2012 12:12 PM, Kim, Milo wrote:
+>   The interrupt status registers of TPS65910/1 should be cleared
+>   when the associated interrupt event occurs.
+>   This work is done in the regmap irq thread - using 'ack_base' register.
+>   The ACK registers should be fixed as status register, not mask registers.
+>
+>   This patch fixes the infinite interrupt event problem by clearing
+>   interrupt status registers.
+>
+>   Tested on the AM3517 Craneboard.
+>
+> Signed-off-by: Milo(Woogyom) Kim<milo.kim@ti.com>
+> ---
 
-This seems dangerous to me: assume you have one CPU which always
-does get and another does put. So there may be 2^32 such operations
-without a kill and you wrap for real in a way that does not get
-corrected.
+Aah,  I was debugging the onkey and I am also seeing continuous 
+interrupt. This fix the issue.
+Thanks,
+Acked-by: Laxman Dewangan <ldewangan@nvidia.com>
 
-Normally this can only happen if you have a lot of objects or CPUs
-are limited.
-
-But you don't have any limit on getting out-of-sync. 
-
-You could make it 64bit, but then wraps could happen.
-
--Andi
