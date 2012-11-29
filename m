@@ -1,88 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754518Ab2K2S30 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 13:29:26 -0500
-Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:37629 "EHLO
-	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754156Ab2K2S3Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 13:29:24 -0500
-Date: Thu, 29 Nov 2012 13:29:02 -0500
-From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Krzysztof Mazur <krzysiek@podlesie.net>,
-        David Laight <David.Laight@ACULAB.COM>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nathan@traverse.com.au
-Subject: Re: [PATCH v2 3/3] pppoatm: protect against freeing of vcc
-Message-ID: <20121129132902.04373f49@thirdoffive.cmf.nrl.navy.mil>
-In-Reply-To: <1354212708.21562.205.camel@shinybook.infradead.org>
-References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
-	<1350926091-12642-3-git-send-email-krzysiek@podlesie.net>
-	<1354036592.2534.6.camel@shinybook.infradead.org>
-	<20121127173906.GA11390@shrek.podlesie.net>
-	<1354039349.2534.11.camel@shinybook.infradead.org>
-	<20121127135434.0728cd4f@thirdoffive.cmf.nrl.navy.mil>
-	<AE90C24D6B3A694183C094C60CF0A2F6026B70C9@saturn3.aculab.com>
-	<1354141115.21562.101.camel@shinybook.infradead.org>
-	<20121129150945.GB16478@shrek.podlesie.net>
-	<1354204077.21562.172.camel@shinybook.infradead.org>
-	<20121129105934.3e0c3a04@thirdoffive.cmf.nrl.navy.mil>
-	<1354206269.21562.189.camel@shinybook.infradead.org>
-	<20121129121701.21ab7c0b@thirdoffive.cmf.nrl.navy.mil>
-	<1354212708.21562.205.camel@shinybook.infradead.org>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754274Ab2K2ScL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 13:32:11 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44795 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751100Ab2K2ScJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 13:32:09 -0500
+Date: Thu, 29 Nov 2012 10:32:07 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-serial@vger.kernel.org
+Subject: Re: [Suggestion] drivers/tty: drivers/char/:  for
+ MAX_ASYNC_BUFFER_SIZE
+Message-ID: <20121129183207.GA4688@kroah.com>
+References: <50B6E751.9000000@asianux.com>
+ <20121129051335.GA4375@kroah.com>
+ <50B6F967.3050000@asianux.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50B6F967.3050000@asianux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Nov 2012 18:11:48 +0000
-David Woodhouse <dwmw2@infradead.org> wrote:
-
-> We do see the 'packet received for unknown VCC' complaint, after we
-> reboot the host without resetting the card. And as shown in the commit I
-> just referenced, we rely on the !ATM_VF_READY check in order to prevent
-> a use-after-free when the tasklet is sending packets up a VCC that's
-> just been closed.
-
-well that behavior is just crap.  why is it delivering cells for a
-vpi/vci pair that is not open?  regardless, i pointed out the behavior
-of find_vcc() just in case you need to do some clean up on data that is
-coming back while you are attempting to finish operations during your
-driver's close() but this cleanup might not be happening since you
-arent able to get a reference to the vcc so you can pop() the data or
-whatever you might need to do.
-
-> > again part of this is poor synchronization.  the detach protocol (i.e.
-> > push of a NULL skb) should be flushing any pending transmits and
-> > shutting down whatever in the protocol is doing any sending and
-> > receiving.  however, i release this might be difficult to do since the
-> > detach protocol is invoked in such a strange way.
+On Thu, Nov 29, 2012 at 01:57:59PM +0800, Chen Gang wrote:
+> > And, I really don't understand here, why do you want to change this?
+> > What is it going to change?  And why?
+> > 
 > 
-> You mean that (e.g.) pppoatm_push(vcc, NULL) should be waiting for any
-> pending TX skb (that has already been passed off to the driver) to
-> *complete*? How would it even do that?
+> Why:
+>   for the context MGSLPC_INFO *info in drivers/char/pcmcia/synclink_cs.c
+>     info->max_frame_size can be the value between 4096 .. 65535 (can be
+> set by its module input parameter)
+>     info->flag_buf length is 4096 (MAX_ASYNC_BUFFER_SIZE)
+>   in function rx_get_frame
+>     the framesize is limit by info->max_frame_size, but may still be
+> larger that 4096.
+>     when call function ldisc_receive_buf, info->flag_buf is equal to
+> 4096, but framesize can be more than 4096. it will cause memory over flow.
 
-i think the order of the vcc_destroy_socket() operations is a bit
-wrong.  it should call detach protocol (i.e. push a NULL).  this should
-cause the attached protocol to stop any future sends and receives, and
-it CAN sleep in this context (and only this context -- generally
-sending cannot sleep which is why this might seem confusing) to do
-whatever it needs to do to wait for the attached protocol to clean up
-queues, flush data etc.
+Do you use that pcmcia driver for anything?  Are those cards still
+around?
 
-then the driver close() should be called.  this takes care of cleaning
-up any pending tx or rx that is in the hardware.  and of course,
-close() can sleep since it will be in a interrutible context.
+> What:
+>   #define MAX_ASYNC_BUFFER_SIZE  0x10000 (instead of 4096, originally).
+>   let it match the max frame size.
+> 
+> At last:
+>   my suggestion may be incorrect, need relative member (who expert about
+> it) to help checking.
 
-the pop() might be screwed up here though.  you might have skb's in the
-driver that should be pop()'ed with the formerly attached protocol.
+That driver might be incorrect, yes, care to make up a patch for it and
+test it to verify it fixes the problem?
 
-you could wait for pending tx's sent to the driver.  you know that your
-attached protocol's pop() will be called.  keep count of the
-outstanding transmit skb's.  you cant do this though if you close() the
-vcc before you detach the protocol.
+thanks,
 
+greg k-h
