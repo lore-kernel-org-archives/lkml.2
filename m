@@ -1,40 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753944Ab2K2Rbn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 12:31:43 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:46468 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753834Ab2K2Rbk convert rfc822-to-8bit (ORCPT
+	id S1753699Ab2K2ReM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 12:34:12 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:50262 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751003Ab2K2ReK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 12:31:40 -0500
-From: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: Re: [3.5.y.z extended stable] Linux 3.5.7.1
-Date: Thu, 29 Nov 2012 18:31:35 +0100
-User-Agent: KMail/1.13.7 (Linux/3.6.8; KDE/4.9.3; x86_64; ; )
-Cc: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
-        stable@vger.kernel.org, kernel-team@lists.ubuntu.com
-References: <1354197892-21593-1-git-send-email-herton.krzesinski@canonical.com>
-In-Reply-To: <1354197892-21593-1-git-send-email-herton.krzesinski@canonical.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201211291831.35981.a.miskiewicz@gmail.com>
+	Thu, 29 Nov 2012 12:34:10 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: How about a gpio_get(device *, char *) function?
+To: Alex Courbot <acourbot@nvidia.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <2022442.P80mCjSeu2@percival>
+References: <38620644.IyR5R8rjKP@percival> <CACRpkdaUJKs7zx=JWRUb+0Qz2dQU=R5KUK+CoM+nLCgHL99AFA@mail.gmail.com> <20121126111431.AE4C23E09C2@localhost> <2022442.P80mCjSeu2@percival>
+Date: Thu, 29 Nov 2012 17:34:07 +0000
+Message-Id: <20121129173407.11A543E0A04@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 29 of November 2012, Herton Ronaldo Krzesinski wrote:
-> I am announcing the release of the 3.5.7.1 tree of stable patches.
+On Wed, 28 Nov 2012 12:38:38 +0900, Alex Courbot <acourbot@nvidia.com> wrote:
+> On Monday 26 November 2012 19:14:31 Grant Likely wrote:
+> > I don't have any problem with a gpio_get function, but I do agree that
+> > making it return an opaque handle is how it should be written with a new
+> > set of accessors. The handle should probably be simply the pointer to
+> > the &gpio_desc[number] which is a private table in gpiolib.c. The
+> > definition of it isn't available outside of gpiolib.c
 > 
-> This tree picks up the latest 3.5 stable release upstream, and add patches
-> on top that were later marked for stable but can't be added to 3.5, as
-> it is not anymore an stable series maintained upstream.
+> That looks like a reasonable approach, but this would make the new API 
+> available only to systems that use GPIOlib. Shouldn't we be concerned about 
+> making this available to all GPIO implementations? Or is GPIOlib so widely 
+> used that we don't care?
 
-Could this tree become real stable release for 3.5 with typical scheme 
-(patches, tarballs, git tree on kernel.org) ?
+I'm tempted to say non-gpiolib is not supported. However, there isn't
+anything that would prevent non-gpiolib users from implementing the api
+themselves, but they'd need to provide their own handle..
 
-Thanks,
--- 
-Arkadiusz Miśkiewicz, arekm / maven.pl
+g.
