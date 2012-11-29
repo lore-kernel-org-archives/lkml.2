@@ -1,113 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005Ab2K2L12 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 06:27:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40815 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752029Ab2K2L11 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 06:27:27 -0500
-Date: Thu, 29 Nov 2012 13:30:13 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: Stephen Hemminger <shemminger@vyatta.com>, rusty@rustcorp.com.au,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [net-next RFC] pktgen: don't wait for the device who doesn't
- free skb immediately after sent
-Message-ID: <20121129113012.GA7866@redhat.com>
-References: <1353916612-6357-1-git-send-email-jasowang@redhat.com>
- <50B5B3D4.1070106@redhat.com>
- <20121128085305.2b0503ce@nehalam.linuxnetplumber.net>
- <1570859.IePPxHAEX1@jason-thinkpad-t430s>
+	id S1754104Ab2K2Laj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 06:30:39 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:42675 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752071Ab2K2Lah (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 06:30:37 -0500
+Date: Thu, 29 Nov 2012 12:30:30 +0100
+From: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Toshi Kani <toshi.kani@hp.com>, linux-acpi@vger.kernel.org,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Wen Congyang <wencongyang@gmail.com>, isimatu.yasuaki@jp.fujitsu.com,
+        lenb@kernel.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on
+ rebind scenario
+Message-ID: <20121129113030.GB639@dhcp-192-168-178-175.profitbricks.localdomain>
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
+ <1354150952.26955.377.camel@misato.fc.hp.com>
+ <1354151742.26955.385.camel@misato.fc.hp.com>
+ <2315811.arm7RJr4ey@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1570859.IePPxHAEX1@jason-thinkpad-t430s>
+In-Reply-To: <2315811.arm7RJr4ey@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 06:13:13PM +0800, Jason Wang wrote:
-> On Wednesday, November 28, 2012 08:53:05 AM Stephen Hemminger wrote:
-> > On Wed, 28 Nov 2012 14:48:52 +0800
-> > 
-> > Jason Wang <jasowang@redhat.com> wrote:
-> > > On 11/28/2012 12:49 AM, Stephen Hemminger wrote:
-> > > > On Tue, 27 Nov 2012 14:45:13 +0800
-> > > > 
-> > > > Jason Wang <jasowang@redhat.com> wrote:
-> > > >> On 11/27/2012 01:37 AM, Stephen Hemminger wrote:
-> > > >>> On Mon, 26 Nov 2012 15:56:52 +0800
-> > > >>> 
-> > > >>> Jason Wang <jasowang@redhat.com> wrote:
-> > > >>>> Some deivces do not free the old tx skbs immediately after it has
-> > > >>>> been sent
-> > > >>>> (usually in tx interrupt). One such example is virtio-net which
-> > > >>>> optimizes for virt and only free the possible old tx skbs during the
-> > > >>>> next packet sending. This would lead the pktgen to wait forever in
-> > > >>>> the refcount of the skb if no other pakcet will be sent afterwards.
-> > > >>>> 
-> > > >>>> Solving this issue by introducing a new flag IFF_TX_SKB_FREE_DELAY
-> > > >>>> which could notify the pktgen that the device does not free skb
-> > > >>>> immediately after it has been sent and let it not to wait for the
-> > > >>>> refcount to be one.
-> > > >>>> 
-> > > >>>> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> > > >>> 
-> > > >>> Another alternative would be using skb_orphan() and skb->destructor.
-> > > >>> There are other cases where skb's are not freed right away.
-> > > >>> --
-> > > >>> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> > > >>> the body of a message to majordomo@vger.kernel.org
-> > > >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > > >> 
-> > > >> Hi Stephen:
-> > > >> 
-> > > >> Do you mean registering a skb->destructor for pktgen then set and check
-> > > >> bits in skb->tx_flag?
-> > > > 
-> > > > Yes. Register a destructor that does something like update a counter
-> > > > (number of packets pending), then just spin while number of packets
-> > > > pending is over threshold.
-> > > > --
-> > > 
-> > > Not sure this is the best method, since pktgen was used to test the tx
-> > > process of the device driver and NIC. If we use skb_orhpan(), we would
-> > > miss the test of tx completion part.
-> > 
-> > There are other places that delay freeing and your solution would mean
-> > finding and fixing all those. Code that does that already has to use
-> > skb_orphan() to work, and I was looking for a way that could use that.
-> > Introducing another flag value seems like a long term burden.
-> > 
+On Thu, Nov 29, 2012 at 11:03:05AM +0100, Rafael J. Wysocki wrote:
+> On Wednesday, November 28, 2012 06:15:42 PM Toshi Kani wrote:
+> > On Wed, 2012-11-28 at 18:02 -0700, Toshi Kani wrote:
+> > > On Thu, 2012-11-29 at 00:49 +0100, Rafael J. Wysocki wrote:
+> > > > On Wednesday, November 28, 2012 02:02:48 PM Toshi Kani wrote:
+> > > > > > > > > > > > Consider the following case:
+> > > > > > > > > > > > 
+> > > > > > > > > > > > We hotremove the memory device by SCI and unbind it from the driver at the same time:
+> > > > > > > > > > > > 
+> > > > > > > > > > > > CPUa                                                  CPUb
+> > > > > > > > > > > > acpi_memory_device_notify()
+> > > > > > > > > > > >                                        unbind it from the driver
+> > > > > > > > > > > >     acpi_bus_hot_remove_device()
+> > > > > > > > > > > 
+[...]
+> Well, in the meantime I've had a look at acpi_bus_hot_remove_device() and
+> friends and I think there's a way to address all of these problems
+> without big redesign (for now).
 > 
-> Get the point, will draft another version.
->
-> > Alternatively, virtio could do cleanup more aggressively. Maybe in response
-> > to ring getting half full, or add a cleanup timer or something to avoid the
-> > problem.
+> First, why don't we introduce an ACPI device flag (in the flags field of
+> struct acpi_device) called eject_forbidden or something like this such that:
+> 
+> (1) It will be clear by default.
+> (2) It may only be set by a driver's .add() routine if necessary.
+> (3) Once set, it may only be cleared by the driver's .remove() routine if
+>     it's safe to physically remove the device after the .remove().
+> 
+> Then, after the .remove() (which must be successful) has returned, and the
+> flag is set, it will tell acpi_bus_remove() to return a specific error code
+> (such as -EBUSY or -EAGAIN).  It doesn't matter if .remove() was called
+> earlier, because if it left the flag set, there's no way to clear it afterward
+> and acpi_bus_remove() will see it set anyway.  I think the struct acpi_device
+> should be unregistered anyway if that error code is to be returned.
+> 
+> [By the way, do you know where we free the memory allocated for struct
+>  acpi_device objects?]
+> 
+> Now if acpi_bus_trim() gets that error code from acpi_bus_remove(), it should
+> store it, but continue the trimming normally and finally it should return that
+> error code to acpi_bus_hot_remove_device().
 
-Timer would prevent complete deadlock but it is very expensive
-in the virt scenario.
-pulling at ring half full would only help if ring gets half full :)
-which it does not have to.
+Side-note: In the pre_remove patches, acpi_bus_trim actually returns on the
+first error from acpi_bus_remove (e.g. when memory offlining in pre_remove
+fails). Trimming is not continued. 
+
+Normally, acpi_bus_trim keeps trimming as you say, and always returns the last
+error. Is this the desired behaviour that we want to keep for bus_trim? (This is
+more a general question, not specific to the eject_forbidden suggestion)
 
 > 
-> May worth to try. Another method is that virtio has a feature to notify guest 
-> when tx ring is empty, we could free the old tx skbs there.
-> But it may brings 
-> extra overhead. If we could let virtio_net free the old tx skb timely, it 
-> would be easier to bring BQL support to virtio_net also.
+> Now, if acpi_bus_hot_remove_device() gets that error code, it should just
+> reverse the whole trimming (i.e. trigger acpi_bus_scan() from the device
+> we attempted to eject) and notify the firmware about the failure.
+
+sounds like this rollback needs to be implemented in any solution we choose
+to implement, correct?
+
 > 
-> Thanks
+> If we have that, then the memory hotplug driver would only need to set
+> flags.eject_forbidden in its .add() routine and make its .remove() routine
+> only clear that flag if it is safe to actually remove the memory.
+> 
 
-We used to use notify on empty - it's still very slow.
+But when .remove op is called, we are already in the irreversible/error-free
+removal (final removal step).
+Maybe we need to reset eject_forbidden in a prepare_remove operation which
+handles the removal part that can fail ?
 
-> > 
-> > 
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe netdev" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+thanks,
+
+- Vasilis
