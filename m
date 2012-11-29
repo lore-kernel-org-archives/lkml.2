@@ -1,181 +1,586 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754324Ab2K2Lrh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 06:47:37 -0500
-Received: from mx3.cyfra.ua ([62.80.160.182]:46440 "EHLO mx3.cyfra.ua"
+	id S1754435Ab2K2Lr4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 06:47:56 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52839 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751894Ab2K2Lre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 06:47:34 -0500
-From: Vitalii Demianets <vitas@nppfactor.kiev.ua>
-Organization: Factor-SPE
-To: "Hans J. Koch" <hjk@hansjkoch.de>
-Date: Thu, 29 Nov 2012 13:47:28 +0200
-User-Agent: KMail/1.9.10
-Cc: Cong Ding <dinggnu@gmail.com>, linux-kernel@vger.kernel.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-References: <201211271929.32315.vitas@nppfactor.kiev.ua> <201211281137.23623.vitas@nppfactor.kiev.ua> <20121128211407.GC2590@local>
-In-Reply-To: <20121128211407.GC2590@local>
+	id S1754369Ab2K2Lrw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 06:47:52 -0500
+From: "Philip, Avinash" <avinashphilip@ti.com>
+To: <dwmw2@infradead.org>, <artem.bityutskiy@linux.intel.com>, <afzal@ti.com>,
+        <tony@atomide.com>, <broonie@opensource.wolfsonmicro.com>,
+        <rmk+kernel@arm.linux.org.uk>, <gregkh@linuxfoundation.org>
+CC: <linux-mtd@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <nsekhar@ti.com>, <gururaja.hebbar@ti.com>, <ivan.djelic@parrot.com>,
+        "Philip, Avinash" <avinashphilip@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>
+Subject: [PATCH v3 2/3] mtd: devices: elm: Add support for ELM error correction
+Date: Thu, 29 Nov 2012 17:16:33 +0530
+Message-ID: <1354189595-12784-3-git-send-email-avinashphilip@ti.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1354189595-12784-1-git-send-email-avinashphilip@ti.com>
+References: <1354189595-12784-1-git-send-email-avinashphilip@ti.com>
 MIME-Version: 1.0
-Content-Disposition: inline
-Subject: [PATCH] drivers/uio/uio_pdrv_genirq.c: Fix memory freeing issues
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201211291347.28273.vitas@nppfactor.kiev.ua>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. uioinfo was kfreed based on the presence of pdev->dev.of_node, which was
-obviously wrong and unrelated to the fact if uioinfo was allocated statically
-or dynamically. This patch introduces new flag which clearly shows if uioinfo
-was allocated dynamically and kfrees uioinfo based on that flag;
-2. Fix: priv data was not freed in case platform_get_irq() failed. As it was
-caused mainly by improper exit labels naming, labels were renamed too;
-3. The case of uioinfo AND pdev->dev.of_node both NULL (not initialized
-in platform data) was not treated properly.
+The ELM hardware module can be used to speedup BCH 4/8/16 ECC scheme
+error correction.
+For now only 4 & 8 bit support is added
 
-Signed-off-by: Vitalii Demianets <vitas@nppfactor.kiev.ua>
+Signed-off-by: Philip, Avinash <avinashphilip@ti.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Rob Landley <rob@landley.net>
 ---
- drivers/uio/uio_pdrv_genirq.c |   44 ++++++++++++++++++++++++----------------
- 1 files changed, 26 insertions(+), 18 deletions(-)
+Changes since v2:
+	- Remove __devinit & __devexit annotations
 
-diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
-index 42202cd..45126e3 100644
---- a/drivers/uio/uio_pdrv_genirq.c
-+++ b/drivers/uio/uio_pdrv_genirq.c
-@@ -30,6 +30,11 @@
+Changes since v1:
+	- Change build attribute to CONFIG_MTD_NAND_OMAP_BCH
+	- Reduced indentation using by passing elm_info , offset
+	  to elm_read & elm_write
+	- Removed syndrome manipulation functions.
+
+:000000 100644 0000000... b88ee83... A	Documentation/devicetree/bindings/mtd/elm.txt
+:100644 100644 395733a... 369a194... M	drivers/mtd/devices/Makefile
+:000000 100644 0000000... d2667f3... A	drivers/mtd/devices/elm.c
+:000000 100644 0000000... d4fce31... A	include/linux/platform_data/elm.h
+ Documentation/devicetree/bindings/mtd/elm.txt |   17 +
+ drivers/mtd/devices/Makefile                  |    4 +-
+ drivers/mtd/devices/elm.c                     |  418 +++++++++++++++++++++++++
+ include/linux/platform_data/elm.h             |   54 ++++
+ 4 files changed, 493 insertions(+), 1 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/mtd/elm.txt b/Documentation/devicetree/bindings/mtd/elm.txt
+new file mode 100644
+index 0000000..b88ee83
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mtd/elm.txt
+@@ -0,0 +1,17 @@
++Error location module
++
++Required properties:
++- compatible: Must be "ti,elm"
++- reg: physical base address and size of the registers map.
++- interrupts: Interrupt number for the elm.
++- interrupt-parent: The parent interrupt controller
++
++Optional properties:
++- ti,hwmods: Name of the hwmod associated to the elm
++
++Example:
++elm: elm@0 {
++	compatible	= "ti,elm";
++	reg = <0x48080000 0x2000>;
++	interrupts = <4>;
++};
+diff --git a/drivers/mtd/devices/Makefile b/drivers/mtd/devices/Makefile
+index 395733a..369a194 100644
+--- a/drivers/mtd/devices/Makefile
++++ b/drivers/mtd/devices/Makefile
+@@ -17,8 +17,10 @@ obj-$(CONFIG_MTD_LART)		+= lart.o
+ obj-$(CONFIG_MTD_BLOCK2MTD)	+= block2mtd.o
+ obj-$(CONFIG_MTD_DATAFLASH)	+= mtd_dataflash.o
+ obj-$(CONFIG_MTD_M25P80)	+= m25p80.o
++obj-$(CONFIG_MTD_NAND_OMAP_BCH)	+= elm.o
+ obj-$(CONFIG_MTD_SPEAR_SMI)	+= spear_smi.o
+ obj-$(CONFIG_MTD_SST25L)	+= sst25l.o
+ obj-$(CONFIG_MTD_BCM47XXSFLASH)	+= bcm47xxsflash.o
  
- #define DRIVER_NAME "uio_pdrv_genirq"
- 
-+enum {
-+	bitIRQDisabled = 0,
-+	bitUioinfoAlloced = 1,
+-CFLAGS_docg3.o			+= -I$(src)
+\ No newline at end of file
++
++CFLAGS_docg3.o			+= -I$(src)
+diff --git a/drivers/mtd/devices/elm.c b/drivers/mtd/devices/elm.c
+new file mode 100644
+index 0000000..d2667f3
+--- /dev/null
++++ b/drivers/mtd/devices/elm.c
+@@ -0,0 +1,418 @@
++/*
++ * Error Location Module
++ *
++ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#include <linux/platform_device.h>
++#include <linux/module.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/of.h>
++#include <linux/pm_runtime.h>
++#include <linux/platform_data/elm.h>
++
++#define ELM_IRQSTATUS			0x018
++#define ELM_IRQENABLE			0x01c
++#define ELM_LOCATION_CONFIG		0x020
++#define ELM_PAGE_CTRL			0x080
++#define ELM_SYNDROME_FRAGMENT_0		0x400
++#define ELM_SYNDROME_FRAGMENT_6		0x418
++#define ELM_LOCATION_STATUS		0x800
++#define ELM_ERROR_LOCATION_0		0x880
++
++/* ELM Interrupt Status Register */
++#define INTR_STATUS_PAGE_VALID		BIT(8)
++
++/* ELM Interrupt Enable Register */
++#define INTR_EN_PAGE_MASK		BIT(8)
++
++/* ELM Location Configuration Register */
++#define ECC_BCH_LEVEL_MASK		0x3
++
++/* ELM syndrome */
++#define ELM_SYNDROME_VALID		BIT(16)
++
++/* ELM_LOCATION_STATUS Register */
++#define ECC_CORRECTABLE_MASK		BIT(8)
++#define ECC_NB_ERRORS_MASK		0x1f
++
++/* ELM_ERROR_LOCATION_0-15 Registers */
++#define ECC_ERROR_LOCATION_MASK		0x1fff
++
++#define ELM_ECC_SIZE			0x7ff
++
++#define SYNDROME_FRAGMENT_REG_SIZE	0x40
++#define ERROR_LOCATION_SIZE		0x100
++
++struct elm_info {
++	struct device *dev;
++	void __iomem *elm_base;
++	struct completion elm_completion;
++	struct list_head list;
++	enum bch_ecc bch_type;
 +};
 +
- struct uio_pdrv_genirq_platdata {
- 	struct uio_info *uioinfo;
- 	spinlock_t lock;
-@@ -63,7 +68,7 @@ static irqreturn_t uio_pdrv_genirq_handler(int irq, struct uio_info *dev_info)
- 	 * remember the state so we can allow user space to enable it later.
- 	 */
- 
--	if (!test_and_set_bit(0, &priv->flags))
-+	if (!test_and_set_bit(bitIRQDisabled, &priv->flags))
- 		disable_irq_nosync(irq);
- 
- 	return IRQ_HANDLED;
-@@ -83,10 +88,10 @@ static int uio_pdrv_genirq_irqcontrol(struct uio_info *dev_info, s32 irq_on)
- 
- 	spin_lock_irqsave(&priv->lock, flags);
- 	if (irq_on) {
--		if (test_and_clear_bit(0, &priv->flags))
-+		if (test_and_clear_bit(bitIRQDisabled, &priv->flags))
- 			enable_irq(dev_info->irq);
- 	} else {
--		if (!test_and_set_bit(0, &priv->flags))
-+		if (!test_and_set_bit(bitIRQDisabled, &priv->flags))
- 			disable_irq(dev_info->irq);
- 	}
- 	spin_unlock_irqrestore(&priv->lock, flags);
-@@ -101,8 +106,9 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
- 	struct uio_mem *uiomem;
- 	int ret = -EINVAL;
- 	int i;
-+	bool uioinfo_alloced = false;
- 
--	if (!uioinfo) {
-+	if (!uioinfo && pdev->dev.of_node) {
- 		int irq;
- 
- 		/* alloc uioinfo for one device */
-@@ -110,10 +116,11 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
- 		if (!uioinfo) {
- 			ret = -ENOMEM;
- 			dev_err(&pdev->dev, "unable to kmalloc\n");
--			goto bad2;
-+			goto out;
- 		}
- 		uioinfo->name = pdev->dev.of_node->name;
- 		uioinfo->version = "devicetree";
-+		uioinfo_alloced = true;
- 
- 		/* Multiple IRQs are not supported */
- 		irq = platform_get_irq(pdev, 0);
-@@ -125,32 +132,33 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
- 
- 	if (!uioinfo || !uioinfo->name || !uioinfo->version) {
- 		dev_err(&pdev->dev, "missing platform_data\n");
--		goto bad0;
-+		goto out_uioinfo;
- 	}
- 
- 	if (uioinfo->handler || uioinfo->irqcontrol ||
- 	    uioinfo->irq_flags & IRQF_SHARED) {
- 		dev_err(&pdev->dev, "interrupt configuration error\n");
--		goto bad0;
-+		goto out_uioinfo;
- 	}
- 
- 	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
- 	if (!priv) {
- 		ret = -ENOMEM;
- 		dev_err(&pdev->dev, "unable to kmalloc\n");
--		goto bad0;
-+		goto out_uioinfo;
- 	}
- 
- 	priv->uioinfo = uioinfo;
- 	spin_lock_init(&priv->lock);
--	priv->flags = 0; /* interrupt is enabled to begin with */
-+	/* interrupt is enabled to begin with */
-+	priv->flags = uioinfo_alloced ? (1 << bitUioinfoAlloced) : 0;
- 	priv->pdev = pdev;
- 
- 	if (!uioinfo->irq) {
- 		ret = platform_get_irq(pdev, 0);
- 		if (ret < 0) {
- 			dev_err(&pdev->dev, "failed to get IRQ\n");
--			goto bad0;
-+			goto out_priv;
- 		}
- 		uioinfo->irq = ret;
- 	}
-@@ -205,19 +213,19 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
- 	ret = uio_register_device(&pdev->dev, priv->uioinfo);
- 	if (ret) {
- 		dev_err(&pdev->dev, "unable to register uio device\n");
--		goto bad1;
-+		goto out_pm;
- 	}
- 
- 	platform_set_drvdata(pdev, priv);
- 	return 0;
-- bad1:
--	kfree(priv);
-+out_pm:
- 	pm_runtime_disable(&pdev->dev);
-- bad0:
--	/* kfree uioinfo for OF */
--	if (pdev->dev.of_node)
-+out_priv:
-+	kfree(priv);
-+out_uioinfo:
-+	if (uioinfo_alloced)
- 		kfree(uioinfo);
-- bad2:
-+out:
- 	return ret;
- }
- 
-@@ -232,7 +240,7 @@ static int uio_pdrv_genirq_remove(struct platform_device *pdev)
- 	priv->uioinfo->irqcontrol = NULL;
- 
- 	/* kfree uioinfo for OF */
--	if (pdev->dev.of_node)
-+	if (priv->flags & (1 << bitUioinfoAlloced))
- 		kfree(priv->uioinfo);
- 
- 	kfree(priv);
++static LIST_HEAD(elm_devices);
++
++static void elm_write_reg(struct elm_info *info, int offset, u32 val)
++{
++	writel(val, info->elm_base + offset);
++}
++
++static u32 elm_read_reg(struct elm_info *info, int offset)
++{
++	return readl(info->elm_base + offset);
++}
++
++/**
++ * elm_config - Configure ELM module
++ * @info:	elm info
++ */
++static void elm_config(struct elm_info *info)
++{
++	u32 reg_val;
++
++	reg_val = (info->bch_type & ECC_BCH_LEVEL_MASK) | (ELM_ECC_SIZE << 16);
++	elm_write_reg(info, ELM_LOCATION_CONFIG, reg_val);
++}
++
++/**
++ * elm_configure_page_mode - Enable/Disable page mode
++ * @info:	elm info
++ * @index:	index number of syndrome fragment vector
++ * @enable:	enable/disable flag for page mode
++ *
++ * Enable page mode for syndrome fragment index
++ */
++static void elm_configure_page_mode(struct elm_info *info, int index,
++		bool enable)
++{
++	u32 reg_val;
++
++	reg_val = elm_read_reg(info, ELM_PAGE_CTRL);
++	if (enable)
++		reg_val |= BIT(index);	/* enable page mode */
++	else
++		reg_val &= ~BIT(index);	/* disable page mode */
++
++	elm_write_reg(info, ELM_PAGE_CTRL, reg_val);
++}
++
++/**
++ * elm_load_syndrome - Load ELM syndrome reg
++ * @info:	elm info
++ * @err_vec:	elm error vectors
++ * @ecc:	buffer with calculated ecc
++ *
++ * Load syndrome fragment registers with calculated ecc in reverse order.
++ */
++static void elm_load_syndrome(struct elm_info *info,
++		struct elm_errorvec *err_vec, u8 *ecc)
++{
++	int i, offset;
++	u32 val;
++
++	for (i = 0; i < ERROR_VECTOR_MAX; i++) {
++
++		/* Check error reported */
++		if (err_vec[i].error_reported) {
++			elm_configure_page_mode(info, i, true);
++			offset = ELM_SYNDROME_FRAGMENT_0 +
++				SYNDROME_FRAGMENT_REG_SIZE * i;
++
++			/* BCH8 */
++			if (info->bch_type) {
++
++				/* syndrome fragment 0 = ecc[9-12B] */
++				val = cpu_to_be32(*(u32 *) &ecc[9]);
++				elm_write_reg(info, offset, val);
++
++				/* syndrome fragment 1 = ecc[5-8B] */
++				offset += 4;
++				val = cpu_to_be32(*(u32 *) &ecc[5]);
++				elm_write_reg(info, offset, val);
++
++				/* syndrome fragment 2 = ecc[1-4B] */
++				offset += 4;
++				val = cpu_to_be32(*(u32 *) &ecc[1]);
++				elm_write_reg(info, offset, val);
++
++				/* syndrome fragment 3 = ecc[0B] */
++				offset += 4;
++				val = ecc[0];
++				elm_write_reg(info, offset, val);
++			} else {
++				/* syndrome fragment 0 = ecc[20-52b] bits */
++				val = (cpu_to_be32(*(u32 *) &ecc[3]) >> 4) |
++					((ecc[2] & 0xf) << 28);
++				elm_write_reg(info, offset, val);
++
++				/* syndrome fragment 1 = ecc[0-20b] bits */
++				offset += 4;
++				val = cpu_to_be32(*(u32 *) &ecc[0]) >> 12;
++				elm_write_reg(info, offset, val);
++			}
++		}
++
++		/* Update ecc pointer with ecc byte size */
++		ecc += info->bch_type ? BCH8_SIZE : BCH4_SIZE;
++	}
++}
++
++/**
++ * elm_start_processing - start elm syndrome processing
++ * @info:	elm info
++ * @err_vec:	elm error vectors
++ *
++ * Set syndrome valid bit for syndrome fragment registers for which
++ * elm syndrome fragment registers are loaded. This enables elm module
++ * to start processing syndrome vectors.
++ */
++static void elm_start_processing(struct elm_info *info,
++		struct elm_errorvec *err_vec)
++{
++	int i, offset;
++	u32 reg_val;
++
++	/*
++	 * Set syndrome vector valid, so that ELM module
++	 * will process it for vectors error is reported
++	 */
++	for (i = 0; i < ERROR_VECTOR_MAX; i++) {
++		if (err_vec[i].error_reported) {
++			offset = ELM_SYNDROME_FRAGMENT_6 +
++				SYNDROME_FRAGMENT_REG_SIZE * i;
++			reg_val = elm_read_reg(info, offset);
++			reg_val |= ELM_SYNDROME_VALID;
++			elm_write_reg(info, offset, reg_val);
++		}
++	}
++}
++
++/**
++ * elm_error_correction - locate correctable error position
++ * @info:	elm info
++ * @err_vec:	elm error vectors
++ *
++ * On completion of processing by elm module, error location status
++ * register updated with correctable/uncorrectable error information.
++ * In case of correctable errors, number of errors located from
++ * elm location status register & read the positions from
++ * elm error location register.
++ */
++static void elm_error_correction(struct elm_info *info,
++		struct elm_errorvec *err_vec)
++{
++	int i, j, errors = 0;
++	int offset;
++	u32 reg_val;
++
++	for (i = 0; i < ERROR_VECTOR_MAX; i++) {
++
++		/* Check error reported */
++		if (err_vec[i].error_reported) {
++			offset = ELM_LOCATION_STATUS + ERROR_LOCATION_SIZE * i;
++			reg_val = elm_read_reg(info, offset);
++
++			/* Check correctable error or not */
++			if (reg_val & ECC_CORRECTABLE_MASK) {
++				offset = ELM_ERROR_LOCATION_0 +
++					ERROR_LOCATION_SIZE * i;
++
++				/* Read count of correctable errors */
++				err_vec[i].error_count = reg_val &
++					ECC_NB_ERRORS_MASK;
++
++				/* Update the error locations in error vector */
++				for (j = 0; j < err_vec[i].error_count; j++) {
++
++					reg_val = elm_read_reg(info, offset);
++					err_vec[i].error_loc[j] = reg_val &
++						ECC_ERROR_LOCATION_MASK;
++
++					/* Update error location register */
++					offset += 4;
++				}
++
++				errors += err_vec[i].error_count;
++			} else {
++				err_vec[i].error_uncorrectable = true;
++			}
++
++			/* Clearing interrupts for processed error vectors */
++			elm_write_reg(info, ELM_IRQSTATUS, BIT(i));
++
++			/* Disable page mode */
++			elm_configure_page_mode(info, i, false);
++		}
++	}
++}
++
++/**
++ * elm_decode_bch_error_page - Locate error position
++ * @dev:	device pointer
++ * @ecc_calc:	calculated ECC bytes from GPMC
++ * @err_vec:	elm error vectors
++ *
++ * Called with one or more error reported vectors & vectors with
++ * error reported is updated in err_vec[].error_reported
++ *
++ */
++void elm_decode_bch_error_page(struct device *dev, u8 *ecc_calc,
++		struct elm_errorvec *err_vec)
++{
++	struct elm_info *info = dev_get_drvdata(dev);
++	u32 reg_val;
++
++	/* Enable page mode interrupt */
++	reg_val = elm_read_reg(info, ELM_IRQSTATUS);
++	elm_write_reg(info, ELM_IRQSTATUS, reg_val & INTR_STATUS_PAGE_VALID);
++	elm_write_reg(info, ELM_IRQENABLE, INTR_EN_PAGE_MASK);
++
++	/* Load valid ecc byte to syndrome fragment register */
++	elm_load_syndrome(info, err_vec, ecc_calc);
++
++	/* Enable syndrome processing for which syndrome fragment is updated */
++	elm_start_processing(info, err_vec);
++
++	/* Wait for ELM module to finish locating error correction */
++	wait_for_completion(&info->elm_completion);
++
++	/* Disable page mode interrupt */
++	reg_val = elm_read_reg(info, ELM_IRQENABLE);
++	elm_write_reg(info, ELM_IRQENABLE, reg_val & ~INTR_EN_PAGE_MASK);
++	elm_error_correction(info, err_vec);
++}
++EXPORT_SYMBOL(elm_decode_bch_error_page);
++
++static irqreturn_t elm_isr(int this_irq, void *dev_id)
++{
++	u32 reg_val;
++	struct elm_info *info = dev_id;
++
++	reg_val = elm_read_reg(info, ELM_IRQSTATUS);
++
++	/* All error vectors processed */
++	if (reg_val & INTR_STATUS_PAGE_VALID) {
++		elm_write_reg(info, ELM_IRQSTATUS,
++				reg_val & INTR_STATUS_PAGE_VALID);
++		complete(&info->elm_completion);
++		return IRQ_HANDLED;
++	}
++
++	return IRQ_NONE;
++}
++
++struct device *elm_request(enum bch_ecc bch_type)
++{
++	struct elm_info *info;
++
++	list_for_each_entry(info, &elm_devices, list) {
++		if (info && info->dev) {
++				info->bch_type = bch_type;
++				elm_config(info);
++				return info->dev;
++		}
++	}
++
++	return NULL;
++}
++EXPORT_SYMBOL(elm_request);
++
++static int elm_probe(struct platform_device *pdev)
++{
++	int ret = 0;
++	struct resource *res, *irq;
++	struct elm_info *info;
++
++	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
++	if (!info) {
++		dev_err(&pdev->dev, "failed to allocate memory\n");
++		return -ENOMEM;
++	}
++
++	info->dev = &pdev->dev;
++
++	irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
++	if (!irq) {
++		dev_err(&pdev->dev, "no irq resource defined\n");
++		return -ENODEV;
++	}
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res) {
++		dev_err(&pdev->dev, "no memory resource defined\n");
++		return -ENODEV;
++	}
++
++	info->elm_base = devm_request_and_ioremap(&pdev->dev, res);
++	if (!info->elm_base)
++		return -EADDRNOTAVAIL;
++
++	ret = devm_request_irq(&pdev->dev, irq->start, elm_isr, 0,
++			pdev->name, info);
++	if (ret) {
++		dev_err(&pdev->dev, "failure requesting irq %i\n", irq->start);
++		return ret;
++	}
++
++	pm_runtime_enable(&pdev->dev);
++	if (pm_runtime_get_sync(&pdev->dev)) {
++		ret = -EINVAL;
++		pm_runtime_disable(&pdev->dev);
++		dev_err(&pdev->dev, "can't enable clock\n");
++		return ret;
++	}
++
++	init_completion(&info->elm_completion);
++	INIT_LIST_HEAD(&info->list);
++	list_add(&info->list, &elm_devices);
++	platform_set_drvdata(pdev, info);
++	return ret;
++}
++
++static int elm_remove(struct platform_device *pdev)
++{
++	pm_runtime_put_sync(&pdev->dev);
++	pm_runtime_disable(&pdev->dev);
++	platform_set_drvdata(pdev, NULL);
++	return 0;
++}
++
++
++#ifdef CONFIG_OF
++static const struct of_device_id elm_of_match[] = {
++	{ .compatible = "ti,elm" },
++	{},
++};
++MODULE_DEVICE_TABLE(of, elm_of_match);
++#endif
++
++static struct platform_driver elm_driver = {
++	.driver	= {
++		.name	= "elm",
++		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(elm_of_match),
++	},
++	.probe	= elm_probe,
++	.remove	= elm_remove,
++};
++
++module_platform_driver(elm_driver);
++
++MODULE_DESCRIPTION("ELM driver for BCH error correction");
++MODULE_AUTHOR("Texas Instruments");
++MODULE_ALIAS("platform: elm");
++MODULE_LICENSE("GPL v2");
+diff --git a/include/linux/platform_data/elm.h b/include/linux/platform_data/elm.h
+new file mode 100644
+index 0000000..d4fce31
+--- /dev/null
++++ b/include/linux/platform_data/elm.h
+@@ -0,0 +1,54 @@
++/*
++ * BCH Error Location Module
++ *
++ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef __ELM_H
++#define __ELM_H
++
++enum bch_ecc {
++	BCH4_ECC = 0,
++	BCH8_ECC,
++};
++
++/* ELM support 8 error syndrome process */
++#define ERROR_VECTOR_MAX		8
++
++#define BCH8_ECC_OOB_BYTES		13
++#define BCH4_ECC_OOB_BYTES		7
++/* RBL requires 14 byte even though BCH8 uses only 13 byte */
++#define BCH8_SIZE			(BCH8_ECC_OOB_BYTES + 1)
++#define BCH4_SIZE			(BCH4_ECC_OOB_BYTES)
++
++/**
++ * struct elm_errorvec - error vector for elm
++ * @error_reported:		set true for vectors error is reported
++ *
++ * @error_count:		number of correctable errors in the sector
++ * @error_uncorrectable:	number of uncorrectable errors
++ * @error_loc:			buffer for error location
++ *
++ */
++struct elm_errorvec {
++	bool error_reported;
++	bool error_uncorrectable;
++	int error_count;
++	int error_loc[ERROR_VECTOR_MAX];
++};
++
++void elm_decode_bch_error_page(struct device *dev, u8 *ecc_calc,
++		struct elm_errorvec *err_vec);
++struct device *elm_request(enum bch_ecc bch_type);
++#endif /* __ELM_H */
 -- 
-1.7.8.6
+1.7.0.4
+
