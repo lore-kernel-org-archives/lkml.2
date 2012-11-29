@@ -1,87 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624Ab2K2CIV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 21:08:21 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:65023 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753912Ab2K2CIU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 21:08:20 -0500
+	id S1754651Ab2K2CNy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 21:13:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46775 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752836Ab2K2CNw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 21:13:52 -0500
+Date: Wed, 28 Nov 2012 20:20:14 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file.rdu.redhat.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Jens Axboe <axboe@kernel.dk>, Jeff Chua <jeff.chua.linux@gmail.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Neil Brown <neilb@suse.de>
+Subject: Re: [PATCH] Introduce a method to catch mmap_region (was: Recent
+ kernel "mount" slow)
+In-Reply-To: <CA+55aFy_i2HzrXoKsLwuvUbF6=GSGsWxHDczi_grZ7u022xYJw@mail.gmail.com>
+Message-ID: <Pine.LNX.4.64.1211282011110.3957@file.rdu.redhat.com>
+References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com>
+ <CAAJw_ZvUqRmCCQ5-2PdFPRyfdzZMuphGU=hgAjUOHGk=n9Mheg@mail.gmail.com>
+ <CAAJw_ZuJXnAz1ukBwQa3xNbQaL1KUBSrbQMK2hn-7D6Ar1p3fQ@mail.gmail.com>
+ <50B46E05.70906@kernel.dk> <CAAJw_ZsYuLCwCTc6U=ELO_PvyjnVKQdkPke2enfzm6zOeWAqjA@mail.gmail.com>
+ <50B4B313.3030707@kernel.dk> <Pine.LNX.4.64.1211272252260.18338@file.rdu.redhat.com>
+ <50B5CC5A.8060607@kernel.dk> <Pine.LNX.4.64.1211281222410.11599@file.rdu.redhat.com>
+ <CA+55aFx4zYnEsUyGJurBjB0XZ0AgmyKqW-+KWVDvma3w6csnHQ@mail.gmail.com>
+ <Pine.LNX.4.64.1211281422360.26389@file.rdu.redhat.com>
+ <CA+55aFyXdtVJ=SG9bU4qfggCR6DPvz4vOFYxKJZx_WdyFv+3Fw@mail.gmail.com>
+ <CA+55aFyXS0nkDB95c3pcdg1ctrNnUGO8aDuRNhKSEg3JrOqWhA@mail.gmail.com>
+ <Pine.LNX.4.64.1211281540200.5283@file.rdu.redhat.com>
+ <CA+55aFwbnQsvpsOLS6w_G35d4w+Ezv5tOx2SE7dShJhX4iP_0Q@mail.gmail.com>
+ <CA+55aFy_i2HzrXoKsLwuvUbF6=GSGsWxHDczi_grZ7u022xYJw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <50B6BE34.2010109@vflare.org>
-References: <1354001167-24878-1-git-send-email-ngupta@vflare.org>
-	<20121128051505.GD23136@blaptop>
-	<20121129013320.GA24077@blaptop>
-	<50B6BE34.2010109@vflare.org>
-Date: Thu, 29 Nov 2012 11:08:18 +0900
-X-Google-Sender-Auth: Ru1noDF39y2PoR4CMX6e4QbZGTg
-Message-ID: <CAEwNFnC_fzg8Tv1qZy4QACXD_tpFazkfFCwRf8FUforErWXUFg@mail.gmail.com>
-Subject: Re: [PATCH] zram: Prevent use of unmapped buffer
-From: Minchan Kim <minchan@kernel.org>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Greg KH <greg@kroah.com>, Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Sam Hansen <solid.se7en@gmail.com>, Tomas M <tomas@slax.org>,
-        Mihail Kasadjikov <hamer.mk@gmail.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 10:45 AM, Nitin Gupta <ngupta@vflare.org> wrote:
-> On 11/28/2012 05:33 PM, Minchan Kim wrote:
->>
->> On Wed, Nov 28, 2012 at 02:15:05PM +0900, Minchan Kim wrote:
->>>
->>> Hi Nitin,
->>>
->>> On Mon, Nov 26, 2012 at 11:26:07PM -0800, Nitin Gupta wrote:
->>>>
->>>> The commit c8f2f0db1 ("zram: Fix handling of incompressible pages")
->>>> introduced a bug which caused a kunmap()'ed buffer to be used in case
->>>
->>> I got confused by the descripton. :(
->>> The descripton is not right.
->>> The problem is to access freed memory, not accessing to kunmaped buffer.
->>>
->>> partial I/O write.
->>>
->>> 1. uncmem = kmalloc
->>> 2. zram_decompress_page(uncmem)
->>> 3. memcpy(uncmem, user_mem)
->>> 4. lzo1x_1_compress(uncmem)
->>> 5. kfree(uncmem)
->>> 6. src = uncmem
->>> 7. memcpy(cmem, src, clen) <----- HIT
->>>
->>>> of partial writes where the data was found to be incompressible.
->>>>
->> I got it. You shouldn't mention partial write for proper description
->> because it was usecase for swap-over-zram so it can't make partial write.
->> Without partial write mention, your description is right but the problem
->> I mentioned above is another problem for partial write so we need a
->> another
->> patch. I will cook.
->
->
-> I will include explanation of both the cases: use of unmapped buffer
-> and freed buffer, when I resend these patches.
->
 
-As you know, I am going to solve lockdep problem and disksize setting problem.
-Apparently, it conflict with your diet series.
-So I would like to order our patches following as.
 
-1. bug fix patch of unmapped/freed buffer - Nitin
-2. diet patch based on 1 - Nitin
-3. disksize setting and lockdep problem - Minchan
+On Wed, 28 Nov 2012, Linus Torvalds wrote:
 
-I will wait your two patchsets.
-If you have some trouble to hold the time to make the patch, please tell me.
-I will send 1 and 3 ahead so you can send 2 based on it.
+> A bigger issue is for things that emulate what blkdev.c does, and
+> doesn't do the locking. I see code in md/bitmap.c that seems a bit
+> suspicious, for example. That said, it's not *new* breakage, and the
+> "lock at mmap/read/write() time" approach doesn't fix it either (since
+> the mapping will be different for the underlying MD device). So I do
+> think that we should take a look at all the users of
+> "alloc_page_buffers()" and "create_empty_buffers()" to see what *they*
+> do to protect the block-size, but I think that's an independent issue
+> from the raw device access case in fs/block_dev.c..
+> 
+> I guess I have to actually test my patch. I don't have very
+> interesting test-cases, though.
+> 
+>                        Linus
 
--- 
-Kind regards,
-Minchan Kim
+Yes, it md looks suspicious. It disables write access in 
+deny_bitmap_write_access (that functions looks buggy on its own - what 
+happens if i_writecount == 0 or if it is already negative on entry?).
+
+So we could disallow changing block size if i_writecount < 0, that should 
+do the trick.
+
+Mikulas
