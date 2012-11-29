@@ -1,99 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555Ab2K2JH5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 04:07:57 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:18668 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407Ab2K2JHw convert rfc822-to-8bit (ORCPT
+	id S1752314Ab2K2JJZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 04:09:25 -0500
+Received: from ns.km20343-01.keymachine.de ([84.19.182.79]:56766 "EHLO
+	km20343-01.keymachine.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751141Ab2K2JJQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 04:07:52 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 29 Nov 2012 01:07:32 -0800
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: "Kim, Milo" <Milo.Kim@ti.com>, Andrew Morton <akpm@linux-foundation.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        Sivaram Nair <sivaramn@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 29 Nov 2012 14:37:37 +0530
-Subject: RE: [PATCH 2/2] rtc-tps65910: enable RTC power domain on
- initialization
-Thread-Topic: [PATCH 2/2] rtc-tps65910: enable RTC power domain on
- initialization
-Thread-Index: Ac3ODj+EBtR5lNOFQkugojWkudbjXgAASILg
-Message-ID: <D958900912E20642BCBC71664EFECE3E6E17CF0A07@BGMAIL02.nvidia.com>
-References: <A874F61F95741C4A9BA573A70FE3998F6418F1B3@DQHE02.ent.ti.com>
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F6418F1B3@DQHE02.ent.ti.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 29 Nov 2012 04:09:16 -0500
+Message-ID: <1354180153.1479.162.camel@tellur>
+Subject: Re: [RFC v2 8/8] drm: tegra: Add gr2d device
+From: Lucas Stach <dev@lynxeye.de>
+To: Terje =?ISO-8859-1?Q?Bergstr=F6m?= <tbergstrom@nvidia.com>
+Cc: Dave Airlie <airlied@gmail.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arto Merilainen <amerilainen@nvidia.com>
+Date: Thu, 29 Nov 2012 10:09:13 +0100
+In-Reply-To: <50B71A28.5060807@nvidia.com>
+References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com>
+	     <1353935954-13763-9-git-send-email-tbergstrom@nvidia.com>
+	     <CAPM=9tzvt3J6D3zLPV97w629q62CNhAxX8V+_JZ6kmXxxz5fVg@mail.gmail.com>
+	     <50B46336.8030605@nvidia.com>
+	     <CAPM=9txCuPJcFAfD7Hu5o2BVFK=pVah7B8HhG0ctLCyFPwNEnA@mail.gmail.com>
+	     <50B476E1.4070403@nvidia.com>
+	     <CAPM=9tysiK6LgnQdAwGSYfxnQfgcfRm0+X2tPSAEDxUPt-QZGA@mail.gmail.com>
+	     <50B47DA8.60609@nvidia.com>	<1354011776.1479.31.camel@tellur>
+	     <20121127103739.GA3329@avionic-0098.adnet.avionic-design.de>
+	     <50B4A483.8030305@nvidia.com>
+	     <CAPM=9tz=_0Drx3=Me3EQdPgBvYVGzs6Gnqaw6RBaTLsCG24RAg@mail.gmail.com>
+	     <50B60EFF.1050703@nvidia.com> <1354109602.1479.66.camel@tellur>
+	    <50B61845.6060102@nvidia.com> <1354111565.1479.73.camel@tellur>
+	   <50B6237B.8010808@nvidia.com> <1354115609.1479.91.camel@tellur>
+	  <50B63A70.8020107@nvidia.com> <1354128408.1479.137.camel@tellur>
+	 <50B71A28.5060807@nvidia.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Kim, Milo [mailto:Milo.Kim@ti.com]
-> Sent: Thursday, November 29, 2012 2:18 PM
-> To: Andrew Morton
-> Cc: Samuel Ortiz; a.zummo@towertech.it; swarren@wwwdotorg.org; Venu
-> Byravarasu; Sivaram Nair; linux-kernel@vger.kernel.org
-> Subject: [PATCH 2/2] rtc-tps65910: enable RTC power domain on initialization
+Am Donnerstag, den 29.11.2012, 10:17 +0200 schrieb Terje Bergström:
+> On 28.11.2012 20:46, Lucas Stach wrote:
+> > Am Mittwoch, den 28.11.2012, 18:23 +0200 schrieb Terje Bergström:
+> >> Sorry. I promised in another thread a write-up explaining the design. I
+> >> still owe you guys that.
+> > That would be really nice to have. I'm also particularly interested in
+> > how you plan to do synchronization of command streams to different
+> > engines working together, if that's not too much to ask for now. Like
+> > userspace uploading a texture in a buffer, 2D engine doing mipmap
+> > generation, 3D engine using mipmapped texture.
 > 
->  Enabling RTC HW block depends on the default value of TPS65910 register.
->  In some mode, RTC block is disabled by default.(eg. AM3517 Craneboard)
->  In this case, RTC_PWDN(RTC power down) bit should be cleared to enable
->  the RTC HW block.
+> I can briefly explain (and then copy-paste to a coherent text once I get
+> to it) how inter-engine synchronization is done. It's not specifically
+> for 2D or 3D, but generic to any host1x client.
+[...]
+Thanks for that.
+[...]
 
->From the description of RTC_PWDN bit of DEVCTRL_REG in TPS65910 data sheet
-it is very evident that the default value of RTC_PWDN is 0.
+> > 2. Move the exposed DRM interface more in line with other DRM drivers.
+> > Please take a look at how for example the GEM_EXECBUF ioctl works on
+> > other drivers to get a feeling of what I'm talking about. Everything
+> > using the display, 2D and maybe later on the 3D engine should only deal
+> > with GEM handles. I really don't like the idea of having a single
+> > userspace application, which uses engines with similar and known
+> > requirements (DDX) dealing with dma-buf handles or other similar high
+> > overhead stuff to do the most basic tasks.
+> > If we move down the allocator into nvhost we can use buffers allocated
+> > from this to back GEM or V4L2 buffers transparently. The ioctl to
+> > allocate a GEM buffer shouldn't do much more than wrapping the nvhost
+> > buffer.
+> 
+> Ok, this is actually what we do downstream. We use dma-buf handles only
+> for purposes where they're really needed (in fact, none yet), and use
+> our downstream allocator handles for the rest. I did this, because
+> benchmarks were showing that memory management overhead shoot through
+> the roof if I tried doing everything via dma-buf.
+> 
+> We can move support for allocating GEM handles to nvhost, and GEM
+> handles can be treated just as another memory handle type in nvhost.
+> tegradrm would then call nvhost for allocation.
+> 
+We should aim for a clean split here. GEM handles are something which is
+really specific to how DRM works and as such should be constructed by
+tegradrm. nvhost should really just manage allocations/virtual address
+space and provide something that is able to back all the GEM handle
+operations.
 
-Probably on "AM3517 Craneboard", some code is running prior to the RTC driver
-which might be writing 1 on to this bit. IMO you must disable that write operation
-instead of just writing default value into a register.
+nvhost has really no reason at all to even know about GEM handles. If
+you back a GEM object by a nvhost object you can just peel out the
+nvhost handles from the GEM wrapper in the tegradrm submit ioctl handler
+and queue the job to nvhost using it's native handles.
 
+This way you would also be able to construct different handles (like GEM
+obj or V4L2 buffers) from the same backing nvhost object. Note that I'm
+not sure how useful this would be, but it seems like a reasonable design
+to me being able to do so.
+
+> > This may also solve your problem with having multiple mappings of the
+> > same buffer into the very same address space, as nvhost is the single
+> > instance that manages all host1x client address spaces. If the buffer is
+> > originating from there you can easily check if it's already mapped. For
+> > Tegra 3 to do things in an efficient way we likely have to move away
+> > from dealing with the DMA API to dealing with the IOMMU API, this gets a
+> > _lot_ easier_ if you have a single point where you manage memory
+> > allocation and address space.
 > 
->  This patch also works in case that RTC block is active by default,
->  because there is no side effect even if the bit is updated again.
+> Yep, this would definitely simplify our IOMMU problem. But, I thought
+> the canonical way of dealing with device memory is DMA API, and you're
+> saying that we should just bypass it and call IOMMU directly?
 > 
->  Tested on AM3517 Craneboard.
+This is true for all standard devices. But we should not consider this
+as something set in stone and then building some crufty design around
+it. If we can manage to make our design a lot cleaner by managing DMA
+memory and the corresponding IOMMU address spaces for the host1x devices
+ourselves, I think this is the way to go. All other graphics drivers in
+the Linux kernel have to deal with their GTT in some way, we just happen
+to do so by using a shared system IOMMU and not something that is
+exclusive to the graphics devices.
+
+This is more work on the side of nvhost, but IMHO the benefits make it
+look worthwhile.
+
+What we should avoid is something that completely escapes the standard
+ways of dealing with memory used in the Linux kernel, like using
+carveout areas, but I think this is already consensus among us all.
+
+[...]
+> > This an implementation detail. Whether you shoot down the old pushbuf
+> > mapping and insert a new one pointing to free backing memory (which may
+> > be the way to go for 3D) or do an immediate copy of the channel pushbuf
+> > contents to the host1x pushbuf (which may be beneficial for very small
+> > pushs) is all the same. Both methods implicitly guarantee that the
+> > memory mapped by userspace always points to a location the CPU can write
+> > to without interfering with the GPU.
 > 
-> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
-> ---
->  drivers/rtc/rtc-tps65910.c |    7 +++++++
->  1 file changed, 7 insertions(+)
+> Ok. Based on this, I propose the way to go for cases without IOMMU
+> support and all Tegra20 cases (as Tegra20's GART can't provide memory
+> protection) is to copy the stream to host1x push buffer. In Tegra30 with
+> IOMMU support we can just reference the buffer. This way we don't have
+> to do expensive MMU operations.
 > 
-> diff --git a/drivers/rtc/rtc-tps65910.c b/drivers/rtc/rtc-tps65910.c
-> index e8d44bc..b4d9f02 100644
-> --- a/drivers/rtc/rtc-tps65910.c
-> +++ b/drivers/rtc/rtc-tps65910.c
-> @@ -247,6 +247,13 @@ static int __devinit tps65910_rtc_probe(struct
-> platform_device *pdev)
->  		return ret;
-> 
->  	dev_dbg(&pdev->dev, "Enabling rtc-tps65910.\n");
-> +
-> +	/* Enable RTC digital power domain */
-> +	ret = regmap_update_bits(tps65910->regmap, TPS65910_DEVCTRL,
-> +		DEVCTRL_RTC_PWDN_MASK, 0 <<
-> DEVCTRL_RTC_PWDN_SHIFT);
-> +	if (ret < 0)
-> +		return ret;
-> +
->  	rtc_reg = TPS65910_RTC_CTRL_STOP_RTC;
->  	ret = regmap_write(tps65910->regmap, TPS65910_RTC_CTRL,
-> rtc_reg);
->  	if (ret < 0)
-> --
-> 1.7.9.5
-> 
-> 
-> Best Regards,
-> Milo
-> 
+Sounds like a plan.
+
+Regards,
+Lucas
+
 
