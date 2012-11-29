@@ -1,162 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531Ab2K2Ql1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 11:41:27 -0500
-Received: from www.linutronix.de ([62.245.132.108]:46178 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334Ab2K2QlZ (ORCPT
+	id S1752670Ab2K2Qvr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 11:51:47 -0500
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:4776 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751069Ab2K2Qvp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 11:41:25 -0500
-Date: Thu, 29 Nov 2012 17:41:23 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Joel Becker <jlbec@evilplan.org>
-Cc: linux-kernel@vger.kernel.org, andrzej.p@samsung.com,
-        linux-usb@vger.kernel.org
-Subject: [PATCH] fs/configfs: allow to create groups on demand
-Message-ID: <20121129164123.GA8551@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 29 Nov 2012 11:51:45 -0500
+Message-ID: <1354207397.26955.417.camel@misato.fc.hp.com>
+Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on
+ rebind scenario
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Wen Congyang <wencongyang@gmail.com>, isimatu.yasuaki@jp.fujitsu.com,
+        lenb@kernel.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Date: Thu, 29 Nov 2012 09:43:17 -0700
+In-Reply-To: <2315811.arm7RJr4ey@vostro.rjw.lan>
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
+	 <1354150952.26955.377.camel@misato.fc.hp.com>
+	 <1354151742.26955.385.camel@misato.fc.hp.com>
+	 <2315811.arm7RJr4ey@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a function add a group to an existing one and its
-counterart. The newly created group behaves as it would be created via
-default_groups[] which means the user can't rmdir it.
-This should be used by the upcomming USB gadget interface in order to
-add the currently available UDCs as a child of the UDC node. The UDC
-itself will appear once the hardware driver is loaded and can appear
-later.
+On Thu, 2012-11-29 at 11:03 +0100, Rafael J. Wysocki wrote:
+> On Wednesday, November 28, 2012 06:15:42 PM Toshi Kani wrote:
+> > On Wed, 2012-11-28 at 18:02 -0700, Toshi Kani wrote:
+> > > On Thu, 2012-11-29 at 00:49 +0100, Rafael J. Wysocki wrote:
+> > > > On Wednesday, November 28, 2012 02:02:48 PM Toshi Kani wrote:
+> > > > If we disabled exposing
+> > > > acpi_eject_store() for memory devices, then the only way would be from the
+> > > > notify handler.  So I wonder if driver_unbind() shouldn't just uninstall the
+> > > > notify handler for memory (so that memory eject events are simply dropped on
+> > > > the floor after unbinding the driver)?
+> > > 
+> > > If driver_unbind() happens before an eject request, we do not have a
+> > > problem.  acpi_eject_store() fails if a driver is not bound to the
+> > > device.  acpi_memory_device_notify() fails as well.
+> > > 
+> > > The race condition Wen pointed out (see the top of this email) is that
+> > > driver_unbind() may come in while eject operation is in-progress.  This
+> > > is why I mentioned the following in previous email.
+> > > 
+> > > > So, we basically need to either 1) serialize
+> > > > acpi_bus_hot_remove_device() and driver_unbind(), or 2) make
+> > > > acpi_bus_hot_remove_device() to fail if driver_unbind() is run
+> > > > during the operation.
+> > 
+> > Forgot to mention.  The 3rd option is what Greg said -- use the
+> > suppress_bind_attrs field.  I think this is a good option to address
+> > this race condition for now.  For a long term solution, we should have a
+> > better infrastructure in place to address such issue in general.
+> 
+> Well, in the meantime I've had a look at acpi_bus_hot_remove_device() and
+> friends and I think there's a way to address all of these problems
+> without big redesign (for now).
+> 
+> First, why don't we introduce an ACPI device flag (in the flags field of
+> struct acpi_device) called eject_forbidden or something like this such that:
+> 
+> (1) It will be clear by default.
+> (2) It may only be set by a driver's .add() routine if necessary.
+> (3) Once set, it may only be cleared by the driver's .remove() routine if
+>     it's safe to physically remove the device after the .remove().
+> 
+> Then, after the .remove() (which must be successful) has returned, and the
+> flag is set, it will tell acpi_bus_remove() to return a specific error code
+> (such as -EBUSY or -EAGAIN).  It doesn't matter if .remove() was called
+> earlier, because if it left the flag set, there's no way to clear it afterward
+> and acpi_bus_remove() will see it set anyway.  I think the struct acpi_device
+> should be unregistered anyway if that error code is to be returned.
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
- fs/configfs/dir.c        |   63 ++++++++++++++++++++++++++++++++++------------
- include/linux/configfs.h |    4 +++
- 2 files changed, 51 insertions(+), 16 deletions(-)
+I like the idea!  It's a good intermediate solution if we need to keep
+the bind/unbind interface.  That said, I still prefer to go with option
+3) for now.  I do not see much reason to keep the bind/unbind interface
+for ACPI hotplug drivers, and it seems that the semantics of .remove()
+is .remove_driver(), not .remove_device() for driver_unbind().  So, I
+think we should disable the bind/unbind interface until we settle this
+issue.
 
-diff --git a/fs/configfs/dir.c b/fs/configfs/dir.c
-index 7414ae2..50ee2bd 100644
---- a/fs/configfs/dir.c
-+++ b/fs/configfs/dir.c
-@@ -1663,19 +1663,13 @@ const struct file_operations configfs_dir_operations = {
- 	.readdir	= configfs_readdir,
- };
- 
--int configfs_register_subsystem(struct configfs_subsystem *subsys)
-+static int __create_group(struct config_group *group, struct dentry *root)
- {
- 	int err;
--	struct config_group *group = &subsys->su_group;
- 	struct qstr name;
- 	struct dentry *dentry;
--	struct dentry *root;
- 	struct configfs_dirent *sd;
- 
--	root = configfs_pin_fs();
--	if (IS_ERR(root))
--		return PTR_ERR(root);
--
- 	if (!group->cg_item.ci_name)
- 		group->cg_item.ci_name = group->cg_item.ci_namebuf;
- 
-@@ -1708,25 +1702,48 @@ int configfs_register_subsystem(struct configfs_subsystem *subsys)
- 
- 	mutex_unlock(&root->d_inode->i_mutex);
- 
--	if (err) {
-+	if (err)
- 		unlink_group(group);
--		configfs_release_fs();
-+
-+	return err;
-+}
-+
-+int configfs_create_group(struct config_group *parent, struct config_group *new)
-+{
-+	int ret;
-+
-+	ret = __create_group(new, parent->cg_item.ci_dentry);
-+	if (!ret) {
-+		struct configfs_dirent *sd = new->cg_item.ci_dentry->d_fsdata;
-+
-+		sd->s_type |= CONFIGFS_USET_DEFAULT;
- 	}
- 
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(configfs_create_group);
-+
-+int configfs_register_subsystem(struct configfs_subsystem *subsys)
-+{
-+	int err;
-+	struct dentry *root;
-+
-+	root = configfs_pin_fs();
-+	if (IS_ERR(root))
-+		return PTR_ERR(root);
-+
-+	err = __create_group(&subsys->su_group, root);
-+	if (err)
-+		configfs_release_fs();
-+
- 	return err;
- }
- 
--void configfs_unregister_subsystem(struct configfs_subsystem *subsys)
-+void configfs_remove_group(struct config_group *group)
- {
--	struct config_group *group = &subsys->su_group;
- 	struct dentry *dentry = group->cg_item.ci_dentry;
- 	struct dentry *root = dentry->d_sb->s_root;
- 
--	if (dentry->d_parent != root) {
--		printk(KERN_ERR "configfs: Tried to unregister non-subsystem!\n");
--		return;
--	}
--
- 	mutex_lock_nested(&root->d_inode->i_mutex,
- 			  I_MUTEX_PARENT);
- 	mutex_lock_nested(&dentry->d_inode->i_mutex, I_MUTEX_CHILD);
-@@ -1749,6 +1766,20 @@ void configfs_unregister_subsystem(struct configfs_subsystem *subsys)
- 	dput(dentry);
- 
- 	unlink_group(group);
-+}
-+EXPORT_SYMBOL_GPL(configfs_remove_group);
-+
-+void configfs_unregister_subsystem(struct configfs_subsystem *subsys)
-+{
-+	struct config_group *group = &subsys->su_group;
-+	struct dentry *dentry = group->cg_item.ci_dentry;
-+	struct dentry *root = dentry->d_sb->s_root;
-+
-+	if (dentry->d_parent != root) {
-+		pr_err("configfs: Tried to unregister non-subsystem!\n");
-+		return;
-+	}
-+	configfs_remove_group(group);
- 	configfs_release_fs();
- }
- 
-diff --git a/include/linux/configfs.h b/include/linux/configfs.h
-index 34025df..660c25d 100644
---- a/include/linux/configfs.h
-+++ b/include/linux/configfs.h
-@@ -249,6 +249,10 @@ static inline struct configfs_subsystem *to_configfs_subsystem(struct config_gro
- 		NULL;
- }
- 
-+int configfs_create_group(struct config_group *parent,
-+		struct config_group *new);
-+void configfs_remove_group(struct config_group *group);
-+
- int configfs_register_subsystem(struct configfs_subsystem *subsys);
- void configfs_unregister_subsystem(struct configfs_subsystem *subsys);
- 
--- 
-1.7.10.4
+> [By the way, do you know where we free the memory allocated for struct
+>  acpi_device objects?]
+
+device_release() -> acpi_device_release().
+
+> Now if acpi_bus_trim() gets that error code from acpi_bus_remove(), it should
+> store it, but continue the trimming normally and finally it should return that
+> error code to acpi_bus_hot_remove_device().
+> 
+> Now, if acpi_bus_hot_remove_device() gets that error code, it should just
+> reverse the whole trimming (i.e. trigger acpi_bus_scan() from the device
+> we attempted to eject) and notify the firmware about the failure.
+> 
+> If we have that, then the memory hotplug driver would only need to set
+> flags.eject_forbidden in its .add() routine and make its .remove() routine
+> only clear that flag if it is safe to actually remove the memory.
+> 
+> Does this make sense to you?
+
+In high-level, yes.  Rollback strategy, such as we should continue the
+trimming after an error, is something we need to think about along with
+the framework design.  I think we need a good framework before
+implementing rollback.
+
+> [BTW, using _PS3 in acpi_bus_hot_remove_device() directly to power off the
+>  device is a nonsense, because this method is not guaranteed to turn the power
+>  off in the first place (it may just put the device into D3hot).  If anything,
+>  acpi_device_set_power() should be used for that, but even that is not
+>  guaranteed to actually remove the power (power resources may be shared with
+>  other devices, so in fact that operation should be done by acpi_bus_trim()
+>  for each of the trimmed devices.]
+
+I agree.  I cannot tell for other vendor's implementation, but I expect
+that _EJ0 takes care of the power state after it is ejected.
+
+Thanks,
+-Toshi
+
 
