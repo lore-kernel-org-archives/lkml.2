@@ -1,140 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756128Ab2K2ENk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 23:13:40 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:41377 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756084Ab2K2ENj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 23:13:39 -0500
-Date: Thu, 29 Nov 2012 15:13:36 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bill Pemberton <wfp5p@virginia.edu>,
-        "Rajanikanth H.V" <rajanikanth.hv@stericsson.com>,
-        Anton Vorontsov <avorontsov@ru.mvista.com>
-Subject: linux-next: manual merge of the driver-core tree with the battery
- tree
-Message-Id: <20121129151336.fe662cf31face2b1a73f96df@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__29_Nov_2012_15_13_36_+1100_FPX8OOapcoWTSjua"
+	id S932627Ab2K2EQG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 23:16:06 -0500
+Received: from smtp5-g21.free.fr ([212.27.42.5]:49043 "EHLO smtp5-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753758Ab2K2EQB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 23:16:01 -0500
+From: Jim Meyering <jim@meyering.net>
+To: Hugh Dickins <hughd@google.com>
+Cc: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Zheng Liu <wenqing.lz@taobao.com>,
+        Jeff liu <jeff.liu@oracle.com>, Paul Eggert <eggert@cs.ucla.edu>,
+        Christoph Hellwig <hch@infradead.org>, Josef Bacik <josef@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Andreas Dilger <adilger@dilger.ca>,
+        Dave Chinner <david@fromorbit.com>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        Chris Mason <chris.mason@fusionio.com>,
+        Sunil Mushran <sunil.mushran@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] tmpfs: support SEEK_DATA and SEEK_HOLE (reprise)
+In-Reply-To: <alpine.LNX.2.00.1211281745200.1641@eggly.anvils> (Hugh Dickins's
+	message of "Wed, 28 Nov 2012 18:02:21 -0800 (PST)")
+References: <alpine.LNX.2.00.1211281706390.1516@eggly.anvils>
+	<20121129012933.GA9112@kernel>
+	<alpine.LNX.2.00.1211281745200.1641@eggly.anvils>
+Date: Thu, 29 Nov 2012 05:15:50 +0100
+Message-ID: <87lidlxcw9.fsf@rho.meyering.net>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__29_Nov_2012_15_13_36_+1100_FPX8OOapcoWTSjua
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hugh Dickins wrote:
+> On Thu, 29 Nov 2012, Jaegeuk Hanse wrote:
+...
+>> But this time in which scenario will use it?
+>
+> I was not very convinced by the grep argument from Jim and Paul:
+> that seemed to be grep holding on to a no-arbitrary-limits dogma,
+> at the expense of its users, causing an absurd line-length issue,
+> which use of SEEK_DATA happens to avoid in some cases.
+>
+> The cp of sparse files from Jeff and Dave was more convincing;
+> but I still didn't see why little old tmpfs needed to be ahead
+> of the pack.
+>
+> But at LinuxCon/Plumbers in San Diego in August, a more convincing
+> case was made: I was hoping you would not ask, because I did not take
+> notes, and cannot pass on the details - was it rpm building on tmpfs?
+> I was convinced enough to promise support on tmpfs when support on
+> ext4 goes in.
 
-Hi Greg,
+Re the cp-vs-sparse-file case, the current FIEMAP-based code in GNU
+cp is ugly and complicated enough that until recently it harbored a
+hard-to-reproduce data-corrupting bug[*].  Now that SEEK_DATA/SEEK_HOLE
+support work will work also for tmpfs and ext4, we can plan to remove
+the FIEMAP-based code in favor of a simpler SEEK_DATA/SEEK_HOLE-based
+implementation.
 
-Today's linux-next merge of the driver-core tree got a conflict in
-drivers/power/ab8500_fg.c between commit e0f1abeba5c2 ("ab8500: Add
-devicetree support for fuelgauge") from the battery tree and commit
-c8afa6406e60 ("power: remove use of __devinit") from the driver-core tree.
+With the rise of virtualization, copying sparse images efficiently
+(probably searching, too) is becoming more and more important.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+So, yes, GNU cp will soon use this feature.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/power/ab8500_fg.c
-index ed62ef7,331dc43..0000000
---- a/drivers/power/ab8500_fg.c
-+++ b/drivers/power/ab8500_fg.c
-@@@ -2440,39 -2442,21 +2440,39 @@@ static struct ab8500_fg_interrupts ab85
-  	{"CCEOC", ab8500_fg_cc_data_end_handler},
-  };
- =20
- +static char *supply_interface[] =3D {
- +	"ab8500_chargalg",
- +	"ab8500_usb",
- +};
- +
-- static int __devinit ab8500_fg_probe(struct platform_device *pdev)
-+ static int ab8500_fg_probe(struct platform_device *pdev)
-  {
- +	struct device_node *np =3D pdev->dev.of_node;
- +	struct ab8500_fg *di;
-  	int i, irq;
-  	int ret =3D 0;
- -	struct abx500_bm_plat_data *plat_data =3D pdev->dev.platform_data;
- -	struct ab8500_fg *di;
- -
- -	if (!plat_data) {
- -		dev_err(&pdev->dev, "No platform data\n");
- -		return -EINVAL;
- -	}
- =20
- -	di =3D kzalloc(sizeof(*di), GFP_KERNEL);
- -	if (!di)
- +	di =3D devm_kzalloc(&pdev->dev, sizeof(*di), GFP_KERNEL);
- +	if (!di) {
- +		dev_err(&pdev->dev, "%s no mem for ab8500_fg\n", __func__);
-  		return -ENOMEM;
- +	}
- +	di->bat =3D pdev->mfd_cell->platform_data;
- +	if (!di->bat) {
- +		if (np) {
- +			ret =3D bmdevs_of_probe(&pdev->dev, np, &di->bat);
- +			if (ret) {
- +				dev_err(&pdev->dev,
- +					"failed to get battery information\n");
- +				return ret;
- +			}
- +		} else {
- +			dev_err(&pdev->dev, "missing dt node for ab8500_fg\n");
- +			return -EINVAL;
- +		}
- +	} else {
- +		dev_info(&pdev->dev, "falling back to legacy platform data\n");
- +	}
- =20
-  	mutex_init(&di->cc_lock);
- =20
-@@@ -2608,14 -2609,12 +2608,14 @@@ free_inst_curr_wq
-  	return ret;
-  }
- =20
- +static const struct of_device_id ab8500_fg_match[] =3D {
- +	{ .compatible =3D "stericsson,ab8500-fg", },
- +	{ },
- +};
- +
-  static struct platform_driver ab8500_fg_driver =3D {
-  	.probe =3D ab8500_fg_probe,
-- 	.remove =3D __devexit_p(ab8500_fg_remove),
-+ 	.remove =3D ab8500_fg_remove,
-  	.suspend =3D ab8500_fg_suspend,
-  	.resume =3D ab8500_fg_resume,
-  	.driver =3D {
-
---Signature=_Thu__29_Nov_2012_15_13_36_+1100_FPX8OOapcoWTSjua
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQtuDwAAoJEECxmPOUX5FEVIgQAJia7Zvu7pVMOHTAus1W5gPj
-F1WzPdrbWzoS/gm27zfl79HIR74hhVjD9m6vAcwjj3zyP3F6htVerajyqN9nwEzH
-7jm54rWiBTo0juNDD/p2cGuvBIkiRBLjU9YY0kuJzbFU1GQ2b2pBEStwu965LR3g
-AtXt31ppVbRdEf6v0oQQWRwqm17xODVLSKDBDihjn3SSmAgIL5Dy9h6Bkr+tvbUH
-5wfMzQd1nM3WcA5Ukg6L/tzW7NTsFllzRxyTTktZcWJgQ/PC968E2ORDMpdrHSVb
-cm8mybEoNaBVKqWneARr9Ye6PLp0Kc1C6JiD/BjacjAoKIWH7Yqg0qs0vjSXCQLj
-/eosNV45MnLVBt52IFz63vzRIQD6KhnSncVpJg01Xc0mBuHCOS//eLvtM8vdSyJf
-fYGO8VJvaw+pTGi0QxJ/Zk8eg/CrjS5vHmxrPkTYhaiZhuLiTmHEflQGWCt6/dYJ
-WRe0yCQ7pvgB1OLhAPRhG7ryPuPn2ehhDiDmQM5aD6AbBStxgxoG42SIdxuXIjof
-f0I+xBIypOdGnpC3s8chRQD0UMy9QnxCqeUzktfuIzb3yIJhV4vmBm5ffvzpK19D
-TuO+5nnkvvYnXJy2DanM2Mcilwkp+Zs8GK5CTcxWsKgLaN0MmdIFd1hmbeFR6ovY
-TPxC1O7TR8uZVFhrKl0K
-=4T9v
------END PGP SIGNATURE-----
-
---Signature=_Thu__29_Nov_2012_15_13_36_+1100_FPX8OOapcoWTSjua--
+[*] https://plus.google.com/u/0/114228401647637059102/posts/FDV3JEaYsKD
