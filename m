@@ -1,95 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751418Ab2K2QhE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 11:37:04 -0500
-Received: from mx3.cyfra.ua ([62.80.160.182]:50713 "EHLO mx3.cyfra.ua"
+	id S1752188Ab2K2QjE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 11:39:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56395 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750846Ab2K2QhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 11:37:02 -0500
-From: Vitalii Demianets <vitas@nppfactor.kiev.ua>
-Organization: Factor-SPE
-To: Tux9 <tuxding@gmail.com>
-Subject: Re: [PATCH] uio.c: Fix warning: 'ret' might be used uninitialized
-Date: Thu, 29 Nov 2012 18:36:59 +0200
-User-Agent: KMail/1.9.10
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>, linux-kernel@vger.kernel.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-References: <201211271348.14603.vitas@nppfactor.kiev.ua> <CAM3j68rrBePLoamRb1pCH+TeAfLDO-5Jd_kk7-JRCNnEBhLp2Q@mail.gmail.com> <201211291822.16565.vitas@nppfactor.kiev.ua>
-In-Reply-To: <201211291822.16565.vitas@nppfactor.kiev.ua>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+	id S1750846Ab2K2QjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 11:39:01 -0500
+Date: Thu, 29 Nov 2012 14:38:38 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Manjunath Hadli <manjunath.hadli@ti.com>
+Cc: Hans Verkuil <hverkuil@xs4all.nl>,
+        Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <devel@driverdev.osuosl.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Prabhakar Lad <prabhakar.lad@ti.com>,
+        Hans Verkuil <hansverk@cisco.com>, Sakari Ailus <sakari.ailus@iki.fi>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        LMML <linux-media@vger.kernel.org>
+Subject: Re: [PATCH v3 0/9] Media Controller capture driver for DM365
+Message-ID: <20121129143838.01604378@redhat.com>
+In-Reply-To: <50B758F3.5060008@ti.com>
+References: <1354099329-20722-1-git-send-email-prabhakar.lad@ti.com>
+	<201211282018.20832.hverkuil@xs4all.nl>
+	<20121128193021.GA4174@kroah.com>
+	<201211290843.36468.hverkuil@xs4all.nl>
+	<20121129083956.227f55ee@redhat.com>
+	<50B758F3.5060008@ti.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201211291836.59358.vitas@nppfactor.kiev.ua>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thursday 29 November 2012 18:05:27 Tux9 wrote:
-> > Hans, I think there are something wrong in your patch, while Vitalii's
-> > is right. The variable "ret" is reused in line 292 and line 295, so
-> > the value of "ret" would be overridden (if it goto err_map in line 284
-> > when mi>=1).
->
-> Actually, both patches do exactly the same thing. Hans's patch establishes
-> default value for the ret for all those "other" cases when ret is not
-> explicitly overridden. My patch explicitly enumerates all those "other"
-> cases in more wordily manner.
->
+Em Thu, 29 Nov 2012 18:15:39 +0530
+Manjunath Hadli <manjunath.hadli@ti.com> escreveu:
 
-Oops, disregard this. After looking at it more thoroughly I got your point.
-You are right, ret is overridden at first iteration (mi == 0), so Hans's 
-approach does not work.
-I must do more thinking before replying in a hurry.
+> > So, in summary:
+> > 
+> > Prabhakar/Manju:
+> > 
+> > If you'll be committed to make sure that no regressions will happen when this
+> > driver will be promoted and replace the existing driver, please update
+> > the TODO to point that the compatibility bits is needed.
+> Sure Mauro. All this long wait to get into the mainline would be for
+> nothing if we do not go ahead and make the necessary changes you want us
+> to do to get to the media folder. We will update the TODO patch and
+> resend the series.
 
-> > On Wed, Nov 28, 2012 at 10:05 PM, Hans J. Koch <hjk@hansjkoch.de> wrote:
-> > > On Wed, Nov 28, 2012 at 10:58:32AM +0200, Vitalii Demianets wrote:
-> > >> On Wednesday 28 November 2012 00:43:41 Hans J. Koch wrote:
-> > >> > Thanks, good catch, but why don't you simply do this:
-> > >>
-> > >> Just a matter of personal preference.
-> > >
-> > > Your patch: 1 files changed, 12 insertions(+), 4 deletions(-)
-> > > My patch: 1 files changed, 1 insertions(+), 1 deletions(-)
-> > >
-> > > Both achieve exactly the same. That's not a matter of personal
-> > > preference, that's the difference between a working solution and
-> > > a good solution. In the kernel, we want the latter.
-> > >
-> > >> As a maintainer you can apply either
-> > >> patch you want. I guess you would prefer your approach and I have no
-> > >> objections to that :)
-> > >
-> > > That's not the right kind of comment. Don't make it a habit.
-> > >
-> > > Thanks,
-> > > Hans
-> > >
-> > >> > >From 228445996bb75a44d16b6237eca6a0916d9b2d7e Mon Sep 17 00:00:00
-> > >> > > 2001
-> > >> >
-> > >> > From: "Hans J. Koch" <hjk@hansjkoch.de>
-> > >> > Date: Tue, 27 Nov 2012 23:38:00 +0100
-> > >> > Subject: [PATCH] uio: Fix warning: 'ret' might be used uninitialized
-> > >> >
-> > >> > In two cases, the return value variable "ret" can be undefined.
-> > >> >
-> > >> > Signed-off-by: Hans J. Koch <hjk@hansjkoch.de>
-> > >> > ---
-> > >> >  drivers/uio/uio.c |    2 +-
-> > >> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > >> >
-> > >> > diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
-> > >> > index 5110f36..fc60e35 100644
-> > >> > --- a/drivers/uio/uio.c
-> > >> > +++ b/drivers/uio/uio.c
-> > >> > @@ -263,7 +263,7 @@ static struct class uio_class = {
-> > >> >   */
-> > >> >  static int uio_dev_add_attributes(struct uio_device *idev)
-> > >> >  {
-> > >> > -   int ret;
-> > >> > +   int ret = -ENOMEM;
-> > >> >     int mi, pi;
-> > >> >     int map_found = 0;
-> > >> >     int portio_found = 0;
+Ok, thank you!
+
+Regards,
+Mauro
