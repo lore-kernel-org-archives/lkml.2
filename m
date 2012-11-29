@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755703Ab2K2DdW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 22:33:22 -0500
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:48972 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753800Ab2K2DdT (ORCPT
+	id S932482Ab2K2Ddy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 22:33:54 -0500
+Received: from na3sys009aog137.obsmtp.com ([74.125.149.18]:43557 "EHLO
+	na3sys009aog137.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752406Ab2K2Ddx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 22:33:19 -0500
+	Wed, 28 Nov 2012 22:33:53 -0500
 From: Qing Xu <qingx@marvell.com>
 To: qingx@marvell.com, linux@arm.linux.org.uk, sameo@linux.intel.com,
         grant.likely@secretlab.ca, rob.herring@calxeda.com,
         haojian.zhuang@gmail.com, cxie4@marvell.com,
         linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH] mfd: max8925: add dts
-Date: Thu, 29 Nov 2012 11:34:42 +0800
-Message-Id: <1354160082-1814-1-git-send-email-qingx@marvell.com>
+Subject: [PATCH v4 7/7] mfd: max8925: add dts
+Date: Thu, 29 Nov 2012 11:35:20 +0800
+Message-Id: <1354160120-1923-1-git-send-email-qingx@marvell.com>
 X-Mailer: git-send-email 1.7.0.4
-X-OriginalArrivalTime: 29 Nov 2012 03:33:07.0687 (UTC) FILETIME=[3F986F70:01CDCDE2]
+X-OriginalArrivalTime: 29 Nov 2012 03:33:44.0984 (UTC) FILETIME=[55D38180:01CDCDE2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
