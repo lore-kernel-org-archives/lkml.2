@@ -1,72 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755082Ab2K2VIE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 16:08:04 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32449 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752497Ab2K2VID (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 16:08:03 -0500
-Subject: [PATCH v2] kvm: Fix user memslot overlap check
-To: mtosatti@redhat.com, gleb@redhat.com
-From: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        xiaoguangrong@linux.vnet.ibm.com
-Date: Thu, 29 Nov 2012 14:07:59 -0700
-Message-ID: <20121129210725.9364.72668.stgit@bling.home>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1755311Ab2K2VIf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 16:08:35 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:56049 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754887Ab2K2VId (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 16:08:33 -0500
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1/smwomOmTsL1MwgWfnNqrrGIJATdlAAHx2q0qFdp
+	ymg14pJ/cODeTY
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Kent Yoder <key@linux.vnet.ibm.com>
+Cc: Rajiv Andrade <mail@srajiv.net>, Marcel Selhorst <tpmdd@selhorst.net>,
+        Sirrix AG <tpmdd@sirrix.com>, tpmdd-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH v3] char/tpm: Use true and false for bools
+Date: Thu, 29 Nov 2012 22:08:41 +0100
+Message-Id: <1354223321-3343-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <20121129160627.GB15399@ennui.austin.ibm.com>
+References: <20121129160627.GB15399@ennui.austin.ibm.com>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prior to memory slot sorting this loop compared all of the user memory
-slots for overlap with new entries.  With memory slot sorting, we're
-just checking some number of entries in the array that may or may not
-be user slots.  Instead, walk all the slots with kvm_for_each_memslot,
-which has the added benefit of terminating early when we hit the first
-empty slot, and skip comparison to private slots.
+Bool initializations should use true and false.  Bool tests don't need
+comparisons.  Based on contributions from Joe Perches, Rusty Russell
+and Bruce W Allan.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Cc: stable@vger.kernel.org
+The semantic patch that makes this output is available
+in scripts/coccinelle/misc/boolinit.cocci.
+
+More information about semantic patching is available at
+http://coccinelle.lip6.fr/
+
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
+v3 for this tiny patch... shame on me.
 
-v2: Remove unused variable i
+ drivers/char/tpm/tpm_tis.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
- virt/kvm/kvm_main.c |   13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
-
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index be70035..6e8fa7e 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -709,8 +709,7 @@ int __kvm_set_memory_region(struct kvm *kvm,
- 	int r;
- 	gfn_t base_gfn;
- 	unsigned long npages;
--	unsigned long i;
--	struct kvm_memory_slot *memslot;
-+	struct kvm_memory_slot *memslot, *slot;
- 	struct kvm_memory_slot old, new;
- 	struct kvm_memslots *slots, *old_memslots;
+diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
+index 6bdf267..10f0b47 100644
+--- a/drivers/char/tpm/tpm_tis.c
++++ b/drivers/char/tpm/tpm_tis.c
+@@ -374,7 +374,7 @@ static int probe_itpm(struct tpm_chip *chip)
+ 	if (vendor != TPM_VID_INTEL)
+ 		return 0;
  
-@@ -761,13 +760,11 @@ int __kvm_set_memory_region(struct kvm *kvm,
+-	itpm = 0;
++	itpm = false;
  
- 	/* Check for overlaps */
- 	r = -EEXIST;
--	for (i = 0; i < KVM_MEMORY_SLOTS; ++i) {
--		struct kvm_memory_slot *s = &kvm->memslots->memslots[i];
--
--		if (s == memslot || !s->npages)
-+	kvm_for_each_memslot(slot, kvm->memslots) {
-+		if (slot->id >= KVM_MEMORY_SLOTS || slot == memslot)
- 			continue;
--		if (!((base_gfn + npages <= s->base_gfn) ||
--		      (base_gfn >= s->base_gfn + s->npages)))
-+		if (!((base_gfn + npages <= slot->base_gfn) ||
-+		      (base_gfn >= slot->base_gfn + slot->npages)))
- 			goto out_free;
+ 	rc = tpm_tis_send_data(chip, cmd_getticks, len);
+ 	if (rc == 0)
+@@ -383,7 +383,7 @@ static int probe_itpm(struct tpm_chip *chip)
+ 	tpm_tis_ready(chip);
+ 	release_locality(chip, chip->vendor.locality, 0);
+ 
+-	itpm = 1;
++	itpm = true;
+ 
+ 	rc = tpm_tis_send_data(chip, cmd_getticks, len);
+ 	if (rc == 0) {
+@@ -502,7 +502,7 @@ static irqreturn_t tis_int_handler(int dummy, void *dev_id)
+ 	return IRQ_HANDLED;
+ }
+ 
+-static bool interrupts = 1;
++static bool interrupts = true;
+ module_param(interrupts, bool, 0444);
+ MODULE_PARM_DESC(interrupts, "Enable interrupts");
+ 
+@@ -545,7 +545,7 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
+ 			rc = -ENODEV;
+ 			goto out_err;
+ 		}
+-		itpm = (probe == 0) ? 0 : 1;
++		itpm = !!probe;
  	}
  
+ 	if (itpm)
+@@ -741,10 +741,10 @@ static int __devinit tpm_tis_pnp_init(struct pnp_dev *pnp_dev,
+ 	if (pnp_irq_valid(pnp_dev, 0))
+ 		irq = pnp_irq(pnp_dev, 0);
+ 	else
+-		interrupts = 0;
++		interrupts = false;
+ 
+ 	if (is_itpm(pnp_dev))
+-		itpm = 1;
++		itpm = true;
+ 
+ 	return tpm_tis_init(&pnp_dev->dev, start, len, irq);
+ }
+-- 
+1.7.8.6
 
