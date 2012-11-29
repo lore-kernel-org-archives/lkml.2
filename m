@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754551Ab2K2Xn0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 18:43:26 -0500
-Received: from casper.infradead.org ([85.118.1.10]:39974 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303Ab2K2XnZ (ORCPT
+	id S1754950Ab2K2Xnc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 18:43:32 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:56846 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751303Ab2K2Xn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 18:43:25 -0500
-Message-ID: <50B7F30C.1060105@infradead.org>
-Date: Thu, 29 Nov 2012 15:43:08 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Thu, 29 Nov 2012 18:43:28 -0500
+Date: Thu, 29 Nov 2012 23:43:26 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Patrick McLean <patrickm@gaikai.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-nfs@vger.kernel.org
+Subject: Re: Regression with initramfs and nfsroot (appears to be in the
+ dcache)
+Message-ID: <20121129234326.GX4939@ZenIV.linux.org.uk>
+References: <CAE2NFgU+4QDcLaVE5dKDvZCxey7qEf7FAbYNjNmcjVU=HLhF=A@mail.gmail.com>
+ <20121129213316.GU4939@ZenIV.linux.org.uk>
+ <CAE2NFgWCnmgSCsw7MzRkqBLTHgRDG-FvKKcbTHN6UqePK6Ef+Q@mail.gmail.com>
+ <20121129222109.GW4939@ZenIV.linux.org.uk>
+ <50B7E759.9070007@gaikai.com>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Ville Syrjala <syrjala@sci.fi>
-Subject: [PATCH -next] of: export "allnodes" to fixx w1-gpio.c modular build
-References: <20121129174057.99da02b15426c76054d05592@canb.auug.org.au>
-In-Reply-To: <20121129174057.99da02b15426c76054d05592@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50B7E759.9070007@gaikai.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@infradead.org>
+On Thu, Nov 29, 2012 at 02:53:13PM -0800, Patrick McLean wrote:
+> On 29/11/12 02:21 PM, Al Viro wrote:
+> > On Thu, Nov 29, 2012 at 02:06:22PM -0800, Patrick McLean wrote:
+> > 
+> >> I have a trivial reproducer and am happy to help debug in any way that
+> >> I can. That patch seems to fix the problem, and produces these
+> >> warnings in dmesg:
+> > 
+> > OK...  So we have differing entry->fh and NFS_FH(dentry->d_inode).  Something
+> > like
+> > static void dump_fh(const struct nfs_fh *fh)
+> > {
+> > 	int i;
+> > 	printk(KERN_INFO "FH(%d)", fh->size);
+> > 	for (i = 0; i < fh->size; i++)
+> > 		printk(KERN_CONT "%c%02x", i ? ' ' : '[', fh->data[i]);
+> > 	printk(KERN_CONT "]\n");
+> > }
+> > with dump_fh(entry->fh); dump_fh(NFS_FH(dentry->d_inode)); added next to
+> > that WARN_ON(1) would probably be interesting.  And probably would make
+> > sense to print filename->name as well, to see which files it is about.
 
-Fix build when CONFIG_W1_MASTER_GPIO=m by exporting "allnodes".
+> [    8.821584] FH(0)]
+> [    8.821586] FH(36)[01 00 07 01 89 00 00 00 00 00 00 00 e1 21 fe c4 9e 38 44 dc bf 1b d5 95 d6 76 d6 d9 a7 3c 1b 80 33 38 e3 62]
+> [    8.821601] filename: proc
 
-ERROR: "allnodes" [drivers/w1/masters/w1-gpio.ko] undefined!
+*whoa*
 
-Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-Cc: Ville Syrjala <syrjala@sci.fi>
----
- drivers/of/base.c |    1 +
- 1 file changed, 1 insertion(+)
+So we have zero entry->fh->size?  No wonder it doesn't match...  Which NFS
+version it is?  entry->fh->size is set by nfs[34]_decode_dirent().
 
---- linux-next-20121129.orig/drivers/of/base.c
-+++ linux-next-20121129/drivers/of/base.c
-@@ -46,6 +46,7 @@ struct alias_prop {
- static LIST_HEAD(aliases_lookup);
- 
- struct device_node *allnodes;
-+EXPORT_SYMBOL(allnodes);
- struct device_node *of_chosen;
- struct device_node *of_aliases;
- 
+NFS folks: any ideas on best way to debug it?  The brute-force way would be
+to capture all NFS traffic with tcpdump and see what's going on, but that
+would be a lot of work...
+
+Looks like we have READDIRPLUS attempted and succeeded, but fhandle was not
+given.  Result: nfs_prime_dcache() is doing blind d_drop() on perfectly
+valid dentries, no matter how busy.
