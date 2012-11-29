@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754346Ab2K2Wnv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 17:43:51 -0500
-Received: from mail2.shareable.org ([80.68.89.115]:53346 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303Ab2K2Wnt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 17:43:49 -0500
-X-Greylist: delayed 2753 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 Nov 2012 17:43:49 EST
-Date: Thu, 29 Nov 2012 21:57:52 +0000
-From: Jamie Lokier <jamie@shareable.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Benjamin LaHaise <bcrl@kvack.org>,
-        linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, zab@redhat.com, jmoyer@redhat.com,
-        axboe@kernel.dk, viro@zeniv.linux.org.uk
-Subject: Re: [PATCH 22/25] Generic dynamic per cpu refcounting
-Message-ID: <20121129215751.GA4102@jl-vm1.vm.bytemark.co.uk>
-References: <20121129185953.GW16230@one.firstfloor.org>
- <20121129191214.GG15094@google.com>
- <20121129192003.GX16230@one.firstfloor.org>
- <20121129192925.GH15094@google.com>
- <20121129193452.GI19042@kvack.org>
- <20121129202231.GJ15094@google.com>
- <m2fw3sf8eu.fsf@firstfloor.org>
- <20121129204531.GK15094@google.com>
- <20121129205447.GY16230@one.firstfloor.org>
- <20121129205920.GL15094@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121129205920.GL15094@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754734Ab2K2WqM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 17:46:12 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:37205 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752859Ab2K2WqL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 17:46:11 -0500
+Message-ID: <1354229172.1700.18.camel@joe-AO722>
+Subject: Re: [PATCH V2 00/23] printk: refactoring
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Kay Sievers <kay@vrfy.org>,
+        "Jan H." =?ISO-8859-1?Q?Sch=F6nherr?= <schnhrr@cs.tu-berlin.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 29 Nov 2012 14:46:12 -0800
+In-Reply-To: <20121129142143.22886573.akpm@linux-foundation.org>
+References: <cover.1351135988.git.joe@perches.com>
+	 <1351864140.3537.1.camel@joe-AO722> <1352760850.18715.8.camel@joe-AO722>
+	 <20121112152621.eb14d7f0.akpm@linux-foundation.org>
+	 <1354226895.1700.12.camel@joe-AO722>
+	 <20121129142143.22886573.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kent Overstreet wrote:
-> On Thu, Nov 29, 2012 at 09:54:47PM +0100, Andi Kleen wrote:
-> > > > The regular atomic_t is limited in ways that you are not.
-> > > > See my original mail.
-> > > 
-> > > I don't follow, can you explain?
-> > 
-> > For most cases the reference count is tied to some object, which are
-> > naturally limited by memory size or other physical resources.
-> > 
-> > But in the assymetric CPU case with your ref count no such limiter
-> > exists.
+On Thu, 2012-11-29 at 14:21 -0800, Andrew Morton wrote:
+> On Thu, 29 Nov 2012 14:08:15 -0800
+> Joe Perches <joe@perches.com> wrote:
+> > Well, it's getting to be too late for this series.
 > 
-> It's got exactly the same limit as the old code which used the atomic_t
-> - we're limited by the number of threads that can be issuing aio
-> syscalls at a time.
-> 
-> The assymetry you're talking about _doesn't matter_, individual cpu
-> counters wrapping does not affect what the counters all sum to when we
-> go to tear down.
-> 
-> A coworker at lunch actually pointed out to me that the reason this is
-> true is just that modular arithmatic is still associative with addition
-> and subtraction.
+> Yeah sorry, stuff got in the way, then people patched printk.c.
 
-It's just like jiffies.  Everyone understands jiffies arithmetic I hope.
+No worries.
 
--- Jamie
+> > When would be the best time to resubmit and get this
+> > into -next?
+> 
+> I think at rc1.  Then if all is OK I'd aim at a merge for rc2 or rc3
+> because these patches are rather a pain to keep alive.
+
+It's still a scheduling issue with Kay and Jan's patches.
+Does anyone have any idea if/when those patches are going in?
+
+
