@@ -1,53 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab2K2PEe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 10:04:34 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33555 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751336Ab2K2PEd (ORCPT
+	id S1754181Ab2K2PGs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 10:06:48 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:51431 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750931Ab2K2PGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 10:04:33 -0500
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>
-Subject: [PATCH] mfd: da9052-core: Fix interrupts reported to mfd child devices
-Date: Thu, 29 Nov 2012 16:04:28 +0100
-Message-Id: <1354201468-9219-1-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 1.7.10.4
-X-SA-Exim-Connect-IP: 10.1.0.7
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 29 Nov 2012 10:06:46 -0500
+Date: Thu, 29 Nov 2012 03:36:27 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Li Zhong <zhong@linux.vnet.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Gilad.Ben-Yossef.gilad@benyossef.com
+Subject: Re: [PATCH] context_tracking: New context tracking susbsystem
+Message-ID: <20121129113627.GS2474@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1354041205-6989-1-git-send-email-fweisbec@gmail.com>
+ <1354179992.2499.35.camel@ThinkPad-T5421.cn.ibm.com>
+ <CAFTL4hysBreTXE-rXVQ5no+3B8hZ-3XMgap20PAP9u76-j-Tgg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFTL4hysBreTXE-rXVQ5no+3B8hZ-3XMgap20PAP9u76-j-Tgg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12112915-5406-0000-0000-000002863769
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch "mfd: da9052-core: Use regmap_irq_get_virq() and fix the probe"
-replaces the irq_base with the da9052_map_irq function but doesn't
-update the irq_base parameter to the mfd_add_devices call.
-This causes child devices to try and request IRQs with just the internal
-offset number.
+On Thu, Nov 29, 2012 at 11:30:19AM +0100, Frederic Weisbecker wrote:
+> 2012/11/29 Li Zhong <zhong@linux.vnet.ibm.com>:
+> > On Tue, 2012-11-27 at 19:33 +0100, Frederic Weisbecker wrote:
+> > [....]
+> >> -
+> >> -     WARN_ON_ONCE(!current->mm);
+> >> -
+> >> -     local_irq_save(flags);
+> >> -     rdtp = &__get_cpu_var(rcu_dynticks);
+> >> -     if (!rdtp->ignore_user_qs && !rdtp->in_user) {
+> >> -             rdtp->in_user = true;
+> >> -             rcu_eqs_enter(true);
+> >> -     }
+> >
+> > It seems to me that ignore_user_qs and in_user defined in struct
+> > rcu_dynticks are no longer needed?
+> >
+> > If so, then maybe we could remove them, code below:
+> >
+> > ==========
+> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > index e441b77..b8fae5d 100644
+> > --- a/kernel/rcutree.c
+> > +++ b/kernel/rcutree.c
+> > @@ -2719,9 +2719,6 @@ rcu_boot_init_percpu_data(int cpu, struct rcu_state *rsp)
+> >         rdp->dynticks = &per_cpu(rcu_dynticks, cpu);
+> >         WARN_ON_ONCE(rdp->dynticks->dynticks_nesting != DYNTICK_TASK_EXIT_IDLE);
+> >         WARN_ON_ONCE(atomic_read(&rdp->dynticks->dynticks) != 1);
+> > -#ifdef CONFIG_RCU_USER_QS
+> > -       WARN_ON_ONCE(rdp->dynticks->in_user);
+> > -#endif
+> >         rdp->cpu = cpu;
+> >         rdp->rsp = rsp;
+> >         rcu_boot_init_nocb_percpu_data(rdp);
+> > diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+> > index 4b69291..6f21f2e 100644
+> > --- a/kernel/rcutree.h
+> > +++ b/kernel/rcutree.h
+> > @@ -102,10 +102,6 @@ struct rcu_dynticks {
+> >                                     /* idle-period nonlazy_posted snapshot. */
+> >         int tick_nohz_enabled_snap; /* Previously seen value from sysfs. */
+> >  #endif /* #ifdef CONFIG_RCU_FAST_NO_HZ */
+> > -#ifdef CONFIG_RCU_USER_QS
+> > -       bool ignore_user_qs;        /* Treat userspace as extended QS or not */
+> > -       bool in_user;               /* Is the CPU in userland from RCU POV? */
+> > -#endif
+> >  };
+> >
+> >  /* RCU's kthread states for tracing. */
+> >
+> >
+> 
+> Good point. Paul, do you prefer to fold these changes into my patch or
+> do we add a new one? In any case Li we need your Signed-off-by tag.
 
-Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
----
- drivers/mfd/da9052-core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+A separate patch works fine here because there should be no complaints
+from compilers or tests about these.  Zhong, please do send with your
+Signed-off-by, and I will queue them.
 
-diff --git a/drivers/mfd/da9052-core.c b/drivers/mfd/da9052-core.c
-index c96cdbc..0f12972 100644
---- a/drivers/mfd/da9052-core.c
-+++ b/drivers/mfd/da9052-core.c
-@@ -804,7 +804,7 @@ int __devinit da9052_device_init(struct da9052 *da9052, u8 chip_id)
- 		dev_err(da9052->dev, "DA9052 ADC IRQ failed ret=%d\n", ret);
- 
- 	ret = mfd_add_devices(da9052->dev, -1, da9052_subdev_info,
--			      ARRAY_SIZE(da9052_subdev_info), NULL, 0, NULL);
-+			      ARRAY_SIZE(da9052_subdev_info), NULL, da9052_map_irq(da9052, 0), NULL);
- 	if (ret) {
- 		dev_err(da9052->dev, "mfd_add_devices failed: %d\n", ret);
- 		goto err;
--- 
-1.7.10.4
+							Thanx, Paul
 
