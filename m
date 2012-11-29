@@ -1,227 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932482Ab2K2Ddy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 22:33:54 -0500
-Received: from na3sys009aog137.obsmtp.com ([74.125.149.18]:43557 "EHLO
-	na3sys009aog137.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752406Ab2K2Ddx (ORCPT
+	id S1755804Ab2K2Dgy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 22:36:54 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47028 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755414Ab2K2Dgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 22:33:53 -0500
-From: Qing Xu <qingx@marvell.com>
-To: qingx@marvell.com, linux@arm.linux.org.uk, sameo@linux.intel.com,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        haojian.zhuang@gmail.com, cxie4@marvell.com,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH v4 7/7] mfd: max8925: add dts
-Date: Thu, 29 Nov 2012 11:35:20 +0800
-Message-Id: <1354160120-1923-1-git-send-email-qingx@marvell.com>
-X-Mailer: git-send-email 1.7.0.4
-X-OriginalArrivalTime: 29 Nov 2012 03:33:44.0984 (UTC) FILETIME=[55D38180:01CDCDE2]
+	Wed, 28 Nov 2012 22:36:53 -0500
+Date: Wed, 28 Nov 2012 19:32:54 -0800
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Glauber Costa <glommer@parallels.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Greg Thelen <gthelen@google.com>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com,
+        Robert Love <rlove@google.com>, Colin Cross <ccross@android.com>,
+        Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>
+Subject: Re: [RFC] Add mempressure cgroup
+Message-ID: <20121129033253.GA5554@lizard.sbx05977.paloaca.wayport.net>
+References: <20121128102908.GA15415@lizard>
+ <20121128151432.3e29d830.akpm@linux-foundation.org>
+ <20121129012751.GA20525@lizard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20121129012751.GA20525@lizard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Qing Xu <qingx@marvell.com>
+On Wed, Nov 28, 2012 at 05:27:51PM -0800, Anton Vorontsov wrote:
+> On Wed, Nov 28, 2012 at 03:14:32PM -0800, Andrew Morton wrote:
+> [...]
+> > Compare this with the shrink_slab() shrinkers.  With these, the VM can
+> > query and then control the clients.  If something goes wrong or is out
+> > of balance, it's the VM's problem to solve.
+> > 
+> > So I'm thinking that a better design would be one which puts the kernel
+> > VM in control of userspace scanning and freeing.  Presumably with a
+> > query-and-control interface similar to the slab shrinkers.
+> 
+> Thanks for the ideas, Andrew.
+> 
+> Query-and-control scheme looks very attractive, and that's actually
+> resembles my "balance" level idea, when userland tells the kernel how much
+> reclaimable memory it has. Except the your scheme works in the reverse
+> direction, i.e. the kernel becomes in charge.
+> 
+> But there is one, rather major issue: we're crossing kernel-userspace
+> boundary. And with the scheme we'll have to cross the boundary four times:
+> query / reply-available / control / reply-shrunk / (and repeat if
+> necessary, every SHRINK_BATCH pages). Plus, it has to be done somewhat
+> synchronously (all the four stages), and/or we have to make a "userspace
+> shrinker" thread working in parallel with the normal shrinker, and here,
+> I'm afraid, we'll see more strange interactions. :)
+> 
+> But there is a good news: for these kind of fine-grained control we have a
+> better interface, where we don't have to communicate [very often] w/ the
+> kernel. These are "volatile ranges", where userland itself marks chunks of
+> data as "I might need it, but I won't cry if you recycle it; but when I
+> access it next time, let me know if you actually recycled it". Yes,
+> userland no longer able to decide which exact page it permits to recycle,
+> but we don't have use-cases when we actually care that much. And if we do,
+> we'd rather introduce volatile LRUs with different priorities, or
+> something alike.
+> 
+> So, we really don't need the full-fledged userland shrinker, since we can
+> just let the in-kernel shrinker do its job. If we work with the
+> bytes/pages granularity it is just easier (and more efficient in terms of
+> communication) to do the volatile ranges.
+> 
+> For the pressure notifications use-cases, we don't even know bytes/pages
+> information: "activity managers" are separate processes looking after
+> overall system performance.
+> 
+> So, we're not trying to make userland too smart, quite the contrary: we
+> realized that for this interface we don't want to mess with the bytes and
+> pages, and that's why we cut this stuff down to only three levels. Before
+> this, we were actually trying to count bytes, we did not like it and we
+> ran away screaming.
+> 
+> OTOH, your scheme makes volatile ranges unneeded, since a thread might
+> register a shrinker hook and free stuff by itself. But again, I believe
+> this involves more communication with the kernel.
 
-add max8925 dts support into mmp2 brownstone platform
+Btw, I believe your idea is something completely new, and I surely cannot
+fully evaluate it on my own -- I might be wrong here. So I invite folks to
+express their opinions too.
 
-Signed-off-by: Qing Xu <qingx@marvell.com>
----
- arch/arm/boot/dts/mmp2-brownstone.dts |  158 +++++++++++++++++++++++++++++++++
- arch/arm/boot/dts/mmp2.dtsi           |    4 +-
- 2 files changed, 161 insertions(+), 1 deletions(-)
+Guys, it's about Andrew's idea of exposing shrinker-alike logic to the
+userland (and I made it 'vs. volatile ranges'):
 
-diff --git a/arch/arm/boot/dts/mmp2-brownstone.dts b/arch/arm/boot/dts/mmp2-brownstone.dts
-index c9b4f27..f03d4f4 100644
---- a/arch/arm/boot/dts/mmp2-brownstone.dts
-+++ b/arch/arm/boot/dts/mmp2-brownstone.dts
-@@ -29,6 +29,164 @@
- 			};
- 			twsi1: i2c@d4011000 {
- 				status = "okay";
-+				pmic: max8925@3c {
-+					compatible = "maxim,max8925";
-+					reg = <0x3c>;
-+					interrupts = <1>;
-+					interrupt-parent = <&intcmux4>;
-+					interrupt-controller;
-+					#interrupt-cells = <1>;
-+					tsc-irq = <0>;
-+
-+					regulators {
-+						SDV1 {
-+							regulator-min-microvolt = <637500>;
-+							regulator-max-microvolt = <1425000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						SDV2 {
-+							regulator-min-microvolt = <650000>;
-+							regulator-max-microvolt = <2225000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						SDV3 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO1 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO2 {
-+							regulator-min-microvolt = <650000>;
-+							regulator-max-microvolt = <2250000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO3 {
-+							regulator-min-microvolt = <650000>;
-+							regulator-max-microvolt = <2250000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO4 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO5 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO6 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO7 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO8 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO9 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO10 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+						};
-+						LDO11 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO12 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO13 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO14 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO15 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO16 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO17 {
-+							regulator-min-microvolt = <650000>;
-+							regulator-max-microvolt = <2250000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO18 {
-+							regulator-min-microvolt = <650000>;
-+							regulator-max-microvolt = <2250000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO19 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+						LDO20 {
-+							regulator-min-microvolt = <750000>;
-+							regulator-max-microvolt = <3900000>;
-+							regulator-boot-on;
-+							regulator-always-on;
-+						};
-+					};
-+					backlight {
-+						max8925-dual-string = <0>;
-+					};
-+					charger {
-+						batt-detect = <0>;
-+						topoff-threshold = <1>;
-+						fast-charge = <7>;
-+						no-temp-support = <0>;
-+						no-insert-detect = <0>;
-+					};
-+				};
- 			};
- 			rtc: rtc@d4010000 {
- 				status = "okay";
-diff --git a/arch/arm/boot/dts/mmp2.dtsi b/arch/arm/boot/dts/mmp2.dtsi
-index 80f74e2..76f9cc7 100644
---- a/arch/arm/boot/dts/mmp2.dtsi
-+++ b/arch/arm/boot/dts/mmp2.dtsi
-@@ -41,7 +41,7 @@
- 				mrvl,intc-nr-irqs = <64>;
- 			};
- 
--			intcmux4@d4282150 {
-+			intcmux4: interrupt-controller@d4282150 {
- 				compatible = "mrvl,mmp2-mux-intc";
- 				interrupts = <4>;
- 				interrupt-controller;
-@@ -196,6 +196,8 @@
- 				compatible = "mrvl,mmp-twsi";
- 				reg = <0xd4011000 0x1000>;
- 				interrupts = <7>;
-+				#address-cells = <1>;
-+				#size-cells = <0>;
- 				mrvl,i2c-fast-mode;
- 				status = "disabled";
- 			};
--- 
-1.7.0.4
+	http://lkml.org/lkml/2012/11/28/607
 
+Thanks,
+Anton.
