@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751877Ab2K2Gix (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 01:38:53 -0500
+	id S1752330Ab2K2GjF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 01:39:05 -0500
 Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:42981 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751099Ab2K2Giw (ORCPT
+	with ESMTP id S1751269Ab2K2Gix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 01:38:52 -0500
-X-AuditID: 9c93016f-b7b86ae000003a75-e1-50b702f7304a
+	Thu, 29 Nov 2012 01:38:53 -0500
+X-AuditID: 9c93016f-b7b86ae000003a75-e7-50b702f706d3
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,9 +15,11 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
         Andi Kleen <andi@firstfloor.org>
 Subject: [PATCH 00/18] perf report: Add support for event group view (v6)
-Date: Thu, 29 Nov 2012 15:38:27 +0900
-Message-Id: <1354171126-14387-1-git-send-email-namhyung@kernel.org>
+Date: Thu, 29 Nov 2012 15:38:28 +0900
+Message-Id: <1354171126-14387-2-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1354171126-14387-1-git-send-email-namhyung@kernel.org>
+References: <1354171126-14387-1-git-send-email-namhyung@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,7 +35,7 @@ instead of allocating group_stats for all group members.  But I needed
 to allocate temporary arrays for internal purpose anyway.  If you have
 a better solution please let me know.
 
-Jiri, sorry for the delay.  I had to hunt down some nasty bugs in my
+Jiri, sorry for the delay, I had to hunt down some nasty bugs in my
 patches.  And I saw you submitted the multiplu diff series which will
 conflict my changes.  I'll have a look at it soon, and I'd be glad if
 you take a look at my changes too. :)
