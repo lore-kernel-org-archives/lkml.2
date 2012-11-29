@@ -1,128 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932652Ab2K2BYK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 20:24:10 -0500
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:37182 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755191Ab2K2BYH (ORCPT
+	id S932811Ab2K2BYg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 20:24:36 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29489 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755252Ab2K2BYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 20:24:07 -0500
-Message-ID: <1354151742.26955.385.camel@misato.fc.hp.com>
-Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on
- rebind scenario
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org,
-        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Wen Congyang <wencongyang@gmail.com>, isimatu.yasuaki@jp.fujitsu.com,
-        lenb@kernel.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Wed, 28 Nov 2012 18:15:42 -0700
-In-Reply-To: <1354150952.26955.377.camel@misato.fc.hp.com>
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
-	 <9212118.3s2xH6uJDI@vostro.rjw.lan>
-	 <1354136568.26955.312.camel@misato.fc.hp.com>
-	 <4042591.gpFk7OYmph@vostro.rjw.lan>
-	 <1354150952.26955.377.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Nov 2012 20:24:32 -0500
+X-Authority-Analysis: v=2.0 cv=f9bK9ZOM c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=1760ZO6X2J0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=yMxZZsWedhkA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=z4-vK0M_khU3xeFmJKYA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=Av0ydlvL0s1vSE-7gqIA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20121129012431.485422281@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 28 Nov 2012 20:23:43 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Dave Jones <davej@redhat.com>
+Subject: [PATCH 3/3] tracing: Remove unnecessary WARN_ONCEs from
+ tracing_buffers_splice_read
+References: <20121129012340.602023062@goodmis.org>
+Content-Disposition: inline; filename=0003-tracing-Remove-unnecessary-WARN_ONCE-s-from-tracing_.patch
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-11-28 at 18:02 -0700, Toshi Kani wrote:
-> On Thu, 2012-11-29 at 00:49 +0100, Rafael J. Wysocki wrote:
-> > On Wednesday, November 28, 2012 02:02:48 PM Toshi Kani wrote:
-> > > > > > > > > > Consider the following case:
-> > > > > > > > > > 
-> > > > > > > > > > We hotremove the memory device by SCI and unbind it from the driver at the same time:
-> > > > > > > > > > 
-> > > > > > > > > > CPUa                                                  CPUb
-> > > > > > > > > > acpi_memory_device_notify()
-> > > > > > > > > >                                        unbind it from the driver
-> > > > > > > > > >     acpi_bus_hot_remove_device()
-> > > > > > > > > 
-> > > > > > > > > Can we make acpi_bus_remove() to fail if a given acpi_device is not
-> > > > > > > > > bound with a driver?  If so, can we make the unbind operation to perform
-> > > > > > > > > unbind only?
-> > > > > > > > 
-> > > > > > > > acpi_bus_remove_device could check if the driver is present, and return -ENODEV
-> > > > > > > > if it's not present (dev->driver == NULL).
-> > > > > > > > 
-> > > > > > > > But there can still be a race between an eject and an unbind operation happening
-> > > > > > > > simultaneously. This seems like a general problem to me i.e. not specific to an
-> > > > > > > > acpi memory device. How do we ensure an eject does not race with a driver unbind
-> > > > > > > > for other acpi devices?
-> > > > > > > > 
-> > > > > > > > Is there a per-device lock in acpi-core or device-core that can prevent this from
-> > > > > > > > happening? Driver core does a device_lock(dev) on all operations, but this is
-> > > > > > > > probably not grabbed on SCI-initiated acpi ejects.
-> > > > > > > 
-> > > > > > > Since driver_unbind() calls device_lock(dev->parent) before calling
-> > > > > > > device_release_driver(), I am wondering if we can call
-> > > > > > > device_lock(dev->dev->parent) at the beginning of acpi_bus_remove()
-> > > > > > > (i.e. before calling pre_remove) and fails if dev->driver is NULL.  The
-> > > > > > > parent lock is otherwise released after device_release_driver() is done.
-> > > > > > 
-> > > > > > I would be careful.  You may introduce some subtle locking-related issues
-> > > > > > this way.
-> > > > > 
-> > > > > Right.  This requires careful inspection and testing.  As far as the
-> > > > > locking is concerned, I am not keen on using fine grained locking for
-> > > > > hot-plug.  It is much simpler and solid if we serialize such operations.
-> > > > > 
-> > > > > > Besides, there may be an alternative approach to all this.  For example,
-> > > > > > what if we don't remove struct device objects on eject?  The ACPI handles
-> > > > > > associated with them don't go away in that case after all, do they?
-> > > > > 
-> > > > > Umm...  Sorry, I am not getting your point.  The issue is that we need
-> > > > > to be able to fail a request when memory range cannot be off-lined.
-> > > > > Otherwise, we end up ejecting online memory range.
-> > > > 
-> > > > Yes, this is the major one.  The minor issue, however, is a race condition
-> > > > between unbinding a driver from a device and removing the device if I
-> > > > understand it correctly.  Which will go away automatically if the device is
-> > > > not removed in the first place.  Or so I would think. :-)
-> > > 
-> > > I see.  I do not think whether or not the device is removed on eject
-> > > makes any difference here.  The issue is that after driver_unbind() is
-> > > done, acpi_bus_hot_remove_device() no longer calls the ACPI memory
-> > > driver (hence, it cannot fail in prepare_remove), and goes ahead to call
-> > > _EJ0.
-> > 
-> > I see two reasons for calling acpi_bus_hot_remove_device() for memory (correct
-> > me if I'm wrong): (1) from the memhotplug driver's notify handler and (2) from
-> > acpi_eject_store() which is exposed through sysfs.  
-> 
-> Yes, that is correct.
-> 
-> > If we disabled exposing
-> > acpi_eject_store() for memory devices, then the only way would be from the
-> > notify handler.  So I wonder if driver_unbind() shouldn't just uninstall the
-> > notify handler for memory (so that memory eject events are simply dropped on
-> > the floor after unbinding the driver)?
-> 
-> If driver_unbind() happens before an eject request, we do not have a
-> problem.  acpi_eject_store() fails if a driver is not bound to the
-> device.  acpi_memory_device_notify() fails as well.
-> 
-> The race condition Wen pointed out (see the top of this email) is that
-> driver_unbind() may come in while eject operation is in-progress.  This
-> is why I mentioned the following in previous email.
-> 
-> > So, we basically need to either 1) serialize
-> > acpi_bus_hot_remove_device() and driver_unbind(), or 2) make
-> > acpi_bus_hot_remove_device() to fail if driver_unbind() is run
-> > during the operation.
+--00GvhwF7k39YY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Forgot to mention.  The 3rd option is what Greg said -- use the
-suppress_bind_attrs field.  I think this is a good option to address
-this race condition for now.  For a long term solution, we should have a
-better infrastructure in place to address such issue in general.
+From: Dave Jones <davej@redhat.com>
 
-Thanks,
--Toshi
+WARN shouldn't be used as a means of communicating failure to a userspace p=
+rogrammer.
 
+Link: http://lkml.kernel.org/r/20120725153908.GA25203@redhat.com
+
+Signed-off-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace.c |    2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 64ad9bc..5bc3590 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -4275,13 +4275,11 @@ tracing_buffers_splice_read(struct file *file, loff=
+_t *ppos,
+ 		return -ENOMEM;
+=20
+ 	if (*ppos & (PAGE_SIZE - 1)) {
+-		WARN_ONCE(1, "Ftrace: previous read must page-align\n");
+ 		ret =3D -EINVAL;
+ 		goto out;
+ 	}
+=20
+ 	if (len & (PAGE_SIZE - 1)) {
+-		WARN_ONCE(1, "Ftrace: splice_read should page-align\n");
+ 		if (len < PAGE_SIZE) {
+ 			ret =3D -EINVAL;
+ 			goto out;
+--=20
+1.7.10.4
+
+
+
+--00GvhwF7k39YY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQEcBAABAgAGBQJQtrlPAAoJEOdOSU1xswtMeJkH/RIU3730NKBlUq9lP5sj3tYO
+SQ90DiRHQbkRVOpyVGhAC/y0dj4JQGz/cLjG6lQKX8huj3I3o/LVd9f8Ne1mCQpl
+GpKDI+Ctc3pkdZhqExBI7mBtNyepU86Q7WDRtcNxjOfFBneVREeRwiSPFXNKyLU0
+awitommz1/X3kbxo8EJzqGqLm096oQf/DOdLuDQI4/02ZvABp3aKI0hRVJKxWuuf
+8oSIuiWu21VwmL99MBJBgnH3fF701MPZYjWPdM7xS6RnlGKXAuGnNAPDbkpMYd23
+iGTHewNGfwK4k3Rz7OOluge1WCy+tFlRsP4mO4j0r/8+DWjpqn9ItY8+m2+K1W4=
+=0uRv
+-----END PGP SIGNATURE-----
+
+--00GvhwF7k39YY--
