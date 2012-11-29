@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754274Ab2K2ScL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 13:32:11 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44795 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751100Ab2K2ScJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 13:32:09 -0500
-Date: Thu, 29 Nov 2012 10:32:07 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-serial@vger.kernel.org
-Subject: Re: [Suggestion] drivers/tty: drivers/char/:  for
- MAX_ASYNC_BUFFER_SIZE
-Message-ID: <20121129183207.GA4688@kroah.com>
-References: <50B6E751.9000000@asianux.com>
- <20121129051335.GA4375@kroah.com>
- <50B6F967.3050000@asianux.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50B6F967.3050000@asianux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754615Ab2K2Sdq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 13:33:46 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:24984 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752523Ab2K2Sdo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 13:33:44 -0500
+Message-ID: <1354213519.26955.447.camel@misato.fc.hp.com>
+Subject: Re: [PATCH 1/5] ACPI dock: remove unnecessary newline from
+ exception message
+From: Toshi Kani <toshi.kani@hp.com>
+To: Colin King <colin.king@canonical.com>
+Cc: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 29 Nov 2012 11:25:19 -0700
+In-Reply-To: <1354189996-14431-2-git-send-email-colin.king@canonical.com>
+References: <1354189996-14431-1-git-send-email-colin.king@canonical.com>
+	 <1354189996-14431-2-git-send-email-colin.king@canonical.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 01:57:59PM +0800, Chen Gang wrote:
-> > And, I really don't understand here, why do you want to change this?
-> > What is it going to change?  And why?
-> > 
+On Thu, 2012-11-29 at 11:53 +0000, Colin King wrote:
+> From: Colin Ian King <colin.king@canonical.com>
 > 
-> Why:
->   for the context MGSLPC_INFO *info in drivers/char/pcmcia/synclink_cs.c
->     info->max_frame_size can be the value between 4096 .. 65535 (can be
-> set by its module input parameter)
->     info->flag_buf length is 4096 (MAX_ASYNC_BUFFER_SIZE)
->   in function rx_get_frame
->     the framesize is limit by info->max_frame_size, but may still be
-> larger that 4096.
->     when call function ldisc_receive_buf, info->flag_buf is equal to
-> 4096, but framesize can be more than 4096. it will cause memory over flow.
-
-Do you use that pcmcia driver for anything?  Are those cards still
-around?
-
-> What:
->   #define MAX_ASYNC_BUFFER_SIZE  0x10000 (instead of 4096, originally).
->   let it match the max frame size.
+> ACPI_EXCEPTION() already appends a newline, so there is no
+> need for the failed _DCK messaged to include one too.
 > 
-> At last:
->   my suggestion may be incorrect, need relative member (who expert about
-> it) to help checking.
+> Signed-off-by: Colin Ian King <colin.king@canonical.com>
+> ---
+>  drivers/acpi/dock.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
+> index 88eb143..a873c6b 100644
+> --- a/drivers/acpi/dock.c
+> +++ b/drivers/acpi/dock.c
+> @@ -475,7 +475,7 @@ static void handle_dock(struct dock_station *ds, int dock)
+>  	status = acpi_evaluate_object(ds->handle, "_DCK", &arg_list, &buffer);
+>  	if (ACPI_FAILURE(status) && status != AE_NOT_FOUND)
+>  		ACPI_EXCEPTION((AE_INFO, status, "%s - failed to execute"
+> -			" _DCK\n", (char *)name_buffer.pointer));
+> +			" _DCK", (char *)name_buffer.pointer));
 
-That driver might be incorrect, yes, care to make up a patch for it and
-test it to verify it fixes the problem?
+Hi Colin,
 
-thanks,
+In Rafael's linux-pm tree, this message has been changed to the
+following.  So, this patch is not necessary.
 
-greg k-h
+ if (ACPI_FAILURE(status) && status != AE_NOT_FOUND)
+         acpi_handle_err(ds->handle, "Failed to execute _DCK (0x%x)\n",
+                         status);
+
+Thanks,
+-Toshi
+
+
+>  
+>  	kfree(buffer.pointer);
+>  	kfree(name_buffer.pointer);
+
+
