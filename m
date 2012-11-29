@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754403Ab2K2LxZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 06:53:25 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35017 "EHLO
+	id S1754351Ab2K2LxY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 06:53:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35016 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753324Ab2K2LxV (ORCPT
+	with ESMTP id S1753115Ab2K2LxV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 Nov 2012 06:53:21 -0500
 From: Colin King <colin.king@canonical.com>
 To: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
         linux-acpi@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 4/5] ACPICA: GPE support: remove unnecessary newline from error messages
-Date: Thu, 29 Nov 2012 11:53:15 +0000
-Message-Id: <1354189996-14431-5-git-send-email-colin.king@canonical.com>
+Subject: [PATCH 5/5] ACPI thermal: remove unnecessary newline from exception message
+Date: Thu, 29 Nov 2012 11:53:16 +0000
+Message-Id: <1354189996-14431-6-git-send-email-colin.king@canonical.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1354189996-14431-1-git-send-email-colin.king@canonical.com>
 References: <1354189996-14431-1-git-send-email-colin.king@canonical.com>
@@ -23,27 +23,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Colin Ian King <colin.king@canonical.com>
 
-ACPI_ERROR() already appends a newline, so there is no
-need for the error messages to include one too.
+ACPI_EXCEPTION() already appends a newline, so there is no
+need for the thermal trip point message to include one too.
 
 Signed-off-by: Colin Ian King <colin.king@canonical.com>
 ---
- drivers/acpi/acpica/hwgpe.c | 2 +-
+ drivers/acpi/thermal.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/acpica/hwgpe.c b/drivers/acpi/acpica/hwgpe.c
-index db40765..610ed72 100644
---- a/drivers/acpi/acpica/hwgpe.c
-+++ b/drivers/acpi/acpica/hwgpe.c
-@@ -134,7 +134,7 @@ acpi_hw_low_set_gpe(struct acpi_gpe_event_info *gpe_event_info, u32 action)
- 		break;
+diff --git a/drivers/acpi/thermal.c b/drivers/acpi/thermal.c
+index 804204d..2020d44 100644
+--- a/drivers/acpi/thermal.c
++++ b/drivers/acpi/thermal.c
+@@ -288,7 +288,7 @@ do {	\
+ 	if (flags != ACPI_TRIPS_INIT)	\
+ 		ACPI_EXCEPTION((AE_INFO, AE_ERROR,	\
+ 		"ACPI thermal trip point %s changed\n"	\
+-		"Please send acpidump to linux-acpi@vger.kernel.org\n", str)); \
++		"Please send acpidump to linux-acpi@vger.kernel.org", str)); \
+ } while (0)
  
- 	default:
--		ACPI_ERROR((AE_INFO, "Invalid GPE Action, %u\n", action));
-+		ACPI_ERROR((AE_INFO, "Invalid GPE Action, %u", action));
- 		return (AE_BAD_PARAMETER);
- 	}
- 
+ static int acpi_thermal_trips_update(struct acpi_thermal *tz, int flag)
 -- 
 1.8.0
 
