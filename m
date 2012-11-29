@@ -1,144 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932139Ab2K2Crh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 21:47:37 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:55246 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755310Ab2K2Crf convert rfc822-to-8bit (ORCPT
+	id S932196Ab2K2C7F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 21:59:05 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:57230 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755525Ab2K2C7C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 21:47:35 -0500
-Date: Wed, 28 Nov 2012 21:47:32 -0500 (EST)
-Message-Id: <20121128.214732.1634269294133625782.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 28 Nov 2012 21:59:02 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFz1Wv2S+3XVmZE1cfiN0TZ4gNA8yWbNgufDLTMc8sKf2A@mail.gmail.com>
+References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com>
+ <Pine.LNX.4.64.1211241555470.4300@file.rdu.redhat.com> <CAAJw_ZvUqRmCCQ5-2PdFPRyfdzZMuphGU=hgAjUOHGk=n9Mheg@mail.gmail.com>
+ <CAAJw_ZuJXnAz1ukBwQa3xNbQaL1KUBSrbQMK2hn-7D6Ar1p3fQ@mail.gmail.com>
+ <50B46E05.70906@kernel.dk> <CAAJw_ZsYuLCwCTc6U=ELO_PvyjnVKQdkPke2enfzm6zOeWAqjA@mail.gmail.com>
+ <50B4B313.3030707@kernel.dk> <Pine.LNX.4.64.1211272252260.18338@file.rdu.redhat.com>
+ <50B5CC5A.8060607@kernel.dk> <Pine.LNX.4.64.1211281222410.11599@file.rdu.redhat.com>
+ <CA+55aFx4zYnEsUyGJurBjB0XZ0AgmyKqW-+KWVDvma3w6csnHQ@mail.gmail.com>
+ <Pine.LNX.4.64.1211281422360.26389@file.rdu.redhat.com> <CA+55aFyXdtVJ=SG9bU4qfggCR6DPvz4vOFYxKJZx_WdyFv+3Fw@mail.gmail.com>
+ <CA+55aFyXS0nkDB95c3pcdg1ctrNnUGO8aDuRNhKSEg3JrOqWhA@mail.gmail.com>
+ <Pine.LNX.4.64.1211281540200.5283@file.rdu.redhat.com> <CA+55aFwbnQsvpsOLS6w_G35d4w+Ezv5tOx2SE7dShJhX4iP_0Q@mail.gmail.com>
+ <Pine.LNX.4.64.1211281904010.3957@file.rdu.redhat.com> <CA+55aFz1Wv2S+3XVmZE1cfiN0TZ4gNA8yWbNgufDLTMc8sKf2A@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 28 Nov 2012 18:58:40 -0800
+X-Google-Sender-Auth: 4ceIZ8ozpPvwNHYn7V3BKwLz1eg
+Message-ID: <CA+55aFxYCxsRM==WMGihQGOA7f5u2X_8boJypsxS2v=WMnr70g@mail.gmail.com>
+Subject: Re: [PATCH] Introduce a method to catch mmap_region (was: Recent
+ kernel "mount" slow)
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Jeff Chua <jeff.chua.linux@gmail.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Nov 28, 2012 at 6:04 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Interesting. The code *has* the block size (it's in "bh->b_size"), but
+> it actually then uses the inode blocksize instead, and verifies the
+> two against each other. It could just have used the block size
+> directly (and then used the inode i_blkbits only when no buffers
+> existed), avoiding that dependency entirely..
 
-Some more fixes trickled in over the past few days:
+Looking more at this code, that really would be the nicest solution.
 
-1) PIM device names can overflow the IFNAMSIZ buffer unless we
-   properly limit the allowed indexes, fix from Eric Dumazet.
+There's two cases for the whole get_block() thing:
 
-2) Under heavy load we can OOPS in icmp reply processing due to
-   an unchecked inet_putpeer() call.  Fix from Neal Cardwell.
+ - filesystems. The block size will not change randomly, and
+"get_block()" seriously depends on the block size.
 
-3) SCTP round trip calculations need to use 64-bit math to avoid
-   overflows, fix from Schoch Christian.
+ - the raw device. The block size *will* change, but to simplify the
+problem, "get_block()" is a 1:1 mapping, so it doesn't even care about
+the block size because it will always return "bh->b_blocknr = nr".
 
-4) Fix a memory leak and an error return flub in SCTP and IRDA
-   triggerable by userspace.  Fix from Tommi Rantala and found by
-   the syscall fuzzer (trinity).
+So we *could* just say that all the fs/buffer.c code should use
+"inode->i_blkbits" for creating buffers (because that's the size new
+buffers should always use), but use "bh->b_size" for any *existing*
+buffer use.
 
-5) MLX4 driver gives bogus size to memcpy() call, fix from Amir
-   Vadai.
+And looking at it, it's even simple. Except for one *very* annoying
+thing: several users really don't want the size of the buffer, they
+really do want the *shift* of the buffer size.
 
-6) Fix length calculation in VHOST descriptor translation, from
-   Michael S. Tsirkin.
+In fact, that single issue seems to be the reason why
+"inode->i_blkbits" is really used in fs/buffer.c.
 
-7) Ambassador ATM driver loops forever while loading firmware, fix
-   from Dan Carpenter.
+Otherwise it would be fairly trivial to just make the pattern be just a simple
 
-8) Over MTU packets in openvswitch warn about wrong device, fix
-   from Jesse Gross.
+        if (!page_has_buffers(page))
+                create_empty_buffers(page, 1 << inode->i_blkbits, 0);
+        head = page_buffers(page);
+        blocksize = head->b_size;
 
-9) Netfilter IPSET's netlink code can overrun a string buffer
-   because it's not properly limited to IFNAMSIZ.  Fix from
-   Florian Westphal.
+and just use the blocksize that way, without any other games. All
+done, no silly WARN_ON() to verify against some global block-size, and
+the fs/buffer.c code would be perfectly simple, and would have no
+problem at all with multiple different blocksizes in different pages
+(the page lock serializes the buffers and thus the blocksize at the
+per-page level).
 
-10) PCAN USB driver sets wrong timestamp in SKB, from Oliver
-    Hartkopp.
+But the fact that the code wants to do things like
 
-11) Make sure the RX ifindex always has a valid value in the
-    CAN BCM driver, even if we haven't received a frame yet.
-    Fix also from Oliver Hartkopp.
+        block = (sector_t)page->index << (PAGE_CACHE_SHIFT - bbits);
 
-Please pull, thanks a lot!
+seriously seems to be the main thing that keeps us using
+'inode->i_blkbits'. Calculating bbits from bh->b_size is just costly
+enough to hurt (not everywhere, but on some machines).
 
-The following changes since commit 194d9831f0419b5125dc94ec0ece4434d8ef74f0:
+Very annoying.
 
-  Merge tag 'sound-3.7' of git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound (2012-11-24 08:32:11 -1000)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
-
-for you to fetch changes up to a45085f6a7801f95cd5682290195224e268627fd:
-
-  Merge branch 'fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/jesse/openvswitch (2012-11-28 18:00:47 -0500)
-
-----------------------------------------------------------------
-
-Amir Vadai (1):
-      net/mlx4_en: Can set maxrate only for TC0
-
-Bjørn Mork (1):
-      net: qmi_wwan: add Huawei E173
-
-Dan Carpenter (1):
-      atm: forever loop loading ambassador firmware
-
-David S. Miller (2):
-      Merge branch 'master' of git://1984.lsi.us.es/nf
-      Merge branch 'fixes' of git://git.kernel.org/.../jesse/openvswitch
-
-Eric Dumazet (1):
-      net: ipmr: limit MRT_TABLE identifiers
-
-Florian Westphal (1):
-      netfilter: ipset: fix netiface set name overflow
-
-Jesse Gross (1):
-      openvswitch: Print device when warning about over MTU packets.
-
-Jiri Pirko (1):
-      team: fix hw_features setup
-
-Mehak Mahajan (1):
-      openvswitch: Store flow key len if ARP opcode is not request or reply.
-
-Michael S. Tsirkin (1):
-      vhost: fix length for cross region descriptor
-
-Neal Cardwell (1):
-      ipv4: avoid passing NULL to inet_putpeer() in icmpv4_xrlim_allow()
-
-Oliver Hartkopp (2):
-      can: peak_usb: fix hwtstamp assignment
-      can: bcm: initialize ifindex for timeouts without previous frame reception
-
-Schoch Christian (1):
-      sctp: Error in calculation of RTTvar
-
-Tommi Rantala (3):
-      sctp: fix memory leak in sctp_datamsg_from_user() when copy from user space fails
-      sctp: fix -ENOMEM result with invalid user space pointer in sendto() syscall
-      irda: irttp: fix memory leak in irttp_open_tsap() error path
-
- drivers/atm/ambassador.c                       |  1 +
- drivers/net/can/usb/peak_usb/pcan_usb.c        |  8 ++++++--
- drivers/net/can/usb/peak_usb/pcan_usb_pro.c    |  8 ++++++--
- drivers/net/ethernet/mellanox/mlx4/en_dcb_nl.c |  2 +-
- drivers/net/team/team.c                        |  4 +++-
- drivers/net/usb/qmi_wwan.c                     |  1 +
- drivers/vhost/vhost.c                          |  2 +-
- net/can/bcm.c                                  |  3 +++
- net/ipv4/icmp.c                                |  3 ++-
- net/ipv4/ipmr.c                                |  4 ++++
- net/irda/irttp.c                               |  1 +
- net/netfilter/ipset/ip_set_hash_netiface.c     |  2 +-
- net/openvswitch/flow.c                         | 14 +++++---------
- net/openvswitch/vport-netdev.c                 |  2 +-
- net/sctp/chunk.c                               | 20 ++++++++++++++------
- net/sctp/socket.c                              |  4 ++--
- net/sctp/transport.c                           |  2 +-
- 17 files changed, 53 insertions(+), 28 deletions(-)
+                       Linus
