@@ -1,97 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755167Ab2K2QQw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 11:16:52 -0500
-Received: from cha92-13-88-165-248-19.fbx.proxad.net ([88.165.248.19]:36963
-	"EHLO jigen.glandium.org" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753852Ab2K2QQv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 11:16:51 -0500
-X-Greylist: delayed 1059 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 Nov 2012 11:16:51 EST
-Date: Thu, 29 Nov 2012 16:58:51 +0100
-From: Mike Hommey <mh@glandium.org>
-To: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: John Stultz <john.stultz@linaro.org>, NeilBrown <neilb@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Andrea Righi <andrea@betterlinux.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Taras Glek <tglek@mozilla.com>, Jan Kara <jack@suse.cz>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH 0/3] Volatile Ranges (v7) & Lots of words
-Message-ID: <20121129155851.GA24630@glandium.org>
-References: <1348888593-23047-1-git-send-email-john.stultz@linaro.org>
- <20121002173928.2062004e@notabene.brown>
- <506B6CE0.1060800@linaro.org>
- <CAHO5Pa0KvH+MTYm6BCM5LHj995HpO+t87szyJjjXgupVq2VTfA@mail.gmail.com>
+	id S1751193Ab2K2QWW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 11:22:22 -0500
+Received: from mx3.cyfra.ua ([62.80.160.182]:60711 "EHLO mx3.cyfra.ua"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750881Ab2K2QWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 11:22:21 -0500
+From: Vitalii Demianets <vitas@nppfactor.kiev.ua>
+Organization: Factor-SPE
+To: Tux9 <tuxding@gmail.com>
+Subject: Re: [PATCH] uio.c: Fix warning: 'ret' might be used uninitialized
+Date: Thu, 29 Nov 2012 18:22:16 +0200
+User-Agent: KMail/1.9.10
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>, linux-kernel@vger.kernel.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+References: <201211271348.14603.vitas@nppfactor.kiev.ua> <20121128210509.GA2590@local> <CAM3j68rrBePLoamRb1pCH+TeAfLDO-5Jd_kk7-JRCNnEBhLp2Q@mail.gmail.com>
+In-Reply-To: <CAM3j68rrBePLoamRb1pCH+TeAfLDO-5Jd_kk7-JRCNnEBhLp2Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAHO5Pa0KvH+MTYm6BCM5LHj995HpO+t87szyJjjXgupVq2VTfA@mail.gmail.com>
-X-GPG-Fingerprint: 182E 161D 1130 B9FC CD7D  B167 E42A A04F A6AA 8C72
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201211291822.16565.vitas@nppfactor.kiev.ua>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 02, 2012 at 09:59:07PM +0100, Michael Kerrisk wrote:
-> John,
+On Thursday 29 November 2012 18:05:27 Tux9 wrote:
+> Hans, I think there are something wrong in your patch, while Vitalii's
+> is right. The variable "ret" is reused in line 292 and line 295, so
+> the value of "ret" would be overridden (if it goto err_map in line 284
+> when mi>=1).
 > 
-> A question at on one point:
+
+Actually, both patches do exactly the same thing. Hans's patch establishes 
+default value for the ret for all those "other" cases when ret is not 
+explicitly overridden. My patch explicitly enumerates all those "other" cases 
+in more wordily manner.
+
 > 
-> On Wed, Oct 3, 2012 at 12:38 AM, John Stultz <john.stultz@linaro.org> wrote:
-> > On 10/02/2012 12:39 AM, NeilBrown wrote:
-> [...]
-> >>   The SIGBUS interface could have some merit if it really reduces
-> >> overhead.  I
-> >>   worry about app bugs that could result from the non-deterministic
-> >>   behaviour.   A range could get unmapped while it is in use and testing
-> >> for
-> >>   the case of "get a SIGBUS half way though accessing something" would not
-> >>   be straight forward (SIGBUS on first step of access should be easy).
-> >>   I guess that is up to the app writer, but I have never liked anything
-> >> about
-> >>   the signal interface and encouraging further use doesn't feel wise.
+> On Wed, Nov 28, 2012 at 10:05 PM, Hans J. Koch <hjk@hansjkoch.de> wrote:
+> > On Wed, Nov 28, 2012 at 10:58:32AM +0200, Vitalii Demianets wrote:
+> >> On Wednesday 28 November 2012 00:43:41 Hans J. Koch wrote:
+> >> >
+> >> > Thanks, good catch, but why don't you simply do this:
+> >> >
+> >>
+> >> Just a matter of personal preference.
 > >
-> > Initially I didn't like the idea, but have warmed considerably to it. Mainly
-> > due to the concern that the constant unmark/access/mark pattern would be too
-> > much overhead, and having a lazy method will be much nicer for performance.
-> > But yes, at the cost of additional complexity of handling the signal,
-> > marking the faulted address range as non-volatile, restoring the data and
-> > continuing.
-> 
-> At a finer level of detail, how do you see this as happening in the
-> application. I mean: in the general case, repopulating the purged
-> volatile page would have to be done outside the signal handler (I
-> think, because async-signal-safety considerations would preclude too
-> much compdex stuff going on inside the handler). That implies
-> longjumping out of the handler, repopulating the pages with data, and
-> then restarting whatever work was being done when the SIGBUS was
-> generated.
-
-There are different strategies that can be used to repopulate the pages,
-within or outside the signal handler, and I'd say it's not that
-important of a detail.
-
-That being said, if the kernel could be helpful and avoid people
-shooting themselves in the foot, that would be great, too.
-
-I don't know how possible this would be but being able to get the
-notification on a signalfd in a dedicated thread would certainly improve
-things (I guess other usecases of SIGSEGV/SIGBUG handlers could
-appreciate something like this). The kernel would pause the faulting
-thread while sending the notification on the signalfd, and the notified
-thread would be allowed to resume the faulting thread when it's done
-doing its job.
-
-Mike
+> > Your patch: 1 files changed, 12 insertions(+), 4 deletions(-)
+> > My patch: 1 files changed, 1 insertions(+), 1 deletions(-)
+> >
+> > Both achieve exactly the same. That's not a matter of personal
+> > preference, that's the difference between a working solution and
+> > a good solution. In the kernel, we want the latter.
+> >
+> >> As a maintainer you can apply either
+> >> patch you want. I guess you would prefer your approach and I have no
+> >> objections to that :)
+> >
+> > That's not the right kind of comment. Don't make it a habit.
+> >
+> > Thanks,
+> > Hans
+> >
+> >>
+> >> >
+> >> > >From 228445996bb75a44d16b6237eca6a0916d9b2d7e Mon Sep 17 00:00:00 2001
+> >> > From: "Hans J. Koch" <hjk@hansjkoch.de>
+> >> > Date: Tue, 27 Nov 2012 23:38:00 +0100
+> >> > Subject: [PATCH] uio: Fix warning: 'ret' might be used uninitialized
+> >> >
+> >> > In two cases, the return value variable "ret" can be undefined.
+> >> >
+> >> > Signed-off-by: Hans J. Koch <hjk@hansjkoch.de>
+> >> > ---
+> >> >  drivers/uio/uio.c |    2 +-
+> >> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> >> >
+> >> > diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+> >> > index 5110f36..fc60e35 100644
+> >> > --- a/drivers/uio/uio.c
+> >> > +++ b/drivers/uio/uio.c
+> >> > @@ -263,7 +263,7 @@ static struct class uio_class = {
+> >> >   */
+> >> >  static int uio_dev_add_attributes(struct uio_device *idev)
+> >> >  {
+> >> > -   int ret;
+> >> > +   int ret = -ENOMEM;
+> >> >     int mi, pi;
+> >> >     int map_found = 0;
+> >> >     int portio_found = 0;
