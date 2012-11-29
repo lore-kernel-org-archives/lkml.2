@@ -1,168 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753759Ab2K2KSA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 05:18:00 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:65182 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392Ab2K2KR5 (ORCPT
+	id S1753591Ab2K2KV2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 05:21:28 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:52436 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751392Ab2K2KVZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 05:17:57 -0500
-Date: Thu, 29 Nov 2012 11:17:29 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-Cc: "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "James.Bottomley@HansenPartnership.com" 
-	<James.Bottomley@HansenPartnership.com>,
-        "arnd@arndb.de" <arnd@arndb.de>, Krishna Reddy <vdumpa@nvidia.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "minchan@kernel.org" <minchan@kernel.org>,
-        "chunsang.jeong@linaro.org" <chunsang.jeong@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "subashrp@gmail.com" <subashrp@gmail.com>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "pullip.cho@samsung.com" <pullip.cho@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/1] ARM: tegra: bus_notifier registers IOMMU
- devices(was: How to specify IOMMU'able devices in DT)
-Message-ID: <20121129101729.GA6150@avionic-0098.adnet.avionic-design.de>
-References: <20120924124452.41070ed2ee9944d930cffffc@nvidia.com>
- <054901cd9a45$db1a7ea0$914f7be0$%szyprowski@samsung.com>
- <20120924.145014.1452596970914043018.hdoyu@nvidia.com>
- <20121128.154832.539666140149950229.hdoyu@nvidia.com>
+	Thu, 29 Nov 2012 05:21:25 -0500
+Date: Thu, 29 Nov 2012 11:22:49 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PULL] last drm-intel-next for 3.8
+Message-ID: <20121129102249.GG3202@phenom.ffwll.local>
+Mail-Followup-To: Dave Airlie <airlied@gmail.com>,
+	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+	DRI Development <dri-devel@lists.freedesktop.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <20121129101200.GF3202@phenom.ffwll.local>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="vkogqOf2sHV7VnPd"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121128.154832.539666140149950229.hdoyu@nvidia.com>
+In-Reply-To: <20121129101200.GF3202@phenom.ffwll.local>
+X-Operating-System: Linux phenom 3.7.0-rc2+
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:jBhMrRhD877xN95BIVNeqC89GO9DdjVI90IBmLZ8d6E
- vwfCZtcoumlxLB4/+JVisMZSwT/6/HKY5knBrd3eSeioOzWA5x
- Do96mwjtG6NN5ZH8DsALcfufft94fBSn5Lc2SStrJ++QEA8mlj
- uqGkhS/zOjwiSIbpzvyJKs16z7FvaVI9tYKvDPaXfcW/k0GQ1J
- SgpCZlVA8oAzAVRMPhMDnE24FeC5gOBv3ERkgZzz+jsFHwLAyp
- Jwx2TjoI+CpXMZj2CQdDTzADZA0XTLzy84dV0h7SHpzonrbbxM
- 9VFDEdKI14VuC86lRoGIDttWpgSLEkjhapipQ/e1z9UZ1qWd0Z
- 6x6vbEZU+BNP08BpDBF9NJ1Gs2em54I9MGvObu5rYmB7L07pmj
- CcZABWropLSt7+9jOQRDLJvvT9Obd8eF/s=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 29, 2012 at 11:12:00AM +0100, Daniel Vetter wrote:
+> Besides the big item of lifting the "preliminary hw support" tag from the
+> Haswell code, just small bits&pieces all over:
+> - Leftover Haswell patches and some fixes from Paulo
+> - LyncPoint PCH support (for hsw)
+> - OOM handling improvements from Chris Wilson
+> - connector property and send_vblank_event refactorings from Rob Clark
+> - random pile of small fixes
+> 
+> Note that the send_vblank refactorings will cause some locking WARNs to
+> show up. Imre has fixed that up, but since all the driver changes outside
+> of the drm core have been for exonys, those four patches are merged
+> through the exonys-next tree.
 
---vkogqOf2sHV7VnPd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Meh, I've forgotten to cherry-pick an important fix from Ben for a
+regression in the 3.8 gen6+ gtt code. New pull request below. While I'm at
+it, the hdmi VIC patch for the drm edid code is still in my queue, I'll
+send you that in the next 3.8-fixes pull.
 
-On Wed, Nov 28, 2012 at 02:48:32PM +0100, Hiroshi Doyu wrote:
-[...]
-> From: Hiroshi Doyu <hdoyu@nvidia.com>
-> Date: Wed, 28 Nov 2012 14:47:04 +0200
-> Subject: [PATCH 1/1] ARM: tegra: bus_notifier registers IOMMU devices
->=20
-> platform_bus notifier registers IOMMU devices if dma-window is
-> specified.
->=20
-> Its format is:
->   dma-window =3D <"start" "size">;
-> ex)
->   dma-window =3D <0x12345000 0x8000>;
->=20
-> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-> ---
->  arch/arm/mach-tegra/board-dt-tegra30.c |   40 ++++++++++++++++++++++++++=
-++++++
->  1 file changed, 40 insertions(+)
->=20
-> diff --git a/arch/arm/mach-tegra/board-dt-tegra30.c b/arch/arm/mach-tegra=
-/board-dt-tegra30.c
-> index a2b6cf1..570d718 100644
-> --- a/arch/arm/mach-tegra/board-dt-tegra30.c
-> +++ b/arch/arm/mach-tegra/board-dt-tegra30.c
-> @@ -30,9 +30,11 @@
->  #include <linux/of_fdt.h>
->  #include <linux/of_irq.h>
->  #include <linux/of_platform.h>
-> +#include <linux/of_iommu.h>
-> =20
->  #include <asm/mach/arch.h>
->  #include <asm/hardware/gic.h>
-> +#include <asm/dma-iommu.h>
-> =20
->  #include "board.h"
->  #include "clock.h"
-> @@ -86,10 +88,48 @@ static __initdata struct tegra_clk_init_table tegra_d=
-t_clk_init_table[] =3D {
->  	{ NULL,		NULL,		0,		0},
->  };
-> =20
-> +#ifdef CONFIG_ARM_DMA_USE_IOMMU
-> +static int tegra_iommu_device_notifier(struct notifier_block *nb,
-> +				       unsigned long event, void *_dev)
-> +{
-> +	struct dma_iommu_mapping *map =3D NULL;
-> +	struct device *dev =3D _dev;
-> +	dma_addr_t base;
-> +	size_t size;
-> +	int err;
-> +
-> +	switch (event) {
-> +	case BUS_NOTIFY_ADD_DEVICE:
-> +		err =3D of_get_dma_window(dev->of_node, NULL, 0, NULL, &base,
-> +					&size);
-> +		if (!err)
-> +			map =3D arm_iommu_create_mapping(&platform_bus_type,
-> +						       base, size, 0);
-> +		if (IS_ERR_OR_NULL(map))
-> +			break;
-> +		if (arm_iommu_attach_device(dev, map))
-> +			dev_err(dev, "Failed to attach %s\n", dev_name(dev));
-> +		dev_dbg(dev, "Attached %s to map %p\n", dev_name(dev), map);
-> +		break;
-> +	}
-> +	return NOTIFY_DONE;
-> +}
-> +#else
-> +#define tegra_iommu_device_notifier NULL
-> +#endif
-> +
-> +static struct notifier_block tegra_iommu_device_nb =3D {
-> +	.notifier_call =3D tegra_iommu_device_notifier,
-> +};
+Yours, Daniel
 
-You don't need this extra protection since you use IS_ENABLED below and
-these are all static variables. The whole point of IS_ENABLED is to
-allow full compile coverage while leaving it up to the compiler to
-eliminate dead code.
 
-Thierry
+The following changes since commit bf6f036848ab2151c2498f11cb7d31a52a95dd5c:
 
---vkogqOf2sHV7VnPd
-Content-Type: application/pgp-signature
+  drm/vmwgfx: Make vmw_dmabuf_unreference handle NULL objects (2012-11-20 16:19:59 +1000)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+are available in the git repository at:
 
-iQIcBAEBAgAGBQJQtzY5AAoJEN0jrNd/PrOhuzMP/iJ18BF54Mt6oyjkj7L4SDsE
-BHtFAOgoS6H6ZE4gDkJcmXotmEb1qSP4dhM6kox7XtEwfQ2QQ19btFNfsvyZrrZF
-S7oRehteLuY9f9UeattSzMW7p/vLp4ca15krNuS2zMLonsvfARY3+zKshvp95i4w
-u13XLVCCz8qFqMI+hTC1mG6J38yUX3OE8MatP213sO23gR+M+k2W2hGdShoIkLca
-FjaeWw8XqapGQNAM7M95IkdWalIZGGQ7VUcWU7J+dYnb1yNS0fIiDPyc+PMXlcDc
-rRseaEPAjeRKcx+gu7mTf0tZOo+oiwQFy7eRVtj1o/9KteIvL7BE5ePd7pnNQM5v
-U9zBJ3mTt4suST5xFK0tTnJElbZFMtNA75ZC6mrHfyVFo1HcQd3gx2CN5qxWL709
-Sgr8Gr0hrWyodLxiDE+a3q+k4deB5BxYccp1swZMrrlkH4MYVESCrgJ6TyZPjihr
-OtpJyH4myC+GqBBdyxQ5phNLq13UdgmtiurnXDaKIgqq46yNR5TaUuo4B/bTDK6s
-2PmMFziZYyCmnWiMb8JU42J/VHSQrQkv7EC3V9w6BKhkynPvh6CLMcsD7A2Ub+Ta
-rZKyuy89z0wuGKhyJgpIGXRpjyROIorlHcsWpP9MPGb3V8Hec6hmBbVGFsSrxPqw
-Io+pFSTddkjReGRA/agl
-=uArM
------END PGP SIGNATURE-----
+  git://people.freedesktop.org/~danvet/drm-intel for-airlied
 
---vkogqOf2sHV7VnPd--
+for you to fetch changes up to 2ff4aeac39dbdcac934694413767f09a27965e11:
+
+  drm/i915: Fix pte updates in ggtt clear range (2012-11-29 11:14:44 +0100)
+
+----------------------------------------------------------------
+Ben Widawsky (3):
+      drm/i915: Fix warning in i915_gem_chipset_flush
+      drm/i915: Use pci_resource functions for BARs.
+      drm/i915: Fix pte updates in ggtt clear range
+
+Chris Wilson (11):
+      drm/i915: Use LRI to update the semaphore registers
+      drm/i915: Remove save/restore of physical HWS_PGA register
+      drm/i915: Remove bogus test for a present execbuffer
+      drm/i915: Guard pages being reaped by OOM whilst binding-to-GTT
+      drm/i915: Pin the object whilst faulting it in
+      drm/i915: Flush outstanding unpin tasks before pageflipping
+      drm/i915: Apply the IBX transcoder A w/a for HDMI to SDVO as well
+      drm/i915: Defer assignment of obj->gtt_space until after all possible mallocs
+      drm/i915: Borrow our struct_mutex for the direct reclaim
+      drm/i915: LVDS fallback to fixed-mode if EDID not present
+      drm/i915: Report the origin of the LVDS fixed panel mode
+
+Damien Lespiau (1):
+      drm/i915: Only check for valid PP_{ON, OFF}_DELAYS on pre ILK hardware
+
+Daniel Vetter (2):
+      drm/i915: drop buggy write to FDI_RX_CHICKEN register
+      drm/i915: resurrect panel lid handling
+
+Jani Nikula (1):
+      drm/i915/sdvo: kfree the intel_sdvo_connector, not drm_connector, on destroy
+
+Jean Delvare (1):
+      drm/i915: Optimize DIV_ROUND_CLOSEST call
+
+Paulo Zanoni (10):
+      drm/i915: don't limit Haswell CRT encoder to pipe A
+      drm/i915: use cpu/pch transcoder on intel_enable_pipe
+      drm/i915: fix false positive "Unclaimed write" messages
+      drm/i915: make DP work on LPT-LP machines
+      drm/i915: don't intel_crt_init if DDI A has 4 lanes
+      drm/i915: make the panel fitter work on pipes B and C on IVB
+      drm/i915: make the panel fitter work on pipes B and C on Haswell
+      drm/i915: fix intel_ddi_get_cdclk_freq for ULT machines
+      drm/i915: implement WaMbcDriverBootEnable on Haswell
+      drm/i915: promote Haswell to full support
+
+Rob Clark (2):
+      drm/i915: use drm_send_vblank_event() helper
+      drm/i915: drm_connector_property -> drm_object_property
+
+Takashi Iwai (1):
+      drm/i915: Enable DP audio for Haswell
+
+Wei Shun Chang (1):
+      drm/i915: add LynxPoint-LP PCH ID
+
+ drivers/gpu/drm/i915/i915_drv.c            |   26 ++++---
+ drivers/gpu/drm/i915/i915_drv.h            |   13 +++-
+ drivers/gpu/drm/i915/i915_gem.c            |  102 ++++++++++++++++------------
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |    9 ---
+ drivers/gpu/drm/i915/i915_gem_gtt.c        |   14 ++--
+ drivers/gpu/drm/i915/i915_reg.h            |    4 ++
+ drivers/gpu/drm/i915/i915_suspend.c        |    8 ---
+ drivers/gpu/drm/i915/intel_bios.c          |    3 +-
+ drivers/gpu/drm/i915/intel_crt.c           |    2 +-
+ drivers/gpu/drm/i915/intel_ddi.c           |   11 +++
+ drivers/gpu/drm/i915/intel_display.c       |   80 +++++++++++-----------
+ drivers/gpu/drm/i915/intel_dp.c            |    2 +-
+ drivers/gpu/drm/i915/intel_drv.h           |    4 +-
+ drivers/gpu/drm/i915/intel_hdmi.c          |    2 +-
+ drivers/gpu/drm/i915/intel_lvds.c          |   24 ++++---
+ drivers/gpu/drm/i915/intel_modes.c         |    4 +-
+ drivers/gpu/drm/i915/intel_panel.c         |   25 +++----
+ drivers/gpu/drm/i915/intel_pm.c            |   25 ++++++-
+ drivers/gpu/drm/i915/intel_ringbuffer.c    |    7 +-
+ drivers/gpu/drm/i915/intel_sdvo.c          |   64 +++++++++++++----
+ drivers/gpu/drm/i915/intel_tv.c            |   14 ++--
+ 21 files changed, 264 insertions(+), 179 deletions(-)
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
