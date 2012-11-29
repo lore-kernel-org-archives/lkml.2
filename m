@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755347Ab2K2VGW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 16:06:22 -0500
-Received: from mga11.intel.com ([192.55.52.93]:35161 "EHLO mga11.intel.com"
+	id S1755082Ab2K2VIE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 16:08:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32449 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754154Ab2K2VGV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 16:06:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,186,1355126400"; 
-   d="scan'208";a="255238718"
-Message-ID: <50B7CE4C.80201@linux.intel.com>
-Date: Thu, 29 Nov 2012 13:06:20 -0800
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752497Ab2K2VID (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 16:08:03 -0500
+Subject: [PATCH v2] kvm: Fix user memslot overlap check
+To: mtosatti@redhat.com, gleb@redhat.com
+From: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        xiaoguangrong@linux.vnet.ibm.com
+Date: Thu, 29 Nov 2012 14:07:59 -0700
+Message-ID: <20121129210725.9364.72668.stgit@bling.home>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mario Gzuk <mariogzuk@technikz.de>
-Subject: Re: [PATCH 8/8] x86, cleanups: Simplify sync_core() in the case of
- no CPUID
-References: <1354132230-21854-1-git-send-email-hpa@linux.intel.com> <1354132230-21854-9-git-send-email-hpa@linux.intel.com> <20121128204158.GC14635@liondog.tnic> <50B6A8F3.5000407@zytor.com> <20121129091317.GA21084@liondog.tnic>
-In-Reply-To: <20121129091317.GA21084@liondog.tnic>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2012 01:13 AM, Borislav Petkov wrote:
-> 
-> RCX gets correctly cleaned to 0 and *then* we call CPUID.
-> 
-> And the asm output is the same except that RCX gets correctly cleaned up
-> before calling CPUID.
-> 
-> So what am I missing?
-> 
+Prior to memory slot sorting this loop compared all of the user memory
+slots for overlap with new entries.  With memory slot sorting, we're
+just checking some number of entries in the array that may or may not
+be user slots.  Instead, walk all the slots with kvm_for_each_memslot,
+which has the added benefit of terminating early when we hit the first
+empty slot, and skip comparison to private slots.
 
-It doesn't matter in that context, as the surrounding MSR references
-have barriers, but what I'm refering to is the "memory" barrier.
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Cc: stable@vger.kernel.org
+---
 
-The value of ECX doesn't matter when EAX=1.
+v2: Remove unused variable i
 
-	-hpa
+ virt/kvm/kvm_main.c |   13 +++++--------
+ 1 file changed, 5 insertions(+), 8 deletions(-)
 
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index be70035..6e8fa7e 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -709,8 +709,7 @@ int __kvm_set_memory_region(struct kvm *kvm,
+ 	int r;
+ 	gfn_t base_gfn;
+ 	unsigned long npages;
+-	unsigned long i;
+-	struct kvm_memory_slot *memslot;
++	struct kvm_memory_slot *memslot, *slot;
+ 	struct kvm_memory_slot old, new;
+ 	struct kvm_memslots *slots, *old_memslots;
+ 
+@@ -761,13 +760,11 @@ int __kvm_set_memory_region(struct kvm *kvm,
+ 
+ 	/* Check for overlaps */
+ 	r = -EEXIST;
+-	for (i = 0; i < KVM_MEMORY_SLOTS; ++i) {
+-		struct kvm_memory_slot *s = &kvm->memslots->memslots[i];
+-
+-		if (s == memslot || !s->npages)
++	kvm_for_each_memslot(slot, kvm->memslots) {
++		if (slot->id >= KVM_MEMORY_SLOTS || slot == memslot)
+ 			continue;
+-		if (!((base_gfn + npages <= s->base_gfn) ||
+-		      (base_gfn >= s->base_gfn + s->npages)))
++		if (!((base_gfn + npages <= slot->base_gfn) ||
++		      (base_gfn >= slot->base_gfn + slot->npages)))
+ 			goto out_free;
+ 	}
+ 
 
