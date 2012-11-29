@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030202Ab2K2BLQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 20:11:16 -0500
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:40971 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030187Ab2K2BLM (ORCPT
+	id S1756590Ab2K2BMJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 20:12:09 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:56167 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756200Ab2K2BMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 20:11:12 -0500
-From: Cong Ding <dinggnu@gmail.com>
-To: "Hans J. Koch" <hjk@hansjkoch.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Cong Ding <dinggnu@gmail.com>
-Subject: [PATCH 1/1] solve memory leak for uio
-Date: Thu, 29 Nov 2012 01:09:50 +0000
-Message-Id: <1354151390-22108-1-git-send-email-dinggnu@gmail.com>
-X-Mailer: git-send-email 1.7.4.5
+	Wed, 28 Nov 2012 20:12:07 -0500
+Date: Wed, 28 Nov 2012 17:12:03 -0800
+From: Kent Overstreet <koverstreet@google.com>
+To: Zach Brown <zab@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, bcrl@kvack.org, jmoyer@redhat.com,
+        axboe@kernel.dk, viro@zeniv.linux.org.uk
+Subject: Re: [PATCH 12/25] aio: Refcounting cleanup
+Message-ID: <20121129011203.GC15094@google.com>
+References: <1354121029-1376-1-git-send-email-koverstreet@google.com>
+ <1354121029-1376-13-git-send-email-koverstreet@google.com>
+ <20121129001759.GH18574@lenny.home.zabbo.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121129001759.GH18574@lenny.home.zabbo.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-we have to call kobject_put() to clean up the kobject after function
-kobject_init(), kobject_add(), or kobject_uevent() is called. 
+On Wed, Nov 28, 2012 at 04:17:59PM -0800, Zach Brown wrote:
+> 
+> >  struct kioctx {
+> >  	atomic_t		users;
+> > -	int			dead;
+> > +	atomic_t		dead;
+> 
+> Do we want to be paranoid and atomic_set() that to 0 when the ioctx is
+> allocated?
 
-Signed-off-by: Cong Ding <dinggnu@gmail.com>
----
- drivers/uio/uio.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
+I suppose we should, yeah.
 
-diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
-index 5110f36..40566fd 100644
---- a/drivers/uio/uio.c
-+++ b/drivers/uio/uio.c
-@@ -317,16 +317,18 @@ static int uio_dev_add_attributes(struct uio_device *idev)
- 		ret = kobject_add(&portio->kobj, idev->portio_dir,
- 							"port%d", pi);
- 		if (ret)
--			goto err_portio;
-+			goto err_portio_kobj;
- 		ret = kobject_uevent(&portio->kobj, KOBJ_ADD);
- 		if (ret)
--			goto err_portio;
-+			goto err_portio_kobj;
- 	}
- 
- 	return 0;
- 
- err_portio:
--	for (pi--; pi >= 0; pi--) {
-+	pi--;
-+err_portio_kobj:
-+	for (; pi >= 0; pi--) {
- 		port = &idev->info->port[pi];
- 		portio = port->portio;
- 		kobject_put(&portio->kobj);
--- 
-1.7.4.5
+> > +	while (!list_empty(&ctx->active_reqs)) {
+> > +		struct list_head *pos = ctx->active_reqs.next;
+> > +		struct kiocb *iocb = list_kiocb(pos);
+> 
+> I'd use list_first_entry() and ignore the list_kiocb() wrapper, I think.
 
+Fine by me.
+
+> 
+> > +	if (!atomic_xchg(&ctx->dead, 1)) {
+> > +		hlist_del_rcu(&ctx->list);
+> > +		synchronize_rcu();
+> 
+> > +	hlist_for_each_entry_rcu(ctx, n, &mm->ioctx_list, list)
+> > +		if (ctx->user_id == ctx_id){
+> > +			BUG_ON(atomic_read(&ctx->dead));
+> 
+> Hmm.  Won't it be possible to race lookup and io_destroy() to hit this
+> BUG?
+
+Ouch, yes. Dunno what I was thinking when I added that.
