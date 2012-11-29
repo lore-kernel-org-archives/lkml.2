@@ -1,162 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754992Ab2K2QKb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 11:10:31 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:45132 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754456Ab2K2QK3 (ORCPT
+	id S1755102Ab2K2QLt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 11:11:49 -0500
+Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:37303 "EHLO
+	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754588Ab2K2QLs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 11:10:29 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] gpio: New driver for GPO emulation using PWM generators
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Thierry Reding <thierry.reding@avionic-design.de>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-omap@vger.kernel.org
-In-Reply-To: <50B5D161.6010200@ti.com>
-References: <1353591723-25233-1-git-send-email-peter.ujfalusi@ti.com> <20121123075537.A14713E0A91@localhost> <50AF3E21.4000009@ti.com> <50AF4584.7020604@ti.com> <20121126154600.765E03E1AFD@localhost> <50B5D161.6010200@ti.com>
-Date: Thu, 29 Nov 2012 16:10:24 +0000
-Message-Id: <20121129161024.EEA803E0912@localhost>
+	Thu, 29 Nov 2012 11:11:48 -0500
+Date: Thu, 29 Nov 2012 11:11:22 -0500
+From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: David Laight <David.Laight@ACULAB.COM>,
+        Krzysztof Mazur <krzysiek@podlesie.net>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nathan@traverse.com.au
+Subject: Re: [PATCH v2 3/3] pppoatm: protect against freeing of vcc
+Message-ID: <20121129111122.0c3698e1@thirdoffive.cmf.nrl.navy.mil>
+In-Reply-To: <1354204748.21562.180.camel@shinybook.infradead.org>
+References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
+	<1350926091-12642-3-git-send-email-krzysiek@podlesie.net>
+	<1354036592.2534.6.camel@shinybook.infradead.org>
+	<20121127173906.GA11390@shrek.podlesie.net>
+	<1354039349.2534.11.camel@shinybook.infradead.org>
+	<20121127135434.0728cd4f@thirdoffive.cmf.nrl.navy.mil>
+	<AE90C24D6B3A694183C094C60CF0A2F6026B70C9@saturn3.aculab.com>
+	<1354141115.21562.101.camel@shinybook.infradead.org>
+	<20121129103744.38149dc6@thirdoffive.cmf.nrl.navy.mil>
+	<1354204748.21562.180.camel@shinybook.infradead.org>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Nov 2012 09:54:57 +0100, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
-> Hi Grant, Lars, Thierry,
-> 
-> On 11/26/2012 04:46 PM, Grant Likely wrote:
-> > You're effectively asking the pwm layer to behave like a gpio (which
-> > is completely reasonable). Having a completely separate translation node
-> > really doesn't make sense because it is entirely a software construct.
-> > In fact, the way your using it is *entirely* to make the Linux driver
-> > model instantiate the translation code. It has *nothing* to do with the
-> > structure of the hardware. It makes complete sense that if a PWM is
-> > going to be used as a GPIO, then the PWM node should conform to the GPIO
-> > binding.
-> 
-> I understand your point around this. I might say I agree with it as well...
-> I spent yesterday with prototyping and I'm not really convinced that it is a
-> good approach from C code point of view. I got it working, yes.
-> In essence this is what I have on top of the slightly modified gpio-pwm.c
-> driver I have submitted:
-> 
-> DTS files:
-> twl_pwm: pwm {
-> 	/* provides two PWMs (id 0, 1 for PWM1 and PWM2) */
-> 	compatible = "ti,twl6030-pwm";
-> 	#pwm-cells = <2>;
-> 
-> 	/* Enable GPIO us of the PWMs */
-> 	gpio-controller = <1>;
+On Thu, 29 Nov 2012 15:59:08 +0000
+David Woodhouse <dwmw2@infradead.org> wrote:
 
-This line should be simply (the property shouldn't have any data):
-	gpio-controller;
+> On Thu, 2012-11-29 at 10:37 -0500, chas williams - CONTRACTOR wrote:
+> > you shouldnt clear ATM_VF_ADDR until the vpi/vci is actually closed and
+> > ready for reuse.  at this point, it isnt.
+> 
+> So I should always wait for the completion of my PKT_CLOSE and only
+> clear ATM_VF_ADDR when it's actually done?
+> 
+> But can you define 'ready for reuse'? From the moment I clear
+> ATM_VF_ADDR, another CPU may enter my popen() function to set up another
+> VCC with the same parameters, and everything should work fine. The
+> PKT_POPEN will end up on the queue *after* my PKT_PCLOSE for the old
+> VCC. Any received packets will be dropped until the new VCC gets
+> ATM_VF_READY set (by the popen function).
+> 
+> What's the actual failure mode, caused by me clearing ATM_VF_ADDR "too
+> early"?
 
-> 	#gpio-cells = <2>;
-> 	pwm,period_ns = <7812500>;
+there may not be one (due to serialization from other parts of the
+atm stack) but you "shouldn't" clear ATM_VF_ADDR until the vpi/vci pair
+is ready for reuse.  by reuse, i mean that any previous rx/tx data in
+the vpi/vci segmentation hardware has been removed/cleared.
 
-Nit: property names should use '-' instead of '_'.
+> >  ATM_VF_READY should already be clear at this point but you should set
+> > it before you queue your PKT_CLOSE. 
+> 
+> I should *set* it? Do you mean clear it? Yes, I see it's cleared by
 
-> };
-> 
-> leds {
-> 	compatible = "gpio-leds";
-> 	backlight {
-> 		label = "omap4::backlight";
-> 		gpios = <&twl_pwm 1 0>; /* PWM1 of twl6030 */
-> 	};
-> 
-> 	keypad {
-> 		label = "omap4::keypad";
-> 		gpios = <&twl_pwm 0 0>; /* PWM0 of twl6030 */
-> 	};
-> };
-> 
-> The bulk of the code in drivers/pwm/core.c to create the pwm-gpo device when
-> it is requested going to look something like this. I have removed the error
-> checks for now and I still don't have the code to clean up the allocated
-> memory for the created device on error, or in case the module is unloaded. We
-> should also prevent the pwm core from removal when the pwm-gpo driver is loaded.
-> We need to create the platform device for gpo-pwm, create the pdata structure
-> for it and fill it in. We also need to hand craft the pwm_lookup table so we
-> can use pwm_get() to request the PWM. I have other minor changes around this
-> to get things working when we booted with DT.
-> So the function to do the heavy lifting is something like this:
-> static void of_pwmchip_as_gpio(struct pwm_chip *chip)
-> {
-> 	struct platform_device *pdev;
-> 	struct gpio_pwm *gpos;
-> 	struct gpio_pwm_pdata *pdata;
-> 	struct pwm_lookup *lookup;
-> 	char gpodev_name[15];
-> 	int i;
-> 	u32 gpio_mode = 0;
-> 	u32 period_ns = 0;
-> 
-> 	of_property_read_u32(chip->dev->of_node, "gpio-controller",
-> 			     &gpio_mode);
-> 	if (!gpio_mode)
-> 		return;
-> 
-> 	of_property_read_u32(chip->dev->of_node, "pwm,period_ns", &period_ns);
-> 	if (!period_ns) {
-> 		dev_err(chip->dev,
-> 			"period_ns is not specified for GPIO use\n");
-> 		return;
-> 	}
+sorry, i did mean clear it.
 
-This property name seems ambiguous. What do you need to encode here? It
-looks like there is a specific PWM period used for the 'on' state. What
-about the 'off' state? Would different pwm outputs have different
-frequencies required for GPIO usage.
+> vcc_destroy_socket()... but all the other ATM drivers also seem to clear
+> it for themselves, and that would appear to be harmless.
 
-Actually, I'm a bit surprised here that a period value is needed at all.
-I would expect if a PWM is used as a GPIO then the driver would already
-know how to set it up that way.
+yeah, like i said, it is spuriously cleared in the drivers and should
+probably just be moved to under the control of the next layer up
+completely.  drivers/atm should just handle the hardware side, not the
+software side.
 
-> 	lookup = devm_kzalloc(chip->dev, sizeof(*lookup) * chip->npwm,
-> 			      GFP_KERNEL);
-> 	pdata = devm_kzalloc(chip->dev, sizeof(*pdata), GFP_KERNEL);
-> 	gpos = devm_kzalloc(chip->dev, sizeof(*gpos) * chip->npwm,
-> 			    GFP_KERNEL);
+> > checking for ATM_VF_READY in find_vcc() is probably going to give you
+> > grief as well since ATM_VF_READY isnt entirely under your control. 
 > 
-> 	pdata->gpos = gpos;
-> 	pdata->num_gpos = chip->npwm;
-> 	pdata->gpio_base = -1;
+> That's fine. If *anyone* has cleared ATM_VF_READY, I stop sending
+> packets up it. Or, more to the point, I stop using the damn thing at
+> all. See commit 1f6ea6e511e5ec730d8e88651da1b7b6e8fd1333.
 > 
-> 	pdev = platform_device_alloc("pwm-gpo", chip->base);
-> 	pdev->dev.parent = chip->dev;
+> >  you need to be able to find the vcc until after pclose() is finished since
+> > your tasklet might have a few packets it is still processing?
 > 
-> 	sprintf(gpodev_name, "pwm-gpo.%d", chip->base);
-> 	for (i = 0; i < chip->npwm; i++) {
-> 		struct gpio_pwm *gpo = &gpos[i];
-> 		struct pwm_lookup *pl = &lookup[i];
-> 		char con_id[15];
-> 
-> 		sprintf(con_id, "pwm-gpo.%d", chip->base + i);
-> 
-> 		/* prepare GPO information */
-> 		gpo->pwm_period_ns = period_ns;
-> 		gpo->name = kmemdup(con_id, sizeof(con_id), GFP_KERNEL);;
-> 
-> 		/* prepare pwm lookup table */
-> 		pl->provider = dev_name(chip->dev);
-> 		pl->index = i;
-> 		pl->dev_id = kmemdup(gpodev_name, sizeof(gpodev_name),
-> 				     GFP_KERNEL);
-> 		pl->con_id = kmemdup(con_id, sizeof(con_id), GFP_KERNEL);
-> 	}
-> 
-> 	platform_device_add_data(pdev, pdata, sizeof(*pdata));
-> 	pwm_add_table(lookup, chip->npwm);
-> 	platform_device_add(pdev);
+> The whole point of that check is that the tasklet *won't* be able to
+> find it any more, and it'll just discard incoming packets for the
+> obsolescent VCC.
 
-Ugh, yeah this isn't the way to go. Don't register a new platform_device
-for the gpio functionality. It should be inline with the rest of the PWM
-setup and should trigger the registration of a gpio_chip directly.
+that's fine as long as you understand this.  in the case of the he, i
+needed to be able to find the vcc until close() is finished so that i
+can wakeup the sleeper in the close() routine that is waiting for the
+reassembly queue to be cleared/reset.  also, i still needed to find the
+vcc for the tx side during close() since i still might need to pop()
+skb's that are being sent during the close() while i am still trying to
+get the hardware to shutdown the transmit dma engine.
 
-g.
