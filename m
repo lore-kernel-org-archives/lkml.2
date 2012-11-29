@@ -1,30 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754235Ab2K2Th0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 14:37:26 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:37956 "EHLO
+	id S1754639Ab2K2Thf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 14:37:35 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:37391 "EHLO
 	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751013Ab2K2ThX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 14:37:23 -0500
+	id S1754263Ab2K2Thc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 14:37:32 -0500
 From: Joe Perches <joe@perches.com>
-To: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 0/3] cifs: neatening and embedded module size reduction
-Date: Thu, 29 Nov 2012 11:37:17 -0800
-Message-Id: <cover.1354217746.git.joe@perches.com>
+To: Steve French <sfrench@samba.org>
+Cc: linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] cifs: Remove unused cEVENT macro
+Date: Thu, 29 Nov 2012 11:37:18 -0800
+Message-Id: <7176cb20d420849d72aa004e40a404049362da7f.1354217746.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.8.112.g3fd21
+In-Reply-To: <cover.1354217746.git.joe@perches.com>
+References: <cover.1354217746.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches (3):
-  cifs: Remove unused cEVENT macro
-  cifs: Make CIFS_DEBUG possible to undefine
-  cifs: Enable Kconfig control of CIFS_DEBUG
+It uses an undefined KERN_EVENT and is itself unused.
 
- fs/cifs/Kconfig      |   10 ++++++-
- fs/cifs/cifs_debug.h |   74 +++++++++++++++++++++++++++++--------------------
- 2 files changed, 53 insertions(+), 31 deletions(-)
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ fs/cifs/cifs_debug.h |    7 -------
+ 1 files changed, 0 insertions(+), 7 deletions(-)
 
+diff --git a/fs/cifs/cifs_debug.h b/fs/cifs/cifs_debug.h
+index c0c68bb..b0fc344 100644
+--- a/fs/cifs/cifs_debug.h
++++ b/fs/cifs/cifs_debug.h
+@@ -63,12 +63,6 @@ do {						\
+ /* debug event message: */
+ extern int cifsERROR;
+ 
+-#define cEVENT(fmt, arg...)						\
+-do {									\
+-	if (cifsERROR)							\
+-		printk(KERN_EVENT "%s: " fmt "\n", __FILE__, ##arg);	\
+-} while (0)
+-
+ /* error event message: e.g., i/o error */
+ #define cifserror(fmt, arg...)					\
+ do {								\
+@@ -88,7 +82,6 @@ do {						\
+  */
+ #else		/* _CIFS_DEBUG */
+ #define cERROR(set, fmt, arg...)
+-#define cEVENT(fmt, arg...)
+ #define cFYI(set, fmt, arg...)
+ #define cifserror(fmt, arg...)
+ #endif		/* _CIFS_DEBUG */
 -- 
 1.7.8.112.g3fd21
+
