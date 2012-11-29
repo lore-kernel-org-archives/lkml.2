@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932879Ab2K2AXZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 19:23:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54510 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932745Ab2K2AXX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 19:23:23 -0500
-Date: Wed, 28 Nov 2012 22:04:28 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 2/2] KVM: VMX: fix memory order between loading vmcs and
- clearing vmcs
-Message-ID: <20121129000428.GA17264@amt.cnet>
-References: <50B6093B.7040404@linux.vnet.ibm.com>
- <50B60976.7020905@linux.vnet.ibm.com>
+	id S1945978Ab2K2AYM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 19:24:12 -0500
+Received: from smtp151.dfw.emailsrvr.com ([67.192.241.151]:38063 "EHLO
+	smtp151.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932882Ab2K2AYL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 19:24:11 -0500
+Message-ID: <50B6AB2F.5080903@calxeda.com>
+Date: Wed, 28 Nov 2012 18:24:15 -0600
+From: Mark Langsdorf <mark.langsdorf@calxeda.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50B60976.7020905@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mike Turquette <mturquette@ti.com>
+CC: Shawn Guo <shawn.guo@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH 6/6 v6] cpufreq, highbank: add support for highbank cpufreq
+References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com> <1354046672-7392-1-git-send-email-mark.langsdorf@calxeda.com> <1354046672-7392-7-git-send-email-mark.langsdorf@calxeda.com> <20121128023240.GA28170@S2100-06.ap.freescale.net> <50B60E9C.9000405@calxeda.com> <20121128145759.GB28170@S2100-06.ap.freescale.net> <20121128151741.GC28170@S2100-06.ap.freescale.net> <20121128160115.21126.3841@nucleus> <50B6395B.806@calxeda.com> <20121128210552.21126.90710@nucleus>
+In-Reply-To: <20121128210552.21126.90710@nucleus>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 08:54:14PM +0800, Xiao Guangrong wrote:
-> vmcs->cpu indicates whether it exists on the target cpu, -1 means the vmcs
-> does not exist on any vcpu
+On 11/28/2012 03:05 PM, Mike Turquette wrote:
+> Quoting Mark Langsdorf (2012-11-28 08:18:35)
+>> On 11/28/2012 10:01 AM, Mike Turquette wrote:
+>>> Quoting Shawn Guo (2012-11-28 07:17:44)
+>>>> On Wed, Nov 28, 2012 at 10:58:02PM +0800, Shawn Guo wrote:
+>>>>> On Wed, Nov 28, 2012 at 07:16:12AM -0600, Mark Langsdorf wrote:
+>>>>>> I'd
+>>>>>> have to move most of the logic of hb_set_target() into
+>>>>>> clk_highbank.c:clk_pll_set_rate() and then add extra logic for when
+>>>>>> cpufreq is not enabled/loaded.
+>>>>>
+>>>>> You only need to move hb_voltage_change() into cpu clock's .set_rate()
+>>>>> hook with no need of checking if cpufreq is enabled or not.
+>>>>>
+>>>> Need to also check whether frequency or voltage should be changed first
+>>>> in .set_rate() though.
+>>>>
+>>>> Shawn
+>>>>
+>>>
+>>> The notifiers in the clk framework might be a better place for this than
+>>> just simply hacking the logic into the .set_rate callback.
+>>
+>> Unless the clk notifiers are different than the cpufreq notifiers, they
+>> don't handle returning error conditions very well. And given that the
+>> voltage change operation can fail (though it almost always succeeds on a
+>> retry) I need to be able to handle and detect that error condition.
 > 
-> If vcpu load vmcs with vmcs.cpu = -1, it can be directly added to cpu's percpu
-> list. The list can be corrupted if the cpu prefetch the vmcs's list before
-> reading vmcs->cpu. Meanwhile, we should remove vmcs from the list before
-> making vmcs->vcpu == -1 be visible
+> The notifier handler can handle the case where the transition fails (and
+> needs to be retried).
 > 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> ---
->  arch/x86/kvm/vmx.c |   17 +++++++++++++++++
->  1 files changed, 17 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> index 29e8f42..6056d88 100644
-> --- a/arch/x86/kvm/vmx.c
-> +++ b/arch/x86/kvm/vmx.c
-> @@ -1002,6 +1002,15 @@ static void __loaded_vmcs_clear(void *arg)
->  	if (per_cpu(current_vmcs, cpu) == loaded_vmcs->vmcs)
->  		per_cpu(current_vmcs, cpu) = NULL;
->  	list_del(&loaded_vmcs->loaded_vmcss_on_cpu_link);
-> +
-> +	/*
-> +	 * we should ensure updating loaded_vmcs->loaded_vmcss_on_cpu_link
-> +	 * is before setting loaded_vmcs->vcpu to -1 which is done in
-> +	 * loaded_vmcs_init. Otherwise, other cpu can see vcpu = -1 fist
-> +	 * then adds the vmcs into percpu list before it is deleted.
-> +	 */
-> +	smp_wmb();
-> +
+> Also you should check out the clk notifiers.  I think they handle
+> failure decently.  If a notifer returns an error code then everything
+> unrolls and the clk_set_rate operation aborts.
 
-Neither loads nor stores are reordered with like operations (see
-section 8.2.3.2 of intel's volume 3). This behaviour makes the barrier
-not necessary.
+Thanks for the pointer. The clk notifier calls seem to be working with
+cpufreq-cpu0.
 
-However, i agree access to loaded_vmcs is not obviously safe. I can't
-tell its safe with vmm_exclusive = 0 (where vcpu->cpu can change at any
-time).
+I did enough surgery on the code that I want to run a lot of stress
+tests before I resubmit. I'll try to have something for Tuesday.
+
+--Mark Langsdorf
+Calxeda, Inc.
 
