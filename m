@@ -1,56 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364Ab2K2UDX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 15:03:23 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:39086 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751399Ab2K2UDV (ORCPT
+	id S1753739Ab2K2UD0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 15:03:26 -0500
+Received: from ud10.udmedia.de ([194.117.254.50]:42042 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753412Ab2K2UDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 15:03:21 -0500
-From: "Laurent Navet [Mali]" <laurent.navet@gmail.com>
-To: devel@driverdev.osuosl.org
-Cc: line6linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org,
-        "Laurent Navet [Mali]" <laurent.navet@gmail.com>
-Subject: [PATCH] staging: line6: use kstrtoint() instead of simple_strtoul()
-Date: Thu, 29 Nov 2012 21:03:38 +0100
-Message-Id: <1354219418-6882-1-git-send-email-laurent.navet@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 29 Nov 2012 15:03:24 -0500
+Date: Thu, 29 Nov 2012 21:03:21 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: kernel/rcutree.c:2850:13: warning: array subscript is above
+ array bounds
+Message-ID: <20121129200321.GC248@x4>
+References: <20121129134752.GB219@x4>
+ <20121129170241.GT2474@linux.vnet.ibm.com>
+ <20121129174358.GA248@x4>
+ <20121129181013.GW2474@linux.vnet.ibm.com>
+ <20121129182254.GB248@x4>
+ <20121129191933.GX2474@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20121129191933.GX2474@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Laurent Navet [Mali]" <laurent.navet@gmail.com>
+On 2012.11.29 at 11:19 -0800, Paul E. McKenney wrote:
+> On Thu, Nov 29, 2012 at 07:22:54PM +0100, Markus Trippelsdorf wrote:
+> > On 2012.11.29 at 10:10 -0800, Paul E. McKenney wrote:
+> > > On Thu, Nov 29, 2012 at 06:43:58PM +0100, Markus Trippelsdorf wrote:
+> > > > On 2012.11.29 at 09:02 -0800, Paul E. McKenney wrote:
+> > > > > On Thu, Nov 29, 2012 at 02:47:52PM +0100, Markus Trippelsdorf wrote:
+> > > > > > With gcc-4.8 I get:
+> > > > > > 
+> > > > > >   CC      kernel/rcutree.o
+> > > > > >   kernel/rcutree.c: In function ‘rcu_init_one’:
+> > > > > >   kernel/rcutree.c:2850:13: warning: array subscript is above array bounds [-Warray-bounds]
+> > > > > >      rsp->level[i] = rsp->level[i - 1] + rsp->levelcnt[i - 1];
+> > > > > >                   ^
+> > > > > > 2849    for (i = 1; i < rcu_num_lvls; i++)
+> > > > > > 2850           rsp->level[i] = rsp->level[i - 1] + rsp->levelcnt[i - 1];
+> > > > > > 
+> > > > > > At first I thought that the warning was bogus, but rcu_num_lvls isn't static
+> > > > > > and gets modified prior to the for loop.
+> > > > > 
+> > > > So, in your opinion, what would be the best way to silence this warning?
+> > > 
+> > > Good question.  Are you saying that if the compiler cannot prove that
+> > > the index is in bounds, it is going to throw a warning?  
+> > 
+> > Yes, it does seem to be the case. See also my gcc bug report (closed as
+> > invalid): http://gcc.gnu.org/bugzilla/show_bug.cgi?id=55529
+> > 
+> > > If that is the case, perhaps telling the compiler to cool it via the
+> > > command line would be best.
+> > > Or is this really one of a very few places in the kernel where the
+> > > compiler is complaining?
+> > 
+> > Yes. With my (admittedly minimal) config this is only place. 
+> 
+> Hmmmm...  In that case...
+> 
+> Given that this is initialization code that is far from any fastpath,
+> could you try putting something like this at the beginning of
+> rcu_init_one()?
+> 
+> 	if (rcu_num_lvls > RCU_NUM_LVLS)
+> 		panic("rcu_num_lvls overflow");
+> 
+> If the compiler doesn't know that panic() never returns (despite the
+> __noreturn), you could add a "return" after the panic().
+> 
+> Does that help?
 
-staging: line6: pcm.c
-	call to obsolete simple_strtoul() function is replaced
-        by kstrtoint() in pcm_set_impulse_period().
-	Also check the return code.
+Yes. This fixes the issue. Many thanks.
 
-Signed-off-by: Laurent Navet [Mali] <laurent.navet@gmail.com>
----
- drivers/staging/line6/pcm.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+(Perhaps not surprisingly the warning never occurred for
+CONFIG_NR_CPUS>64.
 
-diff --git a/drivers/staging/line6/pcm.c b/drivers/staging/line6/pcm.c
-index a0ce781..876ab89 100644
---- a/drivers/staging/line6/pcm.c
-+++ b/drivers/staging/line6/pcm.c
-@@ -81,7 +81,13 @@ static ssize_t pcm_set_impulse_period(struct device *dev,
- 				      struct device_attribute *attr,
- 				      const char *buf, size_t count)
- {
--	dev2pcm(dev)->impulse_period = simple_strtoul(buf, NULL, 10);
-+        int value;
-+        int rv;
-+        rv = kstrtoint(buf, 10, &value);
-+        if (rv < 0)
-+		return rv;
-+
-+	dev2pcm(dev)->impulse_period = value;
- 	return count;
- }
- 
+I've also built a allyesconfig config and there was no -Warray-bounds
+warning at all.)
+
 -- 
-1.7.10.4
-
+Markus
