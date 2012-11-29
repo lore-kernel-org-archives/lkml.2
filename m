@@ -1,124 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520Ab2K2Tie (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 14:38:34 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:42130 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752223Ab2K2Tid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 14:38:33 -0500
-Date: Thu, 29 Nov 2012 12:38:29 -0700
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH] of: When constructing the bus id consider
- assigned-addresses as well
-Message-ID: <20121129193829.GA10145@obsidianresearch.com>
-References: <20121121210240.GC15285@obsidianresearch.com>
- <20121126140316.99FE23E194B@localhost>
- <20121126182054.GA30177@obsidianresearch.com>
- <20121129162648.80DBC3E0912@localhost>
+	id S1753976Ab2K2TsO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 14:48:14 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:39447 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751355Ab2K2TsN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 14:48:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121129162648.80DBC3E0912@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
+In-Reply-To: <1354144069-28611-7-git-send-email-hauke@hauke-m.de>
+References: <1354144069-28611-1-git-send-email-hauke@hauke-m.de> <1354144069-28611-7-git-send-email-hauke@hauke-m.de>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Thu, 29 Nov 2012 11:47:50 -0800
+X-Google-Sender-Auth: QYXrQMustAbMM7SxSW_bFCgpHfI
+Message-ID: <CAB=NE6Ww8SVm51qph=iXNGS8BN1cWdsT-bvKWrDt4b9c7ea9sg@mail.gmail.com>
+Subject: Re: [PATCH 6/6] compat-drivers: do not use struct spinlock
+To: Hauke Mehrtens <hauke@hauke-m.de>
+Cc: backports@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arend Van Spriel <arend@broadcom.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Alexander Stein <alexander.stein@systec-electronic.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 04:26:48PM +0000, Grant Likely wrote:
+On Wed, Nov 28, 2012 at 3:07 PM, Hauke Mehrtens <hauke@hauke-m.de> wrote:
+> struct spinlock does not exists on kernel version <= 2.6.32, use
+> spinlock_t instead.
+>
+> Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
+> ---
+>  patches/network/67-use_spinlock_t.patch |   11 +++++++++++
+>  1 file changed, 11 insertions(+)
+>  create mode 100644 patches/network/67-use_spinlock_t.patch
+>
+> diff --git a/patches/network/67-use_spinlock_t.patch b/patches/network/67-use_spinlock_t.patch
+> new file mode 100644
+> index 0000000..4c9f315
+> --- /dev/null
+> +++ b/patches/network/67-use_spinlock_t.patch
+> @@ -0,0 +1,11 @@
+> +--- a/drivers/net/wireless/brcm80211/brcmfmac/fweh.h
+> ++++ b/drivers/net/wireless/brcm80211/brcmfmac/fweh.h
+> +@@ -158,7 +158,7 @@ typedef int (*brcmf_fweh_handler_t)(stru
+> +  */
+> + struct brcmf_fweh_info {
+> +       struct work_struct event_work;
+> +-      struct spinlock evt_q_lock;
+> ++      spinlock_t evt_q_lock;
+> +       struct list_head event_q;
+> +       int (*evt_handler[BRCMF_E_LAST])(struct brcmf_if *ifp,
+> +                                        const struct brcmf_event_msg *evtmsg,
 
-> Hmmm. okay that makes sense, but something still isn't quite right. So
-> of_translate_address should take care of drilling down through the bus
-> layers, and when it gets to the PCI node it /should/ use
-> of_bus_pci_translate to handle traversing down to the parent node (which
-> uses the 'assigned-addresses' for the pci node.
+This should have still worked, I thought for a second based on your
+backport patch we ditched the spinlock_t or perhaps this was related
+to the realtime work Thomas has been doing but upon further inspection
+I see now this is simply a discrepancy on sloppy driver development.
 
-The address translation machinery requires PCI format addresses (ie
-address-cells=3) for all nodes below a PCI bus. Part of this
-requirement is that 'assigned-addresses' is used for resources, *not*
-'reg'.
+IMHO your patch should go upstream and a respective patch should be
+submitted as well as for these drivers:
 
-If you attempt to stick a 'reg' in a block nested below a
-'device_type="pci"' the kernel throws lots of error messsages and
-generates bad address mappings.
+mcgrof@frijol ~/linux-next (git::master)$ git grep "struct spinlock" drivers/
+drivers/crypto/ux500/cryp/cryp.h:       struct spinlock ctx_lock;
+drivers/crypto/ux500/cryp/cryp.h:       struct spinlock power_state_spinlock;
+drivers/crypto/ux500/hash/hash_alg.h:   struct spinlock         ctx_lock;
+drivers/crypto/ux500/hash/hash_alg.h:   struct spinlock
+power_state_lock;
+drivers/gpu/drm/i915/i915_drv.h:        struct spinlock gt_lock;
+drivers/gpu/drm/i915/i915_drv.h:                struct spinlock lock;
+drivers/media/platform/s5p-fimc/mipi-csis.c:    struct spinlock slock;
+drivers/media/platform/s5p-jpeg/jpeg-core.h:    struct spinlock         slock;
+drivers/watchdog/ie6xx_wdt.c:   struct spinlock unlock_sequence;
 
-So, we are required to use'assigned-addresses' with the 5 word format
-instead of reg. This seems to be a spec requirement for everything
-below a PCI bus.
+Alexander, please also add your driver to the MAINTAINERS file.
 
-We end up with a DTS where the PCI bus and everything below it must
-be described in the 5 word format that looks like this:
-
-	pex@e0000000 { // <-- This is the PCI bus/controller node
-		device_type = "pci";
-		ranges = <0x02000000 0x00000000 0x00000000  0xe0000000  0x0 0x8000000>;
-		soc@0 { // <-- This is the actual PCI device
-			ranges = <0x02000000 0x00000000 0x00000000  0x02000000 0x00000000 0x00000000  0x0 0x8000000>;
-			gpio3: gpio@8 { // <-- This is a platform device
-			        #gpio-cells = <2>;
-				compatible = "linux,basic-mmio-gpio";
-				gpio-controller;
-				reg-names = "dat", "set", "dirin";
-				assigned-addresses = <0x02000000 0x0 0x8  0x0 4>,
-				                     <0x02000000 0x0 0xc  0x0 4>,
-				                     <0x02000000 0x0 0x10  0x0 4>;
-			};
-
-Which (when combined with the platform_device_add change) builds up an
-iomem like:
-
-e0000000-e7ffffff : PCIe 0 MEM
-  e0000000-e000ffff : 0000:00:01.0
-    e0000000-e0000fff : /pex@e0000000/soc@0/control@0
-      e0000008-e000000b : dat
-        e0000008-e000000b : dat
-      e000000c-e000000f : set
-        e000000c-e000000f : set
-      e0000010-e0000013 : dirin
-        e0000010-e0000013 : dirin
-
-(I trimmed control@0 node from the dts fragment, see other mails on
- the overlapping regions)
-
-And a sysfs like this:
-
-/sys/devices/pci0000:00/0000:00:01.0/e0000000.control
-/sys/devices/pci0000:00/0000:00:01.0/e0000008.gpio
-
-Without the patch the sysfs names will not have the address (gpio.0 or
-whatever it is), but all other address calculations work correctly.
-
-> However, in your case, of_device_make_bus_id() isn't using that code
-> path and you're getting a generic name instead (with no relation to the
-> device address).  Correct?
-
-Right.
- 
-> If that is the case, then the solution is to figure out why
-> of_translate_address() doesn't currently handle your situation and
-> fix
-
-of_translate_address works perfectly - resource records are
-constructed correctly, for instance. The issue is that
-of_device_make_bus_id() doesn't call it:
-
-@@ -105,6 +105,8 @@ void of_device_make_bus_id(struct device *dev)
-         * For MMIO, get the physical address
-         */
-        reg = of_get_property(node, "reg", NULL);
-+       if (!reg)
-+               reg = of_get_property(node, "assigned-addresses", NULL);
-        if (reg) {
-                if (of_can_translate_address(node)) {
-                        addr = of_translate_address(node, reg);
-
-ie what is happening is that of_device_make_bus_id *only* calls
-*_translate_address if 'reg' is a property of the node. The patch
-simply extends that to call if 'reg' or 'assigned-addresses' are a
-property of the node. of_device_make_bus_id doesn't do anything with
-the 'reg' variable other than test it against NULL.
-
-Jason
+  Luis
