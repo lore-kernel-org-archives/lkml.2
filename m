@@ -1,77 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902Ab2K2UGQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 15:06:16 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:56511 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752497Ab2K2UGO (ORCPT
+	id S1753585Ab2K2UIa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 15:08:30 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52619 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751399Ab2K2UI3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 15:06:14 -0500
-Date: Thu, 29 Nov 2012 20:06:12 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Revert "__d_unalias() should refuse to move mountpoints"
-Message-ID: <20121129200612.GP4939@ZenIV.linux.org.uk>
-References: <50609C43.1070702@canonical.com>
- <87txumrct6.fsf@xmission.com>
- <50615268.1040805@canonical.com>
- <8db34325-e8e4-4e24-85dd-c8951769e2b6@email.android.com>
- <506173A6.2050705@canonical.com>
- <87ipb2pemt.fsf@xmission.com>
- <50618F96.1020204@canonical.com>
- <87sja6nxvt.fsf@xmission.com>
+	Thu, 29 Nov 2012 15:08:29 -0500
+Date: Thu, 29 Nov 2012 20:07:08 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "arm@kernel.org" <arm@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Jason Cooper <jason@lakedaemon.net>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [GIT PULL] ARM: final SoC fixes for 3.7
+Message-ID: <20121129200708.GN19440@n2100.arm.linux.org.uk>
+References: <201211291424.25711.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87sja6nxvt.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201211291424.25711.arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 25, 2012 at 04:29:58AM -0700, Eric W. Biederman wrote:
-> Maarten Lankhorst <maarten.lankhorst@canonical.com> writes:
+On Thu, Nov 29, 2012 at 02:24:25PM +0000, Arnd Bergmann wrote:
+> Hi Linus,
 > 
-> >> Could you try the following patch?  This should report what directories
-> >> cannot be renamed because one of them is a mount point and it gives some
-> >> real insight into what is going on.
-> >
-> > ls /
-> > __d_unalias: /dev -> /dev
-> > __d_unalias: /proc -> /proc
-> > __d_unalias: /sys -> /sys
-> 
-> Ok.  That is what I thought was going on.  For some reason nfs is
-> attempting to recreate an existing dentry.
-> 
-> Does this fix the nfs problem for you?
-> 
-> Eric
-> 
-> diff --git a/fs/dcache.c b/fs/dcache.c
-> index 8086636..6390f0f 100644
-> --- a/fs/dcache.c
-> +++ b/fs/dcache.c
-> @@ -2404,6 +2404,9 @@ out_unalias:
->  	if (likely(!d_mountpoint(alias))) {
->  		__d_move(alias, dentry);
->  		ret = alias;
-> +	} else if ((alias->d_parent == dentry->d_parent) &&
-> +		   !dentry_cmp(alias, dentry->d_name.name, dentry->d_name.len))
-> +		ret = alias;
->  	}
+> These should be the last bug fixes you get from Olof and me for 3.7.
+> This is based on the previous one you pulled and there is nothing
+> spectacular in here. I'll follow up with a second pull request
+> knowing that those are probably too late now, but I'd like to let
+> you know about the ones that didn't make it and give you the chance
+> to pull those anyway if you prefer.
 
-The interesting question is why the hell had it decided that preexisting
-dentry was not good enough for it?  Note that we have arrived to nfs_lookup()
-after we'd decided *not* to use the damn alias.  The trace posted upthread
-went __lookup_hash() -> lookup_real().  It means that lookup_dcache()
-has not produced this one.  And no, even if ->d_revalidate() decided it
-was no good, the logics in d_invalidate() would've said "busy" and we'd
-gone with that dentry anyway.  So it means that d_lookup() has not
-found it at all.
-
-IOW, something out there is blindly unhashing mountpoint dentries; that's
-where the real root of the problem seems to be.  Could you slap
-WARN_ON(d_mountpoint(dentry)) in __d_drop() and see what it catches?
+I don't see anything in here for the OMAP warning that I've been reporting
+for the last two weeks.  What's going on with getting fixes merged into
+arm-soc?
