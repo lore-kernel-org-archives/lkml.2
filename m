@@ -1,151 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751318Ab2K2FvT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 00:51:19 -0500
-Received: from na3sys009aog130.obsmtp.com ([74.125.149.143]:41078 "EHLO
-	na3sys009aog130.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750922Ab2K2FvS (ORCPT
+	id S1751350Ab2K2Fxi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 00:53:38 -0500
+Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:60371 "EHLO
+	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751009Ab2K2Fxg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 00:51:18 -0500
+	Thu, 29 Nov 2012 00:53:36 -0500
+Message-ID: <50B6F8AC.6050307@marvell.com>
+Date: Thu, 29 Nov 2012 13:54:52 +0800
 From: Qing Xu <qingx@marvell.com>
-To: qingx@marvell.com, rob@landley.net, linux-doc@vger.kernel.org,
-        sameo@linux.intel.com, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, haojian.zhuang@gmail.com, cxie4@marvell.com,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH] Documentation: add docs for max8925 dt
-Date: Thu, 29 Nov 2012 13:52:39 +0800
-Message-Id: <1354168359-19459-1-git-send-email-qingx@marvell.com>
-X-Mailer: git-send-email 1.7.0.4
-X-OriginalArrivalTime: 29 Nov 2012 05:51:05.0015 (UTC) FILETIME=[85447470:01CDCDF5]
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:14.0) Gecko/20120714 Thunderbird/14.0
+MIME-Version: 1.0
+To: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Chao Xie <cxie4@marvell.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Subject: Re: [PATCH 0/7] mfd: update on max8925 for DT support
+References: <1352187305-9660-1-git-send-email-qingx@marvell.com> <CAN1soZzAZ9Od_5jC0ZFdw03c5P9Q+gJQswTwp0M1YWM_ti+9xw@mail.gmail.com>
+In-Reply-To: <CAN1soZzAZ9Od_5jC0ZFdw03c5P9Q+gJQswTwp0M1YWM_ti+9xw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 29 Nov 2012 05:53:16.0359 (UTC) FILETIME=[D38DF570:01CDCDF5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Qing Xu <qingx@marvell.com>
-
-add docs for dt of max8925-mfd, max8925-backlight, and
-max8925-battery
-
-Signed-off-by: Qing Xu <qingx@marvell.com>
----
- Documentation/devicetree/bindings/mfd/max8925.txt  |   64 ++++++++++++++++++++
- .../bindings/power_supply/max8925_batter.txt       |   18 ++++++
- .../bindings/video/backlight/max8925-backlight.txt |   10 +++
- 3 files changed, 92 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/max8925.txt
- create mode 100644 Documentation/devicetree/bindings/power_supply/max8925_batter.txt
- create mode 100644 Documentation/devicetree/bindings/video/backlight/max8925-backlight.txt
-
-diff --git a/Documentation/devicetree/bindings/mfd/max8925.txt b/Documentation/devicetree/bindings/mfd/max8925.txt
-new file mode 100644
-index 0000000..13bb62b
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/max8925.txt
-@@ -0,0 +1,64 @@
-+* Maxim max8925 Power Management IC
-+
-+Required parent device properties:
-+- compatible : "maxim,max8925"
-+- reg : the I2C slave address for the max8925 chip
-+- interrupts : IRQ line for the max8925 chip
-+- interrupt-controller: describes the max8925 as an interrupt
-+  controller (has its own domain)
-+- #interrupt-cells : should be 1.
-+	- The cell is the max8925 local IRQ number
-+
-+Optional parent device properties:
-+- tsc-irq: there are 2 IRQ lines for max8925, one is indicated in
-+  interrupts property, the other is indicated here.
-+
-+max8925 consists of a large and varied group of sub-devices:
-+
-+Device			 Supply Names	 Description
-+------			 ------------	 -----------
-+max8925-onkey		:		: On key
-+max8925-rtc		:		: RTC
-+max8925-regulator	:		: Regulators
-+max8925-backlight	:		: Backlight
-+max8925-touch		:		: Touchscreen
-+max8925-power		:		: Charger
-+
-+Example:
-+
-+	pmic: max8925@3c {
-+		compatible = "maxim,max8925";
-+		reg = <0x3c>;
-+		interrupts = <1>;
-+		interrupt-parent = <&intcmux4>;
-+		interrupt-controller;
-+		#interrupt-cells = <1>;
-+		tsc-irq = <0>;
-+
-+		regulators {
-+			SDV1 {
-+				regulator-min-microvolt = <637500>;
-+				regulator-max-microvolt = <1425000>;
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+			
-+			LDO1 {
-+				regulator-min-microvolt = <750000>;
-+				regulator-max-microvolt = <3900000>;
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+			
-+		};
-+		backlight {
-+			max8925-dual-string = <0>;
-+		};
-+		charger {
-+			batt-detect = <0>;
-+			topoff-threshold = <1>;
-+			fast-charge = <7>;
-+			no-temp-support = <0>;
-+			no-insert-detect = <0>;
-+		};
-+	};
-diff --git a/Documentation/devicetree/bindings/power_supply/max8925_batter.txt b/Documentation/devicetree/bindings/power_supply/max8925_batter.txt
-new file mode 100644
-index 0000000..d7e3e0c
---- /dev/null
-+++ b/Documentation/devicetree/bindings/power_supply/max8925_batter.txt
-@@ -0,0 +1,18 @@
-+max8925-battery bindings
-+~~~~~~~~~~~~~~~~
-+
-+Optional properties :
-+ - batt-detect: whether support battery detect
-+ - topoff-threshold: set charging current in topoff mode
-+ - fast-charge: set charging current in fast mode
-+ - no-temp-support: whether support temperature protection detect
-+ - no-insert-detect: whether support insert detect
-+
-+Example:
-+	charger {
-+		batt-detect = <0>;
-+		topoff-threshold = <1>;
-+		fast-charge = <7>;
-+		no-temp-support = <0>;
-+		no-insert-detect = <0>;
-+	};
-diff --git a/Documentation/devicetree/bindings/video/backlight/max8925-backlight.txt b/Documentation/devicetree/bindings/video/backlight/max8925-backlight.txt
-new file mode 100644
-index 0000000..d692db3
---- /dev/null
-+++ b/Documentation/devicetree/bindings/video/backlight/max8925-backlight.txt
-@@ -0,0 +1,10 @@
-+88pm860x-backlight bindings
-+
-+Optional properties:
-+  - max8925-dual-string: whether support dual string
-+
-+Example:
-+
-+	backlights {
-+		max8925-dual-string = <0>;
-+	};
--- 
-1.7.0.4
-
+On 11/23/2012 05:09 PM, Haojian Zhuang wrote:
+> On Tue, Nov 6, 2012 at 3:35 PM, Qing Xu <qingx@marvell.com> wrote:
+>> From: Qing Xu <qingx@marvell.com>
+>>
+>> 1. add irqdomain for max8925, it is necessary for dt support
+>> 2. bug fix in max8925 mfd devices'irq base and device registry failure
+>> 3. support DT for max8925 mfd devices
+>>
+>> Qing Xu (7):
+>>    mfd: max8925: add irqdomain for dt
+>>    mfd: max8925: fix mfd device register failure
+>>    mfd: max8925: fix onkey driver irq base
+>>    mfd: max8925: support dt for power supply
+>>    mfd: max8925: support dt for regulator
+>>    mfd: max8925: support dt for backlight
+>>    mfd: max8925: add dts
+>>
+>>   arch/arm/boot/dts/mmp2-brownstone.dts |  166 +++++++++++++++++++++++++++++++++
+>>   arch/arm/boot/dts/mmp2.dtsi           |    4 +-
+>>   drivers/input/misc/max8925_onkey.c    |    3 -
+>>   drivers/mfd/max8925-core.c            |  107 +++++++++++++--------
+>>   drivers/mfd/max8925-i2c.c             |   32 ++++++-
+>>   drivers/power/max8925_power.c         |   57 ++++++++++-
+>>   drivers/regulator/max8925-regulator.c |   35 +++++++-
+>>   drivers/video/backlight/max8925_bl.c  |   31 ++++++-
+>>   include/linux/mfd/max8925.h           |   12 ++-
+>>   9 files changed, 389 insertions(+), 58 deletions(-)
+>>
+> No document on devicetree binding?
+I added a new patch of "Documentation: add docs for max8925 dt",
+please help to review, thanks a lot!
