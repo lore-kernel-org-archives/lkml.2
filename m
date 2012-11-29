@@ -1,93 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754925Ab2K2XAs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 18:00:48 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:57875 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753217Ab2K2XAr (ORCPT
+	id S1755163Ab2K2XDE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 18:03:04 -0500
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:44300 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753692Ab2K2XDB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 18:00:47 -0500
-Message-ID: <50B7E91C.6070403@gmail.com>
-Date: Thu, 29 Nov 2012 15:00:44 -0800
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 29 Nov 2012 18:03:01 -0500
+From: Lance Ortiz <lance.ortiz@hp.com>
+Subject: [PATCH v2 2/3] aerdrv: Enhanced AER logging
+To: bhelgaas@google.com, lance_ortiz@hotmail.com, jiang.liu@huawei.com,
+        tony.luck@intel.com, bp@alien8.de, rostedt@goodmis.org,
+        mchehab@redhat.com, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 29 Nov 2012 15:58:00 -0700
+Message-ID: <20121129225800.8405.83305.stgit@grignak.americas.hpqcorp.net>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: Alan Cooper <alcooperx@gmail.com>
-CC: ralf@linux-mips.org, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: MIPS Function Tracer question
-References: <CAOGqxeUOrVFoqsmUV19h5tXsD6pw5creXP9aN1C-V7K3WL2EXA@mail.gmail.com>
-In-Reply-To: <CAOGqxeUOrVFoqsmUV19h5tXsD6pw5creXP9aN1C-V7K3WL2EXA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2012 01:04 PM, Alan Cooper wrote:
-> I've been doing some testing of the MIPS Function Tracer functionality
-> on the 3.3 kernel. I was surprised to find that the option to generate
-> frame pointers was required for tracing.
+This patch will provide a more reliable and easy way for user-space
+applications to have access to AER logs rather than reading them from the
+message buffer. It also provides a way to notify user-space when an AER
+event occurs.
 
-It is not really required for MIPS function tracing, but the Kconfigs 
-for some reason set it.
+The aer driver is updated to generate a trace event of function 'aer_event'
+when an AER occurs.  The trace event was added to both the interrupt
+based aer path and the firmware first path
 
->  When I don't enable
-> FRAME_POINTER along with FUNCTION_TRACER, the kernel hangs on boot. I
-> also noticed that a checkin to the 3.4 kernel
-> (b732d439cb43336cd6d7e804ecb2c81193ef63b0) no longer forces on
-> FRAME_POINTER when FUNCTION_TRACER is selected. I was wondering how it
-> works in 3.4 and beyond, so I built a Malta kernel from the latest
-> MIPS tree with FUNCTION_TRACING enabled and tested it with QEMU. The
-> kernel hung the same way. I can think of 2 reasons for this:
-> 1. Function tracing is broken for MIPS in 3.4 and beyond.
-> 2. The 4.5.3 GNU C compiler I'm using is generating different code for
-> function tracing.
+Signed-off-by: Lance Ortiz <lance.ortiz@hp.com>
+---
 
-Function tracing works best with recent versions of GCC (those that 
-support -mmcount-ra-address).
+ 0 files changed, 0 insertions(+), 0 deletions(-)
 
-> I was wondering if anyone has MIPS function tracing working in 3.4 or later?
-
-Yes.  Using GCC 4.7.0 on an octeon kernel (based on 3.4.14):
-
-# tracer: function_graph
-#
-# CPU  DURATION                  FUNCTION CALLS
-# |     |   |                     |   |   |   |
-   1)               |  __fsnotify_parent() {
-   1)   7.154 us    |  } /* __fsnotify_parent */
-   1)               |  fsnotify() {
-   1)               |    __srcu_read_lock() {
-   1)               |      add_preempt_count() {
-   1)   1.356 us    |      } /* add_preempt_count */
-   1)               |      sub_preempt_count() {
-   1)   1.385 us    |      } /* sub_preempt_count */
-   1)   6.747 us    |    } /* __srcu_read_lock */
-   1)               |    __srcu_read_unlock() {
-   1)               |      add_preempt_count() {
-   1)   1.383 us    |      } /* add_preempt_count */
-   1)               |      sub_preempt_count() {
-   1)   1.358 us    |      } /* sub_preempt_count */
-   1)   6.642 us    |    } /* __srcu_read_unlock */
-   1) + 17.861 us   |  } /* fsnotify */
-.
-.
-.
-
-
-
->
-> I did figure out why it's hanging and I have some changes that will
-> allow the function tracer to run without frame pointers, but before I
-> proceed I want to rule out compiler differences.
->
-> Thanks
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
->
+diff --git a/drivers/acpi/apei/cper.c b/drivers/acpi/apei/cper.c
+index e6defd8..87345d4 100644
+--- a/drivers/acpi/apei/cper.c
++++ b/drivers/acpi/apei/cper.c
+@@ -29,6 +29,7 @@
+ #include <linux/time.h>
+ #include <linux/cper.h>
+ #include <linux/acpi.h>
++#include <linux/pci.h>
+ #include <linux/aer.h>
+ 
+ /*
+@@ -249,6 +250,10 @@ static const char *cper_pcie_port_type_strs[] = {
+ static void cper_print_pcie(const char *pfx, const struct cper_sec_pcie *pcie,
+ 			    const struct acpi_hest_generic_data *gdata)
+ {
++#ifdef CONFIG_ACPI_APEI_PCIEAER
++	struct pci_dev *dev;
++#endif
++
+ 	if (pcie->validation_bits & CPER_PCIE_VALID_PORT_TYPE)
+ 		printk("%s""port_type: %d, %s\n", pfx, pcie->port_type,
+ 		       pcie->port_type < ARRAY_SIZE(cper_pcie_port_type_strs) ?
+@@ -281,9 +286,17 @@ static void cper_print_pcie(const char *pfx, const struct cper_sec_pcie *pcie,
+ 	"%s""bridge: secondary_status: 0x%04x, control: 0x%04x\n",
+ 	pfx, pcie->bridge.secondary_status, pcie->bridge.control);
+ #ifdef CONFIG_ACPI_APEI_PCIEAER
+-	if (pcie->validation_bits & CPER_PCIE_VALID_AER_INFO) {
++	dev = pci_get_domain_bus_and_slot(pcie->device_id.segment,
++			pcie->device_id.bus, pcie->device_id.function);
++	if (!dev)
++		printk("PCI AER Cannot get PCI device %04x:%02x:%02x.%d\n",
++			pcie->device_id.segment, pcie->device_id.bus,
++			pcie->device_id.slot, pcie->device_id.function);
++
++	if (pcie->validation_bits & CPER_PCIE_VALID_AER_INFO && dev) {
+ 		struct aer_capability_regs *aer_regs = (void *)pcie->aer_info;
+-		cper_print_aer(pfx, gdata->error_severity, aer_regs);
++		cper_print_aer(dev, gdata->error_severity, aer_regs);
++		pci_dev_put(dev);
+ 	}
+ #endif
+ }
+diff --git a/drivers/pci/pcie/aer/aerdrv_errprint.c b/drivers/pci/pcie/aer/aerdrv_errprint.c
+index 3ea5173..6354e50 100644
+--- a/drivers/pci/pcie/aer/aerdrv_errprint.c
++++ b/drivers/pci/pcie/aer/aerdrv_errprint.c
+@@ -23,6 +23,10 @@
+ 
+ #include "aerdrv.h"
+ 
++#define CREATE_TRACE_POINTS
++#define TRACE_INCLUDE_PATH ../../../../include/ras
++#include <ras/aer_event.h>
++
+ #define AER_AGENT_RECEIVER		0
+ #define AER_AGENT_REQUESTER		1
+ #define AER_AGENT_COMPLETER		2
+@@ -194,6 +198,8 @@ void aer_print_error(struct pci_dev *dev, struct aer_err_info *info)
+ 	if (info->id && info->error_dev_num > 1 && info->id == id)
+ 		printk("%s""  Error of this Agent(%04x) is reported first\n",
+ 			prefix, id);
++	trace_aer_event(dev_name(&dev->dev), (info->status & ~info->mask),
++			info->severity);
+ }
+ 
+ void aer_print_port_info(struct pci_dev *dev, struct aer_err_info *info)
+@@ -217,12 +223,13 @@ int cper_severity_to_aer(int cper_severity)
+ }
+ EXPORT_SYMBOL_GPL(cper_severity_to_aer);
+ 
+-void cper_print_aer(const char *prefix, int cper_severity,
++void cper_print_aer(struct pci_dev *dev, int cper_severity,
+ 		    struct aer_capability_regs *aer)
+ {
+ 	int aer_severity, layer, agent, status_strs_size, tlp_header_valid = 0;
+ 	u32 status, mask;
+ 	const char **status_strs;
++	char *prefix = NULL;
+ 
+ 	aer_severity = cper_severity_to_aer(cper_severity);
+ 	if (aer_severity == AER_CORRECTABLE) {
+@@ -259,5 +266,7 @@ void cper_print_aer(const char *prefix, int cper_severity,
+ 			*(tlp + 8), *(tlp + 15), *(tlp + 14),
+ 			*(tlp + 13), *(tlp + 12));
+ 	}
++	trace_aer_event(dev_name(&dev->dev), (status & ~mask),
++			aer_severity);
+ }
+ #endif
+diff --git a/include/linux/aer.h b/include/linux/aer.h
+index 544abdb..7b86dc6 100644
+--- a/include/linux/aer.h
++++ b/include/linux/aer.h
+@@ -49,7 +49,7 @@ static inline int pci_cleanup_aer_uncorrect_error_status(struct pci_dev *dev)
+ }
+ #endif
+ 
+-extern void cper_print_aer(const char *prefix, int cper_severity,
++extern void cper_print_aer(struct pci_dev *dev, int cper_severity,
+ 			   struct aer_capability_regs *aer);
+ extern int cper_severity_to_aer(int cper_severity);
+ extern void aer_recover_queue(int domain, unsigned int bus, unsigned int devfn,
 
