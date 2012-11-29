@@ -1,220 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752845Ab2K2GjM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 01:39:12 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:63188 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752357Ab2K2GjG (ORCPT
+	id S1752791Ab2K2Gls (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 01:41:48 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:42216 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751553Ab2K2Glo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 01:39:06 -0500
-X-AuditID: 9c93016f-b7b86ae000003a75-ad-50b703083a24
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 02/18] perf evsel: Convert to _is_group_leader method
-Date: Thu, 29 Nov 2012 15:38:30 +0900
-Message-Id: <1354171126-14387-4-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1354171126-14387-1-git-send-email-namhyung@kernel.org>
-References: <1354171126-14387-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 29 Nov 2012 01:41:44 -0500
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: "tony@atomide.com" <tony@atomide.com>
+CC: "paul@pwsan.com" <paul@pwsan.com>, "Hiremath, Vaibhav" <hvaibhav@ti.com>,
+        "srinath@mistralsolutions.com" <srinath@mistralsolutions.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/3] omap: craneboard: support NAND device
+Thread-Topic: [PATCH 1/3] omap: craneboard: support NAND device
+Thread-Index: Ac3N/JO+DMulpR+rTCaDo4me8z+9bg==
+Date: Thu, 29 Nov 2012 06:41:37 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F6418F138@DQHE02.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+ This patch enables the NAND device on the AM3517 Craneboard.
 
-Convert perf_evsel__is_group_member to perf_evsel__is_group_leader.
-This is because the most usecases are using negative form to check
-whether the given evsel is a leader or not and it's IMHO somewhat
-ambiguous - leader also *is* a member of the group.
+ MTD partitions are created as below.
+ 0x000000000000-0x000000080000 : "X-Loader"
+ 0x000000080000-0x000000240000 : "U-Boot"
+ 0x000000240000-0x000000280000 : "U-Boot Env"
+ 0x000000280000-0x000000780000 : "Kernel"
+ 0x000000780000-0x000010000000 : "File System"
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 ---
- tools/perf/builtin-stat.c       |  2 +-
- tools/perf/tests/parse-events.c | 20 ++++++++++----------
- tools/perf/util/evlist.c        |  4 ++--
- tools/perf/util/evsel.c         |  6 +++---
- tools/perf/util/evsel.h         |  4 ++--
- 5 files changed, 18 insertions(+), 18 deletions(-)
+ arch/arm/mach-omap2/board-am3517crane.c |   38 +++++++++++++++++++++++++++++++
+ 1 file changed, 38 insertions(+)
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index c247faca7127..c12655af2b88 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -153,7 +153,7 @@ retry:
- 	}
+diff --git a/arch/arm/mach-omap2/board-am3517crane.c b/arch/arm/mach-omap2/board-am3517crane.c
+index 51b96a1..37646e5 100644
+--- a/arch/arm/mach-omap2/board-am3517crane.c
++++ b/arch/arm/mach-omap2/board-am3517crane.c
+@@ -20,12 +20,17 @@
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+ #include <linux/gpio.h>
++#include <linux/mtd/mtd.h>
++#include <linux/mtd/nand.h>
++#include <linux/mtd/partitions.h>
  
- 	if (!perf_target__has_task(&target) &&
--	    !perf_evsel__is_group_member(evsel)) {
-+	    perf_evsel__is_group_leader(evsel)) {
- 		attr->disabled = 1;
- 		attr->enable_on_exec = 1;
- 	}
-diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
-index 42a0c8cd3cd5..17f1cd656314 100644
---- a/tools/perf/tests/parse-events.c
-+++ b/tools/perf/tests/parse-events.c
-@@ -521,7 +521,7 @@ static int test__group1(struct perf_evlist *evlist)
- 	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
- 	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
--	TEST_ASSERT_VAL("wrong leader", !perf_evsel__is_group_member(evsel));
-+	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
+ #include <asm/mach-types.h>
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
  
- 	/* cycles:upp */
- 	evsel = perf_evsel__next(evsel);
-@@ -557,7 +557,7 @@ static int test__group2(struct perf_evlist *evlist)
- 	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
- 	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
--	TEST_ASSERT_VAL("wrong leader", !perf_evsel__is_group_member(evsel));
-+	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
+ #include "common.h"
++#include "common-board-devices.h"
++#include "board-flash.h"
  
- 	/* cache-references + :u modifier */
- 	evsel = perf_evsel__next(evsel);
-@@ -583,7 +583,7 @@ static int test__group2(struct perf_evlist *evlist)
- 	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
- 	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
--	TEST_ASSERT_VAL("wrong leader", !perf_evsel__is_group_member(evsel));
-+	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
+ #include "am35xx-emac.h"
+ #include "mux.h"
+@@ -51,6 +56,36 @@ static struct usbhs_omap_board_data usbhs_bdata __initdata = {
+ 	.reset_gpio_port[2]  = -EINVAL
+ };
  
- 	return 0;
- }
-@@ -606,7 +606,7 @@ static int test__group3(struct perf_evlist *evlist __maybe_unused)
- 	TEST_ASSERT_VAL("wrong exclude guest", evsel->attr.exclude_guest);
- 	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
--	TEST_ASSERT_VAL("wrong leader", !perf_evsel__is_group_member(evsel));
-+	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
- 	TEST_ASSERT_VAL("wrong group name",
- 		!strcmp(leader->group_name, "group1"));
- 
-@@ -636,7 +636,7 @@ static int test__group3(struct perf_evlist *evlist __maybe_unused)
- 	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
- 	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
--	TEST_ASSERT_VAL("wrong leader", !perf_evsel__is_group_member(evsel));
-+	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
- 	TEST_ASSERT_VAL("wrong group name",
- 		!strcmp(leader->group_name, "group2"));
- 
-@@ -663,7 +663,7 @@ static int test__group3(struct perf_evlist *evlist __maybe_unused)
- 	TEST_ASSERT_VAL("wrong exclude guest", !evsel->attr.exclude_guest);
- 	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
--	TEST_ASSERT_VAL("wrong leader", !perf_evsel__is_group_member(evsel));
-+	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
- 
- 	return 0;
- }
-@@ -687,7 +687,7 @@ static int test__group4(struct perf_evlist *evlist __maybe_unused)
- 	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
- 	TEST_ASSERT_VAL("wrong precise_ip", evsel->attr.precise_ip == 1);
- 	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
--	TEST_ASSERT_VAL("wrong leader", !perf_evsel__is_group_member(evsel));
-+	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
- 
- 	/* instructions:kp + p */
- 	evsel = perf_evsel__next(evsel);
-@@ -724,7 +724,7 @@ static int test__group5(struct perf_evlist *evlist __maybe_unused)
- 	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
- 	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
--	TEST_ASSERT_VAL("wrong leader", !perf_evsel__is_group_member(evsel));
-+	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
- 
- 	/* instructions + G */
- 	evsel = perf_evsel__next(evsel);
-@@ -751,7 +751,7 @@ static int test__group5(struct perf_evlist *evlist __maybe_unused)
- 	TEST_ASSERT_VAL("wrong exclude host", evsel->attr.exclude_host);
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
- 	TEST_ASSERT_VAL("wrong group name", !evsel->group_name);
--	TEST_ASSERT_VAL("wrong leader", !perf_evsel__is_group_member(evsel));
-+	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
- 
- 	/* instructions:G */
- 	evsel = perf_evsel__next(evsel);
-@@ -777,7 +777,7 @@ static int test__group5(struct perf_evlist *evlist __maybe_unused)
- 	TEST_ASSERT_VAL("wrong exclude guest", evsel->attr.exclude_guest);
- 	TEST_ASSERT_VAL("wrong exclude host", !evsel->attr.exclude_host);
- 	TEST_ASSERT_VAL("wrong precise_ip", !evsel->attr.precise_ip);
--	TEST_ASSERT_VAL("wrong leader", !perf_evsel__is_group_member(evsel));
-+	TEST_ASSERT_VAL("wrong leader", perf_evsel__is_group_leader(evsel));
- 
- 	return 0;
- }
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 90db2a14e4bb..d0e1e821fe85 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -221,7 +221,7 @@ void perf_evlist__disable(struct perf_evlist *evlist)
- 
- 	for (cpu = 0; cpu < evlist->cpus->nr; cpu++) {
- 		list_for_each_entry(pos, &evlist->entries, node) {
--			if (perf_evsel__is_group_member(pos))
-+			if (!perf_evsel__is_group_leader(pos))
- 				continue;
- 			for (thread = 0; thread < evlist->threads->nr; thread++)
- 				ioctl(FD(pos, cpu, thread),
-@@ -237,7 +237,7 @@ void perf_evlist__enable(struct perf_evlist *evlist)
- 
- 	for (cpu = 0; cpu < cpu_map__nr(evlist->cpus); cpu++) {
- 		list_for_each_entry(pos, &evlist->entries, node) {
--			if (perf_evsel__is_group_member(pos))
-+			if (!perf_evsel__is_group_leader(pos))
- 				continue;
- 			for (thread = 0; thread < evlist->threads->nr; thread++)
- 				ioctl(FD(pos, cpu, thread),
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index ceabe05c6b12..73e6085a7294 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -520,14 +520,14 @@ void perf_evsel__config(struct perf_evsel *evsel,
- 	 * Disabling only independent events or group leaders,
- 	 * keeping group members enabled.
- 	 */
--	if (!perf_evsel__is_group_member(evsel))
-+	if (perf_evsel__is_group_leader(evsel))
- 		attr->disabled = 1;
- 
- 	/*
- 	 * Setting enable_on_exec for independent events and
- 	 * group leaders for traced executed by perf.
- 	 */
--	if (perf_target__none(&opts->target) && !perf_evsel__is_group_member(evsel))
-+	if (perf_target__none(&opts->target) && perf_evsel__is_group_leader(evsel))
- 		attr->enable_on_exec = 1;
- }
- 
-@@ -708,7 +708,7 @@ static int get_group_fd(struct perf_evsel *evsel, int cpu, int thread)
- 	struct perf_evsel *leader = evsel->leader;
- 	int fd;
- 
--	if (!perf_evsel__is_group_member(evsel))
-+	if (perf_evsel__is_group_leader(evsel))
- 		return -1;
- 
- 	/*
-diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-index d504668e7ae5..46c8004ca56b 100644
---- a/tools/perf/util/evsel.h
-+++ b/tools/perf/util/evsel.h
-@@ -226,8 +226,8 @@ static inline struct perf_evsel *perf_evsel__next(struct perf_evsel *evsel)
- 	return list_entry(evsel->node.next, struct perf_evsel, node);
- }
- 
--static inline bool perf_evsel__is_group_member(const struct perf_evsel *evsel)
-+static inline bool perf_evsel__is_group_leader(const struct perf_evsel *evsel)
++static struct mtd_partition crane_nand_partitions[] = {
++	{
++		.name		= "X-Loader",
++		.offset		= 0,
++		.size		= 4 * NAND_BLOCK_SIZE,
++		.mask_flags	= MTD_WRITEABLE,
++	},
++	{
++		.name		= "U-Boot",
++		.offset		= MTDPART_OFS_APPEND,
++		.size		= 14 * NAND_BLOCK_SIZE,
++		.mask_flags	= MTD_WRITEABLE,
++	},
++	{
++		.name		= "U-Boot Env",
++		.offset		= MTDPART_OFS_APPEND,
++		.size		= 2 * NAND_BLOCK_SIZE,
++	},
++	{
++		.name		= "Kernel",
++		.offset		= MTDPART_OFS_APPEND,
++		.size		= 40 * NAND_BLOCK_SIZE,
++	},
++	{
++		.name		= "File System",
++		.offset		= MTDPART_OFS_APPEND,
++		.size		= MTDPART_SIZ_FULL,
++	},
++};
++
+ static void __init am3517_crane_init(void)
  {
--	return evsel->leader != evsel;
-+	return evsel->leader == evsel;
- }
- #endif /* __PERF_EVSEL_H */
+ 	int ret;
+@@ -58,6 +93,9 @@ static void __init am3517_crane_init(void)
+ 	omap3_mux_init(board_mux, OMAP_PACKAGE_CBB);
+ 	omap_serial_init();
+ 	omap_sdrc_init(NULL, NULL);
++	board_nand_init(crane_nand_partitions,
++			ARRAY_SIZE(crane_nand_partitions), 0,
++			NAND_BUSWIDTH_16, NULL);
+ 
+ 	/* Configure GPIO for EHCI port */
+ 	if (omap_mux_init_gpio(GPIO_USB_NRESET, OMAP_PIN_OUTPUT)) {
 -- 
-1.7.11.7
+1.7.9.5
+
+
+Best Regards,
+Milo
+
 
