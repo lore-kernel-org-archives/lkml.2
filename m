@@ -1,85 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754402Ab2K2Bp2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 20:45:28 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:54309 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752564Ab2K2Bp1 (ORCPT
+	id S1752878Ab2K2BuC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 20:50:02 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:49282 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751039Ab2K2BuA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 20:45:27 -0500
-Message-ID: <50B6BE34.2010109@vflare.org>
-Date: Wed, 28 Nov 2012 17:45:24 -0800
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Greg KH <greg@kroah.com>, Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Sam Hansen <solid.se7en@gmail.com>, Tomas M <tomas@slax.org>,
-        Mihail Kasadjikov <hamer.mk@gmail.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] zram: Prevent use of unmapped buffer
-References: <1354001167-24878-1-git-send-email-ngupta@vflare.org> <20121128051505.GD23136@blaptop> <20121129013320.GA24077@blaptop>
-In-Reply-To: <20121129013320.GA24077@blaptop>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 28 Nov 2012 20:50:00 -0500
+Message-ID: <1354153788.2499.9.camel@ThinkPad-T5421.cn.ibm.com>
+Subject: Re: [RFC PATCH v2] Add rcu user eqs exception hooks for async page
+ fault
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-next list <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
+        sasha.levin@oracle.com, gleb@redhat.com, avi@redhat.com
+Date: Thu, 29 Nov 2012 09:49:48 +0800
+In-Reply-To: <CAFTL4hxPSp1fs4=2g0yFs0d5nFisfUsfDAA9bHWcu+-+tO_ySw@mail.gmail.com>
+References: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
+	 <CAFTL4hx0fc_Jo8wkuRZedW4DVEeQceiHMrWVqTqB5k065Wsg8Q@mail.gmail.com>
+	 <1354090704.3054.13.camel@ThinkPad-T5421.cn.ibm.com>
+	 <CAFTL4hxPSp1fs4=2g0yFs0d5nFisfUsfDAA9bHWcu+-+tO_ySw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 12112901-3568-0000-0000-000002D79146
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28/2012 05:33 PM, Minchan Kim wrote:
-> On Wed, Nov 28, 2012 at 02:15:05PM +0900, Minchan Kim wrote:
->> Hi Nitin,
->>
->> On Mon, Nov 26, 2012 at 11:26:07PM -0800, Nitin Gupta wrote:
->>> The commit c8f2f0db1 ("zram: Fix handling of incompressible pages")
->>> introduced a bug which caused a kunmap()'ed buffer to be used in case
->> I got confused by the descripton. :(
->> The descripton is not right.
->> The problem is to access freed memory, not accessing to kunmaped buffer.
->>
->> partial I/O write.
->>
->> 1. uncmem = kmalloc
->> 2. zram_decompress_page(uncmem)
->> 3. memcpy(uncmem, user_mem)
->> 4. lzo1x_1_compress(uncmem)
->> 5. kfree(uncmem)
->> 6. src = uncmem
->> 7. memcpy(cmem, src, clen) <----- HIT
->>
->>> of partial writes where the data was found to be incompressible.
->>>
-> I got it. You shouldn't mention partial write for proper description
-> because it was usecase for swap-over-zram so it can't make partial write.
-> Without partial write mention, your description is right but the problem
-> I mentioned above is another problem for partial write so we need a another
-> patch. I will cook.
+On Wed, 2012-11-28 at 13:55 +0100, Frederic Weisbecker wrote:
+> 2012/11/28 Li Zhong <zhong@linux.vnet.ibm.com>:
+> > Thank you all for the review and education.
+> >
+> > Below are my current understandings and an update version. Would you
+> > please help to review it again and give your comments?
+> >
+> > Thanks, Zhong
+> >
+> > Now it seems to me that it is legal to call rcu_irq_exit/enter() without
+> > a matching rcu_irq_enter/exit() if the cpu is in non rcu idle state.
+> >
+> > As opposite, it is illegal to call rcu_irq_exit() without a matching
+> > rcu_irq_enter() if the cpu is in rcu idle state.
+> >
+> > But it seems legal to call rcu_irq_enter() without a matching
+> > rcu_irq_exit() if the cpu is in rcu idle state, regarding the
+> > dynticks_nesting value.   However, it seems not good to exit the rcu
+> > idle state, if we are actually entering into idle mode, so maybe it's
+> > better to call a matching rcu_irq_exit() before actually idle?
+> >
+> > As Frederic pointed out, we need a rcu_user_exit() to exit the user eqs
+> > (if we are in this state) in the beginning. But after some more
+> > thinking, I guess we might also need to call rcu_user_enter() after the
+> > waiting, if we get this page fault from user space. So maybe it's better
+> > to use rcu user eqs exception hooks here?
+> 
+> Makes sense.
+> 
+> >
+> > With rcu_user_exit() at the beginning, now rcu_irq_enter() only protects
+> > the cpu idle eqs, but it's not good to call rcu_irq_exit() after the cpu
+> > halt and the page ready.
+> 
+> Hmm, why is it not good?
 
-I will include explanation of both the cases: use of unmapped buffer
-and freed buffer, when I resend these patches.
+I think in this case, as cpu halts and waits for page ready, it is
+really in idle, and it's better for rcu to think it as rcu idle. But
+with rcu_irq_enter(), the rcu would not think this cpu as idle. And the
+rcu_irq_exit() is only called after this idle period to mark this cpu as
+rcu idle again. 
+> 
+> >
+> > So I still want to remove it. And later if it shows that we really needs
+> > rcu somewhere in this code path, maybe we could use RCU_NONIDLE() to
+> > protect it. ( The suspicious RCU usage reported in commit
+> > c5e015d4949aa665 seems related to schedule(), which is not in the code
+> > path if we are in cpu idle eqs )
+> 
+> Yes but if rcu_irq_*() calls are fine to be called there, and I
+> believe they are because exception_enter() exits the user mode, we
+> should start to protect there right now instead of waiting for a
+> potential future warning of illegal RCU use.
 
->
->>> This fixes bug 50081:
->>> https://bugzilla.kernel.org/show_bug.cgi?id=50081
->>>
->>> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
->>> Reported-by: Mihail Kasadjikov <hamer.mk@gmail.com>
->>> Reported-by: Tomas M <tomas@slax.org>
->> Good catch! Shame on me. I should have reivewed more carefully. :(
->> Please resend it with revised descrption and title.
->> I will rebase mh patchset just sent on top of this bug fix patch.
->>
->> P.S) Sigh, Now code isn't clean due to partial read/write path handling.
->>       IMHO, sooner or later, we need refactoring.
->>
->> -- 
->> Kind regards,
->> Minchan Kim
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+I agree, but I think by only protecting the necessary code avoids
+marking the entire waiting period as rcu non idle.
+
+Thanks, Zhong
+
+> 
+> >
+> > I think we still need Gleb's patch about the idle check in
+> > kvm_async_pf_task_wait(), and maybe another patch for the
+> > exit_idle()/enter_idle() issue.
+> 
+> Right.
+> 
+> Thanks.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
 
