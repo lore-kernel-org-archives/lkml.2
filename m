@@ -1,103 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754916Ab2K2VzN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 16:55:13 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:17144 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754147Ab2K2VzL (ORCPT
+	id S1754994Ab2K2Vz6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 16:55:58 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38048 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753530Ab2K2Vz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 16:55:11 -0500
-Message-ID: <1354225604.7776.37.camel@misato.fc.hp.com>
-Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on
- rebind scenario
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        linux-acpi@vger.kernel.org, Wen Congyang <wency@cn.fujitsu.com>,
-        Wen Congyang <wencongyang@gmail.com>, isimatu.yasuaki@jp.fujitsu.com,
-        lenb@kernel.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Thu, 29 Nov 2012 14:46:44 -0700
-In-Reply-To: <5067588.Jc88xNrCFc@vostro.rjw.lan>
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
-	 <1666001.sopVksfMvY@vostro.rjw.lan>
-	 <1354221519.7776.10.camel@misato.fc.hp.com>
-	 <5067588.Jc88xNrCFc@vostro.rjw.lan>
+	Thu, 29 Nov 2012 16:55:57 -0500
+Message-ID: <1354226152.12162.6.camel@fourier>
+Subject: Re: [PATCH v2 2/3] input: Cypress PS/2 Trackpad psmouse driver
+From: Kamal Mostafa <kamal@canonical.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        David Solda <dso@cypress.com>, Troy Abercrombia <ta@cypress.com>,
+        Dudley Du <dudl@cypress.com>,
+        Cypress Semiconductor Corporation <customercare@cypress.com>,
+        Kyle Fazzari <git@status.e4ward.com>,
+        Mario Limonciello <mario_limonciello@dell.com>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Herton Krzesinski <herton.krzesinski@canonical.com>
+Date: Thu, 29 Nov 2012 13:55:52 -0800
+In-Reply-To: <20121121192012.GA1345@polaris.bitmath.org>
+References: <1353447010-4852-1-git-send-email-kamal@canonical.com>
+	 <1353447010-4852-3-git-send-email-kamal@canonical.com>
+	 <20121121192012.GA1345@polaris.bitmath.org>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+X-Mailer: Evolution 3.6.2-0ubuntu1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-11-29 at 22:23 +0100, Rafael J. Wysocki wrote:
-> On Thursday, November 29, 2012 01:38:39 PM Toshi Kani wrote:
-> > On Thu, 2012-11-29 at 21:25 +0100, Rafael J. Wysocki wrote:
-> > > On Thursday, November 29, 2012 10:56:30 AM Toshi Kani wrote:
-> > > > On Thu, 2012-11-29 at 12:30 +0100, Vasilis Liaskovitis wrote:
-> > > > > Side-note: In the pre_remove patches, acpi_bus_trim actually returns on the
-> > > > > first error from acpi_bus_remove (e.g. when memory offlining in pre_remove
-> > > > > fails). Trimming is not continued. 
-> > > > > 
-> > > > > Normally, acpi_bus_trim keeps trimming as you say, and always returns the last
-> > > > > error. Is this the desired behaviour that we want to keep for bus_trim? (This is
-> > > > > more a general question, not specific to the eject_forbidden suggestion)
-> > > > 
-> > > > Your change makes sense to me.  At least until we have rollback code in
-> > > > place, we need to fail as soon as we hit an error.
-> > > 
-> > > Are you sure this makes sense?  What happens to the devices that we have
-> > > trimmed already and then there's an error?  Looks like they are just unusable
-> > > going forward, aren't they?
-> > 
-> > Yes, the devices trimmed already are released from the kernel, and their
-> > memory ranges become unusable.  This is bad.  But I do not think we
-> > should trim further to make more devices unusable after an error. 
-> > 
-> > 
-> > > > > > Now, if acpi_bus_hot_remove_device() gets that error code, it should just
-> > > > > > reverse the whole trimming (i.e. trigger acpi_bus_scan() from the device
-> > > > > > we attempted to eject) and notify the firmware about the failure.
-> > > > > 
-> > > > > sounds like this rollback needs to be implemented in any solution we choose
-> > > > > to implement, correct?
-> > > > 
-> > > > Yes, rollback is necessary.  But I do not think we need to include it
-> > > > into your patch, though.
-> > > 
-> > > As the first step, we should just trim everything and then return an error
-> > > code in my opinion.
-> > 
-> > But we cannot trim devices with kernel memory.
+Hi Henrik-
+
+Thanks very much for your detailed review...
+
+
+On Wed, 2012-11-21 at 20:20 +0100, Henrik Rydberg wrote:
+> Reading the patch, it looks very much like a typical semi-mt device to
+> me. Any good reason not to handle it that way?
+
+Well, the device does properly report contact-counts up to 5 fingers
+(though only two actual contact positions).  If I understand SEMI_MT
+correctly (and I might not) using it restricts us to reporting only up
+to 2 fingers, which seems undesirable.
+
+That said, my forthcoming PATCH v3 does implement the SEMI_MT /
+2-contacts-only method as you requested (I think) -- and includes one
+more proposed patch to re-enable >2 contacts.
+
+PATCH v3 also implements the majority of your other suggestions,
+including replacing all the custom slot tracking code with
+input_mt_assign_slots.  Large swaths of code have been eliminated
+(thanks!).
+
+Below are notes regarding the few suggestions which I have not
+addressed.
+
+Thanks again for your help, and in advance for your review of PATCH v3.
+
+ -Kamal
+
+
+> > +static int cypress_read_vital_statistics(struct psmouse *psmouse)
+> > +{
+>> [...]
+> > +
+> > +	if (!cytp->tp_max_pressure ||
+> > +	    (cytp->tp_max_pressure < cytp->tp_min_pressure) ||
+> > +	    (!cytp->tp_width || !cytp->tp_high) ||
+> > +	    (!cytp->tp_max_abs_x) ||
+> > +	    (cytp->tp_max_abs_x < cytp->tp_width) ||
+> > +	    (!cytp->tp_max_abs_y) ||
+> > +	    (cytp->tp_max_abs_y < cytp->tp_high))
+> > +		return -1;
 > 
-> Well, let's put it this way: If we started a trim, we should just do it
-> completely, in which case we know we can go for the eject, or we should
-> roll it back completely.  Now, if you just break the trim on first error,
-> the complete rollback is kind of problematic.  It should be doable, but
-> it won't be easy.  On the other hand, if you go for the full trim,
-> doing a rollback is trivial, it's as though you have reinserted the whole
-> stuff.
+> Odd parenthesis. Can tp_min_pressure be zero? Don't we trust the
+> values coming from the device?
 
-acpi_bus_check_add() skips initialization when an ACPI device already
-has its associated acpi_device.  So, I think it works either way.
+I do not know, so I have left this as is.
 
 
-> Now, that need not harm functionality, and that's why I proposed the
-> eject_forbidden flag, so that .remove() can say "I'm not done, please
-> rollback", in which case the device can happily function going forward,
-> even if we don't rebind the driver to it.
+> > +static psmouse_ret_t cypress_validate_byte(struct psmouse *psmouse)
+> > +{
+> > +	int contact_cnt;
+> > +	int index = psmouse->pktcnt - 1;
+> > +	unsigned char *packet = psmouse->packet;
+> > +	struct cytp_data *cytp = psmouse->private;
+> > +
+> > +	if (index < 0 || index > cytp->pkt_size)
+> > +		return PSMOUSE_BAD_DATA;
+> > +
+> > +	if ((index == 0) && ((packet[0] & 0xfc) == 0)) {
+> > +		/* call packet process for reporting finger leave. */
+> > +		cypress_process_packet(psmouse, 1);
+> > +		return PSMOUSE_FULL_PACKET;
+> > +	}
+> 
+> Odd placement given the function's name?
 
-A partially trimmed acpi_device is hard to rollback.  acpi_device should
-be either trimmed completely or intact.  When a function failed to trim
-an acpi_device, it needs to rollback its operation for the device before
-returning an error.  This is because only the failed function has enough
-context to rollback when an error occurred in the middle of its
-procedure.
+Do you mean the call to cypress_process_packet?  I agree that it is odd.
+Left it as is.  :-)
 
-Thanks,
--Toshi  
 
+> > diff --git a/drivers/input/mouse/cypress_ps2.h b/drivers/input/mouse/cypress_ps2.h
+>> [...]
+> > +
+> > +/* bits of first byte response of E9h-Status Request command. */
+> > +#define RESP_BTN_RIGHT_BIT  0x01
+> > +#define RESP_BTN_MIDDLE_BIT 0x02
+> > +#define RESP_BTN_LEFT_BIT   0x04
+> > +#define RESP_SCALING_BIT    0x10
+> > +#define RESP_ENABLE_BIT     0x20
+> > +#define RESP_REMOTE_BIT     0x40
+> > +#define RESP_SMBUS_BIT      0x80
+> > +
+> > +#define CYTP_MAX_CONTACTS 5
+> > +#define CYTP_MAX_MT_SLOTS 16
+> 
+> Are all these values used?
+
+Some of the #define's are not used, but I'm reluctant to remove them as
+they might be useful for later versions of the driver.  I left them as
+is, pending your advice.
 
 
 
