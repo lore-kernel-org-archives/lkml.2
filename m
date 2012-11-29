@@ -1,139 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754961Ab2K2PsK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 10:48:10 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:57391 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752947Ab2K2PsI (ORCPT
+	id S1754433Ab2K2PwY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 10:52:24 -0500
+Received: from mga02.intel.com ([134.134.136.20]:47937 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752118Ab2K2PwW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 10:48:08 -0500
-Message-ID: <50B78387.5070707@gmail.com>
-Date: Thu, 29 Nov 2012 23:47:19 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: "Luck, Tony" <tony.luck@intel.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "laijs@cn.fujitsu.com" <laijs@cn.fujitsu.com>,
-        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
-        "linfeng@cn.fujitsu.com" <linfeng@cn.fujitsu.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
-        "mgorman@suse.de" <mgorman@suse.de>,
-        "rientjes@google.com" <rientjes@google.com>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+	Thu, 29 Nov 2012 10:52:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,184,1355126400"; 
+   d="scan'208";a="226683464"
+From: "Fujinaka, Todd" <todd.fujinaka@intel.com>
+To: Ethan Zhao <ethan.kernel@gmail.com>
+CC: Joe Jin <joe.jin@oracle.com>, Ben Hutchings <bhutchings@solarflare.com>,
+        Mary Mcgrath <mary.mcgrath@oracle.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, "Wang, Frank" <frank.wang@intel.com>
-Subject: Re: [PATCH v2 0/5] Add movablecore_map boot option
-References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <50B5CFAE.80103@huawei.com> <3908561D78D1C84285E8C5FCA982C28F1C95EDCE@ORSMSX108.amr.corp.intel.com> <50B73B22.90500@jp.fujitsu.com>
-In-Reply-To: <50B73B22.90500@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        linux-pci <linux-pci@vger.kernel.org>
+Subject: RE: [E1000-devel] 82571EB: Detected Hardware Unit Hang
+Thread-Topic: [E1000-devel] 82571EB: Detected Hardware Unit Hang
+Thread-Index: AQHNvXnv9zWmKMRSTUSeVhWmoXs8rZfgY6YggAjMYQD//4mJQIAB4wgAgADGiTCABdgxAIABQf3QgADSdICACRkUUIABF0CAgAASxICAAHGIgIABBjKNgAB6tOCAAUQDgIAATi8A
+Date: Thu, 29 Nov 2012 15:52:01 +0000
+Message-ID: <9B4A1B1917080E46B64F07F2989DADD638C60A9B@ORSMSX102.amr.corp.intel.com>
+References: <509B5038.8090304@oracle.com>
+	<061C8A8601E8EE4CA8D8FD6990CEA89133487884@ORSMSX102.amr.corp.intel.com>
+	<50A30656.6090508@oracle.com>
+	<061C8A8601E8EE4CA8D8FD6990CEA8913348B105@ORSMSX102.amr.corp.intel.com>
+	<50A43828.6000702@oracle.com>
+	<061C8A8601E8EE4CA8D8FD6990CEA8913349A0B4@ORSMSX102.amr.corp.intel.com>
+	<50A9C5CC.1030300@oracle.com>
+	<061C8A8601E8EE4CA8D8FD6990CEA8913349EB41@ORSMSX102.amr.corp.intel.com>
+	<50AB8471.7080607@oracle.com>
+	<9B4A1B1917080E46B64F07F2989DADD62F2D62D6@ORSMSX102.amr.corp.intel.com>
+	<50B41077.3080009@oracle.com>	<b46b84cf-3688-4fd7-b741-4e96f2663517@default>
+	<9B4A1B1917080E46B64F07F2989DADD62F2D8070@ORSMSX102.amr.corp.intel.com>
+	<1354039840.2701.14.camel@bwh-desktop.uk.solarflarecom.com>
+	<50B5CBD2.5020804@oracle.com>
+	<9B4A1B1917080E46B64F07F2989DADD62F2D8AAC@ORSMSX102.amr.corp.intel.com>
+ <CABawtvPrz=z_CLCvPeXkky7COyhjPyfBu3QCTbiiPpvr+5bicg@mail.gmail.com>
+In-Reply-To: <CABawtvPrz=z_CLCvPeXkky7COyhjPyfBu3QCTbiiPpvr+5bicg@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2012 06:38 PM, Yasuaki Ishimatsu wrote:
-> Hi Tony,
-> 
-> 2012/11/29 6:34, Luck, Tony wrote:
->>> 1. use firmware information
->>>    According to ACPI spec 5.0, SRAT table has memory affinity structure
->>>    and the structure has Hot Pluggable Filed. See "5.2.16.2 Memory
->>>    Affinity Structure". If we use the information, we might be able to
->>>    specify movable memory by firmware. For example, if Hot Pluggable
->>>    Filed is enabled, Linux sets the memory as movable memory.
+Someone else pointed this out to me locally. If you have a non-client BIOS, you should be able to set the MaxPayloadSize using setpci. You have to make sure that you're being consistent throughout all the associated links.
+
+Todd Fujinaka
+Technical Marketing Engineer
+LAN Access Division (LAD)
+Intel Corporation
+todd.fujinaka@intel.com
+(503) 712-4565
+
+
+-----Original Message-----
+From: Ethan Zhao [mailto:ethan.kernel@gmail.com] 
+Sent: Wednesday, November 28, 2012 7:10 PM
+To: Fujinaka, Todd
+Cc: Joe Jin; Ben Hutchings; Mary Mcgrath; netdev@vger.kernel.org; e1000-devel@lists.sf.net; linux-kernel@vger.kernel.org; linux-pci
+Subject: Re: [E1000-devel] 82571EB: Detected Hardware Unit Hang
+
+Joe,
+    Possibly your customer is running a kernel without source code on a platform whose vendor wouldn't like to fix BIOS issue( Is that a HP/Dell server ?).
+    Anyway, to see if is a payload issue or,  you could change the payload size with setpci tool to those devices and set the link retrain bit to trigger the link retraining to debug the issue and identity the root cause.  I thinks it is much easier than modify the BIOS or  eeprom of NIC.
+
+    e.g.
+   set device control register to 0f 00   (128 bytes payload size)
+   #   setpci -v -s 00:02.0 98.w=000f
+   set device link control register to 60h (retrain the link)
+   #  setpci -v -s 00:02.0 a0.b=60
+
+  Hope it works,  Just my 2 cents.
+
+Ethan.zhao@oracle.com
+
+On Wed, Nov 28, 2012 at 11:53 PM, Fujinaka, Todd <todd.fujinaka@intel.com> wrote:
+> The only EEPROM I know about or can speak to is the one attached to the 82571 and it doesn't set the MaxPayloadSize. That's done by the BIOS.
+>
+> Todd Fujinaka
+> Technical Marketing Engineer
+> LAN Access Division (LAD)
+> Intel Corporation
+> todd.fujinaka@intel.com
+> (503) 712-4565
+>
+>
+> -----Original Message-----
+> From: Joe Jin [mailto:joe.jin@oracle.com]
+> Sent: Wednesday, November 28, 2012 12:31 AM
+> To: Ben Hutchings
+> Cc: Fujinaka, Todd; Mary Mcgrath; netdev@vger.kernel.org; 
+> e1000-devel@lists.sf.net; linux-kernel@vger.kernel.org; linux-pci
+> Subject: Re: [E1000-devel] 82571EB: Detected Hardware Unit Hang
+>
+> On 11/28/12 02:10, Ben Hutchings wrote:
+>> On Tue, 2012-11-27 at 17:32 +0000, Fujinaka, Todd wrote:
+>>> Forgive me if I'm being too repetitious as I think some of this has 
+>>> been mentioned in the past.
 >>>
->>> 2. use boot option
->>>    This is our proposal. New boot option can specify memory range to use
->>>    as movable memory.
+>>> We (and by we I mean the Ethernet part and driver) can only change 
+>>> the advertised availability of a larger MaxPayloadSize. The size is 
+>>> negotiated by both sides of the link when the link is established.
+>>> The driver should not change the size of the link as it would be 
+>>> poking at registers outside of its scope and is controlled by the 
+>>> upstream bridge (not us).
+>> [...]
 >>
->> Isn't this just moving the work to the user? To pick good values for the
-> 
-> Yes.
-> 
->> movable areas, they need to know how the memory lines up across
->> node boundaries ... because they need to make sure to allow some
->> non-movable memory allocations on each node so that the kernel can
->> take advantage of node locality.
-> 
-> There is no problem.
-> Linux has already two boot options, kernelcore= and movablecore=.
-> So if we use them, non-movable memory is divided into each node evenly.
-> 
-> But there is no way to specify a node used as movable currently. So
-> we proposed the new boot option.
-> 
->> So the user would have to read at least the SRAT table, and perhaps
->> more, to figure out what to provide as arguments.
+>> MaxPayloadSize (MPS) is not negotiated between devices but is 
+>> programmed by the system firmware (at least for devices present at 
+>> boot - the kernel may be responsible in case of hotplug).  You can 
+>> use the kernel parameter 'pci=pcie_bus_perf' (or one of several 
+>> others) to set a policy that overrides this, but no policy will allow 
+>> setting MPS above the device's MaxPayloadSizeSupported (MPSS).
 >>
-> 
->> Since this is going to be used on a dynamic system where nodes might
->> be added an removed - the right values for these arguments might
->> change from one boot to the next. So even if the user gets them right
->> on day 1, a month later when a new node has been added, or a broken
->> node removed the values would be stale.
-> 
-> I don't think so. Even if we hot add/remove node, the memory range of
-> each memory device is not changed. So we don't need to change the boot
-> option.
-Hi Yasuaki,
-	Addresses assigned to each memory device may change under different 
-hardware configurations.
-	According to my experiences with some hotplug capable Xeon and Itanium
-systems, a typical algorithm adopted by BIOS to support memory hotplug is:
-1) For backward compatibility, BIOS assigns continuous addresses to memory
-devices present at boot time. In other words, there are no holes in the memory
-addresses except the hole just below 4G reserved for MMIO and other arch 
-specific usage.
-2) To support memory hotplug, BIOS reserves enough memory address ranges 
-at the high end.
- 
-	Let's take a typical 4 sockets system as an example. Say we have four
-sockets S0-S3, and each socket supports two memory devices(M0-M1) at maximum. 
-Each memory device supports 128G memory at maximum. And at boot, all memory
-slots are fully populated with 4GB memory. Then the address assignment looks
-like:
-0-2G: 		S0.M0
-2-4G: 		MMIO
-4-8G: 		S0.M1
-8-12G: 		S1.M0
-12-16G: 	S1.M1
-16-20G: 	S2.M0
-20-24G:		S2.M1
-24-28G: 	S2.M0
-28-32G:		S2.M1
-32-34G:		S0.M0 (memory recovered from the MMIO hole)
-1024-1152G:	reserved for S0.M0
-1152-1280G:	reserved for S0.M1
-1280-1408G:	reserved for S1.M0
-1408-1536G:	reserved for S1.M1
-1536-1664G:	reserved for S2.M0
-1664-1792G:	reserved for S2.M1
-1792-1920G:	reserved for S3.M0
-1920-2048G:	reserved for S4.M1
-
-If we hot-remove S2.M0 and add back a bigger memory device with 8G memory, it will
-be assigned a new memory address range 1536-1544G.
-
-Based on above algorithm, and we configure 16-24G(S2.M0 and S2.M1) as movable memory.
-1) memory on S3 will be configured as movable if S2 isn't present at boot time. (the
-same effect as "movable_node" in discussion at https://lkml.org/lkml/2012/11/27/154)
-2) S2.M0 will be configured as non-movable and S3.M0 will be configured as movable
-   if S1.M0 isn't present at boot.
-3) And how about replace S1.M0 with a 8GB memory device?
-
-To summarize, kernel parameter to configure movable memory for hotplug will easily
-become invalid if hardware configuration changes, and that may confuse administrators.
-I still think the most reliable way is to figure out movable memory for hotplug by
-parsing hardware configuration information from BIOS.
-
-Regards!
-Gerry
-
+>
+> Ben,
+>
+> Unfortunately I'm using 3.0.x kernel and this is not included in the kernel.
+> So I'm trying to use ethtool modify it from eeprom to see if help or no.
+>
+>
+> Todd, I'll review all MaxPayload for all devices, but need to say if it mismatch, customer could not modify it from BIOS for there was not entry at there, to test it, we have to find how to verify if this is the root cause, so still need to find the offset in eeprom.
+>
+> Thanks in advance,
+> Joe
+>
