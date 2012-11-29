@@ -1,92 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751188Ab2K2HpE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 02:45:04 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:57237 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751187Ab2K2HpD (ORCPT
+	id S1752337Ab2K2HpM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 02:45:12 -0500
+Received: from smtp-vbr9.xs4all.nl ([194.109.24.29]:3896 "EHLO
+	smtp-vbr9.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187Ab2K2HpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 02:45:03 -0500
-X-AuditID: 9c93016f-b7b86ae000003a75-6a-50b7127c243a
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 01/14] perf tool: Introduce perf_hpp__list for period related columns
-References: <1354110769-2998-1-git-send-email-jolsa@redhat.com>
-	<1354110769-2998-2-git-send-email-jolsa@redhat.com>
-Date: Thu, 29 Nov 2012 16:44:59 +0900
-In-Reply-To: <1354110769-2998-2-git-send-email-jolsa@redhat.com> (Jiri Olsa's
-	message of "Wed, 28 Nov 2012 14:52:36 +0100")
-Message-ID: <87d2ywq2dg.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 29 Nov 2012 02:45:08 -0500
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v3 0/9] Media Controller capture driver for DM365
+Date: Thu, 29 Nov 2012 08:43:36 +0100
+User-Agent: KMail/1.13.7 (Linux/3.7.0-rc1-tschai; KDE/4.8.4; x86_64; ; )
+Cc: devel@driverdev.osuosl.org,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Prabhakar Lad <prabhakar.lad@ti.com>,
+        Hans Verkuil <hansverk@cisco.com>,
+        Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        LMML <linux-media@vger.kernel.org>
+References: <1354099329-20722-1-git-send-email-prabhakar.lad@ti.com> <201211282018.20832.hverkuil@xs4all.nl> <20121128193021.GA4174@kroah.com>
+In-Reply-To: <20121128193021.GA4174@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201211290843.36468.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+On Wed November 28 2012 20:30:21 Greg Kroah-Hartman wrote:
+> On Wed, Nov 28, 2012 at 08:18:20PM +0100, Hans Verkuil wrote:
+> > On Wed November 28 2012 18:22:48 Greg Kroah-Hartman wrote:
+> > > On Wed, Nov 28, 2012 at 10:18:02AM -0200, Mauro Carvalho Chehab wrote:
+> > > > Em Wed, 28 Nov 2012 12:56:10 +0100
+> > > > Hans Verkuil <hansverk@cisco.com> escreveu:
+> > > > 
+> > > > > On Wed 28 November 2012 12:45:37 Dan Carpenter wrote:
+> > > > > > I wish people wouldn't submit big patches right before the merge
+> > > > > > window opens...  :/ It's better to let it sit in linux-next for a
+> > > > > > couple weeks so people can mess with it a bit.
+> > > > > 
+> > > > > It's been under review for quite some time now, and the main change since
+> > > > > the last posted version is that this is now moved to staging/media.
+> > > > > 
+> > > > > So it is not yet ready for prime time, but we do want it in to simplify
+> > > > > the last remaining improvements needed to move it to drivers/media.
+> > > > 
+> > > > "last remaining improvements"? I didn't review the patchset, but
+> > > > the TODO list seems to have several pending stuff there:
+> > > > 
+> > > > +- User space interface refinement
+> > > > +        - Controls should be used when possible rather than private ioctl
+> > > > +        - No enums should be used
+> > > > +        - Use of MC and V4L2 subdev APIs when applicable
+> > > > +        - Single interface header might suffice
+> > > > +        - Current interface forces to configure everything at once
+> > > > +- Get rid of the dm365_ipipe_hw.[ch] layer
+> > > > +- Active external sub-devices defined by link configuration; no strcmp
+> > > > +  needed
+> > > > +- More generic platform data (i2c adapters)
+> > > > +- The driver should have no knowledge of possible external subdevs; see
+> > > > +  struct vpfe_subdev_id
+> > > > +- Some of the hardware control should be refactorede
+> > > > +- Check proper serialisation (through mutexes and spinlocks)
+> > > > +- Names that are visible in kernel global namespace should have a common
+> > > > +  prefix (or a few)
+> > > > 
+> > > > From the above comments, both Kernelspace and Userspace APIs require 
+> > > > lots of work.
+> > 
+> > And that's why it is in staging. Should a long TODO list now suddenly
+> > prevent staging from being used? In Barcelona we discussed this and the
+> > only requirement we came up was was that it should compile.
+> 
+> Yes, that's all I care about in staging, but as I stated, I don't
+> maintain drivers/staging/media/ that area is under Mauro's control
+> (MAINTAINERS even says this), and I'm a bit leery of going against the
+> wishes of an existing subsystem maintainer for adding staging drivers
+> that tie into their subsystem.
+> 
+> So if you get Mauro's approval, I'll be glad to queue it up.
 
-On Wed, 28 Nov 2012 14:52:36 +0100, Jiri Olsa wrote:
-> Adding perf_hpp__list list to register and contain all period
-> related columns the command is interested in.
->
-> This way we get rid of static array holding all possible
-> columns and enable commands to register their own columns.
+Just for the record, my comments were addressed to Mauro, not to you.
+I should have stated that in my mail explicitly. As you said, it's
+Mauro's decision.
 
-But it seems you didn't get rid of the array? :)
+Regards,
 
->
-> It'll be handy for diff command in future to process and display
-> data for multiple files.
-[snip]
-> diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-> index 8b091a5..a935a60 100644
-> --- a/tools/perf/util/hist.h
-> +++ b/tools/perf/util/hist.h
-> @@ -126,13 +126,19 @@ struct perf_hpp {
->  };
->  
->  struct perf_hpp_fmt {
-> -	bool cond;
->  	int (*header)(struct perf_hpp *hpp);
->  	int (*width)(struct perf_hpp *hpp);
->  	int (*color)(struct perf_hpp *hpp, struct hist_entry *he);
->  	int (*entry)(struct perf_hpp *hpp, struct hist_entry *he);
-> +
-> +	struct list_head list;
->  };
->  
-> +extern struct list_head perf_hpp__list;
-> +
-> +#define perf_hpp__for_each_format(format) \
-> +	list_for_each_entry(format, &perf_hpp__list, list)
-> +
->  extern struct perf_hpp_fmt perf_hpp__format[];
-
-Instead of using new perf_hpp__list, how about this?
-
-#define perf_hpp__for_each_format(fmt) \
-        for (fmt = &perf_hpp__format[0]; fmt < &perf_hpp__format[PERF_HPP__MAX_INDEX]; fmt++) \
-                if (fmt->cond)
-
-Thanks,
-Namhyung
-
->  
->  enum {
-> @@ -155,7 +161,8 @@ enum {
->  };
->  
->  void perf_hpp__init(void);
-> -void perf_hpp__column_enable(unsigned col, bool enable);
-> +void perf_hpp__column_register(struct perf_hpp_fmt *format);
-> +void perf_hpp__column_enable(unsigned col);
->  int hist_entry__period_snprintf(struct perf_hpp *hpp, struct hist_entry *he,
->  				bool color);
+	Hans
