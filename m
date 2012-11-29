@@ -1,89 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753770Ab2K2NU0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 08:20:26 -0500
-Received: from shrek-wifi.podlesie.net ([93.179.225.50]:59239 "EHLO
-	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751155Ab2K2NUZ (ORCPT
+	id S1754118Ab2K2NU5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 08:20:57 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52400 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753466Ab2K2NUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 08:20:25 -0500
-Date: Thu, 29 Nov 2012 14:20:21 +0100
-From: Krzysztof Mazur <krzysiek@podlesie.net>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: David Laight <David.Laight@ACULAB.COM>,
-        chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nathan@traverse.com.au
-Subject: Re: [PATCH] solos-pci: don't call vcc->pop() after pclose()
-Message-ID: <20121129132021.GA15425@shrek.podlesie.net>
-References: <1354036592.2534.6.camel@shinybook.infradead.org>
- <20121127173906.GA11390@shrek.podlesie.net>
- <1354039349.2534.11.camel@shinybook.infradead.org>
- <20121127135434.0728cd4f@thirdoffive.cmf.nrl.navy.mil>
- <AE90C24D6B3A694183C094C60CF0A2F6026B70C9@saturn3.aculab.com>
- <1354141115.21562.101.camel@shinybook.infradead.org>
- <20121129105715.GA10226@shrek.podlesie.net>
- <1354190143.21562.145.camel@shinybook.infradead.org>
- <20121129124344.GA7704@shrek.podlesie.net>
- <1354193837.21562.159.camel@shinybook.infradead.org>
+	Thu, 29 Nov 2012 08:20:55 -0500
+Date: Thu, 29 Nov 2012 13:18:24 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Marko =?utf-8?B?S2F0acSH?= <dromede@gmail.com>
+Cc: Jingoo Han <jg1.han@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, FlorianSchandinat@gmx.de,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH] backlight: corgi_lcd: Fix WARN_ON() when calling
+	corgi_bl_set_intensity.
+Message-ID: <20121129131824.GJ19440@n2100.arm.linux.org.uk>
+References: <1354139201-12834-1-git-send-email-dromede@gmail.com> <001501cdcdf2$b3f8f730$1beae590$%han@samsung.com> <CAHod+Gd3UU7NdRLAAbsX6TUugnjKBwUsDy7yBQzyykuf5GHMVQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1354193837.21562.159.camel@shinybook.infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAHod+Gd3UU7NdRLAAbsX6TUugnjKBwUsDy7yBQzyykuf5GHMVQ@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 12:57:17PM +0000, David Woodhouse wrote:
-> On Thu, 2012-11-29 at 13:43 +0100, Krzysztof Mazur wrote:
-> > 
-> > Removing packets from tx_queue is not needed. We can transmit packets
-> > also after close. We just can't call vcc->pop() after close,
-> > so we can just set SKB_CB(skb)->vcc of such packets to NULL so
-> > fpga_tx() won't call vcc->pop().
-> 
-> Your patch doesn't do that, does it? You'd want something like
-> 
->  if (card->tx_skb[port] && SKB_CB(card->tx_skb[port]->vcc) == vcc)
->     SKB_CB(card->tx_skb[port]->vcc) = NULL;
+On Thu, Nov 29, 2012 at 02:09:51PM +0100, Marko Katić wrote:
+> Well, the commit message was short because i thought it was a quick
+> and obvious fix.
 
-No, I want to process all queued packets, not just only those that
-were already sent do card.
+Don't always expect the person who ends up applying your patch to know
+what your patch is doing.  Don't expect people who are looking back
+through the git history to look at the patch to work out whether your
+commit is relevant to them.  I suspect Andrew Morton doesn't know what
+a "SCOOP" or "AKITA" is...
 
-In that case we will need to remove other packets with that vcc
-from queue, of couse we can still do that in the same loop, something
-like:
+Commit messages are there not only to describe the change, but also say
+why the change is necessary.  Think about it as your chance to "sell"
+the patch.
 
-	if (SKB_CB(skb)->vcc == vcc) {
-		if (card->tx_skb[port] == skb) {
-			skb_get(skb);
-			solos_pop(SKB_CB(skb)->vcc, skb);
-			SKB_CB(skb)->vcc = NULL;
-		} else {
-			skb_unlink(skb, &card->tx_queue[port]);
-			solos_pop(SKB_CB(skb)->vcc, skb);
-		}
-	}
-
-But I don't think that this optization is needed.
-
-> 
-> Under card->tx_lock should suffice.
-> 
-> And do we just *not* call the ->pop() on that skb ever? And hope that it
-> doesn't screw up some other state somewhere? Like if we're doing MLPPP
-> and I've implemented BQL for PPP... we might never call
-> ppp_completed_queue() for that skb, so even though this *channel* is
-> going away, it might still contribute towards the perceived queue on the
-> overall PPP netdev?
-> 
-> Failing to call ->pop() could cause memory leaks and other issues; I
-> don't think it's reasonable. I think we *have* to wait for
-> card->tx_skb[port] if it's for the VCC we're closing.
-
-We are calling ->pop() in solos_pop() just before SKB_CB(skb)->vcc = NULL,
-but we are doing that before we really finish processing that packet,
-that's why we do skb_get(skb).
-
-Krzysiek
+One good step would be to include the warning message dump from the
+kernel (your subject line says you're hitting a WARN_ON so include
+that.)  At least then people can see your starting point for the patch.
