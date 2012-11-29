@@ -1,58 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945991Ab2K2AYn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 19:24:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4702 "EHLO mx1.redhat.com"
+	id S1946003Ab2K2AYy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 19:24:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56544 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1945929Ab2K2AYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 19:24:41 -0500
-Date: Wed, 28 Nov 2012 16:24:36 -0800
-From: Zach Brown <zab@redhat.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, bcrl@kvack.org, jmoyer@redhat.com,
-        axboe@kernel.dk, viro@zeniv.linux.org.uk
-Subject: Re: [PATCH 13/25] aio: Convert read_events() to hrtimers
-Message-ID: <20121129002436.GI18574@lenny.home.zabbo.net>
-References: <1354121029-1376-1-git-send-email-koverstreet@google.com>
- <1354121029-1376-14-git-send-email-koverstreet@google.com>
+	id S1753352Ab2K2AYx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 19:24:53 -0500
+Date: Wed, 28 Nov 2012 22:23:39 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Gleb Natapov <gleb@redhat.com>, Avi Kivity <avi@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 3/3] KVM: x86: improve reexecute_instruction
+Message-ID: <20121129002339.GD17264@amt.cnet>
+References: <50AAC77C.8040505@linux.vnet.ibm.com>
+ <50AAC7F9.7050305@linux.vnet.ibm.com>
+ <20121126224105.GB10634@amt.cnet>
+ <50B433D0.8060107@linux.vnet.ibm.com>
+ <20121128141230.GI928@redhat.com>
+ <50B626D7.7070608@linux.vnet.ibm.com>
+ <20121128215750.GA10039@amt.cnet>
+ <50B692F3.4000408@linux.vnet.ibm.com>
+ <50B69B62.6010202@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1354121029-1376-14-git-send-email-koverstreet@google.com>
+In-Reply-To: <50B69B62.6010202@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -	int			i = 0;
-> +	DEFINE_WAIT(wait);
-> +	struct hrtimer_sleeper t;
-> +	size_t i = 0;
+On Thu, Nov 29, 2012 at 07:16:50AM +0800, Xiao Guangrong wrote:
+> On 11/29/2012 06:40 AM, Xiao Guangrong wrote:
+> > On 11/29/2012 05:57 AM, Marcelo Tosatti wrote:
+> >> On Wed, Nov 28, 2012 at 10:59:35PM +0800, Xiao Guangrong wrote:
+> >>> On 11/28/2012 10:12 PM, Gleb Natapov wrote:
+> >>>> On Tue, Nov 27, 2012 at 11:30:24AM +0800, Xiao Guangrong wrote:
+> >>>>> On 11/27/2012 06:41 AM, Marcelo Tosatti wrote:
+> >>>>>
+> >>>>>>>
+> >>>>>>> -	return false;
+> >>>>>>> +again:
+> >>>>>>> +	page_fault_count = ACCESS_ONCE(vcpu->kvm->arch.page_fault_count);
+> >>>>>>> +
+> >>>>>>> +	/*
+> >>>>>>> +	 * if emulation was due to access to shadowed page table
+> >>>>>>> +	 * and it failed try to unshadow page and re-enter the
+> >>>>>>> +	 * guest to let CPU execute the instruction.
+> >>>>>>> +	 */
+> >>>>>>> +	kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa));
+> >>>>>>> +	emulate = vcpu->arch.mmu.page_fault(vcpu, cr3, PFERR_WRITE_MASK, false);
+> >>>>>>
+> >>>>>> Can you explain what is the objective here?
+> >>>>>>
+> >>>>>
+> >>>>> Sure. :)
+> >>>>>
+> >>>>> The instruction emulation is caused by fault access on cr3. After unprotect
+> >>>>> the target page, we call vcpu->arch.mmu.page_fault to fix the mapping of cr3.
+> >>>>> if it return 1, mmu can not fix the mapping, we should report the error,
+> >>>>> otherwise it is good to return to guest and let it re-execute the instruction
+> >>>>> again.
+> >>>>>
+> >>>>> page_fault_count is used to avoid the race on other vcpus, since after we
+> >>>>> unprotect the target page, other cpu can enter page fault path and let the
+> >>>>> page be write-protected again.
+> >>>>>
+> >>>>> This way can help us to detect all the case that mmu can not be fixed.
+> >>>>>
+> >>>> Can you write this in a comment above vcpu->arch.mmu.page_fault()?
+> >>>
+> >>> Okay, if Marcelo does not object this way. :)
+> >>
+> >> I do object, since it is possible to detect precisely the condition by 
+> >> storing which gfns have been cached.
+> >>
+> >> Then, Xiao, you need a way to handle large read-only sptes.
+> > 
+> > Sorry, Marcelo, i am still confused why read-only sptes can not work
+> > under this patch?
+> > 
+> > The code after read-only large spte is is:
+> > 
+> > +		if ((level > PT_PAGE_TABLE_LEVEL &&
+> > +		   has_wrprotected_page(vcpu->kvm, gfn, level)) ||
+> > +		      mmu_need_write_protect(vcpu, gfn, can_unsync)) {
+> >  			pgprintk("%s: found shadow page for %llx, marking ro\n",
+> >  				 __func__, gfn);
+> >  			ret = 1;
+> > 
+> > It return 1, then reexecute_instruction return 0. It is the same as without
+> > readonly large-spte.
+> 
+> Ah, wait, There is a case, the large page located at 0-2M, the 0-4K is used as a
+> page-table (e.g. PDE), and the guest want to write the memory located at 5K which
+> should be freely written. This patch can return 0 for both current code and readonly
+> large spte.
 
-Changing i to size_t is kind of surprising.  Is that on purpose?
+Yes, should remove the read-only large spte if any write to 0-2M fails
+(said 'unshadow' in the previous email but the correct is 'remove large
+spte in range').
 
-> -		set_task_state(tsk, TASK_RUNNING);
-> -		remove_wait_queue(&ctx->wait, &wait);
-> -
->  		if (unlikely(ret <= 0))
->  			break;
->  
-> @@ -879,11 +844,10 @@ static int read_events(struct kioctx *ctx,
->  		event ++;
->  		i ++;
->  	}
-> -
-> -	if (timeout)
-> -		clear_timeout(&to);
->  out:
-> -	destroy_timer_on_stack(&to.timer);
-> +	hrtimer_cancel(&t.timer);
-> +	destroy_hrtimer_on_stack(&t.timer);
-> +	finish_wait(&ctx->wait, &wait);
+> I need to think it more.
 
-I'd move the finish_wait() up to where TASK_RUNNING was set previously
-so that we can't call copy_to_user() while still set to
-TASK_INTERRUPTIBLE.
 
-- z
