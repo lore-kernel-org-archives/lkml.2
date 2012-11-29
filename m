@@ -1,83 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752324Ab2K2Ise (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 03:48:34 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:51210 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751127Ab2K2Isd convert rfc822-to-8bit (ORCPT
+	id S1752730Ab2K2Isp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 03:48:45 -0500
+Received: from mail.redabogacia.org ([80.91.72.136]:38626 "EHLO
+	mail.redabogacia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751346Ab2K2Isd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 Nov 2012 03:48:33 -0500
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "ldewangan@nvidia.com" <ldewangan@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/2] mfd: tps65910: remove unused data
-Thread-Topic: [PATCH 1/2] mfd: tps65910: remove unused data
-Thread-Index: Ac3ODkr2q32Ec4t2SJaKQuSVaE+YrA==
-Date: Thu, 29 Nov 2012 08:48:26 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F6418F1BB@DQHE02.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.87.185.123]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+X-Greylist: delayed 376 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 Nov 2012 03:48:33 EST
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlcyAJEft1DAqAUN/2dsb2JhbABED4VViVWrboQVfXOCVwFuSTgYiBIatCmGfoQGBIxZAYQmA5YBhWsiiG2EBAI3gWQHHQ
+X-IronPort-AV: E=Sophos;i="4.84,182,1355094000"; 
+   d="scan'208";a="54009420"
+From: "Irene Carrasco Martin" <irene.carrasco@icace.org>
+Subject: Uw mailbox heeft overschreden de limiet 2.GB
+X-Mailer: CommuniGate Pro WebUser v5.4.4
+Date: Thu, 29 Nov 2012 09:42:14 +0100
+Message-ID: <web-371987290@mail1.redabogacia.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII;
+	format=flowed
+Content-Transfer-Encoding: 7BIT
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- The 'io_mutex' is not used anywhere.
- The regmap API supports the mutex internally, so no additional mutex required.
+Uw mailbox heeft overschreden de limiet 2.GB
+Geplaatst door admin, 2.30GB momenteel niet in staat zijn 
+te verzenden of ontvangen van nieuwe e-mail totdat u 
+valideren uw mailbox
 
- And 'domain' private data is unnecessary because the irq domain is
- already registered by using regmap_add_irq_chip().
+Om opnieuw te valideren uw mailbox. Klik op de link 
+hieronder:
 
-Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
----
- drivers/mfd/tps65910.c       |    1 -
- include/linux/mfd/tps65910.h |    2 --
- 2 files changed, 3 deletions(-)
+https://docs.google.com/spreadsheet/viewform?formkey=dDZ5UzEyak1ycTZoVGdHdnE5QVVGenc6MQ
 
-diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-index fdb3027..d5ef3a5 100644
---- a/drivers/mfd/tps65910.c
-+++ b/drivers/mfd/tps65910.c
-@@ -486,7 +486,6 @@ static __devinit int tps65910_i2c_probe(struct i2c_client *i2c,
- 	tps65910->dev = &i2c->dev;
- 	tps65910->i2c_client = i2c;
- 	tps65910->id = chip_id;
--	mutex_init(&tps65910->io_mutex);
- 
- 	tps65910->regmap = devm_regmap_init_i2c(i2c, &tps65910_regmap_config);
- 	if (IS_ERR(tps65910->regmap)) {
-diff --git a/include/linux/mfd/tps65910.h b/include/linux/mfd/tps65910.h
-index 0b16903..20e433e 100644
---- a/include/linux/mfd/tps65910.h
-+++ b/include/linux/mfd/tps65910.h
-@@ -893,7 +893,6 @@ struct tps65910 {
- 	struct device *dev;
- 	struct i2c_client *i2c_client;
- 	struct regmap *regmap;
--	struct mutex io_mutex;
- 	unsigned int id;
- 
- 	/* Client devices */
-@@ -907,7 +906,6 @@ struct tps65910 {
- 	/* IRQ Handling */
- 	int chip_irq;
- 	struct regmap_irq_chip_data *irq_data;
--	struct irq_domain *domain;
- };
- 
- struct tps65910_platform_data {
--- 
-1.7.9.5
-
-
-Best Regards,
-Milo
-
-
+dank
+systeembeheerder
