@@ -1,71 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313Ab2K2TMU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 14:12:20 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:38688 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303Ab2K2TMS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 14:12:18 -0500
-Date: Thu, 29 Nov 2012 11:12:14 -0800
-From: Kent Overstreet <koverstreet@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, zab@redhat.com, bcrl@kvack.org,
-        jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk
-Subject: Re: [PATCH 22/25] Generic dynamic per cpu refcounting
-Message-ID: <20121129191214.GG15094@google.com>
-References: <1354121029-1376-1-git-send-email-koverstreet@google.com>
- <1354121029-1376-23-git-send-email-koverstreet@google.com>
- <m28v9kgsen.fsf@firstfloor.org>
- <20121129185720.GE15094@google.com>
- <20121129185953.GW16230@one.firstfloor.org>
+	id S1753915Ab2K2TPJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 14:15:09 -0500
+Received: from mx1.fusionio.com ([66.114.96.30]:47923 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753570Ab2K2TPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 14:15:06 -0500
+X-ASG-Debug-ID: 1354216505-03d6a57f9b210180001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Date: Thu, 29 Nov 2012 14:15:03 -0500
+From: Chris Mason <chris.mason@fusionio.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Mikulas Patocka <mpatocka@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Jens Axboe <axboe@kernel.dk>, Jeff Chua <jeff.chua.linux@gmail.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH v2] Do a proper locking for mmap and block size change
+Message-ID: <20121129191503.GB3490@shiny>
+X-ASG-Orig-Subj: Re: [PATCH v2] Do a proper locking for mmap and block size change
+Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Mikulas Patocka <mpatocka@redhat.com>,
+	Al Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
+	Jeff Chua <jeff.chua.linux@gmail.com>,
+	Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
+	lkml <linux-kernel@vger.kernel.org>,
+	linux-fsdevel <linux-fsdevel@vger.kernel.org>
+References: <CAAJw_ZsYuLCwCTc6U=ELO_PvyjnVKQdkPke2enfzm6zOeWAqjA@mail.gmail.com>
+ <50B4B313.3030707@kernel.dk>
+ <Pine.LNX.4.64.1211272252260.18338@file.rdu.redhat.com>
+ <50B5CC5A.8060607@kernel.dk>
+ <Pine.LNX.4.64.1211281222410.11599@file.rdu.redhat.com>
+ <CA+55aFx4zYnEsUyGJurBjB0XZ0AgmyKqW-+KWVDvma3w6csnHQ@mail.gmail.com>
+ <20121128194314.GF4939@ZenIV.linux.org.uk>
+ <Pine.LNX.4.64.1211281630150.5283@file.rdu.redhat.com>
+ <CA+55aFziCW_ywZACGoVyNSgy8mToAGhSbdo0VoUAaGvgSb2XxQ@mail.gmail.com>
+ <CA+55aFxt655WfuhjOCnu3esg3gt=L37v=ofWfjs+qpXjn-F2uA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20121129185953.GW16230@one.firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFxt655WfuhjOCnu3esg3gt=L37v=ofWfjs+qpXjn-F2uA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1354216505
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -2.02
+X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.115623
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 07:59:53PM +0100, Andi Kleen wrote:
-> On Thu, Nov 29, 2012 at 10:57:20AM -0800, Kent Overstreet wrote:
-> > On Thu, Nov 29, 2012 at 10:45:04AM -0800, Andi Kleen wrote:
-> > > Kent Overstreet <koverstreet@google.com> writes:
-> > > 
-> > > > This implements a refcount with similar semantics to
-> > > > atomic_get()/atomic_dec_and_test(), that starts out as just an atomic_t
-> > > > but dynamically switches to per cpu refcounting when the rate of
-> > > > gets/puts becomes too high.
-> > > 
-> > > This will only work if you put on the same CPU as you get, right?
-> > 
-> > Nope, no such restriction.
+On Thu, Nov 29, 2012 at 12:02:17PM -0700, Linus Torvalds wrote:
+> On Thu, Nov 29, 2012 at 9:19 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > I think I'll apply this for 3.7 (since it's too late to do anything
+> > fancier), and then for 3.8 I will rip out all the locking entirely,
+> > because looking at the fs/buffer.c patch I wrote up, it's all totally
+> > unnecessary.
+> >
+> > Adding a ACCESS_ONCE() to the read of the i_blkbits value (when
+> > creating new buffers) simply makes the whole locking thing pointless.
+> > Just make the page lock protect the block size, and make it per-page,
+> > and we're done.
 > 
-> I don't see how you ensure you're doing the __this_cpu_dec on the same
-> CPU as you did the get
+> There's a 'block-dev' branch in my git tree, if you guys want to play
+> around with it.
+> 
+> It actually reverts fs/block-dev.c back to the 3.6 state (except for
+> some whitespace damage that I refused to re-introduce), so that part
+> of the changes should be pretty safe and well tested.
+> 
+> The fs/buffer.c changes, of course, are new. It's largely the same
+> patch I already sent out, with a small helper function to simplify it,
+> and to keep the whole ACCESS_ONCE() thing in just a single place.
 
-I'm not.
+The fs/buffer.c part makes sense during a quick read.  But
+fs/direct-io.c plays with i_blkbits too.  The semaphore was fixing real
+bugs there.
 
-(I probably should've documented this a bit more before I sent it
-out...)
-
-The trick is that we don't watch for the refcount hitting 0 until we're
-shutting down - so this only works if you keep track of your initial
-refcount. As long as we're not shutting down, we know the refcount can't
-hit 0 because we haven't released the initial refcount.
-
-When we do want to shutdown, the user calls percpu_ref_kill() which
-converts the percpu ref back to a single atomic ref, calls
-synchronize_rcu(), then sets the ref's state to PCPU_REF_DEAD.
-
-Only then does the caller drop the initial ref, and percpu_ref_put()
-only does atomic_dec_and_test() when the ref is dead - otherwise it's
-just doing a decrement.
-
-Also, with the percpu refs - you can have all your gets happening on one
-cpu, and all your puts happening on another - the percpu refs are
-unsigned ints so overflow isn't undefined, and if they wrap they'll
-still sum to the right value when we go to shut things down in
-percpu_ref_kill().
+-chris
