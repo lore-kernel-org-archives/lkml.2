@@ -1,72 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753575Ab2K2LvL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 06:51:11 -0500
-Received: from nm6-vm7.bullet.mail.sg3.yahoo.com ([106.10.148.166]:47463 "EHLO
-	nm6-vm7.bullet.mail.sg3.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751393Ab2K2LvK (ORCPT
+	id S1753708Ab2K2LwV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 06:52:21 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:62722 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752613Ab2K2LwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 06:51:10 -0500
-X-Yahoo-Newman-Id: 178980.58392.bm@smtp173.mail.sg3.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: HtkQ7wIVM1kZf7CZa3PyuYNpl0xuOO4ZKZrlxpiyB_w7bRa
- MAMXEY4cIaLz1sX1ffZA4oGxjOSe6I4SS2mUwPn02Mj.0gpLlzdde2q_G31j
- CTHfMP9ZgdusQMl6Z9RWofdYR6y7kfq8owgKJM_DHL9MyBjJwFLJV6eNVGMC
- TGv3YWbScseDBsFx2kROjfg.xzShJ_e5RbggLpjGyDi6teCT57ia7i1gE4bY
- 6pnZPNf.pazYhnmIb3_Byi2WZEJ2v0EnBuc8xtjTUs79Glh1aH14K3zJuwfI
- Y0tg81HNV_JhAKh6BdKrwcs29VSTXkngFL_r7h6xT8bQ.WpA0st5THZkXXA2
- dstJb8KkyR8GAEa99XwKFAZi4IshlsBqj3qCKuv_wPd1t_eFhzAG_F4EUT0g
- Zh2HsDm9EuaY3H1vAKa99wR53pFfO_Xyhhbowh8ma2d583LvWwOo5S0Xfomk
- CkqtVVnZ6KjnEgg--
-X-Yahoo-SMTP: 5Z0EGgSswBADYRzAFfDhaRe8SLNbWkyJV2.r
-Message-ID: <50B6F7D6.51FAE642@smtp.mail.yahoo.com>
-Date: Thu, 29 Nov 2012 05:51:26 -0600
-From: "october_sky144@yahoo.com" <october_sky144@yahoo.com>
-Subject: Find peoples hidden arrest records.
-To: lgiebler@aol.com
-Content-Type: text/plain; charset=UTF-8
-X-Mailer: Opera7.0/Win32 M2 build 2637
+	Thu, 29 Nov 2012 06:52:20 -0500
+X-AuditID: 9c930179-b7c9dae000000e53-dc-50b74c7255b9
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 09/14] perf diff: Update perf diff documentation for multiple data comparison
+References: <1354110769-2998-1-git-send-email-jolsa@redhat.com>
+	<1354110769-2998-10-git-send-email-jolsa@redhat.com>
+Date: Thu, 29 Nov 2012 20:52:18 +0900
+In-Reply-To: <1354110769-2998-10-git-send-email-jolsa@redhat.com> (Jiri Olsa's
+	message of "Wed, 28 Nov 2012 14:52:44 +0100")
+Message-ID: <87ip8oocct.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-find out the dirty truth now! http://bit.ly/Tv4ewy
+On Wed, 28 Nov 2012 14:52:44 +0100, Jiri Olsa wrote:
+> +COMPARISON
+> +----------
+> +The comparison is governed by the baseline file. The baseline perf.data
+> +file is iterated for samples. All other perf.data files specified on
+> +the command line are searched for the baseline sample pair. If the pair
+> +is found, specified computation is made and result is displayed.
+> +
+> +All samples from non-baseline perf.data files, that do not match any
+> +baseline entry, are displayed with empty space within baseline column
+> +and possible computation results (delta) in their related column.
+> +
+> +Example files samples:
+> +- file A with samples f1, f2, f3, f4,    f6
+> +- file B with samples     f2,     f4, f5
+> +- file C with samples f1, f2,         f5
+> +
+> +Example output:
+> +  x - computation takes place for pair
+> +  b - baseline sample percentage
+> +
+> +- perf diff A B C
+> +
+> +  baseline/A compute/B compute/C  samples
+> +  ---------------------------------------
+> +  b                    x          f1
+> +  b          x         x          f2
+> +  b                               f3
+> +  b          x                    f4
+> +  b                               f6
+> +             x         x          f5
+> +
+> +- perf diff B A C
+> +
+> +  baseline/B compute/A compute/C  samples
+> +  ---------------------------------------
+> +  b          x         x          f2
+> +  b          x                    f4
+> +  b                    x          f5
+> +             x         x          f1
+> +             x                    f3
+> +             x                    f6
+> +
+> +- perf diff C B A
+> +
+> +  baseline/C compute/B compute/A  samples
+> +  ---------------------------------------
+> +  b                    x          f1
+> +  b          x         x          f2
+> +  b          x                    f5
+> +                       x          f3
+> +             x         x          f4
+> +                       x          f6
+> +
 
+It seems not work this way.  When I test multiple diff, I didn't get
+consecutive 'b's on the baseline column like your example in the cover
+letter of this series.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Thanks,
+Namhyung
