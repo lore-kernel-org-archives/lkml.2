@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754755Ab2K2ULs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 15:11:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59789 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751399Ab2K2ULr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 15:11:47 -0500
-Date: Thu, 29 Nov 2012 15:11:42 -0500
-From: Aristeu Rozanski <aris@redhat.com>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>, cgroups@vger.kernel.org
-Subject: Re: [PATCH 3/5] device_cgroup: keep track of local group settings
-Message-ID: <20121129201142.GX32112@redhat.com>
-References: <20121127193501.255267751@napanee.usersys.redhat.com>
- <20121127193502.482004744@napanee.usersys.redhat.com>
- <20121129192945.GD26104@mail.hallyn.com>
+	id S1754502Ab2K2UOJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 15:14:09 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:58151 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753328Ab2K2UOG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 15:14:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121129192945.GD26104@mail.hallyn.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1354219418-6882-1-git-send-email-laurent.navet@gmail.com>
+References: <1354219418-6882-1-git-send-email-laurent.navet@gmail.com>
+Date: Thu, 29 Nov 2012 21:14:05 +0100
+Message-ID: <CAJSP0QWE2X3GYA+wh8_iZwHpjeUwe3FrM98PZQ_NvWe+_sGMXw@mail.gmail.com>
+Subject: Re: [Line6linux-devel] [PATCH] staging: line6: use kstrtoint()
+ instead of simple_strtoul()
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: "Laurent Navet [Mali]" <laurent.navet@gmail.com>
+Cc: devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "line6linux-devel@lists.sourceforge.net" 
+	<line6linux-devel@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 07:29:45PM +0000, Serge E. Hallyn wrote:
-> thanks for doing this.  I've got one concern though.  I don't see
-> any place where devcgroup_create() was updated to create the
-> local exceptions list.  I think we need a guarantee that at
-> any time the local exceptions list will contain all the entries
-> contained in the cgroup->exceptions list.  Otherwise you cannot
-> use the exception_add() the way you do (or you can't use RCU),
-> since there could be a window between the successful addition
-> of a rule to cgroup->local.exceptions and the failed addition to
-> cgroup->exceptions, during which a task (since it won't need
-> the mutex for devcg_allow()) could exceed allowed permissions.
-> 
-> It's possible I'm misunderstanding.  If you think that's the case
-> just kick me and I'll take a fresh look.
-> 
-> (Btw is there a git tree or gitweb view I could look at alongside
-> the patchset?)
+On Thu, Nov 29, 2012 at 9:03 PM, Laurent Navet [Mali]
+<laurent.navet@gmail.com> wrote:
+> From: "Laurent Navet [Mali]" <laurent.navet@gmail.com>
+>
+> staging: line6: pcm.c
+>         call to obsolete simple_strtoul() function is replaced
+>         by kstrtoint() in pcm_set_impulse_period().
+>         Also check the return code.
+>
+> Signed-off-by: Laurent Navet [Mali] <laurent.navet@gmail.com>
+> ---
+>  drivers/staging/line6/pcm.c |    8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
 
-ah, yes, the missing thing you're not seeing is
-4b1c7840b7d01b14a1a00fa0e61b761d4391ba67 from Tejun's tree
-('device_cgroup: add lockdep asserts')
-
--- 
-Aristeu
-
+Reviewed-by: Stefan Hajnoczi <stefanha@gmail.com>
