@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945975Ab2K2AE4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 19:04:56 -0500
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:42512 "EHLO e4.ny.us.ibm.com"
+	id S932794Ab2K2AH7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 19:07:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52659 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1945946Ab2K2AEy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 19:04:54 -0500
-Message-ID: <50B6A66E.8030406@linux.vnet.ibm.com>
-Date: Wed, 28 Nov 2012 16:03:58 -0800
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	id S932409Ab2K2AH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 19:07:57 -0500
+Date: Wed, 28 Nov 2012 16:07:53 -0800
+From: Zach Brown <zab@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, bcrl@kvack.org, jmoyer@redhat.com,
+        axboe@kernel.dk, viro@zeniv.linux.org.uk
+Subject: Re: [PATCH 07/25] aio: kiocb_cancel()
+Message-ID: <20121129000753.GG18574@lenny.home.zabbo.net>
+References: <1354121029-1376-1-git-send-email-koverstreet@google.com>
+ <1354121029-1376-8-git-send-email-koverstreet@google.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm@kvack.org, Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: 32/64-bit NUMA consolidation behavior regresion
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12112900-3534-0000-0000-00000FA74A9A
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354121029-1376-8-git-send-email-koverstreet@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+On Wed, Nov 28, 2012 at 08:43:31AM -0800, Kent Overstreet wrote:
+> Minor refactoring, to get rid of some duplicated code
 
-I was bisecting a boot problem on a 32-bit NUMA kernel and it bisected
-down to commit 8db78cc4.  It turns out that, with this patch,
-pcpu_need_numa() changed its return value on my system from 1 to 0.
-What that basically meant was that we stopped using the remapped lowmem
-areas for percpu data.
+A minor nit:
 
-My system is just qemu booted with:
+>  	spin_lock_irq(&ctx->ctx_lock);
+> -	ret = -EAGAIN;
+> +
+>  	kiocb = lookup_kiocb(ctx, iocb, key);
+> -	if (kiocb && kiocb->ki_cancel) {
+> -		cancel = kiocb->ki_cancel;
+> -		kiocb->ki_users ++;
+> -		kiocbSetCancelled(kiocb);
+> -	} else
+> -		cancel = NULL;
+ ...
+> -	if (NULL != cancel) {
+> -	} else
+> -		ret = -EINVAL;
 
--smp 8 -m 8192 -numa node,nodeid=0,cpus=0-3 -numa node,nodeid=1,cpus=4-7
+In the old code it'd return -EINVAL for a NULL kiocb, despite that
+misleading unused EAGAIN.
 
-Watch the "PERCPU:" line early in boot, and you can see the "Embedded"
-come and go with or without your patch:
+> +	if (kiocb)
+> +		ret = kiocb_cancel(ctx, kiocb, &res);
+> +	else
+> +		ret = -EAGAIN;
 
-[    0.000000] PERCPU: Embedded 11 pages/cpu @f3000000 s30592 r0 d14464
-vs
-[    0.000000] PERCPU: 11 4K pages/cpu @f83fe000 s30592 r0 d14464
+But now it returns -EAGAIN.
 
-I believe this has to do with the hunks in your patch that do:
+I bet we want to err on the side of caution and maintain behaviour, no
+matter how funky.
 
--#ifdef CONFIG_X86_64
-        init_cpu_to_node();
--#endif
-...
--#ifdef CONFIG_X86_32
--DEFINE_EARLY_PER_CPU(int, x86_cpu_to_node_map, 0);
--#else
- DEFINE_EARLY_PER_CPU(int, x86_cpu_to_node_map, NUMA_NO_NODE);
--#endif
- EXPORT_EARLY_PER_CPU_SYMBOL(x86_cpu_to_node_map);
-
-I don't have a fix handy because I'm working on the original problem,
-but I just happened to run across this during a bisect.
-
+- z
