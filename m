@@ -1,138 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753464Ab2K2KKk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 05:10:40 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:56143 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751692Ab2K2KKh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 05:10:37 -0500
-Date: Thu, 29 Nov 2012 11:12:00 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-        DRI Development <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PULL] last drm-intel-next for 3.8
-Message-ID: <20121129101200.GF3202@phenom.ffwll.local>
-Mail-Followup-To: Dave Airlie <airlied@gmail.com>,
-	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
-	DRI Development <dri-devel@lists.freedesktop.org>,
-	LKML <linux-kernel@vger.kernel.org>
+	id S1753701Ab2K2KKw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 05:10:52 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:35970 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751692Ab2K2KKr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 05:10:47 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: linux-acpi@vger.kernel.org
+Cc: Toshi Kani <toshi.kani@hp.com>, Hanjun Guo <guohanjun@huawei.com>,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com, lenb@kernel.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Tang Chen <tangchen@cn.fujitsu.com>
+Subject: Re: [RFC PATCH v3 0/3] acpi: Introduce prepare_remove device operation
+Date: Thu, 29 Nov 2012 11:15:31 +0100
+Message-ID: <75241306.UQIr1RW8Qh@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <1354128096.26955.276.camel@misato.fc.hp.com>
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com> <50B5EFE9.3040206@huawei.com> <1354128096.26955.276.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Operating-System: Linux phenom 3.7.0-rc2+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+On Wednesday, November 28, 2012 11:41:36 AM Toshi Kani wrote:
+> On Wed, 2012-11-28 at 19:05 +0800, Hanjun Guo wrote:
+> > On 2012/11/24 1:50, Vasilis Liaskovitis wrote:
+> > > As discussed in https://patchwork.kernel.org/patch/1581581/
+> > > the driver core remove function needs to always succeed. This means we need
+> > > to know that the device can be successfully removed before acpi_bus_trim / 
+> > > acpi_bus_hot_remove_device are called. This can cause panics when OSPM-initiated
+> > > or SCI-initiated eject of memory devices fail e.g with:
+> > > echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
+> > > 
+> > > since the ACPI core goes ahead and ejects the device regardless of whether the
+> > > the memory is still in use or not.
+> > > 
+> > > For this reason a new acpi_device operation called prepare_remove is introduced.
+> > > This operation should be registered for acpi devices whose removal (from kernel
+> > > perspective) can fail.  Memory devices fall in this category.
+> > > 
+> > > acpi_bus_remove() is changed to handle removal in 2 steps:
+> > > - preparation for removal i.e. perform part of removal that can fail. Should
+> > >   succeed for device and all its children.
+> > > - if above step was successfull, proceed to actual device removal
+> > 
+> > Hi Vasilis,
+> > We met the same problem when we doing computer node hotplug, It is a good idea
+> > to introduce prepare_remove before actual device removal.
+> > 
+> > I think we could do more in prepare_remove, such as rollback. In most cases, we can
+> > offline most of memory sections except kernel used pages now, should we rollback
+> > and online the memory sections when prepare_remove failed ?
+> 
+> I think hot-plug operation should have all-or-nothing semantics.  That
+> is, an operation should either complete successfully, or rollback to the
+> original state.
 
-Besides the big item of lifting the "preliminary hw support" tag from the
-Haswell code, just small bits&pieces all over:
-- Leftover Haswell patches and some fixes from Paulo
-- LyncPoint PCH support (for hsw)
-- OOM handling improvements from Chris Wilson
-- connector property and send_vblank_event refactorings from Rob Clark
-- random pile of small fixes
+That's correct.
 
-Note that the send_vblank refactorings will cause some locking WARNs to
-show up. Imre has fixed that up, but since all the driver changes outside
-of the drm core have been for exonys, those four patches are merged
-through the exonys-next tree.
+> > As you may know, the ACPI based hotplug framework we are working on already addressed
+> > this problem, and the way we slove this problem is a bit like yours.
+> > 
+> > We introduce hp_ops in struct acpi_device_ops:
+> > struct acpi_device_ops {
+> > 	acpi_op_add add;
+> > 	acpi_op_remove remove;
+> > 	acpi_op_start start;
+> > 	acpi_op_bind bind;
+> > 	acpi_op_unbind unbind;
+> > 	acpi_op_notify notify;
+> > #ifdef	CONFIG_ACPI_HOTPLUG
+> > 	struct acpihp_dev_ops *hp_ops;
+> > #endif	/* CONFIG_ACPI_HOTPLUG */
+> > };
+> > 
+> > in hp_ops, we divide the prepare_remove into six small steps, that is:
+> > 1) pre_release(): optional step to mark device going to be removed/busy
+> > 2) release(): reclaim device from running system
+> > 3) post_release(): rollback if cancelled by user or error happened
+> > 4) pre_unconfigure(): optional step to solve possible dependency issue
+> > 5) unconfigure(): remove devices from running system
+> > 6) post_unconfigure(): free resources used by devices
+> > 
+> > In this way, we can easily rollback if error happens.
+> > How do you think of this solution, any suggestion ? I think we can achieve
+> > a better way for sharing ideas. :)
+> 
+> Yes, sharing idea is good. :)  I do not know if we need all 6 steps (I
+> have not looked at all your changes yet..), but in my mind, a hot-plug
+> operation should be composed with the following 3 phases.
+> 
+> 1. Validate phase - Verify if the request is a supported operation.  All
+> known restrictions are verified at this phase.  For instance, if a
+> hot-remove request involves kernel memory, it is failed in this phase.
+> Since this phase makes no change, no rollback is necessary to fail.  
 
-Yours, Daniel
+Actually, we can't do it this way, because the conditions may change between
+the check and the execution.  So the first phase needs to involve execution
+to some extent, although only as far as it remains reversible.
 
-The following changes since commit bf6f036848ab2151c2498f11cb7d31a52a95dd5c:
+> 2. Execute phase - Perform hot-add / hot-remove operation that can be
+> rolled-back in case of error or cancel.
 
-  drm/vmwgfx: Make vmw_dmabuf_unreference handle NULL objects (2012-11-20 16:19:59 +1000)
+I would just merge 1 and 2.
 
-are available in the git repository at:
+> 3. Commit phase - Perform the final hot-add / hot-remove operation that
+> cannot be rolled-back.  No error / cancel is allowed in this phase.  For
+> instance, eject operation is performed at this phase.  
 
-  git://people.freedesktop.org/~danvet/drm-intel tags/drm-intel-next-2012-11-23
+Yup.
 
-for you to fetch changes up to 70b12bb415463c1bd146b67c5fbf6784fd046ad9:
+Thanks,
+Rafael
 
-  drm/i915: promote Haswell to full support (2012-11-23 19:40:14 +0100)
 
-----------------------------------------------------------------
-Ben Widawsky (2):
-      drm/i915: Fix warning in i915_gem_chipset_flush
-      drm/i915: Use pci_resource functions for BARs.
-
-Chris Wilson (11):
-      drm/i915: Use LRI to update the semaphore registers
-      drm/i915: Remove save/restore of physical HWS_PGA register
-      drm/i915: Remove bogus test for a present execbuffer
-      drm/i915: Guard pages being reaped by OOM whilst binding-to-GTT
-      drm/i915: Pin the object whilst faulting it in
-      drm/i915: Flush outstanding unpin tasks before pageflipping
-      drm/i915: Apply the IBX transcoder A w/a for HDMI to SDVO as well
-      drm/i915: Defer assignment of obj->gtt_space until after all possible mallocs
-      drm/i915: Borrow our struct_mutex for the direct reclaim
-      drm/i915: LVDS fallback to fixed-mode if EDID not present
-      drm/i915: Report the origin of the LVDS fixed panel mode
-
-Damien Lespiau (1):
-      drm/i915: Only check for valid PP_{ON, OFF}_DELAYS on pre ILK hardware
-
-Daniel Vetter (2):
-      drm/i915: drop buggy write to FDI_RX_CHICKEN register
-      drm/i915: resurrect panel lid handling
-
-Jani Nikula (1):
-      drm/i915/sdvo: kfree the intel_sdvo_connector, not drm_connector, on destroy
-
-Jean Delvare (1):
-      drm/i915: Optimize DIV_ROUND_CLOSEST call
-
-Paulo Zanoni (10):
-      drm/i915: don't limit Haswell CRT encoder to pipe A
-      drm/i915: use cpu/pch transcoder on intel_enable_pipe
-      drm/i915: fix false positive "Unclaimed write" messages
-      drm/i915: make DP work on LPT-LP machines
-      drm/i915: don't intel_crt_init if DDI A has 4 lanes
-      drm/i915: make the panel fitter work on pipes B and C on IVB
-      drm/i915: make the panel fitter work on pipes B and C on Haswell
-      drm/i915: fix intel_ddi_get_cdclk_freq for ULT machines
-      drm/i915: implement WaMbcDriverBootEnable on Haswell
-      drm/i915: promote Haswell to full support
-
-Rob Clark (2):
-      drm/i915: use drm_send_vblank_event() helper
-      drm/i915: drm_connector_property -> drm_object_property
-
-Takashi Iwai (1):
-      drm/i915: Enable DP audio for Haswell
-
-Wei Shun Chang (1):
-      drm/i915: add LynxPoint-LP PCH ID
-
- drivers/gpu/drm/i915/i915_drv.c            |   26 ++++---
- drivers/gpu/drm/i915/i915_drv.h            |   13 +++-
- drivers/gpu/drm/i915/i915_gem.c            |  102 ++++++++++++++++------------
- drivers/gpu/drm/i915/i915_gem_execbuffer.c |    9 ---
- drivers/gpu/drm/i915/i915_gem_gtt.c        |    8 +--
- drivers/gpu/drm/i915/i915_reg.h            |    4 ++
- drivers/gpu/drm/i915/i915_suspend.c        |    8 ---
- drivers/gpu/drm/i915/intel_bios.c          |    3 +-
- drivers/gpu/drm/i915/intel_crt.c           |    2 +-
- drivers/gpu/drm/i915/intel_ddi.c           |   11 +++
- drivers/gpu/drm/i915/intel_display.c       |   80 +++++++++++-----------
- drivers/gpu/drm/i915/intel_dp.c            |    2 +-
- drivers/gpu/drm/i915/intel_drv.h           |    4 +-
- drivers/gpu/drm/i915/intel_hdmi.c          |    2 +-
- drivers/gpu/drm/i915/intel_lvds.c          |   24 ++++---
- drivers/gpu/drm/i915/intel_modes.c         |    4 +-
- drivers/gpu/drm/i915/intel_panel.c         |   25 +++----
- drivers/gpu/drm/i915/intel_pm.c            |   25 ++++++-
- drivers/gpu/drm/i915/intel_ringbuffer.c    |    7 +-
- drivers/gpu/drm/i915/intel_sdvo.c          |   64 +++++++++++++----
- drivers/gpu/drm/i915/intel_tv.c            |   14 ++--
- 21 files changed, 260 insertions(+), 177 deletions(-)
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
