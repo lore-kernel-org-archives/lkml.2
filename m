@@ -1,97 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932819Ab2K2AUd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 19:20:33 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:43801 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754468Ab2K2AUc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 19:20:32 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX19RWeo/BdlRBZVsiZ+dmmBwnfuYVWkus0q0ynUdSu
-	311IGPjifBNuLZ
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Kent Yoder <key@linux.vnet.ibm.com>
-Cc: Rajiv Andrade <mail@srajiv.net>, Marcel Selhorst <tpmdd@selhorst.net>,
-        Sirrix AG <tpmdd@sirrix.com>, tpmdd-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH] char/tpm: Use true and false for bools
-Date: Thu, 29 Nov 2012 01:20:37 +0100
-Message-Id: <1354148437-6446-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.8.6
-X-Y-GMX-Trusted: 0
+	id S932838Ab2K2AWA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 19:22:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63282 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932745Ab2K2AV7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 19:21:59 -0500
+Date: Wed, 28 Nov 2012 22:21:32 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Gleb Natapov <gleb@redhat.com>, Avi Kivity <avi@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 3/3] KVM: x86: improve reexecute_instruction
+Message-ID: <20121129002132.GC17264@amt.cnet>
+References: <50AAC77C.8040505@linux.vnet.ibm.com>
+ <50AAC7F9.7050305@linux.vnet.ibm.com>
+ <20121126224105.GB10634@amt.cnet>
+ <50B433D0.8060107@linux.vnet.ibm.com>
+ <20121128141230.GI928@redhat.com>
+ <50B626D7.7070608@linux.vnet.ibm.com>
+ <20121128215750.GA10039@amt.cnet>
+ <50B692F3.4000408@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50B692F3.4000408@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bool initializations should use true and false.  Bool tests don't need
-comparisons.  Based on contributions from Joe Perches, Rusty Russell
-and Bruce W Allan.
+On Thu, Nov 29, 2012 at 06:40:51AM +0800, Xiao Guangrong wrote:
+> On 11/29/2012 05:57 AM, Marcelo Tosatti wrote:
+> > On Wed, Nov 28, 2012 at 10:59:35PM +0800, Xiao Guangrong wrote:
+> >> On 11/28/2012 10:12 PM, Gleb Natapov wrote:
+> >>> On Tue, Nov 27, 2012 at 11:30:24AM +0800, Xiao Guangrong wrote:
+> >>>> On 11/27/2012 06:41 AM, Marcelo Tosatti wrote:
+> >>>>
+> >>>>>>
+> >>>>>> -	return false;
+> >>>>>> +again:
+> >>>>>> +	page_fault_count = ACCESS_ONCE(vcpu->kvm->arch.page_fault_count);
+> >>>>>> +
+> >>>>>> +	/*
+> >>>>>> +	 * if emulation was due to access to shadowed page table
+> >>>>>> +	 * and it failed try to unshadow page and re-enter the
+> >>>>>> +	 * guest to let CPU execute the instruction.
+> >>>>>> +	 */
+> >>>>>> +	kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa));
+> >>>>>> +	emulate = vcpu->arch.mmu.page_fault(vcpu, cr3, PFERR_WRITE_MASK, false);
+> >>>>>
+> >>>>> Can you explain what is the objective here?
+> >>>>>
+> >>>>
+> >>>> Sure. :)
+> >>>>
+> >>>> The instruction emulation is caused by fault access on cr3. After unprotect
+> >>>> the target page, we call vcpu->arch.mmu.page_fault to fix the mapping of cr3.
+> >>>> if it return 1, mmu can not fix the mapping, we should report the error,
+> >>>> otherwise it is good to return to guest and let it re-execute the instruction
+> >>>> again.
+> >>>>
+> >>>> page_fault_count is used to avoid the race on other vcpus, since after we
+> >>>> unprotect the target page, other cpu can enter page fault path and let the
+> >>>> page be write-protected again.
+> >>>>
+> >>>> This way can help us to detect all the case that mmu can not be fixed.
+> >>>>
+> >>> Can you write this in a comment above vcpu->arch.mmu.page_fault()?
+> >>
+> >> Okay, if Marcelo does not object this way. :)
+> > 
+> > I do object, since it is possible to detect precisely the condition by 
+> > storing which gfns have been cached.
+> > 
+> > Then, Xiao, you need a way to handle large read-only sptes.
+> 
+> Sorry, Marcelo, i am still confused why read-only sptes can not work
+> under this patch?
+> 
+> The code after read-only large spte is is:
+> 
+> +		if ((level > PT_PAGE_TABLE_LEVEL &&
+> +		   has_wrprotected_page(vcpu->kvm, gfn, level)) ||
+> +		      mmu_need_write_protect(vcpu, gfn, can_unsync)) {
+>  			pgprintk("%s: found shadow page for %llx, marking ro\n",
+>  				 __func__, gfn);
+>  			ret = 1;
+> 
+> It return 1, then reexecute_instruction return 0. It is the same as without
+> readonly large-spte.
 
-The semantic patch that makes this output is available
-in scripts/coccinelle/misc/boolinit.cocci.
+https://lkml.org/lkml/2012/11/17/75
 
-More information about semantic patching is available at
-http://coccinelle.lip6.fr/
+Does unshadowing work with large sptes at reexecute_instruction? That
+is, do we nuke any large read-only sptes that might be causing a certain
+gfn to be read-only?
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- drivers/char/tpm/tpm_tis.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
-index 6bdf267..70d4ea5 100644
---- a/drivers/char/tpm/tpm_tis.c
-+++ b/drivers/char/tpm/tpm_tis.c
-@@ -374,7 +374,7 @@ static int probe_itpm(struct tpm_chip *chip)
- 	if (vendor != TPM_VID_INTEL)
- 		return 0;
- 
--	itpm = 0;
-+	itpm = false;
- 
- 	rc = tpm_tis_send_data(chip, cmd_getticks, len);
- 	if (rc == 0)
-@@ -383,7 +383,7 @@ static int probe_itpm(struct tpm_chip *chip)
- 	tpm_tis_ready(chip);
- 	release_locality(chip, chip->vendor.locality, 0);
- 
--	itpm = 1;
-+	itpm = true;
- 
- 	rc = tpm_tis_send_data(chip, cmd_getticks, len);
- 	if (rc == 0) {
-@@ -502,7 +502,7 @@ static irqreturn_t tis_int_handler(int dummy, void *dev_id)
- 	return IRQ_HANDLED;
- }
- 
--static bool interrupts = 1;
-+static bool interrupts = true;
- module_param(interrupts, bool, 0444);
- MODULE_PARM_DESC(interrupts, "Enable interrupts");
- 
-@@ -545,7 +545,7 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
- 			rc = -ENODEV;
- 			goto out_err;
- 		}
--		itpm = (probe == 0) ? 0 : 1;
-+		itpm = (probe == 0) ? false : true;
- 	}
- 
- 	if (itpm)
-@@ -741,10 +741,10 @@ static int __devinit tpm_tis_pnp_init(struct pnp_dev *pnp_dev,
- 	if (pnp_irq_valid(pnp_dev, 0))
- 		irq = pnp_irq(pnp_dev, 0);
- 	else
--		interrupts = 0;
-+		interrupts = false;
- 
- 	if (is_itpm(pnp_dev))
--		itpm = 1;
-+		itpm = true;
- 
- 	return tpm_tis_init(&pnp_dev->dev, start, len, irq);
- }
--- 
-1.7.8.6
+That is, following the sequence there, is the large read-only spte
+properly destroyed?
 
