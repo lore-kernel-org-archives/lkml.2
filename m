@@ -1,107 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946084Ab2K2Aja (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 19:39:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29567 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422635Ab2K2Aj2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 19:39:28 -0500
-Date: Wed, 28 Nov 2012 19:38:37 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Jens Axboe <axboe@kernel.dk>, Jeff Chua <jeff.chua.linux@gmail.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH] Introduce a method to catch mmap_region (was: Recent
- kernel "mount" slow)
-In-Reply-To: <CA+55aFwbnQsvpsOLS6w_G35d4w+Ezv5tOx2SE7dShJhX4iP_0Q@mail.gmail.com>
-Message-ID: <Pine.LNX.4.64.1211281904010.3957@file.rdu.redhat.com>
-References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com>
- <Pine.LNX.4.64.1211241555470.4300@file.rdu.redhat.com>
- <CAAJw_ZvUqRmCCQ5-2PdFPRyfdzZMuphGU=hgAjUOHGk=n9Mheg@mail.gmail.com>
- <CAAJw_ZuJXnAz1ukBwQa3xNbQaL1KUBSrbQMK2hn-7D6Ar1p3fQ@mail.gmail.com>
- <50B46E05.70906@kernel.dk> <CAAJw_ZsYuLCwCTc6U=ELO_PvyjnVKQdkPke2enfzm6zOeWAqjA@mail.gmail.com>
- <50B4B313.3030707@kernel.dk> <Pine.LNX.4.64.1211272252260.18338@file.rdu.redhat.com>
- <50B5CC5A.8060607@kernel.dk> <Pine.LNX.4.64.1211281222410.11599@file.rdu.redhat.com>
- <CA+55aFx4zYnEsUyGJurBjB0XZ0AgmyKqW-+KWVDvma3w6csnHQ@mail.gmail.com>
- <Pine.LNX.4.64.1211281422360.26389@file.rdu.redhat.com>
- <CA+55aFyXdtVJ=SG9bU4qfggCR6DPvz4vOFYxKJZx_WdyFv+3Fw@mail.gmail.com>
- <CA+55aFyXS0nkDB95c3pcdg1ctrNnUGO8aDuRNhKSEg3JrOqWhA@mail.gmail.com>
- <Pine.LNX.4.64.1211281540200.5283@file.rdu.redhat.com>
- <CA+55aFwbnQsvpsOLS6w_G35d4w+Ezv5tOx2SE7dShJhX4iP_0Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1946099Ab2K2Aje (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 19:39:34 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:59787 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1946086Ab2K2Ajb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 19:39:31 -0500
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX18+uToxCS8+NevynPa74ZVduRLvuv5EHlbL0FUiPs
+	L1N2Q370bGknT3
+From: Peter Huewe <peterhuewe@gmx.de>
+To: Kent Yoder <key@linux.vnet.ibm.com>
+Cc: Rajiv Andrade <mail@srajiv.net>, Marcel Selhorst <tpmdd@selhorst.net>,
+        Sirrix AG <tpmdd@sirrix.com>, tpmdd-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>
+Subject: [PATCH v2] char/tpm: Use true and false for bools
+Date: Thu, 29 Nov 2012 01:39:38 +0100
+Message-Id: <1354149578-9252-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <20121129002519.GG4939@ZenIV.linux.org.uk>
+References: <20121129002519.GG4939@ZenIV.linux.org.uk>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Bool initializations should use true and false.  Bool tests don't need
+comparisons.  Based on contributions from Joe Perches, Rusty Russell
+and Bruce W Allan.
 
+The semantic patch that makes this output is available
+in scripts/coccinelle/misc/boolinit.cocci.
 
-On Wed, 28 Nov 2012, Linus Torvalds wrote:
+More information about semantic patching is available at
+http://coccinelle.lip6.fr/
 
-> > For example, __block_write_full_page and __block_write_begin do
-> >         if (!page_has_buffers(page)) { create_empty_buffers... }
-> > and then they do
-> >         WARN_ON(bh->b_size != blocksize)
-> >         err = get_block(inode, block, bh, 1)
-> 
-> Right. And none of this is new.
-> 
-> > ... so if the buffers were left over from some previous call to
-> > create_empty_buffers with a different blocksize, that WARN_ON is trigged.
-> 
-> None of this can happen.
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+v2:
+Removed/changed that silly itpm = (probe == 0) ? 0 : 1; 
+since probe is here either 0 or 1 -- thanks Al for noticing.
+This section and the probing of the itpm can probably be improved anyway,
+but I'll wrap that in a different patch soon.
 
-It can happen. Take your patch (the one that moves bd_block_size_semaphore 
-into blkdev_readpage, blkdev_writepage and blkdev_write_begin).
+ drivers/char/tpm/tpm_tis.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-Insert msleep(1000) into set_blocksize, just before sync_blockdev.
+diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
+index 6bdf267..8b084e0 100644
+--- a/drivers/char/tpm/tpm_tis.c
++++ b/drivers/char/tpm/tpm_tis.c
+@@ -374,7 +374,7 @@ static int probe_itpm(struct tpm_chip *chip)
+ 	if (vendor != TPM_VID_INTEL)
+ 		return 0;
+ 
+-	itpm = 0;
++	itpm = false;
+ 
+ 	rc = tpm_tis_send_data(chip, cmd_getticks, len);
+ 	if (rc == 0)
+@@ -383,7 +383,7 @@ static int probe_itpm(struct tpm_chip *chip)
+ 	tpm_tis_ready(chip);
+ 	release_locality(chip, chip->vendor.locality, 0);
+ 
+-	itpm = 1;
++	itpm = true;
+ 
+ 	rc = tpm_tis_send_data(chip, cmd_getticks, len);
+ 	if (rc == 0) {
+@@ -502,7 +502,7 @@ static irqreturn_t tis_int_handler(int dummy, void *dev_id)
+ 	return IRQ_HANDLED;
+ }
+ 
+-static bool interrupts = 1;
++static bool interrupts = true;
+ module_param(interrupts, bool, 0444);
+ MODULE_PARM_DESC(interrupts, "Enable interrupts");
+ 
+@@ -545,7 +545,7 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
+ 			rc = -ENODEV;
+ 			goto out_err;
+ 		}
+-		itpm = (probe == 0) ? 0 : 1;
++		itpm = probe;
+ 	}
+ 
+ 	if (itpm)
+@@ -741,10 +741,10 @@ static int __devinit tpm_tis_pnp_init(struct pnp_dev *pnp_dev,
+ 	if (pnp_irq_valid(pnp_dev, 0))
+ 		irq = pnp_irq(pnp_dev, 0);
+ 	else
+-		interrupts = 0;
++		interrupts = false;
+ 
+ 	if (is_itpm(pnp_dev))
+-		itpm = 1;
++		itpm = true;
+ 
+ 	return tpm_tis_init(&pnp_dev->dev, start, len, irq);
+ }
+-- 
+1.7.8.6
 
-Run this program:
-#define _XOPEN_SOURCE 500
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/types.h>
-
-static char array[4096];
-
-int main(void)
-{
-        int h;
-        system("dmsetup remove test 2>/dev/null");
-        if (system("dmsetup create test --table '0 1 zero'")) exit(1);
-        h = open("/dev/mapper/test", O_RDWR);
-        if (h < 0) perror("open"), exit(1);
-        if (pread(h, array, 512, 0) != 512) perror("pread"), exit(1);
-        if (system("dmsetup load test --table '0 8 zero'")) exit(1);
-        if (system("dmsetup suspend test")) exit(1);
-        if (system("dmsetup resume test")) exit(1);
-        if (system("blockdev --setbsz 2048 /dev/mapper/test &")) exit(1);
-        usleep(500000);
-        if (pwrite(h, array, 4096, 0) != 4096) perror("pwrite"), exit(1);
-        return 0;
-}
-
---- it triggers WARNING: at fs/buffer.c:1830 in __block_write_begin
-[ 1243.300000] Backtrace:
-[ 1243.330000]  [<0000000040230ba8>] block_write_begin+0x70/0xd0
-[ 1243.400000]  [<00000000402350cc>] blkdev_write_begin+0xb4/0x208
-[ 1243.480000]  [<00000000401a9f10>] generic_file_buffered_write+0x248/0x348
-[ 1243.570000]  [<00000000401ac8c4>] __generic_file_aio_write+0x1fc/0x388
-[ 1243.660000]  [<0000000040235e74>] blkdev_aio_write+0x64/0xf0
-[ 1243.740000]  [<00000000401f2108>] do_sync_write+0xd0/0x128
-[ 1243.810000]  [<00000000401f2930>] vfs_write+0xa0/0x180
-[ 1243.880000]  [<00000000401f2ecc>] sys_pwrite64+0xb4/0xd8
-[ 1243.950000]  [<0000000040122104>] parisc_pwrite64+0x1c/0x28
-[ 1244.020000]  [<0000000040106060>] syscall_exit+0x0/0x14
-
-
-I'm not saying that your approach is wrong, you just have to carefuly
-review all memory management code for assumptions that block size
-doesn't change.
-
-Mikulas
