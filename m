@@ -1,85 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753572Ab2K2KIe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 05:08:34 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:45826 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752277Ab2K2KIO (ORCPT
+	id S1753464Ab2K2KKk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 05:10:40 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:56143 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751692Ab2K2KKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 05:08:14 -0500
-Date: Thu, 29 Nov 2012 10:08:08 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        arnd@arndb.de, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com
-Subject: Re: [PATCH 3/3] Input: bu21013_ts - Add support for Device Tree
- booting
-Message-ID: <20121129100808.GW2013@gmail.com>
-References: <1354021990-16978-1-git-send-email-lee.jones@linaro.org>
- <1354021990-16978-4-git-send-email-lee.jones@linaro.org>
- <20121128070332.GC23378@core.coreip.homeip.net>
- <20121128085731.GH2013@gmail.com>
- <20121128163105.GA28698@sirena.org.uk>
+	Thu, 29 Nov 2012 05:10:37 -0500
+Date: Thu, 29 Nov 2012 11:12:00 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+        DRI Development <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PULL] last drm-intel-next for 3.8
+Message-ID: <20121129101200.GF3202@phenom.ffwll.local>
+Mail-Followup-To: Dave Airlie <airlied@gmail.com>,
+	Intel Graphics Development <intel-gfx@lists.freedesktop.org>,
+	DRI Development <dri-devel@lists.freedesktop.org>,
+	LKML <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121128163105.GA28698@sirena.org.uk>
+X-Operating-System: Linux phenom 3.7.0-rc2+
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Nov 2012, Mark Brown wrote:
+Hi Dave,
 
-> On Wed, Nov 28, 2012 at 08:57:31AM +0000, Lee Jones wrote:
-> 
-> > > I applied these 3 patches, but for DT we also need to specify compatible
-> > > ID and set up of_match_table pointer. 
-> 
-> > Why do you need a compatible string?
-> 
-> The I2C subsystem guesses at a compatible string by default but it's
-> much better to explicitly set one as conflicts do arise from time to
-> time (eg, Wolfson parts are called WMxxxx but the WM prefix is also used
-> by at least WonderMedia).
+Besides the big item of lifting the "preliminary hw support" tag from the
+Haswell code, just small bits&pieces all over:
+- Leftover Haswell patches and some fixes from Paulo
+- LyncPoint PCH support (for hsw)
+- OOM handling improvements from Chris Wilson
+- connector property and send_vblank_event refactorings from Rob Clark
+- random pile of small fixes
 
-It uses the exact device name, rather than guessing. I don't think
-you're allowed to have duplicate device names in the system, or there
-would be clashes at registration time.
+Note that the send_vblank refactorings will cause some locking WARNs to
+show up. Imre has fixed that up, but since all the driver changes outside
+of the drm core have been for exonys, those four patches are merged
+through the exonys-next tree.
 
-The system is the same for platform data and DT alike.
+Yours, Daniel
 
-In platform data we have: 
+The following changes since commit bf6f036848ab2151c2498f11cb7d31a52a95dd5c:
 
-> struct i2c_board_info mop500_i2c0_devices_stuib[] = {
->         {
->                 .type = "bu21013_tp",
->                 .addr = 0x5C,
->         }
-> };
+  drm/vmwgfx: Make vmw_dmabuf_unreference handle NULL objects (2012-11-20 16:19:59 +1000)
 
-Where (i2c_client)client->name is populated by 'type', which should
-then match 'driver.name' exactly.
+are available in the git repository at:
 
-And in DT we have:
+  git://people.freedesktop.org/~danvet/drm-intel tags/drm-intel-next-2012-11-23
 
-bu21013_tp@0x5c {
-        compatible = "rhom,bu21013_tp";
-        reg = <0x5c>;
-};
+for you to fetch changes up to 70b12bb415463c1bd146b67c5fbf6784fd046ad9:
 
-Where (i2c_client)client->name is populated by of_modalias_node(), which
-uses the compatible string in the DTS(I) file and takes off the
-'<vendor>,' which should then match 'driver.name' exactly.
+  drm/i915: promote Haswell to full support (2012-11-23 19:40:14 +0100)
 
-Hence, there should be no need to have a compatible string in any i2c
-driver registration information.
+----------------------------------------------------------------
+Ben Widawsky (2):
+      drm/i915: Fix warning in i915_gem_chipset_flush
+      drm/i915: Use pci_resource functions for BARs.
 
+Chris Wilson (11):
+      drm/i915: Use LRI to update the semaphore registers
+      drm/i915: Remove save/restore of physical HWS_PGA register
+      drm/i915: Remove bogus test for a present execbuffer
+      drm/i915: Guard pages being reaped by OOM whilst binding-to-GTT
+      drm/i915: Pin the object whilst faulting it in
+      drm/i915: Flush outstanding unpin tasks before pageflipping
+      drm/i915: Apply the IBX transcoder A w/a for HDMI to SDVO as well
+      drm/i915: Defer assignment of obj->gtt_space until after all possible mallocs
+      drm/i915: Borrow our struct_mutex for the direct reclaim
+      drm/i915: LVDS fallback to fixed-mode if EDID not present
+      drm/i915: Report the origin of the LVDS fixed panel mode
 
+Damien Lespiau (1):
+      drm/i915: Only check for valid PP_{ON, OFF}_DELAYS on pre ILK hardware
+
+Daniel Vetter (2):
+      drm/i915: drop buggy write to FDI_RX_CHICKEN register
+      drm/i915: resurrect panel lid handling
+
+Jani Nikula (1):
+      drm/i915/sdvo: kfree the intel_sdvo_connector, not drm_connector, on destroy
+
+Jean Delvare (1):
+      drm/i915: Optimize DIV_ROUND_CLOSEST call
+
+Paulo Zanoni (10):
+      drm/i915: don't limit Haswell CRT encoder to pipe A
+      drm/i915: use cpu/pch transcoder on intel_enable_pipe
+      drm/i915: fix false positive "Unclaimed write" messages
+      drm/i915: make DP work on LPT-LP machines
+      drm/i915: don't intel_crt_init if DDI A has 4 lanes
+      drm/i915: make the panel fitter work on pipes B and C on IVB
+      drm/i915: make the panel fitter work on pipes B and C on Haswell
+      drm/i915: fix intel_ddi_get_cdclk_freq for ULT machines
+      drm/i915: implement WaMbcDriverBootEnable on Haswell
+      drm/i915: promote Haswell to full support
+
+Rob Clark (2):
+      drm/i915: use drm_send_vblank_event() helper
+      drm/i915: drm_connector_property -> drm_object_property
+
+Takashi Iwai (1):
+      drm/i915: Enable DP audio for Haswell
+
+Wei Shun Chang (1):
+      drm/i915: add LynxPoint-LP PCH ID
+
+ drivers/gpu/drm/i915/i915_drv.c            |   26 ++++---
+ drivers/gpu/drm/i915/i915_drv.h            |   13 +++-
+ drivers/gpu/drm/i915/i915_gem.c            |  102 ++++++++++++++++------------
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |    9 ---
+ drivers/gpu/drm/i915/i915_gem_gtt.c        |    8 +--
+ drivers/gpu/drm/i915/i915_reg.h            |    4 ++
+ drivers/gpu/drm/i915/i915_suspend.c        |    8 ---
+ drivers/gpu/drm/i915/intel_bios.c          |    3 +-
+ drivers/gpu/drm/i915/intel_crt.c           |    2 +-
+ drivers/gpu/drm/i915/intel_ddi.c           |   11 +++
+ drivers/gpu/drm/i915/intel_display.c       |   80 +++++++++++-----------
+ drivers/gpu/drm/i915/intel_dp.c            |    2 +-
+ drivers/gpu/drm/i915/intel_drv.h           |    4 +-
+ drivers/gpu/drm/i915/intel_hdmi.c          |    2 +-
+ drivers/gpu/drm/i915/intel_lvds.c          |   24 ++++---
+ drivers/gpu/drm/i915/intel_modes.c         |    4 +-
+ drivers/gpu/drm/i915/intel_panel.c         |   25 +++----
+ drivers/gpu/drm/i915/intel_pm.c            |   25 ++++++-
+ drivers/gpu/drm/i915/intel_ringbuffer.c    |    7 +-
+ drivers/gpu/drm/i915/intel_sdvo.c          |   64 +++++++++++++----
+ drivers/gpu/drm/i915/intel_tv.c            |   14 ++--
+ 21 files changed, 260 insertions(+), 177 deletions(-)
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
