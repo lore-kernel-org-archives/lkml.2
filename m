@@ -1,83 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751351Ab2K2Fr6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 00:47:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48884 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750922Ab2K2Fr4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 00:47:56 -0500
-From: Jason Wang <jasowang@redhat.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        ML netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, rmilasan@suse.cz,
-        Jiri Slaby <jirislaby@gmail.com>, maxk@qualcomm.com,
-        vtun@office.satix.net
-Subject: Re: "tuntap: multiqueue support" causes udev fork bombs
-Date: Thu, 29 Nov 2012 13:47:04 +0800
-Message-ID: <4146845.d5imC0scLB@jason-thinkpad-t430s>
-User-Agent: KMail/4.9.2 (Linux/3.7.0-rc6+; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <50B5E6A5.6040009@suse.cz>
-References: <50B5E6A5.6040009@suse.cz>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1751318Ab2K2FvT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 00:51:19 -0500
+Received: from na3sys009aog130.obsmtp.com ([74.125.149.143]:41078 "EHLO
+	na3sys009aog130.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750922Ab2K2FvS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 00:51:18 -0500
+From: Qing Xu <qingx@marvell.com>
+To: qingx@marvell.com, rob@landley.net, linux-doc@vger.kernel.org,
+        sameo@linux.intel.com, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, haojian.zhuang@gmail.com, cxie4@marvell.com,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH] Documentation: add docs for max8925 dt
+Date: Thu, 29 Nov 2012 13:52:39 +0800
+Message-Id: <1354168359-19459-1-git-send-email-qingx@marvell.com>
+X-Mailer: git-send-email 1.7.0.4
+X-OriginalArrivalTime: 29 Nov 2012 05:51:05.0015 (UTC) FILETIME=[85447470:01CDCDF5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 28, 2012 11:25:41 AM Jiri Slaby wrote:
-> Hi,
-> 
-> with this commit:
-> commit c8d68e6be1c3b242f1c598595830890b65cea64a
-> Author: Jason Wang <jasowang@redhat.com>
-> Date:   Wed Oct 31 19:46:00 2012 +0000
-> 
->     tuntap: multiqueue support
-> 
-> 
-> I see fork bombs from udev. It is trying to create 2048 processes. 1024
-> for tx, 1024 for rx. OOM killer indeed steps in and kills everything.
+From: Qing Xu <qingx@marvell.com>
 
-Hi, thanks for the reporting, could you pls try the following patch?
+add docs for dt of max8925-mfd, max8925-backlight, and
+max8925-battery
 
+Signed-off-by: Qing Xu <qingx@marvell.com>
 ---
+ Documentation/devicetree/bindings/mfd/max8925.txt  |   64 ++++++++++++++++++++
+ .../bindings/power_supply/max8925_batter.txt       |   18 ++++++
+ .../bindings/video/backlight/max8925-backlight.txt |   10 +++
+ 3 files changed, 92 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/max8925.txt
+ create mode 100644 Documentation/devicetree/bindings/power_supply/max8925_batter.txt
+ create mode 100644 Documentation/devicetree/bindings/video/backlight/max8925-backlight.txt
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index b44d7b7..cc3f878 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -492,9 +492,6 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
- 
- 	tun_set_real_num_queues(tun);
- 
--	if (tun->numqueues == 1)
--		netif_carrier_on(tun->dev);
--
- 	/* device is allowed to go away first, so no need to hold extra
- 	 * refcnt.
- 	 */
-@@ -1611,6 +1608,10 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
- 			TUN_USER_FEATURES;
- 		dev->features = dev->hw_features;
- 
-+		err = tun_attach(tun, file);
-+		if (err < 0)
-+			goto err_free_dev;
+diff --git a/Documentation/devicetree/bindings/mfd/max8925.txt b/Documentation/devicetree/bindings/mfd/max8925.txt
+new file mode 100644
+index 0000000..13bb62b
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/max8925.txt
+@@ -0,0 +1,64 @@
++* Maxim max8925 Power Management IC
 +
- 		err = register_netdevice(tun->dev);
- 		if (err < 0)
- 			goto err_free_dev;
-@@ -1620,9 +1621,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
- 		    device_create_file(&tun->dev->dev, &dev_attr_group))
- 			pr_err("Failed to create tun sysfs files\n");
- 
--		err = tun_attach(tun, file);
--		if (err < 0)
--			goto err_free_dev;
-+		netif_carrier_on(tun->dev);
- 	}
- 
- 	tun_debug(KERN_INFO, tun, "tun_set_iff\n");
++Required parent device properties:
++- compatible : "maxim,max8925"
++- reg : the I2C slave address for the max8925 chip
++- interrupts : IRQ line for the max8925 chip
++- interrupt-controller: describes the max8925 as an interrupt
++  controller (has its own domain)
++- #interrupt-cells : should be 1.
++	- The cell is the max8925 local IRQ number
++
++Optional parent device properties:
++- tsc-irq: there are 2 IRQ lines for max8925, one is indicated in
++  interrupts property, the other is indicated here.
++
++max8925 consists of a large and varied group of sub-devices:
++
++Device			 Supply Names	 Description
++------			 ------------	 -----------
++max8925-onkey		:		: On key
++max8925-rtc		:		: RTC
++max8925-regulator	:		: Regulators
++max8925-backlight	:		: Backlight
++max8925-touch		:		: Touchscreen
++max8925-power		:		: Charger
++
++Example:
++
++	pmic: max8925@3c {
++		compatible = "maxim,max8925";
++		reg = <0x3c>;
++		interrupts = <1>;
++		interrupt-parent = <&intcmux4>;
++		interrupt-controller;
++		#interrupt-cells = <1>;
++		tsc-irq = <0>;
++
++		regulators {
++			SDV1 {
++				regulator-min-microvolt = <637500>;
++				regulator-max-microvolt = <1425000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++			
++			LDO1 {
++				regulator-min-microvolt = <750000>;
++				regulator-max-microvolt = <3900000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++			
++		};
++		backlight {
++			max8925-dual-string = <0>;
++		};
++		charger {
++			batt-detect = <0>;
++			topoff-threshold = <1>;
++			fast-charge = <7>;
++			no-temp-support = <0>;
++			no-insert-detect = <0>;
++		};
++	};
+diff --git a/Documentation/devicetree/bindings/power_supply/max8925_batter.txt b/Documentation/devicetree/bindings/power_supply/max8925_batter.txt
+new file mode 100644
+index 0000000..d7e3e0c
+--- /dev/null
++++ b/Documentation/devicetree/bindings/power_supply/max8925_batter.txt
+@@ -0,0 +1,18 @@
++max8925-battery bindings
++~~~~~~~~~~~~~~~~
++
++Optional properties :
++ - batt-detect: whether support battery detect
++ - topoff-threshold: set charging current in topoff mode
++ - fast-charge: set charging current in fast mode
++ - no-temp-support: whether support temperature protection detect
++ - no-insert-detect: whether support insert detect
++
++Example:
++	charger {
++		batt-detect = <0>;
++		topoff-threshold = <1>;
++		fast-charge = <7>;
++		no-temp-support = <0>;
++		no-insert-detect = <0>;
++	};
+diff --git a/Documentation/devicetree/bindings/video/backlight/max8925-backlight.txt b/Documentation/devicetree/bindings/video/backlight/max8925-backlight.txt
+new file mode 100644
+index 0000000..d692db3
+--- /dev/null
++++ b/Documentation/devicetree/bindings/video/backlight/max8925-backlight.txt
+@@ -0,0 +1,10 @@
++88pm860x-backlight bindings
++
++Optional properties:
++  - max8925-dual-string: whether support dual string
++
++Example:
++
++	backlights {
++		max8925-dual-string = <0>;
++	};
+-- 
+1.7.0.4
 
