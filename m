@@ -1,93 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754926Ab2K2Xjd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 18:39:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40276 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752859Ab2K2Xjc (ORCPT
+	id S1754551Ab2K2Xn0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 18:43:26 -0500
+Received: from casper.infradead.org ([85.118.1.10]:39974 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751303Ab2K2XnZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 18:39:32 -0500
-Date: Thu, 29 Nov 2012 15:39:30 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Lin Feng <linfeng@cn.fujitsu.com>
-Cc: viro@zeniv.linux.org.uk, bcrl@kvack.org, kamezawa.hiroyu@jp.fujitsu.com,
-        mhocko@suse.cz, hughd@google.com, cl@linux.com, mgorman@suse.de,
-        minchan@kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        laijs@cn.fujitsu.com, wency@cn.fujitsu.com, tangchen@cn.fujitsu.com,
-        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [BUG REPORT] [mm-hotplug, aio] aio ring_pages can't be offlined
-Message-Id: <20121129153930.477e9709.akpm@linux-foundation.org>
-In-Reply-To: <1354172098-5691-1-git-send-email-linfeng@cn.fujitsu.com>
-References: <1354172098-5691-1-git-send-email-linfeng@cn.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 29 Nov 2012 18:43:25 -0500
+Message-ID: <50B7F30C.1060105@infradead.org>
+Date: Thu, 29 Nov 2012 15:43:08 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Ville Syrjala <syrjala@sci.fi>
+Subject: [PATCH -next] of: export "allnodes" to fixx w1-gpio.c modular build
+References: <20121129174057.99da02b15426c76054d05592@canb.auug.org.au>
+In-Reply-To: <20121129174057.99da02b15426c76054d05592@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Nov 2012 14:54:58 +0800
-Lin Feng <linfeng@cn.fujitsu.com> wrote:
+From: Randy Dunlap <rdunlap@infradead.org>
 
-> Hi all,
-> 
-> We encounter a "Resource temporarily unavailable" fail while trying
-> to offline a memory section in a movable zone. We found that there are 
-> some pages can't be migrated. The offline operation fails in function 
-> migrate_page_move_mapping() returning -EAGAIN till timeout because 
-> the if assertion 'page_count(page) != 1' fails.
-> I wonder in the case 'page_count(page) != 1', should we always wait
-> (return -EAGAING)? Or in other words, can we do something here for 
-> migration if we know where the pages from?
-> 
-> And finally found that such pages are used by /sbin/multipathd in the form
-> of aio ring_pages. Besides once increment introduced by the offline calling
-> chain, another increment is added by aio_setup_ring() via callling
-> get_userpages(), it won't decrease until we call aio_free_ring().
-> 
-> The dump_page info in the offline context is showed as following:
-> page:ffffea0011e69140 count:2 mapcount:0 mapping:ffff8801d6949881 index:0x7fc4b6d1d
-> page flags: 0x30000000018081d(locked|referenced|uptodate|dirty|swapbacked|unevictable)
-> page:ffffea0011fb0480 count:2 mapcount:0 mapping:ffff8801d6949881 index:0x7fc4b6d1c
-> page flags: 0x30000000018081d(locked|referenced|uptodate|dirty|swapbacked|unevictable)
-> page:ffffea0011fbaa80 count:2 mapcount:0 mapping:ffff8801d6949881 index:0x7fc4b6d1a
-> page flags: 0x30000000018081d(locked|referenced|uptodate|dirty|swapbacked|unevictable)
-> page:ffffea0011ff21c0 count:2 mapcount:0 mapping:ffff8801d6949881 index:0x7fc4b6d1b
-> page flags: 0x30000000018081d(locked|referenced|uptodate|dirty|swapbacked|unevictable)
-> 
-> The multipathd seems never going to release the ring_pages until we reboot the box.
-> Furthermore, if some guy makes app which only calls io_setup() but never calls 
-> io_destroy() for the reason that he has to keep the io_setup() for a long time 
-> or just forgets to or even on purpose that we can't expect.
-> So I think the mm-hotplug framwork should get the capability to deal with such
-> situation. And should we consider adding migration support for such pages?
-> 
-> However I don't know if there are any other kinds of such particular pages in 
-> current kernel/Linux system. If unluckily there are many apparently it's hard to 
-> handle them all, just adding migrate support for aio ring_pages is insufficient. 
-> 
-> But if luckily can we use the private field of page struct to track the
-> ring_pages[] pointer so that we can retrieve the user when migrate? 
-> Doing so another problem occurs, how to distinguish such special pages?
-> Use pageflag may cause an impact on current pageflag layout, add new pageflag
-> item also seems to be impossible.
-> 
-> I'm not sure what way is the right approach, seeking for help.
-> Any comments are extremely needed, thanks :)
+Fix build when CONFIG_W1_MASTER_GPIO=m by exporting "allnodes".
 
-Tricky.
+ERROR: "allnodes" [drivers/w1/masters/w1-gpio.ko] undefined!
 
-I expect the same problem would occur with pages which are under
-O_DIRECT I/O.  Obviously O_DIRECT pages won't be pinned for such long
-periods, but the durations could still be lengthy (seconds).
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+Cc: Ville Syrjala <syrjala@sci.fi>
+---
+ drivers/of/base.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Worse is a futex page, which could easily remain pinned indefinitely.
-
-The best I can think of is to make changes in or around
-get_user_pages(), to steal the pages from userspace and replace them
-with non-movable ones before pinning them.  The performance cost of
-something like this would surely be unacceptable for direct-io, but
-maybe OK for the aio ring and futexes.
-
+--- linux-next-20121129.orig/drivers/of/base.c
++++ linux-next-20121129/drivers/of/base.c
+@@ -46,6 +46,7 @@ struct alias_prop {
+ static LIST_HEAD(aliases_lookup);
+ 
+ struct device_node *allnodes;
++EXPORT_SYMBOL(allnodes);
+ struct device_node *of_chosen;
+ struct device_node *of_aliases;
+ 
