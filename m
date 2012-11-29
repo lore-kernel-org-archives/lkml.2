@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751184Ab2K2FG2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 00:06:28 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:12152 "EHLO
+	id S1751352Ab2K2FGf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 00:06:35 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:12164 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751022Ab2K2FGY (ORCPT
+	with ESMTP id S1751077Ab2K2FGa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 00:06:24 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-d1-50b6ed4fefbe
+	Thu, 29 Nov 2012 00:06:30 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-33-50b6ed543ea0
 From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
         linux-i2c@vger.kernel.org
 Cc: naveen@chromium.org, sjg@chromium.org, grundler@chromium.org,
         w.sang@pengutronix.de, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] i2c-s3c2410: Leave the bus disabled unless it is in use
-Date: Thu, 29 Nov 2012 10:35:34 +0530
-Message-id: <1354165536-18529-2-git-send-email-ch.naveen@samsung.com>
+Subject: [PATCH 2/2] i2c-s3c2410: Add bus arbitration implementation
+Date: Thu, 29 Nov 2012 10:35:35 +0530
+Message-id: <1354165536-18529-3-git-send-email-ch.naveen@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1354165536-18529-1-git-send-email-ch.naveen@samsung.com>
 References: <1354165536-18529-1-git-send-email-ch.naveen@samsung.com>
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrALMWRmVeSWpSXmKPExsWyRsSkStf/7bYAg54bIhYdf78wWlzeNYfN
-	Ysb5fUwOzB6fN8kFMEZx2aSk5mSWpRbp2yVwZbQd/MRasFuhYsGrzAbGbVJdjJwcEgImEh+P
-	9LBC2GISF+6tZ+ti5OIQEljKKPFq/mKWLkYOsKLl3ckQ8UWMEhMXLWKBcHqYJK4sm8QG0s0m
-	YCZxcNFqdhBbRCBDYsmjDYwgNrNAucSnR9tZQQYJC/hIfL4aCmKyCKhKTHwUBVLBK+Aq8XHh
-	OXaIVQoScybZgJicAm4S2y4GgVQIAVV0397DDGKzCAhIfJt8COowWYlNB5hBbpEQuM8mce99
-	EzvEJ5ISB1fcYJnAKLyAkWEVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRmAwnv73THoH46oG
-	i0OMAhyMSjy8Gy23BQixJpYVV+YeYpTgYFYS4bWsBgrxpiRWVqUW5ccXleakFh9i9AG6ZCKz
-	lGhyPjBS8kriDY1NzE2NTS2NjMxMTXEIK4nzNnukBAgJpCeWpGanphakFsGMY+LglGpg3Prf
-	KPtpyYXYacsXyawJUHzAxakwc+JTuYxVYSmxaicMDeXzxAL1Ww80Wht8F+bde/u2/CHWs1oL
-	vYImBPGqsdz7cV6eQ+rdq1Or85/0tTCmv1n4dXb2zbcL9rJbKSx9XXFPscrx93unWd0s7c8T
-	H2ot/KdkeYb9g65HVOzmCxIOFWIVE04WK7EUZyQaajEXFScCAN0QtUhzAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnkeLIzCtJLcpLzFFi42I5/e+xgK7/220BBmeOsVh0/P3CaHF51xw2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsWyRsSkWjf07bYAg9mtbBYdf78wWlzeNYfN
+	Ysb5fUwOzB6fN8kFMEZx2aSk5mSWpRbp2yVwZdxbcJ6toD2g4nnfbuYGxjf2XYwcHBICJhJH
+	Dgl3MXICmWISF+6tZ+ti5OIQEljKKDF10nI2iISJxPNrLewQiUWMEn+72pggnB4miQ0v9zKB
+	VLEJmEkcXLSaHcQWEciQWPJoAyOIzSxQLvHp0XZWEFtYwEXi4pHZzCA2i4CqxP7Z98F6eQVc
+	JW6e+M4OcZGCxJxJNiAmp4CbxLaLQSAVQkAV3bf3QHUKSHybfIgFolpWYtMBZpBrJAQes0nM
+	nHOeBeJmSYmDK26wTGAUXsDIsIpRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjMCRP/3smvYNx
+	VYPFIUYBDkYlHt6NltsChFgTy4orcw8xSnAwK4nwWlYDhXhTEiurUovy44tKc1KLDzH6AF0y
+	kVlKNDkfGC95JfGGxibmpsamlkZGZqamOISVxHmbPVIChATSE0tSs1NTC1KLYMYxcXBKNTC2
+	z7eOz21U2VvYbLRphl3Yl58GmTcunD+o9z7C78hLnxVvjF5JPClZdry7q9u1XYblnEESZ+uy
+	GY8FDhwsqo3aujrgSc79FSs/eXc8uSu34MgVc8mV6n7v/qe+Nq9sSmC+vcdE6Mriy3uL/245
+	OmVuc+qzHy6TvP3df62c/CM7rOTKwfy+gMOzlViKMxINtZiLihMBzZz0B3YCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMIsWRmVeSWpSXmKPExsVy+t9jAd2Qt9sCDOb3WVp0/P3CaHF51xw2
 	ixnn9zE5MHt83iQXwBjVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ib
-	aqvk4hOg65aZAzRfSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5jRdvAT
-	a8FuhYoFrzIbGLdJdTFycEgImEgs707uYuQEMsUkLtxbz9bFyMUhJLCIUWLiokUsEE4Pk8SV
-	ZZPYQKrYBMwkDi5azQ5iiwhkSCx5tIERxGYWKJf49Gg7K8hQYQEfic9XQ0FMFgFViYmPokAq
-	eAVcJT4uPMcOsVZBYs4kGxCTU8BNYtvFIJAKIaCK7tt7mCcw8i5gZFjFKJpakFxQnJSea6RX
-	nJhbXJqXrpecn7uJERzqz6R3MK5qsDjEKMDBqMTDu9FyW4AQa2JZcWXuIUYJDmYlEV7LaqAQ
-	b0piZVVqUX58UWlOavEhRh+gkyYyS4km5wPjMK8k3tDYxNzU2NTSxMLEzBKHsJI4b7NHSoCQ
-	QHpiSWp2ampBahHMOCYOTqkGxkWtd+1XSqr8Ej70QcnDNrzZ6hJzpobDpgpjo/BF6+7VihwV
-	qH6/WpTxO+9mP22DVmF+sewZosUv5KdK13LVW/wMSdl/b03WpC8sl5S0bixpNUkMMvnIMv31
-	w4jQmipe6UjV1AS3w7Wf17X/ljef2/uSU4j7c+WCPJGPb2ZEvuPuMlH89e6/EktxRqKhFnNR
-	cSIAn/Szz6ICAAA=
+	aqvk4hOg65aZAzRfSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5hxb8F5
+	toL2gIrnfbuZGxjf2HcxcnJICJhIPL/Wwg5hi0lcuLeerYuRi0NIYBGjxN+uNiYIp4dJYsPL
+	vUwgVWwCZhIHF60G6xARyJBY8mgDI4jNLFAu8enRdlYQW1jAReLikdnMIDaLgKrE/tn3wXp5
+	BVwlbp74DtTLAbRNQWLOJBsQk1PATWLbxSCQCiGgiu7be5gnMPIuYGRYxSiaWpBcUJyUnmuk
+	V5yYW1yal66XnJ+7iREc8s+kdzCuarA4xCjAwajEw7vRcluAEGtiWXFl7iFGCQ5mJRFey2qg
+	EG9KYmVValF+fFFpTmrxIUYfoJsmMkuJJucD4zGvJN7Q2MTc1NjU0sTCxMwSh7CSOG+zR0qA
+	kEB6YklqdmpqQWoRzDgmDk6pBsZ8V4FZfEEGV2OsGPiWxCUIB3b9FWzjMzR6I7z+jKlN5l32
+	dQbJu5VcPJT/f5h8N+qzdJbNEVOR39vWTpj7dH7cyrdqda8PHPtyR84+edvGj2+uVk+/KfT1
+	+/3aqsUP2M8rst+VY9pxXDrTpOPzTDnWGQ+2VZUKsf2X2XNB4iuP7Fudp1xbfD8rsRRnJBpq
+	MRcVJwIA1zKDYKYCAAA=
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -51,119 +51,325 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Simon Glass <sjg@chromium.org>
 
-There is a rather odd feature of the exynos i2c controller that if it
-is left enabled, it can lock itself up with the clk line held low.
-This makes the bus unusable.
-
-Unfortunately, the s3c24xx_i2c_set_master() function does not notice
-this, and reports a timeout. From then on the bus cannot be used until
-the AP is rebooted.
-
-The problem happens when any sort of interrupt occurs (e.g. due to a
-bus transition) when we are not in the middle of a transaction. We
-have seen many instances of this when U-Boot leaves the bus apparently
-happy, but Linux cannot access it.
-
-The current code is therefore pretty fragile.
-
-This fixes things by leaving the bus disabled unless we are actually
-in a transaction. We enable the bus at the start of the transaction and
-disable it at the end. That way we won't get interrupts and will not
-lock up the bus.
-
-It might be possible to clear pending interrupts on start-up, but this
-seems to be a more robust solution. We can't service interrupts when
-we are not in a transaction, and anyway would rather not lock up the
-bus while we try.
+The arbitrator is a general purpose function which uses two GPIOs to
+communicate with another device to claim/release a bus. We use it to
+arbitrate an i2c port between the AP and the EC.
 
 Signed-off-by: Simon Glass <sjg@chromium.org>
 Cc: Grant Grundler <grundler@chromium.org>
 Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
 ---
- drivers/i2c/busses/i2c-s3c2410.c |   37 +++++++++++++++++++++++++++++++++----
- 1 file changed, 33 insertions(+), 4 deletions(-)
+ .../devicetree/bindings/i2c/samsung-i2c.txt        |   46 ++++++
+ drivers/i2c/busses/i2c-s3c2410.c                   |  167 ++++++++++++++++++--
+ 2 files changed, 200 insertions(+), 13 deletions(-)
 
+diff --git a/Documentation/devicetree/bindings/i2c/samsung-i2c.txt b/Documentation/devicetree/bindings/i2c/samsung-i2c.txt
+index e9611ac..4bed49f 100644
+--- a/Documentation/devicetree/bindings/i2c/samsung-i2c.txt
++++ b/Documentation/devicetree/bindings/i2c/samsung-i2c.txt
+@@ -28,6 +28,11 @@ Optional properties:
+     specified, default value is 0.
+   - samsung,i2c-max-bus-freq: Desired frequency in Hz of the bus. If not
+     specified, the default value in Hz is 100000.
++  - samsung,arbitration-gpios : Two GPIOs to use with the GPIO-based bus
++    arbitration protocol (see below). The first should be an output, and is
++    used to claim the I2C bus, the second should be an input, and signals that
++    the other side wants to claim the bus. This allows two masters to share
++    the same I2C bus.
+ 
+ Example:
+ 
+@@ -52,4 +57,45 @@ Example:
+ 			compatible = "wlf,wm8994";
+ 			reg = <0x1a>;
+ 		};
++
++		/* If you want GPIO-based bus arbitration */
++		samsung,arbitration-gpios = <&gpf0 3 1 0 0>,	/* AP_CLAIM */
++			<&gpe0 4 0 3 0>;			/* EC_CLAIM */
+ 	};
++
++
++GPIO-based Arbitration
++======================
++(documented here for want of a better place - an implementation is in the
++i2c-s3c2410 driver)
++
++This uses GPIO lines between the AP (Exynos) and an attached EC (embedded
++controller) which both want to talk on the same I2C bus as master.
++
++The AP and EC each have a 'bus claim' line, which is an output that the
++other can see. These are both active low, with pull-ups enabled.
++
++- AP_CLAIM: output from AP, signalling to the EC that the AP wants the bus
++- EC_CLAIM: output from EC, signalling to the AP that the EC wants the bus
++
++
++Algorithm
++---------
++The basic algorithm is to assert your line when you want the bus, then make
++sure that the other side doesn't want it also. A detailed explanation is best
++done with an example.
++
++Let's say the AP wants to claim the bus. It:
++1. Asserts AP_CLAIM
++2. Waits a little bit for the other side to notice (slew time, say 10
++microseconds)
++3. Checks EC_CLAIM. If this is not asserted, then the AP has the bus, and
++we are done
++4. Otherwise, wait for a few milliseconds and see if EC_CLAIM is released
++5. If not, back off, release the claim and wait for a few more milliseconds
++6. Go back to 1 (until retry time has expired)
++
++To release the bus, just de-assert the claim line. If the other wants the bus
++it will notice soon enough.
++
++The same algorithm applies on the EC side.
 diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
-index e93e7d6..2fd346d 100644
+index 2fd346d..87a6928 100644
 --- a/drivers/i2c/busses/i2c-s3c2410.c
 +++ b/drivers/i2c/busses/i2c-s3c2410.c
-@@ -186,6 +186,31 @@ static inline void s3c24xx_i2c_enable_irq(struct s3c24xx_i2c *i2c)
- 	writel(tmp | S3C2410_IICCON_IRQEN, i2c->regs + S3C2410_IICCON);
- }
+@@ -62,6 +62,13 @@ enum s3c24xx_i2c_state {
+ 	STATE_STOP
+ };
+ 
++enum {
++	I2C_ARB_GPIO_AP,		/* AP claims i2c bus */
++	I2C_ARB_GPIO_EC,		/* EC claims i2c bus */
++
++	I2C_ARB_GPIO_COUNT,
++};
++
+ struct s3c24xx_i2c {
+ 	wait_queue_head_t	wait;
+ 	unsigned int            quirks;
+@@ -85,10 +92,16 @@ struct s3c24xx_i2c {
+ 
+ 	struct s3c2410_platform_i2c	*pdata;
+ 	int			gpios[2];
++	int			arb_gpios[I2C_ARB_GPIO_COUNT];
+ 	struct pinctrl          *pctrl;
+ #ifdef CONFIG_CPU_FREQ
+ 	struct notifier_block	freq_transition;
+ #endif
++	/* Arbitration parameters */
++	bool			arbitrate;
++	unsigned int		slew_delay_us;
++	unsigned int		wait_retry_us;
++	unsigned int		wait_free_us;
+ };
+ 
+ static struct platform_device_id s3c24xx_driver_ids[] = {
+@@ -116,6 +129,61 @@ static const struct of_device_id s3c24xx_i2c_match[] = {
+ MODULE_DEVICE_TABLE(of, s3c24xx_i2c_match);
+ #endif
  
 +/*
-+ * Disable the bus so that we won't get any interrupts from now on, or try
-+ * to drive any lines. This is the default state when we don't have
-+ * anything to send/receive.
-+ *
-+ * If there is an event on the bus, or we have a pre-existing event at
-+ * kernel boot time, we may not notice the event and the I2C controller
-+ * will lock the bus with the I2C clock line low indefinitely.
++ * If we have enabled arbitration on this bus, claim the i2c bus, using
++ * the GPIO-based signalling protocol.
 + */
-+static inline void s3c24xx_i2c_disable_bus(struct s3c24xx_i2c *i2c)
++int s3c24xx_i2c_claim(struct s3c24xx_i2c *i2c)
 +{
-+	unsigned long tmp;
++	unsigned long stop_retry, stop_time;
 +
-+	/* Stop driving the I2C pins */
-+	tmp = readl(i2c->regs + S3C2410_IICSTAT);
-+	tmp &= ~S3C2410_IICSTAT_TXRXEN;
-+	writel(tmp, i2c->regs + S3C2410_IICSTAT);
++	if (!i2c->arbitrate)
++		return 0;
 +
-+	/* We don't expect any interrupts now, and don't want send acks */
-+	tmp = readl(i2c->regs + S3C2410_IICCON);
-+	tmp &= ~(S3C2410_IICCON_IRQEN | S3C2410_IICCON_IRQPEND |
-+		S3C2410_IICCON_ACKEN);
-+	writel(tmp, i2c->regs + S3C2410_IICCON);
++	/* Start a round of trying to claim the bus */
++	stop_time = jiffies + usecs_to_jiffies(i2c->wait_free_us) + 1;
++	do {
++		/* Indicate that we want to claim the bus */
++		gpio_set_value(i2c->arb_gpios[I2C_ARB_GPIO_AP], 0);
++		udelay(i2c->slew_delay_us);
++
++		/* Wait for the EC to release it */
++		stop_retry = jiffies + usecs_to_jiffies(i2c->wait_retry_us) + 1;
++		while (time_before(jiffies, stop_retry)) {
++			if (gpio_get_value(i2c->arb_gpios[I2C_ARB_GPIO_EC])) {
++				/* We got it, so return */
++				return 0;
++			}
++
++			usleep_range(50, 200);
++		}
++
++		/* It didn't release, so give up, wait, and try again */
++		gpio_set_value(i2c->arb_gpios[I2C_ARB_GPIO_AP], 1);
++
++		usleep_range(i2c->wait_retry_us, i2c->wait_retry_us * 2);
++	} while (time_before(jiffies, stop_time));
++
++	/* Give up, release our claim */
++	gpio_set_value(i2c->arb_gpios[I2C_ARB_GPIO_AP], 1);
++	udelay(i2c->slew_delay_us);
++	dev_err(i2c->dev, "I2C: Could not claim bus, timeout\n");
++	return -EBUSY;
 +}
 +
- 
- /* s3c24xx_i2c_message_start
-  *
-@@ -646,7 +671,11 @@ static int s3c24xx_i2c_doxfer(struct s3c24xx_i2c *i2c,
- 
- 	s3c24xx_i2c_wait_idle(i2c);
- 
-+	s3c24xx_i2c_disable_bus(i2c);
++/*
++ * If we have enabled arbitration on this bus, release the i2c bus, using
++ * the GPIO-based signalling protocol.
++ */
++void s3c24xx_i2c_release(struct s3c24xx_i2c *i2c)
++{
++	if (i2c->arbitrate) {
++		/* Release the bus and wait for the EC to notice */
++		gpio_set_value(i2c->arb_gpios[I2C_ARB_GPIO_AP], 1);
++		udelay(i2c->slew_delay_us);
++	}
++}
 +
+ /* s3c24xx_get_device_quirks
+  *
+  * Get controller type either from device tree or platform device variant.
+@@ -637,6 +705,15 @@ static int s3c24xx_i2c_doxfer(struct s3c24xx_i2c *i2c,
+ 	if (i2c->suspended)
+ 		return -EIO;
+ 
++	/*
++	 * Claim the bus if needed.
++	 *
++	 * Note, this needs a lock. How come s3c24xx_i2c_set_master() below
++	 * is outside the lock?
++	 */
++	if (s3c24xx_i2c_claim(i2c))
++		return -EBUSY;
++
+ 	ret = s3c24xx_i2c_set_master(i2c);
+ 	if (ret != 0) {
+ 		dev_err(i2c->dev, "cannot get bus (error %d)\n", ret);
+@@ -676,6 +753,9 @@ static int s3c24xx_i2c_doxfer(struct s3c24xx_i2c *i2c,
   out:
-+	i2c->state = STATE_IDLE;
+ 	i2c->state = STATE_IDLE;
+ 
++	/* Release the bus if needed */
++	s3c24xx_i2c_release(i2c);
 +
  	return ret;
  }
  
-@@ -912,7 +941,6 @@ static void s3c24xx_i2c_dt_gpio_free(struct s3c24xx_i2c *i2c)
+@@ -884,20 +964,42 @@ static inline void s3c24xx_i2c_deregister_cpufreq(struct s3c24xx_i2c *i2c)
+ #endif
  
- static int s3c24xx_i2c_init(struct s3c24xx_i2c *i2c)
+ #ifdef CONFIG_OF
+-static int s3c24xx_i2c_parse_dt_gpio(struct s3c24xx_i2c *i2c)
++/*
++ * Parse a list of GPIOs from a node property and request each one
++ *
++ * This might be better as of_gpio_get_array() one day.
++ *
++ * @param i2c		i2c driver data
++ * @param name		name of property to read from
++ * @param gpios		returns an array of GPIOs
++ * @param count		number of GPIOs to read
++ * @param required	true if the property is required, false if it is
++ *			optional so no warning is printed (avoids a separate
++ *			check in caller)
++ * @return 0 on success, -ve on error, in which case no GPIOs remain
++ * requested
++ */
++static int s3c24xx_i2c_parse_gpio(struct s3c24xx_i2c *i2c, const char *name,
++		int gpios[], size_t count, bool required)
  {
--	unsigned long iicon = S3C2410_IICCON_IRQEN | S3C2410_IICCON_ACKEN;
- 	struct s3c2410_platform_i2c *pdata;
- 	unsigned int freq;
+-	int idx, gpio, ret;
+-
+-	if (i2c->quirks & QUIRK_NO_GPIO)
+-		return 0;
++	struct device_node *dn = i2c->dev->of_node;
++	unsigned int idx;
++	int gpio, ret;
  
-@@ -926,12 +954,12 @@ static int s3c24xx_i2c_init(struct s3c24xx_i2c *i2c)
+-	for (idx = 0; idx < 2; idx++) {
+-		gpio = of_get_gpio(i2c->dev->of_node, idx);
++	/*
++	 * It would be nice if there were an of function to return a list
++	 * of GPIOs
++	 */
++	for (idx = 0; idx < count; idx++) {
++		gpio = of_get_named_gpio(dn, name, idx);
+ 		if (!gpio_is_valid(gpio)) {
+-			dev_err(i2c->dev, "invalid gpio[%d]: %d\n", idx, gpio);
++			if (idx || required) {
++				dev_err(i2c->dev, "invalid gpio[%d]: %d\n",
++					idx, gpio);
++			}
+ 			goto free_gpio;
+ 		}
+-		i2c->gpios[idx] = gpio;
++		gpios[idx] = gpio;
  
- 	dev_info(i2c->dev, "slave address 0x%02x\n", pdata->slave_addr);
+ 		ret = gpio_request(gpio, "i2c-bus");
+ 		if (ret) {
+@@ -909,19 +1011,47 @@ static int s3c24xx_i2c_parse_dt_gpio(struct s3c24xx_i2c *i2c)
  
--	writel(iicon, i2c->regs + S3C2410_IICCON);
-+	writel(0, i2c->regs + S3C2410_IICCON);
-+	writel(0, i2c->regs + S3C2410_IICSTAT);
- 
- 	/* we need to work out the divisors for the clock... */
- 
- 	if (s3c24xx_i2c_clockrate(i2c, &freq) != 0) {
--		writel(0, i2c->regs + S3C2410_IICCON);
- 		dev_err(i2c->dev, "cannot meet bus frequency required\n");
- 		return -EINVAL;
- 	}
-@@ -939,7 +967,8 @@ static int s3c24xx_i2c_init(struct s3c24xx_i2c *i2c)
- 	/* todo - check that the i2c lines aren't being dragged anywhere */
- 
- 	dev_info(i2c->dev, "bus frequency set to %d KHz\n", freq);
--	dev_dbg(i2c->dev, "S3C2410_IICCON=0x%02lx\n", iicon);
-+	dev_dbg(i2c->dev, "S3C2410_IICCON=0x%02x\n",
-+		readl(i2c->regs + S3C2410_IICCON));
- 
- 	return 0;
+ free_gpio:
+ 	while (--idx >= 0)
+-		gpio_free(i2c->gpios[idx]);
++		gpio_free(gpios[idx]);
+ 	return -EINVAL;
  }
+ 
+-static void s3c24xx_i2c_dt_gpio_free(struct s3c24xx_i2c *i2c)
++/* Free a list of GPIOs */
++static void s3c24xx_i2c_free_gpios(int gpios[], int count)
+ {
+ 	unsigned int idx;
+ 
++	for (idx = 0; idx < count; idx++) {
++		if (gpio_is_valid(gpios[idx]))
++			gpio_free(gpios[idx]);
++	}
++}
++
++static int s3c24xx_i2c_parse_dt_gpio(struct s3c24xx_i2c *i2c)
++{
++	if (i2c->quirks & QUIRK_NO_GPIO)
++		return 0;
++
++	if (s3c24xx_i2c_parse_gpio(i2c, "gpios", i2c->gpios, 2, true))
++		return -EINVAL;
++
++	if (!s3c24xx_i2c_parse_gpio(i2c, "samsung,arbitration-gpios",
++			i2c->arb_gpios, I2C_ARB_GPIO_COUNT, false)) {
++		i2c->arbitrate = 1;
++		dev_warn(i2c->dev, "GPIO-based arbitration enabled");
++	}
++
++	return 0;
++
++}
++
++static void s3c24xx_i2c_dt_gpio_free(struct s3c24xx_i2c *i2c)
++{
+ 	if (i2c->quirks & QUIRK_NO_GPIO)
+ 		return;
+ 
+-	for (idx = 0; idx < 2; idx++)
+-		gpio_free(i2c->gpios[idx]);
++	s3c24xx_i2c_free_gpios(i2c->gpios, 2);
++	if (i2c->arbitrate)
++		s3c24xx_i2c_free_gpios(i2c->arb_gpios, I2C_ARB_GPIO_COUNT);
+ }
+ #else
+ static int s3c24xx_i2c_parse_dt_gpio(struct s3c24xx_i2c *i2c)
+@@ -992,6 +1122,17 @@ s3c24xx_i2c_parse_dt(struct device_node *np, struct s3c24xx_i2c *i2c)
+ 	of_property_read_u32(np, "samsung,i2c-slave-addr", &pdata->slave_addr);
+ 	of_property_read_u32(np, "samsung,i2c-max-bus-freq",
+ 				(u32 *)&pdata->frequency);
++
++	/* Arbitration parameters */
++	if (of_property_read_u32(np, "samsung,slew-delay-us",
++				 &i2c->slew_delay_us))
++		i2c->slew_delay_us = 10;
++	if (of_property_read_u32(np, "samsung,wait-retry-us",
++				 &i2c->wait_retry_us))
++		i2c->wait_retry_us = 2000;
++	if (of_property_read_u32(np, "samsung,wait-free-us",
++				 &i2c->wait_free_us))
++		i2c->wait_free_us = 50000;
+ }
+ #else
+ static void
 -- 
 1.7.9.5
 
