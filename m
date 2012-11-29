@@ -1,123 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753701Ab2K2KKw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 05:10:52 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:35970 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751692Ab2K2KKr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 05:10:47 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: linux-acpi@vger.kernel.org
-Cc: Toshi Kani <toshi.kani@hp.com>, Hanjun Guo <guohanjun@huawei.com>,
-        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com, lenb@kernel.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Tang Chen <tangchen@cn.fujitsu.com>
-Subject: Re: [RFC PATCH v3 0/3] acpi: Introduce prepare_remove device operation
-Date: Thu, 29 Nov 2012 11:15:31 +0100
-Message-ID: <75241306.UQIr1RW8Qh@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <1354128096.26955.276.camel@misato.fc.hp.com>
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com> <50B5EFE9.3040206@huawei.com> <1354128096.26955.276.camel@misato.fc.hp.com>
+	id S1753939Ab2K2KLF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 05:11:05 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:50173 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753759Ab2K2KK7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 05:10:59 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        Prabhakar Lad <prabhakar.lad@ti.com>, devel@driverdev.osuosl.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Subject: Re: [PATCH v3 0/9] Media Controller capture driver for DM365
+Date: Thu, 29 Nov 2012 11:12:05 +0100
+Message-ID: <3827969.48rJ6ExhZb@avalon>
+User-Agent: KMail/4.9.2 (Linux/3.5.7-gentoo; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <1354099329-20722-1-git-send-email-prabhakar.lad@ti.com>
+References: <1354099329-20722-1-git-send-email-prabhakar.lad@ti.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 28, 2012 11:41:36 AM Toshi Kani wrote:
-> On Wed, 2012-11-28 at 19:05 +0800, Hanjun Guo wrote:
-> > On 2012/11/24 1:50, Vasilis Liaskovitis wrote:
-> > > As discussed in https://patchwork.kernel.org/patch/1581581/
-> > > the driver core remove function needs to always succeed. This means we need
-> > > to know that the device can be successfully removed before acpi_bus_trim / 
-> > > acpi_bus_hot_remove_device are called. This can cause panics when OSPM-initiated
-> > > or SCI-initiated eject of memory devices fail e.g with:
-> > > echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
-> > > 
-> > > since the ACPI core goes ahead and ejects the device regardless of whether the
-> > > the memory is still in use or not.
-> > > 
-> > > For this reason a new acpi_device operation called prepare_remove is introduced.
-> > > This operation should be registered for acpi devices whose removal (from kernel
-> > > perspective) can fail.  Memory devices fall in this category.
-> > > 
-> > > acpi_bus_remove() is changed to handle removal in 2 steps:
-> > > - preparation for removal i.e. perform part of removal that can fail. Should
-> > >   succeed for device and all its children.
-> > > - if above step was successfull, proceed to actual device removal
-> > 
-> > Hi Vasilis,
-> > We met the same problem when we doing computer node hotplug, It is a good idea
-> > to introduce prepare_remove before actual device removal.
-> > 
-> > I think we could do more in prepare_remove, such as rollback. In most cases, we can
-> > offline most of memory sections except kernel used pages now, should we rollback
-> > and online the memory sections when prepare_remove failed ?
+On Wednesday 28 November 2012 16:12:00 Prabhakar Lad wrote:
+> From: Manjunath Hadli <manjunath.hadli@ti.com>
+
+For staging, and provided that all parties involved understand that an API 
+compatibility layer with the existing drivers/media/platform/davinci/ driver 
+(called the "existing driver") will need to be provided when this media 
+controller aware driver will move out of staging to drivers/media/ and replace 
+the existing driver,
+
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+
+> Mauro/Greg,
+>  The below series of patches have gone through good amount of reviews, and
+> agreed by Laurent, Hans and Sakari to be part of the staging tree. I am
+> combining the patchs with the pull request so we can get them into the 3.8
+> kernel. Please pull these patches.If you want a seperate pull request,
+> please let me know.
 > 
-> I think hot-plug operation should have all-or-nothing semantics.  That
-> is, an operation should either complete successfully, or rollback to the
-> original state.
-
-That's correct.
-
-> > As you may know, the ACPI based hotplug framework we are working on already addressed
-> > this problem, and the way we slove this problem is a bit like yours.
-> > 
-> > We introduce hp_ops in struct acpi_device_ops:
-> > struct acpi_device_ops {
-> > 	acpi_op_add add;
-> > 	acpi_op_remove remove;
-> > 	acpi_op_start start;
-> > 	acpi_op_bind bind;
-> > 	acpi_op_unbind unbind;
-> > 	acpi_op_notify notify;
-> > #ifdef	CONFIG_ACPI_HOTPLUG
-> > 	struct acpihp_dev_ops *hp_ops;
-> > #endif	/* CONFIG_ACPI_HOTPLUG */
-> > };
-> > 
-> > in hp_ops, we divide the prepare_remove into six small steps, that is:
-> > 1) pre_release(): optional step to mark device going to be removed/busy
-> > 2) release(): reclaim device from running system
-> > 3) post_release(): rollback if cancelled by user or error happened
-> > 4) pre_unconfigure(): optional step to solve possible dependency issue
-> > 5) unconfigure(): remove devices from running system
-> > 6) post_unconfigure(): free resources used by devices
-> > 
-> > In this way, we can easily rollback if error happens.
-> > How do you think of this solution, any suggestion ? I think we can achieve
-> > a better way for sharing ideas. :)
+> This patch set adds media controller based capture driver for
+> DM365.
 > 
-> Yes, sharing idea is good. :)  I do not know if we need all 6 steps (I
-> have not looked at all your changes yet..), but in my mind, a hot-plug
-> operation should be composed with the following 3 phases.
+> This driver bases its design on Laurent Pinchart's Media Controller Design
+> whose patches for Media Controller and subdev enhancements form the base.
+> The driver also takes copious elements taken from Laurent Pinchart and
+> others' OMAP ISP driver based on Media Controller. So thank you all the
+> people who are responsible for the Media Controller and the OMAP ISP driver.
 > 
-> 1. Validate phase - Verify if the request is a supported operation.  All
-> known restrictions are verified at this phase.  For instance, if a
-> hot-remove request involves kernel memory, it is failed in this phase.
-> Since this phase makes no change, no rollback is necessary to fail.  
-
-Actually, we can't do it this way, because the conditions may change between
-the check and the execution.  So the first phase needs to involve execution
-to some extent, although only as far as it remains reversible.
-
-> 2. Execute phase - Perform hot-add / hot-remove operation that can be
-> rolled-back in case of error or cancel.
-
-I would just merge 1 and 2.
-
-> 3. Commit phase - Perform the final hot-add / hot-remove operation that
-> cannot be rolled-back.  No error / cancel is allowed in this phase.  For
-> instance, eject operation is performed at this phase.  
-
-Yup.
-
-Thanks,
-Rafael
-
+> Also, the core functionality of the driver comes from the arago vpfe capture
+> driver of which the isif capture was based on V4L2, with other drivers like
+> ipipe, ipipeif and Resizer.
+> 
+> Changes for v2:
+> 1: Migrated the driver for videobuf2 usage pointed Hans.
+> 2: Changed the design as pointed by Laurent, Exposed one more subdevs
+>    ipipeif and split the resizer subdev into three subdevs.
+> 3: Rearrganed the patch sequence and changed the commit messages.
+> 4: Changed the file architecture as pointed by Laurent.
+> 
+> Changes for v3:
+> 1: Rebased on staging.
+> 2: Seprated out patches which would go into staging.
+> 
+> The following changes since commit c6c22955f80f2db9614b01fe5a3d1cfcd8b3d848:
+> 
+>   [media] dma-mapping: fix dma_common_get_sgtable() conditional compilation
+> (2012-11-27 09:42:31 -0200)
+> 
+> are available in the git repository at:
+>   git://linuxtv.org/mhadli/v4l-dvb-davinci_devices.git vpfe_driver_staging
+> 
+> Manjunath Hadli (9):
+>       davinci: vpfe: add v4l2 capture driver with media interface
+>       davinci: vpfe: add v4l2 video driver support
+>       davinci: vpfe: dm365: add IPIPEIF driver based on media framework
+>       davinci: vpfe: dm365: add ISIF driver based on media framework
+>       davinci: vpfe: dm365: add IPIPE support for media controller driver
+>       davinci: vpfe: dm365: add IPIPE hardware layer support
+>       davinci: vpfe: dm365: resizer driver based on media framework
+>       davinci: vpfe: dm365: add build infrastructure for capture driver
+>       davinci: vpfe: Add documentation and TODO
+> 
+>  drivers/staging/media/Kconfig                      |    2 +
+>  drivers/staging/media/Makefile                     |    1 +
+>  drivers/staging/media/davinci_vpfe/Kconfig         |    9 +
+>  drivers/staging/media/davinci_vpfe/Makefile        |    3 +
+>  drivers/staging/media/davinci_vpfe/TODO            |   34 +
+>  .../staging/media/davinci_vpfe/davinci-vpfe-mc.txt |  154 ++
+>  .../staging/media/davinci_vpfe/davinci_vpfe_user.h | 1290 ++++++++++++
+>  drivers/staging/media/davinci_vpfe/dm365_ipipe.c   | 1863 +++++++++++++++++
+> drivers/staging/media/davinci_vpfe/dm365_ipipe.h   |  179 ++
+>  .../staging/media/davinci_vpfe/dm365_ipipe_hw.c    | 1048 ++++++++++
+>  .../staging/media/davinci_vpfe/dm365_ipipe_hw.h    |  559 ++++++
+>  drivers/staging/media/davinci_vpfe/dm365_ipipeif.c | 1071 ++++++++++
+>  drivers/staging/media/davinci_vpfe/dm365_ipipeif.h |  233 +++
+>  .../media/davinci_vpfe/dm365_ipipeif_user.h        |   93 +
+>  drivers/staging/media/davinci_vpfe/dm365_isif.c    | 2104 +++++++++++++++++
+>  drivers/staging/media/davinci_vpfe/dm365_isif.h    |  203 ++
+>  .../staging/media/davinci_vpfe/dm365_isif_regs.h   |  294 +++
+>  drivers/staging/media/davinci_vpfe/dm365_resizer.c | 1999 +++++++++++++++++
+>  drivers/staging/media/davinci_vpfe/dm365_resizer.h |  244 +++
+>  drivers/staging/media/davinci_vpfe/vpfe.h          |   86 +
+>  .../staging/media/davinci_vpfe/vpfe_mc_capture.c   |  740 +++++++
+>  .../staging/media/davinci_vpfe/vpfe_mc_capture.h   |   97 +
+>  drivers/staging/media/davinci_vpfe/vpfe_video.c    | 1620 +++++++++++++++
+>  drivers/staging/media/davinci_vpfe/vpfe_video.h    |  155 ++
+>  24 files changed, 14081 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/staging/media/davinci_vpfe/Kconfig
+>  create mode 100644 drivers/staging/media/davinci_vpfe/Makefile
+>  create mode 100644 drivers/staging/media/davinci_vpfe/TODO
+>  create mode 100644 drivers/staging/media/davinci_vpfe/davinci-vpfe-mc.txt
+>  create mode 100644 drivers/staging/media/davinci_vpfe/davinci_vpfe_user.h
+>  create mode 100644 drivers/staging/media/davinci_vpfe/dm365_ipipe.c
+>  create mode 100644 drivers/staging/media/davinci_vpfe/dm365_ipipe.h
+>  create mode 100644 drivers/staging/media/davinci_vpfe/dm365_ipipe_hw.c
+>  create mode 100644 drivers/staging/media/davinci_vpfe/dm365_ipipe_hw.h
+>  create mode 100644 drivers/staging/media/davinci_vpfe/dm365_ipipeif.c
+>  create mode 100644 drivers/staging/media/davinci_vpfe/dm365_ipipeif.h
+>  create mode 100644 drivers/staging/media/davinci_vpfe/dm365_ipipeif_user.h
+>  create mode 100644 drivers/staging/media/davinci_vpfe/dm365_isif.c
+>  create mode 100644 drivers/staging/media/davinci_vpfe/dm365_isif.h
+>  create mode 100644 drivers/staging/media/davinci_vpfe/dm365_isif_regs.h
+>  create mode 100644 drivers/staging/media/davinci_vpfe/dm365_resizer.c
+>  create mode 100644 drivers/staging/media/davinci_vpfe/dm365_resizer.h
+>  create mode 100644 drivers/staging/media/davinci_vpfe/vpfe.h
+>  create mode 100644 drivers/staging/media/davinci_vpfe/vpfe_mc_capture.c
+>  create mode 100644 drivers/staging/media/davinci_vpfe/vpfe_mc_capture.h
+>  create mode 100644 drivers/staging/media/davinci_vpfe/vpfe_video.c
+>  create mode 100644 drivers/staging/media/davinci_vpfe/vpfe_video.h
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Regards,
+
+Laurent Pinchart
+
