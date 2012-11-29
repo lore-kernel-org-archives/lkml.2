@@ -1,71 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751546Ab2K2Ers (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 23:47:48 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:38907 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750909Ab2K2Err (ORCPT
+	id S1751645Ab2K2Etl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 23:49:41 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:6196 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750713Ab2K2Etj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 23:47:47 -0500
-Date: Thu, 29 Nov 2012 15:47:39 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: linux-next: manual merge of the staging tree with the tty tree
-Message-Id: <20121129154739.241d7a45c8bab79b3aeb9fe6@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__29_Nov_2012_15_47_39_+1100_l_JzM1SjO9mElQtg"
+	Wed, 28 Nov 2012 23:49:39 -0500
+Message-ID: <50B6E936.2080308@huawei.com>
+Date: Thu, 29 Nov 2012 12:48:54 +0800
+From: Hanjun Guo <guohanjun@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Toshi Kani <toshi.kani@hp.com>
+CC: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        <linux-acpi@vger.kernel.org>, <isimatu.yasuaki@jp.fujitsu.com>,
+        <wency@cn.fujitsu.com>, <rjw@sisk.pl>, <lenb@kernel.org>,
+        <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, Tang Chen <tangchen@cn.fujitsu.com>,
+        Liujiang <jiang.liu@huawei.com>, Huxinwei <huxinwei@huawei.com>
+Subject: Re: [RFC PATCH v3 0/3] acpi: Introduce prepare_remove device operation
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>  <50B5EFE9.3040206@huawei.com> <1354128096.26955.276.camel@misato.fc.hp.com>
+In-Reply-To: <1354128096.26955.276.camel@misato.fc.hp.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.69.25]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__29_Nov_2012_15_47_39_+1100_l_JzM1SjO9mElQtg
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 2012/11/29 2:41, Toshi Kani wrote:
+> On Wed, 2012-11-28 at 19:05 +0800, Hanjun Guo wrote:
+>> On 2012/11/24 1:50, Vasilis Liaskovitis wrote:
+>>> As discussed in https://patchwork.kernel.org/patch/1581581/
+>>> the driver core remove function needs to always succeed. This means we need
+>>> to know that the device can be successfully removed before acpi_bus_trim / 
+>>> acpi_bus_hot_remove_device are called. This can cause panics when OSPM-initiated
+>>> or SCI-initiated eject of memory devices fail e.g with:
+>>> echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
+>>>
+>>> since the ACPI core goes ahead and ejects the device regardless of whether the
+>>> the memory is still in use or not.
+>>>
+>>> For this reason a new acpi_device operation called prepare_remove is introduced.
+>>> This operation should be registered for acpi devices whose removal (from kernel
+>>> perspective) can fail.  Memory devices fall in this category.
+>>>
+>>> acpi_bus_remove() is changed to handle removal in 2 steps:
+>>> - preparation for removal i.e. perform part of removal that can fail. Should
+>>>   succeed for device and all its children.
+>>> - if above step was successfull, proceed to actual device removal
+>>
+>> Hi Vasilis,
+>> We met the same problem when we doing computer node hotplug, It is a good idea
+>> to introduce prepare_remove before actual device removal.
+>>
+>> I think we could do more in prepare_remove, such as rollback. In most cases, we can
+>> offline most of memory sections except kernel used pages now, should we rollback
+>> and online the memory sections when prepare_remove failed ?
+> 
+> I think hot-plug operation should have all-or-nothing semantics.  That
+> is, an operation should either complete successfully, or rollback to the
+> original state.
 
-Hi Greg,
+Yes, we have the same point of view with you. We handle this problem in the ACPI
+based hot-plug framework as following:
+1) hot add / hot remove complete successfully if no error happens;
+2) automatic rollback to the original state if meets some error ;
+3) rollback to the original if hot-plug operation cancelled by user ;
 
-Today's linux-next merge of the staging tree got a conflicts in
-drivers/staging/fwserial/fwserial.c, drivers/staging/Kconfig and
-drivers/staging/Kconfig between commit 7355ba3445f2 ("staging: fwserial:
-Add TTY-over-Firewire serial driver") from the tty tree and commit
-e5711071ad94 ("staging: fwserial: Add TTY-over-Firewire serial driver")
-from the staging tree.
+> 
+>> As you may know, the ACPI based hotplug framework we are working on already addressed
+>> this problem, and the way we slove this problem is a bit like yours.
+>>
+>> We introduce hp_ops in struct acpi_device_ops:
+>> struct acpi_device_ops {
+>> 	acpi_op_add add;
+>> 	acpi_op_remove remove;
+>> 	acpi_op_start start;
+>> 	acpi_op_bind bind;
+>> 	acpi_op_unbind unbind;
+>> 	acpi_op_notify notify;
+>> #ifdef	CONFIG_ACPI_HOTPLUG
+>> 	struct acpihp_dev_ops *hp_ops;
+>> #endif	/* CONFIG_ACPI_HOTPLUG */
+>> };
+>>
+>> in hp_ops, we divide the prepare_remove into six small steps, that is:
+>> 1) pre_release(): optional step to mark device going to be removed/busy
+>> 2) release(): reclaim device from running system
+>> 3) post_release(): rollback if cancelled by user or error happened
+>> 4) pre_unconfigure(): optional step to solve possible dependency issue
+>> 5) unconfigure(): remove devices from running system
+>> 6) post_unconfigure(): free resources used by devices
+>>
+>> In this way, we can easily rollback if error happens.
+>> How do you think of this solution, any suggestion ? I think we can achieve
+>> a better way for sharing ideas. :)
+> 
+> Yes, sharing idea is good. :)  I do not know if we need all 6 steps (I
+> have not looked at all your changes yet..), but in my mind, a hot-plug
+> operation should be composed with the following 3 phases.
 
-I am not sure why this patch exists in both trees :-(
+Good idea ! we also implement a hot-plug operation in 3 phases:
+1) acpihp_drv_pre_execute
+2) acpihp_drv_execute
+3) acpihp_drv_post_execute
+you may refer to :
+https://lkml.org/lkml/2012/11/4/79
 
-I fixed it up (they are the same but the trees contain more commits
-affecting these files) and can carry the fix as necessary (no action is
-required).
+> 
+> 1. Validate phase - Verify if the request is a supported operation.  All
+> known restrictions are verified at this phase.  For instance, if a
+> hot-remove request involves kernel memory, it is failed in this phase.
+> Since this phase makes no change, no rollback is necessary to fail. 
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Yes, we have done this in acpihp_drv_pre_execute, and check following things:
 
---Signature=_Thu__29_Nov_2012_15_47_39_+1100_l_JzM1SjO9mElQtg
-Content-Type: application/pgp-signature
+1) Hot-plugble or not. the instance kernel memory you mentioned is also checked
+   when memory device remove;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+2) Dependency check involved. For instance, if hot-add a memory device,
+   processor should be added first, otherwise it's not valid to this operation.
 
-iQIcBAEBCAAGBQJQtujrAAoJEECxmPOUX5FEfCUP/itfXzXsgmQGLlvfPkCm/qSA
-nhZbS0MB8gX6bV8A7YhmOfb8+pWCkLtc9f7YqVYMd3L2tXuYr6IGfFwHpQ7A4F+r
-MNG/KkufjY5ByqzWH8bKltlafZqTudNuJwD34lIyU2euxJQnHr1IVXhIZEzu4fJU
-t7MKGO6wzB3TXs6jQFtn6Lnz9Kn43LfFSGkArZikp0pIPQxSA26zJ26rW+Nyntek
-lvLGu8PPxVwvdeLDkElWX85BjB6tE1J8x5RW//mRSJhD7jW/e7dEe8mlddjiEQxf
-j8XL2Vy/W3YUdzPqsS7Es3PdixMPgBWsGptny1rDGBnAy0oUYqaALNd8jV7HM1Qk
-qo4xGtdY+fp+iKuj8Z6RzPPlY9erbonnf9Y7xNmgwKcvxsmrATz9ns4Uuph+Y3Pt
-2mbqtktWH084nbEFUgakYtpaH8fjBKPVvNXpJiClvXSJIrpl0fCEYd4CgC11Jjfi
-010N5rONEWQT77g6T4D9A1+t7Pfwbbm7QrfbkbfjjzijwSzU/2/J3qhQ7WuBb4Oi
-Qud2w67uQWPX/eMsT6tNQbMYgXEUb9DKwTarhHEe6TANG+m2S/6TPARQVjHGpskx
-jDRjcXZe2J8lABL2PdAuLxvO9SmBnKd25ezcfILWM44GUKyov86IkRuMCdwM1SDP
-pUk+Y6cGcCGj5d1huRq6
-=0gh1
------END PGP SIGNATURE-----
+3) Race condition check. if the device and its dependent device is in hot-plug
+   process, another request will be denied.
 
---Signature=_Thu__29_Nov_2012_15_47_39_+1100_l_JzM1SjO9mElQtg--
+No rollback is needed for the above checks.
+
+> 
+> 2. Execute phase - Perform hot-add / hot-remove operation that can be
+> rolled-back in case of error or cancel.
+
+In this phase, we introduce a state machine for the hot-plugble device,
+please refer to:
+https://lkml.org/lkml/2012/11/4/79
+
+I think we have the same idea for the major framework, but the ACPI based
+hot-plug framework implement it differently in detail, right ?
+
+Thanks
+Hanjun
+
+> 
+> 3. Commit phase - Perform the final hot-add / hot-remove operation that
+> cannot be rolled-back.  No error / cancel is allowed in this phase.  For
+> instance, eject operation is performed at this phase.  
+> 
+> 
+> Thanks,
+> -Toshi
+> 
+
+
+
