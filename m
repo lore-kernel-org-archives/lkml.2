@@ -1,42 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753585Ab2K2UIa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 15:08:30 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52619 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751399Ab2K2UI3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 15:08:29 -0500
-Date: Thu, 29 Nov 2012 20:07:08 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "arm@kernel.org" <arm@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Jason Cooper <jason@lakedaemon.net>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [GIT PULL] ARM: final SoC fixes for 3.7
-Message-ID: <20121129200708.GN19440@n2100.arm.linux.org.uk>
-References: <201211291424.25711.arnd@arndb.de>
+	id S1753886Ab2K2UKH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 15:10:07 -0500
+Received: from mga01.intel.com ([192.55.52.88]:55593 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752609Ab2K2UKF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 15:10:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,186,1355126400"; 
+   d="scan'208";a="256800267"
+From: Andi Kleen <andi@firstfloor.org>
+To: Jim Kukunas <james.t.kukunas@linux.intel.com>
+Cc: Linux Raid <linux-raid@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Neil Brown <neilb@suse.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] lib/raid6: Add AVX2 optimized recovery functions
+References: <1352411264-5156-1-git-send-email-james.t.kukunas@linux.intel.com>
+Date: Thu, 29 Nov 2012 12:09:37 -0800
+In-Reply-To: <1352411264-5156-1-git-send-email-james.t.kukunas@linux.intel.com>
+	(Jim Kukunas's message of "Thu, 8 Nov 2012 13:47:44 -0800")
+Message-ID: <m2obigf9xa.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201211291424.25711.arnd@arndb.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 02:24:25PM +0000, Arnd Bergmann wrote:
-> Hi Linus,
-> 
-> These should be the last bug fixes you get from Olof and me for 3.7.
-> This is based on the previous one you pulled and there is nothing
-> spectacular in here. I'll follow up with a second pull request
-> knowing that those are probably too late now, but I'd like to let
-> you know about the ones that didn't make it and give you the chance
-> to pull those anyway if you prefer.
+Jim Kukunas <james.t.kukunas@linux.intel.com> writes:
+> +
+> +	/* ymm0 = x0f[16] */
+> +	asm volatile("vpbroadcastb %0, %%ymm7" : : "m" (x0f));
+> +
+> +	while (bytes) {
+> +#ifdef CONFIG_X86_64
+> +		asm volatile("vmovdqa %0, %%ymm1" : : "m" (q[0]));
+> +		asm volatile("vmovdqa %0, %%ymm9" : : "m" (q[32]));
+> +		asm volatile("vmovdqa %0, %%ymm0" : : "m" (p[0]));
+> +		asm volatile("vmovdqa %0, %%ymm8" : : "m" (p[32]));
 
-I don't see anything in here for the OMAP warning that I've been reporting
-for the last two weeks.  What's going on with getting fixes merged into
-arm-soc?
+This is somewhat dangerous to assume registers do not get changed
+between assembler statements or assembler statements do not get
+reordered. Better always put such values into explicit variables or
+merge them into a single asm statement.
+
+asm volatile is also not enough to prevent reordering. If anything
+you would need a memory clobber.
+
+-Andi
+
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
