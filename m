@@ -1,102 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610Ab2K2PJt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 10:09:49 -0500
-Received: from shrek-wifi.podlesie.net ([93.179.225.50]:53416 "EHLO
-	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753096Ab2K2PJs (ORCPT
+	id S1754675Ab2K2PPr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 10:15:47 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57607 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751418Ab2K2PPq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 10:09:48 -0500
-Date: Thu, 29 Nov 2012 16:09:45 +0100
-From: Krzysztof Mazur <krzysiek@podlesie.net>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: David Laight <David.Laight@ACULAB.COM>,
-        chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nathan@traverse.com.au
-Subject: Re: [PATCH v2 3/3] pppoatm: protect against freeing of vcc
-Message-ID: <20121129150945.GB16478@shrek.podlesie.net>
-References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
- <1350926091-12642-3-git-send-email-krzysiek@podlesie.net>
- <1354036592.2534.6.camel@shinybook.infradead.org>
- <20121127173906.GA11390@shrek.podlesie.net>
- <1354039349.2534.11.camel@shinybook.infradead.org>
- <20121127135434.0728cd4f@thirdoffive.cmf.nrl.navy.mil>
- <AE90C24D6B3A694183C094C60CF0A2F6026B70C9@saturn3.aculab.com>
- <1354141115.21562.101.camel@shinybook.infradead.org>
+	Thu, 29 Nov 2012 10:15:46 -0500
+Date: Thu, 29 Nov 2012 15:15:43 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        arnd@arndb.de, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com
+Subject: Re: [PATCH 3/3] Input: bu21013_ts - Add support for Device Tree
+ booting
+Message-ID: <20121129151543.GK32691@opensource.wolfsonmicro.com>
+References: <1354021990-16978-1-git-send-email-lee.jones@linaro.org>
+ <1354021990-16978-4-git-send-email-lee.jones@linaro.org>
+ <20121128070332.GC23378@core.coreip.homeip.net>
+ <20121128085731.GH2013@gmail.com>
+ <20121128163105.GA28698@sirena.org.uk>
+ <20121129100808.GW2013@gmail.com>
+ <20121129112058.GH32691@opensource.wolfsonmicro.com>
+ <20121129120000.GJ2013@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bg/E/yN4pR4or5qL"
 Content-Disposition: inline
-In-Reply-To: <1354141115.21562.101.camel@shinybook.infradead.org>
+In-Reply-To: <20121129120000.GJ2013@gmail.com>
+X-Cookie: Your ignorance cramps my conversation.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 10:18:35PM +0000, David Woodhouse wrote:
-> On Wed, 2012-11-28 at 09:21 +0000, David Laight wrote:
-> > Even when it might make sense to sleep in close until tx drains
-> > there needs to be a finite timeout before it become abortive.
-> 
-> You are, of course, right. We should never wait for hardware for ever.
-> And just to serve me right, I seem to have hit a bug in the latest Solos
-> firmware (1.11) which makes it sometimes lock up when I reboot. So it
-> never responds to the PKT_PCLOSE packet... and thus it deadlocks when I
-> try to kill pppd and unload the module to reset it :)
-> 
-> New version...
-> 
-> From 53dd01c08fec5b26006a009b25e4210127fdb27a Mon Sep 17 00:00:00 2001
-> From: David Woodhouse <David.Woodhouse@intel.com>
-> Date: Tue, 27 Nov 2012 23:49:24 +0000
-> Subject: [PATCH] solos-pci: Wait for pending TX to complete when releasing
->  vcc
-> 
-> We should no longer be calling the old pop routine for the vcc, after
-> vcc_release() has completed. Make sure we wait for any pending TX skbs
-> to complete, by waiting for our own PKT_PCLOSE control skb to be sent.
-> 
-> Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-> ---
->  drivers/atm/solos-pci.c | 17 +++++++++++++++--
->  1 file changed, 15 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/atm/solos-pci.c b/drivers/atm/solos-pci.c
-> index 9851093..3720670 100644
-> --- a/drivers/atm/solos-pci.c
-> +++ b/drivers/atm/solos-pci.c
-> @@ -92,6 +92,7 @@ struct pkt_hdr {
->  };
->  
->  struct solos_skb_cb {
-> +	struct completion c;
->  	struct atm_vcc *vcc;
->  	uint32_t dma_addr;
->  };
-> @@ -881,11 +882,18 @@ static void pclose(struct atm_vcc *vcc)
->  	header->vci = cpu_to_le16(vcc->vci);
->  	header->type = cpu_to_le16(PKT_PCLOSE);
->  
-> +	init_completion(&SKB_CB(skb)->c);
-> +
->  	fpga_queue(card, SOLOS_CHAN(vcc->dev), skb, NULL);
->  
->  	clear_bit(ATM_VF_ADDR, &vcc->flags);
->  	clear_bit(ATM_VF_READY, &vcc->flags);
->  
-> +	if (!wait_for_completion_timeout(&SKB_CB(skb)->c,
-> +					 jiffies + msecs_to_jiffies(5000)))
-> +		dev_warn(&card->dev->dev, "Timeout waiting for VCC close on port %d\n",
-> +			 SOLOS_CHAN(vcc->dev));
-> +
 
-I don't like two thinks about this patch:
+--bg/E/yN4pR4or5qL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-	- if allos_skb(sizeof(*header), GFP_ATOMIC) at beginning of
-	  pclose() fails we will crash
+On Thu, Nov 29, 2012 at 12:00:00PM +0000, Lee Jones wrote:
+> On Thu, 29 Nov 2012, Mark Brown wrote:
 
-	- if card wakes up after this timeout we will probably crash too
+> > Right, which is why this mostly works, but it's still better to provide
+> > an actual compatible string which we can be 100% certain will avoid
+> > conflicts.  This is very low cost when one is already defining DT
+> > bindings.
 
-That's why proposed different approach, but it has other problems.
+> I know that it's an easy thing to do, but I'm more worried about
+> what would happen if the an I2C device is registered using the
+> current way (stripping the compatible string and using it as a
+> client look-up) and we also provide a compatible entry in the
+> driver itself. Do you know if there is any danger of duplicate
+> registration or suchlike?
 
-Krzysiek
+That's totally fine, we try first with compatible properties and only
+look for the fallback if there aren't any.
+
+> > > Hence, there should be no need to have a compatible string in any i2c
+> > > driver registration information.
+
+> > We're getting away with it at present (and frankly nobody's going to
+> > build in two different drivers for a chip of the same name for practical
+> > systems anyway).
+
+> Right. In the same way as we're getting away with it when we
+> register a platform_device using the register/add routines.
+
+Those are all completely Linux-defined of course which helps as well.
+
+--bg/E/yN4pR4or5qL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQt3wXAAoJELSic+t+oim9B7AP/3iH/RwYN3t5B/y96DrQw3/r
+f9JERuj8k7lGtMyH6VrnyLdMQxMOoVfnjQcM5y9/UusgbmZ+mG2Qd2Wgsy0hIXgU
+Rr1YZrdIqPTfVJbo/YwsULhaJSv4grt9zLNJWcAc8kbhWkRjE80PbWGR1uEnoiIX
+z9V2AmJ5Eh7W6DtT26toyZBV+0GUNvOVTn4cYFm+rlr/OeV3DLR7hEQmPsbyYori
+ExcEDCcnm+ww3F6DB7Df1OdrpmQlFAhQdnIPBLIYKUAm55pt6U9qPHCNjsmT/DVQ
+uaO2Z3AlyFjCbMwhCJ6ntiRSkyq2gra3BCswDhTy6ujC6aC6nSRhRxpS43Cu1L0c
+CHXMY+xDuEvyRM7vibeLWjdMidRFyuUXkVDkYZM65PGYqOCOTMgcBrJ11kpBPGah
+wUVYhYVc9meN0vyYy6WVUyLUz5wNX5FsSGY4ST6uS6eJmOepn5WleB4CZJ8zseyZ
+J9sV/Stw2qyFI50jw5mCHu7LMN8IM4qViTqG1lQYutlHyupE29AR5nBGS0j8C28K
+F31bXmwFD5CL81SugpN2X9u33dq1bzMI1+aguVvNYnmi6bFveUuS/XPyLrRIIsVy
+mgw2Z7cZs9xTBhpEI8LoEQf2Me6gF2SB6RLprBbhdTJ49aRaFOAvbBUb95wnffDl
+cKHryLaDdJwf47/i28FK
+=SVo4
+-----END PGP SIGNATURE-----
+
+--bg/E/yN4pR4or5qL--
