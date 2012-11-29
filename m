@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932910Ab2K2AtW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 19:49:22 -0500
+	id S932925Ab2K2Atg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 19:49:36 -0500
 Received: from mail-qc0-f174.google.com ([209.85.216.174]:41238 "EHLO
 	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932414Ab2K2AtV convert rfc822-to-8bit (ORCPT
+	with ESMTP id S932414Ab2K2Ate convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 19:49:21 -0500
+	Wed, 28 Nov 2012 19:49:34 -0500
 From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
-To: "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        "'Robert Hancock'" <hancockrwd@gmail.com>
-Cc: "=?iso-8859-1?Q?'Bruno_Pr=E9mont'?=" <bonbons@linux-vserver.org>,
+To: "'Robert Hancock'" <hancockrwd@gmail.com>
+Cc: "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        "=?iso-8859-1?Q?'Bruno_Pr=E9mont'?=" <bonbons@linux-vserver.org>,
         <support@supermicro.com>, <linux-kernel@vger.kernel.org>,
         "'Dan Williams'" <djbw@fb.com>
-References: <097501cdca7b$7e303890$7a90a9b0$@lucidpixels.com> <20121126224245.248f0901@neptune.home> <CAErSpo7Y7m9o2u36ghiW1UDkwweSCG1ZGBx167Anfw4wXTYrCg@mail.gmail.com> <CAErSpo6vrHMTht1nQxiF6HD7qCvUE-NS2eAnQjgUXym1pnNkSA@mail.gmail.com> <004201cdcc3a$a7538310$f5fa8930$@lucidpixels.com> <CAErSpo7530xA6=1Ytj09dwyS1M_N_yAfk4xkr3f9Z_NBn6TJrA@mail.gmail.com> <00a501cdcca3$c2638510$472a8f30$@lucidpixels.com> <00b501cdcca6$03f88af0$0be9a0d0$@lucidpixels.com> <00b701cdcca6$ff097620$fd1c6260$@lucidpixels.com> <00cc01cdccac$7c273d40$7475b7c0$@lucidpixels.com> <CAErSpo6b2CBLCs9uP5Ls2qdM3QKG73pychSp9O4ADD07h_bdTA@mail.gmail.com>
-In-Reply-To: <CAErSpo6b2CBLCs9uP5Ls2qdM3QKG73pychSp9O4ADD07h_bdTA@mail.gmail.com>
+References: <097501cdca7b$7e303890$7a90a9b0$@lucidpixels.com> <20121126224245.248f0901@neptune.home> <CAErSpo7Y7m9o2u36ghiW1UDkwweSCG1ZGBx167Anfw4wXTYrCg@mail.gmail.com> <CAErSpo6vrHMTht1nQxiF6HD7qCvUE-NS2eAnQjgUXym1pnNkSA@mail.gmail.com> <004201cdcc3a$a7538310$f5fa8930$@lucidpixels.com> <CAErSpo7530xA6=1Ytj09dwyS1M_N_yAfk4xkr3f9Z_NBn6TJrA@mail.gmail.com> <00a501cdcca3$c2638510$472a8f30$@lucidpixels.com> <00b501cdcca6$03f88af0$0be9a0d0$@lucidpixels.com> <50B6ADA5.2030205@gmail.com>
+In-Reply-To: <50B6ADA5.2030205@gmail.com>
 Subject: RE: Supermicro X9SRL-F - channel enumeration error & ACPI/firmware bug question
-Date: Wed, 28 Nov 2012 19:49:19 -0500
-Message-ID: <04b201cdcdcb$5e2a2d50$1a7e87f0$@lucidpixels.com>
+Date: Wed, 28 Nov 2012 19:49:32 -0500
+Message-ID: <04b301cdcdcb$65e2f400$31a8dc00$@lucidpixels.com>
 MIME-Version: 1.0
 Content-Type: text/plain;
 	charset="iso-8859-1"
 Content-Transfer-Encoding: 8BIT
 X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQH421ylXKr/7aSEd56ctRShmAJ9gwGHtGctAMAwLAsA1DUSgwLbZdCZAXol/xoByREOOQK10CNCAguYW3MCOIRwlQL37+fVlxB3JlA=
+Thread-Index: AQH421ylXKr/7aSEd56ctRShmAJ9gwGHtGctAMAwLAsA1DUSgwLbZdCZAXol/xoByREOOQK10CNCAnA9sI2XNtejIA==
 Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,112 +32,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 -----Original Message-----
-From: Bjorn Helgaas [mailto:bhelgaas@google.com] 
-Sent: Wednesday, November 28, 2012 7:09 PM
+From: Robert Hancock [mailto:hancockrwd@gmail.com] 
+Sent: Wednesday, November 28, 2012 7:35 PM
 To: Justin Piszcz
-Cc: Bruno Prémont; support@supermicro.com; linux-kernel@vger.kernel.org; Dan
-Williams
+Cc: 'Bjorn Helgaas'; 'Bruno Prémont'; support@supermicro.com;
+linux-kernel@vger.kernel.org; 'Dan Williams'
 Subject: Re: Supermicro X9SRL-F - channel enumeration error & ACPI/firmware
 bug question
 
-On Tue, Nov 27, 2012 at 7:35 AM, Justin Piszcz <jpiszcz@lucidpixels.com>
-wrote:
+
+What does lspci -vv show on that controller? Not sure what actual 
+chipset that controller is, but there's a known issue with some Marvell 
+6Gbps SATA controllers with DMAR enabled - it seems the device issues 
+memory read/write requests from the wrong PCI function ID and the IOMMU 
+rightly denies access as the function listed in the requests doesn't 
+have any mapping to that memory. I don't think there's presently a 
+workaround other than disabling DMAR. We could (and likely should) be 
+detecting that device and adding some kind of quirk for it.
+
+That sounds likely...
+It is shown below:
+
+Card name: HighPoint Rocket 620 Dual Port SATA 6 Gbps PCI Express 2.0 Host
+Adapter
+
+lspci -vv output:
+
+84:00.0 SATA controller: Marvell Technology Group Ltd. 88SE9123 PCIe SATA
+6.0 Gb/s controller (rev 11) (prog-if 01 [AHCI 1.0])
+  Subsystem: Marvell Technology Group Ltd. 88SE9123 PCIe SATA 6.0 Gb/s
+controller
+  Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
+Stepping- SERR- FastB2B- DisINTx+
+  Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort-
+<MAbort- >SERR- <PERR- INTx-
+  Latency: 0, Cache Line Size: 256 bytes
+  Interrupt: pin A routed to IRQ 119
+  Region 0: I/O ports at e000 [size=8]
+  Region 1: I/O ports at dc00 [size=4]
+  Region 2: I/O ports at ec00 [size=8]
+  Region 3: I/O ports at e800 [size=4]
+  Region 4: I/O ports at e400 [size=16]
+  Region 5: Memory at cfeee000 (32-bit, non-prefetchable) [size=2K]
+  Expansion ROM at cfef0000 [disabled] [size=64K]
+  Capabilities: [40] Power Management version 3
+    Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA
+PME(D0-,D1-,D2-,D3hot+,D3cold-)
+    Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+  Capabilities: [50] MSI: Enable+ Count=1/1 Maskable- 64bit-
+    Address: fee20000  Data: 4076
+  Capabilities: [70] Express (v2) Legacy Endpoint, MSI 00
+    DevCap: MaxPayload 512 bytes, PhantFunc 0, Latency L0s <1us, L1 <8us
+      ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
+    DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
+      RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop-
+      MaxPayload 256 bytes, MaxReadReq 512 bytes
+    DevSta: CorrErr+ UncorrErr- FatalErr- UnsuppReq+ AuxPwr- TransPend-
+    LnkCap: Port #0, Speed 5GT/s, Width x1, ASPM L0s L1, Latency L0 <512ns,
+L1 <64us
+      ClockPM- Surprise- LLActRep- BwNot-
+    LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
+      ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+    LnkSta: Speed 5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- BWMgmt-
+ABWMgmt-
+    DevCap2: Completion Timeout: Not Supported, TimeoutDis+
+    DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis-
+    LnkCtl2: Target Link Speed: 5GT/s, EnterCompliance- SpeedDis-,
+Selectable De-emphasis: -6dB
+       Transmit Margin: Normal Operating Range, EnterModifiedCompliance-
+ComplianceSOS-
+       Compliance De-emphasis: -6dB
+    LnkSta2: Current De-emphasis Level: -6dB, EqualizationComplete-,
+EqualizationPhase1-
+       EqualizationPhase2-, EqualizationPhase3-, LinkEqualizationRequest-
+  Capabilities: [100 v1] Advanced Error Reporting
+    UESta:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF-
+MalfTLP- ECRC- UnsupReq- ACSViol-
+    UEMsk:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF-
+MalfTLP- ECRC- UnsupReq- ACSViol-
+    UESvrt: DLP+ SDES+ TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt- RxOF+
+MalfTLP+ ECRC- UnsupReq- ACSViol-
+    CESta:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
+    CEMsk:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
+    AERCap: First Error Pointer: 00, GenCap- CGenEn- ChkCap- ChkEn-
+  Kernel driver in use: ahci
+
+>
+> --
 >
 >
-> -----Original Message-----
-> From: Justin Piszcz [mailto:jpiszcz@lucidpixels.com]
-> Sent: Tuesday, November 27, 2012 8:56 AM
-> To: 'Bjorn Helgaas'
-> Cc: 'Bruno Prémont'; support@supermicro.com; linux-kernel@vger.kernel.org;
-> 'Dan Williams'
-> Subject: RE: Supermicro X9SRL-F - channel enumeration error &
-ACPI/firmware
-> bug question
->
->
->> It is _not_ working on the:
->
->> 2) Supermicro X8DTH-F (the boot drive in this system is running off a
-> PCI-e
->> card, could the IRQ for the I/O controller be getting re-mapped and
-> fail?)--
->> worse case I can move the SSD from the 6.0gbpa SATA card to the
-> motherboard
->> and see if that works, but that kind of defeats the purpose of a 6.0gbps
->> SATA SSD.
->
-> When I removed the Highpoint 2-port SATA card and plugged it into the
-> motherboard, the system boots (plugged the SSD into the motherboard).
-> So if you use a HIGHPOINT 2-PORT SATA 6.0gbps card, do NOT enable IOMMU or
-> it will fail to initialize the Highpoint 2-port SATA controller card!
-> I also tried upgrading the BIOS (of the mobo, no diff)
-> I also tried just leaving the SATA card in and plugging it into the
-> motherboard (no diff)
-> Removed the Highpoint 2-port SATA card and then success, it would be nice
-to
-> use that card with IOMMU support though, is it just not compatible
-> (marvell-problem?) or is a driver bug?  Based on the pictures/etc sent
-> earlier?
+> ==> Further issues with the X9SRL-F -- does this board support ASPM or is
+> this a Linux/ASPM implementation issue?
+> [    0.632170]  pci0000:ff: ACPI _OSC support notification failed,
+disabling
+> PCIe ASPM
+> [    0.632239]  pci0000:ff: Unable to request _OSC control (_OSC support
+> mask: 0x08)
 
-I would guess this is a core bug, but it's hard to tell without more
-information.
+What's the full dmesg from this machine (or is it already posted somewhere)?
 
-If you boot with "intel_iommu=off", I would guess the Highpoint card
-would work (this should have the same effect as turning off
-CONFIG_INTEL_IOMMU).  I'd like to compare the complete dmesg log for
-that boot with the one that fails.
-
-It sounds like it might be hard to collect the log for the failing
-case -- you said the boot fails when the Highpoint card is in the
-system even if the SSD is connected to the motherboard instead of the
-Highpoint card.  The panic in the photo2 image looks like it's just a
-failure to mount the root filesystem, which is what I'd expect if we
-can't find the SSD.  It seems like we ought to be able to *boot* with
-the SSD connected to the motherboard, even if the Highpoint card
-doesn't work.  But worst-case, a video of the failing boot might be
-enough, especially if you can slow it down with "boot_delay="
-
---
-
-SUMMARY: Card fails with iommu support in the kernel: (but system does now
-boot (3.6.8) with the card in as long as the system disk isn't attached to
-it, not sure what was wrong earlier).
-
-It seems to be working now:
-=> SSD on motherboard
-=> PCI-e card (highpoint in the system but not used, no disks attached)
-
-(After I enabled nouveau, not sure that has anything to do with it) I put
-the card in, and it errors as usual but the SSD now on the motherboard it
-does boot successfully.  
-
-Here are the errors from the kernel trying to initialize the board with
-iommu enabled (retrieved via netconsole) also picture below (w/help from
-boot_delay=100 && nouveau enabled):
-http://home.comcast.net/~jpiszcz/20121128/highpoint.jpg
-
-Nov 28 19:30:16 p34 [    7.771060] ata14.00: qc timeout (cmd 0xa1) 
-Nov 28 19:30:16 p34 [    8.270153] ata14.00: failed to IDENTIFY (I/O error,
-err_mask=0x4) 
-Nov 28 19:30:17 p34 [    9.073935] ata14: SATA link up 1.5 Gbps (SStatus 113
-SControl 300) 
-Nov 28 19:30:27 p34 [   19.058915] ata14.00: qc timeout (cmd 0xa1) 
-Nov 28 19:30:28 p34 [   19.557885] ata14.00: failed to IDENTIFY (I/O error,
-err_mask=0x4) 
-Nov 28 19:30:28 p34 [   19.558478] ata14: limiting SATA link speed to 1.5
-Gbps 
-Nov 28 19:30:29 p34 [   20.363658] ata14: SATA link up 1.5 Gbps (SStatus 113
-SControl 310) 
-Nov 28 19:30:48 p34 [   39.568234] dmar: DRHD: handling fault status reg 502
-
-Nov 28 19:30:48 p34 [   39.571508] dmar: DMAR:[DMA Read] Request device
-[04:00.0] fault addr 0  [   39.571508] DMAR:[fault reason 06] PTE Read
-access is not set 
-Nov 28 19:30:59 p34 [   50.318146] ata14.00: qc timeout (cmd 0xa1) 
-Nov 28 19:30:59 p34 [   50.818061] ata14.00: failed to IDENTIFY (I/O error,
-err_mask=0x4) 
-Nov 28 19:31:00 p34 [   51.621827] ata14: SATA link up 1.5 Gbps (SStatus 113
-SControl 310)
+It is now available here:
+http://home.comcast.net/~jpiszcz/20121128/dmesg.txt
 
 Justin.
 
