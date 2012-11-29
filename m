@@ -1,185 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754358Ab2K2IOF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 03:14:05 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:11816 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754305Ab2K2IOB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 03:14:01 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 29 Nov 2012 00:13:53 -0800
-Message-ID: <50B71A28.5060807@nvidia.com>
-Date: Thu, 29 Nov 2012 10:17:44 +0200
-From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Lucas Stach <dev@lynxeye.de>
-CC: Dave Airlie <airlied@gmail.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arto Merilainen <amerilainen@nvidia.com>
-Subject: Re: [RFC v2 8/8] drm: tegra: Add gr2d device
-References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com>     <1353935954-13763-9-git-send-email-tbergstrom@nvidia.com>     <CAPM=9tzvt3J6D3zLPV97w629q62CNhAxX8V+_JZ6kmXxxz5fVg@mail.gmail.com>     <50B46336.8030605@nvidia.com>     <CAPM=9txCuPJcFAfD7Hu5o2BVFK=pVah7B8HhG0ctLCyFPwNEnA@mail.gmail.com>     <50B476E1.4070403@nvidia.com>     <CAPM=9tysiK6LgnQdAwGSYfxnQfgcfRm0+X2tPSAEDxUPt-QZGA@mail.gmail.com>     <50B47DA8.60609@nvidia.com>	<1354011776.1479.31.camel@tellur>     <20121127103739.GA3329@avionic-0098.adnet.avionic-design.de>     <50B4A483.8030305@nvidia.com>     <CAPM=9tz=_0Drx3=Me3EQdPgBvYVGzs6Gnqaw6RBaTLsCG24RAg@mail.gmail.com>     <50B60EFF.1050703@nvidia.com> <1354109602.1479.66.camel@tellur>    <50B61845.6060102@nvidia.com> <1354111565.1479.73.camel@tellur>   <50B6237B.8010808@nvidia.com> <1354115609.1479.91.camel@tellur>  <50B63A70.8020107@nvidia.com> <1354128408.1479.137.camel@tellur>
-In-Reply-To: <1354128408.1479.137.camel@tellur>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
+	id S1754334Ab2K2IOw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 03:14:52 -0500
+Received: from smtp5-g21.free.fr ([212.27.42.5]:34479 "EHLO smtp5-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753019Ab2K2INo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 03:13:44 -0500
+From: Corentin Chary <corentin.chary@gmail.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: platform-driver-x86@vger.kernel.org, AceLan Kao <acelan.kao@canonical.com>,
+        Corentin Chary <corentincj@iksaif.net>,
+        Corentin Chary <corentin.chary@gmail.com>,
+        Matthew Garrett <mjg@redhat.com>, acpi4asus-user@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 08/11] asus-wmi: add display toggle quirk
+Date: Thu, 29 Nov 2012 09:12:36 +0100
+Message-Id: <1354176759-630-9-git-send-email-corentin.chary@gmail.com>
+X-Mailer: git-send-email 1.7.8.6
+In-Reply-To: <1354176759-630-1-git-send-email-corentin.chary@gmail.com>
+References: <1354176759-630-1-git-send-email-corentin.chary@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28.11.2012 20:46, Lucas Stach wrote:
-> Am Mittwoch, den 28.11.2012, 18:23 +0200 schrieb Terje Bergström:
->> Sorry. I promised in another thread a write-up explaining the design. I
->> still owe you guys that.
-> That would be really nice to have. I'm also particularly interested in
-> how you plan to do synchronization of command streams to different
-> engines working together, if that's not too much to ask for now. Like
-> userspace uploading a texture in a buffer, 2D engine doing mipmap
-> generation, 3D engine using mipmapped texture.
+From: AceLan Kao <acelan.kao@canonical.com>
 
-I can briefly explain (and then copy-paste to a coherent text once I get
-to it) how inter-engine synchronization is done. It's not specifically
-for 2D or 3D, but generic to any host1x client.
+For machines with AMD graphic chips, it will send out WMI event and ACPI
+interrupt at the same time while hitting the hotkey. BIOS will notify the
+system the next display output mode throught WMI event code, so that
+windows' application can show an OSD to tell the user which mode will be
+taken effect. User can hit the display toggle key many times within 2
+seconds to choose the mode they want. After 2 seconds, WMI dirver should
+send a WMIMethod(SDSP) command to tell the BIOS which mode the user chose.
+And then BIOS will raise another ACPI interrupt to tell the system to
+really switch the display mode.
 
-Sync point register is a counter that can only increase. It starts from
-0 and is incremented by a host1x client or CPU. host1x can freeze a
-channel until a sync point value is reached, and it can trigger an
-interrupt upon reaching a threshold. On Tegra2 and Tegra3 we have 32
-sync points.
+In Linux desktop, we don't have this kind of OSD to let users to choose
+the mode they want, so we don't need to call WMIMethod(SDSP) to have
+another ACPI interrupt. To simplify the problem, we just have to ignore
+the WMI event, and let the first ACPI interrupt to send out the key event.
 
-host1x clients all implement a method for incrementing a sync point
-based on a condition, and on all of them (well, not entirely true) the
-register is number 0. The most used condition is op_done, telling the
-client to increment sync point once the previous operations are done.
+For the need, here comes another quirk to add machines with this kind of
+behavior. When the WMI driver receives the display toggle WMI event, and
+found the machin is in the list, it will do nothing and let ACPI video
+driver to report the key event.
 
-In kernel, we keep track of the active range of sync point values, i.e.
-ones we expect to be reached with the active jobs. Active range's
-minimum is the current value read from hw and shadowed in memory. At job
-submit time, kernel increments the maximum by the number of sync points
-the stream announces it will perform. After performing the increment, we
-have a number, which the sync point is supposed to reach at the end of
-submit. That number is the the fence and it is recorded in kernel and
-returned to user space.
+Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
+Signed-off-by: Corentin Chary <corentincj@iksaif.net>
+Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
+---
+ drivers/platform/x86/asus-nb-wmi.c |   31 ++++++++++++++++++++++++++++++-
+ drivers/platform/x86/asus-wmi.c    |   26 +++++++++++++++++++++++---
+ drivers/platform/x86/asus-wmi.h    |    7 +++++++
+ 3 files changed, 60 insertions(+), 4 deletions(-)
 
-So, when user space flushes, it receives a fence. It can insert the
-fence into another command stream as parameter to a host1x channel wait.
-This makes that channel freeze until an operation in another channel is
-finished. That's how different host1x clients can synchronize without
-using CPU.
+diff --git a/drivers/platform/x86/asus-nb-wmi.c b/drivers/platform/x86/asus-nb-wmi.c
+index 87d45e0..9aa6642 100644
+--- a/drivers/platform/x86/asus-nb-wmi.c
++++ b/drivers/platform/x86/asus-nb-wmi.c
+@@ -59,6 +59,17 @@ static struct quirk_entry quirk_asus_unknown = {
+ 	.wapf = 0,
+ };
+ 
++/*
++ * For those machines that need software to control bt/wifi status
++ * and can't adjust brightness through ACPI interface
++ * and have duplicate events(ACPI and WMI) for display toggle
++ */
++static struct quirk_entry quirk_asus_x55u = {
++	.wapf = 4,
++	.wmi_backlight_power = true,
++	.no_display_toggle = true,
++};
++
+ static struct quirk_entry quirk_asus_x401u = {
+ 	.wapf = 4,
+ };
+@@ -77,6 +88,15 @@ static struct dmi_system_id asus_quirks[] = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "X401U"),
+ 		},
++		.driver_data = &quirk_asus_x55u,
++	},
++	{
++		.callback = dmi_matched,
++		.ident = "ASUSTeK COMPUTER INC. X401A",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "X401A"),
++		},
+ 		.driver_data = &quirk_asus_x401u,
+ 	},
+ 	{
+@@ -95,6 +115,15 @@ static struct dmi_system_id asus_quirks[] = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "X501U"),
+ 		},
++		.driver_data = &quirk_asus_x55u,
++	},
++	{
++		.callback = dmi_matched,
++		.ident = "ASUSTeK COMPUTER INC. X501A",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "X501A"),
++		},
+ 		.driver_data = &quirk_asus_x401u,
+ 	},
+ 	{
+@@ -131,7 +160,7 @@ static struct dmi_system_id asus_quirks[] = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "X55U"),
+ 		},
+-		.driver_data = &quirk_asus_x401u,
++		.driver_data = &quirk_asus_x55u,
+ 	},
+ 	{
+ 		.callback = dmi_matched,
+diff --git a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
+index 912ec7d..6327a1b 100644
+--- a/drivers/platform/x86/asus-wmi.c
++++ b/drivers/platform/x86/asus-wmi.c
+@@ -1341,6 +1341,18 @@ static void asus_wmi_backlight_exit(struct asus_wmi *asus)
+ 	asus->backlight_device = NULL;
+ }
+ 
++static int is_display_toggle(int code)
++{
++	/* display toggle keys */
++	if ((code >= 0x61 && code <= 0x67) ||
++	    (code >= 0x8c && code <= 0x93) ||
++	    (code >= 0xa0 && code <= 0xa7) ||
++	    (code >= 0xd0 && code <= 0xd5))
++		return 1;
++
++	return 0;
++}
++
+ static void asus_wmi_notify(u32 value, void *context)
+ {
+ 	struct asus_wmi *asus = context;
+@@ -1380,10 +1392,18 @@ static void asus_wmi_notify(u32 value, void *context)
+ 		code = NOTIFY_BRNDOWN_MIN;
+ 
+ 	if (code == NOTIFY_BRNUP_MIN || code == NOTIFY_BRNDOWN_MIN) {
+-		if (!acpi_video_backlight_support())
++		if (!acpi_video_backlight_support()) {
+ 			asus_wmi_backlight_notify(asus, orig_code);
+-	} else if (!sparse_keymap_report_event(asus->inputdev, code,
+-					       key_value, autorelease))
++		}
++		goto exit;
++	}
++
++	if (is_display_toggle(code) &&
++	    asus->driver->quirks->no_display_toggle)
++		goto exit;
++
++	if (!sparse_keymap_report_event(asus->inputdev, code,
++					key_value, autorelease))
+ 		pr_info("Unknown key %x pressed\n", code);
+ 
+ exit:
+diff --git a/drivers/platform/x86/asus-wmi.h b/drivers/platform/x86/asus-wmi.h
+index 4c9bd38..776524c 100644
+--- a/drivers/platform/x86/asus-wmi.h
++++ b/drivers/platform/x86/asus-wmi.h
+@@ -41,6 +41,13 @@ struct quirk_entry {
+ 	bool store_backlight_power;
+ 	bool wmi_backlight_power;
+ 	int wapf;
++	/*
++	 * For machines with AMD graphic chips, it will send out WMI event
++	 * and ACPI interrupt at the same time while hitting the hotkey.
++	 * To simplify the problem, we just have to ignore the WMI event,
++	 * and let the ACPI interrupt to send out the key event.
++	 */
++	int no_display_toggle;
+ };
+ 
+ struct asus_wmi_driver {
+-- 
+1.7.8.6
 
-Kernel's sync point wait essentially puts the process into sleep until
-host1x sends an interrupt and we determine the value that a process is
-waiting for, has been reached.
-
-On top of this, we guard against wrapping issues by nulling out any sync
-point waits (CPU or inside stream) that are waiting for values outside
-the active range, and we have a timeout for jobs so that we can kick out
-misbehaving command streams.
-
-> Ah yes I see. So if we consider nvhost to be the central entity in
-> charge of controlling all host1x clients and tegradrm as the interface
-> that happens to bundle display, 2d and 3d engine functionality into it's
-> interface we should probably aim for two things:
-> 1. Move everything needed by all engines down into nvhost (I especially
-> see the allocator falling under this point, I'll explain why this would
-> be beneficial a bit later)
-
-Ok. This is almost the current design, except for the allocator.
-
-> 2. Move the exposed DRM interface more in line with other DRM drivers.
-> Please take a look at how for example the GEM_EXECBUF ioctl works on
-> other drivers to get a feeling of what I'm talking about. Everything
-> using the display, 2D and maybe later on the 3D engine should only deal
-> with GEM handles. I really don't like the idea of having a single
-> userspace application, which uses engines with similar and known
-> requirements (DDX) dealing with dma-buf handles or other similar high
-> overhead stuff to do the most basic tasks.
-> If we move down the allocator into nvhost we can use buffers allocated
-> from this to back GEM or V4L2 buffers transparently. The ioctl to
-> allocate a GEM buffer shouldn't do much more than wrapping the nvhost
-> buffer.
-
-Ok, this is actually what we do downstream. We use dma-buf handles only
-for purposes where they're really needed (in fact, none yet), and use
-our downstream allocator handles for the rest. I did this, because
-benchmarks were showing that memory management overhead shoot through
-the roof if I tried doing everything via dma-buf.
-
-We can move support for allocating GEM handles to nvhost, and GEM
-handles can be treated just as another memory handle type in nvhost.
-tegradrm would then call nvhost for allocation.
-
-
-> This may also solve your problem with having multiple mappings of the
-> same buffer into the very same address space, as nvhost is the single
-> instance that manages all host1x client address spaces. If the buffer is
-> originating from there you can easily check if it's already mapped. For
-> Tegra 3 to do things in an efficient way we likely have to move away
-> from dealing with the DMA API to dealing with the IOMMU API, this gets a
-> _lot_ easier_ if you have a single point where you manage memory
-> allocation and address space.
-
-Yep, this would definitely simplify our IOMMU problem. But, I thought
-the canonical way of dealing with device memory is DMA API, and you're
-saying that we should just bypass it and call IOMMU directly?
-
->> Concurrency is handled with sync points. User space will know when a
->> command stream is processed and can be reused by comparing the current
->> sync point value, and the fence that 2D driver returned to user space.
->> User space can have a pool of buffers and can recycle when it knows it
->> can do so. But, this is not enforced by kernel.
->>
-> This is the point where we have differ: You have to deal with syncpts in
-> kernel anyway, otherwise you don't know when it's safe to destroy a
-> buffer. And no, userspace should not have the ability to destroy a
-> buffer itself, userspace should always just be able to free it's
-> reference to the buffer. Remember: never trust the userspace. And if you
-> are dealing with syncpts in kernel anyway, you can just go ahead and
-> enforce some sane concurrency rules. There may be some corener cases
-> related to userspace suballocating a kernel buffer, which might need
-> some more thought still, but that's not a valid excuse to not do any
-> concurrency validation in kernel.
-
-nvhost is already dealing with sync points, and protecting memory from
-being freed if it's used. We use refcounting to do that. When a job is
-sent to hw, we get reference to all memory (command stream & surfaces).
-When job is done (fence reached), nvhost unreferences them. User space
-can free the memory it has allocated, but kernel would hold on to it
-until it's safe to actually release the memory.
-
->> The difference with your proposal and what I posted is the level of
->> control user space has over its command stream management. But as said,
->> 2D streams are so short that my guess is that there's not too much
->> penalty copying it to kernel managed host1x push buffer directly instead
->> of inserting a GATHER reference.
->>
-> This an implementation detail. Whether you shoot down the old pushbuf
-> mapping and insert a new one pointing to free backing memory (which may
-> be the way to go for 3D) or do an immediate copy of the channel pushbuf
-> contents to the host1x pushbuf (which may be beneficial for very small
-> pushs) is all the same. Both methods implicitly guarantee that the
-> memory mapped by userspace always points to a location the CPU can write
-> to without interfering with the GPU.
-
-Ok. Based on this, I propose the way to go for cases without IOMMU
-support and all Tegra20 cases (as Tegra20's GART can't provide memory
-protection) is to copy the stream to host1x push buffer. In Tegra30 with
-IOMMU support we can just reference the buffer. This way we don't have
-to do expensive MMU operations.
-
-> I really enjoyed the discussion so far and hope we can get to the point
-> where we have a nice design/interface, working together.
-
-Thanks. I don't have a strict deadline for upstreaming, so I'm fine
-continuing with discussion until we're settled, and then doing the
-needed changes.
-
-My goal is to end up with something that we can take advantage of in
-upstream with tegradrm and 2D, but also downstream with the rest of the
-downstream stack. That way there's no technical barrier to us moving in
-downstream to use the upstream code.
-
-Terje
