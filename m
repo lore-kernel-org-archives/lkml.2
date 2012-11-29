@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755089Ab2K2V7x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 16:59:53 -0500
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:4357 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752497Ab2K2V7u (ORCPT
+	id S1755206Ab2K2V76 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 16:59:58 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:32322 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753909Ab2K2V74 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 16:59:50 -0500
+	Thu, 29 Nov 2012 16:59:56 -0500
 From: Lance Ortiz <lance.ortiz@hp.com>
-Subject: [PATCH 2/3] aerdrv: Enhanced AER logging
+Subject: [PATCH 3/3] aerdrv: Cleanup log output for CPER based AER
 To: bhelgaas@google.com, lance_ortiz@hotmail.com, jiang.liu@huawei.com,
         tony.luck@intel.com, bp@alien8.de, rostedt@goodmis.org,
         mchehab@redhat.com, linux-acpi@vger.kernel.org,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 29 Nov 2012 14:54:50 -0700
-Message-ID: <20121129215450.5483.26562.stgit@grignak.americas.hpqcorp.net>
+Date: Thu, 29 Nov 2012 14:54:56 -0700
+Message-ID: <20121129215456.5483.27026.stgit@grignak.americas.hpqcorp.net>
 In-Reply-To: <20121129215443.5483.43364.stgit@grignak.americas.hpqcorp.net>
 References: <20121129215443.5483.43364.stgit@grignak.americas.hpqcorp.net>
 User-Agent: StGIT/0.14.3
@@ -25,90 +25,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch will provide a more reliable and easy way for user-space
-applications to have access to AER logs rather than reading them from the
-message buffer. It also provides a way to notify user-space when an AER
-event occurs.
-
-The aer driver is updated to generate a trace event of function 'aer_event'
-when an AER occurs.  The trace event was added to both the interrupt
-based aer path and the firmware first path
+These changes make cper_print_aer more consistent with aer_print_error
+which is called in the AER interrupt case. The string in the variable
+'prefix' is printed at the beginning of each print statement in
+cper_print_aer(). The prefix is a string containing the driver name
+and the device's path.  Looking up the call path, the value of prefix
+is never assigned and is NULL, so when cper_print_aer prints data the
+initial string does not get printed.  This string is important because
+it identifies the device that the error is on. This patch adds code to
+create the prefix and print it in the cper_print_aer function. This
+patch also calculates the device's agent id so it can be printed.
 
 Signed-off-by: Lance Ortiz <lance.ortiz@hp.com>
 ---
 
- drivers/acpi/apei/cper.c               |   11 +++++++++--
- drivers/pci/pcie/aer/aerdrv_errprint.c |   11 ++++++++++-
- 2 files changed, 19 insertions(+), 3 deletions(-)
+ drivers/pci/pcie/aer/aerdrv_errprint.c |   12 +++++++++---
+ 1 files changed, 9 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/acpi/apei/cper.c b/drivers/acpi/apei/cper.c
-index e6defd8..ef1e1c0 100644
---- a/drivers/acpi/apei/cper.c
-+++ b/drivers/acpi/apei/cper.c
-@@ -281,9 +281,16 @@ static void cper_print_pcie(const char *pfx, const struct cper_sec_pcie *pcie,
- 	"%s""bridge: secondary_status: 0x%04x, control: 0x%04x\n",
- 	pfx, pcie->bridge.secondary_status, pcie->bridge.control);
- #ifdef CONFIG_ACPI_APEI_PCIEAER
--	if (pcie->validation_bits & CPER_PCIE_VALID_AER_INFO) {
-+	dev = pci_get_domain_bus_and_slot(pcie->device_id.segment,
-+			pcie->device_id.bus, pcie->device_id.function);
-+	if (!dev)
-+		pr_info(KERN_INFO, "PCI AER Cannot get PCI device %04x:%02x:%02x.%d\n",
-+			domain, bus, slot, func);
-+
-+	if (pcie->validation_bits & CPER_PCIE_VALID_AER_INFO && dev) {
- 		struct aer_capability_regs *aer_regs = (void *)pcie->aer_info;
--		cper_print_aer(pfx, gdata->error_severity, aer_regs);
-+		cper_print_aer(dev, gdata->error_severity, aer_regs);
-+		pci_dev_put(dev);
- 	}
- #endif
- }
 diff --git a/drivers/pci/pcie/aer/aerdrv_errprint.c b/drivers/pci/pcie/aer/aerdrv_errprint.c
-index 3ea5173..6354e50 100644
+index 6354e50..bc0a091 100644
 --- a/drivers/pci/pcie/aer/aerdrv_errprint.c
 +++ b/drivers/pci/pcie/aer/aerdrv_errprint.c
-@@ -23,6 +23,10 @@
- 
- #include "aerdrv.h"
- 
-+#define CREATE_TRACE_POINTS
-+#define TRACE_INCLUDE_PATH ../../../../include/ras
-+#include <ras/aer_event.h>
-+
- #define AER_AGENT_RECEIVER		0
- #define AER_AGENT_REQUESTER		1
- #define AER_AGENT_COMPLETER		2
-@@ -194,6 +198,8 @@ void aer_print_error(struct pci_dev *dev, struct aer_err_info *info)
- 	if (info->id && info->error_dev_num > 1 && info->id == id)
- 		printk("%s""  Error of this Agent(%04x) is reported first\n",
- 			prefix, id);
-+	trace_aer_event(dev_name(&dev->dev), (info->status & ~info->mask),
-+			info->severity);
- }
- 
- void aer_print_port_info(struct pci_dev *dev, struct aer_err_info *info)
-@@ -217,12 +223,13 @@ int cper_severity_to_aer(int cper_severity)
- }
- EXPORT_SYMBOL_GPL(cper_severity_to_aer);
- 
--void cper_print_aer(const char *prefix, int cper_severity,
-+void cper_print_aer(struct pci_dev *dev, int cper_severity,
- 		    struct aer_capability_regs *aer)
- {
+@@ -229,7 +229,13 @@ void cper_print_aer(struct pci_dev *dev, int cper_severity,
  	int aer_severity, layer, agent, status_strs_size, tlp_header_valid = 0;
  	u32 status, mask;
  	const char **status_strs;
-+	char *prefix = NULL;
+-	char *prefix = NULL;
++	int id = ((dev->bus->number << 8) | dev->devfn);
++	char prefix[44];
++
++	snprintf(prefix, sizeof(prefix), "%s%s %s: ",
++		(info->severity == AER_CORRECTABLE) ?
++		KERN_WARNING : KERN_ERR,
++		dev_driver_string(&dev->dev), dev_name(&dev->dev));
  
  	aer_severity = cper_severity_to_aer(cper_severity);
  	if (aer_severity == AER_CORRECTABLE) {
-@@ -259,5 +266,7 @@ void cper_print_aer(const char *prefix, int cper_severity,
- 			*(tlp + 8), *(tlp + 15), *(tlp + 14),
- 			*(tlp + 13), *(tlp + 12));
- 	}
-+	trace_aer_event(dev_name(&dev->dev), (status & ~mask),
-+			aer_severity);
- }
- #endif
+@@ -249,8 +255,8 @@ void cper_print_aer(struct pci_dev *dev, int cper_severity,
+ 	printk("%s""aer_status: 0x%08x, aer_mask: 0x%08x\n",
+ 	       prefix, status, mask);
+ 	cper_print_bits(prefix, status, status_strs, status_strs_size);
+-	printk("%s""aer_layer=%s, aer_agent=%s\n", prefix,
+-	       aer_error_layer[layer], aer_agent_string[agent]);
++	printk("%s""aer_layer=%s, %d=%04x(%s)\n", prefix,
++	       aer_error_layer[layer], id, aer_agent_string[agent]);
+ 	if (aer_severity != AER_CORRECTABLE)
+ 		printk("%s""aer_uncor_severity: 0x%08x\n",
+ 		       prefix, aer->uncor_severity);
 
