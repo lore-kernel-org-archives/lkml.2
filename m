@@ -1,83 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755054Ab2K2Okd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 09:40:33 -0500
+	id S1755113Ab2K2Okl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 09:40:41 -0500
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:49531 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754883Ab2K2Okb (ORCPT
+	with ESMTP id S1754935Ab2K2Okj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 09:40:31 -0500
+	Thu, 29 Nov 2012 09:40:39 -0500
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: sameo@linux.intel.com, grant.likely@secretlab.ca,
         rabin.vincent@stericsson.com, shiraz.hashim@st.com
 Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
         spear-devel@list.st.com, lee.jones@linaro.org,
-        linus.walleij@linaro.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V5 1/2] mfd: stmpe: Get rid of irq_invert_polarity
-Date: Thu, 29 Nov 2012 20:10:17 +0530
-Message-Id: <2dcd7cb4c4022fa24b5328974e4226f5aaf89419.1354199865.git.viresh.kumar@linaro.org>
+        linus.walleij@linaro.org, Vipul Kumar Samar <vipulkumar.samar@st.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V5 2/2] mfd: stmpe: Update DT support in stmpe driver
+Date: Thu, 29 Nov 2012 20:10:18 +0530
+Message-Id: <121653def4e985b0c1b59045637dd4518f97e73a.1354199865.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <2dcd7cb4c4022fa24b5328974e4226f5aaf89419.1354199865.git.viresh.kumar@linaro.org>
+References: <2dcd7cb4c4022fa24b5328974e4226f5aaf89419.1354199865.git.viresh.kumar@linaro.org>
+In-Reply-To: <2dcd7cb4c4022fa24b5328974e4226f5aaf89419.1354199865.git.viresh.kumar@linaro.org>
+References: <2dcd7cb4c4022fa24b5328974e4226f5aaf89419.1354199865.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the very first patch, stmpe core driver is using irq_invert_polarity as
-part of platform data. But, nobody is actually using it in kernel till now.
+From: Vipul Kumar Samar <vipulkumar.samar@st.com>
 
-Also, this is not something part of hardware specs, but is included to cater
-some board mistakes or quirks.
+This patch extends existing DT support for stmpe devices. This updates:
+- DT support from stmpe SPI and I2C drivers
+- missing header files in stmpe.c
+- stmpe_of_probe() with pwm, rotator and new bindings.
+- Bindings are updated in binding document.
 
-So, better get rid of it. This is earlier discussed here:
-
-https://lkml.org/lkml/2012/11/27/636
-
-Acked-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Vipul Kumar Samar <vipulkumar.samar@st.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
-Nothing changed from last version.
+V4->V5:
+------
+- 2/3 and 3/3 merged.
+- irq_trigger is kept same for non-DT booti.
 
- drivers/mfd/stmpe.c       | 7 -------
- include/linux/mfd/stmpe.h | 2 --
- 2 files changed, 9 deletions(-)
+@Lee: I haven't added your Acked-by, because this differs from your Acked
+version.
 
+ Documentation/devicetree/bindings/mfd/stmpe.txt |  9 ++++++---
+ drivers/mfd/stmpe-i2c.c                         | 15 ++++++++++++++
+ drivers/mfd/stmpe-spi.c                         | 15 ++++++++++++++
+ drivers/mfd/stmpe.c                             | 27 +++++++++++++++++++------
+ 4 files changed, 57 insertions(+), 9 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/mfd/stmpe.txt b/Documentation/devicetree/bindings/mfd/stmpe.txt
+index 8f0aeda..d2d88d9 100644
+--- a/Documentation/devicetree/bindings/mfd/stmpe.txt
++++ b/Documentation/devicetree/bindings/mfd/stmpe.txt
+@@ -1,8 +1,11 @@
+-* STMPE Multi-Functional Device
++* ST Microelectronics STMPE Multi-Functional Device
++
++STMPE is an MFD device which may expose following inbuilt devices: gpio, keypad,
++touchscreen, adc, pwm, rotator.
+ 
+ Required properties:
+- - compatible                   : "st,stmpe[811|1601|2401|2403]"
+- - reg                          : I2C address of the device
++ - compatible                   : "st,stmpe[610|801|811|1601|2401|2403]"
++ - reg                          : I2C/SPI address of the device
+ 
+ Optional properties:
+  - interrupts                   : The interrupt outputs from the controller
+diff --git a/drivers/mfd/stmpe-i2c.c b/drivers/mfd/stmpe-i2c.c
+index c734dc3..003c49b 100644
+--- a/drivers/mfd/stmpe-i2c.c
++++ b/drivers/mfd/stmpe-i2c.c
+@@ -13,6 +13,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
++#include <linux/of.h>
+ #include <linux/types.h>
+ #include "stmpe.h"
+ 
+@@ -81,6 +82,19 @@ static const struct i2c_device_id stmpe_i2c_id[] = {
+ };
+ MODULE_DEVICE_TABLE(i2c, stmpe_id);
+ 
++#ifdef CONFIG_OF
++static const struct of_device_id stmpe_dt_ids[] = {
++	{ .compatible = "st,stmpe610", .data = &stmpe_i2c_id[0], },
++	{ .compatible = "st,stmpe801", .data = &stmpe_i2c_id[1], },
++	{ .compatible = "st,stmpe811", .data = &stmpe_i2c_id[2], },
++	{ .compatible = "st,stmpe1601", .data = &stmpe_i2c_id[3], },
++	{ .compatible = "st,stmpe2401", .data = &stmpe_i2c_id[4], },
++	{ .compatible = "st,stmpe2403", .data = &stmpe_i2c_id[5], },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, stmpe_dt_ids);
++#endif
++
+ static struct i2c_driver stmpe_i2c_driver = {
+ 	.driver = {
+ 		.name = "stmpe-i2c",
+@@ -88,6 +102,7 @@ static struct i2c_driver stmpe_i2c_driver = {
+ #ifdef CONFIG_PM
+ 		.pm = &stmpe_dev_pm_ops,
+ #endif
++		.of_match_table = of_match_ptr(stmpe_dt_ids),
+ 	},
+ 	.probe		= stmpe_i2c_probe,
+ 	.remove		= __devexit_p(stmpe_i2c_remove),
+diff --git a/drivers/mfd/stmpe-spi.c b/drivers/mfd/stmpe-spi.c
+index 9edfe86..1e2bff0 100644
+--- a/drivers/mfd/stmpe-spi.c
++++ b/drivers/mfd/stmpe-spi.c
+@@ -11,6 +11,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
++#include <linux/of.h>
+ #include <linux/types.h>
+ #include "stmpe.h"
+ 
+@@ -119,6 +120,19 @@ static const struct spi_device_id stmpe_spi_id[] = {
+ };
+ MODULE_DEVICE_TABLE(spi, stmpe_id);
+ 
++#ifdef CONFIG_OF
++static const struct of_device_id stmpe_dt_ids[] = {
++	{ .compatible = "st,stmpe610", .data = (void *)STMPE610, },
++	{ .compatible = "st,stmpe801", .data = (void *)STMPE801, },
++	{ .compatible = "st,stmpe811", .data = (void *)STMPE811, },
++	{ .compatible = "st,stmpe1601", .data = (void *)STMPE1601, },
++	{ .compatible = "st,stmpe2401", .data = (void *)STMPE2401, },
++	{ .compatible = "st,stmpe2403", .data = (void *)STMPE2403, },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, stmpe_dt_ids);
++#endif
++
+ static struct spi_driver stmpe_spi_driver = {
+ 	.driver = {
+ 		.name	= "stmpe-spi",
+@@ -126,6 +140,7 @@ static struct spi_driver stmpe_spi_driver = {
+ #ifdef CONFIG_PM
+ 		.pm	= &stmpe_dev_pm_ops,
+ #endif
++		.of_match_table = of_match_ptr(stmpe_dt_ids),
+ 	},
+ 	.probe		= stmpe_spi_probe,
+ 	.remove		= __devexit_p(stmpe_spi_remove),
 diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
-index 6175aa4..34408b4 100644
+index 34408b4..bb2dfdb 100644
 --- a/drivers/mfd/stmpe.c
 +++ b/drivers/mfd/stmpe.c
-@@ -960,13 +960,6 @@ static int __devinit stmpe_chip_init(struct stmpe *stmpe)
- 			else
- 				icr |= STMPE_ICR_LSB_HIGH;
- 		}
--
--		if (stmpe->pdata->irq_invert_polarity) {
--			if (id == STMPE801_ID)
--				icr ^= STMPE801_REG_SYS_CTRL_INT_HI;
--			else
--				icr ^= STMPE_ICR_LSB_HIGH;
+@@ -7,12 +7,15 @@
+  * Author: Rabin Vincent <rabin.vincent@stericsson.com> for ST-Ericsson
+  */
+ 
++#include <linux/err.h>
+ #include <linux/gpio.h>
+ #include <linux/export.h>
+ #include <linux/kernel.h>
+ #include <linux/interrupt.h>
+ #include <linux/irq.h>
+ #include <linux/irqdomain.h>
++#include <linux/of.h>
++#include <linux/of_gpio.h>
+ #include <linux/pm.h>
+ #include <linux/slab.h>
+ #include <linux/mfd/core.h>
+@@ -1019,6 +1022,14 @@ void __devinit stmpe_of_probe(struct stmpe_platform_data *pdata,
+ {
+ 	struct device_node *child;
+ 
++	/*
++	 * Distinct names of same cell-type within multiple instances of stmpe
++	 * will be guaranteed by DT.
++	 */
++	pdata->id = -1;
++
++	pdata->irq_trigger = IRQF_TRIGGER_NONE;
++
+ 	of_property_read_u32(np, "st,autosleep-timeout",
+ 			&pdata->autosleep_timeout);
+ 
+@@ -1027,15 +1038,16 @@ void __devinit stmpe_of_probe(struct stmpe_platform_data *pdata,
+ 	for_each_child_of_node(np, child) {
+ 		if (!strcmp(child->name, "stmpe_gpio")) {
+ 			pdata->blocks |= STMPE_BLOCK_GPIO;
 -		}
+-		if (!strcmp(child->name, "stmpe_keypad")) {
++		} else if (!strcmp(child->name, "stmpe_keypad")) {
+ 			pdata->blocks |= STMPE_BLOCK_KEYPAD;
+-		}
+-		if (!strcmp(child->name, "stmpe_touchscreen")) {
++		} else if (!strcmp(child->name, "stmpe_touchscreen")) {
+ 			pdata->blocks |= STMPE_BLOCK_TOUCHSCREEN;
+-		}
+-		if (!strcmp(child->name, "stmpe_adc")) {
++		} else if (!strcmp(child->name, "stmpe_adc")) {
+ 			pdata->blocks |= STMPE_BLOCK_ADC;
++		} else if (!strcmp(child->name, "stmpe_pwm")) {
++			pdata->blocks |= STMPE_BLOCK_PWM;
++		} else if (!strcmp(child->name, "stmpe_rotator")) {
++			pdata->blocks |= STMPE_BLOCK_ROTATOR;
+ 		}
+ 	}
+ }
+@@ -1106,6 +1118,9 @@ int __devinit stmpe_probe(struct stmpe_client_info *ci, int partnum)
+ 			return -ENODEV;
+ 		}
+ 		stmpe->variant = stmpe_noirq_variant_info[stmpe->partnum];
++	} else if (pdata->irq_trigger == IRQF_TRIGGER_NONE) {
++		pdata->irq_trigger =
++			irqd_get_trigger_type(irq_get_irq_data(stmpe->irq));
  	}
  
- 	if (stmpe->pdata->autosleep) {
-diff --git a/include/linux/mfd/stmpe.h b/include/linux/mfd/stmpe.h
-index 15dac79..383ac15 100644
---- a/include/linux/mfd/stmpe.h
-+++ b/include/linux/mfd/stmpe.h
-@@ -190,7 +190,6 @@ struct stmpe_ts_platform_data {
-  * @id: device id to distinguish between multiple STMPEs on the same board
-  * @blocks: bitmask of blocks to enable (use STMPE_BLOCK_*)
-  * @irq_trigger: IRQ trigger to use for the interrupt to the host
-- * @irq_invert_polarity: IRQ line is connected with reversed polarity
-  * @autosleep: bool to enable/disable stmpe autosleep
-  * @autosleep_timeout: inactivity timeout in milliseconds for autosleep
-  * @irq_base: base IRQ number.  %STMPE_NR_IRQS irqs will be used, or
-@@ -207,7 +206,6 @@ struct stmpe_platform_data {
- 	unsigned int blocks;
- 	int irq_base;
- 	unsigned int irq_trigger;
--	bool irq_invert_polarity;
- 	bool autosleep;
- 	bool irq_over_gpio;
- 	int irq_gpio;
+ 	ret = stmpe_chip_init(stmpe);
 -- 
 1.7.12.rc2.18.g61b472e
 
