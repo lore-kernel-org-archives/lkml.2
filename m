@@ -1,87 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454Ab2K2Ugt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 15:36:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40212 "EHLO mx1.redhat.com"
+	id S1754210Ab2K2UmU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 15:42:20 -0500
+Received: from mga09.intel.com ([134.134.136.24]:21247 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751384Ab2K2Ugs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 15:36:48 -0500
-Date: Thu, 29 Nov 2012 15:36:39 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: Steve French <smfrench@gmail.com>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>, linux-cifs@vger.kernel.org,
-        sfrench@samba.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFQ PATCH] cifs: Change default security error message
-Message-ID: <20121129153639.57dede12@tlielax.poochiereds.net>
-In-Reply-To: <CAH2r5mvWo_NjV_wCx=Pd0D5VZbWVxsy-31z9r-vh=ioPwe3AqQ@mail.gmail.com>
-References: <20121129173053.GQ27196@axis.com>
-	<20121129132509.211c4977@corrin.poochiereds.net>
-	<CAH2r5mvWo_NjV_wCx=Pd0D5VZbWVxsy-31z9r-vh=ioPwe3AqQ@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753833Ab2K2UmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 15:42:18 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,186,1355126400"; 
+   d="scan'208";a="249420574"
+From: Andi Kleen <andi@firstfloor.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: Benjamin LaHaise <bcrl@kvack.org>, linux-kernel@vger.kernel.org,
+        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org, zab@redhat.com,
+        jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk
+Subject: Re: [PATCH 22/25] Generic dynamic per cpu refcounting
+References: <1354121029-1376-1-git-send-email-koverstreet@google.com>
+	<1354121029-1376-23-git-send-email-koverstreet@google.com>
+	<m28v9kgsen.fsf@firstfloor.org> <20121129185720.GE15094@google.com>
+	<20121129185953.GW16230@one.firstfloor.org>
+	<20121129191214.GG15094@google.com>
+	<20121129192003.GX16230@one.firstfloor.org>
+	<20121129192925.GH15094@google.com> <20121129193452.GI19042@kvack.org>
+	<20121129202231.GJ15094@google.com>
+Date: Thu, 29 Nov 2012 12:42:17 -0800
+In-Reply-To: <20121129202231.GJ15094@google.com> (Kent Overstreet's message of
+	"Thu, 29 Nov 2012 12:22:31 -0800")
+Message-ID: <m2fw3sf8eu.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Nov 2012 12:54:41 -0600
-Steve French <smfrench@gmail.com> wrote:
+Kent Overstreet <koverstreet@google.com> writes:
 
-> On Thu, Nov 29, 2012 at 12:25 PM, Jeff Layton <jlayton@redhat.com> wrote:
-> > On Thu, 29 Nov 2012 18:30:53 +0100
-> > Jesper Nilsson <jesper.nilsson@axis.com> wrote:
-> >
-> >> Hi!
-> >>
-> >> Connecting with a default security mechanism prompts an KERN_ERROR
-> >> output warning to the user that the default mechanism will be changed
-> >> in Linux 3.3.
-> >>
-> >> We're now at 3.7, so we either could remove the warning completely
-> >> (if the default has been changed), or we could bump the number to
-> >> what our current target for the change is.
-> >>
-> >>
-> >> The below patch changes the cERROR (which turns into a printk with KERN_ERROR)
-> >> into a straight printk with KERN_WARNING and changes the text to indicate
-> >> that it was changed in 3.3.
-> >>
-> >> I expect that the patch is incorrect and that we should choose
-> >> another of the alternative solutions above, but I'd like to get
-> >> some input on this.
-> >>
-> >> Not-Signed-off-by: Jesper Nilsson <jesper.nilsson@axis.com>
-> >> ---
-> >> diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
-> >> index c83f5b65..968456f 100644
-> >> --- a/fs/cifs/connect.c
-> >> +++ b/fs/cifs/connect.c
-> >> @@ -2480,9 +2480,9 @@ cifs_get_smb_ses(struct TCP_Server_Info *server, struct smb_vol *volume_info)
-> >>       supported for many years, time to update default security mechanism */
-> >>       if ((volume_info->secFlg == 0) && warned_on_ntlm == false) {
-> >>               warned_on_ntlm = true;
-> >> -             cERROR(1, "default security mechanism requested.  The default "
-> >> -                     "security mechanism will be upgraded from ntlm to "
-> >> -                     "ntlmv2 in kernel release 3.3");
-> >> +             printk(KERN_WARNING "default security mechanism requested.  "
-> >> +                     "The default security mechanism was changed "
-> >> +                     " from ntlm to ntlmv2 in kernel release 3.3");
-> >>       }
-> >>       ses->overrideSecFlg = volume_info->secFlg;
-> >>
-> >>
-> >>
-> >> /^JN - Jesper Nilsson
-> >
-> > I think this warning has lived long enough and needs to go away. Steve
-> > supposedly has a patch that finally makes this change, but it hasn't
-> > been sent to the list yet... Steve?
-> 
-> It was posted to list on November 25th (and you even included it in
-> your git tree on samba.org ?!)
-> 
+> On Thu, Nov 29, 2012 at 02:34:52PM -0500, Benjamin LaHaise wrote:
+>> On Thu, Nov 29, 2012 at 11:29:25AM -0800, Kent Overstreet wrote:
+>> > There's some kind of symmetry going on here, and if I'd been awake more
+>> > in college I could probably say exactly why it works, but it does.
+>> 
+>> I think the catch is that using only a 32 bit counter is something the 
+>> user could arbitrarily control the sum of all parts.  I think a 64 bit 
+>> counter may be required to ensure no overflow occurs.  Otherwise, an 
+>> overflow could result in a premature free when there are still 2^32 
+>> objects active thanks to a malicious user (possible on systems with lots 
+>> of memory these days -- remote, but possible).
+>
+> That's no different from regular atomic_t - but you're right, we
+> should be using size_t for anything userspace can manipulate.
 
-Oops, my mistake. You're quite correct...
+The regular atomic_t is limited in ways that you are not.
+See my original mail.
+
+-Andi
 
 -- 
-Jeff Layton <jlayton@redhat.com>
+ak@linux.intel.com -- Speaking for myself only
