@@ -1,102 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755311Ab2K2VIf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 16:08:35 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:56049 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754887Ab2K2VId (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 16:08:33 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1/smwomOmTsL1MwgWfnNqrrGIJATdlAAHx2q0qFdp
-	ymg14pJ/cODeTY
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Kent Yoder <key@linux.vnet.ibm.com>
-Cc: Rajiv Andrade <mail@srajiv.net>, Marcel Selhorst <tpmdd@selhorst.net>,
-        Sirrix AG <tpmdd@sirrix.com>, tpmdd-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH v3] char/tpm: Use true and false for bools
-Date: Thu, 29 Nov 2012 22:08:41 +0100
-Message-Id: <1354223321-3343-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <20121129160627.GB15399@ennui.austin.ibm.com>
-References: <20121129160627.GB15399@ennui.austin.ibm.com>
-X-Y-GMX-Trusted: 0
+	id S1755448Ab2K2VOb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 16:14:31 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52628 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755089Ab2K2VOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 16:14:30 -0500
+Message-ID: <50B7CFF8.7010401@zytor.com>
+Date: Thu, 29 Nov 2012 13:13:28 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Andi Kleen <andi@firstfloor.org>
+CC: Jim Kukunas <james.t.kukunas@linux.intel.com>,
+        Linux Raid <linux-raid@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Neil Brown <neilb@suse.de>
+Subject: Re: [PATCH] lib/raid6: Add AVX2 optimized recovery functions
+References: <1352411264-5156-1-git-send-email-james.t.kukunas@linux.intel.com> <m2obigf9xa.fsf@firstfloor.org>
+In-Reply-To: <m2obigf9xa.fsf@firstfloor.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bool initializations should use true and false.  Bool tests don't need
-comparisons.  Based on contributions from Joe Perches, Rusty Russell
-and Bruce W Allan.
+On 11/29/2012 12:09 PM, Andi Kleen wrote:
+> Jim Kukunas <james.t.kukunas@linux.intel.com> writes:
+>> +
+>> +	/* ymm0 = x0f[16] */
+>> +	asm volatile("vpbroadcastb %0, %%ymm7" : : "m" (x0f));
+>> +
+>> +	while (bytes) {
+>> +#ifdef CONFIG_X86_64
+>> +		asm volatile("vmovdqa %0, %%ymm1" : : "m" (q[0]));
+>> +		asm volatile("vmovdqa %0, %%ymm9" : : "m" (q[32]));
+>> +		asm volatile("vmovdqa %0, %%ymm0" : : "m" (p[0]));
+>> +		asm volatile("vmovdqa %0, %%ymm8" : : "m" (p[32]));
+> 
+> This is somewhat dangerous to assume registers do not get changed
+> between assembler statements or assembler statements do not get
+> reordered. Better always put such values into explicit variables or
+> merge them into a single asm statement.
+> 
+> asm volatile is also not enough to prevent reordering. If anything
+> you would need a memory clobber.
+> 
 
-The semantic patch that makes this output is available
-in scripts/coccinelle/misc/boolinit.cocci.
+The code is compiled so that the xmm/ymm registers are not available to
+the compiler.  Do you have any known examples of asm volatiles being
+reordered *with respect to each other*?  My understandings of gcc is
+that volatile operations are ordered with respect to each other (not
+necessarily with respect to non-volatile operations, though.)
 
-More information about semantic patching is available at
-http://coccinelle.lip6.fr/
+Either way, this implementatin technique was used for the MMX/SSE
+implementations without any problems for 9 years now.
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
-v3 for this tiny patch... shame on me.
+	-h[a
 
- drivers/char/tpm/tpm_tis.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
-index 6bdf267..10f0b47 100644
---- a/drivers/char/tpm/tpm_tis.c
-+++ b/drivers/char/tpm/tpm_tis.c
-@@ -374,7 +374,7 @@ static int probe_itpm(struct tpm_chip *chip)
- 	if (vendor != TPM_VID_INTEL)
- 		return 0;
- 
--	itpm = 0;
-+	itpm = false;
- 
- 	rc = tpm_tis_send_data(chip, cmd_getticks, len);
- 	if (rc == 0)
-@@ -383,7 +383,7 @@ static int probe_itpm(struct tpm_chip *chip)
- 	tpm_tis_ready(chip);
- 	release_locality(chip, chip->vendor.locality, 0);
- 
--	itpm = 1;
-+	itpm = true;
- 
- 	rc = tpm_tis_send_data(chip, cmd_getticks, len);
- 	if (rc == 0) {
-@@ -502,7 +502,7 @@ static irqreturn_t tis_int_handler(int dummy, void *dev_id)
- 	return IRQ_HANDLED;
- }
- 
--static bool interrupts = 1;
-+static bool interrupts = true;
- module_param(interrupts, bool, 0444);
- MODULE_PARM_DESC(interrupts, "Enable interrupts");
- 
-@@ -545,7 +545,7 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
- 			rc = -ENODEV;
- 			goto out_err;
- 		}
--		itpm = (probe == 0) ? 0 : 1;
-+		itpm = !!probe;
- 	}
- 
- 	if (itpm)
-@@ -741,10 +741,10 @@ static int __devinit tpm_tis_pnp_init(struct pnp_dev *pnp_dev,
- 	if (pnp_irq_valid(pnp_dev, 0))
- 		irq = pnp_irq(pnp_dev, 0);
- 	else
--		interrupts = 0;
-+		interrupts = false;
- 
- 	if (is_itpm(pnp_dev))
--		itpm = 1;
-+		itpm = true;
- 
- 	return tpm_tis_init(&pnp_dev->dev, start, len, irq);
- }
--- 
-1.7.8.6
 
