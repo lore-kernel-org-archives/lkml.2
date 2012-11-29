@@ -1,422 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932581Ab2K2DyL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 22:54:11 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46246 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932548Ab2K2DyK (ORCPT
+	id S932630Ab2K2D5U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 22:57:20 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:39441 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932504Ab2K2D5S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 22:54:10 -0500
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org,
-        David Gibson <david@gibson.dropbear.id.au>
-Subject: [PATCH] vfio powerpc: enabled on powernv platform
-Date: Thu, 29 Nov 2012 14:53:45 +1100
-Message-Id: <1354161225-23118-1-git-send-email-aik@ozlabs.ru>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1354138245.1809.226.camel@bling.home>
-References: <1354138245.1809.226.camel@bling.home>
+	Wed, 28 Nov 2012 22:57:18 -0500
+Date: Thu, 29 Nov 2012 14:57:14 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Davide Ciminaghi <ciminaghi@gnudd.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Bill Pemberton <wfp5p@virginia.edu>
+Subject: linux-next: manual merge of the driver-core tree with the mfd tree
+Message-Id: <20121129145714.4da1094e1f33ce8db417fa19@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__29_Nov_2012_14_57_14_+1100_n7T8lL3qDkETQ_x5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch initializes IOMMU groups based on the IOMMU
-configuration discovered during the PCI scan on POWERNV
-(POWER non virtualized) platform. The IOMMU groups are
-to be used later by VFIO driver (PCI pass through).
+--Signature=_Thu__29_Nov_2012_14_57_14_+1100_n7T8lL3qDkETQ_x5
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It also implements an API for mapping/unmapping pages for
-guest PCI drivers and providing DMA window properties.
-This API is going to be used later by QEMU-VFIO to handle
-h_put_tce hypercalls from the KVM guest.
+Hi Greg,
 
-Although this driver has been tested only on the POWERNV
-platform, it should work on any platform which supports
-TCE tables.
+Today's linux-next merge of the driver-core tree got a conflict in
+drivers/mfd/sta2x11-mfd.c between various commits from the mfd tree and
+commits f791be492f76 ("mfd: remove use of __devinit"), a9e9ce4c4167
+("mfd: remove use of __devinitdata") and a73e5df16b52 ("mfd: remove use
+of __devinitconst") from the driver-core tree.
 
-To enable VFIO on POWER, enable SPAPR_TCE_IOMMU config
-option and configure VFIO as required.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Cc: David Gibson <david@gibson.dropbear.id.au>
-Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
----
- arch/powerpc/include/asm/iommu.h     |    9 ++
- arch/powerpc/kernel/iommu.c          |  159 ++++++++++++++++++++++++++++++++++
- arch/powerpc/platforms/powernv/pci.c |  135 +++++++++++++++++++++++++++++
- drivers/iommu/Kconfig                |    8 ++
- 4 files changed, 311 insertions(+)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --git a/arch/powerpc/include/asm/iommu.h b/arch/powerpc/include/asm/iommu.h
-index cbfe678..5c7087a 100644
---- a/arch/powerpc/include/asm/iommu.h
-+++ b/arch/powerpc/include/asm/iommu.h
-@@ -76,6 +76,9 @@ struct iommu_table {
- 	struct iommu_pool large_pool;
- 	struct iommu_pool pools[IOMMU_NR_POOLS];
- 	unsigned long *it_map;       /* A simple allocation bitmap for now */
-+#ifdef CONFIG_IOMMU_API
-+	struct iommu_group *it_group;
-+#endif
- };
- 
- struct scatterlist;
-@@ -147,5 +150,11 @@ static inline void iommu_restore(void)
+diff --cc drivers/mfd/sta2x11-mfd.c
+index 6fb0938,d6284ca..0000000
+--- a/drivers/mfd/sta2x11-mfd.c
++++ b/drivers/mfd/sta2x11-mfd.c
+@@@ -76,9 -69,8 +76,9 @@@ static struct sta2x11_mfd *sta2x11_mfd_
+  	return NULL;
+  }
+ =20
+- static int __devinit sta2x11_mfd_add(struct pci_dev *pdev, gfp_t flags)
++ static int sta2x11_mfd_add(struct pci_dev *pdev, gfp_t flags)
+  {
+ +	int i;
+  	struct sta2x11_mfd *mfd =3D sta2x11_mfd_find(pdev);
+  	struct sta2x11_instance *instance;
+ =20
+@@@ -458,73 -305,42 +458,73 @@@ enum mfd0_bar1_cells=20
+  		.flags =3D IORESOURCE_MEM, \
+  		}
+ =20
+- static const __devinitconst struct resource gpio_resources[] =3D {
++ static const struct resource gpio_resources[] =3D {
+  	{
+ -		.name =3D "sta2x11_gpio", /* 4 consecutive cells, 1 driver */
+ +		/* 4 consecutive cells, 1 driver */
+ +		.name =3D STA2X11_MFD_GPIO_NAME,
+  		.start =3D 0,
+  		.end =3D (4 * 4096) - 1,
+  		.flags =3D IORESOURCE_MEM,
+  	}
+  };
+- static const __devinitconst struct resource sctl_resources[] =3D {
++ static const struct resource sctl_resources[] =3D {
+ -	CELL_4K("sta2x11-sctl", STA2X11_SCTL),
+ +	CELL_4K(STA2X11_MFD_SCTL_NAME, STA2X11_SCTL),
+  };
+- static const __devinitconst struct resource scr_resources[] =3D {
++ static const struct resource scr_resources[] =3D {
+ -	CELL_4K("sta2x11-scr", STA2X11_SCR),
+ +	CELL_4K(STA2X11_MFD_SCR_NAME, STA2X11_SCR),
+  };
+- static const __devinitconst struct resource time_resources[] =3D {
++ static const struct resource time_resources[] =3D {
+ -	CELL_4K("sta2x11-time", STA2X11_TIME),
+ +	CELL_4K(STA2X11_MFD_TIME_NAME, STA2X11_TIME),
+  };
+ =20
+- static const __devinitconst struct resource apbreg_resources[] =3D {
++ static const struct resource apbreg_resources[] =3D {
+ -	CELL_4K("sta2x11-apbreg", STA2X11_APBREG),
+ +	CELL_4K(STA2X11_MFD_APBREG_NAME, STA2X11_APBREG),
+  };
+ =20
+  #define DEV(_name, _r) \
+  	{ .name =3D _name, .num_resources =3D ARRAY_SIZE(_r), .resources =3D _r,=
  }
- #endif
- 
-+extern long iommu_clear_tces(struct iommu_table *tbl, unsigned long entry,
-+		unsigned long pages);
-+extern long iommu_put_tces(struct iommu_table *tbl, unsigned long entry,
-+		uint64_t tce, enum dma_data_direction direction,
-+		unsigned long pages);
-+
- #endif /* __KERNEL__ */
- #endif /* _ASM_IOMMU_H */
-diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
-index ff5a6ce..1225fbb 100644
---- a/arch/powerpc/kernel/iommu.c
-+++ b/arch/powerpc/kernel/iommu.c
-@@ -44,6 +44,7 @@
- #include <asm/kdump.h>
- #include <asm/fadump.h>
- #include <asm/vio.h>
-+#include <asm/tce.h>
- 
- #define DBG(...)
- 
-@@ -856,3 +857,161 @@ void iommu_free_coherent(struct iommu_table *tbl, size_t size,
- 		free_pages((unsigned long)vaddr, get_order(size));
- 	}
- }
-+
-+#ifdef CONFIG_IOMMU_API
-+/*
-+ * SPAPR TCE API
-+ */
-+static void tce_flush(struct iommu_table *tbl)
-+{
-+	/* Flush/invalidate TLB caches if necessary */
-+	if (ppc_md.tce_flush)
-+		ppc_md.tce_flush(tbl);
-+
-+	/* Make sure updates are seen by hardware */
-+	mb();
-+}
-+
-+/*
-+ * iommu_clear_tces clears tces and returned the number of pages
-+ * which it called put_page() on.
-+ */
-+static long clear_tces_nolock(struct iommu_table *tbl, unsigned long entry,
-+		unsigned long pages)
-+{
-+	int i, retpages = 0;
-+	unsigned long oldtce;
-+	struct page *page;
-+
-+	for (i = 0; i < pages; ++i) {
-+		oldtce = ppc_md.tce_get(tbl, entry + i);
-+		ppc_md.tce_free(tbl, entry + i, 1);
-+
-+		if (!(oldtce & (TCE_PCI_WRITE | TCE_PCI_READ)))
-+			continue;
-+
-+		page = pfn_to_page(oldtce >> PAGE_SHIFT);
-+
-+		WARN_ON(!page);
-+		if (!page)
-+			continue;
-+
-+		if (oldtce & TCE_PCI_WRITE)
-+			SetPageDirty(page);
-+
-+		if (!(oldtce & ~PAGE_MASK))
-+			++retpages;
-+
-+		put_page(page);
-+	}
-+
-+	return retpages;
-+}
-+
-+/*
-+ * iommu_clear_tces clears tces and returned the number of released pages
-+ */
-+long iommu_clear_tces(struct iommu_table *tbl, unsigned long entry,
-+		unsigned long pages)
-+{
-+	int ret;
-+	struct iommu_pool *pool = get_pool(tbl, entry);
-+
-+	spin_lock(&(pool->lock));
-+	ret = clear_tces_nolock(tbl, entry, pages);
-+	tce_flush(tbl);
-+	spin_unlock(&(pool->lock));
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(iommu_clear_tces);
-+
-+static int put_tce(struct iommu_table *tbl, unsigned long entry,
-+		uint64_t tce, enum dma_data_direction direction)
-+{
-+	int ret;
-+	struct page *page = NULL;
-+	unsigned long kva, offset;
-+
-+	/* Map new TCE */
-+	offset = (tce & IOMMU_PAGE_MASK) - (tce & PAGE_MASK);
-+
-+	ret = get_user_pages_fast(tce & PAGE_MASK, 1,
-+			direction != DMA_TO_DEVICE, &page);
-+	if (ret < 1) {
-+		printk(KERN_ERR "tce_vfio: get_user_pages_fast failed tce=%llx ioba=%lx ret=%d\n",
-+				tce, entry << IOMMU_PAGE_SHIFT, ret);
-+		if (!ret)
-+			ret = -EFAULT;
-+		return ret;
-+	}
-+
-+	kva = (unsigned long) page_address(page);
-+	kva += offset;
-+
-+	/* tce_build receives a virtual address */
-+	entry += tbl->it_offset; /* Offset into real TCE table */
-+	ret = ppc_md.tce_build(tbl, entry, 1, kva, direction, NULL);
-+
-+	/* tce_build() only returns non-zero for transient errors */
-+	if (unlikely(ret)) {
-+		printk(KERN_ERR "tce_vfio: tce_put failed on tce=%llx ioba=%lx kva=%lx ret=%d\n",
-+				tce, entry << IOMMU_PAGE_SHIFT, kva, ret);
-+		put_page(page);
-+		return -EIO;
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-+ * iommu_put_tces builds tces and returned the number of actually
-+ * locked system pages
-+ */
-+long iommu_put_tces(struct iommu_table *tbl, unsigned long entry,
-+		uint64_t tce, enum dma_data_direction direction,
-+		unsigned long pages)
-+{
-+	int i, ret = 0, retpages = 0;
-+	struct iommu_pool *pool = get_pool(tbl, entry);
-+
-+	BUILD_BUG_ON(PAGE_SIZE < IOMMU_PAGE_SIZE);
-+	BUG_ON(direction == DMA_NONE);
-+
-+	spin_lock(&(pool->lock));
-+
-+	/* Check if any is in use */
-+	for (i = 0; i < pages; ++i) {
-+		unsigned long oldtce = ppc_md.tce_get(tbl, entry + i);
-+		if (oldtce & (TCE_PCI_WRITE | TCE_PCI_READ)) {
-+			spin_unlock(&(pool->lock));
-+			return -EBUSY;
-+		}
-+	}
-+
-+	/* Put tces to the table */
-+	for (i = 0; (i < pages) && !ret; ++i, tce += IOMMU_PAGE_SIZE) {
-+		ret = put_tce(tbl, entry + i, tce, direction);
-+		/*
-+		 * As IOMMU page size is always 4K, the system page size
-+		 * can be 64K and there is no special tracking for IOMMU pages,
-+		 * we only do rlimit check/update for the very first
-+		 * 4K IOMMUpage within 64K system page.
-+		 */
-+		if (!(tce & ~PAGE_MASK))
-+			++retpages;
-+	}
-+
-+	/* If failed, release locked pages, otherwise return the number of pages */
-+	if (ret)
-+		clear_tces_nolock(tbl, entry, i);
-+	else
-+		ret = retpages;
-+
-+	tce_flush(tbl);
-+	spin_unlock(&(pool->lock));
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(iommu_put_tces);
-+#endif /* CONFIG_IOMMU_API */
-diff --git a/arch/powerpc/platforms/powernv/pci.c b/arch/powerpc/platforms/powernv/pci.c
-index 05205cf..21250ef 100644
---- a/arch/powerpc/platforms/powernv/pci.c
-+++ b/arch/powerpc/platforms/powernv/pci.c
-@@ -20,6 +20,7 @@
- #include <linux/irq.h>
- #include <linux/io.h>
- #include <linux/msi.h>
-+#include <linux/iommu.h>
- 
- #include <asm/sections.h>
- #include <asm/io.h>
-@@ -613,3 +614,137 @@ void __init pnv_pci_init(void)
- 	ppc_md.teardown_msi_irqs = pnv_teardown_msi_irqs;
- #endif
- }
-+
-+#ifdef CONFIG_IOMMU_API
-+/*
-+ * IOMMU groups support required by VFIO
-+ */
-+static int add_device(struct device *dev)
-+{
-+	struct iommu_table *tbl;
-+	int ret = 0;
-+
-+	if (WARN_ON(dev->iommu_group)) {
-+		printk(KERN_WARNING "tce_vfio: device %s is already in iommu group %d, skipping\n",
-+				dev_name(dev),
-+				iommu_group_id(dev->iommu_group));
-+		return -EBUSY;
-+	}
-+
-+	tbl = get_iommu_table_base(dev);
-+	if (!tbl) {
-+		pr_debug("tce_vfio: skipping device %s with no tbl\n",
-+				dev_name(dev));
-+		return 0;
-+	}
-+
-+	pr_debug("tce_vfio: adding %s to iommu group %d\n",
-+			dev_name(dev), iommu_group_id(tbl->it_group));
-+
-+	ret = iommu_group_add_device(tbl->it_group, dev);
-+	if (ret < 0)
-+		printk(KERN_ERR "tce_vfio: %s has not been added, ret=%d\n",
-+				dev_name(dev), ret);
-+
-+	return ret;
-+}
-+
-+static void del_device(struct device *dev)
-+{
-+	iommu_group_remove_device(dev);
-+}
-+
-+static int iommu_bus_notifier(struct notifier_block *nb,
-+			      unsigned long action, void *data)
-+{
-+	struct device *dev = data;
-+
-+	switch (action) {
-+	case BUS_NOTIFY_ADD_DEVICE:
-+		return add_device(dev);
-+	case BUS_NOTIFY_DEL_DEVICE:
-+		del_device(dev);
-+		return 0;
-+	default:
-+		return 0;
-+	}
-+}
-+
-+static struct notifier_block tce_iommu_bus_nb = {
-+	.notifier_call = iommu_bus_notifier,
-+};
-+
-+static void group_release(void *iommu_data)
-+{
-+	struct iommu_table *tbl = iommu_data;
-+	tbl->it_group = NULL;
-+}
-+
-+static int __init tce_iommu_init(void)
-+{
-+	struct pci_dev *pdev = NULL;
-+	struct iommu_table *tbl;
-+	struct iommu_group *grp;
-+
-+	/* Allocate and initialize IOMMU groups */
-+	for_each_pci_dev(pdev) {
-+		tbl = get_iommu_table_base(&pdev->dev);
-+		if (!tbl)
-+			continue;
-+
-+		/* Skip already initialized */
-+		if (tbl->it_group)
-+			continue;
-+
-+		grp = iommu_group_alloc();
-+		if (IS_ERR(grp)) {
-+			printk(KERN_INFO "tce_vfio: cannot create "
-+					"new IOMMU group, ret=%ld\n",
-+					PTR_ERR(grp));
-+			return PTR_ERR(grp);
-+		}
-+		tbl->it_group = grp;
-+		iommu_group_set_iommudata(grp, tbl, group_release);
-+	}
-+
-+	bus_register_notifier(&pci_bus_type, &tce_iommu_bus_nb);
-+
-+	/* Add PCI devices to VFIO groups */
-+	for_each_pci_dev(pdev)
-+		add_device(&pdev->dev);
-+
-+	return 0;
-+}
-+
-+static void __exit tce_iommu_cleanup(void)
-+{
-+	struct pci_dev *pdev = NULL;
-+	struct iommu_table *tbl;
-+	struct iommu_group *grp = NULL;
-+
-+	bus_unregister_notifier(&pci_bus_type, &tce_iommu_bus_nb);
-+
-+	/* Delete PCI devices from VFIO groups */
-+	for_each_pci_dev(pdev)
-+		del_device(&pdev->dev);
-+
-+	/* Release VFIO groups */
-+	for_each_pci_dev(pdev) {
-+		tbl = get_iommu_table_base(&pdev->dev);
-+		if (!tbl)
-+			continue;
-+		grp = tbl->it_group;
-+
-+		/* Skip (already) uninitialized */
-+		if (!grp)
-+			continue;
-+
-+		/* Do actual release, group_release() is expected to work */
-+		iommu_group_put(grp);
-+		BUG_ON(tbl->it_group);
-+	}
-+}
-+
-+module_init(tce_iommu_init);
-+module_exit(tce_iommu_cleanup);
-+#endif /* CONFIG_IOMMU_API */
-diff --git a/drivers/iommu/Kconfig b/drivers/iommu/Kconfig
-index 9f69b56..29d11dc 100644
---- a/drivers/iommu/Kconfig
-+++ b/drivers/iommu/Kconfig
-@@ -187,4 +187,12 @@ config EXYNOS_IOMMU_DEBUG
- 
- 	  Say N unless you need kernel log message for IOMMU debugging
- 
-+config SPAPR_TCE_IOMMU
-+	bool "sPAPR TCE IOMMU Support"
-+	depends on PPC_POWERNV
-+	select IOMMU_API
-+	help
-+	  Enables bits of IOMMU API required by VFIO. The iommu_ops is
-+	  still not implemented.
-+
- endif # IOMMU_SUPPORT
--- 
-1.7.10.4
+ =20
+- static __devinitdata struct mfd_cell sta2x11_mfd0_bar0[] =3D {
+ -static struct mfd_cell sta2x11_mfd_bar0[] =3D {
+ -	DEV("sta2x11-gpio", gpio_resources), /* offset 0: we add pdata later */
+ -	DEV("sta2x11-sctl", sctl_resources),
+ -	DEV("sta2x11-scr", scr_resources),
+ -	DEV("sta2x11-time", time_resources),
+++static struct mfd_cell sta2x11_mfd0_bar0[] =3D {
+ +	/* offset 0: we add pdata later */
+ +	DEV(STA2X11_MFD_GPIO_NAME, gpio_resources),
+ +	DEV(STA2X11_MFD_SCTL_NAME, sctl_resources),
+ +	DEV(STA2X11_MFD_SCR_NAME,  scr_resources),
+ +	DEV(STA2X11_MFD_TIME_NAME, time_resources),
+  };
+ =20
+- static __devinitdata struct mfd_cell sta2x11_mfd0_bar1[] =3D {
+ -static struct mfd_cell sta2x11_mfd_bar1[] =3D {
+ -	DEV("sta2x11-apbreg", apbreg_resources),
+++static struct mfd_cell sta2x11_mfd0_bar1[] =3D {
+ +	DEV(STA2X11_MFD_APBREG_NAME, apbreg_resources),
+  };
+ =20
+ +/* Mfd 1 devices */
+ +
+ +/* Mfd 1, Bar 0 */
+ +enum mfd1_bar0_cells {
+ +	STA2X11_VIC =3D 0,
+ +};
+ +
+ +/* Mfd 1, Bar 1 */
+ +enum mfd1_bar1_cells {
+ +	STA2X11_APB_SOC_REGS =3D 0,
+ +};
+ +
+- static const __devinitconst struct resource vic_resources[] =3D {
+++static const struct resource vic_resources[] =3D {
+ +	CELL_4K(STA2X11_MFD_VIC_NAME, STA2X11_VIC),
+ +};
+ +
+- static const __devinitconst struct resource apb_soc_regs_resources[] =3D {
+++static const struct resource apb_soc_regs_resources[] =3D {
+ +	CELL_4K(STA2X11_MFD_APB_SOC_REGS_NAME, STA2X11_APB_SOC_REGS),
+ +};
+ +
+- static __devinitdata struct mfd_cell sta2x11_mfd1_bar0[] =3D {
+++static struct mfd_cell sta2x11_mfd1_bar0[] =3D {
+ +	DEV(STA2X11_MFD_VIC_NAME, vic_resources),
+ +};
+ +
+- static __devinitdata struct mfd_cell sta2x11_mfd1_bar1[] =3D {
+++static struct mfd_cell sta2x11_mfd1_bar1[] =3D {
+ +	DEV(STA2X11_MFD_APB_SOC_REGS_NAME, apb_soc_regs_resources),
+ +};
+ +
+ +
+  static int sta2x11_mfd_suspend(struct pci_dev *pdev, pm_message_t state)
+  {
+  	pci_save_state(pdev);
+@@@ -547,59 -363,7 +547,59 @@@ static int sta2x11_mfd_resume(struct pc
+  	return 0;
+  }
+ =20
+ +struct sta2x11_mfd_bar_setup_data {
+ +	struct mfd_cell *cells;
+ +	int ncells;
+ +};
+ +
+ +struct sta2x11_mfd_setup_data {
+ +	struct sta2x11_mfd_bar_setup_data bars[2];
+ +};
+ +
+ +#define STA2X11_MFD0 0
+ +#define STA2X11_MFD1 1
+ +
+ +static struct sta2x11_mfd_setup_data mfd_setup_data[] =3D {
+ +	/* Mfd 0: gpio, sctl, scr, timers / apbregs */
+ +	[STA2X11_MFD0] =3D {
+ +		.bars =3D {
+ +			[0] =3D {
+ +				.cells =3D sta2x11_mfd0_bar0,
+ +				.ncells =3D ARRAY_SIZE(sta2x11_mfd0_bar0),
+ +			},
+ +			[1] =3D {
+ +				.cells =3D sta2x11_mfd0_bar1,
+ +				.ncells =3D ARRAY_SIZE(sta2x11_mfd0_bar1),
+ +			},
+ +		},
+ +	},
+ +	/* Mfd 1: vic / apb-soc-regs */
+ +	[STA2X11_MFD1] =3D {
+ +		.bars =3D {
+ +			[0] =3D {
+ +				.cells =3D sta2x11_mfd1_bar0,
+ +				.ncells =3D ARRAY_SIZE(sta2x11_mfd1_bar0),
+ +			},
+ +			[1] =3D {
+ +				.cells =3D sta2x11_mfd1_bar1,
+ +				.ncells =3D ARRAY_SIZE(sta2x11_mfd1_bar1),
+ +			},
+ +		},
+ +	},
+ +};
+ +
+- static void __devinit sta2x11_mfd_setup(struct pci_dev *pdev,
+++static void sta2x11_mfd_setup(struct pci_dev *pdev,
+ +					struct sta2x11_mfd_setup_data *sd)
+ +{
+ +	int i, j;
+ +	for (i =3D 0; i < ARRAY_SIZE(sd->bars); i++)
+ +		for (j =3D 0; j < sd->bars[i].ncells; j++) {
+ +			sd->bars[i].cells[j].pdata_size =3D sizeof(pdev);
+ +			sd->bars[i].cells[j].platform_data =3D &pdev;
+ +		}
+ +}
+ +
+- static int __devinit sta2x11_mfd_probe(struct pci_dev *pdev,
++ static int sta2x11_mfd_probe(struct pci_dev *pdev,
+  				       const struct pci_device_id *pci_id)
+  {
+  	int err, i;
 
+--Signature=_Thu__29_Nov_2012_14_57_14_+1100_n7T8lL3qDkETQ_x5
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQtt0aAAoJEECxmPOUX5FEAX4P/2DdC/UvJd9nK5fJcJGuTxD9
+gsyJaC9MHAOQFRJvkhtqFjlhA02LmyOO0fx1AP4g5fz92r8KvB8nhVQtPHedxURw
+B3jshvYxda8dk65tQ23CCr77yCjTRDBcDEZJNa69QH2Ocd/dzyCKYQbfSOVWYhAX
+jzy3t33/8ySw2z2uuxHk5THVeB+IAFzE45mH5WTVWnoVrLs5defSFWMNpdevVjWW
+SByf8MRPw9zNu08tFzbN5TDUkN0ORFxWRr1zCRRdzsY5a2FSgLLSTAeRmbC5+2Y4
+iXn9Ot+r8yEWHSFGWqqU/BrlO4R93HUmmudDffgFMVOizplD2LQiNQr14kiIMjtc
+1J+GnnrXi9SeK8sNJoRVpACZXpb7CrfDIA7RtWofZj/ISrBsF3tnq/Mo2koSxcyM
+cqV/qBizPyY4hiKp4BOAS9ZHXAAEgP0PBdClVyiByv1JJfQrZr/LFChK+rTVlXd/
+yTlWOPRopzJVLsc7NcEucdWYgg+T3IsQvmTbX2IIVzVtDhxfBpPp008MLoVQ2fgK
+vxPmz9f+8YLXO1MJdYoXCQ4qHr7Rk+MOFmXkJOQ5aqI8epZZIU+/CXY5sOMbhwCp
+6BkGATMR2ya4cEchouQNOowej8YWjRh+BelqSRAEK9caATDoddNquj2N73ltBwA8
+DHqLeahqr23SzRzdVm3a
+=9T0n
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__29_Nov_2012_14_57_14_+1100_n7T8lL3qDkETQ_x5--
