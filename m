@@ -1,65 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754666Ab2K2NLI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 08:11:08 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52391 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754538Ab2K2NLH (ORCPT
+	id S1754671Ab2K2NPs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 08:15:48 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:49336 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754375Ab2K2NPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 08:11:07 -0500
-Date: Thu, 29 Nov 2012 13:08:44 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Michael Spang <spang@chromium.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: Fix page counting in mem_init and show_mem
-Message-ID: <20121129130844.GI19440@n2100.arm.linux.org.uk>
-References: <1350956091-5276-1-git-send-email-spang@chromium.org>
+	Thu, 29 Nov 2012 08:15:45 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1350956091-5276-1-git-send-email-spang@chromium.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1352962777-24407-6-git-send-email-wency@cn.fujitsu.com>
+References: <1352962777-24407-1-git-send-email-wency@cn.fujitsu.com>
+	<1352962777-24407-6-git-send-email-wency@cn.fujitsu.com>
+Date: Thu, 29 Nov 2012 21:15:44 +0800
+Message-ID: <CA+quRcbBCau+2h0fxncR3ck-PZeB2NzFJZxQVea3y0VHAHp2uQ@mail.gmail.com>
+Subject: Re: [Patch v5 5/7] acpi_memhotplug.c: don't allow to eject the memory
+ device if it is being used
+From: =?GB2312?B?YW5keXd1MTA2vai5+g==?= <wujianguo106@gmail.com>
+To: Wen Congyang <wency@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org, Len Brown <len.brown@intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Toshi Kani <toshi.kani@hp.com>, Jiang Liu <liuj97@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Christoph Lameter <cl@linux.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 22, 2012 at 09:34:51PM -0400, Michael Spang wrote:
->  	for_each_bank (i, mi) {
->  		struct membank *bank = &mi->bank[i];
-> -		unsigned int pfn1, pfn2;
-> -		struct page *page, *end;
-> +		unsigned int start, end, pfn;
->  
-> -		pfn1 = bank_pfn_start(bank);
-> -		pfn2 = bank_pfn_end(bank);
-> +		start = bank_pfn_start(bank);
-> +		end = bank_pfn_end(bank);
->  
-> -		page = pfn_to_page(pfn1);
-> -		end  = pfn_to_page(pfn2 - 1) + 1;
-> +		for (pfn = start; pfn < end; pfn++) {
-> +			struct page *page;
+2012/11/15 Wen Congyang <wency@cn.fujitsu.com>
+>
+> We eject the memory device even if it is in use.  It is very dangerous,
+> and it will cause the kernel to be panicked.
+>
+> CC: David Rientjes <rientjes@google.com>
+> CC: Jiang Liu <liuj97@gmail.com>
+> CC: Len Brown <len.brown@intel.com>
+> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> CC: Paul Mackerras <paulus@samba.org>
+> CC: Christoph Lameter <cl@linux.com>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> CC: Rafael J. Wysocki <rjw@sisk.pl>
+> CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+> ---
+>  drivers/acpi/acpi_memhotplug.c | 42 +++++++++++++++++++++++++++++++++---------
+>  1 file changed, 33 insertions(+), 9 deletions(-)
+>
+> diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
+> index e52ad5d..f7e3007 100644
+> --- a/drivers/acpi/acpi_memhotplug.c
+> +++ b/drivers/acpi/acpi_memhotplug.c
+> @@ -78,6 +78,7 @@ struct acpi_memory_info {
+>         unsigned short caching; /* memory cache attribute */
+>         unsigned short write_protect;   /* memory read/write attribute */
+>         unsigned int enabled:1;
+> +       unsigned int failed:1;
+>  };
+>
+>  struct acpi_memory_device {
+> @@ -257,9 +258,23 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
+>                         node = memory_add_physaddr_to_nid(info->start_addr);
+>
+>                 result = add_memory(node, info->start_addr, info->length);
+> -               if (result)
 > +
-> +			if (!pfn_valid(pfn))
-> +				continue;
+> +               /*
+> +                * If the memory block has been used by the kernel, add_memory()
+> +                * returns -EEXIST. If add_memory() returns the other error, it
+> +                * means that this memory block is not used by the kernel.
+> +                */
+> +               if (result && result != -EEXIST) {
+> +                       info->failed = 1;
+>                         continue;
+> -               info->enabled = 1;
+> +               }
+> +
+> +               if (!result)
+> +                       info->enabled = 1;
 
-This is not a very good fix; what this means is that we end up calling
-pfn_valid() for each and every page in the system, and as pfn_valid()
-may not be a simple test (but a search) we should avoid that when we're
-iterating over all pages in the system.
+Hi Congyang,
 
-Firstly, the mem blank information is assumed from the very beginning
-to be aligned with the sparsemem split-up.  This comes from the previous
-discontiguous implementation where this was an absolute requirement.  We
-continue to require that.
+If a memory device booting with the system, the info->enable will equal to 0,
+and can not be hot-removed in  acpi_memory_remove_memory(), right?
 
-Secondly, if you're worred about the stolen memory, then we need to be
-iterating over the memblock information instead of the membank information.
-This is slightly more complex because memblock will merge neighbouring
-regions into one contiguous entry - and this needs to be split up here.
-This is why I persisted with the membank stuff here as that _should_
-already be appropriately split.
+Thanks,
+Jianguo Wu
 
-In the long run though, moving to memblock and dealing better with the
-split memory maps (rather than looking up each and every page using
-pfn_to_page()) is the right way to go.
+>
+> +               /*
+> +                * Add num_enable even if add_memory() returns -EEXIST, so the
+> +                * device is bound to this driver.
+> +                */
+>                 num_enabled++;
+>         }
+>         if (!num_enabled) {
+> @@ -280,21 +295,30 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
+>
+>  static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
+>  {
+> -       int result;
+> +       int result = 0;
+>         struct acpi_memory_info *info, *n;
+>
+>         list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
+> -               if (info->enabled) {
+> -                       result = remove_memory(info->start_addr, info->length);
+> -                       if (result)
+> -                               return result;
+> -               }
+> +               if (info->failed)
+> +                       /* The kernel does not use this memory block */
+> +                       continue;
+> +
+> +               if (!info->enabled)
+> +                       /*
+> +                        * The kernel uses this memory block, but it may be not
+> +                        * managed by us.
+> +                        */
+> +                       return -EBUSY;
+> +
+> +               result = remove_memory(info->start_addr, info->length);
+> +               if (result)
+> +                       return result;
+>
+>                 list_del(&info->list);
+>                 kfree(info);
+>         }
+>
+> -       return 0;
+> +       return result;
+>  }
+>
+>  static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
+> --
+> 1.8.0
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
