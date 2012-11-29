@@ -1,83 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755681Ab2K2DHH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 22:07:07 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:46080 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755525Ab2K2DHF (ORCPT
+	id S1755633Ab2K2DHG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 22:07:06 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:39436 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755499Ab2K2DHE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 22:07:05 -0500
-Date: Thu, 29 Nov 2012 14:06:51 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: linux-next: manual merge of the rcu tree with Linus' tree
-Message-Id: <20121129140651.33881363cc4870a87cf84adc@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__29_Nov_2012_14_06_51_+1100_krrhcl/kpgpOqIYJ"
+	Wed, 28 Nov 2012 22:07:04 -0500
+Message-ID: <50B6D14E.8020509@linux.vnet.ibm.com>
+Date: Thu, 29 Nov 2012 11:06:54 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 2/2] KVM: VMX: fix memory order between loading vmcs and
+ clearing vmcs
+References: <50B6093B.7040404@linux.vnet.ibm.com> <50B60976.7020905@linux.vnet.ibm.com> <20121129000428.GA17264@amt.cnet>
+In-Reply-To: <20121129000428.GA17264@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12112903-2674-0000-0000-000006EA6F63
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__29_Nov_2012_14_06_51_+1100_krrhcl/kpgpOqIYJ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 11/29/2012 08:04 AM, Marcelo Tosatti wrote:
+> On Wed, Nov 28, 2012 at 08:54:14PM +0800, Xiao Guangrong wrote:
+>> vmcs->cpu indicates whether it exists on the target cpu, -1 means the vmcs
+>> does not exist on any vcpu
+>>
+>> If vcpu load vmcs with vmcs.cpu = -1, it can be directly added to cpu's percpu
+>> list. The list can be corrupted if the cpu prefetch the vmcs's list before
+>> reading vmcs->cpu. Meanwhile, we should remove vmcs from the list before
+>> making vmcs->vcpu == -1 be visible
+>>
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>> ---
+>>  arch/x86/kvm/vmx.c |   17 +++++++++++++++++
+>>  1 files changed, 17 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+>> index 29e8f42..6056d88 100644
+>> --- a/arch/x86/kvm/vmx.c
+>> +++ b/arch/x86/kvm/vmx.c
+>> @@ -1002,6 +1002,15 @@ static void __loaded_vmcs_clear(void *arg)
+>>  	if (per_cpu(current_vmcs, cpu) == loaded_vmcs->vmcs)
+>>  		per_cpu(current_vmcs, cpu) = NULL;
+>>  	list_del(&loaded_vmcs->loaded_vmcss_on_cpu_link);
+>> +
+>> +	/*
+>> +	 * we should ensure updating loaded_vmcs->loaded_vmcss_on_cpu_link
+>> +	 * is before setting loaded_vmcs->vcpu to -1 which is done in
+>> +	 * loaded_vmcs_init. Otherwise, other cpu can see vcpu = -1 fist
+>> +	 * then adds the vmcs into percpu list before it is deleted.
+>> +	 */
+>> +	smp_wmb();
+>> +
+> 
+> Neither loads nor stores are reordered with like operations (see
+> section 8.2.3.2 of intel's volume 3). This behaviour makes the barrier
+> not necessary.
 
-Hi Paul,
+Ouch, yes, you are right. My memory is wrong. It seems only later-read
+can be reordered with early-write.
 
-Today's linux-next merge of the rcu tree got a conflict in
-arch/x86/kernel/ptrace.c between commit cb57a2b4cff7 ("x86-32: Export
-kernel_stack_pointer() for modules") from Linus' tree and commit
-98dbec158343 ("context_tracking: New context tracking susbsystem") from
-the rcu tree.
+But if 'read vs read' and 'write vs write' can be guaranteed by CPU, smp_wmb()
+and smp_rmb() should act as a complier barrier, so i think we can add the barriers
+to improve the readable and the portable.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+And anyway, the current code missed complier-barrier.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> However, i agree access to loaded_vmcs is not obviously safe. I can't
+> tell its safe with vmm_exclusive = 0 (where vcpu->cpu can change at any
+> time).
 
-diff --cc arch/x86/kernel/ptrace.c
-index 974b67e,65b88a5..0000000
---- a/arch/x86/kernel/ptrace.c
-+++ b/arch/x86/kernel/ptrace.c
-@@@ -21,8 -21,7 +21,8 @@@
-  #include <linux/signal.h>
-  #include <linux/perf_event.h>
-  #include <linux/hw_breakpoint.h>
-- #include <linux/rcupdate.h>
- +#include <linux/module.h>
-+ #include <linux/context_tracking.h>
- =20
-  #include <asm/uaccess.h>
-  #include <asm/pgtable.h>
+If vmm_exclusive = 0, the vmcs can removed from percpu list when vcpu is scheduled
+out. The list is not broken.
 
---Signature=_Thu__29_Nov_2012_14_06_51_+1100_krrhcl/kpgpOqIYJ
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQttFLAAoJEECxmPOUX5FECEEQAJkeNP19+yIQ59QyEvfkIk/T
-QbEDJVbb9uCP7Qlvp9nLb6MXK6xCatNDHs/wjMVLepbLYFzjPrU6+jAf1mmglHlE
-MiE2ROKohEjmps9046SdGccRFpMjgcwZCfOAGodlSdjNmJp6ilHcCB9VRHV+Jj0I
-BDihvcZ0FgtVV27ceDRUZaTu1CvgqotrrqvmABx38kc3pg3jBY2F0iGOPjeMOMAL
-/vAm2zUty+/NfKz+a/qtD8mtmRck+qakE89iuJGHY0zLkx/WgP9//6KxK+VXvKiO
-vskZPADoyox7yeW4vU1tHI2/JkhH71DL7VFiD05RvS9DlxgBd1G2kg6bEYKw4+lF
-DfjlM8RoYysCPq67hZnsfeHIhMsoHr0gsuz/Ph0uNBNyd38u/Y2OPaYqWcjnlqIG
-nQCO0RbLYPqd9Eg7sK9xVzlrGJDjetJ8ORLnwbgbqAqZOSsYjN6/urBcH989FqWD
-1Q4EfxqVfjz7BB1tLEnCn5AzKEQDDb0VqtnTZ+bDJYSsIh27vhdkX6nUbPoy8gD3
-hn9aM4HNvjdwWsrfnVK5RQA2uL918wIATneC5tXlkI1WtkHKmb5hVY0Wg+xTIpNa
-dvgEtoSPuxQtnjfNQIC3BmdrjQ8cu7rddTdGKQXomhDQbG4LLhXUweB9lujtDEX7
-Kkmw7vcVmsldL5qAEm79
-=3k/D
------END PGP SIGNATURE-----
-
---Signature=_Thu__29_Nov_2012_14_06_51_+1100_krrhcl/kpgpOqIYJ--
