@@ -1,84 +1,439 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752354Ab2K2EYR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 23:24:17 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:53142 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752128Ab2K2EYP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 23:24:15 -0500
-Date: Thu, 29 Nov 2012 15:24:11 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bill Pemberton <wfp5p@virginia.edu>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: linux-next: manual merge of the driver-core tree with the tip tree
-Message-Id: <20121129152411.5333767f38065751b4723663@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	id S1752667Ab2K2E1i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 23:27:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43696 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752378Ab2K2E1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 23:27:37 -0500
+Message-ID: <1354162826.1809.241.camel@bling.home>
+Subject: Re: [PATCH] vfio powerpc: enabled on powernv platform
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org,
+        David Gibson <david@gibson.dropbear.id.au>
+Date: Wed, 28 Nov 2012 21:20:26 -0700
+In-Reply-To: <1354161225-23118-1-git-send-email-aik@ozlabs.ru>
+References: <1354138245.1809.226.camel@bling.home>
+	 <1354161225-23118-1-git-send-email-aik@ozlabs.ru>
+Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__29_Nov_2012_15_24_11_+1100_AYlMF/RLvHABQH1o"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__29_Nov_2012_15_24_11_+1100_AYlMF/RLvHABQH1o
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2012-11-29 at 14:53 +1100, Alexey Kardashevskiy wrote:
+> This patch initializes IOMMU groups based on the IOMMU
+> configuration discovered during the PCI scan on POWERNV
+> (POWER non virtualized) platform. The IOMMU groups are
+> to be used later by VFIO driver (PCI pass through).
+> 
+> It also implements an API for mapping/unmapping pages for
+> guest PCI drivers and providing DMA window properties.
+> This API is going to be used later by QEMU-VFIO to handle
+> h_put_tce hypercalls from the KVM guest.
+> 
+> Although this driver has been tested only on the POWERNV
+> platform, it should work on any platform which supports
+> TCE tables.
+> 
+> To enable VFIO on POWER, enable SPAPR_TCE_IOMMU config
+> option and configure VFIO as required.
+> 
+> Cc: David Gibson <david@gibson.dropbear.id.au>
+> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+> ---
+>  arch/powerpc/include/asm/iommu.h     |    9 ++
+>  arch/powerpc/kernel/iommu.c          |  159 ++++++++++++++++++++++++++++++++++
+>  arch/powerpc/platforms/powernv/pci.c |  135 +++++++++++++++++++++++++++++
+>  drivers/iommu/Kconfig                |    8 ++
+>  4 files changed, 311 insertions(+)
+> 
+> diff --git a/arch/powerpc/include/asm/iommu.h b/arch/powerpc/include/asm/iommu.h
+> index cbfe678..5c7087a 100644
+> --- a/arch/powerpc/include/asm/iommu.h
+> +++ b/arch/powerpc/include/asm/iommu.h
+> @@ -76,6 +76,9 @@ struct iommu_table {
+>  	struct iommu_pool large_pool;
+>  	struct iommu_pool pools[IOMMU_NR_POOLS];
+>  	unsigned long *it_map;       /* A simple allocation bitmap for now */
+> +#ifdef CONFIG_IOMMU_API
+> +	struct iommu_group *it_group;
+> +#endif
+>  };
+>  
+>  struct scatterlist;
+> @@ -147,5 +150,11 @@ static inline void iommu_restore(void)
+>  }
+>  #endif
+>  
+> +extern long iommu_clear_tces(struct iommu_table *tbl, unsigned long entry,
+> +		unsigned long pages);
+> +extern long iommu_put_tces(struct iommu_table *tbl, unsigned long entry,
+> +		uint64_t tce, enum dma_data_direction direction,
+> +		unsigned long pages);
+> +
+>  #endif /* __KERNEL__ */
+>  #endif /* _ASM_IOMMU_H */
+> diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
+> index ff5a6ce..1225fbb 100644
+> --- a/arch/powerpc/kernel/iommu.c
+> +++ b/arch/powerpc/kernel/iommu.c
+> @@ -44,6 +44,7 @@
+>  #include <asm/kdump.h>
+>  #include <asm/fadump.h>
+>  #include <asm/vio.h>
+> +#include <asm/tce.h>
+>  
+>  #define DBG(...)
+>  
+> @@ -856,3 +857,161 @@ void iommu_free_coherent(struct iommu_table *tbl, size_t size,
+>  		free_pages((unsigned long)vaddr, get_order(size));
+>  	}
+>  }
+> +
+> +#ifdef CONFIG_IOMMU_API
+> +/*
+> + * SPAPR TCE API
+> + */
+> +static void tce_flush(struct iommu_table *tbl)
+> +{
+> +	/* Flush/invalidate TLB caches if necessary */
+> +	if (ppc_md.tce_flush)
+> +		ppc_md.tce_flush(tbl);
+> +
+> +	/* Make sure updates are seen by hardware */
+> +	mb();
+> +}
+> +
+> +/*
+> + * iommu_clear_tces clears tces and returned the number of pages
+> + * which it called put_page() on.
+> + */
+> +static long clear_tces_nolock(struct iommu_table *tbl, unsigned long entry,
+> +		unsigned long pages)
+> +{
+> +	int i, retpages = 0;
+> +	unsigned long oldtce;
+> +	struct page *page;
+> +
+> +	for (i = 0; i < pages; ++i) {
+> +		oldtce = ppc_md.tce_get(tbl, entry + i);
+> +		ppc_md.tce_free(tbl, entry + i, 1);
+> +
+> +		if (!(oldtce & (TCE_PCI_WRITE | TCE_PCI_READ)))
+> +			continue;
+> +
+> +		page = pfn_to_page(oldtce >> PAGE_SHIFT);
+> +
+> +		WARN_ON(!page);
+> +		if (!page)
+> +			continue;
+> +
+> +		if (oldtce & TCE_PCI_WRITE)
+> +			SetPageDirty(page);
+> +
+> +		if (!(oldtce & ~PAGE_MASK))
+> +			++retpages;
 
-Hi Greg,
+I'm confused, it looks like you're trying to only increment the counter
+for tce pages aligned at the start of a page, but don't we need to mask
+out the read/write and valid bits?  Trickiness like this demands a
+comment.
 
-Today's linux-next merge of the driver-core tree got a conflict in
-lib/Makefile between commit e6459606b04e ("lib: Add early cpio decoder")
-from the tip tree and commit 610141ee651c ("lib: kobject_uevent is no
-longer dependant on CONFIG_HOTPLUG") from the driver-core tree.
+> +
+> +		put_page(page);
+> +	}
+> +
+> +	return retpages;
+> +}
+> +
+> +/*
+> + * iommu_clear_tces clears tces and returned the number of released pages
+> + */
+> +long iommu_clear_tces(struct iommu_table *tbl, unsigned long entry,
+> +		unsigned long pages)
+> +{
+> +	int ret;
+> +	struct iommu_pool *pool = get_pool(tbl, entry);
+> +
+> +	spin_lock(&(pool->lock));
+> +	ret = clear_tces_nolock(tbl, entry, pages);
+> +	tce_flush(tbl);
+> +	spin_unlock(&(pool->lock));
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(iommu_clear_tces);
+> +
+> +static int put_tce(struct iommu_table *tbl, unsigned long entry,
+> +		uint64_t tce, enum dma_data_direction direction)
+> +{
+> +	int ret;
+> +	struct page *page = NULL;
+> +	unsigned long kva, offset;
+> +
+> +	/* Map new TCE */
+> +	offset = (tce & IOMMU_PAGE_MASK) - (tce & PAGE_MASK);
+> +
+> +	ret = get_user_pages_fast(tce & PAGE_MASK, 1,
+> +			direction != DMA_TO_DEVICE, &page);
+> +	if (ret < 1) {
+> +		printk(KERN_ERR "tce_vfio: get_user_pages_fast failed tce=%llx ioba=%lx ret=%d\n",
+> +				tce, entry << IOMMU_PAGE_SHIFT, ret);
+> +		if (!ret)
+> +			ret = -EFAULT;
+> +		return ret;
+> +	}
+> +
+> +	kva = (unsigned long) page_address(page);
+> +	kva += offset;
+> +
+> +	/* tce_build receives a virtual address */
+> +	entry += tbl->it_offset; /* Offset into real TCE table */
+> +	ret = ppc_md.tce_build(tbl, entry, 1, kva, direction, NULL);
+> +
+> +	/* tce_build() only returns non-zero for transient errors */
+> +	if (unlikely(ret)) {
+> +		printk(KERN_ERR "tce_vfio: tce_put failed on tce=%llx ioba=%lx kva=%lx ret=%d\n",
+> +				tce, entry << IOMMU_PAGE_SHIFT, kva, ret);
+> +		put_page(page);
+> +		return -EIO;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +/*
+> + * iommu_put_tces builds tces and returned the number of actually
+> + * locked system pages
+> + */
+> +long iommu_put_tces(struct iommu_table *tbl, unsigned long entry,
+> +		uint64_t tce, enum dma_data_direction direction,
+> +		unsigned long pages)
+> +{
+> +	int i, ret = 0, retpages = 0;
+> +	struct iommu_pool *pool = get_pool(tbl, entry);
+> +
+> +	BUILD_BUG_ON(PAGE_SIZE < IOMMU_PAGE_SIZE);
+> +	BUG_ON(direction == DMA_NONE);
+> +
+> +	spin_lock(&(pool->lock));
+> +
+> +	/* Check if any is in use */
+> +	for (i = 0; i < pages; ++i) {
+> +		unsigned long oldtce = ppc_md.tce_get(tbl, entry + i);
+> +		if (oldtce & (TCE_PCI_WRITE | TCE_PCI_READ)) {
+> +			spin_unlock(&(pool->lock));
+> +			return -EBUSY;
+> +		}
+> +	}
+> +
+> +	/* Put tces to the table */
+> +	for (i = 0; (i < pages) && !ret; ++i, tce += IOMMU_PAGE_SIZE) {
+> +		ret = put_tce(tbl, entry + i, tce, direction);
+> +		/*
+> +		 * As IOMMU page size is always 4K, the system page size
+> +		 * can be 64K and there is no special tracking for IOMMU pages,
+> +		 * we only do rlimit check/update for the very first
+> +		 * 4K IOMMUpage within 64K system page.
+> +		 */
+> +		if (!(tce & ~PAGE_MASK))
+> +			++retpages;
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Ah, here's the comment I was looking for, though I'm still not sure
+about the read/write bits.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Isn't there an exploit here that a user can lock pages beyond their
+limits if they just skip mapping the first 4k of each page?  Thanks,
 
-diff --cc lib/Makefile
-index e91b9df,66787b9..0000000
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@@ -12,7 -12,7 +12,7 @@@ lib-y :=3D ctype.o string.o vsprintf.o cm
-  	 idr.o int_sqrt.o extable.o \
-  	 sha1.o md5.o irq_regs.o reciprocal_div.o argv_split.o \
-  	 proportions.o flex_proportions.o prio_heap.o ratelimit.o show_mem.o \
-- 	 is_single_threaded.o plist.o decompress.o earlycpio.o
- -	 is_single_threaded.o plist.o decompress.o kobject_uevent.o
-++	 is_single_threaded.o plist.o decompress.o earlycpio.o kobject_uevent.o
- =20
-  lib-$(CONFIG_MMU) +=3D ioremap.o
-  lib-$(CONFIG_SMP) +=3D cpumask.o
+Alex
 
---Signature=_Thu__29_Nov_2012_15_24_11_+1100_AYlMF/RLvHABQH1o
-Content-Type: application/pgp-signature
+> +	}
+> +
+> +	/* If failed, release locked pages, otherwise return the number of pages */
+> +	if (ret)
+> +		clear_tces_nolock(tbl, entry, i);
+> +	else
+> +		ret = retpages;
+> +
+> +	tce_flush(tbl);
+> +	spin_unlock(&(pool->lock));
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(iommu_put_tces);
+> +#endif /* CONFIG_IOMMU_API */
+> diff --git a/arch/powerpc/platforms/powernv/pci.c b/arch/powerpc/platforms/powernv/pci.c
+> index 05205cf..21250ef 100644
+> --- a/arch/powerpc/platforms/powernv/pci.c
+> +++ b/arch/powerpc/platforms/powernv/pci.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/irq.h>
+>  #include <linux/io.h>
+>  #include <linux/msi.h>
+> +#include <linux/iommu.h>
+>  
+>  #include <asm/sections.h>
+>  #include <asm/io.h>
+> @@ -613,3 +614,137 @@ void __init pnv_pci_init(void)
+>  	ppc_md.teardown_msi_irqs = pnv_teardown_msi_irqs;
+>  #endif
+>  }
+> +
+> +#ifdef CONFIG_IOMMU_API
+> +/*
+> + * IOMMU groups support required by VFIO
+> + */
+> +static int add_device(struct device *dev)
+> +{
+> +	struct iommu_table *tbl;
+> +	int ret = 0;
+> +
+> +	if (WARN_ON(dev->iommu_group)) {
+> +		printk(KERN_WARNING "tce_vfio: device %s is already in iommu group %d, skipping\n",
+> +				dev_name(dev),
+> +				iommu_group_id(dev->iommu_group));
+> +		return -EBUSY;
+> +	}
+> +
+> +	tbl = get_iommu_table_base(dev);
+> +	if (!tbl) {
+> +		pr_debug("tce_vfio: skipping device %s with no tbl\n",
+> +				dev_name(dev));
+> +		return 0;
+> +	}
+> +
+> +	pr_debug("tce_vfio: adding %s to iommu group %d\n",
+> +			dev_name(dev), iommu_group_id(tbl->it_group));
+> +
+> +	ret = iommu_group_add_device(tbl->it_group, dev);
+> +	if (ret < 0)
+> +		printk(KERN_ERR "tce_vfio: %s has not been added, ret=%d\n",
+> +				dev_name(dev), ret);
+> +
+> +	return ret;
+> +}
+> +
+> +static void del_device(struct device *dev)
+> +{
+> +	iommu_group_remove_device(dev);
+> +}
+> +
+> +static int iommu_bus_notifier(struct notifier_block *nb,
+> +			      unsigned long action, void *data)
+> +{
+> +	struct device *dev = data;
+> +
+> +	switch (action) {
+> +	case BUS_NOTIFY_ADD_DEVICE:
+> +		return add_device(dev);
+> +	case BUS_NOTIFY_DEL_DEVICE:
+> +		del_device(dev);
+> +		return 0;
+> +	default:
+> +		return 0;
+> +	}
+> +}
+> +
+> +static struct notifier_block tce_iommu_bus_nb = {
+> +	.notifier_call = iommu_bus_notifier,
+> +};
+> +
+> +static void group_release(void *iommu_data)
+> +{
+> +	struct iommu_table *tbl = iommu_data;
+> +	tbl->it_group = NULL;
+> +}
+> +
+> +static int __init tce_iommu_init(void)
+> +{
+> +	struct pci_dev *pdev = NULL;
+> +	struct iommu_table *tbl;
+> +	struct iommu_group *grp;
+> +
+> +	/* Allocate and initialize IOMMU groups */
+> +	for_each_pci_dev(pdev) {
+> +		tbl = get_iommu_table_base(&pdev->dev);
+> +		if (!tbl)
+> +			continue;
+> +
+> +		/* Skip already initialized */
+> +		if (tbl->it_group)
+> +			continue;
+> +
+> +		grp = iommu_group_alloc();
+> +		if (IS_ERR(grp)) {
+> +			printk(KERN_INFO "tce_vfio: cannot create "
+> +					"new IOMMU group, ret=%ld\n",
+> +					PTR_ERR(grp));
+> +			return PTR_ERR(grp);
+> +		}
+> +		tbl->it_group = grp;
+> +		iommu_group_set_iommudata(grp, tbl, group_release);
+> +	}
+> +
+> +	bus_register_notifier(&pci_bus_type, &tce_iommu_bus_nb);
+> +
+> +	/* Add PCI devices to VFIO groups */
+> +	for_each_pci_dev(pdev)
+> +		add_device(&pdev->dev);
+> +
+> +	return 0;
+> +}
+> +
+> +static void __exit tce_iommu_cleanup(void)
+> +{
+> +	struct pci_dev *pdev = NULL;
+> +	struct iommu_table *tbl;
+> +	struct iommu_group *grp = NULL;
+> +
+> +	bus_unregister_notifier(&pci_bus_type, &tce_iommu_bus_nb);
+> +
+> +	/* Delete PCI devices from VFIO groups */
+> +	for_each_pci_dev(pdev)
+> +		del_device(&pdev->dev);
+> +
+> +	/* Release VFIO groups */
+> +	for_each_pci_dev(pdev) {
+> +		tbl = get_iommu_table_base(&pdev->dev);
+> +		if (!tbl)
+> +			continue;
+> +		grp = tbl->it_group;
+> +
+> +		/* Skip (already) uninitialized */
+> +		if (!grp)
+> +			continue;
+> +
+> +		/* Do actual release, group_release() is expected to work */
+> +		iommu_group_put(grp);
+> +		BUG_ON(tbl->it_group);
+> +	}
+> +}
+> +
+> +module_init(tce_iommu_init);
+> +module_exit(tce_iommu_cleanup);
+> +#endif /* CONFIG_IOMMU_API */
+> diff --git a/drivers/iommu/Kconfig b/drivers/iommu/Kconfig
+> index 9f69b56..29d11dc 100644
+> --- a/drivers/iommu/Kconfig
+> +++ b/drivers/iommu/Kconfig
+> @@ -187,4 +187,12 @@ config EXYNOS_IOMMU_DEBUG
+>  
+>  	  Say N unless you need kernel log message for IOMMU debugging
+>  
+> +config SPAPR_TCE_IOMMU
+> +	bool "sPAPR TCE IOMMU Support"
+> +	depends on PPC_POWERNV
+> +	select IOMMU_API
+> +	help
+> +	  Enables bits of IOMMU API required by VFIO. The iommu_ops is
+> +	  still not implemented.
+> +
+>  endif # IOMMU_SUPPORT
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQtuNrAAoJEECxmPOUX5FEFf8QAKSrkuHeYlMs/58n1LZH9XdZ
-nXYzPPk1yuARXqwBXtNGQO+3i5VEQ0uVN+AI8uuGeUIi3x7GSHpSWNmyeUopahZ+
-Chmrx+zj9UMK29F1zs46HKSgNqPmwFQHcTO/R8munoXs7hEoAwylPx4vFXMgElxZ
-B91YjKUQg0mB9OPUKzbsWDQW/H6LLmT5SFRD6Jz0Y8v56eDI14+v4b16pq/8ZCO+
-TBrqgtgJfI1hvzAtiI16a5OtQby6RSYlE883fP8gRqU5zuaV6fVPxjFOnUCTIW5l
-j5NZztig9KmLJBC0mN+yaoaDPg92z0U5hpZkQfFLFVfbPG5W9lR9qIYcYstkXqft
-rPN/br2QFGO5G9pF936DzF0LHZGbRFyuTxdt+0rBYU6TO02Zu+nDZLDUMyrWwDJN
-tiv5g4M0vcBBEYzW5VjO8OTloNpAETt1COeQJcnhQmsE+Pv1R3jI1NDwQ+zjxX7D
-vrti7vazisiNKa9DlyOYtu5PlfsgcbbArKV6dpHh+Za4CrSl/gUiIuJn2sQZbxON
-A35ig2Heute+fJhK8sCAvBmzLHx+yABGAEQMKCWywlZ02GC/odlO/htizUruVS9d
-sVpzBlIh8VLGWz3M9Tn6GnJXeE8A4n+sBsDgFgTbtHNo7Y3BjKhfJCI3HL4FglR0
-1Vw4eTc/t0CLwYpycJEz
-=7G/T
------END PGP SIGNATURE-----
 
---Signature=_Thu__29_Nov_2012_15_24_11_+1100_AYlMF/RLvHABQH1o--
