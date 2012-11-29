@@ -1,166 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754758Ab2K2XLS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 18:11:18 -0500
-Received: from vm1.sequanux.org ([188.165.36.56]:36579 "EHLO vm1.sequanux.org"
+	id S1754934Ab2K2XMK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 18:12:10 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:33862 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752776Ab2K2XLR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 18:11:17 -0500
-X-Greylist: delayed 627 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 Nov 2012 18:11:16 EST
-Date: Thu, 29 Nov 2012 23:59:27 +0100
-From: Simon Guinot <simon.guinot@sequanux.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Bill Pemberton <wfp5p@virginia.edu>,
-        Greg KH <greg@kroah.com>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the
- driver-core tree
-Message-ID: <20121129225927.GJ8628@kw.sim.vm.gnt>
-References: <20121129160309.7dc352f433d39f1bde0018a8@canb.auug.org.au>
+	id S1752776Ab2K2XMI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 18:12:08 -0500
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Venu Byravarasu <vbyravarasu@nvidia.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        Sivaram Nair <sivaramn@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 2/2] rtc-tps65910: enable RTC power domain on
+ initialization
+Thread-Topic: [PATCH 2/2] rtc-tps65910: enable RTC power domain on
+ initialization
+Thread-Index: Ac3ODj+EBtR5lNOFQkugojWkudbjXgAASILgAB0lr6A=
+Date: Thu, 29 Nov 2012 23:11:37 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F6418F30B@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F6418F1B3@DQHE02.ent.ti.com>
+ <D958900912E20642BCBC71664EFECE3E6E17CF0A07@BGMAIL02.nvidia.com>
+In-Reply-To: <D958900912E20642BCBC71664EFECE3E6E17CF0A07@BGMAIL02.nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.87.185.123]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="aqWxf8ydqYKP8htK"
-Content-Disposition: inline
-In-Reply-To: <20121129160309.7dc352f433d39f1bde0018a8@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Venu
 
---aqWxf8ydqYKP8htK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> >  Enabling RTC HW block depends on the default value of TPS65910
+> register.
+> >  In some mode, RTC block is disabled by default.(eg. AM3517
+> Craneboard)
+> >  In this case, RTC_PWDN(RTC power down) bit should be cleared to
+> enable
+> >  the RTC HW block.
+> 
+> From the description of RTC_PWDN bit of DEVCTRL_REG in TPS65910 data
+> sheet
+> it is very evident that the default value of RTC_PWDN is 0.
 
-On Thu, Nov 29, 2012 at 04:03:09PM +1100, Stephen Rothwell wrote:
-> Hi all,
->=20
-> Today's linux-next merge of the arm-soc tree got a conflict in
-> drivers/leds/leds-ns2.c between commit 98ea1ea20cb7 ("leds: remove use of
-> __devinit") from the driver-core tree and commit 72052fcc1026 ("leds:
-> leds-ns2: add device tree binding") from the arm-soc tree.
->=20
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+According to the datasheet(http://www.ti.com/lit/ds/swcs046q/swcs046q.pdf),
+the default value RTC_PWDN is 1 which means power down.
 
-Hi Stephen,
+The default values are loaded from the EEPROM with BOOT_MODE 0,1 pin connection.
+The RTC is disabled by default when BOOT_MODE = 00.
+The Craneboard has the BOOT_MODE 00.
 
-The merge is fine and the driver works as expected.
+You may have other EEPROM settings,
+however the official datasheet shows the RTC block is off by default.
 
-Thanks.
+Could you check the silicon version number? (0x80 register - JTAGVERNUM_REG)
+In my case, the read value is 0x01.
 
-Simon
+> Probably on "AM3517 Craneboard", some code is running prior to the RTC
+> driver
+> which might be writing 1 on to this bit. IMO you must disable that
+> write operation
+> instead of just writing default value into a register.
 
->=20
-> --=20
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
->=20
-> diff --cc drivers/leds/leds-ns2.c
-> index bc6a0db,d64cc22..0000000
-> --- a/drivers/leds/leds-ns2.c
-> +++ b/drivers/leds/leds-ns2.c
-> @@@ -247,9 -260,67 +248,65 @@@ static void delete_ns2_led(struct ns2_l
->   {
->   	device_remove_file(led_dat->cdev.dev, &dev_attr_sata);
->   	led_classdev_unregister(&led_dat->cdev);
->  -	gpio_free(led_dat->cmd);
->  -	gpio_free(led_dat->slow);
->   }
->  =20
-> + #ifdef CONFIG_OF_GPIO
-> + /*
-> +  * Translate OpenFirmware node properties into platform_data.
-> +  */
->  -static int __devinit
-> ++static int
-> + ns2_leds_get_of_pdata(struct device *dev, struct ns2_led_platform_data =
-*pdata)
-> + {
-> + 	struct device_node *np =3D dev->of_node;
-> + 	struct device_node *child;
-> + 	struct ns2_led *leds;
-> + 	int num_leds =3D 0;
-> + 	int i =3D 0;
-> +=20
-> + 	num_leds =3D of_get_child_count(np);
-> + 	if (!num_leds)
-> + 		return -ENODEV;
-> +=20
-> + 	leds =3D devm_kzalloc(dev, num_leds * sizeof(struct ns2_led),
-> + 			    GFP_KERNEL);
-> + 	if (!leds)
-> + 		return -ENOMEM;
-> +=20
-> + 	for_each_child_of_node(np, child) {
-> + 		const char *string;
-> + 		int ret;
-> +=20
-> + 		ret =3D of_get_named_gpio(child, "cmd-gpio", 0);
-> + 		if (ret < 0)
-> + 			return ret;
-> + 		leds[i].cmd =3D ret;
-> + 		ret =3D of_get_named_gpio(child, "slow-gpio", 0);
-> + 		if (ret < 0)
-> + 			return ret;
-> + 		leds[i].slow =3D ret;
-> + 		ret =3D of_property_read_string(child, "label", &string);
-> + 		leds[i].name =3D (ret =3D=3D 0) ? string : child->name;
-> + 		ret =3D of_property_read_string(child, "linux,default-trigger",
-> + 					      &string);
-> + 		if (ret =3D=3D 0)
-> + 			leds[i].default_trigger =3D string;
-> +=20
-> + 		i++;
-> + 	}
-> +=20
-> + 	pdata->leds =3D leds;
-> + 	pdata->num_leds =3D num_leds;
-> +=20
-> + 	return 0;
-> + }
-> +=20
-> + static const struct of_device_id of_ns2_leds_match[] =3D {
-> + 	{ .compatible =3D "lacie,ns2-leds", },
-> + 	{},
-> + };
-> + #endif /* CONFIG_OF_GPIO */
-> +=20
->  -static int __devinit ns2_led_probe(struct platform_device *pdev)
->  +static int ns2_led_probe(struct platform_device *pdev)
->   {
->   	struct ns2_led_platform_data *pdata =3D pdev->dev.platform_data;
->   	struct ns2_led_data *leds_data;
-> @@@ -296,10 -381,11 +367,11 @@@ static int ns2_led_remove(struct platfo
->  =20
->   static struct platform_driver ns2_led_driver =3D {
->   	.probe		=3D ns2_led_probe,
->  -	.remove		=3D __devexit_p(ns2_led_remove),
->  +	.remove		=3D ns2_led_remove,
->   	.driver		=3D {
-> - 		.name	=3D "leds-ns2",
-> - 		.owner	=3D THIS_MODULE,
-> + 		.name		=3D "leds-ns2",
-> + 		.owner		=3D THIS_MODULE,
-> + 		.of_match_table	=3D of_match_ptr(of_ns2_leds_match),
->   	},
->   };
->  =20
+Thank you for your comment.
+I've read the DEVCTRL register (0x3F) in mfd tps65910 driver
+as soon as the regmap registration is done, however RTC_PWDN is always 1.
+That means the RTC is disabled by default.
 
+Best Regards,
+Milo
 
-
---aqWxf8ydqYKP8htK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAlC36M8ACgkQgtp0PDeOcDq9NwCgha3sIDKFoz+xXZOp+l5d7+5b
-n/wAn091Ln9UhKBOEeK6WImqORHyXfag
-=rGMF
------END PGP SIGNATURE-----
-
---aqWxf8ydqYKP8htK--
