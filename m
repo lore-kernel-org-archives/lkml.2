@@ -1,92 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753012Ab2K2ROL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 12:14:11 -0500
-Received: from na01-by2-obe.ptr.protection.outlook.com ([207.46.100.28]:42787
-	"EHLO NA01-BY2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751898Ab2K2ROK convert rfc822-to-8bit (ORCPT
+	id S1752864Ab2K2RRS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 12:17:18 -0500
+Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:37470 "EHLO
+	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751013Ab2K2RRR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 12:14:10 -0500
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT004.namprd03.prod.outlook.com;R:internal;EFV:INT
-X-SpamScore: -7
-X-BigFish: PS-7(zz9371I542M1432Izz1de0h1202h1d1ah1d2ahzz6d524h8275dhz31h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1155h)
-From: KY Srinivasan <kys@microsoft.com>
-To: Wei Yongjun <weiyj.lk@gmail.com>, Haiyang Zhang <haiyangz@microsoft.com>
-CC: "yongjun_wei@trendmicro.com.cn" <yongjun_wei@trendmicro.com.cn>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH -next] hv: hv_balloon: remove duplicated include from
- hv_balloon.c
-Thread-Topic: [PATCH -next] hv: hv_balloon: remove duplicated include from
- hv_balloon.c
-Thread-Index: AQHNzdiEl4Tq2123h0WTbffKwUKYjpgBDM1A
-Date: Thu, 29 Nov 2012 17:09:42 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF930E5E818@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <CAPgLHd-9_p_haRkx-2D_5eT-E6_g84N=Hjs4JB5gu_kPVSp2Vw@mail.gmail.com>
-In-Reply-To: <CAPgLHd-9_p_haRkx-2D_5eT-E6_g84N=Hjs4JB5gu_kPVSp2Vw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [98.110.61.144]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT004.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%TRENDMICRO.COM.CN$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%GMAIL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14MLTC101.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14MLTC101.redmond.corp.microsoft.com
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(377454001)(51704002)(13464001)(47976001)(47736001)(47776002)(4396001)(76482001)(54356001)(44976002)(56776001)(6806001)(46406002)(33656001)(46102001)(23726001)(50466001)(56816002)(74502001)(51856001)(49866001)(16676001)(4477805001)(53806001)(31966008)(50986001)(54316002)(55846006)(5343655001)(47446002)(74662001);DIR:OUT;SFP:;LANG:en;
-X-OriginatorOrg: microsoft.onmicrosoft.com
-X-Forefront-PRVS: 0680FADD48
+	Thu, 29 Nov 2012 12:17:17 -0500
+Date: Thu, 29 Nov 2012 12:17:01 -0500
+From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Krzysztof Mazur <krzysiek@podlesie.net>,
+        David Laight <David.Laight@ACULAB.COM>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nathan@traverse.com.au
+Subject: Re: [PATCH v2 3/3] pppoatm: protect against freeing of vcc
+Message-ID: <20121129121701.21ab7c0b@thirdoffive.cmf.nrl.navy.mil>
+In-Reply-To: <1354206269.21562.189.camel@shinybook.infradead.org>
+References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
+	<1350926091-12642-3-git-send-email-krzysiek@podlesie.net>
+	<1354036592.2534.6.camel@shinybook.infradead.org>
+	<20121127173906.GA11390@shrek.podlesie.net>
+	<1354039349.2534.11.camel@shinybook.infradead.org>
+	<20121127135434.0728cd4f@thirdoffive.cmf.nrl.navy.mil>
+	<AE90C24D6B3A694183C094C60CF0A2F6026B70C9@saturn3.aculab.com>
+	<1354141115.21562.101.camel@shinybook.infradead.org>
+	<20121129150945.GB16478@shrek.podlesie.net>
+	<1354204077.21562.172.camel@shinybook.infradead.org>
+	<20121129105934.3e0c3a04@thirdoffive.cmf.nrl.navy.mil>
+	<1354206269.21562.189.camel@shinybook.infradead.org>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 29 Nov 2012 16:24:29 +0000
+David Woodhouse <dwmw2@infradead.org> wrote:
 
+> On Thu, 2012-11-29 at 10:59 -0500, chas williams - CONTRACTOR wrote:
+> > the part that bothers me (and i dont have the programmer's guide for
+> > the solos hardware) is that you are watching for the PKT_PCLOSE to be
+> > sent to the card.  shouldnt you be watching for the PKT_PCLOSE to be
+> > returned from the card (assuming it does such a thing) so that you can
+> > be assured that the tx/rx for this vpi/vci pair has been "stopped"?
+> 
+> Define "stopped".
+> 
+> For the RX case... the other end may *always* take it upon itself to
+> send us a packet marked with arbitrary VCI/VPI, right? There's no
+> connection setup for it "on the wire", in the case of PVC?
 
-> -----Original Message-----
-> From: Wei Yongjun [mailto:weiyj.lk@gmail.com]
-> Sent: Wednesday, November 28, 2012 9:23 PM
-> To: KY Srinivasan; Haiyang Zhang
-> Cc: yongjun_wei@trendmicro.com.cn; devel@linuxdriverproject.org; linux-
-> kernel@vger.kernel.org
-> Subject: [PATCH -next] hv: hv_balloon: remove duplicated include from
-> hv_balloon.c
-> 
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> 
-> Remove duplicated include.
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
->  drivers/hv/hv_balloon.c | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
-> index f6c0011..0ce08c4 100644
-> --- a/drivers/hv/hv_balloon.c
-> +++ b/drivers/hv/hv_balloon.c
-> @@ -29,7 +29,6 @@
->  #include <linux/memory_hotplug.h>
->  #include <linux/memory.h>
->  #include <linux/notifier.h>
-> -#include <linux/mman.h>
->  #include <linux/percpu_counter.h>
-> 
->  #include <linux/hyperv.h>
+most atm hardware that i am familiar with, wont deliver vpi/vci data
+unless you are actually trying to receive it.  however, this hardware
+is generally doing its reassembly in hardware and delivering aal5
+pdu's and needs to manage its memory resources carefully.  you might be
+trying to reassemble 1000 pdu's from different vpi/vci's.
 
-Could you generate patches using git.
-
-Regards,
-
-K. Y
+> So bearing that in mind: from the moment ATM_VF_READY gets cleared, as
+> far as the ATM core is concerned, we will no longer receive packets on
+> the given VCC. If we receive any, we'll just complain about receiving
+> packets for an unknown VCI/VPI.
 > 
-> 
+> For the TX case ... yes, we need to be sure we aren't continuing to send
+> packets after our close() routine completes. We *used* to, but the
+> resulting ->pop() calls were causing problems, and that's why we're
+> looking at this code path closer. The currently proposed patches (except
+> one suggestion from Krzyztof that we both shouted down) would fix that.
 
+again part of this is poor synchronization.  the detach protocol (i.e.
+push of a NULL skb) should be flushing any pending transmits and
+shutting down whatever in the protocol is doing any sending and
+receiving.  however, i release this might be difficult to do since the
+detach protocol is invoked in such a strange way.
 
