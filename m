@@ -1,52 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751692Ab2K2QbT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 11:31:19 -0500
-Received: from anubis.se.axis.com ([195.60.68.12]:33823 "EHLO
-	anubis.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781Ab2K2QbS (ORCPT
+	id S1751760Ab2K2Qd3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 11:33:29 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:49366 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750846Ab2K2Qd2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 11:31:18 -0500
-Date: Thu, 29 Nov 2012 17:31:16 +0100
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: linux-cifs@vger.kernel.org, sfrench@samba.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] cifs: Add handling of blank password option
-Message-ID: <20121129163116.GP27196@axis.com>
+	Thu, 29 Nov 2012 11:33:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201211291822.16565.vitas@nppfactor.kiev.ua>
+References: <201211271348.14603.vitas@nppfactor.kiev.ua>
+	<20121128210509.GA2590@local>
+	<CAM3j68rrBePLoamRb1pCH+TeAfLDO-5Jd_kk7-JRCNnEBhLp2Q@mail.gmail.com>
+	<201211291822.16565.vitas@nppfactor.kiev.ua>
+Date: Thu, 29 Nov 2012 17:33:24 +0100
+X-Google-Sender-Auth: JYeCPvND3q2YgaW7K-BncWWv-_w
+Message-ID: <CAM3j68p0i-AeuKX9CfU99pbmtj9PT_GOom+nzCZWdAMmGm8XMQ@mail.gmail.com>
+Subject: Re: [PATCH] uio.c: Fix warning: 'ret' might be used uninitialized
+From: Cong Ding <dinggnu@gmail.com>
+To: Vitalii Demianets <vitas@nppfactor.kiev.ua>
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The option to have a blank "pass=" already exists, and with
-a password specified both "pass=%s" and "password=%s" are supported.
-Also, both blank "user=" and "username=" are supported, making
-"password=" the odd man out.
+No, there are some exceptions. Imagine this case, when mi=0,
+everything works correct in the loop, and then mi=1, if the kzalloc in
+line 286 fails, you patch will goto err_map with ret=-ENOMEM, while
+Hans's patch will goto err_map with ret=0 (the ret=0 is from line 295
+when mi=0).
 
-Signed-off-by: Jesper Nilsson <jesper.nilsson@axis.com>
----
- fs/cifs/connect.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
-index 5c670b9..c83f5b65 100644
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -186,6 +186,7 @@ static const match_table_t cifs_mount_option_tokens = {
- 	{ Opt_user, "user=%s" },
- 	{ Opt_user, "username=%s" },
- 	{ Opt_blank_pass, "pass=" },
-+	{ Opt_blank_pass, "password=" },
- 	{ Opt_pass, "pass=%s" },
- 	{ Opt_pass, "password=%s" },
- 	{ Opt_blank_ip, "ip=" },
--- 
-1.8.0.rc0.18.gf84667d
-
-
-/^JN - Jesper Nilsson
--- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+On Thu, Nov 29, 2012 at 5:22 PM, Vitalii Demianets
+<vitas@nppfactor.kiev.ua> wrote:
+> Actually, both patches do exactly the same thing. Hans's patch establishes
+> default value for the ret for all those "other" cases when ret is not
+> explicitly overridden. My patch explicitly enumerates all those "other" cases
+> in more wordily manner.
