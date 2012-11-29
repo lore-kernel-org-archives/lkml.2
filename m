@@ -1,38 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932672Ab2K1X4w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 18:56:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60963 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932390Ab2K1X4v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 18:56:51 -0500
-Date: Wed, 28 Nov 2012 15:56:50 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Stefani Seibold <stefani@seibold.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH, resend] kfifo: initialize fifo accordingly to C99
- standard
-Message-Id: <20121128155650.cd20d6bf.akpm@linux-foundation.org>
-In-Reply-To: <1353508271-30646-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1353508271-30646-1-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932775Ab2K2ADO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 19:03:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57212 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932576Ab2K2ADN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 19:03:13 -0500
+Date: Wed, 28 Nov 2012 16:03:03 -0800
+From: Zach Brown <zab@redhat.com>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, bcrl@kvack.org, jmoyer@redhat.com,
+        axboe@kernel.dk, viro@zeniv.linux.org.uk
+Subject: Re: [PATCH 00/25] AIO performance improvements/cleanups
+Message-ID: <20121129000303.GF18574@lenny.home.zabbo.net>
+References: <1354121029-1376-1-git-send-email-koverstreet@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354121029-1376-1-git-send-email-koverstreet@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Nov 2012 16:31:11 +0200
-Andy Shevchenko <andriy.shevchenko@linux.intel.com> wrote:
+On Wed, Nov 28, 2012 at 08:43:24AM -0800, Kent Overstreet wrote:
+> Bunch of performance improvements and cleanups Zach Brown and I have
+> been working on. The code should be pretty solid at this point, though
+> it could of course use more review and testing.
 
-> When build a kernel with "make W=1" we will get a warning about missing
-> initializer. It comes from kfifo usage style. The DEFINE_KFIFO macro doesn't
-> initialize the buf[] field of the fifo structure. So, using C99 style helps in
-> such case.
+Thanks for sending these out.  I have some initial review comments
+that'll follow, but I'm running out of steam today.  I'll continue
+tomorrow.
 
-I see no such warning.  When fixing warnings or compilation errors,
-please always quote the compiler output in the changelog.
+> The results in my testing are pretty impressive, particularly when an
+> ioctx is being shared between multiple threads. In my crappy synthetic
+> benchmark, with 4 threads submitting and one thread reaping completions,
+> I saw overhead in the aio code go from ~50% (mostly ioctx lock
+> contention) to low single digits. Performance with ioctx per thread
+> improved too, but I'd have to rerun those benchmarks.
 
+You should probably mention that those four threads were *spinning* on
+io_submit() :).  I'm still guessing that this unreasonably inflated the
+contention amongst submitters and that without this inflation we might
+not find the per-cpu ioctx refcounts worth the trouble.
+
+> Performance wise, the end result of this patch series is that submitting
+> a kiocb writes to _no_ shared cachelines - the penalty for sharing an
+> ioctx is gone there. There's still going to be some cacheline contention
+> when we deliver the completions to the aio ringbuffer (at least if you
+> have interrupts being delivered on multiple cores, which for high end
+> stuff you do) but I have a couple more patches not in this series that
+> implement coalescing for that (by taking advantage of interrupt
+> coalescing). With that, there's basically no bottlenecks or performance
+> issues to speak of in the aio code.
+
+Yeah, this is good stuff.  Thanks for pushing it.
+
+We should mention Jens' omnibus patch that also took on these problems:
+
+  http://git.kernel.dk/?p=linux-block.git;a=commit;h=6b6723fc3e4f24dbd80526df935ca115ead578c6
+
+- z
