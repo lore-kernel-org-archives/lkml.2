@@ -1,86 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753038Ab2K2KHS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 05:07:18 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:34695 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751141Ab2K2KHP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 05:07:15 -0500
-Date: Thu, 29 Nov 2012 10:07:12 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1211291004440.27480@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753487Ab2K2KIQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 05:08:16 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45687 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751692Ab2K2KIO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 05:08:14 -0500
+Date: Thu, 29 Nov 2012 10:13:17 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: Re: drivres/hv
+Message-ID: <20121129101317.4a7ccb8e@pyramind.ukuu.org.uk>
+In-Reply-To: <426367E2313C2449837CD2DE46E7EAF930E5E599@SN2PRD0310MB382.namprd03.prod.outlook.com>
+References: <1354133850-17540-1-git-send-email-kys@microsoft.com>
+	<20121128224313.GA14402@kroah.com>
+	<426367E2313C2449837CD2DE46E7EAF930E5E514@SN2PRD0310MB382.namprd03.prod.outlook.com>
+	<20121129000434.GA17233@kroah.com>
+	<426367E2313C2449837CD2DE46E7EAF930E5E599@SN2PRD0310MB382.namprd03.prod.outlook.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> All I know is that it is present and its size is known. If I have a way of knowing
+> what range of mmio memory is unclaimed; I could grab that perhaps using
+> the request_mem_region() call, I know the size that is reserved for this device.
+> So, is there a way to query the system for the first unclaimed address in the mmio
+> range.
 
-Hi Linus
+You can add memory region resources yes. See the code in drivers/pci
+which allocates mmio space to unassigned BARs and/or moves stuff around.
 
-just driver fixes, nothing major, except maybe ilk rc6 disable.
-
-intel: revert ironlake rc6 - we still have one ilk regression, but this 
-gets rid of one big one, turn off cloning, and a directed fix for Apple 
-edp
-radeon: one modesetting fix
-exynos: minor fixes
-
-Dave.
-
-The following changes since commit 9489e9dcae718d5fde988e4a684a0f55b5f94d17:
-
-  Linux 3.7-rc7 (2012-11-25 17:59:19 -0800)
-
-are available in the git repository at:
-
-  git://people.freedesktop.org/~airlied/linux drm-fixes
-
-for you to fetch changes up to e548a83c34806b8bc2c55f52d3bc481a13a3829e:
-
-  Merge branch 'drm-fixes-3.7' of git://people.freedesktop.org/~agd5f/linux (2012-11-28 16:51:10 +1000)
-
-----------------------------------------------------------------
-
-Chris Wilson (1):
-      Revert "drm/i915: enable rc6 on ilk again"
-
-Daniel Vetter (1):
-      drm/i915: disable cloning on sdvo
-
-Dave Airlie (3):
-      Merge branch 'drm-intel-fixes' of git://people.freedesktop.org/~danvet/drm-intel
-      Merge branch 'exynos-drm-fixes' of git://git.kernel.org/.../daeinki/drm-exynos
-      Merge branch 'drm-fixes-3.7' of git://people.freedesktop.org/~agd5f/linux
-
-Inki Dae (3):
-      drm/exynos: fix linux framebuffer address setting.
-      drm/exynos: remove unnecessary code.
-      drm/exynos: fix overlay updating issue
-
-Jani Nikula (1):
-      drm/i915: do not default to 18 bpp for eDP if missing from VBT
-
-Jerome Glisse (1):
-      radeon: fix pll/ctrc mapping on dce2 and dce3 hardware
-
-Sachin Kamat (2):
-      drm/exynos: Make exynos4/5_fimd_driver_data static
-      drm/exynos: Fix potential NULL pointer dereference in exynos_drm_encoder.c
-
- drivers/gpu/drm/exynos/exynos_drm_encoder.c |  8 ++++-
- drivers/gpu/drm/exynos/exynos_drm_fbdev.c   |  3 +-
- drivers/gpu/drm/exynos/exynos_drm_fimd.c    |  4 +--
- drivers/gpu/drm/exynos/exynos_drm_plane.c   |  1 -
- drivers/gpu/drm/i915/intel_bios.c           | 11 ++-----
- drivers/gpu/drm/i915/intel_display.c        |  2 +-
- drivers/gpu/drm/i915/intel_pm.c             | 12 ++------
- drivers/gpu/drm/i915/intel_sdvo.c           | 17 +++++-----
- drivers/gpu/drm/radeon/atombios_crtc.c      | 48 +++++++++--------------------
- 9 files changed, 41 insertions(+), 65 deletions(-)
+Alan
