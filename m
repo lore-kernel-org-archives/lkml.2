@@ -1,95 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675Ab2K2PPr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 10:15:47 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57607 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751418Ab2K2PPq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 10:15:46 -0500
-Date: Thu, 29 Nov 2012 15:15:43 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        arnd@arndb.de, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com
-Subject: Re: [PATCH 3/3] Input: bu21013_ts - Add support for Device Tree
- booting
-Message-ID: <20121129151543.GK32691@opensource.wolfsonmicro.com>
-References: <1354021990-16978-1-git-send-email-lee.jones@linaro.org>
- <1354021990-16978-4-git-send-email-lee.jones@linaro.org>
- <20121128070332.GC23378@core.coreip.homeip.net>
- <20121128085731.GH2013@gmail.com>
- <20121128163105.GA28698@sirena.org.uk>
- <20121129100808.GW2013@gmail.com>
- <20121129112058.GH32691@opensource.wolfsonmicro.com>
- <20121129120000.GJ2013@gmail.com>
+	id S1754771Ab2K2PU4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 10:20:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51435 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754614Ab2K2PUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 10:20:55 -0500
+Date: Thu, 29 Nov 2012 15:20:51 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: George Spelvin <linux@horizon.com>
+Cc: dave@linux.vnet.ibm.com, hannes@cmpxchg.org, jack@suse.cz,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, riel@redhat.com
+Subject: Re: 3.7-rc6 soft lockup in kswapd0
+Message-ID: <20121129152051.GZ8218@suse.de>
+References: <20121128113920.GU8218@suse.de>
+ <20121129145414.9415.qmail@science.horizon.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bg/E/yN4pR4or5qL"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20121129120000.GJ2013@gmail.com>
-X-Cookie: Your ignorance cramps my conversation.
+In-Reply-To: <20121129145414.9415.qmail@science.horizon.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 29, 2012 at 09:54:14AM -0500, George Spelvin wrote:
+> Mel Gorman <mgorman@suse.de> wrote:
+> > On Tue, Nov 27, 2012 at 04:25:14PM -0500, George Spelvin wrote:
+> >> Well, it just made it to 24 hours, 
+> >> it did before.  I'm going to wait a couple more days before declaring
+> >> victory, but it looks good so far.
+> >> 
+> >>  19:19:10 up 1 day, 0 min,  2 users,  load average: 0.15, 0.20, 0.22
+> >>  21:24:05 up 1 day,  2:05,  2 users,  load average: 0.25, 0.19, 0.18
+> >
+> > Superb. The relevant patches *should* be in flight for 3.7 assuming they
+> > make it through the confusion of last-minute fixes.
+> 
+>  14:53:54 up 2 days, 19:35,  2 users,  load average: 0.20, 0.24, 0.23
+> 
+> Almost three days, when it wouldn't live overnight before.
+> As promised, I'm declaring victory.
+> 
+> The patch that worked (on top of -rc7) was Johannes Weiner's
+> "mm: vmscan: fix endless loop in kswapd balancing"
+> that added the zone_balanced() function to mm/vmscan.c:2400.
+> 
+> Thank you all very much!
 
---bg/E/yN4pR4or5qL
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Excellent, thanks for getting back quickly. The necessary patches in
+question are sortof-in-flight but I expect they'll make it in for 3.7.
+If that happens, it would be very nice if you could test with 3.7 to confirm
+and if all goes according to plan, I'll do a backport for 3.6-stable and
+hopefully squash most of the THP-causes-all-and-sundry-to-go-nuts bugs.
 
-On Thu, Nov 29, 2012 at 12:00:00PM +0000, Lee Jones wrote:
-> On Thu, 29 Nov 2012, Mark Brown wrote:
 
-> > Right, which is why this mostly works, but it's still better to provide
-> > an actual compatible string which we can be 100% certain will avoid
-> > conflicts.  This is very low cost when one is already defining DT
-> > bindings.
-
-> I know that it's an easy thing to do, but I'm more worried about
-> what would happen if the an I2C device is registered using the
-> current way (stripping the compatible string and using it as a
-> client look-up) and we also provide a compatible entry in the
-> driver itself. Do you know if there is any danger of duplicate
-> registration or suchlike?
-
-That's totally fine, we try first with compatible properties and only
-look for the fallback if there aren't any.
-
-> > > Hence, there should be no need to have a compatible string in any i2c
-> > > driver registration information.
-
-> > We're getting away with it at present (and frankly nobody's going to
-> > build in two different drivers for a chip of the same name for practical
-> > systems anyway).
-
-> Right. In the same way as we're getting away with it when we
-> register a platform_device using the register/add routines.
-
-Those are all completely Linux-defined of course which helps as well.
-
---bg/E/yN4pR4or5qL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQt3wXAAoJELSic+t+oim9B7AP/3iH/RwYN3t5B/y96DrQw3/r
-f9JERuj8k7lGtMyH6VrnyLdMQxMOoVfnjQcM5y9/UusgbmZ+mG2Qd2Wgsy0hIXgU
-Rr1YZrdIqPTfVJbo/YwsULhaJSv4grt9zLNJWcAc8kbhWkRjE80PbWGR1uEnoiIX
-z9V2AmJ5Eh7W6DtT26toyZBV+0GUNvOVTn4cYFm+rlr/OeV3DLR7hEQmPsbyYori
-ExcEDCcnm+ww3F6DB7Df1OdrpmQlFAhQdnIPBLIYKUAm55pt6U9qPHCNjsmT/DVQ
-uaO2Z3AlyFjCbMwhCJ6ntiRSkyq2gra3BCswDhTy6ujC6aC6nSRhRxpS43Cu1L0c
-CHXMY+xDuEvyRM7vibeLWjdMidRFyuUXkVDkYZM65PGYqOCOTMgcBrJ11kpBPGah
-wUVYhYVc9meN0vyYy6WVUyLUz5wNX5FsSGY4ST6uS6eJmOepn5WleB4CZJ8zseyZ
-J9sV/Stw2qyFI50jw5mCHu7LMN8IM4qViTqG1lQYutlHyupE29AR5nBGS0j8C28K
-F31bXmwFD5CL81SugpN2X9u33dq1bzMI1+aguVvNYnmi6bFveUuS/XPyLrRIIsVy
-mgw2Z7cZs9xTBhpEI8LoEQf2Me6gF2SB6RLprBbhdTJ49aRaFOAvbBUb95wnffDl
-cKHryLaDdJwf47/i28FK
-=SVo4
------END PGP SIGNATURE-----
-
---bg/E/yN4pR4or5qL--
+-- 
+Mel Gorman
+SUSE Labs
