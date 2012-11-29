@@ -1,65 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756574Ab2K2BFX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 20:05:23 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:46813 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756491Ab2K2BFT (ORCPT
+	id S1946121Ab2K2BLA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 20:11:00 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:32626 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1945912Ab2K2BK6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 20:05:19 -0500
-Date: Wed, 28 Nov 2012 17:05:16 -0800
-From: Kent Overstreet <koverstreet@google.com>
-To: Zach Brown <zab@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, bcrl@kvack.org, jmoyer@redhat.com,
-        axboe@kernel.dk, viro@zeniv.linux.org.uk
-Subject: Re: [PATCH 13/25] aio: Convert read_events() to hrtimers
-Message-ID: <20121129010516.GB15094@google.com>
-References: <1354121029-1376-1-git-send-email-koverstreet@google.com>
- <1354121029-1376-14-git-send-email-koverstreet@google.com>
- <20121129002436.GI18574@lenny.home.zabbo.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121129002436.GI18574@lenny.home.zabbo.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 28 Nov 2012 20:10:58 -0500
+Message-ID: <1354150952.26955.377.camel@misato.fc.hp.com>
+Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on
+ rebind scenario
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        Wen Congyang <wencongyang@gmail.com>, isimatu.yasuaki@jp.fujitsu.com,
+        lenb@kernel.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Date: Wed, 28 Nov 2012 18:02:32 -0700
+In-Reply-To: <4042591.gpFk7OYmph@vostro.rjw.lan>
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
+	 <9212118.3s2xH6uJDI@vostro.rjw.lan>
+	 <1354136568.26955.312.camel@misato.fc.hp.com>
+	 <4042591.gpFk7OYmph@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 04:24:36PM -0800, Zach Brown wrote:
-> > -	int			i = 0;
-> > +	DEFINE_WAIT(wait);
-> > +	struct hrtimer_sleeper t;
-> > +	size_t i = 0;
+On Thu, 2012-11-29 at 00:49 +0100, Rafael J. Wysocki wrote:
+> On Wednesday, November 28, 2012 02:02:48 PM Toshi Kani wrote:
+> > > > > > > > > Consider the following case:
+> > > > > > > > > 
+> > > > > > > > > We hotremove the memory device by SCI and unbind it from the driver at the same time:
+> > > > > > > > > 
+> > > > > > > > > CPUa                                                  CPUb
+> > > > > > > > > acpi_memory_device_notify()
+> > > > > > > > >                                        unbind it from the driver
+> > > > > > > > >     acpi_bus_hot_remove_device()
+> > > > > > > > 
+> > > > > > > > Can we make acpi_bus_remove() to fail if a given acpi_device is not
+> > > > > > > > bound with a driver?  If so, can we make the unbind operation to perform
+> > > > > > > > unbind only?
+> > > > > > > 
+> > > > > > > acpi_bus_remove_device could check if the driver is present, and return -ENODEV
+> > > > > > > if it's not present (dev->driver == NULL).
+> > > > > > > 
+> > > > > > > But there can still be a race between an eject and an unbind operation happening
+> > > > > > > simultaneously. This seems like a general problem to me i.e. not specific to an
+> > > > > > > acpi memory device. How do we ensure an eject does not race with a driver unbind
+> > > > > > > for other acpi devices?
+> > > > > > > 
+> > > > > > > Is there a per-device lock in acpi-core or device-core that can prevent this from
+> > > > > > > happening? Driver core does a device_lock(dev) on all operations, but this is
+> > > > > > > probably not grabbed on SCI-initiated acpi ejects.
+> > > > > > 
+> > > > > > Since driver_unbind() calls device_lock(dev->parent) before calling
+> > > > > > device_release_driver(), I am wondering if we can call
+> > > > > > device_lock(dev->dev->parent) at the beginning of acpi_bus_remove()
+> > > > > > (i.e. before calling pre_remove) and fails if dev->driver is NULL.  The
+> > > > > > parent lock is otherwise released after device_release_driver() is done.
+> > > > > 
+> > > > > I would be careful.  You may introduce some subtle locking-related issues
+> > > > > this way.
+> > > > 
+> > > > Right.  This requires careful inspection and testing.  As far as the
+> > > > locking is concerned, I am not keen on using fine grained locking for
+> > > > hot-plug.  It is much simpler and solid if we serialize such operations.
+> > > > 
+> > > > > Besides, there may be an alternative approach to all this.  For example,
+> > > > > what if we don't remove struct device objects on eject?  The ACPI handles
+> > > > > associated with them don't go away in that case after all, do they?
+> > > > 
+> > > > Umm...  Sorry, I am not getting your point.  The issue is that we need
+> > > > to be able to fail a request when memory range cannot be off-lined.
+> > > > Otherwise, we end up ejecting online memory range.
+> > > 
+> > > Yes, this is the major one.  The minor issue, however, is a race condition
+> > > between unbinding a driver from a device and removing the device if I
+> > > understand it correctly.  Which will go away automatically if the device is
+> > > not removed in the first place.  Or so I would think. :-)
+> > 
+> > I see.  I do not think whether or not the device is removed on eject
+> > makes any difference here.  The issue is that after driver_unbind() is
+> > done, acpi_bus_hot_remove_device() no longer calls the ACPI memory
+> > driver (hence, it cannot fail in prepare_remove), and goes ahead to call
+> > _EJ0.
 > 
-> Changing i to size_t is kind of surprising.  Is that on purpose?
+> I see two reasons for calling acpi_bus_hot_remove_device() for memory (correct
+> me if I'm wrong): (1) from the memhotplug driver's notify handler and (2) from
+> acpi_eject_store() which is exposed through sysfs.  
 
-I doubt it matters due to limits on ringbuffer size elsewhere but size_t
-is more correct, since we're counting objects in an array.
+Yes, that is correct.
 
-> > -		set_task_state(tsk, TASK_RUNNING);
-> > -		remove_wait_queue(&ctx->wait, &wait);
-> > -
-> >  		if (unlikely(ret <= 0))
-> >  			break;
-> >  
-> > @@ -879,11 +844,10 @@ static int read_events(struct kioctx *ctx,
-> >  		event ++;
-> >  		i ++;
-> >  	}
-> > -
-> > -	if (timeout)
-> > -		clear_timeout(&to);
-> >  out:
-> > -	destroy_timer_on_stack(&to.timer);
-> > +	hrtimer_cancel(&t.timer);
-> > +	destroy_hrtimer_on_stack(&t.timer);
-> > +	finish_wait(&ctx->wait, &wait);
-> 
-> I'd move the finish_wait() up to where TASK_RUNNING was set previously
-> so that we can't call copy_to_user() while still set to
-> TASK_INTERRUPTIBLE.
+> If we disabled exposing
+> acpi_eject_store() for memory devices, then the only way would be from the
+> notify handler.  So I wonder if driver_unbind() shouldn't just uninstall the
+> notify handler for memory (so that memory eject events are simply dropped on
+> the floor after unbinding the driver)?
 
-Slightly less efficient, but yeah that's more correct and this code all
-changes later anyways.
+If driver_unbind() happens before an eject request, we do not have a
+problem.  acpi_eject_store() fails if a driver is not bound to the
+device.  acpi_memory_device_notify() fails as well.
+
+The race condition Wen pointed out (see the top of this email) is that
+driver_unbind() may come in while eject operation is in-progress.  This
+is why I mentioned the following in previous email.
+
+> So, we basically need to either 1) serialize
+> acpi_bus_hot_remove_device() and driver_unbind(), or 2) make
+> acpi_bus_hot_remove_device() to fail if driver_unbind() is run
+> during the operation.
+
+
+Thanks,
+-Toshi
+
