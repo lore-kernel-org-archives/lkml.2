@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593Ab2K2Q2X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 11:28:23 -0500
-Received: from shrek-wifi.podlesie.net ([93.179.225.50]:45056 "EHLO
-	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752421Ab2K2Q2W (ORCPT
+	id S1751692Ab2K2QbT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 11:31:19 -0500
+Received: from anubis.se.axis.com ([195.60.68.12]:33823 "EHLO
+	anubis.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750781Ab2K2QbS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 11:28:22 -0500
-Date: Thu, 29 Nov 2012 17:28:18 +0100
-From: Krzysztof Mazur <krzysiek@podlesie.net>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: David Laight <David.Laight@ACULAB.COM>,
-        chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nathan@traverse.com.au
-Subject: Re: [PATCH v2 3/3] pppoatm: protect against freeing of vcc
-Message-ID: <20121129162818.GA6615@shrek.podlesie.net>
-References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
- <1350926091-12642-3-git-send-email-krzysiek@podlesie.net>
- <1354036592.2534.6.camel@shinybook.infradead.org>
- <20121127173906.GA11390@shrek.podlesie.net>
- <1354039349.2534.11.camel@shinybook.infradead.org>
- <20121127135434.0728cd4f@thirdoffive.cmf.nrl.navy.mil>
- <AE90C24D6B3A694183C094C60CF0A2F6026B70C9@saturn3.aculab.com>
- <1354141115.21562.101.camel@shinybook.infradead.org>
- <20121129150945.GB16478@shrek.podlesie.net>
- <1354204077.21562.172.camel@shinybook.infradead.org>
+	Thu, 29 Nov 2012 11:31:18 -0500
+Date: Thu, 29 Nov 2012 17:31:16 +0100
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: linux-cifs@vger.kernel.org, sfrench@samba.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] cifs: Add handling of blank password option
+Message-ID: <20121129163116.GP27196@axis.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1354204077.21562.172.camel@shinybook.infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 03:47:57PM +0000, David Woodhouse wrote:
-> On Thu, 2012-11-29 at 16:09 +0100, Krzysztof Mazur wrote:
-> > 
-> > I don't like two thinks about this patch:
-> > 
-> >         - if allos_skb(sizeof(*header), GFP_ATOMIC) at beginning of
-> >           pclose() fails we will crash
-> > 
-> >         - if card wakes up after this timeout we will probably crash too
-> > 
-> > That's why proposed different approach, but it has other problems.
-> 
-> How about this variant on what you suggested. Yes, we can definitely
-> remove everything that's in the queue... as long as we use
-> skb_queue_walk_safe() instead of skb_queue_walk().
-> 
-> We can use GFP_KERNEL instead of GFP_ATOMIC, which at least reduces the
-> likelihood of failing to close the vcc.
-> 
-> We end up waiting *only* if there is a packet which is *currently* being
-> DMA'd to the card. And if the card doesn't take that within 5 seconds,
-> it almost certainly never will. So I can live with that.
-> 
+The option to have a blank "pass=" already exists, and with
+a password specified both "pass=%s" and "password=%s" are supported.
+Also, both blank "user=" and "username=" are supported, making
+"password=" the odd man out.
 
-Yeah, that shouldn't happen.
+Signed-off-by: Jesper Nilsson <jesper.nilsson@axis.com>
+---
+ fs/cifs/connect.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-> +				if (!test_bit(ATM_VF_READY, &vcc->flags))
-> +					wake_up(&card->param_wq);
-> +			} else
+diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
+index 5c670b9..c83f5b65 100644
+--- a/fs/cifs/connect.c
++++ b/fs/cifs/connect.c
+@@ -186,6 +186,7 @@ static const match_table_t cifs_mount_option_tokens = {
+ 	{ Opt_user, "user=%s" },
+ 	{ Opt_user, "username=%s" },
+ 	{ Opt_blank_pass, "pass=" },
++	{ Opt_blank_pass, "password=" },
+ 	{ Opt_pass, "pass=%s" },
+ 	{ Opt_pass, "password=%s" },
+ 	{ Opt_blank_ip, "ip=" },
+-- 
+1.8.0.rc0.18.gf84667d
 
-according to CodingStyle:
 
-+ } else {
->  				dev_kfree_skb_irq(oldskb);
-> -			}
-+ }
-
-Krzysiek
+/^JN - Jesper Nilsson
+-- 
+               Jesper Nilsson -- jesper.nilsson@axis.com
