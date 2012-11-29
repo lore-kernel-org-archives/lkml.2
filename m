@@ -1,299 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755038Ab2K2PsL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 10:48:11 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:42921 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754836Ab2K2PsI (ORCPT
+	id S1754961Ab2K2PsK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 10:48:10 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:57391 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752947Ab2K2PsI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 Nov 2012 10:48:08 -0500
-Message-ID: <1354204077.21562.172.camel@shinybook.infradead.org>
-Subject: Re: [PATCH v2 3/3] pppoatm: protect against freeing of vcc
-From: David Woodhouse <dwmw2@infradead.org>
-To: Krzysztof Mazur <krzysiek@podlesie.net>
-Cc: David Laight <David.Laight@ACULAB.COM>,
-        chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nathan@traverse.com.au
-Date: Thu, 29 Nov 2012 15:47:57 +0000
-In-Reply-To: <20121129150945.GB16478@shrek.podlesie.net>
-References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
-	 <1350926091-12642-3-git-send-email-krzysiek@podlesie.net>
-	 <1354036592.2534.6.camel@shinybook.infradead.org>
-	 <20121127173906.GA11390@shrek.podlesie.net>
-	 <1354039349.2534.11.camel@shinybook.infradead.org>
-	 <20121127135434.0728cd4f@thirdoffive.cmf.nrl.navy.mil>
-	 <AE90C24D6B3A694183C094C60CF0A2F6026B70C9@saturn3.aculab.com>
-	 <1354141115.21562.101.camel@shinybook.infradead.org>
-	 <20121129150945.GB16478@shrek.podlesie.net>
-Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature";
-	boundary="=-SyNrhMH28xfmBHT0QlXt"
-X-Mailer: Evolution 3.6.1 (3.6.1-1.fc18) 
-Mime-Version: 1.0
+Message-ID: <50B78387.5070707@gmail.com>
+Date: Thu, 29 Nov 2012 23:47:19 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+MIME-Version: 1.0
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: "Luck, Tony" <tony.luck@intel.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "laijs@cn.fujitsu.com" <laijs@cn.fujitsu.com>,
+        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
+        "linfeng@cn.fujitsu.com" <linfeng@cn.fujitsu.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
+        "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
+        "mgorman@suse.de" <mgorman@suse.de>,
+        "rientjes@google.com" <rientjes@google.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, "Wang, Frank" <frank.wang@intel.com>
+Subject: Re: [PATCH v2 0/5] Add movablecore_map boot option
+References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <50B5CFAE.80103@huawei.com> <3908561D78D1C84285E8C5FCA982C28F1C95EDCE@ORSMSX108.amr.corp.intel.com> <50B73B22.90500@jp.fujitsu.com>
+In-Reply-To: <50B73B22.90500@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/29/2012 06:38 PM, Yasuaki Ishimatsu wrote:
+> Hi Tony,
+> 
+> 2012/11/29 6:34, Luck, Tony wrote:
+>>> 1. use firmware information
+>>>    According to ACPI spec 5.0, SRAT table has memory affinity structure
+>>>    and the structure has Hot Pluggable Filed. See "5.2.16.2 Memory
+>>>    Affinity Structure". If we use the information, we might be able to
+>>>    specify movable memory by firmware. For example, if Hot Pluggable
+>>>    Filed is enabled, Linux sets the memory as movable memory.
+>>>
+>>> 2. use boot option
+>>>    This is our proposal. New boot option can specify memory range to use
+>>>    as movable memory.
+>>
+>> Isn't this just moving the work to the user? To pick good values for the
+> 
+> Yes.
+> 
+>> movable areas, they need to know how the memory lines up across
+>> node boundaries ... because they need to make sure to allow some
+>> non-movable memory allocations on each node so that the kernel can
+>> take advantage of node locality.
+> 
+> There is no problem.
+> Linux has already two boot options, kernelcore= and movablecore=.
+> So if we use them, non-movable memory is divided into each node evenly.
+> 
+> But there is no way to specify a node used as movable currently. So
+> we proposed the new boot option.
+> 
+>> So the user would have to read at least the SRAT table, and perhaps
+>> more, to figure out what to provide as arguments.
+>>
+> 
+>> Since this is going to be used on a dynamic system where nodes might
+>> be added an removed - the right values for these arguments might
+>> change from one boot to the next. So even if the user gets them right
+>> on day 1, a month later when a new node has been added, or a broken
+>> node removed the values would be stale.
+> 
+> I don't think so. Even if we hot add/remove node, the memory range of
+> each memory device is not changed. So we don't need to change the boot
+> option.
+Hi Yasuaki,
+	Addresses assigned to each memory device may change under different 
+hardware configurations.
+	According to my experiences with some hotplug capable Xeon and Itanium
+systems, a typical algorithm adopted by BIOS to support memory hotplug is:
+1) For backward compatibility, BIOS assigns continuous addresses to memory
+devices present at boot time. In other words, there are no holes in the memory
+addresses except the hole just below 4G reserved for MMIO and other arch 
+specific usage.
+2) To support memory hotplug, BIOS reserves enough memory address ranges 
+at the high end.
+ 
+	Let's take a typical 4 sockets system as an example. Say we have four
+sockets S0-S3, and each socket supports two memory devices(M0-M1) at maximum. 
+Each memory device supports 128G memory at maximum. And at boot, all memory
+slots are fully populated with 4GB memory. Then the address assignment looks
+like:
+0-2G: 		S0.M0
+2-4G: 		MMIO
+4-8G: 		S0.M1
+8-12G: 		S1.M0
+12-16G: 	S1.M1
+16-20G: 	S2.M0
+20-24G:		S2.M1
+24-28G: 	S2.M0
+28-32G:		S2.M1
+32-34G:		S0.M0 (memory recovered from the MMIO hole)
+1024-1152G:	reserved for S0.M0
+1152-1280G:	reserved for S0.M1
+1280-1408G:	reserved for S1.M0
+1408-1536G:	reserved for S1.M1
+1536-1664G:	reserved for S2.M0
+1664-1792G:	reserved for S2.M1
+1792-1920G:	reserved for S3.M0
+1920-2048G:	reserved for S4.M1
 
---=-SyNrhMH28xfmBHT0QlXt
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+If we hot-remove S2.M0 and add back a bigger memory device with 8G memory, it will
+be assigned a new memory address range 1536-1544G.
 
-On Thu, 2012-11-29 at 16:09 +0100, Krzysztof Mazur wrote:
->=20
-> I don't like two thinks about this patch:
->=20
->         - if allos_skb(sizeof(*header), GFP_ATOMIC) at beginning of
->           pclose() fails we will crash
->=20
->         - if card wakes up after this timeout we will probably crash too
->=20
-> That's why proposed different approach, but it has other problems.
+Based on above algorithm, and we configure 16-24G(S2.M0 and S2.M1) as movable memory.
+1) memory on S3 will be configured as movable if S2 isn't present at boot time. (the
+same effect as "movable_node" in discussion at https://lkml.org/lkml/2012/11/27/154)
+2) S2.M0 will be configured as non-movable and S3.M0 will be configured as movable
+   if S1.M0 isn't present at boot.
+3) And how about replace S1.M0 with a 8GB memory device?
 
-How about this variant on what you suggested. Yes, we can definitely
-remove everything that's in the queue... as long as we use
-skb_queue_walk_safe() instead of skb_queue_walk().
+To summarize, kernel parameter to configure movable memory for hotplug will easily
+become invalid if hardware configuration changes, and that may confuse administrators.
+I still think the most reliable way is to figure out movable memory for hotplug by
+parsing hardware configuration information from BIOS.
 
-We can use GFP_KERNEL instead of GFP_ATOMIC, which at least reduces the
-likelihood of failing to close the vcc.
-
-We end up waiting *only* if there is a packet which is *currently* being
-DMA'd to the card. And if the card doesn't take that within 5 seconds,
-it almost certainly never will. So I can live with that.
-
-I'd definitely want someone with a DMA-capable FPGA to test this
-properly, adding printks to it to make sure the interesting path is
-being exercised. Nathan, you should be able to trigger it with the same
-test that used to just crash the system entirely =E2=80=94 send a flood of
-packets while you kill br2684ctl.
-
-diff --git a/drivers/atm/solos-pci.c b/drivers/atm/solos-pci.c
-index 6258961..2006a39 100644
---- a/drivers/atm/solos-pci.c
-+++ b/drivers/atm/solos-pci.c
-@@ -92,7 +92,6 @@ struct pkt_hdr {
- };
-=20
- struct solos_skb_cb {
--	struct completion c;
- 	struct atm_vcc *vcc;
- 	uint32_t dma_addr;
- };
-@@ -868,10 +867,11 @@ static int popen(struct atm_vcc *vcc)
- static void pclose(struct atm_vcc *vcc)
- {
- 	struct solos_card *card =3D vcc->dev->dev_data;
--	struct sk_buff *skb;
-+	struct sk_buff *skb, *tmpskb;
- 	struct pkt_hdr *header;
-+	unsigned char port =3D SOLOS_CHAN(vcc->dev);
-=20
--	skb =3D alloc_skb(sizeof(*header), GFP_ATOMIC);
-+	skb =3D alloc_skb(sizeof(*header), GFP_KERNEL);
- 	if (!skb) {
- 		dev_warn(&card->dev->dev, "Failed to allocate sk_buff in pclose()\n");
- 		return;
-@@ -883,22 +883,50 @@ static void pclose(struct atm_vcc *vcc)
- 	header->vci =3D cpu_to_le16(vcc->vci);
- 	header->type =3D cpu_to_le16(PKT_PCLOSE);
-=20
--	init_completion(&SKB_CB(skb)->c);
--
- 	fpga_queue(card, SOLOS_CHAN(vcc->dev), skb, NULL);
-=20
- 	clear_bit(ATM_VF_ADDR, &vcc->flags);
- 	clear_bit(ATM_VF_READY, &vcc->flags);
-=20
--	if (!wait_for_completion_timeout(&SKB_CB(skb)->c,
--					 msecs_to_jiffies(5000)))
--		dev_warn(&card->dev->dev, "Timeout waiting for VCC close on port %d\n",
--			 SOLOS_CHAN(vcc->dev));
-+	/* Remove any yet-to-be-transmitted packets from the pending queue */
-+	spin_lock(&card->tx_queue_lock);
-+	skb_queue_walk_safe(&card->tx_queue[port], skb, tmpskb) {
-+		if (SKB_CB(skb)->vcc =3D=3D vcc) {
-+			skb_unlink(skb, &card->tx_queue[port]);
-+			solos_pop(vcc, skb);
-+		}
-+	}
-+	spin_unlock(&card->tx_queue_lock);
-=20
- 	/* Hold up vcc_destroy_socket() (our caller) until solos_bh() in the
- 	   tasklet has finished processing any incoming packets (and, more to
- 	   the point, using the vcc pointer). */
- 	tasklet_unlock_wait(&card->tlet);
-+
-+	/*
-+	 * If we're in DMA mode and a skb on this VCC is *currently* being
-+	 * submitted, wait for it to finish (using param_wq)
-+	 */
-+	if (card->using_dma) {
-+		DEFINE_WAIT(wait);
-+
-+		spin_lock(&card->tx_lock);
-+		while (card->tx_skb[port] && SKB_CB(card->tx_skb[port])->vcc =3D=3D vcc)=
- {
-+			prepare_to_wait(&card->param_wq, &wait, TASK_UNINTERRUPTIBLE);
-+			spin_unlock(&card->tx_lock);
-+
-+			if (schedule_timeout(5 * HZ)) {
-+				dev_warn(&card->dev->dev,
-+					 "Timeout waiting for VCC close on port %d\n",
-+					 port);
-+				goto done_waiting;
-+			}
-+			spin_lock(&card->tx_lock);
-+		}
-+		spin_unlock(&card->tx_lock);
-+	done_waiting:
-+		finish_wait(&card->param_wq, &wait);
-+	}
- 	return;
- }
-=20
-@@ -1020,12 +1048,15 @@ static uint32_t fpga_tx(struct solos_card *card)
- 			if (vcc) {
- 				atomic_inc(&vcc->stats->tx);
- 				solos_pop(vcc, oldskb);
--			} else {
--				struct pkt_hdr *header =3D (void *)oldskb->data;
--				if (le16_to_cpu(header->type) =3D=3D PKT_PCLOSE)
--					complete(&SKB_CB(oldskb)->c);
-+
-+				/*
-+				 * If it's a TX skb on a closed VCC, pclose()
-+				 * may be waiting for it...
-+				 */
-+				if (!test_bit(ATM_VF_READY, &vcc->flags))
-+					wake_up(&card->param_wq);
-+			} else
- 				dev_kfree_skb_irq(oldskb);
--			}
- 		}
- 	}
- 	/* For non-DMA TX, write the 'TX start' bit for all four ports simultaneo=
-usly */
-
-
---=20
-dwmw2
-
-
---=-SyNrhMH28xfmBHT0QlXt
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Transfer-Encoding: base64
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIUbjCCBjQw
-ggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
-Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAn
-BgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3MTAyNDIxMDE1NVoX
-DTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSsw
-KQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFy
-dENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTCCASIwDQYJKoZIhvcN
-AQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOrlr6KMoOMpohBllVHrdRvEg/q6r8jR+EK
-75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSMzR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC
-+y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxD
-z2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSDkOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr
-/+N2JLKutIxMYqQOJebr/f/h5t95m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0w
-ggGpMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFc
-fH6WNU7y1LhRgjAfBgNVHSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRa
-MFgwJwYIKwYBBQUHMAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYh
-aHR0cDovL3d3dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6
-Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5j
-b20vc2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
-c3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqDCH14qywG
-XLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy6QMVQjbbMXlt
-UfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPIzKKR9tQW8gGK+2+R
-HxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKfKSETEPrHh7p5shuuNktv
-sv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HORz9v3vQwR4e3ksLc2JZOAFK+s
-sS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9sIPP7ON0fz095HdThKjiVJe6vofq
-+n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCieuoBJ9OlqmsVWQvifIYf40dJPZkk9YgGT
-zWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7tw1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGq
-Up/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQG2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb1
-9mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIHFzCCBf+g
-AwIBAgIDBCZ6MA0GCSqGSIb3DQEBBQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
-b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYG
-A1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcN
-MTIwNTAxMTI1ODI3WhcNMTMwNTAzMTEzNzIwWjBdMRkwFwYDVQQNExA4Y1VOSzUzMTc0ODRYRjk3
-MRwwGgYDVQQDDBNkd213MkBpbmZyYWRlYWQub3JnMSIwIAYJKoZIhvcNAQkBFhNkd213MkBpbmZy
-YWRlYWQub3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyYe7wo6MrtrB4uIGGbrY
-4IifY/Xsq22pSv605yganL0+uyUdd8rCjrYlH6Q/ra5TVJCQFTgzaepkuqPQc79DC/Cxmzm6Qo+s
-wLZy868oFsccsVokL2bPAWIPaRXfNPJKkYR1FTWQfZpWJVQmT+sPf1XFUullVBAK+d9RztopyacI
-xWoZ/W/Cmv7mseQbttYTtGKJa0btX73nsQRWl6SgErWXo59zg9friCLTy1GXMXJYB8H+PtnuwX0w
-MrAvWDdX1ABgIlA17W3FraCn0eW15ZM46eyu0/amGzJZNtemCWF73P7BAijzeV1jNmiJFXdZ0DT0
-w+hmtMO9PxdDUyt78QIDAQABo4IDrjCCA6owCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0l
-BBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1UdDgQWBBTkfe5UOr3PcirsjApibyyUEfsyRzAf
-BgNVHSMEGDAWgBRTcu2SnODaywFcfH6WNU7y1LhRgjAeBgNVHREEFzAVgRNkd213MkBpbmZyYWRl
-YWQub3JnMIICIQYDVR0gBIICGDCCAhQwggIQBgsrBgEEAYG1NwECAjCCAf8wLgYIKwYBBQUHAgEW
-Imh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
-d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwgfcGCCsGAQUFBwICMIHqMCcWIFN0YXJ0
-Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5UaGlzIGNlcnRpZmljYXRlIHdhcyBp
-c3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZhbGlkYXRpb24gcmVxdWlyZW1lbnRzIG9m
-IHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlhbmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRlZCBw
-dXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhlIHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMuMIGc
-BggrBgEFBQcCAjCBjzAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgECGmRM
-aWFiaWxpdHkgYW5kIHdhcnJhbnRpZXMgYXJlIGxpbWl0ZWQhIFNlZSBzZWN0aW9uICJMZWdhbCBh
-bmQgTGltaXRhdGlvbnMiIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3kuMDYGA1UdHwQvMC0wK6Ap
-oCeGJWh0dHA6Ly9jcmwuc3RhcnRzc2wuY29tL2NydHUxLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGB
-MH8wOQYIKwYBBQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MxL2NsaWVu
-dC9jYTBCBggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNz
-MS5jbGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkq
-hkiG9w0BAQUFAAOCAQEAqDU1FKifNtCFJbLnvOi1BLRfk7mut55PMtPSZLJ4/AnG7AjmJnbBI4U5
-DELwvVq3mIpwUpGqZUkqkZMEfBPIbfq517UZB3h4iANtqif+ULfTLhg5XgcK5eF8/T6EtX2c3epq
-ylARdleCbj/0FwiUDvPlTsA6PIN4SCekjRLgjKERrL3heFz+Hteq1rtMAvMkNuyL0/0ijyyg2y45
-NASAl2Afl9SLes/fnoh9nBwzfNQfb6qDYUFpnglfpGrq/0b1NtaOUb2z1SR+H1tKlb8bVJJIdvpu
-mEi27kSRIhzk3h30uTfKkKetgy++ouyldxZ7KZ0PuoLQrBy465EoQLosETCCBxcwggX/oAMCAQIC
-AwQmejANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0
-ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMT
-L1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBMB4XDTEyMDUw
-MTEyNTgyN1oXDTEzMDUwMzExMzcyMFowXTEZMBcGA1UEDRMQOGNVTks1MzE3NDg0WEY5NzEcMBoG
-A1UEAwwTZHdtdzJAaW5mcmFkZWFkLm9yZzEiMCAGCSqGSIb3DQEJARYTZHdtdzJAaW5mcmFkZWFk
-Lm9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMmHu8KOjK7aweLiBhm62OCIn2P1
-7KttqUr+tOcoGpy9PrslHXfKwo62JR+kP62uU1SQkBU4M2nqZLqj0HO/QwvwsZs5ukKPrMC2cvOv
-KBbHHLFaJC9mzwFiD2kV3zTySpGEdRU1kH2aViVUJk/rD39VxVLpZVQQCvnfUc7aKcmnCMVqGf1v
-wpr+5rHkG7bWE7RiiWtG7V+957EEVpekoBK1l6Ofc4PX64gi08tRlzFyWAfB/j7Z7sF9MDKwL1g3
-V9QAYCJQNe1txa2gp9HlteWTOOnsrtP2phsyWTbXpglhe9z+wQIo83ldYzZoiRV3WdA09MPoZrTD
-vT8XQ1Mre/ECAwEAAaOCA64wggOqMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgSwMB0GA1UdJQQWMBQG
-CCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQU5H3uVDq9z3Iq7IwKYm8slBH7MkcwHwYDVR0j
-BBgwFoAUU3Ltkpzg2ssBXHx+ljVO8tS4UYIwHgYDVR0RBBcwFYETZHdtdzJAaW5mcmFkZWFkLm9y
-ZzCCAiEGA1UdIASCAhgwggIUMIICEAYLKwYBBAGBtTcBAgIwggH/MC4GCCsGAQUFBwIBFiJodHRw
-Oi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMDQGCCsGAQUFBwIBFihodHRwOi8vd3d3LnN0
-YXJ0c3NsLmNvbS9pbnRlcm1lZGlhdGUucGRmMIH3BggrBgEFBQcCAjCB6jAnFiBTdGFydENvbSBD
-ZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0aWZpY2F0ZSB3YXMgaXNzdWVk
-IGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJlcXVpcmVtZW50cyBvZiB0aGUg
-U3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0aGUgaW50ZW5kZWQgcHVycG9z
-ZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5IG9ibGlnYXRpb25zLjCBnAYIKwYB
-BQUHAgIwgY8wJxYgU3RhcnRDb20gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwAwIBAhpkTGlhYmls
-aXR5IGFuZCB3YXJyYW50aWVzIGFyZSBsaW1pdGVkISBTZWUgc2VjdGlvbiAiTGVnYWwgYW5kIExp
-bWl0YXRpb25zIiBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LjA2BgNVHR8ELzAtMCugKaAnhiVo
-dHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkG
-CCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFydHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2Ew
-QgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3RhcnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xp
-ZW50LmNhLmNydDAjBgNVHRIEHDAahhhodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcN
-AQEFBQADggEBAKg1NRSonzbQhSWy57zotQS0X5O5rreeTzLT0mSyePwJxuwI5iZ2wSOFOQxC8L1a
-t5iKcFKRqmVJKpGTBHwTyG36ude1GQd4eIgDbaon/lC30y4YOV4HCuXhfP0+hLV9nN3qaspQEXZX
-gm4/9BcIlA7z5U7AOjyDeEgnpI0S4IyhEay94Xhc/h7Xqta7TALzJDbsi9P9Io8soNsuOTQEgJdg
-H5fUi3rP356IfZwcM3zUH2+qg2FBaZ4JX6Rq6v9G9TbWjlG9s9Ukfh9bSpW/G1SSSHb6bphItu5E
-kSIc5N4d9Lk3ypCnrYMvvqLspXcWeymdD7qC0KwcuOuRKEC6LBExggNvMIIDawIBATCBlDCBjDEL
-MAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdp
-dGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFy
-eSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMEJnowCQYFKw4DAhoFAKCCAa8wGAYJKoZIhvcNAQkD
-MQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTIxMTI5MTU0NzU3WjAjBgkqhkiG9w0BCQQx
-FgQUeBFLS/E7svA5+ciJG21y5PQNrDswgaUGCSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMC
-SUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRp
-ZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1l
-ZGlhdGUgQ2xpZW50IENBAgMEJnowgacGCyqGSIb3DQEJEAILMYGXoIGUMIGMMQswCQYDVQQGEwJJ
-TDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlm
-aWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVk
-aWF0ZSBDbGllbnQgQ0ECAwQmejANBgkqhkiG9w0BAQEFAASCAQBx0LqhLSw+hf7FD09i8qhgBFCZ
-ZARPO90Rv6aJJoTOJSCDyOAo5wvq1OJS1KDYQeT5/0CQFreUuoDQtb9j2JTsd97NpoCXSd0NGD9b
-evjA/82c73ospcy+fE02ynZ6SleJjKZmt1diAiGO4Zte6JZeyPj8SQTbDbTq2/5iFD9/o47ibhNH
-gHNASOcPY7Q66nYp7V6c/UV+ENXQC7SlDTaE7HyGDbE1/9hJhuh8OegM8FebTnsLAhdXAXoEhU/3
-c2eA2Mbh7h+92p136hIFgfrI+6xD5AagMU9ShpV0QZ0rd++GtOwQ4yq6ZXYZLbdPI1tw5CHTBec/
-rF3w3iBao/xYAAAAAAAA
-
-
---=-SyNrhMH28xfmBHT0QlXt--
+Regards!
+Gerry
 
