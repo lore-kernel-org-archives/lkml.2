@@ -1,121 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751991Ab2K2HmS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 02:42:18 -0500
-Received: from smtp-vbr2.xs4all.nl ([194.109.24.22]:1678 "EHLO
-	smtp-vbr2.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751187Ab2K2HmR (ORCPT
+	id S1751188Ab2K2HpE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 02:45:04 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:57237 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187Ab2K2HpD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 02:42:17 -0500
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-Subject: Re: [PATCH v3 0/9] Media Controller capture driver for DM365
-Date: Thu, 29 Nov 2012 08:40:40 +0100
-User-Agent: KMail/1.13.7 (Linux/3.7.0-rc1-tschai; KDE/4.8.4; x86_64; ; )
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        devel@driverdev.osuosl.org,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Prabhakar Lad <prabhakar.lad@ti.com>,
-        Hans Verkuil <hansverk@cisco.com>,
-        Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        LMML <linux-media@vger.kernel.org>
-References: <1354099329-20722-1-git-send-email-prabhakar.lad@ti.com> <20121128212952.GP11248@mwanda> <50B6A29D.9050004@gmail.com>
-In-Reply-To: <50B6A29D.9050004@gmail.com>
+	Thu, 29 Nov 2012 02:45:03 -0500
+X-AuditID: 9c93016f-b7b86ae000003a75-6a-50b7127c243a
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 01/14] perf tool: Introduce perf_hpp__list for period related columns
+References: <1354110769-2998-1-git-send-email-jolsa@redhat.com>
+	<1354110769-2998-2-git-send-email-jolsa@redhat.com>
+Date: Thu, 29 Nov 2012 16:44:59 +0900
+In-Reply-To: <1354110769-2998-2-git-send-email-jolsa@redhat.com> (Jiri Olsa's
+	message of "Wed, 28 Nov 2012 14:52:36 +0100")
+Message-ID: <87d2ywq2dg.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201211290840.40670.hverkuil@xs4all.nl>
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu November 29 2012 00:47:41 Sylwester Nawrocki wrote:
-> On 11/28/2012 10:29 PM, Dan Carpenter wrote:
-> > On Wed, Nov 28, 2012 at 08:30:04PM +0100, Sylwester Nawrocki wrote:
-> >> On 11/28/2012 01:22 PM, Dan Carpenter wrote:
-> >>> In the end this is just a driver, and I don't especially care.  But
-> >>> it's like not just this one which makes me frustrated.  I really
-> >>> believe in linux-next and I think everything should spend a couple
-> >>> weeks there before being merged.
-> >>
-> >> Couple of weeks in linux-next plus a couple of weeks of final patch
-> >> series version awaiting to being reviewed and picked up by a maintainer
-> >> makes almost entire kernel development cycle. These are huge additional
-> >> delays, especially in the embedded world. Things like these certainly
-> >> aren't encouraging for moving over from out-of-tree to the mainline
-> >> development process. And in this case we are talking only about merging
-> >> driver to the staging tree...
-> >
-> > Yeah.  A couple weeks is probably too long.  But I think a week is
-> > totally reasonable.
-> 
-> Agreed, exactly that couple weeks requirement seemed a bit long to me.
-> 
-> > You have the process wrong.  The maintainer reviews it first, merges
-> > it into his -next git tree.  It sits in linux-next for a bit.  The
-> > merge window opens up.  It is merged.  It gets tested for 3 months.
-> > It is released.
-> 
-> I believe what you're describing is true for most subsystems.  At
-> linux-media the process looks roughly that you prepare a patch and post
-> it to the mailing list for review.  Regular developers review it, you
-> address the comments and submit again.  Repeat these steps until
-> everyone's happy.  Then, when the patch looks like it is ready for
-> merging it is preferred to send the maintainer a pull request.
-> Now there can be a delay of up to couple weeks.  Afterwards the patch
-> in most cases gets merged, with a few possible change requests. However
-> it may happen the maintainer has different views on what's has been
-> agreed before and you start everything again.
+Hi Jiri,
 
-Yes, and the problem is that the maintainer (Mauro) tends to look at this
-close to the merge window, generally leaving you with very little time to
-make adjustments.
+On Wed, 28 Nov 2012 14:52:36 +0100, Jiri Olsa wrote:
+> Adding perf_hpp__list list to register and contain all period
+> related columns the command is interested in.
+>
+> This way we get rid of static array holding all possible
+> columns and enable commands to register their own columns.
 
-In all honesty, in this particular case the pull request came in late
-because other reviewers asked TI to move the driver to staging because we
-thought the driver wasn't quite ready yet.
+But it seems you didn't get rid of the array? :)
 
-If it would just be merged as a staging driver, then it would most likely
-be sitting in linux-next by now since a few days, well in time for the merge
-window. Instead we are having this whole discussion :-(
+>
+> It'll be handy for diff command in future to process and display
+> data for multiple files.
+[snip]
+> diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+> index 8b091a5..a935a60 100644
+> --- a/tools/perf/util/hist.h
+> +++ b/tools/perf/util/hist.h
+> @@ -126,13 +126,19 @@ struct perf_hpp {
+>  };
+>  
+>  struct perf_hpp_fmt {
+> -	bool cond;
+>  	int (*header)(struct perf_hpp *hpp);
+>  	int (*width)(struct perf_hpp *hpp);
+>  	int (*color)(struct perf_hpp *hpp, struct hist_entry *he);
+>  	int (*entry)(struct perf_hpp *hpp, struct hist_entry *he);
+> +
+> +	struct list_head list;
+>  };
+>  
+> +extern struct list_head perf_hpp__list;
+> +
+> +#define perf_hpp__for_each_format(format) \
+> +	list_for_each_entry(format, &perf_hpp__list, list)
+> +
+>  extern struct perf_hpp_fmt perf_hpp__format[];
 
-> With a few sub-maintainers recently appointed hopefully there can be
-> seen some improvement.
+Instead of using new perf_hpp__list, how about this?
 
-I sincerely hope so. Of course, since I'm going to be one of the sub-maintainers
-I'm going to see this from the other side as well, so I might get the same
-critisism in the future :-)
+#define perf_hpp__for_each_format(fmt) \
+        for (fmt = &perf_hpp__format[0]; fmt < &perf_hpp__format[PERF_HPP__MAX_INDEX]; fmt++) \
+                if (fmt->cond)
 
-> > It should work as a continuous even flow.  It shouldn't be a rush to
-> > submit drivers right before the merge window opens.  It's not hard,
-> > you can submit a driver to linux-next at any time.  It magically
-> > flows through the process and is released some months later.
-> >
-> > It does suck to add a 3 month delay for people who miss the cut off.
-> > Don't wait until the last minute.  In the embedded world you can
-> > use git cherry-pick to get the driver from linux-next.
-> 
-> Yeah, it's not unusual to work with specific -rc tree with multiple
-> subsystem -next branches on top of it.
-> 
-> It's just those cases where you're told to get feature A in the kernel
-> release X and it is already late in the development cycle... But it
-> might just be a matter of planning the work adequately with proper
-> understanding of the whole process.
+Thanks,
+Namhyung
 
-Well, it would work if you can rely on patches being reviewed and merged
-in a timely manner. Hopefully that will happen when the sub-maintainers
-can start next year. It should make everything more predictable.
-
-Regards,
-
-	Hans
+>  
+>  enum {
+> @@ -155,7 +161,8 @@ enum {
+>  };
+>  
+>  void perf_hpp__init(void);
+> -void perf_hpp__column_enable(unsigned col, bool enable);
+> +void perf_hpp__column_register(struct perf_hpp_fmt *format);
+> +void perf_hpp__column_enable(unsigned col);
+>  int hist_entry__period_snprintf(struct perf_hpp *hpp, struct hist_entry *he,
+>  				bool color);
