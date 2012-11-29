@@ -1,83 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081Ab2K2RoF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 12:44:05 -0500
-Received: from ud10.udmedia.de ([194.117.254.50]:49106 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753976Ab2K2RoB (ORCPT
+	id S1754064Ab2K2RpV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 12:45:21 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:34079 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753718Ab2K2RpU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 12:44:01 -0500
-Date: Thu, 29 Nov 2012 18:43:58 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: kernel/rcutree.c:2850:13: warning: array subscript is above
- array bounds
-Message-ID: <20121129174358.GA248@x4>
-References: <20121129134752.GB219@x4>
- <20121129170241.GT2474@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121129170241.GT2474@linux.vnet.ibm.com>
+	Thu, 29 Nov 2012 12:45:20 -0500
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [GIT PULL] cputime: Cleanups on adjusted cputime code
+Date: Thu, 29 Nov 2012 18:45:11 +0100
+Message-Id: <1354211111-12113-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1354125140-9294-1-git-send-email-fweisbec@gmail.com>
+References: <1354125140-9294-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012.11.29 at 09:02 -0800, Paul E. McKenney wrote:
-> On Thu, Nov 29, 2012 at 02:47:52PM +0100, Markus Trippelsdorf wrote:
-> > With gcc-4.8 I get:
-> > 
-> >   CC      kernel/rcutree.o
-> >   kernel/rcutree.c: In function ‘rcu_init_one’:
-> >   kernel/rcutree.c:2850:13: warning: array subscript is above array bounds [-Warray-bounds]
-> >      rsp->level[i] = rsp->level[i - 1] + rsp->levelcnt[i - 1];
-> >                   ^
-> > 2849    for (i = 1; i < rcu_num_lvls; i++)
-> > 2850           rsp->level[i] = rsp->level[i - 1] + rsp->levelcnt[i - 1];
-> > 
-> > At first I thought that the warning was bogus, but rcu_num_lvls isn't static
-> > and gets modified prior to the for loop.
-> 
-> You are quite correct that rcu_num_lvls does get modified, but there
-> are checks in rcu_init_geometry() to ensure that it does not increase:
-> 
-> 	/*
-> 	 * The boot-time rcu_fanout_leaf parameter is only permitted
-> 	 * to increase the leaf-level fanout, not decrease it.  Of course,
-> 	 * the leaf-level fanout cannot exceed the number of bits in
-> 	 * the rcu_node masks.  Finally, the tree must be able to accommodate
-> 	 * the configured number of CPUs.  Complain and fall back to the
-> 	 * compile-time values if these limits are exceeded.
-> 	 */
-> 	if (rcu_fanout_leaf < CONFIG_RCU_FANOUT_LEAF ||
-> 	    rcu_fanout_leaf > sizeof(unsigned long) * 8 ||
-> 	    n > rcu_capacity[MAX_RCU_LVLS]) {
-> 		WARN_ON(1);
-> 		return;
-> 	}
-> 
-> The value of rcu_num_lvls starts out at RCU_NUM_LVLS, the same as
-> the dimension of the ->level[] array.  The loop goes only to one less
-> than rcu_num_lvls, as needed, and rcu_num_lvls is never greater than
-> RCU_NUM_LVLS, so this should be safe.
-> 
-> So what am I missing here?
 
-rcu_num_lvls does get modified in rcu_init_geometry:
+Ingo,
 
-2942         /* Calculate the number of rcu_nodes at each level of the tree. */
-2943         for (i = 1; i <= MAX_RCU_LVLS; i++)
-2944                 if (n <= rcu_capacity[i]) {
-2945                         for (j = 0; j <= i; j++)
-2946                                 num_rcu_lvl[j] =
-2947                                         DIV_ROUND_UP(n, rcu_capacity[i - j]);
-2948                         rcu_num_lvls = i;
+Please pull the latest cputime adjustment cleanups that can be found at:
 
-And rcu_init_geometry gets called before rcu_init_one, so the compiler assumes
-the worst and issues a warning.
-So, in your opinion, what would be the best way to silence this warning?
+  git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git cputime/adjustment-v2
 
--- 
-Markus
+for you to fetch changes up to fa09205783d11cc05122ad6e4ce06074624b2c0c:
+
+  cputime: Comment cputime's adjusting code (2012-11-28 17:08:20 +0100)
+
+Note it's not related to my previous cputime pull request. Both are independant.
+
+Thanks.
+
+----------------------------------------------------------------
+Cputime cleanups on reader side:
+
+* Improve naming and code location
+
+* Consolidate adjustment code
+
+* Comment the adjustement code
+
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+
+----------------------------------------------------------------
+Frederic Weisbecker (4):
+      cputime: Move thread_group_cputime() to sched code
+      cputime: Rename thread_group_times to thread_group_cputime_adjusted
+      cputime: Consolidate cputime adjustment code
+      cputime: Comment cputime's adjusting code
+
+ fs/proc/array.c           |    4 +-
+ include/linux/sched.h     |   27 ++++++++++---
+ kernel/exit.c             |    4 +-
+ kernel/fork.c             |    2 +-
+ kernel/posix-cpu-timers.c |   24 -----------
+ kernel/sched/cputime.c    |   98 ++++++++++++++++++++++++++++++++-------------
+ kernel/sys.c              |    6 +--
+ 7 files changed, 99 insertions(+), 66 deletions(-)
