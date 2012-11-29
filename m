@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab2K2INw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 03:13:52 -0500
-Received: from smtp5-g21.free.fr ([212.27.42.5]:34715 "EHLO smtp5-g21.free.fr"
+	id S1754231Ab2K2IN4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 03:13:56 -0500
+Received: from smtp5-g21.free.fr ([212.27.42.5]:34935 "EHLO smtp5-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753274Ab2K2INt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 03:13:49 -0500
+	id S1754134Ab2K2INx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 03:13:53 -0500
 From: Corentin Chary <corentin.chary@gmail.com>
 To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: platform-driver-x86@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>,
+Cc: platform-driver-x86@vger.kernel.org,
         Corentin Chary <corentin.chary@gmail.com>,
         Matthew Garrett <mjg@redhat.com>, acpi4asus-user@lists.sourceforge.net,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 09/11] asus-laptop: Do not call HWRS on init
-Date: Thu, 29 Nov 2012 09:12:37 +0100
-Message-Id: <1354176759-630-10-git-send-email-corentin.chary@gmail.com>
+Subject: [PATCH 10/11] asus-wmi: always report brightness key events
+Date: Thu, 29 Nov 2012 09:12:38 +0100
+Message-Id: <1354176759-630-11-git-send-email-corentin.chary@gmail.com>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1354176759-630-1-git-send-email-corentin.chary@gmail.com>
 References: <1354176759-630-1-git-send-email-corentin.chary@gmail.com>
@@ -22,68 +22,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <ben@decadent.org.uk>
-
-Since commit 8871e99f89b7 ('asus-laptop: HRWS/HWRS typo'), module
-initialisation is very slow on the Asus UL30A.  The HWRS method takes
-about 12 seconds to run, and subsequent initialisation also seems to
-be delayed.  Since we don't really need the result, don't bother
-calling it on init.  Those who are curious can still get the result
-through the 'infos' device attribute.
-
-Update the comment about HWRS in show_infos().
-
-Reported-by: ryan <draziw+deb@gmail.com>
-References: http://bugs.debian.org/692436
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
 ---
- drivers/platform/x86/asus-laptop.c |   17 ++++-------------
- 1 files changed, 4 insertions(+), 13 deletions(-)
+ drivers/platform/x86/asus-nb-wmi.c |    2 ++
+ drivers/platform/x86/asus-wmi.c    |    8 ++++----
+ drivers/platform/x86/asus-wmi.h    |    2 ++
+ drivers/platform/x86/eeepc-wmi.c   |    2 ++
+ 4 files changed, 10 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/platform/x86/asus-laptop.c b/drivers/platform/x86/asus-laptop.c
-index 0d371d0..0fc4e30 100644
---- a/drivers/platform/x86/asus-laptop.c
-+++ b/drivers/platform/x86/asus-laptop.c
-@@ -883,8 +883,10 @@ static ssize_t show_infos(struct device *dev,
- 	/*
- 	 * The HWRS method return informations about the hardware.
- 	 * 0x80 bit is for WLAN, 0x100 for Bluetooth.
-+	 * 0x40 for WWAN, 0x10 for WIMAX.
- 	 * The significance of others is yet to be found.
--	 * If we don't find the method, we assume the device are present.
-+	 * We don't currently use this for device detection, and it
-+	 * takes several seconds to run on some systems.
- 	 */
- 	rv = acpi_evaluate_integer(asus->handle, "HWRS", NULL, &temp);
- 	if (!ACPI_FAILURE(rv))
-@@ -1705,7 +1707,7 @@ static int asus_laptop_get_info(struct asus_laptop *asus)
- {
- 	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
- 	union acpi_object *model = NULL;
--	unsigned long long bsts_result, hwrs_result;
-+	unsigned long long bsts_result;
- 	char *string = NULL;
- 	acpi_status status;
+diff --git a/drivers/platform/x86/asus-nb-wmi.c b/drivers/platform/x86/asus-nb-wmi.c
+index 9aa6642..210b5b8 100644
+--- a/drivers/platform/x86/asus-nb-wmi.c
++++ b/drivers/platform/x86/asus-nb-wmi.c
+@@ -190,6 +190,8 @@ static void asus_nb_wmi_quirks(struct asus_wmi_driver *driver)
+ }
  
-@@ -1767,17 +1769,6 @@ static int asus_laptop_get_info(struct asus_laptop *asus)
- 	if (*string)
- 		pr_notice("  %s model detected\n", string);
+ static const struct key_entry asus_nb_wmi_keymap[] = {
++	{ KE_KEY, ASUS_WMI_BRN_DOWN, { KEY_BRIGHTNESSDOWN } },
++	{ KE_KEY, ASUS_WMI_BRN_UP, { KEY_BRIGHTNESSUP } },
+ 	{ KE_KEY, 0x30, { KEY_VOLUMEUP } },
+ 	{ KE_KEY, 0x31, { KEY_VOLUMEDOWN } },
+ 	{ KE_KEY, 0x32, { KEY_MUTE } },
+diff --git a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
+index 6327a1b..c11b242 100644
+--- a/drivers/platform/x86/asus-wmi.c
++++ b/drivers/platform/x86/asus-wmi.c
+@@ -1386,16 +1386,16 @@ static void asus_wmi_notify(u32 value, void *context)
+ 	}
  
--	/*
--	 * The HWRS method return informations about the hardware.
--	 * 0x80 bit is for WLAN, 0x100 for Bluetooth,
--	 * 0x40 for WWAN, 0x10 for WIMAX.
--	 * The significance of others is yet to be found.
--	 */
--	status =
--	    acpi_evaluate_integer(asus->handle, "HWRS", NULL, &hwrs_result);
--	if (!ACPI_FAILURE(status))
--		pr_notice("  HWRS returned %x", (int)hwrs_result);
--
- 	if (!acpi_check_handle(asus->handle, METHOD_WL_STATUS, NULL))
- 		asus->have_rsts = true;
+ 	if (code >= NOTIFY_BRNUP_MIN && code <= NOTIFY_BRNUP_MAX)
+-		code = NOTIFY_BRNUP_MIN;
++		code = ASUS_WMI_BRN_UP;
+ 	else if (code >= NOTIFY_BRNDOWN_MIN &&
+ 		 code <= NOTIFY_BRNDOWN_MAX)
+-		code = NOTIFY_BRNDOWN_MIN;
++		code = ASUS_WMI_BRN_DOWN;
  
+-	if (code == NOTIFY_BRNUP_MIN || code == NOTIFY_BRNDOWN_MIN) {
++	if (code == ASUS_WMI_BRN_DOWN || code == ASUS_WMI_BRN_UP) {
+ 		if (!acpi_video_backlight_support()) {
+ 			asus_wmi_backlight_notify(asus, orig_code);
++			goto exit;
+ 		}
+-		goto exit;
+ 	}
+ 
+ 	if (is_display_toggle(code) &&
+diff --git a/drivers/platform/x86/asus-wmi.h b/drivers/platform/x86/asus-wmi.h
+index 776524c..4da4c8b 100644
+--- a/drivers/platform/x86/asus-wmi.h
++++ b/drivers/platform/x86/asus-wmi.h
+@@ -30,6 +30,8 @@
+ #include <linux/platform_device.h>
+ 
+ #define ASUS_WMI_KEY_IGNORE (-1)
++#define ASUS_WMI_BRN_DOWN	0x20
++#define ASUS_WMI_BRN_UP		0x2f
+ 
+ struct module;
+ struct key_entry;
+diff --git a/drivers/platform/x86/eeepc-wmi.c b/drivers/platform/x86/eeepc-wmi.c
+index 60cb76a..af67e6e 100644
+--- a/drivers/platform/x86/eeepc-wmi.c
++++ b/drivers/platform/x86/eeepc-wmi.c
+@@ -63,6 +63,8 @@ MODULE_PARM_DESC(hotplug_wireless,
+ #define HOME_RELEASE	0xe5
+ 
+ static const struct key_entry eeepc_wmi_keymap[] = {
++	{ KE_KEY, ASUS_WMI_BRN_DOWN, { KEY_BRIGHTNESSDOWN } },
++	{ KE_KEY, ASUS_WMI_BRN_UP, { KEY_BRIGHTNESSUP } },
+ 	/* Sleep already handled via generic ACPI code */
+ 	{ KE_KEY, 0x30, { KEY_VOLUMEUP } },
+ 	{ KE_KEY, 0x31, { KEY_VOLUMEDOWN } },
 -- 
 1.7.8.6
 
