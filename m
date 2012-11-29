@@ -1,111 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755545Ab2K2Vb5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 16:31:57 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:38129 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754879Ab2K2Vb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 16:31:56 -0500
-Date: Thu, 29 Nov 2012 22:31:51 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Mario Gzuk <mariogzuk@technikz.de>
-Subject: Re: [PATCH 8/8] x86, cleanups: Simplify sync_core() in the case of
- no CPUID
-Message-ID: <20121129213151.GI30789@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"H. Peter Anvin" <hpa@linux.intel.com>,
-	"H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Mario Gzuk <mariogzuk@technikz.de>
-References: <1354132230-21854-1-git-send-email-hpa@linux.intel.com>
- <1354132230-21854-9-git-send-email-hpa@linux.intel.com>
- <20121128204158.GC14635@liondog.tnic>
- <50B6A8F3.5000407@zytor.com>
- <20121129091317.GA21084@liondog.tnic>
- <50B7CE4C.80201@linux.intel.com>
- <20121129211856.GH30789@liondog.tnic>
- <50B7D180.9090605@linux.intel.com>
+	id S1755550Ab2K2VdS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 16:33:18 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:56648 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754879Ab2K2VdR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 16:33:17 -0500
+Date: Thu, 29 Nov 2012 21:33:16 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Patrick McLean <patrickm@gaikai.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Regression with initramfs and nfsroot (appears to be in the
+ dcache)
+Message-ID: <20121129213316.GU4939@ZenIV.linux.org.uk>
+References: <CAE2NFgU+4QDcLaVE5dKDvZCxey7qEf7FAbYNjNmcjVU=HLhF=A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50B7D180.9090605@linux.intel.com>
+In-Reply-To: <CAE2NFgU+4QDcLaVE5dKDvZCxey7qEf7FAbYNjNmcjVU=HLhF=A@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 01:20:00PM -0800, H. Peter Anvin wrote:
-> On 11/29/2012 01:18 PM, Borislav Petkov wrote:
-> > On Thu, Nov 29, 2012 at 01:06:20PM -0800, H. Peter Anvin wrote:
-> >> It doesn't matter in that context, as the surrounding MSR references
-> >> have barriers, but what I'm refering to is the "memory" barrier.
-> > 
-> > Ok, but the only difference between the two versions is this line:
-> > 
-> >         movl    %esi, %ecx      # tmp144, ecx
-> > 
-> > coming from the cpuid_eax() function. So the memory barrier is the same
-> > and in the right place in both cases.
-> > 
-> 
-> In the case of that one call site, yes, because the MSR references
-> include the barrier.  Other sites, current or future, may not have the
-> same property.
+On Thu, Nov 29, 2012 at 11:16:59AM -0800, Patrick McLean wrote:
+> With 3.6-rc1 and up, when using a (dracut) initramfs with a read-only
+> nfs root, all accesses to /proc. /sys and /dev return EBUSY.
 
-Sorry, but I think we're misunderstanding each other in some way, so let
-me restart. Here's the version I'm suggesting:
+See "[PATCH] Revert "__d_unalias() should refuse to move mountpoints"
+thread.  If you have a convenient reproducer, could you check if
+the fixes the breakage?  If so, we'll need to look into false negatives
+from nfs_same_file() in there...
 
-static inline void sync_core(void)
-{
-	int tmp;
-
-#ifdef CONFIG_M486
-	/*
-	 * Do a CPUID if available, otherwise do a jump.  The jump
-	 * can conveniently enough be the jump around CPUID.
-	 */
-	asm volatile("cmpl %2,%1\n\t"
-		     "jl 1f\n\t"
-		     "cpuid\n"
-		     "1:"
-		     : "=a" (tmp)
-		     : "rm" (boot_cpu_data.cpuid_level), "ri" (0), "0" (1)
-		     : "ebx", "ecx", "edx", "memory");
-#else
-	/*
-	 * CPUID is a barrier to speculative execution. Prefetched instructions
-	 * are automatically invalidated when modified.
-	 */
-	tmp = cpuid_eax(1);
-
-	/*
-	asm volatile("cpuid" : "=a" (tmp) : "0" (1)
-		     : "ebx", "ecx", "edx", "memory");
-	*/
-#endif
-}
-
-with the last asm volatile("cpuid"...) commented out. The only
-non-trivial difference between the two is the zeroing out of %ecx when
-looking at the resulting asm.
-
-Now, cpuid_eax is actually native_cpuid() which has the memory barrier
-character by having an "asm volatile" in there too and it too clobbers
-memory.
-
-Are you saying that there's a semantic difference between the naked
-"asm volatile" and the compiler inlining a couple of inline functions
-resulting in the same "asm volatile" memory barrier for it?
-
-Hmm, strange.
-
--- 
-Regards/Gruss,
-    Boris.
+diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+index ce8cb92..55436f5 100644
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -450,7 +450,10 @@ void nfs_prime_dcache(struct dentry *parent, struct nfs_entry *entry)
+ 			nfs_refresh_inode(dentry->d_inode, entry->fattr);
+ 			goto out;
+ 		} else {
+-			d_drop(dentry);
++			if (d_invalidate(dentry) != 0) {
++				WARN_ON(1);
++				goto out;
++			}
+ 			dput(dentry);
+ 		}
+ 	}
