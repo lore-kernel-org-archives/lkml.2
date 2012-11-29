@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680Ab2K2SpM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 13:45:12 -0500
-Received: from mga03.intel.com ([143.182.124.21]:9515 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752689Ab2K2SpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 13:45:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,186,1355126400"; 
-   d="scan'208";a="174095522"
-From: Andi Kleen <andi@firstfloor.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, zab@redhat.com, bcrl@kvack.org,
-        jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk
-Subject: Re: [PATCH 22/25] Generic dynamic per cpu refcounting
-References: <1354121029-1376-1-git-send-email-koverstreet@google.com>
-	<1354121029-1376-23-git-send-email-koverstreet@google.com>
-Date: Thu, 29 Nov 2012 10:45:04 -0800
-In-Reply-To: <1354121029-1376-23-git-send-email-koverstreet@google.com> (Kent
-	Overstreet's message of "Wed, 28 Nov 2012 08:43:46 -0800")
-Message-ID: <m28v9kgsen.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1754773Ab2K2Sq3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 13:46:29 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:50587 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754704Ab2K2Sq1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 13:46:27 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <Pine.LNX.4.64.1211291319370.25003@file.rdu.redhat.com>
+References: <CAAJw_ZvUqRmCCQ5-2PdFPRyfdzZMuphGU=hgAjUOHGk=n9Mheg@mail.gmail.com>
+ <CAAJw_ZuJXnAz1ukBwQa3xNbQaL1KUBSrbQMK2hn-7D6Ar1p3fQ@mail.gmail.com>
+ <50B46E05.70906@kernel.dk> <CAAJw_ZsYuLCwCTc6U=ELO_PvyjnVKQdkPke2enfzm6zOeWAqjA@mail.gmail.com>
+ <50B4B313.3030707@kernel.dk> <Pine.LNX.4.64.1211272252260.18338@file.rdu.redhat.com>
+ <50B5CC5A.8060607@kernel.dk> <Pine.LNX.4.64.1211281222410.11599@file.rdu.redhat.com>
+ <CA+55aFx4zYnEsUyGJurBjB0XZ0AgmyKqW-+KWVDvma3w6csnHQ@mail.gmail.com>
+ <20121128194314.GF4939@ZenIV.linux.org.uk> <Pine.LNX.4.64.1211281630150.5283@file.rdu.redhat.com>
+ <CA+55aFziCW_ywZACGoVyNSgy8mToAGhSbdo0VoUAaGvgSb2XxQ@mail.gmail.com> <Pine.LNX.4.64.1211291319370.25003@file.rdu.redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 29 Nov 2012 10:46:06 -0800
+X-Google-Sender-Auth: i3GxHNEhkCjWeB826pPJ2S-t5v8
+Message-ID: <CA+55aFzpKH2FkU+9hdhZ5L9n8Mqr1vNO3Tdjmu1n+WmcHG1sNg@mail.gmail.com>
+Subject: Re: [PATCH v2] Do a proper locking for mmap and block size change
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
+        Jeff Chua <jeff.chua.linux@gmail.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kent Overstreet <koverstreet@google.com> writes:
+On Thu, Nov 29, 2012 at 10:23 AM, Mikulas Patocka <mpatocka@redhat.com> wrote:
+>
+>
+> If you remove that percpu rw lock, you also need to rewrite direct i/o
+> code.
+>
+> In theory, block device direct i/o doesn't need buffer block size at all.
+> But in practice, it shares a lot of code with filesystem direct i/o, it
+> reads the block size multiple times and it crashes if it changes.
 
-> This implements a refcount with similar semantics to
-> atomic_get()/atomic_dec_and_test(), that starts out as just an atomic_t
-> but dynamically switches to per cpu refcounting when the rate of
-> gets/puts becomes too high.
+If it's a filesystem, then the size will never change while it is mounted.
 
-This will only work if you put on the same CPU as you get, right?
-In this case I would rather use RCU. It's clearly unusable for anything 
-blocking (or not get_cpu) Normally RCU already handles the "ref count for short non
-blocking case"
+So only the direct-block-device case needs to be worried about, no?
 
-Is that really true for AIO? It seems dubious.
+And that uses __generic_file_aio_write() and friends, which in turn
+use the readpage/writepage functions.
 
--Andi
+So for block devices, it should be sufficient to make
+readpage/writepage (with the writing obviously having all the
+"write_begin/write_end/fullpage" variants) be safe as far as I can
+see.
 
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+                 Linus
