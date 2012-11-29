@@ -1,126 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554Ab2K2UZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 15:25:26 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:36393 "EHLO hydra.sisk.pl"
+	id S1754130Ab2K2UZf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 15:25:35 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:32810 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751734Ab2K2UZY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 15:25:24 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: linux-acpi@vger.kernel.org, Hanjun Guo <guohanjun@huawei.com>,
-        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com, lenb@kernel.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Tang Chen <tangchen@cn.fujitsu.com>
-Subject: Re: [RFC PATCH v3 0/3] acpi: Introduce prepare_remove device operation
-Date: Thu, 29 Nov 2012 21:30:09 +0100
-Message-ID: <1553400.FCdSlj7sbe@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <1354208592.26955.429.camel@misato.fc.hp.com>
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com> <75241306.UQIr1RW8Qh@vostro.rjw.lan> <1354208592.26955.429.camel@misato.fc.hp.com>
+	id S1753766Ab2K2UZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 15:25:32 -0500
+Date: Thu, 29 Nov 2012 12:25:22 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: kernel/rcutree.c:2850:13: warning: array subscript is above
+ array bounds
+Message-ID: <20121129202522.GB2474@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20121129134752.GB219@x4>
+ <20121129170241.GT2474@linux.vnet.ibm.com>
+ <20121129174358.GA248@x4>
+ <20121129181013.GW2474@linux.vnet.ibm.com>
+ <20121129182254.GB248@x4>
+ <20121129191933.GX2474@linux.vnet.ibm.com>
+ <20121129200321.GC248@x4>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20121129200321.GC248@x4>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12112920-5806-0000-0000-00001C59DE00
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 29, 2012 10:03:12 AM Toshi Kani wrote:
-> On Thu, 2012-11-29 at 11:15 +0100, Rafael J. Wysocki wrote:
-> > On Wednesday, November 28, 2012 11:41:36 AM Toshi Kani wrote:
-> > > On Wed, 2012-11-28 at 19:05 +0800, Hanjun Guo wrote:
-> > > > On 2012/11/24 1:50, Vasilis Liaskovitis wrote:
-> > > > > As discussed in https://patchwork.kernel.org/patch/1581581/
-> > > > > the driver core remove function needs to always succeed. This means we need
-> > > > > to know that the device can be successfully removed before acpi_bus_trim / 
-> > > > > acpi_bus_hot_remove_device are called. This can cause panics when OSPM-initiated
-> > > > > or SCI-initiated eject of memory devices fail e.g with:
-> > > > > echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
-> > > > > 
-> > > > > since the ACPI core goes ahead and ejects the device regardless of whether the
-> > > > > the memory is still in use or not.
-> > > > > 
-> > > > > For this reason a new acpi_device operation called prepare_remove is introduced.
-> > > > > This operation should be registered for acpi devices whose removal (from kernel
-> > > > > perspective) can fail.  Memory devices fall in this category.
-> > > > > 
-> > > > > acpi_bus_remove() is changed to handle removal in 2 steps:
-> > > > > - preparation for removal i.e. perform part of removal that can fail. Should
-> > > > >   succeed for device and all its children.
-> > > > > - if above step was successfull, proceed to actual device removal
+On Thu, Nov 29, 2012 at 09:03:21PM +0100, Markus Trippelsdorf wrote:
+> On 2012.11.29 at 11:19 -0800, Paul E. McKenney wrote:
+> > On Thu, Nov 29, 2012 at 07:22:54PM +0100, Markus Trippelsdorf wrote:
+> > > On 2012.11.29 at 10:10 -0800, Paul E. McKenney wrote:
+> > > > On Thu, Nov 29, 2012 at 06:43:58PM +0100, Markus Trippelsdorf wrote:
+> > > > > On 2012.11.29 at 09:02 -0800, Paul E. McKenney wrote:
+> > > > > > On Thu, Nov 29, 2012 at 02:47:52PM +0100, Markus Trippelsdorf wrote:
+> > > > > > > With gcc-4.8 I get:
+> > > > > > > 
+> > > > > > >   CC      kernel/rcutree.o
+> > > > > > >   kernel/rcutree.c: In function ‘rcu_init_one’:
+> > > > > > >   kernel/rcutree.c:2850:13: warning: array subscript is above array bounds [-Warray-bounds]
+> > > > > > >      rsp->level[i] = rsp->level[i - 1] + rsp->levelcnt[i - 1];
+> > > > > > >                   ^
+> > > > > > > 2849    for (i = 1; i < rcu_num_lvls; i++)
+> > > > > > > 2850           rsp->level[i] = rsp->level[i - 1] + rsp->levelcnt[i - 1];
+> > > > > > > 
+> > > > > > > At first I thought that the warning was bogus, but rcu_num_lvls isn't static
+> > > > > > > and gets modified prior to the for loop.
+> > > > > > 
+> > > > > So, in your opinion, what would be the best way to silence this warning?
 > > > > 
-> > > > Hi Vasilis,
-> > > > We met the same problem when we doing computer node hotplug, It is a good idea
-> > > > to introduce prepare_remove before actual device removal.
-> > > > 
-> > > > I think we could do more in prepare_remove, such as rollback. In most cases, we can
-> > > > offline most of memory sections except kernel used pages now, should we rollback
-> > > > and online the memory sections when prepare_remove failed ?
+> > > > Good question.  Are you saying that if the compiler cannot prove that
+> > > > the index is in bounds, it is going to throw a warning?  
 > > > 
-> > > I think hot-plug operation should have all-or-nothing semantics.  That
-> > > is, an operation should either complete successfully, or rollback to the
-> > > original state.
-> > 
-> > That's correct.
-> > 
-> > > > As you may know, the ACPI based hotplug framework we are working on already addressed
-> > > > this problem, and the way we slove this problem is a bit like yours.
-> > > > 
-> > > > We introduce hp_ops in struct acpi_device_ops:
-> > > > struct acpi_device_ops {
-> > > > 	acpi_op_add add;
-> > > > 	acpi_op_remove remove;
-> > > > 	acpi_op_start start;
-> > > > 	acpi_op_bind bind;
-> > > > 	acpi_op_unbind unbind;
-> > > > 	acpi_op_notify notify;
-> > > > #ifdef	CONFIG_ACPI_HOTPLUG
-> > > > 	struct acpihp_dev_ops *hp_ops;
-> > > > #endif	/* CONFIG_ACPI_HOTPLUG */
-> > > > };
-> > > > 
-> > > > in hp_ops, we divide the prepare_remove into six small steps, that is:
-> > > > 1) pre_release(): optional step to mark device going to be removed/busy
-> > > > 2) release(): reclaim device from running system
-> > > > 3) post_release(): rollback if cancelled by user or error happened
-> > > > 4) pre_unconfigure(): optional step to solve possible dependency issue
-> > > > 5) unconfigure(): remove devices from running system
-> > > > 6) post_unconfigure(): free resources used by devices
-> > > > 
-> > > > In this way, we can easily rollback if error happens.
-> > > > How do you think of this solution, any suggestion ? I think we can achieve
-> > > > a better way for sharing ideas. :)
+> > > Yes, it does seem to be the case. See also my gcc bug report (closed as
+> > > invalid): http://gcc.gnu.org/bugzilla/show_bug.cgi?id=55529
 > > > 
-> > > Yes, sharing idea is good. :)  I do not know if we need all 6 steps (I
-> > > have not looked at all your changes yet..), but in my mind, a hot-plug
-> > > operation should be composed with the following 3 phases.
+> > > > If that is the case, perhaps telling the compiler to cool it via the
+> > > > command line would be best.
+> > > > Or is this really one of a very few places in the kernel where the
+> > > > compiler is complaining?
 > > > 
-> > > 1. Validate phase - Verify if the request is a supported operation.  All
-> > > known restrictions are verified at this phase.  For instance, if a
-> > > hot-remove request involves kernel memory, it is failed in this phase.
-> > > Since this phase makes no change, no rollback is necessary to fail.  
+> > > Yes. With my (admittedly minimal) config this is only place. 
 > > 
-> > Actually, we can't do it this way, because the conditions may change between
-> > the check and the execution.  So the first phase needs to involve execution
-> > to some extent, although only as far as it remains reversible.
+> > Hmmmm...  In that case...
+> > 
+> > Given that this is initialization code that is far from any fastpath,
+> > could you try putting something like this at the beginning of
+> > rcu_init_one()?
+> > 
+> > 	if (rcu_num_lvls > RCU_NUM_LVLS)
+> > 		panic("rcu_num_lvls overflow");
+> > 
+> > If the compiler doesn't know that panic() never returns (despite the
+> > __noreturn), you could add a "return" after the panic().
+> > 
+> > Does that help?
 > 
-> For memory hot-remove, we can check if the target memory ranges are
-> within ZONE_MOVABLE.  We should not allow user to change this setup
-> during hot-remove operation.  Other things may be to check if a target
-> node contains cpu0 (until it is supported), the console UART (assuming
-> we cannot delete it), etc.  We should avoid doing rollback as much as we
-> can.
+> Yes. This fixes the issue. Many thanks.
+> 
+> (Perhaps not surprisingly the warning never occurred for
+> CONFIG_NR_CPUS>64.
+> 
+> I've also built a allyesconfig config and there was no -Warray-bounds
+> warning at all.)
 
-Yes, we can make some checks upfront as an optimization and fail early if
-the conditions are not met, but for correctness we need to repeat those
-checks later anyway.  Once we've decided to go for the eject, the conditions
-must hold whatever happens.
+OK, I am applying this change with your Reported-by.  But please
+understand that if something like this shows up in a fastpath, the
+compiler will likely need to be told to keep its array-bounds opinions
+to itself.
 
-Thanks,
-Rafael
+							Thanx, Paul
 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
