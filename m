@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275Ab2K2Uqq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 15:46:46 -0500
+	id S1754913Ab2K2Upi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 15:45:38 -0500
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:50270 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754646Ab2K2Upj (ORCPT
+	with ESMTP id S1754646Ab2K2Upe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 15:45:39 -0500
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: linux-kernel@vger.kernel.org, tglx@linutronix.de
-Cc: backports@vger.kernel.org, alexander.stein@systec-electronic.com,
-        brudley@broadcom.com, rvossen@broadcom.com, arend@broadcom.com,
-        frankyl@broadcom.com, kanyan@broadcom.com,
-        linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
-        kyungmin.park@samsung.com, s.nawrocki@samsung.com,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
-        daniel.vetter@ffwll.ch, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, srinidhi.kasagar@stericsson.com,
-        linus.walleij@linaro.org,
-        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Subject: [PATCH 4/6] s5p-jpeg: convert struct spinlock to spinlock_t
-Date: Thu, 29 Nov 2012 12:45:08 -0800
-Message-Id: <1354221910-22493-5-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1354221910-22493-1-git-send-email-mcgrof@do-not-panic.com>
-References: <1354221910-22493-1-git-send-email-mcgrof@do-not-panic.com>
+	Thu, 29 Nov 2012 15:45:34 -0500
+Date: Thu, 29 Nov 2012 12:45:31 -0800
+From: Kent Overstreet <koverstreet@google.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Benjamin LaHaise <bcrl@kvack.org>, linux-kernel@vger.kernel.org,
+        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org, zab@redhat.com,
+        jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk
+Subject: Re: [PATCH 22/25] Generic dynamic per cpu refcounting
+Message-ID: <20121129204531.GK15094@google.com>
+References: <1354121029-1376-23-git-send-email-koverstreet@google.com>
+ <m28v9kgsen.fsf@firstfloor.org>
+ <20121129185720.GE15094@google.com>
+ <20121129185953.GW16230@one.firstfloor.org>
+ <20121129191214.GG15094@google.com>
+ <20121129192003.GX16230@one.firstfloor.org>
+ <20121129192925.GH15094@google.com>
+ <20121129193452.GI19042@kvack.org>
+ <20121129202231.GJ15094@google.com>
+ <m2fw3sf8eu.fsf@firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m2fw3sf8eu.fsf@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+On Thu, Nov 29, 2012 at 12:42:17PM -0800, Andi Kleen wrote:
+> Kent Overstreet <koverstreet@google.com> writes:
+> 
+> > On Thu, Nov 29, 2012 at 02:34:52PM -0500, Benjamin LaHaise wrote:
+> >> On Thu, Nov 29, 2012 at 11:29:25AM -0800, Kent Overstreet wrote:
+> >> > There's some kind of symmetry going on here, and if I'd been awake more
+> >> > in college I could probably say exactly why it works, but it does.
+> >> 
+> >> I think the catch is that using only a 32 bit counter is something the 
+> >> user could arbitrarily control the sum of all parts.  I think a 64 bit 
+> >> counter may be required to ensure no overflow occurs.  Otherwise, an 
+> >> overflow could result in a premature free when there are still 2^32 
+> >> objects active thanks to a malicious user (possible on systems with lots 
+> >> of memory these days -- remote, but possible).
+> >
+> > That's no different from regular atomic_t - but you're right, we
+> > should be using size_t for anything userspace can manipulate.
+> 
+> The regular atomic_t is limited in ways that you are not.
+> See my original mail.
 
-spinlock_t should always be used.
-
-Could not get this to build with allmodconfig:
-
-mcgrof@frijol ~/linux-next (git::(no branch))$ make C=1 M=drivers/media/platform/s5p-jpeg
-
-  WARNING: Symbol version dump /home/mcgrof/linux-next/Module.symvers
-           is missing; modules will have no dependencies and modversions.
-
-  Building modules, stage 2.
-  MODPOST 0 modules
-
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-media@vger.kernel.org
-Reported-by: Hauke Mehrtens <hauke@hauke-m.de>
-Signed-off-by: Luis R. Rodriguez <mcgrof@do-not-panic.com>
----
- drivers/media/platform/s5p-jpeg/jpeg-core.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/media/platform/s5p-jpeg/jpeg-core.h b/drivers/media/platform/s5p-jpeg/jpeg-core.h
-index 022b9b9..8a4013e 100644
---- a/drivers/media/platform/s5p-jpeg/jpeg-core.h
-+++ b/drivers/media/platform/s5p-jpeg/jpeg-core.h
-@@ -62,7 +62,7 @@
-  */
- struct s5p_jpeg {
- 	struct mutex		lock;
--	struct spinlock		slock;
-+	spinlock_t		slock;
- 
- 	struct v4l2_device	v4l2_dev;
- 	struct video_device	*vfd_encoder;
--- 
-1.7.10.4
-
+I don't follow, can you explain?
