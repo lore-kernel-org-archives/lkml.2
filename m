@@ -1,49 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841Ab2K2J00 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 04:26:26 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:60605 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751553Ab2K2J0Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 04:26:24 -0500
-Date: Thu, 29 Nov 2012 10:26:21 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Ian Kumlien <pomac@vapor.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] NULL pointer dereference in 3.7-rc7 (syscall_trace_enter)
-Message-ID: <20121129092621.GA21100@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Ian Kumlien <pomac@vapor.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1354144802.5396.3.camel@pi>
+	id S1752940Ab2K2J1J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 04:27:09 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:35407 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751865Ab2K2J1H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 04:27:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1354144802.5396.3.camel@pi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121129092308.GT2013@gmail.com>
+References: <d1f012d7bb2835f696fc100073f2eb16d9f6204d.1354128258.git.viresh.kumar@linaro.org>
+	<eb65ded18560f902b0713d9df57c43e07704b5ec.1354128258.git.viresh.kumar@linaro.org>
+	<20121129092308.GT2013@gmail.com>
+Date: Thu, 29 Nov 2012 14:57:05 +0530
+Message-ID: <CAKohpomw7yn-wj==qscuQ5j2FGv=Ks3RU9py=NWUnnT0_cK1aA@mail.gmail.com>
+Subject: Re: [PATCH V4 Resend 3/3] mfd: stmpe: Update DT support in stmpe driver
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: sameo@linux.intel.com, grant.likely@secretlab.ca,
+        rabin.vincent@stericsson.com, shiraz.hashim@st.com,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, linus.walleij@linaro.org,
+        Vipul Kumar Samar <vipulkumar.samar@st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 12:20:02AM +0100, Ian Kumlien wrote:
-> Hi, 
-> 
-> Due to unexplained dns problems, I'll be using google plus to post the
-> photo of the bug output.
-> 
-> https://plus.google.com/photos/110698868656495230656/albums/5816005854482735041
-> 
-> I'm sorry but my knowledge is limited and current caffeine level is low,
-> so I'm offloading to someone who has these things handled ;)
+On 29 November 2012 14:53, Lee Jones <lee.jones@linaro.org> wrote:
+>> From: Vipul Kumar Samar <vipulkumar.samar@st.com>
+>> +     /*
+>> +      * Distinct names of same cell-type within multiple instances of stmpe
+>> +      * will be guaranteed by DT.
+>> +      */
+>> +     pdata->id = -1;
+>
+> And what if we're not booting with DT?
 
-Hmm, this looks strange, were you doing any system tracing or similar?
-How reproducible is this? If you can reliably reproduce it, can you
-make a much more readable screen photo of it so that one can read all
-register values and the "Code:" section in the backtrace is complete and
-also readable?
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
+Then it is responsibility of code creating platform data for stmpe to fill
+it appropriately. i.e. If there is only one instance of stmpe on board, then
+better pass it as -1, else start counting.
