@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755061Ab2K2WM7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 17:12:59 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:35075 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754205Ab2K2WM6 (ORCPT
+	id S1755125Ab2K2WQq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 17:16:46 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:38344 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753766Ab2K2WQp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 17:12:58 -0500
-Date: Thu, 29 Nov 2012 14:12:48 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: linux-next: manual merge of the rcu tree with Linus' tree
-Message-ID: <20121129221248.GF2474@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20121129140651.33881363cc4870a87cf84adc@canb.auug.org.au>
+	Thu, 29 Nov 2012 17:16:45 -0500
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1/ACdcCZsHACb7jA5hugxVCPdNDBiGejoHP6YESz8
+	tePBH2SveV+D2C
+From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
+To: Kent Yoder <key@linux.vnet.ibm.com>
+Subject: Re: [PATCH v3] char/tpm: Use true and false for bools
+Date: Thu, 29 Nov 2012 23:16:55 +0100
+User-Agent: KMail/1.13.7 (Linux/3.6.7; KDE/4.8.5; x86_64; ; )
+Cc: Joe Perches <joe@perches.com>, Rajiv Andrade <mail@srajiv.net>,
+        Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>
+References: <20121129160627.GB15399@ennui.austin.ibm.com> <1354226092.1700.8.camel@joe-AO722> <20121129220811.GA32514@ennui.austin.ibm.com>
+In-Reply-To: <20121129220811.GA32514@ennui.austin.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121129140651.33881363cc4870a87cf84adc@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12112922-7606-0000-0000-000005ED4314
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201211292316.55305.PeterHuewe@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 02:06:51PM +1100, Stephen Rothwell wrote:
-> Hi Paul,
+Am Donnerstag, 29. November 2012, 23:08:11 schrieb Kent Yoder:
+> On Thu, Nov 29, 2012 at 01:54:52PM -0800, Joe Perches wrote:
+> > > 
+> > > -		itpm = (probe == 0) ? 0 : 1;
+> > > +		itpm = !!probe;
+> > 
+> > Even more trivia:
+> > 
+> > This !! isn't necessary as ints assigned to bool are converted
+> > by the compiler to 0 or 1.
 > 
-> Today's linux-next merge of the rcu tree got a conflict in
-> arch/x86/kernel/ptrace.c between commit cb57a2b4cff7 ("x86-32: Export
-> kernel_stack_pointer() for modules") from Linus' tree and commit
-> 98dbec158343 ("context_tracking: New context tracking susbsystem") from
-> the rcu tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
+>   Good to know, thanks Joe!
 
-Looks good, thank you!
+So v2 is fine.
 
-							Thanx, Paul
-
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc arch/x86/kernel/ptrace.c
-> index 974b67e,65b88a5..0000000
-> --- a/arch/x86/kernel/ptrace.c
-> +++ b/arch/x86/kernel/ptrace.c
-> @@@ -21,8 -21,7 +21,8 @@@
->   #include <linux/signal.h>
->   #include <linux/perf_event.h>
->   #include <linux/hw_breakpoint.h>
-> - #include <linux/rcupdate.h>
->  +#include <linux/module.h>
-> + #include <linux/context_tracking.h>
->   
->   #include <asm/uaccess.h>
->   #include <asm/pgtable.h>
-
-
+Peter
