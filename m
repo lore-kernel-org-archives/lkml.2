@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754972Ab2K2W21 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 17:28:27 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:53177 "EHLO mail.zytor.com"
+	id S1755227Ab2K2W3Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 17:29:16 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:53184 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754646Ab2K2W2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 17:28:25 -0500
-Message-ID: <50B7E146.4060907@zytor.com>
-Date: Thu, 29 Nov 2012 14:27:18 -0800
+	id S1754823Ab2K2W3P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 17:29:15 -0500
+Message-ID: <50B7E17A.2020609@zytor.com>
+Date: Thu, 29 Nov 2012 14:28:10 -0800
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
@@ -28,16 +28,20 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 11/29/2012 01:18 PM, Andi Kleen wrote:
 > 
-> Can you quote it from the manual? As I understand volatile as usual
-> is not clearly defined. 
+>> Either way, this implementatin technique was used for the MMX/SSE
+>> implementations without any problems for 9 years now.
 > 
-> gcc has a lot of optimization passes and volatile bugs are common.
+> It's still wrong.
+> 
+> Lying to the compiler usually bites you at some point.
 > 
 
-I talked it over with H.J. and we walked through the code.  The
-documentation is lacking, of course, as is common with gcc.
+It's not lying to the compiler.  It is telling the compiler "do
+something that you have no way of knowing about".
 
-However, that piece was pretty clear.
+It would be lying to the compiler if the compiler was allowed to touch
+the FPU state, but it's not.
 
 	-hpa
+
 
