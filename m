@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752419Ab2K2GZq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 01:25:46 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:58039 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751692Ab2K2GZo (ORCPT
+	id S1751752Ab2K2G0j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 01:26:39 -0500
+Received: from intranet.asianux.com ([58.214.24.6]:8592 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750781Ab2K2G0h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 01:25:44 -0500
-Date: Thu, 29 Nov 2012 17:25:39 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build warning after merge of the final tree (sound-asoc
- tree related)
-Message-Id: <20121129172539.c2985a1ea7ddebc8dec28a50@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__29_Nov_2012_17_25_39_+1100_w/X/pF2fRnfbsJkG"
+	Thu, 29 Nov 2012 01:26:37 -0500
+X-Greylist: delayed 1769 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 Nov 2012 01:26:37 EST
+X-Spam-Score: -100.8
+Message-ID: <50B70051.4000206@asianux.com>
+Date: Thu, 29 Nov 2012 14:27:29 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Greg KH <gregkh@linuxfoundation.org>, Jiri Slaby <jslaby@suse.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH] MAINTAINERS: TTY - Add linux-serial mailing list
+References: <50B6E751.9000000@asianux.com> <20121129051335.GA4375@kroah.com>  <50B6F967.3050000@asianux.com> <1354169679.29762.28.camel@joe-AO722>
+In-Reply-To: <1354169679.29762.28.camel@joe-AO722>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__29_Nov_2012_17_25_39_+1100_w/X/pF2fRnfbsJkG
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+于 2012年11月29日 14:14, Joe Perches 写道:
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  MAINTAINERS |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index afc0b27..255dafb 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -7658,6 +7658,7 @@ K:	^Subject:.*(?i)trivial
+>  TTY LAYER
+>  M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>  M:	Jiri Slaby <jslaby@suse.cz>
+> +L:	linux-serial@vger.kernel.org
+>  S:	Supported
+>  T:	git git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git
+>  F:	drivers/tty/
+> 
+> 
+> 
+> 
 
-Hi all,
+  thank you very much.
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) produced this warning:
 
-sound/soc/codecs/wm_adsp.c: In function 'wm_adsp2_event':
-sound/soc/codecs/wm_adsp.c:556:4: warning: suggest parentheses around compa=
-rison in operand of '&' [-Wparentheses]
+-- 
+Chen Gang
 
-Introduced by commit 973838a030d2 ("ASoC: wm_adsp: Enable DVFS for ADSP2").
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__29_Nov_2012_17_25_39_+1100_w/X/pF2fRnfbsJkG
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQtv/jAAoJEECxmPOUX5FEwMEQAIaP6A7sdbl3jaxti+b/3e3p
-6IDyeCZp85Evcu9vvpNxFtEqr/3GjKlWROgTc8fbwIgZ7Cjvt4ie1We/ffNSaw3I
-qzJwBjMKKiYFBwfMF2Hz4zt0mjXr45WVGFg0IYv1W/ra4NGkHT5zsVYoXTV2PYPa
-1qMNkYQG8eKyri8kn8qVbchPgVnMK6a0vdiM4esSaGrrcPXfpXvzt//knQoSRx+R
-sf1tR5TJ27uYBygjdWd5WrIW06mlpqI7WpN3++Y3weHzA0MZCvQVyyj761GbaePd
-ceSX99TvktD/UUDFz9zzpEGgTs3fcZU5PQ7uWrcexp9gwG21qCXT9nbEvqVyQsTQ
-e+fupKqJ4HS4im0o8tybBMuhPQ7JFuLYXDPnm7+1hTVKYBeXwwDOuS75Rjdkgn/p
-wuqy5bPmYz83eNzOaxbMQbO4DuQ37OKe7zUqqOOmTxnN8h1V/kZh9DhexIZJDJtz
-e+vV2qAp+L1suuM05YHP0iy5AFEKH3zqnMyV4ls9MVNly9HbKHucmwBKgymTSWg0
-EWotEha4nTBDT40WS4B48MNBYR4JkNqP+gYKwSszx3QhM5mRB+y8qsaxNl2/WAfV
-fq/sBurTKl9AHLf4vGwABkFlZNxLwhjnBLV+4PauohbJzKYUvGMeyjgvH+D2Jv4E
-0y4kM/QgNMsvyHl4z2GT
-=lOJS
------END PGP SIGNATURE-----
-
---Signature=_Thu__29_Nov_2012_17_25_39_+1100_w/X/pF2fRnfbsJkG--
+Asianux Corporation
