@@ -1,88 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754411Ab2K2MSb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 07:18:31 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:46323 "EHLO comal.ext.ti.com"
+	id S1754368Ab2K2MU7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 07:20:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40088 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754181Ab2K2MS3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 07:18:29 -0500
-Message-ID: <50B75283.6010207@ti.com>
-Date: Thu, 29 Nov 2012 13:18:11 +0100
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752613Ab2K2MU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 07:20:58 -0500
+Date: Thu, 29 Nov 2012 13:19:47 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 14/14] perf diff: Add generic order option for compute
+ sorting
+Message-ID: <20121129121947.GE1096@krava.brq.redhat.com>
+References: <1354110769-2998-1-git-send-email-jolsa@redhat.com>
+ <1354110769-2998-15-git-send-email-jolsa@redhat.com>
+ <87a9u0obwm.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rob Landley <rob@landley.net>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] gpio: New driver for GPO emulation using PWM generators
-References: <1353591723-25233-1-git-send-email-peter.ujfalusi@ti.com> <20121123075537.A14713E0A91@localhost> <50AF3E21.4000009@ti.com> <50AF4584.7020604@ti.com> <20121126154600.765E03E1AFD@localhost> <50B5D161.6010200@ti.com> <20121128193006.GB23444@avionic-0098.adnet.avionic-design.de>
-In-Reply-To: <20121128193006.GB23444@avionic-0098.adnet.avionic-design.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87a9u0obwm.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28/2012 08:30 PM, Thierry Reding wrote:
-> I must say I'm not terribly thrilled to integrate something like this
-> into the PWM subsystem.
-
-I agree. I would not really want to add my name to something like this either...
-
-> I wish hardware engineers wouldn't come up with such designs.
-
-I have checked and rechecked the schematics and datasheets. Still can not
-understand how anyone would come to this HW solution (when the twl4030 have at
-least 4 unused GPIO line left unconnected).
-
-> But since this seems to be a real use-case, if we want to
-> support it we should try and find the "right" solution.
+On Thu, Nov 29, 2012 at 09:02:01PM +0900, Namhyung Kim wrote:
+> On Wed, 28 Nov 2012 14:52:49 +0100, Jiri Olsa wrote:
+> > Adding option 'o' to allow sorting based on the
+> > input file number.
+> [snip]
+> >  hist_entry__cmp_compute(struct hist_entry *left, struct hist_entry *right,
+> >  			int c)
+> >  {
+> > -	int i;
+> > +	struct hist_entry **pairs_left  = left->pairs;
+> > +	struct hist_entry **pairs_right = right->pairs;
+> > +	struct hist_entry *p_right, *p_left;
+> > +	static int64_t cmp;
+> >  
+> > -	for (i = 0; i < data_cnt; i++) {
+> > -		struct hist_entry **pairs_left  = left->pairs;
+> > -		struct hist_entry **pairs_right = right->pairs;
+> > -		struct hist_entry *p_right, *p_left;
+> > -		static int64_t cmp;
+> > +	if (!pairs_left || !pairs_right)
+> > +		return pairs_left ? -1 : 1;
+> >  
+> > -		if (!pairs_left || !pairs_right)
+> > -			return pairs_right - pairs_left;
+> > +	p_right = pairs_right[sort_compute];
+> > +	p_left  = pairs_left[sort_compute];
+> >  
+> > -		p_right = pairs_right[i];
+> > -		p_left  = pairs_left[i];
+> > +	if (!p_left || !p_right)
+> > +		return p_left ? -1 : 1;
 > 
-> Reading the above sounds overly complicated. Couldn't we, instead of
-> instantiating an extra driver, just register a GPIO chip if a chip wants
-> to support this functionality? Where the GPIO chip's request callback
-> requests the given PWM so that it cannot be used elsewhere? The
-> direction_input callback would need to always fail and the set callback
-> can configure the PWM either to 0% or 100% duty-cycle depending on the
-> desired output value.
+> What if both p_left and p_right are NULL?  Shouldn't it be move to the
+> next pairs?
+hm, right.. we bail out, but not sure what to return.. 0,-1 or 1
 
-The original driver was doing exactly this. Basically I have added a GPO chip
-(which was just a translator from PWM to GPO). In DT it looked like this:
 
-twl_pwm: pwm {
-	compatible = "ti,twl4030-pwmled";
-	#pwm-cells = <2>;
-};
+> 
+> >  
+> > -		if (!p_left || !p_right)
+> > -			return p_right - p_left;
+> > -
+> > -		/*
+> > -		 * If we differ, we are done, otherwise continue until all
+> > -		 * is processed or we find a difference.
+> > -		 */
+> > -		cmp = __hist_entry__cmp_compute(p_left, p_right, c);
+> > -		if (cmp)
+> > -			return cmp;
+> > -	}
+> > +	/*
+> > +	 * If we differ, we are done, otherwise continue until all
+> > +	 * is processed or we find a difference.
+> > +	 */
+> 
+> I guess this comment is not applied anymore.  Or we need a loop after
+> checking sort_compute column, right?
 
-pwm_gpo1: gpo1 {
-	compatible = "pwm-gpo";
-	#gpio-cells = <1>;
-	gpio-controller;
-	pwms = <&twl_pwm 0 7812500>;
-	pwm-names = "nUSBHOST_PWR_EN";
-};
+unfortunatelly formated.. if we get this far, we have numbers to compare..
+meaning: we have 2 lines that have same, non empty column to compare
 
-user@1 {
-	compatible = "example,testuser";
-	gpios = <&pwm_gpo1 0>;
-};
-
-When we boot with DT the pwm_get() needs pwms phandle from the device you are
-calling it in order to find the PWM in question. If we do not have DT entry
-for the GPO driver, we need to build up a pwm_lookup table to ensure that the
-pwm_get() will find the PWM we want to handle.
-
-We could implement the GPIO related code under for example
-drivers/pwm/pwm-as-gpo.c
-But then I should merge the code from drivers/gpio/gpio-pwm.c inside.
-This is not nice either since we will have a GPIO driver living under pwm/
-directory and I'm not sure how this would use the pwm API when the GPO
-functionality is requested.
-
--- 
-Péter
+thanks,
+jirka
