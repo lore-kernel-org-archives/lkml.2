@@ -1,45 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473Ab2K2S74 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 13:59:56 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:60966 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753074Ab2K2S7z (ORCPT
+	id S1752462Ab2K2TBi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 14:01:38 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:58544 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751384Ab2K2TBg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 13:59:55 -0500
-Date: Thu, 29 Nov 2012 19:59:53 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org, zab@redhat.com,
-        bcrl@kvack.org, jmoyer@redhat.com, axboe@kernel.dk,
-        viro@zeniv.linux.org.uk
-Subject: Re: [PATCH 22/25] Generic dynamic per cpu refcounting
-Message-ID: <20121129185953.GW16230@one.firstfloor.org>
-References: <1354121029-1376-1-git-send-email-koverstreet@google.com> <1354121029-1376-23-git-send-email-koverstreet@google.com> <m28v9kgsen.fsf@firstfloor.org> <20121129185720.GE15094@google.com>
-Mime-Version: 1.0
+	Thu, 29 Nov 2012 14:01:36 -0500
+Date: Thu, 29 Nov 2012 11:01:33 -0800
+From: Kent Overstreet <koverstreet@google.com>
+To: Zach Brown <zab@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, bcrl@kvack.org, jmoyer@redhat.com,
+        axboe@kernel.dk, viro@zeniv.linux.org.uk
+Subject: Re: [PATCH 00/25] AIO performance improvements/cleanups
+Message-ID: <20121129190133.GF15094@google.com>
+References: <1354121029-1376-1-git-send-email-koverstreet@google.com>
+ <20121129000303.GF18574@lenny.home.zabbo.net>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121129185720.GE15094@google.com>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <20121129000303.GF18574@lenny.home.zabbo.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 10:57:20AM -0800, Kent Overstreet wrote:
-> On Thu, Nov 29, 2012 at 10:45:04AM -0800, Andi Kleen wrote:
-> > Kent Overstreet <koverstreet@google.com> writes:
-> > 
-> > > This implements a refcount with similar semantics to
-> > > atomic_get()/atomic_dec_and_test(), that starts out as just an atomic_t
-> > > but dynamically switches to per cpu refcounting when the rate of
-> > > gets/puts becomes too high.
-> > 
-> > This will only work if you put on the same CPU as you get, right?
+On Wed, Nov 28, 2012 at 04:03:03PM -0800, Zach Brown wrote:
+> On Wed, Nov 28, 2012 at 08:43:24AM -0800, Kent Overstreet wrote:
+> > Bunch of performance improvements and cleanups Zach Brown and I have
+> > been working on. The code should be pretty solid at this point, though
+> > it could of course use more review and testing.
 > 
-> Nope, no such restriction.
+> Thanks for sending these out.  I have some initial review comments
+> that'll follow, but I'm running out of steam today.  I'll continue
+> tomorrow.
+> 
+> > The results in my testing are pretty impressive, particularly when an
+> > ioctx is being shared between multiple threads. In my crappy synthetic
+> > benchmark, with 4 threads submitting and one thread reaping completions,
+> > I saw overhead in the aio code go from ~50% (mostly ioctx lock
+> > contention) to low single digits. Performance with ioctx per thread
+> > improved too, but I'd have to rerun those benchmarks.
+> 
+> You should probably mention that those four threads were *spinning* on
+> io_submit() :).  I'm still guessing that this unreasonably inflated the
+> contention amongst submitters and that without this inflation we might
+> not find the per-cpu ioctx refcounts worth the trouble.
 
-I don't see how you ensure you're doing the __this_cpu_dec on the same
-CPU as you did the get
+Yeah, should've mentioned that :) It was intentionally a worst case
+scenario for aio.
 
--Andi
+> > Performance wise, the end result of this patch series is that submitting
+> > a kiocb writes to _no_ shared cachelines - the penalty for sharing an
+> > ioctx is gone there. There's still going to be some cacheline contention
+> > when we deliver the completions to the aio ringbuffer (at least if you
+> > have interrupts being delivered on multiple cores, which for high end
+> > stuff you do) but I have a couple more patches not in this series that
+> > implement coalescing for that (by taking advantage of interrupt
+> > coalescing). With that, there's basically no bottlenecks or performance
+> > issues to speak of in the aio code.
+> 
+> Yeah, this is good stuff.  Thanks for pushing it.
+> 
+> We should mention Jens' omnibus patch that also took on these problems:
+> 
+>   http://git.kernel.dk/?p=linux-block.git;a=commit;h=6b6723fc3e4f24dbd80526df935ca115ead578c6
+
+Oh yeah. I think this patch series solves everything Jens was working on
+in the aio code, but there's still dio stuff in that patch that's worth
+looking at.
