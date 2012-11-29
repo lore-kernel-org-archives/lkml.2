@@ -1,94 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756460Ab2K2BbN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 20:31:13 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:37511 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756280Ab2K2BbM (ORCPT
+	id S1756639Ab2K2BdX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 20:33:23 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:61180 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756296Ab2K2BdW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 20:31:12 -0500
-Date: Wed, 28 Nov 2012 17:27:51 -0800
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Glauber Costa <glommer@parallels.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Greg Thelen <gthelen@google.com>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [RFC] Add mempressure cgroup
-Message-ID: <20121129012751.GA20525@lizard>
-References: <20121128102908.GA15415@lizard>
- <20121128151432.3e29d830.akpm@linux-foundation.org>
+	Wed, 28 Nov 2012 20:33:22 -0500
+X-AuditID: 9c93016f-b7b86ae000003a75-d1-50b6bb601c07
+Date: Thu, 29 Nov 2012 10:33:20 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Nitin Gupta <ngupta@vflare.org>
+Cc: Greg KH <greg@kroah.com>, Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Sam Hansen <solid.se7en@gmail.com>, Tomas M <tomas@slax.org>,
+        Mihail Kasadjikov <hamer.mk@gmail.com>,
+        Linux Driver Project <devel@linuxdriverproject.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] zram: Prevent use of unmapped buffer
+Message-ID: <20121129013320.GA24077@blaptop>
+References: <1354001167-24878-1-git-send-email-ngupta@vflare.org>
+ <20121128051505.GD23136@blaptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121128151432.3e29d830.akpm@linux-foundation.org>
+In-Reply-To: <20121128051505.GD23136@blaptop>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 03:14:32PM -0800, Andrew Morton wrote:
-[...]
-> Compare this with the shrink_slab() shrinkers.  With these, the VM can
-> query and then control the clients.  If something goes wrong or is out
-> of balance, it's the VM's problem to solve.
+On Wed, Nov 28, 2012 at 02:15:05PM +0900, Minchan Kim wrote:
+> Hi Nitin,
 > 
-> So I'm thinking that a better design would be one which puts the kernel
-> VM in control of userspace scanning and freeing.  Presumably with a
-> query-and-control interface similar to the slab shrinkers.
+> On Mon, Nov 26, 2012 at 11:26:07PM -0800, Nitin Gupta wrote:
+> > The commit c8f2f0db1 ("zram: Fix handling of incompressible pages")
+> > introduced a bug which caused a kunmap()'ed buffer to be used in case
+> 
+> I got confused by the descripton. :(
+> The descripton is not right.
+> The problem is to access freed memory, not accessing to kunmaped buffer.
+> 
+> partial I/O write.
+> 
+> 1. uncmem = kmalloc
+> 2. zram_decompress_page(uncmem)
+> 3. memcpy(uncmem, user_mem)
+> 4. lzo1x_1_compress(uncmem)
+> 5. kfree(uncmem)
+> 6. src = uncmem
+> 7. memcpy(cmem, src, clen) <----- HIT
+> 
+> > of partial writes where the data was found to be incompressible.
+> > 
 
-Thanks for the ideas, Andrew.
+I got it. You shouldn't mention partial write for proper description
+because it was usecase for swap-over-zram so it can't make partial write.
+Without partial write mention, your description is right but the problem
+I mentioned above is another problem for partial write so we need a another
+patch. I will cook.
 
-Query-and-control scheme looks very attractive, and that's actually
-resembles my "balance" level idea, when userland tells the kernel how much
-reclaimable memory it has. Except the your scheme works in the reverse
-direction, i.e. the kernel becomes in charge.
+Thanks.
 
-But there is one, rather major issue: we're crossing kernel-userspace
-boundary. And with the scheme we'll have to cross the boundary four times:
-query / reply-available / control / reply-shrunk / (and repeat if
-necessary, every SHRINK_BATCH pages). Plus, it has to be done somewhat
-synchronously (all the four stages), and/or we have to make a "userspace
-shrinker" thread working in parallel with the normal shrinker, and here,
-I'm afraid, we'll see more strange interactions. :)
 
-But there is a good news: for these kind of fine-grained control we have a
-better interface, where we don't have to communicate [very often] w/ the
-kernel. These are "volatile ranges", where userland itself marks chunks of
-data as "I might need it, but I won't cry if you recycle it; but when I
-access it next time, let me know if you actually recycled it". Yes,
-userland no longer able to decide which exact page it permits to recycle,
-but we don't have use-cases when we actually care that much. And if we do,
-we'd rather introduce volatile LRUs with different priorities, or
-something alike.
+> > This fixes bug 50081:
+> > https://bugzilla.kernel.org/show_bug.cgi?id=50081
+> > 
+> > Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+> > Reported-by: Mihail Kasadjikov <hamer.mk@gmail.com>
+> > Reported-by: Tomas M <tomas@slax.org>
+> 
+> Good catch! Shame on me. I should have reivewed more carefully. :(
+> Please resend it with revised descrption and title.
+> I will rebase mh patchset just sent on top of this bug fix patch.
+> 
+> P.S) Sigh, Now code isn't clean due to partial read/write path handling.
+>      IMHO, sooner or later, we need refactoring.
+> 
+> -- 
+> Kind regards,
+> Minchan Kim
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-So, we really don't need the full-fledged userland shrinker, since we can
-just let the in-kernel shrinker do its job. If we work with the
-bytes/pages granularity it is just easier (and more efficient in terms of
-communication) to do the volatile ranges.
-
-For the pressure notifications use-cases, we don't even know bytes/pages
-information: "activity managers" are separate processes looking after
-overall system performance.
-
-So, we're not trying to make userland too smart, quite the contrary: we
-realized that for this interface we don't want to mess with the bytes and
-pages, and that's why we cut this stuff down to only three levels. Before
-this, we were actually trying to count bytes, we did not like it and we
-ran away screaming.
-
-OTOH, your scheme makes volatile ranges unneeded, since a thread might
-register a shrinker hook and free stuff by itself. But again, I believe
-this involves more communication with the kernel.
-
-Thanks,
-Anton.
+-- 
+Kind regards,
+Minchan Kim
