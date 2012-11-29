@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752954Ab2K2KwQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 05:52:16 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:56506 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751155Ab2K2KwO (ORCPT
+	id S1753442Ab2K2KwX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 05:52:23 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:64700 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753080Ab2K2KwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 05:52:14 -0500
-Message-ID: <50B73E56.4050603@googlemail.com>
-Date: Thu, 29 Nov 2012 10:52:06 +0000
-From: Chris Clayton <chris2553@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 29 Nov 2012 05:52:20 -0500
+X-AuditID: 9c930197-b7bd3ae000003f1c-2e-50b73e62ab10
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 01/14] perf tool: Introduce perf_hpp__list for period related columns
+References: <1354110769-2998-1-git-send-email-jolsa@redhat.com>
+	<1354110769-2998-2-git-send-email-jolsa@redhat.com>
+	<87d2ywq2dg.fsf@sejong.aot.lge.com>
+Date: Thu, 29 Nov 2012 19:52:18 +0900
+In-Reply-To: <87d2ywq2dg.fsf@sejong.aot.lge.com> (Namhyung Kim's message of
+	"Thu, 29 Nov 2012 16:44:59 +0900")
+Message-ID: <87zk20of4t.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Jiang Liu <liuj97@gmail.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFT PATCH v2 4/5] mm: provide more accurate estimation of pages
- occupied by memmap
-References: <20121120111942.c9596d3f.akpm@linux-foundation.org> <1353510586-6393-1-git-send-email-jiang.liu@huawei.com> <20121128155221.df369ce4.akpm@linux-foundation.org>
-In-Reply-To: <20121128155221.df369ce4.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28/12 23:52, Andrew Morton wrote:
-> On Wed, 21 Nov 2012 23:09:46 +0800
-> Jiang Liu <liuj97@gmail.com> wrote:
->
->> Subject: Re: [RFT PATCH v2 4/5] mm: provide more accurate estimation of pages occupied by memmap
->
-> How are people to test this?  "does it boot"?
->
+Hi,
 
-I've been running kernels with Gerry's 5 patches applied for 11 days 
-now. This is on a 64bit laptop but with a 32bit kernel + HIGHMEM. I 
-joined the conversation because my laptop would not resume from suspend 
-to disk - it either froze or rebooted. With the patches applied the 
-laptop does successfully resume and has been stable.
+On Thu, 29 Nov 2012 16:44:59 +0900, Namhyung Kim wrote:
+> Hi Jiri,
+>
+> On Wed, 28 Nov 2012 14:52:36 +0100, Jiri Olsa wrote:
+>> Adding perf_hpp__list list to register and contain all period
+>> related columns the command is interested in.
+>>
+>> This way we get rid of static array holding all possible
+>> columns and enable commands to register their own columns.
+>
+> But it seems you didn't get rid of the array? :)
 
-Since Monday, I have have been running a kernel with the patches (plus, 
-from today, the patch you mailed yesterday) applied to 3.7rc7, without 
-problems.
+Ah, understood.  You wanted to add new hpp columns dynamically!
+Looks good to me then.
+
+Acked-by: Namhyung Kim <namhyung@kernel.org>
 
 Thanks,
-Chris
+Namhyung
