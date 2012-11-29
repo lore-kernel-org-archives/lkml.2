@@ -1,151 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753275Ab2K2TwO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 14:52:14 -0500
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:37020 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752107Ab2K2TwM (ORCPT
+	id S1753244Ab2K2Txc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 14:53:32 -0500
+Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:9895
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751399Ab2K2Tx3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 14:52:12 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApEKAEe8t1B5LN4a/2dsb2JhbABEhUK0R4V7F3OCHgEBBTocIxAIAxguFCUDIROID78fFIwsg2BhA5YAiUuGeoMG
-Date: Fri, 30 Nov 2012 06:52:07 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Jim Meyering <jim@meyering.net>
-Cc: Hugh Dickins <hughd@google.com>, Jaegeuk Hanse <jaegeuk.hanse@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Zheng Liu <wenqing.lz@taobao.com>,
-        Jeff liu <jeff.liu@oracle.com>, Paul Eggert <eggert@cs.ucla.edu>,
-        Christoph Hellwig <hch@infradead.org>, Josef Bacik <josef@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Andreas Dilger <adilger@dilger.ca>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Sunil Mushran <sunil.mushran@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] tmpfs: support SEEK_DATA and SEEK_HOLE (reprise)
-Message-ID: <20121129195206.GB6434@dastard>
-References: <alpine.LNX.2.00.1211281706390.1516@eggly.anvils>
- <20121129012933.GA9112@kernel>
- <alpine.LNX.2.00.1211281745200.1641@eggly.anvils>
- <87lidlxcw9.fsf@rho.meyering.net>
+	Thu, 29 Nov 2012 14:53:29 -0500
+X-Forefront-Antispam-Report: CIP:160.33.194.231;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail04v.am.sony.com;RD:mail04.sonyusa.com;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zzbb2dI98dI1432Izz1de0h1202h1d1ah1d2ahzz8275bhz2fh2a8h668h839h947hd25hf0ah10d2h1288h12a5h12a9h12bdh137ah13b6h1441h1537h153bh162dh1631h1155h)
+Message-ID: <50B7BD1B.9010508@am.sony.com>
+Date: Thu, 29 Nov 2012 11:52:59 -0800
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87lidlxcw9.fsf@rho.meyering.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>
+Subject: Re: 3.6.7-rt18 ARM BUG_ON() at kernel/sched/core.c:3817
+References: <50B6D71E.30003@am.sony.com>
+In-Reply-To: <50B6D71E.30003@am.sony.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 05:15:50AM +0100, Jim Meyering wrote:
-> Hugh Dickins wrote:
-> > On Thu, 29 Nov 2012, Jaegeuk Hanse wrote:
-> ...
-> >> But this time in which scenario will use it?
-> >
-> > I was not very convinced by the grep argument from Jim and Paul:
-> > that seemed to be grep holding on to a no-arbitrary-limits dogma,
-> > at the expense of its users, causing an absurd line-length issue,
-> > which use of SEEK_DATA happens to avoid in some cases.
-> >
-> > The cp of sparse files from Jeff and Dave was more convincing;
-> > but I still didn't see why little old tmpfs needed to be ahead
-> > of the pack.
-> >
-> > But at LinuxCon/Plumbers in San Diego in August, a more convincing
-> > case was made: I was hoping you would not ask, because I did not take
-> > notes, and cannot pass on the details - was it rpm building on tmpfs?
-> > I was convinced enough to promise support on tmpfs when support on
-> > ext4 goes in.
+On 11/28/12 19:31, Frank Rowand wrote:
+> 3.6.7-rt18:  kernel BUG at .../kernel/sched/core.c:3817!
 > 
-> Re the cp-vs-sparse-file case, the current FIEMAP-based code in GNU
-> cp is ugly and complicated enough that until recently it harbored a
-> hard-to-reproduce data-corrupting bug[*].  Now that SEEK_DATA/SEEK_HOLE
-> support work will work also for tmpfs and ext4, we can plan to remove
-> the FIEMAP-based code in favor of a simpler SEEK_DATA/SEEK_HOLE-based
-> implementation.
+> Grant reported this same problem for 3.6.5-rt15.
 > 
-> With the rise of virtualization, copying sparse images efficiently
-> (probably searching, too) is becoming more and more important.
+> I am seeing it on a different arm board.
 > 
-> So, yes, GNU cp will soon use this feature.
+> Here is the BUG_ON():
+> 
+>    asmlinkage void __sched preempt_schedule_irq(void)
+>    {
+>         struct thread_info *ti = current_thread_info();
+> 
+>         /* Catch callers which need to be fixed */
+>         BUG_ON(ti->preempt_count || !irqs_disabled());
+> 
+> Putting in some extra printk(), the BUG_ON() is triggering because
+> ti->preempt_count is non-zero.
+> 
+> 
+> It appears that the cause is in arch/arm/kernel/entry-armv.S.
+> 
+> The call to preempt_schedule_irq() is from svc_preempt:
+> 
+>    #ifdef CONFIG_PREEMPT
+>    svc_preempt:
+>            mov     r8, lr
+>    1:      bl      preempt_schedule_irq            @ irq en/disable is done inside
+> 
+> 
+> svc_preempt is branched to from one of two possible places.  The first was
+> present before the lazy preempt code was added.  The first appears ok to me.
+> (Note that the first branch does not occur if preempt count is non-zero.)
+> 
+> The second branch can occur even if the preempt count is non-zero (which is
+> what the BUG_ON() is finding):
+> 
+>    __irq_svc:
+>            svc_entry
+>            irq_handler
+> 
+>    #ifdef CONFIG_PREEMPT
+>            get_thread_info tsk
+>            ldr     r8, [tsk, #TI_PREEMPT]          @ get preempt count
+>            ldr     r0, [tsk, #TI_FLAGS]            @ get flags
+>            teq     r8, #0                          @ if preempt count != 0
+>            movne   r0, #0                          @ force flags to 0
+>            tst     r0, #_TIF_NEED_RESCHED
+>            blne    svc_preempt
+>            ldr     r8, [tsk, #TI_PREEMPT_LAZY]     @ get preempt lazy count
+>            ldr     r0, [tsk, #TI_FLAGS]            @ get flags
+>            teq     r8, #0                          @ if preempt lazy count != 0
+>            movne   r0, #0                          @ force flags to 0
+>            tst     r0, #_TIF_NEED_RESCHED_LAZY
+>            blne    svc_preempt
+>    #endif
 
-It would be nice if utilities like grep used it, too, because having
-grep burn gigabytes of memory scanning holes in large files and
-then going OOM is, well, kind of nasty:
+And here is a patch that fixes the symptom.  I'll have to look at how
+the preempt lazy count feature works to see if the patch is consistent
+with the feature.  I'll do that next.
 
-$ xfs_io -f -c "truncate 1t" blah
-$ ls -l
-total 0
--rw-r--r-- 1 dave dave 1.0T Nov 30 06:42 blah
-$ grep foo blah
-grep: memory exhausted
-$ $ grep -V
-grep (GNU grep) 2.12
-....
+Signed-off-by: Frank Rowand <frank.rowand@am.sony.com>
+---
+ arch/arm/kernel/entry-armv.S |    4 	3 +	1 -	0 !
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-It looks like it's doing something silly when holes are found - the
-buffer size just keeps getting doubled until it's larger than
-physical memory (4GB in this case).
+Index: b/arch/arm/kernel/entry-armv.S
+===================================================================
+--- a/arch/arm/kernel/entry-armv.S
++++ b/arch/arm/kernel/entry-armv.S
+@@ -221,8 +221,10 @@ __irq_svc:
+ 	movne	r0, #0				@ force flags to 0
+ 	tst	r0, #_TIF_NEED_RESCHED
+ 	blne	svc_preempt
+-	ldr	r8, [tsk, #TI_PREEMPT_LAZY]	@ get preempt lazy count
+ 	ldr	r0, [tsk, #TI_FLAGS]		@ get flags
++	teq	r8, #0				@ if preempt count != 0
++	movne	r0, #0				@ force flags to 0
++	ldr	r8, [tsk, #TI_PREEMPT_LAZY]	@ get preempt lazy count
+ 	teq	r8, #0				@ if preempt lazy count != 0
+ 	movne	r0, #0				@ force flags to 0
+ 	tst	r0, #_TIF_NEED_RESCHED_LAZY
 
-openat(AT_FDCWD, "blah", O_RDONLY)      = 3
-fstat(3, {st_mode=S_IFREG|0600, st_size=1099511627776, ...}) = 0
-ioctl(3, SNDCTL_TMR_TIMEBASE or TCGETS, 0x7ffff31d4c80) = -1 ENOTTY (Inappropriate ioctl for device)
-read(3, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 32768) = 32768
-read(3, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 32768) = 32768
-mmap(NULL, 139264, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f62b0291000
-read(3, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 65536) = 65536
-mmap(NULL, 270336, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f62b024f000
-munmap(0x7f62b0291000, 139264)          = 0
-read(3, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 131072) = 131072
-mmap(NULL, 532480, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f62afc0d000
-munmap(0x7f62b024f000, 270336)          = 0
-read(3, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 262144) = 262144
-mmap(NULL, 1056768, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f62afb0b000
-munmap(0x7f62afc0d000, 532480)          = 0
-read(3, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 524288) = 524288
-mmap(NULL, 2105344, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f62af909000
-munmap(0x7f62afb0b000, 1056768)         = 0
-read(3, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 1048576) = 1048576
-mmap(NULL, 4202496, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f62af507000
-munmap(0x7f62af909000, 2105344)         = 0
-read(3, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 2097152) = 2097152
-mmap(NULL, 8396800, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f62aed05000
-munmap(0x7f62af507000, 4202496)         = 0
-read(3, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 4194304) = 4194304
-mmap(NULL, 16785408, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f62add03000
-munmap(0x7f62aed05000, 8396800)         = 0
-read(3, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 8388608) = 8388608
-mmap(NULL, 33562624, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f62abd01000
-munmap(0x7f62add03000, 16785408)        = 0
-read(3, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 16777216) = 16777216
-mmap(NULL, 67117056, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f62a7cff000
-munmap(0x7f62abd01000, 33562624)        = 0
-read(3, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 33554432) = 33554432
-mmap(NULL, 134225920, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f629fcfd000
-munmap(0x7f62a7cff000, 67117056)        = 0
-read(3, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 67108864) = 67108864
-mmap(NULL, 268443648, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f628fcfb000
-munmap(0x7f629fcfd000, 134225920)       = 0
-read(3, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 134217728) = 134217728
-mmap(NULL, 536879104, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f626fcf9000
-munmap(0x7f628fcfb000, 268443648)       = 0
-read(3, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 268435456) = 268435456
-mmap(NULL, 1073750016, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f622fcf7000
-munmap(0x7f626fcf9000, 536879104)       = 0
-read(3, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 536870912) = 536870912
-mmap(NULL, 2147491840, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f61afcf5000
-munmap(0x7f622fcf7000, 1073750016)      = 0
-read(3, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 1073741824) = 1073741824
-mmap(NULL, 4294975488, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f60afcf3000
-munmap(0x7f61afcf5000, 2147491840)      = 0
-read(3, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 2147483648) = 2147479552
-read(3, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 4096) = 4096
-mmap(NULL, 8589942784, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = -1 ENOMEM (Cannot allocate memory)
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
