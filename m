@@ -1,84 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751747Ab2K2Env (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 23:43:51 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:20378 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899Ab2K2Ent (ORCPT
+	id S1751546Ab2K2Ers (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 23:47:48 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:38907 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750909Ab2K2Err (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 23:43:49 -0500
-Message-ID: <50B6E7CB.1040504@oracle.com>
-Date: Thu, 29 Nov 2012 12:42:51 +0800
-From: Jeff Liu <jeff.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Jim Meyering <jim@meyering.net>
-CC: Hugh Dickins <hughd@google.com>, Jaegeuk Hanse <jaegeuk.hanse@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Zheng Liu <wenqing.lz@taobao.com>,
-        Paul Eggert <eggert@cs.ucla.edu>,
-        Christoph Hellwig <hch@infradead.org>, Josef Bacik <josef@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Andreas Dilger <adilger@dilger.ca>,
-        Dave Chinner <david@fromorbit.com>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Sunil Mushran <sunil.mushran@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] tmpfs: support SEEK_DATA and SEEK_HOLE (reprise)
-References: <alpine.LNX.2.00.1211281706390.1516@eggly.anvils> <20121129012933.GA9112@kernel> <alpine.LNX.2.00.1211281745200.1641@eggly.anvils> <87lidlxcw9.fsf@rho.meyering.net>
-In-Reply-To: <87lidlxcw9.fsf@rho.meyering.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Wed, 28 Nov 2012 23:47:47 -0500
+Date: Thu, 29 Nov 2012 15:47:39 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Peter Hurley <peter@hurleysoftware.com>
+Subject: linux-next: manual merge of the staging tree with the tty tree
+Message-Id: <20121129154739.241d7a45c8bab79b3aeb9fe6@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__29_Nov_2012_15_47_39_+1100_l_JzM1SjO9mElQtg"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2012 12:15 PM, Jim Meyering wrote:
-> Hugh Dickins wrote:
->> On Thu, 29 Nov 2012, Jaegeuk Hanse wrote:
-> ...
->>> But this time in which scenario will use it?
->>
->> I was not very convinced by the grep argument from Jim and Paul:
->> that seemed to be grep holding on to a no-arbitrary-limits dogma,
->> at the expense of its users, causing an absurd line-length issue,
->> which use of SEEK_DATA happens to avoid in some cases.
->>
->> The cp of sparse files from Jeff and Dave was more convincing;
->> but I still didn't see why little old tmpfs needed to be ahead
->> of the pack.
->>
->> But at LinuxCon/Plumbers in San Diego in August, a more convincing
->> case was made: I was hoping you would not ask, because I did not take
->> notes, and cannot pass on the details - was it rpm building on tmpfs?
->> I was convinced enough to promise support on tmpfs when support on
->> ext4 goes in.
-> 
-> Re the cp-vs-sparse-file case, the current FIEMAP-based code in GNU
-> cp is ugly and complicated enough that until recently it harbored a
-> hard-to-reproduce data-corrupting bug[*].  Now that SEEK_DATA/SEEK_HOLE
-> support work will work also for tmpfs and ext4, we can plan to remove
-> the FIEMAP-based code in favor of a simpler SEEK_DATA/SEEK_HOLE-based
-> implementation.
-How do we teach du(1) to aware of the real disk footprint with Btrfs
-clone or OCFS2 reflinked files if we remove the FIEMAP-based code?
+--Signature=_Thu__29_Nov_2012_15_47_39_+1100_l_JzM1SjO9mElQtg
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-How about if we still keep it there, and introduce SEEK_DATA/SEEK_HOLE
-code to the extent-scan module which is dedicated to deal with sparse files?
+Hi Greg,
 
-Thanks,
--Jeff
-> 
-> With the rise of virtualization, copying sparse images efficiently
-> (probably searching, too) is becoming more and more important.
-> 
-> So, yes, GNU cp will soon use this feature.
-> 
-> [*] https://plus.google.com/u/0/114228401647637059102/posts/FDV3JEaYsKD
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Today's linux-next merge of the staging tree got a conflicts in
+drivers/staging/fwserial/fwserial.c, drivers/staging/Kconfig and
+drivers/staging/Kconfig between commit 7355ba3445f2 ("staging: fwserial:
+Add TTY-over-Firewire serial driver") from the tty tree and commit
+e5711071ad94 ("staging: fwserial: Add TTY-over-Firewire serial driver")
+from the staging tree.
 
+I am not sure why this patch exists in both trees :-(
+
+I fixed it up (they are the same but the trees contain more commits
+affecting these files) and can carry the fix as necessary (no action is
+required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__29_Nov_2012_15_47_39_+1100_l_JzM1SjO9mElQtg
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQtujrAAoJEECxmPOUX5FEfCUP/itfXzXsgmQGLlvfPkCm/qSA
+nhZbS0MB8gX6bV8A7YhmOfb8+pWCkLtc9f7YqVYMd3L2tXuYr6IGfFwHpQ7A4F+r
+MNG/KkufjY5ByqzWH8bKltlafZqTudNuJwD34lIyU2euxJQnHr1IVXhIZEzu4fJU
+t7MKGO6wzB3TXs6jQFtn6Lnz9Kn43LfFSGkArZikp0pIPQxSA26zJ26rW+Nyntek
+lvLGu8PPxVwvdeLDkElWX85BjB6tE1J8x5RW//mRSJhD7jW/e7dEe8mlddjiEQxf
+j8XL2Vy/W3YUdzPqsS7Es3PdixMPgBWsGptny1rDGBnAy0oUYqaALNd8jV7HM1Qk
+qo4xGtdY+fp+iKuj8Z6RzPPlY9erbonnf9Y7xNmgwKcvxsmrATz9ns4Uuph+Y3Pt
+2mbqtktWH084nbEFUgakYtpaH8fjBKPVvNXpJiClvXSJIrpl0fCEYd4CgC11Jjfi
+010N5rONEWQT77g6T4D9A1+t7Pfwbbm7QrfbkbfjjzijwSzU/2/J3qhQ7WuBb4Oi
+Qud2w67uQWPX/eMsT6tNQbMYgXEUb9DKwTarhHEe6TANG+m2S/6TPARQVjHGpskx
+jDRjcXZe2J8lABL2PdAuLxvO9SmBnKd25ezcfILWM44GUKyov86IkRuMCdwM1SDP
+pUk+Y6cGcCGj5d1huRq6
+=0gh1
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__29_Nov_2012_15_47_39_+1100_l_JzM1SjO9mElQtg--
