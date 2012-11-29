@@ -1,171 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751919Ab2K2GQp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 01:16:45 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:37066 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751039Ab2K2GQo (ORCPT
+	id S1751929Ab2K2GTp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 01:19:45 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:49580 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751392Ab2K2GTn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 01:16:44 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFxYCxsRM==WMGihQGOA7f5u2X_8boJypsxS2v=WMnr70g@mail.gmail.com>
-References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com>
- <Pine.LNX.4.64.1211241555470.4300@file.rdu.redhat.com> <CAAJw_ZvUqRmCCQ5-2PdFPRyfdzZMuphGU=hgAjUOHGk=n9Mheg@mail.gmail.com>
- <CAAJw_ZuJXnAz1ukBwQa3xNbQaL1KUBSrbQMK2hn-7D6Ar1p3fQ@mail.gmail.com>
- <50B46E05.70906@kernel.dk> <CAAJw_ZsYuLCwCTc6U=ELO_PvyjnVKQdkPke2enfzm6zOeWAqjA@mail.gmail.com>
- <50B4B313.3030707@kernel.dk> <Pine.LNX.4.64.1211272252260.18338@file.rdu.redhat.com>
- <50B5CC5A.8060607@kernel.dk> <Pine.LNX.4.64.1211281222410.11599@file.rdu.redhat.com>
- <CA+55aFx4zYnEsUyGJurBjB0XZ0AgmyKqW-+KWVDvma3w6csnHQ@mail.gmail.com>
- <Pine.LNX.4.64.1211281422360.26389@file.rdu.redhat.com> <CA+55aFyXdtVJ=SG9bU4qfggCR6DPvz4vOFYxKJZx_WdyFv+3Fw@mail.gmail.com>
- <CA+55aFyXS0nkDB95c3pcdg1ctrNnUGO8aDuRNhKSEg3JrOqWhA@mail.gmail.com>
- <Pine.LNX.4.64.1211281540200.5283@file.rdu.redhat.com> <CA+55aFwbnQsvpsOLS6w_G35d4w+Ezv5tOx2SE7dShJhX4iP_0Q@mail.gmail.com>
- <Pine.LNX.4.64.1211281904010.3957@file.rdu.redhat.com> <CA+55aFz1Wv2S+3XVmZE1cfiN0TZ4gNA8yWbNgufDLTMc8sKf2A@mail.gmail.com>
- <CA+55aFxYCxsRM==WMGihQGOA7f5u2X_8boJypsxS2v=WMnr70g@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 28 Nov 2012 22:16:21 -0800
-X-Google-Sender-Auth: Qp4QoqqFdOUjlqF9b1SJwOhilno
-Message-ID: <CA+55aFxrkX_=4yNQ1TwjqU9=pkRY=ud+Kw3YnADJMJxA-ZqQUg@mail.gmail.com>
-Subject: Re: [PATCH] Introduce a method to catch mmap_region (was: Recent
- kernel "mount" slow)
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Jeff Chua <jeff.chua.linux@gmail.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: multipart/mixed; boundary=0016e6d9714f080b6004cf9c3a4f
+	Thu, 29 Nov 2012 01:19:43 -0500
+Date: Thu, 29 Nov 2012 17:19:39 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Philipp Reisner <philipp.reisner@linbit.com>,
+        Lars Ellenberg <lars.ellenberg@linbit.com>,
+        Jens Axboe <axboe@kernel.dk>, Lukas Czerner <lczerner@redhat.com>
+Subject: linux-next: build warnings after merge of the akpm tree
+Message-Id: <20121129171939.8539a56adf1f0f7ae518f4ce@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__29_Nov_2012_17_19_39_+1100_vMvHEMfJNPi4yXY2"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016e6d9714f080b6004cf9c3a4f
-Content-Type: text/plain; charset=ISO-8859-1
+--Signature=_Thu__29_Nov_2012_17_19_39_+1100_vMvHEMfJNPi4yXY2
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, Nov 28, 2012 at 6:58 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> But the fact that the code wants to do things like
->
->         block = (sector_t)page->index << (PAGE_CACHE_SHIFT - bbits);
->
-> seriously seems to be the main thing that keeps us using
-> 'inode->i_blkbits'. Calculating bbits from bh->b_size is just costly
-> enough to hurt (not everywhere, but on some machines).
->
-> Very annoying.
+Hi Andrew,
 
-Hmm. Here's a patch that does that anyway. I'm not 100% happy with the
-whole ilog2 thing, but at the same time, in other cases it actually
-seems to improve code generation (ie gets rid of the whole unnecessary
-two dereferences through page->mapping->host just to get the block
-size, when we have it in the buffer-head that we have to touch
-*anyway*).
+After merging the akpm tree, today's linux-next build (x86_64
+allmodconfig) produced these warnings:
 
-Comments? Again, untested.
+In file included from drivers/block/drbd/drbd_bitmap.c:32:0:
+drivers/block/drbd/drbd_int.h:2339:0: warning: "__wait_event_lock_irq" rede=
+fined [enabled by default]
+include/linux/wait.h:554:0: note: this is the location of the previous defi=
+nition
+drivers/block/drbd/drbd_int.h:2358:0: warning: "wait_event_lock_irq" redefi=
+ned [enabled by default]
+include/linux/wait.h:621:0: note: this is the location of the previous defi=
+nition
+In file included from drivers/block/drbd/drbd_receiver.c:46:0:
+drivers/block/drbd/drbd_int.h:2339:0: warning: "__wait_event_lock_irq" rede=
+fined [enabled by default]
+include/linux/wait.h:554:0: note: this is the location of the previous defi=
+nition
+drivers/block/drbd/drbd_int.h:2358:0: warning: "wait_event_lock_irq" redefi=
+ned [enabled by default]
+include/linux/wait.h:621:0: note: this is the location of the previous defi=
+nition
+In file included from drivers/block/drbd/drbd_proc.c:34:0:
+drivers/block/drbd/drbd_int.h:2339:0: warning: "__wait_event_lock_irq" rede=
+fined [enabled by default]
+include/linux/wait.h:554:0: note: this is the location of the previous defi=
+nition
+drivers/block/drbd/drbd_int.h:2358:0: warning: "wait_event_lock_irq" redefi=
+ned [enabled by default]
+include/linux/wait.h:621:0: note: this is the location of the previous defi=
+nition
+In file included from drivers/block/drbd/drbd_worker.c:38:0:
+drivers/block/drbd/drbd_int.h:2339:0: warning: "__wait_event_lock_irq" rede=
+fined [enabled by default]
+include/linux/wait.h:554:0: note: this is the location of the previous defi=
+nition
+drivers/block/drbd/drbd_int.h:2358:0: warning: "wait_event_lock_irq" redefi=
+ned [enabled by default]
+include/linux/wait.h:621:0: note: this is the location of the previous defi=
+nition
+In file included from drivers/block/drbd/drbd_actlog.c:31:0:
+drivers/block/drbd/drbd_int.h:2339:0: warning: "__wait_event_lock_irq" rede=
+fined [enabled by default]
+include/linux/wait.h:554:0: note: this is the location of the previous defi=
+nition
+drivers/block/drbd/drbd_int.h:2358:0: warning: "wait_event_lock_irq" redefi=
+ned [enabled by default]
+include/linux/wait.h:621:0: note: this is the location of the previous defi=
+nition
+In file included from drivers/block/drbd/drbd_req.c:30:0:
+drivers/block/drbd/drbd_int.h:2339:0: warning: "__wait_event_lock_irq" rede=
+fined [enabled by default]
+include/linux/wait.h:554:0: note: this is the location of the previous defi=
+nition
+drivers/block/drbd/drbd_int.h:2358:0: warning: "wait_event_lock_irq" redefi=
+ned [enabled by default]
+include/linux/wait.h:621:0: note: this is the location of the previous defi=
+nition
 
-And I notice that Al Viro hasn't been cc'd, which is sad, since he's
-been involved in much of fs/block_dev.c.
+Introduced by the interaction of commit c1fd29a11f43 ("drbd: Fix a race
+condition that can lead to a BUG()") from the block tree and commit
+"wait: add wait_event_lock_irq() interface" from the akpm tree.
 
-Al - this is an independent patch to fs/buffer.c to make
-fs/block_dev.c able to change the block size of a block device while
-there is IO in progress that may still use the old block size. The
-discussion has been on fsdevel and lkml, but you may have missed it...
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-                Linus
+--Signature=_Thu__29_Nov_2012_17_19_39_+1100_vMvHEMfJNPi4yXY2
+Content-Type: application/pgp-signature
 
---0016e6d9714f080b6004cf9c3a4f
-Content-Type: application/octet-stream; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_ha3hpqwa0
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-IGZzL2J1ZmZlci5jIHwgNjAgKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysr
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tCiAxIGZpbGUgY2hhbmdlZCwgMzkgaW5zZXJ0aW9ucygrKSwg
-MjEgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZnMvYnVmZmVyLmMgYi9mcy9idWZmZXIuYwpp
-bmRleCBiNWYwNDQyODNlZGIuLjI4N2JjNmYyYmQ1MSAxMDA2NDQKLS0tIGEvZnMvYnVmZmVyLmMK
-KysrIGIvZnMvYnVmZmVyLmMKQEAgLTE1NTMsNiArMTU1MywxOSBAQCB2b2lkIHVubWFwX3VuZGVy
-bHlpbmdfbWV0YWRhdGEoc3RydWN0IGJsb2NrX2RldmljZSAqYmRldiwgc2VjdG9yX3QgYmxvY2sp
-CiBFWFBPUlRfU1lNQk9MKHVubWFwX3VuZGVybHlpbmdfbWV0YWRhdGEpOwogCiAvKgorICogU2l6
-ZSBpcyBhIHBvd2VyLW9mLXR3byBpbiB0aGUgcmFuZ2UgNTEyLi5QQUdFX1NJWkUsCisgKiBhbmQg
-dGhlIGNhc2Ugd2UgY2FyZSBhYm91dCBtb3N0IGlzIFBBR0VfU0laRS4KKyAqCisgKiBTbyB0aGlz
-ICpjb3VsZCogcG9zc2libHkgYmUgd3JpdHRlbiB3aXRoIHRob3NlCisgKiBjb25zdHJhaW50cyBp
-biBtaW5kIChyZWxldmFudCBtb3N0bHkgaWYgc29tZQorICogYXJjaGl0ZWN0dXJlIGhhcyBhIHNs
-b3cgYml0LXNjYW4gaW5zdHJ1Y3Rpb24pCisgKi8KK3N0YXRpYyBpbmxpbmUgaW50IGJsb2NrX3Np
-emVfYml0cyh1bnNpZ25lZCBpbnQgYmxvY2tzaXplKQoreworCXJldHVybiBpbG9nMihibG9ja3Np
-emUpOworfQorCisvKgogICogTk9URSEgQWxsIG1hcHBlZC91cHRvZGF0ZSBjb21iaW5hdGlvbnMg
-YXJlIHZhbGlkOgogICoKICAqCU1hcHBlZAlVcHRvZGF0ZQlNZWFuaW5nCkBAIC0xNTg5LDE3ICsx
-NjAyLDE1IEBAIHN0YXRpYyBpbnQgX19ibG9ja193cml0ZV9mdWxsX3BhZ2Uoc3RydWN0IGlub2Rl
-ICppbm9kZSwgc3RydWN0IHBhZ2UgKnBhZ2UsCiAJc2VjdG9yX3QgYmxvY2s7CiAJc2VjdG9yX3Qg
-bGFzdF9ibG9jazsKIAlzdHJ1Y3QgYnVmZmVyX2hlYWQgKmJoLCAqaGVhZDsKLQljb25zdCB1bnNp
-Z25lZCBibG9ja3NpemUgPSAxIDw8IGlub2RlLT5pX2Jsa2JpdHM7CisJdW5zaWduZWQgaW50IGJs
-b2Nrc2l6ZSwgYmJpdHM7CiAJaW50IG5yX3VuZGVyd2F5ID0gMDsKIAlpbnQgd3JpdGVfb3AgPSAo
-d2JjLT5zeW5jX21vZGUgPT0gV0JfU1lOQ19BTEwgPwogCQkJV1JJVEVfU1lOQyA6IFdSSVRFKTsK
-IAogCUJVR19PTighUGFnZUxvY2tlZChwYWdlKSk7CiAKLQlsYXN0X2Jsb2NrID0gKGlfc2l6ZV9y
-ZWFkKGlub2RlKSAtIDEpID4+IGlub2RlLT5pX2Jsa2JpdHM7Ci0KIAlpZiAoIXBhZ2VfaGFzX2J1
-ZmZlcnMocGFnZSkpIHsKLQkJY3JlYXRlX2VtcHR5X2J1ZmZlcnMocGFnZSwgYmxvY2tzaXplLAor
-CQljcmVhdGVfZW1wdHlfYnVmZmVycyhwYWdlLCAxIDw8IGlub2RlLT5pX2Jsa2JpdHMsCiAJCQkJ
-CSgxIDw8IEJIX0RpcnR5KXwoMSA8PCBCSF9VcHRvZGF0ZSkpOwogCX0KIApAQCAtMTYxMyw5ICsx
-NjI0LDEzIEBAIHN0YXRpYyBpbnQgX19ibG9ja193cml0ZV9mdWxsX3BhZ2Uoc3RydWN0IGlub2Rl
-ICppbm9kZSwgc3RydWN0IHBhZ2UgKnBhZ2UsCiAJICogaGFuZGxlIHRoYXQgaGVyZSBieSBqdXN0
-IGNsZWFuaW5nIHRoZW0uCiAJICovCiAKLQlibG9jayA9IChzZWN0b3JfdClwYWdlLT5pbmRleCA8
-PCAoUEFHRV9DQUNIRV9TSElGVCAtIGlub2RlLT5pX2Jsa2JpdHMpOwogCWhlYWQgPSBwYWdlX2J1
-ZmZlcnMocGFnZSk7CiAJYmggPSBoZWFkOworCWJsb2Nrc2l6ZSA9IGJoLT5iX3NpemU7CisJYmJp
-dHMgPSBibG9ja19zaXplX2JpdHMoYmxvY2tzaXplKTsKKworCWJsb2NrID0gKHNlY3Rvcl90KXBh
-Z2UtPmluZGV4IDw8IChQQUdFX0NBQ0hFX1NISUZUIC0gYmJpdHMpOworCWxhc3RfYmxvY2sgPSAo
-aV9zaXplX3JlYWQoaW5vZGUpIC0gMSkgPj4gYmJpdHM7CiAKIAkvKgogCSAqIEdldCBhbGwgdGhl
-IGRpcnR5IGJ1ZmZlcnMgbWFwcGVkIHRvIGRpc2sgYWRkcmVzc2VzIGFuZApAQCAtMTgwNiwxMiAr
-MTgyMSwxMiBAQCBpbnQgX19ibG9ja193cml0ZV9iZWdpbihzdHJ1Y3QgcGFnZSAqcGFnZSwgbG9m
-Zl90IHBvcywgdW5zaWduZWQgbGVuLAogCUJVR19PTih0byA+IFBBR0VfQ0FDSEVfU0laRSk7CiAJ
-QlVHX09OKGZyb20gPiB0byk7CiAKLQlibG9ja3NpemUgPSAxIDw8IGlub2RlLT5pX2Jsa2JpdHM7
-CiAJaWYgKCFwYWdlX2hhc19idWZmZXJzKHBhZ2UpKQotCQljcmVhdGVfZW1wdHlfYnVmZmVycyhw
-YWdlLCBibG9ja3NpemUsIDApOworCQljcmVhdGVfZW1wdHlfYnVmZmVycyhwYWdlLCAxIDw8IGlu
-b2RlLT5pX2Jsa2JpdHMsIDApOwogCWhlYWQgPSBwYWdlX2J1ZmZlcnMocGFnZSk7CisJYmxvY2tz
-aXplID0gaGVhZC0+Yl9zaXplOworCWJiaXRzID0gYmxvY2tfc2l6ZV9iaXRzKGJsb2Nrc2l6ZSk7
-CiAKLQliYml0cyA9IGlub2RlLT5pX2Jsa2JpdHM7CiAJYmxvY2sgPSAoc2VjdG9yX3QpcGFnZS0+
-aW5kZXggPDwgKFBBR0VfQ0FDSEVfU0hJRlQgLSBiYml0cyk7CiAKIAlmb3IoYmggPSBoZWFkLCBi
-bG9ja19zdGFydCA9IDA7IGJoICE9IGhlYWQgfHwgIWJsb2NrX3N0YXJ0OwpAQCAtMTg4MSwxMSAr
-MTg5NiwxMSBAQCBzdGF0aWMgaW50IF9fYmxvY2tfY29tbWl0X3dyaXRlKHN0cnVjdCBpbm9kZSAq
-aW5vZGUsIHN0cnVjdCBwYWdlICpwYWdlLAogCXVuc2lnbmVkIGJsb2Nrc2l6ZTsKIAlzdHJ1Y3Qg
-YnVmZmVyX2hlYWQgKmJoLCAqaGVhZDsKIAotCWJsb2Nrc2l6ZSA9IDEgPDwgaW5vZGUtPmlfYmxr
-Yml0czsKKwliaCA9IGhlYWQgPSBwYWdlX2J1ZmZlcnMocGFnZSk7CisJYmxvY2tzaXplID0gYmgt
-PmJfc2l6ZTsKIAotCWZvcihiaCA9IGhlYWQgPSBwYWdlX2J1ZmZlcnMocGFnZSksIGJsb2NrX3N0
-YXJ0ID0gMDsKLQkgICAgYmggIT0gaGVhZCB8fCAhYmxvY2tfc3RhcnQ7Ci0JICAgIGJsb2NrX3N0
-YXJ0PWJsb2NrX2VuZCwgYmggPSBiaC0+Yl90aGlzX3BhZ2UpIHsKKwlibG9ja19zdGFydCA9IDA7
-CisJZG8gewogCQlibG9ja19lbmQgPSBibG9ja19zdGFydCArIGJsb2Nrc2l6ZTsKIAkJaWYgKGJs
-b2NrX2VuZCA8PSBmcm9tIHx8IGJsb2NrX3N0YXJ0ID49IHRvKSB7CiAJCQlpZiAoIWJ1ZmZlcl91
-cHRvZGF0ZShiaCkpCkBAIC0xODk1LDcgKzE5MTAsMTAgQEAgc3RhdGljIGludCBfX2Jsb2NrX2Nv
-bW1pdF93cml0ZShzdHJ1Y3QgaW5vZGUgKmlub2RlLCBzdHJ1Y3QgcGFnZSAqcGFnZSwKIAkJCW1h
-cmtfYnVmZmVyX2RpcnR5KGJoKTsKIAkJfQogCQljbGVhcl9idWZmZXJfbmV3KGJoKTsKLQl9CisK
-KwkJYmxvY2tfc3RhcnQgPSBibG9ja19lbmQ7CisJCWJoID0gYmgtPmJfdGhpc19wYWdlOworCX0g
-d2hpbGUgKGJoICE9IGhlYWQpOwogCiAJLyoKIAkgKiBJZiB0aGlzIGlzIGEgcGFydGlhbCB3cml0
-ZSB3aGljaCBoYXBwZW5lZCB0byBtYWtlIGFsbCBidWZmZXJzCkBAIC0yMDIwLDcgKzIwMzgsNiBA
-QCBFWFBPUlRfU1lNQk9MKGdlbmVyaWNfd3JpdGVfZW5kKTsKIGludCBibG9ja19pc19wYXJ0aWFs
-bHlfdXB0b2RhdGUoc3RydWN0IHBhZ2UgKnBhZ2UsIHJlYWRfZGVzY3JpcHRvcl90ICpkZXNjLAog
-CQkJCQl1bnNpZ25lZCBsb25nIGZyb20pCiB7Ci0Jc3RydWN0IGlub2RlICppbm9kZSA9IHBhZ2Ut
-Pm1hcHBpbmctPmhvc3Q7CiAJdW5zaWduZWQgYmxvY2tfc3RhcnQsIGJsb2NrX2VuZCwgYmxvY2tz
-aXplOwogCXVuc2lnbmVkIHRvOwogCXN0cnVjdCBidWZmZXJfaGVhZCAqYmgsICpoZWFkOwpAQCAt
-MjAyOSwxMyArMjA0NiwxMyBAQCBpbnQgYmxvY2tfaXNfcGFydGlhbGx5X3VwdG9kYXRlKHN0cnVj
-dCBwYWdlICpwYWdlLCByZWFkX2Rlc2NyaXB0b3JfdCAqZGVzYywKIAlpZiAoIXBhZ2VfaGFzX2J1
-ZmZlcnMocGFnZSkpCiAJCXJldHVybiAwOwogCi0JYmxvY2tzaXplID0gMSA8PCBpbm9kZS0+aV9i
-bGtiaXRzOworCWhlYWQgPSBwYWdlX2J1ZmZlcnMocGFnZSk7CisJYmxvY2tzaXplID0gaGVhZC0+
-Yl9zaXplOwogCXRvID0gbWluX3QodW5zaWduZWQsIFBBR0VfQ0FDSEVfU0laRSAtIGZyb20sIGRl
-c2MtPmNvdW50KTsKIAl0byA9IGZyb20gKyB0bzsKIAlpZiAoZnJvbSA8IGJsb2Nrc2l6ZSAmJiB0
-byA+IFBBR0VfQ0FDSEVfU0laRSAtIGJsb2Nrc2l6ZSkKIAkJcmV0dXJuIDA7CiAKLQloZWFkID0g
-cGFnZV9idWZmZXJzKHBhZ2UpOwogCWJoID0gaGVhZDsKIAlibG9ja19zdGFydCA9IDA7CiAJZG8g
-ewpAQCAtMjA2OCwxOCArMjA4NSwxOSBAQCBpbnQgYmxvY2tfcmVhZF9mdWxsX3BhZ2Uoc3RydWN0
-IHBhZ2UgKnBhZ2UsIGdldF9ibG9ja190ICpnZXRfYmxvY2spCiAJc3RydWN0IGlub2RlICppbm9k
-ZSA9IHBhZ2UtPm1hcHBpbmctPmhvc3Q7CiAJc2VjdG9yX3QgaWJsb2NrLCBsYmxvY2s7CiAJc3Ry
-dWN0IGJ1ZmZlcl9oZWFkICpiaCwgKmhlYWQsICphcnJbTUFYX0JVRl9QRVJfUEFHRV07Ci0JdW5z
-aWduZWQgaW50IGJsb2Nrc2l6ZTsKKwl1bnNpZ25lZCBpbnQgYmxvY2tzaXplLCBiYml0czsKIAlp
-bnQgbnIsIGk7CiAJaW50IGZ1bGx5X21hcHBlZCA9IDE7CiAKIAlCVUdfT04oIVBhZ2VMb2NrZWQo
-cGFnZSkpOwotCWJsb2Nrc2l6ZSA9IDEgPDwgaW5vZGUtPmlfYmxrYml0czsKIAlpZiAoIXBhZ2Vf
-aGFzX2J1ZmZlcnMocGFnZSkpCi0JCWNyZWF0ZV9lbXB0eV9idWZmZXJzKHBhZ2UsIGJsb2Nrc2l6
-ZSwgMCk7CisJCWNyZWF0ZV9lbXB0eV9idWZmZXJzKHBhZ2UsIDEgPDwgaW5vZGUtPmlfYmxrYml0
-cywgMCk7CiAJaGVhZCA9IHBhZ2VfYnVmZmVycyhwYWdlKTsKKwlibG9ja3NpemUgPSBoZWFkLT5i
-X3NpemU7CisJYmJpdHMgPSBibG9ja19zaXplX2JpdHMoYmxvY2tzaXplKTsKIAotCWlibG9jayA9
-IChzZWN0b3JfdClwYWdlLT5pbmRleCA8PCAoUEFHRV9DQUNIRV9TSElGVCAtIGlub2RlLT5pX2Js
-a2JpdHMpOwotCWxibG9jayA9IChpX3NpemVfcmVhZChpbm9kZSkrYmxvY2tzaXplLTEpID4+IGlu
-b2RlLT5pX2Jsa2JpdHM7CisJaWJsb2NrID0gKHNlY3Rvcl90KXBhZ2UtPmluZGV4IDw8IChQQUdF
-X0NBQ0hFX1NISUZUIC0gYmJpdHMpOworCWxibG9jayA9IChpX3NpemVfcmVhZChpbm9kZSkrYmxv
-Y2tzaXplLTEpID4+IGJiaXRzOwogCWJoID0gaGVhZDsKIAluciA9IDA7CiAJaSA9IDA7Cg==
---0016e6d9714f080b6004cf9c3a4f--
+iQIcBAEBCAAGBQJQtv57AAoJEECxmPOUX5FEw38QAJ+FcJys6W9LPpQQQYWiWOvb
+QEHYyFSlsddhc1cjPSo8AFtBpeM94H71vj+nOgNut9lw8DX0zYe2E+Hj2YLTYZ+v
+09uaEKnqfOaelEYhzOEhdLJ2uBupqk9lgjATpynoNiUUzPCl814H1LAEze0V8gxG
+orOASo7JEVxPby+KtqsVpaaJRRaxOVglrvPZQF3Vc4xT/DRbhOW9el5GZX/Jro5w
+1KvqBzk2a/Qzmaw+tlEj0VJUQEAaKk03S1EB9bC5VUqFfRwjeJwxgVH/uyZWKEC6
+wB+Sny1JwE1P+yhSlBz459s3FWqAKW33y3j12NSYDeHV3AVQ/DERs8ZEtKBtZ9jQ
+3HC9drvhKwpewVma3abZy/QpF0XudZ7AQuvd1dDrwVl8eWc0Wtm7a7YJkPktOheD
+GfixAf9vqvOMQE/IXHibUnxosg5jDHqaQo7V82PsZ9eNZFfe6TsvCdKRwnFA+Gu3
+Lt3hNpAhXvd5Qb/wyJN6kyaBs5PvnJ+CC5KLqReRIRKd0lO6ZbIEGrEbsoQB2Csl
+SGtmQBIT0WHZic2lMLdT/f33OFVut5l4qeyCJd6dfAtCDUuWyLTfXXXcjJZ4GLqs
++8hglZzZnAjWqsgZeuPsD4ZZAomdDNhq1R0+huVhKJApNWQgeA8UH3O8u/0HLRk9
+63PN53seWBkZvNk8Cnos
+=ivIK
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__29_Nov_2012_17_19_39_+1100_vMvHEMfJNPi4yXY2--
