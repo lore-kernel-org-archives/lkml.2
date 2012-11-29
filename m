@@ -1,87 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752893Ab2K2RLa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 12:11:30 -0500
-Received: from na01-by2-obe.ptr.protection.outlook.com ([207.46.100.28]:15273
-	"EHLO NA01-BY2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752493Ab2K2RL3 convert rfc822-to-8bit (ORCPT
+	id S1753103Ab2K2RLl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 12:11:41 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:20510 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752977Ab2K2RLj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 12:11:29 -0500
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT003.namprd03.prod.outlook.com;R:internal;EFV:INT
-X-SpamScore: -7
-X-BigFish: PS-7(zz9371I542M1432Izz1de0h1202h1d1ah1d2ahzz6d524h8275bh8275dhz31h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1155h)
-From: KY Srinivasan <kys@microsoft.com>
-To: Wei Yongjun <weiyj.lk@gmail.com>, Haiyang Zhang <haiyangz@microsoft.com>
-CC: "yongjun_wei@trendmicro.com.cn" <yongjun_wei@trendmicro.com.cn>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH -next] hv: hv_balloon: remove duplicated include from
- hv_balloon.c
-Thread-Topic: [PATCH -next] hv: hv_balloon: remove duplicated include from
- hv_balloon.c
-Thread-Index: AQHNzdiEl4Tq2123h0WTbffKwUKYjpgBC/LA
-Date: Thu, 29 Nov 2012 17:08:53 +0000
-Message-ID: <426367E2313C2449837CD2DE46E7EAF930E5E809@SN2PRD0310MB382.namprd03.prod.outlook.com>
-References: <CAPgLHd-9_p_haRkx-2D_5eT-E6_g84N=Hjs4JB5gu_kPVSp2Vw@mail.gmail.com>
-In-Reply-To: <CAPgLHd-9_p_haRkx-2D_5eT-E6_g84N=Hjs4JB5gu_kPVSp2Vw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [98.110.61.144]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PRD0310HT003.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%TRENDMICRO.COM.CN$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%GMAIL.COM$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14MLTC103.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14MLTC103.redmond.corp.microsoft.com
-X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(51704002)(13464001)(377454001)(46406002)(47446002)(54356001)(50986001)(50466001)(74662001)(74502001)(44976002)(33656001)(53806001)(31966008)(47736001)(4396001)(47976001)(55846006)(51856001)(16676001)(6806001)(23726001)(49866001)(54316002)(56816002)(4477805001)(56776001)(47776002)(5343635001)(76482001)(5343655001)(46102001);DIR:OUT;SFP:;LANG:en;
-X-OriginatorOrg: microsoft.onmicrosoft.com
-X-Forefront-PRVS: 0680FADD48
+	Thu, 29 Nov 2012 12:11:39 -0500
+Message-ID: <1354208592.26955.429.camel@misato.fc.hp.com>
+Subject: Re: [RFC PATCH v3 0/3] acpi: Introduce prepare_remove device
+ operation
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org, Hanjun Guo <guohanjun@huawei.com>,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com, lenb@kernel.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Tang Chen <tangchen@cn.fujitsu.com>
+Date: Thu, 29 Nov 2012 10:03:12 -0700
+In-Reply-To: <75241306.UQIr1RW8Qh@vostro.rjw.lan>
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
+	 <50B5EFE9.3040206@huawei.com> <1354128096.26955.276.camel@misato.fc.hp.com>
+	 <75241306.UQIr1RW8Qh@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2012-11-29 at 11:15 +0100, Rafael J. Wysocki wrote:
+> On Wednesday, November 28, 2012 11:41:36 AM Toshi Kani wrote:
+> > On Wed, 2012-11-28 at 19:05 +0800, Hanjun Guo wrote:
+> > > On 2012/11/24 1:50, Vasilis Liaskovitis wrote:
+> > > > As discussed in https://patchwork.kernel.org/patch/1581581/
+> > > > the driver core remove function needs to always succeed. This means we need
+> > > > to know that the device can be successfully removed before acpi_bus_trim / 
+> > > > acpi_bus_hot_remove_device are called. This can cause panics when OSPM-initiated
+> > > > or SCI-initiated eject of memory devices fail e.g with:
+> > > > echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
+> > > > 
+> > > > since the ACPI core goes ahead and ejects the device regardless of whether the
+> > > > the memory is still in use or not.
+> > > > 
+> > > > For this reason a new acpi_device operation called prepare_remove is introduced.
+> > > > This operation should be registered for acpi devices whose removal (from kernel
+> > > > perspective) can fail.  Memory devices fall in this category.
+> > > > 
+> > > > acpi_bus_remove() is changed to handle removal in 2 steps:
+> > > > - preparation for removal i.e. perform part of removal that can fail. Should
+> > > >   succeed for device and all its children.
+> > > > - if above step was successfull, proceed to actual device removal
+> > > 
+> > > Hi Vasilis,
+> > > We met the same problem when we doing computer node hotplug, It is a good idea
+> > > to introduce prepare_remove before actual device removal.
+> > > 
+> > > I think we could do more in prepare_remove, such as rollback. In most cases, we can
+> > > offline most of memory sections except kernel used pages now, should we rollback
+> > > and online the memory sections when prepare_remove failed ?
+> > 
+> > I think hot-plug operation should have all-or-nothing semantics.  That
+> > is, an operation should either complete successfully, or rollback to the
+> > original state.
+> 
+> That's correct.
+> 
+> > > As you may know, the ACPI based hotplug framework we are working on already addressed
+> > > this problem, and the way we slove this problem is a bit like yours.
+> > > 
+> > > We introduce hp_ops in struct acpi_device_ops:
+> > > struct acpi_device_ops {
+> > > 	acpi_op_add add;
+> > > 	acpi_op_remove remove;
+> > > 	acpi_op_start start;
+> > > 	acpi_op_bind bind;
+> > > 	acpi_op_unbind unbind;
+> > > 	acpi_op_notify notify;
+> > > #ifdef	CONFIG_ACPI_HOTPLUG
+> > > 	struct acpihp_dev_ops *hp_ops;
+> > > #endif	/* CONFIG_ACPI_HOTPLUG */
+> > > };
+> > > 
+> > > in hp_ops, we divide the prepare_remove into six small steps, that is:
+> > > 1) pre_release(): optional step to mark device going to be removed/busy
+> > > 2) release(): reclaim device from running system
+> > > 3) post_release(): rollback if cancelled by user or error happened
+> > > 4) pre_unconfigure(): optional step to solve possible dependency issue
+> > > 5) unconfigure(): remove devices from running system
+> > > 6) post_unconfigure(): free resources used by devices
+> > > 
+> > > In this way, we can easily rollback if error happens.
+> > > How do you think of this solution, any suggestion ? I think we can achieve
+> > > a better way for sharing ideas. :)
+> > 
+> > Yes, sharing idea is good. :)  I do not know if we need all 6 steps (I
+> > have not looked at all your changes yet..), but in my mind, a hot-plug
+> > operation should be composed with the following 3 phases.
+> > 
+> > 1. Validate phase - Verify if the request is a supported operation.  All
+> > known restrictions are verified at this phase.  For instance, if a
+> > hot-remove request involves kernel memory, it is failed in this phase.
+> > Since this phase makes no change, no rollback is necessary to fail.  
+> 
+> Actually, we can't do it this way, because the conditions may change between
+> the check and the execution.  So the first phase needs to involve execution
+> to some extent, although only as far as it remains reversible.
+
+For memory hot-remove, we can check if the target memory ranges are
+within ZONE_MOVABLE.  We should not allow user to change this setup
+during hot-remove operation.  Other things may be to check if a target
+node contains cpu0 (until it is supported), the console UART (assuming
+we cannot delete it), etc.  We should avoid doing rollback as much as we
+can.
+
+Thanks,
+-Toshi
 
 
-> -----Original Message-----
-> From: Wei Yongjun [mailto:weiyj.lk@gmail.com]
-> Sent: Wednesday, November 28, 2012 9:23 PM
-> To: KY Srinivasan; Haiyang Zhang
-> Cc: yongjun_wei@trendmicro.com.cn; devel@linuxdriverproject.org; linux-
-> kernel@vger.kernel.org
-> Subject: [PATCH -next] hv: hv_balloon: remove duplicated include from
-> hv_balloon.c
+> > 2. Execute phase - Perform hot-add / hot-remove operation that can be
+> > rolled-back in case of error or cancel.
 > 
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> I would just merge 1 and 2.
 > 
-> Remove duplicated include.
+> > 3. Commit phase - Perform the final hot-add / hot-remove operation that
+> > cannot be rolled-back.  No error / cancel is allowed in this phase.  For
+> > instance, eject operation is performed at this phase.  
 > 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-Acked-by:  K. Y. Srinivasan <kys@microsoft.com>
-
-> ---
->  drivers/hv/hv_balloon.c | 1 -
->  1 file changed, 1 deletion(-)
+> Yup.
 > 
-> diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
-> index f6c0011..0ce08c4 100644
-> --- a/drivers/hv/hv_balloon.c
-> +++ b/drivers/hv/hv_balloon.c
-> @@ -29,7 +29,6 @@
->  #include <linux/memory_hotplug.h>
->  #include <linux/memory.h>
->  #include <linux/notifier.h>
-> -#include <linux/mman.h>
->  #include <linux/percpu_counter.h>
-> 
->  #include <linux/hyperv.h>
+> Thanks,
+> Rafael
 > 
 > 
 
