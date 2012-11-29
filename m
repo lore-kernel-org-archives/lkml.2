@@ -1,122 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929Ab2K2GTp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 01:19:45 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:49580 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392Ab2K2GTn (ORCPT
+	id S1752148Ab2K2GUi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 01:20:38 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:4925 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751692Ab2K2GUh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 01:19:43 -0500
-Date: Thu, 29 Nov 2012 17:19:39 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Philipp Reisner <philipp.reisner@linbit.com>,
-        Lars Ellenberg <lars.ellenberg@linbit.com>,
-        Jens Axboe <axboe@kernel.dk>, Lukas Czerner <lczerner@redhat.com>
-Subject: linux-next: build warnings after merge of the akpm tree
-Message-Id: <20121129171939.8539a56adf1f0f7ae518f4ce@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__29_Nov_2012_17_19_39_+1100_vMvHEMfJNPi4yXY2"
+	Thu, 29 Nov 2012 01:20:37 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 28 Nov 2012 22:20:20 -0800
+Message-ID: <50B6FEAD.9070401@nvidia.com>
+Date: Thu, 29 Nov 2012 11:50:29 +0530
+From: Prashant Gaikwad <pgaikwad@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Sivaram Nair <sivaramn@nvidia.com>
+CC: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/2] ARM: tegra: remove unused functions in mach/clk.h
+References: <1353999553-5196-1-git-send-email-sivaramn@nvidia.com>
+In-Reply-To: <1353999553-5196-1-git-send-email-sivaramn@nvidia.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__29_Nov_2012_17_19_39_+1100_vMvHEMfJNPi4yXY2
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tuesday 27 November 2012 12:29 PM, Sivaram Nair wrote:
+> This is a cleaning up patch that removes couple of functions in
+> mach/clk.h that are no longer used and does not have any body.
+>
+> Signed-off-by: Sivaram Nair <sivaramn@nvidia.com>
+> ---
+>   arch/arm/mach-tegra/include/mach/clk.h |    5 -----
+>   1 file changed, 5 deletions(-)
+>
+> diff --git a/arch/arm/mach-tegra/include/mach/clk.h b/arch/arm/mach-tegra/include/mach/clk.h
+> index 95f3a54..64d2657 100644
+> --- a/arch/arm/mach-tegra/include/mach/clk.h
+> +++ b/arch/arm/mach-tegra/include/mach/clk.h
+> @@ -34,11 +34,6 @@ enum tegra_clk_ex_param {
+>   void tegra_periph_reset_deassert(struct clk *c);
+>   void tegra_periph_reset_assert(struct clk *c);
+>   
+> -#ifndef CONFIG_COMMON_CLK
+> -unsigned long clk_get_rate_all_locked(struct clk *c);
+> -#endif
+> -
+> -void tegra2_sdmmc_tap_delay(struct clk *c, int delay);
+>   int tegra_clk_cfg_ex(struct clk *c, enum tegra_clk_ex_param p, u32 setting);
+>   
+>   #endif
 
-Hi Andrew,
-
-After merging the akpm tree, today's linux-next build (x86_64
-allmodconfig) produced these warnings:
-
-In file included from drivers/block/drbd/drbd_bitmap.c:32:0:
-drivers/block/drbd/drbd_int.h:2339:0: warning: "__wait_event_lock_irq" rede=
-fined [enabled by default]
-include/linux/wait.h:554:0: note: this is the location of the previous defi=
-nition
-drivers/block/drbd/drbd_int.h:2358:0: warning: "wait_event_lock_irq" redefi=
-ned [enabled by default]
-include/linux/wait.h:621:0: note: this is the location of the previous defi=
-nition
-In file included from drivers/block/drbd/drbd_receiver.c:46:0:
-drivers/block/drbd/drbd_int.h:2339:0: warning: "__wait_event_lock_irq" rede=
-fined [enabled by default]
-include/linux/wait.h:554:0: note: this is the location of the previous defi=
-nition
-drivers/block/drbd/drbd_int.h:2358:0: warning: "wait_event_lock_irq" redefi=
-ned [enabled by default]
-include/linux/wait.h:621:0: note: this is the location of the previous defi=
-nition
-In file included from drivers/block/drbd/drbd_proc.c:34:0:
-drivers/block/drbd/drbd_int.h:2339:0: warning: "__wait_event_lock_irq" rede=
-fined [enabled by default]
-include/linux/wait.h:554:0: note: this is the location of the previous defi=
-nition
-drivers/block/drbd/drbd_int.h:2358:0: warning: "wait_event_lock_irq" redefi=
-ned [enabled by default]
-include/linux/wait.h:621:0: note: this is the location of the previous defi=
-nition
-In file included from drivers/block/drbd/drbd_worker.c:38:0:
-drivers/block/drbd/drbd_int.h:2339:0: warning: "__wait_event_lock_irq" rede=
-fined [enabled by default]
-include/linux/wait.h:554:0: note: this is the location of the previous defi=
-nition
-drivers/block/drbd/drbd_int.h:2358:0: warning: "wait_event_lock_irq" redefi=
-ned [enabled by default]
-include/linux/wait.h:621:0: note: this is the location of the previous defi=
-nition
-In file included from drivers/block/drbd/drbd_actlog.c:31:0:
-drivers/block/drbd/drbd_int.h:2339:0: warning: "__wait_event_lock_irq" rede=
-fined [enabled by default]
-include/linux/wait.h:554:0: note: this is the location of the previous defi=
-nition
-drivers/block/drbd/drbd_int.h:2358:0: warning: "wait_event_lock_irq" redefi=
-ned [enabled by default]
-include/linux/wait.h:621:0: note: this is the location of the previous defi=
-nition
-In file included from drivers/block/drbd/drbd_req.c:30:0:
-drivers/block/drbd/drbd_int.h:2339:0: warning: "__wait_event_lock_irq" rede=
-fined [enabled by default]
-include/linux/wait.h:554:0: note: this is the location of the previous defi=
-nition
-drivers/block/drbd/drbd_int.h:2358:0: warning: "wait_event_lock_irq" redefi=
-ned [enabled by default]
-include/linux/wait.h:621:0: note: this is the location of the previous defi=
-nition
-
-Introduced by the interaction of commit c1fd29a11f43 ("drbd: Fix a race
-condition that can lead to a BUG()") from the block tree and commit
-"wait: add wait_event_lock_irq() interface" from the akpm tree.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__29_Nov_2012_17_19_39_+1100_vMvHEMfJNPi4yXY2
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQtv57AAoJEECxmPOUX5FEw38QAJ+FcJys6W9LPpQQQYWiWOvb
-QEHYyFSlsddhc1cjPSo8AFtBpeM94H71vj+nOgNut9lw8DX0zYe2E+Hj2YLTYZ+v
-09uaEKnqfOaelEYhzOEhdLJ2uBupqk9lgjATpynoNiUUzPCl814H1LAEze0V8gxG
-orOASo7JEVxPby+KtqsVpaaJRRaxOVglrvPZQF3Vc4xT/DRbhOW9el5GZX/Jro5w
-1KvqBzk2a/Qzmaw+tlEj0VJUQEAaKk03S1EB9bC5VUqFfRwjeJwxgVH/uyZWKEC6
-wB+Sny1JwE1P+yhSlBz459s3FWqAKW33y3j12NSYDeHV3AVQ/DERs8ZEtKBtZ9jQ
-3HC9drvhKwpewVma3abZy/QpF0XudZ7AQuvd1dDrwVl8eWc0Wtm7a7YJkPktOheD
-GfixAf9vqvOMQE/IXHibUnxosg5jDHqaQo7V82PsZ9eNZFfe6TsvCdKRwnFA+Gu3
-Lt3hNpAhXvd5Qb/wyJN6kyaBs5PvnJ+CC5KLqReRIRKd0lO6ZbIEGrEbsoQB2Csl
-SGtmQBIT0WHZic2lMLdT/f33OFVut5l4qeyCJd6dfAtCDUuWyLTfXXXcjJZ4GLqs
-+8hglZzZnAjWqsgZeuPsD4ZZAomdDNhq1R0+huVhKJApNWQgeA8UH3O8u/0HLRk9
-63PN53seWBkZvNk8Cnos
-=ivIK
------END PGP SIGNATURE-----
-
---Signature=_Thu__29_Nov_2012_17_19_39_+1100_vMvHEMfJNPi4yXY2--
+Reviewed-by: Prashant Gaikwad <pgaikwad@nvidia.com>
