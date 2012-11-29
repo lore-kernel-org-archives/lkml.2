@@ -1,90 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754250Ab2K2CGv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 21:06:51 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:46319 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752896Ab2K2CGt convert rfc822-to-8bit (ORCPT
+	id S1754460Ab2K2CHQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 21:07:16 -0500
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:16966 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753420Ab2K2CHP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 21:06:49 -0500
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "vbyravarasu@nvidia.com" <vbyravarasu@nvidia.com>,
-        "sivaramn@nvidia.com" <sivaramn@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] rtc-tps65910: fix invalid pointer access on _remove()
-Thread-Topic: [PATCH] rtc-tps65910: fix invalid pointer access on _remove()
-Thread-Index: Ac3N1h+hbmHcRBfbTaOdOF2knV6cjg==
-Date: Thu, 29 Nov 2012 02:06:21 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F6418F0D4@DQHE02.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.87.185.123]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 28 Nov 2012 21:07:15 -0500
+Message-ID: <50B6C34E.20007@hp.com>
+Date: Wed, 28 Nov 2012 18:07:10 -0800
+From: Chegu Vinod <chegu_vinod@hp.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+CC: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH V3 RFC 0/2] kvm: Improving undercommit scenarios
+References: <20121126120740.2595.33651.sendpatchset@codeblue>
+In-Reply-To: <20121126120740.2595.33651.sendpatchset@codeblue>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- The tps65910_rtc data is registered as the platform driver data in _probe().
- Therefore the tps65910_rtc should be used on unregistering the rtc device.
- And device pointer should be retrieved from the platform_device structure.
-
- This patch fixes the error as below.
-
- Unable to handle kernel NULL pointer dereference at virtual address 00000008
- Modules linked in: rtc_tps65910(-)
- CPU: 0    Not tainted  (3.7.0-rc7-next-20121128-g6b1f974-dirty #7)
- PC is at tps65910_rtc_alarm_irq_enable+0x20/0x2c [rtc_tps65910]
- LR is at tps65910_rtc_alarm_irq_enable+0x10/0x2c [rtc_tps65910]
- [<bf000044>] (tps65910_rtc_alarm_irq_enable+0x20/0x2c [rtc_tps65910]) from
-   [<bf0004d4>] (tps65910_rtc_remove+0x18/0x28 [rtc_)
- [<bf0004d4>] (tps65910_rtc_remove+0x18/0x28 [rtc_tps65910]) from
-   [<c034e700>] (platform_drv_remove+0x18/0x1c)
- [<c034e700>] (platform_drv_remove+0x18/0x1c) from
-   [<c034ceec>] (__device_release_driver+0x70/0xcc)
- [<c034ceec>] (__device_release_driver+0x70/0xcc) from
-   [<c034d608>] (driver_detach+0xb4/0xb8)
- [<c034d608>] (driver_detach+0xb4/0xb8) from
-   [<c034cc24>] (bus_remove_driver+0x7c/0xc0)
- [<c034cc24>] (bus_remove_driver+0x7c/0xc0) from
-   [<c00a045c>] (sys_delete_module+0x148/0x21c)
- [<c00a045c>] (sys_delete_module+0x148/0x21c) from
-   [<c0013c60>] (ret_fast_syscall+0x0/0x3c)
-
-Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
----
- drivers/rtc/rtc-tps65910.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/rtc/rtc-tps65910.c b/drivers/rtc/rtc-tps65910.c
-index e8d44bc..687006f 100644
---- a/drivers/rtc/rtc-tps65910.c
-+++ b/drivers/rtc/rtc-tps65910.c
-@@ -288,11 +288,11 @@ static int __devinit tps65910_rtc_probe(struct platform_device *pdev)
- static int __devexit tps65910_rtc_remove(struct platform_device *pdev)
- {
- 	/* leave rtc running, but disable irqs */
--	struct rtc_device *rtc = platform_get_drvdata(pdev);
-+	struct tps65910_rtc *tps_rtc = platform_get_drvdata(pdev);
- 
--	tps65910_rtc_alarm_irq_enable(&rtc->dev, 0);
-+	tps65910_rtc_alarm_irq_enable(&pdev->dev, 0);
- 
--	rtc_device_unregister(rtc);
-+	rtc_device_unregister(tps_rtc->rtc);
- 	return 0;
- }
- 
--- 
-1.7.9.5
-
-
-Best Regards,
-Milo
-
+On 11/26/2012 4:07 AM, Raghavendra K T wrote:
+>   In some special scenarios like #vcpu <= #pcpu, PLE handler may
+> prove very costly, because there is no need to iterate over vcpus
+> and do unsuccessful yield_to burning CPU.
+>
+>   The first patch optimizes all the yield_to by bailing out when there
+>   is no need to continue in yield_to (i.e., when there is only one task
+>   in source and target rq).
+>
+>   Second patch uses that in PLE handler. Further when a yield_to fails
+>   we do not immediately go out of PLE handler instead we try thrice
+>   to have better statistical possibility of false return. Otherwise that
+>   would affect moderate overcommit cases.
+>   
+>   Result on 3.7.0-rc6 kernel shows around 140% improvement for ebizzy 1x and
+>   around 51% for dbench 1x  with 32 core PLE machine with 32 vcpu guest.
+>
+>
+> base = 3.7.0-rc6
+> machine: 32 core mx3850 x5 PLE mc
+>
+> --+-----------+-----------+-----------+------------+-----------+
+>                 ebizzy (rec/sec higher is beter)
+> --+-----------+-----------+-----------+------------+-----------+
+>      base        stdev       patched     stdev       %improve
+> --+-----------+-----------+-----------+------------+-----------+
+> 1x   2511.3000    21.5409    6051.8000   170.2592   140.98276
+> 2x   2679.4000   332.4482    2692.3000   251.4005     0.48145
+> 3x   2253.5000   266.4243    2192.1667   178.9753    -2.72169
+> 4x   1784.3750   102.2699    2018.7500   187.5723    13.13485
+> --+-----------+-----------+-----------+------------+-----------+
+>
+> --+-----------+-----------+-----------+------------+-----------+
+>          dbench (throughput in MB/sec. higher is better)
+> --+-----------+-----------+-----------+------------+-----------+
+>      base        stdev       patched     stdev       %improve
+> --+-----------+-----------+-----------+------------+-----------+
+> 1x  6677.4080   638.5048    10098.0060   3449.7026     51.22643
+> 2x  2012.6760    64.7642    2019.0440     62.6702       0.31639
+> 3x  1302.0783    40.8336    1292.7517     27.0515      -0.71629
+> 4x  3043.1725  3243.7281    4664.4662   5946.5741      53.27643
+> --+-----------+-----------+-----------+------------+-----------+
+>
+> Here is the refernce of no ple result.
+>   ebizzy-1x_nople 7592.6000 rec/sec
+>   dbench_1x_nople 7853.6960 MB/sec
+>
+> The result says we can still improve by 60% for ebizzy, but overall we are
+> getting impressive performance with the patches.
+>
+>   Changes Since V2:
+>   - Dropped global measures usage patch (Peter Zilstra)
+>   - Do not bail out on first failure (Avi Kivity)
+>   - Try thrice for the failure of yield_to to get statistically more correct
+>     behaviour.
+>
+>   Changes since V1:
+>   - Discard the idea of exporting nrrunning and optimize in core scheduler (Peter)
+>   - Use yield() instead of schedule in overcommit scenarios (Rik)
+>   - Use loadavg knowledge to detect undercommit/overcommit
+>
+>   Peter Zijlstra (1):
+>    Bail out of yield_to when source and target runqueue has one task
+>
+>   Raghavendra K T (1):
+>    Handle yield_to failure return for potential undercommit case
+>
+>   Please let me know your comments and suggestions.
+>
+>   Link for V2:
+>   https://lkml.org/lkml/2012/10/29/287
+>
+>   Link for V1:
+>   https://lkml.org/lkml/2012/9/21/168
+>
+>   kernel/sched/core.c | 25 +++++++++++++++++++------
+>   virt/kvm/kvm_main.c | 26 ++++++++++++++++----------
+>   2 files changed, 35 insertions(+), 16 deletions(-)
+>
+> .
+>
+Tested-by: Chegu Vinod <chegu_vinod@hp.com>
