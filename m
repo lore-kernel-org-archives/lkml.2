@@ -1,65 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754818Ab2K2QAv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 11:00:51 -0500
-Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:37284 "EHLO
-	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753469Ab2K2QAu (ORCPT
+	id S1754892Ab2K2QFc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 11:05:32 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:63579 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753466Ab2K2QFa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 11:00:50 -0500
-Date: Thu, 29 Nov 2012 10:59:34 -0500
-From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Krzysztof Mazur <krzysiek@podlesie.net>,
-        David Laight <David.Laight@ACULAB.COM>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nathan@traverse.com.au
-Subject: Re: [PATCH v2 3/3] pppoatm: protect against freeing of vcc
-Message-ID: <20121129105934.3e0c3a04@thirdoffive.cmf.nrl.navy.mil>
-In-Reply-To: <1354204077.21562.172.camel@shinybook.infradead.org>
-References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
-	<1350926091-12642-3-git-send-email-krzysiek@podlesie.net>
-	<1354036592.2534.6.camel@shinybook.infradead.org>
-	<20121127173906.GA11390@shrek.podlesie.net>
-	<1354039349.2534.11.camel@shinybook.infradead.org>
-	<20121127135434.0728cd4f@thirdoffive.cmf.nrl.navy.mil>
-	<AE90C24D6B3A694183C094C60CF0A2F6026B70C9@saturn3.aculab.com>
-	<1354141115.21562.101.camel@shinybook.infradead.org>
-	<20121129150945.GB16478@shrek.podlesie.net>
-	<1354204077.21562.172.camel@shinybook.infradead.org>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 29 Nov 2012 11:05:30 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121128210509.GA2590@local>
+References: <201211271348.14603.vitas@nppfactor.kiev.ua>
+	<20121127224341.GA2605@local>
+	<201211281058.33185.vitas@nppfactor.kiev.ua>
+	<20121128210509.GA2590@local>
+Date: Thu, 29 Nov 2012 17:05:27 +0100
+X-Google-Sender-Auth: zsdiLiMY21BF5V8adUEx1X5sk04
+Message-ID: <CAM3j68rrBePLoamRb1pCH+TeAfLDO-5Jd_kk7-JRCNnEBhLp2Q@mail.gmail.com>
+Subject: Re: [PATCH] uio.c: Fix warning: 'ret' might be used uninitialized
+From: Tux9 <tuxding@gmail.com>
+To: "Hans J. Koch" <hjk@hansjkoch.de>
+Cc: Vitalii Demianets <vitas@nppfactor.kiev.ua>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Nov 2012 15:47:57 +0000
-David Woodhouse <dwmw2@infradead.org> wrote:
+Hans, I think there are something wrong in your patch, while Vitalii's
+is right. The variable "ret" is reused in line 292 and line 295, so
+the value of "ret" would be overridden (if it goto err_map in line 284
+when mi>=1).
 
+Best,
+Cong
 
-> @@ -1020,12 +1048,15 @@ static uint32_t fpga_tx(struct solos_card *card)
->  			if (vcc) {
->  				atomic_inc(&vcc->stats->tx);
->  				solos_pop(vcc, oldskb);
-> -			} else {
-> -				struct pkt_hdr *header = (void *)oldskb->data;
-> -				if (le16_to_cpu(header->type) == PKT_PCLOSE)
-> -					complete(&SKB_CB(oldskb)->c);
-> +
-> +				/*
-> +				 * If it's a TX skb on a closed VCC, pclose()
-> +				 * may be waiting for it...
-> +				 */
-> +				if (!test_bit(ATM_VF_READY, &vcc->flags))
-> +					wake_up(&card->param_wq);
-> +			} else
->  				dev_kfree_skb_irq(oldskb);
-> -			}
-
-the part that bothers me (and i dont have the programmer's guide for
-the solos hardware) is that you are watching for the PKT_PCLOSE to be
-sent to the card.  shouldnt you be watching for the PKT_PCLOSE to be
-returned from the card (assuming it does such a thing) so that you can
-be assured that the tx/rx for this vpi/vci pair has been "stopped"?
+On Wed, Nov 28, 2012 at 10:05 PM, Hans J. Koch <hjk@hansjkoch.de> wrote:
+> On Wed, Nov 28, 2012 at 10:58:32AM +0200, Vitalii Demianets wrote:
+>> On Wednesday 28 November 2012 00:43:41 Hans J. Koch wrote:
+>> >
+>> > Thanks, good catch, but why don't you simply do this:
+>> >
+>>
+>> Just a matter of personal preference.
+>
+> Your patch: 1 files changed, 12 insertions(+), 4 deletions(-)
+> My patch: 1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> Both achieve exactly the same. That's not a matter of personal
+> preference, that's the difference between a working solution and
+> a good solution. In the kernel, we want the latter.
+>
+>> As a maintainer you can apply either
+>> patch you want. I guess you would prefer your approach and I have no
+>> objections to that :)
+>
+> That's not the right kind of comment. Don't make it a habit.
+>
+> Thanks,
+> Hans
+>
+>>
+>> >
+>> > >From 228445996bb75a44d16b6237eca6a0916d9b2d7e Mon Sep 17 00:00:00 2001
+>> > From: "Hans J. Koch" <hjk@hansjkoch.de>
+>> > Date: Tue, 27 Nov 2012 23:38:00 +0100
+>> > Subject: [PATCH] uio: Fix warning: 'ret' might be used uninitialized
+>> >
+>> > In two cases, the return value variable "ret" can be undefined.
+>> >
+>> > Signed-off-by: Hans J. Koch <hjk@hansjkoch.de>
+>> > ---
+>> >  drivers/uio/uio.c |    2 +-
+>> >  1 files changed, 1 insertions(+), 1 deletions(-)
+>> >
+>> > diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+>> > index 5110f36..fc60e35 100644
+>> > --- a/drivers/uio/uio.c
+>> > +++ b/drivers/uio/uio.c
+>> > @@ -263,7 +263,7 @@ static struct class uio_class = {
+>> >   */
+>> >  static int uio_dev_add_attributes(struct uio_device *idev)
+>> >  {
+>> > -   int ret;
+>> > +   int ret = -ENOMEM;
+>> >     int mi, pi;
+>> >     int map_found = 0;
+>> >     int portio_found = 0;
+>>
+>>
+>>
+>> --
+>> With Best Regards,
+>> Vitalii Demianets
+>>
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
