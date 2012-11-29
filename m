@@ -1,375 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751352Ab2K2FGf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 00:06:35 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:12164 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077Ab2K2FGa (ORCPT
+	id S1751425Ab2K2FGj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 00:06:39 -0500
+Received: from intranet.asianux.com ([58.214.24.6]:39487 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751077Ab2K2FGh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 00:06:30 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-33-50b6ed543ea0
-From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        linux-i2c@vger.kernel.org
-Cc: naveen@chromium.org, sjg@chromium.org, grundler@chromium.org,
-        w.sang@pengutronix.de, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] i2c-s3c2410: Add bus arbitration implementation
-Date: Thu, 29 Nov 2012 10:35:35 +0530
-Message-id: <1354165536-18529-3-git-send-email-ch.naveen@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1354165536-18529-1-git-send-email-ch.naveen@samsung.com>
-References: <1354165536-18529-1-git-send-email-ch.naveen@samsung.com>
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsWyRsSkWjf07bYAg9mtbBYdf78wWlzeNYfN
-	Ysb5fUwOzB6fN8kFMEZx2aSk5mSWpRbp2yVwZdxbcJ6toD2g4nnfbuYGxjf2XYwcHBICJhJH
-	Dgl3MXICmWISF+6tZ+ti5OIQEljKKDF10nI2iISJxPNrLewQiUWMEn+72pggnB4miQ0v9zKB
-	VLEJmEkcXLSaHcQWEciQWPJoAyOIzSxQLvHp0XZWEFtYwEXi4pHZzCA2i4CqxP7Z98F6eQVc
-	JW6e+M4OcZGCxJxJNiAmp4CbxLaLQSAVQkAV3bf3QHUKSHybfIgFolpWYtMBZpBrJAQes0nM
-	nHOeBeJmSYmDK26wTGAUXsDIsIpRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjMCRP/3smvYNx
-	VYPFIUYBDkYlHt6NltsChFgTy4orcw8xSnAwK4nwWlYDhXhTEiurUovy44tKc1KLDzH6AF0y
-	kVlKNDkfGC95JfGGxibmpsamlkZGZqamOISVxHmbPVIChATSE0tSs1NTC1KLYMYxcXBKNTC2
-	z7eOz21U2VvYbLRphl3Yl58GmTcunD+o9z7C78hLnxVvjF5JPClZdry7q9u1XYblnEESZ+uy
-	GY8FDhwsqo3aujrgSc79FSs/eXc8uSu34MgVc8mV6n7v/qe+Nq9sSmC+vcdE6Mriy3uL/245
-	OmVuc+qzHy6TvP3df62c/CM7rOTKwfy+gMOzlViKMxINtZiLihMBzZz0B3YCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMIsWRmVeSWpSXmKPExsVy+t9jAd2Qt9sCDOb3WVp0/P3CaHF51xw2
-	ixnn9zE5MHt83iQXwBjVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhraGlhrqSQl5ib
-	aqvk4hOg65aZAzRfSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5hxb8F5
-	toL2gIrnfbuZGxjf2HcxcnJICJhIPL/Wwg5hi0lcuLeerYuRi0NIYBGjxN+uNiYIp4dJYsPL
-	vUwgVWwCZhIHF60G6xARyJBY8mgDI4jNLFAu8enRdlYQW1jAReLikdnMIDaLgKrE/tn3wXp5
-	BVwlbp74DtTLAbRNQWLOJBsQk1PATWLbxSCQCiGgiu7be5gnMPIuYGRYxSiaWpBcUJyUnmuk
-	V5yYW1yal66XnJ+7iREc8s+kdzCuarA4xCjAwajEw7vRcluAEGtiWXFl7iFGCQ5mJRFey2qg
-	EG9KYmVValF+fFFpTmrxIUYfoJsmMkuJJucD4zGvJN7Q2MTc1NjU0sTCxMwSh7CSOG+zR0qA
-	kEB6YklqdmpqQWoRzDgmDk6pBsZ8V4FZfEEGV2OsGPiWxCUIB3b9FWzjMzR6I7z+jKlN5l32
-	dQbJu5VcPJT/f5h8N+qzdJbNEVOR39vWTpj7dH7cyrdqda8PHPtyR84+edvGj2+uVk+/KfT1
-	+/3aqsUP2M8rst+VY9pxXDrTpOPzTDnWGQ+2VZUKsf2X2XNB4iuP7Fudp1xbfD8rsRRnJBpq
-	MRcVJwIA1zKDYKYCAAA=
-X-CFilter-Loop: Reflected
+	Thu, 29 Nov 2012 00:06:37 -0500
+X-Spam-Score: -100.8
+Message-ID: <50B6ED90.6060100@asianux.com>
+Date: Thu, 29 Nov 2012 13:07:28 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [Suggestion] drivers/tty: drivers/char/:  for MAX_ASYNC_BUFFER_SIZE
+References: <50B6E751.9000000@asianux.com>
+In-Reply-To: <50B6E751.9000000@asianux.com>
+X-Forwarded-Message-Id: <50B6E751.9000000@asianux.com>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Simon Glass <sjg@chromium.org>
+Hello Greg Kroah-Hartman:
 
-The arbitrator is a general purpose function which uses two GPIOs to
-communicate with another device to claim/release a bus. We use it to
-arbitrate an i2c port between the AP and the EC.
+for MAX_ASYNC_BUFFER_SIZE:
+  it is defined as 4096;
+  but for the max buffer size which it processes, is 65535.
+  so suggest to #define MAX_ASYNC_BUFFER_SIZE 0x10000  (better than 0xffff)
 
-Signed-off-by: Simon Glass <sjg@chromium.org>
-Cc: Grant Grundler <grundler@chromium.org>
-Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
----
- .../devicetree/bindings/i2c/samsung-i2c.txt        |   46 ++++++
- drivers/i2c/busses/i2c-s3c2410.c                   |  167 ++++++++++++++++++--
- 2 files changed, 200 insertions(+), 13 deletions(-)
+  I use 3 Step to prove it, please see below:
 
-diff --git a/Documentation/devicetree/bindings/i2c/samsung-i2c.txt b/Documentation/devicetree/bindings/i2c/samsung-i2c.txt
-index e9611ac..4bed49f 100644
---- a/Documentation/devicetree/bindings/i2c/samsung-i2c.txt
-+++ b/Documentation/devicetree/bindings/i2c/samsung-i2c.txt
-@@ -28,6 +28,11 @@ Optional properties:
-     specified, default value is 0.
-   - samsung,i2c-max-bus-freq: Desired frequency in Hz of the bus. If not
-     specified, the default value in Hz is 100000.
-+  - samsung,arbitration-gpios : Two GPIOs to use with the GPIO-based bus
-+    arbitration protocol (see below). The first should be an output, and is
-+    used to claim the I2C bus, the second should be an input, and signals that
-+    the other side wants to claim the bus. This allows two masters to share
-+    the same I2C bus.
- 
- Example:
- 
-@@ -52,4 +57,45 @@ Example:
- 			compatible = "wlf,wm8994";
- 			reg = <0x1a>;
- 		};
-+
-+		/* If you want GPIO-based bus arbitration */
-+		samsung,arbitration-gpios = <&gpf0 3 1 0 0>,	/* AP_CLAIM */
-+			<&gpe0 4 0 3 0>;			/* EC_CLAIM */
- 	};
-+
-+
-+GPIO-based Arbitration
-+======================
-+(documented here for want of a better place - an implementation is in the
-+i2c-s3c2410 driver)
-+
-+This uses GPIO lines between the AP (Exynos) and an attached EC (embedded
-+controller) which both want to talk on the same I2C bus as master.
-+
-+The AP and EC each have a 'bus claim' line, which is an output that the
-+other can see. These are both active low, with pull-ups enabled.
-+
-+- AP_CLAIM: output from AP, signalling to the EC that the AP wants the bus
-+- EC_CLAIM: output from EC, signalling to the AP that the EC wants the bus
-+
-+
-+Algorithm
-+---------
-+The basic algorithm is to assert your line when you want the bus, then make
-+sure that the other side doesn't want it also. A detailed explanation is best
-+done with an example.
-+
-+Let's say the AP wants to claim the bus. It:
-+1. Asserts AP_CLAIM
-+2. Waits a little bit for the other side to notice (slew time, say 10
-+microseconds)
-+3. Checks EC_CLAIM. If this is not asserted, then the AP has the bus, and
-+we are done
-+4. Otherwise, wait for a few milliseconds and see if EC_CLAIM is released
-+5. If not, back off, release the claim and wait for a few more milliseconds
-+6. Go back to 1 (until retry time has expired)
-+
-+To release the bus, just de-assert the claim line. If the other wants the bus
-+it will notice soon enough.
-+
-+The same algorithm applies on the EC side.
-diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
-index 2fd346d..87a6928 100644
---- a/drivers/i2c/busses/i2c-s3c2410.c
-+++ b/drivers/i2c/busses/i2c-s3c2410.c
-@@ -62,6 +62,13 @@ enum s3c24xx_i2c_state {
- 	STATE_STOP
- };
- 
-+enum {
-+	I2C_ARB_GPIO_AP,		/* AP claims i2c bus */
-+	I2C_ARB_GPIO_EC,		/* EC claims i2c bus */
-+
-+	I2C_ARB_GPIO_COUNT,
-+};
-+
- struct s3c24xx_i2c {
- 	wait_queue_head_t	wait;
- 	unsigned int            quirks;
-@@ -85,10 +92,16 @@ struct s3c24xx_i2c {
- 
- 	struct s3c2410_platform_i2c	*pdata;
- 	int			gpios[2];
-+	int			arb_gpios[I2C_ARB_GPIO_COUNT];
- 	struct pinctrl          *pctrl;
- #ifdef CONFIG_CPU_FREQ
- 	struct notifier_block	freq_transition;
- #endif
-+	/* Arbitration parameters */
-+	bool			arbitrate;
-+	unsigned int		slew_delay_us;
-+	unsigned int		wait_retry_us;
-+	unsigned int		wait_free_us;
- };
- 
- static struct platform_device_id s3c24xx_driver_ids[] = {
-@@ -116,6 +129,61 @@ static const struct of_device_id s3c24xx_i2c_match[] = {
- MODULE_DEVICE_TABLE(of, s3c24xx_i2c_match);
- #endif
- 
-+/*
-+ * If we have enabled arbitration on this bus, claim the i2c bus, using
-+ * the GPIO-based signalling protocol.
-+ */
-+int s3c24xx_i2c_claim(struct s3c24xx_i2c *i2c)
-+{
-+	unsigned long stop_retry, stop_time;
-+
-+	if (!i2c->arbitrate)
-+		return 0;
-+
-+	/* Start a round of trying to claim the bus */
-+	stop_time = jiffies + usecs_to_jiffies(i2c->wait_free_us) + 1;
-+	do {
-+		/* Indicate that we want to claim the bus */
-+		gpio_set_value(i2c->arb_gpios[I2C_ARB_GPIO_AP], 0);
-+		udelay(i2c->slew_delay_us);
-+
-+		/* Wait for the EC to release it */
-+		stop_retry = jiffies + usecs_to_jiffies(i2c->wait_retry_us) + 1;
-+		while (time_before(jiffies, stop_retry)) {
-+			if (gpio_get_value(i2c->arb_gpios[I2C_ARB_GPIO_EC])) {
-+				/* We got it, so return */
-+				return 0;
-+			}
-+
-+			usleep_range(50, 200);
-+		}
-+
-+		/* It didn't release, so give up, wait, and try again */
-+		gpio_set_value(i2c->arb_gpios[I2C_ARB_GPIO_AP], 1);
-+
-+		usleep_range(i2c->wait_retry_us, i2c->wait_retry_us * 2);
-+	} while (time_before(jiffies, stop_time));
-+
-+	/* Give up, release our claim */
-+	gpio_set_value(i2c->arb_gpios[I2C_ARB_GPIO_AP], 1);
-+	udelay(i2c->slew_delay_us);
-+	dev_err(i2c->dev, "I2C: Could not claim bus, timeout\n");
-+	return -EBUSY;
-+}
-+
-+/*
-+ * If we have enabled arbitration on this bus, release the i2c bus, using
-+ * the GPIO-based signalling protocol.
-+ */
-+void s3c24xx_i2c_release(struct s3c24xx_i2c *i2c)
-+{
-+	if (i2c->arbitrate) {
-+		/* Release the bus and wait for the EC to notice */
-+		gpio_set_value(i2c->arb_gpios[I2C_ARB_GPIO_AP], 1);
-+		udelay(i2c->slew_delay_us);
-+	}
-+}
-+
- /* s3c24xx_get_device_quirks
-  *
-  * Get controller type either from device tree or platform device variant.
-@@ -637,6 +705,15 @@ static int s3c24xx_i2c_doxfer(struct s3c24xx_i2c *i2c,
- 	if (i2c->suspended)
- 		return -EIO;
- 
-+	/*
-+	 * Claim the bus if needed.
-+	 *
-+	 * Note, this needs a lock. How come s3c24xx_i2c_set_master() below
-+	 * is outside the lock?
-+	 */
-+	if (s3c24xx_i2c_claim(i2c))
-+		return -EBUSY;
-+
- 	ret = s3c24xx_i2c_set_master(i2c);
- 	if (ret != 0) {
- 		dev_err(i2c->dev, "cannot get bus (error %d)\n", ret);
-@@ -676,6 +753,9 @@ static int s3c24xx_i2c_doxfer(struct s3c24xx_i2c *i2c,
-  out:
- 	i2c->state = STATE_IDLE;
- 
-+	/* Release the bus if needed */
-+	s3c24xx_i2c_release(i2c);
-+
- 	return ret;
- }
- 
-@@ -884,20 +964,42 @@ static inline void s3c24xx_i2c_deregister_cpufreq(struct s3c24xx_i2c *i2c)
- #endif
- 
- #ifdef CONFIG_OF
--static int s3c24xx_i2c_parse_dt_gpio(struct s3c24xx_i2c *i2c)
-+/*
-+ * Parse a list of GPIOs from a node property and request each one
-+ *
-+ * This might be better as of_gpio_get_array() one day.
-+ *
-+ * @param i2c		i2c driver data
-+ * @param name		name of property to read from
-+ * @param gpios		returns an array of GPIOs
-+ * @param count		number of GPIOs to read
-+ * @param required	true if the property is required, false if it is
-+ *			optional so no warning is printed (avoids a separate
-+ *			check in caller)
-+ * @return 0 on success, -ve on error, in which case no GPIOs remain
-+ * requested
-+ */
-+static int s3c24xx_i2c_parse_gpio(struct s3c24xx_i2c *i2c, const char *name,
-+		int gpios[], size_t count, bool required)
- {
--	int idx, gpio, ret;
--
--	if (i2c->quirks & QUIRK_NO_GPIO)
--		return 0;
-+	struct device_node *dn = i2c->dev->of_node;
-+	unsigned int idx;
-+	int gpio, ret;
- 
--	for (idx = 0; idx < 2; idx++) {
--		gpio = of_get_gpio(i2c->dev->of_node, idx);
-+	/*
-+	 * It would be nice if there were an of function to return a list
-+	 * of GPIOs
-+	 */
-+	for (idx = 0; idx < count; idx++) {
-+		gpio = of_get_named_gpio(dn, name, idx);
- 		if (!gpio_is_valid(gpio)) {
--			dev_err(i2c->dev, "invalid gpio[%d]: %d\n", idx, gpio);
-+			if (idx || required) {
-+				dev_err(i2c->dev, "invalid gpio[%d]: %d\n",
-+					idx, gpio);
-+			}
- 			goto free_gpio;
- 		}
--		i2c->gpios[idx] = gpio;
-+		gpios[idx] = gpio;
- 
- 		ret = gpio_request(gpio, "i2c-bus");
- 		if (ret) {
-@@ -909,19 +1011,47 @@ static int s3c24xx_i2c_parse_dt_gpio(struct s3c24xx_i2c *i2c)
- 
- free_gpio:
- 	while (--idx >= 0)
--		gpio_free(i2c->gpios[idx]);
-+		gpio_free(gpios[idx]);
- 	return -EINVAL;
- }
- 
--static void s3c24xx_i2c_dt_gpio_free(struct s3c24xx_i2c *i2c)
-+/* Free a list of GPIOs */
-+static void s3c24xx_i2c_free_gpios(int gpios[], int count)
- {
- 	unsigned int idx;
- 
-+	for (idx = 0; idx < count; idx++) {
-+		if (gpio_is_valid(gpios[idx]))
-+			gpio_free(gpios[idx]);
-+	}
-+}
-+
-+static int s3c24xx_i2c_parse_dt_gpio(struct s3c24xx_i2c *i2c)
-+{
-+	if (i2c->quirks & QUIRK_NO_GPIO)
-+		return 0;
-+
-+	if (s3c24xx_i2c_parse_gpio(i2c, "gpios", i2c->gpios, 2, true))
-+		return -EINVAL;
-+
-+	if (!s3c24xx_i2c_parse_gpio(i2c, "samsung,arbitration-gpios",
-+			i2c->arb_gpios, I2C_ARB_GPIO_COUNT, false)) {
-+		i2c->arbitrate = 1;
-+		dev_warn(i2c->dev, "GPIO-based arbitration enabled");
-+	}
-+
-+	return 0;
-+
-+}
-+
-+static void s3c24xx_i2c_dt_gpio_free(struct s3c24xx_i2c *i2c)
-+{
- 	if (i2c->quirks & QUIRK_NO_GPIO)
- 		return;
- 
--	for (idx = 0; idx < 2; idx++)
--		gpio_free(i2c->gpios[idx]);
-+	s3c24xx_i2c_free_gpios(i2c->gpios, 2);
-+	if (i2c->arbitrate)
-+		s3c24xx_i2c_free_gpios(i2c->arb_gpios, I2C_ARB_GPIO_COUNT);
- }
- #else
- static int s3c24xx_i2c_parse_dt_gpio(struct s3c24xx_i2c *i2c)
-@@ -992,6 +1122,17 @@ s3c24xx_i2c_parse_dt(struct device_node *np, struct s3c24xx_i2c *i2c)
- 	of_property_read_u32(np, "samsung,i2c-slave-addr", &pdata->slave_addr);
- 	of_property_read_u32(np, "samsung,i2c-max-bus-freq",
- 				(u32 *)&pdata->frequency);
-+
-+	/* Arbitration parameters */
-+	if (of_property_read_u32(np, "samsung,slew-delay-us",
-+				 &i2c->slew_delay_us))
-+		i2c->slew_delay_us = 10;
-+	if (of_property_read_u32(np, "samsung,wait-retry-us",
-+				 &i2c->wait_retry_us))
-+		i2c->wait_retry_us = 2000;
-+	if (of_property_read_u32(np, "samsung,wait-free-us",
-+				 &i2c->wait_free_us))
-+		i2c->wait_free_us = 50000;
- }
- #else
- static void
--- 
-1.7.9.5
+by the way:
+  I find it only through code review, not test it.
+  so I send it as suggestions (not a patch).
+  next time:
+    for the same case, if it is better to send a patch, directly.
+    please tell me by replying for this mail.
+    (at least, it can save your time, since you are busy)
+
+gchen.
+
+---------------------------------------------------------------------------------
+Step 1:
+
+the MAX_ASYNC_BUFFER_SIZE is 4096:
+
+root@gchen-desktop:~/linux# grep -rn MAX_ASYNC_BUFFER_SIZE *
+drivers/char/pcmcia/synclink_cs.c:213:	char flag_buf[MAX_ASYNC_BUFFER_SIZE];
+drivers/tty/synclink_gt.c:320:	char flag_buf[MAX_ASYNC_BUFFER_SIZE];
+drivers/tty/synclink_gt.c:321:	char char_buf[MAX_ASYNC_BUFFER_SIZE];
+drivers/tty/synclink.c:294:	char flag_buf[MAX_ASYNC_BUFFER_SIZE];
+drivers/tty/synclink.c:295:	char char_buf[MAX_ASYNC_BUFFER_SIZE];	
+drivers/tty/synclinkmp.c:265:	char flag_buf[MAX_ASYNC_BUFFER_SIZE];
+drivers/tty/synclinkmp.c:266:	char char_buf[MAX_ASYNC_BUFFER_SIZE];
+include/uapi/linux/synclink.h:54:#define MAX_ASYNC_BUFFER_SIZE	4096
+
+---------------------------------------------------------------------------------
+Step 2:
+
+one sample in drivers/char/pcmcia/synclink_cs.c: (same for another files)
+
+  we check the framesize according to info->max_frame_size in line 3687..3689.
+    and call ldisc_receive_buf without checking whether it is larger than MAX_ASYNC_BUFFER_SIZE at line 3705
+  info->max_frame_size can be the value between 4096 and 65535 in line 2729..2732.
+  ldisc_receive_buf call ld->ops->receive_buf to perform the work.
+
+
+ 496 static void ldisc_receive_buf(struct tty_struct *tty,
+ 497                               const __u8 *data, char *flags, int count)
+ 498 {
+ 499         struct tty_ldisc *ld;
+ 500         if (!tty)
+ 501                 return;
+ 502         ld = tty_ldisc_ref(tty);
+ 503         if (ld) {
+ 504                 if (ld->ops->receive_buf)
+ 505                         ld->ops->receive_buf(tty, data, flags, count);
+ 506                 tty_ldisc_deref(ld);
+ 507         }
+ 508 }
+ ...
+
+2728 
+2729         if (info->max_frame_size < 4096)
+2730                 info->max_frame_size = 4096;
+2731         else if (info->max_frame_size > 65535)
+2732                 info->max_frame_size = 65535;
+2733 
+...
+
+3686         if (framesize) {
+3687                 if ((info->params.crc_type & HDLC_CRC_RETURN_EX &&
+3688                       framesize+1 > info->max_frame_size) ||
+3689                     framesize > info->max_frame_size)
+3690                         info->icount.rxlong++;
+3691                 else {
+3692                         if (status & BIT5)
+3693                                 info->icount.rxok++;
+3694 
+3695                         if (info->params.crc_type & HDLC_CRC_RETURN_EX) {
+3696                                 *(buf->data + framesize) = status & BIT5 ? RX_OK:RX_CRC_ERROR;
+3697                                 ++framesize;
+3698                         }
+3699 
+3700 #if SYNCLINK_GENERIC_HDLC
+3701                         if (info->netcount)
+3702                                 hdlcdev_rx(info, buf->data, framesize);
+3703                         else
+3704 #endif
+3705                                 ldisc_receive_buf(tty, buf->data, info->flag_buf, framesize);
+3706                 }
+3707         }
+
+---------------------------------------------------------------------------------
+Step 3:
+
+one sample in drivers/tty/n_gsm.c  (same for another implementation)
+
+  receive_buf is a function ptr which may be gsmld_receive_buf at line 2819. 
+  it does not check the length of count whether larger than MAX_ASYNC_BUFFER_SIZE.
+  if count is larger than MAX_ASYNC_BUFFER_SIZE, will cause issue.
+
+  it is only a sample, maybe not the function ptr which mentioned in Step 2.
+  at lease, I have checked 3 function ptr implementations, none of them check the MAX_ASYNC_BUFFER_SIZE.
+  the all function ptr searching is at the bottom.
+
+2257 static void gsmld_receive_buf(struct tty_struct *tty, const unsigned char *cp,
+2258                               char *fp, int count)
+2259 {
+2260         struct gsm_mux *gsm = tty->disc_data;
+2261         const unsigned char *dp;
+2262         char *f;
+2263         int i;
+2264         char buf[64];
+2265         char flags;
+2266 
+2267         if (debug & 4)
+2268                 print_hex_dump_bytes("gsmld_receive: ", DUMP_PREFIX_OFFSET,
+2269                                      cp, count);
+2270 
+2271         for (i = count, dp = cp, f = fp; i; i--, dp++) {
+2272                 flags = *f++;
+2273                 switch (flags) {
+2274                 case TTY_NORMAL:
+2275                         gsm->receive(gsm, *dp);
+2276                         break;
+2277                 case TTY_OVERRUN:
+2278                 case TTY_BREAK:
+2279                 case TTY_PARITY:
+2280                 case TTY_FRAME:
+2281                         gsm->error(gsm, *dp, flags);
+2282                         break;
+2283                 default:
+2284                         WARN_ONCE(1, "%s: unknown flag %d\n",
+2285                                tty_name(tty, buf), flags);
+2286                         break;
+2287                 }
+2288         }
+2289         /* FASYNC if needed ? */
+2290         /* If clogged call tty_throttle(tty); */
+2291 }
+2292 
+...
+
+2806 /* Line discipline for real tty */
+2807 struct tty_ldisc_ops tty_ldisc_packet = {
+2808         .owner           = THIS_MODULE,
+2809         .magic           = TTY_LDISC_MAGIC,
+2810         .name            = "n_gsm",
+2811         .open            = gsmld_open,
+2812         .close           = gsmld_close,
+2813         .flush_buffer    = gsmld_flush_buffer,
+2814         .chars_in_buffer = gsmld_chars_in_buffer,
+2815         .read            = gsmld_read,
+2816         .write           = gsmld_write,
+2817         .ioctl           = gsmld_ioctl,
+2818         .poll            = gsmld_poll,
+2819         .receive_buf     = gsmld_receive_buf,
+2820         .write_wakeup    = gsmld_write_wakeup
+2821 };
+2822 
+
+
+input/serio/serport.c:244:	.receive_buf =	serport_ldisc_receive,
+isdn/gigaset/ser-gigaset.c:758:	.receive_buf	= gigaset_tty_receive,
+misc/ti-st/st_core.c:822:	.receive_buf = st_tty_receive,
+net/can/slcan.c:626:	.receive_buf	= slcan_receive_buf,
+net/hamradio/6pack.c:808:	.receive_buf	= sixpack_receive_buf,
+net/hamradio/mkiss.c:996:	.receive_buf	= mkiss_receive_buf,
+net/irda/irtty-sir.c:547:	.receive_buf	= irtty_receive_buf,
+net/caif/caif_serial.c:378:	.receive_buf =	ldisc_receive,
+net/ppp/ppp_synctty.c:428:	.receive_buf = ppp_sync_receive,
+net/ppp/ppp_async.c:387:	.receive_buf = ppp_asynctty_receive,
+tty/n_gsm.c:2819:	.receive_buf     = gsmld_receive_buf,
+tty/n_tty.c:2129:	.receive_buf     = n_tty_receive_buf,
+tty/n_hdlc.c:234:	.receive_buf	= n_hdlc_tty_receive,
+tty/n_tracerouter.c:193:	.receive_buf	= n_tracerouter_receivebuf
+tty/n_r3964.c:156:	.receive_buf = r3964_receive_buf,
+
+
+
+
+
 
