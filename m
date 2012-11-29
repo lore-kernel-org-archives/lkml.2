@@ -1,94 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753958Ab2K2KjT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 05:39:19 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40255 "EHLO
+	id S1753917Ab2K2KlB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 05:41:01 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40329 "EHLO
 	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077Ab2K2KjR (ORCPT
+	with ESMTP id S1751077Ab2K2KlA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 05:39:17 -0500
+	Thu, 29 Nov 2012 05:41:00 -0500
 X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <50B73B22.90500@jp.fujitsu.com>
-Date: Thu, 29 Nov 2012 19:38:26 +0900
+Message-ID: <50B73BA0.4060406@jp.fujitsu.com>
+Date: Thu, 29 Nov 2012 19:40:32 +0900
 From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: "Luck, Tony" <tony.luck@intel.com>
-CC: Jiang Liu <jiang.liu@huawei.com>, Tang Chen <tangchen@cn.fujitsu.com>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "laijs@cn.fujitsu.com" <laijs@cn.fujitsu.com>,
-        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
-        "linfeng@cn.fujitsu.com" <linfeng@cn.fujitsu.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
-        "mgorman@suse.de" <mgorman@suse.de>,
-        "rientjes@google.com" <rientjes@google.com>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, "Wang, Frank" <frank.wang@intel.com>
-Subject: Re: [PATCH v2 0/5] Add movablecore_map boot option
-References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <50B5CFAE.80103@huawei.com> <3908561D78D1C84285E8C5FCA982C28F1C95EDCE@ORSMSX108.amr.corp.intel.com>
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F1C95EDCE@ORSMSX108.amr.corp.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v9 02/46] x86, mm: Split out split_mem_range from init_memory_mapping
+References: <1354139277-17376-1-git-send-email-yinghai@kernel.org> <1354139277-17376-3-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1354139277-17376-3-git-send-email-yinghai@kernel.org>
+Content-Type: text/plain; charset="ISO-2022-JP"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
+2012/11/29 6:47, Yinghai Lu wrote:
+> So make init_memory_mapping smaller and readable.
+> 
+> -v2: use 0 instead of nr_range as input parameter found by Yasuaki Ishimatsu.
+> 
+> Suggested-by: Ingo Molnar <mingo@elte.hu>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Reviewed-by: Pekka Enberg <penberg@kernel.org>
+> Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> ---
 
-2012/11/29 6:34, Luck, Tony wrote:
->> 1. use firmware information
->>    According to ACPI spec 5.0, SRAT table has memory affinity structure
->>    and the structure has Hot Pluggable Filed. See "5.2.16.2 Memory
->>    Affinity Structure". If we use the information, we might be able to
->>    specify movable memory by firmware. For example, if Hot Pluggable
->>    Filed is enabled, Linux sets the memory as movable memory.
->>
->> 2. use boot option
->>    This is our proposal. New boot option can specify memory range to use
->>    as movable memory.
->
-> Isn't this just moving the work to the user? To pick good values for the
+Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-Yes.
-
-> movable areas, they need to know how the memory lines up across
-> node boundaries ... because they need to make sure to allow some
-> non-movable memory allocations on each node so that the kernel can
-> take advantage of node locality.
-
-There is no problem.
-Linux has already two boot options, kernelcore= and movablecore=.
-So if we use them, non-movable memory is divided into each node evenly.
-
-But there is no way to specify a node used as movable currently. So
-we proposed the new boot option.
-
-> So the user would have to read at least the SRAT table, and perhaps
-> more, to figure out what to provide as arguments.
->
-
-> Since this is going to be used on a dynamic system where nodes might
-> be added an removed - the right values for these arguments might
-> change from one boot to the next. So even if the user gets them right
-> on day 1, a month later when a new node has been added, or a broken
-> node removed the values would be stale.
-
-I don't think so. Even if we hot add/remove node, the memory range of
-each memory device is not changed. So we don't need to change the boot
-option.
-
-Thanks,
-Yasuaki Ishimatsu
-
->
-> -Tony
->
+>   arch/x86/mm/init.c |   41 +++++++++++++++++++++++++----------------
+>   1 files changed, 25 insertions(+), 16 deletions(-)
+> 
+> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+> index aa5b0da..6368b86 100644
+> --- a/arch/x86/mm/init.c
+> +++ b/arch/x86/mm/init.c
+> @@ -146,25 +146,13 @@ static int __meminit save_mr(struct map_range *mr, int nr_range,
+>   	return nr_range;
+>   }
+>   
+> -/*
+> - * Setup the direct mapping of the physical memory at PAGE_OFFSET.
+> - * This runs before bootmem is initialized and gets pages directly from
+> - * the physical memory. To access them they are temporarily mapped.
+> - */
+> -unsigned long __init_refok init_memory_mapping(unsigned long start,
+> -					       unsigned long end)
+> +static int __meminit split_mem_range(struct map_range *mr, int nr_range,
+> +				     unsigned long start,
+> +				     unsigned long end)
+>   {
+>   	unsigned long start_pfn, end_pfn;
+> -	unsigned long ret = 0;
+>   	unsigned long pos;
+> -	struct map_range mr[NR_RANGE_MR];
+> -	int nr_range, i;
+> -
+> -	printk(KERN_INFO "init_memory_mapping: [mem %#010lx-%#010lx]\n",
+> -	       start, end - 1);
+> -
+> -	memset(mr, 0, sizeof(mr));
+> -	nr_range = 0;
+> +	int i;
+>   
+>   	/* head if not big page alignment ? */
+>   	start_pfn = start >> PAGE_SHIFT;
+> @@ -258,6 +246,27 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+>   			(mr[i].page_size_mask & (1<<PG_LEVEL_1G))?"1G":(
+>   			 (mr[i].page_size_mask & (1<<PG_LEVEL_2M))?"2M":"4k"));
+>   
+> +	return nr_range;
+> +}
+> +
+> +/*
+> + * Setup the direct mapping of the physical memory at PAGE_OFFSET.
+> + * This runs before bootmem is initialized and gets pages directly from
+> + * the physical memory. To access them they are temporarily mapped.
+> + */
+> +unsigned long __init_refok init_memory_mapping(unsigned long start,
+> +					       unsigned long end)
+> +{
+> +	struct map_range mr[NR_RANGE_MR];
+> +	unsigned long ret = 0;
+> +	int nr_range, i;
+> +
+> +	pr_info("init_memory_mapping: [mem %#010lx-%#010lx]\n",
+> +	       start, end - 1);
+> +
+> +	memset(mr, 0, sizeof(mr));
+> +	nr_range = split_mem_range(mr, 0, start, end);
+> +
+>   	/*
+>   	 * Find space for the kernel direct mapping tables.
+>   	 *
+> 
 
 
