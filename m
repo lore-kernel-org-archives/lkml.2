@@ -1,68 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751543Ab2K2GHm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 01:07:42 -0500
-Received: from gate.crashing.org ([63.228.1.57]:60532 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751066Ab2K2GHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 01:07:40 -0500
-Message-ID: <1354169232.2179.183.camel@pasglop>
-Subject: Re: [PATCH] export of_reconfig_notifier_[register,unregister]
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Nathan Fontenot <nfont@linux.vnet.ibm.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Paul Mackerras <paulus@samba.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 29 Nov 2012 17:07:12 +1100
-In-Reply-To: <50B66922.9090209@linux.vnet.ibm.com>
-References: <20121128140308.abb21ec8f61553a2ed077fe3@canb.auug.org.au>
-	 <50B66922.9090209@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	id S1751656Ab2K2GNB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 01:13:01 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:4338 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751039Ab2K2GNA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 01:13:00 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 28 Nov 2012 22:12:59 -0800
+Message-ID: <50B6FCE5.7080003@nvidia.com>
+Date: Thu, 29 Nov 2012 11:42:53 +0530
+From: Prashant Gaikwad <pgaikwad@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Sivaram Nair <sivaramn@nvidia.com>
+CC: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/2] ARM: tegra: moving stuff away from mach/clk.h
+References: <1353999553-5196-1-git-send-email-sivaramn@nvidia.com> <1353999553-5196-2-git-send-email-sivaramn@nvidia.com>
+In-Reply-To: <1353999553-5196-2-git-send-email-sivaramn@nvidia.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-11-28 at 13:42 -0600, Nathan Fontenot wrote:
-> The of reconfiguration notification chains should be exported for use
-> by modules.
-> 
-> Signed-off-by:Nathan Fontenot <nfont@linux.vnet.ibm.com>
-
-Grant, I'm applying that into the powerpc tree (with a slightly modified
-subject line). You don't need to add it to your tree at this stage I
-suspect.
-
-Cheers,
-Ben.
-
+On Tuesday 27 November 2012 12:29 PM, Sivaram Nair wrote:
+> This patch moves some stuff away from mach/clk.h to other mach-tegra
+> files. This is part of the efforts to get rid of mach/clk.h which in
+> turn will help to enable single zImage.
+>
+> Signed-off-by: Sivaram Nair <sivaramn@nvidia.com>
 > ---
-> Index: linux-next/drivers/of/base.c
-> ===================================================================
-> --- linux-next.orig/drivers/of/base.c	2012-11-28 09:18:02.000000000 -0600
-> +++ linux-next/drivers/of/base.c	2012-11-28 11:05:00.000000000 -0600
-> @@ -1282,11 +1282,13 @@
->  {
->  	return blocking_notifier_chain_register(&of_reconfig_chain, nb);
->  }
-> +EXPORT_SYMBOL_GPL(of_reconfig_notifier_register);
->  
->  int of_reconfig_notifier_unregister(struct notifier_block *nb)
->  {
->  	return blocking_notifier_chain_unregister(&of_reconfig_chain, nb);
->  }
-> +EXPORT_SYMBOL_GPL(of_reconfig_notifier_unregister);
->  
->  int of_reconfig_notify(unsigned long action, void *p)
->  {
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>   arch/arm/mach-tegra/clock.c            |    1 +
+>   arch/arm/mach-tegra/clock.h            |   12 ++++++++++--
+>   arch/arm/mach-tegra/include/mach/clk.h |   11 -----------
+>   3 files changed, 11 insertions(+), 13 deletions(-)
 
+This patch will not add any real value since I have removed clk_cfg_ex 
+functionality in clock code rework.
+It's just that I will have to rebase my changes on this.
+
+Reviewed-by: Prashant Gaikwad <pgaikwad@nvidia.com>
+
+> diff --git a/arch/arm/mach-tegra/clock.c b/arch/arm/mach-tegra/clock.c
+> index 867bf8b..4440626 100644
+> --- a/arch/arm/mach-tegra/clock.c
+> +++ b/arch/arm/mach-tegra/clock.c
+> @@ -26,6 +26,7 @@
+>   #include <linux/sched.h>
+>   #include <linux/seq_file.h>
+>   #include <linux/slab.h>
+> +#include <mach/clk.h>
+>   
+>   #include "board.h"
+>   #include "clock.h"
+> diff --git a/arch/arm/mach-tegra/clock.h b/arch/arm/mach-tegra/clock.h
+> index 2aa37f5..e6685d4 100644
+> --- a/arch/arm/mach-tegra/clock.h
+> +++ b/arch/arm/mach-tegra/clock.h
+> @@ -25,8 +25,6 @@
+>   #include <linux/clkdev.h>
+>   #include <linux/list.h>
+>   
+> -#include <mach/clk.h>
+> -
+>   #define DIV_BUS			(1 << 0)
+>   #define DIV_U71			(1 << 1)
+>   #define DIV_U71_FIXED		(1 << 2)
+> @@ -70,6 +68,15 @@ struct clk_pll_freq_table {
+>   	u8		cpcon;
+>   };
+>   
+> +enum tegra_clk_ex_param {
+> +	TEGRA_CLK_VI_INP_SEL,
+> +	TEGRA_CLK_DTV_INVERT,
+> +	TEGRA_CLK_NAND_PAD_DIV2_ENB,
+> +	TEGRA_CLK_PLLD_CSI_OUT_ENB,
+> +	TEGRA_CLK_PLLD_DSI_OUT_ENB,
+> +	TEGRA_CLK_PLLD_MIPI_MUX_SEL,
+> +};
+> +
+>   enum clk_state {
+>   	UNINITIALIZED = 0,
+>   	ON,
+> @@ -149,5 +156,6 @@ void tegra2_init_clocks(void);
+>   void tegra30_init_clocks(void);
+>   struct clk *tegra_get_clock_by_name(const char *name);
+>   void tegra_clk_init_from_table(struct tegra_clk_init_table *table);
+> +int tegra_clk_cfg_ex(struct clk *c, enum tegra_clk_ex_param p, u32 setting);
+>   
+>   #endif
+> diff --git a/arch/arm/mach-tegra/include/mach/clk.h b/arch/arm/mach-tegra/include/mach/clk.h
+> index 64d2657..6338652 100644
+> --- a/arch/arm/mach-tegra/include/mach/clk.h
+> +++ b/arch/arm/mach-tegra/include/mach/clk.h
+> @@ -22,18 +22,7 @@
+>   
+>   struct clk;
+>   
+> -enum tegra_clk_ex_param {
+> -	TEGRA_CLK_VI_INP_SEL,
+> -	TEGRA_CLK_DTV_INVERT,
+> -	TEGRA_CLK_NAND_PAD_DIV2_ENB,
+> -	TEGRA_CLK_PLLD_CSI_OUT_ENB,
+> -	TEGRA_CLK_PLLD_DSI_OUT_ENB,
+> -	TEGRA_CLK_PLLD_MIPI_MUX_SEL,
+> -};
+> -
+>   void tegra_periph_reset_deassert(struct clk *c);
+>   void tegra_periph_reset_assert(struct clk *c);
+>   
+> -int tegra_clk_cfg_ex(struct clk *c, enum tegra_clk_ex_param p, u32 setting);
+> -
+>   #endif
 
