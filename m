@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab2K2Ra4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 12:30:56 -0500
-Received: from ra.se.axis.com ([195.60.68.13]:37515 "EHLO ra.se.axis.com"
+	id S1753794Ab2K2Rbc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 12:31:32 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42725 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752518Ab2K2Raz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 12:30:55 -0500
-Date: Thu, 29 Nov 2012 18:30:53 +0100
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: linux-cifs@vger.kernel.org, sfrench@samba.org,
-        linux-kernel@vger.kernel.org
-Subject: [RFQ PATCH] cifs: Change default security error message
-Message-ID: <20121129173053.GQ27196@axis.com>
+	id S1753632Ab2K2Rbb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 12:31:31 -0500
+Date: Thu, 29 Nov 2012 09:31:25 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Wei Yongjun <weiyj.lk@gmail.com>, Haiyang Zhang <haiyangz@microsoft.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "yongjun_wei@trendmicro.com.cn" <yongjun_wei@trendmicro.com.cn>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -next] hv: hv_balloon: remove duplicated include from
+ hv_balloon.c
+Message-ID: <20121129173125.GA7839@kroah.com>
+References: <CAPgLHd-9_p_haRkx-2D_5eT-E6_g84N=Hjs4JB5gu_kPVSp2Vw@mail.gmail.com>
+ <426367E2313C2449837CD2DE46E7EAF930E5E818@SN2PRD0310MB382.namprd03.prod.outlook.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <426367E2313C2449837CD2DE46E7EAF930E5E818@SN2PRD0310MB382.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Thu, Nov 29, 2012 at 05:09:42PM +0000, KY Srinivasan wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: Wei Yongjun [mailto:weiyj.lk@gmail.com]
+> > Sent: Wednesday, November 28, 2012 9:23 PM
+> > To: KY Srinivasan; Haiyang Zhang
+> > Cc: yongjun_wei@trendmicro.com.cn; devel@linuxdriverproject.org; linux-
+> > kernel@vger.kernel.org
+> > Subject: [PATCH -next] hv: hv_balloon: remove duplicated include from
+> > hv_balloon.c
+> > 
+> > From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> > 
+> > Remove duplicated include.
+> > 
+> > Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> > ---
+> >  drivers/hv/hv_balloon.c | 1 -
+> >  1 file changed, 1 deletion(-)
+> > 
+> > diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
+> > index f6c0011..0ce08c4 100644
+> > --- a/drivers/hv/hv_balloon.c
+> > +++ b/drivers/hv/hv_balloon.c
+> > @@ -29,7 +29,6 @@
+> >  #include <linux/memory_hotplug.h>
+> >  #include <linux/memory.h>
+> >  #include <linux/notifier.h>
+> > -#include <linux/mman.h>
+> >  #include <linux/percpu_counter.h>
+> > 
+> >  #include <linux/hyperv.h>
+> 
+> Could you generate patches using git.
 
-Connecting with a default security mechanism prompts an KERN_ERROR
-output warning to the user that the default mechanism will be changed
-in Linux 3.3.
+Why do you think this wasn't generated using git?
 
-We're now at 3.7, so we either could remove the warning completely
-(if the default has been changed), or we could bump the number to
-what our current target for the change is.
-
-
-The below patch changes the cERROR (which turns into a printk with KERN_ERROR)
-into a straight printk with KERN_WARNING and changes the text to indicate
-that it was changed in 3.3.
-
-I expect that the patch is incorrect and that we should choose
-another of the alternative solutions above, but I'd like to get
-some input on this.
-
-Not-Signed-off-by: Jesper Nilsson <jesper.nilsson@axis.com>
----
-diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
-index c83f5b65..968456f 100644
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -2480,9 +2480,9 @@ cifs_get_smb_ses(struct TCP_Server_Info *server, struct smb_vol *volume_info)
- 	supported for many years, time to update default security mechanism */
- 	if ((volume_info->secFlg == 0) && warned_on_ntlm == false) {
- 		warned_on_ntlm = true;
--		cERROR(1, "default security mechanism requested.  The default "
--			"security mechanism will be upgraded from ntlm to "
--			"ntlmv2 in kernel release 3.3");
-+		printk(KERN_WARNING "default security mechanism requested.  "
-+			"The default security mechanism was changed "
-+			" from ntlm to ntlmv2 in kernel release 3.3");
- 	}
- 	ses->overrideSecFlg = volume_info->secFlg;
- 
-
-
-/^JN - Jesper Nilsson
--- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
