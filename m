@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363Ab2K2Tb7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 14:31:59 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:51663 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355Ab2K2Tb6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 14:31:58 -0500
-Date: Thu, 29 Nov 2012 11:31:54 -0800
-From: Kent Overstreet <koverstreet@google.com>
-To: Zach Brown <zab@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, bcrl@kvack.org, jmoyer@redhat.com,
-        axboe@kernel.dk, viro@zeniv.linux.org.uk
-Subject: Re: [PATCH 14/25] aio: Make aio_read_evt() more efficient
-Message-ID: <20121129193154.GI15094@google.com>
-References: <1354121029-1376-1-git-send-email-koverstreet@google.com>
- <1354121029-1376-15-git-send-email-koverstreet@google.com>
- <20121129003816.GJ18574@lenny.home.zabbo.net>
+	id S1754581Ab2K2Tel (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 14:34:41 -0500
+Received: from mga01.intel.com ([192.55.52.88]:33882 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753766Ab2K2Tek (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 14:34:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,186,1355126400"; 
+   d="scan'208";a="256785862"
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 5/8] sched, numa, mm: Add adaptive NUMA affinity support
+References: <20121112160451.189715188@chello.nl>
+	<20121112161215.782018877@chello.nl>
+Date: Thu, 29 Nov 2012 11:34:15 -0800
+In-Reply-To: <20121112161215.782018877@chello.nl> (Peter Zijlstra's message of
+	"Mon, 12 Nov 2012 17:04:56 +0100")
+Message-ID: <m2sj7sfbk8.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121129003816.GJ18574@lenny.home.zabbo.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 04:38:16PM -0800, Zach Brown wrote:
-> > We can't use cmpxchg() on the ring buffer's head pointer directly, since
-> > it's modded to nr_events and would be susceptible to ABA. So instead we
-> > maintain a shadow head that uses the full 32 bits, and cmpxchg() that
-> > and then updated the real head pointer.
-> 
-> Time to update this comment to reflect the mutex instead of the shadow
-> head? :)
+Peter Zijlstra <a.p.zijlstra@chello.nl> writes:
 
-Yeah :P
+> +
+> +		down_write(&mm->mmap_sem);
+> +		for (vma = mm->mmap; vma; vma = vma->vm_next) {
+> +			if (!vma_migratable(vma))
+> +				continue;
+> +			change_protection(vma, vma->vm_start, vma->vm_end, vma_prot_none(vma), 0);
+> +		}
 
-> > +		ev = kmap(page);
-> > +		copy_ret = copy_to_user(event + ret, ev + pos, sizeof(*ev) * i);
-> > +		kunmap(page);
-> 
-> For lack of a better time: do we want to bring up the missing
-> flush_dcache_page() calls around the kernel mappings of ring pages that
-> are also mapped to user addresses?
+What happens if I have a 1TB process? Will you really unmap all of the
+1TB in that timer?
 
-Well, it's mainly aio_complete() that needs to be doing
-flush_dcache_page()... technically io_getevents should be too, but only
-because it's updating the head pointer. Should probably do it now and
-not forget about it again, but I think it should be its own patch.
 
-> >  		prepare_to_wait_exclusive(&ctx->wait, &wait,
-> >  					  TASK_INTERRUPTIBLE);
-> >  
-> > +		ret = aio_read_events(ctx, event + i, nr - i);
-> > +		if (ret < 0)
-> >  			break;
-> 
-> As mentioned offlist: we don't want to be blocking under
-> TASK_INTERRUPTIBLE.  Is the plan to do a non-blocking check and pop
-> outside the wait loop to do a blocking copy?
+>  
+>  	case MPOL_PREFERRED:
+>  		if (pol->flags & MPOL_F_LOCAL)
+> -			polnid = numa_node_id();
+> +			best_nid = numa_node_id();
+>  		else
+> -			polnid = pol->v.preferred_node;
+> +			best_nid = pol->v.preferred_node;
 
-Argh. This thing is getting irritating. Gonna mull this over on irc
-more.
+So that's not the local node anymore?  That will change behaviour for
+people using the NUMA affinity APIs explicitely.  I don't think that's a
+good idea, if someone set the affinity explicitely the kernel better
+follow that.
+
+If you want to change behaviour for non DEFAULT like this
+please use a new policy type.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
