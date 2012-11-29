@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754950Ab2K2Xnc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 18:43:32 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:56846 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303Ab2K2Xn2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 18:43:28 -0500
-Date: Thu, 29 Nov 2012 23:43:26 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Patrick McLean <patrickm@gaikai.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-nfs@vger.kernel.org
-Subject: Re: Regression with initramfs and nfsroot (appears to be in the
- dcache)
-Message-ID: <20121129234326.GX4939@ZenIV.linux.org.uk>
-References: <CAE2NFgU+4QDcLaVE5dKDvZCxey7qEf7FAbYNjNmcjVU=HLhF=A@mail.gmail.com>
- <20121129213316.GU4939@ZenIV.linux.org.uk>
- <CAE2NFgWCnmgSCsw7MzRkqBLTHgRDG-FvKKcbTHN6UqePK6Ef+Q@mail.gmail.com>
- <20121129222109.GW4939@ZenIV.linux.org.uk>
- <50B7E759.9070007@gaikai.com>
+	id S1754915Ab2K2Xqm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 18:46:42 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:36543 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753778Ab2K2Xqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 18:46:39 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Shuah Khan <shuahkhan@gmail.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Zdenek Kabelac <zdenek.kabelac@gmail.com>
+Subject: Re: [PATCH] ACPI / PNP: Do not crash due to stale pointer use during system resume
+Date: Fri, 30 Nov 2012 00:51:25 +0100
+Message-ID: <28227702.6DTxM78Dej@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <CAKocOOOsOZ=g45cdFSZZoCVMBxf9aWNSa4RdGNCuAEKrxXkr1Q@mail.gmail.com>
+References: <1829835.4TBEQGhjkq@vostro.rjw.lan> <CAKocOOOsOZ=g45cdFSZZoCVMBxf9aWNSa4RdGNCuAEKrxXkr1Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50B7E759.9070007@gaikai.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 02:53:13PM -0800, Patrick McLean wrote:
-> On 29/11/12 02:21 PM, Al Viro wrote:
-> > On Thu, Nov 29, 2012 at 02:06:22PM -0800, Patrick McLean wrote:
-> > 
-> >> I have a trivial reproducer and am happy to help debug in any way that
-> >> I can. That patch seems to fix the problem, and produces these
-> >> warnings in dmesg:
-> > 
-> > OK...  So we have differing entry->fh and NFS_FH(dentry->d_inode).  Something
-> > like
-> > static void dump_fh(const struct nfs_fh *fh)
-> > {
-> > 	int i;
-> > 	printk(KERN_INFO "FH(%d)", fh->size);
-> > 	for (i = 0; i < fh->size; i++)
-> > 		printk(KERN_CONT "%c%02x", i ? ' ' : '[', fh->data[i]);
-> > 	printk(KERN_CONT "]\n");
-> > }
-> > with dump_fh(entry->fh); dump_fh(NFS_FH(dentry->d_inode)); added next to
-> > that WARN_ON(1) would probably be interesting.  And probably would make
-> > sense to print filename->name as well, to see which files it is about.
+On Thursday, November 29, 2012 04:25:20 PM Shuah Khan wrote:
+> On Thu, Nov 29, 2012 at 4:10 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >
+> > During resume from system suspend the 'data' field of
+> > struct pnp_dev in pnpacpi_set_resources() may be a stale pointer,
+> > due to removal of the associated ACPI device node object in the
+> > previous suspend-resume cycle.  This happens, for example, if a
+> > dockable machine is booted in the docking station and then suspended
+> > and resumed and suspended again.  If that happens,
+> > pnpacpi_build_resource_template() called from pnpacpi_set_resources()
+> > attempts to use that pointer and crashes.
+> >
+> > However, pnpacpi_set_resources() actually checks the device's ACPI
+> > handle, attempts to find the ACPI device node object attached to it
+> > and returns an error code if that fails, so in fact it knows what the
+> > correct value of dev->data should be.  Use this observation to update
+> > dev->data with the correct value if necessary and dump a call trace
+> > if that's the case (once).
+> >
+> > We still need to fix the root cause of this issue, but preventing
+> > systems from crashing because of it is an improvement too.
+> >
+> > Reported-and-tested-by: Zdenek Kabelac <zdenek.kabelac@gmail.com>
+> > References: https://bugzilla.kernel.org/show_bug.cgi?id=51071
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> Any reason why this shouldn't go into stable releases?
 
-> [    8.821584] FH(0)]
-> [    8.821586] FH(36)[01 00 07 01 89 00 00 00 00 00 00 00 e1 21 fe c4 9e 38 44 dc bf 1b d5 95 d6 76 d6 d9 a7 3c 1b 80 33 38 e3 62]
-> [    8.821601] filename: proc
+Yes, it can go to -stable.  This is just a patch, not a git commit.  I can
+still add the "stable" tag to it when it goes to git. :-)
 
-*whoa*
+Thanks,
+Rafael
 
-So we have zero entry->fh->size?  No wonder it doesn't match...  Which NFS
-version it is?  entry->fh->size is set by nfs[34]_decode_dirent().
 
-NFS folks: any ideas on best way to debug it?  The brute-force way would be
-to capture all NFS traffic with tcpdump and see what's going on, but that
-would be a lot of work...
-
-Looks like we have READDIRPLUS attempted and succeeded, but fhandle was not
-given.  Result: nfs_prime_dcache() is doing blind d_drop() on perfectly
-valid dentries, no matter how busy.
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
