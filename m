@@ -1,106 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753226Ab2K2UVI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 15:21:08 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:36379 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751303Ab2K2UVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 15:21:05 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        linux-acpi@vger.kernel.org, Wen Congyang <wency@cn.fujitsu.com>,
-        Wen Congyang <wencongyang@gmail.com>, isimatu.yasuaki@jp.fujitsu.com,
-        lenb@kernel.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on rebind scenario
-Date: Thu, 29 Nov 2012 21:25:48 +0100
-Message-ID: <1666001.sopVksfMvY@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <1354211790.26955.443.camel@misato.fc.hp.com>
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com> <20121129113030.GB639@dhcp-192-168-178-175.profitbricks.localdomain> <1354211790.26955.443.camel@misato.fc.hp.com>
+	id S1753890Ab2K2UVm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 15:21:42 -0500
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:58336 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753331Ab2K2UVk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 15:21:40 -0500
+Date: Thu, 29 Nov 2012 20:26:08 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Aristeu Rozanski <aris@redhat.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Serge Hallyn <serge.hallyn@canonical.com>,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH 3/5] device_cgroup: keep track of local group settings
+Message-ID: <20121129202608.GA26716@mail.hallyn.com>
+References: <20121127193501.255267751@napanee.usersys.redhat.com>
+ <20121127193502.482004744@napanee.usersys.redhat.com>
+ <20121129192945.GD26104@mail.hallyn.com>
+ <20121129195942.GW32112@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121129195942.GW32112@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 29, 2012 10:56:30 AM Toshi Kani wrote:
-> On Thu, 2012-11-29 at 12:30 +0100, Vasilis Liaskovitis wrote:
-> > On Thu, Nov 29, 2012 at 11:03:05AM +0100, Rafael J. Wysocki wrote:
-> > > On Wednesday, November 28, 2012 06:15:42 PM Toshi Kani wrote:
-> > > > On Wed, 2012-11-28 at 18:02 -0700, Toshi Kani wrote:
-> > > > > On Thu, 2012-11-29 at 00:49 +0100, Rafael J. Wysocki wrote:
-> > > > > > On Wednesday, November 28, 2012 02:02:48 PM Toshi Kani wrote:
-> > > > > > > > > > > > > > Consider the following case:
-> > > > > > > > > > > > > > 
-> > > > > > > > > > > > > > We hotremove the memory device by SCI and unbind it from the driver at the same time:
-> > > > > > > > > > > > > > 
-> > > > > > > > > > > > > > CPUa                                                  CPUb
-> > > > > > > > > > > > > > acpi_memory_device_notify()
-> > > > > > > > > > > > > >                                        unbind it from the driver
-> > > > > > > > > > > > > >     acpi_bus_hot_remove_device()
-> > > > > > > > > > > > > 
-> > [...]
-> > > Well, in the meantime I've had a look at acpi_bus_hot_remove_device() and
-> > > friends and I think there's a way to address all of these problems
-> > > without big redesign (for now).
+Quoting Aristeu Rozanski (aris@redhat.com):
+> On Thu, Nov 29, 2012 at 07:29:45PM +0000, Serge E. Hallyn wrote:
+> > Quoting Aristeu Rozanski (aris@redhat.com):
+> > > In preparation for better hierarchy support, it's needed to retain the local
+> > > settings in order to try to reapply them after a propagated change if they're
+> > > still valid.
 > > > 
-> > > First, why don't we introduce an ACPI device flag (in the flags field of
-> > > struct acpi_device) called eject_forbidden or something like this such that:
-> > > 
-> > > (1) It will be clear by default.
-> > > (2) It may only be set by a driver's .add() routine if necessary.
-> > > (3) Once set, it may only be cleared by the driver's .remove() routine if
-> > >     it's safe to physically remove the device after the .remove().
-> > > 
-> > > Then, after the .remove() (which must be successful) has returned, and the
-> > > flag is set, it will tell acpi_bus_remove() to return a specific error code
-> > > (such as -EBUSY or -EAGAIN).  It doesn't matter if .remove() was called
-> > > earlier, because if it left the flag set, there's no way to clear it afterward
-> > > and acpi_bus_remove() will see it set anyway.  I think the struct acpi_device
-> > > should be unregistered anyway if that error code is to be returned.
-> > > 
-> > > [By the way, do you know where we free the memory allocated for struct
-> > >  acpi_device objects?]
-> > > 
-> > > Now if acpi_bus_trim() gets that error code from acpi_bus_remove(), it should
-> > > store it, but continue the trimming normally and finally it should return that
-> > > error code to acpi_bus_hot_remove_device().
+> > > Cc: Tejun Heo <tj@kernel.org>
+> > > Cc: Serge Hallyn <serge.hallyn@canonical.com>
+> > > Signed-off-by: Aristeu Rozanski <aris@redhat.com>
+> > >  
+> > > ---
+> > >  security/device_cgroup.c |  108 ++++++++++++++++++++++++++++++++++-------------
+> > >  1 file changed, 80 insertions(+), 28 deletions(-)
 > > 
-> > Side-note: In the pre_remove patches, acpi_bus_trim actually returns on the
-> > first error from acpi_bus_remove (e.g. when memory offlining in pre_remove
-> > fails). Trimming is not continued. 
+> > Hi,
 > > 
-> > Normally, acpi_bus_trim keeps trimming as you say, and always returns the last
-> > error. Is this the desired behaviour that we want to keep for bus_trim? (This is
-> > more a general question, not specific to the eject_forbidden suggestion)
+> > thanks for doing this.  I've got one concern though.  I don't see
+> > any place where devcgroup_create() was updated to create the
+> > local exceptions list.  I think we need a guarantee that at
 > 
-> Your change makes sense to me.  At least until we have rollback code in
-> place, we need to fail as soon as we hit an error.
-
-Are you sure this makes sense?  What happens to the devices that we have
-trimmed already and then there's an error?  Looks like they are just unusable
-going forward, aren't they?
-
-> > > Now, if acpi_bus_hot_remove_device() gets that error code, it should just
-> > > reverse the whole trimming (i.e. trigger acpi_bus_scan() from the device
-> > > we attempted to eject) and notify the firmware about the failure.
-> > 
-> > sounds like this rollback needs to be implemented in any solution we choose
-> > to implement, correct?
+> the local exceptions list is part of the dev_cgroup structure and it's
+> initialized on the patch 'device_cgroup: keep track of local group
+> setting':
 > 
-> Yes, rollback is necessary.  But I do not think we need to include it
-> into your patch, though.
+> @@ -190,6 +238,8 @@
+>         if (!dev_cgroup)
+>                 return ERR_PTR(-ENOMEM);
+>         INIT_LIST_HEAD(&dev_cgroup->exceptions);
+> +       INIT_LIST_HEAD(&dev_cgroup->local.exceptions);
+> +       dev_cgroup->local.behavior = DEVCG_DEFAULT_NONE;
+>         parent_cgroup = cgroup->parent;
+> 
+>         if (parent_cgroup == NULL)
+> 
+> > any time the local exceptions list will contain all the entries
+> > contained in the cgroup->exceptions list.  Otherwise you cannot
+> 
+> hm, no. the local exceptions are meant to be used for stuff written
+> locally. the devcgroup->exceptions list is the list in effect.
+> 
+> > use the exception_add() the way you do (or you can't use RCU),
+> > since there could be a window between the successful addition
+> > of a rule to cgroup->local.exceptions and the failed addition to
+> > cgroup->exceptions, during which a task (since it won't need
+> > the mutex for devcg_allow()) could exceed allowed permissions.
+> >
+> > It's possible I'm misunderstanding.  If you think that's the case
+> > just kick me and I'll take a fresh look.
+> 
+> I see your point. it's indeed a problem. in dev_exception_add(), it
+> needs to check for permissions before actually adding to
+> devcgroup->exceptions.
+> 
+> > (Btw is there a git tree or gitweb view I could look at alongside
+> > the patchset?)
+> 
+> I'll rebase the patchset along with a fix for this and resubmit with a
+> link to the git repo.
 
-As the first step, we should just trim everything and then return an error
-code in my opinion.
+Thanks, Aristeu!
 
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+-serge
