@@ -1,89 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386Ab2K2Gps (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 01:45:48 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:6713 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752645Ab2K2Gpq (ORCPT
+	id S1753600Ab2K2Gpz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 01:45:55 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:55387 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752645Ab2K2Gpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 01:45:46 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Wed, 28 Nov 2012 22:45:09 -0800
-Date: Thu, 29 Nov 2012 08:45:15 +0200
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "James.Bottomley@HansenPartnership.com" 
-	<James.Bottomley@HansenPartnership.com>,
-        "arnd@arndb.de" <arnd@arndb.de>, Krishna Reddy <vdumpa@nvidia.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "minchan@kernel.org" <minchan@kernel.org>,
-        "chunsang.jeong@linaro.org" <chunsang.jeong@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "subashrp@gmail.com" <subashrp@gmail.com>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "pullip.cho@samsung.com" <pullip.cho@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/1] ARM: tegra: bus_notifier registers IOMMU
- devices(was: How to specify IOMMU'able devices in DT)
-Message-ID: <20121129084515.8a818bf4793e0d4bb3305c36@nvidia.com>
-In-Reply-To: <50B652F2.5050407@wwwdotorg.org>
-References: <20120924124452.41070ed2ee9944d930cffffc@nvidia.com>
-	<054901cd9a45$db1a7ea0$914f7be0$%szyprowski@samsung.com>
-	<20120924.145014.1452596970914043018.hdoyu@nvidia.com>
-	<20121128.154832.539666140149950229.hdoyu@nvidia.com>
-	<50B652F2.5050407@wwwdotorg.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-X-NVConfidentiality: public
+	Thu, 29 Nov 2012 01:45:51 -0500
+Date: Thu, 29 Nov 2012 06:45:39 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Jeff Chua <jeff.chua.linux@gmail.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH] Introduce a method to catch mmap_region (was: Recent
+ kernel "mount" slow)
+Message-ID: <20121129064539.GL4939@ZenIV.linux.org.uk>
+References: <CA+55aFyXS0nkDB95c3pcdg1ctrNnUGO8aDuRNhKSEg3JrOqWhA@mail.gmail.com>
+ <Pine.LNX.4.64.1211281540200.5283@file.rdu.redhat.com>
+ <CA+55aFwbnQsvpsOLS6w_G35d4w+Ezv5tOx2SE7dShJhX4iP_0Q@mail.gmail.com>
+ <Pine.LNX.4.64.1211281904010.3957@file.rdu.redhat.com>
+ <CA+55aFz1Wv2S+3XVmZE1cfiN0TZ4gNA8yWbNgufDLTMc8sKf2A@mail.gmail.com>
+ <CA+55aFxYCxsRM==WMGihQGOA7f5u2X_8boJypsxS2v=WMnr70g@mail.gmail.com>
+ <CA+55aFxrkX_=4yNQ1TwjqU9=pkRY=ud+Kw3YnADJMJxA-ZqQUg@mail.gmail.com>
+ <20121129062519.GI4939@ZenIV.linux.org.uk>
+ <20121129063043.GJ4939@ZenIV.linux.org.uk>
+ <CA+55aFwL9-yOfCHskXyiCJ3YKB0MgaOJ5-XrvWBtH+URCowfcg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwL9-yOfCHskXyiCJ3YKB0MgaOJ5-XrvWBtH+URCowfcg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Nov 2012 19:07:46 +0100
-Stephen Warren <swarren@wwwdotorg.org> wrote:
-......
-> >>> Please read more about bus notifiers. IMHO a good example is provided in 
-> >>> the following thread:
-> >>> http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg12238.html
-> >>
-> >> This bus notifier seems enough flexible to afford the variation of
-> >> IOMMU map info, like Tegra ASID, which could be platform-specific, and
-> >> the other could be common too. There's already iommu_bus_notifier
-> >> too. I'll try to implement something base on this.
-> > 
-> > Experimentally implemented as below. With the followig patch, each
-> > device could specify its own map in DT, and automatically the device
-> > would be attached to the map.
-> > 
-> > There is a case that some devices share a map. This patch doesn't
-> > suppor such case yet.
-> > 
-> > From 8cb75bb6f3a8535a077e0e85265f87c1f1289bfd Mon Sep 17 00:00:00 2001
-> > From: Hiroshi Doyu <hdoyu@nvidia.com>
-> > Date: Wed, 28 Nov 2012 14:47:04 +0200
-> > Subject: [PATCH 1/1] ARM: tegra: bus_notifier registers IOMMU devices
-> > 
-> > platform_bus notifier registers IOMMU devices if dma-window is
-> > specified.
-> > 
-> > Its format is:
-> >   dma-window = <"start" "size">;
-> > ex)
-> >   dma-window = <0x12345000 0x8000>;
-> > 
-> > Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-> > ---
-> >  arch/arm/mach-tegra/board-dt-tegra30.c |   40 ++++++++++++++++++++++++++++++++
+On Wed, Nov 28, 2012 at 10:37:27PM -0800, Linus Torvalds wrote:
+> On Wed, Nov 28, 2012 at 10:30 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >
+> > Note that sync_blockdev() a few lines prior to that is good only if we
+> > have no other processes doing write(2) (or dirtying the mmapped pages,
+> > for that matter).  The window isn't too wide, but...
 > 
-> Shouldn't this patch be to the IOMMU driver itself, not the core Tegra code?
+> So with Mikulas' patches, the write actually would block (at write
+> level) due to the locking. The mmap'ed patches may be around and
+> flushed, but the logic to not allow currently *active* mmaps (with the
+> rather nasty random -EBUSY return value) should mean that there is no
+> race.
+> 
+> Or rather, there's a race, but it results in that EBUSY thing.
 
-That could be possible and cleaner. I'll check if it works.
+Same as with fs mounted on it, or the sucker having been claimed for
+RAID array, etc.  Frankly, I'm more than slightly tempted to make
+bdev mmap() just claim the sodding device exclusive for as long as
+it's mmapped...
+
+In principle, I agree, but...  I still have nightmares from mmap/truncate
+races way back.  You are stepping into what used to be a really nasty
+minefield.  I'll look into that, but it's *definitely* not -rc8 fodder.
