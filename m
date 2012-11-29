@@ -1,51 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754315Ab2K2Vyw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 16:54:52 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:57483 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753115Ab2K2Vyv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 16:54:51 -0500
-Message-ID: <1354226092.1700.8.camel@joe-AO722>
-Subject: Re: [PATCH v3] char/tpm: Use true and false for bools
-From: Joe Perches <joe@perches.com>
-To: Peter Huewe <peterhuewe@gmx.de>
-Cc: Kent Yoder <key@linux.vnet.ibm.com>, Rajiv Andrade <mail@srajiv.net>,
-        Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Date: Thu, 29 Nov 2012 13:54:52 -0800
-In-Reply-To: <1354223321-3343-1-git-send-email-peterhuewe@gmx.de>
-References: <20121129160627.GB15399@ennui.austin.ibm.com>
-	 <1354223321-3343-1-git-send-email-peterhuewe@gmx.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
+	id S1754916Ab2K2VzN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 16:55:13 -0500
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:17144 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754147Ab2K2VzL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 16:55:11 -0500
+Message-ID: <1354225604.7776.37.camel@misato.fc.hp.com>
+Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on
+ rebind scenario
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        linux-acpi@vger.kernel.org, Wen Congyang <wency@cn.fujitsu.com>,
+        Wen Congyang <wencongyang@gmail.com>, isimatu.yasuaki@jp.fujitsu.com,
+        lenb@kernel.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Date: Thu, 29 Nov 2012 14:46:44 -0700
+In-Reply-To: <5067588.Jc88xNrCFc@vostro.rjw.lan>
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
+	 <1666001.sopVksfMvY@vostro.rjw.lan>
+	 <1354221519.7776.10.camel@misato.fc.hp.com>
+	 <5067588.Jc88xNrCFc@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-11-29 at 22:08 +0100, Peter Huewe wrote:
-> Bool initializations should use true and false.  Bool tests don't need
-> comparisons
-[]
-> .v3 for this tiny patch... shame on me.
+On Thu, 2012-11-29 at 22:23 +0100, Rafael J. Wysocki wrote:
+> On Thursday, November 29, 2012 01:38:39 PM Toshi Kani wrote:
+> > On Thu, 2012-11-29 at 21:25 +0100, Rafael J. Wysocki wrote:
+> > > On Thursday, November 29, 2012 10:56:30 AM Toshi Kani wrote:
+> > > > On Thu, 2012-11-29 at 12:30 +0100, Vasilis Liaskovitis wrote:
+> > > > > Side-note: In the pre_remove patches, acpi_bus_trim actually returns on the
+> > > > > first error from acpi_bus_remove (e.g. when memory offlining in pre_remove
+> > > > > fails). Trimming is not continued. 
+> > > > > 
+> > > > > Normally, acpi_bus_trim keeps trimming as you say, and always returns the last
+> > > > > error. Is this the desired behaviour that we want to keep for bus_trim? (This is
+> > > > > more a general question, not specific to the eject_forbidden suggestion)
+> > > > 
+> > > > Your change makes sense to me.  At least until we have rollback code in
+> > > > place, we need to fail as soon as we hit an error.
+> > > 
+> > > Are you sure this makes sense?  What happens to the devices that we have
+> > > trimmed already and then there's an error?  Looks like they are just unusable
+> > > going forward, aren't they?
+> > 
+> > Yes, the devices trimmed already are released from the kernel, and their
+> > memory ranges become unusable.  This is bad.  But I do not think we
+> > should trim further to make more devices unusable after an error. 
+> > 
+> > 
+> > > > > > Now, if acpi_bus_hot_remove_device() gets that error code, it should just
+> > > > > > reverse the whole trimming (i.e. trigger acpi_bus_scan() from the device
+> > > > > > we attempted to eject) and notify the firmware about the failure.
+> > > > > 
+> > > > > sounds like this rollback needs to be implemented in any solution we choose
+> > > > > to implement, correct?
+> > > > 
+> > > > Yes, rollback is necessary.  But I do not think we need to include it
+> > > > into your patch, though.
+> > > 
+> > > As the first step, we should just trim everything and then return an error
+> > > code in my opinion.
+> > 
+> > But we cannot trim devices with kernel memory.
+> 
+> Well, let's put it this way: If we started a trim, we should just do it
+> completely, in which case we know we can go for the eject, or we should
+> roll it back completely.  Now, if you just break the trim on first error,
+> the complete rollback is kind of problematic.  It should be doable, but
+> it won't be easy.  On the other hand, if you go for the full trim,
+> doing a rollback is trivial, it's as though you have reinserted the whole
+> stuff.
 
-Don't be silly...
+acpi_bus_check_add() skips initialization when an ACPI device already
+has its associated acpi_device.  So, I think it works either way.
 
-> diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
-[]
-> @@ -545,7 +545,7 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
->  			rc = -ENODEV;
->  			goto out_err;
->  		}
-> -		itpm = (probe == 0) ? 0 : 1;
-> +		itpm = !!probe;
 
-Even more trivia:
+> Now, that need not harm functionality, and that's why I proposed the
+> eject_forbidden flag, so that .remove() can say "I'm not done, please
+> rollback", in which case the device can happily function going forward,
+> even if we don't rebind the driver to it.
 
-This !! isn't necessary as ints assigned to bool are converted
-by the compiler to 0 or 1.
+A partially trimmed acpi_device is hard to rollback.  acpi_device should
+be either trimmed completely or intact.  When a function failed to trim
+an acpi_device, it needs to rollback its operation for the device before
+returning an error.  This is because only the failed function has enough
+context to rollback when an error occurred in the middle of its
+procedure.
+
+Thanks,
+-Toshi  
+
+
 
 
