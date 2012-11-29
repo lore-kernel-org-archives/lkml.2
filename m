@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754032Ab2K2INk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 03:13:40 -0500
-Received: from smtp5-g21.free.fr ([212.27.42.5]:34065 "EHLO smtp5-g21.free.fr"
+	id S1753963Ab2K2INd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 03:13:33 -0500
+Received: from smtp5-g21.free.fr ([212.27.42.5]:33843 "EHLO smtp5-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753949Ab2K2INf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 03:13:35 -0500
+	id S1753845Ab2K2INa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 03:13:30 -0500
 From: Corentin Chary <corentin.chary@gmail.com>
 To: Matthew Garrett <mjg59@srcf.ucam.org>
 Cc: platform-driver-x86@vger.kernel.org, AceLan Kao <acelan.kao@canonical.com>,
         Corentin Chary <corentin.chary@gmail.com>,
         Matthew Garrett <mjg@redhat.com>, acpi4asus-user@lists.sourceforge.net,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 06/11] asus-nb-wmi: correct a touchpad hotkey mapping
-Date: Thu, 29 Nov 2012 09:12:34 +0100
-Message-Id: <1354176759-630-7-git-send-email-corentin.chary@gmail.com>
+Subject: [PATCH 05/11] asus-laptop: add all video switch keys
+Date: Thu, 29 Nov 2012 09:12:33 +0100
+Message-Id: <1354176759-630-6-git-send-email-corentin.chary@gmail.com>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1354176759-630-1-git-send-email-corentin.chary@gmail.com>
 References: <1354176759-630-1-git-send-email-corentin.chary@gmail.com>
@@ -24,27 +24,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: AceLan Kao <acelan.kao@canonical.com>
 
-0x60 is touchpad enable key, but is misdefined in the keymap.
+Fill up all the video switch keys in the map.
 
 Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
 Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
 ---
- drivers/platform/x86/asus-nb-wmi.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/platform/x86/asus-laptop.c |   26 +++++++++++++++++++++++---
+ 1 files changed, 23 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/platform/x86/asus-nb-wmi.c b/drivers/platform/x86/asus-nb-wmi.c
-index 9f1caa7..75ce18c 100644
---- a/drivers/platform/x86/asus-nb-wmi.c
-+++ b/drivers/platform/x86/asus-nb-wmi.c
-@@ -180,7 +180,7 @@ static const struct key_entry asus_nb_wmi_keymap[] = {
- 	{ KE_KEY, 0x5D, { KEY_WLAN } }, /* Wireless console Toggle */
- 	{ KE_KEY, 0x5E, { KEY_WLAN } }, /* Wireless console Enable */
- 	{ KE_KEY, 0x5F, { KEY_WLAN } }, /* Wireless console Disable */
--	{ KE_KEY, 0x60, { KEY_SWITCHVIDEOMODE } },
-+	{ KE_KEY, 0x60, { KEY_TOUCHPAD_ON } },
- 	{ KE_KEY, 0x61, { KEY_SWITCHVIDEOMODE } }, /* LCD Only */
- 	{ KE_KEY, 0x62, { KEY_SWITCHVIDEOMODE } }, /* CRT Only */
- 	{ KE_KEY, 0x63, { KEY_SWITCHVIDEOMODE } }, /* LCD + CRT */
+diff --git a/drivers/platform/x86/asus-laptop.c b/drivers/platform/x86/asus-laptop.c
+index 73d0198..0d371d0 100644
+--- a/drivers/platform/x86/asus-laptop.c
++++ b/drivers/platform/x86/asus-laptop.c
+@@ -321,9 +321,13 @@ static const struct key_entry asus_keymap[] = {
+ 	{KE_KEY, 0x5E, { KEY_WLAN } }, /* WLAN Enable */
+ 	{KE_KEY, 0x5F, { KEY_WLAN } }, /* WLAN Disable */
+ 	{KE_KEY, 0x60, { KEY_TOUCHPAD_ON } },
+-	{KE_KEY, 0x61, { KEY_SWITCHVIDEOMODE } }, /* LCD Only */
+-	{KE_KEY, 0x62, { KEY_SWITCHVIDEOMODE } }, /* CRT Only */
+-	{KE_KEY, 0x63, { KEY_SWITCHVIDEOMODE } }, /* LCD + CRT */
++	{KE_KEY, 0x61, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD only */
++	{KE_KEY, 0x62, { KEY_SWITCHVIDEOMODE } }, /* SDSP CRT only */
++	{KE_KEY, 0x63, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + CRT */
++	{KE_KEY, 0x64, { KEY_SWITCHVIDEOMODE } }, /* SDSP TV */
++	{KE_KEY, 0x65, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + TV */
++	{KE_KEY, 0x66, { KEY_SWITCHVIDEOMODE } }, /* SDSP CRT + TV */
++	{KE_KEY, 0x67, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + CRT + TV */
+ 	{KE_KEY, 0x6B, { KEY_TOUCHPAD_TOGGLE } }, /* Lock Touchpad */
+ 	{KE_KEY, 0x6C, { KEY_SLEEP } }, /* Suspend */
+ 	{KE_KEY, 0x6D, { KEY_SLEEP } }, /* Hibernate */
+@@ -333,8 +337,24 @@ static const struct key_entry asus_keymap[] = {
+ 	{KE_KEY, 0x82, { KEY_CAMERA } },
+ 	{KE_KEY, 0x88, { KEY_RFKILL  } }, /* Radio Toggle Key */
+ 	{KE_KEY, 0x8A, { KEY_PROG1 } }, /* Color enhancement mode */
++	{KE_KEY, 0x8C, { KEY_SWITCHVIDEOMODE } }, /* SDSP DVI only */
++	{KE_KEY, 0x8D, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + DVI */
++	{KE_KEY, 0x8E, { KEY_SWITCHVIDEOMODE } }, /* SDSP CRT + DVI */
++	{KE_KEY, 0x8F, { KEY_SWITCHVIDEOMODE } }, /* SDSP TV + DVI */
++	{KE_KEY, 0x90, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + CRT + DVI */
++	{KE_KEY, 0x91, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + TV + DVI */
++	{KE_KEY, 0x92, { KEY_SWITCHVIDEOMODE } }, /* SDSP CRT + TV + DVI */
++	{KE_KEY, 0x93, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + CRT + TV + DVI */
+ 	{KE_KEY, 0x95, { KEY_MEDIA } },
+ 	{KE_KEY, 0x99, { KEY_PHONE } },
++	{KE_KEY, 0xA0, { KEY_SWITCHVIDEOMODE } }, /* SDSP HDMI only */
++	{KE_KEY, 0xA1, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + HDMI */
++	{KE_KEY, 0xA2, { KEY_SWITCHVIDEOMODE } }, /* SDSP CRT + HDMI */
++	{KE_KEY, 0xA3, { KEY_SWITCHVIDEOMODE } }, /* SDSP TV + HDMI */
++	{KE_KEY, 0xA4, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + CRT + HDMI */
++	{KE_KEY, 0xA5, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + TV + HDMI */
++	{KE_KEY, 0xA6, { KEY_SWITCHVIDEOMODE } }, /* SDSP CRT + TV + HDMI */
++	{KE_KEY, 0xA7, { KEY_SWITCHVIDEOMODE } }, /* SDSP LCD + CRT + TV + HDMI */
+ 	{KE_KEY, 0xB5, { KEY_CALC } },
+ 	{KE_KEY, 0xC4, { KEY_KBDILLUMUP } },
+ 	{KE_KEY, 0xC5, { KEY_KBDILLUMDOWN } },
 -- 
 1.7.8.6
 
