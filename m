@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab2K2LHY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 06:07:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55094 "EHLO mx1.redhat.com"
+	id S1753110Ab2K2LPK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 06:15:10 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:37840 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751692Ab2K2LHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 06:07:22 -0500
-Date: Thu, 29 Nov 2012 13:07:17 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>,
-        linux-next list <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
-        sasha.levin@oracle.com, avi@redhat.com
-Subject: Re: [RFC PATCH v2] Add rcu user eqs exception hooks for async page
- fault
-Message-ID: <20121129110717.GA9711@redhat.com>
-References: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
- <CAFTL4hx0fc_Jo8wkuRZedW4DVEeQceiHMrWVqTqB5k065Wsg8Q@mail.gmail.com>
- <1354090704.3054.13.camel@ThinkPad-T5421.cn.ibm.com>
- <CAFTL4hxPSp1fs4=2g0yFs0d5nFisfUsfDAA9bHWcu+-+tO_ySw@mail.gmail.com>
- <20121128135345.GG928@redhat.com>
- <CAFTL4hxoFBLNQCABBpJRBgV-r-Mg5GSq7HbPfWJRraSvtviz4A@mail.gmail.com>
+	id S1751303Ab2K2LPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 06:15:07 -0500
+Message-ID: <50B743A1.4040405@parallels.com>
+Date: Thu, 29 Nov 2012 15:14:41 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFTL4hxoFBLNQCABBpJRBgV-r-Mg5GSq7HbPfWJRraSvtviz4A@mail.gmail.com>
+To: Tejun Heo <tj@kernel.org>
+CC: <lizefan@huawei.com>, <paul@paulmenage.org>,
+        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <peterz@infradead.org>, <mhocko@suse.cz>, <bsingharora@gmail.com>,
+        <hannes@cmpxchg.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHSET cgroup/for-3.8] cpuset: decouple cpuset locking from
+ cgroup core
+References: <1354138460-19286-1-git-send-email-tj@kernel.org>
+In-Reply-To: <1354138460-19286-1-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 03:25:07PM +0100, Frederic Weisbecker wrote:
-> 2012/11/28 Gleb Natapov <gleb@redhat.com>:
-> > On Wed, Nov 28, 2012 at 01:55:42PM +0100, Frederic Weisbecker wrote:
-> >> Yes but if rcu_irq_*() calls are fine to be called there, and I
-> >> believe they are because exception_enter() exits the user mode, we
-> >> should start to protect there right now instead of waiting for a
-> >> potential future warning of illegal RCU use.
-> >>
-> > Async page not present is not much different from regular page fault
-> > exception when it happens not on idle task (regular #PF cannot happen
-> > on idle task), but code have a special handling for idle task. So why
-> > do you think rcu_irq_*() is required here, but not in page fault
-> > handler?
+On 11/29/2012 01:34 AM, Tejun Heo wrote:
+> This patchset decouples cpuset locking from cgroup_mutex.  After the
+> patchset, cpuset uses cpuset-specific cpuset_mutex instead of
+> cgroup_mutex.  This also removes the lockdep warning triggered during
+> cpu offlining (see 0009).
 > 
-> Because we are not supposed to fault in idle, at least I hope there
-> are no case around. Except on cases like here with KVM I guess but we
-> have that special async handler for that.
-> 
-As far as I understand rcu_irq_enter() should be called before entering
-the mode in which read-side critical sections can occur, but async page
-fault does not uses RCU in case of faulting in idle. Actually, looking
-closer, it may call kfree() if page ready notification arrives ahead
-of not present notification (with todays KVM it cannot happen) and we
-have to assume that kfree() uses rcu read even if it currently does not.
-So may be it is possible to move rcu_irq_*() calls to be around unlikely
-kfree() call only.
+> Note that this leaves memcg as the only external user of cgroup_mutex.
+> Michal, Kame, can you guys please convert memcg to use its own locking
+> too?
 
---
-			Gleb.
+Not totally. There is still one mention to the cgroup_lock():
+
+static void cpuset_do_move_task(struct task_struct *tsk,
+                                struct cgroup_scanner *scan)
+{
+        struct cgroup *new_cgroup = scan->data;
+
+        cgroup_lock();
+        cgroup_attach_task(new_cgroup, tsk);
+        cgroup_unlock();
+}
+
+And similar problem to this, is the one we have in memcg: We need to
+somehow guarantee that no tasks will join the cgroup for some time -
+this is why we hold the lock in memcg.
+
+Just calling a function that internally calls the cgroup lock won't do
+much, since it won't solve any dependencies - where it is called matters
+little.
+
+What I'll try to do, is to come with another specialized lock in cgroup
+just for this case. So after taking the cgroup lock, we would also take
+an extra lock if we are adding another entry - be it task or children -
+to the cgroup.
+
+cpuset and memcg could then take that lock as well, explicitly or
+implicitly.
+
+How does it sound?
+
