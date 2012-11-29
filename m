@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754633Ab2K2NJy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 08:09:54 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:58354 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752118Ab2K2NJw (ORCPT
+	id S1754666Ab2K2NLI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 08:11:08 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:52391 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754538Ab2K2NLH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 08:09:52 -0500
+	Thu, 29 Nov 2012 08:11:07 -0500
+Date: Thu, 29 Nov 2012 13:08:44 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Michael Spang <spang@chromium.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: Fix page counting in mem_init and show_mem
+Message-ID: <20121129130844.GI19440@n2100.arm.linux.org.uk>
+References: <1350956091-5276-1-git-send-email-spang@chromium.org>
 MIME-Version: 1.0
-In-Reply-To: <001501cdcdf2$b3f8f730$1beae590$%han@samsung.com>
-References: <1354139201-12834-1-git-send-email-dromede@gmail.com>
-	<001501cdcdf2$b3f8f730$1beae590$%han@samsung.com>
-Date: Thu, 29 Nov 2012 14:09:51 +0100
-Message-ID: <CAHod+Gd3UU7NdRLAAbsX6TUugnjKBwUsDy7yBQzyykuf5GHMVQ@mail.gmail.com>
-Subject: Re: [PATCH] backlight: corgi_lcd: Fix WARN_ON() when calling corgi_bl_set_intensity.
-From: =?UTF-8?B?TWFya28gS2F0acSH?= <dromede@gmail.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        FlorianSchandinat@gmx.de, linux-fbdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1350956091-5276-1-git-send-email-spang@chromium.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 6:30 AM, Jingoo Han <jg1.han@samsung.com> wrote:
-> On Thursday, November 29, 2012 6:47 AM, Marko Katic wrote
->> Subject: [PATCH] backlight: corgi_lcd: Fix WARN_ON() when calling corgi_bl_set_intensity.
->
-> CC'ed Andrew Morton.
->
->
-> Hi Marko Katic,
-> The commit subject and commit message are not clear.
->
-> How about using subject as below?
-> backlight: corgi_lcd: use gpio_set_value_cansleep()
->
-> In addition, 'Fix WARN_ON() when calling corgi_bl_set_intensity'
-> would be the reason why you submit this patch.
-> Please make the commit message more detail.
->
-> Also, I have a question on gpio driver.
-> In order to trigger WARN_ON(chip->can_sleep), 'can_sleep' should be
-> set as 1. However, I cannot find 'can_sleep = 1' in the PXA gpio driver.
-> What gpio driver do you use to test corgi_lcd driver?
->
->
-> Best regards,
-> Jingoo Han
->
+On Mon, Oct 22, 2012 at 09:34:51PM -0400, Michael Spang wrote:
+>  	for_each_bank (i, mi) {
+>  		struct membank *bank = &mi->bank[i];
+> -		unsigned int pfn1, pfn2;
+> -		struct page *page, *end;
+> +		unsigned int start, end, pfn;
+>  
+> -		pfn1 = bank_pfn_start(bank);
+> -		pfn2 = bank_pfn_end(bank);
+> +		start = bank_pfn_start(bank);
+> +		end = bank_pfn_end(bank);
+>  
+> -		page = pfn_to_page(pfn1);
+> -		end  = pfn_to_page(pfn2 - 1) + 1;
+> +		for (pfn = start; pfn < end; pfn++) {
+> +			struct page *page;
+> +
+> +			if (!pfn_valid(pfn))
+> +				continue;
 
-Well, the commit message was short because i thought it was a quick
-and obvious fix.
-But it doesn't really matter now since you raise a valid point with
-your question.
-There are two classes of devices that use this lcd, corgi and spitz
-(both are in mach-pxa tree). Both have
-several variants. All of them use the SCOOP chip for backlight control
-(arm/common/scoop.c) except akita which
-uses the max7310 gpio expander for backlight control. The SCOOP chip
-driver doesn't set can_sleep but the
-max7310 does. So this patch is probably only valid for akita machines.
-I'll test this further and post a revised patch
-soon.
+This is not a very good fix; what this means is that we end up calling
+pfn_valid() for each and every page in the system, and as pfn_valid()
+may not be a simple test (but a search) we should avoid that when we're
+iterating over all pages in the system.
+
+Firstly, the mem blank information is assumed from the very beginning
+to be aligned with the sparsemem split-up.  This comes from the previous
+discontiguous implementation where this was an absolute requirement.  We
+continue to require that.
+
+Secondly, if you're worred about the stolen memory, then we need to be
+iterating over the memblock information instead of the membank information.
+This is slightly more complex because memblock will merge neighbouring
+regions into one contiguous entry - and this needs to be split up here.
+This is why I persisted with the membank stuff here as that _should_
+already be appropriately split.
+
+In the long run though, moving to memblock and dealing better with the
+split memory maps (rather than looking up each and every page using
+pfn_to_page()) is the right way to go.
