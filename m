@@ -1,91 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932952Ab2K2AzV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 19:55:21 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:44862 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932558Ab2K2AzT convert rfc822-to-8bit (ORCPT
+	id S1756504Ab2K2A6f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 19:58:35 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36150 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755386Ab2K2A6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 19:55:19 -0500
+	Wed, 28 Nov 2012 19:58:33 -0500
+Date: Wed, 28 Nov 2012 16:58:29 -0800
+From: Kent Overstreet <koverstreet@google.com>
+To: Zach Brown <zab@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, bcrl@kvack.org, jmoyer@redhat.com,
+        axboe@kernel.dk, viro@zeniv.linux.org.uk
+Subject: Re: [PATCH 07/25] aio: kiocb_cancel()
+Message-ID: <20121129005829.GA15094@google.com>
+References: <1354121029-1376-1-git-send-email-koverstreet@google.com>
+ <1354121029-1376-8-git-send-email-koverstreet@google.com>
+ <20121129000753.GG18574@lenny.home.zabbo.net>
 MIME-Version: 1.0
-In-Reply-To: <04b301cdcdcb$65e2f400$31a8dc00$@lucidpixels.com>
-References: <097501cdca7b$7e303890$7a90a9b0$@lucidpixels.com>
-	<20121126224245.248f0901@neptune.home>
-	<CAErSpo7Y7m9o2u36ghiW1UDkwweSCG1ZGBx167Anfw4wXTYrCg@mail.gmail.com>
-	<CAErSpo6vrHMTht1nQxiF6HD7qCvUE-NS2eAnQjgUXym1pnNkSA@mail.gmail.com>
-	<004201cdcc3a$a7538310$f5fa8930$@lucidpixels.com>
-	<CAErSpo7530xA6=1Ytj09dwyS1M_N_yAfk4xkr3f9Z_NBn6TJrA@mail.gmail.com>
-	<00a501cdcca3$c2638510$472a8f30$@lucidpixels.com>
-	<00b501cdcca6$03f88af0$0be9a0d0$@lucidpixels.com>
-	<50B6ADA5.2030205@gmail.com>
-	<04b301cdcdcb$65e2f400$31a8dc00$@lucidpixels.com>
-Date: Wed, 28 Nov 2012 18:55:17 -0600
-Message-ID: <CADLC3L09uxX_AU+22nfS20DCE97n1_ZxkG5A1R9joJcEua-EBg@mail.gmail.com>
-Subject: Re: Supermicro X9SRL-F - channel enumeration error & ACPI/firmware
- bug question
-From: Robert Hancock <hancockrwd@gmail.com>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
-        support@supermicro.com, linux-kernel@vger.kernel.org,
-        Dan Williams <djbw@fb.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121129000753.GG18574@lenny.home.zabbo.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 6:49 PM, Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
->
->
-> -----Original Message-----
-> From: Robert Hancock [mailto:hancockrwd@gmail.com]
-> Sent: Wednesday, November 28, 2012 7:35 PM
-> To: Justin Piszcz
-> Cc: 'Bjorn Helgaas'; 'Bruno Prémont'; support@supermicro.com;
-> linux-kernel@vger.kernel.org; 'Dan Williams'
-> Subject: Re: Supermicro X9SRL-F - channel enumeration error & ACPI/firmware
-> bug question
->
->
-> What does lspci -vv show on that controller? Not sure what actual
-> chipset that controller is, but there's a known issue with some Marvell
-> 6Gbps SATA controllers with DMAR enabled - it seems the device issues
-> memory read/write requests from the wrong PCI function ID and the IOMMU
-> rightly denies access as the function listed in the requests doesn't
-> have any mapping to that memory. I don't think there's presently a
-> workaround other than disabling DMAR. We could (and likely should) be
-> detecting that device and adding some kind of quirk for it.
->
-> That sounds likely...
-> It is shown below:
->
-> Card name: HighPoint Rocket 620 Dual Port SATA 6 Gbps PCI Express 2.0 Host
-> Adapter
->
-> lspci -vv output:
->
-> 84:00.0 SATA controller: Marvell Technology Group Ltd. 88SE9123 PCIe SATA
-> 6.0 Gb/s controller (rev 11) (prog-if 01 [AHCI 1.0])
->   Subsystem: Marvell Technology Group Ltd. 88SE9123 PCIe SATA 6.0 Gb/s
-> controller
+On Wed, Nov 28, 2012 at 04:07:53PM -0800, Zach Brown wrote:
+> On Wed, Nov 28, 2012 at 08:43:31AM -0800, Kent Overstreet wrote:
+> > Minor refactoring, to get rid of some duplicated code
+> 
+> A minor nit:
+> 
+> >  	spin_lock_irq(&ctx->ctx_lock);
+> > -	ret = -EAGAIN;
+> > +
+> >  	kiocb = lookup_kiocb(ctx, iocb, key);
+> > -	if (kiocb && kiocb->ki_cancel) {
+> > -		cancel = kiocb->ki_cancel;
+> > -		kiocb->ki_users ++;
+> > -		kiocbSetCancelled(kiocb);
+> > -	} else
+> > -		cancel = NULL;
+>  ...
+> > -	if (NULL != cancel) {
+> > -	} else
+> > -		ret = -EINVAL;
+> 
+> In the old code it'd return -EINVAL for a NULL kiocb, despite that
+> misleading unused EAGAIN.
 
-Yeah, that's one of those controllers I think. But I can't tell from
-the bit of the dmesg you posted exactly what's going on. Can you post
-a full boot log from having the card installed and some drive attached
-(by putting the boot drive on another controller for example)?
+Oh damn, that's evil. Hadn't noticed that before.
 
->> ==> Further issues with the X9SRL-F -- does this board support ASPM or is
->> this a Linux/ASPM implementation issue?
->> [    0.632170]  pci0000:ff: ACPI _OSC support notification failed,
-> disabling
->> PCIe ASPM
->> [    0.632239]  pci0000:ff: Unable to request _OSC control (_OSC support
->> mask: 0x08)
->
-> What's the full dmesg from this machine (or is it already posted somewhere)?
->
-> It is now available here:
-> http://home.comcast.net/~jpiszcz/20121128/dmesg.txt
+> 
+> > +	if (kiocb)
+> > +		ret = kiocb_cancel(ctx, kiocb, &res);
+> > +	else
+> > +		ret = -EAGAIN;
+> 
+> But now it returns -EAGAIN.
+> 
+> I bet we want to err on the side of caution and maintain behaviour, no
+> matter how funky.
 
-Is that the same boot log? It doesn't have this error in it.
+Agreed. Fixed patch below:
+
+
+fatal: Not a git repository (or any of the parent directories): .git
+commit 7ad9d0a1914e9563021c0f5f7fc55f20e41999e7
+Author: Kent Overstreet <koverstreet@google.com>
+Date:   Wed Nov 28 16:57:48 2012 -0800
+
+    aio: kiocb_cancel()
+    
+    Minor refactoring, to get rid of some duplicated code
+    
+    Signed-off-by: Kent Overstreet <koverstreet@google.com>
+
+diff --git a/fs/aio.c b/fs/aio.c
+index 91879d4..786c904 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -217,6 +217,29 @@ static inline void put_ioctx(struct kioctx *kioctx)
+ 		__put_ioctx(kioctx);
+ }
+ 
++static int kiocb_cancel(struct kioctx *ctx, struct kiocb *kiocb,
++			struct io_event *res)
++{
++	int (*cancel)(struct kiocb *, struct io_event *);
++	int ret = -EINVAL;
++
++	cancel = kiocb->ki_cancel;
++	kiocbSetCancelled(kiocb);
++	if (cancel) {
++		kiocb->ki_users++;
++		spin_unlock_irq(&ctx->ctx_lock);
++
++		memset(res, 0, sizeof(*res));
++		res->obj = (u64) kiocb->ki_obj.user;
++		res->data = kiocb->ki_user_data;
++		ret = cancel(kiocb, res);
++
++		spin_lock_irq(&ctx->ctx_lock);
++	}
++
++	return ret;
++}
++
+ /* ioctx_alloc
+  *	Allocates and initializes an ioctx.  Returns an ERR_PTR if it failed.
+  */
+@@ -287,7 +310,6 @@ out_freectx:
+  */
+ static void kill_ctx(struct kioctx *ctx)
+ {
+-	int (*cancel)(struct kiocb *, struct io_event *);
+ 	struct task_struct *tsk = current;
+ 	DECLARE_WAITQUEUE(wait, tsk);
+ 	struct io_event res;
+@@ -298,14 +320,8 @@ static void kill_ctx(struct kioctx *ctx)
+ 		struct list_head *pos = ctx->active_reqs.next;
+ 		struct kiocb *iocb = list_kiocb(pos);
+ 		list_del_init(&iocb->ki_list);
+-		cancel = iocb->ki_cancel;
+-		kiocbSetCancelled(iocb);
+-		if (cancel) {
+-			iocb->ki_users++;
+-			spin_unlock_irq(&ctx->ctx_lock);
+-			cancel(iocb, &res);
+-			spin_lock_irq(&ctx->ctx_lock);
+-		}
++
++		kiocb_cancel(ctx, iocb, &res);
+ 	}
+ 
+ 	if (!ctx->reqs_active)
+@@ -1411,7 +1427,7 @@ static struct kiocb *lookup_kiocb(struct kioctx *ctx, struct iocb __user *iocb,
+ SYSCALL_DEFINE3(io_cancel, aio_context_t, ctx_id, struct iocb __user *, iocb,
+ 		struct io_event __user *, result)
+ {
+-	int (*cancel)(struct kiocb *iocb, struct io_event *res);
++	struct io_event res;
+ 	struct kioctx *ctx;
+ 	struct kiocb *kiocb;
+ 	u32 key;
+@@ -1426,32 +1442,22 @@ SYSCALL_DEFINE3(io_cancel, aio_context_t, ctx_id, struct iocb __user *, iocb,
+ 		return -EINVAL;
+ 
+ 	spin_lock_irq(&ctx->ctx_lock);
+-	ret = -EAGAIN;
++
+ 	kiocb = lookup_kiocb(ctx, iocb, key);
+-	if (kiocb && kiocb->ki_cancel) {
+-		cancel = kiocb->ki_cancel;
+-		kiocb->ki_users ++;
+-		kiocbSetCancelled(kiocb);
+-	} else
+-		cancel = NULL;
++	if (kiocb)
++		ret = kiocb_cancel(ctx, kiocb, &res);
++	else
++		ret = -EINVAL;
++
+ 	spin_unlock_irq(&ctx->ctx_lock);
+ 
+-	if (NULL != cancel) {
+-		struct io_event tmp;
+-		pr_debug("calling cancel\n");
+-		memset(&tmp, 0, sizeof(tmp));
+-		tmp.obj = (u64)(unsigned long)kiocb->ki_obj.user;
+-		tmp.data = kiocb->ki_user_data;
+-		ret = cancel(kiocb, &tmp);
+-		if (!ret) {
+-			/* Cancellation succeeded -- copy the result
+-			 * into the user's buffer.
+-			 */
+-			if (copy_to_user(result, &tmp, sizeof(tmp)))
+-				ret = -EFAULT;
+-		}
+-	} else
+-		ret = -EINVAL;
++	if (!ret) {
++		/* Cancellation succeeded -- copy the result
++		 * into the user's buffer.
++		 */
++		if (copy_to_user(result, &res, sizeof(res)))
++			ret = -EFAULT;
++	}
+ 
+ 	put_ioctx(ctx);
+ 
