@@ -1,116 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754460Ab2K2CHQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 21:07:16 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:16966 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753420Ab2K2CHP (ORCPT
+	id S1754624Ab2K2CIV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 21:08:21 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:65023 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753912Ab2K2CIU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 21:07:15 -0500
-Message-ID: <50B6C34E.20007@hp.com>
-Date: Wed, 28 Nov 2012 18:07:10 -0800
-From: Chegu Vinod <chegu_vinod@hp.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 28 Nov 2012 21:08:20 -0500
 MIME-Version: 1.0
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-CC: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Andrew Jones <drjones@redhat.com>
-Subject: Re: [PATCH V3 RFC 0/2] kvm: Improving undercommit scenarios
-References: <20121126120740.2595.33651.sendpatchset@codeblue>
-In-Reply-To: <20121126120740.2595.33651.sendpatchset@codeblue>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <50B6BE34.2010109@vflare.org>
+References: <1354001167-24878-1-git-send-email-ngupta@vflare.org>
+	<20121128051505.GD23136@blaptop>
+	<20121129013320.GA24077@blaptop>
+	<50B6BE34.2010109@vflare.org>
+Date: Thu, 29 Nov 2012 11:08:18 +0900
+X-Google-Sender-Auth: Ru1noDF39y2PoR4CMX6e4QbZGTg
+Message-ID: <CAEwNFnC_fzg8Tv1qZy4QACXD_tpFazkfFCwRf8FUforErWXUFg@mail.gmail.com>
+Subject: Re: [PATCH] zram: Prevent use of unmapped buffer
+From: Minchan Kim <minchan@kernel.org>
+To: Nitin Gupta <ngupta@vflare.org>
+Cc: Greg KH <greg@kroah.com>, Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Sam Hansen <solid.se7en@gmail.com>, Tomas M <tomas@slax.org>,
+        Mihail Kasadjikov <hamer.mk@gmail.com>,
+        Linux Driver Project <devel@linuxdriverproject.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/26/2012 4:07 AM, Raghavendra K T wrote:
->   In some special scenarios like #vcpu <= #pcpu, PLE handler may
-> prove very costly, because there is no need to iterate over vcpus
-> and do unsuccessful yield_to burning CPU.
+On Thu, Nov 29, 2012 at 10:45 AM, Nitin Gupta <ngupta@vflare.org> wrote:
+> On 11/28/2012 05:33 PM, Minchan Kim wrote:
+>>
+>> On Wed, Nov 28, 2012 at 02:15:05PM +0900, Minchan Kim wrote:
+>>>
+>>> Hi Nitin,
+>>>
+>>> On Mon, Nov 26, 2012 at 11:26:07PM -0800, Nitin Gupta wrote:
+>>>>
+>>>> The commit c8f2f0db1 ("zram: Fix handling of incompressible pages")
+>>>> introduced a bug which caused a kunmap()'ed buffer to be used in case
+>>>
+>>> I got confused by the descripton. :(
+>>> The descripton is not right.
+>>> The problem is to access freed memory, not accessing to kunmaped buffer.
+>>>
+>>> partial I/O write.
+>>>
+>>> 1. uncmem = kmalloc
+>>> 2. zram_decompress_page(uncmem)
+>>> 3. memcpy(uncmem, user_mem)
+>>> 4. lzo1x_1_compress(uncmem)
+>>> 5. kfree(uncmem)
+>>> 6. src = uncmem
+>>> 7. memcpy(cmem, src, clen) <----- HIT
+>>>
+>>>> of partial writes where the data was found to be incompressible.
+>>>>
+>> I got it. You shouldn't mention partial write for proper description
+>> because it was usecase for swap-over-zram so it can't make partial write.
+>> Without partial write mention, your description is right but the problem
+>> I mentioned above is another problem for partial write so we need a
+>> another
+>> patch. I will cook.
 >
->   The first patch optimizes all the yield_to by bailing out when there
->   is no need to continue in yield_to (i.e., when there is only one task
->   in source and target rq).
 >
->   Second patch uses that in PLE handler. Further when a yield_to fails
->   we do not immediately go out of PLE handler instead we try thrice
->   to have better statistical possibility of false return. Otherwise that
->   would affect moderate overcommit cases.
->   
->   Result on 3.7.0-rc6 kernel shows around 140% improvement for ebizzy 1x and
->   around 51% for dbench 1x  with 32 core PLE machine with 32 vcpu guest.
+> I will include explanation of both the cases: use of unmapped buffer
+> and freed buffer, when I resend these patches.
 >
->
-> base = 3.7.0-rc6
-> machine: 32 core mx3850 x5 PLE mc
->
-> --+-----------+-----------+-----------+------------+-----------+
->                 ebizzy (rec/sec higher is beter)
-> --+-----------+-----------+-----------+------------+-----------+
->      base        stdev       patched     stdev       %improve
-> --+-----------+-----------+-----------+------------+-----------+
-> 1x   2511.3000    21.5409    6051.8000   170.2592   140.98276
-> 2x   2679.4000   332.4482    2692.3000   251.4005     0.48145
-> 3x   2253.5000   266.4243    2192.1667   178.9753    -2.72169
-> 4x   1784.3750   102.2699    2018.7500   187.5723    13.13485
-> --+-----------+-----------+-----------+------------+-----------+
->
-> --+-----------+-----------+-----------+------------+-----------+
->          dbench (throughput in MB/sec. higher is better)
-> --+-----------+-----------+-----------+------------+-----------+
->      base        stdev       patched     stdev       %improve
-> --+-----------+-----------+-----------+------------+-----------+
-> 1x  6677.4080   638.5048    10098.0060   3449.7026     51.22643
-> 2x  2012.6760    64.7642    2019.0440     62.6702       0.31639
-> 3x  1302.0783    40.8336    1292.7517     27.0515      -0.71629
-> 4x  3043.1725  3243.7281    4664.4662   5946.5741      53.27643
-> --+-----------+-----------+-----------+------------+-----------+
->
-> Here is the refernce of no ple result.
->   ebizzy-1x_nople 7592.6000 rec/sec
->   dbench_1x_nople 7853.6960 MB/sec
->
-> The result says we can still improve by 60% for ebizzy, but overall we are
-> getting impressive performance with the patches.
->
->   Changes Since V2:
->   - Dropped global measures usage patch (Peter Zilstra)
->   - Do not bail out on first failure (Avi Kivity)
->   - Try thrice for the failure of yield_to to get statistically more correct
->     behaviour.
->
->   Changes since V1:
->   - Discard the idea of exporting nrrunning and optimize in core scheduler (Peter)
->   - Use yield() instead of schedule in overcommit scenarios (Rik)
->   - Use loadavg knowledge to detect undercommit/overcommit
->
->   Peter Zijlstra (1):
->    Bail out of yield_to when source and target runqueue has one task
->
->   Raghavendra K T (1):
->    Handle yield_to failure return for potential undercommit case
->
->   Please let me know your comments and suggestions.
->
->   Link for V2:
->   https://lkml.org/lkml/2012/10/29/287
->
->   Link for V1:
->   https://lkml.org/lkml/2012/9/21/168
->
->   kernel/sched/core.c | 25 +++++++++++++++++++------
->   virt/kvm/kvm_main.c | 26 ++++++++++++++++----------
->   2 files changed, 35 insertions(+), 16 deletions(-)
->
-> .
->
-Tested-by: Chegu Vinod <chegu_vinod@hp.com>
+
+As you know, I am going to solve lockdep problem and disksize setting problem.
+Apparently, it conflict with your diet series.
+So I would like to order our patches following as.
+
+1. bug fix patch of unmapped/freed buffer - Nitin
+2. diet patch based on 1 - Nitin
+3. disksize setting and lockdep problem - Minchan
+
+I will wait your two patchsets.
+If you have some trouble to hold the time to make the patch, please tell me.
+I will send 1 and 3 ahead so you can send 2 based on it.
+
+-- 
+Kind regards,
+Minchan Kim
