@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751784Ab2K2G3E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 01:29:04 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49430 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922Ab2K2G3B (ORCPT
+	id S1752049Ab2K2Gat (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 01:30:49 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:55066 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751100Ab2K2Gas (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 01:29:01 -0500
-From: Abhijit Pawar <abhi.c.pawar@gmail.com>
-To: Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Abhijit Pawar <abhi.c.pawar@gmail.com>
-Subject: [PATCH 4/6] fs:btrfs pass NULL as second parameter for set_anon_super
-Date: Thu, 29 Nov 2012 11:58:41 +0530
-Message-Id: <1354170521-12096-1-git-send-email-abhi.c.pawar@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
+	Thu, 29 Nov 2012 01:30:48 -0500
+Date: Thu, 29 Nov 2012 06:30:43 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Jeff Chua <jeff.chua.linux@gmail.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH] Introduce a method to catch mmap_region (was: Recent
+ kernel "mount" slow)
+Message-ID: <20121129063043.GJ4939@ZenIV.linux.org.uk>
+References: <Pine.LNX.4.64.1211281422360.26389@file.rdu.redhat.com>
+ <CA+55aFyXdtVJ=SG9bU4qfggCR6DPvz4vOFYxKJZx_WdyFv+3Fw@mail.gmail.com>
+ <CA+55aFyXS0nkDB95c3pcdg1ctrNnUGO8aDuRNhKSEg3JrOqWhA@mail.gmail.com>
+ <Pine.LNX.4.64.1211281540200.5283@file.rdu.redhat.com>
+ <CA+55aFwbnQsvpsOLS6w_G35d4w+Ezv5tOx2SE7dShJhX4iP_0Q@mail.gmail.com>
+ <Pine.LNX.4.64.1211281904010.3957@file.rdu.redhat.com>
+ <CA+55aFz1Wv2S+3XVmZE1cfiN0TZ4gNA8yWbNgufDLTMc8sKf2A@mail.gmail.com>
+ <CA+55aFxYCxsRM==WMGihQGOA7f5u2X_8boJypsxS2v=WMnr70g@mail.gmail.com>
+ <CA+55aFxrkX_=4yNQ1TwjqU9=pkRY=ud+Kw3YnADJMJxA-ZqQUg@mail.gmail.com>
+ <20121129062519.GI4939@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121129062519.GI4939@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-set_anon_super does not use the second parameter in its implementation.
-So there is no need to pass on the second parameter. 
+On Thu, Nov 29, 2012 at 06:25:19AM +0000, Al Viro wrote:
 
-Signed-off-by: Abhijit Pawar <abhi.c.pawar@gmail.com>
----
- fs/btrfs/super.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> 	Umm...  set_blocksize() is calling kill_bdev(), which does
+> truncate_inode_pages(mapping, 0).  What's going to happen to data in
+> the dirty pages?  IO in progress is not the only thing to worry about...
 
-diff --git a/fs/btrfs/super.c b/fs/btrfs/super.c
-index 915ac14..c9994a3 100644
---- a/fs/btrfs/super.c
-+++ b/fs/btrfs/super.c
-@@ -954,7 +954,7 @@ static int btrfs_test_super(struct super_block *s, void *data)
- 
- static int btrfs_set_super(struct super_block *s, void *data)
- {
--	int err = set_anon_super(s, data);
-+	int err = set_anon_super(s, NULL);
- 	if (!err)
- 		s->s_fs_info = data;
- 	return err;
--- 
-1.7.7.6
-
+Note that sync_blockdev() a few lines prior to that is good only if we
+have no other processes doing write(2) (or dirtying the mmapped pages,
+for that matter).  The window isn't too wide, but...
