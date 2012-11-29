@@ -1,54 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752116Ab2K2GPR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 01:15:17 -0500
-Received: from stargate.chelsio.com ([67.207.112.58]:14875 "EHLO
-	stargate.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553Ab2K2GPP (ORCPT
+	id S1751919Ab2K2GQp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 01:16:45 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:37066 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751039Ab2K2GQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 01:15:15 -0500
-Message-ID: <50B6FD64.2080504@chelsio.com>
-Date: Thu, 29 Nov 2012 11:45:00 +0530
-From: Naresh Kumar Inna <naresh@chelsio.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	Thu, 29 Nov 2012 01:16:44 -0500
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
-Subject: Re: [patch] [SCSI] csiostor: remove unneeded memset()
-References: <20121127173330.GD1059@elgon.mountain>
-In-Reply-To: <20121127173330.GD1059@elgon.mountain>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.193.191.187]
-X-OriginalArrivalTime: 29 Nov 2012 06:15:05.0964 (UTC) FILETIME=[E023D2C0:01CDCDF8]
+In-Reply-To: <CA+55aFxYCxsRM==WMGihQGOA7f5u2X_8boJypsxS2v=WMnr70g@mail.gmail.com>
+References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com>
+ <Pine.LNX.4.64.1211241555470.4300@file.rdu.redhat.com> <CAAJw_ZvUqRmCCQ5-2PdFPRyfdzZMuphGU=hgAjUOHGk=n9Mheg@mail.gmail.com>
+ <CAAJw_ZuJXnAz1ukBwQa3xNbQaL1KUBSrbQMK2hn-7D6Ar1p3fQ@mail.gmail.com>
+ <50B46E05.70906@kernel.dk> <CAAJw_ZsYuLCwCTc6U=ELO_PvyjnVKQdkPke2enfzm6zOeWAqjA@mail.gmail.com>
+ <50B4B313.3030707@kernel.dk> <Pine.LNX.4.64.1211272252260.18338@file.rdu.redhat.com>
+ <50B5CC5A.8060607@kernel.dk> <Pine.LNX.4.64.1211281222410.11599@file.rdu.redhat.com>
+ <CA+55aFx4zYnEsUyGJurBjB0XZ0AgmyKqW-+KWVDvma3w6csnHQ@mail.gmail.com>
+ <Pine.LNX.4.64.1211281422360.26389@file.rdu.redhat.com> <CA+55aFyXdtVJ=SG9bU4qfggCR6DPvz4vOFYxKJZx_WdyFv+3Fw@mail.gmail.com>
+ <CA+55aFyXS0nkDB95c3pcdg1ctrNnUGO8aDuRNhKSEg3JrOqWhA@mail.gmail.com>
+ <Pine.LNX.4.64.1211281540200.5283@file.rdu.redhat.com> <CA+55aFwbnQsvpsOLS6w_G35d4w+Ezv5tOx2SE7dShJhX4iP_0Q@mail.gmail.com>
+ <Pine.LNX.4.64.1211281904010.3957@file.rdu.redhat.com> <CA+55aFz1Wv2S+3XVmZE1cfiN0TZ4gNA8yWbNgufDLTMc8sKf2A@mail.gmail.com>
+ <CA+55aFxYCxsRM==WMGihQGOA7f5u2X_8boJypsxS2v=WMnr70g@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 28 Nov 2012 22:16:21 -0800
+X-Google-Sender-Auth: Qp4QoqqFdOUjlqF9b1SJwOhilno
+Message-ID: <CA+55aFxrkX_=4yNQ1TwjqU9=pkRY=ud+Kw3YnADJMJxA-ZqQUg@mail.gmail.com>
+Subject: Re: [PATCH] Introduce a method to catch mmap_region (was: Recent
+ kernel "mount" slow)
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Jeff Chua <jeff.chua.linux@gmail.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: multipart/mixed; boundary=0016e6d9714f080b6004cf9c3a4f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2012 11:03 PM, Dan Carpenter wrote:
-> No need to memset() this when we just copy over it on the next line.
-> 
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> 
-> diff --git a/drivers/scsi/csiostor/csio_lnode.c b/drivers/scsi/csiostor/csio_lnode.c
-> index 551959e..8b54976 100644
-> --- a/drivers/scsi/csiostor/csio_lnode.c
-> +++ b/drivers/scsi/csiostor/csio_lnode.c
-> @@ -245,7 +245,6 @@ csio_append_attrib(uint8_t **ptr, uint16_t type, uint8_t *val, uint16_t len)
->  	len += 4;		/* includes attribute type and length */
->  	len = (len + 3) & ~3;	/* should be multiple of 4 bytes */
->  	ae->len = htons(len);
-> -	memset(ae->value, 0, len - 4);
->  	memcpy(ae->value, val, len);
->  	*ptr += len;
->  }
-> 
+--0016e6d9714f080b6004cf9c3a4f
+Content-Type: text/plain; charset=ISO-8859-1
 
-Acked-by: Naresh Kumar Inna <naresh@chelsio.com>
+On Wed, Nov 28, 2012 at 6:58 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> But the fact that the code wants to do things like
+>
+>         block = (sector_t)page->index << (PAGE_CACHE_SHIFT - bbits);
+>
+> seriously seems to be the main thing that keeps us using
+> 'inode->i_blkbits'. Calculating bbits from bh->b_size is just costly
+> enough to hurt (not everywhere, but on some machines).
+>
+> Very annoying.
 
-Thanks,
-Naresh.
+Hmm. Here's a patch that does that anyway. I'm not 100% happy with the
+whole ilog2 thing, but at the same time, in other cases it actually
+seems to improve code generation (ie gets rid of the whole unnecessary
+two dereferences through page->mapping->host just to get the block
+size, when we have it in the buffer-head that we have to touch
+*anyway*).
 
+Comments? Again, untested.
+
+And I notice that Al Viro hasn't been cc'd, which is sad, since he's
+been involved in much of fs/block_dev.c.
+
+Al - this is an independent patch to fs/buffer.c to make
+fs/block_dev.c able to change the block size of a block device while
+there is IO in progress that may still use the old block size. The
+discussion has been on fsdevel and lkml, but you may have missed it...
+
+                Linus
+
+--0016e6d9714f080b6004cf9c3a4f
+Content-Type: application/octet-stream; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_ha3hpqwa0
+
+IGZzL2J1ZmZlci5jIHwgNjAgKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysr
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tCiAxIGZpbGUgY2hhbmdlZCwgMzkgaW5zZXJ0aW9ucygrKSwg
+MjEgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZnMvYnVmZmVyLmMgYi9mcy9idWZmZXIuYwpp
+bmRleCBiNWYwNDQyODNlZGIuLjI4N2JjNmYyYmQ1MSAxMDA2NDQKLS0tIGEvZnMvYnVmZmVyLmMK
+KysrIGIvZnMvYnVmZmVyLmMKQEAgLTE1NTMsNiArMTU1MywxOSBAQCB2b2lkIHVubWFwX3VuZGVy
+bHlpbmdfbWV0YWRhdGEoc3RydWN0IGJsb2NrX2RldmljZSAqYmRldiwgc2VjdG9yX3QgYmxvY2sp
+CiBFWFBPUlRfU1lNQk9MKHVubWFwX3VuZGVybHlpbmdfbWV0YWRhdGEpOwogCiAvKgorICogU2l6
+ZSBpcyBhIHBvd2VyLW9mLXR3byBpbiB0aGUgcmFuZ2UgNTEyLi5QQUdFX1NJWkUsCisgKiBhbmQg
+dGhlIGNhc2Ugd2UgY2FyZSBhYm91dCBtb3N0IGlzIFBBR0VfU0laRS4KKyAqCisgKiBTbyB0aGlz
+ICpjb3VsZCogcG9zc2libHkgYmUgd3JpdHRlbiB3aXRoIHRob3NlCisgKiBjb25zdHJhaW50cyBp
+biBtaW5kIChyZWxldmFudCBtb3N0bHkgaWYgc29tZQorICogYXJjaGl0ZWN0dXJlIGhhcyBhIHNs
+b3cgYml0LXNjYW4gaW5zdHJ1Y3Rpb24pCisgKi8KK3N0YXRpYyBpbmxpbmUgaW50IGJsb2NrX3Np
+emVfYml0cyh1bnNpZ25lZCBpbnQgYmxvY2tzaXplKQoreworCXJldHVybiBpbG9nMihibG9ja3Np
+emUpOworfQorCisvKgogICogTk9URSEgQWxsIG1hcHBlZC91cHRvZGF0ZSBjb21iaW5hdGlvbnMg
+YXJlIHZhbGlkOgogICoKICAqCU1hcHBlZAlVcHRvZGF0ZQlNZWFuaW5nCkBAIC0xNTg5LDE3ICsx
+NjAyLDE1IEBAIHN0YXRpYyBpbnQgX19ibG9ja193cml0ZV9mdWxsX3BhZ2Uoc3RydWN0IGlub2Rl
+ICppbm9kZSwgc3RydWN0IHBhZ2UgKnBhZ2UsCiAJc2VjdG9yX3QgYmxvY2s7CiAJc2VjdG9yX3Qg
+bGFzdF9ibG9jazsKIAlzdHJ1Y3QgYnVmZmVyX2hlYWQgKmJoLCAqaGVhZDsKLQljb25zdCB1bnNp
+Z25lZCBibG9ja3NpemUgPSAxIDw8IGlub2RlLT5pX2Jsa2JpdHM7CisJdW5zaWduZWQgaW50IGJs
+b2Nrc2l6ZSwgYmJpdHM7CiAJaW50IG5yX3VuZGVyd2F5ID0gMDsKIAlpbnQgd3JpdGVfb3AgPSAo
+d2JjLT5zeW5jX21vZGUgPT0gV0JfU1lOQ19BTEwgPwogCQkJV1JJVEVfU1lOQyA6IFdSSVRFKTsK
+IAogCUJVR19PTighUGFnZUxvY2tlZChwYWdlKSk7CiAKLQlsYXN0X2Jsb2NrID0gKGlfc2l6ZV9y
+ZWFkKGlub2RlKSAtIDEpID4+IGlub2RlLT5pX2Jsa2JpdHM7Ci0KIAlpZiAoIXBhZ2VfaGFzX2J1
+ZmZlcnMocGFnZSkpIHsKLQkJY3JlYXRlX2VtcHR5X2J1ZmZlcnMocGFnZSwgYmxvY2tzaXplLAor
+CQljcmVhdGVfZW1wdHlfYnVmZmVycyhwYWdlLCAxIDw8IGlub2RlLT5pX2Jsa2JpdHMsCiAJCQkJ
+CSgxIDw8IEJIX0RpcnR5KXwoMSA8PCBCSF9VcHRvZGF0ZSkpOwogCX0KIApAQCAtMTYxMyw5ICsx
+NjI0LDEzIEBAIHN0YXRpYyBpbnQgX19ibG9ja193cml0ZV9mdWxsX3BhZ2Uoc3RydWN0IGlub2Rl
+ICppbm9kZSwgc3RydWN0IHBhZ2UgKnBhZ2UsCiAJICogaGFuZGxlIHRoYXQgaGVyZSBieSBqdXN0
+IGNsZWFuaW5nIHRoZW0uCiAJICovCiAKLQlibG9jayA9IChzZWN0b3JfdClwYWdlLT5pbmRleCA8
+PCAoUEFHRV9DQUNIRV9TSElGVCAtIGlub2RlLT5pX2Jsa2JpdHMpOwogCWhlYWQgPSBwYWdlX2J1
+ZmZlcnMocGFnZSk7CiAJYmggPSBoZWFkOworCWJsb2Nrc2l6ZSA9IGJoLT5iX3NpemU7CisJYmJp
+dHMgPSBibG9ja19zaXplX2JpdHMoYmxvY2tzaXplKTsKKworCWJsb2NrID0gKHNlY3Rvcl90KXBh
+Z2UtPmluZGV4IDw8IChQQUdFX0NBQ0hFX1NISUZUIC0gYmJpdHMpOworCWxhc3RfYmxvY2sgPSAo
+aV9zaXplX3JlYWQoaW5vZGUpIC0gMSkgPj4gYmJpdHM7CiAKIAkvKgogCSAqIEdldCBhbGwgdGhl
+IGRpcnR5IGJ1ZmZlcnMgbWFwcGVkIHRvIGRpc2sgYWRkcmVzc2VzIGFuZApAQCAtMTgwNiwxMiAr
+MTgyMSwxMiBAQCBpbnQgX19ibG9ja193cml0ZV9iZWdpbihzdHJ1Y3QgcGFnZSAqcGFnZSwgbG9m
+Zl90IHBvcywgdW5zaWduZWQgbGVuLAogCUJVR19PTih0byA+IFBBR0VfQ0FDSEVfU0laRSk7CiAJ
+QlVHX09OKGZyb20gPiB0byk7CiAKLQlibG9ja3NpemUgPSAxIDw8IGlub2RlLT5pX2Jsa2JpdHM7
+CiAJaWYgKCFwYWdlX2hhc19idWZmZXJzKHBhZ2UpKQotCQljcmVhdGVfZW1wdHlfYnVmZmVycyhw
+YWdlLCBibG9ja3NpemUsIDApOworCQljcmVhdGVfZW1wdHlfYnVmZmVycyhwYWdlLCAxIDw8IGlu
+b2RlLT5pX2Jsa2JpdHMsIDApOwogCWhlYWQgPSBwYWdlX2J1ZmZlcnMocGFnZSk7CisJYmxvY2tz
+aXplID0gaGVhZC0+Yl9zaXplOworCWJiaXRzID0gYmxvY2tfc2l6ZV9iaXRzKGJsb2Nrc2l6ZSk7
+CiAKLQliYml0cyA9IGlub2RlLT5pX2Jsa2JpdHM7CiAJYmxvY2sgPSAoc2VjdG9yX3QpcGFnZS0+
+aW5kZXggPDwgKFBBR0VfQ0FDSEVfU0hJRlQgLSBiYml0cyk7CiAKIAlmb3IoYmggPSBoZWFkLCBi
+bG9ja19zdGFydCA9IDA7IGJoICE9IGhlYWQgfHwgIWJsb2NrX3N0YXJ0OwpAQCAtMTg4MSwxMSAr
+MTg5NiwxMSBAQCBzdGF0aWMgaW50IF9fYmxvY2tfY29tbWl0X3dyaXRlKHN0cnVjdCBpbm9kZSAq
+aW5vZGUsIHN0cnVjdCBwYWdlICpwYWdlLAogCXVuc2lnbmVkIGJsb2Nrc2l6ZTsKIAlzdHJ1Y3Qg
+YnVmZmVyX2hlYWQgKmJoLCAqaGVhZDsKIAotCWJsb2Nrc2l6ZSA9IDEgPDwgaW5vZGUtPmlfYmxr
+Yml0czsKKwliaCA9IGhlYWQgPSBwYWdlX2J1ZmZlcnMocGFnZSk7CisJYmxvY2tzaXplID0gYmgt
+PmJfc2l6ZTsKIAotCWZvcihiaCA9IGhlYWQgPSBwYWdlX2J1ZmZlcnMocGFnZSksIGJsb2NrX3N0
+YXJ0ID0gMDsKLQkgICAgYmggIT0gaGVhZCB8fCAhYmxvY2tfc3RhcnQ7Ci0JICAgIGJsb2NrX3N0
+YXJ0PWJsb2NrX2VuZCwgYmggPSBiaC0+Yl90aGlzX3BhZ2UpIHsKKwlibG9ja19zdGFydCA9IDA7
+CisJZG8gewogCQlibG9ja19lbmQgPSBibG9ja19zdGFydCArIGJsb2Nrc2l6ZTsKIAkJaWYgKGJs
+b2NrX2VuZCA8PSBmcm9tIHx8IGJsb2NrX3N0YXJ0ID49IHRvKSB7CiAJCQlpZiAoIWJ1ZmZlcl91
+cHRvZGF0ZShiaCkpCkBAIC0xODk1LDcgKzE5MTAsMTAgQEAgc3RhdGljIGludCBfX2Jsb2NrX2Nv
+bW1pdF93cml0ZShzdHJ1Y3QgaW5vZGUgKmlub2RlLCBzdHJ1Y3QgcGFnZSAqcGFnZSwKIAkJCW1h
+cmtfYnVmZmVyX2RpcnR5KGJoKTsKIAkJfQogCQljbGVhcl9idWZmZXJfbmV3KGJoKTsKLQl9CisK
+KwkJYmxvY2tfc3RhcnQgPSBibG9ja19lbmQ7CisJCWJoID0gYmgtPmJfdGhpc19wYWdlOworCX0g
+d2hpbGUgKGJoICE9IGhlYWQpOwogCiAJLyoKIAkgKiBJZiB0aGlzIGlzIGEgcGFydGlhbCB3cml0
+ZSB3aGljaCBoYXBwZW5lZCB0byBtYWtlIGFsbCBidWZmZXJzCkBAIC0yMDIwLDcgKzIwMzgsNiBA
+QCBFWFBPUlRfU1lNQk9MKGdlbmVyaWNfd3JpdGVfZW5kKTsKIGludCBibG9ja19pc19wYXJ0aWFs
+bHlfdXB0b2RhdGUoc3RydWN0IHBhZ2UgKnBhZ2UsIHJlYWRfZGVzY3JpcHRvcl90ICpkZXNjLAog
+CQkJCQl1bnNpZ25lZCBsb25nIGZyb20pCiB7Ci0Jc3RydWN0IGlub2RlICppbm9kZSA9IHBhZ2Ut
+Pm1hcHBpbmctPmhvc3Q7CiAJdW5zaWduZWQgYmxvY2tfc3RhcnQsIGJsb2NrX2VuZCwgYmxvY2tz
+aXplOwogCXVuc2lnbmVkIHRvOwogCXN0cnVjdCBidWZmZXJfaGVhZCAqYmgsICpoZWFkOwpAQCAt
+MjAyOSwxMyArMjA0NiwxMyBAQCBpbnQgYmxvY2tfaXNfcGFydGlhbGx5X3VwdG9kYXRlKHN0cnVj
+dCBwYWdlICpwYWdlLCByZWFkX2Rlc2NyaXB0b3JfdCAqZGVzYywKIAlpZiAoIXBhZ2VfaGFzX2J1
+ZmZlcnMocGFnZSkpCiAJCXJldHVybiAwOwogCi0JYmxvY2tzaXplID0gMSA8PCBpbm9kZS0+aV9i
+bGtiaXRzOworCWhlYWQgPSBwYWdlX2J1ZmZlcnMocGFnZSk7CisJYmxvY2tzaXplID0gaGVhZC0+
+Yl9zaXplOwogCXRvID0gbWluX3QodW5zaWduZWQsIFBBR0VfQ0FDSEVfU0laRSAtIGZyb20sIGRl
+c2MtPmNvdW50KTsKIAl0byA9IGZyb20gKyB0bzsKIAlpZiAoZnJvbSA8IGJsb2Nrc2l6ZSAmJiB0
+byA+IFBBR0VfQ0FDSEVfU0laRSAtIGJsb2Nrc2l6ZSkKIAkJcmV0dXJuIDA7CiAKLQloZWFkID0g
+cGFnZV9idWZmZXJzKHBhZ2UpOwogCWJoID0gaGVhZDsKIAlibG9ja19zdGFydCA9IDA7CiAJZG8g
+ewpAQCAtMjA2OCwxOCArMjA4NSwxOSBAQCBpbnQgYmxvY2tfcmVhZF9mdWxsX3BhZ2Uoc3RydWN0
+IHBhZ2UgKnBhZ2UsIGdldF9ibG9ja190ICpnZXRfYmxvY2spCiAJc3RydWN0IGlub2RlICppbm9k
+ZSA9IHBhZ2UtPm1hcHBpbmctPmhvc3Q7CiAJc2VjdG9yX3QgaWJsb2NrLCBsYmxvY2s7CiAJc3Ry
+dWN0IGJ1ZmZlcl9oZWFkICpiaCwgKmhlYWQsICphcnJbTUFYX0JVRl9QRVJfUEFHRV07Ci0JdW5z
+aWduZWQgaW50IGJsb2Nrc2l6ZTsKKwl1bnNpZ25lZCBpbnQgYmxvY2tzaXplLCBiYml0czsKIAlp
+bnQgbnIsIGk7CiAJaW50IGZ1bGx5X21hcHBlZCA9IDE7CiAKIAlCVUdfT04oIVBhZ2VMb2NrZWQo
+cGFnZSkpOwotCWJsb2Nrc2l6ZSA9IDEgPDwgaW5vZGUtPmlfYmxrYml0czsKIAlpZiAoIXBhZ2Vf
+aGFzX2J1ZmZlcnMocGFnZSkpCi0JCWNyZWF0ZV9lbXB0eV9idWZmZXJzKHBhZ2UsIGJsb2Nrc2l6
+ZSwgMCk7CisJCWNyZWF0ZV9lbXB0eV9idWZmZXJzKHBhZ2UsIDEgPDwgaW5vZGUtPmlfYmxrYml0
+cywgMCk7CiAJaGVhZCA9IHBhZ2VfYnVmZmVycyhwYWdlKTsKKwlibG9ja3NpemUgPSBoZWFkLT5i
+X3NpemU7CisJYmJpdHMgPSBibG9ja19zaXplX2JpdHMoYmxvY2tzaXplKTsKIAotCWlibG9jayA9
+IChzZWN0b3JfdClwYWdlLT5pbmRleCA8PCAoUEFHRV9DQUNIRV9TSElGVCAtIGlub2RlLT5pX2Js
+a2JpdHMpOwotCWxibG9jayA9IChpX3NpemVfcmVhZChpbm9kZSkrYmxvY2tzaXplLTEpID4+IGlu
+b2RlLT5pX2Jsa2JpdHM7CisJaWJsb2NrID0gKHNlY3Rvcl90KXBhZ2UtPmluZGV4IDw8IChQQUdF
+X0NBQ0hFX1NISUZUIC0gYmJpdHMpOworCWxibG9jayA9IChpX3NpemVfcmVhZChpbm9kZSkrYmxv
+Y2tzaXplLTEpID4+IGJiaXRzOwogCWJoID0gaGVhZDsKIAluciA9IDA7CiAJaSA9IDA7Cg==
+--0016e6d9714f080b6004cf9c3a4f--
