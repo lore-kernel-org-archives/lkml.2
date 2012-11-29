@@ -1,115 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932351Ab2K2DK0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 22:10:26 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:49044 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932299Ab2K2DKY convert rfc822-to-8bit (ORCPT
+	id S932429Ab2K2DZl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 22:25:41 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:52986 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932294Ab2K2DZk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 22:10:24 -0500
-MIME-Version: 1.0
-In-Reply-To: <9B4A1B1917080E46B64F07F2989DADD62F2D8AAC@ORSMSX102.amr.corp.intel.com>
-References: <509B5038.8090304@oracle.com>
-	<061C8A8601E8EE4CA8D8FD6990CEA89133487884@ORSMSX102.amr.corp.intel.com>
-	<50A30656.6090508@oracle.com>
-	<061C8A8601E8EE4CA8D8FD6990CEA8913348B105@ORSMSX102.amr.corp.intel.com>
-	<50A43828.6000702@oracle.com>
-	<061C8A8601E8EE4CA8D8FD6990CEA8913349A0B4@ORSMSX102.amr.corp.intel.com>
-	<50A9C5CC.1030300@oracle.com>
-	<061C8A8601E8EE4CA8D8FD6990CEA8913349EB41@ORSMSX102.amr.corp.intel.com>
-	<50AB8471.7080607@oracle.com>
-	<9B4A1B1917080E46B64F07F2989DADD62F2D62D6@ORSMSX102.amr.corp.intel.com>
-	<50B41077.3080009@oracle.com>
-	<b46b84cf-3688-4fd7-b741-4e96f2663517@default>
-	<9B4A1B1917080E46B64F07F2989DADD62F2D8070@ORSMSX102.amr.corp.intel.com>
-	<1354039840.2701.14.camel@bwh-desktop.uk.solarflarecom.com>
-	<50B5CBD2.5020804@oracle.com>
-	<9B4A1B1917080E46B64F07F2989DADD62F2D8AAC@ORSMSX102.amr.corp.intel.com>
-Date: Thu, 29 Nov 2012 11:10:23 +0800
-Message-ID: <CABawtvPrz=z_CLCvPeXkky7COyhjPyfBu3QCTbiiPpvr+5bicg@mail.gmail.com>
-Subject: Re: [E1000-devel] 82571EB: Detected Hardware Unit Hang
-From: Ethan Zhao <ethan.kernel@gmail.com>
-To: "Fujinaka, Todd" <todd.fujinaka@intel.com>
-Cc: Joe Jin <joe.jin@oracle.com>, Ben Hutchings <bhutchings@solarflare.com>,
-        Mary Mcgrath <mary.mcgrath@oracle.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-pci <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Wed, 28 Nov 2012 22:25:40 -0500
+Date: Thu, 29 Nov 2012 14:25:30 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Olaf Hering <olaf@aepfle.de>
+Subject: linux-next: build warning after merge of the xen-two tree
+Message-Id: <20121129142530.37630048cd37048f884b17e9@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__29_Nov_2012_14_25_30_+1100_BcMX8+GlK5FDxGEQ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe,
-    Possibly your customer is running a kernel without source code on
-a platform whose vendor wouldn't like to fix BIOS issue( Is that a
-HP/Dell server ?).
-    Anyway, to see if is a payload issue or,  you could change the
-payload size with setpci tool to those devices and set the link
-retrain bit to trigger the link retraining to debug the issue and
-identity the root cause.  I thinks it is much easier than modify the
-BIOS or  eeprom of NIC.
+--Signature=_Thu__29_Nov_2012_14_25_30_+1100_BcMX8+GlK5FDxGEQ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-    e.g.
-   set device control register to 0f 00   (128 bytes payload size)
-   #   setpci -v -s 00:02.0 98.w=000f
-   set device link control register to 60h (retrain the link)
-   #  setpci -v -s 00:02.0 a0.b=60
+Hi Konrad,
 
-  Hope it works,  Just my 2 cents.
+After merging the xen-two tree, today's linux-next build (x86_64
+allmodconfig) produced this warning:
 
-Ethan.zhao@oracle.com
+arch/x86/xen/enlighten.c: In function 'init_hvm_pv_info':
+arch/x86/xen/enlighten.c:1617:16: warning: unused variable 'ebx' [-Wunused-=
+variable]
+arch/x86/xen/enlighten.c:1617:11: warning: unused variable 'eax' [-Wunused-=
+variable]
 
-On Wed, Nov 28, 2012 at 11:53 PM, Fujinaka, Todd
-<todd.fujinaka@intel.com> wrote:
-> The only EEPROM I know about or can speak to is the one attached to the 82571 and it doesn't set the MaxPayloadSize. That's done by the BIOS.
->
-> Todd Fujinaka
-> Technical Marketing Engineer
-> LAN Access Division (LAD)
-> Intel Corporation
-> todd.fujinaka@intel.com
-> (503) 712-4565
->
->
-> -----Original Message-----
-> From: Joe Jin [mailto:joe.jin@oracle.com]
-> Sent: Wednesday, November 28, 2012 12:31 AM
-> To: Ben Hutchings
-> Cc: Fujinaka, Todd; Mary Mcgrath; netdev@vger.kernel.org; e1000-devel@lists.sf.net; linux-kernel@vger.kernel.org; linux-pci
-> Subject: Re: [E1000-devel] 82571EB: Detected Hardware Unit Hang
->
-> On 11/28/12 02:10, Ben Hutchings wrote:
->> On Tue, 2012-11-27 at 17:32 +0000, Fujinaka, Todd wrote:
->>> Forgive me if I'm being too repetitious as I think some of this has
->>> been mentioned in the past.
->>>
->>> We (and by we I mean the Ethernet part and driver) can only change
->>> the advertised availability of a larger MaxPayloadSize. The size is
->>> negotiated by both sides of the link when the link is established.
->>> The driver should not change the size of the link as it would be
->>> poking at registers outside of its scope and is controlled by the
->>> upstream bridge (not us).
->> [...]
->>
->> MaxPayloadSize (MPS) is not negotiated between devices but is
->> programmed by the system firmware (at least for devices present at
->> boot - the kernel may be responsible in case of hotplug).  You can use
->> the kernel parameter 'pci=pcie_bus_perf' (or one of several others) to
->> set a policy that overrides this, but no policy will allow setting MPS
->> above the device's MaxPayloadSizeSupported (MPSS).
->>
->
-> Ben,
->
-> Unfortunately I'm using 3.0.x kernel and this is not included in the kernel.
-> So I'm trying to use ethtool modify it from eeprom to see if help or no.
->
->
-> Todd, I'll review all MaxPayload for all devices, but need to say if it mismatch, customer could not modify it from BIOS for there was not entry at there, to test it, we have to find how to verify if this is the root cause, so still need to find the offset in eeprom.
->
-> Thanks in advance,
-> Joe
->
+Introduced by commit 9d02b43dee0d ("xen PVonHVM: use E820_Reserved area
+for shared_info").
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__29_Nov_2012_14_25_30_+1100_BcMX8+GlK5FDxGEQ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQttWqAAoJEECxmPOUX5FEgsgP/2fwgDauJfqjC6FrQGWbNFIW
+gM4KvnMNlSnJ6W4AHG8bbdEDO6qNTJVDFIBJaZY4AwIvt9gk3XAUpo/Dwhndtqcz
+It+CFCy4ZKlsJErSXMd6f3ttXeK5dtpr3+d1vzE7ao2Un4F+xm0wJwoHv98M1oMs
+vyfLhaG4YdplVHVVL8LGyt3Pz1+1G/k/Zc7RXVVZjCzQoSUzhBngFE3pmAQu6E6Z
+vfPWiMubdy3yFKuU3BN6svFvVC0T/v9Y+C0TqQqdi9kpsj4J3AEKoJMF6PoReL2d
+/0hsPegmkLWo96vmI9fSaKNpYNQ6xUOzUI4h3jh+W+NJqgm3Xx5V4K/l+2wjAHF+
+87+GQySctPmg5DGtONmDJKxS2jDCrNZdXrNWOSVrTwBR8p9sLvoVV6WOLF5Pcocn
+er9tIhfBejIAdZMzR7kNIiu7VI4IwsDTh7LEcF6gik8Dy/Gosd/f2NJ3n5PH8PLj
+oIw9o9Yy9VaQRROxjUxb7OXs6ShWQeHG2VBo0g4pQlysIuDgLnDeyRyHVcEmTA0U
+/GKji5m+n8qJbOCF2dGiZG9Bw8ERm7SMwFgNdY/jsX3eE6HF5SiqqrSMrCogk2by
+eTDiyd58JBEiyIYaHdYoL+961/UQLAm22ks+kZZvGi7jQqZb+YmTHMsVm8xIogfG
+MreTi0ydgN/u7N/bqeX/
+=Z6b9
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__29_Nov_2012_14_25_30_+1100_BcMX8+GlK5FDxGEQ--
