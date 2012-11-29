@@ -1,164 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566Ab2K2Wfi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 17:35:38 -0500
-Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:38879 "EHLO
-	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752157Ab2K2Wfh (ORCPT
+	id S1754812Ab2K2WhB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 17:37:01 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:45813 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752157Ab2K2Wg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 17:35:37 -0500
-Message-ID: <1354228028.7776.56.camel@misato.fc.hp.com>
-Subject: Re: [RFC PATCH v3 0/3] acpi: Introduce prepare_remove device
- operation
-From: Toshi Kani <toshi.kani@hp.com>
-To: Hanjun Guo <guohanjun@huawei.com>
-Cc: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com, rjw@sisk.pl, lenb@kernel.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Tang Chen <tangchen@cn.fujitsu.com>,
-        Liujiang <jiang.liu@huawei.com>, Huxinwei <huxinwei@huawei.com>
-Date: Thu, 29 Nov 2012 15:27:08 -0700
-In-Reply-To: <50B6E936.2080308@huawei.com>
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
-	  <50B5EFE9.3040206@huawei.com>
-	 <1354128096.26955.276.camel@misato.fc.hp.com> <50B6E936.2080308@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 29 Nov 2012 17:36:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFzeq1HZvEZdmx=f8at2UOWcyp4oZv0RCX4dd0+dthuM1w@mail.gmail.com>
+References: <Pine.LNX.4.64.1211281222410.11599@file.rdu.redhat.com>
+ <CA+55aFx4zYnEsUyGJurBjB0XZ0AgmyKqW-+KWVDvma3w6csnHQ@mail.gmail.com>
+ <20121128194314.GF4939@ZenIV.linux.org.uk> <Pine.LNX.4.64.1211281630150.5283@file.rdu.redhat.com>
+ <CA+55aFziCW_ywZACGoVyNSgy8mToAGhSbdo0VoUAaGvgSb2XxQ@mail.gmail.com>
+ <CA+55aFxt655WfuhjOCnu3esg3gt=L37v=ofWfjs+qpXjn-F2uA@mail.gmail.com>
+ <20121129191503.GB3490@shiny> <CA+55aFxaHuxaEezkpmGRi4kFGaQFTv9S89N-hJhxBjVa6ZwnbQ@mail.gmail.com>
+ <20121129194840.GC3490@shiny> <CA+55aFwGLExQGhhzStMobWzLju0tVjKW9SZphrxp3AJ6w_ZH9g@mail.gmail.com>
+ <20121129212931.GD3490@shiny> <CA+55aFzeq1HZvEZdmx=f8at2UOWcyp4oZv0RCX4dd0+dthuM1w@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 29 Nov 2012 14:36:38 -0800
+X-Google-Sender-Auth: xYb3Vb6LEq_kXo0DQFUpVj5Zojs
+Message-ID: <CA+55aFwoM3wje+XS60=kE3eVndWQD6szfgYa9MyfSp=itdr9Vg@mail.gmail.com>
+Subject: Re: [PATCH v2] Do a proper locking for mmap and block size change
+To: Chris Mason <chris.mason@fusionio.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Chris Mason <clmason@fusionio.com>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
+        Jeff Chua <jeff.chua.linux@gmail.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-11-29 at 12:48 +0800, Hanjun Guo wrote:
-> On 2012/11/29 2:41, Toshi Kani wrote:
-> > On Wed, 2012-11-28 at 19:05 +0800, Hanjun Guo wrote:
-> >> On 2012/11/24 1:50, Vasilis Liaskovitis wrote:
-> >>> As discussed in https://patchwork.kernel.org/patch/1581581/
-> >>> the driver core remove function needs to always succeed. This means we need
-> >>> to know that the device can be successfully removed before acpi_bus_trim / 
-> >>> acpi_bus_hot_remove_device are called. This can cause panics when OSPM-initiated
-> >>> or SCI-initiated eject of memory devices fail e.g with:
-> >>> echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
-> >>>
-> >>> since the ACPI core goes ahead and ejects the device regardless of whether the
-> >>> the memory is still in use or not.
-> >>>
-> >>> For this reason a new acpi_device operation called prepare_remove is introduced.
-> >>> This operation should be registered for acpi devices whose removal (from kernel
-> >>> perspective) can fail.  Memory devices fall in this category.
-> >>>
-> >>> acpi_bus_remove() is changed to handle removal in 2 steps:
-> >>> - preparation for removal i.e. perform part of removal that can fail. Should
-> >>>   succeed for device and all its children.
-> >>> - if above step was successfull, proceed to actual device removal
-> >>
-> >> Hi Vasilis,
-> >> We met the same problem when we doing computer node hotplug, It is a good idea
-> >> to introduce prepare_remove before actual device removal.
-> >>
-> >> I think we could do more in prepare_remove, such as rollback. In most cases, we can
-> >> offline most of memory sections except kernel used pages now, should we rollback
-> >> and online the memory sections when prepare_remove failed ?
-> > 
-> > I think hot-plug operation should have all-or-nothing semantics.  That
-> > is, an operation should either complete successfully, or rollback to the
-> > original state.
-> 
-> Yes, we have the same point of view with you. We handle this problem in the ACPI
-> based hot-plug framework as following:
-> 1) hot add / hot remove complete successfully if no error happens;
-> 2) automatic rollback to the original state if meets some error ;
-> 3) rollback to the original if hot-plug operation cancelled by user ;
+On Thu, Nov 29, 2012 at 2:16 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> But you're right. The direct-IO code really *is* violating that, and
+> knows that get_block() ends up being defined in i_blkbits regardless
+> of b_size.
 
-Cool!
- 
-> >> As you may know, the ACPI based hotplug framework we are working on already addressed
-> >> this problem, and the way we slove this problem is a bit like yours.
-> >>
-> >> We introduce hp_ops in struct acpi_device_ops:
-> >> struct acpi_device_ops {
-> >> 	acpi_op_add add;
-> >> 	acpi_op_remove remove;
-> >> 	acpi_op_start start;
-> >> 	acpi_op_bind bind;
-> >> 	acpi_op_unbind unbind;
-> >> 	acpi_op_notify notify;
-> >> #ifdef	CONFIG_ACPI_HOTPLUG
-> >> 	struct acpihp_dev_ops *hp_ops;
-> >> #endif	/* CONFIG_ACPI_HOTPLUG */
-> >> };
-> >>
-> >> in hp_ops, we divide the prepare_remove into six small steps, that is:
-> >> 1) pre_release(): optional step to mark device going to be removed/busy
-> >> 2) release(): reclaim device from running system
-> >> 3) post_release(): rollback if cancelled by user or error happened
-> >> 4) pre_unconfigure(): optional step to solve possible dependency issue
-> >> 5) unconfigure(): remove devices from running system
-> >> 6) post_unconfigure(): free resources used by devices
-> >>
-> >> In this way, we can easily rollback if error happens.
-> >> How do you think of this solution, any suggestion ? I think we can achieve
-> >> a better way for sharing ideas. :)
-> > 
-> > Yes, sharing idea is good. :)  I do not know if we need all 6 steps (I
-> > have not looked at all your changes yet..), but in my mind, a hot-plug
-> > operation should be composed with the following 3 phases.
-> 
-> Good idea ! we also implement a hot-plug operation in 3 phases:
-> 1) acpihp_drv_pre_execute
-> 2) acpihp_drv_execute
-> 3) acpihp_drv_post_execute
-> you may refer to :
-> https://lkml.org/lkml/2012/11/4/79
+It turns out fs/ioctl.c does the same - it fills in the buffer head
+with some random bh->b_size too. I think it's not even a power of two
+in that case.
 
-Great.  Yes, I will take a look.
- 
-> > 1. Validate phase - Verify if the request is a supported operation.  All
-> > known restrictions are verified at this phase.  For instance, if a
-> > hot-remove request involves kernel memory, it is failed in this phase.
-> > Since this phase makes no change, no rollback is necessary to fail. 
-> 
-> Yes, we have done this in acpihp_drv_pre_execute, and check following things:
-> 
-> 1) Hot-plugble or not. the instance kernel memory you mentioned is also checked
->    when memory device remove;
+And I guess it's understandable - they don't actually *use* the
+buffer, they just want the offset. So the b_size field really is just
+random crap to the users of the get_block interfaces, since they've
+never cared before.
 
-Agreed.
+Ugh, this was definitely a dark and disgusting underbelly of the VFS
+layer. We've not had to really touch it for a *looong* time..
 
-> 2) Dependency check involved. For instance, if hot-add a memory device,
->    processor should be added first, otherwise it's not valid to this operation.
-
-I think FW should be the one that assures such dependency.  That is,
-when a memory device object is marked as present/enabled/functioning, it
-should be ready for the OS to use.
-
-> 3) Race condition check. if the device and its dependent device is in hot-plug
->    process, another request will be denied.
-
-I agree that hot-plug operation should be serialized.  I think another
-request should be either queued or denied based on the caller's intent
-(i.e. wait-ok or no-wait). 
-
-> No rollback is needed for the above checks.
-
-Great.
-
-> > 2. Execute phase - Perform hot-add / hot-remove operation that can be
-> > rolled-back in case of error or cancel.
-> 
-> In this phase, we introduce a state machine for the hot-plugble device,
-> please refer to:
-> https://lkml.org/lkml/2012/11/4/79
-> 
-> I think we have the same idea for the major framework, but the ACPI based
-> hot-plug framework implement it differently in detail, right ?
-
-Yes, I am surprised with the similarity.  What I described is something
-we had implemented for other OS.  I am still studying how best we can
-improve the Linux hotplug code. :)
-
-Thanks,
--Toshi
-
+               Linus
