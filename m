@@ -1,165 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149Ab2K2CBv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 21:01:51 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:35877 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752432Ab2K2CBu (ORCPT
+	id S1753548Ab2K2CCX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 21:02:23 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:54758 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752896Ab2K2CCV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 21:01:50 -0500
-Message-ID: <1354154504.10511.4.camel@phoenix>
-Subject: [RFT][PATCH 2/2] regulator: palmas: Convert palmas_ops_smps to
- regulator_[get|set]_voltage_sel_regmap
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Graeme Gregory <gg@slimlogic.co.uk>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 29 Nov 2012 10:01:44 +0800
-In-Reply-To: <1354154356.10511.2.camel@phoenix>
-References: <1354154356.10511.2.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 28 Nov 2012 21:02:21 -0500
+Date: Wed, 28 Nov 2012 18:02:21 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Zheng Liu <wenqing.lz@taobao.com>, Jeff liu <jeff.liu@oracle.com>,
+        Jim Meyering <jim@meyering.net>, Paul Eggert <eggert@cs.ucla.edu>,
+        Christoph Hellwig <hch@infradead.org>, Josef Bacik <josef@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Andreas Dilger <adilger@dilger.ca>,
+        Dave Chinner <david@fromorbit.com>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        Chris Mason <chris.mason@fusionio.com>,
+        Sunil Mushran <sunil.mushran@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] tmpfs: support SEEK_DATA and SEEK_HOLE (reprise)
+In-Reply-To: <20121129012933.GA9112@kernel>
+Message-ID: <alpine.LNX.2.00.1211281745200.1641@eggly.anvils>
+References: <alpine.LNX.2.00.1211281706390.1516@eggly.anvils> <20121129012933.GA9112@kernel>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/palmas-regulator.c |   87 ++++++++++------------------------
- 1 file changed, 26 insertions(+), 61 deletions(-)
+On Thu, 29 Nov 2012, Jaegeuk Hanse wrote:
+> On Wed, Nov 28, 2012 at 05:22:03PM -0800, Hugh Dickins wrote:
+> >Revert 3.5's f21f8062201f ("tmpfs: revert SEEK_DATA and SEEK_HOLE")
+> >to reinstate 4fb5ef089b28 ("tmpfs: support SEEK_DATA and SEEK_HOLE"),
+> >with the intervening additional arg to generic_file_llseek_size().
+> >
+> >In 3.8, ext4 is expected to join btrfs, ocfs2 and xfs with proper
+> >SEEK_DATA and SEEK_HOLE support; and a good case has now been made
+> >for it on tmpfs, so let's join the party.
+> >
+> 
+> Hi Hugh,
+> 
+> IIUC, several months ago you revert the patch. You said, 
+> 
+> "I don't know who actually uses SEEK_DATA or SEEK_HOLE, and whether it
+> would be of any use to them on tmpfs.  This code adds 92 lines and 752
+> bytes on x86_64 - is that bloat or worthwhile?"
 
-diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
-index 76eaafb..932cc05 100644
---- a/drivers/regulator/palmas-regulator.c
-+++ b/drivers/regulator/palmas-regulator.c
-@@ -327,42 +327,6 @@ static int palmas_list_voltage_smps(struct regulator_dev *dev,
- 		return (490000 + ((selector - 5) * 10000)) * mult;
- }
- 
--static int palmas_get_voltage_smps_sel(struct regulator_dev *dev)
--{
--	struct palmas_pmic *pmic = rdev_get_drvdata(dev);
--	int id = rdev_get_id(dev);
--	int selector;
--	unsigned int reg;
--	unsigned int addr;
--
--	addr = palmas_regs_info[id].vsel_addr;
--
--	palmas_smps_read(pmic->palmas, addr, &reg);
--
--	selector = reg & PALMAS_SMPS12_VOLTAGE_VSEL_MASK;
--
--	return selector;
--}
--
--static int palmas_set_voltage_smps_sel(struct regulator_dev *dev,
--		unsigned selector)
--{
--	struct palmas_pmic *pmic = rdev_get_drvdata(dev);
--	int id = rdev_get_id(dev);
--	unsigned int reg, addr;
--
--	addr = palmas_regs_info[id].vsel_addr;
--	reg = selector;
--
--	/* Make sure we don't change the value of RANGE */
--	if (pmic->range[id])
--		reg |= PALMAS_SMPS12_VOLTAGE_RANGE;
--
--	palmas_smps_write(pmic->palmas, addr, reg);
--
--	return 0;
--}
--
- static int palmas_map_voltage_smps(struct regulator_dev *rdev,
- 		int min_uV, int max_uV)
- {
-@@ -397,8 +361,8 @@ static struct regulator_ops palmas_ops_smps = {
- 	.disable		= palmas_disable_smps,
- 	.set_mode		= palmas_set_mode_smps,
- 	.get_mode		= palmas_get_mode_smps,
--	.get_voltage_sel	= palmas_get_voltage_smps_sel,
--	.set_voltage_sel	= palmas_set_voltage_smps_sel,
-+	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
-+	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
- 	.list_voltage		= palmas_list_voltage_smps,
- 	.map_voltage		= palmas_map_voltage_smps,
- };
-@@ -693,6 +657,14 @@ static int palmas_probe(struct platform_device *pdev)
- 				continue;
- 		}
- 
-+		/* Initialise sleep/init values from platform data */
-+		if (pdata && pdata->reg_init[id]) {
-+			reg_init = pdata->reg_init[id];
-+			ret = palmas_smps_init(palmas, id, reg_init);
-+			if (ret)
-+				goto err_unregister_regulator;
-+		}
-+
- 		/* Register the regulators */
- 		pmic->desc[id].name = palmas_regs_info[id].name;
- 		pmic->desc[id].id = id;
-@@ -713,29 +685,11 @@ static int palmas_probe(struct platform_device *pdev)
- 			pmic->desc[id].uV_step = 1250000;
- 			break;
- 		default:
--			pmic->desc[id].ops = &palmas_ops_smps;
--			pmic->desc[id].n_voltages = PALMAS_SMPS_NUM_VOLTAGES;
--		}
--
--		pmic->desc[id].type = REGULATOR_VOLTAGE;
--		pmic->desc[id].owner = THIS_MODULE;
--
--		/* Initialise sleep/init values from platform data */
--		if (pdata) {
--			reg_init = pdata->reg_init[id];
--			if (reg_init) {
--				ret = palmas_smps_init(palmas, id, reg_init);
--				if (ret)
--					goto err_unregister_regulator;
--			}
--		}
--
--		/*
--		 * read and store the RANGE bit for later use
--		 * This must be done before regulator is probed otherwise
--		 * we error in probe with unsuportable ranges.
--		 */
--		if (id != PALMAS_REG_SMPS10) {
-+			/*
-+			 * Read and store the RANGE bit for later use
-+			 * This must be done before regulator is probed,
-+			 * otherwise we error in probe with unsupportable ranges.
-+			 */
- 			addr = palmas_regs_info[id].vsel_addr;
- 
- 			ret = palmas_smps_read(pmic->palmas, addr, &reg);
-@@ -743,8 +697,19 @@ static int palmas_probe(struct platform_device *pdev)
- 				goto err_unregister_regulator;
- 			if (reg & PALMAS_SMPS12_VOLTAGE_RANGE)
- 				pmic->range[id] = 1;
-+
-+			pmic->desc[id].ops = &palmas_ops_smps;
-+			pmic->desc[id].n_voltages = PALMAS_SMPS_NUM_VOLTAGES;
-+			pmic->desc[id].vsel_reg =
-+					PALMAS_BASE_TO_REG(PALMAS_SMPS_BASE,
-+						palmas_regs_info[id].vsel_addr);
-+			pmic->desc[id].vsel_mask =
-+					PALMAS_SMPS12_VOLTAGE_VSEL_MASK;
- 		}
- 
-+		pmic->desc[id].type = REGULATOR_VOLTAGE;
-+		pmic->desc[id].owner = THIS_MODULE;
-+
- 		if (pdata)
- 			config.init_data = pdata->reg_data[id];
- 		else
--- 
-1.7.9.5
+YUC.
 
+> 
+> But this time in which scenario will use it?
 
+I was not very convinced by the grep argument from Jim and Paul:
+that seemed to be grep holding on to a no-arbitrary-limits dogma,
+at the expense of its users, causing an absurd line-length issue,
+which use of SEEK_DATA happens to avoid in some cases.
 
+The cp of sparse files from Jeff and Dave was more convincing;
+but I still didn't see why little old tmpfs needed to be ahead
+of the pack.
+
+But at LinuxCon/Plumbers in San Diego in August, a more convincing
+case was made: I was hoping you would not ask, because I did not take
+notes, and cannot pass on the details - was it rpm building on tmpfs?
+I was convinced enough to promise support on tmpfs when support on
+ext4 goes in.
+
+Hugh
