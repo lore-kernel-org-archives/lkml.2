@@ -1,89 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754400Ab2K2DdJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 22:33:09 -0500
-Received: from [216.32.181.184] ([216.32.181.184]:59801 "EHLO
-	ch1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1751972Ab2K2DdG (ORCPT
+	id S1755703Ab2K2DdW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 22:33:22 -0500
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:48972 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753800Ab2K2DdT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 22:33:06 -0500
-X-Forefront-Antispam-Report: CIP:160.33.194.230;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail03v.am.sony.com;RD:mail.sonyusa.com;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1de0h1202h1d1ah1d2ahzzz2fh2a8h668h839hd25hf0ah10d2h1288h12a5h12a9h12bdh137ah13b6h1441h1537h153bh162dh1631h1155h)
-Message-ID: <50B6D71E.30003@am.sony.com>
-Date: Wed, 28 Nov 2012 19:31:42 -0800
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: <linux-kernel@vger.kernel.org>, <linux-rt-users@vger.kernel.org>,
-        <grant.likely@secretlab.ca>
-Subject: 3.6.7-rt18 ARM BUG_ON() at kernel/sched/core.c:3817
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+	Wed, 28 Nov 2012 22:33:19 -0500
+From: Qing Xu <qingx@marvell.com>
+To: qingx@marvell.com, linux@arm.linux.org.uk, sameo@linux.intel.com,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        haojian.zhuang@gmail.com, cxie4@marvell.com,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH] mfd: max8925: add dts
+Date: Thu, 29 Nov 2012 11:34:42 +0800
+Message-Id: <1354160082-1814-1-git-send-email-qingx@marvell.com>
+X-Mailer: git-send-email 1.7.0.4
+X-OriginalArrivalTime: 29 Nov 2012 03:33:07.0687 (UTC) FILETIME=[3F986F70:01CDCDE2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6.7-rt18:  kernel BUG at .../kernel/sched/core.c:3817!
+From: Qing Xu <qingx@marvell.com>
 
-Grant reported this same problem for 3.6.5-rt15.
+add max8925 dts support into mmp2 brownstone platform
 
-I am seeing it on a different arm board.
+Signed-off-by: Qing Xu <qingx@marvell.com>
+---
+ arch/arm/boot/dts/mmp2-brownstone.dts |  158 +++++++++++++++++++++++++++++++++
+ arch/arm/boot/dts/mmp2.dtsi           |    4 +-
+ 2 files changed, 161 insertions(+), 1 deletions(-)
 
-Here is the BUG_ON():
-
-   asmlinkage void __sched preempt_schedule_irq(void)
-   {
-        struct thread_info *ti = current_thread_info();
-
-        /* Catch callers which need to be fixed */
-        BUG_ON(ti->preempt_count || !irqs_disabled());
-
-Putting in some extra printk(), the BUG_ON() is triggering because
-ti->preempt_count is non-zero.
-
-
-It appears that the cause is in arch/arm/kernel/entry-armv.S.
-
-The call to preempt_schedule_irq() is from svc_preempt:
-
-   #ifdef CONFIG_PREEMPT
-   svc_preempt:
-           mov     r8, lr
-   1:      bl      preempt_schedule_irq            @ irq en/disable is done inside
-
-
-svc_preempt is branched to from one of two possible places.  The first was
-present before the lazy preempt code was added.  The first appears ok to me.
-(Note that the first branch does not occur if preempt count is non-zero.)
-
-The second branch can occur even if the preempt count is non-zero (which is
-what the BUG_ON() is finding):
-
-   __irq_svc:
-           svc_entry
-           irq_handler
-
-   #ifdef CONFIG_PREEMPT
-           get_thread_info tsk
-           ldr     r8, [tsk, #TI_PREEMPT]          @ get preempt count
-           ldr     r0, [tsk, #TI_FLAGS]            @ get flags
-           teq     r8, #0                          @ if preempt count != 0
-           movne   r0, #0                          @ force flags to 0
-           tst     r0, #_TIF_NEED_RESCHED
-           blne    svc_preempt
-           ldr     r8, [tsk, #TI_PREEMPT_LAZY]     @ get preempt lazy count
-           ldr     r0, [tsk, #TI_FLAGS]            @ get flags
-           teq     r8, #0                          @ if preempt lazy count != 0
-           movne   r0, #0                          @ force flags to 0
-           tst     r0, #_TIF_NEED_RESCHED_LAZY
-           blne    svc_preempt
-   #endif
-
-
-
-
+diff --git a/arch/arm/boot/dts/mmp2-brownstone.dts b/arch/arm/boot/dts/mmp2-brownstone.dts
+index c9b4f27..f03d4f4 100644
+--- a/arch/arm/boot/dts/mmp2-brownstone.dts
++++ b/arch/arm/boot/dts/mmp2-brownstone.dts
+@@ -29,6 +29,164 @@
+ 			};
+ 			twsi1: i2c@d4011000 {
+ 				status = "okay";
++				pmic: max8925@3c {
++					compatible = "maxim,max8925";
++					reg = <0x3c>;
++					interrupts = <1>;
++					interrupt-parent = <&intcmux4>;
++					interrupt-controller;
++					#interrupt-cells = <1>;
++					tsc-irq = <0>;
++
++					regulators {
++						SDV1 {
++							regulator-min-microvolt = <637500>;
++							regulator-max-microvolt = <1425000>;
++							regulator-boot-on;
++							regulator-always-on;
++						};
++						SDV2 {
++							regulator-min-microvolt = <650000>;
++							regulator-max-microvolt = <2225000>;
++							regulator-boot-on;
++							regulator-always-on;
++						};
++						SDV3 {
++							regulator-min-microvolt = <750000>;
++							regulator-max-microvolt = <3900000>;
++							regulator-boot-on;
++							regulator-always-on;
++						};
++						LDO1 {
++							regulator-min-microvolt = <750000>;
++							regulator-max-microvolt = <3900000>;
++							regulator-boot-on;
++							regulator-always-on;
++						};
++						LDO2 {
++							regulator-min-microvolt = <650000>;
++							regulator-max-microvolt = <2250000>;
++							regulator-boot-on;
++							regulator-always-on;
++						};
++						LDO3 {
++							regulator-min-microvolt = <650000>;
++							regulator-max-microvolt = <2250000>;
++							regulator-boot-on;
++							regulator-always-on;
++						};
++						LDO4 {
++							regulator-min-microvolt = <750000>;
++							regulator-max-microvolt = <3900000>;
++							regulator-boot-on;
++							regulator-always-on;
++						};
++						LDO5 {
++							regulator-min-microvolt = <750000>;
++							regulator-max-microvolt = <3900000>;
++							regulator-boot-on;
++							regulator-always-on;
++						};
++						LDO6 {
++							regulator-min-microvolt = <750000>;
++							regulator-max-microvolt = <3900000>;
++							regulator-boot-on;
++							regulator-always-on;
++						};
++						LDO7 {
++							regulator-min-microvolt = <750000>;
++							regulator-max-microvolt = <3900000>;
++							regulator-boot-on;
++							regulator-always-on;
++						};
++						LDO8 {
++							regulator-min-microvolt = <750000>;
++							regulator-max-microvolt = <3900000>;
++							regulator-boot-on;
++							regulator-always-on;
++						};
++						LDO9 {
++							regulator-min-microvolt = <750000>;
++							regulator-max-microvolt = <3900000>;
++							regulator-boot-on;
++							regulator-always-on;
++						};
++						LDO10 {
++							regulator-min-microvolt = <750000>;
++							regulator-max-microvolt = <3900000>;
++						};
++						LDO11 {
++							regulator-min-microvolt = <750000>;
++							regulator-max-microvolt = <3900000>;
++							regulator-boot-on;
++							regulator-always-on;
++						};
++						LDO12 {
++							regulator-min-microvolt = <750000>;
++							regulator-max-microvolt = <3900000>;
++							regulator-boot-on;
++							regulator-always-on;
++						};
++						LDO13 {
++							regulator-min-microvolt = <750000>;
++							regulator-max-microvolt = <3900000>;
++							regulator-boot-on;
++							regulator-always-on;
++						};
++						LDO14 {
++							regulator-min-microvolt = <750000>;
++							regulator-max-microvolt = <3900000>;
++							regulator-boot-on;
++							regulator-always-on;
++						};
++						LDO15 {
++							regulator-min-microvolt = <750000>;
++							regulator-max-microvolt = <3900000>;
++							regulator-boot-on;
++							regulator-always-on;
++						};
++						LDO16 {
++							regulator-min-microvolt = <750000>;
++							regulator-max-microvolt = <3900000>;
++							regulator-boot-on;
++							regulator-always-on;
++						};
++						LDO17 {
++							regulator-min-microvolt = <650000>;
++							regulator-max-microvolt = <2250000>;
++							regulator-boot-on;
++							regulator-always-on;
++						};
++						LDO18 {
++							regulator-min-microvolt = <650000>;
++							regulator-max-microvolt = <2250000>;
++							regulator-boot-on;
++							regulator-always-on;
++						};
++						LDO19 {
++							regulator-min-microvolt = <750000>;
++							regulator-max-microvolt = <3900000>;
++							regulator-boot-on;
++							regulator-always-on;
++						};
++						LDO20 {
++							regulator-min-microvolt = <750000>;
++							regulator-max-microvolt = <3900000>;
++							regulator-boot-on;
++							regulator-always-on;
++						};
++					};
++					backlight {
++						max8925-dual-string = <0>;
++					};
++					charger {
++						batt-detect = <0>;
++						topoff-threshold = <1>;
++						fast-charge = <7>;
++						no-temp-support = <0>;
++						no-insert-detect = <0>;
++					};
++				};
+ 			};
+ 			rtc: rtc@d4010000 {
+ 				status = "okay";
+diff --git a/arch/arm/boot/dts/mmp2.dtsi b/arch/arm/boot/dts/mmp2.dtsi
+index 80f74e2..76f9cc7 100644
+--- a/arch/arm/boot/dts/mmp2.dtsi
++++ b/arch/arm/boot/dts/mmp2.dtsi
+@@ -41,7 +41,7 @@
+ 				mrvl,intc-nr-irqs = <64>;
+ 			};
+ 
+-			intcmux4@d4282150 {
++			intcmux4: interrupt-controller@d4282150 {
+ 				compatible = "mrvl,mmp2-mux-intc";
+ 				interrupts = <4>;
+ 				interrupt-controller;
+@@ -196,6 +196,8 @@
+ 				compatible = "mrvl,mmp-twsi";
+ 				reg = <0xd4011000 0x1000>;
+ 				interrupts = <7>;
++				#address-cells = <1>;
++				#size-cells = <0>;
+ 				mrvl,i2c-fast-mode;
+ 				status = "disabled";
+ 			};
+-- 
+1.7.0.4
 
