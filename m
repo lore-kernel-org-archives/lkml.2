@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755443Ab2K2CaE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 21:30:04 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:45833 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754807Ab2K2CaC (ORCPT
+	id S1754820Ab2K2Cow (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 21:44:52 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:45090 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753795Ab2K2Cov (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 21:30:02 -0500
+	Wed, 28 Nov 2012 21:44:51 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Aj0IACHLtlB5LIZ7gWdsb2JhbABFhUG0WoYEFw4BARYmJ4IeAQEFOhwjEAgDGC4UJQMhE4gPvyUUjCuEQQOWAIlLigA
+Date: Thu, 29 Nov 2012 13:44:46 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Zheng Liu <wenqing.lz@taobao.com>, Jeff liu <jeff.liu@oracle.com>,
+        Jim Meyering <jim@meyering.net>, Paul Eggert <eggert@cs.ucla.edu>,
+        Christoph Hellwig <hch@infradead.org>, Josef Bacik <josef@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Andreas Dilger <adilger@dilger.ca>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        Chris Mason <chris.mason@fusionio.com>,
+        Sunil Mushran <sunil.mushran@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] tmpfs: support SEEK_DATA and SEEK_HOLE (reprise)
+Message-ID: <20121129024446.GY6434@dastard>
+References: <alpine.LNX.2.00.1211281706390.1516@eggly.anvils>
 MIME-Version: 1.0
-Date: Wed, 28 Nov 2012 21:30:01 -0500
-Message-ID: <CAPgLHd8rsNm8pbQozGrpcB-DWD94Av8dj-98eFh2Efn4nZOzaw@mail.gmail.com>
-Subject: [PATCH -next] staging: sb105x: fix potential NULL pointer dereference
- in mp_chars_in_buffer()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1211281706390.1516@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Wed, Nov 28, 2012 at 05:22:03PM -0800, Hugh Dickins wrote:
+> Revert 3.5's f21f8062201f ("tmpfs: revert SEEK_DATA and SEEK_HOLE")
+> to reinstate 4fb5ef089b28 ("tmpfs: support SEEK_DATA and SEEK_HOLE"),
+> with the intervening additional arg to generic_file_llseek_size().
+> 
+> In 3.8, ext4 is expected to join btrfs, ocfs2 and xfs with proper
+> SEEK_DATA and SEEK_HOLE support; and a good case has now been made
+> for it on tmpfs, so let's join the party.
+> 
+> It's quite easy for tmpfs to scan the radix_tree to support llseek's new
+> SEEK_DATA and SEEK_HOLE options: so add them while the minutiae are still
+> on my mind (in particular, the !PageUptodate-ness of pages fallocated but
+> still unwritten).
+> 
+> [akpm@linux-foundation.org: fix warning with CONFIG_TMPFS=n]
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> ---
 
-The dereference to 'state' should be moved below the NULL test.
+Does it pass the seek hole/data tests (285, 286) in xfstests?
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- drivers/staging/sb105x/sb_pci_mp.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Cheers,
 
-diff --git a/drivers/staging/sb105x/sb_pci_mp.c b/drivers/staging/sb105x/sb_pci_mp.c
-index fbebf88..edb2a85 100644
---- a/drivers/staging/sb105x/sb_pci_mp.c
-+++ b/drivers/staging/sb105x/sb_pci_mp.c
-@@ -689,13 +689,14 @@ static int mp_chars_in_buffer(struct tty_struct *tty)
- static void mp_flush_buffer(struct tty_struct *tty)
- {
- 	struct sb_uart_state *state = tty->driver_data;
--	struct sb_uart_port *port = state->port;
-+	struct sb_uart_port *port;
- 	unsigned long flags;
- 
- 	if (!state || !state->info) {
- 		return;
- 	}
- 
-+	port = state->port;
- 	spin_lock_irqsave(&port->lock, flags);
- 	uart_circ_clear(&state->info->xmit);
- 	spin_unlock_irqrestore(&port->lock, flags);
-
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
