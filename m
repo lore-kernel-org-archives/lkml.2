@@ -1,58 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754913Ab2K2Upi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 15:45:38 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50270 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754646Ab2K2Upe (ORCPT
+	id S1755050Ab2K2UrL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 15:47:11 -0500
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:32406 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754557Ab2K2UrJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 15:45:34 -0500
-Date: Thu, 29 Nov 2012 12:45:31 -0800
-From: Kent Overstreet <koverstreet@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Benjamin LaHaise <bcrl@kvack.org>, linux-kernel@vger.kernel.org,
-        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org, zab@redhat.com,
-        jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk
-Subject: Re: [PATCH 22/25] Generic dynamic per cpu refcounting
-Message-ID: <20121129204531.GK15094@google.com>
-References: <1354121029-1376-23-git-send-email-koverstreet@google.com>
- <m28v9kgsen.fsf@firstfloor.org>
- <20121129185720.GE15094@google.com>
- <20121129185953.GW16230@one.firstfloor.org>
- <20121129191214.GG15094@google.com>
- <20121129192003.GX16230@one.firstfloor.org>
- <20121129192925.GH15094@google.com>
- <20121129193452.GI19042@kvack.org>
- <20121129202231.GJ15094@google.com>
- <m2fw3sf8eu.fsf@firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m2fw3sf8eu.fsf@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 29 Nov 2012 15:47:09 -0500
+Message-ID: <1354221519.7776.10.camel@misato.fc.hp.com>
+Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on
+ rebind scenario
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        linux-acpi@vger.kernel.org, Wen Congyang <wency@cn.fujitsu.com>,
+        Wen Congyang <wencongyang@gmail.com>, isimatu.yasuaki@jp.fujitsu.com,
+        lenb@kernel.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Date: Thu, 29 Nov 2012 13:38:39 -0700
+In-Reply-To: <1666001.sopVksfMvY@vostro.rjw.lan>
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
+	 <20121129113030.GB639@dhcp-192-168-178-175.profitbricks.localdomain>
+	 <1354211790.26955.443.camel@misato.fc.hp.com>
+	 <1666001.sopVksfMvY@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 12:42:17PM -0800, Andi Kleen wrote:
-> Kent Overstreet <koverstreet@google.com> writes:
+On Thu, 2012-11-29 at 21:25 +0100, Rafael J. Wysocki wrote:
+> On Thursday, November 29, 2012 10:56:30 AM Toshi Kani wrote:
+> > On Thu, 2012-11-29 at 12:30 +0100, Vasilis Liaskovitis wrote:
+> > > On Thu, Nov 29, 2012 at 11:03:05AM +0100, Rafael J. Wysocki wrote:
+> > > > On Wednesday, November 28, 2012 06:15:42 PM Toshi Kani wrote:
+> > > > > On Wed, 2012-11-28 at 18:02 -0700, Toshi Kani wrote:
+> > > > > > On Thu, 2012-11-29 at 00:49 +0100, Rafael J. Wysocki wrote:
+> > > > > > > On Wednesday, November 28, 2012 02:02:48 PM Toshi Kani wrote:
+> > > > > > > > > > > > > > > Consider the following case:
+> > > > > > > > > > > > > > > 
+> > > > > > > > > > > > > > > We hotremove the memory device by SCI and unbind it from the driver at the same time:
+> > > > > > > > > > > > > > > 
+> > > > > > > > > > > > > > > CPUa                                                  CPUb
+> > > > > > > > > > > > > > > acpi_memory_device_notify()
+> > > > > > > > > > > > > > >                                        unbind it from the driver
+> > > > > > > > > > > > > > >     acpi_bus_hot_remove_device()
+> > > > > > > > > > > > > > 
+> > > [...]
+> > > > Well, in the meantime I've had a look at acpi_bus_hot_remove_device() and
+> > > > friends and I think there's a way to address all of these problems
+> > > > without big redesign (for now).
+> > > > 
+> > > > First, why don't we introduce an ACPI device flag (in the flags field of
+> > > > struct acpi_device) called eject_forbidden or something like this such that:
+> > > > 
+> > > > (1) It will be clear by default.
+> > > > (2) It may only be set by a driver's .add() routine if necessary.
+> > > > (3) Once set, it may only be cleared by the driver's .remove() routine if
+> > > >     it's safe to physically remove the device after the .remove().
+> > > > 
+> > > > Then, after the .remove() (which must be successful) has returned, and the
+> > > > flag is set, it will tell acpi_bus_remove() to return a specific error code
+> > > > (such as -EBUSY or -EAGAIN).  It doesn't matter if .remove() was called
+> > > > earlier, because if it left the flag set, there's no way to clear it afterward
+> > > > and acpi_bus_remove() will see it set anyway.  I think the struct acpi_device
+> > > > should be unregistered anyway if that error code is to be returned.
+> > > > 
+> > > > [By the way, do you know where we free the memory allocated for struct
+> > > >  acpi_device objects?]
+> > > > 
+> > > > Now if acpi_bus_trim() gets that error code from acpi_bus_remove(), it should
+> > > > store it, but continue the trimming normally and finally it should return that
+> > > > error code to acpi_bus_hot_remove_device().
+> > > 
+> > > Side-note: In the pre_remove patches, acpi_bus_trim actually returns on the
+> > > first error from acpi_bus_remove (e.g. when memory offlining in pre_remove
+> > > fails). Trimming is not continued. 
+> > > 
+> > > Normally, acpi_bus_trim keeps trimming as you say, and always returns the last
+> > > error. Is this the desired behaviour that we want to keep for bus_trim? (This is
+> > > more a general question, not specific to the eject_forbidden suggestion)
+> > 
+> > Your change makes sense to me.  At least until we have rollback code in
+> > place, we need to fail as soon as we hit an error.
 > 
-> > On Thu, Nov 29, 2012 at 02:34:52PM -0500, Benjamin LaHaise wrote:
-> >> On Thu, Nov 29, 2012 at 11:29:25AM -0800, Kent Overstreet wrote:
-> >> > There's some kind of symmetry going on here, and if I'd been awake more
-> >> > in college I could probably say exactly why it works, but it does.
-> >> 
-> >> I think the catch is that using only a 32 bit counter is something the 
-> >> user could arbitrarily control the sum of all parts.  I think a 64 bit 
-> >> counter may be required to ensure no overflow occurs.  Otherwise, an 
-> >> overflow could result in a premature free when there are still 2^32 
-> >> objects active thanks to a malicious user (possible on systems with lots 
-> >> of memory these days -- remote, but possible).
-> >
-> > That's no different from regular atomic_t - but you're right, we
-> > should be using size_t for anything userspace can manipulate.
-> 
-> The regular atomic_t is limited in ways that you are not.
-> See my original mail.
+> Are you sure this makes sense?  What happens to the devices that we have
+> trimmed already and then there's an error?  Looks like they are just unusable
+> going forward, aren't they?
 
-I don't follow, can you explain?
+Yes, the devices trimmed already are released from the kernel, and their
+memory ranges become unusable.  This is bad.  But I do not think we
+should trim further to make more devices unusable after an error. 
+
+
+> > > > Now, if acpi_bus_hot_remove_device() gets that error code, it should just
+> > > > reverse the whole trimming (i.e. trigger acpi_bus_scan() from the device
+> > > > we attempted to eject) and notify the firmware about the failure.
+> > > 
+> > > sounds like this rollback needs to be implemented in any solution we choose
+> > > to implement, correct?
+> > 
+> > Yes, rollback is necessary.  But I do not think we need to include it
+> > into your patch, though.
+> 
+> As the first step, we should just trim everything and then return an error
+> code in my opinion.
+
+But we cannot trim devices with kernel memory.
+
+Thanks,
+-Toshi
+
