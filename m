@@ -1,56 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425Ab2K2KEx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 05:04:53 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:35959 "EHLO hydra.sisk.pl"
+	id S1753038Ab2K2KHS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 05:07:18 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:34695 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751692Ab2K2KEv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 05:04:51 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: linux-acpi@vger.kernel.org
-Cc: Zdenek Kabelac <zkabelac@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Len Brown <lenb@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Acpi deadlocks with 3.7.0-rc4
-Date: Thu, 29 Nov 2012 11:09:36 +0100
-Message-ID: <1658287.3KNDf2oyAg@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <50B724F9.7040504@redhat.com>
-References: <50A513A8.9010404@redhat.com> <6072715.FoXSX1UJhO@vostro.rjw.lan> <50B724F9.7040504@redhat.com>
+	id S1751141Ab2K2KHP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 05:07:15 -0500
+Date: Thu, 29 Nov 2012 10:07:12 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1211291004440.27480@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 29, 2012 10:03:53 AM Zdenek Kabelac wrote:
-> Dne 28.11.2012 21:31, Rafael J. Wysocki napsal(a):
-> > On Wednesday, November 28, 2012 06:27:50 PM Zdenek Kabelac wrote:
-> >> Dne 28.11.2012 18:02, Linus Torvalds napsal(a):
-> >>> On Wed, Nov 28, 2012 at 8:21 AM, Zdenek Kabelac <zkabelac@redhat.com> wrote:
-> >>>>
-> >>>> I've opened  https://bugzilla.kernel.org/show_bug.cgi?id=51071
-> >>>> and attached picture there which is all I have.
-> >
-> > I wonder if you can try to apply the patch below and see if that makes any
-> > difference?
-> >
-> 
-> Yep - extended BZ with 2 new pictures - it's now crashing earlier within
-> the call of acpi_bus_get_device().
 
-Pretty much as expected.
+Hi Linus
 
-So this is the problem I was thinking it was: the previous suspend-resume
-cycle unregistered the struct acpi_device pointed to by dev->data in
-pnpacpi_build_resource_template(), so the handle pointer in there is now
-invalid.
+just driver fixes, nothing major, except maybe ilk rc6 disable.
 
-Thanks,
-Rafael
+intel: revert ironlake rc6 - we still have one ilk regression, but this 
+gets rid of one big one, turn off cloning, and a directed fix for Apple 
+edp
+radeon: one modesetting fix
+exynos: minor fixes
 
+Dave.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+The following changes since commit 9489e9dcae718d5fde988e4a684a0f55b5f94d17:
+
+  Linux 3.7-rc7 (2012-11-25 17:59:19 -0800)
+
+are available in the git repository at:
+
+  git://people.freedesktop.org/~airlied/linux drm-fixes
+
+for you to fetch changes up to e548a83c34806b8bc2c55f52d3bc481a13a3829e:
+
+  Merge branch 'drm-fixes-3.7' of git://people.freedesktop.org/~agd5f/linux (2012-11-28 16:51:10 +1000)
+
+----------------------------------------------------------------
+
+Chris Wilson (1):
+      Revert "drm/i915: enable rc6 on ilk again"
+
+Daniel Vetter (1):
+      drm/i915: disable cloning on sdvo
+
+Dave Airlie (3):
+      Merge branch 'drm-intel-fixes' of git://people.freedesktop.org/~danvet/drm-intel
+      Merge branch 'exynos-drm-fixes' of git://git.kernel.org/.../daeinki/drm-exynos
+      Merge branch 'drm-fixes-3.7' of git://people.freedesktop.org/~agd5f/linux
+
+Inki Dae (3):
+      drm/exynos: fix linux framebuffer address setting.
+      drm/exynos: remove unnecessary code.
+      drm/exynos: fix overlay updating issue
+
+Jani Nikula (1):
+      drm/i915: do not default to 18 bpp for eDP if missing from VBT
+
+Jerome Glisse (1):
+      radeon: fix pll/ctrc mapping on dce2 and dce3 hardware
+
+Sachin Kamat (2):
+      drm/exynos: Make exynos4/5_fimd_driver_data static
+      drm/exynos: Fix potential NULL pointer dereference in exynos_drm_encoder.c
+
+ drivers/gpu/drm/exynos/exynos_drm_encoder.c |  8 ++++-
+ drivers/gpu/drm/exynos/exynos_drm_fbdev.c   |  3 +-
+ drivers/gpu/drm/exynos/exynos_drm_fimd.c    |  4 +--
+ drivers/gpu/drm/exynos/exynos_drm_plane.c   |  1 -
+ drivers/gpu/drm/i915/intel_bios.c           | 11 ++-----
+ drivers/gpu/drm/i915/intel_display.c        |  2 +-
+ drivers/gpu/drm/i915/intel_pm.c             | 12 ++------
+ drivers/gpu/drm/i915/intel_sdvo.c           | 17 +++++-----
+ drivers/gpu/drm/radeon/atombios_crtc.c      | 48 +++++++++--------------------
+ 9 files changed, 41 insertions(+), 65 deletions(-)
