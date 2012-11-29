@@ -1,93 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754900Ab2K2OdX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 09:33:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62546 "EHLO mx1.redhat.com"
+	id S1754923Ab2K2Odt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 09:33:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42557 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750931Ab2K2OdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 09:33:22 -0500
-Date: Thu, 29 Nov 2012 15:33:03 +0100
+	id S1751409Ab2K2Ods (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 09:33:48 -0500
+Date: Thu, 29 Nov 2012 14:40:02 +0100
 From: Jiri Olsa <jolsa@redhat.com>
 To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 03/18] perf tools: Keep group information
-Message-ID: <20121129143303.GJ1096@krava.brq.redhat.com>
-References: <1354171126-14387-1-git-send-email-namhyung@kernel.org>
- <1354171126-14387-5-git-send-email-namhyung@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH] perf hists: Fix period symbol_conf.field_sep display, again
+Message-ID: <20121129134001.GG1096@krava.brq.redhat.com>
+References: <1354110769-2998-1-git-send-email-jolsa@redhat.com>
+ <1354110769-2998-4-git-send-email-jolsa@redhat.com>
+ <878v9kq1uz.fsf@sejong.aot.lge.com>
+ <20121129115344.GB1096@krava.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1354171126-14387-5-git-send-email-namhyung@kernel.org>
+In-Reply-To: <20121129115344.GB1096@krava.brq.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 03:38:31PM +0900, Namhyung Kim wrote:
-> From: Namhyung Kim <namhyung.kim@lge.com>
+On Thu, Nov 29, 2012 at 12:53:44PM +0100, Jiri Olsa wrote:
+> On Thu, Nov 29, 2012 at 04:56:04PM +0900, Namhyung Kim wrote:
 
 SNIP
 
-> --- a/tools/perf/util/evlist.h
-> +++ b/tools/perf/util/evlist.h
-> @@ -21,6 +21,7 @@ struct perf_evlist {
->  	struct list_head entries;
->  	struct hlist_head heads[PERF_EVLIST__HLIST_SIZE];
->  	int		 nr_entries;
-> +	int		 nr_groups;
->  	int		 nr_fds;
->  	int		 nr_mmaps;
->  	int		 mmap_len;
-> diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
-> index 46c8004ca56b..887834ed0af1 100644
-> --- a/tools/perf/util/evsel.h
-> +++ b/tools/perf/util/evsel.h
-> @@ -73,6 +73,7 @@ struct perf_evsel {
->  	bool 			needs_swap;
->  	/* parse modifier helper */
->  	int			exclude_GH;
-> +	int			nr_members;
->  	struct perf_evsel	*leader;
->  	char			*group_name;
->  };
+> > > -		if (!sep || !first) {
+> > > -			ret = scnprintf(hpp->buf, hpp->size, "%s", sep ?: "  ");
+> > > -			advance_hpp(hpp, ret);
+> > > -			first = false;
+> > > -		}
+> > > +		ret = scnprintf(hpp->buf, hpp->size, "%s", sep ?: "  ");
+> > > +		advance_hpp(hpp, ret);
+> > 
+> > It will display the separator even before the first column so that the
+> > output can be messed up with this.  I can see that there's a bug setting
+> > 'first' to false - the line should be moved out of the block otherwise
+> > it's pointless since we cannot enter the block.
+> 
+> hum, I'll retest
 
-we could test both new fields in existing group tests
+you're right, fix is attached
 
-> @@ -230,4 +231,9 @@ static inline bool perf_evsel__is_group_leader(const struct perf_evsel *evsel)
->  {
->  	return evsel->leader == evsel;
-
-SNIP
-
->  {
->  	struct list_head *list = $3;
-> +	struct parse_events_data__events *data = _data;
-> +
-> +	/* Count groups only have more than 1 members */
-> +	if (!list_is_last(list->next, list))
-> +		data->nr_groups++;
->  
->  	parse_events__set_leader($1, list);
->  	$$ = list;
-> @@ -130,6 +135,11 @@ PE_NAME '{' events '}'
->  '{' events '}'
->  {
->  	struct list_head *list = $2;
-> +	struct parse_events_data__events *data = _data;
-> +
-> +	/* Count groups only have more than 1 members */
-> +	if (!list_is_last(list->next, list))
-> +		data->nr_groups++;
-
-nitpick.. maybe add a function for above 3 lines?
-
-You could add static function right after ABORT_ON
-macro definition.
+Arnaldo, I know you've already pulled this one.. I can resend v2
+if needed, which is shorter (just that 'first = false' move as
+Namhyyung said)
 
 thanks,
 jirka
+
+
+---
+Last fix of this place was wrong and caused the separator
+field to be displayed even before period column.
+
+Should be fixed properly this time by introducing 'first' bool
+like on other places doing the same stuff.
+
+Screwed-up-by: Jiri Olsa <jolsa@redhat.com>
+Reported-by: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ tools/perf/ui/hist.c | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+index 2447e0c..6e639b5 100644
+--- a/tools/perf/ui/hist.c
++++ b/tools/perf/ui/hist.c
+@@ -466,13 +466,21 @@ int hist_entry__period_snprintf(struct perf_hpp *hpp, struct hist_entry *he,
+ 	struct perf_hpp_fmt *fmt;
+ 	char *start = hpp->buf;
+ 	int ret;
++	bool first = true;
+ 
+ 	if (symbol_conf.exclude_other && !he->parent)
+ 		return 0;
+ 
+ 	perf_hpp__for_each_format(fmt) {
+-		ret = scnprintf(hpp->buf, hpp->size, "%s", sep ?: "  ");
+-		advance_hpp(hpp, ret);
++		/*
++		 * If there's no field_sep, we still need
++		 * to display initial '  '.
++		 */
++		if (!sep || !first) {
++			ret = scnprintf(hpp->buf, hpp->size, "%s", sep ?: "  ");
++			advance_hpp(hpp, ret);
++		} else
++			first = false;
+ 
+ 		if (color && fmt->color)
+ 			ret = fmt->color(hpp, he);
+-- 
+1.7.11.7
