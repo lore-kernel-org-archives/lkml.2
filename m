@@ -1,115 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753324Ab2K2SE6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 13:04:58 -0500
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:39362 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751069Ab2K2SE4 (ORCPT
+	id S1753340Ab2K2SKZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 13:10:25 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:57060 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751100Ab2K2SKY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 13:04:56 -0500
-Message-ID: <1354211790.26955.443.camel@misato.fc.hp.com>
-Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on
- rebind scenario
-From: Toshi Kani <toshi.kani@hp.com>
-To: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Wen Congyang <wencongyang@gmail.com>, isimatu.yasuaki@jp.fujitsu.com,
-        lenb@kernel.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Thu, 29 Nov 2012 10:56:30 -0700
-In-Reply-To: <20121129113030.GB639@dhcp-192-168-178-175.profitbricks.localdomain>
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
-	 <1354150952.26955.377.camel@misato.fc.hp.com>
-	 <1354151742.26955.385.camel@misato.fc.hp.com>
-	 <2315811.arm7RJr4ey@vostro.rjw.lan>
-	 <20121129113030.GB639@dhcp-192-168-178-175.profitbricks.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 29 Nov 2012 13:10:24 -0500
+Date: Thu, 29 Nov 2012 10:10:13 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: kernel/rcutree.c:2850:13: warning: array subscript is above
+ array bounds
+Message-ID: <20121129181013.GW2474@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20121129134752.GB219@x4>
+ <20121129170241.GT2474@linux.vnet.ibm.com>
+ <20121129174358.GA248@x4>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20121129174358.GA248@x4>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12112918-4834-0000-0000-000000E5118C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-11-29 at 12:30 +0100, Vasilis Liaskovitis wrote:
-> On Thu, Nov 29, 2012 at 11:03:05AM +0100, Rafael J. Wysocki wrote:
-> > On Wednesday, November 28, 2012 06:15:42 PM Toshi Kani wrote:
-> > > On Wed, 2012-11-28 at 18:02 -0700, Toshi Kani wrote:
-> > > > On Thu, 2012-11-29 at 00:49 +0100, Rafael J. Wysocki wrote:
-> > > > > On Wednesday, November 28, 2012 02:02:48 PM Toshi Kani wrote:
-> > > > > > > > > > > > > Consider the following case:
-> > > > > > > > > > > > > 
-> > > > > > > > > > > > > We hotremove the memory device by SCI and unbind it from the driver at the same time:
-> > > > > > > > > > > > > 
-> > > > > > > > > > > > > CPUa                                                  CPUb
-> > > > > > > > > > > > > acpi_memory_device_notify()
-> > > > > > > > > > > > >                                        unbind it from the driver
-> > > > > > > > > > > > >     acpi_bus_hot_remove_device()
-> > > > > > > > > > > > 
-> [...]
-> > Well, in the meantime I've had a look at acpi_bus_hot_remove_device() and
-> > friends and I think there's a way to address all of these problems
-> > without big redesign (for now).
+On Thu, Nov 29, 2012 at 06:43:58PM +0100, Markus Trippelsdorf wrote:
+> On 2012.11.29 at 09:02 -0800, Paul E. McKenney wrote:
+> > On Thu, Nov 29, 2012 at 02:47:52PM +0100, Markus Trippelsdorf wrote:
+> > > With gcc-4.8 I get:
+> > > 
+> > >   CC      kernel/rcutree.o
+> > >   kernel/rcutree.c: In function ‘rcu_init_one’:
+> > >   kernel/rcutree.c:2850:13: warning: array subscript is above array bounds [-Warray-bounds]
+> > >      rsp->level[i] = rsp->level[i - 1] + rsp->levelcnt[i - 1];
+> > >                   ^
+> > > 2849    for (i = 1; i < rcu_num_lvls; i++)
+> > > 2850           rsp->level[i] = rsp->level[i - 1] + rsp->levelcnt[i - 1];
+> > > 
+> > > At first I thought that the warning was bogus, but rcu_num_lvls isn't static
+> > > and gets modified prior to the for loop.
 > > 
-> > First, why don't we introduce an ACPI device flag (in the flags field of
-> > struct acpi_device) called eject_forbidden or something like this such that:
+> > You are quite correct that rcu_num_lvls does get modified, but there
+> > are checks in rcu_init_geometry() to ensure that it does not increase:
 > > 
-> > (1) It will be clear by default.
-> > (2) It may only be set by a driver's .add() routine if necessary.
-> > (3) Once set, it may only be cleared by the driver's .remove() routine if
-> >     it's safe to physically remove the device after the .remove().
+> > 	/*
+> > 	 * The boot-time rcu_fanout_leaf parameter is only permitted
+> > 	 * to increase the leaf-level fanout, not decrease it.  Of course,
+> > 	 * the leaf-level fanout cannot exceed the number of bits in
+> > 	 * the rcu_node masks.  Finally, the tree must be able to accommodate
+> > 	 * the configured number of CPUs.  Complain and fall back to the
+> > 	 * compile-time values if these limits are exceeded.
+> > 	 */
+> > 	if (rcu_fanout_leaf < CONFIG_RCU_FANOUT_LEAF ||
+> > 	    rcu_fanout_leaf > sizeof(unsigned long) * 8 ||
+> > 	    n > rcu_capacity[MAX_RCU_LVLS]) {
+> > 		WARN_ON(1);
+> > 		return;
+> > 	}
 > > 
-> > Then, after the .remove() (which must be successful) has returned, and the
-> > flag is set, it will tell acpi_bus_remove() to return a specific error code
-> > (such as -EBUSY or -EAGAIN).  It doesn't matter if .remove() was called
-> > earlier, because if it left the flag set, there's no way to clear it afterward
-> > and acpi_bus_remove() will see it set anyway.  I think the struct acpi_device
-> > should be unregistered anyway if that error code is to be returned.
+> > The value of rcu_num_lvls starts out at RCU_NUM_LVLS, the same as
+> > the dimension of the ->level[] array.  The loop goes only to one less
+> > than rcu_num_lvls, as needed, and rcu_num_lvls is never greater than
+> > RCU_NUM_LVLS, so this should be safe.
 > > 
-> > [By the way, do you know where we free the memory allocated for struct
-> >  acpi_device objects?]
-> > 
-> > Now if acpi_bus_trim() gets that error code from acpi_bus_remove(), it should
-> > store it, but continue the trimming normally and finally it should return that
-> > error code to acpi_bus_hot_remove_device().
+> > So what am I missing here?
 > 
-> Side-note: In the pre_remove patches, acpi_bus_trim actually returns on the
-> first error from acpi_bus_remove (e.g. when memory offlining in pre_remove
-> fails). Trimming is not continued. 
+> rcu_num_lvls does get modified in rcu_init_geometry:
 > 
-> Normally, acpi_bus_trim keeps trimming as you say, and always returns the last
-> error. Is this the desired behaviour that we want to keep for bus_trim? (This is
-> more a general question, not specific to the eject_forbidden suggestion)
+> 2942         /* Calculate the number of rcu_nodes at each level of the tree. */
+> 2943         for (i = 1; i <= MAX_RCU_LVLS; i++)
+> 2944                 if (n <= rcu_capacity[i]) {
+> 2945                         for (j = 0; j <= i; j++)
+> 2946                                 num_rcu_lvl[j] =
+> 2947                                         DIV_ROUND_UP(n, rcu_capacity[i - j]);
+> 2948                         rcu_num_lvls = i;
+> 
+> And rcu_init_geometry gets called before rcu_init_one, so the compiler assumes
+> the worst and issues a warning.
+> So, in your opinion, what would be the best way to silence this warning?
 
-Your change makes sense to me.  At least until we have rollback code in
-place, we need to fail as soon as we hit an error.
- 
-> > Now, if acpi_bus_hot_remove_device() gets that error code, it should just
-> > reverse the whole trimming (i.e. trigger acpi_bus_scan() from the device
-> > we attempted to eject) and notify the firmware about the failure.
-> 
-> sounds like this rollback needs to be implemented in any solution we choose
-> to implement, correct?
+Good question.  Are you saying that if the compiler cannot prove that
+the index is in bounds, it is going to throw a warning?  If that is the
+case, perhaps telling the compiler to cool it via the command line would
+be best.
 
-Yes, rollback is necessary.  But I do not think we need to include it
-into your patch, though.
+Or is this really one of a very few places in the kernel where the
+compiler is complaining?
 
-Thanks,
--Toshi
- 
-> > If we have that, then the memory hotplug driver would only need to set
-> > flags.eject_forbidden in its .add() routine and make its .remove() routine
-> > only clear that flag if it is safe to actually remove the memory.
-> > 
-> 
-> But when .remove op is called, we are already in the irreversible/error-free
-> removal (final removal step).
-> Maybe we need to reset eject_forbidden in a prepare_remove operation which
-> handles the removal part that can fail ?
-> 
-> thanks,
-> 
-> - Vasilis
-
+							Thanx, Paul
 
