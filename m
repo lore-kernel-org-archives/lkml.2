@@ -1,143 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755163Ab2K2XDE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 18:03:04 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:44300 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753692Ab2K2XDB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 18:03:01 -0500
-From: Lance Ortiz <lance.ortiz@hp.com>
-Subject: [PATCH v2 2/3] aerdrv: Enhanced AER logging
-To: bhelgaas@google.com, lance_ortiz@hotmail.com, jiang.liu@huawei.com,
-        tony.luck@intel.com, bp@alien8.de, rostedt@goodmis.org,
-        mchehab@redhat.com, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 29 Nov 2012 15:58:00 -0700
-Message-ID: <20121129225800.8405.83305.stgit@grignak.americas.hpqcorp.net>
-User-Agent: StGIT/0.14.3
+	id S1754803Ab2K2XGL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 18:06:11 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:36531 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752776Ab2K2XGI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 18:06:08 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Zdenek Kabelac <zdenek.kabelac@gmail.com>
+Subject: [PATCH] ACPI / PNP: Do not crash due to stale pointer use during system resume
+Date: Fri, 30 Nov 2012 00:10:54 +0100
+Message-ID: <1829835.4TBEQGhjkq@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch will provide a more reliable and easy way for user-space
-applications to have access to AER logs rather than reading them from the
-message buffer. It also provides a way to notify user-space when an AER
-event occurs.
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-The aer driver is updated to generate a trace event of function 'aer_event'
-when an AER occurs.  The trace event was added to both the interrupt
-based aer path and the firmware first path
+During resume from system suspend the 'data' field of
+struct pnp_dev in pnpacpi_set_resources() may be a stale pointer,
+due to removal of the associated ACPI device node object in the
+previous suspend-resume cycle.  This happens, for example, if a
+dockable machine is booted in the docking station and then suspended
+and resumed and suspended again.  If that happens,
+pnpacpi_build_resource_template() called from pnpacpi_set_resources()
+attempts to use that pointer and crashes.
 
-Signed-off-by: Lance Ortiz <lance.ortiz@hp.com>
+However, pnpacpi_set_resources() actually checks the device's ACPI
+handle, attempts to find the ACPI device node object attached to it
+and returns an error code if that fails, so in fact it knows what the
+correct value of dev->data should be.  Use this observation to update
+dev->data with the correct value if necessary and dump a call trace
+if that's the case (once).
+
+We still need to fix the root cause of this issue, but preventing
+systems from crashing because of it is an improvement too.
+
+Reported-and-tested-by: Zdenek Kabelac <zdenek.kabelac@gmail.com>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=51071
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
+ drivers/pnp/pnpacpi/core.c |    3 +++
+ 2 files changed, 6 insertions(+), 1 deletion(-)
 
- 0 files changed, 0 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/acpi/apei/cper.c b/drivers/acpi/apei/cper.c
-index e6defd8..87345d4 100644
---- a/drivers/acpi/apei/cper.c
-+++ b/drivers/acpi/apei/cper.c
-@@ -29,6 +29,7 @@
- #include <linux/time.h>
- #include <linux/cper.h>
- #include <linux/acpi.h>
-+#include <linux/pci.h>
- #include <linux/aer.h>
- 
- /*
-@@ -249,6 +250,10 @@ static const char *cper_pcie_port_type_strs[] = {
- static void cper_print_pcie(const char *pfx, const struct cper_sec_pcie *pcie,
- 			    const struct acpi_hest_generic_data *gdata)
- {
-+#ifdef CONFIG_ACPI_APEI_PCIEAER
-+	struct pci_dev *dev;
-+#endif
-+
- 	if (pcie->validation_bits & CPER_PCIE_VALID_PORT_TYPE)
- 		printk("%s""port_type: %d, %s\n", pfx, pcie->port_type,
- 		       pcie->port_type < ARRAY_SIZE(cper_pcie_port_type_strs) ?
-@@ -281,9 +286,17 @@ static void cper_print_pcie(const char *pfx, const struct cper_sec_pcie *pcie,
- 	"%s""bridge: secondary_status: 0x%04x, control: 0x%04x\n",
- 	pfx, pcie->bridge.secondary_status, pcie->bridge.control);
- #ifdef CONFIG_ACPI_APEI_PCIEAER
--	if (pcie->validation_bits & CPER_PCIE_VALID_AER_INFO) {
-+	dev = pci_get_domain_bus_and_slot(pcie->device_id.segment,
-+			pcie->device_id.bus, pcie->device_id.function);
-+	if (!dev)
-+		printk("PCI AER Cannot get PCI device %04x:%02x:%02x.%d\n",
-+			pcie->device_id.segment, pcie->device_id.bus,
-+			pcie->device_id.slot, pcie->device_id.function);
-+
-+	if (pcie->validation_bits & CPER_PCIE_VALID_AER_INFO && dev) {
- 		struct aer_capability_regs *aer_regs = (void *)pcie->aer_info;
--		cper_print_aer(pfx, gdata->error_severity, aer_regs);
-+		cper_print_aer(dev, gdata->error_severity, aer_regs);
-+		pci_dev_put(dev);
+Index: linux/drivers/pnp/pnpacpi/core.c
+===================================================================
+--- linux.orig/drivers/pnp/pnpacpi/core.c
++++ linux/drivers/pnp/pnpacpi/core.c
+@@ -95,6 +95,9 @@ static int pnpacpi_set_resources(struct
+ 		return -ENODEV;
  	}
- #endif
- }
-diff --git a/drivers/pci/pcie/aer/aerdrv_errprint.c b/drivers/pci/pcie/aer/aerdrv_errprint.c
-index 3ea5173..6354e50 100644
---- a/drivers/pci/pcie/aer/aerdrv_errprint.c
-+++ b/drivers/pci/pcie/aer/aerdrv_errprint.c
-@@ -23,6 +23,10 @@
  
- #include "aerdrv.h"
- 
-+#define CREATE_TRACE_POINTS
-+#define TRACE_INCLUDE_PATH ../../../../include/ras
-+#include <ras/aer_event.h>
++	if (WARN_ON_ONCE(acpi_dev != dev->data))
++		dev->data = acpi_dev;
 +
- #define AER_AGENT_RECEIVER		0
- #define AER_AGENT_REQUESTER		1
- #define AER_AGENT_COMPLETER		2
-@@ -194,6 +198,8 @@ void aer_print_error(struct pci_dev *dev, struct aer_err_info *info)
- 	if (info->id && info->error_dev_num > 1 && info->id == id)
- 		printk("%s""  Error of this Agent(%04x) is reported first\n",
- 			prefix, id);
-+	trace_aer_event(dev_name(&dev->dev), (info->status & ~info->mask),
-+			info->severity);
- }
- 
- void aer_print_port_info(struct pci_dev *dev, struct aer_err_info *info)
-@@ -217,12 +223,13 @@ int cper_severity_to_aer(int cper_severity)
- }
- EXPORT_SYMBOL_GPL(cper_severity_to_aer);
- 
--void cper_print_aer(const char *prefix, int cper_severity,
-+void cper_print_aer(struct pci_dev *dev, int cper_severity,
- 		    struct aer_capability_regs *aer)
- {
- 	int aer_severity, layer, agent, status_strs_size, tlp_header_valid = 0;
- 	u32 status, mask;
- 	const char **status_strs;
-+	char *prefix = NULL;
- 
- 	aer_severity = cper_severity_to_aer(cper_severity);
- 	if (aer_severity == AER_CORRECTABLE) {
-@@ -259,5 +266,7 @@ void cper_print_aer(const char *prefix, int cper_severity,
- 			*(tlp + 8), *(tlp + 15), *(tlp + 14),
- 			*(tlp + 13), *(tlp + 12));
- 	}
-+	trace_aer_event(dev_name(&dev->dev), (status & ~mask),
-+			aer_severity);
- }
- #endif
-diff --git a/include/linux/aer.h b/include/linux/aer.h
-index 544abdb..7b86dc6 100644
---- a/include/linux/aer.h
-+++ b/include/linux/aer.h
-@@ -49,7 +49,7 @@ static inline int pci_cleanup_aer_uncorrect_error_status(struct pci_dev *dev)
- }
- #endif
- 
--extern void cper_print_aer(const char *prefix, int cper_severity,
-+extern void cper_print_aer(struct pci_dev *dev, int cper_severity,
- 			   struct aer_capability_regs *aer);
- extern int cper_severity_to_aer(int cper_severity);
- extern void aer_recover_queue(int domain, unsigned int bus, unsigned int devfn,
+ 	ret = pnpacpi_build_resource_template(dev, &buffer);
+ 	if (ret)
+ 		return ret;
 
