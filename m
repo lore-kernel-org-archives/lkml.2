@@ -1,173 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933170Ab2K3QB5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 11:01:57 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:59903 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932387Ab2K3QBx (ORCPT
+	id S1751793Ab2K3QJu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 11:09:50 -0500
+Received: from mail-ye0-f174.google.com ([209.85.213.174]:54695 "EHLO
+	mail-ye0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839Ab2K3QJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 11:01:53 -0500
-Message-ID: <50B8D86E.1080109@gmail.com>
-Date: Fri, 30 Nov 2012 10:01:50 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Fri, 30 Nov 2012 11:09:49 -0500
+Date: Thu, 29 Nov 2012 14:35:09 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH] perf hists: Fix period symbol_conf.field_sep display,
+ again
+Message-ID: <20121129173509.GA1957@ghostprotocols.net>
+References: <1354110769-2998-1-git-send-email-jolsa@redhat.com>
+ <1354110769-2998-4-git-send-email-jolsa@redhat.com>
+ <878v9kq1uz.fsf@sejong.aot.lge.com>
+ <20121129115344.GB1096@krava.brq.redhat.com>
+ <20121129134001.GG1096@krava.brq.redhat.com>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Michal Marek <mmarek@suse.cz>, Grant Likely <grant.likely@secretlab.ca>,
-        Sam Ravnborg <sam@ravnborg.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Stephen Warren <swarren@nvidia.com>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Jonas Bonn <jonas@southpole.se>, linux@openrisc.net,
-        Aurelien Jacquiot <a-jacquiot@ti.com>, linux-c6x-dev@linux-c6x.org,
-        Mark Salter <msalter@redhat.com>, Michal Simek <monstr@monstr.eu>,
-        microblaze-uclinux@itee.uq.edu.au, Chris Zankel <chris@zankel.net>,
-        linux-xtensa@linux-xtensa.org, Max Filippov <jcmvbkbc@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: [PATCH V7 1/7] kbuild: centralize .dts->.dtb rule
-References: <1354058956-7199-1-git-send-email-swarren@wwwdotorg.org>
-In-Reply-To: <1354058956-7199-1-git-send-email-swarren@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121129134001.GG1096@krava.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2012 05:29 PM, Stephen Warren wrote:
-> From: Stephen Warren <swarren@nvidia.com>
+Em Thu, Nov 29, 2012 at 02:40:02PM +0100, Jiri Olsa escreveu:
+> On Thu, Nov 29, 2012 at 12:53:44PM +0100, Jiri Olsa wrote:
+> > On Thu, Nov 29, 2012 at 04:56:04PM +0900, Namhyung Kim wrote:
 > 
-> All architectures that use cmd_dtc do so in almost the same way. Create
-> a central build rule to avoid duplication. The one difference is that
-> most current uses of dtc build $(obj)/%.dtb from $(src)/dts/%.dts rather
-> than building the .dtb in the same directory as the .dts file. This
-> difference will be eliminated arch-by-arch in future patches.
+> SNIP
 > 
-> MIPS is the exception here; it already uses the exact same rule as the
-> new common rule, so the duplicate is removed in this patch to avoid any
-> conflict. arch/mips changes courtesy of Ralf Baechle.
+> > > > -		if (!sep || !first) {
+> > > > -			ret = scnprintf(hpp->buf, hpp->size, "%s", sep ?: "  ");
+> > > > -			advance_hpp(hpp, ret);
+> > > > -			first = false;
+> > > > -		}
+> > > > +		ret = scnprintf(hpp->buf, hpp->size, "%s", sep ?: "  ");
+> > > > +		advance_hpp(hpp, ret);
+> > > 
+> > > It will display the separator even before the first column so that the
+> > > output can be messed up with this.  I can see that there's a bug setting
+> > > 'first' to false - the line should be moved out of the block otherwise
+> > > it's pointless since we cannot enter the block.
+> > 
+> > hum, I'll retest
 > 
-> Update Documentation/kbuild to remove the explicit call to cmd_dtc from
-> the example, now that the rule exists in a centralized location.
+> you're right, fix is attached
 > 
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: Olof Johansson <olof@lixom.net>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Jonas Bonn <jonas@southpole.se>
-> Cc: linux@lists.openrisc.net
-> Cc: Aurelien Jacquiot <a-jacquiot@ti.com>
-> Cc: linux-c6x-dev@linux-c6x.org
-> Cc: Mark Salter <msalter@redhat.com>
-> Cc: Michal Simek <monstr@monstr.eu>
-> Cc: microblaze-uclinux@itee.uq.edu.au
-> Cc: Chris Zankel <chris@zankel.net>
-> Cc: linux-xtensa@linux-xtensa.org
-> Cc: Max Filippov <jcmvbkbc@gmail.com>
-> Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> Arnaldo, I know you've already pulled this one.. I can resend v2
+> if needed, which is shorter (just that 'first = false' move as
+> Namhyyung said)
+
+I just folded it, was the tip of the tree, will go on processing the
+others now.
+ 
+> thanks,
+> jirka
+> 
+> 
 > ---
-> This is based on next-20121126.
+> Last fix of this place was wrong and caused the separator
+> field to be displayed even before period column.
 > 
-
-I'll apply the series but I need a stable base. Looks like xtensa has
-the dependency. Or I can just drop xtensa.
-
-Rob
-
-> I've split out this dtc rule cleanup as a separate patch series.
-> Hopefully it can be applied without too much controversy, then I'll move
-> back to discussing running cpp over *.dts.
+> Should be fixed properly this time by introducing 'first' bool
+> like on other places doing the same stuff.
 > 
-> v7:
-> * Build *.dtb from *.dts not src/*.dts.
-> * Removed all arch/ updates except MIPS.
-> v6: Added arch/{arm64,microblaze,mips} updates.
-> v5: Updated Documentation/kbuild.
-> v4: No change.
-> v3: No change.
-> v2: New patch.
+> Screwed-up-by: Jiri Olsa <jolsa@redhat.com>
+> Reported-by: Namhyung Kim <namhyung@kernel.org>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 > ---
->  Documentation/kbuild/makefiles.txt |   15 ++++++++-------
->  arch/mips/cavium-octeon/Makefile   |    3 ---
->  arch/mips/lantiq/dts/Makefile      |    3 ---
->  arch/mips/netlogic/dts/Makefile    |    3 ---
->  scripts/Makefile.lib               |    3 +++
->  5 files changed, 11 insertions(+), 16 deletions(-)
+>  tools/perf/ui/hist.c | 12 ++++++++++--
+>  1 file changed, 10 insertions(+), 2 deletions(-)
 > 
-> diff --git a/Documentation/kbuild/makefiles.txt b/Documentation/kbuild/makefiles.txt
-> index ec9ae67..14c3f4f 100644
-> --- a/Documentation/kbuild/makefiles.txt
-> +++ b/Documentation/kbuild/makefiles.txt
-> @@ -1175,15 +1175,16 @@ When kbuild executes, the following steps are followed (roughly):
->  	in an init section in the image. Platform code *must* copy the
->  	blob to non-init memory prior to calling unflatten_device_tree().
+> diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
+> index 2447e0c..6e639b5 100644
+> --- a/tools/perf/ui/hist.c
+> +++ b/tools/perf/ui/hist.c
+> @@ -466,13 +466,21 @@ int hist_entry__period_snprintf(struct perf_hpp *hpp, struct hist_entry *he,
+>  	struct perf_hpp_fmt *fmt;
+>  	char *start = hpp->buf;
+>  	int ret;
+> +	bool first = true;
 >  
-> -	Example:
-> -		#arch/x86/platform/ce4100/Makefile
-> -		clean-files := *dtb.S
-> +	To use this command, simply add *.dtb into obj-y or targets, or make
-> +	some other target depend on %.dtb
+>  	if (symbol_conf.exclude_other && !he->parent)
+>  		return 0;
 >  
-> -		DTC_FLAGS := -p 1024
-> -		obj-y += foo.dtb.o
-> +	A central rule exists to create $(obj)/%.dtb from $(src)/%.dts;
-> +	architecture Makefiles do no need to explicitly write out that rule.
+>  	perf_hpp__for_each_format(fmt) {
+> -		ret = scnprintf(hpp->buf, hpp->size, "%s", sep ?: "  ");
+> -		advance_hpp(hpp, ret);
+> +		/*
+> +		 * If there's no field_sep, we still need
+> +		 * to display initial '  '.
+> +		 */
+> +		if (!sep || !first) {
+> +			ret = scnprintf(hpp->buf, hpp->size, "%s", sep ?: "  ");
+> +			advance_hpp(hpp, ret);
+> +		} else
+> +			first = false;
 >  
-> -		$(obj)/%.dtb: $(src)/%.dts
-> -			$(call cmd,dtc)
-> +	Example:
-> +		targets += $(dtb-y)
-> +		clean-files += *.dtb
-> +		DTC_FLAGS ?= -p 1024
->  
->  --- 6.8 Custom kbuild commands
->  
-> diff --git a/arch/mips/cavium-octeon/Makefile b/arch/mips/cavium-octeon/Makefile
-> index bc96e29..6e927cf 100644
-> --- a/arch/mips/cavium-octeon/Makefile
-> +++ b/arch/mips/cavium-octeon/Makefile
-> @@ -24,9 +24,6 @@ DTB_FILES = $(patsubst %.dts, %.dtb, $(DTS_FILES))
->  
->  obj-y += $(patsubst %.dts, %.dtb.o, $(DTS_FILES))
->  
-> -$(obj)/%.dtb: $(src)/%.dts FORCE
-> -	$(call if_changed_dep,dtc)
-> -
->  # Let's keep the .dtb files around in case we want to look at them.
->  .SECONDARY:  $(addprefix $(obj)/, $(DTB_FILES))
->  
-> diff --git a/arch/mips/lantiq/dts/Makefile b/arch/mips/lantiq/dts/Makefile
-> index 674fca4..6fa72dd 100644
-> --- a/arch/mips/lantiq/dts/Makefile
-> +++ b/arch/mips/lantiq/dts/Makefile
-> @@ -1,4 +1 @@
->  obj-$(CONFIG_DT_EASY50712) := easy50712.dtb.o
-> -
-> -$(obj)/%.dtb: $(obj)/%.dts
-> -	$(call if_changed,dtc)
-> diff --git a/arch/mips/netlogic/dts/Makefile b/arch/mips/netlogic/dts/Makefile
-> index 67ae3fe2..d117d46 100644
-> --- a/arch/mips/netlogic/dts/Makefile
-> +++ b/arch/mips/netlogic/dts/Makefile
-> @@ -1,4 +1 @@
->  obj-$(CONFIG_DT_XLP_EVP) := xlp_evp.dtb.o
-> -
-> -$(obj)/%.dtb: $(obj)/%.dts
-> -	$(call if_changed,dtc)
-> diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-> index 0be6f11..bdf42fd 100644
-> --- a/scripts/Makefile.lib
-> +++ b/scripts/Makefile.lib
-> @@ -266,6 +266,9 @@ $(obj)/%.dtb.S: $(obj)/%.dtb
->  quiet_cmd_dtc = DTC     $@
->  cmd_dtc = $(objtree)/scripts/dtc/dtc -O dtb -o $@ -b 0 $(DTC_FLAGS) -d $(depfile) $<
->  
-> +$(obj)/%.dtb: $(src)/%.dts FORCE
-> +	$(call if_changed_dep,dtc)
-> +
->  # Bzip2
->  # ---------------------------------------------------------------------------
->  
-> 
+>  		if (color && fmt->color)
+>  			ret = fmt->color(hpp, he);
+> -- 
+> 1.7.11.7
