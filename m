@@ -1,185 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754334Ab2K2IOw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 03:14:52 -0500
-Received: from smtp5-g21.free.fr ([212.27.42.5]:34479 "EHLO smtp5-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753019Ab2K2INo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 03:13:44 -0500
-From: Corentin Chary <corentin.chary@gmail.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: platform-driver-x86@vger.kernel.org, AceLan Kao <acelan.kao@canonical.com>,
-        Corentin Chary <corentincj@iksaif.net>,
-        Corentin Chary <corentin.chary@gmail.com>,
-        Matthew Garrett <mjg@redhat.com>, acpi4asus-user@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 08/11] asus-wmi: add display toggle quirk
-Date: Thu, 29 Nov 2012 09:12:36 +0100
-Message-Id: <1354176759-630-9-git-send-email-corentin.chary@gmail.com>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1354176759-630-1-git-send-email-corentin.chary@gmail.com>
-References: <1354176759-630-1-git-send-email-corentin.chary@gmail.com>
+	id S1751661Ab2K2IXL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 03:23:11 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:49800 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750922Ab2K2IXJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 03:23:09 -0500
+Message-ID: <50B71B68.2090601@suse.cz>
+Date: Thu, 29 Nov 2012 09:23:04 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: Greg KH <gregkh@linuxfoundation.org>, Chen Gang <gang.chen@asianux.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH] MAINTAINERS: TTY - Add linux-serial mailing list
+References: <50B6E751.9000000@asianux.com> <20121129051335.GA4375@kroah.com>  <50B6F967.3050000@asianux.com> <1354169679.29762.28.camel@joe-AO722>
+In-Reply-To: <1354169679.29762.28.camel@joe-AO722>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: AceLan Kao <acelan.kao@canonical.com>
+On 11/29/2012 07:14 AM, Joe Perches wrote:
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  MAINTAINERS |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index afc0b27..255dafb 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -7658,6 +7658,7 @@ K:	^Subject:.*(?i)trivial
+>  TTY LAYER
+>  M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>  M:	Jiri Slaby <jslaby@suse.cz>
+> +L:	linux-serial@vger.kernel.org
 
-For machines with AMD graphic chips, it will send out WMI event and ACPI
-interrupt at the same time while hitting the hotkey. BIOS will notify the
-system the next display output mode throught WMI event code, so that
-windows' application can show an OSD to tell the user which mode will be
-taken effect. User can hit the display toggle key many times within 2
-seconds to choose the mode they want. After 2 seconds, WMI dirver should
-send a WMIMethod(SDSP) command to tell the BIOS which mode the user chose.
-And then BIOS will raise another ACPI interrupt to tell the system to
-really switch the display mode.
+This might have the effect that people will try to reach us at that
+list. But this is not true at least for me. serial != tty.
 
-In Linux desktop, we don't have this kind of OSD to let users to choose
-the mode they want, so we don't need to call WMIMethod(SDSP) to have
-another ACPI interrupt. To simplify the problem, we just have to ignore
-the WMI event, and let the first ACPI interrupt to send out the key event.
-
-For the need, here comes another quirk to add machines with this kind of
-behavior. When the WMI driver receives the display toggle WMI event, and
-found the machin is in the list, it will do nothing and let ACPI video
-driver to report the key event.
-
-Signed-off-by: AceLan Kao <acelan.kao@canonical.com>
-Signed-off-by: Corentin Chary <corentincj@iksaif.net>
-Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
----
- drivers/platform/x86/asus-nb-wmi.c |   31 ++++++++++++++++++++++++++++++-
- drivers/platform/x86/asus-wmi.c    |   26 +++++++++++++++++++++++---
- drivers/platform/x86/asus-wmi.h    |    7 +++++++
- 3 files changed, 60 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/platform/x86/asus-nb-wmi.c b/drivers/platform/x86/asus-nb-wmi.c
-index 87d45e0..9aa6642 100644
---- a/drivers/platform/x86/asus-nb-wmi.c
-+++ b/drivers/platform/x86/asus-nb-wmi.c
-@@ -59,6 +59,17 @@ static struct quirk_entry quirk_asus_unknown = {
- 	.wapf = 0,
- };
- 
-+/*
-+ * For those machines that need software to control bt/wifi status
-+ * and can't adjust brightness through ACPI interface
-+ * and have duplicate events(ACPI and WMI) for display toggle
-+ */
-+static struct quirk_entry quirk_asus_x55u = {
-+	.wapf = 4,
-+	.wmi_backlight_power = true,
-+	.no_display_toggle = true,
-+};
-+
- static struct quirk_entry quirk_asus_x401u = {
- 	.wapf = 4,
- };
-@@ -77,6 +88,15 @@ static struct dmi_system_id asus_quirks[] = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
- 			DMI_MATCH(DMI_PRODUCT_NAME, "X401U"),
- 		},
-+		.driver_data = &quirk_asus_x55u,
-+	},
-+	{
-+		.callback = dmi_matched,
-+		.ident = "ASUSTeK COMPUTER INC. X401A",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "X401A"),
-+		},
- 		.driver_data = &quirk_asus_x401u,
- 	},
- 	{
-@@ -95,6 +115,15 @@ static struct dmi_system_id asus_quirks[] = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
- 			DMI_MATCH(DMI_PRODUCT_NAME, "X501U"),
- 		},
-+		.driver_data = &quirk_asus_x55u,
-+	},
-+	{
-+		.callback = dmi_matched,
-+		.ident = "ASUSTeK COMPUTER INC. X501A",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "X501A"),
-+		},
- 		.driver_data = &quirk_asus_x401u,
- 	},
- 	{
-@@ -131,7 +160,7 @@ static struct dmi_system_id asus_quirks[] = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
- 			DMI_MATCH(DMI_PRODUCT_NAME, "X55U"),
- 		},
--		.driver_data = &quirk_asus_x401u,
-+		.driver_data = &quirk_asus_x55u,
- 	},
- 	{
- 		.callback = dmi_matched,
-diff --git a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
-index 912ec7d..6327a1b 100644
---- a/drivers/platform/x86/asus-wmi.c
-+++ b/drivers/platform/x86/asus-wmi.c
-@@ -1341,6 +1341,18 @@ static void asus_wmi_backlight_exit(struct asus_wmi *asus)
- 	asus->backlight_device = NULL;
- }
- 
-+static int is_display_toggle(int code)
-+{
-+	/* display toggle keys */
-+	if ((code >= 0x61 && code <= 0x67) ||
-+	    (code >= 0x8c && code <= 0x93) ||
-+	    (code >= 0xa0 && code <= 0xa7) ||
-+	    (code >= 0xd0 && code <= 0xd5))
-+		return 1;
-+
-+	return 0;
-+}
-+
- static void asus_wmi_notify(u32 value, void *context)
- {
- 	struct asus_wmi *asus = context;
-@@ -1380,10 +1392,18 @@ static void asus_wmi_notify(u32 value, void *context)
- 		code = NOTIFY_BRNDOWN_MIN;
- 
- 	if (code == NOTIFY_BRNUP_MIN || code == NOTIFY_BRNDOWN_MIN) {
--		if (!acpi_video_backlight_support())
-+		if (!acpi_video_backlight_support()) {
- 			asus_wmi_backlight_notify(asus, orig_code);
--	} else if (!sparse_keymap_report_event(asus->inputdev, code,
--					       key_value, autorelease))
-+		}
-+		goto exit;
-+	}
-+
-+	if (is_display_toggle(code) &&
-+	    asus->driver->quirks->no_display_toggle)
-+		goto exit;
-+
-+	if (!sparse_keymap_report_event(asus->inputdev, code,
-+					key_value, autorelease))
- 		pr_info("Unknown key %x pressed\n", code);
- 
- exit:
-diff --git a/drivers/platform/x86/asus-wmi.h b/drivers/platform/x86/asus-wmi.h
-index 4c9bd38..776524c 100644
---- a/drivers/platform/x86/asus-wmi.h
-+++ b/drivers/platform/x86/asus-wmi.h
-@@ -41,6 +41,13 @@ struct quirk_entry {
- 	bool store_backlight_power;
- 	bool wmi_backlight_power;
- 	int wapf;
-+	/*
-+	 * For machines with AMD graphic chips, it will send out WMI event
-+	 * and ACPI interrupt at the same time while hitting the hotkey.
-+	 * To simplify the problem, we just have to ignore the WMI event,
-+	 * and let the ACPI interrupt to send out the key event.
-+	 */
-+	int no_display_toggle;
- };
- 
- struct asus_wmi_driver {
+thanks,
 -- 
-1.7.8.6
-
+js
+suse labs
