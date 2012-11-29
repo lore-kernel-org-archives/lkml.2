@@ -1,28 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932657Ab2K2EAt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 23:00:49 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:49108 "EHLO
+	id S1422635Ab2K2EDo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 23:03:44 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:54155 "EHLO
 	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932503Ab2K2EAs (ORCPT
+	with ESMTP id S932675Ab2K2EDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 23:00:48 -0500
-Date: Thu, 29 Nov 2012 15:00:44 +1100
+	Wed, 28 Nov 2012 23:03:43 -0500
+Date: Thu, 29 Nov 2012 15:03:40 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: manual merge of the driver-core tree with the mfd tree
-Message-Id: <20121129150044.3795f21cd3913abc0c10f45c@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bill Pemberton <wfp5p@virginia.edu>,
+        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>
+Subject: linux-next: manual merge of the driver-core tree with the pci tree
+Message-Id: <20121129150340.768fdffc941d501c9975c2be@canb.auug.org.au>
 X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Thu__29_Nov_2012_15_00_44_+1100_IU75cvJiyjjoom4i"
+ boundary="Signature=_Thu__29_Nov_2012_15_03_40_+1100_C3QrtJZRubTu+WMZ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__29_Nov_2012_15_00_44_+1100_IU75cvJiyjjoom4i
+--Signature=_Thu__29_Nov_2012_15_03_40_+1100_C3QrtJZRubTu+WMZ
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
@@ -30,37 +32,54 @@ Content-Transfer-Encoding: quoted-printable
 Hi Greg,
 
 Today's linux-next merge of the driver-core tree got a conflict in
-drivers/mfd/tps65090.c between various commits from the mfd tree and
-commits 84449216b01f ("mfd: remove use of __devexit_p"), f791be492f76
-("mfd: remove use of __devinit") and 4740f73fe538 ("mfd: remove use of
-__devexit") from the driver-core tree.
+drivers/pci/pci.h between commit 4e15c46bdc4d ("PCI: Add pci_device_type
+to pdev's device struct") from the pci tree and commit b40b97ae736c
+("PCI: Remove CONFIG_HOTPLUG ifdefs") from the driver-core tree.
 
-I fixed it up (by using the mfd tree version) and can carry the fix as
-necessary (no action is required).
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Thu__29_Nov_2012_15_00_44_+1100_IU75cvJiyjjoom4i
+diff --cc drivers/pci/pci.h
+index 11a713b,e253881..0000000
+--- a/drivers/pci/pci.h
++++ b/drivers/pci/pci.h
+@@@ -159,12 -158,7 +158,8 @@@ static inline int pci_no_d1d2(struct pc
+  }
+  extern struct device_attribute pci_dev_attrs[];
+  extern struct device_attribute pcibus_dev_attrs[];
+ +extern struct device_type pci_dev_type;
+- #ifdef CONFIG_HOTPLUG
+  extern struct bus_attribute pci_bus_attrs[];
+- #else
+- #define pci_bus_attrs	NULL
+- #endif
+ =20
+ =20
+  /**
+
+--Signature=_Thu__29_Nov_2012_15_03_40_+1100_C3QrtJZRubTu+WMZ
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQtt3tAAoJEECxmPOUX5FES9EQAIBgM38j1rGYlIVY4cUomqOY
-J1ixBaZlmiNg0c8fdxKjFa7FGR4yRcSEK7xAdp4TkGwSLLk3njYGMBvystn2smTn
-bkSr6jsuDdx2qhLNf9g5G32YhGxBbeADd6ko7JYtXlc8si0r4aRY0hOe0pYJQfhq
-v04TXfu7ZMLGfe//8yu5Mj4A+J3n/nj3EmhSXGcTj62OrsXa2VUaBHU7QXPIGhV7
-o52OhJNruP8nAX8ySqGs5kn08iDmMEeL4qizlgkhQ24U85HY96LgdauFEXmKJB/A
-5+QzfZnv/e2nES5IfZSkIfGbvPa3ADyDg6TsAf4aN1xEoaJvf/Z9A/cpmFw0CkJ0
-EkJoiykGPPJCr6y91udXq72Qt/hNt2DzNy8AQlidbAALSSX601+O6YvDnKrjnj8b
-0kOfE3uoJ2N+JpKt8g4I7+DyxrVGHK9ex39s5A7mqIC5Hf+63JoO0+KFsWqPCkO+
-a/VBlnf+5nbUOCHMoon6xZuEWC24A1UTc5Xz1nX2SeJA5IF0Y1BVH5U4vdGMbCln
-4W7PYT52hcS617FCnUHi42zaISKAPtCebOACbWOs0nd6XO8zz7uy7sIt5N92CLw8
-amnDLgApJc07FRW7EzesIQ/WUlSeueEiV5ex/DIxlXpYbw7+sE/aRLIXEXrMIVLo
-b1hm2THMl2KuFZ0RR8CR
-=UAQD
+iQIcBAEBCAAGBQJQtt6cAAoJEECxmPOUX5FEv98P/3C2+yRQf2QVahkMgA5Zcerp
+ixbK/u6bdxEOzXCemZLrDlsincOWeVrB6wVWkEAHI7h6JQWdnLK+b75pTFLzVUsc
+do4TRgRxQPSyN2gFxv0UFAnpNWLck63g6+9NYUAZtaFmm9aaks2qIbIBYIGE2m5w
+KgzSNHhsvXRtw/eCNJdRVC2zqdVkChbnnJnlcbMkY3iAvjdUL0hkC9z5kqqAoR6O
+ngyyXaA8MTC3cEeEVdWxhYORUTLbuJjpyS06mrUl7Ba+rx4uEvuatDbE+KzAej4h
+vvHeqGkHoOtunhwMw4ih4TYpS1ZZSAW1aOK8vNC1BgoRHvl6Edpg2iIfVX3Xpxvb
+2enc0h+5i8vUU3gKxhpFsehxm5D8i9M0rXeBpTrXdoSSPwaEMCQ9rmkHZzGdCP6Q
+HM7ryP6eor8erKaaXbf14R1hQY26k3re8aU6g+vBSRCiwWe6SdHmP2YsXiKXOTfq
+zpWbSAtfp/b+jGFmJIpnGxt26veDk4B3zqCDlO9Wgsz+Ak46WVY4hkyzMlQ0/HkI
+hsHIADb0LSEwDBPPLrbDHL4EmcUh0392PLbYwog1kUHEZDoCC7RGIPpxWShAzlwM
+P+QAvnpUSYhFpKbdoXIlY4qVBUJtMT7UxrSYKCkT+PrqxzEiUYaXekmRkm24fybQ
+rhZcBVKcUdwLufXEeFtN
+=+cQX
 -----END PGP SIGNATURE-----
 
---Signature=_Thu__29_Nov_2012_15_00_44_+1100_IU75cvJiyjjoom4i--
+--Signature=_Thu__29_Nov_2012_15_03_40_+1100_C3QrtJZRubTu+WMZ--
