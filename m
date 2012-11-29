@@ -1,83 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754169Ab2K2LFm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 06:05:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40398 "EHLO mx2.suse.de"
+	id S1753405Ab2K2LHY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 06:07:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55094 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754037Ab2K2LFk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 06:05:40 -0500
-Date: Thu, 29 Nov 2012 11:05:35 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: "Luck, Tony" <tony.luck@intel.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "laijs@cn.fujitsu.com" <laijs@cn.fujitsu.com>,
-        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
-        "linfeng@cn.fujitsu.com" <linfeng@cn.fujitsu.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
-        "rientjes@google.com" <rientjes@google.com>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, "Wang, Frank" <frank.wang@intel.com>
-Subject: Re: [PATCH v2 0/5] Add movablecore_map boot option
-Message-ID: <20121129110535.GY8218@suse.de>
-References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com>
- <50B5CFAE.80103@huawei.com>
- <3908561D78D1C84285E8C5FCA982C28F1C95EDCE@ORSMSX108.amr.corp.intel.com>
- <50B73B22.90500@jp.fujitsu.com>
+	id S1751692Ab2K2LHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 06:07:22 -0500
+Date: Thu, 29 Nov 2012 13:07:17 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Li Zhong <zhong@linux.vnet.ibm.com>,
+        linux-next list <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
+        sasha.levin@oracle.com, avi@redhat.com
+Subject: Re: [RFC PATCH v2] Add rcu user eqs exception hooks for async page
+ fault
+Message-ID: <20121129110717.GA9711@redhat.com>
+References: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
+ <CAFTL4hx0fc_Jo8wkuRZedW4DVEeQceiHMrWVqTqB5k065Wsg8Q@mail.gmail.com>
+ <1354090704.3054.13.camel@ThinkPad-T5421.cn.ibm.com>
+ <CAFTL4hxPSp1fs4=2g0yFs0d5nFisfUsfDAA9bHWcu+-+tO_ySw@mail.gmail.com>
+ <20121128135345.GG928@redhat.com>
+ <CAFTL4hxoFBLNQCABBpJRBgV-r-Mg5GSq7HbPfWJRraSvtviz4A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50B73B22.90500@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAFTL4hxoFBLNQCABBpJRBgV-r-Mg5GSq7HbPfWJRraSvtviz4A@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 07:38:26PM +0900, Yasuaki Ishimatsu wrote:
-> Hi Tony,
-> 
-> 2012/11/29 6:34, Luck, Tony wrote:
-> >>1. use firmware information
-> >>   According to ACPI spec 5.0, SRAT table has memory affinity structure
-> >>   and the structure has Hot Pluggable Filed. See "5.2.16.2 Memory
-> >>   Affinity Structure". If we use the information, we might be able to
-> >>   specify movable memory by firmware. For example, if Hot Pluggable
-> >>   Filed is enabled, Linux sets the memory as movable memory.
+On Wed, Nov 28, 2012 at 03:25:07PM +0100, Frederic Weisbecker wrote:
+> 2012/11/28 Gleb Natapov <gleb@redhat.com>:
+> > On Wed, Nov 28, 2012 at 01:55:42PM +0100, Frederic Weisbecker wrote:
+> >> Yes but if rcu_irq_*() calls are fine to be called there, and I
+> >> believe they are because exception_enter() exits the user mode, we
+> >> should start to protect there right now instead of waiting for a
+> >> potential future warning of illegal RCU use.
 > >>
-> >>2. use boot option
-> >>   This is our proposal. New boot option can specify memory range to use
-> >>   as movable memory.
-> >
-> >Isn't this just moving the work to the user? To pick good values for the
+> > Async page not present is not much different from regular page fault
+> > exception when it happens not on idle task (regular #PF cannot happen
+> > on idle task), but code have a special handling for idle task. So why
+> > do you think rcu_irq_*() is required here, but not in page fault
+> > handler?
 > 
-> Yes.
+> Because we are not supposed to fault in idle, at least I hope there
+> are no case around. Except on cases like here with KVM I guess but we
+> have that special async handler for that.
 > 
-> >movable areas, they need to know how the memory lines up across
-> >node boundaries ... because they need to make sure to allow some
-> >non-movable memory allocations on each node so that the kernel can
-> >take advantage of node locality.
-> 
-> There is no problem.
-> Linux has already two boot options, kernelcore= and movablecore=.
-> So if we use them, non-movable memory is divided into each node evenly.
-> 
+As far as I understand rcu_irq_enter() should be called before entering
+the mode in which read-side critical sections can occur, but async page
+fault does not uses RCU in case of faulting in idle. Actually, looking
+closer, it may call kfree() if page ready notification arrives ahead
+of not present notification (with todays KVM it cannot happen) and we
+have to assume that kfree() uses rcu read even if it currently does not.
+So may be it is possible to move rcu_irq_*() calls to be around unlikely
+kfree() call only.
 
-The motivation for those options was to reserve a percentage of memory
-to be used for hugepage allocation. If hugepages were not being used at
-a particular time then they could be used for other purposes. While the
-system could in theory face lowmem/highmem style problems, in practice
-it did not happen because the memory would be allocated as hugetlbfs
-pages and unavailable anyway. The same does not really apply to a general
-purpose system that you want to support memory hot-remove on so be wary of
-lowmem/highmem style problems caused by relying too heavily on ZONE_MOVABLE.
-
--- 
-Mel Gorman
-SUSE Labs
+--
+			Gleb.
