@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754421Ab2K2Ly6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 06:54:58 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35020 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753766Ab2K2LxV (ORCPT
+	id S1754215Ab2K2Lzt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 06:55:49 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:63991 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751894Ab2K2Lzs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 06:53:21 -0500
-From: Colin King <colin.king@canonical.com>
-To: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-acpi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] ACPI dock: remove unnecessary newline from exception message
-Date: Thu, 29 Nov 2012 11:53:12 +0000
-Message-Id: <1354189996-14431-2-git-send-email-colin.king@canonical.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1354189996-14431-1-git-send-email-colin.king@canonical.com>
-References: <1354189996-14431-1-git-send-email-colin.king@canonical.com>
+	Thu, 29 Nov 2012 06:55:48 -0500
+X-AuditID: 9c930179-b7c9dae000000e53-d8-50b74d439e4d
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 10/14] perf tool: Centralize default columns init in perf_hpp__init
+References: <1354110769-2998-1-git-send-email-jolsa@redhat.com>
+	<1354110769-2998-11-git-send-email-jolsa@redhat.com>
+Date: Thu, 29 Nov 2012 20:55:47 +0900
+In-Reply-To: <1354110769-2998-11-git-send-email-jolsa@redhat.com> (Jiri Olsa's
+	message of "Wed, 28 Nov 2012 14:52:45 +0100")
+Message-ID: <87ehjcoc70.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Colin Ian King <colin.king@canonical.com>
+On Wed, 28 Nov 2012 14:52:45 +0100, Jiri Olsa wrote:
+> Now when diff command is separated from other standard outputs,
+> we can use perf_hpp__init to initialize all standard columns.
+>
+> Moving PERF_HPP__OVERHEAD column init back to perf_hpp__init,
+> and removing extra enable calls.
 
-ACPI_EXCEPTION() already appends a newline, so there is no
-need for the failed _DCK messaged to include one too.
+Why was this needed in the first place?  AFAIK it's already there and
+didn't used only for perf diff.
 
-Signed-off-by: Colin Ian King <colin.king@canonical.com>
----
- drivers/acpi/dock.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/acpi/dock.c b/drivers/acpi/dock.c
-index 88eb143..a873c6b 100644
---- a/drivers/acpi/dock.c
-+++ b/drivers/acpi/dock.c
-@@ -475,7 +475,7 @@ static void handle_dock(struct dock_station *ds, int dock)
- 	status = acpi_evaluate_object(ds->handle, "_DCK", &arg_list, &buffer);
- 	if (ACPI_FAILURE(status) && status != AE_NOT_FOUND)
- 		ACPI_EXCEPTION((AE_INFO, status, "%s - failed to execute"
--			" _DCK\n", (char *)name_buffer.pointer));
-+			" _DCK", (char *)name_buffer.pointer));
- 
- 	kfree(buffer.pointer);
- 	kfree(name_buffer.pointer);
--- 
-1.8.0
-
+Thanks,
+Namhyung
