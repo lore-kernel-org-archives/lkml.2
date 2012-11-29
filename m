@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765Ab2K2TZV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 14:25:21 -0500
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:51849 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753633Ab2K2TZR (ORCPT
+	id S1754649Ab2K2T03 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 14:26:29 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:37221 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133Ab2K2T01 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 14:25:17 -0500
-Date: Thu, 29 Nov 2012 19:29:45 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Aristeu Rozanski <aris@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>, cgroups@vger.kernel.org
-Subject: Re: [PATCH 3/5] device_cgroup: keep track of local group settings
-Message-ID: <20121129192945.GD26104@mail.hallyn.com>
-References: <20121127193501.255267751@napanee.usersys.redhat.com>
- <20121127193502.482004744@napanee.usersys.redhat.com>
+	Thu, 29 Nov 2012 14:26:27 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121127193502.482004744@napanee.usersys.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20121129191503.GB3490@shiny>
+References: <CAAJw_ZsYuLCwCTc6U=ELO_PvyjnVKQdkPke2enfzm6zOeWAqjA@mail.gmail.com>
+ <50B4B313.3030707@kernel.dk> <Pine.LNX.4.64.1211272252260.18338@file.rdu.redhat.com>
+ <50B5CC5A.8060607@kernel.dk> <Pine.LNX.4.64.1211281222410.11599@file.rdu.redhat.com>
+ <CA+55aFx4zYnEsUyGJurBjB0XZ0AgmyKqW-+KWVDvma3w6csnHQ@mail.gmail.com>
+ <20121128194314.GF4939@ZenIV.linux.org.uk> <Pine.LNX.4.64.1211281630150.5283@file.rdu.redhat.com>
+ <CA+55aFziCW_ywZACGoVyNSgy8mToAGhSbdo0VoUAaGvgSb2XxQ@mail.gmail.com>
+ <CA+55aFxt655WfuhjOCnu3esg3gt=L37v=ofWfjs+qpXjn-F2uA@mail.gmail.com> <20121129191503.GB3490@shiny>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 29 Nov 2012 11:26:06 -0800
+X-Google-Sender-Auth: nGjOn0wUk_c7ZXU-JKDFXKEFhuU
+Message-ID: <CA+55aFxaHuxaEezkpmGRi4kFGaQFTv9S89N-hJhxBjVa6ZwnbQ@mail.gmail.com>
+Subject: Re: [PATCH v2] Do a proper locking for mmap and block size change
+To: Chris Mason <chris.mason@fusionio.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
+        Jeff Chua <jeff.chua.linux@gmail.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Aristeu Rozanski (aris@redhat.com):
-> In preparation for better hierarchy support, it's needed to retain the local
-> settings in order to try to reapply them after a propagated change if they're
-> still valid.
-> 
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Serge Hallyn <serge.hallyn@canonical.com>
-> Signed-off-by: Aristeu Rozanski <aris@redhat.com>
->  
-> ---
->  security/device_cgroup.c |  108 ++++++++++++++++++++++++++++++++++-------------
->  1 file changed, 80 insertions(+), 28 deletions(-)
+On Thu, Nov 29, 2012 at 11:15 AM, Chris Mason <chris.mason@fusionio.com> wrote:
+>
+> The fs/buffer.c part makes sense during a quick read.  But
+> fs/direct-io.c plays with i_blkbits too.  The semaphore was fixing real
+> bugs there.
 
-Hi,
+Ugh. I _hate_ direct-IO. What a mess. And yeah, it seems to be
+incestuously playing games that should be in fs/buffer.c. I thought it
+was doing the sane thing with the page cache.
 
-thanks for doing this.  I've got one concern though.  I don't see
-any place where devcgroup_create() was updated to create the
-local exceptions list.  I think we need a guarantee that at
-any time the local exceptions list will contain all the entries
-contained in the cgroup->exceptions list.  Otherwise you cannot
-use the exception_add() the way you do (or you can't use RCU),
-since there could be a window between the successful addition
-of a rule to cgroup->local.exceptions and the failed addition to
-cgroup->exceptions, during which a task (since it won't need
-the mutex for devcg_allow()) could exceed allowed permissions.
+(I now realize that Mikulas was talking about this mess, while I
+thought he was talking about the AIO code which is largely sane).
 
-It's possible I'm misunderstanding.  If you think that's the case
-just kick me and I'll take a fresh look.
-
-(Btw is there a git tree or gitweb view I could look at alongside
-the patchset?)
-
-thanks,
--serge
+                    Linus
