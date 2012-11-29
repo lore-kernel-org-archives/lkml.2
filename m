@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755397Ab2K2Usu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 15:48:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25337 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754807Ab2K2UsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 15:48:23 -0500
-Subject: [PATCH] kvm: Fix user memslot overlap check
-To: mtosatti@redhat.com, gleb@redhat.com
-From: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        xiaoguangrong@linux.vnet.ibm.com
-Date: Thu, 29 Nov 2012 13:48:17 -0700
-Message-ID: <20121129204619.8862.77695.stgit@bling.home>
-User-Agent: StGit/0.16
+	id S1754420Ab2K2UwC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 15:52:02 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:35335 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751399Ab2K2Uv7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 15:51:59 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAB=NE6Ww8SVm51qph=iXNGS8BN1cWdsT-bvKWrDt4b9c7ea9sg@mail.gmail.com>
+References: <1354144069-28611-1-git-send-email-hauke@hauke-m.de>
+ <1354144069-28611-7-git-send-email-hauke@hauke-m.de> <CAB=NE6Ww8SVm51qph=iXNGS8BN1cWdsT-bvKWrDt4b9c7ea9sg@mail.gmail.com>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Thu, 29 Nov 2012 12:51:37 -0800
+X-Google-Sender-Auth: zWLZ1bzlaJLjME0whhP3VKGt2RU
+Message-ID: <CAB=NE6XiuZCzWXROi35no0nnU4F7-=d_FwX90xEKgSgFGVbfYg@mail.gmail.com>
+Subject: Re: [PATCH 6/6] compat-drivers: do not use struct spinlock
+To: Hauke Mehrtens <hauke@hauke-m.de>
+Cc: backports@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arend Van Spriel <arend@broadcom.com>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Alexander Stein <alexander.stein@systec-electronic.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prior to memory slot sorting this loop compared all of the user memory
-slots for overlap with new entries.  With memory slot sorting, we're
-just checking some number of entries in the array that may or may not
-be user slots.  Instead, walk all the slots with kvm_for_each_memslot,
-which has the added benefit of terminating early when we hit the first
-empty slot, and skip comparison to private slots.
+On Thu, Nov 29, 2012 at 11:47 AM, Luis R. Rodriguez
+<mcgrof@do-not-panic.com> wrote:
+> On Wed, Nov 28, 2012 at 3:07 PM, Hauke Mehrtens <hauke@hauke-m.de> wrote:
+>
+> IMHO your patch should go upstream and a respective patch should be
+> submitted as well as for these drivers:
+>
+> mcgrof@frijol ~/linux-next (git::master)$ git grep "struct spinlock" drivers/
+> drivers/crypto/ux500/cryp/cryp.h:       struct spinlock ctx_lock;
+> drivers/crypto/ux500/cryp/cryp.h:       struct spinlock power_state_spinlock;
+> drivers/crypto/ux500/hash/hash_alg.h:   struct spinlock         ctx_lock;
+> drivers/crypto/ux500/hash/hash_alg.h:   struct spinlock
+> power_state_lock;
+> drivers/gpu/drm/i915/i915_drv.h:        struct spinlock gt_lock;
+> drivers/gpu/drm/i915/i915_drv.h:                struct spinlock lock;
+> drivers/media/platform/s5p-fimc/mipi-csis.c:    struct spinlock slock;
+> drivers/media/platform/s5p-jpeg/jpeg-core.h:    struct spinlock         slock;
+> drivers/watchdog/ie6xx_wdt.c:   struct spinlock unlock_sequence;
+>
+> Alexander, please also add your driver to the MAINTAINERS file.
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Cc: stable@vger.kernel.org
----
- virt/kvm/kvm_main.c |   12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+Hauke, I'll add your patch for now into compat-drivers until shit
+catches up on linux-next if the series I just posted goes through.
 
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index be70035..cac294d 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -710,7 +710,7 @@ int __kvm_set_memory_region(struct kvm *kvm,
- 	gfn_t base_gfn;
- 	unsigned long npages;
- 	unsigned long i;
--	struct kvm_memory_slot *memslot;
-+	struct kvm_memory_slot *memslot, *slot;
- 	struct kvm_memory_slot old, new;
- 	struct kvm_memslots *slots, *old_memslots;
- 
-@@ -761,13 +761,11 @@ int __kvm_set_memory_region(struct kvm *kvm,
- 
- 	/* Check for overlaps */
- 	r = -EEXIST;
--	for (i = 0; i < KVM_MEMORY_SLOTS; ++i) {
--		struct kvm_memory_slot *s = &kvm->memslots->memslots[i];
--
--		if (s == memslot || !s->npages)
-+	kvm_for_each_memslot(slot, kvm->memslots) {
-+		if (slot->id >= KVM_MEMORY_SLOTS || slot == memslot)
- 			continue;
--		if (!((base_gfn + npages <= s->base_gfn) ||
--		      (base_gfn >= s->base_gfn + s->npages)))
-+		if (!((base_gfn + npages <= slot->base_gfn) ||
-+		      (base_gfn >= slot->base_gfn + slot->npages)))
- 			goto out_free;
- 	}
- 
-
+  Luis
