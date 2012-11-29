@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755512Ab2K2VSe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 16:18:34 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:32889 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755477Ab2K2VS3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 16:18:29 -0500
-Date: Thu, 29 Nov 2012 22:18:28 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Jim Kukunas <james.t.kukunas@linux.intel.com>,
-        Linux Raid <linux-raid@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Neil Brown <neilb@suse.de>
-Subject: Re: [PATCH] lib/raid6: Add AVX2 optimized recovery functions
-Message-ID: <20121129211828.GZ16230@one.firstfloor.org>
-References: <1352411264-5156-1-git-send-email-james.t.kukunas@linux.intel.com> <m2obigf9xa.fsf@firstfloor.org> <50B7CFF8.7010401@zytor.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755536Ab2K2VTD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 16:19:03 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:41387 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753051Ab2K2VTA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 16:19:00 -0500
+Date: Thu, 29 Nov 2012 22:18:56 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mario Gzuk <mariogzuk@technikz.de>
+Subject: Re: [PATCH 8/8] x86, cleanups: Simplify sync_core() in the case of
+ no CPUID
+Message-ID: <20121129211856.GH30789@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"H. Peter Anvin" <hpa@linux.intel.com>,
+	"H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Mario Gzuk <mariogzuk@technikz.de>
+References: <1354132230-21854-1-git-send-email-hpa@linux.intel.com>
+ <1354132230-21854-9-git-send-email-hpa@linux.intel.com>
+ <20121128204158.GC14635@liondog.tnic>
+ <50B6A8F3.5000407@zytor.com>
+ <20121129091317.GA21084@liondog.tnic>
+ <50B7CE4C.80201@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <50B7CFF8.7010401@zytor.com>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <50B7CE4C.80201@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The code is compiled so that the xmm/ymm registers are not available to
-> the compiler.  Do you have any known examples of asm volatiles being
-> reordered *with respect to each other*?  My understandings of gcc is
-> that volatile operations are ordered with respect to each other (not
-> necessarily with respect to non-volatile operations, though.)
+On Thu, Nov 29, 2012 at 01:06:20PM -0800, H. Peter Anvin wrote:
+> It doesn't matter in that context, as the surrounding MSR references
+> have barriers, but what I'm refering to is the "memory" barrier.
 
-Can you quote it from the manual? As I understand volatile as usual
-is not clearly defined. 
+Ok, but the only difference between the two versions is this line:
 
-gcc has a lot of optimization passes and volatile bugs are common.
+        movl    %esi, %ecx      # tmp144, ecx
 
+coming from the cpuid_eax() function. So the memory barrier is the same
+and in the right place in both cases.
 
-> Either way, this implementatin technique was used for the MMX/SSE
-> implementations without any problems for 9 years now.
+> The value of ECX doesn't matter when EAX=1.
 
-It's still wrong.
+Ok.
 
-Lying to the compiler usually bites you at some point.
-
--Andi
+-- 
+Regards/Gruss,
+    Boris.
