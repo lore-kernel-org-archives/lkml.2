@@ -1,108 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754399Ab2K2S2f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 13:28:35 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:52890 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754262Ab2K2S2c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 13:28:32 -0500
-From: Jay Vosburgh <fubar@us.ibm.com>
-To: Zheng Li <zheng.x.li@oracle.com>
-cc: netdev@vger.kernel.org, andy@greyhouse.net, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, joe.jin@oracle.com
-Subject: Re: [PATCH] bonding: rlb mode of bond should not alter ARP originating via bridge
-In-reply-to: <1354096624-22380-1-git-send-email-zheng.x.li@oracle.com>
-References: <1354096624-22380-1-git-send-email-zheng.x.li@oracle.com>
-Comments: In-reply-to Zheng Li <zheng.x.li@oracle.com>
-   message dated "Wed, 28 Nov 2012 17:57:04 +0800."
-X-Mailer: MH-E 8.2; nmh 1.4; GNU Emacs 23.4.1
-Date: Thu, 29 Nov 2012 10:28:25 -0800
-Message-ID: <15005.1354213705@death.nxdomain>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12112918-5806-0000-0000-00001C58AE58
+	id S1754518Ab2K2S30 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 13:29:26 -0500
+Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:37629 "EHLO
+	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754156Ab2K2S3Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 13:29:24 -0500
+Date: Thu, 29 Nov 2012 13:29:02 -0500
+From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Krzysztof Mazur <krzysiek@podlesie.net>,
+        David Laight <David.Laight@ACULAB.COM>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nathan@traverse.com.au
+Subject: Re: [PATCH v2 3/3] pppoatm: protect against freeing of vcc
+Message-ID: <20121129132902.04373f49@thirdoffive.cmf.nrl.navy.mil>
+In-Reply-To: <1354212708.21562.205.camel@shinybook.infradead.org>
+References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
+	<1350926091-12642-3-git-send-email-krzysiek@podlesie.net>
+	<1354036592.2534.6.camel@shinybook.infradead.org>
+	<20121127173906.GA11390@shrek.podlesie.net>
+	<1354039349.2534.11.camel@shinybook.infradead.org>
+	<20121127135434.0728cd4f@thirdoffive.cmf.nrl.navy.mil>
+	<AE90C24D6B3A694183C094C60CF0A2F6026B70C9@saturn3.aculab.com>
+	<1354141115.21562.101.camel@shinybook.infradead.org>
+	<20121129150945.GB16478@shrek.podlesie.net>
+	<1354204077.21562.172.camel@shinybook.infradead.org>
+	<20121129105934.3e0c3a04@thirdoffive.cmf.nrl.navy.mil>
+	<1354206269.21562.189.camel@shinybook.infradead.org>
+	<20121129121701.21ab7c0b@thirdoffive.cmf.nrl.navy.mil>
+	<1354212708.21562.205.camel@shinybook.infradead.org>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zheng Li <zheng.x.li@oracle.com> wrote:
+On Thu, 29 Nov 2012 18:11:48 +0000
+David Woodhouse <dwmw2@infradead.org> wrote:
 
->Do not modify or load balance ARP packets passing through balance-alb
->mode (wherein the ARP did not originate locally, and arrived via a bridge).
->
->Modifying pass-through ARP replies causes an incorrect MAC address 
->to be placed into the ARP packet, rendering peers unable to communicate 
->with the actual destination from which the ARP reply originated.
->
->Load balancing pass-through ARP requests causes an entry to be
->created for the peer in the rlb table, and bond_alb_monitor will
->occasionally issue ARP updates to all peers in the table instrucing them
->as to which MAC address they should communicate with; this occurs when
->some event sets rx_ntt.  In the bridged case, however, the MAC address
->used for the update would be the MAC of the slave, not the actual source
->MAC of the originating destination.  This would render peers unable to
->communicate with the destinations beyond the bridge.
->
->Signed-off-by: Zheng Li <zheng.x.li@oracle.com>
->Cc: Jay Vosburgh <fubar@us.ibm.com>
->Cc: Andy Gospodarek <andy@greyhouse.net>
->Cc: "David S. Miller" <davem@davemloft.net>
+> We do see the 'packet received for unknown VCC' complaint, after we
+> reboot the host without resetting the card. And as shown in the commit I
+> just referenced, we rely on the !ATM_VF_READY check in order to prevent
+> a use-after-free when the tasklet is sending packets up a VCC that's
+> just been closed.
 
-Signed-off-by: Jay Vosburgh <fubar@us.ibm.com>
+well that behavior is just crap.  why is it delivering cells for a
+vpi/vci pair that is not open?  regardless, i pointed out the behavior
+of find_vcc() just in case you need to do some clean up on data that is
+coming back while you are attempting to finish operations during your
+driver's close() but this cleanup might not be happening since you
+arent able to get a reference to the vcc so you can pop() the data or
+whatever you might need to do.
 
->---
-> drivers/net/bonding/bond_alb.c |    6 ++++++
-> drivers/net/bonding/bonding.h  |   13 +++++++++++++
-> 2 files changed, 19 insertions(+), 0 deletions(-)
->
->diff --git a/drivers/net/bonding/bond_alb.c b/drivers/net/bonding/bond_alb.c
->index e15cc11..6fecb52 100644
->--- a/drivers/net/bonding/bond_alb.c
->+++ b/drivers/net/bonding/bond_alb.c
->@@ -694,6 +694,12 @@ static struct slave *rlb_arp_xmit(struct sk_buff *skb, struct bonding *bond)
-> 	struct arp_pkt *arp = arp_pkt(skb);
-> 	struct slave *tx_slave = NULL;
->
->+	/* Don't modify or load balance ARPs that do not originate locally
->+	 * (e.g.,arrive via a bridge).
->+	 */
->+	if (!bond_slave_has_mac(bond, arp->mac_src))
->+		return NULL;
->+
-> 	if (arp->op_code == htons(ARPOP_REPLY)) {
-> 		/* the arp must be sent on the selected
-> 		* rx channel
->diff --git a/drivers/net/bonding/bonding.h b/drivers/net/bonding/bonding.h
->index f8af2fc..6dded56 100644
->--- a/drivers/net/bonding/bonding.h
->+++ b/drivers/net/bonding/bonding.h
->@@ -22,6 +22,7 @@
-> #include <linux/in6.h>
-> #include <linux/netpoll.h>
-> #include <linux/inetdevice.h>
->+#include <linux/etherdevice.h>
-> #include "bond_3ad.h"
-> #include "bond_alb.h"
->
->@@ -450,6 +451,18 @@ static inline void bond_destroy_proc_dir(struct bond_net *bn)
-> }
-> #endif
->
->+static inline struct slave *bond_slave_has_mac(struct bonding *bond,
->+					       const u8 *mac)
->+{
->+	int i = 0;
->+	struct slave *tmp;
->+
->+	bond_for_each_slave(bond, tmp, i)
->+		if (ether_addr_equal_64bits(mac, tmp->dev->dev_addr))
->+			return tmp;
->+
->+	return NULL;
->+}
->
-> /* exported from bond_main.c */
-> extern int bond_net_id;
->-- 
->1.7.6.5
->
+> > again part of this is poor synchronization.  the detach protocol (i.e.
+> > push of a NULL skb) should be flushing any pending transmits and
+> > shutting down whatever in the protocol is doing any sending and
+> > receiving.  however, i release this might be difficult to do since the
+> > detach protocol is invoked in such a strange way.
+> 
+> You mean that (e.g.) pppoatm_push(vcc, NULL) should be waiting for any
+> pending TX skb (that has already been passed off to the driver) to
+> *complete*? How would it even do that?
+
+i think the order of the vcc_destroy_socket() operations is a bit
+wrong.  it should call detach protocol (i.e. push a NULL).  this should
+cause the attached protocol to stop any future sends and receives, and
+it CAN sleep in this context (and only this context -- generally
+sending cannot sleep which is why this might seem confusing) to do
+whatever it needs to do to wait for the attached protocol to clean up
+queues, flush data etc.
+
+then the driver close() should be called.  this takes care of cleaning
+up any pending tx or rx that is in the hardware.  and of course,
+close() can sleep since it will be in a interrutible context.
+
+the pop() might be screwed up here though.  you might have skb's in the
+driver that should be pop()'ed with the formerly attached protocol.
+
+you could wait for pending tx's sent to the driver.  you know that your
+attached protocol's pop() will be called.  keep count of the
+outstanding transmit skb's.  you cant do this though if you close() the
+vcc before you detach the protocol.
 
