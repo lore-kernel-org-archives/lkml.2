@@ -1,57 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754663Ab2K2USF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 15:18:05 -0500
-Received: from smtp5-g21.free.fr ([212.27.42.5]:46667 "EHLO smtp5-g21.free.fr"
+	id S1753226Ab2K2UVI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 15:21:08 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:36379 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753200Ab2K2USE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 15:18:04 -0500
-From: Jim Meyering <jim@meyering.net>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Hugh Dickins <hughd@google.com>, Jaegeuk Hanse <jaegeuk.hanse@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Zheng Liu <wenqing.lz@taobao.com>,
-        Jeff liu <jeff.liu@oracle.com>, Paul Eggert <eggert@cs.ucla.edu>,
-        Christoph Hellwig <hch@infradead.org>, Josef Bacik <josef@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Andreas Dilger <adilger@dilger.ca>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Sunil Mushran <sunil.mushran@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] tmpfs: support SEEK_DATA and SEEK_HOLE (reprise)
-In-Reply-To: <20121129195206.GB6434@dastard> (Dave Chinner's message of "Fri,
-	30 Nov 2012 06:52:07 +1100")
-References: <alpine.LNX.2.00.1211281706390.1516@eggly.anvils>
-	<20121129012933.GA9112@kernel>
-	<alpine.LNX.2.00.1211281745200.1641@eggly.anvils>
-	<87lidlxcw9.fsf@rho.meyering.net> <20121129195206.GB6434@dastard>
-Date: Thu, 29 Nov 2012 21:17:51 +0100
-Message-ID: <87ip8o17v4.fsf@rho.meyering.net>
+	id S1751303Ab2K2UVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 15:21:05 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Toshi Kani <toshi.kani@hp.com>
+Cc: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        linux-acpi@vger.kernel.org, Wen Congyang <wency@cn.fujitsu.com>,
+        Wen Congyang <wencongyang@gmail.com>, isimatu.yasuaki@jp.fujitsu.com,
+        lenb@kernel.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on rebind scenario
+Date: Thu, 29 Nov 2012 21:25:48 +0100
+Message-ID: <1666001.sopVksfMvY@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <1354211790.26955.443.camel@misato.fc.hp.com>
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com> <20121129113030.GB639@dhcp-192-168-178-175.profitbricks.localdomain> <1354211790.26955.443.camel@misato.fc.hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Chinner wrote:
-...
->> So, yes, GNU cp will soon use this feature.
->
-> It would be nice if utilities like grep used it, too, because having
-> grep burn gigabytes of memory scanning holes in large files and
-> then going OOM is, well, kind of nasty:
->
-> $ xfs_io -f -c "truncate 1t" blah
-> $ ls -l
-> total 0
-> -rw-r--r-- 1 dave dave 1.0T Nov 30 06:42 blah
-> $ grep foo blah
-> grep: memory exhausted
-> $ $ grep -V
-> grep (GNU grep) 2.12
+On Thursday, November 29, 2012 10:56:30 AM Toshi Kani wrote:
+> On Thu, 2012-11-29 at 12:30 +0100, Vasilis Liaskovitis wrote:
+> > On Thu, Nov 29, 2012 at 11:03:05AM +0100, Rafael J. Wysocki wrote:
+> > > On Wednesday, November 28, 2012 06:15:42 PM Toshi Kani wrote:
+> > > > On Wed, 2012-11-28 at 18:02 -0700, Toshi Kani wrote:
+> > > > > On Thu, 2012-11-29 at 00:49 +0100, Rafael J. Wysocki wrote:
+> > > > > > On Wednesday, November 28, 2012 02:02:48 PM Toshi Kani wrote:
+> > > > > > > > > > > > > > Consider the following case:
+> > > > > > > > > > > > > > 
+> > > > > > > > > > > > > > We hotremove the memory device by SCI and unbind it from the driver at the same time:
+> > > > > > > > > > > > > > 
+> > > > > > > > > > > > > > CPUa                                                  CPUb
+> > > > > > > > > > > > > > acpi_memory_device_notify()
+> > > > > > > > > > > > > >                                        unbind it from the driver
+> > > > > > > > > > > > > >     acpi_bus_hot_remove_device()
+> > > > > > > > > > > > > 
+> > [...]
+> > > Well, in the meantime I've had a look at acpi_bus_hot_remove_device() and
+> > > friends and I think there's a way to address all of these problems
+> > > without big redesign (for now).
+> > > 
+> > > First, why don't we introduce an ACPI device flag (in the flags field of
+> > > struct acpi_device) called eject_forbidden or something like this such that:
+> > > 
+> > > (1) It will be clear by default.
+> > > (2) It may only be set by a driver's .add() routine if necessary.
+> > > (3) Once set, it may only be cleared by the driver's .remove() routine if
+> > >     it's safe to physically remove the device after the .remove().
+> > > 
+> > > Then, after the .remove() (which must be successful) has returned, and the
+> > > flag is set, it will tell acpi_bus_remove() to return a specific error code
+> > > (such as -EBUSY or -EAGAIN).  It doesn't matter if .remove() was called
+> > > earlier, because if it left the flag set, there's no way to clear it afterward
+> > > and acpi_bus_remove() will see it set anyway.  I think the struct acpi_device
+> > > should be unregistered anyway if that error code is to be returned.
+> > > 
+> > > [By the way, do you know where we free the memory allocated for struct
+> > >  acpi_device objects?]
+> > > 
+> > > Now if acpi_bus_trim() gets that error code from acpi_bus_remove(), it should
+> > > store it, but continue the trimming normally and finally it should return that
+> > > error code to acpi_bus_hot_remove_device().
+> > 
+> > Side-note: In the pre_remove patches, acpi_bus_trim actually returns on the
+> > first error from acpi_bus_remove (e.g. when memory offlining in pre_remove
+> > fails). Trimming is not continued. 
+> > 
+> > Normally, acpi_bus_trim keeps trimming as you say, and always returns the last
+> > error. Is this the desired behaviour that we want to keep for bus_trim? (This is
+> > more a general question, not specific to the eject_forbidden suggestion)
+> 
+> Your change makes sense to me.  At least until we have rollback code in
+> place, we need to fail as soon as we hit an error.
 
-Hi Dave,
+Are you sure this makes sense?  What happens to the devices that we have
+trimmed already and then there's an error?  Looks like they are just unusable
+going forward, aren't they?
 
-Yes, adapting grep is also on the road map.
-That precise case was one of my arguments for making SEEK_DATA/SEEK_HOLE
-support more widespread.
+> > > Now, if acpi_bus_hot_remove_device() gets that error code, it should just
+> > > reverse the whole trimming (i.e. trigger acpi_bus_scan() from the device
+> > > we attempted to eject) and notify the firmware about the failure.
+> > 
+> > sounds like this rollback needs to be implemented in any solution we choose
+> > to implement, correct?
+> 
+> Yes, rollback is necessary.  But I do not think we need to include it
+> into your patch, though.
+
+As the first step, we should just trim everything and then return an error
+code in my opinion.
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
