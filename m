@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752864Ab2K2RRS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 12:17:18 -0500
-Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:37470 "EHLO
-	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751013Ab2K2RRR (ORCPT
+	id S1753117Ab2K2RTy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 12:19:54 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:62343 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187Ab2K2RTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 12:17:17 -0500
-Date: Thu, 29 Nov 2012 12:17:01 -0500
-From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Krzysztof Mazur <krzysiek@podlesie.net>,
-        David Laight <David.Laight@ACULAB.COM>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nathan@traverse.com.au
-Subject: Re: [PATCH v2 3/3] pppoatm: protect against freeing of vcc
-Message-ID: <20121129121701.21ab7c0b@thirdoffive.cmf.nrl.navy.mil>
-In-Reply-To: <1354206269.21562.189.camel@shinybook.infradead.org>
-References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
-	<1350926091-12642-3-git-send-email-krzysiek@podlesie.net>
-	<1354036592.2534.6.camel@shinybook.infradead.org>
-	<20121127173906.GA11390@shrek.podlesie.net>
-	<1354039349.2534.11.camel@shinybook.infradead.org>
-	<20121127135434.0728cd4f@thirdoffive.cmf.nrl.navy.mil>
-	<AE90C24D6B3A694183C094C60CF0A2F6026B70C9@saturn3.aculab.com>
-	<1354141115.21562.101.camel@shinybook.infradead.org>
-	<20121129150945.GB16478@shrek.podlesie.net>
-	<1354204077.21562.172.camel@shinybook.infradead.org>
-	<20121129105934.3e0c3a04@thirdoffive.cmf.nrl.navy.mil>
-	<1354206269.21562.189.camel@shinybook.infradead.org>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 29 Nov 2012 12:19:53 -0500
+MIME-Version: 1.0
+In-Reply-To: <Pine.LNX.4.64.1211281630150.5283@file.rdu.redhat.com>
+References: <CAAJw_ZvUqRmCCQ5-2PdFPRyfdzZMuphGU=hgAjUOHGk=n9Mheg@mail.gmail.com>
+ <CAAJw_ZuJXnAz1ukBwQa3xNbQaL1KUBSrbQMK2hn-7D6Ar1p3fQ@mail.gmail.com>
+ <50B46E05.70906@kernel.dk> <CAAJw_ZsYuLCwCTc6U=ELO_PvyjnVKQdkPke2enfzm6zOeWAqjA@mail.gmail.com>
+ <50B4B313.3030707@kernel.dk> <Pine.LNX.4.64.1211272252260.18338@file.rdu.redhat.com>
+ <50B5CC5A.8060607@kernel.dk> <Pine.LNX.4.64.1211281222410.11599@file.rdu.redhat.com>
+ <CA+55aFx4zYnEsUyGJurBjB0XZ0AgmyKqW-+KWVDvma3w6csnHQ@mail.gmail.com>
+ <20121128194314.GF4939@ZenIV.linux.org.uk> <Pine.LNX.4.64.1211281630150.5283@file.rdu.redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 29 Nov 2012 09:19:30 -0800
+X-Google-Sender-Auth: NMe_-iEKltGVNKX4Tk9fWRCeWoQ
+Message-ID: <CA+55aFziCW_ywZACGoVyNSgy8mToAGhSbdo0VoUAaGvgSb2XxQ@mail.gmail.com>
+Subject: Re: [PATCH v2] Do a proper locking for mmap and block size change
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
+        Jeff Chua <jeff.chua.linux@gmail.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Nov 2012 16:24:29 +0000
-David Woodhouse <dwmw2@infradead.org> wrote:
+On Wed, Nov 28, 2012 at 2:01 PM, Mikulas Patocka <mpatocka@redhat.com> wrote:
+>
+> This sounds sensible. I'm sending this patch.
 
-> On Thu, 2012-11-29 at 10:59 -0500, chas williams - CONTRACTOR wrote:
-> > the part that bothers me (and i dont have the programmer's guide for
-> > the solos hardware) is that you are watching for the PKT_PCLOSE to be
-> > sent to the card.  shouldnt you be watching for the PKT_PCLOSE to be
-> > returned from the card (assuming it does such a thing) so that you can
-> > be assured that the tx/rx for this vpi/vci pair has been "stopped"?
-> 
-> Define "stopped".
-> 
-> For the RX case... the other end may *always* take it upon itself to
-> send us a packet marked with arbitrary VCI/VPI, right? There's no
-> connection setup for it "on the wire", in the case of PVC?
+This looks much better.
 
-most atm hardware that i am familiar with, wont deliver vpi/vci data
-unless you are actually trying to receive it.  however, this hardware
-is generally doing its reassembly in hardware and delivering aal5
-pdu's and needs to manage its memory resources carefully.  you might be
-trying to reassemble 1000 pdu's from different vpi/vci's.
+I think I'll apply this for 3.7 (since it's too late to do anything
+fancier), and then for 3.8 I will rip out all the locking entirely,
+because looking at the fs/buffer.c patch I wrote up, it's all totally
+unnecessary.
 
-> So bearing that in mind: from the moment ATM_VF_READY gets cleared, as
-> far as the ATM core is concerned, we will no longer receive packets on
-> the given VCC. If we receive any, we'll just complain about receiving
-> packets for an unknown VCI/VPI.
-> 
-> For the TX case ... yes, we need to be sure we aren't continuing to send
-> packets after our close() routine completes. We *used* to, but the
-> resulting ->pop() calls were causing problems, and that's why we're
-> looking at this code path closer. The currently proposed patches (except
-> one suggestion from Krzyztof that we both shouted down) would fix that.
+Adding a ACCESS_ONCE() to the read of the i_blkbits value (when
+creating new buffers) simply makes the whole locking thing pointless.
+Just make the page lock protect the block size, and make it per-page,
+and we're done.
 
-again part of this is poor synchronization.  the detach protocol (i.e.
-push of a NULL skb) should be flushing any pending transmits and
-shutting down whatever in the protocol is doing any sending and
-receiving.  however, i release this might be difficult to do since the
-detach protocol is invoked in such a strange way.
+No RCU grace period crap, no expedited mess, no nothing.
 
+                      Linus
