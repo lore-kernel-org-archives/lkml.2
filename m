@@ -1,101 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756267Ab2K2AOz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 19:14:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:32831 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754018Ab2K2AOy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 19:14:54 -0500
-Date: Wed, 28 Nov 2012 16:14:52 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        George Spelvin <linux@horizon.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        Tomas Racek <tracek@redhat.com>, Jan Kara <jack@suse.cz>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Josh Boyer <jwboyer@gmail.com>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Jiri Slaby <jslaby@suse.cz>, Thorsten Leemhuis <fedora@leemhuis.info>,
-        Zdenek Kabelac <zkabelac@redhat.com>, Bruno Wolff III <bruno@wolff.to>,
-        linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: kswapd craziness in 3.7
-Message-Id: <20121128161452.c1ddc9a3.akpm@linux-foundation.org>
-In-Reply-To: <20121128235412.GW8218@suse.de>
-References: <1354049315-12874-1-git-send-email-hannes@cmpxchg.org>
-	<CA+55aFywygqWUBNWtZYa+vk8G0cpURZbFdC7+tOzyWk6tLi=WA@mail.gmail.com>
-	<50B52DC4.5000109@redhat.com>
-	<20121127214928.GA20253@cmpxchg.org>
-	<50B5387C.1030005@redhat.com>
-	<20121127222637.GG2301@cmpxchg.org>
-	<CA+55aFyrNRF8nWyozDPi4O1bdjzO189YAgMukyhTOZ9fwKqOpA@mail.gmail.com>
-	<20121128101359.GT8218@suse.de>
-	<20121128145215.d23aeb1b.akpm@linux-foundation.org>
-	<20121128235412.GW8218@suse.de>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756452Ab2K2APZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 19:15:25 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:42206 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756428Ab2K2APY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 19:15:24 -0500
+Message-ID: <50B6A8F3.5000407@zytor.com>
+Date: Wed, 28 Nov 2012 16:14:43 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mario Gzuk <mariogzuk@technikz.de>
+Subject: Re: [PATCH 8/8] x86, cleanups: Simplify sync_core() in the case of
+ no CPUID
+References: <1354132230-21854-1-git-send-email-hpa@linux.intel.com> <1354132230-21854-9-git-send-email-hpa@linux.intel.com> <20121128204158.GC14635@liondog.tnic>
+In-Reply-To: <20121128204158.GC14635@liondog.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Nov 2012 23:54:12 +0000
-Mel Gorman <mgorman@suse.de> wrote:
+On 11/28/2012 12:41 PM, Borislav Petkov wrote:
+>
+> While at it, you could correct this comment to adhere to kernel coding
+> style:
+>
+> 	/*
+> 	 * cpuid is a barrier...
+> 	 * ...
+> 	 */
+>
+>> +	asm volatile("cpuid" : "=a" (tmp) : "0" (1)
+>> +		     : "ebx", "ecx", "edx", "memory");
+>
+> ... and then write this in its shorter form:
+>
+> 	tmp = cpuid_eax(1);
+>
+> to have it a bit easier on the eyes.
+>
 
-> On Wed, Nov 28, 2012 at 02:52:15PM -0800, Andrew Morton wrote:
-> > On Wed, 28 Nov 2012 10:13:59 +0000
-> > Mel Gorman <mgorman@suse.de> wrote:
-> > 
-> > > Based on the reports I've seen I expect the following to work for 3.7
-> > > 
-> > > Keep
-> > >   96710098 mm: revert "mm: vmscan: scale number of pages reclaimed by reclaim/compaction based on failures"
-> > >   ef6c5be6 fix incorrect NR_FREE_PAGES accounting (appears like memory leak)
-> > > 
-> > > Revert
-> > >   82b212f4 Revert "mm: remove __GFP_NO_KSWAPD"
-> > > 
-> > > Merge
-> > >   mm: vmscan: fix kswapd endless loop on higher order allocation
-> > >   mm: Avoid waking kswapd for THP allocations when compaction is deferred or contended
-> > 
-> > "mm: Avoid waking kswapd for THP ..." is marked "I have not tested it
-> > myself" and when Zdenek tested it he hit an unexplained oom.
-> > 
-> 
-> I thought Zdenek was testing with __GFP_NO_KSWAPD when he hit that OOM.
-> Further, when he hit that OOM, it looked like a genuine OOM. He had no
-> swap configured and inactive/active file pages were very low. Finally,
-> the free pages for Normal looked off and could also have been affected by
-> the accounting bug. I'm looking at https://lkml.org/lkml/2012/11/18/132
-> here. Are you thinking of something else?
+Wrong barrier semantics.
 
-who, me, think?  I was trying to work out why I hadn't merged or queued
-a patch which you felt was important.  Turned out it was because it
-didn't look very tested and final.
+	-hpa
 
-> I have not tested with the patch admittedly but Thorsten has and seemed
-> to be ok with it https://lkml.org/lkml/2012/11/23/276.
-
-OK, I'll queue revert-revert-mm-remove-__gfp_no_kswapd.patch and the
-patch from https://patchwork.kernel.org/patch/1728081/.
-
-So what I'm currently sitting on for 3.7 is
-
-mm-compaction-fix-return-value-of-capture_free_page.patch
-mm-vmemmap-fix-wrong-use-of-virt_to_page.patch
-mm-vmscan-fix-endless-loop-in-kswapd-balancing.patch
-revert-revert-mm-remove-__gfp_no_kswapd.patch
-mm-avoid-waking-kswapd-for-thp-allocations-when-compaction-is-deferred-or-contended.patch
-mm-soft-offline-split-thp-at-the-beginning-of-soft_offline_page.patch
-
-> > Please identify "Johannes' patch"?
-> 
-> mm: vmscan: fix kswapd endless loop on higher order allocation
-
-OK, we have that.  I'll start a round of testing, do another -next drop
-and send the above Linuswards tomorrow.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
