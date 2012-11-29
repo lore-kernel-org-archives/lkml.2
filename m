@@ -1,73 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756284Ab2K2ESO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 23:18:14 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:33056 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756196Ab2K2ESM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 23:18:12 -0500
-Message-ID: <50B6E1F9.5010301@linaro.org>
-Date: Wed, 28 Nov 2012 20:18:01 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Christoph Lameter <cl@linux.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [RFC v2] Support volatile range for anon vma
-References: <1351560594-18366-1-git-send-email-minchan@kernel.org> <50AD739A.30804@linaro.org>
-In-Reply-To: <50AD739A.30804@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12112904-7182-0000-0000-0000036635ED
+	id S1753972Ab2K2EUO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 23:20:14 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:47409 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752435Ab2K2EUM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 23:20:12 -0500
+Date: Thu, 29 Nov 2012 15:20:08 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bill Pemberton <wfp5p@virginia.edu>, Qing Xu <qingx@marvell.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>
+Subject: linux-next: manual merge of the driver-core tree with the battery
+ tree
+Message-Id: <20121129152008.5a74394e46746fa83e70b8ff@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__29_Nov_2012_15_20_08_+1100_Fo1CjAd7Rr1WWsEf"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21/2012 04:36 PM, John Stultz wrote:
-> 2) Being able to use this with tmpfs files. I'm currently trying to 
-> better understand the rmap code, looking to see if there's a way to 
-> have try_to_unmap_file() work similarly to try_to_unmap_anon(), to 
-> allow allow users to madvise() on mmapped tmpfs files. This would 
-> provide a very similar interface as to what I've been proposing with 
-> fadvise/fallocate, but just using process virtual addresses instead of 
-> (fd, offset) pairs.   The benefit with (fd,offset) pairs for Android 
-> is that its easier to manage shared volatile ranges between two 
-> processes that are sharing data via an mmapped tmpfs file (although 
-> this actual use case may be fairly rare).  I believe we should still 
-> be able to rework the ashmem internals to use madvise (which would 
-> provide legacy support for existing android apps), so then its just a 
-> question of if we could then eventually convince Android apps to use 
-> the madvise interface directly, rather then the ashmem unpin ioctl.
+--Signature=_Thu__29_Nov_2012_15_20_08_+1100_Fo1CjAd7Rr1WWsEf
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hey Minchan,
-     I've been playing around with your patch trying to better 
-understand your approach and to extend it to support tmpfs files. In 
-doing so I've found a few bugs, and have some rough fixes I wanted to 
-share. There's still a few edge cases I need to deal with (the 
-vma-purged flag isn't being properly handled through vma merge/split 
-operations), but its starting to come along.
+Hi Greg,
 
-Anyway, take a look at the tree here and let me know what you think.
-http://git.linaro.org/gitweb?p=people/jstultz/android-dev.git;a=shortlog;h=refs/heads/dev/minchan-anonvol
+Today's linux-next merge of the driver-core tree got a conflict in
+drivers/power/max8925_power.c between commit eba3b670a916
+("max8925_power: Add support for device-tree initialization") from the
+battery tree and commit c8afa6406e60 ("power: remove use of __devinit")
+from the driver-core tree.
 
-I'm sure much is wrong with the tree, but with it I can now mark tmpfs 
-file pages as volatile/nonvolatile and see them purged under pressure. 
-Unfortunately its not limited to tmpfs, so persistent files will also 
-work, but the state of the underlying files on purge is undefined. 
-Hopefully I can find a way to limit it to non-persistent filesystems for 
-now, and if needed find a way to extend it to persistent filesystems in 
-a sane way later.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-thanks
--john
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc drivers/power/max8925_power.c
+index b5a3ccb,1a075f1..0000000
+--- a/drivers/power/max8925_power.c
++++ b/drivers/power/max8925_power.c
+@@@ -427,55 -426,7 +427,55 @@@ static int max8925_deinit_charger(struc
+  	return 0;
+  }
+ =20
+ +#ifdef CONFIG_OF
+ +static struct max8925_power_pdata *
+ +max8925_power_dt_init(struct platform_device *pdev)
+ +{
+ +	struct device_node *nproot =3D pdev->dev.parent->of_node;
+ +	struct device_node *np;
+ +	int batt_detect;
+ +	int topoff_threshold;
+ +	int fast_charge;
+ +	int no_temp_support;
+ +	int no_insert_detect;
+ +	struct max8925_power_pdata *pdata;
+ +
+ +	if (!nproot)
+ +		return pdev->dev.platform_data;
+ +
+ +	np =3D of_find_node_by_name(nproot, "charger");
+ +	if (!np) {
+ +		dev_err(&pdev->dev, "failed to find charger node\n");
+ +		return NULL;
+ +	}
+ +
+ +	pdata =3D devm_kzalloc(&pdev->dev,
+ +			sizeof(struct max8925_power_pdata),
+ +			GFP_KERNEL);
+ +
+ +	of_property_read_u32(np, "topoff-threshold", &topoff_threshold);
+ +	of_property_read_u32(np, "batt-detect", &batt_detect);
+ +	of_property_read_u32(np, "fast-charge", &fast_charge);
+ +	of_property_read_u32(np, "no-insert-detect", &no_insert_detect);
+ +	of_property_read_u32(np, "no-temp-support", &no_temp_support);
+ +
+ +	pdata->batt_detect =3D batt_detect;
+ +	pdata->fast_charge =3D fast_charge;
+ +	pdata->topoff_threshold =3D topoff_threshold;
+ +	pdata->no_insert_detect =3D no_insert_detect;
+ +	pdata->no_temp_support =3D no_temp_support;
+ +
+ +	return pdata;
+ +}
+ +#else
+ +static struct max8925_power_pdata *
+ +max8925_power_dt_init(struct platform_device *pdev)
+ +{
+ +	return pdev->dev.platform_data;
+ +}
+ +#endif
+ +
+- static __devinit int max8925_power_probe(struct platform_device *pdev)
++ static int max8925_power_probe(struct platform_device *pdev)
+  {
+  	struct max8925_chip *chip =3D dev_get_drvdata(pdev->dev.parent);
+  	struct max8925_power_pdata *pdata =3D NULL;
+
+--Signature=_Thu__29_Nov_2012_15_20_08_+1100_Fo1CjAd7Rr1WWsEf
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQtuJ4AAoJEECxmPOUX5FEBC8P/1s38Pofor6mgwk8NQiXg2/G
+vrQ+KYl3lK9fWxUVqSo7SVLVBWBWd1nCtBYXQqOBXl5vL7IPXQp6hyVtVKJ8OIY+
+/L6DZWZRzZK3BZLV0J5eOb2RlvLMFofPiZXSmFpkIL+h1CIE9lraa9awMlB0Ph1l
+IpsK15ODzSfpqruRo6IihxyFKyzVnIC+s21rCwhK6PQF1z6afx/1JoZtb4UGOM+K
+SMBLhmdEPb44k4AxuMHlMSdJLrMEZyurjYvEGYQP5UcJm6xKZ8vXJGeVPvxQrxk5
+A5lZcCzgAsjBvCobXsKgVqErDeZOBb0/c1JVyRggPvXANXZkt2bKR5+zELEVjou6
+i7Nqjis/Xkh0B/mP2aE5HYzzrQCMuSGFGdy1ocOc5BaZQQWmDZHHIl9EVqgVwoLF
+vw8K3vq9Rr0iA6ai0VUJIP4LjfSZRDZ5F2C0G8bOrpPIroUhcew8W0zLehgJt30k
+U0TwUabuiH75an6SMb9nuuulWXyrdlfkPtVZzzBfDiMzdSZsj/QSuHJ/LO7vcvUE
+AFlyf3r2wDrVgJjOfutjQcquJAu6K3oB4l8mjGpg0h9yBQSHIvJuj+m6SsHYPGxQ
+73mcD13REtk4AS+M9z73FSkH8GcLTwsKmJsFwc6DZ8TM29q99UcN2ZV+GzmSxcvW
+IvfKgs+grzckDW0TRhRS
+=aPxK
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__29_Nov_2012_15_20_08_+1100_Fo1CjAd7Rr1WWsEf--
