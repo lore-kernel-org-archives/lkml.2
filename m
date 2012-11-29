@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754392Ab2K2UEZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 15:04:25 -0500
-Received: from smtp1-g21.free.fr ([212.27.42.1]:43395 "EHLO smtp1-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752836Ab2K2UEY convert rfc822-to-8bit (ORCPT
+	id S1753902Ab2K2UGQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 15:06:16 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:56511 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752497Ab2K2UGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 15:04:24 -0500
-From: Robert Jarzmik <robert.jarzmik@free.fr>
-To: Chao Xie <chao.xie@marvell.com>
-Cc: a.zummo@towertech.it, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org, haojian.zhuang@gmail.com,
-        linux-arm-kernel@lists.infradead.org, xiechao.mail@gmail.com
-Subject: Re: [PATCH 2/4] rtc: pxa: fix rtc caculation issue
-References: <1354155670-6267-1-git-send-email-chao.xie@marvell.com>
-	<1354155670-6267-2-git-send-email-chao.xie@marvell.com>
-X-URL: http://belgarath.falguerolles.org/
-Date: Thu, 29 Nov 2012 21:04:06 +0100
-In-Reply-To: <1354155670-6267-2-git-send-email-chao.xie@marvell.com> (Chao
-	Xie's message of "Wed, 28 Nov 2012 21:21:08 -0500")
-Message-ID: <87r4nc18i1.fsf@free.fr>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+	Thu, 29 Nov 2012 15:06:14 -0500
+Date: Thu, 29 Nov 2012 20:06:12 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Revert "__d_unalias() should refuse to move mountpoints"
+Message-ID: <20121129200612.GP4939@ZenIV.linux.org.uk>
+References: <50609C43.1070702@canonical.com>
+ <87txumrct6.fsf@xmission.com>
+ <50615268.1040805@canonical.com>
+ <8db34325-e8e4-4e24-85dd-c8951769e2b6@email.android.com>
+ <506173A6.2050705@canonical.com>
+ <87ipb2pemt.fsf@xmission.com>
+ <50618F96.1020204@canonical.com>
+ <87sja6nxvt.fsf@xmission.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87sja6nxvt.fsf@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chao Xie <chao.xie@marvell.com> writes:
+On Tue, Sep 25, 2012 at 04:29:58AM -0700, Eric W. Biederman wrote:
+> Maarten Lankhorst <maarten.lankhorst@canonical.com> writes:
+> 
+> >> Could you try the following patch?  This should report what directories
+> >> cannot be renamed because one of them is a mount point and it gives some
+> >> real insight into what is going on.
+> >
+> > ls /
+> > __d_unalias: /dev -> /dev
+> > __d_unalias: /proc -> /proc
+> > __d_unalias: /sys -> /sys
+> 
+> Ok.  That is what I thought was going on.  For some reason nfs is
+> attempting to recreate an existing dentry.
+> 
+> Does this fix the nfs problem for you?
+> 
+> Eric
+> 
+> diff --git a/fs/dcache.c b/fs/dcache.c
+> index 8086636..6390f0f 100644
+> --- a/fs/dcache.c
+> +++ b/fs/dcache.c
+> @@ -2404,6 +2404,9 @@ out_unalias:
+>  	if (likely(!d_mountpoint(alias))) {
+>  		__d_move(alias, dentry);
+>  		ret = alias;
+> +	} else if ((alias->d_parent == dentry->d_parent) &&
+> +		   !dentry_cmp(alias, dentry->d_name.name, dentry->d_name.len))
+> +		ret = alias;
+>  	}
 
-Hi Chao Xie,
+The interesting question is why the hell had it decided that preexisting
+dentry was not good enough for it?  Note that we have arrived to nfs_lookup()
+after we'd decided *not* to use the damn alias.  The trace posted upthread
+went __lookup_hash() -> lookup_real().  It means that lookup_dcache()
+has not produced this one.  And no, even if ->d_revalidate() decided it
+was no good, the logics in d_invalidate() would've said "busy" and we'd
+gone with that dentry anyway.  So it means that d_lookup() has not
+found it at all.
 
-First of all, could you please send patches from rtc-pxa to me also, as I'm
-maintaining that driver ?
-
-Second point, the original design of the driver relies on the special case of
-writing zeroes to WOM and DOM, as mentionned in PXA27x Developers Guide, chapter
-21.4.2.3.5 "Writing Alarm Registers with Invalid (Zero) Data", which states :
-> Day-Of-Week (DOW), or Week-Of-Month (WOM), Day of Month (DOM), Month or Year
-> fields—Zero is not valid for these fields. If zero is written into any of
-> these fields, it is ignored while generating the alarm.
-
-I'd like to know if your patch fixes something, or is an enhancement ?
-
-Cheers.
-
---
-Robert
-
-PS: I've not checked the patch yet, that's just a prelimary comment on the patch
-message.
+IOW, something out there is blindly unhashing mountpoint dentries; that's
+where the real root of the problem seems to be.  Could you slap
+WARN_ON(d_mountpoint(dentry)) in __d_drop() and see what it catches?
