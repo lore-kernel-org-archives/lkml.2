@@ -1,81 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754822Ab2K2O04 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 09:26:56 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:35233 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754703Ab2K2O0y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 09:26:54 -0500
-Date: Thu, 29 Nov 2012 06:26:46 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: lizefan@huawei.com, paul@paulmenage.org,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        peterz@infradead.org, mhocko@suse.cz, bsingharora@gmail.com,
-        hannes@cmpxchg.org, kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET cgroup/for-3.8] cpuset: decouple cpuset locking from
- cgroup core
-Message-ID: <20121129142646.GD24683@htj.dyndns.org>
-References: <1354138460-19286-1-git-send-email-tj@kernel.org>
- <50B743A1.4040405@parallels.com>
+	id S1754788Ab2K2O2V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 09:28:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39357 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754647Ab2K2O2U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 09:28:20 -0500
+Date: Thu, 29 Nov 2012 15:28:01 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 01/18] perf evsel: Set leader evsel's ->leader to itself
+Message-ID: <20121129142801.GH1096@krava.brq.redhat.com>
+References: <1354171126-14387-1-git-send-email-namhyung@kernel.org>
+ <1354171126-14387-3-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50B743A1.4040405@parallels.com>
+In-Reply-To: <1354171126-14387-3-git-send-email-namhyung@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Glauber.
-
-On Thu, Nov 29, 2012 at 03:14:41PM +0400, Glauber Costa wrote:
-> On 11/29/2012 01:34 AM, Tejun Heo wrote:
-> > This patchset decouples cpuset locking from cgroup_mutex.  After the
-> > patchset, cpuset uses cpuset-specific cpuset_mutex instead of
-> > cgroup_mutex.  This also removes the lockdep warning triggered during
-> > cpu offlining (see 0009).
-> > 
-> > Note that this leaves memcg as the only external user of cgroup_mutex.
-> > Michal, Kame, can you guys please convert memcg to use its own locking
-> > too?
+On Thu, Nov 29, 2012 at 03:38:29PM +0900, Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
 > 
-> Not totally. There is still one mention to the cgroup_lock():
+> Currently only non-leader members are set ->leader to the leader evsel
+> of the group and the leader has set NULL.  Thus it requires special
+> casing for leader evsels.  Set ->leader to itself will remove this.
 > 
-> static void cpuset_do_move_task(struct task_struct *tsk,
->                                 struct cgroup_scanner *scan)
-> {
->         struct cgroup *new_cgroup = scan->data;
-> 
->         cgroup_lock();
->         cgroup_attach_task(new_cgroup, tsk);
->         cgroup_unlock();
-> }
+> Suggested-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Stephane Eranian <eranian@google.com>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
 
-Which is outside all other locks and scheduled to be moved inside
-cgroup_attach_task().
-
-> And similar problem to this, is the one we have in memcg: We need to
-> somehow guarantee that no tasks will join the cgroup for some time -
-> this is why we hold the lock in memcg.
-> 
-> Just calling a function that internally calls the cgroup lock won't do
-> much, since it won't solve any dependencies - where it is called matters
-> little.
-
-The dependency is already solved in cpuset.
-
-> What I'll try to do, is to come with another specialized lock in cgroup
-> just for this case. So after taking the cgroup lock, we would also take
-> an extra lock if we are adding another entry - be it task or children -
-> to the cgroup.
-
-No, please don't do that.  Just don't invoke cgroup operation inside
-any subsystem lock.
-
-Thanks.
-
--- 
-tejun
+Acked-by: Jiri Olsa <jolsa@redhat.com>
