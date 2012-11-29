@@ -1,62 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753600Ab2K2Gpz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 01:45:55 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55387 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752645Ab2K2Gpv (ORCPT
+	id S1753876Ab2K2GqI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 01:46:08 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:54966 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752029Ab2K2GqF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 01:45:51 -0500
-Date: Thu, 29 Nov 2012 06:45:39 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mikulas Patocka <mpatocka@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Jeff Chua <jeff.chua.linux@gmail.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH] Introduce a method to catch mmap_region (was: Recent
- kernel "mount" slow)
-Message-ID: <20121129064539.GL4939@ZenIV.linux.org.uk>
-References: <CA+55aFyXS0nkDB95c3pcdg1ctrNnUGO8aDuRNhKSEg3JrOqWhA@mail.gmail.com>
- <Pine.LNX.4.64.1211281540200.5283@file.rdu.redhat.com>
- <CA+55aFwbnQsvpsOLS6w_G35d4w+Ezv5tOx2SE7dShJhX4iP_0Q@mail.gmail.com>
- <Pine.LNX.4.64.1211281904010.3957@file.rdu.redhat.com>
- <CA+55aFz1Wv2S+3XVmZE1cfiN0TZ4gNA8yWbNgufDLTMc8sKf2A@mail.gmail.com>
- <CA+55aFxYCxsRM==WMGihQGOA7f5u2X_8boJypsxS2v=WMnr70g@mail.gmail.com>
- <CA+55aFxrkX_=4yNQ1TwjqU9=pkRY=ud+Kw3YnADJMJxA-ZqQUg@mail.gmail.com>
- <20121129062519.GI4939@ZenIV.linux.org.uk>
- <20121129063043.GJ4939@ZenIV.linux.org.uk>
- <CA+55aFwL9-yOfCHskXyiCJ3YKB0MgaOJ5-XrvWBtH+URCowfcg@mail.gmail.com>
+	Thu, 29 Nov 2012 01:46:05 -0500
+Date: Thu, 29 Nov 2012 07:45:54 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bill Pemberton <wfp5p@virginia.edu>, Greg KH <greg@kroah.com>,
+        "Philip, Avinash" <avinashphilip@ti.com>
+Subject: Re: linux-next: manual merge of the pwm tree with the driver-core
+ tree
+Message-ID: <20121129064554.GB28582@avionic-0098.adnet.avionic-design.de>
+References: <20121129162514.98c3ba48441171c486742ef1@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="JYK4vJDZwFMowpUq"
 Content-Disposition: inline
-In-Reply-To: <CA+55aFwL9-yOfCHskXyiCJ3YKB0MgaOJ5-XrvWBtH+URCowfcg@mail.gmail.com>
+In-Reply-To: <20121129162514.98c3ba48441171c486742ef1@canb.auug.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:7KBB18WI4ecCbLtbr76xhQ5+qR2+lYgUFU/aLweDQdb
+ GPWkaHNNaOft/k5gEUPIgG/oeJ0bcmCGBMKO4jTW/CiLO4cfgJ
+ hhayaY6DrD52sncNWiVVGQI0ruVCopyGZekbTTjKmrIuvMrAY9
+ ANwwN+8wvRh6lWaRI8PVm4syM+al8DPRVorP/mizhcgH59pHxF
+ AzfU1jZF/Vl34+bl5hR0JtaGJDTHQw+k8QKTP+FJ4Ypx32tpxi
+ xRVbn1TtQlL6JCUJnwhrjjonrTnwPLb07M9PF036MPrTsJwvlW
+ RT9WjmA0QPrnjN+r60MRFTE/3GfUzcI0hA/q/Ng8RgBymJuNZf
+ FySnRic9kRR/ryHg1SAjwqWk1/LdYyk25Qdp4M66PdbigWR+PB
+ DVN3CYR6av/IwxJR9rjAazJF+XnMgkdPRg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 10:37:27PM -0800, Linus Torvalds wrote:
-> On Wed, Nov 28, 2012 at 10:30 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >
-> > Note that sync_blockdev() a few lines prior to that is good only if we
-> > have no other processes doing write(2) (or dirtying the mmapped pages,
-> > for that matter).  The window isn't too wide, but...
-> 
-> So with Mikulas' patches, the write actually would block (at write
-> level) due to the locking. The mmap'ed patches may be around and
-> flushed, but the logic to not allow currently *active* mmaps (with the
-> rather nasty random -EBUSY return value) should mean that there is no
-> race.
-> 
-> Or rather, there's a race, but it results in that EBUSY thing.
 
-Same as with fs mounted on it, or the sucker having been claimed for
-RAID array, etc.  Frankly, I'm more than slightly tempted to make
-bdev mmap() just claim the sodding device exclusive for as long as
-it's mmapped...
+--JYK4vJDZwFMowpUq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-In principle, I agree, but...  I still have nightmares from mmap/truncate
-races way back.  You are stepping into what used to be a really nasty
-minefield.  I'll look into that, but it's *definitely* not -rc8 fodder.
+On Thu, Nov 29, 2012 at 04:25:14PM +1100, Stephen Rothwell wrote:
+> Hi Thierry,
+>=20
+> Today's linux-next merge of the pwm tree got a conflict in
+> drivers/pwm/pwm-tiecap.c between commit 3e9fe83d278c ("pwm: remove use of
+> __devinit") from the driver-core tree and commit 333b08ee8c6e ("pwm:
+> tiecap: Add device-tree binding") from the pwm tree.
+>=20
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
+
+Looks good to me, thanks Stephen.
+
+Thierry
+
+>=20
+> --=20
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+>=20
+> diff --cc drivers/pwm/pwm-tiecap.c
+> index 87c091b,b4f9d47..0000000
+> --- a/drivers/pwm/pwm-tiecap.c
+> +++ b/drivers/pwm/pwm-tiecap.c
+> @@@ -184,7 -188,13 +188,13 @@@ static const struct pwm_ops ecap_pwm_op
+>   	.owner		=3D THIS_MODULE,
+>   };
+>  =20
+> + static const struct of_device_id ecap_of_match[] =3D {
+> + 	{ .compatible	=3D "ti,am33xx-ecap" },
+> + 	{},
+> + };
+> + MODULE_DEVICE_TABLE(of, ecap_of_match);
+> +=20
+>  -static int __devinit ecap_pwm_probe(struct platform_device *pdev)
+>  +static int ecap_pwm_probe(struct platform_device *pdev)
+>   {
+>   	int ret;
+>   	struct resource *r;
+> @@@ -231,11 -249,29 +249,29 @@@
+>   	}
+>  =20
+>   	pm_runtime_enable(&pdev->dev);
+> + 	pm_runtime_get_sync(&pdev->dev);
+> +=20
+> + 	status =3D pwmss_submodule_state_change(pdev->dev.parent,
+> + 			PWMSS_ECAPCLK_EN);
+> + 	if (!(status & PWMSS_ECAPCLK_EN_ACK)) {
+> + 		dev_err(&pdev->dev, "PWMSS config space clock enable failed\n");
+> + 		ret =3D -EINVAL;
+> + 		goto pwmss_clk_failure;
+> + 	}
+> +=20
+> + 	pm_runtime_put_sync(&pdev->dev);
+> +=20
+>   	platform_set_drvdata(pdev, pc);
+>   	return 0;
+> +=20
+> + pwmss_clk_failure:
+> + 	pm_runtime_put_sync(&pdev->dev);
+> + 	pm_runtime_disable(&pdev->dev);
+> + 	pwmchip_remove(&pc->chip);
+> + 	return ret;
+>   }
+>  =20
+>  -static int __devexit ecap_pwm_remove(struct platform_device *pdev)
+>  +static int ecap_pwm_remove(struct platform_device *pdev)
+>   {
+>   	struct ecap_pwm_chip *pc =3D platform_get_drvdata(pdev);
+>  =20
+> @@@ -246,10 -290,12 +290,12 @@@
+>  =20
+>   static struct platform_driver ecap_pwm_driver =3D {
+>   	.driver =3D {
+> - 		.name =3D "ecap",
+> + 		.name	=3D "ecap",
+> + 		.owner	=3D THIS_MODULE,
+> + 		.of_match_table =3D ecap_of_match,
+>   	},
+>   	.probe =3D ecap_pwm_probe,
+>  -	.remove =3D __devexit_p(ecap_pwm_remove),
+>  +	.remove =3D ecap_pwm_remove,
+>   };
+>  =20
+>   module_platform_driver(ecap_pwm_driver);
+
+
+
+--JYK4vJDZwFMowpUq
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQtwSiAAoJEN0jrNd/PrOhic4P/iVds2f9k8noQpehc+h3OhZ6
+LV9cOrS5UPzQxeuslOiTvWdZF6kNgBhFPATo1LKgD1N/W8y1g7d8s/sRGhCQwQ4Q
+9EaggDBk73tuG/njOPVDpvCSGTsCDrEoctjCngcfa+OMZSH67rPmXkzNczb+Adeh
+ftBQymaXhXaXYWtiyhd5EKma5IkDdw3wlmFCH+K7bzrHT3cRzCA+RRc/CL/+0DdS
+bRfAmasq+9GQC1BmNm5KGAI8Wq/47b3x+pEHJVMu7E4QXm6HDCElFlW+Qc1uSIe5
+M5M23/BXi/gpplj4R/7Kxi8+rFqVmM1Sq1CgiivoxtLN+ZaEwE3uvHIiyJvnjw1A
+zSFn43herEKr5Ylc2Lcqwdb/qTR3Wn6+ff8GNqSDyNiopWdhNawFXyqxZf60IfvF
+9Ucixbiq0y7Yo2JPGe0wtTGf0TikdyZ6ainRPLUe5BKevUKM2KrRwi78nxzG3Wek
+lH5IuXMF9G884BuLmCvQwHOhKuMqGEe3RciPZ/+6CyUvQbCTuA2JRoXHmej7wmLP
+zeEg6CRqSeGNv1d6er2D0PvDALGE2P9PtNNVlaBhunfQRMxWCyq2yb5FDUEx4ne8
+mtyShVmOKEiqHiGZJupeuNpY75vJKez6JwSgHGrVEpt/vlI3wG02LgK9mbdca0ZU
+wrfiv5rS7xX091GfarcV
+=AaTA
+-----END PGP SIGNATURE-----
+
+--JYK4vJDZwFMowpUq--
