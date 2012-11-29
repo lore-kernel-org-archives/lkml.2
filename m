@@ -1,97 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754181Ab2K2PGs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 10:06:48 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:51431 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750931Ab2K2PGq (ORCPT
+	id S1754256Ab2K2PJS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 10:09:18 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:59195 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750931Ab2K2PJR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 10:06:46 -0500
-Date: Thu, 29 Nov 2012 03:36:27 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Gilad.Ben-Yossef.gilad@benyossef.com
-Subject: Re: [PATCH] context_tracking: New context tracking susbsystem
-Message-ID: <20121129113627.GS2474@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1354041205-6989-1-git-send-email-fweisbec@gmail.com>
- <1354179992.2499.35.camel@ThinkPad-T5421.cn.ibm.com>
- <CAFTL4hysBreTXE-rXVQ5no+3B8hZ-3XMgap20PAP9u76-j-Tgg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFTL4hysBreTXE-rXVQ5no+3B8hZ-3XMgap20PAP9u76-j-Tgg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12112915-5406-0000-0000-000002863769
+	Thu, 29 Nov 2012 10:09:17 -0500
+Subject: Re: [PATCH 03/18] perf tools: Keep group information
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Namhyung Kim <namhyung.kim@lge.com>
+In-Reply-To: <20121129150220.GL1096@krava.brq.redhat.com>
+References: <1354171126-14387-1-git-send-email-namhyung@kernel.org>
+	 <1354171126-14387-5-git-send-email-namhyung@kernel.org>
+	 <20121129143303.GJ1096@krava.brq.redhat.com>
+	 <1354201134.1630.41.camel@leonhard>
+	 <20121129150220.GL1096@krava.brq.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 30 Nov 2012 00:09:11 +0900
+Message-ID: <1354201751.1630.45.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 11:30:19AM +0100, Frederic Weisbecker wrote:
-> 2012/11/29 Li Zhong <zhong@linux.vnet.ibm.com>:
-> > On Tue, 2012-11-27 at 19:33 +0100, Frederic Weisbecker wrote:
-> > [....]
-> >> -
-> >> -     WARN_ON_ONCE(!current->mm);
-> >> -
-> >> -     local_irq_save(flags);
-> >> -     rdtp = &__get_cpu_var(rcu_dynticks);
-> >> -     if (!rdtp->ignore_user_qs && !rdtp->in_user) {
-> >> -             rdtp->in_user = true;
-> >> -             rcu_eqs_enter(true);
-> >> -     }
-> >
-> > It seems to me that ignore_user_qs and in_user defined in struct
-> > rcu_dynticks are no longer needed?
-> >
-> > If so, then maybe we could remove them, code below:
-> >
-> > ==========
-> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > index e441b77..b8fae5d 100644
-> > --- a/kernel/rcutree.c
-> > +++ b/kernel/rcutree.c
-> > @@ -2719,9 +2719,6 @@ rcu_boot_init_percpu_data(int cpu, struct rcu_state *rsp)
-> >         rdp->dynticks = &per_cpu(rcu_dynticks, cpu);
-> >         WARN_ON_ONCE(rdp->dynticks->dynticks_nesting != DYNTICK_TASK_EXIT_IDLE);
-> >         WARN_ON_ONCE(atomic_read(&rdp->dynticks->dynticks) != 1);
-> > -#ifdef CONFIG_RCU_USER_QS
-> > -       WARN_ON_ONCE(rdp->dynticks->in_user);
-> > -#endif
-> >         rdp->cpu = cpu;
-> >         rdp->rsp = rsp;
-> >         rcu_boot_init_nocb_percpu_data(rdp);
-> > diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-> > index 4b69291..6f21f2e 100644
-> > --- a/kernel/rcutree.h
-> > +++ b/kernel/rcutree.h
-> > @@ -102,10 +102,6 @@ struct rcu_dynticks {
-> >                                     /* idle-period nonlazy_posted snapshot. */
-> >         int tick_nohz_enabled_snap; /* Previously seen value from sysfs. */
-> >  #endif /* #ifdef CONFIG_RCU_FAST_NO_HZ */
-> > -#ifdef CONFIG_RCU_USER_QS
-> > -       bool ignore_user_qs;        /* Treat userspace as extended QS or not */
-> > -       bool in_user;               /* Is the CPU in userland from RCU POV? */
-> > -#endif
-> >  };
-> >
-> >  /* RCU's kthread states for tracing. */
-> >
-> >
+2012-11-29 (목), 16:02 +0100, Jiri Olsa:
+> On Thu, Nov 29, 2012 at 11:58:54PM +0900, Namhyung Kim wrote:
+> > 2012-11-29 (목), 15:33 +0100, Jiri Olsa:
+> > > On Thu, Nov 29, 2012 at 03:38:31PM +0900, Namhyung Kim wrote:
+> > > > From: Namhyung Kim <namhyung.kim@lge.com>
+> > > 
+> > > SNIP
+> > > 
+> > > > --- a/tools/perf/util/evlist.h
+> > > > +++ b/tools/perf/util/evlist.h
+> > > > @@ -21,6 +21,7 @@ struct perf_evlist {
+> > > >  	struct list_head entries;
+> > > >  	struct hlist_head heads[PERF_EVLIST__HLIST_SIZE];
+> > > >  	int		 nr_entries;
+> > > > +	int		 nr_groups;
+> > > >  	int		 nr_fds;
+> > > >  	int		 nr_mmaps;
+> > > >  	int		 mmap_len;
+> > > > diff --git a/tools/perf/util/evsel.h b/tools/perf/util/evsel.h
+> > > > index 46c8004ca56b..887834ed0af1 100644
+> > > > --- a/tools/perf/util/evsel.h
+> > > > +++ b/tools/perf/util/evsel.h
+> > > > @@ -73,6 +73,7 @@ struct perf_evsel {
+> > > >  	bool 			needs_swap;
+> > > >  	/* parse modifier helper */
+> > > >  	int			exclude_GH;
+> > > > +	int			nr_members;
+> > > >  	struct perf_evsel	*leader;
+> > > >  	char			*group_name;
+> > > >  };
+> > > 
+> > > we could test both new fields in existing group tests
+> > > 
+> > > > @@ -230,4 +231,9 @@ static inline bool perf_evsel__is_group_leader(const struct perf_evsel *evsel)
+> > > >  {
+> > > >  	return evsel->leader == evsel;
+> > > 
+> > 
+> > You mean adding 'evsel->nr_members > 1' to this function?  For some
+> > reason, I'd like to treat non-group events as group leaders so I dropped
+> > that check from the function.
 > 
-> Good point. Paul, do you prefer to fold these changes into my patch or
-> do we add a new one? In any case Li we need your Signed-off-by tag.
+> nope, the change is ok, I meant updating automated tests in tests/parse-events.c
 
-A separate patch works fine here because there should be no complaints
-from compilers or tests about these.  Zhong, please do send with your
-Signed-off-by, and I will queue them.
+Ah, okay.  Always forgot to update the test. :(  Will add.
 
-							Thanx, Paul
+Thanks,
+Namhyung
+
+
 
