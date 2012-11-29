@@ -1,96 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751688Ab2K2GNy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 01:13:54 -0500
-Received: from shutemov.name ([204.155.152.216]:37573 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751392Ab2K2GNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 01:13:53 -0500
-Date: Thu, 29 Nov 2012 08:14:13 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Glauber Costa <glommer@parallels.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [RFC] Add mempressure cgroup
-Message-ID: <20121129061412.GA26034@shutemov.name>
-References: <20121128102908.GA15415@lizard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121128102908.GA15415@lizard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751866Ab2K2GOl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 01:14:41 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:57631 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751406Ab2K2GOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 01:14:40 -0500
+Message-ID: <1354169679.29762.28.camel@joe-AO722>
+Subject: [PATCH] MAINTAINERS: TTY - Add linux-serial mailing list
+From: Joe Perches <joe@perches.com>
+To: Greg KH <gregkh@linuxfoundation.org>, Jiri Slaby <jslaby@suse.cz>
+Cc: Chen Gang <gang.chen@asianux.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-serial@vger.kernel.org
+Date: Wed, 28 Nov 2012 22:14:39 -0800
+In-Reply-To: <50B6F967.3050000@asianux.com>
+References: <50B6E751.9000000@asianux.com> <20121129051335.GA4375@kroah.com>
+	 <50B6F967.3050000@asianux.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 02:29:08AM -0800, Anton Vorontsov wrote:
-> +static int mpc_pre_destroy(struct cgroup *cg)
-> +{
-> +	struct mpc_state *mpc = cg2mpc(cg);
-> +	int ret = 0;
-> +
-> +	mutex_lock(&mpc->lock);
-> +
-> +	if (mpc->eventfd)
-> +		ret = -EBUSY;
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ MAINTAINERS |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-cgroup_rmdir() will unregister all events for you. No need to handle it
-here.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index afc0b27..255dafb 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -7658,6 +7658,7 @@ K:	^Subject:.*(?i)trivial
+ TTY LAYER
+ M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+ M:	Jiri Slaby <jslaby@suse.cz>
++L:	linux-serial@vger.kernel.org
+ S:	Supported
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git
+ F:	drivers/tty/
 
-> +
-> +	mutex_unlock(&mpc->lock);
-> +
-> +	return ret;
-> +}
 
-> +static int mpc_register_level_event(struct cgroup *cg, struct cftype *cft,
-> +				    struct eventfd_ctx *eventfd,
-> +				    const char *args)
-> +{
-> +	struct mpc_state *mpc = cg2mpc(cg);
-> +	int i;
-> +	int ret;
-> +
-> +	mutex_lock(&mpc->lock);
-> +
-> +	/*
-> +	 * It's easy to implement multiple thresholds, but so far we don't
-> +	 * need it.
-> +	 */
-> +	if (mpc->eventfd) {
-> +		ret = -EBUSY;
-> +		goto out_unlock;
-> +	}
-
-One user which listen for one threashold per cgroup?
-I think it's wrong. It's essensial for API to serve multiple users.
-
-> +
-> +	ret = -EINVAL;
-> +	for (i = 0; i < VMPRESSURE_NUM_LEVELS; i++) {
-> +		if (strcmp(vmpressure_str_levels[i], args))
-> +			continue;
-> +		mpc->eventfd = eventfd;
-> +		mpc->thres = i;
-> +		ret = 0;
-> +		break;
-> +	}
-> +out_unlock:
-> +	mutex_unlock(&mpc->lock);
-> +
-> +	return ret;
-> +}
-
--- 
- Kirill A. Shutemov
