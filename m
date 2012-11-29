@@ -1,86 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946054Ab2K2Aet (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 19:34:49 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:52363 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422635Ab2K2Aes (ORCPT
+	id S932890Ab2K2Ag2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 19:36:28 -0500
+Received: from na01-by2-obe.ptr.protection.outlook.com ([207.46.100.23]:28944
+	"EHLO NA01-BY2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932789Ab2K2Ag1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 19:34:48 -0500
-Message-ID: <50B6ADA5.2030205@gmail.com>
-Date: Wed, 28 Nov 2012 18:34:45 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 28 Nov 2012 19:36:27 -0500
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.234.5;KIP:(null);UIP:(null);(null);H:SN2PRD0310HT004.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-SpamScore: -9
+X-BigFish: PS-9(zz98dI9371I542M1432I4015Izz1de0h1202h1d1ah1d2ahzz8275dhz31h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1155h)
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
+Subject: RE: drivres/hv
+Thread-Topic: drivres/hv
+Thread-Index: AQHNzbnkuR7QxMXjLE2jWFnID1DlIJf/3c9wgAAQ9gCAAAIZIA==
+Date: Thu, 29 Nov 2012 00:35:00 +0000
+Message-ID: <426367E2313C2449837CD2DE46E7EAF930E5E599@SN2PRD0310MB382.namprd03.prod.outlook.com>
+References: <1354133850-17540-1-git-send-email-kys@microsoft.com>
+ <20121128224313.GA14402@kroah.com>
+ <426367E2313C2449837CD2DE46E7EAF930E5E514@SN2PRD0310MB382.namprd03.prod.outlook.com>
+ <20121129000434.GA17233@kroah.com>
+In-Reply-To: <20121129000434.GA17233@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [98.110.61.144]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-CC: "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        =?ISO-8859-1?Q?=27Bruno_Pr=E9?= =?ISO-8859-1?Q?mont=27?= 
-	<bonbons@linux-vserver.org>,
-        support@supermicro.com, linux-kernel@vger.kernel.org,
-        "'Dan Williams'" <djbw@fb.com>
-Subject: Re: Supermicro X9SRL-F - channel enumeration error & ACPI/firmware
- bug question
-References: <097501cdca7b$7e303890$7a90a9b0$@lucidpixels.com> <20121126224245.248f0901@neptune.home> <CAErSpo7Y7m9o2u36ghiW1UDkwweSCG1ZGBx167Anfw4wXTYrCg@mail.gmail.com> <CAErSpo6vrHMTht1nQxiF6HD7qCvUE-NS2eAnQjgUXym1pnNkSA@mail.gmail.com> <004201cdcc3a$a7538310$f5fa8930$@lucidpixels.com> <CAErSpo7530xA6=1Ytj09dwyS1M_N_yAfk4xkr3f9Z_NBn6TJrA@mail.gmail.com> <00a501cdcca3$c2638510$472a8f30$@lucidpixels.com> <00b501cdcca6$03f88af0$0be9a0d0$@lucidpixels.com>
-In-Reply-To: <00b501cdcca6$03f88af0$0be9a0d0$@lucidpixels.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-OrganizationHeadersPreserved: SN2PRD0310HT004.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%131.107.125.5$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC101.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC101.redmond.corp.microsoft.com
+X-Forefront-Antispam-Report: CIP:131.107.125.37;CTRY:US;IPV:CAL;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(377454001)(24454001)(51704002)(164054002)(13464001)(56776001)(47736001)(33656001)(31966008)(51856001)(47976001)(49866001)(54356001)(50986001)(55846006)(50466001)(5343655001)(74662001)(54316002)(6806001)(74502001)(53806001)(56816002)(47776002)(4396001)(16676001)(76482001)(46406002)(23726001)(44976002)(47446002)(46102001);DIR:OUT;SFP:;LANG:en;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-Forefront-PRVS: 0680FADD48
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2012 07:49 AM, Justin Piszcz wrote:
->
->> It looks like maybe you don't have CONFIG_PCI_MMCONFIG turned on?
->
-> ===> FOR I/OAT DMA
-> Latest status, it _appears_ its working on the X9SRL-F now, thank you!
->
-> 1) Supermicro X9SRL-F (GOOD)
-> [    0.738510] ioatdma: Intel(R) QuickData Technology Driver 4.00
-> [    0.738719] ioatdma 0000:00:04.0: irq 75 for MSI/MSI-X
-> [    0.739088] ioatdma 0000:00:04.1: irq 76 for MSI/MSI-X
-> [    0.739408] ioatdma 0000:00:04.2: irq 77 for MSI/MSI-X
-> [    0.739739] ioatdma 0000:00:04.3: irq 78 for MSI/MSI-X
-> [    0.740040] ioatdma 0000:00:04.4: irq 79 for MSI/MSI-X
-> [    0.740342] ioatdma 0000:00:04.5: irq 80 for MSI/MSI-X
-> [    0.740670] ioatdma 0000:00:04.6: irq 81 for MSI/MSI-X
-> [    0.740971] ioatdma 0000:00:04.7: irq 82 for MSI/MSI-X
->
-> It is _not_ working on the:
->
-> 2) Supermicro X8DTH-F (the boot drive in this system is running off a PCI-e
-> card, could the IRQ for the I/O controller be getting re-mapped and fail?)--
-> worse case I can move the SSD from the 6.0gbpa SATA card to the motherboard
-> and see if that works, but that kind of defeats the purpose of a 6.0gbps
-> SATA SSD.
->
-> (Fails to talk to the SSD)
-> http://home.comcast.net/~jpiszcz/20121127/photo1-resize.jpg
->
-> (then, a few moments later: Kernel panic)
-> http://home.comcast.net/~jpiszcz/20121127/photo2-resize.jpg
->
-> Would be curious if anyone had any suggestions besides removing the
-> controller card?
 
-What does lspci -vv show on that controller? Not sure what actual 
-chipset that controller is, but there's a known issue with some Marvell 
-6Gbps SATA controllers with DMAR enabled - it seems the device issues 
-memory read/write requests from the wrong PCI function ID and the IOMMU 
-rightly denies access as the function listed in the requests doesn't 
-have any mapping to that memory. I don't think there's presently a 
-workaround other than disabling DMAR. We could (and likely should) be 
-detecting that device and adding some kind of quirk for it.
 
->
-> --
->
->
-> ==> Further issues with the X9SRL-F -- does this board support ASPM or is
-> this a Linux/ASPM implementation issue?
-> [    0.632170]  pci0000:ff: ACPI _OSC support notification failed, disabling
-> PCIe ASPM
-> [    0.632239]  pci0000:ff: Unable to request _OSC control (_OSC support
-> mask: 0x08)
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Wednesday, November 28, 2012 7:05 PM
+> To: KY Srinivasan
+> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org
+> Subject: Re: drivres/hv
+> 
+> On Wed, Nov 28, 2012 at 11:32:52PM +0000, KY Srinivasan wrote:
+> > > > I recently discovered that the Hyper-V host allocates mmio
+> > > > memory for some synthetic devices like the virtual framebuffer.
+> > > > We are currently in the process of implementing this virtual
+> > > > framebuffer device. As part of the offer message from the host
+> > > > we are given the mmio region size that needs to be allocatted to
+> > > > the device. I am told in the current implementation of the firmware,
+> > > > this mmio resource shows up in the PCI space. What is the best way to
+> > > > allocate this mmio space for this driver.
+> > >
+> > > I don't understand, does the guest os think this really is mmio memory
+> > > and the host just set up up?  Or is the memory being used to pass data
+> > > back and forth?  Or something else?
+> >
+> > From what I understand, the host is allocating this memory and presenting
+> > this to the guest. This memory is to be used for framebuffer. The guest is
+> > expected to setup appropriate mappings to this region and use that as the
+> > framebuffer.
+> 
+> What type of framebuffer?  Linux supports a ton of different ones, have
+> you looked at drivers/video/ to see if one of the ones there will "just
+> work" with what hyperv is passing to the guest?
 
-What's the full dmesg from this machine (or is it already posted somewhere)?
+We are writing a diver for this device. The existing Linux drivers can (and do)
+work for the emulated VGA device. What we are implementing is a synthetic
+framebuffer driver that will communicate over the vmbus to the host.
+ 
+> 
+> If not, you'll have to write a new driver for this, look at the examples
+> of other framebuffer drivers in that directory for examples.  Also, I
+> bet the code there will answer your memory questions.
+> 
+> > > And what do you mean "firmware"?  That usually means UEFI/BIOS to me,
+> > > not a hyperv host.
+> >
+> > Hyper-V host presents the firmware to the guest (Hyper-V like KVM supports
+> > full virtualization with selective para-virtualization - PV drivers). As part of the
+> > BIOS presented to the guest this mmio region is allocated.
+> >
+> > >
+> > > And finally, what does the guest os see as far as the PCI resource space
+> > > shows it?  Shouldn't it just think it is a normal PCI device and access
+> > > it properly that way?
+> >
+> > This is the crux of the problem. Vmbus and other vmbus based devices are not
+> > PCI  devices. I have implemented vmbus as an ACPI driver since vmbus is an
+> ACPI
+> > enumerated device. I have the size information of the mmio region that is to be
+> > allocated to the framebuffer device. I am looking at a way to allocate this mmio
+> > region.
+> 
+> Do you have any "hints" as to where it is, if it even is present, or
+> anything else?  If so, use them and create a new framebuffer device with
+> that information.
+
+All I know is that it is present and its size is known. If I have a way of knowing
+what range of mmio memory is unclaimed; I could grab that perhaps using
+the request_mem_region() call, I know the size that is reserved for this device.
+So, is there a way to query the system for the first unclaimed address in the mmio
+range.
+
+Thanks,
+
+K. Y
+> 
+
+
