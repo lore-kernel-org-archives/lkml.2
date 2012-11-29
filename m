@@ -1,65 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753231Ab2K2Gol (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 01:44:41 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50052 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752451Ab2K2GjH (ORCPT
+	id S1753386Ab2K2Gps (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 01:45:48 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:6713 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752645Ab2K2Gpq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 01:39:07 -0500
-X-AuditID: 9c93016f-b7b86ae000003a75-be-50b703095a90
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Namhyung Kim <namhyung.kim@lge.com>
-Subject: [PATCH 06/18] perf hists: Link hist entry pairs to leader
-Date: Thu, 29 Nov 2012 15:38:34 +0900
-Message-Id: <1354171126-14387-8-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1354171126-14387-1-git-send-email-namhyung@kernel.org>
-References: <1354171126-14387-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 29 Nov 2012 01:45:46 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 28 Nov 2012 22:45:09 -0800
+Date: Thu, 29 Nov 2012 08:45:15 +0200
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
+        "joro@8bytes.org" <joro@8bytes.org>,
+        "James.Bottomley@HansenPartnership.com" 
+	<James.Bottomley@HansenPartnership.com>,
+        "arnd@arndb.de" <arnd@arndb.de>, Krishna Reddy <vdumpa@nvidia.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "minchan@kernel.org" <minchan@kernel.org>,
+        "chunsang.jeong@linaro.org" <chunsang.jeong@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "subashrp@gmail.com" <subashrp@gmail.com>,
+        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
+        "pullip.cho@samsung.com" <pullip.cho@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/1] ARM: tegra: bus_notifier registers IOMMU
+ devices(was: How to specify IOMMU'able devices in DT)
+Message-ID: <20121129084515.8a818bf4793e0d4bb3305c36@nvidia.com>
+In-Reply-To: <50B652F2.5050407@wwwdotorg.org>
+References: <20120924124452.41070ed2ee9944d930cffffc@nvidia.com>
+	<054901cd9a45$db1a7ea0$914f7be0$%szyprowski@samsung.com>
+	<20120924.145014.1452596970914043018.hdoyu@nvidia.com>
+	<20121128.154832.539666140149950229.hdoyu@nvidia.com>
+	<50B652F2.5050407@wwwdotorg.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+On Wed, 28 Nov 2012 19:07:46 +0100
+Stephen Warren <swarren@wwwdotorg.org> wrote:
+......
+> >>> Please read more about bus notifiers. IMHO a good example is provided in 
+> >>> the following thread:
+> >>> http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg12238.html
+> >>
+> >> This bus notifier seems enough flexible to afford the variation of
+> >> IOMMU map info, like Tegra ASID, which could be platform-specific, and
+> >> the other could be common too. There's already iommu_bus_notifier
+> >> too. I'll try to implement something base on this.
+> > 
+> > Experimentally implemented as below. With the followig patch, each
+> > device could specify its own map in DT, and automatically the device
+> > would be attached to the map.
+> > 
+> > There is a case that some devices share a map. This patch doesn't
+> > suppor such case yet.
+> > 
+> > From 8cb75bb6f3a8535a077e0e85265f87c1f1289bfd Mon Sep 17 00:00:00 2001
+> > From: Hiroshi Doyu <hdoyu@nvidia.com>
+> > Date: Wed, 28 Nov 2012 14:47:04 +0200
+> > Subject: [PATCH 1/1] ARM: tegra: bus_notifier registers IOMMU devices
+> > 
+> > platform_bus notifier registers IOMMU devices if dma-window is
+> > specified.
+> > 
+> > Its format is:
+> >   dma-window = <"start" "size">;
+> > ex)
+> >   dma-window = <0x12345000 0x8000>;
+> > 
+> > Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+> > ---
+> >  arch/arm/mach-tegra/board-dt-tegra30.c |   40 ++++++++++++++++++++++++++++++++
+> 
+> Shouldn't this patch be to the IOMMU driver itself, not the core Tegra code?
 
-Current hists__match/link() link a leader to its pair, so if multiple
-pairs were linked, the leader will lose pointer to previous pairs
-since it was overwritten.  Fix it by making leader the list head.
-
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/hist.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index d2bc05cd1708..82df1b26f0d4 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -785,7 +785,7 @@ void hists__match(struct hists *leader, struct hists *other)
- 		pair = hists__find_entry(other, pos);
- 
- 		if (pair)
--			hist_entry__add_pair(pos, pair);
-+			hist_entry__add_pair(pair, pos);
- 	}
- }
- 
-@@ -806,7 +806,7 @@ int hists__link(struct hists *leader, struct hists *other)
- 			pair = hists__add_dummy_entry(leader, pos);
- 			if (pair == NULL)
- 				return -1;
--			hist_entry__add_pair(pair, pos);
-+			hist_entry__add_pair(pos, pair);
- 		}
- 	}
- 
--- 
-1.7.11.7
-
+That could be possible and cleaner. I'll check if it works.
