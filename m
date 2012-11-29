@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886Ab2K2UKH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 15:10:07 -0500
-Received: from mga01.intel.com ([192.55.52.88]:55593 "EHLO mga01.intel.com"
+	id S1754366Ab2K2UKo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 15:10:44 -0500
+Received: from smtp1-g21.free.fr ([212.27.42.1]:39789 "EHLO smtp1-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752609Ab2K2UKF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 15:10:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,186,1355126400"; 
-   d="scan'208";a="256800267"
-From: Andi Kleen <andi@firstfloor.org>
-To: Jim Kukunas <james.t.kukunas@linux.intel.com>
-Cc: Linux Raid <linux-raid@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Neil Brown <neilb@suse.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] lib/raid6: Add AVX2 optimized recovery functions
-References: <1352411264-5156-1-git-send-email-james.t.kukunas@linux.intel.com>
-Date: Thu, 29 Nov 2012 12:09:37 -0800
-In-Reply-To: <1352411264-5156-1-git-send-email-james.t.kukunas@linux.intel.com>
-	(Jim Kukunas's message of "Thu, 8 Nov 2012 13:47:44 -0800")
-Message-ID: <m2obigf9xa.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1753467Ab2K2UKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 15:10:43 -0500
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: Chao Xie <chao.xie@marvell.com>
+Cc: a.zummo@towertech.it, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org, haojian.zhuang@gmail.com,
+        linux-arm-kernel@lists.infradead.org, xiechao.mail@gmail.com
+Subject: Re: [PATCH 4/4] rtc: pxa: request rtc irqs when probe/remove the device
+References: <1354155670-6267-1-git-send-email-chao.xie@marvell.com>
+	<1354155670-6267-4-git-send-email-chao.xie@marvell.com>
+X-URL: http://belgarath.falguerolles.org/
+Date: Thu, 29 Nov 2012 21:10:26 +0100
+In-Reply-To: <1354155670-6267-4-git-send-email-chao.xie@marvell.com> (Chao
+	Xie's message of "Wed, 28 Nov 2012 21:21:10 -0500")
+Message-ID: <87mwy0187h.fsf@free.fr>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jim Kukunas <james.t.kukunas@linux.intel.com> writes:
-> +
-> +	/* ymm0 = x0f[16] */
-> +	asm volatile("vpbroadcastb %0, %%ymm7" : : "m" (x0f));
-> +
-> +	while (bytes) {
-> +#ifdef CONFIG_X86_64
-> +		asm volatile("vmovdqa %0, %%ymm1" : : "m" (q[0]));
-> +		asm volatile("vmovdqa %0, %%ymm9" : : "m" (q[32]));
-> +		asm volatile("vmovdqa %0, %%ymm0" : : "m" (p[0]));
-> +		asm volatile("vmovdqa %0, %%ymm8" : : "m" (p[32]));
+Chao Xie <chao.xie@marvell.com> writes:
 
-This is somewhat dangerous to assume registers do not get changed
-between assembler statements or assembler statements do not get
-reordered. Better always put such values into explicit variables or
-merge them into a single asm statement.
+> The original pxa_rtc_open/pxa_rtc_release will be called
+> when the /dev/rtc0 is opened or closed.
+> In fact, these two functions will register/unregister the irqs.
+> User application will use /dev/rtc0 to read the rtc time or set
+> the alarm. The rtc should still run indepent of open/close the
+> rtc device.
+> So only register the irqs when probe the device,
+> and disable clock and unregister the irqs when remove the device.
+No, as Russell I think that's not correct.
 
-asm volatile is also not enough to prevent reordering. If anything
-you would need a memory clobber.
+This is not how RTC API should be used. And on top of RTC API considerations,
+consider this : today, rtc-pxa and rtc-sa1100 _can_ coexist on a PXA platform,
+and be used alternatively (I know, it's a bit borderline because of IO space,
+but anyway it does work). How will that be possible with your patch ?
 
--Andi
+Cheers.
 
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+--
+Robert
