@@ -1,70 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932429Ab2K2DZl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 22:25:41 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:52986 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932294Ab2K2DZk (ORCPT
+	id S932469Ab2K2D2O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 22:28:14 -0500
+Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:35834 "EHLO
+	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932294Ab2K2D2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 22:25:40 -0500
-Date: Thu, 29 Nov 2012 14:25:30 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Olaf Hering <olaf@aepfle.de>
-Subject: linux-next: build warning after merge of the xen-two tree
-Message-Id: <20121129142530.37630048cd37048f884b17e9@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__29_Nov_2012_14_25_30_+1100_BcMX8+GlK5FDxGEQ"
+	Wed, 28 Nov 2012 22:28:12 -0500
+From: Qing Xu <qingx@marvell.com>
+To: qingx@marvell.com, sameo@linux.intel.com, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, haojian.zhuang@gmail.com, cxie4@marvell.com,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH v3 1/7] mfd: max8925: add irqdomain for dt
+Date: Thu, 29 Nov 2012 11:29:16 +0800
+Message-Id: <1354159756-562-1-git-send-email-qingx@marvell.com>
+X-Mailer: git-send-email 1.7.0.4
+X-OriginalArrivalTime: 29 Nov 2012 03:27:48.0765 (UTC) FILETIME=[8180CCD0:01CDCDE1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__29_Nov_2012_14_25_30_+1100_BcMX8+GlK5FDxGEQ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Qing Xu <qingx@marvell.com>
 
-Hi Konrad,
+Add irqdomains for max8925's main irq, wrap irq register operations
+into irqdomain's map func. it is necessary for dt support.
 
-After merging the xen-two tree, today's linux-next build (x86_64
-allmodconfig) produced this warning:
+Also, add dt support for max8925 driver.
 
-arch/x86/xen/enlighten.c: In function 'init_hvm_pv_info':
-arch/x86/xen/enlighten.c:1617:16: warning: unused variable 'ebx' [-Wunused-=
-variable]
-arch/x86/xen/enlighten.c:1617:11: warning: unused variable 'eax' [-Wunused-=
-variable]
+Signed-off-by: Qing Xu <qingx@marvell.com>
+---
+ drivers/mfd/max8925-core.c  |   69 ++++++++++++++++++++++++++-----------------
+ drivers/mfd/max8925-i2c.c   |   37 +++++++++++++++++++++--
+ include/linux/mfd/max8925.h |    3 +-
+ 3 files changed, 78 insertions(+), 31 deletions(-)
 
-Introduced by commit 9d02b43dee0d ("xen PVonHVM: use E820_Reserved area
-for shared_info").
+diff --git a/drivers/mfd/max8925-core.c b/drivers/mfd/max8925-core.c
+index 1e0ab0a..d0ebdbf 100644
+--- a/drivers/mfd/max8925-core.c
++++ b/drivers/mfd/max8925-core.c
+@@ -14,10 +14,13 @@
+ #include <linux/i2c.h>
+ #include <linux/irq.h>
+ #include <linux/interrupt.h>
++#include <linux/irqdomain.h>
+ #include <linux/platform_device.h>
+ #include <linux/regulator/machine.h>
+ #include <linux/mfd/core.h>
+ #include <linux/mfd/max8925.h>
++#include <linux/of.h>
++#include <linux/of_platform.h>
+ 
+ static struct resource bk_resources[] __devinitdata = {
+ 	{ 0x84, 0x84, "mode control", IORESOURCE_REG, },
+@@ -639,17 +642,33 @@ static struct irq_chip max8925_irq_chip = {
+ 	.irq_disable	= max8925_irq_disable,
+ };
+ 
++static int max8925_irq_domain_map(struct irq_domain *d, unsigned int virq,
++				 irq_hw_number_t hw)
++{
++	irq_set_chip_data(virq, d->host_data);
++	irq_set_chip_and_handler(virq, &max8925_irq_chip, handle_edge_irq);
++	irq_set_nested_thread(virq, 1);
++#ifdef CONFIG_ARM
++	set_irq_flags(virq, IRQF_VALID);
++#else
++	irq_set_noprobe(virq);
++#endif
++	return 0;
++}
++
++static struct irq_domain_ops max8925_irq_domain_ops = {
++	.map	= max8925_irq_domain_map,
++	.xlate	= irq_domain_xlate_onetwocell,
++};
++
++
+ static int max8925_irq_init(struct max8925_chip *chip, int irq,
+ 			    struct max8925_platform_data *pdata)
+ {
+ 	unsigned long flags = IRQF_TRIGGER_FALLING | IRQF_ONESHOT;
+-	int i, ret;
+-	int __irq;
++	int ret;
++	struct device_node *node = chip->dev->of_node;
+ 
+-	if (!pdata || !pdata->irq_base) {
+-		dev_warn(chip->dev, "No interrupt support on IRQ base\n");
+-		return -EINVAL;
+-	}
+ 	/* clear all interrupts */
+ 	max8925_reg_read(chip->i2c, MAX8925_CHG_IRQ1);
+ 	max8925_reg_read(chip->i2c, MAX8925_CHG_IRQ2);
+@@ -667,35 +686,32 @@ static int max8925_irq_init(struct max8925_chip *chip, int irq,
+ 	max8925_reg_write(chip->rtc, MAX8925_RTC_IRQ_MASK, 0xff);
+ 
+ 	mutex_init(&chip->irq_lock);
+-	chip->core_irq = irq;
+-	chip->irq_base = pdata->irq_base;
+ 
+-	/* register with genirq */
+-	for (i = 0; i < ARRAY_SIZE(max8925_irqs); i++) {
+-		__irq = i + chip->irq_base;
+-		irq_set_chip_data(__irq, chip);
+-		irq_set_chip_and_handler(__irq, &max8925_irq_chip,
+-					 handle_edge_irq);
+-		irq_set_nested_thread(__irq, 1);
+-#ifdef CONFIG_ARM
+-		set_irq_flags(__irq, IRQF_VALID);
+-#else
+-		irq_set_noprobe(__irq);
+-#endif
+-	}
+-	if (!irq) {
+-		dev_warn(chip->dev, "No interrupt support on core IRQ\n");
+-		goto tsc_irq;
++	chip->irq_base = irq_alloc_descs(-1, 0, MAX8925_NR_IRQS, 0);
++	if (chip->irq_base < 0) {
++		dev_err(chip->dev, "Failed to allocate interrupts, ret:%d\n",
++			chip->irq_base);
++		return -EBUSY;
+ 	}
+ 
++	irq_domain_add_legacy(node, MAX8925_NR_IRQS, chip->irq_base, 0,
++			      &max8925_irq_domain_ops, chip);
++
++	/* request irq handler for pmic main irq*/
++
++	chip->core_irq = irq;
++	if (!chip->core_irq)
++		return -EBUSY;
+ 	ret = request_threaded_irq(irq, NULL, max8925_irq, flags,
+ 				   "max8925", chip);
+ 	if (ret) {
+ 		dev_err(chip->dev, "Failed to request core IRQ: %d\n", ret);
+ 		chip->core_irq = 0;
++		return -EBUSY;
+ 	}
+ 
+-tsc_irq:
++	/* request irq handler for pmic tsc irq*/
++
+ 	/* mask TSC interrupt */
+ 	max8925_reg_write(chip->adc, MAX8925_TSC_IRQ_MASK, 0x0f);
+ 
+@@ -704,7 +720,6 @@ tsc_irq:
+ 		return 0;
+ 	}
+ 	chip->tsc_irq = pdata->tsc_irq;
+-
+ 	ret = request_threaded_irq(chip->tsc_irq, NULL, max8925_tsc_irq,
+ 				   flags, "max8925-tsc", chip);
+ 	if (ret) {
+@@ -876,7 +891,7 @@ int __devinit max8925_device_init(struct max8925_chip *chip,
+ 	if (pdata && pdata->power) {
+ 		ret = mfd_add_devices(chip->dev, 0, &power_devs[0],
+ 					ARRAY_SIZE(power_devs),
+-				      &power_supply_resources[0], 0, NULL);
++					&power_supply_resources[0], 0, NULL);
+ 		if (ret < 0) {
+ 			dev_err(chip->dev, "Failed to add power supply "
+ 				"subdev\n");
+diff --git a/drivers/mfd/max8925-i2c.c b/drivers/mfd/max8925-i2c.c
+index d9e4b36..46df784 100644
+--- a/drivers/mfd/max8925-i2c.c
++++ b/drivers/mfd/max8925-i2c.c
+@@ -135,13 +135,38 @@ static const struct i2c_device_id max8925_id_table[] = {
+ };
+ MODULE_DEVICE_TABLE(i2c, max8925_id_table);
+ 
++static int __devinit max8925_dt_init(struct device_node *np,
++				    struct device *dev,
++				    struct max8925_platform_data *pdata)
++{
++	int ret;
++
++	ret = of_property_read_u32(np, "tsc-irq", &pdata->tsc_irq);
++	if (ret) {
++		dev_err(dev, "Not found \"tsc-irq\" property\n");
++		return -EINVAL;
++	}
++	return 0;
++}
++
+ static int __devinit max8925_probe(struct i2c_client *client,
+ 				   const struct i2c_device_id *id)
+ {
+ 	struct max8925_platform_data *pdata = client->dev.platform_data;
+ 	static struct max8925_chip *chip;
+-
+-	if (!pdata) {
++	struct device_node *node = client->dev.of_node;
++
++	if (node && !pdata) {
++		/* parse DT to get platform data */
++		pdata = devm_kzalloc(&client->dev,
++				     sizeof(struct max8925_platform_data),
++				     GFP_KERNEL);
++		if (!pdata)
++			return -ENOMEM;
++
++		if (max8925_dt_init(node, &client->dev, pdata))
++			return -EINVAL;
++	} else if (!pdata) {
+ 		pr_info("%s: platform data is missing\n", __func__);
+ 		return -EINVAL;
+ 	}
+@@ -203,11 +228,18 @@ static int max8925_resume(struct device *dev)
+ 
+ static SIMPLE_DEV_PM_OPS(max8925_pm_ops, max8925_suspend, max8925_resume);
+ 
++static const struct of_device_id max8925_dt_ids[] = {
++	{ .compatible = "maxim,max8925", },
++	{},
++};
++MODULE_DEVICE_TABLE(of, max8925_dt_ids);
++
+ static struct i2c_driver max8925_driver = {
+ 	.driver	= {
+ 		.name	= "max8925",
+ 		.owner	= THIS_MODULE,
+ 		.pm     = &max8925_pm_ops,
++		.of_match_table = of_match_ptr(max8925_dt_ids),
+ 	},
+ 	.probe		= max8925_probe,
+ 	.remove		= __devexit_p(max8925_remove),
+@@ -217,7 +249,6 @@ static struct i2c_driver max8925_driver = {
+ static int __init max8925_i2c_init(void)
+ {
+ 	int ret;
+-
+ 	ret = i2c_add_driver(&max8925_driver);
+ 	if (ret != 0)
+ 		pr_err("Failed to register MAX8925 I2C driver: %d\n", ret);
+diff --git a/include/linux/mfd/max8925.h b/include/linux/mfd/max8925.h
+index 74d8e29..ce8502e 100644
+--- a/include/linux/mfd/max8925.h
++++ b/include/linux/mfd/max8925.h
+@@ -190,6 +190,8 @@ enum {
+ 	MAX8925_NR_IRQS,
+ };
+ 
++
++
+ struct max8925_chip {
+ 	struct device		*dev;
+ 	struct i2c_client	*i2c;
+@@ -201,7 +203,6 @@ struct max8925_chip {
+ 	int			irq_base;
+ 	int			core_irq;
+ 	int			tsc_irq;
+-
+ 	unsigned int            wakeup_flag;
+ };
+ 
+-- 
+1.7.0.4
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__29_Nov_2012_14_25_30_+1100_BcMX8+GlK5FDxGEQ
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQttWqAAoJEECxmPOUX5FEgsgP/2fwgDauJfqjC6FrQGWbNFIW
-gM4KvnMNlSnJ6W4AHG8bbdEDO6qNTJVDFIBJaZY4AwIvt9gk3XAUpo/Dwhndtqcz
-It+CFCy4ZKlsJErSXMd6f3ttXeK5dtpr3+d1vzE7ao2Un4F+xm0wJwoHv98M1oMs
-vyfLhaG4YdplVHVVL8LGyt3Pz1+1G/k/Zc7RXVVZjCzQoSUzhBngFE3pmAQu6E6Z
-vfPWiMubdy3yFKuU3BN6svFvVC0T/v9Y+C0TqQqdi9kpsj4J3AEKoJMF6PoReL2d
-/0hsPegmkLWo96vmI9fSaKNpYNQ6xUOzUI4h3jh+W+NJqgm3Xx5V4K/l+2wjAHF+
-87+GQySctPmg5DGtONmDJKxS2jDCrNZdXrNWOSVrTwBR8p9sLvoVV6WOLF5Pcocn
-er9tIhfBejIAdZMzR7kNIiu7VI4IwsDTh7LEcF6gik8Dy/Gosd/f2NJ3n5PH8PLj
-oIw9o9Yy9VaQRROxjUxb7OXs6ShWQeHG2VBo0g4pQlysIuDgLnDeyRyHVcEmTA0U
-/GKji5m+n8qJbOCF2dGiZG9Bw8ERm7SMwFgNdY/jsX3eE6HF5SiqqrSMrCogk2by
-eTDiyd58JBEiyIYaHdYoL+961/UQLAm22ks+kZZvGi7jQqZb+YmTHMsVm8xIogfG
-MreTi0ydgN/u7N/bqeX/
-=Z6b9
------END PGP SIGNATURE-----
-
---Signature=_Thu__29_Nov_2012_14_25_30_+1100_BcMX8+GlK5FDxGEQ--
