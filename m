@@ -1,97 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949Ab2K2KN2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 05:13:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15866 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753644Ab2K2KNX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 05:13:23 -0500
-From: Jason Wang <jasowang@redhat.com>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: rusty@rustcorp.com.au, mst@redhat.com, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [net-next RFC] pktgen: don't wait for the device who doesn't free skb immediately after sent
-Date: Thu, 29 Nov 2012 18:13:13 +0800
-Message-ID: <1570859.IePPxHAEX1@jason-thinkpad-t430s>
-User-Agent: KMail/4.9.2 (Linux/3.7.0-rc6+; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <20121128085305.2b0503ce@nehalam.linuxnetplumber.net>
-References: <1353916612-6357-1-git-send-email-jasowang@redhat.com> <50B5B3D4.1070106@redhat.com> <20121128085305.2b0503ce@nehalam.linuxnetplumber.net>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1753524Ab2K2KPx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 05:15:53 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61397 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752188Ab2K2KPu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 05:15:50 -0500
+Subject: Re: Interrupt handling - Linux
+From: anish kumar <anish198519851985@gmail.com>
+To: manty kuma <mantykuma@gmail.com>
+Cc: kernelnewbies@kernelnewbies.org,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>, Anmar Oueja <anmar.oueja@linaro.org>
+In-Reply-To: <CAB6A5-AN7boq57w7z+x6bhO3mYsbHzyD6cAkq1BXN5a+B=2XyQ@mail.gmail.com>
+References: <CAB6A5-AN7boq57w7z+x6bhO3mYsbHzyD6cAkq1BXN5a+B=2XyQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 29 Nov 2012 02:15:44 -0800
+Message-ID: <1354184144.1600.76.camel@anish-Inspiron-N5050>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 28, 2012 08:53:05 AM Stephen Hemminger wrote:
-> On Wed, 28 Nov 2012 14:48:52 +0800
-> 
-> Jason Wang <jasowang@redhat.com> wrote:
-> > On 11/28/2012 12:49 AM, Stephen Hemminger wrote:
-> > > On Tue, 27 Nov 2012 14:45:13 +0800
-> > > 
-> > > Jason Wang <jasowang@redhat.com> wrote:
-> > >> On 11/27/2012 01:37 AM, Stephen Hemminger wrote:
-> > >>> On Mon, 26 Nov 2012 15:56:52 +0800
-> > >>> 
-> > >>> Jason Wang <jasowang@redhat.com> wrote:
-> > >>>> Some deivces do not free the old tx skbs immediately after it has
-> > >>>> been sent
-> > >>>> (usually in tx interrupt). One such example is virtio-net which
-> > >>>> optimizes for virt and only free the possible old tx skbs during the
-> > >>>> next packet sending. This would lead the pktgen to wait forever in
-> > >>>> the refcount of the skb if no other pakcet will be sent afterwards.
-> > >>>> 
-> > >>>> Solving this issue by introducing a new flag IFF_TX_SKB_FREE_DELAY
-> > >>>> which could notify the pktgen that the device does not free skb
-> > >>>> immediately after it has been sent and let it not to wait for the
-> > >>>> refcount to be one.
-> > >>>> 
-> > >>>> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> > >>> 
-> > >>> Another alternative would be using skb_orphan() and skb->destructor.
-> > >>> There are other cases where skb's are not freed right away.
-> > >>> --
-> > >>> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> > >>> the body of a message to majordomo@vger.kernel.org
-> > >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > >> 
-> > >> Hi Stephen:
-> > >> 
-> > >> Do you mean registering a skb->destructor for pktgen then set and check
-> > >> bits in skb->tx_flag?
-> > > 
-> > > Yes. Register a destructor that does something like update a counter
-> > > (number of packets pending), then just spin while number of packets
-> > > pending is over threshold.
-> > > --
-> > 
-> > Not sure this is the best method, since pktgen was used to test the tx
-> > process of the device driver and NIC. If we use skb_orhpan(), we would
-> > miss the test of tx completion part.
-> 
-> There are other places that delay freeing and your solution would mean
-> finding and fixing all those. Code that does that already has to use
-> skb_orphan() to work, and I was looking for a way that could use that.
-> Introducing another flag value seems like a long term burden.
-> 
+On Wed, 2012-11-28 at 20:10 +0530, manty kuma wrote:
+> In linux interrupt programming, we do request_irq(...) in this
+> function, the first argument is irq number. If i am not wrong, this is
+> the interrupt line that we are requesting from kernel. For one
+Right.
+>  particular hardware, is this IRQ line fixed or can it register on any
+> line based on the availability? The concept is not clear. Kindly
+In linux there are two concepts related to interrupt which is never
+clearly mentioned anywhere(at least not that I know of) and that is why
+let me clarify.
+1. Hardware interrupt number.Given by your irq controller or the
+hardware which is capable of generating the interrupts.
+2. Software interrupt number assigned by linux interrupt handling core.
 
-Get the point, will draft another version.
-> Alternatively, virtio could do cleanup more aggressively. Maybe in response
-> to ring getting half full, or add a cleanup timer or something to avoid the
-> problem.
+So the first question which arises in mind is: why does linux generates
+the software interrupt number?Won't hardware interrupt number be enough
+to keep everyone happy?
 
-May worth to try. Another method is that virtio has a feature to notify guest 
-when tx ring is empty, we could free the old tx skbs there. But it may brings 
-extra overhead. If we could let virtio_net free the old tx skb timely, it 
-would be easier to bring BQL support to virtio_net also.
+Simple reason is just for book keeping as the software interrupt numbers
+generated would be linear as we are in control of what numbers to
+allocate and if we start using the numbers generated by irq controller
+which can generate random numbers then searching and indexing would
+require expensive operations as compared to working in linear
+domain(experts can add more here if I am not to the point).
 
-Thanks
+However if your irq controller is capable of choosing the interrupt
+numbers then linux irq number will be same as hardware interrupt number.
+
+So let's come back to the question.So for a particular hardware the
+hardware interrupt line would be always fixed as well as the software
+interrupt numbers generated by the linux irq core.
+ 
+>  explain. Also, when i do interrupt programming for AVR or ARM, all
+> the peripherals are having fixed IRQ numbers. and they are having
+>  handlers. There is no concept of interrupt lines as such. So my
+> second question is how are IRQ lines and IRQ numbers related?
+IRQ lines are connected to irq controller and you should have a look at
+the driver of your irq controller as to how does it assign the hardware
+irq numbers(probably by reading some registers).All the peripherals are
+connected to the irq controller such as keyboard and mouse and they have
+fixed irq lines.Once a signal is asserted the irq controller raises an
+interrupt to arm core and arm core in turn raises a hardware
+interrupt.This hardware interrupt will call into linux irq handling
+code.Which interrupt handler to be called is already decided by the
+individual drivers, remember they have called request_irq with an
+interrupt number.
+This interrupt number would be a software interrupt number as explained
+before and this number to hardware interrupt number association is done
+by the interrupt controller or the chip driver which is capable of
+taking(handling) one interrupt and calling individual interrupt handlers
+after reading the corresponding registers(read handle_nested_irq).
+This conversion of hardware interrupt number to software interrupt
+number is done in /kernel/irq/irqdomain.c file.
+ 
+PS:I may be wrong but this description is from what I have read in the
+code.Please do point out any mistakes.
 > 
 > 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Thanks,
+> Sandeep
+> _______________________________________________
+> Kernelnewbies mailing list
+> Kernelnewbies@kernelnewbies.org
+> http://lists.kernelnewbies.org/mailman/listinfo/kernelnewbies
+
+
