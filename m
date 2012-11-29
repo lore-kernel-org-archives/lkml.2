@@ -1,83 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824Ab2K2Spp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 13:45:45 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:34001 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754696Ab2K2SpO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 13:45:14 -0500
-Date: Thu, 29 Nov 2012 10:43:28 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Jim Cromie <jim.cromie@gmail.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>, Michal Marek <mmarek@suse.cz>,
-        Tony Lindgren <tony@atomide.com>,
-        Jonathan Kliegman <kliegs@chromium.org>,
-        Chris Zankel <chris@zankel.net>
-Cc: Bill Pemberton <wfp5p@viridian.itc.virginia.edu>,
-        Fengguang Wu <fengguang.wu@intel.com>, Sam Ravnborg <sam@ravnborg.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-Subject: [PATCH 1/2] init.h: Remove __dev* sections from the kernel
-Message-ID: <20121129184328.GB15110@kroah.com>
-References: <20121129184133.GA15110@kroah.com>
+	id S1754680Ab2K2SpM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 13:45:12 -0500
+Received: from mga03.intel.com ([143.182.124.21]:9515 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752689Ab2K2SpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 13:45:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,186,1355126400"; 
+   d="scan'208";a="174095522"
+From: Andi Kleen <andi@firstfloor.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, zab@redhat.com, bcrl@kvack.org,
+        jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk
+Subject: Re: [PATCH 22/25] Generic dynamic per cpu refcounting
+References: <1354121029-1376-1-git-send-email-koverstreet@google.com>
+	<1354121029-1376-23-git-send-email-koverstreet@google.com>
+Date: Thu, 29 Nov 2012 10:45:04 -0800
+In-Reply-To: <1354121029-1376-23-git-send-email-koverstreet@google.com> (Kent
+	Overstreet's message of "Wed, 28 Nov 2012 08:43:46 -0800")
+Message-ID: <m28v9kgsen.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121129184133.GA15110@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Kent Overstreet <koverstreet@google.com> writes:
 
-With the recent work to remove CONFIG_HOTPLUG, we are starting to get a
-bunch of __devinit section warnings, despite CONFIG_HOTPLUG always being
-enabled.  So, stop marking the sections entirely, by defining them away
-the section markings in init.h
+> This implements a refcount with similar semantics to
+> atomic_get()/atomic_dec_and_test(), that starts out as just an atomic_t
+> but dynamically switches to per cpu refcounting when the rate of
+> gets/puts becomes too high.
 
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+This will only work if you put on the same CPU as you get, right?
+In this case I would rather use RCU. It's clearly unusable for anything 
+blocking (or not get_cpu) Normally RCU already handles the "ref count for short non
+blocking case"
 
----
- include/linux/init.h |   18 +++++++-----------
- 1 file changed, 7 insertions(+), 11 deletions(-)
+Is that really true for AIO? It seems dubious.
 
-diff --git a/include/linux/init.h b/include/linux/init.h
-index e59041e..f63692d 100644
---- a/include/linux/init.h
-+++ b/include/linux/init.h
-@@ -93,13 +93,13 @@
- 
- #define __exit          __section(.exit.text) __exitused __cold notrace
- 
--/* Used for HOTPLUG */
--#define __devinit        __section(.devinit.text) __cold notrace
--#define __devinitdata    __section(.devinit.data)
--#define __devinitconst   __constsection(.devinit.rodata)
--#define __devexit        __section(.devexit.text) __exitused __cold notrace
--#define __devexitdata    __section(.devexit.data)
--#define __devexitconst   __constsection(.devexit.rodata)
-+/* Used for HOTPLUG, but that is always enabled now, so just make them noops */
-+#define __devinit
-+#define __devinitdata
-+#define __devinitconst
-+#define __devexit
-+#define __devexitdata
-+#define __devexitconst
- 
- /* Used for HOTPLUG_CPU */
- #define __cpuinit        __section(.cpuinit.text) __cold notrace
-@@ -126,10 +126,6 @@
- #define __INITRODATA	.section	".init.rodata","a",%progbits
- #define __FINITDATA	.previous
- 
--#define __DEVINIT        .section	".devinit.text", "ax"
--#define __DEVINITDATA    .section	".devinit.data", "aw"
--#define __DEVINITRODATA  .section	".devinit.rodata", "a"
--
- #define __CPUINIT        .section	".cpuinit.text", "ax"
- #define __CPUINITDATA    .section	".cpuinit.data", "aw"
- #define __CPUINITRODATA  .section	".cpuinit.rodata", "a"
+-Andi
+
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
