@@ -1,78 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754341Ab2K2MAI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 07:00:08 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:45622 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753231Ab2K2MAG (ORCPT
+	id S1754151Ab2K2MCE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 07:02:04 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50440 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753172Ab2K2MCC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 07:00:06 -0500
-Date: Thu, 29 Nov 2012 12:00:00 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        arnd@arndb.de, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com
-Subject: Re: [PATCH 3/3] Input: bu21013_ts - Add support for Device Tree
- booting
-Message-ID: <20121129120000.GJ2013@gmail.com>
-References: <1354021990-16978-1-git-send-email-lee.jones@linaro.org>
- <1354021990-16978-4-git-send-email-lee.jones@linaro.org>
- <20121128070332.GC23378@core.coreip.homeip.net>
- <20121128085731.GH2013@gmail.com>
- <20121128163105.GA28698@sirena.org.uk>
- <20121129100808.GW2013@gmail.com>
- <20121129112058.GH32691@opensource.wolfsonmicro.com>
+	Thu, 29 Nov 2012 07:02:02 -0500
+X-AuditID: 9c930179-b7c9dae000000e53-70-50b74eb938fb
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 14/14] perf diff: Add generic order option for compute sorting
+References: <1354110769-2998-1-git-send-email-jolsa@redhat.com>
+	<1354110769-2998-15-git-send-email-jolsa@redhat.com>
+Date: Thu, 29 Nov 2012 21:02:01 +0900
+In-Reply-To: <1354110769-2998-15-git-send-email-jolsa@redhat.com> (Jiri Olsa's
+	message of "Wed, 28 Nov 2012 14:52:49 +0100")
+Message-ID: <87a9u0obwm.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121129112058.GH32691@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Nov 2012, Mark Brown wrote:
+On Wed, 28 Nov 2012 14:52:49 +0100, Jiri Olsa wrote:
+> Adding option 'o' to allow sorting based on the
+> input file number.
+[snip]
+>  hist_entry__cmp_compute(struct hist_entry *left, struct hist_entry *right,
+>  			int c)
+>  {
+> -	int i;
+> +	struct hist_entry **pairs_left  = left->pairs;
+> +	struct hist_entry **pairs_right = right->pairs;
+> +	struct hist_entry *p_right, *p_left;
+> +	static int64_t cmp;
+>  
+> -	for (i = 0; i < data_cnt; i++) {
+> -		struct hist_entry **pairs_left  = left->pairs;
+> -		struct hist_entry **pairs_right = right->pairs;
+> -		struct hist_entry *p_right, *p_left;
+> -		static int64_t cmp;
+> +	if (!pairs_left || !pairs_right)
+> +		return pairs_left ? -1 : 1;
+>  
+> -		if (!pairs_left || !pairs_right)
+> -			return pairs_right - pairs_left;
+> +	p_right = pairs_right[sort_compute];
+> +	p_left  = pairs_left[sort_compute];
+>  
+> -		p_right = pairs_right[i];
+> -		p_left  = pairs_left[i];
+> +	if (!p_left || !p_right)
+> +		return p_left ? -1 : 1;
 
-> On Thu, Nov 29, 2012 at 10:08:08AM +0000, Lee Jones wrote:
-> > On Wed, 28 Nov 2012, Mark Brown wrote:
-> 
-> > > The I2C subsystem guesses at a compatible string by default but it's
-> > > much better to explicitly set one as conflicts do arise from time to
-> > > time (eg, Wolfson parts are called WMxxxx but the WM prefix is also used
-> > > by at least WonderMedia).
-> 
-> > It uses the exact device name, rather than guessing. I don't think
-> > you're allowed to have duplicate device names in the system, or there
-> > would be clashes at registration time.
-> 
-> > The system is the same for platform data and DT alike.
-> 
-> Right, which is why this mostly works, but it's still better to provide
-> an actual compatible string which we can be 100% certain will avoid
-> conflicts.  This is very low cost when one is already defining DT
-> bindings.
+What if both p_left and p_right are NULL?  Shouldn't it be move to the
+next pairs?
 
-I know that it's an easy thing to do, but I'm more worried about
-what would happen if the an I2C device is registered using the
-current way (stripping the compatible string and using it as a
-client look-up) and we also provide a compatible entry in the
-driver itself. Do you know if there is any danger of duplicate
-registration or suchlike?
+>  
+> -		if (!p_left || !p_right)
+> -			return p_right - p_left;
+> -
+> -		/*
+> -		 * If we differ, we are done, otherwise continue until all
+> -		 * is processed or we find a difference.
+> -		 */
+> -		cmp = __hist_entry__cmp_compute(p_left, p_right, c);
+> -		if (cmp)
+> -			return cmp;
+> -	}
+> +	/*
+> +	 * If we differ, we are done, otherwise continue until all
+> +	 * is processed or we find a difference.
+> +	 */
 
-> > Hence, there should be no need to have a compatible string in any i2c
-> > driver registration information.
-> 
-> We're getting away with it at present (and frankly nobody's going to
-> build in two different drivers for a chip of the same name for practical
-> systems anyway).
+I guess this comment is not applied anymore.  Or we need a loop after
+checking sort_compute column, right?
 
-Right. In the same way as we're getting away with it when we
-register a platform_device using the register/add routines.
+Thanks,
+Namhyung
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+
+> +	cmp = __hist_entry__cmp_compute(p_left, p_right, c);
+> +	if (cmp)
+> +		return cmp;
+>  
+>  	return 0;
+>  }
+> @@ -759,6 +748,7 @@ static const struct option options[] = {
+>  		   "columns '.' is reserved."),
+>  	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
+>  		    "Look for files with symbols relative to this directory"),
+> +	OPT_UINTEGER('o', "order", &sort_compute, "Specify compute sorting."),
+>  	OPT_END()
+>  };
+>  
+> @@ -1087,6 +1077,11 @@ static int data_init(int argc, const char **argv)
+>  		d->idx  = i;
+>  	}
+>  
+> +	if (sort_compute >= (unsigned int) data_cnt) {
+> +		pr_err("Order option out of limit.\n");
+> +		return -EINVAL;
+> +	}
+> +
+>  	return 0;
+>  }
