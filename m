@@ -1,88 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751671Ab2K2H2D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 02:28:03 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:18604 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751188Ab2K2H2B (ORCPT
+	id S1751636Ab2K2HhS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 02:37:18 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:44492 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751062Ab2K2HhQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 02:28:01 -0500
-Message-ID: <50B70E50.7080508@oracle.com>
-Date: Thu, 29 Nov 2012 15:27:12 +0800
-From: Jeff Liu <jeff.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Thu, 29 Nov 2012 02:37:16 -0500
+Message-ID: <50B710A0.4080907@gmail.com>
+Date: Thu, 29 Nov 2012 15:37:04 +0800
+From: Mark Zhang <nvmarkzhang@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Jim Meyering <jim@meyering.net>
-CC: Hugh Dickins <hughd@google.com>, Jaegeuk Hanse <jaegeuk.hanse@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Zheng Liu <wenqing.lz@taobao.com>,
-        Paul Eggert <eggert@cs.ucla.edu>,
-        Christoph Hellwig <hch@infradead.org>, Josef Bacik <josef@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Andreas Dilger <adilger@dilger.ca>,
-        Dave Chinner <david@fromorbit.com>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Sunil Mushran <sunil.mushran@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] tmpfs: support SEEK_DATA and SEEK_HOLE (reprise)
-References: <alpine.LNX.2.00.1211281706390.1516@eggly.anvils> <20121129012933.GA9112@kernel> <alpine.LNX.2.00.1211281745200.1641@eggly.anvils> <87lidlxcw9.fsf@rho.meyering.net> <50B6E7CB.1040504@oracle.com> <87d2yw3not.fsf@rho.meyering.net>
-In-Reply-To: <87d2yw3not.fsf@rho.meyering.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Terje Bergstrom <tbergstrom@nvidia.com>
+CC: thierry.reding@avionic-design.de, linux-tegra@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Arto Merilainen <amerilainen@nvidia.com>
+Subject: Re: [RFC,v2,8/8] drm: tegra: Add gr2d device
+References: <1353935954-13763-9-git-send-email-tbergstrom@nvidia.com>
+In-Reply-To: <1353935954-13763-9-git-send-email-tbergstrom@nvidia.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2012 02:53 PM, Jim Meyering wrote:
-> Jeff Liu wrote:
+On 11/26/2012 09:19 PM, Terje Bergström <tbergstrom@nvidia.com> wrote:
+> Add client driver for 2D device.
 > 
->> On 11/29/2012 12:15 PM, Jim Meyering wrote:
->>> Hugh Dickins wrote:
->>>> On Thu, 29 Nov 2012, Jaegeuk Hanse wrote:
->>> ...
->>>>> But this time in which scenario will use it?
->>>>
->>>> I was not very convinced by the grep argument from Jim and Paul:
->>>> that seemed to be grep holding on to a no-arbitrary-limits dogma,
->>>> at the expense of its users, causing an absurd line-length issue,
->>>> which use of SEEK_DATA happens to avoid in some cases.
->>>>
->>>> The cp of sparse files from Jeff and Dave was more convincing;
->>>> but I still didn't see why little old tmpfs needed to be ahead
->>>> of the pack.
->>>>
->>>> But at LinuxCon/Plumbers in San Diego in August, a more convincing
->>>> case was made: I was hoping you would not ask, because I did not take
->>>> notes, and cannot pass on the details - was it rpm building on tmpfs?
->>>> I was convinced enough to promise support on tmpfs when support on
->>>> ext4 goes in.
->>>
->>> Re the cp-vs-sparse-file case, the current FIEMAP-based code in GNU
->>> cp is ugly and complicated enough that until recently it harbored a
->>> hard-to-reproduce data-corrupting bug[*].  Now that SEEK_DATA/SEEK_HOLE
->>> support work will work also for tmpfs and ext4, we can plan to remove
->>> the FIEMAP-based code in favor of a simpler SEEK_DATA/SEEK_HOLE-based
->>> implementation.
->> How do we teach du(1) to aware of the real disk footprint with Btrfs
->> clone or OCFS2 reflinked files if we remove the FIEMAP-based code?
->>
->> How about if we still keep it there, and introduce SEEK_DATA/SEEK_HOLE
->> code to the extent-scan module which is dedicated to deal with sparse files?
+> Signed-off-by: Arto Merilainen <amerilainen@nvidia.com>
+> Signed-off-by: Terje Bergstrom <tbergstrom@nvidia.com>
 > 
-> Hi Jeff,
-> By "removing the FIEMAP-based code" I mean the uses in copy.c.
-> All of that should remain independent of how du does its job,
-> so if FIEMAP is required for your planned du enhancement,
-> then feel free to use it.
-Hi Jim,
-Thanks for the clarification, that's fine. :)
+> ---
+> 
+[...]
+> +
+> +static int
+> +tegra_drm_ioctl_open_channel(struct drm_device *drm, void *data,
+> +			 struct drm_file *file_priv)
+> +{
+> +	struct tegra_drm_open_channel_args *args = data;
+> +	struct tegra_drm_client *client;
+> +	struct tegra_drm_context *context;
+> +	struct tegra_drm_fpriv *fpriv = tegra_drm_fpriv(file_priv);
+> +	int err = 0;
+> +
+> +	dev_dbg(drm->dev, "> %s(fpriv=%p, class=%x)\n", __func__,
+> +			fpriv, args->class);
+> +
+> +	context = kzalloc(sizeof(*context), GFP_KERNEL);
+> +	if (!context) {
+> +		err = -ENOMEM;
+> +		goto out;
 
-Regards,
--Jeff
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Change to "return -ENOMEM". Otherwise the NULL "context" will be kfree.
 
+> +	}
+> +
+> +	list_for_each_entry(client, &tegra_drm_subdrv_list, list) {
+> +		if (client->class == args->class) {
+> +			dev_dbg(drm->dev, "opening client %x\n", args->class);
+> +			context->client = client;
+> +			err = client->ops->open_channel(client, context);
+> +			if (err)
+> +				goto out;
+> +
+> +			dev_dbg(drm->dev, "context %p\n", context);
+> +			list_add(&context->list, &fpriv->contexts);
+> +			args->context = context;
+> +			goto out;
+> +		}
+> +	}
+> +	err = -ENODEV;
+> +
+> +out:
+> +	if (err)
+> +		kfree(context);
+> +
+> +	dev_dbg(drm->dev, "< %s() = %d\n", __func__, err);
+> +	return err;
+> +}
+> +
+> +static int
+> +tegra_drm_ioctl_close_channel(struct drm_device *drm, void *data,
+> +			 struct drm_file *file_priv)
+> +{
+> +	struct tegra_drm_open_channel_args *args = data;
+> +	struct tegra_drm_context *context;
+> +	struct tegra_drm_fpriv *fpriv = tegra_drm_fpriv(file_priv);
+> +	int err = 0;
+> +
+> +	dev_dbg(drm->dev, "> %s(fpriv=%p)\n", __func__, fpriv);
+> +	list_for_each_entry(context, &fpriv->contexts, list) {
+
+Consider "list_for_each_entry_safe" cause you remove list members during
+the loop.
+
+> +		if (context == args->context) {
+> +			context->client->ops->close_channel(context);
+> +			list_del(&context->list);
+> +			kfree(context);
+> +			goto out;
+> +		}
+> +	}
+> +	err = -EINVAL;
+> +
+> +out:
+> +	dev_dbg(drm->dev, "< %s() = %d\n", __func__, err);
+> +	return err;
+> +}
+> +
+[...]
+> +
+> +static int gr2d_submit(struct tegra_drm_context *context,
+> +		struct tegra_drm_submit_args *args)
+
+I'm still in the middle of code reading of job submit, so I'll get you
+back if I find something.
+
+[...]
+> +
+> +static struct of_device_id gr2d_match[] __devinitdata = {
+> +	{ .compatible = "nvidia,tegra20-gr2d", },
+> +	{ .compatible = "nvidia,tegra30-gr2d", },
+
+Just as swarren mentioned, you'd better place "nvidia,tegra30-gr2d" in
+the front of "nvidia,tegra20-gr2d"...
+
+[...]
+> +
+> +#define DRM_TEGRA_GEM_CREATE		0x00
+> +
+> +#define DRM_IOCTL_TEGRA_GEM_CREATE	DRM_IOWR(DRM_COMMAND_BASE + \
+> +		DRM_TEGRA_GEM_CREATE, struct tegra_gem_create)
+> +
+
+Just a very minor suggestion: could you put them at the end of this
+file? I mean, stay with other IOCTLs like SYNCPT_READ, SYNCPT_WAIT...
+
+[...]
+> +
+> +#define DRM_TEGRA_DRM_SYNCPT_READ 0x01
+> +#define DRM_TEGRA_DRM_SYNCPT_INCR 0x02
+> +#define DRM_TEGRA_DRM_SYNCPT_WAIT 0x03
+> +#define DRM_TEGRA_DRM_OPEN_CHANNEL 0x04
+> +#define DRM_TEGRA_DRM_CLOSE_CHANNEL 0x05
+> +#define DRM_TEGRA_DRM_GET_SYNCPOINTS 0x06
+> +#define DRM_TEGRA_DRM_GET_MODMUTEXES 0x07
+> +#define DRM_TEGRA_DRM_SUBMIT 0x08
+> +
+> +#define DRM_IOCTL_TEGRA_DRM_SYNCPT_READ DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_DRM_SYNCPT_READ, struct tegra_drm_syncpt_read_args)
+> +#define DRM_IOCTL_TEGRA_DRM_SYNCPT_INCR DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_DRM_SYNCPT_INCR, struct tegra_drm_syncpt_incr_args)
+> +#define DRM_IOCTL_TEGRA_DRM_SYNCPT_WAIT DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_DRM_SYNCPT_WAIT, struct tegra_drm_syncpt_wait_args)
+> +#define DRM_IOCTL_TEGRA_DRM_OPEN_CHANNEL DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_DRM_OPEN_CHANNEL, struct tegra_drm_open_channel_args)
+> +#define DRM_IOCTL_TEGRA_DRM_CLOSE_CHANNEL DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_DRM_CLOSE_CHANNEL, struct tegra_drm_open_channel_args)
+> +#define DRM_IOCTL_TEGRA_DRM_GET_SYNCPOINTS DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_DRM_GET_SYNCPOINTS, struct tegra_drm_get_channel_param_args)
+> +#define DRM_IOCTL_TEGRA_DRM_GET_MODMUTEXES DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_DRM_GET_MODMUTEXES, struct tegra_drm_get_channel_param_args)
+> +#define DRM_IOCTL_TEGRA_DRM_SUBMIT DRM_IOWR(DRM_COMMAND_BASE + DRM_TEGRA_DRM_SUBMIT, struct tegra_drm_submit_args)
+> +
+> +#endif
+> 
