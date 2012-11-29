@@ -1,61 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753779Ab2K2CE3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 21:04:29 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:55278 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752444Ab2K2CE1 (ORCPT
+	id S1754008Ab2K2CEe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 21:04:34 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:34769 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753800Ab2K2CEb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 21:04:27 -0500
+	Wed, 28 Nov 2012 21:04:31 -0500
+Message-ID: <50B6C2A6.3040402@linux.vnet.ibm.com>
+Date: Thu, 29 Nov 2012 10:04:22 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.64.1211281904010.3957@file.rdu.redhat.com>
-References: <CAAJw_ZtbhE5Jtd4PsWx8a23QdFTW7aMrKBmRf-bo5Wrean9Xhg@mail.gmail.com>
- <Pine.LNX.4.64.1211241555470.4300@file.rdu.redhat.com> <CAAJw_ZvUqRmCCQ5-2PdFPRyfdzZMuphGU=hgAjUOHGk=n9Mheg@mail.gmail.com>
- <CAAJw_ZuJXnAz1ukBwQa3xNbQaL1KUBSrbQMK2hn-7D6Ar1p3fQ@mail.gmail.com>
- <50B46E05.70906@kernel.dk> <CAAJw_ZsYuLCwCTc6U=ELO_PvyjnVKQdkPke2enfzm6zOeWAqjA@mail.gmail.com>
- <50B4B313.3030707@kernel.dk> <Pine.LNX.4.64.1211272252260.18338@file.rdu.redhat.com>
- <50B5CC5A.8060607@kernel.dk> <Pine.LNX.4.64.1211281222410.11599@file.rdu.redhat.com>
- <CA+55aFx4zYnEsUyGJurBjB0XZ0AgmyKqW-+KWVDvma3w6csnHQ@mail.gmail.com>
- <Pine.LNX.4.64.1211281422360.26389@file.rdu.redhat.com> <CA+55aFyXdtVJ=SG9bU4qfggCR6DPvz4vOFYxKJZx_WdyFv+3Fw@mail.gmail.com>
- <CA+55aFyXS0nkDB95c3pcdg1ctrNnUGO8aDuRNhKSEg3JrOqWhA@mail.gmail.com>
- <Pine.LNX.4.64.1211281540200.5283@file.rdu.redhat.com> <CA+55aFwbnQsvpsOLS6w_G35d4w+Ezv5tOx2SE7dShJhX4iP_0Q@mail.gmail.com>
- <Pine.LNX.4.64.1211281904010.3957@file.rdu.redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 28 Nov 2012 18:04:06 -0800
-X-Google-Sender-Auth: 8wocM7iMOlaJLaEwHAqgST3-d1U
-Message-ID: <CA+55aFz1Wv2S+3XVmZE1cfiN0TZ4gNA8yWbNgufDLTMc8sKf2A@mail.gmail.com>
-Subject: Re: [PATCH] Introduce a method to catch mmap_region (was: Recent
- kernel "mount" slow)
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Jeff Chua <jeff.chua.linux@gmail.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 2/2] KVM: VMX: fix memory order between loading vmcs and
+ clearing vmcs
+References: <50B6093B.7040404@linux.vnet.ibm.com> <50B60976.7020905@linux.vnet.ibm.com> <20121129000428.GA17264@amt.cnet>
+In-Reply-To: <20121129000428.GA17264@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12112901-0260-0000-0000-0000023A9895
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Sorry, I was offline for a while driving kids around ]
+On 11/29/2012 08:04 AM, Marcelo Tosatti wrote:
+> On Wed, Nov 28, 2012 at 08:54:14PM +0800, Xiao Guangrong wrote:
+>> vmcs->cpu indicates whether it exists on the target cpu, -1 means the vmcs
+>> does not exist on any vcpu
+>>
+>> If vcpu load vmcs with vmcs.cpu = -1, it can be directly added to cpu's percpu
+>> list. The list can be corrupted if the cpu prefetch the vmcs's list before
+>> reading vmcs->cpu. Meanwhile, we should remove vmcs from the list before
+>> making vmcs->vcpu == -1 be visible
+>>
+>> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+>> ---
+>>  arch/x86/kvm/vmx.c |   17 +++++++++++++++++
+>>  1 files changed, 17 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+>> index 29e8f42..6056d88 100644
+>> --- a/arch/x86/kvm/vmx.c
+>> +++ b/arch/x86/kvm/vmx.c
+>> @@ -1002,6 +1002,15 @@ static void __loaded_vmcs_clear(void *arg)
+>>  	if (per_cpu(current_vmcs, cpu) == loaded_vmcs->vmcs)
+>>  		per_cpu(current_vmcs, cpu) = NULL;
+>>  	list_del(&loaded_vmcs->loaded_vmcss_on_cpu_link);
+>> +
+>> +	/*
+>> +	 * we should ensure updating loaded_vmcs->loaded_vmcss_on_cpu_link
+>> +	 * is before setting loaded_vmcs->vcpu to -1 which is done in
+>> +	 * loaded_vmcs_init. Otherwise, other cpu can see vcpu = -1 fist
+>> +	 * then adds the vmcs into percpu list before it is deleted.
+>> +	 */
+>> +	smp_wmb();
+>> +
+> 
+> Neither loads nor stores are reordered with like operations (see
+> section 8.2.3.2 of intel's volume 3). This behaviour makes the barrier
+> not necessary.
 
-On Wed, Nov 28, 2012 at 4:38 PM, Mikulas Patocka <mpatocka@redhat.com> wrote:
->
-> It can happen. Take your patch (the one that moves bd_block_size_semaphore
-> into blkdev_readpage, blkdev_writepage and blkdev_write_begin).
+Ouch, yes, you are right. My memory is wrong. It seems only later-read
+can be reordered with early-write.
 
-Interesting. The code *has* the block size (it's in "bh->b_size"), but
-it actually then uses the inode blocksize instead, and verifies the
-two against each other. It could just have used the block size
-directly (and then used the inode i_blkbits only when no buffers
-existed), avoiding that dependency entirely..
+But if 'read vs read' and 'write vs write' can be guaranteed by CPU, smp_wmb()
+and smp_rmb() should only be a complier barrier, so i think we can add the barriers
+to improve the readable and the portable.
 
-It actually does the same thing (with the same verification) in
-__block_write_full_page() and (_without_ the verification) in
-__block_commit_write().
+And anyway, the current code missed complier-barrier.
 
-Ho humm. All of those places actually do hold the rwsem for reading,
-it's just that I don't want to hold it for writing over the sync..
+> 
+> However, i agree access to loaded_vmcs is not obviously safe. I can't
+> tell its safe with vmm_exclusive = 0 (where vcpu->cpu can change at any
+> time).
 
-Need to think on this,
+If vmm_exclusive = 0, the vmcs can removed from percpu list when vcpu is scheduled
+out. The list is not broken.
 
-                Linus
