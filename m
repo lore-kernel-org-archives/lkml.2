@@ -1,43 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752090Ab2K2JEG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 04:04:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14024 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751138Ab2K2JEC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 04:04:02 -0500
-Message-ID: <50B724F9.7040504@redhat.com>
-Date: Thu, 29 Nov 2012 10:03:53 +0100
-From: Zdenek Kabelac <zkabelac@redhat.com>
-Organization: Red Hat
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: linux-acpi@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Len Brown <lenb@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Acpi deadlocks with 3.7.0-rc4
-References: <50A513A8.9010404@redhat.com> <CA+55aFy7hxayPzr3MiV1xc0bvLcd+-7b52iA3CYhbPZuWXr9yA@mail.gmail.com> <50B64996.1010709@redhat.com> <6072715.FoXSX1UJhO@vostro.rjw.lan>
-In-Reply-To: <6072715.FoXSX1UJhO@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1752331Ab2K2JHB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 04:07:01 -0500
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:48864 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553Ab2K2JG5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 04:06:57 -0500
+Message-ID: <1354179992.2499.35.camel@ThinkPad-T5421.cn.ibm.com>
+Subject: Re: [PATCH] context_tracking: New context tracking susbsystem
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Gilad.Ben-Yossef.gilad@benyossef.com
+Date: Thu, 29 Nov 2012 17:06:32 +0800
+In-Reply-To: <1354041205-6989-1-git-send-email-fweisbec@gmail.com>
+References: <1354041205-6989-1-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 12112909-8256-0000-0000-0000053A9E1D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 28.11.2012 21:31, Rafael J. Wysocki napsal(a):
-> On Wednesday, November 28, 2012 06:27:50 PM Zdenek Kabelac wrote:
->> Dne 28.11.2012 18:02, Linus Torvalds napsal(a):
->>> On Wed, Nov 28, 2012 at 8:21 AM, Zdenek Kabelac <zkabelac@redhat.com> wrote:
->>>>
->>>> I've opened  https://bugzilla.kernel.org/show_bug.cgi?id=51071
->>>> and attached picture there which is all I have.
->
-> I wonder if you can try to apply the patch below and see if that makes any
-> difference?
->
+On Tue, 2012-11-27 at 19:33 +0100, Frederic Weisbecker wrote:
+[....]
+> -
+> -	WARN_ON_ONCE(!current->mm);
+> -
+> -	local_irq_save(flags);
+> -	rdtp = &__get_cpu_var(rcu_dynticks);
+> -	if (!rdtp->ignore_user_qs && !rdtp->in_user) {
+> -		rdtp->in_user = true;
+> -		rcu_eqs_enter(true);
+> -	}
 
-Yep - extended BZ with 2 new pictures - it's now crashing earlier within
-the call of acpi_bus_get_device().
+It seems to me that ignore_user_qs and in_user defined in struct
+rcu_dynticks are no longer needed? 
 
-Zdenek
+If so, then maybe we could remove them, code below:
+
+==========
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index e441b77..b8fae5d 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -2719,9 +2719,6 @@ rcu_boot_init_percpu_data(int cpu, struct rcu_state *rsp)
+ 	rdp->dynticks = &per_cpu(rcu_dynticks, cpu);
+ 	WARN_ON_ONCE(rdp->dynticks->dynticks_nesting != DYNTICK_TASK_EXIT_IDLE);
+ 	WARN_ON_ONCE(atomic_read(&rdp->dynticks->dynticks) != 1);
+-#ifdef CONFIG_RCU_USER_QS
+-	WARN_ON_ONCE(rdp->dynticks->in_user);
+-#endif
+ 	rdp->cpu = cpu;
+ 	rdp->rsp = rsp;
+ 	rcu_boot_init_nocb_percpu_data(rdp);
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index 4b69291..6f21f2e 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -102,10 +102,6 @@ struct rcu_dynticks {
+ 				    /* idle-period nonlazy_posted snapshot. */
+ 	int tick_nohz_enabled_snap; /* Previously seen value from sysfs. */
+ #endif /* #ifdef CONFIG_RCU_FAST_NO_HZ */
+-#ifdef CONFIG_RCU_USER_QS
+-	bool ignore_user_qs;	    /* Treat userspace as extended QS or not */
+-	bool in_user;		    /* Is the CPU in userland from RCU POV? */
+-#endif
+ };
+ 
+ /* RCU's kthread states for tracing. */
+
 
