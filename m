@@ -1,116 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992Ab2K2K5U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 05:57:20 -0500
-Received: from shrek-wifi.podlesie.net ([93.179.225.50]:33364 "EHLO
-	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753080Ab2K2K5T (ORCPT
+	id S1753954Ab2K2K5s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 05:57:48 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:58018 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753080Ab2K2K5p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 05:57:19 -0500
-Date: Thu, 29 Nov 2012 11:57:15 +0100
-From: Krzysztof Mazur <krzysiek@podlesie.net>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: David Laight <David.Laight@ACULAB.COM>,
-        chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>,
-        davem@davemloft.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nathan@traverse.com.au
-Subject: Re: [PATCH v2 3/3] pppoatm: protect against freeing of vcc
-Message-ID: <20121129105715.GA10226@shrek.podlesie.net>
-References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
- <1350926091-12642-3-git-send-email-krzysiek@podlesie.net>
- <1354036592.2534.6.camel@shinybook.infradead.org>
- <20121127173906.GA11390@shrek.podlesie.net>
- <1354039349.2534.11.camel@shinybook.infradead.org>
- <20121127135434.0728cd4f@thirdoffive.cmf.nrl.navy.mil>
- <AE90C24D6B3A694183C094C60CF0A2F6026B70C9@saturn3.aculab.com>
- <1354141115.21562.101.camel@shinybook.infradead.org>
+	Thu, 29 Nov 2012 05:57:45 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354141115.21562.101.camel@shinybook.infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121129064539.GL4939@ZenIV.linux.org.uk>
+References: <CA+55aFyXS0nkDB95c3pcdg1ctrNnUGO8aDuRNhKSEg3JrOqWhA@mail.gmail.com>
+	<Pine.LNX.4.64.1211281540200.5283@file.rdu.redhat.com>
+	<CA+55aFwbnQsvpsOLS6w_G35d4w+Ezv5tOx2SE7dShJhX4iP_0Q@mail.gmail.com>
+	<Pine.LNX.4.64.1211281904010.3957@file.rdu.redhat.com>
+	<CA+55aFz1Wv2S+3XVmZE1cfiN0TZ4gNA8yWbNgufDLTMc8sKf2A@mail.gmail.com>
+	<CA+55aFxYCxsRM==WMGihQGOA7f5u2X_8boJypsxS2v=WMnr70g@mail.gmail.com>
+	<CA+55aFxrkX_=4yNQ1TwjqU9=pkRY=ud+Kw3YnADJMJxA-ZqQUg@mail.gmail.com>
+	<20121129062519.GI4939@ZenIV.linux.org.uk>
+	<20121129063043.GJ4939@ZenIV.linux.org.uk>
+	<CA+55aFwL9-yOfCHskXyiCJ3YKB0MgaOJ5-XrvWBtH+URCowfcg@mail.gmail.com>
+	<20121129064539.GL4939@ZenIV.linux.org.uk>
+Date: Thu, 29 Nov 2012 18:57:44 +0800
+Message-ID: <CAAJw_ZuMGk+r73LBUik=bz8YD2=dd4WTwzmf8ru0oCFv+GSSCA@mail.gmail.com>
+Subject: Re: [PATCH] Introduce a method to catch mmap_region (was: Recent
+ kernel "mount" slow)
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mikulas Patocka <mpatocka@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 10:18:35PM +0000, David Woodhouse wrote:
-> On Wed, 2012-11-28 at 09:21 +0000, David Laight wrote:
-> > Even when it might make sense to sleep in close until tx drains
-> > there needs to be a finite timeout before it become abortive.
-> 
-> You are, of course, right. We should never wait for hardware for ever.
-> And just to serve me right, I seem to have hit a bug in the latest Solos
-> firmware (1.11) which makes it sometimes lock up when I reboot. So it
-> never responds to the PKT_PCLOSE packet... and thus it deadlocks when I
-> try to kill pppd and unload the module to reset it :)
-> 
-> New version...
-> 
-> From 53dd01c08fec5b26006a009b25e4210127fdb27a Mon Sep 17 00:00:00 2001
-> From: David Woodhouse <David.Woodhouse@intel.com>
-> Date: Tue, 27 Nov 2012 23:49:24 +0000
-> Subject: [PATCH] solos-pci: Wait for pending TX to complete when releasing
->  vcc
-> 
-> We should no longer be calling the old pop routine for the vcc, after
-> vcc_release() has completed. Make sure we wait for any pending TX skbs
-> to complete, by waiting for our own PKT_PCLOSE control skb to be sent.
-> 
-> Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-> ---
->  drivers/atm/solos-pci.c | 17 +++++++++++++++--
->  1 file changed, 15 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/atm/solos-pci.c b/drivers/atm/solos-pci.c
-> index 9851093..3720670 100644
-> --- a/drivers/atm/solos-pci.c
-> +++ b/drivers/atm/solos-pci.c
-> @@ -92,6 +92,7 @@ struct pkt_hdr {
->  };
->  
->  struct solos_skb_cb {
-> +	struct completion c;
->  	struct atm_vcc *vcc;
->  	uint32_t dma_addr;
->  };
-> @@ -881,11 +882,18 @@ static void pclose(struct atm_vcc *vcc)
->  	header->vci = cpu_to_le16(vcc->vci);
->  	header->type = cpu_to_le16(PKT_PCLOSE);
->  
-> +	init_completion(&SKB_CB(skb)->c);
-> +
->  	fpga_queue(card, SOLOS_CHAN(vcc->dev), skb, NULL);
->  
->  	clear_bit(ATM_VF_ADDR, &vcc->flags);
->  	clear_bit(ATM_VF_READY, &vcc->flags);
->  
-> +	if (!wait_for_completion_timeout(&SKB_CB(skb)->c,
-> +					 jiffies + msecs_to_jiffies(5000)))
-> +		dev_warn(&card->dev->dev, "Timeout waiting for VCC close on port %d\n",
-> +			 SOLOS_CHAN(vcc->dev));
-> +
+On Thu, Nov 29, 2012 at 2:45 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Wed, Nov 28, 2012 at 10:37:27PM -0800, Linus Torvalds wrote:
+>> On Wed, Nov 28, 2012 at 10:30 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>> >
+>> > Note that sync_blockdev() a few lines prior to that is good only if we
+>> > have no other processes doing write(2) (or dirtying the mmapped pages,
+>> > for that matter).  The window isn't too wide, but...
+>>
+>> So with Mikulas' patches, the write actually would block (at write
+>> level) due to the locking. The mmap'ed patches may be around and
+>> flushed, but the logic to not allow currently *active* mmaps (with the
+>> rather nasty random -EBUSY return value) should mean that there is no
+>> race.
+>>
+>> Or rather, there's a race, but it results in that EBUSY thing.
+>
+> Same as with fs mounted on it, or the sucker having been claimed for
+> RAID array, etc.  Frankly, I'm more than slightly tempted to make
+> bdev mmap() just claim the sodding device exclusive for as long as
+> it's mmapped...
+>
+> In principle, I agree, but...  I still have nightmares from mmap/truncate
+> races way back.  You are stepping into what used to be a really nasty
+> minefield.  I'll look into that, but it's *definitely* not -rc8 fodder.
 
-do we really need to wait here?
+Just let me know which relevant patch(es) you want me to test or break.
 
-Why don't just do something like that:
-
-	tasklet_disable(&card->tlet);
-	spin_lock(&card->tx_queue_lock);
-	for each skb in queue
-		SKB_CB(skb)->vcc = NULL;
-	spin_unlock(&card->tx_queue_lock);
-	tasklet_enable(&card->tlet);
-
-or if we really want to call vcc->pop() for such skbs:
-
-	tasklet_disable(&card->tlet);
-	spin_lock(&card->tx_queue_lock);
-	for each skb in queue {
-		skb_get(skb);
-		solos_pop(SKB_CB(skb)->vcc, skb);
-		SKB_CB(skb)->vcc = NULL;
-	}
-	spin_unlock(&card->tx_queue_lock);
-	tasklet_enable(&card->tlet);
-
-Krzysiek
+Thanks,
+Jeff
