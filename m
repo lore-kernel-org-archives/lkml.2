@@ -1,99 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932710Ab2K2BYe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 20:24:34 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9831 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755087Ab2K2BYc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 20:24:32 -0500
-X-Authority-Analysis: v=2.0 cv=EshQXFgA c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=NWE-DfuZo18A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=MOQqWvG9ABwA:10 a=KKAkSRfTAAAA:8 a=VwQbUJbxAAAA:8 a=5F87krKy-Ch-Y-VvF2oA:9 a=QEXdDO2ut3YA:10 a=WwgC8nHKvroA:10 a=jeBq3FmKZ4MA:10 a=arzFhO6oAAAA:8 a=E0mzQjHhEipPLPF19dUA:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20121129012431.307425107@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 28 Nov 2012 20:23:42 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>
-Subject: [PATCH 2/3] tracing: Remove unneeded checks from the stack tracer
-References: <20121129012340.602023062@goodmis.org>
-Content-Disposition: inline; filename=0002-tracing-Remove-unneeded-checks-from-the-stack-tracer.patch
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
+	id S1755053Ab2K2BZO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 20:25:14 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:42387 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932814Ab2K2BZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 20:25:10 -0500
+X-IronPort-AV: E=Sophos;i="4.83,337,1352044800"; 
+   d="scan'208";a="6295475"
+Message-ID: <50B6B936.10200@cn.fujitsu.com>
+Date: Thu, 29 Nov 2012 09:24:06 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Jaegeuk Hanse <jaegeuk.hanse@gmail.com>
+CC: Wen Congyang <wency@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Bob Liu <lliubbo@gmail.com>, hpa@zytor.com, akpm@linux-foundation.org,
+        rob@landley.net, isimatu.yasuaki@jp.fujitsu.com, laijs@cn.fujitsu.com,
+        linfeng@cn.fujitsu.com, yinghai@kernel.org,
+        kosaki.motohiro@jp.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
+        rientjes@google.com, rusty@rustcorp.com.au,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-doc@vger.kernel.org, m.szyprowski@samsung.com
+Subject: Re: [PATCH v2 0/5] Add movablecore_map boot option
+References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <CAA_GA1d7CxHvmZELvD_DO6u5tu1WBqfmLiuEzeFo=xMzuW50Tg@mail.gmail.com> <50B479FA.6010307@cn.fujitsu.com> <CAA_GA1ezZJyqVL=Dp5U2zzNw6bkfMKJY_STkt3E7TXkUYcv+jQ@mail.gmail.com> <50B4B6BE.3000902@cn.fujitsu.com> <CAA_GA1fE0fhLVs50rRZ6OsTw7DV0hyVC2EuRyUrbzxLztPLoeg@mail.gmail.com> <50B58E30.9060804@huawei.com> <50B5CB4D.6070402@cn.fujitsu.com> <20121129004323.GA9058@kernel>
+In-Reply-To: <20121129004323.GA9058@kernel>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/29 09:24:39,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/29 09:24:40,
+	Serialize complete at 2012/11/29 09:24:40
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00GvhwF7k39YY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On 11/29/2012 08:43 AM, Jaegeuk Hanse wrote:
+> Hi Tang,
+>
+> I haven't read the patchset yet, but could you give a short describe how
+> you design your implementation in this patchset?
+>
+> Regards,
+> Jaegeuk
+>
 
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
+Hi Jaegeuk,
 
-It seems that 'ftrace_enabled' flag should not be used inside the tracer
-functions. The ftrace core is using this flag for internal purposes, and
-the flag wasn't meant to be used in tracers' runtime checks.
+Thanks for your joining in. :)
 
-stack tracer is the only tracer that abusing the flag. So stop it from
-serving as a bad example.
+This feature is used in memory hotplug.
 
-Also, there is a local 'stack_trace_disabled' flag in the stack tracer,
-which is never updated; so it can be removed as well.
+In order to implement a whole node hotplug, we need to make sure the
+node contains no kernel memory, because memory used by kernel could
+not be migrated. (Since the kernel memory is directly mapped,
+VA = PA + __PAGE_OFFSET. So the physical address could not be changed.)
 
-Link: http://lkml.kernel.org/r/1342637761-9655-1-git-send-email-anton.voron=
-tsov@linaro.org
+With this boot option, user could specify all the memory on a node to
+be movable(which means they are in ZONE_MOVABLE), so that the node
+could be hot-removed.
 
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace_stack.c |    4 ----
- 1 file changed, 4 deletions(-)
-
-diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
-index 0c1b1657..42ca822 100644
---- a/kernel/trace/trace_stack.c
-+++ b/kernel/trace/trace_stack.c
-@@ -33,7 +33,6 @@ static unsigned long max_stack_size;
- static arch_spinlock_t max_stack_lock =3D
- 	(arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
-=20
--static int stack_trace_disabled __read_mostly;
- static DEFINE_PER_CPU(int, trace_active);
- static DEFINE_MUTEX(stack_sysctl_mutex);
-=20
-@@ -116,9 +115,6 @@ stack_trace_call(unsigned long ip, unsigned long parent=
-_ip,
- {
- 	int cpu;
-=20
--	if (unlikely(!ftrace_enabled || stack_trace_disabled))
--		return;
--
- 	preempt_disable_notrace();
-=20
- 	cpu =3D raw_smp_processor_id();
---=20
-1.7.10.4
+Thanks.
 
 
 
---00GvhwF7k39YY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQEcBAABAgAGBQJQtrlPAAoJEOdOSU1xswtMVFkH/A/rU2jVlaKtLL7U68r9G+RU
-pAPqK7JZc86OGFDKJtAC5RwIHBiUX4Xo5K/CyA83j0yCMPbzY60rLIUljoEY1HDO
-O4v7bHjXelwsdAh+FNSfO+STTfVW+F5Dzd2QfSgbEqjW5kC2UgaztQyDdDYUPgu/
-d7UXvTnlo1RmE5TbI0i1UU6JFjQFeYv++3Zg163XBTgtkaONA8xoXnEf8nVpkk12
-o+ja/6DFB0m62kL+bPGAufFzXuB2JPBubwmm3dG6Q8TC5qLlmM++Z9m4b2geauvH
-pJr2b/R5i6qfZ+UrqOVEiKLPN/GaEVZqYwxpz7ewZiFill34WU7F8Pn8ytt51cQ=
-=KdTu
------END PGP SIGNATURE-----
-
---00GvhwF7k39YY--
