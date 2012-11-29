@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756477Ab2K2ASG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Nov 2012 19:18:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8567 "EHLO mx1.redhat.com"
+	id S932707Ab2K2AUD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Nov 2012 19:20:03 -0500
+Received: from 8bytes.org ([85.214.48.195]:41476 "EHLO mail.8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755538Ab2K2ASE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Nov 2012 19:18:04 -0500
-Date: Wed, 28 Nov 2012 16:17:59 -0800
-From: Zach Brown <zab@redhat.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, bcrl@kvack.org, jmoyer@redhat.com,
-        axboe@kernel.dk, viro@zeniv.linux.org.uk
-Subject: Re: [PATCH 12/25] aio: Refcounting cleanup
-Message-ID: <20121129001759.GH18574@lenny.home.zabbo.net>
-References: <1354121029-1376-1-git-send-email-koverstreet@google.com>
- <1354121029-1376-13-git-send-email-koverstreet@google.com>
+	id S1754468Ab2K2AUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Nov 2012 19:20:00 -0500
+Date: Thu, 29 Nov 2012 01:19:54 +0100
+From: Joerg Roedel <joro@8bytes.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
+        Yinghai Lu <yinghai@kernel.org>,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Subject: Re: [PATCH 00/19 v4] Improve IRQ remapping abstraction in x86 core
+ code
+Message-ID: <20121129001954.GG30633@8bytes.org>
+References: <1353417176-18945-1-git-send-email-joro@8bytes.org>
+ <20121128212205.GD13915@phenom.dumpdata.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1354121029-1376-13-git-send-email-koverstreet@google.com>
+In-Reply-To: <20121128212205.GD13915@phenom.dumpdata.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Thu Nov 29 01:19:56 2012
+X-DSPAM-Confidence: 0.9994
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 50b6aa2c22975153712821
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Konrad,
 
->  struct kioctx {
->  	atomic_t		users;
-> -	int			dead;
-> +	atomic_t		dead;
+On Wed, Nov 28, 2012 at 04:22:05PM -0500, Konrad Rzeszutek Wilk wrote:
 
-Do we want to be paranoid and atomic_set() that to 0 when the ioctx is
-allocated?
+> I looked at the patches and you can also add
+> Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-> +	while (!list_empty(&ctx->active_reqs)) {
-> +		struct list_head *pos = ctx->active_reqs.next;
-> +		struct kiocb *iocb = list_kiocb(pos);
+Thanks for your review, I added the line to the patches.
 
-I'd use list_first_entry() and ignore the list_kiocb() wrapper, I think.
+> If you have a git tree I would like to test them as well. Thx.
 
-> +	if (!atomic_xchg(&ctx->dead, 1)) {
-> +		hlist_del_rcu(&ctx->list);
-> +		synchronize_rcu();
+I rebased to v3.7-rc7 and pushed it to
 
-> +	hlist_for_each_entry_rcu(ctx, n, &mm->ioctx_list, list)
-> +		if (ctx->user_id == ctx_id){
-> +			BUG_ON(atomic_read(&ctx->dead));
+	git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git  ioapic-cleanups
 
-Hmm.  Won't it be possible to race lookup and io_destroy() to hit this
-BUG?
+(Just pushed, may take some time to hit the mirrors)
 
-- z
+
+Thanks,
+
+	Joerg
+
+
