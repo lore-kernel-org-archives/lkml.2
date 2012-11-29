@@ -1,104 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104Ab2K2Laj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 06:30:39 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:42675 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752071Ab2K2Lah (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 06:30:37 -0500
-Date: Thu, 29 Nov 2012 12:30:30 +0100
-From: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Toshi Kani <toshi.kani@hp.com>, linux-acpi@vger.kernel.org,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Wen Congyang <wencongyang@gmail.com>, isimatu.yasuaki@jp.fujitsu.com,
-        lenb@kernel.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on
- rebind scenario
-Message-ID: <20121129113030.GB639@dhcp-192-168-178-175.profitbricks.localdomain>
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
- <1354150952.26955.377.camel@misato.fc.hp.com>
- <1354151742.26955.385.camel@misato.fc.hp.com>
- <2315811.arm7RJr4ey@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2315811.arm7RJr4ey@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754099Ab2K2Lc6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 06:32:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64025 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752760Ab2K2Lc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 06:32:56 -0500
+Date: Thu, 29 Nov 2012 08:39:56 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Hans Verkuil <hverkuil@xs4all.nl>,
+        Prabhakar Lad <prabhakar.csengg@gmail.com>
+Cc: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Prabhakar Lad <prabhakar.lad@ti.com>,
+        Hans Verkuil <hansverk@cisco.com>, Sakari Ailus <sakari.ailus@iki.fi>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        LMML <linux-media@vger.kernel.org>
+Subject: Re: [PATCH v3 0/9] Media Controller capture driver for DM365
+Message-ID: <20121129083956.227f55ee@redhat.com>
+In-Reply-To: <201211290843.36468.hverkuil@xs4all.nl>
+References: <1354099329-20722-1-git-send-email-prabhakar.lad@ti.com>
+	<201211282018.20832.hverkuil@xs4all.nl>
+	<20121128193021.GA4174@kroah.com>
+	<201211290843.36468.hverkuil@xs4all.nl>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 11:03:05AM +0100, Rafael J. Wysocki wrote:
-> On Wednesday, November 28, 2012 06:15:42 PM Toshi Kani wrote:
-> > On Wed, 2012-11-28 at 18:02 -0700, Toshi Kani wrote:
-> > > On Thu, 2012-11-29 at 00:49 +0100, Rafael J. Wysocki wrote:
-> > > > On Wednesday, November 28, 2012 02:02:48 PM Toshi Kani wrote:
-> > > > > > > > > > > > Consider the following case:
-> > > > > > > > > > > > 
-> > > > > > > > > > > > We hotremove the memory device by SCI and unbind it from the driver at the same time:
-> > > > > > > > > > > > 
-> > > > > > > > > > > > CPUa                                                  CPUb
-> > > > > > > > > > > > acpi_memory_device_notify()
-> > > > > > > > > > > >                                        unbind it from the driver
-> > > > > > > > > > > >     acpi_bus_hot_remove_device()
-> > > > > > > > > > > 
-[...]
-> Well, in the meantime I've had a look at acpi_bus_hot_remove_device() and
-> friends and I think there's a way to address all of these problems
-> without big redesign (for now).
-> 
-> First, why don't we introduce an ACPI device flag (in the flags field of
-> struct acpi_device) called eject_forbidden or something like this such that:
-> 
-> (1) It will be clear by default.
-> (2) It may only be set by a driver's .add() routine if necessary.
-> (3) Once set, it may only be cleared by the driver's .remove() routine if
->     it's safe to physically remove the device after the .remove().
-> 
-> Then, after the .remove() (which must be successful) has returned, and the
-> flag is set, it will tell acpi_bus_remove() to return a specific error code
-> (such as -EBUSY or -EAGAIN).  It doesn't matter if .remove() was called
-> earlier, because if it left the flag set, there's no way to clear it afterward
-> and acpi_bus_remove() will see it set anyway.  I think the struct acpi_device
-> should be unregistered anyway if that error code is to be returned.
-> 
-> [By the way, do you know where we free the memory allocated for struct
->  acpi_device objects?]
-> 
-> Now if acpi_bus_trim() gets that error code from acpi_bus_remove(), it should
-> store it, but continue the trimming normally and finally it should return that
-> error code to acpi_bus_hot_remove_device().
+Em Thu, 29 Nov 2012 08:43:36 +0100
+Hans Verkuil <hverkuil@xs4all.nl> escreveu:
 
-Side-note: In the pre_remove patches, acpi_bus_trim actually returns on the
-first error from acpi_bus_remove (e.g. when memory offlining in pre_remove
-fails). Trimming is not continued. 
+> On Wed November 28 2012 20:30:21 Greg Kroah-Hartman wrote:
+> > On Wed, Nov 28, 2012 at 08:18:20PM +0100, Hans Verkuil wrote:
+> > > On Wed November 28 2012 18:22:48 Greg Kroah-Hartman wrote:
+> > > > On Wed, Nov 28, 2012 at 10:18:02AM -0200, Mauro Carvalho Chehab wrote:
+> > > > > Em Wed, 28 Nov 2012 12:56:10 +0100
+> > > > > Hans Verkuil <hansverk@cisco.com> escreveu:
+> > > > > 
+> > > > > > On Wed 28 November 2012 12:45:37 Dan Carpenter wrote:
+> > > > > > > I wish people wouldn't submit big patches right before the merge
+> > > > > > > window opens...  :/ It's better to let it sit in linux-next for a
+> > > > > > > couple weeks so people can mess with it a bit.
+> > > > > > 
+> > > > > > It's been under review for quite some time now, and the main change since
+> > > > > > the last posted version is that this is now moved to staging/media.
+> > > > > > 
+> > > > > > So it is not yet ready for prime time, but we do want it in to simplify
+> > > > > > the last remaining improvements needed to move it to drivers/media.
+> > > > > 
+> > > > > "last remaining improvements"? I didn't review the patchset, but
+> > > > > the TODO list seems to have several pending stuff there:
+> > > > > 
+> > > > > +- User space interface refinement
+> > > > > +        - Controls should be used when possible rather than private ioctl
+> > > > > +        - No enums should be used
+> > > > > +        - Use of MC and V4L2 subdev APIs when applicable
+> > > > > +        - Single interface header might suffice
+> > > > > +        - Current interface forces to configure everything at once
+> > > > > +- Get rid of the dm365_ipipe_hw.[ch] layer
+> > > > > +- Active external sub-devices defined by link configuration; no strcmp
+> > > > > +  needed
+> > > > > +- More generic platform data (i2c adapters)
+> > > > > +- The driver should have no knowledge of possible external subdevs; see
+> > > > > +  struct vpfe_subdev_id
+> > > > > +- Some of the hardware control should be refactorede
+> > > > > +- Check proper serialisation (through mutexes and spinlocks)
+> > > > > +- Names that are visible in kernel global namespace should have a common
+> > > > > +  prefix (or a few)
+> > > > > 
+> > > > > From the above comments, both Kernelspace and Userspace APIs require 
+> > > > > lots of work.
+> > > 
+> > > And that's why it is in staging. Should a long TODO list now suddenly
+> > > prevent staging from being used? In Barcelona we discussed this and the
+> > > only requirement we came up was was that it should compile.
+> > 
+> > Yes, that's all I care about in staging, but as I stated, I don't
+> > maintain drivers/staging/media/ that area is under Mauro's control
+> > (MAINTAINERS even says this), and I'm a bit leery of going against the
+> > wishes of an existing subsystem maintainer for adding staging drivers
+> > that tie into their subsystem.
 
-Normally, acpi_bus_trim keeps trimming as you say, and always returns the last
-error. Is this the desired behaviour that we want to keep for bus_trim? (This is
-more a general question, not specific to the eject_forbidden suggestion)
+On my understanding, this is not a "normal" staging driver for some
+unsupported hardware. It is a driver that is meant to replace an 
+existing driver, whose plans is to implement a different, userspace-incompatible
+API set than the existing one. In other words, merging it as-is would give the
+false impression that only solving the TODO items would be enough to promote it.
 
-> 
-> Now, if acpi_bus_hot_remove_device() gets that error code, it should just
-> reverse the whole trimming (i.e. trigger acpi_bus_scan() from the device
-> we attempted to eject) and notify the firmware about the failure.
+However, the main criteria for a replacement driver is to not cause any
+regression. So, a compatibility layer and compatibility tests that warrants
+this is a requirement (eventually using the  libv4l's LD_PRELOAD approach). 
 
-sounds like this rollback needs to be implemented in any solution we choose
-to implement, correct?
+So, if the ones working on the driver are also willing to work on the 
+needed compatibility bits, I'm ok on merging it at staging; if not, there's
+no sense on spending everybody's time on something that will be discarded
+on a few kernel cycles.
 
-> 
-> If we have that, then the memory hotplug driver would only need to set
-> flags.eject_forbidden in its .add() routine and make its .remove() routine
-> only clear that flag if it is safe to actually remove the memory.
-> 
+So, the main discussion here is not about merging it at staging or not; is
+to be sure that, once it got merged, the right things will be addressed,
+in order to allow it to replace the existing driver.
 
-But when .remove op is called, we are already in the irreversible/error-free
-removal (final removal step).
-Maybe we need to reset eject_forbidden in a prepare_remove operation which
-handles the removal part that can fail ?
+Of course, Dan's request is valid; pushing it right now at -next will give
+only a week for the others to review a big driver. So, better to delay it.
 
-thanks,
+In any case, there are already 400+ patches on my queue that arrived
+before these late-submitted patch series. So, it would be delayed
+anyway to the next cycle, due to the very high volume of pending stuff
+there, and to his late submission.
 
-- Vasilis
+So, in summary:
+
+Prabhakar/Manju:
+
+If you'll be committed to make sure that no regressions will happen when this
+driver will be promoted and replace the existing driver, please update
+the TODO to point that the compatibility bits is needed.
+
+I'll then merge it after the end of the merge window.
+
+Regards,
+Mauro
