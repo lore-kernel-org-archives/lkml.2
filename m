@@ -1,81 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881Ab2K2UEN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 15:04:13 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:50060 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752609Ab2K2UEL (ORCPT
+	id S1754392Ab2K2UEZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 15:04:25 -0500
+Received: from smtp1-g21.free.fr ([212.27.42.1]:43395 "EHLO smtp1-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752836Ab2K2UEY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 15:04:11 -0500
+	Thu, 29 Nov 2012 15:04:24 -0500
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: Chao Xie <chao.xie@marvell.com>
+Cc: a.zummo@towertech.it, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org, haojian.zhuang@gmail.com,
+        linux-arm-kernel@lists.infradead.org, xiechao.mail@gmail.com
+Subject: Re: [PATCH 2/4] rtc: pxa: fix rtc caculation issue
+References: <1354155670-6267-1-git-send-email-chao.xie@marvell.com>
+	<1354155670-6267-2-git-send-email-chao.xie@marvell.com>
+X-URL: http://belgarath.falguerolles.org/
+Date: Thu, 29 Nov 2012 21:04:06 +0100
+In-Reply-To: <1354155670-6267-2-git-send-email-chao.xie@marvell.com> (Chao
+	Xie's message of "Wed, 28 Nov 2012 21:21:08 -0500")
+Message-ID: <87r4nc18i1.fsf@free.fr>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20121129130844.GI19440@n2100.arm.linux.org.uk>
-References: <1350956091-5276-1-git-send-email-spang@chromium.org> <20121129130844.GI19440@n2100.arm.linux.org.uk>
-From: Michael Spang <spang@chromium.org>
-Date: Thu, 29 Nov 2012 15:03:46 -0500
-Message-ID: <CAC5F_1=SEDNsWGdPdFXB+RASV2oaRrnoOx46h2jCDwgNAEZXvQ@mail.gmail.com>
-Subject: Re: [PATCH] ARM: Fix page counting in mem_init and show_mem
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 8:08 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Mon, Oct 22, 2012 at 09:34:51PM -0400, Michael Spang wrote:
->>       for_each_bank (i, mi) {
->>               struct membank *bank = &mi->bank[i];
->> -             unsigned int pfn1, pfn2;
->> -             struct page *page, *end;
->> +             unsigned int start, end, pfn;
->>
->> -             pfn1 = bank_pfn_start(bank);
->> -             pfn2 = bank_pfn_end(bank);
->> +             start = bank_pfn_start(bank);
->> +             end = bank_pfn_end(bank);
->>
->> -             page = pfn_to_page(pfn1);
->> -             end  = pfn_to_page(pfn2 - 1) + 1;
->> +             for (pfn = start; pfn < end; pfn++) {
->> +                     struct page *page;
->> +
->> +                     if (!pfn_valid(pfn))
->> +                             continue;
->
-> This is not a very good fix; what this means is that we end up calling
-> pfn_valid() for each and every page in the system, and as pfn_valid()
-> may not be a simple test (but a search) we should avoid that when we're
-> iterating over all pages in the system.
->
-> Firstly, the mem blank information is assumed from the very beginning
-> to be aligned with the sparsemem split-up.  This comes from the previous
-> discontiguous implementation where this was an absolute requirement.  We
-> continue to require that.
+Chao Xie <chao.xie@marvell.com> writes:
 
-Little confused here.
+Hi Chao Xie,
 
-On my system, there are 2 membanks and 8 sparsemem sections.
-Obviously, the banks have been further divided into sections by
-sparsemem. My problem occurs because this code assumes there's a
-single struct page array for the whole bank, when really there are
-multiple.
+First of all, could you please send patches from rtc-pxa to me also, as I'm
+maintaining that driver ?
 
-Each struct page array is allocated in a separate call to bootmem.
-It's disastrous if bootmem can't allocate them contiguously. This
-happens on one of my devices with certain kernel options.
+Second point, the original design of the driver relies on the special case of
+writing zeroes to WOM and DOM, as mentionned in PXA27x Developers Guide, chapter
+21.4.2.3.5 "Writing Alarm Registers with Invalid (Zero) Data", which states :
+> Day-Of-Week (DOW), or Week-Of-Month (WOM), Day of Month (DOM), Month or Year
+> fields—Zero is not valid for these fields. If zero is written into any of
+> these fields, it is ignored while generating the alarm.
 
->
-> Secondly, if you're worred about the stolen memory, then we need to be
-> iterating over the memblock information instead of the membank information.
-> This is slightly more complex because memblock will merge neighbouring
-> regions into one contiguous entry - and this needs to be split up here.
-> This is why I persisted with the membank stuff here as that _should_
-> already be appropriately split.
->
-> In the long run though, moving to memblock and dealing better with the
-> split memory maps (rather than looking up each and every page using
-> pfn_to_page()) is the right way to go.
+I'd like to know if your patch fixes something, or is an enhancement ?
 
-Thanks,
-Michael
+Cheers.
+
+--
+Robert
+
+PS: I've not checked the patch yet, that's just a prelimary comment on the patch
+message.
