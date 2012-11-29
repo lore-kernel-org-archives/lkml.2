@@ -1,99 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755102Ab2K2QLt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 11:11:49 -0500
-Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:37303 "EHLO
-	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754588Ab2K2QLs (ORCPT
+	id S1755167Ab2K2QQw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 11:16:52 -0500
+Received: from cha92-13-88-165-248-19.fbx.proxad.net ([88.165.248.19]:36963
+	"EHLO jigen.glandium.org" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753852Ab2K2QQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 11:11:48 -0500
-Date: Thu, 29 Nov 2012 11:11:22 -0500
-From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: David Laight <David.Laight@ACULAB.COM>,
-        Krzysztof Mazur <krzysiek@podlesie.net>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nathan@traverse.com.au
-Subject: Re: [PATCH v2 3/3] pppoatm: protect against freeing of vcc
-Message-ID: <20121129111122.0c3698e1@thirdoffive.cmf.nrl.navy.mil>
-In-Reply-To: <1354204748.21562.180.camel@shinybook.infradead.org>
-References: <1350926091-12642-1-git-send-email-krzysiek@podlesie.net>
-	<1350926091-12642-3-git-send-email-krzysiek@podlesie.net>
-	<1354036592.2534.6.camel@shinybook.infradead.org>
-	<20121127173906.GA11390@shrek.podlesie.net>
-	<1354039349.2534.11.camel@shinybook.infradead.org>
-	<20121127135434.0728cd4f@thirdoffive.cmf.nrl.navy.mil>
-	<AE90C24D6B3A694183C094C60CF0A2F6026B70C9@saturn3.aculab.com>
-	<1354141115.21562.101.camel@shinybook.infradead.org>
-	<20121129103744.38149dc6@thirdoffive.cmf.nrl.navy.mil>
-	<1354204748.21562.180.camel@shinybook.infradead.org>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.7; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 29 Nov 2012 11:16:51 -0500
+X-Greylist: delayed 1059 seconds by postgrey-1.27 at vger.kernel.org; Thu, 29 Nov 2012 11:16:51 EST
+Date: Thu, 29 Nov 2012 16:58:51 +0100
+From: Mike Hommey <mh@glandium.org>
+To: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: John Stultz <john.stultz@linaro.org>, NeilBrown <neilb@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Dave Chinner <david@fromorbit.com>,
+        Andrea Righi <andrea@betterlinux.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Taras Glek <tglek@mozilla.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 0/3] Volatile Ranges (v7) & Lots of words
+Message-ID: <20121129155851.GA24630@glandium.org>
+References: <1348888593-23047-1-git-send-email-john.stultz@linaro.org>
+ <20121002173928.2062004e@notabene.brown>
+ <506B6CE0.1060800@linaro.org>
+ <CAHO5Pa0KvH+MTYm6BCM5LHj995HpO+t87szyJjjXgupVq2VTfA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHO5Pa0KvH+MTYm6BCM5LHj995HpO+t87szyJjjXgupVq2VTfA@mail.gmail.com>
+X-GPG-Fingerprint: 182E 161D 1130 B9FC CD7D  B167 E42A A04F A6AA 8C72
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Nov 2012 15:59:08 +0000
-David Woodhouse <dwmw2@infradead.org> wrote:
-
-> On Thu, 2012-11-29 at 10:37 -0500, chas williams - CONTRACTOR wrote:
-> > you shouldnt clear ATM_VF_ADDR until the vpi/vci is actually closed and
-> > ready for reuse.  at this point, it isnt.
+On Fri, Nov 02, 2012 at 09:59:07PM +0100, Michael Kerrisk wrote:
+> John,
 > 
-> So I should always wait for the completion of my PKT_CLOSE and only
-> clear ATM_VF_ADDR when it's actually done?
+> A question at on one point:
 > 
-> But can you define 'ready for reuse'? From the moment I clear
-> ATM_VF_ADDR, another CPU may enter my popen() function to set up another
-> VCC with the same parameters, and everything should work fine. The
-> PKT_POPEN will end up on the queue *after* my PKT_PCLOSE for the old
-> VCC. Any received packets will be dropped until the new VCC gets
-> ATM_VF_READY set (by the popen function).
+> On Wed, Oct 3, 2012 at 12:38 AM, John Stultz <john.stultz@linaro.org> wrote:
+> > On 10/02/2012 12:39 AM, NeilBrown wrote:
+> [...]
+> >>   The SIGBUS interface could have some merit if it really reduces
+> >> overhead.  I
+> >>   worry about app bugs that could result from the non-deterministic
+> >>   behaviour.   A range could get unmapped while it is in use and testing
+> >> for
+> >>   the case of "get a SIGBUS half way though accessing something" would not
+> >>   be straight forward (SIGBUS on first step of access should be easy).
+> >>   I guess that is up to the app writer, but I have never liked anything
+> >> about
+> >>   the signal interface and encouraging further use doesn't feel wise.
+> >
+> > Initially I didn't like the idea, but have warmed considerably to it. Mainly
+> > due to the concern that the constant unmark/access/mark pattern would be too
+> > much overhead, and having a lazy method will be much nicer for performance.
+> > But yes, at the cost of additional complexity of handling the signal,
+> > marking the faulted address range as non-volatile, restoring the data and
+> > continuing.
 > 
-> What's the actual failure mode, caused by me clearing ATM_VF_ADDR "too
-> early"?
+> At a finer level of detail, how do you see this as happening in the
+> application. I mean: in the general case, repopulating the purged
+> volatile page would have to be done outside the signal handler (I
+> think, because async-signal-safety considerations would preclude too
+> much compdex stuff going on inside the handler). That implies
+> longjumping out of the handler, repopulating the pages with data, and
+> then restarting whatever work was being done when the SIGBUS was
+> generated.
 
-there may not be one (due to serialization from other parts of the
-atm stack) but you "shouldn't" clear ATM_VF_ADDR until the vpi/vci pair
-is ready for reuse.  by reuse, i mean that any previous rx/tx data in
-the vpi/vci segmentation hardware has been removed/cleared.
+There are different strategies that can be used to repopulate the pages,
+within or outside the signal handler, and I'd say it's not that
+important of a detail.
 
-> >  ATM_VF_READY should already be clear at this point but you should set
-> > it before you queue your PKT_CLOSE. 
-> 
-> I should *set* it? Do you mean clear it? Yes, I see it's cleared by
+That being said, if the kernel could be helpful and avoid people
+shooting themselves in the foot, that would be great, too.
 
-sorry, i did mean clear it.
+I don't know how possible this would be but being able to get the
+notification on a signalfd in a dedicated thread would certainly improve
+things (I guess other usecases of SIGSEGV/SIGBUG handlers could
+appreciate something like this). The kernel would pause the faulting
+thread while sending the notification on the signalfd, and the notified
+thread would be allowed to resume the faulting thread when it's done
+doing its job.
 
-> vcc_destroy_socket()... but all the other ATM drivers also seem to clear
-> it for themselves, and that would appear to be harmless.
-
-yeah, like i said, it is spuriously cleared in the drivers and should
-probably just be moved to under the control of the next layer up
-completely.  drivers/atm should just handle the hardware side, not the
-software side.
-
-> > checking for ATM_VF_READY in find_vcc() is probably going to give you
-> > grief as well since ATM_VF_READY isnt entirely under your control. 
-> 
-> That's fine. If *anyone* has cleared ATM_VF_READY, I stop sending
-> packets up it. Or, more to the point, I stop using the damn thing at
-> all. See commit 1f6ea6e511e5ec730d8e88651da1b7b6e8fd1333.
-> 
-> >  you need to be able to find the vcc until after pclose() is finished since
-> > your tasklet might have a few packets it is still processing?
-> 
-> The whole point of that check is that the tasklet *won't* be able to
-> find it any more, and it'll just discard incoming packets for the
-> obsolescent VCC.
-
-that's fine as long as you understand this.  in the case of the he, i
-needed to be able to find the vcc until close() is finished so that i
-can wakeup the sleeper in the close() routine that is waiting for the
-reassembly queue to be cleared/reset.  also, i still needed to find the
-vcc for the tx side during close() since i still might need to pop()
-skb's that are being sent during the close() while i am still trying to
-get the hardware to shutdown the transmit dma engine.
-
+Mike
