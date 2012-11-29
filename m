@@ -1,81 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836Ab2K2Gsk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 01:48:40 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:57886 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751039Ab2K2Gsi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 01:48:38 -0500
-Date: Thu, 29 Nov 2012 07:48:32 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bill Pemberton <wfp5p@virginia.edu>, Greg KH <greg@kroah.com>,
-        Peter Ujfalusi <peter.ujfalusi@ti.com>
-Subject: Re: linux-next: manual merge of the pwm tree with the driver-core
- tree
-Message-ID: <20121129064831.GD28582@avionic-0098.adnet.avionic-design.de>
-References: <20121129162945.ee9cf8d7620477159e038ccf@canb.auug.org.au>
+	id S1752947Ab2K2GxR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 01:53:17 -0500
+Received: from smtp5-g21.free.fr ([212.27.42.5]:37448 "EHLO smtp5-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751039Ab2K2GxQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 01:53:16 -0500
+From: Jim Meyering <jim@meyering.net>
+To: Jeff Liu <jeff.liu@oracle.com>
+Cc: Hugh Dickins <hughd@google.com>, Jaegeuk Hanse <jaegeuk.hanse@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>, Zheng Liu <wenqing.lz@taobao.com>,
+        Paul Eggert <eggert@cs.ucla.edu>,
+        Christoph Hellwig <hch@infradead.org>, Josef Bacik <josef@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Andreas Dilger <adilger@dilger.ca>,
+        Dave Chinner <david@fromorbit.com>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        Chris Mason <chris.mason@fusionio.com>,
+        Sunil Mushran <sunil.mushran@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] tmpfs: support SEEK_DATA and SEEK_HOLE (reprise)
+In-Reply-To: <50B6E7CB.1040504@oracle.com> (Jeff Liu's message of "Thu, 29 Nov
+	2012 12:42:51 +0800")
+References: <alpine.LNX.2.00.1211281706390.1516@eggly.anvils>
+	<20121129012933.GA9112@kernel>
+	<alpine.LNX.2.00.1211281745200.1641@eggly.anvils>
+	<87lidlxcw9.fsf@rho.meyering.net> <50B6E7CB.1040504@oracle.com>
+Date: Thu, 29 Nov 2012 07:53:06 +0100
+Message-ID: <87d2yw3not.fsf@rho.meyering.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="g7w8+K/95kPelPD2"
-Content-Disposition: inline
-In-Reply-To: <20121129162945.ee9cf8d7620477159e038ccf@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:kQN3h91j0fNpjQjerE77/1KDXLPEtBwvS1xH63Sv7OR
- AkwzeXAtdfkH0tHFGMXockcRPrmjVtM8Gu5Yll2iLLGGs3pBHU
- UlIc0IUeOPBlE91T6Xix4rc5KPSAFDsVSHe4AT1E3iIHlQDCj2
- pN+uLWVWUy5c8DZ7ZSwGfxDzTjqpGv1VVDd7pLUFwVxe9ugMP1
- IVc7VppEJyILXGxxQ4o1fcXIsHc+dyCtlJpWyv5uibV7LimM4D
- lmawcL7VTRYrB3UycvYE/2GALT3vWsZxFZprnFTSHj30XTJ+cv
- h+2yue81RJ/073FcdtcPaVuishr5am2dmNgbFU7+ZarrkDmixb
- G9HCfUuhV0Gr+wonhnt5uDb4+StUJ2CURf2939OkGhCDsWo+uq
- Fuka7Sq6y/ikY3RsUOwQcWK8LGN6LHWDJo=
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Jeff Liu wrote:
 
---g7w8+K/95kPelPD2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On 11/29/2012 12:15 PM, Jim Meyering wrote:
+>> Hugh Dickins wrote:
+>>> On Thu, 29 Nov 2012, Jaegeuk Hanse wrote:
+>> ...
+>>>> But this time in which scenario will use it?
+>>>
+>>> I was not very convinced by the grep argument from Jim and Paul:
+>>> that seemed to be grep holding on to a no-arbitrary-limits dogma,
+>>> at the expense of its users, causing an absurd line-length issue,
+>>> which use of SEEK_DATA happens to avoid in some cases.
+>>>
+>>> The cp of sparse files from Jeff and Dave was more convincing;
+>>> but I still didn't see why little old tmpfs needed to be ahead
+>>> of the pack.
+>>>
+>>> But at LinuxCon/Plumbers in San Diego in August, a more convincing
+>>> case was made: I was hoping you would not ask, because I did not take
+>>> notes, and cannot pass on the details - was it rpm building on tmpfs?
+>>> I was convinced enough to promise support on tmpfs when support on
+>>> ext4 goes in.
+>>
+>> Re the cp-vs-sparse-file case, the current FIEMAP-based code in GNU
+>> cp is ugly and complicated enough that until recently it harbored a
+>> hard-to-reproduce data-corrupting bug[*].  Now that SEEK_DATA/SEEK_HOLE
+>> support work will work also for tmpfs and ext4, we can plan to remove
+>> the FIEMAP-based code in favor of a simpler SEEK_DATA/SEEK_HOLE-based
+>> implementation.
+> How do we teach du(1) to aware of the real disk footprint with Btrfs
+> clone or OCFS2 reflinked files if we remove the FIEMAP-based code?
+>
+> How about if we still keep it there, and introduce SEEK_DATA/SEEK_HOLE
+> code to the extent-scan module which is dedicated to deal with sparse files?
 
-On Thu, Nov 29, 2012 at 04:29:45PM +1100, Stephen Rothwell wrote:
-> Hi Thierry,
->=20
-> Today's linux-next merge of the pwm tree got a conflict in
-> drivers/pwm/pwm-twl6030.c between commit fd1091125a1d ("pwm: remove use
-> of __devexit_p") from the driver-core tree and commit 6179a58ec7e2 ("pwm:
-> Remove pwm-twl6030 driver") from the pwm tree.
->=20
-> I fixed it up (the latter removed the file) and can carry the fix as
-> necessary (no action is required).
-
-Great, thanks!
-
-Thierry
-
---g7w8+K/95kPelPD2
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQtwU/AAoJEN0jrNd/PrOhUrYP/jNWpFGp4oM+9joVT0QCE/jZ
-U/SbQEBSL80Hzo+R3d1AACKvrccw0ouaUINKn0z8KVhagXVj2J7V0HOYGqEkmb+T
-htaO3nxh1VtReeywAjz7ohG2Af2Wphbd//ePIepKCkZF5GQK32zwJBu8cNBdX7++
-RqSVyUZtqQK6cKOlprx22CIg+yDcRgNd7yuOI49/zbOt27/4MTrPXyOb0uPpNYEg
-h8LFvI6+F4eZZgxWhPANddn2y/mhCMo9ZFx8wl9uWbSs7OMlyzCMjY645hED1Jc6
-ikMPrNJDRyU6ExmgnkkFVdz6pnaR785mnsiG+HkXdKA/5eS4BYIR0kRYGKsIPoZp
-7NuUIFzerbDpiyxkvuYhTRY1fE6HvAnGs1z38GpcIvslVyL/EZ4PTWLzNBxWokI1
-4cSS371R7pzEjkRJjBkpX8mPrv+hFQqjzs10enJf3llu3td2xh7irTrG0wEiTigt
-+hwt9sar52sT0QnOeQCTRwoeeGUXT8p3swAvmNaj5ii5h7U/J1SMjbYgyOmBST5U
-uCs8V1CAQGAm28jfPWBhu6X3yDFpeP5/DA9LradKdw603vYf0kwNyaio/s1DnKQr
-YZ5Wh42KN6ZRt/W1zXpN5jeTtDWBzq8jppTuhZNPxIEr1WVOvz3lYhFF9hLiXNKq
-idjUlOwQtRVpuzH0YP4c
-=nKhl
------END PGP SIGNATURE-----
-
---g7w8+K/95kPelPD2--
+Hi Jeff,
+By "removing the FIEMAP-based code" I mean the uses in copy.c.
+All of that should remain independent of how du does its job,
+so if FIEMAP is required for your planned du enhancement,
+then feel free to use it.
