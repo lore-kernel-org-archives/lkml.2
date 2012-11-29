@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754210Ab2K2UmU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 15:42:20 -0500
-Received: from mga09.intel.com ([134.134.136.24]:21247 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753833Ab2K2UmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 15:42:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,186,1355126400"; 
-   d="scan'208";a="249420574"
-From: Andi Kleen <andi@firstfloor.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: Benjamin LaHaise <bcrl@kvack.org>, linux-kernel@vger.kernel.org,
-        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org, zab@redhat.com,
-        jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk
-Subject: Re: [PATCH 22/25] Generic dynamic per cpu refcounting
-References: <1354121029-1376-1-git-send-email-koverstreet@google.com>
-	<1354121029-1376-23-git-send-email-koverstreet@google.com>
-	<m28v9kgsen.fsf@firstfloor.org> <20121129185720.GE15094@google.com>
-	<20121129185953.GW16230@one.firstfloor.org>
-	<20121129191214.GG15094@google.com>
-	<20121129192003.GX16230@one.firstfloor.org>
-	<20121129192925.GH15094@google.com> <20121129193452.GI19042@kvack.org>
-	<20121129202231.GJ15094@google.com>
-Date: Thu, 29 Nov 2012 12:42:17 -0800
-In-Reply-To: <20121129202231.GJ15094@google.com> (Kent Overstreet's message of
-	"Thu, 29 Nov 2012 12:22:31 -0800")
-Message-ID: <m2fw3sf8eu.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1754603Ab2K2UpU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 15:45:20 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:63515 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753975Ab2K2UpR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 15:45:17 -0500
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+To: linux-kernel@vger.kernel.org, tglx@linutronix.de
+Cc: backports@vger.kernel.org, alexander.stein@systec-electronic.com,
+        brudley@broadcom.com, rvossen@broadcom.com, arend@broadcom.com,
+        frankyl@broadcom.com, kanyan@broadcom.com,
+        linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
+        kyungmin.park@samsung.com, s.nawrocki@samsung.com,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
+        daniel.vetter@ffwll.ch, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, srinidhi.kasagar@stericsson.com,
+        linus.walleij@linaro.org,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Subject: [PATCH 0/6] drivers: convert struct spinlock to spinlock_t
+Date: Thu, 29 Nov 2012 12:45:04 -0800
+Message-Id: <1354221910-22493-1-git-send-email-mcgrof@do-not-panic.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kent Overstreet <koverstreet@google.com> writes:
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
 
-> On Thu, Nov 29, 2012 at 02:34:52PM -0500, Benjamin LaHaise wrote:
->> On Thu, Nov 29, 2012 at 11:29:25AM -0800, Kent Overstreet wrote:
->> > There's some kind of symmetry going on here, and if I'd been awake more
->> > in college I could probably say exactly why it works, but it does.
->> 
->> I think the catch is that using only a 32 bit counter is something the 
->> user could arbitrarily control the sum of all parts.  I think a 64 bit 
->> counter may be required to ensure no overflow occurs.  Otherwise, an 
->> overflow could result in a premature free when there are still 2^32 
->> objects active thanks to a malicious user (possible on systems with lots 
->> of memory these days -- remote, but possible).
->
-> That's no different from regular atomic_t - but you're right, we
-> should be using size_t for anything userspace can manipulate.
+Turns out a few drivers have strayed away from using the
+spinlock_t typedef and decided to use struct spinlock
+directly. This series converts these drivers to use
+spinlock_t. Each change has been compile tested with
+allmodconfig and sparse checked. Driver developers
+may want to look at the compile error output / sparse
+error report supplied in each commit log, in particular
+brcmfmac and i915, there are quite a few things that
+are not related to this change that the developers
+can clean up / fix.
 
-The regular atomic_t is limited in ways that you are not.
-See my original mail.
+Luis R. Rodriguez (6):
+  ux500: convert struct spinlock to spinlock_t
+  i915: convert struct spinlock to spinlock_t
+  s5p-fimc: convert struct spinlock to spinlock_t
+  s5p-jpeg: convert struct spinlock to spinlock_t
+  brcmfmac: convert struct spinlock to spinlock_t
+  ie6xx_wdt: convert struct spinlock to spinlock_t
 
--Andi
+ drivers/crypto/ux500/cryp/cryp.h               |    4 ++--
+ drivers/crypto/ux500/hash/hash_alg.h           |    4 ++--
+ drivers/gpu/drm/i915/i915_drv.h                |    4 ++--
+ drivers/media/platform/s5p-fimc/mipi-csis.c    |    2 +-
+ drivers/media/platform/s5p-jpeg/jpeg-core.h    |    2 +-
+ drivers/net/wireless/brcm80211/brcmfmac/fweh.h |    2 +-
+ drivers/watchdog/ie6xx_wdt.c                   |    2 +-
+ 7 files changed, 10 insertions(+), 10 deletions(-)
 
 -- 
-ak@linux.intel.com -- Speaking for myself only
+1.7.10.4
+
