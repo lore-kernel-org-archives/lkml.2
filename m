@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754881Ab2K2V6H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 16:58:07 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38062 "EHLO
+	id S1754661Ab2K2V6F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 16:58:05 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38060 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752977Ab2K2V6D (ORCPT
+	with ESMTP id S1751303Ab2K2V6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 Nov 2012 16:58:03 -0500
 From: Kamal Mostafa <kamal@canonical.com>
@@ -19,85 +19,74 @@ Cc: David Solda <dso@cypress.com>, Troy Abercrombia <ta@cypress.com>,
         Mario Limonciello <mario_limonciello@dell.com>,
         Tim Gardner <tim.gardner@canonical.com>,
         Herton Krzesinski <herton.krzesinski@canonical.com>
-Subject: [PATCH v3 4/4] input: Cypress PS/2 Trackpad simulated multitouch
-Date: Thu, 29 Nov 2012 13:58:01 -0800
-Message-Id: <1354226281-3476-5-git-send-email-kamal@canonical.com>
+Subject: [PATCH v3 0/4] Cypress PS/2 Trackpad driver
+Date: Thu, 29 Nov 2012 13:57:57 -0800
+Message-Id: <1354226281-3476-1-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1354226281-3476-1-git-send-email-kamal@canonical.com>
-References: <1354226281-3476-1-git-send-email-kamal@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of SEMI_MT, present a full mt interface with simulated contact
-positions for >=3 fingers.  Enables e.g. multi-finger tap and drag.
+This driver, submitted on behalf of Cypress Semiconductor Corporation and
+additional contributors, provides support for the Cypress PS/2 Trackpad.
 
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/input/mouse/cypress_ps2.c |   16 ++++++++++++++++
- drivers/input/mouse/cypress_ps2.h |   14 +++++++++++++-
- 2 files changed, 29 insertions(+), 1 deletion(-)
+This [PATCH v3] version differs from my previous submitted version[1]:
 
-diff --git a/drivers/input/mouse/cypress_ps2.c b/drivers/input/mouse/cypress_ps2.c
-index 472342a..bbaa9b9 100644
---- a/drivers/input/mouse/cypress_ps2.c
-+++ b/drivers/input/mouse/cypress_ps2.c
-@@ -408,7 +408,9 @@ static int cypress_set_input_params(struct input_dev *input,
- 			return ret;
- 		}
- 
-+#if ( CYPRESS_SIMULATED_MT != 1 )
- 		__set_bit(INPUT_PROP_SEMI_MT, input->propbit);
-+#endif
- 
- 		if (cytp->tp_res_x && cytp->tp_res_x) {
- 			input_abs_set_res(input, ABS_X, cytp->tp_res_x);
-@@ -531,6 +533,20 @@ static int cypress_parse_packet(struct psmouse *psmouse,
- 				((packet[5] & 0x0f) << 8) | packet[7];
- 			if (cytp->mode & CYTP_BIT_ABS_PRESSURE)
- 				report_data->contacts[1].z = report_data->contacts[0].z;
-+#if ( CYPRESS_SIMULATED_MT == 1 )
-+			/* simulate contact positions for >2 fingers */
-+			if ( report_data->contact_cnt >= 3 )
-+				for ( i=1; i<report_data->contact_cnt; i++ ) {
-+				    report_data->contacts[i].x =
-+						    report_data->contacts[0].x
-+						    + 100*(i)*((i%2)?-1:1);
-+				    report_data->contacts[i].y =
-+						    report_data->contacts[0].y;
-+				    if (cytp->mode & CYTP_BIT_ABS_PRESSURE)
-+					    report_data->contacts[i].z =
-+						    report_data->contacts[0].z;
-+				}
-+#endif
- 		}
- 
- 		report_data->left = (header_byte & BTN_LEFT_BIT) ? 1 : 0;
-diff --git a/drivers/input/mouse/cypress_ps2.h b/drivers/input/mouse/cypress_ps2.h
-index ce70462..4b903a9 100644
---- a/drivers/input/mouse/cypress_ps2.h
-+++ b/drivers/input/mouse/cypress_ps2.h
-@@ -134,7 +134,19 @@
- #define RESP_SMBUS_BIT      0x80
- 
- #define CYTP_MAX_CONTACTS 5
--#define CYTP_MAX_MT_SLOTS 2
-+
-+/*
-+ * CYPRESS_SIMULATED_MT
-+ *   set to 1 for simulated multitouch (up to CTYP_MAX_CONTACTS fingers)
-+ *   set to 0 for SEMI_MT (2 fingers only)
-+ */
-+#define CYPRESS_SIMULATED_MT 1
-+
-+#if ( CYPRESS_SIMULATED_MT == 1 )
-+# define CYTP_MAX_MT_SLOTS 16
-+#else
-+# define CYTP_MAX_MT_SLOTS 2
-+#endif
- 
- enum cytp_type {
- 	CYTP_STG,
+  Patch #1 (cmdbuf to 8 bytes) and #3 (link in driver) are unchanged.
+
+  Patch #2 (main driver), as recommended by Henrik Rydberg[2]:
+  - use input_mt_assign_slots; drop cypress_cal_finger_id.
+  - enable 2-finger-only SEMI_MT; drop cypress_simulate_fingers.
+  - various code clean-ups.
+
+  Henrik, does patch #2 appear to properly use assign_slots and SEMI_MT as
+  you intended?  This SEMI_MT method does work (with 2 finger support only),
+  but I'm not clear why we wouldn't want to handle >2 fingers also, so ...
+
+  Patch #4 (new) reintroduces simulated multitouch for up to 5 fingers
+  (#if CYPRESS_SIMULATE_MT), disabling SEMI_MT again.
+
+  If that functionality (support for >2 fingers) can be acheived in some
+  better way, please advise.
+
+
+Remaining known problems (assistance or advice appreciated):
+
+  - Multitouch >2 fingers does not work after rmmod/insmod, and stops
+    working after suspend/resume.  Restarting X fixes it in both cases.
+
+  - cypress_reconnect() never actually works, so I disabled it; just let
+    psmouse re-init the driver instead, which works and is what was ending
+    up happenning anyway.
+
+
+ -Kamal Mostafa <kamal@canonical.com>
+
+[0] PATCH v1: http://www.spinics.net/lists/linux-input/msg23690.html
+[1] PATCH v2: http://www.spinics.net/lists/linux-input/msg23718.html
+[2] Henrik's review: http://www.spinics.net/lists/linux-input/msg23747.html
+
+
+
+Cypress Semiconductor Corporation (2):
+  input: Cypress PS/2 Trackpad psmouse driver
+  input: Cypress PS/2 Trackpad link into psmouse-base
+
+Kamal Mostafa (2):
+  input: increase struct ps2dev cmdbuf[] to 8 bytes
+  input: Cypress PS/2 Trackpad simulated multitouch
+
+ drivers/input/mouse/Kconfig        |   10 +
+ drivers/input/mouse/Makefile       |    1 +
+ drivers/input/mouse/cypress_ps2.c  |  846 ++++++++++++++++++++++++++++++++++++
+ drivers/input/mouse/cypress_ps2.h  |  231 ++++++++++
+ drivers/input/mouse/psmouse-base.c |   32 ++
+ drivers/input/mouse/psmouse.h      |    1 +
+ include/linux/libps2.h             |    2 +-
+ 7 files changed, 1122 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/input/mouse/cypress_ps2.c
+ create mode 100644 drivers/input/mouse/cypress_ps2.h
+
 -- 
 1.7.10.4
 
