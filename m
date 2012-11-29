@@ -1,84 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976Ab2K2TsO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 14:48:14 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:39447 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355Ab2K2TsN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 14:48:13 -0500
+	id S1754263Ab2K2Tsp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 14:48:45 -0500
+Received: from mx1.fusionio.com ([66.114.96.30]:41616 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752987Ab2K2Tsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 14:48:43 -0500
+X-ASG-Debug-ID: 1354218522-03d6a57f9b2125c0001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Date: Thu, 29 Nov 2012 14:48:40 -0500
+From: Chris Mason <chris.mason@fusionio.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Chris Mason <clmason@fusionio.com>, Mikulas Patocka <mpatocka@redhat.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
+        Jeff Chua <jeff.chua.linux@gmail.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH v2] Do a proper locking for mmap and block size change
+Message-ID: <20121129194840.GC3490@shiny>
+X-ASG-Orig-Subj: Re: [PATCH v2] Do a proper locking for mmap and block size change
+Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Chris Mason <clmason@fusionio.com>,
+	Mikulas Patocka <mpatocka@redhat.com>,
+	Al Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
+	Jeff Chua <jeff.chua.linux@gmail.com>,
+	Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
+	lkml <linux-kernel@vger.kernel.org>,
+	linux-fsdevel <linux-fsdevel@vger.kernel.org>
+References: <Pine.LNX.4.64.1211272252260.18338@file.rdu.redhat.com>
+ <50B5CC5A.8060607@kernel.dk>
+ <Pine.LNX.4.64.1211281222410.11599@file.rdu.redhat.com>
+ <CA+55aFx4zYnEsUyGJurBjB0XZ0AgmyKqW-+KWVDvma3w6csnHQ@mail.gmail.com>
+ <20121128194314.GF4939@ZenIV.linux.org.uk>
+ <Pine.LNX.4.64.1211281630150.5283@file.rdu.redhat.com>
+ <CA+55aFziCW_ywZACGoVyNSgy8mToAGhSbdo0VoUAaGvgSb2XxQ@mail.gmail.com>
+ <CA+55aFxt655WfuhjOCnu3esg3gt=L37v=ofWfjs+qpXjn-F2uA@mail.gmail.com>
+ <20121129191503.GB3490@shiny>
+ <CA+55aFxaHuxaEezkpmGRi4kFGaQFTv9S89N-hJhxBjVa6ZwnbQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1354144069-28611-7-git-send-email-hauke@hauke-m.de>
-References: <1354144069-28611-1-git-send-email-hauke@hauke-m.de> <1354144069-28611-7-git-send-email-hauke@hauke-m.de>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Thu, 29 Nov 2012 11:47:50 -0800
-X-Google-Sender-Auth: QYXrQMustAbMM7SxSW_bFCgpHfI
-Message-ID: <CAB=NE6Ww8SVm51qph=iXNGS8BN1cWdsT-bvKWrDt4b9c7ea9sg@mail.gmail.com>
-Subject: Re: [PATCH 6/6] compat-drivers: do not use struct spinlock
-To: Hauke Mehrtens <hauke@hauke-m.de>
-Cc: backports@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arend Van Spriel <arend@broadcom.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Alexander Stein <alexander.stein@systec-electronic.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxaHuxaEezkpmGRi4kFGaQFTv9S89N-hJhxBjVa6ZwnbQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1354218522
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -2.02
+X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.115625
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 3:07 PM, Hauke Mehrtens <hauke@hauke-m.de> wrote:
-> struct spinlock does not exists on kernel version <= 2.6.32, use
-> spinlock_t instead.
->
-> Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
-> ---
->  patches/network/67-use_spinlock_t.patch |   11 +++++++++++
->  1 file changed, 11 insertions(+)
->  create mode 100644 patches/network/67-use_spinlock_t.patch
->
-> diff --git a/patches/network/67-use_spinlock_t.patch b/patches/network/67-use_spinlock_t.patch
-> new file mode 100644
-> index 0000000..4c9f315
-> --- /dev/null
-> +++ b/patches/network/67-use_spinlock_t.patch
-> @@ -0,0 +1,11 @@
-> +--- a/drivers/net/wireless/brcm80211/brcmfmac/fweh.h
-> ++++ b/drivers/net/wireless/brcm80211/brcmfmac/fweh.h
-> +@@ -158,7 +158,7 @@ typedef int (*brcmf_fweh_handler_t)(stru
-> +  */
-> + struct brcmf_fweh_info {
-> +       struct work_struct event_work;
-> +-      struct spinlock evt_q_lock;
-> ++      spinlock_t evt_q_lock;
-> +       struct list_head event_q;
-> +       int (*evt_handler[BRCMF_E_LAST])(struct brcmf_if *ifp,
-> +                                        const struct brcmf_event_msg *evtmsg,
+On Thu, Nov 29, 2012 at 12:26:06PM -0700, Linus Torvalds wrote:
+> On Thu, Nov 29, 2012 at 11:15 AM, Chris Mason <chris.mason@fusionio.com> wrote:
+> >
+> > The fs/buffer.c part makes sense during a quick read.  But
+> > fs/direct-io.c plays with i_blkbits too.  The semaphore was fixing real
+> > bugs there.
+> 
+> Ugh. I _hate_ direct-IO. What a mess. And yeah, it seems to be
+> incestuously playing games that should be in fs/buffer.c. I thought it
+> was doing the sane thing with the page cache.
+> 
+> (I now realize that Mikulas was talking about this mess, while I
+> thought he was talking about the AIO code which is largely sane).
 
-This should have still worked, I thought for a second based on your
-backport patch we ditched the spinlock_t or perhaps this was related
-to the realtime work Thomas has been doing but upon further inspection
-I see now this is simply a discrepancy on sloppy driver development.
+It was all a trick to get you to say the AIO code was sane.
 
-IMHO your patch should go upstream and a respective patch should be
-submitted as well as for these drivers:
+It looks like we could use the private copy of i_blkbits that DIO is
+already recording.
 
-mcgrof@frijol ~/linux-next (git::master)$ git grep "struct spinlock" drivers/
-drivers/crypto/ux500/cryp/cryp.h:       struct spinlock ctx_lock;
-drivers/crypto/ux500/cryp/cryp.h:       struct spinlock power_state_spinlock;
-drivers/crypto/ux500/hash/hash_alg.h:   struct spinlock         ctx_lock;
-drivers/crypto/ux500/hash/hash_alg.h:   struct spinlock
-power_state_lock;
-drivers/gpu/drm/i915/i915_drv.h:        struct spinlock gt_lock;
-drivers/gpu/drm/i915/i915_drv.h:                struct spinlock lock;
-drivers/media/platform/s5p-fimc/mipi-csis.c:    struct spinlock slock;
-drivers/media/platform/s5p-jpeg/jpeg-core.h:    struct spinlock         slock;
-drivers/watchdog/ie6xx_wdt.c:   struct spinlock unlock_sequence;
+blkdev_get_blocks (called during DIO) is also checking i_blkbits, but I
+really don't get why that isn't byte based instead.  DIO is already
+doing the shift & mask game.
 
-Alexander, please also add your driver to the MAINTAINERS file.
+I think only clean_blockdev_aliases is intentionally using the inode's
+i_blkbits, but again that shouldn't be changing for filesystems so it
+seems safe to use the DIO copy.
 
-  Luis
+-chris
+
