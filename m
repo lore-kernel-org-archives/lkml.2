@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351Ab2K2LxY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 06:53:24 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35016 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753115Ab2K2LxV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 06:53:21 -0500
-From: Colin King <colin.king@canonical.com>
-To: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-acpi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 5/5] ACPI thermal: remove unnecessary newline from exception message
-Date: Thu, 29 Nov 2012 11:53:16 +0000
-Message-Id: <1354189996-14431-6-git-send-email-colin.king@canonical.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1354189996-14431-1-git-send-email-colin.king@canonical.com>
-References: <1354189996-14431-1-git-send-email-colin.king@canonical.com>
+	id S1754553Ab2K2LyL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 06:54:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11568 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754389Ab2K2LyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 06:54:08 -0500
+Date: Thu, 29 Nov 2012 12:53:18 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 08/14] perf diff: Change diff command to work over
+ multiple data files
+Message-ID: <20121129115318.GA1096@krava.brq.redhat.com>
+References: <1354110769-2998-1-git-send-email-jolsa@redhat.com>
+ <1354110769-2998-9-git-send-email-jolsa@redhat.com>
+ <87mwy0od0x.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87mwy0od0x.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Colin Ian King <colin.king@canonical.com>
+On Thu, Nov 29, 2012 at 08:37:50PM +0900, Namhyung Kim wrote:
+> On Wed, 28 Nov 2012 14:52:43 +0100, Jiri Olsa wrote:
+> > Adding diff command the flexibility to specify multiple data
+> > files on input. If not input file is given the standard behaviour
+> > stands and diff inspects 'perf.data' and 'perf.data.old' files.
+> >
+> > Also changing the processing and output display for data files.
+> >
+> > For 'perf diff A B' command:
+> >
+> >   - the current way is to iterate over B data and display
+> >     A (baseline) data (symbol samples) only if found in B
+> >
+> >   - this patch iterates over A (baseline) data and display
+> >     B data (symbol samples) only if found in A
+> >
+> > For 'perf diff A B C' command, the diff now iterates the
+> > A (baseline) data and display B and C data (symbol samples)
+> > only if they found in A (baseline)
+> >
+> > All other standard diff command computation features
+> > (delta,ratio,wdiff) stays.
+> 
+> This is quite a large change and IMHO can be separated into 3 patches at
+> least.
 
-ACPI_EXCEPTION() already appends a newline, so there is no
-need for the thermal trip point message to include one too.
+you should have seen this patch before ;-)
 
-Signed-off-by: Colin Ian King <colin.king@canonical.com>
----
- drivers/acpi/thermal.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+>  1) change he->pairs from list to array
 
-diff --git a/drivers/acpi/thermal.c b/drivers/acpi/thermal.c
-index 804204d..2020d44 100644
---- a/drivers/acpi/thermal.c
-+++ b/drivers/acpi/thermal.c
-@@ -288,7 +288,7 @@ do {	\
- 	if (flags != ACPI_TRIPS_INIT)	\
- 		ACPI_EXCEPTION((AE_INFO, AE_ERROR,	\
- 		"ACPI thermal trip point %s changed\n"	\
--		"Please send acpidump to linux-acpi@vger.kernel.org\n", str)); \
-+		"Please send acpidump to linux-acpi@vger.kernel.org", str)); \
- } while (0)
- 
- static int acpi_thermal_trips_update(struct acpi_thermal *tz, int flag)
--- 
-1.8.0
+ok
 
+>  2) introduce diff_data__fmt
+>  3) convert to diff_data__fmt
+
+will try ;)
+
+thanks,
+jirka
