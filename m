@@ -1,155 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752079Ab2K2JS5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 04:18:57 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:61626 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138Ab2K2JSy (ORCPT
+	id S1752332Ab2K2JUK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 04:20:10 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34141 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751392Ab2K2JUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 04:18:54 -0500
-From: Nitin Gupta <ngupta@vflare.org>
-To: Greg KH <greg@kroah.com>
-Cc: Jerome Marchand <jmarchan@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Sam Hansen <solid.se7en@gmail.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3] zram: fix invalid memory references during disk write
-Date: Thu, 29 Nov 2012 01:18:48 -0800
-Message-Id: <1354180728-1958-1-git-send-email-ngupta@vflare.org>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 29 Nov 2012 04:20:07 -0500
+Date: Thu, 29 Nov 2012 09:20:01 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: sameo@linux.intel.com, grant.likely@secretlab.ca,
+        rabin.vincent@stericsson.com, shiraz.hashim@st.com,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, linus.walleij@linaro.org
+Subject: Re: [PATCH V4 Resend 1/3] mfd: stmpe: Get rid of irq_invert_polarity
+Message-ID: <20121129092001.GS2013@gmail.com>
+References: <d1f012d7bb2835f696fc100073f2eb16d9f6204d.1354128258.git.viresh.kumar@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <d1f012d7bb2835f696fc100073f2eb16d9f6204d.1354128258.git.viresh.kumar@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog v3 vs v2:
- - Further changes to changelog message to explain the bug case
-of incorrect use of kunmapped buffer
-Changelog v2 vs v1:
- - Changelog message now correctly explains the problem
+On Thu, 29 Nov 2012, Viresh Kumar wrote:
 
-Fixes a bug introduced by commit c8f2f0db1 ("zram: Fix handling
-of incompressible pages") which caused invalid memory references
-during disk write. Invalid references could occur in two cases:
- - Incoming data expands on compression: In this case, reference was
-made to kunmap()'ed bio page.
- - Partial (non PAGE_SIZE) write with incompressible data: In this
-case, reference was made to a kfree()'ed buffer.
+> Since the very first patch, stmpe core driver is using irq_invert_polarity as
+> part of platform data. But, nobody is actually using it in kernel till now.
+> 
+> Also, this is not something part of hardware specs, but is included to cater
+> some board mistakes or quirks.
+> 
+> So, better get rid of it. This is earlier discussed here:
+> 
+> https://lkml.org/lkml/2012/11/27/636
+> 
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-Fixes bug 50081:
-https://bugzilla.kernel.org/show_bug.cgi?id=50081
+Glad to see the back of it:
 
-Signed-off-by: Nitin Gupta <ngupta@vflare.org>
-Reported-by: Mihail Kasadjikov <hamer.mk@gmail.com>
-Reported-by: Tomas M <tomas@slax.org>
-Reviewed-by: Minchan Kim <minchan@kernel.org>
----
- drivers/staging/zram/zram_drv.c |   39 ++++++++++++++++++++++++---------------
- 1 file changed, 24 insertions(+), 15 deletions(-)
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index fb4a7c9..f2a73bd 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -265,7 +265,7 @@ out_cleanup:
- static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 			   int offset)
- {
--	int ret;
-+	int ret = 0;
- 	size_t clen;
- 	unsigned long handle;
- 	struct page *page;
-@@ -286,10 +286,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 			goto out;
- 		}
- 		ret = zram_decompress_page(zram, uncmem, index);
--		if (ret) {
--			kfree(uncmem);
-+		if (ret)
- 			goto out;
--		}
- 	}
-
- 	/*
-@@ -302,16 +300,18 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
-
- 	user_mem = kmap_atomic(page);
-
--	if (is_partial_io(bvec))
-+	if (is_partial_io(bvec)) {
- 		memcpy(uncmem + offset, user_mem + bvec->bv_offset,
- 		       bvec->bv_len);
--	else
-+		kunmap_atomic(user_mem);
-+		user_mem = NULL;
-+	} else {
- 		uncmem = user_mem;
-+	}
-
- 	if (page_zero_filled(uncmem)) {
--		kunmap_atomic(user_mem);
--		if (is_partial_io(bvec))
--			kfree(uncmem);
-+		if (!is_partial_io(bvec))
-+			kunmap_atomic(user_mem);
- 		zram_stat_inc(&zram->stats.pages_zero);
- 		zram_set_flag(zram, index, ZRAM_ZERO);
- 		ret = 0;
-@@ -321,9 +321,11 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 	ret = lzo1x_1_compress(uncmem, PAGE_SIZE, src, &clen,
- 			       zram->compress_workmem);
-
--	kunmap_atomic(user_mem);
--	if (is_partial_io(bvec))
--			kfree(uncmem);
-+	if (!is_partial_io(bvec)) {
-+		kunmap_atomic(user_mem);
-+		user_mem = NULL;
-+		uncmem = NULL;
-+	}
-
- 	if (unlikely(ret != LZO_E_OK)) {
- 		pr_err("Compression failed! err=%d\n", ret);
-@@ -332,8 +334,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
-
- 	if (unlikely(clen > max_zpage_size)) {
- 		zram_stat_inc(&zram->stats.bad_compress);
--		src = uncmem;
- 		clen = PAGE_SIZE;
-+		src = NULL;
-+		if (is_partial_io(bvec))
-+			src = uncmem;
- 	}
-
- 	handle = zs_malloc(zram->mem_pool, clen);
-@@ -345,7 +349,11 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 	}
- 	cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_WO);
-
-+	if ((clen == PAGE_SIZE) && !is_partial_io(bvec))
-+		src = kmap_atomic(page);
- 	memcpy(cmem, src, clen);
-+	if ((clen == PAGE_SIZE) && !is_partial_io(bvec))
-+		kunmap_atomic(src);
-
- 	zs_unmap_object(zram->mem_pool, handle);
-
-@@ -358,9 +366,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 	if (clen <= PAGE_SIZE / 2)
- 		zram_stat_inc(&zram->stats.good_compress);
-
--	return 0;
--
- out:
-+	if (is_partial_io(bvec))
-+		kfree(uncmem);
-+
- 	if (ret)
- 		zram_stat64_inc(zram, &zram->stats.failed_writes);
- 	return ret;
---
-1.7.10.4
-
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
