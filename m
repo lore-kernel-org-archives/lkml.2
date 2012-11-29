@@ -1,107 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000Ab2K2JQe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 04:16:34 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:19366 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751138Ab2K2JQc convert rfc822-to-8bit (ORCPT
+	id S1752079Ab2K2JS5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 04:18:57 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:61626 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138Ab2K2JSy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 04:16:32 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 29 Nov 2012 01:16:13 -0800
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: "Kim, Milo" <Milo.Kim@ti.com>, Andrew Morton <akpm@linux-foundation.org>
-CC: "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        Sivaram Nair <sivaramn@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 29 Nov 2012 14:46:25 +0530
-Subject: RE: [PATCH] rtc-tps65910: fix invalid pointer access on _remove()
-Thread-Topic: [PATCH] rtc-tps65910: fix invalid pointer access on _remove()
-Thread-Index: Ac3N1h+hbmHcRBfbTaOdOF2knV6cjgAO54DQ
-Message-ID: <D958900912E20642BCBC71664EFECE3E6E17CF0A0E@BGMAIL02.nvidia.com>
-References: <A874F61F95741C4A9BA573A70FE3998F6418F0D4@DQHE02.ent.ti.com>
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F6418F0D4@DQHE02.ent.ti.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 29 Nov 2012 04:18:54 -0500
+From: Nitin Gupta <ngupta@vflare.org>
+To: Greg KH <greg@kroah.com>
+Cc: Jerome Marchand <jmarchan@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Sam Hansen <solid.se7en@gmail.com>,
+        Linux Driver Project <devel@linuxdriverproject.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3] zram: fix invalid memory references during disk write
+Date: Thu, 29 Nov 2012 01:18:48 -0800
+Message-Id: <1354180728-1958-1-git-send-email-ngupta@vflare.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Kim, Milo [mailto:Milo.Kim@ti.com]
-> Sent: Thursday, November 29, 2012 7:36 AM
-> To: Andrew Morton
-> Cc: a.zummo@towertech.it; swarren@wwwdotorg.org; Venu Byravarasu;
-> Sivaram Nair; linux-kernel@vger.kernel.org
-> Subject: [PATCH] rtc-tps65910: fix invalid pointer access on _remove()
-> 
->  The tps65910_rtc data is registered as the platform driver data in _probe().
->  Therefore the tps65910_rtc should be used on unregistering the rtc device.
->  And device pointer should be retrieved from the platform_device structure.
-> 
->  This patch fixes the error as below.
-> 
->  Unable to handle kernel NULL pointer dereference at virtual address
-> 00000008
->  Modules linked in: rtc_tps65910(-)
->  CPU: 0    Not tainted  (3.7.0-rc7-next-20121128-g6b1f974-dirty #7)
->  PC is at tps65910_rtc_alarm_irq_enable+0x20/0x2c [rtc_tps65910]
->  LR is at tps65910_rtc_alarm_irq_enable+0x10/0x2c [rtc_tps65910]
->  [<bf000044>] (tps65910_rtc_alarm_irq_enable+0x20/0x2c [rtc_tps65910])
-> from
->    [<bf0004d4>] (tps65910_rtc_remove+0x18/0x28 [rtc_)
->  [<bf0004d4>] (tps65910_rtc_remove+0x18/0x28 [rtc_tps65910]) from
->    [<c034e700>] (platform_drv_remove+0x18/0x1c)
->  [<c034e700>] (platform_drv_remove+0x18/0x1c) from
->    [<c034ceec>] (__device_release_driver+0x70/0xcc)
->  [<c034ceec>] (__device_release_driver+0x70/0xcc) from
->    [<c034d608>] (driver_detach+0xb4/0xb8)
->  [<c034d608>] (driver_detach+0xb4/0xb8) from
->    [<c034cc24>] (bus_remove_driver+0x7c/0xc0)
->  [<c034cc24>] (bus_remove_driver+0x7c/0xc0) from
->    [<c00a045c>] (sys_delete_module+0x148/0x21c)
->  [<c00a045c>] (sys_delete_module+0x148/0x21c) from
->    [<c0013c60>] (ret_fast_syscall+0x0/0x3c)
-> 
-> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
-> ---
->  drivers/rtc/rtc-tps65910.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/rtc/rtc-tps65910.c b/drivers/rtc/rtc-tps65910.c
-> index e8d44bc..687006f 100644
-> --- a/drivers/rtc/rtc-tps65910.c
-> +++ b/drivers/rtc/rtc-tps65910.c
-> @@ -288,11 +288,11 @@ static int __devinit tps65910_rtc_probe(struct
-> platform_device *pdev)
->  static int __devexit tps65910_rtc_remove(struct platform_device *pdev)
->  {
->  	/* leave rtc running, but disable irqs */
-> -	struct rtc_device *rtc = platform_get_drvdata(pdev);
-> +	struct tps65910_rtc *tps_rtc = platform_get_drvdata(pdev);
-> 
-> -	tps65910_rtc_alarm_irq_enable(&rtc->dev, 0);
-> +	tps65910_rtc_alarm_irq_enable(&pdev->dev, 0);
-> 
-> -	rtc_device_unregister(rtc);
-> +	rtc_device_unregister(tps_rtc->rtc);
->  	return 0;
->  }
-> 
-> --
-> 1.7.9.5
-> 
-> 
-> Best Regards,
-> Milo
+Changelog v3 vs v2:
+ - Further changes to changelog message to explain the bug case
+of incorrect use of kunmapped buffer
+Changelog v2 vs v1:
+ - Changelog message now correctly explains the problem
 
-This change looks good to me.
-Plz consider my ACK.
-Acked-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+Fixes a bug introduced by commit c8f2f0db1 ("zram: Fix handling
+of incompressible pages") which caused invalid memory references
+during disk write. Invalid references could occur in two cases:
+ - Incoming data expands on compression: In this case, reference was
+made to kunmap()'ed bio page.
+ - Partial (non PAGE_SIZE) write with incompressible data: In this
+case, reference was made to a kfree()'ed buffer.
+
+Fixes bug 50081:
+https://bugzilla.kernel.org/show_bug.cgi?id=50081
+
+Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+Reported-by: Mihail Kasadjikov <hamer.mk@gmail.com>
+Reported-by: Tomas M <tomas@slax.org>
+Reviewed-by: Minchan Kim <minchan@kernel.org>
+---
+ drivers/staging/zram/zram_drv.c |   39 ++++++++++++++++++++++++---------------
+ 1 file changed, 24 insertions(+), 15 deletions(-)
+
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index fb4a7c9..f2a73bd 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -265,7 +265,7 @@ out_cleanup:
+ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 			   int offset)
+ {
+-	int ret;
++	int ret = 0;
+ 	size_t clen;
+ 	unsigned long handle;
+ 	struct page *page;
+@@ -286,10 +286,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 			goto out;
+ 		}
+ 		ret = zram_decompress_page(zram, uncmem, index);
+-		if (ret) {
+-			kfree(uncmem);
++		if (ret)
+ 			goto out;
+-		}
+ 	}
+
+ 	/*
+@@ -302,16 +300,18 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+
+ 	user_mem = kmap_atomic(page);
+
+-	if (is_partial_io(bvec))
++	if (is_partial_io(bvec)) {
+ 		memcpy(uncmem + offset, user_mem + bvec->bv_offset,
+ 		       bvec->bv_len);
+-	else
++		kunmap_atomic(user_mem);
++		user_mem = NULL;
++	} else {
+ 		uncmem = user_mem;
++	}
+
+ 	if (page_zero_filled(uncmem)) {
+-		kunmap_atomic(user_mem);
+-		if (is_partial_io(bvec))
+-			kfree(uncmem);
++		if (!is_partial_io(bvec))
++			kunmap_atomic(user_mem);
+ 		zram_stat_inc(&zram->stats.pages_zero);
+ 		zram_set_flag(zram, index, ZRAM_ZERO);
+ 		ret = 0;
+@@ -321,9 +321,11 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 	ret = lzo1x_1_compress(uncmem, PAGE_SIZE, src, &clen,
+ 			       zram->compress_workmem);
+
+-	kunmap_atomic(user_mem);
+-	if (is_partial_io(bvec))
+-			kfree(uncmem);
++	if (!is_partial_io(bvec)) {
++		kunmap_atomic(user_mem);
++		user_mem = NULL;
++		uncmem = NULL;
++	}
+
+ 	if (unlikely(ret != LZO_E_OK)) {
+ 		pr_err("Compression failed! err=%d\n", ret);
+@@ -332,8 +334,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+
+ 	if (unlikely(clen > max_zpage_size)) {
+ 		zram_stat_inc(&zram->stats.bad_compress);
+-		src = uncmem;
+ 		clen = PAGE_SIZE;
++		src = NULL;
++		if (is_partial_io(bvec))
++			src = uncmem;
+ 	}
+
+ 	handle = zs_malloc(zram->mem_pool, clen);
+@@ -345,7 +349,11 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 	}
+ 	cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_WO);
+
++	if ((clen == PAGE_SIZE) && !is_partial_io(bvec))
++		src = kmap_atomic(page);
+ 	memcpy(cmem, src, clen);
++	if ((clen == PAGE_SIZE) && !is_partial_io(bvec))
++		kunmap_atomic(src);
+
+ 	zs_unmap_object(zram->mem_pool, handle);
+
+@@ -358,9 +366,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+ 	if (clen <= PAGE_SIZE / 2)
+ 		zram_stat_inc(&zram->stats.good_compress);
+
+-	return 0;
+-
+ out:
++	if (is_partial_io(bvec))
++		kfree(uncmem);
++
+ 	if (ret)
+ 		zram_stat64_inc(zram, &zram->stats.failed_writes);
+ 	return ret;
+--
+1.7.10.4
+
