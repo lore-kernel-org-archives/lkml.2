@@ -1,84 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030861Ab2K3Pjk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 10:39:40 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:61595 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030715Ab2K3Pjg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 10:39:36 -0500
+	id S1030876Ab2K3Pjr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 10:39:47 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47488 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030863Ab2K3Pjn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 10:39:43 -0500
+Date: Fri, 30 Nov 2012 16:39:42 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: azurIt <azurit@pobox.sk>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH for 3.2.34] memcg: do not trigger OOM from
+ add_to_page_cache_locked
+Message-ID: <20121130153942.GL29317@dhcp22.suse.cz>
+References: <20121125120524.GB10623@dhcp22.suse.cz>
+ <20121125135542.GE10623@dhcp22.suse.cz>
+ <20121126013855.AF118F5E@pobox.sk>
+ <20121126131837.GC17860@dhcp22.suse.cz>
+ <20121126132149.GD17860@dhcp22.suse.cz>
+ <20121130032918.59B3F780@pobox.sk>
+ <20121130124506.GH29317@dhcp22.suse.cz>
+ <20121130144427.51A09169@pobox.sk>
+ <20121130144431.GI29317@dhcp22.suse.cz>
+ <20121130160811.6BB25BDD@pobox.sk>
 MIME-Version: 1.0
-In-Reply-To: <20121130064710.1bcd227b@tlielax.poochiereds.net>
-References: <cover.1354217746.git.joe@perches.com>
-	<7176cb20d420849d72aa004e40a404049362da7f.1354217746.git.joe@perches.com>
-	<20121130064710.1bcd227b@tlielax.poochiereds.net>
-Date: Fri, 30 Nov 2012 09:39:35 -0600
-Message-ID: <CAH2r5mtbhZWJu1eoahDSo84Wr=6jrSDVdwEVnQWYxztU72T2nQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] cifs: Remove unused cEVENT macro
-From: Steve French <smfrench@gmail.com>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Joe Perches <joe@perches.com>, Steve French <sfrench@samba.org>,
-        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121130160811.6BB25BDD@pobox.sk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I don't mind removing cEVENT (it is currently unused, and presumably
-the older file systems that used EVENT logging, have moved to dtrace
-or other tracing mechanisms).
+On Fri 30-11-12 16:08:11, azurIt wrote:
+> >DMA32 zone is usually fills up first 4G unless your HW remaps the rest
+> >of the memory above 4G or you have a numa machine and the rest of the
+> >memory is at other node. Could you post your memory map printed during
+> >the boot? (e820: BIOS-provided physical RAM map: and following lines)
+> 
+> 
+> Here is the full boot log:
+> www.watchdog.sk/lkml/kern.log
 
-But ... the need still remains for more tracing for cifs (I run into
-this a few times a month at least when debugging) - does anyone have
-any ideas for how to add dynamic trace points to cifs (has anyone even
-done it for the vfs?) - is there any file system that does a good job
-defining dynamic trace points?
+The log is not complete. Could you paste the comple dmesg output? Or
+even better, do you have logs from the previous run?
 
-On Fri, Nov 30, 2012 at 5:47 AM, Jeff Layton <jlayton@redhat.com> wrote:
-> On Thu, 29 Nov 2012 11:37:18 -0800
-> Joe Perches <joe@perches.com> wrote:
->
->> It uses an undefined KERN_EVENT and is itself unused.
->>
->> Signed-off-by: Joe Perches <joe@perches.com>
->> ---
->>  fs/cifs/cifs_debug.h |    7 -------
->>  1 files changed, 0 insertions(+), 7 deletions(-)
->>
->> diff --git a/fs/cifs/cifs_debug.h b/fs/cifs/cifs_debug.h
->> index c0c68bb..b0fc344 100644
->> --- a/fs/cifs/cifs_debug.h
->> +++ b/fs/cifs/cifs_debug.h
->> @@ -63,12 +63,6 @@ do {                                               \
->>  /* debug event message: */
->>  extern int cifsERROR;
->>
->> -#define cEVENT(fmt, arg...)                                          \
->> -do {                                                                 \
->> -     if (cifsERROR)                                                  \
->> -             printk(KERN_EVENT "%s: " fmt "\n", __FILE__, ##arg);    \
->> -} while (0)
->> -
->>  /* error event message: e.g., i/o error */
->>  #define cifserror(fmt, arg...)                                       \
->>  do {                                                         \
->> @@ -88,7 +82,6 @@ do {                                                \
->>   */
->>  #else                /* _CIFS_DEBUG */
->>  #define cERROR(set, fmt, arg...)
->> -#define cEVENT(fmt, arg...)
->>  #define cFYI(set, fmt, arg...)
->>  #define cifserror(fmt, arg...)
->>  #endif               /* _CIFS_DEBUG */
->
-> Yay! More cruft removal!
->
-> Reviewed-by: Jeff Layton <jlayton@redhat.com>
+> >You have mentioned that you are comounting with cpuset. If this happens
+> >to be a NUMA machine have you made the access to all nodes available?
+> >Also what does /proc/sys/vm/zone_reclaim_mode says?
+> 
+> 
+> Don't really know what NUMA means and which nodes are you talking
+> about, sorry :(
 
+http://en.wikipedia.org/wiki/Non-Uniform_Memory_Access
+ 
+> # cat /proc/sys/vm/zone_reclaim_mode
+> cat: /proc/sys/vm/zone_reclaim_mode: No such file or directory
 
-
+OK, so the NUMA is not enabled.
 -- 
-Thanks,
-
-Steve
+Michal Hocko
+SUSE Labs
