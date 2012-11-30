@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757271Ab2K3LoX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 06:44:23 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53110 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932642Ab2K3LoV (ORCPT
+	id S932920Ab2K3Loh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 06:44:37 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:40983 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757341Ab2K3Loe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 06:44:21 -0500
+	Fri, 30 Nov 2012 06:44:34 -0500
 From: Prabhakar Lad <prabhakar.csengg@gmail.com>
 To: LMML <linux-media@vger.kernel.org>,
         Mauro Carvalho Chehab <mchehab@redhat.com>
@@ -17,9 +17,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
         Hans Verkuil <hans.verkuil@cisco.com>,
         Sakari Ailus <sakari.ailus@iki.fi>
-Subject: [PATCH v4 2/3] davinci: vpss: dm365: set vpss clk ctrl
-Date: Fri, 30 Nov 2012 17:13:40 +0530
-Message-Id: <1354275821-25235-3-git-send-email-prabhakar.lad@ti.com>
+Subject: [PATCH v4 3/3] davinci: vpss: dm365: add vpss helper functions to be used in the main driver for setting hardware parameters
+Date: Fri, 30 Nov 2012 17:13:41 +0530
+Message-Id: <1354275821-25235-4-git-send-email-prabhakar.lad@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1354275821-25235-1-git-send-email-prabhakar.lad@ti.com>
 References: <1354275821-25235-1-git-send-email-prabhakar.lad@ti.com>
@@ -29,60 +29,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Manjunath Hadli <manjunath.hadli@ti.com>
 
-request_mem_region for VPSS_CLK_CTRL register and ioremap.
-and enable clocks appropriately.
+add interface functions to set sync polarity, interrupt
+completion and pageframe size in vpss to be used by the main driver.
 
 Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
 Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
 ---
- drivers/media/platform/davinci/vpss.c |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
+ drivers/media/platform/davinci/vpss.c |   32 ++++++++++++++++++++++++++++++++
+ include/media/davinci/vpss.h          |   16 ++++++++++++++++
+ 2 files changed, 48 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/media/platform/davinci/vpss.c b/drivers/media/platform/davinci/vpss.c
-index 1c96ce8..e4ad63d 100644
+index e4ad63d..d945f94 100644
 --- a/drivers/media/platform/davinci/vpss.c
 +++ b/drivers/media/platform/davinci/vpss.c
-@@ -69,6 +69,11 @@ MODULE_AUTHOR("Texas Instruments");
- #define DM365_ISP5_CCDCMUX 		0x20
- #define DM365_ISP5_PG_FRAME_SIZE 	0x28
- #define DM365_VPBE_CLK_CTRL 		0x00
-+
-+#define VPSS_CLK_CTRL			0x01c40044
-+#define VPSS_CLK_CTRL_VENCCLKEN		BIT(3)
-+#define VPSS_CLK_CTRL_DACCLKEN		BIT(4)
-+
- /*
-  * vpss interrupts. VDINT0 - vpss_int0, VDINT1 - vpss_int1,
-  * AF - vpss_int3
-@@ -112,6 +117,7 @@ struct vpss_hw_ops {
- struct vpss_oper_config {
- 	__iomem void *vpss_regs_base0;
- 	__iomem void *vpss_regs_base1;
-+	resource_size_t *vpss_regs_base2;
- 	enum vpss_platform_type platform;
- 	spinlock_t vpss_lock;
- 	struct vpss_hw_ops hw_ops;
-@@ -492,11 +498,20 @@ static struct platform_driver vpss_driver = {
+@@ -111,6 +111,12 @@ struct vpss_hw_ops {
+ 	void (*select_ccdc_source)(enum vpss_ccdc_source_sel src_sel);
+ 	/* clear wbl overflow bit */
+ 	int (*clear_wbl_overflow)(enum vpss_wbl_sel wbl_sel);
++	/* set sync polarity */
++	void (*set_sync_pol)(struct vpss_sync_pol);
++	/* set the PG_FRAME_SIZE register*/
++	void (*set_pg_frame_size)(struct vpss_pg_frame_size);
++	/* check and clear interrupt if occured */
++	int (*dma_complete_interrupt)(void);
+ };
  
- static void vpss_exit(void)
- {
-+	iounmap(oper_cfg.vpss_regs_base2);
-+	release_mem_region(VPSS_CLK_CTRL, 4);
- 	platform_driver_unregister(&vpss_driver);
+ /* vpss configuration */
+@@ -175,6 +181,14 @@ static void dm355_select_ccdc_source(enum vpss_ccdc_source_sel src_sel)
+ 	bl_regw(src_sel << VPSS_HSSISEL_SHIFT, DM355_VPSSBL_CCDCMUX);
  }
  
- static int __init vpss_init(void)
++int vpss_dma_complete_interrupt(void)
++{
++	if (!oper_cfg.hw_ops.dma_complete_interrupt)
++		return 2;
++	return oper_cfg.hw_ops.dma_complete_interrupt();
++}
++EXPORT_SYMBOL(vpss_dma_complete_interrupt);
++
+ int vpss_select_ccdc_source(enum vpss_ccdc_source_sel src_sel)
  {
-+	if (!request_mem_region(VPSS_CLK_CTRL, 4, "vpss_clock_control"))
-+		return -EBUSY;
-+
-+	oper_cfg.vpss_regs_base2 = ioremap(VPSS_CLK_CTRL, 4);
-+	writel(VPSS_CLK_CTRL_VENCCLKEN |
-+		     VPSS_CLK_CTRL_DACCLKEN, oper_cfg.vpss_regs_base2);
-+
- 	return platform_driver_register(&vpss_driver);
+ 	if (!oper_cfg.hw_ops.select_ccdc_source)
+@@ -200,6 +214,15 @@ static int dm644x_clear_wbl_overflow(enum vpss_wbl_sel wbl_sel)
+ 	return 0;
  }
- subsys_initcall(vpss_init);
+ 
++void vpss_set_sync_pol(struct vpss_sync_pol sync)
++{
++	if (!oper_cfg.hw_ops.set_sync_pol)
++		return;
++
++	oper_cfg.hw_ops.set_sync_pol(sync);
++}
++EXPORT_SYMBOL(vpss_set_sync_pol);
++
+ int vpss_clear_wbl_overflow(enum vpss_wbl_sel wbl_sel)
+ {
+ 	if (!oper_cfg.hw_ops.clear_wbl_overflow)
+@@ -365,6 +388,15 @@ void dm365_vpss_set_sync_pol(struct vpss_sync_pol sync)
+ }
+ EXPORT_SYMBOL(dm365_vpss_set_sync_pol);
+ 
++void vpss_set_pg_frame_size(struct vpss_pg_frame_size frame_size)
++{
++	if (!oper_cfg.hw_ops.set_pg_frame_size)
++		return;
++
++	oper_cfg.hw_ops.set_pg_frame_size(frame_size);
++}
++EXPORT_SYMBOL(vpss_set_pg_frame_size);
++
+ void dm365_vpss_set_pg_frame_size(struct vpss_pg_frame_size frame_size)
+ {
+ 	int current_reg = ((frame_size.hlpfr >> 1) - 1) << 16;
+diff --git a/include/media/davinci/vpss.h b/include/media/davinci/vpss.h
+index b586495..153473d 100644
+--- a/include/media/davinci/vpss.h
++++ b/include/media/davinci/vpss.h
+@@ -105,4 +105,20 @@ enum vpss_wbl_sel {
+ };
+ /* clear wbl overflow flag for DM6446 */
+ int vpss_clear_wbl_overflow(enum vpss_wbl_sel wbl_sel);
++
++/* set sync polarity*/
++void vpss_set_sync_pol(struct vpss_sync_pol sync);
++/* set the PG_FRAME_SIZE register */
++void vpss_set_pg_frame_size(struct vpss_pg_frame_size frame_size);
++/*
++ * vpss_check_and_clear_interrupt - check and clear interrupt
++ * @irq - common enumerator for IRQ
++ *
++ * Following return values used:-
++ * 0 - interrupt occurred and cleared
++ * 1 - interrupt not occurred
++ * 2 - interrupt status not available
++ */
++int vpss_dma_complete_interrupt(void);
++
+ #endif
 -- 
 1.7.4.1
 
