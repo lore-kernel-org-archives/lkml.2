@@ -1,191 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031417Ab2K3SFO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:05:14 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:2122 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1759085Ab2K3SFI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:05:08 -0500
-X-IronPort-AV: E=Sophos;i="4.83,348,1352044800"; 
-   d="scan'208";a="6309164"
-From: Gao feng <gaofeng@cn.fujitsu.com>
-To: cgroups@vger.kernel.org
-Cc: tj@kernel.org, lizefan@huawei.com, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org,
-        Gao feng <gaofeng@cn.fujitsu.com>
-Subject: [PATCH 2/2] cgroup: remove subsystem files when remounting cgroup
-Date: Sat, 1 Dec 2012 00:21:29 +0800
-Message-Id: <1354292489-18434-2-git-send-email-gaofeng@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.7.6
-In-Reply-To: <1354292489-18434-1-git-send-email-gaofeng@cn.fujitsu.com>
-References: <1354292489-18434-1-git-send-email-gaofeng@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/01 00:21:06,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/01 00:21:49,
-	Serialize complete at 2012/12/01 00:21:49
+	id S1759138Ab2K3SEh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:04:37 -0500
+Received: from mail.work-microwave.de ([62.245.205.51]:49034 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759100Ab2K3SEc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:04:32 -0500
+From: Roland Stigge <stigge@antcom.de>
+To: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
+        jbe@pengutronix.de, plagnioj@jcrosoft.com, highguy@gmail.com,
+        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
+        rmallon@gmail.com, tru@work-microwave.de, sr@denx.de,
+        wg@grandegger.com
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH 0/6 v8] gpio: Add block GPIO
+Date: Fri, 30 Nov 2012 19:03:50 +0100
+Message-Id: <1354298637-25058-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cgroup_clear_directroy is called by cgroup_d_remove_dir
-and cgroup_remount.
+This set of patches adds:
 
-when we call cgroup_remount to remount the cgroup,the subsystem
-may be unlinked from cgroupfs_root->subsys_list in rebind_subsystem,this
-subsystem's files will not be removed in cgroup_clear_directroy.
-And the system will panic when we try to access these files.
+* Block GPIO API to gpiolib
+* Sysfs support for GPIO API, to provide userland access
+* Device interface for userland access (alternative to sysfs)
+* Devicetree support to instantiate GPIO blocks via DT
+* Example implementations in several gpio drivers since they need
+  special accessor functions for block wise GPIO access
+* Fix for race condition in gpiolib on device creation
 
-this patch fix it.
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+--
 
-Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
----
- kernel/cgroup.c |   86 ++++++++++++++++++++++++++++++++++--------------------
- 1 files changed, 54 insertions(+), 32 deletions(-)
+Changes since v7:
+* Fixed error in API documentation (name arg missing in prototype)
+* Fixed compile error if sysfs is missing: Moved gpio_block_is_output()
+  out of sysfs-ifdef
+* Added error handling to gpio_block_register()
+* Added mask attribute to sysfs (although dev interface exists now)
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index e5233b7..90429d5 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -982,10 +982,14 @@ static void cgroup_clear_directory(struct dentry *dir, bool base_files,
- 				   unsigned long subsys_mask)
- {
- 	struct cgroup *cgrp = __d_cgrp(dir);
--	struct cgroup_subsys *ss;
-+	int i;
- 
--	for_each_subsys(cgrp->root, ss) {
-+	for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
- 		struct cftype_set *set;
-+		struct cgroup_subsys *ss = subsys[i];
-+
-+		if (ss == NULL)
-+			continue;
- 		if (!test_bit(ss->subsys_id, &subsys_mask))
- 			continue;
- 		list_for_each_entry(set, &ss->cftsets, node)
-@@ -1160,6 +1164,40 @@ static int cgroup_show_options(struct seq_file *seq, struct dentry *dentry)
- 	return 0;
- }
- 
-+static int cgroup_get_module_refcounts(unsigned long subsys_mask)
-+{
-+	int i;
-+	bool module_pin_failed = false;
-+
-+	for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
-+		unsigned long bit = 1UL << i;
-+
-+		if (!(bit & subsys_mask))
-+			continue;
-+		if (!try_module_get(subsys[i]->module)) {
-+			module_pin_failed = true;
-+			break;
-+		}
-+	}
-+	if (module_pin_failed) {
-+		/*
-+		 * oops, one of the modules was going away. this means that we
-+		 * raced with a module_delete call, and to the user this is
-+		 * essentially a "subsystem doesn't exist" case.
-+		 */
-+		for (i--; i >= 0; i--) {
-+			/* drop refcounts only on the ones we took */
-+			unsigned long bit = 1UL << i;
-+
-+			if (!(bit & subsys_mask))
-+				continue;
-+			module_put(subsys[i]->module);
-+		}
-+		return -ENOENT;
-+	}
-+	return 0;
-+}
-+
- struct cgroup_sb_opts {
- 	unsigned long subsys_mask;
- 	unsigned long flags;
-@@ -1185,7 +1223,6 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
- 	bool all_ss = false, one_ss = false;
- 	unsigned long mask = (unsigned long)-1;
- 	int i;
--	bool module_pin_failed = false;
- 
- 	BUG_ON(!mutex_is_locked(&cgroup_mutex));
- 
-@@ -1324,34 +1361,8 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
- 	 * take duplicate reference counts on a subsystem that's already used,
- 	 * but rebind_subsystems handles this case.
- 	 */
--	for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
--		unsigned long bit = 1UL << i;
- 
--		if (!(bit & opts->subsys_mask))
--			continue;
--		if (!try_module_get(subsys[i]->module)) {
--			module_pin_failed = true;
--			break;
--		}
--	}
--	if (module_pin_failed) {
--		/*
--		 * oops, one of the modules was going away. this means that we
--		 * raced with a module_delete call, and to the user this is
--		 * essentially a "subsystem doesn't exist" case.
--		 */
--		for (i--; i >= 0; i--) {
--			/* drop refcounts only on the ones we took */
--			unsigned long bit = 1UL << i;
--
--			if (!(bit & opts->subsys_mask))
--				continue;
--			module_put(subsys[i]->module);
--		}
--		return -ENOENT;
--	}
--
--	return 0;
-+	return cgroup_get_module_refcounts(opts->subsys_mask);
- }
- 
- static void drop_parsed_module_refcounts(unsigned long subsys_mask)
-@@ -1392,23 +1403,34 @@ static int cgroup_remount(struct super_block *sb, int *flags, char *data)
- 	removed_mask = root->subsys_mask & ~opts.subsys_mask;
- 
- 	/* Don't allow flags or name to change at remount */
-+	ret = -EINVAL;
- 	if (opts.flags != root->flags ||
- 	    (opts.name && strcmp(opts.name, root->name))) {
--		ret = -EINVAL;
- 		drop_parsed_module_refcounts(opts.subsys_mask);
- 		goto out_unlock;
- 	}
- 
--	ret = rebind_subsystems(root, opts.subsys_mask);
-+	/*
-+	 * Add the reference of these removed subsystem,we
-+	 * need use subsystems to remove their cgroup files.
-+	 */
-+	ret = cgroup_get_module_refcounts(removed_mask);
- 	if (ret) {
- 		drop_parsed_module_refcounts(opts.subsys_mask);
- 		goto out_unlock;
- 	}
- 
-+	ret = rebind_subsystems(root, opts.subsys_mask);
-+	if (ret) {
-+		drop_parsed_module_refcounts(opts.subsys_mask | removed_mask);
-+		goto out_unlock;
-+	}
-+
- 	/* clear out any existing files and repopulate subsystem files */
- 	cgroup_clear_directory(cgrp->dentry, false, removed_mask);
- 	/* re-populate subsystem files */
- 	cgroup_populate_dir(cgrp, false, added_mask);
-+	drop_parsed_module_refcounts(removed_mask);
- 
- 	if (opts.release_agent)
- 		strcpy(root->release_agent_path, opts.release_agent);
--- 
-1.7.7.6
+Changes since v6:
+* Changed realloc to list handling
+* Added mask to kernel API
+* Added device interface as userspace API
+* Changed sizeof() to BITS_PER_LONG
+* Fixed multiline comment style
+* Documented direction setting by the user
+* Documented order of handled chips in case of multiple chips in one block
 
+Changes since v5:
+* Documented sysfs: elaborated on "exported" and "values" attributes
+* Documented sysfs: gpiochip is a separate class now
+* Aggregated driver support patches for block gpio into one single patch
+* Added gpio block driver support for twl6040 and pch
+
+Changes since v4:
+* Documented word width
+* Bugfix: export/unexport on register/unregister
+* Using default dev_attrs for gpio_block_class
+* Fix gpiolib: race condition on device creation
+* Added driver support for ucb14500, vt8500, xilinx
+
+Changes since v3:
+* Added driver support for pca953x, em, pl061, max732x, pcf857x
+* Coding style improvements
+* Fixed krealloc memory leak in error case
+* sysfs: values in hex
+* Register blocks in a list
+* Narrowing lock scope
+* Use S_IWUSR and S_IRUGO instead of direct octal values
+* Use for_each_set_bit()
+* Change from unsigned to unsigned long for masks and values
+
+Changes since v2:
+* Added sysfs support
+* Added devicetree support
+* Added support for lpc32xx, generic
+* Added functions for GPIO block registration
+* Added more error checking
+* Bit remapping bugfix
+
+Changes since v1:
+* API change to 32/64 bit word, bit masks
+
+Thanks to Ryan Mallon, Linus Walleij, Stijn Devriendt, Jean-Christophe
+Plagniol-Villard, Mark Brown, Greg Kroah-Hartman, Grant Likely, Stefan
+Roese and Wolfgang Grandegger for reviewing!
+
+Roland Stigge (6):
+ gpio: Add a block GPIO API to gpiolib
+ gpio: Add sysfs support to block GPIO API
+ gpio: Add userland device interface to block GPIO
+ gpiolib: Fix default attributes for class
+ gpio: Add device tree support to block GPIO API
+ gpio: Add block gpio to several gpio drivers
+
+ Documentation/ABI/testing/dev-gpioblock               |   25 
+ Documentation/ABI/testing/sysfs-gpio                  |   31 
+ Documentation/devicetree/bindings/gpio/gpio-block.txt |   36 
+ Documentation/gpio.txt                                |   58 +
+ drivers/gpio/Makefile                                 |    1 
+ drivers/gpio/gpio-em.c                                |   23 
+ drivers/gpio/gpio-generic.c                           |   56 +
+ drivers/gpio/gpio-lpc32xx.c                           |   82 ++
+ drivers/gpio/gpio-max730x.c                           |   61 +
+ drivers/gpio/gpio-max732x.c                           |   59 +
+ drivers/gpio/gpio-pca953x.c                           |   64 +
+ drivers/gpio/gpio-pcf857x.c                           |   24 
+ drivers/gpio/gpio-pch.c                               |   27 
+ drivers/gpio/gpio-pl061.c                             |   17 
+ drivers/gpio/gpio-twl6040.c                           |   32 
+ drivers/gpio/gpio-ucb1400.c                           |   23 
+ drivers/gpio/gpio-vt8500.c                            |   24 
+ drivers/gpio/gpio-xilinx.c                            |   44 +
+ drivers/gpio/gpioblock-of.c                           |   84 ++
+ drivers/gpio/gpiolib.c                                |  674 ++++++++++++++++--
+ include/asm-generic/gpio.h                            |   28 
+ include/linux/gpio.h                                  |  115 +++
+ 22 files changed, 1540 insertions(+), 48 deletions(-)
