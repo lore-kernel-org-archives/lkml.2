@@ -1,186 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911Ab2K3GXI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 01:23:08 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:59409 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755030Ab2K3GXF (ORCPT
+	id S1755995Ab2K3GYi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 01:24:38 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:39281 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753853Ab2K3GYg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 01:23:05 -0500
-Message-ID: <50B850C6.20808@gmail.com>
-Date: Fri, 30 Nov 2012 00:23:02 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: "Artem S. Tashkinov" <t.artem@lycos.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: A vague, murky topic of "Buffer I/O error on device sdb6, logical
- block NNNNNNNNN" and a ext4/VFS oops
-References: <101873674.12848.1354217245216.JavaMail.mail@webmail07>
-In-Reply-To: <101873674.12848.1354217245216.JavaMail.mail@webmail07>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 30 Nov 2012 01:24:36 -0500
+Date: Fri, 30 Nov 2012 17:24:27 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mikulas Patocka <mpatocka@redhat.com>, Oleg Nesterov <oleg@redhat.com>
+Subject: linux-next: manual merge of the akpm tree with Linus' tree
+Message-Id: <20121130172427.39c2928ab7cd6cdaca7a9746@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__30_Nov_2012_17_24_27_+1100_kti2i+F5M8GA00L8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2012 01:27 PM, Artem S. Tashkinov wrote:
-> Hello,
->
-> When I was copying a lot of information (tens of gigabytes) from my primary HDD to a
-> secondary HDD I got gazillions of errors like these ones:
->
-> [19568.964762] EXT4-fs warning (device sdb6): ext4_end_bio:250: I/O error writing to inode 6029369 (offset 8036352 size 524288 starting block 51946549)
-> [19568.964767] sd 2:0:0:0: [sdb]
-> [19568.964768] Result: hostbyte=0x00 driverbyte=0x08
-> [19568.964770] sd 2:0:0:0: [sdb]
-> [19568.964771] Sense Key : 0xb [current] [descriptor]
-> [19568.964774] Descriptor sense data with sense descriptors (in hex):
-> [19568.964775]         72 0b 00 00 00 00 00 0c 00 0a 80 00 00 00 00 00
-> [19568.964784]         00 00 00 00
-> [19568.964788] sd 2:0:0:0: [sdb]
-> [19568.964789] ASC=0x0 ASCQ=0x0
-> [19568.964791] sd 2:0:0:0: [sdb] CDB:
-> [19568.964792] cdb[0]=0x2a: 2a 00 18 c5 25 a8 00 00 70 00
-> [19568.964804] Buffer I/O error on device sdb6, logical block 13727786
-> [19568.964806] Buffer I/O error on device sdb6, logical block 13727787
-> [19568.964808] Buffer I/O error on device sdb6, logical block 13727788
-> [19568.964810] Buffer I/O error on device sdb6, logical block 13727789
-> [19568.964812] Buffer I/O error on device sdb6, logical block 13727790
->
-> along with:
->
-> [19568.964832] EXT4-fs warning (device sdb6): ext4_end_bio:250: I/O error writing to inode 6029369 (offset 8560640 size 57344 starting block 51946677)
-> [19568.964843] ata3: EH complete
-> [19624.635176] ata3.00: exception Emask 0x0 SAct 0x3fff SErr 0x40000 action 0x6 frozen
-> [19624.635181] ata3: SError: { CommWake }
+--Signature=_Fri__30_Nov_2012_17_24_27_+1100_kti2i+F5M8GA00L8
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This is likely the real problem - the controller saw a CommWake during 
-operation, which likely means the SATA link bounced for some reason. 
-Could be a bad cable, a power issue, or some other hardware problem. The 
-rest is likely all fallout from that (except from those _GTF errors 
-which are likely due to a somewhat broken BIOS).
+Hi Andrew,
 
-> [19624.635184] ata3.00: failed command: WRITE FPDMA QUEUED
-> [19624.635190] ata3.00: cmd 61/00:00:48:ee:cb/04:00:18:00:00/40 tag 0 ncq 524288 out
-> [19624.635190]          res 40/00:01:00:00:00/00:00:00:00:00/00 Emask 0x4 (timeout)
-> [19624.635193] ata3.00: status: { DRDY }
-> [19624.635196] ata3.00: failed command: WRITE FPDMA QUEUED
-> [19624.635201] ata3.00: cmd 61/08:08:f0:65:bd/00:00:1d:00:00/40 tag 1 ncq 4096 out
-> [19624.635201]          res 40/00:00:00:00:00/00:00:00:00:00/00 Emask 0x4 (timeout)
-> [19624.635203] ata3.00: status: { DRDY }
-> [19624.635206] ata3.00: failed command: WRITE FPDMA QUEUED
-> [19624.635211] ata3.00: cmd 61/00:10:48:f2:cb/04:00:18:00:00/40 tag 2 ncq 524288 out
-> [19624.635211]          res 40/00:00:00:00:00/00:00:00:00:00/00 Emask 0x4 (timeout)
-> [19624.635213] ata3.00: status: { DRDY }
-> [19624.635215] ata3.00: failed command: WRITE FPDMA QUEUED
-> [19624.635220] ata3.00: cmd 61/00:18:48:f6:cb/04:00:18:00:00/40 tag 3 ncq 524288 out
-> [19624.635220]          res 40/00:00:00:00:00/00:00:00:00:00/00 Emask 0x4 (timeout)
-> [19624.635223] ata3.00: status: { DRDY }
-> [19624.635225] ata3.00: failed command: WRITE FPDMA QUEUED
->
-> along with:
->
-> [19624.635320] ata3: hard resetting link
-> [19624.954880] ata3: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-> [19624.956101] ACPI Error: [DSSP] Namespace lookup failure, AE_NOT_FOUND (20120711/psargs-359)
-> [19624.956109] ACPI Error: Method parse/execution failed [\_SB_.PCI0.SAT0.SPT2._GTF] (Node ef0307b0), AE_NOT_FOUND (20120711/psparse-536)
-> [19624.958006] ACPI Error: [DSSP] Namespace lookup failure, AE_NOT_FOUND (20120711/psargs-359)
-> [19624.958011] ACPI Error: Method parse/execution failed [\_SB_.PCI0.SAT0.SPT2._GTF] (Node ef0307b0), AE_NOT_FOUND (20120711/psparse-536)
-> [19624.958366] ata3.00: configured for UDMA/133
-> [19624.960763] ata3.00: device reported invalid CHS sector 0
-> [19624.960765] ata3.00: device reported invalid CHS sector 0
-> [19624.960767] ata3.00: device reported invalid CHS sector 0
-> [19624.960769] ata3.00: device reported invalid CHS sector 0
-> [19624.960771] ata3.00: device reported invalid CHS sector 0
-> [19624.960773] ata3.00: device reported invalid CHS sector 0
-> [19624.960775] ata3.00: device reported invalid CHS sector 0
-> [19624.960777] ata3.00: device reported invalid CHS sector 0
-> [19624.960779] ata3.00: device reported invalid CHS sector 0
-> [19624.960781] ata3.00: device reported invalid CHS sector 0
-> [19624.960782] ata3.00: device reported invalid CHS sector 0
-> [19624.960784] ata3.00: device reported invalid CHS sector 0
-> [19624.960786] ata3.00: device reported invalid CHS sector 0
-> [19624.960788] ata3.00: device reported invalid CHS sector 0
->
-> and also this:
->
-> [19624.961128] Buffer I/O error on device sdb6, logical block 13783485
-> [19624.961132] EXT4-fs warning (device sdb6): ext4_end_bio:250: I/O error writing to inode 6029369 (offset 236183552 size 524288 starting block 52002249)
-> [19624.961142] sd 2:0:0:0: [sdb]
-> [19624.961144] Result: hostbyte=0x00 driverbyte=0x08
-> [19624.961146] sd 2:0:0:0: [sdb]
-> [19624.961147] Sense Key : 0xb [current] [descriptor]
-> [19624.961149] Descriptor sense data with sense descriptors (in hex):
-> [19624.961151]         72 0b 00 00 00 00 00 0c 00 0a 80 00 00 00 00 00
-> [19624.961160]         00 00 00 00
-> [19624.961164] sd 2:0:0:0: [sdb]
-> [19624.961165] ASC=0x0 ASCQ=0x0
-> [19624.961167] sd 2:0:0:0: [sdb] CDB:
-> [19624.961168] cdb[0]=0x2a: 2a 00 1d bd 65 f0 00 00 08 00
-> [19624.961176] end_request: I/O error, dev sdb, sector 498951664
-> [19624.961179] Buffer I/O error on device sdb6, logical block 24150067
-> [19624.961180] lost page write due to I/O error on sdb6
-> [19624.961189] sd 2:0:0:0: [sdb]
-> [19624.961191] Result: hostbyte=0x00 driverbyte=0x08
-> [19624.961192] sd 2:0:0:0: [sdb]
-> [19624.961194] Sense Key : 0xb [current] [descriptor]
-> [19624.961196] Descriptor sense data with sense descriptors (in hex):
-> [19624.961197]         72 0b 00 00 00 00 00 0c 00 0a 80 00 00 00 00 00
-> [19624.961206]         00 00 00 00
-> [19624.961210] sd 2:0:0:0: [sdb]
-> [19624.961212] ASC=0x0 ASCQ=0x0
-> [19624.961214] sd 2:0:0:0: [sdb] CDB:
-> [19624.961215] cdb[0]=0x2a: 2a 00 18 cb f2 48 00 04 00 00
-> [19624.961222] end_request: I/O error, dev sdb, sector 416019016
-> [19624.961256] Buffer I/O error on device sdb6, logical block 13783486
->
-> What _exactly_ do these "Buffer I/O error on device sdb6, logical block 13727790" errors mean?
-> The Internet doesn't offer any relevant information on this topic - only assumption which I don't quite
-> appreciate.
->
-> I suspect my second HDD is failing but I've no idea how and what causes it?
->
-> Also, due to this yet unidentified failure, I've discovered a kernel bug (that's on the vanilla kernel 3.6.7):
->
-> [19633.288813] ------------[ cut here ]------------
-> [19633.288824] WARNING: at fs/buffer.c:1106 mark_buffer_dirty+0x64/0x70()
-> [19633.288826] Hardware name: System Product Name
-> [19633.288828] Modules linked in:
-> [19633.288892] Pid: 16654, comm: cp Tainted: P           O 3.6.7-ic #3
-> [19633.288893] Call Trace:
-> [19633.288899]  [] warn_slowpath_common+0x6d/0xa0
-> [19633.288903]  [] ? mark_buffer_dirty+0x64/0x70
-> [19633.288907]  [] ? mark_buffer_dirty+0x64/0x70
-> [19633.288911]  [] warn_slowpath_null+0x1d/0x20
-> [19633.288914]  [] mark_buffer_dirty+0x64/0x70
-> [19633.288919]  [] __ext4_handle_dirty_metadata+0xef/0x100
-> [19633.288922]  [] ? alloc_inode+0x2a/0x80
-> [19633.288927]  [] ext4_new_inode+0x7df/0x1170
-> [19633.288932]  [] ? __d_lookup+0x105/0x190
-> [19633.288936]  [] ext4_create+0x94/0x100
-> [19633.288939]  [] ? ext4_mknod+0x100/0x100
-> [19633.288943]  [] vfs_create+0x7b/0xc0
-> [19633.288946]  [] ? lookup_dcache+0x25/0xb0
-> [19633.288949]  [] do_last.isra.50+0x736/0xad0
-> [19633.288953]  [] ? link_path_walk+0x5a/0x7b0
-> [19633.288956]  [] path_openat+0x95/0x3e0
-> [19633.288960]  [] ? user_path_at_empty+0x4f/0x80
-> [19633.288964]  [] ? copy_to_user+0x2c/0x40
-> [19633.288967]  [] do_filp_open+0x2c/0x80
-> [19633.288971]  [] ? alloc_fd+0xa7/0xf0
-> [19633.288975]  [] do_sys_open+0xe0/0x1c0
-> [19633.288978]  [] sys_open+0x2d/0x40
-> [19633.288983]  [] sysenter_do_call+0x12/0x26
-> [19633.288985] ---[ end trace 2d9fda7935bc9fda ]---
->
-> Last but not least, when the kernel tries to reset the second HDD, all read/write operations
-> on the first HDD completely stall.
->
-> Please, advise.
->
-> --
->
-> Artem
->
+Today's linux-next merge of the akpm tree got a conflict in
+include/linux/percpu-rwsem.h between commit 4b05a1c74d1c ("percpu-rwsem:
+use synchronize_sched_expedited") from Linus' tree and commit
+"percpu_rw_semaphore: reimplement to not block the readers unnecessarily"
+from the akpm tree.
 
+I fixed it up (using the version from the akpm tree) and can carry the
+fix as necessary (more action may be required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__30_Nov_2012_17_24_27_+1100_kti2i+F5M8GA00L8
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQuFEbAAoJEECxmPOUX5FE+0IP/22426PhyltPre259Co1C38d
+A/C0lVpAwgq4N1od7OxP9JNMS+i2f1lj5BoI1+Zg4gq8DFIEgJUp4D5R8ai5ldy2
+s+P2CHoKtar7HWqWNyJOk5oLCQtv4oTyv+XSK60HQ1pAId7XMyEwzwd6BcniSXWe
+7/b9cTAZBftCpzKCBEHILVKn4XBQ0EchGygzCi/PQLvvdjx3TVOwDsjA8ocSxNPx
+L95e3v+QNLHrySCKznW+p1e9ZshF3pr3dMiNP+5ikqLUS0HUTNTEyEbClq1KOpx6
+cCPDsocTOHa2bOcuBlODdrgFCV6CFFYeKtAL0n20DVwpGQGRspLWrXCAWB0gjoN8
+Qn/z98gxknvX2HrD9awH1ZIJG85u+GKFtV+IFsKowrEanXdPPs6IpVrLg97wjQza
+wqchKxx1zuzBzxyeznjJZ6QEKMKTIcj3fkJktzXXDpZ1Npehy/vjYon5QqGaTfQx
+PZUR+N081OBZz6IVfbVgYXCO2DF6q+tpJb5P8kisxpURwC0b5NwDQfQZCjSMwcHe
+5sjkX27aIsSgJyFU1S6SpzTYLU1wTBqnGZ9A5rBCg0fv2oO6Z7kAh+kGN+rHKgyM
+57RsoTS921PdCLHow+LJFaJQwN3fLYZl5Ssj4Qv7b1FonGAXTMeZJPPAbJc6LH7W
+h1w1aOCIFWY4kAI2L8Jp
+=WlpG
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__30_Nov_2012_17_24_27_+1100_kti2i+F5M8GA00L8--
