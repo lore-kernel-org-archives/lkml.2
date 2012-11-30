@@ -1,225 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759247Ab2K3SGT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:06:19 -0500
-Received: from mail.work-microwave.de ([62.245.205.51]:51074 "EHLO
-	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759107Ab2K3SEf (ORCPT
+	id S1759276Ab2K3SHM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:07:12 -0500
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:60003 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752466Ab2K3SHK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:04:35 -0500
-From: Roland Stigge <stigge@antcom.de>
-To: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
-        jbe@pengutronix.de, plagnioj@jcrosoft.com, highguy@gmail.com,
-        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
-        rmallon@gmail.com, tru@work-microwave.de, sr@denx.de,
-        wg@grandegger.com
-Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH 4/6 v8] gpiolib: Fix default attributes for class
-Date: Fri, 30 Nov 2012 19:03:54 +0100
-Message-Id: <1354298637-25058-5-git-send-email-stigge@antcom.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1354298637-25058-1-git-send-email-stigge@antcom.de>
-References: <1354298637-25058-1-git-send-email-stigge@antcom.de>
-X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
+	Fri, 30 Nov 2012 13:07:10 -0500
+X-Greylist: delayed 1731 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 Nov 2012 13:07:10 EST
+MIME-Version: 1.0
+In-Reply-To: <1354125783-15816-1-git-send-email-hakanakkan@gmail.com>
+References: <1354091364-7920-1-git-send-email-hakanakkan@gmail.com>
+	<1354125783-15816-1-git-send-email-hakanakkan@gmail.com>
+Date: Fri, 30 Nov 2012 18:38:16 +0100
+Message-ID: <CAFTL4hwSva0eBK1f=K7Hus0ybiEACtebQbhEUDsJjLZcmmeCtA@mail.gmail.com>
+Subject: Re: [PATCH] nohz/cpuset: Make a CPU stick with do_timer() duty in the
+ presence of nohz cpusets
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Hakan Akkan <hakanakkan@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a race condition between creating a gpio or gpiochip device and adding
-default attributes. This patch fixes this by defining the default attributes as
-dev_attrs of the class. For this, it was necessary to create a separate
-gpiochip_class besides gpio_class.
+2012/11/28 Hakan Akkan <hakanakkan@gmail.com>:
+> +static int check_drop_timer_duty(int cpu)
+> +{
+> +       int curr_handler, prev_handler, new_handler;
+> +       int nrepeat = -1;
+> +       bool drop_recheck;
+> +
+> +repeat:
+> +       WARN_ON_ONCE(++nrepeat > 1);
+> +       drop_recheck = false;
+> +       curr_handler = cpu;
+> +       new_handler = TICK_DO_TIMER_NONE;
+> +
+> +#ifdef CONFIG_CPUSETS_NO_HZ
+> +       if (atomic_read(&nr_cpus_user_nohz) > 0) {
 
-Signed-off-by: Roland Stigge <stigge@antcom.de>
----
- Documentation/ABI/testing/sysfs-gpio |   11 ++++
- drivers/gpio/gpiolib.c               |   79 +++++++++++++++--------------------
- 2 files changed, 45 insertions(+), 45 deletions(-)
+Note atomic_read() is not SMP ordered. If another CPU does
+atomic_add() or atomic_add_return(), you may not see the new value as
+expected with atomic_read(). Doing atomic_add_return(0, &atomic_thing)
+returns the fully ordered result.
 
---- linux-2.6.orig/Documentation/ABI/testing/sysfs-gpio
-+++ linux-2.6/Documentation/ABI/testing/sysfs-gpio
-@@ -20,6 +20,17 @@ Description:
- 	    /value ... always readable, writes fail for input GPIOs
- 	    /direction ... r/w as: in, out (default low); write: high, low
- 	    /edge ... r/w as: none, falling, rising, both
-+
-+What:		/sys/class/gpiochip/
-+Date:		October 2012
-+KernelVersion:	3.7
-+Contact:	Roland Stigge <stigge@antcom.de>
-+Description:
-+
-+  Each gpiochip is represented by a separate device having the following
-+  attributes:
-+
-+    /sys/class/gpiochip
- 	/gpiochipN ... for each gpiochip; #N is its first GPIO
- 	    /base ... (r/o) same as N
- 	    /label ... (r/o) descriptive, not necessarily unique
---- linux-2.6.orig/drivers/gpio/gpiolib.c
-+++ linux-2.6/drivers/gpio/gpiolib.c
-@@ -333,9 +333,6 @@ static ssize_t gpio_value_store(struct d
- 	return status;
- }
- 
--static const DEVICE_ATTR(value, 0644,
--		gpio_value_show, gpio_value_store);
--
- static irqreturn_t gpio_sysfs_irq(int irq, void *priv)
- {
- 	struct sysfs_dirent	*value_sd = priv;
-@@ -556,19 +553,6 @@ static ssize_t gpio_active_low_store(str
- 	return status ? : size;
- }
- 
--static const DEVICE_ATTR(active_low, 0644,
--		gpio_active_low_show, gpio_active_low_store);
--
--static const struct attribute *gpio_attrs[] = {
--	&dev_attr_value.attr,
--	&dev_attr_active_low.attr,
--	NULL,
--};
--
--static const struct attribute_group gpio_attr_group = {
--	.attrs = (struct attribute **) gpio_attrs,
--};
--
- /*
-  * /sys/class/gpio/gpiochipN/
-  *   /base ... matching gpio_chip.base (N)
-@@ -583,7 +567,6 @@ static ssize_t chip_base_show(struct dev
- 
- 	return sprintf(buf, "%d\n", chip->base);
- }
--static DEVICE_ATTR(base, 0444, chip_base_show, NULL);
- 
- static ssize_t chip_label_show(struct device *dev,
- 			       struct device_attribute *attr, char *buf)
-@@ -592,7 +575,6 @@ static ssize_t chip_label_show(struct de
- 
- 	return sprintf(buf, "%s\n", chip->label ? : "");
- }
--static DEVICE_ATTR(label, 0444, chip_label_show, NULL);
- 
- static ssize_t chip_ngpio_show(struct device *dev,
- 			       struct device_attribute *attr, char *buf)
-@@ -601,18 +583,6 @@ static ssize_t chip_ngpio_show(struct de
- 
- 	return sprintf(buf, "%u\n", chip->ngpio);
- }
--static DEVICE_ATTR(ngpio, 0444, chip_ngpio_show, NULL);
--
--static const struct attribute *gpiochip_attrs[] = {
--	&dev_attr_base.attr,
--	&dev_attr_label.attr,
--	&dev_attr_ngpio.attr,
--	NULL,
--};
--
--static const struct attribute_group gpiochip_attr_group = {
--	.attrs = (struct attribute **) gpiochip_attrs,
--};
- 
- /*
-  * /sys/class/gpio/export ... write-only
-@@ -691,11 +661,32 @@ static struct class_attribute gpio_class
- 	__ATTR_NULL,
- };
- 
-+static struct device_attribute gpio_attrs[] = {
-+	__ATTR(active_low, 0644, gpio_active_low_show, gpio_active_low_store),
-+	__ATTR(value, 0644, gpio_value_show, gpio_value_store),
-+	__ATTR_NULL,
-+};
-+
- static struct class gpio_class = {
- 	.name =		"gpio",
- 	.owner =	THIS_MODULE,
- 
--	.class_attrs =	gpio_class_attrs,
-+	.class_attrs = gpio_class_attrs,
-+	.dev_attrs = gpio_attrs,
-+};
-+
-+static struct device_attribute gpiochip_attrs[] = {
-+	__ATTR(label, 0444, chip_label_show, NULL),
-+	__ATTR(base, 0444, chip_base_show, NULL),
-+	__ATTR(ngpio, 0444, chip_ngpio_show, NULL),
-+	__ATTR_NULL,
-+};
-+
-+static struct class gpiochip_class = {
-+	.name =		"gpiochip",
-+	.owner =	THIS_MODULE,
-+
-+	.dev_attrs =	gpiochip_attrs,
- };
- 
- 
-@@ -752,10 +743,7 @@ int gpio_export(unsigned gpio, bool dire
- 		dev = device_create(&gpio_class, desc->chip->dev, MKDEV(0, 0),
- 				desc, ioname ? ioname : "gpio%u", gpio);
- 		if (!IS_ERR(dev)) {
--			status = sysfs_create_group(&dev->kobj,
--						&gpio_attr_group);
--
--			if (!status && direction_may_change)
-+			if (direction_may_change)
- 				status = device_create_file(dev,
- 						&dev_attr_direction);
- 
-@@ -925,25 +913,22 @@ EXPORT_SYMBOL_GPL(gpio_unexport);
- 
- static int gpiochip_export(struct gpio_chip *chip)
- {
--	int		status;
-+	int		status = 0;
- 	struct device	*dev;
- 
- 	/* Many systems register gpio chips for SOC support very early,
- 	 * before driver model support is available.  In those cases we
- 	 * export this later, in gpiolib_sysfs_init() ... here we just
--	 * verify that _some_ field of gpio_class got initialized.
-+	 * verify that _some_ field of gpiochip_class got initialized.
- 	 */
--	if (!gpio_class.p)
-+	if (!gpiochip_class.p)
- 		return 0;
- 
- 	/* use chip->base for the ID; it's already known to be unique */
- 	mutex_lock(&sysfs_lock);
--	dev = device_create(&gpio_class, chip->dev, MKDEV(0, 0), chip,
--				"gpiochip%d", chip->base);
--	if (!IS_ERR(dev)) {
--		status = sysfs_create_group(&dev->kobj,
--				&gpiochip_attr_group);
--	} else
-+	dev = device_create(&gpiochip_class, chip->dev, MKDEV(0, 0), chip,
-+			    "gpiochip%d", chip->base);
-+	if (IS_ERR(dev))
- 		status = PTR_ERR(dev);
- 	chip->exported = (status == 0);
- 	mutex_unlock(&sysfs_lock);
-@@ -971,7 +956,7 @@ static void gpiochip_unexport(struct gpi
- 	struct device		*dev;
- 
- 	mutex_lock(&sysfs_lock);
--	dev = class_find_device(&gpio_class, NULL, chip, match_export);
-+	dev = class_find_device(&gpiochip_class, NULL, chip, match_export);
- 	if (dev) {
- 		put_device(dev);
- 		device_unregister(dev);
-@@ -1228,6 +1213,10 @@ static int __init gpiolib_sysfs_init(voi
- 	if (status < 0)
- 		return status;
- 
-+	status = class_register(&gpiochip_class);
-+	if (status < 0)
-+		return status;
-+
- 	status = class_register(&gpio_block_class);
- 	if (status < 0)
- 		return status;
+You also need to do that to ensure full ordering against
+tick_cpu_sched.user_nohz.
+
+On the current layout we have:
+
+(Write side)                                      (Read side)
+
+ts->user_nohz = 1;
+atomic_inc(&nr_cpus_user_nohz)
+
+                                                      if
+(atomic_read(&nr_cpus_user_nohz))
+                                                            if
+(per_cpu(tick_cpu_sched, curr_handler).user_nohz)
+                                                                ....
+
+If you want to make sure that you see the expected value on user_nohz
+from the read side, you need to correctly order the write and read
+against nr_cpus_user_nohz.
+
+For this you can use atomic_add_return() which implies the full barrier:
+
+
+(Write side)                                      (Read side)
+
+ts->user_nohz = 1;
+atomic_inc_return(&nr_cpus_user_nohz)
+
+                                                      if
+(atomic_add_return(0, &nr_cpus_user_nohz))
+                                                            if
+(per_cpu(tick_cpu_sched, curr_handler).user_nohz)
+                                                                ....
+
+I have much more comments on this patch, I will come back on this soon.
+
+Thanks.
