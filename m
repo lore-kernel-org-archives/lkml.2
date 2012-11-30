@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756351Ab2K3UiM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 15:38:12 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:64459 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754635Ab2K3UiK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 15:38:10 -0500
+	id S1757005Ab2K3UkO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 15:40:14 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37489 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756707Ab2K3UkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 15:40:12 -0500
+Message-ID: <50B91965.5030007@zytor.com>
+Date: Fri, 30 Nov 2012 12:39:01 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <1354305521-11583-1-git-send-email-mingo@kernel.org>
-References: <1354305521-11583-1-git-send-email-mingo@kernel.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 30 Nov 2012 12:37:49 -0800
-X-Google-Sender-Auth: 6czdD7fjzZVjinU2GRfT4hYeUSc
-Message-ID: <CA+55aFwjxm7OYuucHeE2WFr4p+jwr63t=kSdHndta_QkyFbyBQ@mail.gmail.com>
-Subject: Re: [PATCH 00/10] Latest numa/core release, v18
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Jim Cromie <jim.cromie@gmail.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Andi Kleen <ak@linux.intel.com>, Michal Marek <mmarek@suse.cz>,
+        Tony Lindgren <tony@atomide.com>,
+        Jonathan Kliegman <kliegs@chromium.org>,
+        Chris Zankel <chris@zankel.net>,
+        Bill Pemberton <wfp5p@viridian.itc.virginia.edu>,
+        Fengguang Wu <fengguang.wu@intel.com>, Sam Ravnborg <sam@ravnborg.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Subject: Re: [PATCH 1/2] init.h: Remove __dev* sections from the kernel
+References: <20121129184133.GA15110@kroah.com> <20121129184328.GB15110@kroah.com>
+In-Reply-To: <20121129184328.GB15110@kroah.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 30, 2012 at 11:58 AM, Ingo Molnar <mingo@kernel.org> wrote:
+On 11/29/2012 10:43 AM, Greg Kroah-Hartman wrote:
+> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 >
-> When pushed hard enough via threaded workloads (for example via the
-> numa02 test) then the upstream page migration code in mm/migration.c
-> becomes unscalable, resulting in lot of scheduling on the anon vma
-> mutex and a subsequent drop in performance.
+> With the recent work to remove CONFIG_HOTPLUG, we are starting to get a
+> bunch of __devinit section warnings, despite CONFIG_HOTPLUG always being
+> enabled.  So, stop marking the sections entirely, by defining them away
+> the section markings in init.h
+>
 
-Ugh.
+Could we run a sed script over the kernel tree and generate patches to 
+remove the markings completely?
 
-I wonder if migration really needs that thing to be a mutex? I may be
-wrong, but the anon_vma lock only protects the actual rmap chains, and
-migration only ever changes the pte *contents*, not the actual chains
-of pte's themselves, right?
+	-hpa
 
-So if this is a migration-specific scalability issue, then it might be
-possible to solve by making the mutex be a rwsem instead, and have
-migration only take it for reading.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-Of course, I'm quite possibly wrong, and the code depends on full
-mutual exclusion.
-
-Just a thought, in case it makes somebody go "Hmm.."
-
-               Linus
