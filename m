@@ -1,106 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757531Ab2K3K5W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 05:57:22 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34134 "EHLO mx2.suse.de"
+	id S1757547Ab2K3K5j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 05:57:39 -0500
+Received: from mga11.intel.com ([192.55.52.93]:42511 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750852Ab2K3K5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 05:57:20 -0500
-Date: Fri, 30 Nov 2012 10:57:15 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Lin Feng <linfeng@cn.fujitsu.com>, viro@zeniv.linux.org.uk, bcrl@kvack.org,
-        kamezawa.hiroyu@jp.fujitsu.com, mhocko@suse.cz, hughd@google.com,
-        cl@linux.com, minchan@kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        laijs@cn.fujitsu.com, wency@cn.fujitsu.com, tangchen@cn.fujitsu.com,
-        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [BUG REPORT] [mm-hotplug, aio] aio ring_pages can't be offlined
-Message-ID: <20121130105715.GC8218@suse.de>
-References: <1354172098-5691-1-git-send-email-linfeng@cn.fujitsu.com>
- <20121129153930.477e9709.akpm@linux-foundation.org>
+	id S1750852Ab2K3K5h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 05:57:37 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,191,1355126400"; 
+   d="scan'208";a="255493942"
+Date: Fri, 30 Nov 2012 11:57:31 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: grant.likely@secretlab.ca, rabin.vincent@stericsson.com,
+        shiraz.hashim@st.com, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, spear-devel@list.st.com,
+        lee.jones@linaro.org, linus.walleij@linaro.org,
+        Vipul Kumar Samar <vipulkumar.samar@st.com>
+Subject: Re: [PATCH V5 2/2] mfd: stmpe: Update DT support in stmpe driver
+Message-ID: <20121130105731.GN3176@sortiz-mobl>
+References: <2dcd7cb4c4022fa24b5328974e4226f5aaf89419.1354199865.git.viresh.kumar@linaro.org>
+ <121653def4e985b0c1b59045637dd4518f97e73a.1354199865.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121129153930.477e9709.akpm@linux-foundation.org>
+In-Reply-To: <121653def4e985b0c1b59045637dd4518f97e73a.1354199865.git.viresh.kumar@linaro.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 03:39:30PM -0800, Andrew Morton wrote:
-> On Thu, 29 Nov 2012 14:54:58 +0800
-> Lin Feng <linfeng@cn.fujitsu.com> wrote:
-> 
-> > Hi all,
-> > 
-> > We encounter a "Resource temporarily unavailable" fail while trying
-> > to offline a memory section in a movable zone. We found that there are 
-> > some pages can't be migrated. The offline operation fails in function 
-> > migrate_page_move_mapping() returning -EAGAIN till timeout because 
-> > the if assertion 'page_count(page) != 1' fails.
-> > I wonder in the case 'page_count(page) != 1', should we always wait
-> > (return -EAGAING)? Or in other words, can we do something here for 
-> > migration if we know where the pages from?
-> > 
-> > And finally found that such pages are used by /sbin/multipathd in the form
-> > of aio ring_pages. Besides once increment introduced by the offline calling
-> > chain, another increment is added by aio_setup_ring() via callling
-> > get_userpages(), it won't decrease until we call aio_free_ring().
-> > 
-> > The dump_page info in the offline context is showed as following:
-> > page:ffffea0011e69140 count:2 mapcount:0 mapping:ffff8801d6949881 index:0x7fc4b6d1d
-> > page flags: 0x30000000018081d(locked|referenced|uptodate|dirty|swapbacked|unevictable)
-> > page:ffffea0011fb0480 count:2 mapcount:0 mapping:ffff8801d6949881 index:0x7fc4b6d1c
-> > page flags: 0x30000000018081d(locked|referenced|uptodate|dirty|swapbacked|unevictable)
-> > page:ffffea0011fbaa80 count:2 mapcount:0 mapping:ffff8801d6949881 index:0x7fc4b6d1a
-> > page flags: 0x30000000018081d(locked|referenced|uptodate|dirty|swapbacked|unevictable)
-> > page:ffffea0011ff21c0 count:2 mapcount:0 mapping:ffff8801d6949881 index:0x7fc4b6d1b
-> > page flags: 0x30000000018081d(locked|referenced|uptodate|dirty|swapbacked|unevictable)
-> > 
-> > The multipathd seems never going to release the ring_pages until we reboot the box.
-> > Furthermore, if some guy makes app which only calls io_setup() but never calls 
-> > io_destroy() for the reason that he has to keep the io_setup() for a long time 
-> > or just forgets to or even on purpose that we can't expect.
-> > So I think the mm-hotplug framwork should get the capability to deal with such
-> > situation. And should we consider adding migration support for such pages?
-> > 
-> > However I don't know if there are any other kinds of such particular pages in 
-> > current kernel/Linux system. If unluckily there are many apparently it's hard to 
-> > handle them all, just adding migrate support for aio ring_pages is insufficient. 
-> > 
-> > But if luckily can we use the private field of page struct to track the
-> > ring_pages[] pointer so that we can retrieve the user when migrate? 
-> > Doing so another problem occurs, how to distinguish such special pages?
-> > Use pageflag may cause an impact on current pageflag layout, add new pageflag
-> > item also seems to be impossible.
-> > 
-> > I'm not sure what way is the right approach, seeking for help.
-> > Any comments are extremely needed, thanks :)
-> 
-> Tricky.
-> 
-> I expect the same problem would occur with pages which are under
-> O_DIRECT I/O.  Obviously O_DIRECT pages won't be pinned for such long
-> periods, but the durations could still be lengthy (seconds).
-> 
-> Worse is a futex page, which could easily remain pinned indefinitely.
-> 
-> The best I can think of is to make changes in or around
-> get_user_pages(), to steal the pages from userspace and replace them
-> with non-movable ones before pinning them.  The performance cost of
-> something like this would surely be unacceptable for direct-io, but
-> maybe OK for the aio ring and futexes.
-> 
+Hi Viresh, Lee,
 
-If this happens then it would be preferred if this only happened for
-ZONE_MOVABLE. If it generally happens it means we're going to have a lot
-more MIGRATE_UNMOVABLE pageblocks and a lot more fragmentation leading
-to lower THP availability. For THP, we're ok if some pageblocks are
-temporarily unavailable or even unavailable for long periods of time,
-we can cope with that but we (or I at least) do not want to lower THP
-availability on systems that do not care about ZONE_MOVABLE or node hot-plug.
+On Thu, Nov 29, 2012 at 08:10:18PM +0530, Viresh Kumar wrote:
+> From: Vipul Kumar Samar <vipulkumar.samar@st.com>
+> 
+> This patch extends existing DT support for stmpe devices. This updates:
+> - DT support from stmpe SPI and I2C drivers
+> - missing header files in stmpe.c
+> - stmpe_of_probe() with pwm, rotator and new bindings.
+> - Bindings are updated in binding document.
+> 
+> Signed-off-by: Vipul Kumar Samar <vipulkumar.samar@st.com>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+> V4->V5:
+> ------
+> - 2/3 and 3/3 merged.
+> - irq_trigger is kept same for non-DT booti.
+> 
+> @Lee: I haven't added your Acked-by, because this differs from your Acked
+> version.
+Lee, are you ok with this one ? Could you give it a test ?
+
+Cheers,
+Samuel.
 
 -- 
-Mel Gorman
-SUSE Labs
+Intel Open Source Technology Centre
+http://oss.intel.com/
