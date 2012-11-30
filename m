@@ -1,72 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758946Ab2K3Rgk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 12:36:40 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:36678 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755697Ab2K3Rgh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 12:36:37 -0500
-Date: Fri, 30 Nov 2012 18:36:35 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Lance Ortiz <lance.ortiz@hp.com>, bhelgaas@google.com,
-        lance_ortiz@hotmail.com, jiang.liu@huawei.com, tony.luck@intel.com,
-        mchehab@redhat.com, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] aerdrv: Trace Event for AER
-Message-ID: <20121130173635.GD23034@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	Lance Ortiz <lance.ortiz@hp.com>, bhelgaas@google.com,
-	lance_ortiz@hotmail.com, jiang.liu@huawei.com, tony.luck@intel.com,
-	mchehab@redhat.com, linux-acpi@vger.kernel.org,
-	linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20121129215443.5483.43364.stgit@grignak.americas.hpqcorp.net>
- <1354240279.6276.131.camel@gandalf.local.home>
- <20121130105311.GA6869@liondog.tnic>
- <1354275551.6276.140.camel@gandalf.local.home>
- <20121130134232.GD6869@liondog.tnic>
- <1354283631.6276.143.camel@gandalf.local.home>
+	id S1758959Ab2K3Rgv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 12:36:51 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40005 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755697Ab2K3Rgt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 12:36:49 -0500
+Date: Fri, 30 Nov 2012 09:36:44 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Eli Billauer <eli.billauer@gmail.com>, linux-kernel@vger.kernel.org,
+        Philip Balister <philip@balister.org>, Pavel Machek <pavel@denx.de>,
+        John Linn <john.linn@xilinx.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        "Ira W. Snyder" <iws@ovro.caltech.edu>
+Subject: Re: [PATCH 2/2] New driver: Xillybus generic interface for FPGA
+ (programmable logic)
+Message-ID: <20121130173644.GA9841@kroah.com>
+References: <1354117293-13632-1-git-send-email-eli.billauer@gmail.com>
+ <1354117293-13632-2-git-send-email-eli.billauer@gmail.com>
+ <201211301728.48008.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1354283631.6276.143.camel@gandalf.local.home>
+In-Reply-To: <201211301728.48008.arnd@arndb.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 30, 2012 at 08:53:51AM -0500, Steven Rostedt wrote:
-> On Fri, 2012-11-30 at 14:42 +0100, Borislav Petkov wrote:
-> 
-> > So, it sounds to me like we should we move all RAS-specific tracepoints
-> > to <trace/events/ras.h> and then in each usage site do:
-> 
-> Note, the CREATE_TRACE_POINTS must only be done in one location. Not
-> every place. It creates the code that does the work to make the
-> tracepoints show up in /debug/tracing/events/* as well as the callback
-> code and other such things. If you define it in more than one .c file,
-> then you will have linker issues due to the functions being created more
-> than once.
-> 
+On Fri, Nov 30, 2012 at 05:28:47PM +0000, Arnd Bergmann wrote:
+> On Wednesday 28 November 2012, Eli Billauer wrote:
 > > 
-> > #define CREATE_TRACE_POINTS
-> > #include <trace/events/ras.h>
+> > Xillybus is a general-purpose framework for communication between programmable
+> > logic (FPGA) and a host. It provides a simple connection between hardware FIFOs
+> > in the FPGA and their respective device files on the host. The user space
+> > programming model is like piping data from or to the FPGA.
 > > 
-> > Correct?
+> > The underlying transport between the host and FPGA is either PCIe or AXI
+> > (AMBA bus by ARM).
+> > 
+> > The Xillybus logic (IP core) is configurable in the number of pipes it presents
+> > and their nature. The driver autodetects these pipes, making it essentially
+> > forward-compatible to future configurations. The benefit of having this driver
+> > enabled in the kernel is that hardware vendors may release a new card, knowing
+> > that it will work out of the box on any future Linux machine, with the specific
+> > configuration defined for the FPGA part.
+> > 
+> > This driver has been available for download for over a year, and has been
+> > actively used on a wide variety of kernels versions and configurations.
 > 
-> That's the default way to do things.
+> I have a much higher-level comment on this driver: There seem to be a number
+> of parties that are interested in having reprogrammable logic available in
+> Linux and that will want to merge their drivers. I'm aware of these other
+> people that must have some interest (and one person I can't mention here
+> because of NDA):
+> 
+> Philip Balister  <philip@balister.org> (OpenSDR)
+> Dinh Nguyen <dinguyen@altera.com> (ARM SOCFPGA maintainer)
+> Pavel Machek <pavel@denx.de> (SOCFPGA contributor)
+> John Linn <john.linn@xilinx.com> (Zynq maintainer)
+> Michal Simek <michal.simek@xilinx.com> (Zynq maintainer)
+> Ira W. Snyder <iws@ovro.caltech.edu> (Carma driver author)
 
-Ok, cool.
+Yes, I know of at least one more device other than the ones listed above
+that wants this type of functionality as well, so defining it in a
+standard user/kernel api manner would be very good to do.
 
-Lance, care to move the TP to a new header called
-include/trace/events/ras.h in your next iteration of the patches?
+thanks,
 
-I'll later move the mc_event TP there too and drop the RAS-specific TP
-header.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
+greg k-h
