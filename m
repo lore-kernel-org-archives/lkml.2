@@ -1,181 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983Ab2K3IGi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 03:06:38 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:2672 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753747Ab2K3IGg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 03:06:36 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Fri, 30 Nov 2012 00:06:17 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "nvmarkzhang@gmail.com" <nvmarkzhang@gmail.com>
-CC: "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "James.Bottomley@HansenPartnership.com" 
-	<James.Bottomley@HansenPartnership.com>,
-        "arnd@arndb.de" <arnd@arndb.de>, Krishna Reddy <vdumpa@nvidia.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "minchan@kernel.org" <minchan@kernel.org>,
-        "chunsang.jeong@linaro.org" <chunsang.jeong@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "subashrp@gmail.com" <subashrp@gmail.com>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "pullip.cho@samsung.com" <pullip.cho@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Fri, 30 Nov 2012 09:06:25 +0100
-Subject: Re: [PATCH 1/1] ARM: tegra: bus_notifier registers IOMMU devices
-Thread-Topic: [PATCH 1/1] ARM: tegra: bus_notifier registers IOMMU devices
-Thread-Index: Ac3O0Zg3fWbZTjEMTbuu0gSV/Ghh9w==
-Message-ID: <20121130.100625.755725517856599433.hdoyu@nvidia.com>
-References: <20120924.145014.1452596970914043018.hdoyu@nvidia.com><20121128.154832.539666140149950229.hdoyu@nvidia.com><50B83D34.2030006@gmail.com>
-In-Reply-To: <50B83D34.2030006@gmail.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1754088Ab2K3IKv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 03:10:51 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:2674 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753463Ab2K3IKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 03:10:50 -0500
+X-IronPort-AV: E=Sophos;i="4.83,347,1352044800"; 
+   d="scan'208";a="6306743"
+Message-ID: <50B86ACA.2060408@cn.fujitsu.com>
+Date: Fri, 30 Nov 2012 16:14:02 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 8/8] srcu: use ACCESS_ONCE() to access sp->completed in
+ srcu_read_lock()
+References: <1354178770-6028-1-git-send-email-laijs@cn.fujitsu.com> <1354178770-6028-9-git-send-email-laijs@cn.fujitsu.com> <20121129220525.GD2474@linux.vnet.ibm.com>
+In-Reply-To: <20121129220525.GD2474@linux.vnet.ibm.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/30 16:10:16,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/30 16:10:17,
+	Serialize complete at 2012/11/30 16:10:17
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Zhang <nvmarkzhang@gmail.com> wrote @ Fri, 30 Nov 2012 05:59:32 +0100:
-
-> On 11/28/2012 09:48 PM, Hiroshi Doyu wrote:
-> > Hiroshi Doyu <hdoyu@nvidia.com> wrote @ Mon, 24 Sep 2012 14:50:14 +0300 (EEST):
-> > ...
-> >>>>> On Mon, 2012-09-24 at 12:04 +0300, Hiroshi Doyu wrote:
-> >>>>>> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-> >>>>>> index a1a7225..9eae3be 100644
-> >>>>>> --- a/drivers/base/platform.c
-> >>>>>> +++ b/drivers/base/platform.c
-> >>>>>> @@ -21,6 +21,8 @@
-> >>>>>>  #include <linux/slab.h>
-> >>>>>>  #include <linux/pm_runtime.h>
-> >>>>>>
-> >>>>>> +#include <asm/dma-iommu.h>
-> >>>>>> +
-> >>>>>>  #include "base.h"
-> >>>>>>
-> >>>>>>  #define to_platform_driver(drv)        (container_of((drv), struct
-> >>>>>> platform_driver, \
-> >>>>>> @@ -305,8 +307,19 @@ int platform_device_add(struct platform_device
-> >>>>>> *pdev)
-> >>>>>>                  dev_name(&pdev->dev), dev_name(pdev->dev.parent));
-> >>>>>>
-> >>>>>>         ret = device_add(&pdev->dev);
-> >>>>>> -       if (ret == 0)
-> >>>>>> -               return ret;
-> >>>>>> +       if (ret)
-> >>>>>> +               goto failed;
-> >>>>>> +
-> >>>>>> +#ifdef CONFIG_PLATFORM_ENABLE_IOMMU
-> >>>>>> +       if (platform_bus_type.map && !pdev->dev.archdata.mapping) {
-> >>>>>> +               ret = arm_iommu_attach_device(&pdev->dev,
-> >>>>>> +                                             platform_bus_type.map);
-> >>>>>> +               if (ret)
-> >>>>>> +                       goto failed;
-> >>>>>
-> >>>>> This is horrible ... you're adding an architecture specific callback
-> >>>>> into our generic code; that's really a no-no.  If the concept of
-> >>>>> CONFIG_PLATFORM_ENABE_IOMMU is useful to more than just arm, then this
-> >>>>> could become a generic callback.
-> >>>>
-> >>>> As mentioned in the original, this is a heck to explain what is
-> >>>> needed. I am looking for some generic solution for how to specify
-> >>>> IOMMU info for each platform devices. I'm guessing that some other SoC
-> >>>> may have the similar requirements on the above. As you mentioned, this
-> >>>> solution should be a generic, not arch specific.
-> >>>
-> >>> Please read more about bus notifiers. IMHO a good example is provided in 
-> >>> the following thread:
-> >>> http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg12238.html
-> >>
-> >> This bus notifier seems enough flexible to afford the variation of
-> >> IOMMU map info, like Tegra ASID, which could be platform-specific, and
-> >> the other could be common too. There's already iommu_bus_notifier
-> >> too. I'll try to implement something base on this.
-> > 
-> > Experimentally implemented as below. With the followig patch, each
-> > device could specify its own map in DT, and automatically the device
-> > would be attached to the map.
-> > 
-> > There is a case that some devices share a map. This patch doesn't
-> > suppor such case yet.
-> > 
-> > From 8cb75bb6f3a8535a077e0e85265f87c1f1289bfd Mon Sep 17 00:00:00 2001
-> > From: Hiroshi Doyu <hdoyu@nvidia.com>
-> > Date: Wed, 28 Nov 2012 14:47:04 +0200
-> > Subject: [PATCH 1/1] ARM: tegra: bus_notifier registers IOMMU devices
-> > 
-> > platform_bus notifier registers IOMMU devices if dma-window is
-> > specified.
-> > 
-> > Its format is:
-> >   dma-window = <"start" "size">;
-> > ex)
-> >   dma-window = <0x12345000 0x8000>;
-> > 
-> > Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-> > ---
-> >  arch/arm/mach-tegra/board-dt-tegra30.c |   40 ++++++++++++++++++++++++++++++++
-> >  1 file changed, 40 insertions(+)
-> > 
-> > diff --git a/arch/arm/mach-tegra/board-dt-tegra30.c b/arch/arm/mach-tegra/board-dt-tegra30.c
-> > index a2b6cf1..570d718 100644
-> > --- a/arch/arm/mach-tegra/board-dt-tegra30.c
-> > +++ b/arch/arm/mach-tegra/board-dt-tegra30.c
-> > @@ -30,9 +30,11 @@
-> >  #include <linux/of_fdt.h>
-> >  #include <linux/of_irq.h>
-> >  #include <linux/of_platform.h>
-> > +#include <linux/of_iommu.h>
-> >  
-> >  #include <asm/mach/arch.h>
-> >  #include <asm/hardware/gic.h>
-> > +#include <asm/dma-iommu.h>
-> >  
-> >  #include "board.h"
-> >  #include "clock.h"
-> > @@ -86,10 +88,48 @@ static __initdata struct tegra_clk_init_table tegra_dt_clk_init_table[] = {
-> >  	{ NULL,		NULL,		0,		0},
-> >  };
-> >  
-> > +#ifdef CONFIG_ARM_DMA_USE_IOMMU
-> > +static int tegra_iommu_device_notifier(struct notifier_block *nb,
-> > +				       unsigned long event, void *_dev)
-> > +{
-> > +	struct dma_iommu_mapping *map = NULL;
-> > +	struct device *dev = _dev;
-> > +	dma_addr_t base;
-> > +	size_t size;
-> > +	int err;
-> > +
-> > +	switch (event) {
-> > +	case BUS_NOTIFY_ADD_DEVICE:
-> > +		err = of_get_dma_window(dev->of_node, NULL, 0, NULL, &base,
-> > +					&size);
-> > +		if (!err)
-> > +			map = arm_iommu_create_mapping(&platform_bus_type,
-> > +						       base, size, 0);
-> > +		if (IS_ERR_OR_NULL(map))
-> > +			break;
-> > +		if (arm_iommu_attach_device(dev, map))
+On 11/30/2012 06:05 AM, Paul E. McKenney wrote:
+> On Thu, Nov 29, 2012 at 04:46:09PM +0800, Lai Jiangshan wrote:
+>> Old srcu implement requires sp->completed is loaded in
+>> RCU-sched(preempt_disable()) section.
+>>
+>> The new srcu is now not RCU-sched based, it doesn't require the load of
+>> sp->completed and the access to counter must be in the same RCU-sched
+>> read site C.S., so we use ACCESS_ONCE() instead, and move it out of
+>> the preempt_disable() section, preempt_disable() section is only used
+>> for percpu data, not for RCU-sched.
+>>
+>> The resulted code is almost as the same as before, but it helps people to
+>> understand the code, and it avoids to add surprise to reviewer: "why we need
+>> rcu_read_lock_sched_held() here?"
 > 
-> Add "arm_iommu_release_mapping" here.
+> The first seven patches look good!
+> 
+> One question about this one -- the current code provided dependency
+> ordering between the fetch of idx and the increment, but the code after
+> this patch would not provide this ordering (at least not on Alpha,
+> and maybe also not in presence of aggressive compiler optimizations).
+> 
+> In the immortal words of MSDOS, "Are you sure?"
 
-Yes.
+Sure, the update site doesn't modify the percpu counter, so there is
+no dependency mb needed in read-site. I can ask "where is the corresponding
+mb which is paired with this dependency mb?"
 
-> And finally we see this patch, that's great. :)
 
-I'll move the location of patch to drivers/iommu/tegra-smmu.c and repost.
+The correctness of SRCU is based on
+	the wait in synchrinize_srcu()
+	the counter and seq and the mbs between them
+	X: sp->completed is not necessary here except for reporting how many GP passed.
+
+The starvation-free of SRCU is based on
+	split counter and seq into two index,
+	split the wait into two waits for both index
+	add sp->completed field
+	the flip between the two waits
+	-> the index for wait and the index for late-enough-after-flip read-site are different.
+
+
+Thanks,
+Lai
+
+
+
+>> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+>> ---
+>>  kernel/srcu.c |    3 +--
+>>  1 files changed, 1 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/kernel/srcu.c b/kernel/srcu.c
+>> index 38a762f..224400a 100644
+>> --- a/kernel/srcu.c
+>> +++ b/kernel/srcu.c
+>> @@ -294,9 +294,8 @@ int __srcu_read_lock(struct srcu_struct *sp)
+>>  {
+>>  	int idx;
+>>
+>> +	idx = ACCESS_ONCE(sp->completed) & 0x1;
+>>  	preempt_disable();
+>> -	idx = rcu_dereference_index_check(sp->completed,
+>> -					  rcu_read_lock_sched_held()) & 0x1;
+>>  	ACCESS_ONCE(this_cpu_ptr(sp->per_cpu_ref)->c[idx]) += 1;
+>>  	smp_mb(); /* B */  /* Avoid leaking the critical section. */
+>>  	ACCESS_ONCE(this_cpu_ptr(sp->per_cpu_ref)->seq[idx]) += 1;
+>> -- 
+>> 1.7.4.4
+>>
+> 
+> 
+
