@@ -1,167 +1,364 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505Ab2K3Cjn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 21:39:43 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:60172 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754097Ab2K3Cjm convert rfc822-to-8bit (ORCPT
+	id S1755436Ab2K3CsM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 21:48:12 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:7943 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753523Ab2K3CsJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 21:39:42 -0500
+	Thu, 29 Nov 2012 21:48:09 -0500
+Message-ID: <50B81E50.9050101@huawei.com>
+Date: Fri, 30 Nov 2012 10:47:44 +0800
+From: Jianguo Wu <wujianguo@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo7MpFrSX9rVH48A4mvsRdBjQybqiocv3nrZOPoK_+aqcw@mail.gmail.com>
-References: <097501cdca7b$7e303890$7a90a9b0$@lucidpixels.com>
-	<20121126224245.248f0901@neptune.home>
-	<CAErSpo7Y7m9o2u36ghiW1UDkwweSCG1ZGBx167Anfw4wXTYrCg@mail.gmail.com>
-	<CAErSpo6vrHMTht1nQxiF6HD7qCvUE-NS2eAnQjgUXym1pnNkSA@mail.gmail.com>
-	<004201cdcc3a$a7538310$f5fa8930$@lucidpixels.com>
-	<CAErSpo7530xA6=1Ytj09dwyS1M_N_yAfk4xkr3f9Z_NBn6TJrA@mail.gmail.com>
-	<00a501cdcca3$c2638510$472a8f30$@lucidpixels.com>
-	<00b501cdcca6$03f88af0$0be9a0d0$@lucidpixels.com>
-	<50B6ADA5.2030205@gmail.com>
-	<04b301cdcdcb$65e2f400$31a8dc00$@lucidpixels.com>
-	<CADLC3L09uxX_AU+22nfS20DCE97n1_ZxkG5A1R9joJcEua-EBg@mail.gmail.com>
-	<02d501cdce0f$4b0ce520$e126af60$@lucidpixels.com>
-	<CAErSpo7MpFrSX9rVH48A4mvsRdBjQybqiocv3nrZOPoK_+aqcw@mail.gmail.com>
-Date: Thu, 29 Nov 2012 20:39:41 -0600
-Message-ID: <CADLC3L1BAgQCbi1V=N0CRkJxbaQVK36q4pzbdnanO60exFem4w@mail.gmail.com>
-Subject: Re: Supermicro X9SRL-F - channel enumeration error & ACPI/firmware
- bug question
-From: Robert Hancock <hancockrwd@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Justin Piszcz <jpiszcz@lucidpixels.com>,
-        =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
-        support@supermicro.com, linux-kernel@vger.kernel.org,
-        Dan Williams <djbw@fb.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: <x86@kernel.org>, <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>,
+        <linux-s390@vger.kernel.org>, <linux-sh@vger.kernel.org>,
+        <linux-ia64@vger.kernel.org>, <cmetcalf@tilera.com>,
+        <sparclinux@vger.kernel.org>, David Rientjes <rientjes@google.com>,
+        Jiang Liu <liuj97@gmail.com>, Len Brown <len.brown@intel.com>,
+        <benh@kernel.crashing.org>, <paulus@samba.org>,
+        Christoph Lameter <cl@linux.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: Re: [Patch v4 08/12] memory-hotplug: remove memmap of sparse-vmemmap
+References: <1354010422-19648-1-git-send-email-wency@cn.fujitsu.com> <1354010422-19648-9-git-send-email-wency@cn.fujitsu.com> <50B5DC00.20103@huawei.com> <50B80FB1.6040906@cn.fujitsu.com>
+In-Reply-To: <50B80FB1.6040906@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.216]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 12:16 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Thu, Nov 29, 2012 at 1:55 AM, Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
->>
->>
->> -----Original Message-----
->> From: Robert Hancock [mailto:hancockrwd@gmail.com]
->> Sent: Wednesday, November 28, 2012 7:55 PM
->> To: Justin Piszcz
->> Cc: Bjorn Helgaas; Bruno Prémont; support@supermicro.com;
->> linux-kernel@vger.kernel.org; Dan Williams
->> Subject: Re: Supermicro X9SRL-F - channel enumeration error & ACPI/firmware
->> bug question
->>
->> On Wed, Nov 28, 2012 at 6:49 PM, Justin Piszcz <jpiszcz@lucidpixels.com>
->> wrote:
->>>
->>>
->>> -----Original Message-----
->>> From: Robert Hancock [mailto:hancockrwd@gmail.com]
->>> Sent: Wednesday, November 28, 2012 7:35 PM
->>> To: Justin Piszcz
->>> Cc: 'Bjorn Helgaas'; 'Bruno Prémont'; support@supermicro.com;
->>> linux-kernel@vger.kernel.org; 'Dan Williams'
->>> Subject: Re: Supermicro X9SRL-F - channel enumeration error &
->> ACPI/firmware
->>> bug question
->>>
->>>
->>> What does lspci -vv show on that controller? Not sure what actual
->>> chipset that controller is, but there's a known issue with some Marvell
->>> 6Gbps SATA controllers with DMAR enabled - it seems the device issues
->>> memory read/write requests from the wrong PCI function ID and the IOMMU
->>> rightly denies access as the function listed in the requests doesn't
->>> have any mapping to that memory. I don't think there's presently a
->>> workaround other than disabling DMAR. We could (and likely should) be
->>> detecting that device and adding some kind of quirk for it.
->>>
->>> That sounds likely...
->>> It is shown below:
->>>
->>> Card name: HighPoint Rocket 620 Dual Port SATA 6 Gbps PCI Express 2.0 Host
->>> Adapter
->>>
->>> lspci -vv output:
->>>
->>> 84:00.0 SATA controller: Marvell Technology Group Ltd. 88SE9123 PCIe SATA
->>> 6.0 Gb/s controller (rev 11) (prog-if 01 [AHCI 1.0])
->>>   Subsystem: Marvell Technology Group Ltd. 88SE9123 PCIe SATA 6.0 Gb/s
->>> controller
->>
->> Yeah, that's one of those controllers I think. But I can't tell from
->> the bit of the dmesg you posted exactly what's going on. Can you post
->> a full boot log from having the card installed and some drive attached
->> (by putting the boot drive on another controller for example)?
->>
->>>> ==> Further issues with the X9SRL-F -- does this board support ASPM or is
->>>> this a Linux/ASPM implementation issue?
->>>> [    0.632170]  pci0000:ff: ACPI _OSC support notification failed,
->>> disabling
->>>> PCIe ASPM
->>>> [    0.632239]  pci0000:ff: Unable to request _OSC control (_OSC support
->>>> mask: 0x08)
->>>
->>> What's the full dmesg from this machine (or is it already posted
->> somewhere)?
->>>
->>> It is now available here:
->>> http://home.comcast.net/~jpiszcz/20121128/dmesg.txt
->>
->>> Is that the same boot log? It doesn't have this error in it.
->>
->> Yes, the error is here: (its towards the bottom)
->>
->>  [    7.973015] ata14.00: qc timeout (cmd 0xa1)
->> [    8.472120] ata14.00: failed to IDENTIFY (I/O error, err_mask=0x4)
->> [    9.275922] ata14: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
->> [   19.260667] ata14.00: qc timeout (cmd 0xa1)
->> [   19.759828] ata14.00: failed to IDENTIFY (I/O error, err_mask=0x4)
->> [   19.760451] ata14: limiting SATA link speed to 1.5 Gbps
->> [   20.566598] ata14: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
->> [   50.521078] ata14.00: qc timeout (cmd 0xa1)
->> [   51.020880] ata14.00: failed to IDENTIFY (I/O error, err_mask=0x4)
->> [   51.824664] ata14: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
->> [   51.824682] dmar: DRHD: handling fault status reg 502
->> [   51.824686] dmar: DMAR:[DMA Read] Request device [04:00.0] fault addr 0
->> [   51.824686] DMAR:[fault reason 06] PTE Read access is not set
->
-> You have these devices:
->
->     pci 0000:04:00.0: [10de:01d3] type 00 class 0x030000 nVidia G72
->     pci 0000:84:00.0: [1b4b:9123] type 00 class 0x010601 Marvell 88SE9123 SATA
->     pci 0000:84:00.1: [1b4b:91a4] type 00 class 0x01018f Marvell 88SE9128 IDE
->
-> I think the 04:00.0 DMAR errors are symptoms of nouveau driver issues,
-> and if you get rid of that driver, they'll probably go away.
->
-> But this 84:00.1 DMAR error:
->
->     dmar: DMAR:[DMA Read] Request device [84:00.1] fault addr fff00000
->     DMAR:[fault reason 02] Present bit in context entry is clear
->
-> looks like the probable cause of the Marvell issue.  It looks similar
-> to https://bugzilla.kernel.org/show_bug.cgi?id=42679, although the
-> reports there show a bb:dd.0 device (but no bb:dd.1 device), and the
-> DMAR rejects DMA that appears to be from bb:dd.1.
->
-> Another report that's even more similar is
-> https://bugzilla.redhat.com/show_bug.cgi?id=757166 .  In that case,
-> both bb:dd.0 and bb:dd.1 exist (as in your system), and the DMAR fault
-> is exactly like what you're seeing.
->
-> So you're not alone, but unfortunately, nobody seems to be working on
-> either bug report.  I took the liberty to add you to the cc: list of
-> both.
->
-> I don't really know what else to do at this point.  Maybe a SATA
-> expert with some Marvell docs could figure out why we're seeing DMA
-> from the IDE controller, but I'm not that person :)
+Hi Congyang,
 
-I doubt any Marvell docs would really be very helpful (except for
-maybe an errata list but that likely would just tell us what we can
-already figure out). The SATA controller part of the device seems to
-just be issuing accesses with the wrong PCI function ID.
+Thanks for your review and comments.
 
-The only solution I can think of would be at the PCI/DMAR layer -
-basically functions 0 and 1 on this device should be allowed to access
-each other's DMA regions.
+On 2012/11/30 9:45, Wen Congyang wrote:
+
+> At 11/28/2012 05:40 PM, Jianguo Wu Wrote:
+>> Hi Congyang,
+>>
+>> I think vmemmap's pgtable pages should be freed after all entries are cleared, I have a patch to do this.
+>> The code logic is the same as [Patch v4 09/12] memory-hotplug: remove page table of x86_64 architecture.
+>>
+>> How do you think about this?
+>>
+>> Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
+>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+>> ---
+>>  include/linux/mm.h  |    1 +
+>>  mm/sparse-vmemmap.c |  214 +++++++++++++++++++++++++++++++++++++++++++++++++++
+>>  mm/sparse.c         |    5 +-
+>>  3 files changed, 218 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/include/linux/mm.h b/include/linux/mm.h
+>> index 5657670..1f26af5 100644
+>> --- a/include/linux/mm.h
+>> +++ b/include/linux/mm.h
+>> @@ -1642,6 +1642,7 @@ int vmemmap_populate(struct page *start_page, unsigned long pages, int node);
+>>  void vmemmap_populate_print_last(void);
+>>  void register_page_bootmem_memmap(unsigned long section_nr, struct page *map,
+>>  				  unsigned long size);
+>> +void vmemmap_free(struct page *memmap, unsigned long nr_pages);
+>>  
+>>  enum mf_flags {
+>>  	MF_COUNT_INCREASED = 1 << 0,
+>> diff --git a/mm/sparse-vmemmap.c b/mm/sparse-vmemmap.c
+>> index 1b7e22a..242cb28 100644
+>> --- a/mm/sparse-vmemmap.c
+>> +++ b/mm/sparse-vmemmap.c
+>> @@ -29,6 +29,10 @@
+>>  #include <asm/pgalloc.h>
+>>  #include <asm/pgtable.h>
+>>  
+>> +#ifdef CONFIG_MEMORY_HOTREMOVE
+>> +#include <asm/tlbflush.h>
+>> +#endif
+>> +
+>>  /*
+>>   * Allocate a block of memory to be used to back the virtual memory map
+>>   * or to back the page tables that are used to create the mapping.
+>> @@ -224,3 +228,213 @@ void __init sparse_mem_maps_populate_node(struct page **map_map,
+>>  		vmemmap_buf_end = NULL;
+>>  	}
+>>  }
+>> +
+>> +#ifdef CONFIG_MEMORY_HOTREMOVE
+>> +static void vmemmap_free_pages(struct page *page, int order)
+>> +{
+>> +	struct zone *zone;
+>> +	unsigned long magic;
+>> +
+>> +	magic = (unsigned long) page->lru.next;
+>> +	if (magic == SECTION_INFO || magic == MIX_SECTION_INFO) {
+>> +		put_page_bootmem(page);
+>> +
+>> +		zone = page_zone(page);
+>> +		zone_span_writelock(zone);
+>> +		zone->present_pages++;
+>> +		zone_span_writeunlock(zone);
+>> +		totalram_pages++;
+>> +	} else {
+>> +		if (is_vmalloc_addr(page_address(page)))
+>> +			vfree(page_address(page));
+> 
+> Hmm, vmemmap doesn't use vmalloc() to allocate memory.
+> 
+
+yes, this can be removed.
+
+>> +		else
+>> +			free_pages((unsigned long)page_address(page), order);
+>> +	}
+>> +}
+>> +
+>> +static void free_pte_table(pmd_t *pmd)
+>> +{
+>> +	pte_t *pte, *pte_start;
+>> +	int i;
+>> +
+>> +	pte_start = (pte_t *)pmd_page_vaddr(*pmd);
+>> +	for (i = 0; i < PTRS_PER_PTE; i++) {
+>> +		pte = pte_start + i;
+>> +		if (pte_val(*pte))
+>> +			return;
+>> +	}
+>> +
+>> +	/* free a pte talbe */
+>> +	vmemmap_free_pages(pmd_page(*pmd), 0);
+>> +	spin_lock(&init_mm.page_table_lock);
+>> +	pmd_clear(pmd);
+>> +	spin_unlock(&init_mm.page_table_lock);
+>> +}
+>> +
+>> +static void free_pmd_table(pud_t *pud)
+>> +{
+>> +	pmd_t *pmd, *pmd_start;
+>> +	int i;
+>> +
+>> +	pmd_start = (pmd_t *)pud_page_vaddr(*pud);
+>> +	for (i = 0; i < PTRS_PER_PMD; i++) {
+>> +		pmd = pmd_start + i;
+>> +		if (pmd_val(*pmd))
+>> +			return;
+>> +	}
+>> +
+>> +	/* free a pmd talbe */
+>> +	vmemmap_free_pages(pud_page(*pud), 0);
+>> +	spin_lock(&init_mm.page_table_lock);
+>> +	pud_clear(pud);
+>> +	spin_unlock(&init_mm.page_table_lock);
+>> +}
+>> +
+>> +static void free_pud_table(pgd_t *pgd)
+>> +{
+>> +	pud_t *pud, *pud_start;
+>> +	int i;
+>> +
+>> +	pud_start = (pud_t *)pgd_page_vaddr(*pgd);
+>> +	for (i = 0; i < PTRS_PER_PUD; i++) {
+>> +		pud = pud_start + i;
+>> +		if (pud_val(*pud))
+>> +			return;
+>> +	}
+>> +
+>> +	/* free a pud table */
+>> +	vmemmap_free_pages(pgd_page(*pgd), 0);
+>> +	spin_lock(&init_mm.page_table_lock);
+>> +	pgd_clear(pgd);
+>> +	spin_unlock(&init_mm.page_table_lock);
+>> +}
+>> +
+>> +static int split_large_page(pte_t *kpte, unsigned long address, pte_t *pbase)
+>> +{
+>> +	struct page *page = pmd_page(*(pmd_t *)kpte);
+>> +	int i = 0;
+>> +	unsigned long magic;
+>> +	unsigned long section_nr;
+>> +
+>> +	__split_large_page(kpte, address, pbase);
+>> +	__flush_tlb_all();
+>> +
+>> +	magic = (unsigned long) page->lru.next;
+>> +	if (magic == SECTION_INFO) {
+>> +		section_nr = pfn_to_section_nr(page_to_pfn(page));
+>> +		while (i < PTRS_PER_PMD) {
+>> +			page++;
+>> +			i++;
+>> +			get_page_bootmem(section_nr, page, SECTION_INFO);
+>> +		}
+>> +	}
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static void vmemmap_pte_remove(pmd_t *pmd, unsigned long addr, unsigned long end)
+>> +{
+>> +	pte_t *pte;
+>> +	unsigned long next;
+>> +
+>> +	pte = pte_offset_kernel(pmd, addr);
+>> +	for (; addr < end; pte++, addr += PAGE_SIZE) {
+>> +		next = (addr + PAGE_SIZE) & PAGE_MASK;
+>> +		if (next > end)
+>> +			next = end;
+>> +
+>> +		if (pte_none(*pte))
+>> +			continue;
+>> +		if (IS_ALIGNED(addr, PAGE_SIZE) &&
+>> +		    IS_ALIGNED(end, PAGE_SIZE)) {
+>> +			vmemmap_free_pages(pte_page(*pte), 0);
+>> +			spin_lock(&init_mm.page_table_lock);
+>> +			pte_clear(&init_mm, addr, pte);
+>> +			spin_unlock(&init_mm.page_table_lock);
+> 
+> If addr or end is not alianed with PAGE_SIZE, you may leak some
+> memory.
+> 
+
+yes, I think we can handle this situation with the method you mentioned in the change log:
+1. When removing memory, the page structs of the revmoved memory are filled
+   with 0xFD.
+2. All page structs are filled with 0xFD on PT/PMD, PT/PMD can be cleared.
+   In this case, the page used as PT/PMD can be freed.
+
+By the way, why is 0xFD?
+
+>> +		}
+>> +	}
+>> +
+>> +	free_pte_table(pmd);
+>> +	__flush_tlb_all();
+>> +}
+>> +
+>> +static void vmemmap_pmd_remove(pud_t *pud, unsigned long addr, unsigned long end)
+>> +{
+>> +	unsigned long next;
+>> +	pmd_t *pmd;
+>> +
+>> +	pmd = pmd_offset(pud, addr);
+>> +	for (; addr < end; addr = next, pmd++) {
+>> +		next = pmd_addr_end(addr, end);
+>> +		if (pmd_none(*pmd))
+>> +			continue;
+>> +
+>> +		if (cpu_has_pse) {
+>> +			unsigned long pte_base;
+>> +
+>> +			if (IS_ALIGNED(addr, PMD_SIZE) &&
+>> +			    IS_ALIGNED(next, PMD_SIZE)) {
+>> +				vmemmap_free_pages(pmd_page(*pmd),
+>> +						   get_order(PMD_SIZE));
+>> +				spin_lock(&init_mm.page_table_lock);
+>> +				pmd_clear(pmd);
+>> +				spin_unlock(&init_mm.page_table_lock);
+>> +				continue;
+>> +			}
+>> +
+>> +			/*
+>> +			 * We use 2M page, but we need to remove part of them,
+>> +			 * so split 2M page to 4K page.
+>> +			 */
+>> +			pte_base = get_zeroed_page(GFP_ATOMIC | __GFP_NOTRACK);
+> 
+> get_zeored_page() may fail. You should handle this error.
+> 
+
+That means system is out of memory, I will trigger a bug_on.
+
+>> +			split_large_page((pte_t *)pmd, addr, (pte_t *)pte_base);
+>> +			__flush_tlb_all();
+>> +
+>> +			spin_lock(&init_mm.page_table_lock);
+>> +			pmd_populate_kernel(&init_mm, pmd, (pte_t *)pte_base);
+>> +			spin_unlock(&init_mm.page_table_lock);
+>> +		}
+>> +
+>> +		vmemmap_pte_remove(pmd, addr, next);
+>> +	}
+>> +
+>> +	free_pmd_table(pud);
+>> +	__flush_tlb_all();
+>> +}
+>> +
+>> +static void vmemmap_pud_remove(pgd_t *pgd, unsigned long addr, unsigned long end)
+>> +{
+>> +	unsigned long next;
+>> +	pud_t *pud;
+>> +
+>> +	pud = pud_offset(pgd, addr);
+>> +	for (; addr < end; addr = next, pud++) {
+>> +		next = pud_addr_end(addr, end);
+>> +		if (pud_none(*pud))
+>> +			continue;
+>> +
+>> +		vmemmap_pmd_remove(pud, addr, next);
+>> +	}
+>> +
+>> +	free_pud_table(pgd);
+>> +	__flush_tlb_all();
+>> +}
+>> +
+>> +void vmemmap_free(struct page *memmap, unsigned long nr_pages)
+>> +{
+>> +	unsigned long addr = (unsigned long)memmap;
+>> +	unsigned long end = (unsigned long)(memmap + nr_pages);
+>> +	unsigned long next;
+>> +
+>> +	for (; addr < end; addr = next) {
+>> +		pgd_t *pgd = pgd_offset_k(addr);
+>> +
+>> +		next = pgd_addr_end(addr, end);
+>> +		if (!pgd_present(*pgd))
+>> +			continue;
+>> +
+>> +		vmemmap_pud_remove(pgd, addr, next);
+>> +		sync_global_pgds(addr, next);
+> 
+> The parameter for sync_global_pgds() is [start, end], not
+> [start, end)
+> 
+
+yes, thanks.
+
+>> +	}
+>> +}
+>> +#endif
+>> diff --git a/mm/sparse.c b/mm/sparse.c
+>> index fac95f2..3a16d68 100644
+>> --- a/mm/sparse.c
+>> +++ b/mm/sparse.c
+>> @@ -613,12 +613,13 @@ static inline struct page *kmalloc_section_memmap(unsigned long pnum, int nid,
+>>  	/* This will make the necessary allocations eventually. */
+>>  	return sparse_mem_map_populate(pnum, nid);
+>>  }
+>> -static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
+>> +static void __kfree_section_memmap(struct page *page, unsigned long nr_pages)
+> Why do you change this line?
+> 
+
+0k, it is no need to change.
+
+>>  {
+>> -	return; /* XXX: Not implemented yet */
+>> +	vmemmap_free(page, nr_pages);
+>>  }
+>>  static void free_map_bootmem(struct page *page, unsigned long nr_pages)
+>>  {
+>> +	vmemmap_free(page, nr_pages);
+>>  }
+>>  #else
+>>  static struct page *__kmalloc_section_memmap(unsigned long nr_pages)
+> 
+> 
+> .
+> 
+
+
+
