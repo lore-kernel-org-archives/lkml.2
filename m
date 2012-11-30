@@ -1,140 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755493Ab2K3DWg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 22:22:36 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:60517 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754782Ab2K3DWe (ORCPT
+	id S1751378Ab2K3D0T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 22:26:19 -0500
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:27467
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751019Ab2K3D0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 22:22:34 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <50B8263C.7060908@jp.fujitsu.com>
-Date: Fri, 30 Nov 2012 12:21:32 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	Thu, 29 Nov 2012 22:26:18 -0500
+X-Forefront-Antispam-Report: CIP:160.33.194.231;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail04v.am.sony.com;RD:mail.sonyusa.com;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(z21eIzbb2dI98dI1432Izz1de0h1202h1d1ah1d2ahzzz2fh2a8h668h839h947hd25hf0ah10d2h1288h12a5h12a9h12bdh137ah13b6h1441h1537h153bh162dh1631h1155h)
+Message-ID: <50B82754.8080703@am.sony.com>
+Date: Thu, 29 Nov 2012 19:26:12 -0800
+From: Frank Rowand <frank.rowand@am.sony.com>
+Reply-To: <frank.rowand@am.sony.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: lizefan@huawei.com, paul@paulmenage.org, glommer@parallels.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        peterz@infradead.org, mhocko@suse.cz, bsingharora@gmail.com,
-        hannes@cmpxchg.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET cgroup/for-3.8] cpuset: decouple cpuset locking from
- cgroup core
-References: <1354138460-19286-1-git-send-email-tj@kernel.org>
-In-Reply-To: <1354138460-19286-1-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>
+Subject: Re: [ANNOUNCE] 3.0.53-rt77
+References: <1354070691.6276.95.camel@gandalf.local.home>
+In-Reply-To: <1354070691.6276.95.camel@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-15"
 Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: am.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/11/29 6:34), Tejun Heo wrote:
-> Hello, guys.
+On 11/27/12 18:44, Steven Rostedt wrote:
 > 
-> Depending on cgroup core locking - cgroup_mutex - is messy and makes
-> cgroup prone to locking dependency problems.  The current code already
-> has lock dependency loop - memcg nests get_online_cpus() inside
-> cgroup_mutex.  cpuset the other way around.
+> Dear RT Folks,
 > 
-> Regardless of the locking details, whatever is protecting cgroup has
-> inherently to be something outer to most other locking constructs.
-> cgroup calls into a lot of major subsystems which in turn have to
-> perform subsystem-specific locking.  Trying to nest cgroup
-> synchronization inside other locks isn't something which can work
-> well.
-> 
-> cgroup now has enough API to allow subsystems to implement their own
-> locking and cgroup_mutex is scheduled to be made private to cgroup
-> core.  This patchset makes cpuset implement its own locking instead of
-> relying on cgroup_mutex.
-> 
-> cpuset is rather nasty in this respect.  Some of it seems to have come
-> from the implementation history - cgroup core grew out of cpuset - but
-> big part stems from cpuset's need to migrate tasks to an ancestor
-> cgroup when an hotunplug event makes a cpuset empty (w/o any cpu or
-> memory).
-> 
-> This patchset decouples cpuset locking from cgroup_mutex.  After the
-> patchset, cpuset uses cpuset-specific cpuset_mutex instead of
-> cgroup_mutex.  This also removes the lockdep warning triggered during
-> cpu offlining (see 0009).
-> 
-> Note that this leaves memcg as the only external user of cgroup_mutex.
-> Michal, Kame, can you guys please convert memcg to use its own locking
-> too?
-> 
+> I'm pleased to announce the 3.0.53-rt77 stable release.
 
-Hmm. let me see....at quick glance cgroup_lock() is used at
-  hierarchy policy change
-  kmem_limit
-  migration policy change
-  swapiness change
-  oom control
+3.0.53-rt77 builds and boots on some ARM boards (PandaBoard, Realview) for:
 
-Because all aboves takes care of changes in hierarchy,
-Having a new memcg's mutex in ->create() may be a way.
-
-Ah, hm, Costa is mentioning task-attach. is the task-attach problem in memcg ?
-
-Thanks,
--Kame
+  - SMP, PREEMPT_RT_FULL
+  - SMP, PREEMPT_NONE
+  - UP, PREEMPT_RT_FULL
+  - UP, PREEMPT_NONE
 
 
-
-
-
-
-
-
-
-
-
-> This patchset contains the following thirteen patches.
-> 
->   0001-cpuset-remove-unused-cpuset_unlock.patch
->   0002-cpuset-remove-fast-exit-path-from-remove_tasks_in_em.patch
->   0003-cpuset-introduce-css_on-offline.patch
->   0004-cpuset-introduce-CS_ONLINE.patch
->   0005-cpuset-introduce-cpuset_for_each_child.patch
->   0006-cpuset-cleanup-cpuset-_can-_attach.patch
->   0007-cpuset-drop-async_rebuild_sched_domains.patch
->   0008-cpuset-reorganize-CPU-memory-hotplug-handling.patch
->   0009-cpuset-don-t-nest-cgroup_mutex-inside-get_online_cpu.patch
->   0010-cpuset-make-CPU-memory-hotplug-propagation-asynchron.patch
->   0011-cpuset-pin-down-cpus-and-mems-while-a-task-is-being-.patch
->   0012-cpuset-schedule-hotplug-propagation-from-cpuset_atta.patch
->   0013-cpuset-replace-cgroup_mutex-locking-with-cpuset-inte.patch
-> 
-> 0001-0006 are prep patches.
-> 
-> 0007-0009 make cpuset nest get_online_cpus() inside cgroup_mutex, not
-> the other way around.
-> 
-> 0010-0012 plug holes which would be exposed by switching to
-> cpuset-specific locking.
-> 
-> 0013 replaces cgroup_mutex with cpuset_mutex.
-> 
-> This patchset is on top of cgroup/for-3.8 (fddfb02ad0) and also
-> available in the following git branch.
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-cpuset-locking
-> 
-> diffstat follows.
-> 
->   kernel/cpuset.c |  750 +++++++++++++++++++++++++++++++-------------------------
->   1 file changed, 423 insertions(+), 327 deletions(-)
-> 
-> Thanks.
-> 
-> --
-> tejun
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+-Frank
 
