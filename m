@@ -1,105 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752086Ab2K3HYI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 02:24:08 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:63120 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806Ab2K3HYF (ORCPT
+	id S1752293Ab2K3Hh7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 02:37:59 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:2414 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167Ab2K3Hh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 02:24:05 -0500
-Date: Fri, 30 Nov 2012 08:23:57 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Terje Bergstrom <tbergstrom@nvidia.com>, linux-tegra@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC v2 2/8] video: tegra: Add syncpoint wait and interrupts
-Message-ID: <20121130072357.GF26474@avionic-0098.adnet.avionic-design.de>
-References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com>
- <1353935954-13763-3-git-send-email-tbergstrom@nvidia.com>
- <20121129084400.GA28781@avionic-0098.adnet.avionic-design.de>
- <50B7AC6E.4050906@wwwdotorg.org>
+	Fri, 30 Nov 2012 02:37:57 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 29 Nov 2012 23:37:30 -0800
+Message-ID: <50B8633A.6010302@nvidia.com>
+Date: Fri, 30 Nov 2012 09:41:46 +0200
+From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="L2Brqb15TUChFOBK"
-Content-Disposition: inline
-In-Reply-To: <50B7AC6E.4050906@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:7V22obW5Ja+Q2ymuAlWxj9+SAAeiY6e4f+DOoPAid0T
- 9rq2w+Z4nTOr0t4nVwjoSY7kFLBj9P+O7y5G4gTaOzFKsayuBh
- AJfhCpCyELDgCU1Jcc5OO79TV0gYAMglF/KO/1pfi4Kqsa2U20
- G6PM6bRMLzhZg3PGEYX1+njylyaOnUDqgHMhdSrTjxDoovLt8L
- v6/lpC0ACadcioijV3j7rwDiUopeZKYT5CzELYZRZzivBmZkk5
- Xeh7ptEGy44oGmE7pBqsDKj6rjxwH+pyDkuKRRhceLC6ameljh
- 3mIilBGu6bvTsIAxl8pd99GFQqNIdwha9sNqnTj1BlrbLHJNbq
- dcpV4isVehdkdFjQi6rwAthZgaGPqZd6qhFuaY7ZlwwmKHCTrF
- 6a8xI2f+k/e02HodcmYuEvlVOdVcAHg6OlCC7mA/0lm3esj1Oa
- XxxaY
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC v2 2/8] video: tegra: Add syncpoint wait and interrupts
+References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com> <1353935954-13763-3-git-send-email-tbergstrom@nvidia.com> <20121129084400.GA28781@avionic-0098.adnet.avionic-design.de> <50B73B5B.8030008@nvidia.com> <20121130072200.GE26474@avionic-0098.adnet.avionic-design.de>
+In-Reply-To: <20121130072200.GE26474@avionic-0098.adnet.avionic-design.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Just replying to part of your mail.
 
---L2Brqb15TUChFOBK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 30.11.2012 09:22, Thierry Reding wrote:
+> Actually for the display controller we want just a notification when the
+> VBLANK happens. I'm not sure if we want to do that with syncpoints at
+> all since it works quite well using regular interrupts.
 
-On Thu, Nov 29, 2012 at 11:41:50AM -0700, Stephen Warren wrote:
-> On 11/29/2012 01:44 AM, Thierry Reding wrote:
-> > On Mon, Nov 26, 2012 at 03:19:08PM +0200, Terje Bergstrom wrote:
->=20
-> >> diff --git a/drivers/video/tegra/host/host1x/host1x_intr.c
-> >> b/drivers/video/tegra/host/host1x/host1x_intr.c
-> > [...]
-> >> +/* Spacing between sync registers */ +#define REGISTER_STRIDE 4
-> >=20
-> > Erm... no. The usual way you should be doing this is either make
-> > the register definitions account for the stride or use accessors
-> > that apply the stride. You should be doing the latter anyway to
-> > make accesses. For example:
-> >=20
-> > static inline void host1x_syncpt_writel(struct host1x *host1x,=20
-> > unsigned long value, unsigned long offset) { writel(value,
-> > host1x->regs + SYNCPT_BASE + offset); }
-> >=20
-> > static inline unsigned long host1x_syncpt_readl(struct host1x
-> > *host1x, unsigned long offset) { return readl(host1x->regs +
-> > SYNCPT_BASE + offset); }
-> >=20
-> > Alternatively, if you want to pass the register index instead of
-> > the offset, you can use just multiply the offset in that function:
-> >=20
-> > writel(value, host1x->regs + SYNCPT_BASE + (offset << 2));
-> >=20
-> > The same can also be done with the non-syncpt registers.
->=20
-> It seems like reasonable documentation to replace "<< 2" with "*
-> REGISTER_STRIDE" here.
+VBLANK isn't actually a very good example of dc's use of sync points.
+That can easily be done with regular interrupts, as you mention.
 
-Given that it is a very common pattern, << 2 seems enough documentation
-to me, but sure, if you prefer to be extra explicit that's fine with me.
+More important is when we have double buffering enabled. When you draw
+something to a surface, and flip it to display, you want DC to notify
+when the flip has been done and rendering can continue to the back buffer.
 
-Thierry
+So, what you can do is return a fence from DC when initiating a flip,
+and place that fence into 2D stream as a host wait so that 2D will
+patiently wait for buffer to become free before it renders.
 
---L2Brqb15TUChFOBK
-Content-Type: application/pgp-signature
+> What I'm proposing is to leave it up to each host1x client how they want
+> to handle this. For display controllers it may be enough to have their
+> callback run in interrupt context but other clients may need to do more
+> work so they can queue it themselves.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+DC doesn't need to worry about host1x interrupts at all. It's all
+internal to the host1x driver, so we're now just talking about the
+internal implementation of host1x.
 
-iQIcBAEBAgAGBQJQuF8NAAoJEN0jrNd/PrOhhAgP/0dsjWCTylvnvrbB60Xfy0NH
-veT4LTrEabepeQRz6VaRb4kC0Xbh9jJe6HDFgTrTrBRkTsOJYIXFmcdyLpOOAApZ
-HM3W9b9FPZHzLIqdwhJwl3hEO0IziAGyGfux7Jt0saSEcLSDXaspwEoSORYUh/wN
-ERdBd6FRNuIWxNrENI1ian9NWWSI8UeaPTzn/CrM8nh5NmM1iP9wt0Ssb1bdZtLK
-B9eHnE8KdBj1qTXnHXiPfm29NNq3KFqE0PR4STD7+8Pwjo01hC4mWKOMUoodBLA1
-Ph3vSQYB0IyI2BY5KwPNRqI68fY0j723/zUG7ix6z0spjl+zMUfwn6ZtBXb2uZPl
-3/35lNFzlCfkmhvr65usS9oXQ+ivd7SbjLt9FEVvaSG6njuMrexMvXZVuKRgmDkX
-rmaRMcvDbO6mRQUXAYgt7BboiQQDXQ7kecilT2JHzvB6Mv6hvpqNX8fpV1urAMU9
-3pEJyPzfrWQqt/vh5OhmeL1NZF9VAubC0HAgUa1sbRKB9TxfktUiynzt7jalOyDk
-vj+Ot7g9SdjQMCRttqbPoGhTp9AsbWgbku/7alkoqYb4W1iqWhlZinLEYTEyhMzN
-TLBpMhTOCDpvxn3EdQTDeqKpwIM22bwsZQCSWAD9CkT+sXWInlB6VMzg0mf+HSVc
-h+StfsAYls5sOrifLVSi
-=BhV8
------END PGP SIGNATURE-----
+We have two scenarios for the syncpt interrupts. One is that a job got
+finished and we need to clean up the queue and free up resources. This
+must be done in threads. Other is releasing a thread that is blocked by
+a syncpt wait.
 
---L2Brqb15TUChFOBK--
+It's simpler if both of these are handled with the same infrastructure,
+and we've shown that latency is very good even if we handle all events
+in a thread.
+
+> I know that this looks like it might be more work, but if it turns out
+> that many drivers need to do the exact same thing, that functionality
+> can be factored out into a helper. But it may just as well turn out that
+> the requirements for each module are slightly different that forcing a
+> workqueue on them could result in ugly workarounds because it doesn't
+> quite work for them.
+
+This is just driver internal, so there's no need for other drivers to
+access this part.
+
+> If we move responsibility of managing the workqueue out of host1x as I
+> proposed above, maybe a lot of this code can be removed. Maybe you can
+> explain a bit what they are used for exactly in your write-up.
+
+It's going to be a big bad boy. :-)
+
+Terje
+
