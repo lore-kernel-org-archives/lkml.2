@@ -1,143 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756212Ab2K3XOm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 18:14:42 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:38739 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750854Ab2K3XOl (ORCPT
+	id S1756280Ab2K3XQZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 18:16:25 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:51473 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756226Ab2K3XQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 18:14:41 -0500
-Date: Fri, 30 Nov 2012 15:13:33 -0800
-Message-Id: <201211302313.qAUNDXMK022697@terminus.zytor.com>
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] x86 fixes for 3.7
-Cc: <stable@kernel.org>, Duncan Laurie <dlaurie@chromium.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Melanie Blower <melanie.blower@intel.com>,
-        Olof Johansson <olofj@chromium.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Vincent Palatin <vpalatin@chromium.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 30 Nov 2012 15:13:39 -0800 (PST)
+	Fri, 30 Nov 2012 18:16:24 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAAfyv35P20QSeG3JR9jJ2-UoJwyDNm4JP0a2TNs_wPXxcJOVRA@mail.gmail.com>
+References: <201211092242.34697.linux@rainbow-software.org>
+	<CAAfyv36UhwVmjwBV5RKDmWm3ag_yqr+t1u+NHAtamFSkmcrUhw@mail.gmail.com>
+	<201211131111.38721.linux@rainbow-software.org>
+	<CAAfyv35P20QSeG3JR9jJ2-UoJwyDNm4JP0a2TNs_wPXxcJOVRA@mail.gmail.com>
+Date: Sat, 1 Dec 2012 00:16:23 +0100
+Message-ID: <CAAfyv37PYKnhxn3rH2-DNjfS1QxipyEqR3jpbH+n8e=w=LW2oA@mail.gmail.com>
+Subject: Re: [RFC, RFT] [PATCH] staging: ft1000: unify struct ft1000_info
+ between USB and PCMCIA drivers
+From: Belisko Marek <marek.belisko@gmail.com>
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: Greg Kroah-Hartman <greg@kroah.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi,
 
-The following changes since commit 9489e9dcae718d5fde988e4a684a0f55b5f94d17:
+On Tue, Nov 13, 2012 at 12:32 PM, Belisko Marek <marek.belisko@gmail.com> wrote:
+> On Tue, Nov 13, 2012 at 11:11 AM, Ondrej Zary
+> <linux@rainbow-software.org> wrote:
+>> On Monday 12 November 2012, Belisko Marek wrote:
+>>> Hi Ondrej,
+>>>
+>>> On Fri, Nov 9, 2012 at 10:42 PM, Ondrej Zary <linux@rainbow-software.org>
+>> wrote:
+>>> > Unify struct ft1000_info between ft1000-usb and ft1000-pcmcia and move it
+>>> > to common ft1000.h.
+>>> >
+>>> > ft1000-pcmcia seems to work. Please test ft1000-usb.
+>>> >
+>>> > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+>>> > ---
+>>> >  drivers/staging/ft1000/ft1000-pcmcia/ft1000.h      |   33 +-----
+>>> >  drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c   |   21 ++-
+>>> >  drivers/staging/ft1000/ft1000-pcmcia/ft1000_proc.c |   10 +-
+>>> >  drivers/staging/ft1000/ft1000-usb/ft1000_debug.c   |  147
+>>> > ++++++++++---------- .../staging/ft1000/ft1000-usb/ft1000_download.c    |
+>>> >   70 +++++----- drivers/staging/ft1000/ft1000-usb/ft1000_hw.c      |   99
+>>> > +++++++------- drivers/staging/ft1000/ft1000-usb/ft1000_proc.c    |    4
+>>> > +-
+>>> >  drivers/staging/ft1000/ft1000-usb/ft1000_usb.c     |   30 ++--
+>>> >  drivers/staging/ft1000/ft1000-usb/ft1000_usb.h     |   54 +------
+>>> >  drivers/staging/ft1000/ft1000.h                    |   35 +++++
+>>> >  10 files changed, 236 insertions(+), 267 deletions(-)
+>>> >
+>>> > diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
+>>> > b/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h index adb436e..65f7ab6
+>>> > 100644
+>>> > --- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
+>>> > +++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
+>>> > @@ -31,41 +31,10 @@
+>>> >  #define SUCCESS        0x00
+>>> >  #define FAILURE        0x01
+>>> >
+>>> > -struct ft1000_info {
+>>> > -       struct net_device_stats stats;
+>>> > -       u16 DrvErrNum;
+>>> > -       u16 AsicID;
+>>> > +struct ft1000_pcmcia {
+>>>
+>>> To be consistent can you please name also usb part not ft100_device
+>>> but e.g. ft1000_usb or something?
+>>
+>> Yes, that's a good idea. I'd like to do that in a separate patch, this one is
+>> already big enough.
+> OK good idea.
+>>
+>>> > @@ -1179,8 +1179,6 @@ static int ft1000_open(struct net_device *dev)
+>>> >         struct ft1000_info *pInfo = netdev_priv(dev);
+>>> >         struct timeval tv;
+>>> >
+>>> > -       DEBUG("ft1000_open is called for card %d\n", pInfo->CardNumber);
+>>>
+>>> ^^^ Why removing this debug?
+>>
+>> I don't remember exactly (this is from an old patch) but probably because I
+>> didn't want to add code to reach CardNumber (which should be removed too).
+>> The debug messages are a mess, some are completely useless, some should be
+>> non-debug instead.
+> There is rule one change one patch so please keep it there and remove
+> in separate patch.
+>>
+>> If you have the USB hardware, please test if this patch does not break
+>> anything. I have only a PCMCIA card.
+> I'll do testing on USB (waiting for HW to come ;))
+USB testing done. It's working good. Please update patch according comments
+and re-send. Thanks.
+>>
+>> --
+>> Ondrej Zary
+>
+> Cheers,
+>
+> marek
+>
+> --
+> as simple and primitive as possible
+> -------------------------------------------------
+> Marek Belisko - OPEN-NANDRA
+> Freelance Developer
+>
+> Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+> Tel: +421 915 052 184
+> skype: marekwhite
+> twitter: #opennandra
+> web: http://open-nandra.com
 
-  Linux 3.7-rc7 (2012-11-25 17:59:19 -0800)
+Marek
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86/urgent
+-- 
+as simple and primitive as possible
+-------------------------------------------------
+Marek Belisko - OPEN-NANDRA
+Freelance Developer
 
-H. Peter Anvin (2):
-      x86, kvm: Remove incorrect redundant assembly constraint
-      x86-32: Unbreak booting on some 486 clones
-
-Vincent Palatin (1):
-      x86, fpu: Avoid FPU lazy restore after suspend
-
- arch/x86/include/asm/fpu-internal.h |   15 +++++++++------
- arch/x86/kernel/head_32.S           |    9 +++++++--
- arch/x86/kernel/smpboot.c           |    5 +++++
- arch/x86/kvm/emulate.c              |    3 +--
- 4 files changed, 22 insertions(+), 10 deletions(-)
-
-diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
-index 831dbb9..41ab26e 100644
---- a/arch/x86/include/asm/fpu-internal.h
-+++ b/arch/x86/include/asm/fpu-internal.h
-@@ -399,14 +399,17 @@ static inline void drop_init_fpu(struct task_struct *tsk)
- typedef struct { int preload; } fpu_switch_t;
- 
- /*
-- * FIXME! We could do a totally lazy restore, but we need to
-- * add a per-cpu "this was the task that last touched the FPU
-- * on this CPU" variable, and the task needs to have a "I last
-- * touched the FPU on this CPU" and check them.
-+ * Must be run with preemption disabled: this clears the fpu_owner_task,
-+ * on this CPU.
-  *
-- * We don't do that yet, so "fpu_lazy_restore()" always returns
-- * false, but some day..
-+ * This will disable any lazy FPU state restore of the current FPU state,
-+ * but if the current thread owns the FPU, it will still be saved by.
-  */
-+static inline void __cpu_disable_lazy_restore(unsigned int cpu)
-+{
-+	per_cpu(fpu_owner_task, cpu) = NULL;
-+}
-+
- static inline int fpu_lazy_restore(struct task_struct *new, unsigned int cpu)
- {
- 	return new == this_cpu_read_stable(fpu_owner_task) &&
-diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-index 957a47a..4dac2f6 100644
---- a/arch/x86/kernel/head_32.S
-+++ b/arch/x86/kernel/head_32.S
-@@ -292,8 +292,8 @@ default_entry:
-  *	be using the global pages. 
-  *
-  *	NOTE! If we are on a 486 we may have no cr4 at all!
-- *	Specifically, cr4 exists if and only if CPUID exists,
-- *	which in turn exists if and only if EFLAGS.ID exists.
-+ *	Specifically, cr4 exists if and only if CPUID exists
-+ *	and has flags other than the FPU flag set.
-  */
- 	movl $X86_EFLAGS_ID,%ecx
- 	pushl %ecx
-@@ -308,6 +308,11 @@ default_entry:
- 	testl %ecx,%eax
- 	jz 6f			# No ID flag = no CPUID = no CR4
- 
-+	movl $1,%eax
-+	cpuid
-+	andl $~1,%edx		# Ignore CPUID.FPU
-+	jz 6f			# No flags or only CPUID.FPU = no CR4
-+
- 	movl pa(mmu_cr4_features),%eax
- 	movl %eax,%cr4
- 
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index c80a33b..f3e2ec8 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -68,6 +68,8 @@
- #include <asm/mwait.h>
- #include <asm/apic.h>
- #include <asm/io_apic.h>
-+#include <asm/i387.h>
-+#include <asm/fpu-internal.h>
- #include <asm/setup.h>
- #include <asm/uv/uv.h>
- #include <linux/mc146818rtc.h>
-@@ -818,6 +820,9 @@ int __cpuinit native_cpu_up(unsigned int cpu, struct task_struct *tidle)
- 
- 	per_cpu(cpu_state, cpu) = CPU_UP_PREPARE;
- 
-+	/* the FPU context is blank, nobody can own it */
-+	__cpu_disable_lazy_restore(cpu);
-+
- 	err = do_boot_cpu(apicid, cpu, tidle);
- 	if (err) {
- 		pr_debug("do_boot_cpu failed %d\n", err);
-diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index 39171cb..bba39bf 100644
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -426,8 +426,7 @@ static void invalidate_registers(struct x86_emulate_ctxt *ctxt)
- 			_ASM_EXTABLE(1b, 3b)				\
- 			: "=m" ((ctxt)->eflags), "=&r" (_tmp),		\
- 			  "+a" (*rax), "+d" (*rdx), "+qm"(_ex)		\
--			: "i" (EFLAGS_MASK), "m" ((ctxt)->src.val),	\
--			  "a" (*rax), "d" (*rdx));			\
-+			: "i" (EFLAGS_MASK), "m" ((ctxt)->src.val));	\
- 	} while (0)
- 
- /* instruction has only one source operand, destination is implicit (e.g. mul, div, imul, idiv) */
+Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
+Tel: +421 915 052 184
+skype: marekwhite
+twitter: #opennandra
+web: http://open-nandra.com
