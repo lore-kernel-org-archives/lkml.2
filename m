@@ -1,130 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030768Ab2K3Pbp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 10:31:45 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:60962 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030753Ab2K3Pbm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 10:31:42 -0500
-From: Paul Moore <paul@paul-moore.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: linux-next: Tree for Nov 29 (netlabel)
-Date: Fri, 30 Nov 2012 10:31:38 -0500
-Message-ID: <2664553.2TRaVqlkGg@sifl>
-User-Agent: KMail/4.9.3 (Linux/3.6.6-gentoo; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <3694027.VYznNcdp7C@sifl>
-References: <20121129174057.99da02b15426c76054d05592@canb.auug.org.au> <50B7F846.70202@infradead.org> <3694027.VYznNcdp7C@sifl>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1030783Ab2K3Pb6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 10:31:58 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:58717 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1030753Ab2K3Pb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 10:31:56 -0500
+Message-ID: <1354289516.11903.15.camel@joe-AO722>
+Subject: [PATCH V2 3/3] cifs: Add CONFIG_CIFS_DEBUG and rename use of
+ CIFS_DEBUG
+From: Joe Perches <joe@perches.com>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org
+Date: Fri, 30 Nov 2012 07:31:56 -0800
+In-Reply-To: <20121130100705.782980df@tlielax.poochiereds.net>
+References: <cover.1354217746.git.joe@perches.com>
+	 <5f5c9196b44908026a27333ef31dd4ebf4314de2.1354217746.git.joe@perches.com>
+	 <20121130065629.52c489dc@tlielax.poochiereds.net>
+	 <1354287460.11903.8.camel@joe-AO722>
+	 <20121130100705.782980df@tlielax.poochiereds.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 30, 2012 10:19:16 AM Paul Moore wrote:
-> On Thursday, November 29, 2012 04:05:26 PM Randy Dunlap wrote:
-> > On 11/28/2012 10:40 PM, Stephen Rothwell wrote:
-> > > Hi all,
+On Fri, 2012-11-30 at 10:07 -0500, Jeff Layton wrote:
+> On Fri, 30 Nov 2012 06:57:40 -0800
+> Joe Perches <joe@perches.com> wrote:
+> > On Fri, 2012-11-30 at 06:56 -0500, Jeff Layton wrote:
+> > > On Thu, 29 Nov 2012 11:37:20 -0800
+> > > Joe Perches <joe@perches.com> wrote:
+> > > > Rather than havign a permanently enabled #define, allow
+> > > > control over it.
+> > > > 
+> > > > This can reduce the size of the module by ~100KB which
+> > > > could be useful for embedded systems.
+> > []
+> > > > diff --git a/fs/cifs/cifs_debug.h b/fs/cifs/cifs_debug.h
+> > > > index 4d12fe4..6867a7f 100644
+> > > > --- a/fs/cifs/cifs_debug.h
+> > > > +++ b/fs/cifs/cifs_debug.h
+> > > > @@ -18,7 +18,10 @@
+> > > >   *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+> > > >   *
+> > > >  */
+> > > > -#define CIFS_DEBUG		/* BB temporary */
+> > > > +
+> > > > +#ifdef CONFIG_CIFS_DEBUG
+> > > > +#define CIFS_DEBUG
+> > > > +#endif
+> > > >  
+> > > >  #ifndef _H_CIFS_DEBUG
+> > > >  #define _H_CIFS_DEBUG
+> > > 
+> > > Looks fine, but I'd probably prefer to just get rid of CIFS_DEBUG
+> > > altogether here and replace it with CONFIG_CIFS_DEBUG.
 > > 
-> > > Changes since 20121128:
-> > (on i386:)
+> > I wasn't sure if there was other code anywhere else that depends
+> > on CIFS_DEBUG.  There isn't any in the kernel source tree.  If not,
+> > then you are right, it should be just CONFIG_CIFS_DEBUG.
+> There shouldn't be. None of this stuff is exposed to userspace, AFAIK.
+> I think it's ok to just make that CONFIG_CIFS_DEBUG.
 > 
-> If I had to guess it looks like CONFIG_NETLABEL needs to be dependent on
-> CONFIG_INET.  While the net/ Kconfig only pulls in the net/netlabel Kconfig
-> if CONFIG_INET is defined, I'm guessing that without the explicit
-> dependency there is nothing preventing someone from arriving at a bad
-> configuration as we see here.
-> 
-> Let me test this out to make sure my reasoning is right and if it is I'll
-> post a patch to netdev later today.
-> 
-> Thanks for catching this.
-
-Hmmm.  The existing logic in net/Kconfig seems to disable CONFIG_NETLABEL at 
-build time whenever CONFIG_INET is disabled in my .config file.  The only way 
-I can recreate what you are seeing here is if I move the NetLabel include 
-outside of the INET conditional in net/Kconfig.
-
-Regardless, adding an explicit dependency on INET to NETLABEL shouldn't hurt 
-anything so I'll go ahead and post the patch to netdev.  Hopefully someone who 
-understands Kconfig better than I do can help shed some light on this.
-
-> > net/built-in.o: In function `netlbl_cfg_cipsov4_add':
-> > (.text+0x61757): undefined reference to `cipso_v4_doi_add'
-> > net/built-in.o: In function `netlbl_cfg_cipsov4_del':
-> > (.text+0x6177d): undefined reference to `cipso_v4_doi_remove'
-> > net/built-in.o: In function `netlbl_cfg_cipsov4_map_add':
-> > (.text+0x617ae): undefined reference to `cipso_v4_doi_getdef'
-> > net/built-in.o: In function `netlbl_cfg_cipsov4_map_add':
-> > (.text+0x61a49): undefined reference to `cipso_v4_doi_putdef'
-> > net/built-in.o: In function `netlbl_sock_setattr':
-> > (.text+0x6218c): undefined reference to `cipso_v4_sock_setattr'
-> > net/built-in.o: In function `netlbl_sock_delattr':
-> > (.text+0x6220b): undefined reference to `cipso_v4_sock_delattr'
-> > net/built-in.o: In function `netlbl_sock_getattr':
-> > (.text+0x62238): undefined reference to `cipso_v4_sock_getattr'
-> > net/built-in.o: In function `netlbl_conn_setattr':
-> > (.text+0x622de): undefined reference to `cipso_v4_sock_setattr'
-> > net/built-in.o: In function `netlbl_conn_setattr':
-> > (.text+0x62303): undefined reference to `cipso_v4_sock_delattr'
-> > net/built-in.o: In function `netlbl_req_setattr':
-> > (.text+0x62429): undefined reference to `cipso_v4_req_setattr'
-> > net/built-in.o: In function `netlbl_req_setattr':
-> > (.text+0x6244e): undefined reference to `cipso_v4_req_delattr'
-> > net/built-in.o: In function `netlbl_req_delattr':
-> > (.text+0x624ba): undefined reference to `cipso_v4_req_delattr'
-> > net/built-in.o: In function `netlbl_skbuff_setattr':
-> > (.text+0x62551): undefined reference to `cipso_v4_skbuff_setattr'
-> > net/built-in.o: In function `netlbl_skbuff_setattr':
-> > (.text+0x62576): undefined reference to `cipso_v4_skbuff_delattr'
-> > net/built-in.o: In function `netlbl_skbuff_getattr':
-> > (.text+0x62619): undefined reference to `cipso_v4_skbuff_getattr'
-> > net/built-in.o: In function `netlbl_skbuff_err':
-> > (.text+0x62685): undefined reference to `cipso_v4_error'
-> > net/built-in.o: In function `netlbl_cache_invalidate':
-> > (.text+0x626ab): undefined reference to `cipso_v4_cache_invalidate'
-> > net/built-in.o: In function `netlbl_cache_add':
-> > (.text+0x626ec): undefined reference to `cipso_v4_cache_add'
-> > net/built-in.o: In function `netlbl_domhsh_remove_entry':
-> > (.text+0x63294): undefined reference to `cipso_v4_doi_putdef'
-> > net/built-in.o: In function `netlbl_domhsh_remove_entry':
-> > (.text+0x632eb): undefined reference to `cipso_v4_doi_putdef'
-> > net/built-in.o: In function `netlbl_domhsh_remove_af4':
-> > (.text+0x6349b): undefined reference to `cipso_v4_doi_putdef'
-> > net/built-in.o: In function `netlbl_mgmt_add_common.clone.1':
-> > netlabel_mgmt.c:(.text+0x64a87): undefined reference to
-> > `cipso_v4_doi_getdef' netlabel_mgmt.c:(.text+0x64c83): undefined reference
-> > to `cipso_v4_doi_putdef' net/built-in.o: In function
-> > `netlbl_cipsov4_listall':
-> > netlabel_cipso_v4.c:(.text+0x66e52): undefined reference to
-> > `cipso_v4_doi_walk' net/built-in.o: In function `netlbl_cipsov4_list':
-> > netlabel_cipso_v4.c:(.text+0x67199): undefined reference to
-> > `cipso_v4_doi_getdef' net/built-in.o: In function `netlbl_cipsov4_remove':
-> > netlabel_cipso_v4.c:(.text+0x6771b): undefined reference to
-> > `cipso_v4_doi_remove' net/built-in.o: In function
-> > `netlbl_cipsov4_add_pass':
-> > netlabel_cipso_v4.c:(.text+0x67a4b): undefined reference to
-> > `cipso_v4_doi_add' netlabel_cipso_v4.c:(.text+0x67a76): undefined
-> > reference
-> > to `cipso_v4_doi_free' net/built-in.o: In function
-> > `netlbl_cipsov4_add_local':
-> > netlabel_cipso_v4.c:(.text+0x67b9a): undefined reference to
-> > `cipso_v4_doi_add' netlabel_cipso_v4.c:(.text+0x67bc5): undefined
-> > reference
-> > to `cipso_v4_doi_free' net/built-in.o: In function
-> > `netlbl_cipsov4_add_std':
-> > netlabel_cipso_v4.c:(.text+0x68535): undefined reference to
-> > `cipso_v4_doi_add' netlabel_cipso_v4.c:(.text+0x68575): undefined
-> > reference
-> > to `cipso_v4_doi_free'
+> > > While you're at it, /proc/fs/cifs/cifsFYI should probably not be
+> > > present when CONFIG_CIFS_DEBUG isn't set. Perhaps we should also
+> > > disable traceSMB and its related functions too in that case?
 > > 
+> > That could be considered a kernel api change.
+> > If people agree to delete it, I'd be OK with it.
 > > 
-> > Full randconfig file is attached.
+> 
+> If you compile with CONFIG_CIFS_DEBUG turned off, then the cifsFYI file
+> will be a knob that's not hooked up to anything. I think it's best not
+> to present it at all in that case.
+
+If there's a userspace script that does
+echo 1 > /proc/fs/cifs/cifsFYI
+it'd now get a file not found error.
+
+> traceSMB is a little harder to make the case for. Theoretically, it'll
+> still work after your changes, but I'm not sure it makes sense to leave
+> that knob around since it's technically a flag for debugging. You're
+> probably fine not to worry about that one. I'll look at that at some
+> point in the future.
+
+This could be changed in a separate patch if appropriate.
+Here's the modified patch.
+
+From: Joe Perches <joe@perches.com>
+
+This can reduce the size of the module by ~120KB which
+could be useful for embedded systems.
+
+$ size fs/cifs/built-in.o*
+   text	   data	    bss	    dec	    hex	filename
+ 388567	  34459	 100440	 523466	  7fcca	fs/cifs/built-in.o.new
+ 495970	  34599	 117904	 648473	  9e519	fs/cifs/built-in.o.old
+
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ fs/cifs/Kconfig      |   10 +++++++++-
+ fs/cifs/cifs_debug.h |    3 +--
+ 2 files changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/fs/cifs/Kconfig b/fs/cifs/Kconfig
+index 2075ddf..21ff76c 100644
+--- a/fs/cifs/Kconfig
++++ b/fs/cifs/Kconfig
+@@ -122,9 +122,17 @@ config CIFS_ACL
+ 	    Allows fetching CIFS/NTFS ACL from the server.  The DACL blob
+ 	    is handed over to the application/caller.
+ 
++config CIFS_DEBUG
++	bool "Enable CIFS debugging routines"
++	default y
++	depends on CIFS
++	help
++	   Enabling this option adds helpful debugging messages to
++	   the cifs code which increases the size of the cifs module.
++	   If unsure, say Y.
+ config CIFS_DEBUG2
+ 	bool "Enable additional CIFS debugging routines"
+-	depends on CIFS
++	depends on CIFS_DEBUG
+ 	help
+ 	   Enabling this option adds a few more debugging routines
+ 	   to the cifs code which slightly increases the size of
+diff --git a/fs/cifs/cifs_debug.h b/fs/cifs/cifs_debug.h
+index 4d12fe4..86e92ef 100644
+--- a/fs/cifs/cifs_debug.h
++++ b/fs/cifs/cifs_debug.h
+@@ -18,7 +18,6 @@
+  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+  *
+ */
+-#define CIFS_DEBUG		/* BB temporary */
+ 
+ #ifndef _H_CIFS_DEBUG
+ #define _H_CIFS_DEBUG
+@@ -44,7 +43,7 @@ extern int cifsERROR;
+  *	debug ON
+  *	--------
+  */
+-#ifdef CIFS_DEBUG
++#ifdef CONFIG_CIFS_DEBUG
+ 
+ /* information message: e.g., configuration, major event */
+ #define cifsfyi(fmt, ...)						\
 -- 
-paul moore
-www.paul-moore.com
+1.7.8.112.g3fd21
+
 
