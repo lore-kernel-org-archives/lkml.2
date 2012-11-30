@@ -1,180 +1,567 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755068Ab2K3AgN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 19:36:13 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:57110 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754414Ab2K3AgM (ORCPT
+	id S1754809Ab2K3AxS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 19:53:18 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:52842 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751303Ab2K3AxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 19:36:12 -0500
-X-AuditID: 9c93016f-b7b86ae000003a75-e3-50b7ff7be681
-Date: Fri, 30 Nov 2012 09:36:09 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Greg KH <greg@kroah.com>, Jerome Marchand <jmarchan@redhat.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+	Thu, 29 Nov 2012 19:53:17 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121130000307.GA17427@blaptop>
+References: <1354001201-25537-1-git-send-email-ngupta@vflare.org>
+	<20121129074538.GA5564@bbox>
+	<50B72664.30000@vflare.org>
+	<20121130000307.GA17427@blaptop>
+Date: Thu, 29 Nov 2012 16:53:15 -0800
+Message-ID: <CAPkvG_dn_Dpen79T7R6WVg_SDisVz1tDhd7=uz+cbwrHzQUNKw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] zsmalloc: add function to query object size
+From: Nitin Gupta <ngupta@vflare.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Greg KH <greg@kroah.com>, Seth Jennings <sjenning@linux.vnet.ibm.com>,
         Dan Carpenter <dan.carpenter@oracle.com>,
-        Sam Hansen <solid.se7en@gmail.com>,
+        Sam Hansen <solid.se7en@gmail.com>, Tomas M <tomas@slax.org>,
+        Mihail Kasadjikov <hamer.mk@gmail.com>,
         Linux Driver Project <devel@linuxdriverproject.org>,
         linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] zram: fix invalid memory references during disk write
-Message-ID: <20121130003609.GA18630@blaptop>
-References: <1354180728-1958-1-git-send-email-ngupta@vflare.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354180728-1958-1-git-send-email-ngupta@vflare.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Thu, Nov 29, 2012 at 4:03 PM, Minchan Kim <minchan@kernel.org> wrote:
+> On Thu, Nov 29, 2012 at 01:09:56AM -0800, Nitin Gupta wrote:
+>> On 11/28/2012 11:45 PM, Minchan Kim wrote:
+>> >On Mon, Nov 26, 2012 at 11:26:40PM -0800, Nitin Gupta wrote:
+>> >>Adds zs_get_object_size(handle) which provides the size of
+>> >>the given object. This is useful since the user (zram etc.)
+>> >>now do not have to maintain object sizes separately, saving
+>> >>on some metadata size (4b per page).
+>> >>
+>> >>The object handle encodes <page, offset> pair which currently points
+>> >
+>> >Nitpick.
+>> >
+>> ><page, index> in descrption would be proper instead of
+>> ><page, offset>. You are going to replace <page, idx> with <page, offset>.
+>> >
+>>
+>> I think 'offset' conveys the meaning more clearly; 'index' is after
+>> all just a chopped-off version of offset :)
+>
+> In my perceptoin, offset means location from some point by some byte
+> while index is thing we have to multiply sizeof(object) to get.
+> So you used index before the patch but now you try to use offset instead of
+> index.
+>
+> Anyway, it's minor nitpick. Never mind if you don't agree. :)
+>
+>>
+>>
+>> >>to the start of the object. Now, the handle implicitly stores the size
+>> >>information by pointing to the object's end instead. Since zsmalloc is
+>> >>a slab based allocator, the start of the object can be easily determined
+>> >>and the difference between the end offset encoded in the handle and the
+>> >>start gives us the object size.
+>> >
+>> >It's a good idea. Look at just minor comment below.
+>> >
+>> >Let's talk with another concern. This patch surely helps current
+>> >customer's memory usage who should add 4 byte for accounting the
+>> >statistics while zsmalloc could be slow down.
+>> >Is it really valuable?
+>> >
+>> >Yes. zram/zcache had a tight coupling with zsmalloc so it already
+>> >lost modularity. :( In this POV, this patch makes sense.
+>> >But if someone are willing to remove statistics for performance?
+>> >Although he remove it, zsmalloc is still slow down.
+>> >
+>> >Statistic for user of zsmalloc should be cost of user himself, not zsmalloc
+>> >and it accelerates dependency with customer so it makes changing allocator
+>> >hard in future. We already had such experience(xvmalloc->zsmalloc). Of course,
+>> >it's not good that worry future things too early without any plan.
+>> >So I'm not strong againt you. If any reviewer don't raise an eyebrow,
+>> >I wil rely on your decision.
+>> >
+>>
+>> Looking over the changes I do not expect any difference in
+>> performance -- just a bit more arithmetic, however the use of
+>> get_prev_page() which may dereference a few extra pointers might not
+>> be really free. Also, my iozone test[1] shows very little difference
+>> in performance:
+>
+> Iozone test isn't enough to prove the minor slow down because it would have
+> many noise about I/O path and different compression ratio per I/O.
+>
+>>
+>> With just the fix for crash (patch 1/2):
+>> 9.28user 1159.84system 21:46.54elapsed 89%CPU (0avgtext+0avgdata
+>> 50200maxresident)k
+>> 212988544inputs+190660816outputs (1major+16706minor)pagefaults 0swaps
+>>
+>> With the new get_object_size() code (patch 1/2 + patch 2/2):
+>> 9.20user 1112.63system 21:03.61elapsed 88%CPU (0avgtext+0avgdata
+>> 50200maxresident)k
+>> 194636568inputs+190500424outputs (1major+16707minor)pagefaults 0swaps
+>>
+>> I really cannot explain this ~40s speedup but anyways, I think
+>> optimizing zsmalloc/zram should be taken up separately, at least
+>> when this new code does not seem to have any significant effects.
+>>
+>>
+>> [1] iozone test:
+>>  - Create zram of size 1200m
+>>  - Create ext4 fs
+>>  - iozone -a -g 1G
+>>  - In parallel: watch zram_stress
+>>
+>> # zram_stress
+>> sync
+>> echo 1 | sudo tee /proc/sys/vm/drop_caches
+>>
+>>
+>> Surely, not the most accurate of the tests but gives an idea if
+>> anything is making a significant difference.
+>
+> For more accurate test, it would be better to use zsmapbench by Seth.
+> https://github.com/spartacus06/zsmapbench
 
-I would like to tidy zram_bvec_write up but it needs more churn
-than needed to fix this bug and makes review hard. So I want you to pick up
-this patch asap because it's a candidate of stable.
+Thanks for the pointer. I also found fio which can generate I/O with different
+levels of compressibility. These would help with future evaluations.
 
-Thanks.
+> Frankly speaking, I don't expect it has a significant regression as you said.
+> More concern to me is we are going to make tight coupling with zram/zcache +
+> zsmalloc. It makes changing from zsmalloc to smarter allocator hard.
 
-On Thu, Nov 29, 2012 at 01:18:48AM -0800, Nitin Gupta wrote:
-> Changelog v3 vs v2:
->  - Further changes to changelog message to explain the bug case
-> of incorrect use of kunmapped buffer
-> Changelog v2 vs v1:
->  - Changelog message now correctly explains the problem
-> 
-> Fixes a bug introduced by commit c8f2f0db1 ("zram: Fix handling
-> of incompressible pages") which caused invalid memory references
-> during disk write. Invalid references could occur in two cases:
->  - Incoming data expands on compression: In this case, reference was
-> made to kunmap()'ed bio page.
->  - Partial (non PAGE_SIZE) write with incompressible data: In this
-> case, reference was made to a kfree()'ed buffer.
-> 
-> Fixes bug 50081:
-> https://bugzilla.kernel.org/show_bug.cgi?id=50081
-> 
-> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
-> Reported-by: Mihail Kasadjikov <hamer.mk@gmail.com>
-> Reported-by: Tomas M <tomas@slax.org>
-> Reviewed-by: Minchan Kim <minchan@kernel.org>
-> ---
->  drivers/staging/zram/zram_drv.c |   39 ++++++++++++++++++++++++---------------
->  1 file changed, 24 insertions(+), 15 deletions(-)
-> 
-> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-> index fb4a7c9..f2a73bd 100644
-> --- a/drivers/staging/zram/zram_drv.c
-> +++ b/drivers/staging/zram/zram_drv.c
-> @@ -265,7 +265,7 @@ out_cleanup:
->  static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->  			   int offset)
->  {
-> -	int ret;
-> +	int ret = 0;
->  	size_t clen;
->  	unsigned long handle;
->  	struct page *page;
-> @@ -286,10 +286,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->  			goto out;
->  		}
->  		ret = zram_decompress_page(zram, uncmem, index);
-> -		if (ret) {
-> -			kfree(uncmem);
-> +		if (ret)
->  			goto out;
-> -		}
->  	}
-> 
->  	/*
-> @@ -302,16 +300,18 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
-> 
->  	user_mem = kmap_atomic(page);
-> 
-> -	if (is_partial_io(bvec))
-> +	if (is_partial_io(bvec)) {
->  		memcpy(uncmem + offset, user_mem + bvec->bv_offset,
->  		       bvec->bv_len);
-> -	else
-> +		kunmap_atomic(user_mem);
-> +		user_mem = NULL;
-> +	} else {
->  		uncmem = user_mem;
-> +	}
-> 
->  	if (page_zero_filled(uncmem)) {
-> -		kunmap_atomic(user_mem);
-> -		if (is_partial_io(bvec))
-> -			kfree(uncmem);
-> +		if (!is_partial_io(bvec))
-> +			kunmap_atomic(user_mem);
->  		zram_stat_inc(&zram->stats.pages_zero);
->  		zram_set_flag(zram, index, ZRAM_ZERO);
->  		ret = 0;
-> @@ -321,9 +321,11 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->  	ret = lzo1x_1_compress(uncmem, PAGE_SIZE, src, &clen,
->  			       zram->compress_workmem);
-> 
-> -	kunmap_atomic(user_mem);
-> -	if (is_partial_io(bvec))
-> -			kfree(uncmem);
-> +	if (!is_partial_io(bvec)) {
-> +		kunmap_atomic(user_mem);
-> +		user_mem = NULL;
-> +		uncmem = NULL;
-> +	}
-> 
->  	if (unlikely(ret != LZO_E_OK)) {
->  		pr_err("Compression failed! err=%d\n", ret);
-> @@ -332,8 +334,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
-> 
->  	if (unlikely(clen > max_zpage_size)) {
->  		zram_stat_inc(&zram->stats.bad_compress);
-> -		src = uncmem;
->  		clen = PAGE_SIZE;
-> +		src = NULL;
-> +		if (is_partial_io(bvec))
-> +			src = uncmem;
->  	}
-> 
->  	handle = zs_malloc(zram->mem_pool, clen);
-> @@ -345,7 +349,11 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->  	}
->  	cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_WO);
-> 
-> +	if ((clen == PAGE_SIZE) && !is_partial_io(bvec))
-> +		src = kmap_atomic(page);
->  	memcpy(cmem, src, clen);
-> +	if ((clen == PAGE_SIZE) && !is_partial_io(bvec))
-> +		kunmap_atomic(src);
-> 
->  	zs_unmap_object(zram->mem_pool, handle);
-> 
-> @@ -358,9 +366,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
->  	if (clen <= PAGE_SIZE / 2)
->  		zram_stat_inc(&zram->stats.good_compress);
-> 
-> -	return 0;
-> -
->  out:
-> +	if (is_partial_io(bvec))
-> +		kfree(uncmem);
-> +
->  	if (ret)
->  		zram_stat64_inc(zram, &zram->stats.failed_writes);
->  	return ret;
+I could not understand how this patch increasing zram + zsmalloc coupling.
+All we need from any potential allocator replacement is an interface to
+provide the object size given its handle.  If the new allocation cannot
+support that then the we can create another size[] just like handle[] to
+maintain sizes.  So, its really simple to replace zsmalloc. if required, at
+least for the zram.
+
+
+> The reason I have a such concern is that I have a TODO which supports
+> swap-over-zram pages migratin to storage swap when zram is full. Yes. It's a
+> just plan, no schedule at the moment so I can't insist on but if i try it in
+> future, I might want to replace zsmalloc to another. In case of that, tight
+> coupling would be a another hurdle.
+
+For me, its hard to see what kind of issues you might face during this
+zram-to-disk migration work, especially from the allocator side. Anyways, this
+would be an interesting feature, so please let me know if you get any issues
+I can help with.
+
+> But as I mentioned, I shouldn't prevent your great work by my ideal plan which
+> even don't have real schedule. So still I can follow your opinion.
+> Please resend the patch with fix if you think it's really worthy. :)
+>
+
+I didn't get it. Do you want any changes in this patch? or in patch 2/2?
+In my opinion this patch should be included since you are getting get_size()
+functionality for almost no cost.
+
+Thanks,
+Nitin
+
+
+>>
+>> >
+>> >>
+>> >>Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+>> >>---
+>> >>  drivers/staging/zsmalloc/zsmalloc-main.c |  177 +++++++++++++++++++++---------
+>> >>  drivers/staging/zsmalloc/zsmalloc.h      |    1 +
+>> >>  2 files changed, 127 insertions(+), 51 deletions(-)
+>> >>
+>> >>diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
+>> >>index 09a9d35..65c9d3b 100644
+>> >>--- a/drivers/staging/zsmalloc/zsmalloc-main.c
+>> >>+++ b/drivers/staging/zsmalloc/zsmalloc-main.c
+>> >>@@ -112,20 +112,20 @@
+>> >>  #define MAX_PHYSMEM_BITS 36
+>> >>  #else /* !CONFIG_HIGHMEM64G */
+>> >>  /*
+>> >>- * If this definition of MAX_PHYSMEM_BITS is used, OBJ_INDEX_BITS will just
+>> >>+ * If this definition of MAX_PHYSMEM_BITS is used, OFFSET_BITS will just
+>> >>   * be PAGE_SHIFT
+>> >>   */
+>> >>  #define MAX_PHYSMEM_BITS BITS_PER_LONG
+>> >>  #endif
+>> >>  #endif
+>> >>  #define _PFN_BITS         (MAX_PHYSMEM_BITS - PAGE_SHIFT)
+>> >>-#define OBJ_INDEX_BITS     (BITS_PER_LONG - _PFN_BITS)
+>> >>-#define OBJ_INDEX_MASK     ((_AC(1, UL) << OBJ_INDEX_BITS) - 1)
+>> >>+#define OFFSET_BITS        (BITS_PER_LONG - _PFN_BITS)
+>> >>+#define OFFSET_MASK        ((_AC(1, UL) << OFFSET_BITS) - 1)
+>> >>
+>> >>  #define MAX(a, b) ((a) >= (b) ? (a) : (b))
+>> >>  /* ZS_MIN_ALLOC_SIZE must be multiple of ZS_ALIGN */
+>> >>  #define ZS_MIN_ALLOC_SIZE \
+>> >>-   MAX(32, (ZS_MAX_PAGES_PER_ZSPAGE << PAGE_SHIFT >> OBJ_INDEX_BITS))
+>> >>+   MAX(32, (ZS_MAX_PAGES_PER_ZSPAGE << PAGE_SHIFT >> OFFSET_BITS))
+>> >>  #define ZS_MAX_ALLOC_SIZE PAGE_SIZE
+>> >>
+>> >>  /*
+>> >>@@ -256,6 +256,11 @@ static int is_last_page(struct page *page)
+>> >>    return PagePrivate2(page);
+>> >>  }
+>> >>
+>> >>+static unsigned long get_page_index(struct page *page)
+>> >
+>> >IMO, first_obj_offset(struct page *page) would be better readable.
+>> >
+>> >>+{
+>> >>+   return is_first_page(page) ? 0 : page->index;
+>> >>+}
+>> >>+
+>> >>  static void get_zspage_mapping(struct page *page, unsigned int *class_idx,
+>> >>                            enum fullness_group *fullness)
+>> >>  {
+>> >>@@ -433,39 +438,86 @@ static struct page *get_next_page(struct page *page)
+>> >>    return next;
+>> >>  }
+>> >>
+>> >>-/* Encode <page, obj_idx> as a single handle value */
+>> >>-static void *obj_location_to_handle(struct page *page, unsigned long obj_idx)
+>> >>+static struct page *get_prev_page(struct page *page)
+>> >>  {
+>> >>-   unsigned long handle;
+>> >>+   struct page *prev, *first_page;
+>> >>
+>> >>-   if (!page) {
+>> >>-           BUG_ON(obj_idx);
+>> >>-           return NULL;
+>> >>-   }
+>> >>+   first_page = get_first_page(page);
+>> >>+   if (page == first_page)
+>> >>+           prev = NULL;
+>> >>+   else if (page == (struct page *)first_page->private)
+>> >>+           prev = first_page;
+>> >>+   else
+>> >>+           prev = list_entry(page->lru.prev, struct page, lru);
+>> >>
+>> >>-   handle = page_to_pfn(page) << OBJ_INDEX_BITS;
+>> >>-   handle |= (obj_idx & OBJ_INDEX_MASK);
+>> >>+   return prev;
+>> >>
+>> >>-   return (void *)handle;
+>> >>  }
+>> >>
+>> >>-/* Decode <page, obj_idx> pair from the given object handle */
+>> >>-static void obj_handle_to_location(unsigned long handle, struct page **page,
+>> >>-                           unsigned long *obj_idx)
+>> >>+static void *encode_ptr(struct page *page, unsigned long offset)
+>> >>  {
+>> >>-   *page = pfn_to_page(handle >> OBJ_INDEX_BITS);
+>> >>-   *obj_idx = handle & OBJ_INDEX_MASK;
+>> >>+   unsigned long ptr;
+>> >>+   ptr = page_to_pfn(page) << OFFSET_BITS;
+>> >>+   ptr |= offset & OFFSET_MASK;
+>> >>+   return (void *)ptr;
+>> >>+}
+>> >>+
+>> >>+static void decode_ptr(unsigned long ptr, struct page **page,
+>> >>+                                   unsigned int *offset)
+>> >>+{
+>> >>+   *page = pfn_to_page(ptr >> OFFSET_BITS);
+>> >>+   *offset = ptr & OFFSET_MASK;
+>> >>+}
+>> >>+
+>> >>+static struct page *obj_handle_to_page(unsigned long handle)
+>> >>+{
+>> >>+   struct page *page;
+>> >>+   unsigned int offset;
+>> >>+
+>> >>+   decode_ptr(handle, &page, &offset);
+>> >>+   if (offset < get_page_index(page))
+>> >>+           page = get_prev_page(page);
+>> >>+
+>> >>+   return page;
+>> >>+}
+>> >>+
+>> >>+static unsigned int obj_handle_to_offset(unsigned long handle,
+>> >>+                                   unsigned int class_size)
+>> >>+{
+>> >>+   struct page *page;
+>> >>+   unsigned int offset;
+>> >>+
+>> >>+   decode_ptr(handle, &page, &offset);
+>> >>+   if (offset < get_page_index(page))
+>> >>+           offset = PAGE_SIZE - class_size + get_page_index(page);
+>> >
+>> >Althoug it's trivial, we can reduce get_page_index calling.
+>> >
+>> >>+   else
+>> >>+           offset = roundup(offset, class_size) - class_size;
+>> >>+
+>> >>+   return offset;
+>> >>  }
+>> >>
+>> >>-static unsigned long obj_idx_to_offset(struct page *page,
+>> >>-                           unsigned long obj_idx, int class_size)
+>> >>+/* Encode <page, offset, size> as a single handle value */
+>> >
+>> >Need more kind comment about encoding scheme with obj's end <page, offset>
+>> >
+>> >>+static void *obj_location_to_handle(struct page *page, unsigned int offset,
+>> >>+                           unsigned int size, unsigned int class_size)
+>> >>  {
+>> >>-   unsigned long off = 0;
+>> >>+   struct page *endpage;
+>> >>+   unsigned int endoffset;
+>> >>
+>> >>-   if (!is_first_page(page))
+>> >>-           off = page->index;
+>> >>+   if (!page) {
+>> >>+           BUG_ON(offset);
+>> >>+           return NULL;
+>> >>+   }
+>> >
+>> >What do you expect to catch with above check?
+>> >
+>> >>+   BUG_ON(offset >= PAGE_SIZE);
+>> >>+
+>> >>+   endpage = page;
+>> >>+   endoffset = offset + size - 1;
+>> >>+   if (endoffset >= PAGE_SIZE) {
+>> >>+           endpage = get_next_page(page);
+>> >>+           BUG_ON(!endpage);
+>> >>+           endoffset -= PAGE_SIZE;
+>> >>+   }
+>> >>
+>> >>-   return off + obj_idx * class_size;
+>> >>+   return encode_ptr(endpage, endoffset);
+>> >>  }
+>> >>
+>> >>  static void reset_page(struct page *page)
+>> >>@@ -506,14 +558,13 @@ static void free_zspage(struct page *first_page)
+>> >>  /* Initialize a newly allocated zspage */
+>> >>  static void init_zspage(struct page *first_page, struct size_class *class)
+>> >>  {
+>> >>-   unsigned long off = 0;
+>> >>+   unsigned long off = 0, next_off = 0;
+>> >>    struct page *page = first_page;
+>> >>
+>> >>    BUG_ON(!is_first_page(first_page));
+>> >>    while (page) {
+>> >>            struct page *next_page;
+>> >>            struct link_free *link;
+>> >>-           unsigned int i, objs_on_page;
+>> >>
+>> >>            /*
+>> >>             * page->index stores offset of first object starting
+>> >>@@ -526,14 +577,12 @@ static void init_zspage(struct page *first_page, struct size_class *class)
+>> >>
+>> >>            link = (struct link_free *)kmap_atomic(page) +
+>> >>                                            off / sizeof(*link);
+>> >>-           objs_on_page = (PAGE_SIZE - off) / class->size;
+>> >>
+>> >>-           for (i = 1; i <= objs_on_page; i++) {
+>> >>-                   off += class->size;
+>> >>-                   if (off < PAGE_SIZE) {
+>> >>-                           link->next = obj_location_to_handle(page, i);
+>> >>-                           link += class->size / sizeof(*link);
+>> >>-                   }
+>> >>+           next_off = off + class->size;
+>> >>+           while (next_off < PAGE_SIZE) {
+>> >>+                   link->next = encode_ptr(page, next_off);
+>> >>+                   link += class->size / sizeof(*link);
+>> >>+                   next_off += class->size;
+>> >>            }
+>> >>
+>> >>            /*
+>> >>@@ -542,10 +591,11 @@ static void init_zspage(struct page *first_page, struct size_class *class)
+>> >>             * page (if present)
+>> >>             */
+>> >>            next_page = get_next_page(page);
+>> >>-           link->next = obj_location_to_handle(next_page, 0);
+>> >>+           next_off = next_page ? next_off - PAGE_SIZE : 0;
+>> >>+           link->next = encode_ptr(next_page, next_off);
+>> >>            kunmap_atomic(link);
+>> >>            page = next_page;
+>> >>-           off = (off + class->size) % PAGE_SIZE;
+>> >>+           off = next_off;
+>> >>    }
+>> >>  }
+>> >>
+>> >>@@ -596,7 +646,7 @@ static struct page *alloc_zspage(struct size_class *class, gfp_t flags)
+>> >>
+>> >>    init_zspage(first_page, class);
+>> >>
+>> >>-   first_page->freelist = obj_location_to_handle(first_page, 0);
+>> >>+   first_page->freelist = encode_ptr(first_page, 0);
+>> >>    /* Maximum number of objects we can store in this zspage */
+>> >>    first_page->objects = class->pages_per_zspage * PAGE_SIZE / class->size;
+>> >>
+>> >>@@ -871,7 +921,7 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
+>> >>    struct size_class *class;
+>> >>
+>> >>    struct page *first_page, *m_page;
+>> >>-   unsigned long m_objidx, m_offset;
+>> >>+   unsigned int m_offset;
+>> >>
+>> >>    if (unlikely(!size || size > ZS_MAX_ALLOC_SIZE))
+>> >>            return 0;
+>> >>@@ -895,8 +945,7 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
+>> >>    }
+>> >>
+>> >>    obj = (unsigned long)first_page->freelist;
+>> >>-   obj_handle_to_location(obj, &m_page, &m_objidx);
+>> >>-   m_offset = obj_idx_to_offset(m_page, m_objidx, class->size);
+>> >>+   decode_ptr(obj, &m_page, &m_offset);
+>> >>
+>> >>    link = (struct link_free *)kmap_atomic(m_page) +
+>> >>                                    m_offset / sizeof(*link);
+>> >>@@ -907,6 +956,9 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
+>> >>    first_page->inuse++;
+>> >>    /* Now move the zspage to another fullness group, if required */
+>> >>    fix_fullness_group(pool, first_page);
+>> >>+
+>> >>+   obj = (unsigned long)obj_location_to_handle(m_page, m_offset,
+>> >>+                                           size, class->size);
+>> >>    spin_unlock(&class->lock);
+>> >>
+>> >>    return obj;
+>> >>@@ -917,7 +969,7 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
+>> >>  {
+>> >>    struct link_free *link;
+>> >>    struct page *first_page, *f_page;
+>> >>-   unsigned long f_objidx, f_offset;
+>> >>+   unsigned long f_offset;
+>> >>
+>> >>    int class_idx;
+>> >>    struct size_class *class;
+>> >>@@ -926,12 +978,12 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
+>> >>    if (unlikely(!obj))
+>> >>            return;
+>> >>
+>> >>-   obj_handle_to_location(obj, &f_page, &f_objidx);
+>> >>+   f_page = obj_handle_to_page(obj);
+>> >>    first_page = get_first_page(f_page);
+>> >>
+>> >>    get_zspage_mapping(first_page, &class_idx, &fullness);
+>> >>    class = &pool->size_class[class_idx];
+>> >>-   f_offset = obj_idx_to_offset(f_page, f_objidx, class->size);
+>> >>+   f_offset = obj_handle_to_offset(obj, class->size);
+>> >>
+>> >>    spin_lock(&class->lock);
+>> >>
+>> >>@@ -940,7 +992,7 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
+>> >>                                                    + f_offset);
+>> >>    link->next = first_page->freelist;
+>> >>    kunmap_atomic(link);
+>> >>-   first_page->freelist = (void *)obj;
+>> >>+   first_page->freelist = encode_ptr(f_page, f_offset);
+>> >>
+>> >>    first_page->inuse--;
+>> >>    fullness = fix_fullness_group(pool, first_page);
+>> >>@@ -970,10 +1022,10 @@ EXPORT_SYMBOL_GPL(zs_free);
+>> >>   * This function returns with preemption and page faults disabled.
+>> >>  */
+>> >>  void *zs_map_object(struct zs_pool *pool, unsigned long handle,
+>> >>-                   enum zs_mapmode mm)
+>> >>+                                   enum zs_mapmode mm)
+>> >>  {
+>> >>    struct page *page;
+>> >>-   unsigned long obj_idx, off;
+>> >>+   unsigned long off;
+>> >>
+>> >>    unsigned int class_idx;
+>> >>    enum fullness_group fg;
+>> >>@@ -990,10 +1042,10 @@ void *zs_map_object(struct zs_pool *pool, unsigned long handle,
+>> >>     */
+>> >>    BUG_ON(in_interrupt());
+>> >>
+>> >>-   obj_handle_to_location(handle, &page, &obj_idx);
+>> >>+   page = obj_handle_to_page(handle);
+>> >>    get_zspage_mapping(get_first_page(page), &class_idx, &fg);
+>> >>    class = &pool->size_class[class_idx];
+>> >>-   off = obj_idx_to_offset(page, obj_idx, class->size);
+>> >>+   off = obj_handle_to_offset(handle, class->size);
+>> >>
+>> >>    area = &get_cpu_var(zs_map_area);
+>> >>    area->vm_mm = mm;
+>> >>@@ -1015,7 +1067,7 @@ EXPORT_SYMBOL_GPL(zs_map_object);
+>> >>  void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
+>> >>  {
+>> >>    struct page *page;
+>> >>-   unsigned long obj_idx, off;
+>> >>+   unsigned long off;
+>> >>
+>> >>    unsigned int class_idx;
+>> >>    enum fullness_group fg;
+>> >>@@ -1024,10 +1076,10 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
+>> >>
+>> >>    BUG_ON(!handle);
+>> >>
+>> >>-   obj_handle_to_location(handle, &page, &obj_idx);
+>> >>+   page = obj_handle_to_page(handle);
+>> >>    get_zspage_mapping(get_first_page(page), &class_idx, &fg);
+>> >>    class = &pool->size_class[class_idx];
+>> >>-   off = obj_idx_to_offset(page, obj_idx, class->size);
+>> >>+   off = obj_handle_to_offset(handle, class->size);
+>> >>
+>> >>    area = &__get_cpu_var(zs_map_area);
+>> >>    if (off + class->size <= PAGE_SIZE)
+>> >>@@ -1045,6 +1097,29 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
+>> >>  }
+>> >>  EXPORT_SYMBOL_GPL(zs_unmap_object);
+>> >>
+>> >>+size_t zs_get_object_size(struct zs_pool *pool, unsigned long handle)
+>> >>+{
+>> >>+   struct page *endpage;
+>> >>+   unsigned int endoffset, size;
+>> >>+
+>> >>+   unsigned int class_idx;
+>> >>+   enum fullness_group fg;
+>> >>+   struct size_class *class;
+>> >>+
+>> >>+   decode_ptr(handle, &endpage, &endoffset);
+>> >>+   get_zspage_mapping(endpage, &class_idx, &fg);
+>> >>+   class = &pool->size_class[class_idx];
+>> >>+
+>> >>+   size = endoffset + 1;
+>> >>+   if (endoffset < get_page_index(endpage))
+>> >>+           size += class->size - get_page_index(endpage);
+>> >>+   else
+>> >>+           size -= rounddown(endoffset, class->size);
+>> >>+
+>> >>+   return size;
+>> >>+}
+>> >>+EXPORT_SYMBOL_GPL(zs_get_object_size);
+>> >>+
+>> >>  u64 zs_get_total_size_bytes(struct zs_pool *pool)
+>> >>  {
+>> >>    int i;
+>> >>diff --git a/drivers/staging/zsmalloc/zsmalloc.h b/drivers/staging/zsmalloc/zsmalloc.h
+>> >>index de2e8bf..2830fdf 100644
+>> >>--- a/drivers/staging/zsmalloc/zsmalloc.h
+>> >>+++ b/drivers/staging/zsmalloc/zsmalloc.h
+>> >>@@ -38,6 +38,7 @@ void *zs_map_object(struct zs_pool *pool, unsigned long handle,
+>> >>                    enum zs_mapmode mm);
+>> >>  void zs_unmap_object(struct zs_pool *pool, unsigned long handle);
+>> >>
+>> >>+size_t zs_get_object_size(struct zs_pool *pool, unsigned long handle);
+>> >>  u64 zs_get_total_size_bytes(struct zs_pool *pool);
+>> >>
+>> >>  #endif
+>> >>--
+>> >>1.7.10.4
+>> >>
+>> >>--
+>> >>To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> >>the body of a message to majordomo@vger.kernel.org
+>> >>More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> >>Please read the FAQ at  http://www.tux.org/lkml/
+>> >
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
 > --
-> 1.7.10.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-Kind regards,
-Minchan Kim
+> Kind regards,
+> Minchan Kim
