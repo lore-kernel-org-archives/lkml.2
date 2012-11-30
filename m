@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756549Ab2K3JBD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 04:01:03 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:59308 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751235Ab2K3JBC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 04:01:02 -0500
-Message-ID: <50B875B4.2020507@parallels.com>
-Date: Fri, 30 Nov 2012 13:00:36 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Tejun Heo <tj@kernel.org>, <lizefan@huawei.com>, <paul@paulmenage.org>,
-        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
-        <peterz@infradead.org>, <mhocko@suse.cz>, <bsingharora@gmail.com>,
-        <hannes@cmpxchg.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHSET cgroup/for-3.8] cpuset: decouple cpuset locking from
- cgroup core
-References: <1354138460-19286-1-git-send-email-tj@kernel.org> <50B8263C.7060908@jp.fujitsu.com>
-In-Reply-To: <50B8263C.7060908@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+	id S1756573Ab2K3JCx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 04:02:53 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:36871 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756556Ab2K3JCu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 04:02:50 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] irqdomain: stop screaming about preallocated irqdescs
+To: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Anmar Oueja <anmar.oueja@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+In-Reply-To: <1353975632-1327-1-git-send-email-linus.walleij@stericsson.com>
+References: <1353975632-1327-1-git-send-email-linus.walleij@stericsson.com>
+Date: Fri, 30 Nov 2012 09:02:46 +0000
+Message-Id: <20121130090246.59F733E070C@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/30/2012 07:21 AM, Kamezawa Hiroyuki wrote:
-> (2012/11/29 6:34), Tejun Heo wrote:
->> Hello, guys.
->>
->> Depending on cgroup core locking - cgroup_mutex - is messy and makes
->> cgroup prone to locking dependency problems.  The current code already
->> has lock dependency loop - memcg nests get_online_cpus() inside
->> cgroup_mutex.  cpuset the other way around.
->>
->> Regardless of the locking details, whatever is protecting cgroup has
->> inherently to be something outer to most other locking constructs.
->> cgroup calls into a lot of major subsystems which in turn have to
->> perform subsystem-specific locking.  Trying to nest cgroup
->> synchronization inside other locks isn't something which can work
->> well.
->>
->> cgroup now has enough API to allow subsystems to implement their own
->> locking and cgroup_mutex is scheduled to be made private to cgroup
->> core.  This patchset makes cpuset implement its own locking instead of
->> relying on cgroup_mutex.
->>
->> cpuset is rather nasty in this respect.  Some of it seems to have come
->> from the implementation history - cgroup core grew out of cpuset - but
->> big part stems from cpuset's need to migrate tasks to an ancestor
->> cgroup when an hotunplug event makes a cpuset empty (w/o any cpu or
->> memory).
->>
->> This patchset decouples cpuset locking from cgroup_mutex.  After the
->> patchset, cpuset uses cpuset-specific cpuset_mutex instead of
->> cgroup_mutex.  This also removes the lockdep warning triggered during
->> cpu offlining (see 0009).
->>
->> Note that this leaves memcg as the only external user of cgroup_mutex.
->> Michal, Kame, can you guys please convert memcg to use its own locking
->> too?
->>
+On Tue, 27 Nov 2012 01:20:32 +0100, Linus Walleij <linus.walleij@stericsson.com> wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
 > 
-> Hmm. let me see....at quick glance cgroup_lock() is used at
->   hierarchy policy change
->   kmem_limit
->   migration policy change
->   swapiness change
->   oom control
+> In the simple irqdomain: don't shout warnings to the user,
+> there is no point. An informational print is sufficient.
 > 
-> Because all aboves takes care of changes in hierarchy,
-> Having a new memcg's mutex in ->create() may be a way.
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+
+Applied, thanks.
+
+g.
+
+> ---
+>  kernel/irq/irqdomain.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
-> Ah, hm, Costa is mentioning task-attach. is the task-attach problem in memcg ?
+> diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+> index 4e69e24..96f3a1d 100644
+> --- a/kernel/irq/irqdomain.c
+> +++ b/kernel/irq/irqdomain.c
+> @@ -177,8 +177,8 @@ struct irq_domain *irq_domain_add_simple(struct device_node *of_node,
+>  			irq_base = irq_alloc_descs(first_irq, first_irq, size,
+>  						   of_node_to_nid(of_node));
+>  			if (irq_base < 0) {
+> -				WARN(1, "Cannot allocate irq_descs @ IRQ%d, assuming pre-allocated\n",
+> -				     first_irq);
+> +				pr_info("Cannot allocate irq_descs @ IRQ%d, assuming pre-allocated\n",
+> +					first_irq);
+>  				irq_base = first_irq;
+>  			}
+>  		} else
+> -- 
+> 1.7.11.3
 > 
 
-We disallow the kmem limit to be set if a task already exists in the
-cgroup. So we can't allow a new task to attach if we are setting the limit.
-
-
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
