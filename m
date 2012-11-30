@@ -1,212 +1,896 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758331Ab2K3ORK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 09:17:10 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24625 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758310Ab2K3ORI (ORCPT
+	id S1758380Ab2K3OTQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 09:19:16 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:52655 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758360Ab2K3OTN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 09:17:08 -0500
-X-Authority-Analysis: v=2.0 cv=f9bK9ZOM c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=O7yW5i6_SjkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=apWNB6VHehcA:10 a=qnRtVIaIrdebiBWiOgoA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1354285026.6276.157.camel@gandalf.local.home>
-Subject: Re: [PATCH v2 -tip 3/4] tracing: make a snapshot feature available
- from userspace
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Hiraku Toyooka <hiraku.toyooka.gu@hitachi.com>
-Cc: yrl.pp-manager.tt@hitachi.com, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
-        Li Zefan <lizf@cn.fujitsu.com>
-Date: Fri, 30 Nov 2012 09:17:06 -0500
-In-Reply-To: <50B84822.6010409@hitachi.com>
-References: <20121017025608.2627.87497.stgit@falsita>
-		 <20121017025619.2627.96794.stgit@falsita>
-	 <1353030384.9391.19.camel@gandalf.local.home>
-	 <50B84822.6010409@hitachi.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 30 Nov 2012 09:19:13 -0500
+From: Li Wu <willy.woo@gmail.com>
+To: willy.woo@gmail.com, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Li Wu <li.wu@st.com>, Henrik Rydberg <rydberg@euromail.se>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Shawn Landden <shawnlandden@gmail.com>, Felipe Balbi <balbi@ti.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Jianchun <jcbian@pixcir.com.cn>, David Dajun Chen <dchen@diasemi.com>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        device-drivers-devel@blackfin.uclinux.org
+Cc: victor.phay@st.com
+Subject: [PATCH 1/1] Input: STMicroelectronics multi touch capacitive touchscreen ftk
+Date: Fri, 30 Nov 2012 09:18:54 -0500
+Message-Id: <1354285134-8188-1-git-send-email-willy.woo@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-11-30 at 14:46 +0900, Hiraku Toyooka wrote:
-> Hi, Steven,
-> 
-> Thank you for your review.
-> 
-> (2012/11/16 10:46), Steven Rostedt wrote:
-> [snip]
->  > I was thinking about this some more, and I don't like the
->  > snapshot_allocate part. Also, I think the snapshot should not be
->  > allocated by default, and not used until the user explicitly asks for
->  > it.
->  >
->  > Have this:
->  >
->  > ---
->  >  # cat snapshot
->  > Snapshot is not allocated. To allocate it write the ASCII "1" into
->  > this file:
->  >
->  >   echo 1 > snapshot
->  >
->  > This will allocate the buffer for you. To free the snapshot echo "0"
->  > into this file.
->  >
->  >   echo "0" > snapshot
->  >
->  > Anything else will reset the snapshot if it is allocated, or return
->  > EINVAL if it is not allocated.
->  > ---
->  >
-> 
-> Your idea about "snapshot" is like following table, isn't it?
-> 
->   status\input |     0      |     1      |    else    |
-> --------------+------------+------------+------------+
-> not allocated |   EINVAL   | alloc+swap |   EINVAL   |
-> --------------+------------+------------+------------+
->    allocated   |    free    | clear+swap |   clear    |
-> --------------+------------+------------+------------+
+This is a initial driver for STMicroelectronics multi touch
+capacitive touchscren FingertipK. It supports maximum 10 fingers,
+based on I2C interface.
 
-Actually, I would have:
+Tested on Beagleboard, Android ICS.
 
-  status\input |     0      |     1      |    else    |
- --------------+------------+------------+------------+
- not allocated |(do nothing)| alloc+swap |   EINVAL   |
- --------------+------------+------------+------------+
-   allocated   |    free    |   swap     |   clear    |
- --------------+------------+------------+------------+
+Signed-off-by: Li Wu <willy.woo@gmail.com>
+---
+ MAINTAINERS                        |    8 +
+ drivers/input/touchscreen/Kconfig  |   11 +
+ drivers/input/touchscreen/Makefile |    1 +
+ drivers/input/touchscreen/ftk.c    |  792 ++++++++++++++++++++++++++++++++++++
+ 4 files changed, 812 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/input/touchscreen/ftk.c
 
-Perhaps we don't need to do the clear on swap, just let the trace
-continue where it left off? But in case we should swap...
-
-There's a fast way to clear the tracer. Look at what the wakeup tracer
-does. We can make that generic. If you want, I can write that code up
-too. Hmm, maybe I'll do that, as it will speed things up for
-everyone :-)
-
-
-> 
-> I think it is almost OK, but there is a problem.
-> When we echo "1" to the allocated snapshot, the clear operation adds
-> some delay because the time cost of tracing_reset_online_cpus() is in
-> proportion to the number of CPUs.
-> (It takes 72ms in my 8 CPU environment.)
-> 
-> So, when the snapshot is already cleared by echoing "else" values, we
-> can avoid the delay on echoing "1" by keeping "cleared" status
-> internally. For example, we can add the "cleared" flag to struct tracer.
-> What do you think about it?
-> 
->  >
->  > Also we can add a "trace_snapshot" to the kernel parameters to have it
->  > allocated on boot. But I can add that if you update these patches.
->  >
-> 
-> OK, I'll update my patches.
-
-This part (kernel parameter) can be a separate patch.
-
-
->  > Either test here, or better yet, put the test into
->  > tracing_reset_online_cpus().
->  >
->  >     if (!buffer)
->  >         return;
->  >
-> 
-> I see. I'll add the test to tracing_reset_online_cpus(). Should I make a
-> separated patch?
-
-It's a small change, you can add it to your patch or make it separate.
-I'll leave that up to you.
-
-> 
-> [snip]
->  >> +static ssize_t tracing_snapshot_read(struct file *filp, char __user 
-> *ubuf,
->  >> +                     size_t cnt, loff_t *ppos)
->  >> +{
->  >> +    ssize_t ret = 0;
->  >> +
->  >> +    mutex_lock(&trace_types_lock);
->  >> +    if (current_trace && current_trace->use_max_tr)
->  >> +        ret = -EBUSY;
->  >> +    mutex_unlock(&trace_types_lock);
->  >
->  > I don't like this, as it is racy. The current tracer could change after
->  > the unlock, and your back to the problem.
->  >
-> 
-> You're right...
-> This is racy.
-> 
->  > Now what we may be able to do, but it would take a little checking for
->  > lock ordering with trace_access_lock() and trace_event_read_lock(), but
->  > we could add the mutex to trace_types_lock to both s_start() and
->  > s_stop() and do the check in s_start() if iter->snapshot is true.
->  >
-> 
-> If I catch your meaning, do s_start() and s_stop() become like following
-> code?
-> (Now, s_start() is used from two files - "trace" and "snapshot", so we
-> should change static "old_tracer" to per open-file.)
-
-Actually, lets nuke all the old_tracer totally, and instead do:
-
-if (unlikely(strcmp(iter->trace->name, current_trace->name) != 0)) {
-
-You can make this into a separate patch. You can add a check if
-current_trace is not NULL too, but I need to fix that, as current_trace
-should never be NULL (except for very early boot). But don't worry about
-that, I'll handle that.
-
-Or I can write up this patch and send it to you, and you can include it
-in your series.
-
-> 
-> static void *s_start(struct seq_file *m, loff_t *pos)
-> {
->       struct trace_iterator *iter = m->private;
-> -    static struct tracer *old_tracer;
-> ...
->       /* copy the tracer to avoid using a global lock all around */
->       mutex_lock(&trace_types_lock);
-> -    if (unlikely(old_tracer != current_trace && current_trace)) {
-> -        old_tracer = current_trace;
-> +    if (unlikely(iter->old_tracer != current_trace && current_trace)) {
-> +        iter->old_tracer = current_trace;
->           *iter->trace = *current_trace;
->       }
->       mutex_unlock(&trace_types_lock);
-> 
-> +    if (iter->snapshot && iter->trace->use_max_tr)
-> +        return ERR_PTR(-EBUSY);
-> +
-> ...
-> }
-> 
-> static void s_stop(struct seq_file *m, void *p)
-> {
->       struct trace_iterator *iter = m->private;
-> 
-> +    if (iter->snapshot && iter->trace->use_max_tr)
-> +        return;
-
-This part shouldn't be needed, as if s_start fails it wont call
-s_stop(). But if you are paranoid (like I am ;-) then we can do:
-
-	if (WARN_ON_ONCE(iter->snapshot && iter->trace->use_max_tr)
-		return;
-
-
-
--- Steve
-
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 9386a63..3f5398f 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -314,6 +314,14 @@ W:	http://wiki.analog.com/AD7879
+ S:	Supported
+ F:	drivers/input/touchscreen/ad7879.c
+ 
++STM FTK TOUCHSCREEN DRIVER
++M:      Li Wu <li.wu@st.com>
++L:      device-drivers-devel@blackfin.uclinux.org
++W:      http://www.st.com
++S:      Supported
++F:      drivers/input/touchscreen/ftk.c
++
++
+ ADDRESS SPACE LAYOUT RANDOMIZATION (ASLR)
+ M:	Jiri Kosina <jkosina@suse.cz>
+ S:	Maintained
+diff --git a/drivers/input/touchscreen/Kconfig b/drivers/input/touchscreen/Kconfig
+index f7668b2..c81e2e7 100644
+--- a/drivers/input/touchscreen/Kconfig
++++ b/drivers/input/touchscreen/Kconfig
+@@ -900,4 +900,15 @@ config TOUCHSCREEN_TPS6507X
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called tps6507x_ts.
+ 
++config TOUCHSCREEN_FTK
++        tristate "STMicroelectronics i2c multitouch touchscreen with FingerTipK"
++        depends on I2C
++        help
++          Say Y here to enable STMicroelectronics touchscreen support.
++
++          If unsure, say N.
++
++          To compile this driver as a module, choose M here: the
++          module will be called STM_ts.
++
+ endif
+diff --git a/drivers/input/touchscreen/Makefile b/drivers/input/touchscreen/Makefile
+index 178eb12..6feba9b 100644
+--- a/drivers/input/touchscreen/Makefile
++++ b/drivers/input/touchscreen/Makefile
+@@ -73,3 +73,4 @@ obj-$(CONFIG_TOUCHSCREEN_WM97XX_MAINSTONE)	+= mainstone-wm97xx.o
+ obj-$(CONFIG_TOUCHSCREEN_WM97XX_ZYLONITE)	+= zylonite-wm97xx.o
+ obj-$(CONFIG_TOUCHSCREEN_W90X900)	+= w90p910_ts.o
+ obj-$(CONFIG_TOUCHSCREEN_TPS6507X)	+= tps6507x-ts.o
++obj-$(CONFIG_TOUCHSCREEN_FTK)           += ftk.o
+diff --git a/drivers/input/touchscreen/ftk.c b/drivers/input/touchscreen/ftk.c
+new file mode 100644
+index 0000000..7c995f6
+--- /dev/null
++++ b/drivers/input/touchscreen/ftk.c
+@@ -0,0 +1,792 @@
++/*
++ * drivers/input/touchscreen/ftk.c
++ *
++ * Driver for STMicroelectronics FTK capacity touchscreen
++ *
++ * Author: JH Jang <jh.jang@st.com>
++ *         Victor Phay <victor.phay@st.com>
++ *	   Li Wu <li.wu@st.com>, <willy.woo@gmail.com>
++ *
++ * Copyright (c) 2012 STMicroelectronics Limited
++ *
++ * This program is free software; you can redistribute  it and/or modify it
++ * under  the terms of  the GNU General  Public License as published by the
++ * Free Software Foundation;  either version 2 of the  License, or (at your
++ * option) any later version.
++ *
++ */
++
++#include <linux/ctype.h>
++#include <linux/delay.h>
++#include <linux/errno.h>
++#include <linux/firmware.h>
++#include <linux/fs.h>
++#include <linux/gpio.h>
++#include <linux/hrtimer.h>
++#include <linux/i2c.h>
++#include <linux/i2c-dev.h>
++#include <linux/init.h>
++#include <linux/input.h>
++#include <linux/interrupt.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/serio.h>
++#include <linux/slab.h>
++#include <linux/uaccess.h>
++
++/*
++ * Definitions & global arrays.
++ */
++#define DRIVER_DESC                   "ftk i2c touchscreen driver"
++#define ftk_TS_DRV_NAME               "ftk"
++#define X_AXIS_MAX                    800
++#define X_AXIS_MIN                    0
++#define Y_AXIS_MAX                    480
++#define Y_AXIS_MIN                    0
++#define PRESSURE_MIN                  0
++#define PRESSURE_MAX                  256
++#define P70_PATCH_ADDR_START          0x00420000
++#define LEAVE_EVENT                   0x04
++#define ENTER_EVENT                   0x03
++#define MOTION_EVENT                  0x05
++#define RESET_EVENT                   0x10
++#define MAX_SUPPORTED_FINGERS         10
++#define MAX_TRANSACTION_LENGTH        8
++
++static struct i2c_driver stm_ts_driver;
++static struct workqueue_struct *stmtouch_wq;
++static int cor_xyz[10][3];
++static unsigned char ID_Indx[10] = {
++	0, 0, 0, 0, 0, 0, 0, 0, 0, 0
++};
++
++struct B0_write {
++	u8 addr;
++	u8 val;
++};
++
++struct ftk_i2c_platform_data {
++	int (*power)(int on);
++};
++
++struct ftk_ts {
++	struct device *dev;
++	struct i2c_client *client;
++	struct input_dev *input_dev;
++	struct hrtimer timer;
++	struct work_struct work;
++	spinlock_t lock;
++	int x;
++	int y;
++	int z;
++	int irq;
++	int (*power)(int on);
++#ifdef CONFIG_HAS_EARLYSUSPEND
++	struct early_suspend early_suspend;
++#endif
++};
++
++#ifdef CONFIG_HAS_EARLYSUSPEND
++static void stm_ts_early_suspend(struct early_suspend *h);
++static void stm_ts_late_resume(struct early_suspend *h);
++#endif
++
++static int ftk_write_reg(struct ftk_ts *ftk_ts, u8 *reg, u16 num_com);
++static int ftk_read_reg(struct ftk_ts *ftk_ts, u8 *reg, int cnum, u8 *buf,
++			int num);
++static void touch_ON(struct ftk_ts *ftkts, int x, int y, int z, int id);
++static void touch_OFF(struct ftk_ts *ftkts);
++static u8 load_config(struct ftk_ts *ftk_ts, const struct firmware *firmware);
++static u8 load_patch(struct ftk_ts *ftk_ts, const struct firmware *firmware);
++static int verify_firmware(const struct firmware *firmware);
++static int init_ftk(struct ftk_ts *ftk_ts);
++static enum hrtimer_restart st_ts_timer_func(struct hrtimer *timer);
++static irqreturn_t ts_interrupt(int irq, void *handle);
++static u8 decode_data_packet(struct ftk_ts *ftkts, unsigned char data[],
++			     unsigned char LeftEvent);
++static void ts_tasklet_proc(struct work_struct *work);
++static int stm_ts_probe(struct i2c_client *client,
++			const struct i2c_device_id *idp);
++static int stm_ts_remove(struct i2c_client *client);
++static int stm_ts_suspend(struct i2c_client *client, pm_message_t mesg);
++static int stm_ts_resume(struct i2c_client *client);
++static int __init stm_ts_init(void);
++static void __exit stm_ts_exit(void);
++
++static int ftk_write_reg(struct ftk_ts *ftk_ts, u8 *reg, u16 num_com)
++{
++	struct i2c_msg xfer_msg[2];
++
++	xfer_msg[0].addr = ftk_ts->client->addr;
++	xfer_msg[0].len = num_com;
++	xfer_msg[0].flags = 0;
++	xfer_msg[0].buf = reg;
++
++	return i2c_transfer(ftk_ts->client->adapter, xfer_msg, 1);
++}
++
++
++static int ftk_read_reg(struct ftk_ts *ftk_ts, u8 *reg, int cnum, u8 *buf,
++			int num)
++{
++	u16 left = num;
++	u16 offset = 0;
++
++	struct i2c_msg xfer_msg[2];
++
++	xfer_msg[0].addr = ftk_ts->client->addr;
++	xfer_msg[0].len = cnum;
++	xfer_msg[0].flags = 0;
++	xfer_msg[0].buf = reg;
++
++	xfer_msg[1].addr = ftk_ts->client->addr;
++	xfer_msg[1].flags = I2C_M_RD;
++
++	/* MTK platform */
++	/* Can only transfer 8 bytes per transaction */
++	while (left > 0) {
++		xfer_msg[1].buf = &buf[offset];
++
++		if (left > MAX_TRANSACTION_LENGTH) {
++			xfer_msg[1].len = MAX_TRANSACTION_LENGTH;
++			left -= MAX_TRANSACTION_LENGTH;
++			offset += MAX_TRANSACTION_LENGTH;
++		} else {
++			xfer_msg[1].len = left;
++			left = 0;
++		}
++
++		if (i2c_transfer(ftk_ts->client->adapter, xfer_msg, 2) != 2) {
++			dev_err(ftk_ts->dev, "FTK - i2c Transfer error!\n");
++			return 1;
++		}
++	}
++
++	return 0;
++}
++
++
++static void touch_ON(struct ftk_ts *ftkts, int x, int y, int z, int id)
++{
++	input_report_key(ftkts->input_dev, BTN_TOUCH, 1);
++	input_report_abs(ftkts->input_dev, ABS_MT_POSITION_X, x);
++	input_report_abs(ftkts->input_dev, ABS_MT_POSITION_Y, y);
++	input_report_abs(ftkts->input_dev, ABS_MT_TOUCH_MAJOR, z);
++	input_report_abs(ftkts->input_dev, ABS_MT_TRACKING_ID, id);
++	input_mt_sync(ftkts->input_dev);
++}
++
++
++static void touch_OFF(struct ftk_ts *ftkts)
++{
++	input_report_key(ftkts->input_dev, BTN_TOUCH, 0);
++	input_report_abs(ftkts->input_dev, ABS_MT_TRACKING_ID, 0);
++	input_mt_sync(ftkts->input_dev);
++}
++
++
++static u8 load_config(struct ftk_ts *ftk_ts, const struct firmware *firmware)
++{
++	u16 one_group_length = 0;
++	u16 patch_length = 0;
++	u16 config_length = 0;
++	u16 i = 0;
++	u8 *pdata;
++	u8 regAdd[8];
++	u8 val[8];
++	int ret;
++
++	patch_length = firmware->data[0] * 256 + firmware->data[1];
++	config_length =
++		firmware->data[patch_length + 2] * 256 +
++		firmware->data[patch_length + 2 + 1];
++	pdata = (u8 *)&firmware->data[patch_length + 4];
++
++	while (i < config_length) {
++		one_group_length = pdata[i] * 256 + pdata[i + 1];
++
++		if ((pdata[i + 2] == 0xFF) && (pdata[i + 3] == 0xFF))
++			mdelay(pdata[i + 4]);
++		else{
++			ftk_write_reg(ftk_ts, &(pdata[i + 2]),
++				      one_group_length);
++			mdelay(100);
++		}
++
++		i = i + 2;
++		i = i + one_group_length;
++	}
++
++	regAdd[0] = 0xB0;
++	regAdd[1] = 0x05;       /* Set Interrupt Polarity */
++	regAdd[2] = 0x00;       /* '00' - level interrupt */
++				/* '02' - edge interrupt */
++	ftk_write_reg(ftk_ts, &regAdd[0], 3);
++	mdelay(5);
++
++	regAdd[0] = 0xB0;
++	regAdd[1] = 0x06;       /* Enable Touch Detect Interrupt */
++	regAdd[2] = 0x40;       /* 0xC0 */
++	ftk_write_reg(ftk_ts, &regAdd[0], 3);
++	mdelay(5);
++
++	regAdd[0] = 0xB0;
++	regAdd[1] = 0x07;	/* Read 0x07 to clear ISR */
++	ret = ftk_read_reg(ftk_ts, &regAdd[0], 2, &val[0], 1);
++	mdelay(5);
++
++	regAdd[0] = 0x85;
++	ret = ftk_read_reg(ftk_ts, &regAdd[0], 1, &val[0], 8);
++	mdelay(20);
++
++	regAdd[0] = 0x85;
++	ret = ftk_read_reg(ftk_ts, &regAdd[0], 1, &val[0], 8);
++	mdelay(20);
++
++	regAdd[0] = 0xB0;
++	regAdd[1] = 0x03;
++	ret = ftk_read_reg(ftk_ts, regAdd, 2, val, 1);
++	mdelay(5);
++	dev_info(ftk_ts->dev, "Patch loaded, Version =%X\n", val[0]);
++
++	regAdd[0] = 0x83;	/* TS Sense on */
++	regAdd[1] = 0x00;
++	ret = ftk_write_reg(ftk_ts, &regAdd[0], 1);
++	mdelay(5);
++	return ret;
++}
++
++
++static u8 load_patch(struct ftk_ts *ftk_ts, const struct firmware *firmware)
++{
++	u32 writeAddr, j = 0, i = 0;
++	u16 patch_length = 0;
++	u8 byteWork1[256 + 3] = { 0 };
++	u8 regAdd[3] = { 0 };
++
++	patch_length = firmware->data[0] * 256 + firmware->data[1];
++
++	while (j < patch_length) {
++		writeAddr = P70_PATCH_ADDR_START + j;
++
++		regAdd[0] = 0xB3;
++		regAdd[1] = (writeAddr >> 24) & 0xFF;
++		regAdd[2] = (writeAddr >> 16) & 0xFF;
++		ftk_write_reg(ftk_ts, &regAdd[0], 3);
++
++		byteWork1[0] = 0xB1;
++		byteWork1[1] = (writeAddr >> 8) & 0xFF;
++		byteWork1[2] = writeAddr & 0xFF;
++
++		i = 0;
++		while ((j < firmware->size) && (i < 256)) {
++			byteWork1[i + 3] = firmware->data[j + 2];
++			i++;
++			j++;
++		}
++		ftk_write_reg(ftk_ts, &byteWork1[0], 256 + 3);
++	}
++
++	return 0;
++}
++
++
++static int verify_firmware(const struct firmware *firmware)
++{
++	u16 firmware_length;
++	u16 patch_length;
++	u16 config_length;
++
++	firmware_length = firmware->size;
++	patch_length = firmware->data[0] * 256 + firmware->data[1];
++	config_length =
++		firmware->data[patch_length + 2] * 256 +
++		firmware->data[patch_length + 2 + 1];
++
++	if (firmware_length == patch_length + config_length + 4)
++		return 0;
++	else
++		return -1;
++}
++
++
++static int init_ftk(struct ftk_ts *ftk_ts)
++{
++	const struct firmware *firmware;
++	u8 regAdd[7];
++	u8 val[8];
++	int ret;
++
++	regAdd[0] = 0xB0;
++	regAdd[1] = 0x00;
++	ret = ftk_read_reg(ftk_ts, regAdd, 2, val, 3);
++
++	if (ret < 0)
++		dev_err(ftk_ts->dev, " i2c_transfer failed\n");
++
++	mdelay(1);
++	dev_info(ftk_ts->dev, "Chip ID = %x %x %x\n", val[0], val[1], val[2]);
++
++	regAdd[0] = 0x9E; /* TS Soft Reset */
++	ret = ftk_write_reg(ftk_ts, &regAdd[0], 1);
++	mdelay(1);
++
++	ret = request_firmware(&firmware, "ftk/ftk.bin", ftk_ts->dev);
++	if (ret < 0)
++		dev_err(ftk_ts->dev, " request fw fail ,err = %d\n", ret);
++	else{
++		ret = verify_firmware(firmware);
++		if (ret == 0) {
++			load_patch(ftk_ts, firmware);
++			load_config(ftk_ts, firmware);
++		}
++	}
++
++	release_firmware(firmware);
++
++	regAdd[0] = 0xB3;
++	regAdd[1] = 0xFF;
++	regAdd[2] = 0xFF;
++	ftk_write_reg(ftk_ts, &regAdd[0], 3);
++	mdelay(5);
++
++	regAdd[0] = 0xA0;
++	ftk_write_reg(ftk_ts, &regAdd[0], 1);
++	mdelay(5);
++
++	if (ret < 0)
++		dev_err(ftk_ts->dev, "ftk Not Initialised\n");
++	else
++		dev_info(ftk_ts->dev, "ftk Initialised\n");
++
++	return 0;
++}
++
++
++static enum hrtimer_restart st_ts_timer_func(struct hrtimer *timer)
++{
++	struct ftk_ts *ftkts = container_of(timer, struct ftk_ts, timer);
++
++	queue_work(stmtouch_wq, &ftkts->work);
++	return HRTIMER_NORESTART;
++}
++
++
++static irqreturn_t ts_interrupt(int irq, void *handle)
++{
++	struct ftk_ts *ftk_ts = handle;
++
++	disable_irq_nosync(ftk_ts->client->irq);
++	queue_work(stmtouch_wq, &ftk_ts->work);
++	return IRQ_HANDLED;
++}
++
++
++static u8 decode_data_packet(struct ftk_ts *ftkts, unsigned char data[],
++			     unsigned char LeftEvent)
++{
++	u8 EventNum;
++	u8 TouchID, EventID;
++	u8 LastLeftEvent = 0;
++	u8 i, num_released_finger;
++	u8 valid_id = 0;
++
++	for (EventNum = 0; EventNum < LeftEvent; EventNum++) {
++		LastLeftEvent = data[7 + EventNum * 8] & 0x0F;
++		TouchID = data[1 + EventNum * 8] & 0x0F;
++		EventID = data[EventNum * 8] & 0xFF;
++
++		if ((EventID == LEAVE_EVENT) || (EventID == ENTER_EVENT) ||
++		    (EventID == MOTION_EVENT)) {
++			/* Enter, Leave or Motion Event */
++
++			if (TouchID < MAX_SUPPORTED_FINGERS) {
++				valid_id = 1;
++
++				ID_Indx[TouchID] = EventID;
++				cor_xyz[TouchID][0] =
++					((data[4 + EventNum *
++					       8] &
++					  0xF0) >>
++					 4) | ((data[2 + EventNum * 8]) << 4);
++				cor_xyz[TouchID][1] =
++					((data[4 + EventNum *
++					       8] &
++					  0x0F) |
++					 ((data[3 + EventNum * 8]) << 4));
++				cor_xyz[TouchID][2] = data[5 + EventNum * 8];
++			}
++		} else if (EventID == RESET_EVENT) {
++			/* Reset happened */
++			for (i = 0; i < MAX_SUPPORTED_FINGERS; i++)
++				ID_Indx[i] = 0;
++
++			touch_OFF(ftkts);
++
++			input_sync(ftkts->input_dev);
++			init_ftk(ftkts);
++			return 0;
++		}
++	}
++
++	if (valid_id) {
++		/* Report all fingers on panel */
++		/* ---------------------------------- */
++		num_released_finger = 0;
++		for (i = 0; i < MAX_SUPPORTED_FINGERS; i++) {
++			if (ID_Indx[i]) {
++				if (ID_Indx[i] == LEAVE_EVENT) {
++					ID_Indx[i] = 0;
++					num_released_finger++;
++				}
++
++				touch_ON(ftkts, cor_xyz[i][0], cor_xyz[i][1],
++					 cor_xyz[i][2],
++					 i);
++			} else
++				num_released_finger++;
++		}
++
++		input_sync(ftkts->input_dev);
++		/* ---------------------------------- */
++
++		/* Check if all fingers are released */
++		/* ---------------------------------- */
++		if (num_released_finger == MAX_SUPPORTED_FINGERS) {
++			/* All fingers are released */
++			touch_OFF(ftkts);
++			input_sync(ftkts->input_dev);
++		}
++		/* ---------------------------------- */
++	}
++
++	return LastLeftEvent;
++}
++
++
++static void ts_tasklet_proc(struct work_struct *work)
++{
++	struct ftk_ts *ftkts = container_of(work, struct ftk_ts, work);
++
++	unsigned char data[256];
++	int ret;
++	u8 status;
++	u8 regAdd;
++	u8 i;
++	u8 FirstLeftEvent = 0;
++
++	data[0] = 0xB0;
++	data[1] = 0x07;
++	ret = ftk_read_reg(ftkts, &data[0], 2, &status, 1);
++
++	if (status & 0x40) {
++		regAdd = 0x85;
++		if (ftk_read_reg(ftkts, &regAdd, 1, data, 8) == 0) {
++			FirstLeftEvent = decode_data_packet(ftkts, data, 1);
++
++			/* Read and process 1 event (8bytes) at a time */
++			for (i = 0; i < FirstLeftEvent; i++) {
++				regAdd = 0x85;
++				if (ftk_read_reg(ftkts, &regAdd, 1, data,
++						 8) == 0)
++					FirstLeftEvent = decode_data_packet(
++						ftkts, data, 1);
++			}
++		}
++	}
++
++	if (!ftkts->irq)
++		hrtimer_start(&ftkts->timer, ktime_set(0, 10000000),
++			      HRTIMER_MODE_REL);
++	else
++		enable_irq(ftkts->client->irq);
++}
++
++
++static int stm_ts_probe(struct i2c_client *client,
++			const struct i2c_device_id *idp)
++{
++	struct ftk_ts *ftk_ts = NULL;
++	struct ftk_i2c_platform_data *pdata;
++	int ret = 0;
++	int err = 0;
++
++	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
++		dev_err(ftk_ts->dev, "err = EIO!\n");
++		err = EIO;
++		goto fail;
++	}
++
++	ftk_ts = kzalloc(sizeof(struct ftk_ts), GFP_KERNEL);
++	if (!ftk_ts) {
++		dev_err(ftk_ts->dev, "err = ENOMEM!\n");
++		err = ENOMEM;
++		goto fail;
++	}
++
++	INIT_WORK(&ftk_ts->work, ts_tasklet_proc);
++
++	ftk_ts->client = client;
++	i2c_set_clientdata(client, ftk_ts);
++
++	pdata = client->dev.platform_data;
++
++	if (pdata)
++		ftk_ts->power = pdata->power;
++
++	if (ftk_ts->power) {
++		ret = ftk_ts->power(1);
++
++		pdata->power(1);
++
++		if (ret < 0) {
++			pr_err("ftk_probe power on failed\n");
++			goto fail;
++		}
++	}
++
++	ftk_ts->dev = &ftk_ts->client->dev;
++	ftk_ts->input_dev = input_allocate_device();
++	ftk_ts->input_dev->dev.parent = &client->dev;
++	if (!ftk_ts->input_dev) {
++		dev_err(ftk_ts->dev, "err = ENOMEM!\n");
++		err = ENOMEM;
++		goto fail;
++	}
++	ftk_ts->input_dev->name = "ftk";
++	ftk_ts->input_dev->phys = "ftk/input0";
++	ftk_ts->input_dev->id.bustype = BUS_I2C;
++	ftk_ts->input_dev->id.vendor = 0x0001;
++	ftk_ts->input_dev->id.product = 0x0002;
++	ftk_ts->input_dev->id.version = 0x0100;
++
++	ftk_ts->input_dev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
++	ftk_ts->input_dev->keybit[BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH);
++	set_bit(EV_SYN, ftk_ts->input_dev->evbit);
++	set_bit(EV_KEY, ftk_ts->input_dev->evbit);
++	set_bit(BTN_TOUCH, ftk_ts->input_dev->keybit);
++	set_bit(BTN_2, ftk_ts->input_dev->keybit);
++	set_bit(EV_ABS, ftk_ts->input_dev->evbit);
++
++	input_set_abs_params(ftk_ts->input_dev, ABS_X, X_AXIS_MIN, X_AXIS_MAX,
++			     0, 0);
++	input_set_abs_params(ftk_ts->input_dev, ABS_Y, Y_AXIS_MIN, Y_AXIS_MAX,
++			     0, 0);
++	input_set_abs_params(ftk_ts->input_dev, ABS_PRESSURE, PRESSURE_MIN,
++			     PRESSURE_MAX, 0, 0);
++	input_set_abs_params(ftk_ts->input_dev, ABS_MT_TRACKING_ID, 0, 10, 0,
++			     0);
++	input_set_abs_params(ftk_ts->input_dev, ABS_MT_TOUCH_MAJOR,
++			     PRESSURE_MIN, PRESSURE_MAX, 0, 0);
++	input_set_abs_params(ftk_ts->input_dev, ABS_MT_WIDTH_MAJOR,
++			     PRESSURE_MIN, PRESSURE_MAX, 0, 0);
++	input_set_abs_params(ftk_ts->input_dev, ABS_MT_POSITION_X, X_AXIS_MIN,
++			     X_AXIS_MAX, 0, 0);
++	input_set_abs_params(ftk_ts->input_dev, ABS_MT_POSITION_Y, Y_AXIS_MIN,
++			     Y_AXIS_MAX, 0, 0);
++
++	err = input_register_device(ftk_ts->input_dev);
++	if (err) {
++		dev_err(ftk_ts->dev, "input_register_device fail!\n");
++		goto fail;
++	}
++
++	err = init_ftk(ftk_ts);
++	if (err) {
++		dev_err(ftk_ts->dev, "init_ftk  fail!\n");
++		goto fail;
++	}
++
++	ftk_ts->irq = client->irq;
++
++	if (!ftk_ts->irq) {
++		hrtimer_init(&ftk_ts->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
++		ftk_ts->timer.function = st_ts_timer_func;
++		hrtimer_start(&ftk_ts->timer, ktime_set(1, 0),
++			      HRTIMER_MODE_REL);
++	} else {
++		if (request_irq
++			    (ftk_ts->irq, ts_interrupt, IRQF_TRIGGER_LOW,
++			    client->name, ftk_ts)) {
++			dev_err(ftk_ts->dev, "request_irq  fail!\n");
++			err = -EBUSY;
++			goto fail;
++		} else
++			dev_info(ftk_ts->dev, "request_irq  success!\n");
++	}
++
++#ifdef CONFIG_HAS_EARLYSUSPEND
++	ftk_ts->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
++	ftk_ts->early_suspend.suspend = stm_ts_early_suspend;
++	ftk_ts->early_suspend.resume = stm_ts_late_resume;
++	register_early_suspend(&ftk_ts->early_suspend);
++#endif
++
++	return 0;
++fail:
++	if (ftk_ts) {
++		if (ftk_ts->input_dev)
++			input_free_device(ftk_ts->input_dev);
++		kfree(ftk_ts);
++	}
++	dev_info(ftk_ts->dev, "--ftkts_probe ret=%d\n", err);
++	return err;
++}
++
++
++static int stm_ts_remove(struct i2c_client *client)
++{
++	struct ftk_ts *ts = i2c_get_clientdata(client);
++
++#ifdef CONFIG_HAS_EARLYSUSPEND
++	unregister_early_suspend(&ts->early_suspend);
++#endif
++
++	if (ts->irq)
++		free_irq(client->irq, ts);
++	else
++		hrtimer_cancel(&ts->timer);
++
++	input_unregister_device(ts->input_dev);
++	kfree(ts);
++	return 0;
++}
++
++
++static int stm_ts_suspend(struct i2c_client *client, pm_message_t mesg)
++{
++	int ret, i;
++	u8 regAdd[3];
++
++	struct ftk_ts *ts = i2c_get_clientdata(client);
++
++	if (ts->irq)
++		disable_irq(client->irq);
++	else
++		hrtimer_cancel(&ts->timer);
++
++	ret = cancel_work_sync(&ts->work);
++
++	regAdd[0] = 0x80;
++	regAdd[1] = 0x00;
++	ret = ftk_write_reg(ts, &regAdd[0], 1);
++	mdelay(5);
++
++	regAdd[0] = 0x88;
++	regAdd[1] = 0x00;
++	ret = ftk_write_reg(ts, &regAdd[0], 1);
++	mdelay(5);
++
++	regAdd[0] = 0xB0;
++	regAdd[1] = 0x06;
++	regAdd[2] = 0x00;
++	ret = ftk_write_reg(ts, &regAdd[0], 3);
++	mdelay(5);
++
++	for (i = 0; i < 10; i++)
++		ID_Indx[i] = 0;
++
++	input_mt_sync(ts->input_dev);
++	input_sync(ts->input_dev);
++
++	if (ret < 0)
++		dev_err(ts->dev, "stm_ts_suspend: i2c_smbus_write_byte_data failed\n");
++
++	return 0;
++}
++
++
++static int stm_ts_resume(struct i2c_client *client)
++{
++	int ret;
++	u8 regAdd[3];
++	struct ftk_ts *ts = i2c_get_clientdata(client);
++
++	if (ts->irq)
++		enable_irq(client->irq);
++	else
++		hrtimer_start(&ts->timer, ktime_set(1, 0), HRTIMER_MODE_REL);
++
++	regAdd[0] = 0x81;
++	regAdd[1] = 0x00;
++	ret = ftk_write_reg(ts, &regAdd[0], 1);
++	mdelay(5);
++
++	regAdd[0] = 0xB0;
++	regAdd[1] = 0x06;
++	regAdd[2] = 0x40;
++	ret = ftk_write_reg(ts, &regAdd[0], 3);
++	mdelay(5);
++
++	if (ret < 0)
++		dev_err(ts->dev,
++		       "stm_ts_suspend: i2c_smbus_write_byte_data failed\n");
++
++	return 0;
++}
++
++
++#ifdef CONFIG_HAS_EARLYSUSPEND
++static void stm_ts_early_suspend(struct early_suspend *h)
++{
++	struct ftk_ts *ts;
++
++	ts = container_of(h, struct ftk_ts, early_suspend);
++	stm_ts_suspend(ts->client, PMSG_SUSPEND);
++}
++
++
++static void stm_ts_late_resume(struct early_suspend *h)
++{
++	struct ftk_ts *ts;
++
++	ts = container_of(h, struct ftk_ts, early_suspend);
++	stm_ts_resume(ts->client);
++}
++
++
++#endif
++
++static const struct i2c_device_id stm_ts_id[] = {
++	{ "ftk", 0 },
++	{}
++};
++
++static struct i2c_driver stm_ts_driver = {
++	.driver		= {
++		.name	= "ftk",
++	},
++	.probe		= stm_ts_probe,
++	.remove		= stm_ts_remove,
++#ifndef CONFIG_HAS_EARLYSUSPEND
++	.suspend	= stm_ts_suspend,
++	.resume		= stm_ts_resume,
++#endif
++	.id_table	= stm_ts_id,
++};
++
++static int __init stm_ts_init(void)
++{
++	stmtouch_wq = create_singlethread_workqueue("stmtouch_wq");
++	if (!stmtouch_wq)
++		return -ENOMEM;
++
++	return i2c_add_driver(&stm_ts_driver);
++}
++
++
++static void __exit stm_ts_exit(void)
++{
++	i2c_del_driver(&stm_ts_driver);
++	if (stmtouch_wq)
++		destroy_workqueue(stmtouch_wq);
++}
++
++
++MODULE_DESCRIPTION("STM MultiTouch IC Driver");
++MODULE_AUTHOR("Li Wu <li.wu@st.com>");
++MODULE_LICENSE("GPL");
++
++module_init(stm_ts_init);
++module_exit(stm_ts_exit);
+-- 
+1.7.1
 
