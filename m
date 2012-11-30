@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759381Ab2K3S6i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:58:38 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58794 "EHLO mail.kernel.org"
+	id S1758991Ab2K3S5D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:57:03 -0500
+Received: from mail.kernel.org ([198.145.19.201]:58690 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757822Ab2K3S5E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:57:04 -0500
+	id S1756474Ab2K3S4z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:56:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        liu chuansheng <chuansheng.liu@intel.com>,
-        Don Zickus <dzickus@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Shuah Khan <shuah.khan@hp.com>
-Subject: [ 49/56] watchdog: using u64 in get_sample_period()
-Date: Fri, 30 Nov 2012 10:55:41 -0800
-Message-Id: <20121130185123.328988171@linuxfoundation.org>
+        Stanislav Yakovlev <stas.yakovlev@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 55/56] net/wireless: ipw2200: Fix panic occurring in ipw_handle_promiscuous_tx()
+Date: Fri, 30 Nov 2012 10:55:47 -0800
+Message-Id: <20121130185123.927244281@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185118.302752929@linuxfoundation.org>
 References: <20121130185118.302752929@linuxfoundation.org>
@@ -29,53 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chuansheng Liu <chuansheng.liu@intel.com>
+From: Stanislav Yakovlev <stas.yakovlev@gmail.com>
 
-commit 8ffeb9b0e6369135bf03a073514f571ef10606b9 upstream.
+commit bf11315eeda510ea4fc1a2bf972d8155d31d89b4 upstream.
 
-In get_sample_period(), unsigned long is not enough:
+The driver does not count space of radiotap fields when allocating skb for
+radiotap packet. This leads to kernel panic with the following call trace:
 
-  watchdog_thresh * 2 * (NSEC_PER_SEC / 5)
+...
+[67607.676067] [<c152f90f>] error_code+0x67/0x6c
+[67607.676067] [<c142f831>] ? skb_put+0x91/0xa0
+[67607.676067] [<f8cf5e5b>] ? ipw_handle_promiscuous_tx+0x16b/0x2d0 [ipw2200]
+[67607.676067] [<f8cf5e5b>] ipw_handle_promiscuous_tx+0x16b/0x2d0 [ipw2200]
+[67607.676067] [<f8cf899b>] ipw_net_hard_start_xmit+0x8b/0x90 [ipw2200]
+[67607.676067] [<f8741c5a>] libipw_xmit+0x55a/0x980 [libipw]
+[67607.676067] [<c143d3e8>] dev_hard_start_xmit+0x218/0x4d0
+...
 
-case1:
-  watchdog_thresh is 10 by default, the sample value will be: 0xEE6B2800
+This bug was found by VittGam.
+https://bugzilla.kernel.org/show_bug.cgi?id=43255
 
-case2:
- set watchdog_thresh is 20, the sample value will be: 0x1 DCD6 5000
-
-In case2, we need use u64 to express the sample period.  Otherwise,
-changing the threshold thru proc often can not be successful.
-
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-Acked-by: Don Zickus <dzickus@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+Signed-off-by: Stanislav Yakovlev <stas.yakovlev@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/watchdog.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/ipw2x00/ipw2200.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -112,7 +112,7 @@ static unsigned long get_timestamp(int t
- 	return cpu_clock(this_cpu) >> 30LL;  /* 2^30 ~= 10^9 */
- }
+--- a/drivers/net/wireless/ipw2x00/ipw2200.c
++++ b/drivers/net/wireless/ipw2x00/ipw2200.c
+@@ -10471,7 +10471,7 @@ static void ipw_handle_promiscuous_tx(st
+ 		} else
+ 			len = src->len;
  
--static unsigned long get_sample_period(void)
-+static u64 get_sample_period(void)
- {
- 	/*
- 	 * convert watchdog_thresh from seconds to ns
-@@ -121,7 +121,7 @@ static unsigned long get_sample_period(v
- 	 * and hard thresholds) to increment before the
- 	 * hardlockup detector generates a warning
- 	 */
--	return get_softlockup_thresh() * (NSEC_PER_SEC / 5);
-+	return get_softlockup_thresh() * ((u64)NSEC_PER_SEC / 5);
- }
+-		dst = alloc_skb(len + sizeof(*rt_hdr), GFP_ATOMIC);
++		dst = alloc_skb(len + sizeof(*rt_hdr) + sizeof(u16)*2, GFP_ATOMIC);
+ 		if (!dst)
+ 			continue;
  
- /* Commands for resetting the watchdog */
 
 
