@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755716Ab2K3EKz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 23:10:55 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38600 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753143Ab2K3EKy (ORCPT
+	id S1755798Ab2K3ELJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 23:11:09 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:57335 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755747Ab2K3ELG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 23:10:54 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <50B831BC.3050500@jp.fujitsu.com>
-Date: Fri, 30 Nov 2012 13:10:36 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	Thu, 29 Nov 2012 23:11:06 -0500
+Date: Fri, 30 Nov 2012 04:11:03 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Patrick McLean <patrickm@gaikai.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-nfs@vger.kernel.org
+Subject: Re: Regression with initramfs and nfsroot (appears to be in the
+ dcache)
+Message-ID: <20121130041103.GF4939@ZenIV.linux.org.uk>
+References: <20121129222109.GW4939@ZenIV.linux.org.uk>
+ <50B7E759.9070007@gaikai.com>
+ <20121129234326.GX4939@ZenIV.linux.org.uk>
+ <50B7FBA7.2030300@gaikai.com>
+ <20121130003502.GY4939@ZenIV.linux.org.uk>
+ <50B8046F.7030308@cim.mcgill.ca>
+ <20121130013628.GZ4939@ZenIV.linux.org.uk>
+ <50B811BA.6070503@cim.mcgill.ca>
+ <20121130020047.GA4939@ZenIV.linux.org.uk>
+ <50B81B11.7050704@gaikai.com>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
-        Tejun Heo <htejun@gmail.com>, Glauber Costa <glommer@parallels.com>,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: [patch v2 5/6] memcg: further simplify mem_cgroup_iter
-References: <1353955671-14385-1-git-send-email-mhocko@suse.cz> <1353955671-14385-6-git-send-email-mhocko@suse.cz>
-In-Reply-To: <1353955671-14385-6-git-send-email-mhocko@suse.cz>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50B81B11.7050704@gaikai.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/11/27 3:47), Michal Hocko wrote:
-> mem_cgroup_iter basically does two things currently. It takes care of
-> the house keeping (reference counting, raclaim cookie) and it iterates
-> through a hierarchy tree (by using cgroup generic tree walk).
-> The code would be much more easier to follow if we move the iteration
-> outside of the function (to __mem_cgrou_iter_next) so the distinction
-> is more clear.
-> This patch doesn't introduce any functional changes.
-> 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+On Thu, Nov 29, 2012 at 06:33:53PM -0800, Patrick McLean wrote:
 
-Very nice look !
+> Excellent, thanks. Is there any chance this will make it to 3.7? Also we might want to cc stable@ on this as well since it is a regression in 3.6.
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
-
+Definitely.  I've dropped that into vfs.git#for-linus and vfs.git#for-next
+and tomorrow to Linus it goes...
