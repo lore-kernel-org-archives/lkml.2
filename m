@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932465Ab2K3QRf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 11:17:35 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:39623 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751808Ab2K3QRe (ORCPT
+	id S933203Ab2K3QSc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 11:18:32 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6931 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932517Ab2K3QSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 11:17:34 -0500
-Date: Tue, 27 Nov 2012 10:41:16 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>,
-        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Kyle McMartin <kyle@mcmartin.ca>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Tony Luck <tony.luck@intel.com>, Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH] perf tools: fix build for various architectures
-Message-ID: <20121127134116.GC18340@ghostprotocols.net>
-References: <1354018591-26656-1-git-send-email-mark.rutland@arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354018591-26656-1-git-send-email-mark.rutland@arm.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 30 Nov 2012 11:18:30 -0500
+X-Authority-Analysis: v=2.0 cv=f9bK9ZOM c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=CzdeYTRZPqoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=kgPz-38iio4A:10 a=VwQbUJbxAAAA:8 a=qvmrgIgGuK3iWGooozEA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1354292309.6276.161.camel@gandalf.local.home>
+Subject: [v3.2-v3.4 stable version][PATCH 1/2] ring-buffer: Fix NULL pointer
+ if rb_set_head_page() fails
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, stable <stable@vger.kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Date: Fri, 30 Nov 2012 11:18:29 -0500
+In-Reply-To: <20121130161333.983378567@goodmis.org>
+References: <20121130161238.909829067@goodmis.org>
+	 <20121130161333.983378567@goodmis.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Nov 27, 2012 at 12:16:31PM +0000, Mark Rutland escreveu:
-> The UAPI changes broke the perf tool, and as of 3.7-rc7, it
-> still won't build for arm:
-> 
-> 	util/../../../arch/arm/include/asm/unistd.h:16:29: fatal error: uapi/asm/unistd.h: No such file or directory
-> 	compilation terminated.
+The function rb_set_head_page() searches the list of ring buffer
+pages for a the page that has the HEAD page flag set. If it does
+not find it, it will do a WARN_ON(), disable the ring buffer and
+return NULL, as this should never happen.
+
+But if this bug happens to happen, not all callers of this function
+can handle a NULL pointer being returned from it. That needs to be
+fixed.
+
+Cc: stable@vger.kernel.org # 3.0+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/ring_buffer.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
+
+Index: linux-test.git/kernel/trace/ring_buffer.c
+===================================================================
+--- linux-test.git.orig/kernel/trace/ring_buffer.c
++++ linux-test.git/kernel/trace/ring_buffer.c
+@@ -2683,7 +2683,7 @@ unsigned long ring_buffer_oldest_event_t
+ 	unsigned long flags;
+ 	struct ring_buffer_per_cpu *cpu_buffer;
+ 	struct buffer_page *bpage;
+-	unsigned long ret;
++	unsigned long ret = 0;
  
-> I've tested this on arm, but I don't have the necessary toolchains to
-> check the other cases.
+ 	if (!cpumask_test_cpu(cpu, buffer->cpumask))
+ 		return 0;
+@@ -2698,7 +2698,8 @@ unsigned long ring_buffer_oldest_event_t
+ 		bpage = cpu_buffer->reader_page;
+ 	else
+ 		bpage = rb_set_head_page(cpu_buffer);
+-	ret = bpage->page->time_stamp;
++	if (bpage)
++		ret = bpage->page->time_stamp;
+ 	raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
+ 
+ 	return ret;
+@@ -3005,6 +3006,8 @@ rb_get_reader_page(struct ring_buffer_pe
+ 	 * Splice the empty reader page into the list around the head.
+ 	 */
+ 	reader = rb_set_head_page(cpu_buffer);
++	if (!reader)
++		goto out;
+ 	cpu_buffer->reader_page->list.next = rb_list_head(reader->list.next);
+ 	cpu_buffer->reader_page->list.prev = reader->list.prev;
+ 
 
-Can you try with my perf/urgent branch?
 
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/urgent
-
-I tested it with raspbian on a raspberry pi system and also with a cross
-compiler on a x86_64 workstation.
-
-I already sent the pull request to Ingo, that should process it and push
-to Linus soon.
-
-- Arnaldo
