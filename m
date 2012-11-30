@@ -1,141 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755624Ab2K3Vn4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 16:43:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50819 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755484Ab2K3Vnz (ORCPT
+	id S1752725Ab2K3VqF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 16:46:05 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:40994 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750725Ab2K3VqC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 16:43:55 -0500
-Date: Fri, 30 Nov 2012 13:43:53 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Lukas Czerner <lczerner@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, axboe@kernel.dk,
-        jmoyer@redhat.com, Neil Brown <neilb@suse.de>,
-        David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 1/2 v3] wait: add wait_event_lock_irq() interface
-Message-Id: <20121130134353.eb4ba17e.akpm@linux-foundation.org>
-In-Reply-To: <1354272161-9173-1-git-send-email-lczerner@redhat.com>
-References: <1354272161-9173-1-git-send-email-lczerner@redhat.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 30 Nov 2012 16:46:02 -0500
+MIME-Version: 1.0
+In-Reply-To: <50B90F4F.7070400@zytor.com>
+References: <1354301523-5252-1-git-send-email-vpalatin@chromium.org>
+ <1354301523-5252-2-git-send-email-vpalatin@chromium.org> <CA+55aFz4M4GmQbUkD1dhTkLTYka4H+T_phrsXgx+eGe8g9iLYA@mail.gmail.com>
+ <50B90B31.3000907@zytor.com> <CA+55aFyoAq+w6eNAyOJ00cpFEaGE=eKzMMtr9kEtMuUU820oYg@mail.gmail.com>
+ <50B90E4D.8010604@zytor.com> <CAP_ceTxmMhQeDi=x9HmYke85hKMg3_YhbXSnfDC12rOcocQJpA@mail.gmail.com>
+ <50B90F4F.7070400@zytor.com>
+From: Vincent Palatin <vpalatin@chromium.org>
+Date: Fri, 30 Nov 2012 13:45:42 -0800
+X-Google-Sender-Auth: t7dHdiWNAcVvWCHz2WcviAby2x0
+Message-ID: <CAP_ceTz-63+vpg3dMr8Xc2dek0SUWvV3nJAwQWj_GYP07Wcsgg@mail.gmail.com>
+Subject: Re: [PATCH] x86, fpu: avoid FPU lazy restore after suspend
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Duncan Laurie <dlaurie@chromium.org>,
+        Olof Johansson <olofj@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Nov 2012 11:42:40 +0100
-Lukas Czerner <lczerner@redhat.com> wrote:
+On Fri, Nov 30, 2012 at 11:55 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>
+> On 11/30/2012 11:54 AM, Vincent Palatin wrote:
+> >>
+> > I have done a patch v2 according to your suggestions.
+> > I will run the testing on it now.
+> > I probably need at least 2 to 3 hours to validate it.
+> >
+>
+> That would be super.  Let me know and I'll queue it up and send a pull
+> request with this and a few more urgent things to Linus.
 
-> New wait_event{_interruptible}_lock_irq{_cmd} macros added. This commit
-> moves the private wait_event_lock_irq() macro from MD to regular wait
-> includes, introduces new macro wait_event_lock_irq_cmd() instead of using
-> the old method with omitting cmd parameter which is ugly and makes a use
-> of new macros in the MD. It also introduces the _interruptible_ variant.
-> 
-> The use of new interface is when one have a special lock to protect data
-> structures used in the condition, or one also needs to invoke "cmd"
-> before putting it to sleep.
-> 
-> All new macros are expected to be called with the lock taken. The lock
-> is released before sleep and is reacquired afterwards. We will leave the
-> macro with the lock held.
-> 
-> Note to DM: IMO this should also fix theoretical race on waitqueue while
-> using simultaneously wait_event_lock_irq() and wait_event() because of
-> lack of locking around current state setting and wait queue removal.
-> 
-> Signed-off-by: Lukas Czerner <lczerner@redhat.com>
-> Cc: Neil Brown <neilb@suse.de>
-> Cc: David Howells <dhowells@redhat.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
-> v2: add interruptible variant, swap cmd and schedule, use prepare_to_wait
-> v3: swap cmd and schedule so we call cmd before schedule
 
-Your v3 patch reverts
-http://ozlabs.org/~akpm/mmots/broken-out/wait-add-wait_event_lock_irq-interface-fix.patch.
+I have done 1000+ cycles so far with patch v3 (on 4-core Ivybridge and
+no eagerfpu),
+and did not hit my issue.
+I let the testing going on,
+but wrt the issue after suspend, this fixes it with very high probability
+(ie I have never done that many cycles without hitting the issue).
 
-Here's what I've queued in -mm:
-
---- a/include/linux/wait.h~wait-add-wait_event_lock_irq-interface-v3
-+++ a/include/linux/wait.h
-@@ -555,14 +555,13 @@ do {									\
- do {									\
- 	DEFINE_WAIT(__wait);						\
- 									\
--	cmd;								\
- 	for (;;) {							\
- 		prepare_to_wait(&wq, &__wait, TASK_UNINTERRUPTIBLE);	\
- 		if (condition)						\
- 			break;						\
- 		spin_unlock_irq(&lock);					\
--		schedule();						\
- 		cmd;							\
-+		schedule();						\
- 		spin_lock_irq(&lock);					\
- 	}								\
- 	finish_wait(&wq, &__wait);					\
-@@ -575,8 +574,8 @@ do {									\
-  *			     taken.
-  * @wq: the waitqueue to wait on
-  * @condition: a C expression for the event to wait for
-- * @lock: a locked spinlock_t, which will be released before schedule()
-- *	  and cmd reacquired afterwards.
-+ * @lock: a locked spinlock_t, which will be released before cmd
-+ *	  and schedule() and reacquired afterwards.
-  * @cmd: a command which is invoked outside the critical section before
-  *	 sleep
-  *
-@@ -588,7 +587,7 @@ do {									\
-  * change the result of the wait condition.
-  *
-  * This is supposed to be called while holding the lock. The lock is
-- * dropped before going to sleep and invoking the cmd and is reacquired
-+ * dropped before invoking the cmd and going to sleep and is reacquired
-  * afterwards.
-  */
- #define wait_event_lock_irq_cmd(wq, condition, lock, cmd)		\
-@@ -631,7 +630,6 @@ do {									\
- do {									\
- 	DEFINE_WAIT(__wait);						\
- 									\
--	cmd;								\
- 	for (;;) {							\
- 		prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);	\
- 		if (condition)						\
-@@ -641,8 +639,8 @@ do {									\
- 			break;						\
- 		}							\
- 		spin_unlock_irq(&lock);					\
--		schedule();						\
- 		cmd;							\
-+		schedule();						\
- 		spin_lock_irq(&lock);					\
- 	}								\
- 	finish_wait(&wq, &__wait);					\
-@@ -654,8 +652,8 @@ do {									\
-  *		be called with the lock taken.
-  * @wq: the waitqueue to wait on
-  * @condition: a C expression for the event to wait for
-- * @lock: a locked spinlock_t, which will be released before schedule()
-- *	  and cmd reacquired afterwards.
-+ * @lock: a locked spinlock_t, which will be released before cmd and
-+ *	  schedule() and reacquired afterwards.
-  * @cmd: a command which is invoked outside the critical section before
-  *	 sleep
-  *
-@@ -667,7 +665,7 @@ do {									\
-  * change the result of the wait condition.
-  *
-  * This is supposed to be called while holding the lock. The lock is
-- * dropped before going to sleep and invoking the cmd and is reacquired
-+ * dropped before invoking the cmd and going to sleep and is reacquired
-  * afterwards.
-  *
-  * The macro will return -ERESTARTSYS if it was interrupted by a signal
-_
-
+-- 
+Vincent
