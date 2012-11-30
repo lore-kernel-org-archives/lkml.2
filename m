@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030595Ab2K3PIF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 10:08:05 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:49426 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030581Ab2K3PIC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 10:08:02 -0500
-Date: Fri, 30 Nov 2012 07:09:44 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Eli Billauer <eli.billauer@gmail.com>
-Cc: linux-kernel@vger.kernel.org, arnd@arndb.de
-Subject: Re: [PATCH v2 2/2] New driver: Xillybus generic interface for FPGA
- (programmable logic)
-Message-ID: <20121130150944.GB2658@kroah.com>
-References: <1354287112-18159-1-git-send-email-eli.billauer@gmail.com>
- <1354287112-18159-2-git-send-email-eli.billauer@gmail.com>
+	id S1030611Ab2K3PIQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 10:08:16 -0500
+Received: from gmmr3.centrum.cz ([46.255.225.251]:36166 "EHLO gmmr3.centrum.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030598Ab2K3PIO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 10:08:14 -0500
+To: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>
+Subject: =?utf-8?q?Re=3A_=5BPATCH_for_3=2E2=2E34=5D_memcg=3A_do_not_trigger_OOM_from_add=5Fto=5Fpage=5Fcache=5Flocked?=
+Date: Fri, 30 Nov 2012 16:08:11 +0100
+From: "azurIt" <azurit@pobox.sk>
+Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        =?utf-8?q?cgroups_mailinglist?= <cgroups@vger.kernel.org>,
+        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
+        =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
+References: <20121123100438.GF24698@dhcp22.suse.cz>, <20121125011047.7477BB5E@pobox.sk>, <20121125120524.GB10623@dhcp22.suse.cz>, <20121125135542.GE10623@dhcp22.suse.cz>, <20121126013855.AF118F5E@pobox.sk>, <20121126131837.GC17860@dhcp22.suse.cz>, <20121126132149.GD17860@dhcp22.suse.cz>, <20121130032918.59B3F780@pobox.sk>, <20121130124506.GH29317@dhcp22.suse.cz>, <20121130144427.51A09169@pobox.sk> <20121130144431.GI29317@dhcp22.suse.cz>
+In-Reply-To: <20121130144431.GI29317@dhcp22.suse.cz>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
+X-Original-From: azurit@pobox.sk
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354287112-18159-2-git-send-email-eli.billauer@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <20121130160811.6BB25BDD@pobox.sk>
+X-Maser: brud
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 30, 2012 at 04:51:52PM +0200, Eli Billauer wrote:
-> Xillybus is a general-purpose framework for communication between programmable
-> logic (FPGA) and a host. It provides a simple connection between hardware FIFOs
-> in the FPGA and their respective device files on the host.
-> 
-> The user interface is device files that are used like pipe files, only there's
-> FPGA logic on the other side rather than another process.
-> 
-> The underlying transport between the host and FPGA is either PCIe or AXI
-> (AMBA bus by ARM).
-> 
-> The Xillybus logic (IP core) is configurable in the number of pipes it presents
-> and their nature. The driver autodetects these pipes, making it essentially
-> forward-compatible to future configurations. The benefit of having this driver
-> enabled in the kernel is that hardware vendors may release a new card, knowing
-> that it will work out of the box on any future Linux machine, with the specific
-> configuration defined for the FPGA part.
-> 
-> Documentation: http://xillybus.com/doc/
-> 
-> This driver has been available for download for over a year, and has been
-> actively used on a wide variety of kernels versions and configurations.
+>DMA32 zone is usually fills up first 4G unless your HW remaps the rest
+>of the memory above 4G or you have a numa machine and the rest of the
+>memory is at other node. Could you post your memory map printed during
+>the boot? (e820: BIOS-provided physical RAM map: and following lines)
 
-You didn't answer my previous comments about the kernel/user interface
-here, why not?
 
-And you ignored my other review comments, which is a sure way for me to
-want to reject this and not look at any future submissions from you for
-at least a month...
+Here is the full boot log:
+www.watchdog.sk/lkml/kern.log
 
-greg k-h
+
+>You have mentioned that you are comounting with cpuset. If this happens
+>to be a NUMA machine have you made the access to all nodes available?
+>Also what does /proc/sys/vm/zone_reclaim_mode says?
+
+
+Don't really know what NUMA means and which nodes are you talking about, sorry :(
+
+# cat /proc/sys/vm/zone_reclaim_mode
+cat: /proc/sys/vm/zone_reclaim_mode: No such file or directory
+
+
+
+azur
