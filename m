@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992798Ab2K3S4r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:56:47 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58528 "EHLO mail.kernel.org"
+	id S1759220Ab2K3S5H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:57:07 -0500
+Received: from mail.kernel.org ([198.145.19.201]:58775 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992759Ab2K3S4j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:56:39 -0500
+	id S1758957Ab2K3S5C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:57:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        James Bottomley <JBottomley@parallels.com>, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@kernel.dk>,
-        satoru takeuchi <satoru.takeuchi@gmail.com>
-Subject: [ 40/56] scsi: Silence unnecessary warnings about ioctl to partition
-Date: Fri, 30 Nov 2012 10:55:32 -0800
-Message-Id: <20121130185122.404966631@linuxfoundation.org>
+        Thierry Escande <thierry.escande@linux.intel.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Peter Huewe <peterhuewe@gmx.de>
+Subject: [ 47/56] NFC: Fix nfc_llcp_local chained list insertion
+Date: Fri, 30 Nov 2012 10:55:39 -0800
+Message-Id: <20121130185123.140479907@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185118.302752929@linuxfoundation.org>
 References: <20121130185118.302752929@linuxfoundation.org>
@@ -28,50 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Thierry Escande <thierry.escande@linux.intel.com>
 
-commit 6d9359280753d2955f86d6411047516a9431eb51 upstream.
+commit 16a78e9fed5e8baa8480ae3413f4328c4537c599 upstream.
 
-Sometimes, warnings about ioctls to partition happen often enough that they
-form majority of the warnings in the kernel log and users complain. In some
-cases warnings are about ioctls such as SG_IO so it's not good to get rid of
-the warnings completely as they can ease debugging of userspace problems
-when ioctl is refused.
+list_add was called with swapped parameters
 
-Since I have seen warnings from lots of commands, including some proprietary
-userspace applications, I don't think disallowing the ioctls for processes
-with CAP_SYS_RAWIO will happen in the near future if ever. So lets just
-stop warning for processes with CAP_SYS_RAWIO for which ioctl is allowed.
-
-Acked-by: Paolo Bonzini <pbonzini@redhat.com>
-CC: Paolo Bonzini <pbonzini@redhat.com>
-CC: James Bottomley <JBottomley@parallels.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
-Cc: satoru takeuchi <satoru.takeuchi@gmail.com>
+Signed-off-by: Thierry Escande <thierry.escande@linux.intel.com>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/scsi_ioctl.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ net/nfc/llcp/llcp.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -721,11 +721,14 @@ int scsi_verify_blk_ioctl(struct block_d
- 		break;
- 	}
+--- a/net/nfc/llcp/llcp.c
++++ b/net/nfc/llcp/llcp.c
+@@ -966,7 +966,7 @@ int nfc_llcp_register_device(struct nfc_
+ 	local->remote_lto = LLCP_DEFAULT_LTO;
+ 	local->remote_rw = LLCP_DEFAULT_RW;
  
-+	if (capable(CAP_SYS_RAWIO))
-+		return 0;
-+
- 	/* In particular, rule out all resets and host-specific ioctls.  */
- 	printk_ratelimited(KERN_WARNING
- 			   "%s: sending ioctl %x to a partition!\n", current->comm, cmd);
+-	list_add(&llcp_devices, &local->list);
++	list_add(&local->list, &llcp_devices);
  
--	return capable(CAP_SYS_RAWIO) ? 0 : -ENOIOCTLCMD;
-+	return -ENOIOCTLCMD;
- }
- EXPORT_SYMBOL(scsi_verify_blk_ioctl);
+ 	return 0;
  
 
 
