@@ -1,99 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756376Ab2K3XV3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 18:21:29 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:35376 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756326Ab2K3XV1 (ORCPT
+	id S1756444Ab2K3XVw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 18:21:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51290 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756411Ab2K3XVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 18:21:27 -0500
-Date: Sat, 1 Dec 2012 07:21:52 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: nic_swsd@realtek.com
-Cc: romieu@fr.zoreil.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3]realtek:r8169: Bugfix or workaround for missing extended
- GigaMAC registers settings
-Message-ID: <20121130232152.GA10960@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>, nic_swsd@realtek.com,
-	romieu@fr.zoreil.com, netdev@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 30 Nov 2012 18:21:51 -0500
+Date: Fri, 30 Nov 2012 15:21:49 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "joe@perches.com" <joe@perches.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "kay@vrfy.org" <kay@vrfy.org>,
+        "jim.cromie@gmail.com" <jim.cromie@gmail.com>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        "jason.wessel@windriver.com" <jason.wessel@windriver.com>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: Re: [PATCH] Avoid dead lock of console related locks in panic case
+Message-Id: <20121130152149.6f266216.akpm@linux-foundation.org>
+In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D414A0339D@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A02C44@USINDEM103.corp.hds.com>
+	<20121130143023.2d67d817.akpm@linux-foundation.org>
+	<A5ED84D3BB3A384992CBB9C77DEDA4D414A0339D@USINDEM103.corp.hds.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I get a board with 8168e-vl(10ec:8168 with RTL_GIGA_MAC_VER_34),
-everything looks well first, I can use ifconfig to set ip, netmask,
-etc. And the rx/tx statistics show by ifconfig looks good when I
-ping another host or ping it from another host. But it don't work,
-I can't get ICMP REPLAY from both sides, although the RX/TX statistics
-seem good.
+On Fri, 30 Nov 2012 22:59:13 +0000
+Seiji Aguchi <seiji.aguchi@hds.com> wrote:
 
-After add some debug code, I found this NIC only accept ethernet
-broadcast package, it can't filter out the package send to its
-MAC address, but it works good for sending.So ifconfig show the
-RX/TX status means it can receive ARP package.(It don't know its
-MAC address, so below)
+> > 
+> > Let's step back a bit.  Please identify with great specificity the code sites which are stopping other CPUs before taking locks which
+> > those other CPUs might have been holding.
+> > 
+> > Then let's see what we can do to fix up the callers, instead of trying to tidy up after they have made this mess.
+> 
+> OK.
+> I will update my patch without adding complexity.
+> The logic will be as follows, if I understand your comment correctly.
+> 
+>  - take console related locks (logbuf_lock, console_sem)
+>  - stop other cpus
+>  - release those locks
 
-I have try the driver provided by realtek's website, it have the
-same problem at the first time. BUT IT WORK AFTER I REBOOT with
-CRTL-ALT-DEL, the reason is that realtek's driver call rtl8168_rar_set
-in the .shutdown function register with pci_register_driver. Yes,
-the really reason to make it work is rtl8689_rar_set, this function
-set extended GigaMAC registers, so after reboot without lost the power,
-NIC keep the status before reboot.
+That would be one way around the problem.  It's still a bit messy,
+because we'll have to take more and more locks in the future, as we
+identify them.
 
-I haven't see any code to set GigaMAC registers in kernel when boot,
-so I guess BIOS or NIC's circuit make it, but of course one miss
-the extended GigaMAC registers  in this problem. The probe code can
-get MAC address right, so MAC{0,4} must had been setted, but some
-guys forget the extended GigaMAC registers.
+What I actually meant was: can "this" CPU avoid stopping other CPUs so
+early?  If we stop the other CPUs when this CPU is ready to stop itself
+then there will never be such deadlocks.
 
-This patch fix it.
-
-[ I don't known whether others' realtek's NIC with extended GigaMAC
-reigisters have the same problem, I meet it in 8168e-vl with
-RTL_GIGA_MAC_VER_34, so I make this patch just for it.]
-
-Changes:
-V1-V2:
-I follow Francois Romieu 's below opinion to make this patch oneline:
-
-I'd rather see the GigaMAC registers written through a call to
-rtl_rar_set when the mac address is read in rtl_init_one instead of
-duplicating most of rtl_rar_set in a quite different place.
-
-V2-V3:
-1:Add conditon code to around this fix, because it make no sense for
-most NIC
-2:Add comment in code
-
-Signed-off-by: Wang YanQing <udknight@gmail.com>
----
- drivers/net/ethernet/realtek/r8169.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
-
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index 927aa33..5d98296 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -6903,6 +6903,14 @@ rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 		dev->dev_addr[i] = RTL_R8(MAC0 + i);
- 	memcpy(dev->perm_addr, dev->dev_addr, dev->addr_len);
- 
-+	/*
-+	 *This is a fix for BIOS forget to set
-+	 *extend GigaMAC registers
-+	 *Wang YanQing 12/1/2012
-+	 */
-+	if (tp->mac_version == RTL_GIGA_MAC_VER_34) {
-+	    rtl_rar_set(tp, dev->dev_addr);
-+	}
- 	SET_ETHTOOL_OPS(dev, &rtl8169_ethtool_ops);
- 	dev->watchdog_timeo = RTL8169_TX_TIMEOUT;
- 
--- 
-1.7.11.1.116.g8228a23
