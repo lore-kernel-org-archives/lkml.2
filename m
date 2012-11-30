@@ -1,102 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755215Ab2K3VjL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 16:39:11 -0500
-Received: from www.hansjkoch.de ([178.63.77.200]:51459 "EHLO www.hansjkoch.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754846Ab2K3VjJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 16:39:09 -0500
-Date: Fri, 30 Nov 2012 22:39:06 +0100
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Vitalii Demianets <vitas@nppfactor.kiev.ua>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Tux9 <tuxding@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] uio.c: Fix warning: 'ret' might be used uninitialized
-Message-ID: <20121130213906.GB2603@local>
-References: <201211271348.14603.vitas@nppfactor.kiev.ua>
- <201211291836.59358.vitas@nppfactor.kiev.ua>
- <20121129235822.GA2590@local>
- <201211301316.19217.vitas@nppfactor.kiev.ua>
+	id S1755463Ab2K3Vmi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 16:42:38 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:37309 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751952Ab2K3Vmg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 16:42:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201211301316.19217.vitas@nppfactor.kiev.ua>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAErSpo6jBTGQYdPK==u7zjDuhV+U5iUfUp_KZnxkhvZCU4difQ@mail.gmail.com>
+References: <507FD39F.4060601@citrix.com> <1350554618-14582-3-git-send-email-david.vrabel@citrix.com>
+ <20121019125919.GC26830@phenom.dumpdata.com> <CAErSpo6jBTGQYdPK==u7zjDuhV+U5iUfUp_KZnxkhvZCU4difQ@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 30 Nov 2012 14:42:14 -0700
+Message-ID: <CAErSpo7Vob9CiRxK+E2nV2V7G4FCss6zLCPO93PMSDj9G55ywg@mail.gmail.com>
+Subject: Re: [PATCH 3/5] xen-pcifront: handle backend CLOSED without CLOSING
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xen.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 30, 2012 at 01:16:19PM +0200, Vitalii Demianets wrote:
-> On Friday 30 November 2012 01:58:22 Hans J. Koch wrote:
-> > On Thu, Nov 29, 2012 at 06:36:59PM +0200, Vitalii Demianets wrote:
-> > > > On Thursday 29 November 2012 18:05:27 Tux9 wrote:
-> > > > > Hans, I think there are something wrong in your patch, while
-> > > > > Vitalii's is right. The variable "ret" is reused in line 292 and line
-> > > > > 295, so the value of "ret" would be overridden (if it goto err_map in
-> > > > > line 284 when mi>=1).
-> > > >
-> > > > Actually, both patches do exactly the same thing. Hans's patch
-> > > > establishes default value for the ret for all those "other" cases when
-> > > > ret is not explicitly overridden. My patch explicitly enumerates all
-> > > > those "other" cases in more wordily manner.
-> > >
-> > > Oops, disregard this. After looking at it more thoroughly I got your
-> > > point. You are right, ret is overridden at first iteration (mi == 0), so
-> > > Hans's approach does not work.
-> > > I must do more thinking before replying in a hurry.
-> >
-> > You're right. Initialization of "ret" has to take place at the beginning of
-> > the loop.
-> >
-> > I think this version is right:
-> 
-> Yes, this looks right for me.
+On Fri, Nov 30, 2012 at 11:41 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Fri, Oct 19, 2012 at 6:59 AM, Konrad Rzeszutek Wilk
+> <konrad.wilk@oracle.com> wrote:
+>> On Thu, Oct 18, 2012 at 11:03:36AM +0100, David Vrabel wrote:
+>>> From: David Vrabel <david.vrabel@citrix.com>
+>>>
+>>> Backend drivers shouldn't transistion to CLOSED unless the frontend is
+>>> CLOSED.  If a backend does transition to CLOSED too soon then the
+>>> frontend may not see the CLOSING state and will not properly shutdown.
+>>>
+>>> So, treat an unexpected backend CLOSED state the same as CLOSING.
+>>>
+>>> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
+>>> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+>>> ---
+>>> Cc: linux-pci@vger.kernel.org
+>>> Cc: Bjorn Helgaas <bhelgaas@google.com>
+>>
+>> Bjorn, do you want me to prep a git pull with this patch
+>> or can I have your Ack to put it my tree and have it part of my
+>> git pull to Linus?
+>
+> Sorry, I missed this.  I can put it in my -next branch for the v3.8
+> merge window.  Would that work for you?
 
-OK, I'll send that patch offically, then. This might also be material for
-the stable updates. Greg?
+I put this in my -next branch, so we'll at least have a chance of
+making a linux-next cycle before v3.7 pops.
 
-Thanks a lot for reporting and discussing that problem. I'll add a
-
-Reported-by: Vitalii Demianets <vitas@nppfactor.kiev.ua>
-
-if you have no objections.
-
-Thanks,
-Hans
-
-> 
-> > >From 00c3c734c0dde67873a628bcb18cee403c95c301 Mon Sep 17 00:00:00 2001
-> >
-> > From: "Hans J. Koch" <hjk@hansjkoch.de>
-> > Date: Fri, 30 Nov 2012 00:51:50 +0100
-> > Subject: [PATCH] uio: Fix warning: 'ret' might be used uninitialized
-> >
-> > In two cases, the return value variable "ret" can be undefined.
-> >
-> > Signed-off-by: Hans J. Koch <hjk@hansjkoch.de>
-> > ---
-> >  drivers/uio/uio.c |    2 ++
-> >  1 files changed, 2 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
-> > index 5110f36..0c80df2 100644
-> > --- a/drivers/uio/uio.c
-> > +++ b/drivers/uio/uio.c
-> > @@ -273,6 +273,7 @@ static int uio_dev_add_attributes(struct uio_device
-> > *idev) struct uio_portio *portio;
-> >
-> >  	for (mi = 0; mi < MAX_UIO_MAPS; mi++) {
-> > +		ret = -ENOMEM;
-> >  		mem = &idev->info->mem[mi];
-> >  		if (mem->size == 0)
-> >  			break;
-> > @@ -298,6 +299,7 @@ static int uio_dev_add_attributes(struct uio_device
-> > *idev) }
-> >
-> >  	for (pi = 0; pi < MAX_UIO_PORT_REGIONS; pi++) {
-> > +		ret = -ENOMEM;
-> >  		port = &idev->info->port[pi];
-> >  		if (port->size == 0)
-> >  			break;
-> 
+>>> ---
+>>>  drivers/pci/xen-pcifront.c |    5 ++++-
+>>>  1 files changed, 4 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
+>>> index 0aab85a..a0c7312 100644
+>>> --- a/drivers/pci/xen-pcifront.c
+>>> +++ b/drivers/pci/xen-pcifront.c
+>>> @@ -1068,13 +1068,16 @@ static void __init_refok pcifront_backend_changed(struct xenbus_device *xdev,
+>>>       case XenbusStateInitialising:
+>>>       case XenbusStateInitWait:
+>>>       case XenbusStateInitialised:
+>>> -     case XenbusStateClosed:
+>>>               break;
+>>>
+>>>       case XenbusStateConnected:
+>>>               pcifront_try_connect(pdev);
+>>>               break;
+>>>
+>>> +     case XenbusStateClosed:
+>>> +             if (xdev->state == XenbusStateClosed)
+>>> +                     break;
+>>> +             /* Missed the backend's CLOSING state -- fallthrough */
+>>>       case XenbusStateClosing:
+>>>               dev_warn(&xdev->dev, "backend going away!\n");
+>>>               pcifront_try_disconnect(pdev);
+>>> --
+>>> 1.7.2.5
