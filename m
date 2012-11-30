@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031427Ab2K3SMC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:12:02 -0500
-Received: from smtp.snhosting.dk ([87.238.248.203]:38436 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753128Ab2K3SL7 (ORCPT
+	id S1031443Ab2K3SMI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:12:08 -0500
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:34797 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1031428Ab2K3SMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:11:59 -0500
-Date: Fri, 30 Nov 2012 19:11:56 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
+	Fri, 30 Nov 2012 13:12:03 -0500
+Date: Fri, 30 Nov 2012 19:11:59 +0100
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Jim Cromie <jim.cromie@gmail.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>, Michal Marek <mmarek@suse.cz>,
-        Tony Lindgren <tony@atomide.com>,
-        Jonathan Kliegman <kliegs@chromium.org>,
-        Chris Zankel <chris@zankel.net>,
-        Bill Pemberton <wfp5p@viridian.itc.virginia.edu>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>
-Subject: Re: [PATCH 1/2] init.h: Remove __dev* sections from the kernel
-Message-ID: <20121130181156.GA18287@merkur.ravnborg.org>
-References: <20121129184133.GA15110@kroah.com> <20121129184328.GB15110@kroah.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH RESEND] tty: don't dead lock while flushing workqueue
+Message-ID: <20121130181159.GA7468@breakpoint.cc>
+References: <1353501542-14707-1-git-send-email-bigeasy@linutronix.de>
+ <20121121140426.1860d093@pyramind.ukuu.org.uk>
+ <20121127095357.GA3536@breakpoint.cc>
+ <20121127172249.GB24592@kroah.com>
+ <20121127180108.GA7376@linutronix.de>
+ <20121130170938.GA7323@breakpoint.cc>
+ <20121130172143.GA6635@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121129184328.GB15110@kroah.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20121130172143.GA6635@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 10:43:28AM -0800, Greg Kroah-Hartman wrote:
-> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+On Fri, Nov 30, 2012 at 09:21:43AM -0800, Greg Kroah-Hartman wrote:
+> > Ping. Can you feed this to your tty tree? :)
 > 
-> With the recent work to remove CONFIG_HOTPLUG, we are starting to get a
-> bunch of __devinit section warnings, despite CONFIG_HOTPLUG always being
-> enabled.  So, stop marking the sections entirely, by defining them away
-> the section markings in init.h
-> 
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Acked-by: Sam Ravnborg <sam@ravnborg.org>
-> 
-> ---
->  include/linux/init.h |   18 +++++++-----------
->  1 file changed, 7 insertions(+), 11 deletions(-)
-> 
-> diff --git a/include/linux/init.h b/include/linux/init.h
-> index e59041e..f63692d 100644
-> --- a/include/linux/init.h
-> +++ b/include/linux/init.h
-> @@ -93,13 +93,13 @@
->  
->  #define __exit          __section(.exit.text) __exitused __cold notrace
->  
-> -/* Used for HOTPLUG */
-> -#define __devinit        __section(.devinit.text) __cold notrace
-> -#define __devinitdata    __section(.devinit.data)
-> -#define __devinitconst   __constsection(.devinit.rodata)
-> -#define __devexit        __section(.devexit.text) __exitused __cold notrace
-> -#define __devexitdata    __section(.devexit.data)
-> -#define __devexitconst   __constsection(.devexit.rodata)
-> +/* Used for HOTPLUG, but that is always enabled now, so just make them noops */
+> It's really late in the release cycle, I would like to have this get
+> more testing in linux-next before I send it to Linus, so I was going to
+> wait until after 3.8-rc1 is out before doing it.
 
-This comment should be explicit that these are provided only for backward compatibility
-and their usage is discouarged.
+I assumed that you apply this to your tty-next tree so it appears in
+linux-next. So now I wait until -rc2 is out and ping again if nothing
+happens :)
 
-	Sam
+> I'm doing the same thing for all tty/serial patches right now, so don't
+> feel like I'm picking on you :)
+
+Next time I look for a bug that annoys everyone :)
+Nah. I saw some movement in tty-next so I though I ping you. But staging
+stuff is probably a different category.
+
+> 
+> thanks,
+> 
+> greg k-h
+
+Sebastian
