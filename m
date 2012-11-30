@@ -1,133 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756280Ab2K3XQZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 18:16:25 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:51473 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756226Ab2K3XQY (ORCPT
+	id S1756376Ab2K3XV3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 18:21:29 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:35376 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756326Ab2K3XV1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 18:16:24 -0500
+	Fri, 30 Nov 2012 18:21:27 -0500
+Date: Sat, 1 Dec 2012 07:21:52 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: nic_swsd@realtek.com
+Cc: romieu@fr.zoreil.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3]realtek:r8169: Bugfix or workaround for missing extended
+ GigaMAC registers settings
+Message-ID: <20121130232152.GA10960@udknight>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>, nic_swsd@realtek.com,
+	romieu@fr.zoreil.com, netdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <CAAfyv35P20QSeG3JR9jJ2-UoJwyDNm4JP0a2TNs_wPXxcJOVRA@mail.gmail.com>
-References: <201211092242.34697.linux@rainbow-software.org>
-	<CAAfyv36UhwVmjwBV5RKDmWm3ag_yqr+t1u+NHAtamFSkmcrUhw@mail.gmail.com>
-	<201211131111.38721.linux@rainbow-software.org>
-	<CAAfyv35P20QSeG3JR9jJ2-UoJwyDNm4JP0a2TNs_wPXxcJOVRA@mail.gmail.com>
-Date: Sat, 1 Dec 2012 00:16:23 +0100
-Message-ID: <CAAfyv37PYKnhxn3rH2-DNjfS1QxipyEqR3jpbH+n8e=w=LW2oA@mail.gmail.com>
-Subject: Re: [RFC, RFT] [PATCH] staging: ft1000: unify struct ft1000_info
- between USB and PCMCIA drivers
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Ondrej Zary <linux@rainbow-software.org>
-Cc: Greg Kroah-Hartman <greg@kroah.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+I get a board with 8168e-vl(10ec:8168 with RTL_GIGA_MAC_VER_34),
+everything looks well first, I can use ifconfig to set ip, netmask,
+etc. And the rx/tx statistics show by ifconfig looks good when I
+ping another host or ping it from another host. But it don't work,
+I can't get ICMP REPLAY from both sides, although the RX/TX statistics
+seem good.
 
-On Tue, Nov 13, 2012 at 12:32 PM, Belisko Marek <marek.belisko@gmail.com> wrote:
-> On Tue, Nov 13, 2012 at 11:11 AM, Ondrej Zary
-> <linux@rainbow-software.org> wrote:
->> On Monday 12 November 2012, Belisko Marek wrote:
->>> Hi Ondrej,
->>>
->>> On Fri, Nov 9, 2012 at 10:42 PM, Ondrej Zary <linux@rainbow-software.org>
->> wrote:
->>> > Unify struct ft1000_info between ft1000-usb and ft1000-pcmcia and move it
->>> > to common ft1000.h.
->>> >
->>> > ft1000-pcmcia seems to work. Please test ft1000-usb.
->>> >
->>> > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
->>> > ---
->>> >  drivers/staging/ft1000/ft1000-pcmcia/ft1000.h      |   33 +-----
->>> >  drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c   |   21 ++-
->>> >  drivers/staging/ft1000/ft1000-pcmcia/ft1000_proc.c |   10 +-
->>> >  drivers/staging/ft1000/ft1000-usb/ft1000_debug.c   |  147
->>> > ++++++++++---------- .../staging/ft1000/ft1000-usb/ft1000_download.c    |
->>> >   70 +++++----- drivers/staging/ft1000/ft1000-usb/ft1000_hw.c      |   99
->>> > +++++++------- drivers/staging/ft1000/ft1000-usb/ft1000_proc.c    |    4
->>> > +-
->>> >  drivers/staging/ft1000/ft1000-usb/ft1000_usb.c     |   30 ++--
->>> >  drivers/staging/ft1000/ft1000-usb/ft1000_usb.h     |   54 +------
->>> >  drivers/staging/ft1000/ft1000.h                    |   35 +++++
->>> >  10 files changed, 236 insertions(+), 267 deletions(-)
->>> >
->>> > diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
->>> > b/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h index adb436e..65f7ab6
->>> > 100644
->>> > --- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
->>> > +++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
->>> > @@ -31,41 +31,10 @@
->>> >  #define SUCCESS        0x00
->>> >  #define FAILURE        0x01
->>> >
->>> > -struct ft1000_info {
->>> > -       struct net_device_stats stats;
->>> > -       u16 DrvErrNum;
->>> > -       u16 AsicID;
->>> > +struct ft1000_pcmcia {
->>>
->>> To be consistent can you please name also usb part not ft100_device
->>> but e.g. ft1000_usb or something?
->>
->> Yes, that's a good idea. I'd like to do that in a separate patch, this one is
->> already big enough.
-> OK good idea.
->>
->>> > @@ -1179,8 +1179,6 @@ static int ft1000_open(struct net_device *dev)
->>> >         struct ft1000_info *pInfo = netdev_priv(dev);
->>> >         struct timeval tv;
->>> >
->>> > -       DEBUG("ft1000_open is called for card %d\n", pInfo->CardNumber);
->>>
->>> ^^^ Why removing this debug?
->>
->> I don't remember exactly (this is from an old patch) but probably because I
->> didn't want to add code to reach CardNumber (which should be removed too).
->> The debug messages are a mess, some are completely useless, some should be
->> non-debug instead.
-> There is rule one change one patch so please keep it there and remove
-> in separate patch.
->>
->> If you have the USB hardware, please test if this patch does not break
->> anything. I have only a PCMCIA card.
-> I'll do testing on USB (waiting for HW to come ;))
-USB testing done. It's working good. Please update patch according comments
-and re-send. Thanks.
->>
->> --
->> Ondrej Zary
->
-> Cheers,
->
-> marek
->
-> --
-> as simple and primitive as possible
-> -------------------------------------------------
-> Marek Belisko - OPEN-NANDRA
-> Freelance Developer
->
-> Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-> Tel: +421 915 052 184
-> skype: marekwhite
-> twitter: #opennandra
-> web: http://open-nandra.com
+After add some debug code, I found this NIC only accept ethernet
+broadcast package, it can't filter out the package send to its
+MAC address, but it works good for sending.So ifconfig show the
+RX/TX status means it can receive ARP package.(It don't know its
+MAC address, so below)
 
-Marek
+I have try the driver provided by realtek's website, it have the
+same problem at the first time. BUT IT WORK AFTER I REBOOT with
+CRTL-ALT-DEL, the reason is that realtek's driver call rtl8168_rar_set
+in the .shutdown function register with pci_register_driver. Yes,
+the really reason to make it work is rtl8689_rar_set, this function
+set extended GigaMAC registers, so after reboot without lost the power,
+NIC keep the status before reboot.
 
+I haven't see any code to set GigaMAC registers in kernel when boot,
+so I guess BIOS or NIC's circuit make it, but of course one miss
+the extended GigaMAC registers  in this problem. The probe code can
+get MAC address right, so MAC{0,4} must had been setted, but some
+guys forget the extended GigaMAC registers.
+
+This patch fix it.
+
+[ I don't known whether others' realtek's NIC with extended GigaMAC
+reigisters have the same problem, I meet it in 8168e-vl with
+RTL_GIGA_MAC_VER_34, so I make this patch just for it.]
+
+Changes:
+V1-V2:
+I follow Francois Romieu 's below opinion to make this patch oneline:
+
+I'd rather see the GigaMAC registers written through a call to
+rtl_rar_set when the mac address is read in rtl_init_one instead of
+duplicating most of rtl_rar_set in a quite different place.
+
+V2-V3:
+1:Add conditon code to around this fix, because it make no sense for
+most NIC
+2:Add comment in code
+
+Signed-off-by: Wang YanQing <udknight@gmail.com>
+---
+ drivers/net/ethernet/realtek/r8169.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index 927aa33..5d98296 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -6903,6 +6903,14 @@ rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 		dev->dev_addr[i] = RTL_R8(MAC0 + i);
+ 	memcpy(dev->perm_addr, dev->dev_addr, dev->addr_len);
+ 
++	/*
++	 *This is a fix for BIOS forget to set
++	 *extend GigaMAC registers
++	 *Wang YanQing 12/1/2012
++	 */
++	if (tp->mac_version == RTL_GIGA_MAC_VER_34) {
++	    rtl_rar_set(tp, dev->dev_addr);
++	}
+ 	SET_ETHTOOL_OPS(dev, &rtl8169_ethtool_ops);
+ 	dev->watchdog_timeo = RTL8169_TX_TIMEOUT;
+ 
 -- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
-
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-twitter: #opennandra
-web: http://open-nandra.com
+1.7.11.1.116.g8228a23
