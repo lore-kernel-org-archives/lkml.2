@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422651Ab2K3St7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:49:59 -0500
-Received: from mail.kernel.org ([198.145.19.201]:57727 "EHLO mail.kernel.org"
+	id S1161118Ab2K3St5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:49:57 -0500
+Received: from mail.kernel.org ([198.145.19.201]:57717 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161083Ab2K3Sty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:49:54 -0500
+	id S1161096Ab2K3Stx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:49:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>, Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 32/37] USB: mct_u232: fix broken close
-Date: Fri, 30 Nov 2012 10:46:19 -0800
-Message-Id: <20121130183900.693163813@linuxfoundation.org>
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Peter Huewe <peterhuewe@gmx.de>
+Subject: [ 31/37] get_dvb_firmware: fix download site for tda10046 firmware
+Date: Fri, 30 Nov 2012 10:46:18 -0800
+Message-Id: <20121130183900.589585576@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130183857.166228045@linuxfoundation.org>
 References: <20121130183857.166228045@linuxfoundation.org>
@@ -25,51 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-commit 5260e458f5eff269a43e4f1e9c47186c57b88ddb upstream.
+commit 25ec43d3e6306978cf66060ed18c4160ce8fc302 upstream.
 
-Make sure generic close is called at close.
+The previous website doesn't exist anymore. Update it to one site that
+actually exists.
 
-The driver relies on the generic write implementation but did not call
-generic close.
-
-Note that the call to kill the read urb is not redundant, as mct_u232
-uses an interrupt urb from the second port as the read urb and that
-generic close therefore fails to kill it.
-
-Compile-only tested.
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: adjust context]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/usb/serial/mct_u232.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/serial/mct_u232.c
-+++ b/drivers/usb/serial/mct_u232.c
-@@ -577,12 +577,14 @@ static void mct_u232_close(struct usb_se
- {
- 	dbg("%s port %d", __func__, port->number);
+---
+ Documentation/dvb/get_dvb_firmware |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/Documentation/dvb/get_dvb_firmware
++++ b/Documentation/dvb/get_dvb_firmware
+@@ -114,7 +114,7 @@ sub tda10045 {
  
--	if (port->serial->dev) {
--		/* shutdown our urbs */
--		usb_kill_urb(port->write_urb);
--		usb_kill_urb(port->read_urb);
--		usb_kill_urb(port->interrupt_in_urb);
--	}
-+	/*
-+	 * Must kill the read urb as it is actually an interrupt urb, which
-+	 * generic close thus fails to kill.
-+	 */
-+	usb_kill_urb(port->read_urb);
-+	usb_kill_urb(port->interrupt_in_urb);
-+
-+	usb_serial_generic_close(port);
- } /* mct_u232_close */
- 
- 
+ sub tda10046 {
+ 	my $sourcefile = "TT_PCI_2.19h_28_11_2006.zip";
+-	my $url = "http://www.tt-download.com/download/updates/219/$sourcefile";
++	my $url = "http://technotrend.com.ua/download/software/219/$sourcefile";
+ 	my $hash = "6a7e1e2f2644b162ff0502367553c72d";
+ 	my $outfile = "dvb-fe-tda10046.fw";
+ 	my $tmpdir = tempdir(DIR => "/tmp", CLEANUP => 1);
 
 
