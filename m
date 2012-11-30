@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1769202Ab2K3T0u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:26:50 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58260 "EHLO mail.kernel.org"
+	id S1769232Ab2K3T1j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:27:39 -0500
+Received: from mail.kernel.org ([198.145.19.201]:58236 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992642Ab2K3S4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:56:16 -0500
+	id S2992635Ab2K3S4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:56:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 20/56] PARISC: fix user-triggerable panic on parisc
-Date: Fri, 30 Nov 2012 10:55:12 -0800
-Message-Id: <20121130185120.348707366@linuxfoundation.org>
+        David Henningsson <david.henningsson@canonical.com>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 18/56] ALSA: hda - Cirrus: Correctly clear line_out_pins when moving to speaker
+Date: Fri, 30 Nov 2012 10:55:10 -0800
+Message-Id: <20121130185120.163549451@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185118.302752929@linuxfoundation.org>
 References: <20121130185118.302752929@linuxfoundation.org>
@@ -26,59 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: David Henningsson <david.henningsson@canonical.com>
 
-commit 441a179dafc0f99fc8b3a8268eef66958621082e upstream.
+commit 34c3d1926bdaf45d3a891dd577482abcdd9faa34 upstream.
 
-int sys32_rt_sigprocmask(int how, compat_sigset_t __user *set, compat_sigset_t __user *oset,
-                                    unsigned int sigsetsize)
-{
-        sigset_t old_set, new_set;
-        int ret;
+If this array is not cleared, the jack related code later might
+fail to create "Internal Speaker Phantom Jack" on Dell Inspiron 3420 and
+Dell Vostro 2420.
 
-        if (set && get_sigset32(set, &new_set, sigsetsize))
-
-...
-static int
-get_sigset32(compat_sigset_t __user *up, sigset_t *set, size_t sz)
-{
-        compat_sigset_t s;
-        int r;
-
-        if (sz != sizeof *set) panic("put_sigset32()");
-
-In other words, rt_sigprocmask(69, (void *)69, 69) done by 32bit process
-will promptly panic the box.
-
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+BugLink: https://bugs.launchpad.net/bugs/1076840
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/parisc/kernel/signal32.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_cirrus.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/parisc/kernel/signal32.c
-+++ b/arch/parisc/kernel/signal32.c
-@@ -67,7 +67,8 @@ put_sigset32(compat_sigset_t __user *up,
- {
- 	compat_sigset_t s;
+--- a/sound/pci/hda/patch_cirrus.c
++++ b/sound/pci/hda/patch_cirrus.c
+@@ -460,6 +460,7 @@ static int parse_output(struct hda_codec
+ 		memcpy(cfg->speaker_pins, cfg->line_out_pins,
+ 		       sizeof(cfg->speaker_pins));
+ 		cfg->line_outs = 0;
++		memset(cfg->line_out_pins, 0, sizeof(cfg->line_out_pins));
+ 	}
  
--	if (sz != sizeof *set) panic("put_sigset32()");
-+	if (sz != sizeof *set)
-+		return -EINVAL;
- 	sigset_64to32(&s, set);
- 
- 	return copy_to_user(up, &s, sizeof s);
-@@ -79,7 +80,8 @@ get_sigset32(compat_sigset_t __user *up,
- 	compat_sigset_t s;
- 	int r;
- 
--	if (sz != sizeof *set) panic("put_sigset32()");
-+	if (sz != sizeof *set)
-+		return -EINVAL;
- 
- 	if ((r = copy_from_user(&s, up, sz)) == 0) {
- 		sigset_32to64(set, &s);
+ 	return 0;
 
 
