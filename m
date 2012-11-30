@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993378Ab2K3TKZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:10:25 -0500
-Received: from mail.kernel.org ([198.145.19.201]:59598 "EHLO mail.kernel.org"
+	id S1768808Ab2K3TKs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:10:48 -0500
+Received: from mail.kernel.org ([198.145.19.201]:59587 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993017Ab2K3TCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 14:02:25 -0500
+	id S2993012Ab2K3TCY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 14:02:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dave Airlie <airlied@gmail.com>, Bill Nottingham <notting@redhat.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 01/54] wireless: add back sysfs directory
-Date: Fri, 30 Nov 2012 10:55:32 -0800
-Message-Id: <20121130185208.038570845@linuxfoundation.org>
+        Tim Shepard <shep@laptop.org>, Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 10/54] mwifiex: fix system hang issue in cmd timeout error case
+Date: Fri, 30 Nov 2012 10:55:41 -0800
+Message-Id: <20121130185208.919121107@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185207.894301294@linuxfoundation.org>
 References: <20121130185207.894301294@linuxfoundation.org>
@@ -26,61 +26,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Bing Zhao <bzhao@marvell.com>
 
-commit 38c1a01cf10c6e4049b4ffbd4a6af655df2a46e1 upstream.
+commit b1a47aa5e1e159e2cb06d7dfcc17ef5149b09299 upstream.
 
-commit 35b2a113cb0298d4f9a1263338b456094a414057 broke (at least)
-Fedora's networking scripts, they check for the existence of the
-wireless directory. As the files aren't used, add the directory
-back and not the files. Also do it for both drivers based on the
-old wireless extensions and cfg80211, regardless of whether the
-compat code for wext is built into cfg80211 or not.
+Reported by Tim Shepard:
+I was seeing sporadic failures (wedgeups), and the majority of those
+failures I saw printed the printouts in mwifiex_cmd_timeout_func with
+cmd = 0xe5 which is CMD_802_11_HS_CFG_ENH.  When this happens, two
+minutes later I get notified that the rtcwake thread is blocked, like
+this:
+      INFO: task rtcwake:3495 blocked for more than 120 seconds.
 
-Reported-by: Dave Airlie <airlied@gmail.com>
-Reported-by: Bill Nottingham <notting@redhat.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+To get the hung thread unblocked we wake up the cmd wait queue and
+cancel the ioctl.
+
+Reported-by: Tim Shepard <shep@laptop.org>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/core/net-sysfs.c |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ drivers/net/wireless/mwifiex/cmdevt.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
---- a/net/core/net-sysfs.c
-+++ b/net/core/net-sysfs.c
-@@ -417,6 +417,17 @@ static struct attribute_group netstat_gr
- 	.name  = "statistics",
- 	.attrs  = netstat_attrs,
- };
-+
-+#if IS_ENABLED(CONFIG_WIRELESS_EXT) || IS_ENABLED(CONFIG_CFG80211)
-+static struct attribute *wireless_attrs[] = {
-+	NULL
-+};
-+
-+static struct attribute_group wireless_group = {
-+	.name = "wireless",
-+	.attrs = wireless_attrs,
-+};
-+#endif
- #endif /* CONFIG_SYSFS */
+--- a/drivers/net/wireless/mwifiex/cmdevt.c
++++ b/drivers/net/wireless/mwifiex/cmdevt.c
+@@ -887,9 +887,6 @@ mwifiex_cmd_timeout_func(unsigned long f
+ 		return;
+ 	}
+ 	cmd_node = adapter->curr_cmd;
+-	if (cmd_node->wait_q_enabled)
+-		adapter->cmd_wait_q.status = -ETIMEDOUT;
+-
+ 	if (cmd_node) {
+ 		adapter->dbg.timeout_cmd_id =
+ 			adapter->dbg.last_cmd_id[adapter->dbg.last_cmd_index];
+@@ -935,6 +932,14 @@ mwifiex_cmd_timeout_func(unsigned long f
  
- #ifdef CONFIG_RPS
-@@ -1397,6 +1408,15 @@ int netdev_register_kobject(struct net_d
- 		groups++;
- 
- 	*groups++ = &netstat_group;
+ 		dev_err(adapter->dev, "ps_mode=%d ps_state=%d\n",
+ 			adapter->ps_mode, adapter->ps_state);
 +
-+#if IS_ENABLED(CONFIG_WIRELESS_EXT) || IS_ENABLED(CONFIG_CFG80211)
-+	if (net->ieee80211_ptr)
-+		*groups++ = &wireless_group;
-+#if IS_ENABLED(CONFIG_WIRELESS_EXT)
-+	else if (net->wireless_handlers)
-+		*groups++ = &wireless_group;
-+#endif
-+#endif
- #endif /* CONFIG_SYSFS */
- 
- 	error = device_add(dev);
++		if (cmd_node->wait_q_enabled) {
++			adapter->cmd_wait_q.status = -ETIMEDOUT;
++			wake_up_interruptible(&adapter->cmd_wait_q.wait);
++			mwifiex_cancel_pending_ioctl(adapter);
++			/* reset cmd_sent flag to unblock new commands */
++			adapter->cmd_sent = false;
++		}
+ 	}
+ 	if (adapter->hw_status == MWIFIEX_HW_STATUS_INITIALIZING)
+ 		mwifiex_init_fw_complete(adapter);
 
 
