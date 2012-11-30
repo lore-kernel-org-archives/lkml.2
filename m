@@ -1,83 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932395Ab2K3KSh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 05:18:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28392 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932370Ab2K3KSe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932371Ab2K3KSe (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 30 Nov 2012 05:18:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43855 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932341Ab2K3KSb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 05:18:31 -0500
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: David Teigland <teigland@redhat.com>,
+Cc: Bob Peterson <rpeterso@redhat.com>,
         Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 11/16] GFS2: skip dlm_unlock calls in unmount
-Date: Fri, 30 Nov 2012 09:52:16 +0000
-Message-Id: <1354269141-3311-12-git-send-email-swhiteho@redhat.com>
+Subject: [PATCH 09/16] GFS2: Eliminate redundant buffer_head manipulation in gfs2_unlink_inode
+Date: Fri, 30 Nov 2012 09:52:14 +0000
+Message-Id: <1354269141-3311-10-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1354269141-3311-1-git-send-email-swhiteho@redhat.com>
 References: <1354269141-3311-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Teigland <teigland@redhat.com>
+From: Bob Peterson <rpeterso@redhat.com>
 
-When unmounting, gfs2 does a full dlm_unlock operation on every
-cached lock.  This can create a very large amount of work and can
-take a long time to complete.  However, the vast majority of these
-dlm unlock operations are unnecessary because after all the unlocks
-are done, gfs2 leaves the dlm lockspace, which automatically clears
-the locks of the leaving node, without unlocking each one individually.
-So, gfs2 can skip explicit dlm unlocks, and use dlm_release_lockspace to
-remove the locks implicitly.  The one exception is when the lock's lvb is
-being used.  In this case, dlm_unlock is called because it may update the
-lvb of the resource.
+Since we now have a dirty_inode that takes care of manipulating the
+inode buffer and writing from the inode to the buffer, we can
+eliminate some unnecessary buffer manipulations in gfs2_unlink_inode
+that are now redundant.
 
-Signed-off-by: David Teigland <teigland@redhat.com>
+Signed-off-by: Bob Peterson <rpeterso@redhat.com>
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
-diff --git a/fs/gfs2/glock.c b/fs/gfs2/glock.c
-index 6114571..9d29a51 100644
---- a/fs/gfs2/glock.c
-+++ b/fs/gfs2/glock.c
-@@ -1526,6 +1526,7 @@ static void dump_glock_func(struct gfs2_glock *gl)
+diff --git a/fs/gfs2/inode.c b/fs/gfs2/inode.c
+index ef3ce00..e321333 100644
+--- a/fs/gfs2/inode.c
++++ b/fs/gfs2/inode.c
+@@ -995,7 +995,6 @@ static int gfs2_unlink_ok(struct gfs2_inode *dip, const struct qstr *name,
+  * gfs2_unlink_inode - Removes an inode from its parent dir and unlinks it
+  * @dip: The parent directory
+  * @name: The name of the entry in the parent directory
+- * @bh: The inode buffer for the inode to be removed
+  * @inode: The inode to be removed
+  *
+  * Called with all the locks and in a transaction. This will only be
+@@ -1005,8 +1004,7 @@ static int gfs2_unlink_ok(struct gfs2_inode *dip, const struct qstr *name,
+  */
  
- void gfs2_gl_hash_clear(struct gfs2_sbd *sdp)
+ static int gfs2_unlink_inode(struct gfs2_inode *dip,
+-			     const struct dentry *dentry,
+-			     struct buffer_head *bh)
++			     const struct dentry *dentry)
  {
-+	set_bit(SDF_SKIP_DLM_UNLOCK, &sdp->sd_flags);
- 	glock_hash_walk(clear_glock, sdp);
- 	flush_workqueue(glock_workqueue);
- 	wait_event(sdp->sd_glock_wait, atomic_read(&sdp->sd_glock_disposal) == 0);
-diff --git a/fs/gfs2/incore.h b/fs/gfs2/incore.h
-index a46f034..a35ef5c 100644
---- a/fs/gfs2/incore.h
-+++ b/fs/gfs2/incore.h
-@@ -539,6 +539,7 @@ enum {
- 	SDF_DEMOTE		= 5,
- 	SDF_NOJOURNALID		= 6,
- 	SDF_RORECOVERY		= 7, /* read only recovery */
-+	SDF_SKIP_DLM_UNLOCK	= 8,
- };
+ 	struct inode *inode = dentry->d_inode;
+ 	struct gfs2_inode *ip = GFS2_I(inode);
+@@ -1046,7 +1044,6 @@ static int gfs2_unlink(struct inode *dir, struct dentry *dentry)
+ 	struct gfs2_sbd *sdp = GFS2_SB(dir);
+ 	struct inode *inode = dentry->d_inode;
+ 	struct gfs2_inode *ip = GFS2_I(inode);
+-	struct buffer_head *bh;
+ 	struct gfs2_holder ghs[3];
+ 	struct gfs2_rgrpd *rgd;
+ 	int error;
+@@ -1095,14 +1092,9 @@ static int gfs2_unlink(struct inode *dir, struct dentry *dentry)
  
- #define GFS2_FSNAME_LEN		256
-diff --git a/fs/gfs2/lock_dlm.c b/fs/gfs2/lock_dlm.c
-index 0fb6539..f6504d3 100644
---- a/fs/gfs2/lock_dlm.c
-+++ b/fs/gfs2/lock_dlm.c
-@@ -289,6 +289,14 @@ static void gdlm_put_lock(struct gfs2_glock *gl)
- 	gfs2_glstats_inc(gl, GFS2_LKS_DCOUNT);
- 	gfs2_sbstats_inc(gl, GFS2_LKS_DCOUNT);
- 	gfs2_update_request_times(gl);
-+
-+	/* don't want to skip dlm_unlock writing the lvb when lock is ex */
-+	if (test_bit(SDF_SKIP_DLM_UNLOCK, &sdp->sd_flags) &&
-+	    gl->gl_state != LM_ST_EXCLUSIVE) {
-+		gfs2_glock_free(gl);
-+		return;
-+	}
-+
- 	error = dlm_unlock(ls->ls_dlm, gl->gl_lksb.sb_lkid, DLM_LKF_VALBLK,
- 			   NULL, gl);
- 	if (error) {
+ 	error = gfs2_trans_begin(sdp, 2*RES_DINODE + 3*RES_LEAF + RES_RG_BIT, 0);
+ 	if (error)
+-		goto out_gunlock;
+-
+-	error = gfs2_meta_inode_buffer(ip, &bh);
+-	if (error)
+ 		goto out_end_trans;
+ 
+-	error = gfs2_unlink_inode(dip, dentry, bh);
+-	brelse(bh);
++	error = gfs2_unlink_inode(dip, dentry);
+ 
+ out_end_trans:
+ 	gfs2_trans_end(sdp);
+@@ -1402,14 +1394,8 @@ static int gfs2_rename(struct inode *odir, struct dentry *odentry,
+ 
+ 	/* Remove the target file, if it exists */
+ 
+-	if (nip) {
+-		struct buffer_head *bh;
+-		error = gfs2_meta_inode_buffer(nip, &bh);
+-		if (error)
+-			goto out_end_trans;
+-		error = gfs2_unlink_inode(ndip, ndentry, bh);
+-		brelse(bh);
+-	}
++	if (nip)
++		error = gfs2_unlink_inode(ndip, ndentry);
+ 
+ 	if (dir_rename) {
+ 		error = gfs2_dir_mvino(ip, &gfs2_qdotdot, ndip, DT_DIR);
 -- 
 1.7.4
 
