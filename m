@@ -1,55 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755544Ab2K3GQw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 01:16:52 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:62304 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755460Ab2K3GQv (ORCPT
+	id S1755660Ab2K3GSu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 01:18:50 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:24359 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751259Ab2K3GSt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 01:16:51 -0500
-Message-ID: <50B84F4E.20809@ozlabs.ru>
-Date: Fri, 30 Nov 2012 17:16:46 +1100
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Fri, 30 Nov 2012 01:18:49 -0500
+Date: Fri, 30 Nov 2012 14:17:14 +0800
+From: Liu Bo <bo.li.liu@oracle.com>
+To: Filipe Brandenburger <filbranden@google.com>
+Cc: Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Btrfs: fix permissions of empty files not affected
+ by umask
+Message-ID: <20121130061714.GA2613@liubo.cn.oracle.com>
+Reply-To: bo.li.liu@oracle.com
+References: <1354246809-32339-1-git-send-email-filbranden@google.com>
+ <1354246809-32339-2-git-send-email-filbranden@google.com>
 MIME-Version: 1.0
-To: Alex Williamson <alex.williamson@redhat.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org,
-        David Gibson <david@gibson.dropbear.id.au>
-Subject: Re: [PATCH] vfio powerpc: enabled on powernv platform
-References: <1354138245.1809.226.camel@bling.home>  <1354161225-23118-1-git-send-email-aik@ozlabs.ru> <1354162826.1809.241.camel@bling.home>
-In-Reply-To: <1354162826.1809.241.camel@bling.home>
-Content-Type: text/plain; charset=KOI8-R; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354246809-32339-2-git-send-email-filbranden@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/11/12 15:20, Alex Williamson wrote:
+On Thu, Nov 29, 2012 at 07:40:08PM -0800, Filipe Brandenburger wrote:
+> When a new file is created with btrfs_create(), the inode will initially be
+> created with permissions 0666 and later on in btrfs_init_acl() it will be
+> adapted to mask out the umask bits. The problem is that this change won't make
+> it into the btrfs_inode unless there's another change to the inode (e.g. writing
+> content changing the size or touching the file changing the mtime.)
+> 
+> This fix adds a call to btrfs_update_inode() to btrfs_create() to make sure that
+> the change will not get lost if the in-memory inode is flushed before other
+> changes are made to the file.
+> 
 
->> +	/* Put tces to the table */
->> +	for (i = 0; (i < pages) && !ret; ++i, tce += IOMMU_PAGE_SIZE) {
->> +		ret = put_tce(tbl, entry + i, tce, direction);
->> +		/*
->> +		 * As IOMMU page size is always 4K, the system page size
->> +		 * can be 64K and there is no special tracking for IOMMU pages,
->> +		 * we only do rlimit check/update for the very first
->> +		 * 4K IOMMUpage within 64K system page.
->> +		 */
->> +		if (!(tce & ~PAGE_MASK))
->> +			++retpages;
->
-> Ah, here's the comment I was looking for, though I'm still not sure
-> about the read/write bits.
->
-> Isn't there an exploit here that a user can lock pages beyond their
-> limits if they just skip mapping the first 4k of each page?  Thanks,
+Looks good to me.
 
+Reviewed-by: Liu Bo <bo.li.liu@oracle.com>
 
-Heh. True. Posted another patch with 4K pages per system page usage tracking.
+thanks,
+liubo
 
-
-
--- 
-Alexey
+> Signed-off-by: Filipe Brandenburger <filbranden@google.com>
+> ---
+>  fs/btrfs/inode.c | 6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+> index 95542a1..caf9d76 100644
+> --- a/fs/btrfs/inode.c
+> +++ b/fs/btrfs/inode.c
+> @@ -4996,6 +4996,12 @@ static int btrfs_create(struct inode *dir, struct dentry *dentry,
+>  		goto out_unlock;
+>  	}
+>  
+> +	err = btrfs_update_inode(trans, root, inode);
+> +	if (err) {
+> +		drop_inode = 1;
+> +		goto out_unlock;
+> +	}
+> +
+>  	/*
+>  	* If the active LSM wants to access the inode during
+>  	* d_instantiate it needs these. Smack checks to see
+> -- 
+> 1.7.11.7
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
