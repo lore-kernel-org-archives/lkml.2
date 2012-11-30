@@ -1,72 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993454Ab2K3T0w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:26:52 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58245 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992641Ab2K3S4P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:56:15 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Michel Lespinasse <walken@google.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 19/56] PARISC: fix virtual aliasing issue in get_shared_area()
-Date: Fri, 30 Nov 2012 10:55:11 -0800
-Message-Id: <20121130185120.254372123@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121130185118.302752929@linuxfoundation.org>
-References: <20121130185118.302752929@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1769216Ab2K3T1E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:27:04 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36114 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2993456Ab2K3T1A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 14:27:00 -0500
+Date: Fri, 30 Nov 2012 11:26:47 -0800
+From: tip-bot for Vincent Palatin <vpalatin@chromium.org>
+Message-ID: <tip-c9370d1039848a813a63c3fd44b6e4833a78246a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        olofj@chromium.org, dlaurie@chromium.org, vpalatin@chromium.org,
+        tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        olofj@chromium.org, vpalatin@chromium.org, dlaurie@chromium.org,
+        tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1354301523-5252-2-git-send-email-vpalatin@chromium.org>
+References: <1354301523-5252-2-git-send-email-vpalatin@chromium.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, fpu: Avoid FPU lazy restore after suspend
+Git-Commit-ID: c9370d1039848a813a63c3fd44b6e4833a78246a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 30 Nov 2012 11:26:53 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+Commit-ID:  c9370d1039848a813a63c3fd44b6e4833a78246a
+Gitweb:     http://git.kernel.org/tip/c9370d1039848a813a63c3fd44b6e4833a78246a
+Author:     Vincent Palatin <vpalatin@chromium.org>
+AuthorDate: Fri, 30 Nov 2012 10:52:03 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 30 Nov 2012 10:58:14 -0800
 
-------------------
+x86, fpu: Avoid FPU lazy restore after suspend
 
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
+When a cpu enters S3 state, the FPU state is lost.
+After resuming for S3, if we try to lazy restore the FPU for a process running
+on the same CPU, this will result in a corrupted FPU context.
 
-commit 949a05d03490e39e773e8652ccab9157e6f595b4 upstream.
+We can just invalidate the "fpu_owner_task", so nobody will try to
+lazy restore a state which no longer exists in the hardware.
 
-On Thu, 2012-11-01 at 16:45 -0700, Michel Lespinasse wrote:
-> Looking at the arch/parisc/kernel/sys_parisc.c implementation of
-> get_shared_area(), I do have a concern though. The function basically
-> ignores the pgoff argument, so that if one creates a shared mapping of
-> pages 0-N of a file, and then a separate shared mapping of pages 1-N
-> of that same file, both will have the same cache offset for their
-> starting address.
->
-> This looks like this would create obvious aliasing issues. Am I
-> misreading this ? I can't understand how this could work good enough
-> to be undetected, so there must be something I'm missing here ???
+Tested with a 64-bit kernel on a 4-core Ivybridge CPU with eagerfpu=off,
+by doing thousands of suspend/resume cycles with 4 processes doing FPU
+operations running. Without the patch, a process is killed after a
+few hundreds cycles by a SIGFPE.
 
-This turns out to be correct and we need to pay attention to the pgoff as
-well as the address when creating the virtual address for the area.
-Fortunately, the bug is rarely triggered as most applications which use pgoff
-tend to use large values (git being the primary one, and it uses pgoff in
-multiples of 16MB) which are larger than our cache coherency modulus, so the
-problem isn't often seen in practise.
+The issue seems to exist since 3.4 (after the FPU lazy restore was actually implemented),
+to apply the change to 3.4, "this_cpu_write" needs to be replaced by percpu_write.
 
-Reported-by: Michel Lespinasse <walken@google.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Cc: Duncan Laurie <dlaurie@chromium.org>
+Cc: Olof Johansson <olofj@chromium.org>
+Cc: <stable@kernel.org> [v3.4+] # for 3.4 need to replace this_cpu_write by percpu_write
+Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
+Link: http://lkml.kernel.org/r/1354301523-5252-2-git-send-email-vpalatin@chromium.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/parisc/kernel/sys_parisc.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/x86/kernel/smpboot.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/arch/parisc/kernel/sys_parisc.c
-+++ b/arch/parisc/kernel/sys_parisc.c
-@@ -73,6 +73,8 @@ static unsigned long get_shared_area(str
- 	struct vm_area_struct *vma;
- 	int offset = mapping ? get_offset(mapping) : 0;
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index c80a33b..7610c58 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -68,6 +68,8 @@
+ #include <asm/mwait.h>
+ #include <asm/apic.h>
+ #include <asm/io_apic.h>
++#include <asm/i387.h>
++#include <asm/fpu-internal.h>
+ #include <asm/setup.h>
+ #include <asm/uv/uv.h>
+ #include <linux/mc146818rtc.h>
+@@ -1230,6 +1232,9 @@ int native_cpu_disable(void)
+ 	clear_local_APIC();
  
-+	offset = (offset + (pgoff << PAGE_SHIFT)) & 0x3FF000;
+ 	cpu_disable_common();
 +
- 	addr = DCACHE_ALIGN(addr - offset) + offset;
++	/* the FPU context will be lost, nobody owns it */
++	this_cpu_write(fpu_owner_task, NULL);
+ 	return 0;
+ }
  
- 	for (vma = find_vma(current->mm, addr); ; vma = vma->vm_next) {
-
-
