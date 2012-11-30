@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755616Ab2K3CLq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 21:11:46 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:44176 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753467Ab2K3CLp (ORCPT
+	id S1755748Ab2K3CNF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 21:13:05 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:62737 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755042Ab2K3CNC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 21:11:45 -0500
-X-Sasl-enc: TxmMvUf99zioz4kVGMgOoBSHc9FGw1MgGHQMvLq+un5x 1354241504
-Date: Thu, 29 Nov 2012 18:11:43 -0800
-From: Greg KH <greg@kroah.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Nitin Gupta <ngupta@vflare.org>, Jerome Marchand <jmarchan@redhat.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Sam Hansen <solid.se7en@gmail.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] zram: fix invalid memory references during disk write
-Message-ID: <20121130021143.GC2056@kroah.com>
-References: <1354180728-1958-1-git-send-email-ngupta@vflare.org>
- <20121130003609.GA18630@blaptop>
+	Thu, 29 Nov 2012 21:13:02 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121130003609.GA18630@blaptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121129163448.GA3761@sirena.org.uk>
+References: <1354165536-18529-1-git-send-email-ch.naveen@samsung.com>
+	<1354165536-18529-3-git-send-email-ch.naveen@samsung.com>
+	<20121129163448.GA3761@sirena.org.uk>
+Date: Thu, 29 Nov 2012 18:13:01 -0800
+X-Google-Sender-Auth: VprkVF4JFB4AgtZnXBnSQO1KTLY
+Message-ID: <CAPnjgZ0atD3k=gT0vjgkLO_SA8DMak6SiT6nZ_2T6WFqtK0szQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] i2c-s3c2410: Add bus arbitration implementation
+From: Simon Glass <sjg@chromium.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-i2c@vger.kernel.org,
+        grundler@chromium.org, naveen@chromium.org, w.sang@pengutronix.de,
+        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 30, 2012 at 09:36:09AM +0900, Minchan Kim wrote:
-> Hi Greg,
-> 
-> I would like to tidy zram_bvec_write up but it needs more churn
-> than needed to fix this bug and makes review hard. So I want you to pick up
-> this patch asap because it's a candidate of stable.
++Olof
 
-It is?  How come no one said that in the patch itself?  Please read
-Documentation/stable_kernel_rules.txt for how to properly include a
-patch into the stable tree.
+On Thu, Nov 29, 2012 at 8:34 AM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Thu, Nov 29, 2012 at 10:35:35AM +0530, Naveen Krishna Chatradhi wrote:
+>
+>> The arbitrator is a general purpose function which uses two GPIOs to
+>> communicate with another device to claim/release a bus. We use it to
+>> arbitrate an i2c port between the AP and the EC.
+>
+> Should this not be layerd on top of the I2C controller rather than part
+> of the controller driver?  It doesn't seem terribly controller specific.
 
-What stable trees should it go to?
+It was originally done separately but I think it was felt that this
+was overly complex. Olof can you please comment on this?
 
-thanks,
-
-greg k-h
+Regards,
+Simon
