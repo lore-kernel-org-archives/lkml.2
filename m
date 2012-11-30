@@ -1,103 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932973Ab2K3Nm3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 08:42:29 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:35800 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932959Ab2K3NmY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 08:42:24 -0500
-Date: Fri, 30 Nov 2012 05:42:13 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jeff Chua <jeff.chua.linux@gmail.com>, Jens Axboe <axboe@kernel.dk>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 1/2] percpu-rwsem: use synchronize_sched_expedited
-Message-ID: <20121130134213.GI2474@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <50AF7901.20401@kernel.dk>
- <CAAJw_ZvXGKcjfOAS_tRdXJ9SjpCKw1t7rNt+Q=ieCkVJwN2qcg@mail.gmail.com>
- <Pine.LNX.4.64.1211241555470.4300@file.rdu.redhat.com>
- <CAAJw_ZvUqRmCCQ5-2PdFPRyfdzZMuphGU=hgAjUOHGk=n9Mheg@mail.gmail.com>
- <CAAJw_ZuJXnAz1ukBwQa3xNbQaL1KUBSrbQMK2hn-7D6Ar1p3fQ@mail.gmail.com>
- <50B46E05.70906@kernel.dk>
- <CAAJw_ZsYuLCwCTc6U=ELO_PvyjnVKQdkPke2enfzm6zOeWAqjA@mail.gmail.com>
- <Pine.LNX.4.64.1211272257140.18338@file.rdu.redhat.com>
- <20121129160607.06a063bb.akpm@linux-foundation.org>
- <Pine.LNX.4.64.1211292149550.14890@file.rdu.redhat.com>
+	id S932994Ab2K3Nmk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 08:42:40 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:50647 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932959Ab2K3Nmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 08:42:36 -0500
+Date: Fri, 30 Nov 2012 14:42:32 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Lance Ortiz <lance.ortiz@hp.com>, bhelgaas@google.com,
+        lance_ortiz@hotmail.com, jiang.liu@huawei.com, tony.luck@intel.com,
+        mchehab@redhat.com, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] aerdrv: Trace Event for AER
+Message-ID: <20121130134232.GD6869@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Lance Ortiz <lance.ortiz@hp.com>, bhelgaas@google.com,
+	lance_ortiz@hotmail.com, jiang.liu@huawei.com, tony.luck@intel.com,
+	mchehab@redhat.com, linux-acpi@vger.kernel.org,
+	linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20121129215443.5483.43364.stgit@grignak.americas.hpqcorp.net>
+ <1354240279.6276.131.camel@gandalf.local.home>
+ <20121130105311.GA6869@liondog.tnic>
+ <1354275551.6276.140.camel@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1211292149550.14890@file.rdu.redhat.com>
+In-Reply-To: <1354275551.6276.140.camel@gandalf.local.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12113013-5406-0000-0000-0000028C7F34
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 10:00:53PM -0500, Mikulas Patocka wrote:
-> On Thu, 29 Nov 2012, Andrew Morton wrote:
-> > On Tue, 27 Nov 2012 22:59:52 -0500 (EST)
-> > Mikulas Patocka <mpatocka@redhat.com> wrote:
-> > 
-> > > percpu-rwsem: use synchronize_sched_expedited
+On Fri, Nov 30, 2012 at 06:39:11AM -0500, Steven Rostedt wrote:
+> On Fri, 2012-11-30 at 11:53 +0100, Borislav Petkov wrote:
+> > On Thu, Nov 29, 2012 at 08:51:19PM -0500, Steven Rostedt wrote:
+> > > >  include/ras/aer_event.h |   77 +++++++++++++++++++++++++++++++++++++++++++++++
 > > > 
-> > > Use synchronize_sched_expedited() instead of synchronize_sched()
-> > > to improve mount speed.
+> > > Is there a reason this header is here? Egad, I never noticed the
+> > > ras_event.h that is there. This include/ras directory was created for
+> > > the sole purpose of trace events! This is not the way to do this.
+> > 
+> > Well, the idea for the ras event was to be able to use it in multiple
+> > places. It is currently used only by EDAC but it could be that memory
+> > errors could be reported by other agents which would reuse that TP.
+> > 
+> 
+> If it's generic, then place it into the include/trace/events directory,
+> the you don't need to have the TRACE_INCLUDE_PATH as that is the default
+> path the macros will use.
+
+Hmm, so I'm thinking maybe we should add a ras.h header there which
+contains all RAS TPs.
+
+> > > Please look at the sample in samples/trace_events/
 > > > 
-> > > This patch improves mount time from 0.500s to 0.013s.
+> > > The proper way is to keep the header by the driver. Then you can simply
+> > > include the header with "aer_event.h".
 > > > 
-> > > Note: if realtime people complain about the use
-> > > synchronize_sched_expedited() and synchronize_rcu_expedited(), I suggest
-> > > that they introduce an option CONFIG_REALTIME or
-> > > /proc/sys/kernel/realtime and turn off these *_expedited functions if
-> > > the option is enabled (i.e. turn synchronize_sched_expedited into
-> > > synchronize_sched and synchronize_rcu_expedited into synchronize_rcu).
+> > > But to have the macro magic work, you need to modify the Makefile to
+> > > have something like:
 > > > 
-> > > Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+> > > CFLAGS_aerdrv_errprint.o = -I$(src)
 > > 
-> > So I read through this thread but I really didn't see a clear
-> > description of why mount() got slower.  The changelog for 4b05a1c74d1
-> > is spectacularly awful :(
-> > 
-> > 
-> > Apparently the slowdown occurred because a blockdev mount patch
-> > 62ac665ff9fc07497ca524 ("blockdev: turn a rw semaphore into a percpu rw
-> > semaphore") newly uses percpu rwsems, and percpu rwsems are slow on the
-> > down_write() path.
-> > 
-> > And using synchronize_sched_expedited() rather than synchronize_sched()
-> > makes percpu_down_write() somewhat less slow.  Correct?
+> > So I'm guessing that every .c file including the TP should also -I
+> > include the TP definition header wherever it is. Is that agreeable?
 > 
-> Yes.
-> 
-> > Why is it OK to use synchronize_sched_expedited() here?  If it's
-> > faster, why can't we use synchronize_sched_expedited() everywhere and
-> > zap synchronize_sched()?
-> 
-> Because synchronize_sched_expedited sends interrupts to all processors and 
-> it is bad for realtime workloads.
-> 
-> Peter Zijlstra once complained when I used synchronize_rcu_expedited in 
-> bdi_remove_from_list (but he left it there).
-> 
-> I suggest that if it really hurts real time response for someone, let they 
-> introduce a switch to turn it into non-expedited call.
+> You only need the -I$(src) for the .c file that uses the
+> CREATE_TRACE_POINTS macro, as the trace point macro magic headers
+> require it to find the TP header.
 
-Once Frederic's adaptive-ticks work reaches mainline, it will be possible
-to avoid the IPIs to CPUs that are executing in user mode, in addition to
-the current code's avoiding sending IPIs to CPUs that are idle.  That said,
-it will still be necessary to send IPIs to CPUs that are executing in
-the kernel.
+This is done like this from EDAC's single usage site:
 
-So things will get better, but won't be perfect.  Sort of like this was
-real life or something.  ;-)
+#define CREATE_TRACE_POINTS
+#define TRACE_INCLUDE_PATH ../../include/ras
+#include <ras/ras_event.h>
 
-							Thanx, Paul
+This is in <drivers/edac/edac_mc.c> and it doesn't to "-I$(src)" in the
+edac Makefile.
 
+> Other files just need "foo.h", or <trace/events/foo.h> if it's in the
+> generic location.
+
+So, it sounds to me like we should we move all RAS-specific tracepoints
+to <trace/events/ras.h> and then in each usage site do:
+
+#define CREATE_TRACE_POINTS
+#include <trace/events/ras.h>
+
+Correct?
+
+FWIW, it looks neat and clean to me that way.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
