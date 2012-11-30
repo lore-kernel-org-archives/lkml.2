@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755626Ab2K3Bxw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 20:53:52 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9914 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755285Ab2K3Bxt (ORCPT
+	id S1755719Ab2K3ByJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 20:54:09 -0500
+Received: from smtp.cim.mcgill.ca ([132.206.73.2]:40496 "EHLO
+	orford.cim.mcgill.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755436Ab2K3ByF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 20:53:49 -0500
-X-Authority-Analysis: v=2.0 cv=EshQXFgA c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=4gJ6l1g9Zg8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=D-SQa_yzUHkA:10 a=zFBsKnK20XNvy2LhON8A:9 a=PUjeQqilurYA:10 a=-lNqdChQBFne4Esp:21 a=iyFjtaJlwE_U-uTh:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1354240427.6276.134.camel@gandalf.local.home>
-Subject: Re: [PATCH 2/3] aerdrv: Enhanced AER logging
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Lance Ortiz <lance.ortiz@hp.com>
-Cc: bhelgaas@google.com, lance_ortiz@hotmail.com, jiang.liu@huawei.com,
-        tony.luck@intel.com, bp@alien8.de, mchehab@redhat.com,
-        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 29 Nov 2012 20:53:47 -0500
-In-Reply-To: <20121129215450.5483.26562.stgit@grignak.americas.hpqcorp.net>
-References: <20121129215443.5483.43364.stgit@grignak.americas.hpqcorp.net>
-	 <20121129215450.5483.26562.stgit@grignak.americas.hpqcorp.net>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.3-1 
-Mime-Version: 1.0
+	Thu, 29 Nov 2012 20:54:05 -0500
+Message-ID: <50B811BA.6070503@cim.mcgill.ca>
+Date: Thu, 29 Nov 2012 17:54:02 -0800
+From: Patrick McLean <patrick@cim.mcgill.ca>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Patrick McLean <patrickm@gaikai.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-nfs@vger.kernel.org
+Subject: Re: Regression with initramfs and nfsroot (appears to be in the dcache)
+References: <CAE2NFgU+4QDcLaVE5dKDvZCxey7qEf7FAbYNjNmcjVU=HLhF=A@mail.gmail.com> <20121129213316.GU4939@ZenIV.linux.org.uk> <CAE2NFgWCnmgSCsw7MzRkqBLTHgRDG-FvKKcbTHN6UqePK6Ef+Q@mail.gmail.com> <20121129222109.GW4939@ZenIV.linux.org.uk> <50B7E759.9070007@gaikai.com> <20121129234326.GX4939@ZenIV.linux.org.uk> <50B7FBA7.2030300@gaikai.com> <20121130003502.GY4939@ZenIV.linux.org.uk> <50B8046F.7030308@cim.mcgill.ca> <20121130013628.GZ4939@ZenIV.linux.org.uk>
+In-Reply-To: <20121130013628.GZ4939@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-11-29 at 14:54 -0700, Lance Ortiz wrote:
+On 29/11/12 05:36 PM, Al Viro wrote:
+> On Thu, Nov 29, 2012 at 04:57:19PM -0800, Patrick McLean wrote:
+>>> Interesting...  Server-side that should've been produced by
+>>> encode_entryplus_baggage(), which looks like failing compose_entry_fh()...
+>>> which has explicit
+>>>         if (d_mountpoint(dchild))
+>>>                 goto out;
+>>> resulting in ENOENT on everything that's overmounted on server.
+>>>
+>>> Do you, by any chance, have the server really exporting its own root
+>>> filesystem?  Another thing to check: have nfs_prime_dcache() print
+>>> filename.name of everything that fails nfs_same_entry() and has
+>>> zero entry->fh->size, regardless of d_invalidate() results.
+>>
+>> The server is running 3.6.6 and is just exporting a subdir of an xfs filesystem (which does not happen to be the root filesystem).
+>>
+>> The client is running as a KVM guest on the machine that is serving the NFS. I am reproducing this by booting the guest via an initramfs, and doing
+>> "ls /" at in single user mode.
+>>
+>> I added a check that prints the filename.name of everything that fails nfs_same_file, and it appears to just be triggered by the same filesystems that
+>> are triggering the WARN_ON, the relevant dmesg is below.
+> 
+> [the same /dev, /proc and /sys]
+> 
+> 	Very interesting.  Do you have anything mounted on the corresponding
+> directories on server?  The picture looks like you are getting empty
+> fhandles in readdir+ respons for exactly the same directories that happen
+> to be mountpoints on client.  In any case, we shouldn't do that blind
+> d_drop() - empty fhandles can happen.  The only remaining question is
+> why do they happen on that set of entries.  From my reading of
+> encode_entryplus_baggage() it looks like we have compose_entry_fh()
+> failing for those entries and those entries alone.  One possible cause
+> would be d_mountpoint(dchild) being true on server.  If it is true, we
+> can declare the case closed; if not, I really wonder what's going on.
 
-> --- a/drivers/pci/pcie/aer/aerdrv_errprint.c
-> +++ b/drivers/pci/pcie/aer/aerdrv_errprint.c
-> @@ -23,6 +23,10 @@
->  
->  #include "aerdrv.h"
->  
-> +#define CREATE_TRACE_POINTS
-> +#define TRACE_INCLUDE_PATH ../../../../include/ras
-> +#include <ras/aer_event.h>
-> +
+Those directories do have the server's own copies of the said directories bind mounted at the moment in a separate mount namespace.
 
-Yuck yuck yuck!
+Unmounting those directories on the server does appear to stop the WARN_ON from triggering.
 
-This header should be in the same directory, and you should have in that
-same header:
-
-#undef TRACE_INCLUDE_PATH
-#define TRACE_INCLUDE_PATH .
-
-and remove the definition here.
-
--- Steve
-
->  #define AER_AGENT_RECEIVER		0
->  #define AER_AGENT_REQUESTER		1
->  #define AER_AGENT_COMPLETER		2
-> @@ -194,6 +198,8 @@ void aer_print_error(struct pci_dev *dev, struct aer_err_info *info)
->  	if (info->id && info->error_dev_num > 1 && info->id == id)
->  		printk("%s""  Error of this Agent(%04x) is reported first\n",
->  			prefix, id);
-> +	trace_aer_event(dev_name(&dev->dev), (info->status & ~info->mask),
-> +			info->severity);
->  }
->  
-
-
+> Note that if the same fs is mounted elsewhere, d_mountpoint() would mean
+> that something is mounted on top of that directory in _some_ instance;
+> not necessary the exported one.  Can you slap printks on fs/nfsd/nfs3xdr.c
+> compose_entry_fh() failure exits and see which one triggers server-side?
