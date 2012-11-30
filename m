@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993396Ab2K3TMO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:12:14 -0500
-Received: from mail.kernel.org ([198.145.19.201]:59542 "EHLO mail.kernel.org"
+	id S2992966Ab2K3TCO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:02:14 -0500
+Received: from mail.kernel.org ([198.145.19.201]:59439 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992968Ab2K3TCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 14:02:16 -0500
+	id S2992927Ab2K3TCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 14:02:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 06/54] iwlwifi: dont WARN when a non empty queue is disabled
-Date: Fri, 30 Nov 2012 10:55:37 -0800
-Message-Id: <20121130185208.531458071@linuxfoundation.org>
+        "George Spelvin" <linux@horizon.com>, NeilBrown <neilb@suse.de>
+Subject: [ 22/54] md/raid10: decrement correct pending counter when writing to replacement.
+Date: Fri, 30 Nov 2012 10:55:53 -0800
+Message-Id: <20121130185210.133297767@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185207.894301294@linuxfoundation.org>
 References: <20121130185207.894301294@linuxfoundation.org>
@@ -26,42 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: NeilBrown <neilb@suse.de>
 
-commit e1b69fdf33f63cfa600b992172d7376f9d9ef2e9 upstream.
+commit 884162df2aadd7414bef4935e1a54976fd4e3988 upstream.
 
-This can happen when we shut down suddenly an interface.
+When a write to a replacement device completes, we carefully
+and correctly found the rdev that the write actually went to
+and the blithely called rdev_dec_pending on the primary rdev,
+even if this write was to the replacement.
 
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+This means that any writes to an array while a replacement
+was ongoing would cause the nr_pending count for the primary
+device to go negative, so it could never be removed.
+
+This bug has been present since replacement was introduced in
+3.3, so it is suitable for any -stable kernel since then.
+
+Reported-by: "George Spelvin" <linux@horizon.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/pcie/tx.c |    8 --------
- 1 file changed, 8 deletions(-)
+ drivers/md/raid10.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/iwlwifi/pcie/tx.c
-+++ b/drivers/net/wireless/iwlwifi/pcie/tx.c
-@@ -480,20 +480,12 @@ void iwl_trans_pcie_txq_enable(struct iw
- void iwl_trans_pcie_txq_disable(struct iwl_trans *trans, int txq_id)
- {
- 	struct iwl_trans_pcie *trans_pcie = IWL_TRANS_GET_PCIE_TRANS(trans);
--	u16 rd_ptr, wr_ptr;
--	int n_bd = trans_pcie->txq[txq_id].q.n_bd;
- 
- 	if (!test_and_clear_bit(txq_id, trans_pcie->queue_used)) {
- 		WARN_ONCE(1, "queue %d not used", txq_id);
- 		return;
- 	}
- 
--	rd_ptr = iwl_read_prph(trans, SCD_QUEUE_RDPTR(txq_id)) & (n_bd - 1);
--	wr_ptr = iwl_read_prph(trans, SCD_QUEUE_WRPTR(txq_id));
--
--	WARN_ONCE(rd_ptr != wr_ptr, "queue %d isn't empty: [%d,%d]",
--		  txq_id, rd_ptr, wr_ptr);
--
- 	iwl_txq_set_inactive(trans, txq_id);
- 	IWL_DEBUG_TX_QUEUES(trans, "Deactivate queue %d\n", txq_id);
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -499,7 +499,7 @@ static void raid10_end_write_request(str
+ 	 */
+ 	one_write_done(r10_bio);
+ 	if (dec_rdev)
+-		rdev_dec_pending(conf->mirrors[dev].rdev, conf->mddev);
++		rdev_dec_pending(rdev, conf->mddev);
  }
+ 
+ /*
 
 
