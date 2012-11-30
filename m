@@ -1,44 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753986Ab2K3Fcb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 00:32:31 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:44346 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753899Ab2K3Fca (ORCPT
+	id S1754159Ab2K3FkT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 00:40:19 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52606 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753996Ab2K3FkR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 00:32:30 -0500
-Message-ID: <50B844DC.308@gmail.com>
-Date: Fri, 30 Nov 2012 11:02:12 +0530
+	Fri, 30 Nov 2012 00:40:17 -0500
+Message-ID: <50B846B2.9040700@gmail.com>
+Date: Fri, 30 Nov 2012 11:10:02 +0530
 From: Abhijit Pawar <abhi.c.pawar@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Abhijit Pawar <abhi.c.pawar@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] fs:sysfs pass NULL as second parameter for set_anon_super
-References: <1354170945-12211-1-git-send-email-abhi.c.pawar@gmail.com> <20121129153639.GA6639@kroah.com>
-In-Reply-To: <20121129153639.GA6639@kroah.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Abhijit Pawar <abhi.c.pawar@gmail.com>, linux-fsdevel@vger.kernel.org,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: Re: [RESEND PATCH] fs/super.c set_anon_super calling optimization
+References: <CA+kxV1F5VxBGawhkV=02LcgHNWiKF-H_k6N-d1TEYNeFAScezg@mail.gmail.com> <508924AB.4060902@gmail.com> <20121026131441.GA22256@andromeda.usersys.redhat.com> <20121130040556.GD4939@ZenIV.linux.org.uk>
+In-Reply-To: <20121130040556.GD4939@ZenIV.linux.org.uk>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2012 09:06 PM, Greg Kroah-Hartman wrote:
-> On Thu, Nov 29, 2012 at 12:05:45PM +0530, Abhijit Pawar wrote:
->> set_anon_super does not use the second parameter in its implementation.
->> So there is no need to pass on the second parameter.
+On 11/30/2012 09:35 AM, Al Viro wrote:
+> On Fri, Oct 26, 2012 at 11:14:41AM -0200, Carlos Maiolino wrote:
+>> Hi,
+>>
+>> On Thu, Oct 25, 2012 at 05:08:19PM +0530, Abhijit Pawar wrote:
+>>> Hi,
+>>> set_anon_super is called by many filesystems. Some call directly and
+>>> some call through the wrapper. Many of them in the wrapper's call to
+>>> this function are passing the second argument to this function which
+>>> is not used anywhere.
+>>>
+>>> This patch replaces the second variable with NULL.
+>>>
+>>
+>> If the variable isn't used anymore, why don't just get rid of it, instead of
+>> call the function passing a NULL pointer on it?
 > 
-> Why not just remove the second parameter from the call then?
+> 	Because we want it to be a valid sget() callback.  I doubt that this
+> optimization is worth doing, though - might even micro-pessimize the things
+> on architectures where all arguments are passed in registers.
 > 
-> thanks,
-> 
-> greg k-h
-> 
-
-This is used as a callback function. So changing the signature will
-affect many other filesystems who use the default function rather than
-the overridden one.
-
+Al,
+Yes. it will be helpful in registers case.
 
 -- 
 -
