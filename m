@@ -1,61 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758700Ab2K3Qxw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 11:53:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34700 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758648Ab2K3Qxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 11:53:50 -0500
-Date: Fri, 30 Nov 2012 17:53:47 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: azurIt <azurit@pobox.sk>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups mailinglist <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH for 3.2.34] memcg: do not trigger OOM from
- add_to_page_cache_locked
-Message-ID: <20121130165347.GO29317@dhcp22.suse.cz>
-References: <20121126132149.GD17860@dhcp22.suse.cz>
- <20121130032918.59B3F780@pobox.sk>
- <20121130124506.GH29317@dhcp22.suse.cz>
- <20121130144427.51A09169@pobox.sk>
- <20121130144431.GI29317@dhcp22.suse.cz>
- <20121130160811.6BB25BDD@pobox.sk>
- <20121130153942.GL29317@dhcp22.suse.cz>
- <20121130165937.F9564EBE@pobox.sk>
- <20121130161923.GN29317@dhcp22.suse.cz>
- <20121130172651.B6917602@pobox.sk>
+	id S1758724Ab2K3QzP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 11:55:15 -0500
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:53242 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758648Ab2K3QzM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 11:55:12 -0500
+Message-ID: <50B8E4E6.2040901@xenotime.net>
+Date: Fri, 30 Nov 2012 08:55:02 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121130172651.B6917602@pobox.sk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paul Moore <paul@paul-moore.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        linux-security-module@vger.kernel.org
+Subject: Re: linux-next: Tree for Nov 29 (netlabel)
+References: <20121129174057.99da02b15426c76054d05592@canb.auug.org.au> <50B7F846.70202@infradead.org> <3694027.VYznNcdp7C@sifl> <2664553.2TRaVqlkGg@sifl>
+In-Reply-To: <2664553.2TRaVqlkGg@sifl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 30-11-12 17:26:51, azurIt wrote:
-> >Could you also post your complete containers configuration, maybe there
-> >is something strange in there (basically grep . -r YOUR_CGROUP_MNT
-> >except for tasks files which are of no use right now).
-> 
-> 
-> Here it is:
-> http://www.watchdog.sk/lkml/cgroups.gz
+On 11/30/2012 07:31 AM, Paul Moore wrote:
 
-The only strange thing I noticed is that some groups have 0 limit. Is
-this intentional?
-grep memory.limit_in_bytes cgroups | grep -v uid | sed 's@.*/@@' | sort | uniq -c
-      3 memory.limit_in_bytes:0
-    254 memory.limit_in_bytes:104857600
-    107 memory.limit_in_bytes:157286400
-     68 memory.limit_in_bytes:209715200
-     10 memory.limit_in_bytes:262144000
-     28 memory.limit_in_bytes:314572800
-      1 memory.limit_in_bytes:346030080
-      1 memory.limit_in_bytes:524288000
-      2 memory.limit_in_bytes:9223372036854775807
+> On Friday, November 30, 2012 10:19:16 AM Paul Moore wrote:
+>> On Thursday, November 29, 2012 04:05:26 PM Randy Dunlap wrote:
+>>> On 11/28/2012 10:40 PM, Stephen Rothwell wrote:
+>>>> Hi all,
+>>>
+>>>> Changes since 20121128:
+>>> (on i386:)
+>>
+>> If I had to guess it looks like CONFIG_NETLABEL needs to be dependent on
+>> CONFIG_INET.  While the net/ Kconfig only pulls in the net/netlabel Kconfig
+>> if CONFIG_INET is defined, I'm guessing that without the explicit
+>> dependency there is nothing preventing someone from arriving at a bad
+>> configuration as we see here.
+>>
+>> Let me test this out to make sure my reasoning is right and if it is I'll
+>> post a patch to netdev later today.
+>>
+>> Thanks for catching this.
+> 
+> Hmmm.  The existing logic in net/Kconfig seems to disable CONFIG_NETLABEL at 
+> build time whenever CONFIG_INET is disabled in my .config file.  The only way 
+> I can recreate what you are seeing here is if I move the NetLabel include 
+> outside of the INET conditional in net/Kconfig.
+> 
+> Regardless, adding an explicit dependency on INET to NETLABEL shouldn't hurt 
+> anything so I'll go ahead and post the patch to netdev.  Hopefully someone who 
+> understands Kconfig better than I do can help shed some light on this.
+
+Sorry, this patch doesn't help.
+
+I just checked the kernel .config again.  SECURITY_SMACK
+selects NETLABEL even when INET is not enabled.  Bad SMACK.
+
+I added Casey and mailing list to the cc:
+
+>>> net/built-in.o: In function `netlbl_cfg_cipsov4_add':
+>>> (.text+0x61757): undefined reference to `cipso_v4_doi_add'
+>>> net/built-in.o: In function `netlbl_cfg_cipsov4_del':
+>>> (.text+0x6177d): undefined reference to `cipso_v4_doi_remove'
+>>> net/built-in.o: In function `netlbl_cfg_cipsov4_map_add':
+>>> (.text+0x617ae): undefined reference to `cipso_v4_doi_getdef'
+>>> net/built-in.o: In function `netlbl_cfg_cipsov4_map_add':
+>>> (.text+0x61a49): undefined reference to `cipso_v4_doi_putdef'
+>>> net/built-in.o: In function `netlbl_sock_setattr':
+>>> (.text+0x6218c): undefined reference to `cipso_v4_sock_setattr'
+>>> net/built-in.o: In function `netlbl_sock_delattr':
+>>> (.text+0x6220b): undefined reference to `cipso_v4_sock_delattr'
+>>> net/built-in.o: In function `netlbl_sock_getattr':
+>>> (.text+0x62238): undefined reference to `cipso_v4_sock_getattr'
+>>> net/built-in.o: In function `netlbl_conn_setattr':
+>>> (.text+0x622de): undefined reference to `cipso_v4_sock_setattr'
+>>> net/built-in.o: In function `netlbl_conn_setattr':
+>>> (.text+0x62303): undefined reference to `cipso_v4_sock_delattr'
+>>> net/built-in.o: In function `netlbl_req_setattr':
+>>> (.text+0x62429): undefined reference to `cipso_v4_req_setattr'
+>>> net/built-in.o: In function `netlbl_req_setattr':
+>>> (.text+0x6244e): undefined reference to `cipso_v4_req_delattr'
+>>> net/built-in.o: In function `netlbl_req_delattr':
+>>> (.text+0x624ba): undefined reference to `cipso_v4_req_delattr'
+>>> net/built-in.o: In function `netlbl_skbuff_setattr':
+>>> (.text+0x62551): undefined reference to `cipso_v4_skbuff_setattr'
+>>> net/built-in.o: In function `netlbl_skbuff_setattr':
+>>> (.text+0x62576): undefined reference to `cipso_v4_skbuff_delattr'
+>>> net/built-in.o: In function `netlbl_skbuff_getattr':
+>>> (.text+0x62619): undefined reference to `cipso_v4_skbuff_getattr'
+>>> net/built-in.o: In function `netlbl_skbuff_err':
+>>> (.text+0x62685): undefined reference to `cipso_v4_error'
+>>> net/built-in.o: In function `netlbl_cache_invalidate':
+>>> (.text+0x626ab): undefined reference to `cipso_v4_cache_invalidate'
+>>> net/built-in.o: In function `netlbl_cache_add':
+>>> (.text+0x626ec): undefined reference to `cipso_v4_cache_add'
+>>> net/built-in.o: In function `netlbl_domhsh_remove_entry':
+>>> (.text+0x63294): undefined reference to `cipso_v4_doi_putdef'
+>>> net/built-in.o: In function `netlbl_domhsh_remove_entry':
+>>> (.text+0x632eb): undefined reference to `cipso_v4_doi_putdef'
+>>> net/built-in.o: In function `netlbl_domhsh_remove_af4':
+>>> (.text+0x6349b): undefined reference to `cipso_v4_doi_putdef'
+>>> net/built-in.o: In function `netlbl_mgmt_add_common.clone.1':
+>>> netlabel_mgmt.c:(.text+0x64a87): undefined reference to
+>>> `cipso_v4_doi_getdef' netlabel_mgmt.c:(.text+0x64c83): undefined reference
+>>> to `cipso_v4_doi_putdef' net/built-in.o: In function
+>>> `netlbl_cipsov4_listall':
+>>> netlabel_cipso_v4.c:(.text+0x66e52): undefined reference to
+>>> `cipso_v4_doi_walk' net/built-in.o: In function `netlbl_cipsov4_list':
+>>> netlabel_cipso_v4.c:(.text+0x67199): undefined reference to
+>>> `cipso_v4_doi_getdef' net/built-in.o: In function `netlbl_cipsov4_remove':
+>>> netlabel_cipso_v4.c:(.text+0x6771b): undefined reference to
+>>> `cipso_v4_doi_remove' net/built-in.o: In function
+>>> `netlbl_cipsov4_add_pass':
+>>> netlabel_cipso_v4.c:(.text+0x67a4b): undefined reference to
+>>> `cipso_v4_doi_add' netlabel_cipso_v4.c:(.text+0x67a76): undefined
+>>> reference
+>>> to `cipso_v4_doi_free' net/built-in.o: In function
+>>> `netlbl_cipsov4_add_local':
+>>> netlabel_cipso_v4.c:(.text+0x67b9a): undefined reference to
+>>> `cipso_v4_doi_add' netlabel_cipso_v4.c:(.text+0x67bc5): undefined
+>>> reference
+>>> to `cipso_v4_doi_free' net/built-in.o: In function
+>>> `netlbl_cipsov4_add_std':
+>>> netlabel_cipso_v4.c:(.text+0x68535): undefined reference to
+>>> `cipso_v4_doi_add' netlabel_cipso_v4.c:(.text+0x68575): undefined
+>>> reference
+>>> to `cipso_v4_doi_free'
+>>>
+>>>
+>>> Full randconfig file is attached.
+
+
+
 -- 
-Michal Hocko
-SUSE Labs
+~Randy
