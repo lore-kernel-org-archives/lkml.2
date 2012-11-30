@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759497Ab2K3TGu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:06:50 -0500
-Received: from mail.kernel.org ([198.145.19.201]:59856 "EHLO mail.kernel.org"
+	id S1759513Ab2K3THa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:07:30 -0500
+Received: from mail.kernel.org ([198.145.19.201]:59828 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993100Ab2K3TCy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 14:02:54 -0500
+	id S2993094Ab2K3TCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 14:02:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Theodore Tso" <tytso@mit.edu>, Tao Ma <boyu.mt@taobao.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 51/54] ext4: remove erroneous ext4_superblock_csum_set() in update_backups()
-Date: Fri, 30 Nov 2012 10:56:22 -0800
-Message-Id: <20121130185213.043880641@linuxfoundation.org>
+        liu chuansheng <chuansheng.liu@intel.com>,
+        Don Zickus <dzickus@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Shuah Khan <shuah.khan@hp.com>
+Subject: [ 49/54] watchdog: using u64 in get_sample_period()
+Date: Fri, 30 Nov 2012 10:56:20 -0800
+Message-Id: <20121130185212.841565964@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185207.894301294@linuxfoundation.org>
 References: <20121130185207.894301294@linuxfoundation.org>
@@ -26,41 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tao Ma <boyu.mt@taobao.com>
+From: Chuansheng Liu <chuansheng.liu@intel.com>
 
-commit bef53b01faeb791e27605cba1a71ba21364cb23e upstream.
+commit 8ffeb9b0e6369135bf03a073514f571ef10606b9 upstream.
 
-The update_backups() function is used to backup all the metadata
-blocks, so we should not take it for granted that 'data' is pointed to
-a super block and use ext4_superblock_csum_set to calculate the
-checksum there.  In case where the data is a group descriptor block,
-it will corrupt the last group descriptor, and then e2fsck will
-complain about it it.
+In get_sample_period(), unsigned long is not enough:
 
-As all the metadata checksums should already be OK when we do the
-backup, remove the wrong ext4_superblock_csum_set and it should be
-just fine.
+  watchdog_thresh * 2 * (NSEC_PER_SEC / 5)
 
-Reported-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+case1:
+  watchdog_thresh is 10 by default, the sample value will be: 0xEE6B2800
+
+case2:
+ set watchdog_thresh is 20, the sample value will be: 0x1 DCD6 5000
+
+In case2, we need use u64 to express the sample period.  Otherwise,
+changing the threshold thru proc often can not be successful.
+
+Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+Acked-by: Don Zickus <dzickus@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/resize.c |    2 --
- 1 file changed, 2 deletions(-)
+ kernel/watchdog.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -979,8 +979,6 @@ static void update_backups(struct super_
- 		goto exit_err;
- 	}
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -113,7 +113,7 @@ static unsigned long get_timestamp(int t
+ 	return cpu_clock(this_cpu) >> 30LL;  /* 2^30 ~= 10^9 */
+ }
  
--	ext4_superblock_csum_set(sb);
--
- 	while ((group = ext4_list_backups(sb, &three, &five, &seven)) < last) {
- 		struct buffer_head *bh;
+-static unsigned long get_sample_period(void)
++static u64 get_sample_period(void)
+ {
+ 	/*
+ 	 * convert watchdog_thresh from seconds to ns
+@@ -122,7 +122,7 @@ static unsigned long get_sample_period(v
+ 	 * and hard thresholds) to increment before the
+ 	 * hardlockup detector generates a warning
+ 	 */
+-	return get_softlockup_thresh() * (NSEC_PER_SEC / 5);
++	return get_softlockup_thresh() * ((u64)NSEC_PER_SEC / 5);
+ }
  
+ /* Commands for resetting the watchdog */
 
 
