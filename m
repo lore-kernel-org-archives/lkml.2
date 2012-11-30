@@ -1,118 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933544Ab2K3Rst (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 12:48:49 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50634 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757519Ab2K3Rss (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 12:48:48 -0500
-From: Joonsoo Kim <js1304@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Android Kernel Team <kernel-team@android.com>,
-        Joonsoo Kim <js1304@gmail.com>, John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>, Colin Cross <ccross@android.com>,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Dima Zavin <dima@android.com>, Robert Love <rlove@google.com>
-Subject: [RFC PATCH] staging, android, ashmem: invalidate pin/unpin ioctl for private map
-Date: Sat,  1 Dec 2012 02:45:57 +0900
-Message-Id: <1354297557-24486-1-git-send-email-js1304@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1031266Ab2K3RtQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 12:49:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25035 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933546Ab2K3RtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 12:49:14 -0500
+Date: Fri, 30 Nov 2012 15:47:25 -0200
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Greg Thelen <gthelen@google.com>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com, aquini@redhat.com,
+        riel@redhat.com
+Subject: Re: [RFC] Add mempressure cgroup
+Message-ID: <20121130154725.0a81913c@doriath.home>
+In-Reply-To: <20121129012751.GA20525@lizard>
+References: <20121128102908.GA15415@lizard>
+	<20121128151432.3e29d830.akpm@linux-foundation.org>
+	<20121129012751.GA20525@lizard>
+Organization: Red Hat
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Private mapped ashmem doesn't install vm fault handler.
-So, do_anonymous_page is called for handling fault in handle_pte_fault().
-This type of backed memory isn't related to asma->file which is used by
-ashmem shrinker. Shrinking unpinned area for this mapping
-will not shrink memory actually.
-Although it's memory doesn't actually removed, pin status will
-return ASHMEM_WAS_PURGED. So application will re-load content.
-This is needless overhead, so invalidate pin/unpin ioctl behavior for
-private map.
+On Wed, 28 Nov 2012 17:27:51 -0800
+Anton Vorontsov <anton.vorontsov@linaro.org> wrote:
 
-CC: John Stultz <john.stultz@linaro.org>
-CC: Brian Swetland <swetland@google.com>
-CC: Colin Cross <ccross@android.com>
-CC: Arve Hjønnevåg <arve@android.com>
-CC: Dima Zavin <dima@android.com>
-CC: Robert Love <rlove@google.com>
-Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+> On Wed, Nov 28, 2012 at 03:14:32PM -0800, Andrew Morton wrote:
+> [...]
+> > Compare this with the shrink_slab() shrinkers.  With these, the VM can
+> > query and then control the clients.  If something goes wrong or is out
+> > of balance, it's the VM's problem to solve.
+> > 
+> > So I'm thinking that a better design would be one which puts the kernel
+> > VM in control of userspace scanning and freeing.  Presumably with a
+> > query-and-control interface similar to the slab shrinkers.
+> 
+> Thanks for the ideas, Andrew.
+> 
+> Query-and-control scheme looks very attractive, and that's actually
+> resembles my "balance" level idea, when userland tells the kernel how much
+> reclaimable memory it has. Except the your scheme works in the reverse
+> direction, i.e. the kernel becomes in charge.
+> 
+> But there is one, rather major issue: we're crossing kernel-userspace
+> boundary. And with the scheme we'll have to cross the boundary four times:
+> query / reply-available / control / reply-shrunk / (and repeat if
+> necessary, every SHRINK_BATCH pages). Plus, it has to be done somewhat
+> synchronously (all the four stages), and/or we have to make a "userspace
+> shrinker" thread working in parallel with the normal shrinker, and here,
+> I'm afraid, we'll see more strange interactions. :)
 
-diff --git a/drivers/staging/android/ashmem.c b/drivers/staging/android/ashmem.c
-index 634b9ae..2fde9df 100644
---- a/drivers/staging/android/ashmem.c
-+++ b/drivers/staging/android/ashmem.c
-@@ -49,6 +49,7 @@ struct ashmem_area {
- 	struct file *file;		 /* the shmem-based backing file */
- 	size_t size;			 /* size of the mapping, in bytes */
- 	unsigned long prot_mask;	 /* allowed prot bits, as vm_flags */
-+	bool shared_mapping;		 /* mapping type */
- };
- 
- /*
-@@ -327,6 +328,7 @@ static int ashmem_mmap(struct file *file, struct vm_area_struct *vma)
- 			fput(asma->file);
- 			goto out;
- 		}
-+		asma->shared_mapping = 1;
- 	}
- 
- 	if (vma->vm_file)
-@@ -614,21 +616,35 @@ static int ashmem_pin_unpin(struct ashmem_area *asma, unsigned long cmd,
- 	pgstart = pin.offset / PAGE_SIZE;
- 	pgend = pgstart + (pin.len / PAGE_SIZE) - 1;
- 
--	mutex_lock(&ashmem_mutex);
-+	if (asma->shared_mapping) {
-+		mutex_lock(&ashmem_mutex);
- 
--	switch (cmd) {
--	case ASHMEM_PIN:
--		ret = ashmem_pin(asma, pgstart, pgend);
--		break;
--	case ASHMEM_UNPIN:
--		ret = ashmem_unpin(asma, pgstart, pgend);
--		break;
--	case ASHMEM_GET_PIN_STATUS:
--		ret = ashmem_get_pin_status(asma, pgstart, pgend);
--		break;
--	}
-+		switch (cmd) {
-+		case ASHMEM_PIN:
-+			ret = ashmem_pin(asma, pgstart, pgend);
-+			break;
-+		case ASHMEM_UNPIN:
-+			ret = ashmem_unpin(asma, pgstart, pgend);
-+			break;
-+		case ASHMEM_GET_PIN_STATUS:
-+			ret = ashmem_get_pin_status(asma, pgstart, pgend);
-+			break;
-+		}
- 
--	mutex_unlock(&ashmem_mutex);
-+		mutex_unlock(&ashmem_mutex);
-+
-+	} else {
-+		switch (cmd) {
-+		/* if it is private map, pin/unpin have no impact to vm */
-+		case ASHMEM_PIN:
-+		case ASHMEM_UNPIN:
-+			ret = ASHMEM_NOT_PURGED;
-+			break;
-+		case ASHMEM_GET_PIN_STATUS:
-+			ret = ASHMEM_IS_PINNED;
-+			break;
-+		}
-+	}
- 
- 	return ret;
- }
--- 
-1.7.9.5
+Wouldn't this be just like kswapd?
 
+> But there is a good news: for these kind of fine-grained control we have a
+> better interface, where we don't have to communicate [very often] w/ the
+> kernel. These are "volatile ranges", where userland itself marks chunks of
+> data as "I might need it, but I won't cry if you recycle it; but when I
+> access it next time, let me know if you actually recycled it". Yes,
+> userland no longer able to decide which exact page it permits to recycle,
+> but we don't have use-cases when we actually care that much. And if we do,
+> we'd rather introduce volatile LRUs with different priorities, or
+> something alike.
+
+I'm new to this stuff so please take this with a grain of salt, but I'm
+not sure volatile ranges would be a good fit for our use case: we want to
+make (kvm) guests reduce their memory when the host is getting memory
+pressure.
+
+Having a notification seems just fine for this purpose, but I'm not sure
+how this would work with volatile ranges, as we'd have to mark pages volatile
+in advance.
+
+Andrew's idea seems to give a lot more freedom to apps, IMHO.
