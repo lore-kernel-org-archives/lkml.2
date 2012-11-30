@@ -1,98 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757878Ab2K3LMt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 06:12:49 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:60295 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752738Ab2K3LMs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 06:12:48 -0500
+	id S1757891Ab2K3LQT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 06:16:19 -0500
+Received: from mga03.intel.com ([143.182.124.21]:46860 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752738Ab2K3LQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 06:16:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,191,1355126400"; 
+   d="scan'208";a="174383187"
+Date: Fri, 30 Nov 2012 12:16:14 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Philipp Zabel <p.zabel@pengutronix.de>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: da9052-core: Fix interrupts reported to mfd child
+ devices
+Message-ID: <20121130111614.GA1729@sortiz-mobl>
+References: <1354201468-9219-1-git-send-email-p.zabel@pengutronix.de>
+ <20121130110438.GO3176@sortiz-mobl>
 MIME-Version: 1.0
-In-Reply-To: <20121129235822.GA2590@local>
-References: <201211271348.14603.vitas@nppfactor.kiev.ua>
-	<CAM3j68rrBePLoamRb1pCH+TeAfLDO-5Jd_kk7-JRCNnEBhLp2Q@mail.gmail.com>
-	<201211291822.16565.vitas@nppfactor.kiev.ua>
-	<201211291836.59358.vitas@nppfactor.kiev.ua>
-	<20121129235822.GA2590@local>
-Date: Fri, 30 Nov 2012 12:12:46 +0100
-X-Google-Sender-Auth: 9bViMx08V6_sPgTK0YcX64XsGe0
-Message-ID: <CAM3j68rH8qyN8zX7TLZNvQz-1Vr6qMjS0cR7QKGAs6w54L7dag@mail.gmail.com>
-Subject: Re: [PATCH] uio.c: Fix warning: 'ret' might be used uninitialized
-From: Tux9 <tuxding@gmail.com>
-To: "Hans J. Koch" <hjk@hansjkoch.de>
-Cc: Vitalii Demianets <vitas@nppfactor.kiev.ua>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121130110438.GO3176@sortiz-mobl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I like Vitalii's solution more. Hans's solution assign the value
--ENOMEM to ret in every round of the loop, which is a kind of wasting
-CPU cycles.
+Hi Philipp,
 
-On Fri, Nov 30, 2012 at 12:58 AM, Hans J. Koch <hjk@hansjkoch.de> wrote:
-> On Thu, Nov 29, 2012 at 06:36:59PM +0200, Vitalii Demianets wrote:
->> > On Thursday 29 November 2012 18:05:27 Tux9 wrote:
->> > > Hans, I think there are something wrong in your patch, while Vitalii's
->> > > is right. The variable "ret" is reused in line 292 and line 295, so
->> > > the value of "ret" would be overridden (if it goto err_map in line 284
->> > > when mi>=1).
->> >
->> > Actually, both patches do exactly the same thing. Hans's patch establishes
->> > default value for the ret for all those "other" cases when ret is not
->> > explicitly overridden. My patch explicitly enumerates all those "other"
->> > cases in more wordily manner.
->> >
->>
->> Oops, disregard this. After looking at it more thoroughly I got your point.
->> You are right, ret is overridden at first iteration (mi == 0), so Hans's
->> approach does not work.
->> I must do more thinking before replying in a hurry.
->
-> You're right. Initialization of "ret" has to take place at the beginning of
-> the loop.
->
-> I think this version is right:
->
->
-> From 00c3c734c0dde67873a628bcb18cee403c95c301 Mon Sep 17 00:00:00 2001
-> From: "Hans J. Koch" <hjk@hansjkoch.de>
-> Date: Fri, 30 Nov 2012 00:51:50 +0100
-> Subject: [PATCH] uio: Fix warning: 'ret' might be used uninitialized
->
-> In two cases, the return value variable "ret" can be undefined.
->
-> Signed-off-by: Hans J. Koch <hjk@hansjkoch.de>
-> ---
->  drivers/uio/uio.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
-> index 5110f36..0c80df2 100644
-> --- a/drivers/uio/uio.c
-> +++ b/drivers/uio/uio.c
-> @@ -273,6 +273,7 @@ static int uio_dev_add_attributes(struct uio_device *idev)
->         struct uio_portio *portio;
->
->         for (mi = 0; mi < MAX_UIO_MAPS; mi++) {
-> +               ret = -ENOMEM;
->                 mem = &idev->info->mem[mi];
->                 if (mem->size == 0)
->                         break;
-> @@ -298,6 +299,7 @@ static int uio_dev_add_attributes(struct uio_device *idev)
->         }
->
->         for (pi = 0; pi < MAX_UIO_PORT_REGIONS; pi++) {
-> +               ret = -ENOMEM;
->                 port = &idev->info->port[pi];
->                 if (port->size == 0)
->                         break;
-> --
-> 1.7.9
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+On Fri, Nov 30, 2012 at 12:04:38PM +0100, Samuel Ortiz wrote:
+> Hi Philipp,
+> 
+> On Thu, Nov 29, 2012 at 04:04:28PM +0100, Philipp Zabel wrote:
+> > The patch "mfd: da9052-core: Use regmap_irq_get_virq() and fix the probe"
+> > replaces the irq_base with the da9052_map_irq function but doesn't
+> > update the irq_base parameter to the mfd_add_devices call.
+> > This causes child devices to try and request IRQs with just the internal
+> > offset number.
+> > 
+> > Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> > ---
+> >  drivers/mfd/da9052-core.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> Applied, 
+I'll take that back. It fails to build because on my for-next branch
+da9052_map_irq() is a da9052-irq.c static function. It was moved from core.c
+to irq.c with Fabio's patch "mfd: da9052: Introduce da9052-irq.c", commit
+8bad1abd6303476d6f77878aa8ea737d5d1b625c.
+
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
