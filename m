@@ -1,53 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030246Ab2K3L7I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 06:59:08 -0500
-Received: from gate.in-addr.de ([212.8.193.158]:33812 "EHLO mx.in-addr.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755982Ab2K3L6D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1030232Ab2K3L7H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 06:59:07 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:33263 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756008Ab2K3L6D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 Nov 2012 06:58:03 -0500
-X-Greylist: delayed 1078 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 Nov 2012 06:58:02 EST
-Date: Fri, 30 Nov 2012 12:39:28 +0100
-From: Lars Marowsky-Bree <lmb@suse.com>
-To: device-mapper development <dm-devel@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [dm-devel] [PATCH 2/3] dm raid1: add interface to set resync
- speed
-Message-ID: <20121130113928.GO29064@suse.de>
-References: <1353565673-4233-1-git-send-email-gzhao@suse.com>
- <1353565673-4233-3-git-send-email-gzhao@suse.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1353565673-4233-3-git-send-email-gzhao@suse.com>
-X-Ctuhulu: HASTUR
-User-Agent: Mutt/1.5.21 (2011-07-01)
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: linus.walleij@stericsson.com, arnd@arndb.de, cbou@mail.ru,
+        dwmw2@infradead.org, rajanikanth.hv@linaro.org,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 08/12] ab8500_btemp: Reorder obtainment of platform specific battery management data
+Date: Fri, 30 Nov 2012 11:57:30 +0000
+Message-Id: <1354276654-590-9-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1354276654-590-1-git-send-email-lee.jones@linaro.org>
+References: <1354276654-590-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-11-22T14:27:52, Guangliang Zhao <gzhao@suse.com> wrote:
+Now that we always pass platform specific battery management data
+through platform_data instead of obtaining it via different means
+depending the way be boot the system (DT or ATAGs); we need to
+re-jiggle the way we acquire it in the driver start-up functions.
+Now it is wrong for it to be missing, but we still allow Device
+Tree code to fiddle with it once we've confirmed it's there.
 
-Hi Guangliang,
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/power/ab8500_btemp.c |   27 +++++++++++++--------------
+ 1 file changed, 13 insertions(+), 14 deletions(-)
 
-thanks for adding this. I think this approach is a good direction to
-take, just one feedback:
-
-> Add ioctl to control resync speed, userspace tool
-> is dmsetup message, message format is:
-> 	dmsetup message $device 0 "set $speed"
-> e.g.
-> 	dmsetup message /dev/dm-2 "set 12345"
-
-I think this should be "set-max-resync-rate" or something; "set" is very
-generic and not very extensible going forward, should the need arise.
-
-Regards,
-    Lars
-
+diff --git a/drivers/power/ab8500_btemp.c b/drivers/power/ab8500_btemp.c
+index c0f7dcc..158cba5 100644
+--- a/drivers/power/ab8500_btemp.c
++++ b/drivers/power/ab8500_btemp.c
+@@ -976,6 +976,7 @@ static char *supply_interface[] = {
+ static int __devinit ab8500_btemp_probe(struct platform_device *pdev)
+ {
+ 	struct device_node *np = pdev->dev.of_node;
++	struct abx500_bm_data *plat = pdev->dev.platform_data;
+ 	struct ab8500_btemp *di;
+ 	int irq, i, ret = 0;
+ 	u8 val;
+@@ -985,21 +986,19 @@ static int __devinit ab8500_btemp_probe(struct platform_device *pdev)
+ 		dev_err(&pdev->dev, "%s no mem for ab8500_btemp\n", __func__);
+ 		return -ENOMEM;
+ 	}
+-	di->bm = pdev->mfd_cell->platform_data;
+-	if (!di->bm) {
+-		if (np) {
+-			ret = ab8500_bm_of_probe(&pdev->dev, np, di->bm);
+-			if (ret) {
+-				dev_err(&pdev->dev,
+-					"failed to get battery information\n");
+-				return ret;
+-			}
+-		} else {
+-			dev_err(&pdev->dev, "missing dt node for ab8500_btemp\n");
+-			return -EINVAL;
++
++	if (!plat) {
++		dev_err(&pdev->dev, "no battery management data supplied\n");
++		return -EINVAL;
++	}
++	di->bm = plat;
++
++	if (np) {
++		ret = ab8500_bm_of_probe(&pdev->dev, np, di->bm);
++		if (ret) {
++			dev_err(&pdev->dev, "failed to get battery information\n");
++			return ret;
+ 		}
+-	} else {
+-		dev_info(&pdev->dev, "falling back to legacy platform data\n");
+ 	}
+ 
+ 	/* get parent data */
 -- 
-Architect Storage/HA
-SUSE LINUX Products GmbH, GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer, HRB 21284 (AG Nürnberg)
-"Experience is the name everyone gives to their mistakes." -- Oscar Wilde
+1.7.9.5
 
