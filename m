@@ -1,71 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754975Ab2K3AfG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 19:35:06 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:56932 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753813Ab2K3AfF (ORCPT
+	id S1755068Ab2K3AgN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 19:36:13 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:57110 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754414Ab2K3AgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 19:35:05 -0500
-Date: Fri, 30 Nov 2012 00:35:02 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Patrick McLean <patrickm@gaikai.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-nfs@vger.kernel.org
-Subject: Re: Regression with initramfs and nfsroot (appears to be in the
- dcache)
-Message-ID: <20121130003502.GY4939@ZenIV.linux.org.uk>
-References: <CAE2NFgU+4QDcLaVE5dKDvZCxey7qEf7FAbYNjNmcjVU=HLhF=A@mail.gmail.com>
- <20121129213316.GU4939@ZenIV.linux.org.uk>
- <CAE2NFgWCnmgSCsw7MzRkqBLTHgRDG-FvKKcbTHN6UqePK6Ef+Q@mail.gmail.com>
- <20121129222109.GW4939@ZenIV.linux.org.uk>
- <50B7E759.9070007@gaikai.com>
- <20121129234326.GX4939@ZenIV.linux.org.uk>
- <50B7FBA7.2030300@gaikai.com>
+	Thu, 29 Nov 2012 19:36:12 -0500
+X-AuditID: 9c93016f-b7b86ae000003a75-e3-50b7ff7be681
+Date: Fri, 30 Nov 2012 09:36:09 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Nitin Gupta <ngupta@vflare.org>
+Cc: Greg KH <greg@kroah.com>, Jerome Marchand <jmarchan@redhat.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Sam Hansen <solid.se7en@gmail.com>,
+        Linux Driver Project <devel@linuxdriverproject.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] zram: fix invalid memory references during disk write
+Message-ID: <20121130003609.GA18630@blaptop>
+References: <1354180728-1958-1-git-send-email-ngupta@vflare.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50B7FBA7.2030300@gaikai.com>
+In-Reply-To: <1354180728-1958-1-git-send-email-ngupta@vflare.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 04:19:51PM -0800, Patrick McLean wrote:
-> >> [    8.821584] FH(0)]
-> >> [    8.821586] FH(36)[01 00 07 01 89 00 00 00 00 00 00 00 e1 21 fe c4 9e 38 44 dc bf 1b d5 95 d6 76 d6 d9 a7 3c 1b 80 33 38 e3 62]
-> >> [    8.821601] filename: proc
-> > 
-> > *whoa*
-> > 
-> > So we have zero entry->fh->size?  No wonder it doesn't match...  Which NFS
-> > version it is?  entry->fh->size is set by nfs[34]_decode_dirent().
+Hi Greg,
+
+I would like to tidy zram_bvec_write up but it needs more churn
+than needed to fix this bug and makes review hard. So I want you to pick up
+this patch asap because it's a candidate of stable.
+
+Thanks.
+
+On Thu, Nov 29, 2012 at 01:18:48AM -0800, Nitin Gupta wrote:
+> Changelog v3 vs v2:
+>  - Further changes to changelog message to explain the bug case
+> of incorrect use of kunmapped buffer
+> Changelog v2 vs v1:
+>  - Changelog message now correctly explains the problem
 > 
-> This is nfs v3 over TCP on Linus git at commit e9296e89b85604862bd9ec2d54dc43edad775c0d with nfs-utils-1.2.6 userspace.
+> Fixes a bug introduced by commit c8f2f0db1 ("zram: Fix handling
+> of incompressible pages") which caused invalid memory references
+> during disk write. Invalid references could occur in two cases:
+>  - Incoming data expands on compression: In this case, reference was
+> made to kunmap()'ed bio page.
+>  - Partial (non PAGE_SIZE) write with incompressible data: In this
+> case, reference was made to a kfree()'ed buffer.
+> 
+> Fixes bug 50081:
+> https://bugzilla.kernel.org/show_bug.cgi?id=50081
+> 
+> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+> Reported-by: Mihail Kasadjikov <hamer.mk@gmail.com>
+> Reported-by: Tomas M <tomas@slax.org>
+> Reviewed-by: Minchan Kim <minchan@kernel.org>
+> ---
+>  drivers/staging/zram/zram_drv.c |   39 ++++++++++++++++++++++++---------------
+>  1 file changed, 24 insertions(+), 15 deletions(-)
+> 
+> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+> index fb4a7c9..f2a73bd 100644
+> --- a/drivers/staging/zram/zram_drv.c
+> +++ b/drivers/staging/zram/zram_drv.c
+> @@ -265,7 +265,7 @@ out_cleanup:
+>  static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>  			   int offset)
+>  {
+> -	int ret;
+> +	int ret = 0;
+>  	size_t clen;
+>  	unsigned long handle;
+>  	struct page *page;
+> @@ -286,10 +286,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>  			goto out;
+>  		}
+>  		ret = zram_decompress_page(zram, uncmem, index);
+> -		if (ret) {
+> -			kfree(uncmem);
+> +		if (ret)
+>  			goto out;
+> -		}
+>  	}
+> 
+>  	/*
+> @@ -302,16 +300,18 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+> 
+>  	user_mem = kmap_atomic(page);
+> 
+> -	if (is_partial_io(bvec))
+> +	if (is_partial_io(bvec)) {
+>  		memcpy(uncmem + offset, user_mem + bvec->bv_offset,
+>  		       bvec->bv_len);
+> -	else
+> +		kunmap_atomic(user_mem);
+> +		user_mem = NULL;
+> +	} else {
+>  		uncmem = user_mem;
+> +	}
+> 
+>  	if (page_zero_filled(uncmem)) {
+> -		kunmap_atomic(user_mem);
+> -		if (is_partial_io(bvec))
+> -			kfree(uncmem);
+> +		if (!is_partial_io(bvec))
+> +			kunmap_atomic(user_mem);
+>  		zram_stat_inc(&zram->stats.pages_zero);
+>  		zram_set_flag(zram, index, ZRAM_ZERO);
+>  		ret = 0;
+> @@ -321,9 +321,11 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>  	ret = lzo1x_1_compress(uncmem, PAGE_SIZE, src, &clen,
+>  			       zram->compress_workmem);
+> 
+> -	kunmap_atomic(user_mem);
+> -	if (is_partial_io(bvec))
+> -			kfree(uncmem);
+> +	if (!is_partial_io(bvec)) {
+> +		kunmap_atomic(user_mem);
+> +		user_mem = NULL;
+> +		uncmem = NULL;
+> +	}
+> 
+>  	if (unlikely(ret != LZO_E_OK)) {
+>  		pr_err("Compression failed! err=%d\n", ret);
+> @@ -332,8 +334,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+> 
+>  	if (unlikely(clen > max_zpage_size)) {
+>  		zram_stat_inc(&zram->stats.bad_compress);
+> -		src = uncmem;
+>  		clen = PAGE_SIZE;
+> +		src = NULL;
+> +		if (is_partial_io(bvec))
+> +			src = uncmem;
+>  	}
+> 
+>  	handle = zs_malloc(zram->mem_pool, clen);
+> @@ -345,7 +349,11 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>  	}
+>  	cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_WO);
+> 
+> +	if ((clen == PAGE_SIZE) && !is_partial_io(bvec))
+> +		src = kmap_atomic(page);
+>  	memcpy(cmem, src, clen);
+> +	if ((clen == PAGE_SIZE) && !is_partial_io(bvec))
+> +		kunmap_atomic(src);
+> 
+>  	zs_unmap_object(zram->mem_pool, handle);
+> 
+> @@ -358,9 +366,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
+>  	if (clen <= PAGE_SIZE / 2)
+>  		zram_stat_inc(&zram->stats.good_compress);
+> 
+> -	return 0;
+> -
+>  out:
+> +	if (is_partial_io(bvec))
+> +		kfree(uncmem);
+> +
+>  	if (ret)
+>  		zram_stat64_inc(zram, &zram->stats.failed_writes);
+>  	return ret;
+> --
+> 1.7.10.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-So we have nfs3_decode_dirent(), stepping into
-                /* In fact, a post_op_fh3: */
-                p = xdr_inline_decode(xdr, 4);
-                if (unlikely(p == NULL))
-                        goto out_overflow;
-                if (*p != xdr_zero) {
-                        error = decode_nfs_fh3(xdr, entry->fh);
-                        if (unlikely(error)) {
-                                if (error == -E2BIG)
-                                        goto out_truncated;
-                                return error;
-                        }
-                } else
-                        zero_nfs_fh3(entry->fh);
-Interesting...  Server-side that should've been produced by
-encode_entryplus_baggage(), which looks like failing compose_entry_fh()...
-which has explicit
-        if (d_mountpoint(dchild))
-                goto out;
-resulting in ENOENT on everything that's overmounted on server.
-
-Do you, by any chance, have the server really exporting its own root
-filesystem?  Another thing to check: have nfs_prime_dcache() print
-filename.name of everything that fails nfs_same_entry() and has
-zero entry->fh->size, regardless of d_invalidate() results.
+-- 
+Kind regards,
+Minchan Kim
