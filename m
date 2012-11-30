@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422681Ab2K3SvA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:51:00 -0500
-Received: from mail.kernel.org ([198.145.19.201]:57737 "EHLO mail.kernel.org"
+	id S1161099Ab2K3Stx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:49:53 -0500
+Received: from mail.kernel.org ([198.145.19.201]:57697 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161101Ab2K3Stz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:49:55 -0500
+	id S1161083Ab2K3Stu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:49:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        liu chuansheng <chuansheng.liu@intel.com>,
-        Don Zickus <dzickus@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Shuah Khan <shuah.khan@hp.com>
-Subject: [ 33/37] watchdog: using u64 in get_sample_period()
-Date: Fri, 30 Nov 2012 10:46:20 -0800
-Message-Id: <20121130183900.802561648@linuxfoundation.org>
+        Emil Tantilov <emil.s.tantilov@intel.com>,
+        Phil Schmitt <phillip.j.schmitt@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Abdallah Chatila <Abdallah.Chatila@ericsson.com>
+Subject: [ 29/37] ixgbe: add support for new 82599 device
+Date: Fri, 30 Nov 2012 10:46:16 -0800
+Message-Id: <20121130183900.361099742@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130183857.166228045@linuxfoundation.org>
 References: <20121130183857.166228045@linuxfoundation.org>
@@ -29,53 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chuansheng Liu <chuansheng.liu@intel.com>
+From: Emil Tantilov <emil.s.tantilov@intel.com>
 
-commit 8ffeb9b0e6369135bf03a073514f571ef10606b9 upstream.
+commit 7d145282da8d1ae4ba5f7ead8a4f51183496803c upstream.
 
-In get_sample_period(), unsigned long is not enough:
+This patch adds support for new device ID.
 
-  watchdog_thresh * 2 * (NSEC_PER_SEC / 5)
-
-case1:
-  watchdog_thresh is 10 by default, the sample value will be: 0xEE6B2800
-
-case2:
- set watchdog_thresh is 20, the sample value will be: 0x1 DCD6 5000
-
-In case2, we need use u64 to express the sample period.  Otherwise,
-changing the threshold thru proc often can not be successful.
-
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-Acked-by: Don Zickus <dzickus@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Shuah Khan <shuah.khan@hp.com>
+Signed-off-by: Emil Tantilov <emil.s.tantilov@intel.com>
+Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: Abdallah Chatila <Abdallah.Chatila@ericsson.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/watchdog.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/ixgbe/ixgbe_82599.c |    1 +
+ drivers/net/ixgbe/ixgbe_main.c  |    2 ++
+ drivers/net/ixgbe/ixgbe_type.h  |    1 +
+ 3 files changed, 4 insertions(+)
 
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -113,7 +113,7 @@ static unsigned long get_timestamp(int t
- 	return cpu_clock(this_cpu) >> 30LL;  /* 2^30 ~= 10^9 */
- }
+--- a/drivers/net/ixgbe/ixgbe_82599.c
++++ b/drivers/net/ixgbe/ixgbe_82599.c
+@@ -360,6 +360,7 @@ static enum ixgbe_media_type ixgbe_get_m
+ 	case IXGBE_DEV_ID_82599_SFP_FCOE:
+ 	case IXGBE_DEV_ID_82599_SFP_EM:
+ 	case IXGBE_DEV_ID_82599_SFP_SF2:
++	case IXGBE_DEV_ID_82599EN_SFP:
+ 		media_type = ixgbe_media_type_fiber;
+ 		break;
+ 	case IXGBE_DEV_ID_82599_CX4:
+--- a/drivers/net/ixgbe/ixgbe_main.c
++++ b/drivers/net/ixgbe/ixgbe_main.c
+@@ -129,6 +129,8 @@ static DEFINE_PCI_DEVICE_TABLE(ixgbe_pci
+ 	 board_82599 },
+ 	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_82599_LS),
+ 	 board_82599 },
++	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_82599EN_SFP),
++	 board_82599 },
+ 	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_X540T1),
+ 	 board_X540 },
  
--static unsigned long get_sample_period(void)
-+static u64 get_sample_period(void)
- {
- 	/*
- 	 * convert watchdog_thresh from seconds to ns
-@@ -121,7 +121,7 @@ static unsigned long get_sample_period(v
- 	 * increment before the hardlockup detector generates
- 	 * a warning
- 	 */
--	return get_softlockup_thresh() * (NSEC_PER_SEC / 5);
-+	return get_softlockup_thresh() * ((u64)NSEC_PER_SEC / 5);
- }
- 
- /* Commands for resetting the watchdog */
+--- a/drivers/net/ixgbe/ixgbe_type.h
++++ b/drivers/net/ixgbe/ixgbe_type.h
+@@ -59,6 +59,7 @@
+ #define IXGBE_SUBDEV_ID_82599_SFP        0x11A9
+ #define IXGBE_DEV_ID_82599_SFP_EM        0x1507
+ #define IXGBE_DEV_ID_82599_SFP_SF2       0x154D
++#define IXGBE_DEV_ID_82599EN_SFP         0x1557
+ #define IXGBE_DEV_ID_82599_XAUI_LOM      0x10FC
+ #define IXGBE_DEV_ID_82599_COMBO_BACKPLANE 0x10F8
+ #define IXGBE_SUBDEV_ID_82599_KX4_KR_MEZZ  0x000C
 
 
