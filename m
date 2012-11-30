@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759576Ab2K3TXm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:23:42 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58428 "EHLO mail.kernel.org"
+	id S1759602Ab2K3TYE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:24:04 -0500
+Received: from mail.kernel.org ([198.145.19.201]:58417 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992710Ab2K3S4a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:56:30 -0500
+	id S2992705Ab2K3S43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:56:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Andre Naujoks <nautsch2@googlemail.com>,
         Oliver Hartkopp <socketcan@hartkopp.net>,
         Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [ 32/56] can: bcm: initialize ifindex for timeouts without previous frame reception
-Date: Fri, 30 Nov 2012 10:55:24 -0800
-Message-Id: <20121130185121.560920532@linuxfoundation.org>
+Subject: [ 31/56] can: peak_usb: fix hwtstamp assignment
+Date: Fri, 30 Nov 2012 10:55:23 -0800
+Message-Id: <20121130185121.469849733@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185118.302752929@linuxfoundation.org>
 References: <20121130185118.302752929@linuxfoundation.org>
@@ -29,33 +28,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Oliver Hartkopp <socketcan@hartkopp.net>
 
-commit 81b401100c01d2357031e874689f89bd788d13cd upstream.
+commit c9faaa09e2a1335678f09c70a0d0eda095564bab upstream.
 
-Set in the rx_ifindex to pass the correct interface index in the case of a
-message timeout detection. Usually the rx_ifindex value is set at receive
-time. But when no CAN frame has been received the RX_TIMEOUT notification
-did not contain a valid value.
+The skb->tstamp is set to the hardware timestamp when available in the USB
+urb message. This leads to user visible timestamps which contain the 'uptime'
+of the USB adapter - and not the usual system generated timestamp.
 
-Reported-by: Andre Naujoks <nautsch2@googlemail.com>
+Fix this wrong assignment by applying the available hardware timestamp to the
+skb_shared_hwtstamps data structure - which is intended for this purpose.
+
 Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
 Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/can/bcm.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/net/can/usb/peak_usb/pcan_usb.c     |    8 ++++++--
+ drivers/net/can/usb/peak_usb/pcan_usb_pro.c |    8 ++++++--
+ 2 files changed, 12 insertions(+), 4 deletions(-)
 
---- a/net/can/bcm.c
-+++ b/net/can/bcm.c
-@@ -1084,6 +1084,9 @@ static int bcm_rx_setup(struct bcm_msg_h
- 		op->sk = sk;
- 		op->ifindex = ifindex;
+--- a/drivers/net/can/usb/peak_usb/pcan_usb.c
++++ b/drivers/net/can/usb/peak_usb/pcan_usb.c
+@@ -519,8 +519,10 @@ static int pcan_usb_decode_error(struct
+ 	mc->pdev->dev.can.state = new_state;
  
-+		/* ifindex for timeout events w/o previous frame reception */
-+		op->rx_ifindex = ifindex;
+ 	if (status_len & PCAN_USB_STATUSLEN_TIMESTAMP) {
++		struct skb_shared_hwtstamps *hwts = skb_hwtstamps(skb);
 +
- 		/* initialize uninitialized (kzalloc) structure */
- 		hrtimer_init(&op->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
- 		op->timer.function = bcm_rx_timeout_handler;
+ 		peak_usb_get_ts_tv(&mc->pdev->time_ref, mc->ts16, &tv);
+-		skb->tstamp = timeval_to_ktime(tv);
++		hwts->hwtstamp = timeval_to_ktime(tv);
+ 	}
+ 
+ 	netif_rx(skb);
+@@ -605,6 +607,7 @@ static int pcan_usb_decode_data(struct p
+ 	struct sk_buff *skb;
+ 	struct can_frame *cf;
+ 	struct timeval tv;
++	struct skb_shared_hwtstamps *hwts;
+ 
+ 	skb = alloc_can_skb(mc->netdev, &cf);
+ 	if (!skb)
+@@ -652,7 +655,8 @@ static int pcan_usb_decode_data(struct p
+ 
+ 	/* convert timestamp into kernel time */
+ 	peak_usb_get_ts_tv(&mc->pdev->time_ref, mc->ts16, &tv);
+-	skb->tstamp = timeval_to_ktime(tv);
++	hwts = skb_hwtstamps(skb);
++	hwts->hwtstamp = timeval_to_ktime(tv);
+ 
+ 	/* push the skb */
+ 	netif_rx(skb);
+--- a/drivers/net/can/usb/peak_usb/pcan_usb_pro.c
++++ b/drivers/net/can/usb/peak_usb/pcan_usb_pro.c
+@@ -532,6 +532,7 @@ static int pcan_usb_pro_handle_canmsg(st
+ 	struct can_frame *can_frame;
+ 	struct sk_buff *skb;
+ 	struct timeval tv;
++	struct skb_shared_hwtstamps *hwts;
+ 
+ 	skb = alloc_can_skb(netdev, &can_frame);
+ 	if (!skb)
+@@ -549,7 +550,8 @@ static int pcan_usb_pro_handle_canmsg(st
+ 		memcpy(can_frame->data, rx->data, can_frame->can_dlc);
+ 
+ 	peak_usb_get_ts_tv(&usb_if->time_ref, le32_to_cpu(rx->ts32), &tv);
+-	skb->tstamp = timeval_to_ktime(tv);
++	hwts = skb_hwtstamps(skb);
++	hwts->hwtstamp = timeval_to_ktime(tv);
+ 
+ 	netif_rx(skb);
+ 	netdev->stats.rx_packets++;
+@@ -570,6 +572,7 @@ static int pcan_usb_pro_handle_error(str
+ 	u8 err_mask = 0;
+ 	struct sk_buff *skb;
+ 	struct timeval tv;
++	struct skb_shared_hwtstamps *hwts;
+ 
+ 	/* nothing should be sent while in BUS_OFF state */
+ 	if (dev->can.state == CAN_STATE_BUS_OFF)
+@@ -664,7 +667,8 @@ static int pcan_usb_pro_handle_error(str
+ 	dev->can.state = new_state;
+ 
+ 	peak_usb_get_ts_tv(&usb_if->time_ref, le32_to_cpu(er->ts32), &tv);
+-	skb->tstamp = timeval_to_ktime(tv);
++	hwts = skb_hwtstamps(skb);
++	hwts->hwtstamp = timeval_to_ktime(tv);
+ 	netif_rx(skb);
+ 	netdev->stats.rx_packets++;
+ 	netdev->stats.rx_bytes += can_frame->can_dlc;
 
 
