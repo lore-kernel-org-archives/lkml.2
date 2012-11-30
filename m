@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993321Ab2K3TIn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:08:43 -0500
-Received: from mail.kernel.org ([198.145.19.201]:59758 "EHLO mail.kernel.org"
+	id S2993339Ab2K3TJG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:09:06 -0500
+Received: from mail.kernel.org ([198.145.19.201]:59666 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751299Ab2K3TCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 14:02:43 -0500
+	id S2993055Ab2K3TCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 14:02:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Thierry Escande <thierry.escande@linux.intel.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Peter Huewe <peterhuewe@gmx.de>
-Subject: [ 45/54] NFC: Fix pn533 target mode memory leak
-Date: Fri, 30 Nov 2012 10:56:16 -0800
-Message-Id: <20121130185212.456298784@linuxfoundation.org>
+        David Milburn <dmilburn@redhat.com>, Jeff Garzik <jgarzik@redhat.com>,
+        CAI Qian <caiqian@redhat.com>
+Subject: [ 42/54] sata_svw: check DMA start bit before reset
+Date: Fri, 30 Nov 2012 10:56:13 -0800
+Message-Id: <20121130185212.160651853@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185207.894301294@linuxfoundation.org>
 References: <20121130185207.894301294@linuxfoundation.org>
@@ -26,44 +26,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thierry Escande <thierry.escande@linux.intel.com>
+From: David Milburn <dmilburn@redhat.com>
 
-commit 5b412fd11c918171c98a253d8a3484afa9f69ca5 upstream.
+commit b03e66a6be91f8389fcd902ab6c1563db1c9c06b upstream.
 
-In target mode, sent sk_buff were not freed in pn533_tm_send_complete
+If kdump is triggered with pending IO, controller may not respond causing
+kdump to fail.
 
-Signed-off-by: Thierry Escande <thierry.escande@linux.intel.com>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+http://marc.info/?l=linux-ide&m=133032255424658&w=2
+
+During error recovery ata_do_dev_read_id never completes due hang
+in mmio_insw.
+
+ata_do_dev_read_id
+ ata_sff_data_xfer
+  ioread16_rep
+   mmio_insw
+
+if DMA start bit is cleared before reset, PIO command is successful
+and kdump succeeds.
+
+Signed-off-by: David Milburn <dmilburn@redhat.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Cc: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/nfc/pn533.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/ata/sata_svw.c |   35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
 
---- a/drivers/nfc/pn533.c
-+++ b/drivers/nfc/pn533.c
-@@ -2014,8 +2014,12 @@ error:
- static int pn533_tm_send_complete(struct pn533 *dev, void *arg,
- 				  u8 *params, int params_len)
+--- a/drivers/ata/sata_svw.c
++++ b/drivers/ata/sata_svw.c
+@@ -142,6 +142,39 @@ static int k2_sata_scr_write(struct ata_
+ 	return 0;
+ }
+ 
++static int k2_sata_softreset(struct ata_link *link,
++			     unsigned int *class, unsigned long deadline)
++{
++	u8 dmactl;
++	void __iomem *mmio = link->ap->ioaddr.bmdma_addr;
++
++	dmactl = readb(mmio + ATA_DMA_CMD);
++
++	/* Clear the start bit */
++	if (dmactl & ATA_DMA_START) {
++		dmactl &= ~ATA_DMA_START;
++		writeb(dmactl, mmio + ATA_DMA_CMD);
++	}
++
++	return ata_sff_softreset(link, class, deadline);
++}
++
++static int k2_sata_hardreset(struct ata_link *link,
++			     unsigned int *class, unsigned long deadline)
++{
++	u8 dmactl;
++	void __iomem *mmio = link->ap->ioaddr.bmdma_addr;
++
++	dmactl = readb(mmio + ATA_DMA_CMD);
++
++	/* Clear the start bit */
++	if (dmactl & ATA_DMA_START) {
++		dmactl &= ~ATA_DMA_START;
++		writeb(dmactl, mmio + ATA_DMA_CMD);
++	}
++
++	return sata_sff_hardreset(link, class, deadline);
++}
+ 
+ static void k2_sata_tf_load(struct ata_port *ap, const struct ata_taskfile *tf)
  {
-+	struct sk_buff *skb_out = arg;
-+
- 	nfc_dev_dbg(&dev->interface->dev, "%s", __func__);
+@@ -346,6 +379,8 @@ static struct scsi_host_template k2_sata
  
-+	dev_kfree_skb(skb_out);
-+
- 	if (params_len < 0) {
- 		nfc_dev_err(&dev->interface->dev,
- 			    "Error %d when sending data",
-@@ -2053,7 +2057,7 @@ static int pn533_tm_send(struct nfc_dev
- 
- 	rc = pn533_send_cmd_frame_async(dev, out_frame, dev->in_frame,
- 					dev->in_maxlen, pn533_tm_send_complete,
--					NULL, GFP_KERNEL);
-+					skb, GFP_KERNEL);
- 	if (rc) {
- 		nfc_dev_err(&dev->interface->dev,
- 			    "Error %d when trying to send data", rc);
+ static struct ata_port_operations k2_sata_ops = {
+ 	.inherits		= &ata_bmdma_port_ops,
++	.softreset              = k2_sata_softreset,
++	.hardreset              = k2_sata_hardreset,
+ 	.sff_tf_load		= k2_sata_tf_load,
+ 	.sff_tf_read		= k2_sata_tf_read,
+ 	.sff_check_status	= k2_stat_check_status,
 
 
