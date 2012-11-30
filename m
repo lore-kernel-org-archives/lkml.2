@@ -1,99 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992843Ab2K3TAi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:00:38 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58714 "EHLO mail.kernel.org"
+	id S1759472Ab2K3TA5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:00:57 -0500
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:60797
+	"EHLO p3plsmtps2ded02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757948Ab2K3S44 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:56:56 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Josh Hay <joshua.a.hay@intel.com>,
-        Phil Schmitt <phillip.j.schmitt@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Abdallah Chatila <Abdallah.Chatila@ericsson.com>
-Subject: [ 42/56] ixgbe: add support for X540-AT1
-Date: Fri, 30 Nov 2012 10:55:34 -0800
-Message-Id: <20121130185122.640414136@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121130185118.302752929@linuxfoundation.org>
-References: <20121130185118.302752929@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1759441Ab2K3TAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 14:00:35 -0500
+x-originating-ip: 72.167.245.219
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: davem@davemloft.net, netdev@vger.kernel.org
+Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org
+Subject: [PATCH net-next,1/1] hyperv: Add an error message to rndis_filter_set_device_mac()
+Date: Fri, 30 Nov 2012 11:23:41 -0800
+Message-Id: <1354303421-26149-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+This message indicates an error returned from the host when changing MAC address.
 
-------------------
-
-From: "joshua.a.hay@intel.com" <joshua.a.hay@intel.com>
-
-commit df376f0de167754da9b3ece4afdb5bb8bf3fbf3e upstream.
-
-This patch adds device support for Ethernet Controller X540-AT1.
-
-Signed-off-by: Josh Hay <joshua.a.hay@intel.com>
-Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: Abdallah Chatila <Abdallah.Chatila@ericsson.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reported-by: Michal Kubecek <mkubecek@suse.com>
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
 
 ---
- drivers/net/ethernet/intel/ixgbe/ixgbe_common.c  |    1 +
- drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c |    1 +
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c    |    2 ++
- drivers/net/ethernet/intel/ixgbe/ixgbe_type.h    |    1 +
- 4 files changed, 5 insertions(+)
+ drivers/net/hyperv/rndis_filter.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_common.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_common.c
-@@ -3216,6 +3216,7 @@ static s32 ixgbe_device_supports_autoneg
+diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
+index 7fdeb52..2b657d4 100644
+--- a/drivers/net/hyperv/rndis_filter.c
++++ b/drivers/net/hyperv/rndis_filter.c
+@@ -605,8 +605,11 @@ int rndis_filter_set_device_mac(struct hv_device *hdev, char *mac)
+ 		return -EBUSY;
+ 	} else {
+ 		set_complete = &request->response_msg.msg.set_complete;
+-		if (set_complete->status != RNDIS_STATUS_SUCCESS)
++		if (set_complete->status != RNDIS_STATUS_SUCCESS) {
++			netdev_err(ndev, "Fail to set MAC on host side:0x%x\n",
++				   set_complete->status);
+ 			ret = -EINVAL;
++		}
+ 	}
  
- 	switch (hw->device_id) {
- 	case IXGBE_DEV_ID_X540T:
-+	case IXGBE_DEV_ID_X540T1:
- 		return 0;
- 	case IXGBE_DEV_ID_82599_T3_LOM:
- 		return 0;
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
-@@ -2006,6 +2006,7 @@ static int ixgbe_wol_exclusion(struct ix
- 		retval = 0;
- 		break;
- 	case IXGBE_DEV_ID_X540T:
-+	case IXGBE_DEV_ID_X540T1:
- 		/* check eeprom to see if enabled wol */
- 		if ((wol_cap == IXGBE_DEVICE_CAPS_WOL_PORT0_1) ||
- 		    ((wol_cap == IXGBE_DEVICE_CAPS_WOL_PORT0) &&
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-@@ -114,6 +114,7 @@ static DEFINE_PCI_DEVICE_TABLE(ixgbe_pci
- 	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_82599_LS), board_82599 },
- 	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_82599EN_SFP), board_82599 },
- 	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_82599_SFP_SF_QP), board_82599 },
-+	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_X540T1), board_X540 },
- 	/* required last entry */
- 	{0, }
- };
-@@ -7060,6 +7061,7 @@ static int __devinit ixgbe_probe(struct
- 		adapter->wol = IXGBE_WUFC_MAG;
- 		break;
- 	case IXGBE_DEV_ID_X540T:
-+	case IXGBE_DEV_ID_X540T1:
- 		/* Check eeprom to see if it is enabled */
- 		hw->eeprom.ops.read(hw, 0x2c, &adapter->eeprom_cap);
- 		wol_cap = adapter->eeprom_cap & IXGBE_DEVICE_CAPS_WOL_MASK;
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
-@@ -67,6 +67,7 @@
- #define IXGBE_DEV_ID_82599_LS            0x154F
- #define IXGBE_DEV_ID_X540T               0x1528
- #define IXGBE_DEV_ID_82599_SFP_SF_QP     0x154A
-+#define IXGBE_DEV_ID_X540T1              0x1560
- 
- /* VF Device IDs */
- #define IXGBE_DEV_ID_82599_VF           0x10ED
-
+ cleanup:
+-- 
+1.7.4.1
 
