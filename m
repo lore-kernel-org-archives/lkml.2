@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1769258Ab2K3T2U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:28:20 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58219 "EHLO mail.kernel.org"
+	id S2992631Ab2K3S4M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:56:12 -0500
+Received: from mail.kernel.org ([198.145.19.201]:58157 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1031442Ab2K3S4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:56:13 -0500
+	id S1031442Ab2K3S4H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:56:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Colin Fletcher <colin.m.fletcher@googlemail.com>,
-        Devin Venable <venable.devin@gmail.com>,
-        Dr Nick Bailey <nicholas.bailey@glasgow.ac.uk>,
-        Jannis Achstetter <jannis_achstetter@web.de>,
-        Rui Nuno Capela <rncbc@rncbc.org>, Oliver Neukum <oliver@neukum.org>,
-        Clemens Ladisch <clemens@ladisch.de>
-Subject: [ 17/56] ALSA: ua101, usx2y: fix broken MIDI output
-Date: Fri, 30 Nov 2012 10:55:09 -0800
-Message-Id: <20121130185120.069279120@linuxfoundation.org>
+        Keith Busch <keith.busch@intel.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>
+Subject: [ 02/56] NVMe: Fix uninitialized iod compiler warning
+Date: Fri, 30 Nov 2012 10:54:54 -0800
+Message-Id: <20121130185118.573869516@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185118.302752929@linuxfoundation.org>
 References: <20121130185118.302752929@linuxfoundation.org>
@@ -30,65 +26,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Keith Busch <keith.busch@intel.com>
 
-commit e99ddfde6ae0dd2662bb40435696002b590e4057 upstream.
+commit c7d36ab8fa04c213328119a9c0d66985fe204ee5 upstream.
 
-Commit 88a8516a2128 (ALSA: usbaudio: implement USB autosuspend) added
-autosuspend code to all files making up the snd-usb-audio driver.
-However, midi.c is part of snd-usb-lib and is also used by other
-drivers, not all of which support autosuspend.  Thus, calls to
-usb_autopm_get_interface() could fail, and this unexpected error would
-result in the MIDI output being completely unusable.
-
-Make it work by ignoring the error that is expected with drivers that do
-not support autosuspend.
-
-Reported-by: Colin Fletcher <colin.m.fletcher@googlemail.com>
-Reported-by: Devin Venable <venable.devin@gmail.com>
-Reported-by: Dr Nick Bailey <nicholas.bailey@glasgow.ac.uk>
-Reported-by: Jannis Achstetter <jannis_achstetter@web.de>
-Reported-by: Rui Nuno Capela <rncbc@rncbc.org>
-Cc: Oliver Neukum <oliver@neukum.org>
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Keith Busch <keith.busch@intel.com>
+Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/midi.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/block/nvme.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/usb/midi.c
-+++ b/sound/usb/midi.c
-@@ -148,6 +148,7 @@ struct snd_usb_midi_out_endpoint {
- 		struct snd_usb_midi_out_endpoint* ep;
- 		struct snd_rawmidi_substream *substream;
- 		int active;
-+		bool autopm_reference;
- 		uint8_t cable;		/* cable number << 4 */
- 		uint8_t state;
- #define STATE_UNKNOWN	0
-@@ -1076,7 +1077,8 @@ static int snd_usbmidi_output_open(struc
- 		return -ENXIO;
- 	}
- 	err = usb_autopm_get_interface(umidi->iface);
--	if (err < 0)
-+	port->autopm_reference = err >= 0;
-+	if (err < 0 && err != -EACCES)
- 		return -EIO;
- 	substream->runtime->private_data = port;
- 	port->state = STATE_UNKNOWN;
-@@ -1087,9 +1089,11 @@ static int snd_usbmidi_output_open(struc
- static int snd_usbmidi_output_close(struct snd_rawmidi_substream *substream)
- {
- 	struct snd_usb_midi* umidi = substream->rmidi->private_data;
-+	struct usbmidi_out_port *port = substream->runtime->private_data;
+--- a/drivers/block/nvme.c
++++ b/drivers/block/nvme.c
+@@ -1153,7 +1153,7 @@ static int nvme_user_admin_cmd(struct nv
+ 	struct nvme_admin_cmd cmd;
+ 	struct nvme_command c;
+ 	int status, length;
+-	struct nvme_iod *iod;
++	struct nvme_iod *uninitialized_var(iod);
  
- 	substream_open(substream, 0);
--	usb_autopm_put_interface(umidi->iface);
-+	if (port->autopm_reference)
-+		usb_autopm_put_interface(umidi->iface);
- 	return 0;
- }
- 
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EACCES;
 
 
