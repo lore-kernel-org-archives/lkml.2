@@ -1,56 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031443Ab2K3SMI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:12:08 -0500
-Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:34797 "EHLO
-	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1031428Ab2K3SMD (ORCPT
+	id S1031461Ab2K3SNY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:13:24 -0500
+Received: from smtp.snhosting.dk ([87.238.248.203]:48634 "EHLO
+	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031447Ab2K3SNV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:12:03 -0500
-Date: Fri, 30 Nov 2012 19:11:59 +0100
-From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+	Fri, 30 Nov 2012 13:13:21 -0500
+Date: Fri, 30 Nov 2012 19:13:20 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH RESEND] tty: don't dead lock while flushing workqueue
-Message-ID: <20121130181159.GA7468@breakpoint.cc>
-References: <1353501542-14707-1-git-send-email-bigeasy@linutronix.de>
- <20121121140426.1860d093@pyramind.ukuu.org.uk>
- <20121127095357.GA3536@breakpoint.cc>
- <20121127172249.GB24592@kroah.com>
- <20121127180108.GA7376@linutronix.de>
- <20121130170938.GA7323@breakpoint.cc>
- <20121130172143.GA6635@kroah.com>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Jim Cromie <jim.cromie@gmail.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>, Michal Marek <mmarek@suse.cz>,
+        Tony Lindgren <tony@atomide.com>,
+        Jonathan Kliegman <kliegs@chromium.org>,
+        Chris Zankel <chris@zankel.net>,
+        Bill Pemberton <wfp5p@viridian.itc.virginia.edu>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Subject: Re: [PATCH 1/2] modpost.c: Stop checking __dev* section mismatches
+Message-ID: <20121130181320.GB18287@merkur.ravnborg.org>
+References: <20121129184133.GA15110@kroah.com> <20121129184328.GB15110@kroah.com> <20121129184502.GC15110@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121130172143.GA6635@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121129184502.GC15110@kroah.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 30, 2012 at 09:21:43AM -0800, Greg Kroah-Hartman wrote:
-> > Ping. Can you feed this to your tty tree? :)
+On Thu, Nov 29, 2012 at 10:45:02AM -0800, Greg Kroah-Hartman wrote:
+> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 > 
-> It's really late in the release cycle, I would like to have this get
-> more testing in linux-next before I send it to Linus, so I was going to
-> wait until after 3.8-rc1 is out before doing it.
-
-I assumed that you apply this to your tty-next tree so it appears in
-linux-next. So now I wait until -rc2 is out and ping again if nothing
-happens :)
-
-> I'm doing the same thing for all tty/serial patches right now, so don't
-> feel like I'm picking on you :)
-
-Next time I look for a bug that annoys everyone :)
-Nah. I saw some movement in tty-next so I though I ping you. But staging
-stuff is probably a different category.
-
+> Now that the __dev* sections are not being generated, we don't need to
+> check for them in modpost.c.
 > 
-> thanks,
-> 
-> greg k-h
-
-Sebastian
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Acked-by: Sam Ravnborg <sam@ravnborg.org>
