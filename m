@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031653Ab2K3St3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:49:29 -0500
-Received: from mail.kernel.org ([198.145.19.201]:57440 "EHLO mail.kernel.org"
+	id S1031705Ab2K3Stm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:49:42 -0500
+Received: from mail.kernel.org ([198.145.19.201]:57450 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1031595Ab2K3St0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:49:26 -0500
+	id S1031634Ab2K3St1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:49:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Danny Kukawka <danny.kukawka@bisect.de>, Jens Axboe <axboe@kernel.dk>
-Subject: [ 03/37] drivers/block/DAC960: fix -Wuninitialized warning
-Date: Fri, 30 Nov 2012 10:45:50 -0800
-Message-Id: <20121130183857.567243855@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 22/37] sparc64: not any error from do_sigaltstack() should fail rt_sigreturn()
+Date: Fri, 30 Nov 2012 10:46:09 -0800
+Message-Id: <20121130183859.634524718@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130183857.166228045@linuxfoundation.org>
 References: <20121130183857.166228045@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,37 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Danny Kukawka <danny.kukawka@bisect.de>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit cecd353a02fb1405c8a72a324b26b5acf97e7411 upstream.
+commit fae2ae2a900a5c7bb385fe4075f343e7e2d5daa2 upstream.
 
-Set CommandMailbox with memset before use it. Fix for:
+If a signal handler is executed on altstack and another signal comes,
+we will end up with rt_sigreturn() on return from the second handler
+getting -EPERM from do_sigaltstack().  It's perfectly OK, since we
+are not asking to change the settings; in fact, they couldn't have been
+changed during the second handler execution exactly because we'd been
+on altstack all along.  64bit sigreturn on sparc treats any error from
+do_sigaltstack() as "SIGSEGV now"; we need to switch to the same semantics
+we are using on other architectures.
 
-drivers/block/DAC960.c: In function ‘DAC960_V1_EnableMemoryMailboxInterface’:
-arch/x86/include/asm/io.h:61:1: warning: ‘CommandMailbox.Bytes[12]’
- may be used uninitialized in this function [-Wuninitialized]
-drivers/block/DAC960.c:1175:30: note: ‘CommandMailbox.Bytes[12]’
- was declared here
-
-Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/block/DAC960.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/sparc/kernel/signal_64.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/drivers/block/DAC960.c
-+++ b/drivers/block/DAC960.c
-@@ -1177,7 +1177,8 @@ static bool DAC960_V1_EnableMemoryMailbo
-   int TimeoutCounter;
-   int i;
+--- a/arch/sparc/kernel/signal_64.c
++++ b/arch/sparc/kernel/signal_64.c
+@@ -309,9 +309,7 @@ void do_rt_sigreturn(struct pt_regs *reg
+ 		err |= restore_fpu_state(regs, fpu_save);
  
--  
-+  memset(&CommandMailbox, 0, sizeof(DAC960_V1_CommandMailbox_T));
-+
-   if (pci_set_dma_mask(Controller->PCIDevice, DMA_BIT_MASK(32)))
- 	return DAC960_Failure(Controller, "DMA mask out of range");
-   Controller->BounceBufferLimit = DMA_BIT_MASK(32);
+ 	err |= __copy_from_user(&set, &sf->mask, sizeof(sigset_t));
+-	err |= do_sigaltstack(&sf->stack, NULL, (unsigned long)sf);
+-
+-	if (err)
++	if (err || do_sigaltstack(&sf->stack, NULL, (unsigned long)sf) == -EFAULT)
+ 		goto segv;
+ 
+ 	err |= __get_user(rwin_save, &sf->rwin_save);
 
 
