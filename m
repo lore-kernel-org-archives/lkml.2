@@ -1,67 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932134Ab2K3IxC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 03:53:02 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:51084 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756532Ab2K3Iw7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 03:52:59 -0500
-Message-ID: <1354265569.3859.1.camel@phoenix>
-Subject: [PATCH] regulator: tps51632: Ensure [base|max]_voltage_uV pdata
- settings are valid
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 30 Nov 2012 16:52:49 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756061Ab2K3IzA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 03:55:00 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52958 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751357Ab2K3Iy6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 03:54:58 -0500
+Message-ID: <50B8745F.4020701@ti.com>
+Date: Fri, 30 Nov 2012 10:54:55 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Axel Lin <axel.lin@ingics.com>
+CC: Archit Taneja <archit@ti.com>, Mythri P K <mythripk@ti.com>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] OMAPDSS: Add terminating entry for picodlp_i2c_id table
+References: <1354249845.18712.2.camel@phoenix>
+In-Reply-To: <1354249845.18712.2.camel@phoenix>
+X-Enigmail-Version: 1.4.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="------------enig3C2E0DFF10C4F0CF3288AA4D"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If pdata->base_voltage_uV is missing or the settings of pdata->base_voltage_uV
-and pdata->max_voltage_uV are out of range, TPS51632_VOLT_VSEL macro
-returns wrong vsel.
+--------------enig3C2E0DFF10C4F0CF3288AA4D
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Thus add checking [base|max]_voltage_uV pdata settings in probe.
+Hi,
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/tps51632-regulator.c |   15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+On 2012-11-30 06:30, Axel Lin wrote:
+> The i2c_device_id table is supposed to be zero-terminated.
+>=20
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/video/omap2/displays/panel-picodlp.c |    1 +
+>  1 file changed, 1 insertion(+)
+>=20
+> diff --git a/drivers/video/omap2/displays/panel-picodlp.c b/drivers/vid=
+eo/omap2/displays/panel-picodlp.c
+> index e3a6c19..1b94018 100644
+> --- a/drivers/video/omap2/displays/panel-picodlp.c
+> +++ b/drivers/video/omap2/displays/panel-picodlp.c
+> @@ -50,6 +50,7 @@ struct picodlp_i2c_data {
+> =20
+>  static struct i2c_device_id picodlp_i2c_id[] =3D {
+>  	{ "picodlp_i2c_driver", 0 },
+> +	{ }
+>  };
+> =20
+>  struct picodlp_i2c_command {
 
-diff --git a/drivers/regulator/tps51632-regulator.c b/drivers/regulator/tps51632-regulator.c
-index 523b1e5..ab21133 100644
---- a/drivers/regulator/tps51632-regulator.c
-+++ b/drivers/regulator/tps51632-regulator.c
-@@ -236,6 +236,21 @@ static int tps51632_probe(struct i2c_client *client,
- 		return -EINVAL;
- 	}
- 
-+	if (pdata->enable_pwm_dvfs) {
-+		if ((pdata->base_voltage_uV < TPS51632_MIN_VOLATGE) ||
-+		    (pdata->base_voltage_uV > TPS51632_MAX_VOLATGE)) {
-+			dev_err(&client->dev, "Invalid base_voltage_uV setting\n");
-+			return -EINVAL;
-+		}
-+
-+		if ((pdata->max_voltage_uV) &&
-+		    ((pdata->max_voltage_uV < TPS51632_MIN_VOLATGE) ||
-+		     (pdata->max_voltage_uV > TPS51632_MAX_VOLATGE))) {
-+			dev_err(&client->dev, "Invalid max_voltage_uV setting\n");
-+			return -EINVAL;
-+		}
-+	}
-+
- 	tps = devm_kzalloc(&client->dev, sizeof(*tps), GFP_KERNEL);
- 	if (!tps) {
- 		dev_err(&client->dev, "Memory allocation failed\n");
--- 
-1.7.9.5
+Thanks, I'll apply to omapdss tree.
+
+ Tomi
 
 
 
+
+--------------enig3C2E0DFF10C4F0CF3288AA4D
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with undefined - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJQuHRfAAoJEPo9qoy8lh71BgMP/iokScfkKLA2NHTpv8aUoblR
+mfIGKtggJ21fYVMHbmhyD/ohy3RRofX/KZSJXPSNuygN8cwjD/LbrxlfMvGsB1/R
+frbFHG98E/im31MKm8e/R7GmZgmceUgtjaPq3pEkatN1VrCpcfREAEmFWAgYetad
+Jn9U/qNf0M08vQ2Pyd9mXiGIuYZ2AcXavtEuvjVAgsKLjgeSwTpp61MzN/X2wBrQ
+HqXmCCEAd3FoJARBofzdXBiw0DBg34umYFDbg7AFRHTv9m7pdRtONf7Yl/qHgCEn
+u1ylOpV7jmVnKqEnjAH5whQhu9bEMAxCI7mJ8XWJBn2D+0vD+wYhG08qwAluBkJY
++/zAj3P5RDcmSLvcLZZsv085v7AYM/yI4XQf3XF5y41PDLW2jZPqVYVhDjn+r1fS
+4rjcZ3QQpdvegyvqg3NhP7eUeyQ4H5911PUYxjmKk9eAqyAB9BHzpQovCKGm6IBO
+I52VwRgBraIN0oVOLDRK6UPJML3rFbIHXhz+AP+LFClRo5BHuWJCCwJwoP75+UOw
+X4Tkhhhr8LyjE6PEuDWExZ/qi/oVhN/fUwOuciQzP8rQiKLdwkpUrKlpVkzrX/Iz
++Zz3yUcjBrXlTPD+fNEU4LBhOBYFXwOCLyFq97miwf4BZZ+KAwpb4RNQac4+dfrM
+EngBNyWsk61lvUbn2Hmf
+=1gRk
+-----END PGP SIGNATURE-----
+
+--------------enig3C2E0DFF10C4F0CF3288AA4D--
