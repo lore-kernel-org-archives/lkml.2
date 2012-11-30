@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992737Ab2K3S4d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:56:33 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58394 "EHLO mail.kernel.org"
+	id S2992798Ab2K3S4r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:56:47 -0500
+Received: from mail.kernel.org ([198.145.19.201]:58528 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992616Ab2K3S41 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:56:27 -0500
+	id S2992759Ab2K3S4j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:56:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>, Ignacy Gawedzki <i@lri.fr>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 29/56] mac80211: deinitialize ibss-internals after emptiness check
-Date: Fri, 30 Nov 2012 10:55:21 -0800
-Message-Id: <20121130185121.233810131@linuxfoundation.org>
+        Paolo Bonzini <pbonzini@redhat.com>,
+        James Bottomley <JBottomley@parallels.com>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>,
+        satoru takeuchi <satoru.takeuchi@gmail.com>
+Subject: [ 40/56] scsi: Silence unnecessary warnings about ioctl to partition
+Date: Fri, 30 Nov 2012 10:55:32 -0800
+Message-Id: <20121130185122.404966631@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185118.302752929@linuxfoundation.org>
 References: <20121130185118.302752929@linuxfoundation.org>
@@ -26,53 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Simon Wunderlich <simon.wunderlich@s2003.tu-chemnitz.de>
+From: Jan Kara <jack@suse.cz>
 
-commit b78a4932f5fb11fadf41e69c606a33fa6787574c upstream.
+commit 6d9359280753d2955f86d6411047516a9431eb51 upstream.
 
-The check whether the IBSS is active and can be removed should be
-performed before deinitializing the fields used for the check/search.
-Otherwise, the configured BSS will not be found and removed properly.
+Sometimes, warnings about ioctls to partition happen often enough that they
+form majority of the warnings in the kernel log and users complain. In some
+cases warnings are about ioctls such as SG_IO so it's not good to get rid of
+the warnings completely as they can ease debugging of userspace problems
+when ioctl is refused.
 
-To make it more clear for the future, rename sdata->u.ibss to the
-local pointer ifibss which is used within the checks.
+Since I have seen warnings from lots of commands, including some proprietary
+userspace applications, I don't think disallowing the ioctls for processes
+with CAP_SYS_RAWIO will happen in the near future if ever. So lets just
+stop warning for processes with CAP_SYS_RAWIO for which ioctl is allowed.
 
-This behaviour was introduced by
-f3209bea110cade12e2b133da8b8499689cb0e2e
-("mac80211: fix IBSS teardown race")
-
-Signed-off-by: Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
-Cc: Ignacy Gawedzki <i@lri.fr>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Acked-by: Paolo Bonzini <pbonzini@redhat.com>
+CC: Paolo Bonzini <pbonzini@redhat.com>
+CC: James Bottomley <JBottomley@parallels.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Cc: satoru takeuchi <satoru.takeuchi@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/ibss.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ block/scsi_ioctl.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/net/mac80211/ibss.c
-+++ b/net/mac80211/ibss.c
-@@ -1153,10 +1153,6 @@ int ieee80211_ibss_leave(struct ieee8021
- 
- 	mutex_lock(&sdata->u.ibss.mtx);
- 
--	sdata->u.ibss.state = IEEE80211_IBSS_MLME_SEARCH;
--	memset(sdata->u.ibss.bssid, 0, ETH_ALEN);
--	sdata->u.ibss.ssid_len = 0;
--
- 	active_ibss = ieee80211_sta_active_ibss(sdata);
- 
- 	if (!active_ibss && !is_zero_ether_addr(ifibss->bssid)) {
-@@ -1177,6 +1173,10 @@ int ieee80211_ibss_leave(struct ieee8021
- 		}
+--- a/block/scsi_ioctl.c
++++ b/block/scsi_ioctl.c
+@@ -721,11 +721,14 @@ int scsi_verify_blk_ioctl(struct block_d
+ 		break;
  	}
  
-+	ifibss->state = IEEE80211_IBSS_MLME_SEARCH;
-+	memset(ifibss->bssid, 0, ETH_ALEN);
-+	ifibss->ssid_len = 0;
++	if (capable(CAP_SYS_RAWIO))
++		return 0;
 +
- 	sta_info_flush(sdata->local, sdata);
+ 	/* In particular, rule out all resets and host-specific ioctls.  */
+ 	printk_ratelimited(KERN_WARNING
+ 			   "%s: sending ioctl %x to a partition!\n", current->comm, cmd);
  
- 	spin_lock_bh(&ifibss->incomplete_lock);
+-	return capable(CAP_SYS_RAWIO) ? 0 : -ENOIOCTLCMD;
++	return -ENOIOCTLCMD;
+ }
+ EXPORT_SYMBOL(scsi_verify_blk_ioctl);
+ 
 
 
