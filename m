@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755889Ab2K3XJQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 18:09:16 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:52172
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752671Ab2K3XJO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 18:09:14 -0500
-Date: Fri, 30 Nov 2012 18:09:00 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Chris Mason <clmason@fusionio.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
-        Jeff Chua <jeff.chua.linux@gmail.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH v2] Do a proper locking for mmap and block size change
-Message-ID: <20121130230900.GA12674@infradead.org>
-References: <CA+55aFxt655WfuhjOCnu3esg3gt=L37v=ofWfjs+qpXjn-F2uA@mail.gmail.com>
- <20121129191503.GB3490@shiny>
- <CA+55aFxaHuxaEezkpmGRi4kFGaQFTv9S89N-hJhxBjVa6ZwnbQ@mail.gmail.com>
- <20121129194840.GC3490@shiny>
- <CA+55aFwGLExQGhhzStMobWzLju0tVjKW9SZphrxp3AJ6w_ZH9g@mail.gmail.com>
- <20121129212931.GD3490@shiny>
- <CA+55aFzeq1HZvEZdmx=f8at2UOWcyp4oZv0RCX4dd0+dthuM1w@mail.gmail.com>
- <20121130024910.GF6434@dastard>
- <20121130163601.GA32238@infradead.org>
- <20121130224041.GD12955@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121130224041.GD12955@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1756134Ab2K3XJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 18:09:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11338 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756007Ab2K3XJ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 18:09:27 -0500
+Message-ID: <1354316964.1873.11.camel@t520.localdomain>
+Subject: [GIT PULL] C6X: fixes for v3.7
+From: Mark Salter <msalter@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Date: Fri, 30 Nov 2012 18:09:24 -0500
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="us-ascii"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 01, 2012 at 09:40:41AM +1100, Dave Chinner wrote:
-> So it was based on this interface?
+The following changes since commit 9489e9dcae718d5fde988e4a684a0f55b5f94d17:
 
-Based on that.  I had dropped the inode operation as it's not really
-a generic operation but a callback for either the buffered I/O code
-or direct I/O and should be treated as such.  I've also split the
-single multiplexer function into individual ones, but the underlying
-data structure and fundamental operations are the same.
+  Linux 3.7-rc7 (2012-11-25 17:59:19 -0800)
 
-> (I went looking for this code on google a couple of days ago so I
-> could point at it and say "we should be using an iomap structure,
-> not buffer heads", but it looks like I never posted it to fsdevel or
-> the xfs lists...)
+are available in the git repository at:
 
-Your version defintively was up on your kernel.org XFS tree, that's what
-I started from.
+  git://linux-c6x.org/git/projects/linux-c6x-upstreaming.git tags/for-linus
 
-I'll have a long plane right tonight, let's see if I can get the direct
-I/O version updated.
+for you to fetch changes up to 93bbd0c087eb299e0fe11c59d340932180c082b5:
+
+  c6x: use generic kvm_para.h (2012-11-28 14:33:03 -0500)
+
+----------------------------------------------------------------
+C6X fixes for v3.7
+
+----------------------------------------------------------------
+Mark Salter (4):
+      c6x: run do_notify_resume with interrupts enabled
+      c6x: fix misleading comment
+      c6x: remove internal kernel symbols from exported setup.h
+      c6x: use generic kvm_para.h
+
+ arch/c6x/include/asm/setup.h         |   33 +++++++++++++++++++++++++++++++++
+ arch/c6x/include/uapi/asm/Kbuild     |    2 ++
+ arch/c6x/include/uapi/asm/kvm_para.h |    1 -
+ arch/c6x/include/uapi/asm/setup.h    |   33 +++------------------------------
+ arch/c6x/kernel/entry.S              |    5 +++--
+ 5 files changed, 41 insertions(+), 33 deletions(-)
+ create mode 100644 arch/c6x/include/asm/setup.h
+ delete mode 100644 arch/c6x/include/uapi/asm/kvm_para.h
+
 
