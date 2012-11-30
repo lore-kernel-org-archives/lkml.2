@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760Ab2K3Dky (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 22:40:54 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:57300 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754372Ab2K3Dkg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 22:40:36 -0500
-Date: Fri, 30 Nov 2012 03:40:34 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Eric Paris <eparis@parisplace.org>
-Cc: Pavel Roskin <proski@gnu.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        SE-Linux <selinux@tycho.nsa.gov>
-Subject: Re: Bisected regression: iterate_fd() selinux change affects flash
- plugin
-Message-ID: <20121130034034.GB4939@ZenIV.linux.org.uk>
-References: <20121025101416.v1wilj95q8wkk0os-cebfxv@webmail.spamcop.net>
- <20121111235001.a3gqhaijmec0gk0g-cebfxv@webmail.spamcop.net>
- <CACLa4pu4FFwKdoA8ATfmviOj0e0mAQ3U2FNEiJHCv4RfDY4ZoQ@mail.gmail.com>
- <20121112115707.r8h545480kg0cgkk-cebfxv@webmail.spamcop.net>
- <CACLa4pvixB3Ehz-Ds+opvMF73pNwQJxpNx=02qy94ufJag2qwA@mail.gmail.com>
+	id S1755421Ab2K3DmY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 22:42:24 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:60089 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752595Ab2K3DmX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 22:42:23 -0500
+X-IronPort-AV: E=Sophos;i="4.83,346,1352044800"; 
+   d="scan'208";a="6303958"
+Message-ID: <50B82B0D.8010206@cn.fujitsu.com>
+Date: Fri, 30 Nov 2012 11:42:05 +0800
+From: Lin Feng <linfeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACLa4pvixB3Ehz-Ds+opvMF73pNwQJxpNx=02qy94ufJag2qwA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: viro@zeniv.linux.org.uk, bcrl@kvack.org, kamezawa.hiroyu@jp.fujitsu.com,
+        mhocko@suse.cz, hughd@google.com, cl@linux.com, mgorman@suse.de,
+        minchan@kernel.org, isimatu.yasuaki@jp.fujitsu.com,
+        laijs@cn.fujitsu.com, wency@cn.fujitsu.com, tangchen@cn.fujitsu.com,
+        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [BUG REPORT] [mm-hotplug, aio] aio ring_pages can't be offlined
+References: <1354172098-5691-1-git-send-email-linfeng@cn.fujitsu.com> <20121129153930.477e9709.akpm@linux-foundation.org>
+In-Reply-To: <20121129153930.477e9709.akpm@linux-foundation.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/30 11:41:51,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/30 11:41:52,
+	Serialize complete at 2012/11/30 11:41:52
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 16, 2012 at 02:58:46PM -0500, Eric Paris wrote:
-> On Mon, Nov 12, 2012 at 11:57 AM, Pavel Roskin <proski@gnu.org> wrote:
-> > Quoting Eric Paris <eparis@parisplace.org>:
-> >
-> >> OMG this +1 -1 stuff is nuts...
-> 
-> Ping, Al.
-> 
-> int iterate_fd(struct files_struct *files, unsigned n,
-> [snip]
->         while (!res && n < fdt->max_fds) {
->                 file = rcu_dereference_check_fdtable(files, fdt->fd[n++]);
->                 if (file)
->                         res = f(p, file, n);
->         }
->         spin_unlock(&files->file_lock);
->         return res;
-> 
-> So we increment n (the file descriptor number) in the dereference,
-> then pass that (wrong) number to f().
-> 
-> Every single f() (including SELinux, the cause of this bug) returns
-> fd+1 (so now we are up by 2).  Then all of the users of iterate fd
-> actually use fd-1 (which is wrong)
-> 
-> Why not have iterate_fd return -ENOENT on no entries and stop all of
-> the stupid games?  We fix the real bug (the above function should do
-> the n++ after the f() call, and the interface is sane to design
-> against...
+hi Andrew,
 
-Because we might bloody well want to have "run some test on all opened
-files, return the first error".  And -ENOENT is quite possible one.
-Moreover, -ENOENT for "everything's OK, keep going" would be really
-weird.
+On 11/30/2012 07:39 AM, Andrew Morton wrote:
+> Tricky.
+> 
+> I expect the same problem would occur with pages which are under
+> O_DIRECT I/O.  Obviously O_DIRECT pages won't be pinned for such long
+> periods, but the durations could still be lengthy (seconds).
+the offline retry timeout duration is 2 minutes, so to O_DIRECT pages 
+seem maybe not a problem for the moment.
+> 
+> Worse is a futex page, which could easily remain pinned indefinitely.
+> 
+> The best I can think of is to make changes in or around
+> get_user_pages(), to steal the pages from userspace and replace them
+> with non-movable ones before pinning them.  The performance cost of
+> something like this would surely be unacceptable for direct-io, but
+> maybe OK for the aio ring and futexes.
+thanks for your advice.
+I want to limit the impact as little as possible, as mentioned above,
+direct-io seems not a problem, we needn't touch them. Maybe we can 
+just change the use of get_user_pages()(in or around) such as aio 
+ring pages. I will try to find a way to do this.
 
-The bug is real, but Pavel's patch is all wrong.  The problem is in the
-argument; we should pass descriptor number, not descriptor + 1.  And fixing
-that (in iterator_fd() itself) makes all callbacks work as they ought to.
-
-PS: Pavel, the life is painful enough as it is, no need to involve BZ into
-it.  Next time you need to post a patch, please do just that, especially
-when it's so short, OK?
+Thanks,
+linfeng
