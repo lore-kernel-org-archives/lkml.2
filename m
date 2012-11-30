@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882Ab2K3F57 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 00:57:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41980 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754696Ab2K3F56 (ORCPT
+	id S1755065Ab2K3GEQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 01:04:16 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:57431 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753565Ab2K3GEO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 00:57:58 -0500
-Date: Thu, 29 Nov 2012 21:57:49 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Lin Feng <linfeng@cn.fujitsu.com>
-Cc: viro@zeniv.linux.org.uk, bcrl@kvack.org, kamezawa.hiroyu@jp.fujitsu.com,
-        mhocko@suse.cz, hughd@google.com, cl@linux.com, mgorman@suse.de,
-        minchan@kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        laijs@cn.fujitsu.com, wency@cn.fujitsu.com, tangchen@cn.fujitsu.com,
-        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [BUG REPORT] [mm-hotplug, aio] aio ring_pages can't be offlined
-Message-Id: <20121129215749.acfd872a.akpm@linux-foundation.org>
-In-Reply-To: <50B82B0D.8010206@cn.fujitsu.com>
-References: <1354172098-5691-1-git-send-email-linfeng@cn.fujitsu.com>
-	<20121129153930.477e9709.akpm@linux-foundation.org>
-	<50B82B0D.8010206@cn.fujitsu.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 30 Nov 2012 01:04:14 -0500
+Date: Fri, 30 Nov 2012 06:04:12 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Abhijit Pawar <abhi.c.pawar@gmail.com>
+Cc: linux-fsdevel@vger.kernel.org,
+        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
+Subject: Re: [RESEND PATCH] fs/super.c set_anon_super calling optimization
+Message-ID: <20121130060412.GG4939@ZenIV.linux.org.uk>
+References: <CA+kxV1F5VxBGawhkV=02LcgHNWiKF-H_k6N-d1TEYNeFAScezg@mail.gmail.com>
+ <508924AB.4060902@gmail.com>
+ <20121026131441.GA22256@andromeda.usersys.redhat.com>
+ <20121130040556.GD4939@ZenIV.linux.org.uk>
+ <50B846B2.9040700@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50B846B2.9040700@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Nov 2012 11:42:05 +0800 Lin Feng <linfeng@cn.fujitsu.com> wrote:
+On Fri, Nov 30, 2012 at 11:10:02AM +0530, Abhijit Pawar wrote:
 
-> hi Andrew,
-> 
-> On 11/30/2012 07:39 AM, Andrew Morton wrote:
-> > Tricky.
+> > 	Because we want it to be a valid sget() callback.  I doubt that this
+> > optimization is worth doing, though - might even micro-pessimize the things
+> > on architectures where all arguments are passed in registers.
 > > 
-> > I expect the same problem would occur with pages which are under
-> > O_DIRECT I/O.  Obviously O_DIRECT pages won't be pinned for such long
-> > periods, but the durations could still be lengthy (seconds).
-> the offline retry timeout duration is 2 minutes, so to O_DIRECT pages 
-> seem maybe not a problem for the moment.
-> > 
-> > Worse is a futex page, which could easily remain pinned indefinitely.
-> > 
-> > The best I can think of is to make changes in or around
-> > get_user_pages(), to steal the pages from userspace and replace them
-> > with non-movable ones before pinning them.  The performance cost of
-> > something like this would surely be unacceptable for direct-io, but
-> > maybe OK for the aio ring and futexes.
-> thanks for your advice.
-> I want to limit the impact as little as possible, as mentioned above,
-> direct-io seems not a problem, we needn't touch them. Maybe we can 
-> just change the use of get_user_pages()(in or around) such as aio 
-> ring pages. I will try to find a way to do this.
+> Al,
+> Yes. it will be helpful in registers case.
 
-What about futexes?
+How so?  Consider something like
+static int btrfs_set_super(struct super_block *s, void *data)
+{
+        int err = set_anon_super(s, data);
+        if (!err)
+                s->s_fs_info = data;
+        return err;
+}
+Compile it e.g. for alpha.  Or powerpc.  Or amd64, for that matter.
+With and without your change.  And compare the resulting assembler.
+
+Hell, if the arguments are passed in register, without your patch
+we have the args for set_anon_super() all set just as we enter
+btrfs_set_super().  With your patch the second one needs to be zeroed
+out...
+
+In any case, that's microoptimization in the best case and on quite a few
+architectures it's a pessimization (granted, an equally minor one).
