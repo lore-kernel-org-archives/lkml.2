@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933416Ab2K3Q77 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 11:59:59 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:57821 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933370Ab2K3Q7y (ORCPT
+	id S1758740Ab2K3RAO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 12:00:14 -0500
+Received: from shrek-wifi.podlesie.net ([93.179.225.50]:51826 "EHLO
+	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933370Ab2K3RAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 11:59:54 -0500
-From: Johan Meiring <johanmeiring@gmail.com>
-To: pe1dnn@amsat.org, jkosina@suse.cz, standby24x7@gmail.com,
-        viro@zeniv.linux.org.uk, gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Johan Meiring <johanmeiring@gmail.com>
-Subject: [PATCH 03/32] staging: wlags49_h2: ap_h25: corrects parentheses styling issue
-Date: Fri, 30 Nov 2012 18:58:28 +0200
-Message-Id: <1354294737-5735-3-git-send-email-johanmeiring@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1354294737-5735-1-git-send-email-johanmeiring@gmail.com>
-References: <1354294737-5735-1-git-send-email-johanmeiring@gmail.com>
+	Fri, 30 Nov 2012 12:00:11 -0500
+Date: Fri, 30 Nov 2012 18:00:07 +0100
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: "Chas Williams (CONTRACTOR)" <chas@cmf.nrl.navy.mil>,
+        David Laight <David.Laight@ACULAB.COM>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nathan@traverse.com.au
+Subject: Re: [PATCH v2 3/3] pppoatm: protect against freeing of vcc
+Message-ID: <20121130170007.GA25818@shrek.podlesie.net>
+References: <201211300138.qAU1c8sE003388@thirdoffive.cmf.nrl.navy.mil>
+ <1354240620.21562.256.camel@shinybook.infradead.org>
+ <1354263922.21562.270.camel@shinybook.infradead.org>
+ <20121130095354.GA15126@shrek.podlesie.net>
+ <1354277415.21562.284.camel@shinybook.infradead.org>
+ <1354292626.21562.298.camel@shinybook.infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354292626.21562.298.camel@shinybook.infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit corrects incorrect spaces around parentheses.
+On Fri, Nov 30, 2012 at 04:23:46PM +0000, David Woodhouse wrote:
+> 
+> +static void br2684_release_cb(struct atm_vcc *atmvcc)
+> +{
+> +	struct br2684_vcc *brvcc = BR2684_VCC(atmvcc);
+> +
+> +	/*
+> +	 * A race with br2684_xmit_vcc() might cause a spurious wakeup just
+> +	 * after that function *stops* the queue, and qspace might actually
+> +	 * go negative before the queue stops again. We cope with that.
+> +	 */
 
-Signed-off-by: Johan Meiring <johanmeiring@gmail.com>
----
- drivers/staging/wlags49_h2/ap_h25.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+We cannot race with br2684_xmit_vcc() because both br2684_xmit_vcc()
+and br2684_release_cb() are called with locked sk->sk_lock.slock.
 
-diff --git a/drivers/staging/wlags49_h2/ap_h25.c b/drivers/staging/wlags49_h2/ap_h25.c
-index f0fd34f..1c8f2be 100644
---- a/drivers/staging/wlags49_h2/ap_h25.c
-+++ b/drivers/staging/wlags49_h2/ap_h25.c
-@@ -3996,7 +3996,7 @@ static const hcf_8 fw_image_4_data[] = {
- 
- static const CFG_IDENTITY_STRCT fw_image_infoidentity[] = {
- 	{
--		sizeof( CFG_IDENTITY_STRCT ) / sizeof(hcf_16) - 1,
-+		sizeof(CFG_IDENTITY_STRCT) / sizeof(hcf_16) - 1,
- 		CFG_FW_IDENTITY,
- 		COMP_ID_FW_AP,
- 		3,							//Variant
--- 
-1.7.10.4
+> +	if (atomic_read(&brvcc->qspace) > 0)
+> +		netif_wake_queue(brvcc->device);
+> +
+> +	if (brvcc->old_release_cb)
+> +		brvcc->old_release_cb(atmvcc);
+> +}
 
+Except that comment, the patch looks good:
+
+Acked-by: Krzysztof Mazur <krzysiek@podlesie.net>
+
+Krzysiek
