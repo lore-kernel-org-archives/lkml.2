@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933569Ab2K3TUP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:20:15 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58599 "EHLO mail.kernel.org"
+	id S2992779Ab2K3S4o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:56:44 -0500
+Received: from mail.kernel.org ([198.145.19.201]:58519 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992786Ab2K3S4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:56:46 -0500
+	id S2992758Ab2K3S4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:56:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 13/56] mwifiex: report error to MMC core if we cannot suspend
-Date: Fri, 30 Nov 2012 10:55:05 -0800
-Message-Id: <20121130185119.694169337@linuxfoundation.org>
+        Tilman Schmidt <tilman@imap.cc>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 39/56] bas_gigaset: fix pre_reset handling
+Date: Fri, 30 Nov 2012 10:55:31 -0800
+Message-Id: <20121130185122.269058335@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185118.302752929@linuxfoundation.org>
 References: <20121130185118.302752929@linuxfoundation.org>
@@ -26,51 +26,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bing Zhao <bzhao@marvell.com>
+From: Tilman Schmidt <tilman@imap.cc>
 
-commit dd321acddc3be1371263b8c9e6c6f2af89f63d57 upstream.
+commit c6fdd8e5d0c65bb8821dc6da26ee1a2ddd58b3cc upstream.
 
-When host_sleep_config command fails we should return error to
-MMC core to indicate the failure for our device.
+The delayed work function int_in_work() may call usb_reset_device()
+and thus, indirectly, the driver's pre_reset method. Trying to
+cancel the work synchronously in that situation would deadlock.
+Fix by avoiding cancel_work_sync() in the pre_reset method.
 
-The misspelled variable is also removed as it's redundant.
+If the reset was NOT initiated by int_in_work() this might cause
+int_in_work() to run after the post_reset method, with urb_int_in
+already resubmitted, so handle that case gracefully.
 
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Tilman Schmidt <tilman@imap.cc>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/sdio.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ drivers/isdn/gigaset/bas-gigaset.c |   19 ++++++++++++++++---
+ 1 file changed, 16 insertions(+), 3 deletions(-)
 
---- a/drivers/net/wireless/mwifiex/sdio.c
-+++ b/drivers/net/wireless/mwifiex/sdio.c
-@@ -158,7 +158,6 @@ static int mwifiex_sdio_suspend(struct d
- 	struct sdio_mmc_card *card;
- 	struct mwifiex_adapter *adapter;
- 	mmc_pm_flag_t pm_flag = 0;
--	int hs_actived = 0;
- 	int i;
- 	int ret = 0;
- 
-@@ -185,12 +184,14 @@ static int mwifiex_sdio_suspend(struct d
- 	adapter = card->adapter;
- 
- 	/* Enable the Host Sleep */
--	hs_actived = mwifiex_enable_hs(adapter);
--	if (hs_actived) {
--		pr_debug("cmd: suspend with MMC_PM_KEEP_POWER\n");
--		ret = sdio_set_host_pm_flags(func, MMC_PM_KEEP_POWER);
-+	if (!mwifiex_enable_hs(adapter)) {
-+		dev_err(adapter->dev, "cmd: failed to suspend\n");
-+		return -EFAULT;
- 	}
- 
-+	dev_dbg(adapter->dev, "cmd: suspend with MMC_PM_KEEP_POWER\n");
-+	ret = sdio_set_host_pm_flags(func, MMC_PM_KEEP_POWER);
+--- a/drivers/isdn/gigaset/bas-gigaset.c
++++ b/drivers/isdn/gigaset/bas-gigaset.c
+@@ -616,7 +616,13 @@ static void int_in_work(struct work_stru
+ 	if (rc == 0)
+ 		/* success, resubmit interrupt read URB */
+ 		rc = usb_submit_urb(urb, GFP_ATOMIC);
+-	if (rc != 0 && rc != -ENODEV) {
 +
- 	/* Indicate device suspended */
- 	adapter->is_suspended = true;
++	switch (rc) {
++	case 0:		/* success */
++	case -ENODEV:	/* device gone */
++	case -EINVAL:	/* URB already resubmitted, or terminal badness */
++		break;
++	default:	/* failure: try to recover by resetting the device */
+ 		dev_err(cs->dev, "clear halt failed: %s\n", get_usb_rcmsg(rc));
+ 		rc = usb_lock_device_for_reset(ucs->udev, ucs->interface);
+ 		if (rc == 0) {
+@@ -2437,7 +2443,9 @@ static void gigaset_disconnect(struct us
+ }
  
+ /* gigaset_suspend
+- * This function is called before the USB connection is suspended.
++ * This function is called before the USB connection is suspended
++ * or before the USB device is reset.
++ * In the latter case, message == PMSG_ON.
+  */
+ static int gigaset_suspend(struct usb_interface *intf, pm_message_t message)
+ {
+@@ -2493,7 +2501,12 @@ static int gigaset_suspend(struct usb_in
+ 	del_timer_sync(&ucs->timer_atrdy);
+ 	del_timer_sync(&ucs->timer_cmd_in);
+ 	del_timer_sync(&ucs->timer_int_in);
+-	cancel_work_sync(&ucs->int_in_wq);
++
++	/* don't try to cancel int_in_wq from within reset as it
++	 * might be the one requesting the reset
++	 */
++	if (message.event != PM_EVENT_ON)
++		cancel_work_sync(&ucs->int_in_wq);
+ 
+ 	gig_dbg(DEBUG_SUSPEND, "suspend complete");
+ 	return 0;
 
 
