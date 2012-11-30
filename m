@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759617Ab2K3TYY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:24:24 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58405 "EHLO mail.kernel.org"
+	id S1769158Ab2K3TYv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:24:51 -0500
+Received: from mail.kernel.org ([198.145.19.201]:58357 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992703Ab2K3S42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:56:28 -0500
+	id S2992684Ab2K3S4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:56:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Paul Bolle <pebolle@tiscali.nl>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 30/56] radeon: add AGPMode 1 quirk for RV250
-Date: Fri, 30 Nov 2012 10:55:22 -0800
-Message-Id: <20121130185121.354230502@linuxfoundation.org>
+        "George Spelvin" <linux@horizon.com>, NeilBrown <neilb@suse.de>
+Subject: [ 26/56] md/raid10: decrement correct pending counter when writing to replacement.
+Date: Fri, 30 Nov 2012 10:55:18 -0800
+Message-Id: <20121130185120.922550056@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185118.302752929@linuxfoundation.org>
 References: <20121130185118.302752929@linuxfoundation.org>
@@ -26,39 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Bolle <pebolle@tiscali.nl>
+From: NeilBrown <neilb@suse.de>
 
-commit 45171002b01b2e2ec4f991eca81ffd8430fd0aec upstream.
+commit 884162df2aadd7414bef4935e1a54976fd4e3988 upstream.
 
-The Intel 82855PM host bridge / Mobility FireGL 9000 RV250 combination
-in an (outdated) ThinkPad T41 needs AGPMode 1 for suspend/resume (under
-KMS, that is). So add a quirk for it.
+When a write to a replacement device completes, we carefully
+and correctly found the rdev that the write actually went to
+and the blithely called rdev_dec_pending on the primary rdev,
+even if this write was to the replacement.
 
-(Change R250 to RV250 in comment for preceding quirk too.)
+This means that any writes to an array while a replacement
+was ongoing would cause the nr_pending count for the primary
+device to go negative, so it could never be removed.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+This bug has been present since replacement was introduced in
+3.3, so it is suitable for any -stable kernel since then.
+
+Reported-by: "George Spelvin" <linux@horizon.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_agp.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/md/raid10.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/radeon_agp.c
-+++ b/drivers/gpu/drm/radeon/radeon_agp.c
-@@ -70,9 +70,12 @@ static struct radeon_agpmode_quirk radeo
- 	/* Intel 82830 830 Chipset Host Bridge / Mobility M6 LY Needs AGPMode 2 (fdo #17360)*/
- 	{ PCI_VENDOR_ID_INTEL, 0x3575, PCI_VENDOR_ID_ATI, 0x4c59,
- 		PCI_VENDOR_ID_DELL, 0x00e3, 2},
--	/* Intel 82852/82855 host bridge / Mobility FireGL 9000 R250 Needs AGPMode 1 (lp #296617) */
-+	/* Intel 82852/82855 host bridge / Mobility FireGL 9000 RV250 Needs AGPMode 1 (lp #296617) */
- 	{ PCI_VENDOR_ID_INTEL, 0x3580, PCI_VENDOR_ID_ATI, 0x4c66,
- 		PCI_VENDOR_ID_DELL, 0x0149, 1},
-+	/* Intel 82855PM host bridge / Mobility FireGL 9000 RV250 Needs AGPMode 1 for suspend/resume */
-+	{ PCI_VENDOR_ID_INTEL, 0x3340, PCI_VENDOR_ID_ATI, 0x4c66,
-+		PCI_VENDOR_ID_IBM, 0x0531, 1},
- 	/* Intel 82852/82855 host bridge / Mobility 9600 M10 RV350 Needs AGPMode 1 (deb #467460) */
- 	{ PCI_VENDOR_ID_INTEL, 0x3580, PCI_VENDOR_ID_ATI, 0x4e50,
- 		0x1025, 0x0061, 1},
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -476,7 +476,7 @@ static void raid10_end_write_request(str
+ 	 */
+ 	one_write_done(r10_bio);
+ 	if (dec_rdev)
+-		rdev_dec_pending(conf->mirrors[dev].rdev, conf->mddev);
++		rdev_dec_pending(rdev, conf->mddev);
+ }
+ 
+ /*
 
 
