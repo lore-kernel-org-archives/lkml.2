@@ -1,114 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754322Ab2K3Vdk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 16:33:40 -0500
-Received: from www.hansjkoch.de ([178.63.77.200]:51454 "EHLO www.hansjkoch.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753893Ab2K3Vdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 16:33:39 -0500
-Date: Fri, 30 Nov 2012 22:33:33 +0100
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Tux9 <tuxding@gmail.com>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>,
-        Vitalii Demianets <vitas@nppfactor.kiev.ua>,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] uio.c: Fix warning: 'ret' might be used uninitialized
-Message-ID: <20121130213333.GA2603@local>
-References: <201211271348.14603.vitas@nppfactor.kiev.ua>
- <CAM3j68rrBePLoamRb1pCH+TeAfLDO-5Jd_kk7-JRCNnEBhLp2Q@mail.gmail.com>
- <201211291822.16565.vitas@nppfactor.kiev.ua>
- <201211291836.59358.vitas@nppfactor.kiev.ua>
- <20121129235822.GA2590@local>
- <CAM3j68rH8qyN8zX7TLZNvQz-1Vr6qMjS0cR7QKGAs6w54L7dag@mail.gmail.com>
+	id S1753496Ab2K3Vie (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 16:38:34 -0500
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:7975 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167Ab2K3Vid (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 16:38:33 -0500
+From: Lance Ortiz <lance.ortiz@hp.com>
+Subject: [PATCH v3 1/3] aerdrv: Trace Event for AER
+To: bhelgaas@google.com, lance_ortiz@hotmail.com, jiang.liu@huawei.com,
+        tony.luck@intel.com, bp@alien8.de, rostedt@goodmis.org,
+        mchehab@redhat.com, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 30 Nov 2012 14:33:30 -0700
+Message-ID: <20121130213330.7649.51101.stgit@grignak.americas.hpqcorp.net>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAM3j68rH8qyN8zX7TLZNvQz-1Vr6qMjS0cR7QKGAs6w54L7dag@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 30, 2012 at 12:12:46PM +0100, Tux9 wrote:
-> I like Vitalii's solution more. Hans's solution assign the value
-> -ENOMEM to ret in every round of the loop, which is a kind of wasting
-> CPU cycles.
+This header file will define a new trace event that will be triggered when
+a AER event occurs.  The following data will be provided to the trace
+event.
 
-The difference between
-1 files changed, 12 insertions(+), 4 deletions(-) and
-1 files changed, 2 insertions(+), 0 deletions(-)
+char * name -	String containing the device path
 
-is more important. Note that this code is not in a fast path but only
-called once at device creation.
+u32 status - 	Either the correctable or uncorrectable register
+		indicating what error or errors have been see.
 
-Thanks,
-Hans
+u8 severity - 	error severity 0:NONFATAL 1:FATAL 2:CORRECTED
 
-> 
-> On Fri, Nov 30, 2012 at 12:58 AM, Hans J. Koch <hjk@hansjkoch.de> wrote:
-> > On Thu, Nov 29, 2012 at 06:36:59PM +0200, Vitalii Demianets wrote:
-> >> > On Thursday 29 November 2012 18:05:27 Tux9 wrote:
-> >> > > Hans, I think there are something wrong in your patch, while Vitalii's
-> >> > > is right. The variable "ret" is reused in line 292 and line 295, so
-> >> > > the value of "ret" would be overridden (if it goto err_map in line 284
-> >> > > when mi>=1).
-> >> >
-> >> > Actually, both patches do exactly the same thing. Hans's patch establishes
-> >> > default value for the ret for all those "other" cases when ret is not
-> >> > explicitly overridden. My patch explicitly enumerates all those "other"
-> >> > cases in more wordily manner.
-> >> >
-> >>
-> >> Oops, disregard this. After looking at it more thoroughly I got your point.
-> >> You are right, ret is overridden at first iteration (mi == 0), so Hans's
-> >> approach does not work.
-> >> I must do more thinking before replying in a hurry.
-> >
-> > You're right. Initialization of "ret" has to take place at the beginning of
-> > the loop.
-> >
-> > I think this version is right:
-> >
-> >
-> > From 00c3c734c0dde67873a628bcb18cee403c95c301 Mon Sep 17 00:00:00 2001
-> > From: "Hans J. Koch" <hjk@hansjkoch.de>
-> > Date: Fri, 30 Nov 2012 00:51:50 +0100
-> > Subject: [PATCH] uio: Fix warning: 'ret' might be used uninitialized
-> >
-> > In two cases, the return value variable "ret" can be undefined.
-> >
-> > Signed-off-by: Hans J. Koch <hjk@hansjkoch.de>
-> > ---
-> >  drivers/uio/uio.c |    2 ++
-> >  1 files changed, 2 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
-> > index 5110f36..0c80df2 100644
-> > --- a/drivers/uio/uio.c
-> > +++ b/drivers/uio/uio.c
-> > @@ -273,6 +273,7 @@ static int uio_dev_add_attributes(struct uio_device *idev)
-> >         struct uio_portio *portio;
-> >
-> >         for (mi = 0; mi < MAX_UIO_MAPS; mi++) {
-> > +               ret = -ENOMEM;
-> >                 mem = &idev->info->mem[mi];
-> >                 if (mem->size == 0)
-> >                         break;
-> > @@ -298,6 +299,7 @@ static int uio_dev_add_attributes(struct uio_device *idev)
-> >         }
-> >
-> >         for (pi = 0; pi < MAX_UIO_PORT_REGIONS; pi++) {
-> > +               ret = -ENOMEM;
-> >                 port = &idev->info->port[pi];
-> >                 if (port->size == 0)
-> >                         break;
-> > --
-> > 1.7.9
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
+The trace event will also provide a trace string that may look like:
+
+"0000:05:00.0 PCIe Bus Error:severity=Uncorrected (Non-Fatal), Poisoned
+TLP"
+
+v1-v2 Move header from include/ras/aer_event.h to
+include/trace/events/ras.h
+
+Signed-off-by: Lance Ortiz <lance.ortiz@hp.com>
+---
+
+ include/trace/events/ras.h |   77 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 77 insertions(+), 0 deletions(-)
+ create mode 100644 include/trace/events/ras.h
+
+diff --git a/include/trace/events/ras.h b/include/trace/events/ras.h
+new file mode 100644
+index 0000000..f77d009
+--- /dev/null
++++ b/include/trace/events/ras.h
+@@ -0,0 +1,77 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM aer_event
++#define TRACE_INCLUDE_FILE ras 
++
++#if !defined(_TRACE_AER_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_AER_H
++
++#include <linux/tracepoint.h>
++#include <linux/edac.h>
++
++
++/*
++ * Anhance Error Reporting (AER) PCIE Report Error
++ *
++ * These events are generated when hardware detects a corrected or
++ * uncorrected event on a pci express device and reports
++ * errors.  The event reports the following data.
++ *
++ * char * dev_name -	String containing the device identification
++ * u32 status -		Either the correctable or uncorrectable register
++ *			indicating what error or errors have been seen
++ * u8 severity -	error severity 0:NONFATAL 1:FATAL 2:CORRECTED
++ */
++
++#define correctable_error_string			\
++	{BIT(0),	"Receiver Error"},		\
++	{BIT(6),	"Bad TLP"},			\
++	{BIT(7),	"Bad DLLP"},			\
++	{BIT(8),	"RELAY_NUM Rollover"},		\
++	{BIT(12),	"Replay Timer Timeout"},	\
++	{BIT(13),	"Advisory Non-Fatal"}
++
++#define uncorrectable_error_string			\
++	{BIT(4),	"Data Link Protocol"},		\
++	{BIT(12),	"Poisoned TLP"},		\
++	{BIT(13),	"Flow Control Protocol"},	\
++	{BIT(14),	"Completion Timeout"},		\
++	{BIT(15),	"Completer Abort"},		\
++	{BIT(16),	"Unexpected Completion"},	\
++	{BIT(17),	"Receiver Overflow"},		\
++	{BIT(18),	"Malformed TLP"},		\
++	{BIT(19),	"ECRC"},			\
++	{BIT(20),	"Unsupported Request"}
++
++TRACE_EVENT(aer_event,
++	TP_PROTO(const char *dev_name,
++		 const u32 status,
++		 const u8 severity),
++
++	TP_ARGS(dev_name, status, severity),
++
++	TP_STRUCT__entry(
++		__string(	dev_name,	dev_name	)
++		__field(	u32,		status		)
++		__field(	u8,		severity	)
++	),
++
++	TP_fast_assign(
++		__assign_str(dev_name, dev_name);
++		__entry->status		= status;
++		__entry->severity	= severity;
++	),
++
++	TP_printk("%s PCIe Bus Error: severity=%s, %s\n",
++		__get_str(dev_name),
++		(__entry->severity == HW_EVENT_ERR_CORRECTED) ? "Corrected" :
++			((__entry->severity == HW_EVENT_ERR_FATAL) ?
++			"Fatal" : "Uncorrected"),
++		__entry->severity == HW_EVENT_ERR_CORRECTED ?
++		__print_flags(__entry->status, "|", correctable_error_string) :
++		__print_flags(__entry->status, "|", uncorrectable_error_string))
++);
++
++#endif /* _TRACE_AER_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
+
