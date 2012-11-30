@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759407Ab2K3S7Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:59:16 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58764 "EHLO mail.kernel.org"
+	id S1759421Ab2K3S7e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:59:34 -0500
+Received: from mail.kernel.org ([198.145.19.201]:58754 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758905Ab2K3S5B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:57:01 -0500
+	id S1758848Ab2K3S5A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:57:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Waldemar Rymarkiewicz <waldemar.rymarkiewicz@tieto.com>,
+        Szymon Janc <szymon.janc@tieto.com>,
         Samuel Ortiz <sameo@linux.intel.com>, Peter Huewe <peterhuewe@gmx.de>
-Subject: [ 46/56] NFC: pn533: Fix mem leak in pn533_in_dep_link_up
-Date: Fri, 30 Nov 2012 10:55:38 -0800
-Message-Id: <20121130185123.048434895@linuxfoundation.org>
+Subject: [ 45/56] NFC: pn533: Fix use after free
+Date: Fri, 30 Nov 2012 10:55:37 -0800
+Message-Id: <20121130185122.956146382@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185118.302752929@linuxfoundation.org>
 References: <20121130185118.302752929@linuxfoundation.org>
@@ -26,58 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Waldemar Rymarkiewicz <waldemar.rymarkiewicz@tieto.com>
+From: Szymon Janc <szymon.janc@tieto.com>
 
-commit 70418e6efcf4f8652cc08e3f2ab8ae35f0948fd9 upstream.
+commit 770f750bc2b8312489c8e45306f551d08a319d3c upstream.
 
-cmd is allocated in pn533_dep_link_up and passed as an arg to
-pn533_send_cmd_frame_async together with a complete cb.
+cmd was freed in pn533_dep_link_up regardless of
+pn533_send_cmd_frame_async return code. Cmd is passed as argument to
+pn533_in_dep_link_up_complete callback and should be freed there.
 
-arg is passed to the cb and must be kfreed there.
-
-Signed-off-by: Waldemar Rymarkiewicz <waldemar.rymarkiewicz@tieto.com>
+Signed-off-by: Szymon Janc <szymon.janc@tieto.com>
 Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/nfc/pn533.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/nfc/pn533.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
 --- a/drivers/nfc/pn533.c
 +++ b/drivers/nfc/pn533.c
-@@ -1278,11 +1278,14 @@ static void pn533_deactivate_target(stru
- static int pn533_in_dep_link_up_complete(struct pn533 *dev, void *arg,
- 						u8 *params, int params_len)
- {
--	struct pn533_cmd_jump_dep *cmd;
- 	struct pn533_cmd_jump_dep_response *resp;
- 	struct nfc_target nfc_target;
- 	u8 target_gt_len;
- 	int rc;
-+	struct pn533_cmd_jump_dep *cmd = (struct pn533_cmd_jump_dep *)arg;
-+	u8 active = cmd->active;
-+
-+	kfree(arg);
+@@ -1385,12 +1385,8 @@ static int pn533_dep_link_up(struct nfc_
+ 	rc = pn533_send_cmd_frame_async(dev, dev->out_frame, dev->in_frame,
+ 				dev->in_maxlen,	pn533_in_dep_link_up_complete,
+ 				cmd, GFP_KERNEL);
+-	if (rc)
+-		goto out;
+-
+-
+-out:
+-	kfree(cmd);
++	if (rc < 0)
++		kfree(cmd);
  
- 	if (params_len == -ENOENT) {
- 		nfc_dev_dbg(&dev->interface->dev, "");
-@@ -1304,7 +1307,6 @@ static int pn533_in_dep_link_up_complete
- 	}
- 
- 	resp = (struct pn533_cmd_jump_dep_response *) params;
--	cmd = (struct pn533_cmd_jump_dep *) arg;
- 	rc = resp->status & PN533_CMD_RET_MASK;
- 	if (rc != PN533_CMD_RET_SUCCESS) {
- 		nfc_dev_err(&dev->interface->dev,
-@@ -1334,7 +1336,7 @@ static int pn533_in_dep_link_up_complete
- 	if (rc == 0)
- 		rc = nfc_dep_link_is_up(dev->nfc_dev,
- 						dev->nfc_dev->targets[0].idx,
--						!cmd->active, NFC_RF_INITIATOR);
-+						!active, NFC_RF_INITIATOR);
- 
- 	return 0;
+ 	return rc;
  }
 
 
