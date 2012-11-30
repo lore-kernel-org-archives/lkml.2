@@ -1,87 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756645Ab2K3Jip (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 04:38:45 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:42346 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085Ab2K3Jil (ORCPT
+	id S1756667Ab2K3Jko (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 04:40:44 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:49721 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751291Ab2K3Jkn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 04:38:41 -0500
-Date: Fri, 30 Nov 2012 17:38:19 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: nic_swsd@realtek.com
-Cc: romieu@fr.zoreil.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2]realtek:r8169: Bugfix or workaround for missing extended
- GigaMAC registers settings
-Message-ID: <20121130093819.GA1874@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>, nic_swsd@realtek.com,
-	romieu@fr.zoreil.com, netdev@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 30 Nov 2012 04:40:43 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: SPARC and OF_GPIO
+To: David Miller <davem@davemloft.net>, thierry.reding@avionic-design.de
+Cc: sparclinux@vger.kernel.org, linus.walleij@linaro.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20121107.023419.1656398773495533906.davem@davemloft.net>
+References: <20121105095315.GG5847@avionic-0098.mockup.avionic-design.de> <20121106.184058.636480855516538607.davem@davemloft.net> <20121107065258.GA22325@avionic-0098.mockup.avionic-design.de> <20121107.023419.1656398773495533906.davem@davemloft.net>
+Date: Fri, 30 Nov 2012 09:35:20 +0000
+Message-Id: <20121130093520.631503E070C@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I get a board with 8168e-vl(10ec:8168 with RTL_GIGA_MAC_VER_34),
-everything looks well first, I can use ifconfig to set ip, netmask,
-etc. And the rx/tx statistics show by ifconfig looks good when I
-ping another host or ping it from another host. But it don't work,
-I can't get ICMP REPLAY from both sides, although the RX/TX statistics
-seem good.
+On Wed, 07 Nov 2012 02:34:19 -0500 (EST), David Miller <davem@davemloft.net> wrote:
+> From: Thierry Reding <thierry.reding@avionic-design.de>
+> Date: Wed, 7 Nov 2012 07:52:58 +0100
+> 
+> > It seems like OF_ADDRESS would be trickier. A comment around line 60 in
+> > drivers/of/platform.c says that SPARC doesn't need functions defined in
+> > the enclosing #ifdef CONFIG_OF_ADDRESS block. I'm not sure it would be
+> > acceptable to remove the conflict nonetheless, even if the functions
+> > aren't used. One benefit would be that the code could receive some extra
+> > compile coverage.
+>  ...
+> > Finally, OF_IRQ is again just generic code to map device tree data to
+> > IRQ domains. While I didn't see the IRQ_DOMAIN symbol selected anywhere
+> > in SPARC it should still be possible to run drivers that properly
+> > implement IRQ domains on SPARC, right? Or is there any reason why they
+> > wouldn't work?
+> 
+> These are the two most conflicted areas for Sparc.
+> 
+> For addresses, we fully compute the full fully resolved physical
+> address of all registers of an OF device very early at bootup time
+> when we first scan the device tree.
+> 
+> Same goes for interrupts, we fully compute them early in the bootup
+> process.
 
-After add some debug code, I found this NIC only accept ethernet
-broadcast package, it can't filter out the package send to its
-MAC address, but it works good for sending.So ifconfig show the
-RX/TX status means it can receive ARP package.(It don't know its
-MAC address, so below)
+Right. That's the reason I haven't tackled making all architectures do
+the same thing. I've not been confident that I'd get the sparc bits
+correct. I think it could be done, but I haven't been able to wrap my
+brain around it sufficiently.
 
-I have try the driver provided by realtek's website, it have the
-same problem at the first time. BUT IT WORK AFTER I REBOOT with
-CRTL-ALT-DEL, the reason is that realtek's driver call rtl8168_rar_set
-in the .shutdown function register with pci_register_driver. Yes,
-the really reason to make it work is rtl8689_rar_set, this function
-set extended GigaMAC registers, so after reboot without lost the power,
-NIC keep the status before reboot.
+On non-sparc I've actually been moving in the direction of resolving
+resources at .probe time to make it easier to handle deferred probing.
+So if, for example, a device irq line is routed to a GPIO instead of the
+core interrupt controller, then the irq number won't be known until
+after the gpio driver .probe occurs. For addresses, this situation is
+unlikely, but for all the other kinds of resources (gpios, regs, clocks, irqs,
+etc) it is a problem that we're actually seeing.
 
-I haven't see any code to set GigaMAC registers in kernel when boot,
-so I guess BIOS or NIC's circuit make it, but of course one miss
-the extended GigaMAC registers  in this problem. The probe code can
-get MAC address right, so MAC{0,4} must had been setted, but some
-guys forget the extended GigaMAC registers.
+g.
 
-This patch fix it.
-
-[ I don't known whether others' realtek's NIC with extended GigaMAC
-reigisters have the same problem, I meet it in 8168e-vl with
-RTL_GIGA_MAC_VER_34, so I make this patch just for it.]
-
-Changes:
-V1-V2:
-I follow Francois Romieu 's below opinion to make this patch oneline:
-
-I'd rather see the GigaMAC registers written through a call to
-rtl_rar_set when the mac address is read in rtl_init_one instead of
-duplicating most of rtl_rar_set in a quite different place.
-
-Signed-off-by: Wang YanQing <udknight@gmail.com>
----
- drivers/net/ethernet/realtek/r8169.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index 927aa33..cb1dce4 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -6903,6 +6903,7 @@ rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 		dev->dev_addr[i] = RTL_R8(MAC0 + i);
- 	memcpy(dev->perm_addr, dev->dev_addr, dev->addr_len);
- 
-+	rtl_rar_set(tp, dev->dev_addr);
- 	SET_ETHTOOL_OPS(dev, &rtl8169_ethtool_ops);
- 	dev->watchdog_timeo = RTL8169_TX_TIMEOUT;
- 
 -- 
-1.7.11.1.116.g8228a23
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
