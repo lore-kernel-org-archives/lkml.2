@@ -1,40 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755882Ab2K3EMw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 23:12:52 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60023 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755757Ab2K3EMv (ORCPT
+	id S1755906Ab2K3EZN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 23:25:13 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:45912 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753463Ab2K3EZL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 23:12:51 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <50B8322D.7050104@jp.fujitsu.com>
-Date: Fri, 30 Nov 2012 13:12:29 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
-        Tejun Heo <htejun@gmail.com>, Glauber Costa <glommer@parallels.com>,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: [patch v2 6/6] cgroup: remove css_get_next
-References: <1353955671-14385-1-git-send-email-mhocko@suse.cz> <1353955671-14385-7-git-send-email-mhocko@suse.cz>
-In-Reply-To: <1353955671-14385-7-git-send-email-mhocko@suse.cz>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Thu, 29 Nov 2012 23:25:11 -0500
+X-Sasl-enc: pZvxcUK8aCS/Cn7q4iu7fKPc3Zw5TXFx0XL4GX0eRLwo 1354249510
+From: Alan Ott <alan@signal11.us>
+To: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alan Ott <alan@signal11.us>
+Subject: [PATCH 1/2] mac802154: fix memory leaks
+Date: Thu, 29 Nov 2012 23:25:10 -0500
+Message-Id: <1354249511-8086-1-git-send-email-alan@signal11.us>
+X-Mailer: git-send-email 1.7.11.2
+In-Reply-To: <504EA95C.9010003@signal11.us>
+References: <504EA95C.9010003@signal11.us>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/11/27 3:47), Michal Hocko wrote:
-> Now that we have generic and well ordered cgroup tree walkers there is
-> no need to keep css_get_next in the place.
-> 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+kfree_skb() was not getting called in the case of some failures.
+This was pointed out by Eric Dumazet.
 
-Hm, then, the next think will be css_is_ancestor() etc..
+Signed-off-by: Alan Ott <alan@signal11.us>
+---
+ net/mac802154/tx.c   | 5 ++++-
+ net/mac802154/wpan.c | 4 +++-
+ 2 files changed, 7 insertions(+), 2 deletions(-)
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
+diff --git a/net/mac802154/tx.c b/net/mac802154/tx.c
+index 1a4df39..db63914 100644
+--- a/net/mac802154/tx.c
++++ b/net/mac802154/tx.c
+@@ -85,6 +85,7 @@ netdev_tx_t mac802154_tx(struct mac802154_priv *priv, struct sk_buff *skb,
+ 
+ 	if (!(priv->phy->channels_supported[page] & (1 << chan))) {
+ 		WARN_ON(1);
++		kfree_skb(skb);
+ 		return NETDEV_TX_OK;
+ 	}
+ 
+@@ -103,8 +104,10 @@ netdev_tx_t mac802154_tx(struct mac802154_priv *priv, struct sk_buff *skb,
+ 	}
+ 
+ 	work = kzalloc(sizeof(struct xmit_work), GFP_ATOMIC);
+-	if (!work)
++	if (!work) {
++		kfree_skb(skb);
+ 		return NETDEV_TX_BUSY;
++	}
+ 
+ 	INIT_WORK(&work->work, mac802154_xmit_worker);
+ 	work->skb = skb;
+diff --git a/net/mac802154/wpan.c b/net/mac802154/wpan.c
+index f30f6d4..1191039 100644
+--- a/net/mac802154/wpan.c
++++ b/net/mac802154/wpan.c
+@@ -327,8 +327,10 @@ mac802154_wpan_xmit(struct sk_buff *skb, struct net_device *dev)
+ 
+ 	if (chan == MAC802154_CHAN_NONE ||
+ 	    page >= WPAN_NUM_PAGES ||
+-	    chan >= WPAN_NUM_CHANNELS)
++	    chan >= WPAN_NUM_CHANNELS) {
++		kfree_skb(skb);
+ 		return NETDEV_TX_OK;
++	}
+ 
+ 	skb->skb_iif = dev->ifindex;
+ 	dev->stats.tx_packets++;
+-- 
+1.7.11.2
 
