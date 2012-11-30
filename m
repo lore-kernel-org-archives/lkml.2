@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757220Ab2K3TXS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:23:18 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58439 "EHLO mail.kernel.org"
+	id S1759576Ab2K3TXm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:23:42 -0500
+Received: from mail.kernel.org ([198.145.19.201]:58428 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992722Ab2K3S4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:56:31 -0500
+	id S2992710Ab2K3S4a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:56:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jan Kara <jack@suse.cz>
-Subject: [ 33/56] jbd: Fix lock ordering bug in journal_unmap_buffer()
-Date: Fri, 30 Nov 2012 10:55:25 -0800
-Message-Id: <20121130185121.652401086@linuxfoundation.org>
+        Andre Naujoks <nautsch2@googlemail.com>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [ 32/56] can: bcm: initialize ifindex for timeouts without previous frame reception
+Date: Fri, 30 Nov 2012 10:55:24 -0800
+Message-Id: <20121130185121.560920532@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185118.302752929@linuxfoundation.org>
 References: <20121130185118.302752929@linuxfoundation.org>
@@ -25,38 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Oliver Hartkopp <socketcan@hartkopp.net>
 
-commit 25389bb207987b5774182f763b9fb65ff08761c8 upstream.
+commit 81b401100c01d2357031e874689f89bd788d13cd upstream.
 
-Commit 09e05d48 introduced a wait for transaction commit into
-journal_unmap_buffer() in the case we are truncating a buffer undergoing commit
-in the page stradding i_size on a filesystem with blocksize < pagesize. Sadly
-we forgot to drop buffer lock before waiting for transaction commit and thus
-deadlock is possible when kjournald wants to lock the buffer.
+Set in the rx_ifindex to pass the correct interface index in the case of a
+message timeout detection. Usually the rx_ifindex value is set at receive
+time. But when no CAN frame has been received the RX_TIMEOUT notification
+did not contain a valid value.
 
-Fix the problem by dropping the buffer lock before waiting for transaction
-commit. Since we are still holding page lock (and that is OK), buffer cannot
-disappear under us.
-
-Signed-off-by: Jan Kara <jack@suse.cz>
+Reported-by: Andre Naujoks <nautsch2@googlemail.com>
+Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/jbd/transaction.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/can/bcm.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/fs/jbd/transaction.c
-+++ b/fs/jbd/transaction.c
-@@ -1963,7 +1963,9 @@ retry:
- 			spin_unlock(&journal->j_list_lock);
- 			jbd_unlock_bh_state(bh);
- 			spin_unlock(&journal->j_state_lock);
-+			unlock_buffer(bh);
- 			log_wait_commit(journal, tid);
-+			lock_buffer(bh);
- 			goto retry;
- 		}
- 		/*
+--- a/net/can/bcm.c
++++ b/net/can/bcm.c
+@@ -1084,6 +1084,9 @@ static int bcm_rx_setup(struct bcm_msg_h
+ 		op->sk = sk;
+ 		op->ifindex = ifindex;
+ 
++		/* ifindex for timeout events w/o previous frame reception */
++		op->rx_ifindex = ifindex;
++
+ 		/* initialize uninitialized (kzalloc) structure */
+ 		hrtimer_init(&op->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+ 		op->timer.function = bcm_rx_timeout_handler;
 
 
