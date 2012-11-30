@@ -1,73 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756803Ab2K3Jtu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 04:49:50 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:10436 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167Ab2K3Jts convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 04:49:48 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 30 Nov 2012 01:49:02 -0800
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: Andrew Morton <akpm@linux-foundation.org>, "Kim, Milo" <Milo.Kim@ti.com>
-CC: Samuel Ortiz <sameo@linux.intel.com>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        Sivaram Nair <sivaramn@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 30 Nov 2012 15:19:18 +0530
-Subject: RE: [PATCH 2/2] rtc-tps65910: enable RTC power domain on
- initialization
-Thread-Topic: [PATCH 2/2] rtc-tps65910: enable RTC power domain on
- initialization
-Thread-Index: Ac3Oj6JhA/G6ohVnQ0uMm1NsrJ8QewAT+ADw
-Message-ID: <D958900912E20642BCBC71664EFECE3E6E187A3DA1@BGMAIL02.nvidia.com>
-References: <A874F61F95741C4A9BA573A70FE3998F6418F1B3@DQHE02.ent.ti.com>
-	<D958900912E20642BCBC71664EFECE3E6E17CF0A07@BGMAIL02.nvidia.com>
-	<A874F61F95741C4A9BA573A70FE3998F6418F30B@DQHE02.ent.ti.com>
- <20121129161358.9ae29f96.akpm@linux-foundation.org>
-In-Reply-To: <20121129161358.9ae29f96.akpm@linux-foundation.org>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	id S1756824Ab2K3JuJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 04:50:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58564 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752167Ab2K3JuC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 04:50:02 -0500
+Date: Fri, 30 Nov 2012 10:49:59 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, lizefan@huawei.com, paul@paulmenage.org,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        peterz@infradead.org, bsingharora@gmail.com, hannes@cmpxchg.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET cgroup/for-3.8] cpuset: decouple cpuset locking from
+ cgroup core
+Message-ID: <20121130094959.GE29317@dhcp22.suse.cz>
+References: <1354138460-19286-1-git-send-email-tj@kernel.org>
+ <50B8263C.7060908@jp.fujitsu.com>
+ <50B875B4.2020507@parallels.com>
+ <20121130092435.GD29317@dhcp22.suse.cz>
+ <50B87F84.7040206@parallels.com>
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50B87F84.7040206@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Andrew Morton [mailto:akpm@linux-foundation.org]
-> Sent: Friday, November 30, 2012 5:44 AM
-> To: Kim, Milo
-> Cc: Venu Byravarasu; Samuel Ortiz; a.zummo@towertech.it;
-> swarren@wwwdotorg.org; Sivaram Nair; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 2/2] rtc-tps65910: enable RTC power domain on
-> initialization
-> 
-> On Thu, 29 Nov 2012 23:11:37 +0000
-> "Kim, Milo" <Milo.Kim@ti.com> wrote:
-> 
-> > Hi Venu
-> >
+On Fri 30-11-12 13:42:28, Glauber Costa wrote:
+[...]
+> Speaking of it: Tejun's tree still lacks the kmem bits. How hard would
+> it be for you to merge his branch into a temporary branch of your tree?
 
-> >
-> 
-> I've merged this patch into -mm for 3.8 along with a note-to-self that
-> there might still be open issues.  Venu, please let us know if the
-> above settles things?
-
-Hi Andrew,
-
-Above change is fine & I added my ACK to the change.
-Due to recent change in the data sheet, which I'm not aware of, made
-my previous comment.
-
-Sorry for the confusion created.
-
-Thanks,
-Venu
+review-cpuset-locking is based on a post merge window merges so I cannot
+merge it as is. I could cherry-pick the series after it is settled. I
+have no idea how much conflicts this would bring, though.
+-- 
+Michal Hocko
+SUSE Labs
