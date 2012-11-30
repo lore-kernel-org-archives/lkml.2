@@ -1,55 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932864Ab2K3TwR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:52:17 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36384 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932197Ab2K3TwQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 14:52:16 -0500
-Message-ID: <50B90E4D.8010604@zytor.com>
-Date: Fri, 30 Nov 2012 11:51:41 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Vincent Palatin <vpalatin@chromium.org>, Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        the arch/x86 maintainers <x86@kernel.org>,
+	id S933606Ab2K3Twx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:52:53 -0500
+Received: from mail-ea0-f202.google.com ([209.85.215.202]:34866 "EHLO
+	mail-ea0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932197Ab2K3Twv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 14:52:51 -0500
+From: Vincent Palatin <vpalatin@chromium.org>
+To: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Vincent Palatin <vpalatin@chromium.org>,
         Duncan Laurie <dlaurie@chromium.org>,
         Olof Johansson <olofj@chromium.org>
-Subject: Re: [PATCH] x86, fpu: avoid FPU lazy restore after suspend
-References: <1354301523-5252-1-git-send-email-vpalatin@chromium.org> <1354301523-5252-2-git-send-email-vpalatin@chromium.org> <CA+55aFz4M4GmQbUkD1dhTkLTYka4H+T_phrsXgx+eGe8g9iLYA@mail.gmail.com> <50B90B31.3000907@zytor.com> <CA+55aFyoAq+w6eNAyOJ00cpFEaGE=eKzMMtr9kEtMuUU820oYg@mail.gmail.com>
+Subject: [PATCH v2] x86, fpu: avoid FPU lazy restore after suspend
+Date: Fri, 30 Nov 2012 11:52:43 -0800
+Message-Id: <1354305164-10601-1-git-send-email-vpalatin@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <CA+55aFyoAq+w6eNAyOJ00cpFEaGE=eKzMMtr9kEtMuUU820oYg@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+References: <CA+55aFyoAq+w6eNAyOJ00cpFEaGE=eKzMMtr9kEtMuUU820oYg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/30/2012 11:41 AM, Linus Torvalds wrote:
->>
->> Hmm... from my point of view it would almost seem saner to do this on
->> the way *up*... as part of CPU (re-)initialization.  After all, the
->> "nothing is currently running on this CPU" is part of the initial state
->> of the CPU, regardless of if we have ever been online before or not.
-> 
-> That works for me too, and has the similar advantage of being easier
-> to think about than "the cpu is actually still being used, and we're
-> playing tricks with the FPU state cache" approach.
-> 
-> Regardless, much credit to Vincent (and presumably others on the
-> chromium team) for finding and debugging this.
-> 
+When a cpu enters S3 state, the FPU state is lost.
+After resuming for S3, if we try to lazy restore the FPU for a process running
+on the same CPU, this will result in a corrupted FPU context.
 
-OK, how do you want to handle this, given that 3.7 is presumably
-imminent?  We can apply Vincent's patch now, and then restructure it
-later, or we can go for the gold now, but replicating the testing
-Vincent has done will probably take well into next week.
+Ensure that "fpu_owner_task" is properly invalided when (re-)initializing a CPU,
+so nobody will try to lazy restore a state which doesn't exist in the hardware.
 
-	-hpa
+Tested with a 64-bit kernel on a 4-core Ivybridge CPU with eagerfpu=off,
+by doing thousands of suspend/resume cycles with 4 processes doing FPU
+operations running. Without the patch, a process is killed after a
+few hundreds cycles by a SIGFPE.
 
+The issue seems to exist since 3.4 (after the FPU lazy restore was actually implemented),
+to apply the change to 3.4, "this_cpu_write" needs to be replaced by percpu_write.
+
+Cc: Duncan Laurie <dlaurie@chromium.org>
+Cc: Olof Johansson <olofj@chromium.org>
+Cc: <stable@kernel.org> [v3.4+] # for 3.4 need to replace this_cpu_write by percpu_write
+Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
+---
+ arch/x86/include/asm/fpu-internal.h |   15 +++++++++------
+ arch/x86/kernel/smpboot.c           |    5 +++++
+ 2 files changed, 14 insertions(+), 6 deletions(-)
+
+diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
+index 831dbb9..41ab26e 100644
+--- a/arch/x86/include/asm/fpu-internal.h
++++ b/arch/x86/include/asm/fpu-internal.h
+@@ -399,14 +399,17 @@ static inline void drop_init_fpu(struct task_struct *tsk)
+ typedef struct { int preload; } fpu_switch_t;
+ 
+ /*
+- * FIXME! We could do a totally lazy restore, but we need to
+- * add a per-cpu "this was the task that last touched the FPU
+- * on this CPU" variable, and the task needs to have a "I last
+- * touched the FPU on this CPU" and check them.
++ * Must be run with preemption disabled: this clears the fpu_owner_task,
++ * on this CPU.
+  *
+- * We don't do that yet, so "fpu_lazy_restore()" always returns
+- * false, but some day..
++ * This will disable any lazy FPU state restore of the current FPU state,
++ * but if the current thread owns the FPU, it will still be saved by.
+  */
++static inline void __cpu_disable_lazy_restore(unsigned int cpu)
++{
++	per_cpu(fpu_owner_task, cpu) = NULL;
++}
++
+ static inline int fpu_lazy_restore(struct task_struct *new, unsigned int cpu)
+ {
+ 	return new == this_cpu_read_stable(fpu_owner_task) &&
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index c80a33b..f3e2ec8 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -68,6 +68,8 @@
+ #include <asm/mwait.h>
+ #include <asm/apic.h>
+ #include <asm/io_apic.h>
++#include <asm/i387.h>
++#include <asm/fpu-internal.h>
+ #include <asm/setup.h>
+ #include <asm/uv/uv.h>
+ #include <linux/mc146818rtc.h>
+@@ -818,6 +820,9 @@ int __cpuinit native_cpu_up(unsigned int cpu, struct task_struct *tidle)
+ 
+ 	per_cpu(cpu_state, cpu) = CPU_UP_PREPARE;
+ 
++	/* the FPU context is blank, nobody can own it */
++	__cpu_disable_lazy_restore(cpu);
++
+ 	err = do_boot_cpu(apicid, cpu, tidle);
+ 	if (err) {
+ 		pr_debug("do_boot_cpu failed %d\n", err);
+-- 
+1.7.7.3
 
