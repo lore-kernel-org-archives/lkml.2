@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759311Ab2K3S5O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:57:14 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58821 "EHLO mail.kernel.org"
+	id S1759381Ab2K3S6i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:58:38 -0500
+Received: from mail.kernel.org ([198.145.19.201]:58794 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759209Ab2K3S5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:57:06 -0500
+	id S1757822Ab2K3S5E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:57:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Petr Matousek <pmatouse@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [ 41/56] KVM: x86: invalid opcode oops on SET_SREGS with OSXSAVE bit set (CVE-2012-4461)
-Date: Fri, 30 Nov 2012 10:55:33 -0800
-Message-Id: <20121130185122.499261788@linuxfoundation.org>
+        liu chuansheng <chuansheng.liu@intel.com>,
+        Don Zickus <dzickus@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Shuah Khan <shuah.khan@hp.com>
+Subject: [ 49/56] watchdog: using u64 in get_sample_period()
+Date: Fri, 30 Nov 2012 10:55:41 -0800
+Message-Id: <20121130185123.328988171@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185118.302752929@linuxfoundation.org>
 References: <20121130185118.302752929@linuxfoundation.org>
@@ -26,81 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Petr Matousek <pmatouse@redhat.com>
+From: Chuansheng Liu <chuansheng.liu@intel.com>
 
-commit 6d1068b3a98519247d8ba4ec85cd40ac136dbdf9 upstream.
+commit 8ffeb9b0e6369135bf03a073514f571ef10606b9 upstream.
 
-On hosts without the XSAVE support unprivileged local user can trigger
-oops similar to the one below by setting X86_CR4_OSXSAVE bit in guest
-cr4 register using KVM_SET_SREGS ioctl and later issuing KVM_RUN
-ioctl.
+In get_sample_period(), unsigned long is not enough:
 
-invalid opcode: 0000 [#2] SMP
-Modules linked in: tun ip6table_filter ip6_tables ebtable_nat ebtables
-...
-Pid: 24935, comm: zoog_kvm_monito Tainted: G      D      3.2.0-3-686-pae
-EIP: 0060:[<f8b9550c>] EFLAGS: 00210246 CPU: 0
-EIP is at kvm_arch_vcpu_ioctl_run+0x92a/0xd13 [kvm]
-EAX: 00000001 EBX: 000f387e ECX: 00000000 EDX: 00000000
-ESI: 00000000 EDI: 00000000 EBP: ef5a0060 ESP: d7c63e70
- DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-Process zoog_kvm_monito (pid: 24935, ti=d7c62000 task=ed84a0c0
-task.ti=d7c62000)
-Stack:
- 00000001 f70a1200 f8b940a9 ef5a0060 00000000 00200202 f8769009 00000000
- ef5a0060 000f387e eda5c020 8722f9c8 00015bae 00000000 ed84a0c0 ed84a0c0
- c12bf02d 0000ae80 ef7f8740 fffffffb f359b740 ef5a0060 f8b85dc1 0000ae80
-Call Trace:
- [<f8b940a9>] ? kvm_arch_vcpu_ioctl_set_sregs+0x2fe/0x308 [kvm]
-...
- [<c12bfb44>] ? syscall_call+0x7/0xb
-Code: 89 e8 e8 14 ee ff ff ba 00 00 04 00 89 e8 e8 98 48 ff ff 85 c0 74
-1e 83 7d 48 00 75 18 8b 85 08 07 00 00 31 c9 8b 95 0c 07 00 00 <0f> 01
-d1 c7 45 48 01 00 00 00 c7 45 1c 01 00 00 00 0f ae f0 89
-EIP: [<f8b9550c>] kvm_arch_vcpu_ioctl_run+0x92a/0xd13 [kvm] SS:ESP
-0068:d7c63e70
+  watchdog_thresh * 2 * (NSEC_PER_SEC / 5)
 
-QEMU first retrieves the supported features via KVM_GET_SUPPORTED_CPUID
-and then sets them later. So guest's X86_FEATURE_XSAVE should be masked
-out on hosts without X86_FEATURE_XSAVE, making kvm_set_cr4 with
-X86_CR4_OSXSAVE fail. Userspaces that allow specifying guest cpuid with
-X86_FEATURE_XSAVE even on hosts that do not support it, might be
-susceptible to this attack from inside the guest as well.
+case1:
+  watchdog_thresh is 10 by default, the sample value will be: 0xEE6B2800
 
-Allow setting X86_CR4_OSXSAVE bit only if host has XSAVE support.
+case2:
+ set watchdog_thresh is 20, the sample value will be: 0x1 DCD6 5000
 
-Signed-off-by: Petr Matousek <pmatouse@redhat.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+In case2, we need use u64 to express the sample period.  Otherwise,
+changing the threshold thru proc often can not be successful.
+
+Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+Acked-by: Don Zickus <dzickus@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/cpuid.h |    3 +++
- arch/x86/kvm/x86.c   |    3 +++
- 2 files changed, 6 insertions(+)
+ kernel/watchdog.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kvm/cpuid.h
-+++ b/arch/x86/kvm/cpuid.h
-@@ -23,6 +23,9 @@ static inline bool guest_cpuid_has_xsave
- {
- 	struct kvm_cpuid_entry2 *best;
- 
-+	if (!static_cpu_has(X86_FEATURE_XSAVE))
-+		return 0;
-+
- 	best = kvm_find_cpuid_entry(vcpu, 1, 0);
- 	return best && (best->ecx & bit(X86_FEATURE_XSAVE));
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -112,7 +112,7 @@ static unsigned long get_timestamp(int t
+ 	return cpu_clock(this_cpu) >> 30LL;  /* 2^30 ~= 10^9 */
  }
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -5697,6 +5697,9 @@ int kvm_arch_vcpu_ioctl_set_sregs(struct
- 	int pending_vec, max_bits, idx;
- 	struct desc_ptr dt;
  
-+	if (!guest_cpuid_has_xsave(vcpu) && (sregs->cr4 & X86_CR4_OSXSAVE))
-+		return -EINVAL;
-+
- 	dt.size = sregs->idt.limit;
- 	dt.address = sregs->idt.base;
- 	kvm_x86_ops->set_idt(vcpu, &dt);
+-static unsigned long get_sample_period(void)
++static u64 get_sample_period(void)
+ {
+ 	/*
+ 	 * convert watchdog_thresh from seconds to ns
+@@ -121,7 +121,7 @@ static unsigned long get_sample_period(v
+ 	 * and hard thresholds) to increment before the
+ 	 * hardlockup detector generates a warning
+ 	 */
+-	return get_softlockup_thresh() * (NSEC_PER_SEC / 5);
++	return get_softlockup_thresh() * ((u64)NSEC_PER_SEC / 5);
+ }
+ 
+ /* Commands for resetting the watchdog */
 
 
