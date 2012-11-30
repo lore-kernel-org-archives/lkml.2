@@ -1,69 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992502Ab2K3SxO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:53:14 -0500
-Received: from mail-wg0-f74.google.com ([74.125.82.74]:37786 "EHLO
-	mail-wg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161068Ab2K3SwQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:52:16 -0500
-From: Vincent Palatin <vpalatin@chromium.org>
-To: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Duncan Laurie <dlaurie@chromium.org>,
-        Olof Johansson <olofj@chromium.org>
-Subject: issue with x86 FPU state after suspend to ram
-Date: Fri, 30 Nov 2012 10:52:02 -0800
-Message-Id: <1354301523-5252-1-git-send-email-vpalatin@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	id S2992533Ab2K3Sxk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:53:40 -0500
+Received: from mail.kernel.org ([198.145.19.201]:57660 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1031708Ab2K3Stp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:49:45 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Tilman Schmidt <tilman@imap.cc>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 26/37] bas_gigaset: fix pre_reset handling
+Date: Fri, 30 Nov 2012 10:46:13 -0800
+Message-Id: <20121130183900.068126321@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.197.g5a90748
+In-Reply-To: <20121130183857.166228045@linuxfoundation.org>
+References: <20121130183857.166228045@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-On a 4-core Ivybridge platform, when doing a lot of suspend-to-ram/resume
-cycles, we were observing processes randomly killed by a SIGFPE.
-When dumping the FPU registers state on the SIGFPE (usually a floating stack
-underflow/overflow on a floating point arithmetic operation), the FPU registers
-looks empty or at least corrupted which was more or less impossible with
-respect to the disassembled floating point code.
+------------------
 
-After doing more tracing, in the faulty case, the process seems to be keeping
-FPU ownership over a secondary CPU unplug/re-plug triggered by the suspend.
-Then it's doing a lazy restore of its FPU context (ie just using the current
-FPU hardware registers as he is the owner) instead of writing them back
-to the hardware from the version previously saved in the task context,
-despite the fact the whole FPU hardware state has been lost.
+From: Tilman Schmidt <tilman@imap.cc>
 
-Just invalidating the "fpu_owner_task" when disabling a secondary CPU seems
-to solve my issue (it's already reset for the primary CPU).
+commit c6fdd8e5d0c65bb8821dc6da26ee1a2ddd58b3cc upstream.
 
-By the way, when FPU the lazy restore patch was discussed back in february,
-Ingo commented (in http://permalink.gmane.org/gmane.linux.kernel/1255423) :
-"
-I guess the CPU hotplug case deserves a comment in the code: CPU
-hotplug + replug of the same (but meanwhile reset) CPU is safe
-because fpu_owner_task[cpu] gets reset to NULL.
-"
-That contradicts my previous observation, so maybe I have totally overlooked
-something in this mechanism.
-Can you comment ?
+The delayed work function int_in_work() may call usb_reset_device()
+and thus, indirectly, the driver's pre_reset method. Trying to
+cancel the work synchronously in that situation would deadlock.
+Fix by avoiding cancel_work_sync() in the pre_reset method.
 
-I'm still putting my patch proposal in this thread.
-The issue seems to exist since 3.4 after the FPU lazy restore was actually
-implemented by commit 7e16838d "i387: support lazy restore of FPU state".
-But the issue is mainly visible on 3.4 and 3.6 since on tip of tree, it is
-hidden by the eager fpu implementation for platforms with xsave support,
-but it still happens with eagerfpu=off.
+If the reset was NOT initiated by int_in_work() this might cause
+int_in_work() to run after the post_reset method, with urb_int_in
+already resubmitted, so handle that case gracefully.
 
-To apply this change to 3.4, "this_cpu_write" needs to be replaced by
-percpu_write.
+Signed-off-by: Tilman Schmidt <tilman@imap.cc>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
---
-Vincent
+---
+ drivers/isdn/gigaset/bas-gigaset.c |   19 ++++++++++++++++---
+ 1 file changed, 16 insertions(+), 3 deletions(-)
+
+--- a/drivers/isdn/gigaset/bas-gigaset.c
++++ b/drivers/isdn/gigaset/bas-gigaset.c
+@@ -616,7 +616,13 @@ static void int_in_work(struct work_stru
+ 	if (rc == 0)
+ 		/* success, resubmit interrupt read URB */
+ 		rc = usb_submit_urb(urb, GFP_ATOMIC);
+-	if (rc != 0 && rc != -ENODEV) {
++
++	switch (rc) {
++	case 0:		/* success */
++	case -ENODEV:	/* device gone */
++	case -EINVAL:	/* URB already resubmitted, or terminal badness */
++		break;
++	default:	/* failure: try to recover by resetting the device */
+ 		dev_err(cs->dev, "clear halt failed: %s\n", get_usb_rcmsg(rc));
+ 		rc = usb_lock_device_for_reset(ucs->udev, ucs->interface);
+ 		if (rc == 0) {
+@@ -2437,7 +2443,9 @@ static void gigaset_disconnect(struct us
+ }
+ 
+ /* gigaset_suspend
+- * This function is called before the USB connection is suspended.
++ * This function is called before the USB connection is suspended
++ * or before the USB device is reset.
++ * In the latter case, message == PMSG_ON.
+  */
+ static int gigaset_suspend(struct usb_interface *intf, pm_message_t message)
+ {
+@@ -2493,7 +2501,12 @@ static int gigaset_suspend(struct usb_in
+ 	del_timer_sync(&ucs->timer_atrdy);
+ 	del_timer_sync(&ucs->timer_cmd_in);
+ 	del_timer_sync(&ucs->timer_int_in);
+-	cancel_work_sync(&ucs->int_in_wq);
++
++	/* don't try to cancel int_in_wq from within reset as it
++	 * might be the one requesting the reset
++	 */
++	if (message.event != PM_EVENT_ON)
++		cancel_work_sync(&ucs->int_in_wq);
+ 
+ 	gig_dbg(DEBUG_SUSPEND, "suspend complete");
+ 	return 0;
+
 
