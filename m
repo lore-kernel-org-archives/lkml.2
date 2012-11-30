@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993339Ab2K3TJG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:09:06 -0500
-Received: from mail.kernel.org ([198.145.19.201]:59666 "EHLO mail.kernel.org"
+	id S2993046Ab2K3TCc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:02:32 -0500
+Received: from mail.kernel.org ([198.145.19.201]:59622 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993055Ab2K3TCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 14:02:35 -0500
+	id S2992945Ab2K3TC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 14:02:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        David Milburn <dmilburn@redhat.com>, Jeff Garzik <jgarzik@redhat.com>,
-        CAI Qian <caiqian@redhat.com>
-Subject: [ 42/54] sata_svw: check DMA start bit before reset
-Date: Fri, 30 Nov 2012 10:56:13 -0800
-Message-Id: <20121130185212.160651853@linuxfoundation.org>
+        Marek Vasut <marex@denx.de>, Chen Peter <B29397@freescale.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [ 39/54] HID: add quirk for Freescale i.MX28 ROM recovery
+Date: Fri, 30 Nov 2012 10:56:10 -0800
+Message-Id: <20121130185211.872118616@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185207.894301294@linuxfoundation.org>
 References: <20121130185207.894301294@linuxfoundation.org>
@@ -26,85 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Milburn <dmilburn@redhat.com>
+From: Marek Vasut <marex@denx.de>
 
-commit b03e66a6be91f8389fcd902ab6c1563db1c9c06b upstream.
+commit 2843b673d03421e0e73cf061820d1db328f7c8eb upstream.
 
-If kdump is triggered with pending IO, controller may not respond causing
-kdump to fail.
+The USB recovery mode present in i.MX28 ROM emulates USB HID.
+It needs this quirk to behave properly.
 
-http://marc.info/?l=linux-ide&m=133032255424658&w=2
-
-During error recovery ata_do_dev_read_id never completes due hang
-in mmio_insw.
-
-ata_do_dev_read_id
- ata_sff_data_xfer
-  ioread16_rep
-   mmio_insw
-
-if DMA start bit is cleared before reset, PIO command is successful
-and kdump succeeds.
-
-Signed-off-by: David Milburn <dmilburn@redhat.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
-Cc: CAI Qian <caiqian@redhat.com>
+Signed-off-by: Marek Vasut <marex@denx.de>
+Cc: Chen Peter <B29397@freescale.com>
+Cc: Jiri Kosina <jkosina@suse.cz>
+[jkosina@suse.cz: fix alphabetical ordering]
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/sata_svw.c |   35 +++++++++++++++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
+ drivers/hid/hid-ids.h           |    3 +++
+ drivers/hid/usbhid/hid-quirks.c |    1 +
+ 2 files changed, 4 insertions(+)
 
---- a/drivers/ata/sata_svw.c
-+++ b/drivers/ata/sata_svw.c
-@@ -142,6 +142,39 @@ static int k2_sata_scr_write(struct ata_
- 	return 0;
- }
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -296,6 +296,9 @@
+ #define USB_VENDOR_ID_EZKEY		0x0518
+ #define USB_DEVICE_ID_BTC_8193		0x0002
  
-+static int k2_sata_softreset(struct ata_link *link,
-+			     unsigned int *class, unsigned long deadline)
-+{
-+	u8 dmactl;
-+	void __iomem *mmio = link->ap->ioaddr.bmdma_addr;
++#define USB_VENDOR_ID_FREESCALE		0x15A2
++#define USB_DEVICE_ID_FREESCALE_MX28	0x004F
 +
-+	dmactl = readb(mmio + ATA_DMA_CMD);
-+
-+	/* Clear the start bit */
-+	if (dmactl & ATA_DMA_START) {
-+		dmactl &= ~ATA_DMA_START;
-+		writeb(dmactl, mmio + ATA_DMA_CMD);
-+	}
-+
-+	return ata_sff_softreset(link, class, deadline);
-+}
-+
-+static int k2_sata_hardreset(struct ata_link *link,
-+			     unsigned int *class, unsigned long deadline)
-+{
-+	u8 dmactl;
-+	void __iomem *mmio = link->ap->ioaddr.bmdma_addr;
-+
-+	dmactl = readb(mmio + ATA_DMA_CMD);
-+
-+	/* Clear the start bit */
-+	if (dmactl & ATA_DMA_START) {
-+		dmactl &= ~ATA_DMA_START;
-+		writeb(dmactl, mmio + ATA_DMA_CMD);
-+	}
-+
-+	return sata_sff_hardreset(link, class, deadline);
-+}
+ #define USB_VENDOR_ID_FRUCTEL	0x25B6
+ #define USB_DEVICE_ID_GAMETEL_MT_MODE	0x0002
  
- static void k2_sata_tf_load(struct ata_port *ap, const struct ata_taskfile *tf)
- {
-@@ -346,6 +379,8 @@ static struct scsi_host_template k2_sata
- 
- static struct ata_port_operations k2_sata_ops = {
- 	.inherits		= &ata_bmdma_port_ops,
-+	.softreset              = k2_sata_softreset,
-+	.hardreset              = k2_sata_hardreset,
- 	.sff_tf_load		= k2_sata_tf_load,
- 	.sff_tf_read		= k2_sata_tf_read,
- 	.sff_check_status	= k2_stat_check_status,
+--- a/drivers/hid/usbhid/hid-quirks.c
++++ b/drivers/hid/usbhid/hid-quirks.c
+@@ -70,6 +70,7 @@ static const struct hid_blacklist {
+ 	{ USB_VENDOR_ID_CH, USB_DEVICE_ID_CH_AXIS_295, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_DMI, USB_DEVICE_ID_DMI_ENC, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_ELO, USB_DEVICE_ID_ELO_TS2700, HID_QUIRK_NOGET },
++	{ USB_VENDOR_ID_FREESCALE, USB_DEVICE_ID_FREESCALE_MX28, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_MGE, USB_DEVICE_ID_MGE_UPS, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN1, HID_QUIRK_NO_INIT_REPORTS },
 
 
