@@ -1,117 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755308Ab2K3AIV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 19:08:21 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:36554 "EHLO hydra.sisk.pl"
+	id S1755029Ab2K3ANJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 19:13:09 -0500
+Received: from www.hansjkoch.de ([178.63.77.200]:51449 "EHLO www.hansjkoch.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755159Ab2K3AIU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 19:08:20 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: linux-acpi@vger.kernel.org,
-        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Wen Congyang <wencongyang@gmail.com>, isimatu.yasuaki@jp.fujitsu.com,
-        lenb@kernel.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on rebind scenario
+	id S1751303Ab2K3ANH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 19:13:07 -0500
 Date: Fri, 30 Nov 2012 01:13:04 +0100
-Message-ID: <1525935.BNLeevluWK@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <1354231039.7776.80.camel@misato.fc.hp.com>
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com> <3341852.kzFLTzlKxq@vostro.rjw.lan> <1354231039.7776.80.camel@misato.fc.hp.com>
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Cong Ding <dinggnu@gmail.com>, h@local
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/1] uio.c: solve memory leak
+Message-ID: <20121130001304.GB2590@local>
+References: <1354210800-27230-1-git-send-email-dinggnu@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354210800-27230-1-git-send-email-dinggnu@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 29, 2012 04:17:19 PM Toshi Kani wrote:
-> On Thu, 2012-11-29 at 23:11 +0100, Rafael J. Wysocki wrote:
-> > On Thursday, November 29, 2012 02:46:44 PM Toshi Kani wrote:
-> > > On Thu, 2012-11-29 at 22:23 +0100, Rafael J. Wysocki wrote:
-> > > > On Thursday, November 29, 2012 01:38:39 PM Toshi Kani wrote:
-> > > > 
-> > > > Well, let's put it this way: If we started a trim, we should just do it
-> > > > completely, in which case we know we can go for the eject, or we should
-> > > > roll it back completely.  Now, if you just break the trim on first error,
-> > > > the complete rollback is kind of problematic.  It should be doable, but
-> > > > it won't be easy.  On the other hand, if you go for the full trim,
-> > > > doing a rollback is trivial, it's as though you have reinserted the whole
-> > > > stuff.
-> > > 
-> > > acpi_bus_check_add() skips initialization when an ACPI device already
-> > > has its associated acpi_device.  So, I think it works either way.
-> > 
-> > OK
-> > 
-> > > > Now, that need not harm functionality, and that's why I proposed the
-> > > > eject_forbidden flag, so that .remove() can say "I'm not done, please
-> > > > rollback", in which case the device can happily function going forward,
-> > > > even if we don't rebind the driver to it.
-> > > 
-> > > A partially trimmed acpi_device is hard to rollback.  acpi_device should
-> > > be either trimmed completely or intact.
-> > 
-> > I may or may not agree, depending on what you mean by "trimmed". :-)
-> > 
-> > > When a function failed to trim
-> > > an acpi_device, it needs to rollback its operation for the device before
-> > > returning an error.
-> > 
-> > Unless it is .remove(), because .remove() is supposed to always succeed
-> > (ie. unbind the driver from the device).  However, it may signal the caller
-> > that something's fishy, by setting a flag in the device object, for example.
+On Thu, Nov 29, 2012 at 05:40:00PM +0000, Cong Ding wrote:
+> In version 1, I forgot to modify the same bug in the first loop.
 > 
-> Right, .remove() cannot fail.  We still need to check if we should
-> continue to use .remove(), though.
-> 
-> As for the flag, are you thinking that we call acpi_bus_trim() with
-> rmdevice false first, so that it won't remove acpi_device?
+> we have to call kobject_put() to clean up the kobject after function
+> kobject_init(), kobject_add(), or kobject_uevent() is called.
 
-I'm not sure if that's going to help.
-
-Definitely, .remove() should just unbind the driver from the device.
-That's what it's supposed to do.  Still, it may leave some information for
-the caller in the device structure itself.  For example, "I have unbound
-from the device, but it is not safe to remove it physically".
-
-I'm now thinking that we may need to rework the trimming so that
-.remove() is called for all drivers first and the struct acpi_device
-objects are not removed at this stage.  Then, if .remove() from one
-driver signals the situation like above, the routine will have to
-rebind the drivers that have been unbound and we're done.
-
-After that stage, when all drivers have been unbound, we should be
-able to go for full eject.  First, we can drop all struct acpi_device
-objects in the relevant subtree and then we can run _EJ0.
-
-> > > This is because only the failed function has enough
-> > > context to rollback when an error occurred in the middle of its
-> > > procedure.
-> > 
-> > Not really.  If it actually removes the struct acpi_device then the caller
-> > may run acpi_bus_scan() on that device if necessary.  There may be a problem
-> > if the device has an associated physical node (or more of them), but that
-> > requires special care anyway.
-> 
-> Well, hot-remove to a device fails when there is a reason to fail.  IOW,
-> such reason prevented the device to be removed safely.  So, I think we
-> need to put it back to the original state in this case.  Removing it by
-> ignoring the cause of failure sounds unsafe to me.  Some status/data may
-> be left un-deleted as a result.
-
-Again, I may or may not agree with that, depending on whether you're talking
-about physical devices or about struct acpi_device objects.
-
-Anyway, I agree that removing struct acpi_device objects may not be worth the
-effort if we're going to re-create them in a while, because that may be costly.
+Yes, thanks. Incredible how that code looks like...
+There's still another bug: The memory allocated with kzalloc is
+never freed. More tomorrow, have to go to sleep now.
 
 Thanks,
-Rafael
+Hans
 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> 
+> Signed-off-by: Cong Ding <dinggnu@gmail.com>
+> ---
+>  drivers/uio/uio.c |   16 ++++++++++------
+>  1 files changed, 10 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+> index 5110f36..79774d3 100644
+> --- a/drivers/uio/uio.c
+> +++ b/drivers/uio/uio.c
+> @@ -291,10 +291,10 @@ static int uio_dev_add_attributes(struct uio_device *idev)
+>  		mem->map = map;
+>  		ret = kobject_add(&map->kobj, idev->map_dir, "map%d", mi);
+>  		if (ret)
+> -			goto err_map;
+> +			goto err_map_kobj;
+>  		ret = kobject_uevent(&map->kobj, KOBJ_ADD);
+>  		if (ret)
+> -			goto err_map;
+> +			goto err_map_kobj;
+>  	}
+>  
+>  	for (pi = 0; pi < MAX_UIO_PORT_REGIONS; pi++) {
+> @@ -317,23 +317,27 @@ static int uio_dev_add_attributes(struct uio_device *idev)
+>  		ret = kobject_add(&portio->kobj, idev->portio_dir,
+>  							"port%d", pi);
+>  		if (ret)
+> -			goto err_portio;
+> +			goto err_portio_kobj;
+>  		ret = kobject_uevent(&portio->kobj, KOBJ_ADD);
+>  		if (ret)
+> -			goto err_portio;
+> +			goto err_portio_kobj;
+>  	}
+>  
+>  	return 0;
+>  
+>  err_portio:
+> -	for (pi--; pi >= 0; pi--) {
+> +	pi--;
+> +err_portio_kobj:
+> +	for (; pi >= 0; pi--) {
+>  		port = &idev->info->port[pi];
+>  		portio = port->portio;
+>  		kobject_put(&portio->kobj);
+>  	}
+>  	kobject_put(idev->portio_dir);
+>  err_map:
+> -	for (mi--; mi>=0; mi--) {
+> +	mi--;
+> +err_map_kobj:
+> +	for (; mi >= 0; mi--) {
+>  		mem = &idev->info->mem[mi];
+>  		map = mem->map;
+>  		kobject_put(&map->kobj);
+> -- 
+> 1.7.4.5
+> 
+> 
