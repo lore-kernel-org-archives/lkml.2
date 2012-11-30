@@ -1,90 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756694Ab2K3Jmh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 04:42:37 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:60805 "EHLO mx2.parallels.com"
+	id S1756700Ab2K3Jm5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 04:42:57 -0500
+Received: from mga09.intel.com ([134.134.136.24]:9125 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751291Ab2K3Jme (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 04:42:34 -0500
-Message-ID: <50B87F84.7040206@parallels.com>
-Date: Fri, 30 Nov 2012 13:42:28 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, <lizefan@huawei.com>, <paul@paulmenage.org>,
-        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
-        <peterz@infradead.org>, <bsingharora@gmail.com>, <hannes@cmpxchg.org>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHSET cgroup/for-3.8] cpuset: decouple cpuset locking from
- cgroup core
-References: <1354138460-19286-1-git-send-email-tj@kernel.org> <50B8263C.7060908@jp.fujitsu.com> <50B875B4.2020507@parallels.com> <20121130092435.GD29317@dhcp22.suse.cz>
-In-Reply-To: <20121130092435.GD29317@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1751291Ab2K3Jmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 04:42:55 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,191,1355126400"; 
+   d="scan'208";a="227076086"
+From: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+Subject: [PATCH] power_supply: add watchdog and safety timer expiries under PROP_HEALTH_*
+Date: Fri, 30 Nov 2012 13:57:46 +0530
+Message-Id: <1354264066-3523-1-git-send-email-ramakrishna.pallala@intel.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/30/2012 01:24 PM, Michal Hocko wrote:
-> On Fri 30-11-12 13:00:36, Glauber Costa wrote:
->> On 11/30/2012 07:21 AM, Kamezawa Hiroyuki wrote:
->>> (2012/11/29 6:34), Tejun Heo wrote:
->>>> Hello, guys.
->>>>
->>>> Depending on cgroup core locking - cgroup_mutex - is messy and makes
->>>> cgroup prone to locking dependency problems.  The current code already
->>>> has lock dependency loop - memcg nests get_online_cpus() inside
->>>> cgroup_mutex.  cpuset the other way around.
->>>>
->>>> Regardless of the locking details, whatever is protecting cgroup has
->>>> inherently to be something outer to most other locking constructs.
->>>> cgroup calls into a lot of major subsystems which in turn have to
->>>> perform subsystem-specific locking.  Trying to nest cgroup
->>>> synchronization inside other locks isn't something which can work
->>>> well.
->>>>
->>>> cgroup now has enough API to allow subsystems to implement their own
->>>> locking and cgroup_mutex is scheduled to be made private to cgroup
->>>> core.  This patchset makes cpuset implement its own locking instead of
->>>> relying on cgroup_mutex.
->>>>
->>>> cpuset is rather nasty in this respect.  Some of it seems to have come
->>>> from the implementation history - cgroup core grew out of cpuset - but
->>>> big part stems from cpuset's need to migrate tasks to an ancestor
->>>> cgroup when an hotunplug event makes a cpuset empty (w/o any cpu or
->>>> memory).
->>>>
->>>> This patchset decouples cpuset locking from cgroup_mutex.  After the
->>>> patchset, cpuset uses cpuset-specific cpuset_mutex instead of
->>>> cgroup_mutex.  This also removes the lockdep warning triggered during
->>>> cpu offlining (see 0009).
->>>>
->>>> Note that this leaves memcg as the only external user of cgroup_mutex.
->>>> Michal, Kame, can you guys please convert memcg to use its own locking
->>>> too?
->>>>
->>>
->>> Hmm. let me see....at quick glance cgroup_lock() is used at
->>>   hierarchy policy change
->>>   kmem_limit
->>>   migration policy change
->>>   swapiness change
->>>   oom control
->>>
->>> Because all aboves takes care of changes in hierarchy,
->>> Having a new memcg's mutex in ->create() may be a way.
->>>
->>> Ah, hm, Costa is mentioning task-attach. is the task-attach problem in memcg ?
->>>
->>
->> We disallow the kmem limit to be set if a task already exists in the
->> cgroup. So we can't allow a new task to attach if we are setting the limit.
-> 
-> This is racy without additional locking, isn't it?
-> 
-Speaking of it: Tejun's tree still lacks the kmem bits. How hard would
-it be for you to merge his branch into a temporary branch of your tree?
+As most of the charger chips come with two kinds of safety features
+related to timing.
+1. Watchdog Timer (interms of seconds/mins)
+2. Safety Timer (interms of hours)
 
+This patch adds these to fault causes in POWER_SUPPLY_PROP_HEALTH_*
+enums so that whenever there is either watchdog timeout or safety timer
+timeout driver could notify the user space accurately about the fault
+and will also be helpful for debug.
+
+Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+---
+ drivers/power/power_supply_sysfs.c |    3 ++-
+ include/linux/power_supply.h       |    2 ++
+ 2 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
+index 40fa3b7..29178f7 100644
+--- a/drivers/power/power_supply_sysfs.c
++++ b/drivers/power/power_supply_sysfs.c
+@@ -55,7 +55,8 @@ static ssize_t power_supply_show_property(struct device *dev,
+ 	};
+ 	static char *health_text[] = {
+ 		"Unknown", "Good", "Overheat", "Dead", "Over voltage",
+-		"Unspecified failure", "Cold",
++		"Unspecified failure", "Cold", "Watchdog timer expire",
++		"Safety timer expire"
+ 	};
+ 	static char *technology_text[] = {
+ 		"Unknown", "NiMH", "Li-ion", "Li-poly", "LiFe", "NiCd",
+diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
+index 35cdf2c..4e672e1 100644
+--- a/include/linux/power_supply.h
++++ b/include/linux/power_supply.h
+@@ -54,6 +54,8 @@ enum {
+ 	POWER_SUPPLY_HEALTH_OVERVOLTAGE,
+ 	POWER_SUPPLY_HEALTH_UNSPEC_FAILURE,
+ 	POWER_SUPPLY_HEALTH_COLD,
++	POWER_SUPPLY_HEALTH_WATCHDOG_TIMER_EXPIRE,
++	POWER_SUPPLY_HEALTH_SAFETY_TIMER_EXPIRE,
+ };
+ 
+ enum {
+-- 
+1.7.0.4
 
