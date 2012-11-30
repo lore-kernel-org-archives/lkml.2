@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993076Ab2K3TCl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:02:41 -0500
-Received: from mail.kernel.org ([198.145.19.201]:59683 "EHLO mail.kernel.org"
+	id S2993091Ab2K3TCs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:02:48 -0500
+Received: from mail.kernel.org ([198.145.19.201]:59736 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993030Ab2K3TCg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 14:02:36 -0500
+	id S2993030Ab2K3TCm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 14:02:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Peter Huewe <peterhuewe@gmx.de>
-Subject: [ 43/54] get_dvb_firmware: fix download site for tda10046 firmware
-Date: Fri, 30 Nov 2012 10:56:14 -0800
-Message-Id: <20121130185212.259190667@linuxfoundation.org>
+        Szymon Janc <szymon.janc@tieto.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Peter Huewe <peterhuewe@gmx.de>
+Subject: [ 44/54] NFC: pn533: Fix use after free
+Date: Fri, 30 Nov 2012 10:56:15 -0800
+Message-Id: <20121130185212.353803989@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185207.894301294@linuxfoundation.org>
 References: <20121130185207.894301294@linuxfoundation.org>
@@ -26,31 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
+From: Szymon Janc <szymon.janc@tieto.com>
 
-commit 25ec43d3e6306978cf66060ed18c4160ce8fc302 upstream.
+commit 770f750bc2b8312489c8e45306f551d08a319d3c upstream.
 
-The previous website doesn't exist anymore. Update it to one site that
-actually exists.
+cmd was freed in pn533_dep_link_up regardless of
+pn533_send_cmd_frame_async return code. Cmd is passed as argument to
+pn533_in_dep_link_up_complete callback and should be freed there.
 
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Szymon Janc <szymon.janc@tieto.com>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/dvb/get_dvb_firmware |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/nfc/pn533.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
---- a/Documentation/dvb/get_dvb_firmware
-+++ b/Documentation/dvb/get_dvb_firmware
-@@ -116,7 +116,7 @@ sub tda10045 {
+--- a/drivers/nfc/pn533.c
++++ b/drivers/nfc/pn533.c
+@@ -1759,12 +1759,8 @@ static int pn533_dep_link_up(struct nfc_
+ 	rc = pn533_send_cmd_frame_async(dev, dev->out_frame, dev->in_frame,
+ 				dev->in_maxlen,	pn533_in_dep_link_up_complete,
+ 				cmd, GFP_KERNEL);
+-	if (rc)
+-		goto out;
+-
+-
+-out:
+-	kfree(cmd);
++	if (rc < 0)
++		kfree(cmd);
  
- sub tda10046 {
- 	my $sourcefile = "TT_PCI_2.19h_28_11_2006.zip";
--	my $url = "http://www.tt-download.com/download/updates/219/$sourcefile";
-+	my $url = "http://technotrend.com.ua/download/software/219/$sourcefile";
- 	my $hash = "6a7e1e2f2644b162ff0502367553c72d";
- 	my $outfile = "dvb-fe-tda10046.fw";
- 	my $tmpdir = tempdir(DIR => "/tmp", CLEANUP => 1);
+ 	return rc;
+ }
 
 
