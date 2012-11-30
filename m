@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031153Ab2K3RB7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 12:01:59 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:45959 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932737Ab2K3RB4 (ORCPT
+	id S1750944Ab2K3RCL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 12:02:11 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:55829 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1031155Ab2K3RCF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 12:01:56 -0500
+	Fri, 30 Nov 2012 12:02:05 -0500
 From: Johan Meiring <johanmeiring@gmail.com>
 To: pe1dnn@amsat.org, jkosina@suse.cz, standby24x7@gmail.com,
         viro@zeniv.linux.org.uk, gregkh@linuxfoundation.org
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Johan Meiring <johanmeiring@gmail.com>
-Subject: [PATCH 15/32] staging: wlags49_h2: wl_netdev.h: sorts out spacing issues
-Date: Fri, 30 Nov 2012 18:58:40 +0200
-Message-Id: <1354294737-5735-15-git-send-email-johanmeiring@gmail.com>
+Subject: [PATCH 16/32] staging: wlags49_h2: sta_h2: fixes spaces-before-tabs problems
+Date: Fri, 30 Nov 2012 18:58:41 +0200
+Message-Id: <1354294737-5735-16-git-send-email-johanmeiring@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1354294737-5735-1-git-send-email-johanmeiring@gmail.com>
 References: <1354294737-5735-1-git-send-email-johanmeiring@gmail.com>
@@ -22,150 +22,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit fixes issues regarding spacing around parentheses. The
-checkpatch.pl tool reports that this file has no further styling
-issues.
+This commit various cases where there were spaces before tabs, as
+reported by the checkpatch.pl tool.
 
 Signed-off-by: Johan Meiring <johanmeiring@gmail.com>
 ---
- drivers/staging/wlags49_h2/wl_netdev.h |   90 ++++++++++++++++----------------
- 1 file changed, 45 insertions(+), 45 deletions(-)
+ drivers/staging/wlags49_h2/sta_h2.c |   20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/staging/wlags49_h2/wl_netdev.h b/drivers/staging/wlags49_h2/wl_netdev.h
-index 78a7057..95bfbeb 100644
---- a/drivers/staging/wlags49_h2/wl_netdev.h
-+++ b/drivers/staging/wlags49_h2/wl_netdev.h
-@@ -68,85 +68,85 @@
- /*******************************************************************************
-  *  function prototypes
-  ******************************************************************************/
--int wl_init( struct net_device *dev );
-+int wl_init(struct net_device *dev);
- 
--int wl_config( struct net_device *dev, struct ifmap *map );
-+int wl_config(struct net_device *dev, struct ifmap *map);
- 
--struct net_device *wl_device_alloc( void );
-+struct net_device *wl_device_alloc(void);
- 
--void wl_device_dealloc( struct net_device *dev );
-+void wl_device_dealloc(struct net_device *dev);
- 
--int wl_open( struct net_device *dev );
-+int wl_open(struct net_device *dev);
- 
--int wl_close( struct net_device *dev );
-+int wl_close(struct net_device *dev);
- 
--int wl_ioctl( struct net_device *dev, struct ifreq *rq, int cmd );
-+int wl_ioctl(struct net_device *dev, struct ifreq *rq, int cmd);
- 
--int wl_tx( struct sk_buff *skb, struct net_device *dev, int port );
-+int wl_tx(struct sk_buff *skb, struct net_device *dev, int port);
- 
--int wl_send( struct wl_private *lp );
-+int wl_send(struct wl_private *lp);
- 
--int wl_rx( struct net_device *dev );
-+int wl_rx(struct net_device *dev);
- 
--void wl_tx_timeout( struct net_device *dev );
-+void wl_tx_timeout(struct net_device *dev);
- 
--struct net_device_stats *wl_stats( struct net_device *dev );
-+struct net_device_stats *wl_stats(struct net_device *dev);
+diff --git a/drivers/staging/wlags49_h2/sta_h2.c b/drivers/staging/wlags49_h2/sta_h2.c
+index 00dffe2..6fc61ba 100644
+--- a/drivers/staging/wlags49_h2/sta_h2.c
++++ b/drivers/staging/wlags49_h2/sta_h2.c
+@@ -25,10 +25,10 @@
+  */
  
  
- #ifdef ENABLE_DMA
--int wl_send_dma( struct wl_private *lp, struct sk_buff *skb, int port );
--int wl_rx_dma( struct net_device *dev );
-+int wl_send_dma(struct wl_private *lp, struct sk_buff *skb, int port);
-+int wl_rx_dma(struct net_device *dev);
- #endif
+-#include "hcfcfg.h"				// to get hcf_16 etc defined as well as
+-                                // possible settings which influence mdd.h or dhf.h
+-#include "mdd.h"   				//to get COMP_ID_STA etc defined
+-#include "dhf.h"   				//used to be "fhfmem.h", to get memblock,plugrecord,
++#include "hcfcfg.h"	// to get hcf_16 etc defined as well as
++			// possible settings which influence mdd.h or dhf.h
++#include "mdd.h"	// to get COMP_ID_STA etc defined
++#include "dhf.h"	// used to be "fhfmem.h", to get memblock,plugrecord,
  
- #ifdef NEW_MULTICAST
--void wl_multicast( struct net_device *dev );
-+void wl_multicast(struct net_device *dev);
- #else
--void wl_multicast( struct net_device *dev, int num_addrs, void *addrs );
-+void wl_multicast(struct net_device *dev, int num_addrs, void *addrs);
- #endif /* NEW_MULTICAST */
- 
- 
--int wl_tx_port0( struct sk_buff *skb, struct net_device *dev );
-+int wl_tx_port0(struct sk_buff *skb, struct net_device *dev);
- 
- 
- #ifdef USE_WDS
- 
--int wl_tx_port1( struct sk_buff *skb, struct net_device *dev );
--int wl_tx_port2( struct sk_buff *skb, struct net_device *dev );
--int wl_tx_port3( struct sk_buff *skb, struct net_device *dev );
--int wl_tx_port4( struct sk_buff *skb, struct net_device *dev );
--int wl_tx_port5( struct sk_buff *skb, struct net_device *dev );
--int wl_tx_port6( struct sk_buff *skb, struct net_device *dev );
--
--void wl_wds_device_alloc( struct wl_private *lp );
--void wl_wds_device_dealloc( struct wl_private *lp );
--void wl_wds_netif_start_queue( struct wl_private *lp );
--void wl_wds_netif_stop_queue( struct wl_private *lp );
--void wl_wds_netif_wake_queue( struct wl_private *lp );
--void wl_wds_netif_carrier_on( struct wl_private *lp );
--void wl_wds_netif_carrier_off( struct wl_private *lp );
-+int wl_tx_port1(struct sk_buff *skb, struct net_device *dev);
-+int wl_tx_port2(struct sk_buff *skb, struct net_device *dev);
-+int wl_tx_port3(struct sk_buff *skb, struct net_device *dev);
-+int wl_tx_port4(struct sk_buff *skb, struct net_device *dev);
-+int wl_tx_port5(struct sk_buff *skb, struct net_device *dev);
-+int wl_tx_port6(struct sk_buff *skb, struct net_device *dev);
-+
-+void wl_wds_device_alloc(struct wl_private *lp);
-+void wl_wds_device_dealloc(struct wl_private *lp);
-+void wl_wds_netif_start_queue(struct wl_private *lp);
-+void wl_wds_netif_stop_queue(struct wl_private *lp);
-+void wl_wds_netif_wake_queue(struct wl_private *lp);
-+void wl_wds_netif_carrier_on(struct wl_private *lp);
-+void wl_wds_netif_carrier_off(struct wl_private *lp);
- 
- #endif  /* USE_WDS */
- 
- 
- #ifdef USE_WDS
- 
--#define WL_WDS_DEVICE_ALLOC( ARG )      wl_wds_device_alloc( ARG )
--#define WL_WDS_DEVICE_DEALLOC( ARG )    wl_wds_device_dealloc( ARG )
--#define WL_WDS_NETIF_START_QUEUE( ARG ) wl_wds_netif_start_queue( ARG )
--#define WL_WDS_NETIF_STOP_QUEUE( ARG )  wl_wds_netif_stop_queue( ARG )
--#define WL_WDS_NETIF_WAKE_QUEUE( ARG )  wl_wds_netif_wake_queue( ARG )
--#define WL_WDS_NETIF_CARRIER_ON( ARG )  wl_wds_netif_carrier_on( ARG )
--#define WL_WDS_NETIF_CARRIER_OFF( ARG ) wl_wds_netif_carrier_off( ARG )
-+#define WL_WDS_DEVICE_ALLOC(ARG)      wl_wds_device_alloc(ARG)
-+#define WL_WDS_DEVICE_DEALLOC(ARG)    wl_wds_device_dealloc(ARG)
-+#define WL_WDS_NETIF_START_QUEUE(ARG) wl_wds_netif_start_queue(ARG)
-+#define WL_WDS_NETIF_STOP_QUEUE(ARG)  wl_wds_netif_stop_queue(ARG)
-+#define WL_WDS_NETIF_WAKE_QUEUE(ARG)  wl_wds_netif_wake_queue(ARG)
-+#define WL_WDS_NETIF_CARRIER_ON(ARG)  wl_wds_netif_carrier_on(ARG)
-+#define WL_WDS_NETIF_CARRIER_OFF(ARG) wl_wds_netif_carrier_off(ARG)
- 
- #else
- 
--#define WL_WDS_DEVICE_ALLOC( ARG )
--#define WL_WDS_DEVICE_DEALLOC( ARG )
--#define WL_WDS_NETIF_START_QUEUE( ARG )
--#define WL_WDS_NETIF_STOP_QUEUE( ARG )
--#define WL_WDS_NETIF_WAKE_QUEUE( ARG )
--#define WL_WDS_NETIF_CARRIER_ON( ARG )
--#define WL_WDS_NETIF_CARRIER_OFF( ARG )
-+#define WL_WDS_DEVICE_ALLOC(ARG)
-+#define WL_WDS_DEVICE_DEALLOC(ARG)
-+#define WL_WDS_NETIF_START_QUEUE(ARG)
-+#define WL_WDS_NETIF_STOP_QUEUE(ARG)
-+#define WL_WDS_NETIF_WAKE_QUEUE(ARG)
-+#define WL_WDS_NETIF_CARRIER_ON(ARG)
-+#define WL_WDS_NETIF_CARRIER_OFF(ARG)
- 
- #endif  /* USE_WDS */
- 
+ static const hcf_8 fw_image_1_data[] = {
+ 	 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+@@ -4433,7 +4433,7 @@ static const CFG_PROG_STRCT fw_image_code[] = {
+ 		CFG_PROG,
+ 		CFG_PROG_STOP,				// mode
+ 		0000,
+- 	0x000F368E,					// Start execution address
++	0x000F368E,		// Start execution address
+ 	},
+ 	{ 0000, 0000, 0000, 0000, 00000000, 0000, 00000000}
+ };
+@@ -4444,7 +4444,7 @@ static const CFG_RANGE20_STRCT fw_image_infocompat[] = {
+ 		COMP_ROLE_SUPL,
+ 		COMP_ID_STA,
+ 		{
+-			{ 2, 2, 5 }  				//variant, bottom, top
++			{ 2, 2, 5 }				//variant, bottom, top
+ 		}
+ 	},
+ 	{	3 + ((20 * sizeof(CFG_RANGE_SPEC_STRCT)) / sizeof(hcf_16)),
+@@ -4452,9 +4452,9 @@ static const CFG_RANGE20_STRCT fw_image_infocompat[] = {
+ 		COMP_ROLE_ACT,
+ 		COMP_ID_MFI,
+ 		{
+-			{ 4, 6, 7 }, 				//variant, bottom, top
+-			{ 5, 6, 7 }, 				//variant, bottom, top
+-			{ 6, 6, 7 }  				//variant, bottom, top
++			{ 4, 6, 7 },				//variant, bottom, top
++			{ 5, 6, 7 },				//variant, bottom, top
++			{ 6, 6, 7 }				//variant, bottom, top
+ 		}
+ 	},
+ 	{	3 + ((20 * sizeof(CFG_RANGE_SPEC_STRCT)) / sizeof(hcf_16)),
+@@ -4462,7 +4462,7 @@ static const CFG_RANGE20_STRCT fw_image_infocompat[] = {
+ 		COMP_ROLE_ACT,
+ 		COMP_ID_CFI,
+ 		{
+-			{ 2, 1, 2 }  				//variant, bottom, top
++			{ 2, 1, 2 }				//variant, bottom, top
+ 		}
+ 	},
+ 	{ 0000, 0000, 0000, 0000, { { 0000, 0000, 0000 } } }	//endsentinel
 -- 
 1.7.10.4
 
