@@ -1,82 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757839Ab2K3LLj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 06:11:39 -0500
-Received: from mga09.intel.com ([134.134.136.24]:38310 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756075Ab2K3LLi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 06:11:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,191,1355126400"; 
-   d="asc'?scan'208";a="227100587"
-Message-ID: <1354273947.30168.91.camel@sauron.fi.intel.com>
-Subject: Re: [RFC/PATCH 1/1] ubi: Add ubiblock driver
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Ezequiel Garcia <elezegarcia@gmail.com>
-Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
-        michael.opdenacker@free-electrons.com, dwmw2@infradead.org,
-        Tim Bird <tim.bird@am.sony.com>
-Date: Fri, 30 Nov 2012 13:12:27 +0200
-In-Reply-To: <CALF0-+UVNwAcEe5UVK9MdKYGwwubCi70DRXdWaojEUDg3uR+Xg@mail.gmail.com>
-References: <1353451183-18807-1-git-send-email-elezegarcia@gmail.com>
-	 <CAFLxGvxuRtbvTob0j-YgfK6Ydz9TVCdjD5NOToyyKQb2S7bC9Q@mail.gmail.com>
-	 <CALF0-+UVNwAcEe5UVK9MdKYGwwubCi70DRXdWaojEUDg3uR+Xg@mail.gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-t9H/mpfk7CtLw34LVLXn"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
+	id S1757863Ab2K3LMf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 06:12:35 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:60669 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756077Ab2K3LMd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 06:12:33 -0500
+Date: Fri, 30 Nov 2012 11:12:27 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: "Rajanikanth H.V" <rajanikanth.hv@linaro.org>
+Cc: anton.vorontsov@linaro.org, francescolavra.fl@gmail.com,
+        rob.herring@calxeda.com, arnd@arndb.de, linus.walleij@stericsson.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        STEricsson_nomadik_linux@list.st.com, rajanikanth.hv@stericsson.com
+Subject: Re: [PATCH] ab8500: remove explicit handling of battery type
+Message-ID: <20121130111227.GE26023@gmail.com>
+References: <1354130865-6148-1-git-send-email-rajanikanth.hv@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1354130865-6148-1-git-send-email-rajanikanth.hv@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 29 Nov 2012, Rajanikanth H.V wrote:
 
---=-t9H/mpfk7CtLw34LVLXn
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> From: "Rajanikanth H.V" <rajanikanth.hv@stericsson.com>
+> 
+> property, battery-type shall be one of supported technology type
+> instead blank
+> - refer: Documentation/devicetree/bindings/power_supply/ab8500/fg.txt
+> 	for the list supported types
+> - this patch appends to ab8500 bm devs DT binding patch set
+> 	ref: commit-id e0f1abeba5c2d8a2183566717d99294fd1a29c2e
+> 		git://git.infradead.org/battery-2.6.git
+> - promote ab8500_fg probe to happen before ab8500_btemp probe as
+> 	btemp driver depends on fuelgauge list,
+> 	ref: ab8500_fg_get(...)
 
-On Wed, 2012-11-21 at 07:20 -0300, Ezequiel Garcia wrote:
-> Yes, I thought of this.
->=20
-> For now, I decided to keep the implementation as simple as possible.
+I don't much like this commit message.
 
-WRT atomic LEB caches and barriers - I guess if there are users who
-would prefer higher I/O speed to the power-cut tolerance, you could:
+Take a look at some others to see how it's normally done.
 
-1. ignore I/O barriers
-2. use plain leb_unmap/leb_write instead of atomic leb change, which is
-faster.
+> Signed-off-by: Rajanikanth H.V <rajanikanth.hv@stericsson.com>
+> ---
+>  drivers/power/Makefile        |    2 +-
+>  drivers/power/ab8500_bmdata.c |   10 +++-------
+>  2 files changed, 4 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/power/Makefile b/drivers/power/Makefile
+> index 696e3a9..070c73d 100644
+> --- a/drivers/power/Makefile
+> +++ b/drivers/power/Makefile
+> @@ -38,7 +38,7 @@ obj-$(CONFIG_CHARGER_PCF50633)	+= pcf50633-charger.o
+>  obj-$(CONFIG_BATTERY_JZ4740)	+= jz4740-battery.o
+>  obj-$(CONFIG_BATTERY_INTEL_MID)	+= intel_mid_battery.o
+>  obj-$(CONFIG_BATTERY_RX51)	+= rx51_battery.o
+> -obj-$(CONFIG_AB8500_BM)		+= ab8500_bmdata.o ab8500_charger.o ab8500_btemp.o ab8500_fg.o abx500_chargalg.o
+> +obj-$(CONFIG_AB8500_BM)		+= ab8500_bmdata.o ab8500_charger.o ab8500_fg.o ab8500_btemp.o abx500_chargalg.o
+>  obj-$(CONFIG_CHARGER_ISP1704)	+= isp1704_charger.o
+>  obj-$(CONFIG_CHARGER_MAX8903)	+= max8903_charger.o
+>  obj-$(CONFIG_CHARGER_TWL4030)	+= twl4030_charger.o
 
-There could be a switch, probably an ioctl? But this is not very
-important now, I am just throwing an idea.
+This should be a separate patch.
 
---=20
-Best Regards,
-Artem Bityutskiy
+> diff --git a/drivers/power/ab8500_bmdata.c b/drivers/power/ab8500_bmdata.c
+> index 03cc528..f16b60c 100644
+> --- a/drivers/power/ab8500_bmdata.c
+> +++ b/drivers/power/ab8500_bmdata.c
+> @@ -461,7 +461,6 @@ bmdevs_of_probe(struct device *dev,
+>  	struct  device_node *np_bat_supply;
+>  	struct	abx500_bm_data *bat;
+>  	const char *btech;
+> -	char bat_tech[8];
+>  	int i, thermistor;
+>  
+>  	*battery = &ab8500_bm_data;
+> @@ -488,12 +487,9 @@ bmdevs_of_probe(struct device *dev,
+>  		"stericsson,battery-type", NULL);
+>  	if (!btech) {
+>  		dev_warn(dev, "missing property battery-name/type\n");
+> -		strcpy(bat_tech, "UNKNOWN");
+> -	} else {
+> -		strcpy(bat_tech, btech);
+> +		return -EINVAL;
+>  	}
+> -
+> -	if (strncmp(bat_tech, "LION", 4) == 0) {
+> +	if (strncmp(btech, "LION", 4) == 0) {
+>  		bat->no_maintenance  = true;
+>  		bat->chg_unknown_bat = true;
+>  		bat->bat_type[BATTERY_UNKNOWN].charge_full_design = 2600;
+> @@ -508,7 +504,7 @@ bmdevs_of_probe(struct device *dev,
+>  		if (thermistor == NTC_EXTERNAL) {
+>  			btype->batres_tbl =
+>  				temp_to_batres_tbl_ext_thermistor;
+> -		} else if (strncmp(bat_tech, "LION", 4) == 0) {
+> +		} else if (strncmp(btech, "LION", 4) == 0) {
+>  			btype->batres_tbl =
+>  				temp_to_batres_tbl_9100;
+>  		} else {
 
---=-t9H/mpfk7CtLw34LVLXn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Code is good though.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Once you have a sensible commit message you can apply my Acked-by
+for both patches.
 
-iQIcBAABAgAGBQJQuJSbAAoJECmIfjd9wqK0FJkQAJWgCsQ7n3z1qaffKQWHJjvz
-YxYMudjb9G1uhKkzDQBxnj7Qj5+LFj1YRdnz48Pu/6bGtoUQgw8Bx04FowABNDtR
-3z+cZl1Qrj9Zgosx5A08OaaiVcePkkS3TuEH/DTVIswi0hd2h2J4O+iJS5e6uALw
-lFHqj8K5zH9H7DWiUFuHK/Nva8XzARgbpKjyJ0d79r0jII2gbBFbzF/uLqrhv15Z
-iV9bqwlBfrh8InCRu067PONejfW46RF6nGKP4hvxWXSR5XdtOdKALFTnG38zm4qG
-1XNhNjSuW/U8bRKdAxbr2Kd+DBx3bW3AI4pbba/vAuYH5SIoZChZTbscUYSawphF
-DicCCorwwyXO7J/imSPqTzmMkoic6iwSwbsBTxDN66O/wp1ZEpvIIr/xIph/tKCo
-T8GiQnzZtnLmUVdOZ6gaOPG3nPCAeSZXSBDRPaNgkxSblE6Va7xJqQWfm9shtDk8
-U9GMaD+dR+9jqlyRGGaEP/Y/u/v+2O1XUKQxQgkNZV4noOVgKNdIrqU8Xk5pxYOd
-gTJfEhrrCPIQRPkrHaybV8zZ27pZS9W4amWViFtd7AP03pIfaVuxCv3ab1Co4811
-c4Gweqqi7jjlzg+jjTFB/4hF3//oL9p1ukEG/z6NuYcQ+wPSfxBr3Cfxd2PEKEyj
-2TBbRZz+kqUEk31cyC5C
-=2pVT
------END PGP SIGNATURE-----
-
---=-t9H/mpfk7CtLw34LVLXn--
-
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
