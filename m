@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161118Ab2K3St5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:49:57 -0500
-Received: from mail.kernel.org ([198.145.19.201]:57717 "EHLO mail.kernel.org"
+	id S1422681Ab2K3SvA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:51:00 -0500
+Received: from mail.kernel.org ([198.145.19.201]:57737 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161096Ab2K3Stx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:49:53 -0500
+	id S1161101Ab2K3Stz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:49:55 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Peter Huewe <peterhuewe@gmx.de>
-Subject: [ 31/37] get_dvb_firmware: fix download site for tda10046 firmware
-Date: Fri, 30 Nov 2012 10:46:18 -0800
-Message-Id: <20121130183900.589585576@linuxfoundation.org>
+        liu chuansheng <chuansheng.liu@intel.com>,
+        Don Zickus <dzickus@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Shuah Khan <shuah.khan@hp.com>
+Subject: [ 33/37] watchdog: using u64 in get_sample_period()
+Date: Fri, 30 Nov 2012 10:46:20 -0800
+Message-Id: <20121130183900.802561648@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130183857.166228045@linuxfoundation.org>
 References: <20121130183857.166228045@linuxfoundation.org>
@@ -26,31 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
+From: Chuansheng Liu <chuansheng.liu@intel.com>
 
-commit 25ec43d3e6306978cf66060ed18c4160ce8fc302 upstream.
+commit 8ffeb9b0e6369135bf03a073514f571ef10606b9 upstream.
 
-The previous website doesn't exist anymore. Update it to one site that
-actually exists.
+In get_sample_period(), unsigned long is not enough:
 
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+  watchdog_thresh * 2 * (NSEC_PER_SEC / 5)
+
+case1:
+  watchdog_thresh is 10 by default, the sample value will be: 0xEE6B2800
+
+case2:
+ set watchdog_thresh is 20, the sample value will be: 0x1 DCD6 5000
+
+In case2, we need use u64 to express the sample period.  Otherwise,
+changing the threshold thru proc often can not be successful.
+
+Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+Acked-by: Don Zickus <dzickus@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/dvb/get_dvb_firmware |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/watchdog.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/Documentation/dvb/get_dvb_firmware
-+++ b/Documentation/dvb/get_dvb_firmware
-@@ -114,7 +114,7 @@ sub tda10045 {
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -113,7 +113,7 @@ static unsigned long get_timestamp(int t
+ 	return cpu_clock(this_cpu) >> 30LL;  /* 2^30 ~= 10^9 */
+ }
  
- sub tda10046 {
- 	my $sourcefile = "TT_PCI_2.19h_28_11_2006.zip";
--	my $url = "http://www.tt-download.com/download/updates/219/$sourcefile";
-+	my $url = "http://technotrend.com.ua/download/software/219/$sourcefile";
- 	my $hash = "6a7e1e2f2644b162ff0502367553c72d";
- 	my $outfile = "dvb-fe-tda10046.fw";
- 	my $tmpdir = tempdir(DIR => "/tmp", CLEANUP => 1);
+-static unsigned long get_sample_period(void)
++static u64 get_sample_period(void)
+ {
+ 	/*
+ 	 * convert watchdog_thresh from seconds to ns
+@@ -121,7 +121,7 @@ static unsigned long get_sample_period(v
+ 	 * increment before the hardlockup detector generates
+ 	 * a warning
+ 	 */
+-	return get_softlockup_thresh() * (NSEC_PER_SEC / 5);
++	return get_softlockup_thresh() * ((u64)NSEC_PER_SEC / 5);
+ }
+ 
+ /* Commands for resetting the watchdog */
 
 
