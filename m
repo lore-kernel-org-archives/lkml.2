@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754725Ab2K3ASZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 19:18:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40422 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752859Ab2K3ASX (ORCPT
+	id S1754811Ab2K3AT4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 19:19:56 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:44521 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753982Ab2K3ATy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 19:18:23 -0500
-Date: Thu, 29 Nov 2012 16:18:21 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Zheng Liu <wenqing.lz@taobao.com>,
-        Jeff liu <jeff.liu@oracle.com>, Jim Meyering <jim@meyering.net>,
-        Paul Eggert <eggert@cs.ucla.edu>,
-        Christoph Hellwig <hch@infradead.org>, Josef Bacik <josef@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Andreas Dilger <adilger@dilger.ca>,
-        Dave Chinner <david@fromorbit.com>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Sunil Mushran <sunil.mushran@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] tmpfs: support SEEK_DATA and SEEK_HOLE (reprise)
-Message-Id: <20121129161821.8103962c.akpm@linux-foundation.org>
-In-Reply-To: <alpine.LNX.2.00.1211291522550.3226@eggly.anvils>
-References: <alpine.LNX.2.00.1211281706390.1516@eggly.anvils>
-	<20121129145924.9fb05982.akpm@linux-foundation.org>
-	<alpine.LNX.2.00.1211291522550.3226@eggly.anvils>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 29 Nov 2012 19:19:54 -0500
+Message-ID: <50B7FBA7.2030300@gaikai.com>
+Date: Thu, 29 Nov 2012 16:19:51 -0800
+From: Patrick McLean <patrickm@gaikai.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-nfs@vger.kernel.org
+Subject: Re: Regression with initramfs and nfsroot (appears to be in the dcache)
+References: <CAE2NFgU+4QDcLaVE5dKDvZCxey7qEf7FAbYNjNmcjVU=HLhF=A@mail.gmail.com> <20121129213316.GU4939@ZenIV.linux.org.uk> <CAE2NFgWCnmgSCsw7MzRkqBLTHgRDG-FvKKcbTHN6UqePK6Ef+Q@mail.gmail.com> <20121129222109.GW4939@ZenIV.linux.org.uk> <50B7E759.9070007@gaikai.com> <20121129234326.GX4939@ZenIV.linux.org.uk>
+In-Reply-To: <20121129234326.GX4939@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Nov 2012 15:29:15 -0800 (PST)
-Hugh Dickins <hughd@google.com> wrote:
-
-> On Thu, 29 Nov 2012, Andrew Morton wrote:
-> > On Wed, 28 Nov 2012 17:22:03 -0800 (PST)
-> > Hugh Dickins <hughd@google.com> wrote:
-> > 
-> > > +/*
-> > > + * llseek SEEK_DATA or SEEK_HOLE through the radix_tree.
-> > > + */
-> > > +static pgoff_t shmem_seek_hole_data(struct address_space *mapping,
-> > > +				    pgoff_t index, pgoff_t end, int origin)
-> > 
-> > So I was starting at this wondering what on earth "origin" is and why
-> > it has the fishy-in-this-context type "int".
-> > 
-> > There is a pretty well established convention that the lseek seek mode
-> > is called "whence".
-> > 
-> > The below gets most of it.  Too anal?
+On 29/11/12 03:43 PM, Al Viro wrote:
+> On Thu, Nov 29, 2012 at 02:53:13PM -0800, Patrick McLean wrote:
+>> On 29/11/12 02:21 PM, Al Viro wrote:
+>>> On Thu, Nov 29, 2012 at 02:06:22PM -0800, Patrick McLean wrote:
+>>>
+>>>> I have a trivial reproducer and am happy to help debug in any way that
+>>>> I can. That patch seems to fix the problem, and produces these
+>>>> warnings in dmesg:
+>>>
+>>> OK...  So we have differing entry->fh and NFS_FH(dentry->d_inode).  Something
+>>> like
+>>> static void dump_fh(const struct nfs_fh *fh)
+>>> {
+>>> 	int i;
+>>> 	printk(KERN_INFO "FH(%d)", fh->size);
+>>> 	for (i = 0; i < fh->size; i++)
+>>> 		printk(KERN_CONT "%c%02x", i ? ' ' : '[', fh->data[i]);
+>>> 	printk(KERN_CONT "]\n");
+>>> }
+>>> with dump_fh(entry->fh); dump_fh(NFS_FH(dentry->d_inode)); added next to
+>>> that WARN_ON(1) would probably be interesting.  And probably would make
+>>> sense to print filename->name as well, to see which files it is about.
 > 
-> No, not too anal: I'm all in favour of "whence", which is indeed
-> the name of that lseek argument - since mediaeval times I believe.
+>> [    8.821584] FH(0)]
+>> [    8.821586] FH(36)[01 00 07 01 89 00 00 00 00 00 00 00 e1 21 fe c4 9e 38 44 dc bf 1b d5 95 d6 76 d6 d9 a7 3c 1b 80 33 38 e3 62]
+>> [    8.821601] filename: proc
+> 
+> *whoa*
+> 
+> So we have zero entry->fh->size?  No wonder it doesn't match...  Which NFS
+> version it is?  entry->fh->size is set by nfs[34]_decode_dirent().
 
-Alas, the rest of us don't have personal memories from those days.
+This is nfs v3 over TCP on Linus git at commit e9296e89b85604862bd9ec2d54dc43edad775c0d with nfs-utils-1.2.6 userspace.
 
-> It's good to have words like that in the kernel source: while you're
-> in the mood, please see if you can find good homes for "whither" and
-> "thrice" and "widdershins".
-
-We use "thrice" quite a lot.  And "whither" once coz alfa peeps cnat spel. 
-No widdershins yet.
-
+> NFS folks: any ideas on best way to debug it?  The brute-force way would be
+> to capture all NFS traffic with tcpdump and see what's going on, but that
+> would be a lot of work...
+> 
+> Looks like we have READDIRPLUS attempted and succeeded, but fhandle was not
+> given.  Result: nfs_prime_dcache() is doing blind d_drop() on perfectly
+> valid dentries, no matter how busy.
+> 
