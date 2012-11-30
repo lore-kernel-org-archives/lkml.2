@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1768883Ab2K3TOk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:14:40 -0500
-Received: from mail.kernel.org ([198.145.19.201]:59403 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992913Ab2K3TCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 14:02:03 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jianpeng Ma <majianpeng@gmail.com>, NeilBrown <neilb@suse.de>
-Subject: [ 20/54] md: Reassigned the parameters if read_seqretry returned true in func md_is_badblock.
-Date: Fri, 30 Nov 2012 10:55:51 -0800
-Message-Id: <20121130185209.935969916@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121130185207.894301294@linuxfoundation.org>
-References: <20121130185207.894301294@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1768903Ab2K3TOt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:14:49 -0500
+Received: from webmail.solarflare.com ([12.187.104.25]:38974 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2992913Ab2K3TOr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 14:14:47 -0500
+Message-ID: <1354302880.2640.1.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH] smsc: RFC: Workaround for problems with lan8710 phy
+ auto MDI-X
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: David Miller <davem@davemloft.net>
+CC: <jkosina@suse.cz>, <pt@netconsequence.de>, <otavio@ossystems.com.br>,
+        <javier@dowhile0.org>, <chohnstaedt@innominate.com>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Date: Fri, 30 Nov 2012 19:14:40 +0000
+In-Reply-To: <20121130.122302.1825816242500143123.davem@davemloft.net>
+References: <8D7E9026-6276-452B-9E0C-AEB8CF38C9FD@netconsequence.de>
+	 <alpine.LNX.2.00.1211301622110.25639@pobox.suse.cz>
+	 <20121130.122302.1825816242500143123.davem@davemloft.net>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-Originating-IP: [10.17.20.137]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.6-stable review patch.  If anyone has any objections, please let me know.
+On Fri, 2012-11-30 at 12:23 -0500, David Miller wrote:
+> From: Jiri Kosina <jkosina@suse.cz>
+> Date: Fri, 30 Nov 2012 16:23:30 +0100 (CET)
+> 
+> > Of course it'd be far better if faulty hardware can be autodetected in 
+> > runtime.
+> 
+> That is how this must be handled.
 
-------------------
+Well, we also have the recent extension to ETHTOOL_SSET for forcing
+MDI-X on or off.  If it's not possible to detect the faulty hardware
+then the driver can implement this.
 
-From: majianpeng <majianpeng@gmail.com>
+Ben.
 
-commit ab05613a0646dcc11049692d54bae76ca9ffa910 upstream.
-
-This bug was introduced by commit(v3.0-rc7-126-g2230dfe).
-So fix is suitable for 3.0.y thru 3.6.y.
-
-Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/md/md.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
-
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -7907,9 +7907,9 @@ int md_is_badblock(struct badblocks *bb,
- 		   sector_t *first_bad, int *bad_sectors)
- {
- 	int hi;
--	int lo = 0;
-+	int lo;
- 	u64 *p = bb->page;
--	int rv = 0;
-+	int rv;
- 	sector_t target = s + sectors;
- 	unsigned seq;
- 
-@@ -7924,7 +7924,8 @@ int md_is_badblock(struct badblocks *bb,
- 
- retry:
- 	seq = read_seqbegin(&bb->lock);
--
-+	lo = 0;
-+	rv = 0;
- 	hi = bb->count;
- 
- 	/* Binary search between lo and hi for 'target'
-
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
