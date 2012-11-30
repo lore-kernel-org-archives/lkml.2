@@ -1,67 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755545Ab2K3M6j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 07:58:39 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36735 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751412Ab2K3M6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 07:58:38 -0500
-From: Vitaly Andrianov <vitalya@ti.com>
-To: <mina86@mina86.com>, <m.szyprowski@samsung.com>,
-        <kyungmin.park@samsung.com>, <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>, <linux-keystone@list.ti.com>
-CC: Vitaly Andrianov <vitalya@ti.com>, Cyril Chemparathy <cyril@ti.com>
-Subject: [PATCH] drivers: cma: fix addressing on PAE machines
-Date: Fri, 30 Nov 2012 07:58:03 -0500
-Message-ID: <1354280283-28365-1-git-send-email-vitalya@ti.com>
+	id S1756356Ab2K3NA7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 08:00:59 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50841 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754200Ab2K3NA6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 08:00:58 -0500
+From: YAMANE Toshiaki <yamanetoshi@gmail.com>
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org, YAMANE Toshiaki <yamanetoshi@gmail.com>
+Subject: [PATCH 1/3] staging/rtl8187se: Fix spacing coding style in ieee80211/dot11d.c
+Date: Fri, 30 Nov 2012 22:00:52 +0900
+Message-Id: <1354280452-25365-1-git-send-email-yamanetoshi@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a couple of bugs that otherwise impair CMA functionality on
-PAE machines:
+The following errors fixed.
+- ERROR: spaces required around that '=' (ctx:VxV)
+- ERROR: spaces required around that '<=' (ctx:VxV)
+- ERROR: space required after that ',' (ctx:VxV)
 
-  - alignment must be a 64-bit type when running on systems with 64-bit
-    physical addresses.  If this is not the case, the limit calculation thunks
-    allocations down to an address range < 4G.
-
-  - The allocated range check is removed. On 32bit ARM kernel with LPAE
-    enabled the base may be allocated outside the fist 4GB of physical
-    memory (keystone SoC for example).
-
-Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
-Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
 ---
- drivers/base/dma-contiguous.c |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+ drivers/staging/rtl8187se/ieee80211/dot11d.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
-index 9a14694..7936b2e 100644
---- a/drivers/base/dma-contiguous.c
-+++ b/drivers/base/dma-contiguous.c
-@@ -234,7 +234,7 @@ int __init dma_declare_contiguous(struct device *dev, unsigned long size,
- 				  phys_addr_t base, phys_addr_t limit)
- {
- 	struct cma_reserved *r = &cma_reserved[cma_reserved_count];
--	unsigned long alignment;
-+	phys_addr_t alignment;
+diff --git a/drivers/staging/rtl8187se/ieee80211/dot11d.c b/drivers/staging/rtl8187se/ieee80211/dot11d.c
+index 0e93eb0..247916b 100644
+--- a/drivers/staging/rtl8187se/ieee80211/dot11d.c
++++ b/drivers/staging/rtl8187se/ieee80211/dot11d.c
+@@ -39,10 +39,10 @@ Dot11d_Reset(struct ieee80211_device *ieee)
+ 	memset(pDot11dInfo->channel_map, 0, MAX_CHANNEL_NUMBER+1);
+ 	memset(pDot11dInfo->MaxTxPwrDbmList, 0xFF, MAX_CHANNEL_NUMBER+1);
+ 	// Set new channel map
+-	for (i=1; i<=11; i++) {
++	for (i = 1; i <= 11; i++) {
+ 		(pDot11dInfo->channel_map)[i] = 1;
+ 	}
+-	for (i=12; i<=14; i++) {
++	for (i = 12; i <= 14; i++) {
+ 		(pDot11dInfo->channel_map)[i] = 2;
+ 	}
  
- 	pr_debug("%s(size %lx, base %08lx, limit %08lx)\n", __func__,
- 		 (unsigned long)size, (unsigned long)base,
-@@ -271,10 +271,6 @@ int __init dma_declare_contiguous(struct device *dev, unsigned long size,
- 		if (!addr) {
- 			base = -ENOMEM;
- 			goto err;
--		} else if (addr + size > ~(unsigned long)0) {
--			memblock_free(addr, size);
--			base = -EINVAL;
--			goto err;
- 		} else {
- 			base = addr;
- 		}
+@@ -116,7 +116,7 @@ Dot11d_UpdateCountryIe(
+ #if 1
+ 	//printk("Dot11d_UpdateCountryIe(): Channel List:\n");
+ 	printk("Channel List:");
+-	for(i=1; i<= MAX_CHANNEL_NUMBER; i++)
++	for(i = 1; i <= MAX_CHANNEL_NUMBER; i++)
+ 		if(pDot11dInfo->channel_map[i] > 0)
+ 			printk(" %d", i);
+ 	printk("\n");
+@@ -125,7 +125,7 @@ Dot11d_UpdateCountryIe(
+ 	UPDATE_CIE_SRC(dev, pTaddr);
+ 
+ 	pDot11dInfo->CountryIeLen = CoutryIeLen;
+-	memcpy(pDot11dInfo->CountryIeBuf, pCoutryIe,CoutryIeLen);
++	memcpy(pDot11dInfo->CountryIeBuf, pCoutryIe, CoutryIeLen);
+ 	pDot11dInfo->State = DOT11D_STATE_LEARNED;
+ }
+ 
+@@ -202,7 +202,7 @@ int ToLegalChannel(
+ 	u8 default_chn = 0;
+ 	u32 i = 0;
+ 
+-	for (i=1; i<= MAX_CHANNEL_NUMBER; i++)
++	for (i = 1; i <= MAX_CHANNEL_NUMBER; i++)
+ 	{
+ 		if(pDot11dInfo->channel_map[i] > 0)
+ 		{
 -- 
 1.7.9.5
 
