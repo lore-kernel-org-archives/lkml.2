@@ -1,52 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030848Ab2K3Pi7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 10:38:59 -0500
-Received: from utopia.booyaka.com ([74.50.51.50]:46993 "EHLO
-	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030753Ab2K3Pi5 (ORCPT
+	id S1030861Ab2K3Pjk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 10:39:40 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:61595 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030715Ab2K3Pjg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 10:38:57 -0500
-Date: Fri, 30 Nov 2012 15:38:56 +0000 (UTC)
-From: Paul Walmsley <paul@pwsan.com>
-To: "Philip, Avinash" <avinashphilip@ti.com>
-cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "Cousson, Benoit" <b-cousson@ti.com>,
-        "Hiremath, Vaibhav" <hvaibhav@ti.com>,
-        "AnilKumar, Chimata" <anilkumar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
-        "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
-Subject: RE: [PATCH v5 00/12] Support for AM33xx PWM Subsystem
-In-Reply-To: <518397C60809E147AF5323E0420B992E3EA0E480@DBDE01.ent.ti.com>
-Message-ID: <alpine.DEB.2.00.1211301533560.18138@utopia.booyaka.com>
-References: <1354006097-25895-1-git-send-email-avinashphilip@ti.com> <20121128142101.GB21042@avionic-0098.adnet.avionic-design.de> <518397C60809E147AF5323E0420B992E3EA0E480@DBDE01.ent.ti.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 30 Nov 2012 10:39:36 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20121130064710.1bcd227b@tlielax.poochiereds.net>
+References: <cover.1354217746.git.joe@perches.com>
+	<7176cb20d420849d72aa004e40a404049362da7f.1354217746.git.joe@perches.com>
+	<20121130064710.1bcd227b@tlielax.poochiereds.net>
+Date: Fri, 30 Nov 2012 09:39:35 -0600
+Message-ID: <CAH2r5mtbhZWJu1eoahDSo84Wr=6jrSDVdwEVnQWYxztU72T2nQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] cifs: Remove unused cEVENT macro
+From: Steve French <smfrench@gmail.com>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Joe Perches <joe@perches.com>, Steve French <sfrench@samba.org>,
+        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Nov 2012, Philip, Avinash wrote:
+I don't mind removing cEVENT (it is currently unused, and presumably
+the older file systems that used EVENT logging, have moved to dtrace
+or other tracing mechanisms).
 
-> Is there any way to get HWMOD and DT patches getting accepted in 3.8?
-> Or should I wait and send rebased patch based on 3.8-rc1?
+But ... the need still remains for more tracing for cifs (I run into
+this a few times a month at least when debugging) - does anyone have
+any ideas for how to add dynamic trace points to cifs (has anyone even
+done it for the vfs?) - is there any file system that does a good job
+defining dynamic trace points?
 
-Our upstreams aren't taking any more new features for v3.8, so basing on 
-v3.8-rc1 is the best thing to do now.
+On Fri, Nov 30, 2012 at 5:47 AM, Jeff Layton <jlayton@redhat.com> wrote:
+> On Thu, 29 Nov 2012 11:37:18 -0800
+> Joe Perches <joe@perches.com> wrote:
+>
+>> It uses an undefined KERN_EVENT and is itself unused.
+>>
+>> Signed-off-by: Joe Perches <joe@perches.com>
+>> ---
+>>  fs/cifs/cifs_debug.h |    7 -------
+>>  1 files changed, 0 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/fs/cifs/cifs_debug.h b/fs/cifs/cifs_debug.h
+>> index c0c68bb..b0fc344 100644
+>> --- a/fs/cifs/cifs_debug.h
+>> +++ b/fs/cifs/cifs_debug.h
+>> @@ -63,12 +63,6 @@ do {                                               \
+>>  /* debug event message: */
+>>  extern int cifsERROR;
+>>
+>> -#define cEVENT(fmt, arg...)                                          \
+>> -do {                                                                 \
+>> -     if (cifsERROR)                                                  \
+>> -             printk(KERN_EVENT "%s: " fmt "\n", __FILE__, ##arg);    \
+>> -} while (0)
+>> -
+>>  /* error event message: e.g., i/o error */
+>>  #define cifserror(fmt, arg...)                                       \
+>>  do {                                                         \
+>> @@ -88,7 +82,6 @@ do {                                                \
+>>   */
+>>  #else                /* _CIFS_DEBUG */
+>>  #define cERROR(set, fmt, arg...)
+>> -#define cEVENT(fmt, arg...)
+>>  #define cFYI(set, fmt, arg...)
+>>  #define cifserror(fmt, arg...)
+>>  #endif               /* _CIFS_DEBUG */
+>
+> Yay! More cruft removal!
+>
+> Reviewed-by: Jeff Layton <jlayton@redhat.com>
 
-In the meantime, you can try basing your series against a recent for-next 
-HEAD to get an early start on testing, etc.
 
 
-- Paul
+-- 
+Thanks,
+
+Steve
