@@ -1,87 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756900Ab2K3J6u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 04:58:50 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:37982 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752460Ab2K3J6q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 04:58:46 -0500
+	id S1756929Ab2K3KA3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 05:00:29 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:33395 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753143Ab2K3KA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 05:00:27 -0500
+Message-ID: <50B883B5.8020705@parallels.com>
+Date: Fri, 30 Nov 2012 14:00:21 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <20121130094044.GA3053@avionic-0098.adnet.avionic-design.de>
-References: <20121105095315.GG5847@avionic-0098.mockup.avionic-design.de>
- <20121106.184058.636480855516538607.davem@davemloft.net> <20121107065258.GA22325@avionic-0098.mockup.avionic-design.de>
- <20121107.023419.1656398773495533906.davem@davemloft.net> <20121130093520.631503E070C@localhost>
- <20121130094044.GA3053@avionic-0098.adnet.avionic-design.de>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 30 Nov 2012 09:58:24 +0000
-X-Google-Sender-Auth: QvPP9b3S18e8BXmWQq_BTI98KT0
-Message-ID: <CACxGe6u5Ff65CtYgCeuQYaz4hAghAAAuHZLAk4k2EQYE8Z9K6Q@mail.gmail.com>
-Subject: Re: SPARC and OF_GPIO
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: David Miller <davem@davemloft.net>, sparclinux@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Michal Hocko <mhocko@suse.cz>
+CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, <lizefan@huawei.com>, <paul@paulmenage.org>,
+        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <peterz@infradead.org>, <bsingharora@gmail.com>, <hannes@cmpxchg.org>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHSET cgroup/for-3.8] cpuset: decouple cpuset locking from
+ cgroup core
+References: <1354138460-19286-1-git-send-email-tj@kernel.org> <50B8263C.7060908@jp.fujitsu.com> <50B875B4.2020507@parallels.com> <20121130092435.GD29317@dhcp22.suse.cz> <50B87F84.7040206@parallels.com> <20121130094959.GE29317@dhcp22.suse.cz>
+In-Reply-To: <20121130094959.GE29317@dhcp22.suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 30, 2012 at 9:40 AM, Thierry Reding
-<thierry.reding@avionic-design.de> wrote:
-> On Fri, Nov 30, 2012 at 09:35:20AM +0000, Grant Likely wrote:
->> On Wed, 07 Nov 2012 02:34:19 -0500 (EST), David Miller <davem@davemloft.net> wrote:
->> > From: Thierry Reding <thierry.reding@avionic-design.de>
->> > Date: Wed, 7 Nov 2012 07:52:58 +0100
->> >
->> > > It seems like OF_ADDRESS would be trickier. A comment around line 60 in
->> > > drivers/of/platform.c says that SPARC doesn't need functions defined in
->> > > the enclosing #ifdef CONFIG_OF_ADDRESS block. I'm not sure it would be
->> > > acceptable to remove the conflict nonetheless, even if the functions
->> > > aren't used. One benefit would be that the code could receive some extra
->> > > compile coverage.
->> >  ...
->> > > Finally, OF_IRQ is again just generic code to map device tree data to
->> > > IRQ domains. While I didn't see the IRQ_DOMAIN symbol selected anywhere
->> > > in SPARC it should still be possible to run drivers that properly
->> > > implement IRQ domains on SPARC, right? Or is there any reason why they
->> > > wouldn't work?
->> >
->> > These are the two most conflicted areas for Sparc.
->> >
->> > For addresses, we fully compute the full fully resolved physical
->> > address of all registers of an OF device very early at bootup time
->> > when we first scan the device tree.
->> >
->> > Same goes for interrupts, we fully compute them early in the bootup
->> > process.
->>
->> Right. That's the reason I haven't tackled making all architectures do
->> the same thing. I've not been confident that I'd get the sparc bits
->> correct. I think it could be done, but I haven't been able to wrap my
->> brain around it sufficiently.
->>
->> On non-sparc I've actually been moving in the direction of resolving
->> resources at .probe time to make it easier to handle deferred probing.
->> So if, for example, a device irq line is routed to a GPIO instead of the
->> core interrupt controller, then the irq number won't be known until
->> after the gpio driver .probe occurs. For addresses, this situation is
->> unlikely, but for all the other kinds of resources (gpios, regs, clocks, irqs,
->> etc) it is a problem that we're actually seeing.
->
-> Interesting. I have some I2C devices that run into the problem where
-> their interrupts cannot be resolved at instantiation time so I've had to
-> work around it by calling irq_of_parse_and_map() at .probe() time and
-> return -EPROBE_DEFER if that return NO_IRQ.
->
-> Are any of your plans documented somewhere? I'd be interested to know
-> how this is supposed to be solved. irq_of_parse_and_map() is not going
-> to work for non-DT setups so the above can't be a proper solution.
+On 11/30/2012 01:49 PM, Michal Hocko wrote:
+> On Fri 30-11-12 13:42:28, Glauber Costa wrote:
+> [...]
+>> Speaking of it: Tejun's tree still lacks the kmem bits. How hard would
+>> it be for you to merge his branch into a temporary branch of your tree?
+> 
+> review-cpuset-locking is based on a post merge window merges so I cannot
+> merge it as is. I could cherry-pick the series after it is settled. I
+> have no idea how much conflicts this would bring, though.
+> 
+Ok.
 
-I think there should be generic helpers for retrieving each type of
-resource and each data source (resource table, DT, ACPI, etc) should
-plug into that infrastructure. Those functions already exist for the
-platform bus type, but I've not gotten to the step of plugging in the
-decode helpers.
+I believe the task problem only exist for us for kmem. So I could come
+up with a patchset that only deals with child cgroup creation, and
+ignore attach for now. So long as we have a mechanism that will work for
+it, and don't get lost and forget to patch it when the trees are merged.
 
-g.
+Now, what I am actually seeing with cgroup creation, is that the
+children will copy a lot of the values from the parent, like swappiness,
+hierarchy, etc. Once the child copies it, we should no longer be able to
+change those values in the parent: otherwise we'll get funny things like
+parent.use_hierarchy = 1, child.use_hierarchy = 0.
+
+One option is to take a global lock in memcg_alloc_css(), and keep it
+locked until we did all the cgroup bookkeeping, and then unlock it in
+css_online. But I am guessing Tejun won't like it very much.
+
+What do you think about a children counter? If we are going to do things
+similar to the attach_in_progress of cpuset, we might very well turn it
+into a direct counter so we don't have to iterate at all.
+
+The code would look like: (simplified example for use_hierarchy)
+
+memcg_lock();
+if (memcg->nr_children != 0)
+    return -EINVAL;
+else
+    memcg->use_hierarchy = val
+memcg_unlock()
+
+
