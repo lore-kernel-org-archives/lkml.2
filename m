@@ -1,113 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755355Ab2K3BSH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 20:18:07 -0500
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:11134 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753766Ab2K3BSG (ORCPT
+	id S1755438Ab2K3BSM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 20:18:12 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:49436 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755407Ab2K3BSI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 20:18:06 -0500
-Message-ID: <1354237778.7776.98.camel@misato.fc.hp.com>
-Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on
- rebind scenario
-From: Toshi Kani <toshi.kani@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-acpi@vger.kernel.org,
-        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        Wen Congyang <wencongyang@gmail.com>, isimatu.yasuaki@jp.fujitsu.com,
-        lenb@kernel.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Thu, 29 Nov 2012 18:09:38 -0700
-In-Reply-To: <1525935.BNLeevluWK@vostro.rjw.lan>
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
-	 <3341852.kzFLTzlKxq@vostro.rjw.lan>
-	 <1354231039.7776.80.camel@misato.fc.hp.com>
-	 <1525935.BNLeevluWK@vostro.rjw.lan>
+	Thu, 29 Nov 2012 20:18:08 -0500
+Subject: Re: [PATCH] br2684: don't send frames on not-ready vcc
+From: Nathan Williams <nathan@traverse.com.au>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: David Miller <davem@davemloft.net>, chas@cmf.nrl.navy.mil,
+        krzysiek@podlesie.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1354122555.21562.92.camel@shinybook.infradead.org>
+References: <1354058916.2534.25.camel@shinybook.infradead.org>
+	 <20121128.114153.737074131307295783.davem@davemloft.net>
+	 <1354122070.21562.89.camel@shinybook.infradead.org>
+	 <20121128.120415.778262714601372592.davem@davemloft.net>
+	 <1354122555.21562.92.camel@shinybook.infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Date: Fri, 30 Nov 2012 12:18:05 +1100
+Message-ID: <1354238285.3128.273.camel@dualcore.traverse>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-11-30 at 01:13 +0100, Rafael J. Wysocki wrote:
-> On Thursday, November 29, 2012 04:17:19 PM Toshi Kani wrote:
-> > On Thu, 2012-11-29 at 23:11 +0100, Rafael J. Wysocki wrote:
-> > > On Thursday, November 29, 2012 02:46:44 PM Toshi Kani wrote:
-> > > > On Thu, 2012-11-29 at 22:23 +0100, Rafael J. Wysocki wrote:
-> > > > > On Thursday, November 29, 2012 01:38:39 PM Toshi Kani wrote:
-> > > > > Now, that need not harm functionality, and that's why I proposed the
-> > > > > eject_forbidden flag, so that .remove() can say "I'm not done, please
-> > > > > rollback", in which case the device can happily function going forward,
-> > > > > even if we don't rebind the driver to it.
-> > > > 
-> > > > A partially trimmed acpi_device is hard to rollback.  acpi_device should
-> > > > be either trimmed completely or intact.
-> > > 
-> > > I may or may not agree, depending on what you mean by "trimmed". :-)
-> > > 
-> > > > When a function failed to trim
-> > > > an acpi_device, it needs to rollback its operation for the device before
-> > > > returning an error.
-> > > 
-> > > Unless it is .remove(), because .remove() is supposed to always succeed
-> > > (ie. unbind the driver from the device).  However, it may signal the caller
-> > > that something's fishy, by setting a flag in the device object, for example.
-> > 
-> > Right, .remove() cannot fail.  We still need to check if we should
-> > continue to use .remove(), though.
-> > 
-> > As for the flag, are you thinking that we call acpi_bus_trim() with
-> > rmdevice false first, so that it won't remove acpi_device?
+On Wed, 2012-11-28 at 17:09 +0000, David Woodhouse wrote:
+> On Wed, 2012-11-28 at 12:04 -0500, David Miller wrote:
+> > Do you want me to pull that tree into net-next or is there a plan to
+> > repost the entire series of work for a final submission?
 > 
-> I'm not sure if that's going to help.
+> I think it needs a little more testing/consensus first. I'd like an ack
+> from Chas on the atm ->release_cb() thing, at least. And I wouldn't mind
+> confirmation from Nathan's customer that they're no longer seeing the
+> panics.
 > 
-> Definitely, .remove() should just unbind the driver from the device.
-> That's what it's supposed to do.  Still, it may leave some information for
-> the caller in the device structure itself.  For example, "I have unbound
-> from the device, but it is not safe to remove it physically".
 
-Right.
+The customer has confirmed that they haven't seen any panics.  I tested
+these patches on OpenWrt with Kernel 3.3.8 and couldn't get a panic:
 
-> I'm now thinking that we may need to rework the trimming so that
-> .remove() is called for all drivers first and the struct acpi_device
-> objects are not removed at this stage.  Then, if .remove() from one
-> driver signals the situation like above, the routine will have to
-> rebind the drivers that have been unbound and we're done.
-> 
-> After that stage, when all drivers have been unbound, we should be
-> able to go for full eject.  First, we can drop all struct acpi_device
-> objects in the relevant subtree and then we can run _EJ0.
+c118dc5 solos-pci: Fix leak of skb received for unknown vcc
+e539793 br2684: fix module_put() race
+3656320 br2684: don't send frames on not-ready vcc
+753f920 solos-pci: Wait for pending TX to complete when releasing vcc
+91ab2cf pppoatm: do not inline pppoatm_may_send()
+85b48fa pppoatm: drop frames to not-ready vcc
+3ac1080 pppoatm: take ATM socket lock in pppoatm_send()
+e41faed pppoatm: fix module_put() race
+3b1a914 pppoatm: allow assign only on a connected socket
+ec809bd atm: add owner of push() callback to atmvcc
+ae088d6 atm: br2684: Fix excessive queue bloat
 
-I agree that such approach is worth pursuing.
+I haven't tested these ones:
 
-> > > > This is because only the failed function has enough
-> > > > context to rollback when an error occurred in the middle of its
-> > > > procedure.
-> > > 
-> > > Not really.  If it actually removes the struct acpi_device then the caller
-> > > may run acpi_bus_scan() on that device if necessary.  There may be a problem
-> > > if the device has an associated physical node (or more of them), but that
-> > > requires special care anyway.
-> > 
-> > Well, hot-remove to a device fails when there is a reason to fail.  IOW,
-> > such reason prevented the device to be removed safely.  So, I think we
-> > need to put it back to the original state in this case.  Removing it by
-> > ignoring the cause of failure sounds unsafe to me.  Some status/data may
-> > be left un-deleted as a result.
-> 
-> Again, I may or may not agree with that, depending on whether you're talking
-> about physical devices or about struct acpi_device objects.
-
-Sorry, by "hot-remove a device", I was referring removing struct
-acpi_device and off-lining its resource.  By "left un-delted", I was
-referring its resource left un-deleted, such as memory ranges.
-
-> Anyway, I agree that removing struct acpi_device objects may not be worth the
-> effort if we're going to re-create them in a while, because that may be costly.
-
-Thanks,
--Toshi
+230a012 pppoatm: fix missing wakeup in pppoatm_send()
+1c0c800 atm: Add release_cb() callback to vcc
 
