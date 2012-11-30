@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933306Ab2K3Qgh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 11:36:37 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:50511
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932954Ab2K3Qgg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 11:36:36 -0500
-Date: Fri, 30 Nov 2012 11:36:01 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Mason <chris.mason@fusionio.com>,
-        Chris Mason <clmason@fusionio.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
-        Jeff Chua <jeff.chua.linux@gmail.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH v2] Do a proper locking for mmap and block size change
-Message-ID: <20121130163601.GA32238@infradead.org>
-References: <Pine.LNX.4.64.1211281630150.5283@file.rdu.redhat.com>
- <CA+55aFziCW_ywZACGoVyNSgy8mToAGhSbdo0VoUAaGvgSb2XxQ@mail.gmail.com>
- <CA+55aFxt655WfuhjOCnu3esg3gt=L37v=ofWfjs+qpXjn-F2uA@mail.gmail.com>
- <20121129191503.GB3490@shiny>
- <CA+55aFxaHuxaEezkpmGRi4kFGaQFTv9S89N-hJhxBjVa6ZwnbQ@mail.gmail.com>
- <20121129194840.GC3490@shiny>
- <CA+55aFwGLExQGhhzStMobWzLju0tVjKW9SZphrxp3AJ6w_ZH9g@mail.gmail.com>
- <20121129212931.GD3490@shiny>
- <CA+55aFzeq1HZvEZdmx=f8at2UOWcyp4oZv0RCX4dd0+dthuM1w@mail.gmail.com>
- <20121130024910.GF6434@dastard>
+	id S933324Ab2K3Qik (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 11:38:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40237 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932472Ab2K3Qii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 11:38:38 -0500
+Message-ID: <50B8DA2D.8030604@redhat.com>
+Date: Fri, 30 Nov 2012 11:09:17 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121130024910.GF6434@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Mel Gorman <mgorman@suse.de>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Hillf Danton <dhillf@gmail.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Alex Shi <lkml.alex@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Results for balancenuma v8, autonuma-v28fast and numacore-20121126
+References: <1353612353-1576-1-git-send-email-mgorman@suse.de> <20121126145800.GK8218@suse.de> <20121128134930.GB20087@suse.de> <20121130113300.GC20087@suse.de> <20121130114145.GD20087@suse.de>
+In-Reply-To: <20121130114145.GD20087@suse.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 30, 2012 at 01:49:10PM +1100, Dave Chinner wrote:
-> > Ugh. That's a big violation of how buffer-heads are supposed to work:
-> > the block number is very much defined to be in multiples of b_size
-> > (see for example "submit_bh()" that turns it into a sector number).
-> > 
-> > But you're right. The direct-IO code really *is* violating that, and
-> > knows that get_block() ends up being defined in i_blkbits regardless
-> > of b_size.
-> 
-> Same with mpage_readpages(), so it's not just direct IO that has
-> this problem....
+On 11/30/2012 06:41 AM, Mel Gorman wrote:
+> This is an another insanely long mail. Short summary, based on the results
+> of what is in tip/master right now, I think if we're going to merge
+> anything for v3.8 it should be the "Automatic NUMA Balancing V8". It does
+> reasonably well for many of the workloads and AFAIK there is no reason why
+> numacore or autonuma could not be rebased on top with the view to merging
+> proper scheduling and placement policies in 3.9.
 
-The mpage code may actually fall back to BHs.
+Given how minimalistic balancenuma is, and how there does not seem
+to be anything significant in the way of performance regressions
+with balancenuma, I have no objections to Linus merging all of
+balancenuma for 3.8.
 
-I have a version of the direct I/O code that uses the iomap_ops from the
-multi-page write code that you originally started.  It uses the new op
-as primary interface for direct I/O and provides a helper for
-filesystems that still use buffer heads internally.  I'll try to dust it
-off and send out a version for the current kernel.
+That could significantly reduce the amount of NUMA code we need
+to "fight over" for the 3.9 kernel :)
 
+-- 
+All rights reversed
