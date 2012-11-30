@@ -1,102 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759471Ab2K3UNM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 15:13:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50058 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751398Ab2K3UNK (ORCPT
+	id S1759954Ab2K3UPv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 15:15:51 -0500
+Received: from mail-wi0-f202.google.com ([209.85.212.202]:53884 "EHLO
+	mail-wi0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753447Ab2K3UPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 15:13:10 -0500
-Date: Fri, 30 Nov 2012 12:13:08 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: =?UTF-8?B?THVrw6HFoQ==?= Czerner <lczerner@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, axboe@kernel.dk,
-        jmoyer@redhat.com, Neil Brown <neilb@suse.de>
-Subject: Re: [PATCH 1/2 v3] wait: add wait_event_lock_irq() interface
-Message-Id: <20121130121308.54d66bfe.akpm@linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1211301233320.8688@dhcp-1-104.brq.redhat.com>
-References: <1354272161-9173-1-git-send-email-lczerner@redhat.com>
-	<20121130024842.5326d998.akpm@linux-foundation.org>
-	<alpine.LFD.2.00.1211301233320.8688@dhcp-1-104.brq.redhat.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Fri, 30 Nov 2012 15:15:50 -0500
+From: Vincent Palatin <vpalatin@chromium.org>
+To: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Vincent Palatin <vpalatin@chromium.org>,
+        Duncan Laurie <dlaurie@chromium.org>,
+        Olof Johansson <olofj@chromium.org>
+Subject: [PATCH v3] x86, fpu: avoid FPU lazy restore after suspend
+Date: Fri, 30 Nov 2012 12:15:32 -0800
+Message-Id: <1354306532-1014-1-git-send-email-vpalatin@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1354305164-10601-1-git-send-email-vpalatin@chromium.org>
+References: <1354305164-10601-1-git-send-email-vpalatin@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Nov 2012 12:36:35 +0100 (CET)
-Lukáš Czerner <lczerner@redhat.com> wrote:
+When a cpu enters S3 state, the FPU state is lost.
+After resuming for S3, if we try to lazy restore the FPU for a process running
+on the same CPU, this will result in a corrupted FPU context.
 
-> On Fri, 30 Nov 2012, Andrew Morton wrote:
-> 
-> > Date: Fri, 30 Nov 2012 02:48:42 -0800
-> > From: Andrew Morton <akpm@linux-foundation.org>
-> > To: Lukas Czerner <lczerner@redhat.com>
-> > Cc: linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, axboe@kernel.dk,
-> >     jmoyer@redhat.com, Neil Brown <neilb@suse.de>,
-> >     David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-> >     Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Subject: Re: [PATCH 1/2 v3] wait: add wait_event_lock_irq() interface
-> > 
-> > On Fri, 30 Nov 2012 11:42:40 +0100 Lukas Czerner <lczerner@redhat.com> wrote:
-> > 
-> > > New wait_event{_interruptible}_lock_irq{_cmd} macros added. This commit
-> > > moves the private wait_event_lock_irq() macro from MD to regular wait
-> > > includes, introduces new macro wait_event_lock_irq_cmd() instead of using
-> > > the old method with omitting cmd parameter which is ugly and makes a use
-> > > of new macros in the MD. It also introduces the _interruptible_ variant.
-> > > 
-> > > The use of new interface is when one have a special lock to protect data
-> > > structures used in the condition, or one also needs to invoke "cmd"
-> > > before putting it to sleep.
-> > > 
-> > > All new macros are expected to be called with the lock taken. The lock
-> > > is released before sleep and is reacquired afterwards. We will leave the
-> > > macro with the lock held.
-> > > 
-> > > Note to DM: IMO this should also fix theoretical race on waitqueue while
-> > > using simultaneously wait_event_lock_irq() and wait_event() because of
-> > > lack of locking around current state setting and wait queue removal.
-> > 
-> > Does this fix the sparse warning which Fengguang just sent us?
-> 
-> Which report from Fengguang do you have in mind ? I do not see any
-> on linux-kernel today.
-> 
-> /me going to see what spare reports
-> 
+Ensure that "fpu_owner_task" is properly invalided when (re-)initializing a CPU,
+so nobody will try to lazy restore a state which doesn't exist in the hardware.
 
-On Fri, 30 Nov 2012 16:30:24 +0800
-kbuild test robot <fengguang.wu@intel.com> wrote:
+Tested with a 64-bit kernel on a 4-core Ivybridge CPU with eagerfpu=off,
+by doing thousands of suspend/resume cycles with 4 processes doing FPU
+operations running. Without the patch, a process is killed after a
+few hundreds cycles by a SIGFPE.
 
-> tree:   git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git akpm
-> head:   cfb65dadcd079ad4547407a1584bc6b96bd48bb3
-> commit: 2b29cdb6f98c86a1da4ec5335d6247392b7c6551 [35/476] wait: add wait_event_lock_irq() interface
-> 
-> 
-> sparse warnings:
-> 
-> + drivers/block/drbd/drbd_int.h:2339:9: sparse: preprocessor token __wait_event_lock_irq redefined
-> include/linux/wait.h:554:9: this was the original definition
-> + drivers/block/drbd/drbd_int.h:2358:9: sparse: preprocessor token wait_event_lock_irq redefined
-> include/linux/wait.h:621:9: this was the original definition
-> drivers/block/drbd/drbd_interval.h:12:63: sparse: dubious one-bit signed bitfield
-> drivers/block/drbd/drbd_interval.h:13:22: sparse: dubious one-bit signed bitfield
-> drivers/block/drbd/drbd_int.h:903:39: sparse: attribute 'require_context': unknown attribute
-> drivers/block/drbd/drbd_int.h:1123:69: sparse: attribute 'require_context': unknown attribute
-> drivers/block/drbd/drbd_int.h:1124:70: sparse: attribute 'require_context': unknown attribute
-> drivers/block/drbd/drbd_int.h:1125:59: sparse: attribute 'require_context': unknown attribute
-> drivers/block/drbd/drbd_int.h:1126:63: sparse: attribute 'require_context': unknown attribute
-> drivers/block/drbd/drbd_int.h:1127:60: sparse: attribute 'require_context': unknown attribute
-> drivers/block/drbd/drbd_int.h:1128:71: sparse: attribute 'require_context': unknown attribute
-> drivers/block/drbd/drbd_int.h:1129:65: sparse: attribute 'require_context': unknown attribute
-> drivers/block/drbd/drbd_int.h:1130:66: sparse: attribute 'require_context': unknown attribute
-> drivers/block/drbd/drbd_int.h:1335:74: sparse: attribute 'require_context': unknown attribute
-> drivers/block/drbd/drbd_int.h:1336:50: sparse: attribute 'require_context': unknown attribute
-> drivers/block/drbd/drbd_int.h:1338:51: sparse: attribute 'require_context': unknown attribute
-> drivers/block/drbd/drbd_int.h:1339:58: sparse: attribute 'require_context': unknown attribute
-> drivers/block/drbd/drbd_int.h:1340:54: sparse: attribute 'require_context': unknown attribute
-> drivers/block/drbd/drbd_int.h:1341:62: sparse: attribute 'require_context': unknown attribute
-> drivers/block/drbd/drbd_int.h:1435:92: sparse: attribute 'require_context': unknown attribute
+Cc: Duncan Laurie <dlaurie@chromium.org>
+Cc: Olof Johansson <olofj@chromium.org>
+Cc: <stable@kernel.org> [v3.4+] # for 3.4 need to replace this_cpu_write by percpu_write
+Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
+---
+Hi,
+
+The patch updated according the HPA and Linus comments.
+I'm still re-running the testing on v3.
+
+Change in v3:
+- remove misleading comment about 3.4 in the description.
+
+Change in v2:
+- add an helper function and comment in fpu-internal.h as described by Linus
+- do the cleaning in the native_cpu_up function as suggested by HPA
+
+Vincent
+
+ arch/x86/include/asm/fpu-internal.h |   15 +++++++++------
+ arch/x86/kernel/smpboot.c           |    5 +++++
+ 2 files changed, 14 insertions(+), 6 deletions(-)
+
+diff --git a/arch/x86/include/asm/fpu-internal.h b/arch/x86/include/asm/fpu-internal.h
+index 831dbb9..41ab26e 100644
+--- a/arch/x86/include/asm/fpu-internal.h
++++ b/arch/x86/include/asm/fpu-internal.h
+@@ -399,14 +399,17 @@ static inline void drop_init_fpu(struct task_struct *tsk)
+ typedef struct { int preload; } fpu_switch_t;
+ 
+ /*
+- * FIXME! We could do a totally lazy restore, but we need to
+- * add a per-cpu "this was the task that last touched the FPU
+- * on this CPU" variable, and the task needs to have a "I last
+- * touched the FPU on this CPU" and check them.
++ * Must be run with preemption disabled: this clears the fpu_owner_task,
++ * on this CPU.
+  *
+- * We don't do that yet, so "fpu_lazy_restore()" always returns
+- * false, but some day..
++ * This will disable any lazy FPU state restore of the current FPU state,
++ * but if the current thread owns the FPU, it will still be saved by.
+  */
++static inline void __cpu_disable_lazy_restore(unsigned int cpu)
++{
++	per_cpu(fpu_owner_task, cpu) = NULL;
++}
++
+ static inline int fpu_lazy_restore(struct task_struct *new, unsigned int cpu)
+ {
+ 	return new == this_cpu_read_stable(fpu_owner_task) &&
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index c80a33b..f3e2ec8 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -68,6 +68,8 @@
+ #include <asm/mwait.h>
+ #include <asm/apic.h>
+ #include <asm/io_apic.h>
++#include <asm/i387.h>
++#include <asm/fpu-internal.h>
+ #include <asm/setup.h>
+ #include <asm/uv/uv.h>
+ #include <linux/mc146818rtc.h>
+@@ -818,6 +820,9 @@ int __cpuinit native_cpu_up(unsigned int cpu, struct task_struct *tidle)
+ 
+ 	per_cpu(cpu_state, cpu) = CPU_UP_PREPARE;
+ 
++	/* the FPU context is blank, nobody can own it */
++	__cpu_disable_lazy_restore(cpu);
++
+ 	err = do_boot_cpu(apicid, cpu, tidle);
+ 	if (err) {
+ 		pr_debug("do_boot_cpu failed %d\n", err);
+-- 
+1.7.7.3
+
