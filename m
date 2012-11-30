@@ -1,92 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757583Ab2K3LA1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 06:00:27 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:38131 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755384Ab2K3LAZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 06:00:25 -0500
-Message-ID: <50B891B3.8070400@ti.com>
-Date: Fri, 30 Nov 2012 12:00:03 +0100
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1754614Ab2K3LBG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 06:01:06 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34281 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752237Ab2K3LBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 06:01:03 -0500
+Date: Fri, 30 Nov 2012 11:00:59 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Lin Feng <linfeng@cn.fujitsu.com>, viro@zeniv.linux.org.uk, bcrl@kvack.org,
+        kamezawa.hiroyu@jp.fujitsu.com, mhocko@suse.cz, hughd@google.com,
+        cl@linux.com, minchan@kernel.org, isimatu.yasuaki@jp.fujitsu.com,
+        laijs@cn.fujitsu.com, wency@cn.fujitsu.com, tangchen@cn.fujitsu.com,
+        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [BUG REPORT] [mm-hotplug, aio] aio ring_pages can't be offlined
+Message-ID: <20121130110059.GD8218@suse.de>
+References: <1354172098-5691-1-git-send-email-linfeng@cn.fujitsu.com>
+ <20121129153930.477e9709.akpm@linux-foundation.org>
+ <50B82B0D.8010206@cn.fujitsu.com>
+ <20121129215749.acfd872a.akpm@linux-foundation.org>
+ <50B859C6.3020707@cn.fujitsu.com>
+ <20121129235502.05223586.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Lars-Peter Clausen <lars@metafoo.de>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Rob Landley <rob@landley.net>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] gpio: New driver for GPO emulation using PWM generators
-References: <1353591723-25233-1-git-send-email-peter.ujfalusi@ti.com> <20121123075537.A14713E0A91@localhost> <50AF3E21.4000009@ti.com> <50AF4584.7020604@ti.com> <20121126154600.765E03E1AFD@localhost> <50B5D161.6010200@ti.com> <20121129161024.EEA803E0912@localhost>
-In-Reply-To: <20121129161024.EEA803E0912@localhost>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20121129235502.05223586.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2012 05:10 PM, Grant Likely wrote:
->> 	/* Enable GPIO us of the PWMs */
->> 	gpio-controller = <1>;
+On Thu, Nov 29, 2012 at 11:55:02PM -0800, Andrew Morton wrote:
+> On Fri, 30 Nov 2012 15:01:26 +0800 Lin Feng <linfeng@cn.fujitsu.com> wrote:
 > 
-> This line should be simply (the property shouldn't have any data):
-> 	gpio-controller;
-
-Yes I know. It is like this already in my code. I just mixed up things while
-hacking it together.
-
+> > 
+> > 
+> > On 11/30/2012 01:57 PM, Andrew Morton wrote:
+> > > On Fri, 30 Nov 2012 11:42:05 +0800 Lin Feng <linfeng@cn.fujitsu.com> wrote:
+> > > 
+> > >> hi Andrew,
+> > >>
+> > >> On 11/30/2012 07:39 AM, Andrew Morton wrote:
+> > >>> Tricky.
+> > >>>
+> > >>> I expect the same problem would occur with pages which are under
+> > >>> O_DIRECT I/O.  Obviously O_DIRECT pages won't be pinned for such long
+> > >>> periods, but the durations could still be lengthy (seconds).
+> > >> the offline retry timeout duration is 2 minutes, so to O_DIRECT pages 
+> > >> seem maybe not a problem for the moment.
+> > >>>
+> > >>> Worse is a futex page, which could easily remain pinned indefinitely.
+> > >>>
+> > >>> The best I can think of is to make changes in or around
+> > >>> get_user_pages(), to steal the pages from userspace and replace them
+> > >>> with non-movable ones before pinning them.  The performance cost of
+> > >>> something like this would surely be unacceptable for direct-io, but
+> > >>> maybe OK for the aio ring and futexes.
+> > >> thanks for your advice.
+> > >> I want to limit the impact as little as possible, as mentioned above,
+> > >> direct-io seems not a problem, we needn't touch them. Maybe we can 
+> > >> just change the use of get_user_pages()(in or around) such as aio 
+> > >> ring pages. I will try to find a way to do this.
+> > > 
+> > > What about futexes?
+> > hi Andrew,
+> > 
+> > Yes, better to find an approach to solve them all.
+> >  
+> > But I'm worried about that if we just confine get_user_pages() to use 
+> > none-movable pages, it will drain the none-movable pages soon. Because
+> > there are many places using get_user_pages() such as some drivers. 
 > 
->> 	#gpio-cells = <2>;
->> 	pwm,period_ns = <7812500>;
+> Obviously we shouldn't change get_user_pages() for all callers.
 > 
-> Nit: property names should use '-' instead of '_'.
-
-Yes, true.
-
->> 	of_property_read_u32(chip->dev->of_node, "pwm,period_ns", &period_ns);
->> 	if (!period_ns) {
->> 		dev_err(chip->dev,
->> 			"period_ns is not specified for GPIO use\n");
->> 		return;
->> 	}
+> > IMHO in most cases get_user_pages() callers should release the pages soon, 
+> > so pages allocated from movable zone should be OK. But I'm not sure if
+> > we get such rule upon get_user_pages(). 
+> > And in other cases we specify get_user_pages() to allocate pages from
+> > none-movable zone. 
+> > 
+> > So could we add a zone-alloc flags when we call get_user_pages()?
 > 
-> This property name seems ambiguous. What do you need to encode here? It
-> looks like there is a specific PWM period used for the 'on' state. What
-> about the 'off' state? Would different pwm outputs have different
-> frequencies required for GPIO usage.
+> Well, that's a fairly low-level implementation detail.  A more typical
+> approach would be to add a new get_user_pages_non_movable() or such. 
+> That would probably have the same signature as get_user_pages(), with
+> one additional argument.  Then get_user_pages() becomes a one-line
+> wrapper which passes in a particular value of that argument.
 > 
-> Actually, I'm a bit surprised here that a period value is needed at all.
-> I would expect if a PWM is used as a GPIO then the driver would already
-> know how to set it up that way.
 
-Some PWM hw can select between different frequencies. They do that based on
-the period_ns.
-We can not just pass random non 0 number to them since they might fail with
-the check for supported frequencies.
+That is going in the direction that all pinned pages become MIGRATE_UNMOVABLE
+allocations.  That will impact THP availability by increasing the number
+of MIGRATE_UNMOVABLE blocks that exist and it would hit every user --
+not just those that care about ZONE_MOVABLE.
 
-> Ugh, yeah this isn't the way to go. Don't register a new platform_device
-> for the gpio functionality. It should be inline with the rest of the PWM
-> setup and should trigger the registration of a gpio_chip directly.
+I'm likely to NAK such a patch if it's only about node hot-remove because
+it's much more of a corner case than wanting to use THP.
 
-We also need to take care of the non DT booted cases as well.
-What we could do:
-this driver with removed DT support for legacy booted systems.
-GPO layer implementation within drivers/pwm/ to handle DT boot.
-
-When we boot without DT we need to tell back to the machine driver about the
-GPIO start of the gpio chip we just allocated.
-
-Hrm, we could do this from the pwm-twl* drivers as well by adding an optional
-callback and flag to the pwm core to register the gpio chip.
-In this case we can move the whole whole gpio-pwm code under drivers/pwm, add
-the 'struct gpio_chip' to struct pwm_chip{}
-and register the gpio chip from within the pwm core.
-We still have to provide the period_ns in same way to the PWM instance used as
-GPIO, probably via platform data. Not sure about it right now.
+I would prefer if get_user_pages() checked if the page it was about to
+pin was in ZONE_MOVABLE and if so, migrate it at that point before it's
+pinned. It'll be expensive but will guarantee ZONE_MOVABLE availability
+if that's what they want. The CMA people might also want to take
+advantage of this if the page happened to be in the MIGRATE_CMA
+pageblock.
 
 -- 
-Péter
+Mel Gorman
+SUSE Labs
