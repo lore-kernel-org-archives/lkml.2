@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758769Ab2K3RA2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 12:00:28 -0500
+	id S1031050Ab2K3RAt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 12:00:49 -0500
 Received: from mail-we0-f174.google.com ([74.125.82.174]:57821 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757346Ab2K3RAZ (ORCPT
+	with ESMTP id S1757346Ab2K3RAq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 12:00:25 -0500
+	Fri, 30 Nov 2012 12:00:46 -0500
 From: Johan Meiring <johanmeiring@gmail.com>
 To: pe1dnn@amsat.org, jkosina@suse.cz, standby24x7@gmail.com,
         viro@zeniv.linux.org.uk, gregkh@linuxfoundation.org
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         Johan Meiring <johanmeiring@gmail.com>
-Subject: [PATCH 06/32] staging: wlags49_h2: ap_h25: corrects incorrect use of // comments
-Date: Fri, 30 Nov 2012 18:58:31 +0200
-Message-Id: <1354294737-5735-6-git-send-email-johanmeiring@gmail.com>
+Subject: [PATCH 08/32] staging: wlags49_h2: wl_enc: corrects spacing around parentheses
+Date: Fri, 30 Nov 2012 18:58:33 +0200
+Message-Id: <1354294737-5735-8-git-send-email-johanmeiring@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1354294737-5735-1-git-send-email-johanmeiring@gmail.com>
 References: <1354294737-5735-1-git-send-email-johanmeiring@gmail.com>
@@ -22,155 +22,141 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit converts C99 // comments to /* */
+This commit corrects various instances where the use of spaces
+around parentheses was incorrect.
 
 Signed-off-by: Johan Meiring <johanmeiring@gmail.com>
 ---
- drivers/staging/wlags49_h2/ap_h25.c |   68 +++++++++++++++++------------------
- 1 file changed, 34 insertions(+), 34 deletions(-)
+ drivers/staging/wlags49_h2/wl_enc.c |   46 +++++++++++++++++------------------
+ 1 file changed, 23 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/staging/wlags49_h2/ap_h25.c b/drivers/staging/wlags49_h2/ap_h25.c
-index f578800..d3a0faa 100644
---- a/drivers/staging/wlags49_h2/ap_h25.c
-+++ b/drivers/staging/wlags49_h2/ap_h25.c
-@@ -24,10 +24,10 @@
-  */
+diff --git a/drivers/staging/wlags49_h2/wl_enc.c b/drivers/staging/wlags49_h2/wl_enc.c
+index a62db46..1d143cd 100644
+--- a/drivers/staging/wlags49_h2/wl_enc.c
++++ b/drivers/staging/wlags49_h2/wl_enc.c
+@@ -105,7 +105,7 @@ extern dbg_info_t *DbgInfo;
+  *      OK
+  *
+  ******************************************************************************/
+-int wl_wep_code( char *szCrypt, char *szDest, void *Data, int nLen )
++int wl_wep_code(char *szCrypt, char *szDest, void *Data, int nLen)
+ {
+ 	int     i;
+ 	int     t;
+@@ -115,16 +115,16 @@ int wl_wep_code( char *szCrypt, char *szDest, void *Data, int nLen )
+ 	/*------------------------------------------------------------------------*/
  
  
--#include "hcfcfg.h"		// to get hcf_16 etc defined as well as
--				// possible settings which inluence mdd.h or dhf.h
--#include "mdd.h"		// to get COMP_ID_STA etc defined
--#include "dhf.h"		// used to be fhfmem.h, to get memblock,plugrecord,
-+#include "hcfcfg.h"	/* to get hcf_16 etc defined as well as */
-+			/* possible settings which inluence mdd.h or dhf.h */
-+#include "mdd.h"	/* to get COMP_ID_STA etc defined */
-+#include "dhf.h"	/* used to be fhfmem.h, to get memblock,plugrecord, */
+-	for( i = bits = 0 ; i < MACADDRESS_STR_LEN; i++ ) {
++	for (i = bits = 0; i < MACADDRESS_STR_LEN; i++) {
+ 		bits ^= szCrypt[i];
+ 		bits += szCrypt[i];
+ 	}
  
- static const hcf_8 fw_image_1_data[] = {
- 	 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-@@ -3999,56 +3999,56 @@ static const CFG_IDENTITY_STRCT fw_image_infoidentity[] = {
- 		sizeof(CFG_IDENTITY_STRCT) / sizeof(hcf_16) - 1,
- 		CFG_FW_IDENTITY,
- 		COMP_ID_FW_AP,
--		3,							//Variant
--		1,							//Major
--		24							//Minor
-+		3,	/* Variant */
-+		1,	/* Major */
-+		24	/* Minor */
- 	},
--	{ 0000, 0000, 0000, 0000, 0000, 0000 }		//endsentinel
-+	{ 0000, 0000, 0000, 0000, 0000, 0000 }	/* endsentinel */
- };
+-	for( i = t = *szDest = 0; i < nLen; i++, t++ ) {
+-		k = szData[i] ^ ( bits + i );
++	for (i = t = *szDest = 0; i < nLen; i++, t++) {
++		k = szData[i] ^ (bits + i);
  
- static const CFG_PROG_STRCT fw_image_code[] = {
- 	{
- 		8,
- 		CFG_PROG,
--		CFG_PROG_VOLATILE,			// mode
--		0x0148,		// sizeof(fw_image_1_data),
--		0x00000060,					// Target address in NIC Memory
--		0x0000,						// CRC: yes/no	TYPE: primary/station/tertiary
-+		CFG_PROG_VOLATILE,	/* mode */
-+		0x0148,			/* sizeof(fw_image_1_data), */
-+		0x00000060,		/* Target address in NIC Memory */
-+		0x0000,			/* CRC: yes/no	TYPE: primary/station/tertiary */
- 		(hcf_8 *)fw_image_1_data
- 	},
- 	{
- 		8,
- 		CFG_PROG,
--		CFG_PROG_VOLATILE,			// mode
--		0x2432,		// sizeof(fw_image_2_data),
--		0x00000C16,					// Target address in NIC Memory
--		0x0000,						// CRC: yes/no	TYPE: primary/station/tertiary
-+		CFG_PROG_VOLATILE,	/* mode */
-+		0x2432,			/* sizeof(fw_image_2_data), */
-+		0x00000C16,		/* Target address in NIC Memory */
-+		0x0000,			/* CRC: yes/no	TYPE: primary/station/tertiary */
- 		(hcf_8 *)fw_image_2_data
- 	},
- 	{
- 		8,
- 		CFG_PROG,
--		CFG_PROG_VOLATILE,			// mode
--		0x194c,		// sizeof(fw_image_3_data),
--		0x001E3048,					// Target address in NIC Memory
--		0x0000,						// CRC: yes/no	TYPE: primary/station/tertiary
-+		CFG_PROG_VOLATILE,	/*  mode */
-+		0x194c,			/*  sizeof(fw_image_3_data), */
-+		0x001E3048,		/*  Target address in NIC Memory */
-+		0x0000,			/*  CRC: yes/no	TYPE: primary/station/tertiary */
- 		(hcf_8 *)fw_image_3_data
- 	},
- 	{
- 		8,
- 		CFG_PROG,
--		CFG_PROG_VOLATILE,			// mode
--		0xb7e4,		// sizeof(fw_image_4_data),
--		0x001F4000,					// Target address in NIC Memory
--		0x0000,						// CRC: yes/no	TYPE: primary/station/tertiary
-+		CFG_PROG_VOLATILE,	/* mode*/
-+		0xb7e4,			/* sizeof(fw_image_4_data),*/
-+		0x001F4000,		/* Target address in NIC Memory*/
-+		0x0000,			/* CRC: yes/no	TYPE: primary/station/tertiary*/
- 		(hcf_8 *)fw_image_4_data
- 	},
- 	{
- 		5,
- 		CFG_PROG,
--		CFG_PROG_STOP,				// mode
-+		CFG_PROG_STOP,		/* mode*/
- 		0000,
--	0x000F2101,					// Start execution address
-+		0x000F2101,		/* Start execution address*/
- 	},
- 	{ 0000, 0000, 0000, 0000, 00000000, 0000, 00000000}
- };
-@@ -4059,7 +4059,7 @@ static const CFG_RANGE20_STRCT fw_image_infocompat[] = {
- 		COMP_ROLE_SUPL,
- 		COMP_ID_APF,
- 		{
--			{ 4, 1, 1 }				//variant, bottom, top
-+			{ 4, 1, 1 }	/* variant, bottom, top*/
+ 
+-	switch( i % 3 ) {
++	switch (i % 3) {
+ 
+ 	case 0 :
+ 
+@@ -137,8 +137,8 @@ int wl_wep_code( char *szCrypt, char *szDest, void *Data, int nLen )
+ 
+ 	case 1 :
+ 
+-		szDest[t]  += (( k & 0xF0 ) >> 4 );
+-		szDest[t+1] = (( k & 0x0F ) << 2 ) + CH_START ;
++		szDest[t]  += ((k & 0xF0) >> 4);
++		szDest[t+1] = ((k & 0x0F) << 2) + CH_START ;
+ 		szDest[t+2] = '\0';
+ 
+ 		break;
+@@ -146,8 +146,8 @@ int wl_wep_code( char *szCrypt, char *szDest, void *Data, int nLen )
+ 
+ 	case 2 :
+ 
+-		szDest[t]  += (( k & 0xC0 ) >> 6 );
+-		szDest[t+1] = ( k & 0x3F ) + CH_START ;
++		szDest[t]  += ((k & 0xC0) >> 6);
++		szDest[t+1] = (k & 0x3F) + CH_START ;
+ 		szDest[t+2] = '\0';
+ 		t++;
+ 
+@@ -155,7 +155,7 @@ int wl_wep_code( char *szCrypt, char *szDest, void *Data, int nLen )
+ 	}
+ 	}
+ 
+-	return( strlen( szDest )) ;
++	return(strlen(szDest)) ;
+ 
+ }
+ /*============================================================================*/
+@@ -182,7 +182,7 @@ int wl_wep_code( char *szCrypt, char *szDest, void *Data, int nLen )
+  *      OK
+  *
+  ******************************************************************************/
+-int wl_wep_decode( char *szCrypt, void *Dest, char *szData )
++int wl_wep_decode(char *szCrypt, void *Dest, char *szData)
+ {
+ 	int     i;
+ 	int     t;
+@@ -192,40 +192,40 @@ int wl_wep_decode( char *szCrypt, void *Dest, char *szData )
+ 	/*------------------------------------------------------------------------*/
+ 
+ 
+-	for( i = bits = 0 ; i < 12; i++ ) {
++	for (i = bits = 0; i < 12; i++) {
+ 		bits ^= szCrypt[i] ;
+ 		bits += szCrypt[i] ;
+ 	}
+ 
+-	nLen = ( strlen( szData ) * 3) / 4 ;
++	nLen = (strlen(szData) * 3) / 4 ;
+ 
+-	for( i = t = 0; i < nLen; i++, t++ ) {
+-		switch( i % 3 ) {
++	for (i = t = 0; i < nLen; i++, t++) {
++		switch (i % 3) {
+ 		case 0 :
+ 
+-			szDest[i] = ((( szData[t]-CH_START ) & 0x3f ) << 2 ) +
+-				    ((( szData[t+1]-CH_START ) & 0x30 ) >> 4 );
++			szDest[i] = (((szData[t] - CH_START) & 0x3f) << 2) +
++				    (((szData[t+1] - CH_START) & 0x30) >> 4);
+ 			break;
+ 
+ 
+ 		case 1 :
+-			szDest[i] = ((( szData[t]-CH_START ) & 0x0f ) << 4 ) +
+-				    ((( szData[t+1]-CH_START ) & 0x3c ) >> 2 );
++			szDest[i] = (((szData[t] - CH_START) & 0x0f) << 4) +
++				    (((szData[t+1] - CH_START) & 0x3c) >> 2);
+ 			break;
+ 
+ 
+ 		case 2 :
+-			szDest[i] = ((( szData[t]-CH_START ) & 0x03 ) << 6 ) +
+-				     (( szData[t+1]-CH_START ) & 0x3f );
++			szDest[i] = (((szData[t] - CH_START) & 0x03) << 6) +
++				     ((szData[t+1] - CH_START) & 0x3f);
+ 			t++;
+ 			break;
  		}
- 	},
- 	{	3 + ((20 * sizeof(CFG_RANGE_SPEC_STRCT)) / sizeof(hcf_16)),
-@@ -4067,8 +4067,8 @@ static const CFG_RANGE20_STRCT fw_image_infocompat[] = {
- 		COMP_ROLE_ACT,
- 		COMP_ID_MFI,
- 		{
--			{ 7, 3, 3 },				//variant, bottom, top
--			{ 8, 1, 1 }				//variant, bottom, top
-+			{ 7, 3, 3 },	/* variant, bottom, top */
-+			{ 8, 1, 1 }	/* variant, bottom, top */
- 		}
- 	},
- 	{	3 + ((20 * sizeof(CFG_RANGE_SPEC_STRCT)) / sizeof(hcf_16)),
-@@ -4076,18 +4076,18 @@ static const CFG_RANGE20_STRCT fw_image_infocompat[] = {
- 		COMP_ROLE_ACT,
- 		COMP_ID_CFI,
- 		{
--			{ 4, 1, 2 }				//variant, bottom, top
-+			{ 4, 1, 2 }	/* variant, bottom, top */
- 		}
- 	},
--	{ 0000, 0000, 0000, 0000, { { 0000, 0000, 0000 } } }			//endsentinel
-+	{ 0000, 0000, 0000, 0000, { { 0000, 0000, 0000 } } }	/* endsentinel */
- };
  
- memimage fw_image = {
--	"FUPU7D37dhfwci\001C",			//signature, <format number>, C/Bin type
-+	"FUPU7D37dhfwci\001C",			/* signature, <format number>, C/Bin type */
- 	(CFG_PROG_STRCT *) fw_image_code,
- 	0x000F2101,
--	00000000,					//(dummy) pdaplug
--	00000000,					//(dummy) priplug
-+	00000000,				/* (dummy) pdaplug */
-+	00000000,				/* (dummy) priplug */
- 	(CFG_RANGE20_STRCT *) fw_image_infocompat,
- 	(CFG_IDENTITY_STRCT *) fw_image_infoidentity,
- };
+-		szDest[i] ^= ( bits + i ) ;
++		szDest[i] ^= (bits + i);
+ 
+ 	}
+ 
+-	return( i ) ;
++	return(i) ;
+ 
+ }
+ /*============================================================================*/
 -- 
 1.7.10.4
 
