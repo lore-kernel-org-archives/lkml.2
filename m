@@ -1,43 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755798Ab2K3ELJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 23:11:09 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:57335 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755747Ab2K3ELG (ORCPT
+	id S1755882Ab2K3EMw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 23:12:52 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60023 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755757Ab2K3EMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 23:11:06 -0500
-Date: Fri, 30 Nov 2012 04:11:03 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Patrick McLean <patrickm@gaikai.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-nfs@vger.kernel.org
-Subject: Re: Regression with initramfs and nfsroot (appears to be in the
- dcache)
-Message-ID: <20121130041103.GF4939@ZenIV.linux.org.uk>
-References: <20121129222109.GW4939@ZenIV.linux.org.uk>
- <50B7E759.9070007@gaikai.com>
- <20121129234326.GX4939@ZenIV.linux.org.uk>
- <50B7FBA7.2030300@gaikai.com>
- <20121130003502.GY4939@ZenIV.linux.org.uk>
- <50B8046F.7030308@cim.mcgill.ca>
- <20121130013628.GZ4939@ZenIV.linux.org.uk>
- <50B811BA.6070503@cim.mcgill.ca>
- <20121130020047.GA4939@ZenIV.linux.org.uk>
- <50B81B11.7050704@gaikai.com>
+	Thu, 29 Nov 2012 23:12:51 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <50B8322D.7050104@jp.fujitsu.com>
+Date: Fri, 30 Nov 2012 13:12:29 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50B81B11.7050704@gaikai.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michal Hocko <mhocko@suse.cz>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
+        Tejun Heo <htejun@gmail.com>, Glauber Costa <glommer@parallels.com>,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: [patch v2 6/6] cgroup: remove css_get_next
+References: <1353955671-14385-1-git-send-email-mhocko@suse.cz> <1353955671-14385-7-git-send-email-mhocko@suse.cz>
+In-Reply-To: <1353955671-14385-7-git-send-email-mhocko@suse.cz>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 06:33:53PM -0800, Patrick McLean wrote:
+(2012/11/27 3:47), Michal Hocko wrote:
+> Now that we have generic and well ordered cgroup tree walkers there is
+> no need to keep css_get_next in the place.
+> 
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
 
-> Excellent, thanks. Is there any chance this will make it to 3.7? Also we might want to cc stable@ on this as well since it is a regression in 3.6.
+Hm, then, the next think will be css_is_ancestor() etc..
 
-Definitely.  I've dropped that into vfs.git#for-linus and vfs.git#for-next
-and tomorrow to Linus it goes...
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+
