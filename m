@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758754Ab2K3S45 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:56:57 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58588 "EHLO mail.kernel.org"
+	id S2992760Ab2K3TAJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:00:09 -0500
+Received: from mail.kernel.org ([198.145.19.201]:58725 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992758Ab2K3S4p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:56:45 -0500
+	id S1756463Ab2K3S46 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:56:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Albert Pool <albertpool@solcon.nl>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 12/56] rtlwifi: rtl8192cu: Add new USB ID
-Date: Fri, 30 Nov 2012 10:55:04 -0800
-Message-Id: <20121130185119.592444450@linuxfoundation.org>
+        David Milburn <dmilburn@redhat.com>, Jeff Garzik <jgarzik@redhat.com>,
+        CAI Qian <caiqian@redhat.com>
+Subject: [ 43/56] sata_svw: check DMA start bit before reset
+Date: Fri, 30 Nov 2012 10:55:35 -0800
+Message-Id: <20121130185122.733372811@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185118.302752929@linuxfoundation.org>
 References: <20121130185118.302752929@linuxfoundation.org>
@@ -27,31 +26,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Albert Pool <albertpool@solcon.nl>
+From: David Milburn <dmilburn@redhat.com>
 
-commit a485e827f07bfdd0762059386e6e787bed6e81ee upstream.
+commit b03e66a6be91f8389fcd902ab6c1563db1c9c06b upstream.
 
-This is an ISY IWL 2000. Probably a clone of Belkin F7D1102 050d:1102.
-Its FCC ID is the same.
+If kdump is triggered with pending IO, controller may not respond causing
+kdump to fail.
 
-Signed-off-by: Albert Pool <albertpool@solcon.nl>
-Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+http://marc.info/?l=linux-ide&m=133032255424658&w=2
+
+During error recovery ata_do_dev_read_id never completes due hang
+in mmio_insw.
+
+ata_do_dev_read_id
+ ata_sff_data_xfer
+  ioread16_rep
+   mmio_insw
+
+if DMA start bit is cleared before reset, PIO command is successful
+and kdump succeeds.
+
+Signed-off-by: David Milburn <dmilburn@redhat.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Cc: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/sw.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/ata/sata_svw.c |   35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-@@ -297,6 +297,7 @@ static struct usb_device_id rtl8192c_usb
- 	/*=== Customer ID ===*/
- 	/****** 8188CU ********/
- 	{RTL_USB_DEVICE(0x050d, 0x1102, rtl92cu_hal_cfg)}, /*Belkin - Edimax*/
-+	{RTL_USB_DEVICE(0x050d, 0x11f2, rtl92cu_hal_cfg)}, /*Belkin - ISY*/
- 	{RTL_USB_DEVICE(0x06f8, 0xe033, rtl92cu_hal_cfg)}, /*Hercules - Edimax*/
- 	{RTL_USB_DEVICE(0x07b8, 0x8188, rtl92cu_hal_cfg)}, /*Abocom - Abocom*/
- 	{RTL_USB_DEVICE(0x07b8, 0x8189, rtl92cu_hal_cfg)}, /*Funai - Abocom*/
+--- a/drivers/ata/sata_svw.c
++++ b/drivers/ata/sata_svw.c
+@@ -142,6 +142,39 @@ static int k2_sata_scr_write(struct ata_
+ 	return 0;
+ }
+ 
++static int k2_sata_softreset(struct ata_link *link,
++			     unsigned int *class, unsigned long deadline)
++{
++	u8 dmactl;
++	void __iomem *mmio = link->ap->ioaddr.bmdma_addr;
++
++	dmactl = readb(mmio + ATA_DMA_CMD);
++
++	/* Clear the start bit */
++	if (dmactl & ATA_DMA_START) {
++		dmactl &= ~ATA_DMA_START;
++		writeb(dmactl, mmio + ATA_DMA_CMD);
++	}
++
++	return ata_sff_softreset(link, class, deadline);
++}
++
++static int k2_sata_hardreset(struct ata_link *link,
++			     unsigned int *class, unsigned long deadline)
++{
++	u8 dmactl;
++	void __iomem *mmio = link->ap->ioaddr.bmdma_addr;
++
++	dmactl = readb(mmio + ATA_DMA_CMD);
++
++	/* Clear the start bit */
++	if (dmactl & ATA_DMA_START) {
++		dmactl &= ~ATA_DMA_START;
++		writeb(dmactl, mmio + ATA_DMA_CMD);
++	}
++
++	return sata_sff_hardreset(link, class, deadline);
++}
+ 
+ static void k2_sata_tf_load(struct ata_port *ap, const struct ata_taskfile *tf)
+ {
+@@ -346,6 +379,8 @@ static struct scsi_host_template k2_sata
+ 
+ static struct ata_port_operations k2_sata_ops = {
+ 	.inherits		= &ata_bmdma_port_ops,
++	.softreset              = k2_sata_softreset,
++	.hardreset              = k2_sata_hardreset,
+ 	.sff_tf_load		= k2_sata_tf_load,
+ 	.sff_tf_read		= k2_sata_tf_read,
+ 	.sff_check_status	= k2_stat_check_status,
 
 
