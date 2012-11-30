@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933633Ab2K3UBq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 15:01:46 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:47825 "EHLO
+	id S933646Ab2K3UCI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 15:02:08 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:54149 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757049Ab2K3T7A (ORCPT
+	with ESMTP id S1756461Ab2K3T64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 14:59:00 -0500
+	Fri, 30 Nov 2012 14:58:56 -0500
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
@@ -18,9 +18,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: [PATCH 04/10] mm, numa: Turn 4K pte NUMA faults into effective hugepage ones
-Date: Fri, 30 Nov 2012 20:58:35 +0100
-Message-Id: <1354305521-11583-5-git-send-email-mingo@kernel.org>
+Subject: [PATCH 02/10] sched: Move the NUMA placement logic to a worklet
+Date: Fri, 30 Nov 2012 20:58:33 +0100
+Message-Id: <1354305521-11583-3-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1354305521-11583-1-git-send-email-mingo@kernel.org>
 References: <1354305521-11583-1-git-send-email-mingo@kernel.org>
@@ -28,411 +28,325 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reduce the 4K page fault count by looking around and processing
-nearby pages if possible.
+As an implementational detail, to be able to do directed task placement
+we have to change how task_numa_fault() interfaces with the scheduler:
+instead of the placement logic being executed directly from the fault
+path we now trigger a worklet, similarly to how we do the NUMA
+hinting fault work.
 
-To keep the logic and cache overhead simple and straightforward
-we do a couple of simplifications:
+This moves placement into process context and allows the execution of the
+directed task-flipping code via sched_rebalance_to().
 
- - we only scan in the HPAGE_SIZE range of the faulting address
- - we only go as far as the vma allows us
+This further decouples the NUMA hinting fault engine from
+the actual NUMA placement logic.
 
-Also simplify the do_numa_page() flow while at it and fix the
-previous double faulting we incurred due to not properly fixing
-up freshly migrated ptes.
-
-While at it also simplify the THP fault processing code and make
-the change_protection() code more robust.
-
-Suggested-by: Mel Gorman <mgorman@suse.de>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Andrea Arcangeli <aarcange@redhat.com>
 Cc: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
 Cc: Hugh Dickins <hughd@google.com>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- mm/huge_memory.c |  51 ++++++++++++-------
- mm/memory.c      | 151 ++++++++++++++++++++++++++++++++++++++++++-------------
- mm/mprotect.c    |  24 +++++++--
- 3 files changed, 167 insertions(+), 59 deletions(-)
+ include/linux/sched.h |   3 +-
+ kernel/sched/core.c   |  21 ++++++-
+ kernel/sched/fair.c   | 151 +++++++++++++++++++++++++++++++-------------------
+ kernel/sched/sched.h  |   6 ++
+ 4 files changed, 123 insertions(+), 58 deletions(-)
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 977834c..5c8de10 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -739,6 +739,7 @@ void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	struct mem_cgroup *memcg = NULL;
- 	struct page *new_page;
- 	struct page *page = NULL;
-+	int page_nid = -1;
- 	int last_cpu;
- 	int node = -1;
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 696492e..ce9ccd7 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1512,7 +1512,8 @@ struct task_struct {
+ 	unsigned long numa_weight;
+ 	unsigned long *numa_faults;
+ 	unsigned long *numa_faults_curr;
+-	struct callback_head numa_work;
++	struct callback_head numa_scan_work;
++	struct callback_head numa_placement_work;
  
-@@ -754,12 +755,11 @@ void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	struct task_struct *shared_buddy, *shared_buddy_curr;
+ 	unsigned long shared_buddy_faults, shared_buddy_faults_curr;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index cad6c89..0324d5e 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -39,6 +39,7 @@
+ #include <linux/kernel_stat.h>
+ #include <linux/debug_locks.h>
+ #include <linux/perf_event.h>
++#include <linux/task_work.h>
+ #include <linux/security.h>
+ #include <linux/notifier.h>
+ #include <linux/profile.h>
+@@ -1558,7 +1559,6 @@ static void __sched_fork(struct task_struct *p)
+ 	p->numa_migrate_seq = 2;
+ 	p->numa_faults = NULL;
+ 	p->numa_scan_period = sysctl_sched_numa_scan_delay;
+-	p->numa_work.next = &p->numa_work;
  
- 	page = pmd_page(entry);
- 	if (page) {
--		int page_nid = page_to_nid(page);
-+		page_nid = page_to_nid(page);
+ 	p->shared_buddy = NULL;
+ 	p->shared_buddy_faults = 0;
+@@ -1570,6 +1570,25 @@ static void __sched_fork(struct task_struct *p)
+ 	p->numa_policy.v.preferred_node = 0;
+ 	p->numa_policy.v.nodes = node_online_map;
  
- 		VM_BUG_ON(!PageCompound(page) || !PageHead(page));
- 		last_cpu = page_last_cpu(page);
- 
--		get_page(page);
- 		/*
- 		 * Note that migrating pages shared by others is safe, since
- 		 * get_user_pages() or GUP fast would have to fault this page
-@@ -769,6 +769,8 @@ void do_huge_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		node = mpol_misplaced(page, vma, haddr);
- 		if (node != -1 && node != page_nid)
- 			goto migrate;
++	init_task_work(&p->numa_scan_work, task_numa_scan_work);
++	p->numa_scan_work.next = &p->numa_scan_work;
 +
-+		task_numa_fault(page_nid, last_cpu, HPAGE_PMD_NR);
- 	}
++	init_task_work(&p->numa_placement_work, task_numa_placement_work);
++	p->numa_placement_work.next = &p->numa_placement_work;
++
++	if (p->mm) {
++		int entries = 2*nr_node_ids;
++		int size = sizeof(*p->numa_faults) * entries;
++
++		/*
++		 * For efficiency reasons we allocate ->numa_faults[]
++		 * and ->numa_faults_curr[] at once and split the
++		 * buffer we get. They are separate otherwise.
++		 */
++		p->numa_faults = kzalloc(2*size, GFP_KERNEL);
++		if (p->numa_faults)
++			p->numa_faults_curr = p->numa_faults + entries;
++	}
+ #endif /* CONFIG_NUMA_BALANCING */
+ }
  
- fixup:
-@@ -779,32 +781,33 @@ fixup:
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 54c1e7b..fda1b63 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1063,19 +1063,18 @@ clear_buddy:
+ 	p->ideal_cpu_curr		= -1;
+ }
  
- unlock:
- 	spin_unlock(&mm->page_table_lock);
--	if (page) {
--		task_numa_fault(page_to_nid(page), last_cpu, HPAGE_PMD_NR);
--		put_page(page);
--	}
- 	return;
+-static void task_numa_placement(struct task_struct *p)
++/*
++ * Called every couple of hundred milliseconds in the task's
++ * execution life-time, this function decides whether to
++ * change placement parameters:
++ */
++static void task_numa_placement_tick(struct task_struct *p)
+ {
+-	int seq = ACCESS_ONCE(p->mm->numa_scan_seq);
+ 	unsigned long total[2] = { 0, 0 };
+ 	unsigned long faults, max_faults = 0;
+ 	int node, priv, shared, max_node = -1;
+ 	int this_node;
  
- migrate:
--	spin_unlock(&mm->page_table_lock);
+-	if (p->numa_scan_seq == seq)
+-		return;
+-
+-	p->numa_scan_seq = seq;
 -
  	/*
- 	 * If this node is getting full then don't migrate even
-  	 * more pages here:
-  	 */
--	if (!migrate_balanced_pgdat(NODE_DATA(node), HPAGE_PMD_NR)) {
--		put_page(page);
--		return;
--	}
-+	if (!migrate_balanced_pgdat(NODE_DATA(node), HPAGE_PMD_NR))
-+		goto fixup;
+ 	 * Update the fault average with the result of the latest
+ 	 * scan:
+@@ -1280,43 +1279,24 @@ void task_numa_fault(int node, int last_cpu, int pages)
+ 	int idx = 2*node + priv;
  
--	lock_page(page);
--	spin_lock(&mm->page_table_lock);
--	if (unlikely(!pmd_same(*pmd, entry))) {
-+	get_page(page);
-+
-+	/*
-+	 * If we cannot lock the page immediately then wait for it
-+	 * to migrate and re-take the fault (which might not be
-+	 * necessary if the migrating task fixed up the pmd):
-+	 */
-+	if (!trylock_page(page)) {
- 		spin_unlock(&mm->page_table_lock);
-+
-+		lock_page(page);
- 		unlock_page(page);
- 		put_page(page);
-+
- 		return;
- 	}
-+
- 	spin_unlock(&mm->page_table_lock);
- 
- 	new_page = alloc_pages_node(node,
-@@ -884,12 +887,13 @@ migrate:
- 
- alloc_fail:
- 	unlock_page(page);
-+
- 	spin_lock(&mm->page_table_lock);
--	if (unlikely(!pmd_same(*pmd, entry))) {
--		put_page(page);
--		page = NULL;
-+	put_page(page);
-+
-+	if (unlikely(!pmd_same(*pmd, entry)))
- 		goto unlock;
--	}
-+
- 	goto fixup;
- }
- #endif
-@@ -1275,9 +1279,18 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
- 
- 	if (__pmd_trans_huge_lock(pmd, vma) == 1) {
- 		pmd_t entry;
-+
- 		entry = pmdp_get_and_clear(mm, addr, pmd);
- 		entry = pmd_modify(entry, newprot);
-+
-+		if (pmd_numa(vma, entry)) {
-+			struct page *page = pmd_page(*pmd);
-+
-+ 			if (page_mapcount(page) != 1)
-+				goto skip;
-+		}
- 		set_pmd_at(mm, addr, pmd, entry);
-+skip:
- 		spin_unlock(&vma->vm_mm->page_table_lock);
- 		ret = 1;
- 	}
-diff --git a/mm/memory.c b/mm/memory.c
-index 1f733dc..c6884e8 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3457,64 +3457,143 @@ static int do_nonlinear_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	return __do_fault(mm, vma, address, pmd, pgoff, flags, orig_pte);
- }
- 
--static int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
-+static int __do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 			unsigned long address, pte_t *ptep, pmd_t *pmd,
--			unsigned int flags, pte_t entry)
-+			unsigned int flags, pte_t entry, spinlock_t *ptl)
- {
--	struct page *page = NULL;
--	int node, page_nid = -1;
--	int last_cpu = -1;
--	spinlock_t *ptl;
-+	struct page *page;
-+	int best_node;
-+	int last_cpu;
-+	int page_nid;
- 
--	ptl = pte_lockptr(mm, pmd);
--	spin_lock(ptl);
--	if (unlikely(!pte_same(*ptep, entry)))
--		goto out_unlock;
-+	WARN_ON_ONCE(pmd_trans_splitting(*pmd));
- 
- 	page = vm_normal_page(vma, address, entry);
--	if (page) {
--		get_page(page);
--		page_nid = page_to_nid(page);
--		last_cpu = page_last_cpu(page);
--		node = mpol_misplaced(page, vma, address);
--		if (node != -1 && node != page_nid)
--			goto migrate;
--	}
- 
--out_pte_upgrade_unlock:
- 	flush_cache_page(vma, address, pte_pfn(entry));
+ 	WARN_ON_ONCE(last_cpu == -1 || node == -1);
 -
- 	ptep_modify_prot_start(mm, address, ptep);
- 	entry = pte_modify(entry, vma->vm_page_prot);
--	ptep_modify_prot_commit(mm, address, ptep, entry);
+-	if (unlikely(!p->numa_faults)) {
+-		int entries = 2*nr_node_ids;
+-		int size = sizeof(*p->numa_faults) * entries;
+-
+-		p->numa_faults = kzalloc(2*size, GFP_KERNEL);
+-		if (!p->numa_faults)
+-			return;
+-		/*
+-		 * For efficiency reasons we allocate ->numa_faults[]
+-		 * and ->numa_faults_curr[] at once and split the
+-		 * buffer we get. They are separate otherwise.
+-		 */
+-		p->numa_faults_curr = p->numa_faults + entries;
+-	}
++	BUG_ON(!p->numa_faults);
  
--	/* No TLB flush needed because we upgraded the PTE */
-+	/* Be careful: */
-+	if (pte_dirty(entry) && page && PageAnon(page) && (page_mapcount(page) == 1))
-+		entry = pte_mkwrite(entry);
- 
-+	ptep_modify_prot_commit(mm, address, ptep, entry);
-+	/* No TLB flush needed because we upgraded the PTE */
- 	update_mmu_cache(vma, address, ptep);
- 
--out_unlock:
--	pte_unmap_unlock(ptep, ptl);
-+	if (!page)
-+		return 0;
- 
--	if (page) {
-+	page_nid = page_to_nid(page);
-+	last_cpu = page_last_cpu(page);
-+	best_node = mpol_misplaced(page, vma, address);
-+
-+	if (best_node == -1 || best_node == page_nid || page_mapcount(page) != 1) {
- 		task_numa_fault(page_nid, last_cpu, 1);
--		put_page(page);
-+		return 0;
- 	}
--out:
--	return 0;
- 
--migrate:
-+	/* Start the migration: */
-+
-+	get_page(page);
- 	pte_unmap_unlock(ptep, ptl);
- 
--	if (migrate_misplaced_page(page, node)) {
--		goto out;
-+	/* Drops the page reference */
-+	if (migrate_misplaced_page(page, best_node))
-+		task_numa_fault(best_node, last_cpu, 1);
-+
-+	spin_lock(ptl);
-+	return 0;
-+}
-+
-+/*
-+ * Also fault over nearby ptes from within the same pmd and vma,
-+ * in order to minimize the overhead from page fault exceptions:
-+ */
-+static int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
-+			unsigned long addr0, pte_t *ptep0, pmd_t *pmd,
-+			unsigned int flags, pte_t entry0)
-+{
-+	unsigned long addr0_pmd;
-+	unsigned long addr_start;
-+	unsigned long addr;
-+	struct page *page;
-+	spinlock_t *ptl;
-+	pte_t *ptep_start;
-+	pte_t *ptep;
-+	pte_t entry;
-+
-+	WARN_ON_ONCE(addr0 < vma->vm_start || addr0 >= vma->vm_end);
-+
-+	addr0_pmd = addr0 & PMD_MASK;
-+	addr_start = max(addr0_pmd, vma->vm_start);
-+
-+	/*
-+	 * Serialize the 2MB clustering of this NUMA probing
-+	 * pte by taking the lock of the pmd level page.
-+	 *
-+	 * This allows the whole HPAGE_SIZE-sized NUMA operation
-+	 * that was already started by another thread to be
-+	 * finished, without us interfering.
-+	 *
-+	 * It's not like that we are likely to make any meaningful
-+	 * progress while the NUMA pte handling logic is running
-+	 * in another thread, so we (and other threads) don't
-+	 * waste CPU time taking the ptl lock and excessive page
-+	 * faults and scheduling.
-+	 *
-+	 * ( This is also roughly analogous to the serialization of
-+	 *   a real 2MB huge page fault. )
-+	 */
-+	spin_lock(&mm->page_table_lock);
-+	page = pmd_page(*pmd);
-+	WARN_ON_ONCE(!page);
-+	get_page(page);
-+	spin_unlock(&mm->page_table_lock);
-+
-+	if (!trylock_page(page)) {
-+
-+		lock_page(page);
-+		unlock_page(page);
-+		put_page(page);
-+
-+		/* The pte has most likely been resolved by another thread meanwhile */
-+
-+		return 0;
- 	}
--	page = NULL;
- 
--	ptep = pte_offset_map_lock(mm, pmd, address, &ptl);
--	if (!pte_same(*ptep, entry))
--		goto out_unlock;
-+	ptep_start = pte_offset_map(pmd, addr_start);
-+	ptl = pte_lockptr(mm, pmd);
-+	spin_lock(ptl);
-+
-+	ptep = ptep_start+1;
- 
--	goto out_pte_upgrade_unlock;
-+	for (addr = addr_start+PAGE_SIZE; addr < vma->vm_end; addr += PAGE_SIZE, ptep++) {
-+
-+		if ((addr & PMD_MASK) != addr0_pmd)
-+			break;
-+
-+		entry = ACCESS_ONCE(*ptep);
-+
-+		if (!pte_present(entry))
-+			continue;
-+		if (!pte_numa(vma, entry))
-+			continue;
-+
-+		__do_numa_page(mm, vma, addr, ptep, pmd, flags, entry, ptl);
-+	}
-+
-+	entry = ACCESS_ONCE(*ptep_start);
-+	if (pte_present(entry) && pte_numa(vma, entry))
-+		__do_numa_page(mm, vma, addr_start, ptep_start, pmd, flags, entry, ptl);
-+
-+	pte_unmap_unlock(ptep_start, ptl);
-+
-+	unlock_page(page);
-+	put_page(page);
-+
-+	return 0;
+ 	p->numa_faults_curr[idx] += pages;
+ 	shared_fault_tick(p, node, last_cpu, pages);
+-	task_numa_placement(p);
  }
  
  /*
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index 6ff2d5e..7bb3536 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -28,16 +28,19 @@
- #include <asm/cacheflush.h>
- #include <asm/tlbflush.h>
- 
--static unsigned long change_pte_range(struct mm_struct *mm, pmd_t *pmd,
-+static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
- 		unsigned long addr, unsigned long end, pgprot_t newprot,
- 		int dirty_accountable)
+  * The expensive part of numa migration is done from task_work context.
+  * Triggered from task_tick_numa().
+  */
+-void task_numa_work(struct callback_head *work)
++void task_numa_placement_work(struct callback_head *work)
  {
-+	struct mm_struct *mm = vma->vm_mm;
- 	pte_t *pte, oldpte;
-+	struct page *page;
- 	spinlock_t *ptl;
- 	unsigned long pages = 0;
+-	long pages_total, pages_left, pages_changed;
+-	unsigned long migrate, next_scan, now = jiffies;
+-	unsigned long start0, start, end;
+ 	struct task_struct *p = current;
+-	struct mm_struct *mm = p->mm;
+-	struct vm_area_struct *vma;
  
- 	pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
- 	arch_enter_lazy_mmu_mode();
+-	WARN_ON_ONCE(p != container_of(work, struct task_struct, numa_work));
++	WARN_ON_ONCE(p != container_of(work, struct task_struct, numa_placement_work));
+ 
+ 	work->next = work; /* protect against double add */
 +
- 	do {
- 		oldpte = *pte;
- 		if (pte_present(oldpte)) {
-@@ -46,6 +49,18 @@ static unsigned long change_pte_range(struct mm_struct *mm, pmd_t *pmd,
- 			ptent = ptep_modify_prot_start(mm, addr, pte);
- 			ptent = pte_modify(ptent, newprot);
+ 	/*
+ 	 * Who cares about NUMA placement when they're dying.
+ 	 *
+@@ -1328,6 +1308,29 @@ void task_numa_work(struct callback_head *work)
+ 	if (p->flags & PF_EXITING)
+ 		return;
  
-+			/* Are we turning it into a NUMA entry? */
-+			if (pte_numa(vma, ptent)) {
-+				page = vm_normal_page(vma, addr, oldpte);
++	task_numa_placement_tick(p);
++}
 +
-+				/* Skip all but private pages: */
-+				if (!page || !PageAnon(page) || page_mapcount(page) != 1)
-+					ptent = oldpte;
-+				else
-+					pages++;
-+			} else {
-+				pages++;
-+			}
- 			/*
- 			 * Avoid taking write faults for pages we know to be
- 			 * dirty.
-@@ -54,7 +69,6 @@ static unsigned long change_pte_range(struct mm_struct *mm, pmd_t *pmd,
- 				ptent = pte_mkwrite(ptent);
- 
- 			ptep_modify_prot_commit(mm, addr, pte, ptent);
--			pages++;
- 		} else if (IS_ENABLED(CONFIG_MIGRATION) && !pte_file(oldpte)) {
- 			swp_entry_t entry = pte_to_swp_entry(oldpte);
- 
-@@ -98,7 +112,7 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma, pud_t *
- 		}
- 		if (pmd_none_or_clear_bad(pmd))
- 			continue;
--		pages += change_pte_range(vma->vm_mm, pmd, addr, next, newprot,
-+		pages += change_pte_range(vma, pmd, addr, next, newprot,
- 				 dirty_accountable);
- 	} while (pmd++, addr = next, addr != end);
- 
-@@ -135,7 +149,9 @@ static unsigned long change_protection_range(struct vm_area_struct *vma,
- 	unsigned long start = addr;
- 	unsigned long pages = 0;
- 
--	BUG_ON(addr >= end);
-+	if (WARN_ON_ONCE(addr >= end))
-+		return 0;
++/*
++ * The expensive part of numa migration is done from task_work context.
++ * Triggered from task_tick_numa().
++ */
++void task_numa_scan_work(struct callback_head *work)
++{
++	long pages_total, pages_left, pages_changed;
++	unsigned long migrate, next_scan, now = jiffies;
++	unsigned long start0, start, end;
++	struct task_struct *p = current;
++	struct mm_struct *mm = p->mm;
++	struct vm_area_struct *vma;
 +
- 	pgd = pgd_offset(mm, addr);
- 	flush_cache_range(vma, addr, end);
- 	do {
++	WARN_ON_ONCE(p != container_of(work, struct task_struct, numa_scan_work));
++
++	work->next = work; /* protect against double add */
++
++	if (p->flags & PF_EXITING)
++		return;
++
+ 	/*
+ 	 * Enforce maximal scan/migration frequency..
+ 	 */
+@@ -1383,15 +1386,12 @@ out:
+ /*
+  * Drive the periodic memory faults..
+  */
+-void task_tick_numa(struct rq *rq, struct task_struct *curr)
++static void task_tick_numa_scan(struct rq *rq, struct task_struct *curr)
+ {
+-	struct callback_head *work = &curr->numa_work;
++	struct callback_head *work = &curr->numa_scan_work;
+ 	u64 period, now;
+ 
+-	/*
+-	 * We don't care about NUMA placement if we don't have memory.
+-	 */
+-	if (!curr->mm || (curr->flags & PF_EXITING) || work->next != work)
++	if (work->next != work)
+ 		return;
+ 
+ 	/*
+@@ -1403,28 +1403,67 @@ void task_tick_numa(struct rq *rq, struct task_struct *curr)
+ 	now = curr->se.sum_exec_runtime;
+ 	period = (u64)curr->numa_scan_period * NSEC_PER_MSEC;
+ 
+-	if (now - curr->node_stamp > period) {
+-		curr->node_stamp += period;
+-		curr->numa_scan_period = sysctl_sched_numa_scan_period_min;
++	if (now - curr->node_stamp <= period)
++		return;
+ 
+-		/*
+-		 * We are comparing runtime to wall clock time here, which
+-		 * puts a maximum scan frequency limit on the task work.
+-		 *
+-		 * This, together with the limits in task_numa_work() filters
+-		 * us from over-sampling if there are many threads: if all
+-		 * threads happen to come in at the same time we don't create a
+-		 * spike in overhead.
+-		 *
+-		 * We also avoid multiple threads scanning at once in parallel to
+-		 * each other.
+-		 */
+-		if (!time_before(jiffies, curr->mm->numa_next_scan)) {
+-			init_task_work(work, task_numa_work); /* TODO: move this into sched_fork() */
+-			task_work_add(curr, work, true);
+-		}
+-	}
++	curr->node_stamp += period;
++	curr->numa_scan_period = sysctl_sched_numa_scan_period_min;
++
++	/*
++	 * We are comparing runtime to wall clock time here, which
++	 * puts a maximum scan frequency limit on the task work.
++	 *
++	 * This, together with the limits in task_numa_work() filters
++	 * us from over-sampling if there are many threads: if all
++	 * threads happen to come in at the same time we don't create a
++	 * spike in overhead.
++	 *
++	 * We also avoid multiple threads scanning at once in parallel to
++	 * each other.
++	 */
++	if (time_before(jiffies, curr->mm->numa_next_scan))
++		return;
++
++	task_work_add(curr, work, true);
+ }
++
++/*
++ * Drive the placement logic:
++ */
++static void task_tick_numa_placement(struct rq *rq, struct task_struct *curr)
++{
++	struct callback_head *work = &curr->numa_placement_work;
++	int seq;
++
++	if (work->next != work)
++		return;
++
++	/*
++	 * Check whether we should run task_numa_placement(),
++	 * and if yes, activate the worklet:
++	 */
++	seq = ACCESS_ONCE(curr->mm->numa_scan_seq);
++
++	if (curr->numa_scan_seq == seq)
++		return;
++
++	curr->numa_scan_seq = seq;
++	task_work_add(curr, work, true);
++}
++
++static void task_tick_numa(struct rq *rq, struct task_struct *curr)
++{
++	/*
++	 * We don't care about NUMA placement if we don't have memory
++	 * or are exiting:
++	 */
++	if (!curr->mm || (curr->flags & PF_EXITING))
++		return;
++
++	task_tick_numa_scan(rq, curr);
++	task_tick_numa_placement(rq, curr);
++}
++
+ #else /* !CONFIG_NUMA_BALANCING: */
+ #ifdef CONFIG_SMP
+ static inline int task_ideal_cpu(struct task_struct *p)				{ return -1; }
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index f3a284e..7e53cbf 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -1259,6 +1259,12 @@ static inline u64 irq_time_read(int cpu)
+ 	return per_cpu(cpu_softirq_time, cpu) + per_cpu(cpu_hardirq_time, cpu);
+ }
+ #endif /* CONFIG_64BIT */
++
++#ifdef CONFIG_NUMA_BALANCING
++extern void task_numa_scan_work(struct callback_head *work);
++extern void task_numa_placement_work(struct callback_head *work);
++#endif
++
+ #ifdef CONFIG_SMP
+ extern void sched_rebalance_to(int dest_cpu, int flip_tasks);
+ #else
 -- 
 1.7.11.7
 
