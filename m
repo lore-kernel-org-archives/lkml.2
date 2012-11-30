@@ -1,62 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438Ab2K3BSM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 20:18:12 -0500
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:49436 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755407Ab2K3BSI (ORCPT
+	id S1755249Ab2K3BW1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 20:22:27 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:34237 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752787Ab2K3BW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 20:18:08 -0500
-Subject: Re: [PATCH] br2684: don't send frames on not-ready vcc
-From: Nathan Williams <nathan@traverse.com.au>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: David Miller <davem@davemloft.net>, chas@cmf.nrl.navy.mil,
-        krzysiek@podlesie.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1354122555.21562.92.camel@shinybook.infradead.org>
-References: <1354058916.2534.25.camel@shinybook.infradead.org>
-	 <20121128.114153.737074131307295783.davem@davemloft.net>
-	 <1354122070.21562.89.camel@shinybook.infradead.org>
-	 <20121128.120415.778262714601372592.davem@davemloft.net>
-	 <1354122555.21562.92.camel@shinybook.infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 30 Nov 2012 12:18:05 +1100
-Message-ID: <1354238285.3128.273.camel@dualcore.traverse>
+	Thu, 29 Nov 2012 20:22:26 -0500
+Date: Fri, 30 Nov 2012 12:22:09 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kelly Doran <kel.p.doran@gmail.com>, Ben Skeggs <bskeggs@redhat.com>
+Subject: linux-next: manual merge of the drm tree with Linus' tree
+Message-Id: <20121130122209.2df445e05e638738a0739f25@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__30_Nov_2012_12_22_09_+1100_lPw6cKnKK1EIMc9q"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-11-28 at 17:09 +0000, David Woodhouse wrote:
-> On Wed, 2012-11-28 at 12:04 -0500, David Miller wrote:
-> > Do you want me to pull that tree into net-next or is there a plan to
-> > repost the entire series of work for a final submission?
-> 
-> I think it needs a little more testing/consensus first. I'd like an ack
-> from Chas on the atm ->release_cb() thing, at least. And I wouldn't mind
-> confirmation from Nathan's customer that they're no longer seeing the
-> panics.
-> 
+--Signature=_Fri__30_Nov_2012_12_22_09_+1100_lPw6cKnKK1EIMc9q
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The customer has confirmed that they haven't seen any panics.  I tested
-these patches on OpenWrt with Kernel 3.3.8 and couldn't get a panic:
+Hi Dave,
 
-c118dc5 solos-pci: Fix leak of skb received for unknown vcc
-e539793 br2684: fix module_put() race
-3656320 br2684: don't send frames on not-ready vcc
-753f920 solos-pci: Wait for pending TX to complete when releasing vcc
-91ab2cf pppoatm: do not inline pppoatm_may_send()
-85b48fa pppoatm: drop frames to not-ready vcc
-3ac1080 pppoatm: take ATM socket lock in pppoatm_send()
-e41faed pppoatm: fix module_put() race
-3b1a914 pppoatm: allow assign only on a connected socket
-ec809bd atm: add owner of push() callback to atmvcc
-ae088d6 atm: br2684: Fix excessive queue bloat
+Today's linux-next merge of the drm tree got a conflict in
+drivers/gpu/drm/nouveau/core/engine/disp/nv50.c between commit
+11d92561c81b ("drm/nvc0/disp: fix regression in vblank semaphore
+release") from Linus' tree and commit 370c00f939c5 ("drm/nv50/disp:
+initial implementation of the various channel object classes") from the
+drm tree.
 
-I haven't tested these ones:
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-230a012 pppoatm: fix missing wakeup in pppoatm_send()
-1c0c800 atm: Add release_cb() callback to vcc
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc drivers/gpu/drm/nouveau/core/engine/disp/nv50.c
+index 15b182c,c6f8005..0000000
+--- a/drivers/gpu/drm/nouveau/core/engine/disp/nv50.c
++++ b/drivers/gpu/drm/nouveau/core/engine/disp/nv50.c
+@@@ -22,7 -22,10 +22,11 @@@
+   * Authors: Ben Skeggs
+   */
+ =20
++ #include <core/object.h>
++ #include <core/parent.h>
++ #include <core/handle.h>
++ #include <core/class.h>
+ +#include <subdev/bar.h>
+ =20
+  #include <engine/software.h>
+  #include <engine/disp.h>
+
+--Signature=_Fri__30_Nov_2012_12_22_09_+1100_lPw6cKnKK1EIMc9q
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQuApBAAoJEECxmPOUX5FEW3MP/0ZoK1G7dqMC4fdjAEBuEYiP
+ru4IsNdoGhrb/wRp52sP4UqPdYcptcOOkjQJs0lBx9VmXtL1tSWgLzGw2wNvoWTP
+EYd0sLgwx5Rgr2yUsxCG6SPs9MtIzlL4X1p94SfJB/dfr/JllSauw6ESjTKN3EJC
+cXB4CHSs0LqOvMtvUOVttMlXw43MfTocqQx2I0lWlUYPwMzzS/6TVBAqK8Ag9wxO
+SLCNMIZ688chNGa0wlXaVk//ch70/sp/XHpEwxrpKaWl9digbt5MRO/ag4/SXzLV
+iYrLzYCEK7p9vuVzV8KObisjiYiaGq1d8e5hCuQWkGp88KDVv3owgDgsRHV0XLZJ
+Ytga58i0L4rFuRRZWOqP+6GdSFfyegDqGEAwLT97gIHk3HXkXqNpmCYzYzRZWD7N
+6WX+hNgbr/GHevbqZKLUh9TNdXaj8y6zBYJHrokYDW0o7GRhPRVRJ3aeLXgPCetN
+Pwu1JOz0E6jmcTkTPfGnMfJyDRk8RuN4JgMHD8OxxkcCnlSL9/xDsaxmlqlPforH
+2krfqQUAuZVUBNHREIcgkHclJmes027aaD8M0KGpjEJp+6qsXt8I2Op12vR06NlM
+RTxElcsnYvO4x2H8ekt3OB1S5BRydU6JiUvMutOwe0VXo7RdmDERPYgFMpwBAVWn
+vGUM+eU+q1bLVO/QEaGx
+=+RCo
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__30_Nov_2012_12_22_09_+1100_lPw6cKnKK1EIMc9q--
