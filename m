@@ -1,69 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030744Ab2K3PaI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 10:30:08 -0500
-Received: from mxout2.netvision.net.il ([194.90.9.21]:48840 "EHLO
-	mxout2.netvision.net.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030718Ab2K3P3y (ORCPT
+	id S1030768Ab2K3Pbp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 10:31:45 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:60962 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030753Ab2K3Pbm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 10:29:54 -0500
-X-Greylist: delayed 1403 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 Nov 2012 10:29:53 EST
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; CHARSET=US-ASCII; format=flowed
-Message-id: <50B8C7BF.4000004@gmail.com>
-Date: Fri, 30 Nov 2012 16:50:39 +0200
-From: Eli Billauer <eli.billauer@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12)
- Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, arnd@arndb.de
-Subject: Re: [PATCH 2/2] New driver: Xillybus generic interface for FPGA
- (programmable logic)
-References: <1354117293-13632-1-git-send-email-eli.billauer@gmail.com>
- <1354117293-13632-2-git-send-email-eli.billauer@gmail.com>
- <20121128165719.GB31314@kroah.com>
-In-reply-to: <20121128165719.GB31314@kroah.com>
+	Fri, 30 Nov 2012 10:31:42 -0500
+From: Paul Moore <paul@paul-moore.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: linux-next: Tree for Nov 29 (netlabel)
+Date: Fri, 30 Nov 2012 10:31:38 -0500
+Message-ID: <2664553.2TRaVqlkGg@sifl>
+User-Agent: KMail/4.9.3 (Linux/3.6.6-gentoo; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <3694027.VYznNcdp7C@sifl>
+References: <20121129174057.99da02b15426c76054d05592@canb.auug.org.au> <50B7F846.70202@infradead.org> <3694027.VYznNcdp7C@sifl>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the remarks.
+On Friday, November 30, 2012 10:19:16 AM Paul Moore wrote:
+> On Thursday, November 29, 2012 04:05:26 PM Randy Dunlap wrote:
+> > On 11/28/2012 10:40 PM, Stephen Rothwell wrote:
+> > > Hi all,
+> > 
+> > > Changes since 20121128:
+> > (on i386:)
+> 
+> If I had to guess it looks like CONFIG_NETLABEL needs to be dependent on
+> CONFIG_INET.  While the net/ Kconfig only pulls in the net/netlabel Kconfig
+> if CONFIG_INET is defined, I'm guessing that without the explicit
+> dependency there is nothing preventing someone from arriving at a bad
+> configuration as we see here.
+> 
+> Let me test this out to make sure my reasoning is right and if it is I'll
+> post a patch to netdev later today.
+> 
+> Thanks for catching this.
 
-I'm sending the updated patches in a minute. Basically, I divided the 
-module into three (one core, one for PCIe and one for OF) and made 
-several corrections.
+Hmmm.  The existing logic in net/Kconfig seems to disable CONFIG_NETLABEL at 
+build time whenever CONFIG_INET is disabled in my .config file.  The only way 
+I can recreate what you are seeing here is if I move the NetLabel include 
+outside of the INET conditional in net/Kconfig.
 
-On 11/28/2012 06:57 PM, Greg KH wrote:
-> What is the user/kernel interface for this driver?  Is it documented
-> anywhere?
->    
-There's a rather extensive documentation for download at the site. The 
-docs for the host side mostly instruct common UNIX programming 
-techniques: The device files are just data pipes to FIFOs in the FPGA, 
-behaving like one would expect.
->> +#if (PAGE_SIZE<  4096)
->> +#error Your processor architecture has a page size smaller than 4096
->> +#endif
->>      
-> That can never happen.  Even if it does, you don't care about that in
-> the driver.
->
->    
-I removed this check because it can't happen. But the driver *does* care 
-about this, since it creates a lot of buffers with different alignments, 
-hence depending on the pages' alignment.
->
->> +static struct class *xillybus_class;
->>      
-> Why not just use the misc interface instead of your own class?
->    
-When Xillybus is used, the whole system's mission is usually around it 
-(e.g. it's a computer doing data acquisition through the Xillybus 
-pipes). So giving it a high profile makes sense, I believe. Besides, a 
-dozen of device files are not rare.
+Regardless, adding an explicit dependency on INET to NETLABEL shouldn't hurt 
+anything so I'll go ahead and post the patch to netdev.  Hopefully someone who 
+understands Kconfig better than I do can help shed some light on this.
 
-Regards,
-     Eli
-
+> > net/built-in.o: In function `netlbl_cfg_cipsov4_add':
+> > (.text+0x61757): undefined reference to `cipso_v4_doi_add'
+> > net/built-in.o: In function `netlbl_cfg_cipsov4_del':
+> > (.text+0x6177d): undefined reference to `cipso_v4_doi_remove'
+> > net/built-in.o: In function `netlbl_cfg_cipsov4_map_add':
+> > (.text+0x617ae): undefined reference to `cipso_v4_doi_getdef'
+> > net/built-in.o: In function `netlbl_cfg_cipsov4_map_add':
+> > (.text+0x61a49): undefined reference to `cipso_v4_doi_putdef'
+> > net/built-in.o: In function `netlbl_sock_setattr':
+> > (.text+0x6218c): undefined reference to `cipso_v4_sock_setattr'
+> > net/built-in.o: In function `netlbl_sock_delattr':
+> > (.text+0x6220b): undefined reference to `cipso_v4_sock_delattr'
+> > net/built-in.o: In function `netlbl_sock_getattr':
+> > (.text+0x62238): undefined reference to `cipso_v4_sock_getattr'
+> > net/built-in.o: In function `netlbl_conn_setattr':
+> > (.text+0x622de): undefined reference to `cipso_v4_sock_setattr'
+> > net/built-in.o: In function `netlbl_conn_setattr':
+> > (.text+0x62303): undefined reference to `cipso_v4_sock_delattr'
+> > net/built-in.o: In function `netlbl_req_setattr':
+> > (.text+0x62429): undefined reference to `cipso_v4_req_setattr'
+> > net/built-in.o: In function `netlbl_req_setattr':
+> > (.text+0x6244e): undefined reference to `cipso_v4_req_delattr'
+> > net/built-in.o: In function `netlbl_req_delattr':
+> > (.text+0x624ba): undefined reference to `cipso_v4_req_delattr'
+> > net/built-in.o: In function `netlbl_skbuff_setattr':
+> > (.text+0x62551): undefined reference to `cipso_v4_skbuff_setattr'
+> > net/built-in.o: In function `netlbl_skbuff_setattr':
+> > (.text+0x62576): undefined reference to `cipso_v4_skbuff_delattr'
+> > net/built-in.o: In function `netlbl_skbuff_getattr':
+> > (.text+0x62619): undefined reference to `cipso_v4_skbuff_getattr'
+> > net/built-in.o: In function `netlbl_skbuff_err':
+> > (.text+0x62685): undefined reference to `cipso_v4_error'
+> > net/built-in.o: In function `netlbl_cache_invalidate':
+> > (.text+0x626ab): undefined reference to `cipso_v4_cache_invalidate'
+> > net/built-in.o: In function `netlbl_cache_add':
+> > (.text+0x626ec): undefined reference to `cipso_v4_cache_add'
+> > net/built-in.o: In function `netlbl_domhsh_remove_entry':
+> > (.text+0x63294): undefined reference to `cipso_v4_doi_putdef'
+> > net/built-in.o: In function `netlbl_domhsh_remove_entry':
+> > (.text+0x632eb): undefined reference to `cipso_v4_doi_putdef'
+> > net/built-in.o: In function `netlbl_domhsh_remove_af4':
+> > (.text+0x6349b): undefined reference to `cipso_v4_doi_putdef'
+> > net/built-in.o: In function `netlbl_mgmt_add_common.clone.1':
+> > netlabel_mgmt.c:(.text+0x64a87): undefined reference to
+> > `cipso_v4_doi_getdef' netlabel_mgmt.c:(.text+0x64c83): undefined reference
+> > to `cipso_v4_doi_putdef' net/built-in.o: In function
+> > `netlbl_cipsov4_listall':
+> > netlabel_cipso_v4.c:(.text+0x66e52): undefined reference to
+> > `cipso_v4_doi_walk' net/built-in.o: In function `netlbl_cipsov4_list':
+> > netlabel_cipso_v4.c:(.text+0x67199): undefined reference to
+> > `cipso_v4_doi_getdef' net/built-in.o: In function `netlbl_cipsov4_remove':
+> > netlabel_cipso_v4.c:(.text+0x6771b): undefined reference to
+> > `cipso_v4_doi_remove' net/built-in.o: In function
+> > `netlbl_cipsov4_add_pass':
+> > netlabel_cipso_v4.c:(.text+0x67a4b): undefined reference to
+> > `cipso_v4_doi_add' netlabel_cipso_v4.c:(.text+0x67a76): undefined
+> > reference
+> > to `cipso_v4_doi_free' net/built-in.o: In function
+> > `netlbl_cipsov4_add_local':
+> > netlabel_cipso_v4.c:(.text+0x67b9a): undefined reference to
+> > `cipso_v4_doi_add' netlabel_cipso_v4.c:(.text+0x67bc5): undefined
+> > reference
+> > to `cipso_v4_doi_free' net/built-in.o: In function
+> > `netlbl_cipsov4_add_std':
+> > netlabel_cipso_v4.c:(.text+0x68535): undefined reference to
+> > `cipso_v4_doi_add' netlabel_cipso_v4.c:(.text+0x68575): undefined
+> > reference
+> > to `cipso_v4_doi_free'
+> > 
+> > 
+> > Full randconfig file is attached.
+-- 
+paul moore
+www.paul-moore.com
 
