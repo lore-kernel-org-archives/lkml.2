@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422697Ab2K3Svd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:51:33 -0500
-Received: from mail.kernel.org ([198.145.19.201]:57707 "EHLO mail.kernel.org"
+	id S1422714Ab2K3Svy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:51:54 -0500
+Received: from mail.kernel.org ([198.145.19.201]:57688 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1161084Ab2K3Stv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:49:51 -0500
+	id S1161068Ab2K3Sts (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:49:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Emil Tantilov <emil.s.tantilov@intel.com>,
-        Phil Schmitt <phillip.j.schmitt@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Abdallah Chatila <Abdallah.Chatila@ericsson.com>
-Subject: [ 30/37] ixgbe: add support for new 82599 device id
-Date: Fri, 30 Nov 2012 10:46:17 -0800
-Message-Id: <20121130183900.481216781@linuxfoundation.org>
+        David Milburn <dmilburn@redhat.com>, Jeff Garzik <jgarzik@redhat.com>,
+        CAI Qian <caiqian@redhat.com>
+Subject: [ 28/37] sata_svw: check DMA start bit before reset
+Date: Fri, 30 Nov 2012 10:46:15 -0800
+Message-Id: <20121130183900.267220828@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130183857.166228045@linuxfoundation.org>
 References: <20121130183857.166228045@linuxfoundation.org>
@@ -28,54 +26,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emil Tantilov <emil.s.tantilov@intel.com>
+From: David Milburn <dmilburn@redhat.com>
 
-commit 9e791e4a04c08868f02cd579a428a7268492e1b4 upstream.
+commit b03e66a6be91f8389fcd902ab6c1563db1c9c06b upstream.
 
-Support for new 82599 based quad port adapter.
+If kdump is triggered with pending IO, controller may not respond causing
+kdump to fail.
 
-Signed-off-by: Emil Tantilov <emil.s.tantilov@intel.com>
-Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: Abdallah Chatila <Abdallah.Chatila@ericsson.com>
+http://marc.info/?l=linux-ide&m=133032255424658&w=2
+
+During error recovery ata_do_dev_read_id never completes due hang
+in mmio_insw.
+
+ata_do_dev_read_id
+ ata_sff_data_xfer
+  ioread16_rep
+   mmio_insw
+
+if DMA start bit is cleared before reset, PIO command is successful
+and kdump succeeds.
+
+Signed-off-by: David Milburn <dmilburn@redhat.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Cc: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ixgbe/ixgbe_82599.c |    1 +
- drivers/net/ixgbe/ixgbe_main.c  |    2 ++
- drivers/net/ixgbe/ixgbe_type.h  |    1 +
- 3 files changed, 4 insertions(+)
+ drivers/ata/sata_svw.c |   35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
 
---- a/drivers/net/ixgbe/ixgbe_82599.c
-+++ b/drivers/net/ixgbe/ixgbe_82599.c
-@@ -361,6 +361,7 @@ static enum ixgbe_media_type ixgbe_get_m
- 	case IXGBE_DEV_ID_82599_SFP_EM:
- 	case IXGBE_DEV_ID_82599_SFP_SF2:
- 	case IXGBE_DEV_ID_82599EN_SFP:
-+	case IXGBE_DEV_ID_82599_SFP_SF_QP:
- 		media_type = ixgbe_media_type_fiber;
- 		break;
- 	case IXGBE_DEV_ID_82599_CX4:
---- a/drivers/net/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ixgbe/ixgbe_main.c
-@@ -131,6 +131,8 @@ static DEFINE_PCI_DEVICE_TABLE(ixgbe_pci
- 	 board_82599 },
- 	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_82599EN_SFP),
- 	 board_82599 },
-+	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_82599_SFP_SF_QP),
-+	 board_82599 },
- 	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_X540T1),
- 	 board_X540 },
+--- a/drivers/ata/sata_svw.c
++++ b/drivers/ata/sata_svw.c
+@@ -142,6 +142,39 @@ static int k2_sata_scr_write(struct ata_
+ 	return 0;
+ }
  
---- a/drivers/net/ixgbe/ixgbe_type.h
-+++ b/drivers/net/ixgbe/ixgbe_type.h
-@@ -64,6 +64,7 @@
- #define IXGBE_DEV_ID_82599_COMBO_BACKPLANE 0x10F8
- #define IXGBE_SUBDEV_ID_82599_KX4_KR_MEZZ  0x000C
- #define IXGBE_DEV_ID_82599_LS            0x154F
-+#define IXGBE_DEV_ID_82599_SFP_SF_QP     0x154A
- #define IXGBE_DEV_ID_X540T               0x1528
- #define IXGBE_DEV_ID_X540T1              0x1560
++static int k2_sata_softreset(struct ata_link *link,
++			     unsigned int *class, unsigned long deadline)
++{
++	u8 dmactl;
++	void __iomem *mmio = link->ap->ioaddr.bmdma_addr;
++
++	dmactl = readb(mmio + ATA_DMA_CMD);
++
++	/* Clear the start bit */
++	if (dmactl & ATA_DMA_START) {
++		dmactl &= ~ATA_DMA_START;
++		writeb(dmactl, mmio + ATA_DMA_CMD);
++	}
++
++	return ata_sff_softreset(link, class, deadline);
++}
++
++static int k2_sata_hardreset(struct ata_link *link,
++			     unsigned int *class, unsigned long deadline)
++{
++	u8 dmactl;
++	void __iomem *mmio = link->ap->ioaddr.bmdma_addr;
++
++	dmactl = readb(mmio + ATA_DMA_CMD);
++
++	/* Clear the start bit */
++	if (dmactl & ATA_DMA_START) {
++		dmactl &= ~ATA_DMA_START;
++		writeb(dmactl, mmio + ATA_DMA_CMD);
++	}
++
++	return sata_sff_hardreset(link, class, deadline);
++}
  
+ static void k2_sata_tf_load(struct ata_port *ap, const struct ata_taskfile *tf)
+ {
+@@ -346,6 +379,8 @@ static struct scsi_host_template k2_sata
+ 
+ static struct ata_port_operations k2_sata_ops = {
+ 	.inherits		= &ata_bmdma_port_ops,
++	.softreset              = k2_sata_softreset,
++	.hardreset              = k2_sata_hardreset,
+ 	.sff_tf_load		= k2_sata_tf_load,
+ 	.sff_tf_read		= k2_sata_tf_read,
+ 	.sff_check_status	= k2_stat_check_status,
 
 
