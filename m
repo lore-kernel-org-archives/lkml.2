@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757780Ab2K3Tra (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:47:30 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:52855 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750934Ab2K3Tr1 (ORCPT
+	id S1757881Ab2K3Tsa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:48:30 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:43001 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756202Ab2K3Ts3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 14:47:27 -0500
-Date: Fri, 30 Nov 2012 11:47:20 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: cgroups@vger.kernel.org, lizefan@huawei.com, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Subject: [PATCH] cgroup: use cgroup_addrm_files() in cgroup_clear_directory()
-Message-ID: <20121130194720.GG3873@htj.dyndns.org>
-References: <1354292489-18434-1-git-send-email-gaofeng@cn.fujitsu.com>
+	Fri, 30 Nov 2012 14:48:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354292489-18434-1-git-send-email-gaofeng@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50B90B31.3000907@zytor.com>
+References: <1354301523-5252-1-git-send-email-vpalatin@chromium.org>
+ <1354301523-5252-2-git-send-email-vpalatin@chromium.org> <CA+55aFz4M4GmQbUkD1dhTkLTYka4H+T_phrsXgx+eGe8g9iLYA@mail.gmail.com>
+ <50B90B31.3000907@zytor.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 30 Nov 2012 11:41:47 -0800
+X-Google-Sender-Auth: pVEtMqMhNxs1yeWkgRm3UBmhXS0
+Message-ID: <CA+55aFyoAq+w6eNAyOJ00cpFEaGE=eKzMMtr9kEtMuUU820oYg@mail.gmail.com>
+Subject: Re: [PATCH] x86, fpu: avoid FPU lazy restore after suspend
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Vincent Palatin <vpalatin@chromium.org>, Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Duncan Laurie <dlaurie@chromium.org>,
+        Olof Johansson <olofj@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 879a3d9dbbde823ac77d39131e7a287f31b8296f Mon Sep 17 00:00:00 2001
-From: Gao feng <gaofeng@cn.fujitsu.com>
-Date: Sat, 1 Dec 2012 00:21:28 +0800
+On Fri, Nov 30, 2012 at 11:38 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 11/30/2012 11:25 AM, Linus Torvalds wrote:
+>>
+>> and in fact I think the right place to do this *might* be in
+>> "native_cpu_die()" instead, at which point it would actually be
+>> something like
+>>
+>>     per_cpu(fpu_owner_task, cpu) = NULL;
+>>
+>> *after* the CPU is dead, so that nothing ever can actually see the
+>> state where a process is still running on the CPU and might possibly
+>> use the FPU.
+>>
+>> I dunno. I think doing it after really killing the CPU (ie in the
+>> native_cpu_die() function) might be easier to think about, but I don't
+>> really hate your patch either (it does make me go "ok, we need to
+>> guarantee no scheduling or FP use after" - which is probably true, but
+>> it's still some non-local thing). Either way, a comment about it and
+>> abstracting whatever the invalidation sequence is in fpu-internal.h
+>> sounds like a good idea.
+>>
+>
+> Hmm... from my point of view it would almost seem saner to do this on
+> the way *up*... as part of CPU (re-)initialization.  After all, the
+> "nothing is currently running on this CPU" is part of the initial state
+> of the CPU, regardless of if we have ever been online before or not.
 
-cgroup_clear_directory() incorrectly invokes cgroup_rm_file() on each
-cftset of the target subsystems, which only removes the first file of
-each set.  This leaves dangling files after subsystems are removed
-from a cgroup root via remount.
+That works for me too, and has the similar advantage of being easier
+to think about than "the cpu is actually still being used, and we're
+playing tricks with the FPU state cache" approach.
 
-Use cgroup_addrm_files() to remove all files of target subsystems.
+Regardless, much credit to Vincent (and presumably others on the
+chromium team) for finding and debugging this.
 
-tj: Move cgroup_addrm_files() prototype decl upwards next to other
-    global declarations.  Commit message updated.
-
-Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
-Applied to cgroup/for-3.8 with minor updates.  Thanks!
-
- kernel/cgroup.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index b186a7e..e1293a9 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -246,6 +246,8 @@ static DEFINE_SPINLOCK(hierarchy_id_lock);
- static int need_forkexit_callback __read_mostly;
- 
- static int cgroup_destroy_locked(struct cgroup *cgrp);
-+static int cgroup_addrm_files(struct cgroup *cgrp, struct cgroup_subsys *subsys,
-+			      struct cftype cfts[], bool is_add);
- 
- #ifdef CONFIG_PROVE_LOCKING
- int cgroup_lock_is_held(void)
-@@ -964,7 +966,7 @@ static void cgroup_clear_directory(struct dentry *dir, bool base_files,
- 		if (!test_bit(ss->subsys_id, &subsys_mask))
- 			continue;
- 		list_for_each_entry(set, &ss->cftsets, node)
--			cgroup_rm_file(cgrp, set->cfts);
-+			cgroup_addrm_files(cgrp, NULL, set->cfts, false);
- 	}
- 	if (base_files) {
- 		while (!list_empty(&cgrp->files))
--- 
-1.7.11.7
-
+             Linus
