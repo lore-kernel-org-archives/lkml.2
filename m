@@ -1,39 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933012Ab2K3Noc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 08:44:32 -0500
-Received: from gmmr3.centrum.cz ([46.255.225.251]:55084 "EHLO gmmr3.centrum.cz"
+	id S933026Ab2K3NsL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 08:48:11 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:60267 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756623Ab2K3Noa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 08:44:30 -0500
-To: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>
-Subject: =?utf-8?q?Re=3A_=5BPATCH_for_3=2E2=2E34=5D_memcg=3A_do_not_trigger_OOM_from_add=5Fto=5Fpage=5Fcache=5Flocked?=
-Date: Fri, 30 Nov 2012 14:44:27 +0100
-From: "azurIt" <azurit@pobox.sk>
-Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        =?utf-8?q?cgroups_mailinglist?= <cgroups@vger.kernel.org>,
-        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
-        =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
-References: <20121123074023.GA24698@dhcp22.suse.cz>, <20121123102137.10D6D653@pobox.sk>, <20121123100438.GF24698@dhcp22.suse.cz>, <20121125011047.7477BB5E@pobox.sk>, <20121125120524.GB10623@dhcp22.suse.cz>, <20121125135542.GE10623@dhcp22.suse.cz>, <20121126013855.AF118F5E@pobox.sk>, <20121126131837.GC17860@dhcp22.suse.cz>, <20121126132149.GD17860@dhcp22.suse.cz>, <20121130032918.59B3F780@pobox.sk> <20121130124506.GH29317@dhcp22.suse.cz>
-In-Reply-To: <20121130124506.GH29317@dhcp22.suse.cz>
-X-Mailer: Centrum Email 5.3
-X-Priority: 3
-X-Original-From: azurit@pobox.sk
+	id S932315Ab2K3NsI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 08:48:08 -0500
+X-IronPort-AV: E=Sophos;i="4.84,191,1355126400"; 
+   d="scan'208";a="714598657"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>
+CC: Peng Tao <tao.peng@emc.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "kernel-team@lists.ubuntu.com" <kernel-team@lists.ubuntu.com>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: RE: [PATCH 041/270] pnfsblock: fix partial page buffer wirte
+Thread-Topic: [PATCH 041/270] pnfsblock: fix partial page buffer wirte
+Thread-Index: AQHNy/fMbhRr8wRr7UWdk/Rh2nkeSZf9fVIAgASpyICAAELTQA==
+Date: Fri, 30 Nov 2012 13:48:06 +0000
+Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA90B32EE5D@SACEXCMBX04-PRD.hq.netapp.com>
+References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
+ <1353949160-26803-42-git-send-email-herton.krzesinski@canonical.com>
+ <1353983604.4266.44.camel@deadeye.wl.decadent.org.uk>
+ <20121130014607.GD13478@kroah.com>
+In-Reply-To: <20121130014607.GD13478@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.106.53.51]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Message-Id: <20121130144427.51A09169@pobox.sk>
-X-Maser: Georgo
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->Anyway your system is under both global and local memory pressure. You
->didn't see apache going down previously because it was probably the one
->which was stuck and could be killed.
->Anyway you need to setup your system more carefully.
+> -----Original Message-----
+> From: Greg Kroah-Hartman [mailto:gregkh@linuxfoundation.org]
+> Sent: Thursday, November 29, 2012 8:46 PM
+> To: Ben Hutchings
+> Cc: Peng Tao; Myklebust, Trond; linux-kernel@vger.kernel.org;
+> stable@vger.kernel.org; kernel-team@lists.ubuntu.com; Herton Ronaldo
+> Krzesinski
+> Subject: Re: [PATCH 041/270] pnfsblock: fix partial page buffer wirte
+> 
+> On Tue, Nov 27, 2012 at 02:33:24AM +0000, Ben Hutchings wrote:
+> > On Mon, 2012-11-26 at 14:55 -0200, Herton Ronaldo Krzesinski wrote:
+> > > 3.5.7u1 -stable review patch.  If anyone has any objections, please let me
+> know.
+> > >
+> > > ------------------
+> > >
+> > > From: Peng Tao <bergwolf@gmail.com>
+> > >
+> > > commit fe6e1e8d9fad86873eb74a26e80a8f91f9e870b5 upstream.
+> > >
+> > > If applications use flock to protect its write range, generic NFS
+> > > will not do read-modify-write cycle at page cache level. Therefore
+> > > LD should know how to handle non-sector aligned writes. Otherwise
+> > > there will be data corruption.
+> > >
+> > > Signed-off-by: Peng Tao <tao.peng@emc.com>
+> > > Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+> > > Signed-off-by: Herton Ronaldo Krzesinski
+> > > <herton.krzesinski@canonical.com>
+> > [...]
+> >
+> > I notice that this fix is missing from 3.4, and will need backporting.
+> 
+> I don't trust myself with backporting this, as I got it wrong.  So if one of the
+> NFS developers wants to do this (same goes for the other NFS patch), I'll
+> gladly take it.
+> 
 
+Tao would be the right person to do this since he has access to pNFS blocks hardware and can test the results.
 
-There is, also, an evidence that system has enough of memory! :) Just take column 'rss' from process list in OOM message and sum it - you will get 2489911. It's probably in KB so it's about 2.4 GB. System has 14 GB of RAM so this also match data on my graph - 2.4 is about 17% of 14.
-
-azur
+Cheers
+  Trond
