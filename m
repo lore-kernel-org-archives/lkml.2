@@ -1,58 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932122Ab2K3B6X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 20:58:23 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:37815 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755879Ab2K3B6V (ORCPT
+	id S932175Ab2K3B6i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 20:58:38 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:45308 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754782Ab2K3B6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 20:58:21 -0500
-Date: Thu, 29 Nov 2012 17:58:17 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, Johannes Berg <johannes.berg@intel.com>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: Re: [PATCH 188/270] iwlwifi: fix 6000 series channel switch command
-Message-ID: <20121130015817.GI13478@kroah.com>
-References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
- <1353949160-26803-189-git-send-email-herton.krzesinski@canonical.com>
- <1354032158.4266.60.camel@deadeye.wl.decadent.org.uk>
+	Thu, 29 Nov 2012 20:58:36 -0500
+X-Sasl-enc: pO2Sf7WyyIVzWmhoq/Usws8r/RUvmyuolHPrfQwjWbij 1354240715
+Message-ID: <50B812CD.5000802@signal11.us>
+Date: Thu, 29 Nov 2012 20:58:37 -0500
+From: Alan Ott <alan@signal11.us>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354032158.4266.60.camel@deadeye.wl.decadent.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alan Ott <alan@signal11.us>
+CC: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] 6lowpan: consider checksum bytes in fragmentation threshold
+References: <504EA95C.9010003@signal11.us> <1354240544-22214-1-git-send-email-alan@signal11.us>
+In-Reply-To: <1354240544-22214-1-git-send-email-alan@signal11.us>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 27, 2012 at 04:02:38PM +0000, Ben Hutchings wrote:
-> On Mon, 2012-11-26 at 14:57 -0200, Herton Ronaldo Krzesinski wrote:
-> > 3.5.7u1 -stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Johannes Berg <johannes.berg@intel.com>
-> > 
-> > commit 8f7b8db6e0557c8437adf9371e020cd89a7e85dc upstream.
-> > 
-> > The channel switch command for 6000 series devices
-> > is larger than the maximum inline command size of
-> > 320 bytes. The command is therefore refused with a
-> > warning. Fix this by allocating the command and
-> > using the NOCOPY mechanism.
-> > 
-> > Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-> > Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-> > [ herton: file name is different on 3.5, code differs a little bit at
-> >   the end, adjusted context ]
-> > Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-> 
-> Also missing from 3.4; the filename is different again
-> (drivers/net/wireless/iwlwifi/iwl-6000.c) but this should otherwise be
-> applicable with one line of fuzz at the end.
+On 11/29/2012 08:55 PM, Alan Ott wrote:
+> Change the threshold for framentation of a lowpan packet from
+> using the MTU size to now use the MTU size minus the checksum length,
+> which is added by the hardware. For IEEE 802.15.4, this effectively
+> changes it from 127 bytes to 125 bytes.
+>
 
-Thanks, I forced it in by hand.
-
-greg k-h
+Sorry, this was put in the wrong thread. One day I'll get one of these
+first-try. :(
