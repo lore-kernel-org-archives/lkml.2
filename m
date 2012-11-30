@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992682Ab2K3S4W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:56:22 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58277 "EHLO mail.kernel.org"
+	id S2992700Ab2K3S40 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:56:26 -0500
+Received: from mail.kernel.org ([198.145.19.201]:58338 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992616Ab2K3S4S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:56:18 -0500
+	id S2992616Ab2K3S4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:56:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Artem Bityutskiy <artem.bityutskiy@intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [ 22/56] mtd: ofpart: Fix incorrect NULL check in parse_ofoldpart_partitions()
-Date: Fri, 30 Nov 2012 10:55:14 -0800
-Message-Id: <20121130185120.536050880@linuxfoundation.org>
+        Jianpeng Ma <majianpeng@gmail.com>, NeilBrown <neilb@suse.de>
+Subject: [ 25/56] md: Avoid write invalid address if read_seqretry returned true.
+Date: Fri, 30 Nov 2012 10:55:17 -0800
+Message-Id: <20121130185120.834782969@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185118.302752929@linuxfoundation.org>
 References: <20121130185118.302752929@linuxfoundation.org>
@@ -28,37 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sachin Kamat <sachin.kamat@linaro.org>
+From: majianpeng <majianpeng@gmail.com>
 
-commit 5a6ea4af0907f995dc06df21a9c9ef764c7cd3bc upstream.
+commit 35f9ac2dcec8f79d7059ce174fd7b7ee3290d620 upstream.
 
-The pointer returned by kzalloc should be tested for NULL
-to avoid potential NULL pointer dereference later. Incorrect
-pointer was being tested for NULL. Bug introduced by commit fbcf62a3
-(mtd: physmap_of: move parse_obsolete_partitions to become separate
-parser).
-This patch fixes this bug.
+If read_seqretry returned true and bbp was changed, it will write
+invalid address which can cause some serious problem.
 
-Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: Artem Bityutskiy <artem.bityutskiy@intel.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+This bug was introduced by commit v3.0-rc7-130-g2699b67.
+So fix is suitable for 3.0.y thru 3.6.y.
+
+Reported-by: zhuwenfeng@kedacom.com
+Tested-by: zhuwenfeng@kedacom.com
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/ofpart.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/md.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/mtd/ofpart.c
-+++ b/drivers/mtd/ofpart.c
-@@ -121,7 +121,7 @@ static int parse_ofoldpart_partitions(st
- 	nr_parts = plen / sizeof(part[0]);
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -1805,10 +1805,10 @@ retry:
+ 			memset(bbp, 0xff, PAGE_SIZE);
  
- 	*pparts = kzalloc(nr_parts * sizeof(*(*pparts)), GFP_KERNEL);
--	if (!pparts)
-+	if (!*pparts)
- 		return -ENOMEM;
- 
- 	names = of_get_property(dp, "partition-names", &plen);
+ 			for (i = 0 ; i < bb->count ; i++) {
+-				u64 internal_bb = *p++;
++				u64 internal_bb = p[i];
+ 				u64 store_bb = ((BB_OFFSET(internal_bb) << 10)
+ 						| BB_LEN(internal_bb));
+-				*bbp++ = cpu_to_le64(store_bb);
++				bbp[i] = cpu_to_le64(store_bb);
+ 			}
+ 			bb->changed = 0;
+ 			if (read_seqretry(&bb->lock, seq))
 
 
