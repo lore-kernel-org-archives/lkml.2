@@ -1,39 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755780Ab2K3C3X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 21:29:23 -0500
-Received: from gmmr3.centrum.cz ([46.255.225.251]:57425 "EHLO gmmr3.centrum.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755115Ab2K3C3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 21:29:21 -0500
-To: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>
-Subject: =?utf-8?q?Re=3A_=5BPATCH_for_3=2E2=2E34=5D_memcg=3A_do_not_trigger_OOM_from_add=5Fto=5Fpage=5Fcache=5Flocked?=
-Date: Fri, 30 Nov 2012 03:29:18 +0100
-From: "azurIt" <azurit@pobox.sk>
-Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        =?utf-8?q?cgroups_mailinglist?= <cgroups@vger.kernel.org>,
-        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
-        =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
-References: <20121122214249.GA20319@dhcp22.suse.cz>, <20121122233434.3D5E35E6@pobox.sk>, <20121123074023.GA24698@dhcp22.suse.cz>, <20121123102137.10D6D653@pobox.sk>, <20121123100438.GF24698@dhcp22.suse.cz>, <20121125011047.7477BB5E@pobox.sk>, <20121125120524.GB10623@dhcp22.suse.cz>, <20121125135542.GE10623@dhcp22.suse.cz>, <20121126013855.AF118F5E@pobox.sk>, <20121126131837.GC17860@dhcp22.suse.cz> <20121126132149.GD17860@dhcp22.suse.cz>
-In-Reply-To: <20121126132149.GD17860@dhcp22.suse.cz>
-X-Mailer: Centrum Email 5.3
-X-Priority: 3
-X-Original-From: azurit@pobox.sk
+	id S1755604Ab2K3CeF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 21:34:05 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:55357 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753467Ab2K3CeC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 21:34:02 -0500
+Message-ID: <50B81B11.7050704@gaikai.com>
+Date: Thu, 29 Nov 2012 18:33:53 -0800
+From: Patrick McLean <patrickm@gaikai.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Message-Id: <20121130032918.59B3F780@pobox.sk>
-X-Maser: brud
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Patrick McLean <patrickm@gaikai.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-nfs@vger.kernel.org
+Subject: Re: Regression with initramfs and nfsroot (appears to be in the dcache)
+References: <20121129213316.GU4939@ZenIV.linux.org.uk> <CAE2NFgWCnmgSCsw7MzRkqBLTHgRDG-FvKKcbTHN6UqePK6Ef+Q@mail.gmail.com> <20121129222109.GW4939@ZenIV.linux.org.uk> <50B7E759.9070007@gaikai.com> <20121129234326.GX4939@ZenIV.linux.org.uk> <50B7FBA7.2030300@gaikai.com> <20121130003502.GY4939@ZenIV.linux.org.uk> <50B8046F.7030308@cim.mcgill.ca> <20121130013628.GZ4939@ZenIV.linux.org.uk> <50B811BA.6070503@cim.mcgill.ca> <20121130020047.GA4939@ZenIV.linux.org.uk>
+In-Reply-To: <20121130020047.GA4939@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->Here we go with the patch for 3.2.34. Could you test with this one,
->please?
+On 29/11/12 06:00 PM, Al Viro wrote:
+> On Thu, Nov 29, 2012 at 05:54:02PM -0800, Patrick McLean wrote:
+>>> 	Very interesting.  Do you have anything mounted on the corresponding
+>>> directories on server?  The picture looks like you are getting empty
+>>> fhandles in readdir+ respons for exactly the same directories that happen
+>>> to be mountpoints on client.  In any case, we shouldn't do that blind
+>>> d_drop() - empty fhandles can happen.  The only remaining question is
+>>> why do they happen on that set of entries.  From my reading of
+>>> encode_entryplus_baggage() it looks like we have compose_entry_fh()
+>>> failing for those entries and those entries alone.  One possible cause
+>>> would be d_mountpoint(dchild) being true on server.  If it is true, we
+>>> can declare the case closed; if not, I really wonder what's going on.
+>>
+>> Those directories do have the server's own copies of the said directories bind mounted at the moment in a separate mount namespace.
+>>
+>> Unmounting those directories on the server does appear to stop the WARN_ON from triggering.
+> 
+> OK, that settles it.  WARN_ON() and printks in the area can be dropped;
+> the right fix is below.  However, there's a similar place in cifs that
+> also needs to be dealt with and I really, really wonder why the hell do
+> we do d_drop() in nfs_revalidate_lookup().  It's not relevant in this
+> bug, but I would like to understand what's wrong with simply returning
+> 0 from ->d_revalidate() and letting the caller (in fs/namei.c) take care
+> of unhashing, etc. itself.  Would make have_submounts() in there pointless
+> as well - we could just return 0 and let d_invalidate() take care of the
+> checks...  Trond?
+> 
+> diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+> --- a/fs/nfs/dir.c
+> +++ b/fs/nfs/dir.c
+> @@ -450,7 +450,8 @@ void nfs_prime_dcache(struct dentry *parent, struct nfs_entry *entry)
+>  			nfs_refresh_inode(dentry->d_inode, entry->fattr);
+>  			goto out;
+>  		} else {
+> -			d_drop(dentry);
+> +			if (d_invalidate(dentry) != 0)
+> +				goto out;
+>  			dput(dentry);
+>  		}
+>  	}
 
-
-Michal, unfortunately i had to boot to another kernel because the one with this patch keeps killing my MySQL server :( it was, probably, doing it on OOM in any cgroup - looks like OOM was not choosing processes only from cgroup which is out of memory. Here is the log from syslog: http://www.watchdog.sk/lkml/oom_mysqld
-
-Maybe i should mention that MySQL server has it's own cgroup (called 'mysql') but with no limits to any resources.
-
-azurIt
+Excellent, thanks. Is there any chance this will make it to 3.7? Also we might want to cc stable@ on this as well since it is a regression in 3.6.
