@@ -1,157 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030783Ab2K3Pb6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 10:31:58 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:58717 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1030753Ab2K3Pb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 10:31:56 -0500
-Message-ID: <1354289516.11903.15.camel@joe-AO722>
-Subject: [PATCH V2 3/3] cifs: Add CONFIG_CIFS_DEBUG and rename use of
- CIFS_DEBUG
-From: Joe Perches <joe@perches.com>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org
-Date: Fri, 30 Nov 2012 07:31:56 -0800
-In-Reply-To: <20121130100705.782980df@tlielax.poochiereds.net>
-References: <cover.1354217746.git.joe@perches.com>
-	 <5f5c9196b44908026a27333ef31dd4ebf4314de2.1354217746.git.joe@perches.com>
-	 <20121130065629.52c489dc@tlielax.poochiereds.net>
-	 <1354287460.11903.8.camel@joe-AO722>
-	 <20121130100705.782980df@tlielax.poochiereds.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1030798Ab2K3Pe7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 10:34:59 -0500
+Received: from hop-nat-141.emc.com ([168.159.213.141]:42286 "EHLO
+	mexforward.lss.emc.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1030753Ab2K3Pe5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 10:34:57 -0500
+From: "Peng, Tao" <tao.peng@emc.com>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "kernel-team@lists.ubuntu.com" <kernel-team@lists.ubuntu.com>,
+        "Herton Ronaldo Krzesinski" <herton.krzesinski@canonical.com>
+Subject: RE: [PATCH 041/270] pnfsblock: fix partial page buffer wirte
+Thread-Topic: [PATCH 041/270] pnfsblock: fix partial page buffer wirte
+Thread-Index: AQHNy/fYx6XCYZQqHkKJpJtQ4mQx3Zf9SwcAgASpyICAAMm5AP//yIij
+Date: Fri, 30 Nov 2012 15:34:24 +0000
+Message-ID: <1882637210201641A747464075FFC649037C07@MX101CL02.corp.emc.com>
+References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
+ <1353949160-26803-42-git-send-email-herton.krzesinski@canonical.com>
+ <1353983604.4266.44.camel@deadeye.wl.decadent.org.uk>
+ <20121130014607.GD13478@kroah.com>,<4FA345DA4F4AE44899BD2B03EEEC2FA90B32EE5D@SACEXCMBX04-PRD.hq.netapp.com>
+In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA90B32EE5D@SACEXCMBX04-PRD.hq.netapp.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.250.132.63]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-EMM-MHVC: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-11-30 at 10:07 -0500, Jeff Layton wrote:
-> On Fri, 30 Nov 2012 06:57:40 -0800
-> Joe Perches <joe@perches.com> wrote:
-> > On Fri, 2012-11-30 at 06:56 -0500, Jeff Layton wrote:
-> > > On Thu, 29 Nov 2012 11:37:20 -0800
-> > > Joe Perches <joe@perches.com> wrote:
-> > > > Rather than havign a permanently enabled #define, allow
-> > > > control over it.
-> > > > 
-> > > > This can reduce the size of the module by ~100KB which
-> > > > could be useful for embedded systems.
-> > []
-> > > > diff --git a/fs/cifs/cifs_debug.h b/fs/cifs/cifs_debug.h
-> > > > index 4d12fe4..6867a7f 100644
-> > > > --- a/fs/cifs/cifs_debug.h
-> > > > +++ b/fs/cifs/cifs_debug.h
-> > > > @@ -18,7 +18,10 @@
-> > > >   *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-> > > >   *
-> > > >  */
-> > > > -#define CIFS_DEBUG		/* BB temporary */
-> > > > +
-> > > > +#ifdef CONFIG_CIFS_DEBUG
-> > > > +#define CIFS_DEBUG
-> > > > +#endif
-> > > >  
-> > > >  #ifndef _H_CIFS_DEBUG
-> > > >  #define _H_CIFS_DEBUG
-> > > 
-> > > Looks fine, but I'd probably prefer to just get rid of CIFS_DEBUG
-> > > altogether here and replace it with CONFIG_CIFS_DEBUG.
-> > 
-> > I wasn't sure if there was other code anywhere else that depends
-> > on CIFS_DEBUG.  There isn't any in the kernel source tree.  If not,
-> > then you are right, it should be just CONFIG_CIFS_DEBUG.
-> There shouldn't be. None of this stuff is exposed to userspace, AFAIK.
-> I think it's ok to just make that CONFIG_CIFS_DEBUG.
-> 
-> > > While you're at it, /proc/fs/cifs/cifsFYI should probably not be
-> > > present when CONFIG_CIFS_DEBUG isn't set. Perhaps we should also
-> > > disable traceSMB and its related functions too in that case?
-> > 
-> > That could be considered a kernel api change.
-> > If people agree to delete it, I'd be OK with it.
-> > 
-> 
-> If you compile with CONFIG_CIFS_DEBUG turned off, then the cifsFYI file
-> will be a knob that's not hooked up to anything. I think it's best not
-> to present it at all in that case.
+Sorry for the late response. I will get it done in the weekend. The only one that need backport is bellow patch. The two DIO patches are not necessary because 3.4 NFS DIO does not support pNFS yet.
 
-If there's a userspace script that does
-echo 1 > /proc/fs/cifs/cifsFYI
-it'd now get a file not found error.
+Thanks,
+Tao
+________________________________________
+From: Myklebust, Trond [Trond.Myklebust@netapp.com]
+Sent: Friday, November 30, 2012 9:48 PM
+To: Greg Kroah-Hartman; Ben Hutchings
+Cc: Peng, Tao; linux-kernel@vger.kernel.org; stable@vger.kernel.org; kernel-team@lists.ubuntu.com; Herton Ronaldo Krzesinski
+Subject: RE: [PATCH 041/270] pnfsblock: fix partial page buffer wirte
 
-> traceSMB is a little harder to make the case for. Theoretically, it'll
-> still work after your changes, but I'm not sure it makes sense to leave
-> that knob around since it's technically a flag for debugging. You're
-> probably fine not to worry about that one. I'll look at that at some
-> point in the future.
+> -----Original Message-----
+> From: Greg Kroah-Hartman [mailto:gregkh@linuxfoundation.org]
+> Sent: Thursday, November 29, 2012 8:46 PM
+> To: Ben Hutchings
+> Cc: Peng Tao; Myklebust, Trond; linux-kernel@vger.kernel.org;
+> stable@vger.kernel.org; kernel-team@lists.ubuntu.com; Herton Ronaldo
+> Krzesinski
+> Subject: Re: [PATCH 041/270] pnfsblock: fix partial page buffer wirte
+>
+> On Tue, Nov 27, 2012 at 02:33:24AM +0000, Ben Hutchings wrote:
+> > On Mon, 2012-11-26 at 14:55 -0200, Herton Ronaldo Krzesinski wrote:
+> > > 3.5.7u1 -stable review patch.  If anyone has any objections, please let me
+> know.
+> > >
+> > > ------------------
+> > >
+> > > From: Peng Tao <bergwolf@gmail.com>
+> > >
+> > > commit fe6e1e8d9fad86873eb74a26e80a8f91f9e870b5 upstream.
+> > >
+> > > If applications use flock to protect its write range, generic NFS
+> > > will not do read-modify-write cycle at page cache level. Therefore
+> > > LD should know how to handle non-sector aligned writes. Otherwise
+> > > there will be data corruption.
+> > >
+> > > Signed-off-by: Peng Tao <tao.peng@emc.com>
+> > > Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+> > > Signed-off-by: Herton Ronaldo Krzesinski
+> > > <herton.krzesinski@canonical.com>
+> > [...]
+> >
+> > I notice that this fix is missing from 3.4, and will need backporting.
+>
+> I don't trust myself with backporting this, as I got it wrong.  So if one of the
+> NFS developers wants to do this (same goes for the other NFS patch), I'll
+> gladly take it.
+>
 
-This could be changed in a separate patch if appropriate.
-Here's the modified patch.
+Tao would be the right person to do this since he has access to pNFS blocks hardware and can test the results.
 
-From: Joe Perches <joe@perches.com>
-
-This can reduce the size of the module by ~120KB which
-could be useful for embedded systems.
-
-$ size fs/cifs/built-in.o*
-   text	   data	    bss	    dec	    hex	filename
- 388567	  34459	 100440	 523466	  7fcca	fs/cifs/built-in.o.new
- 495970	  34599	 117904	 648473	  9e519	fs/cifs/built-in.o.old
-
-Signed-off-by: Joe Perches <joe@perches.com>
----
- fs/cifs/Kconfig      |   10 +++++++++-
- fs/cifs/cifs_debug.h |    3 +--
- 2 files changed, 10 insertions(+), 3 deletions(-)
-
-diff --git a/fs/cifs/Kconfig b/fs/cifs/Kconfig
-index 2075ddf..21ff76c 100644
---- a/fs/cifs/Kconfig
-+++ b/fs/cifs/Kconfig
-@@ -122,9 +122,17 @@ config CIFS_ACL
- 	    Allows fetching CIFS/NTFS ACL from the server.  The DACL blob
- 	    is handed over to the application/caller.
- 
-+config CIFS_DEBUG
-+	bool "Enable CIFS debugging routines"
-+	default y
-+	depends on CIFS
-+	help
-+	   Enabling this option adds helpful debugging messages to
-+	   the cifs code which increases the size of the cifs module.
-+	   If unsure, say Y.
- config CIFS_DEBUG2
- 	bool "Enable additional CIFS debugging routines"
--	depends on CIFS
-+	depends on CIFS_DEBUG
- 	help
- 	   Enabling this option adds a few more debugging routines
- 	   to the cifs code which slightly increases the size of
-diff --git a/fs/cifs/cifs_debug.h b/fs/cifs/cifs_debug.h
-index 4d12fe4..86e92ef 100644
---- a/fs/cifs/cifs_debug.h
-+++ b/fs/cifs/cifs_debug.h
-@@ -18,7 +18,6 @@
-  *   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-  *
- */
--#define CIFS_DEBUG		/* BB temporary */
- 
- #ifndef _H_CIFS_DEBUG
- #define _H_CIFS_DEBUG
-@@ -44,7 +43,7 @@ extern int cifsERROR;
-  *	debug ON
-  *	--------
-  */
--#ifdef CIFS_DEBUG
-+#ifdef CONFIG_CIFS_DEBUG
- 
- /* information message: e.g., configuration, major event */
- #define cifsfyi(fmt, ...)						\
--- 
-1.7.8.112.g3fd21
-
+Cheers
+  Trond
 
