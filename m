@@ -1,81 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755463Ab2K3Vmi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 16:42:38 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:37309 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751952Ab2K3Vmg (ORCPT
+	id S1755624Ab2K3Vn4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 16:43:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50819 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755484Ab2K3Vnz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 16:42:36 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAErSpo6jBTGQYdPK==u7zjDuhV+U5iUfUp_KZnxkhvZCU4difQ@mail.gmail.com>
-References: <507FD39F.4060601@citrix.com> <1350554618-14582-3-git-send-email-david.vrabel@citrix.com>
- <20121019125919.GC26830@phenom.dumpdata.com> <CAErSpo6jBTGQYdPK==u7zjDuhV+U5iUfUp_KZnxkhvZCU4difQ@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Fri, 30 Nov 2012 14:42:14 -0700
-Message-ID: <CAErSpo7Vob9CiRxK+E2nV2V7G4FCss6zLCPO93PMSDj9G55ywg@mail.gmail.com>
-Subject: Re: [PATCH 3/5] xen-pcifront: handle backend CLOSED without CLOSING
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xen.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 30 Nov 2012 16:43:55 -0500
+Date: Fri, 30 Nov 2012 13:43:53 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, axboe@kernel.dk,
+        jmoyer@redhat.com, Neil Brown <neilb@suse.de>,
+        David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 1/2 v3] wait: add wait_event_lock_irq() interface
+Message-Id: <20121130134353.eb4ba17e.akpm@linux-foundation.org>
+In-Reply-To: <1354272161-9173-1-git-send-email-lczerner@redhat.com>
+References: <1354272161-9173-1-git-send-email-lczerner@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 30, 2012 at 11:41 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Fri, Oct 19, 2012 at 6:59 AM, Konrad Rzeszutek Wilk
-> <konrad.wilk@oracle.com> wrote:
->> On Thu, Oct 18, 2012 at 11:03:36AM +0100, David Vrabel wrote:
->>> From: David Vrabel <david.vrabel@citrix.com>
->>>
->>> Backend drivers shouldn't transistion to CLOSED unless the frontend is
->>> CLOSED.  If a backend does transition to CLOSED too soon then the
->>> frontend may not see the CLOSING state and will not properly shutdown.
->>>
->>> So, treat an unexpected backend CLOSED state the same as CLOSING.
->>>
->>> Signed-off-by: David Vrabel <david.vrabel@citrix.com>
->>> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->>> ---
->>> Cc: linux-pci@vger.kernel.org
->>> Cc: Bjorn Helgaas <bhelgaas@google.com>
->>
->> Bjorn, do you want me to prep a git pull with this patch
->> or can I have your Ack to put it my tree and have it part of my
->> git pull to Linus?
->
-> Sorry, I missed this.  I can put it in my -next branch for the v3.8
-> merge window.  Would that work for you?
+On Fri, 30 Nov 2012 11:42:40 +0100
+Lukas Czerner <lczerner@redhat.com> wrote:
 
-I put this in my -next branch, so we'll at least have a chance of
-making a linux-next cycle before v3.7 pops.
+> New wait_event{_interruptible}_lock_irq{_cmd} macros added. This commit
+> moves the private wait_event_lock_irq() macro from MD to regular wait
+> includes, introduces new macro wait_event_lock_irq_cmd() instead of using
+> the old method with omitting cmd parameter which is ugly and makes a use
+> of new macros in the MD. It also introduces the _interruptible_ variant.
+> 
+> The use of new interface is when one have a special lock to protect data
+> structures used in the condition, or one also needs to invoke "cmd"
+> before putting it to sleep.
+> 
+> All new macros are expected to be called with the lock taken. The lock
+> is released before sleep and is reacquired afterwards. We will leave the
+> macro with the lock held.
+> 
+> Note to DM: IMO this should also fix theoretical race on waitqueue while
+> using simultaneously wait_event_lock_irq() and wait_event() because of
+> lack of locking around current state setting and wait queue removal.
+> 
+> Signed-off-by: Lukas Czerner <lczerner@redhat.com>
+> Cc: Neil Brown <neilb@suse.de>
+> Cc: David Howells <dhowells@redhat.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> ---
+> v2: add interruptible variant, swap cmd and schedule, use prepare_to_wait
+> v3: swap cmd and schedule so we call cmd before schedule
 
->>> ---
->>>  drivers/pci/xen-pcifront.c |    5 ++++-
->>>  1 files changed, 4 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
->>> index 0aab85a..a0c7312 100644
->>> --- a/drivers/pci/xen-pcifront.c
->>> +++ b/drivers/pci/xen-pcifront.c
->>> @@ -1068,13 +1068,16 @@ static void __init_refok pcifront_backend_changed(struct xenbus_device *xdev,
->>>       case XenbusStateInitialising:
->>>       case XenbusStateInitWait:
->>>       case XenbusStateInitialised:
->>> -     case XenbusStateClosed:
->>>               break;
->>>
->>>       case XenbusStateConnected:
->>>               pcifront_try_connect(pdev);
->>>               break;
->>>
->>> +     case XenbusStateClosed:
->>> +             if (xdev->state == XenbusStateClosed)
->>> +                     break;
->>> +             /* Missed the backend's CLOSING state -- fallthrough */
->>>       case XenbusStateClosing:
->>>               dev_warn(&xdev->dev, "backend going away!\n");
->>>               pcifront_try_disconnect(pdev);
->>> --
->>> 1.7.2.5
+Your v3 patch reverts
+http://ozlabs.org/~akpm/mmots/broken-out/wait-add-wait_event_lock_irq-interface-fix.patch.
+
+Here's what I've queued in -mm:
+
+--- a/include/linux/wait.h~wait-add-wait_event_lock_irq-interface-v3
++++ a/include/linux/wait.h
+@@ -555,14 +555,13 @@ do {									\
+ do {									\
+ 	DEFINE_WAIT(__wait);						\
+ 									\
+-	cmd;								\
+ 	for (;;) {							\
+ 		prepare_to_wait(&wq, &__wait, TASK_UNINTERRUPTIBLE);	\
+ 		if (condition)						\
+ 			break;						\
+ 		spin_unlock_irq(&lock);					\
+-		schedule();						\
+ 		cmd;							\
++		schedule();						\
+ 		spin_lock_irq(&lock);					\
+ 	}								\
+ 	finish_wait(&wq, &__wait);					\
+@@ -575,8 +574,8 @@ do {									\
+  *			     taken.
+  * @wq: the waitqueue to wait on
+  * @condition: a C expression for the event to wait for
+- * @lock: a locked spinlock_t, which will be released before schedule()
+- *	  and cmd reacquired afterwards.
++ * @lock: a locked spinlock_t, which will be released before cmd
++ *	  and schedule() and reacquired afterwards.
+  * @cmd: a command which is invoked outside the critical section before
+  *	 sleep
+  *
+@@ -588,7 +587,7 @@ do {									\
+  * change the result of the wait condition.
+  *
+  * This is supposed to be called while holding the lock. The lock is
+- * dropped before going to sleep and invoking the cmd and is reacquired
++ * dropped before invoking the cmd and going to sleep and is reacquired
+  * afterwards.
+  */
+ #define wait_event_lock_irq_cmd(wq, condition, lock, cmd)		\
+@@ -631,7 +630,6 @@ do {									\
+ do {									\
+ 	DEFINE_WAIT(__wait);						\
+ 									\
+-	cmd;								\
+ 	for (;;) {							\
+ 		prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);	\
+ 		if (condition)						\
+@@ -641,8 +639,8 @@ do {									\
+ 			break;						\
+ 		}							\
+ 		spin_unlock_irq(&lock);					\
+-		schedule();						\
+ 		cmd;							\
++		schedule();						\
+ 		spin_lock_irq(&lock);					\
+ 	}								\
+ 	finish_wait(&wq, &__wait);					\
+@@ -654,8 +652,8 @@ do {									\
+  *		be called with the lock taken.
+  * @wq: the waitqueue to wait on
+  * @condition: a C expression for the event to wait for
+- * @lock: a locked spinlock_t, which will be released before schedule()
+- *	  and cmd reacquired afterwards.
++ * @lock: a locked spinlock_t, which will be released before cmd and
++ *	  schedule() and reacquired afterwards.
+  * @cmd: a command which is invoked outside the critical section before
+  *	 sleep
+  *
+@@ -667,7 +665,7 @@ do {									\
+  * change the result of the wait condition.
+  *
+  * This is supposed to be called while holding the lock. The lock is
+- * dropped before going to sleep and invoking the cmd and is reacquired
++ * dropped before invoking the cmd and going to sleep and is reacquired
+  * afterwards.
+  *
+  * The macro will return -ERESTARTSYS if it was interrupted by a signal
+_
+
