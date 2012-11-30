@@ -1,162 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752879Ab2K3FKd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 00:10:33 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:51142 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076Ab2K3FKb (ORCPT
+	id S1753192Ab2K3FTJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 00:19:09 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:37437 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752774Ab2K3FTG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 00:10:31 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: trivial@kernel.org, linux-kernel@vger.kernel.org
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] [trivial] treewide: Fix typos in various drivers
-Date: Fri, 30 Nov 2012 14:10:25 +0900
-Message-Id: <1354252225-25996-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.8.0.1.244.g77b598b
+	Fri, 30 Nov 2012 00:19:06 -0500
+Date: Fri, 30 Nov 2012 16:18:56 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Manjunathappa, Prakash" <prakash.pm@ti.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, Matt Porter <mporter@ti.com>,
+        Sekhar Nori <nsekhar@ti.com>
+Subject: linux-next: manual merge of the arm-soc tree with the omap_dss2
+ tree
+Message-Id: <20121130161856.985bdeb55e3a9be322e772ec@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__30_Nov_2012_16_18_56_+1100_wdwJQK8fGccNMkea"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix typos in printk within various drivers.
+--Signature=_Fri__30_Nov_2012_16_18_56_+1100_wdwJQK8fGccNMkea
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- arch/arm/kernel/kprobes-test.c             | 2 +-
- arch/arm/mach-netx/xc.c                    | 2 +-
- arch/blackfin/mach-bf609/Kconfig           | 2 +-
- arch/blackfin/mm/sram-alloc.c              | 2 +-
- drivers/media/dvb-frontends/drxk_hard.c    | 2 +-
- drivers/media/platform/mx2_emmaprp.c       | 2 +-
- drivers/remoteproc/remoteproc_elf_loader.c | 4 ++--
- tools/perf/Documentation/perf-record.txt   | 2 +-
- tools/perf/util/parse-events-test.c        | 2 +-
- 9 files changed, 10 insertions(+), 10 deletions(-)
+Hi all,
 
-diff --git a/arch/arm/kernel/kprobes-test.c b/arch/arm/kernel/kprobes-test.c
-index 1862d8f..0cd63d0 100644
---- a/arch/arm/kernel/kprobes-test.c
-+++ b/arch/arm/kernel/kprobes-test.c
-@@ -1598,7 +1598,7 @@ static int __init run_all_tests(void)
- {
- 	int ret = 0;
- 
--	pr_info("Begining kprobe tests...\n");
-+	pr_info("Beginning kprobe tests...\n");
- 
- #ifndef CONFIG_THUMB2_KERNEL
- 
-diff --git a/arch/arm/mach-netx/xc.c b/arch/arm/mach-netx/xc.c
-index e4cfb7e..f1c972d 100644
---- a/arch/arm/mach-netx/xc.c
-+++ b/arch/arm/mach-netx/xc.c
-@@ -136,7 +136,7 @@ int xc_request_firmware(struct xc *x)
- 	if (head->magic != 0x4e657458) {
- 		if (head->magic == 0x5874654e) {
- 			dev_err(x->dev,
--			    "firmware magic is 'XteN'. Endianess problems?\n");
-+			    "firmware magic is 'XteN'. Endianness problems?\n");
- 			ret = -ENODEV;
- 			goto exit_release_firmware;
- 		}
-diff --git a/arch/blackfin/mach-bf609/Kconfig b/arch/blackfin/mach-bf609/Kconfig
-index 101b33e..95a4f1b 100644
---- a/arch/blackfin/mach-bf609/Kconfig
-+++ b/arch/blackfin/mach-bf609/Kconfig
-@@ -56,7 +56,7 @@ config SEC_IRQ_PRIORITY_LEVELS
- 	default 7
- 	range 0 7
- 	help
--	  Devide the total number of interrupt priority levels into sub-levels.
-+	  Divide the total number of interrupt priority levels into sub-levels.
- 	  There is 2 ^ (SEC_IRQ_PRIORITY_LEVELS + 1) different levels.
- 
- endmenu
-diff --git a/arch/blackfin/mm/sram-alloc.c b/arch/blackfin/mm/sram-alloc.c
-index 342e378..1f3b3ef 100644
---- a/arch/blackfin/mm/sram-alloc.c
-+++ b/arch/blackfin/mm/sram-alloc.c
-@@ -191,7 +191,7 @@ static irqreturn_t l2_ecc_err(int irq, void *dev_id)
- {
- 	int status;
- 
--	printk(KERN_ERR "L2 ecc error happend\n");
-+	printk(KERN_ERR "L2 ecc error happened\n");
- 	status = bfin_read32(L2CTL0_STAT);
- 	if (status & 0x1)
- 		printk(KERN_ERR "Core channel error type:0x%x, addr:0x%x\n",
-diff --git a/drivers/media/dvb-frontends/drxk_hard.c b/drivers/media/dvb-frontends/drxk_hard.c
-index 8b4c6d5..df9abe8 100644
---- a/drivers/media/dvb-frontends/drxk_hard.c
-+++ b/drivers/media/dvb-frontends/drxk_hard.c
-@@ -948,7 +948,7 @@ static int GetDeviceCapabilities(struct drxk_state *state)
- 		state->m_oscClockFreq = 20250;
- 		break;
- 	default:
--		printk(KERN_ERR "drxk: Clock Frequency is unkonwn\n");
-+		printk(KERN_ERR "drxk: Clock Frequency is unknown\n");
- 		return -EINVAL;
- 	}
- 	/*
-diff --git a/drivers/media/platform/mx2_emmaprp.c b/drivers/media/platform/mx2_emmaprp.c
-index 8f22ce5..bfa6507 100644
---- a/drivers/media/platform/mx2_emmaprp.c
-+++ b/drivers/media/platform/mx2_emmaprp.c
-@@ -371,7 +371,7 @@ static irqreturn_t emmaprp_irq(int irq_emma, void *data)
- 	if (!curr_ctx->aborting) {
- 		if ((irqst & PRP_INTR_ST_RDERR) ||
- 		(irqst & PRP_INTR_ST_CH2WERR)) {
--			pr_err("PrP bus error ocurred, this transfer is probably corrupted\n");
-+			pr_err("PrP bus error occurred, this transfer is probably corrupted\n");
- 			writel(PRP_CNTL_SWRST, pcdev->base_emma + PRP_CNTL);
- 		} else if (irqst & PRP_INTR_ST_CH2B1CI) { /* buffer ready */
- 			src_vb = v4l2_m2m_src_buf_remove(curr_ctx->m2m_ctx);
-diff --git a/drivers/remoteproc/remoteproc_elf_loader.c b/drivers/remoteproc/remoteproc_elf_loader.c
-index e1f89d6..0d36f94 100644
---- a/drivers/remoteproc/remoteproc_elf_loader.c
-+++ b/drivers/remoteproc/remoteproc_elf_loader.c
-@@ -66,13 +66,13 @@ rproc_elf_sanity_check(struct rproc *rproc, const struct firmware *fw)
- 		return -EINVAL;
- 	}
- 
--	/* We assume the firmware has the same endianess as the host */
-+	/* We assume the firmware has the same endianness as the host */
- # ifdef __LITTLE_ENDIAN
- 	if (ehdr->e_ident[EI_DATA] != ELFDATA2LSB) {
- # else /* BIG ENDIAN */
- 	if (ehdr->e_ident[EI_DATA] != ELFDATA2MSB) {
- # endif
--		dev_err(dev, "Unsupported firmware endianess\n");
-+		dev_err(dev, "Unsupported firmware endianness\n");
- 		return -EINVAL;
- 	}
- 
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index b38a1f9..938e890 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -175,7 +175,7 @@ following filters are defined:
- 
- +
- The option requires at least one branch type among any, any_call, any_ret, ind_call.
--The privilege levels may be ommitted, in which case, the privilege levels of the associated
-+The privilege levels may be omitted, in which case, the privilege levels of the associated
- event are applied to the branch filter. Both kernel (k) and hypervisor (hv) privilege
- levels are subject to permissions.  When sampling on multiple events, branch stack sampling
- is enabled for all the sampling events. The sampled branch type is the same for all events.
-diff --git a/tools/perf/util/parse-events-test.c b/tools/perf/util/parse-events-test.c
-index b49c2ee..f07abeb 100644
---- a/tools/perf/util/parse-events-test.c
-+++ b/tools/perf/util/parse-events-test.c
-@@ -1054,7 +1054,7 @@ static int test_pmu_events(void)
- 
- 	ret = stat(path, &st);
- 	if (ret) {
--		pr_debug("ommiting PMU cpu events tests\n");
-+		pr_debug("omitting PMU cpu events tests\n");
- 		return 0;
- 	}
- 
--- 
-1.8.0.1.244.g77b598b
+Today's linux-next merge of the arm-soc tree got a conflict in
+arch/arm/mach-davinci/devices-da8xx.c between commit 3b43ad201dea
+("da8xx-fb: cleanup LCDC configurations") from the omap_dss2 tree and
+commit 8e0d72d2c7a6 ("ARM: davinci: da8xx: add DA850 PRUSS support") from
+the arm-soc tree.
 
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/arm/mach-davinci/devices-da8xx.c
+index fcb30d3,46c9a0c..0000000
+--- a/arch/arm/mach-davinci/devices-da8xx.c
++++ b/arch/arm/mach-davinci/devices-da8xx.c
+@@@ -518,9 -520,98 +520,78 @@@ void __init da8xx_register_mcasp(int id
+  	}
+  }
+ =20
++ static struct resource da8xx_pruss_resources[] =3D {
++ 	{
++ 		.start	=3D DA8XX_PRUSS_MEM_BASE,
++ 		.end	=3D DA8XX_PRUSS_MEM_BASE + 0xFFFF,
++ 		.flags	=3D IORESOURCE_MEM,
++ 	},
++ 	{
++ 		.start	=3D IRQ_DA8XX_EVTOUT0,
++ 		.end	=3D IRQ_DA8XX_EVTOUT0,
++ 		.flags	=3D IORESOURCE_IRQ,
++ 	},
++ 	{
++ 		.start	=3D IRQ_DA8XX_EVTOUT1,
++ 		.end	=3D IRQ_DA8XX_EVTOUT1,
++ 		.flags	=3D IORESOURCE_IRQ,
++ 	},
++ 	{
++ 		.start	=3D IRQ_DA8XX_EVTOUT2,
++ 		.end	=3D IRQ_DA8XX_EVTOUT2,
++ 		.flags	=3D IORESOURCE_IRQ,
++ 	},
++ 	{
++ 		.start	=3D IRQ_DA8XX_EVTOUT3,
++ 		.end	=3D IRQ_DA8XX_EVTOUT3,
++ 		.flags	=3D IORESOURCE_IRQ,
++ 	},
++ 	{
++ 		.start	=3D IRQ_DA8XX_EVTOUT4,
++ 		.end	=3D IRQ_DA8XX_EVTOUT4,
++ 		.flags	=3D IORESOURCE_IRQ,
++ 	},
++ 	{
++ 		.start	=3D IRQ_DA8XX_EVTOUT5,
++ 		.end	=3D IRQ_DA8XX_EVTOUT5,
++ 		.flags	=3D IORESOURCE_IRQ,
++ 	},
++ 	{
++ 		.start	=3D IRQ_DA8XX_EVTOUT6,
++ 		.end	=3D IRQ_DA8XX_EVTOUT6,
++ 		.flags	=3D IORESOURCE_IRQ,
++ 	},
++ 	{
++ 		.start	=3D IRQ_DA8XX_EVTOUT7,
++ 		.end	=3D IRQ_DA8XX_EVTOUT7,
++ 		.flags	=3D IORESOURCE_IRQ,
++ 	},
++ };
++=20
++ static struct uio_pruss_pdata da8xx_uio_pruss_pdata =3D {
++ 	.pintc_base	=3D 0x4000,
++ };
++=20
++ static struct platform_device da8xx_uio_pruss_dev =3D {
++ 	.name		=3D "pruss_uio",
++ 	.id		=3D -1,
++ 	.num_resources	=3D ARRAY_SIZE(da8xx_pruss_resources),
++ 	.resource	=3D da8xx_pruss_resources,
++ 	.dev		=3D {
++ 		.coherent_dma_mask	=3D DMA_BIT_MASK(32),
++ 		.platform_data		=3D &da8xx_uio_pruss_pdata,
++ 	}
++ };
++=20
++ int __init da8xx_register_uio_pruss(void)
++ {
++ 	da8xx_uio_pruss_pdata.sram_pool =3D sram_get_gen_pool();
++ 	return platform_device_register(&da8xx_uio_pruss_dev);
++ }
++=20
+ -static const struct display_panel disp_panel =3D {
+ -	QVGA,
+ -	16,
+ -	16,
+ -	COLOR_ACTIVE,
+ -};
+ -
+  static struct lcd_ctrl_config lcd_cfg =3D {
+ -	&disp_panel,
+ -	.ac_bias		=3D 255,
+ -	.ac_bias_intrpt		=3D 0,
+ -	.dma_burst_sz		=3D 16,
+ +	.panel_shade		=3D COLOR_ACTIVE,
+  	.bpp			=3D 16,
+ -	.fdd			=3D 255,
+ -	.tft_alt_mode		=3D 0,
+ -	.stn_565_mode		=3D 0,
+ -	.mono_8bit_mode		=3D 0,
+ -	.invert_line_clock	=3D 1,
+ -	.invert_frm_clock	=3D 1,
+ -	.sync_edge		=3D 0,
+ -	.sync_ctrl		=3D 1,
+ -	.raster_order		=3D 0,
+ -	.fifo_th		=3D 6,
+  };
+ =20
+  struct da8xx_lcdc_platform_data sharp_lcd035q3dg01_pdata =3D {
+
+--Signature=_Fri__30_Nov_2012_16_18_56_+1100_wdwJQK8fGccNMkea
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQuEHAAAoJEECxmPOUX5FEsgcP/2dE/zJgg9tQV1puXGIyQjCm
+VAzE7IO5CxuwYgeDjteuNWHRCBnCy98bxtERN/5o4jhCwyVc8WE0lrfLJYEhfb2A
+d5nq08f2vDg4wfmcExMZiKzWJD8e/tMaRo6nyifoAm3c9yS+uu2pM29wf5l64F2P
+DxaGIC63dsKh5hFjos5dCTr7lFaTENNfBgxGYMeDWx4lUBIOf5U0FeLmuIMi7oDW
+B8y1V+gt+Q9oBt2lAcDPV8OVr1QEYaBNz8EgNPQB6t7VvCLXZX1eXfj6/RXOgTo3
+1JM6Jww6AHYFKbyweMJSK4JDHVfZs3VdAdNWdnq5M04cxURaAbAU9gZHdjZzN4xl
+5AZY9P+ui//1XJf6//b3Y6v8wlxNYpZi9cM6E9kYwKFb+UbghF9TzqKzt5PzwH5v
+w0/Z4ZrjAz/9jsr+UEF2qoHjRDvrXQgwt9IPgI0aSIqBv8OELAyF3Uuprea3IqVs
++3Dj8m+9rS2zMoNPbzUE60ZZ00ew9X6Ov6bGyLP20ysp3BtVBSWXL6z/O4MYHFGI
+exHI9jIZ1caA/kmLRoyeQ2/q3q3JzGfpLL88vG414NywOau0qfW1h3+JARco1MgQ
+Ah8h0y3DPgfm2w3kINzXD8eGleCSg4t/dzmoJ/fTITLCsWex75Tse70tCmeO2mgU
+h8JXA8v2l/gnFXsQ279B
+=jP3+
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__30_Nov_2012_16_18_56_+1100_wdwJQK8fGccNMkea--
