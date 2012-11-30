@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756480Ab2K3HJN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 02:09:13 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:18008 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751602Ab2K3HJL (ORCPT
+	id S1752472Ab2K3HNU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 02:13:20 -0500
+Received: from intranet.asianux.com ([58.214.24.6]:32256 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750929Ab2K3HNS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 02:09:11 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 29 Nov 2012 23:08:50 -0800
-Message-ID: <50B85B91.6080802@nvidia.com>
-Date: Fri, 30 Nov 2012 12:39:05 +0530
-From: Prashant Gaikwad <pgaikwad@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Fri, 30 Nov 2012 02:13:18 -0500
+X-Spam-Score: -100.8
+Message-ID: <50B85CC1.9010403@asianux.com>
+Date: Fri, 30 Nov 2012 15:14:09 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Sivaram Nair <sivaramn@nvidia.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+To: Paul Fulghum <paulkf@microgate.com>
+CC: Greg KH <gregkh@linuxfoundation.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/2] ARM: tegra: moving stuff away from mach/clk.h
-References: <1353999553-5196-1-git-send-email-sivaramn@nvidia.com> <1353999553-5196-2-git-send-email-sivaramn@nvidia.com> <50B6FCE5.7080003@nvidia.com> <50B7A87E.5070302@wwwdotorg.org>
-In-Reply-To: <50B7A87E.5070302@wwwdotorg.org>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+        linux-serial@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [Suggestion] drivers/tty: drivers/char/:  for MAX_ASYNC_BUFFER_SIZE
+References: <50B6E751.9000000@asianux.com> <20121129051335.GA4375@kroah.com> <50B6F967.3050000@asianux.com> <20121129183207.GA4688@kroah.com> <50B81F76.8020508@asianux.com> <C7D3911F-7B6B-4353-A84B-0218FAB27198@microgate.com>
+In-Reply-To: <C7D3911F-7B6B-4353-A84B-0218FAB27198@microgate.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 29 November 2012 11:55 PM, Stephen Warren wrote:
-> On 11/28/2012 11:12 PM, Prashant Gaikwad wrote:
->> On Tuesday 27 November 2012 12:29 PM, Sivaram Nair wrote:
->>> This patch moves some stuff away from mach/clk.h to other mach-tegra
->>> files. This is part of the efforts to get rid of mach/clk.h which in
->>> turn will help to enable single zImage.
->>>
->>> Signed-off-by: Sivaram Nair <sivaramn@nvidia.com>
->>> ---
->>>    arch/arm/mach-tegra/clock.c            |    1 +
->>>    arch/arm/mach-tegra/clock.h            |   12 ++++++++++--
->>>    arch/arm/mach-tegra/include/mach/clk.h |   11 -----------
->>>    3 files changed, 11 insertions(+), 13 deletions(-)
->> This patch will not add any real value since I have removed clk_cfg_ex
->> functionality in clock code rework.
->> It's just that I will have to rebase my changes on this.
->>
->> Reviewed-by: Prashant Gaikwad <pgaikwad@nvidia.com>
-> In that case, I may as well not apply patch 2/2 at all, and I'll just
-> take your clock code cleanup instead. I assume that will be posted for
-> inclusion into 3.9?
+于 2012年11月30日 11:27, Paul Fulghum 写道:
+> 
+> I’m the maintainer for these drivers. I only caught this message by
+> chance and
+> have not had a chance to review the entire thread and original patches.
+> It’s late and I’m tired so I won’t be able to look at this until tomorrow.
+> 
+> I do not doubt there is a problem that needs cleaning up. I just need a
+> day to
+> review and make sure this does not cause any problems.
 
-Yes, I am targeting for 3.9.
+  if it is surely an issue,
+    is it suitable to let Paul Fulghum to provide the relative patch ?
+    for synclink, he is more expert than me.
+    for test and test environments, he is also more expert than me.
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+  thanks.
 
+-- 
+Chen Gang
+
+Asianux Corporation
