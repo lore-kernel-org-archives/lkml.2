@@ -1,97 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415Ab2K3Cvt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 21:51:49 -0500
-Received: from intranet.asianux.com ([58.214.24.6]:45191 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754097Ab2K3Cvr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 21:51:47 -0500
-X-Spam-Score: -100.8
-Message-ID: <50B81F76.8020508@asianux.com>
-Date: Fri, 30 Nov 2012 10:52:38 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-serial@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [Suggestion] drivers/tty: drivers/char/:  for MAX_ASYNC_BUFFER_SIZE
-References: <50B6E751.9000000@asianux.com> <20121129051335.GA4375@kroah.com> <50B6F967.3050000@asianux.com> <20121129183207.GA4688@kroah.com>
-In-Reply-To: <20121129183207.GA4688@kroah.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1755453Ab2K3CyO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 21:54:14 -0500
+Received: from mga03.intel.com ([143.182.124.21]:2230 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754609Ab2K3CyN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 21:54:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,189,1355126400"; 
+   d="scan'208";a="174259414"
+Message-ID: <1354244049.29553.97.camel@yhuang-dev>
+Subject: Re: [ 02/38] PCI/PM: Fix deadlock when unbinding device if parent
+ in D3cold
+From: Huang Ying <ying.huang@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, alan@lxorguk.ukuu.org.uk,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Zhang Yanmin <yanmin.zhang@intel.com>
+Date: Fri, 30 Nov 2012 10:54:09 +0800
+In-Reply-To: <20121130020104.GJ13478@kroah.com>
+References: <20121122003904.262382971@linuxfoundation.org>
+	 <20121122003904.516735571@linuxfoundation.org>
+	 <1353638130.4764.4.camel@deadeye.wl.decadent.org.uk>
+	 <1353640177.28789.21.camel@yhuang-dev>
+	 <1353656862.28789.57.camel@yhuang-dev> <20121130020104.GJ13478@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2012年11月30日 02:32, Greg KH 写道:
-> On Thu, Nov 29, 2012 at 01:57:59PM +0800, Chen Gang wrote:
->>> And, I really don't understand here, why do you want to change this?
->>> What is it going to change?  And why?
->>>
->>
->> Why:
->>   for the context MGSLPC_INFO *info in drivers/char/pcmcia/synclink_cs.c
->>     info->max_frame_size can be the value between 4096 .. 65535 (can be
->> set by its module input parameter)
->>     info->flag_buf length is 4096 (MAX_ASYNC_BUFFER_SIZE)
->>   in function rx_get_frame
->>     the framesize is limit by info->max_frame_size, but may still be
->> larger that 4096.
->>     when call function ldisc_receive_buf, info->flag_buf is equal to
->> 4096, but framesize can be more than 4096. it will cause memory over flow.
+On Thu, 2012-11-29 at 18:01 -0800, Greg Kroah-Hartman wrote:
+> On Fri, Nov 23, 2012 at 03:47:42PM +0800, Huang Ying wrote:
+> > On Fri, 2012-11-23 at 11:09 +0800, Huang Ying wrote:
+> > > On Fri, 2012-11-23 at 02:35 +0000, Ben Hutchings wrote:
+> > > > On Wed, 2012-11-21 at 16:39 -0800, Greg Kroah-Hartman wrote:
+> > > > > 3.0-stable review patch.  If anyone has any objections, please let me know.
+> > > > > 
+> > > > > ------------------
+> > > > > 
+> > > > > From: Huang Ying <ying.huang@intel.com>
+> > > > > 
+> > > > > commit 90b5c1d7c45eeb622302680ff96ed30c1a2b6f0e upstream.
+> > > > > 
+> > > > > If a PCI device and its parents are put into D3cold, unbinding the
+> > > > > device will trigger deadlock as follow:
+> > > > > 
+> > > > > - driver_unbind
+> > > > >   - device_release_driver
+> > > > >     - device_lock(dev)				<--- previous lock here
+> > > > >     - __device_release_driver
+> > > > >       - pm_runtime_get_sync
+> > > > >         ...
+> > > > >           - rpm_resume(dev)
+> > > > >             - rpm_resume(dev->parent)
+> > > > >               ...
+> > > > >                 - pci_pm_runtime_resume
+> > > > >                   ...
+> > > > >                   - pci_set_power_state
+> > > > >                     - __pci_start_power_transition
+> > > > >                       - pci_wakeup_bus(dev->parent->subordinate)
+> > > > >                         - pci_walk_bus
+> > > > >                           - device_lock(dev)	<--- deadlock here
+> > > > > 
+> > > > > 
+> > > > > If we do not do device_lock in pci_walk_bus, we can avoid deadlock.
+> > > > > Device_lock in pci_walk_bus is introduced in commit:
+> > > > > d71374dafbba7ec3f67371d3b7e9f6310a588808, corresponding email thread
+> > > > > is: https://lkml.org/lkml/2006/5/26/38.  The patch author Zhang Yanmin
+> > > > > said device_lock is added to pci_walk_bus because:
+> > > > > 
+> > > > >   Some error handling functions call pci_walk_bus. For example, PCIe
+> > > > >   aer. Here we lock the device, so the driver wouldn't detach from the
+> > > > >   device, as the cb might call driver's callback function.
+> > > > > 
+> > > > > So I fixed the deadlock as follows:
+> > > > > 
+> > > > > - remove device_lock from pci_walk_bus
+> > > > > - add device_lock into callback if callback will call driver's callback
+> > > > > 
+> > > > > I checked pci_walk_bus users one by one, and found only PCIe aer needs
+> > > > > device lock.
+> > > > [...]
+> > > > 
+> > > > What about eeh_report_error() in
+> > > > arch/powerpc/platforms/pseries/eeh_driver.c?
+> > > 
+> > > En...  Because pci_walk_bus() invocation is removed in 3.7, so this
+> > > patch is only valid for 3.7.  We need another version for 3.6.
+> > 
+> > Here is the patch for 3.6.  I have no powerpc machine, so build test
+> > only.
+> > 
+> > Subject: [BUGFIX] PCI/PM: Fix deadlock when unbind device if its parent in D3cold
+> > 
+> > If a PCI device and its parents are put into D3cold, unbinding the
+> > device will trigger deadlock as follow:
+> > 
+> > - driver_unbind
+> >   - device_release_driver
+> >     - device_lock(dev)				<--- previous lock here
+> >     - __device_release_driver
+> >       - pm_runtime_get_sync
+> >         ...
+> >           - rpm_resume(dev)
+> >             - rpm_resume(dev->parent)
+> >               ...
+> >                 - pci_pm_runtime_resume
+> >                   ...
+> >                   - pci_set_power_state
+> >                     - __pci_start_power_transition
+> >                       - pci_wakeup_bus(dev->parent->subordinate)
+> >                         - pci_walk_bus
+> >                           - device_lock(dev)	<--- dead lock here
+> > 
+> > 
+> > If we do not do device_lock in pci_walk_bus, we can avoid dead lock.
+> > Device_lock in pci_walk_bus is introduced in commit:
+> > d71374dafbba7ec3f67371d3b7e9f6310a588808, corresponding email thread
+> > is: https://lkml.org/lkml/2006/5/26/38.  The patch author Zhang Yanmin
+> > said device_lock is added to pci_walk_bus because:
+> > 
+> >   Some error handling functions call pci_walk_bus. For example, PCIe
+> >   aer. Here we lock the device, so the driver wouldn't detach from the
+> >   device, as the cb might call driver's callback function.
+> > 
+> > So I fixed the dead lock as follow:
+> > 
+> > - remove device_lock from pci_walk_bus
+> > - add device_lock into callback if callback will call driver's callback
+> > 
+> > I checked pci_walk_bus users one by one, and found only PCIe aer needs
+> > device lock.
+> > 
+> > Signed-off-by: Huang Ying <ying.huang@intel.com>
+> > Cc: Zhang Yanmin <yanmin.zhang@intel.com>
+> > ---
+> >  arch/powerpc/platforms/pseries/eeh_driver.c |   51 ++++++++++++++++++----------
 > 
-> Do you use that pcmcia driver for anything?  Are those cards still
-> around?
-
-I am not use them.
-
-I am just through code review (so it is only a suggestion).
-
-this issue has effect with 4 synclink drivers
-I checked their source code, all of them have the same issue.
-  drivers/char/pcmcia/synclink_cs.c:213:        char flag_buf[MAX_ASYNC_BUFFER_SIZE];
-  drivers/tty/synclink_gt.c:320:        char flag_buf[MAX_ASYNC_BUFFER_SIZE];
-  drivers/tty/synclink.c:294:   char flag_buf[MAX_ASYNC_BUFFER_SIZE];
-  drivers/tty/synclinkmp.c:265: char flag_buf[MAX_ASYNC_BUFFER_SIZE];
-
-by the way, for the char_buf, has already useless (can be removed)
-  drivers/tty/synclink_gt.c:321:        char char_buf[MAX_ASYNC_BUFFER_SIZE];
-  drivers/tty/synclink.c:295:   char char_buf[MAX_ASYNC_BUFFER_SIZE];   
-  drivers/tty/synclinkmp.c:266: char char_buf[MAX_ASYNC_BUFFER_SIZE];
-
-
-
+> Due to me applying a power pci patch,
+> feadf7c0a1a7c08c74bebb4a13b755f8c40e3bbc in Linus's tree to 3.6-stable,
+> this patch doesn't apply here anymore.
 > 
->> What:
->>   #define MAX_ASYNC_BUFFER_SIZE  0x10000 (instead of 4096, originally).
->>   let it match the max frame size.
->>
->> At last:
->>   my suggestion may be incorrect, need relative member (who expert about
->> it) to help checking.
-> 
-> That driver might be incorrect, yes, care to make up a patch for it and
-> test it to verify it fixes the problem?
-> 
+> Because that patch is in the tree, is it now just safe to take your
+> original, unmodified, version of this patch for 3.6-stable?
 
-and now Alan Cox has his own opinions
-  at least, I think it is valuable to continue discussing about it.
+No.  My original version does not work.  I need to rebase my patch on
+this patch.  Which tree should I base?
 
-if Alan Cox agree with it (but it seems not),  I will make patch, and try to perform test.
-also welcome another members to help testing.
+Best Regards,
+Huang Ying
 
 
-
-> thanks,
-> 
-> greg k-h
-> 
-> 
-
-
--- 
-Chen Gang
-
-Asianux Corporation
