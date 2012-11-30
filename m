@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1769420Ab2K3Tco (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:32:44 -0500
-Received: from mail.kernel.org ([198.145.19.201]:57461 "EHLO mail.kernel.org"
+	id S1031631Ab2K3StY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:49:24 -0500
+Received: from mail.kernel.org ([198.145.19.201]:57339 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1031639Ab2K3St2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:49:28 -0500
+	id S1031595Ab2K3StR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:49:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 23/37] ALSA: hda - Add new codec ALC283 ALC290 support
-Date: Fri, 30 Nov 2012 10:46:10 -0800
-Message-Id: <20121130183859.751223883@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 14/37] PARISC: fix user-triggerable panic on parisc
+Date: Fri, 30 Nov 2012 10:46:01 -0800
+Message-Id: <20121130183858.755271178@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130183857.166228045@linuxfoundation.org>
 References: <20121130183857.166228045@linuxfoundation.org>
@@ -25,30 +26,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kailang Yang <kailang@realtek.com>
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-commit 7ff34ad80b7080fafaac8efa9ef0061708eddd51 upstream.
+commit 441a179dafc0f99fc8b3a8268eef66958621082e upstream.
 
-These are compatible with standard ALC269 parser.
+int sys32_rt_sigprocmask(int how, compat_sigset_t __user *set, compat_sigset_t __user *oset,
+                                    unsigned int sigsetsize)
+{
+        sigset_t old_set, new_set;
+        int ret;
 
-Signed-off-by: Kailang Yang <kailang@realtek.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+        if (set && get_sigset32(set, &new_set, sigsetsize))
+
+...
+static int
+get_sigset32(compat_sigset_t __user *up, sigset_t *set, size_t sz)
+{
+        compat_sigset_t s;
+        int r;
+
+        if (sz != sizeof *set) panic("put_sigset32()");
+
+In other words, rt_sigprocmask(69, (void *)69, 69) done by 32bit process
+will promptly panic the box.
+
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/parisc/kernel/signal32.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -20134,6 +20134,8 @@ static const struct hda_codec_preset snd
- 	{ .id = 0x10ec0276, .name = "ALC276", .patch = patch_alc269 },
- 	{ .id = 0x10ec0280, .name = "ALC280", .patch = patch_alc269 },
- 	{ .id = 0x10ec0282, .name = "ALC282", .patch = patch_alc269 },
-+	{ .id = 0x10ec0283, .name = "ALC283", .patch = patch_alc269 },
-+	{ .id = 0x10ec0290, .name = "ALC290", .patch = patch_alc269 },
- 	{ .id = 0x10ec0861, .rev = 0x100340, .name = "ALC660",
- 	  .patch = patch_alc861 },
- 	{ .id = 0x10ec0660, .name = "ALC660-VD", .patch = patch_alc861vd },
+--- a/arch/parisc/kernel/signal32.c
++++ b/arch/parisc/kernel/signal32.c
+@@ -67,7 +67,8 @@ put_sigset32(compat_sigset_t __user *up,
+ {
+ 	compat_sigset_t s;
+ 
+-	if (sz != sizeof *set) panic("put_sigset32()");
++	if (sz != sizeof *set)
++		return -EINVAL;
+ 	sigset_64to32(&s, set);
+ 
+ 	return copy_to_user(up, &s, sizeof s);
+@@ -79,7 +80,8 @@ get_sigset32(compat_sigset_t __user *up,
+ 	compat_sigset_t s;
+ 	int r;
+ 
+-	if (sz != sizeof *set) panic("put_sigset32()");
++	if (sz != sizeof *set)
++		return -EINVAL;
+ 
+ 	if ((r = copy_from_user(&s, up, sz)) == 0) {
+ 		sigset_32to64(set, &s);
 
 
