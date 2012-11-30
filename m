@@ -1,47 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1767735Ab2K3UA5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 15:00:57 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:46698 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933616Ab2K3UAy (ORCPT
+	id S2993139Ab2K3UAz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 15:00:55 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:18016 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933615Ab2K3UAx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 15:00:54 -0500
-Date: Fri, 30 Nov 2012 15:00:48 -0500 (EST)
-Message-Id: <20121130.150048.112475787724653030.davem@davemloft.net>
-To: bhutchings@solarflare.com
-Cc: jkosina@suse.cz, pt@netconsequence.de, otavio@ossystems.com.br,
-        javier@dowhile0.org, chohnstaedt@innominate.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] smsc: RFC: Workaround for problems with lan8710 phy
- auto MDI-X
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1354302880.2640.1.camel@bwh-desktop.uk.solarflarecom.com>
-References: <alpine.LNX.2.00.1211301622110.25639@pobox.suse.cz>
-	<20121130.122302.1825816242500143123.davem@davemloft.net>
-	<1354302880.2640.1.camel@bwh-desktop.uk.solarflarecom.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Fri, 30 Nov 2012 15:00:53 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 30 Nov 2012 12:00:24 -0800
+Message-ID: <50B91070.9080708@nvidia.com>
+Date: Sat, 1 Dec 2012 01:30:48 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Axel Lin <axel.lin@ingics.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] regulator: tps51632: Ensure [base|max]_voltage_uV pdata
+ settings are valid
+References: <1354265569.3859.1.camel@phoenix>
+In-Reply-To: <1354265569.3859.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <bhutchings@solarflare.com>
-Date: Fri, 30 Nov 2012 19:14:40 +0000
+On Friday 30 November 2012 02:22 PM, Axel Lin wrote:
+> If pdata->base_voltage_uV is missing or the settings of pdata->base_voltage_uV
+> and pdata->max_voltage_uV are out of range, TPS51632_VOLT_VSEL macro
+> returns wrong vsel.
+>
+> Thus add checking [base|max]_voltage_uV pdata settings in probe.
+>
 
-> On Fri, 2012-11-30 at 12:23 -0500, David Miller wrote:
->> From: Jiri Kosina <jkosina@suse.cz>
->> Date: Fri, 30 Nov 2012 16:23:30 +0100 (CET)
->> 
->> > Of course it'd be far better if faulty hardware can be autodetected in 
->> > runtime.
->> 
->> That is how this must be handled.
-> 
-> Well, we also have the recent extension to ETHTOOL_SSET for forcing
-> MDI-X on or off.  If it's not possible to detect the faulty hardware
-> then the driver can implement this.
+Looks good.
 
-Agreed.
+Acked-by: Laxman Dewangan <ldewangan@nvidia.com>
+
+
