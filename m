@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992779Ab2K3S4o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:56:44 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58519 "EHLO mail.kernel.org"
+	id S933582Ab2K3TUm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:20:42 -0500
+Received: from mail.kernel.org ([198.145.19.201]:58577 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992758Ab2K3S4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:56:38 -0500
+	id S2992780Ab2K3S4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:56:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tilman Schmidt <tilman@imap.cc>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 39/56] bas_gigaset: fix pre_reset handling
-Date: Fri, 30 Nov 2012 10:55:31 -0800
-Message-Id: <20121130185122.269058335@linuxfoundation.org>
+        Boris Ostrovsky <boris.ostrovsky@amd.com>,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 11/56] x86, microcode, AMD: Add support for family 16h processors
+Date: Fri, 30 Nov 2012 10:55:03 -0800
+Message-Id: <20121130185119.501015718@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185118.302752929@linuxfoundation.org>
 References: <20121130185118.302752929@linuxfoundation.org>
@@ -26,68 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tilman Schmidt <tilman@imap.cc>
+From: Boris Ostrovsky <boris.ostrovsky@amd.com>
 
-commit c6fdd8e5d0c65bb8821dc6da26ee1a2ddd58b3cc upstream.
+commit 36c46ca4f322a7bf89aad5462a3a1f61713edce7 upstream.
 
-The delayed work function int_in_work() may call usb_reset_device()
-and thus, indirectly, the driver's pre_reset method. Trying to
-cancel the work synchronously in that situation would deadlock.
-Fix by avoiding cancel_work_sync() in the pre_reset method.
+Add valid patch size for family 16h processors.
 
-If the reset was NOT initiated by int_in_work() this might cause
-int_in_work() to run after the post_reset method, with urb_int_in
-already resubmitted, so handle that case gracefully.
+[ hpa: promoting to urgent/stable since it is hw enabling and trivial ]
 
-Signed-off-by: Tilman Schmidt <tilman@imap.cc>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Boris Ostrovsky <boris.ostrovsky@amd.com>
+Acked-by: Andreas Herrmann <herrmann.der.user@googlemail.com>
+Link: http://lkml.kernel.org/r/1353004910-2204-1-git-send-email-boris.ostrovsky@amd.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/isdn/gigaset/bas-gigaset.c |   19 ++++++++++++++++---
- 1 file changed, 16 insertions(+), 3 deletions(-)
+ arch/x86/kernel/microcode_amd.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/isdn/gigaset/bas-gigaset.c
-+++ b/drivers/isdn/gigaset/bas-gigaset.c
-@@ -616,7 +616,13 @@ static void int_in_work(struct work_stru
- 	if (rc == 0)
- 		/* success, resubmit interrupt read URB */
- 		rc = usb_submit_urb(urb, GFP_ATOMIC);
--	if (rc != 0 && rc != -ENODEV) {
-+
-+	switch (rc) {
-+	case 0:		/* success */
-+	case -ENODEV:	/* device gone */
-+	case -EINVAL:	/* URB already resubmitted, or terminal badness */
+--- a/arch/x86/kernel/microcode_amd.c
++++ b/arch/x86/kernel/microcode_amd.c
+@@ -97,6 +97,7 @@ static unsigned int verify_ucode_size(in
+ #define F1XH_MPB_MAX_SIZE 2048
+ #define F14H_MPB_MAX_SIZE 1824
+ #define F15H_MPB_MAX_SIZE 4096
++#define F16H_MPB_MAX_SIZE 3458
+ 
+ 	switch (c->x86) {
+ 	case 0x14:
+@@ -105,6 +106,9 @@ static unsigned int verify_ucode_size(in
+ 	case 0x15:
+ 		max_size = F15H_MPB_MAX_SIZE;
+ 		break;
++	case 0x16:
++		max_size = F16H_MPB_MAX_SIZE;
 +		break;
-+	default:	/* failure: try to recover by resetting the device */
- 		dev_err(cs->dev, "clear halt failed: %s\n", get_usb_rcmsg(rc));
- 		rc = usb_lock_device_for_reset(ucs->udev, ucs->interface);
- 		if (rc == 0) {
-@@ -2437,7 +2443,9 @@ static void gigaset_disconnect(struct us
- }
- 
- /* gigaset_suspend
-- * This function is called before the USB connection is suspended.
-+ * This function is called before the USB connection is suspended
-+ * or before the USB device is reset.
-+ * In the latter case, message == PMSG_ON.
-  */
- static int gigaset_suspend(struct usb_interface *intf, pm_message_t message)
- {
-@@ -2493,7 +2501,12 @@ static int gigaset_suspend(struct usb_in
- 	del_timer_sync(&ucs->timer_atrdy);
- 	del_timer_sync(&ucs->timer_cmd_in);
- 	del_timer_sync(&ucs->timer_int_in);
--	cancel_work_sync(&ucs->int_in_wq);
-+
-+	/* don't try to cancel int_in_wq from within reset as it
-+	 * might be the one requesting the reset
-+	 */
-+	if (message.event != PM_EVENT_ON)
-+		cancel_work_sync(&ucs->int_in_wq);
- 
- 	gig_dbg(DEBUG_SUSPEND, "suspend complete");
- 	return 0;
+ 	default:
+ 		max_size = F1XH_MPB_MAX_SIZE;
+ 		break;
 
 
