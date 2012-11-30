@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992760Ab2K3TAJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:00:09 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58725 "EHLO mail.kernel.org"
+	id S2992843Ab2K3TAi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:00:38 -0500
+Received: from mail.kernel.org ([198.145.19.201]:58714 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756463Ab2K3S46 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:56:58 -0500
+	id S1757948Ab2K3S44 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:56:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        David Milburn <dmilburn@redhat.com>, Jeff Garzik <jgarzik@redhat.com>,
-        CAI Qian <caiqian@redhat.com>
-Subject: [ 43/56] sata_svw: check DMA start bit before reset
-Date: Fri, 30 Nov 2012 10:55:35 -0800
-Message-Id: <20121130185122.733372811@linuxfoundation.org>
+        Josh Hay <joshua.a.hay@intel.com>,
+        Phil Schmitt <phillip.j.schmitt@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Abdallah Chatila <Abdallah.Chatila@ericsson.com>
+Subject: [ 42/56] ixgbe: add support for X540-AT1
+Date: Fri, 30 Nov 2012 10:55:34 -0800
+Message-Id: <20121130185122.640414136@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185118.302752929@linuxfoundation.org>
 References: <20121130185118.302752929@linuxfoundation.org>
@@ -26,85 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Milburn <dmilburn@redhat.com>
+From: "joshua.a.hay@intel.com" <joshua.a.hay@intel.com>
 
-commit b03e66a6be91f8389fcd902ab6c1563db1c9c06b upstream.
+commit df376f0de167754da9b3ece4afdb5bb8bf3fbf3e upstream.
 
-If kdump is triggered with pending IO, controller may not respond causing
-kdump to fail.
+This patch adds device support for Ethernet Controller X540-AT1.
 
-http://marc.info/?l=linux-ide&m=133032255424658&w=2
-
-During error recovery ata_do_dev_read_id never completes due hang
-in mmio_insw.
-
-ata_do_dev_read_id
- ata_sff_data_xfer
-  ioread16_rep
-   mmio_insw
-
-if DMA start bit is cleared before reset, PIO command is successful
-and kdump succeeds.
-
-Signed-off-by: David Milburn <dmilburn@redhat.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
-Cc: CAI Qian <caiqian@redhat.com>
+Signed-off-by: Josh Hay <joshua.a.hay@intel.com>
+Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: Abdallah Chatila <Abdallah.Chatila@ericsson.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/sata_svw.c |   35 +++++++++++++++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
+ drivers/net/ethernet/intel/ixgbe/ixgbe_common.c  |    1 +
+ drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c |    1 +
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c    |    2 ++
+ drivers/net/ethernet/intel/ixgbe/ixgbe_type.h    |    1 +
+ 4 files changed, 5 insertions(+)
 
---- a/drivers/ata/sata_svw.c
-+++ b/drivers/ata/sata_svw.c
-@@ -142,6 +142,39 @@ static int k2_sata_scr_write(struct ata_
- 	return 0;
- }
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_common.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_common.c
+@@ -3216,6 +3216,7 @@ static s32 ixgbe_device_supports_autoneg
  
-+static int k2_sata_softreset(struct ata_link *link,
-+			     unsigned int *class, unsigned long deadline)
-+{
-+	u8 dmactl;
-+	void __iomem *mmio = link->ap->ioaddr.bmdma_addr;
-+
-+	dmactl = readb(mmio + ATA_DMA_CMD);
-+
-+	/* Clear the start bit */
-+	if (dmactl & ATA_DMA_START) {
-+		dmactl &= ~ATA_DMA_START;
-+		writeb(dmactl, mmio + ATA_DMA_CMD);
-+	}
-+
-+	return ata_sff_softreset(link, class, deadline);
-+}
-+
-+static int k2_sata_hardreset(struct ata_link *link,
-+			     unsigned int *class, unsigned long deadline)
-+{
-+	u8 dmactl;
-+	void __iomem *mmio = link->ap->ioaddr.bmdma_addr;
-+
-+	dmactl = readb(mmio + ATA_DMA_CMD);
-+
-+	/* Clear the start bit */
-+	if (dmactl & ATA_DMA_START) {
-+		dmactl &= ~ATA_DMA_START;
-+		writeb(dmactl, mmio + ATA_DMA_CMD);
-+	}
-+
-+	return sata_sff_hardreset(link, class, deadline);
-+}
+ 	switch (hw->device_id) {
+ 	case IXGBE_DEV_ID_X540T:
++	case IXGBE_DEV_ID_X540T1:
+ 		return 0;
+ 	case IXGBE_DEV_ID_82599_T3_LOM:
+ 		return 0;
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c
+@@ -2006,6 +2006,7 @@ static int ixgbe_wol_exclusion(struct ix
+ 		retval = 0;
+ 		break;
+ 	case IXGBE_DEV_ID_X540T:
++	case IXGBE_DEV_ID_X540T1:
+ 		/* check eeprom to see if enabled wol */
+ 		if ((wol_cap == IXGBE_DEVICE_CAPS_WOL_PORT0_1) ||
+ 		    ((wol_cap == IXGBE_DEVICE_CAPS_WOL_PORT0) &&
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -114,6 +114,7 @@ static DEFINE_PCI_DEVICE_TABLE(ixgbe_pci
+ 	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_82599_LS), board_82599 },
+ 	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_82599EN_SFP), board_82599 },
+ 	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_82599_SFP_SF_QP), board_82599 },
++	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_X540T1), board_X540 },
+ 	/* required last entry */
+ 	{0, }
+ };
+@@ -7060,6 +7061,7 @@ static int __devinit ixgbe_probe(struct
+ 		adapter->wol = IXGBE_WUFC_MAG;
+ 		break;
+ 	case IXGBE_DEV_ID_X540T:
++	case IXGBE_DEV_ID_X540T1:
+ 		/* Check eeprom to see if it is enabled */
+ 		hw->eeprom.ops.read(hw, 0x2c, &adapter->eeprom_cap);
+ 		wol_cap = adapter->eeprom_cap & IXGBE_DEVICE_CAPS_WOL_MASK;
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
+@@ -67,6 +67,7 @@
+ #define IXGBE_DEV_ID_82599_LS            0x154F
+ #define IXGBE_DEV_ID_X540T               0x1528
+ #define IXGBE_DEV_ID_82599_SFP_SF_QP     0x154A
++#define IXGBE_DEV_ID_X540T1              0x1560
  
- static void k2_sata_tf_load(struct ata_port *ap, const struct ata_taskfile *tf)
- {
-@@ -346,6 +379,8 @@ static struct scsi_host_template k2_sata
- 
- static struct ata_port_operations k2_sata_ops = {
- 	.inherits		= &ata_bmdma_port_ops,
-+	.softreset              = k2_sata_softreset,
-+	.hardreset              = k2_sata_hardreset,
- 	.sff_tf_load		= k2_sata_tf_load,
- 	.sff_tf_read		= k2_sata_tf_read,
- 	.sff_check_status	= k2_stat_check_status,
+ /* VF Device IDs */
+ #define IXGBE_DEV_ID_82599_VF           0x10ED
 
 
