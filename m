@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759389Ab2K3S6z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:58:55 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58784 "EHLO mail.kernel.org"
+	id S1759407Ab2K3S7Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:59:16 -0500
+Received: from mail.kernel.org ([198.145.19.201]:58764 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759038Ab2K3S5D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:57:03 -0500
+	id S1758905Ab2K3S5B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:57:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>, Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 48/56] USB: mct_u232: fix broken close
-Date: Fri, 30 Nov 2012 10:55:40 -0800
-Message-Id: <20121130185123.236192248@linuxfoundation.org>
+        Waldemar Rymarkiewicz <waldemar.rymarkiewicz@tieto.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Peter Huewe <peterhuewe@gmx.de>
+Subject: [ 46/56] NFC: pn533: Fix mem leak in pn533_in_dep_link_up
+Date: Fri, 30 Nov 2012 10:55:38 -0800
+Message-Id: <20121130185123.048434895@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185118.302752929@linuxfoundation.org>
 References: <20121130185118.302752929@linuxfoundation.org>
@@ -25,51 +26,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Waldemar Rymarkiewicz <waldemar.rymarkiewicz@tieto.com>
 
-commit 5260e458f5eff269a43e4f1e9c47186c57b88ddb upstream.
+commit 70418e6efcf4f8652cc08e3f2ab8ae35f0948fd9 upstream.
 
-Make sure generic close is called at close.
+cmd is allocated in pn533_dep_link_up and passed as an arg to
+pn533_send_cmd_frame_async together with a complete cb.
 
-The driver relies on the generic write implementation but did not call
-generic close.
+arg is passed to the cb and must be kfreed there.
 
-Note that the call to kill the read urb is not redundant, as mct_u232
-uses an interrupt urb from the second port as the read urb and that
-generic close therefore fails to kill it.
-
-Compile-only tested.
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Waldemar Rymarkiewicz <waldemar.rymarkiewicz@tieto.com>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: adjust context]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/usb/serial/mct_u232.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/serial/mct_u232.c
-+++ b/drivers/usb/serial/mct_u232.c
-@@ -533,12 +533,14 @@ static void mct_u232_close(struct usb_se
+---
+ drivers/nfc/pn533.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+--- a/drivers/nfc/pn533.c
++++ b/drivers/nfc/pn533.c
+@@ -1278,11 +1278,14 @@ static void pn533_deactivate_target(stru
+ static int pn533_in_dep_link_up_complete(struct pn533 *dev, void *arg,
+ 						u8 *params, int params_len)
  {
- 	dbg("%s port %d", __func__, port->number);
- 
--	if (port->serial->dev) {
--		/* shutdown our urbs */
--		usb_kill_urb(port->write_urb);
--		usb_kill_urb(port->read_urb);
--		usb_kill_urb(port->interrupt_in_urb);
--	}
-+	/*
-+	 * Must kill the read urb as it is actually an interrupt urb, which
-+	 * generic close thus fails to kill.
-+	 */
-+	usb_kill_urb(port->read_urb);
-+	usb_kill_urb(port->interrupt_in_urb);
+-	struct pn533_cmd_jump_dep *cmd;
+ 	struct pn533_cmd_jump_dep_response *resp;
+ 	struct nfc_target nfc_target;
+ 	u8 target_gt_len;
+ 	int rc;
++	struct pn533_cmd_jump_dep *cmd = (struct pn533_cmd_jump_dep *)arg;
++	u8 active = cmd->active;
 +
-+	usb_serial_generic_close(port);
- } /* mct_u232_close */
++	kfree(arg);
  
+ 	if (params_len == -ENOENT) {
+ 		nfc_dev_dbg(&dev->interface->dev, "");
+@@ -1304,7 +1307,6 @@ static int pn533_in_dep_link_up_complete
+ 	}
  
+ 	resp = (struct pn533_cmd_jump_dep_response *) params;
+-	cmd = (struct pn533_cmd_jump_dep *) arg;
+ 	rc = resp->status & PN533_CMD_RET_MASK;
+ 	if (rc != PN533_CMD_RET_SUCCESS) {
+ 		nfc_dev_err(&dev->interface->dev,
+@@ -1334,7 +1336,7 @@ static int pn533_in_dep_link_up_complete
+ 	if (rc == 0)
+ 		rc = nfc_dep_link_is_up(dev->nfc_dev,
+ 						dev->nfc_dev->targets[0].idx,
+-						!cmd->active, NFC_RF_INITIATOR);
++						!active, NFC_RF_INITIATOR);
+ 
+ 	return 0;
+ }
 
 
