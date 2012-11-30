@@ -1,136 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932729Ab2K3K07 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 05:26:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56172 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932225Ab2K3K05 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 05:26:57 -0500
-Date: Fri, 30 Nov 2012 12:26:52 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        linux-next list <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
-        sasha.levin@oracle.com, avi@redhat.com
-Subject: Re: [RFC PATCH v3] Add rcu user eqs exception hooks for async page
- fault
-Message-ID: <20121130102652.GG20873@redhat.com>
-References: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
- <CAFTL4hx0fc_Jo8wkuRZedW4DVEeQceiHMrWVqTqB5k065Wsg8Q@mail.gmail.com>
- <1354090704.3054.13.camel@ThinkPad-T5421.cn.ibm.com>
- <CAFTL4hxPSp1fs4=2g0yFs0d5nFisfUsfDAA9bHWcu+-+tO_ySw@mail.gmail.com>
- <20121128135345.GG928@redhat.com>
- <CAFTL4hxoFBLNQCABBpJRBgV-r-Mg5GSq7HbPfWJRraSvtviz4A@mail.gmail.com>
- <20121129110717.GA9711@redhat.com>
- <CAFTL4hyHW3uJHvzxz1o4agtGbicFAP1DuUsifbOrp1Q3ODRBMA@mail.gmail.com>
- <1354267121.2552.65.camel@ThinkPad-T5421.cn.ibm.com>
+	id S932761Ab2K3K3v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 05:29:51 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:36123 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754322Ab2K3K3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 05:29:49 -0500
+X-IronPort-AV: E=Sophos;i="4.83,347,1352044800"; 
+   d="scan'208";a="6308005"
+Message-ID: <50B88A8A.9020802@cn.fujitsu.com>
+Date: Fri, 30 Nov 2012 18:29:30 +0800
+From: Lin Feng <linfeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354267121.2552.65.camel@ThinkPad-T5421.cn.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: viro@zeniv.linux.org.uk, bcrl@kvack.org, kamezawa.hiroyu@jp.fujitsu.com,
+        mhocko@suse.cz, hughd@google.com, cl@linux.com, mgorman@suse.de,
+        minchan@kernel.org, isimatu.yasuaki@jp.fujitsu.com,
+        laijs@cn.fujitsu.com, wency@cn.fujitsu.com, tangchen@cn.fujitsu.com,
+        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Lin Feng <linfeng@cn.fujitsu.com>
+Subject: Re: [BUG REPORT] [mm-hotplug, aio] aio ring_pages can't be offlined
+References: <1354172098-5691-1-git-send-email-linfeng@cn.fujitsu.com> <20121129153930.477e9709.akpm@linux-foundation.org> <50B82B0D.8010206@cn.fujitsu.com> <20121129215749.acfd872a.akpm@linux-foundation.org> <50B859C6.3020707@cn.fujitsu.com> <20121129235502.05223586.akpm@linux-foundation.org>
+In-Reply-To: <20121129235502.05223586.akpm@linux-foundation.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/30 18:29:15,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/30 18:29:17,
+	Serialize complete at 2012/11/30 18:29:17
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 30, 2012 at 05:18:41PM +0800, Li Zhong wrote:
-> This patch adds user eqs exception hooks for async page fault page not
-> present code path, to exit the user eqs and re-enter it as necessary. 
-> 
-> Async page fault is different from other exceptions that it may be
-> triggered from idle process, so we still need rcu_irq_enter() and
-> rcu_irq_exit() to exit cpu idle eqs when needed, to protect the code
-> that needs use rcu.
-> 
-> As Frederic pointed out it would be safest and simplest to protect the
-> whole kvm_async_pf_task_wait(). Otherwise, "we need to check all the
-> code there deeply for potential RCU uses and ensure it will never be
-> extended later to use RCU.".
-> 
-> However, We'd better re-enter the cpu idle eqs if we get the exception
-> in cpu idle eqs, by calling rcu_irq_exit() before native_safe_halt(). 
-> 
-> So the patch does what Frederic suggested for rcu_irq_*() API usage
-> here, except that I moved the rcu_irq_*() pair originally in
-> do_async_page_fault() into kvm_async_pf_task_wait(). 
-> 
-> That's because, I think it's better to have rcu_irq_*() pairs to be in
-> one function ( rcu_irq_exit() after rcu_irq_enter() ), especially here,
-> kvm_async_pf_task_wait() has other callers, which might cause
-> rcu_irq_exit() be called without a matching rcu_irq_enter() before it,
-> which is illegal if the cpu happens to be in rcu idle state. 
-> 
-> Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
-> ---
->  arch/x86/kernel/kvm.c | 12 ++++++++++--
->  1 file changed, 10 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-> index 4180a87..342b00b 100644
-> --- a/arch/x86/kernel/kvm.c
-> +++ b/arch/x86/kernel/kvm.c
-> @@ -42,6 +42,7 @@
->  #include <asm/apic.h>
->  #include <asm/apicdef.h>
->  #include <asm/hypervisor.h>
-> +#include <asm/rcu.h>
->  
->  static int kvmapf = 1;
->  
-> @@ -112,6 +113,8 @@ void kvm_async_pf_task_wait(u32 token)
->  	DEFINE_WAIT(wait);
->  	int cpu, idle;
->  
-> +	rcu_irq_enter();
-> +
-Why move rcu_irq_*() calls into kvm_async_pf_task_wait()?
 
->  	cpu = get_cpu();
->  	idle = idle_cpu(cpu);
->  	put_cpu();
-> @@ -123,6 +126,8 @@ void kvm_async_pf_task_wait(u32 token)
->  		hlist_del(&e->link);
->  		kfree(e);
->  		spin_unlock(&b->lock);
-> +
-> +		rcu_irq_exit();
-We can skip that if  rcu_irq_*() will stay outside.
 
->  		return;
->  	}
->  
-> @@ -147,13 +152,16 @@ void kvm_async_pf_task_wait(u32 token)
->  			/*
->  			 * We cannot reschedule. So halt.
->  			 */
-> +			rcu_irq_exit();
->  			native_safe_halt();
-> +			rcu_irq_enter();
->  			local_irq_disable();
->  		}
->  	}
->  	if (!n.halted)
->  		finish_wait(&n.wq, &wait);
->  
-> +	rcu_irq_exit();
->  	return;
->  }
->  EXPORT_SYMBOL_GPL(kvm_async_pf_task_wait);
-> @@ -247,10 +255,10 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
->  		break;
->  	case KVM_PV_REASON_PAGE_NOT_PRESENT:
->  		/* page is swapped out by the host. */
-> -		rcu_irq_enter();
-> +		exception_enter(regs);
->  		exit_idle();
->  		kvm_async_pf_task_wait((u32)read_cr2());
-> -		rcu_irq_exit();
-> +		exception_exit(regs);
->  		break;
->  	case KVM_PV_REASON_PAGE_READY:
->  		rcu_irq_enter();
-> -- 
-> 1.7.11.4
+On 11/30/2012 03:55 PM, Andrew Morton wrote:
+> On Fri, 30 Nov 2012 15:01:26 +0800 Lin Feng <linfeng@cn.fujitsu.com> wrote:
+> 
+>>
+>>
+>> On 11/30/2012 01:57 PM, Andrew Morton wrote:
+>>> On Fri, 30 Nov 2012 11:42:05 +0800 Lin Feng <linfeng@cn.fujitsu.com> wrote:
+>>>
+>>>> hi Andrew,
+>>>>
+>>>> On 11/30/2012 07:39 AM, Andrew Morton wrote:
+>>>>> Tricky.
+>>>>>
+>>>>> I expect the same problem would occur with pages which are under
+>>>>> O_DIRECT I/O.  Obviously O_DIRECT pages won't be pinned for such long
+>>>>> periods, but the durations could still be lengthy (seconds).
+>>>> the offline retry timeout duration is 2 minutes, so to O_DIRECT pages 
+>>>> seem maybe not a problem for the moment.
+>>>>>
+>>>>> Worse is a futex page, which could easily remain pinned indefinitely.
+>>>>>
+>>>>> The best I can think of is to make changes in or around
+>>>>> get_user_pages(), to steal the pages from userspace and replace them
+>>>>> with non-movable ones before pinning them.  The performance cost of
+>>>>> something like this would surely be unacceptable for direct-io, but
+>>>>> maybe OK for the aio ring and futexes.
+>>>> thanks for your advice.
+>>>> I want to limit the impact as little as possible, as mentioned above,
+>>>> direct-io seems not a problem, we needn't touch them. Maybe we can 
+>>>> just change the use of get_user_pages()(in or around) such as aio 
+>>>> ring pages. I will try to find a way to do this.
+>>>
+>>> What about futexes?
+>> hi Andrew,
+>>
+>> Yes, better to find an approach to solve them all.
+>>  
+>> But I'm worried about that if we just confine get_user_pages() to use 
+>> none-movable pages, it will drain the none-movable pages soon. Because
+>> there are many places using get_user_pages() such as some drivers. 
+> 
+> Obviously we shouldn't change get_user_pages() for all callers.
+> 
+>> IMHO in most cases get_user_pages() callers should release the pages soon, 
+>> so pages allocated from movable zone should be OK. But I'm not sure if
+>> we get such rule upon get_user_pages(). 
+>> And in other cases we specify get_user_pages() to allocate pages from
+>> none-movable zone. 
+>>
+>> So could we add a zone-alloc flags when we call get_user_pages()?
+> 
+> Well, that's a fairly low-level implementation detail.  A more typical
+> approach would be to add a new get_user_pages_non_movable() or such. 
+> That would probably have the same signature as get_user_pages(), with
+> one additional argument.  Then get_user_pages() becomes a one-line
+> wrapper which passes in a particular value of that argument.
+> 
+> But that means we'd also have to add get_user_pages_fast_non_movable()
+> and things might become a bit stupid.  A better approach might be to
+hi Andrew,
 
---
-			Gleb.
+Thanks for your patient reply.
+
+What I can think out is like following:
+inline int generic_get_user_pages(..., int movable_flag)
+{
+	if (0 == movable_flag)
+		return get_user_pages();
+	else if (1 == movable_flag)
+		return get_user_pages_non_movable();
+}
+Yes, that seems to add a lot of duplicated codes.
+
+> add a new library function which callers can use before (or after?)
+> calling get_user_pages[_fast]().
+Sorry, I'm not quite understand what "library function" function means..
+Does it means a function aids get_user_pages() or totally wraps/replaces 
+get_user_pages(), or none of above?
+
+Thanks,
+linfeng
+> 
+> Unsure.  It's the sort of thing where one has to dive in and try a few
+> things.
+ah, maybe more complicated than as I can expect..
+> 
