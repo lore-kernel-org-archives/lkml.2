@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993169Ab2K3TDc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:03:32 -0500
-Received: from mail.kernel.org ([198.145.19.201]:59999 "EHLO mail.kernel.org"
+	id S2993182Ab2K3TDe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:03:34 -0500
+Received: from mail.kernel.org ([198.145.19.201]:59992 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993142Ab2K3TDL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 14:03:11 -0500
+	id S2993140Ab2K3TDK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 14:03:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [ 28/54] can: peak_usb: fix hwtstamp assignment
-Date: Fri, 30 Nov 2012 10:55:59 -0800
-Message-Id: <20121130185210.731532603@linuxfoundation.org>
+        Tilman Schmidt <tilman@imap.cc>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 37/54] bas_gigaset: fix pre_reset handling
+Date: Fri, 30 Nov 2012 10:56:08 -0800
+Message-Id: <20121130185211.673898011@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185207.894301294@linuxfoundation.org>
 References: <20121130185207.894301294@linuxfoundation.org>
@@ -26,95 +26,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Hartkopp <socketcan@hartkopp.net>
+From: Tilman Schmidt <tilman@imap.cc>
 
-commit c9faaa09e2a1335678f09c70a0d0eda095564bab upstream.
+commit c6fdd8e5d0c65bb8821dc6da26ee1a2ddd58b3cc upstream.
 
-The skb->tstamp is set to the hardware timestamp when available in the USB
-urb message. This leads to user visible timestamps which contain the 'uptime'
-of the USB adapter - and not the usual system generated timestamp.
+The delayed work function int_in_work() may call usb_reset_device()
+and thus, indirectly, the driver's pre_reset method. Trying to
+cancel the work synchronously in that situation would deadlock.
+Fix by avoiding cancel_work_sync() in the pre_reset method.
 
-Fix this wrong assignment by applying the available hardware timestamp to the
-skb_shared_hwtstamps data structure - which is intended for this purpose.
+If the reset was NOT initiated by int_in_work() this might cause
+int_in_work() to run after the post_reset method, with urb_int_in
+already resubmitted, so handle that case gracefully.
 
-Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Tilman Schmidt <tilman@imap.cc>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/usb/peak_usb/pcan_usb.c     |    8 ++++++--
- drivers/net/can/usb/peak_usb/pcan_usb_pro.c |    8 ++++++--
- 2 files changed, 12 insertions(+), 4 deletions(-)
+ drivers/isdn/gigaset/bas-gigaset.c |   19 ++++++++++++++++---
+ 1 file changed, 16 insertions(+), 3 deletions(-)
 
---- a/drivers/net/can/usb/peak_usb/pcan_usb.c
-+++ b/drivers/net/can/usb/peak_usb/pcan_usb.c
-@@ -519,8 +519,10 @@ static int pcan_usb_decode_error(struct
- 	mc->pdev->dev.can.state = new_state;
- 
- 	if (status_len & PCAN_USB_STATUSLEN_TIMESTAMP) {
-+		struct skb_shared_hwtstamps *hwts = skb_hwtstamps(skb);
+--- a/drivers/isdn/gigaset/bas-gigaset.c
++++ b/drivers/isdn/gigaset/bas-gigaset.c
+@@ -617,7 +617,13 @@ static void int_in_work(struct work_stru
+ 	if (rc == 0)
+ 		/* success, resubmit interrupt read URB */
+ 		rc = usb_submit_urb(urb, GFP_ATOMIC);
+-	if (rc != 0 && rc != -ENODEV) {
 +
- 		peak_usb_get_ts_tv(&mc->pdev->time_ref, mc->ts16, &tv);
--		skb->tstamp = timeval_to_ktime(tv);
-+		hwts->hwtstamp = timeval_to_ktime(tv);
- 	}
++	switch (rc) {
++	case 0:		/* success */
++	case -ENODEV:	/* device gone */
++	case -EINVAL:	/* URB already resubmitted, or terminal badness */
++		break;
++	default:	/* failure: try to recover by resetting the device */
+ 		dev_err(cs->dev, "clear halt failed: %s\n", get_usb_rcmsg(rc));
+ 		rc = usb_lock_device_for_reset(ucs->udev, ucs->interface);
+ 		if (rc == 0) {
+@@ -2442,7 +2448,9 @@ static void gigaset_disconnect(struct us
+ }
  
- 	netif_rx(skb);
-@@ -605,6 +607,7 @@ static int pcan_usb_decode_data(struct p
- 	struct sk_buff *skb;
- 	struct can_frame *cf;
- 	struct timeval tv;
-+	struct skb_shared_hwtstamps *hwts;
+ /* gigaset_suspend
+- * This function is called before the USB connection is suspended.
++ * This function is called before the USB connection is suspended
++ * or before the USB device is reset.
++ * In the latter case, message == PMSG_ON.
+  */
+ static int gigaset_suspend(struct usb_interface *intf, pm_message_t message)
+ {
+@@ -2498,7 +2506,12 @@ static int gigaset_suspend(struct usb_in
+ 	del_timer_sync(&ucs->timer_atrdy);
+ 	del_timer_sync(&ucs->timer_cmd_in);
+ 	del_timer_sync(&ucs->timer_int_in);
+-	cancel_work_sync(&ucs->int_in_wq);
++
++	/* don't try to cancel int_in_wq from within reset as it
++	 * might be the one requesting the reset
++	 */
++	if (message.event != PM_EVENT_ON)
++		cancel_work_sync(&ucs->int_in_wq);
  
- 	skb = alloc_can_skb(mc->netdev, &cf);
- 	if (!skb)
-@@ -652,7 +655,8 @@ static int pcan_usb_decode_data(struct p
- 
- 	/* convert timestamp into kernel time */
- 	peak_usb_get_ts_tv(&mc->pdev->time_ref, mc->ts16, &tv);
--	skb->tstamp = timeval_to_ktime(tv);
-+	hwts = skb_hwtstamps(skb);
-+	hwts->hwtstamp = timeval_to_ktime(tv);
- 
- 	/* push the skb */
- 	netif_rx(skb);
---- a/drivers/net/can/usb/peak_usb/pcan_usb_pro.c
-+++ b/drivers/net/can/usb/peak_usb/pcan_usb_pro.c
-@@ -532,6 +532,7 @@ static int pcan_usb_pro_handle_canmsg(st
- 	struct can_frame *can_frame;
- 	struct sk_buff *skb;
- 	struct timeval tv;
-+	struct skb_shared_hwtstamps *hwts;
- 
- 	skb = alloc_can_skb(netdev, &can_frame);
- 	if (!skb)
-@@ -549,7 +550,8 @@ static int pcan_usb_pro_handle_canmsg(st
- 		memcpy(can_frame->data, rx->data, can_frame->can_dlc);
- 
- 	peak_usb_get_ts_tv(&usb_if->time_ref, le32_to_cpu(rx->ts32), &tv);
--	skb->tstamp = timeval_to_ktime(tv);
-+	hwts = skb_hwtstamps(skb);
-+	hwts->hwtstamp = timeval_to_ktime(tv);
- 
- 	netif_rx(skb);
- 	netdev->stats.rx_packets++;
-@@ -570,6 +572,7 @@ static int pcan_usb_pro_handle_error(str
- 	u8 err_mask = 0;
- 	struct sk_buff *skb;
- 	struct timeval tv;
-+	struct skb_shared_hwtstamps *hwts;
- 
- 	/* nothing should be sent while in BUS_OFF state */
- 	if (dev->can.state == CAN_STATE_BUS_OFF)
-@@ -664,7 +667,8 @@ static int pcan_usb_pro_handle_error(str
- 	dev->can.state = new_state;
- 
- 	peak_usb_get_ts_tv(&usb_if->time_ref, le32_to_cpu(er->ts32), &tv);
--	skb->tstamp = timeval_to_ktime(tv);
-+	hwts = skb_hwtstamps(skb);
-+	hwts->hwtstamp = timeval_to_ktime(tv);
- 	netif_rx(skb);
- 	netdev->stats.rx_packets++;
- 	netdev->stats.rx_bytes += can_frame->can_dlc;
+ 	gig_dbg(DEBUG_SUSPEND, "suspend complete");
+ 	return 0;
 
 
