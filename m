@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1769158Ab2K3TYv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:24:51 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58357 "EHLO mail.kernel.org"
+	id S1769145Ab2K3TYt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:24:49 -0500
+Received: from mail.kernel.org ([198.145.19.201]:58365 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992684Ab2K3S4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:56:24 -0500
+	id S2992685Ab2K3S4Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:56:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "George Spelvin" <linux@horizon.com>, NeilBrown <neilb@suse.de>
-Subject: [ 26/56] md/raid10: decrement correct pending counter when writing to replacement.
-Date: Fri, 30 Nov 2012 10:55:18 -0800
-Message-Id: <20121130185120.922550056@linuxfoundation.org>
+        Alasdair G Kergon <agk@redhat.com>, Jens Axboe <axboe@kernel.dk>
+Subject: [ 27/56] dm: fix deadlock with request based dm and queue request_fn recursion
+Date: Fri, 30 Nov 2012 10:55:19 -0800
+Message-Id: <20121130185121.022432203@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185118.302752929@linuxfoundation.org>
 References: <20121130185118.302752929@linuxfoundation.org>
@@ -25,40 +25,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Jens Axboe <axboe@kernel.dk>
 
-commit 884162df2aadd7414bef4935e1a54976fd4e3988 upstream.
+commit a8c32a5c98943d370ea606a2e7dc04717eb92206 upstream.
 
-When a write to a replacement device completes, we carefully
-and correctly found the rdev that the write actually went to
-and the blithely called rdev_dec_pending on the primary rdev,
-even if this write was to the replacement.
+Request based dm attempts to re-run the request queue off the
+request completion path. If used with a driver that potentially does
+end_io from its request_fn, we could deadlock trying to recurse
+back into request dispatch. Fix this by punting the request queue
+run to kblockd.
 
-This means that any writes to an array while a replacement
-was ongoing would cause the nr_pending count for the primary
-device to go negative, so it could never be removed.
+Tested to fix a quickly reproducible deadlock in such a scenario.
 
-This bug has been present since replacement was introduced in
-3.3, so it is suitable for any -stable kernel since then.
-
-Reported-by: "George Spelvin" <linux@horizon.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Acked-by: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid10.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/dm.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -476,7 +476,7 @@ static void raid10_end_write_request(str
- 	 */
- 	one_write_done(r10_bio);
- 	if (dec_rdev)
--		rdev_dec_pending(conf->mirrors[dev].rdev, conf->mddev);
-+		rdev_dec_pending(rdev, conf->mddev);
- }
+--- a/drivers/md/dm.c
++++ b/drivers/md/dm.c
+@@ -754,8 +754,14 @@ static void rq_completed(struct mapped_d
+ 	if (!md_in_flight(md))
+ 		wake_up(&md->wait);
  
- /*
++	/*
++	 * Run this off this callpath, as drivers could invoke end_io while
++	 * inside their request_fn (and holding the queue lock). Calling
++	 * back into ->request_fn() could deadlock attempting to grab the
++	 * queue lock again.
++	 */
+ 	if (run_queue)
+-		blk_run_queue(md->queue);
++		blk_run_queue_async(md->queue);
+ 
+ 	/*
+ 	 * dm_put() must be at the end of this function. See the comment above
 
 
