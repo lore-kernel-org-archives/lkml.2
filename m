@@ -1,149 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757342Ab2K3KYf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 05:24:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20072 "EHLO mx1.redhat.com"
+	id S932729Ab2K3K07 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 05:26:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56172 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756978Ab2K3KSS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 05:18:18 -0500
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: Bob Peterson <rpeterso@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 02/16] GFS2: Speed up gfs2_rbm_from_block
-Date: Fri, 30 Nov 2012 09:52:07 +0000
-Message-Id: <1354269141-3311-3-git-send-email-swhiteho@redhat.com>
-In-Reply-To: <1354269141-3311-1-git-send-email-swhiteho@redhat.com>
-References: <1354269141-3311-1-git-send-email-swhiteho@redhat.com>
+	id S932225Ab2K3K05 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 05:26:57 -0500
+Date: Fri, 30 Nov 2012 12:26:52 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        linux-next list <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
+        sasha.levin@oracle.com, avi@redhat.com
+Subject: Re: [RFC PATCH v3] Add rcu user eqs exception hooks for async page
+ fault
+Message-ID: <20121130102652.GG20873@redhat.com>
+References: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
+ <CAFTL4hx0fc_Jo8wkuRZedW4DVEeQceiHMrWVqTqB5k065Wsg8Q@mail.gmail.com>
+ <1354090704.3054.13.camel@ThinkPad-T5421.cn.ibm.com>
+ <CAFTL4hxPSp1fs4=2g0yFs0d5nFisfUsfDAA9bHWcu+-+tO_ySw@mail.gmail.com>
+ <20121128135345.GG928@redhat.com>
+ <CAFTL4hxoFBLNQCABBpJRBgV-r-Mg5GSq7HbPfWJRraSvtviz4A@mail.gmail.com>
+ <20121129110717.GA9711@redhat.com>
+ <CAFTL4hyHW3uJHvzxz1o4agtGbicFAP1DuUsifbOrp1Q3ODRBMA@mail.gmail.com>
+ <1354267121.2552.65.camel@ThinkPad-T5421.cn.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354267121.2552.65.camel@ThinkPad-T5421.cn.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bob Peterson <rpeterso@redhat.com>
+On Fri, Nov 30, 2012 at 05:18:41PM +0800, Li Zhong wrote:
+> This patch adds user eqs exception hooks for async page fault page not
+> present code path, to exit the user eqs and re-enter it as necessary. 
+> 
+> Async page fault is different from other exceptions that it may be
+> triggered from idle process, so we still need rcu_irq_enter() and
+> rcu_irq_exit() to exit cpu idle eqs when needed, to protect the code
+> that needs use rcu.
+> 
+> As Frederic pointed out it would be safest and simplest to protect the
+> whole kvm_async_pf_task_wait(). Otherwise, "we need to check all the
+> code there deeply for potential RCU uses and ensure it will never be
+> extended later to use RCU.".
+> 
+> However, We'd better re-enter the cpu idle eqs if we get the exception
+> in cpu idle eqs, by calling rcu_irq_exit() before native_safe_halt(). 
+> 
+> So the patch does what Frederic suggested for rcu_irq_*() API usage
+> here, except that I moved the rcu_irq_*() pair originally in
+> do_async_page_fault() into kvm_async_pf_task_wait(). 
+> 
+> That's because, I think it's better to have rcu_irq_*() pairs to be in
+> one function ( rcu_irq_exit() after rcu_irq_enter() ), especially here,
+> kvm_async_pf_task_wait() has other callers, which might cause
+> rcu_irq_exit() be called without a matching rcu_irq_enter() before it,
+> which is illegal if the cpu happens to be in rcu idle state. 
+> 
+> Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+> ---
+>  arch/x86/kernel/kvm.c | 12 ++++++++++--
+>  1 file changed, 10 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+> index 4180a87..342b00b 100644
+> --- a/arch/x86/kernel/kvm.c
+> +++ b/arch/x86/kernel/kvm.c
+> @@ -42,6 +42,7 @@
+>  #include <asm/apic.h>
+>  #include <asm/apicdef.h>
+>  #include <asm/hypervisor.h>
+> +#include <asm/rcu.h>
+>  
+>  static int kvmapf = 1;
+>  
+> @@ -112,6 +113,8 @@ void kvm_async_pf_task_wait(u32 token)
+>  	DEFINE_WAIT(wait);
+>  	int cpu, idle;
+>  
+> +	rcu_irq_enter();
+> +
+Why move rcu_irq_*() calls into kvm_async_pf_task_wait()?
 
-This patch is a rewrite of function gfs2_rbm_from_block. Rather than
-looping to find the right bitmap, the code now does a few simple
-math calculations.
+>  	cpu = get_cpu();
+>  	idle = idle_cpu(cpu);
+>  	put_cpu();
+> @@ -123,6 +126,8 @@ void kvm_async_pf_task_wait(u32 token)
+>  		hlist_del(&e->link);
+>  		kfree(e);
+>  		spin_unlock(&b->lock);
+> +
+> +		rcu_irq_exit();
+We can skip that if  rcu_irq_*() will stay outside.
 
-I compared the performance of both algorithms side by side and the new
-algorithm is noticeably faster. Sample instrumentation output from a
-"fast" machine:
+>  		return;
+>  	}
+>  
+> @@ -147,13 +152,16 @@ void kvm_async_pf_task_wait(u32 token)
+>  			/*
+>  			 * We cannot reschedule. So halt.
+>  			 */
+> +			rcu_irq_exit();
+>  			native_safe_halt();
+> +			rcu_irq_enter();
+>  			local_irq_disable();
+>  		}
+>  	}
+>  	if (!n.halted)
+>  		finish_wait(&n.wq, &wait);
+>  
+> +	rcu_irq_exit();
+>  	return;
+>  }
+>  EXPORT_SYMBOL_GPL(kvm_async_pf_task_wait);
+> @@ -247,10 +255,10 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
+>  		break;
+>  	case KVM_PV_REASON_PAGE_NOT_PRESENT:
+>  		/* page is swapped out by the host. */
+> -		rcu_irq_enter();
+> +		exception_enter(regs);
+>  		exit_idle();
+>  		kvm_async_pf_task_wait((u32)read_cr2());
+> -		rcu_irq_exit();
+> +		exception_exit(regs);
+>  		break;
+>  	case KVM_PV_REASON_PAGE_READY:
+>  		rcu_irq_enter();
+> -- 
+> 1.7.11.4
 
-5 million calls: millisec spent: Orig: 166 New: 113
-5 million calls: millisec spent: Orig: 189 New: 114
-
-In addition, I ran postmark (on a somewhat slowr CPU) before the after
-the new algorithm was put in place and postmark showed a decent
-improvement:
-
-Before the new algorithm:
--------------------------
-Time:
-	645 seconds total
-	584 seconds of transactions (171 per second)
-
-Files:
-	150087 created (232 per second)
-		Creation alone: 100000 files (2083 per second)
-		Mixed with transactions: 50087 files (85 per second)
-	49995 read (85 per second)
-	49991 appended (85 per second)
-	150087 deleted (232 per second)
-		Deletion alone: 100174 files (7705 per second)
-		Mixed with transactions: 49913 files (85 per second)
-
-Data:
-	273.42 megabytes read (434.08 kilobytes per second)
-	852.13 megabytes written (1.32 megabytes per second)
-
-With the new algorithm:
------------------------
-Time:
-	599 seconds total
-	530 seconds of transactions (188 per second)
-
-Files:
-	150087 created (250 per second)
-		Creation alone: 100000 files (1886 per second)
-		Mixed with transactions: 50087 files (94 per second)
-	49995 read (94 per second)
-	49991 appended (94 per second)
-	150087 deleted (250 per second)
-		Deletion alone: 100174 files (6260 per second)
-		Mixed with transactions: 49913 files (94 per second)
-
-Data:
-	273.42 megabytes read (467.42 kilobytes per second)
-	852.13 megabytes written (1.42 megabytes per second)
-
-Signed-off-by: Bob Peterson <rpeterso@redhat.com>
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-
-diff --git a/fs/gfs2/incore.h b/fs/gfs2/incore.h
-index 3d469d3..24bb0b8 100644
---- a/fs/gfs2/incore.h
-+++ b/fs/gfs2/incore.h
-@@ -621,6 +621,7 @@ struct gfs2_sbd {
- 	u32 sd_hash_bsize_shift;
- 	u32 sd_hash_ptrs;	/* Number of pointers in a hash block */
- 	u32 sd_qc_per_block;
-+	u32 sd_blocks_per_bitmap;
- 	u32 sd_max_dirres;	/* Max blocks needed to add a directory entry */
- 	u32 sd_max_height;	/* Max height of a file's metadata tree */
- 	u64 sd_heightsize[GFS2_MAX_META_HEIGHT + 1];
-diff --git a/fs/gfs2/ops_fstype.c b/fs/gfs2/ops_fstype.c
-index e443966..0e3554e 100644
---- a/fs/gfs2/ops_fstype.c
-+++ b/fs/gfs2/ops_fstype.c
-@@ -278,6 +278,9 @@ static int gfs2_read_sb(struct gfs2_sbd *sdp, int silent)
- 	sdp->sd_qc_per_block = (sdp->sd_sb.sb_bsize -
- 				sizeof(struct gfs2_meta_header)) /
- 			        sizeof(struct gfs2_quota_change);
-+	sdp->sd_blocks_per_bitmap = (sdp->sd_sb.sb_bsize -
-+				     sizeof(struct gfs2_meta_header))
-+		* GFS2_NBBY; /* not the rgrp bitmap, subsequent bitmaps only */
- 
- 	/* Compute maximum reservation required to add a entry to a directory */
- 
-diff --git a/fs/gfs2/rgrp.c b/fs/gfs2/rgrp.c
-index 38fe18f..669b89b 100644
---- a/fs/gfs2/rgrp.c
-+++ b/fs/gfs2/rgrp.c
-@@ -251,22 +251,25 @@ static u32 gfs2_bitfit(const u8 *buf, const unsigned int len,
- static int gfs2_rbm_from_block(struct gfs2_rbm *rbm, u64 block)
- {
- 	u64 rblock = block - rbm->rgd->rd_data0;
--	u32 goal = (u32)rblock;
--	int x;
-+	u32 x;
- 
- 	if (WARN_ON_ONCE(rblock > UINT_MAX))
- 		return -EINVAL;
- 	if (block >= rbm->rgd->rd_data0 + rbm->rgd->rd_data)
- 		return -E2BIG;
- 
--	for (x = 0; x < rbm->rgd->rd_length; x++) {
--		rbm->bi = rbm->rgd->rd_bits + x;
--		if (goal < (rbm->bi->bi_start + rbm->bi->bi_len) * GFS2_NBBY) {
--			rbm->offset = goal - (rbm->bi->bi_start * GFS2_NBBY);
--			break;
--		}
--	}
-+	rbm->bi = rbm->rgd->rd_bits;
-+	rbm->offset = (u32)(rblock);
-+	/* Check if the block is within the first block */
-+	if (rbm->offset < (rbm->bi->bi_start + rbm->bi->bi_len) * GFS2_NBBY)
-+		return 0;
- 
-+	/* Adjust for the size diff between gfs2_meta_header and gfs2_rgrp */
-+	rbm->offset += (sizeof(struct gfs2_rgrp) -
-+			sizeof(struct gfs2_meta_header)) * GFS2_NBBY;
-+	x = rbm->offset / rbm->rgd->rd_sbd->sd_blocks_per_bitmap;
-+	rbm->offset -= x * rbm->rgd->rd_sbd->sd_blocks_per_bitmap;
-+	rbm->bi += x;
- 	return 0;
- }
- 
--- 
-1.7.4
-
+--
+			Gleb.
