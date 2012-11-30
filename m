@@ -1,195 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752784Ab2K3E7x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 23:59:53 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:49192 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181Ab2K3E7v (ORCPT
+	id S1751073Ab2K3FGI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 00:06:08 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:38715 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750703Ab2K3FGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 23:59:51 -0500
-Message-ID: <50B83D34.2030006@gmail.com>
-Date: Fri, 30 Nov 2012 12:59:32 +0800
-From: Mark Zhang <nvmarkzhang@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Fri, 30 Nov 2012 00:06:05 -0500
+Message-ID: <50B83E64.1010907@linux.vnet.ibm.com>
+Date: Fri, 30 Nov 2012 10:34:36 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-CC: "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "joro@8bytes.org" <joro@8bytes.org>,
-        "James.Bottomley@HansenPartnership.com" 
-	<James.Bottomley@HansenPartnership.com>,
-        "arnd@arndb.de" <arnd@arndb.de>, Krishna Reddy <vdumpa@nvidia.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "minchan@kernel.org" <minchan@kernel.org>,
-        "chunsang.jeong@linaro.org" <chunsang.jeong@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "subashrp@gmail.com" <subashrp@gmail.com>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "pullip.cho@samsung.com" <pullip.cho@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/1] ARM: tegra: bus_notifier registers IOMMU devices(was:
- How to specify IOMMU'able devices in DT)
-References: <20120924124452.41070ed2ee9944d930cffffc@nvidia.com><054901cd9a45$db1a7ea0$914f7be0$%szyprowski@samsung.com><20120924.145014.1452596970914043018.hdoyu@nvidia.com> <20121128.154832.539666140149950229.hdoyu@nvidia.com>
-In-Reply-To: <20121128.154832.539666140149950229.hdoyu@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Gleb Natapov <gleb@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH V3 RFC 2/2] kvm: Handle yield_to failure return code for
+ potential undercommit case
+References: <20121126120740.2595.33651.sendpatchset@codeblue> <20121126120804.2595.20280.sendpatchset@codeblue> <20121128011228.GH8295@amt.cnet> <50B59CE0.70305@linux.vnet.ibm.com> <20121129121636.GB9711@redhat.com>
+In-Reply-To: <20121129121636.GB9711@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+x-cbid: 12113005-2674-0000-0000-000006EE4E1C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28/2012 09:48 PM, Hiroshi Doyu wrote:
-> Hiroshi Doyu <hdoyu@nvidia.com> wrote @ Mon, 24 Sep 2012 14:50:14 +0300 (EEST):
-> ...
->>>>> On Mon, 2012-09-24 at 12:04 +0300, Hiroshi Doyu wrote:
->>>>>> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
->>>>>> index a1a7225..9eae3be 100644
->>>>>> --- a/drivers/base/platform.c
->>>>>> +++ b/drivers/base/platform.c
->>>>>> @@ -21,6 +21,8 @@
->>>>>>  #include <linux/slab.h>
->>>>>>  #include <linux/pm_runtime.h>
->>>>>>
->>>>>> +#include <asm/dma-iommu.h>
->>>>>> +
->>>>>>  #include "base.h"
->>>>>>
->>>>>>  #define to_platform_driver(drv)        (container_of((drv), struct
->>>>>> platform_driver, \
->>>>>> @@ -305,8 +307,19 @@ int platform_device_add(struct platform_device
->>>>>> *pdev)
->>>>>>                  dev_name(&pdev->dev), dev_name(pdev->dev.parent));
->>>>>>
->>>>>>         ret = device_add(&pdev->dev);
->>>>>> -       if (ret == 0)
->>>>>> -               return ret;
->>>>>> +       if (ret)
->>>>>> +               goto failed;
->>>>>> +
->>>>>> +#ifdef CONFIG_PLATFORM_ENABLE_IOMMU
->>>>>> +       if (platform_bus_type.map && !pdev->dev.archdata.mapping) {
->>>>>> +               ret = arm_iommu_attach_device(&pdev->dev,
->>>>>> +                                             platform_bus_type.map);
->>>>>> +               if (ret)
->>>>>> +                       goto failed;
->>>>>
->>>>> This is horrible ... you're adding an architecture specific callback
->>>>> into our generic code; that's really a no-no.  If the concept of
->>>>> CONFIG_PLATFORM_ENABE_IOMMU is useful to more than just arm, then this
->>>>> could become a generic callback.
->>>>
->>>> As mentioned in the original, this is a heck to explain what is
->>>> needed. I am looking for some generic solution for how to specify
->>>> IOMMU info for each platform devices. I'm guessing that some other SoC
->>>> may have the similar requirements on the above. As you mentioned, this
->>>> solution should be a generic, not arch specific.
+On 11/29/2012 05:46 PM, Gleb Natapov wrote:
+> On Wed, Nov 28, 2012 at 10:40:56AM +0530, Raghavendra K T wrote:
+>> On 11/28/2012 06:42 AM, Marcelo Tosatti wrote:
 >>>
->>> Please read more about bus notifiers. IMHO a good example is provided in 
->>> the following thread:
->>> http://www.mail-archive.com/linux-samsung-soc@vger.kernel.org/msg12238.html
+>>> Don't understand the reasoning behind why 3 is a good choice.
 >>
->> This bus notifier seems enough flexible to afford the variation of
->> IOMMU map info, like Tegra ASID, which could be platform-specific, and
->> the other could be common too. There's already iommu_bus_notifier
->> too. I'll try to implement something base on this.
-> 
-> Experimentally implemented as below. With the followig patch, each
-> device could specify its own map in DT, and automatically the device
-> would be attached to the map.
-> 
-> There is a case that some devices share a map. This patch doesn't
-> suppor such case yet.
-> 
-> From 8cb75bb6f3a8535a077e0e85265f87c1f1289bfd Mon Sep 17 00:00:00 2001
-> From: Hiroshi Doyu <hdoyu@nvidia.com>
-> Date: Wed, 28 Nov 2012 14:47:04 +0200
-> Subject: [PATCH 1/1] ARM: tegra: bus_notifier registers IOMMU devices
-> 
-> platform_bus notifier registers IOMMU devices if dma-window is
-> specified.
-> 
-> Its format is:
->   dma-window = <"start" "size">;
-> ex)
->   dma-window = <0x12345000 0x8000>;
-> 
-> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
-> ---
->  arch/arm/mach-tegra/board-dt-tegra30.c |   40 ++++++++++++++++++++++++++++++++
->  1 file changed, 40 insertions(+)
-> 
-> diff --git a/arch/arm/mach-tegra/board-dt-tegra30.c b/arch/arm/mach-tegra/board-dt-tegra30.c
-> index a2b6cf1..570d718 100644
-> --- a/arch/arm/mach-tegra/board-dt-tegra30.c
-> +++ b/arch/arm/mach-tegra/board-dt-tegra30.c
-> @@ -30,9 +30,11 @@
->  #include <linux/of_fdt.h>
->  #include <linux/of_irq.h>
->  #include <linux/of_platform.h>
-> +#include <linux/of_iommu.h>
->  
->  #include <asm/mach/arch.h>
->  #include <asm/hardware/gic.h>
-> +#include <asm/dma-iommu.h>
->  
->  #include "board.h"
->  #include "clock.h"
-> @@ -86,10 +88,48 @@ static __initdata struct tegra_clk_init_table tegra_dt_clk_init_table[] = {
->  	{ NULL,		NULL,		0,		0},
->  };
->  
-> +#ifdef CONFIG_ARM_DMA_USE_IOMMU
-> +static int tegra_iommu_device_notifier(struct notifier_block *nb,
-> +				       unsigned long event, void *_dev)
-> +{
-> +	struct dma_iommu_mapping *map = NULL;
-> +	struct device *dev = _dev;
-> +	dma_addr_t base;
-> +	size_t size;
-> +	int err;
-> +
-> +	switch (event) {
-> +	case BUS_NOTIFY_ADD_DEVICE:
-> +		err = of_get_dma_window(dev->of_node, NULL, 0, NULL, &base,
-> +					&size);
-> +		if (!err)
-> +			map = arm_iommu_create_mapping(&platform_bus_type,
-> +						       base, size, 0);
-> +		if (IS_ERR_OR_NULL(map))
-> +			break;
-> +		if (arm_iommu_attach_device(dev, map))
+>> Here is where I came from. (explaining from scratch for
+>> completeness, forgive me :))
+>> In moderate overcommits, we can falsely exit from ple handler even when
+>> we have preempted task of same VM waiting on other cpus. To reduce this
+>> problem, we try few times before exiting.
+>> The problem boils down to:
+>> what is the probability that we exit ple handler even when we have more
+>> than 1 task in other cpus. Theoretical worst case should be around 1.5x
+>> overcommit (As also pointed by Andrew Theurer). [But practical
+>> worstcase may be around 2x,3x overcommits as indicated by the results
+>> for the patch series]
+>>
+>> So if p is the probability of finding rq length one on a particular cpu,
+>> and if we do n tries, then probability of exiting ple handler is:
+>>
+>>   p^(n+1) [ because we would have come across one source with rq length
+>> 1 and n target cpu rqs  with length 1 ]
+>>
+>> so
+>> num tries:         probability of aborting ple handler (1.5x overcommit)
+>>   1                 1/4
+>>   2                 1/8
+>>   3                 1/16
+>>
+>> We can increase this probability with more tries, but the problem is
+>> the overhead.
+> IIRC Avi (again) had an idea to track vcpu preemption. When vcpu thread
+> is preempted we do kvm->preempted_vcpus++, when it runs again we do
+> kvm->preempted_vcpus--. PLE handler can try harder if kvm->preempted_vcpus
+> is big or do not try at all if it is zero.
 
-Add "arm_iommu_release_mapping" here.
+Thanks for the reply Gleb.
 
-And finally we see this patch, that's great. :)
+Yes.. It was on my next TODO as you know and it make sense to weigh all 
+these approaches (undercommit patches/throttled yield/preempt
+notifier/pvspinlock and their combination) to good extent before going 
+further. I am happy if these patches are now in 'good shape to compare'
+state. (same reason I had posted dynamic PLE appaoch too).
 
-> +			dev_err(dev, "Failed to attach %s\n", dev_name(dev));
-> +		dev_dbg(dev, "Attached %s to map %p\n", dev_name(dev), map);
-> +		break;
-> +	}
-> +	return NOTIFY_DONE;
-> +}
-> +#else
-> +#define tegra_iommu_device_notifier NULL
-> +#endif
-> +
-> +static struct notifier_block tegra_iommu_device_nb = {
-> +	.notifier_call = tegra_iommu_device_notifier,
-> +};
-> +
->  static void __init tegra30_dt_init(void)
->  {
->  	tegra_clk_init_from_table(tegra_dt_clk_init_table);
->  
-> +	if (IS_ENABLED(CONFIG_ARM_DMA_USE_IOMMU))
-> +		bus_register_notifier(&platform_bus_type,
-> +				      &tegra_iommu_device_nb);
-> +
->  	of_platform_populate(NULL, of_default_bus_match_table,
->  				tegra30_auxdata_lookup, NULL);
->  }
-> 
+
+
+
