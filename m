@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757200Ab2K3KTy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 05:19:54 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:34305 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757049Ab2K3KTw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757182Ab2K3KTw (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 30 Nov 2012 05:19:52 -0500
-Message-ID: <50B88835.80805@parallels.com>
-Date: Fri, 30 Nov 2012 14:19:33 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+Received: from mga03.intel.com ([143.182.124.21]:50433 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754149Ab2K3KTu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 05:19:50 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,191,1355126400"; 
+   d="scan'208";a="224694013"
+Date: Fri, 30 Nov 2012 11:19:46 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: arizona: Register haptics devices
+Message-ID: <20121130101946.GE3176@sortiz-mobl>
+References: <1354037834-32061-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: "Luck, Tony" <tony.luck@intel.com>
-CC: Mel Gorman <mgorman@suse.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jiang Liu <jiang.liu@huawei.com>, Tang Chen <tangchen@cn.fujitsu.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "rob@landley.net" <rob@landley.net>,
-        "isimatu.yasuaki@jp.fujitsu.com" <isimatu.yasuaki@jp.fujitsu.com>,
-        "laijs@cn.fujitsu.com" <laijs@cn.fujitsu.com>,
-        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
-        "linfeng@cn.fujitsu.com" <linfeng@cn.fujitsu.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
-        "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
-        "rientjes@google.com" <rientjes@google.com>,
-        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, "Wang, Frank" <frank.wang@intel.com>
-Subject: Re: [PATCH v2 0/5] Add movablecore_map boot option
-References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <50B5CFAE.80103@huawei.com> <3908561D78D1C84285E8C5FCA982C28F1C95EDCE@ORSMSX108.amr.corp.intel.com> <50B68467.5020008@zytor.com> <20121129110045.GX8218@suse.de> <3908561D78D1C84285E8C5FCA982C28F1C95FF53@ORSMSX108.amr.corp.intel.com>
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F1C95FF53@ORSMSX108.amr.corp.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354037834-32061-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/30/2012 06:58 AM, Luck, Tony wrote:
->> If any significant percentage of memory is in ZONE_MOVABLE then the memory
->> hotplug people will have to deal with all the lowmem/highmem problems
->> that used to be faced by 32-bit x86 with PAE enabled. 
+Hi Mark,
+
+On Tue, Nov 27, 2012 at 05:37:13PM +0000, Mark Brown wrote:
+> Both WM5102 and WM5110 support haptics, register the device.
 > 
-> While these problems may still exist on large systems - I think it becomes
-> harder to construct workloads that run into problems.  In those bad old days
-> a significant fraction of lowmem was consumed by the kernel ... so it was
-> pretty easy to find meta-data intensive workloads that would push it over
-> a cliff.  Here we  are talking about systems with say 128GB per node divided
-> into 64GB moveable and 64GB non-moveable (and I'd regard this as a rather
-> low-end machine).  Unless the workload consists of zillions of tiny processes
-> all mapping shared memory blocks, the percentage of memory allocated to
-> the kernel is going to be tiny compared with the old 4GB days.
-> 
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> ---
+>  drivers/mfd/arizona-core.c |    2 ++
+>  1 file changed, 2 insertions(+)
+I applied this one. Please let me know if you want to push it through your
+asoc tree as well.
 
-Which is a perfectly common workload for containers, where you can have
-hundreds of machines (per node) being sold out to third parties, a lot
-of them consuming every single bit of metadata they can.
+Cheers,
+Samuel.
 
-
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
