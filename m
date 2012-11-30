@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945909Ab2K3TWr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:22:47 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58450 "EHLO mail.kernel.org"
+	id S1757220Ab2K3TXS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:23:18 -0500
+Received: from mail.kernel.org ([198.145.19.201]:58439 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992731Ab2K3S4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:56:32 -0500
+	id S2992722Ab2K3S4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:56:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 34/56] sparc64: not any error from do_sigaltstack() should fail rt_sigreturn()
-Date: Fri, 30 Nov 2012 10:55:26 -0800
-Message-Id: <20121130185121.754371071@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>
+Subject: [ 33/56] jbd: Fix lock ordering bug in journal_unmap_buffer()
+Date: Fri, 30 Nov 2012 10:55:25 -0800
+Message-Id: <20121130185121.652401086@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185118.302752929@linuxfoundation.org>
 References: <20121130185118.302752929@linuxfoundation.org>
@@ -26,39 +25,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Jan Kara <jack@suse.cz>
 
-commit fae2ae2a900a5c7bb385fe4075f343e7e2d5daa2 upstream.
+commit 25389bb207987b5774182f763b9fb65ff08761c8 upstream.
 
-If a signal handler is executed on altstack and another signal comes,
-we will end up with rt_sigreturn() on return from the second handler
-getting -EPERM from do_sigaltstack().  It's perfectly OK, since we
-are not asking to change the settings; in fact, they couldn't have been
-changed during the second handler execution exactly because we'd been
-on altstack all along.  64bit sigreturn on sparc treats any error from
-do_sigaltstack() as "SIGSEGV now"; we need to switch to the same semantics
-we are using on other architectures.
+Commit 09e05d48 introduced a wait for transaction commit into
+journal_unmap_buffer() in the case we are truncating a buffer undergoing commit
+in the page stradding i_size on a filesystem with blocksize < pagesize. Sadly
+we forgot to drop buffer lock before waiting for transaction commit and thus
+deadlock is possible when kjournald wants to lock the buffer.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fix the problem by dropping the buffer lock before waiting for transaction
+commit. Since we are still holding page lock (and that is OK), buffer cannot
+disappear under us.
+
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/sparc/kernel/signal_64.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ fs/jbd/transaction.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/sparc/kernel/signal_64.c
-+++ b/arch/sparc/kernel/signal_64.c
-@@ -309,9 +309,7 @@ void do_rt_sigreturn(struct pt_regs *reg
- 		err |= restore_fpu_state(regs, fpu_save);
- 
- 	err |= __copy_from_user(&set, &sf->mask, sizeof(sigset_t));
--	err |= do_sigaltstack(&sf->stack, NULL, (unsigned long)sf);
--
--	if (err)
-+	if (err || do_sigaltstack(&sf->stack, NULL, (unsigned long)sf) == -EFAULT)
- 		goto segv;
- 
- 	err |= __get_user(rwin_save, &sf->rwin_save);
+--- a/fs/jbd/transaction.c
++++ b/fs/jbd/transaction.c
+@@ -1963,7 +1963,9 @@ retry:
+ 			spin_unlock(&journal->j_list_lock);
+ 			jbd_unlock_bh_state(bh);
+ 			spin_unlock(&journal->j_state_lock);
++			unlock_buffer(bh);
+ 			log_wait_commit(journal, tid);
++			lock_buffer(bh);
+ 			goto retry;
+ 		}
+ 		/*
 
 
