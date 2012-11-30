@@ -1,82 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757237Ab2K3Uka (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 15:40:30 -0500
-Received: from mga11.intel.com ([192.55.52.93]:48573 "EHLO mga11.intel.com"
+	id S1757441Ab2K3Ukt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 15:40:49 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37498 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757087Ab2K3Uk1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 15:40:27 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,194,1355126400"; 
-   d="scan'208";a="257323341"
-From: "Yu, Fenghua" <fenghua.yu@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "Mallick, Asit K" <asit.k.mallick@intel.com>,
-        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: RE: [PATCH v2 01/10] Documentation/x86: Early load microcode
-Thread-Topic: [PATCH v2 01/10] Documentation/x86: Early load microcode
-Thread-Index: AQHNztec7t04HXDVJEWLAFC5kNl3w5gDTyGA//+H2bA=
-Date: Fri, 30 Nov 2012 20:40:24 +0000
-Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C712203AE0B90F@ORSMSX105.amr.corp.intel.com>
-References: <1354240068-9821-1-git-send-email-fenghua.yu@intel.com>
- <1354240068-9821-2-git-send-email-fenghua.yu@intel.com>
- <50B90D05.2030002@zytor.com>
-In-Reply-To: <50B90D05.2030002@zytor.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757261Ab2K3Ukq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 15:40:46 -0500
+Message-ID: <50B9198F.7050806@zytor.com>
+Date: Fri, 30 Nov 2012 12:39:43 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Jim Cromie <jim.cromie@gmail.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <ak@linux.intel.com>, Michal Marek <mmarek@suse.cz>,
+        Tony Lindgren <tony@atomide.com>,
+        Jonathan Kliegman <kliegs@chromium.org>,
+        Chris Zankel <chris@zankel.net>,
+        Bill Pemberton <wfp5p@viridian.itc.virginia.edu>,
+        Fengguang Wu <fengguang.wu@intel.com>, Sam Ravnborg <sam@ravnborg.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Subject: Re: [PATCH 1/2] init.h: Remove __dev* sections from the kernel
+References: <20121129184133.GA15110@kroah.com> <20121129184328.GB15110@kroah.com>
+In-Reply-To: <20121129184328.GB15110@kroah.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: H. Peter Anvin [mailto:hpa@zytor.com]
-> Sent: Friday, November 30, 2012 11:46 AM
-> To: Yu, Fenghua
-> Cc: Ingo Molnar; Thomas Gleixner; Mallick, Asit K; Tigran Aivazian;
-> Andreas Herrmann; Borislav Petkov; linux-kernel; x86
-> Subject: Re: [PATCH v2 01/10] Documentation/x86: Early load microcode
-> 
-> On 11/29/2012 05:47 PM, Fenghua Yu wrote:
-> > +
-> > +mkdir initrd
-> > +cd initrd
-> > +cp ../microcode.hex kernel/x86/microcode/GenuineIntel/microcode.hex
-> > +find .|cpio -oc >../ucode.cpio
-> > +cd ..
-> > +cat ucode.cpio /boot/initrd-3.5.0.img >/boot/initrd-3.5.0.ucode.img
-> > +
-> > +The generated /boot/initrd-3.5.0.ucode.img can be used as initrd
-> file to load
-> > +microcode during early boot time.
-> >
-> 
-> This is wrong; first of all, this refers to microcode.hex whereas the
-> patch refers to microcode.bin, and 
+On 11/29/2012 10:43 AM, Greg Kroah-Hartman wrote:
+>
+> -/* Used for HOTPLUG */
+> -#define __devinit        __section(.devinit.text) __cold notrace
+> -#define __devinitdata    __section(.devinit.data)
+> -#define __devinitconst   __constsection(.devinit.rodata)
+> -#define __devexit        __section(.devexit.text) __exitused __cold notrace
+> -#define __devexitdata    __section(.devexit.data)
+> -#define __devexitconst   __constsection(.devexit.rodata)
+> +/* Used for HOTPLUG, but that is always enabled now, so just make them noops */
+> +#define __devinit
+> +#define __devinitdata
+> +#define __devinitconst
+> +#define __devexit
+> +#define __devexitdata
+> +#define __devexitconst
+>
 
-Will fix this sentence. 
+Second question... what about the __exitused __cold notrace annotations?
 
-> it misses the mandatory -H newc
-> option to cpio.
+	-hpa
 
-I think there is no problem here. "-c" is "-H newc".
 
-Quote from man cpio:
-'-c' Identical to -H newc, use the new (SVR4) portable format.  If you wish the old
-       portable (ASCII) archive format, use -H odc instead.
-
-> 
-> Could you update this bit, please?
-> 
-> 	-hpa
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
