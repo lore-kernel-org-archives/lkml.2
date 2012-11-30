@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993061Ab2K3TCf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:02:35 -0500
-Received: from mail.kernel.org ([198.145.19.201]:59634 "EHLO mail.kernel.org"
+	id S2993076Ab2K3TCl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:02:41 -0500
+Received: from mail.kernel.org ([198.145.19.201]:59683 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993030Ab2K3TC3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 14:02:29 -0500
+	id S2993030Ab2K3TCg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 14:02:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Petr Matousek <pmatouse@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [ 40/54] KVM: x86: invalid opcode oops on SET_SREGS with OSXSAVE bit set (CVE-2012-4461)
-Date: Fri, 30 Nov 2012 10:56:11 -0800
-Message-Id: <20121130185211.970301987@linuxfoundation.org>
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Peter Huewe <peterhuewe@gmx.de>
+Subject: [ 43/54] get_dvb_firmware: fix download site for tda10046 firmware
+Date: Fri, 30 Nov 2012 10:56:14 -0800
+Message-Id: <20121130185212.259190667@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185207.894301294@linuxfoundation.org>
 References: <20121130185207.894301294@linuxfoundation.org>
@@ -26,81 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Petr Matousek <pmatouse@redhat.com>
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-commit 6d1068b3a98519247d8ba4ec85cd40ac136dbdf9 upstream.
+commit 25ec43d3e6306978cf66060ed18c4160ce8fc302 upstream.
 
-On hosts without the XSAVE support unprivileged local user can trigger
-oops similar to the one below by setting X86_CR4_OSXSAVE bit in guest
-cr4 register using KVM_SET_SREGS ioctl and later issuing KVM_RUN
-ioctl.
+The previous website doesn't exist anymore. Update it to one site that
+actually exists.
 
-invalid opcode: 0000 [#2] SMP
-Modules linked in: tun ip6table_filter ip6_tables ebtable_nat ebtables
-...
-Pid: 24935, comm: zoog_kvm_monito Tainted: G      D      3.2.0-3-686-pae
-EIP: 0060:[<f8b9550c>] EFLAGS: 00210246 CPU: 0
-EIP is at kvm_arch_vcpu_ioctl_run+0x92a/0xd13 [kvm]
-EAX: 00000001 EBX: 000f387e ECX: 00000000 EDX: 00000000
-ESI: 00000000 EDI: 00000000 EBP: ef5a0060 ESP: d7c63e70
- DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-Process zoog_kvm_monito (pid: 24935, ti=d7c62000 task=ed84a0c0
-task.ti=d7c62000)
-Stack:
- 00000001 f70a1200 f8b940a9 ef5a0060 00000000 00200202 f8769009 00000000
- ef5a0060 000f387e eda5c020 8722f9c8 00015bae 00000000 ed84a0c0 ed84a0c0
- c12bf02d 0000ae80 ef7f8740 fffffffb f359b740 ef5a0060 f8b85dc1 0000ae80
-Call Trace:
- [<f8b940a9>] ? kvm_arch_vcpu_ioctl_set_sregs+0x2fe/0x308 [kvm]
-...
- [<c12bfb44>] ? syscall_call+0x7/0xb
-Code: 89 e8 e8 14 ee ff ff ba 00 00 04 00 89 e8 e8 98 48 ff ff 85 c0 74
-1e 83 7d 48 00 75 18 8b 85 08 07 00 00 31 c9 8b 95 0c 07 00 00 <0f> 01
-d1 c7 45 48 01 00 00 00 c7 45 1c 01 00 00 00 0f ae f0 89
-EIP: [<f8b9550c>] kvm_arch_vcpu_ioctl_run+0x92a/0xd13 [kvm] SS:ESP
-0068:d7c63e70
-
-QEMU first retrieves the supported features via KVM_GET_SUPPORTED_CPUID
-and then sets them later. So guest's X86_FEATURE_XSAVE should be masked
-out on hosts without X86_FEATURE_XSAVE, making kvm_set_cr4 with
-X86_CR4_OSXSAVE fail. Userspaces that allow specifying guest cpuid with
-X86_FEATURE_XSAVE even on hosts that do not support it, might be
-susceptible to this attack from inside the guest as well.
-
-Allow setting X86_CR4_OSXSAVE bit only if host has XSAVE support.
-
-Signed-off-by: Petr Matousek <pmatouse@redhat.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/cpuid.h |    3 +++
- arch/x86/kvm/x86.c   |    3 +++
- 2 files changed, 6 insertions(+)
+ Documentation/dvb/get_dvb_firmware |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kvm/cpuid.h
-+++ b/arch/x86/kvm/cpuid.h
-@@ -24,6 +24,9 @@ static inline bool guest_cpuid_has_xsave
- {
- 	struct kvm_cpuid_entry2 *best;
+--- a/Documentation/dvb/get_dvb_firmware
++++ b/Documentation/dvb/get_dvb_firmware
+@@ -116,7 +116,7 @@ sub tda10045 {
  
-+	if (!static_cpu_has(X86_FEATURE_XSAVE))
-+		return 0;
-+
- 	best = kvm_find_cpuid_entry(vcpu, 1, 0);
- 	return best && (best->ecx & bit(X86_FEATURE_XSAVE));
- }
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -5762,6 +5762,9 @@ int kvm_arch_vcpu_ioctl_set_sregs(struct
- 	int pending_vec, max_bits, idx;
- 	struct desc_ptr dt;
- 
-+	if (!guest_cpuid_has_xsave(vcpu) && (sregs->cr4 & X86_CR4_OSXSAVE))
-+		return -EINVAL;
-+
- 	dt.size = sregs->idt.limit;
- 	dt.address = sregs->idt.base;
- 	kvm_x86_ops->set_idt(vcpu, &dt);
+ sub tda10046 {
+ 	my $sourcefile = "TT_PCI_2.19h_28_11_2006.zip";
+-	my $url = "http://www.tt-download.com/download/updates/219/$sourcefile";
++	my $url = "http://technotrend.com.ua/download/software/219/$sourcefile";
+ 	my $hash = "6a7e1e2f2644b162ff0502367553c72d";
+ 	my $outfile = "dvb-fe-tda10046.fw";
+ 	my $tmpdir = tempdir(DIR => "/tmp", CLEANUP => 1);
 
 
