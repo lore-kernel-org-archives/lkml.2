@@ -1,59 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751467Ab2K3FGy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 00:06:54 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52924 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751357Ab2K3FGx (ORCPT
+	id S1751671Ab2K3FHB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 00:07:01 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:37410 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751357Ab2K3FG5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 00:06:53 -0500
-X-AuditID: 9c93016f-b7b86ae000003a75-00-50b83eeb25ed
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 10/14] perf tool: Centralize default columns init in perf_hpp__init
-References: <1354110769-2998-1-git-send-email-jolsa@redhat.com>
-	<1354110769-2998-11-git-send-email-jolsa@redhat.com>
-	<87ehjcoc70.fsf@sejong.aot.lge.com>
-	<20121129121319.GD1096@krava.brq.redhat.com>
-Date: Fri, 30 Nov 2012 14:06:51 +0900
-In-Reply-To: <20121129121319.GD1096@krava.brq.redhat.com> (Jiri Olsa's message
-	of "Thu, 29 Nov 2012 13:13:19 +0100")
-Message-ID: <87624nof10.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 30 Nov 2012 00:06:57 -0500
+Date: Fri, 30 Nov 2012 13:06:19 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: nic_swsd@realtek.com
+Cc: romieu@fr.zoreil.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH]realtek:r8169: Bugfix or workaround for missing extended
+ GigaMAC registers settings
+Message-ID: <20121130050619.GA12862@udknight>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>, nic_swsd@realtek.com,
+	romieu@fr.zoreil.com, netdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+I get a board with 8168e-vl(10ec:8168 with RTL_GIGA_MAC_VER_34),
+everything looks well first, I can use ifconfig to set ip, netmask,
+etc. And the rx/tx statistics show by ifconfig looks good when I
+ping another host or ping it from another host. But it don't work,
+I can't get ICMP REPLAY from both sides, although the RX/TX statistics
+seem good.
 
-On Thu, 29 Nov 2012 13:13:19 +0100, Jiri Olsa wrote:
-> On Thu, Nov 29, 2012 at 08:55:47PM +0900, Namhyung Kim wrote:
->> On Wed, 28 Nov 2012 14:52:45 +0100, Jiri Olsa wrote:
->> > Now when diff command is separated from other standard outputs,
->> > we can use perf_hpp__init to initialize all standard columns.
->> >
->> > Moving PERF_HPP__OVERHEAD column init back to perf_hpp__init,
->> > and removing extra enable calls.
->> 
->> Why was this needed in the first place?  AFAIK it's already there and
->> didn't used only for perf diff.
->
-> hm, I think PERF_HPP__OVERHEAD wasn't part of perf_hpp__init and every
-> report except for diff command is using it.. so I think it makes sense
-> to move it to perf_hpp__init.. maybe I'm missing something.
+After add some debug code, I found this NIC only accept ethernet
+broadcast package, it can't filter out the package send to its
+MAC address, but it works good for sending.So ifconfig show the
+RX/TX status means it can receive ARP package.(It don't its MAC
+address, so below)
 
-You're right.  The _OVERHEAD column was enabled by default but wasn't
-part of the _init function - sorry for the confusion.  But what I try to
-say was that it can be folded into the patch 1.
+I have try the driver provided by realtek's website, it have the
+same problem at the first time. BUT IT WORK AFTER I REBOOT with
+CRTL-ALT-DEL, the reason is that realtek's driver call rtl8168_rar_set
+in the .shutdown function register with pci_register_driver. Yes,
+the really reason to make it work is rtl8689_rar_set, this function
+set extended GigaMAC registers, so after reboot without lost the power,
+NIC keep the status before reboot.
 
-Thanks,
-Namhyung
+I haven't see any code to set GigaMAC registers in kernel when boot,
+so I guess BIOS or NIC's circuit make it, but of course one miss
+the extended GigaMAC registers  in this problem. The probe code can
+get MAC address right, so MAC{0,4} must had been setted, but some
+guys forget the extended GigaMAC registers.
+
+This patch fix it.
+[ I don't known whether others' realtek's NIC with extended GigaMAC
+reigisters have the same problem, I meet it in 8168e-vl with
+RTL_GIGA_MAC_VER_34, so I make this patch just for it.]
+
+Signed-off-by: Wang YanQing <udknight@gmail.com>
+---
+ drivers/net/ethernet/realtek/r8169.c | 24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
+
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index 927aa33..e49c08d 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -3095,7 +3095,30 @@ static void rtl8168e_1_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl_writephy(tp, 0x0e, 0x0000);
+ 	rtl_writephy(tp, 0x0d, 0x0000);
+ }
++static void rtl8168e_2_workaround(struct rtl8169_private *tp, u8 *addr)
++{
++	void __iomem *ioaddr = tp->mmio_addr;
++	u32 high;
++	u32 low;
++
++	low  = addr[0] | (addr[1] << 8) | (addr[2] << 16) | (addr[3] << 24);
++	high = addr[4] | (addr[5] << 8);
++
++
++	RTL_W8(Cfg9346, Cfg9346_Unlock);
++	if (tp->mac_version == RTL_GIGA_MAC_VER_34) {
++		const struct exgmac_reg e[] = {
++			{ .addr = 0xe0, ERIAR_MASK_1111, .val = low },
++			{ .addr = 0xe4, ERIAR_MASK_1111, .val = high },
++			{ .addr = 0xf0, ERIAR_MASK_1111, .val = low << 16 },
++			{ .addr = 0xf4, ERIAR_MASK_1111, .val = high << 16 |
++								low  >> 16 },
++		};
+ 
++		rtl_write_exgmac_batch(tp, e, ARRAY_SIZE(e));
++	}
++	RTL_W8(Cfg9346, Cfg9346_Lock);
++}
+ static void rtl8168e_2_hw_phy_config(struct rtl8169_private *tp)
+ {
+ 	static const struct phy_reg phy_reg_init[] = {
+@@ -3178,6 +3201,7 @@ static void rtl8168e_2_hw_phy_config(struct rtl8169_private *tp)
+ 	rtl_w1w0_phy(tp, 0x19, 0x0000, 0x0001);
+ 	rtl_w1w0_phy(tp, 0x10, 0x0000, 0x0400);
+ 	rtl_writephy(tp, 0x1f, 0x0000);
++	rtl8168e_2_workaround(tp, tp->dev->dev_addr);
+ }
+ 
+ static void rtl8168f_hw_phy_config(struct rtl8169_private *tp)
+-- 
+1.7.11.1.116.g8228a23
