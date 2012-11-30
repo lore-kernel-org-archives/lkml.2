@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993425Ab2K3TNO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:13:14 -0500
-Received: from mail.kernel.org ([198.145.19.201]:59507 "EHLO mail.kernel.org"
+	id S1768876Ab2K3TNh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:13:37 -0500
+Received: from mail.kernel.org ([198.145.19.201]:59484 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992954Ab2K3TCN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 14:02:13 -0500
+	id S2992947Ab2K3TCK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 14:02:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Ryan Underwood <nemesis@icequake.net>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Matt Fleming <matt.fleming@intel.com>
-Subject: [ 03/54] x86, efi: Fix processor-specific memcpy() build error
-Date: Fri, 30 Nov 2012 10:55:34 -0800
-Message-Id: <20121130185208.242068901@linuxfoundation.org>
+        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>, Ignacy Gawedzki <i@lri.fr>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 26/54] mac80211: deinitialize ibss-internals after emptiness check
+Date: Fri, 30 Nov 2012 10:55:57 -0800
+Message-Id: <20121130185210.526901190@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185207.894301294@linuxfoundation.org>
 References: <20121130185207.894301294@linuxfoundation.org>
@@ -28,44 +26,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matt Fleming <matt.fleming@intel.com>
+From: Simon Wunderlich <simon.wunderlich@s2003.tu-chemnitz.de>
 
-commit 0f905a43ce955b638139bd84486194770a6a2c08 upstream.
+commit b78a4932f5fb11fadf41e69c606a33fa6787574c upstream.
 
-Building for Athlon/Duron/K7 results in the following build error,
+The check whether the IBSS is active and can be removed should be
+performed before deinitializing the fields used for the check/search.
+Otherwise, the configured BSS will not be found and removed properly.
 
-arch/x86/boot/compressed/eboot.o: In function `__constant_memcpy3d':
-eboot.c:(.text+0x385): undefined reference to `_mmx_memcpy'
-arch/x86/boot/compressed/eboot.o: In function `efi_main':
-eboot.c:(.text+0x1a22): undefined reference to `_mmx_memcpy'
+To make it more clear for the future, rename sdata->u.ibss to the
+local pointer ifibss which is used within the checks.
 
-because the boot stub code doesn't link with the kernel proper, and
-therefore doesn't have access to the 3DNow version of memcpy. So,
-follow the example of misc.c and #undef memcpy so that we use the
-version provided by misc.c.
+This behaviour was introduced by
+f3209bea110cade12e2b133da8b8499689cb0e2e
+("mac80211: fix IBSS teardown race")
 
-See https://bugzilla.kernel.org/show_bug.cgi?id=50391
-
-Reported-by: Al Viro <viro@zeniv.linux.org.uk>
-Reported-by: Ryan Underwood <nemesis@icequake.net>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Signed-off-by: Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
+Cc: Ignacy Gawedzki <i@lri.fr>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/boot/compressed/eboot.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/mac80211/ibss.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -12,6 +12,8 @@
- #include <asm/setup.h>
- #include <asm/desc.h>
+--- a/net/mac80211/ibss.c
++++ b/net/mac80211/ibss.c
+@@ -1117,10 +1117,6 @@ int ieee80211_ibss_leave(struct ieee8021
  
-+#undef memcpy			/* Use memcpy from misc.c */
+ 	mutex_lock(&sdata->u.ibss.mtx);
+ 
+-	sdata->u.ibss.state = IEEE80211_IBSS_MLME_SEARCH;
+-	memset(sdata->u.ibss.bssid, 0, ETH_ALEN);
+-	sdata->u.ibss.ssid_len = 0;
+-
+ 	active_ibss = ieee80211_sta_active_ibss(sdata);
+ 
+ 	if (!active_ibss && !is_zero_ether_addr(ifibss->bssid)) {
+@@ -1141,6 +1137,10 @@ int ieee80211_ibss_leave(struct ieee8021
+ 		}
+ 	}
+ 
++	ifibss->state = IEEE80211_IBSS_MLME_SEARCH;
++	memset(ifibss->bssid, 0, ETH_ALEN);
++	ifibss->ssid_len = 0;
 +
- #include "eboot.h"
+ 	sta_info_flush(sdata->local, sdata);
  
- static efi_system_table_t *sys_table;
+ 	spin_lock_bh(&ifibss->incomplete_lock);
 
 
