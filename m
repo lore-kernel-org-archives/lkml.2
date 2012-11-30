@@ -1,89 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031266Ab2K3RtQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 12:49:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25035 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933546Ab2K3RtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 12:49:14 -0500
-Date: Fri, 30 Nov 2012 15:47:25 -0200
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Glauber Costa <glommer@parallels.com>, Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Greg Thelen <gthelen@google.com>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com, aquini@redhat.com,
-        riel@redhat.com
-Subject: Re: [RFC] Add mempressure cgroup
-Message-ID: <20121130154725.0a81913c@doriath.home>
-In-Reply-To: <20121129012751.GA20525@lizard>
-References: <20121128102908.GA15415@lizard>
-	<20121128151432.3e29d830.akpm@linux-foundation.org>
-	<20121129012751.GA20525@lizard>
-Organization: Red Hat
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1031409Ab2K3RuO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 12:50:14 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:61901 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1031395Ab2K3RuK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 12:50:10 -0500
+X-IronPort-AV: E=Sophos;i="4.83,348,1352044800"; 
+   d="scan'208";a="6309117"
+From: Gao feng <gaofeng@cn.fujitsu.com>
+To: cgroups@vger.kernel.org
+Cc: tj@kernel.org, lizefan@huawei.com, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org,
+        Gao feng <gaofeng@cn.fujitsu.com>
+Subject: [PATCH 1/2] cgroup: use cgroup_addrm_files in cgroup_clear_directory
+Date: Sat, 1 Dec 2012 00:21:28 +0800
+Message-Id: <1354292489-18434-1-git-send-email-gaofeng@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.7.6
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/01 00:21:06,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/01 00:21:49,
+	Serialize complete at 2012/12/01 00:21:49
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Nov 2012 17:27:51 -0800
-Anton Vorontsov <anton.vorontsov@linaro.org> wrote:
+cgroup_rm_file only remove the first file. after remount,
+the cgroup subsystem will be unloaded with it's files left.
 
-> On Wed, Nov 28, 2012 at 03:14:32PM -0800, Andrew Morton wrote:
-> [...]
-> > Compare this with the shrink_slab() shrinkers.  With these, the VM can
-> > query and then control the clients.  If something goes wrong or is out
-> > of balance, it's the VM's problem to solve.
-> > 
-> > So I'm thinking that a better design would be one which puts the kernel
-> > VM in control of userspace scanning and freeing.  Presumably with a
-> > query-and-control interface similar to the slab shrinkers.
-> 
-> Thanks for the ideas, Andrew.
-> 
-> Query-and-control scheme looks very attractive, and that's actually
-> resembles my "balance" level idea, when userland tells the kernel how much
-> reclaimable memory it has. Except the your scheme works in the reverse
-> direction, i.e. the kernel becomes in charge.
-> 
-> But there is one, rather major issue: we're crossing kernel-userspace
-> boundary. And with the scheme we'll have to cross the boundary four times:
-> query / reply-available / control / reply-shrunk / (and repeat if
-> necessary, every SHRINK_BATCH pages). Plus, it has to be done somewhat
-> synchronously (all the four stages), and/or we have to make a "userspace
-> shrinker" thread working in parallel with the normal shrinker, and here,
-> I'm afraid, we'll see more strange interactions. :)
+use cgroup_addrm_files to remove all files of subsystem.
 
-Wouldn't this be just like kswapd?
+Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+---
+ kernel/cgroup.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-> But there is a good news: for these kind of fine-grained control we have a
-> better interface, where we don't have to communicate [very often] w/ the
-> kernel. These are "volatile ranges", where userland itself marks chunks of
-> data as "I might need it, but I won't cry if you recycle it; but when I
-> access it next time, let me know if you actually recycled it". Yes,
-> userland no longer able to decide which exact page it permits to recycle,
-> but we don't have use-cases when we actually care that much. And if we do,
-> we'd rather introduce volatile LRUs with different priorities, or
-> something alike.
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index f24f724..e5233b7 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -970,6 +970,8 @@ static int cgroup_rm_file(struct cgroup *cgrp, const struct cftype *cft)
+ 	return -ENOENT;
+ }
+ 
++static int cgroup_addrm_files(struct cgroup *cgrp, struct cgroup_subsys *subsys,
++			      struct cftype cfts[], bool is_add);
+ /**
+  * cgroup_clear_directory - selective removal of base and subsystem files
+  * @dir: directory containing the files
+@@ -987,7 +989,7 @@ static void cgroup_clear_directory(struct dentry *dir, bool base_files,
+ 		if (!test_bit(ss->subsys_id, &subsys_mask))
+ 			continue;
+ 		list_for_each_entry(set, &ss->cftsets, node)
+-			cgroup_rm_file(cgrp, set->cfts);
++			cgroup_addrm_files(cgrp, NULL, set->cfts, false);
+ 	}
+ 	if (base_files) {
+ 		while (!list_empty(&cgrp->files))
+-- 
+1.7.7.6
 
-I'm new to this stuff so please take this with a grain of salt, but I'm
-not sure volatile ranges would be a good fit for our use case: we want to
-make (kvm) guests reduce their memory when the host is getting memory
-pressure.
-
-Having a notification seems just fine for this purpose, but I'm not sure
-how this would work with volatile ranges, as we'd have to mark pages volatile
-in advance.
-
-Andrew's idea seems to give a lot more freedom to apps, IMHO.
