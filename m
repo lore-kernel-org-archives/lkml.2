@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031705Ab2K3Stm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:49:42 -0500
-Received: from mail.kernel.org ([198.145.19.201]:57450 "EHLO mail.kernel.org"
+	id S1161080Ab2K3Stt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:49:49 -0500
+Received: from mail.kernel.org ([198.145.19.201]:57567 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1031634Ab2K3St1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:49:27 -0500
+	id S1031634Ab2K3Stn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:49:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 22/37] sparc64: not any error from do_sigaltstack() should fail rt_sigreturn()
-Date: Fri, 30 Nov 2012 10:46:09 -0800
-Message-Id: <20121130183859.634524718@linuxfoundation.org>
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>, Chris Ball <cjb@laptop.org>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 37/37] mmc: sdhci-s3c: fix the wrong number of max bus clocks
+Date: Fri, 30 Nov 2012 10:46:24 -0800
+Message-Id: <20121130183901.213479863@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130183857.166228045@linuxfoundation.org>
 References: <20121130183857.166228045@linuxfoundation.org>
@@ -26,39 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Jaehoon Chung <jh80.chung@samsung.com>
 
-commit fae2ae2a900a5c7bb385fe4075f343e7e2d5daa2 upstream.
+commit 5feb54a1ab91a237e247c013b8c4fb100ea347b1 upstream.
 
-If a signal handler is executed on altstack and another signal comes,
-we will end up with rt_sigreturn() on return from the second handler
-getting -EPERM from do_sigaltstack().  It's perfectly OK, since we
-are not asking to change the settings; in fact, they couldn't have been
-changed during the second handler execution exactly because we'd been
-on altstack all along.  64bit sigreturn on sparc treats any error from
-do_sigaltstack() as "SIGSEGV now"; we need to switch to the same semantics
-we are using on other architectures.
+We can use up to four bus-clocks; but on module remove, we didn't
+disable the fourth bus clock.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/sparc/kernel/signal_64.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/mmc/host/sdhci-s3c.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/sparc/kernel/signal_64.c
-+++ b/arch/sparc/kernel/signal_64.c
-@@ -309,9 +309,7 @@ void do_rt_sigreturn(struct pt_regs *reg
- 		err |= restore_fpu_state(regs, fpu_save);
+--- a/drivers/mmc/host/sdhci-s3c.c
++++ b/drivers/mmc/host/sdhci-s3c.c
+@@ -589,7 +589,7 @@ static int __devexit sdhci_s3c_remove(st
  
- 	err |= __copy_from_user(&set, &sf->mask, sizeof(sigset_t));
--	err |= do_sigaltstack(&sf->stack, NULL, (unsigned long)sf);
--
--	if (err)
-+	if (err || do_sigaltstack(&sf->stack, NULL, (unsigned long)sf) == -EFAULT)
- 		goto segv;
+ 	sdhci_remove_host(host, 1);
  
- 	err |= __get_user(rwin_save, &sf->rwin_save);
+-	for (ptr = 0; ptr < 3; ptr++) {
++	for (ptr = 0; ptr < MAX_BUS_CLK; ptr++) {
+ 		if (sc->clk_bus[ptr]) {
+ 			clk_disable(sc->clk_bus[ptr]);
+ 			clk_put(sc->clk_bus[ptr]);
 
 
