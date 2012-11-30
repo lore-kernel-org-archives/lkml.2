@@ -1,53 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756933Ab2K3LEo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 06:04:44 -0500
-Received: from mga01.intel.com ([192.55.52.88]:16630 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756682Ab2K3LEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 06:04:43 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,191,1355126400"; 
-   d="scan'208";a="257101132"
-Date: Fri, 30 Nov 2012 12:04:38 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Philipp Zabel <p.zabel@pengutronix.de>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: da9052-core: Fix interrupts reported to mfd child
- devices
-Message-ID: <20121130110438.GO3176@sortiz-mobl>
-References: <1354201468-9219-1-git-send-email-p.zabel@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354201468-9219-1-git-send-email-p.zabel@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757597Ab2K3LEw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 06:04:52 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:42229 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757564Ab2K3LEt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 06:04:49 -0500
+X-Greylist: delayed 407 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 Nov 2012 06:04:49 EST
+From: Laurent Navet <laurent.navet@gmail.com>
+To: devel@driverdev.osuosl.org
+Cc: line6linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, Laurent Navet <laurent.navet@gmail.com>
+Subject: [PATCH] staging: line6: pcm.c fix checkpatch issues
+Date: Fri, 30 Nov 2012 11:57:32 +0100
+Message-Id: <1354273052-5203-2-git-send-email-laurent.navet@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1354273052-5203-1-git-send-email-laurent.navet@gmail.com>
+References: <1354273052-5203-1-git-send-email-laurent.navet@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Philipp,
+fix those checkpatch issues
+drivers/staging/line6/pcm.c:84:
+	WARNING: simple_strtoul is obsolete, use kstrtoul instead
+	call to obsolete simple_strtoul() replaced by kstrtoint()
 
-On Thu, Nov 29, 2012 at 04:04:28PM +0100, Philipp Zabel wrote:
-> The patch "mfd: da9052-core: Use regmap_irq_get_virq() and fix the probe"
-> replaces the irq_base with the da9052_map_irq function but doesn't
-> update the irq_base parameter to the mfd_add_devices call.
-> This causes child devices to try and request IRQs with just the internal
-> offset number.
-> 
-> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-> ---
->  drivers/mfd/da9052-core.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-Applied, although I'd like to get Fabio's ACK on it.
-I think this is a problem he should have seen, although he could have missed
-it since the original patch is a fairly old one and there have been some MFD
-API changes in between.
+drivers/staging/line6/pcm.c:423:
+	ERROR: switch and case should be at the same indent
+	realigns comments
 
-Cheers,
-Samuel.
+Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
+---
+ drivers/staging/line6/pcm.c |   30 ++++++++++++++++++------------
+ 1 file changed, 18 insertions(+), 12 deletions(-)
 
+diff --git a/drivers/staging/line6/pcm.c b/drivers/staging/line6/pcm.c
+index 6c1e313..17969c6 100644
+--- a/drivers/staging/line6/pcm.c
++++ b/drivers/staging/line6/pcm.c
+@@ -49,11 +49,11 @@ static ssize_t pcm_set_impulse_volume(struct device *dev,
+ {
+ 	struct snd_line6_pcm *line6pcm = dev2pcm(dev);
+ 	int value;
+-	int rv;
++	int ret;
+ 
+-	rv = kstrtoint(buf, 10, &value);
+-	if (rv < 0)
+-		return rv;
++	ret = kstrtoint(buf, 10, &value);
++	if (ret < 0)
++		return ret;
+ 
+ 	line6pcm->impulse_volume = value;
+ 
+@@ -81,7 +81,14 @@ static ssize_t pcm_set_impulse_period(struct device *dev,
+ 				      struct device_attribute *attr,
+ 				      const char *buf, size_t count)
+ {
+-	dev2pcm(dev)->impulse_period = simple_strtoul(buf, NULL, 10);
++	int value;
++	int ret;
++
++	ret = kstrtoint(buf, 10, &value);
++	if (ret < 0)
++		return ret;
++
++	dev2pcm(dev)->impulse_period = value;
+ 	return count;
+ }
+ 
+@@ -455,13 +462,12 @@ int line6_init_pcm(struct usb_line6 *line6,
+ 		ep_write = 0x01;
+ 		break;
+ 
+-		/* this is for interface_number == 1:
+-		   case LINE6_DEVID_TONEPORT_UX2:
+-		   case LINE6_DEVID_PODSTUDIO_UX2:
+-		   ep_read  = 0x87;
+-		   ep_write = 0x00;
+-		   break;
+-		 */
++	/* this is for interface_number == 1:
++	case LINE6_DEVID_TONEPORT_UX2:
++	case LINE6_DEVID_PODSTUDIO_UX2:
++		ep_read  = 0x87;
++		ep_write = 0x00;
++		break; */
+ 
+ 	default:
+ 		MISSING_CASE;
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.10.4
+
