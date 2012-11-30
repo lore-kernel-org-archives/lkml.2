@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993046Ab2K3TCc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:02:32 -0500
-Received: from mail.kernel.org ([198.145.19.201]:59622 "EHLO mail.kernel.org"
+	id S2993028Ab2K3TC1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:02:27 -0500
+Received: from mail.kernel.org ([198.145.19.201]:59574 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992945Ab2K3TC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 14:02:28 -0500
+	id S2992945Ab2K3TCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 14:02:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Marek Vasut <marex@denx.de>, Chen Peter <B29397@freescale.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 39/54] HID: add quirk for Freescale i.MX28 ROM recovery
-Date: Fri, 30 Nov 2012 10:56:10 -0800
-Message-Id: <20121130185211.872118616@linuxfoundation.org>
+        Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 09/54] mwifiex: report error to MMC core if we cannot suspend
+Date: Fri, 30 Nov 2012 10:55:40 -0800
+Message-Id: <20121130185208.820318126@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185207.894301294@linuxfoundation.org>
 References: <20121130185207.894301294@linuxfoundation.org>
@@ -26,46 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marek Vasut <marex@denx.de>
+From: Bing Zhao <bzhao@marvell.com>
 
-commit 2843b673d03421e0e73cf061820d1db328f7c8eb upstream.
+commit dd321acddc3be1371263b8c9e6c6f2af89f63d57 upstream.
 
-The USB recovery mode present in i.MX28 ROM emulates USB HID.
-It needs this quirk to behave properly.
+When host_sleep_config command fails we should return error to
+MMC core to indicate the failure for our device.
 
-Signed-off-by: Marek Vasut <marex@denx.de>
-Cc: Chen Peter <B29397@freescale.com>
-Cc: Jiri Kosina <jkosina@suse.cz>
-[jkosina@suse.cz: fix alphabetical ordering]
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+The misspelled variable is also removed as it's redundant.
+
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-ids.h           |    3 +++
- drivers/hid/usbhid/hid-quirks.c |    1 +
- 2 files changed, 4 insertions(+)
+ drivers/net/wireless/mwifiex/sdio.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -296,6 +296,9 @@
- #define USB_VENDOR_ID_EZKEY		0x0518
- #define USB_DEVICE_ID_BTC_8193		0x0002
+--- a/drivers/net/wireless/mwifiex/sdio.c
++++ b/drivers/net/wireless/mwifiex/sdio.c
+@@ -161,7 +161,6 @@ static int mwifiex_sdio_suspend(struct d
+ 	struct sdio_mmc_card *card;
+ 	struct mwifiex_adapter *adapter;
+ 	mmc_pm_flag_t pm_flag = 0;
+-	int hs_actived = 0;
+ 	int i;
+ 	int ret = 0;
  
-+#define USB_VENDOR_ID_FREESCALE		0x15A2
-+#define USB_DEVICE_ID_FREESCALE_MX28	0x004F
+@@ -188,12 +187,14 @@ static int mwifiex_sdio_suspend(struct d
+ 	adapter = card->adapter;
+ 
+ 	/* Enable the Host Sleep */
+-	hs_actived = mwifiex_enable_hs(adapter);
+-	if (hs_actived) {
+-		pr_debug("cmd: suspend with MMC_PM_KEEP_POWER\n");
+-		ret = sdio_set_host_pm_flags(func, MMC_PM_KEEP_POWER);
++	if (!mwifiex_enable_hs(adapter)) {
++		dev_err(adapter->dev, "cmd: failed to suspend\n");
++		return -EFAULT;
+ 	}
+ 
++	dev_dbg(adapter->dev, "cmd: suspend with MMC_PM_KEEP_POWER\n");
++	ret = sdio_set_host_pm_flags(func, MMC_PM_KEEP_POWER);
 +
- #define USB_VENDOR_ID_FRUCTEL	0x25B6
- #define USB_DEVICE_ID_GAMETEL_MT_MODE	0x0002
+ 	/* Indicate device suspended */
+ 	adapter->is_suspended = true;
  
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -70,6 +70,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_CH, USB_DEVICE_ID_CH_AXIS_295, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_DMI, USB_DEVICE_ID_DMI_ENC, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_ELO, USB_DEVICE_ID_ELO_TS2700, HID_QUIRK_NOGET },
-+	{ USB_VENDOR_ID_FREESCALE, USB_DEVICE_ID_FREESCALE_MX28, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_MGE, USB_DEVICE_ID_MGE_UPS, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN1, HID_QUIRK_NO_INIT_REPORTS },
 
 
