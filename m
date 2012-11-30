@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161080Ab2K3Stt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:49:49 -0500
-Received: from mail.kernel.org ([198.145.19.201]:57567 "EHLO mail.kernel.org"
+	id S1422669Ab2K3SuB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:50:01 -0500
+Received: from mail.kernel.org ([198.145.19.201]:57751 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1031634Ab2K3Stn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:49:43 -0500
+	id S1161104Ab2K3St4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:49:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>, Chris Ball <cjb@laptop.org>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 37/37] mmc: sdhci-s3c: fix the wrong number of max bus clocks
-Date: Fri, 30 Nov 2012 10:46:24 -0800
-Message-Id: <20121130183901.213479863@linuxfoundation.org>
+        Duncan Roe <duncan_roe@acslink.net.au>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 24/37] ALSA: hda - Fix missing beep on ASUS X43U notebook
+Date: Fri, 30 Nov 2012 10:46:11 -0800
+Message-Id: <20121130183859.841524707@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130183857.166228045@linuxfoundation.org>
 References: <20121130183857.166228045@linuxfoundation.org>
@@ -27,33 +25,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jaehoon Chung <jh80.chung@samsung.com>
+From: Duncan Roe <duncan_roe@acslink.net.au>
 
-commit 5feb54a1ab91a237e247c013b8c4fb100ea347b1 upstream.
+commit 7110005e8d5c3cd418fc4b64f9f124f004422a9a upstream.
 
-We can use up to four bus-clocks; but on module remove, we didn't
-disable the fourth bus clock.
-
-Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Duncan Roe <duncan_roe@acslink.net.au>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/sdhci-s3c.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/patch_realtek.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/mmc/host/sdhci-s3c.c
-+++ b/drivers/mmc/host/sdhci-s3c.c
-@@ -589,7 +589,7 @@ static int __devexit sdhci_s3c_remove(st
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -5967,6 +5967,7 @@ static void fillup_priv_adc_nids(struct
+ 	((spec)->beep_amp = HDA_COMPOSE_AMP_VAL(nid, 3, idx, dir))
  
- 	sdhci_remove_host(host, 1);
- 
--	for (ptr = 0; ptr < 3; ptr++) {
-+	for (ptr = 0; ptr < MAX_BUS_CLK; ptr++) {
- 		if (sc->clk_bus[ptr]) {
- 			clk_disable(sc->clk_bus[ptr]);
- 			clk_put(sc->clk_bus[ptr]);
+ static const struct snd_pci_quirk beep_white_list[] = {
++	SND_PCI_QUIRK(0x1043, 0x103c, "ASUS", 1),
+ 	SND_PCI_QUIRK(0x1043, 0x829f, "ASUS", 1),
+ 	SND_PCI_QUIRK(0x1043, 0x83ce, "EeePC", 1),
+ 	SND_PCI_QUIRK(0x1043, 0x831a, "EeePC", 1),
 
 
