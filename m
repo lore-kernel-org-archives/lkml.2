@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754588Ab2K3ISg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 03:18:36 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55123 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754413Ab2K3ISd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 03:18:33 -0500
-Date: Fri, 30 Nov 2012 09:18:28 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
-        Tejun Heo <htejun@gmail.com>, Glauber Costa <glommer@parallels.com>,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: [patch v2 6/6] cgroup: remove css_get_next
-Message-ID: <20121130081828.GB29317@dhcp22.suse.cz>
-References: <1353955671-14385-1-git-send-email-mhocko@suse.cz>
- <1353955671-14385-7-git-send-email-mhocko@suse.cz>
- <50B8322D.7050104@jp.fujitsu.com>
+	id S1754742Ab2K3IVp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 03:21:45 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:54454 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754611Ab2K3IVo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 03:21:44 -0500
+Date: Fri, 30 Nov 2012 08:21:39 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Simon Glass <sjg@chromium.org>
+Cc: Kyungmin Park <kmpark@infradead.org>, linux@arm.linux.org.uk,
+        linus.walleij@stericsson.com, jonas.aberg@stericsson.com,
+        will.deacon@arm.com, linux-kernel@vger.kernel.org, arnd@arndb.de,
+        Mian Yousaf Kaukab <mian.yousaf.kaukab@stericsson.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] Boottime: A tool for automatic measurement of
+ kernel/bootloader boot time
+Message-ID: <20121130082139.GA26023@gmail.com>
+References: <1352973847-21605-1-git-send-email-lee.jones@linaro.org>
+ <1352973847-21605-2-git-send-email-lee.jones@linaro.org>
+ <CAH9JG2UX0Wyr-QKw3=tbUXeuEhHe04_cFkkAp6bB2Rr-x7ViHQ@mail.gmail.com>
+ <20121115112543.GC21682@gmail.com>
+ <20121120161638.GD28265@gmail.com>
+ <CAPnjgZ1SRvZtUD7wUV4E41Vi7q6B9qGLvGPhMqx_Heoq7YwOkA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <50B8322D.7050104@jp.fujitsu.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAPnjgZ1SRvZtUD7wUV4E41Vi7q6B9qGLvGPhMqx_Heoq7YwOkA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 30-11-12 13:12:29, KAMEZAWA Hiroyuki wrote:
-> (2012/11/27 3:47), Michal Hocko wrote:
-> > Now that we have generic and well ordered cgroup tree walkers there is
-> > no need to keep css_get_next in the place.
-> > 
-> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+On Thu, 29 Nov 2012, Simon Glass wrote:
+
+> Hi,
 > 
-> Hm, then, the next think will be css_is_ancestor() etc..
-
-Good point I thought that the only remaining part is swap accounting. It
-is not directly with the iterators so I will send a separate patch.
-Tejun said he has a replacement that could be used for the swap
-accounting and then the whole css_id can be buried.
-
+> On Tue, Nov 20, 2012 at 8:16 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> >> > > +/* for automatic boot timing testcases */
+> >> > > +#define ATAG_BOOTTIME  0x41000403
+> >> > Where can I refer this ATAG usage? can you point out the reference URL
+> >> > or patches?
+> >>
+> >> I assumed this would be in Mainline u-boot, but apparently not.
+> >> On closer inspection of the internal ST-Ericsson u-boot, this
+> >> functionality appears to be provided by patches which currently
+> >> exist as delta. So in essence, the bootloader you use will have
+> >> to be patched in a similar way for you to retrieve information
+> >> surrounding bootloader boot times.
+> >>
+> >> And there was me thinking it was magic. ;)
+> >
+> > Okay, so I'm going through the motions of upstreaming this magic
+> > now. Please see the link below for reference:
+> >
+> > http://marc.info/?l=u-boot&m=135342273317337&w=2
 > 
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Given that U-Boot has bootstage, would it make sense to upstream that
+> to the kernel? Some RFC patches were sent before this went into U-Boot
+> to sound out the interest.
 
-Thanks for the review of the whole patchset, Kame!
-I would like to hear back from Johannes and then resubmit the series to
-Andrew.
+Right. As Simon and I have already discussed, I am pulling the
+u-boot and kernel boottime components in lieu of bootstage.
+
 -- 
-Michal Hocko
-SUSE Labs
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
