@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993269Ab2K3TFi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:05:38 -0500
-Received: from mail.kernel.org ([198.145.19.201]:59914 "EHLO mail.kernel.org"
+	id S2993254Ab2K3TFh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:05:37 -0500
+Received: from mail.kernel.org ([198.145.19.201]:59925 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757232Ab2K3TC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 14:02:59 -0500
+	id S1757236Ab2K3TDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 14:03:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 31/54] sparc64: not any error from do_sigaltstack() should fail rt_sigreturn()
-Date: Fri, 30 Nov 2012 10:56:02 -0800
-Message-Id: <20121130185211.062066049@linuxfoundation.org>
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 32/54] PM / QoS: fix wrong error-checking condition
+Date: Fri, 30 Nov 2012 10:56:03 -0800
+Message-Id: <20121130185211.163696376@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185207.894301294@linuxfoundation.org>
 References: <20121130185207.894301294@linuxfoundation.org>
@@ -26,39 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
 
-commit fae2ae2a900a5c7bb385fe4075f343e7e2d5daa2 upstream.
+commit a7227a0faa117d0bc532aea546ae5ac5f89e8ed7 upstream.
 
-If a signal handler is executed on altstack and another signal comes,
-we will end up with rt_sigreturn() on return from the second handler
-getting -EPERM from do_sigaltstack().  It's perfectly OK, since we
-are not asking to change the settings; in fact, they couldn't have been
-changed during the second handler execution exactly because we'd been
-on altstack all along.  64bit sigreturn on sparc treats any error from
-do_sigaltstack() as "SIGSEGV now"; we need to switch to the same semantics
-we are using on other architectures.
+dev_pm_qos_add_request() can return 0, 1, or a negative error code,
+therefore the correct error test is "if (error < 0)." Checking just for
+non-zero return code leads to erroneous setting of the req->dev pointer
+to NULL, which then leads to a repeated call to
+dev_pm_qos_add_ancestor_request() in st1232_ts_irq_handler(). This in turn
+leads to an Oops, when the I2C host adapter is unloaded and reloaded again
+because of the inconsistent state of its QoS request list.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/sparc/kernel/signal_64.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/base/power/qos.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/sparc/kernel/signal_64.c
-+++ b/arch/sparc/kernel/signal_64.c
-@@ -295,9 +295,7 @@ void do_rt_sigreturn(struct pt_regs *reg
- 		err |= restore_fpu_state(regs, fpu_save);
+--- a/drivers/base/power/qos.c
++++ b/drivers/base/power/qos.c
+@@ -451,7 +451,7 @@ int dev_pm_qos_add_ancestor_request(stru
+ 	if (ancestor)
+ 		error = dev_pm_qos_add_request(ancestor, req, value);
  
- 	err |= __copy_from_user(&set, &sf->mask, sizeof(sigset_t));
--	err |= do_sigaltstack(&sf->stack, NULL, (unsigned long)sf);
--
--	if (err)
-+	if (err || do_sigaltstack(&sf->stack, NULL, (unsigned long)sf) == -EFAULT)
- 		goto segv;
+-	if (error)
++	if (error < 0)
+ 		req->dev = NULL;
  
- 	err |= __get_user(rwin_save, &sf->rwin_save);
+ 	return error;
 
 
