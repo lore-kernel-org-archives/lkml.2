@@ -1,98 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030360Ab2K3MEL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 07:04:11 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:42571 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030312Ab2K3MEE (ORCPT
+	id S1030389Ab2K3MEm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 07:04:42 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:65133 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030350Ab2K3MEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 07:04:04 -0500
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        Prabhakar Lad <prabhakar.lad@ti.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>, <devel@driverdev.osuosl.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH v4 8/9] davinci: vpfe: dm365: add build infrastructure for capture driver
-Date: Fri, 30 Nov 2012 17:31:18 +0530
-Message-Id: <1354276879-27244-9-git-send-email-prabhakar.lad@ti.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1354276879-27244-1-git-send-email-prabhakar.lad@ti.com>
-References: <1354276879-27244-1-git-send-email-prabhakar.lad@ti.com>
+	Fri, 30 Nov 2012 07:04:38 -0500
+X-Greylist: delayed 408 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 Nov 2012 07:04:38 EST
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: linus.walleij@stericsson.com, arnd@arndb.de, cbou@mail.ru,
+        dwmw2@infradead.org, rajanikanth.hv@linaro.org,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH 10/12] ab8500_fg: Reorder obtainment of platform specific battery management data
+Date: Fri, 30 Nov 2012 11:57:32 +0000
+Message-Id: <1354276654-590-11-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1354276654-590-1-git-send-email-lee.jones@linaro.org>
+References: <1354276654-590-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Manjunath Hadli <manjunath.hadli@ti.com>
+Now that we always pass platform specific battery management data
+through platform_data instead of obtaining it via different means
+depending the way be boot the system (DT or ATAGs); we need to
+re-jiggle the way we acquire it in the driver start-up functions.
+Now it is wrong for it to be missing, but we still allow Device
+Tree code to fiddle with it once we've confirmed it's there.
 
-add build infrastructure for dm365 specific modules for VPFE
-capture driver.
-
-Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
-Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Acked-by: Sakari Ailus <sakari.ailus@iki.fi>
-Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/staging/media/Kconfig               |    2 ++
- drivers/staging/media/Makefile              |    1 +
- drivers/staging/media/davinci_vpfe/Kconfig  |    9 +++++++++
- drivers/staging/media/davinci_vpfe/Makefile |    3 +++
- 4 files changed, 15 insertions(+), 0 deletions(-)
- create mode 100644 drivers/staging/media/davinci_vpfe/Kconfig
- create mode 100644 drivers/staging/media/davinci_vpfe/Makefile
+ drivers/power/ab8500_fg.c |   27 +++++++++++++--------------
+ 1 file changed, 13 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/staging/media/Kconfig b/drivers/staging/media/Kconfig
-index 427218b..ae0abc3 100644
---- a/drivers/staging/media/Kconfig
-+++ b/drivers/staging/media/Kconfig
-@@ -23,6 +23,8 @@ source "drivers/staging/media/as102/Kconfig"
- 
- source "drivers/staging/media/cxd2099/Kconfig"
- 
-+source "drivers/staging/media/davinci_vpfe/Kconfig"
+diff --git a/drivers/power/ab8500_fg.c b/drivers/power/ab8500_fg.c
+index 8bb9df9..df681a8 100644
+--- a/drivers/power/ab8500_fg.c
++++ b/drivers/power/ab8500_fg.c
+@@ -2448,6 +2448,7 @@ static char *supply_interface[] = {
+ static int __devinit ab8500_fg_probe(struct platform_device *pdev)
+ {
+ 	struct device_node *np = pdev->dev.of_node;
++	struct abx500_bm_data *plat = pdev->dev.platform_data;
+ 	struct ab8500_fg *di;
+ 	int i, irq;
+ 	int ret = 0;
+@@ -2457,21 +2458,19 @@ static int __devinit ab8500_fg_probe(struct platform_device *pdev)
+ 		dev_err(&pdev->dev, "%s no mem for ab8500_fg\n", __func__);
+ 		return -ENOMEM;
+ 	}
+-	di->bm = pdev->mfd_cell->platform_data;
+-	if (!di->bm) {
+-		if (np) {
+-			ret = ab8500_bm_of_probe(&pdev->dev, np, di->bm);
+-			if (ret) {
+-				dev_err(&pdev->dev,
+-					"failed to get battery information\n");
+-				return ret;
+-			}
+-		} else {
+-			dev_err(&pdev->dev, "missing dt node for ab8500_fg\n");
+-			return -EINVAL;
 +
- source "drivers/staging/media/dt3155v4l/Kconfig"
- 
- source "drivers/staging/media/go7007/Kconfig"
-diff --git a/drivers/staging/media/Makefile b/drivers/staging/media/Makefile
-index aec6eb9..2b97cae 100644
---- a/drivers/staging/media/Makefile
-+++ b/drivers/staging/media/Makefile
-@@ -4,3 +4,4 @@ obj-$(CONFIG_LIRC_STAGING)	+= lirc/
- obj-$(CONFIG_SOLO6X10)		+= solo6x10/
- obj-$(CONFIG_VIDEO_DT3155)	+= dt3155v4l/
- obj-$(CONFIG_VIDEO_GO7007)	+= go7007/
-+obj-$(CONFIG_VIDEO_DM365_VPFE)	+= davinci_vpfe/
-diff --git a/drivers/staging/media/davinci_vpfe/Kconfig b/drivers/staging/media/davinci_vpfe/Kconfig
-new file mode 100644
-index 0000000..2e4a28b
---- /dev/null
-+++ b/drivers/staging/media/davinci_vpfe/Kconfig
-@@ -0,0 +1,9 @@
-+config VIDEO_DM365_VPFE
-+	tristate "DM365 VPFE Media Controller Capture Driver"
-+	depends on VIDEO_V4L2 && ARCH_DAVINCI_DM365 && !VIDEO_VPFE_CAPTURE
-+	select VIDEOBUF2_DMA_CONTIG
-+	help
-+	  Support for DM365 VPFE based Media Controller Capture driver.
++	if (!plat) {
++		dev_err(&pdev->dev, "no battery management data supplied\n");
++		return -EINVAL;
++	}
++	di->bm = plat;
 +
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called vpfe-mc-capture.
-diff --git a/drivers/staging/media/davinci_vpfe/Makefile b/drivers/staging/media/davinci_vpfe/Makefile
-new file mode 100644
-index 0000000..c64515c
---- /dev/null
-+++ b/drivers/staging/media/davinci_vpfe/Makefile
-@@ -0,0 +1,3 @@
-+obj-$(CONFIG_VIDEO_DM365_VPFE) += \
-+	dm365_isif.o dm365_ipipe_hw.o dm365_ipipe.o \
-+	dm365_resizer.o dm365_ipipeif.o vpfe_mc_capture.o vpfe_video.o
++	if (np) {
++		ret = ab8500_bm_of_probe(&pdev->dev, np, di->bm);
++		if (ret) {
++			dev_err(&pdev->dev, "failed to get battery information\n");
++			return ret;
+ 		}
+-	} else {
+-		dev_info(&pdev->dev, "falling back to legacy platform data\n");
+ 	}
+ 
+ 	mutex_init(&di->cc_lock);
 -- 
-1.7.4.1
+1.7.9.5
 
