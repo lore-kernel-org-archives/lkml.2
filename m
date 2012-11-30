@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757134Ab2K3Ldz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 06:33:55 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:44555 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755361Ab2K3Ldy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 06:33:54 -0500
+	id S1757584Ab2K3Lh0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 06:37:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24118 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751691Ab2K3LhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 06:37:25 -0500
+Date: Fri, 30 Nov 2012 12:36:35 +0100 (CET)
+From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-1-104.brq.redhat.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Lukas Czerner <lczerner@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-raid@vger.kernel.org, axboe@kernel.dk, jmoyer@redhat.com,
+        Neil Brown <neilb@suse.de>
+Subject: Re: [PATCH 1/2 v3] wait: add wait_event_lock_irq() interface
+In-Reply-To: <20121130024842.5326d998.akpm@linux-foundation.org>
+Message-ID: <alpine.LFD.2.00.1211301233320.8688@dhcp-1-104.brq.redhat.com>
+References: <1354272161-9173-1-git-send-email-lczerner@redhat.com> <20121130024842.5326d998.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Date: Fri, 30 Nov 2012 17:03:53 +0530
-Message-ID: <CACBffj90HufSBwL5fcmCzLjvQJ_QOMfT=3KJgbkgjn55kudwNw@mail.gmail.com>
-Subject: panic doesn't get invoked on oops when panic_on_oops is set
-From: Kalash Nainwal <kalash@aristanetworks.com>
-To: linux-kernel@vger.kernel.org
-Cc: Kalash Nainwal <kalash@aristanetworks.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 30 Nov 2012, Andrew Morton wrote:
 
-An oops doesn't result in panic() call even when panic_on_oops
-is set (if we've a crash kernel loaded). The reason seems to be
-that from oops codepath before calling panic(), we call
-crash_kexec() if panic_on_oops is set:
+> Date: Fri, 30 Nov 2012 02:48:42 -0800
+> From: Andrew Morton <akpm@linux-foundation.org>
+> To: Lukas Czerner <lczerner@redhat.com>
+> Cc: linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, axboe@kernel.dk,
+>     jmoyer@redhat.com, Neil Brown <neilb@suse.de>,
+>     David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+>     Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Subject: Re: [PATCH 1/2 v3] wait: add wait_event_lock_irq() interface
+> 
+> On Fri, 30 Nov 2012 11:42:40 +0100 Lukas Czerner <lczerner@redhat.com> wrote:
+> 
+> > New wait_event{_interruptible}_lock_irq{_cmd} macros added. This commit
+> > moves the private wait_event_lock_irq() macro from MD to regular wait
+> > includes, introduces new macro wait_event_lock_irq_cmd() instead of using
+> > the old method with omitting cmd parameter which is ugly and makes a use
+> > of new macros in the MD. It also introduces the _interruptible_ variant.
+> > 
+> > The use of new interface is when one have a special lock to protect data
+> > structures used in the condition, or one also needs to invoke "cmd"
+> > before putting it to sleep.
+> > 
+> > All new macros are expected to be called with the lock taken. The lock
+> > is released before sleep and is reacquired afterwards. We will leave the
+> > macro with the lock held.
+> > 
+> > Note to DM: IMO this should also fix theoretical race on waitqueue while
+> > using simultaneously wait_event_lock_irq() and wait_event() because of
+> > lack of locking around current state setting and wait queue removal.
+> 
+> Does this fix the sparse warning which Fengguang just sent us?
 
-void __kprobes oops_end(unsigned long flags, struct pt_regs *regs, int signr)
+Which report from Fengguang do you have in mind ? I do not see any
+on linux-kernel today.
 
-{
-       if (regs && kexec_should_crash(current))
-                crash_kexec(regs);  <====== I'm hitting this
-        .
-        .
-        if (panic_on_oops)
-                 panic("Fatal exception");  <==== I want this to be hit
-        do_exit(signr);
-}
+/me going to see what spare reports
 
-int kexec_should_crash(struct task_struct *p)
-{
-          if (in_interrupt() || !p->pid || is_global_init(p) || panic_on_oops)
-                   return 1;
-           return 0;
-}
-
-If we let panic() get called from oops_end(), we would eventually
-call crash_kexec() from panic() anyway. Isn't it?
-
-Then is the panic_on_oops check in kexec_should_crash()
-redundant? Or there's reason behind this behavior?
-
-Would greatly appreciate any response here. Also please CC me
-as I am not part of linux-kernel list.
-
-Regards,
--Kalash
+-Lukas
