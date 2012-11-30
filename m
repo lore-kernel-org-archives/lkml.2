@@ -1,23 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993240Ab2K3TEq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:04:46 -0500
-Received: from mail.kernel.org ([198.145.19.201]:59942 "EHLO mail.kernel.org"
+	id S2993227Ab2K3TEo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:04:44 -0500
+Received: from mail.kernel.org ([198.145.19.201]:59959 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993122Ab2K3TDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 14:03:02 -0500
+	id S2993124Ab2K3TDD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 14:03:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jan Kara <jack@suse.cz>, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 33/54] writeback: put unused inodes to LRU after writeback completion
-Date: Fri, 30 Nov 2012 10:56:04 -0800
-Message-Id: <20121130185211.261563985@linuxfoundation.org>
+        Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 34/54] ALSA: hda - Add new codec ALC283 ALC290 support
+Date: Fri, 30 Nov 2012 10:56:05 -0800
+Message-Id: <20121130185211.363509127@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185207.894301294@linuxfoundation.org>
 References: <20121130185207.894301294@linuxfoundation.org>
@@ -30,104 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Kailang Yang <kailang@realtek.com>
 
-commit 4eff96dd5283a102e0c1cac95247090be74a38ed upstream.
+commit 7ff34ad80b7080fafaac8efa9ef0061708eddd51 upstream.
 
-Commit 169ebd90131b ("writeback: Avoid iput() from flusher thread")
-removed iget-iput pair from inode writeback.  As a side effect, inodes
-that are dirty during iput_final() call won't be ever added to inode LRU
-(iput_final() doesn't add dirty inodes to LRU and later when the inode
-is cleaned there's noone to add the inode there).  Thus inodes are
-effectively unreclaimable until someone looks them up again.
+These are compatible with standard ALC269 parser.
 
-The practical effect of this bug is limited by the fact that inodes are
-pinned by a dentry for long enough that the inode gets cleaned.  But
-still the bug can have nasty consequences leading up to OOM conditions
-under certain circumstances.  Following can easily reproduce the
-problem:
-
-  for (( i = 0; i < 1000; i++ )); do
-    mkdir $i
-    for (( j = 0; j < 1000; j++ )); do
-      touch $i/$j
-      echo 2 > /proc/sys/vm/drop_caches
-    done
-  done
-
-then one needs to run 'sync; ls -lR' to make inodes reclaimable again.
-
-We fix the issue by inserting unused clean inodes into the LRU after
-writeback finishes in inode_sync_complete().
-
-Signed-off-by: Jan Kara <jack@suse.cz>
-Reported-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Dave Chinner <david@fromorbit.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Kailang Yang <kailang@realtek.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/fs-writeback.c |    2 ++
- fs/inode.c        |   16 ++++++++++++++--
- fs/internal.h     |    1 +
- 3 files changed, 17 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_realtek.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -228,6 +228,8 @@ static void requeue_io(struct inode *ino
- static void inode_sync_complete(struct inode *inode)
- {
- 	inode->i_state &= ~I_SYNC;
-+	/* If inode is clean an unused, put it into LRU now... */
-+	inode_add_lru(inode);
- 	/* Waiters must see I_SYNC cleared before being woken up */
- 	smp_mb();
- 	wake_up_bit(&inode->i_state, __I_SYNC);
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -408,6 +408,19 @@ static void inode_lru_list_add(struct in
- 	spin_unlock(&inode->i_sb->s_inode_lru_lock);
- }
- 
-+/*
-+ * Add inode to LRU if needed (inode is unused and clean).
-+ *
-+ * Needs inode->i_lock held.
-+ */
-+void inode_add_lru(struct inode *inode)
-+{
-+	if (!(inode->i_state & (I_DIRTY | I_SYNC | I_FREEING | I_WILL_FREE)) &&
-+	    !atomic_read(&inode->i_count) && inode->i_sb->s_flags & MS_ACTIVE)
-+		inode_lru_list_add(inode);
-+}
-+
-+
- static void inode_lru_list_del(struct inode *inode)
- {
- 	spin_lock(&inode->i_sb->s_inode_lru_lock);
-@@ -1390,8 +1403,7 @@ static void iput_final(struct inode *ino
- 
- 	if (!drop && (sb->s_flags & MS_ACTIVE)) {
- 		inode->i_state |= I_REFERENCED;
--		if (!(inode->i_state & (I_DIRTY|I_SYNC)))
--			inode_lru_list_add(inode);
-+		inode_add_lru(inode);
- 		spin_unlock(&inode->i_lock);
- 		return;
- 	}
---- a/fs/internal.h
-+++ b/fs/internal.h
-@@ -110,6 +110,7 @@ extern int open_check_o_direct(struct fi
-  * inode.c
-  */
- extern spinlock_t inode_sb_list_lock;
-+extern void inode_add_lru(struct inode *inode);
- 
- /*
-  * fs-writeback.c
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -7089,6 +7089,8 @@ static const struct hda_codec_preset snd
+ 	{ .id = 0x10ec0276, .name = "ALC276", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0280, .name = "ALC280", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0282, .name = "ALC282", .patch = patch_alc269 },
++	{ .id = 0x10ec0283, .name = "ALC283", .patch = patch_alc269 },
++	{ .id = 0x10ec0290, .name = "ALC290", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0861, .rev = 0x100340, .name = "ALC660",
+ 	  .patch = patch_alc861 },
+ 	{ .id = 0x10ec0660, .name = "ALC660-VD", .patch = patch_alc861vd },
 
 
