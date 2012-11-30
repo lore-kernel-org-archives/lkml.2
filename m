@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751378Ab2K3D0T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 22:26:19 -0500
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:27467
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751019Ab2K3D0S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 22:26:18 -0500
-X-Forefront-Antispam-Report: CIP:160.33.194.231;KIP:(null);UIP:(null);IPV:NLI;H:usculsndmail04v.am.sony.com;RD:mail.sonyusa.com;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(z21eIzbb2dI98dI1432Izz1de0h1202h1d1ah1d2ahzzz2fh2a8h668h839h947hd25hf0ah10d2h1288h12a5h12a9h12bdh137ah13b6h1441h1537h153bh162dh1631h1155h)
-Message-ID: <50B82754.8080703@am.sony.com>
-Date: Thu, 29 Nov 2012 19:26:12 -0800
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: <frank.rowand@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	id S1752174Ab2K3D3l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 22:29:41 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:55010 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751028Ab2K3D3k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Nov 2012 22:29:40 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F1C95FF53@ORSMSX108.amr.corp.intel.com>
+References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <50B5CFAE.80103@huawei.com> <3908561D78D1C84285E8C5FCA982C28F1C95EDCE@ORSMSX108.amr.corp.intel.com> <50B68467.5020008@zytor.com> <20121129110045.GX8218@suse.de> <3908561D78D1C84285E8C5FCA982C28F1C95FF53@ORSMSX108.amr.corp.intel.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Subject: Re: [ANNOUNCE] 3.0.53-rt77
-References: <1354070691.6276.95.camel@gandalf.local.home>
-In-Reply-To: <1354070691.6276.95.camel@gandalf.local.home>
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: am.sony.com
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: RE: [PATCH v2 0/5] Add movablecore_map boot option
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, 29 Nov 2012 19:28:12 -0800
+To: "Luck, Tony" <tony.luck@intel.com>, Mel Gorman <mgorman@suse.de>
+CC: Jiang Liu <jiang.liu@huawei.com>, Tang Chen <tangchen@cn.fujitsu.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "isimatu.yasuaki@jp.fujitsu.com" <isimatu.yasuaki@jp.fujitsu.com>,
+        "laijs@cn.fujitsu.com" <laijs@cn.fujitsu.com>,
+        "wency@cn.fujitsu.com" <wency@cn.fujitsu.com>,
+        "linfeng@cn.fujitsu.com" <linfeng@cn.fujitsu.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>,
+        "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
+        "rientjes@google.com" <rientjes@google.com>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, "Wang, Frank" <frank.wang@intel.com>
+Message-ID: <5a01986b-e412-44df-b376-fce7f8937b93@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/12 18:44, Steven Rostedt wrote:
-> 
-> Dear RT Folks,
-> 
-> I'm pleased to announce the 3.0.53-rt77 stable release.
+Disk I/O is still a big consumer of lowmem.
 
-3.0.53-rt77 builds and boots on some ARM boards (PandaBoard, Realview) for:
+"Luck, Tony" <tony.luck@intel.com> wrote:
 
-  - SMP, PREEMPT_RT_FULL
-  - SMP, PREEMPT_NONE
-  - UP, PREEMPT_RT_FULL
-  - UP, PREEMPT_NONE
+>> If any significant percentage of memory is in ZONE_MOVABLE then the
+>memory
+>> hotplug people will have to deal with all the lowmem/highmem problems
+>> that used to be faced by 32-bit x86 with PAE enabled. 
+>
+>While these problems may still exist on large systems - I think it
+>becomes
+>harder to construct workloads that run into problems.  In those bad old
+>days
+>a significant fraction of lowmem was consumed by the kernel ... so it
+>was
+>pretty easy to find meta-data intensive workloads that would push it
+>over
+>a cliff.  Here we  are talking about systems with say 128GB per node
+>divided
+>into 64GB moveable and 64GB non-moveable (and I'd regard this as a
+>rather
+>low-end machine).  Unless the workload consists of zillions of tiny
+>processes
+>all mapping shared memory blocks, the percentage of memory allocated to
+>the kernel is going to be tiny compared with the old 4GB days.
+>
+>-Tony
 
-
--Frank
-
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
