@@ -1,117 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933139Ab2K3PTY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 10:19:24 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:44184 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030643Ab2K3PTV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 10:19:21 -0500
-From: Paul Moore <paul@paul-moore.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: linux-next: Tree for Nov 29 (netlabel)
-Date: Fri, 30 Nov 2012 10:19:16 -0500
-Message-ID: <3694027.VYznNcdp7C@sifl>
-User-Agent: KMail/4.9.3 (Linux/3.6.6-gentoo; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <50B7F846.70202@infradead.org>
-References: <20121129174057.99da02b15426c76054d05592@canb.auug.org.au> <50B7F846.70202@infradead.org>
+	id S1030672Ab2K3PU5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 10:20:57 -0500
+Received: from c62.cesmail.net ([216.154.195.54]:36888 "EHLO c62.cesmail.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030659Ab2K3PU4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 10:20:56 -0500
+Message-ID: <20121130102055.ofc76mrlusc0s40g-cebfxv@webmail.spamcop.net>
+Date: Fri, 30 Nov 2012 10:20:55 -0500
+From: Pavel Roskin <proski@gnu.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Eric Paris <eparis@parisplace.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        SE-Linux <selinux@tycho.nsa.gov>
+Subject: Re: Bisected regression: iterate_fd() selinux change affects flash
+	plugin
+References: <20121025101416.v1wilj95q8wkk0os-cebfxv@webmail.spamcop.net>
+	<20121111235001.a3gqhaijmec0gk0g-cebfxv@webmail.spamcop.net>
+	<CACLa4pu4FFwKdoA8ATfmviOj0e0mAQ3U2FNEiJHCv4RfDY4ZoQ@mail.gmail.com>
+	<20121112115707.r8h545480kg0cgkk-cebfxv@webmail.spamcop.net>
+	<CACLa4pvixB3Ehz-Ds+opvMF73pNwQJxpNx=02qy94ufJag2qwA@mail.gmail.com>
+	<20121130034034.GB4939@ZenIV.linux.org.uk>
+	<20121130040240.GC4939@ZenIV.linux.org.uk>
+In-Reply-To: <20121130040240.GC4939@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain;
+	charset=UTF-8;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, November 29, 2012 04:05:26 PM Randy Dunlap wrote:
-> On 11/28/2012 10:40 PM, Stephen Rothwell wrote:
-> > Hi all,
-> 
-> > Changes since 20121128:
-> (on i386:)
+Quoting Al Viro <viro@ZenIV.linux.org.uk>:
 
-If I had to guess it looks like CONFIG_NETLABEL needs to be dependent on 
-CONFIG_INET.  While the net/ Kconfig only pulls in the net/netlabel Kconfig if 
-CONFIG_INET is defined, I'm guessing that without the explicit dependency 
-there is nothing preventing someone from arriving at a bad configuration as we 
-see here.
+> On Fri, Nov 30, 2012 at 03:40:34AM +0000, Al Viro wrote:
+>
+>> The bug is real, but Pavel's patch is all wrong.  The problem is in the
+>> argument; we should pass descriptor number, not descriptor + 1.  And fixing
+>> that (in iterator_fd() itself) makes all callbacks work as they ought to.
+>>
+>> PS: Pavel, the life is painful enough as it is, no need to involve BZ into
+>> it.  Next time you need to post a patch, please do just that, especially
+>> when it's so short, OK?
+>
+> See tonight's vfs.git#for-linus; the head is at commit a77cfcb.
 
-Let me test this out to make sure my reasoning is right and if it is I'll post 
-a patch to netdev later today.
+Works for me!  Thank you!  Sorry if I mishandled anything.
 
-Thanks for catching this.
-
-> net/built-in.o: In function `netlbl_cfg_cipsov4_add':
-> (.text+0x61757): undefined reference to `cipso_v4_doi_add'
-> net/built-in.o: In function `netlbl_cfg_cipsov4_del':
-> (.text+0x6177d): undefined reference to `cipso_v4_doi_remove'
-> net/built-in.o: In function `netlbl_cfg_cipsov4_map_add':
-> (.text+0x617ae): undefined reference to `cipso_v4_doi_getdef'
-> net/built-in.o: In function `netlbl_cfg_cipsov4_map_add':
-> (.text+0x61a49): undefined reference to `cipso_v4_doi_putdef'
-> net/built-in.o: In function `netlbl_sock_setattr':
-> (.text+0x6218c): undefined reference to `cipso_v4_sock_setattr'
-> net/built-in.o: In function `netlbl_sock_delattr':
-> (.text+0x6220b): undefined reference to `cipso_v4_sock_delattr'
-> net/built-in.o: In function `netlbl_sock_getattr':
-> (.text+0x62238): undefined reference to `cipso_v4_sock_getattr'
-> net/built-in.o: In function `netlbl_conn_setattr':
-> (.text+0x622de): undefined reference to `cipso_v4_sock_setattr'
-> net/built-in.o: In function `netlbl_conn_setattr':
-> (.text+0x62303): undefined reference to `cipso_v4_sock_delattr'
-> net/built-in.o: In function `netlbl_req_setattr':
-> (.text+0x62429): undefined reference to `cipso_v4_req_setattr'
-> net/built-in.o: In function `netlbl_req_setattr':
-> (.text+0x6244e): undefined reference to `cipso_v4_req_delattr'
-> net/built-in.o: In function `netlbl_req_delattr':
-> (.text+0x624ba): undefined reference to `cipso_v4_req_delattr'
-> net/built-in.o: In function `netlbl_skbuff_setattr':
-> (.text+0x62551): undefined reference to `cipso_v4_skbuff_setattr'
-> net/built-in.o: In function `netlbl_skbuff_setattr':
-> (.text+0x62576): undefined reference to `cipso_v4_skbuff_delattr'
-> net/built-in.o: In function `netlbl_skbuff_getattr':
-> (.text+0x62619): undefined reference to `cipso_v4_skbuff_getattr'
-> net/built-in.o: In function `netlbl_skbuff_err':
-> (.text+0x62685): undefined reference to `cipso_v4_error'
-> net/built-in.o: In function `netlbl_cache_invalidate':
-> (.text+0x626ab): undefined reference to `cipso_v4_cache_invalidate'
-> net/built-in.o: In function `netlbl_cache_add':
-> (.text+0x626ec): undefined reference to `cipso_v4_cache_add'
-> net/built-in.o: In function `netlbl_domhsh_remove_entry':
-> (.text+0x63294): undefined reference to `cipso_v4_doi_putdef'
-> net/built-in.o: In function `netlbl_domhsh_remove_entry':
-> (.text+0x632eb): undefined reference to `cipso_v4_doi_putdef'
-> net/built-in.o: In function `netlbl_domhsh_remove_af4':
-> (.text+0x6349b): undefined reference to `cipso_v4_doi_putdef'
-> net/built-in.o: In function `netlbl_mgmt_add_common.clone.1':
-> netlabel_mgmt.c:(.text+0x64a87): undefined reference to
-> `cipso_v4_doi_getdef' netlabel_mgmt.c:(.text+0x64c83): undefined reference
-> to `cipso_v4_doi_putdef' net/built-in.o: In function
-> `netlbl_cipsov4_listall':
-> netlabel_cipso_v4.c:(.text+0x66e52): undefined reference to
-> `cipso_v4_doi_walk' net/built-in.o: In function `netlbl_cipsov4_list':
-> netlabel_cipso_v4.c:(.text+0x67199): undefined reference to
-> `cipso_v4_doi_getdef' net/built-in.o: In function `netlbl_cipsov4_remove':
-> netlabel_cipso_v4.c:(.text+0x6771b): undefined reference to
-> `cipso_v4_doi_remove' net/built-in.o: In function
-> `netlbl_cipsov4_add_pass':
-> netlabel_cipso_v4.c:(.text+0x67a4b): undefined reference to
-> `cipso_v4_doi_add' netlabel_cipso_v4.c:(.text+0x67a76): undefined reference
-> to `cipso_v4_doi_free' net/built-in.o: In function
-> `netlbl_cipsov4_add_local':
-> netlabel_cipso_v4.c:(.text+0x67b9a): undefined reference to
-> `cipso_v4_doi_add' netlabel_cipso_v4.c:(.text+0x67bc5): undefined reference
-> to `cipso_v4_doi_free' net/built-in.o: In function
-> `netlbl_cipsov4_add_std':
-> netlabel_cipso_v4.c:(.text+0x68535): undefined reference to
-> `cipso_v4_doi_add' netlabel_cipso_v4.c:(.text+0x68575): undefined reference
-> to `cipso_v4_doi_free'
-> 
-> 
-> Full randconfig file is attached.
 -- 
-paul moore
-www.paul-moore.com
-
+Regards,
+Pavel Roskin
