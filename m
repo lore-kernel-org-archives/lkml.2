@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933235Ab2K3QUt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 11:20:49 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29759 "EHLO
+	id S933254Ab2K3QVX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 11:21:23 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24481 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932472Ab2K3QUq (ORCPT
+	with ESMTP id S932472Ab2K3QVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 11:20:46 -0500
-X-Authority-Analysis: v=2.0 cv=f9bK9ZOM c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=T9x2bjRdwFwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=dFgh_tzUenkA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=R6e7cXeecl7ZAh5hFSAA:9 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Fri, 30 Nov 2012 11:21:21 -0500
+X-Authority-Analysis: v=2.0 cv=cuMZYiEi c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=tT9fRLUzu9sA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=9vvjUtWwzb8A:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=tN5xWe8_vvL4AfRlGK0A:9 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-ID: <1354292445.6276.162.camel@gandalf.local.home>
-Subject: Re: [PATCH 1/2] ring-buffer: Fix NULL pointer if rb_set_head_page()
- fails
+Message-ID: <1354292479.6276.163.camel@gandalf.local.home>
+Subject: Re: [PATCH 2/2] ring-buffer: Fix race between integrity check and
+ readers
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org, stable <stable@vger.kernel.org>
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Date: Fri, 30 Nov 2012 11:20:45 -0500
-In-Reply-To: <20121130161333.983378567@goodmis.org>
+Date: Fri, 30 Nov 2012 11:21:19 -0500
+In-Reply-To: <20121130161334.164485242@goodmis.org>
 References: <20121130161238.909829067@goodmis.org>
-	 <20121130161333.983378567@goodmis.org>
+	 <20121130161334.164485242@goodmis.org>
 Content-Type: text/plain; charset="ISO-8859-15"
 X-Mailer: Evolution 3.4.3-1 
 Mime-Version: 1.0
@@ -34,67 +34,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On Fri, 2012-11-30 at 11:12 -0500, Steven Rostedt wrote:
 > From: Steven Rostedt <srostedt@redhat.com>
 > 
-> The function rb_set_head_page() searches the list of ring buffer
-> pages for a the page that has the HEAD page flag set. If it does
-> not find it, it will do a WARN_ON(), disable the ring buffer and
-> return NULL, as this should never happen.
+> The function rb_check_pages() was added to make sure the ring buffer's
+> pages were sane. This check is done when the ring buffer size is modified
+> as well as when the iterator is released (closing the "trace" file),
+> as that was considered a non fast path and a good place to do a sanity
+> check.
 > 
-> But if this bug happens to happen, not all callers of this function
-> can handle a NULL pointer being returned from it. That needs to be
-> fixed.
+> The problem is that the check does not have any locks around it.
+> If one process were to read the trace file, and another were to read
+> the raw binary file, the check could happen while the reader is reading
+> the file.
 > 
-> Cc: stable@vger.kernel.org # 3.0+
+> The issues with this is that the check requires to clear the HEAD page
+> before doing the full check and it restores it afterward. But readers
+> require the HEAD page to exist before it can read the buffer, otherwise
+> it gives a nasty warning and disables the buffer.
+> 
+> By adding the reader lock around the check, this keeps the race from
+> happening.
+> 
+> Cc: stable@vger.kernel.org # 3.6
 
-Hmm, quilt didn't Cc. Grumble, I think a system update of quilt removed
-my modification to not have quilt get confused by the hash symbol :-(
+Again, quilt failed to Cc stable :-(
 
 -- Steve
 
 > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 > ---
->  kernel/trace/ring_buffer.c |    9 +++++++--
->  1 file changed, 7 insertions(+), 2 deletions(-)
+>  kernel/trace/ring_buffer.c |    7 ++++++-
+>  1 file changed, 6 insertions(+), 1 deletion(-)
 > 
 > diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-> index b979426..ec01803 100644
+> index ec01803..4cb5e51 100644
 > --- a/kernel/trace/ring_buffer.c
 > +++ b/kernel/trace/ring_buffer.c
-> @@ -1396,6 +1396,8 @@ rb_insert_pages(struct ring_buffer_per_cpu *cpu_buffer)
->  		struct list_head *head_page_with_bit;
+> @@ -3783,12 +3783,17 @@ void
+>  ring_buffer_read_finish(struct ring_buffer_iter *iter)
+>  {
+>  	struct ring_buffer_per_cpu *cpu_buffer = iter->cpu_buffer;
+> +	unsigned long flags;
 >  
->  		head_page = &rb_set_head_page(cpu_buffer)->list;
-> +		if (!head_page)
-> +			break;
->  		prev_page = head_page->prev;
->  
->  		first_page = pages->next;
-> @@ -2934,7 +2936,7 @@ unsigned long ring_buffer_oldest_event_ts(struct ring_buffer *buffer, int cpu)
->  	unsigned long flags;
->  	struct ring_buffer_per_cpu *cpu_buffer;
->  	struct buffer_page *bpage;
-> -	unsigned long ret;
-> +	unsigned long ret = 0;
->  
->  	if (!cpumask_test_cpu(cpu, buffer->cpumask))
->  		return 0;
-> @@ -2949,7 +2951,8 @@ unsigned long ring_buffer_oldest_event_ts(struct ring_buffer *buffer, int cpu)
->  		bpage = cpu_buffer->reader_page;
->  	else
->  		bpage = rb_set_head_page(cpu_buffer);
-> -	ret = bpage->page->time_stamp;
-> +	if (bpage)
-> +		ret = bpage->page->time_stamp;
->  	raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
->  
->  	return ret;
-> @@ -3260,6 +3263,8 @@ rb_get_reader_page(struct ring_buffer_per_cpu *cpu_buffer)
->  	 * Splice the empty reader page into the list around the head.
+>  	/*
+>  	 * Ring buffer is disabled from recording, here's a good place
+> -	 * to check the integrity of the ring buffer. 
+> +	 * to check the integrity of the ring buffer.
+> +	 * Must prevent readers from trying to read, as the check
+> +	 * clears the HEAD page and readers require it.
 >  	 */
->  	reader = rb_set_head_page(cpu_buffer);
-> +	if (!reader)
-> +		goto out;
->  	cpu_buffer->reader_page->list.next = rb_list_head(reader->list.next);
->  	cpu_buffer->reader_page->list.prev = reader->list.prev;
+> +	raw_spin_lock_irqsave(&cpu_buffer->reader_lock, flags);
+>  	rb_check_pages(cpu_buffer);
+> +	raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
 >  
+>  	atomic_dec(&cpu_buffer->record_disabled);
+>  	atomic_dec(&cpu_buffer->buffer->resize_disabled);
 
 
