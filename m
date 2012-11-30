@@ -1,63 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933529Ab2K3RkW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 12:40:22 -0500
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:56747 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759007Ab2K3RkS (ORCPT
+	id S933544Ab2K3Rst (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 12:48:49 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50634 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757519Ab2K3Rss (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 12:40:18 -0500
-Message-ID: <50B8EF79.4080907@xenotime.net>
-Date: Fri, 30 Nov 2012 09:40:09 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Fri, 30 Nov 2012 12:48:48 -0500
+From: Joonsoo Kim <js1304@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Android Kernel Team <kernel-team@android.com>,
+        Joonsoo Kim <js1304@gmail.com>, John Stultz <john.stultz@linaro.org>,
+        Brian Swetland <swetland@google.com>, Colin Cross <ccross@android.com>,
+        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        Dima Zavin <dima@android.com>, Robert Love <rlove@google.com>
+Subject: [RFC PATCH] staging, android, ashmem: invalidate pin/unpin ioctl for private map
+Date: Sat,  1 Dec 2012 02:45:57 +0900
+Message-Id: <1354297557-24486-1-git-send-email-js1304@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Casey Schaufler <casey@schaufler-ca.com>
-CC: Randy Dunlap <rdunlap@xenotime.net>, Paul Moore <paul@paul-moore.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] Smack: Add missing depends on INET in Kconfig
-References: <20121129174057.99da02b15426c76054d05592@canb.auug.org.au> <50B7F846.70202@infradead.org> <3694027.VYznNcdp7C@sifl> <2664553.2TRaVqlkGg@sifl> <50B8E4E6.2040901@xenotime.net> <50B8ECB3.2090801@schaufler-ca.com>
-In-Reply-To: <50B8ECB3.2090801@schaufler-ca.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/30/2012 09:28 AM, Casey Schaufler wrote:
+Private mapped ashmem doesn't install vm fault handler.
+So, do_anonymous_page is called for handling fault in handle_pte_fault().
+This type of backed memory isn't related to asma->file which is used by
+ashmem shrinker. Shrinking unpinned area for this mapping
+will not shrink memory actually.
+Although it's memory doesn't actually removed, pin status will
+return ASHMEM_WAS_PURGED. So application will re-load content.
+This is needless overhead, so invalidate pin/unpin ioctl behavior for
+private map.
 
-> Because NETLABEL depends on INET SECURITY_SMACK
-> has to explicitly call out the dependency.
-> 
-> Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
+CC: John Stultz <john.stultz@linaro.org>
+CC: Brian Swetland <swetland@google.com>
+CC: Colin Cross <ccross@android.com>
+CC: Arve Hjønnevåg <arve@android.com>
+CC: Dima Zavin <dima@android.com>
+CC: Robert Love <rlove@google.com>
+Signed-off-by: Joonsoo Kim <js1304@gmail.com>
 
-
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
-
-Thanks for the quick fix.
-
-> ---
->  security/smack/Kconfig |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/security/smack/Kconfig b/security/smack/Kconfig
-> index 9fb14ef..1be1088 100644
-> --- a/security/smack/Kconfig
-> +++ b/security/smack/Kconfig
-> @@ -1,5 +1,6 @@
->  config SECURITY_SMACK
->  	bool "Simplified Mandatory Access Control Kernel Support"
-> +	depends on INET
->  	depends on NET
->  	depends on SECURITY
->  	select NETLABEL
-> 
-> --
-
-
+diff --git a/drivers/staging/android/ashmem.c b/drivers/staging/android/ashmem.c
+index 634b9ae..2fde9df 100644
+--- a/drivers/staging/android/ashmem.c
++++ b/drivers/staging/android/ashmem.c
+@@ -49,6 +49,7 @@ struct ashmem_area {
+ 	struct file *file;		 /* the shmem-based backing file */
+ 	size_t size;			 /* size of the mapping, in bytes */
+ 	unsigned long prot_mask;	 /* allowed prot bits, as vm_flags */
++	bool shared_mapping;		 /* mapping type */
+ };
+ 
+ /*
+@@ -327,6 +328,7 @@ static int ashmem_mmap(struct file *file, struct vm_area_struct *vma)
+ 			fput(asma->file);
+ 			goto out;
+ 		}
++		asma->shared_mapping = 1;
+ 	}
+ 
+ 	if (vma->vm_file)
+@@ -614,21 +616,35 @@ static int ashmem_pin_unpin(struct ashmem_area *asma, unsigned long cmd,
+ 	pgstart = pin.offset / PAGE_SIZE;
+ 	pgend = pgstart + (pin.len / PAGE_SIZE) - 1;
+ 
+-	mutex_lock(&ashmem_mutex);
++	if (asma->shared_mapping) {
++		mutex_lock(&ashmem_mutex);
+ 
+-	switch (cmd) {
+-	case ASHMEM_PIN:
+-		ret = ashmem_pin(asma, pgstart, pgend);
+-		break;
+-	case ASHMEM_UNPIN:
+-		ret = ashmem_unpin(asma, pgstart, pgend);
+-		break;
+-	case ASHMEM_GET_PIN_STATUS:
+-		ret = ashmem_get_pin_status(asma, pgstart, pgend);
+-		break;
+-	}
++		switch (cmd) {
++		case ASHMEM_PIN:
++			ret = ashmem_pin(asma, pgstart, pgend);
++			break;
++		case ASHMEM_UNPIN:
++			ret = ashmem_unpin(asma, pgstart, pgend);
++			break;
++		case ASHMEM_GET_PIN_STATUS:
++			ret = ashmem_get_pin_status(asma, pgstart, pgend);
++			break;
++		}
+ 
+-	mutex_unlock(&ashmem_mutex);
++		mutex_unlock(&ashmem_mutex);
++
++	} else {
++		switch (cmd) {
++		/* if it is private map, pin/unpin have no impact to vm */
++		case ASHMEM_PIN:
++		case ASHMEM_UNPIN:
++			ret = ASHMEM_NOT_PURGED;
++			break;
++		case ASHMEM_GET_PIN_STATUS:
++			ret = ASHMEM_IS_PINNED;
++			break;
++		}
++	}
+ 
+ 	return ret;
+ }
 -- 
-~Randy
+1.7.9.5
+
