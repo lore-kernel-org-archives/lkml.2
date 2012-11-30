@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992582Ab2K3Szg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:55:36 -0500
-Received: from mail.kernel.org ([198.145.19.201]:57567 "EHLO mail.kernel.org"
+	id S2992600Ab2K3Szw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:55:52 -0500
+Received: from mail.kernel.org ([198.145.19.201]:57556 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1031678Ab2K3Stg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:49:36 -0500
+	id S1031673Ab2K3Stf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:49:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Maciej Patelczyk <maciej.patelczyk@intel.com>,
-        Lukasz Dorau <lukasz.dorau@intel.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 10/37] SCSI: isci: copy fis 0x34 response into proper buffer
-Date: Fri, 30 Nov 2012 10:45:57 -0800
-Message-Id: <20121130183858.305888512@linuxfoundation.org>
+        Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 09/37] mwifiex: report error to MMC core if we cannot suspend
+Date: Fri, 30 Nov 2012 10:45:56 -0800
+Message-Id: <20121130183858.197277367@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130183857.166228045@linuxfoundation.org>
 References: <20121130183857.166228045@linuxfoundation.org>
@@ -27,36 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Maciej Patelczyk <maciej.patelczyk@intel.com>
+From: Bing Zhao <bzhao@marvell.com>
 
-commit 49bd665c5407a453736d3232ee58f2906b42e83c upstream.
+commit dd321acddc3be1371263b8c9e6c6f2af89f63d57 upstream.
 
-SATA MICROCODE DOWNALOAD fails on isci driver. After receiving Register
-Device to Host (FIS 0x34) frame Initiator resets phy.
-In the frame handler routine response (FIS 0x34) was copied into wrong
-buffer and upper layer did not receive any answer which resulted in
-timeout and reset.
-This patch corrects this bug.
+When host_sleep_config command fails we should return error to
+MMC core to indicate the failure for our device.
 
-Signed-off-by: Maciej Patelczyk <maciej.patelczyk@intel.com>
-Signed-off-by: Lukasz Dorau <lukasz.dorau@intel.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+The misspelled variable is also removed as it's redundant.
+
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/isci/request.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/mwifiex/sdio.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/drivers/scsi/isci/request.c
-+++ b/drivers/scsi/isci/request.c
-@@ -1693,7 +1693,7 @@ sci_io_request_frame_handler(struct isci
- 								      frame_index,
- 								      (void **)&frame_buffer);
+--- a/drivers/net/wireless/mwifiex/sdio.c
++++ b/drivers/net/wireless/mwifiex/sdio.c
+@@ -122,7 +122,6 @@ static int mwifiex_sdio_suspend(struct d
+ 	struct sdio_mmc_card *card;
+ 	struct mwifiex_adapter *adapter;
+ 	mmc_pm_flag_t pm_flag = 0;
+-	int hs_actived = 0;
+ 	int i;
+ 	int ret = 0;
  
--			sci_controller_copy_sata_response(&ireq->stp.req,
-+			sci_controller_copy_sata_response(&ireq->stp.rsp,
- 							       frame_header,
- 							       frame_buffer);
+@@ -149,12 +148,14 @@ static int mwifiex_sdio_suspend(struct d
+ 	adapter = card->adapter;
+ 
+ 	/* Enable the Host Sleep */
+-	hs_actived = mwifiex_enable_hs(adapter);
+-	if (hs_actived) {
+-		pr_debug("cmd: suspend with MMC_PM_KEEP_POWER\n");
+-		ret = sdio_set_host_pm_flags(func, MMC_PM_KEEP_POWER);
++	if (!mwifiex_enable_hs(adapter)) {
++		dev_err(adapter->dev, "cmd: failed to suspend\n");
++		return -EFAULT;
+ 	}
+ 
++	dev_dbg(adapter->dev, "cmd: suspend with MMC_PM_KEEP_POWER\n");
++	ret = sdio_set_host_pm_flags(func, MMC_PM_KEEP_POWER);
++
+ 	/* Indicate device suspended */
+ 	adapter->is_suspended = true;
  
 
 
