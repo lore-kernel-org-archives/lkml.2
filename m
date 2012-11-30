@@ -1,63 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756363Ab2K3G7f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 01:59:35 -0500
-Received: from violet.fr.zoreil.com ([92.243.8.30]:60980 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752007Ab2K3G7e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 01:59:34 -0500
-Date: Fri, 30 Nov 2012 07:35:00 +0100
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Wang YanQing <udknight@gmail.com>
-Cc: nic_swsd@realtek.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hayes Wang <hayeswang@realtek.com>
-Subject: Re: [PATCH]realtek:r8169: Bugfix or workaround for missing extended GigaMAC registers settings
-Message-ID: <20121130063500.GA9436@electric-eye.fr.zoreil.com>
-References: <20121130050619.GA12862@udknight>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121130050619.GA12862@udknight>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+	id S1756413Ab2K3HBp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 02:01:45 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:6540 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756379Ab2K3HBn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 02:01:43 -0500
+X-IronPort-AV: E=Sophos;i="4.83,346,1352044800"; 
+   d="scan'208";a="6306271"
+Message-ID: <50B859C6.3020707@cn.fujitsu.com>
+Date: Fri, 30 Nov 2012 15:01:26 +0800
+From: Lin Feng <linfeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: viro@zeniv.linux.org.uk, bcrl@kvack.org, kamezawa.hiroyu@jp.fujitsu.com,
+        mhocko@suse.cz, hughd@google.com, cl@linux.com, mgorman@suse.de,
+        minchan@kernel.org, isimatu.yasuaki@jp.fujitsu.com,
+        laijs@cn.fujitsu.com, wency@cn.fujitsu.com, tangchen@cn.fujitsu.com,
+        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [BUG REPORT] [mm-hotplug, aio] aio ring_pages can't be offlined
+References: <1354172098-5691-1-git-send-email-linfeng@cn.fujitsu.com> <20121129153930.477e9709.akpm@linux-foundation.org> <50B82B0D.8010206@cn.fujitsu.com> <20121129215749.acfd872a.akpm@linux-foundation.org>
+In-Reply-To: <20121129215749.acfd872a.akpm@linux-foundation.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/30 15:01:11,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/11/30 15:01:12,
+	Serialize complete at 2012/11/30 15:01:12
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wang YanQing <udknight@gmail.com> :
-[...]
-> After add some debug code, I found this NIC only accept ethernet
-> broadcast package, it can't filter out the package send to its
-> MAC address, but it works good for sending.So ifconfig show the
-> RX/TX status means it can receive ARP package.(It don't its MAC
-> address, so below)
 
-Which kernel version is it ?
 
-[...]
-> I haven't see any code to set GigaMAC registers in kernel when boot,
-> so I guess BIOS or NIC's circuit make it, but of course one miss
-
-I'd appreciate to figure it out (and understand why I did not notice
-it when testing).
-
-> the extended GigaMAC registers  in this problem. The probe code can
-> get MAC address right, so MAC{0,4} must had been setted, but some
-> guys forget the extended GigaMAC registers.
+On 11/30/2012 01:57 PM, Andrew Morton wrote:
+> On Fri, 30 Nov 2012 11:42:05 +0800 Lin Feng <linfeng@cn.fujitsu.com> wrote:
 > 
-> This patch fix it.
+>> hi Andrew,
+>>
+>> On 11/30/2012 07:39 AM, Andrew Morton wrote:
+>>> Tricky.
+>>>
+>>> I expect the same problem would occur with pages which are under
+>>> O_DIRECT I/O.  Obviously O_DIRECT pages won't be pinned for such long
+>>> periods, but the durations could still be lengthy (seconds).
+>> the offline retry timeout duration is 2 minutes, so to O_DIRECT pages 
+>> seem maybe not a problem for the moment.
+>>>
+>>> Worse is a futex page, which could easily remain pinned indefinitely.
+>>>
+>>> The best I can think of is to make changes in or around
+>>> get_user_pages(), to steal the pages from userspace and replace them
+>>> with non-movable ones before pinning them.  The performance cost of
+>>> something like this would surely be unacceptable for direct-io, but
+>>> maybe OK for the aio ring and futexes.
+>> thanks for your advice.
+>> I want to limit the impact as little as possible, as mentioned above,
+>> direct-io seems not a problem, we needn't touch them. Maybe we can 
+>> just change the use of get_user_pages()(in or around) such as aio 
+>> ring pages. I will try to find a way to do this.
+> 
+> What about futexes?
+hi Andrew,
 
-It is a good analysis job.
+Yes, better to find an approach to solve them all.
+ 
+But I'm worried about that if we just confine get_user_pages() to use 
+none-movable pages, it will drain the none-movable pages soon. Because
+there are many places using get_user_pages() such as some drivers. 
 
-I'd rather see the GigaMAC registers written through a call to
-rtl_rar_set when the mac address is read in rtl_init_one instead
-of duplicating most of rtl_rar_set in a quite different place.
+IMHO in most cases get_user_pages() callers should release the pages soon, 
+so pages allocated from movable zone should be OK. But I'm not sure if
+we get such rule upon get_user_pages(). 
+And in other cases we specify get_user_pages() to allocate pages from
+none-movable zone. 
 
-Hayes, can you specify if it would work or if it may mess the registers
-init sequence ordering ?
+So could we add a zone-alloc flags when we call get_user_pages()?
 
-Thanks.
+Thanks,
+linfeng
 
--- 
-Ueimor
+> 
+
