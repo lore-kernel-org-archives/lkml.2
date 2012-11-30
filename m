@@ -1,63 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031560Ab2K3SrR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:47:17 -0500
-Received: from smtp103.biz.mail.gq1.yahoo.com ([98.137.12.178]:44044 "HELO
-	smtp103.biz.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1030923Ab2K3SrP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:47:15 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: IPNQIYMVM1kOPIoSzNUVoBvQYhKJ3aYjzG9eMnZKCt2iO7A
- LAz3ripGjChkhUl6D1mqVCqj__PUuSeEPVtaijNfM5RdqqAtmpdDbD7KmvM.
- yN13Q1d1pBnZzlftyHezzDFZs6zkQmgXCetsSR8knneEUFIkeQMq_366Myv4
- sLoOjEYvVYAmZokL1EnlTrgqTtV4sXEj51cqKf5.8FC3X9EEaI0d.3gLKYwi
- Fx7aH1fhTFwHxbV.Jmhmzpf9_wSrCpNfo4WkK_FpxEsa8rSAuUcTkxuC1IRO
- 8qXxFYVRMAezHenkOtBXhy13DKJ1FMjNxFMhri5.47AvEqW8DmXQ8JBsrFp0
- Enw1t980cx0cqmQ0WLMERuTyT0S1_rRH0uHwSNP8ieJT8p0hvp3XiF0vn5I.
- dNDJ6op2XRrQoHk.yJ0RiJgs.cpNFU_L125xJZqjycbtiAy9a7FWVbQ8VuOK
- 9t3gclVBMf2OX81YVSuMX7QnFXLrpBcP7DvPIABpq8wRC5d1GSWRQmQspHQ-
- -
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <50B8FF3B.80003@schaufler-ca.com>
-Date: Fri, 30 Nov 2012 10:47:23 -0800
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: rdunlap@xenotime.net, paul@paul-moore.com, sfr@canb.auug.org.au,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] Smack: Add missing depends on INET in Kconfig
-References: <50B8E4E6.2040901@xenotime.net> <50B8ECB3.2090801@schaufler-ca.com> <50B8EF79.4080907@xenotime.net> <20121130.134326.730429492162984746.davem@davemloft.net>
-In-Reply-To: <20121130.134326.730429492162984746.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1031576Ab2K3Ssv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:48:51 -0500
+Received: from mail.kernel.org ([198.145.19.201]:57278 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1031543Ab2K3Sst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:48:49 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: [ 00/37] 3.0.54-stable review
+Date: Fri, 30 Nov 2012 10:45:47 -0800
+Message-Id: <20121130183857.166228045@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.197.g5a90748
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/30/2012 10:43 AM, David Miller wrote:
-> From: Randy Dunlap <rdunlap@xenotime.net>
-> Date: Fri, 30 Nov 2012 09:40:09 -0800
->
->> On 11/30/2012 09:28 AM, Casey Schaufler wrote:
->>
->>> Because NETLABEL depends on INET SECURITY_SMACK
->>> has to explicitly call out the dependency.
->>>
->>> Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
->>
->> Acked-by: Randy Dunlap <rdunlap@xenotime.net>
->>
->> Thanks for the quick fix.
-> In what tree does this Kconfig file look like this?
+This is the start of the stable review cycle for the 3.0.54 release.
+There are 37 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-James Morris' security-next
+Responses should be made by Sun Dec  2 18:36:43 UTC 2012.
+Anything received after that time might be too late.
 
->
-> In my net-next tree the current dependencies are expressed as:
->
-> 	depends on NETLABEL && SECURITY_NETWORK
->
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.54-rc1.gz
+and the diffstat can be found below.
+
+thanks,
+
+greg k-h
+
+-------------
+Pseudo-Shortlog of commits:
+
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.0.54-rc1
+
+Jaehoon Chung <jh80.chung@samsung.com>
+    mmc: sdhci-s3c: fix the wrong number of max bus clocks
+
+Jussi Pakkanen <jussi.pakkanen@canonical.com>
+    Input: bcm5974 - set BUTTONPAD property
+
+Fenghua Yu <fenghua.yu@intel.com>
+    x86, mce, therm_throt: Don't report power limit and package level thermal throttle events in mcelog
+
+Merlin Schumacher <merlin.schumacher@gmail.com>
+    acer-wmi: support for P key on TM8372
+
+Chuansheng Liu <chuansheng.liu@intel.com>
+    watchdog: using u64 in get_sample_period()
+
+Johan Hovold <jhovold@gmail.com>
+    USB: mct_u232: fix broken close
+
+Mauro Carvalho Chehab <mchehab@redhat.com>
+    get_dvb_firmware: fix download site for tda10046 firmware
+
+Emil Tantilov <emil.s.tantilov@intel.com>
+    ixgbe: add support for new 82599 device id
+
+Emil Tantilov <emil.s.tantilov@intel.com>
+    ixgbe: add support for new 82599 device
+
+David Milburn <dmilburn@redhat.com>
+    sata_svw: check DMA start bit before reset
+
+joshua.a.hay@intel.com <joshua.a.hay@intel.com>
+    ixgbe: add support for X540-AT1
+
+Tilman Schmidt <tilman@imap.cc>
+    bas_gigaset: fix pre_reset handling
+
+David Henningsson <david.henningsson@canonical.com>
+    ALSA: hda - Add support for Realtek ALC292
+
+Duncan Roe <duncan_roe@acslink.net.au>
+    ALSA: hda - Fix missing beep on ASUS X43U notebook
+
+Kailang Yang <kailang@realtek.com>
+    ALSA: hda - Add new codec ALC283 ALC290 support
+
+Al Viro <viro@zeniv.linux.org.uk>
+    sparc64: not any error from do_sigaltstack() should fail rt_sigreturn()
+
+Jan Kara <jack@suse.cz>
+    jbd: Fix lock ordering bug in journal_unmap_buffer()
+
+Oliver Hartkopp <socketcan@hartkopp.net>
+    can: bcm: initialize ifindex for timeouts without previous frame reception
+
+Paul Bolle <pebolle@tiscali.nl>
+    radeon: add AGPMode 1 quirk for RV250
+
+Simon Wunderlich <simon.wunderlich@s2003.tu-chemnitz.de>
+    mac80211: deinitialize ibss-internals after emptiness check
+
+Darren Hart <dvhart@linux.intel.com>
+    futex: avoid wake_futex() for a PI futex_q
+
+Jens Axboe <axboe@kernel.dk>
+    dm: fix deadlock with request based dm and queue request_fn recursion
+
+Jiri Engelthaler <engycz@gmail.com>
+    mtd: slram: invalid checking of absolute end address
+
+Al Viro <viro@ZenIV.linux.org.uk>
+    PARISC: fix user-triggerable panic on parisc
+
+James Bottomley <James.Bottomley@HansenPartnership.com>
+    PARISC: fix virtual aliasing issue in get_shared_area()
+
+David Henningsson <david.henningsson@canonical.com>
+    ALSA: hda - Cirrus: Correctly clear line_out_pins when moving to speaker
+
+Clemens Ladisch <clemens@ladisch.de>
+    ALSA: ua101, usx2y: fix broken MIDI output
+
+Maciej Patelczyk <maciej.patelczyk@intel.com>
+    SCSI: isci: copy fis 0x34 response into proper buffer
+
+Bing Zhao <bzhao@marvell.com>
+    mwifiex: report error to MMC core if we cannot suspend
+
+Albert Pool <albertpool@solcon.nl>
+    rtlwifi: rtl8192cu: Add new USB ID
+
+Boris Ostrovsky <boris.ostrovsky@amd.com>
+    x86, microcode, AMD: Add support for family 16h processors
+
+Robert Richter <robert.richter@amd.com>
+    x86-32: Fix invalid stack address while in softirq
+
+David S. Miller <davem@davemloft.net>
+    ifenslave: Fix unused variable warnings.
+
+Danny Kukawka <danny.kukawka@bisect.de>
+    riva/fbdev: fix several -Wuninitialized
+
+Danny Kukawka <danny.kukawka@bisect.de>
+    drivers/block/DAC960: fix -Wuninitialized warning
+
+Danny Kukawka <danny.kukawka@bisect.de>
+    drivers/block/DAC960: fix DAC960_V2_IOCTL_Opcode_T -Wenum-compare warning
+
+Takashi Iwai <tiwai@suse.de>
+    ALSA: pcmcia - Use pcmcia_request_irq()
+
+
+-------------
+
+Diffstat:
+
+ Documentation/dvb/get_dvb_firmware          |  2 +-
+ Documentation/networking/ifenslave.c        |  2 ++
+ Makefile                                    |  4 ++--
+ arch/parisc/kernel/signal32.c               |  6 ++++--
+ arch/parisc/kernel/sys_parisc.c             |  2 ++
+ arch/sparc/kernel/signal_64.c               |  4 +---
+ arch/x86/include/asm/ptrace.h               | 15 ++++-----------
+ arch/x86/kernel/cpu/mcheck/therm_throt.c    | 29 +++++++----------------------
+ arch/x86/kernel/microcode_amd.c             |  4 ++++
+ arch/x86/kernel/ptrace.c                    | 28 ++++++++++++++++++++++++++++
+ drivers/ata/sata_svw.c                      | 35 +++++++++++++++++++++++++++++++++++
+ drivers/block/DAC960.c                      | 18 ++++++++++--------
+ drivers/gpu/drm/radeon/radeon_agp.c         |  5 ++++-
+ drivers/input/mouse/bcm5974.c               |  3 +++
+ drivers/isdn/gigaset/bas-gigaset.c          | 19 ++++++++++++++++---
+ drivers/md/dm.c                             |  8 +++++++-
+ drivers/mmc/host/sdhci-s3c.c                |  2 +-
+ drivers/mtd/devices/slram.c                 |  2 +-
+ drivers/net/ixgbe/ixgbe_82599.c             |  2 ++
+ drivers/net/ixgbe/ixgbe_common.c            |  1 +
+ drivers/net/ixgbe/ixgbe_main.c              |  6 ++++++
+ drivers/net/ixgbe/ixgbe_type.h              |  3 +++
+ drivers/net/wireless/mwifiex/sdio.c         | 11 ++++++-----
+ drivers/net/wireless/rtlwifi/rtl8192cu/sw.c |  1 +
+ drivers/platform/x86/acer-wmi.c             |  1 +
+ drivers/scsi/isci/request.c                 |  2 +-
+ drivers/usb/serial/mct_u232.c               | 14 ++++++++------
+ drivers/video/riva/fbdev.c                  |  5 ++---
+ fs/jbd/transaction.c                        |  2 ++
+ kernel/futex.c                              | 18 +++++++++++++++++-
+ kernel/watchdog.c                           |  4 ++--
+ net/can/bcm.c                               |  3 +++
+ net/mac80211/ibss.c                         |  8 ++++----
+ sound/pci/hda/patch_cirrus.c                |  1 +
+ sound/pci/hda/patch_realtek.c               |  4 ++++
+ sound/pcmcia/pdaudiocf/pdaudiocf.c          |  2 +-
+ sound/pcmcia/vx/vxpocket.c                  |  2 +-
+ sound/usb/midi.c                            |  8 ++++++--
+ 38 files changed, 204 insertions(+), 82 deletions(-)
+
 
