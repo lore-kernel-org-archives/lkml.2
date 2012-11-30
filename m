@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346Ab2K3UgP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 15:36:15 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:63378 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751167Ab2K3UgO (ORCPT
+	id S1756351Ab2K3UiM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 15:38:12 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:64459 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754635Ab2K3UiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 15:36:14 -0500
+	Fri, 30 Nov 2012 15:38:10 -0500
 MIME-Version: 1.0
-In-Reply-To: <20121130144823.GA1985@kroah.com>
-References: <1354188082-2655-1-git-send-email-laurent.navet@gmail.com>
-	<20121130020848.GA2056@kroah.com>
-	<CAH7P7NhO1Qg=g7VKOFcO5jCQc+u5CPoH9L-y2S=q3BtMFYghkQ@mail.gmail.com>
-	<20121130144823.GA1985@kroah.com>
-Date: Fri, 30 Nov 2012 21:36:13 +0100
-Message-ID: <CAH7P7Ni36uA6j4LKue69GnU-o8SGBGtu3nhAcJPpuJYJ=GHg4g@mail.gmail.com>
-Subject: Re: [PATCH] staging: line6: Fix checkpatch.pl switch - case issue
-From: Laurent Navet <laurent.navet@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1354305521-11583-1-git-send-email-mingo@kernel.org>
+References: <1354305521-11583-1-git-send-email-mingo@kernel.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 30 Nov 2012 12:37:49 -0800
+X-Google-Sender-Auth: 6czdD7fjzZVjinU2GRfT4hYeUSc
+Message-ID: <CA+55aFwjxm7OYuucHeE2WFr4p+jwr63t=kSdHndta_QkyFbyBQ@mail.gmail.com>
+Subject: Re: [PATCH 00/10] Latest numa/core release, v18
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 2012/11/30, Greg KH <gregkh@linuxfoundation.org>:
-> For some reason you sent this only to me, which is a bit rude to
-> everyone else on the mailing list.  I'll be glad to respond if you
-> resend it to everyone.
+On Fri, Nov 30, 2012 at 11:58 AM, Ingo Molnar <mingo@kernel.org> wrote:
+>
+> When pushed hard enough via threaded workloads (for example via the
+> numa02 test) then the upstream page migration code in mm/migration.c
+> becomes unscalable, resulting in lot of scheduling on the anon vma
+> mutex and a subsequent drop in performance.
 
-Sorry, seem's i've reply instead of reply to all.
-Anyway, it's maybe not the better idea i've had this day, but i've
-started a new thread with a new patch[1], aggregating the two first
-ones [2][3].
+Ugh.
 
-[1] http://driverdev.linuxdriverproject.org/pipermail/devel/2012-November/033700.html
+I wonder if migration really needs that thing to be a mutex? I may be
+wrong, but the anon_vma lock only protects the actual rmap chains, and
+migration only ever changes the pte *contents*, not the actual chains
+of pte's themselves, right?
 
-[2] http://driverdev.linuxdriverproject.org/pipermail/devel/2012-November/033607.html
+So if this is a migration-specific scalability issue, then it might be
+possible to solve by making the mutex be a rwsem instead, and have
+migration only take it for reading.
 
-[3] http://driverdev.linuxdriverproject.org/pipermail/devel/2012-November/033629.html
+Of course, I'm quite possibly wrong, and the code depends on full
+mutual exclusion.
 
-Regards,
-Laurent.
+Just a thought, in case it makes somebody go "Hmm.."
+
+               Linus
