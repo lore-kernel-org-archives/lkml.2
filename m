@@ -1,352 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933646Ab2K3UCI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 15:02:08 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:54149 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756461Ab2K3T64 (ORCPT
+	id S1768809Ab2K3UDM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 15:03:12 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:46727 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933620Ab2K3UDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 14:58:56 -0500
-From: Ingo Molnar <mingo@kernel.org>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: [PATCH 02/10] sched: Move the NUMA placement logic to a worklet
-Date: Fri, 30 Nov 2012 20:58:33 +0100
-Message-Id: <1354305521-11583-3-git-send-email-mingo@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1354305521-11583-1-git-send-email-mingo@kernel.org>
-References: <1354305521-11583-1-git-send-email-mingo@kernel.org>
+	Fri, 30 Nov 2012 15:03:10 -0500
+Date: Fri, 30 Nov 2012 15:03:08 -0500 (EST)
+Message-Id: <20121130.150308.1302355065124987824.davem@davemloft.net>
+To: haiyangz@microsoft.com
+Cc: netdev@vger.kernel.org, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org
+Subject: Re: [PATCH net-next,1/1] hyperv: Add an error message to
+ rndis_filter_set_device_mac()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1354303421-26149-1-git-send-email-haiyangz@microsoft.com>
+References: <1354303421-26149-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As an implementational detail, to be able to do directed task placement
-we have to change how task_numa_fault() interfaces with the scheduler:
-instead of the placement logic being executed directly from the fault
-path we now trigger a worklet, similarly to how we do the NUMA
-hinting fault work.
+From: Haiyang Zhang <haiyangz@microsoft.com>
+Date: Fri, 30 Nov 2012 11:23:41 -0800
 
-This moves placement into process context and allows the execution of the
-directed task-flipping code via sched_rebalance_to().
+> This message indicates an error returned from the host when changing MAC address.
+> 
+> Reported-by: Michal Kubecek <mkubecek@suse.com>
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
 
-This further decouples the NUMA hinting fault engine from
-the actual NUMA placement logic.
-
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Hugh Dickins <hughd@google.com>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- include/linux/sched.h |   3 +-
- kernel/sched/core.c   |  21 ++++++-
- kernel/sched/fair.c   | 151 +++++++++++++++++++++++++++++++-------------------
- kernel/sched/sched.h  |   6 ++
- 4 files changed, 123 insertions(+), 58 deletions(-)
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 696492e..ce9ccd7 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1512,7 +1512,8 @@ struct task_struct {
- 	unsigned long numa_weight;
- 	unsigned long *numa_faults;
- 	unsigned long *numa_faults_curr;
--	struct callback_head numa_work;
-+	struct callback_head numa_scan_work;
-+	struct callback_head numa_placement_work;
- 
- 	struct task_struct *shared_buddy, *shared_buddy_curr;
- 	unsigned long shared_buddy_faults, shared_buddy_faults_curr;
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index cad6c89..0324d5e 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -39,6 +39,7 @@
- #include <linux/kernel_stat.h>
- #include <linux/debug_locks.h>
- #include <linux/perf_event.h>
-+#include <linux/task_work.h>
- #include <linux/security.h>
- #include <linux/notifier.h>
- #include <linux/profile.h>
-@@ -1558,7 +1559,6 @@ static void __sched_fork(struct task_struct *p)
- 	p->numa_migrate_seq = 2;
- 	p->numa_faults = NULL;
- 	p->numa_scan_period = sysctl_sched_numa_scan_delay;
--	p->numa_work.next = &p->numa_work;
- 
- 	p->shared_buddy = NULL;
- 	p->shared_buddy_faults = 0;
-@@ -1570,6 +1570,25 @@ static void __sched_fork(struct task_struct *p)
- 	p->numa_policy.v.preferred_node = 0;
- 	p->numa_policy.v.nodes = node_online_map;
- 
-+	init_task_work(&p->numa_scan_work, task_numa_scan_work);
-+	p->numa_scan_work.next = &p->numa_scan_work;
-+
-+	init_task_work(&p->numa_placement_work, task_numa_placement_work);
-+	p->numa_placement_work.next = &p->numa_placement_work;
-+
-+	if (p->mm) {
-+		int entries = 2*nr_node_ids;
-+		int size = sizeof(*p->numa_faults) * entries;
-+
-+		/*
-+		 * For efficiency reasons we allocate ->numa_faults[]
-+		 * and ->numa_faults_curr[] at once and split the
-+		 * buffer we get. They are separate otherwise.
-+		 */
-+		p->numa_faults = kzalloc(2*size, GFP_KERNEL);
-+		if (p->numa_faults)
-+			p->numa_faults_curr = p->numa_faults + entries;
-+	}
- #endif /* CONFIG_NUMA_BALANCING */
- }
- 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 54c1e7b..fda1b63 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1063,19 +1063,18 @@ clear_buddy:
- 	p->ideal_cpu_curr		= -1;
- }
- 
--static void task_numa_placement(struct task_struct *p)
-+/*
-+ * Called every couple of hundred milliseconds in the task's
-+ * execution life-time, this function decides whether to
-+ * change placement parameters:
-+ */
-+static void task_numa_placement_tick(struct task_struct *p)
- {
--	int seq = ACCESS_ONCE(p->mm->numa_scan_seq);
- 	unsigned long total[2] = { 0, 0 };
- 	unsigned long faults, max_faults = 0;
- 	int node, priv, shared, max_node = -1;
- 	int this_node;
- 
--	if (p->numa_scan_seq == seq)
--		return;
--
--	p->numa_scan_seq = seq;
--
- 	/*
- 	 * Update the fault average with the result of the latest
- 	 * scan:
-@@ -1280,43 +1279,24 @@ void task_numa_fault(int node, int last_cpu, int pages)
- 	int idx = 2*node + priv;
- 
- 	WARN_ON_ONCE(last_cpu == -1 || node == -1);
--
--	if (unlikely(!p->numa_faults)) {
--		int entries = 2*nr_node_ids;
--		int size = sizeof(*p->numa_faults) * entries;
--
--		p->numa_faults = kzalloc(2*size, GFP_KERNEL);
--		if (!p->numa_faults)
--			return;
--		/*
--		 * For efficiency reasons we allocate ->numa_faults[]
--		 * and ->numa_faults_curr[] at once and split the
--		 * buffer we get. They are separate otherwise.
--		 */
--		p->numa_faults_curr = p->numa_faults + entries;
--	}
-+	BUG_ON(!p->numa_faults);
- 
- 	p->numa_faults_curr[idx] += pages;
- 	shared_fault_tick(p, node, last_cpu, pages);
--	task_numa_placement(p);
- }
- 
- /*
-  * The expensive part of numa migration is done from task_work context.
-  * Triggered from task_tick_numa().
-  */
--void task_numa_work(struct callback_head *work)
-+void task_numa_placement_work(struct callback_head *work)
- {
--	long pages_total, pages_left, pages_changed;
--	unsigned long migrate, next_scan, now = jiffies;
--	unsigned long start0, start, end;
- 	struct task_struct *p = current;
--	struct mm_struct *mm = p->mm;
--	struct vm_area_struct *vma;
- 
--	WARN_ON_ONCE(p != container_of(work, struct task_struct, numa_work));
-+	WARN_ON_ONCE(p != container_of(work, struct task_struct, numa_placement_work));
- 
- 	work->next = work; /* protect against double add */
-+
- 	/*
- 	 * Who cares about NUMA placement when they're dying.
- 	 *
-@@ -1328,6 +1308,29 @@ void task_numa_work(struct callback_head *work)
- 	if (p->flags & PF_EXITING)
- 		return;
- 
-+	task_numa_placement_tick(p);
-+}
-+
-+/*
-+ * The expensive part of numa migration is done from task_work context.
-+ * Triggered from task_tick_numa().
-+ */
-+void task_numa_scan_work(struct callback_head *work)
-+{
-+	long pages_total, pages_left, pages_changed;
-+	unsigned long migrate, next_scan, now = jiffies;
-+	unsigned long start0, start, end;
-+	struct task_struct *p = current;
-+	struct mm_struct *mm = p->mm;
-+	struct vm_area_struct *vma;
-+
-+	WARN_ON_ONCE(p != container_of(work, struct task_struct, numa_scan_work));
-+
-+	work->next = work; /* protect against double add */
-+
-+	if (p->flags & PF_EXITING)
-+		return;
-+
- 	/*
- 	 * Enforce maximal scan/migration frequency..
- 	 */
-@@ -1383,15 +1386,12 @@ out:
- /*
-  * Drive the periodic memory faults..
-  */
--void task_tick_numa(struct rq *rq, struct task_struct *curr)
-+static void task_tick_numa_scan(struct rq *rq, struct task_struct *curr)
- {
--	struct callback_head *work = &curr->numa_work;
-+	struct callback_head *work = &curr->numa_scan_work;
- 	u64 period, now;
- 
--	/*
--	 * We don't care about NUMA placement if we don't have memory.
--	 */
--	if (!curr->mm || (curr->flags & PF_EXITING) || work->next != work)
-+	if (work->next != work)
- 		return;
- 
- 	/*
-@@ -1403,28 +1403,67 @@ void task_tick_numa(struct rq *rq, struct task_struct *curr)
- 	now = curr->se.sum_exec_runtime;
- 	period = (u64)curr->numa_scan_period * NSEC_PER_MSEC;
- 
--	if (now - curr->node_stamp > period) {
--		curr->node_stamp += period;
--		curr->numa_scan_period = sysctl_sched_numa_scan_period_min;
-+	if (now - curr->node_stamp <= period)
-+		return;
- 
--		/*
--		 * We are comparing runtime to wall clock time here, which
--		 * puts a maximum scan frequency limit on the task work.
--		 *
--		 * This, together with the limits in task_numa_work() filters
--		 * us from over-sampling if there are many threads: if all
--		 * threads happen to come in at the same time we don't create a
--		 * spike in overhead.
--		 *
--		 * We also avoid multiple threads scanning at once in parallel to
--		 * each other.
--		 */
--		if (!time_before(jiffies, curr->mm->numa_next_scan)) {
--			init_task_work(work, task_numa_work); /* TODO: move this into sched_fork() */
--			task_work_add(curr, work, true);
--		}
--	}
-+	curr->node_stamp += period;
-+	curr->numa_scan_period = sysctl_sched_numa_scan_period_min;
-+
-+	/*
-+	 * We are comparing runtime to wall clock time here, which
-+	 * puts a maximum scan frequency limit on the task work.
-+	 *
-+	 * This, together with the limits in task_numa_work() filters
-+	 * us from over-sampling if there are many threads: if all
-+	 * threads happen to come in at the same time we don't create a
-+	 * spike in overhead.
-+	 *
-+	 * We also avoid multiple threads scanning at once in parallel to
-+	 * each other.
-+	 */
-+	if (time_before(jiffies, curr->mm->numa_next_scan))
-+		return;
-+
-+	task_work_add(curr, work, true);
- }
-+
-+/*
-+ * Drive the placement logic:
-+ */
-+static void task_tick_numa_placement(struct rq *rq, struct task_struct *curr)
-+{
-+	struct callback_head *work = &curr->numa_placement_work;
-+	int seq;
-+
-+	if (work->next != work)
-+		return;
-+
-+	/*
-+	 * Check whether we should run task_numa_placement(),
-+	 * and if yes, activate the worklet:
-+	 */
-+	seq = ACCESS_ONCE(curr->mm->numa_scan_seq);
-+
-+	if (curr->numa_scan_seq == seq)
-+		return;
-+
-+	curr->numa_scan_seq = seq;
-+	task_work_add(curr, work, true);
-+}
-+
-+static void task_tick_numa(struct rq *rq, struct task_struct *curr)
-+{
-+	/*
-+	 * We don't care about NUMA placement if we don't have memory
-+	 * or are exiting:
-+	 */
-+	if (!curr->mm || (curr->flags & PF_EXITING))
-+		return;
-+
-+	task_tick_numa_scan(rq, curr);
-+	task_tick_numa_placement(rq, curr);
-+}
-+
- #else /* !CONFIG_NUMA_BALANCING: */
- #ifdef CONFIG_SMP
- static inline int task_ideal_cpu(struct task_struct *p)				{ return -1; }
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index f3a284e..7e53cbf 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -1259,6 +1259,12 @@ static inline u64 irq_time_read(int cpu)
- 	return per_cpu(cpu_softirq_time, cpu) + per_cpu(cpu_hardirq_time, cpu);
- }
- #endif /* CONFIG_64BIT */
-+
-+#ifdef CONFIG_NUMA_BALANCING
-+extern void task_numa_scan_work(struct callback_head *work);
-+extern void task_numa_placement_work(struct callback_head *work);
-+#endif
-+
- #ifdef CONFIG_SMP
- extern void sched_rebalance_to(int dest_cpu, int flip_tasks);
- #else
--- 
-1.7.11.7
-
+Applied.
