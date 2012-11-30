@@ -1,70 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755604Ab2K3CeF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 21:34:05 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:55357 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753467Ab2K3CeC (ORCPT
+	id S1755505Ab2K3Cjn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 21:39:43 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:60172 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754097Ab2K3Cjm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 21:34:02 -0500
-Message-ID: <50B81B11.7050704@gaikai.com>
-Date: Thu, 29 Nov 2012 18:33:53 -0800
-From: Patrick McLean <patrickm@gaikai.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 29 Nov 2012 21:39:42 -0500
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Patrick McLean <patrickm@gaikai.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-nfs@vger.kernel.org
-Subject: Re: Regression with initramfs and nfsroot (appears to be in the dcache)
-References: <20121129213316.GU4939@ZenIV.linux.org.uk> <CAE2NFgWCnmgSCsw7MzRkqBLTHgRDG-FvKKcbTHN6UqePK6Ef+Q@mail.gmail.com> <20121129222109.GW4939@ZenIV.linux.org.uk> <50B7E759.9070007@gaikai.com> <20121129234326.GX4939@ZenIV.linux.org.uk> <50B7FBA7.2030300@gaikai.com> <20121130003502.GY4939@ZenIV.linux.org.uk> <50B8046F.7030308@cim.mcgill.ca> <20121130013628.GZ4939@ZenIV.linux.org.uk> <50B811BA.6070503@cim.mcgill.ca> <20121130020047.GA4939@ZenIV.linux.org.uk>
-In-Reply-To: <20121130020047.GA4939@ZenIV.linux.org.uk>
+In-Reply-To: <CAErSpo7MpFrSX9rVH48A4mvsRdBjQybqiocv3nrZOPoK_+aqcw@mail.gmail.com>
+References: <097501cdca7b$7e303890$7a90a9b0$@lucidpixels.com>
+	<20121126224245.248f0901@neptune.home>
+	<CAErSpo7Y7m9o2u36ghiW1UDkwweSCG1ZGBx167Anfw4wXTYrCg@mail.gmail.com>
+	<CAErSpo6vrHMTht1nQxiF6HD7qCvUE-NS2eAnQjgUXym1pnNkSA@mail.gmail.com>
+	<004201cdcc3a$a7538310$f5fa8930$@lucidpixels.com>
+	<CAErSpo7530xA6=1Ytj09dwyS1M_N_yAfk4xkr3f9Z_NBn6TJrA@mail.gmail.com>
+	<00a501cdcca3$c2638510$472a8f30$@lucidpixels.com>
+	<00b501cdcca6$03f88af0$0be9a0d0$@lucidpixels.com>
+	<50B6ADA5.2030205@gmail.com>
+	<04b301cdcdcb$65e2f400$31a8dc00$@lucidpixels.com>
+	<CADLC3L09uxX_AU+22nfS20DCE97n1_ZxkG5A1R9joJcEua-EBg@mail.gmail.com>
+	<02d501cdce0f$4b0ce520$e126af60$@lucidpixels.com>
+	<CAErSpo7MpFrSX9rVH48A4mvsRdBjQybqiocv3nrZOPoK_+aqcw@mail.gmail.com>
+Date: Thu, 29 Nov 2012 20:39:41 -0600
+Message-ID: <CADLC3L1BAgQCbi1V=N0CRkJxbaQVK36q4pzbdnanO60exFem4w@mail.gmail.com>
+Subject: Re: Supermicro X9SRL-F - channel enumeration error & ACPI/firmware
+ bug question
+From: Robert Hancock <hancockrwd@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Justin Piszcz <jpiszcz@lucidpixels.com>,
+        =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
+        support@supermicro.com, linux-kernel@vger.kernel.org,
+        Dan Williams <djbw@fb.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/11/12 06:00 PM, Al Viro wrote:
-> On Thu, Nov 29, 2012 at 05:54:02PM -0800, Patrick McLean wrote:
->>> 	Very interesting.  Do you have anything mounted on the corresponding
->>> directories on server?  The picture looks like you are getting empty
->>> fhandles in readdir+ respons for exactly the same directories that happen
->>> to be mountpoints on client.  In any case, we shouldn't do that blind
->>> d_drop() - empty fhandles can happen.  The only remaining question is
->>> why do they happen on that set of entries.  From my reading of
->>> encode_entryplus_baggage() it looks like we have compose_entry_fh()
->>> failing for those entries and those entries alone.  One possible cause
->>> would be d_mountpoint(dchild) being true on server.  If it is true, we
->>> can declare the case closed; if not, I really wonder what's going on.
+On Thu, Nov 29, 2012 at 12:16 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Thu, Nov 29, 2012 at 1:55 AM, Justin Piszcz <jpiszcz@lucidpixels.com> wrote:
 >>
->> Those directories do have the server's own copies of the said directories bind mounted at the moment in a separate mount namespace.
 >>
->> Unmounting those directories on the server does appear to stop the WARN_ON from triggering.
-> 
-> OK, that settles it.  WARN_ON() and printks in the area can be dropped;
-> the right fix is below.  However, there's a similar place in cifs that
-> also needs to be dealt with and I really, really wonder why the hell do
-> we do d_drop() in nfs_revalidate_lookup().  It's not relevant in this
-> bug, but I would like to understand what's wrong with simply returning
-> 0 from ->d_revalidate() and letting the caller (in fs/namei.c) take care
-> of unhashing, etc. itself.  Would make have_submounts() in there pointless
-> as well - we could just return 0 and let d_invalidate() take care of the
-> checks...  Trond?
-> 
-> diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-> --- a/fs/nfs/dir.c
-> +++ b/fs/nfs/dir.c
-> @@ -450,7 +450,8 @@ void nfs_prime_dcache(struct dentry *parent, struct nfs_entry *entry)
->  			nfs_refresh_inode(dentry->d_inode, entry->fattr);
->  			goto out;
->  		} else {
-> -			d_drop(dentry);
-> +			if (d_invalidate(dentry) != 0)
-> +				goto out;
->  			dput(dentry);
->  		}
->  	}
+>> -----Original Message-----
+>> From: Robert Hancock [mailto:hancockrwd@gmail.com]
+>> Sent: Wednesday, November 28, 2012 7:55 PM
+>> To: Justin Piszcz
+>> Cc: Bjorn Helgaas; Bruno Prémont; support@supermicro.com;
+>> linux-kernel@vger.kernel.org; Dan Williams
+>> Subject: Re: Supermicro X9SRL-F - channel enumeration error & ACPI/firmware
+>> bug question
+>>
+>> On Wed, Nov 28, 2012 at 6:49 PM, Justin Piszcz <jpiszcz@lucidpixels.com>
+>> wrote:
+>>>
+>>>
+>>> -----Original Message-----
+>>> From: Robert Hancock [mailto:hancockrwd@gmail.com]
+>>> Sent: Wednesday, November 28, 2012 7:35 PM
+>>> To: Justin Piszcz
+>>> Cc: 'Bjorn Helgaas'; 'Bruno Prémont'; support@supermicro.com;
+>>> linux-kernel@vger.kernel.org; 'Dan Williams'
+>>> Subject: Re: Supermicro X9SRL-F - channel enumeration error &
+>> ACPI/firmware
+>>> bug question
+>>>
+>>>
+>>> What does lspci -vv show on that controller? Not sure what actual
+>>> chipset that controller is, but there's a known issue with some Marvell
+>>> 6Gbps SATA controllers with DMAR enabled - it seems the device issues
+>>> memory read/write requests from the wrong PCI function ID and the IOMMU
+>>> rightly denies access as the function listed in the requests doesn't
+>>> have any mapping to that memory. I don't think there's presently a
+>>> workaround other than disabling DMAR. We could (and likely should) be
+>>> detecting that device and adding some kind of quirk for it.
+>>>
+>>> That sounds likely...
+>>> It is shown below:
+>>>
+>>> Card name: HighPoint Rocket 620 Dual Port SATA 6 Gbps PCI Express 2.0 Host
+>>> Adapter
+>>>
+>>> lspci -vv output:
+>>>
+>>> 84:00.0 SATA controller: Marvell Technology Group Ltd. 88SE9123 PCIe SATA
+>>> 6.0 Gb/s controller (rev 11) (prog-if 01 [AHCI 1.0])
+>>>   Subsystem: Marvell Technology Group Ltd. 88SE9123 PCIe SATA 6.0 Gb/s
+>>> controller
+>>
+>> Yeah, that's one of those controllers I think. But I can't tell from
+>> the bit of the dmesg you posted exactly what's going on. Can you post
+>> a full boot log from having the card installed and some drive attached
+>> (by putting the boot drive on another controller for example)?
+>>
+>>>> ==> Further issues with the X9SRL-F -- does this board support ASPM or is
+>>>> this a Linux/ASPM implementation issue?
+>>>> [    0.632170]  pci0000:ff: ACPI _OSC support notification failed,
+>>> disabling
+>>>> PCIe ASPM
+>>>> [    0.632239]  pci0000:ff: Unable to request _OSC control (_OSC support
+>>>> mask: 0x08)
+>>>
+>>> What's the full dmesg from this machine (or is it already posted
+>> somewhere)?
+>>>
+>>> It is now available here:
+>>> http://home.comcast.net/~jpiszcz/20121128/dmesg.txt
+>>
+>>> Is that the same boot log? It doesn't have this error in it.
+>>
+>> Yes, the error is here: (its towards the bottom)
+>>
+>>  [    7.973015] ata14.00: qc timeout (cmd 0xa1)
+>> [    8.472120] ata14.00: failed to IDENTIFY (I/O error, err_mask=0x4)
+>> [    9.275922] ata14: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
+>> [   19.260667] ata14.00: qc timeout (cmd 0xa1)
+>> [   19.759828] ata14.00: failed to IDENTIFY (I/O error, err_mask=0x4)
+>> [   19.760451] ata14: limiting SATA link speed to 1.5 Gbps
+>> [   20.566598] ata14: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+>> [   50.521078] ata14.00: qc timeout (cmd 0xa1)
+>> [   51.020880] ata14.00: failed to IDENTIFY (I/O error, err_mask=0x4)
+>> [   51.824664] ata14: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+>> [   51.824682] dmar: DRHD: handling fault status reg 502
+>> [   51.824686] dmar: DMAR:[DMA Read] Request device [04:00.0] fault addr 0
+>> [   51.824686] DMAR:[fault reason 06] PTE Read access is not set
+>
+> You have these devices:
+>
+>     pci 0000:04:00.0: [10de:01d3] type 00 class 0x030000 nVidia G72
+>     pci 0000:84:00.0: [1b4b:9123] type 00 class 0x010601 Marvell 88SE9123 SATA
+>     pci 0000:84:00.1: [1b4b:91a4] type 00 class 0x01018f Marvell 88SE9128 IDE
+>
+> I think the 04:00.0 DMAR errors are symptoms of nouveau driver issues,
+> and if you get rid of that driver, they'll probably go away.
+>
+> But this 84:00.1 DMAR error:
+>
+>     dmar: DMAR:[DMA Read] Request device [84:00.1] fault addr fff00000
+>     DMAR:[fault reason 02] Present bit in context entry is clear
+>
+> looks like the probable cause of the Marvell issue.  It looks similar
+> to https://bugzilla.kernel.org/show_bug.cgi?id=42679, although the
+> reports there show a bb:dd.0 device (but no bb:dd.1 device), and the
+> DMAR rejects DMA that appears to be from bb:dd.1.
+>
+> Another report that's even more similar is
+> https://bugzilla.redhat.com/show_bug.cgi?id=757166 .  In that case,
+> both bb:dd.0 and bb:dd.1 exist (as in your system), and the DMAR fault
+> is exactly like what you're seeing.
+>
+> So you're not alone, but unfortunately, nobody seems to be working on
+> either bug report.  I took the liberty to add you to the cc: list of
+> both.
+>
+> I don't really know what else to do at this point.  Maybe a SATA
+> expert with some Marvell docs could figure out why we're seeing DMA
+> from the IDE controller, but I'm not that person :)
 
-Excellent, thanks. Is there any chance this will make it to 3.7? Also we might want to cc stable@ on this as well since it is a regression in 3.6.
+I doubt any Marvell docs would really be very helpful (except for
+maybe an errata list but that likely would just tell us what we can
+already figure out). The SATA controller part of the device seems to
+just be issuing accesses with the wrong PCI function ID.
+
+The only solution I can think of would be at the PCI/DMAR layer -
+basically functions 0 and 1 on this device should be allowed to access
+each other's DMA regions.
