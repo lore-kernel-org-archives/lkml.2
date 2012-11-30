@@ -1,170 +1,605 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932092Ab2K3B5K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 20:57:10 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:44762 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755263Ab2K3B5J (ORCPT
+	id S1755877Ab2K3B6P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 20:58:15 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:60919 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751303Ab2K3B6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 20:57:09 -0500
-Message-ID: <1354240620.21562.256.camel@shinybook.infradead.org>
-Subject: Re: [PATCH v2 3/3] pppoatm: protect against freeing of vcc
-From: David Woodhouse <dwmw2@infradead.org>
-To: "Chas Williams (CONTRACTOR)" <chas@cmf.nrl.navy.mil>
-Cc: Krzysztof Mazur <krzysiek@podlesie.net>,
-        David Laight <David.Laight@ACULAB.COM>, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nathan@traverse.com.au
-Date: Fri, 30 Nov 2012 01:57:00 +0000
-In-Reply-To: <201211300138.qAU1c8sE003388@thirdoffive.cmf.nrl.navy.mil>
-References: <201211300138.qAU1c8sE003388@thirdoffive.cmf.nrl.navy.mil>
-Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature";
-	boundary="=-Uv+8oUvGEg7Vwn/i7DMq"
-X-Mailer: Evolution 3.6.1 (3.6.1-1.fc18) 
-Mime-Version: 1.0
+	Thu, 29 Nov 2012 20:58:14 -0500
+X-AuditID: 9c930197-b7bd3ae000003f1c-de-50b812b3987f
+Date: Fri, 30 Nov 2012 10:58:10 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Nitin Gupta <ngupta@vflare.org>
+Cc: Greg KH <greg@kroah.com>, Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Sam Hansen <solid.se7en@gmail.com>, Tomas M <tomas@slax.org>,
+        Mihail Kasadjikov <hamer.mk@gmail.com>,
+        Linux Driver Project <devel@linuxdriverproject.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] zsmalloc: add function to query object size
+Message-ID: <20121130015810.GB18630@blaptop>
+References: <1354001201-25537-1-git-send-email-ngupta@vflare.org>
+ <20121129074538.GA5564@bbox>
+ <50B72664.30000@vflare.org>
+ <20121130000307.GA17427@blaptop>
+ <CAPkvG_dn_Dpen79T7R6WVg_SDisVz1tDhd7=uz+cbwrHzQUNKw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPkvG_dn_Dpen79T7R6WVg_SDisVz1tDhd7=uz+cbwrHzQUNKw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 29, 2012 at 04:53:15PM -0800, Nitin Gupta wrote:
+> On Thu, Nov 29, 2012 at 4:03 PM, Minchan Kim <minchan@kernel.org> wrote:
+> > On Thu, Nov 29, 2012 at 01:09:56AM -0800, Nitin Gupta wrote:
+> >> On 11/28/2012 11:45 PM, Minchan Kim wrote:
+> >> >On Mon, Nov 26, 2012 at 11:26:40PM -0800, Nitin Gupta wrote:
+> >> >>Adds zs_get_object_size(handle) which provides the size of
+> >> >>the given object. This is useful since the user (zram etc.)
+> >> >>now do not have to maintain object sizes separately, saving
+> >> >>on some metadata size (4b per page).
+> >> >>
+> >> >>The object handle encodes <page, offset> pair which currently points
+> >> >
+> >> >Nitpick.
+> >> >
+> >> ><page, index> in descrption would be proper instead of
+> >> ><page, offset>. You are going to replace <page, idx> with <page, offset>.
+> >> >
+> >>
+> >> I think 'offset' conveys the meaning more clearly; 'index' is after
+> >> all just a chopped-off version of offset :)
+> >
+> > In my perceptoin, offset means location from some point by some byte
+> > while index is thing we have to multiply sizeof(object) to get.
+> > So you used index before the patch but now you try to use offset instead of
+> > index.
+> >
+> > Anyway, it's minor nitpick. Never mind if you don't agree. :)
+> >
+> >>
+> >>
+> >> >>to the start of the object. Now, the handle implicitly stores the size
+> >> >>information by pointing to the object's end instead. Since zsmalloc is
+> >> >>a slab based allocator, the start of the object can be easily determined
+> >> >>and the difference between the end offset encoded in the handle and the
+> >> >>start gives us the object size.
+> >> >
+> >> >It's a good idea. Look at just minor comment below.
+> >> >
+> >> >Let's talk with another concern. This patch surely helps current
+> >> >customer's memory usage who should add 4 byte for accounting the
+> >> >statistics while zsmalloc could be slow down.
+> >> >Is it really valuable?
+> >> >
+> >> >Yes. zram/zcache had a tight coupling with zsmalloc so it already
+> >> >lost modularity. :( In this POV, this patch makes sense.
+> >> >But if someone are willing to remove statistics for performance?
+> >> >Although he remove it, zsmalloc is still slow down.
+> >> >
+> >> >Statistic for user of zsmalloc should be cost of user himself, not zsmalloc
+> >> >and it accelerates dependency with customer so it makes changing allocator
+> >> >hard in future. We already had such experience(xvmalloc->zsmalloc). Of course,
+> >> >it's not good that worry future things too early without any plan.
+> >> >So I'm not strong againt you. If any reviewer don't raise an eyebrow,
+> >> >I wil rely on your decision.
+> >> >
+> >>
+> >> Looking over the changes I do not expect any difference in
+> >> performance -- just a bit more arithmetic, however the use of
+> >> get_prev_page() which may dereference a few extra pointers might not
+> >> be really free. Also, my iozone test[1] shows very little difference
+> >> in performance:
+> >
+> > Iozone test isn't enough to prove the minor slow down because it would have
+> > many noise about I/O path and different compression ratio per I/O.
+> >
+> >>
+> >> With just the fix for crash (patch 1/2):
+> >> 9.28user 1159.84system 21:46.54elapsed 89%CPU (0avgtext+0avgdata
+> >> 50200maxresident)k
+> >> 212988544inputs+190660816outputs (1major+16706minor)pagefaults 0swaps
+> >>
+> >> With the new get_object_size() code (patch 1/2 + patch 2/2):
+> >> 9.20user 1112.63system 21:03.61elapsed 88%CPU (0avgtext+0avgdata
+> >> 50200maxresident)k
+> >> 194636568inputs+190500424outputs (1major+16707minor)pagefaults 0swaps
+> >>
+> >> I really cannot explain this ~40s speedup but anyways, I think
+> >> optimizing zsmalloc/zram should be taken up separately, at least
+> >> when this new code does not seem to have any significant effects.
+> >>
+> >>
+> >> [1] iozone test:
+> >>  - Create zram of size 1200m
+> >>  - Create ext4 fs
+> >>  - iozone -a -g 1G
+> >>  - In parallel: watch zram_stress
+> >>
+> >> # zram_stress
+> >> sync
+> >> echo 1 | sudo tee /proc/sys/vm/drop_caches
+> >>
+> >>
+> >> Surely, not the most accurate of the tests but gives an idea if
+> >> anything is making a significant difference.
+> >
+> > For more accurate test, it would be better to use zsmapbench by Seth.
+> > https://github.com/spartacus06/zsmapbench
+> 
+> Thanks for the pointer. I also found fio which can generate I/O with different
+> levels of compressibility. These would help with future evaluations.
+> 
+> > Frankly speaking, I don't expect it has a significant regression as you said.
+> > More concern to me is we are going to make tight coupling with zram/zcache +
+> > zsmalloc. It makes changing from zsmalloc to smarter allocator hard.
+> 
+> I could not understand how this patch increasing zram + zsmalloc coupling.
+> All we need from any potential allocator replacement is an interface to
+> provide the object size given its handle.  If the new allocation cannot
 
---=-Uv+8oUvGEg7Vwn/i7DMq
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+That's it. Why should general allocator support such special function?
 
-On Thu, 2012-11-29 at 20:38 -0500, Chas Williams (CONTRACTOR) wrote:
-> it isnt clear to me that fixes the race entirely either.
-> vcc_destroy_socket() and any of the push()/sends()'s are not
-> serialized.
-> while you may clear the ATM_VF_READY flag, you might not clear it soon
-> enough for any particular push() that is already running.  so it still
-> seems like you are racing close() against push() at this point.  the
-> window is greatly reduced, but it still exists.
+> support that then the we can create another size[] just like handle[] to
+> maintain sizes.  So, its really simple to replace zsmalloc. if required, at
+> least for the zram.
 
-I think it's actually fixed for pppoatm by the bh_lock_sock() and the
-sock_owned_by_user() check. As soon as vcc_release() calls lock_sock(),
-pppoatm stops accepting packets.
+You're right. It's simple now but the concern is that we are approaching to
+put the specific function which should be customer side to general allocator
+side. Although it's simple at the moment, it could be severe if such special
+functionalitys are accumulated.
 
-It should be simple enough to do the same in br2684.
+> 
+> 
+> > The reason I have a such concern is that I have a TODO which supports
+> > swap-over-zram pages migratin to storage swap when zram is full. Yes. It's a
+> > just plan, no schedule at the moment so I can't insist on but if i try it in
+> > future, I might want to replace zsmalloc to another. In case of that, tight
+> > coupling would be a another hurdle.
+> 
+> For me, its hard to see what kind of issues you might face during this
+> zram-to-disk migration work, especially from the allocator side. Anyways, this
 
---=20
-dwmw2
+The reason is that I want to make free pages via such migration when memory pressure
+is very severe. For it, we need some scheme to select victm zram objects like LRU.
+In case of that, although we migrate them, we can't get a free page if they are
+spread over lots of other zram pages. It's already problem in slab-based allocator.
 
-
---=-Uv+8oUvGEg7Vwn/i7DMq
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Transfer-Encoding: base64
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIUbjCCBjQw
-ggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
-Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAn
-BgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3MTAyNDIxMDE1NVoX
-DTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSsw
-KQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFy
-dENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTCCASIwDQYJKoZIhvcN
-AQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOrlr6KMoOMpohBllVHrdRvEg/q6r8jR+EK
-75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSMzR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC
-+y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxD
-z2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSDkOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr
-/+N2JLKutIxMYqQOJebr/f/h5t95m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0w
-ggGpMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFc
-fH6WNU7y1LhRgjAfBgNVHSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRa
-MFgwJwYIKwYBBQUHMAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYh
-aHR0cDovL3d3dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6
-Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5j
-b20vc2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
-dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
-c3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqDCH14qywG
-XLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy6QMVQjbbMXlt
-UfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPIzKKR9tQW8gGK+2+R
-HxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKfKSETEPrHh7p5shuuNktv
-sv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HORz9v3vQwR4e3ksLc2JZOAFK+s
-sS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9sIPP7ON0fz095HdThKjiVJe6vofq
-+n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCieuoBJ9OlqmsVWQvifIYf40dJPZkk9YgGT
-zWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7tw1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGq
-Up/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQG2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb1
-9mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIHFzCCBf+g
-AwIBAgIDBCZ6MA0GCSqGSIb3DQEBBQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
-b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYG
-A1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcN
-MTIwNTAxMTI1ODI3WhcNMTMwNTAzMTEzNzIwWjBdMRkwFwYDVQQNExA4Y1VOSzUzMTc0ODRYRjk3
-MRwwGgYDVQQDDBNkd213MkBpbmZyYWRlYWQub3JnMSIwIAYJKoZIhvcNAQkBFhNkd213MkBpbmZy
-YWRlYWQub3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyYe7wo6MrtrB4uIGGbrY
-4IifY/Xsq22pSv605yganL0+uyUdd8rCjrYlH6Q/ra5TVJCQFTgzaepkuqPQc79DC/Cxmzm6Qo+s
-wLZy868oFsccsVokL2bPAWIPaRXfNPJKkYR1FTWQfZpWJVQmT+sPf1XFUullVBAK+d9RztopyacI
-xWoZ/W/Cmv7mseQbttYTtGKJa0btX73nsQRWl6SgErWXo59zg9friCLTy1GXMXJYB8H+PtnuwX0w
-MrAvWDdX1ABgIlA17W3FraCn0eW15ZM46eyu0/amGzJZNtemCWF73P7BAijzeV1jNmiJFXdZ0DT0
-w+hmtMO9PxdDUyt78QIDAQABo4IDrjCCA6owCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0l
-BBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1UdDgQWBBTkfe5UOr3PcirsjApibyyUEfsyRzAf
-BgNVHSMEGDAWgBRTcu2SnODaywFcfH6WNU7y1LhRgjAeBgNVHREEFzAVgRNkd213MkBpbmZyYWRl
-YWQub3JnMIICIQYDVR0gBIICGDCCAhQwggIQBgsrBgEEAYG1NwECAjCCAf8wLgYIKwYBBQUHAgEW
-Imh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93
-d3cuc3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwgfcGCCsGAQUFBwICMIHqMCcWIFN0YXJ0
-Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5UaGlzIGNlcnRpZmljYXRlIHdhcyBp
-c3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZhbGlkYXRpb24gcmVxdWlyZW1lbnRzIG9m
-IHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlhbmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRlZCBw
-dXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhlIHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMuMIGc
-BggrBgEFBQcCAjCBjzAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgECGmRM
-aWFiaWxpdHkgYW5kIHdhcnJhbnRpZXMgYXJlIGxpbWl0ZWQhIFNlZSBzZWN0aW9uICJMZWdhbCBh
-bmQgTGltaXRhdGlvbnMiIG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3kuMDYGA1UdHwQvMC0wK6Ap
-oCeGJWh0dHA6Ly9jcmwuc3RhcnRzc2wuY29tL2NydHUxLWNybC5jcmwwgY4GCCsGAQUFBwEBBIGB
-MH8wOQYIKwYBBQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9zdWIvY2xhc3MxL2NsaWVu
-dC9jYTBCBggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20vY2VydHMvc3ViLmNsYXNz
-MS5jbGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3RhcnRzc2wuY29tLzANBgkq
-hkiG9w0BAQUFAAOCAQEAqDU1FKifNtCFJbLnvOi1BLRfk7mut55PMtPSZLJ4/AnG7AjmJnbBI4U5
-DELwvVq3mIpwUpGqZUkqkZMEfBPIbfq517UZB3h4iANtqif+ULfTLhg5XgcK5eF8/T6EtX2c3epq
-ylARdleCbj/0FwiUDvPlTsA6PIN4SCekjRLgjKERrL3heFz+Hteq1rtMAvMkNuyL0/0ijyyg2y45
-NASAl2Afl9SLes/fnoh9nBwzfNQfb6qDYUFpnglfpGrq/0b1NtaOUb2z1SR+H1tKlb8bVJJIdvpu
-mEi27kSRIhzk3h30uTfKkKetgy++ouyldxZ7KZ0PuoLQrBy465EoQLosETCCBxcwggX/oAMCAQIC
-AwQmejANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0
-ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMT
-L1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBMB4XDTEyMDUw
-MTEyNTgyN1oXDTEzMDUwMzExMzcyMFowXTEZMBcGA1UEDRMQOGNVTks1MzE3NDg0WEY5NzEcMBoG
-A1UEAwwTZHdtdzJAaW5mcmFkZWFkLm9yZzEiMCAGCSqGSIb3DQEJARYTZHdtdzJAaW5mcmFkZWFk
-Lm9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMmHu8KOjK7aweLiBhm62OCIn2P1
-7KttqUr+tOcoGpy9PrslHXfKwo62JR+kP62uU1SQkBU4M2nqZLqj0HO/QwvwsZs5ukKPrMC2cvOv
-KBbHHLFaJC9mzwFiD2kV3zTySpGEdRU1kH2aViVUJk/rD39VxVLpZVQQCvnfUc7aKcmnCMVqGf1v
-wpr+5rHkG7bWE7RiiWtG7V+957EEVpekoBK1l6Ofc4PX64gi08tRlzFyWAfB/j7Z7sF9MDKwL1g3
-V9QAYCJQNe1txa2gp9HlteWTOOnsrtP2phsyWTbXpglhe9z+wQIo83ldYzZoiRV3WdA09MPoZrTD
-vT8XQ1Mre/ECAwEAAaOCA64wggOqMAkGA1UdEwQCMAAwCwYDVR0PBAQDAgSwMB0GA1UdJQQWMBQG
-CCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQU5H3uVDq9z3Iq7IwKYm8slBH7MkcwHwYDVR0j
-BBgwFoAUU3Ltkpzg2ssBXHx+ljVO8tS4UYIwHgYDVR0RBBcwFYETZHdtdzJAaW5mcmFkZWFkLm9y
-ZzCCAiEGA1UdIASCAhgwggIUMIICEAYLKwYBBAGBtTcBAgIwggH/MC4GCCsGAQUFBwIBFiJodHRw
-Oi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMDQGCCsGAQUFBwIBFihodHRwOi8vd3d3LnN0
-YXJ0c3NsLmNvbS9pbnRlcm1lZGlhdGUucGRmMIH3BggrBgEFBQcCAjCB6jAnFiBTdGFydENvbSBD
-ZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0aWZpY2F0ZSB3YXMgaXNzdWVk
-IGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJlcXVpcmVtZW50cyBvZiB0aGUg
-U3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0aGUgaW50ZW5kZWQgcHVycG9z
-ZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5IG9ibGlnYXRpb25zLjCBnAYIKwYB
-BQUHAgIwgY8wJxYgU3RhcnRDb20gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwAwIBAhpkTGlhYmls
-aXR5IGFuZCB3YXJyYW50aWVzIGFyZSBsaW1pdGVkISBTZWUgc2VjdGlvbiAiTGVnYWwgYW5kIExp
-bWl0YXRpb25zIiBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LjA2BgNVHR8ELzAtMCugKaAnhiVo
-dHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkG
-CCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFydHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2Ew
-QgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3RhcnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xp
-ZW50LmNhLmNydDAjBgNVHRIEHDAahhhodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcN
-AQEFBQADggEBAKg1NRSonzbQhSWy57zotQS0X5O5rreeTzLT0mSyePwJxuwI5iZ2wSOFOQxC8L1a
-t5iKcFKRqmVJKpGTBHwTyG36ude1GQd4eIgDbaon/lC30y4YOV4HCuXhfP0+hLV9nN3qaspQEXZX
-gm4/9BcIlA7z5U7AOjyDeEgnpI0S4IyhEay94Xhc/h7Xqta7TALzJDbsi9P9Io8soNsuOTQEgJdg
-H5fUi3rP356IfZwcM3zUH2+qg2FBaZ4JX6Rq6v9G9TbWjlG9s9Ukfh9bSpW/G1SSSHb6bphItu5E
-kSIc5N4d9Lk3ypCnrYMvvqLspXcWeymdD7qC0KwcuOuRKEC6LBExggNvMIIDawIBATCBlDCBjDEL
-MAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdp
-dGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFy
-eSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMEJnowCQYFKw4DAhoFAKCCAa8wGAYJKoZIhvcNAQkD
-MQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcNMTIxMTMwMDE1NzAwWjAjBgkqhkiG9w0BCQQx
-FgQUBgW1bnfAWdhuWbYiGvjeSzX3Tj0wgaUGCSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMC
-SUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRp
-ZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1l
-ZGlhdGUgQ2xpZW50IENBAgMEJnowgacGCyqGSIb3DQEJEAILMYGXoIGUMIGMMQswCQYDVQQGEwJJ
-TDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlm
-aWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVk
-aWF0ZSBDbGllbnQgQ0ECAwQmejANBgkqhkiG9w0BAQEFAASCAQCLI3jNqmgC+Iw7sCa+eLLdh/nQ
-EHqsO11pM7eM3hnFYf+pORj7QgpoAklBR45DnIh9I9Uw+fvlno3u7kWzBVpmiBuPToRFxnAgGSRF
-Kr/4HDtGE1BJwYruN4Gi+ZD9goN0DlLIgAVlNs7Mlw3O+ctmsvpdDwy9dVlcFaNYxqNbiT6EtxeO
-hKqPu5qua2mS5A7bxexTVB3tW3JVe6j7OQdzb2K0Gp0yAkygjD0mGwzMRXjP/XOfK73vzqNvPoL7
-NcG57f3k4mFfno9LdYP8rhm4bDVYLGEFusrs0FokJQPZKtYLpatkzG8tLd2JDwmS6wSWa3OOzMPj
-Qc2Im4GAiYniAAAAAAAA
+If I should develop a allocator for preventing above my concern, I never want to
+provide getting objsize function from new allocator.
 
 
---=-Uv+8oUvGEg7Vwn/i7DMq--
+> would be an interesting feature, so please let me know if you get any issues
+> I can help with.
+> 
+> > But as I mentioned, I shouldn't prevent your great work by my ideal plan which
+> > even don't have real schedule. So still I can follow your opinion.
+> > Please resend the patch with fix if you think it's really worthy. :)
+> >
+> 
+> I didn't get it. Do you want any changes in this patch? or in patch 2/2?
+> In my opinion this patch should be included since you are getting get_size()
+> functionality for almost no cost.
 
+Hmm, You mentioned like below , so I guess you found some bug. No?
+                With just the fix for crash (patch 1/2):
+
+> 
+> Thanks,
+> Nitin
+> 
+> 
+> >>
+> >> >
+> >> >>
+> >> >>Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+> >> >>---
+> >> >>  drivers/staging/zsmalloc/zsmalloc-main.c |  177 +++++++++++++++++++++---------
+> >> >>  drivers/staging/zsmalloc/zsmalloc.h      |    1 +
+> >> >>  2 files changed, 127 insertions(+), 51 deletions(-)
+> >> >>
+> >> >>diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
+> >> >>index 09a9d35..65c9d3b 100644
+> >> >>--- a/drivers/staging/zsmalloc/zsmalloc-main.c
+> >> >>+++ b/drivers/staging/zsmalloc/zsmalloc-main.c
+> >> >>@@ -112,20 +112,20 @@
+> >> >>  #define MAX_PHYSMEM_BITS 36
+> >> >>  #else /* !CONFIG_HIGHMEM64G */
+> >> >>  /*
+> >> >>- * If this definition of MAX_PHYSMEM_BITS is used, OBJ_INDEX_BITS will just
+> >> >>+ * If this definition of MAX_PHYSMEM_BITS is used, OFFSET_BITS will just
+> >> >>   * be PAGE_SHIFT
+> >> >>   */
+> >> >>  #define MAX_PHYSMEM_BITS BITS_PER_LONG
+> >> >>  #endif
+> >> >>  #endif
+> >> >>  #define _PFN_BITS         (MAX_PHYSMEM_BITS - PAGE_SHIFT)
+> >> >>-#define OBJ_INDEX_BITS     (BITS_PER_LONG - _PFN_BITS)
+> >> >>-#define OBJ_INDEX_MASK     ((_AC(1, UL) << OBJ_INDEX_BITS) - 1)
+> >> >>+#define OFFSET_BITS        (BITS_PER_LONG - _PFN_BITS)
+> >> >>+#define OFFSET_MASK        ((_AC(1, UL) << OFFSET_BITS) - 1)
+> >> >>
+> >> >>  #define MAX(a, b) ((a) >= (b) ? (a) : (b))
+> >> >>  /* ZS_MIN_ALLOC_SIZE must be multiple of ZS_ALIGN */
+> >> >>  #define ZS_MIN_ALLOC_SIZE \
+> >> >>-   MAX(32, (ZS_MAX_PAGES_PER_ZSPAGE << PAGE_SHIFT >> OBJ_INDEX_BITS))
+> >> >>+   MAX(32, (ZS_MAX_PAGES_PER_ZSPAGE << PAGE_SHIFT >> OFFSET_BITS))
+> >> >>  #define ZS_MAX_ALLOC_SIZE PAGE_SIZE
+> >> >>
+> >> >>  /*
+> >> >>@@ -256,6 +256,11 @@ static int is_last_page(struct page *page)
+> >> >>    return PagePrivate2(page);
+> >> >>  }
+> >> >>
+> >> >>+static unsigned long get_page_index(struct page *page)
+> >> >
+> >> >IMO, first_obj_offset(struct page *page) would be better readable.
+> >> >
+> >> >>+{
+> >> >>+   return is_first_page(page) ? 0 : page->index;
+> >> >>+}
+> >> >>+
+> >> >>  static void get_zspage_mapping(struct page *page, unsigned int *class_idx,
+> >> >>                            enum fullness_group *fullness)
+> >> >>  {
+> >> >>@@ -433,39 +438,86 @@ static struct page *get_next_page(struct page *page)
+> >> >>    return next;
+> >> >>  }
+> >> >>
+> >> >>-/* Encode <page, obj_idx> as a single handle value */
+> >> >>-static void *obj_location_to_handle(struct page *page, unsigned long obj_idx)
+> >> >>+static struct page *get_prev_page(struct page *page)
+> >> >>  {
+> >> >>-   unsigned long handle;
+> >> >>+   struct page *prev, *first_page;
+> >> >>
+> >> >>-   if (!page) {
+> >> >>-           BUG_ON(obj_idx);
+> >> >>-           return NULL;
+> >> >>-   }
+> >> >>+   first_page = get_first_page(page);
+> >> >>+   if (page == first_page)
+> >> >>+           prev = NULL;
+> >> >>+   else if (page == (struct page *)first_page->private)
+> >> >>+           prev = first_page;
+> >> >>+   else
+> >> >>+           prev = list_entry(page->lru.prev, struct page, lru);
+> >> >>
+> >> >>-   handle = page_to_pfn(page) << OBJ_INDEX_BITS;
+> >> >>-   handle |= (obj_idx & OBJ_INDEX_MASK);
+> >> >>+   return prev;
+> >> >>
+> >> >>-   return (void *)handle;
+> >> >>  }
+> >> >>
+> >> >>-/* Decode <page, obj_idx> pair from the given object handle */
+> >> >>-static void obj_handle_to_location(unsigned long handle, struct page **page,
+> >> >>-                           unsigned long *obj_idx)
+> >> >>+static void *encode_ptr(struct page *page, unsigned long offset)
+> >> >>  {
+> >> >>-   *page = pfn_to_page(handle >> OBJ_INDEX_BITS);
+> >> >>-   *obj_idx = handle & OBJ_INDEX_MASK;
+> >> >>+   unsigned long ptr;
+> >> >>+   ptr = page_to_pfn(page) << OFFSET_BITS;
+> >> >>+   ptr |= offset & OFFSET_MASK;
+> >> >>+   return (void *)ptr;
+> >> >>+}
+> >> >>+
+> >> >>+static void decode_ptr(unsigned long ptr, struct page **page,
+> >> >>+                                   unsigned int *offset)
+> >> >>+{
+> >> >>+   *page = pfn_to_page(ptr >> OFFSET_BITS);
+> >> >>+   *offset = ptr & OFFSET_MASK;
+> >> >>+}
+> >> >>+
+> >> >>+static struct page *obj_handle_to_page(unsigned long handle)
+> >> >>+{
+> >> >>+   struct page *page;
+> >> >>+   unsigned int offset;
+> >> >>+
+> >> >>+   decode_ptr(handle, &page, &offset);
+> >> >>+   if (offset < get_page_index(page))
+> >> >>+           page = get_prev_page(page);
+> >> >>+
+> >> >>+   return page;
+> >> >>+}
+> >> >>+
+> >> >>+static unsigned int obj_handle_to_offset(unsigned long handle,
+> >> >>+                                   unsigned int class_size)
+> >> >>+{
+> >> >>+   struct page *page;
+> >> >>+   unsigned int offset;
+> >> >>+
+> >> >>+   decode_ptr(handle, &page, &offset);
+> >> >>+   if (offset < get_page_index(page))
+> >> >>+           offset = PAGE_SIZE - class_size + get_page_index(page);
+> >> >
+> >> >Althoug it's trivial, we can reduce get_page_index calling.
+> >> >
+> >> >>+   else
+> >> >>+           offset = roundup(offset, class_size) - class_size;
+> >> >>+
+> >> >>+   return offset;
+> >> >>  }
+> >> >>
+> >> >>-static unsigned long obj_idx_to_offset(struct page *page,
+> >> >>-                           unsigned long obj_idx, int class_size)
+> >> >>+/* Encode <page, offset, size> as a single handle value */
+> >> >
+> >> >Need more kind comment about encoding scheme with obj's end <page, offset>
+> >> >
+> >> >>+static void *obj_location_to_handle(struct page *page, unsigned int offset,
+> >> >>+                           unsigned int size, unsigned int class_size)
+> >> >>  {
+> >> >>-   unsigned long off = 0;
+> >> >>+   struct page *endpage;
+> >> >>+   unsigned int endoffset;
+> >> >>
+> >> >>-   if (!is_first_page(page))
+> >> >>-           off = page->index;
+> >> >>+   if (!page) {
+> >> >>+           BUG_ON(offset);
+> >> >>+           return NULL;
+> >> >>+   }
+> >> >
+> >> >What do you expect to catch with above check?
+> >> >
+> >> >>+   BUG_ON(offset >= PAGE_SIZE);
+> >> >>+
+> >> >>+   endpage = page;
+> >> >>+   endoffset = offset + size - 1;
+> >> >>+   if (endoffset >= PAGE_SIZE) {
+> >> >>+           endpage = get_next_page(page);
+> >> >>+           BUG_ON(!endpage);
+> >> >>+           endoffset -= PAGE_SIZE;
+> >> >>+   }
+> >> >>
+> >> >>-   return off + obj_idx * class_size;
+> >> >>+   return encode_ptr(endpage, endoffset);
+> >> >>  }
+> >> >>
+> >> >>  static void reset_page(struct page *page)
+> >> >>@@ -506,14 +558,13 @@ static void free_zspage(struct page *first_page)
+> >> >>  /* Initialize a newly allocated zspage */
+> >> >>  static void init_zspage(struct page *first_page, struct size_class *class)
+> >> >>  {
+> >> >>-   unsigned long off = 0;
+> >> >>+   unsigned long off = 0, next_off = 0;
+> >> >>    struct page *page = first_page;
+> >> >>
+> >> >>    BUG_ON(!is_first_page(first_page));
+> >> >>    while (page) {
+> >> >>            struct page *next_page;
+> >> >>            struct link_free *link;
+> >> >>-           unsigned int i, objs_on_page;
+> >> >>
+> >> >>            /*
+> >> >>             * page->index stores offset of first object starting
+> >> >>@@ -526,14 +577,12 @@ static void init_zspage(struct page *first_page, struct size_class *class)
+> >> >>
+> >> >>            link = (struct link_free *)kmap_atomic(page) +
+> >> >>                                            off / sizeof(*link);
+> >> >>-           objs_on_page = (PAGE_SIZE - off) / class->size;
+> >> >>
+> >> >>-           for (i = 1; i <= objs_on_page; i++) {
+> >> >>-                   off += class->size;
+> >> >>-                   if (off < PAGE_SIZE) {
+> >> >>-                           link->next = obj_location_to_handle(page, i);
+> >> >>-                           link += class->size / sizeof(*link);
+> >> >>-                   }
+> >> >>+           next_off = off + class->size;
+> >> >>+           while (next_off < PAGE_SIZE) {
+> >> >>+                   link->next = encode_ptr(page, next_off);
+> >> >>+                   link += class->size / sizeof(*link);
+> >> >>+                   next_off += class->size;
+> >> >>            }
+> >> >>
+> >> >>            /*
+> >> >>@@ -542,10 +591,11 @@ static void init_zspage(struct page *first_page, struct size_class *class)
+> >> >>             * page (if present)
+> >> >>             */
+> >> >>            next_page = get_next_page(page);
+> >> >>-           link->next = obj_location_to_handle(next_page, 0);
+> >> >>+           next_off = next_page ? next_off - PAGE_SIZE : 0;
+> >> >>+           link->next = encode_ptr(next_page, next_off);
+> >> >>            kunmap_atomic(link);
+> >> >>            page = next_page;
+> >> >>-           off = (off + class->size) % PAGE_SIZE;
+> >> >>+           off = next_off;
+> >> >>    }
+> >> >>  }
+> >> >>
+> >> >>@@ -596,7 +646,7 @@ static struct page *alloc_zspage(struct size_class *class, gfp_t flags)
+> >> >>
+> >> >>    init_zspage(first_page, class);
+> >> >>
+> >> >>-   first_page->freelist = obj_location_to_handle(first_page, 0);
+> >> >>+   first_page->freelist = encode_ptr(first_page, 0);
+> >> >>    /* Maximum number of objects we can store in this zspage */
+> >> >>    first_page->objects = class->pages_per_zspage * PAGE_SIZE / class->size;
+> >> >>
+> >> >>@@ -871,7 +921,7 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
+> >> >>    struct size_class *class;
+> >> >>
+> >> >>    struct page *first_page, *m_page;
+> >> >>-   unsigned long m_objidx, m_offset;
+> >> >>+   unsigned int m_offset;
+> >> >>
+> >> >>    if (unlikely(!size || size > ZS_MAX_ALLOC_SIZE))
+> >> >>            return 0;
+> >> >>@@ -895,8 +945,7 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
+> >> >>    }
+> >> >>
+> >> >>    obj = (unsigned long)first_page->freelist;
+> >> >>-   obj_handle_to_location(obj, &m_page, &m_objidx);
+> >> >>-   m_offset = obj_idx_to_offset(m_page, m_objidx, class->size);
+> >> >>+   decode_ptr(obj, &m_page, &m_offset);
+> >> >>
+> >> >>    link = (struct link_free *)kmap_atomic(m_page) +
+> >> >>                                    m_offset / sizeof(*link);
+> >> >>@@ -907,6 +956,9 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
+> >> >>    first_page->inuse++;
+> >> >>    /* Now move the zspage to another fullness group, if required */
+> >> >>    fix_fullness_group(pool, first_page);
+> >> >>+
+> >> >>+   obj = (unsigned long)obj_location_to_handle(m_page, m_offset,
+> >> >>+                                           size, class->size);
+> >> >>    spin_unlock(&class->lock);
+> >> >>
+> >> >>    return obj;
+> >> >>@@ -917,7 +969,7 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
+> >> >>  {
+> >> >>    struct link_free *link;
+> >> >>    struct page *first_page, *f_page;
+> >> >>-   unsigned long f_objidx, f_offset;
+> >> >>+   unsigned long f_offset;
+> >> >>
+> >> >>    int class_idx;
+> >> >>    struct size_class *class;
+> >> >>@@ -926,12 +978,12 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
+> >> >>    if (unlikely(!obj))
+> >> >>            return;
+> >> >>
+> >> >>-   obj_handle_to_location(obj, &f_page, &f_objidx);
+> >> >>+   f_page = obj_handle_to_page(obj);
+> >> >>    first_page = get_first_page(f_page);
+> >> >>
+> >> >>    get_zspage_mapping(first_page, &class_idx, &fullness);
+> >> >>    class = &pool->size_class[class_idx];
+> >> >>-   f_offset = obj_idx_to_offset(f_page, f_objidx, class->size);
+> >> >>+   f_offset = obj_handle_to_offset(obj, class->size);
+> >> >>
+> >> >>    spin_lock(&class->lock);
+> >> >>
+> >> >>@@ -940,7 +992,7 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
+> >> >>                                                    + f_offset);
+> >> >>    link->next = first_page->freelist;
+> >> >>    kunmap_atomic(link);
+> >> >>-   first_page->freelist = (void *)obj;
+> >> >>+   first_page->freelist = encode_ptr(f_page, f_offset);
+> >> >>
+> >> >>    first_page->inuse--;
+> >> >>    fullness = fix_fullness_group(pool, first_page);
+> >> >>@@ -970,10 +1022,10 @@ EXPORT_SYMBOL_GPL(zs_free);
+> >> >>   * This function returns with preemption and page faults disabled.
+> >> >>  */
+> >> >>  void *zs_map_object(struct zs_pool *pool, unsigned long handle,
+> >> >>-                   enum zs_mapmode mm)
+> >> >>+                                   enum zs_mapmode mm)
+> >> >>  {
+> >> >>    struct page *page;
+> >> >>-   unsigned long obj_idx, off;
+> >> >>+   unsigned long off;
+> >> >>
+> >> >>    unsigned int class_idx;
+> >> >>    enum fullness_group fg;
+> >> >>@@ -990,10 +1042,10 @@ void *zs_map_object(struct zs_pool *pool, unsigned long handle,
+> >> >>     */
+> >> >>    BUG_ON(in_interrupt());
+> >> >>
+> >> >>-   obj_handle_to_location(handle, &page, &obj_idx);
+> >> >>+   page = obj_handle_to_page(handle);
+> >> >>    get_zspage_mapping(get_first_page(page), &class_idx, &fg);
+> >> >>    class = &pool->size_class[class_idx];
+> >> >>-   off = obj_idx_to_offset(page, obj_idx, class->size);
+> >> >>+   off = obj_handle_to_offset(handle, class->size);
+> >> >>
+> >> >>    area = &get_cpu_var(zs_map_area);
+> >> >>    area->vm_mm = mm;
+> >> >>@@ -1015,7 +1067,7 @@ EXPORT_SYMBOL_GPL(zs_map_object);
+> >> >>  void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
+> >> >>  {
+> >> >>    struct page *page;
+> >> >>-   unsigned long obj_idx, off;
+> >> >>+   unsigned long off;
+> >> >>
+> >> >>    unsigned int class_idx;
+> >> >>    enum fullness_group fg;
+> >> >>@@ -1024,10 +1076,10 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
+> >> >>
+> >> >>    BUG_ON(!handle);
+> >> >>
+> >> >>-   obj_handle_to_location(handle, &page, &obj_idx);
+> >> >>+   page = obj_handle_to_page(handle);
+> >> >>    get_zspage_mapping(get_first_page(page), &class_idx, &fg);
+> >> >>    class = &pool->size_class[class_idx];
+> >> >>-   off = obj_idx_to_offset(page, obj_idx, class->size);
+> >> >>+   off = obj_handle_to_offset(handle, class->size);
+> >> >>
+> >> >>    area = &__get_cpu_var(zs_map_area);
+> >> >>    if (off + class->size <= PAGE_SIZE)
+> >> >>@@ -1045,6 +1097,29 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
+> >> >>  }
+> >> >>  EXPORT_SYMBOL_GPL(zs_unmap_object);
+> >> >>
+> >> >>+size_t zs_get_object_size(struct zs_pool *pool, unsigned long handle)
+> >> >>+{
+> >> >>+   struct page *endpage;
+> >> >>+   unsigned int endoffset, size;
+> >> >>+
+> >> >>+   unsigned int class_idx;
+> >> >>+   enum fullness_group fg;
+> >> >>+   struct size_class *class;
+> >> >>+
+> >> >>+   decode_ptr(handle, &endpage, &endoffset);
+> >> >>+   get_zspage_mapping(endpage, &class_idx, &fg);
+> >> >>+   class = &pool->size_class[class_idx];
+> >> >>+
+> >> >>+   size = endoffset + 1;
+> >> >>+   if (endoffset < get_page_index(endpage))
+> >> >>+           size += class->size - get_page_index(endpage);
+> >> >>+   else
+> >> >>+           size -= rounddown(endoffset, class->size);
+> >> >>+
+> >> >>+   return size;
+> >> >>+}
+> >> >>+EXPORT_SYMBOL_GPL(zs_get_object_size);
+> >> >>+
+> >> >>  u64 zs_get_total_size_bytes(struct zs_pool *pool)
+> >> >>  {
+> >> >>    int i;
+> >> >>diff --git a/drivers/staging/zsmalloc/zsmalloc.h b/drivers/staging/zsmalloc/zsmalloc.h
+> >> >>index de2e8bf..2830fdf 100644
+> >> >>--- a/drivers/staging/zsmalloc/zsmalloc.h
+> >> >>+++ b/drivers/staging/zsmalloc/zsmalloc.h
+> >> >>@@ -38,6 +38,7 @@ void *zs_map_object(struct zs_pool *pool, unsigned long handle,
+> >> >>                    enum zs_mapmode mm);
+> >> >>  void zs_unmap_object(struct zs_pool *pool, unsigned long handle);
+> >> >>
+> >> >>+size_t zs_get_object_size(struct zs_pool *pool, unsigned long handle);
+> >> >>  u64 zs_get_total_size_bytes(struct zs_pool *pool);
+> >> >>
+> >> >>  #endif
+> >> >>--
+> >> >>1.7.10.4
+> >> >>
+> >> >>--
+> >> >>To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> >> >>the body of a message to majordomo@vger.kernel.org
+> >> >>More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >> >>Please read the FAQ at  http://www.tux.org/lkml/
+> >> >
+> >>
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >> Please read the FAQ at  http://www.tux.org/lkml/
+> >
+> > --
+> > Kind regards,
+> > Minchan Kim
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+Kind regards,
+Minchan Kim
