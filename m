@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1768808Ab2K3TKs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:10:48 -0500
-Received: from mail.kernel.org ([198.145.19.201]:59587 "EHLO mail.kernel.org"
+	id S1768819Ab2K3TLI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:11:08 -0500
+Received: from mail.kernel.org ([198.145.19.201]:59564 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993012Ab2K3TCY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 14:02:24 -0500
+	id S2993005Ab2K3TCW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 14:02:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tim Shepard <shep@laptop.org>, Bing Zhao <bzhao@marvell.com>,
+        Albert Pool <albertpool@solcon.nl>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 10/54] mwifiex: fix system hang issue in cmd timeout error case
-Date: Fri, 30 Nov 2012 10:55:41 -0800
-Message-Id: <20121130185208.919121107@linuxfoundation.org>
+Subject: [ 08/54] rtlwifi: rtl8192cu: Add new USB ID
+Date: Fri, 30 Nov 2012 10:55:39 -0800
+Message-Id: <20121130185208.725225727@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185207.894301294@linuxfoundation.org>
 References: <20121130185207.894301294@linuxfoundation.org>
@@ -26,56 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bing Zhao <bzhao@marvell.com>
+From: Albert Pool <albertpool@solcon.nl>
 
-commit b1a47aa5e1e159e2cb06d7dfcc17ef5149b09299 upstream.
+commit a485e827f07bfdd0762059386e6e787bed6e81ee upstream.
 
-Reported by Tim Shepard:
-I was seeing sporadic failures (wedgeups), and the majority of those
-failures I saw printed the printouts in mwifiex_cmd_timeout_func with
-cmd = 0xe5 which is CMD_802_11_HS_CFG_ENH.  When this happens, two
-minutes later I get notified that the rtcwake thread is blocked, like
-this:
-      INFO: task rtcwake:3495 blocked for more than 120 seconds.
+This is an ISY IWL 2000. Probably a clone of Belkin F7D1102 050d:1102.
+Its FCC ID is the same.
 
-To get the hung thread unblocked we wake up the cmd wait queue and
-cancel the ioctl.
-
-Reported-by: Tim Shepard <shep@laptop.org>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: Albert Pool <albertpool@solcon.nl>
+Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/cmdevt.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ drivers/net/wireless/rtlwifi/rtl8192cu/sw.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/wireless/mwifiex/cmdevt.c
-+++ b/drivers/net/wireless/mwifiex/cmdevt.c
-@@ -887,9 +887,6 @@ mwifiex_cmd_timeout_func(unsigned long f
- 		return;
- 	}
- 	cmd_node = adapter->curr_cmd;
--	if (cmd_node->wait_q_enabled)
--		adapter->cmd_wait_q.status = -ETIMEDOUT;
--
- 	if (cmd_node) {
- 		adapter->dbg.timeout_cmd_id =
- 			adapter->dbg.last_cmd_id[adapter->dbg.last_cmd_index];
-@@ -935,6 +932,14 @@ mwifiex_cmd_timeout_func(unsigned long f
- 
- 		dev_err(adapter->dev, "ps_mode=%d ps_state=%d\n",
- 			adapter->ps_mode, adapter->ps_state);
-+
-+		if (cmd_node->wait_q_enabled) {
-+			adapter->cmd_wait_q.status = -ETIMEDOUT;
-+			wake_up_interruptible(&adapter->cmd_wait_q.wait);
-+			mwifiex_cancel_pending_ioctl(adapter);
-+			/* reset cmd_sent flag to unblock new commands */
-+			adapter->cmd_sent = false;
-+		}
- 	}
- 	if (adapter->hw_status == MWIFIEX_HW_STATUS_INITIALIZING)
- 		mwifiex_init_fw_complete(adapter);
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
+@@ -297,6 +297,7 @@ static struct usb_device_id rtl8192c_usb
+ 	/*=== Customer ID ===*/
+ 	/****** 8188CU ********/
+ 	{RTL_USB_DEVICE(0x050d, 0x1102, rtl92cu_hal_cfg)}, /*Belkin - Edimax*/
++	{RTL_USB_DEVICE(0x050d, 0x11f2, rtl92cu_hal_cfg)}, /*Belkin - ISY*/
+ 	{RTL_USB_DEVICE(0x06f8, 0xe033, rtl92cu_hal_cfg)}, /*Hercules - Edimax*/
+ 	{RTL_USB_DEVICE(0x07b8, 0x8188, rtl92cu_hal_cfg)}, /*Abocom - Abocom*/
+ 	{RTL_USB_DEVICE(0x07b8, 0x8189, rtl92cu_hal_cfg)}, /*Funai - Abocom*/
 
 
