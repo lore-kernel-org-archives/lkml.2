@@ -1,109 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751671Ab2K3FHB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 00:07:01 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:37410 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751357Ab2K3FG5 (ORCPT
+	id S1751939Ab2K3FHL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 00:07:11 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:65082 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751736Ab2K3FHF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 00:06:57 -0500
-Date: Fri, 30 Nov 2012 13:06:19 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: nic_swsd@realtek.com
-Cc: romieu@fr.zoreil.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH]realtek:r8169: Bugfix or workaround for missing extended
- GigaMAC registers settings
-Message-ID: <20121130050619.GA12862@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>, nic_swsd@realtek.com,
-	romieu@fr.zoreil.com, netdev@vger.kernel.org,
-	linux-kernel@vger.kernel.org
+	Fri, 30 Nov 2012 00:07:05 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <001301cdce05$a1ab0330$e5010990$%jun@samsung.com>
+References: <1353535387-32106-1-git-send-email-dianders@chromium.org>
+	<1353624835-19137-1-git-send-email-dianders@chromium.org>
+	<001a01cdcd4a$cf01ad40$6d0507c0$%jun@samsung.com>
+	<CAD=FV=Xdb5W_WrDPgxaTzMOYNP7DpD6Gztq9k2B85z1boUV+3w@mail.gmail.com>
+	<001301cdce05$a1ab0330$e5010990$%jun@samsung.com>
+Date: Thu, 29 Nov 2012 21:07:03 -0800
+X-Google-Sender-Auth: Gyz_FZ8OJG0bOi6jeaPwFEfl-N8
+Message-ID: <CAD=FV=U=6km+JknWmv_c5C8HEanHSSK=No2aJH7BAXzTJfc2xg@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] mmc: dw_mmc: exynos: Stop claiming wp-gpio
+From: Doug Anderson <dianders@chromium.org>
+To: Seungwon Jeon <tgih.jun@samsung.com>
+Cc: linux-samsung-soc@vger.kernel.org,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, Will Newton <will.newton@imgtec.com>,
+        Chris Ball <cjb@laptop.org>, Jaehoon Chung <jh80.chung@samsung.com>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I get a board with 8168e-vl(10ec:8168 with RTL_GIGA_MAC_VER_34),
-everything looks well first, I can use ifconfig to set ip, netmask,
-etc. And the rx/tx statistics show by ifconfig looks good when I
-ping another host or ping it from another host. But it don't work,
-I can't get ICMP REPLAY from both sides, although the RX/TX statistics
-seem good.
+Seungwon,
 
-After add some debug code, I found this NIC only accept ethernet
-broadcast package, it can't filter out the package send to its
-MAC address, but it works good for sending.So ifconfig show the
-RX/TX status means it can receive ARP package.(It don't its MAC
-address, so below)
 
-I have try the driver provided by realtek's website, it have the
-same problem at the first time. BUT IT WORK AFTER I REBOOT with
-CRTL-ALT-DEL, the reason is that realtek's driver call rtl8168_rar_set
-in the .shutdown function register with pci_register_driver. Yes,
-the really reason to make it work is rtl8689_rar_set, this function
-set extended GigaMAC registers, so after reboot without lost the power,
-NIC keep the status before reboot.
+On Wed, Nov 28, 2012 at 11:46 PM, Seungwon Jeon <tgih.jun@samsung.com> wrote:
+> Hi Doug,
+>
+> On Thursday, November 29, 2012, Doug Anderson wrote:
+>> Seungwon,
+>>
+>> Thanks for the review.  See below for comments.  If you'd like me to
+>> respin then please let me know.  Otherwise I look forward to your ack.
+>>
+>> On Wed, Nov 28, 2012 at 1:29 AM, Seungwon Jeon <tgih.jun@samsung.com> wrote:
+>> > Yes. pin of write protection is common property.
+>> > This change is good. I have some suggestion below.
+>> > Could you check it?
+>> >
+>> > On Friday, November 23, 2012, Doug Anderson wrote:
+>> >> The exynos code claimed wp-gpio with devm_gpio_request() but never did
+>> >> anything with it.  That meant that anyone using a write protect GPIO
+>> >> would effectively be write protected all the time.
+>> >>
+>> >> A future change will move the wp-gpio support to the core dw_mmc.c
+>> >> file.  Now the exynos-specific code won't claim the GPIO but will
+>> >> just set the DW_MCI_QUIRK_NO_WRITE_PROTECT quirk if write protect
+>> >> won't be used.
+>> >>
+>> >> Signed-off-by: Doug Anderson <dianders@chromium.org>
+>> >>
+>> >> ---
+>> >> Changes in v2:
+>> >> - Nothing new in this patch
+>> >>
+>> >>  drivers/mmc/host/dw_mmc-exynos.c |   12 ++++++------
+>> >>  1 files changed, 6 insertions(+), 6 deletions(-)
+>> >>
+>> >> diff --git a/drivers/mmc/host/dw_mmc-exynos.c b/drivers/mmc/host/dw_mmc-exynos.c
+>> >> index 4d50da6..58cc03e 100644
+>> >> --- a/drivers/mmc/host/dw_mmc-exynos.c
+>> >> +++ b/drivers/mmc/host/dw_mmc-exynos.c
+>> >> @@ -175,12 +175,12 @@ static int dw_mci_exynos_setup_bus(struct dw_mci *host,
+>> >>               }
+>> >>       }
+>> >>
+>> >> -     gpio = of_get_named_gpio(slot_np, "wp-gpios", 0);
+>> >> -     if (gpio_is_valid(gpio)) {
+>> >> -             if (devm_gpio_request(host->dev, gpio, "dw-mci-wp"))
+>> >> -                     dev_info(host->dev, "gpio [%d] request failed\n",
+>> >> -                                             gpio);
+>> >> -     } else {
+>> >> +     /*
+>> >> +      * If there are no write-protect GPIOs present then we assume no write
+>> >> +      * protect.  The mci_readl() in dw_mmc.c won't work since it's not
+>> >> +      * hooked up on exynos.
+>> >> +      */
+>> >> +     if (!of_find_property(slot_np, "wp-gpios", NULL)) {
+>> >>               dev_info(host->dev, "wp gpio not available");
+>> >>               host->pdata->quirks |= DW_MCI_QUIRK_NO_WRITE_PROTECT;
+>> >>       }
+>> > All card types need this quirk in case wp-gpio property is empty?
+>> > I think wp-pin is valid for SD card, not eMMC/SDIO.
+>>
+>> Right.  It is only checked right now by the SD code (mmc/core/sd.c).
+>> It doesn't particularly hurt to set it the quirk in other cases though
+>> and it seems nice not to add special cases.  I could imagine someone
+>> extending the MMC code at some point to support write protect (via
+>> GPIO) for eMMC, so there's even a slight justification for avoiding
+>> the special case.
+>>
+>>
+>> > Of course, I know origin code did it.
+>> > How about removing whole checking routine?
+>> > Instead, new definition for this quirk can be added into 'dw_mci_of_quirks'(dw_mmc.c) and dts file.
+>>
+>> On _exynos_ all SD cards need this quirk if there is no wp-gpio
+>> property.  However this is not generally true for all users of dw_mmc.
+>>  The DesignWare IP Block actually has a write protect input that can
+>> be read with "mci_readl(slot->host, WRTPRT)" but on exynos the
+>> DesignWare write protect line isn't exposed on any physical pins.
+>> That means that the only possible way to do write protect on exynos is
+>> using a GPIO.
+>>
+>> The above means that on exynos if the GPIO isn't defined we will
+>> assume no write protect.  On other platforms if the GPIO isn't defined
+>> we'll assume that the "mci_readl" will work and we'll use that.
+>>
+>> If people would prefer it I can code up an alternate solution that
+>> doesn't touch any exynos code but that would introduce a new device
+>> tree binding.  We could accomplish what's needed for exynos using a
+>> property like "broken-internal-wp".
+>>
+>> Please let me know if you'd like me to submit a new patch with this
+>> solution or if you like the existing solution.
+>>
+> Write protect is additional interface related with SD socket.
+> WP switch appears in SD standard size card.
+> In case EMMC/SDIO spec, there is no mentions about this WP pin.
+> As you mentioned above, that's why 'ger_ro' is called only in sd path(mmc/core/sd.c).
+> So, I meant that we don't need to consider WP pin status about non-SD type.
 
-I haven't see any code to set GigaMAC registers in kernel when boot,
-so I guess BIOS or NIC's circuit make it, but of course one miss
-the extended GigaMAC registers  in this problem. The probe code can
-get MAC address right, so MAC{0,4} must had been setted, but some
-guys forget the extended GigaMAC registers.
+Ah, I understand now.  This is a good point.  I have updated the
+documentation in the latest patch to mention this.  Thanks!
 
-This patch fix it.
-[ I don't known whether others' realtek's NIC with extended GigaMAC
-reigisters have the same problem, I meet it in 8168e-vl with
-RTL_GIGA_MAC_VER_34, so I make this patch just for it.]
 
-Signed-off-by: Wang YanQing <udknight@gmail.com>
----
- drivers/net/ethernet/realtek/r8169.c | 24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+>
+> Such as exynos5250, there is no exposed interface from host controller for write protection pin.
+> In that case, if general gpio pin is connected like your board environment, we can define wp-gpio.
+> Otherwise, 'broken-internal-wp' property will be good solution.
 
-diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
-index 927aa33..e49c08d 100644
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -3095,7 +3095,30 @@ static void rtl8168e_1_hw_phy_config(struct rtl8169_private *tp)
- 	rtl_writephy(tp, 0x0e, 0x0000);
- 	rtl_writephy(tp, 0x0d, 0x0000);
- }
-+static void rtl8168e_2_workaround(struct rtl8169_private *tp, u8 *addr)
-+{
-+	void __iomem *ioaddr = tp->mmio_addr;
-+	u32 high;
-+	u32 low;
-+
-+	low  = addr[0] | (addr[1] << 8) | (addr[2] << 16) | (addr[3] << 24);
-+	high = addr[4] | (addr[5] << 8);
-+
-+
-+	RTL_W8(Cfg9346, Cfg9346_Unlock);
-+	if (tp->mac_version == RTL_GIGA_MAC_VER_34) {
-+		const struct exgmac_reg e[] = {
-+			{ .addr = 0xe0, ERIAR_MASK_1111, .val = low },
-+			{ .addr = 0xe4, ERIAR_MASK_1111, .val = high },
-+			{ .addr = 0xf0, ERIAR_MASK_1111, .val = low << 16 },
-+			{ .addr = 0xf4, ERIAR_MASK_1111, .val = high << 16 |
-+								low  >> 16 },
-+		};
- 
-+		rtl_write_exgmac_batch(tp, e, ARRAY_SIZE(e));
-+	}
-+	RTL_W8(Cfg9346, Cfg9346_Lock);
-+}
- static void rtl8168e_2_hw_phy_config(struct rtl8169_private *tp)
- {
- 	static const struct phy_reg phy_reg_init[] = {
-@@ -3178,6 +3201,7 @@ static void rtl8168e_2_hw_phy_config(struct rtl8169_private *tp)
- 	rtl_w1w0_phy(tp, 0x19, 0x0000, 0x0001);
- 	rtl_w1w0_phy(tp, 0x10, 0x0000, 0x0400);
- 	rtl_writephy(tp, 0x1f, 0x0000);
-+	rtl8168e_2_workaround(tp, tp->dev->dev_addr);
- }
- 
- static void rtl8168f_hw_phy_config(struct rtl8169_private *tp)
--- 
-1.7.11.1.116.g8228a23
+Latest patch (just about to send out) adds a per-slot "disable-wp"
+property for dw_mmc.  See the patch for why I've chosen to do it that
+way.  Hopefully it looks OK to you.
+
+
+>
+> Please feel free to modify.
+> If you will do, I'll be happy.
+>
+> Thanks,
+> Seungwon Jeon
+>> >> --
+>> >> 1.7.7.3
+>> >
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
