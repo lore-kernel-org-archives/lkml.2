@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1769116Ab2K3TWJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:22:09 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58486 "EHLO mail.kernel.org"
+	id S1945909Ab2K3TWr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:22:47 -0500
+Received: from mail.kernel.org ([198.145.19.201]:58450 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992740Ab2K3S4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:56:35 -0500
+	id S2992731Ab2K3S4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:56:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 36/56] ALSA: hda - Add new codec ALC283 ALC290 support
-Date: Fri, 30 Nov 2012 10:55:28 -0800
-Message-Id: <20121130185121.984633609@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 34/56] sparc64: not any error from do_sigaltstack() should fail rt_sigreturn()
+Date: Fri, 30 Nov 2012 10:55:26 -0800
+Message-Id: <20121130185121.754371071@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185118.302752929@linuxfoundation.org>
 References: <20121130185118.302752929@linuxfoundation.org>
@@ -25,30 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kailang Yang <kailang@realtek.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 7ff34ad80b7080fafaac8efa9ef0061708eddd51 upstream.
+commit fae2ae2a900a5c7bb385fe4075f343e7e2d5daa2 upstream.
 
-These are compatible with standard ALC269 parser.
+If a signal handler is executed on altstack and another signal comes,
+we will end up with rt_sigreturn() on return from the second handler
+getting -EPERM from do_sigaltstack().  It's perfectly OK, since we
+are not asking to change the settings; in fact, they couldn't have been
+changed during the second handler execution exactly because we'd been
+on altstack all along.  64bit sigreturn on sparc treats any error from
+do_sigaltstack() as "SIGSEGV now"; we need to switch to the same semantics
+we are using on other architectures.
 
-Signed-off-by: Kailang Yang <kailang@realtek.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/sparc/kernel/signal_64.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -7035,6 +7035,8 @@ static const struct hda_codec_preset snd
- 	{ .id = 0x10ec0276, .name = "ALC276", .patch = patch_alc269 },
- 	{ .id = 0x10ec0280, .name = "ALC280", .patch = patch_alc269 },
- 	{ .id = 0x10ec0282, .name = "ALC282", .patch = patch_alc269 },
-+	{ .id = 0x10ec0283, .name = "ALC283", .patch = patch_alc269 },
-+	{ .id = 0x10ec0290, .name = "ALC290", .patch = patch_alc269 },
- 	{ .id = 0x10ec0861, .rev = 0x100340, .name = "ALC660",
- 	  .patch = patch_alc861 },
- 	{ .id = 0x10ec0660, .name = "ALC660-VD", .patch = patch_alc861vd },
+--- a/arch/sparc/kernel/signal_64.c
++++ b/arch/sparc/kernel/signal_64.c
+@@ -309,9 +309,7 @@ void do_rt_sigreturn(struct pt_regs *reg
+ 		err |= restore_fpu_state(regs, fpu_save);
+ 
+ 	err |= __copy_from_user(&set, &sf->mask, sizeof(sigset_t));
+-	err |= do_sigaltstack(&sf->stack, NULL, (unsigned long)sf);
+-
+-	if (err)
++	if (err || do_sigaltstack(&sf->stack, NULL, (unsigned long)sf) == -EFAULT)
+ 		goto segv;
+ 
+ 	err |= __get_user(rwin_save, &sf->rwin_save);
 
 
