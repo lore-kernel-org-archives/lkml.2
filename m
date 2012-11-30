@@ -1,58 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992812Ab2K3S4u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:56:50 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58508 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992757Ab2K3S4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:56:37 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Acelan Kao <acelan.kao@canonical.com>,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 38/56] ALSA: hda - Add support for Realtek ALC292
-Date: Fri, 30 Nov 2012 10:55:30 -0800
-Message-Id: <20121130185122.169138547@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121130185118.302752929@linuxfoundation.org>
-References: <20121130185118.302752929@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1769054Ab2K3TTG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:19:06 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:42420 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030452Ab2K3TS7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 14:18:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <50B87082.3020604@broadcom.com>
+References: <1354221910-22493-1-git-send-email-mcgrof@do-not-panic.com> <50B87082.3020604@broadcom.com>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Fri, 30 Nov 2012 11:18:37 -0800
+X-Google-Sender-Auth: 03CYvO8T5Qf2KXdWDaMDxCoKNqg
+Message-ID: <CAB=NE6UO8jPYOktteaLeihVqLp251-Q=jv5z_OThXoR+JtRKeg@mail.gmail.com>
+Subject: Re: [PATCH 0/6] drivers: convert struct spinlock to spinlock_t
+To: Arend van Spriel <arend@broadcom.com>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        backports@vger.kernel.org, alexander.stein@systec-electronic.com,
+        brudley@broadcom.com, rvossen@broadcom.com, frankyl@broadcom.com,
+        kanyan@broadcom.com, linux-wireless@vger.kernel.org,
+        brcm80211-dev-list@broadcom.com, kyungmin.park@samsung.com,
+        s.nawrocki@samsung.com, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, daniel.vetter@ffwll.ch,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        srinidhi.kasagar@stericsson.com, linus.walleij@linaro.org,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Nov 30, 2012 at 12:38 AM, Arend van Spriel <arend@broadcom.com> wrote:
+> So what is the rationale here. During mainlining our drivers we had to
+> remove all uses of 'typedef struct foo foo_t;'. The Linux CodingStyle
+> (chapter 5 Typedefs) is spending a number of lines explaining why.
+>
+> So is spinlock_t an exception to this rule simply because the kernel
+> uses spinlock_t all over the place.
 
-------------------
+Yes.
 
-From: David Henningsson <david.henningsson@canonical.com>
-
-commit af02dde8a609d8d071c4b31a82df811a55690a4a upstream.
-
-We found a new codec ID 292, and that just a simple quirk would enable
-sound output/input on this ALC292 chip.
-
-BugLink: https://bugs.launchpad.net/bugs/1081466
-Tested-by: Acelan Kao <acelan.kao@canonical.com>
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -7038,6 +7038,7 @@ static const struct hda_codec_preset snd
- 	{ .id = 0x10ec0282, .name = "ALC282", .patch = patch_alc269 },
- 	{ .id = 0x10ec0283, .name = "ALC283", .patch = patch_alc269 },
- 	{ .id = 0x10ec0290, .name = "ALC290", .patch = patch_alc269 },
-+	{ .id = 0x10ec0292, .name = "ALC292", .patch = patch_alc269 },
- 	{ .id = 0x10ec0861, .rev = 0x100340, .name = "ALC660",
- 	  .patch = patch_alc861 },
- 	{ .id = 0x10ec0660, .name = "ALC660-VD", .patch = patch_alc861vd },
-
-
+  Luis
