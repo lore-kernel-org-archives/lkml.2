@@ -1,67 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755995Ab2K3GYi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 01:24:38 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:39281 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753853Ab2K3GYg (ORCPT
+	id S1755549Ab2K3G2G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 01:28:06 -0500
+Received: from intranet.asianux.com ([58.214.24.6]:35281 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754029Ab2K3G2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 01:24:36 -0500
-Date: Fri, 30 Nov 2012 17:24:27 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>, Oleg Nesterov <oleg@redhat.com>
-Subject: linux-next: manual merge of the akpm tree with Linus' tree
-Message-Id: <20121130172427.39c2928ab7cd6cdaca7a9746@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__30_Nov_2012_17_24_27_+1100_kti2i+F5M8GA00L8"
+	Fri, 30 Nov 2012 01:28:04 -0500
+X-Spam-Score: -100.8
+Message-ID: <50B85221.3050803@asianux.com>
+Date: Fri, 30 Nov 2012 14:28:49 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Paul Fulghum <paulkf@microgate.com>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-serial@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [Suggestion] drivers/tty: drivers/char/:  for MAX_ASYNC_BUFFER_SIZE
+References: <50B6E751.9000000@asianux.com> <20121129051335.GA4375@kroah.com> <50B6F967.3050000@asianux.com> <20121129183207.GA4688@kroah.com> <50B81F76.8020508@asianux.com> <C7D3911F-7B6B-4353-A84B-0218FAB27198@microgate.com>
+In-Reply-To: <C7D3911F-7B6B-4353-A84B-0218FAB27198@microgate.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__30_Nov_2012_17_24_27_+1100_kti2i+F5M8GA00L8
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+于 2012年11月30日 11:27, Paul Fulghum 写道:
+> 
+> I’m the maintainer for these drivers. I only caught this message by
+> chance and
 
-Hi Andrew,
+  it seems you are not in MAINTAINER file.
+  is it suitable to add your name into MAINTAINER file ?
+    (if it was, please help adding ?  I am not quite familiar with it)
 
-Today's linux-next merge of the akpm tree got a conflict in
-include/linux/percpu-rwsem.h between commit 4b05a1c74d1c ("percpu-rwsem:
-use synchronize_sched_expedited") from Linus' tree and commit
-"percpu_rw_semaphore: reimplement to not block the readers unnecessarily"
-from the akpm tree.
+  thanks.
 
-I fixed it up (using the version from the akpm tree) and can carry the
-fix as necessary (more action may be required).
+-- 
+Chen Gang
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__30_Nov_2012_17_24_27_+1100_kti2i+F5M8GA00L8
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQuFEbAAoJEECxmPOUX5FE+0IP/22426PhyltPre259Co1C38d
-A/C0lVpAwgq4N1od7OxP9JNMS+i2f1lj5BoI1+Zg4gq8DFIEgJUp4D5R8ai5ldy2
-s+P2CHoKtar7HWqWNyJOk5oLCQtv4oTyv+XSK60HQ1pAId7XMyEwzwd6BcniSXWe
-7/b9cTAZBftCpzKCBEHILVKn4XBQ0EchGygzCi/PQLvvdjx3TVOwDsjA8ocSxNPx
-L95e3v+QNLHrySCKznW+p1e9ZshF3pr3dMiNP+5ikqLUS0HUTNTEyEbClq1KOpx6
-cCPDsocTOHa2bOcuBlODdrgFCV6CFFYeKtAL0n20DVwpGQGRspLWrXCAWB0gjoN8
-Qn/z98gxknvX2HrD9awH1ZIJG85u+GKFtV+IFsKowrEanXdPPs6IpVrLg97wjQza
-wqchKxx1zuzBzxyeznjJZ6QEKMKTIcj3fkJktzXXDpZ1Npehy/vjYon5QqGaTfQx
-PZUR+N081OBZz6IVfbVgYXCO2DF6q+tpJb5P8kisxpURwC0b5NwDQfQZCjSMwcHe
-5sjkX27aIsSgJyFU1S6SpzTYLU1wTBqnGZ9A5rBCg0fv2oO6Z7kAh+kGN+rHKgyM
-57RsoTS921PdCLHow+LJFaJQwN3fLYZl5Ssj4Qv7b1FonGAXTMeZJPPAbJc6LH7W
-h1w1aOCIFWY4kAI2L8Jp
-=WlpG
------END PGP SIGNATURE-----
-
---Signature=_Fri__30_Nov_2012_17_24_27_+1100_kti2i+F5M8GA00L8--
+Asianux Corporation
