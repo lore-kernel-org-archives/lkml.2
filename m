@@ -1,75 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292Ab2K3Bgd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 20:36:33 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:56997 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753530Ab2K3Bgb (ORCPT
+	id S1755444Ab2K3Bgt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 20:36:49 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:54375 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753813Ab2K3Bgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 20:36:31 -0500
-Date: Fri, 30 Nov 2012 01:36:28 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Patrick McLean <patrick@cim.mcgill.ca>
-Cc: Patrick McLean <patrickm@gaikai.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-nfs@vger.kernel.org
-Subject: Re: Regression with initramfs and nfsroot (appears to be in the
- dcache)
-Message-ID: <20121130013628.GZ4939@ZenIV.linux.org.uk>
-References: <CAE2NFgU+4QDcLaVE5dKDvZCxey7qEf7FAbYNjNmcjVU=HLhF=A@mail.gmail.com>
- <20121129213316.GU4939@ZenIV.linux.org.uk>
- <CAE2NFgWCnmgSCsw7MzRkqBLTHgRDG-FvKKcbTHN6UqePK6Ef+Q@mail.gmail.com>
- <20121129222109.GW4939@ZenIV.linux.org.uk>
- <50B7E759.9070007@gaikai.com>
- <20121129234326.GX4939@ZenIV.linux.org.uk>
- <50B7FBA7.2030300@gaikai.com>
- <20121130003502.GY4939@ZenIV.linux.org.uk>
- <50B8046F.7030308@cim.mcgill.ca>
+	Thu, 29 Nov 2012 20:36:48 -0500
+X-AuditID: b753bd60-945e1ba000004744-60-50b80dad1aea
+X-AuditID: b753bd60-945e1ba000004744-60-50b80dad1aea
+Message-ID: <50B80DAB.4030908@hitachi.com>
+Date: Fri, 30 Nov 2012 10:36:43 +0900
+From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120604 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50B8046F.7030308@cim.mcgill.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, David Sharp <dhsharp@google.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, Joerg Roedel <joerg.roedel@amd.com>,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
+        yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Re: Re: Re: Re: Re: Re: [RFC PATCH 0/2] kvm/vmx: Output TSC
+ offset
+References: <1352860305.18025.48.camel@gandalf.local.home> <50A355A2.5040101@hitachi.com> <20121116191537.GB28622@amt.cnet> <50AB5D31.7060305@hitachi.com> <20121120225148.GA6027@amt.cnet> <50ADB650.8080502@hitachi.com> <20121123224608.GA23093@amt.cnet> <50B34CE6.9070207@hitachi.com> <20121126231653.GA20391@amt.cnet> <50B49BBB.1020204@hitachi.com> <20121129225126.GA28555@amt.cnet>
+In-Reply-To: <20121129225126.GA28555@amt.cnet>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 04:57:19PM -0800, Patrick McLean wrote:
-> > Interesting...  Server-side that should've been produced by
-> > encode_entryplus_baggage(), which looks like failing compose_entry_fh()...
-> > which has explicit
-> >         if (d_mountpoint(dchild))
-> >                 goto out;
-> > resulting in ENOENT on everything that's overmounted on server.
-> > 
-> > Do you, by any chance, have the server really exporting its own root
-> > filesystem?  Another thing to check: have nfs_prime_dcache() print
-> > filename.name of everything that fails nfs_same_entry() and has
-> > zero entry->fh->size, regardless of d_invalidate() results.
-> 
-> The server is running 3.6.6 and is just exporting a subdir of an xfs filesystem (which does not happen to be the root filesystem).
-> 
-> The client is running as a KVM guest on the machine that is serving the NFS. I am reproducing this by booting the guest via an initramfs, and doing
-> "ls /" at in single user mode.
-> 
-> I added a check that prints the filename.name of everything that fails nfs_same_file, and it appears to just be triggered by the same filesystems that
-> are triggering the WARN_ON, the relevant dmesg is below.
+Hi Marcelo,
 
-[the same /dev, /proc and /sys]
+>>> Can you please write a succint but complete description of the method
+>>> so it can be verified?
+>>
+>> Sure.
+>>
+>> - Prerequisite
+>> 1. the host TSC is synchronized and stable.
+>> 2. kvm_write_tsc_offset events include previous and next TSC offset
+>>     values.
+>> 3. Every event's trace_clock is TSC.
+>>
+>> - Assumption for the sake of ease
+>> 1. One VCPU
+>> 2. The guest executes no write_tsc or write_tsc only once.
+>>
+>> - Configuration
+>> 1. On the host, kvm_exit/entry events are recorded in the buffer A and
+>>     kvm_write_tsc_offset events are recorded in the buffer B.
+>> 2. Boot a guest
+>>
+>> - Sort method
+>> 1.
+>>   Confirm which the kvm_write_tsc_offset events are recorded except for
+>> boot. Note that a vcpu thread writes TSC offset when boot as an initial
+>> operation.
+>>
+>> 1-1.
+>>   If not recorded, it means that the guest did not execute write_tsc.
+>> So, we convert the guest TSC to the host TSC using TSC offset of boot.
+>> => END
+>>
+>> 1-2.
+>>   If recorded, it means that the guest executed write_tsc.
+>> So, we use new kvm_write_tsc_offset event information.
+>>
+>> 2.
+>> We convert the host TSC(Th) of the kvm_write_tsc_offset event to
+>> the guest TSC(Tg) using previous_tsc_offset value:
+>>      Tg = Th + previous_tsc_offset
+>>
+>> 3.
+>> To search the point where the guest executed write_tsc, we find "n"
+>> which satisfies the condition Tn < Tg < Tn+1 or Tn+1 < Tn < Tg from
+>> older events of the guest.
+>> The former condition means trace data of
+>> the guest were recorded monotonically. On the other hand, the latter
+>> condition means trace data of the guest moved backward.
+>> 4.
+>> We convert the guest TSC of trace data to the host TSC using
+>> previous_tsc_offset value before "n" and using next_tsc_offset value
+>> after "n+1".
+>> => END
+>>
+>> - Note
+>> We assumed one vcpu and no write_tsc or write_tsc only once for the
+>> sake of ease. For other conditions, we will use similar method.
+>>
+>> Thanks,
+>
+> There is no certainty. Consider the following information available
+>
+> guest trace			host trace
+> 				100: guest_tsc_write (tsc_offset=-100 => guest_tsc = 0)
+> 				104: guest_tsc_write (tsc_offset=-104 => guest_tsc = 0)
+> 				108: guest_tsc_write (tsc_offset=-108 => guest_tsc = 0)
+> 1: eventA 			
+> 2: eventB
+> 3: eventC
+> 1: eventD
+> 2: eventE
+> 3: eventF
+>
+> How can you tell which tsc_offset to use for eventD ? It could be either
+> -104 or -108. The notion of "next_tsc_offset" is subject to such
+> issue.
+>
+> I suppose its fine to restrict the interface as follows: the tool will
+> accept one trace of events with monotonic timestamps and the user is
+> responsible for correlating that to a host trace.
 
-	Very interesting.  Do you have anything mounted on the corresponding
-directories on server?  The picture looks like you are getting empty
-fhandles in readdir+ respons for exactly the same directories that happen
-to be mountpoints on client.  In any case, we shouldn't do that blind
-d_drop() - empty fhandles can happen.  The only remaining question is
-why do they happen on that set of entries.  From my reading of
-encode_entryplus_baggage() it looks like we have compose_entry_fh()
-failing for those entries and those entries alone.  One possible cause
-would be d_mountpoint(dchild) being true on server.  If it is true, we
-can declare the case closed; if not, I really wonder what's going on.
+OK, I'll add the restriction, which trace data must have monotonic
+timestamps to use this feature. I think guests seldom will execute
+write_tsc, so in many cases, timestamps will be monotonically recorded
+in trace data.
 
-Note that if the same fs is mounted elsewhere, d_mountpoint() would mean
-that something is mounted on top of that directory in _some_ instance;
-not necessary the exported one.  Can you slap printks on fs/nfsd/nfs3xdr.c
-compose_entry_fh() failure exits and see which one triggers server-side?
+> That is, you can't feed distinct instances of guest kernel trace.
+
+I'm not clear for "distinct instances". Is this about SMP or multiple
+guests? Would you explain about this?
+
+Thanks,
+
+-- 
+Yoshihiro YUNOMAE
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: yoshihiro.yunomae.ez@hitachi.com
+
+
