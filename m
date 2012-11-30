@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992924Ab2K3TCE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:02:04 -0500
-Received: from mail.kernel.org ([198.145.19.201]:59308 "EHLO mail.kernel.org"
+	id S1768883Ab2K3TOk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:14:40 -0500
+Received: from mail.kernel.org ([198.145.19.201]:59403 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992887Ab2K3TBy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 14:01:54 -0500
+	id S2992913Ab2K3TCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 14:02:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 12/54] drm/radeon: add new SI pci id
-Date: Fri, 30 Nov 2012 10:55:43 -0800
-Message-Id: <20121130185209.131839065@linuxfoundation.org>
+        Jianpeng Ma <majianpeng@gmail.com>, NeilBrown <neilb@suse.de>
+Subject: [ 20/54] md: Reassigned the parameters if read_seqretry returned true in func md_is_badblock.
+Date: Fri, 30 Nov 2012 10:55:51 -0800
+Message-Id: <20121130185209.935969916@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185207.894301294@linuxfoundation.org>
 References: <20121130185207.894301294@linuxfoundation.org>
@@ -25,26 +25,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: majianpeng <majianpeng@gmail.com>
 
-commit 0181bd5dea2ed0696f84591a92da0b6a1f1a2e62 upstream.
+commit ab05613a0646dcc11049692d54bae76ca9ffa910 upstream.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+This bug was introduced by commit(v3.0-rc7-126-g2230dfe).
+So fix is suitable for 3.0.y thru 3.6.y.
+
+Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/drm/drm_pciids.h |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/md/md.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/include/drm/drm_pciids.h
-+++ b/include/drm/drm_pciids.h
-@@ -210,6 +210,7 @@
- 	{0x1002, 0x6798, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TAHITI|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6799, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TAHITI|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x679A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TAHITI|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x679B, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TAHITI|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x679E, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TAHITI|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x679F, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_TAHITI|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6800, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_PITCAIRN|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -7907,9 +7907,9 @@ int md_is_badblock(struct badblocks *bb,
+ 		   sector_t *first_bad, int *bad_sectors)
+ {
+ 	int hi;
+-	int lo = 0;
++	int lo;
+ 	u64 *p = bb->page;
+-	int rv = 0;
++	int rv;
+ 	sector_t target = s + sectors;
+ 	unsigned seq;
+ 
+@@ -7924,7 +7924,8 @@ int md_is_badblock(struct badblocks *bb,
+ 
+ retry:
+ 	seq = read_seqbegin(&bb->lock);
+-
++	lo = 0;
++	rv = 0;
+ 	hi = bb->count;
+ 
+ 	/* Binary search between lo and hi for 'target'
 
 
