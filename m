@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031825Ab2K3VRp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 16:17:45 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:47366 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751613Ab2K3VRo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 16:17:44 -0500
-Date: Fri, 30 Nov 2012 13:17:40 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Dmitry Torokhov <dtor@vmware.com>
-Cc: pv-drivers@vmware.com, Andy King <acking@vmware.com>,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [Pv-drivers] [PATCH 12/12] VMCI: Some header and config files.
-Message-ID: <20121130211740.GA1131@kroah.com>
-References: <20121127002357.GA27683@core.coreip.homeip.net>
- <20121130200940.GA12740@dtor-ws.eng.vmware.com>
- <20121130204406.GB32321@kroah.com>
- <1666326.N64s5YcnpN@dtor-d630.eng.vmware.com>
+	id S1754077Ab2K3VVq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 16:21:46 -0500
+Received: from mms3.broadcom.com ([216.31.210.19]:2304 "EHLO mms3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751645Ab2K3VVo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 16:21:44 -0500
+X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
+Message-ID: <50B9235D.7050309@broadcom.com>
+Date: Fri, 30 Nov 2012 22:21:33 +0100
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0
+ Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1666326.N64s5YcnpN@dtor-d630.eng.vmware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+cc: linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        backports@vger.kernel.org, alexander.stein@systec-electronic.com,
+        brudley@broadcom.com, rvossen@broadcom.com, frankyl@broadcom.com,
+        kanyan@broadcom.com, linux-wireless@vger.kernel.org,
+        brcm80211-dev-list@broadcom.com, kyungmin.park@samsung.com,
+        s.nawrocki@samsung.com, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, daniel.vetter@ffwll.ch,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        srinidhi.kasagar@stericsson.com, linus.walleij@linaro.org,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 0/6] drivers: convert struct spinlock to spinlock_t
+References: <1354221910-22493-1-git-send-email-mcgrof@do-not-panic.com>
+ <50B87082.3020604@broadcom.com>
+ <CAB=NE6UO8jPYOktteaLeihVqLp251-Q=jv5z_OThXoR+JtRKeg@mail.gmail.com>
+ <CAB=NE6UVA1As_07HOvCbi4oK+CgbNNeeNMfz8agB-00ZRP973w@mail.gmail.com>
+In-Reply-To: <CAB=NE6UVA1As_07HOvCbi4oK+CgbNNeeNMfz8agB-00ZRP973w@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+X-WSS-ID: 7CA7FDD539W2708228-01-01
+Content-Type: text/plain;
+ charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 30, 2012 at 12:58:25PM -0800, Dmitry Torokhov wrote:
-> On Friday, November 30, 2012 12:44:06 PM Greg KH wrote:
-> > On Fri, Nov 30, 2012 at 12:09:40PM -0800, Dmitry Torokhov wrote:
-> > > On Friday, November 30, 2012 10:57:55 AM Greg KH wrote:
-> > > > On Fri, Nov 30, 2012 at 10:45:44AM -0800, Dmitry Torokhov wrote:
-> > > > > However you snipped the rest of my reply: do we really need to
-> > > > > renumber
-> > > > > ioctls? There is no benefit for the driver as its ioctl handler does
-> > > > > not parse the numbers into components.
-> > > > 
-> > > > I don't know if you need to renumber, I really don't understand what you
-> > > > were trying to do with this code, and as it was acting differently from
-> > > > all other kernel ioctl declarations, I asked for some clarity.
-> > > > 
-> > > > If you can rewrite it to look sane, and keep the same numbers, that's
-> > > > fine with me.
-> > > 
-> > > OK, it looks like we can redo them as:
-> > > 
-> > > #define IOCTL_VMCI_VERSION		_IO(7, 0x9f)    /* 1951 */
-> > > #define IOCTL_VMCI_INIT_CONTEXT		_IO(7, 0xa0)    /* 1952 */
-> > > 
-> > > Is this acceptable?
-> > 
-> > Sure, that's better.  You also got lucky, '7' happens to be unused right
-> > now.
+On 11/30/2012 09:25 PM, Luis R. Rodriguez wrote:
+> On Fri, Nov 30, 2012 at 11:18 AM, Luis R. Rodriguez
+> <mcgrof@do-not-panic.com> wrote:
+>> On Fri, Nov 30, 2012 at 12:38 AM, Arend van Spriel <arend@broadcom.com> wrote:
+>>> So what is the rationale here. During mainlining our drivers we had to
+>>> remove all uses of 'typedef struct foo foo_t;'. The Linux CodingStyle
+>>> (chapter 5 Typedefs) is spending a number of lines explaining why.
+>>>
+>>> So is spinlock_t an exception to this rule simply because the kernel
+>>> uses spinlock_t all over the place.
+>>
+>> Yes.
 > 
-> Excellent. You said you want the next drop after -rc1, right?
+> Let me provide a better explanation. In practice drivers should not be
+> creating their own typedefs given that generally the reasons to create
+> them do not exist for drivers. The kernel may provide their own though
+> for reasons explained in CodingStyle and in such cases the drivers
+> should use these supplied typedefs.
 
-Yes please, I will be ignoring patches until then.
+Ok. Fine by me. It just looked like a case of saying a and doing b.
+Thanks for taking time giving the better explanation :-)
 
-greg k-h
+Gr. AvS
+
+
