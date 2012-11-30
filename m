@@ -1,67 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755291Ab2K3CtP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 21:49:15 -0500
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:21428 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753467Ab2K3CtO (ORCPT
+	id S1755415Ab2K3Cvt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 21:51:49 -0500
+Received: from intranet.asianux.com ([58.214.24.6]:45191 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754097Ab2K3Cvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 21:49:14 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AskLANkduFB5LN4a/2dsb2JhbABEhUO0SYV7F3OCHgEBBScTHBwHEAgDGC4UJQMhE4gPvzAUjCyDYGEDlgCQRYMG
-Date: Fri, 30 Nov 2012 13:49:10 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Chris Mason <chris.mason@fusionio.com>, Chris Mason <clmason@fusionio.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@kernel.dk>,
-        Jeff Chua <jeff.chua.linux@gmail.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Jan Kara <jack@suse.cz>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH v2] Do a proper locking for mmap and block size change
-Message-ID: <20121130024910.GF6434@dastard>
-References: <20121128194314.GF4939@ZenIV.linux.org.uk>
- <Pine.LNX.4.64.1211281630150.5283@file.rdu.redhat.com>
- <CA+55aFziCW_ywZACGoVyNSgy8mToAGhSbdo0VoUAaGvgSb2XxQ@mail.gmail.com>
- <CA+55aFxt655WfuhjOCnu3esg3gt=L37v=ofWfjs+qpXjn-F2uA@mail.gmail.com>
- <20121129191503.GB3490@shiny>
- <CA+55aFxaHuxaEezkpmGRi4kFGaQFTv9S89N-hJhxBjVa6ZwnbQ@mail.gmail.com>
- <20121129194840.GC3490@shiny>
- <CA+55aFwGLExQGhhzStMobWzLju0tVjKW9SZphrxp3AJ6w_ZH9g@mail.gmail.com>
- <20121129212931.GD3490@shiny>
- <CA+55aFzeq1HZvEZdmx=f8at2UOWcyp4oZv0RCX4dd0+dthuM1w@mail.gmail.com>
+	Thu, 29 Nov 2012 21:51:47 -0500
+X-Spam-Score: -100.8
+Message-ID: <50B81F76.8020508@asianux.com>
+Date: Fri, 30 Nov 2012 10:52:38 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzeq1HZvEZdmx=f8at2UOWcyp4oZv0RCX4dd0+dthuM1w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-serial@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [Suggestion] drivers/tty: drivers/char/:  for MAX_ASYNC_BUFFER_SIZE
+References: <50B6E751.9000000@asianux.com> <20121129051335.GA4375@kroah.com> <50B6F967.3050000@asianux.com> <20121129183207.GA4688@kroah.com>
+In-Reply-To: <20121129183207.GA4688@kroah.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 02:16:50PM -0800, Linus Torvalds wrote:
-> On Thu, Nov 29, 2012 at 1:29 PM, Chris Mason <chris.mason@fusionio.com> wrote:
-> >
-> > Just reading the new blkdev_get_blocks, it looks like we're mixing
-> > shifts.  In direct-io.c map_bh->b_size is how much we'd like to map, and
-> > it has no relation at all to the actual block size of the device.  The
-> > interface is abusing b_size to ask for as large a mapping as possible.
+于 2012年11月30日 02:32, Greg KH 写道:
+> On Thu, Nov 29, 2012 at 01:57:59PM +0800, Chen Gang wrote:
+>>> And, I really don't understand here, why do you want to change this?
+>>> What is it going to change?  And why?
+>>>
+>>
+>> Why:
+>>   for the context MGSLPC_INFO *info in drivers/char/pcmcia/synclink_cs.c
+>>     info->max_frame_size can be the value between 4096 .. 65535 (can be
+>> set by its module input parameter)
+>>     info->flag_buf length is 4096 (MAX_ASYNC_BUFFER_SIZE)
+>>   in function rx_get_frame
+>>     the framesize is limit by info->max_frame_size, but may still be
+>> larger that 4096.
+>>     when call function ldisc_receive_buf, info->flag_buf is equal to
+>> 4096, but framesize can be more than 4096. it will cause memory over flow.
 > 
-> Ugh. That's a big violation of how buffer-heads are supposed to work:
-> the block number is very much defined to be in multiples of b_size
-> (see for example "submit_bh()" that turns it into a sector number).
+> Do you use that pcmcia driver for anything?  Are those cards still
+> around?
+
+I am not use them.
+
+I am just through code review (so it is only a suggestion).
+
+this issue has effect with 4 synclink drivers
+I checked their source code, all of them have the same issue.
+  drivers/char/pcmcia/synclink_cs.c:213:        char flag_buf[MAX_ASYNC_BUFFER_SIZE];
+  drivers/tty/synclink_gt.c:320:        char flag_buf[MAX_ASYNC_BUFFER_SIZE];
+  drivers/tty/synclink.c:294:   char flag_buf[MAX_ASYNC_BUFFER_SIZE];
+  drivers/tty/synclinkmp.c:265: char flag_buf[MAX_ASYNC_BUFFER_SIZE];
+
+by the way, for the char_buf, has already useless (can be removed)
+  drivers/tty/synclink_gt.c:321:        char char_buf[MAX_ASYNC_BUFFER_SIZE];
+  drivers/tty/synclink.c:295:   char char_buf[MAX_ASYNC_BUFFER_SIZE];   
+  drivers/tty/synclinkmp.c:266: char char_buf[MAX_ASYNC_BUFFER_SIZE];
+
+
+
 > 
-> But you're right. The direct-IO code really *is* violating that, and
-> knows that get_block() ends up being defined in i_blkbits regardless
-> of b_size.
+>> What:
+>>   #define MAX_ASYNC_BUFFER_SIZE  0x10000 (instead of 4096, originally).
+>>   let it match the max frame size.
+>>
+>> At last:
+>>   my suggestion may be incorrect, need relative member (who expert about
+>> it) to help checking.
+> 
+> That driver might be incorrect, yes, care to make up a patch for it and
+> test it to verify it fixes the problem?
+> 
 
-Same with mpage_readpages(), so it's not just direct IO that has
-this problem....
+and now Alan Cox has his own opinions
+  at least, I think it is valuable to continue discussing about it.
 
-Cheers,
+if Alan Cox agree with it (but it seems not),  I will make patch, and try to perform test.
+also welcome another members to help testing.
 
-Dave.
+
+
+> thanks,
+> 
+> greg k-h
+> 
+> 
+
+
 -- 
-Dave Chinner
-david@fromorbit.com
+Chen Gang
+
+Asianux Corporation
