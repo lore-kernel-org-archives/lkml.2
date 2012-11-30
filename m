@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1769187Ab2K3T0g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:26:36 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58291 "EHLO mail.kernel.org"
+	id S2993454Ab2K3T0w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:26:52 -0500
+Received: from mail.kernel.org ([198.145.19.201]:58245 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992650Ab2K3S4T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:56:19 -0500
+	id S2992641Ab2K3S4P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:56:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Thomas Betker <thomas.betker@rohde-schwarz.com>,
-        Joakim Tjernlund <Joakim.Tjernlund@transmode.se>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [ 23/56] jffs2: Fix lock acquisition order bug in jffs2_write_begin
-Date: Fri, 30 Nov 2012 10:55:15 -0800
-Message-Id: <20121130185120.633205350@linuxfoundation.org>
+        Michel Lespinasse <walken@google.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 19/56] PARISC: fix virtual aliasing issue in get_shared_area()
+Date: Fri, 30 Nov 2012 10:55:11 -0800
+Message-Id: <20121130185120.254372123@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185118.302752929@linuxfoundation.org>
 References: <20121130185118.302752929@linuxfoundation.org>
@@ -27,143 +26,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Betker <thomas.betker@freenet.de>
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
 
-commit 5ffd3412ae5536a4c57469cb8ea31887121dcb2e upstream.
+commit 949a05d03490e39e773e8652ccab9157e6f595b4 upstream.
 
-jffs2_write_begin() first acquires the page lock, then f->sem. This
-causes an AB-BA deadlock with jffs2_garbage_collect_live(), which first
-acquires f->sem, then the page lock:
+On Thu, 2012-11-01 at 16:45 -0700, Michel Lespinasse wrote:
+> Looking at the arch/parisc/kernel/sys_parisc.c implementation of
+> get_shared_area(), I do have a concern though. The function basically
+> ignores the pgoff argument, so that if one creates a shared mapping of
+> pages 0-N of a file, and then a separate shared mapping of pages 1-N
+> of that same file, both will have the same cache offset for their
+> starting address.
+>
+> This looks like this would create obvious aliasing issues. Am I
+> misreading this ? I can't understand how this could work good enough
+> to be undetected, so there must be something I'm missing here ???
 
-jffs2_garbage_collect_live
-    mutex_lock(&f->sem)                         (A)
-    jffs2_garbage_collect_dnode
-        jffs2_gc_fetch_page
-            read_cache_page_async
-                do_read_cache_page
-                    lock_page(page)             (B)
+This turns out to be correct and we need to pay attention to the pgoff as
+well as the address when creating the virtual address for the area.
+Fortunately, the bug is rarely triggered as most applications which use pgoff
+tend to use large values (git being the primary one, and it uses pgoff in
+multiples of 16MB) which are larger than our cache coherency modulus, so the
+problem isn't often seen in practise.
 
-jffs2_write_begin
-    grab_cache_page_write_begin
-        find_lock_page
-            lock_page(page)                     (B)
-    mutex_lock(&f->sem)                         (A)
-
-We fix this by restructuring jffs2_write_begin() to take f->sem before
-the page lock. However, we make sure that f->sem is not held when
-calling jffs2_reserve_space(), as this is not permitted by the locking
-rules.
-
-The deadlock above was observed multiple times on an SoC with a dual
-ARMv7 (Cortex-A9), running the long-term 3.4.11 kernel; it occurred
-when using scp to copy files from a host system to the ARM target
-system. The fix was heavily tested on the same target system.
-
-Signed-off-by: Thomas Betker <thomas.betker@rohde-schwarz.com>
-Acked-by: Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Reported-by: Michel Lespinasse <walken@google.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/jffs2/file.c |   39 +++++++++++++++++++++------------------
- 1 file changed, 21 insertions(+), 18 deletions(-)
+ arch/parisc/kernel/sys_parisc.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/jffs2/file.c
-+++ b/fs/jffs2/file.c
-@@ -138,33 +138,39 @@ static int jffs2_write_begin(struct file
- 	struct page *pg;
- 	struct inode *inode = mapping->host;
- 	struct jffs2_inode_info *f = JFFS2_INODE_INFO(inode);
-+	struct jffs2_sb_info *c = JFFS2_SB_INFO(inode->i_sb);
-+	struct jffs2_raw_inode ri;
-+	uint32_t alloc_len = 0;
- 	pgoff_t index = pos >> PAGE_CACHE_SHIFT;
- 	uint32_t pageofs = index << PAGE_CACHE_SHIFT;
- 	int ret = 0;
+--- a/arch/parisc/kernel/sys_parisc.c
++++ b/arch/parisc/kernel/sys_parisc.c
+@@ -73,6 +73,8 @@ static unsigned long get_shared_area(str
+ 	struct vm_area_struct *vma;
+ 	int offset = mapping ? get_offset(mapping) : 0;
  
-+	jffs2_dbg(1, "%s()\n", __func__);
++	offset = (offset + (pgoff << PAGE_SHIFT)) & 0x3FF000;
 +
-+	if (pageofs > inode->i_size) {
-+		ret = jffs2_reserve_space(c, sizeof(ri), &alloc_len,
-+					  ALLOC_NORMAL, JFFS2_SUMMARY_INODE_SIZE);
-+		if (ret)
-+			return ret;
-+	}
-+
-+	mutex_lock(&f->sem);
- 	pg = grab_cache_page_write_begin(mapping, index, flags);
--	if (!pg)
-+	if (!pg) {
-+		if (alloc_len)
-+			jffs2_complete_reservation(c);
-+		mutex_unlock(&f->sem);
- 		return -ENOMEM;
-+	}
- 	*pagep = pg;
+ 	addr = DCACHE_ALIGN(addr - offset) + offset;
  
--	jffs2_dbg(1, "%s()\n", __func__);
--
--	if (pageofs > inode->i_size) {
-+	if (alloc_len) {
- 		/* Make new hole frag from old EOF to new page */
--		struct jffs2_sb_info *c = JFFS2_SB_INFO(inode->i_sb);
--		struct jffs2_raw_inode ri;
- 		struct jffs2_full_dnode *fn;
--		uint32_t alloc_len;
- 
- 		jffs2_dbg(1, "Writing new hole frag 0x%x-0x%x between current EOF and new page\n",
- 			  (unsigned int)inode->i_size, pageofs);
- 
--		ret = jffs2_reserve_space(c, sizeof(ri), &alloc_len,
--					  ALLOC_NORMAL, JFFS2_SUMMARY_INODE_SIZE);
--		if (ret)
--			goto out_page;
--
--		mutex_lock(&f->sem);
- 		memset(&ri, 0, sizeof(ri));
- 
- 		ri.magic = cpu_to_je16(JFFS2_MAGIC_BITMASK);
-@@ -191,7 +197,6 @@ static int jffs2_write_begin(struct file
- 		if (IS_ERR(fn)) {
- 			ret = PTR_ERR(fn);
- 			jffs2_complete_reservation(c);
--			mutex_unlock(&f->sem);
- 			goto out_page;
- 		}
- 		ret = jffs2_add_full_dnode_to_inode(c, f, fn);
-@@ -206,12 +211,10 @@ static int jffs2_write_begin(struct file
- 			jffs2_mark_node_obsolete(c, fn->raw);
- 			jffs2_free_full_dnode(fn);
- 			jffs2_complete_reservation(c);
--			mutex_unlock(&f->sem);
- 			goto out_page;
- 		}
- 		jffs2_complete_reservation(c);
- 		inode->i_size = pageofs;
--		mutex_unlock(&f->sem);
- 	}
- 
- 	/*
-@@ -220,18 +223,18 @@ static int jffs2_write_begin(struct file
- 	 * case of a short-copy.
- 	 */
- 	if (!PageUptodate(pg)) {
--		mutex_lock(&f->sem);
- 		ret = jffs2_do_readpage_nolock(inode, pg);
--		mutex_unlock(&f->sem);
- 		if (ret)
- 			goto out_page;
- 	}
-+	mutex_unlock(&f->sem);
- 	jffs2_dbg(1, "end write_begin(). pg->flags %lx\n", pg->flags);
- 	return ret;
- 
- out_page:
- 	unlock_page(pg);
- 	page_cache_release(pg);
-+	mutex_unlock(&f->sem);
- 	return ret;
- }
- 
+ 	for (vma = find_vma(current->mm, addr); ; vma = vma->vm_next) {
 
 
