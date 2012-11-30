@@ -1,104 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030534Ab2K3PDv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 10:03:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46102 "EHLO mx2.suse.de"
+	id S1030549Ab2K3PD7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 10:03:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10472 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030520Ab2K3PDt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 10:03:49 -0500
-Date: Fri, 30 Nov 2012 16:03:47 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: azurIt <azurit@pobox.sk>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups mailinglist <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH for 3.2.34] memcg: do not trigger OOM from
- add_to_page_cache_locked
-Message-ID: <20121130150347.GJ29317@dhcp22.suse.cz>
-References: <20121125011047.7477BB5E@pobox.sk>
- <20121125120524.GB10623@dhcp22.suse.cz>
- <20121125135542.GE10623@dhcp22.suse.cz>
- <20121126013855.AF118F5E@pobox.sk>
- <20121126131837.GC17860@dhcp22.suse.cz>
- <20121126132149.GD17860@dhcp22.suse.cz>
- <20121130032918.59B3F780@pobox.sk>
- <20121130124506.GH29317@dhcp22.suse.cz>
- <20121130144427.51A09169@pobox.sk>
- <20121130144431.GI29317@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121130144431.GI29317@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1030520Ab2K3PDy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 10:03:54 -0500
+Date: Fri, 30 Nov 2012 10:03:46 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: Joe Perches <joe@perches.com>
+Cc: Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] cifs: Make CIFS_DEBUG possible to undefine
+Message-ID: <20121130100346.0aa9cabd@tlielax.poochiereds.net>
+In-Reply-To: <1354287129.11903.3.camel@joe-AO722>
+References: <cover.1354217746.git.joe@perches.com>
+	<26f6f4e1a1fb5091784fb1a6919e214994a6dc88.1354217746.git.joe@perches.com>
+	<20121130064919.373547f4@tlielax.poochiereds.net>
+	<1354287129.11903.3.camel@joe-AO722>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 30-11-12 15:44:31, Michal Hocko wrote:
-> On Fri 30-11-12 14:44:27, azurIt wrote:
-> > >Anyway your system is under both global and local memory pressure. You
-> > >didn't see apache going down previously because it was probably the one
-> > >which was stuck and could be killed.
-> > >Anyway you need to setup your system more carefully.
+On Fri, 30 Nov 2012 06:52:09 -0800
+Joe Perches <joe@perches.com> wrote:
+
+> On Fri, 2012-11-30 at 06:49 -0500, Jeff Layton wrote:
+> > On Thu, 29 Nov 2012 11:37:19 -0800
+> > Joe Perches <joe@perches.com> wrote:
 > > 
+> > > Make the compilation work again when CIFS_DEBUG is not #define'd.
+> > > 
+> > > Add format and argument verification for the various macros when
+> > > CIFS_DEBUG is not #define'd.
+> []
+> > Would it be better to simply make those the standard
 > > 
-> > There is, also, an evidence that system has enough of memory! :) Just
-> > take column 'rss' from process list in OOM message and sum it - you
-> > will get 2489911. It's probably in KB so it's about 2.4 GB. System has
-> > 14 GB of RAM so this also match data on my graph - 2.4 is about 17% of
-> > 14.
+> > "do { ; } while(0)" noop macros?
+> > 
+> > I'm not sure I see the point in keeping the printk statements in there...
 > 
-> Hmm, that corresponds to the ZONE_DMA32 size pretty nicely but that zone
-> is hardly touched:
-> Nov 30 02:53:56 server01 kernel: [  818.241291] DMA32 free:2523636kB min:2672kB low:3340kB high:4008kB active_anon:0kB inactive_anon:0kB active_file:0kB inactive_file:0kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:2542248kB mlocked:0kB dirty:0kB writeback:0kB mapped:4kB shmem:0kB slab_reclaimable:0kB slab_unreclaimable:0kB kernel_stack:0kB pagetables:0kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
+> Actually, that's not standard.
+> Look at printk.h
 > 
-> DMA32 zone is usually fills up first 4G unless your HW remaps the rest
-> of the memory above 4G or you have a numa machine and the rest of the
-> memory is at other node. Could you post your memory map printed during
-> the boot? (e820: BIOS-provided physical RAM map: and following lines)
+> It prevents developers from adding code that compiles
+> without warnings in one mode but compiles with warnings
+> in another.
 > 
-> There is also ZONE_NORMAL which is also not used much
-> Nov 30 02:53:56 server01 kernel: [  818.242163] Normal free:6924716kB min:12512kB low:15640kB high:18768kB active_anon:1463128kB inactive_anon:2072kB active_file:1803964kB inactive_file:1072628kB unevictable:3924kB isolated(anon):0kB isolated(file):0kB present:11893760kB mlocked:3924kB dirty:1000kB writeback:776kB mapped:35656kB shmem:3828kB slab_reclaimable:202560kB slab_unreclaimable:50696kB kernel_stack:2944kB pagetables:158616kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
+> The idea is to make sure that format and arguments always
+> match regardless of whether or not you are compiling
+> debug or non-debug.
 > 
-> You have mentioned that you are comounting with cpuset. If this happens
-> to be a NUMA machine have you made the access to all nodes available?
+> 
 
-And now that I am looking at the oom message more closely I can see
-Nov 30 02:53:56 server01 kernel: [  818.232812] apache2 invoked oom-killer: gfp_mask=0x0, order=0, oom_adj=0, oom_score_adj=0
-Nov 30 02:53:56 server01 kernel: [  818.233029] apache2 cpuset=uid mems_allowed=0
-Nov 30 02:53:56 server01 kernel: [  818.233159] Pid: 9247, comm: apache2 Not tainted 3.2.34-grsec #1
-Nov 30 02:53:56 server01 kernel: [  818.233289] Call Trace:
-Nov 30 02:53:56 server01 kernel: [  818.233470]  [<ffffffff810cc90e>] dump_header+0x7e/0x1e0
-Nov 30 02:53:56 server01 kernel: [  818.233600]  [<ffffffff810cc80f>] ? find_lock_task_mm+0x2f/0x70
-Nov 30 02:53:56 server01 kernel: [  818.233721]  [<ffffffff810ccdd5>] oom_kill_process+0x85/0x2a0
-Nov 30 02:53:56 server01 kernel: [  818.233842]  [<ffffffff810cd485>] out_of_memory+0xe5/0x200
-Nov 30 02:53:56 server01 kernel: [  818.233963]  [<ffffffff8102aa8f>] ? pte_alloc_one+0x3f/0x50
-Nov 30 02:53:56 server01 kernel: [  818.234082]  [<ffffffff810cd65d>] pagefault_out_of_memory+0xbd/0x110
-Nov 30 02:53:56 server01 kernel: [  818.234204]  [<ffffffff81026ec6>] mm_fault_error+0xb6/0x1a0
-Nov 30 02:53:56 server01 kernel: [  818.235886]  [<ffffffff8102739e>] do_page_fault+0x3ee/0x460
-Nov 30 02:53:56 server01 kernel: [  818.236006]  [<ffffffff810f3057>] ? vma_merge+0x1f7/0x2c0
-Nov 30 02:53:56 server01 kernel: [  818.236124]  [<ffffffff810f35d7>] ? do_brk+0x267/0x400
-Nov 30 02:53:56 server01 kernel: [  818.236244]  [<ffffffff812c9a92>] ? gr_learn_resource+0x42/0x1e0
-Nov 30 02:53:56 server01 kernel: [  818.236367]  [<ffffffff815b547f>] page_fault+0x1f/0x30
+Fair enough then...
 
-Which is interesting from 2 perspectives. Only the first node (Node-0)
-is allowed which would suggest that the cpuset controller is not
-configured to all nodes. It is still surprising Node 0 wouldn't have any
-memory (I would expect ZONE_DMA32 would be sitting there).
-
-Anyway, the more interesting thing is gfp_mask is GFP_NOWAIT allocation
-from the page fault? Huh this shouldn't happen - ever.
-
-> Also what does /proc/sys/vm/zone_reclaim_mode says?
-> -- 
-> Michal Hocko
-> SUSE Labs
-> --
-> To unsubscribe from this list: send the line "unsubscribe cgroups" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
--- 
-Michal Hocko
-SUSE Labs
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
