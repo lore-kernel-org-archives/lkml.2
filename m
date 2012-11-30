@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2993286Ab2K3TGR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:06:17 -0500
-Received: from mail.kernel.org ([198.145.19.201]:59879 "EHLO mail.kernel.org"
+	id S2993311Ab2K3TGx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:06:53 -0500
+Received: from mail.kernel.org ([198.145.19.201]:59843 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2993105Ab2K3TC4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 14:02:56 -0500
+	id S2993098Ab2K3TCy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 14:02:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>, Chris Ball <cjb@laptop.org>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 53/54] mmc: sdhci-s3c: fix the wrong number of max bus clocks
-Date: Fri, 30 Nov 2012 10:56:24 -0800
-Message-Id: <20121130185213.244932039@linuxfoundation.org>
+        Manuel Lauss <manuel.lauss@gmail.com>,
+        Linux-MIPS <linux-mips@linux-mips.org>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        James Morris <jmorris@namei.org>, Ralf Baechle <ralf@linux-mips.org>,
+        Shuah Khan <shuah.khan@hp.com>
+Subject: [ 50/54] MPI: Fix compilation on MIPS with GCC 4.4 and newer
+Date: Fri, 30 Nov 2012 10:56:21 -0800
+Message-Id: <20121130185212.938237697@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185207.894301294@linuxfoundation.org>
 References: <20121130185207.894301294@linuxfoundation.org>
@@ -27,33 +29,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jaehoon Chung <jh80.chung@samsung.com>
+From: Manuel Lauss <manuel.lauss@gmail.com>
 
-commit 5feb54a1ab91a237e247c013b8c4fb100ea347b1 upstream.
+commit a3cea9894157c20a5b1ec08b7e0b5f2019740c10 upstream.
 
-We can use up to four bus-clocks; but on module remove, we didn't
-disable the fourth bus clock.
+Since 4.4 GCC on MIPS no longer recognizes the "h" constraint,
+leading to this build failure:
 
-Signed-off-by: Jaehoon Chung <jh80.chung@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+  CC      lib/mpi/generic_mpih-mul1.o
+lib/mpi/generic_mpih-mul1.c: In function 'mpihelp_mul_1':
+lib/mpi/generic_mpih-mul1.c:50:3: error: impossible constraint in 'asm'
+
+This patch updates MPI with the latest umul_ppm implementations for MIPS.
+
+Signed-off-by: Manuel Lauss <manuel.lauss@gmail.com>
+Cc: Linux-MIPS <linux-mips@linux-mips.org>
+Cc: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Cc: James Morris <jmorris@namei.org>
+Patchwork: https://patchwork.linux-mips.org/patch/4612/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Cc: Shuah Khan <shuah.khan@hp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/host/sdhci-s3c.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ lib/mpi/longlong.h |   19 +++++++++++++++++--
+ 1 file changed, 17 insertions(+), 2 deletions(-)
 
---- a/drivers/mmc/host/sdhci-s3c.c
-+++ b/drivers/mmc/host/sdhci-s3c.c
-@@ -656,7 +656,7 @@ static int __devexit sdhci_s3c_remove(st
- 
- 	pm_runtime_disable(&pdev->dev);
- 
--	for (ptr = 0; ptr < 3; ptr++) {
-+	for (ptr = 0; ptr < MAX_BUS_CLK; ptr++) {
- 		if (sc->clk_bus[ptr]) {
- 			clk_disable(sc->clk_bus[ptr]);
- 			clk_put(sc->clk_bus[ptr]);
+--- a/lib/mpi/longlong.h
++++ b/lib/mpi/longlong.h
+@@ -703,7 +703,14 @@ do { \
+ 	**************  MIPS  *****************
+ 	***************************************/
+ #if defined(__mips__) && W_TYPE_SIZE == 32
+-#if __GNUC__ > 2 || __GNUC_MINOR__ >= 7
++#if __GNUC__ >= 4 && __GNUC_MINOR__ >= 4
++#define umul_ppmm(w1, w0, u, v)			\
++do {						\
++	UDItype __ll = (UDItype)(u) * (v);	\
++	w1 = __ll >> 32;			\
++	w0 = __ll;				\
++} while (0)
++#elif __GNUC__ > 2 || __GNUC_MINOR__ >= 7
+ #define umul_ppmm(w1, w0, u, v) \
+ 	__asm__ ("multu %2,%3" \
+ 	: "=l" ((USItype)(w0)), \
+@@ -728,7 +735,15 @@ do { \
+ 	**************  MIPS/64  **************
+ 	***************************************/
+ #if (defined(__mips) && __mips >= 3) && W_TYPE_SIZE == 64
+-#if __GNUC__ > 2 || __GNUC_MINOR__ >= 7
++#if __GNUC__ >= 4 && __GNUC_MINOR__ >= 4
++#define umul_ppmm(w1, w0, u, v) \
++do {									\
++	typedef unsigned int __ll_UTItype __attribute__((mode(TI)));	\
++	__ll_UTItype __ll = (__ll_UTItype)(u) * (v);			\
++	w1 = __ll >> 64;						\
++	w0 = __ll;							\
++} while (0)
++#elif __GNUC__ > 2 || __GNUC_MINOR__ >= 7
+ #define umul_ppmm(w1, w0, u, v) \
+ 	__asm__ ("dmultu %2,%3" \
+ 	: "=l" ((UDItype)(w0)), \
 
 
