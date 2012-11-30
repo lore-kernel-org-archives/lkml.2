@@ -1,60 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759839Ab2K3Tiw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:38:52 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36229 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757653Ab2K3Tiv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 14:38:51 -0500
-Message-ID: <50B90B31.3000907@zytor.com>
-Date: Fri, 30 Nov 2012 11:38:25 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1759868Ab2K3TmG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:42:06 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:40067 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759855Ab2K3TmE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 14:42:04 -0500
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Vincent Palatin <vpalatin@chromium.org>, Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
-        Duncan Laurie <dlaurie@chromium.org>,
-        Olof Johansson <olofj@chromium.org>
-Subject: Re: [PATCH] x86, fpu: avoid FPU lazy restore after suspend
-References: <1354301523-5252-1-git-send-email-vpalatin@chromium.org> <1354301523-5252-2-git-send-email-vpalatin@chromium.org> <CA+55aFz4M4GmQbUkD1dhTkLTYka4H+T_phrsXgx+eGe8g9iLYA@mail.gmail.com>
-In-Reply-To: <CA+55aFz4M4GmQbUkD1dhTkLTYka4H+T_phrsXgx+eGe8g9iLYA@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <CAFTL4hwSva0eBK1f=K7Hus0ybiEACtebQbhEUDsJjLZcmmeCtA@mail.gmail.com>
+References: <1354091364-7920-1-git-send-email-hakanakkan@gmail.com>
+ <1354125783-15816-1-git-send-email-hakanakkan@gmail.com> <CAFTL4hwSva0eBK1f=K7Hus0ybiEACtebQbhEUDsJjLZcmmeCtA@mail.gmail.com>
+From: Hakan Akkan <hakanakkan@gmail.com>
+Date: Fri, 30 Nov 2012 12:41:43 -0700
+Message-ID: <CABVzNXp0pLFPP_0NhJfRmi_88Hcmw=ebX7Y+0C+3ZrPNOWmKnA@mail.gmail.com>
+Subject: Re: [PATCH] nohz/cpuset: Make a CPU stick with do_timer() duty in the
+ presence of nohz cpusets
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/30/2012 11:25 AM, Linus Torvalds wrote:
-> 
-> and in fact I think the right place to do this *might* be in
-> "native_cpu_die()" instead, at which point it would actually be
-> something like
-> 
->     per_cpu(fpu_owner_task, cpu) = NULL;
-> 
-> *after* the CPU is dead, so that nothing ever can actually see the
-> state where a process is still running on the CPU and might possibly
-> use the FPU.
-> 
-> I dunno. I think doing it after really killing the CPU (ie in the
-> native_cpu_die() function) might be easier to think about, but I don't
-> really hate your patch either (it does make me go "ok, we need to
-> guarantee no scheduling or FP use after" - which is probably true, but
-> it's still some non-local thing). Either way, a comment about it and
-> abstracting whatever the invalidation sequence is in fpu-internal.h
-> sounds like a good idea.
-> 
+On Fri, Nov 30, 2012 at 10:38 AM, Frederic Weisbecker
+<fweisbec@gmail.com> wrote:
+> 2012/11/28 Hakan Akkan <hakanakkan@gmail.com>:
+>> +static int check_drop_timer_duty(int cpu)
+>> +{
+>> +       int curr_handler, prev_handler, new_handler;
+>> +       int nrepeat = -1;
+>> +       bool drop_recheck;
+>> +
+>> +repeat:
+>> +       WARN_ON_ONCE(++nrepeat > 1);
+>> +       drop_recheck = false;
+>> +       curr_handler = cpu;
+>> +       new_handler = TICK_DO_TIMER_NONE;
+>> +
+>> +#ifdef CONFIG_CPUSETS_NO_HZ
+>> +       if (atomic_read(&nr_cpus_user_nohz) > 0) {
+>
+> Note atomic_read() is not SMP ordered. If another CPU does
+> atomic_add() or atomic_add_return(), you may not see the new value as
+> expected with atomic_read(). Doing atomic_add_return(0, &atomic_thing)
+> returns the fully ordered result.
 
-Hmm... from my point of view it would almost seem saner to do this on
-the way *up*... as part of CPU (re-)initialization.  After all, the
-"nothing is currently running on this CPU" is part of the initial state
-of the CPU, regardless of if we have ever been online before or not.
+That code doesn't necessarily try to achieve a prefect ordering. I wasn't very
+sure if we want the overhead of atomic_add_return(0, ...) in such a hot path
+so this part of the function is racy. Nevertheless, it makes sure that someone
+gets the duty.
 
-	-hpa
+#ifdef CONFIG_CPUSETS_NO_HZ
+       if (atomic_read(&nr_cpus_user_nohz) > 0) {
 
+The CPU who updated nr_cpus_user_nohz will certainly see the new
+value and claim the duty if someone else hasn't yet. Another regular
+CPU will eventually see the new value and assign itself to the duty.
+So we can tolerate some race here for the sake of avoiding heavier locks.
+
+>
+> You also need to do that to ensure full ordering against
+> tick_cpu_sched.user_nohz.
+>
+> On the current layout we have:
+>
+> (Write side)                                      (Read side)
+>
+> ts->user_nohz = 1;
+> atomic_inc(&nr_cpus_user_nohz)
+>
+>                                                       if
+> (atomic_read(&nr_cpus_user_nohz))
+>                                                             if
+> (per_cpu(tick_cpu_sched, curr_handler).user_nohz)
+>                                                                 ....
+>
+> If you want to make sure that you see the expected value on user_nohz
+> from the read side, you need to correctly order the write and read
+> against nr_cpus_user_nohz.
+
+Again, perfect ordering is not critical here. In the worst case we miss that
+CPUs ts->user_nohz = 1 update and that adaptive nohz CPU will keep
+the duty for a short while until someone else takes it. Trying to avoid this
+would require more locking instructions like you suggest below.
+
+If we really want to fully isolate nohz CPUs and avoid "being stuck with
+jiffies update until someone else takes it away" situations, we can have a
+cpumask denoting idle and/or non-adaptive-nohz CPUs and dump the duty
+once we discover that we're "stuck".
+
+>
+> For this you can use atomic_add_return() which implies the full barrier:
+>
+>
+> (Write side)                                      (Read side)
+>
+> ts->user_nohz = 1;
+> atomic_inc_return(&nr_cpus_user_nohz)
+>
+>                                                       if
+> (atomic_add_return(0, &nr_cpus_user_nohz))
+>                                                             if
+> (per_cpu(tick_cpu_sched, curr_handler).user_nohz)
+>                                                                 ....
+>
+> I have much more comments on this patch, I will come back on this soon.
+>
+> Thanks.
