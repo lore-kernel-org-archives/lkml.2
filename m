@@ -1,180 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758279Ab2K3OBv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 09:01:51 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:47438 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756842Ab2K3OBu (ORCPT
+	id S1758331Ab2K3ORK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 09:17:10 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:24625 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758310Ab2K3ORI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 09:01:50 -0500
-Date: Fri, 30 Nov 2012 14:01:44 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: arnd@arndb.de, linus.walleij@stericsson.com, viresh.kumar@linaro.org,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 1/1] gpio: Provide the STMPE GPIO driver with its own IRQ
- Domain
-Message-ID: <20121130140144.GD23648@gmail.com>
-References: <1353683949-9275-1-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1353683949-9275-1-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 30 Nov 2012 09:17:08 -0500
+X-Authority-Analysis: v=2.0 cv=f9bK9ZOM c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=O7yW5i6_SjkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=apWNB6VHehcA:10 a=qnRtVIaIrdebiBWiOgoA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1354285026.6276.157.camel@gandalf.local.home>
+Subject: Re: [PATCH v2 -tip 3/4] tracing: make a snapshot feature available
+ from userspace
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Hiraku Toyooka <hiraku.toyooka.gu@hitachi.com>
+Cc: yrl.pp-manager.tt@hitachi.com, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Li Zefan <lizf@cn.fujitsu.com>
+Date: Fri, 30 Nov 2012 09:17:06 -0500
+In-Reply-To: <50B84822.6010409@hitachi.com>
+References: <20121017025608.2627.87497.stgit@falsita>
+		 <20121017025619.2627.96794.stgit@falsita>
+	 <1353030384.9391.19.camel@gandalf.local.home>
+	 <50B84822.6010409@hitachi.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Nov 2012, Lee Jones wrote:
-
-> The STMPE GPIO driver can be used as an IRQ controller by some
-> related devices. Here we provide it with its very own IRQ Domain
-> so that IRQs can be issued dynamically. This will stand the
-> driver in good stead when it is enabled for Device Tree, as this
-> it a prerequisite.
+On Fri, 2012-11-30 at 14:46 +0900, Hiraku Toyooka wrote:
+> Hi, Steven,
 > 
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/gpio/gpio-stmpe.c |   67 +++++++++++++++++++++++++++------------------
->  1 file changed, 41 insertions(+), 26 deletions(-)
+> Thank you for your review.
 > 
-> diff --git a/drivers/gpio/gpio-stmpe.c b/drivers/gpio/gpio-stmpe.c
-> index dce3472..5a87ed6 100644
-> --- a/drivers/gpio/gpio-stmpe.c
-> +++ b/drivers/gpio/gpio-stmpe.c
-> @@ -11,6 +11,7 @@
->  #include <linux/slab.h>
->  #include <linux/gpio.h>
->  #include <linux/irq.h>
-> +#include <linux/irqdomain.h>
->  #include <linux/interrupt.h>
->  #include <linux/mfd/stmpe.h>
->  
-> @@ -28,6 +29,7 @@ struct stmpe_gpio {
->  	struct stmpe *stmpe;
->  	struct device *dev;
->  	struct mutex irq_lock;
-> +	struct irq_domain *domain;
->  
->  	int irq_base;
->  	unsigned norequest_mask;
-> @@ -267,38 +269,55 @@ static irqreturn_t stmpe_gpio_irq(int irq, void *dev)
->  	return IRQ_HANDLED;
->  }
->  
-> -static int __devinit stmpe_gpio_irq_init(struct stmpe_gpio *stmpe_gpio)
-> +int stmpe_gpio_irq_map(struct irq_domain *d, unsigned int virq,
-> +		       irq_hw_number_t hwirq)
->  {
-> -	int base = stmpe_gpio->irq_base;
-> -	int irq;
-> +	struct stmpe_gpio *stmpe_gpio = d->host_data;
-> +
-> +	if (!stmpe_gpio)
-> +		return -EINVAL;
->  
-> -	for (irq = base; irq < base + stmpe_gpio->chip.ngpio; irq++) {
-> -		irq_set_chip_data(irq, stmpe_gpio);
-> -		irq_set_chip_and_handler(irq, &stmpe_gpio_irq_chip,
-> -					 handle_simple_irq);
-> -		irq_set_nested_thread(irq, 1);
-> +	irq_set_chip_data(hwirq, stmpe_gpio);
-> +	irq_set_chip_and_handler(hwirq, &stmpe_gpio_irq_chip,
-> +				 handle_simple_irq);
-> +	irq_set_nested_thread(hwirq, 1);
->  #ifdef CONFIG_ARM
-> -		set_irq_flags(irq, IRQF_VALID);
-> +	set_irq_flags(hwirq, IRQF_VALID);
->  #else
-> -		irq_set_noprobe(irq);
-> +	irq_set_noprobe(hwirq);
->  #endif
-> -	}
->  
->  	return 0;
->  }
->  
-> -static void stmpe_gpio_irq_remove(struct stmpe_gpio *stmpe_gpio)
-> +void stmpe_gpio_irq_unmap(struct irq_domain *d, unsigned int virq)
->  {
-> -	int base = stmpe_gpio->irq_base;
-> -	int irq;
-> -
-> -	for (irq = base; irq < base + stmpe_gpio->chip.ngpio; irq++) {
->  #ifdef CONFIG_ARM
-> -		set_irq_flags(irq, 0);
-> +	set_irq_flags(virq, 0);
->  #endif
-> -		irq_set_chip_and_handler(irq, NULL, NULL);
-> -		irq_set_chip_data(irq, NULL);
-> +	irq_set_chip_and_handler(virq, NULL, NULL);
-> +	irq_set_chip_data(virq, NULL);
-> +}
-> +
-> +static const struct irq_domain_ops stmpe_gpio_irq_simple_ops = {
-> +	.unmap = stmpe_gpio_irq_unmap,
-> +	.map = stmpe_gpio_irq_map,
-> +	.xlate = irq_domain_xlate_twocell,
-> +};
-> +
-> +static int __devinit stmpe_gpio_irq_init(struct stmpe_gpio *stmpe_gpio)
-> +{
-> +	int base = stmpe_gpio->irq_base;
-> +
-> +	stmpe_gpio->domain = irq_domain_add_simple(NULL,
-> +				stmpe_gpio->chip.ngpio, base,
-> +				&stmpe_gpio_irq_simple_ops, stmpe_gpio);
-> +	if (!stmpe_gpio->domain) {
-> +		dev_err(stmpe_gpio->dev, "failed to create irqdomain\n");
-> +		return -ENOSYS;
->  	}
-> +
-> +	return 0;
->  }
->  
->  static int __devinit stmpe_gpio_probe(struct platform_device *pdev)
-> @@ -348,7 +367,7 @@ static int __devinit stmpe_gpio_probe(struct platform_device *pdev)
->  				IRQF_ONESHOT, "stmpe-gpio", stmpe_gpio);
->  		if (ret) {
->  			dev_err(&pdev->dev, "unable to get irq: %d\n", ret);
-> -			goto out_removeirq;
-> +			goto out_disable;
->  		}
->  	}
->  
-> @@ -368,9 +387,6 @@ static int __devinit stmpe_gpio_probe(struct platform_device *pdev)
->  out_freeirq:
->  	if (irq >= 0)
->  		free_irq(irq, stmpe_gpio);
-> -out_removeirq:
-> -	if (irq >= 0)
-> -		stmpe_gpio_irq_remove(stmpe_gpio);
->  out_disable:
->  	stmpe_disable(stmpe, STMPE_BLOCK_GPIO);
->  out_free:
-> @@ -398,10 +414,9 @@ static int __devexit stmpe_gpio_remove(struct platform_device *pdev)
->  
->  	stmpe_disable(stmpe, STMPE_BLOCK_GPIO);
->  
-> -	if (irq >= 0) {
-> +	if (irq >= 0)
->  		free_irq(irq, stmpe_gpio);
-> -		stmpe_gpio_irq_remove(stmpe_gpio);
-> -	}
-> +
->  	platform_set_drvdata(pdev, NULL);
->  	kfree(stmpe_gpio);
->  
-> -- 
-> 1.7.9.5
+> (2012/11/16 10:46), Steven Rostedt wrote:
+> [snip]
+>  > I was thinking about this some more, and I don't like the
+>  > snapshot_allocate part. Also, I think the snapshot should not be
+>  > allocated by default, and not used until the user explicitly asks for
+>  > it.
+>  >
+>  > Have this:
+>  >
+>  > ---
+>  >  # cat snapshot
+>  > Snapshot is not allocated. To allocate it write the ASCII "1" into
+>  > this file:
+>  >
+>  >   echo 1 > snapshot
+>  >
+>  > This will allocate the buffer for you. To free the snapshot echo "0"
+>  > into this file.
+>  >
+>  >   echo "0" > snapshot
+>  >
+>  > Anything else will reset the snapshot if it is allocated, or return
+>  > EINVAL if it is not allocated.
+>  > ---
+>  >
+> 
+> Your idea about "snapshot" is like following table, isn't it?
+> 
+>   status\input |     0      |     1      |    else    |
+> --------------+------------+------------+------------+
+> not allocated |   EINVAL   | alloc+swap |   EINVAL   |
+> --------------+------------+------------+------------+
+>    allocated   |    free    | clear+swap |   clear    |
+> --------------+------------+------------+------------+
 
-Poke.
+Actually, I would have:
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+  status\input |     0      |     1      |    else    |
+ --------------+------------+------------+------------+
+ not allocated |(do nothing)| alloc+swap |   EINVAL   |
+ --------------+------------+------------+------------+
+   allocated   |    free    |   swap     |   clear    |
+ --------------+------------+------------+------------+
+
+Perhaps we don't need to do the clear on swap, just let the trace
+continue where it left off? But in case we should swap...
+
+There's a fast way to clear the tracer. Look at what the wakeup tracer
+does. We can make that generic. If you want, I can write that code up
+too. Hmm, maybe I'll do that, as it will speed things up for
+everyone :-)
+
+
+> 
+> I think it is almost OK, but there is a problem.
+> When we echo "1" to the allocated snapshot, the clear operation adds
+> some delay because the time cost of tracing_reset_online_cpus() is in
+> proportion to the number of CPUs.
+> (It takes 72ms in my 8 CPU environment.)
+> 
+> So, when the snapshot is already cleared by echoing "else" values, we
+> can avoid the delay on echoing "1" by keeping "cleared" status
+> internally. For example, we can add the "cleared" flag to struct tracer.
+> What do you think about it?
+> 
+>  >
+>  > Also we can add a "trace_snapshot" to the kernel parameters to have it
+>  > allocated on boot. But I can add that if you update these patches.
+>  >
+> 
+> OK, I'll update my patches.
+
+This part (kernel parameter) can be a separate patch.
+
+
+>  > Either test here, or better yet, put the test into
+>  > tracing_reset_online_cpus().
+>  >
+>  >     if (!buffer)
+>  >         return;
+>  >
+> 
+> I see. I'll add the test to tracing_reset_online_cpus(). Should I make a
+> separated patch?
+
+It's a small change, you can add it to your patch or make it separate.
+I'll leave that up to you.
+
+> 
+> [snip]
+>  >> +static ssize_t tracing_snapshot_read(struct file *filp, char __user 
+> *ubuf,
+>  >> +                     size_t cnt, loff_t *ppos)
+>  >> +{
+>  >> +    ssize_t ret = 0;
+>  >> +
+>  >> +    mutex_lock(&trace_types_lock);
+>  >> +    if (current_trace && current_trace->use_max_tr)
+>  >> +        ret = -EBUSY;
+>  >> +    mutex_unlock(&trace_types_lock);
+>  >
+>  > I don't like this, as it is racy. The current tracer could change after
+>  > the unlock, and your back to the problem.
+>  >
+> 
+> You're right...
+> This is racy.
+> 
+>  > Now what we may be able to do, but it would take a little checking for
+>  > lock ordering with trace_access_lock() and trace_event_read_lock(), but
+>  > we could add the mutex to trace_types_lock to both s_start() and
+>  > s_stop() and do the check in s_start() if iter->snapshot is true.
+>  >
+> 
+> If I catch your meaning, do s_start() and s_stop() become like following
+> code?
+> (Now, s_start() is used from two files - "trace" and "snapshot", so we
+> should change static "old_tracer" to per open-file.)
+
+Actually, lets nuke all the old_tracer totally, and instead do:
+
+if (unlikely(strcmp(iter->trace->name, current_trace->name) != 0)) {
+
+You can make this into a separate patch. You can add a check if
+current_trace is not NULL too, but I need to fix that, as current_trace
+should never be NULL (except for very early boot). But don't worry about
+that, I'll handle that.
+
+Or I can write up this patch and send it to you, and you can include it
+in your series.
+
+> 
+> static void *s_start(struct seq_file *m, loff_t *pos)
+> {
+>       struct trace_iterator *iter = m->private;
+> -    static struct tracer *old_tracer;
+> ...
+>       /* copy the tracer to avoid using a global lock all around */
+>       mutex_lock(&trace_types_lock);
+> -    if (unlikely(old_tracer != current_trace && current_trace)) {
+> -        old_tracer = current_trace;
+> +    if (unlikely(iter->old_tracer != current_trace && current_trace)) {
+> +        iter->old_tracer = current_trace;
+>           *iter->trace = *current_trace;
+>       }
+>       mutex_unlock(&trace_types_lock);
+> 
+> +    if (iter->snapshot && iter->trace->use_max_tr)
+> +        return ERR_PTR(-EBUSY);
+> +
+> ...
+> }
+> 
+> static void s_stop(struct seq_file *m, void *p)
+> {
+>       struct trace_iterator *iter = m->private;
+> 
+> +    if (iter->snapshot && iter->trace->use_max_tr)
+> +        return;
+
+This part shouldn't be needed, as if s_start fails it wont call
+s_stop(). But if you are paranoid (like I am ;-) then we can do:
+
+	if (WARN_ON_ONCE(iter->snapshot && iter->trace->use_max_tr)
+		return;
+
+
+
+-- Steve
+
+
