@@ -1,18 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1769145Ab2K3TYt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:24:49 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58365 "EHLO mail.kernel.org"
+	id S2993440Ab2K3TZl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:25:41 -0500
+Received: from mail.kernel.org ([198.145.19.201]:58320 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992685Ab2K3S4Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:56:25 -0500
+	id S2992671Ab2K3S4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:56:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alasdair G Kergon <agk@redhat.com>, Jens Axboe <axboe@kernel.dk>
-Subject: [ 27/56] dm: fix deadlock with request based dm and queue request_fn recursion
-Date: Fri, 30 Nov 2012 10:55:19 -0800
-Message-Id: <20121130185121.022432203@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Xiangliang Yu <yuxiangl@marvell.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 06/56] [SCSI] mvsas: remove unused variable in mvs_task_exec()
+Date: Fri, 30 Nov 2012 10:54:58 -0800
+Message-Id: <20121130185118.986193031@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185118.302752929@linuxfoundation.org>
 References: <20121130185118.302752929@linuxfoundation.org>
@@ -25,43 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jens Axboe <axboe@kernel.dk>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit a8c32a5c98943d370ea606a2e7dc04717eb92206 upstream.
+commit cca85013ef54f66eb4616e6f3860549a96c8338b upstream.
 
-Request based dm attempts to re-run the request queue off the
-request completion path. If used with a driver that potentially does
-end_io from its request_fn, we could deadlock trying to recurse
-back into request dispatch. Fix this by punting the request queue
-run to kblockd.
+We don't use "dev" any more after 07ec747a5f ("libsas: remove
+ata_port.lock management duties from lldds") and it causes a compile
+warning.
 
-Tested to fix a quickly reproducible deadlock in such a scenario.
-
-Acked-by: Alasdair G Kergon <agk@redhat.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Xiangliang Yu <yuxiangl@marvell.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/scsi/mvsas/mv_sas.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -754,8 +754,14 @@ static void rq_completed(struct mapped_d
- 	if (!md_in_flight(md))
- 		wake_up(&md->wait);
- 
-+	/*
-+	 * Run this off this callpath, as drivers could invoke end_io while
-+	 * inside their request_fn (and holding the queue lock). Calling
-+	 * back into ->request_fn() could deadlock attempting to grab the
-+	 * queue lock again.
-+	 */
- 	if (run_queue)
--		blk_run_queue(md->queue);
-+		blk_run_queue_async(md->queue);
- 
- 	/*
- 	 * dm_put() must be at the end of this function. See the comment above
+--- a/drivers/scsi/mvsas/mv_sas.c
++++ b/drivers/scsi/mvsas/mv_sas.c
+@@ -885,7 +885,6 @@ static int mvs_task_exec(struct sas_task
+ 				struct completion *completion, int is_tmf,
+ 				struct mvs_tmf_task *tmf)
+ {
+-	struct domain_device *dev = task->dev;
+ 	struct mvs_info *mvi = NULL;
+ 	u32 rc = 0;
+ 	u32 pass = 0;
 
 
