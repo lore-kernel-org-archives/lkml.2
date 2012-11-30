@@ -1,18 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992700Ab2K3S40 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:56:26 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58338 "EHLO mail.kernel.org"
+	id S2992720Ab2K3S4b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:56:31 -0500
+Received: from mail.kernel.org ([198.145.19.201]:58379 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992616Ab2K3S4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:56:23 -0500
+	id S2992702Ab2K3S40 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:56:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jianpeng Ma <majianpeng@gmail.com>, NeilBrown <neilb@suse.de>
-Subject: [ 25/56] md: Avoid write invalid address if read_seqretry returned true.
-Date: Fri, 30 Nov 2012 10:55:17 -0800
-Message-Id: <20121130185120.834782969@linuxfoundation.org>
+        Darren Hart <dvhart@linux.intel.com>, Dave Jones <davej@redat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        John Kacur <jkacur@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 28/56] futex: avoid wake_futex() for a PI futex_q
+Date: Fri, 30 Nov 2012 10:55:20 -0800
+Message-Id: <20121130185121.120203034@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130185118.302752929@linuxfoundation.org>
 References: <20121130185118.302752929@linuxfoundation.org>
@@ -25,40 +30,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: majianpeng <majianpeng@gmail.com>
+From: Darren Hart <dvhart@linux.intel.com>
 
-commit 35f9ac2dcec8f79d7059ce174fd7b7ee3290d620 upstream.
+commit aa10990e028cac3d5e255711fb9fb47e00700e35 upstream.
 
-If read_seqretry returned true and bbp was changed, it will write
-invalid address which can cause some serious problem.
+Dave Jones reported a bug with futex_lock_pi() that his trinity test
+exposed.  Sometime between queue_me() and taking the q.lock_ptr, the
+lock_ptr became NULL, resulting in a crash.
 
-This bug was introduced by commit v3.0-rc7-130-g2699b67.
-So fix is suitable for 3.0.y thru 3.6.y.
+While futex_wake() is careful to not call wake_futex() on futex_q's with
+a pi_state or an rt_waiter (which are either waiting for a
+futex_unlock_pi() or a PI futex_requeue()), futex_wake_op() and
+futex_requeue() do not perform the same test.
 
-Reported-by: zhuwenfeng@kedacom.com
-Tested-by: zhuwenfeng@kedacom.com
-Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Update futex_wake_op() and futex_requeue() to test for q.pi_state and
+q.rt_waiter and abort with -EINVAL if detected.  To ensure any future
+breakage is caught, add a WARN() to wake_futex() if the same condition
+is true.
+
+This fix has seen 3 hours of testing with "trinity -c futex" on an
+x86_64 VM with 4 CPUS.
+
+[akpm@linux-foundation.org: tidy up the WARN()]
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Reported-by: Dave Jones <davej@redat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: John Kacur <jkacur@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/md.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/futex.c |   18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -1805,10 +1805,10 @@ retry:
- 			memset(bbp, 0xff, PAGE_SIZE);
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -843,6 +843,9 @@ static void wake_futex(struct futex_q *q
+ {
+ 	struct task_struct *p = q->task;
  
- 			for (i = 0 ; i < bb->count ; i++) {
--				u64 internal_bb = *p++;
-+				u64 internal_bb = p[i];
- 				u64 store_bb = ((BB_OFFSET(internal_bb) << 10)
- 						| BB_LEN(internal_bb));
--				*bbp++ = cpu_to_le64(store_bb);
-+				bbp[i] = cpu_to_le64(store_bb);
- 			}
- 			bb->changed = 0;
- 			if (read_seqretry(&bb->lock, seq))
++	if (WARN(q->pi_state || q->rt_waiter, "refusing to wake PI futex\n"))
++		return;
++
+ 	/*
+ 	 * We set q->lock_ptr = NULL _before_ we wake up the task. If
+ 	 * a non-futex wake up happens on another CPU then the task
+@@ -1078,6 +1081,10 @@ retry_private:
+ 
+ 	plist_for_each_entry_safe(this, next, head, list) {
+ 		if (match_futex (&this->key, &key1)) {
++			if (this->pi_state || this->rt_waiter) {
++				ret = -EINVAL;
++				goto out_unlock;
++			}
+ 			wake_futex(this);
+ 			if (++ret >= nr_wake)
+ 				break;
+@@ -1090,6 +1097,10 @@ retry_private:
+ 		op_ret = 0;
+ 		plist_for_each_entry_safe(this, next, head, list) {
+ 			if (match_futex (&this->key, &key2)) {
++				if (this->pi_state || this->rt_waiter) {
++					ret = -EINVAL;
++					goto out_unlock;
++				}
+ 				wake_futex(this);
+ 				if (++op_ret >= nr_wake2)
+ 					break;
+@@ -1098,6 +1109,7 @@ retry_private:
+ 		ret += op_ret;
+ 	}
+ 
++out_unlock:
+ 	double_unlock_hb(hb1, hb2);
+ out_put_keys:
+ 	put_futex_key(&key2);
+@@ -1387,9 +1399,13 @@ retry_private:
+ 		/*
+ 		 * FUTEX_WAIT_REQEUE_PI and FUTEX_CMP_REQUEUE_PI should always
+ 		 * be paired with each other and no other futex ops.
++		 *
++		 * We should never be requeueing a futex_q with a pi_state,
++		 * which is awaiting a futex_unlock_pi().
+ 		 */
+ 		if ((requeue_pi && !this->rt_waiter) ||
+-		    (!requeue_pi && this->rt_waiter)) {
++		    (!requeue_pi && this->rt_waiter) ||
++		    this->pi_state) {
+ 			ret = -EINVAL;
+ 			break;
+ 		}
 
 
