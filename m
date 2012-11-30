@@ -1,321 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754935Ab2K3AU7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Nov 2012 19:20:59 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50876 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753766Ab2K3AU4 (ORCPT
+	id S1754975Ab2K3AfG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Nov 2012 19:35:06 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:56932 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753813Ab2K3AfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Nov 2012 19:20:56 -0500
-Date: Thu, 29 Nov 2012 16:20:52 -0800
-From: Kent Overstreet <koverstreet@google.com>
-To: Zach Brown <zab@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, bcrl@kvack.org, jmoyer@redhat.com,
-        axboe@kernel.dk, viro@zeniv.linux.org.uk
-Subject: Re: [PATCH 14/25] aio: Make aio_read_evt() more efficient
-Message-ID: <20121130002052.GM15094@google.com>
-References: <1354121029-1376-1-git-send-email-koverstreet@google.com>
- <1354121029-1376-15-git-send-email-koverstreet@google.com>
- <20121129003816.GJ18574@lenny.home.zabbo.net>
+	Thu, 29 Nov 2012 19:35:05 -0500
+Date: Fri, 30 Nov 2012 00:35:02 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Patrick McLean <patrickm@gaikai.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-nfs@vger.kernel.org
+Subject: Re: Regression with initramfs and nfsroot (appears to be in the
+ dcache)
+Message-ID: <20121130003502.GY4939@ZenIV.linux.org.uk>
+References: <CAE2NFgU+4QDcLaVE5dKDvZCxey7qEf7FAbYNjNmcjVU=HLhF=A@mail.gmail.com>
+ <20121129213316.GU4939@ZenIV.linux.org.uk>
+ <CAE2NFgWCnmgSCsw7MzRkqBLTHgRDG-FvKKcbTHN6UqePK6Ef+Q@mail.gmail.com>
+ <20121129222109.GW4939@ZenIV.linux.org.uk>
+ <50B7E759.9070007@gaikai.com>
+ <20121129234326.GX4939@ZenIV.linux.org.uk>
+ <50B7FBA7.2030300@gaikai.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121129003816.GJ18574@lenny.home.zabbo.net>
+In-Reply-To: <50B7FBA7.2030300@gaikai.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 04:38:16PM -0800, Zach Brown wrote:
-> As mentioned offlist: we don't want to be blocking under
-> TASK_INTERRUPTIBLE.  Is the plan to do a non-blocking check and pop
-> outside the wait loop to do a blocking copy?
+On Thu, Nov 29, 2012 at 04:19:51PM -0800, Patrick McLean wrote:
+> >> [    8.821584] FH(0)]
+> >> [    8.821586] FH(36)[01 00 07 01 89 00 00 00 00 00 00 00 e1 21 fe c4 9e 38 44 dc bf 1b d5 95 d6 76 d6 d9 a7 3c 1b 80 33 38 e3 62]
+> >> [    8.821601] filename: proc
+> > 
+> > *whoa*
+> > 
+> > So we have zero entry->fh->size?  No wonder it doesn't match...  Which NFS
+> > version it is?  entry->fh->size is set by nfs[34]_decode_dirent().
+> 
+> This is nfs v3 over TCP on Linus git at commit e9296e89b85604862bd9ec2d54dc43edad775c0d with nfs-utils-1.2.6 userspace.
 
-Here's the latest version that I posted on irc earlier:
+So we have nfs3_decode_dirent(), stepping into
+                /* In fact, a post_op_fh3: */
+                p = xdr_inline_decode(xdr, 4);
+                if (unlikely(p == NULL))
+                        goto out_overflow;
+                if (*p != xdr_zero) {
+                        error = decode_nfs_fh3(xdr, entry->fh);
+                        if (unlikely(error)) {
+                                if (error == -E2BIG)
+                                        goto out_truncated;
+                                return error;
+                        }
+                } else
+                        zero_nfs_fh3(entry->fh);
+Interesting...  Server-side that should've been produced by
+encode_entryplus_baggage(), which looks like failing compose_entry_fh()...
+which has explicit
+        if (d_mountpoint(dchild))
+                goto out;
+resulting in ENOENT on everything that's overmounted on server.
 
-
-commit 913ff32bbd4de15a87b07a87ac196e978bc29e17
-Author: Kent Overstreet <koverstreet@google.com>
-Date:   Thu Nov 29 14:12:40 2012 -0800
-
-    aio: Make aio_read_evt() more efficient
-    
-    Previously, aio_read_event() pulled a single completion off the
-    ringbuffer at a time, locking and unlocking each time.
-    
-    Changed it to pull off as many events as it can at a time, and copy them
-    directly to userspace.
-    
-    This also fixes a bug where if copying the event to userspace failed,
-    we'd lose the event.
-    
-    Signed-off-by: Kent Overstreet <koverstreet@google.com>
-
-diff --git a/fs/aio.c b/fs/aio.c
-index 46e6d30..5eca2a4 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -63,7 +63,7 @@ struct aio_ring_info {
- 	unsigned long		mmap_size;
- 
- 	struct page		**ring_pages;
--	spinlock_t		ring_lock;
-+	struct mutex		ring_lock;
- 	long			nr_pages;
- 
- 	unsigned		nr, tail;
-@@ -341,7 +341,7 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
- 	atomic_set(&ctx->users, 2);
- 	atomic_set(&ctx->dead, 0);
- 	spin_lock_init(&ctx->ctx_lock);
--	spin_lock_init(&ctx->ring_info.ring_lock);
-+	mutex_init(&ctx->ring_info.ring_lock);
- 	init_waitqueue_head(&ctx->wait);
- 
- 	INIT_LIST_HEAD(&ctx->active_reqs);
-@@ -746,149 +746,138 @@ put_rq:
- }
- EXPORT_SYMBOL(aio_complete);
- 
--/* aio_read_evt
-- *	Pull an event off of the ioctx's event ring.  Returns the number of 
-- *	events fetched (0 or 1 ;-)
-- *	FIXME: make this use cmpxchg.
-- *	TODO: make the ringbuffer user mmap()able (requires FIXME).
-+/* aio_read_events
-+ *	Pull an event off of the ioctx's event ring.  Returns the number of
-+ *	events fetched
-  */
--static int aio_read_evt(struct kioctx *ioctx, struct io_event *ent)
-+static int aio_read_events(struct kioctx *ctx, struct io_event __user *event,
-+			   long nr, unsigned *head)
- {
--	struct aio_ring_info *info = &ioctx->ring_info;
-+	struct aio_ring_info *info = &ctx->ring_info;
- 	struct aio_ring *ring;
--	unsigned long head;
--	int ret = 0;
-+	unsigned pos;
-+	int ret = 0, copy_ret;
- 
--	ring = kmap_atomic(info->ring_pages[0]);
--	pr_debug("h%u t%u m%u\n", ring->head, ring->tail, ring->nr);
-+	pr_debug("h%u t%u m%u\n", *head, info->tail, info->nr);
- 
--	if (ring->head == ring->tail)
--		goto out;
-+	while (ret < nr) {
-+		unsigned i = (*head < info->tail ? info->tail : info->nr) - *head;
-+		struct io_event *ev;
-+		struct page *page;
-+
-+		if (*head == info->tail)
-+			break;
-+
-+		i = min_t(int, i, nr - ret);
-+		i = min_t(int, i, AIO_EVENTS_PER_PAGE -
-+			  ((*head + AIO_EVENTS_OFFSET) % AIO_EVENTS_PER_PAGE));
-+
-+		pos = *head + AIO_EVENTS_OFFSET;
-+		page = info->ring_pages[pos / AIO_EVENTS_PER_PAGE];
-+		pos %= AIO_EVENTS_PER_PAGE;
- 
--	spin_lock(&info->ring_lock);
--
--	head = ring->head % info->nr;
--	if (head != ring->tail) {
--		struct io_event *evp = aio_ring_event(info, head);
--		*ent = *evp;
--		head = (head + 1) % info->nr;
--		smp_mb(); /* finish reading the event before updatng the head */
--		ring->head = head;
--		ret = 1;
--		put_aio_ring_event(evp);
-+		ev = kmap(page);
-+		copy_ret = copy_to_user(event + ret, ev + pos, sizeof(*ev) * i);
-+		kunmap(page);
-+
-+		if (unlikely(copy_ret))
-+			return -EFAULT;
-+
-+		ret += i;
-+		*head += i;
-+		*head %= info->nr;
- 	}
--	spin_unlock(&info->ring_lock);
- 
--out:
-+	smp_mb(); /* finish reading the event before updating the head */
-+
-+	ring = kmap_atomic(info->ring_pages[0]);
-+	ring->head = *head;
- 	kunmap_atomic(ring);
--	pr_debug("%d  h%u t%u\n", ret, ring->head, ring->tail);
-+
-+	pr_debug("%d  h%u t%u\n", ret, *head, info->tail);
-+
- 	return ret;
- }
- 
- static int read_events(struct kioctx *ctx,
--			long min_nr, long nr,
--			struct io_event __user *event,
--			struct timespec __user *timeout)
-+		       long min_nr, long nr,
-+		       struct io_event __user *event,
-+		       struct timespec __user *timeout)
- {
- 	DEFINE_WAIT(wait);
-+	struct aio_ring_info *info = &ctx->ring_info;
-+	struct aio_ring *ring;
- 	struct hrtimer_sleeper t;
-+	unsigned head;
- 	size_t i = 0;
--	int ret;
--	struct io_event		ent;
-+	int ret = 0;
- 
--	/* needed to zero any padding within an entry (there shouldn't be 
--	 * any, but C is fun!
--	 */
--	memset(&ent, 0, sizeof(ent));
--	ret = 0;
--	while (likely(i < nr)) {
--		ret = aio_read_evt(ctx, &ent);
--		if (unlikely(ret <= 0))
--			break;
-+	hrtimer_init_on_stack(&t.timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-+	hrtimer_init_sleeper(&t, current);
- 
--		pr_debug("%Lx %Lx %Lx %Lx\n",
--			 ent.data, ent.obj, ent.res, ent.res2);
-+	mutex_lock(&info->ring_lock);
- 
--		/* Could we split the check in two? */
--		ret = -EFAULT;
--		if (unlikely(copy_to_user(event, &ent, sizeof(ent)))) {
--			pr_debug("lost an event due to EFAULT.\n");
-+	while (i < nr) {
-+		ring = kmap_atomic(info->ring_pages[0]);
-+		head = ring->head;
-+		kunmap_atomic(ring);
-+retry:
-+		ret = aio_read_events(ctx, event + i, nr - i, &head);
-+		if (ret < 0)
- 			break;
--		}
--		ret = 0;
- 
--		/* Good, event copied to userland, update counts. */
--		event ++;
--		i ++;
--	}
--
--	if (min_nr <= i)
--		return i;
--	if (ret)
--		return ret;
--
--	/* End fast path */
-+		i += ret;
-+		if (i >= min_nr)
-+			break;
-+		if (unlikely(atomic_read(&ctx->dead))) {
-+			ret = -EINVAL;
-+			break;
-+		}
-+		if (!t.task)	/* Only check after read evt */
-+			break;
- 
--	hrtimer_init_on_stack(&t.timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
--	hrtimer_init_sleeper(&t, current);
-+		if (timeout) {
-+			struct timespec	ts;
- 
--	if (timeout) {
--		struct timespec	ts;
-+			if (unlikely(copy_from_user(&ts, timeout, sizeof(ts)))) {
-+				ret = -EFAULT;
-+				break;
-+			}
- 
--		if (unlikely(copy_from_user(&ts, timeout, sizeof(ts)))) {
--			ret = -EFAULT;
--			goto out;
-+			timeout = NULL;
-+			hrtimer_start_range_ns(&t.timer, timespec_to_ktime(ts),
-+					       current->timer_slack_ns,
-+					       HRTIMER_MODE_REL);
- 		}
- 
--		hrtimer_start_range_ns(&t.timer, timespec_to_ktime(ts),
--				       current->timer_slack_ns, HRTIMER_MODE_REL);
--	}
--
--	while (likely(i < nr)) {
- 		prepare_to_wait_exclusive(&ctx->wait, &wait,
- 					  TASK_INTERRUPTIBLE);
- 
--		do {
--			ret = aio_read_evt(ctx, &ent);
--			if (ret)
--				break;
--			if (min_nr <= i)
--				break;
--			if (unlikely(atomic_read(&ctx->dead))) {
--				ret = -EINVAL;
--				break;
--			}
--			if (!t.task)	/* Only check after read evt */
--				break;
--			/* Try to only show up in io wait if there are ops
--			 *  in flight */
--			if (atomic_read(&ctx->reqs_active))
--				io_schedule();
--			else
--				schedule();
--			if (signal_pending(current)) {
--				ret = -EINTR;
--				break;
--			}
--			/*ret = aio_read_evt(ctx, &ent);*/
--		} while (1) ;
-+		if (head != info->tail) {
-+			__set_current_state(TASK_RUNNING);
-+			goto retry;
-+		}
- 
--		finish_wait(&ctx->wait, &wait);
-+		mutex_unlock(&info->ring_lock);
- 
--		if (unlikely(ret <= 0))
--			break;
-+		/* Try to only show up in io wait if there are ops in flight */
-+		if (atomic_read(&ctx->reqs_active))
-+			io_schedule();
-+		else
-+			schedule();
- 
--		ret = -EFAULT;
--		if (unlikely(copy_to_user(event, &ent, sizeof(ent)))) {
--			pr_debug("lost an event due to EFAULT.\n");
--			break;
-+		if (signal_pending(current)) {
-+			ret = -EINTR;
-+			goto out;
- 		}
- 
--		/* Good, event copied to userland, update counts. */
--		event ++;
--		i ++;
-+		__set_current_state(TASK_RUNNING);
-+		mutex_lock(&info->ring_lock);
- 	}
-+
-+	mutex_unlock(&info->ring_lock);
- out:
-+	finish_wait(&ctx->wait, &wait);
- 	hrtimer_cancel(&t.timer);
- 	destroy_hrtimer_on_stack(&t.timer);
- 	return i ? i : ret;
+Do you, by any chance, have the server really exporting its own root
+filesystem?  Another thing to check: have nfs_prime_dcache() print
+filename.name of everything that fails nfs_same_entry() and has
+zero entry->fh->size, regardless of d_invalidate() results.
