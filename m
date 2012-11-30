@@ -1,86 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759276Ab2K3SHM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:07:12 -0500
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:60003 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752466Ab2K3SHK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:07:10 -0500
-X-Greylist: delayed 1731 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 Nov 2012 13:07:10 EST
+	id S1759287Ab2K3SKm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:10:42 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:51567 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759040Ab2K3SKk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:10:40 -0500
+Date: Fri, 30 Nov 2012 19:10:37 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Mario Gzuk <mariogzuk@technikz.de>
+Subject: Re: [PATCH 8/8] x86, cleanups: Simplify sync_core() in the case of
+ no CPUID
+Message-ID: <20121130181037.GE23034@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	"H. Peter Anvin" <hpa@linux.intel.com>,
+	Ingo Molnar <mingo@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Mario Gzuk <mariogzuk@technikz.de>
+References: <1354132230-21854-1-git-send-email-hpa@linux.intel.com>
+ <1354132230-21854-9-git-send-email-hpa@linux.intel.com>
+ <20121128204158.GC14635@liondog.tnic>
+ <50B7D28A.4000401@linux.intel.com>
+ <CA+55aFziiaWt1nU-EPKc=tFd0EvSm2iSBJ2MAqxNiWP5O0mv+w@mail.gmail.com>
+ <50B8F4D7.2010204@zytor.com>
 MIME-Version: 1.0
-In-Reply-To: <1354125783-15816-1-git-send-email-hakanakkan@gmail.com>
-References: <1354091364-7920-1-git-send-email-hakanakkan@gmail.com>
-	<1354125783-15816-1-git-send-email-hakanakkan@gmail.com>
-Date: Fri, 30 Nov 2012 18:38:16 +0100
-Message-ID: <CAFTL4hwSva0eBK1f=K7Hus0ybiEACtebQbhEUDsJjLZcmmeCtA@mail.gmail.com>
-Subject: Re: [PATCH] nohz/cpuset: Make a CPU stick with do_timer() duty in the
- presence of nohz cpusets
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Hakan Akkan <hakanakkan@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <50B8F4D7.2010204@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/11/28 Hakan Akkan <hakanakkan@gmail.com>:
-> +static int check_drop_timer_duty(int cpu)
-> +{
-> +       int curr_handler, prev_handler, new_handler;
-> +       int nrepeat = -1;
-> +       bool drop_recheck;
-> +
-> +repeat:
-> +       WARN_ON_ONCE(++nrepeat > 1);
-> +       drop_recheck = false;
-> +       curr_handler = cpu;
-> +       new_handler = TICK_DO_TIMER_NONE;
-> +
-> +#ifdef CONFIG_CPUSETS_NO_HZ
-> +       if (atomic_read(&nr_cpus_user_nohz) > 0) {
+On Fri, Nov 30, 2012 at 10:03:03AM -0800, H. Peter Anvin wrote:
+> Well, the grand total of serializing instructions are:
+> 
+> INVD, INVEPT, INVLPG, INVVPID, LGDT, LIDT, LLDT, LTR, MOV to CR, MOV
+> to DR, WBINVD, WRMSR, CPUID, IRET, RSM.
 
-Note atomic_read() is not SMP ordered. If another CPU does
-atomic_add() or atomic_add_return(), you may not see the new value as
-expected with atomic_read(). Doing atomic_add_return(0, &atomic_thing)
-returns the fully ordered result.
+What about MFENCE with JMP 1f to kill prefetches? Probably too
+expensive. Oh and MFENCE is an SSE2 insn so maybe not supported by 486
+or something later ...
 
-You also need to do that to ensure full ordering against
-tick_cpu_sched.user_nohz.
+> >From all of the above, the alternatives case is kinda relevant for virt
+> >where we do text_poke_early in a loop for every alternative section
+> >so this could pile up to a bunch of vmexits depending on the emulated
+> >hardware. Might be worth a replacement if it is noticeable in guests.
+> 
+> This is still boot time, and I really doubt it is measurable in the
+> long run.  Yes, exists suck, but at least CPUID is generally a quick
+> exit, since all the relevant state is in registers.
 
-On the current layout we have:
+Agreed.
 
-(Write side)                                      (Read side)
-
-ts->user_nohz = 1;
-atomic_inc(&nr_cpus_user_nohz)
-
-                                                      if
-(atomic_read(&nr_cpus_user_nohz))
-                                                            if
-(per_cpu(tick_cpu_sched, curr_handler).user_nohz)
-                                                                ....
-
-If you want to make sure that you see the expected value on user_nohz
-from the read side, you need to correctly order the write and read
-against nr_cpus_user_nohz.
-
-For this you can use atomic_add_return() which implies the full barrier:
-
-
-(Write side)                                      (Read side)
-
-ts->user_nohz = 1;
-atomic_inc_return(&nr_cpus_user_nohz)
-
-                                                      if
-(atomic_add_return(0, &nr_cpus_user_nohz))
-                                                            if
-(per_cpu(tick_cpu_sched, curr_handler).user_nohz)
-                                                                ....
-
-I have much more comments on this patch, I will come back on this soon.
-
-Thanks.
+-- 
+Regards/Gruss,
+    Boris.
