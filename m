@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755434Ab2K3GPB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 01:15:01 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:46759 "EHLO
+	id S1755544Ab2K3GQw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 01:16:52 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:62304 "EHLO
 	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753059Ab2K3GO7 (ORCPT
+	with ESMTP id S1755460Ab2K3GQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 01:14:59 -0500
+	Fri, 30 Nov 2012 01:16:51 -0500
+Message-ID: <50B84F4E.20809@ozlabs.ru>
+Date: Fri, 30 Nov 2012 17:16:46 +1100
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <CAPnjgZ0atD3k=gT0vjgkLO_SA8DMak6SiT6nZ_2T6WFqtK0szQ@mail.gmail.com>
-References: <1354165536-18529-1-git-send-email-ch.naveen@samsung.com>
-	<1354165536-18529-3-git-send-email-ch.naveen@samsung.com>
-	<20121129163448.GA3761@sirena.org.uk>
-	<CAPnjgZ0atD3k=gT0vjgkLO_SA8DMak6SiT6nZ_2T6WFqtK0szQ@mail.gmail.com>
-Date: Thu, 29 Nov 2012 22:14:58 -0800
-Message-ID: <CAOesGMgE0JEHsdySpua34_kbWi1+z4n4UdW0kumiJEROi7O2pQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] i2c-s3c2410: Add bus arbitration implementation
-From: Olof Johansson <olof@lixom.net>
-To: Simon Glass <sjg@chromium.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-i2c@vger.kernel.org,
-        grundler@chromium.org, naveen@chromium.org, w.sang@pengutronix.de,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org,
+        David Gibson <david@gibson.dropbear.id.au>
+Subject: Re: [PATCH] vfio powerpc: enabled on powernv platform
+References: <1354138245.1809.226.camel@bling.home>  <1354161225-23118-1-git-send-email-aik@ozlabs.ru> <1354162826.1809.241.camel@bling.home>
+In-Reply-To: <1354162826.1809.241.camel@bling.home>
+Content-Type: text/plain; charset=KOI8-R; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 6:13 PM, Simon Glass <sjg@chromium.org> wrote:
-> +Olof
+On 29/11/12 15:20, Alex Williamson wrote:
+
+>> +	/* Put tces to the table */
+>> +	for (i = 0; (i < pages) && !ret; ++i, tce += IOMMU_PAGE_SIZE) {
+>> +		ret = put_tce(tbl, entry + i, tce, direction);
+>> +		/*
+>> +		 * As IOMMU page size is always 4K, the system page size
+>> +		 * can be 64K and there is no special tracking for IOMMU pages,
+>> +		 * we only do rlimit check/update for the very first
+>> +		 * 4K IOMMUpage within 64K system page.
+>> +		 */
+>> +		if (!(tce & ~PAGE_MASK))
+>> +			++retpages;
 >
-> On Thu, Nov 29, 2012 at 8:34 AM, Mark Brown
-> <broonie@opensource.wolfsonmicro.com> wrote:
->> On Thu, Nov 29, 2012 at 10:35:35AM +0530, Naveen Krishna Chatradhi wrote:
->>
->>> The arbitrator is a general purpose function which uses two GPIOs to
->>> communicate with another device to claim/release a bus. We use it to
->>> arbitrate an i2c port between the AP and the EC.
->>
->> Should this not be layerd on top of the I2C controller rather than part
->> of the controller driver?  It doesn't seem terribly controller specific.
+> Ah, here's the comment I was looking for, though I'm still not sure
+> about the read/write bits.
 >
-> It was originally done separately but I think it was felt that this
-> was overly complex. Olof can you please comment on this?
-
-it is indeed not controller specific per se, but we are unaware of any
-other platform/driver using it. So, it seemed reasonable to implement
-it in the driver as long as we have only one user; if another one
-comes along it's of course better to move it to the common i2c code.
-
-At least that was my opinion at the time. I could be convinced
-otherwise if someone else has strong opinions on the matter.
+> Isn't there an exploit here that a user can lock pages beyond their
+> limits if they just skip mapping the first 4k of each page?  Thanks,
 
 
--Olof
+Heh. True. Posted another patch with 4K pages per system page usage tracking.
+
+
+
+-- 
+Alexey
