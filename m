@@ -1,98 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753629Ab2K3FZU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 00:25:20 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:33290 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752327Ab2K3FZS (ORCPT
+	id S1753885Ab2K3F3G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 00:29:06 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:64586 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753747Ab2K3F3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 00:25:18 -0500
+	Fri, 30 Nov 2012 00:29:03 -0500
+Message-ID: <50B84418.5070804@numascale-asia.com>
+Date: Fri, 30 Nov 2012 13:28:56 +0800
+From: Daniel J Blueman <daniel@numascale-asia.com>
+Organization: Numascale Asia
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <20121130021026.GB2056@kroah.com>
-References: <1354165076-30273-1-git-send-email-yamanetoshi@gmail.com>
-	<20121130021026.GB2056@kroah.com>
-Date: Fri, 30 Nov 2012 14:25:17 +0900
-Message-ID: <CAOTypNRjqE0aiP+s551wSciziOeqDZyuhQ+pe96fk8SVj2G64g@mail.gmail.com>
-Subject: Re: [PATCH] staging/serqt_usb2: Refactor qt_status_change_check() in serqt_usb2.c
-From: YAMANE Toshiaki <yamanetoshi@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Joe Perches <joe@perches.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Dan Carpenter <dan.carpenter@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Steffen Persvold <sp@numascale.com>
+Subject: Re: [PATCH v2 RESEND] Add NumaChip remote PCI support
+References: <1353487196-10204-1-git-send-email-daniel@numascale-asia.com> <CAErSpo67Brp8H=Jw77NzA4xL52aRNi+YDw+gM++3y8XqfTWyzA@mail.gmail.com>
+In-Reply-To: <CAErSpo67Brp8H=Jw77NzA4xL52aRNi+YDw+gM++3y8XqfTWyzA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 30, 2012 at 11:10 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Thu, Nov 29, 2012 at 01:57:56PM +0900, YAMANE Toshiaki wrote:
->> Improved position to increment variable i,
->> And typo fixes.
+Hi Bjorn,
+
+On 29/11/2012 07:08, Bjorn Helgaas wrote:
+> On Wed, Nov 21, 2012 at 1:39 AM, Daniel J Blueman
+> <daniel@numascale-asia.com> wrote:
+>> Add NumaChip-specific PCI access mechanism via MMCONFIG cycles, but
+>> preventing access to AMD Northbridges which shouldn't respond.
 >>
->> Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
+>> v2: Use PCI_DEVFN in precomputed constant limit; drop unneeded includes
+>>
+>> Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
 >> ---
->>  drivers/staging/serqt_usb2/serqt_usb2.c |   12 ++++++------
->>  1 file changed, 6 insertions(+), 6 deletions(-)
+>>   arch/x86/include/asm/numachip/numachip.h |   20 +++++
+>>   arch/x86/kernel/apic/apic_numachip.c     |    2 +
+>>   arch/x86/pci/Makefile                    |    1 +
+>>   arch/x86/pci/numachip.c                  |  134 ++++++++++++++++++++++++++++++
+>>   4 files changed, 157 insertions(+)
+>>   create mode 100644 arch/x86/include/asm/numachip/numachip.h
+>>   create mode 100644 arch/x86/pci/numachip.c
 >>
->> diff --git a/drivers/staging/serqt_usb2/serqt_usb2.c b/drivers/staging/serqt_usb2/serqt_usb2.c
->> index 1b3e995..095d6f2 100644
->> --- a/drivers/staging/serqt_usb2/serqt_usb2.c
->> +++ b/drivers/staging/serqt_usb2/serqt_usb2.c
->> @@ -309,26 +309,26 @@ static void qt_status_change_check(struct tty_struct *tty,
->>                       case 0x00:
->>                               if (i > (RxCount - 4)) {
->>                                       dev_dbg(&port->dev,
->> -                                             "Illegal escape seuences in received data\n");
->> +                                             "Illegal escape sequence in received data\n");
->
-> This is a different type of fix from:
->
->>                                       break;
->>                               }
->>
->> -                             ProcessLineStatus(qt_port, data[i + 3]);
->> -
->>                               i += 3;
->> +                             ProcessLineStatus(qt_port, data[i]);
->
-> I think you just changed the logic in this function, didn't you?
->
+>> diff --git a/arch/x86/include/asm/numachip/numachip.h b/arch/x86/include/asm/numachip/numachip.h
+>> new file mode 100644
+>> index 0000000..d35e71a
+>> --- /dev/null
+>> +++ b/arch/x86/include/asm/numachip/numachip.h
+>> @@ -0,0 +1,20 @@
+>> +/*
+>> + * This file is subject to the terms and conditions of the GNU General Public
+>> + * License.  See the file "COPYING" in the main directory of this archive
+>> + * for more details.
+>> + *
+>> + * Numascale NumaConnect-specific header file
+>> + *
+>> + * Copyright (C) 2012 Numascale AS. All rights reserved.
+>> + *
+>> + * Send feedback to <support@numascale.com>
+>> + *
+>> + */
 >> +
->>                               flag = 1;
->>                               break;
+>> +#ifndef _ASM_X86_NUMACHIP_NUMACHIP_H
+>> +#define _ASM_X86_NUMACHIP_NUMACHIP_H
+>> +
+>> +extern int __init pci_numachip_init(void);
+>> +
+>> +#endif /* _ASM_X86_NUMACHIP_NUMACHIP_H */
+>> +
+>> diff --git a/arch/x86/kernel/apic/apic_numachip.c b/arch/x86/kernel/apic/apic_numachip.c
+>> index a65829a..9c2aa89 100644
+>> --- a/arch/x86/kernel/apic/apic_numachip.c
+>> +++ b/arch/x86/kernel/apic/apic_numachip.c
+>> @@ -22,6 +22,7 @@
+>>   #include <linux/hardirq.h>
+>>   #include <linux/delay.h>
 >>
->>                       case 0x01:
->>                               if (i > (RxCount - 4)) {
->>                                       dev_dbg(&port->dev,
->> -                                             "Illegal escape seuences in received data\n");
->> +                                             "Illegal escape sequence in received data\n");
->>                                       break;
->>                               }
+>> +#include <asm/numachip/numachip.h>
+>>   #include <asm/numachip/numachip_csr.h>
+>>   #include <asm/smp.h>
+>>   #include <asm/apic.h>
+>> @@ -179,6 +180,7 @@ static int __init numachip_system_init(void)
+>>                  return 0;
 >>
->> -                             ProcessModemStatus(qt_port, data[i + 3]);
->> -
->>                               i += 3;
->> +                             ProcessModemStatus(qt_port, data[i]);
+>>          x86_cpuinit.fixup_cpu_id = fixup_cpu_id;
+>> +       x86_init.pci.arch_init = pci_numachip_init;
+>>
+>>          map_csrs();
+>>
+>> diff --git a/arch/x86/pci/Makefile b/arch/x86/pci/Makefile
+>> index 3af5a1e..ee0af58 100644
+>> --- a/arch/x86/pci/Makefile
+>> +++ b/arch/x86/pci/Makefile
+>> @@ -16,6 +16,7 @@ obj-$(CONFIG_STA2X11)           += sta2x11-fixup.o
+>>   obj-$(CONFIG_X86_VISWS)                += visws.o
+>>
+>>   obj-$(CONFIG_X86_NUMAQ)                += numaq_32.o
+>> +obj-$(CONFIG_X86_NUMACHIP)     += numachip.o
 >
-> Same here, what happens to i after this?
+> It looks like this depends on CONFIG_PCI_MMCONFIG for
+> pci_mmconfig_lookup().  Are there config constraints that force
+> CONFIG_PCI_MMCONFIG=y when CONFIG_X86_NUMACHIP=y?
+
+I'll revise the patch with this constraint after we work out the best 
+approach for below.
+
+>>   obj-$(CONFIG_X86_INTEL_MID)    += mrst.o
+>>
+>> diff --git a/arch/x86/pci/numachip.c b/arch/x86/pci/numachip.c
+>> new file mode 100644
+>> index 0000000..3773e05
+>> --- /dev/null
+>> +++ b/arch/x86/pci/numachip.c
+>> @@ -0,0 +1,129 @@
+>> +/*
+>> + * This file is subject to the terms and conditions of the GNU General Public
+>> + * License.  See the file "COPYING" in the main directory of this archive
+>> + * for more details.
+>> + *
+>> + * Numascale NumaConnect-specific PCI code
+>> + *
+>> + * Copyright (C) 2012 Numascale AS. All rights reserved.
+>> + *
+>> + * Send feedback to <support@numascale.com>
+>> + *
+>> + * PCI accessor functions derived from mmconfig_64.c
+>> + *
+>> + */
+>> +
+>> +#include <linux/pci.h>
+>> +#include <asm/pci_x86.h>
+>> +
+>> +static u8 limit __read_mostly;
+>> +
+>> +static inline char __iomem *pci_dev_base(unsigned int seg, unsigned int bus, unsigned int devfn)
+>> +{
+>> +       struct pci_mmcfg_region *cfg = pci_mmconfig_lookup(seg, bus);
+>> +
+>> +       if (cfg && cfg->virt)
+>> +               return cfg->virt + (PCI_MMCFG_BUS_OFFSET(bus) | (devfn << 12));
+>> +       return NULL;
+>> +}
 >
-> Please break into two patches, and verify that you didn't break anything
-> here.
+> Most of this file is copied directly from mmconfig_64.c (as you
+> mentioned above).  I wonder if we could avoid the code duplication by
+> making the pci_dev_base() implementation in mmconfig_64.c a weak
+> definition.  Then you could just supply a non-weak pci_dev_base() here
+> that would override that default version.  Your version would look
+> something like:
+>
+>    char __iomem *pci_dev_base(unsigned int seg, unsigned int bus,
+> unsigned int devfn)
+>    {
+>        struct pci_mmcfg_region *cfg = pci_mmconfig_lookup(seg, bus);
+>
+>        if (cfg && cfg->virt && devfn < limit)
+>            return cfg->virt + (PCI_MMCFG_BUS_OFFSET(bus) | (devfn << 12));
+>        return NULL;
+>    }
+>
+> That would be different from what you have in this patch because reads
+> & writes to devices above "limit" would return -EINVAL rather than 0
+> as you do here.  Would that be a problem?
 
-Greg-san,
+That would work nicely (pointer lookup and inlining etc aside) if there 
+was the runtime ability to override pci_dev_base only if the NumaChip 
+signature was detected.
 
-I am sorry for confusion.
-I sent the patch twice since following patch was applied (gregkh/staging-next)
-
-commit 9d36976fad3008fcc4209789566f7f3e7763f212
-Modify qt_status_change_check() and delete qt_status_change().
-
--Incorporate comment of Mr.Joe Perches (sent Nov.17)
--I sent yesterday
-
-Please discard the patches.
+We could expose pci_dev_base via struct x86_init_pci; the extra 
+complexity and performance tradeoff may not be worth it for a single 
+case perhaps?
 
 Thanks,
-
-
-YAMANE Toshiaki
+   Daniel
+-- 
+Daniel J Blueman
+Principal Software Engineer, Numascale Asia
