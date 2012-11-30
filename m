@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030327Ab2K3MD4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 07:03:56 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58520 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030312Ab2K3MDu (ORCPT
+	id S1030343Ab2K3MED (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 07:04:03 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:60030 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030312Ab2K3MD5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 07:03:50 -0500
+	Fri, 30 Nov 2012 07:03:57 -0500
 From: Prabhakar Lad <prabhakar.csengg@gmail.com>
 To: LMML <linux-media@vger.kernel.org>,
         Mauro Carvalho Chehab <mchehab@redhat.com>
@@ -18,9 +18,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Hans Verkuil <hans.verkuil@cisco.com>,
         Sakari Ailus <sakari.ailus@iki.fi>, <devel@driverdev.osuosl.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH v4 6/9] davinci: vpfe: dm365: add IPIPE hardware layer support
-Date: Fri, 30 Nov 2012 17:31:16 +0530
-Message-Id: <1354276879-27244-7-git-send-email-prabhakar.lad@ti.com>
+Subject: [PATCH v4 7/9] davinci: vpfe: dm365: resizer driver based on media framework
+Date: Fri, 30 Nov 2012 17:31:17 +0530
+Message-Id: <1354276879-27244-8-git-send-email-prabhakar.lad@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1354276879-27244-1-git-send-email-prabhakar.lad@ti.com>
 References: <1354276879-27244-1-git-send-email-prabhakar.lad@ti.com>
@@ -30,11 +30,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Manjunath Hadli <manjunath.hadli@ti.com>
 
-IPIPE is the hardware IP which implements the functionality
-required for resizer, ipipe(colorspace converter) and
-the associated hardware support. This patch implements hardware
-setup including coefficient programming for various hardware
-filters, gamma, cfa and clock enabling.
+Add the video resizer driver with the v4l2 media controller framework
+which takes care of resizing the video frames with both up-scaling
+downscaling facility. The driver supports both continuous and
+single shot operations.The driver supports resizer as a subdevice
+and a media entity. It has support for 2 resizers - resizerA
+and resizerB.
 
 Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
 Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
@@ -42,18 +43,18 @@ Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 Acked-by: Sakari Ailus <sakari.ailus@iki.fi>
 Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
 ---
- .../staging/media/davinci_vpfe/dm365_ipipe_hw.c    | 1048 ++++++++++++++++++++
- .../staging/media/davinci_vpfe/dm365_ipipe_hw.h    |  559 +++++++++++
- 2 files changed, 1607 insertions(+), 0 deletions(-)
- create mode 100644 drivers/staging/media/davinci_vpfe/dm365_ipipe_hw.c
- create mode 100644 drivers/staging/media/davinci_vpfe/dm365_ipipe_hw.h
+ drivers/staging/media/davinci_vpfe/dm365_resizer.c | 1999 ++++++++++++++++++++
+ drivers/staging/media/davinci_vpfe/dm365_resizer.h |  244 +++
+ 2 files changed, 2243 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/staging/media/davinci_vpfe/dm365_resizer.c
+ create mode 100644 drivers/staging/media/davinci_vpfe/dm365_resizer.h
 
-diff --git a/drivers/staging/media/davinci_vpfe/dm365_ipipe_hw.c b/drivers/staging/media/davinci_vpfe/dm365_ipipe_hw.c
+diff --git a/drivers/staging/media/davinci_vpfe/dm365_resizer.c b/drivers/staging/media/davinci_vpfe/dm365_resizer.c
 new file mode 100644
-index 0000000..e027b92
+index 0000000..9cb0262
 --- /dev/null
-+++ b/drivers/staging/media/davinci_vpfe/dm365_ipipe_hw.c
-@@ -0,0 +1,1048 @@
++++ b/drivers/staging/media/davinci_vpfe/dm365_resizer.c
+@@ -0,0 +1,1999 @@
 +/*
 + * Copyright (C) 2012 Texas Instruments Inc
 + *
@@ -73,1041 +74,1992 @@ index 0000000..e027b92
 + * Contributors:
 + *      Manjunath Hadli <manjunath.hadli@ti.com>
 + *      Prabhakar Lad <prabhakar.lad@ti.com>
++ *
++ *
++ * Resizer allows upscaling or downscaling a image to a desired
++ * resolution. There are 2 resizer modules. both operating on the
++ * same input image, but can have different output resolution.
 + */
 +
 +#include "dm365_ipipe_hw.h"
++#include "dm365_resizer.h"
 +
-+#define IPIPE_MODE_CONTINUOUS		0
-+#define IPIPE_MODE_SINGLE_SHOT		1
++#define MIN_IN_WIDTH		32
++#define MIN_IN_HEIGHT		32
++#define MAX_IN_WIDTH		4095
++#define MAX_IN_HEIGHT		4095
++#define MIN_OUT_WIDTH		16
++#define MIN_OUT_HEIGHT		2
 +
-+static void ipipe_clock_enable(void *__iomem base_addr)
-+{
-+	/* enable IPIPE MMR for register write access */
-+	regw_ip(base_addr, IPIPE_GCK_MMR_DEFAULT, IPIPE_GCK_MMR);
++static const unsigned int resizer_input_formats[] = {
++	V4L2_MBUS_FMT_UYVY8_2X8,
++	V4L2_MBUS_FMT_Y8_1X8,
++	V4L2_MBUS_FMT_UV8_1X8,
++	V4L2_MBUS_FMT_SGRBG12_1X12,
++};
 +
-+	/* enable the clock wb,cfa,dfc,d2f,pre modules */
-+	regw_ip(base_addr, IPIPE_GCK_PIX_DEFAULT, IPIPE_GCK_PIX);
-+}
++static const unsigned int resizer_output_formats[] = {
++	V4L2_MBUS_FMT_UYVY8_2X8,
++	V4L2_MBUS_FMT_Y8_1X8,
++	V4L2_MBUS_FMT_UV8_1X8,
++	V4L2_MBUS_FMT_YDYUYDYV8_1X16,
++	V4L2_MBUS_FMT_SGRBG12_1X12,
++};
 +
++/* resizer_calculate_line_length() - This function calculates the line length of
++ *				     various image planes at the input and
++ *				     output.
++ */
 +static void
-+rsz_set_common_params(void *__iomem rsz_base, struct resizer_params *params)
++resizer_calculate_line_length(enum v4l2_mbus_pixelcode pix, int width,
++		      int height, int *line_len, int *line_len_c)
 +{
-+	struct rsz_common_params *rsz_common = &params->rsz_common;
-+	u32 val;
++	*line_len = 0;
++	*line_len_c = 0;
 +
-+	/* Set mode */
-+	regw_rsz(rsz_base, params->oper_mode, RSZ_SRC_MODE);
-+
-+	/* data source selection  and bypass */
-+	val = (rsz_common->passthrough << RSZ_BYPASS_SHIFT) |
-+	      rsz_common->source;
-+	regw_rsz(rsz_base, val, RSZ_SRC_FMT0);
-+
-+	/* src image selection */
-+	val = (rsz_common->raw_flip & 1) |
-+	      (rsz_common->src_img_fmt << RSZ_SRC_IMG_FMT_SHIFT) |
-+	      ((rsz_common->y_c & 1) << RSZ_SRC_Y_C_SEL_SHIFT);
-+	regw_rsz(rsz_base, val, RSZ_SRC_FMT1);
-+
-+	regw_rsz(rsz_base, rsz_common->vps & IPIPE_RSZ_VPS_MASK, RSZ_SRC_VPS);
-+	regw_rsz(rsz_base, rsz_common->hps & IPIPE_RSZ_HPS_MASK, RSZ_SRC_HPS);
-+	regw_rsz(rsz_base, rsz_common->vsz & IPIPE_RSZ_VSZ_MASK, RSZ_SRC_VSZ);
-+	regw_rsz(rsz_base, rsz_common->hsz & IPIPE_RSZ_HSZ_MASK, RSZ_SRC_HSZ);
-+	regw_rsz(rsz_base, rsz_common->yuv_y_min, RSZ_YUV_Y_MIN);
-+	regw_rsz(rsz_base, rsz_common->yuv_y_max, RSZ_YUV_Y_MAX);
-+	regw_rsz(rsz_base, rsz_common->yuv_c_min, RSZ_YUV_C_MIN);
-+	regw_rsz(rsz_base, rsz_common->yuv_c_max, RSZ_YUV_C_MAX);
-+	/* chromatic position */
-+	regw_rsz(rsz_base, rsz_common->out_chr_pos, RSZ_YUV_PHS);
-+}
-+
-+static void
-+rsz_set_rsz_regs(void *__iomem rsz_base, unsigned int rsz_id,
-+		 struct resizer_params *params)
-+{
-+	struct resizer_scale_param *rsc_params;
-+	struct rsz_ext_mem_param *ext_mem;
-+	struct resizer_rgb *rgb;
-+	u32 reg_base;
-+	u32 val;
-+
-+	rsc_params = &params->rsz_rsc_param[rsz_id];
-+	rgb = &params->rsz2rgb[rsz_id];
-+	ext_mem = &params->ext_mem_param[rsz_id];
-+
-+	if (rsz_id == RSZ_A) {
-+		val = rsc_params->h_flip << RSZA_H_FLIP_SHIFT;
-+		val |= rsc_params->v_flip << RSZA_V_FLIP_SHIFT;
-+		reg_base = RSZ_EN_A;
++	if (pix == V4L2_MBUS_FMT_UYVY8_2X8 ||
++	    pix == V4L2_MBUS_FMT_SGRBG12_1X12) {
++		*line_len = width << 1;
++	} else if (pix == V4L2_MBUS_FMT_Y8_1X8 ||
++		   pix == V4L2_MBUS_FMT_UV8_1X8) {
++		*line_len = width;
++		*line_len_c = width;
 +	} else {
-+		val = rsc_params->h_flip << RSZB_H_FLIP_SHIFT;
-+		val |= rsc_params->v_flip << RSZB_V_FLIP_SHIFT;
-+		reg_base = RSZ_EN_B;
++		/* YUV 420 */
++		/* round width to upper 32 byte boundary */
++		*line_len = width;
++		*line_len_c = width;
 +	}
-+	/* update flip settings */
-+	regw_rsz(rsz_base, val, RSZ_SEQ);
-+
-+	regw_rsz(rsz_base, params->oper_mode, reg_base + RSZ_MODE);
-+
-+	val = (rsc_params->cen << RSZ_CEN_SHIFT) | rsc_params->yen;
-+	regw_rsz(rsz_base, val, reg_base + RSZ_420);
-+
-+	regw_rsz(rsz_base, rsc_params->i_vps & RSZ_VPS_MASK,
-+		 reg_base + RSZ_I_VPS);
-+	regw_rsz(rsz_base, rsc_params->i_hps & RSZ_HPS_MASK,
-+		 reg_base + RSZ_I_HPS);
-+	regw_rsz(rsz_base, rsc_params->o_vsz & RSZ_O_VSZ_MASK,
-+		 reg_base + RSZ_O_VSZ);
-+	regw_rsz(rsz_base, rsc_params->o_hsz & RSZ_O_HSZ_MASK,
-+		 reg_base + RSZ_O_HSZ);
-+	regw_rsz(rsz_base, rsc_params->v_phs_y & RSZ_V_PHS_MASK,
-+		 reg_base + RSZ_V_PHS_Y);
-+	regw_rsz(rsz_base, rsc_params->v_phs_c & RSZ_V_PHS_MASK,
-+		 reg_base + RSZ_V_PHS_C);
-+
-+	/* keep this additional adjustment to zero for now */
-+	regw_rsz(rsz_base, rsc_params->v_dif & RSZ_V_DIF_MASK,
-+		 reg_base + RSZ_V_DIF);
-+
-+	val = (rsc_params->v_typ_y & 1) |
-+	      ((rsc_params->v_typ_c & 1) << RSZ_TYP_C_SHIFT);
-+	regw_rsz(rsz_base, val, reg_base + RSZ_V_TYP);
-+
-+	val = (rsc_params->v_lpf_int_y & RSZ_LPF_INT_MASK) |
-+	      ((rsc_params->v_lpf_int_c & RSZ_LPF_INT_MASK) <<
-+	      RSZ_LPF_INT_C_SHIFT);
-+	regw_rsz(rsz_base, val, reg_base + RSZ_V_LPF);
-+
-+	regw_rsz(rsz_base, rsc_params->h_phs &
-+		RSZ_H_PHS_MASK, reg_base + RSZ_H_PHS);
-+
-+	regw_rsz(rsz_base, 0, reg_base + RSZ_H_PHS_ADJ);
-+	regw_rsz(rsz_base, rsc_params->h_dif &
-+		RSZ_H_DIF_MASK, reg_base + RSZ_H_DIF);
-+
-+	val = (rsc_params->h_typ_y & 1) |
-+	      ((rsc_params->h_typ_c & 1) << RSZ_TYP_C_SHIFT);
-+	regw_rsz(rsz_base, val, reg_base + RSZ_H_TYP);
-+
-+	val = (rsc_params->h_lpf_int_y & RSZ_LPF_INT_MASK) |
-+		 ((rsc_params->h_lpf_int_c & RSZ_LPF_INT_MASK) <<
-+		 RSZ_LPF_INT_C_SHIFT);
-+	regw_rsz(rsz_base, val, reg_base + RSZ_H_LPF);
-+
-+	regw_rsz(rsz_base, rsc_params->dscale_en & 1, reg_base + RSZ_DWN_EN);
-+
-+	val = (rsc_params->h_dscale_ave_sz & RSZ_DWN_SCALE_AV_SZ_MASK) |
-+	      ((rsc_params->v_dscale_ave_sz & RSZ_DWN_SCALE_AV_SZ_MASK) <<
-+	      RSZ_DWN_SCALE_AV_SZ_V_SHIFT);
-+	regw_rsz(rsz_base, val, reg_base + RSZ_DWN_AV);
-+
-+	/* setting rgb conversion parameters */
-+	regw_rsz(rsz_base, rgb->rgb_en, reg_base + RSZ_RGB_EN);
-+
-+	val = (rgb->rgb_typ << RSZ_RGB_TYP_SHIFT) |
-+	      (rgb->rgb_msk0 << RSZ_RGB_MSK0_SHIFT) |
-+	      (rgb->rgb_msk1 << RSZ_RGB_MSK1_SHIFT);
-+	regw_rsz(rsz_base, val, reg_base + RSZ_RGB_TYP);
-+
-+	regw_rsz(rsz_base, rgb->rgb_alpha_val & RSZ_RGB_ALPHA_MASK,
-+		reg_base + RSZ_RGB_BLD);
-+
-+	/* setting external memory parameters */
-+	regw_rsz(rsz_base, ext_mem->rsz_sdr_oft_y, reg_base + RSZ_SDR_Y_OFT);
-+	regw_rsz(rsz_base, ext_mem->rsz_sdr_ptr_s_y,
-+		 reg_base + RSZ_SDR_Y_PTR_S);
-+	regw_rsz(rsz_base, ext_mem->rsz_sdr_ptr_e_y,
-+		 reg_base + RSZ_SDR_Y_PTR_E);
-+	regw_rsz(rsz_base, ext_mem->rsz_sdr_oft_c, reg_base + RSZ_SDR_C_OFT);
-+	regw_rsz(rsz_base, ext_mem->rsz_sdr_ptr_s_c,
-+		 reg_base + RSZ_SDR_C_PTR_S);
-+	regw_rsz(rsz_base, (ext_mem->rsz_sdr_ptr_e_c >> 1),
-+		 reg_base + RSZ_SDR_C_PTR_E);
++	/* adjust the line len to be a multiple of 32 */
++	*line_len += 31;
++	*line_len &= ~0x1f;
++	*line_len_c += 31;
++	*line_len_c &= ~0x1f;
 +}
 +
-+/*set the registers of either RSZ0 or RSZ1 */
-+static void
-+ipipe_setup_resizer(void *__iomem rsz_base, struct resizer_params *params)
++static inline int
++resizer_validate_output_image_format(struct device *dev,
++				     struct v4l2_mbus_framefmt *format,
++				     int *in_line_len, int *in_line_len_c)
 +{
-+	/* enable MMR gate to write to Resizer */
-+	regw_rsz(rsz_base, 1, RSZ_GCK_MMR);
-+
-+	/* Enable resizer if it is not in bypass mode */
-+	if (params->rsz_common.passthrough)
-+		regw_rsz(rsz_base, 0, RSZ_GCK_SDR);
-+	else
-+		regw_rsz(rsz_base, 1, RSZ_GCK_SDR);
-+
-+	rsz_set_common_params(rsz_base, params);
-+
-+	regw_rsz(rsz_base, params->rsz_en[RSZ_A], RSZ_EN_A);
-+
-+	if (params->rsz_en[RSZ_A])
-+		/*setting rescale parameters */
-+		rsz_set_rsz_regs(rsz_base, RSZ_A, params);
-+
-+	regw_rsz(rsz_base, params->rsz_en[RSZ_B], RSZ_EN_B);
-+
-+	if (params->rsz_en[RSZ_B])
-+		rsz_set_rsz_regs(rsz_base, RSZ_B, params);
-+}
-+
-+static u32 ipipe_get_color_pat(enum v4l2_mbus_pixelcode pix)
-+{
-+	switch (pix) {
-+	case V4L2_MBUS_FMT_SGRBG10_ALAW8_1X8:
-+	case V4L2_MBUS_FMT_SGRBG10_DPCM8_1X8:
-+	case V4L2_MBUS_FMT_SGRBG12_1X12:
-+		return ipipe_sgrbg_pattern;
-+
-+	default:
-+		return ipipe_srggb_pattern;
-+	}
-+}
-+
-+static int ipipe_get_data_path(struct vpfe_ipipe_device *ipipe)
-+{
-+	enum v4l2_mbus_pixelcode temp_pix_fmt;
-+
-+	switch (ipipe->formats[IPIPE_PAD_SINK].code) {
-+	case V4L2_MBUS_FMT_SBGGR8_1X8:
-+	case V4L2_MBUS_FMT_SGRBG10_ALAW8_1X8:
-+	case V4L2_MBUS_FMT_SGRBG10_DPCM8_1X8:
-+	case V4L2_MBUS_FMT_SGRBG12_1X12:
-+		temp_pix_fmt = V4L2_MBUS_FMT_SGRBG12_1X12;
-+		break;
-+
-+	default:
-+		temp_pix_fmt = V4L2_MBUS_FMT_UYVY8_2X8;
-+	}
-+
-+	if (temp_pix_fmt == V4L2_MBUS_FMT_SGRBG12_1X12) {
-+		if (ipipe->formats[IPIPE_PAD_SOURCE].code ==
-+			V4L2_MBUS_FMT_SGRBG12_1X12)
-+			return IPIPE_RAW2RAW;
-+		return IPIPE_RAW2YUV;
-+	}
-+
-+	return IPIPE_YUV2YUV;
-+}
-+
-+static int get_ipipe_mode(struct vpfe_ipipe_device *ipipe)
-+{
-+	struct vpfe_device *vpfe_dev = to_vpfe_device(ipipe);
-+	u16 ipipeif_sink = vpfe_dev->vpfe_ipipeif.input;
-+
-+	if (ipipeif_sink == IPIPEIF_INPUT_MEMORY)
-+		return IPIPE_MODE_SINGLE_SHOT;
-+	else if (ipipeif_sink == IPIPEIF_INPUT_ISIF)
-+		return IPIPE_MODE_CONTINUOUS;
-+
-+	return -EINVAL;
-+}
-+
-+int config_ipipe_hw(struct vpfe_ipipe_device *ipipe)
-+{
-+	struct vpfe_ipipe_input_config *config = &ipipe->config.input_config;
-+	void __iomem *ipipe_base = ipipe->base_addr;
-+	struct v4l2_mbus_framefmt *outformat;
-+	u32 color_pat;
-+	u32 ipipe_mode;
-+	u32 data_path;
-+
-+	/* enable clock to IPIPE */
-+	vpss_enable_clock(VPSS_IPIPE_CLOCK, 1);
-+	ipipe_clock_enable(ipipe_base);
-+
-+	if (ipipe->input == IPIPE_INPUT_NONE) {
-+		regw_ip(ipipe_base, 0, IPIPE_SRC_EN);
-+		return 0;
-+	}
-+
-+	ipipe_mode = get_ipipe_mode(ipipe);
-+	if (ipipe < 0) {
-+		pr_err("Failed to get ipipe mode");
++	if (format->code != V4L2_MBUS_FMT_UYVY8_2X8 &&
++	    format->code != V4L2_MBUS_FMT_Y8_1X8 &&
++	    format->code != V4L2_MBUS_FMT_UV8_1X8 &&
++	    format->code != V4L2_MBUS_FMT_YDYUYDYV8_1X16 &&
++	    format->code != V4L2_MBUS_FMT_SGRBG12_1X12) {
++		dev_err(dev, "Invalid Mbus format, %d\n", format->code);
 +		return -EINVAL;
 +	}
-+	regw_ip(ipipe_base, ipipe_mode, IPIPE_SRC_MODE);
-+
-+	data_path = ipipe_get_data_path(ipipe);
-+	regw_ip(ipipe_base, data_path, IPIPE_SRC_FMT);
-+
-+	regw_ip(ipipe_base, config->vst & IPIPE_RSZ_VPS_MASK, IPIPE_SRC_VPS);
-+	regw_ip(ipipe_base, config->hst & IPIPE_RSZ_HPS_MASK, IPIPE_SRC_HPS);
-+
-+	outformat = &ipipe->formats[IPIPE_PAD_SOURCE];
-+	regw_ip(ipipe_base, (outformat->height + 1) & IPIPE_RSZ_VSZ_MASK,
-+		IPIPE_SRC_VSZ);
-+	regw_ip(ipipe_base, (outformat->width + 1) & IPIPE_RSZ_HSZ_MASK,
-+		IPIPE_SRC_HSZ);
-+
-+	if (data_path == IPIPE_RAW2YUV ||
-+	    data_path == IPIPE_RAW2RAW) {
-+		color_pat =
-+		ipipe_get_color_pat(ipipe->formats[IPIPE_PAD_SINK].code);
-+		regw_ip(ipipe_base, color_pat, IPIPE_SRC_COL);
++	if (!format->width || !format->height) {
++		dev_err(dev, "invalid width or height\n");
++		return -EINVAL;
 +	}
++	resizer_calculate_line_length(format->code, format->width,
++		format->height, in_line_len, in_line_len_c);
++	return 0;
++}
++
++static void
++resizer_configure_passthru(struct vpfe_resizer_device *resizer, int bypass)
++{
++	struct resizer_params *param = &resizer->config;
++
++	param->rsz_rsc_param[RSZ_A].cen = DISABLE;
++	param->rsz_rsc_param[RSZ_A].yen = DISABLE;
++	param->rsz_rsc_param[RSZ_A].v_phs_y = 0;
++	param->rsz_rsc_param[RSZ_A].v_phs_c = 0;
++	param->rsz_rsc_param[RSZ_A].v_dif = 256;
++	param->rsz_rsc_param[RSZ_A].v_lpf_int_y = 0;
++	param->rsz_rsc_param[RSZ_A].v_lpf_int_c = 0;
++	param->rsz_rsc_param[RSZ_A].h_phs = 0;
++	param->rsz_rsc_param[RSZ_A].h_dif = 256;
++	param->rsz_rsc_param[RSZ_A].h_lpf_int_y = 0;
++	param->rsz_rsc_param[RSZ_A].h_lpf_int_c = 0;
++	param->rsz_rsc_param[RSZ_A].dscale_en = DISABLE;
++	param->rsz2rgb[RSZ_A].rgb_en = DISABLE;
++	param->rsz_en[RSZ_A] = ENABLE;
++	param->rsz_en[RSZ_B] = DISABLE;
++	if (bypass) {
++		param->rsz_rsc_param[RSZ_A].i_vps = 0;
++		param->rsz_rsc_param[RSZ_A].i_hps = 0;
++		/* Raw Bypass */
++		param->rsz_common.passthrough = BYPASS_ON;
++	}
++}
++
++static void
++configure_resizer_out_params(struct vpfe_resizer_device *resizer, int index,
++			     void *output_spec, unsigned char partial,
++			     unsigned flag)
++{
++	struct resizer_params *param = &resizer->config;
++	struct v4l2_mbus_framefmt *outformat;
++	struct vpfe_rsz_output_spec *output;
++
++	if (index == RSZ_A &&
++	    resizer->resizer_a.output == RESIZER_OUTPUT_NONE) {
++		param->rsz_en[index] = DISABLE;
++		return;
++	}
++	if (index == RSZ_B &&
++	    resizer->resizer_b.output == RESIZER_OUTPUT_NONE) {
++		param->rsz_en[index] = DISABLE;
++		return;
++	}
++	output = (struct vpfe_rsz_output_spec *)output_spec;
++	param->rsz_en[index] = ENABLE;
++	if (partial) {
++		param->rsz_rsc_param[index].h_flip = output->h_flip;
++		param->rsz_rsc_param[index].v_flip = output->v_flip;
++		param->rsz_rsc_param[index].v_typ_y = output->v_typ_y;
++		param->rsz_rsc_param[index].v_typ_c = output->v_typ_c;
++		param->rsz_rsc_param[index].v_lpf_int_y =
++						output->v_lpf_int_y;
++		param->rsz_rsc_param[index].v_lpf_int_c =
++						output->v_lpf_int_c;
++		param->rsz_rsc_param[index].h_typ_y = output->h_typ_y;
++		param->rsz_rsc_param[index].h_typ_c = output->h_typ_c;
++		param->rsz_rsc_param[index].h_lpf_int_y =
++						output->h_lpf_int_y;
++		param->rsz_rsc_param[index].h_lpf_int_c =
++						output->h_lpf_int_c;
++		param->rsz_rsc_param[index].dscale_en =
++						output->en_down_scale;
++		param->rsz_rsc_param[index].h_dscale_ave_sz =
++						output->h_dscale_ave_sz;
++		param->rsz_rsc_param[index].v_dscale_ave_sz =
++						output->v_dscale_ave_sz;
++		param->ext_mem_param[index].user_y_ofst =
++				    (output->user_y_ofst + 31) & ~0x1f;
++		param->ext_mem_param[index].user_c_ofst =
++				    (output->user_c_ofst + 31) & ~0x1f;
++		return;
++	}
++
++	if (index == RSZ_A)
++		outformat = &resizer->resizer_a.formats[RESIZER_PAD_SOURCE];
++	else
++		outformat = &resizer->resizer_b.formats[RESIZER_PAD_SOURCE];
++	param->rsz_rsc_param[index].o_vsz = outformat->height - 1;
++	param->rsz_rsc_param[index].o_hsz = outformat->width - 1;
++	param->ext_mem_param[index].rsz_sdr_ptr_s_y = output->vst_y;
++	param->ext_mem_param[index].rsz_sdr_ptr_e_y = outformat->height;
++	param->ext_mem_param[index].rsz_sdr_ptr_s_c = output->vst_c;
++	param->ext_mem_param[index].rsz_sdr_ptr_e_c = outformat->height;
++
++	if (!flag)
++		return;
++	/* update common parameters */
++	param->rsz_rsc_param[index].h_flip = output->h_flip;
++	param->rsz_rsc_param[index].v_flip = output->v_flip;
++	param->rsz_rsc_param[index].v_typ_y = output->v_typ_y;
++	param->rsz_rsc_param[index].v_typ_c = output->v_typ_c;
++	param->rsz_rsc_param[index].v_lpf_int_y = output->v_lpf_int_y;
++	param->rsz_rsc_param[index].v_lpf_int_c = output->v_lpf_int_c;
++	param->rsz_rsc_param[index].h_typ_y = output->h_typ_y;
++	param->rsz_rsc_param[index].h_typ_c = output->h_typ_c;
++	param->rsz_rsc_param[index].h_lpf_int_y = output->h_lpf_int_y;
++	param->rsz_rsc_param[index].h_lpf_int_c = output->h_lpf_int_c;
++	param->rsz_rsc_param[index].dscale_en = output->en_down_scale;
++	param->rsz_rsc_param[index].h_dscale_ave_sz = output->h_dscale_ave_sz;
++	param->rsz_rsc_param[index].v_dscale_ave_sz = output->h_dscale_ave_sz;
++	param->ext_mem_param[index].user_y_ofst =
++					(output->user_y_ofst + 31) & ~0x1f;
++	param->ext_mem_param[index].user_c_ofst =
++					(output->user_c_ofst + 31) & ~0x1f;
++}
++
++/*
++ * resizer_calculate_resize_ratios() - Calculates resize ratio for resizer
++ *				      A or B. This is called after setting
++ *				     the input size or output size.
++ * @resizer: Pointer to VPFE resizer subdevice.
++ * @index: index RSZ_A-resizer-A RSZ_B-resizer-B.
++ */
++void
++resizer_calculate_resize_ratios(struct vpfe_resizer_device *resizer, int index)
++{
++	struct resizer_params *param = &resizer->config;
++	struct v4l2_mbus_framefmt *informat, *outformat;
++
++	informat = &resizer->crop_resizer.formats[RESIZER_CROP_PAD_SINK];
++
++	if (index == RSZ_A)
++		outformat = &resizer->resizer_a.formats[RESIZER_PAD_SOURCE];
++	else
++		outformat = &resizer->resizer_b.formats[RESIZER_PAD_SOURCE];
++
++	if (outformat->field != V4L2_FIELD_INTERLACED)
++		param->rsz_rsc_param[index].v_dif =
++			((informat->height) * 256) / (outformat->height);
++	else
++		param->rsz_rsc_param[index].v_dif =
++			((informat->height >> 1) * 256) / (outformat->height);
++	param->rsz_rsc_param[index].h_dif =
++			((informat->width) * 256) / (outformat->width);
++}
++
++void
++static resizer_enable_422_420_conversion(struct resizer_params *param,
++					 int index, bool en)
++{
++	param->rsz_rsc_param[index].cen = en;
++	param->rsz_rsc_param[index].yen = en;
++}
++
++/* resizer_calculate_sdram_offsets() - This function calculates the offsets from
++ *				       start of buffer for the C plane when
++ *				       output format is YUV420SP. It also
++ *				       calculates the offsets from the start of
++ *				       the buffer when the image is flipped
++ *				       vertically or horizontally for ycbcr/y/c
++ *				       planes.
++ * @resizer: Pointer to resizer subdevice.
++ * @index: index RSZ_A-resizer-A RSZ_B-resizer-B.
++ */
++static int
++resizer_calculate_sdram_offsets(struct vpfe_resizer_device *resizer, int index)
++{
++	struct resizer_params *param = &resizer->config;
++	struct v4l2_mbus_framefmt *outformat;
++	int bytesperpixel = 2;
++	int image_height;
++	int image_width;
++	int yuv_420 = 0;
++	int offset = 0;
++
++	if (index == RSZ_A)
++		outformat = &resizer->resizer_a.formats[RESIZER_PAD_SOURCE];
++	else
++		outformat = &resizer->resizer_b.formats[RESIZER_PAD_SOURCE];
++
++	image_height = outformat->height + 1;
++	image_width = outformat->width + 1;
++	param->ext_mem_param[index].c_offset = 0;
++	param->ext_mem_param[index].flip_ofst_y = 0;
++	param->ext_mem_param[index].flip_ofst_c = 0;
++	if (outformat->code == V4L2_MBUS_FMT_YDYUYDYV8_1X16) {
++		/* YUV 420 */
++		yuv_420 = 1;
++		bytesperpixel = 1;
++	}
++
++	if (param->rsz_rsc_param[index].h_flip)
++		/* width * bytesperpixel - 1 */
++		offset = (image_width * bytesperpixel) - 1;
++	if (param->rsz_rsc_param[index].v_flip)
++		offset += (image_height - 1) *
++			param->ext_mem_param[index].rsz_sdr_oft_y;
++	param->ext_mem_param[index].flip_ofst_y = offset;
++	if (!yuv_420)
++		return 0;
++	offset = 0;
++	/* half height for c-plane */
++	if (param->rsz_rsc_param[index].h_flip)
++		/* width * bytesperpixel - 1 */
++		offset = image_width - 1;
++	if (param->rsz_rsc_param[index].v_flip)
++		offset += (((image_height >> 1) - 1) *
++			   param->ext_mem_param[index].rsz_sdr_oft_c);
++	param->ext_mem_param[index].flip_ofst_c = offset;
++	param->ext_mem_param[index].c_offset =
++		      param->ext_mem_param[index].rsz_sdr_oft_y * image_height;
++	return 0;
++}
++
++int resizer_configure_output_win(struct vpfe_resizer_device *resizer)
++{
++	struct resizer_params *param = &resizer->config;
++	struct vpfe_rsz_output_spec output_specs;
++	struct v4l2_mbus_framefmt *outformat;
++	int line_len_c;
++	int line_len;
++	int ret;
++
++	outformat = &resizer->resizer_a.formats[RESIZER_PAD_SOURCE];
++
++	output_specs.vst_y = param->user_config.vst;
++	if (outformat->code == V4L2_MBUS_FMT_YDYUYDYV8_1X16)
++		output_specs.vst_c = param->user_config.vst;
++
++	configure_resizer_out_params(resizer, RSZ_A, &output_specs, 0, 0);
++	resizer_calculate_line_length(outformat->code,
++				      param->rsz_rsc_param[0].o_hsz + 1,
++				      param->rsz_rsc_param[0].o_vsz + 1,
++				      &line_len, &line_len_c);
++	param->ext_mem_param[0].rsz_sdr_oft_y = line_len;
++	param->ext_mem_param[0].rsz_sdr_oft_c = line_len_c;
++	resizer_calculate_resize_ratios(resizer, RSZ_A);
++	if (param->rsz_en[RSZ_B])
++		resizer_calculate_resize_ratios(resizer, RSZ_B);
++
++	if (outformat->code == V4L2_MBUS_FMT_YDYUYDYV8_1X16)
++		resizer_enable_422_420_conversion(param, RSZ_A, ENABLE);
++	else
++		resizer_enable_422_420_conversion(param, RSZ_A, DISABLE);
++
++	ret = resizer_calculate_sdram_offsets(resizer, RSZ_A);
++	if (!ret && param->rsz_en[RSZ_B])
++		ret = resizer_calculate_sdram_offsets(resizer, RSZ_B);
++
++	if (ret)
++		pr_err("Error in calculating sdram offsets\n");
++	return ret;
++}
++
++static int
++resizer_calculate_down_scale_f_div_param(struct device *dev,
++					 int input_width, int output_width,
++					 struct resizer_scale_param *param)
++{
++	/* rsz = R, input_width = H, output width = h in the equation */
++	unsigned int two_power;
++	unsigned int upper_h1;
++	unsigned int upper_h2;
++	unsigned int val1;
++	unsigned int val;
++	unsigned int rsz;
++	unsigned int h1;
++	unsigned int h2;
++	unsigned int o;
++	unsigned int n;
++
++	upper_h1 = input_width >> 1;
++	n = param->h_dscale_ave_sz;
++	/* 2 ^ (scale+1) */
++	two_power = 1 << (n + 1);
++	upper_h1 = (upper_h1 >> (n + 1)) << (n + 1);
++	upper_h2 = input_width - upper_h1;
++	if (upper_h2 % two_power) {
++		dev_err(dev, "frame halves to be a multiple of 2 power n+1\n");
++		return -EINVAL;
++	}
++	two_power = 1 << n;
++	rsz = (input_width << 8) / output_width;
++	val = rsz * two_power;
++	val = ((upper_h1 << 8) / val) + 1;
++	if (!(val % 2)) {
++		h1 = val;
++	} else {
++		val = upper_h1 << 8;
++		val >>= n + 1;
++		val -= rsz >> 1;
++		val /= rsz << 1;
++		val <<= 1;
++		val += 2;
++		h1 = val;
++	}
++	o = 10 + (two_power << 2);
++	if (((input_width << 7) / rsz) % 2)
++		o += (((CEIL(rsz, 1024)) << 1) << n);
++	h2 = output_width - h1;
++	/* phi */
++	val = (h1 * rsz) - (((upper_h1 - (o - 10)) / two_power) << 8);
++	/* skip */
++	val1 = ((val - 1024) >> 9) << 1;
++	param->f_div.num_passes = MAX_PASSES;
++	param->f_div.pass[0].o_hsz = h1 - 1;
++	param->f_div.pass[0].i_hps = 0;
++	param->f_div.pass[0].h_phs = 0;
++	param->f_div.pass[0].src_hps = 0;
++	param->f_div.pass[0].src_hsz = upper_h1 + o;
++	param->f_div.pass[1].o_hsz = h2 - 1;
++	param->f_div.pass[1].i_hps = 10 + (val1 * two_power);
++	param->f_div.pass[1].h_phs = (val - (val1 << 8));
++	param->f_div.pass[1].src_hps = upper_h1 - o;
++	param->f_div.pass[1].src_hsz = upper_h2 + o;
 +
 +	return 0;
 +}
 +
-+/*
-+ * config_rsz_hw() - Performs hardware setup of resizer.
-+ */
-+int config_rsz_hw(struct vpfe_resizer_device *resizer,
-+		  struct resizer_params *config)
++static int
++resizer_configure_common_in_params(struct vpfe_resizer_device *resizer)
 +{
 +	struct vpfe_device *vpfe_dev = to_vpfe_device(resizer);
-+	void *__iomem ipipe_base = vpfe_dev->vpfe_ipipe.base_addr;
-+	void *__iomem rsz_base = vpfe_dev->vpfe_resizer.base_addr;
++	struct resizer_params *param = &resizer->config;
++	struct vpfe_rsz_config_params *user_config;
++	struct v4l2_mbus_framefmt *informat;
 +
-+	/* enable VPSS clock */
-+	vpss_enable_clock(VPSS_IPIPE_CLOCK, 1);
-+	ipipe_clock_enable(ipipe_base);
++	informat = &resizer->crop_resizer.formats[RESIZER_CROP_PAD_SINK];
++	user_config = &resizer->config.user_config;
++	param->rsz_common.vps = param->user_config.vst;
++	param->rsz_common.hps = param->user_config.hst;
 +
-+	ipipe_setup_resizer(rsz_base, config);
-+
-+	return 0;
-+}
-+
-+static void
-+rsz_set_y_address(void *__iomem rsz_base, unsigned int address,
-+		  unsigned int offset)
-+{
-+	u32 val;
-+
-+	val = address & SET_LOW_ADDR;
-+	regw_rsz(rsz_base, val, offset + RSZ_SDR_Y_BAD_L);
-+	regw_rsz(rsz_base, val, offset + RSZ_SDR_Y_SAD_L);
-+
-+	val = (address & SET_HIGH_ADDR) >> 16;
-+	regw_rsz(rsz_base, val, offset + RSZ_SDR_Y_BAD_H);
-+	regw_rsz(rsz_base, val, offset + RSZ_SDR_Y_SAD_H);
-+}
-+
-+static void
-+rsz_set_c_address(void *__iomem rsz_base, unsigned int address,
-+		  unsigned int offset)
-+{
-+	u32 val;
-+
-+	val = address & SET_LOW_ADDR;
-+	regw_rsz(rsz_base, val, offset + RSZ_SDR_C_BAD_L);
-+	regw_rsz(rsz_base, val, offset + RSZ_SDR_C_SAD_L);
-+
-+	val = (address & SET_HIGH_ADDR) >> 16;
-+	regw_rsz(rsz_base, val, offset + RSZ_SDR_C_BAD_H);
-+	regw_rsz(rsz_base, val, offset + RSZ_SDR_C_SAD_H);
-+}
-+
-+/*
-+ * resizer_set_outaddr() - set the address for given resize_no
-+ * @rsz_base: resizer base address
-+ * @params: pointer to ipipe_params structure
-+ * @resize_no: 0 - Resizer-A, 1 - Resizer B
-+ * @address: the address to set
-+ */
-+int
-+resizer_set_outaddr(void *__iomem rsz_base, struct resizer_params *params,
-+		    int resize_no, unsigned int address)
-+{
-+	struct resizer_scale_param *rsc_param;
-+	struct rsz_ext_mem_param *mem_param;
-+	struct rsz_common_params *rsz_common;
-+	unsigned int rsz_start_add;
-+	unsigned int val;
-+
-+	if (resize_no != RSZ_A && resize_no != RSZ_B)
-+		return -EINVAL;
-+
-+	mem_param = &params->ext_mem_param[resize_no];
-+	rsc_param = &params->rsz_rsc_param[resize_no];
-+	rsz_common = &params->rsz_common;
-+
-+	if (resize_no == RSZ_A)
-+		rsz_start_add = RSZ_EN_A;
++	if (vpfe_ipipeif_decimation_enabled(vpfe_dev))
++		param->rsz_common.hsz = (((informat->width - 1) *
++			IPIPEIF_RSZ_CONST) / vpfe_ipipeif_get_rsz(vpfe_dev));
 +	else
-+		rsz_start_add = RSZ_EN_B;
-+
-+	/* y_c = 0 for y, = 1 for c */
-+	if (rsz_common->src_img_fmt == RSZ_IMG_420) {
-+		if (rsz_common->y_c) {
-+			/* C channel */
-+			val = address + mem_param->flip_ofst_c;
-+			rsz_set_c_address(rsz_base, val, rsz_start_add);
-+		} else {
-+			val = address + mem_param->flip_ofst_y;
-+			rsz_set_y_address(rsz_base, val, rsz_start_add);
-+		}
-+	} else {
-+		if (rsc_param->cen && rsc_param->yen) {
-+			/* 420 */
-+			val = address + mem_param->c_offset +
-+			      mem_param->flip_ofst_c +
-+			      mem_param->user_y_ofst +
-+			      mem_param->user_c_ofst;
-+			if (resize_no == RSZ_B)
-+				val +=
-+				params->ext_mem_param[RSZ_A].user_y_ofst +
-+				params->ext_mem_param[RSZ_A].user_c_ofst;
-+			/* set C address */
-+			rsz_set_c_address(rsz_base, val, rsz_start_add);
-+		}
-+		val = address + mem_param->flip_ofst_y + mem_param->user_y_ofst;
-+		if (resize_no == RSZ_B)
-+			val += params->ext_mem_param[RSZ_A].user_y_ofst +
-+				params->ext_mem_param[RSZ_A].user_c_ofst;
-+		/* set Y address */
-+		rsz_set_y_address(rsz_base, val, rsz_start_add);
-+	}
-+	/* resizer must be enabled */
-+	regw_rsz(rsz_base, params->rsz_en[resize_no], rsz_start_add);
-+
-+	return 0;
-+}
-+
-+void
-+ipipe_set_lutdpc_regs(void *__iomem base_addr, void *__iomem isp5_base_addr,
-+		      struct vpfe_ipipe_lutdpc *dpc)
-+{
-+	u32 max_tbl_size = LUT_DPC_MAX_SIZE >> 1;
-+	u32 lut_start_addr = DPC_TB0_START_ADDR;
-+	u32 val;
-+	u32 count;
-+
-+	ipipe_clock_enable(base_addr);
-+	regw_ip(base_addr, dpc->en, DPC_LUT_EN);
-+
-+	if (dpc->en != 1)
-+		return;
-+
-+	val = LUTDPC_TBL_256_EN | (dpc->repl_white & 1);
-+	regw_ip(base_addr, val, DPC_LUT_SEL);
-+	regw_ip(base_addr, LUT_DPC_START_ADDR, DPC_LUT_ADR);
-+	regw_ip(base_addr, dpc->dpc_size, DPC_LUT_SIZ & LUT_DPC_SIZE_MASK);
-+
-+	if (dpc->table == NULL)
-+		return;
-+
-+	for (count = 0; count < dpc->dpc_size; count++) {
-+		if (count >= max_tbl_size)
-+			lut_start_addr = DPC_TB1_START_ADDR;
-+		val = (dpc->table[count].horz_pos & LUT_DPC_H_POS_MASK) |
-+		      ((dpc->table[count].vert_pos & LUT_DPC_V_POS_MASK) <<
-+			LUT_DPC_V_POS_SHIFT) | (dpc->table[count].method <<
-+			LUT_DPC_CORR_METH_SHIFT);
-+		w_ip_table(isp5_base_addr, val, (lut_start_addr +
-+		((count % max_tbl_size) << 2)));
-+	}
-+}
-+
-+static void
-+set_dpc_thresholds(void *__iomem base_addr,
-+		   struct vpfe_ipipe_otfdpc_2_0_cfg *dpc_thr)
-+{
-+	regw_ip(base_addr, dpc_thr->corr_thr.r & OTFDPC_DPC2_THR_MASK,
-+		DPC_OTF_2C_THR_R);
-+	regw_ip(base_addr, dpc_thr->corr_thr.gr & OTFDPC_DPC2_THR_MASK,
-+		DPC_OTF_2C_THR_GR);
-+	regw_ip(base_addr, dpc_thr->corr_thr.gb & OTFDPC_DPC2_THR_MASK,
-+		DPC_OTF_2C_THR_GB);
-+	regw_ip(base_addr, dpc_thr->corr_thr.b & OTFDPC_DPC2_THR_MASK,
-+		DPC_OTF_2C_THR_B);
-+	regw_ip(base_addr, dpc_thr->det_thr.r & OTFDPC_DPC2_THR_MASK,
-+		DPC_OTF_2D_THR_R);
-+	regw_ip(base_addr, dpc_thr->det_thr.gr & OTFDPC_DPC2_THR_MASK,
-+		DPC_OTF_2D_THR_GR);
-+	regw_ip(base_addr, dpc_thr->det_thr.gb & OTFDPC_DPC2_THR_MASK,
-+		DPC_OTF_2D_THR_GB);
-+	regw_ip(base_addr, dpc_thr->det_thr.b & OTFDPC_DPC2_THR_MASK,
-+		DPC_OTF_2D_THR_B);
-+}
-+
-+void ipipe_set_otfdpc_regs(void *__iomem base_addr,
-+			   struct vpfe_ipipe_otfdpc *otfdpc)
-+{
-+	struct vpfe_ipipe_otfdpc_2_0_cfg *dpc_2_0 = &otfdpc->alg_cfg.dpc_2_0;
-+	struct vpfe_ipipe_otfdpc_3_0_cfg *dpc_3_0 = &otfdpc->alg_cfg.dpc_3_0;
-+	u32 val;
-+
-+	ipipe_clock_enable(base_addr);
-+
-+	regw_ip(base_addr, (otfdpc->en & 1), DPC_OTF_EN);
-+	if (!otfdpc->en)
-+		return;
-+
-+	/* dpc enabled */
-+	val = (otfdpc->det_method << OTF_DET_METHOD_SHIFT) | otfdpc->alg;
-+	regw_ip(base_addr, val, DPC_OTF_TYP);
-+
-+	if (otfdpc->det_method == VPFE_IPIPE_DPC_OTF_MIN_MAX) {
-+		/* ALG= 0, TYP = 0, DPC_OTF_2D_THR_[x]=0
-+		 * DPC_OTF_2C_THR_[x] = Maximum thresohld
-+		 * MinMax method
-+		 */
-+		dpc_2_0->det_thr.r = dpc_2_0->det_thr.gb =
-+		dpc_2_0->det_thr.gr = dpc_2_0->det_thr.b = 0;
-+		set_dpc_thresholds(base_addr, dpc_2_0);
-+		return;
-+	}
-+	/* MinMax2 */
-+	if (otfdpc->alg == VPFE_IPIPE_OTFDPC_2_0) {
-+		set_dpc_thresholds(base_addr, dpc_2_0);
-+		return;
-+	}
-+	regw_ip(base_addr, dpc_3_0->act_adj_shf &
-+		OTF_DPC3_0_SHF_MASK, DPC_OTF_3_SHF);
-+	/* Detection thresholds */
-+	regw_ip(base_addr, ((dpc_3_0->det_thr & OTF_DPC3_0_THR_MASK) <<
-+		OTF_DPC3_0_THR_SHIFT), DPC_OTF_3D_THR);
-+	regw_ip(base_addr, dpc_3_0->det_slp &
-+		OTF_DPC3_0_SLP_MASK, DPC_OTF_3D_SLP);
-+	regw_ip(base_addr, dpc_3_0->det_thr_min &
-+		OTF_DPC3_0_DET_MASK, DPC_OTF_3D_MIN);
-+	regw_ip(base_addr, dpc_3_0->det_thr_max &
-+		OTF_DPC3_0_DET_MASK, DPC_OTF_3D_MAX);
-+	/* Correction thresholds */
-+	regw_ip(base_addr, ((dpc_3_0->corr_thr & OTF_DPC3_0_THR_MASK) <<
-+		OTF_DPC3_0_THR_SHIFT), DPC_OTF_3C_THR);
-+	regw_ip(base_addr, dpc_3_0->corr_slp &
-+		OTF_DPC3_0_SLP_MASK, DPC_OTF_3C_SLP);
-+	regw_ip(base_addr, dpc_3_0->corr_thr_min &
-+		OTF_DPC3_0_CORR_MASK, DPC_OTF_3C_MIN);
-+	regw_ip(base_addr, dpc_3_0->corr_thr_max &
-+		OTF_DPC3_0_CORR_MASK, DPC_OTF_3C_MAX);
-+}
-+
-+/* 2D Noise filter */
-+void
-+ipipe_set_d2f_regs(void *__iomem base_addr, unsigned int id,
-+		   struct vpfe_ipipe_nf *noise_filter)
-+{
-+
-+	u32 offset = D2F_1ST;
-+	int count;
-+	u32 val;
-+
-+	if (id == IPIPE_D2F_2ND)
-+		offset = D2F_2ND;
-+
-+	ipipe_clock_enable(base_addr);
-+	regw_ip(base_addr, noise_filter->en & 1, offset + D2F_EN);
-+	if (!noise_filter->en)
-+		return;
-+
-+	/*noise filter enabled */
-+	/* Combine all the fields to make D2F_CFG register of IPIPE */
-+	val = ((noise_filter->spread_val & D2F_SPR_VAL_MASK) <<
-+		D2F_SPR_VAL_SHIFT) | ((noise_filter->shft_val &
-+		D2F_SHFT_VAL_MASK) << D2F_SHFT_VAL_SHIFT) |
-+		(noise_filter->gr_sample_meth << D2F_SAMPLE_METH_SHIFT) |
-+		((noise_filter->apply_lsc_gain & 1) <<
-+		D2F_APPLY_LSC_GAIN_SHIFT) | D2F_USE_SPR_REG_VAL;
-+	regw_ip(base_addr, val, offset + D2F_TYP);
-+
-+	/* edge detection minimum */
-+	regw_ip(base_addr, noise_filter->edge_det_min_thr &
-+		D2F_EDGE_DET_THR_MASK, offset + D2F_EDG_MIN);
-+
-+	/* edge detection maximum */
-+	regw_ip(base_addr, noise_filter->edge_det_max_thr &
-+		D2F_EDGE_DET_THR_MASK, offset + D2F_EDG_MAX);
-+
-+	for (count = 0; count < VPFE_IPIPE_NF_STR_TABLE_SIZE; count++)
-+		regw_ip(base_addr,
-+			(noise_filter->str[count] & D2F_STR_VAL_MASK),
-+			offset + D2F_STR + count * 4);
-+
-+	for (count = 0; count < VPFE_IPIPE_NF_THR_TABLE_SIZE; count++)
-+		regw_ip(base_addr, noise_filter->thr[count] & D2F_THR_VAL_MASK,
-+			offset + D2F_THR + count * 4);
-+}
-+
-+#define IPIPE_U8Q5(decimal, integer) \
-+	(((decimal & 0x1f) | ((integer & 0x7) << 5)))
-+
-+/* Green Imbalance Correction */
-+void ipipe_set_gic_regs(void *__iomem base_addr, struct vpfe_ipipe_gic *gic)
-+{
-+	u32 val;
-+
-+	ipipe_clock_enable(base_addr);
-+	regw_ip(base_addr, gic->en & 1, GIC_EN);
-+
-+	if (!gic->en)
-+		return;
-+
-+	/*gic enabled */
-+	val = (gic->wt_fn_type << GIC_TYP_SHIFT) |
-+	      (gic->thr_sel << GIC_THR_SEL_SHIFT) |
-+	      ((gic->apply_lsc_gain & 1) << GIC_APPLY_LSC_GAIN_SHIFT);
-+	regw_ip(base_addr, val, GIC_TYP);
-+
-+	regw_ip(base_addr, gic->gain & GIC_GAIN_MASK, GIC_GAN);
-+
-+	if (gic->gic_alg != VPFE_IPIPE_GIC_ALG_ADAPT_GAIN) {
-+		/* Constant Gain. Set threshold to maximum */
-+		regw_ip(base_addr, GIC_THR_MASK, GIC_THR);
-+		return;
-+	}
-+
-+	if (gic->thr_sel == VPFE_IPIPE_GIC_THR_REG) {
-+		regw_ip(base_addr, gic->thr & GIC_THR_MASK, GIC_THR);
-+		regw_ip(base_addr, gic->slope & GIC_SLOPE_MASK, GIC_SLP);
-+	} else {
-+		/* Use NF thresholds */
-+		val = IPIPE_U8Q5(gic->nf2_thr_gain.decimal,
-+				gic->nf2_thr_gain.integer);
-+		regw_ip(base_addr, val, GIC_NFGAN);
-+	}
-+}
-+
-+#define IPIPE_U13Q9(decimal, integer) \
-+	(((decimal & 0x1ff) | ((integer & 0xf) << 9)))
-+/* White balance */
-+void ipipe_set_wb_regs(void *__iomem base_addr, struct vpfe_ipipe_wb *wb)
-+{
-+	u32 val;
-+
-+	ipipe_clock_enable(base_addr);
-+	/* Ofsets. S12 */
-+	regw_ip(base_addr, wb->ofst_r & WB_OFFSET_MASK, WB2_OFT_R);
-+	regw_ip(base_addr, wb->ofst_gr & WB_OFFSET_MASK, WB2_OFT_GR);
-+	regw_ip(base_addr, wb->ofst_gb & WB_OFFSET_MASK, WB2_OFT_GB);
-+	regw_ip(base_addr, wb->ofst_b & WB_OFFSET_MASK, WB2_OFT_B);
-+
-+	/* Gains. U13Q9 */
-+	val = IPIPE_U13Q9(wb->gain_r.decimal, wb->gain_r.integer);
-+	regw_ip(base_addr, val, WB2_WGN_R);
-+
-+	val = IPIPE_U13Q9(wb->gain_gr.decimal, wb->gain_gr.integer);
-+	regw_ip(base_addr, val, WB2_WGN_GR);
-+
-+	val = IPIPE_U13Q9(wb->gain_gb.decimal, wb->gain_gb.integer);
-+	regw_ip(base_addr, val, WB2_WGN_GB);
-+
-+	val = IPIPE_U13Q9(wb->gain_b.decimal, wb->gain_b.integer);
-+	regw_ip(base_addr, val, WB2_WGN_B);
-+}
-+
-+/* CFA */
-+void ipipe_set_cfa_regs(void *__iomem base_addr, struct vpfe_ipipe_cfa *cfa)
-+{
-+	ipipe_clock_enable(base_addr);
-+
-+	regw_ip(base_addr, cfa->alg, CFA_MODE);
-+	regw_ip(base_addr, cfa->hpf_thr_2dir & CFA_HPF_THR_2DIR_MASK,
-+		CFA_2DIR_HPF_THR);
-+	regw_ip(base_addr, cfa->hpf_slp_2dir & CFA_HPF_SLOPE_2DIR_MASK,
-+		CFA_2DIR_HPF_SLP);
-+	regw_ip(base_addr, cfa->hp_mix_thr_2dir & CFA_HPF_MIX_THR_2DIR_MASK,
-+		CFA_2DIR_MIX_THR);
-+	regw_ip(base_addr, cfa->hp_mix_slope_2dir & CFA_HPF_MIX_SLP_2DIR_MASK,
-+		CFA_2DIR_MIX_SLP);
-+	regw_ip(base_addr, cfa->dir_thr_2dir & CFA_DIR_THR_2DIR_MASK,
-+		CFA_2DIR_DIR_THR);
-+	regw_ip(base_addr, cfa->dir_slope_2dir & CFA_DIR_SLP_2DIR_MASK,
-+		CFA_2DIR_DIR_SLP);
-+	regw_ip(base_addr, cfa->nd_wt_2dir & CFA_ND_WT_2DIR_MASK,
-+		CFA_2DIR_NDWT);
-+	regw_ip(base_addr, cfa->hue_fract_daa & CFA_DAA_HUE_FRA_MASK,
-+		CFA_MONO_HUE_FRA);
-+	regw_ip(base_addr, cfa->edge_thr_daa & CFA_DAA_EDG_THR_MASK,
-+		CFA_MONO_EDG_THR);
-+	regw_ip(base_addr, cfa->thr_min_daa & CFA_DAA_THR_MIN_MASK,
-+		CFA_MONO_THR_MIN);
-+	regw_ip(base_addr, cfa->thr_slope_daa & CFA_DAA_THR_SLP_MASK,
-+		CFA_MONO_THR_SLP);
-+	regw_ip(base_addr, cfa->slope_min_daa & CFA_DAA_SLP_MIN_MASK,
-+		CFA_MONO_SLP_MIN);
-+	regw_ip(base_addr, cfa->slope_slope_daa & CFA_DAA_SLP_SLP_MASK,
-+		CFA_MONO_SLP_SLP);
-+	regw_ip(base_addr, cfa->lp_wt_daa & CFA_DAA_LP_WT_MASK,
-+		CFA_MONO_LPWT);
-+}
-+
-+void
-+ipipe_set_rgb2rgb_regs(void *__iomem base_addr, unsigned int id,
-+		       struct vpfe_ipipe_rgb2rgb *rgb)
-+{
-+	u32 offset_mask = RGB2RGB_1_OFST_MASK;
-+	u32 offset = RGB1_MUL_BASE;
-+	u32 integ_mask = 0xf;
-+	u32 val;
-+
-+	ipipe_clock_enable(base_addr);
-+
-+	if (id == IPIPE_RGB2RGB_2) {
-+		/* For second RGB module, gain integer is 3 bits instead
-+		of 4, offset has 11 bits insread of 13 */
-+		offset = RGB2_MUL_BASE;
-+		integ_mask = 0x7;
-+		offset_mask = RGB2RGB_2_OFST_MASK;
-+	}
-+	/* Gains */
-+	val = (rgb->coef_rr.decimal & 0xff) |
-+		((rgb->coef_rr.integer & integ_mask) << 8);
-+	regw_ip(base_addr, val, offset + RGB_MUL_RR);
-+	val = (rgb->coef_gr.decimal & 0xff) |
-+		((rgb->coef_gr.integer & integ_mask) << 8);
-+	regw_ip(base_addr, val, offset + RGB_MUL_GR);
-+	val = (rgb->coef_br.decimal & 0xff) |
-+		((rgb->coef_br.integer & integ_mask) << 8);
-+	regw_ip(base_addr, val, offset + RGB_MUL_BR);
-+	val = (rgb->coef_rg.decimal & 0xff) |
-+		((rgb->coef_rg.integer & integ_mask) << 8);
-+	regw_ip(base_addr, val, offset + RGB_MUL_RG);
-+	val = (rgb->coef_gg.decimal & 0xff) |
-+		((rgb->coef_gg.integer & integ_mask) << 8);
-+	regw_ip(base_addr, val, offset + RGB_MUL_GG);
-+	val = (rgb->coef_bg.decimal & 0xff) |
-+		((rgb->coef_bg.integer & integ_mask) << 8);
-+	regw_ip(base_addr, val, offset + RGB_MUL_BG);
-+	val = (rgb->coef_rb.decimal & 0xff) |
-+		((rgb->coef_rb.integer & integ_mask) << 8);
-+	regw_ip(base_addr, val, offset + RGB_MUL_RB);
-+	val = (rgb->coef_gb.decimal & 0xff) |
-+		((rgb->coef_gb.integer & integ_mask) << 8);
-+	regw_ip(base_addr, val, offset + RGB_MUL_GB);
-+	val = (rgb->coef_bb.decimal & 0xff) |
-+		((rgb->coef_bb.integer & integ_mask) << 8);
-+	regw_ip(base_addr, val, offset + RGB_MUL_BB);
-+
-+	/* Offsets */
-+	regw_ip(base_addr, rgb->out_ofst_r & offset_mask, offset + RGB_OFT_OR);
-+	regw_ip(base_addr, rgb->out_ofst_g & offset_mask, offset + RGB_OFT_OG);
-+	regw_ip(base_addr, rgb->out_ofst_b & offset_mask, offset + RGB_OFT_OB);
-+}
-+
-+static void
-+ipipe_update_gamma_tbl(void *__iomem isp5_base_addr,
-+	struct vpfe_ipipe_gamma_entry *table, int size, u32 addr)
-+{
-+	int count;
-+	u32 val;
-+
-+	for (count = 0; count < size; count++) {
-+		val = table[count].slope & GAMMA_MASK;
-+		val |= (table[count].offset & GAMMA_MASK) << GAMMA_SHIFT;
-+		w_ip_table(isp5_base_addr, val, (addr + (count * 4)));
-+	}
-+}
-+
-+void
-+ipipe_set_gamma_regs(void *__iomem base_addr, void *__iomem isp5_base_addr,
-+			  struct vpfe_ipipe_gamma *gamma)
-+{
-+	int table_size;
-+	u32 val;
-+
-+	ipipe_clock_enable(base_addr);
-+	val = (gamma->bypass_r << GAMMA_BYPR_SHIFT) |
-+		(gamma->bypass_b << GAMMA_BYPG_SHIFT) |
-+		(gamma->bypass_g << GAMMA_BYPB_SHIFT) |
-+		(gamma->tbl_sel << GAMMA_TBL_SEL_SHIFT) |
-+		(gamma->tbl_size << GAMMA_TBL_SIZE_SHIFT);
-+
-+	regw_ip(base_addr, val, GMM_CFG);
-+
-+	if (gamma->tbl_sel != VPFE_IPIPE_GAMMA_TBL_RAM)
-+		return;
-+
-+	table_size = gamma->tbl_size;
-+
-+	if (!gamma->bypass_r && gamma->table_r != NULL)
-+		ipipe_update_gamma_tbl(isp5_base_addr, gamma->table_r,
-+			table_size, GAMMA_R_START_ADDR);
-+	if (!gamma->bypass_b && gamma->table_b != NULL)
-+		ipipe_update_gamma_tbl(isp5_base_addr, gamma->table_b,
-+			table_size, GAMMA_B_START_ADDR);
-+	if (!gamma->bypass_g && gamma->table_g != NULL)
-+		ipipe_update_gamma_tbl(isp5_base_addr, gamma->table_g,
-+			table_size, GAMMA_G_START_ADDR);
-+}
-+
-+void
-+ipipe_set_3d_lut_regs(void *__iomem base_addr, void *__iomem isp5_base_addr,
-+			   struct vpfe_ipipe_3d_lut *lut_3d)
-+{
-+	struct vpfe_ipipe_3d_lut_entry *tbl;
-+	u32 bnk_index;
-+	u32 tbl_index;
-+	u32 val;
-+	u32 i;
-+
-+	ipipe_clock_enable(base_addr);
-+	regw_ip(base_addr, lut_3d->en, D3LUT_EN);
-+
-+	if (!lut_3d->en)
-+		return;
-+
-+	/* lut_3d enabled */
-+	if (!lut_3d->table)
-+		return;
-+
-+	/* valied table */
-+	tbl = lut_3d->table;
-+	for (i = 0 ; i < VPFE_IPIPE_MAX_SIZE_3D_LUT; i++) {
-+		/* Each entry has 0-9 (B), 10-19 (G) and
-+		20-29 R values */
-+		val = tbl[i].b & D3_LUT_ENTRY_MASK;
-+		val |= (tbl[i].g & D3_LUT_ENTRY_MASK) <<
-+			 D3_LUT_ENTRY_G_SHIFT;
-+		val |= (tbl[i].r & D3_LUT_ENTRY_MASK) <<
-+			 D3_LUT_ENTRY_R_SHIFT;
-+		bnk_index = i % 4;
-+		tbl_index = i >> 2;
-+		tbl_index <<= 2;
-+		if (bnk_index == 0)
-+			w_ip_table(isp5_base_addr, val,
-+				   tbl_index + D3L_TB0_START_ADDR);
-+		else if (bnk_index == 1)
-+			w_ip_table(isp5_base_addr, val,
-+				   tbl_index + D3L_TB1_START_ADDR);
-+		else if (bnk_index == 2)
-+			w_ip_table(isp5_base_addr, val,
-+				   tbl_index + D3L_TB2_START_ADDR);
-+		else
-+			w_ip_table(isp5_base_addr, val,
-+				   tbl_index + D3L_TB3_START_ADDR);
-+	}
-+}
-+
-+/* Lumina adjustments */
-+void
-+ipipe_set_lum_adj_regs(void *__iomem base_addr, struct ipipe_lum_adj *lum_adj)
-+{
-+	u32 val;
-+
-+	ipipe_clock_enable(base_addr);
-+
-+	/* combine fields of YUV_ADJ to set brightness and contrast */
-+	val = lum_adj->contrast << LUM_ADJ_CONTR_SHIFT |
-+	      lum_adj->brightness << LUM_ADJ_BRIGHT_SHIFT;
-+	regw_ip(base_addr, val, YUV_ADJ);
-+}
-+
-+#define IPIPE_S12Q8(decimal, integer) \
-+	(((decimal & 0xff) | ((integer & 0xf) << 8)))
-+
-+void ipipe_set_rgb2ycbcr_regs(void *__iomem base_addr,
-+			      struct vpfe_ipipe_rgb2yuv *yuv)
-+{
-+	u32 val;
-+
-+	/* S10Q8 */
-+	ipipe_clock_enable(base_addr);
-+	val = IPIPE_S12Q8(yuv->coef_ry.decimal, yuv->coef_ry.integer);
-+	regw_ip(base_addr, val, YUV_MUL_RY);
-+	val = IPIPE_S12Q8(yuv->coef_gy.decimal, yuv->coef_gy.integer);
-+	regw_ip(base_addr, val, YUV_MUL_GY);
-+	val = IPIPE_S12Q8(yuv->coef_by.decimal, yuv->coef_by.integer);
-+	regw_ip(base_addr, val, YUV_MUL_BY);
-+	val = IPIPE_S12Q8(yuv->coef_rcb.decimal, yuv->coef_rcb.integer);
-+	regw_ip(base_addr, val, YUV_MUL_RCB);
-+	val = IPIPE_S12Q8(yuv->coef_gcb.decimal, yuv->coef_gcb.integer);
-+	regw_ip(base_addr, val, YUV_MUL_GCB);
-+	val = IPIPE_S12Q8(yuv->coef_bcb.decimal, yuv->coef_bcb.integer);
-+	regw_ip(base_addr, val, YUV_MUL_BCB);
-+	val = IPIPE_S12Q8(yuv->coef_rcr.decimal, yuv->coef_rcr.integer);
-+	regw_ip(base_addr, val, YUV_MUL_RCR);
-+	val = IPIPE_S12Q8(yuv->coef_gcr.decimal, yuv->coef_gcr.integer);
-+	regw_ip(base_addr, val, YUV_MUL_GCR);
-+	val = IPIPE_S12Q8(yuv->coef_bcr.decimal, yuv->coef_bcr.integer);
-+	regw_ip(base_addr, val, YUV_MUL_BCR);
-+	regw_ip(base_addr, yuv->out_ofst_y & RGB2YCBCR_OFST_MASK, YUV_OFT_Y);
-+	regw_ip(base_addr, yuv->out_ofst_cb & RGB2YCBCR_OFST_MASK, YUV_OFT_CB);
-+	regw_ip(base_addr, yuv->out_ofst_cr & RGB2YCBCR_OFST_MASK, YUV_OFT_CR);
-+}
-+
-+/* YUV 422 conversion */
-+void
-+ipipe_set_yuv422_conv_regs(void *__iomem base_addr,
-+			   struct vpfe_ipipe_yuv422_conv *conv)
-+{
-+	u32 val;
-+
-+	ipipe_clock_enable(base_addr);
-+
-+	/* Combine all the fields to make YUV_PHS register of IPIPE */
-+	val = (conv->chrom_pos << 0) | (conv->en_chrom_lpf << 1);
-+	regw_ip(base_addr, val, YUV_PHS);
-+}
-+
-+void
-+ipipe_set_gbce_regs(void *__iomem base_addr, void *__iomem isp5_base_addr,
-+		    struct vpfe_ipipe_gbce *gbce)
-+{
-+	unsigned int count;
-+	u32 mask = GBCE_Y_VAL_MASK;
-+
-+	if (gbce->type == VPFE_IPIPE_GBCE_GAIN_TBL)
-+		mask = GBCE_GAIN_VAL_MASK;
-+
-+	ipipe_clock_enable(base_addr);
-+	regw_ip(base_addr, gbce->en & 1, GBCE_EN);
-+
-+	if (!gbce->en)
-+		return;
-+
-+	regw_ip(base_addr, gbce->type, GBCE_TYP);
-+
-+	if (!gbce->table)
-+		return;
-+
-+	for (count = 0; count < VPFE_IPIPE_MAX_SIZE_GBCE_LUT ; count += 2)
-+		w_ip_table(isp5_base_addr, ((gbce->table[count + 1] & mask) <<
-+		GBCE_ENTRY_SHIFT) | (gbce->table[count] & mask),
-+		((count/2) << 2) + GBCE_TB_START_ADDR);
-+}
-+
-+void
-+ipipe_set_ee_regs(void *__iomem base_addr, void *__iomem isp5_base_addr,
-+		  struct vpfe_ipipe_yee *ee)
-+{
-+	unsigned int count;
-+	u32 val;
-+
-+	ipipe_clock_enable(base_addr);
-+	regw_ip(base_addr, ee->en, YEE_EN);
-+
-+	if (!ee->en)
-+		return;
-+
-+	val = ee->en_halo_red & 1;
-+	val |= ee->merge_meth << YEE_HALO_RED_EN_SHIFT;
-+	regw_ip(base_addr, val, YEE_TYP);
-+
-+	regw_ip(base_addr, ee->hpf_shft, YEE_SHF);
-+	regw_ip(base_addr, ee->hpf_coef_00 & YEE_COEF_MASK, YEE_MUL_00);
-+	regw_ip(base_addr, ee->hpf_coef_01 & YEE_COEF_MASK, YEE_MUL_01);
-+	regw_ip(base_addr, ee->hpf_coef_02 & YEE_COEF_MASK, YEE_MUL_02);
-+	regw_ip(base_addr, ee->hpf_coef_10 & YEE_COEF_MASK, YEE_MUL_10);
-+	regw_ip(base_addr, ee->hpf_coef_11 & YEE_COEF_MASK, YEE_MUL_11);
-+	regw_ip(base_addr, ee->hpf_coef_12 & YEE_COEF_MASK, YEE_MUL_12);
-+	regw_ip(base_addr, ee->hpf_coef_20 & YEE_COEF_MASK, YEE_MUL_20);
-+	regw_ip(base_addr, ee->hpf_coef_21 & YEE_COEF_MASK, YEE_MUL_21);
-+	regw_ip(base_addr, ee->hpf_coef_22 & YEE_COEF_MASK, YEE_MUL_22);
-+	regw_ip(base_addr, ee->yee_thr & YEE_THR_MASK, YEE_THR);
-+	regw_ip(base_addr, ee->es_gain & YEE_ES_GAIN_MASK, YEE_E_GAN);
-+	regw_ip(base_addr, ee->es_thr1 & YEE_ES_THR1_MASK, YEE_E_THR1);
-+	regw_ip(base_addr, ee->es_thr2 & YEE_THR_MASK, YEE_E_THR2);
-+	regw_ip(base_addr, ee->es_gain_grad & YEE_THR_MASK, YEE_G_GAN);
-+	regw_ip(base_addr, ee->es_ofst_grad & YEE_THR_MASK, YEE_G_OFT);
-+
-+	if (ee->table == NULL)
-+		return;
-+
-+	for (count = 0; count < VPFE_IPIPE_MAX_SIZE_YEE_LUT; count += 2)
-+		w_ip_table(isp5_base_addr, ((ee->table[count + 1] &
-+		YEE_ENTRY_MASK) << YEE_ENTRY_SHIFT) |
-+		(ee->table[count] & YEE_ENTRY_MASK),
-+		((count/2) << 2) + YEE_TB_START_ADDR);
-+}
-+
-+/* Chromatic Artifact Correction. CAR */
-+static void ipipe_set_mf(void *__iomem base_addr)
-+{
-+	/* typ to dynamic switch */
-+	regw_ip(base_addr, VPFE_IPIPE_CAR_DYN_SWITCH, CAR_TYP);
-+	/* Set SW0 to maximum */
-+	regw_ip(base_addr, CAR_MF_THR, CAR_SW);
-+}
-+
-+static void
-+ipipe_set_gain_ctrl(void *__iomem base_addr, struct vpfe_ipipe_car *car)
-+{
-+	regw_ip(base_addr, VPFE_IPIPE_CAR_CHR_GAIN_CTRL, CAR_TYP);
-+	regw_ip(base_addr, car->hpf, CAR_HPF_TYP);
-+	regw_ip(base_addr, car->hpf_shft & CAR_HPF_SHIFT_MASK, CAR_HPF_SHF);
-+	regw_ip(base_addr, car->hpf_thr, CAR_HPF_THR);
-+	regw_ip(base_addr, car->gain1.gain, CAR_GN1_GAN);
-+	regw_ip(base_addr, car->gain1.shft & CAR_GAIN1_SHFT_MASK, CAR_GN1_SHF);
-+	regw_ip(base_addr, car->gain1.gain_min & CAR_GAIN_MIN_MASK,
-+		CAR_GN1_MIN);
-+	regw_ip(base_addr, car->gain2.gain, CAR_GN2_GAN);
-+	regw_ip(base_addr, car->gain2.shft & CAR_GAIN2_SHFT_MASK, CAR_GN2_SHF);
-+	regw_ip(base_addr, car->gain2.gain_min & CAR_GAIN_MIN_MASK,
-+		CAR_GN2_MIN);
-+}
-+
-+void ipipe_set_car_regs(void *__iomem base_addr, struct vpfe_ipipe_car *car)
-+{
-+	u32 val;
-+
-+	ipipe_clock_enable(base_addr);
-+	regw_ip(base_addr, car->en, CAR_EN);
-+
-+	if (!car->en)
-+		return;
-+
-+	switch (car->meth) {
-+	case VPFE_IPIPE_CAR_MED_FLTR:
-+		ipipe_set_mf(base_addr);
++		param->rsz_common.hsz = informat->width - 1;
++
++	if (informat->field == V4L2_FIELD_INTERLACED)
++		param->rsz_common.vsz  = (informat->height - 1) >> 1;
++	else
++		param->rsz_common.vsz  = informat->height - 1;
++
++	param->rsz_common.raw_flip = 0;
++
++	if (resizer->crop_resizer.input == RESIZER_CROP_INPUT_IPIPEIF)
++		param->rsz_common.source = IPIPEIF_DATA;
++	else
++		param->rsz_common.source = IPIPE_DATA;
++
++	switch (informat->code) {
++	case V4L2_MBUS_FMT_UYVY8_2X8:
++		param->rsz_common.src_img_fmt = RSZ_IMG_422;
++		param->rsz_common.raw_flip = 0;
 +		break;
 +
-+	case VPFE_IPIPE_CAR_CHR_GAIN_CTRL:
-+		ipipe_set_gain_ctrl(base_addr, car);
++	case V4L2_MBUS_FMT_Y8_1X8:
++		param->rsz_common.src_img_fmt = RSZ_IMG_420;
++		/* Select y */
++		param->rsz_common.y_c = 0;
++		param->rsz_common.raw_flip = 0;
++		break;
++
++	case V4L2_MBUS_FMT_UV8_1X8:
++		param->rsz_common.src_img_fmt = RSZ_IMG_420;
++		/* Select y */
++		param->rsz_common.y_c = 1;
++		param->rsz_common.raw_flip = 0;
++		break;
++
++	case V4L2_MBUS_FMT_SGRBG12_1X12:
++		param->rsz_common.raw_flip = 1;
 +		break;
 +
 +	default:
-+		/* Dynamic switch between MF and Gain Ctrl. */
-+		ipipe_set_mf(base_addr);
-+		ipipe_set_gain_ctrl(base_addr, car);
-+		/* Set the threshold for switching between
-+		  * the two Here we overwrite the MF SW0 value
-+		  */
-+		regw_ip(base_addr, VPFE_IPIPE_CAR_DYN_SWITCH, CAR_TYP);
-+		val = car->sw1;
-+		val <<= CAR_SW1_SHIFT;
-+		val |= car->sw0;
-+		regw_ip(base_addr, val, CAR_SW);
++		param->rsz_common.src_img_fmt = RSZ_IMG_422;
++		param->rsz_common.source = IPIPE_DATA;
 +	}
++
++	param->rsz_common.yuv_y_min = user_config->yuv_y_min;
++	param->rsz_common.yuv_y_max = user_config->yuv_y_max;
++	param->rsz_common.yuv_c_min = user_config->yuv_c_min;
++	param->rsz_common.yuv_c_max = user_config->yuv_c_max;
++	param->rsz_common.out_chr_pos = user_config->out_chr_pos;
++	param->rsz_common.rsz_seq_crv = user_config->chroma_sample_even;
++
++	return 0;
++}
++static int
++resizer_configure_in_continious_mode(struct vpfe_resizer_device *resizer)
++{
++	struct device *dev = resizer->crop_resizer.subdev.v4l2_dev->dev;
++	struct resizer_params *param = &resizer->config;
++	struct vpfe_rsz_config_params *cont_config;
++	int line_len_c;
++	int line_len;
++	int ret;
++
++	if (resizer->resizer_a.output != RESIZER_OUPUT_MEMORY) {
++		dev_err(dev, "enable resizer - Resizer-A\n");
++		return -EINVAL;
++	}
++
++	cont_config = &resizer->config.user_config;
++	param->rsz_en[RSZ_A] = ENABLE;
++	configure_resizer_out_params(resizer, RSZ_A,
++				     &cont_config->output1, 1, 0);
++	param->rsz_en[RSZ_B] = DISABLE;
++	param->oper_mode = RESIZER_MODE_CONTINIOUS;
++
++	if (resizer->resizer_b.output == RESIZER_OUPUT_MEMORY) {
++		struct v4l2_mbus_framefmt *outformat2;
++
++		param->rsz_en[RSZ_B] = ENABLE;
++		outformat2 = &resizer->resizer_b.formats[RESIZER_PAD_SOURCE];
++		ret = resizer_validate_output_image_format(dev, outformat2,
++				&line_len, &line_len_c);
++		if (ret)
++			return ret;
++		param->ext_mem_param[RSZ_B].rsz_sdr_oft_y = line_len;
++		param->ext_mem_param[RSZ_B].rsz_sdr_oft_c = line_len_c;
++		configure_resizer_out_params(resizer, RSZ_B,
++						&cont_config->output2, 0, 1);
++		if (outformat2->code == V4L2_MBUS_FMT_YDYUYDYV8_1X16)
++			resizer_enable_422_420_conversion(param,
++							  RSZ_B, ENABLE);
++		else
++			resizer_enable_422_420_conversion(param,
++							  RSZ_B, DISABLE);
++	}
++	resizer_configure_common_in_params(resizer);
++	ret = resizer_configure_output_win(resizer);
++	if (ret)
++		return ret;
++
++	param->rsz_common.passthrough = cont_config->bypass;
++	if (cont_config->bypass)
++		resizer_configure_passthru(resizer, 1);
++
++	return 0;
 +}
 +
-+/* Chromatic Gain Suppression */
-+void ipipe_set_cgs_regs(void *__iomem base_addr, struct vpfe_ipipe_cgs *cgs)
++static inline int
++resizer_validate_input_image_format(struct device *dev,
++				    enum v4l2_mbus_pixelcode pix,
++				    int width, int height, int *line_len)
 +{
-+	ipipe_clock_enable(base_addr);
-+	regw_ip(base_addr, cgs->en, CGS_EN);
++	int val;
 +
-+	if (!cgs->en)
-+		return;
++	if (pix != V4L2_MBUS_FMT_UYVY8_2X8 &&
++	    pix != V4L2_MBUS_FMT_Y8_1X8 &&
++	    pix != V4L2_MBUS_FMT_UV8_1X8 &&
++	    pix != V4L2_MBUS_FMT_SGRBG12_1X12) {
++		dev_err(dev,
++		"resizer validate output: pix format not supported, %d\n", pix);
++		return -EINVAL;
++	}
 +
-+	/* Set the bright side parameters */
-+	regw_ip(base_addr, cgs->h_thr, CGS_GN1_H_THR);
-+	regw_ip(base_addr, cgs->h_slope, CGS_GN1_H_GAN);
-+	regw_ip(base_addr, cgs->h_shft & CAR_SHIFT_MASK, CGS_GN1_H_SHF);
-+	regw_ip(base_addr, cgs->h_min, CGS_GN1_H_MIN);
++	if (!width || !height) {
++		dev_err(dev,
++			"resizer validate input: invalid width or height\n");
++		return -EINVAL;
++	}
++
++	if (pix == V4L2_MBUS_FMT_UV8_1X8)
++		resizer_calculate_line_length(pix, width,
++					      height, &val, line_len);
++	else
++		resizer_calculate_line_length(pix, width,
++					      height, line_len, &val);
++
++	return 0;
 +}
 +
-+void rsz_src_enable(void *__iomem rsz_base, int enable)
++static int
++resizer_validate_decimation(struct device *dev, enum ipipeif_decimation dec_en,
++			    unsigned char rsz, unsigned char frame_div_mode_en,
++			    int width)
 +{
-+	regw_rsz(rsz_base, enable, RSZ_SRC_EN);
-+}
++	if (dec_en && frame_div_mode_en) {
++		dev_err(dev,
++		 "dec_en & frame_div_mode_en can not enabled simultaneously\n");
++		return -EINVAL;
++	}
 +
-+int rsz_enable(void *__iomem rsz_base, int rsz_id, int enable)
-+{
-+	if (rsz_id == RSZ_A) {
-+		regw_rsz(rsz_base, enable, RSZ_EN_A);
-+		/* We always enable RSZ_A. RSZ_B is enable upon request from
-+		 * application. So enable RSZ_SRC_EN along with RSZ_A
-+		 */
-+		regw_rsz(rsz_base, enable, RSZ_SRC_EN);
-+	} else if (rsz_id == RSZ_B) {
-+		regw_rsz(rsz_base, enable, RSZ_EN_B);
-+	} else {
-+		BUG();
++	if (frame_div_mode_en) {
++		dev_err(dev, "frame_div_mode mode not supported\n");
++		return -EINVAL;
++	}
++
++	if (!dec_en)
++		return 0;
++
++	if (width <= VPFE_IPIPE_MAX_INPUT_WIDTH) {
++		dev_err(dev,
++			"image width to be more than %d for decimation\n",
++			VPFE_IPIPE_MAX_INPUT_WIDTH);
++		return -EINVAL;
++	}
++
++	if (rsz < IPIPEIF_RSZ_MIN || rsz > IPIPEIF_RSZ_MAX) {
++		dev_err(dev, "rsz range is %d to %d\n",
++			IPIPEIF_RSZ_MIN, IPIPEIF_RSZ_MAX);
++		return -EINVAL;
 +	}
 +
 +	return 0;
 +}
-diff --git a/drivers/staging/media/davinci_vpfe/dm365_ipipe_hw.h b/drivers/staging/media/davinci_vpfe/dm365_ipipe_hw.h
++
++/* resizer_calculate_normal_f_div_param() - Algorithm to calculate the frame
++ *					    division parameters for resizer.
++ *					    in normal mode.
++ */
++static int
++resizer_calculate_normal_f_div_param(struct device *dev, int input_width,
++		int output_width, struct resizer_scale_param *param)
++{
++	/* rsz = R, input_width = H, output width = h in the equation */
++	unsigned int val1;
++	unsigned int rsz;
++	unsigned int val;
++	unsigned int h1;
++	unsigned int h2;
++	unsigned int o;
++
++	if (output_width > input_width) {
++		dev_err(dev, "frame div mode is used for scale down only\n");
++		return -EINVAL;
++	}
++
++	rsz = (input_width << 8) / output_width;
++	val = rsz << 1;
++	val = ((input_width << 8) / val) + 1;
++	o = 14;
++	if (!(val % 2)) {
++		h1 = val;
++	} else {
++		val = (input_width << 7);
++		val -= rsz >> 1;
++		val /= rsz << 1;
++		val <<= 1;
++		val += 2;
++		o += ((CEIL(rsz, 1024)) << 1);
++		h1 = val;
++	}
++	h2 = output_width - h1;
++	/* phi */
++	val = (h1 * rsz) - (((input_width >> 1) - o) << 8);
++	/* skip */
++	val1 = ((val - 1024) >> 9) << 1;
++	param->f_div.num_passes = MAX_PASSES;
++	param->f_div.pass[0].o_hsz = h1 - 1;
++	param->f_div.pass[0].i_hps = 0;
++	param->f_div.pass[0].h_phs = 0;
++	param->f_div.pass[0].src_hps = 0;
++	param->f_div.pass[0].src_hsz = (input_width >> 2) + o;
++	param->f_div.pass[1].o_hsz = h2 - 1;
++	param->f_div.pass[1].i_hps = val1;
++	param->f_div.pass[1].h_phs = (val - (val1 << 8));
++	param->f_div.pass[1].src_hps = (input_width >> 2) - o;
++	param->f_div.pass[1].src_hsz = (input_width >> 2) + o;
++
++	return 0;
++}
++
++static int
++resizer_configure_in_single_shot_mode(struct vpfe_resizer_device *resizer)
++{
++	struct vpfe_rsz_config_params *config = &resizer->config.user_config;
++	struct device *dev = resizer->crop_resizer.subdev.v4l2_dev->dev;
++	struct vpfe_device *vpfe_dev = to_vpfe_device(resizer);
++	struct v4l2_mbus_framefmt *outformat1, *outformat2;
++	struct resizer_params *param = &resizer->config;
++	struct v4l2_mbus_framefmt *informat;
++	int decimation;
++	int line_len_c;
++	int line_len;
++	int rsz;
++	int ret;
++
++	informat = &resizer->crop_resizer.formats[RESIZER_CROP_PAD_SINK];
++	outformat1 = &resizer->resizer_a.formats[RESIZER_PAD_SOURCE];
++	outformat2 = &resizer->resizer_b.formats[RESIZER_PAD_SOURCE];
++
++	decimation = vpfe_ipipeif_decimation_enabled(vpfe_dev);
++	rsz = vpfe_ipipeif_get_rsz(vpfe_dev);
++	if (decimation && param->user_config.frame_div_mode_en) {
++		dev_err(dev,
++		"dec_en & frame_div_mode_en cannot enabled simultaneously\n");
++		return -EINVAL;
++	}
++
++	ret = resizer_validate_decimation(dev, decimation, rsz,
++	      param->user_config.frame_div_mode_en, informat->width);
++	if (ret)
++		return -EINVAL;
++
++	ret = resizer_validate_input_image_format(dev, informat->code,
++		informat->width, informat->height, &line_len);
++	if (ret)
++		return -EINVAL;
++
++	if (resizer->resizer_a.output != RESIZER_OUTPUT_NONE) {
++		param->rsz_en[RSZ_A] = ENABLE;
++		ret = resizer_validate_output_image_format(dev, outformat1,
++					&line_len, &line_len_c);
++		if (ret)
++			return ret;
++		param->ext_mem_param[RSZ_A].rsz_sdr_oft_y = line_len;
++		param->ext_mem_param[RSZ_A].rsz_sdr_oft_c = line_len_c;
++		configure_resizer_out_params(resizer, RSZ_A,
++					&param->user_config.output1, 0, 1);
++
++		if (outformat1->code == V4L2_MBUS_FMT_SGRBG12_1X12)
++			param->rsz_common.raw_flip = 1;
++		else
++			param->rsz_common.raw_flip = 0;
++
++		if (outformat1->code == V4L2_MBUS_FMT_YDYUYDYV8_1X16)
++			resizer_enable_422_420_conversion(param,
++							  RSZ_A, ENABLE);
++		else
++			resizer_enable_422_420_conversion(param,
++							  RSZ_A, DISABLE);
++	}
++
++	if (resizer->resizer_b.output != RESIZER_OUTPUT_NONE) {
++		param->rsz_en[RSZ_B] = ENABLE;
++		ret = resizer_validate_output_image_format(dev, outformat2,
++				&line_len, &line_len_c);
++		if (ret)
++			return ret;
++		param->ext_mem_param[RSZ_B].rsz_sdr_oft_y = line_len;
++		param->ext_mem_param[RSZ_B].rsz_sdr_oft_c = line_len_c;
++		configure_resizer_out_params(resizer, RSZ_B,
++					&param->user_config.output2, 0, 1);
++		if (outformat2->code == V4L2_MBUS_FMT_YDYUYDYV8_1X16)
++			resizer_enable_422_420_conversion(param,
++							  RSZ_B, ENABLE);
++		else
++			resizer_enable_422_420_conversion(param,
++							  RSZ_B, DISABLE);
++	}
++
++	resizer_configure_common_in_params(resizer);
++	if (resizer->resizer_a.output != RESIZER_OUTPUT_NONE) {
++		resizer_calculate_resize_ratios(resizer, RSZ_A);
++		resizer_calculate_sdram_offsets(resizer, RSZ_A);
++		/* Overriding resize ratio calculation */
++		if (informat->code == V4L2_MBUS_FMT_UV8_1X8) {
++			param->rsz_rsc_param[RSZ_A].v_dif =
++				(((informat->height + 1) * 2) * 256) /
++				(param->rsz_rsc_param[RSZ_A].o_vsz + 1);
++		}
++	}
++
++	if (resizer->resizer_b.output != RESIZER_OUTPUT_NONE) {
++		resizer_calculate_resize_ratios(resizer, RSZ_B);
++		resizer_calculate_sdram_offsets(resizer, RSZ_B);
++		/* Overriding resize ratio calculation */
++		if (informat->code == V4L2_MBUS_FMT_UV8_1X8) {
++			param->rsz_rsc_param[RSZ_B].v_dif =
++				(((informat->height + 1) * 2) * 256) /
++				(param->rsz_rsc_param[RSZ_B].o_vsz + 1);
++		}
++	}
++	if (param->user_config.frame_div_mode_en &&
++		param->rsz_en[RSZ_A]) {
++		if (!param->rsz_rsc_param[RSZ_A].dscale_en)
++			ret = resizer_calculate_normal_f_div_param(dev,
++			      informat->width,
++			      param->rsz_rsc_param[RSZ_A].o_vsz + 1,
++			      &param->rsz_rsc_param[RSZ_A]);
++		else
++			ret = resizer_calculate_down_scale_f_div_param(dev,
++			      informat->width,
++			      param->rsz_rsc_param[RSZ_A].o_vsz + 1,
++			      &param->rsz_rsc_param[RSZ_A]);
++		if (ret)
++			return -EINVAL;
++	}
++	if (param->user_config.frame_div_mode_en &&
++		param->rsz_en[RSZ_B]) {
++		if (!param->rsz_rsc_param[RSZ_B].dscale_en)
++			ret = resizer_calculate_normal_f_div_param(dev,
++			      informat->width,
++			      param->rsz_rsc_param[RSZ_B].o_vsz + 1,
++			      &param->rsz_rsc_param[RSZ_B]);
++		else
++			ret = resizer_calculate_down_scale_f_div_param(dev,
++			      informat->width,
++			      param->rsz_rsc_param[RSZ_B].o_vsz + 1,
++			      &param->rsz_rsc_param[RSZ_B]);
++		if (ret)
++			return -EINVAL;
++	}
++	param->rsz_common.passthrough = config->bypass;
++	if (config->bypass)
++		resizer_configure_passthru(resizer, 1);
++	return 0;
++}
++
++static void
++resizer_set_defualt_configuration(struct vpfe_resizer_device *resizer)
++{
++#define  WIDTH_I 640
++#define  HEIGHT_I 480
++#define  WIDTH_O 640
++#define  HEIGHT_O 480
++	const struct resizer_params rsz_default_config = {
++		.oper_mode = RESIZER_MODE_ONE_SHOT,
++		.rsz_common = {
++			.vsz = HEIGHT_I - 1,
++			.hsz = WIDTH_I - 1,
++			.src_img_fmt = RSZ_IMG_422,
++			.raw_flip = 1,	/* flip preserve Raw format */
++			.source = IPIPE_DATA,
++			.passthrough = BYPASS_OFF,
++			.yuv_y_max = 255,
++			.yuv_c_max = 255,
++			.rsz_seq_crv = DISABLE,
++			.out_chr_pos = VPFE_IPIPE_YUV422_CHR_POS_COSITE,
++		},
++		.rsz_rsc_param = {
++			{
++				.h_flip = DISABLE,
++				.v_flip = DISABLE,
++				.cen = DISABLE,
++				.yen = DISABLE,
++				.o_vsz = HEIGHT_O - 1,
++				.o_hsz = WIDTH_O - 1,
++				.v_dif = 256,
++				.v_typ_y = VPFE_RSZ_INTP_CUBIC,
++				.h_typ_c = VPFE_RSZ_INTP_CUBIC,
++				.h_dif = 256,
++				.h_typ_y = VPFE_RSZ_INTP_CUBIC,
++				.h_typ_c = VPFE_RSZ_INTP_CUBIC,
++				.h_dscale_ave_sz =
++					VPFE_IPIPE_DWN_SCALE_1_OVER_2,
++				.v_dscale_ave_sz =
++					VPFE_IPIPE_DWN_SCALE_1_OVER_2,
++			},
++			{
++				.h_flip = DISABLE,
++				.v_flip = DISABLE,
++				.cen = DISABLE,
++				.yen = DISABLE,
++				.o_vsz = HEIGHT_O - 1,
++				.o_hsz = WIDTH_O - 1,
++				.v_dif = 256,
++				.v_typ_y = VPFE_RSZ_INTP_CUBIC,
++				.h_typ_c = VPFE_RSZ_INTP_CUBIC,
++				.h_dif = 256,
++				.h_typ_y = VPFE_RSZ_INTP_CUBIC,
++				.h_typ_c = VPFE_RSZ_INTP_CUBIC,
++				.h_dscale_ave_sz =
++					VPFE_IPIPE_DWN_SCALE_1_OVER_2,
++				.v_dscale_ave_sz =
++					VPFE_IPIPE_DWN_SCALE_1_OVER_2,
++			},
++		},
++		.rsz2rgb = {
++			{
++				.rgb_en = DISABLE
++			},
++			{
++				.rgb_en = DISABLE
++			}
++		},
++		.ext_mem_param = {
++			{
++				.rsz_sdr_oft_y = WIDTH_O << 1,
++				.rsz_sdr_ptr_e_y = HEIGHT_O,
++				.rsz_sdr_oft_c = WIDTH_O,
++				.rsz_sdr_ptr_e_c = HEIGHT_O >> 1,
++			},
++			{
++				.rsz_sdr_oft_y = WIDTH_O << 1,
++				.rsz_sdr_ptr_e_y = HEIGHT_O,
++				.rsz_sdr_oft_c = WIDTH_O,
++				.rsz_sdr_ptr_e_c = HEIGHT_O,
++			},
++		},
++		.rsz_en[0] = ENABLE,
++		.rsz_en[1] = DISABLE,
++		.user_config = {
++			.output1 = {
++				.v_typ_y = VPFE_RSZ_INTP_CUBIC,
++				.v_typ_c = VPFE_RSZ_INTP_CUBIC,
++				.h_typ_y = VPFE_RSZ_INTP_CUBIC,
++				.h_typ_c = VPFE_RSZ_INTP_CUBIC,
++				.h_dscale_ave_sz =
++					VPFE_IPIPE_DWN_SCALE_1_OVER_2,
++				.v_dscale_ave_sz =
++					VPFE_IPIPE_DWN_SCALE_1_OVER_2,
++			},
++			.output2 = {
++				.v_typ_y = VPFE_RSZ_INTP_CUBIC,
++				.v_typ_c = VPFE_RSZ_INTP_CUBIC,
++				.h_typ_y = VPFE_RSZ_INTP_CUBIC,
++				.h_typ_c = VPFE_RSZ_INTP_CUBIC,
++				.h_dscale_ave_sz =
++					VPFE_IPIPE_DWN_SCALE_1_OVER_2,
++				.v_dscale_ave_sz =
++					VPFE_IPIPE_DWN_SCALE_1_OVER_2,
++			},
++			.yuv_y_max = 255,
++			.yuv_c_max = 255,
++			.out_chr_pos = VPFE_IPIPE_YUV422_CHR_POS_COSITE,
++		},
++	};
++	memset(&resizer->config, 0, sizeof(struct resizer_params));
++	memcpy(&resizer->config, &rsz_default_config,
++	       sizeof(struct resizer_params));
++}
++
++/*
++ * resizer_set_configuration() - set resizer config
++ * @resizer: vpfe resizer device pointer.
++ * @chan_config: resizer channel configuration.
++ */
++static int
++resizer_set_configuration(struct vpfe_resizer_device *resizer,
++			  struct vpfe_rsz_config *chan_config)
++{
++	if (!chan_config->config)
++		resizer_set_defualt_configuration(resizer);
++	else
++		if (copy_from_user(&resizer->config.user_config,
++		    chan_config->config, sizeof(struct vpfe_rsz_config_params)))
++			return -EFAULT;
++
++	return 0;
++}
++
++/*
++ * resizer_get_configuration() - get resizer config
++ * @resizer: vpfe resizer device pointer.
++ * @channel: image processor logical channel.
++ * @chan_config: resizer channel configuration.
++ */
++static int
++resizer_get_configuration(struct vpfe_resizer_device *resizer,
++		   struct vpfe_rsz_config *chan_config)
++{
++	struct device *dev = resizer->crop_resizer.subdev.v4l2_dev->dev;
++
++	if (!chan_config->config) {
++		dev_err(dev, "Resizer channel invalid pointer\n");
++		return -EINVAL;
++	}
++
++	if (copy_to_user((void *)chan_config->config,
++	   (void *)&resizer->config.user_config,
++	   sizeof(struct vpfe_rsz_config_params))) {
++		dev_err(dev, "resizer_get_configuration: Error in copy to user\n");
++		return -EFAULT;
++	}
++
++	return 0;
++}
++
++/*
++ * VPFE video operations
++ */
++
++/*
++ * resizer_a_video_out_queue() - RESIZER-A video out queue
++ * @vpfe_dev: vpfe device pointer.
++ * @addr: buffer address.
++ */
++static int resizer_a_video_out_queue(struct vpfe_device *vpfe_dev,
++				     unsigned long addr)
++{
++	struct vpfe_resizer_device *resizer = &vpfe_dev->vpfe_resizer;
++
++	return resizer_set_outaddr(resizer->base_addr,
++				      &resizer->config, RSZ_A, addr);
++}
++
++/*
++ * resizer_b_video_out_queue() - RESIZER-B video out queue
++ * @vpfe_dev: vpfe device pointer.
++ * @addr: buffer address.
++ */
++static int resizer_b_video_out_queue(struct vpfe_device *vpfe_dev,
++				     unsigned long addr)
++{
++	struct vpfe_resizer_device *resizer = &vpfe_dev->vpfe_resizer;
++
++	return resizer_set_outaddr(resizer->base_addr,
++				   &resizer->config, RSZ_B, addr);
++}
++
++static const struct vpfe_video_operations resizer_a_video_ops = {
++	.queue = resizer_a_video_out_queue,
++};
++
++static const struct vpfe_video_operations resizer_b_video_ops = {
++	.queue = resizer_b_video_out_queue,
++};
++
++static void resizer_enable(struct vpfe_resizer_device *resizer, int en)
++{
++	struct vpfe_device *vpfe_dev = to_vpfe_device(resizer);
++	u16 ipipeif_sink = vpfe_dev->vpfe_ipipeif.input;
++	unsigned char val;
++
++	if (resizer->crop_resizer.input == RESIZER_CROP_INPUT_NONE)
++		return;
++
++	if (resizer->crop_resizer.input == RESIZER_CROP_INPUT_IPIPEIF &&
++	   ipipeif_sink == IPIPEIF_INPUT_MEMORY) {
++		do {
++			val = regr_rsz(resizer->base_addr, RSZ_SRC_EN);
++		} while (val);
++
++		if (resizer->resizer_a.output != RESIZER_OUTPUT_NONE) {
++			do {
++				val = regr_rsz(resizer->base_addr, RSZ_A);
++			} while (val);
++		}
++		if (resizer->resizer_b.output != RESIZER_OUTPUT_NONE) {
++			do {
++				val = regr_rsz(resizer->base_addr, RSZ_B);
++			} while (val);
++		}
++	}
++	if (resizer->resizer_a.output != RESIZER_OUTPUT_NONE)
++		rsz_enable(resizer->base_addr, RSZ_A, en);
++
++	if (resizer->resizer_b.output != RESIZER_OUTPUT_NONE)
++		rsz_enable(resizer->base_addr, RSZ_B, en);
++}
++
++
++/*
++ * resizer_ss_isr() - resizer module single-shot buffer scheduling isr
++ * @resizer: vpfe resizer device pointer.
++ */
++static void resizer_ss_isr(struct vpfe_resizer_device *resizer)
++{
++	struct vpfe_video_device *video_out = &resizer->resizer_a.video_out;
++	struct vpfe_video_device *video_out2 = &resizer->resizer_b.video_out;
++	struct vpfe_device *vpfe_dev = to_vpfe_device(resizer);
++	struct vpfe_pipeline *pipe = &video_out->pipe;
++	u16 ipipeif_sink = vpfe_dev->vpfe_ipipeif.input;
++	u32 val;
++
++	if (ipipeif_sink != IPIPEIF_INPUT_MEMORY)
++		return;
++
++	if (resizer->resizer_a.output == RESIZER_OUPUT_MEMORY) {
++		val = vpss_dma_complete_interrupt();
++		if (val != 0 && val != 2)
++			return;
++	}
++
++	if (resizer->resizer_a.output == RESIZER_OUPUT_MEMORY) {
++		spin_lock(&video_out->dma_queue_lock);
++		vpfe_video_process_buffer_complete(video_out);
++		video_out->state = VPFE_VIDEO_BUFFER_NOT_QUEUED;
++		vpfe_video_schedule_next_buffer(video_out);
++		spin_unlock(&video_out->dma_queue_lock);
++	}
++
++	/* If resizer B is enabled */
++	if (pipe->output_num > 1 && resizer->resizer_b.output ==
++	    RESIZER_OUPUT_MEMORY) {
++		spin_lock(&video_out->dma_queue_lock);
++		vpfe_video_process_buffer_complete(video_out2);
++		video_out2->state = VPFE_VIDEO_BUFFER_NOT_QUEUED;
++		vpfe_video_schedule_next_buffer(video_out2);
++		spin_unlock(&video_out2->dma_queue_lock);
++	}
++
++	/* start HW if buffers are queued */
++	if (vpfe_video_is_pipe_ready(pipe) &&
++	    resizer->resizer_a.output == RESIZER_OUPUT_MEMORY) {
++		resizer_enable(resizer, 1);
++		vpfe_ipipe_enable(vpfe_dev, 1);
++		vpfe_ipipeif_enable(vpfe_dev);
++	}
++}
++
++/*
++ * vpfe_resizer_buffer_isr() - resizer module buffer scheduling isr
++ * @resizer: vpfe resizer device pointer.
++ */
++void vpfe_resizer_buffer_isr(struct vpfe_resizer_device *resizer)
++{
++	struct vpfe_device *vpfe_dev = to_vpfe_device(resizer);
++	struct vpfe_video_device *video_out = &resizer->resizer_a.video_out;
++	struct vpfe_video_device *video_out2 = &resizer->resizer_b.video_out;
++	struct vpfe_pipeline *pipe = &resizer->resizer_a.video_out.pipe;
++	enum v4l2_field field;
++	int fid;
++
++	if (!video_out->started)
++		return;
++
++	if (resizer->crop_resizer.input == RESIZER_CROP_INPUT_NONE)
++		return;
++
++	field = video_out->fmt.fmt.pix.field;
++	if (field == V4L2_FIELD_NONE) {
++		/* handle progressive frame capture */
++		if (video_out->cur_frm != video_out->next_frm) {
++			vpfe_video_process_buffer_complete(video_out);
++			if (pipe->output_num > 1)
++				vpfe_video_process_buffer_complete(video_out2);
++		}
++
++		video_out->skip_frame_count--;
++		if (!video_out->skip_frame_count) {
++			video_out->skip_frame_count =
++				video_out->skip_frame_count_init;
++			rsz_src_enable(resizer->base_addr, 1);
++		} else {
++			rsz_src_enable(resizer->base_addr, 0);
++		}
++		return;
++	}
++
++	/* handle interlaced frame capture */
++	fid = vpfe_isif_get_fid(vpfe_dev);
++
++	/* switch the software maintained field id */
++	video_out->field_id ^= 1;
++	if (fid == video_out->field_id) {
++		/*
++		 * we are in-sync here,continue.
++		 * One frame is just being captured. If the
++		 * next frame is available, release the current
++		 * frame and move on
++		 */
++		if (fid == 0 && video_out->cur_frm != video_out->next_frm) {
++			vpfe_video_process_buffer_complete(video_out);
++			if (pipe->output_num > 1)
++				vpfe_video_process_buffer_complete(video_out2);
++		}
++	} else if (fid == 0) {
++		/*
++		* out of sync. Recover from any hardware out-of-sync.
++		* May loose one frame
++		*/
++		video_out->field_id = fid;
++	}
++}
++
++/*
++ * vpfe_resizer_dma_isr() - resizer module dma isr
++ * @resizer: vpfe resizer device pointer.
++ */
++void vpfe_resizer_dma_isr(struct vpfe_resizer_device *resizer)
++{
++	struct vpfe_video_device *video_out2 = &resizer->resizer_b.video_out;
++	struct vpfe_video_device *video_out = &resizer->resizer_a.video_out;
++	struct vpfe_device *vpfe_dev = to_vpfe_device(resizer);
++	struct vpfe_pipeline *pipe = &video_out->pipe;
++	int schedule_capture = 0;
++	enum v4l2_field field;
++	int fid;
++
++	if (!video_out->started)
++		return;
++
++	if (pipe->state == VPFE_PIPELINE_STREAM_SINGLESHOT) {
++		resizer_ss_isr(resizer);
++		return;
++	}
++
++	field = video_out->fmt.fmt.pix.field;
++	if (field == V4L2_FIELD_NONE) {
++		if (!list_empty(&video_out->dma_queue) &&
++			video_out->cur_frm == video_out->next_frm)
++			schedule_capture = 1;
++	} else {
++		fid = vpfe_isif_get_fid(vpfe_dev);
++		if (fid == video_out->field_id) {
++			/* we are in-sync here,continue */
++			if (fid == 1 && !list_empty(&video_out->dma_queue) &&
++			    video_out->cur_frm == video_out->next_frm)
++				schedule_capture = 1;
++		}
++	}
++
++	if (!schedule_capture)
++		return;
++
++	spin_lock(&video_out->dma_queue_lock);
++	vpfe_video_schedule_next_buffer(video_out);
++	spin_unlock(&video_out->dma_queue_lock);
++	if (pipe->output_num > 1) {
++		spin_lock(&video_out2->dma_queue_lock);
++		vpfe_video_schedule_next_buffer(video_out2);
++		spin_unlock(&video_out2->dma_queue_lock);
++	}
++}
++
++/*
++ * V4L2 subdev operations
++ */
++
++/*
++ * resizer_ioctl() - Handle resizer module private ioctl's
++ * @sd: pointer to v4l2 subdev structure
++ * @cmd: configuration command
++ * @arg: configuration argument
++ */
++static long resizer_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
++{
++	struct vpfe_resizer_device *resizer = v4l2_get_subdevdata(sd);
++	struct device *dev = resizer->crop_resizer.subdev.v4l2_dev->dev;
++	struct vpfe_rsz_config *user_config;
++	int ret = -ENOIOCTLCMD;
++
++	if (&resizer->crop_resizer.subdev != sd)
++		return ret;
++
++	switch (cmd) {
++	case VIDIOC_VPFE_RSZ_S_CONFIG:
++		user_config = (struct vpfe_rsz_config *)arg;
++		ret = resizer_set_configuration(resizer, user_config);
++		break;
++
++	case VIDIOC_VPFE_RSZ_G_CONFIG:
++		user_config = (struct vpfe_rsz_config *)arg;
++		if (!user_config->config) {
++			dev_err(dev, "error in VIDIOC_VPFE_RSZ_G_CONFIG\n");
++			return -EINVAL;
++		}
++		ret = resizer_get_configuration(resizer, user_config);
++		break;
++	}
++	return ret;
++}
++
++static int resizer_do_hw_setup(struct vpfe_resizer_device *resizer)
++{
++	struct vpfe_device *vpfe_dev = to_vpfe_device(resizer);
++	u16 ipipeif_sink = vpfe_dev->vpfe_ipipeif.input;
++	u16 ipipeif_source = vpfe_dev->vpfe_ipipeif.output;
++	struct resizer_params *param = &resizer->config;
++	int ret = 0;
++
++	if (resizer->resizer_a.output == RESIZER_OUPUT_MEMORY ||
++	    resizer->resizer_b.output == RESIZER_OUPUT_MEMORY) {
++		if (ipipeif_sink == IPIPEIF_INPUT_MEMORY &&
++		    ipipeif_source == IPIPEIF_OUTPUT_RESIZER)
++			ret = resizer_configure_in_single_shot_mode(resizer);
++		else
++			ret =  resizer_configure_in_continious_mode(resizer);
++		if (ret)
++			return ret;
++		ret = config_rsz_hw(resizer, param);
++	}
++	return ret;
++}
++
++/*
++ * resizer_set_stream() - Enable/Disable streaming on resizer subdev
++ * @sd: pointer to v4l2 subdev structure
++ * @enable: 1 == Enable, 0 == Disable
++ */
++static int resizer_set_stream(struct v4l2_subdev *sd, int enable)
++{
++	struct vpfe_resizer_device *resizer = v4l2_get_subdevdata(sd);
++
++	if (&resizer->crop_resizer.subdev != sd)
++		return 0;
++
++	if (resizer->resizer_a.output != RESIZER_OUPUT_MEMORY)
++		return 0;
++
++	switch (enable) {
++	case 1:
++		if (resizer_do_hw_setup(resizer) < 0)
++			return -EINVAL;
++		resizer_enable(resizer, enable);
++		break;
++
++	case 0:
++		resizer_enable(resizer, enable);
++		break;
++	}
++
++	return 0;
++}
++
++/*
++ * __resizer_get_format() - helper function for getting resizer format
++ * @sd: pointer to subdev.
++ * @fh: V4L2 subdev file handle.
++ * @pad: pad number.
++ * @which: wanted subdev format.
++ * Retun wanted mbus frame format.
++ */
++static struct v4l2_mbus_framefmt *
++__resizer_get_format(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
++		     unsigned int pad, enum v4l2_subdev_format_whence which)
++{
++	struct vpfe_resizer_device *resizer = v4l2_get_subdevdata(sd);
++
++	if (which == V4L2_SUBDEV_FORMAT_TRY)
++		return v4l2_subdev_get_try_format(fh, pad);
++	if (&resizer->crop_resizer.subdev == sd)
++		return &resizer->crop_resizer.formats[pad];
++	if (&resizer->resizer_a.subdev == sd)
++		return &resizer->resizer_a.formats[pad];
++	if (&resizer->resizer_b.subdev == sd)
++		return &resizer->resizer_b.formats[pad];
++	return NULL;
++}
++
++/*
++ * resizer_try_format() - Handle try format by pad subdev method
++ * @sd: pointer to subdev.
++ * @fh: V4L2 subdev file handle.
++ * @pad: pad num.
++ * @fmt: pointer to v4l2 format structure.
++ * @which: wanted subdev format.
++ */
++static void
++resizer_try_format(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
++	unsigned int pad, struct v4l2_mbus_framefmt *fmt,
++	enum v4l2_subdev_format_whence which)
++{
++	struct vpfe_resizer_device *resizer = v4l2_get_subdevdata(sd);
++	unsigned int max_out_height;
++	unsigned int max_out_width;
++	unsigned int i;
++
++	if ((&resizer->resizer_a.subdev == sd && pad == RESIZER_PAD_SINK) ||
++	    (&resizer->resizer_b.subdev == sd && pad == RESIZER_PAD_SINK) ||
++	    (&resizer->crop_resizer.subdev == sd &&
++	    (pad == RESIZER_CROP_PAD_SOURCE ||
++	    pad == RESIZER_CROP_PAD_SOURCE2 || pad == RESIZER_CROP_PAD_SINK))) {
++		for (i = 0; i < ARRAY_SIZE(resizer_input_formats); i++) {
++			if (fmt->code == resizer_input_formats[i])
++				break;
++		}
++		/* If not found, use UYVY as default */
++		if (i >= ARRAY_SIZE(resizer_input_formats))
++			fmt->code = V4L2_MBUS_FMT_UYVY8_2X8;
++
++		fmt->width = clamp_t(u32, fmt->width, MIN_IN_WIDTH,
++					MAX_IN_WIDTH);
++		fmt->height = clamp_t(u32, fmt->height, MIN_IN_HEIGHT,
++				MAX_IN_HEIGHT);
++	} else if (&resizer->resizer_a.subdev == sd &&
++		   pad == RESIZER_PAD_SOURCE) {
++		max_out_width = IPIPE_MAX_OUTPUT_WIDTH_A;
++		max_out_height = IPIPE_MAX_OUTPUT_HEIGHT_A;
++
++		for (i = 0; i < ARRAY_SIZE(resizer_output_formats); i++) {
++			if (fmt->code == resizer_output_formats[i])
++				break;
++		}
++		/* If not found, use UYVY as default */
++		if (i >= ARRAY_SIZE(resizer_output_formats))
++			fmt->code = V4L2_MBUS_FMT_UYVY8_2X8;
++
++		fmt->width = clamp_t(u32, fmt->width, MIN_OUT_WIDTH,
++					max_out_width);
++		fmt->width &= ~15;
++		fmt->height = clamp_t(u32, fmt->height, MIN_OUT_HEIGHT,
++				max_out_height);
++	} else if (&resizer->resizer_b.subdev == sd &&
++		   pad == RESIZER_PAD_SOURCE) {
++		max_out_width = IPIPE_MAX_OUTPUT_WIDTH_B;
++		max_out_height = IPIPE_MAX_OUTPUT_HEIGHT_B;
++
++		for (i = 0; i < ARRAY_SIZE(resizer_output_formats); i++) {
++			if (fmt->code == resizer_output_formats[i])
++				break;
++		}
++		/* If not found, use UYVY as default */
++		if (i >= ARRAY_SIZE(resizer_output_formats))
++			fmt->code = V4L2_MBUS_FMT_UYVY8_2X8;
++
++		fmt->width = clamp_t(u32, fmt->width, MIN_OUT_WIDTH,
++					max_out_width);
++		fmt->width &= ~15;
++		fmt->height = clamp_t(u32, fmt->height, MIN_OUT_HEIGHT,
++				max_out_height);
++	}
++}
++
++/*
++ * resizer_set_format() - Handle set format by pads subdev method
++ * @sd: pointer to v4l2 subdev structure
++ * @fh: V4L2 subdev file handle
++ * @fmt: pointer to v4l2 subdev format structure
++ * return -EINVAL or zero on success
++ */
++static int resizer_set_format(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
++			   struct v4l2_subdev_format *fmt)
++{
++	struct vpfe_resizer_device *resizer = v4l2_get_subdevdata(sd);
++	struct v4l2_mbus_framefmt *format;
++
++	format = __resizer_get_format(sd, fh, fmt->pad, fmt->which);
++	if (format == NULL)
++		return -EINVAL;
++
++	resizer_try_format(sd, fh, fmt->pad, &fmt->format, fmt->which);
++	*format = fmt->format;
++
++	if (fmt->which == V4L2_SUBDEV_FORMAT_TRY)
++		return 0;
++
++	if (&resizer->crop_resizer.subdev == sd) {
++		if (fmt->pad == RESIZER_CROP_PAD_SINK) {
++			resizer->crop_resizer.formats[fmt->pad] = fmt->format;
++		} else if (fmt->pad == RESIZER_CROP_PAD_SOURCE &&
++				resizer->crop_resizer.output == RESIZER_A) {
++			resizer->crop_resizer.formats[fmt->pad] = fmt->format;
++			resizer->crop_resizer.
++			formats[RESIZER_CROP_PAD_SOURCE2] = fmt->format;
++		} else if (fmt->pad == RESIZER_CROP_PAD_SOURCE2 &&
++			resizer->crop_resizer.output2 == RESIZER_B) {
++			resizer->crop_resizer.formats[fmt->pad] = fmt->format;
++			resizer->crop_resizer.
++			formats[RESIZER_CROP_PAD_SOURCE] = fmt->format;
++		} else {
++			return -EINVAL;
++		}
++	} else if (&resizer->resizer_a.subdev == sd) {
++		if (fmt->pad == RESIZER_PAD_SINK)
++			resizer->resizer_a.formats[fmt->pad] = fmt->format;
++		else if (fmt->pad == RESIZER_PAD_SOURCE)
++			resizer->resizer_a.formats[fmt->pad] = fmt->format;
++		else
++			return -EINVAL;
++	} else if (&resizer->resizer_b.subdev == sd) {
++		if (fmt->pad == RESIZER_PAD_SINK)
++			resizer->resizer_b.formats[fmt->pad] = fmt->format;
++		else if (fmt->pad == RESIZER_PAD_SOURCE)
++			resizer->resizer_b.formats[fmt->pad] = fmt->format;
++		else
++			return -EINVAL;
++	} else {
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++/*
++ * resizer_get_format() - Retrieve the video format on a pad
++ * @sd: pointer to v4l2 subdev structure.
++ * @fh: V4L2 subdev file handle.
++ * @fmt: pointer to v4l2 subdev format structure
++ * return -EINVAL or zero on success
++ */
++static int resizer_get_format(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
++			   struct v4l2_subdev_format *fmt)
++{
++	struct v4l2_mbus_framefmt *format;
++
++	format = __resizer_get_format(sd, fh, fmt->pad, fmt->which);
++	if (format == NULL)
++		return -EINVAL;
++
++	fmt->format = *format;
++
++	return 0;
++}
++
++/*
++ * resizer_enum_frame_size() - enum frame sizes on pads
++ * @sd: Pointer to subdevice.
++ * @fh: V4L2 subdev file handle.
++ * @code: pointer to v4l2_subdev_frame_size_enum structure.
++ */
++static int resizer_enum_frame_size(struct v4l2_subdev *sd,
++				   struct v4l2_subdev_fh *fh,
++				   struct v4l2_subdev_frame_size_enum *fse)
++{
++	struct v4l2_mbus_framefmt format;
++
++	if (fse->index != 0)
++		return -EINVAL;
++
++	format.code = fse->code;
++	format.width = 1;
++	format.height = 1;
++	resizer_try_format(sd, fh, fse->pad, &format,
++			    V4L2_SUBDEV_FORMAT_TRY);
++	fse->min_width = format.width;
++	fse->min_height = format.height;
++
++	if (format.code != fse->code)
++		return -EINVAL;
++
++	format.code = fse->code;
++	format.width = -1;
++	format.height = -1;
++	resizer_try_format(sd, fh, fse->pad, &format,
++			   V4L2_SUBDEV_FORMAT_TRY);
++	fse->max_width = format.width;
++	fse->max_height = format.height;
++
++	return 0;
++}
++
++/*
++ * resizer_enum_mbus_code() - enum mbus codes for pads
++ * @sd: Pointer to subdevice.
++ * @fh: V4L2 subdev file handle
++ * @code: pointer to v4l2_subdev_mbus_code_enum structure
++ */
++static int resizer_enum_mbus_code(struct v4l2_subdev *sd,
++				  struct v4l2_subdev_fh *fh,
++				  struct v4l2_subdev_mbus_code_enum *code)
++{
++	if (code->pad == RESIZER_PAD_SINK) {
++		if (code->index >= ARRAY_SIZE(resizer_input_formats))
++			return -EINVAL;
++
++		code->code = resizer_input_formats[code->index];
++	} else if (code->pad == RESIZER_PAD_SOURCE) {
++		if (code->index >= ARRAY_SIZE(resizer_output_formats))
++			return -EINVAL;
++
++		code->code = resizer_output_formats[code->index];
++	}
++
++	return 0;
++}
++
++/*
++ * resizer_init_formats() - Initialize formats on all pads
++ * @sd: Pointer to subdevice.
++ * @fh: V4L2 subdev file handle.
++ *
++ * Initialize all pad formats with default values. If fh is not NULL, try
++ * formats are initialized on the file handle. Otherwise active formats are
++ * initialized on the device.
++ */
++static int resizer_init_formats(struct v4l2_subdev *sd,
++				struct v4l2_subdev_fh *fh)
++{
++	__u32 which = fh ? V4L2_SUBDEV_FORMAT_TRY : V4L2_SUBDEV_FORMAT_ACTIVE;
++	struct vpfe_resizer_device *resizer = v4l2_get_subdevdata(sd);
++	struct v4l2_subdev_format format;
++
++	if (&resizer->crop_resizer.subdev == sd) {
++		memset(&format, 0, sizeof(format));
++		format.pad = RESIZER_CROP_PAD_SINK;
++		format.which = which;
++		format.format.code = V4L2_MBUS_FMT_YUYV8_2X8;
++		format.format.width = MAX_IN_WIDTH;
++		format.format.height = MAX_IN_HEIGHT;
++		resizer_set_format(sd, fh, &format);
++
++		memset(&format, 0, sizeof(format));
++		format.pad = RESIZER_CROP_PAD_SOURCE;
++		format.which = which;
++		format.format.code = V4L2_MBUS_FMT_UYVY8_2X8;
++		format.format.width = MAX_IN_WIDTH;
++		format.format.height = MAX_IN_WIDTH;
++		resizer_set_format(sd, fh, &format);
++
++		memset(&format, 0, sizeof(format));
++		format.pad = RESIZER_CROP_PAD_SOURCE2;
++		format.which = which;
++		format.format.code = V4L2_MBUS_FMT_UYVY8_2X8;
++		format.format.width = MAX_IN_WIDTH;
++		format.format.height = MAX_IN_WIDTH;
++		resizer_set_format(sd, fh, &format);
++	} else if (&resizer->resizer_a.subdev == sd) {
++		memset(&format, 0, sizeof(format));
++		format.pad = RESIZER_PAD_SINK;
++		format.which = which;
++		format.format.code = V4L2_MBUS_FMT_YUYV8_2X8;
++		format.format.width = MAX_IN_WIDTH;
++		format.format.height = MAX_IN_HEIGHT;
++		resizer_set_format(sd, fh, &format);
++
++		memset(&format, 0, sizeof(format));
++		format.pad = RESIZER_PAD_SOURCE;
++		format.which = which;
++		format.format.code = V4L2_MBUS_FMT_UYVY8_2X8;
++		format.format.width = IPIPE_MAX_OUTPUT_WIDTH_A;
++		format.format.height = IPIPE_MAX_OUTPUT_HEIGHT_A;
++		resizer_set_format(sd, fh, &format);
++	} else if (&resizer->resizer_b.subdev == sd) {
++		memset(&format, 0, sizeof(format));
++		format.pad = RESIZER_PAD_SINK;
++		format.which = which;
++		format.format.code = V4L2_MBUS_FMT_YUYV8_2X8;
++		format.format.width = MAX_IN_WIDTH;
++		format.format.height = MAX_IN_HEIGHT;
++		resizer_set_format(sd, fh, &format);
++
++		memset(&format, 0, sizeof(format));
++		format.pad = RESIZER_PAD_SOURCE;
++		format.which = which;
++		format.format.code = V4L2_MBUS_FMT_UYVY8_2X8;
++		format.format.width = IPIPE_MAX_OUTPUT_WIDTH_B;
++		format.format.height = IPIPE_MAX_OUTPUT_HEIGHT_B;
++		resizer_set_format(sd, fh, &format);
++	}
++
++	return 0;
++}
++
++/* subdev core operations */
++static const struct v4l2_subdev_core_ops resizer_v4l2_core_ops = {
++	.ioctl = resizer_ioctl,
++};
++
++/* subdev internal operations */
++static const struct v4l2_subdev_internal_ops resizer_v4l2_internal_ops = {
++	.open = resizer_init_formats,
++};
++
++/* subdev video operations */
++static const struct v4l2_subdev_video_ops resizer_v4l2_video_ops = {
++	.s_stream = resizer_set_stream,
++};
++
++/* subdev pad operations */
++static const struct v4l2_subdev_pad_ops resizer_v4l2_pad_ops = {
++	.enum_mbus_code = resizer_enum_mbus_code,
++	.enum_frame_size = resizer_enum_frame_size,
++	.get_fmt = resizer_get_format,
++	.set_fmt = resizer_set_format,
++};
++
++/* subdev operations */
++static const struct v4l2_subdev_ops resizer_v4l2_ops = {
++	.core = &resizer_v4l2_core_ops,
++	.video = &resizer_v4l2_video_ops,
++	.pad = &resizer_v4l2_pad_ops,
++};
++
++/*
++ * Media entity operations
++ */
++
++/*
++ * resizer_link_setup() - Setup resizer connections
++ * @entity: Pointer to media entity structure
++ * @local: Pointer to local pad array
++ * @remote: Pointer to remote pad array
++ * @flags: Link flags
++ * return -EINVAL or zero on success
++ */
++static int resizer_link_setup(struct media_entity *entity,
++			   const struct media_pad *local,
++			   const struct media_pad *remote, u32 flags)
++{
++	struct v4l2_subdev *sd = media_entity_to_v4l2_subdev(entity);
++	struct vpfe_resizer_device *resizer = v4l2_get_subdevdata(sd);
++	struct vpfe_device *vpfe_dev = to_vpfe_device(resizer);
++	u16 ipipeif_source = vpfe_dev->vpfe_ipipeif.output;
++	u16 ipipe_source = vpfe_dev->vpfe_ipipe.output;
++
++	if (&resizer->crop_resizer.subdev == sd) {
++		switch (local->index | media_entity_type(remote->entity)) {
++		case RESIZER_CROP_PAD_SINK | MEDIA_ENT_T_V4L2_SUBDEV:
++			if (!(flags & MEDIA_LNK_FL_ENABLED)) {
++				resizer->crop_resizer.input =
++					RESIZER_CROP_INPUT_NONE;
++				break;
++			}
++
++			if (resizer->crop_resizer.input !=
++			   RESIZER_CROP_INPUT_NONE)
++				return -EBUSY;
++			if (ipipeif_source == IPIPEIF_OUTPUT_RESIZER)
++				resizer->crop_resizer.input =
++						RESIZER_CROP_INPUT_IPIPEIF;
++			else if (ipipe_source == IPIPE_OUTPUT_RESIZER)
++					resizer->crop_resizer.input =
++						RESIZER_CROP_INPUT_IPIPE;
++			else
++				return -EINVAL;
++			break;
++
++		case RESIZER_CROP_PAD_SOURCE | MEDIA_ENT_T_V4L2_SUBDEV:
++			if (!(flags & MEDIA_LNK_FL_ENABLED)) {
++				resizer->crop_resizer.output =
++				RESIZER_CROP_OUTPUT_NONE;
++				break;
++			}
++			if (resizer->crop_resizer.output !=
++			    RESIZER_CROP_OUTPUT_NONE)
++				return -EBUSY;
++			resizer->crop_resizer.output = RESIZER_A;
++			break;
++
++		case RESIZER_CROP_PAD_SOURCE2 | MEDIA_ENT_T_V4L2_SUBDEV:
++			if (!(flags & MEDIA_LNK_FL_ENABLED)) {
++				resizer->crop_resizer.output2 =
++					RESIZER_CROP_OUTPUT_NONE;
++				break;
++			}
++			if (resizer->crop_resizer.output2 !=
++			    RESIZER_CROP_OUTPUT_NONE)
++				return -EBUSY;
++			resizer->crop_resizer.output2 = RESIZER_B;
++			break;
++
++		default:
++			return -EINVAL;
++		}
++	} else if (&resizer->resizer_a.subdev == sd) {
++		switch (local->index | media_entity_type(remote->entity)) {
++		case RESIZER_PAD_SINK | MEDIA_ENT_T_V4L2_SUBDEV:
++			if (!(flags & MEDIA_LNK_FL_ENABLED)) {
++				resizer->resizer_a.input = RESIZER_INPUT_NONE;
++				break;
++			}
++			if (resizer->resizer_a.input != RESIZER_INPUT_NONE)
++				return -EBUSY;
++			resizer->resizer_a.input = RESIZER_INPUT_CROP_RESIZER;
++			break;
++
++		case RESIZER_PAD_SOURCE | MEDIA_ENT_T_DEVNODE:
++			if (!(flags & MEDIA_LNK_FL_ENABLED)) {
++				resizer->resizer_a.output = RESIZER_OUTPUT_NONE;
++				break;
++			}
++			if (resizer->resizer_a.output != RESIZER_OUTPUT_NONE)
++				return -EBUSY;
++			resizer->resizer_a.output = RESIZER_OUPUT_MEMORY;
++			break;
++
++		default:
++			return -EINVAL;
++		}
++	} else if (&resizer->resizer_b.subdev == sd) {
++		switch (local->index | media_entity_type(remote->entity)) {
++		case RESIZER_PAD_SINK | MEDIA_ENT_T_V4L2_SUBDEV:
++			if (!(flags & MEDIA_LNK_FL_ENABLED)) {
++				resizer->resizer_b.input = RESIZER_INPUT_NONE;
++				break;
++			}
++			if (resizer->resizer_b.input != RESIZER_INPUT_NONE)
++				return -EBUSY;
++			resizer->resizer_b.input = RESIZER_INPUT_CROP_RESIZER;
++			break;
++
++		case RESIZER_PAD_SOURCE | MEDIA_ENT_T_DEVNODE:
++			if (!(flags & MEDIA_LNK_FL_ENABLED)) {
++				resizer->resizer_b.output = RESIZER_OUTPUT_NONE;
++				break;
++			}
++			if (resizer->resizer_b.output != RESIZER_OUTPUT_NONE)
++				return -EBUSY;
++			resizer->resizer_b.output = RESIZER_OUPUT_MEMORY;
++			break;
++
++		default:
++			return -EINVAL;
++		}
++	} else {
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static const struct media_entity_operations resizer_media_ops = {
++	.link_setup = resizer_link_setup,
++};
++
++/*
++ * vpfe_resizer_unregister_entities() - Unregister entity
++ * @vpfe_rsz - pointer to resizer subdevice structure.
++ */
++void vpfe_resizer_unregister_entities(struct vpfe_resizer_device *vpfe_rsz)
++{
++	/* unregister video devices */
++	vpfe_video_unregister(&vpfe_rsz->resizer_a.video_out);
++	vpfe_video_unregister(&vpfe_rsz->resizer_b.video_out);
++
++	/* cleanup entity */
++	media_entity_cleanup(&vpfe_rsz->crop_resizer.subdev.entity);
++	media_entity_cleanup(&vpfe_rsz->resizer_a.subdev.entity);
++	media_entity_cleanup(&vpfe_rsz->resizer_b.subdev.entity);
++	/* unregister subdev */
++	v4l2_device_unregister_subdev(&vpfe_rsz->crop_resizer.subdev);
++	v4l2_device_unregister_subdev(&vpfe_rsz->resizer_a.subdev);
++	v4l2_device_unregister_subdev(&vpfe_rsz->resizer_b.subdev);
++}
++
++/*
++ * vpfe_resizer_register_entities() - Register entity
++ * @resizer - pointer to resizer devive.
++ * @vdev: pointer to v4l2 device structure.
++ */
++int vpfe_resizer_register_entities(struct vpfe_resizer_device *resizer,
++				   struct v4l2_device *vdev)
++{
++	struct vpfe_device *vpfe_dev = to_vpfe_device(resizer);
++	unsigned int flags = 0;
++	int ret;
++
++	/* Register the crop resizer subdev */
++	ret = v4l2_device_register_subdev(vdev, &resizer->crop_resizer.subdev);
++	if (ret < 0) {
++		pr_err("Failed to register crop resizer as v4l2-subdev\n");
++		return ret;
++	}
++	/* Register Resizer-A subdev */
++	ret = v4l2_device_register_subdev(vdev, &resizer->resizer_a.subdev);
++	if (ret < 0) {
++		pr_err("Failed to register resizer-a as v4l2-subdev\n");
++		return ret;
++	}
++	/* Register Resizer-B subdev */
++	ret = v4l2_device_register_subdev(vdev, &resizer->resizer_b.subdev);
++	if (ret < 0) {
++		pr_err("Failed to register resizer-b as v4l2-subdev\n");
++		return ret;
++	}
++	/* Register video-out device for resizer-a */
++	ret = vpfe_video_register(&resizer->resizer_a.video_out, vdev);
++	if (ret) {
++		pr_err("Failed to register RSZ-A video-out device\n");
++		goto out_video_out2_register;
++	}
++	resizer->resizer_a.video_out.vpfe_dev = vpfe_dev;
++
++	/* Register video-out device for resizer-b */
++	ret = vpfe_video_register(&resizer->resizer_b.video_out, vdev);
++	if (ret) {
++		pr_err("Failed to register RSZ-B video-out device\n");
++		goto out_video_out2_register;
++	}
++	resizer->resizer_b.video_out.vpfe_dev = vpfe_dev;
++
++	/* create link between Resizer Crop----> Resizer A*/
++	ret = media_entity_create_link(&resizer->crop_resizer.subdev.entity, 1,
++				&resizer->resizer_a.subdev.entity,
++				0, flags);
++	if (ret < 0)
++		goto out_create_link;
++
++	/* create link between Resizer Crop----> Resizer B*/
++	ret = media_entity_create_link(&resizer->crop_resizer.subdev.entity, 2,
++				&resizer->resizer_b.subdev.entity,
++				0, flags);
++	if (ret < 0)
++		goto out_create_link;
++
++	/* create link between Resizer A ----> video out */
++	ret = media_entity_create_link(&resizer->resizer_a.subdev.entity, 1,
++		&resizer->resizer_a.video_out.video_dev.entity, 0, flags);
++	if (ret < 0)
++		goto out_create_link;
++
++	/* create link between Resizer B ----> video out */
++	ret = media_entity_create_link(&resizer->resizer_b.subdev.entity, 1,
++		&resizer->resizer_b.video_out.video_dev.entity, 0, flags);
++	if (ret < 0)
++		goto out_create_link;
++
++	return 0;
++
++out_create_link:
++	vpfe_video_unregister(&resizer->resizer_b.video_out);
++out_video_out2_register:
++	vpfe_video_unregister(&resizer->resizer_a.video_out);
++	media_entity_cleanup(&resizer->crop_resizer.subdev.entity);
++	media_entity_cleanup(&resizer->resizer_a.subdev.entity);
++	media_entity_cleanup(&resizer->resizer_b.subdev.entity);
++	v4l2_device_unregister_subdev(&resizer->crop_resizer.subdev);
++	v4l2_device_unregister_subdev(&resizer->resizer_a.subdev);
++	v4l2_device_unregister_subdev(&resizer->resizer_b.subdev);
++	return ret;
++}
++
++/*
++ * vpfe_resizer_init() - resizer device initialization.
++ * @vpfe_rsz - pointer to resizer device
++ * @pdev: platform device pointer.
++ */
++int vpfe_resizer_init(struct vpfe_resizer_device *vpfe_rsz,
++		      struct platform_device *pdev)
++{
++	struct v4l2_subdev *sd = &vpfe_rsz->crop_resizer.subdev;
++	struct media_pad *pads = &vpfe_rsz->crop_resizer.pads[0];
++	struct media_entity *me = &sd->entity;
++	static resource_size_t  res_len;
++	struct resource *res;
++	int ret;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 5);
++	if (!res)
++		return -ENOENT;
++
++	res_len = resource_size(res);
++	res = request_mem_region(res->start, res_len, res->name);
++	if (!res)
++		return -EBUSY;
++
++	vpfe_rsz->base_addr = ioremap_nocache(res->start, res_len);
++	if (!vpfe_rsz->base_addr)
++		return -EBUSY;
++
++	v4l2_subdev_init(sd, &resizer_v4l2_ops);
++	sd->internal_ops = &resizer_v4l2_internal_ops;
++	strlcpy(sd->name, "DAVINCI RESIZER CROP", sizeof(sd->name));
++	sd->grp_id = 1 << 16;	/* group ID for davinci subdevs */
++	v4l2_set_subdevdata(sd, vpfe_rsz);
++	sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
++
++	pads[RESIZER_CROP_PAD_SINK].flags = MEDIA_PAD_FL_SINK;
++	pads[RESIZER_CROP_PAD_SOURCE].flags = MEDIA_PAD_FL_SOURCE;
++	pads[RESIZER_CROP_PAD_SOURCE2].flags = MEDIA_PAD_FL_SOURCE;
++
++	vpfe_rsz->crop_resizer.input = RESIZER_CROP_INPUT_NONE;
++	vpfe_rsz->crop_resizer.output = RESIZER_CROP_OUTPUT_NONE;
++	vpfe_rsz->crop_resizer.output2 = RESIZER_CROP_OUTPUT_NONE;
++	vpfe_rsz->crop_resizer.rsz_device = vpfe_rsz;
++	me->ops = &resizer_media_ops;
++	ret = media_entity_init(me, RESIZER_CROP_PADS_NUM, pads, 0);
++	if (ret)
++		return ret;
++
++	sd = &vpfe_rsz->resizer_a.subdev;
++	pads = &vpfe_rsz->resizer_a.pads[0];
++	me = &sd->entity;
++
++	v4l2_subdev_init(sd, &resizer_v4l2_ops);
++	sd->internal_ops = &resizer_v4l2_internal_ops;
++	strlcpy(sd->name, "DAVINCI RESIZER A", sizeof(sd->name));
++	sd->grp_id = 1 << 16;	/* group ID for davinci subdevs */
++	v4l2_set_subdevdata(sd, vpfe_rsz);
++	sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
++
++	pads[RESIZER_PAD_SINK].flags = MEDIA_PAD_FL_SINK;
++	pads[RESIZER_PAD_SOURCE].flags = MEDIA_PAD_FL_SOURCE;
++
++	vpfe_rsz->resizer_a.input = RESIZER_INPUT_NONE;
++	vpfe_rsz->resizer_a.output = RESIZER_OUTPUT_NONE;
++	vpfe_rsz->resizer_a.rsz_device = vpfe_rsz;
++	me->ops = &resizer_media_ops;
++	ret = media_entity_init(me, RESIZER_PADS_NUM, pads, 0);
++	if (ret)
++		return ret;
++
++	sd = &vpfe_rsz->resizer_b.subdev;
++	pads = &vpfe_rsz->resizer_b.pads[0];
++	me = &sd->entity;
++
++	v4l2_subdev_init(sd, &resizer_v4l2_ops);
++	sd->internal_ops = &resizer_v4l2_internal_ops;
++	strlcpy(sd->name, "DAVINCI RESIZER B", sizeof(sd->name));
++	sd->grp_id = 1 << 16;	/* group ID for davinci subdevs */
++	v4l2_set_subdevdata(sd, vpfe_rsz);
++	sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
++
++	pads[RESIZER_PAD_SINK].flags = MEDIA_PAD_FL_SINK;
++	pads[RESIZER_PAD_SOURCE].flags = MEDIA_PAD_FL_SOURCE;
++
++	vpfe_rsz->resizer_b.input = RESIZER_INPUT_NONE;
++	vpfe_rsz->resizer_b.output = RESIZER_OUTPUT_NONE;
++	vpfe_rsz->resizer_b.rsz_device = vpfe_rsz;
++	me->ops = &resizer_media_ops;
++	ret = media_entity_init(me, RESIZER_PADS_NUM, pads, 0);
++	if (ret)
++		return ret;
++
++	vpfe_rsz->resizer_a.video_out.ops = &resizer_a_video_ops;
++	vpfe_rsz->resizer_a.video_out.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
++	ret = vpfe_video_init(&vpfe_rsz->resizer_a.video_out, "RSZ-A");
++	if (ret) {
++		pr_err("Failed to init RSZ video-out device\n");
++		return ret;
++	}
++	vpfe_rsz->resizer_b.video_out.ops = &resizer_b_video_ops;
++	vpfe_rsz->resizer_b.video_out.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
++	ret = vpfe_video_init(&vpfe_rsz->resizer_b.video_out, "RSZ-B");
++	if (ret) {
++		pr_err("Failed to init RSZ video-out2 device\n");
++		return ret;
++	}
++	memset(&vpfe_rsz->config, 0, sizeof(struct resizer_params));
++
++	return 0;
++}
++
++void
++vpfe_resizer_cleanup(struct vpfe_resizer_device *vpfe_rsz,
++		     struct platform_device *pdev)
++{
++	struct resource *res;
++
++	iounmap(vpfe_rsz->base_addr);
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 5);
++	if (res)
++		release_mem_region(res->start,
++					res->end - res->start + 1);
++}
+diff --git a/drivers/staging/media/davinci_vpfe/dm365_resizer.h b/drivers/staging/media/davinci_vpfe/dm365_resizer.h
 new file mode 100644
-index 0000000..010fdb2
+index 0000000..59a7942
 --- /dev/null
-+++ b/drivers/staging/media/davinci_vpfe/dm365_ipipe_hw.h
-@@ -0,0 +1,559 @@
++++ b/drivers/staging/media/davinci_vpfe/dm365_resizer.h
+@@ -0,0 +1,244 @@
 +/*
 + * Copyright (C) 2012 Texas Instruments Inc
 + *
@@ -1129,544 +2081,229 @@ index 0000000..010fdb2
 + *      Prabhakar Lad <prabhakar.lad@ti.com>
 + */
 +
-+#ifndef _DAVINCI_VPFE_DM365_IPIPE_HW_H
-+#define _DAVINCI_VPFE_DM365_IPIPE_HW_H
++#ifndef _DAVINCI_VPFE_DM365_RESIZER_H
++#define _DAVINCI_VPFE_DM365_RESIZER_H
 +
-+#include "vpfe_mc_capture.h"
++enum resizer_oper_mode {
++	RESIZER_MODE_CONTINIOUS = 0,
++	RESIZER_MODE_ONE_SHOT = 1,
++};
 +
-+#define SET_LOW_ADDR     0x0000ffff
-+#define SET_HIGH_ADDR    0xffff0000
++struct f_div_pass {
++	unsigned int o_hsz;
++	unsigned int i_hps;
++	unsigned int h_phs;
++	unsigned int src_hps;
++	unsigned int src_hsz;
++};
 +
-+/* Below are the internal tables */
-+#define DPC_TB0_START_ADDR	0x8000
-+#define DPC_TB1_START_ADDR	0x8400
++#define MAX_PASSES		2
 +
-+#define GAMMA_R_START_ADDR	0xa800
-+#define GAMMA_G_START_ADDR	0xb000
-+#define GAMMA_B_START_ADDR	0xb800
++struct f_div_param {
++	unsigned char en;
++	unsigned int num_passes;
++	struct f_div_pass pass[MAX_PASSES];
++};
 +
-+/* RAM table addresses for edge enhancement correction*/
-+#define YEE_TB_START_ADDR	0x8800
++/* Resizer Rescale Parameters*/
++struct resizer_scale_param {
++	bool h_flip;
++	bool v_flip;
++	bool cen;
++	bool yen;
++	unsigned short i_vps;
++	unsigned short i_hps;
++	unsigned short o_vsz;
++	unsigned short o_hsz;
++	unsigned short v_phs_y;
++	unsigned short v_phs_c;
++	unsigned short v_dif;
++	/* resize method - Luminance */
++	enum vpfe_rsz_intp_t v_typ_y;
++	/* resize method - Chrominance */
++	enum vpfe_rsz_intp_t v_typ_c;
++	/* vertical lpf intensity - Luminance */
++	unsigned char v_lpf_int_y;
++	/* vertical lpf intensity - Chrominance */
++	unsigned char v_lpf_int_c;
++	unsigned short h_phs;
++	unsigned short h_dif;
++	/* resize method - Luminance */
++	enum vpfe_rsz_intp_t h_typ_y;
++	/* resize method - Chrominance */
++	enum vpfe_rsz_intp_t h_typ_c;
++	/* horizontal lpf intensity - Luminance */
++	unsigned char h_lpf_int_y;
++	/* horizontal lpf intensity - Chrominance */
++	unsigned char h_lpf_int_c;
++	bool dscale_en;
++	enum vpfe_rsz_down_scale_ave_sz h_dscale_ave_sz;
++	enum vpfe_rsz_down_scale_ave_sz v_dscale_ave_sz;
++	/* store the calculated frame division parameter */
++	struct f_div_param f_div;
++};
 +
-+/* RAM table address for GBC LUT */
-+#define GBCE_TB_START_ADDR	0x9000
++enum resizer_rgb_t {
++	OUTPUT_32BIT,
++	OUTPUT_16BIT
++};
 +
-+/* RAM table for 3D NF LUT */
-+#define D3L_TB0_START_ADDR	0x9800
-+#define D3L_TB1_START_ADDR	0x9c00
-+#define D3L_TB2_START_ADDR	0xa000
-+#define D3L_TB3_START_ADDR	0xa400
-+
-+/* IPIPE Register Offsets from the base address */
-+#define IPIPE_SRC_EN		0x0000
-+#define IPIPE_SRC_MODE		0x0004
-+#define IPIPE_SRC_FMT		0x0008
-+#define IPIPE_SRC_COL		0x000c
-+#define IPIPE_SRC_VPS		0x0010
-+#define IPIPE_SRC_VSZ		0x0014
-+#define IPIPE_SRC_HPS		0x0018
-+#define IPIPE_SRC_HSZ		0x001c
-+
-+#define IPIPE_SEL_SBU		0x0020
-+
-+#define IPIPE_DMA_STA		0x0024
-+#define IPIPE_GCK_MMR		0x0028
-+#define IPIPE_GCK_PIX		0x002c
-+#define IPIPE_RESERVED0		0x0030
-+
-+/* Defect Correction */
-+#define DPC_LUT_EN		0x0034
-+#define DPC_LUT_SEL		0x0038
-+#define DPC_LUT_ADR		0x003c
-+#define DPC_LUT_SIZ		0x0040
-+#define DPC_OTF_EN		0x0044
-+#define DPC_OTF_TYP		0x0048
-+#define DPC_OTF_2D_THR_R	0x004c
-+#define DPC_OTF_2D_THR_GR	0x0050
-+#define DPC_OTF_2D_THR_GB	0x0054
-+#define DPC_OTF_2D_THR_B	0x0058
-+#define DPC_OTF_2C_THR_R	0x005c
-+#define DPC_OTF_2C_THR_GR	0x0060
-+#define DPC_OTF_2C_THR_GB	0x0064
-+#define DPC_OTF_2C_THR_B	0x0068
-+#define DPC_OTF_3_SHF		0x006c
-+#define DPC_OTF_3D_THR		0x0070
-+#define DPC_OTF_3D_SLP		0x0074
-+#define DPC_OTF_3D_MIN		0x0078
-+#define DPC_OTF_3D_MAX		0x007c
-+#define DPC_OTF_3C_THR		0x0080
-+#define DPC_OTF_3C_SLP		0x0084
-+#define DPC_OTF_3C_MIN		0x0088
-+#define DPC_OTF_3C_MAX		0x008c
-+
-+/* Lense Shading Correction */
-+#define LSC_VOFT		0x90
-+#define LSC_VA2			0x94
-+#define LSC_VA1			0x98
-+#define LSC_VS			0x9c
-+#define LSC_HOFT		0xa0
-+#define LSC_HA2			0xa4
-+#define LSC_HA1			0xa8
-+#define LSC_HS			0xac
-+#define LSC_GAIN_R		0xb0
-+#define LSC_GAIN_GR		0xb4
-+#define LSC_GAIN_GB		0xb8
-+#define LSC_GAIN_B		0xbc
-+#define LSC_OFT_R		0xc0
-+#define LSC_OFT_GR		0xc4
-+#define LSC_OFT_GB		0xc8
-+#define LSC_OFT_B		0xcc
-+#define LSC_SHF			0xd0
-+#define LSC_MAX			0xd4
-+
-+/* Noise Filter 1. Ofsets from start address given */
-+#define D2F_1ST			0xd8
-+#define D2F_EN			0x0
-+#define D2F_TYP			0x4
-+#define D2F_THR			0x8
-+#define D2F_STR			0x28
-+#define D2F_SPR			0x48
-+#define D2F_EDG_MIN		0x68
-+#define D2F_EDG_MAX		0x6c
-+
-+/* Noise Filter 2 */
-+#define D2F_2ND			0x148
-+
-+/* GIC */
-+#define GIC_EN			0x1b8
-+#define GIC_TYP			0x1bc
-+#define GIC_GAN			0x1c0
-+#define GIC_NFGAN		0x1c4
-+#define GIC_THR			0x1c8
-+#define GIC_SLP			0x1cc
-+
-+/* White Balance */
-+#define WB2_OFT_R		0x1d0
-+#define WB2_OFT_GR		0x1d4
-+#define WB2_OFT_GB		0x1d8
-+#define WB2_OFT_B		0x1dc
-+#define WB2_WGN_R		0x1e0
-+#define WB2_WGN_GR		0x1e4
-+#define WB2_WGN_GB		0x1e8
-+#define WB2_WGN_B		0x1ec
-+
-+/* CFA interpolation */
-+#define CFA_MODE		0x1f0
-+#define CFA_2DIR_HPF_THR	0x1f4
-+#define CFA_2DIR_HPF_SLP	0x1f8
-+#define CFA_2DIR_MIX_THR	0x1fc
-+#define CFA_2DIR_MIX_SLP	0x200
-+#define CFA_2DIR_DIR_THR	0x204
-+#define CFA_2DIR_DIR_SLP	0x208
-+#define CFA_2DIR_NDWT		0x20c
-+#define CFA_MONO_HUE_FRA	0x210
-+#define CFA_MONO_EDG_THR	0x214
-+#define CFA_MONO_THR_MIN	0x218
-+#define CFA_MONO_THR_SLP	0x21c
-+#define CFA_MONO_SLP_MIN	0x220
-+#define CFA_MONO_SLP_SLP	0x224
-+#define CFA_MONO_LPWT		0x228
-+
-+/* RGB to RGB conversiona - 1st */
-+#define RGB1_MUL_BASE		0x22c
-+/* Offsets from base */
-+#define RGB_MUL_RR		0x0
-+#define RGB_MUL_GR		0x4
-+#define RGB_MUL_BR		0x8
-+#define RGB_MUL_RG		0xc
-+#define RGB_MUL_GG		0x10
-+#define RGB_MUL_BG		0x14
-+#define RGB_MUL_RB		0x18
-+#define RGB_MUL_GB		0x1c
-+#define RGB_MUL_BB		0x20
-+#define RGB_OFT_OR		0x24
-+#define RGB_OFT_OG		0x28
-+#define RGB_OFT_OB		0x2c
-+
-+/* Gamma */
-+#define GMM_CFG			0x25c
-+
-+/* RGB to RGB conversiona - 2nd */
-+#define RGB2_MUL_BASE		0x260
-+
-+/* 3D LUT */
-+#define D3LUT_EN		0x290
-+
-+/* RGB to YUV(YCbCr) conversion */
-+#define YUV_ADJ			0x294
-+#define YUV_MUL_RY		0x298
-+#define YUV_MUL_GY		0x29c
-+#define YUV_MUL_BY		0x2a0
-+#define YUV_MUL_RCB		0x2a4
-+#define YUV_MUL_GCB		0x2a8
-+#define YUV_MUL_BCB		0x2ac
-+#define YUV_MUL_RCR		0x2b0
-+#define YUV_MUL_GCR		0x2b4
-+#define YUV_MUL_BCR		0x2b8
-+#define YUV_OFT_Y		0x2bc
-+#define YUV_OFT_CB		0x2c0
-+#define YUV_OFT_CR		0x2c4
-+#define YUV_PHS			0x2c8
-+
-+/* Global Brightness and Contrast */
-+#define GBCE_EN			0x2cc
-+#define GBCE_TYP		0x2d0
-+
-+/* Edge Enhancer */
-+#define YEE_EN			0x2d4
-+#define YEE_TYP			0x2d8
-+#define YEE_SHF			0x2dc
-+#define YEE_MUL_00		0x2e0
-+#define YEE_MUL_01		0x2e4
-+#define YEE_MUL_02		0x2e8
-+#define YEE_MUL_10		0x2ec
-+#define YEE_MUL_11		0x2f0
-+#define YEE_MUL_12		0x2f4
-+#define YEE_MUL_20		0x2f8
-+#define YEE_MUL_21		0x2fc
-+#define YEE_MUL_22		0x300
-+#define YEE_THR			0x304
-+#define YEE_E_GAN		0x308
-+#define YEE_E_THR1		0x30c
-+#define YEE_E_THR2		0x310
-+#define YEE_G_GAN		0x314
-+#define YEE_G_OFT		0x318
-+
-+/* Chroma Artifact Reduction */
-+#define CAR_EN			0x31c
-+#define CAR_TYP			0x320
-+#define CAR_SW			0x324
-+#define CAR_HPF_TYP		0x328
-+#define CAR_HPF_SHF		0x32c
-+#define	CAR_HPF_THR		0x330
-+#define CAR_GN1_GAN		0x334
-+#define CAR_GN1_SHF		0x338
-+#define CAR_GN1_MIN		0x33c
-+#define CAR_GN2_GAN		0x340
-+#define CAR_GN2_SHF		0x344
-+#define CAR_GN2_MIN		0x348
-+
-+/* Chroma Gain Suppression */
-+#define CGS_EN			0x34c
-+#define CGS_GN1_L_THR		0x350
-+#define CGS_GN1_L_GAN		0x354
-+#define CGS_GN1_L_SHF		0x358
-+#define CGS_GN1_L_MIN		0x35c
-+#define CGS_GN1_H_THR		0x360
-+#define CGS_GN1_H_GAN		0x364
-+#define CGS_GN1_H_SHF		0x368
-+#define CGS_GN1_H_MIN		0x36c
-+#define CGS_GN2_L_THR		0x370
-+#define CGS_GN2_L_GAN		0x374
-+#define CGS_GN2_L_SHF		0x378
-+#define CGS_GN2_L_MIN		0x37c
-+
-+/* Resizer */
-+#define RSZ_SRC_EN		0x0
-+#define RSZ_SRC_MODE		0x4
-+#define RSZ_SRC_FMT0		0x8
-+#define RSZ_SRC_FMT1		0xc
-+#define RSZ_SRC_VPS		0x10
-+#define RSZ_SRC_VSZ		0x14
-+#define RSZ_SRC_HPS		0x18
-+#define RSZ_SRC_HSZ		0x1c
-+#define RSZ_DMA_RZA		0x20
-+#define RSZ_DMA_RZB		0x24
-+#define RSZ_DMA_STA		0x28
-+#define RSZ_GCK_MMR		0x2c
-+#define RSZ_RESERVED0		0x30
-+#define RSZ_GCK_SDR		0x34
-+#define RSZ_IRQ_RZA		0x38
-+#define RSZ_IRQ_RZB		0x3c
-+#define RSZ_YUV_Y_MIN		0x40
-+#define RSZ_YUV_Y_MAX		0x44
-+#define RSZ_YUV_C_MIN		0x48
-+#define RSZ_YUV_C_MAX		0x4c
-+#define RSZ_YUV_PHS		0x50
-+#define RSZ_SEQ			0x54
-+
-+/* Resizer Rescale Parameters */
-+#define RSZ_EN_A		0x58
-+#define RSZ_EN_B		0xe8
-+/* offset of the registers to be added with base register of
-+   either RSZ0 or RSZ1
-+*/
-+#define RSZ_MODE		0x4
-+#define RSZ_420			0x8
-+#define RSZ_I_VPS		0xc
-+#define RSZ_I_HPS		0x10
-+#define RSZ_O_VSZ		0x14
-+#define RSZ_O_HSZ		0x18
-+#define RSZ_V_PHS_Y		0x1c
-+#define RSZ_V_PHS_C		0x20
-+#define RSZ_V_DIF		0x24
-+#define RSZ_V_TYP		0x28
-+#define RSZ_V_LPF		0x2c
-+#define RSZ_H_PHS		0x30
-+#define RSZ_H_PHS_ADJ		0x34
-+#define RSZ_H_DIF		0x38
-+#define RSZ_H_TYP		0x3c
-+#define RSZ_H_LPF		0x40
-+#define RSZ_DWN_EN		0x44
-+#define RSZ_DWN_AV		0x48
++enum resizer_rgb_msk_t {
++	NOMASK = 0,
++	MASKLAST2 = 1,
++};
 +
 +/* Resizer RGB Conversion Parameters */
-+#define RSZ_RGB_EN		0x4c
-+#define RSZ_RGB_TYP		0x50
-+#define RSZ_RGB_BLD		0x54
++struct resizer_rgb {
++	bool rgb_en;
++	enum resizer_rgb_t rgb_typ;
++	enum resizer_rgb_msk_t rgb_msk0;
++	enum resizer_rgb_msk_t rgb_msk1;
++	unsigned int rgb_alpha_val;
++};
 +
 +/* Resizer External Memory Parameters */
-+#define RSZ_SDR_Y_BAD_H		0x58
-+#define RSZ_SDR_Y_BAD_L		0x5c
-+#define RSZ_SDR_Y_SAD_H		0x60
-+#define RSZ_SDR_Y_SAD_L		0x64
-+#define RSZ_SDR_Y_OFT		0x68
-+#define RSZ_SDR_Y_PTR_S		0x6c
-+#define RSZ_SDR_Y_PTR_E		0x70
-+#define RSZ_SDR_C_BAD_H		0x74
-+#define RSZ_SDR_C_BAD_L		0x78
-+#define RSZ_SDR_C_SAD_H		0x7c
-+#define RSZ_SDR_C_SAD_L		0x80
-+#define RSZ_SDR_C_OFT		0x84
-+#define RSZ_SDR_C_PTR_S		0x88
-+#define RSZ_SDR_C_PTR_E		0x8c
++struct rsz_ext_mem_param {
++	unsigned int rsz_sdr_oft_y;
++	unsigned int rsz_sdr_ptr_s_y;
++	unsigned int rsz_sdr_ptr_e_y;
++	unsigned int rsz_sdr_oft_c;
++	unsigned int rsz_sdr_ptr_s_c;
++	unsigned int rsz_sdr_ptr_e_c;
++	/* offset to be added to buffer start when flipping for y/ycbcr */
++	unsigned int flip_ofst_y;
++	/* offset to be added to buffer start when flipping for c */
++	unsigned int flip_ofst_c;
++	/* c offset for YUV 420SP */
++	unsigned int c_offset;
++	/* User Defined Y offset for YUV 420SP or YUV420ILE data */
++	unsigned int user_y_ofst;
++	/* User Defined C offset for YUV 420SP data */
++	unsigned int user_c_ofst;
++};
 +
-+/* Macro for resizer */
-+#define RSZ_YUV_Y_MIN		0x40
-+#define RSZ_YUV_Y_MAX		0x44
-+#define RSZ_YUV_C_MIN		0x48
-+#define RSZ_YUV_C_MAX		0x4c
++enum rsz_data_source {
++	IPIPE_DATA,
++	IPIPEIF_DATA
++};
 +
-+#define IPIPE_GCK_MMR_DEFAULT	1
-+#define IPIPE_GCK_PIX_DEFAULT	0xe
-+#define RSZ_GCK_MMR_DEFAULT	1
-+#define RSZ_GCK_SDR_DEFAULT	1
++enum rsz_src_img_fmt {
++	RSZ_IMG_422,
++	RSZ_IMG_420
++};
 +
-+/* LUTDPC */
-+#define LUTDPC_TBL_256_EN	0
-+#define LUTDPC_INF_TBL_EN	1
-+#define LUT_DPC_START_ADDR	0
-+#define LUT_DPC_H_POS_MASK	0x1fff
-+#define LUT_DPC_V_POS_MASK	0x1fff
-+#define LUT_DPC_V_POS_SHIFT	13
-+#define LUT_DPC_CORR_METH_SHIFT	26
-+#define LUT_DPC_MAX_SIZE	256
-+#define LUT_DPC_SIZE_MASK	0x3ff
++enum rsz_dpaths_bypass_t {
++	BYPASS_OFF = 0,
++	BYPASS_ON = 1,
++};
 +
-+/* OTFDPC */
-+#define OTFDPC_DPC2_THR_MASK	0xfff
-+#define OTF_DET_METHOD_SHIFT	1
-+#define OTF_DPC3_0_SHF_MASK	3
-+#define OTF_DPC3_0_THR_SHIFT	6
-+#define OTF_DPC3_0_THR_MASK	0x3f
-+#define OTF_DPC3_0_SLP_MASK	0x3f
-+#define OTF_DPC3_0_DET_MASK	0xfff
-+#define OTF_DPC3_0_CORR_MASK	0xfff
++struct rsz_common_params {
++	unsigned int vps;
++	unsigned int vsz;
++	unsigned int hps;
++	unsigned int hsz;
++	/* 420 or 422 */
++	enum rsz_src_img_fmt src_img_fmt;
++	/* Y or C when src_fmt is 420, 0 - y, 1 - c */
++	unsigned char y_c;
++	/* flip raw or ycbcr */
++	unsigned char raw_flip;
++	/* IPIPE or IPIPEIF data */
++	enum rsz_data_source source;
++	enum rsz_dpaths_bypass_t passthrough;
++	unsigned char yuv_y_min;
++	unsigned char yuv_y_max;
++	unsigned char yuv_c_min;
++	unsigned char yuv_c_max;
++	bool rsz_seq_crv;
++	enum vpfe_chr_pos out_chr_pos;
++};
 +
-+/* NF (D2F) */
-+#define D2F_SPR_VAL_MASK		0x1f
-+#define D2F_SPR_VAL_SHIFT		0
-+#define D2F_SHFT_VAL_MASK		3
-+#define D2F_SHFT_VAL_SHIFT		5
-+#define D2F_SAMPLE_METH_SHIFT		7
-+#define D2F_APPLY_LSC_GAIN_SHIFT	8
-+#define D2F_USE_SPR_REG_VAL		0
-+#define D2F_STR_VAL_MASK		0x1f
-+#define D2F_THR_VAL_MASK		0x3ff
-+#define D2F_EDGE_DET_THR_MASK		0x7ff
++struct resizer_params {
++	enum resizer_oper_mode oper_mode;
++	struct rsz_common_params rsz_common;
++	struct resizer_scale_param rsz_rsc_param[2];
++	struct resizer_rgb rsz2rgb[2];
++	struct rsz_ext_mem_param ext_mem_param[2];
++	bool rsz_en[2];
++	struct vpfe_rsz_config_params user_config;
++};
 +
-+/* Green Imbalance Correction */
-+#define GIC_TYP_SHIFT			0
-+#define GIC_THR_SEL_SHIFT		1
-+#define	GIC_APPLY_LSC_GAIN_SHIFT	2
-+#define GIC_GAIN_MASK			0xff
-+#define GIC_THR_MASK			0xfff
-+#define GIC_SLOPE_MASK			0xfff
-+#define GIC_NFGAN_INT_MASK		7
-+#define GIC_NFGAN_DECI_MASK		0x1f
++#define ENABLE			1
++#define DISABLE			(!ENABLE)
 +
-+/* WB */
-+#define WB_OFFSET_MASK			0xfff
-+#define WB_GAIN_INT_MASK		0xf
-+#define WB_GAIN_DECI_MASK		0x1ff
++#define RESIZER_CROP_PAD_SINK		0
++#define RESIZER_CROP_PAD_SOURCE		1
++#define RESIZER_CROP_PAD_SOURCE2	2
 +
-+/* CFA */
-+#define CFA_HPF_THR_2DIR_MASK		0x1fff
-+#define CFA_HPF_SLOPE_2DIR_MASK		0x3ff
-+#define CFA_HPF_MIX_THR_2DIR_MASK	0x1fff
-+#define CFA_HPF_MIX_SLP_2DIR_MASK	0x3ff
-+#define CFA_DIR_THR_2DIR_MASK		0x3ff
-+#define CFA_DIR_SLP_2DIR_MASK		0x7f
-+#define CFA_ND_WT_2DIR_MASK		0x3f
-+#define CFA_DAA_HUE_FRA_MASK		0x3f
-+#define CFA_DAA_EDG_THR_MASK		0xff
-+#define CFA_DAA_THR_MIN_MASK		0x3ff
-+#define CFA_DAA_THR_SLP_MASK		0x3ff
-+#define CFA_DAA_SLP_MIN_MASK		0x3ff
-+#define CFA_DAA_SLP_SLP_MASK		0x3ff
-+#define CFA_DAA_LP_WT_MASK		0x3f
++#define RESIZER_CROP_PADS_NUM		3
 +
-+/* RGB2RGB */
-+#define RGB2RGB_1_OFST_MASK		0x1fff
-+#define RGB2RGB_1_GAIN_INT_MASK		0xf
-+#define RGB2RGB_GAIN_DECI_MASK		0xff
-+#define RGB2RGB_2_OFST_MASK		0x7ff
-+#define RGB2RGB_2_GAIN_INT_MASK		0x7
++enum resizer_crop_input_entity {
++	RESIZER_CROP_INPUT_NONE = 0,
++	RESIZER_CROP_INPUT_IPIPEIF = 1,
++	RESIZER_CROP_INPUT_IPIPE = 2,
++};
 +
-+/* Gamma */
-+#define GAMMA_BYPR_SHIFT		0
-+#define GAMMA_BYPG_SHIFT		1
-+#define GAMMA_BYPB_SHIFT		2
-+#define GAMMA_TBL_SEL_SHIFT		4
-+#define GAMMA_TBL_SIZE_SHIFT		5
-+#define GAMMA_MASK			0x3ff
-+#define GAMMA_SHIFT			10
++enum resizer_crop_output_entity {
++	RESIZER_CROP_OUTPUT_NONE,
++	RESIZER_A,
++	RESIZER_B,
++};
 +
-+/* 3D LUT */
-+#define D3_LUT_ENTRY_MASK		0x3ff
-+#define D3_LUT_ENTRY_R_SHIFT		20
-+#define D3_LUT_ENTRY_G_SHIFT		10
-+#define D3_LUT_ENTRY_B_SHIFT		0
++struct dm365_crop_resizer_device {
++	struct v4l2_subdev			subdev;
++	struct media_pad			pads[RESIZER_CROP_PADS_NUM];
++	struct v4l2_mbus_framefmt		formats[RESIZER_CROP_PADS_NUM];
++	enum resizer_crop_input_entity		input;
++	enum resizer_crop_output_entity		output;
++	enum resizer_crop_output_entity		output2;
++	struct vpfe_resizer_device		*rsz_device;
++};
 +
-+/* Lumina adj */
-+#define	LUM_ADJ_CONTR_SHIFT		0
-+#define	LUM_ADJ_BRIGHT_SHIFT		8
++#define RESIZER_PAD_SINK		0
++#define RESIZER_PAD_SOURCE		1
 +
-+/* RGB2YCbCr */
-+#define RGB2YCBCR_OFST_MASK		0x7ff
-+#define RGB2YCBCR_COEF_INT_MASK		0xf
-+#define RGB2YCBCR_COEF_DECI_MASK	0xff
++#define RESIZER_PADS_NUM		2
 +
-+/* GBCE */
-+#define GBCE_Y_VAL_MASK			0xff
-+#define GBCE_GAIN_VAL_MASK		0x3ff
-+#define GBCE_ENTRY_SHIFT		10
++enum resizer_input_entity {
++	RESIZER_INPUT_NONE = 0,
++	RESIZER_INPUT_CROP_RESIZER = 1,
++};
 +
-+/* Edge Enhancements */
-+#define YEE_HALO_RED_EN_SHIFT		1
-+#define YEE_HPF_SHIFT_MASK		0xf
-+#define YEE_COEF_MASK			0x3ff
-+#define YEE_THR_MASK			0x3f
-+#define YEE_ES_GAIN_MASK		0xfff
-+#define YEE_ES_THR1_MASK		0xfff
-+#define YEE_ENTRY_SHIFT			9
-+#define YEE_ENTRY_MASK			0x1ff
++enum resizer_output_entity {
++	RESIZER_OUTPUT_NONE = 0,
++	RESIZER_OUPUT_MEMORY = 1,
++};
 +
-+/* CAR */
-+#define CAR_MF_THR			0xff
-+#define CAR_SW1_SHIFT			8
-+#define CAR_GAIN1_SHFT_MASK		7
-+#define CAR_GAIN_MIN_MASK		0x1ff
-+#define CAR_GAIN2_SHFT_MASK		0xf
-+#define CAR_HPF_SHIFT_MASK		3
++struct dm365_resizer_device {
++	struct v4l2_subdev		subdev;
++	struct media_pad		pads[RESIZER_PADS_NUM];
++	struct v4l2_mbus_framefmt	formats[RESIZER_PADS_NUM];
++	enum resizer_input_entity	input;
++	enum resizer_output_entity	output;
++	struct vpfe_video_device	video_out;
++	struct vpfe_resizer_device	*rsz_device;
++};
 +
-+/* CGS */
-+#define CAR_SHIFT_MASK			3
++struct vpfe_resizer_device {
++	struct dm365_crop_resizer_device	crop_resizer;
++	struct dm365_resizer_device		resizer_a;
++	struct dm365_resizer_device		resizer_b;
++	struct resizer_params			config;
++	void *__iomem base_addr;
++};
 +
-+/* Resizer */
-+#define RSZ_BYPASS_SHIFT		1
-+#define RSZ_SRC_IMG_FMT_SHIFT		1
-+#define RSZ_SRC_Y_C_SEL_SHIFT		2
-+#define IPIPE_RSZ_VPS_MASK		0xffff
-+#define IPIPE_RSZ_HPS_MASK		0xffff
-+#define IPIPE_RSZ_VSZ_MASK		0x1fff
-+#define IPIPE_RSZ_HSZ_MASK		0x1fff
-+#define RSZ_HPS_MASK			0x1fff
-+#define RSZ_VPS_MASK			0x1fff
-+#define RSZ_O_HSZ_MASK			0x1fff
-+#define RSZ_O_VSZ_MASK			0x1fff
-+#define RSZ_V_PHS_MASK			0x3fff
-+#define RSZ_V_DIF_MASK			0x3fff
++int vpfe_resizer_init(struct vpfe_resizer_device *vpfe_rsz,
++		      struct platform_device *pdev);
++int vpfe_resizer_register_entities(struct vpfe_resizer_device *vpfe_rsz,
++				   struct v4l2_device *v4l2_dev);
++void vpfe_resizer_unregister_entities(struct vpfe_resizer_device *vpfe_rsz);
++void vpfe_resizer_cleanup(struct vpfe_resizer_device *vpfe_rsz,
++			  struct platform_device *pdev);
++void vpfe_resizer_buffer_isr(struct vpfe_resizer_device *resizer);
++void vpfe_resizer_dma_isr(struct vpfe_resizer_device *resizer);
 +
-+#define RSZA_H_FLIP_SHIFT		0
-+#define RSZA_V_FLIP_SHIFT		1
-+#define RSZB_H_FLIP_SHIFT		2
-+#define RSZB_V_FLIP_SHIFT		3
-+#define RSZ_A				0
-+#define RSZ_B				1
-+#define RSZ_CEN_SHIFT			1
-+#define RSZ_YEN_SHIFT			0
-+#define RSZ_TYP_Y_SHIFT			0
-+#define RSZ_TYP_C_SHIFT			1
-+#define RSZ_LPF_INT_MASK		0x3f
-+#define RSZ_LPF_INT_MASK		0x3f
-+#define RSZ_LPF_INT_C_SHIFT		6
-+#define RSZ_H_PHS_MASK			0x3fff
-+#define RSZ_H_DIF_MASK			0x3fff
-+#define RSZ_DIFF_DOWN_THR		256
-+#define RSZ_DWN_SCALE_AV_SZ_V_SHIFT	3
-+#define RSZ_DWN_SCALE_AV_SZ_MASK	7
-+#define RSZ_RGB_MSK1_SHIFT		2
-+#define RSZ_RGB_MSK0_SHIFT		1
-+#define RSZ_RGB_TYP_SHIFT		0
-+#define RSZ_RGB_ALPHA_MASK		0xff
-+
-+static inline u32 regr_ip(void *__iomem addr, u32 offset)
-+{
-+	return readl(addr + offset);
-+}
-+
-+static inline void regw_ip(void *__iomem addr, u32 val, u32 offset)
-+{
-+	writel(val, addr + offset);
-+}
-+
-+static inline u32 w_ip_table(void *__iomem addr, u32 val, u32 offset)
-+{
-+	writel(val, addr + offset);
-+
-+	return val;
-+}
-+
-+static inline u32 regr_rsz(void *__iomem addr, u32 offset)
-+{
-+	return readl(addr + offset);
-+}
-+
-+static inline u32 regw_rsz(void *__iomem addr, u32 val, u32 offset)
-+{
-+	writel(val, addr + offset);
-+
-+	return val;
-+}
-+
-+int config_ipipe_hw(struct vpfe_ipipe_device *ipipe);
-+int resizer_set_outaddr(void *__iomem rsz_base, struct resizer_params *params,
-+			int resize_no, unsigned int address);
-+int rsz_enable(void *__iomem rsz_base, int rsz_id, int enable);
-+void rsz_src_enable(void *__iomem rsz_base, int enable);
-+void rsz_set_in_pix_format(unsigned char y_c);
-+int config_rsz_hw(struct vpfe_resizer_device *resizer,
-+		  struct resizer_params *config);
-+void ipipe_set_d2f_regs(void *__iomem base_addr, unsigned int id,
-+	struct vpfe_ipipe_nf *noise_filter);
-+void ipipe_set_rgb2rgb_regs(void *__iomem base_addr, unsigned int id,
-+	struct vpfe_ipipe_rgb2rgb *rgb);
-+void ipipe_set_yuv422_conv_regs(void *__iomem base_addr,
-+	struct vpfe_ipipe_yuv422_conv *conv);
-+void ipipe_set_lum_adj_regs(void *__iomem base_addr,
-+	struct ipipe_lum_adj *lum_adj);
-+void ipipe_set_rgb2ycbcr_regs(void *__iomem base_addr,
-+	struct vpfe_ipipe_rgb2yuv *yuv);
-+void ipipe_set_lutdpc_regs(void *__iomem base_addr,
-+	void *__iomem isp5_base_addr, struct vpfe_ipipe_lutdpc *lutdpc);
-+void ipipe_set_otfdpc_regs(void *__iomem base_addr,
-+	struct vpfe_ipipe_otfdpc *otfdpc);
-+void ipipe_set_3d_lut_regs(void *__iomem base_addr,
-+	void *__iomem isp5_base_addr, struct vpfe_ipipe_3d_lut *lut_3d);
-+void ipipe_set_gamma_regs(void *__iomem base_addr,
-+	void *__iomem isp5_base_addr, struct vpfe_ipipe_gamma *gamma);
-+void ipipe_set_ee_regs(void *__iomem base_addr,
-+	void *__iomem isp5_base_addr, struct vpfe_ipipe_yee *ee);
-+void ipipe_set_gbce_regs(void *__iomem base_addr,
-+	void *__iomem isp5_base_addr, struct vpfe_ipipe_gbce *gbce);
-+void ipipe_set_gic_regs(void *__iomem base_addr, struct vpfe_ipipe_gic *gic);
-+void ipipe_set_cfa_regs(void *__iomem base_addr, struct vpfe_ipipe_cfa *cfa);
-+void ipipe_set_car_regs(void *__iomem base_addr, struct vpfe_ipipe_car *car);
-+void ipipe_set_cgs_regs(void *__iomem base_addr, struct vpfe_ipipe_cgs *cgs);
-+void ipipe_set_wb_regs(void *__iomem base_addr, struct vpfe_ipipe_wb *wb);
-+
-+#endif		/* _DAVINCI_VPFE_DM365_IPIPE_HW_H */
++#endif		/* _DAVINCI_VPFE_DM365_RESIZER_H */
 -- 
 1.7.4.1
 
