@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031591Ab2K3StA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:49:00 -0500
-Received: from mail.kernel.org ([198.145.19.201]:57304 "EHLO mail.kernel.org"
+	id S1031653Ab2K3St3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:49:29 -0500
+Received: from mail.kernel.org ([198.145.19.201]:57440 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1031543Ab2K3Ss7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:48:59 -0500
+	id S1031595Ab2K3St0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:49:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 01/37] ALSA: pcmcia - Use pcmcia_request_irq()
-Date: Fri, 30 Nov 2012 10:45:48 -0800
-Message-Id: <20121130183857.362490984@linuxfoundation.org>
+        Danny Kukawka <danny.kukawka@bisect.de>, Jens Axboe <axboe@kernel.dk>
+Subject: [ 03/37] drivers/block/DAC960: fix -Wuninitialized warning
+Date: Fri, 30 Nov 2012 10:45:50 -0800
+Message-Id: <20121130183857.567243855@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130183857.166228045@linuxfoundation.org>
 References: <20121130183857.166228045@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,42 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Danny Kukawka <danny.kukawka@bisect.de>
 
-commit 08ef79490dad6b88010e94795cf9f89b018ed504 upstream.
+commit cecd353a02fb1405c8a72a324b26b5acf97e7411 upstream.
 
-The drivers don't require the exclusive irqs.  Let's fix the deprecated
-warnings.
+Set CommandMailbox with memset before use it. Fix for:
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+drivers/block/DAC960.c: In function ‘DAC960_V1_EnableMemoryMailboxInterface’:
+arch/x86/include/asm/io.h:61:1: warning: ‘CommandMailbox.Bytes[12]’
+ may be used uninitialized in this function [-Wuninitialized]
+drivers/block/DAC960.c:1175:30: note: ‘CommandMailbox.Bytes[12]’
+ was declared here
+
+Signed-off-by: Danny Kukawka <danny.kukawka@bisect.de>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pcmcia/pdaudiocf/pdaudiocf.c |    2 +-
- sound/pcmcia/vx/vxpocket.c         |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/block/DAC960.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/sound/pcmcia/pdaudiocf/pdaudiocf.c
-+++ b/sound/pcmcia/pdaudiocf/pdaudiocf.c
-@@ -223,7 +223,7 @@ static int pdacf_config(struct pcmcia_de
- 	if (ret)
- 		goto failed;
+--- a/drivers/block/DAC960.c
++++ b/drivers/block/DAC960.c
+@@ -1177,7 +1177,8 @@ static bool DAC960_V1_EnableMemoryMailbo
+   int TimeoutCounter;
+   int i;
  
--	ret = pcmcia_request_exclusive_irq(link, pdacf_interrupt);
-+	ret = pcmcia_request_irq(link, pdacf_interrupt);
- 	if (ret)
- 		goto failed;
- 
---- a/sound/pcmcia/vx/vxpocket.c
-+++ b/sound/pcmcia/vx/vxpocket.c
-@@ -229,7 +229,7 @@ static int vxpocket_config(struct pcmcia
- 	if (ret)
- 		goto failed;
- 
--	ret = pcmcia_request_exclusive_irq(link, snd_vx_irq_handler);
-+	ret = pcmcia_request_irq(link, snd_vx_irq_handler);
- 	if (ret)
- 		goto failed;
- 
+-  
++  memset(&CommandMailbox, 0, sizeof(DAC960_V1_CommandMailbox_T));
++
+   if (pci_set_dma_mask(Controller->PCIDevice, DMA_BIT_MASK(32)))
+ 	return DAC960_Failure(Controller, "DMA mask out of range");
+   Controller->BounceBufferLimit = DMA_BIT_MASK(32);
 
 
