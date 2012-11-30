@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992518Ab2K3Sxj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:53:39 -0500
-Received: from mail.kernel.org ([198.145.19.201]:57666 "EHLO mail.kernel.org"
+	id S2992547Ab2K3SyK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:54:10 -0500
+Received: from mail.kernel.org ([198.145.19.201]:57567 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1031709Ab2K3Stq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:49:46 -0500
+	id S1031693Ab2K3Stl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:49:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Acelan Kao <acelan.kao@canonical.com>,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 25/37] ALSA: hda - Add support for Realtek ALC292
-Date: Fri, 30 Nov 2012 10:46:12 -0800
-Message-Id: <20121130183859.957554786@linuxfoundation.org>
+        Merlin Schumacher <merlin.schumacher@gmail.com>,
+        Ike Panhc <ike.pan@canonical.com>, Matthew Garrett <mjg@redhat.com>,
+        maximilian attems <max@stro.at>
+Subject: [ 34/37] acer-wmi: support for P key on TM8372
+Date: Fri, 30 Nov 2012 10:46:21 -0800
+Message-Id: <20121130183900.904329144@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130183857.166228045@linuxfoundation.org>
 References: <20121130183857.166228045@linuxfoundation.org>
@@ -27,32 +27,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Merlin Schumacher <merlin.schumacher@gmail.com>
 
-commit af02dde8a609d8d071c4b31a82df811a55690a4a upstream.
+commit 67e1d34cd54cbf33f093f1dd53e7bda1124eb972 upstream.
 
-We found a new codec ID 292, and that just a simple quirk would enable
-sound output/input on this ALC292 chip.
+BugLink: http://launchpad.net/bugs/865807
 
-BugLink: https://bugs.launchpad.net/bugs/1081466
-Tested-by: Acelan Kao <acelan.kao@canonical.com>
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+There is no entry for P key on TM8372, so when P key is pressed, only
+"acer_wmi: Unknown key number - 0x29" in dmesg.
+
+Signed-off-by: Merlin Schumacher <merlin.schumacher@gmail.com>
+Signed-off-by: Ike Panhc <ike.pan@canonical.com>
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+Cc: maximilian attems <max@stro.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 +
+ drivers/platform/x86/acer-wmi.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -20137,6 +20137,7 @@ static const struct hda_codec_preset snd
- 	{ .id = 0x10ec0282, .name = "ALC282", .patch = patch_alc269 },
- 	{ .id = 0x10ec0283, .name = "ALC283", .patch = patch_alc269 },
- 	{ .id = 0x10ec0290, .name = "ALC290", .patch = patch_alc269 },
-+	{ .id = 0x10ec0292, .name = "ALC292", .patch = patch_alc269 },
- 	{ .id = 0x10ec0861, .rev = 0x100340, .name = "ALC660",
- 	  .patch = patch_alc861 },
- 	{ .id = 0x10ec0660, .name = "ALC660-VD", .patch = patch_alc861vd },
+--- a/drivers/platform/x86/acer-wmi.c
++++ b/drivers/platform/x86/acer-wmi.c
+@@ -104,6 +104,7 @@ static const struct key_entry acer_wmi_k
+ 	{KE_KEY, 0x22, {KEY_PROG2} },    /* Arcade */
+ 	{KE_KEY, 0x23, {KEY_PROG3} },    /* P_Key */
+ 	{KE_KEY, 0x24, {KEY_PROG4} },    /* Social networking_Key */
++	{KE_KEY, 0x29, {KEY_PROG3} },    /* P_Key for TM8372 */
+ 	{KE_IGNORE, 0x41, {KEY_MUTE} },
+ 	{KE_IGNORE, 0x42, {KEY_PREVIOUSSONG} },
+ 	{KE_IGNORE, 0x43, {KEY_NEXTSONG} },
 
 
