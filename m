@@ -1,57 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161046Ab2K3STu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:19:50 -0500
-Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:6088 "EHLO
-	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161023Ab2K3STs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:19:48 -0500
-From: "Ortiz, Lance E" <lance.oritz@hp.com>
-To: Borislav Petkov <bp@alien8.de>, Steven Rostedt <rostedt@goodmis.org>
-CC: "bhelgaas@google.com" <bhelgaas@google.com>,
-        "lance_ortiz@hotmail.com" <lance_ortiz@hotmail.com>,
-        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "mchehab@redhat.com" <mchehab@redhat.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/3] aerdrv: Trace Event for AER
-Thread-Topic: [PATCH 1/3] aerdrv: Trace Event for AER
-Thread-Index: AQHNzp0wuAfMoaPmjE6Nsd1Y/5QejZgCNIyAgAAM24CAACJ2AIAAAyqAgAA+O4CAAAuKsA==
-Date: Fri, 30 Nov 2012 18:18:27 +0000
-Message-ID: <A961433CDFF2F640A2866803152E61F9516EAFDF@G4W3219.americas.hpqcorp.net>
-References: <20121129215443.5483.43364.stgit@grignak.americas.hpqcorp.net>
- <1354240279.6276.131.camel@gandalf.local.home>
- <20121130105311.GA6869@liondog.tnic>
- <1354275551.6276.140.camel@gandalf.local.home>
- <20121130134232.GD6869@liondog.tnic>
- <1354283631.6276.143.camel@gandalf.local.home>
- <20121130173635.GD23034@liondog.tnic>
-In-Reply-To: <20121130173635.GD23034@liondog.tnic>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.25]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1754232Ab2K3S1A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:27:00 -0500
+Received: from mga09.intel.com ([134.134.136.24]:48017 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751030Ab2K3S06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:26:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,192,1355126400"; 
+   d="scan'208";a="227266745"
+Subject: Re: [PATCH 1/4] DMA: PL330: fix locking in
+ pl330_free_chan_resources()
+From: Vinod Koul <vinod.koul@linux.intel.com>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Jassi Brar <jassisinghbrar@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, kgene.kim@samsung.com,
+        rob.herring@calxeda.com, dinguyen@altera.com, pawel.moll@arm.com,
+        t.figa@samsung.com, kyungmin.park@samsung.com,
+        Dan Williams <djbw@fb.com>
+In-Reply-To: <201211301159.31098.b.zolnierkie@samsung.com>
+References: <1351504796-24788-1-git-send-email-b.zolnierkie@samsung.com>
+	 <1351504796-24788-2-git-send-email-b.zolnierkie@samsung.com>
+	 <CABb+yY3DJ8saXGmXO31nQjtmqObpJxf5-Zwv4YhkJLv6EA=Tfw@mail.gmail.com>
+	 <201211301159.31098.b.zolnierkie@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 30 Nov 2012 23:37:53 +0530
+Message-ID: <1354298873.7077.76.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qAUIJsO6022882
 
- 
-> Ok, cool.
+On Fri, 2012-11-30 at 11:59 +0100, Bartlomiej Zolnierkiewicz wrote:
+> > Acked-by: Jassi Brar <jassisinghbrar@gmail.com>
 > 
-> Lance, care to move the TP to a new header called
-> include/trace/events/ras.h in your next iteration of the patches?
+> Vinod/Dan could you please pick this patch for 3.8?  Thanks!
+I will check and queue it up today
 
-Will do.
+-- 
+~Vinod
 
-Lance
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
