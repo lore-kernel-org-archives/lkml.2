@@ -1,57 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1769232Ab2K3T1j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:27:39 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58236 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992635Ab2K3S4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:56:14 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 18/56] ALSA: hda - Cirrus: Correctly clear line_out_pins when moving to speaker
-Date: Fri, 30 Nov 2012 10:55:10 -0800
-Message-Id: <20121130185120.163549451@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121130185118.302752929@linuxfoundation.org>
-References: <20121130185118.302752929@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S1769247Ab2K3T1s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:27:48 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53749 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S2992635Ab2K3T1m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 14:27:42 -0500
+Date: Fri, 30 Nov 2012 11:27:35 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Gao feng <gaofeng@cn.fujitsu.com>
+Cc: cgroups@vger.kernel.org, lizefan@huawei.com, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCH 2/2] cgroup: remove subsystem files when remounting cgroup
+Message-ID: <20121130192735.GF3873@htj.dyndns.org>
+References: <1354292489-18434-1-git-send-email-gaofeng@cn.fujitsu.com>
+ <1354292489-18434-2-git-send-email-gaofeng@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354292489-18434-2-git-send-email-gaofeng@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+Hello, Gao.
 
-------------------
+On Sat, Dec 01, 2012 at 12:21:29AM +0800, Gao feng wrote:
+> cgroup_clear_directroy is called by cgroup_d_remove_dir
+> and cgroup_remount.
+> 
+> when we call cgroup_remount to remount the cgroup,the subsystem
+> may be unlinked from cgroupfs_root->subsys_list in rebind_subsystem,this
+> subsystem's files will not be removed in cgroup_clear_directroy.
+> And the system will panic when we try to access these files.
+> 
+> this patch fix it.
 
-From: David Henningsson <david.henningsson@canonical.com>
+I'd really appreciated if you explain how it's fixed.
 
-commit 34c3d1926bdaf45d3a891dd577482abcdd9faa34 upstream.
+> Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+> ---
+>  kernel/cgroup.c |   86 ++++++++++++++++++++++++++++++++++--------------------
+>  1 files changed, 54 insertions(+), 32 deletions(-)
+> 
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index e5233b7..90429d5 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -982,10 +982,14 @@ static void cgroup_clear_directory(struct dentry *dir, bool base_files,
+>  				   unsigned long subsys_mask)
+>  {
+>  	struct cgroup *cgrp = __d_cgrp(dir);
+> -	struct cgroup_subsys *ss;
+> +	int i;
+>  
+> -	for_each_subsys(cgrp->root, ss) {
+> +	for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
+>  		struct cftype_set *set;
+> +		struct cgroup_subsys *ss = subsys[i];
+> +
+> +		if (ss == NULL)
+> +			continue;
 
-If this array is not cleared, the jack related code later might
-fail to create "Internal Speaker Phantom Jack" on Dell Inspiron 3420 and
-Dell Vostro 2420.
+Ummm... I can't say I like it.  It tries to work around the problem
+that the backing subsys may go away earlier by changing how the
+subsystems are iterated so that the "gone" subsystems can be iterated,
+which really doesn't seem like a good diea.  I mean, what if somebody
+tries to access the files inbetween?  root_cgrp->subsys[] would be
+%NULL and segfault all the same.
 
-BugLink: https://bugs.launchpad.net/bugs/1076840
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>  static void drop_parsed_module_refcounts(unsigned long subsys_mask)
+> @@ -1392,23 +1403,34 @@ static int cgroup_remount(struct super_block *sb, int *flags, char *data)
+>  	removed_mask = root->subsys_mask & ~opts.subsys_mask;
+>  
+>  	/* Don't allow flags or name to change at remount */
+> +	ret = -EINVAL;
+>  	if (opts.flags != root->flags ||
+>  	    (opts.name && strcmp(opts.name, root->name))) {
+> -		ret = -EINVAL;
+>  		drop_parsed_module_refcounts(opts.subsys_mask);
+>  		goto out_unlock;
+>  	}
+>  
+> -	ret = rebind_subsystems(root, opts.subsys_mask);
+> +	/*
+> +	 * Add the reference of these removed subsystem,we
+> +	 * need use subsystems to remove their cgroup files.
+> +	 */
+> +	ret = cgroup_get_module_refcounts(removed_mask);
+>  	if (ret) {
+>  		drop_parsed_module_refcounts(opts.subsys_mask);
+>  		goto out_unlock;
+>  	}
+>  
+> +	ret = rebind_subsystems(root, opts.subsys_mask);
+> +	if (ret) {
+> +		drop_parsed_module_refcounts(opts.subsys_mask | removed_mask);
+> +		goto out_unlock;
+> +	}
+> +
+>  	/* clear out any existing files and repopulate subsystem files */
+>  	cgroup_clear_directory(cgrp->dentry, false, removed_mask);
+>  	/* re-populate subsystem files */
+>  	cgroup_populate_dir(cgrp, false, added_mask);
+> +	drop_parsed_module_refcounts(removed_mask);
 
----
- sound/pci/hda/patch_cirrus.c |    1 +
- 1 file changed, 1 insertion(+)
+So, how about performing cgroup_clear_directory() *before*
+rebind_subsystems() and then restore it afterwards?
 
---- a/sound/pci/hda/patch_cirrus.c
-+++ b/sound/pci/hda/patch_cirrus.c
-@@ -460,6 +460,7 @@ static int parse_output(struct hda_codec
- 		memcpy(cfg->speaker_pins, cfg->line_out_pins,
- 		       sizeof(cfg->speaker_pins));
- 		cfg->line_outs = 0;
-+		memset(cfg->line_out_pins, 0, sizeof(cfg->line_out_pins));
- 	}
- 
- 	return 0;
+Thanks.
 
-
+-- 
+tejun
