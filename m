@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992488Ab2K3Swt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:52:49 -0500
-Received: from sabertooth01.qualcomm.com ([65.197.215.72]:46600 "EHLO
-	sabertooth01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161056Ab2K3Swq (ORCPT
+	id S2992502Ab2K3SxO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:53:14 -0500
+Received: from mail-wg0-f74.google.com ([74.125.82.74]:37786 "EHLO
+	mail-wg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161068Ab2K3SwQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:52:46 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6912"; a="9893908"
-X-IronPort-AV: E=McAfee;i="5400,1158,6912"; a="2806502"
-Message-ID: <50B9007B.4070508@qti.qualcomm.com>
-Date: Fri, 30 Nov 2012 10:52:43 -0800
-From: Max Krasnyansky <maxk@qti.qualcomm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <jslaby@suse.cz>, <netdev@vger.kernel.org>, <jirislaby@gmail.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] MAINTAINERS: fix bouncing tun/tap entries
-References: <1354295140-6355-1-git-send-email-jslaby@suse.cz> <20121130.122813.1136966656907114890.davem@davemloft.net>
-In-Reply-To: <20121130.122813.1136966656907114890.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.30.39.5]
+	Fri, 30 Nov 2012 13:52:16 -0500
+From: Vincent Palatin <vpalatin@chromium.org>
+To: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>,
+        Duncan Laurie <dlaurie@chromium.org>,
+        Olof Johansson <olofj@chromium.org>
+Subject: issue with x86 FPU state after suspend to ram
+Date: Fri, 30 Nov 2012 10:52:02 -0800
+Message-Id: <1354301523-5252-1-git-send-email-vpalatin@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/30/2012 09:28 AM, David Miller wrote:
-> From: Jiri Slaby <jslaby@suse.cz>
-> Date: Fri, 30 Nov 2012 18:05:40 +0100
-> 
->> Delivery to the following recipient failed permanently:
->>
->>      vtun@office.satix.net
->>
->> Technical details of permanent failure:
->> DNS Error: Domain name not found
->>
->> Of course:
->> $ host office.satix.net
->> Host office.satix.net not found: 3(NXDOMAIN)
->>
->> ===========
->>
->> And "Change of Email Address Notification":
->> Old Address        New Address           Email Subject
->> ------------------------------------------------------
->> maxk@qualcomm.com  maxk@qti.qualcomm.com "tuntap: multiqueue...
->>
->> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> 
-> Applied.
-> 
+Hi,
 
-Thanks for fixing that guys.
+On a 4-core Ivybridge platform, when doing a lot of suspend-to-ram/resume
+cycles, we were observing processes randomly killed by a SIGFPE.
+When dumping the FPU registers state on the SIGFPE (usually a floating stack
+underflow/overflow on a floating point arithmetic operation), the FPU registers
+looks empty or at least corrupted which was more or less impossible with
+respect to the disassembled floating point code.
 
-Max
+After doing more tracing, in the faulty case, the process seems to be keeping
+FPU ownership over a secondary CPU unplug/re-plug triggered by the suspend.
+Then it's doing a lazy restore of its FPU context (ie just using the current
+FPU hardware registers as he is the owner) instead of writing them back
+to the hardware from the version previously saved in the task context,
+despite the fact the whole FPU hardware state has been lost.
+
+Just invalidating the "fpu_owner_task" when disabling a secondary CPU seems
+to solve my issue (it's already reset for the primary CPU).
+
+By the way, when FPU the lazy restore patch was discussed back in february,
+Ingo commented (in http://permalink.gmane.org/gmane.linux.kernel/1255423) :
+"
+I guess the CPU hotplug case deserves a comment in the code: CPU
+hotplug + replug of the same (but meanwhile reset) CPU is safe
+because fpu_owner_task[cpu] gets reset to NULL.
+"
+That contradicts my previous observation, so maybe I have totally overlooked
+something in this mechanism.
+Can you comment ?
+
+I'm still putting my patch proposal in this thread.
+The issue seems to exist since 3.4 after the FPU lazy restore was actually
+implemented by commit 7e16838d "i387: support lazy restore of FPU state".
+But the issue is mainly visible on 3.4 and 3.6 since on tip of tree, it is
+hidden by the eager fpu implementation for platforms with xsave support,
+but it still happens with eagerfpu=off.
+
+To apply this change to 3.4, "this_cpu_write" needs to be replaced by
+percpu_write.
+
+--
+Vincent
 
