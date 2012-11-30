@@ -1,116 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1769247Ab2K3T1s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:27:48 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53749 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S2992635Ab2K3T1m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 14:27:42 -0500
-Date: Fri, 30 Nov 2012 11:27:35 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: cgroups@vger.kernel.org, lizefan@huawei.com, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Subject: Re: [PATCH 2/2] cgroup: remove subsystem files when remounting cgroup
-Message-ID: <20121130192735.GF3873@htj.dyndns.org>
-References: <1354292489-18434-1-git-send-email-gaofeng@cn.fujitsu.com>
- <1354292489-18434-2-git-send-email-gaofeng@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354292489-18434-2-git-send-email-gaofeng@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1769258Ab2K3T2U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:28:20 -0500
+Received: from mail.kernel.org ([198.145.19.201]:58219 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1031442Ab2K3S4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:56:13 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Colin Fletcher <colin.m.fletcher@googlemail.com>,
+        Devin Venable <venable.devin@gmail.com>,
+        Dr Nick Bailey <nicholas.bailey@glasgow.ac.uk>,
+        Jannis Achstetter <jannis_achstetter@web.de>,
+        Rui Nuno Capela <rncbc@rncbc.org>, Oliver Neukum <oliver@neukum.org>,
+        Clemens Ladisch <clemens@ladisch.de>
+Subject: [ 17/56] ALSA: ua101, usx2y: fix broken MIDI output
+Date: Fri, 30 Nov 2012 10:55:09 -0800
+Message-Id: <20121130185120.069279120@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.197.g5a90748
+In-Reply-To: <20121130185118.302752929@linuxfoundation.org>
+References: <20121130185118.302752929@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Gao.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-On Sat, Dec 01, 2012 at 12:21:29AM +0800, Gao feng wrote:
-> cgroup_clear_directroy is called by cgroup_d_remove_dir
-> and cgroup_remount.
-> 
-> when we call cgroup_remount to remount the cgroup,the subsystem
-> may be unlinked from cgroupfs_root->subsys_list in rebind_subsystem,this
-> subsystem's files will not be removed in cgroup_clear_directroy.
-> And the system will panic when we try to access these files.
-> 
-> this patch fix it.
+------------------
 
-I'd really appreciated if you explain how it's fixed.
+From: Clemens Ladisch <clemens@ladisch.de>
 
-> Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
-> ---
->  kernel/cgroup.c |   86 ++++++++++++++++++++++++++++++++++--------------------
->  1 files changed, 54 insertions(+), 32 deletions(-)
-> 
-> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> index e5233b7..90429d5 100644
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -982,10 +982,14 @@ static void cgroup_clear_directory(struct dentry *dir, bool base_files,
->  				   unsigned long subsys_mask)
->  {
->  	struct cgroup *cgrp = __d_cgrp(dir);
-> -	struct cgroup_subsys *ss;
-> +	int i;
->  
-> -	for_each_subsys(cgrp->root, ss) {
-> +	for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
->  		struct cftype_set *set;
-> +		struct cgroup_subsys *ss = subsys[i];
-> +
-> +		if (ss == NULL)
-> +			continue;
+commit e99ddfde6ae0dd2662bb40435696002b590e4057 upstream.
 
-Ummm... I can't say I like it.  It tries to work around the problem
-that the backing subsys may go away earlier by changing how the
-subsystems are iterated so that the "gone" subsystems can be iterated,
-which really doesn't seem like a good diea.  I mean, what if somebody
-tries to access the files inbetween?  root_cgrp->subsys[] would be
-%NULL and segfault all the same.
+Commit 88a8516a2128 (ALSA: usbaudio: implement USB autosuspend) added
+autosuspend code to all files making up the snd-usb-audio driver.
+However, midi.c is part of snd-usb-lib and is also used by other
+drivers, not all of which support autosuspend.  Thus, calls to
+usb_autopm_get_interface() could fail, and this unexpected error would
+result in the MIDI output being completely unusable.
 
->  static void drop_parsed_module_refcounts(unsigned long subsys_mask)
-> @@ -1392,23 +1403,34 @@ static int cgroup_remount(struct super_block *sb, int *flags, char *data)
->  	removed_mask = root->subsys_mask & ~opts.subsys_mask;
->  
->  	/* Don't allow flags or name to change at remount */
-> +	ret = -EINVAL;
->  	if (opts.flags != root->flags ||
->  	    (opts.name && strcmp(opts.name, root->name))) {
-> -		ret = -EINVAL;
->  		drop_parsed_module_refcounts(opts.subsys_mask);
->  		goto out_unlock;
->  	}
->  
-> -	ret = rebind_subsystems(root, opts.subsys_mask);
-> +	/*
-> +	 * Add the reference of these removed subsystem,we
-> +	 * need use subsystems to remove their cgroup files.
-> +	 */
-> +	ret = cgroup_get_module_refcounts(removed_mask);
->  	if (ret) {
->  		drop_parsed_module_refcounts(opts.subsys_mask);
->  		goto out_unlock;
->  	}
->  
-> +	ret = rebind_subsystems(root, opts.subsys_mask);
-> +	if (ret) {
-> +		drop_parsed_module_refcounts(opts.subsys_mask | removed_mask);
-> +		goto out_unlock;
-> +	}
-> +
->  	/* clear out any existing files and repopulate subsystem files */
->  	cgroup_clear_directory(cgrp->dentry, false, removed_mask);
->  	/* re-populate subsystem files */
->  	cgroup_populate_dir(cgrp, false, added_mask);
-> +	drop_parsed_module_refcounts(removed_mask);
+Make it work by ignoring the error that is expected with drivers that do
+not support autosuspend.
 
-So, how about performing cgroup_clear_directory() *before*
-rebind_subsystems() and then restore it afterwards?
+Reported-by: Colin Fletcher <colin.m.fletcher@googlemail.com>
+Reported-by: Devin Venable <venable.devin@gmail.com>
+Reported-by: Dr Nick Bailey <nicholas.bailey@glasgow.ac.uk>
+Reported-by: Jannis Achstetter <jannis_achstetter@web.de>
+Reported-by: Rui Nuno Capela <rncbc@rncbc.org>
+Cc: Oliver Neukum <oliver@neukum.org>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Thanks.
+---
+ sound/usb/midi.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
--- 
-tejun
+--- a/sound/usb/midi.c
++++ b/sound/usb/midi.c
+@@ -148,6 +148,7 @@ struct snd_usb_midi_out_endpoint {
+ 		struct snd_usb_midi_out_endpoint* ep;
+ 		struct snd_rawmidi_substream *substream;
+ 		int active;
++		bool autopm_reference;
+ 		uint8_t cable;		/* cable number << 4 */
+ 		uint8_t state;
+ #define STATE_UNKNOWN	0
+@@ -1076,7 +1077,8 @@ static int snd_usbmidi_output_open(struc
+ 		return -ENXIO;
+ 	}
+ 	err = usb_autopm_get_interface(umidi->iface);
+-	if (err < 0)
++	port->autopm_reference = err >= 0;
++	if (err < 0 && err != -EACCES)
+ 		return -EIO;
+ 	substream->runtime->private_data = port;
+ 	port->state = STATE_UNKNOWN;
+@@ -1087,9 +1089,11 @@ static int snd_usbmidi_output_open(struc
+ static int snd_usbmidi_output_close(struct snd_rawmidi_substream *substream)
+ {
+ 	struct snd_usb_midi* umidi = substream->rmidi->private_data;
++	struct usbmidi_out_port *port = substream->runtime->private_data;
+ 
+ 	substream_open(substream, 0);
+-	usb_autopm_put_interface(umidi->iface);
++	if (port->autopm_reference)
++		usb_autopm_put_interface(umidi->iface);
+ 	return 0;
+ }
+ 
+
+
