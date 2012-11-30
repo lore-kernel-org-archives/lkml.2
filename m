@@ -1,273 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932702Ab2K3KXv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 05:23:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9244 "EHLO mx1.redhat.com"
+	id S1757333Ab2K3KYP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 05:24:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49653 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757138Ab2K3KSY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 05:18:24 -0500
+	id S1757122Ab2K3KSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 05:18:21 -0500
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
 Cc: Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 06/16] GFS2: Add Orlov allocator
-Date: Fri, 30 Nov 2012 09:52:11 +0000
-Message-Id: <1354269141-3311-7-git-send-email-swhiteho@redhat.com>
+Subject: [PATCH 04/16] GFS2: Add test for resource group congestion status
+Date: Fri, 30 Nov 2012 09:52:09 +0000
+Message-Id: <1354269141-3311-5-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1354269141-3311-1-git-send-email-swhiteho@redhat.com>
 References: <1354269141-3311-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just like ext3, this works on the root directory and any directory
-with the +T flag set. Also, just like ext3, any subdirectory created
-in one of the just mentioned cases will be allocated to a random
-resource group (GFS2 equivalent of a block group).
+This patch uses information gathered by the recent glock statistics
+patch in order to derrive a boolean verdict on the congestion
+status of a resource group. This is then used when making decisions
+on which resource group to choose during block allocation.
 
-If you are creating a set of directories, each of which will contain a
-job running on a different node, then by setting +T on the parent
-directory before creating the subdirectories, each will land up in a
-different resource group, and thus resource group contention between
-nodes will be kept to a minimum.
+The aim is to avoid resource groups which are heavily contended
+by other nodes, while still ensuring locality of access wherever
+possible.
+
+Once a reservation has been made in a particular resource group
+we continue to use that resource group until a new reservation is
+required. This should help to ensure that we do not change resource
+groups too often.
 
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
-diff --git a/fs/gfs2/aops.c b/fs/gfs2/aops.c
-index 01c4975..30de4f2 100644
---- a/fs/gfs2/aops.c
-+++ b/fs/gfs2/aops.c
-@@ -643,7 +643,7 @@ static int gfs2_write_begin(struct file *file, struct address_space *mapping,
- 			goto out_unlock;
- 
- 		requested = data_blocks + ind_blocks;
--		error = gfs2_inplace_reserve(ip, requested);
-+		error = gfs2_inplace_reserve(ip, requested, 0);
- 		if (error)
- 			goto out_qunlock;
- 	}
-diff --git a/fs/gfs2/bmap.c b/fs/gfs2/bmap.c
-index 1fd3ae2..de70e52 100644
---- a/fs/gfs2/bmap.c
-+++ b/fs/gfs2/bmap.c
-@@ -1178,7 +1178,7 @@ static int do_grow(struct inode *inode, u64 size)
- 		if (error)
- 			return error;
- 
--		error = gfs2_inplace_reserve(ip, 1);
-+		error = gfs2_inplace_reserve(ip, 1, 0);
- 		if (error)
- 			goto do_grow_qunlock;
- 		unstuff = 1;
-diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
-index e056b4c..dfe2d8c 100644
---- a/fs/gfs2/file.c
-+++ b/fs/gfs2/file.c
-@@ -432,7 +432,7 @@ static int gfs2_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	if (ret)
- 		goto out_unlock;
- 	gfs2_write_calc_reserv(ip, PAGE_CACHE_SIZE, &data_blocks, &ind_blocks);
--	ret = gfs2_inplace_reserve(ip, data_blocks + ind_blocks);
-+	ret = gfs2_inplace_reserve(ip, data_blocks + ind_blocks, 0);
- 	if (ret)
- 		goto out_quota_unlock;
- 
-@@ -825,7 +825,7 @@ static long gfs2_fallocate(struct file *file, int mode, loff_t offset,
- retry:
- 		gfs2_write_calc_reserv(ip, bytes, &data_blocks, &ind_blocks);
- 
--		error = gfs2_inplace_reserve(ip, data_blocks + ind_blocks);
-+		error = gfs2_inplace_reserve(ip, data_blocks + ind_blocks, 0);
- 		if (error) {
- 			if (error == -ENOSPC && bytes > sdp->sd_sb.sb_bsize) {
- 				bytes >>= 1;
-diff --git a/fs/gfs2/inode.c b/fs/gfs2/inode.c
-index 749b05a..ef3ce00 100644
---- a/fs/gfs2/inode.c
-+++ b/fs/gfs2/inode.c
-@@ -385,13 +385,13 @@ static void munge_mode_uid_gid(const struct gfs2_inode *dip,
- 		inode->i_gid = current_fsgid();
- }
- 
--static int alloc_dinode(struct gfs2_inode *ip)
-+static int alloc_dinode(struct gfs2_inode *ip, u32 flags)
- {
- 	struct gfs2_sbd *sdp = GFS2_SB(&ip->i_inode);
- 	int error;
- 	int dblocks = 1;
- 
--	error = gfs2_inplace_reserve(ip, RES_DINODE);
-+	error = gfs2_inplace_reserve(ip, RES_DINODE, flags);
- 	if (error)
- 		goto out;
- 
-@@ -560,7 +560,7 @@ static int link_dinode(struct gfs2_inode *dip, const struct qstr *name,
- 		if (error)
- 			goto fail_quota_locks;
- 
--		error = gfs2_inplace_reserve(dip, sdp->sd_max_dirres);
-+		error = gfs2_inplace_reserve(dip, sdp->sd_max_dirres, 0);
- 		if (error)
- 			goto fail_quota_locks;
- 
-@@ -650,6 +650,7 @@ static int gfs2_create_inode(struct inode *dir, struct dentry *dentry,
- 	struct gfs2_glock *io_gl;
- 	int error;
- 	struct buffer_head *bh = NULL;
-+	u32 aflags = 0;
- 
- 	if (!name->len || name->len > GFS2_FNAMESIZE)
- 		return -ENAMETOOLONG;
-@@ -685,7 +686,11 @@ static int gfs2_create_inode(struct inode *dir, struct dentry *dentry,
- 	munge_mode_uid_gid(dip, inode);
- 	ip->i_goal = dip->i_goal;
- 
--	error = alloc_dinode(ip);
-+	if ((GFS2_I(sdp->sd_root_dir->d_inode) == dip) ||
-+	    (dip->i_diskflags & GFS2_DIF_TOPDIR))
-+		aflags |= GFS2_AF_ORLOV;
-+
-+	error = alloc_dinode(ip, aflags);
- 	if (error)
- 		goto fail_free_inode;
- 
-@@ -897,7 +902,7 @@ static int gfs2_link(struct dentry *old_dentry, struct inode *dir,
- 		if (error)
- 			goto out_gunlock;
- 
--		error = gfs2_inplace_reserve(dip, sdp->sd_max_dirres);
-+		error = gfs2_inplace_reserve(dip, sdp->sd_max_dirres, 0);
- 		if (error)
- 			goto out_gunlock_q;
- 
-@@ -1378,7 +1383,7 @@ static int gfs2_rename(struct inode *odir, struct dentry *odentry,
- 		if (error)
- 			goto out_gunlock;
- 
--		error = gfs2_inplace_reserve(ndip, sdp->sd_max_dirres);
-+		error = gfs2_inplace_reserve(ndip, sdp->sd_max_dirres, 0);
- 		if (error)
- 			goto out_gunlock_q;
- 
-diff --git a/fs/gfs2/quota.c b/fs/gfs2/quota.c
-index c5af8e1..6bbf64f 100644
---- a/fs/gfs2/quota.c
-+++ b/fs/gfs2/quota.c
-@@ -816,7 +816,7 @@ static int do_sync(unsigned int num_qd, struct gfs2_quota_data **qda)
- 	blocks = num_qd * data_blocks + RES_DINODE + num_qd + 3;
- 
- 	reserved = 1 + (nalloc * (data_blocks + ind_blocks));
--	error = gfs2_inplace_reserve(ip, reserved);
-+	error = gfs2_inplace_reserve(ip, reserved, 0);
- 	if (error)
- 		goto out_alloc;
- 
-@@ -1605,7 +1605,7 @@ static int gfs2_set_dqblk(struct super_block *sb, struct kqid qid,
- 		gfs2_write_calc_reserv(ip, sizeof(struct gfs2_quota),
- 				       &data_blocks, &ind_blocks);
- 		blocks = 1 + data_blocks + ind_blocks;
--		error = gfs2_inplace_reserve(ip, blocks);
-+		error = gfs2_inplace_reserve(ip, blocks, 0);
- 		if (error)
- 			goto out_i;
- 		blocks += gfs2_rg_blocks(ip, blocks);
 diff --git a/fs/gfs2/rgrp.c b/fs/gfs2/rgrp.c
-index bdf3e64..99a6197 100644
+index 669b89b..bdf3e64 100644
 --- a/fs/gfs2/rgrp.c
 +++ b/fs/gfs2/rgrp.c
-@@ -16,6 +16,7 @@
- #include <linux/prefetch.h>
- #include <linux/blkdev.h>
- #include <linux/rbtree.h>
-+#include <linux/random.h>
- 
- #include "gfs2.h"
- #include "incore.h"
-@@ -1763,6 +1764,15 @@ static bool gfs2_rgrp_used_recently(const struct gfs2_blkreserv *rs,
- 	return tdiff > (msecs * 1000 * 1000);
+@@ -1681,6 +1681,88 @@ static void try_rgrp_unlink(struct gfs2_rgrpd *rgd, u64 *last_unlinked, u64 skip
+ 	return;
  }
  
-+static u32 gfs2_orlov_skip(const struct gfs2_inode *ip)
-+{
-+	const struct gfs2_sbd *sdp = GFS2_SB(&ip->i_inode);
-+	u32 skip;
++/**
++ * gfs2_rgrp_congested - Use stats to figure out whether an rgrp is congested
++ * @rgd: The rgrp in question
++ * @loops: An indication of how picky we can be (0=very, 1=less so)
++ *
++ * This function uses the recently added glock statistics in order to
++ * figure out whether a parciular resource group is suffering from
++ * contention from multiple nodes. This is done purely on the basis
++ * of timings, since this is the only data we have to work with and
++ * our aim here is to reject a resource group which is highly contended
++ * but (very important) not to do this too often in order to ensure that
++ * we do not land up introducing fragmentation by changing resource
++ * groups when not actually required.
++ *
++ * The calculation is fairly simple, we want to know whether the SRTTB
++ * (i.e. smoothed round trip time for blocking operations) to acquire
++ * the lock for this rgrp's glock is significantly greater than the
++ * time taken for resource groups on average. We introduce a margin in
++ * the form of the variable @var which is computed as the sum of the two
++ * respective variences, and multiplied by a factor depending on @loops
++ * and whether we have a lot of data to base the decision on. This is
++ * then tested against the square difference of the means in order to
++ * decide whether the result is statistically significant or not.
++ *
++ * Returns: A boolean verdict on the congestion status
++ */
 +
-+	get_random_bytes(&skip, sizeof(skip));
-+	return skip % sdp->sd_rgrps;
++static bool gfs2_rgrp_congested(const struct gfs2_rgrpd *rgd, int loops)
++{
++	const struct gfs2_glock *gl = rgd->rd_gl;
++	const struct gfs2_sbd *sdp = gl->gl_sbd;
++	struct gfs2_lkstats *st;
++	s64 r_dcount, l_dcount;
++	s64 r_srttb, l_srttb;
++	s64 srttb_diff;
++	s64 sqr_diff;
++	s64 var;
++
++	preempt_disable();
++	st = &this_cpu_ptr(sdp->sd_lkstats)->lkstats[LM_TYPE_RGRP];
++	r_srttb = st->stats[GFS2_LKS_SRTTB];
++	r_dcount = st->stats[GFS2_LKS_DCOUNT];
++	var = st->stats[GFS2_LKS_SRTTVARB] +
++	      gl->gl_stats.stats[GFS2_LKS_SRTTVARB];
++	preempt_enable();
++
++	l_srttb = gl->gl_stats.stats[GFS2_LKS_SRTTB];
++	l_dcount = gl->gl_stats.stats[GFS2_LKS_DCOUNT];
++
++	if ((l_dcount < 1) || (r_dcount < 1) || (r_srttb == 0))
++		return false;
++
++	srttb_diff = r_srttb - l_srttb;
++	sqr_diff = srttb_diff * srttb_diff;
++
++	var *= 2;
++	if (l_dcount < 8 || r_dcount < 8)
++		var *= 2;
++	if (loops == 1)
++		var *= 2;
++
++	return ((srttb_diff < 0) && (sqr_diff > var));
++}
++
++/**
++ * gfs2_rgrp_used_recently
++ * @rs: The block reservation with the rgrp to test
++ * @msecs: The time limit in milliseconds
++ *
++ * Returns: True if the rgrp glock has been used within the time limit
++ */
++static bool gfs2_rgrp_used_recently(const struct gfs2_blkreserv *rs,
++				    u64 msecs)
++{
++	u64 tdiff;
++
++	tdiff = ktime_to_ns(ktime_sub(ktime_get_real(),
++                            rs->rs_rbm.rgd->rd_gl->gl_dstamp));
++
++	return tdiff > (msecs * 1000 * 1000);
 +}
 +
  static bool gfs2_select_rgrp(struct gfs2_rgrpd **pos, const struct gfs2_rgrpd *begin)
  {
  	struct gfs2_rgrpd *rgd = *pos;
-@@ -1784,7 +1794,7 @@ static bool gfs2_select_rgrp(struct gfs2_rgrpd **pos, const struct gfs2_rgrpd *b
-  * Returns: errno
-  */
- 
--int gfs2_inplace_reserve(struct gfs2_inode *ip, u32 requested)
-+int gfs2_inplace_reserve(struct gfs2_inode *ip, u32 requested, u32 aflags)
- {
+@@ -1707,7 +1789,7 @@ int gfs2_inplace_reserve(struct gfs2_inode *ip, u32 requested)
  	struct gfs2_sbd *sdp = GFS2_SB(&ip->i_inode);
  	struct gfs2_rgrpd *begin = NULL;
-@@ -1792,6 +1802,7 @@ int gfs2_inplace_reserve(struct gfs2_inode *ip, u32 requested)
- 	int error = 0, rg_locked, flags = 0;
+ 	struct gfs2_blkreserv *rs = ip->i_res;
+-	int error = 0, rg_locked, flags = LM_FLAG_TRY;
++	int error = 0, rg_locked, flags = 0;
  	u64 last_unlinked = NO_BLOCK;
  	int loops = 0;
-+	u32 skip = 0;
  
- 	if (sdp->sd_args.ar_rgrplvb)
- 		flags |= GL_SKIP;
-@@ -1805,6 +1816,8 @@ int gfs2_inplace_reserve(struct gfs2_inode *ip, u32 requested)
- 	} else {
- 		rs->rs_rbm.rgd = begin = gfs2_blk2rgrpd(sdp, ip->i_goal, 1);
- 	}
-+	if (S_ISDIR(ip->i_inode.i_mode) && (aflags & GFS2_AF_ORLOV))
-+		skip = gfs2_orlov_skip(ip);
- 	if (rs->rs_rbm.rgd == NULL)
- 		return -EBADSLT;
- 
-@@ -1813,6 +1826,8 @@ int gfs2_inplace_reserve(struct gfs2_inode *ip, u32 requested)
+@@ -1731,13 +1813,18 @@ int gfs2_inplace_reserve(struct gfs2_inode *ip, u32 requested)
  
  		if (!gfs2_glock_is_locked_by_me(rs->rs_rbm.rgd->rd_gl)) {
  			rg_locked = 0;
-+			if (skip && skip--)
++			if (!gfs2_rs_active(rs) && (loops < 2) &&
++			     gfs2_rgrp_used_recently(rs, 1000) &&
++			     gfs2_rgrp_congested(rs->rs_rbm.rgd, loops))
 +				goto next_rgrp;
- 			if (!gfs2_rs_active(rs) && (loops < 2) &&
- 			     gfs2_rgrp_used_recently(rs, 1000) &&
- 			     gfs2_rgrp_congested(rs->rs_rbm.rgd, loops))
-@@ -1871,6 +1886,8 @@ next_rgrp:
- 		/* Find the next rgrp, and continue looking */
- 		if (gfs2_select_rgrp(&rs->rs_rbm.rgd, begin))
- 			continue;
-+		if (skip)
-+			continue;
- 
- 		/* If we've scanned all the rgrps, but found no free blocks
+ 			error = gfs2_glock_nq_init(rs->rs_rbm.rgd->rd_gl,
+ 						   LM_ST_EXCLUSIVE, flags,
+ 						   &rs->rs_rgd_gh);
+-			if (error == GLR_TRYFAILED)
+-				goto next_rgrp;
+ 			if (unlikely(error))
+ 				return error;
++			if (!gfs2_rs_active(rs) && (loops < 2) &&
++			    gfs2_rgrp_congested(rs->rs_rbm.rgd, loops))
++				goto skip_rgrp;
+ 			if (sdp->sd_args.ar_rgrplvb) {
+ 				error = update_rgrp_lvb(rs->rs_rbm.rgd);
+ 				if (unlikely(error)) {
+@@ -1789,7 +1876,6 @@ next_rgrp:
  		 * then this checks for some less likely conditions before
-diff --git a/fs/gfs2/rgrp.h b/fs/gfs2/rgrp.h
-index 2407795..8421858 100644
---- a/fs/gfs2/rgrp.h
-+++ b/fs/gfs2/rgrp.h
-@@ -39,7 +39,8 @@ extern void gfs2_rgrp_go_unlock(struct gfs2_holder *gh);
- 
- extern struct gfs2_alloc *gfs2_alloc_get(struct gfs2_inode *ip);
- 
--extern int gfs2_inplace_reserve(struct gfs2_inode *ip, u32 requested);
-+#define GFS2_AF_ORLOV 1
-+extern int gfs2_inplace_reserve(struct gfs2_inode *ip, u32 requested, u32 flags);
- extern void gfs2_inplace_release(struct gfs2_inode *ip);
- 
- extern int gfs2_alloc_blocks(struct gfs2_inode *ip, u64 *bn, unsigned int *n,
-diff --git a/fs/gfs2/xattr.c b/fs/gfs2/xattr.c
-index db330e5..76c144b 100644
---- a/fs/gfs2/xattr.c
-+++ b/fs/gfs2/xattr.c
-@@ -734,7 +734,7 @@ static int ea_alloc_skeleton(struct gfs2_inode *ip, struct gfs2_ea_request *er,
- 	if (error)
- 		return error;
- 
--	error = gfs2_inplace_reserve(ip, blks);
-+	error = gfs2_inplace_reserve(ip, blks, 0);
- 	if (error)
- 		goto out_gunlock_q;
- 
+ 		 * trying again.
+ 		 */
+-		flags &= ~LM_FLAG_TRY;
+ 		loops++;
+ 		/* Check that fs hasn't grown if writing to rindex */
+ 		if (ip == GFS2_I(sdp->sd_rindex) && !sdp->sd_rindex_uptodate) {
 -- 
 1.7.4
 
