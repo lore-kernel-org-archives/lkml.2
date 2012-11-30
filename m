@@ -1,64 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992856Ab2K3TBm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:01:42 -0500
-Received: from mail.kernel.org ([198.145.19.201]:58678 "EHLO mail.kernel.org"
+	id S2992872Ab2K3TBu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:01:50 -0500
+Received: from mail.kernel.org ([198.145.19.201]:59274 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S2992830Ab2K3S4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:56:53 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: [ 54/56] timekeeping: Cast raw_interval to u64 to avoid shift overflow
-Date: Fri, 30 Nov 2012 10:55:46 -0800
-Message-Id: <20121130185123.818857217@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121130185118.302752929@linuxfoundation.org>
-References: <20121130185118.302752929@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S2992858Ab2K3TBq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 14:01:46 -0500
+Date: Fri, 30 Nov 2012 10:57:55 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dmitry Torokhov <dtor@vmware.com>
+Cc: pv-drivers@vmware.com, Andy King <acking@vmware.com>,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [Pv-drivers] [PATCH 12/12] VMCI: Some header and config files.
+Message-ID: <20121130185755.GA26841@kroah.com>
+References: <20121127002357.GA27683@core.coreip.homeip.net>
+ <1682307.3e6BJPfOqr@dtor-d630.eng.vmware.com>
+ <20121130183918.GA22577@kroah.com>
+ <27667508.9ZL27Yq4ZC@dtor-d630.eng.vmware.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <27667508.9ZL27Yq4ZC@dtor-d630.eng.vmware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Nov 30, 2012 at 10:45:44AM -0800, Dmitry Torokhov wrote:
+> However you snipped the rest of my reply: do we really need to renumber 
+> ioctls? There is no benefit for the driver as its ioctl handler does
+> not parse the numbers into components.
 
-------------------
+I don't know if you need to renumber, I really don't understand what you
+were trying to do with this code, and as it was acting differently from
+all other kernel ioctl declarations, I asked for some clarity.
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+If you can rewrite it to look sane, and keep the same numbers, that's
+fine with me.
 
-commit 5b3900cd409466c0070b234d941650685ad0c791 upstream.
+thanks,
 
-We fixed a bunch of integer overflows in timekeeping code during the 3.6
-cycle.  I did an audit based on that and found this potential overflow.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: John Stultz <johnstul@us.ibm.com>
-Link: http://lkml.kernel.org/r/20121009071823.GA19159@elgon.mountain
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ben Hutchings <ben@decadent.org.uk>
-[ herton: adapt for 3.5, timekeeper instead of tk pointer ]
-Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- kernel/time/timekeeping.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1014,7 +1014,7 @@ static cycle_t logarithmic_accumulation(
- 	}
- 
- 	/* Accumulate raw time */
--	raw_nsecs = timekeeper.raw_interval << shift;
-+	raw_nsecs = (u64)timekeeper.raw_interval << shift;
- 	raw_nsecs += timekeeper.raw_time.tv_nsec;
- 	if (raw_nsecs >= NSEC_PER_SEC) {
- 		u64 raw_secs = raw_nsecs;
-
-
+greg k-h
