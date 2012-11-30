@@ -1,62 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755947Ab2K3WCC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 17:02:02 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:34469 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752489Ab2K3WB5 (ORCPT
+	id S1755614Ab2K3WHA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 17:07:00 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:47268 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751788Ab2K3WG7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 17:01:57 -0500
+	Fri, 30 Nov 2012 17:06:59 -0500
+Date: Fri, 30 Nov 2012 17:06:49 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: axboe@kernel.dk, linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xensource.com
+Subject: [GIT PULL] (xen) stable/for-jens-3.8 bug-fixes..
+Message-ID: <20121130220649.GA1893@phenom.dumpdata.com>
 MIME-Version: 1.0
-In-Reply-To: <50B8ECB3.2090801@schaufler-ca.com>
-References: <20121129174057.99da02b15426c76054d05592@canb.auug.org.au>
-	<50B7F846.70202@infradead.org>
-	<3694027.VYznNcdp7C@sifl>
-	<2664553.2TRaVqlkGg@sifl>
-	<50B8E4E6.2040901@xenotime.net>
-	<50B8ECB3.2090801@schaufler-ca.com>
-Date: Fri, 30 Nov 2012 17:01:55 -0500
-Message-ID: <CACLa4ptazSZCpk5Ug0mZLZRS1PxZ7KnwYxEXsXFwn3zG90YzNg@mail.gmail.com>
-Subject: Re: [PATCH] Smack: Add missing depends on INET in Kconfig
-From: Eric Paris <eparis@parisplace.org>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Paul Moore <paul@paul-moore.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do other LSMs need this too Casey?  I remember we mentioned how select
-was dangerous  :-(
+Hey Jens
 
-On Fri, Nov 30, 2012 at 12:28 PM, Casey Schaufler
-<casey@schaufler-ca.com> wrote:
-> Because NETLABEL depends on INET SECURITY_SMACK
-> has to explicitly call out the dependency.
->
-> Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
-> ---
->  security/smack/Kconfig |    1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/security/smack/Kconfig b/security/smack/Kconfig
-> index 9fb14ef..1be1088 100644
-> --- a/security/smack/Kconfig
-> +++ b/security/smack/Kconfig
-> @@ -1,5 +1,6 @@
->  config SECURITY_SMACK
->         bool "Simplified Mandatory Access Control Kernel Support"
-> +       depends on INET
->         depends on NET
->         depends on SECURITY
->         select NETLABEL
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Please git pull the following branch
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-jens-3.8
+
+which has one cleanup and one tiny fix.
+
+Please pull!
+
+Roger Pau Monne (2):
+      xen-blkback: move free persistent grants code
+      xen-blkfront: free allocated page
+
+ drivers/block/xen-blkback/blkback.c | 68 ++++++++++++++++++++-----------------
+ drivers/block/xen-blkfront.c        |  1 +
+ 2 files changed, 38 insertions(+), 31 deletions(-)
