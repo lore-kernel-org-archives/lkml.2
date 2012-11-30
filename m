@@ -1,88 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933346Ab2K3R3H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 12:29:07 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:49513 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757127Ab2K3R3E (ORCPT
+	id S933526Ab2K3R3U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 12:29:20 -0500
+Received: from smtp103.biz.mail.gq1.yahoo.com ([98.137.12.178]:39874 "HELO
+	smtp103.biz.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932471Ab2K3R3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 12:29:04 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Eli Billauer <eli.billauer@gmail.com>
-Subject: Re: [PATCH 2/2] New driver: Xillybus generic interface for FPGA (programmable logic)
-Date: Fri, 30 Nov 2012 17:28:47 +0000
-User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        Philip Balister <philip@balister.org>, Pavel Machek <pavel@denx.de>,
-        John Linn <john.linn@xilinx.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "Ira W. Snyder" <iws@ovro.caltech.edu>
-References: <1354117293-13632-1-git-send-email-eli.billauer@gmail.com> <1354117293-13632-2-git-send-email-eli.billauer@gmail.com>
-In-Reply-To: <1354117293-13632-2-git-send-email-eli.billauer@gmail.com>
+	Fri, 30 Nov 2012 12:29:07 -0500
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 Nov 2012 12:29:06 EST
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: CADnMQwVM1kVaD8ufk5RS1_sXh7D1lW1JfDAjsozDT3TS4c
+ uicmI61woKynIvGMsTn98gf_IMfZnYm453Z2XQnj8QzWgmaEjfkFLpOdjS7v
+ lFmaEHnPDalUtDsB73eM6em8vzmEO4PuHi1nqbRQ3aKUsfCkoNvGmtnYA3zX
+ myv7rGq707wgOL8Gk_UNaFDGBjCsIG3H6_kshdr.B_X6wVoKaNlSOkByjGPI
+ GlfG24ImNyKXCCkybrR5E2bXidIc.qmqWtP..KONqKwmvWvJR5iPtfE__gW7
+ 7k6VijZrRnOYeUld9YO05mkMSSOeDHOKe4exsgseHoREiwol6A_bM0oRHzvL
+ tPts6lFJDzI7ofbRzTrLBlDOlLGOboV4WAULrjtvyCTNm5nT7NwRL.kNr5Qd
+ soJj.nUSkifQExONhgS.hVcg0hIV08rGwirntWziApqHYJ0KWvmgzEov_0DV
+ aW_faNvvQ3ajU07aFy4Bh22nqFHsxjpgbrN9izB213H_kTo01ARd36ZKbMws
+ hPpKX1XXsDmzgnNV6Cgo-
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <50B8EB5A.3000307@schaufler-ca.com>
+Date: Fri, 30 Nov 2012 09:22:34 -0800
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: Paul Moore <paul@paul-moore.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-security-module@vger.kernel.org,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: linux-next: Tree for Nov 29 (netlabel)
+References: <20121129174057.99da02b15426c76054d05592@canb.auug.org.au> <50B7F846.70202@infradead.org> <3694027.VYznNcdp7C@sifl> <2664553.2TRaVqlkGg@sifl> <50B8E4E6.2040901@xenotime.net>
+In-Reply-To: <50B8E4E6.2040901@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201211301728.48008.arnd@arndb.de>
-X-Provags-ID: V02:K0:XhlvF1AEZMBV0GApbWgeDqnxFvj38ybA48W6hIKnF0Q
- Ci/3VvIiRu1m6Cvd7vHuRe8n3INSaiYOLaW4GugZn0zclyW1i5
- I5MX7Yu1x1Kddb4kdaQVzdc51MYCTVeZKcmH7zMqN/5W/9Z/7Q
- J8yScGEedb6PZ0JzzNXl3kvKZ5Xhb00NeS0weNNgAjDLCZ7oPD
- K0B0n7I/eebMwg3gTZhdKp03JSfbCFWgsuvaBell/lFzIEbXJA
- 8leqrPYovZV3xR7htzVHhyIi34jgDFRncm7qDmGMIuxxReWIqb
- ka3jdxeKc7UzCEbAmJUvS9gieVtjfgFhGzwBFg1w87yxdF3Tje
- FZiHdbjv5kPLJrYy/7Ls=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 28 November 2012, Eli Billauer wrote:
-> 
-> Xillybus is a general-purpose framework for communication between programmable
-> logic (FPGA) and a host. It provides a simple connection between hardware FIFOs
-> in the FPGA and their respective device files on the host. The user space
-> programming model is like piping data from or to the FPGA.
-> 
-> The underlying transport between the host and FPGA is either PCIe or AXI
-> (AMBA bus by ARM).
-> 
-> The Xillybus logic (IP core) is configurable in the number of pipes it presents
-> and their nature. The driver autodetects these pipes, making it essentially
-> forward-compatible to future configurations. The benefit of having this driver
-> enabled in the kernel is that hardware vendors may release a new card, knowing
-> that it will work out of the box on any future Linux machine, with the specific
-> configuration defined for the FPGA part.
-> 
-> This driver has been available for download for over a year, and has been
-> actively used on a wide variety of kernels versions and configurations.
+On 11/30/2012 8:55 AM, Randy Dunlap wrote:
+> On 11/30/2012 07:31 AM, Paul Moore wrote:
+>
+>> On Friday, November 30, 2012 10:19:16 AM Paul Moore wrote:
+>>> On Thursday, November 29, 2012 04:05:26 PM Randy Dunlap wrote:
+>>>> On 11/28/2012 10:40 PM, Stephen Rothwell wrote:
+>>>>> Hi all,
+>>>>> Changes since 20121128:
+>>>> (on i386:)
+>>> If I had to guess it looks like CONFIG_NETLABEL needs to be dependent on
+>>> CONFIG_INET.  While the net/ Kconfig only pulls in the net/netlabel Kconfig
+>>> if CONFIG_INET is defined, I'm guessing that without the explicit
+>>> dependency there is nothing preventing someone from arriving at a bad
+>>> configuration as we see here.
+>>>
+>>> Let me test this out to make sure my reasoning is right and if it is I'll
+>>> post a patch to netdev later today.
+>>>
+>>> Thanks for catching this.
+>> Hmmm.  The existing logic in net/Kconfig seems to disable CONFIG_NETLABEL at 
+>> build time whenever CONFIG_INET is disabled in my .config file.  The only way 
+>> I can recreate what you are seeing here is if I move the NetLabel include 
+>> outside of the INET conditional in net/Kconfig.
+>>
+>> Regardless, adding an explicit dependency on INET to NETLABEL shouldn't hurt 
+>> anything so I'll go ahead and post the patch to netdev.  Hopefully someone who 
+>> understands Kconfig better than I do can help shed some light on this.
+> Sorry, this patch doesn't help.
+>
+> I just checked the kernel .config again.  SECURITY_SMACK
+> selects NETLABEL even when INET is not enabled.  Bad SMACK.
 
-I have a much higher-level comment on this driver: There seem to be a number
-of parties that are interested in having reprogrammable logic available in
-Linux and that will want to merge their drivers. I'm aware of these other
-people that must have some interest (and one person I can't mention here
-because of NDA):
+I'll send the patch properly, but it'll look like this.
 
-Philip Balister  <philip@balister.org> (OpenSDR)
-Dinh Nguyen <dinguyen@altera.com> (ARM SOCFPGA maintainer)
-Pavel Machek <pavel@denx.de> (SOCFPGA contributor)
-John Linn <john.linn@xilinx.com> (Zynq maintainer)
-Michal Simek <michal.simek@xilinx.com> (Zynq maintainer)
-Ira W. Snyder <iws@ovro.caltech.edu> (Carma driver author)
+ security/smack/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-I believe it is in everybody's interest to define a single kernel-to-user
-interface that can be used to install a payload in an any of the FPGA
-implementations, and a common way to probe logical devices that are
-implemented in that FPGA.
+diff --git a/security/smack/Kconfig b/security/smack/Kconfig
+index 9fb14ef..1be1088 100644
+--- a/security/smack/Kconfig
++++ b/security/smack/Kconfig
+@@ -1,5 +1,6 @@
+ config SECURITY_SMACK
+ 	bool "Simplified Mandatory Access Control Kernel Support"
++	depends on INET
+ 	depends on NET
+ 	depends on SECURITY
+ 	select NETLABEL
 
-Your driver seems like an good start for such an interface, and I
-think it would be reasonable to put it into a new drivers/fpga/
-subsystems rather than a "misc" driver, but that requires at least
-the user level interface to be generic enough to cover all the use
-cases. Ideally, the in-kernel interface would also be generic to allow
-plugging in additional hardware drivers and allowing to add independent
-back-ends for functionality based on the model that gets loaded into
-the FPGA. However, we don't have to do it right away, as we can always
-change in-kernel interfaces when needed, unlike the user interfaces
-that have to remain stable.
 
-	Arnd
+>
+> I added Casey and mailing list to the cc:
+>
+>>>> net/built-in.o: In function `netlbl_cfg_cipsov4_add':
+>>>> (.text+0x61757): undefined reference to `cipso_v4_doi_add'
+>>>> net/built-in.o: In function `netlbl_cfg_cipsov4_del':
+>>>> (.text+0x6177d): undefined reference to `cipso_v4_doi_remove'
+>>>> net/built-in.o: In function `netlbl_cfg_cipsov4_map_add':
+>>>> (.text+0x617ae): undefined reference to `cipso_v4_doi_getdef'
+>>>> net/built-in.o: In function `netlbl_cfg_cipsov4_map_add':
+>>>> (.text+0x61a49): undefined reference to `cipso_v4_doi_putdef'
+>>>> net/built-in.o: In function `netlbl_sock_setattr':
+>>>> (.text+0x6218c): undefined reference to `cipso_v4_sock_setattr'
+>>>> net/built-in.o: In function `netlbl_sock_delattr':
+>>>> (.text+0x6220b): undefined reference to `cipso_v4_sock_delattr'
+>>>> net/built-in.o: In function `netlbl_sock_getattr':
+>>>> (.text+0x62238): undefined reference to `cipso_v4_sock_getattr'
+>>>> net/built-in.o: In function `netlbl_conn_setattr':
+>>>> (.text+0x622de): undefined reference to `cipso_v4_sock_setattr'
+>>>> net/built-in.o: In function `netlbl_conn_setattr':
+>>>> (.text+0x62303): undefined reference to `cipso_v4_sock_delattr'
+>>>> net/built-in.o: In function `netlbl_req_setattr':
+>>>> (.text+0x62429): undefined reference to `cipso_v4_req_setattr'
+>>>> net/built-in.o: In function `netlbl_req_setattr':
+>>>> (.text+0x6244e): undefined reference to `cipso_v4_req_delattr'
+>>>> net/built-in.o: In function `netlbl_req_delattr':
+>>>> (.text+0x624ba): undefined reference to `cipso_v4_req_delattr'
+>>>> net/built-in.o: In function `netlbl_skbuff_setattr':
+>>>> (.text+0x62551): undefined reference to `cipso_v4_skbuff_setattr'
+>>>> net/built-in.o: In function `netlbl_skbuff_setattr':
+>>>> (.text+0x62576): undefined reference to `cipso_v4_skbuff_delattr'
+>>>> net/built-in.o: In function `netlbl_skbuff_getattr':
+>>>> (.text+0x62619): undefined reference to `cipso_v4_skbuff_getattr'
+>>>> net/built-in.o: In function `netlbl_skbuff_err':
+>>>> (.text+0x62685): undefined reference to `cipso_v4_error'
+>>>> net/built-in.o: In function `netlbl_cache_invalidate':
+>>>> (.text+0x626ab): undefined reference to `cipso_v4_cache_invalidate'
+>>>> net/built-in.o: In function `netlbl_cache_add':
+>>>> (.text+0x626ec): undefined reference to `cipso_v4_cache_add'
+>>>> net/built-in.o: In function `netlbl_domhsh_remove_entry':
+>>>> (.text+0x63294): undefined reference to `cipso_v4_doi_putdef'
+>>>> net/built-in.o: In function `netlbl_domhsh_remove_entry':
+>>>> (.text+0x632eb): undefined reference to `cipso_v4_doi_putdef'
+>>>> net/built-in.o: In function `netlbl_domhsh_remove_af4':
+>>>> (.text+0x6349b): undefined reference to `cipso_v4_doi_putdef'
+>>>> net/built-in.o: In function `netlbl_mgmt_add_common.clone.1':
+>>>> netlabel_mgmt.c:(.text+0x64a87): undefined reference to
+>>>> `cipso_v4_doi_getdef' netlabel_mgmt.c:(.text+0x64c83): undefined reference
+>>>> to `cipso_v4_doi_putdef' net/built-in.o: In function
+>>>> `netlbl_cipsov4_listall':
+>>>> netlabel_cipso_v4.c:(.text+0x66e52): undefined reference to
+>>>> `cipso_v4_doi_walk' net/built-in.o: In function `netlbl_cipsov4_list':
+>>>> netlabel_cipso_v4.c:(.text+0x67199): undefined reference to
+>>>> `cipso_v4_doi_getdef' net/built-in.o: In function `netlbl_cipsov4_remove':
+>>>> netlabel_cipso_v4.c:(.text+0x6771b): undefined reference to
+>>>> `cipso_v4_doi_remove' net/built-in.o: In function
+>>>> `netlbl_cipsov4_add_pass':
+>>>> netlabel_cipso_v4.c:(.text+0x67a4b): undefined reference to
+>>>> `cipso_v4_doi_add' netlabel_cipso_v4.c:(.text+0x67a76): undefined
+>>>> reference
+>>>> to `cipso_v4_doi_free' net/built-in.o: In function
+>>>> `netlbl_cipsov4_add_local':
+>>>> netlabel_cipso_v4.c:(.text+0x67b9a): undefined reference to
+>>>> `cipso_v4_doi_add' netlabel_cipso_v4.c:(.text+0x67bc5): undefined
+>>>> reference
+>>>> to `cipso_v4_doi_free' net/built-in.o: In function
+>>>> `netlbl_cipsov4_add_std':
+>>>> netlabel_cipso_v4.c:(.text+0x68535): undefined reference to
+>>>> `cipso_v4_doi_add' netlabel_cipso_v4.c:(.text+0x68575): undefined
+>>>> reference
+>>>> to `cipso_v4_doi_free'
+>>>>
+>>>>
+>>>> Full randconfig file is attached.
+>
+>
+
