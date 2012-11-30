@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1769328Ab2K3TaA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 14:30:00 -0500
-Received: from mail.kernel.org ([198.145.19.201]:57543 "EHLO mail.kernel.org"
+	id S1769339Ab2K3Tal (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 14:30:41 -0500
+Received: from mail.kernel.org ([198.145.19.201]:57525 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1031671Ab2K3Ste (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:49:34 -0500
+	id S1031662Ab2K3Std (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:49:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Albert Pool <albertpool@solcon.nl>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 08/37] rtlwifi: rtl8192cu: Add new USB ID
-Date: Fri, 30 Nov 2012 10:45:55 -0800
-Message-Id: <20121130183858.095171356@linuxfoundation.org>
+        Boris Ostrovsky <boris.ostrovsky@amd.com>,
+        Andreas Herrmann <herrmann.der.user@googlemail.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 07/37] x86, microcode, AMD: Add support for family 16h processors
+Date: Fri, 30 Nov 2012 10:45:54 -0800
+Message-Id: <20121130183857.990978065@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130183857.166228045@linuxfoundation.org>
 References: <20121130183857.166228045@linuxfoundation.org>
@@ -27,31 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Albert Pool <albertpool@solcon.nl>
+From: Boris Ostrovsky <boris.ostrovsky@amd.com>
 
-commit a485e827f07bfdd0762059386e6e787bed6e81ee upstream.
+commit 36c46ca4f322a7bf89aad5462a3a1f61713edce7 upstream.
 
-This is an ISY IWL 2000. Probably a clone of Belkin F7D1102 050d:1102.
-Its FCC ID is the same.
+Add valid patch size for family 16h processors.
 
-Signed-off-by: Albert Pool <albertpool@solcon.nl>
-Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[ hpa: promoting to urgent/stable since it is hw enabling and trivial ]
+
+Signed-off-by: Boris Ostrovsky <boris.ostrovsky@amd.com>
+Acked-by: Andreas Herrmann <herrmann.der.user@googlemail.com>
+Link: http://lkml.kernel.org/r/1353004910-2204-1-git-send-email-boris.ostrovsky@amd.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/sw.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/kernel/microcode_amd.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-@@ -295,6 +295,7 @@ static struct usb_device_id rtl8192c_usb
- 	/*=== Customer ID ===*/
- 	/****** 8188CU ********/
- 	{RTL_USB_DEVICE(0x050d, 0x1102, rtl92cu_hal_cfg)}, /*Belkin - Edimax*/
-+	{RTL_USB_DEVICE(0x050d, 0x11f2, rtl92cu_hal_cfg)}, /*Belkin - ISY*/
- 	{RTL_USB_DEVICE(0x06f8, 0xe033, rtl92cu_hal_cfg)}, /*Hercules - Edimax*/
- 	{RTL_USB_DEVICE(0x07b8, 0x8188, rtl92cu_hal_cfg)}, /*Abocom - Abocom*/
- 	{RTL_USB_DEVICE(0x07b8, 0x8189, rtl92cu_hal_cfg)}, /*Funai - Abocom*/
+--- a/arch/x86/kernel/microcode_amd.c
++++ b/arch/x86/kernel/microcode_amd.c
+@@ -162,6 +162,7 @@ static unsigned int verify_ucode_size(in
+ #define F1XH_MPB_MAX_SIZE 2048
+ #define F14H_MPB_MAX_SIZE 1824
+ #define F15H_MPB_MAX_SIZE 4096
++#define F16H_MPB_MAX_SIZE 3458
+ 
+ 	switch (c->x86) {
+ 	case 0x14:
+@@ -170,6 +171,9 @@ static unsigned int verify_ucode_size(in
+ 	case 0x15:
+ 		max_size = F15H_MPB_MAX_SIZE;
+ 		break;
++	case 0x16:
++		max_size = F16H_MPB_MAX_SIZE;
++		break;
+ 	default:
+ 		max_size = F1XH_MPB_MAX_SIZE;
+ 		break;
 
 
