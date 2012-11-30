@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757584Ab2K3Lh0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 06:37:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24118 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751691Ab2K3LhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 06:37:25 -0500
-Date: Fri, 30 Nov 2012 12:36:35 +0100 (CET)
-From: =?ISO-8859-15?Q?Luk=E1=A8_Czerner?= <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-1-104.brq.redhat.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Lukas Czerner <lczerner@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-raid@vger.kernel.org, axboe@kernel.dk, jmoyer@redhat.com,
-        Neil Brown <neilb@suse.de>
-Subject: Re: [PATCH 1/2 v3] wait: add wait_event_lock_irq() interface
-In-Reply-To: <20121130024842.5326d998.akpm@linux-foundation.org>
-Message-ID: <alpine.LFD.2.00.1211301233320.8688@dhcp-1-104.brq.redhat.com>
-References: <1354272161-9173-1-git-send-email-lczerner@redhat.com> <20121130024842.5326d998.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1758001Ab2K3LjP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 06:39:15 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26232 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750897Ab2K3LjO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 06:39:14 -0500
+X-Authority-Analysis: v=2.0 cv=EshQXFgA c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=bHYkjrJBMqQA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=Prf3J34inRMA:10 a=DiiLRZpmBfxUeRvqNZUA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1354275551.6276.140.camel@gandalf.local.home>
+Subject: Re: [PATCH 1/3] aerdrv: Trace Event for AER
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Lance Ortiz <lance.ortiz@hp.com>, bhelgaas@google.com,
+        lance_ortiz@hotmail.com, jiang.liu@huawei.com, tony.luck@intel.com,
+        mchehab@redhat.com, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 30 Nov 2012 06:39:11 -0500
+In-Reply-To: <20121130105311.GA6869@liondog.tnic>
+References: <20121129215443.5483.43364.stgit@grignak.americas.hpqcorp.net>
+	 <1354240279.6276.131.camel@gandalf.local.home>
+	 <20121130105311.GA6869@liondog.tnic>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Nov 2012, Andrew Morton wrote:
-
-> Date: Fri, 30 Nov 2012 02:48:42 -0800
-> From: Andrew Morton <akpm@linux-foundation.org>
-> To: Lukas Czerner <lczerner@redhat.com>
-> Cc: linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, axboe@kernel.dk,
->     jmoyer@redhat.com, Neil Brown <neilb@suse.de>,
->     David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
->     Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Subject: Re: [PATCH 1/2 v3] wait: add wait_event_lock_irq() interface
-> 
-> On Fri, 30 Nov 2012 11:42:40 +0100 Lukas Czerner <lczerner@redhat.com> wrote:
-> 
-> > New wait_event{_interruptible}_lock_irq{_cmd} macros added. This commit
-> > moves the private wait_event_lock_irq() macro from MD to regular wait
-> > includes, introduces new macro wait_event_lock_irq_cmd() instead of using
-> > the old method with omitting cmd parameter which is ugly and makes a use
-> > of new macros in the MD. It also introduces the _interruptible_ variant.
+On Fri, 2012-11-30 at 11:53 +0100, Borislav Petkov wrote:
+> On Thu, Nov 29, 2012 at 08:51:19PM -0500, Steven Rostedt wrote:
+> > >  include/ras/aer_event.h |   77 +++++++++++++++++++++++++++++++++++++++++++++++
 > > 
-> > The use of new interface is when one have a special lock to protect data
-> > structures used in the condition, or one also needs to invoke "cmd"
-> > before putting it to sleep.
-> > 
-> > All new macros are expected to be called with the lock taken. The lock
-> > is released before sleep and is reacquired afterwards. We will leave the
-> > macro with the lock held.
-> > 
-> > Note to DM: IMO this should also fix theoretical race on waitqueue while
-> > using simultaneously wait_event_lock_irq() and wait_event() because of
-> > lack of locking around current state setting and wait queue removal.
+> > Is there a reason this header is here? Egad, I never noticed the
+> > ras_event.h that is there. This include/ras directory was created for
+> > the sole purpose of trace events! This is not the way to do this.
 > 
-> Does this fix the sparse warning which Fengguang just sent us?
+> Well, the idea for the ras event was to be able to use it in multiple
+> places. It is currently used only by EDAC but it could be that memory
+> errors could be reported by other agents which would reuse that TP.
+> 
 
-Which report from Fengguang do you have in mind ? I do not see any
-on linux-kernel today.
+If it's generic, then place it into the include/trace/events directory,
+the you don't need to have the TRACE_INCLUDE_PATH as that is the default
+path the macros will use.
 
-/me going to see what spare reports
+> > Please look at the sample in samples/trace_events/
+> > 
+> > The proper way is to keep the header by the driver. Then you can simply
+> > include the header with "aer_event.h".
+> > 
+> > But to have the macro magic work, you need to modify the Makefile to
+> > have something like:
+> > 
+> > CFLAGS_aerdrv_errprint.o = -I$(src)
+> 
+> So I'm guessing that every .c file including the TP should also -I
+> include the TP definition header wherever it is. Is that agreeable?
 
--Lukas
+You only need the -I$(src) for the .c file that uses the
+CREATE_TRACE_POINTS macro, as the trace point macro magic headers
+require it to find the TP header. Other files just need "foo.h", or
+<trace/events/foo.h> if it's in the generic location.
+
+-- Steve
+
+
