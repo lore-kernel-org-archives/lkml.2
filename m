@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S2992562Ab2K3SyL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 13:54:11 -0500
-Received: from mail.kernel.org ([198.145.19.201]:57581 "EHLO mail.kernel.org"
+	id S1031689Ab2K3Sti (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 13:49:38 -0500
+Received: from mail.kernel.org ([198.145.19.201]:57411 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1031698Ab2K3Stl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 13:49:41 -0500
+	id S1031630Ab2K3StY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 13:49:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Fenghua Yu <fenghua.yu@intel.com>, Borislav Petkov <bp@amd64.org>,
-        Tony Luck <tony.luck@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        maximilian attems <max@stro.at>
-Subject: [ 35/37] x86, mce, therm_throt: Dont report power limit and package level thermal throttle events in mcelog
-Date: Fri, 30 Nov 2012 10:46:22 -0800
-Message-Id: <20121130183901.006382287@linuxfoundation.org>
+        Andre Naujoks <nautsch2@googlemail.com>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [ 20/37] can: bcm: initialize ifindex for timeouts without previous frame reception
+Date: Fri, 30 Nov 2012 10:46:07 -0800
+Message-Id: <20121130183859.419791430@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121130183857.166228045@linuxfoundation.org>
 References: <20121130183857.166228045@linuxfoundation.org>
@@ -28,105 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fenghua Yu <fenghua.yu@intel.com>
+From: Oliver Hartkopp <socketcan@hartkopp.net>
 
-commit 29e9bf1841e4f9df13b4992a716fece7087dd237 upstream.
+commit 81b401100c01d2357031e874689f89bd788d13cd upstream.
 
-Thermal throttle and power limit events are not defined as MCE errors in x86
-architecture and should not generate MCE errors in mcelog.
+Set in the rx_ifindex to pass the correct interface index in the case of a
+message timeout detection. Usually the rx_ifindex value is set at receive
+time. But when no CAN frame has been received the RX_TIMEOUT notification
+did not contain a valid value.
 
-Current kernel generates fake software defined MCE errors for these events.
-This may confuse users because they may think the machine has real MCE errors
-while actually only thermal throttle or power limit events happen.
-
-To make it worse, buggy firmware on some platforms may falsely generate
-the events. Therefore, kernel reports MCE errors which users think as real
-hardware errors. Although the firmware bugs should be fixed, on the other hand,
-kernel should not report MCE errors either.
-
-So mcelog is not a good mechanism to report these events. To report the events, we count them in respective counters (core_power_limit_count,
-package_power_limit_count, core_throttle_count, and package_throttle_count) in
-/sys/devices/system/cpu/cpu#/thermal_throttle/. Users can check the counters
-for each event on each CPU. Please note that all CPU's on one package report
-duplicate counters. It's user application's responsibity to retrieve a package
-level counter for one package.
-
-This patch doesn't report package level power limit, core level power limit, and
-package level thermal throttle events in mcelog. When the events happen, only
-report them in respective counters in sysfs.
-
-Since core level thermal throttle has been legacy code in kernel for a while and
-users accepted it as MCE error in mcelog, core level thermal throttle is still
-reported in mcelog. In the mean time, the event is counted in a counter in sysfs
-as well.
-
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-Acked-by: Borislav Petkov <bp@amd64.org>
-Acked-by: Tony Luck <tony.luck@intel.com>
-Link: http://lkml.kernel.org/r/20111215001945.GA21009@linux-os.sc.intel.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: maximilian attems <max@stro.at>
+Reported-by: Andre Naujoks <nautsch2@googlemail.com>
+Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- arch/x86/kernel/cpu/mcheck/therm_throt.c |   29 +++++++----------------------
- 1 file changed, 7 insertions(+), 22 deletions(-)
+ net/can/bcm.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
-+++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-@@ -322,17 +322,6 @@ device_initcall(thermal_throttle_init_de
+--- a/net/can/bcm.c
++++ b/net/can/bcm.c
+@@ -1085,6 +1085,9 @@ static int bcm_rx_setup(struct bcm_msg_h
+ 		op->sk = sk;
+ 		op->ifindex = ifindex;
  
- #endif /* CONFIG_SYSFS */
- 
--/*
-- * Set up the most two significant bit to notify mce log that this thermal
-- * event type.
-- * This is a temp solution. May be changed in the future with mce log
-- * infrasture.
-- */
--#define CORE_THROTTLED		(0)
--#define CORE_POWER_LIMIT	((__u64)1 << 62)
--#define PACKAGE_THROTTLED	((__u64)2 << 62)
--#define PACKAGE_POWER_LIMIT	((__u64)3 << 62)
--
- static void notify_thresholds(__u64 msr_val)
- {
- 	/* check whether the interrupt handler is defined;
-@@ -362,27 +351,23 @@ static void intel_thermal_interrupt(void
- 	if (therm_throt_process(msr_val & THERM_STATUS_PROCHOT,
- 				THERMAL_THROTTLING_EVENT,
- 				CORE_LEVEL) != 0)
--		mce_log_therm_throt_event(CORE_THROTTLED | msr_val);
-+		mce_log_therm_throt_event(msr_val);
- 
- 	if (this_cpu_has(X86_FEATURE_PLN))
--		if (therm_throt_process(msr_val & THERM_STATUS_POWER_LIMIT,
-+		therm_throt_process(msr_val & THERM_STATUS_POWER_LIMIT,
- 					POWER_LIMIT_EVENT,
--					CORE_LEVEL) != 0)
--			mce_log_therm_throt_event(CORE_POWER_LIMIT | msr_val);
-+					CORE_LEVEL);
- 
- 	if (this_cpu_has(X86_FEATURE_PTS)) {
- 		rdmsrl(MSR_IA32_PACKAGE_THERM_STATUS, msr_val);
--		if (therm_throt_process(msr_val & PACKAGE_THERM_STATUS_PROCHOT,
-+		therm_throt_process(msr_val & PACKAGE_THERM_STATUS_PROCHOT,
- 					THERMAL_THROTTLING_EVENT,
--					PACKAGE_LEVEL) != 0)
--			mce_log_therm_throt_event(PACKAGE_THROTTLED | msr_val);
-+					PACKAGE_LEVEL);
- 		if (this_cpu_has(X86_FEATURE_PLN))
--			if (therm_throt_process(msr_val &
-+			therm_throt_process(msr_val &
- 					PACKAGE_THERM_STATUS_POWER_LIMIT,
- 					POWER_LIMIT_EVENT,
--					PACKAGE_LEVEL) != 0)
--				mce_log_therm_throt_event(PACKAGE_POWER_LIMIT
--							  | msr_val);
-+					PACKAGE_LEVEL);
- 	}
- }
- 
++		/* ifindex for timeout events w/o previous frame reception */
++		op->rx_ifindex = ifindex;
++
+ 		/* initialize uninitialized (kzalloc) structure */
+ 		hrtimer_init(&op->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+ 		op->timer.function = bcm_rx_timeout_handler;
 
 
