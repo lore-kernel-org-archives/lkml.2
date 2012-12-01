@@ -1,82 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752947Ab2LAR4J (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Dec 2012 12:56:09 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:50391 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752679Ab2LAR4H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Dec 2012 12:56:07 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121201094927.GA12366@gmail.com>
-References: <1354305521-11583-1-git-send-email-mingo@kernel.org>
- <CA+55aFwjxm7OYuucHeE2WFr4p+jwr63t=kSdHndta_QkyFbyBQ@mail.gmail.com> <20121201094927.GA12366@gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 1 Dec 2012 09:55:45 -0800
-X-Google-Sender-Auth: asEORAuIM6h2NWg5FMCnFZ4w6Yg
-Message-ID: <CA+55aFymM2MjEhRUmd-T_3ZJRTa9t5NzBuWgcbcdZmbUJv6dcQ@mail.gmail.com>
-Subject: Re: [RFC PATCH] mm/migration: Don't lock anon vmas in rmap_walk_anon()
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
+	id S1753024Ab2LASFZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Dec 2012 13:05:25 -0500
+Received: from mail.df.lth.se ([194.47.250.12]:57125 "EHLO mail.df.lth.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752675Ab2LASFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Dec 2012 13:05:24 -0500
+From: Linus Walleij <linus.walleij@linaro.org>
+To: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Rob Herring <rob.herring@calxeda.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] irqdomain: update documentation
+Date: Sat,  1 Dec 2012 19:05:16 +0100
+Message-Id: <1354385116-18606-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 1, 2012 at 1:49 AM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> I *think* you are right that for this type of migration that we
-> are using here we indeed don't need to take an exclusive vma
-> lock - in fact I think we don't need to take it at all:
+This updates the IRQdomain documentation a bit, by adding a more
+verbose explanation to why we need this, and by adding some
+extended documentation of the irq_domain_simple() usecase.
 
-I'm pretty sure we do need at least a read-side reference.
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ Documentation/IRQ-domain.txt | 34 +++++++++++++++++++++++++++++++++-
+ 1 file changed, 33 insertions(+), 1 deletion(-)
 
-Even if no other MM can contain that particular pte, the vma lock
-protects the chain that is created by fork and exit and vma splitting
-etc.
+diff --git a/Documentation/IRQ-domain.txt b/Documentation/IRQ-domain.txt
+index 1401cec..9bc9594 100644
+--- a/Documentation/IRQ-domain.txt
++++ b/Documentation/IRQ-domain.txt
+@@ -7,6 +7,21 @@ systems with multiple interrupt controllers the kernel must ensure
+ that each one gets assigned non-overlapping allocations of Linux
+ IRQ numbers.
+ 
++The number of interrupt controllers registered as unique irqchips
++show a rising tendency: for example subdrivers of different kinds
++such as GPIO controllers avoid reimplementing identical callback
++mechanisms as the IRQ core system by modelling their interrupt
++handlers as irqchips, i.e. in effect cascading interrupt controllers.
++
++Here the interrupt number loose all kind of correspondence to
++hardware interrupt numbers: whereas in the past, IRQ numbers could
++be chosen so they matched the hardware IRQ line into the root
++interrupt controller (i.e. the component actually fireing the
++interrupt line to the CPU) nowadays this number is just a number.
++
++For this reason we need a mechanism to separate controller-local
++interrupt numbers, called hardware irq's, from Linux IRQ numbers.
++
+ The irq_alloc_desc*() and irq_free_desc*() APIs provide allocation of
+ irq numbers, but they don't provide any support for reverse mapping of
+ the controller-local IRQ (hwirq) number into the Linux IRQ number
+@@ -40,6 +55,10 @@ required hardware setup.
+ When an interrupt is received, irq_find_mapping() function should
+ be used to find the Linux IRQ number from the hwirq number.
+ 
++The irq_create_mapping() function must be called *atleast once*
++before any call to irq_find_mapping(), lest the descriptor will not
++be allocated.
++
+ If the driver has the Linux IRQ number or the irq_data pointer, and
+ needs to know the associated hwirq number (such as in the irq_chip
+ callbacks) then it can be directly obtained from irq_data->hwirq.
+@@ -119,4 +138,17 @@ numbers.
+ 
+ Most users of legacy mappings should use irq_domain_add_simple() which
+ will use a legacy domain only if an IRQ range is supplied by the
+-system and will otherwise use a linear domain mapping.
++system and will otherwise use a linear domain mapping. The semantics
++of this call are such that if an IRQ range is specified then
++descriptors will be allocated on-the-fly for it, and if no range is
++specified it will fall through to irq_domain_add_linear() which meand
++*no* irq descriptors will be allocated.
++
++A typical use case for simple domains is where an irqchip provider
++is supporting both dynamic and static IRQ assignments.
++
++In order to avoid ending up in a situation where a linear domain is
++used and no descriptor gets allocated it is very important to make sure
++that the driver using the simple domain call irq_create_mapping()
++before any irq_find_mapping() since the latter will actually work
++for the static IRQ assignment case.
+-- 
+1.7.11.7
 
-So it's enough that another thread does a fork() at the same time. Or
-a partial unmap of the vma (that splits it in two), for the rmap chain
-to be modified.
-
-Besides, there's absolutely nothing that protects that vma to be part
-of the same vma chain in entirely unrelated processes. The vma chain
-can get quite long over multiple forks (it's even a performance
-problem under some extreme loads).
-
-And we do walk the rmap chain - so we need the lock.
-
-But we walk it read-only afaik, which is why I think the semaphore
-could be an rwsem.
-
-Now, there *are* likely cases where we could avoid anon_vma locking
-entirely, but they are very specialized. They'd be along the lines of
-
- - we hold the page table lock
- - we see that vma->anon_vma == vma->anon_vma->root
- - we see that vma->anon_vma->refcount == 1
-
-or similar, because then we can guarantee that the anon-vma chain has
-a length of one without even locking, and holding the page table lock
-means that any concurrent fork or mmap/munmap from another thread will
-block on this particular pte.
-
-So I suspect that in the above kind of special case (which might be a
-somewhat common case for normal page faults, for example) we could
-make a "we have exclusive pte access to this page" argument. But quite
-frankly, I completely made the above rules up in my head, they may be
-bogus too.
-
-For the general migration case, it's definitely not possible to just
-drop the anon_vma lock.
-
-                  Linus
