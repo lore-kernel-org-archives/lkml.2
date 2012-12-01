@@ -1,115 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836Ab2LAQzS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Dec 2012 11:55:18 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:2869 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752402Ab2LAQzQ convert rfc822-to-8bit (ORCPT
+	id S1752954Ab2LAQ4S (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Dec 2012 11:56:18 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:48025 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752156Ab2LAQ4R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Dec 2012 11:55:16 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Sat, 01 Dec 2012 08:54:48 -0800
-Message-ID: <50BA3668.1010504@nvidia.com>
-Date: Sat, 1 Dec 2012 18:55:04 +0200
-From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Sat, 1 Dec 2012 11:56:17 -0500
+Date: Sat, 1 Dec 2012 08:56:12 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Philip Balister <philip@balister.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Eli Billauer <eli.billauer@gmail.com>,
+        linux-kernel@vger.kernel.org, Pavel Machek <pavel@denx.de>,
+        John Linn <john.linn@xilinx.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        "Ira W. Snyder" <iws@ovro.caltech.edu>,
+        Josh Cartwright <josh.cartwright@ni.com>
+Subject: Re: [PATCH 2/2] New driver: Xillybus generic interface for FPGA
+ (programmable logic)
+Message-ID: <20121201165612.GG3113@kroah.com>
+References: <1354117293-13632-1-git-send-email-eli.billauer@gmail.com>
+ <1354117293-13632-2-git-send-email-eli.billauer@gmail.com>
+ <201211301728.48008.arnd@arndb.de>
+ <20121130173644.GA9841@kroah.com>
+ <50B97734.3090207@balister.org>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Lucas Stach <dev@lynxeye.de>, Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC v2 1/8] video: tegra: Add nvhost driver
-References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com> <1353935954-13763-2-git-send-email-tbergstrom@nvidia.com> <20121128212301.GA25531@avionic-0098.adnet.avionic-design.de> <50B73710.2040102@nvidia.com> <20121129114704.GB6150@avionic-0098.adnet.avionic-design.de> <50B7AB93.5060207@wwwdotorg.org> <1354265429.1479.187.camel@tellur> <50B9EDA9.2000500@nvidia.com> <20121201151020.GC18209@avionic-0098.adnet.avionic-design.de>
-In-Reply-To: <20121201151020.GC18209@avionic-0098.adnet.avionic-design.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50B97734.3090207@balister.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01.12.2012 17:10, Thierry Reding wrote:
-> On Sat, Dec 01, 2012 at 01:44:41PM +0200, Terje Bergström wrote:
->> host1x module being in DRM directory hinders using nvhost from anywhere
->> outside DRM in both upstream and downstream.
+On Fri, Nov 30, 2012 at 07:19:16PM -0800, Philip Balister wrote:
+> On 11/30/2012 09:36 AM, Greg KH wrote:
+> >On Fri, Nov 30, 2012 at 05:28:47PM +0000, Arnd Bergmann wrote:
+> >>On Wednesday 28 November 2012, Eli Billauer wrote:
+> >>>
+> >>>Xillybus is a general-purpose framework for communication between programmable
+> >>>logic (FPGA) and a host. It provides a simple connection between hardware FIFOs
+> >>>in the FPGA and their respective device files on the host. The user space
+> >>>programming model is like piping data from or to the FPGA.
+> >>>
+> >>>The underlying transport between the host and FPGA is either PCIe or AXI
+> >>>(AMBA bus by ARM).
+> >>>
+> >>>The Xillybus logic (IP core) is configurable in the number of pipes it presents
+> >>>and their nature. The driver autodetects these pipes, making it essentially
+> >>>forward-compatible to future configurations. The benefit of having this driver
+> >>>enabled in the kernel is that hardware vendors may release a new card, knowing
+> >>>that it will work out of the box on any future Linux machine, with the specific
+> >>>configuration defined for the FPGA part.
+> >>>
+> >>>This driver has been available for download for over a year, and has been
+> >>>actively used on a wide variety of kernels versions and configurations.
+> >>
+> >>I have a much higher-level comment on this driver: There seem to be a number
+> >>of parties that are interested in having reprogrammable logic available in
+> >>Linux and that will want to merge their drivers. I'm aware of these other
+> >>people that must have some interest (and one person I can't mention here
+> >>because of NDA):
+> >>
+> >>Philip Balister  <philip@balister.org> (OpenSDR)
+> >>Dinh Nguyen <dinguyen@altera.com> (ARM SOCFPGA maintainer)
+> >>Pavel Machek <pavel@denx.de> (SOCFPGA contributor)
+> >>John Linn <john.linn@xilinx.com> (Zynq maintainer)
+> >>Michal Simek <michal.simek@xilinx.com> (Zynq maintainer)
+> >>Ira W. Snyder <iws@ovro.caltech.edu> (Carma driver author)
+> >
+> >Yes, I know of at least one more device other than the ones listed above
+> >that wants this type of functionality as well, so defining it in a
+> >standard user/kernel api manner would be very good to do.
 > 
-> That's not true. Nothing keeps the rest of the kernel from using an API
-> exported by the tegra-drm driver.
-
-Right, it's just a directory. I was actually thinking that it'd be weird
-if a V4L2 driver would use something from inside drivers/gpu/drm/tegra
-(V4L use DRM? Oh nooooo!).
-
-Shoot the idea down if it's crazy, but please think about it first. :-)
-
-I started thinking about this and we are constrained by the Linux kernel
-subsystems that have a complete different architecture than hardware.
-This leads to awkward design as DRM design as it conflicts with the way
-hardware works.
-
-Placing host1x driver in one place, DRM driver in another and XYZ driver
-in yet another is not ideal either. We're exposing a public API which
-needs to be strictly maintained, because we maintain drivers in
-different trees, but then again, the list of users is very static and
-well-defined, so public API is an overshoot.
-
-How about if we look at this from the hardware architecture point of
-view? You mentioned that perhaps drivers/bus/host1x would be the best
-place for host1x driver.
-
-What if we put also all host1x client modules under that same directory?
-drivers/bus/host1x/drm would be for DRM interface, and all other host1x
-client module drivers could be placed similarly. This way we could keep
-the host1x API private to host1x and the client module drivers, and it's
-easy to understand how host1x is used by just following the directory
-structure.
-
-Naturally, we could also think if we want to have sub-components per
-host1x client (dc, 2d, etc) and a drm sub-component that implements the
-DRM interface, and a V4L2 sub-component that implements V4L2 interface
-(when/if I can convince people that camera should go upstream).
-
->> I also don't like first putting the driver in one place, and then
->> moving it with a huge commit to another place.
+> I'm concerned that a standard driver for FPGA's will be a very
+> difficult problem.
 > 
-> Hehe, you're doing exactly that in this patch series. =)
+> The Xillybus driver looks interesting on several levels, however my
+> first concern is depends on a FPGA IP block that is not open source.
+> This is not a bad thing, just a potential obstacle for some people.
 
-True, I guess it's just a matter of determining what's the best time.
+As long as that doesn't affect the kernel code, I don't see the obstacle
+here.  What am I missing?
 
-> Yes, there would be a certain amount of synchronization needed, but as
-> Stephen correctly pointed out we could do that move through one tree
-> with the Acked-by of the other maintainer. The point is that we need to
-> do this once instead of everytime the API changes.
+> I've been engaged in design discussions today with my customer. Our
+> target is the Xilinx Zynq hardware. The first pass at a driver
+> focuses on creating the minimal amount of code in the kernel doing
+> most of the logic in user space. So the driver code allocates a
+> large chunk of RAM for the FPGA to read/write to, provides a mmap
+> function so user space can see this RAM, also mmaps in the address
+> space of an AXI slave so the user space can control the logic. This
+> approach has no dependencies on what is loaded into the fpga.
 
-Yep, inter-tree synchronization is possible, so not a show stopper.
+Would a simple UIO driver work best for this type of arrangement?  Then
+those types of hardware wouldn't even need to mess with a fpga-type
+interface.
 
-> An entry for drivers/gpu/drm/tegra/host1x would override an entry for
-> drivers/gpu/drm/tegra so no need to exclude it. That said, there's no
-> way to exclude an subdirectory in MAINTAINERS that I know of.
+> This is a very different approach then the Xillybus driver, but
+> should also be useful to a large class of people. Hopefully, we can
+> converge on a set of useful drivers, and not end up with a million
+> drivers all based on custom fpga configuration :)
 
-I saw tag X: in MAINTAINERS file, so that could be used. There's
-documentation for it, but also some examples like:
+Odds are, this should look something like the firmware interface in the
+end, right?  Userspace dumps a bunch of data to the device, and then
+needs the driver to toggle some bits somewhere to enable the device.
+Also, a few control calls like clearing the device, and other minor
+things should be all that is needed, right?
 
-IBM Power Virtual SCSI/FC Device Drivers
-M:	Robert Jennings <rcj@linux.vnet.ibm.com>
-L:	linux-scsi@vger.kernel.org
-S:	Supported
-F:	drivers/scsi/ibmvscsi/
-X:	drivers/scsi/ibmvscsi/ibmvstgt.c
+So, in the grand tradition of, "The first one there wins", why not base
+it all off of your driver, and how that works, and we can go from there :)
 
-> My main point for keeping host1x within tegra-drm for now was that it
-> could possibly help speed up the inclusion of the host1x code. Seeing
-> that there's still a substantial amount of work to be done and a need
-> for discussion I'm not sure if rushing this is the best way. In that
-> case there may be justification for putting it in a separate location
-> from the start.
+thanks,
 
-I'm not in a hurry, so let's try to figure the best design first.
-Biggest architectural unsolved problem is the memory management and
-relationship between tegradrm and host1x driver. What Lucas proposed
-about memory management makes sense, but it'll take a while to implement it.
-
-The rest of the unsolved questions are more about differences in
-opinion, and solvable.
-
-Terje
+greg k-h
