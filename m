@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755977Ab2LAA0f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 19:26:35 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:39168 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751689Ab2LAA0e (ORCPT
+	id S1756421Ab2LAA0m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 19:26:42 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:50954 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751928Ab2LAA0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 19:26:34 -0500
-Date: Fri, 30 Nov 2012 16:26:19 -0800
-From: tip-bot for Fenghua Yu <fenghua.yu@intel.com>
-Message-ID: <tip-eadd948a43145b54b2da8ee4d83774ac2aa6ee02@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1354240068-9821-7-git-send-email-fenghua.yu@intel.com>
-References: <1354240068-9821-7-git-send-email-fenghua.yu@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/microcode] x86/head_32.S: Early update ucode in 32-bit
-Git-Commit-ID: eadd948a43145b54b2da8ee4d83774ac2aa6ee02
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 30 Nov 2012 19:26:38 -0500
+Date: Sat, 1 Dec 2012 09:26:35 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Olof Johansson <olof@lixom.net>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@infradead.org,
+        arm@kernel.org, linux-kernel@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
+        linux-sh@vger.kernel.org
+Subject: Re: [PATCH 01/17] ARM: shmobile: fix memory size for kota2_defconfig
+Message-ID: <20121201002632.GA4416@verge.net.au>
+References: <1349195816-2225-1-git-send-email-arnd@arndb.de>
+ <1349195816-2225-2-git-send-email-arnd@arndb.de>
+ <20121003003759.GD31207@verge.net.au>
+ <201210040834.55096.arnd@arndb.de>
+ <20121004085857.GA7240@verge.net.au>
+ <CAOesGMg6afPjBc82FEOwzwn-nBAFPY7K_udJRJO1bBrtCk3Yvg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 30 Nov 2012 16:26:24 -0800 (PST)
+In-Reply-To: <CAOesGMg6afPjBc82FEOwzwn-nBAFPY7K_udJRJO1bBrtCk3Yvg@mail.gmail.com>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  eadd948a43145b54b2da8ee4d83774ac2aa6ee02
-Gitweb:     http://git.kernel.org/tip/eadd948a43145b54b2da8ee4d83774ac2aa6ee02
-Author:     Fenghua Yu <fenghua.yu@intel.com>
-AuthorDate: Thu, 29 Nov 2012 17:47:44 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 30 Nov 2012 15:18:16 -0800
+On Fri, Nov 30, 2012 at 02:10:47PM -0800, Olof Johansson wrote:
+> Hi,
+> 
+> On Thu, Oct 4, 2012 at 1:58 AM, Simon Horman <horms@verge.net.au> wrote:
+> > On Thu, Oct 04, 2012 at 08:34:54AM +0000, Arnd Bergmann wrote:
+> >> On Wednesday 03 October 2012, Simon Horman wrote:
+> >> > I looked through my fines and found a config that I believe
+> >> > worked with a derivative of 2.6.35.7.
+> >> >
+> >> > It has CONFIG_MEMORY_SIZE=0x1e800000.
+> >> >
+> >> > So what I suspect has happened is that an extra zero has crept into
+> >> > arch/arm/configs/kota2_defconfig and the intended value is:
+> >> >
+> >> > CONFIG_MEMORY_SIZE=0x1e000000
+> >> >
+> >> > Unfortunately I do not have access to a board to test this,
+> >> > nor am I aware of anyone who does.
+> >>
+> >> Ok, I'll drop this patch for now then, so we keep the warning around
+> >> to remind us of the problem.
+> >
+> > Thanks. I have subsequently located a Kota2 board,
+> > however it may be a little while before I get my hands on it.
+> 
+> Gentle ping. I just came across this warning again so I figured I'd check.
 
-x86/head_32.S: Early update ucode in 32-bit
-
-This updates ucode in 32-bit kernel. At this point, there is no paging and no
-virtual address yet.
-
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-Link: http://lkml.kernel.org/r/1354240068-9821-7-git-send-email-fenghua.yu@intel.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/head_32.S | 6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-index 957a47a..b7b76a4 100644
---- a/arch/x86/kernel/head_32.S
-+++ b/arch/x86/kernel/head_32.S
-@@ -144,6 +144,12 @@ ENTRY(startup_32)
- 	movl %eax, pa(olpc_ofw_pgd)
- #endif
- 
-+#ifdef CONFIG_MICROCODE_EARLY
-+	/* Early load ucode on BSP. */
-+	movl $pa(boot_params), %eax
-+	call load_ucode_bsp
-+#endif
-+
- /*
-  * Initialize page tables.  This creates a PDE and a set of page
-  * tables, which are located immediately beyond __brk_base.  The variable
+Sorry, I still don't have a kota2 board.
+However, I expect to obtain one within the next week.
