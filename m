@@ -1,246 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751182Ab2LAAqh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 19:46:37 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:35448 "EHLO zene.cmpxchg.org"
+	id S1751191Ab2LAAtz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 19:49:55 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:37580 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750839Ab2LAAqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 19:46:35 -0500
-Date: Fri, 30 Nov 2012 19:45:20 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Thorsten Leemhuis <fedora@leemhuis.info>
-Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, George Spelvin <linux@horizon.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        Tomas Racek <tracek@redhat.com>, Jan Kara <jack@suse.cz>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Josh Boyer <jwboyer@gmail.com>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Jiri Slaby <jslaby@suse.cz>, Zdenek Kabelac <zkabelac@redhat.com>,
-        Bruno Wolff III <bruno@wolff.to>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        John Ellson <john.ellson@comcast.net>
-Subject: Re: kswapd craziness in 3.7
-Message-ID: <20121201004520.GK2301@cmpxchg.org>
-References: <20121127214928.GA20253@cmpxchg.org>
- <50B5387C.1030005@redhat.com>
- <20121127222637.GG2301@cmpxchg.org>
- <CA+55aFyrNRF8nWyozDPi4O1bdjzO189YAgMukyhTOZ9fwKqOpA@mail.gmail.com>
- <20121128101359.GT8218@suse.de>
- <20121128145215.d23aeb1b.akpm@linux-foundation.org>
- <20121128235412.GW8218@suse.de>
- <50B77F84.1030907@leemhuis.info>
- <20121129170512.GI2301@cmpxchg.org>
- <50B8A8E7.4030108@leemhuis.info>
+	id S1750725Ab2LAAty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 19:49:54 -0500
+Date: Fri, 30 Nov 2012 17:49:48 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH] of: When constructing the bus id consider
+ assigned-addresses as well
+Message-ID: <20121201004948.GA3185@obsidianresearch.com>
+References: <20121121210240.GC15285@obsidianresearch.com>
+ <20121126140316.99FE23E194B@localhost>
+ <20121126182054.GA30177@obsidianresearch.com>
+ <20121129162648.80DBC3E0912@localhost>
+ <20121129193829.GA10145@obsidianresearch.com>
+ <20121130094806.0D6D73E070C@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50B8A8E7.4030108@leemhuis.info>
+In-Reply-To: <20121130094806.0D6D73E070C@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thorsten,
+On Fri, Nov 30, 2012 at 09:48:05AM +0000, Grant Likely wrote:
 
-On Fri, Nov 30, 2012 at 01:39:03PM +0100, Thorsten Leemhuis wrote:
-> /me wonders how to elegantly get out of his man-in-the-middle position
-
-You control the mighty koji :-)
-
-But seriously, this is very helpful, thank you!  John now also Cc'd
-directly.
-
-> John was able to reproduce the problem quickly with a kernel that 
-> contained the patch from your mail. For details see
+> > If you attempt to stick a 'reg' in a block nested below a
+> > 'device_type="pci"' the kernel throws lots of error messsages and
+> > generates bad address mappings.
 > 
-> https://bugzilla.redhat.com/show_bug.cgi?id=866988#c42 and later
-> 
-> He provided the informations there. Parts of it:
+> Have you added the appropriate #address-cells and #size-cells to the pci
+> device node to go back to a non-pci addressing mode?
+> assigned-addresses
 
-> /proc/vmstat while kswad0 at 100%cpu
-> /proc/zoneinfo with kswapd0 at 100% cpu
-> perf profile
+Switching away from the 5 dword address format is not ideal
+because then there is no way to specify the resource region (prefetch,
+io, mmio) and mmio would have to be assumed.
 
-Thanks.
+> only makes sense in the pci-device node itself. reg should work for all
+> nodes below that, and if it doesn't then it is a bug that we need to
+> fix.
 
-I'm quoting the interesting bits in order of the cars on my possibly
-derailing train of thought:
+Okay.. but how should the DTS be constructed?
 
-> pageoutrun 117729182
-> allocstall 5
+pcie_bus { // The PCI-E bus
+   device_type = "pci";
+   ranges = <5dw ranges>;
+   #address-cells = <3>;
+   #size-cells = <2>;
+   soc_bridge { // The PCI-E device
+      device_type = "pci";
+      ranges = <5dw ranges>;
 
-Okay, so kswapd is stupidly looping but it's still managing to do it's
-actual job; nobody is dropping into direct reclaim.
+      soc_device { // Internal device
+          assigned-address = <5dw regs>
+      };
+   };
+};
 
-> pgsteal_kswapd_dma 1
-> pgsteal_kswapd_normal 202106
-> pgsteal_kswapd_high 36515
-> pgsteal_kswapd_movable 0
+This is what I have now, the soc_bridge PCI-E device is DTS modeled as
+a PCI bridge - it has a ranges with its memory location, and the
+children nodes are relative to those ranges. This would not be typical
+for a non-bridge PCI-E device.
 
-> pgscan_kswapd_dma 1
-> pgscan_kswapd_normal 203044
-> pgscan_kswapd_high 40407
-> pgscan_kswapd_movable 0
+The reason for the 'assigned-address' requirement with the current
+kernel code is the device_type=pci on soc_bridge. This makes
+of_match_bus(parent) for soc_device return the PCI structure, which
+has '.addresses = "assigned-addresses",'
 
-Does not seem excessive, so apparently it also does not overreclaim.
+So.. how would you like this to look?
 
-> Node 0, zone      DMA
->   pages free     1655
->         min      196
->         low      245
->         high     294
-
-> Node 0, zone   Normal
->   pages free     186234
->         min      10953
->         low      13691
->         high     16429
-
-> Node 0, zone  HighMem
->   pages free     8983
->         min      34
->         low      475
->         high     917
-
-These are all well above their watermarks, yet kswapd is definitely
-finding something wrong with one of these as it actually does drop
-into the reclaim loop, so zone_balanced() must be returning false:
-
->     16.52%      kswapd0  [kernel.kallsyms]          [k] idr_get_next                   
->                 |
->                 --- idr_get_next
->                    |          
->                    |--99.76%-- css_get_next
->                    |          mem_cgroup_iter
->                    |          |          
->                    |          |--50.49%-- shrink_zone
->                    |          |          kswapd
->                    |          |          kthread
->                    |          |          ret_from_kernel_thread
->                    |          |          
->                    |           --49.51%-- kswapd
->                    |                     kthread
->                    |                     ret_from_kernel_thread
->                     --0.24%-- [...]
-> 
->     11.23%      kswapd0  [kernel.kallsyms]          [k] prune_super                    
->                 |
->                 --- prune_super
->                    |          
->                    |--86.74%-- shrink_slab
->                    |          kswapd
->                    |          kthread
->                    |          ret_from_kernel_thread
->                    |          
->                     --13.26%-- kswapd
->                               kthread
->                               ret_from_kernel_thread
-
-Spending so much time in shrink_zone and shrink_slab without
-overreclaiming a zone, I would say that a) this always stays on the
-DEF_PRIORITY and b) only loops on the DMA zone.  At DEF_PRIORITY, the
-scan goal for filepages in the other zones would be > 0 e.g.
-
-As the DMA zone watermarks are fine, it must be the fragmentation
-index that indicates a lack of memory.  Filling in the 1655 free pages
-into the fragmentation index formula indicates lack of free memory
-when these 1655 pages are lumped together in less than 9 page blocks.
-Not unrealistic, I think: on my desktop machine, the DMA zone's free
-3975 pages are lumped together in only 12 blocks.  But on my system,
-the DMA zone is either never used and there is always at least one
-page block available that could satisfy a huge page allocation
-(fragmentation index == -1000).  Unless the system gets really close
-to OOM, at which point the DMA zone is highly fragmented.  And keep in
-mind that if the priority level goes below DEF_PRIORITY, as it does
-close to OOM, the unreclaimable DMA zone is ignored anyway.  But the
-DMA zone here is just barely used:
-
-> Node 0, zone      DMA
-[...]
->     nr_slab_reclaimable 3
->     nr_slab_unreclaimable 1
-[...]
->     nr_dirtied   315
->     nr_written   315
-
-which could explain a fragmentation index that asks for more free
-memory while the watermarks are fine.
-
-Why this all loops: there is one more inconsistency where the
-conditions for reclaim and the conditions for compaction contradict
-each other: reclaim also does not consider the DMA zone balanced, but
-it needs only 25% of the whole node to be balanced, while compaction
-requires every single zone to be balanced individually.
-
-So these strict per-zone checks for compaction at the end of
-balance_pgdat() are likely to be the culprits that keep kswapd looping
-forever on this machine, trying to balance DMA for compaction while
-reclaim decides it has enough balanced memory in the node overall.
-
-I think we can just remove them: whenever the compaction code is
-reached, the reclaim code balanced 25% of the memory available for the
-classzone to be suitable for compaction.
-
-Mel?  Rik?
-
----
-From: Johannes Weiner <hannes@cmpxchg.org>
-Subject: [patch] mm: vmscan: do not keep kswapd looping forever due
- to individual uncompactable zones
-
-When a zone meets its high watermark and is compactable in case of
-higher order allocations, it contributes to the percentage of the
-node's memory that is considered balanced.
-
-This requirement, that a node be only partially balanced, came about
-when kswapd was desparately trying to balance tiny zones when all
-bigger zones in the node had plenty of free memory.  Arguably, the
-same should apply to compaction: if a significant part of the node is
-balanced enough to run compaction, do not get hung up on that tiny
-zone that might never get in shape.
-
-When the compaction logic in kswapd is reached, we know that at least
-25% of the node's memory is balanced properly for compaction (see
-zone_balanced and pgdat_balanced).  Remove the individual zone checks
-that restart the kswapd cycle.
-
-Otherwise, we may observe more endless looping in kswapd where the
-compaction code loops back to reclaim because of a single zone and
-reclaim does nothing because the node is considered balanced overall.
-
-Reported-by: Thorsten Leemhuis <fedora@leemhuis.info>
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- mm/vmscan.c | 16 ----------------
- 1 file changed, 16 deletions(-)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 3b0aef4..486100f 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2806,22 +2806,6 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 			if (!populated_zone(zone))
- 				continue;
- 
--			if (zone->all_unreclaimable &&
--			    sc.priority != DEF_PRIORITY)
--				continue;
--
--			/* Would compaction fail due to lack of free memory? */
--			if (COMPACTION_BUILD &&
--			    compaction_suitable(zone, order) == COMPACT_SKIPPED)
--				goto loop_again;
--
--			/* Confirm the zone is balanced for order-0 */
--			if (!zone_watermark_ok(zone, 0,
--					high_wmark_pages(zone), 0, 0)) {
--				order = sc.order = 0;
--				goto loop_again;
--			}
--
- 			/* Check if the memory needs to be defragmented. */
- 			if (zone_watermark_ok(zone, order,
- 				    low_wmark_pages(zone), *classzone_idx, 0))
--- 
-1.7.11.7
-
+Jason
