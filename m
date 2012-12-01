@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752259Ab2LAN3J (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Dec 2012 08:29:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5222 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751796Ab2LAN3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Dec 2012 08:29:07 -0500
-Date: Sat, 1 Dec 2012 11:28:25 -0200 (BRST)
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Borislav Petkov <bp@alien8.de>
-cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Lance Ortiz <lance.ortiz@hp.com>, bhelgaas@google.com,
-        lance_ortiz@hotmail.com, jiang.liu@huawei.com, tony.luck@intel.com,
-        rostedt@goodmis.org, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] aerdrv: Trace Event for AER
-In-Reply-To: <20121201114310.GA7853@liondog.tnic>
-Message-ID: <alpine.LFD.2.02.1212011127560.3172@localhost.localdomain>
-References: <20121130213330.7649.51101.stgit@grignak.americas.hpqcorp.net> <20121201093614.720aa96a@redhat.com> <20121201114310.GA7853@liondog.tnic>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1752425Ab2LAN3X (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Dec 2012 08:29:23 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54079 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752302Ab2LAN3V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Dec 2012 08:29:21 -0500
+Date: Sat, 1 Dec 2012 22:29:17 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH] mfd: wm5102: Treat future revisions as revision B
+Message-ID: <20121201132916.GC17981@opensource.wolfsonmicro.com>
+References: <1354211357-13736-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <20121130102221.GH3176@sortiz-mobl>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="1SQmhf2mF2YjsYvc"
+Content-Disposition: inline
+In-Reply-To: <20121130102221.GH3176@sortiz-mobl>
+X-Cookie: Your domestic life may be harmonious.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--1SQmhf2mF2YjsYvc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Fri, Nov 30, 2012 at 11:22:21AM +0100, Samuel Ortiz wrote:
 
-Cheers,
-Mauro
+> This one does not apply. I'm missing a patch that would register the revision
+> B patch.
 
-On Sat, 1 Dec 2012, Borislav Petkov wrote:
+I'm pretty sure I sent it out...  I think there's a few patches went
+AWOL a couple of weeks ago.  Anyway, will resend.
 
-> On Sat, Dec 01, 2012 at 09:36:14AM -0200, Mauro Carvalho Chehab wrote:
->> Please don't call it as "ras.h". Call it, instead, ras_aer.h
->> (or something similar) as, if we're moving the tracing back to
->> include/trace/events/, the same should happen for the memory error
->> events.
->
-> As you can see yourself, include/trace/events/ contains one header per
-> topic so having ras_event.h and ras_aer.h or whatever, doesn't fit the
-> scheme. IOW, we want all RAS-specific tracepoints to be collected in a
-> header called ras.h like the rest of the subsystems do it. See rcu.h
-> there for a good example.
+--1SQmhf2mF2YjsYvc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Works for me.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Regards,
-Mauro
+iQIcBAEBAgAGBQJQugYlAAoJELSic+t+oim9tQgP/2WrpteqNHcezQ6NGhDb2Gmi
+FpZP3T+FGBKy0g5yO32IfmE7oUgeXJby7agSFc5Kl5uEMJRGy2b40itEX8X9SkHe
+ev5SeJH7NPjRn2nW54WI7MhGuxK4Ec9ITwr2oxry/e01eX5N13MxCwlFgzzV0fhZ
+7daYaAuGOFPhZOqSO9nPxXJwFOOYTx1zx2jxh+UAo3Tmu7dzkjLP0zHYbZN8N49j
+/DsgNQPEfnBs9z3EjeqoYm8dujxGZzJBqGu2QejxLlWFGLrDzj4NoUsMFKt/lPxC
+4m1MNsGEeLKoTVjLFRwbuu1CJKeBxI8QOvVsD5ujuxB1YtM8HhVXJZeSeyA3gYEr
+x7XsXHqQlkZIT85bVvZCbgcZTUfxcqHw6d3b+acTDYyGAueFQKzDY1qzRqHcmGlr
+tPYRHIvn1Y3SWYyKYFrbGb1t5pOeRT3JoH3ugm6mIRGAeyfKxFNK4wDFSEc9niRa
+sNQv3DIJwCbRoAx4eHV1F/qa+Djb/uD94O1ECWDJUXFSyd9DDvee0GhND7U7PXxj
+3QFVVP9Pe8Zxhnq51pKXeoAiGSY4oGCWPT5T5zqh5FuoVST86T9a/Mq9YCB1Fg1u
+jnMMSAdv9POBKLLykREYI51m+o63Uf3m6a48DPTRkqquUdIHoQGCk84AU90OUORV
+fUY7DbN/zfWqNrOxUSTO
+=bIqH
+-----END PGP SIGNATURE-----
+
+--1SQmhf2mF2YjsYvc--
