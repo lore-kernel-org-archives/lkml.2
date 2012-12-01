@@ -1,97 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752216Ab2LAOpX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Dec 2012 09:45:23 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:62809 "EHLO
+	id S1752198Ab2LAO6V (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Dec 2012 09:58:21 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:64987 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751852Ab2LAOpV (ORCPT
+	with ESMTP id S1751644Ab2LAO6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Dec 2012 09:45:21 -0500
-Date: Sat, 1 Dec 2012 15:45:12 +0100
+	Sat, 1 Dec 2012 09:58:20 -0500
+Date: Sat, 1 Dec 2012 15:58:14 +0100
 From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Terje Bergstrom <tbergstrom@nvidia.com>
-Cc: linux-tegra@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC v2 0/8] Support for Tegra 2D hardware
-Message-ID: <20121201144512.GA18209@avionic-0098.adnet.avionic-design.de>
+To: Terje =?utf-8?Q?Bergstr=C3=B6m?= <tbergstrom@nvidia.com>
+Cc: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC v2 1/8] video: tegra: Add nvhost driver
+Message-ID: <20121201145814.GB18209@avionic-0098.adnet.avionic-design.de>
 References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com>
+ <1353935954-13763-2-git-send-email-tbergstrom@nvidia.com>
+ <20121128212301.GA25531@avionic-0098.adnet.avionic-design.de>
+ <50B73710.2040102@nvidia.com>
+ <20121129114704.GB6150@avionic-0098.adnet.avionic-design.de>
+ <50B874C7.5030208@nvidia.com>
+ <20121130103850.GA28367@avionic-0098.adnet.avionic-design.de>
+ <50B9EA76.10803@nvidia.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cNdxnHkX5QqsyA0e"
+	protocol="application/pgp-signature"; boundary="St7VIuEGZ6dlpu13"
 Content-Disposition: inline
-In-Reply-To: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com>
+In-Reply-To: <50B9EA76.10803@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:P2MrERZo4juqNH3qwxc8dbHFXPHIMSt1Jw0Rpj2IFQY
- RoUS0OUl2EQ8Qe3kf/ymVQK1rmf1Nh5PBEejbFIRCTAvW/3sxA
- 33ZR9L9Or+GXJmNhVmEWnYDU2QcTqQRf+FTSB4PpjLAJyROyhD
- zcJQI3COZWEveY2y+6l4UImUTT/mFVz/DMZIor7sKRQCY8AT0n
- mMvb+AgAJmZ6UZXib0NXj0YmHPE5rezU16EUIrrhbL0KabV9TN
- 2ENNSyD9Dx5yBPkEktz8zqvgtShI6BR/zfQtK1FW47In0j+PrK
- bq4exxGUujN8wK75Wr2KVS0Xnw4SGa0JbDyCXK12xj3KldLKg3
- C7ndZaJ9tgvHjrpxzEmKVzVjLAK56lHDH6r96qIJNWlw4IYyMn
- mrVQcKnt2a4mbTbvtEz2c4zHZhGWxqtMNm8nhfjkmsmuPTwBOG
- u+ZrF
+X-Provags-ID: V02:K0:jFrIePNLFzlp6plq0DGcltGuKnmGlfX+MmOqV1QZJJK
+ 3hX8XiinbHO2rxi337P36+huOcgiDQCNzlrwE3HUOGrJuwjRPq
+ weLCkcEGg7CLRhWUKTRyUHaWQuKtnvCtzXkgErsJMfXI1DwSts
+ 31pjJ857pWB6O+0/w5vJ79kpepm2ALR77xUFU1O4jp4H8VjjTU
+ AfFm+cR+ApAfQF49vn7ToRQ4Ci3v4IO2A6mZqvN1Xfls3jqrXm
+ p9D0vEclKxEFoJfq72Mkn8YqIh1+Evbp3ccDJjP8ZBU6TlEqoh
+ pDXUxNaYntXUCo3bY4kqcQRout4z5yxJ9gcmC3Igv5VAyqjbY0
+ ZLRA9Nolnswt0kEndVPL6+zPA5OZX14KVHVsvtofsddfaJXR8v
+ Vddv0glMXa7EVZVCyO5V4Q5kYYWrBvuCuo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---cNdxnHkX5QqsyA0e
-Content-Type: text/plain; charset=us-ascii
+--St7VIuEGZ6dlpu13
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Nov 26, 2012 at 03:19:06PM +0200, Terje Bergstrom wrote:
-[...]
-> The patch set also adds user space API to tegradrm for accessing
-> host1d and 2D. We are preparing also patches to libdrm, but they are
-> not yet in condition that they could be sent out.
+On Sat, Dec 01, 2012 at 01:31:02PM +0200, Terje Bergstr=C3=B6m wrote:
+> On 30.11.2012 12:38, Thierry Reding wrote:
+> > * PGP Signed by an unknown key
+> > The above implies that when you submit code it shouldn't contain pieces
+> > that prepare for possible future extensions which may or may not be
+> > submitted (the exception being if such changes are part of a series
+> > where subsequent patches actually use them). The outcome is that the
+> > amount of cruft in the mainline kernel is kept to a minimum. And that's
+> > a very good thing.
+>=20
+> We're now talking about actually a separation of logical and physical
+> driver. I can't see why that's a bad thing. Especially considering that
+> it's standard practice in well written drivers. Let's try to find a
+> technical clean solution instead of debating politics. The latter should
+> never be part of Linux kernel reviews.
 
-I did some prototyping on how a libdrm API could look like a few weeks
-back. I should clean the patches up some and push them to a public
-repository or to the mailing lists for review.
+I don't know where you see politics in what I said. All I'm saying is
+that we shouldn't be making things needlessly complex. In my experience
+the technically cleanest solution is usually the one with the least
+complexity.
 
-There isn't actually much more than a bit of framework along with two
-IOCTLs that allow creating and looking up a Tegra-specific GEM. The
-related kernel patches aren't available anywhere since I didn't deem
-them ready yet. At that time I wasn't even sure if we'd need special
-allocations other than what the dumb BO infrastructure provides. They
-implement some parts of what you've implemented in this series as well,
-with some slight differences.
+> > Okay, so what you're sayingCan here is that a huge number of people hav=
+en't
+> > been wise in using the preprocessor for register definitions all these
+> > years. That's a pretty bold statement. Now I obviously haven't looked at
+> > every single line in the kernel, but I have never come across this usage
+> > for static inline functions used for this. So, to be honest, I don't
+> > think this is really up for discussion. Of course if you come up with an
+> > example where this is done in a similar way I could be persuaded
+> > otherwise.
+>=20
+> We must've talked about a bit different things. For pure register defs,
+> I can accommodate changing to #defines. We'd lose the code coverage
+> analysis, though, but if the parentheses are a make-or-break question to
+> upstreaming, I can change.
+>=20
+> I was thinking of definitions like this:
+>=20
+> static inline u32 host1x_sync_cfpeek_ctrl_cfpeek_addr_f(u32 v)
+> {
+> 	return (v & 0x1ff) << 0;
+> }
+>=20
+> versus
+>=20
+> #define host1x_sync_cfpeek_ctrl_cfpeek_addr_f(v) ((v) >> 16) & 0x3ff
+>=20
+> Both of these produce the same machine code and have same usage, but the
+> latter has type checking and code coverage analysis and the former is
+> (in my eyes) clearer. In both of these cases the usage is like this:
+>=20
+> writel(host1x_sync_cfpeek_ctrl_cfpeek_ena_f(1)
+> 		| host1x_sync_cfpeek_ctrl_cfpeek_channr_f(chid)
+> 		| host1x_sync_cfpeek_ctrl_cfpeek_addr_f(rd_ptr),
+> 	m->sync_aperture + host1x_sync_cfpeek_ctrl_r());
 
-Currently these still use the CMA-backed GEM objects but it should be
-easy to switch to something backed by the host1x infrastructure once
-that's in good shape.
+Again there's no precedent for doing this with static inline functions.
+You can do the same with macros. Type checking isn't an issue in these
+cases since we're talking about bitfields for which no proper type
+exists.
 
-While I can't find the quote right now, I seem to remember that you said
-at some point that you were planning on adding some 2D acceleration bits
-to libdrm. I don't think that's the right place. That code should rather
-go into the DDX. libdrm should instead provide a thin layer on top of
-the DRM IOCTLs to manage buffers and submit command streams. I hope I
-can finish the cleanup of my libdrm patches over the weekend and push
-them out so this may become clearer. Maybe I can even get the
-corresponding kernel patches pushed out.
+Two other things about the examples above: the definitions should be all
+caps and it would be nice if they could be made a bit shorter.
+
+> > But I don't see how that's relevant here. Let me quote what you said
+> > originally:
+> >=20
+> >> This is actually the only interface to read the max value to user spac=
+e,
+> >> which can be useful for doing some comparisons that take wrapping into
+> >> account. But we could just add IOCTLs and remove the sysfs entries.
+> >=20
+> > To me that sounded like it was only used for debugging purposes. If you
+> > actually need to access this from a userspace driver then, as opposed to
+> > what I said earlier, this should be handled by some IOCTL.
+>=20
+> There's a use for production code to know both the max and min, but I
+> think we can just scope that use out from this patch sest.
+>=20
+> User space can use these two for checking if one of their fences has
+> already passed by comparing if the current value is between min and
+> fence, taking wrapping into account. In these cases user space can f.ex.
+> leave a host1x wait out from a command stream.
+
+But you already have extra code in the kernel to patch out expired sync-
+points. Is it really worth the added effort to burden userspace with
+this? If so I still think some kind of generic IOCTL to retrieve
+information about a syncpoint would be better than a sysfs interface.
 
 Thierry
 
---cNdxnHkX5QqsyA0e
+--St7VIuEGZ6dlpu13
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQuhf4AAoJEN0jrNd/PrOhNEsP+wReouOOeSVAbncR5IK58UUn
-Cngi8dGAVr2QMaa5Ouc9ZV2EXFD1sProryvEy23VAPs0Bsrg0DyCMrDAwWpjzFaS
-gIExzX9fWHVmLV7Tt4V9z7q5DXaJa9GgpB/K/P5Csm9dfWvIPKzRfuIYu4HDBSYm
-kITwPofRL6JYgxhMVNYkRdDXqM+0+kB5xYxXSQ7ebWTpW5E1qWOemw1xYwr1gizb
-yzyBh7obsCoqRDMvW82oubLxLmn7HWzowttGscoMB6u0LUGFQKPZP+D78cybSdpJ
-6IP9goFqHZ5qZAGcuR7YJephjiI8jV1cbebXUf/iW0iXp5SHj7D1MU5yQBL2ciGp
-4J86p6qa2gtWqOcEAuqAY8C7+SzIWH15Ai9YEyvgRBUL4fCexHQVin0qif5Qq+qb
-ZVBc/bgdofmXDyYkkaozsl78nfMxnHKW2qsNb+Vs3bKTF42EzSl4qG+DJm3pDoqV
-5a7TZbqvZ9Fd4T5PUxFUy6FmLz1AfWoQ7I4xyMBF1Evfm4pX3OhUxMUw10gNS0vE
-hA0tnr7a3r7Qq3ceDvOvr+Tz5Rcn1MaLphclmMOk0mtohVhAxCXg2q4b2N0C6bBC
-DEqzMWYHRzc1SOSOFQhOn9D8xMpQOp265uBXlaMXBMYZgmIszdJhl5amE3u/lVNw
-CReIF73IT9SSfXF18/kT
-=FzI8
+iQIcBAEBAgAGBQJQuhsGAAoJEN0jrNd/PrOh7JkP/0OZP0t+TvsT38FBxELUVKDM
+jcvApx8OaDa6I78YKsOWFtZLEw5u0w+J6t2DglRu/4n47Gtue0NMfWsnTRep5A4V
+9nzdlFuuHYfBlKIL8avUux8jSYHO7F77ap4lS4iiMpa5PzYqcN3dQcXk/Oxf/H8j
+LXU0W0UuyOw51z0uMz8G1H8TJ6SSq2ixcFHAKPX+n0R8HYcQqmp8HSe7vVqyzrcI
+VA3NxXGA8YGbfNfKzkj8dAs8jhpGtDJPmXVeJnWhCBJc9iNephnPxhKkzPj3Q+uH
+o7zS1W1TX557GSwc2hOLFM4034QZ0uxMh4IAp72+aBJkv2dJVePeID3MOSMS509K
+nOVYrPZszM2imGLuw1COdoi15sPUpDHO4Sa7jBqhQMBX0P6fAbK8fgQTRR3N8zxU
+X6uh8M3XiSRqApUbeqQkU5CZKvwO71XYly4ZsKh1oGO8bYfRAzLHWsfFYO7k1Vl2
+I6lF1tUf+NL8IuklF3Wq8d4JPSJnTbFLr8YuRWRffTxrqwioQJqRelXt7eNfz0Ee
+LFMyrUYlhc+CVVp1vDGW8TsoirR8xdFvJnm4mGJw5HJhnOYK7q6df8eS2+/pP0aL
+JQOPSpBsUBxggz6MFOUCm1VPm+G/l2fyNl5/76RvKxUiocMWHxcM3U2M5fb9KhTp
+iLkmcjp7Wb43YDl3VNYp
+=W1HG
 -----END PGP SIGNATURE-----
 
---cNdxnHkX5QqsyA0e--
+--St7VIuEGZ6dlpu13--
