@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756818Ab2LAAew (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 19:34:52 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:39246 "EHLO
+	id S932085Ab2LAAgF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 19:36:05 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:39267 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751552Ab2LAAeu (ORCPT
+	with ESMTP id S1750934Ab2LAAgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 19:34:50 -0500
-Date: Fri, 30 Nov 2012 16:34:37 -0800
+	Fri, 30 Nov 2012 19:36:01 -0500
+Date: Fri, 30 Nov 2012 16:35:40 -0800
 From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
-Message-ID: <tip-eb068e781020cf491333c773fb41820b57bfada4@git.kernel.org>
+Message-ID: <tip-d55c5a93db2d5fa95f233ab153f594365d95b777@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1354132230-21854-2-git-send-email-hpa@linux.intel.com>
-References: <1354132230-21854-2-git-send-email-hpa@linux.intel.com>
+In-Reply-To: <1354132230-21854-3-git-send-email-hpa@linux.intel.com>
+References: <1354132230-21854-3-git-send-email-hpa@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/nuke386] x86, 386 removal:
-  Remove CONFIG_M386 from Kconfig
-Git-Commit-ID: eb068e781020cf491333c773fb41820b57bfada4
+Subject: [tip:x86/nuke386] x86, 386 removal: Remove CONFIG_CMPXCHG
+Git-Commit-ID: d55c5a93db2d5fa95f233ab153f594365d95b777
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,240 +27,225 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 30 Nov 2012 16:34:44 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 30 Nov 2012 16:35:46 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  eb068e781020cf491333c773fb41820b57bfada4
-Gitweb:     http://git.kernel.org/tip/eb068e781020cf491333c773fb41820b57bfada4
+Commit-ID:  d55c5a93db2d5fa95f233ab153f594365d95b777
+Gitweb:     http://git.kernel.org/tip/d55c5a93db2d5fa95f233ab153f594365d95b777
 Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Wed, 28 Nov 2012 11:50:23 -0800
+AuthorDate: Wed, 28 Nov 2012 11:50:24 -0800
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
 CommitDate: Thu, 29 Nov 2012 13:23:01 -0800
 
-x86, 386 removal: Remove CONFIG_M386 from Kconfig
+x86, 386 removal: Remove CONFIG_CMPXCHG
 
-Remove the CONFIG_M386 symbol from Kconfig so that it cannot be
-selected.
+All 486+ CPUs support CMPXCHG, so remove the fallback 386 support
+code.
 
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/r/1354132230-21854-2-git-send-email-hpa@linux.intel.com
+Link: http://lkml.kernel.org/r/1354132230-21854-3-git-send-email-hpa@linux.intel.com
 ---
- arch/x86/Kconfig                 |  6 ++---
- arch/x86/Kconfig.cpu             | 58 ++++++++++++++++------------------------
- arch/x86/Makefile_32.cpu         |  1 -
- arch/x86/include/asm/module.h    |  2 --
- arch/x86/include/asm/processor.h |  2 +-
- 5 files changed, 27 insertions(+), 42 deletions(-)
+ arch/x86/Kconfig.cpu              |  3 ---
+ arch/x86/include/asm/cmpxchg_32.h | 55 ---------------------------------------
+ arch/x86/include/asm/percpu.h     |  3 ---
+ arch/x86/lib/Makefile             |  1 -
+ arch/x86/lib/cmpxchg.c            | 54 --------------------------------------
+ arch/x86/xen/Kconfig              |  2 +-
+ 6 files changed, 1 insertion(+), 117 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 46c3bff..a1a6627 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -69,8 +69,8 @@ config X86
- 	select HAVE_PERF_USER_STACK_DUMP
- 	select HAVE_DEBUG_KMEMLEAK
- 	select ANON_INODES
--	select HAVE_ALIGNED_STRUCT_PAGE if SLUB && !M386
--	select HAVE_CMPXCHG_LOCAL if !M386
-+	select HAVE_ALIGNED_STRUCT_PAGE if SLUB
-+	select HAVE_CMPXCHG_LOCAL
- 	select HAVE_CMPXCHG_DOUBLE
- 	select HAVE_ARCH_KMEMCHECK
- 	select HAVE_USER_RETURN_NOTIFIER
-@@ -1100,7 +1100,7 @@ config HIGHMEM4G
- 
- config HIGHMEM64G
- 	bool "64GB"
--	depends on !M386 && !M486
-+	depends on !M486
- 	select X86_PAE
- 	---help---
- 	  Select this if you have a 32-bit processor and more than 4
 diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
-index f3b86d0..36a07eb 100644
+index 36a07eb..1290a69 100644
 --- a/arch/x86/Kconfig.cpu
 +++ b/arch/x86/Kconfig.cpu
-@@ -4,23 +4,24 @@ choice
- 	default M686 if X86_32
- 	default GENERIC_CPU if X86_64
+@@ -297,9 +297,6 @@ config X86_INTERNODE_CACHE_SHIFT
+ 	default "12" if X86_VSMP
+ 	default X86_L1_CACHE_SHIFT
  
--config M386
--	bool "386"
--	depends on X86_32 && !UML
-+config M486
-+	bool "486"
-+	depends on X86_32
- 	---help---
--	  This is the processor type of your CPU. This information is used for
--	  optimizing purposes. In order to compile a kernel that can run on
--	  all x86 CPU types (albeit not optimally fast), you can specify
--	  "386" here.
-+	  This is the processor type of your CPU. This information is
-+	  used for optimizing purposes. In order to compile a kernel
-+	  that can run on all supported x86 CPU types (albeit not
-+	  optimally fast), you can specify "486" here.
-+
-+	  Note that the 386 is no longer supported, this includes
-+	  AMD/Cyrix/Intel 386DX/DXL/SL/SLC/SX, Cyrix/TI 486DLC/DLC2,
-+	  and UMC 486SX-S.
- 
- 	  The kernel will not necessarily run on earlier architectures than
- 	  the one you have chosen, e.g. a Pentium optimized kernel will run on
- 	  a PPro, but not necessarily on a i486.
- 
- 	  Here are the settings recommended for greatest speed:
--	  - "386" for the AMD/Cyrix/Intel 386DX/DXL/SL/SLC/SX, Cyrix/TI
--	  486DLC/DLC2, and UMC 486SX-S.  Only "386" kernels will run on a 386
--	  class machine.
- 	  - "486" for the AMD/Cyrix/IBM/Intel 486DX/DX2/DX4 or
- 	  SL/SLC/SLC2/SLC3/SX/SX2 and UMC U5D or U5S.
- 	  - "586" for generic Pentium CPUs lacking the TSC
-@@ -43,16 +44,7 @@ config M386
- 	  - "VIA C3-2" for VIA C3-2 "Nehemiah" (model 9 and above).
- 	  - "VIA C7" for VIA C7.
- 
--	  If you don't know what to do, choose "386".
+-config X86_CMPXCHG
+-	def_bool y
 -
--config M486
--	bool "486"
--	depends on X86_32
--	---help---
--	  Select this for a 486 series processor, either Intel or one of the
--	  compatible processors from AMD, Cyrix, IBM, or Intel.  Includes DX,
--	  DX2, and DX4 variants; also SL/SLC/SLC2/SLC3/SX/SX2 and UMC U5D or
--	  U5S.
-+	  If you don't know what to do, choose "486".
- 
- config M586
- 	bool "586/K5/5x86/6x86/6x86MX"
-@@ -307,22 +299,20 @@ config X86_INTERNODE_CACHE_SHIFT
- 
- config X86_CMPXCHG
- 	def_bool y
--	depends on X86_64 || (X86_32 && !M386)
- 
  config X86_L1_CACHE_SHIFT
  	int
  	default "7" if MPENTIUM4 || MPSC
- 	default "6" if MK7 || MK8 || MPENTIUMM || MCORE2 || MATOM || MVIAC7 || X86_GENERIC || GENERIC_CPU
--	default "4" if MELAN || M486 || M386 || MGEODEGX1
-+	default "4" if MELAN || M486 || MGEODEGX1
- 	default "5" if MWINCHIP3D || MWINCHIPC6 || MCRUSOE || MEFFICEON || MCYRIXIII || MK6 || MPENTIUMIII || MPENTIUMII || M686 || M586MMX || M586TSC || M586 || MVIAC3_2 || MGEODE_LX
+diff --git a/arch/x86/include/asm/cmpxchg_32.h b/arch/x86/include/asm/cmpxchg_32.h
+index 53f4b21..f8bf2ee 100644
+--- a/arch/x86/include/asm/cmpxchg_32.h
++++ b/arch/x86/include/asm/cmpxchg_32.h
+@@ -34,9 +34,7 @@ static inline void set_64bit(volatile u64 *ptr, u64 value)
+ 		     : "memory");
+ }
  
- config X86_XADD
- 	def_bool y
--	depends on !M386
+-#ifdef CONFIG_X86_CMPXCHG
+ #define __HAVE_ARCH_CMPXCHG 1
+-#endif
  
- config X86_PPRO_FENCE
- 	bool "PentiumPro memory ordering errata workaround"
--	depends on M686 || M586MMX || M586TSC || M586 || M486 || M386 || MGEODEGX1
-+	depends on M686 || M586MMX || M586TSC || M586 || M486 || MGEODEGX1
- 	---help---
- 	  Old PentiumPro multiprocessor systems had errata that could cause
- 	  memory operations to violate the x86 ordering standard in rare cases.
-@@ -335,27 +325,26 @@ config X86_PPRO_FENCE
+ #ifdef CONFIG_X86_CMPXCHG64
+ #define cmpxchg64(ptr, o, n)						\
+@@ -73,59 +71,6 @@ static inline u64 __cmpxchg64_local(volatile u64 *ptr, u64 old, u64 new)
+ 	return prev;
+ }
  
- config X86_F00F_BUG
- 	def_bool y
--	depends on M586MMX || M586TSC || M586 || M486 || M386
-+	depends on M586MMX || M586TSC || M586 || M486
+-#ifndef CONFIG_X86_CMPXCHG
+-/*
+- * Building a kernel capable running on 80386. It may be necessary to
+- * simulate the cmpxchg on the 80386 CPU. For that purpose we define
+- * a function for each of the sizes we support.
+- */
+-
+-extern unsigned long cmpxchg_386_u8(volatile void *, u8, u8);
+-extern unsigned long cmpxchg_386_u16(volatile void *, u16, u16);
+-extern unsigned long cmpxchg_386_u32(volatile void *, u32, u32);
+-
+-static inline unsigned long cmpxchg_386(volatile void *ptr, unsigned long old,
+-					unsigned long new, int size)
+-{
+-	switch (size) {
+-	case 1:
+-		return cmpxchg_386_u8(ptr, old, new);
+-	case 2:
+-		return cmpxchg_386_u16(ptr, old, new);
+-	case 4:
+-		return cmpxchg_386_u32(ptr, old, new);
+-	}
+-	return old;
+-}
+-
+-#define cmpxchg(ptr, o, n)						\
+-({									\
+-	__typeof__(*(ptr)) __ret;					\
+-	if (likely(boot_cpu_data.x86 > 3))				\
+-		__ret = (__typeof__(*(ptr)))__cmpxchg((ptr),		\
+-				(unsigned long)(o), (unsigned long)(n),	\
+-				sizeof(*(ptr)));			\
+-	else								\
+-		__ret = (__typeof__(*(ptr)))cmpxchg_386((ptr),		\
+-				(unsigned long)(o), (unsigned long)(n),	\
+-				sizeof(*(ptr)));			\
+-	__ret;								\
+-})
+-#define cmpxchg_local(ptr, o, n)					\
+-({									\
+-	__typeof__(*(ptr)) __ret;					\
+-	if (likely(boot_cpu_data.x86 > 3))				\
+-		__ret = (__typeof__(*(ptr)))__cmpxchg_local((ptr),	\
+-				(unsigned long)(o), (unsigned long)(n),	\
+-				sizeof(*(ptr)));			\
+-	else								\
+-		__ret = (__typeof__(*(ptr)))cmpxchg_386((ptr),		\
+-				(unsigned long)(o), (unsigned long)(n),	\
+-				sizeof(*(ptr)));			\
+-	__ret;								\
+-})
+-#endif
+-
+ #ifndef CONFIG_X86_CMPXCHG64
+ /*
+  * Building a kernel capable running on 80386 and 80486. It may be necessary
+diff --git a/arch/x86/include/asm/percpu.h b/arch/x86/include/asm/percpu.h
+index 1104afa..0da5200 100644
+--- a/arch/x86/include/asm/percpu.h
++++ b/arch/x86/include/asm/percpu.h
+@@ -406,7 +406,6 @@ do {									\
+ #define this_cpu_xchg_2(pcp, nval)	percpu_xchg_op(pcp, nval)
+ #define this_cpu_xchg_4(pcp, nval)	percpu_xchg_op(pcp, nval)
  
- config X86_INVD_BUG
- 	def_bool y
--	depends on M486 || M386
-+	depends on M486
+-#ifndef CONFIG_M386
+ #define __this_cpu_add_return_1(pcp, val) percpu_add_return_op(pcp, val)
+ #define __this_cpu_add_return_2(pcp, val) percpu_add_return_op(pcp, val)
+ #define __this_cpu_add_return_4(pcp, val) percpu_add_return_op(pcp, val)
+@@ -421,8 +420,6 @@ do {									\
+ #define this_cpu_cmpxchg_2(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
+ #define this_cpu_cmpxchg_4(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
  
- config X86_WP_WORKS_OK
- 	def_bool y
--	depends on !M386
- 
- config X86_INVLPG
- 	def_bool y
--	depends on X86_32 && !M386
-+	depends on X86_32
- 
- config X86_BSWAP
- 	def_bool y
--	depends on X86_32 && !M386
-+	depends on X86_32
- 
- config X86_POPAD_OK
- 	def_bool y
--	depends on X86_32 && !M386
-+	depends on X86_32
- 
- config X86_ALIGNMENT_16
- 	def_bool y
-@@ -412,12 +401,11 @@ config X86_MINIMUM_CPU_FAMILY
- 	default "64" if X86_64
- 	default "6" if X86_32 && X86_P6_NOP
- 	default "5" if X86_32 && X86_CMPXCHG64
--	default "4" if X86_32 && (X86_XADD || X86_CMPXCHG || X86_BSWAP || X86_WP_WORKS_OK)
--	default "3"
-+	default "4"
- 
- config X86_DEBUGCTLMSR
- 	def_bool y
--	depends on !(MK6 || MWINCHIPC6 || MWINCHIP3D || MCYRIXIII || M586MMX || M586TSC || M586 || M486 || M386) && !UML
-+	depends on !(MK6 || MWINCHIPC6 || MWINCHIP3D || MCYRIXIII || M586MMX || M586TSC || M586 || M486) && !UML
- 
- menuconfig PROCESSOR_SELECT
- 	bool "Supported processor vendors" if EXPERT
-@@ -441,7 +429,7 @@ config CPU_SUP_INTEL
- config CPU_SUP_CYRIX_32
- 	default y
- 	bool "Support Cyrix processors" if PROCESSOR_SELECT
--	depends on M386 || M486 || M586 || M586TSC || M586MMX || (EXPERT && !64BIT)
-+	depends on M486 || M586 || M586TSC || M586MMX || (EXPERT && !64BIT)
- 	---help---
- 	  This enables detection, tunings and quirks for Cyrix processors
- 
-@@ -495,7 +483,7 @@ config CPU_SUP_TRANSMETA_32
- config CPU_SUP_UMC_32
- 	default y
- 	bool "Support UMC processors" if PROCESSOR_SELECT
--	depends on M386 || M486 || (EXPERT && !64BIT)
-+	depends on M486 || (EXPERT && !64BIT)
- 	---help---
- 	  This enables detection, tunings and quirks for UMC processors
- 
-diff --git a/arch/x86/Makefile_32.cpu b/arch/x86/Makefile_32.cpu
-index 86cee7b..6647ed4 100644
---- a/arch/x86/Makefile_32.cpu
-+++ b/arch/x86/Makefile_32.cpu
-@@ -10,7 +10,6 @@ tune		= $(call cc-option,-mcpu=$(1),$(2))
+-#endif /* !CONFIG_M386 */
+-
+ #ifdef CONFIG_X86_CMPXCHG64
+ #define percpu_cmpxchg8b_double(pcp1, pcp2, o1, o2, n1, n2)		\
+ ({									\
+diff --git a/arch/x86/lib/Makefile b/arch/x86/lib/Makefile
+index b00f678..96b2c66 100644
+--- a/arch/x86/lib/Makefile
++++ b/arch/x86/lib/Makefile
+@@ -32,7 +32,6 @@ ifeq ($(CONFIG_X86_32),y)
+         lib-y += checksum_32.o
+         lib-y += strstr_32.o
+         lib-y += string_32.o
+-        lib-y += cmpxchg.o
+ ifneq ($(CONFIG_X86_CMPXCHG64),y)
+         lib-y += cmpxchg8b_emu.o atomic64_386_32.o
  endif
- 
- align := $(cc-option-align)
--cflags-$(CONFIG_M386)		+= -march=i386
- cflags-$(CONFIG_M486)		+= -march=i486
- cflags-$(CONFIG_M586)		+= -march=i586
- cflags-$(CONFIG_M586TSC)	+= -march=i586
-diff --git a/arch/x86/include/asm/module.h b/arch/x86/include/asm/module.h
-index 9eae775..e3b7819 100644
---- a/arch/x86/include/asm/module.h
-+++ b/arch/x86/include/asm/module.h
-@@ -5,8 +5,6 @@
- 
- #ifdef CONFIG_X86_64
- /* X86_64 does not define MODULE_PROC_FAMILY */
--#elif defined CONFIG_M386
--#define MODULE_PROC_FAMILY "386 "
- #elif defined CONFIG_M486
- #define MODULE_PROC_FAMILY "486 "
- #elif defined CONFIG_M586
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index ad1fc85..9a4ee46 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -672,7 +672,7 @@ static inline void sync_core(void)
- {
- 	int tmp;
- 
--#if defined(CONFIG_M386) || defined(CONFIG_M486)
-+#ifdef CONFIG_M486
- 	if (boot_cpu_data.x86 < 5)
- 		/* There is no speculative execution.
- 		 * jmp is a barrier to prefetching. */
+diff --git a/arch/x86/lib/cmpxchg.c b/arch/x86/lib/cmpxchg.c
+deleted file mode 100644
+index 5d619f6..0000000
+--- a/arch/x86/lib/cmpxchg.c
++++ /dev/null
+@@ -1,54 +0,0 @@
+-/*
+- * cmpxchg*() fallbacks for CPU not supporting these instructions
+- */
+-
+-#include <linux/kernel.h>
+-#include <linux/smp.h>
+-#include <linux/module.h>
+-
+-#ifndef CONFIG_X86_CMPXCHG
+-unsigned long cmpxchg_386_u8(volatile void *ptr, u8 old, u8 new)
+-{
+-	u8 prev;
+-	unsigned long flags;
+-
+-	/* Poor man's cmpxchg for 386. Unsuitable for SMP */
+-	local_irq_save(flags);
+-	prev = *(u8 *)ptr;
+-	if (prev == old)
+-		*(u8 *)ptr = new;
+-	local_irq_restore(flags);
+-	return prev;
+-}
+-EXPORT_SYMBOL(cmpxchg_386_u8);
+-
+-unsigned long cmpxchg_386_u16(volatile void *ptr, u16 old, u16 new)
+-{
+-	u16 prev;
+-	unsigned long flags;
+-
+-	/* Poor man's cmpxchg for 386. Unsuitable for SMP */
+-	local_irq_save(flags);
+-	prev = *(u16 *)ptr;
+-	if (prev == old)
+-		*(u16 *)ptr = new;
+-	local_irq_restore(flags);
+-	return prev;
+-}
+-EXPORT_SYMBOL(cmpxchg_386_u16);
+-
+-unsigned long cmpxchg_386_u32(volatile void *ptr, u32 old, u32 new)
+-{
+-	u32 prev;
+-	unsigned long flags;
+-
+-	/* Poor man's cmpxchg for 386. Unsuitable for SMP */
+-	local_irq_save(flags);
+-	prev = *(u32 *)ptr;
+-	if (prev == old)
+-		*(u32 *)ptr = new;
+-	local_irq_restore(flags);
+-	return prev;
+-}
+-EXPORT_SYMBOL(cmpxchg_386_u32);
+-#endif
+diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
+index fdce49c..9a6775c 100644
+--- a/arch/x86/xen/Kconfig
++++ b/arch/x86/xen/Kconfig
+@@ -7,7 +7,7 @@ config XEN
+ 	select PARAVIRT
+ 	select PARAVIRT_CLOCK
+ 	depends on X86_64 || (X86_32 && X86_PAE && !X86_VISWS)
+-	depends on X86_CMPXCHG && X86_TSC
++	depends on X86_TSC
+ 	help
+ 	  This is the Linux Xen port.  Enabling this will allow the
+ 	  kernel to boot in a paravirtualized environment under the
