@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752967Ab2LAOYW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Dec 2012 09:24:22 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:39248
+	id S1752905Ab2LAOYU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Dec 2012 09:24:20 -0500
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:45206
 	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752266Ab2LAOXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752269Ab2LAOXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 1 Dec 2012 09:23:40 -0500
 x-originating-ip: 72.167.245.219
 From: "K. Y. Srinivasan" <kys@microsoft.com>
@@ -13,9 +13,9 @@ To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
         devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
         jasowang@redhat.com
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 25/28] Drivers: hv: Enable protocol negotiation with win8 hosts
-Date: Sat,  1 Dec 2012 06:46:56 -0800
-Message-Id: <1354373219-31374-25-git-send-email-kys@microsoft.com>
+Subject: [PATCH 28/28] Drivers: hv: Cleanup and consolidate reporting of build/version info
+Date: Sat,  1 Dec 2012 06:46:59 -0800
+Message-Id: <1354373219-31374-28-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1354373219-31374-1-git-send-email-kys@microsoft.com>
 References: <1354373160-31332-1-git-send-email-kys@microsoft.com>
@@ -24,41 +24,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we have implemented all of the Win8 (WS2012) functionality, negotiate
-Win8 protocol with the host.
+Now, cleanup and consolidate reporting of host and vmbus version numbers.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/hv/connection.c |    2 +-
- include/linux/hyperv.h  |    1 +
- 2 files changed, 2 insertions(+), 1 deletions(-)
+ drivers/hv/connection.c |   11 +++++++----
+ drivers/hv/hv.c         |    7 -------
+ 2 files changed, 7 insertions(+), 11 deletions(-)
 
 diff --git a/drivers/hv/connection.c b/drivers/hv/connection.c
-index ac71653..3965537 100644
+index 3965537..253a74b 100644
 --- a/drivers/hv/connection.c
 +++ b/drivers/hv/connection.c
-@@ -194,7 +194,7 @@ int vmbus_connect(void)
- 	 * version.
- 	 */
+@@ -120,9 +120,6 @@ static int vmbus_negotiate_version(struct vmbus_channel_msginfo *msginfo,
+ 	if (msginfo->response.version_response.version_supported) {
+ 		vmbus_connection.conn_state = CONNECTED;
+ 	} else {
+-		pr_err("Unable to connect, "
+-			"Version %d not supported by Hyper-V\n",
+-			version);
+ 		return -ECONNREFUSED;
+ 	}
  
--	version = VERSION_WS2008;
-+	version = VERSION_CURRENT;
+@@ -208,11 +205,17 @@ int vmbus_connect(void)
+ 		goto cleanup;
  
- 	do {
- 		ret = vmbus_negotiate_version(msginfo, version);
-diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
-index 8c3cb1f..5095b06 100644
---- a/include/linux/hyperv.h
-+++ b/include/linux/hyperv.h
-@@ -434,6 +434,7 @@ hv_get_ringbuffer_availbytes(struct hv_ring_buffer_info *rbi,
+ 	vmbus_proto_version = version;
+-	pr_info("Negotiated host information %d\n", version);
++	pr_info("Hyper-V Host Build:%d-%d.%d-%d-%d.%d; Vmbus version:%d.%d\n",
++		    host_info_eax, host_info_ebx >> 16,
++		    host_info_ebx & 0xFFFF, host_info_ecx,
++		    host_info_edx >> 24, host_info_edx & 0xFFFFFF,
++		    version >> 16, version & 0xFFFF);
++
+ 	kfree(msginfo);
+ 	return 0;
  
- #define VERSION_INVAL -1
+ cleanup:
++	pr_err("Unable to connect to host\n");
+ 	vmbus_connection.conn_state = DISCONNECTED;
  
-+#define VERSION_CURRENT VERSION_WIN8
- 
- /* Make maximum size of pipe payload of 16K */
- #define MAX_PIPE_DATA_PAYLOAD		(sizeof(u8) * 16384)
+ 	if (vmbus_connection.work_queue)
+diff --git a/drivers/hv/hv.c b/drivers/hv/hv.c
+index 0cd2da3..1c5481d 100644
+--- a/drivers/hv/hv.c
++++ b/drivers/hv/hv.c
+@@ -74,13 +74,6 @@ static int query_hypervisor_info(void)
+ 		edx = 0;
+ 		op = HVCPUID_VERSION;
+ 		cpuid(op, &eax, &ebx, &ecx, &edx);
+-		pr_info("Hyper-V Host OS Build:%d-%d.%d-%d-%d.%d\n",
+-			    eax,
+-			    ebx >> 16,
+-			    ebx & 0xFFFF,
+-			    ecx,
+-			    edx >> 24,
+-			    edx & 0xFFFFFF);
+ 		host_info_eax = eax;
+ 		host_info_ebx = ebx;
+ 		host_info_ecx = ecx;
 -- 
 1.7.4.1
 
