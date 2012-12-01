@@ -1,53 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115Ab2LAB4e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 20:56:34 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:36191 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751021Ab2LAB4c (ORCPT
+	id S1751545Ab2LACjS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 21:39:18 -0500
+Received: from peace.netnation.com ([204.174.223.2]:36171 "EHLO
+	peace.netnation.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750934Ab2LACjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 20:56:32 -0500
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: [PATCH 6/6] f2fs: move error condition for mkdir at proper place
-Date: Sat,  1 Dec 2012 10:56:25 +0900
-Message-Id: <1354326985-6826-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 30 Nov 2012 21:39:17 -0500
+X-Greylist: delayed 1256 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 Nov 2012 21:39:17 EST
+Date: Fri, 30 Nov 2012 18:18:17 -0800
+From: Simon Kirby <sim@hostway.ca>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Patrick McLean <patrick@cim.mcgill.ca>,
+        Patrick McLean <patrickm@gaikai.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-nfs@vger.kernel.org
+Subject: Re: Regression with initramfs and nfsroot (appears to be in the
+ dcache)
+Message-ID: <20121201021817.GA11921@hostway.ca>
+References: <CAE2NFgWCnmgSCsw7MzRkqBLTHgRDG-FvKKcbTHN6UqePK6Ef+Q@mail.gmail.com>
+ <20121129222109.GW4939@ZenIV.linux.org.uk>
+ <50B7E759.9070007@gaikai.com>
+ <20121129234326.GX4939@ZenIV.linux.org.uk>
+ <50B7FBA7.2030300@gaikai.com>
+ <20121130003502.GY4939@ZenIV.linux.org.uk>
+ <50B8046F.7030308@cim.mcgill.ca>
+ <20121130013628.GZ4939@ZenIV.linux.org.uk>
+ <50B811BA.6070503@cim.mcgill.ca>
+ <20121130020047.GA4939@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121130020047.GA4939@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+On Fri, Nov 30, 2012 at 02:00:48AM +0000, Al Viro wrote:
 
-In function f2fs_mkdir, err is being initialized without even checking
-if there was any error in new inode creation. So, instead check the
-inode error and make use of error/return condition.
+> OK, that settles it.  WARN_ON() and printks in the area can be dropped;
+> the right fix is below.  However, there's a similar place in cifs that
+> also needs to be dealt with and I really, really wonder why the hell do
+> we do d_drop() in nfs_revalidate_lookup().  It's not relevant in this
+> bug, but I would like to understand what's wrong with simply returning
+> 0 from ->d_revalidate() and letting the caller (in fs/namei.c) take care
+> of unhashing, etc. itself.  Would make have_submounts() in there pointless
+> as well - we could just return 0 and let d_invalidate() take care of the
+> checks...  Trond?
+> 
+> diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+> --- a/fs/nfs/dir.c
+> +++ b/fs/nfs/dir.c
+> @@ -450,7 +450,8 @@ void nfs_prime_dcache(struct dentry *parent, struct nfs_entry *entry)
+>  			nfs_refresh_inode(dentry->d_inode, entry->fattr);
+>  			goto out;
+>  		} else {
+> -			d_drop(dentry);
+> +			if (d_invalidate(dentry) != 0)
+> +				goto out;
+>  			dput(dentry);
+>  		}
+>  	}
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
----
- fs/f2fs/namei.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Hello,
 
-diff --git a/fs/f2fs/namei.c b/fs/f2fs/namei.c
-index 63efd77..2d720ca 100644
---- a/fs/f2fs/namei.c
-+++ b/fs/f2fs/namei.c
-@@ -287,9 +287,8 @@ static int f2fs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
- 	int err;
- 
- 	inode = f2fs_new_inode(dir, S_IFDIR | mode);
--	err = PTR_ERR(inode);
- 	if (IS_ERR(inode))
--		return err;
-+		return PTR_ERR(inode);
- 
- 	inode->i_op = &f2fs_dir_inode_operations;
- 	inode->i_fop = &f2fs_dir_operations;
--- 
-1.7.9.5
+With your previous patch (with the WARN_ON), I hit the WARN_ON() in the
+test case described here: https://patchwork.kernel.org/patch/1446851/ .
+The __d_move()ing mountpoint case no longer hits, and there is no longer
+an EBUSY, so this seems to work for me (in 3.6, where it broke).
 
+Simon-
