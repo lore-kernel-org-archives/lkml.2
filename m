@@ -1,89 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753024Ab2LASFZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Dec 2012 13:05:25 -0500
-Received: from mail.df.lth.se ([194.47.250.12]:57125 "EHLO mail.df.lth.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752675Ab2LASFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Dec 2012 13:05:24 -0500
-From: Linus Walleij <linus.walleij@linaro.org>
-To: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Rob Herring <rob.herring@calxeda.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] irqdomain: update documentation
-Date: Sat,  1 Dec 2012 19:05:16 +0100
-Message-Id: <1354385116-18606-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.7.2.5
+	id S1753068Ab2LASKt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Dec 2012 13:10:49 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:62240 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752679Ab2LASKs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Dec 2012 13:10:48 -0500
+Message-ID: <50BA47EF.4040409@gmail.com>
+Date: Sat, 01 Dec 2012 19:09:51 +0100
+From: Francesco Lavra <francescolavra.fl@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: "Rajanikanth H.V" <rajanikanth.hv@linaro.org>
+CC: anton.vorontsov@linaro.org, rob.herring@calxeda.com, lee.jones@linaro.org,
+        arnd@arndb.de, linus.walleij@stericsson.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        STEricsson_nomadik_linux@list.st.com, rajanikanth.hv@stericsson.com
+Subject: Re: [PATCH] ab8500: remove explicit handling of battery type
+References: <1354130865-6148-1-git-send-email-rajanikanth.hv@linaro.org>
+In-Reply-To: <1354130865-6148-1-git-send-email-rajanikanth.hv@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This updates the IRQdomain documentation a bit, by adding a more
-verbose explanation to why we need this, and by adding some
-extended documentation of the irq_domain_simple() usecase.
+Hi,
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- Documentation/IRQ-domain.txt | 34 +++++++++++++++++++++++++++++++++-
- 1 file changed, 33 insertions(+), 1 deletion(-)
+On 11/28/2012 08:27 PM, Rajanikanth H.V wrote:
+> From: "Rajanikanth H.V" <rajanikanth.hv@stericsson.com>
+> 
+> property, battery-type shall be one of supported technology type
+> instead blank
+> - refer: Documentation/devicetree/bindings/power_supply/ab8500/fg.txt
+> 	for the list supported types
+> - this patch appends to ab8500 bm devs DT binding patch set
+> 	ref: commit-id e0f1abeba5c2d8a2183566717d99294fd1a29c2e
+> 		git://git.infradead.org/battery-2.6.git
+> - promote ab8500_fg probe to happen before ab8500_btemp probe as
+> 	btemp driver depends on fuelgauge list,
+> 	ref: ab8500_fg_get(...)
+> 
+> Signed-off-by: Rajanikanth H.V <rajanikanth.hv@stericsson.com>
+> ---
+>  drivers/power/Makefile        |    2 +-
+>  drivers/power/ab8500_bmdata.c |   10 +++-------
+>  2 files changed, 4 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/power/Makefile b/drivers/power/Makefile
+> index 696e3a9..070c73d 100644
+> --- a/drivers/power/Makefile
+> +++ b/drivers/power/Makefile
+> @@ -38,7 +38,7 @@ obj-$(CONFIG_CHARGER_PCF50633)	+= pcf50633-charger.o
+>  obj-$(CONFIG_BATTERY_JZ4740)	+= jz4740-battery.o
+>  obj-$(CONFIG_BATTERY_INTEL_MID)	+= intel_mid_battery.o
+>  obj-$(CONFIG_BATTERY_RX51)	+= rx51_battery.o
+> -obj-$(CONFIG_AB8500_BM)		+= ab8500_bmdata.o ab8500_charger.o ab8500_btemp.o ab8500_fg.o abx500_chargalg.o
+> +obj-$(CONFIG_AB8500_BM)		+= ab8500_bmdata.o ab8500_charger.o ab8500_fg.o ab8500_btemp.o abx500_chargalg.o
+>  obj-$(CONFIG_CHARGER_ISP1704)	+= isp1704_charger.o
+>  obj-$(CONFIG_CHARGER_MAX8903)	+= max8903_charger.o
+>  obj-$(CONFIG_CHARGER_TWL4030)	+= twl4030_charger.o
+> diff --git a/drivers/power/ab8500_bmdata.c b/drivers/power/ab8500_bmdata.c
+> index 03cc528..f16b60c 100644
+> --- a/drivers/power/ab8500_bmdata.c
+> +++ b/drivers/power/ab8500_bmdata.c
+> @@ -461,7 +461,6 @@ bmdevs_of_probe(struct device *dev,
+>  	struct  device_node *np_bat_supply;
+>  	struct	abx500_bm_data *bat;
+>  	const char *btech;
+> -	char bat_tech[8];
+>  	int i, thermistor;
+>  
+>  	*battery = &ab8500_bm_data;
+> @@ -488,12 +487,9 @@ bmdevs_of_probe(struct device *dev,
+>  		"stericsson,battery-type", NULL);
+>  	if (!btech) {
+>  		dev_warn(dev, "missing property battery-name/type\n");
+> -		strcpy(bat_tech, "UNKNOWN");
+> -	} else {
+> -		strcpy(bat_tech, btech);
+> +		return -EINVAL;
 
-diff --git a/Documentation/IRQ-domain.txt b/Documentation/IRQ-domain.txt
-index 1401cec..9bc9594 100644
---- a/Documentation/IRQ-domain.txt
-+++ b/Documentation/IRQ-domain.txt
-@@ -7,6 +7,21 @@ systems with multiple interrupt controllers the kernel must ensure
- that each one gets assigned non-overlapping allocations of Linux
- IRQ numbers.
- 
-+The number of interrupt controllers registered as unique irqchips
-+show a rising tendency: for example subdrivers of different kinds
-+such as GPIO controllers avoid reimplementing identical callback
-+mechanisms as the IRQ core system by modelling their interrupt
-+handlers as irqchips, i.e. in effect cascading interrupt controllers.
-+
-+Here the interrupt number loose all kind of correspondence to
-+hardware interrupt numbers: whereas in the past, IRQ numbers could
-+be chosen so they matched the hardware IRQ line into the root
-+interrupt controller (i.e. the component actually fireing the
-+interrupt line to the CPU) nowadays this number is just a number.
-+
-+For this reason we need a mechanism to separate controller-local
-+interrupt numbers, called hardware irq's, from Linux IRQ numbers.
-+
- The irq_alloc_desc*() and irq_free_desc*() APIs provide allocation of
- irq numbers, but they don't provide any support for reverse mapping of
- the controller-local IRQ (hwirq) number into the Linux IRQ number
-@@ -40,6 +55,10 @@ required hardware setup.
- When an interrupt is received, irq_find_mapping() function should
- be used to find the Linux IRQ number from the hwirq number.
- 
-+The irq_create_mapping() function must be called *atleast once*
-+before any call to irq_find_mapping(), lest the descriptor will not
-+be allocated.
-+
- If the driver has the Linux IRQ number or the irq_data pointer, and
- needs to know the associated hwirq number (such as in the irq_chip
- callbacks) then it can be directly obtained from irq_data->hwirq.
-@@ -119,4 +138,17 @@ numbers.
- 
- Most users of legacy mappings should use irq_domain_add_simple() which
- will use a legacy domain only if an IRQ range is supplied by the
--system and will otherwise use a linear domain mapping.
-+system and will otherwise use a linear domain mapping. The semantics
-+of this call are such that if an IRQ range is specified then
-+descriptors will be allocated on-the-fly for it, and if no range is
-+specified it will fall through to irq_domain_add_linear() which meand
-+*no* irq descriptors will be allocated.
-+
-+A typical use case for simple domains is where an irqchip provider
-+is supporting both dynamic and static IRQ assignments.
-+
-+In order to avoid ending up in a situation where a linear domain is
-+used and no descriptor gets allocated it is very important to make sure
-+that the driver using the simple domain call irq_create_mapping()
-+before any irq_find_mapping() since the latter will actually work
-+for the static IRQ assignment case.
--- 
-1.7.11.7
+Before returning, of_node_put() should be called on the device node.
 
+--
+Francesco
