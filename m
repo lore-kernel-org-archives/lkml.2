@@ -1,52 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753059Ab2LASpy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Dec 2012 13:45:54 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:38624 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751825Ab2LASpw (ORCPT
+	id S1753290Ab2LASuF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Dec 2012 13:50:05 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:52537 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752675Ab2LASuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Dec 2012 13:45:52 -0500
+	Sat, 1 Dec 2012 13:50:03 -0500
+Message-ID: <50BA515A.3020200@googlemail.com>
+Date: Sat, 01 Dec 2012 19:50:02 +0100
+From: Stefan Beller <stefanbeller@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <1354276654-590-1-git-send-email-lee.jones@linaro.org>
-References: <1354276654-590-1-git-send-email-lee.jones@linaro.org>
-Date: Sat, 1 Dec 2012 19:45:51 +0100
-Message-ID: <CACRpkdZpZWF7-VpQumsgdhZ_ox7DQHr+61L8KOPH6tqcK89bkg@mail.gmail.com>
-Subject: Re: [PATCH 00/12] Refactoring the ab8500 battery management drivers
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linus.walleij@stericsson.com, arnd@arndb.de,
-        cbou@mail.ru, dwmw2@infradead.org, rajanikanth.hv@linaro.org,
-        Arun MURTHY <arun.murthy@stericsson.com>
+To: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Updating the .mailmap file
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 30, 2012 at 12:57 PM, Lee Jones <lee.jones@linaro.org> wrote:
+Hello,
 
-> The aim of this and subsequent patch-sets is to refactor battery
-> management services provided by the ab8500 MFD. This first patch-set
-> brings a few modifications to the collection which happened on the
-> internal kernel, but were never Mainlined. There are lots more of
-> these to come. We also tidy-up some of the Device Tree related patches
-> which are currently pending in -next.
->
->  drivers/mfd/ab8500-core.c       |    8 -
->  drivers/power/ab8500_bmdata.c   |  517 +++++++++++++++++++--------------------
->  drivers/power/ab8500_btemp.c    |   96 ++++----
->  drivers/power/ab8500_charger.c  |  222 ++++++++++++-----
->  drivers/power/ab8500_fg.c       |  123 +++++-----
->  drivers/power/abx500_chargalg.c |  133 +++++-----
->  include/linux/mfd/abx500.h      |    6 +-
->  7 files changed, 592 insertions(+), 513 deletions(-)
+I was just browsing the shortlog and it looked to 
+me as if there are many double entries, i.e. the same person
+being there with multiple email addresses.
 
-All of this looks good to me.
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-for all.
+So I wrote a script, which finds double names and adds them 
+to the .mailmap file. However manual checking, whether these 
+are really the same person is required.
 
-Arun submitted the original driver, maybe he can throw in an
-ACK as well...
+---
+#!/bin/bash
 
-Yours,
-Linus Walleij
+git shortlog -sne > shortlog.txt
+
+# find double names in the shortlog
+cat shortlog.txt |awk '{ NF--; $1=""; print }' |sort |uniq -d | sed 's/^ *//g' > names.txt
+
+while read line
+do
+    echo "process name $line"
+    # get the current mailmap file in a state where each person is listed
+    # with their first line:
+    rm mailmap_tmp*
+    cat .mailmap |grep -v "^[# ]"|grep -v "^$" | sort > mailmap_tmp1
+    while read <&9 line2
+    do
+        nameonly="$(echo "$line2" |awk '{NF--; print}')"
+        grep -m1 "$nameonly" mailmap_tmp1 >> mailmap_tmp2
+    done 9< "mailmap_tmp1"
+    cat mailmap_tmp2 |uniq > mailmap_tmp3
+
+    # find all occurences of one name
+    cat shortlog.txt |grep "$line" | awk '{ $1=""; print }' | sed 's/^ *//g' > currentname.txt
+
+    # get that guy alphabetically sorted into the mailmap file:
+    echo $line > name
+    cat mailmap_tmp3 name |sort > mailmap_tmp4
+
+    # find the place where we need to insert this
+    insertbeforeline=$(cat mailmap_tmp4 |grep -A1 "$line" |tail -n1)
+    if [ "$insertbeforeline" != "" ] ; then
+        # insert all in the middle of .mailmap:
+        while read <&9 line2; do
+            echo "adding line $line2 to mailmap before $insertbeforeline"
+            sed "/$insertbeforeline/i $line2" .mailmap > mailmap_tmp5
+            mv mailmap_tmp5 .mailmap
+        done 9< "currentname.txt"
+    else
+        # must appended to end
+        cat currentname.txt >> .mailmap
+    fi
+
+    git commit -a -m "Updating .mailmap file: Adding ${line}" > /dev/null
+    echo "---"
+done < "names.txt"
+
+rm mailmap_tmp*
+rm shortlog.txt
+rm names.txt
