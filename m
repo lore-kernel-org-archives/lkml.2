@@ -1,250 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751034Ab2LAAoP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 19:44:15 -0500
-Received: from scrye.com ([75.148.32.185]:37267 "EHLO mail.scrye.com"
+	id S1751182Ab2LAAqh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 19:46:37 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:35448 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750709Ab2LAAoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 19:44:13 -0500
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] Documentation: Enumerate the guidelines for stable patches.
-From: Anthony Foiani <tkil@scrye.com>
-Reply-To: Anthony Foiani <tkil@scrye.com>
-X-Attribution: Tony
-Date: Fri, 30 Nov 2012 17:44:13 -0700
-Message-ID: <gr4na1u02.fsf@dworkin.scrye.com>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) XEmacs/21.5-b31 (linux)
+	id S1750839Ab2LAAqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 19:46:35 -0500
+Date: Fri, 30 Nov 2012 19:45:20 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Thorsten Leemhuis <fedora@leemhuis.info>
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, George Spelvin <linux@horizon.com>,
+        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
+        Tomas Racek <tracek@redhat.com>, Jan Kara <jack@suse.cz>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Josh Boyer <jwboyer@gmail.com>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Jiri Slaby <jslaby@suse.cz>, Zdenek Kabelac <zkabelac@redhat.com>,
+        Bruno Wolff III <bruno@wolff.to>, linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        John Ellson <john.ellson@comcast.net>
+Subject: Re: kswapd craziness in 3.7
+Message-ID: <20121201004520.GK2301@cmpxchg.org>
+References: <20121127214928.GA20253@cmpxchg.org>
+ <50B5387C.1030005@redhat.com>
+ <20121127222637.GG2301@cmpxchg.org>
+ <CA+55aFyrNRF8nWyozDPi4O1bdjzO189YAgMukyhTOZ9fwKqOpA@mail.gmail.com>
+ <20121128101359.GT8218@suse.de>
+ <20121128145215.d23aeb1b.akpm@linux-foundation.org>
+ <20121128235412.GW8218@suse.de>
+ <50B77F84.1030907@leemhuis.info>
+ <20121129170512.GI2301@cmpxchg.org>
+ <50B8A8E7.4030108@leemhuis.info>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50B8A8E7.4030108@leemhuis.info>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Thorsten,
 
-From: Anthony Foiani <anthony.foiani@gmail.com>
+On Fri, Nov 30, 2012 at 01:39:03PM +0100, Thorsten Leemhuis wrote:
+> /me wonders how to elegantly get out of his man-in-the-middle position
 
-Having recently received a formletter rejection on a stable patch, I
-found it difficult to determine exactly which guideline I had missed.
+You control the mighty koji :-)
 
-Numbering the guidelines will allow the stable maintainer to quickly
-and easily indicate which guidelines have not been followed.
+But seriously, this is very helpful, thank you!  John now also Cc'd
+directly.
 
-The actual changes are only the addition of clause numbering, and the
-wishful thinking added to S15.
+> John was able to reproduce the problem quickly with a kernel that 
+> contained the patch from your mail. For details see
+> 
+> https://bugzilla.redhat.com/show_bug.cgi?id=866988#c42 and later
+> 
+> He provided the informations there. Parts of it:
 
-Signed-Off-By: Anthony Foiani <anthony.foiani@gmail.com>
+> /proc/vmstat while kswad0 at 100%cpu
+> /proc/zoneinfo with kswapd0 at 100% cpu
+> perf profile
+
+Thanks.
+
+I'm quoting the interesting bits in order of the cars on my possibly
+derailing train of thought:
+
+> pageoutrun 117729182
+> allocstall 5
+
+Okay, so kswapd is stupidly looping but it's still managing to do it's
+actual job; nobody is dropping into direct reclaim.
+
+> pgsteal_kswapd_dma 1
+> pgsteal_kswapd_normal 202106
+> pgsteal_kswapd_high 36515
+> pgsteal_kswapd_movable 0
+
+> pgscan_kswapd_dma 1
+> pgscan_kswapd_normal 203044
+> pgscan_kswapd_high 40407
+> pgscan_kswapd_movable 0
+
+Does not seem excessive, so apparently it also does not overreclaim.
+
+> Node 0, zone      DMA
+>   pages free     1655
+>         min      196
+>         low      245
+>         high     294
+
+> Node 0, zone   Normal
+>   pages free     186234
+>         min      10953
+>         low      13691
+>         high     16429
+
+> Node 0, zone  HighMem
+>   pages free     8983
+>         min      34
+>         low      475
+>         high     917
+
+These are all well above their watermarks, yet kswapd is definitely
+finding something wrong with one of these as it actually does drop
+into the reclaim loop, so zone_balanced() must be returning false:
+
+>     16.52%      kswapd0  [kernel.kallsyms]          [k] idr_get_next                   
+>                 |
+>                 --- idr_get_next
+>                    |          
+>                    |--99.76%-- css_get_next
+>                    |          mem_cgroup_iter
+>                    |          |          
+>                    |          |--50.49%-- shrink_zone
+>                    |          |          kswapd
+>                    |          |          kthread
+>                    |          |          ret_from_kernel_thread
+>                    |          |          
+>                    |           --49.51%-- kswapd
+>                    |                     kthread
+>                    |                     ret_from_kernel_thread
+>                     --0.24%-- [...]
+> 
+>     11.23%      kswapd0  [kernel.kallsyms]          [k] prune_super                    
+>                 |
+>                 --- prune_super
+>                    |          
+>                    |--86.74%-- shrink_slab
+>                    |          kswapd
+>                    |          kthread
+>                    |          ret_from_kernel_thread
+>                    |          
+>                     --13.26%-- kswapd
+>                               kthread
+>                               ret_from_kernel_thread
+
+Spending so much time in shrink_zone and shrink_slab without
+overreclaiming a zone, I would say that a) this always stays on the
+DEF_PRIORITY and b) only loops on the DMA zone.  At DEF_PRIORITY, the
+scan goal for filepages in the other zones would be > 0 e.g.
+
+As the DMA zone watermarks are fine, it must be the fragmentation
+index that indicates a lack of memory.  Filling in the 1655 free pages
+into the fragmentation index formula indicates lack of free memory
+when these 1655 pages are lumped together in less than 9 page blocks.
+Not unrealistic, I think: on my desktop machine, the DMA zone's free
+3975 pages are lumped together in only 12 blocks.  But on my system,
+the DMA zone is either never used and there is always at least one
+page block available that could satisfy a huge page allocation
+(fragmentation index == -1000).  Unless the system gets really close
+to OOM, at which point the DMA zone is highly fragmented.  And keep in
+mind that if the priority level goes below DEF_PRIORITY, as it does
+close to OOM, the unreclaimable DMA zone is ignored anyway.  But the
+DMA zone here is just barely used:
+
+> Node 0, zone      DMA
+[...]
+>     nr_slab_reclaimable 3
+>     nr_slab_unreclaimable 1
+[...]
+>     nr_dirtied   315
+>     nr_written   315
+
+which could explain a fragmentation index that asks for more free
+memory while the watermarks are fine.
+
+Why this all loops: there is one more inconsistency where the
+conditions for reclaim and the conditions for compaction contradict
+each other: reclaim also does not consider the DMA zone balanced, but
+it needs only 25% of the whole node to be balanced, while compaction
+requires every single zone to be balanced individually.
+
+So these strict per-zone checks for compaction at the end of
+balance_pgdat() are likely to be the culprits that keep kswapd looping
+forever on this machine, trying to balance DMA for compaction while
+reclaim decides it has enough balanced memory in the node overall.
+
+I think we can just remove them: whenever the compaction code is
+reached, the reclaim code balanced 25% of the memory available for the
+classzone to be suitable for compaction.
+
+Mel?  Rik?
+
 ---
- Documentation/stable_kernel_rules.txt | 185 ++++++++++++++++++++--------------
- 1 file changed, 108 insertions(+), 77 deletions(-)
+From: Johannes Weiner <hannes@cmpxchg.org>
+Subject: [patch] mm: vmscan: do not keep kswapd looping forever due
+ to individual uncompactable zones
 
-diff --git a/Documentation/stable_kernel_rules.txt b/Documentation/stable_kernel_rules.txt
-index b0714d8..9a6dc59 100644
---- a/Documentation/stable_kernel_rules.txt
-+++ b/Documentation/stable_kernel_rules.txt
-@@ -1,95 +1,126 @@
- Everything you ever wanted to know about Linux -stable releases.
+When a zone meets its high watermark and is compactable in case of
+higher order allocations, it contributes to the percentage of the
+node's memory that is considered balanced.
+
+This requirement, that a node be only partially balanced, came about
+when kswapd was desparately trying to balance tiny zones when all
+bigger zones in the node had plenty of free memory.  Arguably, the
+same should apply to compaction: if a significant part of the node is
+balanced enough to run compaction, do not get hung up on that tiny
+zone that might never get in shape.
+
+When the compaction logic in kswapd is reached, we know that at least
+25% of the node's memory is balanced properly for compaction (see
+zone_balanced and pgdat_balanced).  Remove the individual zone checks
+that restart the kswapd cycle.
+
+Otherwise, we may observe more endless looping in kswapd where the
+compaction code loops back to reclaim because of a single zone and
+reclaim does nothing because the node is considered balanced overall.
+
+Reported-by: Thorsten Leemhuis <fedora@leemhuis.info>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/vmscan.c | 16 ----------------
+ 1 file changed, 16 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 3b0aef4..486100f 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2806,22 +2806,6 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 			if (!populated_zone(zone))
+ 				continue;
  
--Rules on what kind of patches are accepted, and which ones are not, into the
--"-stable" tree:
+-			if (zone->all_unreclaimable &&
+-			    sc.priority != DEF_PRIORITY)
+-				continue;
 -
-- - It must be obviously correct and tested.
-- - It cannot be bigger than 100 lines, with context.
-- - It must fix only one thing.
-- - It must fix a real bug that bothers people (not a, "This could be a
--   problem..." type thing).
-- - It must fix a problem that causes a build error (but not for things
--   marked CONFIG_BROKEN), an oops, a hang, data corruption, a real
--   security issue, or some "oh, that's not good" issue.  In short, something
--   critical.
-- - Serious issues as reported by a user of a distribution kernel may also
--   be considered if they fix a notable performance or interactivity issue.
--   As these fixes are not as obvious and have a higher risk of a subtle
--   regression they should only be submitted by a distribution kernel
--   maintainer and include an addendum linking to a bugzilla entry if it
--   exists and additional information on the user-visible impact.
-- - New device IDs and quirks are also accepted.
-- - No "theoretical race condition" issues, unless an explanation of how the
--   race can be exploited is also provided.
-- - It cannot contain any "trivial" fixes in it (spelling changes,
--   whitespace cleanups, etc).
-- - It must follow the Documentation/SubmittingPatches rules.
-- - It or an equivalent fix must already exist in Linus' tree (upstream).
-+Rules on what kind of patches are accepted, and which ones are not,
-+into the "-stable" tree.
- 
-+S1.  It must be obviously correct and tested.
-+
-+S2.  It cannot be bigger than 100 lines, with context.
-+
-+S3.  It must fix only one thing.
-+
-+S4.  It must fix a real bug that bothers people (not a, "This could be
-+     a problem..." type thing).
-+
-+S5.  It must fix a problem that causes a build error (but not for
-+     things marked CONFIG_BROKEN), an oops, a hang, data corruption, a
-+     real security issue, or some "oh, that's not good" issue.  In
-+     short, something critical.
-+
-+S6.  Serious issues as reported by a user of a distribution kernel may
-+     also be considered if they fix a notable performance or
-+     interactivity issue.  As these fixes are not as obvious and have
-+     a higher risk of a subtle regression they should only be
-+     submitted by a distribution kernel maintainer and include an
-+     addendum linking to a bugzilla entry if it exists and additional
-+     information on the user-visible impact.
-+
-+S7.  New device IDs and quirks are also accepted.
-+
-+S8.  No "theoretical race condition" issues, unless an explanation of
-+     how the race can be exploited is also provided.
-+
-+S9.  It cannot contain any "trivial" fixes in it (spelling changes,
-+     whitespace cleanups, etc).
-+
-+S10. It must follow the Documentation/SubmittingPatches rules.
-+
-+S11. It or an equivalent fix must already exist in Linus' tree
-+     (upstream).
- 
- Procedure for submitting patches to the -stable tree:
- 
-- - Send the patch, after verifying that it follows the above rules, to
--   stable@vger.kernel.org.  You must note the upstream commit ID in the
--   changelog of your submission, as well as the kernel version you wish
--   it to be applied to.
-- - To have the patch automatically included in the stable tree, add the tag
--     Cc: stable@vger.kernel.org
--   in the sign-off area. Once the patch is merged it will be applied to
--   the stable tree without anything else needing to be done by the author
--   or subsystem maintainer.
-- - If the patch requires other patches as prerequisites which can be
--   cherry-picked than this can be specified in the following format in
--   the sign-off area:
+-			/* Would compaction fail due to lack of free memory? */
+-			if (COMPACTION_BUILD &&
+-			    compaction_suitable(zone, order) == COMPACT_SKIPPED)
+-				goto loop_again;
 -
--     Cc: <stable@vger.kernel.org> # 3.3.x: a1f84a3: sched: Check for idle
--     Cc: <stable@vger.kernel.org> # 3.3.x: 1b9508f: sched: Rate-limit newidle
--     Cc: <stable@vger.kernel.org> # 3.3.x: fd21073: sched: Fix affinity logic
--     Cc: <stable@vger.kernel.org> # 3.3.x
--    Signed-off-by: Ingo Molnar <mingo@elte.hu>
+-			/* Confirm the zone is balanced for order-0 */
+-			if (!zone_watermark_ok(zone, 0,
+-					high_wmark_pages(zone), 0, 0)) {
+-				order = sc.order = 0;
+-				goto loop_again;
+-			}
 -
--   The tag sequence has the meaning of:
--     git cherry-pick a1f84a3
--     git cherry-pick 1b9508f
--     git cherry-pick fd21073
--     git cherry-pick <this commit>
--
-- - The sender will receive an ACK when the patch has been accepted into the
--   queue, or a NAK if the patch is rejected.  This response might take a few
--   days, according to the developer's schedules.
-- - If accepted, the patch will be added to the -stable queue, for review by
--   other developers and by the relevant subsystem maintainer.
-- - Security patches should not be sent to this alias, but instead to the
--   documented security@kernel.org address.
-+S12. Send the patch, after verifying that it follows the above rules,
-+     to stable@vger.kernel.org.  You must note the upstream commit ID
-+     in the changelog of your submission, as well as the kernel
-+     version you wish it to be applied to.
-+
-+S13. To have the patch automatically included in the stable tree, add
-+     the tag
-+
-+       Cc: stable@vger.kernel.org
-+
-+     in the sign-off area. Once the patch is merged it will be applied
-+     to the stable tree without anything else needing to be done by
-+     the author or subsystem maintainer.
-+
-+S14. If the patch requires other patches as prerequisites which can be
-+     cherry-picked than this can be specified in the following format
-+     in the sign-off area:
- 
-+       Cc: <stable@vger.kernel.org> # 3.3.x: a1f84a3: sched: Check for idle
-+       Cc: <stable@vger.kernel.org> # 3.3.x: 1b9508f: sched: Rate-limit newidle
-+       Cc: <stable@vger.kernel.org> # 3.3.x: fd21073: sched: Fix affinity logic
-+       Cc: <stable@vger.kernel.org> # 3.3.x
-+       Signed-off-by: Ingo Molnar <mingo@elte.hu>
-+
-+     The tag sequence has the meaning of:
-+
-+       git cherry-pick a1f84a3
-+       git cherry-pick 1b9508f
-+       git cherry-pick fd21073
-+       git cherry-pick <this commit>
-+
-+S15. The sender will receive an ACK when the patch has been accepted
-+     into the queue, or a NAK if the patch is rejected.  This response
-+     might take a few days, according to the developer's schedules.
-+     Ideally, any NAK message would include an indication of which
-+     guidelines have not been followed.
-+
-+S16. If accepted, the patch will be added to the -stable queue, for
-+     review by other developers and by the relevant subsystem
-+     maintainer.
-+
-+S17. Security patches should not be sent to this alias, but instead to
-+     the documented security@kernel.org address.
- 
- Review cycle:
- 
-- - When the -stable maintainers decide for a review cycle, the patches will be
--   sent to the review committee, and the maintainer of the affected area of
--   the patch (unless the submitter is the maintainer of the area) and CC: to
--   the linux-kernel mailing list.
-- - The review committee has 48 hours in which to ACK or NAK the patch.
-- - If the patch is rejected by a member of the committee, or linux-kernel
--   members object to the patch, bringing up issues that the maintainers and
--   members did not realize, the patch will be dropped from the queue.
-- - At the end of the review cycle, the ACKed patches will be added to the
--   latest -stable release, and a new -stable release will happen.
-- - Security patches will be accepted into the -stable tree directly from the
--   security kernel team, and not go through the normal review cycle.
--   Contact the kernel security team for more details on this procedure.
-+S18. When the -stable maintainers decide for a review cycle, the
-+     patches will be sent to the review committee, and the maintainer
-+     of the affected area of the patch (unless the submitter is the
-+     maintainer of the area) and CC: to the linux-kernel mailing list.
-+
-+S19. The review committee has 48 hours in which to ACK or NAK the
-+     patch.
-+
-+S20. If the patch is rejected by a member of the committee, or
-+     linux-kernel members object to the patch, bringing up issues that
-+     the maintainers and members did not realize, the patch will be
-+     dropped from the queue.
-+
-+S21. At the end of the review cycle, the ACKed patches will be added
-+     to the latest -stable release, and a new -stable release will
-+     happen.
-+
-+S22. Security patches will be accepted into the -stable tree directly
-+     from the security kernel team, and not go through the normal
-+     review cycle.  Contact the kernel security team for more details
-+     on this procedure.
- 
- Trees:
- 
-- - The queues of patches, for both completed versions and in progress
--   versions can be found at:
-+S23. The queues of patches, for both completed versions and in
-+     progress versions can be found at:
-+
- 	http://git.kernel.org/?p=linux/kernel/git/stable/stable-queue.git
-- - The finalized and tagged releases of all stable kernels can be found
--   in separate branches per version at:
--	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git
- 
-+S24. The finalized and tagged releases of all stable kernels can be
-+     found in separate branches per version at:
-+
-+	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git
- 
- Review committee:
- 
-- - This is made up of a number of kernel developers who have volunteered for
--   this task, and a few that haven't.
-+S25. This is made up of a number of kernel developers who have
-+     volunteered for this task, and a few that haven't.
+ 			/* Check if the memory needs to be defragmented. */
+ 			if (zone_watermark_ok(zone, order,
+ 				    low_wmark_pages(zone), *classzone_idx, 0))
 -- 
 1.7.11.7
 
