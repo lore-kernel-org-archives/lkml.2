@@ -1,99 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab2LAUcX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Dec 2012 15:32:23 -0500
-Received: from trent.utfs.org ([94.185.90.103]:45549 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752898Ab2LAUcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Dec 2012 15:32:21 -0500
-Date: Sat, 1 Dec 2012 12:32:11 -0800 (PST)
-From: Christian Kujau <lists@nerdbynature.de>
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-cc: LKML <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org,
-        paulus@samba.org
-Subject: Re: 3.7-rc7: BUG: MAX_STACK_TRACE_ENTRIES too low!
-In-Reply-To: <1354092082.3054.19.camel@ThinkPad-T5421.cn.ibm.com>
-Message-ID: <alpine.DEB.2.01.1212011229400.7378@trent.utfs.org>
-References: <alpine.DEB.2.01.1211271824120.7378@trent.utfs.org>  <alpine.DEB.2.01.1211271916160.7378@trent.utfs.org> <1354092082.3054.19.camel@ThinkPad-T5421.cn.ibm.com>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1753505Ab2LAUdV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Dec 2012 15:33:21 -0500
+Received: from mailserver6.natinst.com ([130.164.80.6]:42524 "EHLO
+	spamkiller06.natinst.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752898Ab2LAUdT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Dec 2012 15:33:19 -0500
+Date: Sat, 1 Dec 2012 14:33:13 -0600
+From: Josh Cartwright <josh.cartwright@ni.com>
+To: Philip Balister <philip@balister.org>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Arnd Bergmann <arnd@arndb.de>,
+        Eli Billauer <eli.billauer@gmail.com>, linux-kernel@vger.kernel.org,
+        Pavel Machek <pavel@denx.de>, John Linn <john.linn@xilinx.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        "Ira W. Snyder" <iws@ovro.caltech.edu>
+Subject: Re: [PATCH 2/2] New driver: Xillybus generic interface for FPGA
+ (programmable logic)
+Message-ID: <20121201203313.GO1718@beefymiracle.amer.corp.natinst.com>
+References: <1354117293-13632-1-git-send-email-eli.billauer@gmail.com>
+ <1354117293-13632-2-git-send-email-eli.billauer@gmail.com>
+ <201211301728.48008.arnd@arndb.de>
+ <20121130173644.GA9841@kroah.com>
+ <50B97734.3090207@balister.org>
+ <20121201165612.GG3113@kroah.com>
+ <50BA5AEF.3010109@balister.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+In-Reply-To: <50BA5AEF.3010109@balister.org>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-MIMETrack: Itemize by SMTP Server on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+ 14, 2012) at 12/01/2012 02:33:06 PM,
+	Serialize by Router on MailServ59-US/AUS/H/NIC(Release 8.5.3FP2 HF169|September
+ 14, 2012) at 12/01/2012 02:33:06 PM,
+	Serialize complete at 12/01/2012 02:33:06 PM
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ON0CT8LY+wgE1XqS"
+Content-Disposition: inline
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8185,1.0.431,0.0.0000
+ definitions=2012-12-01_01:2012-11-30,2012-12-01,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Nov 2012 at 16:41, Li Zhong wrote:
-> On Tue, 2012-11-27 at 19:22 -0800, Christian Kujau wrote:
-> > On Tue, 27 Nov 2012 at 19:06, Christian Kujau wrote:
-> > > the same thing[0] happened again in 3.7-rc7, after ~20h uptime:
-> > 
-> > I found the following on patchwork, but this seems to deal with powerpc64 
-> > only, while this PowerBook G4 of mine is powerpc32:
-> > 
-> >   http://patchwork.ozlabs.org/patch/193414/
-> > 
-> > It looks related, but then again, I fail to parse assember...
-> 
-> Hi Christian, 
-> 
-> Would you please help to try the following fix? I don't have a powerpc32
-> machine for test...
 
-After 3 days of uptime with your patch applied (and "normal" usage, just 
-as before) no such BUG message occured. So, from my point of view, feel
-free to add:
+--ON0CT8LY+wgE1XqS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-   Tested-by: Christian Kujau <lists@nerdbynature.de>
+On Sat, Dec 01, 2012 at 11:30:55AM -0800, Philip Balister wrote:
+> On 12/01/2012 08:56 AM, Greg KH wrote:
+> >On Fri, Nov 30, 2012 at 07:19:16PM -0800, Philip Balister wrote:
+[..]
+> >
+> >>I've been engaged in design discussions today with my customer. Our
+> >>target is the Xilinx Zynq hardware. The first pass at a driver
+> >>focuses on creating the minimal amount of code in the kernel doing
+> >>most of the logic in user space. So the driver code allocates a
+> >>large chunk of RAM for the FPGA to read/write to, provides a mmap
+> >>function so user space can see this RAM, also mmaps in the address
+> >>space of an AXI slave so the user space can control the logic. This
+> >>approach has no dependencies on what is loaded into the fpga.
+> >
+> >Would a simple UIO driver work best for this type of arrangement?  Then
+> >those types of hardware wouldn't even need to mess with a fpga-type
+> >interface.
+>
+> It is very close to a UIO approach. My key problem I am trying to solve is
+> getting a "large" buffer space for the driver and a way to communicate the
+> physical address and size of the buffer to the fpga. The fpga has several
+> ports that allow it to directly read/write RAM, but it needs to know
+> physical addresses.
+>
+> >>This is a very different approach then the Xillybus driver, but
+> >>should also be useful to a large class of people. Hopefully, we can
+> >>converge on a set of useful drivers, and not end up with a million
+> >>drivers all based on custom fpga configuration :)
+> >
+> >Odds are, this should look something like the firmware interface in the
+> >end, right?  Userspace dumps a bunch of data to the device, and then
+> >needs the driver to toggle some bits somewhere to enable the device.
+> >Also, a few control calls like clearing the device, and other minor
+> >things should be all that is needed, right?
+> >
+>
+> For zynq, there is an out of tree ( :) ) driver that handles the firmware
+> loading. This is an independent problem.
+>
+> >So, in the grand tradition of, "The first one there wins", why not base
+> >it all off of your driver, and how that works, and we can go from there :)
+>
+> I do not think there will be any one driver that will work for all use cases
+> due to the variety of devices that can be implemented in the fpga.
 
-Thanks!
-Christian.
+I see this working such that each IP block/independent logic unit in the
+FPGA bitfile would be reified as an independent device to the kernel,
+perhaps as a child of an 'fpga' bus (or similar).  These devices would
+have their own drivers, and would come and go as the logic is
+reprogrammed.
 
-> ==============================================
-> diff --git a/arch/powerpc/kernel/entry_32.S b/arch/powerpc/kernel/entry_32.S
-> index 9499385..cadebfd 100644
-> --- a/arch/powerpc/kernel/entry_32.S
-> +++ b/arch/powerpc/kernel/entry_32.S
-> @@ -439,6 +439,8 @@ ret_from_fork:
->  ret_from_kernel_thread:
->  	REST_NVGPRS(r1)
->  	bl	schedule_tail
-> +	li	r3,0
-> +	stw	r3,0(r1)
->  	mtlr	r14
->  	mr	r3,r15
->  	PPC440EP_ERR42
-> ==============================================
-> 
-> > 
-> > Christian.
-> > 
-> > > [40007.339487] [sched_delayed] sched: RT throttling activated
-> > > [69731.388717] BUG: MAX_STACK_TRACE_ENTRIES too low!
-> > > [69731.390371] turning off the locking correctness validator.
-> > > [69731.391942] Call Trace:
-> > > [69731.393525] [c9a61c10] [c0009064] show_stack+0x70/0x1bc (unreliable)
-> > > [69731.395152] [c9a61c50] [c0077460] save_trace+0xfc/0x114
-> > > [69731.396735] [c9a61c60] [c007be20] __lock_acquire+0x1568/0x19b8
-> > > [69731.398296] [c9a61d00] [c007c2c0] lock_acquire+0x50/0x70
-> > > [69731.399857] [c9a61d20] [c0550e28] _raw_spin_lock_irq+0x5c/0x78
-> > > [69731.401419] [c9a61d40] [c054fb58] __schedule+0xd8/0x534
-> > > [69731.402972] [c9a61da0] [c0550094] _cond_resched+0x50/0x68
-> > > [69731.404527] [c9a61db0] [c0479908] dst_gc_task+0xbc/0x258
-> > > [69731.406070] [c9a61e40] [c004eeb8] process_one_work+0x1f4/0x49c
-> > > [69731.407585] [c9a61e80] [c004f644] worker_thread+0x14c/0x400
-> > > [69731.409075] [c9a61eb0] [c0057634] kthread+0xbc/0xc0
-> > > [69731.410521] [c9a61f40] [c0011ad4] ret_from_kernel_thread+0x5c/0x64
-> > > [...repeated 54 times...]
-> > > 
-> > > Anyone knows what this is about?
-> > > 
-> > > Thanks,
-> > > Christian.
-> > > 
-> > > [0] http://lkml.indiana.edu/hypermail/linux/kernel/1211.0/03025.html
+This is really useful if you're taking and integrating IP that exposes a
+known interface with existing in-kernel Linux drivers.  Think a soft
+Ethernet MAC IP or a 16550 or something.
 
--- 
-BOFH excuse #267:
+For more application specific things, or lower level/less defined IO
+like you described, an instance of a UIO driver might fit well.
+(Anything more complicated then simple register accesses or interrupts
+might require something more.)
 
-The UPS is on strike.
+The key point here is that there is a need for a common reprogrammable
+logic subsystem that provides an abstraction over the various
+reprogrammable logic devices and exposes a common user interfaces for
+download and configuration.
+
+This user interface would need to encompass a way to hand the kernel a
+blob and a description of the IP contained within.  Grant's recent
+dynamic device tree work seems like would be a great fit for this (and
+infact, I believe this use case was explicitly listed as a userstory).
+
+  Josh
+
+--ON0CT8LY+wgE1XqS
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQummJAAoJEEef0niEbw+lNokP/2T4IWj2bBaoaObVHwZ6OudP
+iL3dyqr9t1k9qUsga35xN5PJZphADScHM1cyj/dmnswexgefaVcp/+MtTULh2Pjw
+iqkeJWe8To5U+2t6d1p8ICVon7hBMvGNSL6K57W64dok/RsDP7FRDFABtTajGkU2
+SeJS7fVAg9Rpca3Mtp3JhLdZptIieatrqfcbw5gYZcO1Dh5P7vTbL3M+NY6uus6w
+jsjeFcG09RbRcGN/4S5FxzARR80YHQ4VfRmHFDoqvEki74IS8hy99WSbTN2/KFiS
+7Mdz5ja4ar9Vlw2+Sevyd8BCutSHH2TE9YnEfg1SlwHmVmWv8Je8TRPprLO7ZcWt
+6Xa9EYTdx5PAt1PxfRZKKLvTHP/hl/rHevhwNrzG0I8KqjOaBTYJ3KPKA6nCQp86
+VlkXVMEpz1yD1JtyBb87Z0r83C+5YLlzt1/50rxn+m64yzoSxe5o/u537ulljHqJ
+mUWtNPKiTUeQ23AOM53Hvf/1bGBniGMzNCUuj1ROsRMHzVjDY9NXF8/+9uDBnVAM
+MH4u6cuwLjbDa5L0yuFw5LIGdn3R8PeORMFH9FUY4SLkt3yUGxYGFTURYlmYhOCQ
++2i3FKJMNUQLB26T+ojFnVF/AuQtJA7oWuX1JUVkuo9q+IINbgFqbv12N37KNvpm
+fdEoQccvjuRf8+rjLoT3
+=I3Tg
+-----END PGP SIGNATURE-----
+
+--ON0CT8LY+wgE1XqS--
