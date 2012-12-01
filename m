@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277Ab2LAPfw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Dec 2012 10:35:52 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:34837 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751852Ab2LAPfu (ORCPT
+	id S1752422Ab2LAPgo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Dec 2012 10:36:44 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:37123 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752029Ab2LAPgm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Dec 2012 10:35:50 -0500
-Date: Sun, 02 Dec 2012 00:35:43 +0900
-Message-ID: <87r4n9u6nk.wl%satoru.takeuchi@gmail.com>
+	Sat, 1 Dec 2012 10:36:42 -0500
+Date: Sun, 02 Dec 2012 00:36:36 +0900
+Message-ID: <87pq2tu6m3.wl%satoru.takeuchi@gmail.com>
 From: Satoru Takeuchi <satoru.takeuchi@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk
-Subject: Re: [ 00/56] 3.4.21-stable review
-In-Reply-To: <20121130185118.302752929@linuxfoundation.org>
-References: <20121130185118.302752929@linuxfoundation.org>
+Subject: Re: [ 00/37] 3.0.54-stable review
+In-Reply-To: <20121130183857.166228045@linuxfoundation.org>
+References: <20121130183857.166228045@linuxfoundation.org>
 User-Agent: Wanderlust/2.14.0 (Africa) SEMI/1.14.6 (Maruoka) FLIM/1.14.9
  (=?ISO-2022-JP-2?B?R29qGyQoRCtXGyhC?=) APEL/10.8 Emacs/23.4
  (x86_64-pc-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -26,22 +26,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Fri, 30 Nov 2012 10:54:52 -0800,
+At Fri, 30 Nov 2012 10:45:47 -0800,
 Greg Kroah-Hartman wrote:
 > 
-> This is the start of the stable review cycle for the 3.4.21 release.
-> There are 56 patches in this series, all will be posted as a response
+> This is the start of the stable review cycle for the 3.0.54 release.
+> There are 37 patches in this series, all will be posted as a response
 > to this one.  If anyone has any issues with these being applied, please
 > let me know.
 > 
-> Responses should be made by Sun Dec  2 18:50:02 UTC 2012.
+> Responses should be made by Sun Dec  2 18:36:43 UTC 2012.
 > Anything received after that time might be too late.
 > 
 > The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.21-rc1.gz
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.54-rc1.gz
 > and the diffstat can be found below.
 
-3.4.21-rc1 can be built and boot without any problem. Building a kernel with
+3.0.54-rc1 can be built and boot without any problem. Building a kernel with
 this kernel also works fine.
 
 Thanks,
@@ -56,28 +56,19 @@ Satoru
 > Pseudo-Shortlog of commits:
 > 
 > Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->     Linux 3.4.21-rc1
-> 
-> Johannes Berg <johannes.berg@intel.com>
->     iwlwifi: fix 6000 series channel switch command
-> 
-> Stanislav Yakovlev <stas.yakovlev@gmail.com>
->     net/wireless: ipw2200: Fix panic occurring in ipw_handle_promiscuous_tx()
-> 
-> Dan Carpenter <dan.carpenter@oracle.com>
->     timekeeping: Cast raw_interval to u64 to avoid shift overflow
-> 
-> Colin Cross <ccross@android.com>
->     ARM: OMAP: counter: add locking to read_persistent_clock
+>     Linux 3.0.54-rc1
 > 
 > Jaehoon Chung <jh80.chung@samsung.com>
 >     mmc: sdhci-s3c: fix the wrong number of max bus clocks
 > 
-> Gavin Shan <shangw@linux.vnet.ibm.com>
->     powerpc/eeh: Lock module while handling EEH event
+> Jussi Pakkanen <jussi.pakkanen@canonical.com>
+>     Input: bcm5974 - set BUTTONPAD property
 > 
-> Manuel Lauss <manuel.lauss@gmail.com>
->     MPI: Fix compilation on MIPS with GCC 4.4 and newer
+> Fenghua Yu <fenghua.yu@intel.com>
+>     x86, mce, therm_throt: Don't report power limit and package level thermal throttle events in mcelog
+> 
+> Merlin Schumacher <merlin.schumacher@gmail.com>
+>     acer-wmi: support for P key on TM8372
 > 
 > Chuansheng Liu <chuansheng.liu@intel.com>
 >     watchdog: using u64 in get_sample_period()
@@ -85,29 +76,20 @@ Satoru
 > Johan Hovold <jhovold@gmail.com>
 >     USB: mct_u232: fix broken close
 > 
-> Thierry Escande <thierry.escande@linux.intel.com>
->     NFC: Fix nfc_llcp_local chained list insertion
-> 
-> Waldemar Rymarkiewicz <waldemar.rymarkiewicz@tieto.com>
->     NFC: pn533: Fix mem leak in pn533_in_dep_link_up
-> 
-> Szymon Janc <szymon.janc@tieto.com>
->     NFC: pn533: Fix use after free
-> 
 > Mauro Carvalho Chehab <mchehab@redhat.com>
 >     get_dvb_firmware: fix download site for tda10046 firmware
+> 
+> Emil Tantilov <emil.s.tantilov@intel.com>
+>     ixgbe: add support for new 82599 device id
+> 
+> Emil Tantilov <emil.s.tantilov@intel.com>
+>     ixgbe: add support for new 82599 device
 > 
 > David Milburn <dmilburn@redhat.com>
 >     sata_svw: check DMA start bit before reset
 > 
 > joshua.a.hay@intel.com <joshua.a.hay@intel.com>
 >     ixgbe: add support for X540-AT1
-> 
-> Petr Matousek <pmatouse@redhat.com>
->     KVM: x86: invalid opcode oops on SET_SREGS with OSXSAVE bit set (CVE-2012-4461)
-> 
-> Jan Kara <jack@suse.cz>
->     scsi: Silence unnecessary warnings about ioctl to partition
 > 
 > Tilman Schmidt <tilman@imap.cc>
 >     bas_gigaset: fix pre_reset handling
@@ -121,9 +103,6 @@ Satoru
 > Kailang Yang <kailang@realtek.com>
 >     ALSA: hda - Add new codec ALC283 ALC290 support
 > 
-> Guennadi Liakhovetski <g.liakhovetski@gmx.de>
->     PM / QoS: fix wrong error-checking condition
-> 
 > Al Viro <viro@zeniv.linux.org.uk>
 >     sparc64: not any error from do_sigaltstack() should fail rt_sigreturn()
 > 
@@ -132,9 +111,6 @@ Satoru
 > 
 > Oliver Hartkopp <socketcan@hartkopp.net>
 >     can: bcm: initialize ifindex for timeouts without previous frame reception
-> 
-> Oliver Hartkopp <socketcan@hartkopp.net>
->     can: peak_usb: fix hwtstamp assignment
 > 
 > Paul Bolle <pebolle@tiscali.nl>
 >     radeon: add AGPMode 1 quirk for RV250
@@ -147,21 +123,6 @@ Satoru
 > 
 > Jens Axboe <axboe@kernel.dk>
 >     dm: fix deadlock with request based dm and queue request_fn recursion
-> 
-> NeilBrown <neilb@suse.de>
->     md/raid10: decrement correct pending counter when writing to replacement.
-> 
-> majianpeng <majianpeng@gmail.com>
->     md: Avoid write invalid address if read_seqretry returned true.
-> 
-> majianpeng <majianpeng@gmail.com>
->     md: Reassigned the parameters if read_seqretry returned true in func md_is_badblock.
-> 
-> Thomas Betker <thomas.betker@freenet.de>
->     jffs2: Fix lock acquisition order bug in jffs2_write_begin
-> 
-> Sachin Kamat <sachin.kamat@linaro.org>
->     mtd: ofpart: Fix incorrect NULL check in parse_ofoldpart_partitions()
 > 
 > Jiri Engelthaler <engycz@gmail.com>
 >     mtd: slram: invalid checking of absolute end address
@@ -178,14 +139,8 @@ Satoru
 > Clemens Ladisch <clemens@ladisch.de>
 >     ALSA: ua101, usx2y: fix broken MIDI output
 > 
-> Alex Deucher <alexander.deucher@amd.com>
->     drm/radeon: add new SI pci id
-> 
 > Maciej Patelczyk <maciej.patelczyk@intel.com>
 >     SCSI: isci: copy fis 0x34 response into proper buffer
-> 
-> Bing Zhao <bzhao@marvell.com>
->     mwifiex: fix system hang issue in cmd timeout error case
 > 
 > Bing Zhao <bzhao@marvell.com>
 >     mwifiex: report error to MMC core if we cannot suspend
@@ -196,101 +151,68 @@ Satoru
 > Boris Ostrovsky <boris.ostrovsky@amd.com>
 >     x86, microcode, AMD: Add support for family 16h processors
 > 
-> Matt Fleming <matt.fleming@intel.com>
->     x86, efi: Fix processor-specific memcpy() build error
-> 
 > Robert Richter <robert.richter@amd.com>
 >     x86-32: Fix invalid stack address while in softirq
 > 
-> Larry Finger <Larry.Finger@lwfinger.net>
->     rtlwifi: rtl8192se: Fix gcc 4.7.x warning
+> David S. Miller <davem@davemloft.net>
+>     ifenslave: Fix unused variable warnings.
 > 
-> Krzysztof Wilczynski <krzysztof.wilczynski@linux.com>
->     scsi: aha152x: Fix sparse warning and make printing pointer address more portable.
+> Danny Kukawka <danny.kukawka@bisect.de>
+>     riva/fbdev: fix several -Wuninitialized
 > 
-> Dan Carpenter <dan.carpenter@oracle.com>
->     mvsas: remove unused variable in mvs_task_exec()
+> Danny Kukawka <danny.kukawka@bisect.de>
+>     drivers/block/DAC960: fix -Wuninitialized warning
 > 
-> Dan Carpenter <dan.carpenter@oracle.com>
->     drivers/leds/leds-lp5521.c: fix lp5521_read() error handling
+> Danny Kukawka <danny.kukawka@bisect.de>
+>     drivers/block/DAC960: fix DAC960_V2_IOCTL_Opcode_T -Wenum-compare warning
 > 
-> Daniel Mack <zonque@gmail.com>
->     ALSA: snd-usb-caiaq: initialize card pointer
-> 
-> Szymon Janc <szymon.janc@tieto.com>
->     Bluetooth: Fix using uninitialized option in RFCMode
-> 
-> Keith Busch <keith.busch@intel.com>
->     NVMe: Fix uninitialized iod compiler warning
-> 
-> Alexandre Pereira da Silva <aletes.xgr@gmail.com>
->     UBIFS: fix compilation warning
+> Takashi Iwai <tiwai@suse.de>
+>     ALSA: pcmcia - Use pcmcia_request_irq()
 > 
 > 
 > -------------
 > 
 > Diffstat:
 > 
->  Documentation/dvb/get_dvb_firmware               |  2 +-
->  Makefile                                         |  4 +-
->  arch/arm/plat-omap/counter_32k.c                 | 21 ++++--
->  arch/parisc/kernel/signal32.c                    |  6 +-
->  arch/parisc/kernel/sys_parisc.c                  |  2 +
->  arch/powerpc/platforms/pseries/eeh_driver.c      | 95 ++++++++++++++++++------
->  arch/sparc/kernel/signal_64.c                    |  4 +-
->  arch/x86/boot/compressed/eboot.c                 |  2 +
->  arch/x86/include/asm/ptrace.h                    | 15 +---
->  arch/x86/kernel/microcode_amd.c                  |  4 +
->  arch/x86/kernel/ptrace.c                         | 28 +++++++
->  arch/x86/kvm/cpuid.h                             |  3 +
->  arch/x86/kvm/x86.c                               |  3 +
->  block/scsi_ioctl.c                               |  5 +-
->  drivers/ata/sata_svw.c                           | 35 +++++++++
->  drivers/base/power/qos.c                         |  2 +-
->  drivers/block/nvme.c                             |  2 +-
->  drivers/gpu/drm/radeon/radeon_agp.c              |  5 +-
->  drivers/isdn/gigaset/bas-gigaset.c               | 19 ++++-
->  drivers/leds/leds-lp5521.c                       | 12 ++-
->  drivers/md/dm.c                                  |  8 +-
->  drivers/md/md.c                                  | 11 +--
->  drivers/md/raid10.c                              |  2 +-
->  drivers/mmc/host/sdhci-s3c.c                     |  2 +-
->  drivers/mtd/devices/slram.c                      |  2 +-
->  drivers/mtd/ofpart.c                             |  2 +-
->  drivers/net/can/usb/peak_usb/pcan_usb.c          |  8 +-
->  drivers/net/can/usb/peak_usb/pcan_usb_pro.c      |  8 +-
->  drivers/net/ethernet/intel/ixgbe/ixgbe_common.c  |  1 +
->  drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c |  1 +
->  drivers/net/ethernet/intel/ixgbe/ixgbe_main.c    |  2 +
->  drivers/net/ethernet/intel/ixgbe/ixgbe_type.h    |  1 +
->  drivers/net/wireless/ipw2x00/ipw2200.c           |  2 +-
->  drivers/net/wireless/iwlwifi/iwl-6000.c          | 33 +++++---
->  drivers/net/wireless/mwifiex/cmdevt.c            | 11 ++-
->  drivers/net/wireless/mwifiex/sdio.c              | 11 +--
->  drivers/net/wireless/rtlwifi/rtl8192cu/sw.c      |  1 +
->  drivers/net/wireless/rtlwifi/rtl8192se/phy.c     |  3 +
->  drivers/nfc/pn533.c                              | 16 ++--
->  drivers/scsi/aha152x.c                           |  4 +-
->  drivers/scsi/isci/request.c                      |  2 +-
->  drivers/scsi/mvsas/mv_sas.c                      |  1 -
->  drivers/usb/serial/mct_u232.c                    | 14 ++--
->  fs/jbd/transaction.c                             |  2 +
->  fs/jffs2/file.c                                  | 39 +++++-----
->  fs/ubifs/dir.c                                   |  2 +-
->  include/drm/drm_pciids.h                         |  1 +
->  kernel/futex.c                                   | 18 ++++-
->  kernel/time/timekeeping.c                        |  2 +-
->  kernel/watchdog.c                                |  4 +-
->  lib/mpi/longlong.h                               | 19 ++++-
->  net/bluetooth/l2cap_core.c                       | 14 ++--
->  net/can/bcm.c                                    |  3 +
->  net/mac80211/ibss.c                              |  8 +-
->  net/nfc/llcp/llcp.c                              |  2 +-
->  sound/pci/hda/patch_cirrus.c                     |  1 +
->  sound/pci/hda/patch_realtek.c                    |  4 +
->  sound/usb/caiaq/device.c                         |  2 +-
->  sound/usb/midi.c                                 |  8 +-
->  59 files changed, 393 insertions(+), 151 deletions(-)
+>  Documentation/dvb/get_dvb_firmware          |  2 +-
+>  Documentation/networking/ifenslave.c        |  2 ++
+>  Makefile                                    |  4 ++--
+>  arch/parisc/kernel/signal32.c               |  6 ++++--
+>  arch/parisc/kernel/sys_parisc.c             |  2 ++
+>  arch/sparc/kernel/signal_64.c               |  4 +---
+>  arch/x86/include/asm/ptrace.h               | 15 ++++-----------
+>  arch/x86/kernel/cpu/mcheck/therm_throt.c    | 29 +++++++----------------------
+>  arch/x86/kernel/microcode_amd.c             |  4 ++++
+>  arch/x86/kernel/ptrace.c                    | 28 ++++++++++++++++++++++++++++
+>  drivers/ata/sata_svw.c                      | 35 +++++++++++++++++++++++++++++++++++
+>  drivers/block/DAC960.c                      | 18 ++++++++++--------
+>  drivers/gpu/drm/radeon/radeon_agp.c         |  5 ++++-
+>  drivers/input/mouse/bcm5974.c               |  3 +++
+>  drivers/isdn/gigaset/bas-gigaset.c          | 19 ++++++++++++++++---
+>  drivers/md/dm.c                             |  8 +++++++-
+>  drivers/mmc/host/sdhci-s3c.c                |  2 +-
+>  drivers/mtd/devices/slram.c                 |  2 +-
+>  drivers/net/ixgbe/ixgbe_82599.c             |  2 ++
+>  drivers/net/ixgbe/ixgbe_common.c            |  1 +
+>  drivers/net/ixgbe/ixgbe_main.c              |  6 ++++++
+>  drivers/net/ixgbe/ixgbe_type.h              |  3 +++
+>  drivers/net/wireless/mwifiex/sdio.c         | 11 ++++++-----
+>  drivers/net/wireless/rtlwifi/rtl8192cu/sw.c |  1 +
+>  drivers/platform/x86/acer-wmi.c             |  1 +
+>  drivers/scsi/isci/request.c                 |  2 +-
+>  drivers/usb/serial/mct_u232.c               | 14 ++++++++------
+>  drivers/video/riva/fbdev.c                  |  5 ++---
+>  fs/jbd/transaction.c                        |  2 ++
+>  kernel/futex.c                              | 18 +++++++++++++++++-
+>  kernel/watchdog.c                           |  4 ++--
+>  net/can/bcm.c                               |  3 +++
+>  net/mac80211/ibss.c                         |  8 ++++----
+>  sound/pci/hda/patch_cirrus.c                |  1 +
+>  sound/pci/hda/patch_realtek.c               |  4 ++++
+>  sound/pcmcia/pdaudiocf/pdaudiocf.c          |  2 +-
+>  sound/pcmcia/vx/vxpocket.c                  |  2 +-
+>  sound/usb/midi.c                            |  8 ++++++--
+>  38 files changed, 204 insertions(+), 82 deletions(-)
 > 
 > 
 > --
