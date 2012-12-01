@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447Ab2LAAh7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 19:37:59 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:39291 "EHLO
+	id S1751375Ab2LAAjD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 19:39:03 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:39300 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751369Ab2LAAh5 (ORCPT
+	with ESMTP id S1750852Ab2LAAi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 19:37:57 -0500
-Date: Fri, 30 Nov 2012 16:37:46 -0800
+	Fri, 30 Nov 2012 19:38:59 -0500
+Date: Fri, 30 Nov 2012 16:38:48 -0800
 From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
-Message-ID: <tip-e5bb8ad862a97a0facc83f3b81731de919fec6ad@git.kernel.org>
+Message-ID: <tip-094ab1db7cb7833cd4c820acd868fc26acf3f08e@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1354132230-21854-5-git-send-email-hpa@linux.intel.com>
-References: <1354132230-21854-5-git-send-email-hpa@linux.intel.com>
+In-Reply-To: <1354132230-21854-6-git-send-email-hpa@linux.intel.com>
+References: <1354132230-21854-6-git-send-email-hpa@linux.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/nuke386] x86, 386 removal: Remove CONFIG_BSWAP
-Git-Commit-ID: e5bb8ad862a97a0facc83f3b81731de919fec6ad
+Subject: [tip:x86/nuke386] x86, 386 removal: Remove CONFIG_INVLPG
+Git-Commit-ID: 094ab1db7cb7833cd4c820acd868fc26acf3f08e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,157 +27,133 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 30 Nov 2012 16:37:51 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 30 Nov 2012 16:38:54 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e5bb8ad862a97a0facc83f3b81731de919fec6ad
-Gitweb:     http://git.kernel.org/tip/e5bb8ad862a97a0facc83f3b81731de919fec6ad
+Commit-ID:  094ab1db7cb7833cd4c820acd868fc26acf3f08e
+Gitweb:     http://git.kernel.org/tip/094ab1db7cb7833cd4c820acd868fc26acf3f08e
 Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Wed, 28 Nov 2012 11:50:26 -0800
+AuthorDate: Wed, 28 Nov 2012 11:50:27 -0800
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
 CommitDate: Thu, 29 Nov 2012 13:23:02 -0800
 
-x86, 386 removal: Remove CONFIG_BSWAP
+x86, 386 removal: Remove CONFIG_INVLPG
 
-All 486+ CPUs support BSWAP, so remove the fallback 386 support
+All 486+ CPUs support INVLPG, so remove the fallback 386 support
 code.
 
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/r/1354132230-21854-5-git-send-email-hpa@linux.intel.com
+Link: http://lkml.kernel.org/r/1354132230-21854-6-git-send-email-hpa@linux.intel.com
 ---
- arch/x86/Kconfig.cpu         |  4 ----
- arch/x86/include/asm/futex.h | 12 ------------
- arch/x86/include/asm/swab.h  | 29 ++---------------------------
- arch/x86/kernel/cpu/bugs.c   | 13 ++-----------
- 4 files changed, 4 insertions(+), 54 deletions(-)
+ arch/x86/Kconfig.cpu              | 4 ----
+ arch/x86/include/asm/cpufeature.h | 6 ------
+ arch/x86/include/asm/tlbflush.h   | 3 ---
+ arch/x86/kernel/cpu/amd.c         | 3 ---
+ arch/x86/kernel/cpu/intel.c       | 4 ----
+ arch/x86/mm/tlb.c                 | 8 +++-----
+ 6 files changed, 3 insertions(+), 25 deletions(-)
 
 diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
-index 52955ee..8e5867c 100644
+index 8e5867c..d3bdc18 100644
 --- a/arch/x86/Kconfig.cpu
 +++ b/arch/x86/Kconfig.cpu
-@@ -332,10 +332,6 @@ config X86_INVLPG
+@@ -328,10 +328,6 @@ config X86_INVD_BUG
+ config X86_WP_WORKS_OK
  	def_bool y
- 	depends on X86_32
  
--config X86_BSWAP
+-config X86_INVLPG
 -	def_bool y
 -	depends on X86_32
 -
  config X86_POPAD_OK
  	def_bool y
  	depends on X86_32
-diff --git a/arch/x86/include/asm/futex.h b/arch/x86/include/asm/futex.h
-index f373046..be27ba1 100644
---- a/arch/x86/include/asm/futex.h
-+++ b/arch/x86/include/asm/futex.h
-@@ -55,12 +55,6 @@ static inline int futex_atomic_op_inuser(int encoded_op, u32 __user *uaddr)
- 	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(u32)))
- 		return -EFAULT;
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 8c297aa..ff8dd62 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -312,12 +312,6 @@ extern const char * const x86_power_flags[32];
+ #define cpu_has_cx16		boot_cpu_has(X86_FEATURE_CX16)
+ #define cpu_has_eager_fpu	boot_cpu_has(X86_FEATURE_EAGER_FPU)
  
--#if defined(CONFIG_X86_32) && !defined(CONFIG_X86_BSWAP)
--	/* Real i386 machines can only support FUTEX_OP_SET */
--	if (op != FUTEX_OP_SET && boot_cpu_data.x86 == 3)
--		return -ENOSYS;
+-#if defined(CONFIG_X86_INVLPG) || defined(CONFIG_X86_64)
+-# define cpu_has_invlpg		1
+-#else
+-# define cpu_has_invlpg		(boot_cpu_data.x86 > 3)
 -#endif
 -
- 	pagefault_disable();
+ #ifdef CONFIG_X86_64
  
- 	switch (op) {
-@@ -118,12 +112,6 @@ static inline int futex_atomic_cmpxchg_inatomic(u32 *uval, u32 __user *uaddr,
+ #undef  cpu_has_vme
+diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
+index 74a4433..0fee48e 100644
+--- a/arch/x86/include/asm/tlbflush.h
++++ b/arch/x86/include/asm/tlbflush.h
+@@ -56,10 +56,7 @@ static inline void __flush_tlb_all(void)
+ 
+ static inline void __flush_tlb_one(unsigned long addr)
  {
- 	int ret = 0;
+-	if (cpu_has_invlpg)
+ 		__flush_tlb_single(addr);
+-	else
+-		__flush_tlb();
+ }
  
--#if defined(CONFIG_X86_32) && !defined(CONFIG_X86_BSWAP)
--	/* Real i386 machines have no cmpxchg instruction */
--	if (boot_cpu_data.x86 == 3)
--		return -ENOSYS;
--#endif
+ #define TLB_FLUSH_ALL	-1UL
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 1b7d165..a025d8c 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -753,9 +753,6 @@ static unsigned int __cpuinit amd_size_cache(struct cpuinfo_x86 *c,
+ 
+ static void __cpuinit cpu_set_tlb_flushall_shift(struct cpuinfo_x86 *c)
+ {
+-	if (!cpu_has_invlpg)
+-		return;
 -
- 	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(u32)))
- 		return -EFAULT;
+ 	tlb_flushall_shift = 5;
  
-diff --git a/arch/x86/include/asm/swab.h b/arch/x86/include/asm/swab.h
-index 557cd9f..7f235c7 100644
---- a/arch/x86/include/asm/swab.h
-+++ b/arch/x86/include/asm/swab.h
-@@ -6,22 +6,7 @@
+ 	if (c->x86 <= 0x11)
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 198e019..fcaabd0 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -612,10 +612,6 @@ static void __cpuinit intel_tlb_lookup(const unsigned char desc)
  
- static inline __attribute_const__ __u32 __arch_swab32(__u32 val)
+ static void __cpuinit intel_tlb_flushall_shift_set(struct cpuinfo_x86 *c)
  {
--#ifdef __i386__
--# ifdef CONFIG_X86_BSWAP
--	asm("bswap %0" : "=r" (val) : "0" (val));
--# else
--	asm("xchgb %b0,%h0\n\t"	/* swap lower bytes	*/
--	    "rorl $16,%0\n\t"	/* swap words		*/
--	    "xchgb %b0,%h0"	/* swap higher bytes	*/
--	    : "=q" (val)
--	    : "0" (val));
--# endif
--
--#else /* __i386__ */
--	asm("bswapl %0"
--	    : "=r" (val)
--	    : "0" (val));
--#endif
-+	asm("bswapl %0" : "=r" (val) : "0" (val));
- 	return val;
- }
- #define __arch_swab32 __arch_swab32
-@@ -37,22 +22,12 @@ static inline __attribute_const__ __u64 __arch_swab64(__u64 val)
- 		__u64 u;
- 	} v;
- 	v.u = val;
--# ifdef CONFIG_X86_BSWAP
- 	asm("bswapl %0 ; bswapl %1 ; xchgl %0,%1"
- 	    : "=r" (v.s.a), "=r" (v.s.b)
- 	    : "0" (v.s.a), "1" (v.s.b));
--# else
--	v.s.a = __arch_swab32(v.s.a);
--	v.s.b = __arch_swab32(v.s.b);
--	asm("xchgl %0,%1"
--	    : "=r" (v.s.a), "=r" (v.s.b)
--	    : "0" (v.s.a), "1" (v.s.b));
--# endif
- 	return v.u;
- #else /* __i386__ */
--	asm("bswapq %0"
--	    : "=r" (val)
--	    : "0" (val));
-+	asm("bswapq %0" : "=r" (val) : "0" (val));
- 	return val;
- #endif
- }
-diff --git a/arch/x86/kernel/cpu/bugs.c b/arch/x86/kernel/cpu/bugs.c
-index d0e910d..0cd07cc 100644
---- a/arch/x86/kernel/cpu/bugs.c
-+++ b/arch/x86/kernel/cpu/bugs.c
-@@ -136,24 +136,15 @@ static void __init check_popad(void)
- /*
-  * Check whether we are able to run this kernel safely on SMP.
-  *
-- * - In order to run on a i386, we need to be compiled for i386
-- *   (for due to lack of "invlpg" and working WP on a i386)
-+ * - i386 is no longer supported.
-  * - In order to run on anything without a TSC, we need to be
-  *   compiled for a i486.
-  */
+-	if (!cpu_has_invlpg) {
+-		tlb_flushall_shift = -1;
+-		return;
+-	}
+ 	switch ((c->x86 << 8) + c->x86_model) {
+ 	case 0x60f: /* original 65 nm celeron/pentium/core2/xeon, "Merom"/"Conroe" */
+ 	case 0x616: /* single-core 65 nm celeron/core2solo "Merom-L"/"Conroe-L" */
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index 60f926c..13a6b29 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -104,7 +104,7 @@ static void flush_tlb_func(void *info)
+ 		return;
  
- static void __init check_config(void)
+ 	if (this_cpu_read(cpu_tlbstate.state) == TLBSTATE_OK) {
+-		if (f->flush_end == TLB_FLUSH_ALL || !cpu_has_invlpg)
++		if (f->flush_end == TLB_FLUSH_ALL)
+ 			local_flush_tlb();
+ 		else if (!f->flush_end)
+ 			__flush_tlb_single(f->flush_start);
+@@ -337,10 +337,8 @@ static const struct file_operations fops_tlbflush = {
+ 
+ static int __cpuinit create_tlb_flushall_shift(void)
  {
--/*
-- * We'd better not be a i386 if we're configured to use some
-- * i486+ only features! (WP works in supervisor mode and the
-- * new "invlpg" and "bswap" instructions)
-- */
--#if defined(CONFIG_X86_WP_WORKS_OK) || defined(CONFIG_X86_INVLPG) || \
--	defined(CONFIG_X86_BSWAP)
--	if (boot_cpu_data.x86 == 3)
-+	if (boot_cpu_data.x86 < 4)
- 		panic("Kernel requires i486+ for 'invlpg' and other features");
--#endif
+-	if (cpu_has_invlpg) {
+-		debugfs_create_file("tlb_flushall_shift", S_IRUSR | S_IWUSR,
+-			arch_debugfs_dir, NULL, &fops_tlbflush);
+-	}
++	debugfs_create_file("tlb_flushall_shift", S_IRUSR | S_IWUSR,
++			    arch_debugfs_dir, NULL, &fops_tlbflush);
+ 	return 0;
  }
- 
- 
+ late_initcall(create_tlb_flushall_shift);
