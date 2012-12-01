@@ -1,43 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753014Ab2LAQ6v (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Dec 2012 11:58:51 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:36546 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752464Ab2LAQ6u (ORCPT
+	id S1753070Ab2LARBF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Dec 2012 12:01:05 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:41358 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752675Ab2LARBC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Dec 2012 11:58:50 -0500
-Date: Sat, 1 Dec 2012 08:58:46 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Philip Balister <philip@balister.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Eli Billauer <eli.billauer@gmail.com>,
-        linux-kernel@vger.kernel.org, Pavel Machek <pavel@denx.de>,
-        John Linn <john.linn@xilinx.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "Ira W. Snyder" <iws@ovro.caltech.edu>,
-        Josh Cartwright <josh.cartwright@ni.com>
-Subject: Re: [PATCH 2/2] New driver: Xillybus generic interface for FPGA
- (programmable logic)
-Message-ID: <20121201165846.GI3113@kroah.com>
-References: <1354117293-13632-1-git-send-email-eli.billauer@gmail.com>
- <1354117293-13632-2-git-send-email-eli.billauer@gmail.com>
- <201211301728.48008.arnd@arndb.de>
- <20121130173644.GA9841@kroah.com>
- <50B97734.3090207@balister.org>
- <20121201165612.GG3113@kroah.com>
+	Sat, 1 Dec 2012 12:01:02 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121201165612.GG3113@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121125083229.GB21091@core.coreip.homeip.net>
+References: <1353590617-11466-1-git-send-email-lee.jones@linaro.org>
+	<20121125083229.GB21091@core.coreip.homeip.net>
+Date: Sat, 1 Dec 2012 18:01:01 +0100
+Message-ID: <CACRpkdYXcC-5hFG+nLK7AT6m-htrivwuhm-HodBnO0LY6RgGfA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] input: gpio-keys: Disable hardware on suspend
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, arnd@arndb.de,
+        linus.walleij@stericsson.com,
+        Jonas Aaberg <jonas.aberg@stericsson.com>, linux-input@vger.kernel.org,
+        Philippe Langlais <philippe.langlais@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 01, 2012 at 08:56:12AM -0800, Greg KH wrote:
-> So, in the grand tradition of, "The first one there wins", why not base
-> it all off of your driver, and how that works, and we can go from there :)
+On Sun, Nov 25, 2012 at 9:32 AM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> On Thu, Nov 22, 2012 at 01:23:36PM +0000, Lee Jones wrote:
+>> From: Jonas Aaberg <jonas.aberg@stericsson.com>
+>>
+>> Disable hardware if active when suspending if the hw can not
+>> wake the system from suspend.
+>
+> How about below instead (needs the other patch I have just sent out)?
 
-Oops, sorry s/your/Eli's/, my confusion.
+LooksGoodToMe(TM)
 
-greg k-h
+Acked-by.
+
+Yours,
+Linus Walleij
