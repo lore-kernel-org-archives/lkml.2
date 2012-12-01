@@ -1,48 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217Ab2LARjA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Dec 2012 12:39:00 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:64343 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752652Ab2LARi7 (ORCPT
+	id S1752947Ab2LAR4J (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Dec 2012 12:56:09 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:50391 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752679Ab2LAR4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Dec 2012 12:38:59 -0500
+	Sat, 1 Dec 2012 12:56:07 -0500
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdYk=YM97Hr2BpGwXsojV1UoEfxc=mCvSVR-8ZmhxytvwA@mail.gmail.com>
-References: <1e773c8f35fed89f6eb6cc44f393fb76ba4ae3e2.1353929710.git.viresh.kumar@linaro.org>
-	<CACRpkdYk=YM97Hr2BpGwXsojV1UoEfxc=mCvSVR-8ZmhxytvwA@mail.gmail.com>
-Date: Sat, 1 Dec 2012 23:08:56 +0530
-Message-ID: <CAKohpomwi3Fzkg51X2tw_VFqDvcCWdFrAOLn8RsuBwqKAT+S4A@mail.gmail.com>
-Subject: Re: [PATCH V2] gpio: stmpe: Add DT support for stmpe gpio
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: grant.likely@secretlab.ca, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, spear-devel@list.st.com,
-        lee.jones@linaro.org, Vipul Kumar Samar <vipulkumar.samar@st.com>
+In-Reply-To: <20121201094927.GA12366@gmail.com>
+References: <1354305521-11583-1-git-send-email-mingo@kernel.org>
+ <CA+55aFwjxm7OYuucHeE2WFr4p+jwr63t=kSdHndta_QkyFbyBQ@mail.gmail.com> <20121201094927.GA12366@gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 1 Dec 2012 09:55:45 -0800
+X-Google-Sender-Auth: asEORAuIM6h2NWg5FMCnFZ4w6Yg
+Message-ID: <CA+55aFymM2MjEhRUmd-T_3ZJRTa9t5NzBuWgcbcdZmbUJv6dcQ@mail.gmail.com>
+Subject: Re: [RFC PATCH] mm/migration: Don't lock anon vmas in rmap_walk_anon()
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1 December 2012 22:17, Linus Walleij <linus.walleij@linaro.org> wrote:
-> If you can, try to avoid this:
-> Content-Type: text/plain; charset=WINDOWS-1252
-> Content-Transfer-Encoding: quoted-printable
+On Sat, Dec 1, 2012 at 1:49 AM, Ingo Molnar <mingo@kernel.org> wrote:
 >
-> That kind om message encoding makes my life a living hell
-> (but I fixed it, manually editing the whole patch) how did you
-> end up with this? Did you for example issue the command
-> git send-email from a Windows machine using some Windows
-> version of git?
+> I *think* you are right that for this type of migration that we
+> are using here we indeed don't need to take an exclusive vma
+> lock - in fact I think we don't need to take it at all:
 
-I don't use windows for any linux work. I went through the header
-to see what went wrong and realized, i sent this mail when i was in ARM's
-office and via arm id only. i.e. using arm id's msmtprc settings. I don't
-know why my linaro settings don't work from office, they work from
-outside with no changes.
+I'm pretty sure we do need at least a read-side reference.
 
-companies use microsoft exchange server and that played with this
-patch. Sorry for making your life miserable :(
+Even if no other MM can contain that particular pte, the vma lock
+protects the chain that is created by fork and exit and vma splitting
+etc.
 
---
-viresh
+So it's enough that another thread does a fork() at the same time. Or
+a partial unmap of the vma (that splits it in two), for the rmap chain
+to be modified.
+
+Besides, there's absolutely nothing that protects that vma to be part
+of the same vma chain in entirely unrelated processes. The vma chain
+can get quite long over multiple forks (it's even a performance
+problem under some extreme loads).
+
+And we do walk the rmap chain - so we need the lock.
+
+But we walk it read-only afaik, which is why I think the semaphore
+could be an rwsem.
+
+Now, there *are* likely cases where we could avoid anon_vma locking
+entirely, but they are very specialized. They'd be along the lines of
+
+ - we hold the page table lock
+ - we see that vma->anon_vma == vma->anon_vma->root
+ - we see that vma->anon_vma->refcount == 1
+
+or similar, because then we can guarantee that the anon-vma chain has
+a length of one without even locking, and holding the page table lock
+means that any concurrent fork or mmap/munmap from another thread will
+block on this particular pte.
+
+So I suspect that in the above kind of special case (which might be a
+somewhat common case for normal page faults, for example) we could
+make a "we have exclusive pte access to this page" argument. But quite
+frankly, I completely made the above rules up in my head, they may be
+bogus too.
+
+For the general migration case, it's definitely not possible to just
+drop the anon_vma lock.
+
+                  Linus
