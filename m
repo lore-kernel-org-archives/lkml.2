@@ -1,76 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751728Ab2LAD4b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 22:56:31 -0500
-Received: from www.hansjkoch.de ([178.63.77.200]:51464 "EHLO www.hansjkoch.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751385Ab2LAD4a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 22:56:30 -0500
-Date: Sat, 1 Dec 2012 04:56:25 +0100
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Cong Ding <dinggnu@gmail.com>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>,
-        Vitalii Demianets <vitas@nppfactor.kiev.ua>,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] uio.c: Fix warning: 'ret' might be used uninitialized
-Message-ID: <20121201035625.GC2603@local>
-References: <201211271348.14603.vitas@nppfactor.kiev.ua>
- <CAM3j68rrBePLoamRb1pCH+TeAfLDO-5Jd_kk7-JRCNnEBhLp2Q@mail.gmail.com>
- <201211291822.16565.vitas@nppfactor.kiev.ua>
- <201211291836.59358.vitas@nppfactor.kiev.ua>
- <20121129235822.GA2590@local>
- <CAM3j68rH8qyN8zX7TLZNvQz-1Vr6qMjS0cR7QKGAs6w54L7dag@mail.gmail.com>
- <20121130213333.GA2603@local>
- <CAM3j68qHuqeafMjfpCiuRKLsKk+ZE3f=DuTM4zmHwUZdHULBMQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAM3j68qHuqeafMjfpCiuRKLsKk+ZE3f=DuTM4zmHwUZdHULBMQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751751Ab2LAEOO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 23:14:14 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:57325 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262Ab2LAEON (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 23:14:13 -0500
+Date: Fri, 30 Nov 2012 20:13:29 -0800
+From: Chris Moeller <kode54@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH v2 0/1] Input: xpad - Implement wireless controller LED
+ setting and fix connect time LED setting
+Message-ID: <20121130201329.3f8aefa0@umaro.lan>
+In-Reply-To: <1994333.0mnJMZMWGT@dtor-d630.eng.vmware.com>
+References: <20121130135406.38c9bdc9@umaro.lan>
+	<1994333.0mnJMZMWGT@dtor-d630.eng.vmware.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.13; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 01, 2012 at 02:22:44AM +0100, Cong Ding wrote:
-> On Fri, Nov 30, 2012 at 10:33 PM, Hans J. Koch <hjk@hansjkoch.de> wrote:
-> > On Fri, Nov 30, 2012 at 12:12:46PM +0100, Tux9 wrote:
-> >> I like Vitalii's solution more. Hans's solution assign the value
-> >> -ENOMEM to ret in every round of the loop, which is a kind of wasting
-> >> CPU cycles.
-> >
-> > The difference between
-> > 1 files changed, 12 insertions(+), 4 deletions(-) and
-> > 1 files changed, 2 insertions(+), 0 deletions(-)
-> >
-> > is more important. Note that this code is not in a fast path but only
-> > called once at device creation.
-> Why do you think the size of the patch is so important? I think the
-> most important thing is the coding style and efficiency. I agree
-> efficiency is not important in this case, but what about coding style?
+On Fri, 30 Nov 2012 14:30:23 -0800
+Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
 
-Most important. Short is beautiful.
+> Hi Chris,
+> 
+> On Friday, November 30, 2012 01:54:06 PM Chris Moeller wrote:
+> > I've submitted versions of this with prior patch sets, and this part
+> > was never accepted, possibly because it depended on other patches to
+> > work, or possibly because it wasn't so cleanly organized. This time,
+> > I've split the LED setting command off into its own static function,
+> > then call that on controller connect and optionally on LED setting
+> > commands. The static function does not include any locking, because
+> > locking inside the function which receives the incoming packets
+> > deadlocks the driver, and does not appear to be necessary anyway.
+> > 
+> > It also removes all traces of the original bulk out function which
+> > was designed for the purpose of setting the LED status on connect,
+> > as I found that it actually does not work at all. It appears to try
+> > to send the data, but nothing actually happens to the controller
+> > LEDs.
+> 
+> Attached is a reply I sent to on 7/4/11 to which you unfortunately
+> never responded. The issue is that of force feedback (rumble) and LED
+> share the same URB then access to that URB should be arbitrated. The
+> attached message contains a patch that attempts to implement that
+> arbitration, could you please try it out and see what changes are
+> needed to make it work?
+> 
+> Thanks.
+> 
 
-> Your code is _not_ very easy to understand.
+So sorry I missed your reply. That's what I get for filtering the
+mailing list messages past my inbox, then never following up on my
+filter/folder set for replies to my own messages. I recall you
+mentioned that potential race condition when I first submitted, but I
+forgot to do anything about it. I'm glad at least one of us has our
+stuff together. It seems to work just fine, but there may be a force
+feedback issue with the following test program, where it leaves the
+effect playing indefinitely after the program terminates, and then the
+controller itself ceases to respond until the module is removed and
+reloaded.
 
-You think so?
+---
 
-> It's a very natural thing
-> to set the return value and then goto the error-handling codes, which
-> is exactly same as what Vitalii did, rather than setting an initial
-> value in the beginning of each round of the loop as you did.
+#include <unistd.h>
+#include <fcntl.h>
+#include <linux/input.h>
+#include <signal.h>
 
-Setting a default value at the beginning of a block is the most natural
-thing. I don't want to repeat the same code in three places.
+int running;
 
-> There are
-> also a bunch of codes in kernel in the same style with Vitalii, but I
-> cannot find anything same as your codes.
+void interrupt(int sig)
+{
+	(void)sig;
+	running = 0;
+}
 
-If you follow LKML closely, you'll notice that simplifying code by
-replacing unnecessary repetitions with shorter versions is always welcome.
-If we didn't go for that, the kernel source would be a few million lines
-bigger by now.
+int main(void)
+{
+	int fd = open("/dev/input/event13", O_RDWR);
 
-Thanks,
-Hans
+	struct ff_effect effect;
+
+	struct input_event play;
+
+	effect.type = FF_RUMBLE;
+	effect.id = -1;
+	effect.u.rumble.strong_magnitude = 0x2F00;
+	effect.u.rumble.weak_magnitude = 0x1500;
+	effect.replay.length = 2000;
+	effect.replay.delay = 0;
+
+	ioctl(fd, EVIOCSFF, &effect);
+
+	play.type = EV_FF;
+	play.code = effect.id;
+
+	running = 1;
+
+	signal(SIGINT, interrupt);
+
+	while (running)
+	{
+		play.value = 1;
+	
+		write(fd, (const void *) &play, sizeof(play));
+	
+		usleep(30000);
+	
+		play.value = 0;
+	
+		write(fd, (const void *) &play, sizeof(play));
+
+		usleep(5000);
+	}
+
+	ioctl(fd, EVIOCRMFF, effect.id);
+
+	close(fd);
+
+	return 0;
+}
