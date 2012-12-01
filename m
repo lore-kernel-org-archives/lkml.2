@@ -1,41 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752258Ab2LAOi7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Dec 2012 09:38:59 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:49433 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644Ab2LAOi6 (ORCPT
+	id S1752508Ab2LAOjd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Dec 2012 09:39:33 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:42949 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752027Ab2LAOjb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Dec 2012 09:38:58 -0500
-Date: Sat, 1 Dec 2012 06:38:52 -0800
+	Sat, 1 Dec 2012 09:39:31 -0500
+Date: Sat, 1 Dec 2012 06:39:26 -0800
 From: Tejun Heo <tj@kernel.org>
-To: Zlatko Calusic <zlatko.calusic@iskon.hr>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: High context switch rate, ksoftirqd's chewing cpu
-Message-ID: <20121201143852.GA2685@htj.dyndns.org>
-References: <50A78AA9.5040904@iskon.hr>
- <20121130225200.GB6021@htj.dyndns.org>
- <20121130225545.GC6021@htj.dyndns.org>
- <50B9E4C1.2050002@iskon.hr>
+To: Anders Kaseorg <andersk@MIT.EDU>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
+        "John W. Linville" <linville@tuxdriver.com>, netdev@vger.kernel.org,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Wireless regression in workqueue: use mod_delayed_work() instead
+ of __cancel + queue
+Message-ID: <20121201143926.GB2685@htj.dyndns.org>
+References: <alpine.DEB.2.00.1211280953350.26602@dr-wily.mit.edu>
+ <alpine.DEB.2.00.1211281016320.26602@dr-wily.mit.edu>
+ <20121130211435.GJ3873@htj.dyndns.org>
+ <20121130225619.GD6021@htj.dyndns.org>
+ <alpine.DEB.2.00.1211302234410.25064@dr-wily.mit.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50B9E4C1.2050002@iskon.hr>
+In-Reply-To: <alpine.DEB.2.00.1211302234410.25064@dr-wily.mit.edu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hey, Anders.
 
-On Sat, Dec 01, 2012 at 12:06:41PM +0100, Zlatko Calusic wrote:
-> I have good news. The patch fixes the regression!
-> 
-> To doublecheck and provide you additional data, I updated to the latest Linus
-> kernel (commit 7c17e48), recompiled (WITHOUT the patch), rebooted and this is
-> what vmstat 1 looks like:
+On Fri, Nov 30, 2012 at 11:15:50PM -0500, Anders Kaseorg wrote:
+> Yes.  I tested that both directly on top of the bad commit, and on 
+> v3.7-rc7, and it fixes the bug in both cases.
 
-Awesome, can you please test the following patch too?  Thanks!
+Can you please test this one too?  Thanks!
 
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
 index 042d221..94964d1 100644
