@@ -1,43 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008Ab2LAQvG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Dec 2012 11:51:06 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:57846 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752565Ab2LAQvE (ORCPT
+	id S1752781Ab2LAQyN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Dec 2012 11:54:13 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:37796 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752464Ab2LAQyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Dec 2012 11:51:04 -0500
+	Sat, 1 Dec 2012 11:54:11 -0500
+Date: Sat, 1 Dec 2012 11:54:10 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Udo van den Heuvel <udovdh@xs4all.nl>
+cc: linux-usb@vger.kernel.org, Jan Ceuleers <jan.ceuleers@computer.org>,
+        Clemens Ladisch <clemens@ladisch.de>,
+        Simon Jones <sijones2010@gmail.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: 3.4.4: disabling irq
+In-Reply-To: <50B9C545.4060808@xs4all.nl>
+Message-ID: <Pine.LNX.4.44L0.1212011137160.30617-100000@netrider.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <1354289099-17931-1-git-send-email-lee.jones@linaro.org>
-References: <1354289099-17931-1-git-send-email-lee.jones@linaro.org>
-Date: Sat, 1 Dec 2012 17:51:02 +0100
-Message-ID: <CACRpkdafvpnyq7YMV=iSjN4+u1hpt3xntAb-daJZifG9VpgnOw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] ARM: ux500: Change IRQ from low-to-high edge
- triggered to high-to-low
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 30, 2012 at 4:24 PM, Lee Jones <lee.jones@linaro.org> wrote:
+On Sat, 1 Dec 2012, Udo van den Heuvel wrote:
 
-> When the STMPE IRQ is triggered to be active high level-sensitive, the
-> Nomadik GPIO controller it uses complains, although it still works.
-> Recently we attempted to move triggering to low-to-high in an attempt
-> to prevent the warning; however, this ensured that the IRQ was actually
-> missed completely. Now we have a solution which both works and keeps the
-> GPIO controller happy.
->
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > Secondly, try building a kernel with the patch below and 
+> > CONFIG_USB_DEBUG enabled.  Let's see what the dmesg log says when the 
+> > problem occurs.
+> [root@a mesa]# dmesg|sort|uniq
 
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+The sort messes up the order of the messages.  uniq by itself would be
+okay, though.  It would help if you also turn on CONFIG_PRINTK_TIME.
 
-Is this something I should put into the ux500 tree or will you
-take care of this in a separate pull request?
+These lines looks significant:
 
-Yours,
-Linus Walleij
+> ohci_hcd 0000:00:13.0: IRQ: 44 8000001a
+> ohci_hcd 0000:00:13.0: IRQ: 4 8000001a
+> ohci_hcd 0000:00:13.0: IRQ: 4 8000005a
+> ohci_hcd 0000:00:13.0: IRQ: 64 5a
+
+The last one is strange.  I wouldn't expect it to appear, because 0x64
+& 0x5a = 0x40 is nonzero.  But it's had to say much without knowing
+where this message belongs in the log.
+
+> I had to hurry as the debug patch overflows dmesg very quickly.
+> That is the reason why the dmesg is sorted and uniq'd etc.
+> I do hope there is enough info to further this issue.
+
+No, not really.  The patch could be modified to reduce the amount of 
+output, if you think that would help.
+
+Alan Stern
+
