@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752101Ab2LAN2K (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Dec 2012 08:28:10 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54070 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751796Ab2LAN2I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Dec 2012 08:28:08 -0500
-Date: Sat, 1 Dec 2012 13:28:04 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: patches@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd: arizona: Register haptics devices
-Message-ID: <20121201132803.GB17981@opensource.wolfsonmicro.com>
-References: <1354037834-32061-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <20121130101946.GE3176@sortiz-mobl>
+	id S1752259Ab2LAN3J (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Dec 2012 08:29:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5222 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751796Ab2LAN3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Dec 2012 08:29:07 -0500
+Date: Sat, 1 Dec 2012 11:28:25 -0200 (BRST)
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Borislav Petkov <bp@alien8.de>
+cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Lance Ortiz <lance.ortiz@hp.com>, bhelgaas@google.com,
+        lance_ortiz@hotmail.com, jiang.liu@huawei.com, tony.luck@intel.com,
+        rostedt@goodmis.org, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/3] aerdrv: Trace Event for AER
+In-Reply-To: <20121201114310.GA7853@liondog.tnic>
+Message-ID: <alpine.LFD.2.02.1212011127560.3172@localhost.localdomain>
+References: <20121130213330.7649.51101.stgit@grignak.americas.hpqcorp.net> <20121201093614.720aa96a@redhat.com> <20121201114310.GA7853@liondog.tnic>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9zSXsLTf0vkW971A"
-Content-Disposition: inline
-In-Reply-To: <20121130101946.GE3176@sortiz-mobl>
-X-Cookie: Your domestic life may be harmonious.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---9zSXsLTf0vkW971A
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-On Fri, Nov 30, 2012 at 11:19:46AM +0100, Samuel Ortiz wrote:
 
-> I applied this one. Please let me know if you want to push it through your
-> asoc tree as well.
+Cheers,
+Mauro
 
-It doesn't really matter either way, applying through MFD is probably
-just as sensible as anything else.
+On Sat, 1 Dec 2012, Borislav Petkov wrote:
 
---9zSXsLTf0vkW971A
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> On Sat, Dec 01, 2012 at 09:36:14AM -0200, Mauro Carvalho Chehab wrote:
+>> Please don't call it as "ras.h". Call it, instead, ras_aer.h
+>> (or something similar) as, if we're moving the tracing back to
+>> include/trace/events/, the same should happen for the memory error
+>> events.
+>
+> As you can see yourself, include/trace/events/ contains one header per
+> topic so having ras_event.h and ras_aer.h or whatever, doesn't fit the
+> scheme. IOW, we want all RAS-specific tracepoints to be collected in a
+> header called ras.h like the rest of the subsystems do it. See rcu.h
+> there for a good example.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Works for me.
 
-iQIcBAEBAgAGBQJQugXUAAoJELSic+t+oim94OcQAJrCWsByU1rz12n7R4B0y/Wx
-ggB21Ox7EE1mtF9ej52f4N20tS6ep38DF5N0b8T6hPGyY29eKtIh5SY+b0Jg3DLV
-R/qqqKqAckB3TR3b6OkBdtHULPMK7EGEjyKnBHcb0CPESbbsuUO3ZIJ4+sgpGHSs
-BWFzJZeAUJbKKozYEKa4NKihVPodFvAZxFuxBASRF5d2/Sy/cgu5wYuKXnBwgp7/
-PqhnBHaduhh+VxSMPh5D2C5AgEOcqfQ9/FverY+mxj/V4DujXzPewSH1l0HD3pVC
-L5WQY6Y/hG8c3VgcZFfhkKC44IY4xoGLjTDZVQ4Qm1YG4hYLxbCZsHZKhC0Nikkn
-nR6CD8AIWDHF7HF5lodWzgeJ9zsWfydgNhnnVY5qv4E3YhowIEBSPFRk2CWl6Sxt
-mYQ1U2hqnt4u59hZu5x4owhUANTm+Naos4FlKqzsEopotVuIQtW7PtOVqbaSwhSC
-5IiYJ4X/QVN++eX8WSlnC13gS1BfkuxiQRhoqlTJ/dYTN2bdSJhRAdx1d/MHeBnV
-96XPIC2pUZhmHEab6VFvYRc/F3UobFaebOMl5khPEWDZYG4OndPcONBHsl2XeBdz
-GCrU1dgTmX3Beh2YepBVFOH1TRRB3oreINLNVT2SDAYirhkO5mY8Yv8y/MvRoTiO
-amfb1978wEKJ8/g1urHF
-=2cAI
------END PGP SIGNATURE-----
-
---9zSXsLTf0vkW971A--
+Regards,
+Mauro
