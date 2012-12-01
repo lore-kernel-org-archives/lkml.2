@@ -1,46 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753638Ab2LAXDg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Dec 2012 18:03:36 -0500
-Received: from eagle.jhcloos.com ([207.210.242.212]:50954 "EHLO
-	eagle.jhcloos.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752873Ab2LAXDf (ORCPT
+	id S1753669Ab2LAXEZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Dec 2012 18:04:25 -0500
+Received: from ns.biofac.uni-sofia.bg ([62.44.104.1]:44755 "HELO
+	mail.biofac.uni-sofia.bg" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753464Ab2LAXEY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Dec 2012 18:03:35 -0500
-From: James Cloos <cloos@jhcloos.com>
-To: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
-Cc: David Rientjes <rientjes@google.com>
-Subject: Re: Likely mem leak in 3.7
-In-Reply-To: <m31ufrg3d4.fsf@carbon.jhcloos.org> (James Cloos's message of
-	"Sat, 17 Nov 2012 19:29:18 -0500")
-References: <m3r4nuwipl.fsf@carbon.jhcloos.org>
-	<alpine.DEB.2.00.1211161115001.2788@chino.kir.corp.google.com>
-	<m31ufrg3d4.fsf@carbon.jhcloos.org>
-User-Agent: Gnus/5.130006 (Ma Gnus v0.6) Emacs/24.3.50 (gnu/linux)
-Face: iVBORw0KGgoAAAANSUhEUgAAABAAAAAQAgMAAABinRfyAAAACVBMVEX///8ZGXBQKKnCrDQ3
- AAAAJElEQVQImWNgQAAXzwQg4SKASgAlXIEEiwsSIYBEcLaAtMEAADJnB+kKcKioAAAAAElFTkSu
- QmCC
-Copyright: Copyright 2012 James Cloos
-OpenPGP: ED7DAEA6; url=http://jhcloos.com/public_key/0xED7DAEA6.asc
-OpenPGP-Fingerprint: E9E9 F828 61A4 6EA9 0F2B  63E7 997A 9F17 ED7D AEA6
-Date: Sat, 01 Dec 2012 17:48:28 -0500
-Message-ID: <m38v9he6cq.fsf@carbon.jhcloos.org>
+	Sat, 1 Dec 2012 18:04:24 -0500
+X-Greylist: delayed 64097 seconds by postgrey-1.27 at vger.kernel.org; Sat, 01 Dec 2012 18:04:23 EST
+Cc: recipient list not shown:;
+Message-ID: <8ff2a4be31fb67c7e03ac59d7b970f91.squirrel@webmail.biofac.uni-sofia.bg>
+Date: Sat, 1 Dec 2012 06:03:57 +0200
+Subject: WARNING!!! VIRUS DETECTED AND SPY, UPDATE NOW!!!
+From: "Webmail System Administrator" <webmailupdate@biofac.uni-sofia.bg>
+Reply-To: gladstonestore@activ8.net.au
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Hashcash: 1:30:121201:linux-kernel@vger.kernel.org::1tYhJI4RYtnIpr5E:00000000000000000000000000000000ndolq
-X-Hashcash: 1:30:121201:linux-btrfs@vger.kernel.org::ZtSXy709APFo5JgF:000000000000000000000000000000000sbVML
-X-Hashcash: 1:30:121201:rientjes@google.com::Lq0kLJ0bbQBGsvDk:00000000000000000000000000000000000000000YZcWW
+Content-Type: text/plain;charset=win-1251
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've extensively tested 2844a48706e5 (tip at the time I compiled) for
-the last few days and have been unable to reproduce.
+ Your webmail account is corrupted by virus, you are to advise to upgrade.
+ You need to upgrade your email limit quota to 10GB within the next 48
+hours. Use the below web link to upgrade your valid email account:
 
-This bug appears to be fixed.
+https://docs.google.com/a/blumail.org/spreadsheet/viewform?formkey=dHV1ODN5bnkxNDVxODgtb0RMTk9DNlE6MQ
 
-Thanks.
+Thank you for using our email.
+Copyright ©2012 Email Helpdesk Centre.
 
--JimC
--- 
-James Cloos <cloos@jhcloos.com>         OpenPGP: 1024D/ED7DAEA6
+
+
