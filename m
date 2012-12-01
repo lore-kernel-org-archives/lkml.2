@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753131Ab2LAOZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Dec 2012 09:25:57 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:42637
+	id S1753055Ab2LAOZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Dec 2012 09:25:56 -0500
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:55647
 	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752200Ab2LAOXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752216Ab2LAOXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 1 Dec 2012 09:23:40 -0500
 x-originating-ip: 72.167.245.219
 From: "K. Y. Srinivasan" <kys@microsoft.com>
@@ -13,9 +13,9 @@ To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
         devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
         jasowang@redhat.com
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 15/28] Drivers: hv: Cleanup vmbus_set_event() to support win7 and beyond
-Date: Sat,  1 Dec 2012 06:46:46 -0800
-Message-Id: <1354373219-31374-15-git-send-email-kys@microsoft.com>
+Subject: [PATCH 14/28] Drivers: hv: Manage signaling state on a per-connection basis
+Date: Sat,  1 Dec 2012 06:46:45 -0800
+Message-Id: <1354373219-31374-14-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1354373219-31374-1-git-send-email-kys@microsoft.com>
 References: <1354373160-31332-1-git-send-email-kys@microsoft.com>
@@ -24,39 +24,138 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On win7 (ws2008 R2) and beyond, we have the notion of having dedicated interrupts on
-a per-channel basis. When a channel has a dedicated interrupt assigned, there is no need
-to set the interrupt bit in the shared page. Implement this optimization.
+The current code has a global handle for supporting signaling of the host
+from guest. Make this a per-channel attribute as on some versions of the
+host we can signal on per-channel handle.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
 ---
- drivers/hv/connection.c |   13 ++++++++-----
- 1 files changed, 8 insertions(+), 5 deletions(-)
+ drivers/hv/channel_mgmt.c |   20 ++++++++++++++++++++
+ drivers/hv/hyperv_vmbus.h |   21 ---------------------
+ include/linux/hyperv.h    |   25 +++++++++++++++++++++++++
+ 3 files changed, 45 insertions(+), 21 deletions(-)
 
-diff --git a/drivers/hv/connection.c b/drivers/hv/connection.c
-index 56b14e5..114050d 100644
---- a/drivers/hv/connection.c
-+++ b/drivers/hv/connection.c
-@@ -383,10 +383,13 @@ int vmbus_post_msg(void *buffer, size_t buflen)
- int vmbus_set_event(struct vmbus_channel *channel)
- {
- 	u32 child_relid = channel->offermsg.child_relid;
--	/* Each u32 represents 32 channels */
--	sync_set_bit(child_relid & 31,
--		(unsigned long *)vmbus_connection.send_int_page +
--		(child_relid >> 5));
+diff --git a/drivers/hv/channel_mgmt.c b/drivers/hv/channel_mgmt.c
+index 7bf5917..f4d9902 100644
+--- a/drivers/hv/channel_mgmt.c
++++ b/drivers/hv/channel_mgmt.c
+@@ -282,6 +282,26 @@ static void vmbus_onoffer(struct vmbus_channel_message_header *hdr)
+ 	 */
+ 	newchannel->batched_reading = true;
  
--	return hv_signal_event(hv_context.signal_event_param);
-+	if (!channel->is_dedicated_interrupt) {
-+		/* Each u32 represents 32 channels */
-+		sync_set_bit(child_relid & 31,
-+			(unsigned long *)vmbus_connection.send_int_page +
-+			(child_relid >> 5));
++	/*
++	 * Setup state for signalling the host.
++	 */
++	newchannel->sig_event = (struct hv_input_signal_event *)
++				(ALIGN((unsigned long)
++				&newchannel->sig_buf,
++				HV_HYPERCALL_PARAM_ALIGN));
++
++	newchannel->sig_event->connectionid.asu32 = 0;
++	newchannel->sig_event->connectionid.u.id = VMBUS_EVENT_CONNECTION_ID;
++	newchannel->sig_event->flag_number = 0;
++	newchannel->sig_event->rsvdz = 0;
++
++	if (vmbus_proto_version != VERSION_WS2008) {
++		newchannel->is_dedicated_interrupt =
++				(offer->is_dedicated_interrupt != 0);
++		newchannel->sig_event->connectionid.u.id =
++				offer->connection_id;
 +	}
 +
-+	return hv_signal_event(channel->sig_event);
- }
+ 	memcpy(&newchannel->offermsg, offer,
+ 	       sizeof(struct vmbus_channel_offer_channel));
+ 	newchannel->monitor_grp = (u8)offer->monitorid / 32;
+diff --git a/drivers/hv/hyperv_vmbus.h b/drivers/hv/hyperv_vmbus.h
+index cd48ac3..1bc7500 100644
+--- a/drivers/hv/hyperv_vmbus.h
++++ b/drivers/hv/hyperv_vmbus.h
+@@ -101,15 +101,6 @@ enum hv_message_type {
+ /* Define invalid partition identifier. */
+ #define HV_PARTITION_ID_INVALID		((u64)0x0)
+ 
+-/* Define connection identifier type. */
+-union hv_connection_id {
+-	u32 asu32;
+-	struct {
+-		u32 id:24;
+-		u32 reserved:8;
+-	} u;
+-};
+-
+ /* Define port identifier type. */
+ union hv_port_id {
+ 	u32 asu32;
+@@ -338,13 +329,6 @@ struct hv_input_post_message {
+ 	u64 payload[HV_MESSAGE_PAYLOAD_QWORD_COUNT];
+ };
+ 
+-/* Definition of the hv_signal_event hypercall input structure. */
+-struct hv_input_signal_event {
+-	union hv_connection_id connectionid;
+-	u16 flag_number;
+-	u16 rsvdz;
+-};
+-
+ /*
+  * Versioning definitions used for guests reporting themselves to the
+  * hypervisor, and visa versa.
+@@ -498,11 +482,6 @@ static const uuid_le VMBUS_SERVICE_ID = {
+ 
+ 
+ 
+-struct hv_input_signal_event_buffer {
+-	u64 align8;
+-	struct hv_input_signal_event event;
+-};
+-
+ struct hv_context {
+ 	/* We only support running on top of Hyper-V
+ 	* So at this point this really can only contain the Hyper-V ID
+diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
+index e725026..c6e2c44 100644
+--- a/include/linux/hyperv.h
++++ b/include/linux/hyperv.h
+@@ -897,6 +897,27 @@ struct vmbus_close_msg {
+ 	struct vmbus_channel_close_channel msg;
+ };
+ 
++/* Define connection identifier type. */
++union hv_connection_id {
++	u32 asu32;
++	struct {
++		u32 id:24;
++		u32 reserved:8;
++	} u;
++};
++
++/* Definition of the hv_signal_event hypercall input structure. */
++struct hv_input_signal_event {
++	union hv_connection_id connectionid;
++	u16 flag_number;
++	u16 rsvdz;
++};
++
++struct hv_input_signal_event_buffer {
++	u64 align8;
++	struct hv_input_signal_event event;
++};
++
+ struct vmbus_channel {
+ 	struct list_head listentry;
+ 
+@@ -946,6 +967,10 @@ struct vmbus_channel {
+ 	 */
+ 
+ 	bool batched_reading;
++
++	bool is_dedicated_interrupt;
++	struct hv_input_signal_event_buffer sig_buf;
++	struct hv_input_signal_event *sig_event;
+ };
+ 
+ static inline void set_channel_read_state(struct vmbus_channel *c, bool state)
 -- 
 1.7.4.1
 
