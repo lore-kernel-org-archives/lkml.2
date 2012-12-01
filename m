@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522Ab2LAWDh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Dec 2012 17:03:37 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:48008 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752833Ab2LAWDg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Dec 2012 17:03:36 -0500
+	id S1753535Ab2LAWLk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Dec 2012 17:11:40 -0500
+Received: from mxout2.iskon.hr ([213.191.128.81]:51850 "EHLO mxout2.iskon.hr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752873Ab2LAWLj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Dec 2012 17:11:39 -0500
+X-Remote-IP: 213.191.128.133
+Date: Sat, 01 Dec 2012 23:11:34 +0100
+From: Zlatko Calusic <zlatko.calusic@iskon.hr>
+Organization: Iskon Internet d.d.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121031 Icedove/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <20121201214438.GA6544@gmail.com>
-References: <20121201111609.GA18679@gmail.com> <CA+55aFx_yJbonbEC5AYteyNv+qWbG-H=yj_=YaiJHwKyu4FH3Q@mail.gmail.com>
- <20121201214438.GA6544@gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 1 Dec 2012 14:03:14 -0800
-X-Google-Sender-Auth: fp6uQP4-PMshDKRGtiZ-k4705r4
-Message-ID: <CA+55aFwp7ZNN5s1vhY9M2VwtjCEien=_iVfCeE1khqH4KY7prw@mail.gmail.com>
-Subject: Re: [RFC GIT PULL] scheduler fix for autogroups
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Mike Galbraith <efault@gmx.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: linux-kernel@vger.kernel.org
+References: <50A78AA9.5040904@iskon.hr> <20121130225200.GB6021@htj.dyndns.org> <20121130225545.GC6021@htj.dyndns.org> <50B9E4C1.2050002@iskon.hr> <20121201143852.GA2685@htj.dyndns.org> <50BA3A2E.9020303@iskon.hr> <20121201191321.GC2685@htj.dyndns.org>
+In-Reply-To: <20121201191321.GC2685@htj.dyndns.org>
+Message-ID: <50BA8096.8060003@iskon.hr>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+Subject: Re: High context switch rate, ksoftirqd's chewing cpu
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45/RELEASE,
+	 bases: 20121201 #8576098, check: 20121201 clean
+X-SpamTest-Envelope-From: zlatko.calusic@iskon.hr
+X-SpamTest-Group-ID: 00000000
+X-SpamTest-Info: Profiles 39763 [Dec 02 2012]
+X-SpamTest-Method: none
+X-SpamTest-Rate: 0
+X-SpamTest-SPF: none
+X-SpamTest-Status: Not detected
+X-SpamTest-Status-Extended: not_detected
+X-SpamTest-Version: SMTP-Filter Version 3.0.0 [0284], KAS30/Release
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 1, 2012 at 1:44 PM, Ingo Molnar <mingo@kernel.org> wrote:
+On 01.12.2012 20:13, Tejun Heo wrote:
+> Hello,
 >
-> You are not missing anything. That flag is my fault not Mike's:
-> I booted the initial version of that patch but was unsure
-> whether autogroups was enabled - it's a pretty transparent
-> feature. So I figured that having that flag (but readonly) would
-> give us this information definitely.
+> On Sat, Dec 01, 2012 at 06:11:10PM +0100, Zlatko Calusic wrote:
+>> Sure. Please clarify, should I apply it on top of the previous one
+>> or standalone?
+>
+> It's a replacement, so by itself.
+>
+> Thanks!
+>
 
-So what's the advantage of it being read-only at all?
+I have good news, again. The kernel with the patch applied has been 
+running flawlessly for the last hour. No excess context switching.
 
-Since the flag is clearly *used*, make it read-write, and then all my
-objections go away (except for a slight worry that the dropping of
-/proc/<pid>/autogroup_nice or whatever it is could break some odd
-system app, but I don't worry *too* much about that).
-
-Disabling autogroup is clearly something people might want, since the
-code tests for it. So removing the flag entirely seems wrong too. But
-if it exists, it should be writable. No?
-
-             Linus
+Regards,
+-- 
+Zlatko
