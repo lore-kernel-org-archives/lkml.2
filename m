@@ -1,77 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753222Ab2LASln (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Dec 2012 13:41:43 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:44718 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752693Ab2LASlm (ORCPT
+	id S1753059Ab2LASpy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Dec 2012 13:45:54 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:38624 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751825Ab2LASpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Dec 2012 13:41:42 -0500
-Date: Sat, 1 Dec 2012 19:41:35 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: [RFC PATCH] mm/migration: Remove anon vma locking from
- try_to_unmap() use
-Message-ID: <20121201184135.GA32449@gmail.com>
-References: <1354305521-11583-1-git-send-email-mingo@kernel.org>
- <CA+55aFwjxm7OYuucHeE2WFr4p+jwr63t=kSdHndta_QkyFbyBQ@mail.gmail.com>
- <20121201094927.GA12366@gmail.com>
- <20121201122649.GA20322@gmail.com>
- <CA+55aFx8QtP0hg8qxn__4vHQuzH7QkhTN-4fwgOpM-A=KuBBjA@mail.gmail.com>
+	Sat, 1 Dec 2012 13:45:52 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFx8QtP0hg8qxn__4vHQuzH7QkhTN-4fwgOpM-A=KuBBjA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1354276654-590-1-git-send-email-lee.jones@linaro.org>
+References: <1354276654-590-1-git-send-email-lee.jones@linaro.org>
+Date: Sat, 1 Dec 2012 19:45:51 +0100
+Message-ID: <CACRpkdZpZWF7-VpQumsgdhZ_ox7DQHr+61L8KOPH6tqcK89bkg@mail.gmail.com>
+Subject: Re: [PATCH 00/12] Refactoring the ab8500 battery management drivers
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linus.walleij@stericsson.com, arnd@arndb.de,
+        cbou@mail.ru, dwmw2@infradead.org, rajanikanth.hv@linaro.org,
+        Arun MURTHY <arun.murthy@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 30, 2012 at 12:57 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> The aim of this and subsequent patch-sets is to refactor battery
+> management services provided by the ab8500 MFD. This first patch-set
+> brings a few modifications to the collection which happened on the
+> internal kernel, but were never Mainlined. There are lots more of
+> these to come. We also tidy-up some of the Device Tree related patches
+> which are currently pending in -next.
+>
+>  drivers/mfd/ab8500-core.c       |    8 -
+>  drivers/power/ab8500_bmdata.c   |  517 +++++++++++++++++++--------------------
+>  drivers/power/ab8500_btemp.c    |   96 ++++----
+>  drivers/power/ab8500_charger.c  |  222 ++++++++++++-----
+>  drivers/power/ab8500_fg.c       |  123 +++++-----
+>  drivers/power/abx500_chargalg.c |  133 +++++-----
+>  include/linux/mfd/abx500.h      |    6 +-
+>  7 files changed, 592 insertions(+), 513 deletions(-)
 
-> On Sat, Dec 1, 2012 at 4:26 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> >
-> >
-> > So as a quick concept hack I wrote the patch attached below.
-> > (It's not signed off, see the patch description text for the
-> > reason.)
-> 
-> Well, it confirms that anon_vma locking is a big problem, but 
-> as outlined in my other email it's completely incorrect from 
-> an actual behavior standpoint.
+All of this looks good to me.
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+for all.
 
-Yeah.
+Arun submitted the original driver, maybe he can throw in an
+ACK as well...
 
-> Btw, I think the anon_vma lock could be made a spinlock 
-> instead of a mutex or rwsem, but that would probably take more 
-> work. We *shouldn't* be doing anything that needs IO inside 
-> the anon_vma lock, though, so it *should* be doable. But there 
-> are probably quite a bit of allocations inside the lock, and I 
-> know it covers huge areas, so a spinlock might not only be 
-> hard to convert to, it quite likely has latency issues too.
-
-I'll try the rwsem and see how it goes?
-
-> Oh, btw, MUTEX_SPIN_ON_OWNER may well improve performance too, 
-> but it gets disabled by DEBUG_MUTEXES. So some of the 
-> performance impact of the vma locking may be *very* 
-> kernel-config dependent.
-
-Hm, indeed. For performance runs I typically disable lock 
-debugging - which might have made me not directly notice some of 
-the performance problems.
-
-Thanks,
-
-	Ingo
+Yours,
+Linus Walleij
