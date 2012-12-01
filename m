@@ -1,164 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756711Ab2LAA0w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 19:26:52 -0500
-Received: from scrye.com ([75.148.32.185]:37187 "EHLO mail.scrye.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755856Ab2LAA0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 19:26:48 -0500
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH 1/1] v3.0.x: mtd: check partition count not partition array pointer
-From: Anthony Foiani <tkil@scrye.com>
-Reply-To: Anthony Foiani <tkil@scrye.com>
-X-Attribution: Tony
-References: <gpq3oh9on.fsf@dworkin.scrye.com>
-	<20121129213838.GA20660@kroah.com>
-Date: Fri, 30 Nov 2012 17:19:28 -0700
-In-Reply-To: <20121129213838.GA20660@kroah.com> (Greg KH's message of "Thu, 29 Nov 2012 13:38:38 -0800")
-Message-ID: <gvccm1v5b.fsf@dworkin.scrye.com>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) XEmacs/21.5-b31 (linux)
+	id S1756743Ab2LAA1f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 19:27:35 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:39183 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756474Ab2LAA1d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 19:27:33 -0500
+Date: Fri, 30 Nov 2012 16:27:22 -0800
+From: tip-bot for Fenghua Yu <fenghua.yu@intel.com>
+Message-ID: <tip-b8f3111a12c190ab8228718e766dd2707b6fc8e0@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1354240068-9821-8-git-send-email-fenghua.yu@intel.com>
+References: <1354240068-9821-8-git-send-email-fenghua.yu@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/microcode] x86/head64.c: Early update ucode in 64-bit
+Git-Commit-ID: b8f3111a12c190ab8228718e766dd2707b6fc8e0
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 30 Nov 2012 16:27:27 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH <greg@kroah.com> writes:
-> This is not the correct way to submit patches for inclusion in the
-> stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-> for how to do this properly.
+Commit-ID:  b8f3111a12c190ab8228718e766dd2707b6fc8e0
+Gitweb:     http://git.kernel.org/tip/b8f3111a12c190ab8228718e766dd2707b6fc8e0
+Author:     Fenghua Yu <fenghua.yu@intel.com>
+AuthorDate: Thu, 29 Nov 2012 17:47:45 -0800
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 30 Nov 2012 15:18:16 -0800
 
-My checklist against stable_kernel_rules.txt is below.
+x86/head64.c: Early update ucode in 64-bit
 
-I could only find two reasons why you are saying this is incorrect:
+This updates ucode in 64-bit mode. Paging and virtual address are working now.
 
-  1. There is no matching upstream commit; or
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+Link: http://lkml.kernel.org/r/1354240068-9821-8-git-send-email-fenghua.yu@intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/head64.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-  2. I did not CC: stable in the signed-off region.
-
-Please let me know which it is, so I can either drop the subject (for
-reasons indicated further below), or respin the patch.
-
-Thanks,
-Tony
-
-| - It must be obviously correct and tested.
-
-Check.
-
-| - It cannot be bigger than 100 lines, with context.
-
-Check: 1 changed line, 2 active lines in the patch, ~10 lines total.
-
-| - It must fix only one thing.
-
-Check.
-
-| - It must fix a real bug that bothers people (not a, "This could be
-|   a problem..." type thing).
-
-It bothered me (made my embedded project not boot correctly).
-
-| - It must fix a problem that causes a build error (but not for
-|   things marked CONFIG_BROKEN), an oops, a hang, data corruption, a
-|   real security issue, or some "oh, that's not good" issue.  In
-|   short, something critical.
-
-It repaired a change in behavior; for my project that was a "oh,
-that's not good" issue.
-
-It booted, but in such a way that it failed to expose a critical
-system resource correctly.
-
-| - Serious issues as reported by a user of a distribution kernel [...]
-
-Not applicable.
-
-| - New device IDs and quirks are also accepted.
-
-Not applicable.
-
-| - No "theoretical race condition" issues [...]
-
-Not applicable.
-
-| - It cannot contain any "trivial" fixes in it [...]
-
-Check.
-
-| - It must follow the Documentation/SubmittingPatches rules.
-
-As far as I can tell, this patch follows those rules. 
-
-| - It or an equivalent fix must already exist in Linus' tree (upstream).
-
-As mentioned in the original submission:
-
->> The current kernel has retired this function; I have not examined
->> its replacement to see if it has the same issue.
-
-You can either use this 1-line patch, or you can have someone else
-backport the changes made in the mainline kernel.  That someone will
-not be me, sadly.
-
-| Procedure for submitting patches to the -stable tree:
-|
-| - Send the patch, after verifying that it follows the above rules,
-|   to stable@vger.kernel.org.
-
-I thought I did this, but I'm guessing that you're complaining about:
-
-|   You must note the upstream commit ID in the changelog of your
-|   submission.
-
-As mentioned above, there is no corresponding upstream commit, because
-that function got removed.
-
-I thought that my contribution was more in the spirit of the stable
-series ("small, obvious, correct"); more so than would be the
-backporting of the upstream fix.
-
-But it's your call; if you disagree, then you disagree.  My patch will
-be here if other people need it.
-
-| - To have the patch automatically included in the stable tree, add
-|   the tag
-|
-|     Cc: stable@vger.kernel.org
-|
-|   in the sign-off area. Once the patch is merged it will be applied
-|   to the stable tree without anything else needing to be done by the
-|   author or subsystem maintainer.
-
-I would be happy to resubmit with that modification, if you find the
-other aspects of the patch acceptable.
-
-With only the formletter response, I'm unable to determine which bits
-you dislike.
-
-| - If the patch requires other patches as prerequisites which can be
-|   cherry-picked than this can be specified in the following format
-|   [...]
-
-Not applicable
-
-| - The sender will receive an ACK when the patch has been accepted
-|   into the queue, or a NAK if the patch is rejected.  This response
-|   might take a few days, according to the developer's schedules.
-
-I received a NAK, and it was timely enough -- thank you.  :)
-
-| - If accepted, the patch will be added to the -stable queue, for
-|   review by other developers and by the relevant subsystem
-|   maintainer.
-
-Presumably not applicable until you tell me why it was rejected; if it
-is repairable, I'll be happy to resubmit.
-
-| - Security patches should not be sent to this alias, but instead to the
-|   documented security@kernel.org address.
-
-Not applicable.
-
-...and I'll not belabor the point.
+diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+index 037df57..a512f56 100644
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -25,6 +25,7 @@
+ #include <asm/kdebug.h>
+ #include <asm/e820.h>
+ #include <asm/bios_ebda.h>
++#include <asm/microcode.h>
+ 
+ static void __init zap_identity_mappings(void)
+ {
+@@ -73,6 +74,11 @@ void __init x86_64_start_kernel(char * real_mode_data)
+ 	/* clear bss before set_intr_gate with early_idt_handler */
+ 	clear_bss();
+ 
++	/*
++	 * Load microcode early on BSP.
++	 */
++	load_ucode_bsp(real_mode_data);
++
+ 	/* Make NULL pointers segfault */
+ 	zap_identity_mappings();
+ 
