@@ -1,83 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756816Ab2LAAam (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 19:30:42 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:39230 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299Ab2LAAak (ORCPT
+	id S1756840Ab2LAAcG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 19:32:06 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:49613 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752020Ab2LAAcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 19:30:40 -0500
-Date: Fri, 30 Nov 2012 16:30:29 -0800
-From: tip-bot for Fenghua Yu <fenghua.yu@intel.com>
-Message-ID: <tip-16544f8d32aca4ec97b22db880f879ee164c3658@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        fenghua.yu@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1354240068-9821-11-git-send-email-fenghua.yu@intel.com>
-References: <1354240068-9821-11-git-send-email-fenghua.yu@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/microcode] x86/Kconfig: Configurations to enable/
- disable the feature
-Git-Commit-ID: 16544f8d32aca4ec97b22db880f879ee164c3658
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 30 Nov 2012 19:32:04 -0500
+X-Sasl-enc: 5sm9zgguWVS8eg6MAkLIY3ra7byyKlfDTPLk8qJkdU32 1354321922
+Date: Fri, 30 Nov 2012 16:32:01 -0800
+From: Greg KH <greg@kroah.com>
+To: Anthony Foiani <tkil@scrye.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH 1/1] v3.0.x: mtd: check partition count not partition
+ array pointer
+Message-ID: <20121201003201.GA18885@kroah.com>
+References: <gpq3oh9on.fsf@dworkin.scrye.com>
+ <20121129213838.GA20660@kroah.com>
+ <gvccm1v5b.fsf@dworkin.scrye.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 30 Nov 2012 16:30:35 -0800 (PST)
+In-Reply-To: <gvccm1v5b.fsf@dworkin.scrye.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  16544f8d32aca4ec97b22db880f879ee164c3658
-Gitweb:     http://git.kernel.org/tip/16544f8d32aca4ec97b22db880f879ee164c3658
-Author:     Fenghua Yu <fenghua.yu@intel.com>
-AuthorDate: Thu, 29 Nov 2012 17:47:48 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 30 Nov 2012 15:18:17 -0800
+On Fri, Nov 30, 2012 at 05:19:28PM -0700, Anthony Foiani wrote:
+> Greg KH <greg@kroah.com> writes:
+> > This is not the correct way to submit patches for inclusion in the
+> > stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
+> > for how to do this properly.
+> 
+> My checklist against stable_kernel_rules.txt is below.
+> 
+> I could only find two reasons why you are saying this is incorrect:
+> 
+>   1. There is no matching upstream commit; or
 
-x86/Kconfig: Configurations to enable/disable the feature
+This is an obvious one, it needs to be upstream first.
 
-MICROCODE_INTEL_LIB, MICROCODE_INTEL_EARLY, and MICROCODE_EARLY are three new
-configurations to enable or disable the feature.
+Or if not, a whole lot of explaination saying that you know it isn't,
+and why it isn't, and why it isn't applicable there, including agreement
+from the subsystem maintainers saying that they agree with you.
 
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-Link: http://lkml.kernel.org/r/1354240068-9821-11-git-send-email-fenghua.yu@intel.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/Kconfig | 18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+thanks,
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 46c3bff..abb1153 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1031,6 +1031,24 @@ config MICROCODE_OLD_INTERFACE
- 	def_bool y
- 	depends on MICROCODE
- 
-+config MICROCODE_INTEL_LIB
-+	def_bool y
-+	depends on MICROCODE_INTEL
-+
-+config MICROCODE_INTEL_EARLY
-+	bool "Early load microcode"
-+	depends on MICROCODE_INTEL && BLK_DEV_INITRD
-+	default y
-+	help
-+	  This option provides functionality to read additional microcode data
-+	  at the beginning of initrd image. The data tells kernel to load
-+	  microcode to CPU's as early as possible. No functional change if no
-+	  microcode data is glued to the initrd, therefore it's safe to say Y.
-+
-+config MICROCODE_EARLY
-+	def_bool y
-+	depends on MICROCODE_INTEL_EARLY
-+
- config X86_MSR
- 	tristate "/dev/cpu/*/msr - Model-specific register support"
- 	---help---
+greg k-h
