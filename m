@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284Ab2LARPX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Dec 2012 12:15:23 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33021 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753205Ab2LARPW (ORCPT
+	id S1753227Ab2LARQh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Dec 2012 12:16:37 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:54681 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752738Ab2LARQg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Dec 2012 12:15:22 -0500
+	Sat, 1 Dec 2012 12:16:36 -0500
 MIME-Version: 1.0
-In-Reply-To: <20121201.112436.2146449310071184200.davem@davemloft.net>
-References: <20121130183857.166228045@linuxfoundation.org>
-	<87pq2tu6m3.wl%satoru.takeuchi@gmail.com>
-	<20121201.112436.2146449310071184200.davem@davemloft.net>
-Date: Sat, 1 Dec 2012 10:15:21 -0700
-Message-ID: <CAKocOOPqekZcHzBUgQr4CWyfX74rsV-cw_+uHVCFogfa5rm5Gg@mail.gmail.com>
-Subject: Re: [ 00/37] 3.0.54-stable review
-From: Shuah Khan <shuahkhan@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: satoru.takeuchi@gmail.com, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
+In-Reply-To: <1354103571-27394-1-git-send-email-rabin.vincent@stericsson.com>
+References: <1354103571-27394-1-git-send-email-rabin.vincent@stericsson.com>
+Date: Sat, 1 Dec 2012 18:16:34 +0100
+Message-ID: <CACRpkdbq02xnVJ4tnZvOFsp8JuP6-F0KLKyyv9TgyY9dWSdDJg@mail.gmail.com>
+Subject: Re: [RFC 1/2] clk: use struct clk only for external API
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Rabin Vincent <rabin.vincent@stericsson.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: Mike Turquette <mturquette@ti.com>, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 1, 2012 at 9:24 AM, David Miller <davem@davemloft.net> wrote:
->
-> Satoru, I just want to let you know that, because you encode your
-> emails using ISO-2022-JP-2, nearly half of the subscribers to
-> the vger.kernel.org mailing lists bounce your postings.
->
-> I know it's stupid, and it's mostly a Microsoft Exchange issue,
-> but it does mean that people that you may wish to see your emails
-> are not.  This includes developers at major sites such as cisco.com
-> and intel.com
->
-> I even saw toshiba.co.jp bounce your postings because of this encoding
-> issue.
->
-> Anyways, just FYI...
+On Wed, Nov 28, 2012 at 12:52 PM, Rabin Vincent
+<rabin.vincent@stericsson.com> wrote:
 
-Satoru,
+> In order to provide per-user accounting, this separates the struct clk
+> used in the common clock framework into two structures 'struct clk_core'
+> and 'struct clk'.  struct clk_core will be used for internal
+> manipulation and struct clk will be used in the clock API
+> implementation.
+>
+> In this patch, struct clk is simply renamed to struct clk_core and a new
+> struct clk is implemented which simply wraps it.  In the next patch, the
+> new struct clk will be used to implement per-user clock enable
+> accounting.
+>
+> There is a rather hacky #define of clk_core to clk for the non-common
+> clk case in order to avoid a mass rename of all clk non-common clk
+> implementations.
+>
+> Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
 
-hp.com addresses have the same issue and I keep cc'ing all my emails
-from hp.com to my gmail address so I don't miss any responses. Again
-just FYI.
+I like the spirit of this and I think it was Thomas Gleixner who early
+on strongly recommended that the struct be kept as private as possible.
 
--- Shuah
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
+Yours,
+Linus Walleij
