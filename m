@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752950Ab2LAQuc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Dec 2012 11:50:32 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:38431 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752441Ab2LAQub (ORCPT
+	id S1753008Ab2LAQvG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Dec 2012 11:51:06 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:57846 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752565Ab2LAQvE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Dec 2012 11:50:31 -0500
-Date: Sat, 1 Dec 2012 08:50:27 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [ 00/54] 3.6.9-stable review
-Message-ID: <20121201165027.GE3113@kroah.com>
-References: <20121130185207.894301294@linuxfoundation.org>
- <87txs5u8dn.wl%satoru.takeuchi@gmail.com>
+	Sat, 1 Dec 2012 11:51:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87txs5u8dn.wl%satoru.takeuchi@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1354289099-17931-1-git-send-email-lee.jones@linaro.org>
+References: <1354289099-17931-1-git-send-email-lee.jones@linaro.org>
+Date: Sat, 1 Dec 2012 17:51:02 +0100
+Message-ID: <CACRpkdafvpnyq7YMV=iSjN4+u1hpt3xntAb-daJZifG9VpgnOw@mail.gmail.com>
+Subject: Re: [PATCH 1/1] ARM: ux500: Change IRQ from low-to-high edge
+ triggered to high-to-low
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 01, 2012 at 11:58:28PM +0900, Satoru Takeuchi wrote:
-> At Fri, 30 Nov 2012 10:55:31 -0800,
-> Greg Kroah-Hartman wrote:
-> > 
-> > This is the start of the stable review cycle for the 3.6.9 release.
-> > There are 54 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> > 
-> > Responses should be made by Sun Dec  2 18:51:00 UTC 2012.
-> > Anything received after that time might be too late.
-> > 
-> > The whole patch series can be found in one patch at:
-> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.6.9-rc1.gz
-> > and the diffstat can be found below.
-> 
-> 3.6.9-rc1 can be built and boot without any problem. Building a kernel with
-> this kernel also works fine.
+On Fri, Nov 30, 2012 at 4:24 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-Great, thanks for testing all three of these trees out and letting me
-know.
+> When the STMPE IRQ is triggered to be active high level-sensitive, the
+> Nomadik GPIO controller it uses complains, although it still works.
+> Recently we attempted to move triggering to low-to-high in an attempt
+> to prevent the warning; however, this ensured that the IRQ was actually
+> missed completely. Now we have a solution which both works and keeps the
+> GPIO controller happy.
+>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
 
-greg k-h
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
+Is this something I should put into the ux500 tree or will you
+take care of this in a separate pull request?
+
+Yours,
+Linus Walleij
