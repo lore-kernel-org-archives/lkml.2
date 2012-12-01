@@ -1,49 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386Ab2LASbH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Dec 2012 13:31:07 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:33735 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753279Ab2LASbD (ORCPT
+	id S1753506Ab2LASbP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Dec 2012 13:31:15 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:40484 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753408Ab2LASbJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Dec 2012 13:31:03 -0500
+	Sat, 1 Dec 2012 13:31:09 -0500
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdYR-GVm0ZXXO=Y7SwiK=nWaL5kkeLkXUzf_8p7jG+digA@mail.gmail.com>
-References: <912d88b8906ce87cf5459cf3d5798e03bfce34c7.1353649737.git.viresh.kumar@linaro.org>
-	<20121123103400.GO17471@gmail.com>
-	<CAKohponW-Wd+Vrnj8mbdFMmJvwQgPq1jFCZRipBFoEhTknStHQ@mail.gmail.com>
-	<20121123121413.GB22268@gmail.com>
-	<20121123123048.GM5384@localhost.localdomain>
-	<20121126112823.GI12782@gmail.com>
-	<20121126113230.GT5384@localhost.localdomain>
-	<CACRpkdYR-GVm0ZXXO=Y7SwiK=nWaL5kkeLkXUzf_8p7jG+digA@mail.gmail.com>
-Date: Sun, 2 Dec 2012 00:01:02 +0530
-Message-ID: <CAPub149j12KmED8PkeFA2Xk8Sj-RoMojSS4g1G8W8=Nx0H=ctQ@mail.gmail.com>
-Subject: Re: [PATCH] gpio: stmpe: Add DT support for stmpe gpio
-From: Shiraz Hashim <shiraz.linux.kernel@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org, spear-devel@list.st.com,
-        linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>
+In-Reply-To: <50B9F233.5040902@gentoo.org>
+References: <50B9F233.5040902@gentoo.org>
+From: Roger Heflin <rogerheflin@gmail.com>
+Date: Sat, 1 Dec 2012 12:30:48 -0600
+Message-ID: <CAAMCDefRCdB1oLGmXxoChzqhoYKK8y4LZ5pOQVN1Uriz514_3w@mail.gmail.com>
+Subject: Re: My SD Card Reader cannot read SDHC cards
+To: kernel@gentoo.org
+Cc: Kernel development list <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 1, 2012 at 10:05 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Mon, Nov 26, 2012 at 12:32 PM, Shiraz Hashim <shiraz.hashim@st.com> wrote:
->> On Mon, Nov 26, 2012 at 11:28:23AM +0000, Lee Jones wrote:
->>>
->>> Doesn't pinctrl normally handle this kind of stuff?
->>
->> Yes, but I think it is only for managing the SoC and its pads.
->
-> No pinctrl is also for off-SoC pin controllers, you can have
-> pinctrl0, pinctrl1 ... pinctrlN on a system. The number space is
-> local per-pincontroller too.
+On Sat, Dec 1, 2012 at 6:04 AM, Richard Yao <ryao@gentoo.org> wrote:
+> Standard Microsystems Corp. 8-in-1 Card
+> Reader
 
-OK. Thanks for correcting.
-
--- 
-regards
-Shiraz Hashim
+Does that card reader support SDHC cards?    The older readers don't
+support >2GB (ie sdhc)
+cards, and that would mean a 2GB card works and the 4GB or larger ones won't.
