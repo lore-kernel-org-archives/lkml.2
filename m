@@ -1,67 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751101Ab2LAAnX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 19:43:23 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:39354 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750709Ab2LAAnV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 19:43:21 -0500
-Date: Fri, 30 Nov 2012 16:42:58 -0800
-From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
-Message-ID: <tip-11af32b69ef7ee64c7d8848cad71a6f3749d9e37@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, alan@lxorguk.ukuu.org.uk, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, alan@lxorguk.ukuu.org.uk
-In-Reply-To: <20121128205203.05868eab@pyramind.ukuu.org.uk>
-References: <20121128205203.05868eab@pyramind.ukuu.org.uk>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/nuke386] x86, 386 removal:
-  Document Nx586 as a 386 and thus unsupported
-Git-Commit-ID: 11af32b69ef7ee64c7d8848cad71a6f3749d9e37
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1751034Ab2LAAoP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 19:44:15 -0500
+Received: from scrye.com ([75.148.32.185]:37267 "EHLO mail.scrye.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750709Ab2LAAoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 19:44:13 -0500
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] Documentation: Enumerate the guidelines for stable patches.
+From: Anthony Foiani <tkil@scrye.com>
+Reply-To: Anthony Foiani <tkil@scrye.com>
+X-Attribution: Tony
+Date: Fri, 30 Nov 2012 17:44:13 -0700
+Message-ID: <gr4na1u02.fsf@dworkin.scrye.com>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) XEmacs/21.5-b31 (linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 30 Nov 2012 16:43:05 -0800 (PST)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  11af32b69ef7ee64c7d8848cad71a6f3749d9e37
-Gitweb:     http://git.kernel.org/tip/11af32b69ef7ee64c7d8848cad71a6f3749d9e37
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Thu, 29 Nov 2012 13:28:39 -0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 29 Nov 2012 13:28:39 -0800
 
-x86, 386 removal: Document Nx586 as a 386 and thus unsupported
+From: Anthony Foiani <anthony.foiani@gmail.com>
 
-Per Alan Cox, Nx586 did not support WP in supervisor mode, making it a
-386 by Linux kernel standards.  As such, it is too unsupported now.
+Having recently received a formletter rejection on a stable patch, I
+found it difficult to determine exactly which guideline I had missed.
 
-Reported-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Link: http://lkml.kernel.org/r/20121128205203.05868eab@pyramind.ukuu.org.uk
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Numbering the guidelines will allow the stable maintainer to quickly
+and easily indicate which guidelines have not been followed.
+
+The actual changes are only the addition of clause numbering, and the
+wishful thinking added to S15.
+
+Signed-Off-By: Anthony Foiani <anthony.foiani@gmail.com>
 ---
- arch/x86/Kconfig.cpu | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ Documentation/stable_kernel_rules.txt | 185 ++++++++++++++++++++--------------
+ 1 file changed, 108 insertions(+), 77 deletions(-)
 
-diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
-index 423db71..c026cca 100644
---- a/arch/x86/Kconfig.cpu
-+++ b/arch/x86/Kconfig.cpu
-@@ -15,7 +15,7 @@ config M486
+diff --git a/Documentation/stable_kernel_rules.txt b/Documentation/stable_kernel_rules.txt
+index b0714d8..9a6dc59 100644
+--- a/Documentation/stable_kernel_rules.txt
++++ b/Documentation/stable_kernel_rules.txt
+@@ -1,95 +1,126 @@
+ Everything you ever wanted to know about Linux -stable releases.
  
- 	  Note that the 386 is no longer supported, this includes
- 	  AMD/Cyrix/Intel 386DX/DXL/SL/SLC/SX, Cyrix/TI 486DLC/DLC2,
--	  and UMC 486SX-S.
-+	  UMC 486SX-S and the NexGen Nx586.
+-Rules on what kind of patches are accepted, and which ones are not, into the
+-"-stable" tree:
+-
+- - It must be obviously correct and tested.
+- - It cannot be bigger than 100 lines, with context.
+- - It must fix only one thing.
+- - It must fix a real bug that bothers people (not a, "This could be a
+-   problem..." type thing).
+- - It must fix a problem that causes a build error (but not for things
+-   marked CONFIG_BROKEN), an oops, a hang, data corruption, a real
+-   security issue, or some "oh, that's not good" issue.  In short, something
+-   critical.
+- - Serious issues as reported by a user of a distribution kernel may also
+-   be considered if they fix a notable performance or interactivity issue.
+-   As these fixes are not as obvious and have a higher risk of a subtle
+-   regression they should only be submitted by a distribution kernel
+-   maintainer and include an addendum linking to a bugzilla entry if it
+-   exists and additional information on the user-visible impact.
+- - New device IDs and quirks are also accepted.
+- - No "theoretical race condition" issues, unless an explanation of how the
+-   race can be exploited is also provided.
+- - It cannot contain any "trivial" fixes in it (spelling changes,
+-   whitespace cleanups, etc).
+- - It must follow the Documentation/SubmittingPatches rules.
+- - It or an equivalent fix must already exist in Linus' tree (upstream).
++Rules on what kind of patches are accepted, and which ones are not,
++into the "-stable" tree.
  
- 	  The kernel will not necessarily run on earlier architectures than
- 	  the one you have chosen, e.g. a Pentium optimized kernel will run on
++S1.  It must be obviously correct and tested.
++
++S2.  It cannot be bigger than 100 lines, with context.
++
++S3.  It must fix only one thing.
++
++S4.  It must fix a real bug that bothers people (not a, "This could be
++     a problem..." type thing).
++
++S5.  It must fix a problem that causes a build error (but not for
++     things marked CONFIG_BROKEN), an oops, a hang, data corruption, a
++     real security issue, or some "oh, that's not good" issue.  In
++     short, something critical.
++
++S6.  Serious issues as reported by a user of a distribution kernel may
++     also be considered if they fix a notable performance or
++     interactivity issue.  As these fixes are not as obvious and have
++     a higher risk of a subtle regression they should only be
++     submitted by a distribution kernel maintainer and include an
++     addendum linking to a bugzilla entry if it exists and additional
++     information on the user-visible impact.
++
++S7.  New device IDs and quirks are also accepted.
++
++S8.  No "theoretical race condition" issues, unless an explanation of
++     how the race can be exploited is also provided.
++
++S9.  It cannot contain any "trivial" fixes in it (spelling changes,
++     whitespace cleanups, etc).
++
++S10. It must follow the Documentation/SubmittingPatches rules.
++
++S11. It or an equivalent fix must already exist in Linus' tree
++     (upstream).
+ 
+ Procedure for submitting patches to the -stable tree:
+ 
+- - Send the patch, after verifying that it follows the above rules, to
+-   stable@vger.kernel.org.  You must note the upstream commit ID in the
+-   changelog of your submission, as well as the kernel version you wish
+-   it to be applied to.
+- - To have the patch automatically included in the stable tree, add the tag
+-     Cc: stable@vger.kernel.org
+-   in the sign-off area. Once the patch is merged it will be applied to
+-   the stable tree without anything else needing to be done by the author
+-   or subsystem maintainer.
+- - If the patch requires other patches as prerequisites which can be
+-   cherry-picked than this can be specified in the following format in
+-   the sign-off area:
+-
+-     Cc: <stable@vger.kernel.org> # 3.3.x: a1f84a3: sched: Check for idle
+-     Cc: <stable@vger.kernel.org> # 3.3.x: 1b9508f: sched: Rate-limit newidle
+-     Cc: <stable@vger.kernel.org> # 3.3.x: fd21073: sched: Fix affinity logic
+-     Cc: <stable@vger.kernel.org> # 3.3.x
+-    Signed-off-by: Ingo Molnar <mingo@elte.hu>
+-
+-   The tag sequence has the meaning of:
+-     git cherry-pick a1f84a3
+-     git cherry-pick 1b9508f
+-     git cherry-pick fd21073
+-     git cherry-pick <this commit>
+-
+- - The sender will receive an ACK when the patch has been accepted into the
+-   queue, or a NAK if the patch is rejected.  This response might take a few
+-   days, according to the developer's schedules.
+- - If accepted, the patch will be added to the -stable queue, for review by
+-   other developers and by the relevant subsystem maintainer.
+- - Security patches should not be sent to this alias, but instead to the
+-   documented security@kernel.org address.
++S12. Send the patch, after verifying that it follows the above rules,
++     to stable@vger.kernel.org.  You must note the upstream commit ID
++     in the changelog of your submission, as well as the kernel
++     version you wish it to be applied to.
++
++S13. To have the patch automatically included in the stable tree, add
++     the tag
++
++       Cc: stable@vger.kernel.org
++
++     in the sign-off area. Once the patch is merged it will be applied
++     to the stable tree without anything else needing to be done by
++     the author or subsystem maintainer.
++
++S14. If the patch requires other patches as prerequisites which can be
++     cherry-picked than this can be specified in the following format
++     in the sign-off area:
+ 
++       Cc: <stable@vger.kernel.org> # 3.3.x: a1f84a3: sched: Check for idle
++       Cc: <stable@vger.kernel.org> # 3.3.x: 1b9508f: sched: Rate-limit newidle
++       Cc: <stable@vger.kernel.org> # 3.3.x: fd21073: sched: Fix affinity logic
++       Cc: <stable@vger.kernel.org> # 3.3.x
++       Signed-off-by: Ingo Molnar <mingo@elte.hu>
++
++     The tag sequence has the meaning of:
++
++       git cherry-pick a1f84a3
++       git cherry-pick 1b9508f
++       git cherry-pick fd21073
++       git cherry-pick <this commit>
++
++S15. The sender will receive an ACK when the patch has been accepted
++     into the queue, or a NAK if the patch is rejected.  This response
++     might take a few days, according to the developer's schedules.
++     Ideally, any NAK message would include an indication of which
++     guidelines have not been followed.
++
++S16. If accepted, the patch will be added to the -stable queue, for
++     review by other developers and by the relevant subsystem
++     maintainer.
++
++S17. Security patches should not be sent to this alias, but instead to
++     the documented security@kernel.org address.
+ 
+ Review cycle:
+ 
+- - When the -stable maintainers decide for a review cycle, the patches will be
+-   sent to the review committee, and the maintainer of the affected area of
+-   the patch (unless the submitter is the maintainer of the area) and CC: to
+-   the linux-kernel mailing list.
+- - The review committee has 48 hours in which to ACK or NAK the patch.
+- - If the patch is rejected by a member of the committee, or linux-kernel
+-   members object to the patch, bringing up issues that the maintainers and
+-   members did not realize, the patch will be dropped from the queue.
+- - At the end of the review cycle, the ACKed patches will be added to the
+-   latest -stable release, and a new -stable release will happen.
+- - Security patches will be accepted into the -stable tree directly from the
+-   security kernel team, and not go through the normal review cycle.
+-   Contact the kernel security team for more details on this procedure.
++S18. When the -stable maintainers decide for a review cycle, the
++     patches will be sent to the review committee, and the maintainer
++     of the affected area of the patch (unless the submitter is the
++     maintainer of the area) and CC: to the linux-kernel mailing list.
++
++S19. The review committee has 48 hours in which to ACK or NAK the
++     patch.
++
++S20. If the patch is rejected by a member of the committee, or
++     linux-kernel members object to the patch, bringing up issues that
++     the maintainers and members did not realize, the patch will be
++     dropped from the queue.
++
++S21. At the end of the review cycle, the ACKed patches will be added
++     to the latest -stable release, and a new -stable release will
++     happen.
++
++S22. Security patches will be accepted into the -stable tree directly
++     from the security kernel team, and not go through the normal
++     review cycle.  Contact the kernel security team for more details
++     on this procedure.
+ 
+ Trees:
+ 
+- - The queues of patches, for both completed versions and in progress
+-   versions can be found at:
++S23. The queues of patches, for both completed versions and in
++     progress versions can be found at:
++
+ 	http://git.kernel.org/?p=linux/kernel/git/stable/stable-queue.git
+- - The finalized and tagged releases of all stable kernels can be found
+-   in separate branches per version at:
+-	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git
+ 
++S24. The finalized and tagged releases of all stable kernels can be
++     found in separate branches per version at:
++
++	http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git
+ 
+ Review committee:
+ 
+- - This is made up of a number of kernel developers who have volunteered for
+-   this task, and a few that haven't.
++S25. This is made up of a number of kernel developers who have
++     volunteered for this task, and a few that haven't.
+-- 
+1.7.11.7
+
