@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753171Ab2LARMD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Dec 2012 12:12:03 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46625 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752675Ab2LARMA (ORCPT
+	id S1753193Ab2LAROA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Dec 2012 12:14:00 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:1794 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752624Ab2LARN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Dec 2012 12:12:00 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 2/2] mfd: wm5102: Add tuning for revision B
-Date: Sun,  2 Dec 2012 02:11:52 +0900
-Message-Id: <1354381913-26146-2-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1354381913-26146-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1354381913-26146-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Sat, 1 Dec 2012 12:13:58 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Sat, 01 Dec 2012 09:13:33 -0800
+Message-ID: <50BA3ACD.9080104@nvidia.com>
+Date: Sat, 1 Dec 2012 19:13:49 +0200
+From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC v2 1/8] video: tegra: Add nvhost driver
+References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com> <1353935954-13763-2-git-send-email-tbergstrom@nvidia.com> <20121128212301.GA25531@avionic-0098.adnet.avionic-design.de> <50B73710.2040102@nvidia.com> <20121129114704.GB6150@avionic-0098.adnet.avionic-design.de> <50B874C7.5030208@nvidia.com> <20121130103850.GA28367@avionic-0098.adnet.avionic-design.de> <50B9EA76.10803@nvidia.com> <20121201145814.GB18209@avionic-0098.adnet.avionic-design.de>
+In-Reply-To: <20121201145814.GB18209@avionic-0098.adnet.avionic-design.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Evaluation of revision B of WM5102 suggests updates to the register patch
-for optimal performance, and make this the default behaviour for new
-devices.
+On 01.12.2012 16:58, Thierry Reding wrote:
+> I don't know where you see politics in what I said. All I'm saying is
+> that we shouldn't be making things needlessly complex. In my experience
+> the technically cleanest solution is usually the one with the least
+> complexity.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/mfd/wm5102-tables.c |   16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
+Let me come up with a proposal and let's then see where to go next.
 
-diff --git a/drivers/mfd/wm5102-tables.c b/drivers/mfd/wm5102-tables.c
-index 8bd0504..36708b0 100644
---- a/drivers/mfd/wm5102-tables.c
-+++ b/drivers/mfd/wm5102-tables.c
-@@ -56,6 +56,18 @@ static const struct reg_default wm5102_reva_patch[] = {
- 	{ 0x80, 0x0000 },
- };
- 
-+static const struct reg_default wm5102_revb_patch[] = {
-+	{ 0x80, 0x0003 },
-+	{ 0x081, 0xE022 },
-+	{ 0x410, 0x6080 },
-+	{ 0x418, 0x6080 },
-+	{ 0x420, 0x6080 },
-+	{ 0x428, 0xC000 },
-+	{ 0x441, 0x8014 },
-+	{ 0x458, 0x000b },
-+	{ 0x80, 0x0000 },
-+};
-+
- /* We use a function so we can use ARRAY_SIZE() */
- int wm5102_patch(struct arizona *arizona)
- {
-@@ -65,7 +77,9 @@ int wm5102_patch(struct arizona *arizona)
- 					     wm5102_reva_patch,
- 					     ARRAY_SIZE(wm5102_reva_patch));
- 	default:
--		return 0;
-+		return regmap_register_patch(arizona->regmap,
-+					     wm5102_revb_patch,
-+					     ARRAY_SIZE(wm5102_revb_patch));
- 	}
- }
- 
--- 
-1.7.10.4
+> But you already have extra code in the kernel to patch out expired sync-
+> points. Is it really worth the added effort to burden userspace with
+> this? If so I still think some kind of generic IOCTL to retrieve
+> information about a syncpoint would be better than a sysfs interface.
 
+That's exactly why I mentioned that it's not useful to upstream. There
+are some cases where user space might want to check if a fence has
+passed without waiting for it, but that's marginal and could be handled
+even with waits with zero timeout.
+
+Terje
