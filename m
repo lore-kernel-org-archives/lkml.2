@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751425Ab2LABCN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Nov 2012 20:02:13 -0500
-Received: from scrye.com ([75.148.32.185]:37370 "EHLO mail.scrye.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750909Ab2LABCM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Nov 2012 20:02:12 -0500
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Documentation: Enumerate the guidelines for stable patches.
-From: Anthony Foiani <tkil@scrye.com>
-Reply-To: Anthony Foiani <tkil@scrye.com>
-X-Attribution: Tony
-References: <gr4na1u02.fsf@dworkin.scrye.com>
-	<20121201005225.GA19767@kroah.com>
-Date: Fri, 30 Nov 2012 18:02:09 -0700
-In-Reply-To: <20121201005225.GA19767@kroah.com> (Greg KH's message of "Fri, 30 Nov 2012 16:52:25 -0800")
-Message-ID: <gip8m1t66.fsf@dworkin.scrye.com>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) XEmacs/21.5-b31 (linux)
+	id S1751291Ab2LABFa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Nov 2012 20:05:30 -0500
+Received: from usindpps03.hds.com ([207.126.252.16]:54484 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750839Ab2LABF2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Nov 2012 20:05:28 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "joe@perches.com" <joe@perches.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "kay@vrfy.org" <kay@vrfy.org>,
+        "jim.cromie@gmail.com" <jim.cromie@gmail.com>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "sboyd@codeaurora.org" <sboyd@codeaurora.org>,
+        "jason.wessel@windriver.com" <jason.wessel@windriver.com>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: RE: [PATCH] Avoid dead lock of console related locks in panic case
+Thread-Topic: [PATCH] Avoid dead lock of console related locks in panic case
+Thread-Index: Ac3PHT6W8aSr96JsTimOsT6bVlOSHQAVvOuAAAnPGzD//7/lgIAASnWw
+Date: Sat, 1 Dec 2012 01:04:22 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D414A0351F@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A02C44@USINDEM103.corp.hds.com>
+	<20121130143023.2d67d817.akpm@linux-foundation.org>
+	<A5ED84D3BB3A384992CBB9C77DEDA4D414A0339D@USINDEM103.corp.hds.com>
+ <20121130152149.6f266216.akpm@linux-foundation.org>
+In-Reply-To: <20121130152149.6f266216.akpm@linux-foundation.org>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8185,1.0.431,0.0.0000
+ definitions=2012-11-30_15:2012-11-30,2012-11-30,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
+ definitions=main-1211300262
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH <gregkh@linuxfoundation.org> writes:
+> What I actually meant was: can "this" CPU avoid stopping other CPUs so early?  If we stop the other CPUs when this CPU is ready to
+> stop itself then there will never be such deadlocks.
 
-> Is this really needed?  For the large majority of the stable
-> patches, specifically enumerating this isn't a big deal, it's a tiny
-> patch, and if you think I'll remember to tell you which specific
-> clause you didn't follow, then you think I have more spare time than
-> I really do.
+Let me explain my opinion.
+When we focus on the deadlock only,   the code will be simple by moving smp_send_stop() at the end of panic().
 
-Yeah, it was largely tongue-in-cheek.  :)
+But, panic situation is not normal.
+I don't think that keeping running multiple cpus is safe, because they may touch corrupted data/variables and unnecessary 
+panic/BUG() may happen.
 
-Although a hint of "not upstream" would have been helpful.  You
-obviously have the checklist in your head, and you (presumably) have a
-your formletter automated; it just seems that, as busy as the
-maintainers are, trading an extra 2s of your time for an hour of a
-contributor's time would sometimes be the right thing.
+IMO, cpus should be stopped "as early as" possible when panic happens.
+And then panic() has to take minimal steps with a single cpu.
+ - output messages
+ - kicking troubleshooting features like kdump/kmsg_dump
 
-Regardless, you're the one doing the work, not me.  (And you're an
-outright angel, compared to some other high-level maintainers, so I
-should simply count myself lucky.)
+Seiji
 
-> Sorry, but no, I don't think this patch is ok, especially that S15
-> clause, nice try :)
 
-Can't fault a guy for trying.  (Or, hopefully, can't fault him much...)
-
-Have a good weekend,
-t.
