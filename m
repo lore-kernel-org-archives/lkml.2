@@ -1,112 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020Ab2LALbN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Dec 2012 06:31:13 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:12034 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751346Ab2LALbL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Dec 2012 06:31:11 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Sat, 01 Dec 2012 03:30:47 -0800
-Message-ID: <50B9EA76.10803@nvidia.com>
-Date: Sat, 1 Dec 2012 13:31:02 +0200
-From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC v2 1/8] video: tegra: Add nvhost driver
-References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com> <1353935954-13763-2-git-send-email-tbergstrom@nvidia.com> <20121128212301.GA25531@avionic-0098.adnet.avionic-design.de> <50B73710.2040102@nvidia.com> <20121129114704.GB6150@avionic-0098.adnet.avionic-design.de> <50B874C7.5030208@nvidia.com> <20121130103850.GA28367@avionic-0098.adnet.avionic-design.de>
-In-Reply-To: <20121130103850.GA28367@avionic-0098.adnet.avionic-design.de>
-Content-Type: text/plain; charset="UTF-8"
+	id S1752014Ab2LALgr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Dec 2012 06:36:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63117 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751346Ab2LALgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 1 Dec 2012 06:36:45 -0500
+Date: Sat, 1 Dec 2012 09:36:14 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Lance Ortiz <lance.ortiz@hp.com>
+Cc: bhelgaas@google.com, lance_ortiz@hotmail.com, jiang.liu@huawei.com,
+        tony.luck@intel.com, bp@alien8.de, rostedt@goodmis.org,
+        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/3] aerdrv: Trace Event for AER
+Message-ID: <20121201093614.720aa96a@redhat.com>
+In-Reply-To: <20121130213330.7649.51101.stgit@grignak.americas.hpqcorp.net>
+References: <20121130213330.7649.51101.stgit@grignak.americas.hpqcorp.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30.11.2012 12:38, Thierry Reding wrote:
-> * PGP Signed by an unknown key
-> The above implies that when you submit code it shouldn't contain pieces
-> that prepare for possible future extensions which may or may not be
-> submitted (the exception being if such changes are part of a series
-> where subsequent patches actually use them). The outcome is that the
-> amount of cruft in the mainline kernel is kept to a minimum. And that's
-> a very good thing.
+Em Fri, 30 Nov 2012 14:33:30 -0700
+Lance Ortiz <lance.ortiz@hp.com> escreveu:
 
-We're now talking about actually a separation of logical and physical
-driver. I can't see why that's a bad thing. Especially considering that
-it's standard practice in well written drivers. Let's try to find a
-technical clean solution instead of debating politics. The latter should
-never be part of Linux kernel reviews.
-
->> I could do that for upstream. In downstream it cannot depend on DEBUG
->> flag, as these spews are an important part of how we debug problems with
->> customer devices and the DEBUG flag is never on in customer builds.
+> This header file will define a new trace event that will be triggered when
+> a AER event occurs.  The following data will be provided to the trace
+> event.
 > 
-> So I've just looked through these patches once more and I can't find
-> where this functionality is actually used. The host1x_syncpt_debug()
-> function is assigned to the nvhost_syncpt_ops.debug member, which in
-> turn is only used by nvhost_syncpt_debug(). The latter, however is
-> never used (not even by the debug infrastructure introduced in patch
-> 4).
+> char * name -	String containing the device path
 
-I have accidentally used the syncpt_op().debug() version directly. I'll
-fix that.
+You renamed it to dev_name. Please fix it at the commit comments.
 
-> Okay, so what you're sayingCan here is that a huge number of people haven't
-> been wise in using the preprocessor for register definitions all these
-> years. That's a pretty bold statement. Now I obviously haven't looked at
-> every single line in the kernel, but I have never come across this usage
-> for static inline functions used for this. So, to be honest, I don't
-> think this is really up for discussion. Of course if you come up with an
-> example where this is done in a similar way I could be persuaded
-> otherwise.
-
-We must've talked about a bit different things. For pure register defs,
-I can accommodate changing to #defines. We'd lose the code coverage
-analysis, though, but if the parentheses are a make-or-break question to
-upstreaming, I can change.
-
-I was thinking of definitions like this:
-
-static inline u32 host1x_sync_cfpeek_ctrl_cfpeek_addr_f(u32 v)
-{
-	return (v & 0x1ff) << 0;
-}
-
-versus
-
-#define host1x_sync_cfpeek_ctrl_cfpeek_addr_f(v) ((v) >> 16) & 0x3ff
-
-Both of these produce the same machine code and have same usage, but the
-latter has type checking and code coverage analysis and the former is
-(in my eyes) clearer. In both of these cases the usage is like this:
-
-writel(host1x_sync_cfpeek_ctrl_cfpeek_ena_f(1)
-		| host1x_sync_cfpeek_ctrl_cfpeek_channr_f(chid)
-		| host1x_sync_cfpeek_ctrl_cfpeek_addr_f(rd_ptr),
-	m->sync_aperture + host1x_sync_cfpeek_ctrl_r());
-
-> But I don't see how that's relevant here. Let me quote what you said
-> originally:
 > 
->> This is actually the only interface to read the max value to user space,
->> which can be useful for doing some comparisons that take wrapping into
->> account. But we could just add IOCTLs and remove the sysfs entries.
+> u32 status - 	Either the correctable or uncorrectable register
+> 		indicating what error or errors have been see.
 > 
-> To me that sounded like it was only used for debugging purposes. If you
-> actually need to access this from a userspace driver then, as opposed to
-> what I said earlier, this should be handled by some IOCTL.
+> u8 severity - 	error severity 0:NONFATAL 1:FATAL 2:CORRECTED
+> 
+> The trace event will also provide a trace string that may look like:
+> 
+> "0000:05:00.0 PCIe Bus Error:severity=Uncorrected (Non-Fatal), Poisoned
+> TLP"
+> 
+> v1-v2 Move header from include/ras/aer_event.h to
+> include/trace/events/ras.h
 
-There's a use for production code to know both the max and min, but I
-think we can just scope that use out from this patch sest.
+Please don't call it as "ras.h". Call it, instead, ras_aer.h (or something
+similar) as, if we're moving the tracing back to include/trace/events/,
+the same should happen for the memory error events.
 
-User space can use these two for checking if one of their fences has
-already passed by comparing if the current value is between min and
-fence, taking wrapping into account. In these cases user space can f.ex.
-leave a host1x wait out from a command stream.
+> 
+> Signed-off-by: Lance Ortiz <lance.ortiz@hp.com>
+> ---
+> 
+>  include/trace/events/ras.h |   77 ++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 77 insertions(+), 0 deletions(-)
+>  create mode 100644 include/trace/events/ras.h
+> 
+> diff --git a/include/trace/events/ras.h b/include/trace/events/ras.h
+> new file mode 100644
+> index 0000000..f77d009
+> --- /dev/null
+> +++ b/include/trace/events/ras.h
+> @@ -0,0 +1,77 @@
+> +#undef TRACE_SYSTEM
+> +#define TRACE_SYSTEM aer_event
+> +#define TRACE_INCLUDE_FILE ras 
+> +
+> +#if !defined(_TRACE_AER_H) || defined(TRACE_HEADER_MULTI_READ)
+> +#define _TRACE_AER_H
+> +
+> +#include <linux/tracepoint.h>
+> +#include <linux/edac.h>
+> +
+> +
+> +/*
+> + * Anhance Error Reporting (AER) PCIE Report Error
+> + *
+> + * These events are generated when hardware detects a corrected or
+> + * uncorrected event on a pci express device and reports
+> + * errors.  The event reports the following data.
+> + *
+> + * char * dev_name -	String containing the device identification
+> + * u32 status -		Either the correctable or uncorrectable register
+> + *			indicating what error or errors have been seen
+> + * u8 severity -	error severity 0:NONFATAL 1:FATAL 2:CORRECTED
+> + */
+> +
+> +#define correctable_error_string			\
+> +	{BIT(0),	"Receiver Error"},		\
+> +	{BIT(6),	"Bad TLP"},			\
+> +	{BIT(7),	"Bad DLLP"},			\
+> +	{BIT(8),	"RELAY_NUM Rollover"},		\
+> +	{BIT(12),	"Replay Timer Timeout"},	\
+> +	{BIT(13),	"Advisory Non-Fatal"}
 
-Terje
+Hmm... isn't something missing here? I'm seeing more bits defined at the
+PCIe V3.0 spec for Offset 10h:
+
+bit 14 - Corrected Internal Error 
+bit 15 - Header Log Overflow 
+
+> +#define uncorrectable_error_string			\
+> +	{BIT(4),	"Data Link Protocol"},		\
+> +	{BIT(12),	"Poisoned TLP"},		\
+> +	{BIT(13),	"Flow Control Protocol"},	\
+> +	{BIT(14),	"Completion Timeout"},		\
+> +	{BIT(15),	"Completer Abort"},		\
+> +	{BIT(16),	"Unexpected Completion"},	\
+> +	{BIT(17),	"Receiver Overflow"},		\
+> +	{BIT(18),	"Malformed TLP"},		\
+> +	{BIT(19),	"ECRC"},			\
+> +	{BIT(20),	"Unsupported Request"}
+
+Hmm... isn't something missing here? I'm seeing more bits defined at the
+PCIe V3.0 spec for Offset 04h:
+
+bit 5 - Surprise Down Error 
+bit 21 - ACS Violation 
+bit 22 - Uncorrectable Internal Error 
+bit 23 - MC Blocked TLP 
+bit 24 - AtomicOp Egress Blocked 
+bit 25 - TLP Prefix Blocked Error 
+
+> +
+> +TRACE_EVENT(aer_event,
+> +	TP_PROTO(const char *dev_name,
+> +		 const u32 status,
+> +		 const u8 severity),
+> +
+> +	TP_ARGS(dev_name, status, severity),
+> +
+> +	TP_STRUCT__entry(
+> +		__string(	dev_name,	dev_name	)
+> +		__field(	u32,		status		)
+> +		__field(	u8,		severity	)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__assign_str(dev_name, dev_name);
+> +		__entry->status		= status;
+> +		__entry->severity	= severity;
+> +	),
+> +
+> +	TP_printk("%s PCIe Bus Error: severity=%s, %s\n",
+> +		__get_str(dev_name),
+> +		(__entry->severity == HW_EVENT_ERR_CORRECTED) ? "Corrected" :
+> +			((__entry->severity == HW_EVENT_ERR_FATAL) ?
+> +			"Fatal" : "Uncorrected"),
+> +		__entry->severity == HW_EVENT_ERR_CORRECTED ?
+> +		__print_flags(__entry->status, "|", correctable_error_string) :
+> +		__print_flags(__entry->status, "|", uncorrectable_error_string))
+> +);
+> +
+> +#endif /* _TRACE_AER_H */
+> +
+> +/* This part must be outside protection */
+> +#include <trace/define_trace.h>
+> 
+
+
+-- 
+Regards,
+Mauro
