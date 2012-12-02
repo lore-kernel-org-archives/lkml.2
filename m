@@ -1,112 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372Ab2LBGPi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 01:15:38 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33587 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751560Ab2LBGPf (ORCPT
+	id S1752123Ab2LBGx2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 01:53:28 -0500
+Received: from mga03.intel.com ([143.182.124.21]:12757 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750869Ab2LBGx1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 01:15:35 -0500
-From: "Guillermo A. Amaral" <g@maral.me>
-To: dmitry.torokhov@gmail.com
-Cc: gregkh@linuxfoundation.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Guillermo A. Amaral" <g@maral.me>
-Subject: [PATCH 2/2] Input: xpad - Added new XBOX new VID/PID combinations.
-Date: Sat,  1 Dec 2012 22:15:31 -0800
-Message-Id: <1354428931-8694-1-git-send-email-g@maral.me>
-X-Mailer: git-send-email 1.7.8.6
+	Sun, 2 Dec 2012 01:53:27 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,200,1355126400"; 
+   d="scan'208";a="225349585"
+From: "Tc, Jenny" <jenny.tc@intel.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        anish kumar <anish198519851985@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+Subject: RE: [PATCH] EXTCON: Get and set cable properties
+Thread-Topic: [PATCH] EXTCON: Get and set cable properties
+Thread-Index: AQHNzLrkDMuiwiRHbU6SrIDfqYZ+tpgFGRSg
+Date: Sun, 2 Dec 2012 06:53:17 +0000
+Message-ID: <20ADAB092842284E95860F279283C564E2754F@BGSMSX101.gar.corp.intel.com>
+References: <1354052956-3394-1-git-send-email-jenny.tc@intel.com>
+In-Reply-To: <1354052956-3394-1-git-send-email-jenny.tc@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Guillermo A. Amaral" <g@maral.me>
 
-Added popular VP combinations for MadCatz, PDP and PowerA (new).
+Hi Myungjoo/Chanwoo/Aneesh/Anton,
 
-Removed Pelican 'TSZ' Wired Xbox 360 Controller since it's clashing with Edge
-wireless Controller and I failed to confirm the PID.
+Could you please review this. This is a follow up patch for "PATCH] extcon : callback function to read cable property"
 
-Signed-off-by: "Guillermo A. Amaral B." <g@maral.me>
----
- drivers/input/joystick/xpad.c |   27 ++++++++++++++++++---------
- 1 files changed, 18 insertions(+), 9 deletions(-)
+-jtc
 
-diff --git a/drivers/input/joystick/xpad.c b/drivers/input/joystick/xpad.c
-index 3d8f39b..d6cbfe9 100644
---- a/drivers/input/joystick/xpad.c
-+++ b/drivers/input/joystick/xpad.c
-@@ -118,11 +118,12 @@ static const struct xpad_device {
- 	u8 xtype;
- } xpad_device[] = {
- 	{ 0x045e, 0x0202, "Microsoft X-Box pad v1 (US)", 0, XTYPE_XBOX },
--	{ 0x045e, 0x0289, "Microsoft X-Box pad v2 (US)", 0, XTYPE_XBOX },
- 	{ 0x045e, 0x0285, "Microsoft X-Box pad (Japan)", 0, XTYPE_XBOX },
- 	{ 0x045e, 0x0287, "Microsoft Xbox Controller S", 0, XTYPE_XBOX },
-+	{ 0x045e, 0x0289, "Microsoft X-Box pad v2 (US)", 0, XTYPE_XBOX },
-+	{ 0x045e, 0x028e, "Microsoft X-Box 360 pad", 0, XTYPE_XBOX360 },
-+	{ 0x045e, 0x0291, "Xbox 360 Wireless Receiver (XBOX)", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360W },
- 	{ 0x045e, 0x0719, "Xbox 360 Wireless Receiver", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360W },
--	{ 0x0c12, 0x8809, "RedOctane Xbox Dance Pad", DANCEPAD_MAP_CONFIG, XTYPE_XBOX },
- 	{ 0x044f, 0x0f07, "Thrustmaster, Inc. Controller", 0, XTYPE_XBOX },
- 	{ 0x046d, 0xc242, "Logitech Chillstream Controller", 0, XTYPE_XBOX360 },
- 	{ 0x046d, 0xca84, "Logitech Xbox Cordless Controller", 0, XTYPE_XBOX },
-@@ -136,9 +137,12 @@ static const struct xpad_device {
- 	{ 0x0738, 0x4540, "Mad Catz Beat Pad", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX },
- 	{ 0x0738, 0x4556, "Mad Catz Lynx Wireless Controller", 0, XTYPE_XBOX },
- 	{ 0x0738, 0x4716, "Mad Catz Wired Xbox 360 Controller", 0, XTYPE_XBOX360 },
-+	{ 0x0738, 0x4728, "Mad Catz Street Fighter IV FightPad", XTYPE_XBOX360 },
- 	{ 0x0738, 0x4738, "Mad Catz Wired Xbox 360 Controller (SFIV)", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
- 	{ 0x0738, 0x6040, "Mad Catz Beat Pad Pro", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX },
-+	{ 0x0738, 0xbeef, "Mad Catz JOYTECH NEO SE Advanced GamePad", XTYPE_XBOX360 },
- 	{ 0x0c12, 0x8802, "Zeroplus Xbox Controller", 0, XTYPE_XBOX },
-+	{ 0x0c12, 0x8809, "RedOctane Xbox Dance Pad", DANCEPAD_MAP_CONFIG, XTYPE_XBOX },
- 	{ 0x0c12, 0x880a, "Pelican Eclipse PL-2023", 0, XTYPE_XBOX },
- 	{ 0x0c12, 0x8810, "Zeroplus Xbox Controller", 0, XTYPE_XBOX },
- 	{ 0x0c12, 0x9902, "HAMA VibraX - *FAULTY HARDWARE*", 0, XTYPE_XBOX },
-@@ -148,24 +152,28 @@ static const struct xpad_device {
- 	{ 0x0e6f, 0x0003, "Logic3 Freebird wireless Controller", 0, XTYPE_XBOX },
- 	{ 0x0e6f, 0x0005, "Eclipse wireless Controller", 0, XTYPE_XBOX },
- 	{ 0x0e6f, 0x0006, "Edge wireless Controller", 0, XTYPE_XBOX },
--	{ 0x0e6f, 0x0006, "Pelican 'TSZ' Wired Xbox 360 Controller", 0, XTYPE_XBOX360 },
-+	{ 0x0e6f, 0x0105, "HSM3 Xbox360 dancepad", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360 },
- 	{ 0x0e6f, 0x0201, "Pelican PL-3601 'TSZ' Wired Xbox 360 Controller", 0, XTYPE_XBOX360 },
-+	{ 0x0e6f, 0x0213, "Afterglow Gamepad for Xbox 360", 0, XTYPE_XBOX360 },
- 	{ 0x0e8f, 0x0201, "SmartJoy Frag Xpad/PS2 adaptor", 0, XTYPE_XBOX },
-+	{ 0x0f0d, 0x000d, "Hori Fighting Stick EX2", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
-+	{ 0x0f0d, 0x0016, "Hori Real Arcade Pro.EX", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
- 	{ 0x0f30, 0x0202, "Joytech Advanced Controller", 0, XTYPE_XBOX },
- 	{ 0x0f30, 0x8888, "BigBen XBMiniPad Controller", 0, XTYPE_XBOX },
- 	{ 0x102c, 0xff0c, "Joytech Wireless Advanced Controller", 0, XTYPE_XBOX },
--	{ 0x12ab, 0x8809, "Xbox DDR dancepad", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX },
- 	{ 0x12ab, 0x0004, "Honey Bee Xbox360 dancepad", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360 },
--	{ 0x0e6f, 0x0105, "HSM3 Xbox360 dancepad", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360 },
-+	{ 0x12ab, 0x8809, "Xbox DDR dancepad", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX },
- 	{ 0x1430, 0x4748, "RedOctane Guitar Hero X-plorer", 0, XTYPE_XBOX360 },
- 	{ 0x1430, 0x8888, "TX6500+ Dance Pad (first generation)", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX },
- 	{ 0x146b, 0x0601, "BigBen Interactive XBOX 360 Controller", 0, XTYPE_XBOX360 },
--	{ 0x045e, 0x028e, "Microsoft X-Box 360 pad", 0, XTYPE_XBOX360 },
-+	{ 0x1689, 0xfd00, "Razer Onza Tournament Edition", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360 },
- 	{ 0x1bad, 0x0002, "Harmonix Rock Band Guitar", 0, XTYPE_XBOX360 },
- 	{ 0x1bad, 0x0003, "Harmonix Rock Band Drumkit", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360 },
--	{ 0x0f0d, 0x0016, "Hori Real Arcade Pro.EX", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
--	{ 0x0f0d, 0x000d, "Hori Fighting Stick EX2", MAP_TRIGGERS_TO_BUTTONS, XTYPE_XBOX360 },
--	{ 0x1689, 0xfd00, "Razer Onza Tournament Edition", MAP_DPAD_TO_BUTTONS, XTYPE_XBOX360 },
-+	{ 0x1bad, 0xf016, "Mad Catz Xbox 360 Controller", 0, XTYPE_XBOX360 },
-+	{ 0x1bad, 0xf028, "Street Fighter IV FightPad", 0, XTYPE_XBOX360 },
-+	{ 0x1bad, 0xf901, "Gamestop Xbox 360 Controller", 0, XTYPE_XBOX360 },
-+	{ 0x1bad, 0xf903, "Tron Xbox 360 controller", 0, XTYPE_XBOX360 },
-+	{ 0x24c6, 0x5300, "PowerA MINI PROEX Controller", 0, XTYPE_XBOX360 },
- 	{ 0xffff, 0xffff, "Chinese-made Xbox Controller", 0, XTYPE_XBOX },
- 	{ 0x0000, 0x0000, "Generic X-Box pad", 0, XTYPE_UNKNOWN }
- };
-@@ -248,6 +256,7 @@ static struct usb_device_id xpad_table[] = {
- 	XPAD_XBOX360_VENDOR(0x1bad),		/* Harminix Rock Band Guitar and Drums */
- 	XPAD_XBOX360_VENDOR(0x0f0d),		/* Hori Controllers */
- 	XPAD_XBOX360_VENDOR(0x1689),		/* Razer Onza */
-+	XPAD_XBOX360_VENDOR(0x24c6),		/* PowerA Controllers */
- 	{ }
- };
- 
--- 
-1.7.8.6
+> Subject: [PATCH] EXTCON: Get and set cable properties
+> 
+> Existing EXTCON implementation doesn't give a mechanim to read the cable
+> properties and extra states a cable needs to support. There are scenarios
+> where a cable can have more than two
+> states(CONNECT/DISCONNECT/SUSPEND/RESUME etc) and can have some
+> properties associated with cables(mA)
+> 
+> This patch introduces interface to get and set cable properties from EXTCON
+> framework. The cable property can be set either by the extcon cable
+> provider or by other subsystems who know the cable properties using eth
+> API extcon_cable_set_data()
+> 
+> When the consumer gets a notification from the extcon, it can use the
+> extcon_cable_get_data() to get the cable properties irrespective of who
+> provides the cable data.
+> 
+> This gives a single interface for setting and getting the cable properties.
+> 
+> Signed-off-by: Jenny TC <jenny.tc@intel.com>
+> ---
+>  drivers/extcon/extcon-class.c |   30 ++++++++++++++++++++++++++++++
+>  include/linux/extcon.h        |   39
+> +++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 69 insertions(+)
+> 
+> diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
+> index d398821..304f343 100644
+> --- a/drivers/extcon/extcon-class.c
+> +++ b/drivers/extcon/extcon-class.c
+> @@ -545,6 +545,36 @@ int extcon_unregister_notifier(struct extcon_dev
+> *edev,  }  EXPORT_SYMBOL_GPL(extcon_unregister_notifier);
+> 
+> +/**
+> + * extcon_cable_set_data() - Set the data structure for a cable
+> + * @edev:	the extcon device
+> + * @cable_index:	the cable index of the correspondant
+> + * @type:	type of the data structure
+> + * @data:
+> + */
+> +void extcon_cable_set_data(struct extcon_dev *edev, int cable_index,
+> +			   enum extcon_cable_name type,
+> +			   union extcon_cable_data data)
+> +{
+> +	edev->cables[cable_index].type = type;
+> +	edev->cables[cable_index].data = data; }
+> +
+> +/**
+> + * extcon_cable_get_data() - Get the data structure for a cable
+> + * @edev:	the extcon device
+> + * @cable_index:	the cable index of the correspondant
+> + * @type:	type of the data structure
+> + * @data:	the corresponding data structure (e.g., regulator)
+> + */
+> +void extcon_cable_get_data(struct extcon_dev *edev, int cable_index,
+> +			   enum extcon_cable_name *type,
+> +			   union extcon_cable_data *data)
+> +{
+> +	*type = edev->cables[cable_index].type;
+> +	*data = edev->cables[cable_index].data; }
+> +
+>  static struct device_attribute extcon_attrs[] = {
+>  	__ATTR(state, S_IRUGO | S_IWUSR, state_show, state_store),
+>  	__ATTR_RO(name),
+> diff --git a/include/linux/extcon.h b/include/linux/extcon.h index
+> 2c26c14..4556cc5 100644
+> --- a/include/linux/extcon.h
+> +++ b/include/linux/extcon.h
+> @@ -135,6 +135,19 @@ struct extcon_dev {
+>  	struct device_attribute *d_attrs_muex;  };
+> 
+> +/* FIXME: Is this the right place for this structure definition?
+> + * Do we need to move it to power_supply.h?
+> + */
+> +struct extcon_chrgr_cable_props {
+> +	unsigned long state;
+> +	int mA;
+> +};
+> +
+> +union extcon_cable_data {
+> +	struct extcon_chrgr_cable_props chrgr_cbl_props;
+> +	/* Please add accordingly*/
+> +};
+> +
+>  /**
+>   * struct extcon_cable	- An internal data for each cable of extcon device.
+>   * @edev	The extcon device
+> @@ -143,6 +156,8 @@ struct extcon_dev {
+>   * @attr_name	"name" sysfs entry
+>   * @attr_state	"state" sysfs entry
+>   * @attrs	Array pointing to attr_name and attr_state for attr_g
+> + * @type:	The type of @data.
+> + * @data:	The data structure representing the status and states of this
+> cable.
+>   */
+>  struct extcon_cable {
+>  	struct extcon_dev *edev;
+> @@ -153,6 +168,11 @@ struct extcon_cable {
+>  	struct device_attribute attr_state;
+> 
+>  	struct attribute *attrs[3]; /* to be fed to attr_g.attrs */
+> +
+> +	union extcon_cable_data data;
+> +
+> +	/* extcon cable type */
+> +	enum extcon_cable_name type;
+>  };
+> 
+>  /**
+> @@ -183,6 +203,17 @@ extern void extcon_dev_unregister(struct
+> extcon_dev *edev);  extern struct extcon_dev
+> *extcon_get_extcon_dev(const char *extcon_name);
+> 
+>  /*
+> + * Following APIs are for managing the status and states of each cable.
+> + * For example, if a cable is represented as a regulator, then the
+> +cable
+> + * may have struct regulator as its data.
+> + */
+> +extern void extcon_cable_set_data(struct extcon_dev *edev, int
+> cable_index,
+> +			enum extcon_cable_name type,
+> +			union extcon_cable_data data);
+> +extern void extcon_cable_get_data(struct extcon_dev *edev, int
+> cable_index,
+> +			enum extcon_cable_name *type,
+> +			union extcon_cable_data *data);
+> +/*
+>   * get/set/update_state access the 32b encoded state value, which
+> represents
+>   * states of all possible cables of the multistate port. For example, if one
+>   * calls extcon_set_state(edev, 0x7), it may mean that all the three cables
+> @@ -244,6 +275,14 @@ static inline int extcon_dev_register(struct
+> extcon_dev *edev,
+> 
+>  static inline void extcon_dev_unregister(struct extcon_dev *edev) { }
+> 
+> +static void extcon_cable_set_data(struct extcon_dev *edev, int
+> cable_index,
+> +				enum extcon_cable_name type,
+> +				union extcon_cable_data data) { }
+> +
+> +static void extcon_cable_get_data(struct extcon_dev *edev, int
+> cable_index,
+> +				enum extcon_cable_name *type,
+> +				union extcon_cable_data *data) { }
+> +
+>  static inline u32 extcon_get_state(struct extcon_dev *edev)  {
+>  	return 0;
+> --
+> 1.7.9.5
 
