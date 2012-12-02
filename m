@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754099Ab2LBSoM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 13:44:12 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:64238 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754063Ab2LBSoF (ORCPT
+	id S1754213Ab2LBS4M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 13:56:12 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:45147 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754003Ab2LBSoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 13:44:05 -0500
+	Sun, 2 Dec 2012 13:44:10 -0500
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
@@ -21,9 +21,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
         Alex Shi <lkml.alex@gmail.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH 04/52] mm/numa: define _PAGE_NUMA
-Date: Sun,  2 Dec 2012 19:42:56 +0100
-Message-Id: <1354473824-19229-5-git-send-email-mingo@kernel.org>
+Subject: [PATCH 06/52] mm/numa: Support NUMA hinting page faults from gup/gup_fast
+Date: Sun,  2 Dec 2012 19:42:58 +0100
+Message-Id: <1354473824-19229-7-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1354473824-19229-1-git-send-email-mingo@kernel.org>
 References: <1354473824-19229-1-git-send-email-mingo@kernel.org>
@@ -33,37 +33,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andrea Arcangeli <aarcange@redhat.com>
 
-The objective of _PAGE_NUMA is to be able to trigger NUMA
-hinting page faults to identify the per NUMA node working set of
-the thread at runtime.
+Introduce FOLL_NUMA to tell follow_page to check
+pte/pmd_numa. get_user_pages must use FOLL_NUMA, and it's safe
+to do so because it always invokes handle_mm_fault and retries
+the follow_page later.
 
-Arming the NUMA hinting page fault mechanism works similarly to
-setting up a mprotect(PROT_NONE) virtual range: the present bit
-is cleared at the same time that _PAGE_NUMA is set, so when the
-fault triggers we can identify it as a NUMA hinting page fault.
+KVM secondary MMU page faults will trigger the NUMA hinting page
+faults through gup_fast -> get_user_pages -> follow_page ->
+handle_mm_fault.
 
-_PAGE_NUMA on x86 shares the same bit number of _PAGE_PROTNONE
-(but it could also use a different bitflag, it's up to the
-architecture to decide).
+Other follow_page callers like KSM should not use FOLL_NUMA, or
+they would fail to get the pages if they use follow_page instead
+of get_user_pages.
 
-It would be confusing to call the "NUMA hinting page faults" as
-"do_prot_none faults". They're different events and _PAGE_NUMA
-doesn't alter the semantics of mprotect(PROT_NONE) in any way.
+[ This patch was picked up from the AutoNUMA tree. ]
 
-Sharing the same bitflag with _PAGE_PROTNONE in fact complicates
-things: it requires us to ensure the code paths executed by
-_PAGE_PROTNONE remains mutually exclusive to the code paths
-executed by _PAGE_NUMA at all times, to avoid _PAGE_NUMA and
-_PAGE_PROTNONE to step into each other toes.
-
-Because we want to be able to set this bitflag in any
-established pte or pmd (while clearing the present bit at the
-same time) without losing information, this bitflag must never
-be set when the pte and pmd are present, so the bitflag picked
-for _PAGE_NUMA usage, must not be used by the swap entry format.
-
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Originally-by: Andrea Arcangeli <aarcange@redhat.com>
 Reviewed-by: Rik van Riel <riel@redhat.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Hugh Dickins <hughd@google.com>
@@ -73,43 +58,70 @@ Cc: Alex Shi <lkml.alex@gmail.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+[ ported to this tree. ]
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/include/asm/pgtable_types.h | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ include/linux/mm.h |  1 +
+ mm/memory.c        | 17 +++++++++++++++++
+ 2 files changed, 18 insertions(+)
 
-diff --git a/arch/x86/include/asm/pgtable_types.h b/arch/x86/include/asm/pgtable_types.h
-index ec8a1fc..3c32db8 100644
---- a/arch/x86/include/asm/pgtable_types.h
-+++ b/arch/x86/include/asm/pgtable_types.h
-@@ -64,6 +64,26 @@
- #define _PAGE_FILE	(_AT(pteval_t, 1) << _PAGE_BIT_FILE)
- #define _PAGE_PROTNONE	(_AT(pteval_t, 1) << _PAGE_BIT_PROTNONE)
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 1856c62..fa16152 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1572,6 +1572,7 @@ struct page *follow_page(struct vm_area_struct *, unsigned long address,
+ #define FOLL_MLOCK	0x40	/* mark page as mlocked */
+ #define FOLL_SPLIT	0x80	/* don't return transhuge pages, split them */
+ #define FOLL_HWPOISON	0x100	/* check page is hwpoisoned */
++#define FOLL_NUMA	0x200	/* force NUMA hinting page fault */
  
-+/*
-+ * _PAGE_NUMA indicates that this page will trigger a numa hinting
-+ * minor page fault to gather numa placement statistics (see
-+ * pte_numa()). The bit picked (8) is within the range between
-+ * _PAGE_FILE (6) and _PAGE_PROTNONE (8) bits. Therefore, it doesn't
-+ * require changes to the swp entry format because that bit is always
-+ * zero when the pte is not present.
-+ *
-+ * The bit picked must be always zero when the pmd is present and not
-+ * present, so that we don't lose information when we set it while
-+ * atomically clearing the present bit.
-+ *
-+ * Because we shared the same bit (8) with _PAGE_PROTNONE this can be
-+ * interpreted as _PAGE_NUMA only in places that _PAGE_PROTNONE
-+ * couldn't reach, like handle_mm_fault() (see access_error in
-+ * arch/x86/mm/fault.c, the vma protection must not be PROT_NONE for
-+ * handle_mm_fault() to be invoked).
-+ */
-+#define _PAGE_NUMA	_PAGE_PROTNONE
+ typedef int (*pte_fn_t)(pte_t *pte, pgtable_t token, unsigned long addr,
+ 			void *data);
+diff --git a/mm/memory.c b/mm/memory.c
+index e0ebd6c..2daa3a7 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1517,6 +1517,8 @@ struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
+ 		page = follow_huge_pmd(mm, address, pmd, flags & FOLL_WRITE);
+ 		goto out;
+ 	}
++	if ((flags & FOLL_NUMA) && pmd_numa(*pmd))
++		goto no_page_table;
+ 	if (pmd_trans_huge(*pmd)) {
+ 		if (flags & FOLL_SPLIT) {
+ 			split_huge_page_pmd(mm, pmd);
+@@ -1546,6 +1548,8 @@ split_fallthrough:
+ 	pte = *ptep;
+ 	if (!pte_present(pte))
+ 		goto no_page;
++	if ((flags & FOLL_NUMA) && pte_numa(pte))
++		goto no_page;
+ 	if ((flags & FOLL_WRITE) && !pte_write(pte))
+ 		goto unlock;
+ 
+@@ -1697,6 +1701,19 @@ int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+ 			(VM_WRITE | VM_MAYWRITE) : (VM_READ | VM_MAYREAD);
+ 	vm_flags &= (gup_flags & FOLL_FORCE) ?
+ 			(VM_MAYREAD | VM_MAYWRITE) : (VM_READ | VM_WRITE);
 +
- #define _PAGE_TABLE	(_PAGE_PRESENT | _PAGE_RW | _PAGE_USER |	\
- 			 _PAGE_ACCESSED | _PAGE_DIRTY)
- #define _KERNPG_TABLE	(_PAGE_PRESENT | _PAGE_RW | _PAGE_ACCESSED |	\
++	/*
++	 * If FOLL_FORCE and FOLL_NUMA are both set, handle_mm_fault
++	 * would be called on PROT_NONE ranges. We must never invoke
++	 * handle_mm_fault on PROT_NONE ranges or the NUMA hinting
++	 * page faults would unprotect the PROT_NONE ranges if
++	 * _PAGE_NUMA and _PAGE_PROTNONE are sharing the same pte/pmd
++	 * bitflag. So to avoid that, don't set FOLL_NUMA if
++	 * FOLL_FORCE is set.
++	 */
++	if (!(gup_flags & FOLL_FORCE))
++		gup_flags |= FOLL_NUMA;
++
+ 	i = 0;
+ 
+ 	do {
 -- 
 1.7.11.7
 
