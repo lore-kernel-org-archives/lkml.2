@@ -1,184 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990Ab2LBQNd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 11:13:33 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:57795 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753905Ab2LBQN3 (ORCPT
+	id S1753723Ab2LBQeb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 11:34:31 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:42867 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751631Ab2LBQe3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 11:13:29 -0500
-From: Ingo Molnar <mingo@kernel.org>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: [PATCH 2/2] sched: Add RSS filter to NUMA-balancing
-Date: Sun,  2 Dec 2012 17:13:16 +0100
-Message-Id: <1354464796-14343-3-git-send-email-mingo@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1354464796-14343-1-git-send-email-mingo@kernel.org>
-References: <1354464796-14343-1-git-send-email-mingo@kernel.org>
+	Sun, 2 Dec 2012 11:34:29 -0500
+Date: Mon, 3 Dec 2012 00:34:50 +0800
+From: Wang YanQing <udknight@gmail.com>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: nic_swsd@realtek.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3]realtek:r8169: Bugfix or workaround for missing
+ extended GigaMAC registers settings
+Message-ID: <20121202163449.GA20796@udknight>
+Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
+	Francois Romieu <romieu@fr.zoreil.com>, nic_swsd@realtek.com,
+	netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20121130232152.GA10960@udknight>
+ <20121201114401.GA3989@electric-eye.fr.zoreil.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121201114401.GA3989@electric-eye.fr.zoreil.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NUMA-balancing, combined with NUMA-affine memory migration,
-is a relatively long-term process (compared to the typical
-time scale of scheduling) that takes time to establish and
-converge - on the time scale of of several seconds or more.
+On Sat, Dec 01, 2012 at 12:44:01PM +0100, Francois Romieu wrote:
+> Wang YanQing <udknight@gmail.com> :
+> > +	/*
+> > +	 *This is a fix for BIOS forget to set
+> > +	 *extend GigaMAC registers
+> > +	 *Wang YanQing 12/1/2012
+> > +	 */
+> 
+> This part will go into the changelog.
+I think brevity comment in code is good for
+code's readableness. We read out the MAC{0,4},
+and write them back in next line to call rtl_rar_set,
+it don't have obvious sense for new readers, so I think 
+the brevity comment is good. Could you consider remaining
+the comment except the no sense line "Wang YanQing 12/1/2012"?
 
-Small, short-lived and don't have much of a NUMA placement
-cost to begin with, so don't NUMA-balance them. A task needs
-to execute long enough and needs to establish a large enough
-user-space memory image to benefit from more intelligent
-NUMA balancing.
+> 
+> > +	if (tp->mac_version == RTL_GIGA_MAC_VER_34) {
+> > +	    rtl_rar_set(tp, dev->dev_addr);
+> > +	}
+> 
+> rtl_rar_set already includes a RTL_GIGA_MAC_VER_34 test and non-8168evl
+> devices are already able to stand an extra MAC{0, 4} write. I'll check
+> it does not hurt on different 81xx devices and submit an update.
+I add the test code to ignore the an extra MAC{0,4} write for non-8168evl
+devices, and if you think it is not a issue, then I agree with you to remove 
+the test code.
 
-We already have a CPU time limit before tasks are affected
-by NUMA balancing - this change adds the memory equivalent:
-by introducing an RSS limit of 128 MBs.
-
-In practice this excludes most short-lived tasks - the limit
-is in fact probably a bit on the conservative side - but with
-intrusive kernel features conservative is good.
-
-The /proc/sys/kernel/sched_numa_rss_threshold_mb value can be
-tuned runtime - setting it to 0 turns off this filter.
-
-To implement the RSS filter first factor out a clean
-task_numa_candidate() function and comment on the various
-reasons of why we wouldn't want to begin to NUMA-balance
-a particular task (yet). Then add the RSS check.
-
-Note, we are using the p->hiwater_rss value instead of the
-current RSS size. We do this to avoid tasks flipping in and
-out of the limit, if their RSS fluctuates around the limit.
-The RSS high-water value increases monotonically in the
-life-time of a task, so there's a single, precise transition
-to NUMA-balancing as the limit is crossed.
-
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Hugh Dickins <hughd@google.com>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- include/linux/sched.h |  1 +
- kernel/sched/fair.c   | 50 ++++++++++++++++++++++++++++++++++++++++++++------
- kernel/sysctl.c       |  7 +++++++
- 3 files changed, 52 insertions(+), 6 deletions(-)
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index ce834e7..6a29dfd 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2059,6 +2059,7 @@ extern unsigned int sysctl_sched_numa_scan_period_min;
- extern unsigned int sysctl_sched_numa_scan_period_max;
- extern unsigned int sysctl_sched_numa_scan_size_min;
- extern unsigned int sysctl_sched_numa_scan_size_max;
-+extern unsigned int sysctl_sched_numa_rss_threshold;
- extern unsigned int sysctl_sched_numa_settle_count;
- 
- #ifdef CONFIG_SCHED_DEBUG
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 9667191..eb49f07 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -812,6 +812,8 @@ unsigned int sysctl_sched_numa_scan_period_max	__read_mostly = 100*16;	/* ms */
- unsigned int sysctl_sched_numa_scan_size_min	__read_mostly =  32;	/* MB */
- unsigned int sysctl_sched_numa_scan_size_max	__read_mostly = 512;	/* MB */
- 
-+unsigned int sysctl_sched_numa_rss_threshold	__read_mostly = 128;	/* MB */
-+
- /*
-  * Wait for the 2-sample stuff to settle before migrating again
-  */
-@@ -2486,17 +2488,53 @@ static void task_tick_numa_placement(struct rq *rq, struct task_struct *curr)
- 	task_work_add(curr, work, true);
- }
- 
--static void task_tick_numa(struct rq *rq, struct task_struct *curr)
-+/*
-+ * Is this task worth NUMA-scanning and NUMA-balancing?
-+ */
-+static bool task_numa_candidate(struct task_struct *p)
- {
-+	unsigned long rss_pages;
-+
-+	/* kthreads don't have any user-space memory to scan: */
-+	if (!p->mm || !p->numa_faults)
-+		return false;
-+
- 	/*
--	 * We don't care about NUMA placement if we don't have memory
--	 * or are exiting:
-+	 * Exiting tasks won't touch any user-space memory in the future,
-+	 * and this also avoids a race with work_exit():
- 	 */
--	if (!curr->mm || (curr->flags & PF_EXITING) || !curr->numa_faults)
--		return;
-+	if (p->flags & PF_EXITING)
-+		return false;
- 
- 	/* Don't disturb hard-bound tasks: */
--	if (sched_feat(NUMA_EXCLUDE_AFFINE) && (curr->nr_cpus_allowed != num_online_cpus())) {
-+	if (sched_feat(NUMA_EXCLUDE_AFFINE)) {
-+		if (p->nr_cpus_allowed != num_online_cpus())
-+			return false;
-+	}
-+
-+	/*
-+	 * NUMA-balancing, combined with NUMA memory migration,
-+	 * is a long-term process that takes time to establish
-+	 * and converge, on the time scale of of several seconds
-+	 * or more.
-+	 *
-+	 * Small tasks are usually short-lived and don't have much
-+	 * of a NUMA placement cost to begin with, so don't
-+	 * NUMA-balance them:
-+	 */
-+	rss_pages = sysctl_sched_numa_rss_threshold;
-+	rss_pages <<= 20 - PAGE_SHIFT; /* MB to pages */
-+
-+	if (p->mm->hiwater_rss < rss_pages)
-+		return false;
-+
-+	return true;
-+}
-+
-+static void task_tick_numa(struct rq *rq, struct task_struct *curr)
-+{
-+	/* Cheap checks first: */
-+	if (!task_numa_candidate(curr)) {
- 		if (curr->numa_shared >= 0)
- 			curr->numa_shared = -1;
- 		return;
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index b6ddfae..75ab895 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -388,6 +388,13 @@ static struct ctl_table kern_table[] = {
- 		.proc_handler	= proc_dointvec,
- 	},
- 	{
-+		.procname	= "sched_numa_rss_threshold_mb",
-+		.data		= &sysctl_sched_numa_rss_threshold,
-+		.maxlen		= sizeof(unsigned int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{
- 		.procname	= "sched_numa_settle_count",
- 		.data		= &sysctl_sched_numa_settle_count,
- 		.maxlen		= sizeof(unsigned int),
--- 
-1.7.11.7
+Thanks.
 
