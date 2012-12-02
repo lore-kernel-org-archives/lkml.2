@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754567Ab2LBSyd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 13:54:33 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:45147 "EHLO
+	id S1754306Ab2LBSyv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 13:54:51 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:34653 "EHLO
 	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754240Ab2LBSo1 (ORCPT
+	with ESMTP id S1754104Ab2LBSoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 13:44:27 -0500
+	Sun, 2 Dec 2012 13:44:20 -0500
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
@@ -22,9 +22,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
         Alex Shi <lkml.alex@gmail.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH 14/52] mm/mempolicy: Add MPOL_MF_LAZY
-Date: Sun,  2 Dec 2012 19:43:06 +0100
-Message-Id: <1354473824-19229-15-git-send-email-mingo@kernel.org>
+Subject: [PATCH 11/52] mm/mempolicy: Check for misplaced page
+Date: Sun,  2 Dec 2012 19:43:03 +0100
+Message-Id: <1354473824-19229-12-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1354473824-19229-1-git-send-email-mingo@kernel.org>
 References: <1354473824-19229-1-git-send-email-mingo@kernel.org>
@@ -34,28 +34,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Lee Schermerhorn <lee.schermerhorn@hp.com>
 
-NOTE: Once again there is a lot of patch reuse and the end
-      result is sufficiently different that I had to drop
-      the prior signed-offs.
-      Will re-add if the original authors are ok with that.
+This patch provides a new function to test whether a page
+resides on a node that is appropriate for the mempolicy for the
+vma and address where the page is supposed to be mapped.  This
+involves looking up the node where the page belongs.  So, the
+function returns that node so that it may be used to allocated
+the page without consulting the policy again.
 
-This patch adds another mbind() flag to request "lazy
-migration".  The flag, MPOL_MF_LAZY, modifies MPOL_MF_MOVE* such
-that the selected pages are marked PROT_NONE. The pages will be
-migrated in the fault path on "first touch", if the policy
-dictates at that time.
+A subsequent patch will call this function from the fault path.
+Because of this, I don't want to go ahead and allocate the page,
+e.g., via alloc_page_vma() only to have to free it if it has the
+correct policy.  So, I just mimic the alloc_page_vma() node
+computation logic--sort of.
 
-"Lazy Migration" will allow testing of migrate-on-fault via
-mbind(). Also allows applications to specify that only
-subsequently touched pages be migrated to obey new policy,
-instead of all pages in range. This can be useful for
-multi-threaded applications working on a large shared data area
-that is initialized by an initial thread resulting in all pages
-on one [or a few, if overflowed] nodes. After PROT_NONE, the
-pages in regions assigned to the worker threads will be
-automatically migrated local to the threads on 1st touch.
+Note:  we could use this function to implement a MPOL_MF_STRICT
+behavior when migrating pages to match mbind() mempolicy--e.g.,
+to ensure that pages in an interleaved range are reinterleaved
+rather than left where they are when they reside on any page in
+the interleave nodemask.
 
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
 Reviewed-by: Rik van Riel <riel@redhat.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Hugh Dickins <hughd@google.com>
@@ -65,311 +63,143 @@ Cc: Alex Shi <lkml.alex@gmail.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Andrea Arcangeli <aarcange@redhat.com>
+[ Added MPOL_F_LAZY to trigger migrate-on-fault;
+  simplified code now that we don't have to bother
+  with special crap for interleaved ]
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/mm.h             |   5 ++
- include/uapi/linux/mempolicy.h |  13 ++-
- mm/mempolicy.c                 | 185 +++++++++++++++++++++++++++++++++++++----
- 3 files changed, 185 insertions(+), 18 deletions(-)
+ include/linux/mempolicy.h      |  8 +++++
+ include/uapi/linux/mempolicy.h |  1 +
+ mm/mempolicy.c                 | 76 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 85 insertions(+)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index fa16152..471185e 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1551,6 +1551,11 @@ static inline pgprot_t vm_get_page_prot(unsigned long vm_flags)
+diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
+index e5ccb9d..c511e25 100644
+--- a/include/linux/mempolicy.h
++++ b/include/linux/mempolicy.h
+@@ -198,6 +198,8 @@ static inline int vma_migratable(struct vm_area_struct *vma)
+ 	return 1;
  }
- #endif
  
-+#ifdef CONFIG_ARCH_USES_NUMA_PROT_NONE
-+void change_prot_numa(struct vm_area_struct *vma,
-+			unsigned long start, unsigned long end);
-+#endif
++extern int mpol_misplaced(struct page *, struct vm_area_struct *, unsigned long);
 +
- struct vm_area_struct *find_extend_vma(struct mm_struct *, unsigned long addr);
- int remap_pfn_range(struct vm_area_struct *, unsigned long addr,
- 			unsigned long pfn, unsigned long size, pgprot_t);
-diff --git a/include/uapi/linux/mempolicy.h b/include/uapi/linux/mempolicy.h
-index 472de8a..6a1baae 100644
---- a/include/uapi/linux/mempolicy.h
-+++ b/include/uapi/linux/mempolicy.h
-@@ -49,9 +49,16 @@ enum mpol_rebind_step {
+ #else
  
- /* Flags for mbind */
- #define MPOL_MF_STRICT	(1<<0)	/* Verify existing pages in the mapping */
--#define MPOL_MF_MOVE	(1<<1)	/* Move pages owned by this process to conform to mapping */
--#define MPOL_MF_MOVE_ALL (1<<2)	/* Move every page to conform to mapping */
--#define MPOL_MF_INTERNAL (1<<3)	/* Internal flags start here */
-+#define MPOL_MF_MOVE	 (1<<1)	/* Move pages owned by this process to conform
-+				   to policy */
-+#define MPOL_MF_MOVE_ALL (1<<2)	/* Move every page to conform to policy */
-+#define MPOL_MF_LAZY	 (1<<3)	/* Modifies '_MOVE:  lazy migrate on fault */
-+#define MPOL_MF_INTERNAL (1<<4)	/* Internal flags start here */
-+
-+#define MPOL_MF_VALID	(MPOL_MF_STRICT   | 	\
-+			 MPOL_MF_MOVE     | 	\
-+			 MPOL_MF_MOVE_ALL |	\
-+			 MPOL_MF_LAZY)
- 
- /*
-  * Internal flags that share the struct mempolicy flags word with
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index df1466d..51d3ebd 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -90,6 +90,7 @@
- #include <linux/syscalls.h>
- #include <linux/ctype.h>
- #include <linux/mm_inline.h>
-+#include <linux/mmu_notifier.h>
- 
- #include <asm/tlbflush.h>
- #include <asm/uaccess.h>
-@@ -565,6 +566,145 @@ static inline int check_pgd_range(struct vm_area_struct *vma,
+ struct mempolicy {};
+@@ -323,5 +325,11 @@ static inline int mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol,
  	return 0;
  }
  
-+#ifdef CONFIG_ARCH_USES_NUMA_PROT_NONE
-+/*
-+ * Here we search for not shared page mappings (mapcount == 1) and we
-+ * set up the pmd/pte_numa on those mappings so the very next access
-+ * will fire a NUMA hinting page fault.
-+ */
-+static int
-+change_prot_numa_range(struct mm_struct *mm, struct vm_area_struct *vma,
-+			unsigned long address)
++static inline int mpol_misplaced(struct page *page, struct vm_area_struct *vma,
++				 unsigned long address)
 +{
-+	pgd_t *pgd;
-+	pud_t *pud;
-+	pmd_t *pmd;
-+	pte_t *pte, *_pte;
-+	struct page *page;
-+	unsigned long _address, end;
-+	spinlock_t *ptl;
-+	int ret = 0;
++	return -1; /* no node preference */
++}
 +
-+	VM_BUG_ON(address & ~PAGE_MASK);
+ #endif /* CONFIG_NUMA */
+ #endif
+diff --git a/include/uapi/linux/mempolicy.h b/include/uapi/linux/mempolicy.h
+index d23dca8..472de8a 100644
+--- a/include/uapi/linux/mempolicy.h
++++ b/include/uapi/linux/mempolicy.h
+@@ -61,6 +61,7 @@ enum mpol_rebind_step {
+ #define MPOL_F_SHARED  (1 << 0)	/* identify shared policies */
+ #define MPOL_F_LOCAL   (1 << 1)	/* preferred local allocation */
+ #define MPOL_F_REBINDING (1 << 2)	/* identify policies in rebinding */
++#define MPOL_F_MOF	(1 << 3) /* this policy wants migrate on fault */
+ 
+ 
+ #endif /* _UAPI_LINUX_MEMPOLICY_H */
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index c21e914..df1466d 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2181,6 +2181,82 @@ static void sp_free(struct sp_node *n)
+ 	kmem_cache_free(sn_cache, n);
+ }
+ 
++/**
++ * mpol_misplaced - check whether current page node is valid in policy
++ *
++ * @page   - page to be checked
++ * @vma    - vm area where page mapped
++ * @addr   - virtual address where page mapped
++ *
++ * Lookup current policy node id for vma,addr and "compare to" page's
++ * node id.
++ *
++ * Returns:
++ *	-1	- not misplaced, page is in the right node
++ *	node	- node id where the page should be
++ *
++ * Policy determination "mimics" alloc_page_vma().
++ * Called from fault path where we know the vma and faulting address.
++ */
++int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long addr)
++{
++	struct mempolicy *pol;
++	struct zone *zone;
++	int curnid = page_to_nid(page);
++	unsigned long pgoff;
++	int polnid = -1;
++	int ret = -1;
 +
-+	pgd = pgd_offset(mm, address);
-+	if (!pgd_present(*pgd))
++	BUG_ON(!vma);
++
++	pol = get_vma_policy(current, vma, addr);
++	if (!(pol->flags & MPOL_F_MOF))
 +		goto out;
 +
-+	pud = pud_offset(pgd, address);
-+	if (!pud_present(*pud))
-+		goto out;
++	switch (pol->mode) {
++	case MPOL_INTERLEAVE:
++		BUG_ON(addr >= vma->vm_end);
++		BUG_ON(addr < vma->vm_start);
 +
-+	pmd = pmd_offset(pud, address);
-+	if (pmd_none(*pmd))
-+		goto out;
++		pgoff = vma->vm_pgoff;
++		pgoff += (addr - vma->vm_start) >> PAGE_SHIFT;
++		polnid = offset_il_node(pol, vma, pgoff);
++		break;
 +
-+	if (pmd_trans_huge_lock(pmd, vma) == 1) {
-+		int page_nid;
-+		ret = HPAGE_PMD_NR;
++	case MPOL_PREFERRED:
++		if (pol->flags & MPOL_F_LOCAL)
++			polnid = numa_node_id();
++		else
++			polnid = pol->v.preferred_node;
++		break;
 +
-+		VM_BUG_ON(address & ~HPAGE_PMD_MASK);
-+
-+		if (pmd_numa(*pmd)) {
-+			spin_unlock(&mm->page_table_lock);
++	case MPOL_BIND:
++		/*
++		 * allows binding to multiple nodes.
++		 * use current page if in policy nodemask,
++		 * else select nearest allowed node, if any.
++		 * If no allowed nodes, use current [!misplaced].
++		 */
++		if (node_isset(curnid, pol->v.nodes))
 +			goto out;
-+		}
++		(void)first_zones_zonelist(
++				node_zonelist(numa_node_id(), GFP_HIGHUSER),
++				gfp_zone(GFP_HIGHUSER),
++				&pol->v.nodes, &zone);
++		polnid = zone->node;
++		break;
 +
-+		page = pmd_page(*pmd);
-+
-+		/* only check non-shared pages */
-+		if (page_mapcount(page) != 1) {
-+			spin_unlock(&mm->page_table_lock);
-+			goto out;
-+		}
-+
-+		page_nid = page_to_nid(page);
-+
-+		if (pmd_numa(*pmd)) {
-+			spin_unlock(&mm->page_table_lock);
-+			goto out;
-+		}
-+
-+		set_pmd_at(mm, address, pmd, pmd_mknuma(*pmd));
-+		ret += HPAGE_PMD_NR;
-+		/* defer TLB flush to lower the overhead */
-+		spin_unlock(&mm->page_table_lock);
-+		goto out;
++	default:
++		BUG();
 +	}
-+
-+	if (pmd_trans_unstable(pmd))
-+		goto out;
-+	VM_BUG_ON(!pmd_present(*pmd));
-+
-+	end = min(vma->vm_end, (address + PMD_SIZE) & PMD_MASK);
-+	pte = pte_offset_map_lock(mm, pmd, address, &ptl);
-+	for (_address = address, _pte = pte; _address < end;
-+	     _pte++, _address += PAGE_SIZE) {
-+		pte_t pteval = *_pte;
-+		if (!pte_present(pteval))
-+			continue;
-+		if (pte_numa(pteval))
-+			continue;
-+		page = vm_normal_page(vma, _address, pteval);
-+		if (unlikely(!page))
-+			continue;
-+		/* only check non-shared pages */
-+		if (page_mapcount(page) != 1)
-+			continue;
-+
-+		set_pte_at(mm, _address, _pte, pte_mknuma(pteval));
-+
-+		/* defer TLB flush to lower the overhead */
-+		ret++;
-+	}
-+	pte_unmap_unlock(pte, ptl);
-+
-+	if (ret && !pmd_numa(*pmd)) {
-+		spin_lock(&mm->page_table_lock);
-+		set_pmd_at(mm, address, pmd, pmd_mknuma(*pmd));
-+		spin_unlock(&mm->page_table_lock);
-+		/* defer TLB flush to lower the overhead */
-+	}
-+
++	if (curnid != polnid)
++		ret = polnid;
 +out:
++	mpol_cond_put(pol);
++
 +	return ret;
 +}
 +
-+/* Assumes mmap_sem is held */
-+void
-+change_prot_numa(struct vm_area_struct *vma,
-+			unsigned long address, unsigned long end)
-+{
-+	struct mm_struct *mm = vma->vm_mm;
-+	int progress = 0;
-+
-+	while (address < end) {
-+		VM_BUG_ON(address < vma->vm_start ||
-+			  address + PAGE_SIZE > vma->vm_end);
-+
-+		progress += change_prot_numa_range(mm, vma, address);
-+		address = (address + PMD_SIZE) & PMD_MASK;
-+	}
-+
-+	/*
-+	 * Flush the TLB for the mm to start the NUMA hinting
-+	 * page faults after we finish scanning this vma part
-+	 * if there were any PTE updates
-+	 */
-+	if (progress) {
-+		mmu_notifier_invalidate_range_start(vma->vm_mm, address, end);
-+		flush_tlb_range(vma, address, end);
-+		mmu_notifier_invalidate_range_end(vma->vm_mm, address, end);
-+	}
-+}
-+#else
-+static unsigned long change_prot_numa(struct vm_area_struct *vma,
-+			unsigned long addr, unsigned long end)
-+{
-+	return 0;
-+}
-+#endif /* CONFIG_ARCH_USES_NUMA_PROT_NONE */
-+
- /*
-  * Check if all pages in a range are on a set of nodes.
-  * If pagelist != NULL then isolate pages from the LRU and
-@@ -583,22 +723,32 @@ check_range(struct mm_struct *mm, unsigned long start, unsigned long end,
- 		return ERR_PTR(-EFAULT);
- 	prev = NULL;
- 	for (vma = first; vma && vma->vm_start < end; vma = vma->vm_next) {
-+		unsigned long endvma = vma->vm_end;
-+
-+		if (endvma > end)
-+			endvma = end;
-+		if (vma->vm_start > start)
-+			start = vma->vm_start;
-+
- 		if (!(flags & MPOL_MF_DISCONTIG_OK)) {
- 			if (!vma->vm_next && vma->vm_end < end)
- 				return ERR_PTR(-EFAULT);
- 			if (prev && prev->vm_end < vma->vm_start)
- 				return ERR_PTR(-EFAULT);
- 		}
--		if (!is_vm_hugetlb_page(vma) &&
--		    ((flags & MPOL_MF_STRICT) ||
-+
-+		if (is_vm_hugetlb_page(vma))
-+			goto next;
-+
-+		if (flags & MPOL_MF_LAZY) {
-+			change_prot_numa(vma, start, endvma);
-+			goto next;
-+		}
-+
-+		if ((flags & MPOL_MF_STRICT) ||
- 		     ((flags & (MPOL_MF_MOVE | MPOL_MF_MOVE_ALL)) &&
--				vma_migratable(vma)))) {
--			unsigned long endvma = vma->vm_end;
-+		      vma_migratable(vma))) {
- 
--			if (endvma > end)
--				endvma = end;
--			if (vma->vm_start > start)
--				start = vma->vm_start;
- 			err = check_pgd_range(vma, start, endvma, nodes,
- 						flags, private);
- 			if (err) {
-@@ -606,6 +756,7 @@ check_range(struct mm_struct *mm, unsigned long start, unsigned long end,
- 				break;
- 			}
- 		}
-+next:
- 		prev = vma;
- 	}
- 	return first;
-@@ -1138,8 +1289,7 @@ static long do_mbind(unsigned long start, unsigned long len,
- 	int err;
- 	LIST_HEAD(pagelist);
- 
--	if (flags & ~(unsigned long)(MPOL_MF_STRICT |
--				     MPOL_MF_MOVE | MPOL_MF_MOVE_ALL))
-+	if (flags & ~(unsigned long)MPOL_MF_VALID)
- 		return -EINVAL;
- 	if ((flags & MPOL_MF_MOVE_ALL) && !capable(CAP_SYS_NICE))
- 		return -EPERM;
-@@ -1162,6 +1312,9 @@ static long do_mbind(unsigned long start, unsigned long len,
- 	if (IS_ERR(new))
- 		return PTR_ERR(new);
- 
-+	if (flags & MPOL_MF_LAZY)
-+		new->flags |= MPOL_F_MOF;
-+
- 	/*
- 	 * If we are using the default policy then operation
- 	 * on discontinuous address spaces is okay after all
-@@ -1198,13 +1351,15 @@ static long do_mbind(unsigned long start, unsigned long len,
- 	vma = check_range(mm, start, end, nmask,
- 			  flags | MPOL_MF_INVERT, &pagelist);
- 
--	err = PTR_ERR(vma);
--	if (!IS_ERR(vma)) {
--		int nr_failed = 0;
--
-+	err = PTR_ERR(vma);	/* maybe ... */
-+	if (!IS_ERR(vma) && mode != MPOL_NOOP)
- 		err = mbind_range(mm, start, end, new);
- 
-+	if (!err) {
-+		int nr_failed = 0;
-+
- 		if (!list_empty(&pagelist)) {
-+			WARN_ON_ONCE(flags & MPOL_MF_LAZY);
- 			nr_failed = migrate_pages(&pagelist, new_vma_page,
- 						(unsigned long)vma,
- 						false, MIGRATE_SYNC,
-@@ -1213,7 +1368,7 @@ static long do_mbind(unsigned long start, unsigned long len,
- 				putback_lru_pages(&pagelist);
- 		}
- 
--		if (!err && nr_failed && (flags & MPOL_MF_STRICT))
-+		if (nr_failed && (flags & MPOL_MF_STRICT))
- 			err = -EIO;
- 	} else
- 		putback_lru_pages(&pagelist);
+ static void sp_delete(struct shared_policy *sp, struct sp_node *n)
+ {
+ 	pr_debug("deleting %lx-l%lx\n", n->start, n->end);
 -- 
 1.7.11.7
 
