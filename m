@@ -1,82 +1,687 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753882Ab2LBDyf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Dec 2012 22:54:35 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56623 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751709Ab2LBDye (ORCPT
+	id S1751986Ab2LBFdj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 00:33:39 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63452 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1749667Ab2LBFdh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Dec 2012 22:54:34 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] spi: Remove SPI_BUFSIZ restriction on spi_write_then_read()
-Date: Sun,  2 Dec 2012 12:54:25 +0900
-Message-Id: <1354420465-29315-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 2 Dec 2012 00:33:37 -0500
+From: Takahisa Tanaka <mc74hc00@gmail.com>
+To: linux-watchdog@vger.kernel.org
+Cc: Wim Van Sebroeck <wim@iguana.be>,
+        Paul Menzel <paulepanter@users.sourceforge.net>,
+        Arkadiusz Miskiewicz <arekm@maven.pl>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jonathan Nieder <jrnieder@gmail.com>, linux-kernel@vger.kernel.org,
+        Takahisa Tanaka <mc74hc00@gmail.com>
+Subject: [PATCH v3] sp5100_tco: Add SB8x0 chipset support
+Date: Sun,  2 Dec 2012 14:33:18 +0900
+Message-Id: <1354426398-6397-1-git-send-email-mc74hc00@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to avoid constantly allocating and deallocating there is a fixed
-buffer which spi_write_then_read() uses for transfers, with an early error
-check to ensure that the transfer fits within the buffer. This limits the
-size of transfers to this size, currently max(32, SMP_CACHE_BYTES).
+The current sp5100_tco driver only supports SP5100/SB7x0 chipset, doesn't
+support SB8x0 chipset, because current sp5100_tco driver doesn't know that the
+offset address for watchdog timer was changed from SB8x0 chipset.
 
-Since we can dynamically allocate and in fact already have a fallback
-to do so when there is contention for the fixed buffer remove this
-restriction and instead dynamically allocate a suitably sized buffer if
-the transfer won't fit.
+The offset address of SP5100 and SB7x0 chipsets are as follows, quote from the
+AMD SB700/710/750 Register Reference Guide (Page 164) and the AMD SP5100
+Register Reference Guide (Page 166).
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+  WatchDogTimerControl 69h
+  WatchDogTimerBase0   6Ch
+  WatchDogTimerBase1   6Dh
+  WatchDogTimerBase2   6Eh
+  WatchDogTimerBase3   6Fh
+
+In contrast, the offset address of SB8x0 chipset is as follows, quote from
+AMD SB800-Series Southbridges Register Reference Guide (Page 147).
+
+  WatchDogTimerEn      48h
+  WatchDogTimerConfig  4Ch
+
+So, In the case of SB8x0 chipset, sp5100_tco reads meaningless MMIO
+address (for example, 0xbafe00) from wrong offset address, and the following
+message is logged.
+
+   SP5100 TCO timer: mmio address 0xbafe00 already in use
+
+With this patch, sp5100_tco driver supports SB8x0 chipset, and can avoid
+iomem resource conflict. The processing of this patch is as follows.
+
+ Step 1) Attempt to get the watchdog base address from indirect I/O (0xCD6
+         and 0xCD7).
+  - Go to the step 7 if obtained address hasn't conflicted with other
+    resource. But, currently, the address (0xfec000f0) conflicts with the
+    IOAPIC MMIO address, and the following message is logged.
+
+       SP5100 TCO timer: mmio address 0xfec000f0 already in use
+
+    0xfec000f0 is recommended by AMD BIOS Developer's Guide. So, go to the
+    next step.
+
+ Step 2) Attempt to get the SBResource_MMIO base address from AcpiMmioEN (for
+         SB8x0,  PM_Reg:24h) or SBResource_MMIO (SP5100/SB7x0, PCI_Reg:9Ch)
+         register.
+  - Go to the step 7 if these register has enabled by BIOS, and obtained
+    address hasn't conflicted with other resource.
+  - If above condition isn't true, go to the next step.
+
+ Step 3) Attempt to get the free MMIO address from allocate_resource().
+  - Go to the step 7 if these register has enabled by BIOS, and obtained
+    address hasn't conflicted with other resource.
+  - Driver initialization has failed if obtained address has conflicted
+    with other resource, and no 'force_addr' parameter is specified.
+
+ Step 4) Use the specified address If 'force_addr' parameter is specified.
+  - allocate_resource() function may fail, when the PCI bridge device occupies
+    iomem resource from 0xf0000000 to 0xffffffff. To handle such a case,
+    I added 'force_addr' parameter to sp5100_tco driver. With 'force_addr'
+    parameter, sp5100_tco driver directly can assign MMIO address for watchdog
+    timer from free iomem region. Note that It's dangerous to specify wrong
+    address in the 'force_addr' parameter.
+
+      Example of force_addr parameter use
+        # cat /proc/iomem
+        ...snip...
+        fec00000-fec003ff : IOAPIC 0
+                                      <--- free MMIO region
+        fec10000-fec1001f : pnp 00:0b
+        fec20000-fec203ff : IOAPIC 1
+        ...snip...
+        # cat /etc/modprobe.d/sp5100_tco.conf
+        options sp5100_tco force_addr=0xfec00800
+        # modprobe sp5100_tco
+        # cat /proc/iomem
+        ...snip...
+        fec00000-fec003ff : IOAPIC 0
+        fec00800-fec00807 : SP5100 TCO  <--- watchdog timer MMIO address
+        fec10000-fec1001f : pnp 00:0b
+        fec20000-fec203ff : IOAPIC 1
+        ...snip...
+        #
+
+  - Driver initialization has failed if specified address has conflicted
+    with other resource.
+
+ Step 5) Disable the watchdog timer
+  - To rewrite the watchdog timer register of the chipset, absolutely
+    guarantee that the watchdog timer is disabled.
+
+ Step 6) Re-program the watchdog timer MMIO address to chipset.
+  - Re-program the obtained MMIO address in Step 3 or Step 4 to chipset via
+    indirect I/O (0xCD6 and 0xCD7).
+
+ Step 7) Enable and setup the watchdog timer
+
+This patch has worked fine on my test environment (ASUS M4A89GTD-PRO/USB3 and
+DL165G7). therefore I believe that it's no problem to re-program the MMIO
+address for watchdog timer to chipset during disabled watchdog. However,
+I'm not sure about it, because I don't know much about chipset programming.
+
+So, any comments will be welcome.
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=43176
+Tested-by: Arkadiusz Miskiewicz <arekm@maven.pl>
+Tested-by: Paul Menzel <paulepanter@users.sourceforge.net>
+Signed-off-by: Takahisa Tanaka <mc74hc00@gmail.com>
+
 ---
- drivers/spi/spi.c |   24 +++++++++++-------------
- 1 file changed, 11 insertions(+), 13 deletions(-)
+v2 -> v3
+ - Leave a space before parentheses.
+ - Restore the commit log v2 to v1.
+ - Add Paul's -by line.
 
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index c4f7d71..224b7bc 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -1646,12 +1646,18 @@ int spi_write_then_read(struct spi_device *spi,
- 	struct spi_transfer	x[2];
- 	u8			*local_buf;
+v1 -> v2
+ -Fix typo in module description and source code.
+ -Fix a bug that can't correctly determine the watchdog fired.
+ -Improve syslog messages.
+ -Truncate the commit log, because previous commit log is too long.
+---
+ drivers/watchdog/sp5100_tco.c | 321 +++++++++++++++++++++++++++++++++++-------
+ drivers/watchdog/sp5100_tco.h |  46 ++++--
+ 2 files changed, 306 insertions(+), 61 deletions(-)
+
+diff --git a/drivers/watchdog/sp5100_tco.c b/drivers/watchdog/sp5100_tco.c
+index ae5e82c..183fcb2 100644
+--- a/drivers/watchdog/sp5100_tco.c
++++ b/drivers/watchdog/sp5100_tco.c
+@@ -13,7 +13,9 @@
+  *	as published by the Free Software Foundation; either version
+  *	2 of the License, or (at your option) any later version.
+  *
+- *	See AMD Publication 43009 "AMD SB700/710/750 Register Reference Guide"
++ *	See AMD Publication 43009 "AMD SB700/710/750 Register Reference Guide",
++ *	    AMD Publication 45482 "AMD SB800-Series Southbridges Register
++ *	                                                      Reference Guide"
+  */
  
--	/* Use preallocated DMA-safe buffer.  We can't avoid copying here,
--	 * (as a pure convenience thing), but we can keep heap costs
--	 * out of the hot path ...
-+	/* Use preallocated DMA-safe buffer if we can.  We can't avoid
-+	 * copying here, (as a pure convenience thing), but we can
-+	 * keep heap costs out of the hot path unless someone else is
-+	 * using the pre-allocated buffer or the transfer is too large.
- 	 */
--	if ((n_tx + n_rx) > SPI_BUFSIZ)
--		return -EINVAL;
-+	if ((n_tx + n_rx) > SPI_BUFSIZ || !mutex_trylock(&lock)) {
-+		local_buf = kmalloc(max(SPI_BUFSIZ, n_tx + n_rx), GFP_KERNEL);
-+		if (!local_buf)
-+			return -ENOMEM;
+ /*
+@@ -38,18 +40,24 @@
+ #include "sp5100_tco.h"
+ 
+ /* Module and version information */
+-#define TCO_VERSION "0.01"
++#define TCO_VERSION "0.03"
+ #define TCO_MODULE_NAME "SP5100 TCO timer"
+ #define TCO_DRIVER_NAME   TCO_MODULE_NAME ", v" TCO_VERSION
+ 
+ /* internal variables */
+ static u32 tcobase_phys;
++static u32 resbase_phys;
++static u32 tco_wdt_fired;
+ static void __iomem *tcobase;
+ static unsigned int pm_iobase;
+ static DEFINE_SPINLOCK(tco_lock);	/* Guards the hardware */
+ static unsigned long timer_alive;
+ static char tco_expect_close;
+ static struct pci_dev *sp5100_tco_pci;
++static struct resource wdt_res = {
++	.name = "Watchdog Timer",
++	.flags = IORESOURCE_MEM,
++};
+ 
+ /* the watchdog platform device */
+ static struct platform_device *sp5100_tco_platform_device;
+@@ -64,9 +72,15 @@ MODULE_PARM_DESC(heartbeat, "Watchdog heartbeat in seconds. (default="
+ 
+ static bool nowayout = WATCHDOG_NOWAYOUT;
+ module_param(nowayout, bool, 0);
+-MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started"
++MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started."
+ 		" (default=" __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
+ 
++static unsigned int force_addr;
++module_param(force_addr, uint, 0);
++MODULE_PARM_DESC(force_addr, "Force the use of specified MMIO address."
++		" ONLY USE THIS PARAMETER IF YOU REALLY KNOW"
++		" WHAT YOU ARE DOING (default=none)");
++
+ /*
+  * Some TCO specific functions
+  */
+@@ -122,6 +136,79 @@ static int tco_timer_set_heartbeat(int t)
+ 	return 0;
+ }
+ 
++static void tco_timer_enable(void)
++{
++	int val;
++
++	if (sp5100_tco_pci->revision >= 0x40) {
++		/* For SB800 or later */
++		/* Set the Watchdog timer resolution to 1 sec */
++		outb(SB800_PM_WATCHDOG_CONFIG, SB800_IO_PM_INDEX_REG);
++		val = inb(SB800_IO_PM_DATA_REG);
++		val |= SB800_PM_WATCHDOG_SECOND_RES;
++		outb(val, SB800_IO_PM_DATA_REG);
++
++		/* Enable watchdog decode bit and watchdog timer */
++		outb(SB800_PM_WATCHDOG_CONTROL, SB800_IO_PM_INDEX_REG);
++		val = inb(SB800_IO_PM_DATA_REG);
++		val |= SB800_PCI_WATCHDOG_DECODE_EN;
++		val &= ~SB800_PM_WATCHDOG_DISABLE;
++		outb(val, SB800_IO_PM_DATA_REG);
 +	} else {
-+		local_buf = buf;
++		/* For SP5100 or SB7x0 */
++		/* Enable watchdog decode bit */
++		pci_read_config_dword(sp5100_tco_pci,
++				      SP5100_PCI_WATCHDOG_MISC_REG,
++				      &val);
++
++		val |= SP5100_PCI_WATCHDOG_DECODE_EN;
++
++		pci_write_config_dword(sp5100_tco_pci,
++				       SP5100_PCI_WATCHDOG_MISC_REG,
++				       val);
++
++		/* Enable Watchdog timer and set the resolution to 1 sec */
++		outb(SP5100_PM_WATCHDOG_CONTROL, SP5100_IO_PM_INDEX_REG);
++		val = inb(SP5100_IO_PM_DATA_REG);
++		val |= SP5100_PM_WATCHDOG_SECOND_RES;
++		val &= ~SP5100_PM_WATCHDOG_DISABLE;
++		outb(val, SP5100_IO_PM_DATA_REG);
 +	}
++}
++
++static void tco_timer_disable(void)
++{
++	int val;
++
++	if (sp5100_tco_pci->revision >= 0x40) {
++		/* For SB800 or later */
++		/* Enable watchdog decode bit and Disable watchdog timer */
++		outb(SB800_PM_WATCHDOG_CONTROL, SB800_IO_PM_INDEX_REG);
++		val = inb(SB800_IO_PM_DATA_REG);
++		val |= SB800_PCI_WATCHDOG_DECODE_EN;
++		val |= SB800_PM_WATCHDOG_DISABLE;
++		outb(val, SB800_IO_PM_DATA_REG);
++	} else {
++		/* For SP5100 or SB7x0 */
++		/* Enable watchdog decode bit */
++		pci_read_config_dword(sp5100_tco_pci,
++				      SP5100_PCI_WATCHDOG_MISC_REG,
++				      &val);
++
++		val |= SP5100_PCI_WATCHDOG_DECODE_EN;
++
++		pci_write_config_dword(sp5100_tco_pci,
++				       SP5100_PCI_WATCHDOG_MISC_REG,
++				       val);
++
++		/* Disable Watchdog timer */
++		outb(SP5100_PM_WATCHDOG_CONTROL, SP5100_IO_PM_INDEX_REG);
++		val = inb(SP5100_IO_PM_DATA_REG);
++		val |= SP5100_PM_WATCHDOG_DISABLE;
++		outb(val, SP5100_IO_PM_DATA_REG);
++	}
++}
++
+ /*
+  *	/dev/watchdog handling
+  */
+@@ -270,11 +357,12 @@ MODULE_DEVICE_TABLE(pci, sp5100_tco_pci_tbl);
+ /*
+  * Init & exit routines
+  */
+-
+ static unsigned char __devinit sp5100_tco_setupdevice(void)
+ {
+ 	struct pci_dev *dev = NULL;
++	const char *dev_name = NULL;
+ 	u32 val;
++	u32 index_reg, data_reg, base_addr;
  
- 	spi_message_init(&message);
- 	memset(x, 0, sizeof x);
-@@ -1664,14 +1670,6 @@ int spi_write_then_read(struct spi_device *spi,
- 		spi_message_add_tail(&x[1], &message);
+ 	/* Match the PCI device */
+ 	for_each_pci_dev(dev) {
+@@ -287,29 +375,160 @@ static unsigned char __devinit sp5100_tco_setupdevice(void)
+ 	if (!sp5100_tco_pci)
+ 		return 0;
+ 
++	pr_info("PCI Revision ID: 0x%x\n", sp5100_tco_pci->revision);
++
++	/*
++	 * Determine type of southbridge chipset.
++	 */
++	if (sp5100_tco_pci->revision >= 0x40) {
++		dev_name = SB800_DEVNAME;
++		index_reg = SB800_IO_PM_INDEX_REG;
++		data_reg = SB800_IO_PM_DATA_REG;
++		base_addr = SB800_PM_WATCHDOG_BASE;
++	} else {
++		dev_name = SP5100_DEVNAME;
++		index_reg = SP5100_IO_PM_INDEX_REG;
++		data_reg = SP5100_IO_PM_DATA_REG;
++		base_addr = SP5100_PM_WATCHDOG_BASE;
++	}
++
+ 	/* Request the IO ports used by this driver */
+ 	pm_iobase = SP5100_IO_PM_INDEX_REG;
+-	if (!request_region(pm_iobase, SP5100_PM_IOPORTS_SIZE, "SP5100 TCO")) {
++	if (!request_region(pm_iobase, SP5100_PM_IOPORTS_SIZE, dev_name)) {
+ 		pr_err("I/O address 0x%04x already in use\n", pm_iobase);
+ 		goto exit;
  	}
  
--	/* ... unless someone else is using the pre-allocated buffer */
--	if (!mutex_trylock(&lock)) {
--		local_buf = kmalloc(SPI_BUFSIZ, GFP_KERNEL);
--		if (!local_buf)
--			return -ENOMEM;
--	} else
--		local_buf = buf;
+-	/* Find the watchdog base address. */
+-	outb(SP5100_PM_WATCHDOG_BASE3, SP5100_IO_PM_INDEX_REG);
+-	val = inb(SP5100_IO_PM_DATA_REG);
+-	outb(SP5100_PM_WATCHDOG_BASE2, SP5100_IO_PM_INDEX_REG);
+-	val = val << 8 | inb(SP5100_IO_PM_DATA_REG);
+-	outb(SP5100_PM_WATCHDOG_BASE1, SP5100_IO_PM_INDEX_REG);
+-	val = val << 8 | inb(SP5100_IO_PM_DATA_REG);
+-	outb(SP5100_PM_WATCHDOG_BASE0, SP5100_IO_PM_INDEX_REG);
+-	/* Low three bits of BASE0 are reserved. */
+-	val = val << 8 | (inb(SP5100_IO_PM_DATA_REG) & 0xf8);
++	/*
++	 * First, Find the watchdog timer MMIO address from indirect I/O.
++	 */
++	outb(base_addr+3, index_reg);
++	val = inb(data_reg);
++	outb(base_addr+2, index_reg);
++	val = val << 8 | inb(data_reg);
++	outb(base_addr+1, index_reg);
++	val = val << 8 | inb(data_reg);
++	outb(base_addr+0, index_reg);
++	/* Low three bits of BASE are reserved */
++	val = val << 8 | (inb(data_reg) & 0xf8);
++
++	pr_debug("Got 0x%04x from indirect I/O\n", val);
++
++	/* Check MMIO address conflict */
++	if (request_mem_region_exclusive(val, SP5100_WDT_MEM_MAP_SIZE,
++								dev_name))
++		goto setup_wdt;
++	else
++		pr_debug("MMIO address 0x%04x already in use\n", val);
++
++	/*
++	 * Secondly, Find the watchdog timer MMIO address
++	 * from SBResource_MMIO register.
++	 */
++	if (sp5100_tco_pci->revision >= 0x40) {
++		/* Read SBResource_MMIO from AcpiMmioEn(PM_Reg: 24h) */
++		outb(SB800_PM_ACPI_MMIO_EN+3, SB800_IO_PM_INDEX_REG);
++		val = inb(SB800_IO_PM_DATA_REG);
++		outb(SB800_PM_ACPI_MMIO_EN+2, SB800_IO_PM_INDEX_REG);
++		val = val << 8 | inb(SB800_IO_PM_DATA_REG);
++		outb(SB800_PM_ACPI_MMIO_EN+1, SB800_IO_PM_INDEX_REG);
++		val = val << 8 | inb(SB800_IO_PM_DATA_REG);
++		outb(SB800_PM_ACPI_MMIO_EN+0, SB800_IO_PM_INDEX_REG);
++		val = val << 8 | inb(SB800_IO_PM_DATA_REG);
++	} else {
++		/* Read SBResource_MMIO from PCI config(PCI_Reg: 9Ch) */
++		pci_read_config_dword(sp5100_tco_pci,
++				      SP5100_SB_RESOURCE_MMIO_BASE, &val);
++	}
++
++	/* The SBResource_MMIO is enabled and mapped memory space? */
++	if ((val & (SB800_ACPI_MMIO_DECODE_EN | SB800_ACPI_MMIO_SEL)) ==
++						  SB800_ACPI_MMIO_DECODE_EN) {
++		/* Clear unnecessary the low twelve bits */
++		val &= ~0xFFF;
++		/* Add the Watchdog Timer offset to base address. */
++		val += SB800_PM_WDT_MMIO_OFFSET;
++		/* Check MMIO address conflict */
++		if (request_mem_region_exclusive(val, SP5100_WDT_MEM_MAP_SIZE,
++								   dev_name)) {
++			pr_debug("Got 0x%04x from SBResource_MMIO register\n",
++				val);
++			goto setup_wdt;
++		} else
++			pr_debug("MMIO address 0x%04x already in use\n", val);
++	} else
++		pr_debug("SBResource_MMIO is disabled(0x%04x)\n", val);
++
++	/*
++	 * Lastly re-programming the watchdog timer MMIO address,
++	 * This method is a last resort...
++	 *
++	 * Before re-programming, to ensure that the watchdog timer
++	 * is disabled, disable the watchdog timer.
++	 */
++	tco_timer_disable();
++
++	if (force_addr) {
++		/*
++		 * Force the use of watchdog timer MMIO address, and aligned to
++		 * 8byte boundary.
++		 */
++		force_addr &= ~0x7;
++		val = force_addr;
++
++		pr_info("Force the use of 0x%04x as MMIO address\n", val);
++	} else {
++		/*
++		 * Get empty slot into the resource tree for watchdog timer.
++		 */
++		if (allocate_resource(&iomem_resource,
++				      &wdt_res,
++				      SP5100_WDT_MEM_MAP_SIZE,
++				      0xf0000000,
++				      0xfffffff8,
++				      0x8,
++				      NULL,
++				      NULL)) {
++			pr_err("MMIO allocation failed\n");
++			goto unreg_region;
++		}
++
++		val = resbase_phys = wdt_res.start;
++		pr_debug("Got 0x%04x from resource tree\n", val);
++	}
++
++	/* Restore to the low three bits, if chipset is SB8x0(or later) */
++	if (sp5100_tco_pci->revision >= 0x40) {
++		u8 reserved_bit;
++		reserved_bit = inb(base_addr) & 0x7;
++		val |= (u32)reserved_bit;
++	}
++
++	/* Re-programming the watchdog timer base address */
++	outb(base_addr+0, index_reg);
++	/* Low three bits of BASE are reserved */
++	outb((val >>  0) & 0xf8, data_reg);
++	outb(base_addr+1, index_reg);
++	outb((val >>  8) & 0xff, data_reg);
++	outb(base_addr+2, index_reg);
++	outb((val >> 16) & 0xff, data_reg);
++	outb(base_addr+3, index_reg);
++	outb((val >> 24) & 0xff, data_reg);
++
++	/*
++	 * Clear unnecessary the low three bits,
++	 * if chipset is SB8x0(or later)
++	 */
++	if (sp5100_tco_pci->revision >= 0x40)
++		val &= ~0x7;
+ 
+ 	if (!request_mem_region_exclusive(val, SP5100_WDT_MEM_MAP_SIZE,
+-								"SP5100 TCO")) {
+-		pr_err("mmio address 0x%04x already in use\n", val);
+-		goto unreg_region;
++								   dev_name)) {
++		pr_err("MMIO address 0x%04x already in use\n", val);
++		goto unreg_resource;
+ 	}
++
++setup_wdt:
+ 	tcobase_phys = val;
+ 
+ 	tcobase = ioremap(val, SP5100_WDT_MEM_MAP_SIZE);
+@@ -318,26 +537,18 @@ static unsigned char __devinit sp5100_tco_setupdevice(void)
+ 		goto unreg_mem_region;
+ 	}
+ 
+-	/* Enable watchdog decode bit */
+-	pci_read_config_dword(sp5100_tco_pci,
+-			      SP5100_PCI_WATCHDOG_MISC_REG,
+-			      &val);
 -
- 	memcpy(local_buf, txbuf, n_tx);
- 	x[0].tx_buf = local_buf;
- 	x[1].rx_buf = local_buf + n_tx;
+-	val |= SP5100_PCI_WATCHDOG_DECODE_EN;
++	pr_info("Using 0x%04x for watchdog MMIO address\n", val);
+ 
+-	pci_write_config_dword(sp5100_tco_pci,
+-			       SP5100_PCI_WATCHDOG_MISC_REG,
+-			       val);
++	/* Setup the watchdog timer */
++	tco_timer_enable();
+ 
+-	/* Enable Watchdog timer and set the resolution to 1 sec. */
+-	outb(SP5100_PM_WATCHDOG_CONTROL, SP5100_IO_PM_INDEX_REG);
+-	val = inb(SP5100_IO_PM_DATA_REG);
+-	val |= SP5100_PM_WATCHDOG_SECOND_RES;
+-	val &= ~SP5100_PM_WATCHDOG_DISABLE;
+-	outb(val, SP5100_IO_PM_DATA_REG);
+-
+-	/* Check that the watchdog action is set to reset the system. */
++	/* Check that the watchdog action is set to reset the system */
+ 	val = readl(SP5100_WDT_CONTROL(tcobase));
++	/*
++	 * Save WatchDogFired status, because WatchDogFired flag is
++	 * cleared here.
++	 */
++	tco_wdt_fired = val & SP5100_PM_WATCHDOG_FIRED;
+ 	val &= ~SP5100_PM_WATCHDOG_ACTION_RESET;
+ 	writel(val, SP5100_WDT_CONTROL(tcobase));
+ 
+@@ -355,6 +566,9 @@ static unsigned char __devinit sp5100_tco_setupdevice(void)
+ 
+ unreg_mem_region:
+ 	release_mem_region(tcobase_phys, SP5100_WDT_MEM_MAP_SIZE);
++unreg_resource:
++	if (resbase_phys)
++		release_resource(&wdt_res);
+ unreg_region:
+ 	release_region(pm_iobase, SP5100_PM_IOPORTS_SIZE);
+ exit:
+@@ -364,23 +578,18 @@ exit:
+ static int __devinit sp5100_tco_init(struct platform_device *dev)
+ {
+ 	int ret;
+-	u32 val;
++	char addr_str[16];
+ 
+-	/* Check whether or not the hardware watchdog is there. If found, then
++	/*
++	 * Check whether or not the hardware watchdog is there. If found, then
+ 	 * set it up.
+ 	 */
+ 	if (!sp5100_tco_setupdevice())
+ 		return -ENODEV;
+ 
+ 	/* Check to see if last reboot was due to watchdog timeout */
+-	pr_info("Watchdog reboot %sdetected\n",
+-		readl(SP5100_WDT_CONTROL(tcobase)) & SP5100_PM_WATCHDOG_FIRED ?
+-		"" : "not ");
+-
+-	/* Clear out the old status */
+-	val = readl(SP5100_WDT_CONTROL(tcobase));
+-	val &= ~SP5100_PM_WATCHDOG_FIRED;
+-	writel(val, SP5100_WDT_CONTROL(tcobase));
++	pr_info("Last reboot was %striggered by watchdog.\n",
++		tco_wdt_fired ? "" : "not ");
+ 
+ 	/*
+ 	 * Check that the heartbeat value is within it's range.
+@@ -400,14 +609,24 @@ static int __devinit sp5100_tco_init(struct platform_device *dev)
+ 
+ 	clear_bit(0, &timer_alive);
+ 
+-	pr_info("initialized (0x%p). heartbeat=%d sec (nowayout=%d)\n",
+-		tcobase, heartbeat, nowayout);
++	/* Show module parameters */
++	if (force_addr == tcobase_phys)
++		/* The force_addr is vaild */
++		sprintf(addr_str, "0x%04x", force_addr);
++	else
++		strcpy(addr_str, "none");
++
++	pr_info("initialized (0x%p). heartbeat=%d sec (nowayout=%d, "
++		"force_addr=%s)\n",
++		tcobase, heartbeat, nowayout, addr_str);
+ 
+ 	return 0;
+ 
+ exit:
+ 	iounmap(tcobase);
+ 	release_mem_region(tcobase_phys, SP5100_WDT_MEM_MAP_SIZE);
++	if (resbase_phys)
++		release_resource(&wdt_res);
+ 	release_region(pm_iobase, SP5100_PM_IOPORTS_SIZE);
+ 	return ret;
+ }
+@@ -422,6 +641,8 @@ static void __devexit sp5100_tco_cleanup(void)
+ 	misc_deregister(&sp5100_tco_miscdev);
+ 	iounmap(tcobase);
+ 	release_mem_region(tcobase_phys, SP5100_WDT_MEM_MAP_SIZE);
++	if (resbase_phys)
++		release_resource(&wdt_res);
+ 	release_region(pm_iobase, SP5100_PM_IOPORTS_SIZE);
+ }
+ 
+@@ -451,7 +672,7 @@ static int __init sp5100_tco_init_module(void)
+ {
+ 	int err;
+ 
+-	pr_info("SP5100 TCO WatchDog Timer Driver v%s\n", TCO_VERSION);
++	pr_info("SP5100/SB800 TCO WatchDog Timer Driver v%s\n", TCO_VERSION);
+ 
+ 	err = platform_driver_register(&sp5100_tco_driver);
+ 	if (err)
+@@ -475,13 +696,13 @@ static void __exit sp5100_tco_cleanup_module(void)
+ {
+ 	platform_device_unregister(sp5100_tco_platform_device);
+ 	platform_driver_unregister(&sp5100_tco_driver);
+-	pr_info("SP5100 TCO Watchdog Module Unloaded\n");
++	pr_info("SP5100/SB800 TCO Watchdog Module Unloaded\n");
+ }
+ 
+ module_init(sp5100_tco_init_module);
+ module_exit(sp5100_tco_cleanup_module);
+ 
+ MODULE_AUTHOR("Priyanka Gupta");
+-MODULE_DESCRIPTION("TCO timer driver for SP5100 chipset");
++MODULE_DESCRIPTION("TCO timer driver for SP5100/SB800 chipset");
+ MODULE_LICENSE("GPL");
+ MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
+diff --git a/drivers/watchdog/sp5100_tco.h b/drivers/watchdog/sp5100_tco.h
+index a5a16cc..71594a0 100644
+--- a/drivers/watchdog/sp5100_tco.h
++++ b/drivers/watchdog/sp5100_tco.h
+@@ -9,33 +9,57 @@
+ /*
+  * Some address definitions for the Watchdog
+  */
+-
+ #define SP5100_WDT_MEM_MAP_SIZE		0x08
+ #define SP5100_WDT_CONTROL(base)	((base) + 0x00) /* Watchdog Control */
+ #define SP5100_WDT_COUNT(base)		((base) + 0x04) /* Watchdog Count */
+ 
+-#define SP5100_WDT_START_STOP_BIT	1
++#define SP5100_WDT_START_STOP_BIT	(1 << 0)
+ #define SP5100_WDT_TRIGGER_BIT		(1 << 7)
+ 
+-#define SP5100_PCI_WATCHDOG_MISC_REG	0x41
+-#define SP5100_PCI_WATCHDOG_DECODE_EN	(1 << 3)
+-
+ #define SP5100_PM_IOPORTS_SIZE		0x02
+ 
+-/* These two IO registers are hardcoded and there doesn't seem to be a way to
++/*
++ * These two IO registers are hardcoded and there doesn't seem to be a way to
+  * read them from a register.
+  */
++
++/*  For SP5100/SB7x0 chipset */
+ #define SP5100_IO_PM_INDEX_REG		0xCD6
+ #define SP5100_IO_PM_DATA_REG		0xCD7
+ 
++#define SP5100_SB_RESOURCE_MMIO_BASE	0x9C
++
+ #define SP5100_PM_WATCHDOG_CONTROL	0x69
+-#define SP5100_PM_WATCHDOG_BASE0	0x6C
+-#define SP5100_PM_WATCHDOG_BASE1	0x6D
+-#define SP5100_PM_WATCHDOG_BASE2	0x6E
+-#define SP5100_PM_WATCHDOG_BASE3	0x6F
++#define SP5100_PM_WATCHDOG_BASE		0x6C
+ 
+ #define SP5100_PM_WATCHDOG_FIRED	(1 << 1)
+ #define SP5100_PM_WATCHDOG_ACTION_RESET	(1 << 2)
+ 
+-#define SP5100_PM_WATCHDOG_DISABLE	1
++#define SP5100_PCI_WATCHDOG_MISC_REG	0x41
++#define SP5100_PCI_WATCHDOG_DECODE_EN	(1 << 3)
++
++#define SP5100_PM_WATCHDOG_DISABLE	(1 << 0)
+ #define SP5100_PM_WATCHDOG_SECOND_RES	(3 << 1)
++
++#define SP5100_DEVNAME			"SP5100 TCO"
++
++
++/*  For SB8x0(or later) chipset */
++#define SB800_IO_PM_INDEX_REG		0xCD6
++#define SB800_IO_PM_DATA_REG		0xCD7
++
++#define SB800_PM_ACPI_MMIO_EN		0x24
++#define SB800_PM_WATCHDOG_CONTROL	0x48
++#define SB800_PM_WATCHDOG_BASE		0x48
++#define SB800_PM_WATCHDOG_CONFIG	0x4C
++
++#define SB800_PCI_WATCHDOG_DECODE_EN	(1 << 0)
++#define SB800_PM_WATCHDOG_DISABLE	(1 << 2)
++#define SB800_PM_WATCHDOG_SECOND_RES	(3 << 0)
++#define SB800_ACPI_MMIO_DECODE_EN	(1 << 0)
++#define SB800_ACPI_MMIO_SEL		(1 << 2)
++
++
++#define SB800_PM_WDT_MMIO_OFFSET	0xB00
++
++#define SB800_DEVNAME			"SB800 TCO"
 -- 
-1.7.10.4
+1.7.11.7
 
