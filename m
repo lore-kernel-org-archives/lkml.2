@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754228Ab2LBSoW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 13:44:22 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:64238 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754180Ab2LBSoS (ORCPT
+	id S1754334Ab2LBSog (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 13:44:36 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:34653 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754290Ab2LBSoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 13:44:18 -0500
+	Sun, 2 Dec 2012 13:44:32 -0500
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
@@ -18,13 +18,12 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
         Alex Shi <lkml.alex@gmail.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH 10/52] mm/mempolicy: Add MPOL_MF_NOOP
-Date: Sun,  2 Dec 2012 19:43:02 +0100
-Message-Id: <1354473824-19229-11-git-send-email-mingo@kernel.org>
+Subject: [PATCH 16/52] mm/mempolicy: Hide MPOL_NOOP and MPOL_MF_LAZY from userspace for now
+Date: Sun,  2 Dec 2012 19:43:08 +0100
+Message-Id: <1354473824-19229-17-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1354473824-19229-1-git-send-email-mingo@kernel.org>
 References: <1354473824-19229-1-git-send-email-mingo@kernel.org>
@@ -32,32 +31,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lee Schermerhorn <lee.schermerhorn@hp.com>
+From: Mel Gorman <mgorman@suse.de>
 
-NOTE: I have not yet addressed by own review feedback of this
-patch. At 	this point I'm trying to construct a baseline tree and will apply
-	my own review feedback later and then fold it in.
+The use of MPOL_NOOP and MPOL_MF_LAZY to allow an application to
+explicitly request lazy migration is a good idea but the actual
+API has not been well reviewed and once released we have to
+support it. For now this patch prevents an application using the
+services. This will need to be revisited.
 
-This patch augments the MPOL_MF_LAZY feature by adding a "NOOP"
-policy to mbind().  When the NOOP policy is used with the 'MOVE
-and 'LAZY flags, mbind() will map the pages PROT_NONE so that
-they will be migrated on the next touch.
-
-This allows an application to prepare for a new phase of
-operation where different regions of shared storage will be
-assigned to worker threads, w/o changing policy.  Note that we
-could just use "default" policy in this case.  However, this
-also allows an application to request that pages be migrated,
-only if necessary, to follow any arbitrary policy that might
-currently apply to a range of pages, without knowing the policy,
-or without specifying multiple mbind()s for ranges with
-different policies.
-
-[ Bug in early version of mpol_parse_str() reported by Fengguang Wu. ]
-
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Lee Schermerhorn <lee.schermerhorn@hp.com>
-Reviewed-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Hugh Dickins <hughd@google.com>
 Cc: Paul Turner <pjt@google.com>
@@ -65,71 +48,82 @@ Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
 Cc: Alex Shi <lkml.alex@gmail.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/uapi/linux/mempolicy.h |  1 +
- mm/mempolicy.c                 | 11 ++++++-----
- 2 files changed, 7 insertions(+), 5 deletions(-)
+ include/uapi/linux/mempolicy.h | 4 +---
+ mm/mempolicy.c                 | 9 ++++-----
+ 2 files changed, 5 insertions(+), 8 deletions(-)
 
 diff --git a/include/uapi/linux/mempolicy.h b/include/uapi/linux/mempolicy.h
-index 3e835c9..d23dca8 100644
+index 6a1baae..16fb4e6 100644
 --- a/include/uapi/linux/mempolicy.h
 +++ b/include/uapi/linux/mempolicy.h
-@@ -21,6 +21,7 @@ enum {
+@@ -21,7 +21,6 @@ enum {
  	MPOL_BIND,
  	MPOL_INTERLEAVE,
  	MPOL_LOCAL,
-+	MPOL_NOOP,		/* retain existing policy for range */
+-	MPOL_NOOP,		/* retain existing policy for range */
  	MPOL_MAX,	/* always last member of enum */
  };
  
+@@ -57,8 +56,7 @@ enum mpol_rebind_step {
+ 
+ #define MPOL_MF_VALID	(MPOL_MF_STRICT   | 	\
+ 			 MPOL_MF_MOVE     | 	\
+-			 MPOL_MF_MOVE_ALL |	\
+-			 MPOL_MF_LAZY)
++			 MPOL_MF_MOVE_ALL)
+ 
+ /*
+  * Internal flags that share the struct mempolicy flags word with
 diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 54bd3e5..c21e914 100644
+index 75d4600..a7a62fe 100644
 --- a/mm/mempolicy.c
 +++ b/mm/mempolicy.c
-@@ -251,10 +251,10 @@ static struct mempolicy *mpol_new(unsigned short mode, unsigned short flags,
+@@ -252,7 +252,7 @@ static struct mempolicy *mpol_new(unsigned short mode, unsigned short flags,
  	pr_debug("setting mode %d flags %d nodes[0] %lx\n",
  		 mode, flags, nodes ? nodes_addr(*nodes)[0] : -1);
  
--	if (mode == MPOL_DEFAULT) {
-+	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP) {
+-	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP) {
++	if (mode == MPOL_DEFAULT) {
  		if (nodes && !nodes_empty(*nodes))
  			return ERR_PTR(-EINVAL);
--		return NULL;	/* simply delete any existing policy */
-+		return NULL;
- 	}
- 	VM_BUG_ON(!nodes);
- 
-@@ -1147,7 +1147,7 @@ static long do_mbind(unsigned long start, unsigned long len,
+ 		return NULL;
+@@ -1186,7 +1186,7 @@ static long do_mbind(unsigned long start, unsigned long len,
  	if (start & ~PAGE_MASK)
  		return -EINVAL;
  
--	if (mode == MPOL_DEFAULT)
-+	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP)
+-	if (mode == MPOL_DEFAULT || mode == MPOL_NOOP)
++	if (mode == MPOL_DEFAULT)
  		flags &= ~MPOL_MF_STRICT;
  
  	len = (len + PAGE_SIZE - 1) & PAGE_MASK;
-@@ -2409,7 +2409,8 @@ static const char * const policy_modes[] =
- 	[MPOL_PREFERRED]  = "prefer",
+@@ -1241,7 +1241,7 @@ static long do_mbind(unsigned long start, unsigned long len,
+ 			  flags | MPOL_MF_INVERT, &pagelist);
+ 
+ 	err = PTR_ERR(vma);	/* maybe ... */
+-	if (!IS_ERR(vma) && mode != MPOL_NOOP)
++	if (!IS_ERR(vma))
+ 		err = mbind_range(mm, start, end, new);
+ 
+ 	if (!err) {
+@@ -2530,7 +2530,6 @@ static const char * const policy_modes[] =
  	[MPOL_BIND]       = "bind",
  	[MPOL_INTERLEAVE] = "interleave",
--	[MPOL_LOCAL]      = "local"
-+	[MPOL_LOCAL]      = "local",
-+	[MPOL_NOOP]	  = "noop",	/* should not actually be used */
+ 	[MPOL_LOCAL]      = "local",
+-	[MPOL_NOOP]	  = "noop",	/* should not actually be used */
  };
  
  
-@@ -2460,7 +2461,7 @@ int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
+@@ -2581,7 +2580,7 @@ int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
  			break;
  		}
  	}
--	if (mode >= MPOL_MAX)
-+	if (mode >= MPOL_MAX || mode == MPOL_NOOP)
+-	if (mode >= MPOL_MAX || mode == MPOL_NOOP)
++	if (mode >= MPOL_MAX)
  		goto out;
  
  	switch (mode) {
