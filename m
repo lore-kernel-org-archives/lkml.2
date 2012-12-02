@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754557Ab2LBSpW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 13:45:22 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:34653 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754482Ab2LBSpR (ORCPT
+	id S1754980Ab2LBSpi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 13:45:38 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:64238 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754878Ab2LBSpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 13:45:17 -0500
+	Sun, 2 Dec 2012 13:45:33 -0500
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
@@ -18,9 +18,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: [PATCH 37/52] sched, numa, mm: Interleave shared tasks
-Date: Sun,  2 Dec 2012 19:43:29 +0100
-Message-Id: <1354473824-19229-38-git-send-email-mingo@kernel.org>
+Subject: [PATCH 45/52] sched: Track quality and strength of convergence
+Date: Sun,  2 Dec 2012 19:43:37 +0100
+Message-Id: <1354473824-19229-46-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1354473824-19229-1-git-send-email-mingo@kernel.org>
 References: <1354473824-19229-1-git-send-email-mingo@kernel.org>
@@ -28,160 +28,135 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Interleave tasks that are 'shared' - i.e. whose memory access patterns
-indicate that they are intensively sharing memory with other tasks.
+Track strength of convergence, which is a value between 1 and 1024.
+This will be used by the placement logic later on.
 
-If such a task ends up converging then it switches back into the lazy
-node-local policy.
+A strength value of 1024 means that the workload has fully
+converged, all faults after the last scan period came from a
+single node.
 
-Build-Bug-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+A value of 1024/nr_nodes means a totally spread out working set.
+
+'max_faults' is the number of faults observed on the highest-faulting node.
+'sum_faults' are all faults from the last scan, averaged over ~16 periods.
+
+The goal of the scheduler is to maximize convergence system-wide.
+Once a task has converged, it carries with it a non-trivial amount
+of working set. If such a task is migrated to another node later
+on then its working set will migrate there as well, which is a
+non-trivial cost.
+
+So the ultimate goal of NUMA scheduling is to let as many tasks
+converge as possible, and to run them as close to their memory
+as possible.
+
+( Note: we could also sample migration activities to directly measure
+  how much convergence influx there is. )
+
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Andrea Arcangeli <aarcange@redhat.com>
 Cc: Rik van Riel <riel@redhat.com>
 Cc: Mel Gorman <mgorman@suse.de>
 Cc: Hugh Dickins <hughd@google.com>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- mm/mempolicy.c | 55 +++++++++++++++++++++++++++++++++++++++++--------------
- 1 file changed, 41 insertions(+), 14 deletions(-)
+ include/linux/sched.h |  2 ++
+ kernel/sched/core.c   |  2 ++
+ kernel/sched/fair.c   | 46 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 50 insertions(+)
 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index ad683b9..a847b10 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -112,12 +112,29 @@ enum zone_type policy_zone = 0;
- /*
-  * run-time system-wide default policy => local allocation
-  */
--static struct mempolicy default_policy = {
--	.refcnt = ATOMIC_INIT(1), /* never free it */
--	.mode = MPOL_PREFERRED,
--	.flags = MPOL_F_LOCAL,
-+static struct mempolicy default_policy_local = {
-+	.refcnt		= ATOMIC_INIT(1), /* never free it */
-+	.mode		= MPOL_PREFERRED,
-+	.flags		= MPOL_F_LOCAL,
- };
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 8eeb866..5b2cf2e 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1509,6 +1509,8 @@ struct task_struct {
+ 	unsigned long numa_scan_ts_secs;
+ 	unsigned int numa_scan_period;
+ 	u64 node_stamp;			/* migration stamp  */
++	unsigned long convergence_strength;
++	int convergence_node;
+ 	unsigned long *numa_faults;
+ 	unsigned long *numa_faults_curr;
+ 	struct callback_head numa_scan_work;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 0fac735..26a2ede 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1555,6 +1555,8 @@ static void __sched_fork(struct task_struct *p)
  
-+/*
-+ * .v.nodes is set by numa_policy_init():
-+ */
-+static struct mempolicy default_policy_shared = {
-+	.refcnt			= ATOMIC_INIT(1), /* never free it */
-+	.mode			= MPOL_INTERLEAVE,
-+	.flags			= 0,
-+};
-+
-+static struct mempolicy *default_policy(void)
-+{
-+	if (task_numa_shared(current) == 1)
-+		return &default_policy_shared;
-+
-+	return &default_policy_local;
-+}
-+
- static struct mempolicy preferred_node_policy[MAX_NUMNODES];
- 
- static struct mempolicy *get_task_policy(struct task_struct *p)
-@@ -855,7 +872,7 @@ out:
- static void get_policy_nodemask(struct mempolicy *p, nodemask_t *nodes)
- {
- 	nodes_clear(*nodes);
--	if (p == &default_policy)
-+	if (p == default_policy())
- 		return;
- 
- 	switch (p->mode) {
-@@ -930,7 +947,7 @@ static long do_get_mempolicy(int *policy, nodemask_t *nmask,
- 		return -EINVAL;
- 
- 	if (!pol)
--		pol = &default_policy;	/* indicates default behavior */
-+		pol = default_policy();	/* indicates default behavior */
- 
- 	if (flags & MPOL_F_NODE) {
- 		if (flags & MPOL_F_ADDR) {
-@@ -946,7 +963,7 @@ static long do_get_mempolicy(int *policy, nodemask_t *nmask,
- 			goto out;
- 		}
- 	} else {
--		*policy = pol == &default_policy ? MPOL_DEFAULT :
-+		*policy = pol == default_policy() ? MPOL_DEFAULT :
- 						pol->mode;
- 		/*
- 		 * Internal mempolicy flags must be masked off before exposing
-@@ -1640,7 +1657,7 @@ struct mempolicy *get_vma_policy(struct task_struct *task,
- 		}
- 	}
- 	if (!pol)
--		pol = &default_policy;
-+		pol = default_policy();
- 	return pol;
+ 	p->numa_shared = -1;
+ 	p->node_stamp = 0ULL;
++	p->convergence_strength		= 0;
++	p->convergence_node		= -1;
+ 	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
+ 	p->numa_faults = NULL;
+ 	p->numa_scan_period = sysctl_sched_numa_scan_delay;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 7af89b7..1f6104a 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1934,6 +1934,50 @@ clear_buddy:
  }
  
-@@ -2046,7 +2063,7 @@ struct page *alloc_pages_current(gfp_t gfp, unsigned order)
- 	unsigned int cpuset_mems_cookie;
- 
- 	if (!pol || in_interrupt() || (gfp & __GFP_THISNODE))
--		pol = &default_policy;
-+		pol = default_policy();
- 
- retry_cpuset:
- 	cpuset_mems_cookie = get_mems_allowed();
-@@ -2269,7 +2286,6 @@ int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long
- 	struct mempolicy *pol;
- 	struct zone *zone;
- 	int page_nid = page_to_nid(page);
--	unsigned long pgoff;
- 	int target_node = page_nid;
- 
- 	BUG_ON(!vma);
-@@ -2280,13 +2296,22 @@ int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long
- 
- 	switch (pol->mode) {
- 	case MPOL_INTERLEAVE:
-+	{
-+		int shift;
+ /*
++ * Update the p->convergence_strength info, which is a value between 1 and 1024.
++ *
++ * A strength value of 1024 means that the workload has fully
++ * converged, all faults after the last scan period came from a
++ * single node.
++ *
++ * A value of 1024/nr_nodes means a totally spread out working set.
++ *
++ * 'max_faults' is the number of faults observed on the highest-faulting node.
++ * 'sum_faults' are all faults from the last scan, averaged over ~8 periods.
++ *
++ * The goal of the scheduler is to maximize convergence system-wide.
++ * Once a task has converged, it carries with it a non-trivial amount
++ * of working set. If such a task is migrated to another node later
++ * on then its working set will migrate there as well, which is a
++ * non-trivial cost.
++ *
++ * So the ultimate goal of NUMA scheduling is to let as many tasks
++ * converge as possible, and to run them as close to their memory
++ * as possible.
++ *
++ * ( Note: we could also sample migration activities to directly measure
++ *   how much convergence influx there is. )
++ */
++static void
++shared_fault_calc_convergence(struct task_struct *p, int max_node,
++			      unsigned long max_faults, unsigned long sum_faults)
++{
++	/*
++	 * If sum_faults is 0 then leave the convergence alone:
++	 */
++	if (sum_faults) {
++		p->convergence_strength = 1024L * max_faults / sum_faults;
 +
- 		BUG_ON(addr >= vma->vm_end);
- 		BUG_ON(addr < vma->vm_start);
- 
--		pgoff = vma->vm_pgoff;
--		pgoff += (addr - vma->vm_start) >> PAGE_SHIFT;
--		target_node = offset_il_node(pol, vma, pgoff);
-+#ifdef CONFIG_HUGETLB_PAGE
-+		if (transparent_hugepage_enabled(vma) || vma->vm_flags & VM_HUGETLB)
-+			shift = HPAGE_SHIFT;
-+		else
-+#endif
-+			shift = PAGE_SHIFT;
-+
-+		target_node = interleave_nid(pol, vma, addr, shift);
- 		break;
++		if (p->convergence_strength >= 921) {
++			WARN_ON_ONCE(max_node == -1);
++			p->convergence_node = max_node;
++		} else {
++			p->convergence_node = -1;
++		}
 +	}
- 
- 	case MPOL_PREFERRED:
- 		if (pol->flags & MPOL_F_LOCAL)
-@@ -2552,6 +2577,8 @@ void __init numa_policy_init(void)
- 		};
++}
++
++/*
+  * Called every couple of hundred milliseconds in the task's
+  * execution life-time, this function decides whether to
+  * change placement parameters:
+@@ -1974,6 +2018,8 @@ static void task_numa_placement_tick(struct task_struct *p)
+ 		}
  	}
  
-+	default_policy_shared.v.nodes = node_online_map;
++	shared_fault_calc_convergence(p, ideal_node, max_faults, total[0] + total[1]);
 +
- 	/*
- 	 * Set interleaving policy for system init. Interleaving is only
- 	 * enabled across suitably sized nodes (default is >= 16MB), or
-@@ -2771,7 +2798,7 @@ int mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol, int no_context)
- 	 */
- 	VM_BUG_ON(maxlen < strlen("interleave") + strlen("relative") + 16);
+ 	shared_fault_full_scan_done(p);
  
--	if (!pol || pol == &default_policy)
-+	if (!pol || pol == default_policy())
- 		mode = MPOL_DEFAULT;
- 	else
- 		mode = pol->mode;
+ 	/*
 -- 
 1.7.11.7
 
