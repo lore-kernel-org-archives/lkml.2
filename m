@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778Ab2LBSvN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 13:51:13 -0500
+	id S1754710Ab2LBSvh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 13:51:37 -0500
 Received: from mail-ea0-f174.google.com ([209.85.215.174]:45147 "EHLO
 	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754275Ab2LBSpG (ORCPT
+	with ESMTP id S1754568Ab2LBSo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 13:45:06 -0500
+	Sun, 2 Dec 2012 13:44:59 -0500
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
@@ -18,9 +18,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: [PATCH 31/52] sched: Introduce staged average NUMA faults
-Date: Sun,  2 Dec 2012 19:43:23 +0100
-Message-Id: <1354473824-19229-32-git-send-email-mingo@kernel.org>
+Subject: [PATCH 28/52] sched: Implement slow start for working set sampling
+Date: Sun,  2 Dec 2012 19:43:20 +0100
+Message-Id: <1354473824-19229-29-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1354473824-19229-1-git-send-email-mingo@kernel.org>
 References: <1354473824-19229-1-git-send-email-mingo@kernel.org>
@@ -28,81 +28,155 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current way of building the p->numa_faults[2][node] faults
-statistics has a sampling artifact:
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-The continuous and immediate nature of propagating new fault
-stats to the numa_faults array creates a 'pulsating' dynamic,
-that starts at the average value at the beginning of the scan,
-increases monotonically until we finish the scan to about twice
-the average, and then drops back to half of its value due to
-the running average.
+Add a 1 second delay before starting to scan the working set of
+a task and starting to balance it amongst nodes.
 
-Since we rely on these values to balance tasks, the pulsating
-nature resulted in false migrations and general noise in the
-stats.
+[ note that before the constant per task WSS sampling rate patch
+  the initial scan would happen much later still, in effect that
+  patch caused this regression. ]
 
-To solve this, introduce buffering of the current scan via
-p->task_numa_faults_curr[]. The array is co-allocated with the
-p->task_numa[] for efficiency reasons, but it is otherwise an
-ordinary separate array.
+The theory is that short-run tasks benefit very little from NUMA
+placement: they come and go, and they better stick to the node
+they were started on. As tasks mature and rebalance to other CPUs
+and nodes, so does their NUMA placement have to change and so
+does it start to matter more and more.
 
-At the end of the scan we propagate the latest stats into the
-average stats value. Most of the balancing code stays unmodified.
+In practice this change fixes an observable kbuild regression:
 
-The cost of this change is that we delay the effects of the latest
-round of faults by 1 scan - but using the partial faults info was
-creating artifacts.
+   # [ a perf stat --null --repeat 10 test of ten bzImage builds to /dev/shm ]
 
-This instantly stabilized the page fault stats and improved
-numa02-alike workloads by making them faster to converge.
+   !NUMA:
+   45.291088843 seconds time elapsed                                          ( +-  0.40% )
+   45.154231752 seconds time elapsed                                          ( +-  0.36% )
 
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+   +NUMA, no slow start:
+   46.172308123 seconds time elapsed                                          ( +-  0.30% )
+   46.343168745 seconds time elapsed                                          ( +-  0.25% )
+
+   +NUMA, 1 sec slow start:
+   45.224189155 seconds time elapsed                                          ( +-  0.25% )
+   45.160866532 seconds time elapsed                                          ( +-  0.17% )
+
+and it also fixes an observable perf bench (hackbench) regression:
+
+   # perf stat --null --repeat 10 perf bench sched messaging
+
+   -NUMA:
+
+   -NUMA:                  0.246225691 seconds time elapsed                   ( +-  1.31% )
+   +NUMA no slow start:    0.252620063 seconds time elapsed                   ( +-  1.13% )
+
+   +NUMA 1sec delay:       0.248076230 seconds time elapsed                   ( +-  1.35% )
+
+The implementation is simple and straightforward, most of the patch
+deals with adding the /proc/sys/kernel/sched_numa_scan_delay_ms tunable
+knob.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Andrea Arcangeli <aarcange@redhat.com>
 Cc: Rik van Riel <riel@redhat.com>
 Cc: Mel Gorman <mgorman@suse.de>
 Cc: Hugh Dickins <hughd@google.com>
+[ Various small fixes ]
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 20 +++++++++++++++++---
- 1 file changed, 17 insertions(+), 3 deletions(-)
+ include/linux/sched.h |  1 +
+ kernel/sched/core.c   |  1 +
+ kernel/sched/fair.c   | 16 ++++++++++------
+ kernel/sysctl.c       |  7 +++++++
+ 4 files changed, 19 insertions(+), 6 deletions(-)
 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 7e838b0..c020bc7 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2051,6 +2051,7 @@ enum sched_tunable_scaling {
+ };
+ extern enum sched_tunable_scaling sysctl_sched_tunable_scaling;
+ 
++extern unsigned int sysctl_sched_numa_scan_delay;
+ extern unsigned int sysctl_sched_numa_scan_period_min;
+ extern unsigned int sysctl_sched_numa_scan_period_max;
+ extern unsigned int sysctl_sched_numa_scan_size;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 171c126..8ef9a46 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1556,6 +1556,7 @@ static void __sched_fork(struct task_struct *p)
+ 	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
+ 	p->numa_migrate_seq = 2;
+ 	p->numa_faults = NULL;
++	p->numa_scan_period = sysctl_sched_numa_scan_delay;
+ 	p->numa_work.next = &p->numa_work;
+ 
+ 	p->shared_buddy = NULL;
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 9c46b45..1ab11be 100644
+index da28315..8f0e6ba 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -852,12 +852,26 @@ static void task_numa_placement(struct task_struct *p)
+@@ -823,11 +823,12 @@ static void account_numa_dequeue(struct rq *rq, struct task_struct *p)
+ }
  
- 	p->numa_scan_seq = seq;
+ /*
+- * numa task sample period in ms: 5s
++ * Scan @scan_size MB every @scan_period after an initial @scan_delay.
+  */
+-unsigned int sysctl_sched_numa_scan_period_min = 100;
+-unsigned int sysctl_sched_numa_scan_period_max = 100*16;
+-unsigned int sysctl_sched_numa_scan_size = 256;   /* MB */
++unsigned int sysctl_sched_numa_scan_delay = 1000;	/* ms */
++unsigned int sysctl_sched_numa_scan_period_min = 100;	/* ms */
++unsigned int sysctl_sched_numa_scan_period_max = 100*16;/* ms */
++unsigned int sysctl_sched_numa_scan_size = 256;		/* MB */
  
-+	/*
-+	 * Update the fault average with the result of the latest
-+	 * scan:
-+	 */
- 	for (node = 0; node < nr_node_ids; node++) {
- 		faults = 0;
- 		for (priv = 0; priv < 2; priv++) {
--			faults += p->numa_faults[2*node + priv];
--			total[priv] += p->numa_faults[2*node + priv];
--			p->numa_faults[2*node + priv] /= 2;
-+			unsigned int new_faults;
-+			unsigned int idx;
+ /*
+  * Wait for the 2-sample stuff to settle before migrating again
+@@ -938,10 +939,12 @@ void task_numa_work(struct callback_head *work)
+ 	if (time_before(now, migrate))
+ 		return;
+ 
+-	next_scan = now + 2*msecs_to_jiffies(sysctl_sched_numa_scan_period_min);
++	next_scan = now + msecs_to_jiffies(sysctl_sched_numa_scan_period_min);
+ 	if (cmpxchg(&mm->numa_next_scan, migrate, next_scan) != migrate)
+ 		return;
+ 
++	current->numa_scan_period += jiffies_to_msecs(2);
 +
-+			idx = 2*node + priv;
-+			new_faults = p->numa_faults_curr[idx];
-+			p->numa_faults_curr[idx] = 0;
-+
-+			/* Keep a simple running average: */
-+			p->numa_faults[idx] += new_faults;
-+			p->numa_faults[idx] /= 2;
-+
-+			faults += p->numa_faults[idx];
-+			total[priv] += p->numa_faults[idx];
- 		}
- 		if (faults > max_faults) {
- 			max_faults = faults;
+ 	start = mm->numa_scan_offset;
+ 	pages = sysctl_sched_numa_scan_size;
+ 	pages <<= 20 - PAGE_SHIFT; /* MB in pages */
+@@ -998,7 +1001,8 @@ void task_tick_numa(struct rq *rq, struct task_struct *curr)
+ 	period = (u64)curr->numa_scan_period * NSEC_PER_MSEC;
+ 
+ 	if (now - curr->node_stamp > period) {
+-		curr->node_stamp = now;
++		curr->node_stamp += period;
++		curr->numa_scan_period = sysctl_sched_numa_scan_period_min;
+ 
+ 		/*
+ 		 * We are comparing runtime to wall clock time here, which
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index a14b8a4..6d2fe5b 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -353,6 +353,13 @@ static struct ctl_table kern_table[] = {
+ #endif /* CONFIG_SMP */
+ #ifdef CONFIG_NUMA_BALANCING
+ 	{
++		.procname	= "sched_numa_scan_delay_ms",
++		.data		= &sysctl_sched_numa_scan_delay,
++		.maxlen		= sizeof(unsigned int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
++	{
+ 		.procname	= "sched_numa_scan_period_min_ms",
+ 		.data		= &sysctl_sched_numa_scan_period_min,
+ 		.maxlen		= sizeof(unsigned int),
 -- 
 1.7.11.7
 
