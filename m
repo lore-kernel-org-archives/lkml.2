@@ -1,59 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167Ab2LBBkq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Dec 2012 20:40:46 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:62109 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501Ab2LBBko (ORCPT
+	id S1753698Ab2LBCHv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Dec 2012 21:07:51 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:32999 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751748Ab2LBCHt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Dec 2012 20:40:44 -0500
-From: Cong Ding <dinggnu@gmail.com>
-To: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Cong Ding <dinggnu@gmail.com>
-Subject: [PATCH] fs:ext3: remove lock_buffer in bclean() and setup_new_group_blocks
-Date: Sun,  2 Dec 2012 01:40:28 +0000
-Message-Id: <1354412428-8938-1-git-send-email-dinggnu@gmail.com>
-X-Mailer: git-send-email 1.7.4.5
+	Sat, 1 Dec 2012 21:07:49 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121130183857.166228045@linuxfoundation.org>
+References: <20121130183857.166228045@linuxfoundation.org>
+Date: Sat, 1 Dec 2012 19:07:48 -0700
+Message-ID: <CAKocOOPH7yMxrQSR6LuAQfW1nkuKVdntmj8mJP82fz3NG=iY6Q@mail.gmail.com>
+Subject: Re: [ 00/37] 3.0.54-stable review
+From: Shuah Khan <shuahkhan@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-it's not necessary to lock the buffers because no one touches them
-beyond the file system.
+On Fri, Nov 30, 2012 at 11:45 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> This is the start of the stable review cycle for the 3.0.54 release.
+> There are 37 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Sun Dec  2 18:36:43 UTC 2012.
+> Anything received after that time might be too late.
+>
 
-Signed-off-by: Cong Ding <dinggnu@gmail.com>
----
- fs/ext3/resize.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
+Patch applied cleanly, compiled and booted on the following systems:
 
-diff --git a/fs/ext3/resize.c b/fs/ext3/resize.c
-index 0f814f3..f76fcd6 100644
---- a/fs/ext3/resize.c
-+++ b/fs/ext3/resize.c
-@@ -122,10 +122,8 @@ static struct buffer_head *bclean(handle_t *handle, struct super_block *sb,
- 		brelse(bh);
- 		bh = ERR_PTR(err);
- 	} else {
--		lock_buffer(bh);
- 		memset(bh->b_data, 0, sb->s_blocksize);
- 		set_buffer_uptodate(bh);
--		unlock_buffer(bh);
- 	}
- 
- 	return bh;
-@@ -242,10 +240,8 @@ static int setup_new_group_blocks(struct super_block *sb,
- 			brelse(gdb);
- 			goto exit_bh;
- 		}
--		lock_buffer(gdb);
- 		memcpy(gdb->b_data, sbi->s_group_desc[i]->b_data, gdb->b_size);
- 		set_buffer_uptodate(gdb);
--		unlock_buffer(gdb);
- 		err = ext3_journal_dirty_metadata(handle, gdb);
- 		if (err) {
- 			brelse(gdb);
--- 
-1.7.4.5
+HP EliteBook 6930p Intel(R) Core(TM)2 Duo CPU     T9400  @ 2.53GHz
+HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
 
+-- Shuah
