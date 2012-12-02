@@ -1,73 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753858Ab2LBKpA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 05:45:00 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:35577 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753326Ab2LBKo7 (ORCPT
+	id S1753809Ab2LBKxc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 05:53:32 -0500
+Received: from mail-gh0-f174.google.com ([209.85.160.174]:60276 "EHLO
+	mail-gh0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752758Ab2LBKxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 05:44:59 -0500
-Date: Sun, 2 Dec 2012 13:44:38 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Russ Anderson <rja@sgi.com>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch v2] x86, UV: integer wrap bug in uv_hub_ipi_value()
-Message-ID: <20121202104438.GD16078@elgon.mountain>
+	Sun, 2 Dec 2012 05:53:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121121073956.GF6186@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <20121202030055.GA4687@omega>
+References: <21103.1349774108@warthog.procyon.org.uk> <20121202030055.GA4687@omega>
+From: Matt Turner <mattst88@gmail.com>
+Date: Sun, 2 Dec 2012 02:48:03 -0800
+Message-ID: <CAEdQ38ERo_2AjLRZTAo-aPNvRybhJaO-dMSmFn8y9_i8=aM7hA@mail.gmail.com>
+Subject: Re: [GIT PULL] Disintegrate UAPI for alpha [ver #2]
+To: Michael Cree <mcree@orcon.net.nz>, David Howells <dhowells@redhat.com>,
+        rth@twiddle.net, linux-alpha@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mattst88@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a static checker fix.  The problem is that we store the bits
-from "uv_apicid_hibits" into "apicid" (the high 16 bits) but then we
-shift it 16 bit to the left.  "apicid" is an int so it wraps and we lose
-them.
+On Sat, Dec 1, 2012 at 7:00 PM, Michael Cree <mcree@orcon.net.nz> wrote:
+> On Tue, Oct 09, 2012 at 10:15:08AM +0100, David Howells wrote:
+>> Can you merge the following branch into the alpha tree please.
+>>
+>> This is to complete part of the UAPI disintegration for which the preparatory
+>> patches were pulled recently.
+>
+> I think the alpha-next tree is currently inactive so nothing has happened
+> regarding your merge request.
+>
+> Any chance you could send it directly to Linus?
+>
+> (A conflict has arisen in arch/alpha/include/asm/Kbuild against Linus'
+> tree but that is easily resolved.)
+>
+> FWIW you can have my Acked-By but it would be better if one of the
+> official Alpha maintainers acknowledged it.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
----
-v2: Style fix.  Don't use ulong.
-
-I don't have this hardware so I can't test it.  There may also be other
-bugs which this patch does not addressed.  These files are only compiled
-on x86_64 and "unsigned long" is used throughout to mean 64 bits.
-
-diff --git a/arch/x86/include/asm/uv/uv_hub.h b/arch/x86/include/asm/uv/uv_hub.h
-index 21f7385..e7a83d5 100644
---- a/arch/x86/include/asm/uv/uv_hub.h
-+++ b/arch/x86/include/asm/uv/uv_hub.h
-@@ -577,7 +577,7 @@ static unsigned long uv_hub_ipi_value(int apicid, int vector, int mode)
- {
- 	apicid |= uv_apicid_hibits;
- 	return (1UL << UVH_IPI_INT_SEND_SHFT) |
--			((apicid) << UVH_IPI_INT_APIC_ID_SHFT) |
-+			((unsigned long)apicid << UVH_IPI_INT_APIC_ID_SHFT) |
- 			(mode << UVH_IPI_INT_DELIVERY_MODE_SHFT) |
- 			(vector << UVH_IPI_INT_VECTOR_SHFT);
- }
-diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
-index 8cfade9..6d93b2f 100644
---- a/arch/x86/kernel/apic/x2apic_uv_x.c
-+++ b/arch/x86/kernel/apic/x2apic_uv_x.c
-@@ -194,13 +194,13 @@ static int __cpuinit uv_wakeup_secondary(int phys_apicid, unsigned long start_ri
- 	pnode = uv_apicid_to_pnode(phys_apicid);
- 	phys_apicid |= uv_apicid_hibits;
- 	val = (1UL << UVH_IPI_INT_SEND_SHFT) |
--	    (phys_apicid << UVH_IPI_INT_APIC_ID_SHFT) |
-+	    ((unsigned long)phys_apicid << UVH_IPI_INT_APIC_ID_SHFT) |
- 	    ((start_rip << UVH_IPI_INT_VECTOR_SHFT) >> 12) |
- 	    APIC_DM_INIT;
- 	uv_write_global_mmr64(pnode, UVH_IPI_INT, val);
- 
- 	val = (1UL << UVH_IPI_INT_SEND_SHFT) |
--	    (phys_apicid << UVH_IPI_INT_APIC_ID_SHFT) |
-+	    ((unsigned long)phys_apicid << UVH_IPI_INT_APIC_ID_SHFT) |
- 	    ((start_rip << UVH_IPI_INT_VECTOR_SHFT) >> 12) |
- 	    APIC_DM_STARTUP;
- 	uv_write_global_mmr64(pnode, UVH_IPI_INT, val);
+Acked-by: Matt Turner <mattst88@gmail.com>
