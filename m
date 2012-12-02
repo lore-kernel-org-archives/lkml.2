@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754381Ab2LBSon (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 13:44:43 -0500
+	id S1754503Ab2LBSow (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 13:44:52 -0500
 Received: from mail-ee0-f46.google.com ([74.125.83.46]:64238 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754303Ab2LBSoj (ORCPT
+	with ESMTP id S1754385Ab2LBSos (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 13:44:39 -0500
+	Sun, 2 Dec 2012 13:44:48 -0500
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
@@ -17,10 +17,11 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
         Andrea Arcangeli <aarcange@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: [PATCH 19/52] sched, numa, mm: Add last_cpu to page flags
-Date: Sun,  2 Dec 2012 19:43:11 +0100
-Message-Id: <1354473824-19229-20-git-send-email-mingo@kernel.org>
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Mike Galbraith <efault@gmx.de>
+Subject: [PATCH 23/52] sched, numa, mm: Describe the NUMA scheduling problem formally
+Date: Sun,  2 Dec 2012 19:43:15 +0100
+Message-Id: <1354473824-19229-24-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1354473824-19229-1-git-send-email-mingo@kernel.org>
 References: <1354473824-19229-1-git-send-email-mingo@kernel.org>
@@ -30,388 +31,259 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Introduce a per-page last_cpu field, fold this into the struct
-page::flags field whenever possible.
+This is probably a first: formal description of a complex high-level
+computing problem, within the kernel source.
 
-The unlikely/rare 32bit NUMA configs will likely grow the page-frame.
-
-[ Completely dropping 32bit support for CONFIG_NUMA_BALANCING would simplify
-  things, but it would also remove the warning if we grow enough 64bit
-  only page-flags to push the last-cpu out. ]
-
-This patch takes the reset_page_last_nid() equivalent from
-Mel Gorman's patch:
-
-   mm: Numa: Introduce last_nid to the page frame
-
-Suggested-by: Rik van Riel <riel@redhat.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Mike Galbraith <efault@gmx.de>
 Cc: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
 Cc: Hugh Dickins <hughd@google.com>
-[ Heavily modified. ]
+[ Next step: generate the kernel source from such formal descriptions and retire to a tropical island! ]
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/mm.h                | 105 +++++++++++++++++++++++---------------
- include/linux/mm_types.h          |   5 ++
- include/linux/mmzone.h            |  14 +----
- include/linux/page-flags-layout.h |  83 ++++++++++++++++++++++++++++++
- kernel/bounds.c                   |   4 ++
- mm/memory.c                       |   4 ++
- mm/page_alloc.c                   |   2 +
- 7 files changed, 163 insertions(+), 54 deletions(-)
- create mode 100644 include/linux/page-flags-layout.h
+ Documentation/scheduler/numa-problem.txt | 230 +++++++++++++++++++++++++++++++
+ 1 file changed, 230 insertions(+)
+ create mode 100644 Documentation/scheduler/numa-problem.txt
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index d04c2f0..a9454ca 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -581,50 +581,11 @@ static inline pte_t maybe_mkwrite(pte_t pte, struct vm_area_struct *vma)
-  * sets it, so none of the operations on it need to be atomic.
-  */
- 
--
--/*
-- * page->flags layout:
-- *
-- * There are three possibilities for how page->flags get
-- * laid out.  The first is for the normal case, without
-- * sparsemem.  The second is for sparsemem when there is
-- * plenty of space for node and section.  The last is when
-- * we have run out of space and have to fall back to an
-- * alternate (slower) way of determining the node.
-- *
-- * No sparsemem or sparsemem vmemmap: |       NODE     | ZONE | ... | FLAGS |
-- * classic sparse with space for node:| SECTION | NODE | ZONE | ... | FLAGS |
-- * classic sparse no space for node:  | SECTION |     ZONE    | ... | FLAGS |
-- */
--#if defined(CONFIG_SPARSEMEM) && !defined(CONFIG_SPARSEMEM_VMEMMAP)
--#define SECTIONS_WIDTH		SECTIONS_SHIFT
--#else
--#define SECTIONS_WIDTH		0
--#endif
--
--#define ZONES_WIDTH		ZONES_SHIFT
--
--#if SECTIONS_WIDTH+ZONES_WIDTH+NODES_SHIFT <= BITS_PER_LONG - NR_PAGEFLAGS
--#define NODES_WIDTH		NODES_SHIFT
--#else
--#ifdef CONFIG_SPARSEMEM_VMEMMAP
--#error "Vmemmap: No space for nodes field in page flags"
--#endif
--#define NODES_WIDTH		0
--#endif
--
--/* Page flags: | [SECTION] | [NODE] | ZONE | ... | FLAGS | */
-+/* Page flags: | [SECTION] | [NODE] | ZONE | [LAST_CPU] | ... | FLAGS | */
- #define SECTIONS_PGOFF		((sizeof(unsigned long)*8) - SECTIONS_WIDTH)
- #define NODES_PGOFF		(SECTIONS_PGOFF - NODES_WIDTH)
- #define ZONES_PGOFF		(NODES_PGOFF - ZONES_WIDTH)
--
--/*
-- * We are going to use the flags for the page to node mapping if its in
-- * there.  This includes the case where there is no node, so it is implicit.
-- */
--#if !(NODES_WIDTH > 0 || NODES_SHIFT == 0)
--#define NODE_NOT_IN_PAGE_FLAGS
--#endif
-+#define LAST_CPU_PGOFF		(ZONES_PGOFF - LAST_CPU_WIDTH)
- 
- /*
-  * Define the bit shifts to access each section.  For non-existent
-@@ -634,6 +595,7 @@ static inline pte_t maybe_mkwrite(pte_t pte, struct vm_area_struct *vma)
- #define SECTIONS_PGSHIFT	(SECTIONS_PGOFF * (SECTIONS_WIDTH != 0))
- #define NODES_PGSHIFT		(NODES_PGOFF * (NODES_WIDTH != 0))
- #define ZONES_PGSHIFT		(ZONES_PGOFF * (ZONES_WIDTH != 0))
-+#define LAST_CPU_PGSHIFT	(LAST_CPU_PGOFF * (LAST_CPU_WIDTH != 0))
- 
- /* NODE:ZONE or SECTION:ZONE is used to ID a zone for the buddy allocator */
- #ifdef NODE_NOT_IN_PAGE_FLAGS
-@@ -655,6 +617,7 @@ static inline pte_t maybe_mkwrite(pte_t pte, struct vm_area_struct *vma)
- #define ZONES_MASK		((1UL << ZONES_WIDTH) - 1)
- #define NODES_MASK		((1UL << NODES_WIDTH) - 1)
- #define SECTIONS_MASK		((1UL << SECTIONS_WIDTH) - 1)
-+#define LAST_CPU_MASK		((1UL << LAST_CPU_WIDTH) - 1)
- #define ZONEID_MASK		((1UL << ZONEID_SHIFT) - 1)
- 
- static inline enum zone_type page_zonenum(const struct page *page)
-@@ -693,6 +656,66 @@ static inline int page_to_nid(const struct page *page)
- }
- #endif
- 
-+#ifdef CONFIG_NUMA_BALANCING
-+#ifdef LAST_CPU_NOT_IN_PAGE_FLAGS
-+static inline int page_xchg_last_cpu(struct page *page, int cpu)
-+{
-+	return xchg(&page->_last_cpu, cpu);
-+}
-+
-+static inline int page_last_cpu(struct page *page)
-+{
-+	return page->_last_cpu;
-+}
-+
-+static inline void reset_page_last_cpu(struct page *page)
-+{
-+	page->_last_cpu = -1;
-+}
-+#else
-+static inline int page_xchg_last_cpu(struct page *page, int cpu)
-+{
-+	unsigned long old_flags, flags;
-+	int last_cpu;
-+
-+	do {
-+		old_flags = flags = page->flags;
-+		last_cpu = (flags >> LAST_CPU_PGSHIFT) & LAST_CPU_MASK;
-+
-+		flags &= ~(LAST_CPU_MASK << LAST_CPU_PGSHIFT);
-+		flags |= (cpu & LAST_CPU_MASK) << LAST_CPU_PGSHIFT;
-+	} while (unlikely(cmpxchg(&page->flags, old_flags, flags) != old_flags));
-+
-+	return last_cpu;
-+}
-+
-+static inline int page_last_cpu(struct page *page)
-+{
-+	return (page->flags >> LAST_CPU_PGSHIFT) & LAST_CPU_MASK;
-+}
-+
-+static inline void reset_page_last_cpu(struct page *page)
-+{
-+}
-+
-+#endif /* LAST_CPU_NOT_IN_PAGE_FLAGS */
-+#else /* CONFIG_NUMA_BALANCING */
-+static inline int page_xchg_last_cpu(struct page *page, int cpu)
-+{
-+	return page_to_nid(page);
-+}
-+
-+static inline int page_last_cpu(struct page *page)
-+{
-+	return page_to_nid(page);
-+}
-+
-+static inline void reset_page_last_cpu(struct page *page)
-+{
-+}
-+
-+#endif /* CONFIG_NUMA_BALANCING */
-+
- static inline struct zone *page_zone(const struct page *page)
- {
- 	return &NODE_DATA(page_to_nid(page))->node_zones[page_zonenum(page)];
-diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index 31f8a3a..7e9f758 100644
---- a/include/linux/mm_types.h
-+++ b/include/linux/mm_types.h
-@@ -12,6 +12,7 @@
- #include <linux/cpumask.h>
- #include <linux/page-debug-flags.h>
- #include <linux/uprobes.h>
-+#include <linux/page-flags-layout.h>
- #include <asm/page.h>
- #include <asm/mmu.h>
- 
-@@ -175,6 +176,10 @@ struct page {
- 	 */
- 	void *shadow;
- #endif
-+
-+#ifdef LAST_CPU_NOT_IN_PAGE_FLAGS
-+	int _last_cpu;
-+#endif
- }
- /*
-  * The struct page can be forced to be double word aligned so that atomic ops
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index a23923b..63f68c6 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -15,7 +15,7 @@
- #include <linux/seqlock.h>
- #include <linux/nodemask.h>
- #include <linux/pageblock-flags.h>
--#include <generated/bounds.h>
-+#include <linux/page-flags-layout.h>
- #include <linux/atomic.h>
- #include <asm/page.h>
- 
-@@ -318,16 +318,6 @@ enum zone_type {
-  * match the requested limits. See gfp_zone() in include/linux/gfp.h
-  */
- 
--#if MAX_NR_ZONES < 2
--#define ZONES_SHIFT 0
--#elif MAX_NR_ZONES <= 2
--#define ZONES_SHIFT 1
--#elif MAX_NR_ZONES <= 4
--#define ZONES_SHIFT 2
--#else
--#error ZONES_SHIFT -- too many zones configured adjust calculation
--#endif
--
- struct zone {
- 	/* Fields commonly accessed by the page allocator */
- 
-@@ -1030,8 +1020,6 @@ static inline unsigned long early_pfn_to_nid(unsigned long pfn)
-  * PA_SECTION_SHIFT		physical address to/from section number
-  * PFN_SECTION_SHIFT		pfn to/from section number
-  */
--#define SECTIONS_SHIFT		(MAX_PHYSMEM_BITS - SECTION_SIZE_BITS)
--
- #define PA_SECTION_SHIFT	(SECTION_SIZE_BITS)
- #define PFN_SECTION_SHIFT	(SECTION_SIZE_BITS - PAGE_SHIFT)
- 
-diff --git a/include/linux/page-flags-layout.h b/include/linux/page-flags-layout.h
+diff --git a/Documentation/scheduler/numa-problem.txt b/Documentation/scheduler/numa-problem.txt
 new file mode 100644
-index 0000000..b258132
+index 0000000..a5d2fee
 --- /dev/null
-+++ b/include/linux/page-flags-layout.h
-@@ -0,0 +1,83 @@
-+#ifndef _LINUX_PAGE_FLAGS_LAYOUT
-+#define _LINUX_PAGE_FLAGS_LAYOUT
++++ b/Documentation/scheduler/numa-problem.txt
+@@ -0,0 +1,230 @@
 +
-+#include <linux/numa.h>
-+#include <generated/bounds.h>
 +
-+#if MAX_NR_ZONES < 2
-+#define ZONES_SHIFT 0
-+#elif MAX_NR_ZONES <= 2
-+#define ZONES_SHIFT 1
-+#elif MAX_NR_ZONES <= 4
-+#define ZONES_SHIFT 2
-+#else
-+#error ZONES_SHIFT -- too many zones configured adjust calculation
-+#endif
++Effective NUMA scheduling problem statement, described formally:
 +
-+#ifdef CONFIG_SPARSEMEM
-+#include <asm/sparsemem.h>
++ * minimize interconnect traffic
 +
-+/* 
-+ * SECTION_SHIFT    		#bits space required to store a section #
-+ */
-+#define SECTIONS_SHIFT         (MAX_PHYSMEM_BITS - SECTION_SIZE_BITS)
-+#endif
++For each task 't_i' we have memory, this memory can be spread over multiple
++physical nodes, let us denote this as: 'p_i,k', the memory task 't_i' has on
++node 'k' in [pages].  
 +
-+/*
-+ * page->flags layout:
-+ *
-+ * There are five possibilities for how page->flags get laid out.  The first
-+ * (and second) is for the normal case, without sparsemem. The third is for
-+ * sparsemem when there is plenty of space for node and section. The last is
-+ * when we have run out of space and have to fall back to an alternate (slower)
-+ * way of determining the node.
-+ *
-+ * No sparsemem or sparsemem vmemmap: |       NODE     | ZONE |            ... | FLAGS |
-+ *     "      plus space for last_cpu:|       NODE     | ZONE | LAST_CPU | ... | FLAGS |
-+ * classic sparse with space for node:| SECTION | NODE | ZONE |            ... | FLAGS |
-+ *     "      plus space for last_cpu:| SECTION | NODE | ZONE | LAST_CPU | ... | FLAGS |
-+ * classic sparse no space for node:  | SECTION |     ZONE    |            ... | FLAGS |
-+ */
-+#if defined(CONFIG_SPARSEMEM) && !defined(CONFIG_SPARSEMEM_VMEMMAP)
++If a task shares memory with another task let us denote this as:
++'s_i,k', the memory shared between tasks including 't_i' residing on node
++'k'.
 +
-+#define SECTIONS_WIDTH		SECTIONS_SHIFT
-+#else
-+#define SECTIONS_WIDTH		0
-+#endif
++Let 'M' be the distribution that governs all 'p' and 's', ie. the page placement.
 +
-+#define ZONES_WIDTH		ZONES_SHIFT
++Similarly, lets define 'fp_i,k' and 'fs_i,k' resp. as the (average) usage
++frequency over those memory regions [1/s] such that the product gives an
++(average) bandwidth 'bp' and 'bs' in [pages/s].
 +
-+#if SECTIONS_WIDTH+ZONES_WIDTH+NODES_SHIFT <= BITS_PER_LONG - NR_PAGEFLAGS
-+#define NODES_WIDTH		NODES_SHIFT
-+#else
-+#ifdef CONFIG_SPARSEMEM_VMEMMAP
-+#error "Vmemmap: No space for nodes field in page flags"
-+#endif
-+#define NODES_WIDTH		0
-+#endif
++(note: multiple tasks sharing memory naturally avoid duplicat accounting
++       because each task will have its own access frequency 'fs')
 +
-+#ifdef CONFIG_NUMA_BALANCING
-+#define LAST_CPU_SHIFT	NR_CPUS_BITS
-+#else
-+#define LAST_CPU_SHIFT	0
-+#endif
++(pjt: I think this frequency is more numerically consistent if you explicitly 
++      restrict p/s above to be the working-set. (It also makes explicit the 
++      requirement for <C0,M0> to change about a change in the working set.)
 +
-+#if SECTIONS_WIDTH+ZONES_WIDTH+NODES_SHIFT+LAST_CPU_SHIFT <= BITS_PER_LONG - NR_PAGEFLAGS
-+#define LAST_CPU_WIDTH	LAST_CPU_SHIFT
-+#else
-+#define LAST_CPU_WIDTH	0
-+#endif
++      Doing this does have the nice property that it lets you use your frequency
++      measurement as a weak-ordering for the benefit a task would receive when
++      we can't fit everything.
 +
-+/*
-+ * We are going to use the flags for the page to node mapping if its in
-+ * there.  This includes the case where there is no node, so it is implicit.
-+ */
-+#if !(NODES_WIDTH > 0 || NODES_SHIFT == 0)
-+#define NODE_NOT_IN_PAGE_FLAGS
-+#endif
++      e.g. task1 has working set 10mb, f=90%
++           task2 has working set 90mb, f=10%
 +
-+#if defined(CONFIG_NUMA_BALANCING) && LAST_CPU_WIDTH == 0
-+#define LAST_CPU_NOT_IN_PAGE_FLAGS
-+#endif
++      Both are using 9mb/s of bandwidth, but we'd expect a much larger benefit
++      from task1 being on the right node than task2. )
 +
-+#endif /* _LINUX_PAGE_FLAGS_LAYOUT */
-diff --git a/kernel/bounds.c b/kernel/bounds.c
-index 0c9b862..e8ca97b 100644
---- a/kernel/bounds.c
-+++ b/kernel/bounds.c
-@@ -10,6 +10,7 @@
- #include <linux/mmzone.h>
- #include <linux/kbuild.h>
- #include <linux/page_cgroup.h>
-+#include <linux/log2.h>
- 
- void foo(void)
- {
-@@ -17,5 +18,8 @@ void foo(void)
- 	DEFINE(NR_PAGEFLAGS, __NR_PAGEFLAGS);
- 	DEFINE(MAX_NR_ZONES, __MAX_NR_ZONES);
- 	DEFINE(NR_PCG_FLAGS, __NR_PCG_FLAGS);
-+#ifdef CONFIG_SMP
-+	DEFINE(NR_CPUS_BITS, ilog2(CONFIG_NR_CPUS));
-+#endif
- 	/* End of constants */
- }
-diff --git a/mm/memory.c b/mm/memory.c
-index 1ff36b1..0197ca0 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -68,6 +68,10 @@
- 
- #include "internal.h"
- 
-+#ifdef LAST_CPU_NOT_IN_PAGE_FLAGS
-+#warning Unfortunate NUMA config, growing page-frame for last_cpu.
-+#endif
++Let 'C' map every task 't_i' to a cpu 'c_i' and its corresponding node 'n_i':
 +
- #ifndef CONFIG_NEED_MULTIPLE_NODES
- /* use the per-pgdat data instead for discontigmem - mbligh */
- unsigned long max_mapnr;
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 1b9d153..92e88bd 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -608,6 +608,7 @@ static inline int free_pages_check(struct page *page)
- 		bad_page(page);
- 		return 1;
- 	}
-+	reset_page_last_cpu(page);
- 	if (page->flags & PAGE_FLAGS_CHECK_AT_PREP)
- 		page->flags &= ~PAGE_FLAGS_CHECK_AT_PREP;
- 	return 0;
-@@ -3826,6 +3827,7 @@ void __meminit memmap_init_zone(unsigned long size, int nid, unsigned long zone,
- 		mminit_verify_page_links(page, zone, nid, pfn);
- 		init_page_count(page);
- 		reset_page_mapcount(page);
-+		reset_page_last_cpu(page);
- 		SetPageReserved(page);
- 		/*
- 		 * Mark the block movable so that blocks are reserved for
++  C: t_i -> {c_i, n_i}
++
++This gives us the total interconnect traffic between nodes 'k' and 'l',
++'T_k,l', as:
++
++  T_k,l = \Sum_i bp_i,l + bs_i,l + \Sum bp_j,k + bs_j,k where n_i == k, n_j == l
++
++And our goal is to obtain C0 and M0 such that:
++
++  T_k,l(C0, M0) =< T_k,l(C, M) for all C, M where k != l
++
++(note: we could introduce 'nc(k,l)' as the cost function of accessing memory
++       on node 'l' from node 'k', this would be useful for bigger NUMA systems
++
++ pjt: I agree nice to have, but intuition suggests diminishing returns on more
++      usual systems given factors like things like Haswell's enormous 35mb l3
++      cache and QPI being able to do a direct fetch.)
++
++(note: do we need a limit on the total memory per node?)
++
++
++ * fairness
++
++For each task 't_i' we have a weight 'w_i' (related to nice), and each cpu
++'c_n' has a compute capacity 'P_n', again, using our map 'C' we can formulate a
++load 'L_n':
++
++  L_n = 1/P_n * \Sum_i w_i for all c_i = n
++
++using that we can formulate a load difference between CPUs
++
++  L_n,m = | L_n - L_m |
++
++Which allows us to state the fairness goal like:
++
++  L_n,m(C0) =< L_n,m(C) for all C, n != m
++
++(pjt: It can also be usefully stated that, having converged at C0:
++
++   | L_n(C0) - L_m(C0) | <= 4/3 * | G_n( U(t_i, t_j) ) - G_m( U(t_i, t_j) ) |
++
++      Where G_n,m is the greedy partition of tasks between L_n and L_m. This is
++      the "worst" partition we should accept; but having it gives us a useful 
++      bound on how much we can reasonably adjust L_n/L_m at a Pareto point to 
++      favor T_n,m. )
++
++Together they give us the complete multi-objective optimization problem:
++
++  min_C,M [ L_n,m(C), T_k,l(C,M) ]
++
++
++
++Notes:
++
++ - the memory bandwidth problem is very much an inter-process problem, in
++   particular there is no such concept as a process in the above problem.
++
++ - the naive solution would completely prefer fairness over interconnect
++   traffic, the more complicated solution could pick another Pareto point using
++   an aggregate objective function such that we balance the loss of work
++   efficiency against the gain of running, we'd want to more or less suggest
++   there to be a fixed bound on the error from the Pareto line for any
++   such solution.
++
++References:
++
++  http://en.wikipedia.org/wiki/Mathematical_optimization
++  http://en.wikipedia.org/wiki/Multi-objective_optimization
++
++
++* warning, significant hand-waving ahead, improvements welcome *
++
++
++Partial solutions / approximations:
++
++ 1) have task node placement be a pure preference from the 'fairness' pov.
++
++This means we always prefer fairness over interconnect bandwidth. This reduces
++the problem to:
++
++  min_C,M [ T_k,l(C,M) ]
++
++ 2a) migrate memory towards 'n_i' (the task's node).
++
++This creates memory movement such that 'p_i,k for k != n_i' becomes 0 -- 
++provided 'n_i' stays stable enough and there's sufficient memory (looks like
++we might need memory limits for this).
++
++This does however not provide us with any 's_i' (shared) information. It does
++however remove 'M' since it defines memory placement in terms of task
++placement.
++
++XXX properties of this M vs a potential optimal
++
++ 2b) migrate memory towards 'n_i' using 2 samples.
++
++This separates pages into those that will migrate and those that will not due
++to the two samples not matching. We could consider the first to be of 'p_i'
++(private) and the second to be of 's_i' (shared).
++
++This interpretation can be motivated by the previously observed property that
++'p_i,k for k != n_i' should become 0 under sufficient memory, leaving only
++'s_i' (shared). (here we loose the need for memory limits again, since it
++becomes indistinguishable from shared).
++
++XXX include the statistical babble on double sampling somewhere near
++
++This reduces the problem further; we loose 'M' as per 2a, it further reduces
++the 'T_k,l' (interconnect traffic) term to only include shared (since per the
++above all private will be local):
++
++  T_k,l = \Sum_i bs_i,l for every n_i = k, l != k
++
++[ more or less matches the state of sched/numa and describes its remaining
++  problems and assumptions. It should work well for tasks without significant
++  shared memory usage between tasks. ]
++
++Possible future directions:
++
++Motivated by the form of 'T_k,l', try and obtain each term of the sum, so we
++can evaluate it;
++
++ 3a) add per-task per node counters
++
++At fault time, count the number of pages the task faults on for each node.
++This should give an approximation of 'p_i' for the local node and 's_i,k' for
++all remote nodes.
++
++While these numbers provide pages per scan, and so have the unit [pages/s] they
++don't count repeat access and thus aren't actually representable for our
++bandwidth numberes.
++
++ 3b) additional frequency term
++
++Additionally (or instead if it turns out we don't need the raw 'p' and 's' 
++numbers) we can approximate the repeat accesses by using the time since marking
++the pages as indication of the access frequency.
++
++Let 'I' be the interval of marking pages and 'e' the elapsed time since the
++last marking, then we could estimate the number of accesses 'a' as 'a = I / e'.
++If we then increment the node counters using 'a' instead of 1 we might get
++a better estimate of bandwidth terms.
++
++ 3c) additional averaging; can be applied on top of either a/b.
++
++[ Rik argues that decaying averages on 3a might be sufficient for bandwidth since
++  the decaying avg includes the old accesses and therefore has a measure of repeat
++  accesses.
++
++  Rik also argued that the sample frequency is too low to get accurate access
++  frequency measurements, I'm not entirely convinced, event at low sample 
++  frequencies the avg elapsed time 'e' over multiple samples should still
++  give us a fair approximation of the avg access frequency 'a'.
++
++  So doing both b&c has a fair chance of working and allowing us to distinguish
++  between important and less important memory accesses.
++
++  Experimentation has shown no benefit from the added frequency term so far. ]
++
++This will give us 'bp_i' and 'bs_i,k' so that we can approximately compute
++'T_k,l' Our optimization problem now reads:
++
++  min_C [ \Sum_i bs_i,l for every n_i = k, l != k ]
++
++And includes only shared terms, this makes sense since all task private memory
++will become local as per 2.
++
++This suggests that if there is significant shared memory, we should try and
++move towards it.
++
++ 4) move towards where 'most' memory is
++
++The simplest significance test is comparing the biggest shared 's_i,k' against
++the private 'p_i'. If we have more shared than private, move towards it.
++
++This effectively makes us move towards where most our memory is and forms a
++feed-back loop with 2. We migrate memory towards us and we migrate towards
++where 'most' memory is.
++
++(Note: even if there were two tasks fully trashing the same shared memory, it
++       is very rare for there to be an 50/50 split in memory, lacking a perfect
++       split, the small will move towards the larger. In case of the perfect
++       split, we'll tie-break towards the lower node number.)
++
++ 5) 'throttle' 4's node placement
++
++Since per 2b our 's_i,k' and 'p_i' require at least two scans to 'stabilize'
++and show representative numbers, we should limit node-migration to not be
++faster than this.
++
++ n) poke holes in previous that require more stuff and describe it.
 -- 
 1.7.11.7
 
