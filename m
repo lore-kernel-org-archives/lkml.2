@@ -1,40 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753898Ab2LBPIl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 10:08:41 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:49304 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753477Ab2LBPIk (ORCPT
+	id S1753803Ab2LBPKz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 10:10:55 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:54225 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751846Ab2LBPKx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 10:08:40 -0500
-Date: Sun, 2 Dec 2012 15:13:32 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Paul Fulghum <paulkf@microgate.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Chen Gang <gang.chen@asianux.com>,
+	Sun, 2 Dec 2012 10:10:53 -0500
+Date: Sun, 2 Dec 2012 16:10:48 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH] synclink fix ldisc buffer argument
-Message-ID: <20121202151332.3b6a6504@pyramind.ukuu.org.uk>
-In-Reply-To: <50B90D0D.9040401@microgate.com>
-References: <50B6E751.9000000@asianux.com>
-	<20121129051335.GA4375@kroah.com>
-	<50B6F967.3050000@asianux.com>
-	<20121129183207.GA4688@kroah.com>
-	<50B81F76.8020508@asianux.com>
-	<50B8DDAC.8070901@microgate.com>
-	<50B90D0D.9040401@microgate.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 1/2] mm/rmap: Convert the struct anon_vma::mutex to an
+ rwsem
+Message-ID: <20121202151048.GA12911@gmail.com>
+References: <1354305521-11583-1-git-send-email-mingo@kernel.org>
+ <CA+55aFwjxm7OYuucHeE2WFr4p+jwr63t=kSdHndta_QkyFbyBQ@mail.gmail.com>
+ <20121201094927.GA12366@gmail.com>
+ <20121201122649.GA20322@gmail.com>
+ <CA+55aFx8QtP0hg8qxn__4vHQuzH7QkhTN-4fwgOpM-A=KuBBjA@mail.gmail.com>
+ <20121201184135.GA32449@gmail.com>
+ <CA+55aFyq7OaUxcEHXvJhp0T57KN14o-RGxqPmA+ks8ge6zJh5w@mail.gmail.com>
+ <20121201201030.GA2704@gmail.com>
+ <50BA6649.7050103@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50BA6649.7050103@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +				 * If a different line discipline is selected by mistake it
-> +				 * will have valid memory for both arguments.
-> +				 */
-> +				ldisc_receive_buf(tty, buf->data, buf->data, framesize);
 
-But not valid content it seems 
+* Rik van Riel <riel@redhat.com> wrote:
+
+> On 12/01/2012 03:10 PM, Ingo Molnar wrote:
+> >
+> >Convert the struct anon_vma::mutex to an rwsem, which will help
+> >in solving a page-migration scalability problem. (Addressed in
+> >a separate patch.)
+> >
+> >The conversion is simple and straightforward: in every case
+> >where we mutex_lock()ed we'll now down_write().
+> >
+> >Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+> >Cc: Andrew Morton <akpm@linux-foundation.org>
+> >Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> >Cc: Andrea Arcangeli <aarcange@redhat.com>
+> >Cc: Rik van Riel <riel@redhat.com>
+> >Cc: Mel Gorman <mgorman@suse.de>
+> >Cc: Hugh Dickins <hughd@google.com>
+> >Signed-off-by: Ingo Molnar <mingo@kernel.org>
+> 
+> Reviewed-by: Rik van Riel <riel@redhat.com>
+
+Thanks Rik!
+
+	Ingo
