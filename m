@@ -1,47 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064Ab2LBOmm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 09:42:42 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:64712 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301Ab2LBOml (ORCPT
+	id S1753898Ab2LBPIl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 10:08:41 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:49304 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753477Ab2LBPIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 09:42:41 -0500
-MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <1738269086.121732.1354456173261.JavaMail.root@elliptictech.com>
-References: <CAKMK7uGrLvmDa+pqStAK_E_rEmgAgR+BO6+-m2dgUk6Ut6DuCQ@mail.gmail.com>
-	<1738269086.121732.1354456173261.JavaMail.root@elliptictech.com>
-Date: Sun, 2 Dec 2012 15:42:39 +0100
-Message-ID: <CAKMK7uG3CvfvmMdusSUQf9+rOv_W1AWmoEqH4EAGgCiTyRfNeg@mail.gmail.com>
-Subject: Re: Brightness control fails between 3.6.8 and 3.7.0-rc7 (Intel
- 915/Dell Vostro 3560)
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Tom St Denis <tstdenis@elliptictech.com>
-Cc: linux-kernel@vger.kernel.org, intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 2 Dec 2012 10:08:40 -0500
+Date: Sun, 2 Dec 2012 15:13:32 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Paul Fulghum <paulkf@microgate.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, Chen Gang <gang.chen@asianux.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH] synclink fix ldisc buffer argument
+Message-ID: <20121202151332.3b6a6504@pyramind.ukuu.org.uk>
+In-Reply-To: <50B90D0D.9040401@microgate.com>
+References: <50B6E751.9000000@asianux.com>
+	<20121129051335.GA4375@kroah.com>
+	<50B6F967.3050000@asianux.com>
+	<20121129183207.GA4688@kroah.com>
+	<50B81F76.8020508@asianux.com>
+	<50B8DDAC.8070901@microgate.com>
+	<50B90D0D.9040401@microgate.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 2, 2012 at 2:49 PM, Tom St Denis <tstdenis@elliptictech.com> wrote:
-> Ok so on v3.7-rc1 [and I suspect up] I can manually control the brightness by echoing to
->
-> /sys/class/backlight/intel_backlight/brightness
->
-> But I still can't use the buttons to control it (it only goes one tick down from max and stops there).  I'm using GNOME3 from a x86_64 unstable debian install [up to date with latest].
->
-> I just noticed that under v3.7 I have a new directory /sys/class/backlight/acpi_video1 which is what GNOME is actually controlling.  I can't disable ACPI video control so is there a workaround?
+> +				 * If a different line discipline is selected by mistake it
+> +				 * will have valid memory for both arguments.
+> +				 */
+> +				ldisc_receive_buf(tty, buf->data, buf->data, framesize);
 
-Hah, acpi registered a broken backlight driver, which overwrites the
-intel backlight - for once it's not i915.ko's fault ;-) For a
-workaround either disable the acpi backlight with
-acpi_backlight=vendor (iirc) kernel option or teach the X driver that
-you want a different backlight driver in the xorg.conf (Option
-"Backlight" "intel_backlight" should do the trick).
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+But not valid content it seems 
