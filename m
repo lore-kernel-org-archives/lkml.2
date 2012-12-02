@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753747Ab2LBCyx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Dec 2012 21:54:53 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:45796 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751573Ab2LBCyw (ORCPT
+	id S1753761Ab2LBDFT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Dec 2012 22:05:19 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:42433 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751573Ab2LBDFR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Dec 2012 21:54:52 -0500
-X-Greylist: delayed 442 seconds by postgrey-1.27 at vger.kernel.org; Sat, 01 Dec 2012 21:54:51 EST
-From: Cyril Roelandt <tipecaml@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: kernel-janitors@vger.kernel.org, Cyril Roelandt <tipecaml@gmail.com>,
-        forest@alittletooquiet.net, gregkh@linuxfoundation.org,
-        tvboxspy@gmail.com, marcos.souza.org@gmail.com, standby24x7@gmail.com,
-        justinmattock@gmail.com, devel@driverdev.osuosl.org
-Subject: [PATCH 6/6] vt6656: remove a useless call to memset().
-Date: Sun,  2 Dec 2012 03:40:22 +0100
-Message-Id: <1354416022-20189-7-git-send-email-tipecaml@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1354416022-20189-1-git-send-email-tipecaml@gmail.com>
-References: <1354416022-20189-1-git-send-email-tipecaml@gmail.com>
+	Sat, 1 Dec 2012 22:05:17 -0500
+MIME-Version: 1.0
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Sat, 1 Dec 2012 19:04:56 -0800
+Message-ID: <CALCETrVQxPDfU83-LUWrf330wOBbSsMvKdFXMR3CL4LmDvyfMw@mail.gmail.com>
+Subject: [RFC] Capabilities still can't be inherited by normal programs
+To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Cc: Kees Cook <keescook@chromium.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@redhat.com>, "Andrew G. Morgan" <morgan@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This call is followed by a call to memcpy() on the same memory area, so it can
-be safely removed.
+I'd like to be able to run programs (like bash!) as nonroot but with
+some capabilities granted.  After all these years, it's almost, but
+not quite, possible.  This is because the transition rule (if root
+isn't involved or NOROOT is set) is pP' = (pB' & fP) | (pI' & fI),
+and, when execing a program without vfs caps set, fI = 0.  I want to
+set PR_SET_KEEPCAPS, setuid away from root, set some capability as
+inheritable, and exec something.  That capability stays inheritable,
+but it doesn't end up permitted.  Oops.
 
-Signed-off-by: Cyril Roelandt <tipecaml@gmail.com>
----
- drivers/staging/vt6656/bssdb.c |    1 -
- 1 file changed, 1 deletion(-)
+(There's another alarming thing that happens -- programs end up with
+capability bits that are inheritable but not permitted.  I'd like to
+change cap_bprm_set_creds to clear all inheritable bits that don't end
+up in the final permitted set to minimize confusion.  Of course, this
+*could* (but seems unlikely to) trigger security bugs.)
 
-diff --git a/drivers/staging/vt6656/bssdb.c b/drivers/staging/vt6656/bssdb.c
-index 6a13941..f9098b8 100644
---- a/drivers/staging/vt6656/bssdb.c
-+++ b/drivers/staging/vt6656/bssdb.c
-@@ -240,7 +240,6 @@ pDevice->bSameBSSMaxNum = jj;
-             pSelect->bSelected = TRUE;
-                         if (pDevice->bRoaming == FALSE)  {
- 	//       Einsn Add @20070907
--				memset(pbyDesireSSID, 0, WLAN_IEHDR_LEN + WLAN_SSID_MAXLEN + 1);
- 			memcpy(pbyDesireSSID,pCurrBSS->abySSID,WLAN_IEHDR_LEN + WLAN_SSID_MAXLEN + 1) ;
-                                                 }
- 
--- 
-1.7.10.4
+The obvious but scary fix is to make everything act like fI = <all
+caps> if vfs caps aren't set.  It's not immediately obvious why this
+would be bad: no task has any inheritable capabilities by default.
+Something like the sendmail bug is unlikely here -- this change would
+give *more* caps, not fewer, and it could be done in such a way that
+setuid binaries don't inherit caps.
 
+A less scary way would be to make it opt-in: set a securebit if you
+want default capability inheritance.  This requires CAP_SETPCAP, which
+seems to be shorthand for "allow me to shoot myself in the foot".
+Sensible programs might set no_new_privs when they set this securebit.
+
+An even less scary way would be to require a new securebit *and* no_new_privs.
+
+Any suggestions?  I'm happy to write patches, but I'd rather not cook
+up ten patches and have this get stuck in limbo for years.
+
+For some rationale: I want to write a program that has cap_net_raw
+permitted as a file capability.  That program will do some checks and
+then invoke tcpdump.  I can't do this: tcpdump can't inherit
+capabilities into its permitted set unless I set the cap_net_raw
+inheritable bit on it.
+
+--Andy
+
+P.S. The get_file_caps code is gross.  Whatever the outcome of this
+discussion, I'll submit a patch to clean it up, and I'll probably add
+a file to Documentation/security for good measure.
