@@ -1,103 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132Ab2LBT5u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 14:57:50 -0500
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:42348 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753582Ab2LBT5s (ORCPT
+	id S1754194Ab2LBUzh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 15:55:37 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:54549 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753884Ab2LBUzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 14:57:48 -0500
-Message-ID: <1354478254.2531.161.camel@thor>
-Subject: Re: flush_to_ldisc accesses tty after free  (was: [PATCH 21/21]
- TTY: move tty buffers to tty_port)
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Jiri Slaby <jslaby@suse.cz>, Jiri Slaby <jirislaby@gmail.com>,
-        alan@linux.intel.com
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        Dave Jones <davej@redhat.com>, Sasha Levin <levinsasha928@gmail.com>,
-        linux-serial <linux-serial@vger.kernel.org>
-Date: Sun, 02 Dec 2012 14:57:34 -0500
-In-Reply-To: <1354392383.2531.118.camel@thor>
-References: <1350592007-9216-1-git-send-email-jslaby@suse.cz>
-	 <1350592007-9216-22-git-send-email-jslaby@suse.cz>
-	 <50897E98.5080502@gmail.com> <50911F67.3040303@suse.cz>
-	 <CA+1xoqfZ5DHVi44Y_a5EmXYeN6Eh=COSP4CiA6tM-aqJE1vBoQ@mail.gmail.com>
-	 <5091448D.3@suse.cz>
-	 <CA+1xoqdRBCQYBQdK-=KJohtua_wD_fp4akk6_jS0x3x82fRp5g@mail.gmail.com>
-	 <5093EC1B.2050800@suse.cz>
-	 <CA+1xoqdRV5LORTDM9iiTRQwCdGK9XqcW54zyh03M-c-mVU2YLQ@mail.gmail.com>
-	 <5093F262.6000301@suse.cz> <50947B7B.8080601@gmail.com>
-	 <50953E8D.9000504@suse.cz> <5095A384.5080205@gmail.com>
-	 <5095BC6E.2010505@gmail.com> <1354046255.2444.10.camel@thor>
-	 <50B946A9.9070306@gmail.com> <1354373995.2531.48.camel@thor>
-	 <1354392383.2531.118.camel@thor>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.2.4-0build1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Authenticated-User: 125194 peter@hurleysoftware.com
-X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+	Sun, 2 Dec 2012 15:55:35 -0500
+Date: Sun, 2 Dec 2012 21:55:27 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Terje =?utf-8?Q?Bergstr=C3=B6m?= <tbergstrom@nvidia.com>
+Cc: Dave Airlie <airlied@gmail.com>, Lucas Stach <dev@lynxeye.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC v2 1/8] video: tegra: Add nvhost driver
+Message-ID: <20121202205527.GA22086@avionic-0098.adnet.avionic-design.de>
+References: <20121129114704.GB6150@avionic-0098.adnet.avionic-design.de>
+ <50B7AB93.5060207@wwwdotorg.org>
+ <1354265429.1479.187.camel@tellur>
+ <50B9EDA9.2000500@nvidia.com>
+ <20121201151020.GC18209@avionic-0098.adnet.avionic-design.de>
+ <50BA3668.1010504@nvidia.com>
+ <1354383291.1503.25.camel@tellur>
+ <50BA5AB2.8000604@nvidia.com>
+ <CAPM=9tzUYkMZhwReSDLxvMYvgDmXukajm8EMqtzqmcNeD+oMAw@mail.gmail.com>
+ <50BB3A5D.6070304@nvidia.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="G4iJoqBmSsgzjUCe"
+Content-Disposition: inline
+In-Reply-To: <50BB3A5D.6070304@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:R1as919DdpnjyIYlBzTcOGQDCTS13fq3VxwOlF8uKAa
+ xMgS49tCZKEnsMt5mNk2k6/GQNPP7g81RClDiu2yGYO3GAFCti
+ qMrrWrKKZ6lKs7PZDj24wxApV2BEW67hy01HSdj7un+1QcpeYu
+ ohg4bNyVq4qwv2Zy2+p9QIWCzA4Ujz3GHbQxdEq3cJmKcrl74j
+ /PBOIunhOGYnOVtup7T8Jp/v7zkregvjUyxal1djbPobvmiwvf
+ h3WE8gfw2lKH0l6xT/FzkZRuKehN824vxcPkIuln/AODFZVOiU
+ tFts7eedVkAMrPjZHJZL9OgUoE6iu0wuExlIP1VjN24I5vq+KI
+ FYxC0gHn6NQKmkl8JUMYwamEGAQo2e/lSqoQ7MPP11BXwcdaAE
+ zuOw27UnnNJYbfYhZQbek6u6TFFJMZ0P8o=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[whoops... cc: linux-serial]
 
-On Sat, 2012-12-01 at 15:06 -0500, Peter Hurley wrote:
-> On Sat, 2012-12-01 at 09:59 -0500, Peter Hurley wrote:
-> ....
-> > From instrumenting the tty_release() path, it's clear that tty_buffer
-> > work is still scheduled even after tty_release_ldisc() has run. For
-> > example, with this patch I get the warning below it.
-> > 
-> > [Further analysis to follow in subsequent mail...]
-> 
-> [ Please note: this analysis only refers to the pty driver. The
-> situation with hardware drivers has further complications.]
-> 
-> Firstly, this problem predates Jiri's changes; only because he was
-> cautious by checking the lifetime of the itty in flush_to_ldisc(), did
-> he uncover this existing problem.
-> 
-> One example of how it is possible for buffer work to be scheduled even
-> after tty_release_ldisc() stems from how tty_ldisc_halt() works (or
-> rather doesn't). (I've snipped out the relevant code from tty_ldisc.c
-> for annotation below.)
+--G4iJoqBmSsgzjUCe
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Naturally, I found the least obvious problem first.
+On Sun, Dec 02, 2012 at 01:24:13PM +0200, Terje Bergstr=C3=B6m wrote:
+> On 01.12.2012 23:42, Dave Airlie wrote:
+> > Guys I think you guys might be overthniking things here.
+> >=20
+> > I know you have some sort of upstream/downstream split, but really in
+> > the upstream kernel, we don't care about that, so don't make it our
+> > problem.
+>=20
+> I am not trying to make anything your problem. Most of the issues we
+> have already worked out with a good solution that all active
+> participants have agreed with. We have only a couple of disagreements
+> with Thierry.
+>=20
+> My goal is to get a good open source co-operation and trying to prevent
+> a code fork while still maintaining good design. That way everybody
+> wins. The way to do that is to base our BSP on upstream kernel.
 
-The more obvious problem is that the pty driver doesn't have an ldisc
-reference to the 'other' tty when pty_write() is called. So doing the
-tty_flip_buffer_push() has scheduled buffer work for a potentially
-halted ldisc.
+Yes, that's exactly what you should be doing.
 
-static int pty_write(struct tty_struct *tty, const unsigned char *buf, int c)
-{
-	struct tty_struct *to = tty->link;	<==== this is the 'other' tty
+> I'm not trying to here throw code over the fence and flee. This is a
+> genuine attempt to work together. I want to prevent the "we" (kernel
+> community excluding NVIDIA) and "you" (NVIDIA) that a split code base
+> would cause in the long run. I'd like to just talk about "we" including
+> NVIDIA.
 
-	if (tty->stopped)
-		return 0;
+FWIW I'm convinced that you're genuinely trying to make this work and
+nobody welcomes this more than me. However it is only natural if you
+dump such a large body of code on the community that people will
+disagree with some of the design decisions.
 
-	if (c > 0) {
-		/* Stuff the data into the input queue of the other end */
-		c = tty_insert_flip_string(to, buf, c);
-		/* And shovel */
-		if (c) {
-			tty_flip_buffer_push(to);
-			tty_wakeup(tty);
-		}
-	}
-	return c;
-}
+So when I comment on the design or patches in general, it is not my
+intention to exclude you or NVIDIA in any way. All I'm trying to do is
+spot problematic or unclear parts that will make working with the code
+any more difficult than it has to be.
 
-There are several possible ways to fix this:
-1. Halt both ldiscs and ensure that both ldiscs have no outstanding
-references before cancelling their work.
-2. Claim an ldisc reference for the 'other' ldisc in things like
-tty_write().
-3. I'm sure there's other ways....
+> > There is no need for any sort of stable API between host1x and the sub
+> > drivers, we change APIs in the kernel the whole time it isn't a
+> > problem.
+> >=20
+> > If you need to change the API, submit a single patch changing it
+> > across all the drivers in the tree, collecting Acks or not as needed.
+> > We do this the whole time, I've never had or seen a problem with it.
+> >=20
+> > We don't do separate subsystems APIs set in stone bullshit, and all
+> > subsystem maintainers are used to dealing with these sort of issues.
+> > You get an ack from one maintainer and the other one sticks it in his
+> > tree with a note to Linus.
+> >=20
+> > You can put the code where you want, maybe just under drivers/gpu
+> > instead of drivers/video or drivers/gpu/drm, just make sure you have a
+> > path for it into the kernel.
+>=20
+> Follows exactly my thinking, as the location of host1x driver has no
+> practical consequence to me.
+>=20
+> Thierry proposed drivers/gpu/host1x. I'd like to see a couple of
+> comments on that proposal, and if it sticks, follow that.
+>=20
+> Thierry, did you mean that host1x driver would be in drivers/gpu/host1x,
+> and tegradrm in drivers/gpu/drm/tegra, or would we put both in same
+> directory?
 
-Regards,
-Peter Hurley
+Since tegra-drm is a DRM driver it should stay in drivers/gpu/drm. I can
+also live with the host1x driver staying in drivers/video, but I don't
+think it's the proper location and drivers/gpu/host1x seems like a much
+better fit.
 
+Thierry
+
+--G4iJoqBmSsgzjUCe
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQu8A/AAoJEN0jrNd/PrOh9W4P/3kiHYiSJO7icJXK2W0CM4Au
+H7od1z2pAl+uZzZRHypaVAqpA3nDzZnFrn+zIAbWHe17wW+wdIf+KUDNomsiYKyC
+pkWczIGQbU9slw1q0sr2IpJ124e3lPiGs2YjFfmvl+Sj3xPrY51Nl8B4RDXxjlSe
+yBRpmHsO8ZEmpiqHazb09U/cZfo/Fng6qVdz+MP5iV5p07hqfA8IQJiBNvHXXO8w
+AeaiNeXMFP29ykZ18FpqLhZUdD84M9CdN8KI35nRLKfjVXv2gS3MfiMnB2XjvaZC
+OovFPOV7IKPMQyRFjrjs7RC6nmVf5sm+OFb+2FUpeTIVCzRMaE8X3doggng4ETjq
+TRbe0i0+uViQ1UbH61+g09xZ1QMHIXumraQAeK47GRccP9J35NTYsEURopIDeUQI
+cpFyhYw9ETTpTFdNoCa5kAkG0L0c+hLlruio3KrVcqjBaF7Py+P9VJW4VqHVEFmW
+Q9kgd95tyVqqxEBqnsnkNAjcQ3yXRxEvdKRkrHVLbuycWl1SW0ou4Hjg3wnmVIrs
+w41r3JjYX+cm6nDL2gDhVNqbyQ32nsNRxYTmh9Q4RoJtstaeukbKlFxIN0HuAry9
+HokuOWXEZZNwvZljKtDS3ajMsuvGvqUnEW8qo9iTu7zHVTxO3KD31v/I785yhfIT
+t/ILSUYS1wq4kmQ7kEFh
+=ZpTe
+-----END PGP SIGNATURE-----
+
+--G4iJoqBmSsgzjUCe--
