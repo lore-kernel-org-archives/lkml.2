@@ -1,145 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194Ab2LBUzh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 15:55:37 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:54549 "EHLO
+	id S1754214Ab2LBVB7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 16:01:59 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:63309 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753884Ab2LBUzf (ORCPT
+	with ESMTP id S1754051Ab2LBVB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 15:55:35 -0500
-Date: Sun, 2 Dec 2012 21:55:27 +0100
+	Sun, 2 Dec 2012 16:01:56 -0500
+Date: Sun, 2 Dec 2012 22:01:06 +0100
 From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Terje =?utf-8?Q?Bergstr=C3=B6m?= <tbergstrom@nvidia.com>
-Cc: Dave Airlie <airlied@gmail.com>, Lucas Stach <dev@lynxeye.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC v2 1/8] video: tegra: Add nvhost driver
-Message-ID: <20121202205527.GA22086@avionic-0098.adnet.avionic-design.de>
-References: <20121129114704.GB6150@avionic-0098.adnet.avionic-design.de>
- <50B7AB93.5060207@wwwdotorg.org>
- <1354265429.1479.187.camel@tellur>
- <50B9EDA9.2000500@nvidia.com>
- <20121201151020.GC18209@avionic-0098.adnet.avionic-design.de>
- <50BA3668.1010504@nvidia.com>
- <1354383291.1503.25.camel@tellur>
- <50BA5AB2.8000604@nvidia.com>
- <CAPM=9tzUYkMZhwReSDLxvMYvgDmXukajm8EMqtzqmcNeD+oMAw@mail.gmail.com>
- <50BB3A5D.6070304@nvidia.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: NeilBrown <neilb@suse.de>, Chris Ball <cjb@laptop.org>,
+        lkml <linux-kernel@vger.kernel.org>, linux-mmc@vger.kernel.org,
+        Linux PM mailing list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH] SDIO / PM: Add empty bus-level suspend/resume callbacks
+Message-ID: <20121202210106.GB22086@avionic-0098.adnet.avionic-design.de>
+References: <20120325203849.7a908e32@notabene.brown>
+ <201203260029.24826.rjw@sisk.pl>
+ <20121202194625.5d66e239@notabene.brown>
+ <2147450.LFoExqrKEF@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="G4iJoqBmSsgzjUCe"
+	protocol="application/pgp-signature"; boundary="b5gNqxB1S1yM7hjW"
 Content-Disposition: inline
-In-Reply-To: <50BB3A5D.6070304@nvidia.com>
+In-Reply-To: <2147450.LFoExqrKEF@vostro.rjw.lan>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:R1as919DdpnjyIYlBzTcOGQDCTS13fq3VxwOlF8uKAa
- xMgS49tCZKEnsMt5mNk2k6/GQNPP7g81RClDiu2yGYO3GAFCti
- qMrrWrKKZ6lKs7PZDj24wxApV2BEW67hy01HSdj7un+1QcpeYu
- ohg4bNyVq4qwv2Zy2+p9QIWCzA4Ujz3GHbQxdEq3cJmKcrl74j
- /PBOIunhOGYnOVtup7T8Jp/v7zkregvjUyxal1djbPobvmiwvf
- h3WE8gfw2lKH0l6xT/FzkZRuKehN824vxcPkIuln/AODFZVOiU
- tFts7eedVkAMrPjZHJZL9OgUoE6iu0wuExlIP1VjN24I5vq+KI
- FYxC0gHn6NQKmkl8JUMYwamEGAQo2e/lSqoQ7MPP11BXwcdaAE
- zuOw27UnnNJYbfYhZQbek6u6TFFJMZ0P8o=
+X-Provags-ID: V02:K0:mWknK2aWX2/IQ4zYapuzlT9e+L/k8Ec3QS1VrSVRIzW
+ zZlD1O1Eimb3KHcL0SgKHIu6qYqXnhMhjKBVu3Rjbc6yRChsh4
+ esqQIkg7ik0/h9iMvT/PG5lPibAek8FIRFiRSdircieB7iS9je
+ hPvT28Afh+JiYYHbsOIJINVHYnKWEBXxGnxFS8u4DDZQRnAtBv
+ fjsZFXRUIUCKx1t74LSTiD9IjnbobUsPHdOieTjif6pXkWmFs7
+ 7ihDouUD9L3r2S9HQ460yBFTtkYrLfe0+wjWo9b7W8ptsBcVkU
+ UT+mKJxScJ1SSibYIyjfwxi1Q/kC1Pz+3wpwqPfIIxjtgKPp7a
+ HZyORqAKobDWKp4KAKMeA9Lm0ncYFf9ujN6Sa/IwovgQrN1Dm3
+ eZNnTk+H9OnWJY0ivo7ngBKz7/hyB1VfsA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---G4iJoqBmSsgzjUCe
-Content-Type: text/plain; charset=utf-8
+--b5gNqxB1S1yM7hjW
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Sun, Dec 02, 2012 at 01:24:13PM +0200, Terje Bergstr=C3=B6m wrote:
-> On 01.12.2012 23:42, Dave Airlie wrote:
-> > Guys I think you guys might be overthniking things here.
+On Sun, Dec 02, 2012 at 02:48:50PM +0100, Rafael J. Wysocki wrote:
+> On Sunday, December 02, 2012 07:46:25 PM NeilBrown wrote:
+> > On Mon, 26 Mar 2012 00:29:24 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wr=
+ote:
 > >=20
-> > I know you have some sort of upstream/downstream split, but really in
-> > the upstream kernel, we don't care about that, so don't make it our
-> > problem.
->=20
-> I am not trying to make anything your problem. Most of the issues we
-> have already worked out with a good solution that all active
-> participants have agreed with. We have only a couple of disagreements
-> with Thierry.
->=20
-> My goal is to get a good open source co-operation and trying to prevent
-> a code fork while still maintaining good design. That way everybody
-> wins. The way to do that is to base our BSP on upstream kernel.
-
-Yes, that's exactly what you should be doing.
-
-> I'm not trying to here throw code over the fence and flee. This is a
-> genuine attempt to work together. I want to prevent the "we" (kernel
-> community excluding NVIDIA) and "you" (NVIDIA) that a split code base
-> would cause in the long run. I'd like to just talk about "we" including
-> NVIDIA.
-
-FWIW I'm convinced that you're genuinely trying to make this work and
-nobody welcomes this more than me. However it is only natural if you
-dump such a large body of code on the community that people will
-disagree with some of the design decisions.
-
-So when I comment on the design or patches in general, it is not my
-intention to exclude you or NVIDIA in any way. All I'm trying to do is
-spot problematic or unclear parts that will make working with the code
-any more difficult than it has to be.
-
-> > There is no need for any sort of stable API between host1x and the sub
-> > drivers, we change APIs in the kernel the whole time it isn't a
-> > problem.
 > >=20
-> > If you need to change the API, submit a single patch changing it
-> > across all the drivers in the tree, collecting Acks or not as needed.
-> > We do this the whole time, I've never had or seen a problem with it.
+> > > Thanks for the confirmation.
+> > >=20
+> > > Below it goes again with a changelog and tags.
+> > >=20
+> > > I don't really think that SDIO does the right thing here overall, but=
+ that's
+> > > all I can do to address the problem timely.
+> > >=20
+> > > Thanks,
+> > > Rafael
 > >=20
-> > We don't do separate subsystems APIs set in stone bullshit, and all
-> > subsystem maintainers are used to dealing with these sort of issues.
-> > You get an ack from one maintainer and the other one sticks it in his
-> > tree with a note to Linus.
+> > Hi Rafael,
+> >  I just discovered that this patch has since been reverted - with an 'a=
+ck'
+> >  from you:
+> > ----------
+> > commit d8e2ac330f65bcf47e8894fe5331a7e8ee019c06
+> > Author: Thierry Reding <thierry.reding@avionic-design.de>
+> > Date:   Thu Aug 9 09:32:21 2012 +0000
 > >=20
-> > You can put the code where you want, maybe just under drivers/gpu
-> > instead of drivers/video or drivers/gpu/drm, just make sure you have a
-> > path for it into the kernel.
+> >     mmc: sdio: Fix PM_SLEEP related build warnings
+> >    =20
+> >     Power management callbacks defined by SIMPLE_DEV_PM_OPS are only us=
+ed if
+> >     the PM_SLEEP Kconfig symbol has been defined. If not, the compiler =
+will
+> >     complain about them being unused. However, since the callback for t=
+his
+> >     driver doesn't do anything it can just as well be dropped.
+> >    =20
+> >     Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> >     Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+> >     Signed-off-by: Chris Ball <cjb@laptop.org>
+> > -----------
+> >=20
+> > Unsurprisingly the problem which your patch fixed has come back.
+> >=20
+> > Do you think we could get the patch back in again.  This time maybe we =
+should
+> > put some comments in there pointing out that having a function which do=
+es
+> > nothing is very different from not having any function at all?
 >=20
-> Follows exactly my thinking, as the location of host1x driver has no
-> practical consequence to me.
+> Well, I agree.  I didn't remember that the callback had been added for
+> a purpose and hence my "ack" for that patch.
 >=20
-> Thierry proposed drivers/gpu/host1x. I'd like to see a couple of
-> comments on that proposal, and if it sticks, follow that.
+> What about applying the appended patch (hopefully, the build warnings sho=
+uld
+> be fixed properly this time)?
 >=20
-> Thierry, did you mean that host1x driver would be in drivers/gpu/host1x,
-> and tegradrm in drivers/gpu/drm/tegra, or would we put both in same
-> directory?
+> Rafael
+>=20
+>=20
+> ---
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Subject: SDIO / PM: Add empty bus-level suspend/resume callbacks
+>=20
+> Suspend methods provided by SDIO drivers are not supposed to be
+> called by the PM core.  Instead, when the SDIO core gets to suspend
+> a device's ancestor, it calls the device driver's suspend routine.
+> However, the PM core executes suspend callback routines directly for
+> device drivers whose bus types don't provide suspend callbacks.
+> In consequece, because the SDIO bus type doesn't provide a suspend
+> callback, the SDIO drivers' suspend routines will be executed by the
+> PM core (which shouldn't happen).
+>=20
+> To prevent this from happening, add empty system suspend/resume
+> callbacks for the SDIO bus type.
+>=20
+> An analogous change had been made already by commit (e841a7c mmc:
+> sdio: Use empty system suspend/resume callbacks at the bus level),
+> but then it was reverted inadvertently by commit (d8e2ac3 mmc: sdio:
+> Fix PM_SLEEP related build warnings) that attempted to fix build
+> warnings introduced by commit e841a7c.
+>=20
+> Reported-by: NeilBrown <neilb@suse.de>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>  drivers/mmc/core/sdio_bus.c |   14 ++++++++++++++
+>  1 file changed, 14 insertions(+)
+>=20
+> Index: linux/drivers/mmc/core/sdio_bus.c
+> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> --- linux.orig/drivers/mmc/core/sdio_bus.c
+> +++ linux/drivers/mmc/core/sdio_bus.c
+> @@ -193,7 +193,21 @@ static int sdio_bus_remove(struct device
+>  }
+> =20
+>  #ifdef CONFIG_PM
+> +
+> +#ifdef CONFIG_PM_SLEEP
+> +static int pm_no_operation(struct device *dev)
+> +{
+> +	/*
+> +	 * Prevent the PM core from calling SDIO device drivers' suspend
+> +	 * callback routines, which it is not supposed to do, by using this
+> +	 * empty function as the bus type suspend callaback for SDIO.
+> +	 */
+> +	return 0;
+> +}
+> +#endif
+> +
+>  static const struct dev_pm_ops sdio_bus_pm_ops =3D {
+> +	SET_SYSTEM_SLEEP_PM_OPS(pm_no_operation, pm_no_operation)
+>  	SET_RUNTIME_PM_OPS(
+>  		pm_generic_runtime_suspend,
+>  		pm_generic_runtime_resume,
+>=20
 
-Since tegra-drm is a DRM driver it should stay in drivers/gpu/drm. I can
-also live with the host1x driver staying in drivers/video, but I don't
-think it's the proper location and drivers/gpu/host1x seems like a much
-better fit.
+Hehe... if my memory serves me well, that's exactly (well, modulo the
+comment) what my initial patch did before somebody suggested that the
+empty callbacks should just be removed altogether. =3D)
 
 Thierry
 
---G4iJoqBmSsgzjUCe
+--b5gNqxB1S1yM7hjW
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQu8A/AAoJEN0jrNd/PrOh9W4P/3kiHYiSJO7icJXK2W0CM4Au
-H7od1z2pAl+uZzZRHypaVAqpA3nDzZnFrn+zIAbWHe17wW+wdIf+KUDNomsiYKyC
-pkWczIGQbU9slw1q0sr2IpJ124e3lPiGs2YjFfmvl+Sj3xPrY51Nl8B4RDXxjlSe
-yBRpmHsO8ZEmpiqHazb09U/cZfo/Fng6qVdz+MP5iV5p07hqfA8IQJiBNvHXXO8w
-AeaiNeXMFP29ykZ18FpqLhZUdD84M9CdN8KI35nRLKfjVXv2gS3MfiMnB2XjvaZC
-OovFPOV7IKPMQyRFjrjs7RC6nmVf5sm+OFb+2FUpeTIVCzRMaE8X3doggng4ETjq
-TRbe0i0+uViQ1UbH61+g09xZ1QMHIXumraQAeK47GRccP9J35NTYsEURopIDeUQI
-cpFyhYw9ETTpTFdNoCa5kAkG0L0c+hLlruio3KrVcqjBaF7Py+P9VJW4VqHVEFmW
-Q9kgd95tyVqqxEBqnsnkNAjcQ3yXRxEvdKRkrHVLbuycWl1SW0ou4Hjg3wnmVIrs
-w41r3JjYX+cm6nDL2gDhVNqbyQ32nsNRxYTmh9Q4RoJtstaeukbKlFxIN0HuAry9
-HokuOWXEZZNwvZljKtDS3ajMsuvGvqUnEW8qo9iTu7zHVTxO3KD31v/I785yhfIT
-t/ILSUYS1wq4kmQ7kEFh
-=ZpTe
+iQIcBAEBAgAGBQJQu8GSAAoJEN0jrNd/PrOhmsMP/AvZGjZDGAyNPdU6Z+JFMLJf
+qnDpGfVDPG6lAdAVWhDtQQX49Y0/lLNSf2FnRZeAwHmMGzCClP1Las0umCtvcqVt
+cGWSW65hF6E2q+pb1BLkcfaW1m+2thxx658Il/U7k/UOy4d9eIWoT1q6PPnQKOth
+ZrGHzrgAm1TKEUXa0zhhgVleapxSO9Fluk5QkXnHYCVz9RSu/ETXx+1nJ1q1OFKI
+a/WCTKHBaddlQ9Xh6QY2i3suweUghBt6k3cTOvL+BmaPxWxp00cpXd35DaS0uxCz
+5dbC+bXn+CHLYG7IsUjee3H+9n0ORumDzDiJ+5mu3xjdYYcgUlA8fpaM/syq0sgy
+a387RSoCANxet2K0Csj3bZC7k9eOj/PzWRctroDjH24fMkj/sDlI/jEoHh+kUzko
+B5inX/abN6zZIvezFmPCzzTNjmfocBI2l35JJyQ0N0feQ5h6YNP/2MBcgpoaP//2
+DDzVNRqvpA8rvtpH63TYpJ8xV8ETz73F4Xp2l1XBkrdX3JxIExsugjkeFiINjUar
+F46/Kllj8M3e5KRLoHEINUQ31JIBn/qDKnLGTffthPNSgkHFVfOAUsOBi3yNxS+4
+rvjJBgLmCMj5Hovi2LyvcrSEwmOHq2iKW8EkU9pdk06xPUrspYM4X4scp49Egbmd
+w/PAxqoJl6pTFVkGySyT
+=7Iq6
 -----END PGP SIGNATURE-----
 
---G4iJoqBmSsgzjUCe--
+--b5gNqxB1S1yM7hjW--
