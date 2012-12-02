@@ -1,102 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab2LBTbF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 14:31:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16860 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751846Ab2LBTbD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 14:31:03 -0500
-Date: Sun, 2 Dec 2012 20:30:58 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Amnon Shiloh <u3557@miso.sublimeip.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>, Pedro Alves <palves@redhat.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
-Subject: PTRACE_SYSCALL && vsyscall (Was: arch_check_bp_in_kernelspace: fix
-	the range check)
-Message-ID: <20121202193058.GA4264@redhat.com>
-References: <20121125225533.GA24905@redhat.com> <20121125234834.DAC34592076@miso.sublimeip.com>
+	id S1754039Ab2LBTg3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 14:36:29 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:39529 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751846Ab2LBTg2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Dec 2012 14:36:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121125234834.DAC34592076@miso.sublimeip.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20121202192733.GA19824@gmail.com>
+References: <20121201111609.GA18679@gmail.com> <CA+55aFx_yJbonbEC5AYteyNv+qWbG-H=yj_=YaiJHwKyu4FH3Q@mail.gmail.com>
+ <20121201214438.GA6544@gmail.com> <1354436468.7048.35.camel@marge.simpson.net>
+ <20121202192733.GA19824@gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 2 Dec 2012 11:36:06 -0800
+X-Google-Sender-Auth: uStyaVUGFgMMsXPzq15IoT2pzp0
+Message-ID: <CA+55aFxcoLuVcrxmRQ8E2d6hXQZLrg8_rzmdSL2Qn3w8VthfSg@mail.gmail.com>
+Subject: Re: [RFC GIT PULL] scheduler fix for autogroups
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Mike Galbraith <efault@gmx.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Amnon, sorry for delay...
-
-On 11/26, Amnon Shiloh wrote:
+On Sun, Dec 2, 2012 at 11:27 AM, Ingo Molnar <mingo@kernel.org> wrote:
 >
-> > Why do you need to _prevent_, say, sys_gettimeofday()? Why we can't
-> > change emulate_vsyscall() to respect PTRACE_SYSCALL and report
-> > TRAP_VSYSCALL or PTRACE_EVENT_VSYSCALL as I tried to suggest in
-> > http://marc.info/?l=linux-kernel&m=135343635523715 ?
-> >
-> > Oleg.
-> >
+> * Mike Galbraith <efault@gmx.de> wrote:
 >
-> For my own application, I would be happy with this.
+>> On Sat, 2012-12-01 at 22:44 +0100, Ingo Molnar wrote:
+>>
+>> > Should we use some other file for that - or no file at all and
+>> > just emit a bootup printk for kernel hackers with a short
+>> > attention span?
+>>
+>> Or, whack the file and don't bother with a printk either.  If
+>> it's in your config, and your command line doesn't contain
+>> noautogroup, it's on, so the info is already present (until
+>> buffer gets full).  That makes for even fewer lines dedicated
+>> to dinky sideline feature.
+>>
+>> Or (as previously mentioned) just depreciate (or rip out) the
+>> whole thing since systemd is propagating everywhere anyway,
+>> and offers the same functionality.
+>>
+>> For 3.7, a revert of 800d4d30c8f2 would prevent the explosion
+>> when folks play with the now non-functional on/off switch
+>> (task groups are required to _always_ exist, that commit
+>> busted the autogroup assumption), so is perhaps a viable
+>> quickfix until autogroups fate is decided?
+>
+> Linus, which one would be your preference? I'm fine with the
+> first and third options - #2 that rips it all out looks like
+> a sad removal of an otherwise useful feature.
 
-OK, good.
+I suspect #3 is the best option right now - just revert 800d4d30c8f2.
 
-> But I suspect it might break current versions of "strace",
-> ...
-> I think it COULD work, but not based on PTRACE_SYSCALL
-> (or PTRACE_SYSEMU) alone.  A new ptrace option will be needed, saying:
-> "Yes, I am aware of TRAP_VSYSCALL and I know how to handle it."
+Willing to write a changelog with the pointer to the actual oops that
+happens due to this issue?
 
-Yes, that is why I said this needs the new option.
-
-However. Of course it would be nice to avoid the new option. IMO it
-would be better to do nothing ;) vsyscall is deprecated, and EMULATE
-is x86-specific.
-
-
-May be we could simply do something like the patch below? (Just in
-case, this hack is only for illustration, it is not complete).
-
-If the tracer does PTRACE_SYSCALL the tracee reports syscall exit
-_after_ gettimeofday/etc. The tracer can look at regs->orig_ax == -1
-and detect that this is not syscall but vsyscall, it can look at
-regs->ip then (not with the patch below).
-
-Denys, Jan, Pedro. Do you think this change can break/confuse
-gdb/strace ?
-
-
-> While for my own application, just fixing the range-check in
-> arch_check_bp_in_kernelspace will do,
-
-You forgot again that EMULATE does not execute the code in the
-vsyscall page.
-
-Oleg.
-
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -186,6 +186,8 @@ static bool write_ok_or_segv(unsigned long ptr, size_t size)
- 	}
- }
- 
-+#include <linux/tracehook.h>
-+
- bool emulate_vsyscall(struct pt_regs *regs, unsigned long address)
- {
- 	struct task_struct *tsk;
-@@ -312,6 +314,8 @@ do_ret:
- 	regs->ip = caller;
- 	regs->sp += 8;
- done:
-+	if (test_thread_flag(TIF_SYSCALL_TRACE))
-+		ptrace_report_syscall(regs);
- 	return true;
- 
- sigsegv:
-
+               Linus
