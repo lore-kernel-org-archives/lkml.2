@@ -1,78 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753800Ab2LBBH7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 1 Dec 2012 20:07:59 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:41737 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753600Ab2LBBH6 (ORCPT
+	id S1753852Ab2LBBMH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 1 Dec 2012 20:12:07 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58310 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753651Ab2LBBME (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 1 Dec 2012 20:07:58 -0500
-Date: Sat, 1 Dec 2012 17:07:51 -0800
+	Sat, 1 Dec 2012 20:12:04 -0500
+Date: Sat, 1 Dec 2012 17:11:57 -0800
 From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Mike Galbraith <mgalbraith@suse.de>,
-        Anders Kaseorg <andersk@MIT.EDU>,
+To: Anders Kaseorg <andersk@MIT.EDU>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
+        "John W. Linville" <linville@tuxdriver.com>, netdev@vger.kernel.org,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
         Zlatko Calusic <zlatko.calusic@iskon.hr>,
         Joonsoo Kim <js1304@gmail.com>
-Subject: [GIT PULL] workqueue fixes for 3.7-rc7
-Message-ID: <20121202010751.GD2685@htj.dyndns.org>
+Subject: [PATCH] workqueue: mod_delayed_work_on() shouldn't queue timer on 0
+ delay
+Message-ID: <20121202011157.GE2685@htj.dyndns.org>
+References: <alpine.DEB.2.00.1211280953350.26602@dr-wily.mit.edu>
+ <alpine.DEB.2.00.1211281016320.26602@dr-wily.mit.edu>
+ <20121130211435.GJ3873@htj.dyndns.org>
+ <20121130225619.GD6021@htj.dyndns.org>
+ <alpine.DEB.2.00.1211302234410.25064@dr-wily.mit.edu>
+ <20121201143926.GB2685@htj.dyndns.org>
+ <alpine.DEB.2.00.1212011852100.25064@dr-wily.mit.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1212011852100.25064@dr-wily.mit.edu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+>From 8852aac25e79e38cc6529f20298eed154f60b574 Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Sat, 1 Dec 2012 16:23:42 -0800
 
-Unfortunately, I have two really late fixes.  One was for a
-long-standing bug and queued for 3.8 but I found out about a
-regression introduced during 3.7-rc1 two days ago, so I'm sending out
-the two fixes together.
+8376fe22c7 ("workqueue: implement mod_delayed_work[_on]()")
+implemented mod_delayed_work[_on]() using the improved
+try_to_grab_pending().  The function is later used, among others, to
+replace [__]candel_delayed_work() + queue_delayed_work() combinations.
 
-The first (long-standing) one is rescuer_thread() entering exit path
-w/ TASK_INTERRUPTIBLE.  It only triggers on workqueue destructions
-which isn't very frequent and the exit path can usually survive being
-called with TASK_INTERRUPT, so it was hidden pretty well.  Apparently,
-if you're reiserfs, this could lead to the exiting kthread sleeping
-indefinitely holding a mutex, which is never good.  The fix is simple
-- restoring TASK_RUNNING before returning from the kthread function.
+Unfortunately, a delayed_work item w/ zero @delay is handled slightly
+differently by mod_delayed_work_on() compared to
+queue_delayed_work_on().  The latter skips timer altogether and
+directly queues it using queue_work_on() while the former schedules
+timer which will expire on the closest tick.  This means, when @delay
+is zero, that [__]cancel_delayed_work() + queue_delayed_work_on()
+makes the target item immediately executable while
+mod_delayed_work_on() may induce delay of upto a full tick.
 
-The second one is introduced by the new mod_delayed_work().
-mod_delayed_work() was missing special case handling for 0 delay.
-Instead of queueing the work item immediately, it queued the timer
-which expires on the closest next tick.  Some users of the new
-function converted from "[__]cancel_delayed_work() +
-queue_delayed_work()" combination became unhappy with the extra delay.
-Block unplugging led to noticeably higher number of context switches
-and intel 6250 wireless failed to associate with WPA-Enterprise
-network.  The fix, again, is fairly simple.  The 0 delay special case
-logic from queue_delayed_work_on() should be moved to
-__queue_delayed_work() which is shared by both queue_delayed_work_on()
-and mod_delayed_work_on().
+This somewhat subtle difference breaks some of the converted users.
+e.g. block queue plugging uses delayed_work for deferred processing
+and uses mod_delayed_work_on() when the queue needs to be immediately
+unplugged.  The above problem manifested as noticeably higher number
+of context switches under certain circumstances.
 
-The first one is difficult to trigger and the failure mode for the
-latter isn't completely catastrophic, so missing these two for 3.7
-wouldn't make it a disastrous release, but both bugs are nasty and the
-fixes are fairly safe, so please consider pulling the following
-branch.
+The difference in behavior was caused by missing special case handling
+for 0 delay in mod_delayed_work_on() compared to
+queue_delayed_work_on().  Joonsoo Kim posted a patch to add it -
+("workqueue: optimize mod_delayed_work_on() when @delay == 0")[1].
+The patch was queued for 3.8 but it was described as optimization and
+I missed that it was a correctness issue.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.7-fixes
+As both queue_delayed_work_on() and mod_delayed_work_on() use
+__queue_delayed_work() for queueing, it seems that the better approach
+is to move the 0 delay special handling to the function instead of
+duplicating it in mod_delayed_work_on().
 
-Thanks.
+Fix the problem by moving 0 delay special case handling from
+queue_delayed_work_on() to __queue_delayed_work().  This replaces
+Joonsoo's patch.
+
+[1] http://thread.gmane.org/gmane.linux.kernel/1379011/focus=1379012
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-and-tested-by: Anders Kaseorg <andersk@MIT.EDU>
+Reported-and-tested-by: Zlatko Calusic <zlatko.calusic@iskon.hr>
+LKML-Reference: <alpine.DEB.2.00.1211280953350.26602@dr-wily.mit.edu>
+LKML-Reference: <50A78AA9.5040904@iskon.hr>
+Cc: Joonsoo Kim <js1304@gmail.com>
 ---
-Mike Galbraith (1):
-      workqueue: exit rescuer_thread() as TASK_RUNNING
+Applied to wq/for-3.7-fixes.  Pull request sent.
 
-Tejun Heo (1):
-      workqueue: mod_delayed_work_on() shouldn't queue timer on 0 delay
+Thanks!
 
- kernel/workqueue.c |   18 ++++++++++++++----
- 1 file changed, 14 insertions(+), 4 deletions(-)
+ kernel/workqueue.c | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
 diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 042d221..084aa47 100644
+index ac25db1..084aa47 100644
 --- a/kernel/workqueue.c
 +++ b/kernel/workqueue.c
 @@ -1364,6 +1364,17 @@ static void __queue_delayed_work(int cpu, struct workqueue_struct *wq,
@@ -103,15 +122,6 @@ index 042d221..084aa47 100644
  	/* read the comment in __queue_work() */
  	local_irq_save(flags);
  
-@@ -2407,8 +2415,10 @@ static int rescuer_thread(void *__wq)
- repeat:
- 	set_current_state(TASK_INTERRUPTIBLE);
- 
--	if (kthread_should_stop())
-+	if (kthread_should_stop()) {
-+		__set_current_state(TASK_RUNNING);
- 		return 0;
-+	}
- 
- 	/*
- 	 * See whether any cpu is asking for help.  Unbounded
+-- 
+1.7.11.7
+
