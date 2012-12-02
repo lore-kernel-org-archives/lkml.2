@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975Ab2LBPMB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 10:12:01 -0500
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:44781 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753914Ab2LBPL6 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 10:11:58 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zz98dIzz1de0h1202h1d1ah1d2ahzzz2dh2a8h668h839h8e2h8e3h947hd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631hbe9i1155h)
-From: Tabi Timur-B04825 <B04825@freescale.com>
-To: Joerg Roedel <joro@8bytes.org>
-CC: Sethi Varun-B16395 <B16395@freescale.com>,
-        "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        Tabi Timur-B04825 <B04825@freescale.com>
-Subject: Re: [PATCH 3/4 v5] iommu/fsl: Add iommu domain attributes required
- by fsl PAMU driver.
-Thread-Topic: [PATCH 3/4 v5] iommu/fsl: Add iommu domain attributes required
- by fsl PAMU driver.
-Thread-Index: AQHNxydj5NZPSTDOR0u3Ec8nKfkMZZgFnUaAgAATHQA=
-Date: Sun, 2 Dec 2012 15:11:54 +0000
-Message-ID: <6AE080B68D46FC4BA2D2769E68D765B7081BD902@039-SN2MPN1-023.039d.mgd.msft.net>
-References: <1353419697-31269-1-git-send-email-Varun.Sethi@freescale.com>
- <1353419697-31269-4-git-send-email-Varun.Sethi@freescale.com>
- <20121202140323.GO30633@8bytes.org>
-In-Reply-To: <20121202140323.GO30633@8bytes.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:17.0) Gecko/17.0
- Firefox/17.0 SeaMonkey/2.14
-x-originating-ip: [70.112.99.80]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <B9AA00DCAD5BDB4BA4F903AE35466973@mgd.freescale.com>
-Content-Transfer-Encoding: 7BIT
+	id S1753950Ab2LBPMd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 10:12:33 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43813 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751770Ab2LBPMc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Dec 2012 10:12:32 -0500
+Date: Mon, 3 Dec 2012 00:12:27 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: wm831x-dcdc: Ensure selected voltage falls
+ within requested range
+Message-ID: <20121202151225.GZ17981@opensource.wolfsonmicro.com>
+References: <1354252773.23591.1.camel@phoenix>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ECAkxgSy0pGoHfdA"
+Content-Disposition: inline
+In-Reply-To: <1354252773.23591.1.camel@phoenix>
+X-Cookie: Your domestic life may be harmonious.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joerg Roedel wrote:
-> When you add implementation specific attributes please add some
-> indication to the names that it is only for PAMU. DOMAIN_ATTR_STASH
-> sounds too generic.
 
-We were thinking that maybe this attribute could be useful to other IOMMUs 
-in the future.  Stashing is not a concept that would only work on 
-Freescale processors.
+--ECAkxgSy0pGoHfdA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-But we'll change it if you insist.
+On Fri, Nov 30, 2012 at 01:19:33PM +0800, Axel Lin wrote:
+> Use DIV_ROUND_UP to ensure selected voltage won't less than min_uV due to
+> integer truncation.
 
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+Applied, thanks.
+
+--ECAkxgSy0pGoHfdA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQu2/TAAoJELSic+t+oim915EP/in00WmqVi7INs1m3DgaZfKs
+HCNG3MnEDcv9TVckIxgjm2VjhvF+kDQQsoQk2IF8WpO0iZQTLKjT0rOf7bofGPgf
+xLJzyrYbXpYyoYW7zC3/RykmITVmaKo2S123+D2hwqaNVX2lVUjiAWxsmKmLDfj8
+wUSsZzuY42j8+BZJpT5o4LOu+DifhBOlmXv6ag1YOfNfq2fm4u2sXRmIZBTa3gL/
+HIwxqtQi45i4Bf29HcLvnkEIJhawisdBAcc9RUwZVp4NU0Pnh/lwebynSsrIDaSH
+5An4Yok+7uNKvon6mA6gucU7PgTNwdP7skJijq63XhKXf/AVmaA8Q8pUQ8HHHm/L
+H553gtc2fTWpKvVdGmqssXx0SDfBlT6auR7r5uvEOdbZhrHqBBzxz7894sX8pX9e
+lDsLL3iPZNTopko9bw5NeG9BbWRkuiijQHk0HYRfJDbxQwK2pgyWJFAmfrxkhW1+
+tE9t0r3at/wcLUasoaOL6PMF4xv9vUpgAPhtAhoZOB8p29M7n4vDe7vNmSXhogMj
+tO/rkw+vR4VXSJVjDlyUeIgeG1Ic6cjHKOIaO9yUvRZLXEUZ8N+dNMMgaxsyMwR/
+G1brtknBtPN3B3lvQKUBgtlKx+654Y3GxFVq/lsL4763bCRnc7sjQS/mCMBM7S+B
+VEoGVRXyJf394dKNGM4R
+=4p1c
+-----END PGP SIGNATURE-----
+
+--ECAkxgSy0pGoHfdA--
