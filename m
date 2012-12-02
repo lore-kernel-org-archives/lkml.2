@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754685Ab2LBSpL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 13:45:11 -0500
+	id S1754434Ab2LBSor (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 13:44:47 -0500
 Received: from mail-ee0-f46.google.com ([74.125.83.46]:64238 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754422Ab2LBSpD (ORCPT
+	with ESMTP id S1754303Ab2LBSon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 13:45:03 -0500
+	Sun, 2 Dec 2012 13:44:43 -0500
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
@@ -18,9 +18,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: [PATCH 30/52] sched: Improve convergence
-Date: Sun,  2 Dec 2012 19:43:22 +0100
-Message-Id: <1354473824-19229-31-git-send-email-mingo@kernel.org>
+Subject: [PATCH 21/52] sched: Make find_busiest_queue() a method
+Date: Sun,  2 Dec 2012 19:43:13 +0100
+Message-Id: <1354473824-19229-22-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1354473824-19229-1-git-send-email-mingo@kernel.org>
 References: <1354473824-19229-1-git-send-email-mingo@kernel.org>
@@ -28,135 +28,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- - break out of can_do_numa_run() earlier if we can make no progress
- - don't flip between siblings that often
- - turn on bidirectional fault balancing
- - improve the flow in task_numa_work()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
+Its a bit awkward but it was the least painful means of modifying the
+queue selection. Used in a later patch to conditionally use a random
+queue.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Turner <pjt@google.com>
+Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Cc: Christoph Lameter <cl@linux.com>
 Cc: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Hugh Dickins <hughd@google.com>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c     | 46 ++++++++++++++++++++++++++++++++--------------
- kernel/sched/features.h |  2 +-
- 2 files changed, 33 insertions(+), 15 deletions(-)
+ kernel/sched/fair.c | 20 ++++++++++++--------
+ 1 file changed, 12 insertions(+), 8 deletions(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 59fea2e..9c46b45 100644
+index 59e072b..511fbb8 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -917,12 +917,12 @@ void task_numa_fault(int node, int last_cpu, int pages)
-  */
- void task_numa_work(struct callback_head *work)
- {
-+	long pages_total, pages_left, pages_changed;
- 	unsigned long migrate, next_scan, now = jiffies;
-+	unsigned long start0, start, end;
- 	struct task_struct *p = current;
- 	struct mm_struct *mm = p->mm;
- 	struct vm_area_struct *vma;
--	unsigned long start, end;
--	long pages;
- 
- 	WARN_ON_ONCE(p != container_of(work, struct task_struct, numa_work));
- 
-@@ -951,35 +951,42 @@ void task_numa_work(struct callback_head *work)
- 
- 	current->numa_scan_period += jiffies_to_msecs(2);
- 
--	start = mm->numa_scan_offset;
--	pages = sysctl_sched_numa_scan_size;
--	pages <<= 20 - PAGE_SHIFT; /* MB in pages */
--	if (!pages)
-+	start0 = start = end = mm->numa_scan_offset;
-+	pages_total = sysctl_sched_numa_scan_size;
-+	pages_total <<= 20 - PAGE_SHIFT; /* MB in pages */
-+	if (!pages_total)
- 		return;
- 
-+	pages_left	= pages_total;
+@@ -3600,6 +3600,9 @@ struct lb_env {
+ 	unsigned int		loop;
+ 	unsigned int		loop_break;
+ 	unsigned int		loop_max;
 +
- 	down_write(&mm->mmap_sem);
- 	vma = find_vma(mm, start);
- 	if (!vma) {
- 		ACCESS_ONCE(mm->numa_scan_seq)++;
--		start = 0;
--		vma = mm->mmap;
-+		end = 0;
-+		vma = find_vma(mm, end);
++	struct rq *		(*find_busiest_queue)(struct lb_env *,
++						      struct sched_group *);
+ };
+ 
+ /*
+@@ -4779,13 +4782,14 @@ static int load_balance(int this_cpu, struct rq *this_rq,
+ 	struct cpumask *cpus = __get_cpu_var(load_balance_tmpmask);
+ 
+ 	struct lb_env env = {
+-		.sd		= sd,
+-		.dst_cpu	= this_cpu,
+-		.dst_rq		= this_rq,
+-		.dst_grpmask    = sched_group_cpus(sd->groups),
+-		.idle		= idle,
+-		.loop_break	= sched_nr_migrate_break,
+-		.cpus		= cpus,
++		.sd		    = sd,
++		.dst_cpu	    = this_cpu,
++		.dst_rq		    = this_rq,
++		.dst_grpmask        = sched_group_cpus(sd->groups),
++		.idle		    = idle,
++		.loop_break	    = sched_nr_migrate_break,
++		.cpus		    = cpus,
++		.find_busiest_queue = find_busiest_queue,
+ 	};
+ 
+ 	cpumask_copy(cpus, cpu_active_mask);
+@@ -4804,7 +4808,7 @@ redo:
+ 		goto out_balanced;
  	}
- 	for (; vma; vma = vma->vm_next) {
- 		if (!vma_migratable(vma))
- 			continue;
  
- 		do {
--			start = max(start, vma->vm_start);
--			end = ALIGN(start + (pages << PAGE_SHIFT), HPAGE_SIZE);
-+			start = max(end, vma->vm_start);
-+			end = ALIGN(start + (pages_left << PAGE_SHIFT), HPAGE_SIZE);
- 			end = min(end, vma->vm_end);
--			pages -= change_prot_numa(vma, start, end);
--			start = end;
--			if (pages <= 0)
-+			pages_changed = change_prot_numa(vma, start, end);
-+
-+			WARN_ON_ONCE(pages_changed > pages_total);
-+			BUG_ON(pages_changed < 0);
-+
-+			pages_left -= pages_changed;
-+			if (pages_left <= 0)
- 				goto out;
- 		} while (end != vma->vm_end);
- 	}
- out:
--	mm->numa_scan_offset = start;
-+	mm->numa_scan_offset = end;
-+
- 	up_write(&mm->mmap_sem);
- }
- 
-@@ -3306,6 +3313,13 @@ static int select_idle_sibling(struct task_struct *p, int target)
- 	int i;
- 
- 	/*
-+	 * For NUMA tasks constant, reliable placement is more important
-+	 * than flipping tasks between siblings:
-+	 */
-+	if (task_numa_shared(p) >= 0)
-+		return target;
-+
-+	/*
- 	 * If the task is going to be woken-up on this cpu and if it is
- 	 * already idle, then it is the right target.
- 	 */
-@@ -4581,6 +4595,10 @@ static bool can_do_numa_run(struct lb_env *env, struct sd_lb_stats *sds)
- 	 * If we got capacity allow stacking up on shared tasks.
- 	 */
- 	if ((sds->this_shared_running < sds->this_group_capacity) && sds->numa_shared_running) {
-+		/* There's no point in trying to move if all are here already: */
-+		if (sds->numa_shared_running == sds->this_shared_running)
-+			return false;
-+
- 		env->flags |= LBF_NUMA_SHARED;
- 		return true;
- 	}
-diff --git a/kernel/sched/features.h b/kernel/sched/features.h
-index a432eb8..b75a10d 100644
---- a/kernel/sched/features.h
-+++ b/kernel/sched/features.h
-@@ -71,6 +71,6 @@ SCHED_FEAT(LB_MIN, false)
- /* Do the working set probing faults: */
- SCHED_FEAT(NUMA,             true)
- SCHED_FEAT(NUMA_FAULTS_UP,   true)
--SCHED_FEAT(NUMA_FAULTS_DOWN, false)
-+SCHED_FEAT(NUMA_FAULTS_DOWN, true)
- SCHED_FEAT(NUMA_SETTLE,      true)
- #endif
+-	busiest = find_busiest_queue(&env, group);
++	busiest = env.find_busiest_queue(&env, group);
+ 	if (!busiest) {
+ 		schedstat_inc(sd, lb_nobusyq[idle]);
+ 		goto out_balanced;
 -- 
 1.7.11.7
 
