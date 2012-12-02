@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754269Ab2LBSo3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 13:44:29 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:45147 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754180Ab2LBSoX (ORCPT
+	id S1754412Ab2LBSyE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 13:54:04 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:64238 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754261Ab2LBSoa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 13:44:23 -0500
+	Sun, 2 Dec 2012 13:44:30 -0500
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
@@ -18,12 +18,13 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
         Alex Shi <lkml.alex@gmail.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH 12/52] mm/migrate: Introduce migrate_misplaced_page()
-Date: Sun,  2 Dec 2012 19:43:04 +0100
-Message-Id: <1354473824-19229-13-git-send-email-mingo@kernel.org>
+Subject: [PATCH 15/52] mm/mempolicy: Implement change_prot_numa() in terms of change_protection()
+Date: Sun,  2 Dec 2012 19:43:07 +0100
+Message-Id: <1354473824-19229-16-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1354473824-19229-1-git-send-email-mingo@kernel.org>
 References: <1354473824-19229-1-git-send-email-mingo@kernel.org>
@@ -31,27 +32,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Lee Schermerhorn <lee.schermerhorn@hp.com>
 
-Note: This was originally based on Peter's patch "mm/migrate:
-Introduce 	migrate_misplaced_page()" but borrows extremely heavily from Andrea's
-	"autonuma: memory follows CPU algorithm and task/mm_autonuma stats
-	collection". The end result is barely recognisable so signed-offs
-	had to be dropped. If original authors are ok with it, I'll
-	re-add the signed-off-bys.
+This patch converts change_prot_numa() to use
+change_protection(). As pte_numa and friends check the PTE bits
+directly it is necessary for change_protection() to use
+pmd_mknuma(). Hence the required modifications to
+change_protection() are a little clumsy but the end result is
+that most of the numa page table helpers are just one or two
+instructions.
 
-Add migrate_misplaced_page() which deals with migrating pages
-from faults.
-
-Based-on-work-by: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Based-on-work-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Based-on-work-by: Andrea Arcangeli <aarcange@redhat.com>
+Original-From: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Hugh Dickins <hughd@google.com>
 Cc: Paul Turner <pjt@google.com>
-Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
 Cc: Alex Shi <lkml.alex@gmail.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>
@@ -60,173 +56,395 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Andrea Arcangeli <aarcange@redhat.com>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/migrate.h |  16 +++++++
- mm/migrate.c            | 108 +++++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 122 insertions(+), 2 deletions(-)
+ include/linux/huge_mm.h |   3 +-
+ include/linux/mm.h      |   4 +-
+ mm/huge_memory.c        |  14 ++++-
+ mm/mempolicy.c          | 137 +++++-------------------------------------------
+ mm/mprotect.c           |  62 ++++++++++++++++------
+ 5 files changed, 75 insertions(+), 145 deletions(-)
 
-diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-index 9d1c159..f7404b6 100644
---- a/include/linux/migrate.h
-+++ b/include/linux/migrate.h
-@@ -13,6 +13,7 @@ enum migrate_reason {
- 	MR_MEMORY_HOTPLUG,
- 	MR_SYSCALL,		/* also applies to cpusets */
- 	MR_MEMPOLICY_MBIND,
-+	MR_NUMA_MISPLACED,
- 	MR_CMA
- };
+diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
+index dabb510..027ad04 100644
+--- a/include/linux/huge_mm.h
++++ b/include/linux/huge_mm.h
+@@ -27,7 +27,8 @@ extern int move_huge_pmd(struct vm_area_struct *vma,
+ 			 unsigned long new_addr, unsigned long old_end,
+ 			 pmd_t *old_pmd, pmd_t *new_pmd);
+ extern int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+-			unsigned long addr, pgprot_t newprot);
++			unsigned long addr, pgprot_t newprot,
++			int prot_numa);
  
-@@ -39,6 +40,15 @@ extern int migrate_vmas(struct mm_struct *mm,
- extern void migrate_page_copy(struct page *newpage, struct page *page);
- extern int migrate_huge_page_move_mapping(struct address_space *mapping,
- 				  struct page *newpage, struct page *page);
-+#ifdef CONFIG_NUMA_BALANCING
-+extern int migrate_misplaced_page(struct page *page, int node);
-+#else
-+static inline
-+int migrate_misplaced_page(struct page *page, int node)
-+{
-+	return -EAGAIN; /* can't migrate now */
-+}
-+#endif
- #else
+ enum transparent_hugepage_flag {
+ 	TRANSPARENT_HUGEPAGE_FLAG,
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 471185e..d04c2f0 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1080,7 +1080,7 @@ extern unsigned long do_mremap(unsigned long addr,
+ 			       unsigned long flags, unsigned long new_addr);
+ extern unsigned long change_protection(struct vm_area_struct *vma, unsigned long start,
+ 			      unsigned long end, pgprot_t newprot,
+-			      int dirty_accountable);
++			      int dirty_accountable, int prot_numa);
+ extern int mprotect_fixup(struct vm_area_struct *vma,
+ 			  struct vm_area_struct **pprev, unsigned long start,
+ 			  unsigned long end, unsigned long newflags);
+@@ -1552,7 +1552,7 @@ static inline pgprot_t vm_get_page_prot(unsigned long vm_flags)
+ #endif
  
- static inline void putback_lru_pages(struct list_head *l) {}
-@@ -72,5 +82,11 @@ static inline int migrate_huge_page_move_mapping(struct address_space *mapping,
- #define migrate_page NULL
- #define fail_migrate_page NULL
+ #ifdef CONFIG_ARCH_USES_NUMA_PROT_NONE
+-void change_prot_numa(struct vm_area_struct *vma,
++unsigned long change_prot_numa(struct vm_area_struct *vma,
+ 			unsigned long start, unsigned long end);
+ #endif
  
-+static inline
-+int migrate_misplaced_page(struct page *page, int node)
-+{
-+	return -EAGAIN; /* can't migrate now */
-+}
- #endif /* CONFIG_MIGRATION */
-+
- #endif /* _LINUX_MIGRATE_H */
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 27be9c9..d168aec 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -282,7 +282,7 @@ static int migrate_page_move_mapping(struct address_space *mapping,
- 		struct page *newpage, struct page *page,
- 		struct buffer_head *head, enum migrate_mode mode)
- {
--	int expected_count;
-+	int expected_count = 0;
- 	void **pslot;
- 
- 	if (!mapping) {
-@@ -1415,4 +1415,108 @@ int migrate_vmas(struct mm_struct *mm, const nodemask_t *to,
-  	}
-  	return err;
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 5723b55..d79f7a5 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1147,7 +1147,7 @@ out:
  }
--#endif
+ 
+ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+-		unsigned long addr, pgprot_t newprot)
++		unsigned long addr, pgprot_t newprot, int prot_numa)
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	int ret = 0;
+@@ -1155,7 +1155,17 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
+ 	if (__pmd_trans_huge_lock(pmd, vma) == 1) {
+ 		pmd_t entry;
+ 		entry = pmdp_get_and_clear(mm, addr, pmd);
+-		entry = pmd_modify(entry, newprot);
++		if (!prot_numa)
++			entry = pmd_modify(entry, newprot);
++		else {
++			struct page *page = pmd_page(*pmd);
 +
-+#ifdef CONFIG_NUMA_BALANCING
-+/*
-+ * Returns true if this is a safe migration target node for misplaced NUMA
-+ * pages. Currently it only checks the watermarks which crude
-+ */
-+static bool migrate_balanced_pgdat(struct pglist_data *pgdat,
-+				   int nr_migrate_pages)
-+{
-+	int z;
-+	for (z = pgdat->nr_zones - 1; z >= 0; z--) {
-+		struct zone *zone = pgdat->node_zones + z;
-+
-+		if (!populated_zone(zone))
-+			continue;
-+
-+		if (zone->all_unreclaimable)
-+			continue;
-+
-+		/* Avoid waking kswapd by allocating pages_to_migrate pages. */
-+		if (!zone_watermark_ok(zone, 0,
-+				       high_wmark_pages(zone) +
-+				       nr_migrate_pages,
-+				       0, 0))
-+			continue;
-+		return true;
-+	}
-+	return false;
-+}
-+
-+static struct page *alloc_misplaced_dst_page(struct page *page,
-+					   unsigned long data,
-+					   int **result)
-+{
-+	int nid = (int) data;
-+	struct page *newpage;
-+
-+	newpage = alloc_pages_exact_node(nid,
-+					 (GFP_HIGHUSER_MOVABLE | GFP_THISNODE |
-+					  __GFP_NOMEMALLOC | __GFP_NORETRY |
-+					  __GFP_NOWARN) &
-+					 ~GFP_IOFS, 0);
-+	return newpage;
-+}
-+
-+/*
-+ * Attempt to migrate a misplaced page to the specified destination
-+ * node. Caller is expected to have an elevated reference count on
-+ * the page that will be dropped by this function before returning.
-+ */
-+int migrate_misplaced_page(struct page *page, int node)
-+{
-+	int isolated = 0;
-+	LIST_HEAD(migratepages);
-+
-+	/*
-+	 * Don't migrate pages that are mapped in multiple processes.
-+	 * TODO: Handle false sharing detection instead of this hammer
-+	 */
-+	if (page_mapcount(page) != 1) {
-+		put_page(page);
-+		goto out;
-+	}
-+
-+	/* Avoid migrating to a node that is nearly full */
-+	if (migrate_balanced_pgdat(NODE_DATA(node), 1)) {
-+		int page_lru;
-+
-+		if (isolate_lru_page(page)) {
-+			put_page(page);
-+			goto out;
++			/* only check non-shared pages */
++			if (page_mapcount(page) == 1 &&
++			    !pmd_numa(*pmd)) {
++				entry = pmd_mknuma(entry);
++			}
 +		}
-+		isolated = 1;
+ 		set_pmd_at(mm, addr, pmd, entry);
+ 		spin_unlock(&vma->vm_mm->page_table_lock);
+ 		ret = 1;
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 51d3ebd..75d4600 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -568,134 +568,23 @@ static inline int check_pgd_range(struct vm_area_struct *vma,
+ 
+ #ifdef CONFIG_ARCH_USES_NUMA_PROT_NONE
+ /*
+- * Here we search for not shared page mappings (mapcount == 1) and we
+- * set up the pmd/pte_numa on those mappings so the very next access
+- * will fire a NUMA hinting page fault.
++ * This is used to mark a range of virtual addresses to be inaccessible.
++ * These are later cleared by a NUMA hinting fault. Depending on these
++ * faults, pages may be migrated for better NUMA placement.
++ *
++ * This is assuming that NUMA faults are handled using PROT_NONE. If
++ * an architecture makes a different choice, it will need further
++ * changes to the core.
+  */
+-static int
+-change_prot_numa_range(struct mm_struct *mm, struct vm_area_struct *vma,
+-			unsigned long address)
+-{
+-	pgd_t *pgd;
+-	pud_t *pud;
+-	pmd_t *pmd;
+-	pte_t *pte, *_pte;
+-	struct page *page;
+-	unsigned long _address, end;
+-	spinlock_t *ptl;
+-	int ret = 0;
+-
+-	VM_BUG_ON(address & ~PAGE_MASK);
+-
+-	pgd = pgd_offset(mm, address);
+-	if (!pgd_present(*pgd))
+-		goto out;
+-
+-	pud = pud_offset(pgd, address);
+-	if (!pud_present(*pud))
+-		goto out;
+-
+-	pmd = pmd_offset(pud, address);
+-	if (pmd_none(*pmd))
+-		goto out;
+-
+-	if (pmd_trans_huge_lock(pmd, vma) == 1) {
+-		int page_nid;
+-		ret = HPAGE_PMD_NR;
+-
+-		VM_BUG_ON(address & ~HPAGE_PMD_MASK);
+-
+-		if (pmd_numa(*pmd)) {
+-			spin_unlock(&mm->page_table_lock);
+-			goto out;
+-		}
+-
+-		page = pmd_page(*pmd);
+-
+-		/* only check non-shared pages */
+-		if (page_mapcount(page) != 1) {
+-			spin_unlock(&mm->page_table_lock);
+-			goto out;
+-		}
+-
+-		page_nid = page_to_nid(page);
+-
+-		if (pmd_numa(*pmd)) {
+-			spin_unlock(&mm->page_table_lock);
+-			goto out;
+-		}
+-
+-		set_pmd_at(mm, address, pmd, pmd_mknuma(*pmd));
+-		ret += HPAGE_PMD_NR;
+-		/* defer TLB flush to lower the overhead */
+-		spin_unlock(&mm->page_table_lock);
+-		goto out;
+-	}
+-
+-	if (pmd_trans_unstable(pmd))
+-		goto out;
+-	VM_BUG_ON(!pmd_present(*pmd));
+-
+-	end = min(vma->vm_end, (address + PMD_SIZE) & PMD_MASK);
+-	pte = pte_offset_map_lock(mm, pmd, address, &ptl);
+-	for (_address = address, _pte = pte; _address < end;
+-	     _pte++, _address += PAGE_SIZE) {
+-		pte_t pteval = *_pte;
+-		if (!pte_present(pteval))
+-			continue;
+-		if (pte_numa(pteval))
+-			continue;
+-		page = vm_normal_page(vma, _address, pteval);
+-		if (unlikely(!page))
+-			continue;
+-		/* only check non-shared pages */
+-		if (page_mapcount(page) != 1)
+-			continue;
+-
+-		set_pte_at(mm, _address, _pte, pte_mknuma(pteval));
+-
+-		/* defer TLB flush to lower the overhead */
+-		ret++;
+-	}
+-	pte_unmap_unlock(pte, ptl);
+-
+-	if (ret && !pmd_numa(*pmd)) {
+-		spin_lock(&mm->page_table_lock);
+-		set_pmd_at(mm, address, pmd, pmd_mknuma(*pmd));
+-		spin_unlock(&mm->page_table_lock);
+-		/* defer TLB flush to lower the overhead */
+-	}
+-
+-out:
+-	return ret;
+-}
+-
+-/* Assumes mmap_sem is held */
+-void
+-change_prot_numa(struct vm_area_struct *vma,
+-			unsigned long address, unsigned long end)
++unsigned long change_prot_numa(struct vm_area_struct *vma,
++			unsigned long addr, unsigned long end)
+ {
+-	struct mm_struct *mm = vma->vm_mm;
+-	int progress = 0;
+-
+-	while (address < end) {
+-		VM_BUG_ON(address < vma->vm_start ||
+-			  address + PAGE_SIZE > vma->vm_end);
++	int nr_updated;
++	BUILD_BUG_ON(_PAGE_NUMA != _PAGE_PROTNONE);
+ 
+-		progress += change_prot_numa_range(mm, vma, address);
+-		address = (address + PMD_SIZE) & PMD_MASK;
+-	}
++	nr_updated = change_protection(vma, addr, end, vma->vm_page_prot, 0, 1);
+ 
+-	/*
+-	 * Flush the TLB for the mm to start the NUMA hinting
+-	 * page faults after we finish scanning this vma part
+-	 * if there were any PTE updates
+-	 */
+-	if (progress) {
+-		mmu_notifier_invalidate_range_start(vma->vm_mm, address, end);
+-		flush_tlb_range(vma, address, end);
+-		mmu_notifier_invalidate_range_end(vma->vm_mm, address, end);
+-	}
++	return nr_updated;
+ }
+ #else
+ static unsigned long change_prot_numa(struct vm_area_struct *vma,
+diff --git a/mm/mprotect.c b/mm/mprotect.c
+index 7c3628a..1b383b7 100644
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -35,10 +35,11 @@ static inline pgprot_t pgprot_modify(pgprot_t oldprot, pgprot_t newprot)
+ }
+ #endif
+ 
+-static unsigned long change_pte_range(struct mm_struct *mm, pmd_t *pmd,
++static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+ 		unsigned long addr, unsigned long end, pgprot_t newprot,
+-		int dirty_accountable)
++		int dirty_accountable, int prot_numa)
+ {
++	struct mm_struct *mm = vma->vm_mm;
+ 	pte_t *pte, oldpte;
+ 	spinlock_t *ptl;
+ 	unsigned long pages = 0;
+@@ -49,19 +50,39 @@ static unsigned long change_pte_range(struct mm_struct *mm, pmd_t *pmd,
+ 		oldpte = *pte;
+ 		if (pte_present(oldpte)) {
+ 			pte_t ptent;
++			bool updated = false;
+ 
+ 			ptent = ptep_modify_prot_start(mm, addr, pte);
+-			ptent = pte_modify(ptent, newprot);
++			if (!prot_numa) {
++				ptent = pte_modify(ptent, newprot);
++				updated = true;
++			} else {
++				struct page *page;
 +
-+		/*
-+		 * Page is isolated which takes a reference count so now the
-+		 * callers reference can be safely dropped without the page
-+		 * disappearing underneath us during migration
-+		 */
-+		put_page(page);
++				page = vm_normal_page(vma, addr, oldpte);
++				if (page) {
++					/* only check non-shared pages */
++					if (!pte_numa(oldpte) &&
++					    page_mapcount(page) == 1) {
++						ptent = pte_mknuma(ptent);
++						updated = true;
++					}
++				}
++			}
+ 
+ 			/*
+ 			 * Avoid taking write faults for pages we know to be
+ 			 * dirty.
+ 			 */
+-			if (dirty_accountable && pte_dirty(ptent))
++			if (dirty_accountable && pte_dirty(ptent)) {
+ 				ptent = pte_mkwrite(ptent);
++				updated = true;
++			}
 +
-+		page_lru = page_is_file_cache(page);
-+		inc_zone_page_state(page, NR_ISOLATED_ANON + page_lru);
-+		list_add(&page->lru, &migratepages);
-+	}
++			if (updated)
++				pages++;
+ 
+ 			ptep_modify_prot_commit(mm, addr, pte, ptent);
+-			pages++;
+ 		} else if (IS_ENABLED(CONFIG_MIGRATION) && !pte_file(oldpte)) {
+ 			swp_entry_t entry = pte_to_swp_entry(oldpte);
+ 
+@@ -85,7 +106,7 @@ static unsigned long change_pte_range(struct mm_struct *mm, pmd_t *pmd,
+ 
+ static inline unsigned long change_pmd_range(struct vm_area_struct *vma, pud_t *pud,
+ 		unsigned long addr, unsigned long end, pgprot_t newprot,
+-		int dirty_accountable)
++		int dirty_accountable, int prot_numa)
+ {
+ 	pmd_t *pmd;
+ 	unsigned long next;
+@@ -97,7 +118,7 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma, pud_t *
+ 		if (pmd_trans_huge(*pmd)) {
+ 			if (next - addr != HPAGE_PMD_SIZE)
+ 				split_huge_page_pmd(vma->vm_mm, pmd);
+-			else if (change_huge_pmd(vma, pmd, addr, newprot)) {
++			else if (change_huge_pmd(vma, pmd, addr, newprot, prot_numa)) {
+ 				pages += HPAGE_PMD_NR;
+ 				continue;
+ 			}
+@@ -105,8 +126,17 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma, pud_t *
+ 		}
+ 		if (pmd_none_or_clear_bad(pmd))
+ 			continue;
+-		pages += change_pte_range(vma->vm_mm, pmd, addr, next, newprot,
+-				 dirty_accountable);
++		pages += change_pte_range(vma, pmd, addr, next, newprot,
++				 dirty_accountable, prot_numa);
 +
-+	if (isolated) {
-+		int nr_remaining;
++		if (prot_numa) {
++			struct mm_struct *mm = vma->vm_mm;
 +
-+		nr_remaining = migrate_pages(&migratepages,
-+				alloc_misplaced_dst_page,
-+				node, false, MIGRATE_ASYNC,
-+				MR_NUMA_MISPLACED);
-+		if (nr_remaining) {
-+			putback_lru_pages(&migratepages);
-+			isolated = 0;
++			spin_lock(&mm->page_table_lock);
++			set_pmd_at(mm, addr & PMD_MASK, pmd, pmd_mknuma(*pmd));
++			spin_unlock(&mm->page_table_lock);
 +		}
-+	}
-+	BUG_ON(!list_empty(&migratepages));
-+out:
-+	return isolated;
-+}
-+#endif /* CONFIG_NUMA_BALANCING */
 +
-+#endif /* CONFIG_NUMA */
+ 	} while (pmd++, addr = next, addr != end);
+ 
+ 	return pages;
+@@ -114,7 +144,7 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma, pud_t *
+ 
+ static inline unsigned long change_pud_range(struct vm_area_struct *vma, pgd_t *pgd,
+ 		unsigned long addr, unsigned long end, pgprot_t newprot,
+-		int dirty_accountable)
++		int dirty_accountable, int prot_numa)
+ {
+ 	pud_t *pud;
+ 	unsigned long next;
+@@ -126,7 +156,7 @@ static inline unsigned long change_pud_range(struct vm_area_struct *vma, pgd_t *
+ 		if (pud_none_or_clear_bad(pud))
+ 			continue;
+ 		pages += change_pmd_range(vma, pud, addr, next, newprot,
+-				 dirty_accountable);
++				 dirty_accountable, prot_numa);
+ 	} while (pud++, addr = next, addr != end);
+ 
+ 	return pages;
+@@ -134,7 +164,7 @@ static inline unsigned long change_pud_range(struct vm_area_struct *vma, pgd_t *
+ 
+ static unsigned long change_protection_range(struct vm_area_struct *vma,
+ 		unsigned long addr, unsigned long end, pgprot_t newprot,
+-		int dirty_accountable)
++		int dirty_accountable, int prot_numa)
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	pgd_t *pgd;
+@@ -150,7 +180,7 @@ static unsigned long change_protection_range(struct vm_area_struct *vma,
+ 		if (pgd_none_or_clear_bad(pgd))
+ 			continue;
+ 		pages += change_pud_range(vma, pgd, addr, next, newprot,
+-				 dirty_accountable);
++				 dirty_accountable, prot_numa);
+ 	} while (pgd++, addr = next, addr != end);
+ 
+ 	/* Only flush the TLB if we actually modified any entries: */
+@@ -162,7 +192,7 @@ static unsigned long change_protection_range(struct vm_area_struct *vma,
+ 
+ unsigned long change_protection(struct vm_area_struct *vma, unsigned long start,
+ 		       unsigned long end, pgprot_t newprot,
+-		       int dirty_accountable)
++		       int dirty_accountable, int prot_numa)
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	unsigned long pages;
+@@ -171,7 +201,7 @@ unsigned long change_protection(struct vm_area_struct *vma, unsigned long start,
+ 	if (is_vm_hugetlb_page(vma))
+ 		pages = hugetlb_change_protection(vma, start, end, newprot);
+ 	else
+-		pages = change_protection_range(vma, start, end, newprot, dirty_accountable);
++		pages = change_protection_range(vma, start, end, newprot, dirty_accountable, prot_numa);
+ 	mmu_notifier_invalidate_range_end(mm, start, end);
+ 
+ 	return pages;
+@@ -249,7 +279,7 @@ success:
+ 		dirty_accountable = 1;
+ 	}
+ 
+-	change_protection(vma, start, end, vma->vm_page_prot, dirty_accountable);
++	change_protection(vma, start, end, vma->vm_page_prot, dirty_accountable, 0);
+ 
+ 	vm_stat_account(mm, oldflags, vma->vm_file, -nrpages);
+ 	vm_stat_account(mm, newflags, vma->vm_file, nrpages);
 -- 
 1.7.11.7
 
