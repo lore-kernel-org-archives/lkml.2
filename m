@@ -1,84 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978Ab2LBR3J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 12:29:09 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:39088 "EHLO
+	id S1754017Ab2LBR3p (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 12:29:45 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:39165 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753003Ab2LBR3H (ORCPT
+	with ESMTP id S1751631Ab2LBR3o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 12:29:07 -0500
-Date: Sun, 2 Dec 2012 20:28:43 +0300
+	Sun, 2 Dec 2012 12:29:44 -0500
+Date: Sun, 2 Dec 2012 20:29:30 +0300
 From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Russ Anderson <rja@sgi.com>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        walter harms <wharms@bfs.de>
-Subject: [patch v3] x86, UV: integer wrap bug in uv_hub_ipi_value()
-Message-ID: <20121202172842.GA20110@elgon.mountain>
+To: Bryan Wu <cooloney@gmail.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] leds: leds-lp5521: return an error code on error in probe()
+Message-ID: <20121202172930.GA21835@elgon.mountain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50BB74E7.9060306@bfs.de>
+In-Reply-To: <1354418247.7995.49.camel@deadeye.wl.decadent.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a static checker fix.  The problem is that we store the bits
-from "uv_apicid_hibits" into "apicid" (the high 16 bits) but then we
-shift it 16 bit to the left.  "apicid" is an int so it wraps and we lose
-them.
+If "buf" wasn't equal to LP5521_REG_R_CURR_DEFAULT the probe fails but
+we still return zero.  I've changed it to print an error message and
+return -EINVAL.
 
-I have also simplified uv_wakeup_secondary() a little based on a
-suggestion.
-
+Reported-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
----
-v2: Style fix.  Don't use ulong.
-v3: Another style fix to uv_wakeup_secondary() based on Walter Harms's
-suggestion.
 
-I don't have this hardware so I can't test it.  There may also be other
-bugs which this patch does not addressed.  These files are only compiled
-on x86_64 and "unsigned long" is used throughout to mean 64 bits.
-
-diff --git a/arch/x86/include/asm/uv/uv_hub.h b/arch/x86/include/asm/uv/uv_hub.h
-index 21f7385..e7a83d5 100644
---- a/arch/x86/include/asm/uv/uv_hub.h
-+++ b/arch/x86/include/asm/uv/uv_hub.h
-@@ -577,7 +577,7 @@ static unsigned long uv_hub_ipi_value(int apicid, int vector, int mode)
- {
- 	apicid |= uv_apicid_hibits;
- 	return (1UL << UVH_IPI_INT_SEND_SHFT) |
--			((apicid) << UVH_IPI_INT_APIC_ID_SHFT) |
-+			((unsigned long)apicid << UVH_IPI_INT_APIC_ID_SHFT) |
- 			(mode << UVH_IPI_INT_DELIVERY_MODE_SHFT) |
- 			(vector << UVH_IPI_INT_VECTOR_SHFT);
- }
-diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
-index 8cfade9..251b36f 100644
---- a/arch/x86/kernel/apic/x2apic_uv_x.c
-+++ b/arch/x86/kernel/apic/x2apic_uv_x.c
-@@ -194,16 +194,10 @@ static int __cpuinit uv_wakeup_secondary(int phys_apicid, unsigned long start_ri
- 	pnode = uv_apicid_to_pnode(phys_apicid);
- 	phys_apicid |= uv_apicid_hibits;
- 	val = (1UL << UVH_IPI_INT_SEND_SHFT) |
--	    (phys_apicid << UVH_IPI_INT_APIC_ID_SHFT) |
--	    ((start_rip << UVH_IPI_INT_VECTOR_SHFT) >> 12) |
--	    APIC_DM_INIT;
--	uv_write_global_mmr64(pnode, UVH_IPI_INT, val);
--
--	val = (1UL << UVH_IPI_INT_SEND_SHFT) |
--	    (phys_apicid << UVH_IPI_INT_APIC_ID_SHFT) |
--	    ((start_rip << UVH_IPI_INT_VECTOR_SHFT) >> 12) |
--	    APIC_DM_STARTUP;
--	uv_write_global_mmr64(pnode, UVH_IPI_INT, val);
-+	    ((unsigned long)phys_apicid << UVH_IPI_INT_APIC_ID_SHFT) |
-+	    ((start_rip << UVH_IPI_INT_VECTOR_SHFT) >> 12);
-+	uv_write_global_mmr64(pnode, UVH_IPI_INT, val | APIC_DM_INIT);
-+	uv_write_global_mmr64(pnode, UVH_IPI_INT, val | APIC_DM_STARTUP);
+diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
+index 2bee6b9..cb8a522 100644
+--- a/drivers/leds/leds-lp5521.c
++++ b/drivers/leds/leds-lp5521.c
+@@ -788,10 +788,17 @@ static int lp5521_probe(struct i2c_client *client,
+ 	 * LP5521_REG_ENABLE register will not have any effect - strange!
+ 	 */
+ 	ret = lp5521_read(client, LP5521_REG_R_CURRENT, &buf);
+-	if (ret || buf != LP5521_REG_R_CURR_DEFAULT) {
++	if (ret) {
+ 		dev_err(&client->dev, "error in resetting chip\n");
+ 		goto fail2;
+ 	}
++	if (buf != LP5521_REG_R_CURR_DEFAULT) {
++		dev_err(&client->dev,
++			"unexpected data in register (expected 0x%x got 0x%x)\n",
++			LP5521_REG_R_CURR_DEFAULT, buf);
++		ret = -EINVAL;
++		goto fail2;
++	}
+ 	usleep_range(10000, 20000);
  
- 	atomic_set(&init_deasserted, 1);
- #endif
+ 	ret = lp5521_detect(client);
