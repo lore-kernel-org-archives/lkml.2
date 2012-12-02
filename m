@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754434Ab2LBSor (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 13:44:47 -0500
+	id S1754634Ab2LBSpB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 13:45:01 -0500
 Received: from mail-ee0-f46.google.com ([74.125.83.46]:64238 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754303Ab2LBSon (ORCPT
+	with ESMTP id S1754531Ab2LBSo5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 13:44:43 -0500
+	Sun, 2 Dec 2012 13:44:57 -0500
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
@@ -18,9 +18,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: [PATCH 21/52] sched: Make find_busiest_queue() a method
-Date: Sun,  2 Dec 2012 19:43:13 +0100
-Message-Id: <1354473824-19229-22-git-send-email-mingo@kernel.org>
+Subject: [PATCH 27/52] sched, numa, mm: Count WS scanning against present PTEs, not virtual memory ranges
+Date: Sun,  2 Dec 2012 19:43:19 +0100
+Message-Id: <1354473824-19229-28-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1354473824-19229-1-git-send-email-mingo@kernel.org>
 References: <1354473824-19229-1-git-send-email-mingo@kernel.org>
@@ -30,68 +30,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Its a bit awkward but it was the least painful means of modifying the
-queue selection. Used in a later patch to conditionally use a random
-queue.
+By accounting against the present PTEs, scanning speed reflects the
+actual present (mapped) memory.
 
+Suggested-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Turner <pjt@google.com>
-Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
 Cc: Hugh Dickins <hughd@google.com>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 20 ++++++++++++--------
- 1 file changed, 12 insertions(+), 8 deletions(-)
+ kernel/sched/fair.c | 37 +++++++++++++++++++++----------------
+ 1 file changed, 21 insertions(+), 16 deletions(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 59e072b..511fbb8 100644
+index 151a3cd..da28315 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -3600,6 +3600,9 @@ struct lb_env {
- 	unsigned int		loop;
- 	unsigned int		loop_break;
- 	unsigned int		loop_max;
-+
-+	struct rq *		(*find_busiest_queue)(struct lb_env *,
-+						      struct sched_group *);
- };
+@@ -914,8 +914,8 @@ void task_numa_work(struct callback_head *work)
+ 	struct task_struct *p = current;
+ 	struct mm_struct *mm = p->mm;
+ 	struct vm_area_struct *vma;
+-	unsigned long offset, end;
+-	long length;
++	unsigned long start, end;
++	long pages;
  
- /*
-@@ -4779,13 +4782,14 @@ static int load_balance(int this_cpu, struct rq *this_rq,
- 	struct cpumask *cpus = __get_cpu_var(load_balance_tmpmask);
+ 	WARN_ON_ONCE(p != container_of(work, struct task_struct, numa_work));
  
- 	struct lb_env env = {
--		.sd		= sd,
--		.dst_cpu	= this_cpu,
--		.dst_rq		= this_rq,
--		.dst_grpmask    = sched_group_cpus(sd->groups),
--		.idle		= idle,
--		.loop_break	= sched_nr_migrate_break,
--		.cpus		= cpus,
-+		.sd		    = sd,
-+		.dst_cpu	    = this_cpu,
-+		.dst_rq		    = this_rq,
-+		.dst_grpmask        = sched_group_cpus(sd->groups),
-+		.idle		    = idle,
-+		.loop_break	    = sched_nr_migrate_break,
-+		.cpus		    = cpus,
-+		.find_busiest_queue = find_busiest_queue,
- 	};
+@@ -942,30 +942,35 @@ void task_numa_work(struct callback_head *work)
+ 	if (cmpxchg(&mm->numa_next_scan, migrate, next_scan) != migrate)
+ 		return;
  
- 	cpumask_copy(cpus, cpu_active_mask);
-@@ -4804,7 +4808,7 @@ redo:
- 		goto out_balanced;
+-	offset = mm->numa_scan_offset;
+-	length = sysctl_sched_numa_scan_size;
+-	length <<= 20;
++	start = mm->numa_scan_offset;
++	pages = sysctl_sched_numa_scan_size;
++	pages <<= 20 - PAGE_SHIFT; /* MB in pages */
++	if (!pages)
++		return;
+ 
+ 	down_write(&mm->mmap_sem);
+-	vma = find_vma(mm, offset);
++	vma = find_vma(mm, start);
+ 	if (!vma) {
+ 		ACCESS_ONCE(mm->numa_scan_seq)++;
+-		offset = 0;
++		start = 0;
+ 		vma = mm->mmap;
  	}
+-	for (; vma && length > 0; vma = vma->vm_next) {
++	for (; vma; vma = vma->vm_next) {
+ 		if (!vma_migratable(vma))
+ 			continue;
  
--	busiest = find_busiest_queue(&env, group);
-+	busiest = env.find_busiest_queue(&env, group);
- 	if (!busiest) {
- 		schedstat_inc(sd, lb_nobusyq[idle]);
- 		goto out_balanced;
+-		offset = max(offset, vma->vm_start);
+-		end = min(ALIGN(offset + length, HPAGE_SIZE), vma->vm_end);
+-		length -= end - offset;
+-
+-		change_prot_numa(vma, offset, end);
+-
+-		offset = end;
++		do {
++			start = max(start, vma->vm_start);
++			end = ALIGN(start + (pages << PAGE_SHIFT), HPAGE_SIZE);
++			end = min(end, vma->vm_end);
++			pages -= change_prot_numa(vma, start, end);
++			start = end;
++			if (pages <= 0)
++				goto out;
++		} while (end != vma->vm_end);
+ 	}
+-	mm->numa_scan_offset = offset;
++out:
++	mm->numa_scan_offset = start;
+ 	up_write(&mm->mmap_sem);
+ }
+ 
 -- 
 1.7.11.7
 
