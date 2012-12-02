@@ -1,134 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753971Ab2LBNoE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 08:44:04 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:37763 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751275Ab2LBNoD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 08:44:03 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: NeilBrown <neilb@suse.de>, Chris Ball <cjb@laptop.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, linux-mmc@vger.kernel.org,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>
-Subject: [PATCH] SDIO / PM: Add empty bus-level suspend/resume callbacks
-Date: Sun, 02 Dec 2012 14:48:50 +0100
-Message-ID: <2147450.LFoExqrKEF@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc7; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <20121202194625.5d66e239@notabene.brown>
-References: <20120325203849.7a908e32@notabene.brown> <201203260029.24826.rjw@sisk.pl> <20121202194625.5d66e239@notabene.brown>
+	id S1753921Ab2LBNtg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 08:49:36 -0500
+Received: from mx.scalarmail.ca ([98.158.95.75]:64909 "EHLO
+	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751673Ab2LBNte (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Dec 2012 08:49:34 -0500
+Date: Sun, 2 Dec 2012 08:49:33 -0500 (EST)
+From: Tom St Denis <tstdenis@elliptictech.com>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: linux-kernel@vger.kernel.org, intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Message-ID: <1738269086.121732.1354456173261.JavaMail.root@elliptictech.com>
+In-Reply-To: <CAKMK7uGrLvmDa+pqStAK_E_rEmgAgR+BO6+-m2dgUk6Ut6DuCQ@mail.gmail.com>
+Subject: Re: Brightness control fails between 3.6.8 and 3.7.0-rc7 (Intel
+ 915/Dell Vostro 3560)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.17.19.112]
+X-Mailer: Zimbra 7.2.1_GA_2790 (ZimbraWebClient - GC23 (Linux)/7.2.1_GA_2790)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, December 02, 2012 07:46:25 PM NeilBrown wrote:
-> On Mon, 26 Mar 2012 00:29:24 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+Ok so on v3.7-rc1 [and I suspect up] I can manually control the brightness by echoing to 
+
+/sys/class/backlight/intel_backlight/brightness
+
+But I still can't use the buttons to control it (it only goes one tick down from max and stops there).  I'm using GNOME3 from a x86_64 unstable debian install [up to date with latest].
+
+I just noticed that under v3.7 I have a new directory /sys/class/backlight/acpi_video1 which is what GNOME is actually controlling.  I can't disable ACPI video control so is there a workaround?
+
+Tom
+
+
+
+----- Original Message -----
+> From: "Daniel Vetter" <daniel.vetter@ffwll.ch>
+> To: "Tom St Denis" <tstdenis@elliptictech.com>
+> Cc: linux-kernel@vger.kernel.org, "intel-gfx" <intel-gfx@lists.freedesktop.org>, "dri-devel"
+> <dri-devel@lists.freedesktop.org>
+> Sent: Sunday, 2 December, 2012 6:43:14 AM
+> Subject: Re: Brightness control fails between 3.6.8 and 3.7.0-rc7 (Intel 915/Dell Vostro 3560)
+> 
+> Including a bunch more lists to the cc.
+> 
+> On Sun, Dec 2, 2012 at 12:42 PM, Daniel Vetter
+> <daniel.vetter@ffwll.ch> wrote:
+> > On Sun, Dec 2, 2012 at 12:32 PM, Tom St Denis
+> > <tstdenis@elliptictech.com> wrote:
+> >> I've narrowed it down to sometime between v3.6.8 and v3.7-rc1.  So
+> >> none of the v3.7 series will work with this GPU/panel.
+> >
+> > Hm, that's still a few hundred relevant commits intermingled with a
+> > few thousand that likely don't matter ;-) Can you please attempt a
+> > kernel bisect with git? For a nice howto check out
+> > http://www.reactivated.net/weblog/archives/2006/01/using-git-bisect-to-find-buggy-kernel-patches/
+> >
+> > Also, can you please check which of the different backlight
+> > controls
+> > in /sys/class/backlight work on 3.6 (and whether any of them still
+> > work on 3.7)?
+> >
+> > Thanks, Daniel
+> > --
+> > Daniel Vetter
+> > Software Engineer, Intel Corporation
+> > +41 (0) 79 365 57 48 - http://blog.ffwll.ch
 > 
 > 
-> > Thanks for the confirmation.
-> > 
-> > Below it goes again with a changelog and tags.
-> > 
-> > I don't really think that SDIO does the right thing here overall, but that's
-> > all I can do to address the problem timely.
-> > 
-> > Thanks,
-> > Rafael
 > 
-> Hi Rafael,
->  I just discovered that this patch has since been reverted - with an 'ack'
->  from you:
-> ----------
-> commit d8e2ac330f65bcf47e8894fe5331a7e8ee019c06
-> Author: Thierry Reding <thierry.reding@avionic-design.de>
-> Date:   Thu Aug 9 09:32:21 2012 +0000
+> --
+> Daniel Vetter
+> Software Engineer, Intel Corporation
+> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
 > 
->     mmc: sdio: Fix PM_SLEEP related build warnings
->     
->     Power management callbacks defined by SIMPLE_DEV_PM_OPS are only used if
->     the PM_SLEEP Kconfig symbol has been defined. If not, the compiler will
->     complain about them being unused. However, since the callback for this
->     driver doesn't do anything it can just as well be dropped.
->     
->     Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
->     Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
->     Signed-off-by: Chris Ball <cjb@laptop.org>
-> -----------
-> 
-> Unsurprisingly the problem which your patch fixed has come back.
-> 
-> Do you think we could get the patch back in again.  This time maybe we should
-> put some comments in there pointing out that having a function which does
-> nothing is very different from not having any function at all?
-
-Well, I agree.  I didn't remember that the callback had been added for
-a purpose and hence my "ack" for that patch.
-
-What about applying the appended patch (hopefully, the build warnings should
-be fixed properly this time)?
-
-Rafael
-
-
----
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Subject: SDIO / PM: Add empty bus-level suspend/resume callbacks
-
-Suspend methods provided by SDIO drivers are not supposed to be
-called by the PM core.  Instead, when the SDIO core gets to suspend
-a device's ancestor, it calls the device driver's suspend routine.
-However, the PM core executes suspend callback routines directly for
-device drivers whose bus types don't provide suspend callbacks.
-In consequece, because the SDIO bus type doesn't provide a suspend
-callback, the SDIO drivers' suspend routines will be executed by the
-PM core (which shouldn't happen).
-
-To prevent this from happening, add empty system suspend/resume
-callbacks for the SDIO bus type.
-
-An analogous change had been made already by commit (e841a7c mmc:
-sdio: Use empty system suspend/resume callbacks at the bus level),
-but then it was reverted inadvertently by commit (d8e2ac3 mmc: sdio:
-Fix PM_SLEEP related build warnings) that attempted to fix build
-warnings introduced by commit e841a7c.
-
-Reported-by: NeilBrown <neilb@suse.de>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/mmc/core/sdio_bus.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
-
-Index: linux/drivers/mmc/core/sdio_bus.c
-===================================================================
---- linux.orig/drivers/mmc/core/sdio_bus.c
-+++ linux/drivers/mmc/core/sdio_bus.c
-@@ -193,7 +193,21 @@ static int sdio_bus_remove(struct device
- }
- 
- #ifdef CONFIG_PM
-+
-+#ifdef CONFIG_PM_SLEEP
-+static int pm_no_operation(struct device *dev)
-+{
-+	/*
-+	 * Prevent the PM core from calling SDIO device drivers' suspend
-+	 * callback routines, which it is not supposed to do, by using this
-+	 * empty function as the bus type suspend callaback for SDIO.
-+	 */
-+	return 0;
-+}
-+#endif
-+
- static const struct dev_pm_ops sdio_bus_pm_ops = {
-+	SET_SYSTEM_SLEEP_PM_OPS(pm_no_operation, pm_no_operation)
- 	SET_RUNTIME_PM_OPS(
- 		pm_generic_runtime_suspend,
- 		pm_generic_runtime_resume,
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
