@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753750Ab2LBNeN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 08:34:13 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:58846 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751511Ab2LBNeM (ORCPT
+	id S1753939Ab2LBNfy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 08:35:54 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:54522 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751770Ab2LBNfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 08:34:12 -0500
+	Sun, 2 Dec 2012 08:35:53 -0500
 MIME-Version: 1.0
-Date: Sun, 2 Dec 2012 08:33:56 -0500
-Message-ID: <CAPgLHd9CsRsD6n7BMnXR__-VaTFUmG86JnDRvyN9J+XwXp7WDQ@mail.gmail.com>
-Subject: [PATCH -next] mfd: sta2x11-mfd: fix potential NULL pointer
- dereference in __sta2x11_mfd_mask()
+Date: Sun, 2 Dec 2012 08:35:52 -0500
+Message-ID: <CAPgLHd_=F+YE-a2_MKV+Od655JiVMmymhKmhQZ1wTvQrfnjWVw@mail.gmail.com>
+Subject: [PATCH -next] gma500: medfield: fix potential NULL pointer
+ dereference in mdfld_dsi_brightness_init()
 From: Wei Yongjun <weiyj.lk@gmail.com>
-To: sameo@linux.intel.com
-Cc: yongjun_wei@trendmicro.com.cn, linux-kernel@vger.kernel.org
+To: airlied@linux.ie
+Cc: yongjun_wei@trendmicro.com.cn, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,32 +23,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-The dereference to 'mfd' should be moved below the NULL test.
+The dereference to 'sender' should be moved below the NULL test.
 
 Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
- drivers/mfd/sta2x11-mfd.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/gma500/mdfld_dsi_output.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mfd/sta2x11-mfd.c b/drivers/mfd/sta2x11-mfd.c
-index 012a521..1ecbdfb 100644
---- a/drivers/mfd/sta2x11-mfd.c
-+++ b/drivers/mfd/sta2x11-mfd.c
-@@ -116,12 +116,14 @@ u32 __sta2x11_mfd_mask(struct pci_dev *pdev, u32 reg, u32 mask, u32 val,
- 	struct sta2x11_mfd *mfd = sta2x11_mfd_find(pdev);
- 	u32 r;
- 	unsigned long flags;
--	void __iomem *regs = mfd->regs[index];
-+	void __iomem *regs;
+diff --git a/drivers/gpu/drm/gma500/mdfld_dsi_output.c b/drivers/gpu/drm/gma500/mdfld_dsi_output.c
+index 637dd84..478f8b9 100644
+--- a/drivers/gpu/drm/gma500/mdfld_dsi_output.c
++++ b/drivers/gpu/drm/gma500/mdfld_dsi_output.c
+@@ -92,8 +92,8 @@ void mdfld_dsi_brightness_init(struct mdfld_dsi_config *dsi_config, int pipe)
+ {
+ 	struct mdfld_dsi_pkg_sender *sender =
+ 				mdfld_dsi_get_pkg_sender(dsi_config);
+-	struct drm_device *dev = sender->dev;
+-	struct drm_psb_private *dev_priv = dev->dev_private;
++	struct drm_device *dev;
++	struct drm_psb_private *dev_priv;
+ 	u32 gen_ctrl_val;
  
- 	if (!mfd) {
- 		dev_warn(&pdev->dev, ": can't access sctl regs\n");
- 		return 0;
+ 	if (!sender) {
+@@ -101,6 +101,8 @@ void mdfld_dsi_brightness_init(struct mdfld_dsi_config *dsi_config, int pipe)
+ 		return;
  	}
-+
-+	regs = mfd->regs[index];
- 	if (!regs) {
- 		dev_warn(&pdev->dev, ": system ctl not initialized\n");
- 		return 0;
+ 
++	dev = sender->dev;
++	dev_priv = dev->dev_private;
+ 	/* Set default display backlight value to 85% (0xd8)*/
+ 	mdfld_dsi_send_mcs_short(sender, write_display_brightness, 0xd8, 1,
+ 				true);
 
 
