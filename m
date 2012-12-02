@@ -1,284 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754082Ab2LBThH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 14:37:07 -0500
-Received: from gwu.lbox.cz ([62.245.111.132]:55581 "EHLO gwu.lbox.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752814Ab2LBThF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 14:37:05 -0500
-Date: Sun, 2 Dec 2012 20:36:57 +0100
-From: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [ 00/37] 3.0.54-stable review
-Message-ID: <20121202193657.GA13040@nik-comp.linuxbox.cz>
-References: <20121130183857.166228045@linuxfoundation.org>
+	id S1754085Ab2LBTpv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 14:45:51 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:42454 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753555Ab2LBTpu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Dec 2012 14:45:50 -0500
+Date: Sun, 2 Dec 2012 20:45:44 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: [PATCH 2/2, v2] sched: Add RSS filter to NUMA-balancing
+Message-ID: <20121202194544.GA20549@gmail.com>
+References: <1354464796-14343-1-git-send-email-mingo@kernel.org>
+ <1354464796-14343-3-git-send-email-mingo@kernel.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6TrnltStXW4iwmi0"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121130183857.166228045@linuxfoundation.org>
-"X-PGP-Key: http://nik.lbox.cz/downloads/nikola.ciprich.asc"
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Antivirus: on lbxovapx by Kaspersky antivirus, 8265391 records (last update: 20121202)
-X-Spam-Score: N/A (imported whitelist)
+In-Reply-To: <1354464796-14343-3-git-send-email-mingo@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---6TrnltStXW4iwmi0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Updated -v2 patch: RSS high-water calculation has a performance 
+trick, so mm->hiwater_rss must be used together with get_mm_rss.
 
-Hi,
+Thanks,
 
-checked this release using linux test project. I don't see any new failures
-compared to previous release. I still have some tests failed, which I want
-to figure out why (some seem to be missing tools, etc) and fix.
-I'd like to check each new release and report.
+	Ingo
 
-following tests are currently failing for me:
+--------------------------->
+>From 92429d012ddc551626d7e414469e080d4b41a0c9 Mon Sep 17 00:00:00 2001
+From: Ingo Molnar <mingo@kernel.org>
+Date: Sun, 2 Dec 2012 15:29:42 +0100
+Subject: [PATCH] sched: Add RSS filter to NUMA-balancing
 
-sysctl03                       FAIL       4   =20
-gf18                           FAIL       1   =20
-aio01                          FAIL       2   =20
-aio02                          FAIL       2   =20
-ksm03                          FAIL       6   =20
-su01                           FAIL       126 =20
-Numa-testcases                 FAIL       1   =20
-mail                           FAIL       1   =20
+NUMA-balancing, combined with NUMA-affine memory migration,
+is a relatively long-term process (compared to the typical
+time scale of scheduling) that takes time to establish and
+converge - on the time scale of of several seconds or more.
 
-I'll report further when I got this fixed (as well as with results for
-other releases).
+Small, short-lived and don't have much of a NUMA placement
+cost to begin with, so don't NUMA-balance them. A task needs
+to execute long enough and needs to establish a large enough
+user-space memory image to benefit from more intelligent
+NUMA balancing.
 
-cheers
+We already have a CPU time limit before tasks are affected
+by NUMA balancing - this change adds the memory equivalent:
+by introducing an RSS limit of 128 MBs.
 
-nik
+In practice this excludes most short-lived tasks - the limit
+is in fact probably a bit on the conservative side - but with
+intrusive kernel features conservative is good.
 
+The /proc/sys/kernel/sched_numa_rss_threshold_mb value can be
+tuned runtime - setting it to 0 turns off this filter.
 
-On Fri, Nov 30, 2012 at 10:45:47AM -0800, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.0.54 release.
-> There are 37 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->=20
-> Responses should be made by Sun Dec  2 18:36:43 UTC 2012.
-> Anything received after that time might be too late.
->=20
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.54-rc1.gz
-> and the diffstat can be found below.
->=20
-> thanks,
->=20
-> greg k-h
->=20
-> -------------
-> Pseudo-Shortlog of commits:
->=20
-> Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->     Linux 3.0.54-rc1
->=20
-> Jaehoon Chung <jh80.chung@samsung.com>
->     mmc: sdhci-s3c: fix the wrong number of max bus clocks
->=20
-> Jussi Pakkanen <jussi.pakkanen@canonical.com>
->     Input: bcm5974 - set BUTTONPAD property
->=20
-> Fenghua Yu <fenghua.yu@intel.com>
->     x86, mce, therm_throt: Don't report power limit and package level the=
-rmal throttle events in mcelog
->=20
-> Merlin Schumacher <merlin.schumacher@gmail.com>
->     acer-wmi: support for P key on TM8372
->=20
-> Chuansheng Liu <chuansheng.liu@intel.com>
->     watchdog: using u64 in get_sample_period()
->=20
-> Johan Hovold <jhovold@gmail.com>
->     USB: mct_u232: fix broken close
->=20
-> Mauro Carvalho Chehab <mchehab@redhat.com>
->     get_dvb_firmware: fix download site for tda10046 firmware
->=20
-> Emil Tantilov <emil.s.tantilov@intel.com>
->     ixgbe: add support for new 82599 device id
->=20
-> Emil Tantilov <emil.s.tantilov@intel.com>
->     ixgbe: add support for new 82599 device
->=20
-> David Milburn <dmilburn@redhat.com>
->     sata_svw: check DMA start bit before reset
->=20
-> joshua.a.hay@intel.com <joshua.a.hay@intel.com>
->     ixgbe: add support for X540-AT1
->=20
-> Tilman Schmidt <tilman@imap.cc>
->     bas_gigaset: fix pre_reset handling
->=20
-> David Henningsson <david.henningsson@canonical.com>
->     ALSA: hda - Add support for Realtek ALC292
->=20
-> Duncan Roe <duncan_roe@acslink.net.au>
->     ALSA: hda - Fix missing beep on ASUS X43U notebook
->=20
-> Kailang Yang <kailang@realtek.com>
->     ALSA: hda - Add new codec ALC283 ALC290 support
->=20
-> Al Viro <viro@zeniv.linux.org.uk>
->     sparc64: not any error from do_sigaltstack() should fail rt_sigreturn=
-()
->=20
-> Jan Kara <jack@suse.cz>
->     jbd: Fix lock ordering bug in journal_unmap_buffer()
->=20
-> Oliver Hartkopp <socketcan@hartkopp.net>
->     can: bcm: initialize ifindex for timeouts without previous frame rece=
-ption
->=20
-> Paul Bolle <pebolle@tiscali.nl>
->     radeon: add AGPMode 1 quirk for RV250
->=20
-> Simon Wunderlich <simon.wunderlich@s2003.tu-chemnitz.de>
->     mac80211: deinitialize ibss-internals after emptiness check
->=20
-> Darren Hart <dvhart@linux.intel.com>
->     futex: avoid wake_futex() for a PI futex_q
->=20
-> Jens Axboe <axboe@kernel.dk>
->     dm: fix deadlock with request based dm and queue request_fn recursion
->=20
-> Jiri Engelthaler <engycz@gmail.com>
->     mtd: slram: invalid checking of absolute end address
->=20
-> Al Viro <viro@ZenIV.linux.org.uk>
->     PARISC: fix user-triggerable panic on parisc
->=20
-> James Bottomley <James.Bottomley@HansenPartnership.com>
->     PARISC: fix virtual aliasing issue in get_shared_area()
->=20
-> David Henningsson <david.henningsson@canonical.com>
->     ALSA: hda - Cirrus: Correctly clear line_out_pins when moving to spea=
-ker
->=20
-> Clemens Ladisch <clemens@ladisch.de>
->     ALSA: ua101, usx2y: fix broken MIDI output
->=20
-> Maciej Patelczyk <maciej.patelczyk@intel.com>
->     SCSI: isci: copy fis 0x34 response into proper buffer
->=20
-> Bing Zhao <bzhao@marvell.com>
->     mwifiex: report error to MMC core if we cannot suspend
->=20
-> Albert Pool <albertpool@solcon.nl>
->     rtlwifi: rtl8192cu: Add new USB ID
->=20
-> Boris Ostrovsky <boris.ostrovsky@amd.com>
->     x86, microcode, AMD: Add support for family 16h processors
->=20
-> Robert Richter <robert.richter@amd.com>
->     x86-32: Fix invalid stack address while in softirq
->=20
-> David S. Miller <davem@davemloft.net>
->     ifenslave: Fix unused variable warnings.
->=20
-> Danny Kukawka <danny.kukawka@bisect.de>
->     riva/fbdev: fix several -Wuninitialized
->=20
-> Danny Kukawka <danny.kukawka@bisect.de>
->     drivers/block/DAC960: fix -Wuninitialized warning
->=20
-> Danny Kukawka <danny.kukawka@bisect.de>
->     drivers/block/DAC960: fix DAC960_V2_IOCTL_Opcode_T -Wenum-compare war=
-ning
->=20
-> Takashi Iwai <tiwai@suse.de>
->     ALSA: pcmcia - Use pcmcia_request_irq()
->=20
->=20
-> -------------
->=20
-> Diffstat:
->=20
->  Documentation/dvb/get_dvb_firmware          |  2 +-
->  Documentation/networking/ifenslave.c        |  2 ++
->  Makefile                                    |  4 ++--
->  arch/parisc/kernel/signal32.c               |  6 ++++--
->  arch/parisc/kernel/sys_parisc.c             |  2 ++
->  arch/sparc/kernel/signal_64.c               |  4 +---
->  arch/x86/include/asm/ptrace.h               | 15 ++++-----------
->  arch/x86/kernel/cpu/mcheck/therm_throt.c    | 29 +++++++----------------=
-------
->  arch/x86/kernel/microcode_amd.c             |  4 ++++
->  arch/x86/kernel/ptrace.c                    | 28 +++++++++++++++++++++++=
-+++++
->  drivers/ata/sata_svw.c                      | 35 +++++++++++++++++++++++=
-++++++++++++
->  drivers/block/DAC960.c                      | 18 ++++++++++--------
->  drivers/gpu/drm/radeon/radeon_agp.c         |  5 ++++-
->  drivers/input/mouse/bcm5974.c               |  3 +++
->  drivers/isdn/gigaset/bas-gigaset.c          | 19 ++++++++++++++++---
->  drivers/md/dm.c                             |  8 +++++++-
->  drivers/mmc/host/sdhci-s3c.c                |  2 +-
->  drivers/mtd/devices/slram.c                 |  2 +-
->  drivers/net/ixgbe/ixgbe_82599.c             |  2 ++
->  drivers/net/ixgbe/ixgbe_common.c            |  1 +
->  drivers/net/ixgbe/ixgbe_main.c              |  6 ++++++
->  drivers/net/ixgbe/ixgbe_type.h              |  3 +++
->  drivers/net/wireless/mwifiex/sdio.c         | 11 ++++++-----
->  drivers/net/wireless/rtlwifi/rtl8192cu/sw.c |  1 +
->  drivers/platform/x86/acer-wmi.c             |  1 +
->  drivers/scsi/isci/request.c                 |  2 +-
->  drivers/usb/serial/mct_u232.c               | 14 ++++++++------
->  drivers/video/riva/fbdev.c                  |  5 ++---
->  fs/jbd/transaction.c                        |  2 ++
->  kernel/futex.c                              | 18 +++++++++++++++++-
->  kernel/watchdog.c                           |  4 ++--
->  net/can/bcm.c                               |  3 +++
->  net/mac80211/ibss.c                         |  8 ++++----
->  sound/pci/hda/patch_cirrus.c                |  1 +
->  sound/pci/hda/patch_realtek.c               |  4 ++++
->  sound/pcmcia/pdaudiocf/pdaudiocf.c          |  2 +-
->  sound/pcmcia/vx/vxpocket.c                  |  2 +-
->  sound/usb/midi.c                            |  8 ++++++--
->  38 files changed, 204 insertions(+), 82 deletions(-)
->=20
->=20
-> --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->=20
+To implement the RSS filter first factor out a clean
+task_numa_candidate() function and comment on the various
+reasons of why we wouldn't want to begin to NUMA-balance
+a particular task (yet). Then add the RSS check.
 
---=20
--------------------------------------
-Ing. Nikola CIPRICH
-LinuxBox.cz, s.r.o.
-28. rijna 168, 709 00 Ostrava
+Note, we are using the p->hiwater_rss value instead of the
+current RSS size. We do this to avoid tasks flipping in and
+out of the limit, if their RSS fluctuates around the limit.
+The RSS high-water value increases monotonically in the
+life-time of a task, so there's a single, precise transition
+to NUMA-balancing as the limit is crossed.
 
-tel.:   +420 591 166 214
-fax:    +420 596 621 273
-mobil:  +420 777 093 799
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Hugh Dickins <hughd@google.com>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ include/linux/sched.h |  1 +
+ kernel/sched/fair.c   | 54 +++++++++++++++++++++++++++++++++++++++++++++------
+ kernel/sysctl.c       |  7 +++++++
+ 3 files changed, 56 insertions(+), 6 deletions(-)
 
-www.linuxbox.cz
-
-mobil servis: +420 737 238 656
-email servis: servis@linuxbox.cz
--------------------------------------
-
---6TrnltStXW4iwmi0
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.14 (GNU/Linux)
-
-iEYEARECAAYFAlC7rdkACgkQ3xdJJrLygV7BsACcDqZ9bmraNb8RozoqZ4TuTeM4
-sZkAnjSr51zsPQGYwuT4X4nu/hKZ4H2t
-=BEUP
------END PGP SIGNATURE-----
-
---6TrnltStXW4iwmi0--
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index ce834e7..6a29dfd 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2059,6 +2059,7 @@ extern unsigned int sysctl_sched_numa_scan_period_min;
+ extern unsigned int sysctl_sched_numa_scan_period_max;
+ extern unsigned int sysctl_sched_numa_scan_size_min;
+ extern unsigned int sysctl_sched_numa_scan_size_max;
++extern unsigned int sysctl_sched_numa_rss_threshold;
+ extern unsigned int sysctl_sched_numa_settle_count;
+ 
+ #ifdef CONFIG_SCHED_DEBUG
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 9667191..21c10f7 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -812,6 +812,8 @@ unsigned int sysctl_sched_numa_scan_period_max	__read_mostly = 100*16;	/* ms */
+ unsigned int sysctl_sched_numa_scan_size_min	__read_mostly =  32;	/* MB */
+ unsigned int sysctl_sched_numa_scan_size_max	__read_mostly = 512;	/* MB */
+ 
++unsigned int sysctl_sched_numa_rss_threshold	__read_mostly = 128;	/* MB */
++
+ /*
+  * Wait for the 2-sample stuff to settle before migrating again
+  */
+@@ -2486,17 +2488,57 @@ static void task_tick_numa_placement(struct rq *rq, struct task_struct *curr)
+ 	task_work_add(curr, work, true);
+ }
+ 
+-static void task_tick_numa(struct rq *rq, struct task_struct *curr)
++/*
++ * Is this task worth NUMA-scanning and NUMA-balancing?
++ */
++static bool task_numa_candidate(struct task_struct *p)
+ {
++	unsigned long rss_high;
++	unsigned long rss_limit;
++
++	/* kthreads don't have any user-space memory to scan: */
++	if (!p->mm || !p->numa_faults)
++		return false;
++
+ 	/*
+-	 * We don't care about NUMA placement if we don't have memory
+-	 * or are exiting:
++	 * Exiting tasks won't touch any user-space memory in the future,
++	 * and this also avoids a race with work_exit():
+ 	 */
+-	if (!curr->mm || (curr->flags & PF_EXITING) || !curr->numa_faults)
+-		return;
++	if (p->flags & PF_EXITING)
++		return false;
+ 
+ 	/* Don't disturb hard-bound tasks: */
+-	if (sched_feat(NUMA_EXCLUDE_AFFINE) && (curr->nr_cpus_allowed != num_online_cpus())) {
++	if (sched_feat(NUMA_EXCLUDE_AFFINE)) {
++		if (p->nr_cpus_allowed != num_online_cpus())
++			return false;
++	}
++
++	/*
++	 * NUMA-balancing, combined with NUMA memory migration,
++	 * is a long-term process that takes time to establish
++	 * and converge, on the time scale of of several seconds
++	 * or more.
++	 *
++	 * Small tasks are usually short-lived and don't have much
++	 * of a NUMA placement cost to begin with, so don't
++	 * NUMA-balance them:
++	 */
++	rss_limit = sysctl_sched_numa_rss_threshold;
++	rss_limit <<= 20 - PAGE_SHIFT; /* MB to pages */
++
++	rss_high = get_mm_rss(p->mm);
++	rss_high = max(p->mm->hiwater_rss, rss_high);
++
++	if (rss_high < rss_limit)
++		return false;
++
++	return true;
++}
++
++static void task_tick_numa(struct rq *rq, struct task_struct *curr)
++{
++	/* Cheap checks first: */
++	if (!task_numa_candidate(curr)) {
+ 		if (curr->numa_shared >= 0)
+ 			curr->numa_shared = -1;
+ 		return;
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index b6ddfae..75ab895 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -388,6 +388,13 @@ static struct ctl_table kern_table[] = {
+ 		.proc_handler	= proc_dointvec,
+ 	},
+ 	{
++		.procname	= "sched_numa_rss_threshold_mb",
++		.data		= &sysctl_sched_numa_rss_threshold,
++		.maxlen		= sizeof(unsigned int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
++	{
+ 		.procname	= "sched_numa_settle_count",
+ 		.data		= &sysctl_sched_numa_settle_count,
+ 		.maxlen		= sizeof(unsigned int),
