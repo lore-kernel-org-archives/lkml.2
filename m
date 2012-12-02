@@ -1,117 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074Ab2LBWtR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 17:49:17 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:60761 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753477Ab2LBWtQ (ORCPT
+	id S1754125Ab2LBWu4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 17:50:56 -0500
+Received: from ngcobalt07.manitu.net ([217.11.48.107]:52177 "EHLO
+	ngcobalt07.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752764Ab2LBWuy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 17:49:16 -0500
-Date: Mon, 3 Dec 2012 09:49:06 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-next@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Request for tree inclusion
-Message-Id: <20121203094906.4cbfcfc0ad3f0319895a162d@canb.auug.org.au>
-In-Reply-To: <CAFTL4hxWdV96dO_KCOnvc4O1zutvnW6eGZ950d+qwnCSHb9NpQ@mail.gmail.com>
-References: <CAFTL4hxWdV96dO_KCOnvc4O1zutvnW6eGZ950d+qwnCSHb9NpQ@mail.gmail.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__3_Dec_2012_09_49_06_+1100_32ZFEUeZqgdqKDQ1"
+	Sun, 2 Dec 2012 17:50:54 -0500
+X-manitu-Original-Sender-IP: 127.0.0.1
+X-manitu-Original-Receiver-Name: ngcobalt07.manitu.net
+Date: Sun, 2 Dec 2012 23:50:51 +0100
+From: Roland Eggner <edvx1@systemanalysen.net>
+To: Dimitrios Apostolou <jimis@gmx.net>
+Cc: linux-kernel@vger.kernel.org, Catalin Marinas <catalin.marinas@arm.com>,
+        "Theodore Ts'o" <tytso@mit.edu>
+Subject: Re: backing up ext4 fs, system unresponsive, thrashing like crazy
+ even though swap is unused
+Message-ID: <20121202225051.GA13685@mobil.systemanalysen.net>
+Reply-To: Roland Eggner <edvx1@systemanalysen.net>
+Mail-Followup-To: Dimitrios Apostolou <jimis@gmx.net>,
+	linux-kernel@vger.kernel.org,
+	Catalin Marinas <catalin.marinas@arm.com>,
+	Theodore Ts'o <tytso@mit.edu>
+References: <1353855815.22969.20.camel@soupermouf>
+ <1354452243.22969.48.camel@soupermouf>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6c2NcOVqGQ03X4Wi"
+Content-Disposition: inline
+In-Reply-To: <1354452243.22969.48.camel@soupermouf>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__3_Dec_2012_09_49_06_+1100_32ZFEUeZqgdqKDQ1
-Content-Type: text/plain; charset=US-ASCII
+
+--6c2NcOVqGQ03X4Wi
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Frederic,
-
-On Sat, 1 Dec 2012 00:09:03 +0100 Frederic Weisbecker <fweisbec@gmail.com> =
-wrote:
->
-> Could please include the following branches from my tree in linux-next:
+On 2012-11-25 Sun 23:59:55 +0100 Roland Eggner wrote:
+>On 2012-11-25 Sunday at 21:30 +0200 Dimitrios Apostolou wrote:
+> > On Sun, 2012-11-25 at 15:55 +0200, Dimitrios Apostolou wrote:
+> > > on an old PIII-500MHz laptop, 128MB RAM, kernel 3.6.6, I started a
+> > > backup process (tar|xz -4, nice'd and ionice'd -c3) from ext4 on local
+> > > ATA disk to ext3 on external USB disk (USB-2.0 port on PCMCIA card).
+> > > Even though earlier system load was minimal, free memory was plenty, =
+the
+> > > system now is unresponsive and is thrashing the disk, but the swapfile
+> > > is rarely touched.
+> >
+> > I'm now having the same experience even though I replaced xz (which
+> > needed ~50MB RAM) with gzip. Even though I feel the realtime root shell
+> > is a bit more responsive than before, the OOM killer is out killing
+> > small processes like syslog-ng and systemd-logind... The
+> > ext4_inode_cache slab is taking almost all my memory (117MB). Please
+> > advise!
 >=20
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
->         cputime/adjustment-v2
+> Hello Dimitrios,
 >=20
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
->         sched/cputime-v2
+> I would try a 2.6.27.* kernel, for following reasons:
 >=20
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
->         nohz/printk-v8
+> (1)  Kernel development since 2.6.27 achieved significant performance
+> improvements at the cost of exploding memory consumption by the kernel for
+> _internal_  data structures.  I am currently using a 3.2.34 kernel on a N=
+otebook
+> with 4 G RAM.  0,5 =E2=80=A6 1 G RAM is usually occupied just by kernel s=
+lab [1];  this
+> memory cannot be swapped, it cannot be released by other means than reboo=
+ting,
+> and there seems to be  _no_  adjustment to memory pressure.  I am surpris=
+ed,
+> that you have managed to boot a 3.6.* kernel at all with only 128 M RAM.
 >=20
-> The two first are based on tip:/sched/core
-> The 3rd is based on upstream.
+> (2)  At the time, when I used a PIII-Notebook, kernels 2.6.27 to 2.6.29 w=
+here
+> current.  Thus chances are good, that a 2.6.27.* kernel will support chip=
+set,
+> PCI bus and devices of your notebook.  2.6.27 got longterm maintainance, =
+the
+> latest release in the linux-stable git repository is 2.6.27.62.
+> So Q @ LKML community:
+> Does anybody know a x86 distribution or live-CD using a 2.6.27.* kernel?
+>=20
+>=20
+> [1]  Picture described in my LKML message
+> Date:  Fri, 20 Jan 2012 01:08:00 +0100
+> Subject:  Re: [kmemleak report 1/2] kernel 3.1.6, x86_64: mm, xfs ?, vfs ?
+> remained the same with  _every_  3.1.* and 3.2.* kernel tried so far.
 
-Well, these are a bit late (I expected Linus to release v3.7 today), but
-since Ingo has not piped in over the weekend, I have added them from today
-after the tip tree merge.
 
-I have called them fw-cputime, fs-sched and fw-nohz respectively and
-listed you as the only contact in case of problems.  If these are to be
-long term trees included in linux-next, I would prefer that you use
-better branch names - otherwise, if they are just short term, please tell
-me to remove them when they are finished with.
+On 2012-12-02 Sunday at 14:44 +0200 Dimitrios Apostolou wrote:
+> Hi, the problem in the quoted message still happens, shouldn't all of
+> ext4_inode_cache slab be emptied after "echo 3
+> > /proc/sys/vm/drop_caches"? In my case slab uses too much memory even
+> after all processes finish and system is in bad shape due to lack of
+> physical RAM. CC'ing tytso and Catalin Marinas since I've not been able
+> to track any leak with kmemleak.
+>=20
+> Kernel is booted with slub_debug=3D,ext4_inode_cache, as this is the only
+> way to avoid for some time the following message. Nevertheless it has
+> not been able to show any leak.
+>=20
+> kmemleak: Cannot allocate a kmemleak_object structure
+> kmemleak: Automatic memory scanning thread ended
+> kmemleak: Kernel memory leak detector disabled
+>=20
+> Please have a look at the log (archived at [1]).
+>=20
+> [1] http://lkml.indiana.edu/hypermail/linux/kernel/1211.3/00183.html
 
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
 
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-	Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
+Hello Dimitrios!
 
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
+
+Which part of =E2=80=A6
+
+=E2=80=9C0,5 =E2=80=A6 1 G RAM is usually occupied just by kernel slab [1];=
+  this
+memory cannot be swapped, it cannot be released by other means than rebooti=
+ng,
+and there seems to be  _no_  adjustment to memory pressure.=E2=80=9D=20
+
+=E2=80=A6 should I explain?
+
+
+When tar or gzip writes to ext4 filesystem on your external disk, the kerne=
+l=20
+keeps all inode data in slab memory  _by design_ , not by memory leaks.
+Several 100 M slab data cannot be stored within 128 M total RAM.
+This cannot by solved by usage of /proc/sys/vm/drop_caches.
+This cannot by solved by oom-killer-actions.
+This cannot be solved by zram tricks.
+Unmounting the external disk would release part of slab memory, but then you
+cannot backup.
+Reformatting the ext4 filesystem on your external disk with 128 byte inode =
+size,=20
+largest possible blocksize and with extents enabled might mitigate the memo=
+ry=20
+pressure slightly =E2=80=A6 probably not sufficient to get a working system=
+ with 3.6=20
+kernel.
+
+
+One advantage of Linux compared to other OS is much more support for old=20
+hardware, if a  _proper_  kernel version is selected.  Many years ago I used
+a notebook with 40 M total RAM, with a 2.4 kernel, Blackbox window manager =
+and
+Opera web browser =E2=80=A6 it worked flawlessly =E2=80=A6 just rather slow=
+ly due to swapping. =20
+Your notebook has much more RAM than 40 M, thus there is surely a Linux sol=
+ution=20
+for you.  Try a 2.6.27.62 kernel, it supports ext4 (=E2=80=9Cext4dev=E2=80=
+=9D), probably it=20
+supports all devices of your notebook, and with a slim window manager e.g. =
+=20
+WindowMaker or OpenBox your notebook will probably =E2=80=9Cfly=E2=80=9D.
+
+
+PS:  Please type your reply below the text you are replying to.
 
 --=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
+Roland
 
-Legal Stuff:
-By participating in linux-next, your subsystem tree contributions are
-public and will be included in the linux-next trees.  You may be sent
-e-mail messages indicating errors or other issues when the
-patches/commits from your subsystem tree are merged and tested in
-linux-next.  These messages may also be cross-posted to the linux-next
-mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-project and IBM (my employer) make no warranties regarding the linux-next
-project, the testing procedures, the results, the e-mails, etc.  If you
-don't agree to these ground rules, let me know and I'll remove your tree
-from participation in linux-next.
-
---Signature=_Mon__3_Dec_2012_09_49_06_+1100_32ZFEUeZqgdqKDQ1
+--6c2NcOVqGQ03X4Wi
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIcBAEBCAAGBQJQu9riAAoJEECxmPOUX5FEGXcP/1QABn8+U6rxt31xSMJDy/Sf
-Ag81Dfdd32kXtUQE0iRr2hI7ZNE378JKe7KwPBrwCUkobq0ODutGhWhp2jfJdEGx
-ix16SuwbD0X/tWdpUS0TTz0rajW1XHw4fM66YIUsZXuCUtJLvnxV/C/h21KCKoY8
-4/b9tmiBhuO37PdAhFW3cJBbVL2NIfImoUKNuCp2t43w7EfvxozOmmehta6TPzbq
-y6MmDfWT7oiYzd8IZPBOSEuJ0srSzESBokKOoVlCc5J9T6L86HA8NrZYQqSG9UIp
-NL4OWhJjM0nwvWvYnvFmpAoSKhrxng65ydOMGCdbPDK2K2xAFXYA8oDM3okKBQ3d
-UM+ZXgTmTJLhAMEd0EREF4peqMN1MtMvEZbs05wtsLmhm9fO2UYh3Ec2a48s6P6W
-p1CGzl75ySikURUkGm5cgoVlMkkEno9hUycpbTAm98Qs0j+nDAnyx0eHEpG4vnX7
-8t3FyQcSr7HPJufHXi9vxHrLLhwo+yRAru/bcGQfyFTJV4wcsV/uApABoKAV2Hb1
-6vpaZ7A/0NY7wQKfA0zy0CdByycpMnT/XJIPZzSjSNRfHFBkJTyMeO56hMLIFjp1
-ayZTjb2cGLW7jfiz9i1R+eHm/fB/wh8+w8QCFWhzagXyEyHgS3ROAIpibwoFMaYJ
-0yS8QDAMVCIiZWy9d5sf
-=UzFs
+iEYEARECAAYFAlC720sACgkQdN/hKfT7G/LKUACfQQcG89JdUmPcYCpzMRP1LwZF
+at0AnA59j9iUvBUONFBCo60jB6jn+P/T
+=x35G
 -----END PGP SIGNATURE-----
 
---Signature=_Mon__3_Dec_2012_09_49_06_+1100_32ZFEUeZqgdqKDQ1--
+--6c2NcOVqGQ03X4Wi--
