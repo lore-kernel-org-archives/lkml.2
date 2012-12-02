@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753803Ab2LBPKz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 10:10:55 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:54225 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751846Ab2LBPKx (ORCPT
+	id S1753865Ab2LBPLv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 10:11:51 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:56186 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751770Ab2LBPLt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 10:10:53 -0500
-Date: Sun, 2 Dec 2012 16:10:48 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 1/2] mm/rmap: Convert the struct anon_vma::mutex to an
- rwsem
-Message-ID: <20121202151048.GA12911@gmail.com>
-References: <1354305521-11583-1-git-send-email-mingo@kernel.org>
- <CA+55aFwjxm7OYuucHeE2WFr4p+jwr63t=kSdHndta_QkyFbyBQ@mail.gmail.com>
- <20121201094927.GA12366@gmail.com>
- <20121201122649.GA20322@gmail.com>
- <CA+55aFx8QtP0hg8qxn__4vHQuzH7QkhTN-4fwgOpM-A=KuBBjA@mail.gmail.com>
- <20121201184135.GA32449@gmail.com>
- <CA+55aFyq7OaUxcEHXvJhp0T57KN14o-RGxqPmA+ks8ge6zJh5w@mail.gmail.com>
- <20121201201030.GA2704@gmail.com>
- <50BA6649.7050103@redhat.com>
+	Sun, 2 Dec 2012 10:11:49 -0500
+Message-ID: <50BB6F8C.1060800@gmail.com>
+Date: Sun, 02 Dec 2012 23:11:08 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50BA6649.7050103@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tang Chen <tangchen@cn.fujitsu.com>
+CC: hpa@zytor.com, akpm@linux-foundation.org, rob@landley.net,
+        isimatu.yasuaki@jp.fujitsu.com, laijs@cn.fujitsu.com,
+        wency@cn.fujitsu.com, linfeng@cn.fujitsu.com, jiang.liu@huawei.com,
+        yinghai@kernel.org, kosaki.motohiro@jp.fujitsu.com,
+        minchan.kim@gmail.com, mgorman@suse.de, rientjes@google.com,
+        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH v2 1/5] x86: get pg_data_t's memory from other node
+References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <1353667445-7593-2-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1353667445-7593-2-git-send-email-tangchen@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Rik van Riel <riel@redhat.com> wrote:
-
-> On 12/01/2012 03:10 PM, Ingo Molnar wrote:
-> >
-> >Convert the struct anon_vma::mutex to an rwsem, which will help
-> >in solving a page-migration scalability problem. (Addressed in
-> >a separate patch.)
-> >
-> >The conversion is simple and straightforward: in every case
-> >where we mutex_lock()ed we'll now down_write().
-> >
-> >Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-> >Cc: Andrew Morton <akpm@linux-foundation.org>
-> >Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> >Cc: Andrea Arcangeli <aarcange@redhat.com>
-> >Cc: Rik van Riel <riel@redhat.com>
-> >Cc: Mel Gorman <mgorman@suse.de>
-> >Cc: Hugh Dickins <hughd@google.com>
-> >Signed-off-by: Ingo Molnar <mingo@kernel.org>
+On 11/23/2012 06:44 PM, Tang Chen wrote:
+> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 > 
-> Reviewed-by: Rik van Riel <riel@redhat.com>
+> If system can create movable node which all memory of the
+> node is allocated as ZONE_MOVABLE, setup_node_data() cannot
+> allocate memory for the node's pg_data_t.
+> So when memblock_alloc_nid() fails, setup_node_data() retries
+> memblock_alloc().
+> 
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+> ---
+>  arch/x86/mm/numa.c |   11 ++++++++---
+>  1 files changed, 8 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+> index 2d125be..734bbd2 100644
+> --- a/arch/x86/mm/numa.c
+> +++ b/arch/x86/mm/numa.c
+> @@ -224,9 +224,14 @@ static void __init setup_node_data(int nid, u64 start, u64 end)
+>  	} else {
+>  		nd_pa = memblock_alloc_nid(nd_size, SMP_CACHE_BYTES, nid);
+>  		if (!nd_pa) {
+> -			pr_err("Cannot find %zu bytes in node %d\n",
+> -			       nd_size, nid);
+> -			return;
+> +			pr_warn("Cannot find %zu bytes in node %d\n",
+> +				nd_size, nid);
+> +			nd_pa = memblock_alloc(nd_size, SMP_CACHE_BYTES);
+> +			if (!nd_pa) {
+> +				pr_err("Cannot find %zu bytes in other node\n",
+> +				       nd_size);
+> +				return;
+> +			}
+Hi Tang,
+	Seems memblock_alloc_try_nid() serves the same purpose, so you may just
+simply replace memblock_alloc_nid() with memblock_alloc_try_nid().
 
-Thanks Rik!
+Regards!
+Gerry
 
-	Ingo
+>  		}
+>  		nd = __va(nd_pa);
+>  	}
+> 
+
