@@ -1,105 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754103Ab2LBTxA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 14:53:00 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59142 "EHLO mx2.suse.de"
+	id S1754180Ab2LBTzR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 14:55:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59175 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753555Ab2LBTw6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 14:52:58 -0500
-Date: Mon, 3 Dec 2012 06:52:45 +1100
+	id S1754110Ab2LBTzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Dec 2012 14:55:14 -0500
+Date: Mon, 3 Dec 2012 06:54:57 +1100
 From: NeilBrown <neilb@suse.de>
-To: Torsten Kaiser <just.for.lkml@googlemail.com>
-Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Hang in md-raid1 with 3.7-rcX
-Message-ID: <20121203065245.4a95b386@notabene.brown>
-In-Reply-To: <CAPVoSvTOQT65zYbz++jbbaT63VbVKchYdhip58R8S6cPxbW2cw@mail.gmail.com>
-References: <CAPVoSvQNVnz=NrkNaZ4G_k76WuVaAJ24uEXkAyJvDNLHHPs1Kw@mail.gmail.com>
-	<20121127120528.637099aa@notabene.brown>
-	<CAPVoSvRssJSzjg1wZ8g9-05Y50xVkVcQqsnZ92Ru6mWZgGrfKg@mail.gmail.com>
-	<CAPVoSvTOQT65zYbz++jbbaT63VbVKchYdhip58R8S6cPxbW2cw@mail.gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Chris Ball <cjb@laptop.org>, lkml <linux-kernel@vger.kernel.org>,
+        linux-mmc@vger.kernel.org,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>
+Subject: Re: [PATCH] SDIO / PM: Add empty bus-level suspend/resume callbacks
+Message-ID: <20121203065457.0bd12fc6@notabene.brown>
+In-Reply-To: <2147450.LFoExqrKEF@vostro.rjw.lan>
+References: <20120325203849.7a908e32@notabene.brown>
+	<201203260029.24826.rjw@sisk.pl>
+	<20121202194625.5d66e239@notabene.brown>
+	<2147450.LFoExqrKEF@vostro.rjw.lan>
 X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/ZwU7=tGDnCJkgs=IZnX1zeW"; protocol="application/pgp-signature"
+ boundary="Sig_/npdZKBa0_l4gKjTxK3MZwOQ"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/ZwU7=tGDnCJkgs=IZnX1zeW
+--Sig_/npdZKBa0_l4gKjTxK3MZwOQ
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: quoted-printable
 
-On Sun, 2 Dec 2012 13:10:33 +0100 Torsten Kaiser
-<just.for.lkml@googlemail.com> wrote:
+On Sun, 02 Dec 2012 14:48:50 +0100 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-> On Tue, Nov 27, 2012 at 8:08 AM, Torsten Kaiser
-> <just.for.lkml@googlemail.com> wrote:
-> > On Tue, Nov 27, 2012 at 2:05 AM, NeilBrown <neilb@suse.de> wrote:
-> >> Can you test to see if this fixes it?
-> >
-> > Patch applied, I will try to get it stuck again.
-> > I don't have a reliable reproducers, but if the problem persists I
-> > will definitly report back here.
+> On Sunday, December 02, 2012 07:46:25 PM NeilBrown wrote:
+> > On Mon, 26 Mar 2012 00:29:24 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wr=
+ote:
+> >=20
+> >=20
+> > > Thanks for the confirmation.
+> > >=20
+> > > Below it goes again with a changelog and tags.
+> > >=20
+> > > I don't really think that SDIO does the right thing here overall, but=
+ that's
+> > > all I can do to address the problem timely.
+> > >=20
+> > > Thanks,
+> > > Rafael
+> >=20
+> > Hi Rafael,
+> >  I just discovered that this patch has since been reverted - with an 'a=
+ck'
+> >  from you:
+> > ----------
+> > commit d8e2ac330f65bcf47e8894fe5331a7e8ee019c06
+> > Author: Thierry Reding <thierry.reding@avionic-design.de>
+> > Date:   Thu Aug 9 09:32:21 2012 +0000
+> >=20
+> >     mmc: sdio: Fix PM_SLEEP related build warnings
+> >    =20
+> >     Power management callbacks defined by SIMPLE_DEV_PM_OPS are only us=
+ed if
+> >     the PM_SLEEP Kconfig symbol has been defined. If not, the compiler =
+will
+> >     complain about them being unused. However, since the callback for t=
+his
+> >     driver doesn't do anything it can just as well be dropped.
+> >    =20
+> >     Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> >     Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+> >     Signed-off-by: Chris Ball <cjb@laptop.org>
+> > -----------
+> >=20
+> > Unsurprisingly the problem which your patch fixed has come back.
+> >=20
+> > Do you think we could get the patch back in again.  This time maybe we =
+should
+> > put some comments in there pointing out that having a function which do=
+es
+> > nothing is very different from not having any function at all?
 >=20
-> With this patch I was not able to recreate the hang. Lacking an 100%
-> way of recreating this, I can't be completely sure of the fix, but as
-> you understood from the code how this hang could happen, I'm quite
-> confident that the fix is working.
+> Well, I agree.  I didn't remember that the callback had been added for
+> a purpose and hence my "ack" for that patch.
 >=20
-> (As I do not use the raid10 personality only patching raid1.c was
-> sufficient for me, I didn't test the version that also patched
-> raid10.c as its not even compiled on my kernel.)
->=20
-> Thanks for the fix!
+> What about applying the appended patch (hopefully, the build warnings sho=
+uld
+> be fixed properly this time)?
 
-And thanks for testing!
-Linus doesn't seem to have pulled in the fix yet, but hopefully it will be =
-in
-3.7.
+Looks good to me - thanks!
 
 NeilBrown
 
 >=20
-> Torsten
+> Rafael
 >=20
-> >> diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-> >> index 636bae0..a0f7309 100644
-> >> --- a/drivers/md/raid1.c
-> >> +++ b/drivers/md/raid1.c
-> >> @@ -963,7 +963,7 @@ static void raid1_unplug(struct blk_plug_cb *cb, b=
-ool from_schedule)
-> >>         struct r1conf *conf =3D mddev->private;
-> >>         struct bio *bio;
-> >>
-> >> -       if (from_schedule) {
-> >> +       if (from_schedule || current->bio_list) {
-> >>                 spin_lock_irq(&conf->device_lock);
-> >>                 bio_list_merge(&conf->pending_bio_list, &plug->pending=
-);
-> >>                 conf->pending_count +=3D plug->pending_cnt;
-> >>
+>=20
+> ---
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Subject: SDIO / PM: Add empty bus-level suspend/resume callbacks
+>=20
+> Suspend methods provided by SDIO drivers are not supposed to be
+> called by the PM core.  Instead, when the SDIO core gets to suspend
+> a device's ancestor, it calls the device driver's suspend routine.
+> However, the PM core executes suspend callback routines directly for
+> device drivers whose bus types don't provide suspend callbacks.
+> In consequece, because the SDIO bus type doesn't provide a suspend
+> callback, the SDIO drivers' suspend routines will be executed by the
+> PM core (which shouldn't happen).
+>=20
+> To prevent this from happening, add empty system suspend/resume
+> callbacks for the SDIO bus type.
+>=20
+> An analogous change had been made already by commit (e841a7c mmc:
+> sdio: Use empty system suspend/resume callbacks at the bus level),
+> but then it was reverted inadvertently by commit (d8e2ac3 mmc: sdio:
+> Fix PM_SLEEP related build warnings) that attempted to fix build
+> warnings introduced by commit e841a7c.
+>=20
+> Reported-by: NeilBrown <neilb@suse.de>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>  drivers/mmc/core/sdio_bus.c |   14 ++++++++++++++
+>  1 file changed, 14 insertions(+)
+>=20
+> Index: linux/drivers/mmc/core/sdio_bus.c
+> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> --- linux.orig/drivers/mmc/core/sdio_bus.c
+> +++ linux/drivers/mmc/core/sdio_bus.c
+> @@ -193,7 +193,21 @@ static int sdio_bus_remove(struct device
+>  }
+> =20
+>  #ifdef CONFIG_PM
+> +
+> +#ifdef CONFIG_PM_SLEEP
+> +static int pm_no_operation(struct device *dev)
+> +{
+> +	/*
+> +	 * Prevent the PM core from calling SDIO device drivers' suspend
+> +	 * callback routines, which it is not supposed to do, by using this
+> +	 * empty function as the bus type suspend callaback for SDIO.
+> +	 */
+> +	return 0;
+> +}
+> +#endif
+> +
+>  static const struct dev_pm_ops sdio_bus_pm_ops =3D {
+> +	SET_SYSTEM_SLEEP_PM_OPS(pm_no_operation, pm_no_operation)
+>  	SET_RUNTIME_PM_OPS(
+>  		pm_generic_runtime_suspend,
+>  		pm_generic_runtime_resume,
+>=20
+>=20
 
 
---Sig_/ZwU7=tGDnCJkgs=IZnX1zeW
+--Sig_/npdZKBa0_l4gKjTxK3MZwOQ
 Content-Type: application/pgp-signature; name=signature.asc
 Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIVAwUBULuxjTnsnt1WYoG5AQLnyw/7BhVZpE23b7tYceA4c39Ul1iE3v7UXaKU
-t922kfxSIugJWSbKzOBjDzzz222CZZT1vbEGn1MGoD/dE47VEMQBMsUJe6GERcM/
-/UG9yo5dOtun6C4v1yPL6toE4yebIK0EBkB0DRc8UDCWjyyhtnZdGs1GD8ZC1MNg
-w18+59I8/KZoNxHbAA8VvWJnxHHxmNn50wLLJl14mGnBKjG4anIKMMAbiDnzmxDA
-ZeJgMo3Xj/FlBRcXG7r2XWp+pjcY8rdeNLrfcY6By6ATSn4DjOe84skCRUNSAHrB
-aodVPfKMAOjas529If+Ckzy0/arP1ILmcWafzEy8MO5RYESWr43tvJvhMF8GSjHf
-vQLg5yt6bYbieXtnNXvYMDcg8erirwaotTG6B55qX3YtEi8PQjYT55JOP1MjsddI
-nWvq+MVaJL2PK7TNugLNxbCo2+mIp0UaaEoY4dJU+Oo6u8Zet84oqAEC09LHXtQK
-KUxg3AfXZchmVN+dDiWfruGvRx6o/bfS9Dx1EwtTUjJkba55fQoS63PPf23gsza9
-jBiHLBOfTDcIfK46TX2ecBRtVq9FUKRz14NIGDZTcgUAGdAR2l7CkEYbC1TmfPdr
-7l6wBs5RsRvJEzOxyrhcLsQY8ztj4pYXb99hF3bWfMbpVRMQmKV7JAoepHoV8by3
-naEYrLbDARg=
-=rb27
+iQIVAwUBULuyETnsnt1WYoG5AQLY5Q//TI530zPPtHXubF/0HVnmcbOH7Kpqyrzj
+oqwjMErbAmeOjEi4kDFqjjnopRYyHhdTo26BrFt0Jtz9BUKsoJoD2/kUX9wURaFW
+3x+slSSDSXe8+bTmQPfua2Dpj3yROUJJbWlUHnbDbLSnkXhJRgNCALsM6XErIm+5
+cxSrKaahrJSN7cGnPa0c2EtVa7EDyBeyR+Ne9S4FeGXJ3kV/ZSyw8BAEjIQLKzCK
+9ZEJxeRkzieb9y1NeDoPA4QmtIIbhba8XnbR6XAQV7Z5/mLyRmtKY0kojBjfQ6Ko
+a/BRZoZEG6lLgpn941SYppVcmv7lExHgTfwovt76ik8Exkc4wJwXtty1XBLtcp16
++/EO4o3rAQbtPPSWUofMcCDPpm1YhPSK3GhAjirjE197A6zXqA4kb0SxuikxzyZV
+/+K3T0aedj/PA1dAjb8OGFXaMUzVKGd3fSTb/3bIyjI0w6awfIRNNPgv1Epu9+uv
+gPeZAhcLvWCeyQSYy07VwEbaveMxgkqT6iHPYAHEAQ6O9lHoHzGwdy4fXefzuwVC
+k9qpbuSfnV3D9IbY2x7yqdlZCDDCrwwsKpcQpS9s1xmwJ3/0IaUBJKRkLAf/B0RZ
+6YtuKVnLas1mxDz2tIrD04zvimoZ4HC7f+Psr/o/aQleYLLzCXKaNoNLyCSu2N6q
+qlu+zOU7920=
+=SYzC
 -----END PGP SIGNATURE-----
 
---Sig_/ZwU7=tGDnCJkgs=IZnX1zeW--
+--Sig_/npdZKBa0_l4gKjTxK3MZwOQ--
