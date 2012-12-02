@@ -1,74 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753583Ab2LBPda (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 10:33:30 -0500
-Received: from mx.scalarmail.ca ([98.158.95.75]:25078 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751448Ab2LBPd3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 10:33:29 -0500
-Date: Sun, 2 Dec 2012 10:33:27 -0500 (EST)
-From: Tom St Denis <tstdenis@elliptictech.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: linux-kernel@vger.kernel.org, intel-gfx <intel-gfx@lists.freedesktop.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        linux-acpi@vger.kernel.org
-Message-ID: <1035525993.121797.1354462407778.JavaMail.root@elliptictech.com>
-In-Reply-To: <CAKMK7uG3CvfvmMdusSUQf9+rOv_W1AWmoEqH4EAGgCiTyRfNeg@mail.gmail.com>
-Subject: Re: Brightness control fails between 3.6.8 and 3.7.0-rc7 (Intel
- 915/Dell Vostro 3560)
+	id S1753941Ab2LBPeF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 10:34:05 -0500
+Received: from mx01.sz.bfs.de ([194.94.69.103]:38642 "EHLO mx01.sz.bfs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752599Ab2LBPeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Dec 2012 10:34:03 -0500
+Message-ID: <50BB74E7.9060306@bfs.de>
+Date: Sun, 02 Dec 2012 16:33:59 +0100
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.16) Gecko/20101125 SUSE/3.0.11 Thunderbird/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Russ Anderson <rja@sgi.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [patch v2] x86, UV: integer wrap bug in uv_hub_ipi_value()
+References: <20121202104438.GD16078@elgon.mountain>
+In-Reply-To: <20121202104438.GD16078@elgon.mountain>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.17.19.111]
-X-Mailer: Zimbra 7.2.1_GA_2790 (ZimbraWebClient - GC23 (Linux)/7.2.1_GA_2790)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Daniel so I'm taking back my bug report on the i915 and claiming this as a bug against the acpi_video stack.
 
-What sort of information would the ACPI folk like from me to help diagnose this?
 
-Here's a dmesg dump of all ACPI messages.
-
-http://pastebin.com/b4XKe5Fk
-
-Tom
-
------ Original Message -----
-> From: "Daniel Vetter" <daniel.vetter@ffwll.ch>
-> To: "Tom St Denis" <tstdenis@elliptictech.com>
-> Cc: linux-kernel@vger.kernel.org, "intel-gfx" <intel-gfx@lists.freedesktop.org>, "dri-devel"
-> <dri-devel@lists.freedesktop.org>
-> Sent: Sunday, 2 December, 2012 9:42:39 AM
-> Subject: Re: Brightness control fails between 3.6.8 and 3.7.0-rc7 (Intel 915/Dell Vostro 3560)
+Am 02.12.2012 11:44, schrieb Dan Carpenter:
+> This is a static checker fix.  The problem is that we store the bits
+> from "uv_apicid_hibits" into "apicid" (the high 16 bits) but then we
+> shift it 16 bit to the left.  "apicid" is an int so it wraps and we lose
+> them.
 > 
-> On Sun, Dec 2, 2012 at 2:49 PM, Tom St Denis
-> <tstdenis@elliptictech.com> wrote:
-> > Ok so on v3.7-rc1 [and I suspect up] I can manually control the
-> > brightness by echoing to
-> >
-> > /sys/class/backlight/intel_backlight/brightness
-> >
-> > But I still can't use the buttons to control it (it only goes one
-> > tick down from max and stops there).  I'm using GNOME3 from a
-> > x86_64 unstable debian install [up to date with latest].
-> >
-> > I just noticed that under v3.7 I have a new directory
-> > /sys/class/backlight/acpi_video1 which is what GNOME is actually
-> > controlling.  I can't disable ACPI video control so is there a
-> > workaround?
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> ---
+> v2: Style fix.  Don't use ulong.
 > 
-> Hah, acpi registered a broken backlight driver, which overwrites the
-> intel backlight - for once it's not i915.ko's fault ;-) For a
-> workaround either disable the acpi backlight with
-> acpi_backlight=vendor (iirc) kernel option or teach the X driver that
-> you want a different backlight driver in the xorg.conf (Option
-> "Backlight" "intel_backlight" should do the trick).
-> -Daniel
+> I don't have this hardware so I can't test it.  There may also be other
+> bugs which this patch does not addressed.  These files are only compiled
+> on x86_64 and "unsigned long" is used throughout to mean 64 bits.
+> 
+> diff --git a/arch/x86/include/asm/uv/uv_hub.h b/arch/x86/include/asm/uv/uv_hub.h
+> index 21f7385..e7a83d5 100644
+> --- a/arch/x86/include/asm/uv/uv_hub.h
+> +++ b/arch/x86/include/asm/uv/uv_hub.h
+> @@ -577,7 +577,7 @@ static unsigned long uv_hub_ipi_value(int apicid, int vector, int mode)
+>  {
+>  	apicid |= uv_apicid_hibits;
+>  	return (1UL << UVH_IPI_INT_SEND_SHFT) |
+> -			((apicid) << UVH_IPI_INT_APIC_ID_SHFT) |
+> +			((unsigned long)apicid << UVH_IPI_INT_APIC_ID_SHFT) |
+>  			(mode << UVH_IPI_INT_DELIVERY_MODE_SHFT) |
+>  			(vector << UVH_IPI_INT_VECTOR_SHFT);
+>  }
+> diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
+> index 8cfade9..6d93b2f 100644
+> --- a/arch/x86/kernel/apic/x2apic_uv_x.c
+> +++ b/arch/x86/kernel/apic/x2apic_uv_x.c
+> @@ -194,13 +194,13 @@ static int __cpuinit uv_wakeup_secondary(int phys_apicid, unsigned long start_ri
+>  	pnode = uv_apicid_to_pnode(phys_apicid);
+>  	phys_apicid |= uv_apicid_hibits;
+>  	val = (1UL << UVH_IPI_INT_SEND_SHFT) |
+> -	    (phys_apicid << UVH_IPI_INT_APIC_ID_SHFT) |
+> +	    ((unsigned long)phys_apicid << UVH_IPI_INT_APIC_ID_SHFT) |
+>  	    ((start_rip << UVH_IPI_INT_VECTOR_SHFT) >> 12) |
+>  	    APIC_DM_INIT;
+>  	uv_write_global_mmr64(pnode, UVH_IPI_INT, val);
+>  
+>  	val = (1UL << UVH_IPI_INT_SEND_SHFT) |
+> -	    (phys_apicid << UVH_IPI_INT_APIC_ID_SHFT) |
+> +	    ((unsigned long)phys_apicid << UVH_IPI_INT_APIC_ID_SHFT) |
+>  	    ((start_rip << UVH_IPI_INT_VECTOR_SHFT) >> 12) |
+>  	    APIC_DM_STARTUP;
+>  	uv_write_global_mmr64(pnode, UVH_IPI_INT, val);
+
+making this more readable is hard but what is about:
+
+val=(1UL << UVH_IPI_INT_SEND_SHFT) |
+     ((unsigned long)phys_apicid << UVH_IPI_INT_APIC_ID_SHFT) |
+      ((start_rip << UVH_IPI_INT_VECTOR_SHFT) >> 12);
+
+ uv_write_global_mmr64(pnode, UVH_IPI_INT, val|APIC_DM_INIT);
+
+ uv_write_global_mmr64(pnode, UVH_IPI_INT, val|APIC_DM_STARTUP);
+
+
+just my 2 cents,
+ re
+  wh
+
 > --
-> Daniel Vetter
-> Software Engineer, Intel Corporation
-> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 > 
