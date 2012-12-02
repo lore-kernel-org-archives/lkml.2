@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213Ab2LBS4M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 13:56:12 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:45147 "EHLO
+	id S1754285Ab2LBS4h (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 13:56:37 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:34653 "EHLO
 	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754003Ab2LBSoK (ORCPT
+	with ESMTP id S1754005Ab2LBSoB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 13:44:10 -0500
+	Sun, 2 Dec 2012 13:44:01 -0500
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
@@ -21,9 +21,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
         Alex Shi <lkml.alex@gmail.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH 06/52] mm/numa: Support NUMA hinting page faults from gup/gup_fast
-Date: Sun,  2 Dec 2012 19:42:58 +0100
-Message-Id: <1354473824-19229-7-git-send-email-mingo@kernel.org>
+Subject: [PATCH 02/52] mm/compaction: Add scanned and isolated counters for compaction
+Date: Sun,  2 Dec 2012 19:42:54 +0100
+Message-Id: <1354473824-19229-3-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1354473824-19229-1-git-send-email-mingo@kernel.org>
 References: <1354473824-19229-1-git-send-email-mingo@kernel.org>
@@ -31,24 +31,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: Mel Gorman <mgorman@suse.de>
 
-Introduce FOLL_NUMA to tell follow_page to check
-pte/pmd_numa. get_user_pages must use FOLL_NUMA, and it's safe
-to do so because it always invokes handle_mm_fault and retries
-the follow_page later.
+Compaction already has tracepoints to count scanned and isolated
+pages but it requires that ftrace be enabled and if that
+information has to be written to disk then it can be disruptive.
+This patch adds vmstat counters for compaction called
+compact_migrate_scanned, compact_free_scanned and
+compact_isolated.
 
-KVM secondary MMU page faults will trigger the NUMA hinting page
-faults through gup_fast -> get_user_pages -> follow_page ->
-handle_mm_fault.
+With these counters, it is possible to define a basic cost model
+for compaction. This approximates of how much work compaction is
+doing and can be compared that with an oprofile showing TLB
+misses and see if the cost of compaction is being offset by THP
+for example. Minimally a compaction patch can be evaluated in
+terms of whether it increases or decreases cost. The basic cost
+model looks like this
 
-Other follow_page callers like KSM should not use FOLL_NUMA, or
-they would fail to get the pages if they use follow_page instead
-of get_user_pages.
+Fundamental unit u:	a word	sizeof(void *)
 
-[ This patch was picked up from the AutoNUMA tree. ]
+Ca  = cost of struct page access = sizeof(struct page) / u
 
-Originally-by: Andrea Arcangeli <aarcange@redhat.com>
+Cmc = Cost migrate page copy = (Ca + PAGE_SIZE/u) * 2
+Cmf = Cost migrate failure   = Ca * 2
+Ci  = Cost page isolation    = (Ca + Wi)
+	where Wi is a constant that should reflect the approximate
+	cost of the locking operation.
+
+Csm = Cost migrate scanning = Ca
+Csf = Cost free    scanning = Ca
+
+Overall cost =	(Csm * compact_migrate_scanned) +
+	      	(Csf * compact_free_scanned)    +
+	      	(Ci  * compact_isolated)	+
+		(Cmc * pgmigrate_success)	+
+		(Cmf * pgmigrate_failed)
+
+Where the values are read from /proc/vmstat.
+
+This is very basic and ignores certain costs such as the
+allocation cost to do a migrate page copy but any improvement to
+the model would still use the same vmstat counters.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
 Reviewed-by: Rik van Riel <riel@redhat.com>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Hugh Dickins <hughd@google.com>
@@ -58,70 +83,69 @@ Cc: Alex Shi <lkml.alex@gmail.com>
 Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Andrea Arcangeli <aarcange@redhat.com>
-[ ported to this tree. ]
+[ Build fix. ]
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/mm.h |  1 +
- mm/memory.c        | 17 +++++++++++++++++
- 2 files changed, 18 insertions(+)
+ include/linux/vm_event_item.h | 2 ++
+ mm/compaction.c               | 8 ++++++++
+ mm/vmstat.c                   | 3 +++
+ 3 files changed, 13 insertions(+)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 1856c62..fa16152 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1572,6 +1572,7 @@ struct page *follow_page(struct vm_area_struct *, unsigned long address,
- #define FOLL_MLOCK	0x40	/* mark page as mlocked */
- #define FOLL_SPLIT	0x80	/* don't return transhuge pages, split them */
- #define FOLL_HWPOISON	0x100	/* check page is hwpoisoned */
-+#define FOLL_NUMA	0x200	/* force NUMA hinting page fault */
+diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
+index 8aa7cb9..b94bafd 100644
+--- a/include/linux/vm_event_item.h
++++ b/include/linux/vm_event_item.h
+@@ -41,6 +41,8 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+ #ifdef CONFIG_MIGRATION
+ 		PGMIGRATE_SUCCESS, PGMIGRATE_FAIL,
+ #endif
++		COMPACTMIGRATE_SCANNED, COMPACTFREE_SCANNED,
++		COMPACTISOLATED,
+ #ifdef CONFIG_COMPACTION
+ 		COMPACTSTALL, COMPACTFAIL, COMPACTSUCCESS,
+ #endif
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 00ad883..2add930 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -356,6 +356,10 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
+ 	if (blockpfn == end_pfn)
+ 		update_pageblock_skip(cc, valid_page, total_isolated, false);
  
- typedef int (*pte_fn_t)(pte_t *pte, pgtable_t token, unsigned long addr,
- 			void *data);
-diff --git a/mm/memory.c b/mm/memory.c
-index e0ebd6c..2daa3a7 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1517,6 +1517,8 @@ struct page *follow_page(struct vm_area_struct *vma, unsigned long address,
- 		page = follow_huge_pmd(mm, address, pmd, flags & FOLL_WRITE);
- 		goto out;
- 	}
-+	if ((flags & FOLL_NUMA) && pmd_numa(*pmd))
-+		goto no_page_table;
- 	if (pmd_trans_huge(*pmd)) {
- 		if (flags & FOLL_SPLIT) {
- 			split_huge_page_pmd(mm, pmd);
-@@ -1546,6 +1548,8 @@ split_fallthrough:
- 	pte = *ptep;
- 	if (!pte_present(pte))
- 		goto no_page;
-+	if ((flags & FOLL_NUMA) && pte_numa(pte))
-+		goto no_page;
- 	if ((flags & FOLL_WRITE) && !pte_write(pte))
- 		goto unlock;
- 
-@@ -1697,6 +1701,19 @@ int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
- 			(VM_WRITE | VM_MAYWRITE) : (VM_READ | VM_MAYREAD);
- 	vm_flags &= (gup_flags & FOLL_FORCE) ?
- 			(VM_MAYREAD | VM_MAYWRITE) : (VM_READ | VM_WRITE);
++	count_vm_events(COMPACTFREE_SCANNED, nr_scanned);
++	if (total_isolated)
++		count_vm_events(COMPACTISOLATED, total_isolated);
 +
-+	/*
-+	 * If FOLL_FORCE and FOLL_NUMA are both set, handle_mm_fault
-+	 * would be called on PROT_NONE ranges. We must never invoke
-+	 * handle_mm_fault on PROT_NONE ranges or the NUMA hinting
-+	 * page faults would unprotect the PROT_NONE ranges if
-+	 * _PAGE_NUMA and _PAGE_PROTNONE are sharing the same pte/pmd
-+	 * bitflag. So to avoid that, don't set FOLL_NUMA if
-+	 * FOLL_FORCE is set.
-+	 */
-+	if (!(gup_flags & FOLL_FORCE))
-+		gup_flags |= FOLL_NUMA;
-+
- 	i = 0;
+ 	return total_isolated;
+ }
  
- 	do {
+@@ -646,6 +650,10 @@ next_pageblock:
+ 
+ 	trace_mm_compaction_isolate_migratepages(nr_scanned, nr_isolated);
+ 
++	count_vm_events(COMPACTMIGRATE_SCANNED, nr_scanned);
++	if (nr_isolated)
++		count_vm_events(COMPACTISOLATED, nr_isolated);
++
+ 	return low_pfn;
+ }
+ 
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 89a7fd6..3a067fa 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -779,6 +779,9 @@ const char * const vmstat_text[] = {
+ 	"pgmigrate_fail",
+ #endif
+ #ifdef CONFIG_COMPACTION
++	"compact_migrate_scanned",
++	"compact_free_scanned",
++	"compact_isolated",
+ 	"compact_stall",
+ 	"compact_fail",
+ 	"compact_success",
 -- 
 1.7.11.7
 
