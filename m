@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710Ab2LBSvh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 13:51:37 -0500
+	id S1754578Ab2LBSo7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 13:44:59 -0500
 Received: from mail-ea0-f174.google.com ([209.85.215.174]:45147 "EHLO
 	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754568Ab2LBSo7 (ORCPT
+	with ESMTP id S1754495Ab2LBSow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 13:44:59 -0500
+	Sun, 2 Dec 2012 13:44:52 -0500
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
@@ -18,9 +18,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: [PATCH 28/52] sched: Implement slow start for working set sampling
-Date: Sun,  2 Dec 2012 19:43:20 +0100
-Message-Id: <1354473824-19229-29-git-send-email-mingo@kernel.org>
+Subject: [PATCH 25/52] sched, numa: Improve the CONFIG_NUMA_BALANCING help text
+Date: Sun,  2 Dec 2012 19:43:17 +0100
+Message-Id: <1354473824-19229-26-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1354473824-19229-1-git-send-email-mingo@kernel.org>
 References: <1354473824-19229-1-git-send-email-mingo@kernel.org>
@@ -28,155 +28,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Add information about cost, type of optimizations, etc.,
+so that the user knows what to expect.
 
-Add a 1 second delay before starting to scan the working set of
-a task and starting to balance it amongst nodes.
-
-[ note that before the constant per task WSS sampling rate patch
-  the initial scan would happen much later still, in effect that
-  patch caused this regression. ]
-
-The theory is that short-run tasks benefit very little from NUMA
-placement: they come and go, and they better stick to the node
-they were started on. As tasks mature and rebalance to other CPUs
-and nodes, so does their NUMA placement have to change and so
-does it start to matter more and more.
-
-In practice this change fixes an observable kbuild regression:
-
-   # [ a perf stat --null --repeat 10 test of ten bzImage builds to /dev/shm ]
-
-   !NUMA:
-   45.291088843 seconds time elapsed                                          ( +-  0.40% )
-   45.154231752 seconds time elapsed                                          ( +-  0.36% )
-
-   +NUMA, no slow start:
-   46.172308123 seconds time elapsed                                          ( +-  0.30% )
-   46.343168745 seconds time elapsed                                          ( +-  0.25% )
-
-   +NUMA, 1 sec slow start:
-   45.224189155 seconds time elapsed                                          ( +-  0.25% )
-   45.160866532 seconds time elapsed                                          ( +-  0.17% )
-
-and it also fixes an observable perf bench (hackbench) regression:
-
-   # perf stat --null --repeat 10 perf bench sched messaging
-
-   -NUMA:
-
-   -NUMA:                  0.246225691 seconds time elapsed                   ( +-  1.31% )
-   +NUMA no slow start:    0.252620063 seconds time elapsed                   ( +-  1.13% )
-
-   +NUMA 1sec delay:       0.248076230 seconds time elapsed                   ( +-  1.35% )
-
-The implementation is simple and straightforward, most of the patch
-deals with adding the /proc/sys/kernel/sched_numa_scan_delay_ms tunable
-knob.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Andrea Arcangeli <aarcange@redhat.com>
 Cc: Rik van Riel <riel@redhat.com>
 Cc: Mel Gorman <mgorman@suse.de>
 Cc: Hugh Dickins <hughd@google.com>
-[ Various small fixes ]
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/sched.h |  1 +
- kernel/sched/core.c   |  1 +
- kernel/sched/fair.c   | 16 ++++++++++------
- kernel/sysctl.c       |  7 +++++++
- 4 files changed, 19 insertions(+), 6 deletions(-)
+ init/Kconfig | 33 +++++++++++++++++++++++++++++++--
+ 1 file changed, 31 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 7e838b0..c020bc7 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2051,6 +2051,7 @@ enum sched_tunable_scaling {
- };
- extern enum sched_tunable_scaling sysctl_sched_tunable_scaling;
+diff --git a/init/Kconfig b/init/Kconfig
+index 37cd8d6..018c8af 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -721,13 +721,42 @@ config ARCH_USES_NUMA_PROT_NONE
+ 	depends on NUMA_BALANCING
  
-+extern unsigned int sysctl_sched_numa_scan_delay;
- extern unsigned int sysctl_sched_numa_scan_period_min;
- extern unsigned int sysctl_sched_numa_scan_period_max;
- extern unsigned int sysctl_sched_numa_scan_size;
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 171c126..8ef9a46 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1556,6 +1556,7 @@ static void __sched_fork(struct task_struct *p)
- 	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
- 	p->numa_migrate_seq = 2;
- 	p->numa_faults = NULL;
-+	p->numa_scan_period = sysctl_sched_numa_scan_delay;
- 	p->numa_work.next = &p->numa_work;
- 
- 	p->shared_buddy = NULL;
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index da28315..8f0e6ba 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -823,11 +823,12 @@ static void account_numa_dequeue(struct rq *rq, struct task_struct *p)
- }
- 
- /*
-- * numa task sample period in ms: 5s
-+ * Scan @scan_size MB every @scan_period after an initial @scan_delay.
-  */
--unsigned int sysctl_sched_numa_scan_period_min = 100;
--unsigned int sysctl_sched_numa_scan_period_max = 100*16;
--unsigned int sysctl_sched_numa_scan_size = 256;   /* MB */
-+unsigned int sysctl_sched_numa_scan_delay = 1000;	/* ms */
-+unsigned int sysctl_sched_numa_scan_period_min = 100;	/* ms */
-+unsigned int sysctl_sched_numa_scan_period_max = 100*16;/* ms */
-+unsigned int sysctl_sched_numa_scan_size = 256;		/* MB */
- 
- /*
-  * Wait for the 2-sample stuff to settle before migrating again
-@@ -938,10 +939,12 @@ void task_numa_work(struct callback_head *work)
- 	if (time_before(now, migrate))
- 		return;
- 
--	next_scan = now + 2*msecs_to_jiffies(sysctl_sched_numa_scan_period_min);
-+	next_scan = now + msecs_to_jiffies(sysctl_sched_numa_scan_period_min);
- 	if (cmpxchg(&mm->numa_next_scan, migrate, next_scan) != migrate)
- 		return;
- 
-+	current->numa_scan_period += jiffies_to_msecs(2);
+ config NUMA_BALANCING
+-	bool "Memory placement aware NUMA scheduler"
++	bool "NUMA-optimizing scheduler"
+ 	default n
+ 	depends on ARCH_SUPPORTS_NUMA_BALANCING
+ 	depends on !ARCH_WANT_NUMA_VARIABLE_LOCALITY
+ 	depends on SMP && NUMA && MIGRATION
+ 	help
+-	  This option adds support for automatic NUMA aware memory/task placement.
++	  This option enables NUMA-aware, transparent, automatic
++	  placement optimizations of memory, tasks and task groups.
 +
- 	start = mm->numa_scan_offset;
- 	pages = sysctl_sched_numa_scan_size;
- 	pages <<= 20 - PAGE_SHIFT; /* MB in pages */
-@@ -998,7 +1001,8 @@ void task_tick_numa(struct rq *rq, struct task_struct *curr)
- 	period = (u64)curr->numa_scan_period * NSEC_PER_MSEC;
++	  The optimizations work by (transparently) runtime sampling the
++	  workload sharing relationship between threads and processes
++	  of long-run workloads, and scheduling them based on these
++	  measured inter-task relationships (or the lack thereof).
++
++	  ("Long-run" means several seconds of CPU runtime at least.)
++
++	  Tasks that predominantly perform their own processing, without
++	  interacting with other tasks much will be independently balanced
++	  to a CPU and their working set memory will migrate to that CPU/node.
++
++	  Tasks that share a lot of data with each other will be attempted to
++	  be scheduled on as few nodes as possible, with their memory
++	  following them there and being distributed between those nodes.
++
++	  This optimization can improve the performance of long-run CPU-bound
++	  workloads by 10% or more. The sampling and migration has a small
++	  but nonzero cost, so if your NUMA workload is already perfectly
++	  placed (for example by use of explicit CPU and memory bindings,
++	  or because the stock scheduler does a good job already) then you
++	  probably don't need this feature.
++
++	  [ On non-NUMA systems this feature will not be active. You can query
++	    whether your system is a NUMA system via looking at the output of
++	    "numactl --hardware". ]
++
++	  Say N if unsure.
  
- 	if (now - curr->node_stamp > period) {
--		curr->node_stamp = now;
-+		curr->node_stamp += period;
-+		curr->numa_scan_period = sysctl_sched_numa_scan_period_min;
- 
- 		/*
- 		 * We are comparing runtime to wall clock time here, which
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index a14b8a4..6d2fe5b 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -353,6 +353,13 @@ static struct ctl_table kern_table[] = {
- #endif /* CONFIG_SMP */
- #ifdef CONFIG_NUMA_BALANCING
- 	{
-+		.procname	= "sched_numa_scan_delay_ms",
-+		.data		= &sysctl_sched_numa_scan_delay,
-+		.maxlen		= sizeof(unsigned int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{
- 		.procname	= "sched_numa_scan_period_min_ms",
- 		.data		= &sysctl_sched_numa_scan_period_min,
- 		.maxlen		= sizeof(unsigned int),
+ menuconfig CGROUPS
+ 	boolean "Control Group support"
 -- 
 1.7.11.7
 
