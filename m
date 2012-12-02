@@ -1,46 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754014Ab2LBRft (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 12:35:49 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:39134 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752814Ab2LBRfr (ORCPT
+	id S1753992Ab2LBRqX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 12:46:23 -0500
+Received: from mxout2.netvision.net.il ([194.90.9.21]:38604 "EHLO
+	mxout2.netvision.net.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752844Ab2LBRqW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 12:35:47 -0500
-Date: Sun, 2 Dec 2012 20:35:18 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Russ Anderson <rja@sgi.com>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        walter harms <wharms@bfs.de>
-Subject: Re: [patch v3] x86, UV: integer wrap bug in uv_hub_ipi_value()
-Message-ID: <20121202173517.GB6568@mwanda>
-References: <50BB74E7.9060306@bfs.de>
- <20121202172842.GA20110@elgon.mountain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121202172842.GA20110@elgon.mountain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Sun, 2 Dec 2012 12:46:22 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; CHARSET=US-ASCII; format=flowed
+Message-id: <50BB8F43.4010208@gmail.com>
+Date: Sun, 02 Dec 2012 19:26:27 +0200
+From: Eli Billauer <eli.billauer@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12)
+ Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, arnd@arndb.de
+Subject: Re: [PATCH 2/2] New driver: Xillybus generic interface for FPGA
+ (programmable logic)
+References: <1354117293-13632-1-git-send-email-eli.billauer@gmail.com>
+ <1354117293-13632-2-git-send-email-eli.billauer@gmail.com>
+ <20121128165719.GB31314@kroah.com> <50B8C7BF.4000004@gmail.com>
+ <20121130163254.GB4478@kroah.com>
+In-reply-to: <20121130163254.GB4478@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 02, 2012 at 08:28:43PM +0300, Dan Carpenter wrote:
-> This is a static checker fix.  The problem is that we store the bits
-> from "uv_apicid_hibits" into "apicid" (the high 16 bits) but then we
-> shift it 16 bit to the left.  "apicid" is an int so it wraps and we lose
-> them.
-> 
-> I have also simplified uv_wakeup_secondary() a little based on a
-> suggestion.
+On 11/30/2012 06:32 PM, Greg KH wrote:
+>>>> >  >>+static struct class *xillybus_class;
+>>>>          
+>>> >  >Why not just use the misc interface instead of your own class?
+>>>        
+>> >  When Xillybus is used, the whole system's mission is usually around
+>> >  it (e.g. it's a computer doing data acquisition through the Xillybus
+>> >  pipes). So giving it a high profile makes sense, I believe. Besides,
+>> >  a dozen of device files are not rare.
+>>      
+> It is no problem to create dozens of misc devices.  It makes your driver
+> smaller, contain less code that I have to audit and you have to ensure
+> you got right, and it removes another user of 'struct class' which we
+> are trying to get rid of anyway.  So please, move to use a misc device.
+>
+>    
 
-This was supposed to say "suggestions from Walter Harms." but I
-pressed "u" in vim instead of "i" because they are next to each
-other so that that got deleted.  @%$@#$%@%$.  I'll resend.
+It has just occurred to me that DYNAMIC_MINORS is 64 
+(drivers/char/misc.c), so I guess that limits the number of misc devices 
+that can be generated, at least with dynamically allocated minors. I 
+previously mentioned "a dozen" as the number of devices, but I've 
+already run tests with 100+ devices, and I can also think of a sane 
+application for that.
 
-regards,
-dan carpenter
+
+So if I understood the situation correctly, it looks like using misc 
+devices will create a limitation which will be reached sooner or later.
+
+Any suggestion what to do?
+
+Thanks in advance,
+
+     Eli
+
 
