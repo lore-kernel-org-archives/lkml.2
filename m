@@ -1,36 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754243Ab2LBVsV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 16:48:21 -0500
-Received: from mail-wi0-f194.google.com ([209.85.212.194]:61212 "EHLO
-	mail-wi0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671Ab2LBVsU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 16:48:20 -0500
+	id S1754281Ab2LBVtO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 16:49:14 -0500
+Received: from mail-in-13.arcor-online.net ([151.189.21.53]:59962 "EHLO
+	mail-in-13.arcor-online.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752465Ab2LBVtN convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Dec 2012 16:49:13 -0500
+X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-17.arcor-online.net 4609DCBA59
 MIME-Version: 1.0
-Date: Sun, 2 Dec 2012 22:48:19 +0100
-Message-ID: <CAKF0DcLw6poqF30YLrbf5H2M_RNs3x3nTi9Uiomda_goygy3Fg@mail.gmail.com>
-Subject: EMAIL ACCOUNT'S UPGRADE !!!
-From: admin <cbiful1@students.towson.edu>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Date: Mon, 03 Dec 2012 03:19:09 +0530
+X-Priority: 3 (Normal)
+X-Mailer: Mutt 3.0.1c
+Subject: Position available ;
+	  id / (Z913GAPIN5W3410263099)...
+From: hsabinelange@arcor.de
+Reply-To: mike-noble@comcast.net
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-ID: <OUTLOOK-IDM-24d0ecc8-e6b2-dc99-f2b3-612cee466235@mp-ftp>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--- 
-ATTENTION WEB-MAIL USER
+Dear!
 
-Your mailbox has exceeded the maximum storage limit of 2 GB, which is
-set by the administrator, you are currently running on 2.4 GB, you may
-not be able to send or receive new email(s) until you re-validate your
-mailbox. Please click the link below to re-validate your mailbox to
-upgrade space for more storage.
+ I have found your CV on Careerbuilder website and thought you like a prospective employee.  
+Your salary is $4500 per month + bonus (%6.69 to %9.83) 
+ 
+Basic Conditions:   
+- opportunity to work 24-48 hours per week;
+- US citizens strictly with clear background report;
+- excellent organizational, negotiating, analytical skills; 
+- 5 years of summary operational backgroung (not exactly in Purchasing);
+- Internet and PC access;
+- PC user skills, email; 
+- you may mix this job with other functioning. 
 
-CLICK HERE: http://lobstervillemv.com/phpform/forms/form1.html
 
-Your account will remain active after you have successfully confirmed
-your account.
+Whether you are interested in this position please give a response back.
 
-© Copyright 2012  |  WEBMASTER EMAIL HELP DESK • • ALL RIGHTS RESERVED.
