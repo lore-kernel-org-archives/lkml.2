@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752879Ab2LBPSO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 10:18:14 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53697 "EHLO
+	id S1753405Ab2LBP1J (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 10:27:09 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58032 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751484Ab2LBPSN (ORCPT
+	by vger.kernel.org with ESMTP id S1751673Ab2LBP1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 10:18:13 -0500
-Date: Mon, 3 Dec 2012 00:18:08 +0900
+	Sun, 2 Dec 2012 10:27:08 -0500
+Date: Mon, 3 Dec 2012 00:27:02 +0900
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Shubhrajyoti D <shubhrajyoti@ti.com>
-Cc: spi-devel-general@lists.sourceforge.net, grant.likely@secretlab.ca,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] spi: omap2-mcspi: Fix the redifine warning
-Message-ID: <20121202151807.GC17981@opensource.wolfsonmicro.com>
-References: <1353307349-4611-1-git-send-email-shubhrajyoti@ti.com>
+To: Andrey Smirnov <andrey.smirnov@convergeddevices.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] [RFC] regmap: Add no-"bus" configuration possibility
+Message-ID: <20121202152701.GF17981@opensource.wolfsonmicro.com>
+References: <1353705924-25401-1-git-send-email-andrey.smirnov@convergeddevices.net>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="MvEh5MSbieV/1Yst"
+	protocol="application/pgp-signature"; boundary="Vx/N56bIaYnO6ICL"
 Content-Disposition: inline
-In-Reply-To: <1353307349-4611-1-git-send-email-shubhrajyoti@ti.com>
+In-Reply-To: <1353705924-25401-1-git-send-email-andrey.smirnov@convergeddevices.net>
 X-Cookie: Your domestic life may be harmonious.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -27,37 +26,46 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---MvEh5MSbieV/1Yst
+--Vx/N56bIaYnO6ICL
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Nov 19, 2012 at 12:12:29PM +0530, Shubhrajyoti D wrote:
-> Fix the below warning
-> drivers/spi/spi-omap2-mcspi.c:336:34: warning: symbol 'tx' shadows an earlier one
-> drivers/spi/spi-omap2-mcspi.c:327:12: originally declared here
+On Fri, Nov 23, 2012 at 01:25:24PM -0800, Andrey Smirnov wrote:
+> Second version of the patch with incorporated suggestions form
+> Mark(hopefully):
+>    https://lkml.org/lkml/2012/11/20/249
+>=20
+> Once again at this point this patch is for illustrative purposes. If
+> the overall structure and nature of the change is agreed upon, I'll
+> work on properly implementing it and testing it with my driver code(SI476=
+X).
 
-Applied, thanks.
+This looks basically good  - I'd like to see the refactoring changes
+split out from the new API (and in general done in smaller hunks) as
+it's a very big and invasive change but the top level API and the basic
+idea look good.
 
---MvEh5MSbieV/1Yst
+--Vx/N56bIaYnO6ICL
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQu3EpAAoJELSic+t+oim9ZYoP/0s+dbPordwOq92RB2QuDj8S
-2EX72Md6vaSG5JPL0pVH8xLdBmX5pTp1qzX+vKGfYjpbQWBkcjGXxmqZm3uHoB/r
-lkwJRAaWGyFZg+23xIybgxfwWMWc6ZPP3rCzd87PmVC9qrvcVjHPq59Pdd6mB9Bc
-ATw42QkoDN3FhZiFDVpwIL4tZ3SpHtye7GcryM1CeIw0k1OA5oEn7q7FXIiDC2eX
-L0d9HXncbBf3/xxcsbVzm9QKB/IL0a7/8BmD8AZVNeg5r8fMx4xS78bMWaT3miwv
-yQVdEH5yJqUY2bFvftzI43Tcii9UsPujFnyo9MJgVZhhwl8RUOvMzGWPgXHFzaSL
-l7fq4Xt7YYhu4/rK43JnTguUG7MB+aqyuokmmWlAsDpEWyDqkcD6eo7Gu9K/otdI
-ldQ2W/A4tgiAmy69BIebIIzTn5N4WqjQJ1Hc0RP9tE2rezivjSmyqrsAtRQu5Vrq
-JGCNnbhw1xaCGsPjVx3g3sbKrGU5ucZRzMM0k9cFsE9+jlJdyL/jOQSuI7FnwMTx
-tCM4ClTZWHIe+w+m474aMQkxWW5yYDf93TyIc7d63o+CiAZgJ1dNh6inQYLVmJ/T
-UsSvFaWolxdZDYBS9X7bi9uT1Z6ZCyurka1B/CPBBxXjHfYmFollCKq9vvCRkFXE
-5NNCxMtT+yKz9ZwiluOL
-=qBGT
+iQIcBAEBAgAGBQJQu3MNAAoJELSic+t+oim9TDwP/1sKf9z/iFrX4AFIHfARUKYe
+WrmI3EESh3RBMfGhyNE3ouCMVT7gOoArdq1/Kn1YkG82RlVW0muc+MZ0IyaY9fm3
+n1XjBCW2BnhkaAwwqfT7sy4CyasImqqHxLotcwU+r+uip7ZjlUhSSLjGRatHpk0X
+VfpjYT7q8FZY/AOFTeGUsORPnMw5HYW2FRqHq1wIQYtFn1SX6RqIDRuxTnf/1Pp+
+vycF6noWro7gUpApu2XciJjt4P41Em+o1QYhlNBhamnfgr95tqJ5q+f+qVzk9UpF
+MHYghOwrROUdPpySO1CDt9Ic07iasDXaWNWALdETFhEONiHfV9MGkcRBbEL8K8rU
+Qn34w26i4AA8ndrxVClG+E7h6h1mJwwLsjEi94UM+2fD/MMgNymXlIaEXfrY0Rwv
+8TDO28/szok4dlbJTF8oBwywiJG8D9trI61ov07sR8cBw5FobjLXZbF+lYuxziUt
+zlZEkowcXtVuZoj7nT2TP6A8B3czHCZ4NYIqT/1b2USvz1kmNhLOuLXfGUhb8Paj
+meXEeT0at1k2ssrJ4Zip+awa4CGJPXncyiN6F2fluLSaNitrUFNDIh5cp31oGM1E
+iYQOT7rBQJP0MyGgurNFrNXc0yJq3VyspYGFv5PVYtVZnPsGDYRCC+OW41mf6n1G
+VlRVb2YIMBcocPXOyezZ
+=/glS
 -----END PGP SIGNATURE-----
 
---MvEh5MSbieV/1Yst--
+--Vx/N56bIaYnO6ICL--
