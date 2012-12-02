@@ -1,43 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754281Ab2LBVtO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 16:49:14 -0500
-Received: from mail-in-13.arcor-online.net ([151.189.21.53]:59962 "EHLO
-	mail-in-13.arcor-online.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752465Ab2LBVtN convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 16:49:13 -0500
-X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-17.arcor-online.net 4609DCBA59
+	id S1754409Ab2LBVtl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 16:49:41 -0500
+Received: from void.printf.net ([89.145.121.20]:33761 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754277Ab2LBVtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Dec 2012 16:49:39 -0500
+From: Chris Ball <cjb@laptop.org>
+To: NeilBrown <neilb@suse.de>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, lkml <linux-kernel@vger.kernel.org>,
+        linux-mmc@vger.kernel.org,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>
+Subject: Re: [PATCH] SDIO / PM: Add empty bus-level suspend/resume callbacks
+References: <20120325203849.7a908e32@notabene.brown>
+	<201203260029.24826.rjw@sisk.pl>
+	<20121202194625.5d66e239@notabene.brown>
+	<2147450.LFoExqrKEF@vostro.rjw.lan>
+	<20121203065457.0bd12fc6@notabene.brown>
+Date: Sun, 02 Dec 2012 16:49:32 -0500
+In-Reply-To: <20121203065457.0bd12fc6@notabene.brown> (NeilBrown's message of
+	"Mon, 3 Dec 2012 06:54:57 +1100")
+Message-ID: <87y5hgcefn.fsf@octavius.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-Date: Mon, 03 Dec 2012 03:19:09 +0530
-X-Priority: 3 (Normal)
-X-Mailer: Mutt 3.0.1c
-Subject: Position available ;
-	  id / (Z913GAPIN5W3410263099)...
-From: hsabinelange@arcor.de
-Reply-To: mike-noble@comcast.net
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-ID: <OUTLOOK-IDM-24d0ecc8-e6b2-dc99-f2b3-612cee466235@mp-ftp>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear!
+Hi,
 
- I have found your CV on Careerbuilder website and thought you like a prospective employee.  
-Your salary is $4500 per month + bonus (%6.69 to %9.83) 
- 
-Basic Conditions:   
-- opportunity to work 24-48 hours per week;
-- US citizens strictly with clear background report;
-- excellent organizational, negotiating, analytical skills; 
-- 5 years of summary operational backgroung (not exactly in Purchasing);
-- Internet and PC access;
-- PC user skills, email; 
-- you may mix this job with other functioning. 
+On Sun, Dec 02 2012, NeilBrown wrote:
+>> What about applying the appended patch (hopefully, the build warnings should
+>> be fixed properly this time)?
+>
+> Looks good to me - thanks!
 
+Thanks, both of you, pushed to mmc-next for 3.8.
 
-Whether you are interested in this position please give a response back.
-
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
