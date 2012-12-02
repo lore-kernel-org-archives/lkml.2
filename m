@@ -1,182 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754180Ab2LBTzR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 14:55:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59175 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754110Ab2LBTzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754112Ab2LBTzO (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 2 Dec 2012 14:55:14 -0500
-Date: Mon, 3 Dec 2012 06:54:57 +1100
-From: NeilBrown <neilb@suse.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Chris Ball <cjb@laptop.org>, lkml <linux-kernel@vger.kernel.org>,
-        linux-mmc@vger.kernel.org,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>
-Subject: Re: [PATCH] SDIO / PM: Add empty bus-level suspend/resume callbacks
-Message-ID: <20121203065457.0bd12fc6@notabene.brown>
-In-Reply-To: <2147450.LFoExqrKEF@vostro.rjw.lan>
-References: <20120325203849.7a908e32@notabene.brown>
-	<201203260029.24826.rjw@sisk.pl>
-	<20121202194625.5d66e239@notabene.brown>
-	<2147450.LFoExqrKEF@vostro.rjw.lan>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/npdZKBa0_l4gKjTxK3MZwOQ"; protocol="application/pgp-signature"
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:34414 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753555Ab2LBTzM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Dec 2012 14:55:12 -0500
+Message-ID: <50BBB21D.3070005@googlemail.com>
+Date: Sun, 02 Dec 2012 19:55:09 +0000
+From: Chris Clayton <chris2553@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Jiang Liu <liuj97@gmail.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFT PATCH v2 4/5] mm: provide more accurate estimation of pages
+ occupied by memmap
+References: <20121120111942.c9596d3f.akpm@linux-foundation.org> <1353510586-6393-1-git-send-email-jiang.liu@huawei.com> <20121128155221.df369ce4.akpm@linux-foundation.org> <50B73E56.4050603@googlemail.com>
+In-Reply-To: <50B73E56.4050603@googlemail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/npdZKBa0_l4gKjTxK3MZwOQ
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
-
-On Sun, 02 Dec 2012 14:48:50 +0100 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-
-> On Sunday, December 02, 2012 07:46:25 PM NeilBrown wrote:
-> > On Mon, 26 Mar 2012 00:29:24 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wr=
-ote:
-> >=20
-> >=20
-> > > Thanks for the confirmation.
-> > >=20
-> > > Below it goes again with a changelog and tags.
-> > >=20
-> > > I don't really think that SDIO does the right thing here overall, but=
- that's
-> > > all I can do to address the problem timely.
-> > >=20
-> > > Thanks,
-> > > Rafael
-> >=20
-> > Hi Rafael,
-> >  I just discovered that this patch has since been reverted - with an 'a=
-ck'
-> >  from you:
-> > ----------
-> > commit d8e2ac330f65bcf47e8894fe5331a7e8ee019c06
-> > Author: Thierry Reding <thierry.reding@avionic-design.de>
-> > Date:   Thu Aug 9 09:32:21 2012 +0000
-> >=20
-> >     mmc: sdio: Fix PM_SLEEP related build warnings
-> >    =20
-> >     Power management callbacks defined by SIMPLE_DEV_PM_OPS are only us=
-ed if
-> >     the PM_SLEEP Kconfig symbol has been defined. If not, the compiler =
-will
-> >     complain about them being unused. However, since the callback for t=
-his
-> >     driver doesn't do anything it can just as well be dropped.
-> >    =20
-> >     Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-> >     Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-> >     Signed-off-by: Chris Ball <cjb@laptop.org>
-> > -----------
-> >=20
-> > Unsurprisingly the problem which your patch fixed has come back.
-> >=20
-> > Do you think we could get the patch back in again.  This time maybe we =
-should
-> > put some comments in there pointing out that having a function which do=
-es
-> > nothing is very different from not having any function at all?
->=20
-> Well, I agree.  I didn't remember that the callback had been added for
-> a purpose and hence my "ack" for that patch.
->=20
-> What about applying the appended patch (hopefully, the build warnings sho=
-uld
-> be fixed properly this time)?
-
-Looks good to me - thanks!
-
-NeilBrown
-
->=20
-> Rafael
->=20
->=20
-> ---
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Subject: SDIO / PM: Add empty bus-level suspend/resume callbacks
->=20
-> Suspend methods provided by SDIO drivers are not supposed to be
-> called by the PM core.  Instead, when the SDIO core gets to suspend
-> a device's ancestor, it calls the device driver's suspend routine.
-> However, the PM core executes suspend callback routines directly for
-> device drivers whose bus types don't provide suspend callbacks.
-> In consequece, because the SDIO bus type doesn't provide a suspend
-> callback, the SDIO drivers' suspend routines will be executed by the
-> PM core (which shouldn't happen).
->=20
-> To prevent this from happening, add empty system suspend/resume
-> callbacks for the SDIO bus type.
->=20
-> An analogous change had been made already by commit (e841a7c mmc:
-> sdio: Use empty system suspend/resume callbacks at the bus level),
-> but then it was reverted inadvertently by commit (d8e2ac3 mmc: sdio:
-> Fix PM_SLEEP related build warnings) that attempted to fix build
-> warnings introduced by commit e841a7c.
->=20
-> Reported-by: NeilBrown <neilb@suse.de>
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
->  drivers/mmc/core/sdio_bus.c |   14 ++++++++++++++
->  1 file changed, 14 insertions(+)
->=20
-> Index: linux/drivers/mmc/core/sdio_bus.c
-> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> --- linux.orig/drivers/mmc/core/sdio_bus.c
-> +++ linux/drivers/mmc/core/sdio_bus.c
-> @@ -193,7 +193,21 @@ static int sdio_bus_remove(struct device
->  }
-> =20
->  #ifdef CONFIG_PM
-> +
-> +#ifdef CONFIG_PM_SLEEP
-> +static int pm_no_operation(struct device *dev)
-> +{
-> +	/*
-> +	 * Prevent the PM core from calling SDIO device drivers' suspend
-> +	 * callback routines, which it is not supposed to do, by using this
-> +	 * empty function as the bus type suspend callaback for SDIO.
-> +	 */
-> +	return 0;
-> +}
-> +#endif
-> +
->  static const struct dev_pm_ops sdio_bus_pm_ops =3D {
-> +	SET_SYSTEM_SLEEP_PM_OPS(pm_no_operation, pm_no_operation)
->  	SET_RUNTIME_PM_OPS(
->  		pm_generic_runtime_suspend,
->  		pm_generic_runtime_resume,
->=20
->=20
 
 
---Sig_/npdZKBa0_l4gKjTxK3MZwOQ
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+On 11/29/12 10:52, Chris Clayton wrote:
+> On 11/28/12 23:52, Andrew Morton wrote:
+>> On Wed, 21 Nov 2012 23:09:46 +0800
+>> Jiang Liu <liuj97@gmail.com> wrote:
+>>
+>>> Subject: Re: [RFT PATCH v2 4/5] mm: provide more accurate estimation
+>>> of pages occupied by memmap
+>>
+>> How are people to test this?  "does it boot"?
+>>
+>
+> I've been running kernels with Gerry's 5 patches applied for 11 days
+> now. This is on a 64bit laptop but with a 32bit kernel + HIGHMEM. I
+> joined the conversation because my laptop would not resume from suspend
+> to disk - it either froze or rebooted. With the patches applied the
+> laptop does successfully resume and has been stable.
+>
+> Since Monday, I have have been running a kernel with the patches (plus,
+> from today, the patch you mailed yesterday) applied to 3.7rc7, without
+> problems.
+>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+I've been running 3.7-rc7 with the patches listed below for a week now 
+and it has been perfectly stable. In particular, my laptop will now 
+successfully resume from suspend to disk, which always failed without 
+the patches.
 
-iQIVAwUBULuyETnsnt1WYoG5AQLY5Q//TI530zPPtHXubF/0HVnmcbOH7Kpqyrzj
-oqwjMErbAmeOjEi4kDFqjjnopRYyHhdTo26BrFt0Jtz9BUKsoJoD2/kUX9wURaFW
-3x+slSSDSXe8+bTmQPfua2Dpj3yROUJJbWlUHnbDbLSnkXhJRgNCALsM6XErIm+5
-cxSrKaahrJSN7cGnPa0c2EtVa7EDyBeyR+Ne9S4FeGXJ3kV/ZSyw8BAEjIQLKzCK
-9ZEJxeRkzieb9y1NeDoPA4QmtIIbhba8XnbR6XAQV7Z5/mLyRmtKY0kojBjfQ6Ko
-a/BRZoZEG6lLgpn941SYppVcmv7lExHgTfwovt76ik8Exkc4wJwXtty1XBLtcp16
-+/EO4o3rAQbtPPSWUofMcCDPpm1YhPSK3GhAjirjE197A6zXqA4kb0SxuikxzyZV
-/+K3T0aedj/PA1dAjb8OGFXaMUzVKGd3fSTb/3bIyjI0w6awfIRNNPgv1Epu9+uv
-gPeZAhcLvWCeyQSYy07VwEbaveMxgkqT6iHPYAHEAQ6O9lHoHzGwdy4fXefzuwVC
-k9qpbuSfnV3D9IbY2x7yqdlZCDDCrwwsKpcQpS9s1xmwJ3/0IaUBJKRkLAf/B0RZ
-6YtuKVnLas1mxDz2tIrD04zvimoZ4HC7f+Psr/o/aQleYLLzCXKaNoNLyCSu2N6q
-qlu+zOU7920=
-=SYzC
------END PGP SIGNATURE-----
+ From Jiang Liu:
+1. [RFT PATCH v2 1/5] mm: introduce new field "managed_pages" to struct zone
+2. [RFT PATCH v1 2/5] mm: replace zone->present_pages with 
+zone->managed_pages if appreciated
+3. [RFT PATCH v1 3/5] mm: set zone->present_pages to number of existing 
+pages in the zone
+4. [RFT PATCH v2 4/5] mm: provide more accurate estimation of pages 
+occupied by memmap
+5. [RFT PATCH v1 5/5] mm: increase totalram_pages when free pages 
+allocated by bootmem allocator
 
---Sig_/npdZKBa0_l4gKjTxK3MZwOQ--
+ From Andrew Morton:
+6. mm-provide-more-accurate-estimation-of-pages-occupied-by-memmap.patch
+
+Tested-by: Chris Clayton <chris2553@googlemail.com>
+
+> Thanks,
+> Chris
+>
+>
