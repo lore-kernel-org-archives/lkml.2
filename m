@@ -1,178 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859Ab2LBIqq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 03:46:46 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43341 "EHLO mx2.suse.de"
+	id S1752886Ab2LBJem (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 04:34:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44240 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752470Ab2LBIqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 03:46:45 -0500
-Date: Sun, 2 Dec 2012 19:46:25 +1100
+	id S1751560Ab2LBJej (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Dec 2012 04:34:39 -0500
+Date: Sun, 2 Dec 2012 20:34:21 +1100
 From: NeilBrown <neilb@suse.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: lkml <linux-kernel@vger.kernel.org>, Chris Ball <cjb@laptop.org>,
-        linux-mmc@vger.kernel.org,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>
-Subject: Re: [PATCH] PM / SDIO: Use empty system suspend/resume callbacks at
- the bus level (was: Re: Recent ...)
-Message-ID: <20121202194625.5d66e239@notabene.brown>
-In-Reply-To: <201203260029.24826.rjw@sisk.pl>
-References: <20120325203849.7a908e32@notabene.brown>
-	<201203252325.37478.rjw@sisk.pl>
-	<20120326084515.0fd3ee7f@notabene.brown>
-	<201203260029.24826.rjw@sisk.pl>
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Lars-Peter Clausen <lars@metafoo.de>,
+        Saranya Gopal <saranya.gopal@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [PATCH] bq27x00_battery: fix bugs introduced with BQ27425 support
+Message-ID: <20121202203421.1ad1f6dc@notabene.brown>
 X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/92Ftmkv5wHEDBN_H5v/QMqo"; protocol="application/pgp-signature"
+ boundary="Sig_/uIdDvXgRvAk+Qzb/IFzcPjn"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/92Ftmkv5wHEDBN_H5v/QMqo
+--Sig_/uIdDvXgRvAk+Qzb/IFzcPjn
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, 26 Mar 2012 00:29:24 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
 
-> Thanks for the confirmation.
->=20
-> Below it goes again with a changelog and tags.
->=20
-> I don't really think that SDIO does the right thing here overall, but tha=
-t's
-> all I can do to address the problem timely.
->=20
-> Thanks,
-> Rafael
+commit a66f59ba2e994bf70274ef0513e24e0e7ae20c63
+    bq27x00_battery: Add support for BQ27425 chip
 
-Hi Rafael,
- I just discovered that this patch has since been reverted - with an 'ack'
- from you:
-----------
-commit d8e2ac330f65bcf47e8894fe5331a7e8ee019c06
-Author: Thierry Reding <thierry.reding@avionic-design.de>
-Date:   Thu Aug 9 09:32:21 2012 +0000
+introduced 2 bug.
 
-    mmc: sdio: Fix PM_SLEEP related build warnings
-   =20
-    Power management callbacks defined by SIMPLE_DEV_PM_OPS are only used if
-    the PM_SLEEP Kconfig symbol has been defined. If not, the compiler will
-    complain about them being unused. However, since the callback for this
-    driver doesn't do anything it can just as well be dropped.
-   =20
-    Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-    Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
-    Signed-off-by: Chris Ball <cjb@laptop.org>
------------
+1/ 'chip' was set to BQ27425 unconditionally - breaking support for
+   other devices.
+2/ BQ27425 does not support cycle count, how the code still tries to
+   get the cycle count for BQ27425, and now does it twice for other chips.
 
-Unsurprisingly the problem which your patch fixed has come back.
+Cc: Saranya Gopal <saranya.gopal@intel.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 
-Do you think we could get the patch back in again.  This time maybe we shou=
-ld
-put some comments in there pointing out that having a function which does
-nothing is very different from not having any function at all?
+diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_batter=
+y.c
+index e2659f1..51d4017 100644
+--- a/drivers/power/bq27x00_battery.c
++++ b/drivers/power/bq27x00_battery.c
+@@ -445,7 +445,6 @@ static void bq27x00_update(struct bq27x00_device_info *=
+di)
+ 		cache.temperature =3D bq27x00_battery_read_temperature(di);
+ 		if (!is_bq27425)
+ 			cache.cycle_count =3D bq27x00_battery_read_cyct(di);
+-		cache.cycle_count =3D bq27x00_battery_read_cyct(di);
+ 		cache.power_avg =3D
+ 			bq27x00_battery_read_pwr_avg(di, BQ27x00_POWER_AVG);
+=20
+@@ -697,7 +696,6 @@ static int bq27x00_powersupply_init(struct bq27x00_devi=
+ce_info *di)
+ 	int ret;
+=20
+ 	di->bat.type =3D POWER_SUPPLY_TYPE_BATTERY;
+-	di->chip =3D BQ27425;
+ 	if (di->chip =3D=3D BQ27425) {
+ 		di->bat.properties =3D bq27425_battery_props;
+ 		di->bat.num_properties =3D ARRAY_SIZE(bq27425_battery_props);
 
-Thanks,
-NeilBrown
-
-
->=20
-> ---
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> Subject: PM / SDIO: Use empty system suspend/resume callbacks at the bus =
-level
->=20
-> Neil Brown reports that commit 35cd133c
->=20
->    PM: Run the driver callback directly if the subsystem one is not there
->=20
-> breaks suspend for his libertas wifi, because SDIO has a protocol
-> where the suspend method can return -ENOSYS and this means "There is
-> no point in suspending, just turn me off".  Moreover, the suspend
-> methods provided by SDIO drivers are not supposed to be called by
-> the PM core or bus-level suspend routines (which aren't presend for
-> SDIO).  Instead, when the SDIO core gets to suspend the device's
-> ancestor, it calls the device driver's suspend function, catches the
-> ENOSYS, and turns the device off.
->=20
-> The commit above breaks the SDIO core's assumption that the device
-> drivers' callbacks won't be executed if it doesn't provide any
-> bus-level callbacks.  If fact, however, this assumption has never
-> been really satisfied, because device class or device type suspend
-> might very well use the driver's callback even without that commit.
->=20
-> The simplest way to address this problem is to make the SDIO core
-> tell the PM core to ignore driver callbacks, for example by providing
-> no-operation suspend/resume callbacks at the bus level for it,
-> which is implemented by this change.
->=20
-> Reported-and-tested-by: Neil Brown <neilb@suse.de>
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> ---
->  drivers/mmc/core/sdio_bus.c |   12 +++++++++---
->  1 file changed, 9 insertions(+), 3 deletions(-)
->=20
-> Index: linux/drivers/mmc/core/sdio_bus.c
-> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> --- linux.orig/drivers/mmc/core/sdio_bus.c
-> +++ linux/drivers/mmc/core/sdio_bus.c
-> @@ -192,9 +192,15 @@ static int sdio_bus_remove(struct device
->  	return ret;
->  }
-> =20
-> -#ifdef CONFIG_PM_RUNTIME
-> +#ifdef CONFIG_PM
-> +
-> +static int pm_no_operation(struct device *dev)
-> +{
-> +	return 0;
-> +}
-> =20
->  static const struct dev_pm_ops sdio_bus_pm_ops =3D {
-> +	SET_SYSTEM_SLEEP_PM_OPS(pm_no_operation, pm_no_operation)
->  	SET_RUNTIME_PM_OPS(
->  		pm_generic_runtime_suspend,
->  		pm_generic_runtime_resume,
-> @@ -204,11 +210,11 @@ static const struct dev_pm_ops sdio_bus_
-> =20
->  #define SDIO_PM_OPS_PTR	(&sdio_bus_pm_ops)
-> =20
-> -#else /* !CONFIG_PM_RUNTIME */
-> +#else /* !CONFIG_PM */
-> =20
->  #define SDIO_PM_OPS_PTR	NULL
-> =20
-> -#endif /* !CONFIG_PM_RUNTIME */
-> +#endif /* !CONFIG_PM */
-> =20
->  static struct bus_type sdio_bus_type =3D {
->  	.name		=3D "sdio",
-
-
---Sig_/92Ftmkv5wHEDBN_H5v/QMqo
+--Sig_/uIdDvXgRvAk+Qzb/IFzcPjn
 Content-Type: application/pgp-signature; name=signature.asc
 Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIVAwUBULsVYjnsnt1WYoG5AQIebA/+MliuCFpKwaUK6/lrbQrLshiq5WPjeogC
-9c/U2+oM/zxfLXpwDIDqjUFJksfK9HxXPmVCT5DF6MLU+Vk7rCceb0jdbSuw37Go
-s2cwBnkOU94WSjAOI310oqdQ/ZY8/RUwMO6uvgqdBkeDEz+EP0AWgTfxMetUCmJ5
-xSLPXbVNgfill7w4v5GN1asMPi0+F0+ETOMRjKM1zifx2nBnjmcxa9Dbhr6cF/uL
-ZRZO59oaHygpSFd7MkCBpsr4vWvVbERyDqIxO7bqU587ezU9cUIsldQ66Z3KM/vE
-Ur6f7WEjuSW3RdMvGcuFlDbQWgvcFF2lrQhVGXYukPYqx9KP27lT5UlJiWjA5TAv
-MkiWud8Zid7am/W88B/Gzbe1brxv5qqD4rpaOCzGOJVLn5Es/YT27qJEYgP3qMO+
-EYjAiyHieDyeK9FwZdLmi5HphGDpqia02fpoKEfUEmdJmohz6aT72pS2jTEGcxD6
-ZbtZBFFXzRfZXU90in2zJuovnMdZFoRQmv1dvnGt6eHLMlphkmSGwU/3dbv5p8fJ
-U0MdBAAw6O0i55XOCY9raKLax02UsiBqIgIwPpDfWCoMej98Y4URCC66ElgrnIOo
-Alkkg7Hjs1wBfCa598HbHnvtc3CxOF0Fn6Doj2exr/j1z0EaFtDvi69AX0aZWwq4
-ZGOpOOb+yvo=
-=t6zs
+iQIVAwUBULsgnTnsnt1WYoG5AQJdJBAAjnFzx+os1r0aizrubYoc8U1IWcmTxGmP
+hhF4z9iF2i2Npt27ig3HgqrKtxp1iBFquENjrZlRkkq+BWixBKYLt7ctWkfvKTmO
+2UxFPvsktC+uA8ykQGnX0PRD5ZFtUuUy3RT7b0zzf5l5ZyT11lVgPnXUwc+zXNR1
+bRJLPgzBsZIbtpBq90ERzbrpy7To7HE94irf4MKsUw4POvYG2b2omzDtaQhIrjLc
+YI4M8TM4OK9/DIx7sDF8NWrF4LJc6a458EWgvbwkwFoPeAh+COFXw5MdARvAEGPv
+aF9yVXpSGc5iIfFDZY5rOkpWu13wVE7ziEsesu3Ve8Tcj4AVhhE9U+cojTlUDsPf
+M930cO205nNWJR/BQ9vWy6AAa8Oc+Bdwy4qRk2IW3voF7iIsAqtSuFURepgjjzbk
++ccZyORh5c7c6uANvmBV6tVxxWSVm+yop+/wsVJmA50P+0QpAFLQLgsQxvBilRfH
+6Tc9McEZho8Ivc+HZtMuiRAca9HLY3fPvPnhHtAgWU/cfKb2S5br/6mfXXIg3PL/
+ZdFNXjds7NheoYKmfc8X7NOn4BJqee/Hg5VBNX4VnYE/DpYojLP7S/w/h5ka07aC
+ZiuXcwgjVRYYeoAlWkgfglBJ5pgaSshAtkgqVjlG81WAPm8ymDOwM6TVpRv6XKCi
+X2S97On2XxA=
+=mIRW
 -----END PGP SIGNATURE-----
 
---Sig_/92Ftmkv5wHEDBN_H5v/QMqo--
+--Sig_/uIdDvXgRvAk+Qzb/IFzcPjn--
