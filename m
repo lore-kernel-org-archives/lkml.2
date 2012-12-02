@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752090Ab2LBOki (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 09:40:38 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:34081 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301Ab2LBOkh (ORCPT
+	id S1752064Ab2LBOmm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 09:42:42 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:64712 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751301Ab2LBOml (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 09:40:37 -0500
-Message-ID: <1354459224.3241.1.camel@phoenix>
-Subject: [PATCH] irqchip: irq-sunxi: Add terminating entry for
- sunxi_irq_dt_ids
-From: Axel Lin <axel.lin@ingics.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Date: Sun, 02 Dec 2012 22:40:24 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sun, 2 Dec 2012 09:42:41 -0500
+MIME-Version: 1.0
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <1738269086.121732.1354456173261.JavaMail.root@elliptictech.com>
+References: <CAKMK7uGrLvmDa+pqStAK_E_rEmgAgR+BO6+-m2dgUk6Ut6DuCQ@mail.gmail.com>
+	<1738269086.121732.1354456173261.JavaMail.root@elliptictech.com>
+Date: Sun, 2 Dec 2012 15:42:39 +0100
+Message-ID: <CAKMK7uG3CvfvmMdusSUQf9+rOv_W1AWmoEqH4EAGgCiTyRfNeg@mail.gmail.com>
+Subject: Re: Brightness control fails between 3.6.8 and 3.7.0-rc7 (Intel
+ 915/Dell Vostro 3560)
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Tom St Denis <tstdenis@elliptictech.com>
+Cc: linux-kernel@vger.kernel.org, intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The of_device_id table is supposed to be zero-terminated.
+On Sun, Dec 2, 2012 at 2:49 PM, Tom St Denis <tstdenis@elliptictech.com> wrote:
+> Ok so on v3.7-rc1 [and I suspect up] I can manually control the brightness by echoing to
+>
+> /sys/class/backlight/intel_backlight/brightness
+>
+> But I still can't use the buttons to control it (it only goes one tick down from max and stops there).  I'm using GNOME3 from a x86_64 unstable debian install [up to date with latest].
+>
+> I just noticed that under v3.7 I have a new directory /sys/class/backlight/acpi_video1 which is what GNOME is actually controlling.  I can't disable ACPI video control so is there a workaround?
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/irqchip/irq-sunxi.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/irqchip/irq-sunxi.c b/drivers/irqchip/irq-sunxi.c
-index eef41a4..10974fa 100644
---- a/drivers/irqchip/irq-sunxi.c
-+++ b/drivers/irqchip/irq-sunxi.c
-@@ -129,7 +129,8 @@ static int __init sunxi_of_init(struct device_node *node,
- }
- 
- static struct of_device_id sunxi_irq_dt_ids[] __initconst = {
--	{ .compatible = "allwinner,sunxi-ic", .data = sunxi_of_init }
-+	{ .compatible = "allwinner,sunxi-ic", .data = sunxi_of_init },
-+	{ }
- };
- 
- void __init sunxi_init_irq(void)
+Hah, acpi registered a broken backlight driver, which overwrites the
+intel backlight - for once it's not i915.ko's fault ;-) For a
+workaround either disable the acpi backlight with
+acpi_backlight=vendor (iirc) kernel option or teach the X driver that
+you want a different backlight driver in the xorg.conf (Option
+"Backlight" "intel_backlight" should do the trick).
+-Daniel
 -- 
-1.7.9.5
-
-
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
