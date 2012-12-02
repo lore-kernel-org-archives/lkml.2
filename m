@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755087Ab2LBSqh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 13:46:37 -0500
+	id S1754928Ab2LBSpg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 13:45:36 -0500
 Received: from mail-ee0-f46.google.com ([74.125.83.46]:64238 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755010Ab2LBSpn (ORCPT
+	with ESMTP id S1754854Ab2LBSpb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 13:45:43 -0500
+	Sun, 2 Dec 2012 13:45:31 -0500
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
@@ -18,9 +18,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: [PATCH 50/52] mm/rmap, migration: Make rmap_walk_anon() and try_to_unmap_anon() more scalable
-Date: Sun,  2 Dec 2012 19:43:42 +0100
-Message-Id: <1354473824-19229-51-git-send-email-mingo@kernel.org>
+Subject: [PATCH 44/52] sched: Remove statistical NUMA scheduling
+Date: Sun,  2 Dec 2012 19:43:36 +0100
+Message-Id: <1354473824-19229-45-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1354473824-19229-1-git-send-email-mingo@kernel.org>
 References: <1354473824-19229-1-git-send-email-mingo@kernel.org>
@@ -28,448 +28,705 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rmap_walk_anon() and try_to_unmap_anon() appears to be too
-careful about locking the anon vma: while it needs protection
-against anon vma list modifications, it does not need exclusive
-access to the list itself.
+Remove leftovers of the (now inactive) statistical NUMA scheduling code.
 
-Transforming this exclusive lock to a read-locked rwsem removes
-a global lock from the hot path of page-migration intense
-threaded workloads which can cause pathological performance like
-this:
-
-    96.43%        process 0  [kernel.kallsyms]  [k] perf_trace_sched_switch
-                  |
-                  --- perf_trace_sched_switch
-                      __schedule
-                      schedule
-                      schedule_preempt_disabled
-                      __mutex_lock_common.isra.6
-                      __mutex_lock_slowpath
-                      mutex_lock
-                     |
-                     |--50.61%-- rmap_walk
-                     |          move_to_new_page
-                     |          migrate_pages
-                     |          migrate_misplaced_page
-                     |          __do_numa_page.isra.69
-                     |          handle_pte_fault
-                     |          handle_mm_fault
-                     |          __do_page_fault
-                     |          do_page_fault
-                     |          page_fault
-                     |          __memset_sse2
-                     |          |
-                     |           --100.00%-- worker_thread
-                     |                     |
-                     |                      --100.00%-- start_thread
-                     |
-                      --49.39%-- page_lock_anon_vma
-                                try_to_unmap_anon
-                                try_to_unmap
-                                migrate_pages
-                                migrate_misplaced_page
-                                __do_numa_page.isra.69
-                                handle_pte_fault
-                                handle_mm_fault
-                                __do_page_fault
-                                do_page_fault
-                                page_fault
-                                __memset_sse2
-                                |
-                                 --100.00%-- worker_thread
-                                           start_thread
-
-With this change applied the profile is now nicely flat
-and there's no anon-vma related scheduling/blocking.
-
-Rename anon_vma_[un]lock() => anon_vma_[un]lock_write(),
-to make it clearer that it's an exclusive write-lock in
-that case - suggested by Rik van Riel.
-
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Turner <pjt@google.com>
-Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Cc: Christoph Lameter <cl@linux.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
 Cc: Rik van Riel <riel@redhat.com>
 Cc: Mel Gorman <mgorman@suse.de>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Hugh Dickins <hughd@google.com>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/linux/huge_mm.h |  2 +-
- include/linux/rmap.h    | 17 ++++++++++++++---
- mm/huge_memory.c        |  6 +++---
- mm/ksm.c                |  6 +++---
- mm/memory-failure.c     |  4 ++--
- mm/migrate.c            |  2 +-
- mm/mmap.c               |  2 +-
- mm/mremap.c             |  2 +-
- mm/rmap.c               | 48 ++++++++++++++++++++++++------------------------
- 9 files changed, 50 insertions(+), 39 deletions(-)
+ include/linux/sched.h   |   2 -
+ kernel/sched/core.c     |   1 -
+ kernel/sched/fair.c     | 436 +-----------------------------------------------
+ kernel/sched/features.h |   3 -
+ kernel/sched/sched.h    |   3 -
+ 5 files changed, 6 insertions(+), 439 deletions(-)
 
-diff --git a/include/linux/huge_mm.h b/include/linux/huge_mm.h
-index 027ad04..0d1208c 100644
---- a/include/linux/huge_mm.h
-+++ b/include/linux/huge_mm.h
-@@ -102,7 +102,7 @@ extern void __split_huge_page_pmd(struct mm_struct *mm, pmd_t *pmd);
- #define wait_split_huge_page(__anon_vma, __pmd)				\
- 	do {								\
- 		pmd_t *____pmd = (__pmd);				\
--		anon_vma_lock(__anon_vma);				\
-+		anon_vma_lock_write(__anon_vma);			\
- 		anon_vma_unlock(__anon_vma);				\
- 		BUG_ON(pmd_trans_splitting(*____pmd) ||			\
- 		       pmd_trans_huge(*____pmd));			\
-diff --git a/include/linux/rmap.h b/include/linux/rmap.h
-index f3f41d2..c20635c 100644
---- a/include/linux/rmap.h
-+++ b/include/linux/rmap.h
-@@ -118,7 +118,7 @@ static inline void vma_unlock_anon_vma(struct vm_area_struct *vma)
- 		up_write(&anon_vma->root->rwsem);
- }
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 3bc69b7..8eeb866 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1507,10 +1507,8 @@ struct task_struct {
+ 	int numa_max_node;
+ 	int numa_scan_seq;
+ 	unsigned long numa_scan_ts_secs;
+-	int numa_migrate_seq;
+ 	unsigned int numa_scan_period;
+ 	u64 node_stamp;			/* migration stamp  */
+-	unsigned long numa_weight;
+ 	unsigned long *numa_faults;
+ 	unsigned long *numa_faults_curr;
+ 	struct callback_head numa_scan_work;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 80bdc9b..0fac735 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1556,7 +1556,6 @@ static void __sched_fork(struct task_struct *p)
+ 	p->numa_shared = -1;
+ 	p->node_stamp = 0ULL;
+ 	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
+-	p->numa_migrate_seq = 2;
+ 	p->numa_faults = NULL;
+ 	p->numa_scan_period = sysctl_sched_numa_scan_delay;
  
--static inline void anon_vma_lock(struct anon_vma *anon_vma)
-+static inline void anon_vma_lock_write(struct anon_vma *anon_vma)
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 417c7bb..7af89b7 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -801,26 +801,6 @@ static unsigned long task_h_load(struct task_struct *p);
+ #endif
+ 
+ #ifdef CONFIG_NUMA_BALANCING
+-static void account_numa_enqueue(struct rq *rq, struct task_struct *p)
+-{
+-	if (task_numa_shared(p) != -1) {
+-		p->numa_weight = task_h_load(p);
+-		rq->nr_numa_running++;
+-		rq->nr_shared_running += task_numa_shared(p);
+-		rq->nr_ideal_running += (cpu_to_node(task_cpu(p)) == p->numa_max_node);
+-		rq->numa_weight += p->numa_weight;
+-	}
+-}
+-
+-static void account_numa_dequeue(struct rq *rq, struct task_struct *p)
+-{
+-	if (task_numa_shared(p) != -1) {
+-		rq->nr_numa_running--;
+-		rq->nr_shared_running -= task_numa_shared(p);
+-		rq->nr_ideal_running -= (cpu_to_node(task_cpu(p)) == p->numa_max_node);
+-		rq->numa_weight -= p->numa_weight;
+-	}
+-}
+ 
+ /*
+  * Scan @scan_size MB every @scan_period after an initial @scan_delay.
+@@ -835,11 +815,6 @@ unsigned int sysctl_sched_numa_scan_size = 256;		/* MB */
+  */
+ unsigned int sysctl_sched_numa_settle_count = 2;
+ 
+-static void task_numa_migrate(struct task_struct *p, int next_cpu)
+-{
+-	p->numa_migrate_seq = 0;
+-}
+-
+ static int task_ideal_cpu(struct task_struct *p)
  {
- 	down_write(&anon_vma->root->rwsem);
- }
-@@ -128,6 +128,17 @@ static inline void anon_vma_unlock(struct anon_vma *anon_vma)
- 	up_write(&anon_vma->root->rwsem);
- }
+ 	if (!sched_feat(IDEAL_CPU))
+@@ -2041,8 +2016,6 @@ static void task_numa_placement_tick(struct task_struct *p)
+ 	}
  
-+static inline void anon_vma_lock_read(struct anon_vma *anon_vma)
-+{
-+	down_read(&anon_vma->root->rwsem);
-+}
-+
-+static inline void anon_vma_unlock_read(struct anon_vma *anon_vma)
-+{
-+	up_read(&anon_vma->root->rwsem);
-+}
-+
-+
- /*
-  * anon_vma helper functions.
-  */
-@@ -220,8 +231,8 @@ int try_to_munlock(struct page *);
- /*
-  * Called by memory-failure.c to kill processes.
-  */
--struct anon_vma *page_lock_anon_vma(struct page *page);
--void page_unlock_anon_vma(struct anon_vma *anon_vma);
-+struct anon_vma *page_lock_anon_vma_read(struct page *page);
-+void page_unlock_anon_vma_read(struct anon_vma *anon_vma);
- int page_mapped_in_vma(struct page *page, struct vm_area_struct *vma);
- 
- /*
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 02ea9ee..d97be37 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1637,7 +1637,7 @@ int split_huge_page(struct page *page)
- 	int ret = 1;
- 
- 	BUG_ON(!PageAnon(page));
--	anon_vma = page_lock_anon_vma(page);
-+	anon_vma = page_lock_anon_vma_read(page);
- 	if (!anon_vma)
- 		goto out;
- 	ret = 0;
-@@ -1650,7 +1650,7 @@ int split_huge_page(struct page *page)
- 
- 	BUG_ON(PageCompound(page));
- out_unlock:
--	page_unlock_anon_vma(anon_vma);
-+	page_unlock_anon_vma_read(anon_vma);
- out:
- 	return ret;
- }
-@@ -2162,7 +2162,7 @@ static void collapse_huge_page(struct mm_struct *mm,
- 	if (!pmd_present(*pmd) || pmd_trans_huge(*pmd))
- 		goto out;
- 
--	anon_vma_lock(vma->anon_vma);
-+	anon_vma_lock_write(vma->anon_vma);
- 
- 	pte = pte_offset_map(pmd, address);
- 	ptl = pte_lockptr(mm, pmd);
-diff --git a/mm/ksm.c b/mm/ksm.c
-index ae539f0..7fa37de 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -1634,7 +1634,7 @@ again:
- 		struct anon_vma_chain *vmac;
- 		struct vm_area_struct *vma;
- 
--		anon_vma_lock(anon_vma);
-+		anon_vma_lock_write(anon_vma);
- 		anon_vma_interval_tree_foreach(vmac, &anon_vma->rb_root,
- 					       0, ULONG_MAX) {
- 			vma = vmac->vma;
-@@ -1688,7 +1688,7 @@ again:
- 		struct anon_vma_chain *vmac;
- 		struct vm_area_struct *vma;
- 
--		anon_vma_lock(anon_vma);
-+		anon_vma_lock_write(anon_vma);
- 		anon_vma_interval_tree_foreach(vmac, &anon_vma->rb_root,
- 					       0, ULONG_MAX) {
- 			vma = vmac->vma;
-@@ -1741,7 +1741,7 @@ again:
- 		struct anon_vma_chain *vmac;
- 		struct vm_area_struct *vma;
- 
--		anon_vma_lock(anon_vma);
-+		anon_vma_lock_write(anon_vma);
- 		anon_vma_interval_tree_foreach(vmac, &anon_vma->rb_root,
- 					       0, ULONG_MAX) {
- 			vma = vmac->vma;
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index ddb68a1..f2cd830 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -402,7 +402,7 @@ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
- 	struct anon_vma *av;
- 	pgoff_t pgoff;
- 
--	av = page_lock_anon_vma(page);
-+	av = page_lock_anon_vma_read(page);
- 	if (av == NULL)	/* Not actually mapped anymore */
+ 	if (shared != task_numa_shared(p) || (ideal_node != -1 && ideal_node != p->numa_max_node)) {
+-
+-		p->numa_migrate_seq = 0;
+ 		/*
+ 		 * Fix up node migration fault statistics artifact, as we
+ 		 * migrate to another node we'll soon bring over our private
+@@ -2227,13 +2200,6 @@ void task_numa_scan_work(struct callback_head *work)
+ 	if (p->flags & PF_EXITING)
  		return;
  
-@@ -423,7 +423,7 @@ static void collect_procs_anon(struct page *page, struct list_head *to_kill,
- 		}
+-	p->numa_migrate_seq++;
+-	if (sched_feat(NUMA_SETTLE) &&
+-	    p->numa_migrate_seq < sysctl_sched_numa_settle_count) {
+-		trace_printk("NUMA TICK: placement, return to let it settle, task %s:%d\n", p->comm, p->pid);
+-		return;
+-	}
+-
+ 	/*
+ 	 * Enforce maximal scan/migration frequency..
+ 	 */
+@@ -2420,11 +2386,8 @@ static void task_tick_numa(struct rq *rq, struct task_struct *curr)
+ #else /* !CONFIG_NUMA_BALANCING: */
+ #ifdef CONFIG_SMP
+ static inline int task_ideal_cpu(struct task_struct *p)				{ return -1; }
+-static inline void account_numa_enqueue(struct rq *rq, struct task_struct *p)	{ }
+ #endif
+-static inline void account_numa_dequeue(struct rq *rq, struct task_struct *p)	{ }
+ static inline void task_tick_numa(struct rq *rq, struct task_struct *curr)	{ }
+-static inline void task_numa_migrate(struct task_struct *p, int next_cpu)	{ }
+ #endif /* CONFIG_NUMA_BALANCING */
+ 
+ /**************************************************
+@@ -2441,7 +2404,6 @@ account_entity_enqueue(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ 	if (entity_is_task(se)) {
+ 		struct rq *rq = rq_of(cfs_rq);
+ 
+-		account_numa_enqueue(rq, task_of(se));
+ 		list_add(&se->group_node, &rq->cfs_tasks);
  	}
- 	read_unlock(&tasklist_lock);
--	page_unlock_anon_vma(av);
-+	page_unlock_anon_vma_read(av);
+ #endif /* CONFIG_SMP */
+@@ -2454,10 +2416,9 @@ account_entity_dequeue(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ 	update_load_sub(&cfs_rq->load, se->load.weight);
+ 	if (!parent_entity(se))
+ 		update_load_sub(&rq_of(cfs_rq)->load, se->load.weight);
+-	if (entity_is_task(se)) {
++	if (entity_is_task(se))
+ 		list_del_init(&se->group_node);
+-		account_numa_dequeue(rq_of(cfs_rq), task_of(se));
+-	}
++
+ 	cfs_rq->nr_running--;
  }
  
+@@ -4892,7 +4853,6 @@ static void
+ migrate_task_rq_fair(struct task_struct *p, int next_cpu)
+ {
+ 	migrate_task_rq_entity(p, next_cpu);
+-	task_numa_migrate(p, next_cpu);
+ }
+ #endif /* CONFIG_SMP */
+ 
+@@ -5268,9 +5228,6 @@ static unsigned long __read_mostly max_load_balance_interval = HZ/10;
+ #define LBF_ALL_PINNED	0x01
+ #define LBF_NEED_BREAK	0x02
+ #define LBF_SOME_PINNED	0x04
+-#define LBF_NUMA_RUN	0x08
+-#define LBF_NUMA_SHARED	0x10
+-#define LBF_KEEP_SHARED	0x20
+ 
+ struct lb_env {
+ 	struct sched_domain	*sd;
+@@ -5313,82 +5270,6 @@ static void move_task(struct task_struct *p, struct lb_env *env)
+ 	check_preempt_curr(env->dst_rq, p, 0);
+ }
+ 
+-#ifdef CONFIG_NUMA_BALANCING
+-
+-static inline unsigned long task_node_faults(struct task_struct *p, int node)
+-{
+-	return p->numa_faults[2*node] + p->numa_faults[2*node + 1];
+-}
+-
+-static int task_faults_down(struct task_struct *p, struct lb_env *env)
+-{
+-	int src_node, dst_node, node, down_node = -1;
+-	unsigned long faults, src_faults, max_faults = 0;
+-
+-	if (!sched_feat_numa(NUMA_FAULTS_DOWN) || !p->numa_faults)
+-		return 1;
+-
+-	src_node = cpu_to_node(env->src_cpu);
+-	dst_node = cpu_to_node(env->dst_cpu);
+-
+-	if (src_node == dst_node)
+-		return 1;
+-
+-	src_faults = task_node_faults(p, src_node);
+-
+-	for (node = 0; node < nr_node_ids; node++) {
+-		if (node == src_node)
+-			continue;
+-
+-		faults = task_node_faults(p, node);
+-
+-		if (faults > max_faults && faults <= src_faults) {
+-			max_faults = faults;
+-			down_node = node;
+-		}
+-	}
+-
+-	if (down_node == dst_node)
+-		return 1; /* move towards the next node down */
+-
+-	return 0; /* stay here */
+-}
+-
+-static int task_faults_up(struct task_struct *p, struct lb_env *env)
+-{
+-	unsigned long src_faults, dst_faults;
+-	int src_node, dst_node;
+-
+-	if (!sched_feat_numa(NUMA_FAULTS_UP) || !p->numa_faults)
+-		return 0; /* can't say it improved */
+-
+-	src_node = cpu_to_node(env->src_cpu);
+-	dst_node = cpu_to_node(env->dst_cpu);
+-
+-	if (src_node == dst_node)
+-		return 0; /* pointless, don't do that */
+-
+-	src_faults = task_node_faults(p, src_node);
+-	dst_faults = task_node_faults(p, dst_node);
+-
+-	if (dst_faults > src_faults)
+-		return 1; /* move to dst */
+-
+-	return 0; /* stay where we are */
+-}
+-
+-#else /* !CONFIG_NUMA_BALANCING: */
+-static inline int task_faults_up(struct task_struct *p, struct lb_env *env)
+-{
+-	return 0;
+-}
+-
+-static inline int task_faults_down(struct task_struct *p, struct lb_env *env)
+-{
+-	return 0;
+-}
+-#endif
+-
  /*
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 94f5f28..5cfc7b6 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -754,7 +754,7 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
- 	 */
- 	if (PageAnon(page)) {
- 		/*
--		 * Only page_lock_anon_vma() understands the subtleties of
-+		 * Only page_lock_anon_vma_read() understands the subtleties of
- 		 * getting a hold on an anon_vma from outside one of its mms.
- 		 */
- 		anon_vma = page_get_anon_vma(page);
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 8840863..68a16b4 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -602,7 +602,7 @@ again:			remove_next = 1 + (end > next->vm_end);
- 	if (anon_vma) {
- 		VM_BUG_ON(adjust_next && next->anon_vma &&
- 			  anon_vma != next->anon_vma);
--		anon_vma_lock(anon_vma);
-+		anon_vma_lock_write(anon_vma);
- 		anon_vma_interval_tree_pre_update_vma(vma);
- 		if (adjust_next)
- 			anon_vma_interval_tree_pre_update_vma(next);
-diff --git a/mm/mremap.c b/mm/mremap.c
-index 1b61c2d..3dabd17 100644
---- a/mm/mremap.c
-+++ b/mm/mremap.c
-@@ -104,7 +104,7 @@ static void move_ptes(struct vm_area_struct *vma, pmd_t *old_pmd,
- 		}
- 		if (vma->anon_vma) {
- 			anon_vma = vma->anon_vma;
--			anon_vma_lock(anon_vma);
-+			anon_vma_lock_write(anon_vma);
- 		}
- 	}
- 
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 6e3ee3b..b0f612d 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -87,24 +87,24 @@ static inline void anon_vma_free(struct anon_vma *anon_vma)
- 	VM_BUG_ON(atomic_read(&anon_vma->refcount));
- 
- 	/*
--	 * Synchronize against page_lock_anon_vma() such that
-+	 * Synchronize against page_lock_anon_vma_read() such that
- 	 * we can safely hold the lock without the anon_vma getting
- 	 * freed.
- 	 *
- 	 * Relies on the full mb implied by the atomic_dec_and_test() from
- 	 * put_anon_vma() against the acquire barrier implied by
--	 * mutex_trylock() from page_lock_anon_vma(). This orders:
-+	 * down_read_trylock() from page_lock_anon_vma_read(). This orders:
- 	 *
--	 * page_lock_anon_vma()		VS	put_anon_vma()
--	 *   mutex_trylock()			  atomic_dec_and_test()
-+	 * page_lock_anon_vma_read()	VS	put_anon_vma()
-+	 *   down_read_trylock()		  atomic_dec_and_test()
- 	 *   LOCK				  MB
--	 *   atomic_read()			  mutex_is_locked()
-+	 *   atomic_read()			  rwsem_is_locked()
- 	 *
- 	 * LOCK should suffice since the actual taking of the lock must
- 	 * happen _before_ what follows.
- 	 */
- 	if (rwsem_is_locked(&anon_vma->root->rwsem)) {
--		anon_vma_lock(anon_vma);
-+		anon_vma_lock_write(anon_vma);
- 		anon_vma_unlock(anon_vma);
- 	}
- 
-@@ -146,7 +146,7 @@ static void anon_vma_chain_link(struct vm_area_struct *vma,
-  * allocate a new one.
-  *
-  * Anon-vma allocations are very subtle, because we may have
-- * optimistically looked up an anon_vma in page_lock_anon_vma()
-+ * optimistically looked up an anon_vma in page_lock_anon_vma_read()
-  * and that may actually touch the spinlock even in the newly
-  * allocated vma (it depends on RCU to make sure that the
-  * anon_vma isn't actually destroyed).
-@@ -181,7 +181,7 @@ int anon_vma_prepare(struct vm_area_struct *vma)
- 			allocated = anon_vma;
- 		}
- 
--		anon_vma_lock(anon_vma);
-+		anon_vma_lock_write(anon_vma);
- 		/* page_table_lock to protect against threads */
- 		spin_lock(&mm->page_table_lock);
- 		if (likely(!vma->anon_vma)) {
-@@ -306,7 +306,7 @@ int anon_vma_fork(struct vm_area_struct *vma, struct vm_area_struct *pvma)
- 	get_anon_vma(anon_vma->root);
- 	/* Mark this anon_vma as the one where our new (COWed) pages go. */
- 	vma->anon_vma = anon_vma;
--	anon_vma_lock(anon_vma);
-+	anon_vma_lock_write(anon_vma);
- 	anon_vma_chain_link(vma, avc, anon_vma);
- 	anon_vma_unlock(anon_vma);
- 
-@@ -442,7 +442,7 @@ out:
-  * atomic op -- the trylock. If we fail the trylock, we fall back to getting a
-  * reference like with page_get_anon_vma() and then block on the mutex.
+  * Is this task likely cache-hot:
   */
--struct anon_vma *page_lock_anon_vma(struct page *page)
-+struct anon_vma *page_lock_anon_vma_read(struct page *page)
- {
- 	struct anon_vma *anon_vma = NULL;
- 	struct anon_vma *root_anon_vma;
-@@ -457,14 +457,14 @@ struct anon_vma *page_lock_anon_vma(struct page *page)
- 
- 	anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);
- 	root_anon_vma = ACCESS_ONCE(anon_vma->root);
--	if (down_write_trylock(&root_anon_vma->rwsem)) {
-+	if (down_read_trylock(&root_anon_vma->rwsem)) {
- 		/*
- 		 * If the page is still mapped, then this anon_vma is still
- 		 * its anon_vma, and holding the mutex ensures that it will
- 		 * not go away, see anon_vma_free().
- 		 */
- 		if (!page_mapped(page)) {
--			up_write(&root_anon_vma->rwsem);
-+			up_read(&root_anon_vma->rwsem);
- 			anon_vma = NULL;
- 		}
- 		goto out;
-@@ -484,15 +484,15 @@ struct anon_vma *page_lock_anon_vma(struct page *page)
- 
- 	/* we pinned the anon_vma, its safe to sleep */
- 	rcu_read_unlock();
--	anon_vma_lock(anon_vma);
-+	anon_vma_lock_read(anon_vma);
- 
- 	if (atomic_dec_and_test(&anon_vma->refcount)) {
- 		/*
- 		 * Oops, we held the last refcount, release the lock
- 		 * and bail -- can't simply use put_anon_vma() because
--		 * we'll deadlock on the anon_vma_lock() recursion.
-+		 * we'll deadlock on the anon_vma_lock_write() recursion.
- 		 */
--		anon_vma_unlock(anon_vma);
-+		anon_vma_unlock_read(anon_vma);
- 		__put_anon_vma(anon_vma);
- 		anon_vma = NULL;
- 	}
-@@ -504,9 +504,9 @@ out:
- 	return anon_vma;
- }
- 
--void page_unlock_anon_vma(struct anon_vma *anon_vma)
-+void page_unlock_anon_vma_read(struct anon_vma *anon_vma)
- {
--	anon_vma_unlock(anon_vma);
-+	anon_vma_unlock_read(anon_vma);
+@@ -5469,77 +5350,6 @@ static bool can_migrate_running_task(struct task_struct *p, struct lb_env *env)
  }
  
  /*
-@@ -732,7 +732,7 @@ static int page_referenced_anon(struct page *page,
- 	struct anon_vma_chain *avc;
- 	int referenced = 0;
+- * Can we migrate a NUMA task? The rules are rather involved:
+- */
+-static bool can_migrate_numa_task(struct task_struct *p, struct lb_env *env)
+-{
+-	/*
+-	 * iteration:
+-	 *   0		   -- only allow improvement, or !numa
+-	 *   1		   -- + worsen !ideal
+-	 *   2                         priv
+-	 *   3                         shared (everything)
+-	 *
+-	 * NUMA_HOT_DOWN:
+-	 *   1 .. nodes    -- allow getting worse by step
+-	 *   nodes+1	   -- punt, everything goes!
+-	 *
+-	 * LBF_NUMA_RUN    -- numa only, only allow improvement
+-	 * LBF_NUMA_SHARED -- shared only
+-	 * LBF_NUMA_IDEAL  -- ideal only
+-	 *
+-	 * LBF_KEEP_SHARED -- do not touch shared tasks
+-	 */
+-
+-	/* a numa run can only move numa tasks about to improve things */
+-	if (env->flags & LBF_NUMA_RUN) {
+-		if (task_numa_shared(p) < 0 && task_ideal_cpu(p) < 0)
+-			return false;
+-
+-		/* If we are only allowed to pull shared tasks: */
+-		if ((env->flags & LBF_NUMA_SHARED) && !task_numa_shared(p))
+-			return false;
+-	} else {
+-		if (task_numa_shared(p) < 0)
+-			goto try_migrate;
+-	}
+-
+-	/* can not move shared tasks */
+-	if ((env->flags & LBF_KEEP_SHARED) && task_numa_shared(p) == 1)
+-		return false;
+-
+-	if (task_faults_up(p, env))
+-		return true; /* memory locality beats cache hotness */
+-
+-	if (env->iteration < 1)
+-		return false;
+-
+-#ifdef CONFIG_NUMA_BALANCING
+-	if (p->numa_max_node != cpu_to_node(task_cpu(p))) /* !ideal */
+-		goto demote;
+-#endif
+-
+-	if (env->iteration < 2)
+-		return false;
+-
+-	if (task_numa_shared(p) == 0) /* private */
+-		goto demote;
+-
+-	if (env->iteration < 3)
+-		return false;
+-
+-demote:
+-	if (env->iteration < 5)
+-		return task_faults_down(p, env);
+-
+-try_migrate:
+-	if (env->failed > env->sd->cache_nice_tries)
+-		return true;
+-
+-	return !task_hot(p, env);
+-}
+-
+-/*
+  * can_migrate_task() - may task p from runqueue rq be migrated to this_cpu?
+  */
+ static int can_migrate_task(struct task_struct *p, struct lb_env *env)
+@@ -5559,7 +5369,7 @@ static int can_migrate_task(struct task_struct *p, struct lb_env *env)
  
--	anon_vma = page_lock_anon_vma(page);
-+	anon_vma = page_lock_anon_vma_read(page);
- 	if (!anon_vma)
- 		return referenced;
+ #ifdef CONFIG_NUMA_BALANCING
+ 	/* If we are only allowed to pull ideal tasks: */
+-	if ((task_ideal_cpu(p) >= 0) && (p->shared_buddy_faults > 1000)) {
++	if (0 && (task_ideal_cpu(p) >= 0) && (p->shared_buddy_faults > 1000)) {
+ 		int ideal_node;
+ 		int dst_node;
  
-@@ -754,7 +754,7 @@ static int page_referenced_anon(struct page *page,
- 			break;
+@@ -5575,9 +5385,6 @@ static int can_migrate_task(struct task_struct *p, struct lb_env *env)
  	}
+ #endif
  
--	page_unlock_anon_vma(anon_vma);
-+	page_unlock_anon_vma_read(anon_vma);
- 	return referenced;
+-	if (env->sd->flags & SD_NUMA)
+-		return can_migrate_numa_task(p, env);
+-
+ 	if (env->failed > env->sd->cache_nice_tries)
+ 		return true;
+ 
+@@ -5867,24 +5674,6 @@ struct sd_lb_stats {
+ 	unsigned int  busiest_group_weight;
+ 
+ 	int group_imb; /* Is there imbalance in this sd */
+-
+-#ifdef CONFIG_NUMA_BALANCING
+-	unsigned long this_numa_running;
+-	unsigned long this_numa_weight;
+-	unsigned long this_shared_running;
+-	unsigned long this_ideal_running;
+-	unsigned long this_group_capacity;
+-
+-	struct sched_group *numa;
+-	unsigned long numa_load;
+-	unsigned long numa_nr_running;
+-	unsigned long numa_numa_running;
+-	unsigned long numa_shared_running;
+-	unsigned long numa_ideal_running;
+-	unsigned long numa_numa_weight;
+-	unsigned long numa_group_capacity;
+-	unsigned int  numa_has_capacity;
+-#endif
+ };
+ 
+ /*
+@@ -5900,13 +5689,6 @@ struct sg_lb_stats {
+ 	unsigned long group_weight;
+ 	int group_imb; /* Is there an imbalance in the group ? */
+ 	int group_has_capacity; /* Is there extra capacity in the group? */
+-
+-#ifdef CONFIG_NUMA_BALANCING
+-	unsigned long sum_ideal_running;
+-	unsigned long sum_numa_running;
+-	unsigned long sum_numa_weight;
+-#endif
+-	unsigned long sum_shared_running;	/* 0 on non-NUMA */
+ };
+ 
+ /**
+@@ -5935,158 +5717,6 @@ static inline int get_sd_load_idx(struct sched_domain *sd,
+ 	return load_idx;
  }
  
-@@ -1474,7 +1474,7 @@ static int try_to_unmap_anon(struct page *page, enum ttu_flags flags)
- 	struct anon_vma_chain *avc;
- 	int ret = SWAP_AGAIN;
+-#ifdef CONFIG_NUMA_BALANCING
+-
+-static inline bool pick_numa_rand(int n)
+-{
+-	return !(get_random_int() % n);
+-}
+-
+-static inline void update_sg_numa_stats(struct sg_lb_stats *sgs, struct rq *rq)
+-{
+-	sgs->sum_ideal_running += rq->nr_ideal_running;
+-	sgs->sum_shared_running += rq->nr_shared_running;
+-	sgs->sum_numa_running += rq->nr_numa_running;
+-	sgs->sum_numa_weight += rq->numa_weight;
+-}
+-
+-static inline
+-void update_sd_numa_stats(struct sched_domain *sd, struct sched_group *sg,
+-			  struct sd_lb_stats *sds, struct sg_lb_stats *sgs,
+-			  int local_group)
+-{
+-	if (!(sd->flags & SD_NUMA))
+-		return;
+-
+-	if (local_group) {
+-		sds->this_numa_running   = sgs->sum_numa_running;
+-		sds->this_numa_weight    = sgs->sum_numa_weight;
+-		sds->this_shared_running = sgs->sum_shared_running;
+-		sds->this_ideal_running  = sgs->sum_ideal_running;
+-		sds->this_group_capacity = sgs->group_capacity;
+-
+-	} else if (sgs->sum_numa_running - sgs->sum_ideal_running) {
+-		if (!sds->numa || pick_numa_rand(sd->span_weight / sg->group_weight)) {
+-			sds->numa = sg;
+-			sds->numa_load		 = sgs->avg_load;
+-			sds->numa_nr_running     = sgs->sum_nr_running;
+-			sds->numa_numa_running   = sgs->sum_numa_running;
+-			sds->numa_shared_running = sgs->sum_shared_running;
+-			sds->numa_ideal_running  = sgs->sum_ideal_running;
+-			sds->numa_numa_weight    = sgs->sum_numa_weight;
+-			sds->numa_has_capacity	 = sgs->group_has_capacity;
+-			sds->numa_group_capacity = sgs->group_capacity;
+-		}
+-	}
+-}
+-
+-static struct rq *
+-find_busiest_numa_queue(struct lb_env *env, struct sched_group *sg)
+-{
+-	struct rq *rq, *busiest = NULL;
+-	int cpu;
+-
+-	for_each_cpu_and(cpu, sched_group_cpus(sg), env->cpus) {
+-		rq = cpu_rq(cpu);
+-
+-		if (!rq->nr_numa_running)
+-			continue;
+-
+-		if (!(rq->nr_numa_running - rq->nr_ideal_running))
+-			continue;
+-
+-		if ((env->flags & LBF_KEEP_SHARED) && !(rq->nr_running - rq->nr_shared_running))
+-			continue;
+-
+-		if (!busiest || pick_numa_rand(sg->group_weight))
+-			busiest = rq;
+-	}
+-
+-	return busiest;
+-}
+-
+-static bool can_do_numa_run(struct lb_env *env, struct sd_lb_stats *sds)
+-{
+-	/*
+-	 * if we're overloaded; don't pull when:
+-	 *   - the other guy isn't
+-	 *   - imbalance would become too great
+-	 */
+-	if (!sds->this_has_capacity) {
+-		if (sds->numa_has_capacity)
+-			return false;
+-	}
+-
+-	/*
+-	 * pull if we got easy trade
+-	 */
+-	if (sds->this_nr_running - sds->this_numa_running)
+-		return true;
+-
+-	/*
+-	 * If we got capacity allow stacking up on shared tasks.
+-	 */
+-	if ((sds->this_shared_running < sds->this_group_capacity) && sds->numa_shared_running) {
+-		/* There's no point in trying to move if all are here already: */
+-		if (sds->numa_shared_running == sds->this_shared_running)
+-			return false;
+-
+-		env->flags |= LBF_NUMA_SHARED;
+-		return true;
+-	}
+-
+-	/*
+-	 * pull if we could possibly trade
+-	 */
+-	if (sds->this_numa_running - sds->this_ideal_running)
+-		return true;
+-
+-	return false;
+-}
+-
+-/*
+- * introduce some controlled imbalance to perturb the state so we allow the
+- * state to improve should be tightly controlled/co-ordinated with
+- * can_migrate_task()
+- */
+-static int check_numa_busiest_group(struct lb_env *env, struct sd_lb_stats *sds)
+-{
+-	if (!sched_feat(NUMA_LB))
+-		return 0;
+-
+-	if (!sds->numa || !sds->numa_numa_running)
+-		return 0;
+-
+-	if (!can_do_numa_run(env, sds))
+-		return 0;
+-
+-	env->flags |= LBF_NUMA_RUN;
+-	env->flags &= ~LBF_KEEP_SHARED;
+-	env->imbalance = sds->numa_numa_weight / sds->numa_numa_running;
+-	sds->busiest = sds->numa;
+-	env->find_busiest_queue = find_busiest_numa_queue;
+-
+-	return 1;
+-}
+-
+-#else /* !CONFIG_NUMA_BALANCING: */
+-static inline
+-void update_sd_numa_stats(struct sched_domain *sd, struct sched_group *sg,
+-			  struct sd_lb_stats *sds, struct sg_lb_stats *sgs,
+-			  int local_group)
+-{
+-}
+-
+-static inline void update_sg_numa_stats(struct sg_lb_stats *sgs, struct rq *rq)
+-{
+-}
+-
+-static inline int check_numa_busiest_group(struct lb_env *env, struct sd_lb_stats *sds)
+-{
+-	return 0;
+-}
+-#endif
+-
+ unsigned long default_scale_freq_power(struct sched_domain *sd, int cpu)
+ {
+ 	return SCHED_POWER_SCALE;
+@@ -6301,8 +5931,6 @@ static inline void update_sg_lb_stats(struct lb_env *env,
+ 		sgs->sum_nr_running += nr_running;
+ 		sgs->sum_weighted_load += weighted_cpuload(i);
  
--	anon_vma = page_lock_anon_vma(page);
-+	anon_vma = page_lock_anon_vma_read(page);
- 	if (!anon_vma)
- 		return ret;
- 
-@@ -1501,7 +1501,7 @@ static int try_to_unmap_anon(struct page *page, enum ttu_flags flags)
- 			break;
+-		update_sg_numa_stats(sgs, rq);
+-
+ 		if (idle_cpu(i))
+ 			sgs->idle_cpus++;
  	}
- 
--	page_unlock_anon_vma(anon_vma);
-+	page_unlock_anon_vma_read(anon_vma);
- 	return ret;
+@@ -6394,13 +6022,6 @@ static bool update_sd_pick_busiest(struct lb_env *env,
+ 	return false;
  }
  
-@@ -1696,7 +1696,7 @@ static int rmap_walk_anon(struct page *page, int (*rmap_one)(struct page *,
- 	int ret = SWAP_AGAIN;
+-static void update_src_keep_shared(struct lb_env *env, bool keep_shared)
+-{
+-	env->flags &= ~LBF_KEEP_SHARED;
+-	if (keep_shared)
+-		env->flags |= LBF_KEEP_SHARED;
+-}
+-
+ /**
+  * update_sd_lb_stats - Update sched_domain's statistics for load balancing.
+  * @env: The load balancing environment.
+@@ -6433,23 +6054,6 @@ static inline void update_sd_lb_stats(struct lb_env *env,
+ 		sds->total_load += sgs.group_load;
+ 		sds->total_pwr += sg->sgp->power;
  
- 	/*
--	 * Note: remove_migration_ptes() cannot use page_lock_anon_vma()
-+	 * Note: remove_migration_ptes() cannot use page_lock_anon_vma_read()
- 	 * because that depends on page_mapped(); but not all its usages
- 	 * are holding mmap_sem. Users without mmap_sem are required to
- 	 * take a reference count to prevent the anon_vma disappearing
-@@ -1704,7 +1704,7 @@ static int rmap_walk_anon(struct page *page, int (*rmap_one)(struct page *,
- 	anon_vma = page_anon_vma(page);
- 	if (!anon_vma)
- 		return ret;
--	anon_vma_lock(anon_vma);
-+	anon_vma_lock_read(anon_vma);
- 	anon_vma_interval_tree_foreach(avc, &anon_vma->rb_root, pgoff, pgoff) {
- 		struct vm_area_struct *vma = avc->vma;
- 		unsigned long address = vma_address(page, vma);
-@@ -1712,7 +1712,7 @@ static int rmap_walk_anon(struct page *page, int (*rmap_one)(struct page *,
- 		if (ret != SWAP_AGAIN)
- 			break;
- 	}
--	anon_vma_unlock(anon_vma);
-+	anon_vma_unlock_read(anon_vma);
- 	return ret;
+-#ifdef CONFIG_NUMA_BALANCING
+-		/*
+-		 * In case the child domain prefers tasks go to siblings
+-		 * first, lower the sg capacity to one so that we'll try
+-		 * and move all the excess tasks away. We lower the capacity
+-		 * of a group only if the local group has the capacity to fit
+-		 * these excess tasks, i.e. nr_running < group_capacity. The
+-		 * extra check prevents the case where you always pull from the
+-		 * heaviest group when it is already under-utilized (possible
+-		 * with a large weight task outweighs the tasks on the system).
+-		 */
+-		if (0 && prefer_sibling && !local_group && sds->this_has_capacity) {
+-			sgs.group_capacity = clamp_val(sgs.sum_shared_running,
+-					1UL, sgs.group_capacity);
+-		}
+-#endif
+-
+ 		if (local_group) {
+ 			sds->this_load = sgs.avg_load;
+ 			sds->this = sg;
+@@ -6467,13 +6071,8 @@ static inline void update_sd_lb_stats(struct lb_env *env,
+ 			sds->busiest_has_capacity = sgs.group_has_capacity;
+ 			sds->busiest_group_weight = sgs.group_weight;
+ 			sds->group_imb = sgs.group_imb;
+-
+-			update_src_keep_shared(env,
+-				sgs.sum_shared_running <= sgs.group_capacity);
+ 		}
+ 
+-		update_sd_numa_stats(env->sd, sg, sds, &sgs, local_group);
+-
+ 		sg = sg->next;
+ 	} while (sg != env->sd->groups);
+ }
+@@ -6765,9 +6364,6 @@ out_imbalanced:
+ 		goto ret;
+ 
+ out_balanced:
+-	if (check_numa_busiest_group(env, &sds))
+-		return sds.busiest;
+-
+ ret:
+ 	env->imbalance = 0;
+ 
+@@ -6806,9 +6402,6 @@ static struct rq *find_busiest_queue(struct lb_env *env,
+ 		if (capacity && rq->nr_running == 1 && wl > env->imbalance)
+ 			continue;
+ 
+-		if ((env->flags & LBF_KEEP_SHARED) && !(rq->nr_running - rq->nr_shared_running))
+-			continue;
+-
+ 		/*
+ 		 * For the load comparisons with the other cpu's, consider
+ 		 * the weighted_cpuload() scaled with the cpu power, so that
+@@ -6847,30 +6440,13 @@ static void update_sd_failed(struct lb_env *env, int ld_moved)
+ 		 * frequent, pollute the failure counter causing
+ 		 * excessive cache_hot migrations and active balances.
+ 		 */
+-		if (env->idle != CPU_NEWLY_IDLE && !(env->flags & LBF_NUMA_RUN))
++		if (env->idle != CPU_NEWLY_IDLE)
+ 			env->sd->nr_balance_failed++;
+ 	} else
+ 		env->sd->nr_balance_failed = 0;
  }
  
+ /*
+- * See can_migrate_numa_task()
+- */
+-static int lb_max_iteration(struct lb_env *env)
+-{
+-	if (!(env->sd->flags & SD_NUMA))
+-		return 0;
+-
+-	if (env->flags & LBF_NUMA_RUN)
+-		return 0; /* NUMA_RUN may only improve */
+-
+-	if (sched_feat_numa(NUMA_FAULTS_DOWN))
+-		return 5; /* nodes^2 would suck */
+-
+-	return 3;
+-}
+-
+-/*
+  * Check this_cpu to ensure it is balanced within domain. Attempt to move
+  * tasks if there is an imbalance.
+  */
+@@ -7006,7 +6582,7 @@ more_balance:
+ 		if (unlikely(env.flags & LBF_ALL_PINNED))
+ 			goto out_pinned;
+ 
+-		if (!ld_moved && env.iteration < lb_max_iteration(&env)) {
++		if (!ld_moved && env.iteration < 3) {
+ 			env.iteration++;
+ 			env.loop = 0;
+ 			goto more_balance;
+@@ -7192,7 +6768,7 @@ static int active_load_balance_cpu_stop(void *data)
+ 			.failed		= busiest_rq->ab_failed,
+ 			.idle		= busiest_rq->ab_idle,
+ 		};
+-		env.iteration = lb_max_iteration(&env);
++		env.iteration = 3;
+ 
+ 		schedstat_inc(sd, alb_count);
+ 
+diff --git a/kernel/sched/features.h b/kernel/sched/features.h
+index 2529f05..fd9db0b 100644
+--- a/kernel/sched/features.h
++++ b/kernel/sched/features.h
+@@ -75,9 +75,6 @@ SCHED_FEAT(WAKE_ON_IDEAL_CPU,		false)
+ #ifdef CONFIG_NUMA_BALANCING
+ /* Do the working set probing faults: */
+ SCHED_FEAT(NUMA,			true)
+-SCHED_FEAT(NUMA_FAULTS_UP,		false)
+-SCHED_FEAT(NUMA_FAULTS_DOWN,		false)
+-SCHED_FEAT(NUMA_SETTLE,			false)
+ SCHED_FEAT(NUMA_BALANCE_ALL,		false)
+ SCHED_FEAT(NUMA_BALANCE_INTERNODE,		false)
+ SCHED_FEAT(NUMA_LB,			false)
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index f46405e..733f646 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -438,9 +438,6 @@ struct rq {
+ 	struct list_head cfs_tasks;
+ 
+ #ifdef CONFIG_NUMA_BALANCING
+-	unsigned long numa_weight;
+-	unsigned long nr_numa_running;
+-	unsigned long nr_ideal_running;
+ 	struct task_struct *curr_buddy;
+ #endif
+ 	unsigned long nr_shared_running;	/* 0 on non-NUMA */
 -- 
 1.7.11.7
 
