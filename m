@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751144Ab2LCFkt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 00:40:49 -0500
-Received: from na3sys009aog137.obsmtp.com ([74.125.149.18]:58114 "EHLO
-	na3sys009aog137.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750871Ab2LCFks (ORCPT
+	id S1751202Ab2LCFmM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 00:42:12 -0500
+Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:37140 "EHLO
+	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750882Ab2LCFmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 00:40:48 -0500
+	Mon, 3 Dec 2012 00:42:10 -0500
 From: Qing Xu <qingx@marvell.com>
-To: qingx@marvell.com, zhouqiao@marvell.com, sameo@linux.intel.com,
-        cxie4@marvell.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] mfd: 88pm80x: move to regmap irq base implementation
-Date: Mon,  3 Dec 2012 13:40:45 +0800
-Message-Id: <1354513245-20775-1-git-send-email-qingx@marvell.com>
+To: dmitry.torokhov@gmail.com, qingx@marvell.com, zhouqiao@marvell.com,
+        sameo@linux.intel.com, cxie4@marvell.com, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/4] onkey: 88pm80x: update irq base
+Date: Mon,  3 Dec 2012 13:42:06 +0800
+Message-Id: <1354513326-21026-1-git-send-email-qingx@marvell.com>
 X-Mailer: git-send-email 1.7.0.4
-X-OriginalArrivalTime: 03 Dec 2012 05:40:47.0412 (UTC) FILETIME=[BECCB740:01CDD118]
+X-OriginalArrivalTime: 03 Dec 2012 05:42:06.0287 (UTC) FILETIME=[EDD015F0:01CDD118]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Qing Xu <qingx@marvell.com>
 
-get irq_base for mfd sub-device
+irq base is stored in 88pm80x's drv data, we need to add irq
+base to get the correct irq num
 
 Signed-off-by: Qiao Zhou <zhouqiao@marvell.com>
 Signed-off-by: Qing Xu <qingx@marvell.com>
 ---
- drivers/mfd/88pm800.c       |    2 +-
- drivers/mfd/88pm805.c       |    1 +
- include/linux/mfd/88pm80x.h |    1 +
- 3 files changed, 3 insertions(+), 1 deletions(-)
+ drivers/input/misc/88pm80x_onkey.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/mfd/88pm800.c b/drivers/mfd/88pm800.c
-index 73b2c9f..e1525ab 100644
---- a/drivers/mfd/88pm800.c
-+++ b/drivers/mfd/88pm800.c
-@@ -343,7 +343,7 @@ static int __devinit device_irq_init_800(struct pm80x_chip *chip)
- 	ret =
- 	    regmap_add_irq_chip(chip->regmap, chip->irq, flags, -1,
- 				chip->regmap_irq_chip, &chip->irq_data);
--
-+	chip->irq_base = regmap_irq_chip_get_base(chip->irq_data);
- out:
- 	return ret;
- }
-diff --git a/drivers/mfd/88pm805.c b/drivers/mfd/88pm805.c
-index 7878013..8c9e25a 100644
---- a/drivers/mfd/88pm805.c
-+++ b/drivers/mfd/88pm805.c
-@@ -168,6 +168,7 @@ static int __devinit device_irq_init_805(struct pm80x_chip *chip)
- 	ret =
- 	    regmap_add_irq_chip(chip->regmap, chip->irq, flags, -1,
- 				chip->regmap_irq_chip, &chip->irq_data);
-+	chip->irq_base = regmap_irq_chip_get_base(chip->irq_data);
- out:
- 	return ret;
- }
-diff --git a/include/linux/mfd/88pm80x.h b/include/linux/mfd/88pm80x.h
-index a0ca0dc..904efb9 100644
---- a/include/linux/mfd/88pm80x.h
-+++ b/include/linux/mfd/88pm80x.h
-@@ -303,6 +303,7 @@ struct pm80x_chip {
- 	int id;
- 	int irq;
- 	int irq_mode;
-+	int irq_base;
- 	unsigned long wu_flag;
- 	spinlock_t lock;
- };
+diff --git a/drivers/input/misc/88pm80x_onkey.c b/drivers/input/misc/88pm80x_onkey.c
+index 7f26e7b..cc352f9 100644
+--- a/drivers/input/misc/88pm80x_onkey.c
++++ b/drivers/input/misc/88pm80x_onkey.c
+@@ -67,7 +67,7 @@ static int __devinit pm80x_onkey_probe(struct platform_device *pdev)
+ 
+ 	struct pm80x_chip *chip = dev_get_drvdata(pdev->dev.parent);
+ 	struct pm80x_onkey_info *info;
+-	int err;
++	int irq, err;
+ 
+ 	info = kzalloc(sizeof(struct pm80x_onkey_info), GFP_KERNEL);
+ 	if (!info)
+@@ -75,13 +75,14 @@ static int __devinit pm80x_onkey_probe(struct platform_device *pdev)
+ 
+ 	info->pm80x = chip;
+ 
+-	info->irq = platform_get_irq(pdev, 0);
+-	if (info->irq < 0) {
++	irq = platform_get_irq(pdev, 0);
++	if (irq < 0) {
+ 		dev_err(&pdev->dev, "No IRQ resource!\n");
+ 		err = -EINVAL;
+ 		goto out;
+ 	}
+ 
++	info->irq = irq + chip->irq_base;
+ 	info->map = info->pm80x->regmap;
+ 	if (!info->map) {
+ 		dev_err(&pdev->dev, "no regmap!\n");
 -- 
 1.7.0.4
 
