@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553Ab2LCOhQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:37:16 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43983 "EHLO
+	id S932553Ab2LCOhO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:37:14 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43973 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932471Ab2LCOhE (ORCPT
+	by vger.kernel.org with ESMTP id S932459Ab2LCOhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 09:37:04 -0500
-Message-Id: <20121203143150.770591193@decadent.org.uk>
+	Mon, 3 Dec 2012 09:37:05 -0500
+Message-Id: <20121203143151.478673837@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Dec 2012 14:32:10 +0000
+Date: Mon, 03 Dec 2012 14:32:14 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Xi Wang <xi.wang@gmail.com>, "David S. Miller" <davem@davemloft.net>
-Subject: [ 24/89] ipv4: avoid undefined behavior in do_ip_setsockopt()
+        Jan Safrata <jan.nikitenko@gmail.com>,
+        Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 28/89] usb: use usb_serial_put in usb_serial_probe errors
 In-Reply-To: <20121203143146.549859007@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,68 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xi Wang <xi.wang@gmail.com>
+From: Jan Safrata <jan.nikitenko@gmail.com>
 
-[ Upstream commit 0c9f79be295c99ac7e4b569ca493d75fdcc19e4e ]
+commit 0658a3366db7e27fa32c12e886230bb58c414c92 upstream.
 
-(1<<optname) is undefined behavior in C with a negative optname or
-optname larger than 31.  In those cases the result of the shift is
-not necessarily zero (e.g., on x86).
+The use of kfree(serial) in error cases of usb_serial_probe
+was invalid - usb_serial structure allocated in create_serial()
+gets reference of usb_device that needs to be put, so we need
+to use usb_serial_put() instead of simple kfree().
 
-This patch simplifies the code with a switch statement on optname.
-It also allows the compiler to generate better code (e.g., using a
-64-bit mask).
-
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jan Safrata <jan.nikitenko@gmail.com>
+Acked-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv4/ip_sockglue.c | 33 +++++++++++++++++++++------------
- 1 file changed, 21 insertions(+), 12 deletions(-)
+ drivers/usb/serial/usb-serial.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/net/ipv4/ip_sockglue.c b/net/ipv4/ip_sockglue.c
-index 09ff51b..0106d25 100644
---- a/net/ipv4/ip_sockglue.c
-+++ b/net/ipv4/ip_sockglue.c
-@@ -468,18 +468,27 @@ static int do_ip_setsockopt(struct sock *sk, int level,
- 	struct inet_sock *inet = inet_sk(sk);
- 	int val = 0, err;
+diff --git a/drivers/usb/serial/usb-serial.c b/drivers/usb/serial/usb-serial.c
+index 6e8c527..27483f9 100644
+--- a/drivers/usb/serial/usb-serial.c
++++ b/drivers/usb/serial/usb-serial.c
+@@ -757,7 +757,7 @@ static int usb_serial_probe(struct usb_interface *interface,
  
--	if (((1<<optname) & ((1<<IP_PKTINFO) | (1<<IP_RECVTTL) |
--			     (1<<IP_RECVOPTS) | (1<<IP_RECVTOS) |
--			     (1<<IP_RETOPTS) | (1<<IP_TOS) |
--			     (1<<IP_TTL) | (1<<IP_HDRINCL) |
--			     (1<<IP_MTU_DISCOVER) | (1<<IP_RECVERR) |
--			     (1<<IP_ROUTER_ALERT) | (1<<IP_FREEBIND) |
--			     (1<<IP_PASSSEC) | (1<<IP_TRANSPARENT) |
--			     (1<<IP_MINTTL) | (1<<IP_NODEFRAG))) ||
--	    optname == IP_MULTICAST_TTL ||
--	    optname == IP_MULTICAST_ALL ||
--	    optname == IP_MULTICAST_LOOP ||
--	    optname == IP_RECVORIGDSTADDR) {
-+	switch (optname) {
-+	case IP_PKTINFO:
-+	case IP_RECVTTL:
-+	case IP_RECVOPTS:
-+	case IP_RECVTOS:
-+	case IP_RETOPTS:
-+	case IP_TOS:
-+	case IP_TTL:
-+	case IP_HDRINCL:
-+	case IP_MTU_DISCOVER:
-+	case IP_RECVERR:
-+	case IP_ROUTER_ALERT:
-+	case IP_FREEBIND:
-+	case IP_PASSSEC:
-+	case IP_TRANSPARENT:
-+	case IP_MINTTL:
-+	case IP_NODEFRAG:
-+	case IP_MULTICAST_TTL:
-+	case IP_MULTICAST_ALL:
-+	case IP_MULTICAST_LOOP:
-+	case IP_RECVORIGDSTADDR:
- 		if (optlen >= sizeof(int)) {
- 			if (get_user(val, (int __user *) optval))
- 				return -EFAULT;
+ 		if (retval) {
+ 			dbg("sub driver rejected device");
+-			kfree(serial);
++			usb_serial_put(serial);
+ 			module_put(type->driver.owner);
+ 			return retval;
+ 		}
+@@ -829,7 +829,7 @@ static int usb_serial_probe(struct usb_interface *interface,
+ 		 */
+ 		if (num_bulk_in == 0 || num_bulk_out == 0) {
+ 			dev_info(&interface->dev, "PL-2303 hack: descriptors matched but endpoints did not\n");
+-			kfree(serial);
++			usb_serial_put(serial);
+ 			module_put(type->driver.owner);
+ 			return -ENODEV;
+ 		}
+@@ -843,7 +843,7 @@ static int usb_serial_probe(struct usb_interface *interface,
+ 		if (num_ports == 0) {
+ 			dev_err(&interface->dev,
+ 			    "Generic device with no bulk out, not allowed.\n");
+-			kfree(serial);
++			usb_serial_put(serial);
+ 			module_put(type->driver.owner);
+ 			return -EIO;
+ 		}
 
 
