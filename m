@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230Ab2LCNyn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 08:54:43 -0500
+	id S1755284Ab2LCNyq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 08:54:46 -0500
 Received: from mga11.intel.com ([192.55.52.93]:8866 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755154Ab2LCNyj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 08:54:39 -0500
+	id S1755154Ab2LCNyo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 08:54:44 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,206,1355126400"; 
-   d="scan'208";a="258229002"
+   d="scan'208";a="258229036"
 From: Alex Shi <alex.shi@intel.com>
 To: npiggin@kernel.dk, mingo@redhat.com, peterz@infradead.org
 Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Subject: [PATCH 02/10] sched: fix find_idlest_group mess logical
-Date: Mon,  3 Dec 2012 21:54:06 +0800
-Message-Id: <1354542848-29638-3-git-send-email-alex.shi@intel.com>
+Subject: [PATCH 04/10] sched: remove domain iterations in fork/exec/wake
+Date: Mon,  3 Dec 2012 21:54:08 +0800
+Message-Id: <1354542848-29638-5-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1354542848-29638-1-git-send-email-alex.shi@intel.com>
 References: <1354542848-29638-1-git-send-email-alex.shi@intel.com>
@@ -22,64 +22,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is 4 situations in the function:
-1, no task allowed group;
-	so min_load = ULONG_MAX, this_load = 0, idlest = NULL
-2, only local group task allowed;
-	so min_load = ULONG_MAX, this_load assigned, idlest = NULL
-3, only non-local task group allowed;
-	so min_load assigned, this_load = 0, idlest != NULL
-4, local group + another group are task allowed.
-	so min_load assigned, this_load assigned, idlest != NULL
+Guess the search cpu from bottom to up in domain tree come from
+commit 3dbd5342074a1e sched: multilevel sbe sbf, the purpose is
+balancing over tasks on all level domains.
 
-Current logical will return NULL in first 3 kinds of scenarios.
-And still return NULL, if idlest group is heavier then the
-local group in the 4th situation.
+This balancing cost much if there has many domain/groups in a large
+system. And force spreading task among different domains may cause
+performance issue due to bad locality.
 
-Actually, I thought groups in situation 2,3 are also eligible to host
-the task. And in 4th situation, agree to bias toward local group.
-So, has this patch.
+If we remove this code, we will get quick fork/exec/wake, plus better
+balancing among whole system, that also reduce migrations in future
+load balancing.
 
 Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- kernel/sched/fair.c |   12 +++++++++---
- 1 files changed, 9 insertions(+), 3 deletions(-)
+ kernel/sched/fair.c |   20 +-------------------
+ 1 files changed, 1 insertions(+), 19 deletions(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index df99456..b40bc2b 100644
+index 05ee54e..1faf89f 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -2953,6 +2953,7 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p,
- 		  int this_cpu, int load_idx)
- {
- 	struct sched_group *idlest = NULL, *group = sd->groups;
-+	struct sched_group *this_group = NULL;
- 	unsigned long min_load = ULONG_MAX, this_load = 0;
- 	int imbalance = 100 + (sd->imbalance_pct-100)/2;
+@@ -3136,15 +3136,9 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+ 		goto unlock;
+ 	}
  
-@@ -2987,14 +2988,19 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p,
+-	while (sd) {
++	if (sd) {
+ 		int load_idx = sd->forkexec_idx;
+ 		struct sched_group *group;
+-		int weight;
+-
+-		if (!(sd->flags & sd_flag)) {
+-			sd = sd->child;
+-			continue;
+-		}
  
- 		if (local_group) {
- 			this_load = avg_load;
--		} else if (avg_load < min_load) {
-+			this_group = group;
-+		}
-+		if (avg_load < min_load) {
- 			min_load = avg_load;
- 			idlest = group;
- 		}
- 	} while (group = group->next, group != sd->groups);
+ 		if (sd_flag & SD_BALANCE_WAKE)
+ 			load_idx = sd->wake_idx;
+@@ -3154,18 +3148,6 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+ 			goto unlock;
  
--	if (!idlest || 100*this_load < imbalance*min_load)
--		return NULL;
-+	if (this_group && idlest != this_group)
-+		/* Bias toward our group again */
-+		if (100*this_load < imbalance*min_load)
-+			idlest = this_group;
-+
- 	return idlest;
- }
- 
+ 		new_cpu = find_idlest_cpu(group, p, cpu);
+-
+-		/* Now try balancing at a lower domain level of new_cpu */
+-		cpu = new_cpu;
+-		weight = sd->span_weight;
+-		sd = NULL;
+-		for_each_domain(cpu, tmp) {
+-			if (weight <= tmp->span_weight)
+-				break;
+-			if (tmp->flags & sd_flag)
+-				sd = tmp;
+-		}
+-		/* while loop will break here if sd == NULL */
+ 	}
+ unlock:
+ 	rcu_read_unlock();
 -- 
 1.7.5.4
 
