@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754877Ab2LCNda (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 08:33:30 -0500
-Received: from mail2.gnudd.com ([213.203.150.91]:49437 "EHLO mail.gnudd.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754131Ab2LCNd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 08:33:29 -0500
-Date: Mon, 3 Dec 2012 14:31:50 +0100
-From: Davide Ciminaghi <ciminaghi@gnudd.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux@arm.linux.org.uk, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, djbw@fb.com, vinod.koul@intel.com,
-        grant.likely@secretlab.ca, rubini@gnudd.com, wim@iguana.be,
-        cjb@laptop.org, davidb@codeaurora.org, nico@fluxnic.net,
-        ben-linux@fluff.org, viresh.linux@gmail.com, rajeev-dlh.kumar@st.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        giancarlo.asnaghi@st.com
-Subject: Re: [PATCH 2/8] gpio: pl061 depends on ARM
-Message-ID: <20121203133150.GC12290@mail.gnudd.com>
-References: <1353683310-23654-1-git-send-email-ciminaghi@gnudd.com> <1353683310-23654-3-git-send-email-ciminaghi@gnudd.com> <CACRpkdZAW_O0AoZD=uOHu7BmEAAbmbc8kLqWfm7iDQrs0TgRdA@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <CACRpkdZAW_O0AoZD=uOHu7BmEAAbmbc8kLqWfm7iDQrs0TgRdA@mail.gmail.com>
-X-Face: #Q;A)@_4.#>0+_%y]7aBr:c"ndLp&#+2?]J;lkse\^)FP^Lr5@O0{)J;'nny4%74.fM'n)M
-	>ISCj.KmsL/HTxz!:Ju'pnj'Gz&.
+	id S1754588Ab2LCNgG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 08:36:06 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:52281 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758Ab2LCNgE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 08:36:04 -0500
+MIME-Version: 1.0
+Date: Mon, 3 Dec 2012 08:36:03 -0500
+Message-ID: <CAPgLHd_esknTwVv4EeehwSJz6ee5eFJ+zf6xntH-vaNwdxkrvg@mail.gmail.com>
+Subject: [PATCH -next] powerpc/85xx: use for_each_compatible_node() macro
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: galak@kernel.crashing.org, benh@kernel.crashing.org, paulus@samba.org,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com
+Cc: yongjun_wei@trendmicro.com.cn, linuxppc-dev@lists.ozlabs.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 01, 2012 at 04:11:08PM +0100, Linus Walleij wrote:
-> On Fri, Nov 23, 2012 at 4:08 PM, Davide Ciminaghi <ciminaghi@gnudd.com> wrote:
-> 
-> > From: Alessandro Rubini <rubini@gnudd.com>
-> >
-> > Commit dece904d (gpio: pl061: use chained_irq_* functions in irq
-> > handler) introduced chained_irq_enter/exit, which is only
-> > available for arch/arm and the driver won't compile elsewhere.
-> >
-> > The dependency is thus made explicit, because AMBA is used in the x86
-> > world by a PCI-to-AMBA bridge, to be submitted.
-> >
-> > Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
-> > Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
-> 
-> Patch applied with Viresh's ACK.
->
-ok thanks a lot and regards
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Davide
+Use for_each_compatible_node() macro instead of open coding it.
+
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ arch/powerpc/platforms/85xx/mpc85xx_mds.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/arch/powerpc/platforms/85xx/mpc85xx_mds.c b/arch/powerpc/platforms/85xx/mpc85xx_mds.c
+index bd12588..a7b3621 100644
+--- a/arch/powerpc/platforms/85xx/mpc85xx_mds.c
++++ b/arch/powerpc/platforms/85xx/mpc85xx_mds.c
+@@ -206,9 +206,7 @@ static void __init mpc85xx_mds_reset_ucc_phys(void)
+ 		setbits8(&bcsr_regs[7], BCSR7_UCC12_GETHnRST);
+ 		clrbits8(&bcsr_regs[8], BCSR8_UEM_MARVELL_RST);
+ 
+-		for (np = NULL; (np = of_find_compatible_node(np,
+-						"network",
+-						"ucc_geth")) != NULL;) {
++		for_each_compatible_node(np, "network", "ucc_geth") {
+ 			const unsigned int *prop;
+ 			int ucc_num;
+ 
+
