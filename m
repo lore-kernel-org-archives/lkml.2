@@ -1,60 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032Ab2LCTTQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 14:19:16 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:40917 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751375Ab2LCTTO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 14:19:14 -0500
+	id S1752049Ab2LCTUI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 14:20:08 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:35599 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751375Ab2LCTUG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 14:20:06 -0500
+Date: Mon, 3 Dec 2012 14:18:58 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Zdenek Kabelac <zkabelac@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, George Spelvin <linux@horizon.com>,
+        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
+        Thorsten Leemhuis <fedora@leemhuis.info>,
+        Tomas Racek <tracek@redhat.com>, Jan Kara <jack@suse.cz>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Josh Boyer <jwboyer@gmail.com>,
+        Valdis.Kletnieks@vt.edu, Jiri Slaby <jslaby@suse.cz>,
+        Bruno Wolff III <bruno@wolff.to>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: kswapd craziness in 3.7
+Message-ID: <20121203191858.GY24381@cmpxchg.org>
+References: <1354049315-12874-1-git-send-email-hannes@cmpxchg.org>
+ <20121128094511.GS8218@suse.de>
+ <50BCC3E3.40804@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20121202172930.GA21835@elgon.mountain>
-References: <1354418247.7995.49.camel@deadeye.wl.decadent.org.uk> <20121202172930.GA21835@elgon.mountain>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Mon, 3 Dec 2012 11:18:52 -0800
-Message-ID: <CAK5ve-Li0O5b7WL6R+RL6+=4FAV=NSLfMt99rG+k7ruTEPNVEg@mail.gmail.com>
-Subject: Re: [patch] leds: leds-lp5521: return an error code on error in probe()
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50BCC3E3.40804@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 2, 2012 at 9:29 AM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> If "buf" wasn't equal to LP5521_REG_R_CURR_DEFAULT the probe fails but
-> we still return zero.  I've changed it to print an error message and
-> return -EINVAL.
->
+Szia Zdenek,
 
-Looks fine with me, I applied it to my for-next branch.
+On Mon, Dec 03, 2012 at 04:23:15PM +0100, Zdenek Kabelac wrote:
+> Ok, bad news - I've been hit by  kswapd0 loop again -
+> my kernel git commit cc19528bd3084c3c2d870b31a3578da8c69952f3 again
+> shown kswapd0 for couple minutes on CPU.
+> 
+> It seemed to go instantly away when I've drop caches
+> (echo 3 >/proc/sys/vm/drop_cache)
+> (After that I've had over 1G free memory)
 
--Bryan
+Any chance you could retry with this patch on top?
 
-> Reported-by: Ben Hutchings <ben@decadent.org.uk>
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
->
-> diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
-> index 2bee6b9..cb8a522 100644
-> --- a/drivers/leds/leds-lp5521.c
-> +++ b/drivers/leds/leds-lp5521.c
-> @@ -788,10 +788,17 @@ static int lp5521_probe(struct i2c_client *client,
->          * LP5521_REG_ENABLE register will not have any effect - strange!
->          */
->         ret = lp5521_read(client, LP5521_REG_R_CURRENT, &buf);
-> -       if (ret || buf != LP5521_REG_R_CURR_DEFAULT) {
-> +       if (ret) {
->                 dev_err(&client->dev, "error in resetting chip\n");
->                 goto fail2;
->         }
-> +       if (buf != LP5521_REG_R_CURR_DEFAULT) {
-> +               dev_err(&client->dev,
-> +                       "unexpected data in register (expected 0x%x got 0x%x)\n",
-> +                       LP5521_REG_R_CURR_DEFAULT, buf);
-> +               ret = -EINVAL;
-> +               goto fail2;
-> +       }
->         usleep_range(10000, 20000);
->
->         ret = lp5521_detect(client);
+Thanks!
+
+---
+From: Johannes Weiner <hannes@cmpxchg.org>
+Subject: [patch] mm: vmscan: do not keep kswapd looping forever due
+ to individual uncompactable zones
+
+When a zone meets its high watermark and is compactable in case of
+higher order allocations, it contributes to the percentage of the
+node's memory that is considered balanced.
+
+This requirement, that a node be only partially balanced, came about
+when kswapd was desparately trying to balance tiny zones when all
+bigger zones in the node had plenty of free memory.  Arguably, the
+same should apply to compaction: if a significant part of the node is
+balanced enough to run compaction, do not get hung up on that tiny
+zone that might never get in shape.
+
+When the compaction logic in kswapd is reached, we know that at least
+25% of the node's memory is balanced properly for compaction (see
+zone_balanced and pgdat_balanced).  Remove the individual zone checks
+that restart the kswapd cycle.
+
+Otherwise, we may observe more endless looping in kswapd where the
+compaction code loops back to reclaim because of a single zone and
+reclaim does nothing because the node is considered balanced overall.
+
+Reported-by: Thorsten Leemhuis <fedora@leemhuis.info>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/vmscan.c | 16 ----------------
+ 1 file changed, 16 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 3b0aef4..486100f 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2806,22 +2806,6 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 			if (!populated_zone(zone))
+ 				continue;
+ 
+-			if (zone->all_unreclaimable &&
+-			    sc.priority != DEF_PRIORITY)
+-				continue;
+-
+-			/* Would compaction fail due to lack of free memory? */
+-			if (COMPACTION_BUILD &&
+-			    compaction_suitable(zone, order) == COMPACT_SKIPPED)
+-				goto loop_again;
+-
+-			/* Confirm the zone is balanced for order-0 */
+-			if (!zone_watermark_ok(zone, 0,
+-					high_wmark_pages(zone), 0, 0)) {
+-				order = sc.order = 0;
+-				goto loop_again;
+-			}
+-
+ 			/* Check if the memory needs to be defragmented. */
+ 			if (zone_watermark_ok(zone, order,
+ 				    low_wmark_pages(zone), *classzone_idx, 0))
+-- 
+1.7.11.7
