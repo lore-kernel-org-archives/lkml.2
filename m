@@ -1,57 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754801Ab2LCLEe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 06:04:34 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:59653 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754314Ab2LCLEd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 06:04:33 -0500
-Date: Mon, 3 Dec 2012 11:04:29 +0000
-From: Cong Ding <dinggnu@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Adam Buchbinder <adam.buchbinder@gmail.com>,
-        Jesper Juhl <jj@chaosbits.net>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= <uwe@kleine-koenig.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers:staging: fix compilation warning
-Message-ID: <20121203110428.GA22681@gmail.com>
-References: <1354530848-12516-1-git-send-email-dinggnu@gmail.com>
- <20121203105609.GE6568@mwanda>
+	id S1754846Ab2LCLIo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 06:08:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45286 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753172Ab2LCLIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 06:08:43 -0500
+Date: Mon, 3 Dec 2012 13:11:18 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, krkumar2@in.ibm.com,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        bhutchings@solarflare.com, jwhan@filewood.snu.ac.kr, shiyer@redhat.com
+Subject: Re: [net-next rfc v7 2/3] virtio_net: multiqueue support
+Message-ID: <20121203111118.GC26167@redhat.com>
+References: <1354011360-39479-1-git-send-email-jasowang@redhat.com>
+ <1354011360-39479-3-git-send-email-jasowang@redhat.com>
+ <87vccjj3hj.fsf@rustcorp.com.au>
+ <20845723.CY8SZ4xV0F@jason-thinkpad-t430s>
+ <20121203094735.GA23009@redhat.com>
+ <50BC7896.4010504@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121203105609.GE6568@mwanda>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <50BC7896.4010504@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 03, 2012 at 01:56:09PM +0300, Dan Carpenter wrote:
-> On Mon, Dec 03, 2012 at 10:34:08AM +0000, Cong Ding wrote:
-> > We do not allow old-style function definition.  Always spell foo(void) if
-> > a function does not take any parameters.
-> > 
+On Mon, Dec 03, 2012 at 06:01:58PM +0800, Jason Wang wrote:
+> On 12/03/2012 05:47 PM, Michael S. Tsirkin wrote:
+> > On Mon, Dec 03, 2012 at 02:05:27PM +0800, Jason Wang wrote:
+> >> On Monday, December 03, 2012 12:34:08 PM Rusty Russell wrote:
+> >>> Jason Wang <jasowang@redhat.com> writes:
+> >>>> +static const struct ethtool_ops virtnet_ethtool_ops;
+> >>>> +
+> >>>> +/*
+> >>>> + * Converting between virtqueue no. and kernel tx/rx queue no.
+> >>>> + * 0:rx0 1:tx0 2:cvq 3:rx1 4:tx1 ... 2N+1:rxN 2N+2:txN
+> >>>> + */
+> >>>> +static int vq2txq(struct virtqueue *vq)
+> >>>> +{
+> >>>> +	int index = virtqueue_get_queue_index(vq);
+> >>>> +	return index == 1 ? 0 : (index - 2) / 2;
+> >>>> +}
+> >>>> +
+> >>>> +static int txq2vq(int txq)
+> >>>> +{
+> >>>> +	return txq ? 2 * txq + 2 : 1;
+> >>>> +}
+> >>>> +
+> >>>> +static int vq2rxq(struct virtqueue *vq)
+> >>>> +{
+> >>>> +	int index = virtqueue_get_queue_index(vq);
+> >>>> +	return index ? (index - 1) / 2 : 0;
+> >>>> +}
+> >>>> +
+> >>>> +static int rxq2vq(int rxq)
+> >>>> +{
+> >>>> +	return rxq ? 2 * rxq + 1 : 0;
+> >>>> +}
+> >>>> +
+> >>> I thought MST changed the proposed spec to make the control queue always
+> >>> the last one, so this logic becomes trivial.
+> >> But it may break the support of legacy guest. If we boot a legacy single queue 
+> >> guest on a 2 queue virtio-net device. It may think vq 2 is cvq which is indeed 
+> >> rx1.
+> > Legacy guyest support should be handled by host using feature
+> > bits in the usual way: host should detect legacy guest
+> > by checking the VIRTIO_NET_F_RFS feature.
+> >
+> > If VIRTIO_NET_F_RFS is acked, cvq is vq max_virtqueue_pairs * 2.
+> > If it's not acked, cvq is vq 2.
+> >
 > 
-> You should be working against linux-next.  This driver has been
-> deleted in linux-next.
-> 
-> The subject should have been:
-> [PATCH] Staging: telephony/ixj: fix sparse warning
-> or something like that.  "drivers" is not useful.  And Staging by
-> itself is too broad.
-> 
-> I think it's a Sparse warning, not a compile warning?  Copy and
-> paste the warning into the commit message.
-sure, thanks for the suggestions. 
+> We could, but we didn't gain much from this.
 
-- cong
+It just seems cleaner and easier to understand.
 
-> 
-> Anyway, since this was deleted it doesn't matter.
-> 
-> regards,
-> dan carpenter
-> 
+> Furthermore, we need also
+> do the dynamic creation/destroying of virtqueues during feature
+> negotiation which seems not supported in qemu now.
+
+It's not *done* in qemu now, but it seems easy: just call
+virtio_add_queue for vq2 and on from virtio_net_set_features.
+As features can be modified multiple times, we
+should add virtio_del_queue and call that beforehand
+to get to the known state (two vqs).
+
+-- 
+MST
