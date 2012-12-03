@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755036Ab2LCCon (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 21:44:43 -0500
-Received: from ozlabs.org ([203.10.76.45]:52561 "EHLO ozlabs.org"
+	id S1754957Ab2LCCom (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 21:44:42 -0500
+Received: from ozlabs.org ([203.10.76.45]:55489 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754644Ab2LCCoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752153Ab2LCCoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 2 Dec 2012 21:44:37 -0500
 From: Rusty Russell <rusty@rustcorp.com.au>
 To: Jason Wang <jasowang@redhat.com>, mst@redhat.com, krkumar2@in.ibm.com,
@@ -12,12 +12,12 @@ To: Jason Wang <jasowang@redhat.com>, mst@redhat.com, krkumar2@in.ibm.com,
         linux-kernel@vger.kernel.org
 Cc: kvm@vger.kernel.org, bhutchings@solarflare.com, jwhan@filewood.snu.ac.kr,
         shiyer@redhat.com, Jason Wang <jasowang@redhat.com>
-Subject: Re: [net-next rfc v7 1/3] virtio-net: separate fields of sending/receiving queue from virtnet_info
-In-Reply-To: <1354011360-39479-2-git-send-email-jasowang@redhat.com>
-References: <1354011360-39479-1-git-send-email-jasowang@redhat.com> <1354011360-39479-2-git-send-email-jasowang@redhat.com>
+Subject: Re: [net-next rfc v7 2/3] virtio_net: multiqueue support
+In-Reply-To: <1354011360-39479-3-git-send-email-jasowang@redhat.com>
+References: <1354011360-39479-1-git-send-email-jasowang@redhat.com> <1354011360-39479-3-git-send-email-jasowang@redhat.com>
 User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Mon, 03 Dec 2012 12:25:42 +1030
-Message-ID: <87y5hfj3vl.fsf@rustcorp.com.au>
+Date: Mon, 03 Dec 2012 12:34:08 +1030
+Message-ID: <87vccjj3hj.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
@@ -25,42 +25,86 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Jason Wang <jasowang@redhat.com> writes:
-> To support multiqueue transmitq/receiveq, the first step is to separate queue
-> related structure from virtnet_info. This patch introduce send_queue and
-> receive_queue structure and use the pointer to them as the parameter in
-> functions handling sending/receiving.
-
-OK, seems like a straightforward xform: a few nit-picks:
-
-> +/* Internal representation of a receive virtqueue */
-> +struct receive_queue {
-> +	/* Virtqueue associated with this receive_queue */
-> +	struct virtqueue *vq;
+> +static const struct ethtool_ops virtnet_ethtool_ops;
 > +
-> +        struct napi_struct napi;
+> +/*
+> + * Converting between virtqueue no. and kernel tx/rx queue no.
+> + * 0:rx0 1:tx0 2:cvq 3:rx1 4:tx1 ... 2N+1:rxN 2N+2:txN
+> + */
+> +static int vq2txq(struct virtqueue *vq)
+> +{
+> +	int index = virtqueue_get_queue_index(vq);
+> +	return index == 1 ? 0 : (index - 2) / 2;
+> +}
 > +
-> +        /* Number of input buffers, and max we've ever had. */
-> +        unsigned int num, max;
-
-Weird whitespace here.
-
+> +static int txq2vq(int txq)
+> +{
+> +	return txq ? 2 * txq + 2 : 1;
+> +}
 > +
-> +	/* Work struct for refilling if we run low on memory. */
-> +	struct delayed_work refill;
+> +static int vq2rxq(struct virtqueue *vq)
+> +{
+> +	int index = virtqueue_get_queue_index(vq);
+> +	return index ? (index - 1) / 2 : 0;
+> +}
+> +
+> +static int rxq2vq(int rxq)
+> +{
+> +	return rxq ? 2 * rxq + 1 : 0;
+> +}
+> +
 
-I can't really see the justificaiton for a refill per queue.  Just have
-one work iterate all the queues if it happens, unless it happens often
-(in which case, we need to look harder at this anyway).
+I thought MST changed the proposed spec to make the control queue always
+the last one, so this logic becomes trivial.
 
->  struct virtnet_info {
->  	struct virtio_device *vdev;
-> -	struct virtqueue *rvq, *svq, *cvq;
-> +	struct virtqueue *cvq;
+> +static int virtnet_set_queues(struct virtnet_info *vi)
+> +{
+> +	struct scatterlist sg;
+> +	struct virtio_net_ctrl_rfs s;
+> +	struct net_device *dev = vi->dev;
+> +
+> +	s.virtqueue_pairs = vi->curr_queue_pairs;
+> +	sg_init_one(&sg, &s, sizeof(s));
+> +
+> +	if (!vi->has_cvq)
+> +		return -EINVAL;
+> +
+> +	if (!virtnet_send_command(vi, VIRTIO_NET_CTRL_RFS,
+> +				  VIRTIO_NET_CTRL_RFS_VQ_PAIRS_SET, &sg, 1, 0)){
+> +		dev_warn(&dev->dev, "Fail to set the number of queue pairs to"
+> +			 " %d\n", vi->curr_queue_pairs);
+> +		return -EINVAL;
+> +	}
+
+Where do we check the VIRTIO_NET_F_RFS bit?
+
+>  static int virtnet_probe(struct virtio_device *vdev)
+>  {
+> -	int err;
+> +	int i, err;
 >  	struct net_device *dev;
->  	struct napi_struct napi;
+>  	struct virtnet_info *vi;
+> +	u16 curr_queue_pairs;
+> +
+> +	/* Find if host supports multiqueue virtio_net device */
+> +	err = virtio_config_val(vdev, VIRTIO_NET_F_RFS,
+> +				offsetof(struct virtio_net_config,
+> +				max_virtqueue_pairs), &curr_queue_pairs);
+> +
+> +	/* We need at least 2 queue's */
+> +	if (err)
+> +		curr_queue_pairs = 1;
 
-You leave napi here, and take it away in the next patch.  I think it's
-supposed to go away now.
+Huh?  Just call this queue_pairs.  It's not curr_ at all...
+
+> +	if (virtio_has_feature(vdev, VIRTIO_NET_F_CTRL_VQ))
+> +		vi->has_cvq = true;
+> +
+> +	/* Use single tx/rx queue pair as default */
+> +	vi->curr_queue_pairs = 1;
+> +	vi->max_queue_pairs = curr_queue_pairs;
+
+See...
 
 Cheers,
 Rusty.
