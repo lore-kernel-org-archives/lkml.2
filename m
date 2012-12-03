@@ -1,69 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542Ab2LCK0I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 05:26:08 -0500
-Received: from borg.uu3.net ([87.99.63.19]:53037 "EHLO borg.uu3.net"
+	id S1754676Ab2LCK0Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 05:26:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31533 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754206Ab2LCK0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 05:26:07 -0500
-X-Greylist: delayed 1733 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Dec 2012 05:26:07 EST
-Date: Mon, 3 Dec 2012 10:57:13 +0100 (CET)
-From: borg@uu3.net
-X-X-Sender: borg@cube
-To: linux-kernel@vger.kernel.org
-Subject: Patch using ipset match in policy routing.
-Message-ID: <Pine.LNX.4.64.1212031042330.4310@cube>
+	id S1754598Ab2LCK0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 05:26:23 -0500
+Date: Mon, 3 Dec 2012 11:19:52 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 07/18] perf hists: Exchange order of comparing items when
+ collapsing hists
+Message-ID: <20121203101952.GA1131@krava.redhat.com>
+References: <1354171126-14387-1-git-send-email-namhyung@kernel.org>
+ <1354171126-14387-9-git-send-email-namhyung@kernel.org>
+ <20121129185257.GC1957@ghostprotocols.net>
+ <87pq2ryksr.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87pq2ryksr.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Mon, Dec 03, 2012 at 10:41:08AM +0900, Namhyung Kim wrote:
+> On Thu, 29 Nov 2012 15:52:57 -0300, Arnaldo Carvalho de Melo wrote:
+> > Em Thu, Nov 29, 2012 at 03:38:35PM +0900, Namhyung Kim escreveu:
+> >> From: Namhyung Kim <namhyung.kim@lge.com>
+> >> 
+> >> When comparing entries for collapsing put the given entry first, and
+> >> then the iterated entry.  This is for the sake of consistency and will
+> >
+> > consistency with what? and, see below:
+> >
+> >> be required by the event group report.
+> >> 
+> >> Cc: Jiri Olsa <jolsa@redhat.com>
+> >> Cc: Stephane Eranian <eranian@google.com>
+> >> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> >> ---
+> >>  tools/perf/util/hist.c | 2 +-
+> >>  1 file changed, 1 insertion(+), 1 deletion(-)
+> >> 
+> >> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+> >> index 82df1b26f0d4..161c35e7ed0e 100644
+> >> --- a/tools/perf/util/hist.c
+> >> +++ b/tools/perf/util/hist.c
+> >> @@ -433,7 +433,7 @@ static bool hists__collapse_insert_entry(struct hists *hists __maybe_unused,
+> >>  		parent = *p;
+> >>  		iter = rb_entry(parent, struct hist_entry, rb_node_in);
+> >>  
+> >> -		cmp = hist_entry__collapse(iter, he);
+> >> +		cmp = hist_entry__collapse(he, iter);
+> >>  
+> >>  		if (!cmp) {
+> >>  			he_stat__add_stat(&iter->stat, &he->stat);
+> >
+> > doesn't this now gets inconsistent with the hist_entry__collapse() call?
+> > I.e. iter first, he after, also there is the case for callchains, below,
+> > care to elaborate here?
+> 
+> I meant it by consistent with hist_entry__cmp() and didn't consider
+> he_stat__add_stat and callchain_merge things - thought that they're
+> other kind of operation.
+> 
+> I needed this change because I introduced hists__{match,link}_collapsed
+> function in the patch 8 and I found that hist_entry__cmp and
+> hist_entry__collapse received same kind of arguments in different
+> order.  Sorry about missing this in the changelog.
+> 
+> However on the second thought, I feel like I don't need those _collapsed
+> functions at all and perf diff can be converted to use collapsed rb tree
+> directly instead.  IIUC perf diff use those functions to match entries
+> by sort keys and do additional resort output rb tree by sort keys (IMHO
+> the function names - _name_resort and _insert_by_name - are misnomers)
+> to do the match.
+> 
+> Since output resorting (by period) is only needed for the baseline,
+> other data files doesn't need to do this additional step.  So I can get
+> rid of those hists__{match,link}_collapsed functions and change plain
+> hists__{match,link} functions to use collapsed (or input) rb tree
+> directly.
+>
+> Jiri, what do you think?  What am I missing? :)
 
-Here comes the patch thats makes possible to use ipset
-directly in ip rule (policy routing).
-This makes such configuration easier, because
-there is no need to have:
-iptables -t mangle -A OUTPUT -m set --set ... -j MARK --set-mark 1
-ip rule add fwmark 1 lookup 1
+feels like I'm missing something now :))
 
-Additionaly, it fixes issue with wrong src addr for unconnected
-protocols such as UDP, ICMP...
-https://bugzilla.kernel.org/show_bug.cgi?id=16216
+right now I don't see a point in having sort__need_collapse enabled
+for group report.. there seems to be no special processing as it was
+in the initial patchset..?
 
-Brief question to google confirms that few people might have
-interest in this patch.
+It seems like you could do only stadard period resort (collapsed if
+needed) and afterwards run current hists__match and hists_link function
+they are now.
 
-ftp://borg.uu3.net/home/borg/patch/linux-2.6.27.62+ipset_routing.patch
-ftp://borg.uu3.net/home/borg/patch/iproute2+ipset.patch
+All you need at the output callback is paired leader hist entry.. where
+you do the temp array magic to get the data.
 
-To install the patch, first you need to patch kernel using
-ipset (4.5 preffered). Then, you apply this patch.
-Additionaly, you need to patch iproute2 to use new match:
-ip route add ipset <name> src|dst lookup <n>
+/me going to dishonour some whiteboard.. ;)
 
-The place for this is IPSET webpage I belive, but I mailing
-it here because I have few concerns:
-- Now this patch needs IPSET to be compiled into kernel (no modules)
-   I would like to fix it
-- I had to add 2 new function to API of IPSET, and so I probably
-   doing something wrong.
-- Patch is conditional: CONFIG_IP_NF_SET
-   except in 2 places:
-   size_t payload = NLMSG_ALIGN(sizeof(struct fib_rule_hdr))
-   enum { ... } // FRA_* defs
-
-   Not sure if this is correct way.
-
-Sorry that patch is agaist old kernel. I just needed it fast
-for monday and this one is run on 2 production boxes I need
-this feature.
-
-One box is already patched and is running fine (non SMP host).
-No issues so far. I will compare CPU usage after roughty 24 hrs.
-
-Second box is SMP and I will try to patch it ASAP.
-
-Regards,
-Borg
+jirka
