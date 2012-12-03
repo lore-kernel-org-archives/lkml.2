@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755909Ab2LCOwV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:52:21 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37977 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755330Ab2LCOwR (ORCPT
+	id S1755517Ab2LCOwO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:52:14 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43694 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755337Ab2LCOgK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 09:52:17 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121203073109.GD6568@mwanda>
-References: <1354297557-24486-1-git-send-email-js1304@gmail.com>
-	<20121201183929.GA6568@mwanda>
-	<CAAmzW4NM5prCnVeaGXGzkvZzg=oQMMC2oKpjEcXuDgfebZe_Pw@mail.gmail.com>
-	<20121203073109.GD6568@mwanda>
-Date: Mon, 3 Dec 2012 23:52:15 +0900
-Message-ID: <CAAmzW4PFKjJ-TmRG0ee4P9OsJwfje_vNS7mbm_iS0+nXpbdBbQ@mail.gmail.com>
-Subject: Re: [RFC PATCH] staging, android, ashmem: invalidate pin/unpin ioctl
- for private map
-From: JoonSoo Kim <js1304@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: devel@driverdev.osuosl.org, Robert Love <rlove@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Colin Cross <ccross@android.com>, linux-kernel@vger.kernel.org,
-        Dima Zavin <dima@android.com>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Brian Swetland <swetland@google.com>,
-        Android Kernel Team <kernel-team@android.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 3 Dec 2012 09:36:10 -0500
+Message-Id: <20121203143159.168011143@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Mon, 03 Dec 2012 14:33:08 +0000
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Andre Naujoks <nautsch2@googlemail.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [ 82/89] can: bcm: initialize ifindex for timeouts without previous frame
+ reception
+In-Reply-To: <20121203143146.549859007@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/12/3 Dan Carpenter <dan.carpenter@oracle.com>:
-> On Mon, Dec 03, 2012 at 09:09:59AM +0900, JoonSoo Kim wrote:
->> Hello, Dan.
->>
->> 2012/12/2 Dan Carpenter <dan.carpenter@oracle.com>:
->> > On Sat, Dec 01, 2012 at 02:45:57AM +0900, Joonsoo Kim wrote:
->> >> @@ -614,21 +616,35 @@ static int ashmem_pin_unpin(struct ashmem_area *asma, unsigned long cmd,
->> >>       pgstart = pin.offset / PAGE_SIZE;
->> >>       pgend = pgstart + (pin.len / PAGE_SIZE) - 1;
->> >>
->> >> -     mutex_lock(&ashmem_mutex);
->> >> +     if (asma->shared_mapping) {
->> >> +             mutex_lock(&ashmem_mutex);
->> >
->> > Wouldn't we need to hold the mutex while we check the
->> > ->shared_mapping?
->>
->> I doesn't fully understand ashmem's lock semantic.
->> Code for retrieving some value of asma instance doesn't hold the mutex, now.
->> For example, in ashmem_ioctl(), asma->size, asma->prot_mask.
->> And in ashmem_pin_unpin(), there is asma->file, asma->size which is
->> retrieved without the mutex.
->> According to this semantic, the mutex doesn't need for checking
->> asma->shared_mapping.
->
-> The ashmem_ioctl() is clearly racy.  :P  asma->size can be modified
-> and read at the same time.  It's not an example to follow.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-Okay :)
-I will insert a code for holding the mutex in next spin.
+------------------
 
-Thanks!
+From: Oliver Hartkopp <socketcan@hartkopp.net>
+
+commit 81b401100c01d2357031e874689f89bd788d13cd upstream.
+
+Set in the rx_ifindex to pass the correct interface index in the case of a
+message timeout detection. Usually the rx_ifindex value is set at receive
+time. But when no CAN frame has been received the RX_TIMEOUT notification
+did not contain a valid value.
+
+Reported-by: Andre Naujoks <nautsch2@googlemail.com>
+Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ net/can/bcm.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/net/can/bcm.c b/net/can/bcm.c
+index 6f74758..969b7cd 100644
+--- a/net/can/bcm.c
++++ b/net/can/bcm.c
+@@ -1084,6 +1084,9 @@ static int bcm_rx_setup(struct bcm_msg_head *msg_head, struct msghdr *msg,
+ 		op->sk = sk;
+ 		op->ifindex = ifindex;
+ 
++		/* ifindex for timeout events w/o previous frame reception */
++		op->rx_ifindex = ifindex;
++
+ 		/* initialize uninitialized (kzalloc) structure */
+ 		hrtimer_init(&op->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+ 		op->timer.function = bcm_rx_timeout_handler;
+
+
