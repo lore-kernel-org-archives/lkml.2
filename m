@@ -1,83 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100Ab2LCG1N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 01:27:13 -0500
-Received: from vaxjo.synopsys.com ([198.182.60.75]:40984 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751024Ab2LCG1L (ORCPT
+	id S1754092Ab2LCG3o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 01:29:44 -0500
+Received: from smtprelay-b31.telenor.se ([213.150.131.20]:43366 "EHLO
+	smtprelay-b31.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751084Ab2LCG3n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 01:27:11 -0500
-Message-ID: <50BC462E.1080200@synopsys.com>
-Date: Mon, 3 Dec 2012 11:56:54 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Mon, 3 Dec 2012 01:29:43 -0500
+X-SENDER-IP: [85.230.168.206]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlllAHVGvFBV5qjOPGdsb2JhbABEhUOFI7UYFwMBAQEBODSCHgEBBAE6HCMFCwgDRhQlChqIHQq+IRSQDGEDlgCFe41A
+X-IronPort-AV: E=Sophos;i="4.83,361,1352070000"; 
+   d="scan'208";a="456958934"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Mon, 3 Dec 2012 07:31:24 +0100
+To: Dudley Du <dudl@cypress.com>
+Cc: Kamal Mostafa <kamal@canonical.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        David Solda <dso@cypress.com>, Troy Abercrombia <ta@cypress.com>,
+        customercare <customercare@cypress.com>,
+        Kyle Fazzari <git@status.e4ward.com>,
+        Mario Limonciello <mario_limonciello@dell.com>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Herton Krzesinski <herton.krzesinski@canonical.com>,
+        "dudl@cyress.com" <dudl@cyress.com>
+Subject: Re: [PATCH v3 2/4] input: Cypress PS/2 Trackpad psmouse driver
+Message-ID: <20121203063124.GA2609@polaris.bitmath.org>
+References: <1354226281-3476-1-git-send-email-kamal@canonical.com>
+ <1354226281-3476-3-git-send-email-kamal@canonical.com>
+ <B27AC323FA92C946BA36D2913DDC8E370234D97E49AE@VMBX126.ihostexchange.net>
 MIME-Version: 1.0
-To: <chrubis@suse.cz>
-CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
-        Ingo Molnar <mingo@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Partialy mapped page stays in page cache after unmap
-References: <20121030182420.GA17171@rei.Home>
-In-Reply-To: <20121030182420.GA17171@rei.Home>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.205]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <B27AC323FA92C946BA36D2913DDC8E370234D97E49AE@VMBX126.ihostexchange.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 30 October 2012 11:54 PM, chrubis@suse.cz wrote:
-> Hi!
-> I'm currently revisiting mmap related tests in LTP (Linux Test Project)
-> and I've came to the tests testing that writes to the partially
-> mapped page (at the end of mapping) are carried out correctly.
-> 
-> These tests fails because even after the object is unmapped and the
-> file-descriptor closed the pages still stays in the page cache so if
-> (possibly another process) opens and maps the file again the whole
-> content of the partial page is preserved.
-> 
-> Strictly speaking this is not a bug at least when sticking to regular
-> files as POSIX which says that the change is not written out. In this
-> case the file content is correct and forcing the data to be written out
-> by msync() makes the test pass.
+Hi Dudley,
 
-Hi Cyril,
+> Another question is that new interface input_mt_assign_slots() is introduced since 3.7-rc7 or later,
+> So we could not support the kernel releases that earlier than 3.7-rc7 with this driver.
 
-I've seen the LTP open posix mmap/{11-4,11-5} issues in the past myself
-and was something I wanted to discuss on the lists myself. Thanks for
-bringing this up.
+The patch is a submission to mainline, so of course it should be in sync with mainline.
 
-Jut to reiterate: the expectations are
-
-1. zero filling of unmapped (trailing) partial page
-2. NO Writeout (to disk) of trailing partial page.
-
-#1 is broken as your latter test case proves. We can have an alternate
-test case which starts with non empty file (preloaded with all 'a's),
-mmap partial page and then read out the trailing partial page, it will
-not be zeroes (it's probably ftruncate which does the trick in first place).
-
-Regarding #2 - I did verify that msync indeed makes it pass - but I'm
-confused why. After all it is going to commit the buffer  with 'b' to
-on-disk - so a subsequent mmap is bound to see the update to file and
-hence would make the test fail. What am  I missing here ?
-
-Thx,
--Vineet
-
- The SHM mappings seems to preserve the
-> content even after calling msync() which is, in my opinion, POSIX
-> violation although a minor one.
-> 
-> Looking at the test results I have, the file based mmap test worked fine
-> on 2.6.5 (or perhaps the page cache was working/setup differently and
-> the test succeeded by accidend).
-> 
-> Attached is a stripped down LTP test for the problem, uncommenting the
-> msync() makes the test succeed.
-> 
-> I would like to hear your opinions on this problems.
-> 
-
+Thanks.
+Henrik
