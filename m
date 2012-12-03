@@ -1,52 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751987Ab2LCSrS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 13:47:18 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:61679 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751313Ab2LCSrQ (ORCPT
+	id S1751918Ab2LCStV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 13:49:21 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:39365 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750874Ab2LCStU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 13:47:16 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121203174342.GB20260@thunk.org>
-References: <1353855815.22969.20.camel@soupermouf>
-	<1354452243.22969.48.camel@soupermouf>
-	<20121202225051.GA13685@mobil.systemanalysen.net>
-	<alpine.LFD.2.02.1212030120090.1646@soupermouf>
-	<20121203174342.GB20260@thunk.org>
-Date: Mon, 3 Dec 2012 13:47:15 -0500
-Message-ID: <CACLa4psEfdA17mcjVHhUfgmARXTZ6AVA7QJ77DymXBeVtgjZ5w@mail.gmail.com>
-Subject: Re: backing up ext4 fs, system unresponsive, thrashing like crazy
- even though swap is unused
-From: Eric Paris <eparis@parisplace.org>
-To: "Theodore Ts'o" <tytso@mit.edu>, Dimitrios Apostolou <jimis@gmx.net>,
-        Roland Eggner <edvx1@systemanalysen.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 3 Dec 2012 13:49:20 -0500
+Date: Mon, 03 Dec 2012 13:49:18 -0500 (EST)
+Message-Id: <20121203.134918.1505727312476469482.davem@davemloft.net>
+To: jasowang@redhat.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, jslaby@suse.cz
+Subject: Re: [PATCH net-next] tuntap: attach queue 0 before registering
+ netdevice
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1354504785-13036-1-git-send-email-jasowang@redhat.com>
+References: <1354504785-13036-1-git-send-email-jasowang@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 3, 2012 at 12:43 PM, Theodore Ts'o <tytso@mit.edu> wrote:
+From: Jason Wang <jasowang@redhat.com>
+Date: Mon,  3 Dec 2012 11:19:45 +0800
 
-> If you are seeing a large number of inodes still in the ext4 inode
-> cache after using drop_caches, then I'd look to see whether you have
-> something like SELinux or auditing enabled which is pinning a bunch of
-> dentries or inodes
+> We attach queue 0 after registering netdevice currently. This leads to call
+> netif_set_real_num_{tx|rx}_queues() after registering the netdevice. Since we
+> allow tun/tap has a maximum of 1024 queues, this may lead a huge number of
+> uevents to be injected to userspace since we create 2048 kobjects and then
+> remove 2046. Solve this problem by attaching queue 0 and set the real number of
+> queues before registering netdevice.
+> 
+> Reported-by: Jiri Slaby <jslaby@suse.cz>
+> Tested-by: Jiri Slaby <jslaby@suse.cz>
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-You can safely ignore this suggestion as it does make sense.  SELinux
-only grabs a references to dentries during its call to
-fs_ops->getxattr, which can't last a meaningful length of time (unless
-the filesystem is busted).  It only grabs references to inodes during
-system initialization, when you couldn't have many in core.
-
-Audit, likewise, only grabs a reference to a dentry during execve()
-and only long enough to run getxattr and does not grab any reference
-directly to an inode at all.
-
-> or whether your backup program (or some other
-> program running on your system) is keeping lots of directories or
-> inodes open for some reason.
-
-Certainly could be this suggestion though..
+Applied, thanks Jason.
