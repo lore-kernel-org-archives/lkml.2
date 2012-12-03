@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755841Ab2LCOtV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:49:21 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43770 "EHLO
+	id S1755528Ab2LCOtl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:49:41 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43752 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932234Ab2LCOgV (ORCPT
+	by vger.kernel.org with ESMTP id S932185Ab2LCOgT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 09:36:21 -0500
-Message-Id: <20121203143156.193480726@decadent.org.uk>
+	Mon, 3 Dec 2012 09:36:19 -0500
+Message-Id: <20121203143156.480273061@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Dec 2012 14:32:48 +0000
+Date: Mon, 03 Dec 2012 14:32:50 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Jan Kara <jack@suse.cz>
-Subject: [ 62/89] reiserfs: Protect reiserfs_quota_on() with write lock
+Subject: [ 64/89] reiserfs: Move quota calls out of write lock
 In-Reply-To: <20121203143146.549859007@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,47 +29,179 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jan Kara <jack@suse.cz>
 
-commit b9e06ef2e8706fe669b51f4364e3aeed58639eb2 upstream.
+commit 7af11686933726e99af22901d622f9e161404e6b upstream.
 
-In reiserfs_quota_on() we do quite some work - for example unpacking
-tail of a quota file. Thus we have to hold write lock until a moment
-we call back into the quota code.
+Calls into highlevel quota code cannot happen under the write lock. These
+calls take dqio_mutex which ranks above write lock. So drop write lock
+before calling back into quota code.
 
 Signed-off-by: Jan Kara <jack@suse.cz>
-[bwh: Backported to 3.2: there is no distinction between USRQUOTA and
- GRPQUOTA mount options here]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/reiserfs/super.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ fs/reiserfs/inode.c |   10 +++++++---
+ fs/reiserfs/stree.c |    4 ++++
+ fs/reiserfs/super.c |   18 ++++++++++++++----
+ 3 files changed, 25 insertions(+), 7 deletions(-)
 
+diff --git a/fs/reiserfs/inode.c b/fs/reiserfs/inode.c
+index f27f01a..d83736f 100644
+--- a/fs/reiserfs/inode.c
++++ b/fs/reiserfs/inode.c
+@@ -1782,8 +1782,9 @@ int reiserfs_new_inode(struct reiserfs_transaction_handle *th,
+ 
+ 	BUG_ON(!th->t_trans_id);
+ 
+-	dquot_initialize(inode);
++	reiserfs_write_unlock(inode->i_sb);
+ 	err = dquot_alloc_inode(inode);
++	reiserfs_write_lock(inode->i_sb);
+ 	if (err)
+ 		goto out_end_trans;
+ 	if (!dir->i_nlink) {
+@@ -1979,8 +1980,10 @@ int reiserfs_new_inode(struct reiserfs_transaction_handle *th,
+ 
+       out_end_trans:
+ 	journal_end(th, th->t_super, th->t_blocks_allocated);
++	reiserfs_write_unlock(inode->i_sb);
+ 	/* Drop can be outside and it needs more credits so it's better to have it outside */
+ 	dquot_drop(inode);
++	reiserfs_write_lock(inode->i_sb);
+ 	inode->i_flags |= S_NOQUOTA;
+ 	make_bad_inode(inode);
+ 
+@@ -3103,10 +3106,9 @@ int reiserfs_setattr(struct dentry *dentry, struct iattr *attr)
+ 	/* must be turned off for recursive notify_change calls */
+ 	ia_valid = attr->ia_valid &= ~(ATTR_KILL_SUID|ATTR_KILL_SGID);
+ 
+-	depth = reiserfs_write_lock_once(inode->i_sb);
+ 	if (is_quota_modification(inode, attr))
+ 		dquot_initialize(inode);
+-
++	depth = reiserfs_write_lock_once(inode->i_sb);
+ 	if (attr->ia_valid & ATTR_SIZE) {
+ 		/* version 2 items will be caught by the s_maxbytes check
+ 		 ** done for us in vmtruncate
+@@ -3170,7 +3172,9 @@ int reiserfs_setattr(struct dentry *dentry, struct iattr *attr)
+ 		error = journal_begin(&th, inode->i_sb, jbegin_count);
+ 		if (error)
+ 			goto out;
++		reiserfs_write_unlock_once(inode->i_sb, depth);
+ 		error = dquot_transfer(inode, attr);
++		depth = reiserfs_write_lock_once(inode->i_sb);
+ 		if (error) {
+ 			journal_end(&th, inode->i_sb, jbegin_count);
+ 			goto out;
+diff --git a/fs/reiserfs/stree.c b/fs/reiserfs/stree.c
+index f8afa4b..2f40a4c 100644
+--- a/fs/reiserfs/stree.c
++++ b/fs/reiserfs/stree.c
+@@ -1968,7 +1968,9 @@ int reiserfs_paste_into_item(struct reiserfs_transaction_handle *th, struct tree
+ 		       key2type(&(key->on_disk_key)));
+ #endif
+ 
++	reiserfs_write_unlock(inode->i_sb);
+ 	retval = dquot_alloc_space_nodirty(inode, pasted_size);
++	reiserfs_write_lock(inode->i_sb);
+ 	if (retval) {
+ 		pathrelse(search_path);
+ 		return retval;
+@@ -2061,9 +2063,11 @@ int reiserfs_insert_item(struct reiserfs_transaction_handle *th,
+ 			       "reiserquota insert_item(): allocating %u id=%u type=%c",
+ 			       quota_bytes, inode->i_uid, head2type(ih));
+ #endif
++		reiserfs_write_unlock(inode->i_sb);
+ 		/* We can't dirty inode here. It would be immediately written but
+ 		 * appropriate stat item isn't inserted yet... */
+ 		retval = dquot_alloc_space_nodirty(inode, quota_bytes);
++		reiserfs_write_lock(inode->i_sb);
+ 		if (retval) {
+ 			pathrelse(path);
+ 			return retval;
+diff --git a/fs/reiserfs/super.c b/fs/reiserfs/super.c
+index c101704..418bdc3 100644
 --- a/fs/reiserfs/super.c
 +++ b/fs/reiserfs/super.c
-@@ -2073,8 +2073,11 @@ static int reiserfs_quota_on(struct supe
- 	struct inode *inode;
- 	struct reiserfs_transaction_handle th;
+@@ -298,7 +298,9 @@ static int finish_unfinished(struct super_block *s)
+ 			retval = remove_save_link_only(s, &save_link_key, 0);
+ 			continue;
+ 		}
++		reiserfs_write_unlock(s);
+ 		dquot_initialize(inode);
++		reiserfs_write_lock(s);
  
--	if (!(REISERFS_SB(sb)->s_mount_opt & (1 << REISERFS_QUOTA)))
--		return -EINVAL;
-+	reiserfs_write_lock(sb);
-+	if (!(REISERFS_SB(sb)->s_mount_opt & (1 << REISERFS_QUOTA))) {
-+		err = -EINVAL;
-+		goto out;
-+	}
- 
- 	/* Quotafile not on the same filesystem? */
- 	if (path->mnt->mnt_sb != sb) {
-@@ -2116,8 +2119,10 @@ static int reiserfs_quota_on(struct supe
- 		if (err)
- 			goto out;
+ 		if (truncate && S_ISDIR(inode->i_mode)) {
+ 			/* We got a truncate request for a dir which is impossible.
+@@ -2108,13 +2110,15 @@ static int reiserfs_write_dquot(struct dquot *dquot)
+ 			  REISERFS_QUOTA_TRANS_BLOCKS(dquot->dq_sb));
+ 	if (ret)
+ 		goto out;
++	reiserfs_write_unlock(dquot->dq_sb);
+ 	ret = dquot_commit(dquot);
++	reiserfs_write_lock(dquot->dq_sb);
+ 	err =
+ 	    journal_end(&th, dquot->dq_sb,
+ 			REISERFS_QUOTA_TRANS_BLOCKS(dquot->dq_sb));
+ 	if (!ret && err)
+ 		ret = err;
+-      out:
++out:
+ 	reiserfs_write_unlock(dquot->dq_sb);
+ 	return ret;
+ }
+@@ -2130,13 +2134,15 @@ static int reiserfs_acquire_dquot(struct dquot *dquot)
+ 			  REISERFS_QUOTA_INIT_BLOCKS(dquot->dq_sb));
+ 	if (ret)
+ 		goto out;
++	reiserfs_write_unlock(dquot->dq_sb);
+ 	ret = dquot_acquire(dquot);
++	reiserfs_write_lock(dquot->dq_sb);
+ 	err =
+ 	    journal_end(&th, dquot->dq_sb,
+ 			REISERFS_QUOTA_INIT_BLOCKS(dquot->dq_sb));
+ 	if (!ret && err)
+ 		ret = err;
+-      out:
++out:
+ 	reiserfs_write_unlock(dquot->dq_sb);
+ 	return ret;
+ }
+@@ -2150,19 +2156,21 @@ static int reiserfs_release_dquot(struct dquot *dquot)
+ 	ret =
+ 	    journal_begin(&th, dquot->dq_sb,
+ 			  REISERFS_QUOTA_DEL_BLOCKS(dquot->dq_sb));
++	reiserfs_write_unlock(dquot->dq_sb);
+ 	if (ret) {
+ 		/* Release dquot anyway to avoid endless cycle in dqput() */
+ 		dquot_release(dquot);
+ 		goto out;
  	}
--	err = dquot_quota_on(sb, type, format_id, path);
-+	reiserfs_write_unlock(sb);
-+	return dquot_quota_on(sb, type, format_id, path);
- out:
-+	reiserfs_write_unlock(sb);
- 	return err;
+ 	ret = dquot_release(dquot);
++	reiserfs_write_lock(dquot->dq_sb);
+ 	err =
+ 	    journal_end(&th, dquot->dq_sb,
+ 			REISERFS_QUOTA_DEL_BLOCKS(dquot->dq_sb));
+ 	if (!ret && err)
+ 		ret = err;
+-      out:
+ 	reiserfs_write_unlock(dquot->dq_sb);
++out:
+ 	return ret;
  }
  
+@@ -2187,11 +2195,13 @@ static int reiserfs_write_info(struct super_block *sb, int type)
+ 	ret = journal_begin(&th, sb, 2);
+ 	if (ret)
+ 		goto out;
++	reiserfs_write_unlock(sb);
+ 	ret = dquot_commit_info(sb, type);
++	reiserfs_write_lock(sb);
+ 	err = journal_end(&th, sb, 2);
+ 	if (!ret && err)
+ 		ret = err;
+-      out:
++out:
+ 	reiserfs_write_unlock(sb);
+ 	return ret;
+ }
 
 
