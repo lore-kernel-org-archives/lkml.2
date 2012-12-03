@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755698Ab2LCOlh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:41:37 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43923 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755503Ab2LCOg4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 09:36:56 -0500
-Message-Id: <20121203143153.159954532@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Mon, 03 Dec 2012 14:32:26 +0000
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jacob Keller <jacob.e.keller@intel.com>,
-        Richard Cochran <richard.cochran@gmail.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 40/89] ptp: update adjfreq callback description
-In-Reply-To: <20121203143146.549859007@decadent.org.uk>
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S932368Ab2LCOlo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:41:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1894 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754712Ab2LCOll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 09:41:41 -0500
+Message-ID: <50BCBA12.5030808@redhat.com>
+Date: Mon, 03 Dec 2012 12:41:22 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux EDAC Mailing List <linux-edac@vger.kernel.org>,
+        Doug Thompson <dougthompson@xmission.com>
+Subject: [GIT PULL for 3.8-final] EDAC fixes
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+Hi Linus,
 
-------------------
+Please pull from:
+   git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac.git master
 
-From: Jacob Keller <jacob.e.keller@intel.com>
+For one EDAC core fix, and a few driver fixes (i7300, i9275x, i7core).
 
-commit 87f4d7c1d36f44b0822053b7e5dedc31fdd0ab99 upstream.
+Thank you!
+Mauro
 
-This patch updates the adjfreq callback description to include a note that the
-delta in ppb is always relative to the base frequency, and not to the current
-frequency of the hardware clock.
+The following changes since commit a0d271cbfed1dd50278c6b06bead3d00ba0a88f9:
 
-Signed-off-by: Jacob Keller <jacob.e.keller@intel.com>
-CC: Richard Cochran <richard.cochran@gmail.com>
-CC: John Stultz <john.stultz@linaro.org>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- include/linux/ptp_clock_kernel.h |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+   Linux 3.6 (2012-09-30 16:47:46 -0700)
 
-diff --git a/include/linux/ptp_clock_kernel.h b/include/linux/ptp_clock_kernel.h
-index f2dc6d8..38a9935 100644
---- a/include/linux/ptp_clock_kernel.h
-+++ b/include/linux/ptp_clock_kernel.h
-@@ -54,7 +54,8 @@ struct ptp_clock_request {
-  * clock operations
-  *
-  * @adjfreq:  Adjusts the frequency of the hardware clock.
-- *            parameter delta: Desired period change in parts per billion.
-+ *            parameter delta: Desired frequency offset from nominal frequency
-+ *            in parts per billion
-  *
-  * @adjtime:  Shifts the time of the hardware clock.
-  *            parameter delta: Desired change in nanoseconds.
+are available in the git repository at:
 
+   git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac.git master
+
+for you to fetch changes up to 42709efb3a47524c6252e1bdc85e205f7bc356fb:
+
+   i7core_edac: fix panic when accessing sysfs files (2012-11-28 06:56:00 -0200)
+
+----------------------------------------------------------------
+Jean Delvare (1):
+       i7300_edac: Fix error flag testing
+
+Mauro Carvalho Chehab (3):
+       Merge tag 'v3.6' into fixes
+       i82975x_edac: Fix dimm label initialization
+       edac: Fix the dimm filling for csrows-based layouts
+
+Prarit Bhargava (1):
+       i7core_edac: fix panic when accessing sysfs files
+
+  drivers/edac/edac_mc.c      | 14 +++++++++++---
+  drivers/edac/i7300_edac.c   |  8 ++++----
+  drivers/edac/i7core_edac.c  |  6 +++---
+  drivers/edac/i82975x_edac.c | 11 ++++-------
+  4 files changed, 22 insertions(+), 17 deletions(-)
 
