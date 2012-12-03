@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932389Ab2LCOgm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:36:42 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43805 "EHLO
+	id S932406Ab2LCOgo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:36:44 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43832 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932290Ab2LCOgd (ORCPT
+	by vger.kernel.org with ESMTP id S932367Ab2LCOgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 09:36:33 -0500
-Message-Id: <20121203143155.590807438@decadent.org.uk>
+	Mon, 3 Dec 2012 09:36:40 -0500
+Message-Id: <20121203143154.892151833@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Dec 2012 14:32:44 +0000
+Date: Mon, 03 Dec 2012 14:32:39 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dave Chinner <dchinner@redhat.com>, Mark Tinguely <tinguely@sgi.com>,
-        Ben Myers <bpm@sgi.com>
-Subject: [ 58/89] xfs: drop buffer io reference when a bad bio is built
+        Simon Wunderlich <simon.wunderlich@s2003.tu-chemnitz.de>,
+        Ignacy Gawedzki <i@lri.fr>, Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 53/89] mac80211: deinitialize ibss-internals after emptiness check
 In-Reply-To: <20121203143146.549859007@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,70 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Chinner <dchinner@redhat.com>
+From: Simon Wunderlich <simon.wunderlich@s2003.tu-chemnitz.de>
 
-commit d69043c42d8c6414fa28ad18d99973aa6c1c2e24 upstream.
+commit b78a4932f5fb11fadf41e69c606a33fa6787574c upstream.
 
-Error handling in xfs_buf_ioapply_map() does not handle IO reference
-counts correctly. We increment the b_io_remaining count before
-building the bio, but then fail to decrement it in the failure case.
-This leads to the buffer never running IO completion and releasing
-the reference that the IO holds, so at unmount we can leak the
-buffer. This leak is captured by this assert failure during unmount:
+The check whether the IBSS is active and can be removed should be
+performed before deinitializing the fields used for the check/search.
+Otherwise, the configured BSS will not be found and removed properly.
 
-XFS: Assertion failed: atomic_read(&pag->pag_ref) == 0, file: fs/xfs/xfs_mount.c, line: 273
+To make it more clear for the future, rename sdata->u.ibss to the
+local pointer ifibss which is used within the checks.
 
-This is not a new bug - the b_io_remaining accounting has had this
-problem for a long, long time - it's just very hard to get a
-zero length bio being built by this code...
+This behaviour was introduced by
+f3209bea110cade12e2b133da8b8499689cb0e2e
+("mac80211: fix IBSS teardown race")
 
-Further, the buffer IO error can be overwritten on a multi-segment
-buffer by subsequent bio completions for partial sections of the
-buffer. Hence we should only set the buffer error status if the
-buffer is not already carrying an error status. This ensures that a
-partial IO error on a multi-segment buffer will not be lost. This
-part of the problem is a regression, however.
-
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Mark Tinguely <tinguely@sgi.com>
-Signed-off-by: Ben Myers <bpm@sgi.com>
+Cc: Ignacy Gawedzki <i@lri.fr>
+Signed-off-by: Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/xfs/xfs_buf.c |   14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ net/mac80211/ibss.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/fs/xfs/xfs_buf.c b/fs/xfs/xfs_buf.c
-index 933b793..4b0b8dd 100644
---- a/fs/xfs/xfs_buf.c
-+++ b/fs/xfs/xfs_buf.c
-@@ -1197,9 +1197,14 @@ xfs_buf_bio_end_io(
- {
- 	xfs_buf_t		*bp = (xfs_buf_t *)bio->bi_private;
+--- a/net/mac80211/ibss.c
++++ b/net/mac80211/ibss.c
+@@ -965,10 +965,6 @@ int ieee80211_ibss_leave(struct ieee8021
  
--	xfs_buf_ioerror(bp, -error);
-+	/*
-+	 * don't overwrite existing errors - otherwise we can lose errors on
-+	 * buffers that require multiple bios to complete.
-+	 */
-+	if (!bp->b_error)
-+		xfs_buf_ioerror(bp, -error);
+ 	mutex_lock(&sdata->u.ibss.mtx);
  
--	if (!error && xfs_buf_is_vmapped(bp) && (bp->b_flags & XBF_READ))
-+	if (!bp->b_error && xfs_buf_is_vmapped(bp) && (bp->b_flags & XBF_READ))
- 		invalidate_kernel_vmap_range(bp->b_addr, xfs_buf_vmap_len(bp));
+-	sdata->u.ibss.state = IEEE80211_IBSS_MLME_SEARCH;
+-	memset(sdata->u.ibss.bssid, 0, ETH_ALEN);
+-	sdata->u.ibss.ssid_len = 0;
+-
+ 	active_ibss = ieee80211_sta_active_ibss(sdata);
  
- 	_xfs_buf_ioend(bp, 1);
-@@ -1279,6 +1284,11 @@ next_chunk:
- 		if (size)
- 			goto next_chunk;
- 	} else {
-+		/*
-+		 * This is guaranteed not to be the last io reference count
-+		 * because the caller (xfs_buf_iorequest) holds a count itself.
-+		 */
-+		atomic_dec(&bp->b_io_remaining);
- 		xfs_buf_ioerror(bp, EIO);
- 		bio_put(bio);
+ 	if (!active_ibss && !is_zero_ether_addr(ifibss->bssid)) {
+@@ -989,6 +985,10 @@ int ieee80211_ibss_leave(struct ieee8021
+ 		}
  	}
+ 
++	ifibss->state = IEEE80211_IBSS_MLME_SEARCH;
++	memset(ifibss->bssid, 0, ETH_ALEN);
++	ifibss->ssid_len = 0;
++
+ 	sta_info_flush(sdata->local, sdata);
+ 
+ 	/* remove beacon */
 
 
