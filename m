@@ -1,162 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785Ab2LCC3t (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 21:29:49 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:49900 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754372Ab2LCC3s (ORCPT
+	id S1754766Ab2LCCkz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 21:40:55 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:64765 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754372Ab2LCCky convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 21:29:48 -0500
+	Sun, 2 Dec 2012 21:40:54 -0500
 MIME-Version: 1.0
-In-Reply-To: <1354287821-5925-3-git-send-email-kirill.shutemov@linux.intel.com>
-References: <50B52E17.8020205@suse.cz>
-	<1354287821-5925-1-git-send-email-kirill.shutemov@linux.intel.com>
-	<1354287821-5925-3-git-send-email-kirill.shutemov@linux.intel.com>
-Date: Mon, 3 Dec 2012 10:29:47 +0800
-Message-ID: <CAA_GA1cBwQqaO-rj_4+MbmEgSsQ9H2fxAgs1T5X+Fze1shnkXQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] thp: avoid race on multiple parallel page faults to
- the same page
-From: Bob Liu <lliubbo@gmail.com>
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <87r4nc18i1.fsf@free.fr>
+References: <1354155670-6267-1-git-send-email-chao.xie@marvell.com>
+	<1354155670-6267-2-git-send-email-chao.xie@marvell.com>
+	<87r4nc18i1.fsf@free.fr>
+Date: Mon, 3 Dec 2012 10:40:53 +0800
+Message-ID: <CADApbehR9TcrGU-t2ZqT58O0OswVmJPQ1paceO6k1+ADvU026A@mail.gmail.com>
+Subject: Re: [PATCH 2/4] rtc: pxa: fix rtc caculation issue
+From: Chao Xie <xiechao.mail@gmail.com>
+To: Robert Jarzmik <robert.jarzmik@free.fr>
+Cc: Chao Xie <chao.xie@marvell.com>, a.zummo@towertech.it,
+        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+        haojian.zhuang@gmail.com, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 30, 2012 at 11:03 PM, Kirill A. Shutemov
-<kirill.shutemov@linux.intel.com> wrote:
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+On Fri, Nov 30, 2012 at 4:04 AM, Robert Jarzmik <robert.jarzmik@free.fr> wrote:
+> Chao Xie <chao.xie@marvell.com> writes:
 >
-> pmd value is stable only with mm->page_table_lock taken. After taking
-> the lock we need to check that nobody modified the pmd before change it.
+> Hi Chao Xie,
 >
-> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-
-Reviewed-by: Bob Liu <lliubbo@gmail.com>
-
-> ---
->  mm/huge_memory.c | 29 ++++++++++++++++++++++++-----
->  1 file changed, 24 insertions(+), 5 deletions(-)
+> First of all, could you please send patches from rtc-pxa to me also, as I'm
+> maintaining that driver ?
 >
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index 9d6f521..51cb8fe 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -770,17 +770,20 @@ static inline struct page *alloc_hugepage(int defrag)
->  }
->  #endif
+> Second point, the original design of the driver relies on the special case of
+> writing zeroes to WOM and DOM, as mentionned in PXA27x Developers Guide, chapter
+> 21.4.2.3.5 "Writing Alarm Registers with Invalid (Zero) Data", which states :
+>> Day-Of-Week (DOW), or Week-Of-Month (WOM), Day of Month (DOM), Month or Year
+>> fields—Zero is not valid for these fields. If zero is written into any of
+>> these fields, it is ignored while generating the alarm.
 >
-> -static void set_huge_zero_page(pgtable_t pgtable, struct mm_struct *mm,
-> +static bool set_huge_zero_page(pgtable_t pgtable, struct mm_struct *mm,
->                 struct vm_area_struct *vma, unsigned long haddr, pmd_t *pmd,
->                 unsigned long zero_pfn)
->  {
->         pmd_t entry;
-> +       if (!pmd_none(*pmd))
-> +               return false;
->         entry = pfn_pmd(zero_pfn, vma->vm_page_prot);
->         entry = pmd_wrprotect(entry);
->         entry = pmd_mkhuge(entry);
->         set_pmd_at(mm, haddr, pmd, entry);
->         pgtable_trans_huge_deposit(mm, pgtable);
->         mm->nr_ptes++;
-> +       return true;
->  }
+> I'd like to know if your patch fixes something, or is an enhancement ?
 >
->  int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
-> @@ -800,6 +803,7 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
->                                 transparent_hugepage_use_zero_page()) {
->                         pgtable_t pgtable;
->                         unsigned long zero_pfn;
-> +                       bool set;
->                         pgtable = pte_alloc_one(mm, haddr);
->                         if (unlikely(!pgtable))
->                                 return VM_FAULT_OOM;
-> @@ -810,9 +814,13 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
->                                 goto out;
->                         }
->                         spin_lock(&mm->page_table_lock);
-> -                       set_huge_zero_page(pgtable, mm, vma, haddr, pmd,
-> +                       set = set_huge_zero_page(pgtable, mm, vma, haddr, pmd,
->                                         zero_pfn);
->                         spin_unlock(&mm->page_table_lock);
-> +                       if (!set) {
-> +                               pte_free(mm, pgtable);
-> +                               put_huge_zero_page();
-> +                       }
->                         return 0;
->                 }
->                 page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
-> @@ -1046,14 +1054,16 @@ int copy_huge_pmd(struct mm_struct *dst_mm, struct mm_struct *src_mm,
->          */
->         if (is_huge_zero_pmd(pmd)) {
->                 unsigned long zero_pfn;
-> +               bool set;
->                 /*
->                  * get_huge_zero_page() will never allocate a new page here,
->                  * since we already have a zero page to copy. It just takes a
->                  * reference.
->                  */
->                 zero_pfn = get_huge_zero_page();
-> -               set_huge_zero_page(pgtable, dst_mm, vma, addr, dst_pmd,
-> +               set = set_huge_zero_page(pgtable, dst_mm, vma, addr, dst_pmd,
->                                 zero_pfn);
-> +               BUG_ON(!set); /* unexpected !pmd_none(dst_pmd) */
->                 ret = 0;
->                 goto out_unlock;
->         }
-> @@ -1110,7 +1120,7 @@ unlock:
+> Cheers.
 >
->  static int do_huge_pmd_wp_zero_page_fallback(struct mm_struct *mm,
->                 struct vm_area_struct *vma, unsigned long address,
-> -               pmd_t *pmd, unsigned long haddr)
-> +               pmd_t *pmd, pmd_t orig_pmd, unsigned long haddr)
->  {
->         pgtable_t pgtable;
->         pmd_t _pmd;
-> @@ -1139,6 +1149,9 @@ static int do_huge_pmd_wp_zero_page_fallback(struct mm_struct *mm,
->         mmu_notifier_invalidate_range_start(mm, mmun_start, mmun_end);
->
->         spin_lock(&mm->page_table_lock);
-> +       if (unlikely(!pmd_same(*pmd, orig_pmd)))
-> +               goto out_free_page;
-> +
->         pmdp_clear_flush(vma, haddr, pmd);
->         /* leave pmd empty until pte is filled */
->
-> @@ -1171,6 +1184,12 @@ static int do_huge_pmd_wp_zero_page_fallback(struct mm_struct *mm,
->         ret |= VM_FAULT_WRITE;
->  out:
->         return ret;
-> +out_free_page:
-> +       spin_unlock(&mm->page_table_lock);
-> +       mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
-> +       mem_cgroup_uncharge_page(page);
-> +       put_page(page);
-> +       goto out;
->  }
->
->  static int do_huge_pmd_wp_page_fallback(struct mm_struct *mm,
-> @@ -1317,7 +1336,7 @@ alloc:
->                 count_vm_event(THP_FAULT_FALLBACK);
->                 if (is_huge_zero_pmd(orig_pmd)) {
->                         ret = do_huge_pmd_wp_zero_page_fallback(mm, vma,
-> -                                       address, pmd, haddr);
-> +                                       address, pmd, orig_pmd, haddr);
->                 } else {
->                         ret = do_huge_pmd_wp_page_fallback(mm, vma, address,
->                                         pmd, orig_pmd, page, haddr);
 > --
-> 1.7.11.7
+> Robert
 >
+> PS: I've not checked the patch yet, that's just a prelimary comment on the patch
+> message.
 
-
-
--- 
-Regards,
---Bob
+hi
+I am sorry, i just use get_maintainer.pl to get the "to" list.
+I have go through the spec. The spec has the desctiption about the
+invalid data writing.
+I am a little confused about the "wrting 0 to DOW". The descrption is
+confused. first it said that "If zero is written into any of these
+fields, it is ignored
+while generating the alarm", then it gives a example, that if writing
+0 to DOW, "For example, if a zero is written into a DOW field, the
+alarm is set
+every day at the time written in the Hours, Minutes, and Seconds
+field”. It seems that the Year/Month/Week will not take effect.
+I will do the test on the board again, and send out the update.
