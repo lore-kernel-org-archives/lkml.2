@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064Ab2LCSi5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 13:38:57 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:42538 "EHLO bear.ext.ti.com"
+	id S1752095Ab2LCSjI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 13:39:08 -0500
+Received: from mail.tpi.com ([70.99.223.143]:2679 "EHLO mail.tpi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751752Ab2LCSiw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 13:38:52 -0500
-From: Murali Karicheri <m-karicheri2@ti.com>
-To: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>, <rob@landley.net>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        <spi-devel-general@lists.sourceforge.net>,
-        <davinci-linux-open-source@linux.davincidsp.com>,
-        <linux-keystone@list.ti.com>
-CC: Murali Karicheri <m-karicheri2@ti.com>
-Subject: [PATCH v1 0/1] spi: davinci: add OF support for the spi controller
-Date: Mon, 3 Dec 2012 13:38:37 -0500
-Message-ID: <1354559918-15105-1-git-send-email-m-karicheri2@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751752Ab2LCSjE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 13:39:04 -0500
+X-Greylist: delayed 1531 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Dec 2012 13:39:04 EST
+Message-ID: <50BCEBCB.4080303@gmail.com>
+Date: Mon, 03 Dec 2012 11:13:31 -0700
+From: Tim Gardner <rtg.canonical@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: tim.gardner@canonical.com, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+Subject: [GIT PULL] linux-firmware: cx23885: update to Version 2.06.139
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds OF support for DaVinci SPI driver. Following are changes from initial
-version based on mostly review comments.
- - removed attribute for spi version. instead, compatibility string is
-   modified to include version info.
- - pdata ptr in davinci_spi_platform_data is replaced with struct itself.
-   spi_davinci_get_pdata() now populates the pdata in the above structure
-   with parsed values from DT bindings.
- - rebased to v3.7 rc7 of linux-next
- - replaces clk_* APIs with their prepare/unprepare versions
+Ben - what is your policy on extracting firmware from Windows drivers?
+It seems like it ought to be OK, and they _are_ the same files that are
+covered under the license in WHENCE.
 
-Murali Karicheri (1):
-  spi: davinci: add OF support for the spi controller
+The following changes since commit bda53ca96deb3cacbef10a7a84bbaee2d09c7f34:
 
- .../devicetree/bindings/spi/spi-davinci.txt        |   51 ++++++++++
- drivers/spi/spi-davinci.c                          |  102 +++++++++++++++++---
- 2 files changed, 139 insertions(+), 14 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/spi/spi-davinci.txt
+  brcm: new firmware version for brcmsmac (2012-12-03 14:46:28 +0000)
 
+are available in the git repository at:
+
+  git://kernel.ubuntu.com/rtg/linux-firmware.git master
+
+for you to fetch changes up to 3c592f80519a7e82eadeccfad7a5cd1604ca463c:
+
+  cx23885: update to Version 2.06.139 (2012-12-03 11:07:43 -0700)
+
+----------------------------------------------------------------
+Tim Gardner (1):
+      cx23885: update to Version 2.06.139
+
+ v4l-cx23885-avcore-01.fw |  Bin 16382 -> 16382 bytes
+ v4l-cx23885-enc.fw       |  Bin 16382 -> 376836 bytes
+ 2 files changed, 0 insertions(+), 0 deletions(-)
+
+rtg
 -- 
-1.7.9.5
-
+Tim Gardner tim.gardner@canonical.com
