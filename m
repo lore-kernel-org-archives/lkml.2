@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752222Ab2LCH6i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 02:58:38 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:29599 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750729Ab2LCH6h (ORCPT
+	id S1753040Ab2LCIBa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 03:01:30 -0500
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:52416 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750923Ab2LCIB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 02:58:37 -0500
-Date: Mon, 3 Dec 2012 10:58:15 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Russ Anderson <rja@sgi.com>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        walter harms <wharms@bfs.de>
-Subject: [patch v4] x86, UV: integer wrap bug in uv_hub_ipi_value()
-Message-ID: <20121203075815.GA27409@elgon.mountain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121202173517.GB6568@mwanda>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Mon, 3 Dec 2012 03:01:29 -0500
+From: Neil Zhang <zhangwm@marvell.com>
+To: mingo@redhat.com, peterz@infradead.org
+Cc: cxie4@marvell.com, linux-kernel@vger.kernel.org,
+        Neil Zhang <zhangwm@marvell.com>
+Subject: [PATCH] sched/rt: don't enable runtime if already enabled
+Date: Mon,  3 Dec 2012 16:01:15 +0800
+Message-Id: <1354521675-31245-1-git-send-email-zhangwm@marvell.com>
+X-Mailer: git-send-email 1.7.4.1
+X-OriginalArrivalTime: 03 Dec 2012 08:01:19.0287 (UTC) FILETIME=[6096BC70:01CDD12C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a static checker fix.  The problem is that we store the bits
-from "uv_apicid_hibits" into "apicid" (the high 16 bits) but then we
-shift it 16 bit to the left.  "apicid" is an int so it wraps and we lose
-them.
+There are two paths will call __enable_runtime, they are enable_runtime
+and rq_online. Don't enable runtime again if it is already enabled.
+It can fix the following kernel BUG when do cpu hotplug while there
+are realtime threads running.
 
-I have also simplified uv_wakeup_secondary() a little based on a
-suggestion from Walter Harms.
+[ 3347.091644] kernel BUG at kernel/sched/rt.c:687!
+[ 3347.091674] Internal error: Oops - BUG: 0 [#1] PREEMPT SMP ARM
+[ 3347.091674] Modules linked in: cidatattydev(O) gs_diag(O) diag(O) gs_modem(O) ccinetdev(O) cci_datastub(O) citty(O) msocke
+[ 3347.091705] CPU: 1    Tainted: G           O  (3.4.5+ #439)
+[ 3347.091735] PC is at __disable_runtime+0x1e4/0x240
+[ 3347.091735] LR is at __disable_runtime+0x1dc/0x240
+[ 3347.091735] pc : [<c0162124>]    lr : [<c016211c>]    psr:
+	a0000093
+[ 3347.091735] sp : e0061dc8  ip : c0807861  fp : c07a9740
+[ 3347.091766] r10: c1a0b740  r9 : ffffffff  r8 : fd050f80
+[ 3347.091766] r7 : 00000002  r6 : 000003f8  r5 : c1a13740  r4 : c1a137d8
+[ 3347.091766] r3 : ffffffff  r2 : e0061dbc  r1 : c06b11b6  r0 : 00000037
+[ 3347.091796] Flags: NzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+[ 3347.091796] Control: 10c53c7d  Table: 21e5004a  DAC: 00000015
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Neil Zhang <zhangwm@marvell.com>
 ---
-v2: Style fix.  Don't use ulong.
-v3: Another style fix to uv_wakeup_secondary() based on Walter Harms's
-suggestion.
-v4: Fix typo in commit message.
+ kernel/sched/rt.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-I don't have this hardware so I can't test it.  There may also be other
-bugs which this patch does not addressed.  These files are only compiled
-on x86_64 and "unsigned long" is used throughout to mean 64 bits.
-
-diff --git a/arch/x86/include/asm/uv/uv_hub.h b/arch/x86/include/asm/uv/uv_hub.h
-index 21f7385..e7a83d5 100644
---- a/arch/x86/include/asm/uv/uv_hub.h
-+++ b/arch/x86/include/asm/uv/uv_hub.h
-@@ -577,7 +577,7 @@ static unsigned long uv_hub_ipi_value(int apicid, int vector, int mode)
- {
- 	apicid |= uv_apicid_hibits;
- 	return (1UL << UVH_IPI_INT_SEND_SHFT) |
--			((apicid) << UVH_IPI_INT_APIC_ID_SHFT) |
-+			((unsigned long)apicid << UVH_IPI_INT_APIC_ID_SHFT) |
- 			(mode << UVH_IPI_INT_DELIVERY_MODE_SHFT) |
- 			(vector << UVH_IPI_INT_VECTOR_SHFT);
- }
-diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
-index 8cfade9..251b36f 100644
---- a/arch/x86/kernel/apic/x2apic_uv_x.c
-+++ b/arch/x86/kernel/apic/x2apic_uv_x.c
-@@ -194,16 +194,10 @@ static int __cpuinit uv_wakeup_secondary(int phys_apicid, unsigned long start_ri
- 	pnode = uv_apicid_to_pnode(phys_apicid);
- 	phys_apicid |= uv_apicid_hibits;
- 	val = (1UL << UVH_IPI_INT_SEND_SHFT) |
--	    (phys_apicid << UVH_IPI_INT_APIC_ID_SHFT) |
--	    ((start_rip << UVH_IPI_INT_VECTOR_SHFT) >> 12) |
--	    APIC_DM_INIT;
--	uv_write_global_mmr64(pnode, UVH_IPI_INT, val);
--
--	val = (1UL << UVH_IPI_INT_SEND_SHFT) |
--	    (phys_apicid << UVH_IPI_INT_APIC_ID_SHFT) |
--	    ((start_rip << UVH_IPI_INT_VECTOR_SHFT) >> 12) |
--	    APIC_DM_STARTUP;
--	uv_write_global_mmr64(pnode, UVH_IPI_INT, val);
-+	    ((unsigned long)phys_apicid << UVH_IPI_INT_APIC_ID_SHFT) |
-+	    ((start_rip << UVH_IPI_INT_VECTOR_SHFT) >> 12);
-+	uv_write_global_mmr64(pnode, UVH_IPI_INT, val | APIC_DM_INIT);
-+	uv_write_global_mmr64(pnode, UVH_IPI_INT, val | APIC_DM_STARTUP);
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 418feb0..6525e5b 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -722,9 +722,11 @@ static void __enable_runtime(struct rq *rq)
  
- 	atomic_set(&init_deasserted, 1);
- #endif
+ 		raw_spin_lock(&rt_b->rt_runtime_lock);
+ 		raw_spin_lock(&rt_rq->rt_runtime_lock);
+-		rt_rq->rt_runtime = rt_b->rt_runtime;
+-		rt_rq->rt_time = 0;
+-		rt_rq->rt_throttled = 0;
++		if (rt_rq->rt_runtime == RUNTIME_INF) {
++			rt_rq->rt_runtime = rt_b->rt_runtime;
++			rt_rq->rt_time = 0;
++			rt_rq->rt_throttled = 0;
++		}
+ 		raw_spin_unlock(&rt_rq->rt_runtime_lock);
+ 		raw_spin_unlock(&rt_b->rt_runtime_lock);
+ 	}
+-- 
+1.7.4.1
 
