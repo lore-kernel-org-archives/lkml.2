@@ -1,199 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751079Ab2LCF3K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 00:29:10 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:37163 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750712Ab2LCF3I (ORCPT
+	id S1751374Ab2LCF3c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 00:29:32 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:43112 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750801Ab2LCF3b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 00:29:08 -0500
-Date: Mon, 3 Dec 2012 06:29:02 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org, dhaval.giani@gmail.com,
-        keescook@chromium.org, edumazet@google.com, laijs@cn.fujitsu.com,
-        wangyun@linux.vnet.ibm.com, fweisbec@gmail.com, ananaza@iki.fi,
-        paul.gortmaker@linaro.org
-Subject: Re: [GIT PULL rcu/next] RCU commits for 3.8
-Message-ID: <20121203052902.GA27014@gmail.com>
-References: <20121120044615.GA11440@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121120044615.GA11440@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 3 Dec 2012 00:29:31 -0500
+Subject: RE: [PATCH] EXTCON: Get and set cable properties
+From: anish kumar <anish198519851985@gmail.com>
+To: "Tc, Jenny" <jenny.tc@intel.com>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+In-Reply-To: <20ADAB092842284E95860F279283C564E29388@BGSMSX101.gar.corp.intel.com>
+References: <1354052956-3394-1-git-send-email-jenny.tc@intel.com>
+	 <50BBFCB8.4080903@samsung.com>
+	 <20ADAB092842284E95860F279283C564E29388@BGSMSX101.gar.corp.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 02 Dec 2012 21:29:24 -0800
+Message-ID: <1354512564.1600.117.camel@anish-Inspiron-N5050>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2012-12-03 at 01:53 +0000, Tc, Jenny wrote:
+> > We discussed about this patch and then suggest some method to resolve this
+> > issue by Myungjoo Ham. Why don't you write additional feature or your
+> > opinion based on following patch by Myungjoo Ham?
+> > -
+> > http://git.kernel.org/?p=linux/kernel/git/mzx/extcon.git;a=commitdiff;h=73
+> > 12b79d69a2b9f06af4f1254bc4644751e3e3ea
+> > 
+> 
+> I replied on the thread and pointed out issues that I see with this solution. IMHO
+> It's not fair to register a cable with power_supply/regulator/charger manager just to
+> expose the cable properties. 
+Don't we do that with already in allmost all drivers?Like if I have a
+keyboard driver and then I register with input framework and if the
+keyboard driver needs clk services then I register with clk framework as
+well and same with other services needed by keyboard driver.I think it
+makes sense for a cable to register with different framework if it
+supports that functionality as those services also would know that we
+have a cable with so and so property.
+> 
+> > 
+> > On 11/28/2012 06:49 AM, Jenny TC wrote:
+> > > Existing EXTCON implementation doesn't give a mechanim to read the
+> > > cable properties and extra states a cable needs to support. There are
+> > > scenarios where a cable can have more than two
+> > > states(CONNECT/DISCONNECT/SUSPEND/RESUME etc) and can have some
+> > > properties associated with cables(mA)
+> > >
+> > > This patch introduces interface to get and set cable properties from
+> > > EXTCON framework. The cable property can be set either by the extcon
+> > > cable provider or by other subsystems who know the cable properties
+> > > using eth API extcon_cable_set_data()
+> > >
+> > > When the consumer gets a notification from the extcon, it can use the
+> > > extcon_cable_get_data() to get the cable properties irrespective of
+> > > who provides the cable data.
+> > >
+> > > This gives a single interface for setting and getting the cable properties.
+> > >
+> > > Signed-off-by: Jenny TC <jenny.tc@intel.com>
+> > > ---
+> > >  drivers/extcon/extcon-class.c |   30
+> > ++++++++++++++++++++++++++++++
+> > >  include/linux/extcon.h        |   39
+> > +++++++++++++++++++++++++++++++++++++++
+> > >  2 files changed, 69 insertions(+)
+> > >
+> > > diff --git a/drivers/extcon/extcon-class.c
+> > > b/drivers/extcon/extcon-class.c index d398821..304f343 100644
+> > > --- a/drivers/extcon/extcon-class.c
+> > > +++ b/drivers/extcon/extcon-class.c
+> > > @@ -545,6 +545,36 @@ int extcon_unregister_notifier(struct extcon_dev
+> > > *edev,  }  EXPORT_SYMBOL_GPL(extcon_unregister_notifier);
+> > >
+> > > +/**
+> > > + * extcon_cable_set_data() - Set the data structure for a cable
+> > > + * @edev:	the extcon device
+> > > + * @cable_index:	the cable index of the correspondant
+> > > + * @type:	type of the data structure
+> > > + * @data:
+> > > + */
+> > > +void extcon_cable_set_data(struct extcon_dev *edev, int cable_index,
+> > > +			   enum extcon_cable_name type,
+> > > +			   union extcon_cable_data data)
+> > > +{
+> > > +	edev->cables[cable_index].type = type;
+> > > +	edev->cables[cable_index].data = data; }
+> > > +
+> > > +/**
+> > > + * extcon_cable_get_data() - Get the data structure for a cable
+> > > + * @edev:	the extcon device
+> > > + * @cable_index:	the cable index of the correspondant
+> > > + * @type:	type of the data structure
+> > > + * @data:	the corresponding data structure (e.g., regulator)
+> > > + */
+> > > +void extcon_cable_get_data(struct extcon_dev *edev, int cable_index,
+> > > +			   enum extcon_cable_name *type,
+> > > +			   union extcon_cable_data *data)
+> > > +{
+> > > +	*type = edev->cables[cable_index].type;
+> > > +	*data = edev->cables[cable_index].data; }
+> > > +
+> > >  static struct device_attribute extcon_attrs[] = {
+> > >  	__ATTR(state, S_IRUGO | S_IWUSR, state_show, state_store),
+> > >  	__ATTR_RO(name),
+> > > diff --git a/include/linux/extcon.h b/include/linux/extcon.h index
+> > > 2c26c14..4556cc5 100644
+> > > --- a/include/linux/extcon.h
+> > > +++ b/include/linux/extcon.h
+> > > @@ -135,6 +135,19 @@ struct extcon_dev {
+> > >  	struct device_attribute *d_attrs_muex;  };
+> > >
+> > > +/* FIXME: Is this the right place for this structure definition?
+> > > + * Do we need to move it to power_supply.h?
+> > > + */
+> > > +struct extcon_chrgr_cable_props {
+> > > +	unsigned long state;
+> > > +	int mA;
+> > > +};
+> > 
+> > As I said, extcon provider driver didn't provide directly charging current(int
+> > mA) and some state(unsigned long state) because the extcon provider
+> > driver(Micro USB interface controller device or other device related to
+> > external connector) haven't mechanism which detect dynamically charging
+> > current immediately. If you wish to provide charging current data to extcon
+> > consumer driver or framework, you should use regulator/power_supply
+> > framework or other method in extcon provider driver.
+> > 
+> > The patch suggested by Myungjoo Ham define following struct:
+> > 	union extcon_cable_data {
+> > 		struct regualtor *reg;  /* EXTCON_CT_REGULATOR */
+> > 		struct power_supply *psy; /* EXTCON_CT_PSY */
+> > 		struct charger_cable *charger; /*
+> > EXTCON_CT_CHARGER_MANAGER */
+> > 		/* Please add accordingly with enum extcon_cable_type */
+> > 	};
+> > 
+> > Also if you want to define 'struct extcon_chrgr_cable_props', you should
+> > certainly show how detect dynamically charging current or state.
+> > 
+> > > +
+> > > +union extcon_cable_data {
+> > > +	struct extcon_chrgr_cable_props chrgr_cbl_props;
+> > > +	/* Please add accordingly*/
+> > > +};
+> > > +
+> > >  /**
+> > >   * struct extcon_cable	- An internal data for each cable of extcon
+> > device.
+> > >   * @edev	The extcon device
+> > > @@ -143,6 +156,8 @@ struct extcon_dev {
+> > >   * @attr_name	"name" sysfs entry
+> > >   * @attr_state	"state" sysfs entry
+> > >   * @attrs	Array pointing to attr_name and attr_state for attr_g
+> > > + * @type:	The type of @data.
+> > > + * @data:	The data structure representing the status and states of this
+> > cable.
+> > >   */
+> > >  struct extcon_cable {
+> > >  	struct extcon_dev *edev;
+> > > @@ -153,6 +168,11 @@ struct extcon_cable {
+> > >  	struct device_attribute attr_state;
+> > >
+> > >  	struct attribute *attrs[3]; /* to be fed to attr_g.attrs */
+> > > +
+> > > +	union extcon_cable_data data;
+> > > +
+> > > +	/* extcon cable type */
+> > > +	enum extcon_cable_name type;
+> > It isn't correct. The 'enum extocn_cable_name' isn't type. For example, the
+> > list of charger cable are TA/USB/Fast Charger/Slow Charger and so on.
+> > The charger cables are charger type so, they has
+> > EXTCON_CT_CHARGER_MANAGER as cable type.
+> > 
+> > The patch suggested by Myungjoo Ham define following struct:
+> > 	enum extcon_cable_type {
+> > 	       EXTCON_CT_NONE = 0,
+> > 	       EXTCON_CT_REGULATOR,
+> > 	       EXTCON_CT_PSY,
+> > 	       EXTCON_CT_CHARGER_MANAGER,
+> > 	       /* Please add other related standards when needed */
+> > 	};
+> > 
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-> Hello, Ingo,
-> 
-> The major features of this series are:
-> 
-> 1.	A first version of no-callbacks CPUs.  This version prohibits
-> 	offlining CPU 0, but only when enabled via CONFIG_RCU_NOCB_CPU=y.
-> 	Relaxing this constraint is in progress, but not yet ready
-> 	for prime time.  These commits were posted to LKML at
-> 	https://lkml.org/lkml/2012/10/30/724, and are at branch rcu/nocb.
-> 
-> 2.	Changes to SRCU that allows statically initialized srcu_struct
-> 	structures.  These commits were posted to LKML at
-> 	https://lkml.org/lkml/2012/10/30/296, and are at branch rcu/srcu.
-> 
-> 3.	Restructuring of RCU's debugfs output.  These commits were posted
-> 	to LKML at https://lkml.org/lkml/2012/10/30/341, and are at
-> 	branch rcu/tracing.
-> 
-> 4.	Additional CPU-hotplug/RCU improvements, posted to LKML at
-> 	https://lkml.org/lkml/2012/10/30/327, and are at branch rcu/hotplug.
-> 	Note that the commit eliminating __stop_machine() was judged to
-> 	be too-high of risk, so is deferred to 3.9.
-> 
-> 5.	Changes to RCU's idle interface, most notably a new module
-> 	parameter that redirects normal grace-period operations to
-> 	their expedited equivalents.  These were posted to LKML at
-> 	https://lkml.org/lkml/2012/10/30/739, and are at branch rcu/idle.
-> 
-> 6.	Additional diagnostics for RCU's CPU stall warning facility,
-> 	posted to LKML at https://lkml.org/lkml/2012/10/30/315, and
-> 	are at branch rcu/stall.  The most notable change reduces the
-> 	default RCU CPU stall-warning time from 60 seconds to 21 seconds,
-> 	so that it once again happens sooner than the softlockup timeout.
-> 
-> 7.	Documentation updates, which were posted to LKML at
-> 	https://lkml.org/lkml/2012/10/30/280, and are at branch rcu/doc.
-> 	A couple of late-breaking changes were posted at
-> 	https://lkml.org/lkml/2012/11/16/634 and
-> 	https://lkml.org/lkml/2012/11/16/547.
-> 
-> 8.	Miscellaneous fixes, which were posted to LKML at
-> 	https://lkml.org/lkml/2012/10/30/309, along with a late-breaking
-> 	change posted at Fri, 16 Nov 2012 11:26:25 -0800 with message-ID
-> 	<20121116192625.GA447@linux.vnet.ibm.com>, but which lkml.org
-> 	seems to have missed.  These are at branch rcu/fixes.
-> 
-> 9.	Finally, a fix for an lockdep-RCU splat was posted to LKML
-> 	at https://lkml.org/lkml/2012/11/7/486.  This is at rcu/next.
-> 
-> All executable code in these commits have been subject to -next testing.
-> (Fixes to trailing whitespace problems in one of the Documentation files
-> has not yet been, but as far as I know -next testing does not do anything
-> with Documentation files -- and testing will happen as soon as -next testing
-> restarts.)
-> 
-> These changes are available in the git repository at:
->   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/next
-> 
-> 							Thanx, Paul
-> 
-> ------------------>
-> Antti P Miettinen (1):
->       rcu: Add a module parameter to force use of expedited RCU primitives
-> 
-> Dhaval Giani (1):
->       rcu: Correct the name of a reference in list of RCU papers
-> 
-> Eric Dumazet (1):
->       rcu: Fix batch-limit size problem
-> 
-> Frederic Weisbecker (2):
->       rcu: Remove rcu_switch()
->       rcu: Fix unrecovered RCU user mode in syscall_trace_leave()
-> 
-> Kees Cook (1):
->       rcu: Update docs to include kfree_rcu()
-> 
-> Lai Jiangshan (4):
->       srcu: Credit Lai Jiangshan with SRCU rewrite
->       srcu: Export process_srcu()
->       srcu: Add DEFINE_SRCU()
->       rcutorture: Use DEFINE_STATIC_SRCU()
-> 
-> Michael Wang (12):
->       rcu: Create directory for each flavor of rcu
->       rcu: Fundamental facility for 'CPU units sequence reading'
->       rcu: Optimize the 'rcudata' for RCU trace
->       rcu: Optimize the 'rcudata.csv' for RCU trace
->       rcu: Optimize the 'rcu_pending' for RCU trace
->       rcu: Replace the old interface with the new one
->       rcu: Remove the interface "rcudata.csv"
->       rcu: split 'rcubarrier' to each flavor
->       rcu: split 'rcuboost' to each flavor
->       rcu: split 'rcugp' to each flavor
->       rcu: split 'rcuhier' to each flavor
->       rcu: Remove old debugfs interfaces and also RCU flavor name
-> 
-> Paul E. McKenney (27):
->       rcu: Accelerate callbacks for CPU initiating a grace period
->       Documentation: Fix memory-barriers.txt example
->       rcu: Fix comment about _rcu_barrier()/orphanage exclusion
->       rcu: Make rcutorture give diagnostics if CPU offline fails
->       rcu: Update RCU_FAST_NO_HZ help text
->       rcu: Fix precedence error in cpu_needs_another_gp()
->       rcu: Print remote CPU's stacks in stall warnings
->       rcu: Add grace-period information to RCU CPU stall warnings
->       rcu: Dump number of callbacks in stall warning messages
->       rcu: Document alternative RCU/reference-count algorithms
->       rcu: Rename ->onofflock to ->orphan_lock
->       rcu: Avoid counter wrap in synchronize_sched_expedited()
->       rcu: Move synchronize_sched_expedited() state to rcu_state
->       rcu: Instrument synchronize_rcu_expedited() for debugfs tracing
->       rcu: Fix tracing formatting
->       rcu: Add tracing for synchronize_sched_expedited()
->       rcu: Remove list_for_each_continue_rcu()
->       rcu: Add new rcutorture module parameters to start/end test messages
->       rcu: Clarify memory-ordering properties of grace-period primitives
->       rcu: Fix TINY_RCU rcu_is_cpu_rrupt_from_idle check
->       rcu: Reduce default RCU CPU stall warning timeout
->       rcu: Update documentation for TREE_RCU debugfs tracing
->       rcu: Add documentation for the new rcuexp debugfs trace file
->       Merge branches 'urgent.2012.10.27a', 'doc.2012.11.16a', 'fixes.2012.11.13a', 'srcu.2012.10.27a', 'stall.2012.11.13a', 'tracing.2012.11.08a' and 'idle.2012.10.24a' into HEAD
->       rcu: Add callback-free CPUs
->       rcu: Separate accounting of callbacks from callback-free CPUs
->       sched: Mark RCU reader in sched_show_task()
-> 
-> Paul Gortmaker (1):
->       rcu: Wordsmith help text for RCU_USER_QS kernel parameter
-> 
->  Documentation/RCU/RTFP.txt          |    2 +-
->  Documentation/RCU/checklist.txt     |   17 +-
->  Documentation/RCU/listRCU.txt       |    2 +-
->  Documentation/RCU/rcuref.txt        |   61 +++++-
->  Documentation/RCU/trace.txt         |  396 ++++++++++++++++++---------------
->  Documentation/RCU/whatisRCU.txt     |   17 +-
->  Documentation/kernel-parameters.txt |   21 ++
->  Documentation/memory-barriers.txt   |    9 +-
->  arch/um/drivers/mconsole_kern.c     |    2 +-
->  arch/x86/kernel/ptrace.c            |    7 +
->  include/linux/rculist.h             |   17 --
->  include/linux/rcupdate.h            |   27 +++
->  include/linux/sched.h               |   10 +-
->  include/linux/srcu.h                |   34 +++
->  include/trace/events/rcu.h          |    1 +
->  init/Kconfig                        |   41 +++-
->  kernel/ksysfs.c                     |   18 ++
->  kernel/rcu.h                        |    2 +
->  kernel/rcupdate.c                   |    3 +
->  kernel/rcutiny.c                    |    2 +-
->  kernel/rcutiny_plugin.h             |    5 +-
->  kernel/rcutorture.c                 |   54 ++---
->  kernel/rcutree.c                    |  283 ++++++++++++++++++------
->  kernel/rcutree.h                    |   67 ++++++-
->  kernel/rcutree_plugin.h             |  415 ++++++++++++++++++++++++++++++++++-
->  kernel/rcutree_trace.c              |  330 ++++++++++++++--------------
->  kernel/sched/core.c                 |   14 +-
->  kernel/srcu.c                       |   16 +-
->  lib/Kconfig.debug                   |    2 +-
->  29 files changed, 1352 insertions(+), 523 deletions(-)
-
-Pulled into tip:core/rcu, thanks a lot Paul!
-
-There was a minor conflict in arch/x86/kernel/ptrace.c that I've 
-resolved.
-
-Thanks,
-
-	Ingo
