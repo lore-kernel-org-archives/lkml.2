@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754524Ab2LCBEm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 20:04:42 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:52383 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754225Ab2LCBEl (ORCPT
+	id S1754482Ab2LCBMb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 20:12:31 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:55611 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754224Ab2LCBMa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 20:04:41 -0500
-Date: Mon, 3 Dec 2012 12:04:29 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Roland Dreier <roland@purestorage.com>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: linux-next: manual merge of the target-updates tree with Linus'
- tree
-Message-Id: <20121203120429.e988d904019ac7ebd609e25e@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__3_Dec_2012_12_04_29_+1100_Nk19MFeqDeoNY5t_"
+	Sun, 2 Dec 2012 20:12:30 -0500
+X-AuditID: 9c930197-b7bd3ae000003f1c-c5-50bbfc7b853f
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 03/18] perf tools: Keep group information
+References: <1354171126-14387-1-git-send-email-namhyung@kernel.org>
+	<1354171126-14387-5-git-send-email-namhyung@kernel.org>
+	<20121129143303.GJ1096@krava.brq.redhat.com>
+	<1354201134.1630.41.camel@leonhard>
+	<20121129150220.GL1096@krava.brq.redhat.com>
+	<1354201751.1630.45.camel@leonhard>
+	<20121129190922.GD1957@ghostprotocols.net>
+Date: Mon, 03 Dec 2012 10:12:27 +0900
+In-Reply-To: <20121129190922.GD1957@ghostprotocols.net> (Arnaldo Carvalho de
+	Melo's message of "Thu, 29 Nov 2012 16:09:22 -0300")
+Message-ID: <871uf8ym4k.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__3_Dec_2012_12_04_29_+1100_Nk19MFeqDeoNY5t_
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Arnaldo,
 
-Hi Nicholas,
+On Thu, 29 Nov 2012 16:09:22 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Fri, Nov 30, 2012 at 12:09:11AM +0900, Namhyung Kim escreveu:
+>> 2012-11-29 (목), 16:02 +0100, Jiri Olsa:
+>> > > You mean adding 'evsel->nr_members > 1' to this function?  For some
+>> > > reason, I'd like to treat non-group events as group leaders so I dropped
+>> > > that check from the function.
+>> > 
+>> > nope, the change is ok, I meant updating automated tests in tests/parse-events.c
+>> 
+>> Ah, okay.  Always forgot to update the test. :(  Will add.
+>
+> Also consider adding more tests, perhaps for the formatting, i.e.
+> calling those hpp functions and then checking that the resulting
+> formatted string is the one expected.
+>
+> One thing I need to do is to create a test that uses slang to write a
+> line with callchains and then, without updating the screen, check if
+> what is buffered to refresh the screen is what we expect, so that we can
+> check that that '+' char isn't lost like it happened twice :-)
 
-Today's linux-next merge of the target-updates tree got a conflict in
-drivers/target/target_core_transport.c between commit 3ea160b3e8f0
-("target: Fix handling of aborted commands") from Linus' tree and commit
-019c4ca62148 ("target: kill dev->dev_task_attr_type") from the
-target-updates tree.
+Yep, will try.
 
-I just use the target-updates tree version and can carry the fix as
-necessary (no action is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__3_Dec_2012_12_04_29_+1100_Nk19MFeqDeoNY5t_
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQu/qdAAoJEECxmPOUX5FEUS4P/1FU/6kilyuhQHzVb9aOZAAs
-LzvtNcEsZNCDK0N0s/Minrb/GvCAiAxqoDgHdsT6zEG29D3PYDJi6ejOT5BGhT9n
-/ZsPTFlZ5qaMJhYkoGKfN1k6LsBgnEs223ePkT1YdQ3L7T+5t0SQYz89gLMTOtjM
-nEsKkG21Vnycm8kNED6RxfONIoNl+myWBEoEPb62h43IaCIS/CBCvQnqQIOAzByE
-m9xLLNN2gXKyH3m1ICt8R+AlcttmkDUGagOCqpW3QzsGBg+HmpC/I463lnY4p+Ja
-tv7HeIuvtUHRUeSIzGYRJ8+oJZ8yFoHEsQDHvZGUgQNpJJ1/5TOufACvUS+o5gKH
-1TXjbg7TQ5FvD2kIuITCPSvg8QDb6tqRpy7YdaICAKpoJeSxPHdUfoKP2XB+EzIU
-bNb2TG3Z0/giTY5eg3BkGSB802/5Oh79acGF7q/4KpWRe0bZ/IiQdhQHqLA3nwrG
-KhebvRgQfqxNjbKZBHs5yJ0lSLqkDqSTdbqVPm0V59SZCq4ZhFx+fRyVqW0Q8rKx
-xx8qYUQeiQMIhWAbythV6eCXmVcp74PaDL5ixQu0cWG9oFUNm3S6qX+Un+uUC5yD
-JTWJ7Muy0YcZAZZt3yFwkFtMzFSbOii7yXpHDSU/zNXQ4iIjEB5eGcBjqLYiH07C
-KPqfGa3tHqPcTLwOj8Nm
-=3Qm6
------END PGP SIGNATURE-----
-
---Signature=_Mon__3_Dec_2012_12_04_29_+1100_Nk19MFeqDeoNY5t_--
+Thanks,
+Namhyung
