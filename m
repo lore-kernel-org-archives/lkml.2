@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755733Ab2LCOnv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:43:51 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43900 "EHLO
+	id S1755753Ab2LCOnx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:43:53 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43896 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755482Ab2LCOgy (ORCPT
+	by vger.kernel.org with ESMTP id S1755312Ab2LCOgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 09:36:54 -0500
-Message-Id: <20121203143152.363434741@decadent.org.uk>
+	Mon, 3 Dec 2012 09:36:53 -0500
+Message-Id: <20121203143153.821800707@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Dec 2012 14:32:20 +0000
+Date: Mon, 03 Dec 2012 14:32:31 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 34/89] get_dvb_firmware: fix download site for tda10046 firmware
+        Fenghua Yu <fenghua.yu@intel.com>, Borislav Petkov <bp@amd64.org>,
+        Tony Luck <tony.luck@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 45/89] x86, mce, therm_throt: Dont report power limit and package level
+ thermal throttle events in mcelog
 In-Reply-To: <20121203143146.549859007@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,31 +30,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
+From: Fenghua Yu <fenghua.yu@intel.com>
 
-commit 25ec43d3e6306978cf66060ed18c4160ce8fc302 upstream.
+commit 29e9bf1841e4f9df13b4992a716fece7087dd237 upstream.
 
-The previous website doesn't exist anymore. Update it to one site that
-actually exists.
+Thermal throttle and power limit events are not defined as MCE errors in x86
+architecture and should not generate MCE errors in mcelog.
 
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Current kernel generates fake software defined MCE errors for these events.
+This may confuse users because they may think the machine has real MCE errors
+while actually only thermal throttle or power limit events happen.
+
+To make it worse, buggy firmware on some platforms may falsely generate
+the events. Therefore, kernel reports MCE errors which users think as real
+hardware errors. Although the firmware bugs should be fixed, on the other hand,
+kernel should not report MCE errors either.
+
+So mcelog is not a good mechanism to report these events. To report the events, we count them in respective counters (core_power_limit_count,
+package_power_limit_count, core_throttle_count, and package_throttle_count) in
+/sys/devices/system/cpu/cpu#/thermal_throttle/. Users can check the counters
+for each event on each CPU. Please note that all CPU's on one package report
+duplicate counters. It's user application's responsibity to retrieve a package
+level counter for one package.
+
+This patch doesn't report package level power limit, core level power limit, and
+package level thermal throttle events in mcelog. When the events happen, only
+report them in respective counters in sysfs.
+
+Since core level thermal throttle has been legacy code in kernel for a while and
+users accepted it as MCE error in mcelog, core level thermal throttle is still
+reported in mcelog. In the mean time, the event is counted in a counter in sysfs
+as well.
+
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+Acked-by: Borislav Petkov <bp@amd64.org>
+Acked-by: Tony Luck <tony.luck@intel.com>
+Link: http://lkml.kernel.org/r/20111215001945.GA21009@linux-os.sc.intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- Documentation/dvb/get_dvb_firmware |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kernel/cpu/mcheck/therm_throt.c |   29 +++++++----------------------
+ 1 file changed, 7 insertions(+), 22 deletions(-)
 
-diff --git a/Documentation/dvb/get_dvb_firmware b/Documentation/dvb/get_dvb_firmware
-index 12d3952e..32bc56b 100755
---- a/Documentation/dvb/get_dvb_firmware
-+++ b/Documentation/dvb/get_dvb_firmware
-@@ -116,7 +116,7 @@ sub tda10045 {
+diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+index 787e06c..ce04b58 100644
+--- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
++++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
+@@ -323,17 +323,6 @@ device_initcall(thermal_throttle_init_device);
  
- sub tda10046 {
- 	my $sourcefile = "TT_PCI_2.19h_28_11_2006.zip";
--	my $url = "http://www.tt-download.com/download/updates/219/$sourcefile";
-+	my $url = "http://technotrend.com.ua/download/software/219/$sourcefile";
- 	my $hash = "6a7e1e2f2644b162ff0502367553c72d";
- 	my $outfile = "dvb-fe-tda10046.fw";
- 	my $tmpdir = tempdir(DIR => "/tmp", CLEANUP => 1);
+ #endif /* CONFIG_SYSFS */
+ 
+-/*
+- * Set up the most two significant bit to notify mce log that this thermal
+- * event type.
+- * This is a temp solution. May be changed in the future with mce log
+- * infrasture.
+- */
+-#define CORE_THROTTLED		(0)
+-#define CORE_POWER_LIMIT	((__u64)1 << 62)
+-#define PACKAGE_THROTTLED	((__u64)2 << 62)
+-#define PACKAGE_POWER_LIMIT	((__u64)3 << 62)
+-
+ static void notify_thresholds(__u64 msr_val)
+ {
+ 	/* check whether the interrupt handler is defined;
+@@ -363,27 +352,23 @@ static void intel_thermal_interrupt(void)
+ 	if (therm_throt_process(msr_val & THERM_STATUS_PROCHOT,
+ 				THERMAL_THROTTLING_EVENT,
+ 				CORE_LEVEL) != 0)
+-		mce_log_therm_throt_event(CORE_THROTTLED | msr_val);
++		mce_log_therm_throt_event(msr_val);
+ 
+ 	if (this_cpu_has(X86_FEATURE_PLN))
+-		if (therm_throt_process(msr_val & THERM_STATUS_POWER_LIMIT,
++		therm_throt_process(msr_val & THERM_STATUS_POWER_LIMIT,
+ 					POWER_LIMIT_EVENT,
+-					CORE_LEVEL) != 0)
+-			mce_log_therm_throt_event(CORE_POWER_LIMIT | msr_val);
++					CORE_LEVEL);
+ 
+ 	if (this_cpu_has(X86_FEATURE_PTS)) {
+ 		rdmsrl(MSR_IA32_PACKAGE_THERM_STATUS, msr_val);
+-		if (therm_throt_process(msr_val & PACKAGE_THERM_STATUS_PROCHOT,
++		therm_throt_process(msr_val & PACKAGE_THERM_STATUS_PROCHOT,
+ 					THERMAL_THROTTLING_EVENT,
+-					PACKAGE_LEVEL) != 0)
+-			mce_log_therm_throt_event(PACKAGE_THROTTLED | msr_val);
++					PACKAGE_LEVEL);
+ 		if (this_cpu_has(X86_FEATURE_PLN))
+-			if (therm_throt_process(msr_val &
++			therm_throt_process(msr_val &
+ 					PACKAGE_THERM_STATUS_POWER_LIMIT,
+ 					POWER_LIMIT_EVENT,
+-					PACKAGE_LEVEL) != 0)
+-				mce_log_therm_throt_event(PACKAGE_POWER_LIMIT
+-							  | msr_val);
++					PACKAGE_LEVEL);
+ 	}
+ }
+ 
 
 
