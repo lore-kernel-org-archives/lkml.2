@@ -1,113 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751418Ab2LCSWS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 13:22:18 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:49634 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751048Ab2LCSWQ (ORCPT
+	id S1751435Ab2LCSZt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 13:25:49 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:54110 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750846Ab2LCSZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 13:22:16 -0500
-Date: Mon, 3 Dec 2012 16:22:08 -0200
-From: Gustavo Padovan <gustavo@padovan.org>
-To: linville@tuxdriver.com
-Cc: davem@davemloft.net, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: bluetooth-next 2012-12-03
-Message-ID: <20121203182208.GB2930@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	linville@tuxdriver.com, davem@davemloft.net,
-	linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+	Mon, 3 Dec 2012 13:25:47 -0500
+X-Sasl-enc: uwIoXvVUdQHn8Ywsc5GKRGp+TQkumlp99QKn2X2jhJTB 1354559146
+Date: Mon, 3 Dec 2012 10:25:45 -0800
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
+        Vinod Koul <vinod.koul@linux.intel.com>,
+        Bill Pemberton <wfp5p@virginia.edu>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the slave_dma
+ and tree
+Message-ID: <20121203182545.GA32702@kroah.com>
+References: <20121203171232.04772e84d18948bbbcafdeef@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OXfL5xGRrasGEqWY"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20121203171232.04772e84d18948bbbcafdeef@canb.auug.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Dec 03, 2012 at 05:12:32PM +1100, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Today's linux-next merge of the arm-soc tree got a conflict in
+> drivers/dma/mv_xor.c between commit d51e88b99533 ("dma: Convert dev_printk
+> (KERN_<LEVEL> to dev_<level>(") from the slave-dma tree, commits
+> a7d6e3ec28bb ("dma: remove use of __devexit_p") and 463a1f8b3cee ("dma:
+> remove use of __devinit") from the driver-core tree and various commits
+> from the arm-soc tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
---OXfL5xGRrasGEqWY
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Looks good to me, thanks.
 
-Hi John,
-
-A few more patches to 3.8, I hope they can still make it to mainline!
-The most important ones are the socket option for the SCO protocol to allow
-accept/refuse new connections from userspace. Other than that I added some
-fixes and Andrei did more AMP work.
-
-Please pull, or let me know any concerns you have. Thanks!
-
-	Gustavo
-
----
-The following changes since commit 2b2fec4d08a0aabe20d2e749cb7978f04217af65:
-
-  Bluetooth: Remove OOB data if device was discovered in band (2012-11-20 1=
-6:03:15 -0200)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next fo=
-r-upstream
-
-for you to fetch changes up to 0b27a4b97cb1874503c78453c0903df53c0c86b2:
-
-  Revert "Bluetooth: Fix possible deadlock in SCO code" (2012-12-03 16:00:0=
-4 -0200)
-
-----------------------------------------------------------------
-Andrei Emeltchenko (6):
-      Bluetooth: Refactor l2cap_send_disconn_req
-      Bluetooth: AMP: Mark controller radio powered down after HCIDEVDOWN
-      Bluetooth: AMP: Check that AMP is present and active
-      Bluetooth: Fix missing L2CAP EWS Conf parameter
-      Bluetooth: Process receiving FCS_NONE in L2CAP Conf Rsp
-      Bluetooth: trivial: Change NO_FCS_RECV to RECV_NO_FCS
-
-Fr=E9d=E9ric Dalleau (2):
-      Bluetooth: Add BT_DEFER_SETUP option to sco socket
-      Bluetooth: Implement deferred sco socket setup
-
-Gustavo Padovan (4):
-      Bluetooth: Add missing lock nesting notation
-      Bluetooth: cancel power_on work when unregistering the device
-      Bluetooth: Move double negation to macros
-      Revert "Bluetooth: Fix possible deadlock in SCO code"
-
- include/net/bluetooth/hci_core.h |  31 ++++++++++---
- include/net/bluetooth/l2cap.h    |   2 +-
- net/bluetooth/hci_core.c         |   5 +++
- net/bluetooth/hci_event.c        |  56 ++++++++++++++++++++---
- net/bluetooth/l2cap_core.c       | 100 +++++++++++++++++++++--------------=
-------
- net/bluetooth/mgmt.c             |  10 ++---
- net/bluetooth/rfcomm/sock.c      |   4 +-
- net/bluetooth/sco.c              |  86 ++++++++++++++++++++++++++++++-----
- 8 files changed, 213 insertions(+), 81 deletions(-)
-
---OXfL5xGRrasGEqWY
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQvO3PAAoJEPs3PUX4s20oGJwQAJx59z01ELd99HkIoCDEKXvS
-rm8QvTn6PJdSJCkH6PyXkYPTC4XTV66TLxYJkBfqgZZFe/nYEHkjdpljZqfrVbYx
-hBHqFa0wDHyvPEXDmUe1iOycMlK5GqS+RLlOnft5vOREbofo0zGlEUtFKOYMOROW
-0dCl61kcl+pbcXvhLktOdov3WD/7SG67vEqaNxC/aIyhXhy2j331d842JBC0e+WK
-JceK2VfvrDC/w+A7mA5qmpMvW+LGpWH0wS1FOtGS2xNTAdx1qPSenLNjljXVKZxR
-mCVmBWrajFMypmckRv8j4lfaaHK1jjzBmGU8/MuOw72z4ZvAVLTsZ3cBo8sdRV6W
-eF7I7dCCu8mnF0OAmvndoJDRT62f6n+ivSLCE+BUw7KM+GO7y7+WBcxfI7+Gc2Xy
-WxkLaeTQDZDtqJshNYnOIB2y8sI+IKdeIs3AvaI13NWwFJUa7Hks5GEz+wk3jtuf
-3GgYHhsTqGNdO6igWFTfWAAoo8ysHe1zuF6JJ6wXCiuW6cKBxwT/dGx7qL3uy5kl
-nYJQfT26yXheUtI5k6Zl4jV67MXK4cmm4ZrSZ8wgohEjbUQwP5NDWUGEvTxmZSO3
-0SUWgmzJydh6a85CRF1d2LMRnbpK4tC4CVFaQhpNkiJLk5ssF/1oLsHFbI6WvWFS
-g8WY3G6/RVhXrArboRRW
-=fW/r
------END PGP SIGNATURE-----
-
---OXfL5xGRrasGEqWY--
+greg k-h
