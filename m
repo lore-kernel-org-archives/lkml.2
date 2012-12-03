@@ -1,504 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751226Ab2LCRxh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 12:53:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2440 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751014Ab2LCRxf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 12:53:35 -0500
-Message-ID: <1354557206.1809.377.camel@bling.home>
-Subject: Re: [PATCH 2/2] vfio powerpc: implemented IOMMU driver for VFIO
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Date: Mon, 03 Dec 2012 10:53:26 -0700
-In-Reply-To: <1354503178-2602-3-git-send-email-aik@ozlabs.ru>
-References: <1353661396-14374-1-git-send-email-aik@ozlabs.ru>
-	 <1354503178-2602-1-git-send-email-aik@ozlabs.ru>
-	 <1354503178-2602-3-git-send-email-aik@ozlabs.ru>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751262Ab2LCR4u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 12:56:50 -0500
+Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:38006 "EHLO
+	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751053Ab2LCR4s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 12:56:48 -0500
+Date: Mon, 3 Dec 2012 18:01:25 +0000
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Aristeu Rozanski <aris@redhat.com>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, Serge Hallyn <serge.hallyn@canonical.com>,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH 3/5] device_cgroup: keep track of local group settings
+Message-ID: <20121203180125.GA30637@mail.hallyn.com>
+References: <20121127193501.255267751@napanee.usersys.redhat.com>
+ <20121127193502.482004744@napanee.usersys.redhat.com>
+ <20121129192945.GD26104@mail.hallyn.com>
+ <20121129195942.GW32112@redhat.com>
+ <20121129202608.GA26716@mail.hallyn.com>
+ <20121129223111.GZ32112@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121129223111.GZ32112@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-12-03 at 13:52 +1100, Alexey Kardashevskiy wrote:
-> VFIO implements platform independent stuff such as
-> a PCI driver, BAR access (via read/write on a file descriptor
-> or direct mapping when possible) and IRQ signaling.
+Quoting Aristeu Rozanski (aris@redhat.com):
+> On Thu, Nov 29, 2012 at 08:26:08PM +0000, Serge E. Hallyn wrote:
+> > Quoting Aristeu Rozanski (aris@redhat.com):
+> > > I see your point. it's indeed a problem. in dev_exception_add(), it
+> > > needs to check for permissions before actually adding to
+> > > devcgroup->exceptions.
 > 
-> The platform dependent part includes IOMMU initialization
-> and handling. This patch implements an IOMMU driver for VFIO
-> which does mapping/unmapping pages for the guest IO and
-> provides information about DMA window (required by a POWERPC
-> guest).
+> actually, checked again, it's done correctly. when adding an exception
+> that will allow extra device access (DEVCG_ALLOW), it does check it
+> before. It means that you can't add local exceptions unless at a certain
+> point of the time it was allowed to do so.
+
+Thanks.
+
+...
+
+> git://github.com/aristeu/linux-2.6.git
 > 
-> The counterpart in QEMU is required to support this functionality.
-> 
-> Cc: David Gibson <david@gibson.dropbear.id.au>
-> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
-> ---
->  drivers/vfio/Kconfig                |    6 +
->  drivers/vfio/Makefile               |    1 +
->  drivers/vfio/vfio_iommu_spapr_tce.c |  350 +++++++++++++++++++++++++++++++++++
->  include/linux/vfio.h                |   26 +++
->  4 files changed, 383 insertions(+)
->  create mode 100644 drivers/vfio/vfio_iommu_spapr_tce.c
-> 
-> diff --git a/drivers/vfio/Kconfig b/drivers/vfio/Kconfig
-> index 7cd5dec..b464687 100644
-> --- a/drivers/vfio/Kconfig
-> +++ b/drivers/vfio/Kconfig
-> @@ -3,10 +3,16 @@ config VFIO_IOMMU_TYPE1
->  	depends on VFIO
->  	default n
->  
-> +config VFIO_IOMMU_SPAPR_TCE
-> +	tristate
-> +	depends on VFIO && SPAPR_TCE_IOMMU
-> +	default n
-> +
->  menuconfig VFIO
->  	tristate "VFIO Non-Privileged userspace driver framework"
->  	depends on IOMMU_API
->  	select VFIO_IOMMU_TYPE1 if X86
-> +	select VFIO_IOMMU_SPAPR_TCE if PPC_POWERNV
->  	help
->  	  VFIO provides a framework for secure userspace device drivers.
->  	  See Documentation/vfio.txt for more details.
-> diff --git a/drivers/vfio/Makefile b/drivers/vfio/Makefile
-> index 2398d4a..72bfabc 100644
-> --- a/drivers/vfio/Makefile
-> +++ b/drivers/vfio/Makefile
-> @@ -1,3 +1,4 @@
->  obj-$(CONFIG_VFIO) += vfio.o
->  obj-$(CONFIG_VFIO_IOMMU_TYPE1) += vfio_iommu_type1.o
-> +obj-$(CONFIG_VFIO_IOMMU_SPAPR_TCE) += vfio_iommu_spapr_tce.o
->  obj-$(CONFIG_VFIO_PCI) += pci/
-> diff --git a/drivers/vfio/vfio_iommu_spapr_tce.c b/drivers/vfio/vfio_iommu_spapr_tce.c
-> new file mode 100644
-> index 0000000..806ad9f
-> --- /dev/null
-> +++ b/drivers/vfio/vfio_iommu_spapr_tce.c
-> @@ -0,0 +1,350 @@
-> +/*
-> + * VFIO: IOMMU DMA mapping support for TCE on POWER
-> + *
-> + * Copyright (C) 2012 IBM Corp.  All rights reserved.
-> + *     Author: Alexey Kardashevskiy <aik@ozlabs.ru>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * Derived from original vfio_iommu_type1.c:
-> + * Copyright (C) 2012 Red Hat, Inc.  All rights reserved.
-> + *     Author: Alex Williamson <alex.williamson@redhat.com>
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/pci.h>
-> +#include <linux/slab.h>
-> +#include <linux/uaccess.h>
-> +#include <linux/err.h>
-> +#include <linux/vfio.h>
-> +#include <asm/iommu.h>
-> +
-> +#define DRIVER_VERSION  "0.1"
-> +#define DRIVER_AUTHOR   "aik@ozlabs.ru"
-> +#define DRIVER_DESC     "VFIO IOMMU SPAPR TCE"
-> +
-> +static void tce_iommu_detach_group(void *iommu_data,
-> +		struct iommu_group *iommu_group);
-> +
-> +/*
-> + * VFIO IOMMU fd for SPAPR_TCE IOMMU implementation
-> + */
-> +
-> +/*
-> + * This code handles mapping and unmapping of user data buffers
-> + * into DMA'ble space using the IOMMU
-> + */
-> +
-> +#define NPAGE_TO_SIZE(npage)	((size_t)(npage) << PAGE_SHIFT)
-> +
-> +struct vwork {
-> +	struct mm_struct	*mm;
-> +	long			npage;
-> +	struct work_struct	work;
-> +};
-> +
-> +/* delayed decrement/increment for locked_vm */
-> +static void lock_acct_bg(struct work_struct *work)
-> +{
-> +	struct vwork *vwork = container_of(work, struct vwork, work);
-> +	struct mm_struct *mm;
-> +
-> +	mm = vwork->mm;
-> +	down_write(&mm->mmap_sem);
-> +	mm->locked_vm += vwork->npage;
-> +	up_write(&mm->mmap_sem);
-> +	mmput(mm);
-> +	kfree(vwork);
-> +}
-> +
-> +static void lock_acct(long npage)
-> +{
-> +	struct vwork *vwork;
-> +	struct mm_struct *mm;
-> +
-> +	if (!current->mm)
-> +		return; /* process exited */
-> +
-> +	if (down_write_trylock(&current->mm->mmap_sem)) {
-> +		current->mm->locked_vm += npage;
-> +		up_write(&current->mm->mmap_sem);
-> +		return;
-> +	}
-> +
-> +	/*
-> +	 * Couldn't get mmap_sem lock, so must setup to update
-> +	 * mm->locked_vm later. If locked_vm were atomic, we
-> +	 * wouldn't need this silliness
-> +	 */
-> +	vwork = kmalloc(sizeof(struct vwork), GFP_KERNEL);
-> +	if (!vwork)
-> +		return;
-> +	mm = get_task_mm(current);
-> +	if (!mm) {
-> +		kfree(vwork);
-> +		return;
-> +	}
-> +	INIT_WORK(&vwork->work, lock_acct_bg);
-> +	vwork->mm = mm;
-> +	vwork->npage = npage;
-> +	schedule_work(&vwork->work);
-> +}
-> +
-> +/*
-> + * The container descriptor supports only a single group per container.
-> + * Required by the API as the container is not supplied with the IOMMU group
-> + * at the moment of initialization.
-> + */
-> +struct tce_container {
-> +	struct mutex lock;
-> +	struct iommu_table *tbl;
-> +};
-> +
-> +static void *tce_iommu_open(unsigned long arg)
-> +{
-> +	struct tce_container *container;
-> +
-> +	if (arg != VFIO_SPAPR_TCE_IOMMU) {
-> +		pr_err("tce_vfio: Wrong IOMMU type\n");
-> +		return ERR_PTR(-EINVAL);
-> +	}
-> +
-> +	container = kzalloc(sizeof(*container), GFP_KERNEL);
-> +	if (!container)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	mutex_init(&container->lock);
-> +
-> +	return container;
-> +}
-> +
-> +static void tce_iommu_release(void *iommu_data)
-> +{
-> +	struct tce_container *container = iommu_data;
-> +
-> +	WARN_ON(container->tbl && !container->tbl->it_group);
-> +	if (container->tbl && container->tbl->it_group)
-> +		tce_iommu_detach_group(iommu_data, container->tbl->it_group);
-> +
-> +	mutex_destroy(&container->lock);
-> +
-> +	kfree(container);
-> +}
-> +
-> +static long tce_iommu_ioctl(void *iommu_data,
-> +				 unsigned int cmd, unsigned long arg)
-> +{
-> +	struct tce_container *container = iommu_data;
-> +	unsigned long minsz;
-> +	long ret;
-> +
-> +	switch (cmd) {
-> +	case VFIO_CHECK_EXTENSION: {
-> +		return (arg == VFIO_SPAPR_TCE_IOMMU) ? 1 : 0;
-> +	}
+> please use branch devcg_hiearchy_review
 
-nit, {}s are unnecessary for this case
+Thanks!
 
-> +	case VFIO_IOMMU_SPAPR_TCE_GET_INFO: {
-> +		struct vfio_iommu_spapr_tce_info info;
-> +		struct iommu_table *tbl = container->tbl;
-> +
-> +		if (WARN_ON(!tbl))
-> +			return -ENXIO;
-> +
-> +		minsz = offsetofend(struct vfio_iommu_spapr_tce_info,
-> +				dma32_window_size);
-> +
-> +		if (copy_from_user(&info, (void __user *)arg, minsz))
-> +			return -EFAULT;
-> +
-> +		if (info.argsz < minsz)
-> +			return -EINVAL;
-> +
-> +		info.dma32_window_start = tbl->it_offset << IOMMU_PAGE_SHIFT;
-> +		info.dma32_window_size = tbl->it_size << IOMMU_PAGE_SHIFT;
-> +		info.flags = 0;
-> +
-> +		if (copy_to_user((void __user *)arg, &info, minsz))
-> +			return -EFAULT;
-> +
-> +		return 0;
-> +	}
-> +	case VFIO_IOMMU_MAP_DMA: {
-> +		vfio_iommu_spapr_tce_dma_map param;
-> +		struct iommu_table *tbl = container->tbl;
-> +		enum dma_data_direction direction;
-> +		unsigned long locked, lock_limit;
-> +
-> +		if (WARN_ON(!tbl))
-> +			return -ENXIO;
-> +
-> +		minsz = offsetofend(vfio_iommu_spapr_tce_dma_map, size);
-> +
-> +		if (copy_from_user(&param, (void __user *)arg, minsz))
-> +			return -EFAULT;
-> +
-> +		if (param.argsz < minsz)
-> +			return -EINVAL;
-> +
-> +		if ((param.flags & VFIO_DMA_MAP_FLAG_READ) &&
-> +				(param.flags & VFIO_DMA_MAP_FLAG_WRITE))
-> +			direction = DMA_BIDIRECTIONAL;
-> +		else if (param.flags & VFIO_DMA_MAP_FLAG_READ)
-> +			direction = DMA_TO_DEVICE;
-> +		else if (param.flags & VFIO_DMA_MAP_FLAG_WRITE)
-> +			direction = DMA_FROM_DEVICE;
-> +		else
-> +			return -EINVAL;
-> +
-> +		if ((param.size & ~IOMMU_PAGE_MASK) ||
-> +				(param.iova & ~IOMMU_PAGE_MASK) ||
-> +				(param.vaddr & ~IOMMU_PAGE_MASK))
-> +			return -EINVAL;
-> +
-> +		if ((param.iova + param.size) >
-> +				(tbl->it_size << IOMMU_PAGE_SHIFT))
-> +			return -EINVAL;
-> +
-> +		if (param.iova < (tbl->it_offset << IOMMU_PAGE_SHIFT))
-> +			return -EINVAL;
+I have a few remaining concerns.
 
-This is confusing me, in 1/2 we had:
+First, generally, I don't think 'allows' added to parent should be 
+automatically propagated to descendents.
 
-entry += tbl->it_offset; /* Offset into real TCE table */
+In devcgroup_update_access: (around line 625)
+	there is a period of time where cgroup members have
+	default allow without the parent's exceptions.
 
-Which implies to me that entry is relative to it_offset.  So I'm not
-sure how iova can be less than it_offset (it's u64, so it can't be
-negative).  If iova is not relative then the iova + size > it_size
-doesn't make any sense.  Looks like you have a few extra ()s in these
-too.  Same for unmap case below.
+propagate_behavior (line 505):
+	1. doesn't follow the same ordering as devcgroup_update_access(), in
+	particular cleaning exceptions before setting behavior.
+	2. When changing a parent from deny to allow, I don't think children
+	should be updated.
 
-> +
-> +		/* Account for locked pages */
-> +		locked = current->mm->locked_vm +
-> +			(param.size >> PAGE_SHIFT);
-> +		lock_limit = rlimit(RLIMIT_MEMLOCK) >> PAGE_SHIFT;
-> +		if (locked > lock_limit && !capable(CAP_IPC_LOCK)) {
-> +			pr_warn("RLIMIT_MEMLOCK (%ld) exceeded\n",
-> +					rlimit(RLIMIT_MEMLOCK));
-> +			return -ENOMEM;
-> +		}
-> +
-> +		ret = iommu_put_tces(tbl, param.iova >> IOMMU_PAGE_SHIFT,
-> +				param.vaddr, direction,
-> +				param.size >> IOMMU_PAGE_SHIFT);
-> +
-> +		if (ret > 0)
-> +			lock_acct(ret);
-> +
-> +		return ret;
-> +	}
-> +	case VFIO_IOMMU_UNMAP_DMA: {
-> +		vfio_iommu_spapr_tce_dma_unmap param;
-> +		struct iommu_table *tbl = container->tbl;
-> +
-> +		if (WARN_ON(!tbl))
-> +			return -ENXIO;
-> +
-> +		minsz = offsetofend(vfio_iommu_spapr_tce_dma_unmap, size);
-> +
-> +		if (copy_from_user(&param, (void __user *)arg, minsz))
-> +			return -EFAULT;
-> +
-> +		if (param.argsz < minsz)
-> +			return -EINVAL;
-> +
-> +		if ((param.size & ~IOMMU_PAGE_MASK) ||
-> +				(param.iova & ~IOMMU_PAGE_MASK))
-> +			return -EINVAL;
-> +
-> +		if ((param.iova + param.size) >
-> +				(tbl->it_size << IOMMU_PAGE_SHIFT))
-> +			return -EINVAL;
-> +
-> +		if (param.iova < (tbl->it_offset << IOMMU_PAGE_SHIFT))
-> +			return -EINVAL;
-> +
-> +		ret = iommu_clear_tces(tbl, param.iova >> IOMMU_PAGE_SHIFT,
-> +				param.size >> IOMMU_PAGE_SHIFT);
-> +
-> +		if (ret > 0)
-> +			lock_acct(-ret);
-> +
-> +		return ret;
-> +	}
-> +	default:
-> +		pr_warn("tce_vfio: unexpected cmd %x\n", cmd);
-> +	}
-> +
-> +	return -ENOTTY;
-> +}
-> +
-> +static int tce_iommu_attach_group(void *iommu_data,
-> +		struct iommu_group *iommu_group)
-> +{
-> +	struct tce_container *container = iommu_data;
-> +	struct iommu_table *tbl = iommu_group_get_iommudata(iommu_group);
-> +
-> +	BUG_ON(!tbl);
-> +	mutex_lock(&container->lock);
-> +	pr_debug("tce_vfio: Attaching group #%u to iommu %p\n",
-> +			iommu_group_id(iommu_group), iommu_group);
-> +	if (container->tbl) {
-> +		pr_warn("tce_vfio: Only one group per IOMMU container is allowed, existing id=%d, attaching id=%d\n",
-> +				iommu_group_id(container->tbl->it_group),
-> +				iommu_group_id(iommu_group));
-> +		mutex_unlock(&container->lock);
-> +		return -EBUSY;
-> +	}
-> +
-> +	container->tbl = tbl;
-> +	iommu_clear_tces(tbl, tbl->it_offset, tbl->it_size);
-> +	mutex_unlock(&container->lock);
-> +
-> +	return 0;
-> +}
-> +
-> +static void tce_iommu_detach_group(void *iommu_data,
-> +		struct iommu_group *iommu_group)
-> +{
-> +	struct tce_container *container = iommu_data;
-> +	struct iommu_table *tbl = iommu_group_get_iommudata(iommu_group);
-> +
-> +	BUG_ON(!tbl);
-> +	mutex_lock(&container->lock);
-> +	if (tbl != container->tbl) {
-> +		pr_warn("tce_vfio: detaching group #%u, expected group is #%u\n",
-> +				iommu_group_id(iommu_group),
-> +				iommu_group_id(tbl->it_group));
-> +	} else {
-> +
-> +		pr_debug("tce_vfio: detaching group #%u from iommu %p\n",
-> +				iommu_group_id(iommu_group), iommu_group);
-> +
-> +		iommu_clear_tces(tbl, tbl->it_offset, tbl->it_size);
-> +		container->tbl = NULL;
-> +		/* Restore reserve for page 0 */
-> +		if (tbl->it_offset == 0)
-> +			set_bit(0, tbl->it_map);
-> +
-> +	}
-> +	mutex_unlock(&container->lock);
-> +}
-> +
-> +const struct vfio_iommu_driver_ops tce_iommu_driver_ops = {
-> +	.name		= "iommu-vfio-powerpc",
-> +	.owner		= THIS_MODULE,
-> +	.open		= tce_iommu_open,
-> +	.release	= tce_iommu_release,
-> +	.ioctl		= tce_iommu_ioctl,
-> +	.attach_group	= tce_iommu_attach_group,
-> +	.detach_group	= tce_iommu_detach_group,
-> +};
-> +
-> +static int __init tce_iommu_init(void)
-> +{
-> +	return vfio_register_iommu_driver(&tce_iommu_driver_ops);
-> +}
-> +
-> +static void __exit tce_iommu_cleanup(void)
-> +{
-> +	vfio_unregister_iommu_driver(&tce_iommu_driver_ops);
-> +}
-> +
-> +module_init(tce_iommu_init);
-> +module_exit(tce_iommu_cleanup);
-> +
-> +MODULE_VERSION(DRIVER_VERSION);
-> +MODULE_LICENSE("GPL v2");
-> +MODULE_AUTHOR(DRIVER_AUTHOR);
-> +MODULE_DESCRIPTION(DRIVER_DESC);
-> +
-> diff --git a/include/linux/vfio.h b/include/linux/vfio.h
-> index 0a4f180..a12295c 100644
-> --- a/include/linux/vfio.h
-> +++ b/include/linux/vfio.h
-> @@ -99,6 +99,7 @@ extern void vfio_unregister_iommu_driver(
->  /* Extensions */
->  
->  #define VFIO_TYPE1_IOMMU		1
-> +#define VFIO_SPAPR_TCE_IOMMU		2
->  
->  /*
->   * The IOCTL interface is designed for extensibility by embedding the
-> @@ -442,4 +443,29 @@ struct vfio_iommu_type1_dma_unmap {
->  
->  #define VFIO_IOMMU_UNMAP_DMA _IO(VFIO_TYPE, VFIO_BASE + 14)
->  
-> +/* -------- Additional API for SPAPR TCE (Server POWERPC) IOMMU -------- */
-> +
-> +/*
-> + * The SPAPR TCE info struct provides the information about the PCI bus
-> + * address ranges available for DMA, these values are programmed into
-> + * the hardware so the guest has to know that information.
-> + *
-> + * The IOMMU page size is always 4K.
-> + */
-> +
-> +struct vfio_iommu_spapr_tce_info {
-> +	__u32 argsz;
-> +	__u32 flags;			/* reserved for future use */
-> +	__u32 dma32_window_start;	/* 32 bit window start (bytes) */
-> +	__u32 dma32_window_size;	/* 32 bit window size (bytes) */
-> +};
-> +
-> +#define VFIO_IOMMU_SPAPR_TCE_GET_INFO	_IO(VFIO_TYPE, VFIO_BASE + 12)
-> +
-> +/* Reuse type1 map/unmap structs as they are the same at the moment */
-> +typedef struct vfio_iommu_type1_dma_map vfio_iommu_spapr_tce_dma_map;
-> +typedef struct vfio_iommu_type1_dma_unmap vfio_iommu_spapr_tce_dma_unmap;
+propagate_exception:
+	1. the WARN_ONCE doesn't seem helpful.
+	2. Again, I don't think allows to a parent should be propagated, only
+	denies.
 
-One or both of us are still confused whether iova passed via these
-structures are absolute or relative, so let's add some documentation for
-that.  Thanks,
-
-Alex
-
-> +
-> +/* ***************************************************************** */
-> +
->  #endif /* VFIO_H */
-
-
-
+-serge
