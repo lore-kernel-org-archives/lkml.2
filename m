@@ -1,120 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754679Ab2LCCDb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 21:03:31 -0500
-Received: from relay.ihostexchange.net ([66.46.182.52]:30227 "EHLO
-	relay.ihostexchange.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754359Ab2LCCDa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 21:03:30 -0500
-X-Greylist: delayed 306 seconds by postgrey-1.27 at vger.kernel.org; Sun, 02 Dec 2012 21:03:30 EST
-From: Dudley Du <dudl@cypress.com>
-To: Kamal Mostafa <kamal@canonical.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>
-CC: David Solda <dso@cypress.com>, Troy Abercrombia <ta@cypress.com>,
-        customercare <customercare@cypress.com>,
-        Kyle Fazzari <git@status.e4ward.com>,
-        Mario Limonciello <mario_limonciello@dell.com>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Herton Krzesinski <herton.krzesinski@canonical.com>
-Date: Sun, 2 Dec 2012 20:58:17 -0500
-Subject: RE: [PATCH v3 4/4] input: Cypress PS/2 Trackpad simulated multitouch
-Thread-Topic: [PATCH v3 4/4] input: Cypress PS/2 Trackpad simulated
- multitouch
-Thread-Index: Ac3OfJzW7z9gs6VuTS+FIGk0Xldq9ACfFoXg
-Message-ID: <B27AC323FA92C946BA36D2913DDC8E370234D97E4987@VMBX126.ihostexchange.net>
-References: <1354226281-3476-1-git-send-email-kamal@canonical.com>
- <1354226281-3476-5-git-send-email-kamal@canonical.com>
-In-Reply-To: <1354226281-3476-5-git-send-email-kamal@canonical.com>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-CN, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1754701Ab2LCCF0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 21:05:26 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:62851 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754359Ab2LCCFZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Dec 2012 21:05:25 -0500
+X-IronPort-AV: E=Sophos;i="4.83,359,1352044800"; 
+   d="scan'208";a="6317664"
+Message-ID: <50BC08D0.5070006@cn.fujitsu.com>
+Date: Mon, 03 Dec 2012 10:05:04 +0800
+From: Lin Feng <linfeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
+To: cavokz@gmail.com
+CC: akpm@linux-foundation.org, viro@zeniv.linux.org.uk, bcrl@kvack.org,
+        kamezawa.hiroyu@jp.fujitsu.com, mhocko@suse.cz, hughd@google.com,
+        cl@linux.com, mgorman@suse.de, minchan@kernel.org,
+        isimatu.yasuaki@jp.fujitsu.com, laijs@cn.fujitsu.com,
+        wency@cn.fujitsu.com, tangchen@cn.fujitsu.com,
+        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [BUG REPORT] [mm-hotplug, aio] aio ring_pages can't be offlined
+References: <1354172098-5691-1-git-send-email-linfeng@cn.fujitsu.com> <20121130152421.GA19849@glitch>
+In-Reply-To: <20121130152421.GA19849@glitch>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/03 10:04:48,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/03 10:04:49,
+	Serialize complete at 2012/12/03 10:04:49
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Instead of SEMI_MT, present a full mt interface with simulated contact positions for >=3 fingers.  Enables e.g. multi-finger tap and drag.
->
-> Signed-off-by: Kamal Mostafa <kamal@canonical.com>
-> ---
->  drivers/input/mouse/cypress_ps2.c |   16 ++++++++++++++++
->  drivers/input/mouse/cypress_ps2.h |   14 +++++++++++++-
->  2 files changed, 29 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/input/mouse/cypress_ps2.c b/drivers/input/mouse/cypress_ps2.c
-> index 472342a..bbaa9b9 100644
-> --- a/drivers/input/mouse/cypress_ps2.c
-> +++ b/drivers/input/mouse/cypress_ps2.c
-> @@ -408,7 +408,9 @@ static int cypress_set_input_params(struct input_dev *input,
->                       return ret;
->               }
->
-> +#if ( CYPRESS_SIMULATED_MT != 1 )
->               __set_bit(INPUT_PROP_SEMI_MT, input->propbit);
-> +#endif
->
->               if (cytp->tp_res_x && cytp->tp_res_x) {
+hi Domenico,
 
+Sorry for my late reply and thanks for your attention, see below :)
 
-Here, should be "if (cytp->tp_res_x && cytp->tp_res_y) {".
-And since cytp->tp_max_abs_y read from trackpad maybe zero, so we should better double check here.
+On 11/30/2012 11:24 PM, Domenico Andreoli wrote:
+> On Thu, Nov 29, 2012 at 02:54:58PM +0800, Lin Feng wrote:
+>> Hi all,
+> 
+> Hi Lin,
+> 
+>> We encounter a "Resource temporarily unavailable" fail while trying
+>> to offline a memory section in a movable zone. We found that there are 
+>> some pages can't be migrated. The offline operation fails in function 
+>> migrate_page_move_mapping() returning -EAGAIN till timeout because 
+>> the if assertion 'page_count(page) != 1' fails.
+> 
+> is this something that worked before? if yes (then it's a regression)
+> do you know with which kernel?
 
+I think it's a problem exist long ago since we got the offline feature,
+while I'm not sure from which version :)
 
->                       input_abs_set_res(input, ABS_X, cytp->tp_res_x); @@ -531,6 +533,20 @@ static int cypress_parse_packet(struct psmouse *psmouse,
->                               ((packet[5] & 0x0f) << 8) | packet[7];
->                       if (cytp->mode & CYTP_BIT_ABS_PRESSURE)
->                               report_data->contacts[1].z = report_data->contacts[0].z;
-> +#if ( CYPRESS_SIMULATED_MT == 1 )
-> +                     /* simulate contact positions for >2 fingers */
-> +                     if ( report_data->contact_cnt >= 3 )
-> +                             for ( i=1; i<report_data->contact_cnt; i++ ) {
-> +                                 report_data->contacts[i].x =
-> +                                                 report_data->contacts[0].x
-> +                                                 + 100*(i)*((i%2)?-1:1);
-> +                                 report_data->contacts[i].y =
-> +                                                 report_data->contacts[0].y;
-> +                                 if (cytp->mode & CYTP_BIT_ABS_PRESSURE)
-> +                                         report_data->contacts[i].z =
-> +                                                 report_data->contacts[0].z;
-> +                             }
-> +#endif
->               }
->
->               report_data->left = (header_byte & BTN_LEFT_BIT) ? 1 : 0; diff --git a/drivers/input/mouse/cypress_ps2.h b/drivers/input/mouse/cypress_ps2.h
-> index ce70462..4b903a9 100644
-> --- a/drivers/input/mouse/cypress_ps2.h
-> +++ b/drivers/input/mouse/cypress_ps2.h
-> @@ -134,7 +134,19 @@
->  #define RESP_SMBUS_BIT      0x80
->
->  #define CYTP_MAX_CONTACTS 5
-> -#define CYTP_MAX_MT_SLOTS 2
-> +
-> +/*
-> + * CYPRESS_SIMULATED_MT
-> + *   set to 1 for simulated multitouch (up to CTYP_MAX_CONTACTS fingers)
-> + *   set to 0 for SEMI_MT (2 fingers only)
-> + */
-> +#define CYPRESS_SIMULATED_MT 1
-> +
-> +#if ( CYPRESS_SIMULATED_MT == 1 )
-> +# define CYTP_MAX_MT_SLOTS 16
-> +#else
-> +# define CYTP_MAX_MT_SLOTS 2
-> +#endif
->
->  enum cytp_type {
->       CYTP_STG,
-> --
-> 1.7.10.4
+It can only be reproduce by a zone-movable configured system holding 
+pages allocated by get_user_pages() for a long time. 
 
+Maybe we could also reproduce it by write a app just calls io_setup()
+syscall and never release until it dies.  Then locate the memory section 
+from which pages are allocated and try to offline it.
+ 
+In fact if one doesn't want to use offline/hotplug memory feature, 
+to whom it's not a bug :)
 
-This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
+Thanks,
+linfeng
+> 
+> Thanks,
+> Domenico
+> 
