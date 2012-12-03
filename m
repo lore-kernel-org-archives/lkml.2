@@ -1,87 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752406Ab2LCUVU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 15:21:20 -0500
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:29326 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752007Ab2LCUVS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 15:21:18 -0500
-From: "Ortiz, Lance E" <lance.oritz@hp.com>
-To: Joe Perches <joe@perches.com>
-CC: "bhelgaas@google.com" <bhelgaas@google.com>,
-        "lance_ortiz@hotmail.com" <lance_ortiz@hotmail.com>,
-        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "bp@alien8.de" <bp@alien8.de>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "mchehab@redhat.com" <mchehab@redhat.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v4 1/3] aerdrv: Trace Event for AER
-Thread-Topic: [PATCH v4 1/3] aerdrv: Trace Event for AER
-Thread-Index: AQHN0Y+XW9X0YAlVw0GID3XVvKQIGpgHg77w
-Date: Mon, 3 Dec 2012 20:20:22 +0000
-Message-ID: <A961433CDFF2F640A2866803152E61F9516EE733@G4W3218.americas.hpqcorp.net>
-References: <20121203183305.26636.22979.stgit@grignak.americas.hpqcorp.net>
- <1354564292.3524.7.camel@joe-AO722>
-In-Reply-To: <1354564292.3524.7.camel@joe-AO722>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.25]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1752076Ab2LCU0M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 15:26:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39660 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750828Ab2LCU0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 15:26:11 -0500
+Message-ID: <1354564850.1809.391.camel@bling.home>
+Subject: Re: [PATCH] PCI AER: pci_get_domain_bus_and_slot() call missing
+ required pci_dev_put()
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Shuah Khan <shuahkhan@gmail.com>
+Cc: Betty Dall <betty.dall@hp.com>, bhelgaas@google.com,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        wangyijing@huawei.com, jiang.liu@huawei.com
+Date: Mon, 03 Dec 2012 13:00:50 -0700
+In-Reply-To: <1354564084.1809.390.camel@bling.home>
+References: <1354552622-687-1-git-send-email-betty.dall@hp.com>
+	 <CAKocOOOudEzMx0Zs9CB2zmtCkPHVkx1TCbWeK2+uoV5cb=eiGg@mail.gmail.com>
+	 <1354564084.1809.390.camel@bling.home>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +#define correctable_error_string			\
-> > +	{BIT(0),	"Receiver Error"},		\
-> > +	{BIT(6),	"Bad TLP"},			\
-> > +	{BIT(7),	"Bad DLLP"},			\
-> > +	{BIT(8),	"RELAY_NUM Rollover"},		\
-> > +	{BIT(12),	"Replay Timer Timeout"},	\
-> > +	{BIT(13),	"Advisory Non-Fatal"}
-> > +
-> > +#define uncorrectable_error_string			\
-> > +	{BIT(4),	"Data Link Protocol"},		\
-> > +	{BIT(12),	"Poisoned TLP"},		\
-> > +	{BIT(13),	"Flow Control Protocol"},	\
-> > +	{BIT(14),	"Completion Timeout"},		\
-> > +	{BIT(15),	"Completer Abort"},		\
-> > +	{BIT(16),	"Unexpected Completion"},	\
-> > +	{BIT(17),	"Receiver Overflow"},		\
-> > +	{BIT(18),	"Malformed TLP"},		\
-> > +	{BIT(19),	"ECRC"},			\
-> > +	{BIT(20),	"Unsupported Request"}
+On Mon, 2012-12-03 at 12:48 -0700, Alex Williamson wrote:
+> On Mon, 2012-12-03 at 10:40 -0700, Shuah Khan wrote:
+> > On Mon, Dec 3, 2012 at 9:37 AM, Betty Dall <betty.dall@hp.com> wrote:
+> > > The function aer_recover_queue() makes a call to pci_get_domain_bus_and_slot().
+> > > That function is documented to require that the caller decrement the
+> > > reference count by calling pci_dev_put(). This patch adds the missing
+> > > call to pci_dev_put().
+> > >
+> > > Signed-off-by: Betty Dall <betty.dall@hp.com>
+> > > ---
+> > >  drivers/pci/pcie/aer/aerdrv_core.c |    1 +
+> > >  1 files changed, 1 insertions(+), 0 deletions(-)
+> > >
+> > > diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
+> > > index af4e31c..43caf53 100644
+> > > --- a/drivers/pci/pcie/aer/aerdrv_core.c
+> > > +++ b/drivers/pci/pcie/aer/aerdrv_core.c
+> > > @@ -616,6 +616,7 @@ static void aer_recover_work_func(struct work_struct *work)
+> > >                         continue;
+> > >                 }
+> > >                 do_recovery(pdev, entry.severity);
+> > > +               pci_dev_put(pdev);
+> > 
+> > Are you sure pci_get_domain_bus_and_slot() does indeed increment the
+> > reference count? I see that in the comments right above the
+> > definition.
+> > 
+> > pci_dev_get() does that for sure. I see a call trace of
+> > 
+> > pci_dev_get() -> get_device() -> kobj_to_dev(kobject_get(&dev->kobj)  etc.
+> > 
+> > and kref_get() finally incrementing the
+> > 
+> > static inline void kref_get(struct kref *kref)
+> > {
+> >         WARN_ON(!atomic_read(&kref->refcount));
+> >         atomic_inc(&kref->refcount);
+> > }
+> > 
+> > However, I could not find any evidence that
+> > pci_get_domain_bus_and_slot() does that. I see
+> > pci_get_domain_bus_and_slot() calling pci_domain_nr() and there are
+> > several architecture specific defines for pci_domain_nr(). It is not
+> > clear to me where does refcount get incremented from
+> > pci_get_domain_bus_and_slot() is called.
+> > 
+> > What am I missing?
 > 
-> probably better to prefix these with aer_
-
-If I add aer_ it will conflict with string array in aerdrv_errprint.c
-
+> Trace back the for_each_pci_dev()
 > 
-> > +	TP_printk("%s PCIe Bus Error: severity=%s, %s\n",
-> > +		__get_str(dev_name),
-> > +		(__entry->severity == HW_EVENT_ERR_CORRECTED) ? "Corrected"
-> :
-> > +			((__entry->severity == HW_EVENT_ERR_FATAL) ?
-> > +			"Fatal" : "Uncorrected"),
+> for_each_pci_dev
+>  -> pci_get_device
+>   -> pci_get_subsys
+>    -> pci_get_dev_by_id
+>     -> bus_find_device
+>      -> get_device()
 > 
-> unnecessary parentheses
-> 
-> 		__entry->severity == HW_EVENT_ERR_CORRECTED ? "Corrected" :
-> 		__entry->severity == HW_EVENT_ERR_FATAL ? "Fatal" :
-> 		"Uncorrected"),
-> 
-> might be more kernel style conventional
+> The real question is how many places do we call for_each_pci_dev()
+> without a put.  It seems like pci_get_domain_bus_and_slot() doesn't even
+> get it right since it should include a put of the non-matched devices.
 
-Ok I removed them. 
+My bad, pci_get_dev_by_id() does a put on the previous devices, keeping
+the counts in order.  Thanks,
 
-Thanks
-
-Lance
+Alex
 
