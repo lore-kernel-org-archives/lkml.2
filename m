@@ -1,94 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754591Ab2LCBlM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 20:41:12 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:51430 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754224Ab2LCBlL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 20:41:11 -0500
-X-AuditID: 9c930197-b7bd3ae000003f1c-fb-50bc0334a044
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 07/18] perf hists: Exchange order of comparing items when collapsing hists
-References: <1354171126-14387-1-git-send-email-namhyung@kernel.org>
-	<1354171126-14387-9-git-send-email-namhyung@kernel.org>
-	<20121129185257.GC1957@ghostprotocols.net>
-Date: Mon, 03 Dec 2012 10:41:08 +0900
-In-Reply-To: <20121129185257.GC1957@ghostprotocols.net> (Arnaldo Carvalho de
-	Melo's message of "Thu, 29 Nov 2012 15:52:57 -0300")
-Message-ID: <87pq2ryksr.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	id S1754595Ab2LCBuW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 20:50:22 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:6556 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754224Ab2LCBuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Dec 2012 20:50:20 -0500
+X-IronPort-AV: E=Sophos;i="4.83,359,1352044800"; 
+   d="scan'208";a="6317466"
+From: Gao feng <gaofeng@cn.fujitsu.com>
+To: tj@kernel.org
+Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org, lizefan@huawei.com,
+        Gao feng <gaofeng@cn.fujitsu.com>
+Subject: [PATCH RESEND] cgroup: remove subsystem files when remounting cgroup
+Date: Mon, 3 Dec 2012 09:28:18 +0800
+Message-Id: <1354498098-17312-1-git-send-email-gaofeng@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.7.6
+In-Reply-To: <1354292489-18434-2-git-send-email-gaofeng@cn.fujitsu.com>
+References: <1354292489-18434-2-git-send-email-gaofeng@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/03 09:28:16,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/03 09:28:18,
+	Serialize complete at 2012/12/03 09:28:18
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Nov 2012 15:52:57 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Nov 29, 2012 at 03:38:35PM +0900, Namhyung Kim escreveu:
->> From: Namhyung Kim <namhyung.kim@lge.com>
->> 
->> When comparing entries for collapsing put the given entry first, and
->> then the iterated entry.  This is for the sake of consistency and will
->
-> consistency with what? and, see below:
->
->> be required by the event group report.
->> 
->> Cc: Jiri Olsa <jolsa@redhat.com>
->> Cc: Stephane Eranian <eranian@google.com>
->> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
->> ---
->>  tools/perf/util/hist.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->> 
->> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
->> index 82df1b26f0d4..161c35e7ed0e 100644
->> --- a/tools/perf/util/hist.c
->> +++ b/tools/perf/util/hist.c
->> @@ -433,7 +433,7 @@ static bool hists__collapse_insert_entry(struct hists *hists __maybe_unused,
->>  		parent = *p;
->>  		iter = rb_entry(parent, struct hist_entry, rb_node_in);
->>  
->> -		cmp = hist_entry__collapse(iter, he);
->> +		cmp = hist_entry__collapse(he, iter);
->>  
->>  		if (!cmp) {
->>  			he_stat__add_stat(&iter->stat, &he->stat);
->
-> doesn't this now gets inconsistent with the hist_entry__collapse() call?
-> I.e. iter first, he after, also there is the case for callchains, below,
-> care to elaborate here?
+cgroup_clear_directroy is called by cgroup_d_remove_dir
+and cgroup_remount.
 
-I meant it by consistent with hist_entry__cmp() and didn't consider
-he_stat__add_stat and callchain_merge things - thought that they're
-other kind of operation.
+when we call cgroup_remount to remount the cgroup,the subsystem
+may be unlinked from cgroupfs_root->subsys_list in rebind_subsystem,this
+subsystem's files will not be removed in cgroup_clear_directroy.
+And the system will panic when we try to access these files.
 
-I needed this change because I introduced hists__{match,link}_collapsed
-function in the patch 8 and I found that hist_entry__cmp and
-hist_entry__collapse received same kind of arguments in different
-order.  Sorry about missing this in the changelog.
+this patch removes subsystems's files before rebind_subsystems,
+if rebind_subsystems failed, repopulate these removed files.
 
-However on the second thought, I feel like I don't need those _collapsed
-functions at all and perf diff can be converted to use collapsed rb tree
-directly instead.  IIUC perf diff use those functions to match entries
-by sort keys and do additional resort output rb tree by sort keys (IMHO
-the function names - _name_resort and _insert_by_name - are misnomers)
-to do the match.
+With help from Tejun.
 
-Since output resorting (by period) is only needed for the baseline,
-other data files doesn't need to do this additional step.  So I can get
-rid of those hists__{match,link}_collapsed functions and change plain
-hists__{match,link} functions to use collapsed (or input) rb tree
-directly.
+Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+---
+ kernel/cgroup.c |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
 
-Jiri, what do you think?  What am I missing? :)
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index e1293a9..afabd2a 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1349,14 +1349,21 @@ static int cgroup_remount(struct super_block *sb, int *flags, char *data)
+ 		goto out_unlock;
+ 	}
+ 
++	/*
++	 * Clear out the files of subsystems that should be removed,do
++	 * this job before rebind_subsystems,since rebind_subsystems may
++	 * change this hierarchy's subsys_list.
++	 */
++	cgroup_clear_directory(cgrp->dentry, false, removed_mask);
++
+ 	ret = rebind_subsystems(root, opts.subsys_mask);
+ 	if (ret) {
++		/* rebind_subsystems failed,re-populate the removed files */
++		cgroup_populate_dir(cgrp, false, removed_mask);
+ 		drop_parsed_module_refcounts(opts.subsys_mask);
+ 		goto out_unlock;
+ 	}
+ 
+-	/* clear out any existing files and repopulate subsystem files */
+-	cgroup_clear_directory(cgrp->dentry, false, removed_mask);
+ 	/* re-populate subsystem files */
+ 	cgroup_populate_dir(cgrp, false, added_mask);
+ 
+-- 
+1.7.7.6
 
-Thanks,
-Namhyung
