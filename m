@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751554Ab2LCSIg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 13:08:36 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:47568 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750794Ab2LCSId (ORCPT
+	id S1751404Ab2LCSJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 13:09:28 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:37960 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751059Ab2LCSJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 13:08:33 -0500
-Date: Mon, 3 Dec 2012 10:08:28 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: yangsheng <sickamd@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        stable@vger.kernel.org, adilger@dilger.ca
-Subject: Re: [PATCH] Update atime from future.
-Message-ID: <20121203180828.GA30435@kroah.com>
-References: <1354557399-6202-1-git-send-email-sickamd@gmail.com>
+	Mon, 3 Dec 2012 13:09:27 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354557399-6202-1-git-send-email-sickamd@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50BCD5CB.2030506@suse.cz>
+References: <1354551724-15089-1-git-send-email-js1304@gmail.com>
+	<1354551724-15089-2-git-send-email-js1304@gmail.com>
+	<50BCD5CB.2030506@suse.cz>
+Date: Tue, 4 Dec 2012 03:09:26 +0900
+Message-ID: <CAAmzW4ND7n6z14hLPL72Hmf2QX4n=gRO6huLNbeVbmQo7kZuOg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] scripts/tags.sh: Support compiled source
+From: JoonSoo Kim <js1304@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 04, 2012 at 01:56:39AM +0800, yangsheng wrote:
-> Relatime should update the inode atime if it is more than a day in the
-> future.  The original problem seen was a tarball that had a bad atime,
-> but could also happen if someone fat-fingers a "touch".  The future
-> atime will never be fixed.  Before the relatime patch, the future atime
-> would be updated back to the current time on the next access.
-> 
-> Only update the atime if it is more than one day in the future.  That
-> avoids thrashing the atime if the clocks on clients of a network fs are
-> only slightly out of sync, but still allows fixing bogus atimes.
-> 
-> Signed-off-by: yangsheng <sickamd@gmail.com>
-> Reviewed-by: adilger@dilger.ca
-> ---
->  fs/inode.c | 10 +++++++++-
->  1 files changed, 9 insertions(+), 1 deletions(-)
+2012/12/4 Michal Marek <mmarek@suse.cz>:
+> On 3.12.2012 17:22, Joonsoo Kim wrote:
+>> We usually have interst in compiled files only,
+>> because they are strongly related to individual's work.
+>> Current tags.sh can't select compiled files, so support it.
+>>
+>> We can use this functionality like below.
+>> "make cscope O=. SRCARCH=xxxx SUBARCH=compiled"
+>
+> I like the idea, but please try to come up with a different syntax that
+> does not abuse SUBARCH.
+>
+>
+>> +all_compiled_sources()
+>> +{
+>> +     for i in $(all_sources); do
+>> +             if [[ $i =~ .*c$ || $i =~ .*S$ ]]; then
+>> +                     j=${i/\.[cS]/\.o}
+>
+> Please use 'case "$i" in ...' instead of the bash-specific [[ ... ]]
+> construct.
 
-
-<formletter>
-
-This is not the correct way to submit patches for inclusion in the
-stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-for how to do this properly.
-
-</formletter>
+I send v2 which is fixed according to your comment.
+Thanks for review.
