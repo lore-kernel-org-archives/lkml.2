@@ -1,247 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754701Ab2LCQSu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 11:18:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38837 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751758Ab2LCQSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 11:18:48 -0500
-Date: Mon, 3 Dec 2012 17:18:45 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, paul@paulmenage.org, glommer@parallels.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        peterz@infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] cpuset: replace cpuset->stack_list with
- cpuset_for_each_descendant_pre()
-Message-ID: <20121203161845.GE17093@dhcp22.suse.cz>
-References: <1354141621-11906-1-git-send-email-tj@kernel.org>
- <1354141621-11906-3-git-send-email-tj@kernel.org>
+	id S1755041Ab2LCQTi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 11:19:38 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:65222 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758Ab2LCQTg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 11:19:36 -0500
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 12/18] perf ui/hist: Add support for event group view
+References: <1354171126-14387-1-git-send-email-namhyung@kernel.org>
+	<1354171126-14387-14-git-send-email-namhyung@kernel.org>
+	<20121130132943.GC1080@krava.brq.redhat.com>
+	<CAM9d7ciOhUE9njWM2apYbiD-Ld3UP7JqhAzz76-DEemONR0OzA@mail.gmail.com>
+	<20121203102327.GB1131@krava.redhat.com>
+	<87a9tvifmk.fsf@sejong.aot.lge.com>
+	<20121203155735.GC2637@krava.redhat.com>
+Date: Tue, 04 Dec 2012 01:19:27 +0900
+In-Reply-To: <20121203155735.GC2637@krava.redhat.com> (Jiri Olsa's message of
+	"Mon, 3 Dec 2012 16:57:36 +0100")
+Message-ID: <87zk1vp0q8.fsf@kernel.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354141621-11906-3-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 28-11-12 14:27:00, Tejun Heo wrote:
-> Implement cpuset_for_each_descendant_pre() and replace the
-> cpuset-specific tree walking using cpuset->stack_list with it.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
+On Mon, 3 Dec 2012 16:57:36 +0100, Jiri Olsa wrote:
+> On Mon, Dec 03, 2012 at 07:39:31PM +0900, Namhyung Kim wrote:
+>> On Mon, 3 Dec 2012 11:23:27 +0100, Jiri Olsa wrote:
+>> > On Mon, Dec 03, 2012 at 10:56:28AM +0900, Namhyung Kim wrote:
+>> >> On Fri, Nov 30, 2012 at 10:29 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+>> >> > ok, so this is the part thats common for both multi diff and group
+>> >> > report and hugely depends on how we link matching hist_entry
+>
+> SNIP
+>
+>> > we discussed with Arnaldo and decided to stay with current approach and
+>> > make the change later if needed.. to be able to see/meassure the benefit
+>> >
+>> > I made some initial attempt to workaround this and it appears to be
+>> > not that bad ;) I'll repost my changes shortly..
+>> 
+>> Hmm.. so are you OK with this patch now?
+>
+> yep, well except for following macros:
+>
+> 	__HPP_COLOR_PERCENT_FN
+> 	__HPP_ENTRY_PERCENT_FN
+> 	__HPP_ENTRY_RAW_FN
+>
+> being so long.. any chance the main part of it being in function?
+>
+> Seems like '_type' is just in function name, but the '_field' might
+> be the killer ;) maybe it could be 'used' in such function via PERF_HPP__*
+> enums instead..?
 
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Okay, I'll re-think about it tomorrow.
 
-> ---
->  kernel/cpuset.c | 123 ++++++++++++++++++++++----------------------------------
->  1 file changed, 48 insertions(+), 75 deletions(-)
-> 
-> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-> index 2ee0e03..3a01730 100644
-> --- a/kernel/cpuset.c
-> +++ b/kernel/cpuset.c
-> @@ -103,9 +103,6 @@ struct cpuset {
->  	/* for custom sched domain */
->  	int relax_domain_level;
->  
-> -	/* used for walking a cpuset hierarchy */
-> -	struct list_head stack_list;
-> -
->  	struct work_struct hotplug_work;
->  };
->  
-> @@ -207,6 +204,20 @@ static struct cpuset top_cpuset = {
->  	cgroup_for_each_child((pos_cgrp), (parent_cs)->css.cgroup)	\
->  		if (is_cpuset_online(((child_cs) = cgroup_cs((pos_cgrp)))))
->  
-> +/**
-> + * cpuset_for_each_descendant_pre - pre-order walk of a cpuset's descendants
-> + * @des_cs: loop cursor pointing to the current descendant
-> + * @pos_cgrp: used for iteration
-> + * @root_cs: target cpuset to walk ancestor of
-> + *
-> + * Walk @des_cs through the online descendants of @root_cs.  Must be used
-> + * with RCU read locked.  The caller may modify @pos_cgrp by calling
-> + * cgroup_rightmost_descendant() to skip subtree.
-> + */
-> +#define cpuset_for_each_descendant_pre(des_cs, pos_cgrp, root_cs)	\
-> +	cgroup_for_each_descendant_pre((pos_cgrp), (root_cs)->css.cgroup) \
-> +		if (is_cpuset_online(((des_cs) = cgroup_cs((pos_cgrp)))))
-> +
->  /*
->   * There are two global mutexes guarding cpuset structures - cpuset_mutex
->   * and callback_mutex.  The latter may nest inside the former.  We also
-> @@ -507,31 +518,24 @@ update_domain_attr(struct sched_domain_attr *dattr, struct cpuset *c)
->  	return;
->  }
->  
-> -static void
-> -update_domain_attr_tree(struct sched_domain_attr *dattr, struct cpuset *c)
-> +static void update_domain_attr_tree(struct sched_domain_attr *dattr,
-> +				    struct cpuset *root_cs)
->  {
-> -	LIST_HEAD(q);
-> -
-> -	list_add(&c->stack_list, &q);
-> -	while (!list_empty(&q)) {
-> -		struct cpuset *cp;
-> -		struct cgroup *cont;
-> -		struct cpuset *child;
-> -
-> -		cp = list_first_entry(&q, struct cpuset, stack_list);
-> -		list_del(q.next);
-> +	struct cpuset *cp;
-> +	struct cgroup *pos_cgrp;
->  
-> -		if (cpumask_empty(cp->cpus_allowed))
-> +	rcu_read_lock();
-> +	cpuset_for_each_descendant_pre(cp, pos_cgrp, root_cs) {
-> +		/* skip the whole subtree if @cp doesn't have any CPU */
-> +		if (cpumask_empty(cp->cpus_allowed)) {
-> +			pos_cgrp = cgroup_rightmost_descendant(pos_cgrp);
->  			continue;
-> +		}
->  
->  		if (is_sched_load_balance(cp))
->  			update_domain_attr(dattr, cp);
-> -
-> -		rcu_read_lock();
-> -		cpuset_for_each_child(child, cont, cp)
-> -			list_add_tail(&child->stack_list, &q);
-> -		rcu_read_unlock();
->  	}
-> +	rcu_read_unlock();
->  }
->  
->  /*
-> @@ -591,7 +595,6 @@ update_domain_attr_tree(struct sched_domain_attr *dattr, struct cpuset *c)
->  static int generate_sched_domains(cpumask_var_t **domains,
->  			struct sched_domain_attr **attributes)
->  {
-> -	LIST_HEAD(q);		/* queue of cpusets to be scanned */
->  	struct cpuset *cp;	/* scans q */
->  	struct cpuset **csa;	/* array of all cpuset ptrs */
->  	int csn;		/* how many cpuset ptrs in csa so far */
-> @@ -600,6 +603,7 @@ static int generate_sched_domains(cpumask_var_t **domains,
->  	struct sched_domain_attr *dattr;  /* attributes for custom domains */
->  	int ndoms = 0;		/* number of sched domains in result */
->  	int nslot;		/* next empty doms[] struct cpumask slot */
-> +	struct cgroup *pos_cgrp;
->  
->  	doms = NULL;
->  	dattr = NULL;
-> @@ -627,33 +631,27 @@ static int generate_sched_domains(cpumask_var_t **domains,
->  		goto done;
->  	csn = 0;
->  
-> -	list_add(&top_cpuset.stack_list, &q);
-> -	while (!list_empty(&q)) {
-> -		struct cgroup *cont;
-> -		struct cpuset *child;   /* scans child cpusets of cp */
-> -
-> -		cp = list_first_entry(&q, struct cpuset, stack_list);
-> -		list_del(q.next);
-> -
-> -		if (cpumask_empty(cp->cpus_allowed))
-> -			continue;
-> -
-> +	rcu_read_lock();
-> +	cpuset_for_each_descendant_pre(cp, pos_cgrp, &top_cpuset) {
->  		/*
-> -		 * All child cpusets contain a subset of the parent's cpus, so
-> -		 * just skip them, and then we call update_domain_attr_tree()
-> -		 * to calc relax_domain_level of the corresponding sched
-> -		 * domain.
-> +		 * Continue traversing beyond @cp iff @cp has some CPUs and
-> +		 * isn't load balancing.  The former is obvious.  The
-> +		 * latter: All child cpusets contain a subset of the
-> +		 * parent's cpus, so just skip them, and then we call
-> +		 * update_domain_attr_tree() to calc relax_domain_level of
-> +		 * the corresponding sched domain.
->  		 */
-> -		if (is_sched_load_balance(cp)) {
-> -			csa[csn++] = cp;
-> +		if (!cpumask_empty(cp->cpus_allowed) &&
-> +		    !is_sched_load_balance(cp))
->  			continue;
-> -		}
->  
-> -		rcu_read_lock();
-> -		cpuset_for_each_child(child, cont, cp)
-> -			list_add_tail(&child->stack_list, &q);
-> -		rcu_read_unlock();
-> -  	}
-> +		if (is_sched_load_balance(cp))
-> +			csa[csn++] = cp;
-> +
-> +		/* skip @cp's subtree */
-> +		pos_cgrp = cgroup_rightmost_descendant(pos_cgrp);
-> +	}
-> +	rcu_read_unlock();
->  
->  	for (i = 0; i < csn; i++)
->  		csa[i]->pn = i;
-> @@ -2059,31 +2057,6 @@ static void remove_tasks_in_empty_cpuset(struct cpuset *cs)
->  	move_member_tasks_to_cpuset(cs, parent);
->  }
->  
-> -/*
-> - * Helper function to traverse cpusets.
-> - * It can be used to walk the cpuset tree from top to bottom, completing
-> - * one layer before dropping down to the next (thus always processing a
-> - * node before any of its children).
-> - */
-> -static struct cpuset *cpuset_next(struct list_head *queue)
-> -{
-> -	struct cpuset *cp;
-> -	struct cpuset *child;	/* scans child cpusets of cp */
-> -	struct cgroup *cont;
-> -
-> -	if (list_empty(queue))
-> -		return NULL;
-> -
-> -	cp = list_first_entry(queue, struct cpuset, stack_list);
-> -	list_del(queue->next);
-> -	rcu_read_lock();
-> -	cpuset_for_each_child(child, cont, cp)
-> -		list_add_tail(&child->stack_list, queue);
-> -	rcu_read_unlock();
-> -
-> -	return cp;
-> -}
-> -
->  /**
->   * cpuset_propagate_hotplug_workfn - propagate CPU/memory hotplug to a cpuset
->   * @cs: cpuset in interest
-> @@ -2220,12 +2193,12 @@ static void cpuset_hotplug_workfn(struct work_struct *work)
->  	/* if cpus or mems went down, we need to propagate to descendants */
->  	if (cpus_offlined || mems_offlined) {
->  		struct cpuset *cs;
-> -		LIST_HEAD(queue);
-> +		struct cgroup *pos_cgrp;
->  
-> -		list_add_tail(&top_cpuset.stack_list, &queue);
-> -		while ((cs = cpuset_next(&queue)))
-> -			if (cs != &top_cpuset)
-> -				schedule_cpuset_propagate_hotplug(cs);
-> +		rcu_read_lock();
-> +		cpuset_for_each_descendant_pre(cs, pos_cgrp, &top_cpuset)
-> +			schedule_cpuset_propagate_hotplug(cs);
-> +		rcu_read_unlock();
->  	}
->  
->  	mutex_unlock(&cpuset_mutex);
-> -- 
-> 1.7.11.7
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
-Michal Hocko
-SUSE Labs
+Thanks,
+Namhyung
