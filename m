@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755693Ab2LCOmw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:42:52 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43908 "EHLO
+	id S1755593Ab2LCOmv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:42:51 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43910 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755488Ab2LCOgy (ORCPT
+	by vger.kernel.org with ESMTP id S1755490Ab2LCOgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Dec 2012 09:36:54 -0500
-Message-Id: <20121203143152.896485415@decadent.org.uk>
+Message-Id: <20121203143152.098622574@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Dec 2012 14:32:24 +0000
+Date: Mon, 03 Dec 2012 14:32:18 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tilman Schmidt <tilman@imap.cc>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 38/89] bas_gigaset: fix pre_reset handling
+        "joshua.a.hay@intel.com" <joshua.a.hay@intel.com>,
+        Phil Schmitt <phillip.j.schmitt@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [ 32/89] ixgbe: add support for X540-AT1
 In-Reply-To: <20121203143146.549859007@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,69 +29,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tilman Schmidt <tilman@imap.cc>
+From: "joshua.a.hay@intel.com" <joshua.a.hay@intel.com>
 
-commit c6fdd8e5d0c65bb8821dc6da26ee1a2ddd58b3cc upstream.
+commit df376f0de167754da9b3ece4afdb5bb8bf3fbf3e upstream.
 
-The delayed work function int_in_work() may call usb_reset_device()
-and thus, indirectly, the driver's pre_reset method. Trying to
-cancel the work synchronously in that situation would deadlock.
-Fix by avoiding cancel_work_sync() in the pre_reset method.
+This patch adds device support for Ethernet Controller X540-AT1.
 
-If the reset was NOT initiated by int_in_work() this might cause
-int_in_work() to run after the post_reset method, with urb_int_in
-already resubmitted, so handle that case gracefully.
-
-Signed-off-by: Tilman Schmidt <tilman@imap.cc>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Josh Hay <joshua.a.hay@intel.com>
+Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/isdn/gigaset/bas-gigaset.c |   19 ++++++++++++++++---
- 1 file changed, 16 insertions(+), 3 deletions(-)
+ drivers/net/ethernet/intel/ixgbe/ixgbe_common.c  |    1 +
+ drivers/net/ethernet/intel/ixgbe/ixgbe_ethtool.c |    1 +
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c    |    2 ++
+ drivers/net/ethernet/intel/ixgbe/ixgbe_type.h    |    1 +
+ 4 files changed, 5 insertions(+)
 
-diff --git a/drivers/isdn/gigaset/bas-gigaset.c b/drivers/isdn/gigaset/bas-gigaset.c
-index 5275887..c44950d 100644
---- a/drivers/isdn/gigaset/bas-gigaset.c
-+++ b/drivers/isdn/gigaset/bas-gigaset.c
-@@ -617,7 +617,13 @@ static void int_in_work(struct work_struct *work)
- 	if (rc == 0)
- 		/* success, resubmit interrupt read URB */
- 		rc = usb_submit_urb(urb, GFP_ATOMIC);
--	if (rc != 0 && rc != -ENODEV) {
-+
-+	switch (rc) {
-+	case 0:		/* success */
-+	case -ENODEV:	/* device gone */
-+	case -EINVAL:	/* URB already resubmitted, or terminal badness */
-+		break;
-+	default:	/* failure: try to recover by resetting the device */
- 		dev_err(cs->dev, "clear halt failed: %s\n", get_usb_rcmsg(rc));
- 		rc = usb_lock_device_for_reset(ucs->udev, ucs->interface);
- 		if (rc == 0) {
-@@ -2442,7 +2448,9 @@ static void gigaset_disconnect(struct usb_interface *interface)
- }
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_common.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_common.c
+@@ -3157,6 +3157,7 @@ static s32 ixgbe_device_supports_autoneg
  
- /* gigaset_suspend
-- * This function is called before the USB connection is suspended.
-+ * This function is called before the USB connection is suspended
-+ * or before the USB device is reset.
-+ * In the latter case, message == PMSG_ON.
-  */
- static int gigaset_suspend(struct usb_interface *intf, pm_message_t message)
- {
-@@ -2498,7 +2506,12 @@ static int gigaset_suspend(struct usb_interface *intf, pm_message_t message)
- 	del_timer_sync(&ucs->timer_atrdy);
- 	del_timer_sync(&ucs->timer_cmd_in);
- 	del_timer_sync(&ucs->timer_int_in);
--	cancel_work_sync(&ucs->int_in_wq);
-+
-+	/* don't try to cancel int_in_wq from within reset as it
-+	 * might be the one requesting the reset
-+	 */
-+	if (message.event != PM_EVENT_ON)
-+		cancel_work_sync(&ucs->int_in_wq);
+ 	switch (hw->device_id) {
+ 	case IXGBE_DEV_ID_X540T:
++	case IXGBE_DEV_ID_X540T1:
+ 		return 0;
+ 	case IXGBE_DEV_ID_82599_T3_LOM:
+ 		return 0;
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -107,6 +107,7 @@ static DEFINE_PCI_DEVICE_TABLE(ixgbe_pci
+ 	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_82599_LS), board_82599 },
+ 	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_82599EN_SFP), board_82599 },
+ 	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_82599_SFP_SF_QP), board_82599 },
++	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_X540T1), board_X540 },
+ 	/* required last entry */
+ 	{0, }
+ };
+@@ -7612,6 +7613,7 @@ static int __devinit ixgbe_probe(struct
+ 		adapter->wol = IXGBE_WUFC_MAG;
+ 		break;
+ 	case IXGBE_DEV_ID_X540T:
++	case IXGBE_DEV_ID_X540T1:
+ 		/* Check eeprom to see if it is enabled */
+ 		hw->eeprom.ops.read(hw, 0x2c, &adapter->eeprom_cap);
+ 		wol_cap = adapter->eeprom_cap & IXGBE_DEVICE_CAPS_WOL_MASK;
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
+@@ -66,6 +66,7 @@
+ #define IXGBE_DEV_ID_82599_LS            0x154F
+ #define IXGBE_DEV_ID_X540T               0x1528
+ #define IXGBE_DEV_ID_82599_SFP_SF_QP     0x154A
++#define IXGBE_DEV_ID_X540T1              0x1560
  
- 	gig_dbg(DEBUG_SUSPEND, "suspend complete");
- 	return 0;
+ /* VF Device IDs */
+ #define IXGBE_DEV_ID_82599_VF           0x10ED
 
 
