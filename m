@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648Ab2LCMs7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 07:48:59 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:45781 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751008Ab2LCMs5 convert rfc822-to-8bit (ORCPT
+	id S1754183Ab2LCNCf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 08:02:35 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:60123 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751238Ab2LCNCe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 07:48:57 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Mon, 3 Dec 2012 08:02:34 -0500
+Message-ID: <50BCA2E4.8050600@suse.cz>
+Date: Mon, 03 Dec 2012 14:02:28 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH v2] net/macb: Use non-coherent memory for rx buffers
-Date: Mon, 3 Dec 2012 12:43:51 -0000
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B70D5@saturn3.aculab.com>
-In-Reply-To: <1354536876-6274-1-git-send-email-nicolas.ferre@atmel.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH v2] net/macb: Use non-coherent memory for rx buffers
-Thread-Index: Ac3RT6OAW4vjzyLKTU6wOYDSlmuLswAAh5lw
-References: <CAGhQ9VwWmP_B17LnAEqDHcL8Yd-s0C-Bf35z3+=vnJmK_NoCSw@mail.gmail.com> <1354536876-6274-1-git-send-email-nicolas.ferre@atmel.com>
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Nicolas Ferre" <nicolas.ferre@atmel.com>,
-        "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        "Joachim Eastwood" <manabian@gmail.com>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        "Havard Skinnemoen" <havard@skinnemoen.net>
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+CC: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>, Bob Liu <lliubbo@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 0/2] kernel BUG at mm/huge_memory.c:212!
+References: <50B52E17.8020205@suse.cz> <1354287821-5925-1-git-send-email-kirill.shutemov@linux.intel.com>
+In-Reply-To: <1354287821-5925-1-git-send-email-kirill.shutemov@linux.intel.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Allocate regular pages to use as backing for the RX ring and use the
-> DMA API to sync the caches. This should give a bit better performance
-> since it allows the CPU to do burst transfers from memory. It is also
-> a necessary step on the way to reduce the amount of copying done by
-> the driver.
+On 11/30/2012 04:03 PM, Kirill A. Shutemov wrote:
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> 
+> Hi Jiri,
+> 
+> Sorry for late answer. It took time to reproduce and debug the issue.
+> 
+> Could you test two patches below by thread. I expect it to fix both
+> issues: put_huge_zero_page() and Bad rss-counter state.
 
-I've not tried to understand the patches, but you have to be
-very careful using non-snooped memory for descriptor rings.
-No amount of DMA API calls can sort out some of the issues.
+Hi, yes, since applying the patches on the last Thu, it didn't recur.
 
-Basically you must not dirty a cache line that contains data
-that the MAC unit might still write to.
+> Kirill A. Shutemov (2):
+>   thp: fix anononymous page accounting in fallback path for COW of HZP
+>   thp: avoid race on multiple parallel page faults to the same page
+> 
+>  mm/huge_memory.c | 30 +++++++++++++++++++++++++-----
+>  1 file changed, 25 insertions(+), 5 deletions(-)
 
-For the receive ring this means that you must not setup
-new rx buffers for ring entries until the MAC unit has
-filled all the ring entries in the same cache line.
-This probably means only adding rx buffers in blocks
-of 8 or 16 (or even more if there are large cache lines).
-
-I can't see any code in the patch that does this.
-
-Doing the same for the tx ring is more difficult, especially
-if you can't stop the MAC unit polling the TX ring on a
-timer basis.
-Basically you can only give the MAX tx packets if either
-it is idle, or if the tx ring containing the new entries
-starts on a cache line.
-If the MAC unit is polling the ring, then to give it
-multiple items you may need to update the 'owner' bit
-in the first ring entry last - just in case the cache
-line gets written out before you've finished.
-
-	David
-
-
-
-
+thanks,
+-- 
+js
+suse labs
