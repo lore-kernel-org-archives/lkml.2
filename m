@@ -1,189 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768Ab2LCNkt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 08:40:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10173 "EHLO mx1.redhat.com"
+	id S1754909Ab2LCNlR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 08:41:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58641 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752768Ab2LCNks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 08:40:48 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-To: Ingo Molnar <mingo.kernel.org@gmail.com>, hpa@zytor.com,
-        Thomas Gleixner <tglx@linutronix.de>
-cc: dhowells@redhat.com, x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] UAPI: Disintegrate arch/x86/include/asm
-Date: Mon, 03 Dec 2012 13:40:35 +0000
-Message-ID: <26921.1354542035@warthog.procyon.org.uk>
+	id S1754547Ab2LCNlQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 08:41:16 -0500
+Date: Mon, 3 Dec 2012 13:41:10 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 00/10] Latest numa/core release, v18
+Message-ID: <20121203134110.GL8218@suse.de>
+References: <1354305521-11583-1-git-send-email-mingo@kernel.org>
+ <CA+55aFwjxm7OYuucHeE2WFr4p+jwr63t=kSdHndta_QkyFbyBQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwjxm7OYuucHeE2WFr4p+jwr63t=kSdHndta_QkyFbyBQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 30, 2012 at 12:37:49PM -0800, Linus Torvalds wrote:
+> On Fri, Nov 30, 2012 at 11:58 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> >
+> > When pushed hard enough via threaded workloads (for example via the
+> > numa02 test) then the upstream page migration code in mm/migration.c
+> > becomes unscalable, resulting in lot of scheduling on the anon vma
+> > mutex and a subsequent drop in performance.
+> 
+> Ugh.
+> 
+> I wonder if migration really needs that thing to be a mutex? I may be
+> wrong, but the anon_vma lock only protects the actual rmap chains, and
+> migration only ever changes the pte *contents*, not the actual chains
+> of pte's themselves, right?
+> 
 
-Hi Ingo, Peter, Thomas,
+Pretty much. As far as migration is concerned all that is critical is
+that it find all the old migration ptes and restore them. If any of them
+are missed then it will likely BUG later when the page is faulted. If a
+process happened to exit while the anon_vma mutex was not held and the
+migration pte and anon_vma disappeared during migration, it would not
+matter as such. If the protection was a rwsem then migration might cause
+delays in a parallel unmap or exit until the migration completed but I
+doubt it would ever be noticed.
 
-Could you merge the x86 arch include disintegration into the tip git tree now
-that the perf stuff has been dealt with?
+> So if this is a migration-specific scalability issue, then it might be
+> possible to solve by making the mutex be a rwsem instead, and have
+> migration only take it for reading.
+> 
+> Of course, I'm quite possibly wrong, and the code depends on full
+> mutual exclusion.
+> 
+> Just a thought, in case it makes somebody go "Hmm.."
+> 
 
-Many thanks,
-David
----
-The following changes since commit 7e5530af11be68f3109672aed59243f82e1272f0:
+Offhand, I cannot think of a reason why a rwsem would not work. This
+thing originally became a mutex because the RT people (Peter in
+particular) cared about being able to preempt faster. It'd be nice if
+they confirmed that rwsem is not be a problem for them.
 
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2012-12-02 16:39:00 -0800)
-
-are available in the git repository at:
-
-
-  git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-x86-20121203
-
-for you to fetch changes up to 7c258580403f18c0b326290253a04a8e38379663:
-
-  UAPI: (Scripted) Disintegrate arch/x86/include/asm (2012-12-03 12:32:55 +0000)
-
-----------------------------------------------------------------
-UAPI disintegration 2012-12-03
-
-----------------------------------------------------------------
-David Howells (1):
-      UAPI: (Scripted) Disintegrate arch/x86/include/asm
-
- arch/x86/include/asm/Kbuild                       |  26 ---
- arch/x86/include/asm/boot.h                       |   9 +-
- arch/x86/include/asm/debugreg.h                   |  79 +-------
- arch/x86/include/asm/e820.h                       |  74 +-------
- arch/x86/include/asm/hw_breakpoint.h              |   5 +-
- arch/x86/include/asm/ist.h                        |  17 +-
- arch/x86/include/asm/kvm_para.h                   |  99 +---------
- arch/x86/include/asm/mce.h                        | 119 +-----------
- arch/x86/include/asm/msr.h                        |  11 +-
- arch/x86/include/asm/mtrr.h                       |  93 +--------
- arch/x86/include/asm/posix_types.h                |  10 -
- arch/x86/include/asm/processor-flags.h            |  97 +---------
- arch/x86/include/asm/ptrace.h                     |  75 +-------
- arch/x86/include/asm/setup.h                      |   5 +-
- arch/x86/include/asm/sigcontext.h                 | 216 +--------------------
- arch/x86/include/asm/signal.h                     | 140 +-------------
- arch/x86/include/asm/svm.h                        | 132 +------------
- arch/x86/include/asm/unistd.h                     |  14 +-
- arch/x86/include/asm/vm86.h                       | 128 +------------
- arch/x86/include/asm/vmx.h                        |  89 +--------
- arch/x86/include/asm/vsyscall.h                   |  16 +-
- arch/x86/include/uapi/asm/Kbuild                  |  58 ++++++
- arch/x86/include/{ => uapi}/asm/a.out.h           |   0
- arch/x86/include/{ => uapi}/asm/auxvec.h          |   0
- arch/x86/include/{ => uapi}/asm/bitsperlong.h     |   0
- arch/x86/include/uapi/asm/boot.h                  |  10 +
- arch/x86/include/{ => uapi}/asm/bootparam.h       |   0
- arch/x86/include/{ => uapi}/asm/byteorder.h       |   0
- arch/x86/include/uapi/asm/debugreg.h              |  80 ++++++++
- arch/x86/include/uapi/asm/e820.h                  |  75 ++++++++
- arch/x86/include/{ => uapi}/asm/errno.h           |   0
- arch/x86/include/{ => uapi}/asm/fcntl.h           |   0
- arch/x86/include/{ => uapi}/asm/hyperv.h          |   0
- arch/x86/include/{ => uapi}/asm/ioctl.h           |   0
- arch/x86/include/{ => uapi}/asm/ioctls.h          |   0
- arch/x86/include/{ => uapi}/asm/ipcbuf.h          |   0
- arch/x86/include/uapi/asm/ist.h                   |  29 +++
- arch/x86/include/{ => uapi}/asm/kvm.h             |   0
- arch/x86/include/uapi/asm/kvm_para.h              | 100 ++++++++++
- arch/x86/include/{ => uapi}/asm/ldt.h             |   0
- arch/x86/include/uapi/asm/mce.h                   | 121 ++++++++++++
- arch/x86/include/{ => uapi}/asm/mman.h            |   0
- arch/x86/include/{ => uapi}/asm/msgbuf.h          |   0
- arch/x86/include/{ => uapi}/asm/msr-index.h       |   0
- arch/x86/include/uapi/asm/msr.h                   |  15 ++
- arch/x86/include/uapi/asm/mtrr.h                  | 117 ++++++++++++
- arch/x86/include/{ => uapi}/asm/param.h           |   0
- arch/x86/include/{ => uapi}/asm/perf_regs.h       |   0
- arch/x86/include/{ => uapi}/asm/poll.h            |   0
- arch/x86/include/uapi/asm/posix_types.h           |   9 +
- arch/x86/include/{ => uapi}/asm/posix_types_32.h  |   0
- arch/x86/include/{ => uapi}/asm/posix_types_64.h  |   0
- arch/x86/include/{ => uapi}/asm/posix_types_x32.h |   0
- arch/x86/include/{ => uapi}/asm/prctl.h           |   0
- arch/x86/include/uapi/asm/processor-flags.h       |  99 ++++++++++
- arch/x86/include/{ => uapi}/asm/ptrace-abi.h      |   0
- arch/x86/include/uapi/asm/ptrace.h                |  78 ++++++++
- arch/x86/include/{ => uapi}/asm/resource.h        |   0
- arch/x86/include/{ => uapi}/asm/sembuf.h          |   0
- arch/x86/include/{ => uapi}/asm/shmbuf.h          |   0
- arch/x86/include/uapi/asm/sigcontext.h            | 221 ++++++++++++++++++++++
- arch/x86/include/{ => uapi}/asm/sigcontext32.h    |   0
- arch/x86/include/{ => uapi}/asm/siginfo.h         |   0
- arch/x86/include/uapi/asm/signal.h                | 145 ++++++++++++++
- arch/x86/include/{ => uapi}/asm/socket.h          |   0
- arch/x86/include/{ => uapi}/asm/sockios.h         |   0
- arch/x86/include/{ => uapi}/asm/stat.h            |   0
- arch/x86/include/{ => uapi}/asm/statfs.h          |   0
- arch/x86/include/uapi/asm/svm.h                   | 132 +++++++++++++
- arch/x86/include/{ => uapi}/asm/swab.h            |   0
- arch/x86/include/{ => uapi}/asm/termbits.h        |   0
- arch/x86/include/{ => uapi}/asm/termios.h         |   0
- arch/x86/include/{ => uapi}/asm/types.h           |   0
- arch/x86/include/{ => uapi}/asm/ucontext.h        |   0
- arch/x86/include/uapi/asm/unistd.h                |  17 ++
- arch/x86/include/uapi/asm/vm86.h                  | 129 +++++++++++++
- arch/x86/include/uapi/asm/vmx.h                   | 109 +++++++++++
- arch/x86/include/uapi/asm/vsyscall.h              |  17 ++
- 78 files changed, 1587 insertions(+), 1428 deletions(-)
- rename arch/x86/include/{ => uapi}/asm/a.out.h (100%)
- rename arch/x86/include/{ => uapi}/asm/auxvec.h (100%)
- rename arch/x86/include/{ => uapi}/asm/bitsperlong.h (100%)
- create mode 100644 arch/x86/include/uapi/asm/boot.h
- rename arch/x86/include/{ => uapi}/asm/bootparam.h (100%)
- rename arch/x86/include/{ => uapi}/asm/byteorder.h (100%)
- create mode 100644 arch/x86/include/uapi/asm/debugreg.h
- create mode 100644 arch/x86/include/uapi/asm/e820.h
- rename arch/x86/include/{ => uapi}/asm/errno.h (100%)
- rename arch/x86/include/{ => uapi}/asm/fcntl.h (100%)
- create mode 100644 arch/x86/include/uapi/asm/hw_breakpoint.h
- rename arch/x86/include/{ => uapi}/asm/hyperv.h (100%)
- rename arch/x86/include/{ => uapi}/asm/ioctl.h (100%)
- rename arch/x86/include/{ => uapi}/asm/ioctls.h (100%)
- rename arch/x86/include/{ => uapi}/asm/ipcbuf.h (100%)
- create mode 100644 arch/x86/include/uapi/asm/ist.h
- rename arch/x86/include/{ => uapi}/asm/kvm.h (100%)
- create mode 100644 arch/x86/include/uapi/asm/kvm_para.h
- rename arch/x86/include/{ => uapi}/asm/ldt.h (100%)
- create mode 100644 arch/x86/include/uapi/asm/mce.h
- rename arch/x86/include/{ => uapi}/asm/mman.h (100%)
- rename arch/x86/include/{ => uapi}/asm/msgbuf.h (100%)
- rename arch/x86/include/{ => uapi}/asm/msr-index.h (100%)
- create mode 100644 arch/x86/include/uapi/asm/msr.h
- create mode 100644 arch/x86/include/uapi/asm/mtrr.h
- rename arch/x86/include/{ => uapi}/asm/param.h (100%)
- rename arch/x86/include/{ => uapi}/asm/perf_regs.h (100%)
- rename arch/x86/include/{ => uapi}/asm/poll.h (100%)
- create mode 100644 arch/x86/include/uapi/asm/posix_types.h
- rename arch/x86/include/{ => uapi}/asm/posix_types_32.h (100%)
- rename arch/x86/include/{ => uapi}/asm/posix_types_64.h (100%)
- rename arch/x86/include/{ => uapi}/asm/posix_types_x32.h (100%)
- rename arch/x86/include/{ => uapi}/asm/prctl.h (100%)
- create mode 100644 arch/x86/include/uapi/asm/processor-flags.h
- rename arch/x86/include/{ => uapi}/asm/ptrace-abi.h (100%)
- create mode 100644 arch/x86/include/uapi/asm/ptrace.h
- rename arch/x86/include/{ => uapi}/asm/resource.h (100%)
- rename arch/x86/include/{ => uapi}/asm/sembuf.h (100%)
- create mode 100644 arch/x86/include/uapi/asm/setup.h
- rename arch/x86/include/{ => uapi}/asm/shmbuf.h (100%)
- create mode 100644 arch/x86/include/uapi/asm/sigcontext.h
- rename arch/x86/include/{ => uapi}/asm/sigcontext32.h (100%)
- rename arch/x86/include/{ => uapi}/asm/siginfo.h (100%)
- create mode 100644 arch/x86/include/uapi/asm/signal.h
- rename arch/x86/include/{ => uapi}/asm/socket.h (100%)
- rename arch/x86/include/{ => uapi}/asm/sockios.h (100%)
- rename arch/x86/include/{ => uapi}/asm/stat.h (100%)
- rename arch/x86/include/{ => uapi}/asm/statfs.h (100%)
- create mode 100644 arch/x86/include/uapi/asm/svm.h
- rename arch/x86/include/{ => uapi}/asm/swab.h (100%)
- rename arch/x86/include/{ => uapi}/asm/termbits.h (100%)
- rename arch/x86/include/{ => uapi}/asm/termios.h (100%)
- rename arch/x86/include/{ => uapi}/asm/types.h (100%)
- rename arch/x86/include/{ => uapi}/asm/ucontext.h (100%)
- create mode 100644 arch/x86/include/uapi/asm/unistd.h
- create mode 100644 arch/x86/include/uapi/asm/vm86.h
- create mode 100644 arch/x86/include/uapi/asm/vmx.h
- create mode 100644 arch/x86/include/uapi/asm/vsyscall.h
+-- 
+Mel Gorman
+SUSE Labs
