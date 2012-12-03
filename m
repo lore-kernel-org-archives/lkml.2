@@ -1,80 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752009Ab2LCT36 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 14:29:58 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:33582 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751008Ab2LCT35 (ORCPT
+	id S1752085Ab2LCTc7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 14:32:59 -0500
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:55686 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751033Ab2LCTc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 14:29:57 -0500
-MIME-Version: 1.0
-In-Reply-To: <1354312850-29264-2-git-send-email-marek.belisko@open-nandra.com>
-References: <1354312850-29264-1-git-send-email-marek.belisko@open-nandra.com> <1354312850-29264-2-git-send-email-marek.belisko@open-nandra.com>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Mon, 3 Dec 2012 11:29:35 -0800
-Message-ID: <CAK5ve-K3aEd57xV_pL36V5sL0FEhp4cWh0DX9zO1j9s1C+j_zg@mail.gmail.com>
-Subject: Re: [PATCH v4 2/2] Add documentation for tca6507 devicetree bindings.
-To: Marek Belisko <marek.belisko@open-nandra.com>
-Cc: rpurdie@rpsys.net, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 3 Dec 2012 14:32:59 -0500
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFIiS0PG3rw
+X-RZG-CLASS-ID: mo00
+From: Olaf Hering <olaf@aepfle.de>
+To: konrad.wilk@oracle.com
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xen.org, jbeulich@suse.com,
+        Olaf Hering <olaf@aepfle.de>
+Subject: [PATCH] xen/blkback: do not leak mode property
+Date: Mon,  3 Dec 2012 20:32:48 +0100
+Message-Id: <1354563168-6609-1-git-send-email-olaf@aepfle.de>
+X-Mailer: git-send-email 1.8.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 30, 2012 at 2:00 PM, Marek Belisko
-<marek.belisko@open-nandra.com> wrote:
-> Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
-> ---
->  Documentation/devicetree/bindings/leds/tca6507.txt |   33 ++++++++++++++++++++
->  1 file changed, 33 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/leds/tca6507.txt
->
-> diff --git a/Documentation/devicetree/bindings/leds/tca6507.txt b/Documentation/devicetree/bindings/leds/tca6507.txt
-> new file mode 100644
-> index 0000000..2b6693b
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/leds/tca6507.txt
-> @@ -0,0 +1,33 @@
-> +LEDs conected to tca6507
-> +
-> +Required properties:
-> +- compatible : should be : "ti,tca6507".
-> +
-> +Each led is represented as a sub-node of the ti,tca6507 device.
-> +
-> +LED sub-node properties:
-> +- label : (optional) see Documentation/devicetree/bindings/leds/common.txt
-> +- reg : number of LED line (could be from 0 to 6)
-> +- linux,default-trigger : (optional)
-> +   see Documentation/devicetree/bindings/leds/common.txt
+be->mode is obtained from xenbus_read, which does a kmalloc for the
+message body. The short string is never released, so do it on blkbk
+remove.
 
-Did you post patch to add this file? I failed to find it and overall
-this patchset looks fine with me.
+Signed-off-by: Olaf Hering <olaf@aepfle.de>
+---
 
--Bryan
+!! Not compile tested !!
 
-> +
-> +Examples:
-> +
-> +tca6507@45 {
-> +       compatible = "ti,tca6507";
-> +       #address-cells = <1>;
-> +       #size-cells = <0>;
-> +       reg = <0x45>;
-> +
-> +       led0: red-aux@0 {
-> +               label = "red:aux";
-> +               reg = <0x0>;
-> +       };
-> +
-> +       led1: green-aux@1 {
-> +               label = "green:aux";
-> +               reg = <0x5>;
-> +               linux,default-trigger = "default-on";
-> +       };
-> +};
-> +
-> --
-> 1.7.10.4
->
+ drivers/block/xen-blkback/xenbus.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
+index f58434c..a6585a4 100644
+--- a/drivers/block/xen-blkback/xenbus.c
++++ b/drivers/block/xen-blkback/xenbus.c
+@@ -366,6 +366,7 @@ static int xen_blkbk_remove(struct xenbus_device *dev)
+ 		be->blkif = NULL;
+ 	}
+ 
++	kfree(be->mode);
+ 	kfree(be);
+ 	dev_set_drvdata(&dev->dev, NULL);
+ 	return 0;
+-- 
+1.8.0.1
+
