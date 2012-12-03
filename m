@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755849Ab2LCRmI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 12:42:08 -0500
-Received: from mga11.intel.com ([192.55.52.93]:43885 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755562Ab2LCRmG convert rfc822-to-8bit (ORCPT
+	id S1755871Ab2LCRmP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 12:42:15 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:51321 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755731Ab2LCRmM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 12:42:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,208,1355126400"; 
-   d="scan'208";a="256654590"
-From: "Koul, Vinod" <vinod.koul@intel.com>
-To: viresh kumar <viresh.kumar@linaro.org>, Dan Williams <djbw@fb.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Jiang, Dave" <dave.jiang@intel.com>,
-        "Mason, Jon" <jon.mason@intel.com>
-Subject: RE: [PATCH v2] dmatest: Fix NULL pointer dereference on ioat
-Thread-Topic: [PATCH v2] dmatest: Fix NULL pointer dereference on ioat
-Thread-Index: AQHNwGDJKBnb2Ushf0C5VEMqI8IyuJfoR+2AgAy+rYCAEnNhMA==
-Date: Mon, 3 Dec 2012 17:42:00 +0000
-Message-ID: <8D3F6266AEB6384E807C6FFC6FE195E302270D26@BGSMSX101.gar.corp.intel.com>
-References: <1352675000-29627-1-git-send-email-jon.mason@intel.com>
-	<CAOh2x=niXPCeg1dWtmjDjms_8ndYD7pzGY37k36e8=D8Km7gqQ@mail.gmail.com>
- <CAOh2x==rW9NNJ6kxRF13D=eYVmHsEhCHck7ecDpe9YcrSm8mXA@mail.gmail.com>
-In-Reply-To: <CAOh2x==rW9NNJ6kxRF13D=eYVmHsEhCHck7ecDpe9YcrSm8mXA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 3 Dec 2012 12:42:12 -0500
 MIME-Version: 1.0
+In-Reply-To: <20121203173951.GA25384@fancy-poultry.org>
+References: <20121203173951.GA25384@fancy-poultry.org>
+Date: Mon, 3 Dec 2012 12:42:11 -0500
+Message-ID: <CAHdPZaP6HvM=UqkAjyC8MFMv9ZFTyxjx-CsMQ+8QZaxPCaW1Hw@mail.gmail.com>
+Subject: Re: i915 freakout with latest 3.7 git
+From: "devendra.aaru" <devendra.aaru@gmail.com>
+To: Heinz Diehl <htd@fancy-poultry.org>, dri-devel@lists.freedesktop.org,
+        intel-gfx@lists.freedesktop.org
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, Nov 14, 2012 at 8:17 AM, viresh kumar <viresh.kumar@linaro.org> wrote:
-> > On Mon, Nov 12, 2012 at 4:33 AM, Jon Mason <jon.mason@intel.com> wrote:
-> >> device_control is an optional and not implemented in all DMA drivers.
-> >> Any calls to these will result in a NULL pointer dereference.
-> >> dmatest makes two of these calls when completing the kernel thread
-> >> and removing the module.  These are corrected by calling the
-> >> dmaengine_device_control wrapper and checking for a non-existant
-> >> device_control function pointer there.
-> >>
-> >> Signed-off-by: Jon Mason <jon.mason@intel.com>
-> >> CC: Vinod Koul <vinod.koul@intel.com>
-> >> CC: Dan Williams <djbw@fb.com>
-> 
-> > Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
-Applied, Thanks
+Add more CC's
 
---
-~Vinod
+On Mon, Dec 3, 2012 at 12:39 PM, Heinz Diehl <htd@fancy-poultry.org> wrote:
+> Hi,
+>
+> with latest linus-3.7 git from today, after some time, my machine gets
+> more and more unresponsible, fanspeed increases, and that's what I see in the logs:
+>
+> Dec  3 18:08:10 wildsau kernel: [35092.535757] [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed... GPU hung
+> Dec  3 18:08:10 wildsau kernel: [35092.535768] [drm] capturing error event; look for more information in /debug/dri/0/i915_error_state
+> Dec  3 18:08:12 wildsau kernel: [35094.050918] [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed... GPU hung
+> Dec  3 18:08:12 wildsau kernel: [35094.051081] [drm:i915_reset] *ERROR* GPU hanging too fast, declaring wedged!
+> Dec  3 18:08:12 wildsau kernel: [35094.051086] [drm:i915_reset] *ERROR* Failed to reset chip.
+>
+> I have never seen that before, up to 3.6.7.
+>
+> Don't know what information would be important for you, but will
+> provide anything you'll ask me to.
+>
+> Thanks,
+> Heinz.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
