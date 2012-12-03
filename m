@@ -1,178 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752028Ab2LCTOR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 14:14:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23473 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751784Ab2LCTOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 14:14:15 -0500
-Date: Mon, 3 Dec 2012 14:14:12 -0500
-From: Aristeu Rozanski <aris@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Serge Hallyn <serge.hallyn@canonical.com>,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH 5/5] device_cgroup: propagate local changes down the
- hierarchy
-Message-ID: <20121203191411.GE32112@redhat.com>
-References: <20121127193501.255267751@napanee.usersys.redhat.com>
- <20121127193503.114004167@napanee.usersys.redhat.com>
- <20121203180145.GJ19802@htj.dyndns.org>
+	id S1752071Ab2LCTPT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 14:15:19 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:25148 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751375Ab2LCTPR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 14:15:17 -0500
+Message-ID: <50BCFA25.9010205@oracle.com>
+Date: Mon, 03 Dec 2012 13:14:45 -0600
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121203180145.GJ19802@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dave Chinner <david@fromorbit.com>
+CC: Steven Whitehouse <swhiteho@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        cluster-devel@redhat.com
+Subject: Re: [PATCH v4 27/31] gfs2: Convert aio_read/write ops to read/write_iter
+References: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com> <1353537671-26284-28-git-send-email-dave.kleikamp@oracle.com> <1353577893.2757.14.camel@menhir> <20121122225926.GU2591@dastard> <50AFB996.7040905@oracle.com>
+In-Reply-To: <50AFB996.7040905@oracle.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 03, 2012 at 10:01:45AM -0800, Tejun Heo wrote:
-> On Tue, Nov 27, 2012 at 02:35:06PM -0500, Aristeu Rozanski wrote:
-> > This patch makes all changes propagate down in hierarchy respecting when
-> > possible local configurations.
-> > 
-> > Behavior changes will clean up exceptions in all the children except when the
-> > parent changes the behavior from allow to deny and the child's behavior was
-> > already deny, in which case the local exceptions will be reused. The inverse
-> > is not possible: you can't have a parent with behavior deny and a child with
-> > behavior accept.
-> > 
-> > New exceptions allowing additional access to devices won't be propagated, but
-> > it'll be possible to add an exception to access all of part of the newly
-> > allowed device(s).
-> > 
-> > New exceptions disallowing access to devices will be propagated down and the
-> > local group's exceptions will be revalidated for the new situation.
+On 11/23/2012 11:59 AM, Dave Kleikamp wrote:
+> On 11/22/2012 04:59 PM, Dave Chinner wrote:
+>> On Thu, Nov 22, 2012 at 09:51:33AM +0000, Steven Whitehouse wrote:
+>>> Hi,
+>>>
+>>> On Wed, 2012-11-21 at 16:41 -0600, Dave Kleikamp wrote:
+>>>> Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+>>>> Cc: Steven Whitehouse <swhiteho@redhat.com>
+>>>> Cc: cluster-devel@redhat.com
+>>>> ---
+>>>>  fs/gfs2/file.c | 21 ++++++++++-----------
+>>>>  1 file changed, 10 insertions(+), 11 deletions(-)
+>>>>
+>>>> diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
+>>>> index e056b4c..bcea69e 100644
+>>>> --- a/fs/gfs2/file.c
+>>>> +++ b/fs/gfs2/file.c
+>>>> @@ -655,10 +655,9 @@ static int gfs2_fsync(struct file *file, loff_t start, loff_t end,
+>>>>  }
+>>>>  
+>>>>  /**
+>>>> - * gfs2_file_aio_write - Perform a write to a file
+>>>> + * gfs2_file_write_iter - Perform a write to a file
+>>>>   * @iocb: The io context
+>>>> - * @iov: The data to write
+>>>> - * @nr_segs: Number of @iov segments
+>>>> + * @iter: The data to write
+>>>>   * @pos: The file position
+>>>>   *
+>>>>   * We have to do a lock/unlock here to refresh the inode size for
+>>>> @@ -668,11 +667,11 @@ static int gfs2_fsync(struct file *file, loff_t start, loff_t end,
+>>>>   *
+>>>>   */
+>>>>  
+>>>> -static ssize_t gfs2_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+>>>> -				   unsigned long nr_segs, loff_t pos)
+>>>> +static ssize_t gfs2_file_write_iter(struct kiocb *iocb, struct iov_iter *iter,
+>>>> +				    loff_t pos)
+>>>>  {
+>>>>  	struct file *file = iocb->ki_filp;
+>>>> -	size_t writesize = iov_length(iov, nr_segs);
+>>>> +	size_t writesize = iov_iter_count(iter);
+>>> Hmm, I'm not sure that length isn't a better name than count for this
+>>> function. What we want is the total length of the i/o request and count
+>>> sounds to me as if it would refer to the number of segments. So could we
+>>> have a iov_iter_length() function instead perhaps?
+>>
+>> I had exactly the same thought when looking at one of the XFS
+>> patches and was holding off commenting until I'd read the entire
+>> patch set. But, you've pointed out the same thing, so I figured I'd
+>> add my 2c here as well.
 > 
-> I think the inheritance policy needs to be documented in detail
-> listing the possible cases and the implemented behavior preferably
-> with rationale.  Can you please do that?
+> I agree with both of you. iov_iter_length() would be more consistent.
 
-ok, will do
+It seems iov_iter_count() has been defined since 2.6.24. I really don't
+feel comfortable changing it now.
 
-> > +/**
-> > + * __revalidate_exceptions - walks through the exception list and revalidates
-> > + *			     the exceptions based on parents' behavior and
-> > + *			     exceptions. Called with devcgroup_mutex held.
+Shaggy
 > 
-> new line
-
-ok
-
-> > + * @devcg: cgroup which exceptions will be checked
-> > + * returns: 0 in success, -ENOMEM in case of out of memory
-> > + */
-> > +static int __revalidate_exceptions(struct dev_cgroup *devcg)
-> 
-> Why __?
-
-hm. I think I had a version with locking in the past, forgot to take
-those out. will fix that too
-
-> > +/**
-> > + * propagate_behavior - propagates a change in the behavior to the children
-> > + * @devcg: device cgroup that changed behavior
-> > + *
-> > + * returns: 0 in case of success, != 0 in case of error
-> > + */
-> > +static int propagate_behavior(struct dev_cgroup *devcg)
-> > +{
-> > +	struct cgroup *root = devcg->css.cgroup, *pos, *saved = NULL,
-> > +			*prev = NULL;
-> > +	struct dev_cgroup *parent;
-> > +	int rc = 0;
-> > +
-> > +	while (1) {
-> > +		rcu_read_lock();
-> > +		cgroup_for_each_descendant_pre(pos, root) {
-> > +			if (saved && prev != saved) {
-> > +				prev = pos;
-> > +				continue;
-> > +			}
-> > +			break;
-> > +		}
-> > +		rcu_read_unlock();
-> 
-> Hmmm... this can race with new cgroup creation and a new child can
-> escape propagation.  devcg currently inherits from css_alloc() at
-> which it isn't visible to cgroup_for_each_*() iteration.  The
-> inheriting step should be moved to css_online() with explicit online
-> marking.  Please take a look at the recently posted cpuset for an
-> example.
-
-ok, will do
-> > +/**
-> > + * propagate_exception - propagates a new exception to the children
-> > + * @devcg: device cgroup that added a new exception
-> > + *
-> > + * returns: 0 in case of success, != 0 in case of error
-> > + */
-> > +static int propagate_exception(struct dev_cgroup *devcg)
-> > +{
-> > +	struct cgroup *root = devcg->css.cgroup, *pos, *saved = NULL,
-> > +			*prev = NULL;
-> > +	struct dev_cgroup *parent;
-> > +	int rc = 0;
-> > +
-> > +	while(1) {
-> > +		rcu_read_lock();
-> > +		cgroup_for_each_descendant_pre(pos, root) {
-> > +			if (saved && prev != saved) {
-> > +				prev = pos;
-> > +				continue;
-> > +			}
-> > +			break;
-> > +		}
-> > +		rcu_read_unlock();
-> 
-> Ditto.  Racy.
-> 
-> > +		if (!pos)
-> > +			break;
-> > +
-> > +		devcg = cgroup_to_devcgroup(pos);
-> > +		parent = cgroup_to_devcgroup(pos->parent);
-> > +
-> > +		__dev_exception_clean(&devcg->exceptions);
-> > +		if (devcg->behavior == parent->behavior) {
-> > +			rc = dev_exceptions_copy(&devcg->exceptions, &parent->exceptions);
-> > +			if (rc) {
-> > +				devcg->behavior = DEVCG_DEFAULT_DENY;
-> > +				break;
-> > +			}
-> > +			rc = __revalidate_exceptions(devcg);
-> > +			if (rc)
-> > +				break;
-> > +		} else {
-> > +			/* we never give more permissions to the child */
-> > +			WARN_ONCE(devcg->behavior == DEVCG_DEFAULT_ALLOW,
-> > +				  "devcg: parent/child behavior is inconsistent");
-> > +			rc = __revalidate_exceptions(devcg);
-> > +			if (rc)
-> > +				break;
-> > +		}
-> > +		saved = pos;
-> > +	}
-> > +	return rc;
-> > +}
-> 
-> Maybe I'm misunderstanding something but the behavior seems a bit
-> inconsistent.  So, you can't add an exception which isn't allowed by
-> your parent, right?  But, if your parent disallows an existing
-> exception, you get to keep it?  I think it would be more consistent to
-> go either
-> 
-> * Allow all settings but apply only as allowed by the parent.
-> 
-> * Deny settings disallowed by the parent.  If parent's config changes,
->   delete configs which fall outside the new config.
-
-I prefer this one, in fact that's what was happening before and you
-suggested to not remove local preferences when they're not valid
-anymore.
-
-In this case, Serge is right about not propagating 'allow' exceptions.
-
--- 
-Aristeu
-
