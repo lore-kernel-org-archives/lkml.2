@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752568Ab2LCVZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 16:25:58 -0500
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:32794 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752261Ab2LCVZ4 (ORCPT
+	id S1752670Ab2LCV0L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 16:26:11 -0500
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:44334 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211Ab2LCV0I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 16:25:56 -0500
+	Mon, 3 Dec 2012 16:26:08 -0500
 From: Lance Ortiz <lance.ortiz@hp.com>
-Subject: [PATCH v5 1/3] aerdrv: Trace Event for AER
+Subject: [PATCH v5 3/3] aerdrv: Cleanup log output for CPER based AER
 To: bhelgaas@google.com, lance_ortiz@hotmail.com, jiang.liu@huawei.com,
         tony.luck@intel.com, bp@alien8.de, rostedt@goodmis.org,
         mchehab@redhat.com, linux-acpi@vger.kernel.org,
         linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 03 Dec 2012 14:20:48 -0700
-Message-ID: <20121203212047.24373.8646.stgit@grignak.americas.hpqcorp.net>
+Date: Mon, 03 Dec 2012 14:21:00 -0700
+Message-ID: <20121203212059.24373.7804.stgit@grignak.americas.hpqcorp.net>
+In-Reply-To: <20121203212047.24373.8646.stgit@grignak.americas.hpqcorp.net>
+References: <20121203212047.24373.8646.stgit@grignak.americas.hpqcorp.net>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -23,117 +25,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This header file will define a new trace event that will be triggered when
-a AER event occurs.  The following data will be provided to the trace
-event.
+These changes make cper_print_aer more consistent with aer_print_error
+which is called in the AER interrupt case. The string in the variable
+'prefix' is printed at the beginning of each print statement in
+cper_print_aer(). The prefix is a string containing the driver name
+and the device's slot location.  From the callers the value of prefix
+is never assigned and is NULL, so when cper_print_aer prints data the
+initial string does not get printed.  This string is important because
+it identifies the device that the error is on.
 
-char * dev_name - The name of the slot where the device resides
-                  ([domain:]bus:device.function).
+v1-v2 fix some compile errors withinn the #ifdef
+v3-v4 remove agent id stuff and kept print the same to avoid
+compatibility issues
 
-u32 status - Either the correctable or uncorrectable register
-             indicating what error or errors have been see.
-
-u8 severity - error severity 0:NONFATAL 1:FATAL 2:CORRECTED
-
-The trace event will also provide a trace string that may look like:
-
-"0000:05:00.0 PCIe Bus Error:severity=Uncorrected (Non-Fatal), Poisoned
-TLP"
-
-v1-v2 Move header from include/ras/aer_event.h to
-include/trace/events/ras.h
-v3-v4 Cleaned up comments and commit header
-v4-v5 More cleanup remove () from if statement in print.
-      Renamed string define to be more specific.
 Signed-off-by: Lance Ortiz <lance.ortiz@hp.com>
 ---
 
- include/trace/events/ras.h |   78 ++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 78 insertions(+), 0 deletions(-)
- create mode 100644 include/trace/events/ras.h
+ drivers/pci/pcie/aer/aerdrv_errprint.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-diff --git a/include/trace/events/ras.h b/include/trace/events/ras.h
-new file mode 100644
-index 0000000..e6f123e
---- /dev/null
-+++ b/include/trace/events/ras.h
-@@ -0,0 +1,78 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM aer_event
-+#define TRACE_INCLUDE_FILE ras
+diff --git a/drivers/pci/pcie/aer/aerdrv_errprint.c b/drivers/pci/pcie/aer/aerdrv_errprint.c
+index 34d96e4..58ff4c0 100644
+--- a/drivers/pci/pcie/aer/aerdrv_errprint.c
++++ b/drivers/pci/pcie/aer/aerdrv_errprint.c
+@@ -228,9 +228,14 @@ void cper_print_aer(struct pci_dev *dev, int cper_severity,
+ 	int aer_severity, layer, agent, status_strs_size, tlp_header_valid = 0;
+ 	u32 status, mask;
+ 	const char **status_strs;
+-	char *prefix = NULL;
++	char prefix[44];
+ 
+ 	aer_severity = cper_severity_to_aer(cper_severity);
++	snprintf(prefix, sizeof(prefix), "%s%s %s: ",
++		(aer_severity == AER_CORRECTABLE) ?
++		KERN_WARNING : KERN_ERR,
++		dev_driver_string(&dev->dev), dev_name(&dev->dev));
 +
-+#if !defined(_TRACE_AER_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_AER_H
-+
-+#include <linux/tracepoint.h>
-+#include <linux/edac.h>
-+
-+
-+/*
-+ * PCIe AER Trace event
-+ *
-+ * These events are generated when hardware detects a corrected or
-+ * uncorrected event on a PCIe device. The event report has
-+ * the following structure:
-+ *
-+ * char * dev_name -	The name of the slot where the device resides
-+ *			([domain:]bus:device.function).
-+ * u32 status -		Either the correctable or uncorrectable register
-+ *			indicating what error or errors have been seen
-+ * u8 severity -	error severity 0:NONFATAL 1:FATAL 2:CORRECTED
-+ */
-+
-+#define aer_correctable_errors		\
-+	{BIT(0),	"Receiver Error"},		\
-+	{BIT(6),	"Bad TLP"},			\
-+	{BIT(7),	"Bad DLLP"},			\
-+	{BIT(8),	"RELAY_NUM Rollover"},		\
-+	{BIT(12),	"Replay Timer Timeout"},	\
-+	{BIT(13),	"Advisory Non-Fatal"}
-+
-+#define aer_uncorrectable_errors		\
-+	{BIT(4),	"Data Link Protocol"},		\
-+	{BIT(12),	"Poisoned TLP"},		\
-+	{BIT(13),	"Flow Control Protocol"},	\
-+	{BIT(14),	"Completion Timeout"},		\
-+	{BIT(15),	"Completer Abort"},		\
-+	{BIT(16),	"Unexpected Completion"},	\
-+	{BIT(17),	"Receiver Overflow"},		\
-+	{BIT(18),	"Malformed TLP"},		\
-+	{BIT(19),	"ECRC"},			\
-+	{BIT(20),	"Unsupported Request"}
-+
-+TRACE_EVENT(aer_event,
-+	TP_PROTO(const char *dev_name,
-+		 const u32 status,
-+		 const u8 severity),
-+
-+	TP_ARGS(dev_name, status, severity),
-+
-+	TP_STRUCT__entry(
-+		__string(	dev_name,	dev_name	)
-+		__field(	u32,		status		)
-+		__field(	u8,		severity	)
-+	),
-+
-+	TP_fast_assign(
-+		__assign_str(dev_name, dev_name);
-+		__entry->status		= status;
-+		__entry->severity	= severity;
-+	),
-+
-+	TP_printk("%s PCIe Bus Error: severity=%s, %s\n",
-+		__get_str(dev_name),
-+		__entry->severity == HW_EVENT_ERR_CORRECTED ? "Corrected" :
-+			__entry->severity == HW_EVENT_ERR_FATAL ?
-+			"Fatal" : "Uncorrected",
-+		__entry->severity == HW_EVENT_ERR_CORRECTED ?
-+		__print_flags(__entry->status, "|", aer_correctable_errors) :
-+		__print_flags(__entry->status, "|", aer_uncorrectable_errors))
-+);
-+
-+#endif /* _TRACE_AER_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
+ 	if (aer_severity == AER_CORRECTABLE) {
+ 		status = aer->cor_status;
+ 		mask = aer->cor_mask;
 
