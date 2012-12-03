@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755244Ab2LCPIx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 10:08:53 -0500
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:50205 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754465Ab2LCPIw (ORCPT
+	id S1754823Ab2LCPJu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 10:09:50 -0500
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:58851 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752813Ab2LCPJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 10:08:52 -0500
-Subject: [PATCH v2 2/4] powerpc: Move the single step enable code to a
- generic path
+	Mon, 3 Dec 2012 10:09:49 -0500
+Subject: [PATCH v2 3/4] uprobes/powerpc: Introduce routines for save/restore
+ context
 To: bigeasy@linutronix.de, oleg@redhat.com, ananth@in.ibm.com,
         srikar@linux.vnet.ibm.com
 From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
-Cc: peterz@infradead.org, benh@kernel.crashing.org,
-        Kumar Gala <galak@kernel.crashing.org>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, anton@redhat.com, mingo@elte.hu
-Date: Mon, 03 Dec 2012 20:38:37 +0530
-Message-ID: <20121203150754.7727.42629.stgit@suzukikp>
+Cc: peterz@infradead.org, benh@kernel.crashing.org, mingo@elte.hu,
+        anton@redhat.com, linux-kernel@vger.kernel.org
+Date: Mon, 03 Dec 2012 20:39:35 +0530
+Message-ID: <20121203150849.7727.53296.stgit@suzukikp>
 In-Reply-To: <20121203150438.7727.74924.stgit@suzukikp>
 References: <20121203150438.7727.74924.stgit@suzukikp>
 User-Agent: StGit/0.16
@@ -24,98 +23,70 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12120315-9574-0000-0000-0000059836B0
+x-cbid: 12120315-8256-0000-0000-00000547772E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Suzuki K. Poulose <suzuki@in.ibm.com>
 
-This patch moves the single step enable code used by kprobe to a generic
-routine header so that, it can be re-used by other code, in this case,
-uprobes. No functional changes.
+Introduce routines for saving and restoring the context
+befre/after the single step. No functional changes involved.
+
+These will be extended later to save/restore more info about
+the process once we replace the ptrace helpers.
 
 Signed-off-by: Suzuki K. Poulose <suzuki@in.ibm.com>
-Cc:	Ananth N Mavinakaynahalli <ananth@in.ibm.com>
-Cc:	Kumar Gala <galak@kernel.crashing.org>
-Cc:	linuxppc-dev@ozlabs.org
 ---
- arch/powerpc/include/asm/probes.h |   25 +++++++++++++++++++++++++
- arch/powerpc/kernel/kprobes.c     |   21 +--------------------
- 2 files changed, 26 insertions(+), 20 deletions(-)
+ arch/powerpc/kernel/uprobes.c |   16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/probes.h b/arch/powerpc/include/asm/probes.h
-index 5f1e15b..f94a44f 100644
---- a/arch/powerpc/include/asm/probes.h
-+++ b/arch/powerpc/include/asm/probes.h
-@@ -38,5 +38,30 @@ typedef u32 ppc_opcode_t;
- #define is_trap(instr)		(IS_TW(instr) || IS_TWI(instr))
- #endif /* CONFIG_PPC64 */
+diff --git a/arch/powerpc/kernel/uprobes.c b/arch/powerpc/kernel/uprobes.c
+index bc77834..1a62353 100644
+--- a/arch/powerpc/kernel/uprobes.c
++++ b/arch/powerpc/kernel/uprobes.c
+@@ -52,6 +52,16 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe,
+ 	return 0;
+ }
  
-+#ifdef CONFIG_PPC_ADV_DEBUG_REGS
-+#define MSR_SINGLESTEP	(MSR_DE)
-+#else
-+#define MSR_SINGLESTEP	(MSR_SE)
-+#endif
-+
-+/* Enable single stepping for the current task */
-+static inline void enable_single_step(struct pt_regs *regs)
++static void uprobe_save_context_sstep(struct arch_uprobe_task *autask)
 +{
-+	regs->msr |= MSR_SINGLESTEP;
-+#ifdef CONFIG_PPC_ADV_DEBUG_REGS
-+	/* 
-+	 * We turn off Critical Input Exception(CE) to ensure that the single
-+	 * step will be for the instruction we have the probe on; if we don't,
-+	 * it is possible we'd get the single step reported for CE.
-+	 */
-+	regs->msr &= ~MSR_CE;
-+	mtspr(SPRN_DBCR0, mfspr(SPRN_DBCR0) | DBCR0_IC | DBCR0_IDM);
-+#ifdef CONFIG_PPC_47x
-+	isync();
-+#endif
-+#endif
++	autask->saved_trap_nr = current->thread.trap_nr;
 +}
 +
++static void uprobe_restore_context_sstep(struct arch_uprobe_task *autask)
++{
++	current->thread.trap_nr = autask->saved_trap_nr;
++}
 +
- #endif /* __KERNEL__ */
- #endif	/* _ASM_POWERPC_PROBES_H */
-diff --git a/arch/powerpc/kernel/kprobes.c b/arch/powerpc/kernel/kprobes.c
-index 4901b34..92f1be7 100644
---- a/arch/powerpc/kernel/kprobes.c
-+++ b/arch/powerpc/kernel/kprobes.c
-@@ -36,12 +36,6 @@
- #include <asm/sstep.h>
- #include <asm/uaccess.h>
- 
--#ifdef CONFIG_PPC_ADV_DEBUG_REGS
--#define MSR_SINGLESTEP	(MSR_DE)
--#else
--#define MSR_SINGLESTEP	(MSR_SE)
--#endif
--
- DEFINE_PER_CPU(struct kprobe *, current_kprobe) = NULL;
- DEFINE_PER_CPU(struct kprobe_ctlblk, kprobe_ctlblk);
- 
-@@ -104,20 +98,7 @@ void __kprobes arch_remove_kprobe(struct kprobe *p)
- 
- static void __kprobes prepare_singlestep(struct kprobe *p, struct pt_regs *regs)
+ /*
+  * arch_uprobe_pre_xol - prepare to execute out of line.
+  * @auprobe: the probepoint information.
+@@ -61,7 +71,7 @@ int arch_uprobe_pre_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
  {
--	regs->msr |= MSR_SINGLESTEP;
--#ifdef CONFIG_PPC_ADV_DEBUG_REGS
--	/* 
--	 * We turn off Critical Input Exception(CE) to ensure that the single
--	 * step will be for the instruction we have the probe on; if we don't,
--	 * it is possible we'd get the single step reported for CE.
--	 */
--	regs->msr &= ~MSR_CE;
--	mtspr(SPRN_DBCR0, mfspr(SPRN_DBCR0) | DBCR0_IC | DBCR0_IDM);
--#ifdef CONFIG_PPC_47x
--	isync();
--#endif
--#endif
--
-+	enable_single_step(regs);
+ 	struct arch_uprobe_task *autask = &current->utask->autask;
+ 
+-	autask->saved_trap_nr = current->thread.trap_nr;
++	uprobe_save_context_sstep(autask);
+ 	current->thread.trap_nr = UPROBE_TRAP_NR;
+ 	regs->nip = current->utask->xol_vaddr;
+ 
+@@ -111,7 +121,7 @@ int arch_uprobe_post_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
+ 
+ 	WARN_ON_ONCE(current->thread.trap_nr != UPROBE_TRAP_NR);
+ 
+-	current->thread.trap_nr = utask->autask.saved_trap_nr;
++	uprobe_restore_context_sstep(&utask->autask);
+ 
  	/*
- 	 * On powerpc we should single step on the original
- 	 * instruction even if the probed insn is a trap
+ 	 * On powerpc, except for loads and stores, most instructions
+@@ -164,7 +174,7 @@ void arch_uprobe_abort_xol(struct arch_uprobe *auprobe, struct pt_regs *regs)
+ {
+ 	struct uprobe_task *utask = current->utask;
+ 
+-	current->thread.trap_nr = utask->autask.saved_trap_nr;
++	uprobe_restore_context_sstep(&utask->autask);
+ 	instruction_pointer_set(regs, utask->vaddr);
+ 
+ 	user_disable_single_step(current);
 
