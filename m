@@ -1,76 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932090Ab2LCRnu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 12:43:50 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:36514 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755797Ab2LCRnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 12:43:49 -0500
-Date: Mon, 3 Dec 2012 12:43:42 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Dimitrios Apostolou <jimis@gmx.net>
-Cc: Roland Eggner <edvx1@systemanalysen.net>, linux-kernel@vger.kernel.org,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: backing up ext4 fs, system unresponsive, thrashing like crazy
- even though swap is unused
-Message-ID: <20121203174342.GB20260@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Dimitrios Apostolou <jimis@gmx.net>,
-	Roland Eggner <edvx1@systemanalysen.net>,
-	linux-kernel@vger.kernel.org,
-	Catalin Marinas <catalin.marinas@arm.com>
-References: <1353855815.22969.20.camel@soupermouf>
- <1354452243.22969.48.camel@soupermouf>
- <20121202225051.GA13685@mobil.systemanalysen.net>
- <alpine.LFD.2.02.1212030120090.1646@soupermouf>
+	id S1751014Ab2LCRo0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 12:44:26 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61103 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754918Ab2LCRoU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 12:44:20 -0500
+Date: Mon, 3 Dec 2012 09:44:14 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Aristeu Rozanski <aris@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Serge Hallyn <serge.hallyn@canonical.com>,
+        cgroups@vger.kernel.org
+Subject: Re: [PATCH 4/5] device_cgroup: make may_access() stronger
+Message-ID: <20121203174414.GI19802@htj.dyndns.org>
+References: <20121127193501.255267751@napanee.usersys.redhat.com>
+ <20121127193502.817704289@napanee.usersys.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1212030120090.1646@soupermouf>
+In-Reply-To: <20121127193502.817704289@napanee.usersys.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 03, 2012 at 01:56:27AM +0200, Dimitrios Apostolou wrote:
-> 
-> Please take a look at [2], it's what is called in that case. Via
-> this call all slabs that have registered a shrinker, get actually
-> shrinked. Other fs do, but I can't find whether ext4 actually
-> registers a shrinker for its slabs.
+Hello,
 
-The ext4 inode cache gets shrunk via the VFS layer, in
-prune_icache_sb() in fs/inode.c.  This is true for all file systems'
-inode caches.
+On Tue, Nov 27, 2012 at 02:35:05PM -0500, Aristeu Rozanski wrote:
+> @@ -375,22 +376,33 @@
+>  			continue;
+>  		if (refex->access & (~ex->access))
+>  			continue;
+> -		match = true;
+> +		match = 1;
+>  		break;
+>  	}
+>  
+>  	/*
+> -	 * In two cases we'll consider this new exception valid:
+> -	 * - the dev cgroup has its default policy to allow + exception list:
+> -	 *   the new exception should *not* match any of the exceptions
+> -	 *   (behavior == DEVCG_DEFAULT_ALLOW, !match)
+> -	 * - the dev cgroup has its default policy to deny + exception list:
+> -	 *   the new exception *should* match the exceptions
+> -	 *   (behavior == DEVCG_DEFAULT_DENY, match)
+> +	 * The only three possibilities are:
+> +	 * devcg->behavior == ALLOW, rule behavior == ALLOW
+> +	 * devcg->behavior == ALLOW, rule behavior == DENY
+> +	 * devcg->behavior == DENY, rule behavior == DENY
+> +	 * the remaining
+> +	 * devcg->behavior == DENY, rule behavior == ALLOW
+> +	 * won't be possible by hierarchy
+> +	 *
+> +	 * Since we want to simplify the code, here're the possibilites to
+> +	 * make easier to understand:
+> +	 *
+> +	 * devcg behavior   rule behavior  match  result
+> +	 * allow            allow          1      0
+> +	 * allow            allow          0      1
+> +	 * allow            deny           1      0
+> +	 * allow            deny           0      1
+> +	 * deny             deny           1      1
+> +	 * deny             deny           0      0
+>  	 */
+> -	if ((dev_cgroup->behavior == DEVCG_DEFAULT_DENY) == match)
+> -		return 1;
+> -	return 0;
+> +	if (dev_cgroup->behavior == DEVCG_DEFAULT_ALLOW)
+> +		return !match;
+> +	return match;
 
-If you are under heavy memory pressure, or if you run echo 3 >
-/proc/sys/vm/drop_caches, and the inodes aren't getting dropped, then
-it's because the inodes are getting pinned for some reason --- i.e.,
-they are referenced via some entry in the dentry cache, perhaps there
-are files open, or processes are cd'ed into a directory, etc.
+I kinda dislike this.  This isn't a performanc critical path where we
+must try our best to shave off a few condition checks.  There's no
+reason to encode the test like this.  Please just spell the conditions
+out in code rather than trying to build a magic series of equality
+tests which somehow ends up spewing out the correct results.
 
-So an example of what happens with the ext4_inode_cache before and
-after running "echo 3 > /proc/sys/vm/drop_caches":
+Thanks.
 
-ext4_inode_cache  183379 183379   1872   17    8 : tunables    0    0    0 : slabdata  10787  10787      0
-
-ext4_inode_cache    1595   6120   1872   17    8 : tunables    0    0    0 : slabdata    360    360      0
-
-(What's left is due to all of the executable files, shared libraries,
-current directories, and open files for all my processes running on my
-system --- which for context is Xfce plus Chrome, emacs, mutt, and a
-bunch of terminal windows plus the usual assortment of system daemons.)
-
-If you are seeing a large number of inodes still in the ext4 inode
-cache after using drop_caches, then I'd look to see whether you have
-something like SELinux or auditing enabled which is pinning a bunch of
-dentries or inodes, or whether your backup program (or some other
-program running on your system) is keeping lots of directories or
-inodes open for some reason.
-
-Hope this helps,
-
-					- Ted
+-- 
+tejun
