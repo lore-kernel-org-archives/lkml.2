@@ -1,150 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310Ab2LCJaM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 04:30:12 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:46382 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750729Ab2LCJaJ (ORCPT
+	id S1754063Ab2LCJat (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 04:30:49 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:61932 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750729Ab2LCJas (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 04:30:09 -0500
-Message-ID: <50BC7118.9060407@gmail.com>
-Date: Mon, 03 Dec 2012 17:30:00 +0800
-From: Mark Zhang <nvmarkzhang@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Dave Airlie <airlied@gmail.com>
-CC: Terje Bergstrom <tbergstrom@nvidia.com>,
-        "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arto Merilainen <amerilainen@nvidia.com>
-Subject: Re: [RFC v2 8/8] drm: tegra: Add gr2d device
-References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com> <1353935954-13763-9-git-send-email-tbergstrom@nvidia.com> <CAPM=9tzvt3J6D3zLPV97w629q62CNhAxX8V+_JZ6kmXxxz5fVg@mail.gmail.com>
-In-Reply-To: <CAPM=9tzvt3J6D3zLPV97w629q62CNhAxX8V+_JZ6kmXxxz5fVg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Dec 2012 04:30:48 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-2e-50bc6c0a273b
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Thomas Abraham'" <thomas.abraham@linaro.org>,
+        "'Axel Lin'" <axel.lin@ingics.com>
+Cc: "'Linus Walleij'" <linus.walleij@linaro.org>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org
+References: <1354027788.13128.1.camel@phoenix>
+ <CAJuYYwRdBdi+gG944ZcJk8xF6hLUD165iX0oLn9HWeyo3od+hA@mail.gmail.com>
+In-reply-to: <CAJuYYwRdBdi+gG944ZcJk8xF6hLUD165iX0oLn9HWeyo3od+hA@mail.gmail.com>
+Subject: RE: [PATCH] pinctrl: exynos5440/samsung: Staticize pcfgs
+Date: Mon, 03 Dec 2012 18:08:26 +0900
+Message-id: <1f6a01cdd135$c11149e0$4333dda0$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac3RNZSWcrp9VFjzQzK6GTZj9hC7YQAAB28Q
+Content-language: ko
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMIsWRmVeSWpSXmKPExsVy+t8zA12unD0BBrOX61lc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6M9a8Osxes46hY+foaWwPjS7YuRk4OCQETiQ2rzrBD2GISF+6t
+	B4pzcQgJLGOU6D+6E8jhACt60poAEZ/OKPHgyCRmCGcek8SM36fBJrEJaEgcfv8MbJKIQIjE
+	+ZfrmUFsZoFqiUdda1lAbCGBUol/Pw+zggzlFAiWeHc0BMQUFnCUeL9CDaSCRUBV4vrKDkYQ
+	m1fAVmLTrs+sELagxI/J91ggJmpJrN95nAnClpfYvOYtM8SZ6hKP/upCHGAk8X96P9QBIhL7
+	XrxjhBgvIPFt8iEWiHJZiU0HmCE+X8Qucee2AIQtKXFwxQ2WCYwSs5AsnoVk8Swki2ch2bCA
+	kWUVo2hqQXJBcVJ6rqFecWJucWleul5yfu4mRkhMSe1gXNlgcYhRgINRiYf34ZfdAUKsiWXF
+	lbmHGCU4mJVEeKOs9wQI8aYkVlalFuXHF5XmpBYfYvQBOnwis5Rocj4w3vNK4g2NjU3MTExN
+	zC1NzU1xCCuJ8zZ7pAQICaQnlqRmp6YWpBbBjGPi4JRqYOzt3nS69ASz4vlNF+Y+sDx0Se3Z
+	FdZHJirvjj5M/L1Y/u2WQ5ZL7iQtnm3X033557QamwV+srod5XL/7hSLtjLrzN7LM+dVO/OJ
+	dhP+paVXv3Kc89i/ctb9xL123iEd07337uw41DzlvqRvsFCZ1pSyFReCLP5IdXseF3TRXdhZ
+	/Ozm5knZtVuVWIozEg21mIuKEwHIo7881gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMIsWRmVeSWpSXmKPExsVy+t9jQV2unD0BBiuOa1lc3jWHzYHR4/Mm
+	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
+	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjPWvDrMXrOOoWPn6GlsD
+	40u2LkYODgkBE4knrQldjJxAppjEhXvrgcJcHEIC0xklHhyZxAzhzGOSmPH7NBtIFZuAhsTh
+	98/YQWwRgRCJ8y/XM4PYzALVEo+61rKA2EICpRL/fh5mBVnAKRAs8e5oCIgpLOAo8X6FGkgF
+	i4CqxPWVHYwgNq+ArcSmXZ9ZIWxBiR+T77FATNSSWL/zOBOELS+xec1bZoiT1SUe/dWFOMBI
+	4v/0fqgDRCT2vXjHOIFRaBaSSbOQTJqFZNIsJC0LGFlWMYqmFiQXFCel5xrqFSfmFpfmpesl
+	5+duYgTH7DOpHYwrGywOMQpwMCrx8D78sjtAiDWxrLgy9xCjBAezkghvlPWeACHelMTKqtSi
+	/Pii0pzU4kOMPkCPTmSWEk3OB6aTvJJ4Q2MTMyNLIzMLIxNzcxzCSuK8zR4pAUIC6Yklqdmp
+	qQWpRTDjmDg4pRoYV27pvGyndTzb9nbCtcBL0nJfnfWNLlxoZvp2tbLMKkjyYOl/Jc9z61Y2
+	z6kp7s6OkFu8OyRCUML+yva0XCf1iXHlf3nyzZTin4ez/MtNOhdkem77h9+7bk+52fbL/Ial
+	brL07mDW6tKahDCJqrlp8+S1LW+kd1guj1kge//K8bz9ZeIyu18osRRnJBpqMRcVJwIAP6M2
+	NgYDAAA=
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave:
+Thomas Abraham wrote:
+> 
+> On 27 November 2012 20:19, Axel Lin <axel.lin@ingics.com> wrote:
+> > I got below build error with random config if CONFIG_PINCTRL_SAMSUNG=y
+> &&
+> > CONFIG_PINCTRL_EXYNOS5440=y.
+> >
+> > Fix the build error by making pcfgs static.
+> >
+> >   LD      drivers/pinctrl/built-in.o
+> > drivers/pinctrl/pinctrl-exynos5440.o: In function `.LANCHOR0':
+> > pinctrl-exynos5440.c:(.data+0x54): multiple definition of `pcfgs'
+> > drivers/pinctrl/pinctrl-samsung.o:pinctrl-samsung.c:(.data+0x54): first
+> defined here
+> > make[2]: *** [drivers/pinctrl/built-in.o] Error 1
+> > make[1]: *** [drivers/pinctrl] Error 2
+> > make: *** [drivers] Error 2
+> >
+> > Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> 
+> Acked-by: Thomas Abraham <thomas.abraham@linaro.org>
+> 
+> Dear Mr. Kim,
+> 
+> Could you please consider this patch in your next pull request for fixes.
+> 
+Sure, I will.
 
-I'm new in kernel development. Could you tell me or give me some
-materials to read that why we need to align the size of IOCTL structures
-to 64bit? I can understand if we're working in a 64bit kernel but why we
-need to do this if we're in a 32bit arm kernel? Besides, why the
-pointers in IOCTL structure should be declared as u64?
+Thanks.
 
-Mark
-On 11/27/2012 06:15 AM, Dave Airlie wrote:
->>  static int tegra_drm_open(struct drm_device *drm, struct drm_file *filp)
->>  {
->> -       return 0;
->> +       struct tegra_drm_fpriv *fpriv;
->> +       int err = 0;
->> +
->> +       fpriv = kzalloc(sizeof(*fpriv), GFP_KERNEL);
->> +       if (!fpriv)
->> +               return -ENOMEM;
->> +
->> +       INIT_LIST_HEAD(&fpriv->contexts);
->> +       filp->driver_priv = fpriv;
->> +
-> 
-> who frees this?
->> +struct tegra_drm_syncpt_incr_args {
->> +       __u32 id;
->> +};
-> 
-> add 32-bits of padding here
-> 
->> +
->> +struct tegra_drm_syncpt_wait_args {
->> +       __u32 id;
->> +       __u32 thresh;
->> +       __s32 timeout;
->> +       __u32 value;
->> +};
->> +
->> +#define DRM_TEGRA_NO_TIMEOUT   (-1)
->> +
->> +struct tegra_drm_open_channel_args {
->> +       __u32 class;
->> +       void *context;
-> 
-> no pointers use u64, align them to 64-bits, so 32-bits of padding,
-> 
->> +};
->> +
->> +struct tegra_drm_get_channel_param_args {
->> +       void *context;
->> +       __u32 value;
-> 
-> Same padding + uint64_t for void *
-> 
->> +};
->> +
->> +struct tegra_drm_syncpt_incr {
->> +       __u32 syncpt_id;
->> +       __u32 syncpt_incrs;
->> +};
->> +
->> +struct tegra_drm_cmdbuf {
->> +       __u32 mem;
->> +       __u32 offset;
->> +       __u32 words;
->> +};
-> 
-> add padding
->> +
->> +struct tegra_drm_reloc {
->> +       __u32 cmdbuf_mem;
->> +       __u32 cmdbuf_offset;
->> +       __u32 target;
->> +       __u32 target_offset;
->> +       __u32 shift;
->> +};
-> 
-> add padding
-> 
->> +
->> +struct tegra_drm_waitchk {
->> +       __u32 mem;
->> +       __u32 offset;
->> +       __u32 syncpt_id;
->> +       __u32 thresh;
->> +};
->> +
->> +struct tegra_drm_submit_args {
->> +       void *context;
->> +       __u32 num_syncpt_incrs;
->> +       __u32 num_cmdbufs;
->> +       __u32 num_relocs;
->> +       __u32 submit_version;
->> +       __u32 num_waitchks;
->> +       __u32 waitchk_mask;
->> +       __u32 timeout;
->> +       struct tegra_drm_syncpt_incrs *syncpt_incrs;
->> +       struct tegra_drm_cmdbuf *cmdbufs;
->> +       struct tegra_drm_reloc *relocs;
->> +       struct tegra_drm_waitchk *waitchks;
->> +
->> +       __u32 pad[5];           /* future expansion */
->> +       __u32 fence;            /* Return value */
->> +};
-> 
-> lose all the pointers for 64-bit aligned uint64_t.
-> 
-> Probably should align all of these on __u64 and __u32 usage if possible.
-> 
-> i'll look at the rest of the patches, but I need to know what commands
-> can be submitted via this interface and what are the security
-> implications of it.
-> 
-> Dave.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
+
