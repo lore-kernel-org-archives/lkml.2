@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932250Ab2LCOxB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:53:01 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43677 "EHLO
+	id S932285Ab2LCOxD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:53:03 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43676 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755328Ab2LCOgJ (ORCPT
+	by vger.kernel.org with ESMTP id S1755318Ab2LCOgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 09:36:09 -0500
-Message-Id: <20121203143159.672050798@decadent.org.uk>
+	Mon, 3 Dec 2012 09:36:08 -0500
+Message-Id: <20121203143158.704079874@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Dec 2012 14:33:11 +0000
+Date: Mon, 03 Dec 2012 14:33:05 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        George Spelvin <linux@horizon.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        Tomas Racek <tracek@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 85/89] mm: vmscan: fix endless loop in kswapd balancing
+        Jens Axboe <axboe@kernel.dk>, Alasdair G Kergon <agk@redhat.com>
+Subject: [ 79/89] dm: fix deadlock with request based dm and queue request_fn
+ recursion
 In-Reply-To: <20121203143146.549859007@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,104 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Weiner <hannes@cmpxchg.org>
+From: Jens Axboe <axboe@kernel.dk>
 
-commit 60cefed485a02bd99b6299dad70666fe49245da7 upstream.
+commit a8c32a5c98943d370ea606a2e7dc04717eb92206 upstream.
 
-Kswapd does not in all places have the same criteria for a balanced
-zone.  Zones are only being reclaimed when their high watermark is
-breached, but compaction checks loop over the zonelist again when the
-zone does not meet the low watermark plus two times the size of the
-allocation.  This gets kswapd stuck in an endless loop over a small
-zone, like the DMA zone, where the high watermark is smaller than the
-compaction requirement.
+Request based dm attempts to re-run the request queue off the
+request completion path. If used with a driver that potentially does
+end_io from its request_fn, we could deadlock trying to recurse
+back into request dispatch. Fix this by punting the request queue
+run to kblockd.
 
-Add a function, zone_balanced(), that checks the watermark, and, for
-higher order allocations, if compaction has enough free memory.  Then
-use it uniformly to check for balanced zones.
+Tested to fix a quickly reproducible deadlock in such a scenario.
 
-This makes sure that when the compaction watermark is not met, at least
-reclaim happens and progress is made - or the zone is declared
-unreclaimable at some point and skipped entirely.
-
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Reported-by: George Spelvin <linux@horizon.com>
-Reported-by: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
-Reported-by: Tomas Racek <tracek@redhat.com>
-Tested-by: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2: adjust context]
+Acked-by: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/vmscan.c |   27 ++++++++++++++++++---------
- 1 file changed, 18 insertions(+), 9 deletions(-)
+ drivers/md/dm.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2492,6 +2492,19 @@ unsigned long try_to_free_mem_cgroup_pag
- }
- #endif
+diff --git a/drivers/md/dm.c b/drivers/md/dm.c
+index 02db918..77e6eff 100644
+--- a/drivers/md/dm.c
++++ b/drivers/md/dm.c
+@@ -740,8 +740,14 @@ static void rq_completed(struct mapped_device *md, int rw, int run_queue)
+ 	if (!md_in_flight(md))
+ 		wake_up(&md->wait);
  
-+static bool zone_balanced(struct zone *zone, int order,
-+			  unsigned long balance_gap, int classzone_idx)
-+{
-+	if (!zone_watermark_ok_safe(zone, order, high_wmark_pages(zone) +
-+				    balance_gap, classzone_idx, 0))
-+		return false;
-+
-+	if (COMPACTION_BUILD && order && !compaction_suitable(zone, order))
-+		return false;
-+
-+	return true;
-+}
-+
- /*
-  * pgdat_balanced is used when checking if a node is balanced for high-order
-  * allocations. Only zones that meet watermarks and are in a zone allowed
-@@ -2551,8 +2564,7 @@ static bool sleeping_prematurely(pg_data
- 			continue;
- 		}
++	/*
++	 * Run this off this callpath, as drivers could invoke end_io while
++	 * inside their request_fn (and holding the queue lock). Calling
++	 * back into ->request_fn() could deadlock attempting to grab the
++	 * queue lock again.
++	 */
+ 	if (run_queue)
+-		blk_run_queue(md->queue);
++		blk_run_queue_async(md->queue);
  
--		if (!zone_watermark_ok_safe(zone, order, high_wmark_pages(zone),
--							i, 0))
-+		if (!zone_balanced(zone, order, 0, i))
- 			all_zones_ok = false;
- 		else
- 			balanced += zone->present_pages;
-@@ -2655,8 +2667,7 @@ loop_again:
- 				shrink_active_list(SWAP_CLUSTER_MAX, zone,
- 							&sc, priority, 0);
- 
--			if (!zone_watermark_ok_safe(zone, order,
--					high_wmark_pages(zone), 0, 0)) {
-+			if (!zone_balanced(zone, order, 0, 0)) {
- 				end_zone = i;
- 				break;
- 			} else {
-@@ -2717,9 +2728,8 @@ loop_again:
- 				(zone->present_pages +
- 					KSWAPD_ZONE_BALANCE_GAP_RATIO-1) /
- 				KSWAPD_ZONE_BALANCE_GAP_RATIO);
--			if (!zone_watermark_ok_safe(zone, order,
--					high_wmark_pages(zone) + balance_gap,
--					end_zone, 0)) {
-+			if (!zone_balanced(zone, order,
-+					   balance_gap, end_zone)) {
- 				shrink_zone(priority, zone, &sc);
- 
- 				reclaim_state->reclaimed_slab = 0;
-@@ -2746,8 +2756,7 @@ loop_again:
- 				continue;
- 			}
- 
--			if (!zone_watermark_ok_safe(zone, order,
--					high_wmark_pages(zone), end_zone, 0)) {
-+			if (!zone_balanced(zone, order, 0, end_zone)) {
- 				all_zones_ok = 0;
- 				/*
- 				 * We are still under min water mark.  This
+ 	/*
+ 	 * dm_put() must be at the end of this function. See the comment above
 
 
