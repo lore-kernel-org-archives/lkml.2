@@ -1,74 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751053Ab2LCRqd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 12:46:33 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48399 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750794Ab2LCRqc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 12:46:32 -0500
-Date: Mon, 3 Dec 2012 17:46:17 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Armando Visconti <armando.visconti@st.com>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        "nico@linaro.org" <nico@linaro.org>,
-        spear-devel <spear-devel@list.st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] nommu: Enable the strict alignment (CR_A) bit only if
- ARCH < v6
-Message-ID: <20121203174617.GL20074@mudshark.cambridge.arm.com>
-References: <1354187042-28568-1-git-send-email-armando.visconti@st.com>
- <50BCD6DB.2030200@st.com>
- <20121203172553.GC14363@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121203172553.GC14363@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751153Ab2LCRrc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 12:47:32 -0500
+Received: from [206.117.179.246] ([206.117.179.246]:40990 "EHLO labridge.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750828Ab2LCRrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 12:47:31 -0500
+Message-ID: <1354556831.3524.0.camel@joe-AO722>
+Subject: Re: [PATCH] ixgbe: Use is_valid_ether_addr
+From: Joe Perches <joe@perches.com>
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 03 Dec 2012 09:47:11 -0800
+In-Reply-To: <1350750159.10791.3.camel@joe-AO722>
+References: <1350750159.10791.3.camel@joe-AO722>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 03, 2012 at 05:25:53PM +0000, Russell King - ARM Linux wrote:
-> On Mon, Dec 03, 2012 at 05:44:11PM +0100, Armando Visconti wrote:
-> > On 11/29/2012 12:04 PM, Armando VISCONTI wrote:
-> >> This patch keeps disabled the strict alignment CP15 bit for
-> >> all armv6 and armv7 processor without the mmu. This behaviour
-> >> is now same as in the mmu case.
-> >>
-> >> Signed-off-by: Armando Visconti<armando.visconti@st.com>
-> >> ---
-> >>   arch/arm/kernel/head-nommu.S |    2 +-
-> >>   1 files changed, 1 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/arch/arm/kernel/head-nommu.S b/arch/arm/kernel/head-nommu.S
-> >> index 278cfc1..2c228a0 100644
-> >> --- a/arch/arm/kernel/head-nommu.S
-> >> +++ b/arch/arm/kernel/head-nommu.S
-> >> @@ -68,7 +68,7 @@ __after_proc_init:
-> >>   	 * CP15 system control register value returned in r0 from
-> >>   	 * the CPU init function.
-> >>   	 */
-> >> -#ifdef CONFIG_ALIGNMENT_TRAP
-> >> +#if defined(CONFIG_ALIGNMENT_TRAP)&&  __LINUX_ARM_ARCH__<  6
-> >>   	orr	r0, r0, #CR_A
-> >>   #else
-> >>   	bic	r0, r0, #CR_A
-> >
-> > Any feedback on this simple patch?
+On Sat, 2012-10-20 at 09:22 -0700, Joe Perches wrote:
+> Use the normal kernel test instead of a module specific one.
+
+ping?
+
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+> found when doing that larger style conversion,
+> might as well submit it.
 > 
-> Well, it brings the nommu version into line with the mmu version, so
-> it's sensible.  Please put it in the patch system, thanks.
+>  drivers/net/ethernet/intel/ixgbe/ixgbe_82599.c  |  2 +-
+>  drivers/net/ethernet/intel/ixgbe/ixgbe_common.c | 27 +------------------------
+>  drivers/net/ethernet/intel/ixgbe/ixgbe_common.h |  1 -
+>  drivers/net/ethernet/intel/ixgbe/ixgbe_main.c   |  2 +-
+>  drivers/net/ethernet/intel/ixgbe/ixgbe_type.h   |  9 ---------
+>  drivers/net/ethernet/intel/ixgbe/ixgbe_x540.c   |  2 +-
+>  6 files changed, 4 insertions(+), 39 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_82599.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_82599.c
+> index 1077cb2..89fe00d 100644
+> --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_82599.c
+> +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_82599.c
+> @@ -1022,7 +1022,7 @@ mac_reset_top:
+>  	hw->mac.ops.get_san_mac_addr(hw, hw->mac.san_addr);
+>  
+>  	/* Add the SAN MAC address to the RAR only if it's a valid address */
+> -	if (ixgbe_validate_mac_addr(hw->mac.san_addr) == 0) {
+> +	if (is_valid_ether_addr(hw->mac.san_addr)) {
+>  		hw->mac.ops.set_rar(hw, hw->mac.num_rar_entries - 1,
+>  		                    hw->mac.san_addr, 0, IXGBE_RAH_AV);
+>  
+> diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_common.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_common.c
+> index dbf37e4..2d8f76d 100644
+> --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_common.c
+> +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_common.c
+> @@ -1762,30 +1762,6 @@ s32 ixgbe_update_eeprom_checksum_generic(struct ixgbe_hw *hw)
+>  }
+>  
+>  /**
+> - *  ixgbe_validate_mac_addr - Validate MAC address
+> - *  @mac_addr: pointer to MAC address.
+> - *
+> - *  Tests a MAC address to ensure it is a valid Individual Address
+> - **/
+> -s32 ixgbe_validate_mac_addr(u8 *mac_addr)
+> -{
+> -	s32 status = 0;
+> -
+> -	/* Make sure it is not a multicast address */
+> -	if (IXGBE_IS_MULTICAST(mac_addr))
+> -		status = IXGBE_ERR_INVALID_MAC_ADDR;
+> -	/* Not a broadcast address */
+> -	else if (IXGBE_IS_BROADCAST(mac_addr))
+> -		status = IXGBE_ERR_INVALID_MAC_ADDR;
+> -	/* Reject the zero address */
+> -	else if (mac_addr[0] == 0 && mac_addr[1] == 0 && mac_addr[2] == 0 &&
+> -	         mac_addr[3] == 0 && mac_addr[4] == 0 && mac_addr[5] == 0)
+> -		status = IXGBE_ERR_INVALID_MAC_ADDR;
+> -
+> -	return status;
+> -}
+> -
+> -/**
+>   *  ixgbe_set_rar_generic - Set Rx address register
+>   *  @hw: pointer to hardware structure
+>   *  @index: Receive address register to write
+> @@ -1889,8 +1865,7 @@ s32 ixgbe_init_rx_addrs_generic(struct ixgbe_hw *hw)
+>  	 * to the permanent address.
+>  	 * Otherwise, use the permanent address from the eeprom.
+>  	 */
+> -	if (ixgbe_validate_mac_addr(hw->mac.addr) ==
+> -	    IXGBE_ERR_INVALID_MAC_ADDR) {
+> +	if (!is_valid_ether_addr(hw->mac.addr)) {
+>  		/* Get the MAC address from the RAR0 for later reference */
+>  		hw->mac.ops.get_mac_addr(hw, hw->mac.addr);
+>  
+> diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_common.h b/drivers/net/ethernet/intel/ixgbe/ixgbe_common.h
+> index d813d11..f49ca84 100644
+> --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_common.h
+> +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_common.h
+> @@ -80,7 +80,6 @@ s32 ixgbe_enable_rx_dma_generic(struct ixgbe_hw *hw, u32 regval);
+>  s32 ixgbe_fc_enable_generic(struct ixgbe_hw *hw);
+>  void ixgbe_fc_autoneg(struct ixgbe_hw *hw);
+>  
+> -s32 ixgbe_validate_mac_addr(u8 *mac_addr);
+>  s32 ixgbe_acquire_swfw_sync(struct ixgbe_hw *hw, u16 mask);
+>  void ixgbe_release_swfw_sync(struct ixgbe_hw *hw, u16 mask);
+>  s32 ixgbe_get_san_mac_addr_generic(struct ixgbe_hw *hw, u8 *san_mac_addr);
+> diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+> index e2a6691..3bb3485 100644
+> --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+> +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+> @@ -7345,7 +7345,7 @@ static int __devinit ixgbe_probe(struct pci_dev *pdev,
+>  	memcpy(netdev->dev_addr, hw->mac.perm_addr, netdev->addr_len);
+>  	memcpy(netdev->perm_addr, hw->mac.perm_addr, netdev->addr_len);
+>  
+> -	if (ixgbe_validate_mac_addr(netdev->perm_addr)) {
+> +	if (!is_valid_ether_addr(netdev->perm_addr)) {
+>  		e_dev_err("invalid MAC address\n");
+>  		err = -EIO;
+>  		goto err_sw_init;
+> diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h b/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
+> index 0722f33..9ddac64 100644
+> --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
+> +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
+> @@ -1833,15 +1833,6 @@ enum {
+>  /* Number of 100 microseconds we wait for PCI Express master disable */
+>  #define IXGBE_PCI_MASTER_DISABLE_TIMEOUT 800
+>  
+> -/* Check whether address is multicast.  This is little-endian specific check.*/
+> -#define IXGBE_IS_MULTICAST(Address) \
+> -                (bool)(((u8 *)(Address))[0] & ((u8)0x01))
+> -
+> -/* Check whether an address is broadcast. */
+> -#define IXGBE_IS_BROADCAST(Address)                      \
+> -                ((((u8 *)(Address))[0] == ((u8)0xff)) && \
+> -                (((u8 *)(Address))[1] == ((u8)0xff)))
+> -
+>  /* RAH */
+>  #define IXGBE_RAH_VIND_MASK     0x003C0000
+>  #define IXGBE_RAH_VIND_SHIFT    18
+> diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_x540.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_x540.c
+> index de4da52..c73b929 100644
+> --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_x540.c
+> +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_x540.c
+> @@ -152,7 +152,7 @@ mac_reset_top:
+>  	hw->mac.ops.get_san_mac_addr(hw, hw->mac.san_addr);
+>  
+>  	/* Add the SAN MAC address to the RAR only if it's a valid address */
+> -	if (ixgbe_validate_mac_addr(hw->mac.san_addr) == 0) {
+> +	if (is_valid_ether_addr(hw->mac.san_addr)) {
+>  		hw->mac.ops.set_rar(hw, hw->mac.num_rar_entries - 1,
+>  		                    hw->mac.san_addr, 0, IXGBE_RAH_AV);
+>  
+> 
 
-In which case, I'll definitely dust-off the patches to prevent unaligned
-accesses to strongly-ordered memory because that results in good ol'
-UNPREDICTABLE behaviour.
 
-I think Uwe also requires some of the stuff there for his M3 port.
 
-Will
