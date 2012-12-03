@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755859Ab2LCOt7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:49:59 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43749 "EHLO
+	id S1755391Ab2LCOgR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:36:17 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43722 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755399Ab2LCOgS (ORCPT
+	by vger.kernel.org with ESMTP id S1755366Ab2LCOgO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 09:36:18 -0500
-Message-Id: <20121203143157.036969202@decadent.org.uk>
+	Mon, 3 Dec 2012 09:36:14 -0500
+Message-Id: <20121203143157.352464627@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Dec 2012 14:32:54 +0000
+Date: Mon, 03 Dec 2012 14:32:56 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Paul Bolle <pebolle@tiscali.nl>,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [ 68/89] radeon: add AGPMode 1 quirk for RV250
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Yang Wei <wei.yang@windriver.com>,
+        Robert Richter <robert.richter@amd.com>,
+        Jun Zhang <jun.zhang@intel.com>
+Subject: [ 70/89] x86-32: Export kernel_stack_pointer() for modules
 In-Reply-To: <20121203143146.549859007@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,40 +30,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Bolle <pebolle@tiscali.nl>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit 45171002b01b2e2ec4f991eca81ffd8430fd0aec upstream.
+commit cb57a2b4cff7edf2a4e32c0163200e9434807e0a upstream.
 
-The Intel 82855PM host bridge / Mobility FireGL 9000 RV250 combination
-in an (outdated) ThinkPad T41 needs AGPMode 1 for suspend/resume (under
-KMS, that is). So add a quirk for it.
+Modules, in particular oprofile (and possibly other similar tools)
+need kernel_stack_pointer(), so export it using EXPORT_SYMBOL_GPL().
 
-(Change R250 to RV250 in comment for preceding quirk too.)
-
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Cc: Yang Wei <wei.yang@windriver.com>
+Cc: Robert Richter <robert.richter@amd.com>
+Cc: Jun Zhang <jun.zhang@intel.com>
+Link: http://lkml.kernel.org/r/20120912135059.GZ8285@erda.amd.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/radeon/radeon_agp.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/x86/kernel/ptrace.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_agp.c b/drivers/gpu/drm/radeon/radeon_agp.c
-index 10ea17a..4243334 100644
---- a/drivers/gpu/drm/radeon/radeon_agp.c
-+++ b/drivers/gpu/drm/radeon/radeon_agp.c
-@@ -69,9 +69,12 @@ static struct radeon_agpmode_quirk radeon_agpmode_quirk_list[] = {
- 	/* Intel 82830 830 Chipset Host Bridge / Mobility M6 LY Needs AGPMode 2 (fdo #17360)*/
- 	{ PCI_VENDOR_ID_INTEL, 0x3575, PCI_VENDOR_ID_ATI, 0x4c59,
- 		PCI_VENDOR_ID_DELL, 0x00e3, 2},
--	/* Intel 82852/82855 host bridge / Mobility FireGL 9000 R250 Needs AGPMode 1 (lp #296617) */
-+	/* Intel 82852/82855 host bridge / Mobility FireGL 9000 RV250 Needs AGPMode 1 (lp #296617) */
- 	{ PCI_VENDOR_ID_INTEL, 0x3580, PCI_VENDOR_ID_ATI, 0x4c66,
- 		PCI_VENDOR_ID_DELL, 0x0149, 1},
-+	/* Intel 82855PM host bridge / Mobility FireGL 9000 RV250 Needs AGPMode 1 for suspend/resume */
-+	{ PCI_VENDOR_ID_INTEL, 0x3340, PCI_VENDOR_ID_ATI, 0x4c66,
-+		PCI_VENDOR_ID_IBM, 0x0531, 1},
- 	/* Intel 82852/82855 host bridge / Mobility 9600 M10 RV350 Needs AGPMode 1 (deb #467460) */
- 	{ PCI_VENDOR_ID_INTEL, 0x3580, PCI_VENDOR_ID_ATI, 0x4e50,
- 		0x1025, 0x0061, 1},
+--- a/arch/x86/kernel/ptrace.c
++++ b/arch/x86/kernel/ptrace.c
+@@ -21,6 +21,7 @@
+ #include <linux/signal.h>
+ #include <linux/perf_event.h>
+ #include <linux/hw_breakpoint.h>
++#include <linux/module.h>
+ 
+ #include <asm/uaccess.h>
+ #include <asm/pgtable.h>
+@@ -191,6 +192,7 @@ unsigned long kernel_stack_pointer(struc
+ 
+ 	return (unsigned long)regs;
+ }
++EXPORT_SYMBOL_GPL(kernel_stack_pointer);
+ 
+ static unsigned long *pt_regs_access(struct pt_regs *regs, unsigned long regno)
+ {
 
 
