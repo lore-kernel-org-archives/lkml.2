@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755973Ab2LCO4Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:56:25 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43553 "EHLO
+	id S1755895Ab2LCO4V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:56:21 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43582 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932100Ab2LCOfs (ORCPT
+	by vger.kernel.org with ESMTP id S932109Ab2LCOfs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Dec 2012 09:35:48 -0500
-Message-Id: <20121203143148.810752377@decadent.org.uk>
+Message-Id: <20121203143147.609467839@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Dec 2012 14:31:59 +0000
+Date: Mon, 03 Dec 2012 14:31:52 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Williams <dcbw@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 13/89] USB: option: add Alcatel X220/X500D USB IDs
+        Tejun Heo <tj@kernel.org>, "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Aristeu Rozanski <aris@redhat.com>, Li Zefan <lizefan@huawei.com>
+Subject: [ 06/89] device_cgroup: fix RCU usage
 In-Reply-To: <20121203143146.549859007@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,36 +28,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit c0bc3098871dd9b964f6b45ec1e4d70d87811744 upstream.
+commit 201e72acb2d3821e2de9ce6091e98859c316b29a upstream.
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+dev_cgroup->exceptions is protected with devcgroup_mutex for writes
+and RCU for reads; however, RCU usage isn't correct.
+
+* dev_exception_clean() doesn't use RCU variant of list_del() and
+  kfree().  The function can race with may_access() and may_access()
+  may end up dereferencing already freed memory.  Use list_del_rcu()
+  and kfree_rcu() instead.
+
+* may_access() may be called only with RCU read locked but doesn't use
+  RCU safe traversal over ->exceptions.  Use list_for_each_entry_rcu().
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+Cc: Aristeu Rozanski <aris@redhat.com>
+Cc: Li Zefan <lizefan@huawei.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Exception list is called whitelist]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/option.c |    2 ++
- 1 file changed, 2 insertions(+)
+ security/device_cgroup.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index c25d3fd..edc64bb 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -287,6 +287,7 @@ static void option_instat_callback(struct urb *urb);
- /* ALCATEL PRODUCTS */
- #define ALCATEL_VENDOR_ID			0x1bbb
- #define ALCATEL_PRODUCT_X060S_X200		0x0000
-+#define ALCATEL_PRODUCT_X220_X500D		0x0017
+--- a/security/device_cgroup.c
++++ b/security/device_cgroup.c
+@@ -202,8 +202,8 @@ static void devcgroup_destroy(struct cgr
  
- #define PIRELLI_VENDOR_ID			0x1266
- #define PIRELLI_PRODUCT_C100_1			0x1002
-@@ -1164,6 +1165,7 @@ static const struct usb_device_id option_ids[] = {
- 	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_X060S_X200),
- 	  .driver_info = (kernel_ulong_t)&alcatel_x200_blacklist
- 	},
-+	{ USB_DEVICE(ALCATEL_VENDOR_ID, ALCATEL_PRODUCT_X220_X500D) },
- 	{ USB_DEVICE(AIRPLUS_VENDOR_ID, AIRPLUS_PRODUCT_MCD650) },
- 	{ USB_DEVICE(TLAYTECH_VENDOR_ID, TLAYTECH_PRODUCT_TEU800) },
- 	{ USB_DEVICE(LONGCHEER_VENDOR_ID, FOUR_G_SYSTEMS_PRODUCT_W14),
+ 	dev_cgroup = cgroup_to_devcgroup(cgroup);
+ 	list_for_each_entry_safe(wh, tmp, &dev_cgroup->whitelist, list) {
+-		list_del(&wh->list);
+-		kfree(wh);
++		list_del_rcu(&wh->list);
++		kfree_rcu(wh, rcu);
+ 	}
+ 	kfree(dev_cgroup);
+ }
+@@ -278,7 +278,7 @@ static int may_access_whitelist(struct d
+ {
+ 	struct dev_whitelist_item *whitem;
+ 
+-	list_for_each_entry(whitem, &c->whitelist, list) {
++	list_for_each_entry_rcu(whitem, &c->whitelist, list) {
+ 		if (whitem->type & DEV_ALL)
+ 			return 1;
+ 		if ((refwh->type & DEV_BLOCK) && !(whitem->type & DEV_BLOCK))
 
 
