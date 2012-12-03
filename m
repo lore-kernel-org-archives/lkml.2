@@ -1,114 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138Ab2LCGJo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 01:09:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60474 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750804Ab2LCGJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 01:09:43 -0500
-From: Jason Wang <jasowang@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: rusty@rustcorp.com.au, krkumar2@in.ibm.com,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        bhutchings@solarflare.com, jwhan@filewood.snu.ac.kr, shiyer@redhat.com
-Subject: Re: [net-next rfc v7 3/3] virtio-net: change the number of queues through ethtool
-Date: Mon, 03 Dec 2012 14:09:28 +0800
-Message-ID: <7408756.Sj6HEpCzzZ@jason-thinkpad-t430s>
-User-Agent: KMail/4.9.2 (Linux/3.7.0-rc6+; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <20121202160906.GB27761@redhat.com>
-References: <1354011360-39479-1-git-send-email-jasowang@redhat.com> <1354011360-39479-4-git-send-email-jasowang@redhat.com> <20121202160906.GB27761@redhat.com>
+	id S1751306Ab2LCGLV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 01:11:21 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47646 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750766Ab2LCGLU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 01:11:20 -0500
+Date: Mon, 3 Dec 2012 15:11:13 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Daniel Jeong <gshark.jeong@gmail.com>
+Cc: Liam Gridwood <lrg@ti.com>, Daniel Jeong <daniel.jeong@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/1] regulator: new driver for LP8755
+Message-ID: <20121203061112.GA9848@opensource.wolfsonmicro.com>
+References: <1354509864-30001-1-git-send-email-gshark.jeong@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354509864-30001-1-git-send-email-gshark.jeong@gmail.com>
+X-Cookie: Reply hazy, ask again later.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, December 02, 2012 06:09:06 PM Michael S. Tsirkin wrote:
-> On Tue, Nov 27, 2012 at 06:16:00PM +0800, Jason Wang wrote:
-> > This patch implement the {set|get}_channels method of ethool to allow user
-> > to change the number of queues dymaically when the device is running.
-> > This would let the user to configure it on demand.
-> > 
-> > Signed-off-by: Jason Wang <jasowang@redhat.com>
-> > ---
-> > 
-> >  drivers/net/virtio_net.c |   41 +++++++++++++++++++++++++++++++++++++++++
-> >  1 files changed, 41 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> > index bcaa6e5..f08ec2a 100644
-> > --- a/drivers/net/virtio_net.c
-> > +++ b/drivers/net/virtio_net.c
-> > @@ -1578,10 +1578,51 @@ static struct virtio_driver virtio_net_driver = {
-> > 
-> >  #endif
-> >  };
-> > 
-> > +/* TODO: Eliminate OOO packets during switching */
-> > +static int virtnet_set_channels(struct net_device *dev,
-> > +				struct ethtool_channels *channels)
-> > +{
-> > +	struct virtnet_info *vi = netdev_priv(dev);
-> > +	u16 queue_pairs = channels->combined_count;
-> > +
-> > +	/* We don't support separate rx/tx channels.
-> > +	 * We don't allow setting 'other' channels.
-> > +	 */
-> > +	if (channels->rx_count || channels->tx_count || channels->other_count)
-> > +		return -EINVAL;
-> > +
-> > +	/* Only two modes were support currently */
-> > +	if (queue_pairs != vi->max_queue_pairs && queue_pairs != 1)
-> > +		return -EINVAL;
-> > +
+On Mon, Dec 03, 2012 at 01:44:23PM +0900, Daniel Jeong wrote:
+> From: Daniel Jeong <daniel.jeong@ti.com>
 > 
-> Why the limitation?
+> This driver is a general version for lp8755 regulator driver of TI.
+> 
+> LP8755 :
+> The LP8755 is a high performance power management unit.It contains
+> six step-down DC-DC converters which can be filexibly bundled
+> together in multiphase converters as required by application.
 
-Not sure the value bettwen 1 and max_queue_pairs is useful. But anyway, I can 
-remove this limitation.
-> Also how does userspace discover what the legal values are?
-
-Userspace only check whether the value is greater than max_queue_pairs.
-> 
-> > +	vi->curr_queue_pairs = queue_pairs;
-> > +	BUG_ON(virtnet_set_queues(vi));
-> > +
-> > +	netif_set_real_num_tx_queues(dev, vi->curr_queue_pairs);
-> > +	netif_set_real_num_rx_queues(dev, vi->curr_queue_pairs);
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static void virtnet_get_channels(struct net_device *dev,
-> > +				 struct ethtool_channels *channels)
-> > +{
-> > +	struct virtnet_info *vi = netdev_priv(dev);
-> > +
-> > +	channels->combined_count = vi->curr_queue_pairs;
-> > +	channels->max_combined = vi->max_queue_pairs;
-> > +	channels->max_other = 0;
-> > +	channels->rx_count = 0;
-> > +	channels->tx_count = 0;
-> > +	channels->other_count = 0;
-> > +}
-> > +
-> > 
-> >  static const struct ethtool_ops virtnet_ethtool_ops = {
-> >  
-> >  	.get_drvinfo = virtnet_get_drvinfo,
-> >  	.get_link = ethtool_op_get_link,
-> >  	.get_ringparam = virtnet_get_ringparam,
-> > 
-> > +	.set_channels = virtnet_set_channels,
-> > +	.get_channels = virtnet_get_channels,
-> > 
-> >  };
-> >  
-> >  static int __init init(void)
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Don't send cover letters for single patches. If doing this either you
+need to improve your patch description or the cover letter is adding
+nothing.
