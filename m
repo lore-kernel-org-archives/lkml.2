@@ -1,71 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755028Ab2LCPH6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 10:07:58 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:44683 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754459Ab2LCPH5 (ORCPT
+	id S1755138Ab2LCPIb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 10:08:31 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:63946 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753640Ab2LCPI3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 10:07:57 -0500
-Subject: [PATCH v2 1/4] kprobes/powerpc: Do not disable External interrupts
- during single step
-To: bigeasy@linutronix.de, oleg@redhat.com, ananth@in.ibm.com,
-        srikar@linux.vnet.ibm.com
-From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
-Cc: peterz@infradead.org, benh@kernel.crashing.org,
-        Kumar Gala <galak@kernel.crashing.org>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, anton@redhat.com, mingo@elte.hu
-Date: Mon, 03 Dec 2012 20:37:42 +0530
-Message-ID: <20121203150720.7727.91582.stgit@suzukikp>
-In-Reply-To: <20121203150438.7727.74924.stgit@suzukikp>
-References: <20121203150438.7727.74924.stgit@suzukikp>
-User-Agent: StGit/0.16
+	Mon, 3 Dec 2012 10:08:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12120315-4790-0000-0000-000005D9664A
+X-Originating-IP: [121.7.72.46]
+In-Reply-To: <s5hip8jyza2.wl%tiwai@suse.de>
+References: <CAMVG2st4KZOYk9qMK6FFRnJt0bCEz-0nFsQAa4zXc+sed_eVhQ@mail.gmail.com>
+	<s5hwqx69kuk.wl%tiwai@suse.de>
+	<s5ha9tv1j2a.wl%tiwai@suse.de>
+	<CAMVG2svAdYxJqj=7oA8XpYfaV6MP14Ff_DR3ZwVG0cm-FV_0sA@mail.gmail.com>
+	<s5hip8jyza2.wl%tiwai@suse.de>
+Date: Mon, 3 Dec 2012 23:08:28 +0800
+Message-ID: <CAMVG2suWOAXJYWJb+QrLH2KV3CJw+Ut6fRRuy0U_F6-9oV9YyA@mail.gmail.com>
+Subject: Re: switcheroo registration vs switching race...
+From: Daniel J Blueman <daniel@quora.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Seth Forshee <seth.forshee@canonical.com>, Dave Airlie <airlied@linux.ie>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Suzuki K. Poulose <suzuki@in.ibm.com>
+On 3 December 2012 22:40, Takashi Iwai <tiwai@suse.de> wrote:
+> At Mon, 3 Dec 2012 22:25:52 +0800,
+> Daniel J Blueman wrote:
+>>
+>> On 3 December 2012 19:17, Takashi Iwai <tiwai@suse.de> wrote:
+>> > At Wed, 28 Nov 2012 09:45:39 +0100,
+>> > Takashi Iwai wrote:
+>> >>
+>> >> At Wed, 28 Nov 2012 11:45:07 +0800,
+>> >> Daniel J Blueman wrote:
+>> >> >
+>> >> > Hi Seth, Dave, Takashi,
+>> >> >
+>> >> > If I power down the unused discrete GPU before lightdm starts by
+>> >> > fiddling with the sysfs file [1] in the upstart script, I see a race
+>> >> > manifesting as the discrete GPU's HDA controller timing out to
+>> >> > commands [2].
+>> >> >
+>> >> > Adding some debug, I see that the registered audio devices are put
+>> >> > into D3 before the GPU is, but it turns out that the discrete (and
+>> >> > internal) GPU's HDA controller gets registered a bit later, so the
+>> >> > list is empty. The symptom is since the HDA driver it's talking to
+>> >> > hardware which is now in D3.
+>> >> >
+>> >> > We could add a mutex to nouveau to allow us to wait for the DGPU HDA
+>> >> > controller, but perhaps this should be solved at a higher level in the
+>> >> > vgaswitcheroo code; what do you think?
+>> >>
+>> >> Maybe it's a side effect for the recent effort to fix another race in
+>> >> the probe.  A part of them problem is that the registration is done at
+>> >> the very last of probing.
+>> >>
+>> >> Instead of delaying the registration, how about the patch below?
+>> >
+>> > Ping.  If this really works, I'd like to queue it for 3.8 merge, at
+>> > least...
+>>
+>> Ping ack; I was trying to find time to understand another race that
+>> occurs with GPU probing after switching, but is separate from the
+>> situation before switching, here.
+>>
+>> In the context of writing the switch, it looks like struct azx isn't
+>> allocated by the time azx_vs_set_state accesses it [1,2]; racing with
+>> azx_codec_create?
+>
+> It was allocated, but it wasn't assigned properly in pci drvdata.
+>
+> Below is the revised patch.  Just moved pci_set_drvdata() before
+> register_vga_switcheroo().  Could you retest with it?
 
-External/Decrement exceptions have lower priority than the Debug Exception.
-So, we don't have to disable the External interrupts before a single step.
-However, on BookE, Critical Input Exception(CE) has higher priority than a
-Debug Exception. Hence we mask them.
+Superb; this addresses the oops.
 
-Signed-off-by: 	Suzuki K. Poulose <suzuki@in.ibm.com>
-Cc:		Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc:		Ananth N Mavinakaynahalli <ananth@in.ibm.com>
-Cc:		Kumar Gala <galak@kernel.crashing.org>
-Cc:		linuxppc-dev@ozlabs.org
----
- arch/powerpc/kernel/kprobes.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+~1 second after the DGPU is put into D3, I still often see "hda-intel:
+spurious response 0x0:0x0, last cmd=0x170500":
+http://quora.org/2012/hda-switch-spurious.txt
 
-diff --git a/arch/powerpc/kernel/kprobes.c b/arch/powerpc/kernel/kprobes.c
-index e88c643..4901b34 100644
---- a/arch/powerpc/kernel/kprobes.c
-+++ b/arch/powerpc/kernel/kprobes.c
-@@ -104,13 +104,13 @@ void __kprobes arch_remove_kprobe(struct kprobe *p)
- 
- static void __kprobes prepare_singlestep(struct kprobe *p, struct pt_regs *regs)
- {
--	/* We turn off async exceptions to ensure that the single step will
--	 * be for the instruction we have the kprobe on, if we dont its
--	 * possible we'd get the single step reported for an exception handler
--	 * like Decrementer or External Interrupt */
--	regs->msr &= ~MSR_EE;
- 	regs->msr |= MSR_SINGLESTEP;
- #ifdef CONFIG_PPC_ADV_DEBUG_REGS
-+	/* 
-+	 * We turn off Critical Input Exception(CE) to ensure that the single
-+	 * step will be for the instruction we have the probe on; if we don't,
-+	 * it is possible we'd get the single step reported for CE.
-+	 */
- 	regs->msr &= ~MSR_CE;
- 	mtspr(SPRN_DBCR0, mfspr(SPRN_DBCR0) | DBCR0_IC | DBCR0_IDM);
- #ifdef CONFIG_PPC_47x
+Presumably this implies the read of the ring-buffer pointer returned
+0xffffffff, so the HDA driver understands the pointer to have wrapped
+and processes the 191 unwritten entries?
 
+Daniel
+--
+Daniel J Blueman
