@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755599Ab2LCOkG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:40:06 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43925 "EHLO
+	id S1755632Ab2LCOkb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:40:31 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43917 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755506Ab2LCOg6 (ORCPT
+	by vger.kernel.org with ESMTP id S1755497Ab2LCOg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Dec 2012 09:36:58 -0500
-Message-Id: <20121203143152.231437786@decadent.org.uk>
+Message-Id: <20121203143153.292966977@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Dec 2012 14:32:19 +0000
+Date: Mon, 03 Dec 2012 14:32:27 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>, Paulo Zanoni <paulo.r.zanoni@intel.com>,
-        Rodrigo Vivi <rodrigo.vivi@gmail.com>, Adam Jackson <ajax@redhat.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 33/89] drm/i915: Check VBIOS value for determining LVDS dual channel mode,
- too
+        Seth Heasley <seth.heasley@intel.com>,
+        Wim Van Sebroeck <wim@iguana.be>
+Subject: [ 41/89] watchdog: iTCO_wdt: add Intel Lynx Point DeviceIDs
 In-Reply-To: <20121203143146.549859007@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,169 +28,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Seth Heasley <seth.heasley@intel.com>
 
-commit b03543857fd75876b96e10d4320b775e95041bb7 upstream.
+commit 84e83c2846ffb42772056a0f825d8578dc92d586 upstream.
 
-Currently i915 driver checks [PCH_]LVDS register bits to decide
-whether to set up the dual-link or the single-link mode.  This relies
-implicitly on that BIOS initializes the register properly at boot.
-However, BIOS doesn't initialize it always.  When the machine is
-booted with the closed lid, BIOS skips the LVDS reg initialization.
-This ends up in blank output on a machine with a dual-link LVDS when
-you open the lid after the boot.
+This patch adds the TCO Watchdog DeviceIDs for the Intel Lynx Point PCH.
 
-This patch adds a workaround for that problem by checking the initial
-LVDS register value in VBT.
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=37742
-Tested-By: Paulo Zanoni <paulo.r.zanoni@intel.com>
-Reviewed-by: Rodrigo Vivi <rodrigo.vivi@gmail.com>
-Reviewed-by: Adam Jackson <ajax@redhat.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/i915/i915_drv.h      |    2 ++
- drivers/gpu/drm/i915/intel_bios.c    |   36 ++++++++++++++++++++++++++++++++++
- drivers/gpu/drm/i915/intel_display.c |   30 ++++++++++++++++++++++------
- 3 files changed, 62 insertions(+), 6 deletions(-)
+ drivers/watchdog/iTCO_wdt.c |   35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
 
-diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
-index b6098b0..4cbed7f 100644
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -406,6 +406,8 @@ typedef struct drm_i915_private {
- 	unsigned int lvds_use_ssc:1;
- 	unsigned int display_clock_mode:1;
- 	int lvds_ssc_freq;
-+	unsigned int bios_lvds_val; /* initial [PCH_]LVDS reg val in VBIOS */
-+	unsigned int lvds_val; /* used for checking LVDS channel mode */
- 	struct {
- 		int rate;
- 		int lanes;
-diff --git a/drivers/gpu/drm/i915/intel_bios.c b/drivers/gpu/drm/i915/intel_bios.c
-index 0ae76d6..e4317da 100644
---- a/drivers/gpu/drm/i915/intel_bios.c
-+++ b/drivers/gpu/drm/i915/intel_bios.c
-@@ -173,6 +173,28 @@ get_lvds_dvo_timing(const struct bdb_lvds_lfp_data *lvds_lfp_data,
- 	return (struct lvds_dvo_timing *)(entry + dvo_timing_offset);
- }
+diff --git a/drivers/watchdog/iTCO_wdt.c b/drivers/watchdog/iTCO_wdt.c
+index 99796c5..bdf401b 100644
+--- a/drivers/watchdog/iTCO_wdt.c
++++ b/drivers/watchdog/iTCO_wdt.c
+@@ -36,6 +36,7 @@
+  *	document number TBD                   : Patsburg (PBG)
+  *	document number TBD                   : DH89xxCC
+  *	document number TBD                   : Panther Point
++ *	document number TBD                   : Lynx Point
+  */
  
-+/* get lvds_fp_timing entry
-+ * this function may return NULL if the corresponding entry is invalid
-+ */
-+static const struct lvds_fp_timing *
-+get_lvds_fp_timing(const struct bdb_header *bdb,
-+		   const struct bdb_lvds_lfp_data *data,
-+		   const struct bdb_lvds_lfp_data_ptrs *ptrs,
-+		   int index)
-+{
-+	size_t data_ofs = (const u8 *)data - (const u8 *)bdb;
-+	u16 data_size = ((const u16 *)data)[-1]; /* stored in header */
-+	size_t ofs;
-+
-+	if (index >= ARRAY_SIZE(ptrs->ptr))
-+		return NULL;
-+	ofs = ptrs->ptr[index].fp_timing_offset;
-+	if (ofs < data_ofs ||
-+	    ofs + sizeof(struct lvds_fp_timing) > data_ofs + data_size)
-+		return NULL;
-+	return (const struct lvds_fp_timing *)((const u8 *)bdb + ofs);
-+}
-+
- /* Try to find integrated panel data */
- static void
- parse_lfp_panel_data(struct drm_i915_private *dev_priv,
-@@ -182,6 +204,7 @@ parse_lfp_panel_data(struct drm_i915_private *dev_priv,
- 	const struct bdb_lvds_lfp_data *lvds_lfp_data;
- 	const struct bdb_lvds_lfp_data_ptrs *lvds_lfp_data_ptrs;
- 	const struct lvds_dvo_timing *panel_dvo_timing;
-+	const struct lvds_fp_timing *fp_timing;
- 	struct drm_display_mode *panel_fixed_mode;
- 	int i, downclock;
- 
-@@ -243,6 +266,19 @@ parse_lfp_panel_data(struct drm_i915_private *dev_priv,
- 			      "Normal Clock %dKHz, downclock %dKHz\n",
- 			      panel_fixed_mode->clock, 10*downclock);
- 	}
-+
-+	fp_timing = get_lvds_fp_timing(bdb, lvds_lfp_data,
-+				       lvds_lfp_data_ptrs,
-+				       lvds_options->panel_type);
-+	if (fp_timing) {
-+		/* check the resolution, just to be sure */
-+		if (fp_timing->x_res == panel_fixed_mode->hdisplay &&
-+		    fp_timing->y_res == panel_fixed_mode->vdisplay) {
-+			dev_priv->bios_lvds_val = fp_timing->lvds_reg_val;
-+			DRM_DEBUG_KMS("VBT initial LVDS value %x\n",
-+				      dev_priv->bios_lvds_val);
-+		}
-+	}
- }
- 
- /* Try to find sdvo panel data */
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 683002fb..a76ac2e 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -360,6 +360,27 @@ static const intel_limit_t intel_limits_ironlake_display_port = {
- 	.find_pll = intel_find_pll_ironlake_dp,
+ /*
+@@ -126,6 +127,7 @@ enum iTCO_chipsets {
+ 	TCO_PBG,	/* Patsburg */
+ 	TCO_DH89XXCC,	/* DH89xxCC */
+ 	TCO_PPT,	/* Panther Point */
++	TCO_LPT,	/* Lynx Point */
  };
  
-+static bool is_dual_link_lvds(struct drm_i915_private *dev_priv,
-+			      unsigned int reg)
-+{
-+	unsigned int val;
-+
-+	if (dev_priv->lvds_val)
-+		val = dev_priv->lvds_val;
-+	else {
-+		/* BIOS should set the proper LVDS register value at boot, but
-+		 * in reality, it doesn't set the value when the lid is closed;
-+		 * we need to check "the value to be set" in VBT when LVDS
-+		 * register is uninitialized.
-+		 */
-+		val = I915_READ(reg);
-+		if (!(val & ~LVDS_DETECTED))
-+			val = dev_priv->bios_lvds_val;
-+		dev_priv->lvds_val = val;
-+	}
-+	return (val & LVDS_CLKB_POWER_MASK) == LVDS_CLKB_POWER_UP;
-+}
-+
- static const intel_limit_t *intel_ironlake_limit(struct drm_crtc *crtc,
- 						int refclk)
- {
-@@ -368,8 +389,7 @@ static const intel_limit_t *intel_ironlake_limit(struct drm_crtc *crtc,
- 	const intel_limit_t *limit;
+ static struct {
+@@ -189,6 +191,7 @@ static struct {
+ 	{"Patsburg", 2},
+ 	{"DH89xxCC", 2},
+ 	{"Panther Point", 2},
++	{"Lynx Point", 2},
+ 	{NULL, 0}
+ };
  
- 	if (intel_pipe_has_type(crtc, INTEL_OUTPUT_LVDS)) {
--		if ((I915_READ(PCH_LVDS) & LVDS_CLKB_POWER_MASK) ==
--		    LVDS_CLKB_POWER_UP) {
-+		if (is_dual_link_lvds(dev_priv, PCH_LVDS)) {
- 			/* LVDS dual channel */
- 			if (refclk == 100000)
- 				limit = &intel_limits_ironlake_dual_lvds_100m;
-@@ -397,8 +417,7 @@ static const intel_limit_t *intel_g4x_limit(struct drm_crtc *crtc)
- 	const intel_limit_t *limit;
- 
- 	if (intel_pipe_has_type(crtc, INTEL_OUTPUT_LVDS)) {
--		if ((I915_READ(LVDS) & LVDS_CLKB_POWER_MASK) ==
--		    LVDS_CLKB_POWER_UP)
-+		if (is_dual_link_lvds(dev_priv, LVDS))
- 			/* LVDS with dual channel */
- 			limit = &intel_limits_g4x_dual_channel_lvds;
- 		else
-@@ -536,8 +555,7 @@ intel_find_best_PLL(const intel_limit_t *limit, struct drm_crtc *crtc,
- 		 * reliably set up different single/dual channel state, if we
- 		 * even can.
- 		 */
--		if ((I915_READ(LVDS) & LVDS_CLKB_POWER_MASK) ==
--		    LVDS_CLKB_POWER_UP)
-+		if (is_dual_link_lvds(dev_priv, LVDS))
- 			clock.p2 = limit->p2.p2_fast;
- 		else
- 			clock.p2 = limit->p2.p2_slow;
+@@ -331,6 +334,38 @@ static DEFINE_PCI_DEVICE_TABLE(iTCO_wdt_pci_tbl) = {
+ 	{ PCI_VDEVICE(INTEL, 0x1e5d), TCO_PPT},
+ 	{ PCI_VDEVICE(INTEL, 0x1e5e), TCO_PPT},
+ 	{ PCI_VDEVICE(INTEL, 0x1e5f), TCO_PPT},
++	{ PCI_VDEVICE(INTEL, 0x8c40), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c41), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c42), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c43), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c44), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c45), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c46), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c47), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c48), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c49), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c4a), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c4b), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c4c), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c4d), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c4e), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c4f), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c50), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c51), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c52), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c53), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c54), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c55), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c56), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c57), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c58), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c59), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c5a), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c5b), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c5c), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c5d), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c5e), TCO_LPT},
++	{ PCI_VDEVICE(INTEL, 0x8c5f), TCO_LPT},
+ 	{ 0, },			/* End of list */
+ };
+ MODULE_DEVICE_TABLE(pci, iTCO_wdt_pci_tbl);
 
 
