@@ -1,397 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755117Ab2LCORL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:17:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60543 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754480Ab2LCORJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 09:17:09 -0500
-Date: Mon, 3 Dec 2012 14:17:01 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 2/2] mm/migration: Make rmap_walk_anon() and
- try_to_unmap_anon() more scalable
-Message-ID: <20121203141701.GN8218@suse.de>
-References: <1354305521-11583-1-git-send-email-mingo@kernel.org>
- <CA+55aFwjxm7OYuucHeE2WFr4p+jwr63t=kSdHndta_QkyFbyBQ@mail.gmail.com>
- <20121201094927.GA12366@gmail.com>
- <20121201122649.GA20322@gmail.com>
- <CA+55aFx8QtP0hg8qxn__4vHQuzH7QkhTN-4fwgOpM-A=KuBBjA@mail.gmail.com>
- <20121201184135.GA32449@gmail.com>
- <CA+55aFyq7OaUxcEHXvJhp0T57KN14o-RGxqPmA+ks8ge6zJh5w@mail.gmail.com>
- <20121201201538.GB2704@gmail.com>
+	id S1755182Ab2LCOZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:25:56 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:33258 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754480Ab2LCOZy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 09:25:54 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20121201201538.GB2704@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [121.7.72.46]
+In-Reply-To: <s5ha9tv1j2a.wl%tiwai@suse.de>
+References: <CAMVG2st4KZOYk9qMK6FFRnJt0bCEz-0nFsQAa4zXc+sed_eVhQ@mail.gmail.com>
+	<s5hwqx69kuk.wl%tiwai@suse.de>
+	<s5ha9tv1j2a.wl%tiwai@suse.de>
+Date: Mon, 3 Dec 2012 22:25:52 +0800
+Message-ID: <CAMVG2svAdYxJqj=7oA8XpYfaV6MP14Ff_DR3ZwVG0cm-FV_0sA@mail.gmail.com>
+Subject: Re: switcheroo registration vs switching race...
+From: Daniel J Blueman <daniel@quora.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Seth Forshee <seth.forshee@canonical.com>, Dave Airlie <airlied@linux.ie>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 01, 2012 at 09:15:38PM +0100, Ingo Molnar wrote:
-> 
-> Note, with this optimization I went a farther than the 
-> boundaries of the migration code - it seemed worthwile to do and 
-> I've reviewed all the other users of page_lock_anon_vma() as 
-> well and none seemed to be modifying the list inside that lock.
-> 
-> Please review this patch carefully - in particular the SMP races 
-> outlined in anon_vma_free() are exciting: I have updated the 
-> reasoning and it still appears to hold, but please double check 
-> the changes nevertheless ...
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
-> ------------------->
-> From: Ingo Molnar <mingo@kernel.org>
-> Date: Sat Dec 1 20:43:04 CET 2012
-> 
-> rmap_walk_anon() and try_to_unmap_anon() appears to be too careful
-> about locking the anon vma: while it needs protection against anon
-> vma list modifications, it does not need exclusive access to the
-> list itself.
-> 
-> Transforming this exclusive lock to a read-locked rwsem removes a
-> global lock from the hot path of page-migration intense threaded
-> workloads which can cause pathological performance like this:
-> 
->     96.43%        process 0  [kernel.kallsyms]  [k] perf_trace_sched_switch
->                   |
->                   --- perf_trace_sched_switch
->                       __schedule
->                       schedule
->                       schedule_preempt_disabled
->                       __mutex_lock_common.isra.6
->                       __mutex_lock_slowpath
->                       mutex_lock
->                      |
->                      |--50.61%-- rmap_walk
->                      |          move_to_new_page
->                      |          migrate_pages
->                      |          migrate_misplaced_page
->                      |          __do_numa_page.isra.69
->                      |          handle_pte_fault
->                      |          handle_mm_fault
->                      |          __do_page_fault
->                      |          do_page_fault
->                      |          page_fault
->                      |          __memset_sse2
->                      |          |
->                      |           --100.00%-- worker_thread
->                      |                     |
->                      |                      --100.00%-- start_thread
->                      |
->                       --49.39%-- page_lock_anon_vma
->                                 try_to_unmap_anon
->                                 try_to_unmap
->                                 migrate_pages
->                                 migrate_misplaced_page
->                                 __do_numa_page.isra.69
->                                 handle_pte_fault
->                                 handle_mm_fault
->                                 __do_page_fault
->                                 do_page_fault
->                                 page_fault
->                                 __memset_sse2
->                                 |
->                                  --100.00%-- worker_thread
->                                            start_thread
-> 
-> With this change applied the profile is now nicely flat
-> and there's no anon-vma related scheduling/blocking.
-> 
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Hugh Dickins <hughd@google.com>
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
-> ---
->  include/linux/rmap.h |   15 +++++++++++++--
->  mm/huge_memory.c     |    4 ++--
->  mm/memory-failure.c  |    4 ++--
->  mm/migrate.c         |    2 +-
->  mm/rmap.c            |   40 ++++++++++++++++++++--------------------
->  5 files changed, 38 insertions(+), 27 deletions(-)
-> 
-> Index: linux/include/linux/rmap.h
-> ===================================================================
-> --- linux.orig/include/linux/rmap.h
-> +++ linux/include/linux/rmap.h
-> @@ -128,6 +128,17 @@ static inline void anon_vma_unlock(struc
->  	up_write(&anon_vma->root->rwsem);
->  }
->  
-> +static inline void anon_vma_lock_read(struct anon_vma *anon_vma)
-> +{
-> +	down_read(&anon_vma->root->rwsem);
-> +}
-> +
-> +static inline void anon_vma_unlock_read(struct anon_vma *anon_vma)
-> +{
-> +	up_read(&anon_vma->root->rwsem);
-> +}
-> +
-> +
->  /*
->   * anon_vma helper functions.
->   */
-> @@ -220,8 +231,8 @@ int try_to_munlock(struct page *);
->  /*
->   * Called by memory-failure.c to kill processes.
->   */
-> -struct anon_vma *page_lock_anon_vma(struct page *page);
-> -void page_unlock_anon_vma(struct anon_vma *anon_vma);
-> +struct anon_vma *page_lock_anon_vma_read(struct page *page);
-> +void page_unlock_anon_vma_read(struct anon_vma *anon_vma);
->  int page_mapped_in_vma(struct page *page, struct vm_area_struct *vma);
->  
->  /*
-> Index: linux/mm/huge_memory.c
-> ===================================================================
-> --- linux.orig/mm/huge_memory.c
-> +++ linux/mm/huge_memory.c
-> @@ -1645,7 +1645,7 @@ int split_huge_page(struct page *page)
->  	int ret = 1;
->  
->  	BUG_ON(!PageAnon(page));
-> -	anon_vma = page_lock_anon_vma(page);
-> +	anon_vma = page_lock_anon_vma_read(page);
->  	if (!anon_vma)
->  		goto out;
->  	ret = 0;
-> @@ -1658,7 +1658,7 @@ int split_huge_page(struct page *page)
->  
->  	BUG_ON(PageCompound(page));
->  out_unlock:
-> -	page_unlock_anon_vma(anon_vma);
-> +	page_unlock_anon_vma_read(anon_vma);
->  out:
->  	return ret;
->  }
-> Index: linux/mm/memory-failure.c
-> ===================================================================
-> --- linux.orig/mm/memory-failure.c
-> +++ linux/mm/memory-failure.c
-> @@ -402,7 +402,7 @@ static void collect_procs_anon(struct pa
->  	struct anon_vma *av;
->  	pgoff_t pgoff;
->  
-> -	av = page_lock_anon_vma(page);
-> +	av = page_lock_anon_vma_read(page);
->  	if (av == NULL)	/* Not actually mapped anymore */
->  		return;
->  
+On 3 December 2012 19:17, Takashi Iwai <tiwai@suse.de> wrote:
+> At Wed, 28 Nov 2012 09:45:39 +0100,
+> Takashi Iwai wrote:
+>>
+>> At Wed, 28 Nov 2012 11:45:07 +0800,
+>> Daniel J Blueman wrote:
+>> >
+>> > Hi Seth, Dave, Takashi,
+>> >
+>> > If I power down the unused discrete GPU before lightdm starts by
+>> > fiddling with the sysfs file [1] in the upstart script, I see a race
+>> > manifesting as the discrete GPU's HDA controller timing out to
+>> > commands [2].
+>> >
+>> > Adding some debug, I see that the registered audio devices are put
+>> > into D3 before the GPU is, but it turns out that the discrete (and
+>> > internal) GPU's HDA controller gets registered a bit later, so the
+>> > list is empty. The symptom is since the HDA driver it's talking to
+>> > hardware which is now in D3.
+>> >
+>> > We could add a mutex to nouveau to allow us to wait for the DGPU HDA
+>> > controller, but perhaps this should be solved at a higher level in the
+>> > vgaswitcheroo code; what do you think?
+>>
+>> Maybe it's a side effect for the recent effort to fix another race in
+>> the probe.  A part of them problem is that the registration is done at
+>> the very last of probing.
+>>
+>> Instead of delaying the registration, how about the patch below?
+>
+> Ping.  If this really works, I'd like to queue it for 3.8 merge, at
+> least...
 
-Probably no real benefit on this one. It takes the tasklist_lock just
-after it which is a much heavier lock anyway. I don't think there is
-anything wrong with this though.
+Ping ack; I was trying to find time to understand another race that
+occurs with GPU probing after switching, but is separate from the
+situation before switching, here.
 
-> @@ -423,7 +423,7 @@ static void collect_procs_anon(struct pa
->  		}
->  	}
->  	read_unlock(&tasklist_lock);
-> -	page_unlock_anon_vma(av);
-> +	page_unlock_anon_vma_read(av);
->  }
->  
->  /*
-> Index: linux/mm/migrate.c
-> ===================================================================
-> --- linux.orig/mm/migrate.c
-> +++ linux/mm/migrate.c
-> @@ -751,7 +751,7 @@ static int __unmap_and_move(struct page
->  	 */
->  	if (PageAnon(page)) {
->  		/*
-> -		 * Only page_lock_anon_vma() understands the subtleties of
-> +		 * Only page_lock_anon_vma_read() understands the subtleties of
->  		 * getting a hold on an anon_vma from outside one of its mms.
->  		 */
->  		anon_vma = page_get_anon_vma(page);
-> Index: linux/mm/rmap.c
-> ===================================================================
-> --- linux.orig/mm/rmap.c
-> +++ linux/mm/rmap.c
-> @@ -87,18 +87,18 @@ static inline void anon_vma_free(struct
->  	VM_BUG_ON(atomic_read(&anon_vma->refcount));
->  
->  	/*
-> -	 * Synchronize against page_lock_anon_vma() such that
-> +	 * Synchronize against page_lock_anon_vma_read() such that
->  	 * we can safely hold the lock without the anon_vma getting
->  	 * freed.
->  	 *
->  	 * Relies on the full mb implied by the atomic_dec_and_test() from
->  	 * put_anon_vma() against the acquire barrier implied by
-> -	 * mutex_trylock() from page_lock_anon_vma(). This orders:
-> +	 * down_read_trylock() from page_lock_anon_vma_read(). This orders:
->  	 *
-> -	 * page_lock_anon_vma()		VS	put_anon_vma()
-> -	 *   mutex_trylock()			  atomic_dec_and_test()
-> +	 * page_lock_anon_vma_read()	VS	put_anon_vma()
-> +	 *   down_read_trylock()		  atomic_dec_and_test()
->  	 *   LOCK				  MB
-> -	 *   atomic_read()			  mutex_is_locked()
-> +	 *   atomic_read()			  rwsem_is_locked()
->  	 *
->  	 * LOCK should suffice since the actual taking of the lock must
->  	 * happen _before_ what follows.
-> @@ -146,7 +146,7 @@ static void anon_vma_chain_link(struct v
->   * allocate a new one.
->   *
->   * Anon-vma allocations are very subtle, because we may have
-> - * optimistically looked up an anon_vma in page_lock_anon_vma()
-> + * optimistically looked up an anon_vma in page_lock_anon_vma_read()
->   * and that may actually touch the spinlock even in the newly
->   * allocated vma (it depends on RCU to make sure that the
->   * anon_vma isn't actually destroyed).
-> @@ -442,7 +442,7 @@ out:
->   * atomic op -- the trylock. If we fail the trylock, we fall back to getting a
->   * reference like with page_get_anon_vma() and then block on the mutex.
->   */
-> -struct anon_vma *page_lock_anon_vma(struct page *page)
-> +struct anon_vma *page_lock_anon_vma_read(struct page *page)
->  {
->  	struct anon_vma *anon_vma = NULL;
->  	struct anon_vma *root_anon_vma;
-> @@ -457,14 +457,14 @@ struct anon_vma *page_lock_anon_vma(stru
->  
->  	anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);
->  	root_anon_vma = ACCESS_ONCE(anon_vma->root);
-> -	if (down_write_trylock(&root_anon_vma->rwsem)) {
-> +	if (down_read_trylock(&root_anon_vma->rwsem)) {
->  		/*
->  		 * If the page is still mapped, then this anon_vma is still
->  		 * its anon_vma, and holding the mutex ensures that it will
->  		 * not go away, see anon_vma_free().
->  		 */
->  		if (!page_mapped(page)) {
-> -			up_write(&root_anon_vma->rwsem);
-> +			up_read(&root_anon_vma->rwsem);
->  			anon_vma = NULL;
->  		}
->  		goto out;
-> @@ -484,7 +484,7 @@ struct anon_vma *page_lock_anon_vma(stru
->  
->  	/* we pinned the anon_vma, its safe to sleep */
->  	rcu_read_unlock();
-> -	anon_vma_lock(anon_vma);
-> +	anon_vma_lock_read(anon_vma);
->  
->  	if (atomic_dec_and_test(&anon_vma->refcount)) {
->  		/*
-> @@ -492,7 +492,7 @@ struct anon_vma *page_lock_anon_vma(stru
->  		 * and bail -- can't simply use put_anon_vma() because
->  		 * we'll deadlock on the anon_vma_lock() recursion.
->  		 */
-> -		anon_vma_unlock(anon_vma);
-> +		anon_vma_unlock_read(anon_vma);
->  		__put_anon_vma(anon_vma);
->  		anon_vma = NULL;
->  	}
-> @@ -504,9 +504,9 @@ out:
->  	return anon_vma;
->  }
->  
-> -void page_unlock_anon_vma(struct anon_vma *anon_vma)
-> +void page_unlock_anon_vma_read(struct anon_vma *anon_vma)
->  {
-> -	anon_vma_unlock(anon_vma);
-> +	anon_vma_unlock_read(anon_vma);
->  }
->  
->  /*
-> @@ -732,7 +732,7 @@ static int page_referenced_anon(struct p
->  	struct anon_vma_chain *avc;
->  	int referenced = 0;
->  
-> -	anon_vma = page_lock_anon_vma(page);
-> +	anon_vma = page_lock_anon_vma_read(page);
->  	if (!anon_vma)
->  		return referenced;
->  
+In the context of writing the switch, it looks like struct azx isn't
+allocated by the time azx_vs_set_state accesses it [1,2]; racing with
+azx_codec_create?
 
-This is a slightly trickier one as this path is called from reclaim. It does
-open the possibility that reclaim can stall something like a parallel fork
-or anything that requires the anon_vma rwsem for a period of time. I very
-severely doubt it'll really be a problem but keep an eye out for bug reports
-related to delayed mmap/fork/anything_needing_write_lock during page reclaim.
+The full dmesg output is at: http://quora.org/2012/hda-switch-oops.txt
 
-> @@ -754,7 +754,7 @@ static int page_referenced_anon(struct p
->  			break;
->  	}
->  
-> -	page_unlock_anon_vma(anon_vma);
-> +	page_unlock_anon_vma_read(anon_vma);
->  	return referenced;
->  }
->  
-> @@ -1474,7 +1474,7 @@ static int try_to_unmap_anon(struct page
->  	struct anon_vma_chain *avc;
->  	int ret = SWAP_AGAIN;
->  
-> -	anon_vma = page_lock_anon_vma(page);
-> +	anon_vma = page_lock_anon_vma_read(page);
->  	if (!anon_vma)
->  		return ret;
->  
-> @@ -1501,7 +1501,7 @@ static int try_to_unmap_anon(struct page
->  			break;
->  	}
->  
-> -	page_unlock_anon_vma(anon_vma);
-> +	page_unlock_anon_vma_read(anon_vma);
->  	return ret;
->  }
->  
-> @@ -1696,7 +1696,7 @@ static int rmap_walk_anon(struct page *p
->  	int ret = SWAP_AGAIN;
->  
->  	/*
-> -	 * Note: remove_migration_ptes() cannot use page_lock_anon_vma()
-> +	 * Note: remove_migration_ptes() cannot use page_lock_anon_vma_read()
->  	 * because that depends on page_mapped(); but not all its usages
->  	 * are holding mmap_sem. Users without mmap_sem are required to
->  	 * take a reference count to prevent the anon_vma disappearing
-> @@ -1704,7 +1704,7 @@ static int rmap_walk_anon(struct page *p
->  	anon_vma = page_anon_vma(page);
->  	if (!anon_vma)
->  		return ret;
-> -	anon_vma_lock(anon_vma);
-> +	anon_vma_lock_read(anon_vma);
->  	anon_vma_interval_tree_foreach(avc, &anon_vma->rb_root, pgoff, pgoff) {
->  		struct vm_area_struct *vma = avc->vma;
->  		unsigned long address = vma_address(page, vma);
-> @@ -1712,7 +1712,7 @@ static int rmap_walk_anon(struct page *p
->  		if (ret != SWAP_AGAIN)
->  			break;
->  	}
-> -	anon_vma_unlock(anon_vma);
-> +	anon_vma_unlock_read(anon_vma);
->  	return ret;
->  }
->  
+Thanks,
+  Daniel
 
-I can't think of any reason why this would not work. Good stuff!
+--- [1]
 
-Acked-by: Mel Gorman <mgorman@suse.de>
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000170
+IP: [<ffffffffa01e4006>] azx_vs_set_state+0x26/0x1a0 [snd_hda_intel]
+PGD 26323d067 PUD 264f58067 PMD 0
+Oops: 0000 [#1] SMP
+Modules linked in: snd_hda_codec_hdmi snd_hda_codec_cirrus rfcomm bnep
+nls_iso8859_1 joydev hid_apple bcm5974 nouveau coretemp kvm_intel b43
+kvm uvcvideo videobuf2_core videobuf2_vmalloc videobuf2_memops
+ghash_clmulni_intel smsc75xx usbnet mii ttm snd_hda_intel(+)
+snd_hda_codec snd_hwdep ssb i915 snd_pcm mxm_wmi snd_timer apple_gmux
+applesmc mei lpc_ich microcode hwmon mfd_core input_polldev bcma snd
+drm_kms_helper snd_page_alloc video apple_bl sdhci_pci sdhci mmc_core
+CPU 1
+Pid: 967, comm: sh Not tainted 3.7.0-rc7-expert+ #8 Apple Inc.
+MacBookPro10,1/Mac-C3EC7CD22292981F
+RIP: 0010:[<ffffffffa01e4006>] [<ffffffffa01e4006>]
+azx_vs_set_state+0x26/0x1a0 [snd_hda_intel]
+RSP: 0018:ffff88025198de48 EFLAGS: 00010286
+RAX: 0000000000000000 RBX: ffff880251960a00 RCX: 0000000000000000
+RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff880265b41098
+RBP: ffff88025198de68 R08: 0000000000000003 R09: 0000000000001000
+R10: 00007fffe481b730 R11: 0000000000000246 R12: ffff880265b41098
+R13: 0000000000000000 R14: ffff88025198df50 R15: 0000000000000000
+FS: 00007f4961480700(0000) GS:ffff88026f240000(0000) knlGS:0000000000000000
+CS: 0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000000170 CR3: 0000000263cd3000 CR4: 00000000001407e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process sh (pid: 967, threadinfo ffff88025198c000, task ffff88025d635820)
+Stack:
+ ffff88025d635820 ffff880251960a00 0000000000000000 ffff88025198de98
+ ffff88025198de88 ffffffff812b8e77 ffff880263ef1740 0000000000000004
+ ffff88025198def8 ffffffff812b947c ffff88020a46464f ffffffff81107982
+Call Trace:
+ [<ffffffff812b8e77>] set_audio_state+0x67/0x70
+ [<ffffffff812b947c>] vga_switcheroo_debugfs_write+0xbc/0x380
+ [<ffffffff81107982>] ? __alloc_fd+0x42/0x110
+ [<ffffffff81107aa9>] ? __fd_install+0x29/0x60
+ [<ffffffff810ed703>] vfs_write+0xa3/0x160
+ [<ffffffff810eda0d>] sys_write+0x4d/0xa0
+ [<ffffffff810283f9>] ? do_page_fault+0x9/0x10
+ [<ffffffff814b7ed6>] system_call_fastpath+0x1a/0x1f
+Code: 00 00 00 00 00 55 48 89 e5 48 83 ec 20 4c 89 65 f0 4c 8d a7 98
+00 00 00 4c 89 e7 48 89 5d e8 4c 89 6d f8 41 89 f5 e8 fa a4 0d e1 <48>
+8b 98 70 01 00 00 0f b6 83 dd 01 00 00 a8 10 75 34 45 85 ed
+RIP [<ffffffffa01e4006>] azx_vs_set_state+0x26/0x1a0 [snd_hda_intel]
+ RSP <ffff88025198de48>
+CR2: 0000000000000170
 
--- 
-Mel Gorman
-SUSE Labs
+--- [2]
+
+$ gdb ./sound/pci/hda/snd-hda-intel.ko
+(gdb) list *(azx_vs_set_state+0x26)
+0x3036 is in azx_vs_set_state (sound/pci/hda/hda_intel.c:2628).
+2623
+2624    static void azx_vs_set_state(struct pci_dev *pci,
+2625                     enum vga_switcheroo_state state)
+2626    {
+2627        struct snd_card *card = pci_get_drvdata(pci);
+2628        struct azx *chip = card->private_data;
+2629        bool disabled;
+2630
+2631        if (chip->init_failed)
+2632            return;
+--
+Daniel J Blueman
