@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755639Ab2LCOlT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:41:19 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43932 "EHLO
+	id S1755698Ab2LCOlh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:41:37 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43923 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755517Ab2LCOg5 (ORCPT
+	by vger.kernel.org with ESMTP id S1755503Ab2LCOg4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 09:36:57 -0500
-Message-Id: <20121203143152.626544316@decadent.org.uk>
+	Mon, 3 Dec 2012 09:36:56 -0500
+Message-Id: <20121203143153.159954532@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Dec 2012 14:32:22 +0000
+Date: Mon, 03 Dec 2012 14:32:26 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Marek Vasut <marex@denx.de>, Chen Peter <B29397@freescale.com>,
-        Greg KH <greg@kroah.com>, Jiri Kosina <jkosina@suse.cz>
-Subject: [ 36/89] HID: add quirk for Freescale i.MX28 ROM recovery
+        Jacob Keller <jacob.e.keller@intel.com>,
+        Richard Cochran <richard.cochran@gmail.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 40/89] ptp: update adjfreq callback description
 In-Reply-To: <20121203143146.549859007@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,47 +31,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marek Vasut <marex@denx.de>
+From: Jacob Keller <jacob.e.keller@intel.com>
 
-commit 2843b673d03421e0e73cf061820d1db328f7c8eb upstream.
+commit 87f4d7c1d36f44b0822053b7e5dedc31fdd0ab99 upstream.
 
-The USB recovery mode present in i.MX28 ROM emulates USB HID.
-It needs this quirk to behave properly.
+This patch updates the adjfreq callback description to include a note that the
+delta in ppb is always relative to the base frequency, and not to the current
+frequency of the hardware clock.
 
-Signed-off-by: Marek Vasut <marex@denx.de>
-Cc: Chen Peter <B29397@freescale.com>
-Cc: Greg KH <greg@kroah.com>
-Cc: Jiri Kosina <jkosina@suse.cz>
-[jkosina@suse.cz: fix alphabetical ordering]
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Jacob Keller <jacob.e.keller@intel.com>
+CC: Richard Cochran <richard.cochran@gmail.com>
+CC: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hid/hid-ids.h           |    3 +++
- drivers/hid/usbhid/hid-quirks.c |    1 +
- 2 files changed, 4 insertions(+)
+ include/linux/ptp_clock_kernel.h |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -277,6 +277,9 @@
- #define USB_VENDOR_ID_EZKEY		0x0518
- #define USB_DEVICE_ID_BTC_8193		0x0002
- 
-+#define USB_VENDOR_ID_FREESCALE		0x15A2
-+#define USB_DEVICE_ID_FREESCALE_MX28	0x004F
-+
- #define USB_VENDOR_ID_GAMERON		0x0810
- #define USB_DEVICE_ID_GAMERON_DUAL_PSX_ADAPTOR	0x0001
- #define USB_DEVICE_ID_GAMERON_DUAL_PCS_ADAPTOR	0x0002
---- a/drivers/hid/usbhid/hid-quirks.c
-+++ b/drivers/hid/usbhid/hid-quirks.c
-@@ -68,6 +68,7 @@ static const struct hid_blacklist {
- 	{ USB_VENDOR_ID_CH, USB_DEVICE_ID_CH_AXIS_295, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_DMI, USB_DEVICE_ID_DMI_ENC, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_ELO, USB_DEVICE_ID_ELO_TS2700, HID_QUIRK_NOGET },
-+	{ USB_VENDOR_ID_FREESCALE, USB_DEVICE_ID_FREESCALE_MX28, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_MGE, USB_DEVICE_ID_MGE_UPS, HID_QUIRK_NOGET },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN, HID_QUIRK_NO_INIT_REPORTS },
- 	{ USB_VENDOR_ID_PIXART, USB_DEVICE_ID_PIXART_OPTICAL_TOUCH_SCREEN1, HID_QUIRK_NO_INIT_REPORTS },
+diff --git a/include/linux/ptp_clock_kernel.h b/include/linux/ptp_clock_kernel.h
+index f2dc6d8..38a9935 100644
+--- a/include/linux/ptp_clock_kernel.h
++++ b/include/linux/ptp_clock_kernel.h
+@@ -54,7 +54,8 @@ struct ptp_clock_request {
+  * clock operations
+  *
+  * @adjfreq:  Adjusts the frequency of the hardware clock.
+- *            parameter delta: Desired period change in parts per billion.
++ *            parameter delta: Desired frequency offset from nominal frequency
++ *            in parts per billion
+  *
+  * @adjtime:  Shifts the time of the hardware clock.
+  *            parameter delta: Desired change in nanoseconds.
 
 
