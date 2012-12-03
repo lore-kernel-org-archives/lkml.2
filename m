@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277Ab2LCTsU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 14:48:20 -0500
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:45643 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752222Ab2LCTsS (ORCPT
+	id S1752292Ab2LCTtD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 14:49:03 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:40031 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751977Ab2LCTtB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 14:48:18 -0500
-Date: Mon, 3 Dec 2012 20:48:17 +0100
-From: Andreas Mohr <andi@lisas.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andreas Mohr <andi@lisas.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [YASB] Re: Linux 3.7-rc7
-Message-ID: <20121203194817.GA14594@rhlx01.hs-esslingen.de>
-References: <CA+55aFyetqyMa2BQu7kE=cqFdAysUh9gV=O5as5Chgg1EMCW7g@mail.gmail.com>
- <20121203193310.GA32762@rhlx01.hs-esslingen.de>
- <CA+55aFygWCxz=Mmogp8FoSr51rNct6ANw0Kw3y=u4Pu2iDK48Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFygWCxz=Mmogp8FoSr51rNct6ANw0Kw3y=u4Pu2iDK48Q@mail.gmail.com>
-X-Priority: none
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 3 Dec 2012 14:49:01 -0500
+Date: Mon, 03 Dec 2012 14:48:59 -0500 (EST)
+Message-Id: <20121203.144859.1267538781200082757.davem@davemloft.net>
+To: mst@redhat.com
+Cc: jasowang@redhat.com, nhorman@tuxdriver.com, ramirose@gmail.com,
+        davej@redhat.com, mtk.manpages@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2] tun: only queue packets on device
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20121203194850.GA920@redhat.com>
+References: <20121203194850.GA920@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Date: Mon, 3 Dec 2012 21:48:50 +0200
 
-On Mon, Dec 03, 2012 at 11:39:07AM -0800, Linus Torvalds wrote:
-> On Mon, Dec 3, 2012 at 11:33 AM, Andreas Mohr <andi@lisas.de> wrote:
-> > Florian Fainelli (1):
-> >       x86/ce4100: Fix pm_poweroff
-> >
-> > sounds like it *might* happen to be a candidate (I could try to add a
-> > revert on top, of certain likely candidates).
-> 
-> That can only matter if you select support for CONFIG_X86_INTEL_CE
-> ("CE4100 TV platform") which you should never do unless you actually
-> compile for that platform.
+>  
+> +	/* This flag has no real effect.  We track the value for backwards
+> +	 * compatibility. */
 
-OK, nevermind.
+	/* Always
+	 * like this.
+	 */
 
-> So it's something else (or you have an insane config file). Bisection
-> would be wonderful.
+	/*
+	 * Never
+	 * like this.
+	 */
 
-At least the config file part of my side seems to be sane ;)
-
-Will try script to unload half of all drivers etc.
-(heavy amounts of bisection wouldn't be joyful on this box).
-
-
-I failed to mention the effects:
-Suspend starts, disk does spin down, yet display backlight stays
-until finally monitor blanks.
-
-Thanks,
-
-Andreas Mohr
+	 /* And never
+	  * like this.  */
