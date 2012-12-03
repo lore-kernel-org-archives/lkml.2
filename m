@@ -1,91 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753665Ab2LCFm2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 00:42:28 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:42359 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751371Ab2LCFm0 (ORCPT
+	id S1751456Ab2LCFny (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 00:43:54 -0500
+Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:51604 "EHLO
+	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750921Ab2LCFnx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 00:42:26 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAN1soZwppuRm9ETq1dwhy7Y+_aoJ9Kt5O1rypqD9T6f4caGV6g@mail.gmail.com>
-References: <1354155670-6267-1-git-send-email-chao.xie@marvell.com>
-	<20121129102519.GG19440@n2100.arm.linux.org.uk>
-	<CAN1soZxUA2PPy4694ByX1FTyWiJkha8QpKFK5Jc3Wf3zT0huOA@mail.gmail.com>
-	<CADApbejZXach=YaiL5rEWA5+uc+mO8PzQzUKN+k90HfxEsqgtA@mail.gmail.com>
-	<CADApbegrJDe5SiO255WdKYai1U7WjBYfMHuCm-hTNfx5p6Wz-Q@mail.gmail.com>
-	<CAN1soZwppuRm9ETq1dwhy7Y+_aoJ9Kt5O1rypqD9T6f4caGV6g@mail.gmail.com>
-Date: Mon, 3 Dec 2012 13:42:25 +0800
-Message-ID: <CADApbehekRckjfRgqNm-PPxmJSXyF17JP5hPtBqMt4vd+Wht=w@mail.gmail.com>
-Subject: Re: [PATCH 1/4] rtc: sa1100: enable/disable rtc when probe/remove the device
-From: Chao Xie <xiechao.mail@gmail.com>
-To: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Chao Xie <chao.xie@marvell.com>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 3 Dec 2012 00:43:53 -0500
+From: Qing Xu <qingx@marvell.com>
+To: a.zummo@towertech.it, qingx@marvell.com, zhouqiao@marvell.com,
+        sameo@linux.intel.com, cxie4@marvell.com, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com
+Subject: [PATCH 4/4] rtc: 88pm80x: update irq base
+Date: Mon,  3 Dec 2012 13:43:47 +0800
+Message-Id: <1354513427-21266-1-git-send-email-qingx@marvell.com>
+X-Mailer: git-send-email 1.7.0.4
+X-OriginalArrivalTime: 03 Dec 2012 05:43:43.0678 (UTC) FILETIME=[27DCC5E0:01CDD119]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 3, 2012 at 1:35 PM, Haojian Zhuang <haojian.zhuang@gmail.com> wrote:
-> On Mon, Dec 3, 2012 at 10:53 AM, Chao Xie <xiechao.mail@gmail.com> wrote:
->> On Mon, Dec 3, 2012 at 9:39 AM, Chao Xie <xiechao.mail@gmail.com> wrote:
->>> On Fri, Nov 30, 2012 at 3:04 PM, Haojian Zhuang
->>> <haojian.zhuang@gmail.com> wrote:
->>>> On Thu, Nov 29, 2012 at 6:25 PM, Russell King - ARM Linux
->>>> <linux@arm.linux.org.uk> wrote:
->>>>> On Wed, Nov 28, 2012 at 09:21:07PM -0500, Chao Xie wrote:
->>>>>> The original sa1100_rtc_open/sa1100_rtc_release will be called
->>>>>> when the /dev/rtc0 is opened or closed.
->>>>>> In fact, these two functions will enable/disable the clock, and
->>>>>> register/unregister the irqs.
->>>>>> User application will use /dev/rtc0 to read the rtc time or set
->>>>>> the alarm. The rtc should still run indepent of open/close the
->>>>>> rtc device.
->>>>>> So only enable clock and register the irqs when probe the device,
->>>>>> and disable clock and unregister the irqs when remove the device.
->>>>>
->>>>> NAK.  I don't think you properly understand what's going on here if you
->>>>> think moving the entire open and release functions into the probe and
->>>>> remove functions is the right thing to do.
->>>>
->>>> Since PXA27x & PXA3xx supports dual rtc device at the same time,
->>>> user could choose use either of rtc at run time. Then clk & irq are setup
->>>> in open().
->>>>
->>>> Chao,
->>>> So you shouldn't remove them into probe().
->>>
->>> How can user to choose one RTC?
->>> The user API, for example "date" will open the device, get the time
->>> and then close the device.
->>> WHen set a alarm, it is the same routine. open->set->close.
->>> The open routine will enable clock and register irq, close will
->>> disable the clock and unregister irq. It means that if only open is
->>> invoked, rtc begins to work, and after close is invoked rtc stops
->>> working. It means that the user can not get correct time and can not
->>> get right alarm.
->>
->> hi
->> I want to correct what i said. For the irq register/unregister i think
->> can be done at open/release. But for clock enable/disable, i do not
->> think so. If clock is disabled, as i think RTC will not work. User API
->> still use open->get_time->close for "date" command. It means that RTC
->> will not return correct date to user.
->
-> I didn't get your point. Do you mean that RTC can't work without your patch?
-hi
-open/release will done two things
-1. enable/disable clock
-2. register/unregister the irq
-i checked the rtc dev code. register/unregister irq is prefered to be
-done at open/release routine, and the users will keep rtc to be opened
-if he want to make use of the interrupts.
-the only problemis the clock. It should be on always.
-If user want to get the rtc value, or set alarm. it will  follow
-open->ioctrl->release. After release the clock is offed, and i do not
-think rtc will has its value updated if the clock is offed.
+From: Qing Xu <qingx@marvell.com>
+
+irq base is stored in 88pm80x's drv data, we need to add irq
+base to get the correct irq num
+
+Signed-off-by: Qiao Zhou <zhouqiao@marvell.com>
+Signed-off-by: Qing Xu <qingx@marvell.com>
+---
+ drivers/rtc/rtc-88pm80x.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/rtc/rtc-88pm80x.c b/drivers/rtc/rtc-88pm80x.c
+index 6367984..7c3a264 100644
+--- a/drivers/rtc/rtc-88pm80x.c
++++ b/drivers/rtc/rtc-88pm80x.c
+@@ -256,7 +256,7 @@ static int __devinit pm80x_rtc_probe(struct platform_device *pdev)
+ 	struct pm80x_rtc_info *info;
+ 	struct rtc_time tm;
+ 	unsigned long ticks = 0;
+-	int ret;
++	int irq, ret;
+ 
+ 	pdata = pdev->dev.platform_data;
+ 	if (pdata == NULL)
+@@ -266,12 +266,13 @@ static int __devinit pm80x_rtc_probe(struct platform_device *pdev)
+ 	    devm_kzalloc(&pdev->dev, sizeof(struct pm80x_rtc_info), GFP_KERNEL);
+ 	if (!info)
+ 		return -ENOMEM;
+-	info->irq = platform_get_irq(pdev, 0);
+-	if (info->irq < 0) {
++	irq = platform_get_irq(pdev, 0);
++	if (irq < 0) {
+ 		dev_err(&pdev->dev, "No IRQ resource!\n");
+ 		ret = -EINVAL;
+ 		goto out;
+ 	}
++	info->irq = irq + chip->irq_base;
+ 
+ 	info->chip = chip;
+ 	info->map = chip->regmap;
+-- 
+1.7.0.4
+
