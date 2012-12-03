@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932540Ab2LCOmH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:42:07 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43913 "EHLO
+	id S932508Ab2LCOmG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:42:06 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43905 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755492Ab2LCOgz (ORCPT
+	by vger.kernel.org with ESMTP id S1755485Ab2LCOgz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Dec 2012 09:36:55 -0500
-Message-Id: <20121203143151.959445796@decadent.org.uk>
+Message-Id: <20121203143154.218941435@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Dec 2012 14:32:17 +0000
+Date: Mon, 03 Dec 2012 14:32:34 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Emil Tantilov <emil.s.tantilov@intel.com>,
-        Phil Schmitt <phillip.j.schmitt@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [ 31/89] ixgbe: add support for new 82599 device id
+        Andre Przywara <andre.przywara@amd.com>,
+        Andre Przywara <osp@andrep.de>, "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 48/89] x86, amd: Disable way access filter on Piledriver CPUs
 In-Reply-To: <20121203143146.549859007@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,57 +28,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emil Tantilov <emil.s.tantilov@intel.com>
+From: Andre Przywara <andre.przywara@amd.com>
 
-commit 9e791e4a04c08868f02cd579a428a7268492e1b4 upstream.
+commit 2bbf0a1427c377350f001fbc6260995334739ad7 upstream.
 
-Support for new 82599 based quad port adapter.
+The Way Access Filter in recent AMD CPUs may hurt the performance of
+some workloads, caused by aliasing issues in the L1 cache.
+This patch disables it on the affected CPUs.
 
-Signed-off-by: Emil Tantilov <emil.s.tantilov@intel.com>
-Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+The issue is similar to that one of last year:
+http://lkml.indiana.edu/hypermail/linux/kernel/1107.3/00041.html
+This new patch does not replace the old one, we just need another
+quirk for newer CPUs.
+
+The performance penalty without the patch depends on the
+circumstances, but is a bit less than the last year's 3%.
+
+The workloads affected would be those that access code from the same
+physical page under different virtual addresses, so different
+processes using the same libraries with ASLR or multiple instances of
+PIE-binaries. The code needs to be accessed simultaneously from both
+cores of the same compute unit.
+
+More details can be found here:
+http://developer.amd.com/Assets/SharedL1InstructionCacheonAMD15hCPU.pdf
+
+CPUs affected are anything with the core known as Piledriver.
+That includes the new parts of the AMD A-Series (aka Trinity) and the
+just released new CPUs of the FX-Series (aka Vishera).
+The model numbering is a bit odd here: FX CPUs have model 2,
+A-Series has model 10h, with possible extensions to 1Fh. Hence the
+range of model ids.
+
+Signed-off-by: Andre Przywara <osp@andrep.de>
+Link: http://lkml.kernel.org/r/1351700450-9277-1-git-send-email-osp@andrep.de
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+[bwh: Backported to 3.2: wrmsrl_safe() is called checking_wrmsrl()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ethernet/intel/ixgbe/ixgbe_82599.c |    1 +
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c  |    1 +
- drivers/net/ethernet/intel/ixgbe/ixgbe_type.h  |    1 +
- 3 files changed, 3 insertions(+)
+ arch/x86/kernel/cpu/amd.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_82599.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_82599.c
-index 4ae26a7..7720721 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_82599.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_82599.c
-@@ -356,6 +356,7 @@ static enum ixgbe_media_type ixgbe_get_media_type_82599(struct ixgbe_hw *hw)
- 	case IXGBE_DEV_ID_82599_SFP_FCOE:
- 	case IXGBE_DEV_ID_82599_SFP_EM:
- 	case IXGBE_DEV_ID_82599_SFP_SF2:
-+	case IXGBE_DEV_ID_82599_SFP_SF_QP:
- 	case IXGBE_DEV_ID_82599EN_SFP:
- 		media_type = ixgbe_media_type_fiber;
- 		break;
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-index cd1f893..e27e4d1 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-@@ -106,6 +106,7 @@ static DEFINE_PCI_DEVICE_TABLE(ixgbe_pci_tbl) = {
- 	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_82599_SFP_SF2), board_82599 },
- 	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_82599_LS), board_82599 },
- 	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_82599EN_SFP), board_82599 },
-+	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_82599_SFP_SF_QP), board_82599 },
- 	/* required last entry */
- 	{0, }
- };
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h b/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
-index 242643a..7c5817f 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
-@@ -65,6 +65,7 @@
- #define IXGBE_SUBDEV_ID_82599_KX4_KR_MEZZ  0x000C
- #define IXGBE_DEV_ID_82599_LS            0x154F
- #define IXGBE_DEV_ID_X540T               0x1528
-+#define IXGBE_DEV_ID_82599_SFP_SF_QP     0x154A
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index f7e98a2..1b7d165 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -631,6 +631,20 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
+ 		}
+ 	}
  
- /* VF Device IDs */
- #define IXGBE_DEV_ID_82599_VF           0x10ED
++	/*
++	 * The way access filter has a performance penalty on some workloads.
++	 * Disable it on the affected CPUs.
++	 */
++	if ((c->x86 == 0x15) &&
++	    (c->x86_model >= 0x02) && (c->x86_model < 0x20)) {
++		u64 val;
++
++		if (!rdmsrl_safe(0xc0011021, &val) && !(val & 0x1E)) {
++			val |= 0x1E;
++			checking_wrmsrl(0xc0011021, val);
++		}
++	}
++
+ 	cpu_detect_cache_sizes(c);
+ 
+ 	/* Multi core CPU? */
 
 
