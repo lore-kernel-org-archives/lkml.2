@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932545Ab2LCOmx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:42:53 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43894 "EHLO
+	id S1755693Ab2LCOmw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:42:52 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43908 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755477Ab2LCOgy (ORCPT
+	by vger.kernel.org with ESMTP id S1755488Ab2LCOgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Dec 2012 09:36:54 -0500
-Message-Id: <20121203143153.027586095@decadent.org.uk>
+Message-Id: <20121203143152.896485415@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Dec 2012 14:32:25 +0000
+Date: Mon, 03 Dec 2012 14:32:24 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Benjamin Marzinski <bmarzins@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>
-Subject: [ 39/89] GFS2: Test bufdata with buffer locked and gfs2_log_lock held
+        Tilman Schmidt <tilman@imap.cc>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 38/89] bas_gigaset: fix pre_reset handling
 In-Reply-To: <20121203143146.549859007@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,115 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Marzinski <bmarzins@redhat.com>
+From: Tilman Schmidt <tilman@imap.cc>
 
-commit 96e5d1d3adf56f1c7eeb07258f6a1a0a7ae9c489 upstream.
+commit c6fdd8e5d0c65bb8821dc6da26ee1a2ddd58b3cc upstream.
 
-In gfs2_trans_add_bh(), gfs2 was testing if a there was a bd attached to the
-buffer without having the gfs2_log_lock held. It was then assuming it would
-stay attached for the rest of the function. However, without either the log
-lock being held of the buffer locked, __gfs2_ail_flush() could detach bd at any
-time.  This patch moves the locking before the test.  If there isn't a bd
-already attached, gfs2 can safely allocate one and attach it before locking.
-There is no way that the newly allocated bd could be on the ail list,
-and thus no way for __gfs2_ail_flush() to detach it.
+The delayed work function int_in_work() may call usb_reset_device()
+and thus, indirectly, the driver's pre_reset method. Trying to
+cancel the work synchronously in that situation would deadlock.
+Fix by avoiding cancel_work_sync() in the pre_reset method.
 
-Signed-off-by: Benjamin Marzinski <bmarzins@redhat.com>
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-[bwh: Backported to 3.2: adjust context]
+If the reset was NOT initiated by int_in_work() this might cause
+int_in_work() to run after the post_reset method, with urb_int_in
+already resubmitted, so handle that case gracefully.
+
+Signed-off-by: Tilman Schmidt <tilman@imap.cc>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/gfs2/lops.c  |   14 ++------------
- fs/gfs2/trans.c |    8 ++++++++
- 2 files changed, 10 insertions(+), 12 deletions(-)
+ drivers/isdn/gigaset/bas-gigaset.c |   19 ++++++++++++++++---
+ 1 file changed, 16 insertions(+), 3 deletions(-)
 
---- a/fs/gfs2/lops.c
-+++ b/fs/gfs2/lops.c
-@@ -165,16 +165,14 @@ static void buf_lo_add(struct gfs2_sbd *
- 	struct gfs2_meta_header *mh;
- 	struct gfs2_trans *tr;
- 
--	lock_buffer(bd->bd_bh);
--	gfs2_log_lock(sdp);
- 	if (!list_empty(&bd->bd_list_tr))
--		goto out;
-+		return;
- 	tr = current->journal_info;
- 	tr->tr_touched = 1;
- 	tr->tr_num_buf++;
- 	list_add(&bd->bd_list_tr, &tr->tr_list_buf);
- 	if (!list_empty(&le->le_list))
--		goto out;
-+		return;
- 	set_bit(GLF_LFLUSH, &bd->bd_gl->gl_flags);
- 	set_bit(GLF_DIRTY, &bd->bd_gl->gl_flags);
- 	gfs2_meta_check(sdp, bd->bd_bh);
-@@ -185,9 +183,6 @@ static void buf_lo_add(struct gfs2_sbd *
- 	sdp->sd_log_num_buf++;
- 	list_add(&le->le_list, &sdp->sd_log_le_buf);
- 	tr->tr_num_buf_new++;
--out:
--	gfs2_log_unlock(sdp);
--	unlock_buffer(bd->bd_bh);
+diff --git a/drivers/isdn/gigaset/bas-gigaset.c b/drivers/isdn/gigaset/bas-gigaset.c
+index 5275887..c44950d 100644
+--- a/drivers/isdn/gigaset/bas-gigaset.c
++++ b/drivers/isdn/gigaset/bas-gigaset.c
+@@ -617,7 +617,13 @@ static void int_in_work(struct work_struct *work)
+ 	if (rc == 0)
+ 		/* success, resubmit interrupt read URB */
+ 		rc = usb_submit_urb(urb, GFP_ATOMIC);
+-	if (rc != 0 && rc != -ENODEV) {
++
++	switch (rc) {
++	case 0:		/* success */
++	case -ENODEV:	/* device gone */
++	case -EINVAL:	/* URB already resubmitted, or terminal badness */
++		break;
++	default:	/* failure: try to recover by resetting the device */
+ 		dev_err(cs->dev, "clear halt failed: %s\n", get_usb_rcmsg(rc));
+ 		rc = usb_lock_device_for_reset(ucs->udev, ucs->interface);
+ 		if (rc == 0) {
+@@ -2442,7 +2448,9 @@ static void gigaset_disconnect(struct usb_interface *interface)
  }
  
- static void buf_lo_before_commit(struct gfs2_sbd *sdp)
-@@ -518,11 +513,9 @@ static void databuf_lo_add(struct gfs2_s
- 	struct address_space *mapping = bd->bd_bh->b_page->mapping;
- 	struct gfs2_inode *ip = GFS2_I(mapping->host);
+ /* gigaset_suspend
+- * This function is called before the USB connection is suspended.
++ * This function is called before the USB connection is suspended
++ * or before the USB device is reset.
++ * In the latter case, message == PMSG_ON.
+  */
+ static int gigaset_suspend(struct usb_interface *intf, pm_message_t message)
+ {
+@@ -2498,7 +2506,12 @@ static int gigaset_suspend(struct usb_interface *intf, pm_message_t message)
+ 	del_timer_sync(&ucs->timer_atrdy);
+ 	del_timer_sync(&ucs->timer_cmd_in);
+ 	del_timer_sync(&ucs->timer_int_in);
+-	cancel_work_sync(&ucs->int_in_wq);
++
++	/* don't try to cancel int_in_wq from within reset as it
++	 * might be the one requesting the reset
++	 */
++	if (message.event != PM_EVENT_ON)
++		cancel_work_sync(&ucs->int_in_wq);
  
--	lock_buffer(bd->bd_bh);
--	gfs2_log_lock(sdp);
- 	if (tr) {
- 		if (!list_empty(&bd->bd_list_tr))
--			goto out;
-+			return;
- 		tr->tr_touched = 1;
- 		if (gfs2_is_jdata(ip)) {
- 			tr->tr_num_buf++;
-@@ -530,7 +523,7 @@ static void databuf_lo_add(struct gfs2_s
- 		}
- 	}
- 	if (!list_empty(&le->le_list))
--		goto out;
-+		return;
- 
- 	set_bit(GLF_LFLUSH, &bd->bd_gl->gl_flags);
- 	set_bit(GLF_DIRTY, &bd->bd_gl->gl_flags);
-@@ -542,9 +535,6 @@ static void databuf_lo_add(struct gfs2_s
- 	} else {
- 		list_add_tail(&le->le_list, &sdp->sd_log_le_ordered);
- 	}
--out:
--	gfs2_log_unlock(sdp);
--	unlock_buffer(bd->bd_bh);
- }
- 
- static void gfs2_check_magic(struct buffer_head *bh)
---- a/fs/gfs2/trans.c
-+++ b/fs/gfs2/trans.c
-@@ -145,14 +145,22 @@ void gfs2_trans_add_bh(struct gfs2_glock
- 	struct gfs2_sbd *sdp = gl->gl_sbd;
- 	struct gfs2_bufdata *bd;
- 
-+	lock_buffer(bh);
-+	gfs2_log_lock(sdp);
- 	bd = bh->b_private;
- 	if (bd)
- 		gfs2_assert(sdp, bd->bd_gl == gl);
- 	else {
-+		gfs2_log_unlock(sdp);
-+		unlock_buffer(bh);
- 		gfs2_attach_bufdata(gl, bh, meta);
- 		bd = bh->b_private;
-+		lock_buffer(bh);
-+		gfs2_log_lock(sdp);
- 	}
- 	lops_add(sdp, &bd->bd_le);
-+	gfs2_log_unlock(sdp);
-+	unlock_buffer(bh);
- }
- 
- void gfs2_trans_add_revoke(struct gfs2_sbd *sdp, struct gfs2_bufdata *bd)
+ 	gig_dbg(DEBUG_SUSPEND, "suspend complete");
+ 	return 0;
 
 
