@@ -1,132 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751807Ab2LCXl4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 18:41:56 -0500
-Received: from [207.46.163.24] ([207.46.163.24]:37436 "EHLO
-	co9outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1751193Ab2LCXly convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 18:41:54 -0500
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -9
-X-BigFish: VPS-9(zz98dI9371I103dK168aJ542I1432Izz1de0h1202h1d1ah1d2ahz8dhz17326ah8275bh8275dhz2dh668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh15d0h162dh1631h1155h)
-X-WSS-ID: 0MEHB3O-02-4EC-02
-X-M-MSG: 
-From: "Deucher, Alexander" <Alexander.Deucher@amd.com>
-To: Josh Boyer <jwboyer@gmail.com>
-CC: Ben Hutchings <ben@decadent.org.uk>, Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
-Subject: RE: [ 67/89] drm/radeon: properly track the crtc not_enabled case
- evergreen_mc_stop()
-Thread-Topic: [ 67/89] drm/radeon: properly track the crtc not_enabled case
- evergreen_mc_stop()
-Thread-Index: AQHN0WO8PqKu5IyWC0OR0yk1TRaqZpgHlmWA//+b11CAAOrHAP//m6vA
-Date: Mon, 3 Dec 2012 23:40:37 +0000
-Message-ID: <A3397C8B8B789E45844E7EC5DEAD89D02DC1B172@sausexdag04.amd.com>
-References: <20121203143146.549859007@decadent.org.uk>
-	<20121203143156.904709715@decadent.org.uk>
-	<CA+5PVA6P9EDYgt2WSXyX_fNsN26rG3a9j=7vk4b2SncwQ7am+A@mail.gmail.com>
-	<A3397C8B8B789E45844E7EC5DEAD89D02DC1AF91@sausexdag04.amd.com>
- <CA+5PVA5TcMC7LyinWyK8mQww7RDT87MTetNY0jb2DqXh0b4zCw@mail.gmail.com>
-In-Reply-To: <CA+5PVA5TcMC7LyinWyK8mQww7RDT87MTetNY0jb2DqXh0b4zCw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.226.128.3]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751903Ab2LCXtz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 18:49:55 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:55997 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236Ab2LCXty (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 18:49:54 -0500
+X-AuditID: 9c930197-b7bd3ae000003f1c-21-50bd3a9e6dfa
+Date: Tue, 4 Dec 2012 08:50:24 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Christoph Lameter <cl@linux.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
+        Taras Glek <tglek@mozilla.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [RFC v2] Support volatile range for anon vma
+Message-ID: <20121203235024.GA20395@bbox>
+References: <1351560594-18366-1-git-send-email-minchan@kernel.org>
+ <50AD739A.30804@linaro.org>
 MIME-Version: 1.0
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50AD739A.30804@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Josh Boyer [mailto:jwboyer@gmail.com]
-> Sent: Monday, December 03, 2012 6:26 PM
-> To: Deucher, Alexander
-> Cc: Ben Hutchings; Greg KH; linux-kernel@vger.kernel.org;
-> stable@vger.kernel.org; akpm@linux-foundation.org;
-> alan@lxorguk.ukuu.org.uk
-> Subject: Re: [ 67/89] drm/radeon: properly track the crtc not_enabled case
-> evergreen_mc_stop()
-> 
-> On Mon, Dec 3, 2012 at 10:35 AM, Deucher, Alexander
-> <Alexander.Deucher@amd.com> wrote:
-> >> -----Original Message-----
-> >> From: Josh Boyer [mailto:jwboyer@gmail.com]
-> >> Sent: Monday, December 03, 2012 10:25 AM
-> >> To: Ben Hutchings; Greg KH
-> >> Cc: linux-kernel@vger.kernel.org; stable@vger.kernel.org; akpm@linux-
-> >> foundation.org; alan@lxorguk.ukuu.org.uk; Deucher, Alexander
-> >> Subject: Re: [ 67/89] drm/radeon: properly track the crtc not_enabled
-> case
-> >> evergreen_mc_stop()
-> >>
-> >> On Mon, Dec 3, 2012 at 9:32 AM, Ben Hutchings <ben@decadent.org.uk>
-> >> wrote:
-> >> > 3.2-stable review patch.  If anyone has any objections, please let me
-> know.
-> >> >
-> >> > ------------------
-> >> >
-> >> > From: Alex Deucher <alexander.deucher@amd.com>
-> >> >
-> >> > commit 804cc4a0ad3a896ca295f771a28c6eb36ced7903 upstream.
-> >> >
-> >> > The save struct is not initialized previously so explicitly
-> >> > mark the crtcs as not used when they are not in use.
-> >> >
-> >> > Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-> >> > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> >>
-> >> Hm.  If this is needed in 3.2, presumably it's needed in 3.6 as well.  I
-> >> don't see it queued for 3.6.9, and the Cc: tag is there.
-> >>
-> >> Greg, Alex, was this just something that was missed, or am I wrong about
-> >> it needing to go into 3.6?
-> >
-> > The original patches should go into 3.6 kernels as well:
-> >
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=4
-> a15903db02026728d0cf2755c6fabae16b8db6a
-> >
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=6
-> 2444b7462a2b98bc78d68736c03a7c4e66ba7e2
-> >
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=8
-> 04cc4a0ad3a896ca295f771a28c6eb36ced7903
-> >
-> > I've been meaning to follow up on it, but I haven't had the time.  Do I need
-> to send explicit patches to stable@vger or can I just ask the above commits
-> be cherrypicked to 3.6?
-> >
-> 
-> Normally the CC tag works.  Not entirely sure why it didn't for the one
-> patch I asked about.  The other two commits you've highlighted here are
-> lacking any sort of stable tag, so you'd have to pipe up here about them.
+Hi John,
 
-The patches were not initially a bug fix per se, so I didn't cc stable.  It was only later that I got reports of the patches fixing issues for some people. Normally I add the stable cc if the patch is a bug fix.
+Sorry for the long delay.
+At last, I get a chance to look at this, again.
+
+On Wed, Nov 21, 2012 at 04:36:42PM -0800, John Stultz wrote:
+> On 10/29/2012 06:29 PM, Minchan Kim wrote:
+> >This patch introudces new madvise behavior MADV_VOLATILE and
+> >MADV_NOVOLATILE for anonymous pages. It's different with
+> >John Stultz's version which considers only tmpfs while this patch
+> >considers only anonymous pages so this cannot cover John's one.
+> >If below idea is proved as reasonable, I hope we can unify both
+> >concepts by madvise/fadvise.
+> >
+> >Rationale is following as.
+> >Many allocators call munmap(2) when user call free(3) if ptr is
+> >in mmaped area. But munmap isn't cheap because it have to clean up
+> >all pte entries and unlinking a vma so overhead would be increased
+> >linearly by mmaped area's size.
+> >
+> >Volatile conecept of Robert Love could be very useful for reducing
+> >free(3) overhead. Allocators can do madvise(MADV_VOLATILE) instead of
+> >munmap(2)(Of course, they need to manage volatile mmaped area to
+> >reduce shortage of address space and sometime ends up unmaping them).
+> >The madvise(MADV_VOLATILE|NOVOLATILE) is very cheap opeartion because
+> >
+> >1) it just marks the flag in VMA and
+> >2) if memory pressure happens, VM can discard pages of volatile VMA
+> >    instead of swapping out when volatile pages is selected as victim
+> >    by normal VM aging policy.
+> >3) freed mmaped area doesn't include any meaningful data so there
+> >    is no point to swap them out.
+> >
+> >Allocator should call madvise(MADV_NOVOLATILE) before reusing for
+> >allocating that area to user. Otherwise, accessing of volatile range
+> >will meet SIGBUS error.
+> >
+> >The downside is that we have to age anon lru list although we don't
+> >have swap because I don't want to discard volatile pages by top priority
+> >when memory pressure happens as volatile in this patch means "We don't
+> >need to swap out because user can handle the situation which data are
+> >disappear suddenly", NOT "They are useless so hurry up to reclaim them".
+> >So I want to apply same aging rule of nomal pages to them.
+> >
+> >Anon background aging of non-swap system would be a trade-off for
+> >getting good feature. Even, we had done it two years ago until merge
+> >[1] and I believe free(3) performance gain will beat loss of anon lru
+> >aging's overead once all of allocator start to use madvise.
+> >(This patch doesn't include background aging in case of non-swap system
+> >  but it's trivial if we decide)
+> 
+> Hey Minchan!
+>     So I've been looking at your patch for a bit, and I'm still
+> trying to fully grok it and the rmap code. Overall this approach
+> looks pretty interesting,  and while your patch description focused
+> on malloc/free behavior, I suspect your patch would satisfy what the
+> mozilla folks are looking for, and while its not quite sufficient
+> yet for Android, the interface semantics are very close to what I've
+> been wanting (my test cases were easily mapped over).
+> 
+> The two major issues for me are:
+> 1) As you noted, this approach currently doesn't work on non-swap
+> systems, as we don't try to shrink the anonymous page lrus. This is
+> a big problem, as it makes it unusable for most all Android systems.
+> You suggest we may want to change aging the anonymous lru, and I had
+> a patch earlier that tried to change some of the anonymous lru aging
+> rules for volatile pages, but its not quite right for what you have
+> here. So I'd be interested in hearing how you think the anonymous
+> lru aging should happen with swapoff.
+
+As I mentioned, anon LRU aging should happen for getting the benefit
+of VOLATILE. I expect user-space allocator(ex, glibc) or VM heap management
+will start it so the gain would be higher than lose.
+Otherwise, we should choose and move volatile pages into anonther LRU
+when madvise calls. It would be a big overhead as you already have measured.
+So the design is same with rmap which move the overhead from frequent place
+(ex, fork, pgfault) to to rare plcae(ie, reclaim)
+I will accept if there is another good idea which is able to minimise
+madvise's overhead.
 
 > 
-> I went ahead and tried the cherry-pick myself on top of 3.6.9, in the
-> order you specified above.  The 62444b7462a has a trivial conflict coming
-> back.  I've attached an mbox with these three patches.  If you want to
-> give them a glance over and OK them, that would be great.
+> 2) Being able to use this with tmpfs files. I'm currently trying to
+> better understand the rmap code, looking to see if there's a way to
+> have try_to_unmap_file() work similarly to try_to_unmap_anon(), to
+> allow allow users to madvise() on mmapped tmpfs files. This would
+> provide a very similar interface as to what I've been proposing with
+> fadvise/fallocate, but just using process virtual addresses instead
+> of (fd, offset) pairs.   The benefit with (fd,offset) pairs for
+> Android is that its easier to manage shared volatile ranges between
+> two processes that are sharing data via an mmapped tmpfs file
+> (although this actual use case may be fairly rare).  I believe we
+> should still be able to rework the ashmem internals to use madvise
+> (which would provide legacy support for existing android apps), so
+> then its just a question of if we could then eventually convince
+> Android apps to use the madvise interface directly, rather then the
+> ashmem unpin ioctl.
 
-They look good to me.  Thanks!
-
-Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
+I didn't look at ashmem in detail. let's pass the answer to andorid
+folks. But apparently, it's very important. If we can't, We might
+separate madvise(anon)/fallocate(file).
 
 > 
-> (Apologies for the attachment.  Gmail is going to mess it up otherwise.)
-> 
-> I have them building locally at the moment on top of 3.6.9 and don't
-> expect many issues, but I can't personally test the fixes myself.
-> 
-> josh
+> The other concern with the madvise on mmapped files approach is that
+> there's no easy way I can see to limit it to tmpfs files. I know
 
+First thing I can thing of is PG_swapbacked. I guess It would be set
+to only swappable data.
+
+> some have been interested in having fallocate(VOLATILE) interface
+> for non-tmpfs files, but I'm not sure I see the benefit there yet. I
+> have noted folks mixing the idea of volatile pages being purged
+> under memory pressure with the idea of volatile files, which might
+> be purged from disk under disk pressure. While I think the second
+> idea is interesting, I do think its completely separate from the
+> volatile memory concept.
+> 
+> Anyway, I'd be interested in your thoughts on these two issues.
+> Thanks so much for sending out this patch, its given me quite a bit
+> to chew on, and I too hope we can merge our different approaches
+> together.
+
+Thanks, John!
+
+> 
+> thanks
+> -john
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
