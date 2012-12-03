@@ -1,72 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751670Ab2LCT7H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 14:59:07 -0500
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:6322 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751098Ab2LCT7E (ORCPT
+	id S1751945Ab2LCT7d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 14:59:33 -0500
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:63309 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751179Ab2LCT7b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 14:59:04 -0500
-From: "Ortiz, Lance E" <lance.oritz@hp.com>
-To: Borislav Petkov <bp@alien8.de>
-CC: "bhelgaas@google.com" <bhelgaas@google.com>,
-        "lance_ortiz@hotmail.com" <lance_ortiz@hotmail.com>,
-        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "mchehab@redhat.com" <mchehab@redhat.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v4 1/3] aerdrv: Trace Event for AER
-Thread-Topic: [PATCH v4 1/3] aerdrv: Trace Event for AER
-Thread-Index: AQHN0YcqW9X0YAlVw0GID3XVvKQIGpgHfabw
-Date: Mon, 3 Dec 2012 19:58:16 +0000
-Message-ID: <A961433CDFF2F640A2866803152E61F9516EE70A@G4W3218.americas.hpqcorp.net>
-References: <20121203183305.26636.22979.stgit@grignak.americas.hpqcorp.net>
- <20121203185059.GA14798@liondog.tnic>
-In-Reply-To: <20121203185059.GA14798@liondog.tnic>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.25]
-Content-Type: text/plain; charset="utf-8"
+	Mon, 3 Dec 2012 14:59:31 -0500
+X-Authority-Analysis: v=2.0 cv=GZOVbHrL c=1 sm=0 a=/DbS/tiKggfTkRRHPZEB4g==:17 a=Qsx_du5GiBkA:10 a=PJtIR_1cTkwA:10 a=S1A5HrydsesA:10 a=8nJEP1OIZ-IA:10 a=fxJcL_dCAAAA:8 a=q1AKSoAqX3wA:10 a=BB99dJHrAAAA:8 a=3DfWnJiXAAAA:8 a=QfKxxUxMAAAA:8 a=qQCFSBdpW3zXkHUApI8A:9 a=wPNLvfGTeEIA:10 a=a63yIOC1_90A:10 a=/DbS/tiKggfTkRRHPZEB4g==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.78.168.186
+Message-ID: <50BD04A1.7030107@ubuntu.com>
+Date: Mon, 03 Dec 2012 14:59:29 -0500
+From: Phillip Susi <psusi@ubuntu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
+To: Anton Altaparmakov <aia21@cantab.net>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: LDM Documentation dead link
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qB3JxARd004995
 
-> > +/*
-> > + * PCIe Advanced Error Reporting (AER) PCIE Report Error
-> 
-> Why do you insist on keeping this convoluted compound name? What does
-> "PCIe AER PCIe Report Error" even mean?
-> 
-> This is not unreadable technical documentation but something people
-> should actually understand. And it is simply a PCIe AER tracepoint. So
-> why the h*ll not call it by its real name?
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-I will fix that.
+drivers/fs/partitions/ldm.[ch] refer to documentation at
+http://www.linux-ntfs.org/content/view/19/37/.  This link appears to
+be dead and just redirects to the main tuxera.com page.
 
-> 
-> > + *
-> > + * These events are generated when hardware detects a corrected or
-> > + * uncorrected event on a pci express device. The event report has
-> 
-> And you should stick to the same spelling for PCIe throughout the text,
-> so choose one and use it everywhere.
-> 
-Ok
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (MingW32)
+Comment: Using GnuPG with undefined - http://www.enigmail.net/
 
-> 
-> Also, you haven't addressed Mauro's comment about other bits in the
-> spec
-> which are not here. Why are you skipping them?
-
-I missed that mail. I will address that.
-
-Lance
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+iQEcBAEBAgAGBQJQvQShAAoJEJrBOlT6nu75rNQIAM9ZTLTtrzdVNcO9biLGxyu6
+ROnUhIyWKRBTUddSfkv3WRcy+9SEQqlSRJpQ9tGp6IqdQbYXuTuy30fPq+crrZd7
+ccHCT2T3Uk0AMmVKBxZ/S1mZAFc0pKmWUdPrIuPLnoN/hhX9hGXRYJYsO8kFZgyj
+xaDTmgWxRKKfqy60uRHRyKYvhV/Jm0XL8GN7osVn5j0Zr3n3PHRDxqaTcnWkCtyM
+x5Fr0DZHAkpDC/NoWdwsvnlRNoXiVDQLenL5cnFim44qGsPJgj75RcnHX2BctOLI
++ZdkzJmAvIRtOCsbbEUL/a9gebMH4RWaksg3bq4fHJoyUf2HuQXFTnsrMwAiAEU=
+=nE2+
+-----END PGP SIGNATURE-----
