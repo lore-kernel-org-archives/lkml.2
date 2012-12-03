@@ -1,83 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154Ab2LCTrL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 14:47:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5382 "EHLO mx1.redhat.com"
+	id S1752209Ab2LCTsM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 14:48:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35388 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751383Ab2LCTrJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 14:47:09 -0500
-Date: Mon, 3 Dec 2012 17:47:04 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Gleb Natapov <gleb@redhat.com>, Avi Kivity <avi@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 3/3] KVM: x86: improve reexecute_instruction
-Message-ID: <20121203194704.GA590@amt.cnet>
-References: <50AAC77C.8040505@linux.vnet.ibm.com>
- <50AAC7F9.7050305@linux.vnet.ibm.com>
- <20121126224105.GB10634@amt.cnet>
- <50B433D0.8060107@linux.vnet.ibm.com>
- <20121128141230.GI928@redhat.com>
- <50B626D7.7070608@linux.vnet.ibm.com>
- <20121128215750.GA10039@amt.cnet>
- <50B692F3.4000408@linux.vnet.ibm.com>
- <20121129002132.GC17264@amt.cnet>
- <50BC63BD.70408@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50BC63BD.70408@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752071Ab2LCTsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 14:48:10 -0500
+Message-ID: <1354564084.1809.390.camel@bling.home>
+Subject: Re: [PATCH] PCI AER: pci_get_domain_bus_and_slot() call missing
+ required pci_dev_put()
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Shuah Khan <shuahkhan@gmail.com>
+Cc: Betty Dall <betty.dall@hp.com>, bhelgaas@google.com,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        wangyijing@huawei.com, jiang.liu@huawei.com
+Date: Mon, 03 Dec 2012 12:48:04 -0700
+In-Reply-To: <CAKocOOOudEzMx0Zs9CB2zmtCkPHVkx1TCbWeK2+uoV5cb=eiGg@mail.gmail.com>
+References: <1354552622-687-1-git-send-email-betty.dall@hp.com>
+	 <CAKocOOOudEzMx0Zs9CB2zmtCkPHVkx1TCbWeK2+uoV5cb=eiGg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 03, 2012 at 04:33:01PM +0800, Xiao Guangrong wrote:
-> Hi Marcelo,
+On Mon, 2012-12-03 at 10:40 -0700, Shuah Khan wrote:
+> On Mon, Dec 3, 2012 at 9:37 AM, Betty Dall <betty.dall@hp.com> wrote:
+> > The function aer_recover_queue() makes a call to pci_get_domain_bus_and_slot().
+> > That function is documented to require that the caller decrement the
+> > reference count by calling pci_dev_put(). This patch adds the missing
+> > call to pci_dev_put().
+> >
+> > Signed-off-by: Betty Dall <betty.dall@hp.com>
+> > ---
+> >  drivers/pci/pcie/aer/aerdrv_core.c |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
+> > index af4e31c..43caf53 100644
+> > --- a/drivers/pci/pcie/aer/aerdrv_core.c
+> > +++ b/drivers/pci/pcie/aer/aerdrv_core.c
+> > @@ -616,6 +616,7 @@ static void aer_recover_work_func(struct work_struct *work)
+> >                         continue;
+> >                 }
+> >                 do_recovery(pdev, entry.severity);
+> > +               pci_dev_put(pdev);
 > 
-> Thanks for your patience. I was reading your reply over and over again, i would
-> like to argue it more :).
-> Please see below.
+> Are you sure pci_get_domain_bus_and_slot() does indeed increment the
+> reference count? I see that in the comments right above the
+> definition.
 > 
-> On 11/29/2012 08:21 AM, Marcelo Tosatti wrote:
+> pci_dev_get() does that for sure. I see a call trace of
 > 
-> > 
-> > https://lkml.org/lkml/2012/11/17/75
-> > 
-> > Does unshadowing work with large sptes at reexecute_instruction? That
-> > is, do we nuke any large read-only sptes that might be causing a certain
-> > gfn to be read-only?
-> > 
-> > That is, following the sequence there, is the large read-only spte
-> > properly destroyed?
+> pci_dev_get() -> get_device() -> kobj_to_dev(kobject_get(&dev->kobj)  etc.
 > 
-> Actually, sptes can not prevent gfn becoming writable, that means the gfn
-> can become writable *even if* it exists a spte which maps to the gfn.
+> and kref_get() finally incrementing the
 > 
-> The condition that can prevent gfn becoming writable is, the gfn has been
-> shadowed, that means the gfn can not become writable if it exists a sp
-> with sp.gfn = gfn.
+> static inline void kref_get(struct kref *kref)
+> {
+>         WARN_ON(!atomic_read(&kref->refcount));
+>         atomic_inc(&kref->refcount);
+> }
 > 
-> Note, drop_spte does not remove any sp. So, either destroying spte or keeping
-> spte doest not have any affect for gfn write-protection.
+> However, I could not find any evidence that
+> pci_get_domain_bus_and_slot() does that. I see
+> pci_get_domain_bus_and_slot() calling pci_domain_nr() and there are
+> several architecture specific defines for pci_domain_nr(). It is not
+> clear to me where does refcount get incremented from
+> pci_get_domain_bus_and_slot() is called.
 > 
-> If luck enough, my point is right, the current code can do some optimizations
-> as below:
-> 
->                 if (level > PT_PAGE_TABLE_LEVEL &&
-> -                   has_wrprotected_page(vcpu->kvm, gfn, level)) {
-> -                       ret = 1;
-> -                       drop_spte(vcpu->kvm, sptep);
-> -                       goto done;
-> -               }
-> +                   has_wrprotected_page(vcpu->kvm, gfn, level))
-> +                       return 0;
-> 
-> 
-> 1): we can return 0 instead of 1 to avoid unnecessary emulation. vcpu will refault
->     again then kvm will use small page.
+> What am I missing?
 
-So on refault the large spte is nuked. That works, yes.
+Trace back the for_each_pci_dev()
 
-> 2): need not do any change on the spte.
+for_each_pci_dev
+ -> pci_get_device
+  -> pci_get_subsys
+   -> pci_get_dev_by_id
+    -> bus_find_device
+     -> get_device()
+
+The real question is how many places do we call for_each_pci_dev()
+without a put.  It seems like pci_get_domain_bus_and_slot() doesn't even
+get it right since it should include a put of the non-matched devices.
+Thanks,
+
+Alex
 
