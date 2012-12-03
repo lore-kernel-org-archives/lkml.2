@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752471Ab2LCU7Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 15:59:25 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:49143 "EHLO
+	id S1752893Ab2LCVGM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 16:06:12 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:45637 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752406Ab2LCU7V (ORCPT
+	with ESMTP id S1752462Ab2LCU7Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 15:59:21 -0500
+	Mon, 3 Dec 2012 15:59:24 -0500
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
         linux-fsdevel@vger.kernel.org
 Cc: zab@redhat.com, bcrl@kvack.org, jmoyer@redhat.com, axboe@kernel.dk,
         viro@zeniv.linux.org.uk, Kent Overstreet <koverstreet@google.com>
-Subject: [PATCH 03/26] gadget: remove only user of aio retry
-Date: Mon,  3 Dec 2012 12:58:19 -0800
-Message-Id: <1354568322-29029-4-git-send-email-koverstreet@google.com>
+Subject: [PATCH 06/26] aio: Kill return value of aio_complete()
+Date: Mon,  3 Dec 2012 12:58:22 -0800
+Message-Id: <1354568322-29029-7-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1354568322-29029-1-git-send-email-koverstreet@google.com>
 References: <1354568322-29029-1-git-send-email-koverstreet@google.com>
@@ -22,144 +22,131 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zach Brown <zab@redhat.com>
+Nothing used the return value, and it probably wasn't possible to use it
+safely for the locked versions (aio_complete(), aio_put_req()). Just
+kill it.
 
-This removes the only in-tree user of aio retry.  This will let us
-remove the retry code from the aio core.
-
-Removing retry is relatively easy as the USB gadget wasn't using it to
-retry IOs at all.  It always fully submitted the IO in the context of
-the initial io_submit() call.  It only used the AIO retry facility to
-get the submitter's mm context for copying the result of a read back to
-user space.  This is easy to implement with use_mm() and a work struct,
-much like kvm does with async_pf_execute() for get_user_pages().
-
-Signed-off-by: Zach Brown <zab@redhat.com>
+Acked-by: Zach Brown <zab@redhat.com>
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 ---
- drivers/usb/gadget/inode.c | 38 +++++++++++++++++++++++++++++---------
- 1 file changed, 29 insertions(+), 9 deletions(-)
+ fs/aio.c            | 19 +++++++------------
+ include/linux/aio.h |  8 ++++----
+ 2 files changed, 11 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
-index 76494ca..2a3f001 100644
---- a/drivers/usb/gadget/inode.c
-+++ b/drivers/usb/gadget/inode.c
-@@ -24,6 +24,7 @@
- #include <linux/sched.h>
- #include <linux/slab.h>
- #include <linux/poll.h>
-+#include <linux/mmu_context.h>
- 
- #include <linux/device.h>
- #include <linux/moduleparam.h>
-@@ -514,6 +515,9 @@ static long ep_ioctl(struct file *fd, unsigned code, unsigned long value)
- struct kiocb_priv {
- 	struct usb_request	*req;
- 	struct ep_data		*epdata;
-+	struct kiocb 		*iocb;
-+	struct mm_struct 	*mm;
-+	struct work_struct	work;
- 	void			*buf;
- 	const struct iovec	*iv;
- 	unsigned long		nr_segs;
-@@ -541,15 +545,12 @@ static int ep_aio_cancel(struct kiocb *iocb, struct io_event *e)
- 	return value;
- }
- 
--static ssize_t ep_aio_read_retry(struct kiocb *iocb)
-+static ssize_t ep_copy_to_user(struct kiocb_priv *priv)
+diff --git a/fs/aio.c b/fs/aio.c
+index 1de4f78..91879d4 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -528,7 +528,7 @@ static inline void really_put_req(struct kioctx *ctx, struct kiocb *req)
+ /* __aio_put_req
+  *	Returns true if this put was the last user of the request.
+  */
+-static int __aio_put_req(struct kioctx *ctx, struct kiocb *req)
++static void __aio_put_req(struct kioctx *ctx, struct kiocb *req)
  {
--	struct kiocb_priv	*priv = iocb->private;
- 	ssize_t			len, total;
- 	void			*to_copy;
- 	int			i;
- 
--	/* we "retry" to get the right mm context for this: */
--
- 	/* copy stuff into user buffers */
- 	total = priv->actual;
- 	len = 0;
-@@ -569,9 +570,26 @@ static ssize_t ep_aio_read_retry(struct kiocb *iocb)
- 		if (total == 0)
- 			break;
- 	}
-+
-+	return len;
-+}
-+
-+static void ep_user_copy_worker(struct work_struct *work)
-+{
-+	struct kiocb_priv *priv = container_of(work, struct kiocb_priv, work);
-+	struct mm_struct *mm = priv->mm;
-+	struct kiocb *iocb = priv->iocb;
-+	size_t ret;
-+
-+	use_mm(mm);
-+	ret = ep_copy_to_user(priv);
-+	unuse_mm(mm);
-+
-+	/* completing the iocb can drop the ctx and mm, don't touch mm after */
-+	aio_complete(iocb, ret, ret);
-+
- 	kfree(priv->buf);
- 	kfree(priv);
--	return len;
+ 	dprintk(KERN_DEBUG "aio_put(%p): f_count=%ld\n",
+ 		req, atomic_long_read(&req->ki_filp->f_count));
+@@ -538,7 +538,7 @@ static int __aio_put_req(struct kioctx *ctx, struct kiocb *req)
+ 	req->ki_users--;
+ 	BUG_ON(req->ki_users < 0);
+ 	if (likely(req->ki_users))
+-		return 0;
++		return;
+ 	list_del(&req->ki_list);		/* remove from active_reqs */
+ 	req->ki_cancel = NULL;
+ 	req->ki_retry = NULL;
+@@ -546,21 +546,18 @@ static int __aio_put_req(struct kioctx *ctx, struct kiocb *req)
+ 	fput(req->ki_filp);
+ 	req->ki_filp = NULL;
+ 	really_put_req(ctx, req);
+-	return 1;
  }
  
- static void ep_aio_complete(struct usb_ep *ep, struct usb_request *req)
-@@ -597,14 +615,14 @@ static void ep_aio_complete(struct usb_ep *ep, struct usb_request *req)
- 		aio_complete(iocb, req->actual ? req->actual : req->status,
- 				req->status);
- 	} else {
--		/* retry() won't report both; so we hide some faults */
-+		/* ep_copy_to_user() won't report both; we hide some faults */
- 		if (unlikely(0 != req->status))
- 			DBG(epdata->dev, "%s fault %d len %d\n",
- 				ep->name, req->status, req->actual);
- 
- 		priv->buf = req->buf;
- 		priv->actual = req->actual;
--		kick_iocb(iocb);
-+		schedule_work(&priv->work);
- 	}
- 	spin_unlock(&epdata->dev->lock);
- 
-@@ -634,8 +652,10 @@ fail:
- 		return value;
- 	}
- 	iocb->private = priv;
-+	priv->iocb = iocb;
- 	priv->iv = iv;
- 	priv->nr_segs = nr_segs;
-+	INIT_WORK(&priv->work, ep_user_copy_worker);
- 
- 	value = get_ready_ep(iocb->ki_filp->f_flags, epdata);
- 	if (unlikely(value < 0)) {
-@@ -647,6 +667,7 @@ fail:
- 	get_ep(epdata);
- 	priv->epdata = epdata;
- 	priv->actual = 0;
-+	priv->mm = current->mm; /* mm teardown waits for iocbs in exit_aio() */
- 
- 	/* each kiocb is coupled to one usb_request, but we can't
- 	 * allocate or submit those if the host disconnected.
-@@ -675,7 +696,7 @@ fail:
- 		kfree(priv);
- 		put_ep(epdata);
- 	} else
--		value = (iv ? -EIOCBRETRY : -EIOCBQUEUED);
-+		value = -EIOCBQUEUED;
- 	return value;
+ /* aio_put_req
+  *	Returns true if this put was the last user of the kiocb,
+  *	false if the request is still in use.
+  */
+-int aio_put_req(struct kiocb *req)
++void aio_put_req(struct kiocb *req)
+ {
+ 	struct kioctx *ctx = req->ki_ctx;
+-	int ret;
+ 	spin_lock_irq(&ctx->ctx_lock);
+-	ret = __aio_put_req(ctx, req);
++	__aio_put_req(ctx, req);
+ 	spin_unlock_irq(&ctx->ctx_lock);
+-	return ret;
  }
+ EXPORT_SYMBOL(aio_put_req);
  
-@@ -693,7 +714,6 @@ ep_aio_read(struct kiocb *iocb, const struct iovec *iov,
- 	if (unlikely(!buf))
- 		return -ENOMEM;
+@@ -594,7 +591,7 @@ static struct kioctx *lookup_ioctx(unsigned long ctx_id)
+  *	Returns true if this is the last user of the request.  The 
+  *	only other user of the request can be the cancellation code.
+  */
+-int aio_complete(struct kiocb *iocb, long res, long res2)
++void aio_complete(struct kiocb *iocb, long res, long res2)
+ {
+ 	struct kioctx	*ctx = iocb->ki_ctx;
+ 	struct aio_ring_info	*info;
+@@ -602,7 +599,6 @@ int aio_complete(struct kiocb *iocb, long res, long res2)
+ 	struct io_event	*event;
+ 	unsigned long	flags;
+ 	unsigned long	tail;
+-	int		ret;
  
--	iocb->ki_retry = ep_aio_read_retry;
- 	return ep_aio_rwtail(iocb, buf, iocb->ki_left, epdata, iov, nr_segs);
+ 	/*
+ 	 * Special case handling for sync iocbs:
+@@ -616,7 +612,7 @@ int aio_complete(struct kiocb *iocb, long res, long res2)
+ 		iocb->ki_user_data = res;
+ 		iocb->ki_users = 0;
+ 		wake_up_process(iocb->ki_obj.tsk);
+-		return 1;
++		return;
+ 	}
+ 
+ 	info = &ctx->ring_info;
+@@ -675,7 +671,7 @@ int aio_complete(struct kiocb *iocb, long res, long res2)
+ 
+ put_rq:
+ 	/* everything turned out well, dispose of the aiocb. */
+-	ret = __aio_put_req(ctx, iocb);
++	__aio_put_req(ctx, iocb);
+ 
+ 	/*
+ 	 * We have to order our ring_info tail store above and test
+@@ -689,7 +685,6 @@ put_rq:
+ 		wake_up(&ctx->wait);
+ 
+ 	spin_unlock_irqrestore(&ctx->ctx_lock, flags);
+-	return ret;
  }
+ EXPORT_SYMBOL(aio_complete);
  
+diff --git a/include/linux/aio.h b/include/linux/aio.h
+index 387dad0..0ce99e8 100644
+--- a/include/linux/aio.h
++++ b/include/linux/aio.h
+@@ -168,16 +168,16 @@ struct kioctx {
+ /* prototypes */
+ #ifdef CONFIG_AIO
+ extern ssize_t wait_on_sync_kiocb(struct kiocb *iocb);
+-extern int aio_put_req(struct kiocb *iocb);
+-extern int aio_complete(struct kiocb *iocb, long res, long res2);
++extern void aio_put_req(struct kiocb *iocb);
++extern void aio_complete(struct kiocb *iocb, long res, long res2);
+ struct mm_struct;
+ extern void exit_aio(struct mm_struct *mm);
+ extern long do_io_submit(aio_context_t ctx_id, long nr,
+ 			 struct iocb __user *__user *iocbpp, bool compat);
+ #else
+ static inline ssize_t wait_on_sync_kiocb(struct kiocb *iocb) { return 0; }
+-static inline int aio_put_req(struct kiocb *iocb) { return 0; }
+-static inline int aio_complete(struct kiocb *iocb, long res, long res2) { return 0; }
++static inline void aio_put_req(struct kiocb *iocb) { }
++static inline void aio_complete(struct kiocb *iocb, long res, long res2) { }
+ struct mm_struct;
+ static inline void exit_aio(struct mm_struct *mm) { }
+ static inline long do_io_submit(aio_context_t ctx_id, long nr,
 -- 
 1.7.12
 
