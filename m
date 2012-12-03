@@ -1,43 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570Ab2LCBci (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 20:32:38 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:64678 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754374Ab2LCBch (ORCPT
+	id S1754641Ab2LCBdN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 20:33:13 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:33662 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754224Ab2LCBdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 20:32:37 -0500
-Date: Sun, 2 Dec 2012 17:29:16 -0800
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: "Tc, Jenny" <jenny.tc@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        anish kumar <anish198519851985@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
-Subject: Re: [PATCH] EXTCON: Get and set cable properties
-Message-ID: <20121203012916.GA7330@lizard.sbx05977.paloaca.wayport.net>
-References: <1354052956-3394-1-git-send-email-jenny.tc@intel.com>
- <20ADAB092842284E95860F279283C564E2754F@BGSMSX101.gar.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20ADAB092842284E95860F279283C564E2754F@BGSMSX101.gar.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 2 Dec 2012 20:33:11 -0500
+Date: Sun, 02 Dec 2012 20:33:09 -0500 (EST)
+Message-Id: <20121202.203309.1858145449914043352.davem@davemloft.net>
+To: tipecaml@gmail.com
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        rmody@brocade.com, netdev@vger.kernel.org
+Subject: Re: [PATCH 1/6] bna: remove useless calls to memset().
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1354416022-20189-2-git-send-email-tipecaml@gmail.com>
+References: <1354416022-20189-1-git-send-email-tipecaml@gmail.com>
+	<1354416022-20189-2-git-send-email-tipecaml@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 02, 2012 at 06:53:17AM +0000, Tc, Jenny wrote:
-> Could you please review this. This is a follow up patch for "PATCH]
-> extcon : callback function to read cable property"
+From: Cyril Roelandt <tipecaml@gmail.com>
+Date: Sun,  2 Dec 2012 03:40:17 +0100
 
-While I see nothing wrong with the patch itself, I beg you to send some
-users for the new calls. Don't be obsessed with the extcon internals too
-much, think more about how things will interact (i.e. I really really want
-to see how you use these calls from the power supply drivers).
+> These calls are followed by calls to memcpy() on the same memory area, so they
+> can safely be removed.
+> 
+> Signed-off-by: Cyril Roelandt <tipecaml@gmail.com>
 
-Thanks,
-Anton.
+Applied, thanks.
