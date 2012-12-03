@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755955Ab2LCO4X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:56:23 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43579 "EHLO
+	id S1756001Ab2LCO40 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:56:26 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43560 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932108Ab2LCOfs (ORCPT
+	by vger.kernel.org with ESMTP id S932097Ab2LCOfs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Dec 2012 09:35:48 -0500
-Message-Id: <20121203143149.339583242@decadent.org.uk>
+Message-Id: <20121203143149.882652302@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Dec 2012 14:32:02 +0000
+Date: Mon, 03 Dec 2012 14:32:05 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 16/89] memcg: oom: fix totalpages calculation for memory.swappiness==0
+        Jacob Shin <jacob.shin@amd.com>, Tom Rini <trini@ti.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 19/89] x86, mm: Find_early_table_space based on ranges that are actually
+ being mapped
 In-Reply-To: <20121203143146.549859007@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,87 +29,142 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Hocko <mhocko@suse.cz>
+From: Jacob Shin <jacob.shin@amd.com>
 
-commit 9a5a8f19b43430752067ecaee62fc59e11e88fa6 upstream.
+commit 844ab6f993b1d32eb40512503d35ff6ad0c57030 upstream.
 
-oom_badness() takes a totalpages argument which says how many pages are
-available and it uses it as a base for the score calculation.  The value
-is calculated by mem_cgroup_get_limit which considers both limit and
-total_swap_pages (resp.  memsw portion of it).
+Current logic finds enough space for direct mapping page tables from 0
+to end. Instead, we only need to find enough space to cover mr[0].start
+to mr[nr_range].end -- the range that is actually being mapped by
+init_memory_mapping()
 
-This is usually correct but since fe35004fbf9e ("mm: avoid swapping out
-with swappiness==0") we do not swap when swappiness is 0 which means
-that we cannot really use up all the totalpages pages.  This in turn
-confuses oom score calculation if the memcg limit is much smaller than
-the available swap because the used memory (capped by the limit) is
-negligible comparing to totalpages so the resulting score is too small
-if adj!=0 (typically task with CAP_SYS_ADMIN or non zero oom_score_adj).
-A wrong process might be selected as result.
+This is needed after 1bbbbe779aabe1f0768c2bf8f8c0a5583679b54a, to address
+the panic reported here:
 
-The problem can be worked around by checking mem_cgroup_swappiness==0
-and not considering swap at all in such a case.
+  https://lkml.org/lkml/2012/10/20/160
+  https://lkml.org/lkml/2012/10/21/157
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: David Rientjes <rientjes@google.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+Link: http://lkml.kernel.org/r/20121024195311.GB11779@jshin-Toonie
+Tested-by: Tom Rini <trini@ti.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - The log message format is a bit different]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- Documentation/cgroups/memory.txt |    4 ++++
- mm/memcontrol.c                  |   21 +++++++++++++++------
- 2 files changed, 19 insertions(+), 6 deletions(-)
+ arch/x86/mm/init.c |   70 ++++++++++++++++++++++++++++++----------------------
+ 1 file changed, 41 insertions(+), 29 deletions(-)
 
---- a/Documentation/cgroups/memory.txt
-+++ b/Documentation/cgroups/memory.txt
-@@ -440,6 +440,10 @@ Note:
- 5.3 swappiness
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -28,36 +28,54 @@ int direct_gbpages
+ #endif
+ ;
  
- Similar to /proc/sys/vm/swappiness, but affecting a hierarchy of groups only.
-+Please note that unlike the global swappiness, memcg knob set to 0
-+really prevents from any swapping even if there is a swap storage
-+available. This might lead to memcg OOM killer if there are no file
-+pages to reclaim.
- 
- Following cgroups' swappiness can't be changed.
- - root cgroup (uses /proc/sys/vm/swappiness).
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1457,17 +1457,26 @@ static int mem_cgroup_count_children(str
- u64 mem_cgroup_get_limit(struct mem_cgroup *memcg)
+-static void __init find_early_table_space(unsigned long end, int use_pse,
+-					  int use_gbpages)
++struct map_range {
++	unsigned long start;
++	unsigned long end;
++	unsigned page_size_mask;
++};
++
++/*
++ * First calculate space needed for kernel direct mapping page tables to cover
++ * mr[0].start to mr[nr_range - 1].end, while accounting for possible 2M and 1GB
++ * pages. Then find enough contiguous space for those page tables.
++ */
++static void __init find_early_table_space(struct map_range *mr, int nr_range)
  {
- 	u64 limit;
--	u64 memsw;
+-	unsigned long puds, pmds, ptes, tables, start = 0, good_end = end;
++	int i;
++	unsigned long puds = 0, pmds = 0, ptes = 0, tables;
++	unsigned long start = 0, good_end;
+ 	phys_addr_t base;
  
- 	limit = res_counter_read_u64(&memcg->res, RES_LIMIT);
--	limit += total_swap_pages << PAGE_SHIFT;
+-	puds = (end + PUD_SIZE - 1) >> PUD_SHIFT;
+-	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
++	for (i = 0; i < nr_range; i++) {
++		unsigned long range, extra;
  
--	memsw = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
- 	/*
--	 * If memsw is finite and limits the amount of swap space available
--	 * to this memcg, return that limit.
-+	 * Do not consider swap space if we cannot swap due to swappiness
- 	 */
--	return min(limit, memsw);
-+	if (mem_cgroup_swappiness(memcg)) {
-+		u64 memsw;
+-	if (use_gbpages) {
+-		unsigned long extra;
++		range = mr[i].end - mr[i].start;
++		puds += (range + PUD_SIZE - 1) >> PUD_SHIFT;
+ 
+-		extra = end - ((end>>PUD_SHIFT) << PUD_SHIFT);
+-		pmds = (extra + PMD_SIZE - 1) >> PMD_SHIFT;
+-	} else
+-		pmds = (end + PMD_SIZE - 1) >> PMD_SHIFT;
+-
+-	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
++		if (mr[i].page_size_mask & (1 << PG_LEVEL_1G)) {
++			extra = range - ((range >> PUD_SHIFT) << PUD_SHIFT);
++			pmds += (extra + PMD_SIZE - 1) >> PMD_SHIFT;
++		} else {
++			pmds += (range + PMD_SIZE - 1) >> PMD_SHIFT;
++		}
+ 
+-	if (use_pse) {
+-		unsigned long extra;
+-
+-		extra = end - ((end>>PMD_SHIFT) << PMD_SHIFT);
++		if (mr[i].page_size_mask & (1 << PG_LEVEL_2M)) {
++			extra = range - ((range >> PMD_SHIFT) << PMD_SHIFT);
+ #ifdef CONFIG_X86_32
+-		extra += PMD_SIZE;
++			extra += PMD_SIZE;
+ #endif
+-		ptes = (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
+-	} else
+-		ptes = (end + PAGE_SIZE - 1) >> PAGE_SHIFT;
++			/* The first 2/4M doesn't use large pages. */
++			if (mr[i].start < PMD_SIZE)
++				extra += range;
 +
-+		limit += total_swap_pages << PAGE_SHIFT;
-+		memsw = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
-+
-+		/*
-+		 * If memsw is finite and limits the amount of swap space
-+		 * available to this memcg, return that limit.
-+		 */
-+		limit = min(limit, memsw);
++			ptes += (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
++		} else {
++			ptes += (range + PAGE_SIZE - 1) >> PAGE_SHIFT;
++		}
 +	}
-+
-+	return limit;
+ 
++	tables = roundup(puds * sizeof(pud_t), PAGE_SIZE);
++	tables += roundup(pmds * sizeof(pmd_t), PAGE_SIZE);
+ 	tables += roundup(ptes * sizeof(pte_t), PAGE_SIZE);
+ 
+ #ifdef CONFIG_X86_32
+@@ -75,7 +93,8 @@ static void __init find_early_table_spac
+ 	pgt_buf_top = pgt_buf_start + (tables >> PAGE_SHIFT);
+ 
+ 	printk(KERN_DEBUG "kernel direct mapping tables up to %lx @ %lx-%lx\n",
+-		end, pgt_buf_start << PAGE_SHIFT, pgt_buf_top << PAGE_SHIFT);
++		mr[nr_range - 1].end, pgt_buf_start << PAGE_SHIFT,
++		pgt_buf_top << PAGE_SHIFT);
  }
  
- /*
+ void __init native_pagetable_reserve(u64 start, u64 end)
+@@ -83,12 +102,6 @@ void __init native_pagetable_reserve(u64
+ 	memblock_x86_reserve_range(start, end, "PGTABLE");
+ }
+ 
+-struct map_range {
+-	unsigned long start;
+-	unsigned long end;
+-	unsigned page_size_mask;
+-};
+-
+ #ifdef CONFIG_X86_32
+ #define NR_RANGE_MR 3
+ #else /* CONFIG_X86_64 */
+@@ -260,7 +273,7 @@ unsigned long __init_refok init_memory_m
+ 	 * nodes are discovered.
+ 	 */
+ 	if (!after_bootmem)
+-		find_early_table_space(end, use_pse, use_gbpages);
++		find_early_table_space(mr, nr_range);
+ 
+ 	for (i = 0; i < nr_range; i++)
+ 		ret = kernel_physical_mapping_init(mr[i].start, mr[i].end,
 
 
