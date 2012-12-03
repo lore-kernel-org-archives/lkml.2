@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754136Ab2LCGbu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 01:31:50 -0500
-Received: from relay.ihostexchange.net ([66.46.182.52]:56282 "EHLO
-	relay.ihostexchange.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751130Ab2LCGbs convert rfc822-to-8bit (ORCPT
+	id S1754217Ab2LCGbw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 01:31:52 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:53632 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751130Ab2LCGbu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 01:31:48 -0500
-From: Dudley Du <dudl@cypress.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-CC: Kamal Mostafa <kamal@canonical.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        David Solda <dso@cypress.com>, Troy Abercrombia <ta@cypress.com>,
-        customercare <customercare@cypress.com>,
-        Kyle Fazzari <git@status.e4ward.com>,
-        Mario Limonciello <mario_limonciello@dell.com>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Herton Krzesinski <herton.krzesinski@canonical.com>,
-        "dudl@cyress.com" <dudl@cyress.com>
-Date: Mon, 3 Dec 2012 01:31:45 -0500
-Subject: RE: [PATCH v3 2/4] input: Cypress PS/2 Trackpad psmouse driver
-Thread-Topic: [PATCH v3 2/4] input: Cypress PS/2 Trackpad psmouse driver
-Thread-Index: Ac3RH5WSWoMxacKbQz6TNCsuyZmY9QAABPhg
-Message-ID: <B27AC323FA92C946BA36D2913DDC8E370234D97E49B8@VMBX126.ihostexchange.net>
-References: <1354226281-3476-1-git-send-email-kamal@canonical.com>
- <1354226281-3476-3-git-send-email-kamal@canonical.com>
- <B27AC323FA92C946BA36D2913DDC8E370234D97E49AE@VMBX126.ihostexchange.net>
- <20121203063124.GA2609@polaris.bitmath.org>
-In-Reply-To: <20121203063124.GA2609@polaris.bitmath.org>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-CN, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 3 Dec 2012 01:31:50 -0500
+From: Hyeonjun Lim <hjoon0510@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] Doc: Update the naming of profiling based on sysfs
+Date: Mon,  3 Dec 2012 15:31:31 +0900
+Message-Id: <1354516291-15589-1-git-send-email-hjoon0510@gmail.com>
+X-Mailer: git-send-email 1.7.8.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Henrik,
+We setup and run 'profiling' feature under Linux system.
+The readprofile(1) command uses the /proc/profile information
+to display ascii data on standard output.
+sort -nr | head -5
 
-Okay, agree.
-Thanks.
+/proc/profile correctly. The ./kernel/ksysfs.c defines 'profiling'
+w/o 'profile' like "KERNEL_ATTR_RW(profiling)".
+We need to synchronize the content between ksys.c source and kernel doc. 
 
-Best Wishes,
-Dudley Du
-dudl@cypress.com
+Signed-off-by: Hyeonjun Lim <hjoon0510@gmail.com>
+---
+ Documentation/ABI/testing/sysfs-profiling |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
------Original Message-----
-From: Henrik Rydberg [mailto:rydberg@euromail.se]
-Sent: Monday, December 03, 2012 2:31 PM
-To: Dudley Du
-Cc: Kamal Mostafa; linux-input@vger.kernel.org; linux-kernel@vger.kernel.org; Dmitry Torokhov; David Solda; Troy Abercrombia; customercare; Kyle Fazzari; Mario Limonciello; Tim Gardner; Herton Krzesinski; dudl@cyress.com
-Subject: Re: [PATCH v3 2/4] input: Cypress PS/2 Trackpad psmouse driver
+diff --git a/Documentation/ABI/testing/sysfs-profiling b/Documentation/ABI/testing/sysfs-profiling
+index b02d8b8..8a8e466 100644
+--- a/Documentation/ABI/testing/sysfs-profiling
++++ b/Documentation/ABI/testing/sysfs-profiling
+@@ -1,13 +1,13 @@
+-What:		/sys/kernel/profile
++What:		/sys/kernel/profiling
+ Date:		September 2008
+ Contact:	Dave Hansen <dave@linux.vnet.ibm.com>
+ Description:
+-		/sys/kernel/profile is the runtime equivalent
++		/sys/kernel/profiling is the runtime equivalent
+ 		of the boot-time profile= option.
+ 
+ 		You can get the same effect running:
+ 
+-			echo 2 > /sys/kernel/profile
++			echo 2 > /sys/kernel/profiling
+ 
+ 		as you would by issuing profile=2 on the boot
+ 		command line.
+-- 
+1.7.8.1
 
-Hi Dudley,
-
-> Another question is that new interface input_mt_assign_slots() is
-> introduced since 3.7-rc7 or later, So we could not support the kernel releases that earlier than 3.7-rc7 with this driver.
-
-The patch is a submission to mainline, so of course it should be in sync with mainline.
-
-Thanks.
-Henrik
-
-This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
