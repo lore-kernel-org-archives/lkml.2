@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751308Ab2LCWUs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 17:20:48 -0500
-Received: from stringer.orebokech.com ([88.190.240.207]:35191 "EHLO
-	stringer.orebokech.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142Ab2LCWUr (ORCPT
+	id S1751351Ab2LCW1K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 17:27:10 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:47160 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085Ab2LCW1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 17:20:47 -0500
-From: Romain Francoise <romain@orebokech.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.7-rc8
-Organization: orebokech dot com
-References: <CA+55aFyFLG+SxRq2=wY=8tyuQzQSHkKxonXwMmCOs=CWyOo=Mg@mail.gmail.com>
-Date: Mon, 03 Dec 2012 23:20:45 +0100
-In-Reply-To: <CA+55aFyFLG+SxRq2=wY=8tyuQzQSHkKxonXwMmCOs=CWyOo=Mg@mail.gmail.com>
-	(Linus Torvalds's message of "Mon, 3 Dec 2012 12:36:26 -0800")
-Message-ID: <874nk2u69u.fsf@silenus.orebokech.com>
+	Mon, 3 Dec 2012 17:27:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1354416022-20189-5-git-send-email-tipecaml@gmail.com>
+References: <1354416022-20189-1-git-send-email-tipecaml@gmail.com>
+	<1354416022-20189-5-git-send-email-tipecaml@gmail.com>
+Date: Mon, 3 Dec 2012 14:27:07 -0800
+Message-ID: <CAHtARFE0y=ug1icuPdUcA0BVqnn6VfknAaVs=V16J-hcbZemGQ@mail.gmail.com>
+Subject: Re: [PATCH 4/6] scsi: megaraid: remove a useless call to memset().
+From: adam radford <aradford@gmail.com>
+To: Cyril Roelandt <tipecaml@gmail.com>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        megaraidlinux@lsi.com, JBottomley@parallels.com,
+        linux-scsi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Sat, Dec 1, 2012 at 6:40 PM, Cyril Roelandt <tipecaml@gmail.com> wrote:
+> This call is followed by a call to memcpy() on the same memory area, so it can
+> be safely removed.
+>
+> Signed-off-by: Cyril Roelandt <tipecaml@gmail.com>
+> ---
+>  drivers/scsi/megaraid/megaraid_sas_fusion.c |    2 --
+>  1 file changed, 2 deletions(-)
+>
+> diff --git a/drivers/scsi/megaraid/megaraid_sas_fusion.c b/drivers/scsi/megaraid/megaraid_sas_fusion.c
+> index 74030af..71cc3eb 100644
+> --- a/drivers/scsi/megaraid/megaraid_sas_fusion.c
+> +++ b/drivers/scsi/megaraid/megaraid_sas_fusion.c
+> @@ -1028,8 +1028,6 @@ map_cmd_status(struct megasas_cmd_fusion *cmd, u8 status, u8 ext_status)
+>
+>                 cmd->scmd->result = (DID_OK << 16) | ext_status;
+>                 if (ext_status == SAM_STAT_CHECK_CONDITION) {
+> -                       memset(cmd->scmd->sense_buffer, 0,
+> -                              SCSI_SENSE_BUFFERSIZE);
+>                         memcpy(cmd->scmd->sense_buffer, cmd->sense,
+>                                SCSI_SENSE_BUFFERSIZE);
+>                         cmd->scmd->result |= DRIVER_SENSE << 24;
+> --
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
-
-> Linus Torvalds (5):
->       fs/buffer.c: make block-size be per-page and protected by the page lock
->       blockdev: remove bd_block_size_semaphore again
->       direct-io: don't read inode->i_blkbits multiple times
->       blkdev_max_block: make private to fs/buffer.c
-
-Could these changes be the reason for the following suddenly appearing in
-one of my VMs with rc8 (no such messages with rc7)? Pretty standard virtio
-setup in KVM.
-
-[   11.832295] attempt to access beyond end of device
-[   11.832298] vda1: rw=0, want=4192904, limit=4192902
-[   11.832299] Buffer I/O error on device vda1, logical block 524112
-[   11.832394] attempt to access beyond end of device
-[   11.832395] vda1: rw=0, want=4192904, limit=4192902
-[   11.832396] Buffer I/O error on device vda1, logical block 524112
-
-Thanks.
+Acked-by: Adam Radford <aradford@gmail.com>
