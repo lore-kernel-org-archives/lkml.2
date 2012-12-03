@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751376Ab2LCWTQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 17:19:16 -0500
-Received: from mms2.broadcom.com ([216.31.210.18]:4131 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751079Ab2LCWTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 17:19:15 -0500
-X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
-Message-ID: <50BD24DB.7090501@broadcom.com>
-Date: Mon, 3 Dec 2012 14:16:59 -0800
-From: "Bhanu Prakash Gollapudi" <bprakash@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120615
- Thunderbird/13.0.1
+	id S1751308Ab2LCWUs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 17:20:48 -0500
+Received: from stringer.orebokech.com ([88.190.240.207]:35191 "EHLO
+	stringer.orebokech.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142Ab2LCWUr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 17:20:47 -0500
+From: Romain Francoise <romain@orebokech.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.7-rc8
+Organization: orebokech dot com
+References: <CA+55aFyFLG+SxRq2=wY=8tyuQzQSHkKxonXwMmCOs=CWyOo=Mg@mail.gmail.com>
+Date: Mon, 03 Dec 2012 23:20:45 +0100
+In-Reply-To: <CA+55aFyFLG+SxRq2=wY=8tyuQzQSHkKxonXwMmCOs=CWyOo=Mg@mail.gmail.com>
+	(Linus Torvalds's message of "Mon, 3 Dec 2012 12:36:26 -0800")
+Message-ID: <874nk2u69u.fsf@silenus.orebokech.com>
 MIME-Version: 1.0
-To: "Cyril Roelandt" <tipecaml@gmail.com>
-cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        JBottomley@parallels.com, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 3/6] scsi: bnx2fc: remove useless calls to memset().
-References: <1354416022-20189-1-git-send-email-tipecaml@gmail.com>
- <1354416022-20189-4-git-send-email-tipecaml@gmail.com>
-In-Reply-To: <1354416022-20189-4-git-send-email-tipecaml@gmail.com>
-X-WSS-ID: 7CA3FB3B3R014178509-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/01/2012 06:40 PM, Cyril Roelandt wrote:
-> These calls are followed by calls to memcpy() on the same memory area, so they
-> can be safely removed.
->
-> Signed-off-by: Cyril Roelandt <tipecaml@gmail.com>
-> ---
->   drivers/scsi/bnx2fc/bnx2fc_hwi.c |    4 ----
->   1 file changed, 4 deletions(-)
->
-> diff --git a/drivers/scsi/bnx2fc/bnx2fc_hwi.c b/drivers/scsi/bnx2fc/bnx2fc_hwi.c
-> index ef60afa..9be42b8 100644
-> --- a/drivers/scsi/bnx2fc/bnx2fc_hwi.c
-> +++ b/drivers/scsi/bnx2fc/bnx2fc_hwi.c
-> @@ -759,8 +759,6 @@ static void bnx2fc_process_unsol_compl(struct bnx2fc_rport *tgt, u16 wqe)
->   		case FCOE_ERROR_CODE_DATA_SOFN_SEQ_ACTIVE_RESET:
->   			BNX2FC_TGT_DBG(tgt, "REC TOV popped for xid - 0x%x\n",
->   				   xid);
-> -			memset(&io_req->err_entry, 0,
-> -			       sizeof(struct fcoe_err_report_entry));
->   			memcpy(&io_req->err_entry, err_entry,
->   			       sizeof(struct fcoe_err_report_entry));
->   			if (!test_bit(BNX2FC_FLAG_SRR_SENT,
-> @@ -847,8 +845,6 @@ ret_err_rqe:
->   			goto ret_warn_rqe;
->   		}
->   
-> -		memset(&io_req->err_entry, 0,
-> -		       sizeof(struct fcoe_err_report_entry));
->   		memcpy(&io_req->err_entry, err_entry,
->   		       sizeof(struct fcoe_err_report_entry));
->   
-Acked-by: Bhanu Prakash Gollapudi <bprakash@broadcom.com>
+Hi Linus,
 
+Linus Torvalds <torvalds@linux-foundation.org> writes:
 
+> Linus Torvalds (5):
+>       fs/buffer.c: make block-size be per-page and protected by the page lock
+>       blockdev: remove bd_block_size_semaphore again
+>       direct-io: don't read inode->i_blkbits multiple times
+>       blkdev_max_block: make private to fs/buffer.c
+
+Could these changes be the reason for the following suddenly appearing in
+one of my VMs with rc8 (no such messages with rc7)? Pretty standard virtio
+setup in KVM.
+
+[   11.832295] attempt to access beyond end of device
+[   11.832298] vda1: rw=0, want=4192904, limit=4192902
+[   11.832299] Buffer I/O error on device vda1, logical block 524112
+[   11.832394] attempt to access beyond end of device
+[   11.832395] vda1: rw=0, want=4192904, limit=4192902
+[   11.832396] Buffer I/O error on device vda1, logical block 524112
+
+Thanks.
