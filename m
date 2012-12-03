@@ -1,50 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755217Ab2LCLSV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 06:18:21 -0500
-Received: from mga03.intel.com ([143.182.124.21]:54270 "EHLO mga03.intel.com"
+	id S1754838Ab2LCLWf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 06:22:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28924 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754588Ab2LCLQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 06:16:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,205,1355126400"; 
-   d="scan'208";a="175377249"
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Alan Cox <alan@linux.intel.com>, Jamie Iles <jamie@jamieiles.com>,
-        linux-serial@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCHv2 2/5] serial: 8250_dw: Don't use UPF_FIXED_TYPE
-Date: Mon,  3 Dec 2012 13:17:56 +0200
-Message-Id: <1354533479-27306-3-git-send-email-heikki.krogerus@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1354533479-27306-1-git-send-email-heikki.krogerus@linux.intel.com>
-References: <1354533479-27306-1-git-send-email-heikki.krogerus@linux.intel.com>
+	id S1754150Ab2LCLWd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 06:22:33 -0500
+Date: Mon, 3 Dec 2012 13:25:07 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: rusty@rustcorp.com.au, krkumar2@in.ibm.com,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        bhutchings@solarflare.com, jwhan@filewood.snu.ac.kr, shiyer@redhat.com
+Subject: Re: [net-next rfc v7 3/3] virtio-net: change the number of queues
+ through ethtool
+Message-ID: <20121203112507.GE26167@redhat.com>
+References: <1354011360-39479-1-git-send-email-jasowang@redhat.com>
+ <1354011360-39479-4-git-send-email-jasowang@redhat.com>
+ <20121202160906.GB27761@redhat.com>
+ <7408756.Sj6HEpCzzZ@jason-thinkpad-t430s>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7408756.Sj6HEpCzzZ@jason-thinkpad-t430s>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow 8250.c to determine the port type for us. This allows
-the driver take advantage of FIFO on Designware UARTs that
-have it.
+On Mon, Dec 03, 2012 at 02:09:28PM +0800, Jason Wang wrote:
+> On Sunday, December 02, 2012 06:09:06 PM Michael S. Tsirkin wrote:
+> > On Tue, Nov 27, 2012 at 06:16:00PM +0800, Jason Wang wrote:
+> > > This patch implement the {set|get}_channels method of ethool to allow user
+> > > to change the number of queues dymaically when the device is running.
+> > > This would let the user to configure it on demand.
+> > > 
+> > > Signed-off-by: Jason Wang <jasowang@redhat.com>
+> > > ---
+> > > 
+> > >  drivers/net/virtio_net.c |   41 +++++++++++++++++++++++++++++++++++++++++
+> > >  1 files changed, 41 insertions(+), 0 deletions(-)
+> > > 
+> > > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> > > index bcaa6e5..f08ec2a 100644
+> > > --- a/drivers/net/virtio_net.c
+> > > +++ b/drivers/net/virtio_net.c
+> > > @@ -1578,10 +1578,51 @@ static struct virtio_driver virtio_net_driver = {
+> > > 
+> > >  #endif
+> > >  };
+> > > 
+> > > +/* TODO: Eliminate OOO packets during switching */
+> > > +static int virtnet_set_channels(struct net_device *dev,
+> > > +				struct ethtool_channels *channels)
+> > > +{
+> > > +	struct virtnet_info *vi = netdev_priv(dev);
+> > > +	u16 queue_pairs = channels->combined_count;
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
----
- drivers/tty/serial/8250/8250_dw.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+by the way shouldn't this be combined_count / 2?
 
-diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
-index 1d0dba2..ff83ea5 100644
---- a/drivers/tty/serial/8250/8250_dw.c
-+++ b/drivers/tty/serial/8250/8250_dw.c
-@@ -112,7 +112,7 @@ static int dw8250_probe(struct platform_device *pdev)
- 	uart.port.handle_irq = dw8250_handle_irq;
- 	uart.port.type = PORT_8250;
- 	uart.port.flags = UPF_SHARE_IRQ | UPF_BOOT_AUTOCONF | UPF_IOREMAP |
--		UPF_FIXED_PORT | UPF_FIXED_TYPE;
-+		UPF_FIXED_PORT;
- 	uart.port.dev = &pdev->dev;
- 
- 	uart.port.iotype = UPIO_MEM;
--- 
-1.7.10.4
+And below channels->max_combined = vi->max_queue_pairs * 2; ?
 
+> > > +
+> > > +	/* We don't support separate rx/tx channels.
+> > > +	 * We don't allow setting 'other' channels.
+> > > +	 */
+> > > +	if (channels->rx_count || channels->tx_count || channels->other_count)
+> > > +		return -EINVAL;
+> > > +
+> > > +	/* Only two modes were support currently */
+> > > +	if (queue_pairs != vi->max_queue_pairs && queue_pairs != 1)
+> > > +		return -EINVAL;
+> > > +
+> > 
+> > Why the limitation?
+> 
+> Not sure the value bettwen 1 and max_queue_pairs is useful. But anyway, I can 
+> remove this limitation.
+
+I guess a reasonable value would be number of active CPUs,
+which can change with CPU hotplug.
+
+> > Also how does userspace discover what the legal values are?
+> 
+> Userspace only check whether the value is greater than max_queue_pairs.
+
+Exactly. One can query max combined but the fact that configuring
+any less is impossible might be surprising.
+
+> > 
+> > > +	vi->curr_queue_pairs = queue_pairs;
+> > > +	BUG_ON(virtnet_set_queues(vi));
+> > > +
+> > > +	netif_set_real_num_tx_queues(dev, vi->curr_queue_pairs);
+> > > +	netif_set_real_num_rx_queues(dev, vi->curr_queue_pairs);
+> > > +
+> > > +	return 0;
+> > > +}
+> > > +
+> > > +static void virtnet_get_channels(struct net_device *dev,
+> > > +				 struct ethtool_channels *channels)
+> > > +{
+> > > +	struct virtnet_info *vi = netdev_priv(dev);
+> > > +
+> > > +	channels->combined_count = vi->curr_queue_pairs;
+> > > +	channels->max_combined = vi->max_queue_pairs;
+> > > +	channels->max_other = 0;
+> > > +	channels->rx_count = 0;
+> > > +	channels->tx_count = 0;
+> > > +	channels->other_count = 0;
+> > > +}
+> > > +
+> > > 
+> > >  static const struct ethtool_ops virtnet_ethtool_ops = {
+> > >  
+> > >  	.get_drvinfo = virtnet_get_drvinfo,
+> > >  	.get_link = ethtool_op_get_link,
+> > >  	.get_ringparam = virtnet_get_ringparam,
+> > > 
+> > > +	.set_channels = virtnet_set_channels,
+> > > +	.get_channels = virtnet_get_channels,
+> > > 
+> > >  };
+> > >  
+> > >  static int __init init(void)
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe kvm" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
