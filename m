@@ -1,73 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752352Ab2LCU4v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 15:56:51 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:37060 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752049Ab2LCU4t (ORCPT
+	id S1752368Ab2LCU7R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 15:59:17 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:49143 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751378Ab2LCU7P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 15:56:49 -0500
-Date: Mon, 3 Dec 2012 12:56:45 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: David Henningsson <david.henningsson@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        alan@lxorguk.ukuu.org.uk, Takashi Iwai <tiwai@suse.de>
-Subject: Re: [ 12/37] ALSA: hda - Cirrus: Correctly clear line_out_pins when
- moving to speaker
-Message-ID: <20121203205645.GA32037@kroah.com>
-References: <20121130183857.166228045@linuxfoundation.org>
- <20121130183858.536342330@linuxfoundation.org>
- <50BC7513.5010504@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50BC7513.5010504@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 3 Dec 2012 15:59:15 -0500
+From: Kent Overstreet <koverstreet@google.com>
+To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org
+Cc: zab@redhat.com, bcrl@kvack.org, jmoyer@redhat.com, axboe@kernel.dk,
+        viro@zeniv.linux.org.uk, Kent Overstreet <koverstreet@google.com>
+Subject: [PATCH 00/26] AIO performance improvements/cleanups, v2
+Date: Mon,  3 Dec 2012 12:58:16 -0800
+Message-Id: <1354568322-29029-1-git-send-email-koverstreet@google.com>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 03, 2012 at 10:46:59AM +0100, David Henningsson wrote:
-> On 11/30/2012 07:45 PM, Greg Kroah-Hartman wrote:
-> >3.0-stable review patch.  If anyone has any objections, please let me know.
-> >
-> >------------------
-> >
-> >From: David Henningsson <david.henningsson@canonical.com>
-> >
-> >commit 34c3d1926bdaf45d3a891dd577482abcdd9faa34 upstream.
-> >
-> >If this array is not cleared, the jack related code later might
-> >fail to create "Internal Speaker Phantom Jack" on Dell Inspiron 3420 and
-> >Dell Vostro 2420.
-> >
-> >BugLink: https://bugs.launchpad.net/bugs/1076840
-> >Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-> >Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> >Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >
-> >---
-> >  sound/pci/hda/patch_cirrus.c |    1 +
-> >  1 file changed, 1 insertion(+)
-> >
-> >--- a/sound/pci/hda/patch_cirrus.c
-> >+++ b/sound/pci/hda/patch_cirrus.c
-> >@@ -413,6 +413,7 @@ static int parse_output(struct hda_codec
-> >  		memcpy(cfg->speaker_pins, cfg->line_out_pins,
-> >  		       sizeof(cfg->speaker_pins));
-> >  		cfg->line_outs = 0;
-> >+		memset(cfg->line_out_pins, 0, sizeof(cfg->line_out_pins));
-> >  	}
-> >
-> >  	return 0;
-> >
-> >
-> 
-> This one was originally targeted for 3.6+ (as mentioned in my
-> original patch), for earlier kernels I don't anticipate it having
-> any effect, neither positive nor negative. Your call.
+Last posting: http://thread.gmane.org/gmane.linux.kernel.aio.general/3169
 
-Ah, I messed up on that, sorry, I've dropped it from the 3.0-stable
-queue now.
+Changes since the last posting should all be noted in the individual
+patch descriptions.
 
-greg k-h
+ * Zach pointed out the aio_read_evt() patch was calling functions that
+   could sleep in TASK_INTERRUPTIBLE state, that patch is rewritten.
+ * Ben pointed out some synchronize_rcu() usage was problematic,
+   converted it to call_rcu()
+ * The flush_dcache_page() patch is new
+ * Changed the "use cancellation list lazily" patch so as to remove
+   ki_flags from struct kiocb.
+
+Kent Overstreet (21):
+  aio: Kill return value of aio_complete()
+  aio: kiocb_cancel()
+  aio: Move private stuff out of aio.h
+  aio: dprintk() -> pr_debug()
+  aio: do fget() after aio_get_req()
+  aio: Make aio_put_req() lockless
+  aio: Refcounting cleanup
+  aio: Convert read_events() to hrtimers
+  aio: Make aio_read_evt() more efficient
+  aio: Use flush_dcache_page()
+  aio: Use cancellation list lazily
+  aio: Change reqs_active to include unreaped completions
+  aio: Kill batch allocation
+  aio: Kill struct aio_ring_info
+  aio: Give shared kioctx fields their own cachelines
+  aio: reqs_active -> reqs_available
+  aio: percpu reqs_available
+  Generic dynamic per cpu refcounting
+  aio: Percpu ioctx refcount
+  aio: use xchg() instead of completion_lock
+  aio: Don't include aio.h in sched.h
+
+Zach Brown (5):
+  mm: remove old aio use_mm() comment
+  aio: remove dead code from aio.h
+  gadget: remove only user of aio retry
+  aio: remove retry-based AIO
+  char: add aio_{read,write} to /dev/{null,zero}
+
+ arch/s390/hypfs/inode.c                      |    1 +
+ block/scsi_ioctl.c                           |    1 +
+ drivers/char/mem.c                           |   36 +
+ drivers/infiniband/hw/ipath/ipath_file_ops.c |    1 +
+ drivers/infiniband/hw/qib/qib_file_ops.c     |    2 +-
+ drivers/staging/android/logger.c             |    1 +
+ drivers/usb/gadget/inode.c                   |   42 +-
+ fs/9p/vfs_addr.c                             |    1 +
+ fs/afs/write.c                               |    1 +
+ fs/aio.c                                     | 1432 ++++++++++----------------
+ fs/block_dev.c                               |    1 +
+ fs/btrfs/file.c                              |    1 +
+ fs/btrfs/inode.c                             |    1 +
+ fs/ceph/file.c                               |    1 +
+ fs/compat.c                                  |    1 +
+ fs/direct-io.c                               |    1 +
+ fs/ecryptfs/file.c                           |    1 +
+ fs/ext2/inode.c                              |    1 +
+ fs/ext3/inode.c                              |    1 +
+ fs/ext4/file.c                               |    1 +
+ fs/ext4/indirect.c                           |    1 +
+ fs/ext4/inode.c                              |    1 +
+ fs/ext4/page-io.c                            |    1 +
+ fs/fat/inode.c                               |    1 +
+ fs/fuse/dev.c                                |    1 +
+ fs/fuse/file.c                               |    1 +
+ fs/gfs2/aops.c                               |    1 +
+ fs/gfs2/file.c                               |    1 +
+ fs/hfs/inode.c                               |    1 +
+ fs/hfsplus/inode.c                           |    1 +
+ fs/jfs/inode.c                               |    1 +
+ fs/nilfs2/inode.c                            |    2 +-
+ fs/ntfs/file.c                               |    1 +
+ fs/ntfs/inode.c                              |    1 +
+ fs/ocfs2/aops.h                              |    2 +
+ fs/ocfs2/dlmglue.c                           |    2 +-
+ fs/ocfs2/inode.h                             |    2 +
+ fs/pipe.c                                    |    1 +
+ fs/read_write.c                              |   35 +-
+ fs/reiserfs/inode.c                          |    1 +
+ fs/ubifs/file.c                              |    1 +
+ fs/udf/inode.c                               |    1 +
+ fs/xfs/xfs_aops.c                            |    1 +
+ fs/xfs/xfs_file.c                            |    1 +
+ include/linux/aio.h                          |  135 +--
+ include/linux/cgroup.h                       |    1 +
+ include/linux/errno.h                        |    1 -
+ include/linux/percpu-refcount.h              |   29 +
+ include/linux/sched.h                        |    2 -
+ kernel/fork.c                                |    1 +
+ kernel/printk.c                              |    1 +
+ kernel/ptrace.c                              |    1 +
+ lib/Makefile                                 |    2 +-
+ lib/percpu-refcount.c                        |  164 +++
+ mm/mmu_context.c                             |    3 -
+ mm/page_io.c                                 |    1 +
+ mm/shmem.c                                   |    1 +
+ mm/swap.c                                    |    1 +
+ security/keys/internal.h                     |    2 +
+ security/keys/keyctl.c                       |    1 +
+ sound/core/pcm_native.c                      |    2 +-
+ 61 files changed, 868 insertions(+), 1070 deletions(-)
+ create mode 100644 include/linux/percpu-refcount.h
+ create mode 100644 lib/percpu-refcount.c
+
+-- 
+1.7.12
+
