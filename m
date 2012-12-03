@@ -1,87 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452Ab2LCRE1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 12:04:27 -0500
-Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:53040
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754000Ab2LCREZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 12:04:25 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -11
-X-BigFish: VS-11(zzbb2dI98dI9371I179dN542I1432Izz1de0h1202h1d1ah1d2ahzz8275dhz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1155h)
-Date: Mon, 3 Dec 2012 11:03:43 -0600
-From: Scott Wood <scottwood@freescale.com>
-Subject: Re: [PATCH 3/4 v5] iommu/fsl: Add iommu domain attributes required
- by fsl PAMU driver.
-To: Sethi Varun-B16395 <B16395@freescale.com>
-CC: Joerg Roedel <joro@8bytes.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Tabi Timur-B04825 <B04825@freescale.com>
-References: <1353419697-31269-1-git-send-email-Varun.Sethi@freescale.com>
-	<1353419697-31269-4-git-send-email-Varun.Sethi@freescale.com>
-	<20121202140323.GO30633@8bytes.org>
-	<C5ECD7A89D1DC44195F34B25E172658D2B2A51@039-SN2MPN1-013.039d.mgd.msft.net>
-In-Reply-To: <C5ECD7A89D1DC44195F34B25E172658D2B2A51@039-SN2MPN1-013.039d.mgd.msft.net>
-	(from B16395@freescale.com on Mon Dec  3 10:57:29 2012)
-X-Mailer: Balsa 2.4.11
-Message-ID: <1354554223.2960.7@snotra>
+	id S1755510Ab2LCREj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 12:04:39 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:34581 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754000Ab2LCREg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 12:04:36 -0500
+Date: Mon, 3 Dec 2012 09:04:21 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Kamal Mostafa <kamal@canonical.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Solda <dso@cypress.com>,
+        Troy Abercrombia <ta@cypress.com>, Dudley Du <dudl@cypress.com>,
+        Cypress Semiconductor Corporation <customercare@cypress.com>,
+        Kyle Fazzari <git@status.e4ward.com>,
+        Mario Limonciello <mario_limonciello@dell.com>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Herton Krzesinski <herton.krzesinski@canonical.com>
+Subject: Re: [PATCH v3 2/4] input: Cypress PS/2 Trackpad psmouse driver
+Message-ID: <20121203170420.GD28682@core.coreip.homeip.net>
+References: <1354226281-3476-1-git-send-email-kamal@canonical.com>
+ <1354226281-3476-3-git-send-email-kamal@canonical.com>
+ <20121203074520.GA2687@polaris.bitmath.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+In-Reply-To: <20121203074520.GA2687@polaris.bitmath.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2012 10:57:29 AM, Sethi Varun-B16395 wrote:
+On Mon, Dec 03, 2012 at 08:45:20AM +0100, Henrik Rydberg wrote:
+> > +/*
+> > + * reset trackpad device to standard relative mode.
+> > + * This is also the defalut mode when trackpad powered on.
+> > + */
+> > +static void cypress_reset(struct psmouse *psmouse)
+> > +{
+> > +	struct cytp_data *cytp = psmouse->private;
+> > +
+> > +	psmouse_reset(psmouse);
+> > +
+> > +	CYTP_SET_MODE_BIT(CYTP_BIT_STANDARD_REL);
+> > +	CYTP_SET_PACKET_SIZE(3);
+> > +
+> > +	cytp->prev_contact_cnt = 0;
+> > +}
 > 
-> 
-> > -----Original Message-----
-> > From: iommu-bounces@lists.linux-foundation.org [mailto:iommu-
-> > bounces@lists.linux-foundation.org] On Behalf Of Joerg Roedel
-> > Sent: Sunday, December 02, 2012 7:33 PM
-> > To: Sethi Varun-B16395
-> > Cc: linux-kernel@vger.kernel.org; iommu@lists.linux-foundation.org;  
-> Wood
-> > Scott-B07421; linuxppc-dev@lists.ozlabs.org; Tabi Timur-B04825
-> > Subject: Re: [PATCH 3/4 v5] iommu/fsl: Add iommu domain attributes
-> > required by fsl PAMU driver.
-> >
-> > Hmm, we need to work out a good abstraction for this.
-> >
-> > On Tue, Nov 20, 2012 at 07:24:56PM +0530, Varun Sethi wrote:
-> > > Added the following domain attributes required by FSL PAMU driver:
-> > > 1. Subwindows field added to the iommu domain geometry attribute.
-> >
-> > Are the Subwindows mapped with full size or do you map only parts  
-> of the
-> > subwindows?
-> >
-> [Sethi Varun-B16395] It's possible to map a part of the subwindow  
-> i.e. size of the mapping can be less than the sub window size.
-> 
-> > > +	 * This attribute indicates number of DMA subwindows supported  
-> by
-> > > +	 * the geometry. If there is a single window that maps the  
-> entire
-> > > +	 * geometry, attribute must be set to "1". A value of "0"  
-> implies
-> > > +	 * that this mechanism is not used at all(normal paging is  
-> used).
-> > > +	 * Value other than* "0" or "1" indicates the actual number of
-> > > +	 * subwindows.
-> > > +	 */
-> >
-> > This semantic is ugly, how about a feature detection mechanism?
-> >
-> [Sethi Varun-B16395] A feature mechanism to query the type of IOMMU?
+> I suppose it is, but is it necessary to reset to default mode?
 
-A feature mechanism to determine whether this subwindow mechanism is  
-available, and what the limits are.
+It most likely is, as quite a few BIOSes get very upset and refuse to
+shutdown/suspend/resume if they find mouse (touchpad) in state other
+than bog-standard PS/2 mode. So psmouse_reset() is needed, the rest is
+not so much as the device supposed to be inactive from this point on.
 
--Scott
+Thanks.
+
+-- 
+Dmitry
