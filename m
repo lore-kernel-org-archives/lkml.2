@@ -1,98 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305Ab2LCPCw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 10:02:52 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:50516 "EHLO
+	id S1755314Ab2LCPDL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 10:03:11 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:50523 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754883Ab2LCPCu (ORCPT
+	with ESMTP id S1753748Ab2LCPDH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 10:02:50 -0500
-Subject: [PATCH 4/9] goldfish: virtual input event driver
+	Mon, 3 Dec 2012 10:03:07 -0500
+Subject: [PATCH 5/9] goldfish: framebuffer
 To: arve@android.com, x86@kernel.org, linux-kernel@vger.kernel.org,
         mikechan@google.com
 From: Alan Cox <alan@linux.intel.com>
-Date: Mon, 03 Dec 2012 15:05:12 +0000
-Message-ID: <20121203150507.16826.17845.stgit@bob.linux.org.uk>
+Date: Mon, 03 Dec 2012 15:05:30 +0000
+Message-ID: <20121203150523.16826.44613.stgit@bob.linux.org.uk>
 In-Reply-To: <20121203150310.16826.3363.stgit@bob.linux.org.uk>
 References: <20121203150310.16826.3363.stgit@bob.linux.org.uk>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Brian Swetland <swetland@google.com>
+From: Arve Hjønnevåg <arve@google.com>
 
-This device is a direct pipe from "hardware" to the input
-event subsystem, allowing us to avoid having to route
-"keypad" style events through an AT keyboard driver (gross!)
+Framebuffer support for the Goldfish emulator. This takes the Google emulator
+and applies the x86 cleanups as well as moving the blank methods to the usual
+Linux place and dropping the Android early suspend logic (for now at least, that
+can be looked at as Android and upstream converge). Dropped various oddities
+like setting MTRRs on a virtual frame buffer emulation...
 
-As with the other submissions this driver is cross architecture.
+With the drivers so far you can now boot a Linux initrd and have fun.
 
 Signed-off-by: Mike A. Chan <mikechan@google.com>
-[Tided up to work on x86]
+Signed-off-by: Arve Hjønnevåg <arve@android.com>
+[cleaned up to handle x86]
 Signed-off-by: Sheng Yang <sheng@linux.intel.com>
 Signed-off-by: Yunhong Jiang <yunhong.jiang@intel.com>
 Signed-off-by: Xiaohui Xin <xiaohui.xin@intel.com>
 Signed-off-by: Jun Nakajima <jun.nakajima@intel.com>
 Signed-off-by: Bruce Beare <bruce.j.beare@intel.com>
-[Ported to 3.4]
+[ported to 3.4]
 Signed-off-by: Tom Keel <thomas.keel@intel.com>
-[Cleaned up for 3.7 and submission]
+[cleaned up for style and 3.7, moved blank methods]
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/input/keyboard/Kconfig           |   11 ++
- drivers/input/keyboard/Makefile          |    1 
- drivers/input/keyboard/goldfish_events.c |  201 ++++++++++++++++++++++++++++++
- 3 files changed, 213 insertions(+)
- create mode 100644 drivers/input/keyboard/goldfish_events.c
+ drivers/video/Kconfig      |    9 +
+ drivers/video/Makefile     |    1 
+ drivers/video/goldfishfb.c |  327 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 337 insertions(+)
+ create mode 100644 drivers/video/goldfishfb.c
 
 
-diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
-index 7ccd652..e6eba4e 100644
---- a/drivers/input/keyboard/Kconfig
-+++ b/drivers/input/keyboard/Kconfig
-@@ -479,6 +479,17 @@ config KEYBOARD_SAMSUNG
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called samsung-keypad.
+diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
+index 50740a8..5cbcfa8 100644
+--- a/drivers/video/Kconfig
++++ b/drivers/video/Kconfig
+@@ -2183,6 +2183,15 @@ config FB_XILINX
+ 	  framebuffer. ML300 carries a 640*480 LCD display on the board,
+ 	  ML403 uses a standard DB15 VGA connector.
  
-+config KEYBOARD_GOLDFISH_EVENTS
-+	depends on GOLDFISH
-+	tristate "Generic Input Event device for Goldfish"
-+	help
-+	  Say Y here to get an input event device for the Goldfish virtual
-+	  device emulator.
++config FB_GOLDFISH
++	tristate "Goldfish Framebuffer"
++	depends on FB
++	select FB_CFB_FILLRECT
++	select FB_CFB_COPYAREA
++	select FB_CFB_IMAGEBLIT
++	---help---
++	  Framebuffer driver for Goldfish Virtual Platform
 +
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called goldfish-events.
-+
-+
- config KEYBOARD_STOWAWAY
- 	tristate "Stowaway keyboard"
- 	select SERIO
-diff --git a/drivers/input/keyboard/Makefile b/drivers/input/keyboard/Makefile
-index 44e7600..49b1645 100644
---- a/drivers/input/keyboard/Makefile
-+++ b/drivers/input/keyboard/Makefile
-@@ -13,6 +13,7 @@ obj-$(CONFIG_KEYBOARD_ATKBD)		+= atkbd.o
- obj-$(CONFIG_KEYBOARD_BFIN)		+= bf54x-keys.o
- obj-$(CONFIG_KEYBOARD_DAVINCI)		+= davinci_keyscan.o
- obj-$(CONFIG_KEYBOARD_EP93XX)		+= ep93xx_keypad.o
-+obj-$(CONFIG_KEYBOARD_GOLDFISH_EVENTS)	+= goldfish_events.o
- obj-$(CONFIG_KEYBOARD_GPIO)		+= gpio_keys.o
- obj-$(CONFIG_KEYBOARD_GPIO_POLLED)	+= gpio_keys_polled.o
- obj-$(CONFIG_KEYBOARD_TCA6416)		+= tca6416-keypad.o
-diff --git a/drivers/input/keyboard/goldfish_events.c b/drivers/input/keyboard/goldfish_events.c
+ config FB_COBALT
+ 	tristate "Cobalt server LCD frame buffer support"
+ 	depends on FB && (MIPS_COBALT || MIPS_SEAD3)
+diff --git a/drivers/video/Makefile b/drivers/video/Makefile
+index 768a137..3363f67 100644
+--- a/drivers/video/Makefile
++++ b/drivers/video/Makefile
+@@ -98,6 +98,7 @@ obj-$(CONFIG_FB_ATMEL)		  += atmel_lcdfb.o
+ obj-$(CONFIG_FB_PVR2)             += pvr2fb.o
+ obj-$(CONFIG_FB_VOODOO1)          += sstfb.o
+ obj-$(CONFIG_FB_ARMCLCD)	  += amba-clcd.o
++obj-$(CONFIG_FB_GOLDFISH)         += goldfishfb.o
+ obj-$(CONFIG_FB_68328)            += 68328fb.o
+ obj-$(CONFIG_FB_GBE)              += gbefb.o
+ obj-$(CONFIG_FB_CIRRUS)		  += cirrusfb.o
+diff --git a/drivers/video/goldfishfb.c b/drivers/video/goldfishfb.c
 new file mode 100644
-index 0000000..bf596b0
+index 0000000..47136ef
 --- /dev/null
-+++ b/drivers/input/keyboard/goldfish_events.c
-@@ -0,0 +1,201 @@
-+/*
-+ * drivers/input/keyboard/goldfish-events.c
++++ b/drivers/video/goldfishfb.c
+@@ -0,0 +1,327 @@
++/* drivers/video/goldfishfb.c
 + *
 + * Copyright (C) 2007 Google, Inc.
 + * Copyright (C) 2012 Intel, Inc.
@@ -109,187 +109,314 @@ index 0000000..bf596b0
 + */
 +
 +#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/dma-mapping.h>
++#include <linux/errno.h>
++#include <linux/string.h>
++#include <linux/slab.h>
++#include <linux/delay.h>
++#include <linux/mm.h>
++#include <linux/fb.h>
 +#include <linux/init.h>
 +#include <linux/interrupt.h>
-+#include <linux/types.h>
-+#include <linux/input.h>
-+#include <linux/kernel.h>
++#include <linux/ioport.h>
 +#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/irq.h>
-+#include <linux/io.h>
 +
 +enum {
-+	REG_READ        = 0x00,
-+	REG_SET_PAGE    = 0x00,
-+	REG_LEN         = 0x04,
-+	REG_DATA        = 0x08,
++	FB_GET_WIDTH        = 0x00,
++	FB_GET_HEIGHT       = 0x04,
++	FB_INT_STATUS       = 0x08,
++	FB_INT_ENABLE       = 0x0c,
++	FB_SET_BASE         = 0x10,
++	FB_SET_ROTATION     = 0x14,
++	FB_SET_BLANK        = 0x18,
++	FB_GET_PHYS_WIDTH   = 0x1c,
++	FB_GET_PHYS_HEIGHT  = 0x20,
 +
-+	PAGE_NAME       = 0x00000,
-+	PAGE_EVBITS     = 0x10000,
-+	PAGE_ABSDATA    = 0x20000 | EV_ABS,
++	FB_INT_VSYNC             = 1U << 0,
++	FB_INT_BASE_UPDATE_DONE  = 1U << 1
 +};
 +
-+struct event_dev {
-+	struct input_dev *input;
++struct goldfish_fb {
++	void __iomem *reg_base;
 +	int irq;
-+	void __iomem *addr;
-+	char name[0];
++	spinlock_t lock;
++	wait_queue_head_t wait;
++	int base_update_count;
++	int rotation;
++	struct fb_info fb;
++	u32 cmap[16];
 +};
 +
-+static irqreturn_t events_interrupt(int irq, void *dev_id)
++static irqreturn_t goldfish_fb_interrupt(int irq, void *dev_id)
 +{
-+	struct event_dev *edev = dev_id;
-+	unsigned type, code, value;
++	unsigned long irq_flags;
++	struct goldfish_fb *fb = dev_id;
++	u32 status;
 +
-+	type = __raw_readl(edev->addr + REG_READ);
-+	code = __raw_readl(edev->addr + REG_READ);
-+	value = __raw_readl(edev->addr + REG_READ);
-+
-+	input_event(edev->input, type, code, value);
-+	if (type == EV_KEY)
-+		input_sync(edev->input);
-+	return IRQ_HANDLED;
++	spin_lock_irqsave(&fb->lock, irq_flags);
++	status = readl(fb->reg_base + FB_INT_STATUS);
++	if (status & FB_INT_BASE_UPDATE_DONE) {
++		fb->base_update_count++;
++		wake_up(&fb->wait);
++	}
++	spin_unlock_irqrestore(&fb->lock, irq_flags);
++	return status ? IRQ_HANDLED : IRQ_NONE;
 +}
 +
-+static void events_import_bits(struct event_dev *edev,
-+			unsigned long bits[], unsigned type, size_t count)
++static inline u32 convert_bitfield(int val, struct fb_bitfield *bf)
 +{
-+	int i, j;
-+	size_t size;
-+	uint8_t val;
-+	void __iomem *addr = edev->addr;
-+	__raw_writel(PAGE_EVBITS | type, addr + REG_SET_PAGE);
-+	size = __raw_readl(addr + REG_LEN) * 8;
-+	if (size < count)
-+		count = size;
-+	addr = addr + REG_DATA;
-+	for (i = 0; i < count; i += 8) {
-+		val = __raw_readb(addr++);
-+		for (j = 0; j < 8; j++)
-+			if (val & 1 << j)
-+				set_bit(i + j, bits);
++	unsigned int mask = (1 << bf->length) - 1;
++
++	return (val >> (16 - bf->length) & mask) << bf->offset;
++}
++
++static int
++goldfish_fb_setcolreg(unsigned int regno, unsigned int red, unsigned int green,
++		 unsigned int blue, unsigned int transp, struct fb_info *info)
++{
++	struct goldfish_fb *fb = container_of(info, struct goldfish_fb, fb);
++
++	if (regno < 16) {
++		fb->cmap[regno] = convert_bitfield(transp, &fb->fb.var.transp) |
++				  convert_bitfield(blue, &fb->fb.var.blue) |
++				  convert_bitfield(green, &fb->fb.var.green) |
++				  convert_bitfield(red, &fb->fb.var.red);
++		return 0;
++	} else {
++		return 1;
 +	}
 +}
 +
-+static int events_probe(struct platform_device *pdev)
++static int goldfish_fb_check_var(struct fb_var_screeninfo *var,
++							struct fb_info *info)
 +{
-+	struct input_dev *input_dev;
-+	struct event_dev *edev = NULL;
-+	struct resource *res;
-+	unsigned keymapnamelen;
-+	int i;
-+	int count;
-+	int irq;
-+	void __iomem *addr;
-+	int ret;
-+
-+	pr_debug("*** events probe ***\n");
-+
-+	input_dev = input_allocate_device();
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!input_dev || !res)
-+		goto fail;
-+
-+	addr = ioremap(res->start, 4096);
-+	irq = platform_get_irq(pdev, 0);
-+
-+	pr_debug("events_probe() addr=%p irq=%d\n", addr, irq);
-+
-+	if (!addr)
-+		goto fail;
-+	if (irq < 0)
-+		goto fail;
-+
-+	__raw_writel(PAGE_NAME, addr + REG_SET_PAGE);
-+	keymapnamelen = __raw_readl(addr + REG_LEN);
-+
-+	edev = kzalloc(sizeof(struct event_dev) + keymapnamelen + 1,
-+								GFP_KERNEL);
-+	if (!edev)
-+		goto fail;
-+
-+	edev->input = input_dev;
-+	edev->addr = addr;
-+	edev->irq = irq;
-+
-+	for (i = 0; i < keymapnamelen; i++)
-+		edev->name[i] = __raw_readb(edev->addr + REG_DATA + i);
-+
-+	pr_debug("events_probe() keymap=%s\n", edev->name);
-+
-+	events_import_bits(edev, input_dev->evbit, EV_SYN, EV_MAX);
-+	events_import_bits(edev, input_dev->keybit, EV_KEY, KEY_MAX);
-+	events_import_bits(edev, input_dev->relbit, EV_REL, REL_MAX);
-+	events_import_bits(edev, input_dev->absbit, EV_ABS, ABS_MAX);
-+	events_import_bits(edev, input_dev->mscbit, EV_MSC, MSC_MAX);
-+	events_import_bits(edev, input_dev->ledbit, EV_LED, LED_MAX);
-+	events_import_bits(edev, input_dev->sndbit, EV_SND, SND_MAX);
-+	events_import_bits(edev, input_dev->ffbit, EV_FF, FF_MAX);
-+	events_import_bits(edev, input_dev->swbit, EV_SW, SW_MAX);
-+
-+	__raw_writel(PAGE_ABSDATA, addr + REG_SET_PAGE);
-+	count = __raw_readl(addr + REG_LEN) / (4 * 4);
-+	if (count > ABS_MAX)
-+		count = ABS_MAX;
-+	for (i = 0; i < count; i++) {
-+		int val[4];
-+		int j;
-+		if (!test_bit(i, input_dev->absbit))
-+			continue;
-+		for (j = 0; j < ARRAY_SIZE(val); j++)
-+			val[j] = __raw_readl(edev->addr + REG_DATA + (i * ARRAY_SIZE(val) + j) * 4);
-+		input_set_abs_params(input_dev, i, val[0], val[1],
-+							val[2], val[3]);
++	if ((var->rotate & 1) != (info->var.rotate & 1)) {
++		if ((var->xres != info->var.yres) ||
++				(var->yres != info->var.xres) ||
++				(var->xres_virtual != info->var.yres) ||
++				(var->yres_virtual > info->var.xres * 2) ||
++				(var->yres_virtual < info->var.xres)) {
++			return -EINVAL;
++		}
++	} else {
++		if ((var->xres != info->var.xres) ||
++		   (var->yres != info->var.yres) ||
++		   (var->xres_virtual != info->var.xres) ||
++		   (var->yres_virtual > info->var.yres * 2) ||
++		   (var->yres_virtual < info->var.yres)) {
++			return -EINVAL;
++		}
 +	}
-+
-+	platform_set_drvdata(pdev, edev);
-+
-+	input_dev->name = edev->name;
-+	input_set_drvdata(input_dev, edev);
-+
-+	ret = input_register_device(input_dev);
-+	if (ret)
-+		goto fail;
-+
-+	if (request_irq(edev->irq, events_interrupt, 0,
-+				"goldfish-events-keypad", edev) < 0) {
-+		input_unregister_device(input_dev);
-+		kfree(edev);
++	if ((var->xoffset != info->var.xoffset) ||
++			(var->bits_per_pixel != info->var.bits_per_pixel) ||
++			(var->grayscale != info->var.grayscale)) {
 +		return -EINVAL;
 +	}
-+
 +	return 0;
-+
-+fail:
-+	kfree(edev);
-+	input_free_device(input_dev);
-+
-+	return -EINVAL;
 +}
 +
-+static struct platform_driver events_driver = {
-+	.probe = events_probe,
-+	.driver = {
-+		.name = "goldfish_events",
-+	},
++static int goldfish_fb_set_par(struct fb_info *info)
++{
++	struct goldfish_fb *fb = container_of(info, struct goldfish_fb, fb);
++	if (fb->rotation != fb->fb.var.rotate) {
++		info->fix.line_length = info->var.xres * 2;
++		fb->rotation = fb->fb.var.rotate;
++		writel(fb->rotation, fb->reg_base + FB_SET_ROTATION);
++	}
++	return 0;
++}
++
++
++static int goldfish_fb_pan_display(struct fb_var_screeninfo *var,
++							struct fb_info *info)
++{
++	unsigned long irq_flags;
++	int base_update_count;
++	struct goldfish_fb *fb = container_of(info, struct goldfish_fb, fb);
++
++	spin_lock_irqsave(&fb->lock, irq_flags);
++	base_update_count = fb->base_update_count;
++	writel(fb->fb.fix.smem_start + fb->fb.var.xres * 2 * var->yoffset,
++						fb->reg_base + FB_SET_BASE);
++	spin_unlock_irqrestore(&fb->lock, irq_flags);
++	wait_event_timeout(fb->wait,
++			fb->base_update_count != base_update_count, HZ / 15);
++	if (fb->base_update_count == base_update_count)
++		pr_err("goldfish_fb_pan_display: timeout wating for base update\n");
++	return 0;
++}
++
++static int goldfish_fb_blank(int blank, struct fb_info *info)
++{
++	struct goldfish_fb *fb = container_of(info, struct goldfish_fb, fb);
++	switch (blank) {
++	case FB_BLANK_NORMAL:
++		writel(1, fb->reg_base + FB_SET_BLANK);
++		break;
++	case FB_BLANK_UNBLANK:
++		writel(0, fb->reg_base + FB_SET_BLANK);
++		break;
++	}
++	return 0;
++}
++
++static struct fb_ops goldfish_fb_ops = {
++	.owner          = THIS_MODULE,
++	.fb_check_var   = goldfish_fb_check_var,
++	.fb_set_par     = goldfish_fb_set_par,
++	.fb_setcolreg   = goldfish_fb_setcolreg,
++	.fb_pan_display = goldfish_fb_pan_display,
++	.fb_blank	= goldfish_fb_blank,
++	.fb_fillrect    = cfb_fillrect,
++	.fb_copyarea    = cfb_copyarea,
++	.fb_imageblit   = cfb_imageblit,
 +};
 +
-+static int __devinit events_init(void)
++
++static int goldfish_fb_probe(struct platform_device *pdev)
 +{
-+	return platform_driver_register(&events_driver);
++	int ret;
++	struct resource *r;
++	struct goldfish_fb *fb;
++	size_t framesize;
++	u32 width, height;
++	dma_addr_t fbpaddr;
++
++	fb = kzalloc(sizeof(*fb), GFP_KERNEL);
++	if (fb == NULL) {
++		ret = -ENOMEM;
++		goto err_fb_alloc_failed;
++	}
++	spin_lock_init(&fb->lock);
++	init_waitqueue_head(&fb->wait);
++	platform_set_drvdata(pdev, fb);
++
++	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (r == NULL) {
++		ret = -ENODEV;
++		goto err_no_io_base;
++	}
++	fb->reg_base = ioremap(r->start, PAGE_SIZE);
++	if (fb->reg_base == NULL) {
++		ret = -ENOMEM;
++		goto err_no_io_base;
++	}
++
++	fb->irq = platform_get_irq(pdev, 0);
++	if (fb->irq <= 0) {
++		ret = -ENODEV;
++		goto err_no_irq;
++	}
++
++	width = readl(fb->reg_base + FB_GET_WIDTH);
++	height = readl(fb->reg_base + FB_GET_HEIGHT);
++
++	fb->fb.fbops		= &goldfish_fb_ops;
++	fb->fb.flags		= FBINFO_FLAG_DEFAULT;
++	fb->fb.pseudo_palette	= fb->cmap;
++	fb->fb.fix.type		= FB_TYPE_PACKED_PIXELS;
++	fb->fb.fix.visual = FB_VISUAL_TRUECOLOR;
++	fb->fb.fix.line_length = width * 2;
++	fb->fb.fix.accel	= FB_ACCEL_NONE;
++	fb->fb.fix.ypanstep = 1;
++
++	fb->fb.var.xres		= width;
++	fb->fb.var.yres		= height;
++	fb->fb.var.xres_virtual	= width;
++	fb->fb.var.yres_virtual	= height * 2;
++	fb->fb.var.bits_per_pixel = 16;
++	fb->fb.var.activate	= FB_ACTIVATE_NOW;
++	fb->fb.var.height	= readl(fb->reg_base + FB_GET_PHYS_HEIGHT);
++	fb->fb.var.width	= readl(fb->reg_base + FB_GET_PHYS_WIDTH);
++	fb->fb.var.pixclock	= 10000;
++
++	fb->fb.var.red.offset = 11;
++	fb->fb.var.red.length = 5;
++	fb->fb.var.green.offset = 5;
++	fb->fb.var.green.length = 6;
++	fb->fb.var.blue.offset = 0;
++	fb->fb.var.blue.length = 5;
++
++	framesize = width * height * 2 * 2;
++	fb->fb.screen_base = dma_alloc_coherent(&pdev->dev, framesize,
++						&fbpaddr, GFP_KERNEL);
++	pr_debug("allocating frame buffer %d * %d, got %p\n",
++					width, height, fb->fb.screen_base);
++	if (fb->fb.screen_base == 0) {
++		ret = -ENOMEM;
++		goto err_alloc_screen_base_failed;
++	}
++	fb->fb.fix.smem_start = fbpaddr;
++	fb->fb.fix.smem_len = framesize;
++
++	ret = fb_set_var(&fb->fb, &fb->fb.var);
++	if (ret)
++		goto err_fb_set_var_failed;
++
++	ret = request_irq(fb->irq, goldfish_fb_interrupt, IRQF_SHARED,
++							pdev->name, fb);
++	if (ret)
++		goto err_request_irq_failed;
++
++	writel(FB_INT_BASE_UPDATE_DONE, fb->reg_base + FB_INT_ENABLE);
++	goldfish_fb_pan_display(&fb->fb.var, &fb->fb); /* updates base */
++
++	ret = register_framebuffer(&fb->fb);
++	if (ret)
++		goto err_register_framebuffer_failed;
++	return 0;
++
++err_register_framebuffer_failed:
++	free_irq(fb->irq, fb);
++err_request_irq_failed:
++err_fb_set_var_failed:
++	dma_free_coherent(&pdev->dev, framesize,
++				fb->fb.screen_base, fb->fb.fix.smem_start);
++err_alloc_screen_base_failed:
++err_no_irq:
++	iounmap(fb->reg_base);
++err_no_io_base:
++	kfree(fb);
++err_fb_alloc_failed:
++	return ret;
++}
++
++static int goldfish_fb_remove(struct platform_device *pdev)
++{
++	size_t framesize;
++	struct goldfish_fb *fb = platform_get_drvdata(pdev);
++
++	framesize = fb->fb.var.xres_virtual * fb->fb.var.yres_virtual * 2;
++	unregister_framebuffer(&fb->fb);
++	free_irq(fb->irq, fb);
++
++	dma_free_coherent(&pdev->dev, framesize, fb->fb.screen_base,
++						fb->fb.fix.smem_start);
++	iounmap(fb->reg_base);
++	return 0;
 +}
 +
 +
-+static void __exit events_exit(void)
++static struct platform_driver goldfish_fb_driver = {
++	.probe		= goldfish_fb_probe,
++	.remove		= goldfish_fb_remove,
++	.driver = {
++		.name = "goldfish_fb"
++	}
++};
++
++static int __init goldfish_fb_init(void)
 +{
-+	return platform_driver_unregister(&events_driver);
++	return platform_driver_register(&goldfish_fb_driver);
 +}
 +
-+module_init(events_init);
-+module_exit(events_exit);
++static void __exit goldfish_fb_exit(void)
++{
++	platform_driver_unregister(&goldfish_fb_driver);
++}
 +
-+MODULE_AUTHOR("Brian Swetland");
-+MODULE_DESCRIPTION("Goldfish Event Device");
-+MODULE_LICENSE("GPL");
++module_init(goldfish_fb_init);
++module_exit(goldfish_fb_exit);
++
 
