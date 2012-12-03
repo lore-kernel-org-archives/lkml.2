@@ -1,173 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751903Ab2LCXtz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 18:49:55 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:55997 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236Ab2LCXty (ORCPT
+	id S1751838Ab2LCXya (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 18:54:30 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:61647 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751327Ab2LCXy2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 18:49:54 -0500
-X-AuditID: 9c930197-b7bd3ae000003f1c-21-50bd3a9e6dfa
-Date: Tue, 4 Dec 2012 08:50:24 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Christoph Lameter <cl@linux.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [RFC v2] Support volatile range for anon vma
-Message-ID: <20121203235024.GA20395@bbox>
-References: <1351560594-18366-1-git-send-email-minchan@kernel.org>
- <50AD739A.30804@linaro.org>
+	Mon, 3 Dec 2012 18:54:28 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Lars-Peter Clausen" <lars@metafoo.de>
+Subject: Re: [PATCH 1/5] asm-generic/mmu.h: Remove unused vmlist field from mm_context_t
+Date: Mon, 3 Dec 2012 23:54:10 +0000
+User-Agent: KMail/1.12.2 (Linux/3.5.0; KDE/4.3.2; x86_64; ; )
+Cc: Mark Salter <msalter@redhat.com>, Aurelien Jacquiot <a-jacquiot@ti.com>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>,
+        linux-c6x-dev@linux-c6x.org, linux-kernel@vger.kernel.org,
+        linux-xtensa@linux-xtensa.org, linux-arch@vger.kernel.org
+References: <1351765467-29244-1-git-send-email-lars@metafoo.de>
+In-Reply-To: <1351765467-29244-1-git-send-email-lars@metafoo.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50AD739A.30804@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201212032354.10573.arnd@arndb.de>
+X-Provags-ID: V02:K0:tMMFfg8oDn1f0AYNUOEK99aBp51LFuE238c8C0MD9oX
+ xh24scp4Mj/8RbpFDf9Ys0zm+Zd8RD5Gzy1CM3FI6nIvm0epSV
+ 7/vRjDxkzPhx2cKmv6JEnV8BMnFOsa84KpK4AiA84yLi+2Au5A
+ gfmaQsq6NXEjEBalL2qhpxiEGmmXSsXotT431i1pAmhx/pi5il
+ uKppVWGw2vL+Wvm1rnmZ3yweM/ILcRsMpR1ikEZtHd1CU2UByB
+ xa7HAO0o0T3xBoXos7Hdx3f6IRm5Kl9Q4vdtqhJaGxLb5aYguN
+ 68FifNJ4Db6dMH1tbotWSu7xkZ7OcoQE/v5FgBdhNh03Iy6dab
+ ppNZDqDAdNo1Yle8ECb4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John,
-
-Sorry for the long delay.
-At last, I get a chance to look at this, again.
-
-On Wed, Nov 21, 2012 at 04:36:42PM -0800, John Stultz wrote:
-> On 10/29/2012 06:29 PM, Minchan Kim wrote:
-> >This patch introudces new madvise behavior MADV_VOLATILE and
-> >MADV_NOVOLATILE for anonymous pages. It's different with
-> >John Stultz's version which considers only tmpfs while this patch
-> >considers only anonymous pages so this cannot cover John's one.
-> >If below idea is proved as reasonable, I hope we can unify both
-> >concepts by madvise/fadvise.
-> >
-> >Rationale is following as.
-> >Many allocators call munmap(2) when user call free(3) if ptr is
-> >in mmaped area. But munmap isn't cheap because it have to clean up
-> >all pte entries and unlinking a vma so overhead would be increased
-> >linearly by mmaped area's size.
-> >
-> >Volatile conecept of Robert Love could be very useful for reducing
-> >free(3) overhead. Allocators can do madvise(MADV_VOLATILE) instead of
-> >munmap(2)(Of course, they need to manage volatile mmaped area to
-> >reduce shortage of address space and sometime ends up unmaping them).
-> >The madvise(MADV_VOLATILE|NOVOLATILE) is very cheap opeartion because
-> >
-> >1) it just marks the flag in VMA and
-> >2) if memory pressure happens, VM can discard pages of volatile VMA
-> >    instead of swapping out when volatile pages is selected as victim
-> >    by normal VM aging policy.
-> >3) freed mmaped area doesn't include any meaningful data so there
-> >    is no point to swap them out.
-> >
-> >Allocator should call madvise(MADV_NOVOLATILE) before reusing for
-> >allocating that area to user. Otherwise, accessing of volatile range
-> >will meet SIGBUS error.
-> >
-> >The downside is that we have to age anon lru list although we don't
-> >have swap because I don't want to discard volatile pages by top priority
-> >when memory pressure happens as volatile in this patch means "We don't
-> >need to swap out because user can handle the situation which data are
-> >disappear suddenly", NOT "They are useless so hurry up to reclaim them".
-> >So I want to apply same aging rule of nomal pages to them.
-> >
-> >Anon background aging of non-swap system would be a trade-off for
-> >getting good feature. Even, we had done it two years ago until merge
-> >[1] and I believe free(3) performance gain will beat loss of anon lru
-> >aging's overead once all of allocator start to use madvise.
-> >(This patch doesn't include background aging in case of non-swap system
-> >  but it's trivial if we decide)
+On Thursday 01 November 2012, Lars-Peter Clausen wrote:
+> Nothing is using the vmlist field in mm_context_t anymore. It has been removed
+> from the non-generic versions over 3 years ago 8feae1311 ("NOMMU: Make VMAs per
+> MM as for MMU-mode linux").
 > 
-> Hey Minchan!
->     So I've been looking at your patch for a bit, and I'm still
-> trying to fully grok it and the rmap code. Overall this approach
-> looks pretty interesting,  and while your patch description focused
-> on malloc/free behavior, I suspect your patch would satisfy what the
-> mozilla folks are looking for, and while its not quite sufficient
-> yet for Android, the interface semantics are very close to what I've
-> been wanting (my test cases were easily mapped over).
-> 
-> The two major issues for me are:
-> 1) As you noted, this approach currently doesn't work on non-swap
-> systems, as we don't try to shrink the anonymous page lrus. This is
-> a big problem, as it makes it unusable for most all Android systems.
-> You suggest we may want to change aging the anonymous lru, and I had
-> a patch earlier that tried to change some of the anonymous lru aging
-> rules for volatile pages, but its not quite right for what you have
-> here. So I'd be interested in hearing how you think the anonymous
-> lru aging should happen with swapoff.
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 
-As I mentioned, anon LRU aging should happen for getting the benefit
-of VOLATILE. I expect user-space allocator(ex, glibc) or VM heap management
-will start it so the gain would be higher than lose.
-Otherwise, we should choose and move volatile pages into anonther LRU
-when madvise calls. It would be a big overhead as you already have measured.
-So the design is same with rmap which move the overhead from frequent place
-(ex, fork, pgfault) to to rare plcae(ie, reclaim)
-I will accept if there is another good idea which is able to minimise
-madvise's overhead.
+Whole series:
 
-> 
-> 2) Being able to use this with tmpfs files. I'm currently trying to
-> better understand the rmap code, looking to see if there's a way to
-> have try_to_unmap_file() work similarly to try_to_unmap_anon(), to
-> allow allow users to madvise() on mmapped tmpfs files. This would
-> provide a very similar interface as to what I've been proposing with
-> fadvise/fallocate, but just using process virtual addresses instead
-> of (fd, offset) pairs.   The benefit with (fd,offset) pairs for
-> Android is that its easier to manage shared volatile ranges between
-> two processes that are sharing data via an mmapped tmpfs file
-> (although this actual use case may be fairly rare).  I believe we
-> should still be able to rework the ashmem internals to use madvise
-> (which would provide legacy support for existing android apps), so
-> then its just a question of if we could then eventually convince
-> Android apps to use the madvise interface directly, rather then the
-> ashmem unpin ioctl.
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-I didn't look at ashmem in detail. let's pass the answer to andorid
-folks. But apparently, it's very important. If we can't, We might
-separate madvise(anon)/fallocate(file).
+Do you want to include the patches in a patch set of your own, or should I put them
+into the asm-generic tree?
 
-> 
-> The other concern with the madvise on mmapped files approach is that
-> there's no easy way I can see to limit it to tmpfs files. I know
-
-First thing I can thing of is PG_swapbacked. I guess It would be set
-to only swappable data.
-
-> some have been interested in having fallocate(VOLATILE) interface
-> for non-tmpfs files, but I'm not sure I see the benefit there yet. I
-> have noted folks mixing the idea of volatile pages being purged
-> under memory pressure with the idea of volatile files, which might
-> be purged from disk under disk pressure. While I think the second
-> idea is interesting, I do think its completely separate from the
-> volatile memory concept.
-> 
-> Anyway, I'd be interested in your thoughts on these two issues.
-> Thanks so much for sending out this patch, its given me quite a bit
-> to chew on, and I too hope we can merge our different approaches
-> together.
-
-Thanks, John!
-
-> 
-> thanks
-> -john
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+	Arnd
