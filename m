@@ -1,72 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755232Ab2LCD22 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 22:28:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33538 "EHLO mx1.redhat.com"
+	id S1755058Ab2LCEJi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 23:09:38 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:52864 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754530Ab2LCD21 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 22:28:27 -0500
-From: Jason Wang <jasowang@redhat.com>
-To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jslaby@suse.cz
-Cc: Jason Wang <jasowang@redhat.com>
-Subject: [PATCH net-next] tuntap: attach queue 0 before registering netdevice
-Date: Mon,  3 Dec 2012 11:19:45 +0800
-Message-Id: <1354504785-13036-1-git-send-email-jasowang@redhat.com>
+	id S1754897Ab2LCEJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Dec 2012 23:09:35 -0500
+Message-ID: <1354507769.2737.59.camel@falcor.watson.ibm.com>
+Subject: Re: [RFC][PATCH 2/2] modsig: differentiate between ephemeral and
+ persistent key names
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mimi Zohar <zohar@us.ibm.com>, David Howells <dhowells@redhat.com>
+Date: Sun, 02 Dec 2012 23:09:29 -0500
+In-Reply-To: <874nk4j580.fsf@rustcorp.com.au>
+References: <1353939786-4829-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1353939786-4829-2-git-send-email-zohar@linux.vnet.ibm.com>
+	 <874nk4j580.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12120304-5806-0000-0000-00001C77D66E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We attach queue 0 after registering netdevice currently. This leads to call
-netif_set_real_num_{tx|rx}_queues() after registering the netdevice. Since we
-allow tun/tap has a maximum of 1024 queues, this may lead a huge number of
-uevents to be injected to userspace since we create 2048 kobjects and then
-remove 2046. Solve this problem by attaching queue 0 and set the real number of
-queues before registering netdevice.
+On Mon, 2012-12-03 at 11:56 +1030, Rusty Russell wrote:
+> Mimi Zohar <zohar@linux.vnet.ibm.com> writes:
+> > Using the same name for ephemeral and "persistent" keys results
+> > in deleting the "persistent" key.  This patch renames the normal
+> > kbuild asymmetric key pair name to "default_signing_key" and the
+> > ephemeral key pair name to "ephemeral_signing_key".
+> 
+> I like the idea: I was always uncomfortable with the mixing of
+> persistent and temporary keys.  But it's a bit misguided, because surely
+> persistent keys don't belong in the build tree at all.
 
-Reported-by: Jiri Slaby <jslaby@suse.cz>
-Tested-by: Jiri Slaby <jslaby@suse.cz>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- drivers/net/tun.c |   11 +++++------
- 1 files changed, 5 insertions(+), 6 deletions(-)
+The original intent of the patch was to differentiate between a key
+generated as part of the kbuild process, that exists for an indefinite
+period of time, versus an ephemeral key, which is created and
+immediately thrown away, after signing the kernel modules.
 
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index b44d7b7..cc3f878 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -492,9 +492,6 @@ static int tun_attach(struct tun_struct *tun, struct file *file)
- 
- 	tun_set_real_num_queues(tun);
- 
--	if (tun->numqueues == 1)
--		netif_carrier_on(tun->dev);
--
- 	/* device is allowed to go away first, so no need to hold extra
- 	 * refcnt.
- 	 */
-@@ -1611,6 +1608,10 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
- 			TUN_USER_FEATURES;
- 		dev->features = dev->hw_features;
- 
-+		err = tun_attach(tun, file);
-+		if (err < 0)
-+			goto err_free_dev;
-+
- 		err = register_netdevice(tun->dev);
- 		if (err < 0)
- 			goto err_free_dev;
-@@ -1620,9 +1621,7 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
- 		    device_create_file(&tun->dev->dev, &dev_attr_group))
- 			pr_err("Failed to create tun sysfs files\n");
- 
--		err = tun_attach(tun, file);
--		if (err < 0)
--			goto err_free_dev;
-+		netif_carrier_on(tun->dev);
- 	}
- 
- 	tun_debug(KERN_INFO, tun, "tun_set_iff\n");
--- 
-1.7.1
+> 
+> How about we do something like:
+> 
+> # Default to temporary keys
+> MODKEYPREFIX = ./temp_signing_key
+> 
+> MODSECKEY = $(MODKEYPREFIX).priv
+> MODPUBKEY = $(MODKEYPREFIX).x509
+> 
+> Then encourage people to do:
+> 
+>         make MODKEYPREFIX=...
+
+Although your suggestion addresses a different use case scenario, I like
+it a lot.  Fortunately, it also works for the above ephemeral use case.
+The default temporary key would be persistent across builds, while an
+ephemeral key could be defined as "MODKEYPREFIX
+= ./ephemeral_signing_key".
+
+My main concern is having to force modsign_pubkey to be rebuilt each and
+every time, since there is no way of knowing which key was previously
+included.
+
+> We could also use a config option to set the path, but that's probably
+> less convenient.
+
+Definitely less convenient.  I assume the normal use case for developers
+would be multiple builds, followed by an install.  Each build shouldn't
+require regenerating a new keypair, nor at the point that we're ready to
+sign and install the kernel modules and image, do we want to change
+the .config, which would result in additional, as you put it, root owned
+turds.
+
+thanks,
+
+Mimi
 
