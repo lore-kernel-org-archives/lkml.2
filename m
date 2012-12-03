@@ -1,312 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150Ab2LCVD1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 16:03:27 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62399 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752636Ab2LCU7e (ORCPT
+	id S1753170Ab2LCVDn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 16:03:43 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:56770 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752859Ab2LCVDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 15:59:34 -0500
-From: Kent Overstreet <koverstreet@google.com>
-To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org
-Cc: zab@redhat.com, bcrl@kvack.org, jmoyer@redhat.com, axboe@kernel.dk,
-        viro@zeniv.linux.org.uk, Kent Overstreet <koverstreet@google.com>
-Subject: [PATCH 14/26] aio: Make aio_read_evt() more efficient
-Date: Mon,  3 Dec 2012 12:58:30 -0800
-Message-Id: <1354568322-29029-15-git-send-email-koverstreet@google.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1354568322-29029-1-git-send-email-koverstreet@google.com>
-References: <1354568322-29029-1-git-send-email-koverstreet@google.com>
+	Mon, 3 Dec 2012 16:03:40 -0500
+Date: Mon, 3 Dec 2012 22:03:29 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Terje =?utf-8?Q?Bergstr=C3=B6m?= <tbergstrom@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC v2 1/8] video: tegra: Add nvhost driver
+Message-ID: <20121203210328.GA20884@avionic-0098.adnet.avionic-design.de>
+References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com>
+ <1353935954-13763-2-git-send-email-tbergstrom@nvidia.com>
+ <20121128212301.GA25531@avionic-0098.adnet.avionic-design.de>
+ <50B73710.2040102@nvidia.com>
+ <20121129114704.GB6150@avionic-0098.adnet.avionic-design.de>
+ <50B874C7.5030208@nvidia.com>
+ <20121130103850.GA28367@avionic-0098.adnet.avionic-design.de>
+ <50BCFB7E.4020007@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="4Ckj6UjgE2iN1+kY"
+Content-Disposition: inline
+In-Reply-To: <50BCFB7E.4020007@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:kyBjwC+6T2pksr5CujHK2txpIzu+9HN4esqytMOqJ9s
+ ckj6rn8sf77UeVKEqxn7noWxrYJXuLiMmwEvcwvahYudcCh30L
+ v5lTmYJK6C2yF4AFnzbApmzcUAc8M11aSQ/As9rtRDASdnGSMS
+ xBcyPDwQOeF8U96X/nCyaeMjeeH39C5rwLjRSDj26zixrhD/YL
+ 4/M4i3/Nmlw1AMAJO8O6BYWeMq66LfIeJjgNuqum0ysPifqLDN
+ QXC98DKLU5FDBZ6yvr98S4E58112pheq27p7FPh3bQlZbhpgJQ
+ uPvvPJv76/8tUa0ap2N5oRA6rl2JXOyD1IJVaM/II78XcU6b9F
+ DYF5L4NG0DtYesUx9ReOj28jfNx2nPbrKRkB9SOvVmIG9d2okO
+ RJ/VkhCNPffvZa+3mU9Lf58dapgKeeM7BtU9lES/ZdsYj4EMfW
+ HRFVT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously, aio_read_event() pulled a single completion off the
-ringbuffer at a time, locking and unlocking each time.
 
-Changed it to pull off as many events as it can at a time, and copy them
-directly to userspace.
+--4Ckj6UjgE2iN1+kY
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This also fixes a bug where if copying the event to userspace failed,
-we'd lose the event.
+On Mon, Dec 03, 2012 at 12:20:30PM -0700, Stephen Warren wrote:
+> On 11/30/2012 03:38 AM, Thierry Reding wrote:
+> > On Fri, Nov 30, 2012 at 10:56:39AM +0200, Terje Bergstr=C3=B6m wrote:
+> >> On 29.11.2012 13:47, Thierry Reding wrote:
+> >>> On Thu, Nov 29, 2012 at 12:21:04PM +0200, Terje Bergstr=C3=B6m
+> >>> wrote:
+> >>>> Tegra20 and Tegra30 are compatible, but future chips are not.
+> >>>> I was hoping we would be ready in upstream kernel for future
+> >>>> chips.
+> >>>=20
+> >>> I think we should ignore that problem for now. Generally
+> >>> planning for any possible combination of incompatibilities
+> >>> leads to overgeneralized designs that require precisely these
+> >>> kinds of indirections.
+> >>>=20
+> >>> Once some documentation for Tegra 40 materializes we can start
+> >>> thinking about how to encapsulate the incompatible code.
+> >>=20
+> >> I think here our perspectives differ a lot. That is natural
+> >> considering the company I work for and company you work for, so
+> >> let's try to sync the perspective.
+> >>=20
+> >> In my reality, whatever is in market is old news and I barely
+> >> work on them anymore. Upstreaming activity is the exception. 90%
+> >> of my time is spent dealing with future chips which I know cannot
+> >> be handled without this split to logical and physical driver
+> >> parts.
+> >>=20
+> >> For you, Tegra2 and Tegra3 are the reality.
+> >=20
+> > To be fair, Tegra2 and Tegra3 are the reality for *everyone*
+> > *outside* NVIDIA.
+> >=20
+> > It's great that you spend most of your time working with future
+> > chips, but unless you submit the code for inclusion or review
+> > nobody upstream needs to be concerned about the implications. Most
+> > people don't have time to waste so we naturally try to keep the
+> > maintenance burden to a minimum.
+> >=20
+> > The above implies that when you submit code it shouldn't contain
+> > pieces that prepare for possible future extensions which may or may
+> > not be submitted (the exception being if such changes are part of a
+> > series where subsequent patches actually use them). The outcome is
+> > that the amount of cruft in the mainline kernel is kept to a
+> > minimum. And that's a very good thing.
+>=20
+> I think there's room for letting Terje's complete knowledge of future
+> chips guide the design of the current code that's sent upstream.
+> Certainly we shouldn't add a ton of unnecessary abstraction layers
+> right now that aren't needed for Tegra20/30, but if there's some
+> decision that doesn't affect the bloat, opaqueness, ... of the current
+> code but one choice is better for future development without serious
+> negatives for the current code, it's pretty reasonable to make that
+> decision rather than the other.
 
-v2: Restructure the code so we're not calling prepare_to_wait() until
-after we've done everything that might block, also got rid of the
-separate fast path
+The original point was that the current design stashes every function of
+host1x into an ops structure and you have to go through those ops to get
+at the functionality. I can understand the need to add an ops structure
+to cope with incompatibilities between versions, but as you say there
+should to be a reason for them being introduced. If such reasons exists,
+then I think they at least warrant a comment somewhere.
 
-Signed-off-by: Kent Overstreet <koverstreet@google.com>
----
- fs/aio.c | 205 ++++++++++++++++++++++++++++++---------------------------------
- 1 file changed, 97 insertions(+), 108 deletions(-)
+Furthermore this is usually best handled by wrapping the ops accesses in
+a public API, so that the ops structure can be hidden within the driver.
+For example, submitting a job to a channel should have a public API such
+as:
 
-diff --git a/fs/aio.c b/fs/aio.c
-index 46e6d30..5eca2a4 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -63,7 +63,7 @@ struct aio_ring_info {
- 	unsigned long		mmap_size;
- 
- 	struct page		**ring_pages;
--	spinlock_t		ring_lock;
-+	struct mutex		ring_lock;
- 	long			nr_pages;
- 
- 	unsigned		nr, tail;
-@@ -341,7 +341,7 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
- 	atomic_set(&ctx->users, 2);
- 	atomic_set(&ctx->dead, 0);
- 	spin_lock_init(&ctx->ctx_lock);
--	spin_lock_init(&ctx->ring_info.ring_lock);
-+	mutex_init(&ctx->ring_info.ring_lock);
- 	init_waitqueue_head(&ctx->wait);
- 
- 	INIT_LIST_HEAD(&ctx->active_reqs);
-@@ -746,149 +746,138 @@ put_rq:
- }
- EXPORT_SYMBOL(aio_complete);
- 
--/* aio_read_evt
-- *	Pull an event off of the ioctx's event ring.  Returns the number of 
-- *	events fetched (0 or 1 ;-)
-- *	FIXME: make this use cmpxchg.
-- *	TODO: make the ringbuffer user mmap()able (requires FIXME).
-+/* aio_read_events
-+ *	Pull an event off of the ioctx's event ring.  Returns the number of
-+ *	events fetched
-  */
--static int aio_read_evt(struct kioctx *ioctx, struct io_event *ent)
-+static int aio_read_events(struct kioctx *ctx, struct io_event __user *event,
-+			   long nr, unsigned *head)
- {
--	struct aio_ring_info *info = &ioctx->ring_info;
-+	struct aio_ring_info *info = &ctx->ring_info;
- 	struct aio_ring *ring;
--	unsigned long head;
--	int ret = 0;
-+	unsigned pos;
-+	int ret = 0, copy_ret;
- 
--	ring = kmap_atomic(info->ring_pages[0]);
--	pr_debug("h%u t%u m%u\n", ring->head, ring->tail, ring->nr);
-+	pr_debug("h%u t%u m%u\n", *head, info->tail, info->nr);
- 
--	if (ring->head == ring->tail)
--		goto out;
-+	while (ret < nr) {
-+		unsigned i = (*head < info->tail ? info->tail : info->nr) - *head;
-+		struct io_event *ev;
-+		struct page *page;
-+
-+		if (*head == info->tail)
-+			break;
-+
-+		i = min_t(int, i, nr - ret);
-+		i = min_t(int, i, AIO_EVENTS_PER_PAGE -
-+			  ((*head + AIO_EVENTS_OFFSET) % AIO_EVENTS_PER_PAGE));
-+
-+		pos = *head + AIO_EVENTS_OFFSET;
-+		page = info->ring_pages[pos / AIO_EVENTS_PER_PAGE];
-+		pos %= AIO_EVENTS_PER_PAGE;
- 
--	spin_lock(&info->ring_lock);
--
--	head = ring->head % info->nr;
--	if (head != ring->tail) {
--		struct io_event *evp = aio_ring_event(info, head);
--		*ent = *evp;
--		head = (head + 1) % info->nr;
--		smp_mb(); /* finish reading the event before updatng the head */
--		ring->head = head;
--		ret = 1;
--		put_aio_ring_event(evp);
-+		ev = kmap(page);
-+		copy_ret = copy_to_user(event + ret, ev + pos, sizeof(*ev) * i);
-+		kunmap(page);
-+
-+		if (unlikely(copy_ret))
-+			return -EFAULT;
-+
-+		ret += i;
-+		*head += i;
-+		*head %= info->nr;
- 	}
--	spin_unlock(&info->ring_lock);
- 
--out:
-+	smp_mb(); /* finish reading the event before updating the head */
-+
-+	ring = kmap_atomic(info->ring_pages[0]);
-+	ring->head = *head;
- 	kunmap_atomic(ring);
--	pr_debug("%d  h%u t%u\n", ret, ring->head, ring->tail);
-+
-+	pr_debug("%d  h%u t%u\n", ret, *head, info->tail);
-+
- 	return ret;
- }
- 
- static int read_events(struct kioctx *ctx,
--			long min_nr, long nr,
--			struct io_event __user *event,
--			struct timespec __user *timeout)
-+		       long min_nr, long nr,
-+		       struct io_event __user *event,
-+		       struct timespec __user *timeout)
- {
- 	DEFINE_WAIT(wait);
-+	struct aio_ring_info *info = &ctx->ring_info;
-+	struct aio_ring *ring;
- 	struct hrtimer_sleeper t;
-+	unsigned head;
- 	size_t i = 0;
--	int ret;
--	struct io_event		ent;
-+	int ret = 0;
- 
--	/* needed to zero any padding within an entry (there shouldn't be 
--	 * any, but C is fun!
--	 */
--	memset(&ent, 0, sizeof(ent));
--	ret = 0;
--	while (likely(i < nr)) {
--		ret = aio_read_evt(ctx, &ent);
--		if (unlikely(ret <= 0))
--			break;
-+	hrtimer_init_on_stack(&t.timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-+	hrtimer_init_sleeper(&t, current);
- 
--		pr_debug("%Lx %Lx %Lx %Lx\n",
--			 ent.data, ent.obj, ent.res, ent.res2);
-+	mutex_lock(&info->ring_lock);
- 
--		/* Could we split the check in two? */
--		ret = -EFAULT;
--		if (unlikely(copy_to_user(event, &ent, sizeof(ent)))) {
--			pr_debug("lost an event due to EFAULT.\n");
-+	while (i < nr) {
-+		ring = kmap_atomic(info->ring_pages[0]);
-+		head = ring->head;
-+		kunmap_atomic(ring);
-+retry:
-+		ret = aio_read_events(ctx, event + i, nr - i, &head);
-+		if (ret < 0)
- 			break;
--		}
--		ret = 0;
- 
--		/* Good, event copied to userland, update counts. */
--		event ++;
--		i ++;
--	}
--
--	if (min_nr <= i)
--		return i;
--	if (ret)
--		return ret;
--
--	/* End fast path */
-+		i += ret;
-+		if (i >= min_nr)
-+			break;
-+		if (unlikely(atomic_read(&ctx->dead))) {
-+			ret = -EINVAL;
-+			break;
-+		}
-+		if (!t.task)	/* Only check after read evt */
-+			break;
- 
--	hrtimer_init_on_stack(&t.timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
--	hrtimer_init_sleeper(&t, current);
-+		if (timeout) {
-+			struct timespec	ts;
- 
--	if (timeout) {
--		struct timespec	ts;
-+			if (unlikely(copy_from_user(&ts, timeout, sizeof(ts)))) {
-+				ret = -EFAULT;
-+				break;
-+			}
- 
--		if (unlikely(copy_from_user(&ts, timeout, sizeof(ts)))) {
--			ret = -EFAULT;
--			goto out;
-+			timeout = NULL;
-+			hrtimer_start_range_ns(&t.timer, timespec_to_ktime(ts),
-+					       current->timer_slack_ns,
-+					       HRTIMER_MODE_REL);
- 		}
- 
--		hrtimer_start_range_ns(&t.timer, timespec_to_ktime(ts),
--				       current->timer_slack_ns, HRTIMER_MODE_REL);
--	}
--
--	while (likely(i < nr)) {
- 		prepare_to_wait_exclusive(&ctx->wait, &wait,
- 					  TASK_INTERRUPTIBLE);
- 
--		do {
--			ret = aio_read_evt(ctx, &ent);
--			if (ret)
--				break;
--			if (min_nr <= i)
--				break;
--			if (unlikely(atomic_read(&ctx->dead))) {
--				ret = -EINVAL;
--				break;
--			}
--			if (!t.task)	/* Only check after read evt */
--				break;
--			/* Try to only show up in io wait if there are ops
--			 *  in flight */
--			if (atomic_read(&ctx->reqs_active))
--				io_schedule();
--			else
--				schedule();
--			if (signal_pending(current)) {
--				ret = -EINTR;
--				break;
--			}
--			/*ret = aio_read_evt(ctx, &ent);*/
--		} while (1) ;
-+		if (head != info->tail) {
-+			__set_current_state(TASK_RUNNING);
-+			goto retry;
-+		}
- 
--		finish_wait(&ctx->wait, &wait);
-+		mutex_unlock(&info->ring_lock);
- 
--		if (unlikely(ret <= 0))
--			break;
-+		/* Try to only show up in io wait if there are ops in flight */
-+		if (atomic_read(&ctx->reqs_active))
-+			io_schedule();
-+		else
-+			schedule();
- 
--		ret = -EFAULT;
--		if (unlikely(copy_to_user(event, &ent, sizeof(ent)))) {
--			pr_debug("lost an event due to EFAULT.\n");
--			break;
-+		if (signal_pending(current)) {
-+			ret = -EINTR;
-+			goto out;
- 		}
- 
--		/* Good, event copied to userland, update counts. */
--		event ++;
--		i ++;
-+		__set_current_state(TASK_RUNNING);
-+		mutex_lock(&info->ring_lock);
- 	}
-+
-+	mutex_unlock(&info->ring_lock);
- out:
-+	finish_wait(&ctx->wait, &wait);
- 	hrtimer_cancel(&t.timer);
- 	destroy_hrtimer_on_stack(&t.timer);
- 	return i ? i : ret;
--- 
-1.7.12
+	int host1x_channel_submit(struct host1x_channel *channel,
+				  struct host1x_job *job)
+	{
+		...
+	}
 
+An initial implementation would just add the code into this function. If
+it turns out some future version requires special incantations to submit
+a job, only then should we introduce an ops structure, with only the one
+function:
+
+	struct host1x_channel_ops {
+		int (*submit)(struct host1x_channel *channel,
+			      struct host1x_job *job);
+	};
+
+But since only the public API above has been used, access to the special
+implementation can be hidden from the user. So the public function could
+be modified in this way:
+
+	int host1x_channel_submit(struct hostx1_channel *channel,
+				  struct host1x_job *job)
+	{
+		if (channel->ops && channel->ops->submit)
+			return channel->ops->submit(channel, job);
+
+		...
+	}
+
+And then you have two choices: either you keep the code for previous
+generations after the if block or you provide a separate ops structure
+for older generations as well and handle them via the same code path.
+
+One other thing that such a design can help with is refactoring common
+code or parameterizing code. Maybe newer generations are not compatible
+but can easily be made to work with existing code by introducing a
+variable such as register stride or something.
+
+What's really difficult to follow is if an ops structure is accessed via
+some global macro. It also breaks encapsulation because you have a
+global ops structure. That may even work fine for now, but it will break
+once you have more than a single host1x in a system. I know this will
+never happen, but all of a sudden it happens anyway and the code breaks.
+Doing this right isn't very hard and it will lead to a better design and
+is less likely to break at some point.
+
+Thierry
+
+--4Ckj6UjgE2iN1+kY
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQvROgAAoJEN0jrNd/PrOhKGQQAJdr9SXX0eMGb1zpAKJbbeTg
+A4KgIRBHEwLX5cNPsA1CrXm0o53UDrkiSrcusj+G1Yib8kKlwCDGU6gkzx9NGpxf
+uIugVvO9Fjb5WjtvZ+k66nBOVZsxs7AHzT17omh6ODpxAtkr7ysbltDtFTUeuUPd
+gyl2tsZXBorj7eWbanuZD8SJ6WjjJWB4hiK/qiT0X0LPUZiQQiHZ2jpOAjf26uD1
+nTPBfEBNIC9c/3Vn2MTHWr6ZlmL30ynLwJIrRNxebmjcWdn4jcfkhX4wdwj2OMIb
+qVKKidkDdq0EfgsVTY9SRGiB7qAvGL1Lo3x5k4d0vQVqbHlsMXVNjcp/StrryEKG
+NAJGa+8scDkLuX+DoGoWLp0aYngZRp3dAKDrN6XLZWLnNT4y6NXbgIqMe4w72Xjm
+F9GLJnlKPWsU2EjHVQl6Qcr9zGxmOQMFFlV5/QhV941dKb+VRyVE50yyrgXQYauL
+j3+ofZRfKfbhpkzkINxnDhPaG2Rq33F2Cu0X0k33W9YtvPrFn3QGHz7HTnqQeGkk
+POfk9Qf2Zw4BBcJDoP77ML50ty2rDLk192MuL5wZ5ogKJDV/eE+MtAk+XCwifULR
+RJoUXi/edSP1oHeAsMPUutyT0KeStM3kIgVkjrc3nUyi0ZtidwKz+2bv/+9t336Y
+uTDGFIL25CBV+zr66X2I
+=q8Ew
+-----END PGP SIGNATURE-----
+
+--4Ckj6UjgE2iN1+kY--
