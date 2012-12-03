@@ -1,75 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754784Ab2LCCwx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 21:52:53 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:3419 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752153Ab2LCCwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 21:52:51 -0500
-X-IronPort-AV: E=Sophos;i="4.83,359,1352044800"; 
-   d="scan'208";a="6318091"
-Message-ID: <50BC13EB.1050009@cn.fujitsu.com>
-Date: Mon, 03 Dec 2012 10:52:27 +0800
-From: Lin Feng <linfeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1754905Ab2LCCxM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 21:53:12 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:56910 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754806Ab2LCCxI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Dec 2012 21:53:08 -0500
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>, viro@zeniv.linux.org.uk,
-        bcrl@kvack.org, kamezawa.hiroyu@jp.fujitsu.com, mhocko@suse.cz,
-        hughd@google.com, cl@linux.com, minchan@kernel.org,
-        isimatu.yasuaki@jp.fujitsu.com, laijs@cn.fujitsu.com,
-        wency@cn.fujitsu.com, tangchen@cn.fujitsu.com,
-        linux-fsdevel@vger.kernel.org, linux-aio@kvack.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [BUG REPORT] [mm-hotplug, aio] aio ring_pages can't be offlined
-References: <1354172098-5691-1-git-send-email-linfeng@cn.fujitsu.com> <20121129153930.477e9709.akpm@linux-foundation.org> <50B82B0D.8010206@cn.fujitsu.com> <20121129215749.acfd872a.akpm@linux-foundation.org> <50B859C6.3020707@cn.fujitsu.com> <20121129235502.05223586.akpm@linux-foundation.org> <20121130110059.GD8218@suse.de>
-In-Reply-To: <20121130110059.GD8218@suse.de>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/03 10:52:12,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/03 10:52:15,
-	Serialize complete at 2012/12/03 10:52:15
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-15
+In-Reply-To: <CADApbejZXach=YaiL5rEWA5+uc+mO8PzQzUKN+k90HfxEsqgtA@mail.gmail.com>
+References: <1354155670-6267-1-git-send-email-chao.xie@marvell.com>
+	<20121129102519.GG19440@n2100.arm.linux.org.uk>
+	<CAN1soZxUA2PPy4694ByX1FTyWiJkha8QpKFK5Jc3Wf3zT0huOA@mail.gmail.com>
+	<CADApbejZXach=YaiL5rEWA5+uc+mO8PzQzUKN+k90HfxEsqgtA@mail.gmail.com>
+Date: Mon, 3 Dec 2012 10:53:07 +0800
+Message-ID: <CADApbegrJDe5SiO255WdKYai1U7WjBYfMHuCm-hTNfx5p6Wz-Q@mail.gmail.com>
+Subject: Re: [PATCH 1/4] rtc: sa1100: enable/disable rtc when probe/remove the device
+From: Chao Xie <xiechao.mail@gmail.com>
+To: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Chao Xie <chao.xie@marvell.com>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 11/30/2012 07:00 PM, Mel Gorman wrote:
+On Mon, Dec 3, 2012 at 9:39 AM, Chao Xie <xiechao.mail@gmail.com> wrote:
+> On Fri, Nov 30, 2012 at 3:04 PM, Haojian Zhuang
+> <haojian.zhuang@gmail.com> wrote:
+>> On Thu, Nov 29, 2012 at 6:25 PM, Russell King - ARM Linux
+>> <linux@arm.linux.org.uk> wrote:
+>>> On Wed, Nov 28, 2012 at 09:21:07PM -0500, Chao Xie wrote:
+>>>> The original sa1100_rtc_open/sa1100_rtc_release will be called
+>>>> when the /dev/rtc0 is opened or closed.
+>>>> In fact, these two functions will enable/disable the clock, and
+>>>> register/unregister the irqs.
+>>>> User application will use /dev/rtc0 to read the rtc time or set
+>>>> the alarm. The rtc should still run indepent of open/close the
+>>>> rtc device.
+>>>> So only enable clock and register the irqs when probe the device,
+>>>> and disable clock and unregister the irqs when remove the device.
+>>>
+>>> NAK.  I don't think you properly understand what's going on here if you
+>>> think moving the entire open and release functions into the probe and
+>>> remove functions is the right thing to do.
 >>
->> Well, that's a fairly low-level implementation detail.  A more typical
->> approach would be to add a new get_user_pages_non_movable() or such. 
->> That would probably have the same signature as get_user_pages(), with
->> one additional argument.  Then get_user_pages() becomes a one-line
->> wrapper which passes in a particular value of that argument.
+>> Since PXA27x & PXA3xx supports dual rtc device at the same time,
+>> user could choose use either of rtc at run time. Then clk & irq are setup
+>> in open().
 >>
-> 
-> That is going in the direction that all pinned pages become MIGRATE_UNMOVABLE
-> allocations.  That will impact THP availability by increasing the number
-> of MIGRATE_UNMOVABLE blocks that exist and it would hit every user --
-> not just those that care about ZONE_MOVABLE.
-> 
-> I'm likely to NAK such a patch if it's only about node hot-remove because
-> it's much more of a corner case than wanting to use THP.
-> 
-> I would prefer if get_user_pages() checked if the page it was about to
-> pin was in ZONE_MOVABLE and if so, migrate it at that point before it's
-> pinned. It'll be expensive but will guarantee ZONE_MOVABLE availability
-> if that's what they want. The CMA people might also want to take
-> advantage of this if the page happened to be in the MIGRATE_CMA
-> pageblock.
-> 
-hi Mel,
+>> Chao,
+>> So you shouldn't remove them into probe().
+>
+> How can user to choose one RTC?
+> The user API, for example "date" will open the device, get the time
+> and then close the device.
+> WHen set a alarm, it is the same routine. open->set->close.
+> The open routine will enable clock and register irq, close will
+> disable the clock and unregister irq. It means that if only open is
+> invoked, rtc begins to work, and after close is invoked rtc stops
+> working. It means that the user can not get correct time and can not
+> get right alarm.
 
-Thanks for your suggestion. 
-My initial idea is also to restrict the impact as little as possible so 
-migrate such pages as we need. 
-But even to such "going to pin pages", most of them are going to be released 
-soon, so deal with them all in the same way is really *expensive*. 
-
-May be we do have to find another way that makes everybody happy :)
-
-Thanks,
-linfeng
+hi
+I want to correct what i said. For the irq register/unregister i think
+can be done at open/release. But for clock enable/disable, i do not
+think so. If clock is disabled, as i think RTC will not work. User API
+still use open->get_time->close for "date" command. It means that RTC
+will not return correct date to user.
