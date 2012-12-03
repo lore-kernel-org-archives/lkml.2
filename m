@@ -1,41 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754340Ab2LCMdM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 07:33:12 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:64815 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751161Ab2LCMdK (ORCPT
+	id S1754256Ab2LCMmL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 07:42:11 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:39841 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751550Ab2LCMmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 07:33:10 -0500
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
-        peterz@infradead.org, mingo@kernel.org
-Cc: ccross@android.com, Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [PATCH Resend 0/3] sched: fix nr_busy_cpus
-Date: Mon,  3 Dec 2012 13:26:25 +0100
-Message-Id: <1354537588-25831-1-git-send-email-vincent.guittot@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 3 Dec 2012 07:42:10 -0500
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+To: Benoit Cousson <b-cousson@ti.com>
+Cc: Tony Lindgren <tony@atomide.com>, grant.likely@secretlab.ca,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Ezequiel Garcia <elezegarcia@gmail.com>,
+        Enrico Butera <ebutera@gmail.com>,
+        Matthias Brugger <matthias.bgg@googlemail.com>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 0/3] ARM/dts: omap3: Add DT support for IGEP devices
+Date: Mon,  3 Dec 2012 13:41:40 +0100
+Message-Id: <1354538503-22671-1-git-send-email-javier.martinez@collabora.co.uk>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The nr_busy_cpus field of the sched_group_power is sometime different from 0
-whereas the platform is fully idle. This serie fixes 3 use cases:
- - when the SCHED softirq is raised on an idle core for idle load balance but
-   the platform doesn't go out of the cpuidle state
- - when some CPUs enter idle state while booting all CPUs
- - when a CPU is unplug and/or replug
+IGEP technology devices are TI OMAP3 SoC based industrial embedded
+and computer-on-module boards. This patch-set adds initial device
+tree support for these devices.
 
-Vincent Guittot (3):
-  sched: fix nr_busy_cpus with coupled cpuidle
-  sched: fix init NOHZ_IDLE flag
-  sched: fix update NOHZ_IDLE flag
+The device trees allows to boot from an MMC and are working all the
+components that already have device tree support on OMAP3 SoCs:
 
- kernel/sched/core.c      |    1 +
- kernel/sched/fair.c      |    2 +-
- kernel/time/tick-sched.c |    2 ++
- 3 files changed, 4 insertions(+), 1 deletion(-)
+- MMC/SD
+- UARTs
+- GPIO LEDs
+- TWL4030 codec audio
+- pinmux/pinconf pinctrl
 
--- 
-1.7.9.5
+Some peripheral are still not working such as Flash storage and
+Ethernet but support for these will also be included once the
+OMAP GPMC device tree binding patches land on mainline.
 
+This is a v3 of the patch-set that solves issues pointed out by
+Enric Balletbo and Benoit Cousson.
+
+The patch-set is composed of the following patches:
+
+[PATCH v3 1/3] ARM/dts: omap3: Add generic DT support for IGEP devices
+[PATCH v3 2/3] ARM/dts: omap3: Add support for IGEPv2 board
+[PATCH v3 3/3] ARM/dts: omap3: Add support for IGEP COM Module
+
+Best regards,
+Javier
