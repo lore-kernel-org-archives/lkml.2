@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755720Ab2LCRjz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 12:39:55 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:54711 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752374Ab2LCRjy (ORCPT
+	id S1755777Ab2LCRka (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 12:40:30 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:41085 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755677Ab2LCRk2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 12:39:54 -0500
-Date: Mon, 3 Dec 2012 18:39:51 +0100
-From: Heinz Diehl <htd@fancy-poultry.org>
-To: linux-kernel@vger.kernel.org
-Subject: i915 freakout with latest 3.7 git
-Message-ID: <20121203173951.GA25384@fancy-poultry.org>
+	Mon, 3 Dec 2012 12:40:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: private site
-OpenPGP: id=BBAD7AE7; url=http://www.fritha.org/htd.asc
-User-Agent: Mutt/1.5.21+67 (d414971f0c48) (2011-07-01)
-X-Provags-ID: V02:K0:xcQ58h9P5CX50WB8PZbXiPyZgn1P7YFVvyJ5/lrrdKE
- 4y5u82Ev34Y4Vq1GZC+iB9pTD+KwJUDnN1OaLo4zG5avdlfeoA
- F8+ijSJFSTZI3Arcw7LUapJ3cl8kGAGda4OGD4v0F43gmtr2Rl
- bWQp+PIm+u2UCn2nbvE+XezVuLGTaEJ35TlQdEpPNHnNEWCBKp
- pIBOa+I6XeKr8UuoYnyp4ohbTxboPBDy3REWZI7JxAAeTDsqd0
- gj22USUNEbyV+YDJeExbl7BiCnvV10qo2C7B04Cdw6PPfcnmZ4
- L69BNWBWm2Tdb6bkaHHFAiOE4eld3cyphP+CTBnH5ncN8yjoJW
- fn8w9N0NagMICXtgZPA5VIJHpOxsoC+b/qRcgVpYU
+In-Reply-To: <1354552622-687-1-git-send-email-betty.dall@hp.com>
+References: <1354552622-687-1-git-send-email-betty.dall@hp.com>
+Date: Mon, 3 Dec 2012 10:40:27 -0700
+Message-ID: <CAKocOOOudEzMx0Zs9CB2zmtCkPHVkx1TCbWeK2+uoV5cb=eiGg@mail.gmail.com>
+Subject: Re: [PATCH] PCI AER: pci_get_domain_bus_and_slot() call missing
+ required pci_dev_put()
+From: Shuah Khan <shuahkhan@gmail.com>
+To: Betty Dall <betty.dall@hp.com>
+Cc: bhelgaas@google.com, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, wangyijing@huawei.com, jiang.liu@huawei.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Dec 3, 2012 at 9:37 AM, Betty Dall <betty.dall@hp.com> wrote:
+> The function aer_recover_queue() makes a call to pci_get_domain_bus_and_slot().
+> That function is documented to require that the caller decrement the
+> reference count by calling pci_dev_put(). This patch adds the missing
+> call to pci_dev_put().
+>
+> Signed-off-by: Betty Dall <betty.dall@hp.com>
+> ---
+>  drivers/pci/pcie/aer/aerdrv_core.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
+> index af4e31c..43caf53 100644
+> --- a/drivers/pci/pcie/aer/aerdrv_core.c
+> +++ b/drivers/pci/pcie/aer/aerdrv_core.c
+> @@ -616,6 +616,7 @@ static void aer_recover_work_func(struct work_struct *work)
+>                         continue;
+>                 }
+>                 do_recovery(pdev, entry.severity);
+> +               pci_dev_put(pdev);
 
-with latest linus-3.7 git from today, after some time, my machine gets
-more and more unresponsible, fanspeed increases, and that's what I see in the logs:
+Are you sure pci_get_domain_bus_and_slot() does indeed increment the
+reference count? I see that in the comments right above the
+definition.
 
-Dec  3 18:08:10 wildsau kernel: [35092.535757] [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed... GPU hung
-Dec  3 18:08:10 wildsau kernel: [35092.535768] [drm] capturing error event; look for more information in /debug/dri/0/i915_error_state
-Dec  3 18:08:12 wildsau kernel: [35094.050918] [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed... GPU hung
-Dec  3 18:08:12 wildsau kernel: [35094.051081] [drm:i915_reset] *ERROR* GPU hanging too fast, declaring wedged!
-Dec  3 18:08:12 wildsau kernel: [35094.051086] [drm:i915_reset] *ERROR* Failed to reset chip.
+pci_dev_get() does that for sure. I see a call trace of
 
-I have never seen that before, up to 3.6.7.
+pci_dev_get() -> get_device() -> kobj_to_dev(kobject_get(&dev->kobj)  etc.
 
-Don't know what information would be important for you, but will
-provide anything you'll ask me to.
+and kref_get() finally incrementing the
+
+static inline void kref_get(struct kref *kref)
+{
+        WARN_ON(!atomic_read(&kref->refcount));
+        atomic_inc(&kref->refcount);
+}
+
+However, I could not find any evidence that
+pci_get_domain_bus_and_slot() does that. I see
+pci_get_domain_bus_and_slot() calling pci_domain_nr() and there are
+several architecture specific defines for pci_domain_nr(). It is not
+clear to me where does refcount get incremented from
+pci_get_domain_bus_and_slot() is called.
+
+What am I missing?
 
 Thanks,
-Heinz.
+-- Shuah
