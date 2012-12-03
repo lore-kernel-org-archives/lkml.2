@@ -1,451 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755022Ab2LCCxU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 21:53:20 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:54494 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754919Ab2LCCxR (ORCPT
+	id S1754856Ab2LCC7M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 21:59:12 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:2345 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752153Ab2LCC7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 21:53:17 -0500
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: [PATCH 1/2] vfio powerpc: enabled on powernv platform
-Date: Mon,  3 Dec 2012 13:52:57 +1100
-Message-Id: <1354503178-2602-2-git-send-email-aik@ozlabs.ru>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1354503178-2602-1-git-send-email-aik@ozlabs.ru>
-References: <1353661396-14374-1-git-send-email-aik@ozlabs.ru>
- <1354503178-2602-1-git-send-email-aik@ozlabs.ru>
+	Sun, 2 Dec 2012 21:59:11 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Sun, 02 Dec 2012 18:58:41 -0800
+From: Joseph Lo <josephl@nvidia.com>
+To: Colin Cross <ccross@android.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Joseph Lo <josephl@nvidia.com>, Colin Cross <ccross@android.com>
+Subject: [PATCH] cpuidle: coupled: fix the potensial race condition and deadlock
+Date: Mon, 3 Dec 2012 10:59:01 +0800
+Message-ID: <1354503541-13463-1-git-send-email-josephl@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
+X-NVConfidentiality: public
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch initializes IOMMU groups based on the IOMMU
-configuration discovered during the PCI scan on POWERNV
-(POWER non virtualized) platform. The IOMMU groups are
-to be used later by VFIO driver (PCI pass through).
+Considering the chance that two CPU come into cpuidle_enter_state_coupled at
+very close time. The 1st CPU increases the waiting count and the 2nd CPU do the
+same thing right away. The 2nd CPU found the 1st CPU already in waiting then
+prepare to poke it.
 
-It also implements an API for mapping/unmapping pages for
-guest PCI drivers and providing DMA window properties.
-This API is going to be used later by QEMU-VFIO to handle
-h_put_tce hypercalls from the KVM guest.
+Before the 2nd CPU to poke 1st CPU, the 1st found the waiting count already same
+with cpu_online count. So the 1st won't go into waiting loop and the 2nd CPU
+didn't poke it yet. The 1st CPU will go into ready loop directly.
 
-Although this driver has been tested only on the POWERNV
-platform, it should work on any platform which supports
-TCE tables.
+Then the 2nd CPU set up the couple_cpuidle_mask for 1st CPU and poke it. But the
+1st CPU already lost the chance to handle the poke and clear the
+couple_cpuidle_mask. Now whole MPcore are alredy to be coupled. The MPcore will
+go into the power saving idle mode.
 
-To enable VFIO on POWER, enable SPAPR_TCE_IOMMU config
-option and configure VFIO as required.
+Because the poke was be implemented as a "smp_call_function_single", it's a
+software intrrupt of "IPI_SINGLE_FUNC". If the power saving idle mode of the
+platform can't retain the software interrupt of power saving idle mode, (e.g.
+Tegra's powerd-down idle mode will shut off cpu power that include the power of
+GIC) the software interrupt will got lost.
 
-Cc: David Gibson <david@gibson.dropbear.id.au>
-Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+When the CPU resumed from the power saving idle mode and the system still keep
+idle, it will go into idle mode again immediately. Because the
+"smp_call_function_single" not allow the same function be called for the same
+cpu twice, or it will got a lock. So the "couple_cpuidle_mask" can't be cleared
+by 1st CPU, the 2nd CPU also can't poke it again. Then the deadlock happens
+here.
+
+The fix here used different wake up mechanism. Because there are already two
+loops and a gloable variable "ready_waiting_counts" to sync the status of
+MPcore to coupled state, the "coupled_cpuidle_mask" was not really necessary.
+Just waking up the CPU from waiting and checking if the CPU need resched at
+outside world to take the CPU out of idle are enough. And this fix didn't
+modify the original behavior of coupled cpuidle framework. It should still
+compitable with the origianal. The cpuidle driver that already applies
+coupled cpuidle not need to change as well.
+
+Cc: Colin Cross <ccross@android.com>
+Signed-off-by: Joseph Lo <josephl@nvidia.com>
 ---
- arch/powerpc/include/asm/iommu.h     |    9 ++
- arch/powerpc/kernel/iommu.c          |  186 ++++++++++++++++++++++++++++++++++
- arch/powerpc/platforms/powernv/pci.c |  135 ++++++++++++++++++++++++
- drivers/iommu/Kconfig                |    8 ++
- 4 files changed, 338 insertions(+)
+Please check the detail sequence about how race condition and deadlock
+be happened below:
+It could be reproduced on Tegra20 and Tegra30.
+(Suppose the last two cpu came into coupled_cpuidle_state at very close time)
+========================================================================
+CPU_0				CPU_1
+cpuidle_enter_state_coupled
+				cpuidle_enter_state_coupled
+1.increase waiting count
+				1. increase waiting count
+------------------------ same time frame -------------------------------
+2.before went into waiting
+  loop, check the waiting
+  count first
+  2.1 the waiting count
+   was same with online
+   count
+  2.2 so it won't go into
+   waiting loop
+				2.in the procedure to prepare to send an
+				 "smp_call_function_single" to wake up CPU_0
+------------------------ next time frame -------------------------------
+3.before go into ready loop
+  3.1 it will enable_irq
+  3.2 check if there is any
+    IPI
+  3.3 if yes, clear the coupled_mask
+  3.4 then disable_irq
+				3. trigger the IPI to CPU_0
+				 3.1 set up the coupled_mask for CPU_0
+				 3.2 sent IPI to CPU_0
+4. the IPI_SINGLE_FUNC been triggered from CPU_1 to CPU_0 and the coupled_mask
+  of CPU_0 been set up
+  4.1 but the CPU_0 miss the IPI and the chance to clear coupled_mask
+------------------------ next time frame -------------------------------
+5. MPCores went into ready loop and been coupled
+6. go into power saving idle mode
+   (For Tegra, it's means the vdd_cpu rail be shut off. The GIC be powered off
+    and the SW_INT(IPI) couldn't be retained.)
+7. After the resume of power saving idle mode, the coupled_mask of CPU_0 not
+   been cleared.
+8. return to kernel
+========================================================================
+If the system still idle, it will come back to idle immediately.
+========================================================================
+CPU_0				CPU_1
+cpuidle_enter_state_coupled
+				cpuidle_enter_state_coupled
+1. set itself to waiting
+2. go into waiting loop
+3. check the coupled_mask been
+  set or not
+  3.1 enable_irq
+  3.2 waiting for the coupled_mask
+    be cleared
 
-diff --git a/arch/powerpc/include/asm/iommu.h b/arch/powerpc/include/asm/iommu.h
-index cbfe678..5c7087a 100644
---- a/arch/powerpc/include/asm/iommu.h
-+++ b/arch/powerpc/include/asm/iommu.h
-@@ -76,6 +76,9 @@ struct iommu_table {
- 	struct iommu_pool large_pool;
- 	struct iommu_pool pools[IOMMU_NR_POOLS];
- 	unsigned long *it_map;       /* A simple allocation bitmap for now */
-+#ifdef CONFIG_IOMMU_API
-+	struct iommu_group *it_group;
+				1. found CPU_0 in waiting
+				2. prepare an IPI to poke CPU_0
+				  2.1 check the coupled_mask of CPU_0
+				  2.2 because it had been set
+				  2.3 so it didn't trigger and
+				    "smp_call_function_single" to CPU_0 again
+				3. then go into ready loop
+
+4. because there is no irq of
+  "IPI_SINGLE_FUNC" be triggered
+  for CPU_0
+  4.1 CPU_0 busy loop here
+
+				4. CPU_1 in ready loop and wait for CPU_0
+				  come here to be coupled
+				  4.1 but CPU_0 be stalled
+				  4.2 CPU_1 be trapped here
+
+5. deadlock
+========================================================================
+
+---
+ drivers/cpuidle/coupled.c |   73 +++++++++++++++-----------------------------
+ 1 files changed, 25 insertions(+), 48 deletions(-)
+
+diff --git a/drivers/cpuidle/coupled.c b/drivers/cpuidle/coupled.c
+index 3265844..c01305a 100644
+--- a/drivers/cpuidle/coupled.c
++++ b/drivers/cpuidle/coupled.c
+@@ -118,16 +118,11 @@ struct cpuidle_coupled {
+ 
+ #define CPUIDLE_COUPLED_NOT_IDLE	(-1)
+ 
+-static DEFINE_MUTEX(cpuidle_coupled_lock);
+-static DEFINE_PER_CPU(struct call_single_data, cpuidle_coupled_poke_cb);
+-
+-/*
+- * The cpuidle_coupled_poked_mask mask is used to avoid calling
+- * __smp_call_function_single with the per cpu call_single_data struct already
+- * in use.  This prevents a deadlock where two cpus are waiting for each others
+- * call_single_data struct to be available
+- */
+-static cpumask_t cpuidle_coupled_poked_mask;
++#ifdef CONFIG_ARM
++#define smp_wakeup(cpu)	arch_send_wakeup_ipi_mask(cpumask_of(cpu))
++#else
++#define smp_wakeup(cpu)	arch_send_call_function_single_ipi(cpu)
 +#endif
- };
  
- struct scatterlist;
-@@ -147,5 +150,11 @@ static inline void iommu_restore(void)
+ /**
+  * cpuidle_coupled_parallel_barrier - synchronize all online coupled cpus
+@@ -291,12 +286,6 @@ static inline int cpuidle_coupled_get_state(struct cpuidle_device *dev,
+ 	return state;
  }
- #endif
  
-+extern long iommu_clear_tces(struct iommu_table *tbl, unsigned long entry,
-+		unsigned long pages);
-+extern long iommu_put_tces(struct iommu_table *tbl, unsigned long entry,
-+		uint64_t tce, enum dma_data_direction direction,
-+		unsigned long pages);
+-static void cpuidle_coupled_poked(void *info)
+-{
+-	int cpu = (unsigned long)info;
+-	cpumask_clear_cpu(cpu, &cpuidle_coupled_poked_mask);
+-}
+-
+ /**
+  * cpuidle_coupled_poke - wake up a cpu that may be waiting
+  * @cpu: target cpu
+@@ -309,12 +298,9 @@ static void cpuidle_coupled_poked(void *info)
+  * either has or will soon have a pending IPI that will wake it out of idle,
+  * or it is currently processing the IPI and is not in idle.
+  */
+-static void cpuidle_coupled_poke(int cpu)
++static inline void cpuidle_coupled_poke(int cpu)
+ {
+-	struct call_single_data *csd = &per_cpu(cpuidle_coupled_poke_cb, cpu);
+-
+-	if (!cpumask_test_and_set_cpu(cpu, &cpuidle_coupled_poked_mask))
+-		__smp_call_function_single(cpu, csd, 0);
++	smp_wakeup(cpu);
+ }
+ 
+ /**
+@@ -403,26 +389,27 @@ static void cpuidle_coupled_set_done(int cpu, struct cpuidle_coupled *coupled)
+ }
+ 
+ /**
+- * cpuidle_coupled_clear_pokes - spin until the poke interrupt is processed
+- * @cpu - this cpu
++ * cpuidle_coupled_need_resched - need_resched when CPU wakeup from waiting
+  *
+- * Turns on interrupts and spins until any outstanding poke interrupts have
+- * been processed and the poke bit has been cleared.
++ * Before the last cpu in MPcore come into coupled_cpuidle_state. There is no
++ * idea to know other cpus already stay in waiting for how long. There maybe
++ * something need to be taken care outside the world.
+  *
+- * Other interrupts may also be processed while interrupts are enabled, so
+- * need_resched() must be tested after turning interrupts off again to make sure
+- * the interrupt didn't schedule work that should take the cpu out of idle.
++ * Turns on interrupts and checks need_resched() to make sure if the cpu
++ * still can stay in waiting for all MPcore to be coupled. If not, the
++ * cpu should be taken out of idle.
+  *
+- * Returns 0 if need_resched was false, -EINTR if need_resched was true.
++ * Returns false if need_resched was false, true if need_resched was true.
+  */
+-static int cpuidle_coupled_clear_pokes(int cpu)
++static bool cpuidle_coupled_need_resched(void)
+ {
++	bool resched;
 +
- #endif /* __KERNEL__ */
- #endif /* _ASM_IOMMU_H */
-diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
-index ff5a6ce..2738aa4 100644
---- a/arch/powerpc/kernel/iommu.c
-+++ b/arch/powerpc/kernel/iommu.c
-@@ -44,6 +44,7 @@
- #include <asm/kdump.h>
- #include <asm/fadump.h>
- #include <asm/vio.h>
-+#include <asm/tce.h>
+ 	local_irq_enable();
+-	while (cpumask_test_cpu(cpu, &cpuidle_coupled_poked_mask))
+-		cpu_relax();
++	resched = need_resched();
+ 	local_irq_disable();
  
- #define DBG(...)
+-	return need_resched() ? -EINTR : 0;
++	return resched;
+ }
  
-@@ -856,3 +857,188 @@ void iommu_free_coherent(struct iommu_table *tbl, size_t size,
- 		free_pages((unsigned long)vaddr, get_order(size));
+ /**
+@@ -454,7 +441,7 @@ int cpuidle_enter_state_coupled(struct cpuidle_device *dev,
+ 		return -EINVAL;
+ 
+ 	while (coupled->prevent) {
+-		if (cpuidle_coupled_clear_pokes(dev->cpu)) {
++		if (cpuidle_coupled_need_resched()) {
+ 			local_irq_enable();
+ 			return entered_state;
+ 		}
+@@ -473,11 +460,6 @@ retry:
+ 	 * allowed for a single cpu.
+ 	 */
+ 	while (!cpuidle_coupled_cpus_waiting(coupled)) {
+-		if (cpuidle_coupled_clear_pokes(dev->cpu)) {
+-			cpuidle_coupled_set_not_waiting(dev->cpu, coupled);
+-			goto out;
+-		}
+-
+ 		if (coupled->prevent) {
+ 			cpuidle_coupled_set_not_waiting(dev->cpu, coupled);
+ 			goto out;
+@@ -485,11 +467,11 @@ retry:
+ 
+ 		entered_state = cpuidle_enter_state(dev, drv,
+ 			dev->safe_state_index);
+-	}
+ 
+-	if (cpuidle_coupled_clear_pokes(dev->cpu)) {
+-		cpuidle_coupled_set_not_waiting(dev->cpu, coupled);
+-		goto out;
++		if (cpuidle_coupled_need_resched()) {
++			cpuidle_coupled_set_not_waiting(dev->cpu, coupled);
++			goto out;
++		}
  	}
+ 
+ 	/*
+@@ -565,7 +547,6 @@ int cpuidle_coupled_register_device(struct cpuidle_device *dev)
+ {
+ 	int cpu;
+ 	struct cpuidle_device *other_dev;
+-	struct call_single_data *csd;
+ 	struct cpuidle_coupled *coupled;
+ 
+ 	if (cpumask_empty(&dev->coupled_cpus))
+@@ -595,10 +576,6 @@ have_coupled:
+ 
+ 	coupled->refcnt++;
+ 
+-	csd = &per_cpu(cpuidle_coupled_poke_cb, dev->cpu);
+-	csd->func = cpuidle_coupled_poked;
+-	csd->info = (void *)(unsigned long)dev->cpu;
+-
+ 	return 0;
  }
-+
-+#ifdef CONFIG_IOMMU_API
-+/*
-+ * SPAPR TCE API
-+ */
-+
-+/*
-+ * Returns the number of used IOMMU pages (4K) within
-+ * the same system page (4K or 64K).
-+ * bitmap_weight is not used as it does not support bigendian maps.
-+ */
-+static int syspage_weight(unsigned long *map, unsigned long entry)
-+{
-+	int ret = 0, nbits = PAGE_SIZE/IOMMU_PAGE_SIZE;
-+
-+	/* Aligns TCE entry number to system page boundary */
-+	entry &= PAGE_MASK >> IOMMU_PAGE_SHIFT;
-+
-+	/* Count used 4K pages */
-+	while (nbits--)
-+		ret += (test_bit(entry++, map) == 0) ? 0 : 1;
-+
-+	return ret;
-+}
-+
-+static void tce_flush(struct iommu_table *tbl)
-+{
-+	/* Flush/invalidate TLB caches if necessary */
-+	if (ppc_md.tce_flush)
-+		ppc_md.tce_flush(tbl);
-+
-+	/* Make sure updates are seen by hardware */
-+	mb();
-+}
-+
-+/*
-+ * iommu_clear_tces clears tces and returned the number of system pages
-+ * which it called put_page() on
-+ */
-+static long clear_tces_nolock(struct iommu_table *tbl, unsigned long entry,
-+		unsigned long pages)
-+{
-+	int i, retpages = 0;
-+	unsigned long oldtce, oldweight;
-+	struct page *page;
-+
-+	for (i = 0; i < pages; ++i) {
-+		oldtce = ppc_md.tce_get(tbl, entry + i);
-+		ppc_md.tce_free(tbl, entry + i, 1);
-+
-+		oldweight = syspage_weight(tbl->it_map, entry);
-+		__clear_bit(entry - tbl->it_offset, tbl->it_map);
-+
-+		if (!(oldtce & (TCE_PCI_WRITE | TCE_PCI_READ)))
-+			continue;
-+
-+		page = pfn_to_page(oldtce >> PAGE_SHIFT);
-+
-+		WARN_ON(!page);
-+		if (!page)
-+			continue;
-+
-+		if (oldtce & TCE_PCI_WRITE)
-+			SetPageDirty(page);
-+
-+		put_page(page);
-+
-+		/* That was the last IOMMU page within the system page */
-+		if ((oldweight == 1) && !syspage_weight(tbl->it_map, entry))
-+			++retpages;
-+	}
-+
-+	return retpages;
-+}
-+
-+/*
-+ * iommu_clear_tces clears tces and returned the number
-+ / of released system pages
-+ */
-+long iommu_clear_tces(struct iommu_table *tbl, unsigned long entry,
-+		unsigned long pages)
-+{
-+	int ret;
-+	struct iommu_pool *pool = get_pool(tbl, entry);
-+
-+	spin_lock(&(pool->lock));
-+	ret = clear_tces_nolock(tbl, entry, pages);
-+	tce_flush(tbl);
-+	spin_unlock(&(pool->lock));
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(iommu_clear_tces);
-+
-+static int put_tce(struct iommu_table *tbl, unsigned long entry,
-+		uint64_t tce, enum dma_data_direction direction)
-+{
-+	int ret;
-+	struct page *page = NULL;
-+	unsigned long kva, offset, oldweight;
-+
-+	/* Map new TCE */
-+	offset = (tce & IOMMU_PAGE_MASK) - (tce & PAGE_MASK);
-+	ret = get_user_pages_fast(tce & PAGE_MASK, 1,
-+			direction != DMA_TO_DEVICE, &page);
-+	if (ret < 1) {
-+		printk(KERN_ERR "tce_vfio: get_user_pages_fast failed tce=%llx ioba=%lx ret=%d\n",
-+				tce, entry << IOMMU_PAGE_SHIFT, ret);
-+		if (!ret || (ret > 1))
-+			ret = -EFAULT;
-+		return ret;
-+	}
-+
-+	kva = (unsigned long) page_address(page);
-+	kva += offset;
-+
-+	/* tce_build receives a virtual address */
-+	entry += tbl->it_offset; /* Offset into real TCE table */
-+	ret = ppc_md.tce_build(tbl, entry, 1, kva, direction, NULL);
-+
-+	/* tce_build() only returns non-zero for transient errors */
-+	if (unlikely(ret)) {
-+		printk(KERN_ERR "tce_vfio: tce_put failed on tce=%llx ioba=%lx kva=%lx ret=%d\n",
-+				tce, entry << IOMMU_PAGE_SHIFT, kva, ret);
-+		put_page(page);
-+		return -EIO;
-+	}
-+
-+	/* Calculate if new system page has been locked */
-+	oldweight = syspage_weight(tbl->it_map, entry);
-+	__set_bit(entry - tbl->it_offset, tbl->it_map);
-+
-+	return (oldweight == 0) ? 1 : 0;
-+}
-+
-+/*
-+ * iommu_put_tces builds tces and returned the number of actually
-+ * locked system pages
-+ */
-+long iommu_put_tces(struct iommu_table *tbl, unsigned long entry,
-+		uint64_t tce, enum dma_data_direction direction,
-+		unsigned long pages)
-+{
-+	int i, ret = 0, retpages = 0;
-+	struct iommu_pool *pool = get_pool(tbl, entry);
-+
-+	BUILD_BUG_ON(PAGE_SIZE < IOMMU_PAGE_SIZE);
-+	BUG_ON(direction == DMA_NONE);
-+
-+	spin_lock(&(pool->lock));
-+
-+	/* Check if any is in use */
-+	for (i = 0; i < pages; ++i) {
-+		unsigned long oldtce = ppc_md.tce_get(tbl, entry + i);
-+		if ((oldtce & (TCE_PCI_WRITE | TCE_PCI_READ)) ||
-+				test_bit(entry + i, tbl->it_map)) {
-+			WARN_ON(test_bit(entry + i, tbl->it_map));
-+			spin_unlock(&(pool->lock));
-+			return -EBUSY;
-+		}
-+	}
-+
-+	/* Put tces to the table */
-+	for (i = 0; (i < pages) && (ret >= 0); ++i, tce += IOMMU_PAGE_SIZE) {
-+		ret = put_tce(tbl, entry + i, tce, direction);
-+		if (ret == 1)
-+			++retpages;
-+	}
-+
-+	/*
-+	 * If failed, release locked pages, otherwise return the number
-+	 * of locked system pages
-+	 */
-+	if (ret < 0)
-+		clear_tces_nolock(tbl, entry, i);
-+	else
-+		ret = retpages;
-+
-+	tce_flush(tbl);
-+	spin_unlock(&(pool->lock));
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(iommu_put_tces);
-+#endif /* CONFIG_IOMMU_API */
-diff --git a/arch/powerpc/platforms/powernv/pci.c b/arch/powerpc/platforms/powernv/pci.c
-index 05205cf..21250ef 100644
---- a/arch/powerpc/platforms/powernv/pci.c
-+++ b/arch/powerpc/platforms/powernv/pci.c
-@@ -20,6 +20,7 @@
- #include <linux/irq.h>
- #include <linux/io.h>
- #include <linux/msi.h>
-+#include <linux/iommu.h>
  
- #include <asm/sections.h>
- #include <asm/io.h>
-@@ -613,3 +614,137 @@ void __init pnv_pci_init(void)
- 	ppc_md.teardown_msi_irqs = pnv_teardown_msi_irqs;
- #endif
- }
-+
-+#ifdef CONFIG_IOMMU_API
-+/*
-+ * IOMMU groups support required by VFIO
-+ */
-+static int add_device(struct device *dev)
-+{
-+	struct iommu_table *tbl;
-+	int ret = 0;
-+
-+	if (WARN_ON(dev->iommu_group)) {
-+		printk(KERN_WARNING "tce_vfio: device %s is already in iommu group %d, skipping\n",
-+				dev_name(dev),
-+				iommu_group_id(dev->iommu_group));
-+		return -EBUSY;
-+	}
-+
-+	tbl = get_iommu_table_base(dev);
-+	if (!tbl) {
-+		pr_debug("tce_vfio: skipping device %s with no tbl\n",
-+				dev_name(dev));
-+		return 0;
-+	}
-+
-+	pr_debug("tce_vfio: adding %s to iommu group %d\n",
-+			dev_name(dev), iommu_group_id(tbl->it_group));
-+
-+	ret = iommu_group_add_device(tbl->it_group, dev);
-+	if (ret < 0)
-+		printk(KERN_ERR "tce_vfio: %s has not been added, ret=%d\n",
-+				dev_name(dev), ret);
-+
-+	return ret;
-+}
-+
-+static void del_device(struct device *dev)
-+{
-+	iommu_group_remove_device(dev);
-+}
-+
-+static int iommu_bus_notifier(struct notifier_block *nb,
-+			      unsigned long action, void *data)
-+{
-+	struct device *dev = data;
-+
-+	switch (action) {
-+	case BUS_NOTIFY_ADD_DEVICE:
-+		return add_device(dev);
-+	case BUS_NOTIFY_DEL_DEVICE:
-+		del_device(dev);
-+		return 0;
-+	default:
-+		return 0;
-+	}
-+}
-+
-+static struct notifier_block tce_iommu_bus_nb = {
-+	.notifier_call = iommu_bus_notifier,
-+};
-+
-+static void group_release(void *iommu_data)
-+{
-+	struct iommu_table *tbl = iommu_data;
-+	tbl->it_group = NULL;
-+}
-+
-+static int __init tce_iommu_init(void)
-+{
-+	struct pci_dev *pdev = NULL;
-+	struct iommu_table *tbl;
-+	struct iommu_group *grp;
-+
-+	/* Allocate and initialize IOMMU groups */
-+	for_each_pci_dev(pdev) {
-+		tbl = get_iommu_table_base(&pdev->dev);
-+		if (!tbl)
-+			continue;
-+
-+		/* Skip already initialized */
-+		if (tbl->it_group)
-+			continue;
-+
-+		grp = iommu_group_alloc();
-+		if (IS_ERR(grp)) {
-+			printk(KERN_INFO "tce_vfio: cannot create "
-+					"new IOMMU group, ret=%ld\n",
-+					PTR_ERR(grp));
-+			return PTR_ERR(grp);
-+		}
-+		tbl->it_group = grp;
-+		iommu_group_set_iommudata(grp, tbl, group_release);
-+	}
-+
-+	bus_register_notifier(&pci_bus_type, &tce_iommu_bus_nb);
-+
-+	/* Add PCI devices to VFIO groups */
-+	for_each_pci_dev(pdev)
-+		add_device(&pdev->dev);
-+
-+	return 0;
-+}
-+
-+static void __exit tce_iommu_cleanup(void)
-+{
-+	struct pci_dev *pdev = NULL;
-+	struct iommu_table *tbl;
-+	struct iommu_group *grp = NULL;
-+
-+	bus_unregister_notifier(&pci_bus_type, &tce_iommu_bus_nb);
-+
-+	/* Delete PCI devices from VFIO groups */
-+	for_each_pci_dev(pdev)
-+		del_device(&pdev->dev);
-+
-+	/* Release VFIO groups */
-+	for_each_pci_dev(pdev) {
-+		tbl = get_iommu_table_base(&pdev->dev);
-+		if (!tbl)
-+			continue;
-+		grp = tbl->it_group;
-+
-+		/* Skip (already) uninitialized */
-+		if (!grp)
-+			continue;
-+
-+		/* Do actual release, group_release() is expected to work */
-+		iommu_group_put(grp);
-+		BUG_ON(tbl->it_group);
-+	}
-+}
-+
-+module_init(tce_iommu_init);
-+module_exit(tce_iommu_cleanup);
-+#endif /* CONFIG_IOMMU_API */
-diff --git a/drivers/iommu/Kconfig b/drivers/iommu/Kconfig
-index 9f69b56..29d11dc 100644
---- a/drivers/iommu/Kconfig
-+++ b/drivers/iommu/Kconfig
-@@ -187,4 +187,12 @@ config EXYNOS_IOMMU_DEBUG
- 
- 	  Say N unless you need kernel log message for IOMMU debugging
- 
-+config SPAPR_TCE_IOMMU
-+	bool "sPAPR TCE IOMMU Support"
-+	depends on PPC_POWERNV
-+	select IOMMU_API
-+	help
-+	  Enables bits of IOMMU API required by VFIO. The iommu_ops is
-+	  still not implemented.
-+
- endif # IOMMU_SUPPORT
 -- 
-1.7.10.4
+1.7.0.4
 
