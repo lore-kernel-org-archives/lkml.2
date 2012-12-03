@@ -1,73 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755123Ab2LCOcd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:32:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48781 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754193Ab2LCOcb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 09:32:31 -0500
-Message-ID: <50BCB7EB.6090707@redhat.com>
-Date: Mon, 03 Dec 2012 12:32:11 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755264Ab2LCOeF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:34:05 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:50961 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754778Ab2LCOeD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 09:34:03 -0500
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL for 3.8-final] media-fixes
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH v2] net/macb: Use non-coherent memory for rx buffers
+Date: Mon, 3 Dec 2012 14:25:40 -0000
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B70D6@saturn3.aculab.com>
+In-Reply-To: <50BCA746.1020705@atmel.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH v2] net/macb: Use non-coherent memory for rx buffers
+Thread-Index: Ac3RWOiOg9+UAE7XQVyE2jMhDhBqcgAB1IGQ
+References: <CAGhQ9VwWmP_B17LnAEqDHcL8Yd-s0C-Bf35z3+=vnJmK_NoCSw@mail.gmail.com> <1354536876-6274-1-git-send-email-nicolas.ferre@atmel.com> <AE90C24D6B3A694183C094C60CF0A2F6026B70D5@saturn3.aculab.com> <50BCA746.1020705@atmel.com>
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Nicolas Ferre" <nicolas.ferre@atmel.com>
+Cc: "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        "Joachim Eastwood" <manabian@gmail.com>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        "Havard Skinnemoen" <havard@skinnemoen.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+> On 12/03/2012 01:43 PM, David Laight :
+> >> Allocate regular pages to use as backing for the RX ring and use the
+> >> DMA API to sync the caches. This should give a bit better performance
+> >> since it allows the CPU to do burst transfers from memory. It is also
+> >> a necessary step on the way to reduce the amount of copying done by
+> >> the driver.
+> >
+> > I've not tried to understand the patches, but you have to be
+> > very careful using non-snooped memory for descriptor rings.
+> > No amount of DMA API calls can sort out some of the issues.
+> 
+> David,
+> 
+> Maybe I have not described the patch properly but the non-coherent
+> memory is not used for descriptor rings. It is used for DMA buffers
+> pointed out by descriptors (that are allocated as coherent memory).
+> 
+> As buffers are filled up by the interface DMA and then, afterwards, used
+> by the driver to pass data to the net layer, it seems to me that the use
+> of non-coherent memory is sensible.
 
-Please pull from:
-   git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
+Ah, ok - difficult to actually determine from a fast read of the code.
+So you invalidate (I think that is the right term) all the cache lines
+that are part of each rx buffer before giving it back to the MAC unit.
+(Maybe that first time, and just those cache lines that might have been
+written to after reception - I'd worry about whether the CRC is written
+into the rx buffer!)
 
-For some driver fixes for s5p/exynos (mostly race fixes).
+I was wondering if the code needs to do per page allocations?
+Perhaps that is necessary to avoid needing a large block of
+contiguous physical memory (and virtual addresses)?
 
-Thanks!
-Mauro
+I know from some experiments done many years ago that a data
+copy in the MAC tx and rx path isn't necessarily as bad as
+people may think - especially if it removes complicated
+'buffer loaning' schemes and/or iommu setup (or bounce
+buffers due to limited hardware memory addressing).
 
--
+The rx copy can usually be made to be a 'whole word' copy
+(ie you copy the two bytes of garbage that (mis)align the
+destination MAC address, and some bytes after the CRC.
+With some hardware I believe it is possible for the cache
+controller to do cache-line aligned copies very quickly!
+(Some very new x86 cpus might be doing this for 'rep movsd'.)
 
-The following changes since commit 86163adb8125a4ce85e0b23a50be82bd8c0daf95:
+The copy in the rx path is also better for short packets
+the can end up queued for userspace (although a copy in
+the socket code would solve that one.
 
-   [media] rtl28xxu: 0ccd:00d7 TerraTec Cinergy T Stick+ (2012-11-22 12:04:53 -0200)
+	David
 
-are available in the git repository at:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
-
-for you to fetch changes up to d2a0db1ee01aea154ccc460e45a16857e32c4427:
-
-   [media] s5p-mfc: Handle multi-frame input buffer (2012-11-26 18:43:27 -0200)
-
-----------------------------------------------------------------
-Arun Kumar K (2):
-       [media] s5p-mfc: Bug fix of timestamp/timecode copy mechanism
-       [media] s5p-mfc: Handle multi-frame input buffer
-
-Shaik Ameer Basha (1):
-       [media] exynos-gsc: Fix settings for input and output image RGB type
-
-Sylwester Nawrocki (5):
-       [media] s5p-fimc: Prevent race conditions during subdevs registration
-       [media] s5p-fimc: Don't use mutex_lock_interruptible() in device release()
-       [media] fimc-lite: Don't use mutex_lock_interruptible() in device release()
-       [media] exynos-gsc: Don't use mutex_lock_interruptible() in device release()
-       [media] exynos-gsc: Add missing video device vfl_dir flag initialization
-
-  drivers/media/platform/exynos-gsc/gsc-m2m.c     |  4 ++--
-  drivers/media/platform/exynos-gsc/gsc-regs.h    | 16 ++++++++--------
-  drivers/media/platform/s5p-fimc/fimc-capture.c  | 10 +++++++---
-  drivers/media/platform/s5p-fimc/fimc-lite.c     |  6 ++++--
-  drivers/media/platform/s5p-fimc/fimc-m2m.c      |  3 +--
-  drivers/media/platform/s5p-fimc/fimc-mdevice.c  |  4 ++--
-  drivers/media/platform/s5p-mfc/s5p_mfc.c        |  7 ++-----
-  drivers/media/platform/s5p-mfc/s5p_mfc_opr_v6.c |  2 +-
-  8 files changed, 27 insertions(+), 25 deletions(-)
 
