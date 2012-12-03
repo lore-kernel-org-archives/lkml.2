@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932508Ab2LCOmG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:42:06 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43905 "EHLO
+	id S932454Ab2LCOmE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:42:04 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43920 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755485Ab2LCOgz (ORCPT
+	by vger.kernel.org with ESMTP id S1755498Ab2LCOgz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Dec 2012 09:36:55 -0500
-Message-Id: <20121203143154.218941435@decadent.org.uk>
+Message-Id: <20121203143152.758696735@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Dec 2012 14:32:34 +0000
+Date: Mon, 03 Dec 2012 14:32:23 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andre Przywara <andre.przywara@amd.com>,
-        Andre Przywara <osp@andrep.de>, "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 48/89] x86, amd: Disable way access filter on Piledriver CPUs
+        Arend van Spriel <arend@broadcom.com>,
+        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
+        Alwin Beukers <alwin@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 37/89] brcm80211: smac: only print block-ack timeout message at trace level
 In-Reply-To: <20121203143146.549859007@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,71 +30,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andre Przywara <andre.przywara@amd.com>
+From: Arend van Spriel <arend@broadcom.com>
 
-commit 2bbf0a1427c377350f001fbc6260995334739ad7 upstream.
+commit 2b0a53d51b5f263bb581bbdb40ebb9f7e09609b1 upstream.
 
-The Way Access Filter in recent AMD CPUs may hurt the performance of
-some workloads, caused by aliasing issues in the L1 cache.
-This patch disables it on the affected CPUs.
+In regular use block-ack timeouts can happen so it does not make
+sense to fill the log with these messages.
 
-The issue is similar to that one of last year:
-http://lkml.indiana.edu/hypermail/linux/kernel/1107.3/00041.html
-This new patch does not replace the old one, we just need another
-quirk for newer CPUs.
-
-The performance penalty without the patch depends on the
-circumstances, but is a bit less than the last year's 3%.
-
-The workloads affected would be those that access code from the same
-physical page under different virtual addresses, so different
-processes using the same libraries with ASLR or multiple instances of
-PIE-binaries. The code needs to be accessed simultaneously from both
-cores of the same compute unit.
-
-More details can be found here:
-http://developer.amd.com/Assets/SharedL1InstructionCacheonAMD15hCPU.pdf
-
-CPUs affected are anything with the core known as Piledriver.
-That includes the new parts of the AMD A-Series (aka Trinity) and the
-just released new CPUs of the FX-Series (aka Vishera).
-The model numbering is a bit odd here: FX CPUs have model 2,
-A-Series has model 10h, with possible extensions to 1Fh. Hence the
-range of model ids.
-
-Signed-off-by: Andre Przywara <osp@andrep.de>
-Link: http://lkml.kernel.org/r/1351700450-9277-1-git-send-email-osp@andrep.de
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-[bwh: Backported to 3.2: wrmsrl_safe() is called checking_wrmsrl()]
+Reviewed-by: Pieter-Paul Giesberts <pieterpg@broadcom.com>
+Reviewed-by: Alwin Beukers <alwin@broadcom.com>
+Signed-off-by: Arend van Spriel <arend@broadcom.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/kernel/cpu/amd.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/net/wireless/brcm80211/brcmsmac/ampdu.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index f7e98a2..1b7d165 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -631,6 +631,20 @@ static void __cpuinit init_amd(struct cpuinfo_x86 *c)
- 		}
- 	}
- 
-+	/*
-+	 * The way access filter has a performance penalty on some workloads.
-+	 * Disable it on the affected CPUs.
-+	 */
-+	if ((c->x86 == 0x15) &&
-+	    (c->x86_model >= 0x02) && (c->x86_model < 0x20)) {
-+		u64 val;
-+
-+		if (!rdmsrl_safe(0xc0011021, &val) && !(val & 0x1E)) {
-+			val |= 0x1E;
-+			checking_wrmsrl(0xc0011021, val);
-+		}
-+	}
-+
- 	cpu_detect_cache_sizes(c);
- 
- 	/* Multi core CPU? */
+diff --git a/drivers/net/wireless/brcm80211/brcmsmac/ampdu.c b/drivers/net/wireless/brcm80211/brcmsmac/ampdu.c
+index 9265226..30b5887 100644
+--- a/drivers/net/wireless/brcm80211/brcmsmac/ampdu.c
++++ b/drivers/net/wireless/brcm80211/brcmsmac/ampdu.c
+@@ -1070,9 +1070,9 @@ brcms_c_ampdu_dotxstatus_complete(struct ampdu_info *ampdu, struct scb *scb,
+ 				    IEEE80211_TX_STAT_AMPDU_NO_BACK;
+ 				skb_pull(p, D11_PHY_HDR_LEN);
+ 				skb_pull(p, D11_TXH_LEN);
+-				wiphy_err(wiphy, "%s: BA Timeout, seq %d, in_"
+-					"transit %d\n", "AMPDU status", seq,
+-					ini->tx_in_transit);
++				BCMMSG(wiphy,
++				       "BA Timeout, seq %d, in_transit %d\n",
++				       seq, ini->tx_in_transit);
+ 				ieee80211_tx_status_irqsafe(wlc->pub->ieee_hw,
+ 							    p);
+ 			}
 
 
