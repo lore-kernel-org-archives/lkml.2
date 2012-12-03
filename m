@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932255Ab2LCOgX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:36:23 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43742 "EHLO
+	id S932281Ab2LCOga (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:36:30 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43777 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755366Ab2LCOgS (ORCPT
+	by vger.kernel.org with ESMTP id S932250Ab2LCOgX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 09:36:18 -0500
-Message-Id: <20121203143156.625011929@decadent.org.uk>
+	Mon, 3 Dec 2012 09:36:23 -0500
+Message-Id: <20121203143156.904709715@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Dec 2012 14:32:51 +0000
+Date: Mon, 03 Dec 2012 14:32:53 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        majianpeng <majianpeng@gmail.com>, NeilBrown <neilb@suse.de>
-Subject: [ 65/89] md: Reassigned the parameters if read_seqretry returned true in func
- md_is_badblock.
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [ 67/89] drm/radeon: properly track the crtc not_enabled case
+ evergreen_mc_stop()
 In-Reply-To: <20121203143146.549859007@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,45 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: majianpeng <majianpeng@gmail.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit ab05613a0646dcc11049692d54bae76ca9ffa910 upstream.
+commit 804cc4a0ad3a896ca295f771a28c6eb36ced7903 upstream.
 
-This bug was introduced by commit(v3.0-rc7-126-g2230dfe).
-So fix is suitable for 3.0.y thru 3.6.y.
+The save struct is not initialized previously so explicitly
+mark the crtcs as not used when they are not in use.
 
-Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/md/md.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/evergreen.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/md/md.c b/drivers/md/md.c
-index 9ab768a..14db6ab 100644
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -7936,9 +7936,9 @@ int md_is_badblock(struct badblocks *bb, sector_t s, int sectors,
- 		   sector_t *first_bad, int *bad_sectors)
- {
- 	int hi;
--	int lo = 0;
-+	int lo;
- 	u64 *p = bb->page;
--	int rv = 0;
-+	int rv;
- 	sector_t target = s + sectors;
- 	unsigned seq;
+diff --git a/drivers/gpu/drm/radeon/evergreen.c b/drivers/gpu/drm/radeon/evergreen.c
+index af31f82..219942c 100644
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -1330,6 +1330,8 @@ void evergreen_mc_stop(struct radeon_device *rdev, struct evergreen_mc_save *sav
+ 					break;
+ 				udelay(1);
+ 			}
++		} else {
++			save->crtc_enabled[i] = false;
+ 		}
+ 	}
  
-@@ -7953,7 +7953,8 @@ int md_is_badblock(struct badblocks *bb, sector_t s, int sectors,
- 
- retry:
- 	seq = read_seqbegin(&bb->lock);
--
-+	lo = 0;
-+	rv = 0;
- 	hi = bb->count;
- 
- 	/* Binary search between lo and hi for 'target'
 
 
