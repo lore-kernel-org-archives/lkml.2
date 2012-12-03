@@ -1,102 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096Ab2LCKtl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 05:49:41 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:52759 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868Ab2LCKtk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 05:49:40 -0500
-X-AuditID: 9c930197-b7bd3ae000003f1c-d7-50bc83c0ed10
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 07/18] perf hists: Exchange order of comparing items when collapsing hists
-References: <1354171126-14387-1-git-send-email-namhyung@kernel.org>
-	<1354171126-14387-9-git-send-email-namhyung@kernel.org>
-	<20121129185257.GC1957@ghostprotocols.net>
-	<87pq2ryksr.fsf@sejong.aot.lge.com>
-	<20121203101952.GA1131@krava.redhat.com>
-Date: Mon, 03 Dec 2012 19:49:36 +0900
-In-Reply-To: <20121203101952.GA1131@krava.redhat.com> (Jiri Olsa's message of
-	"Mon, 3 Dec 2012 11:19:52 +0100")
-Message-ID: <87624jif5r.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1754599Ab2LCKtw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 05:49:52 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:54133 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754119Ab2LCKtu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 05:49:50 -0500
+Message-ID: <50BC83BE.2020202@ti.com>
+Date: Mon, 3 Dec 2012 11:49:34 +0100
+From: Benoit Cousson <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+CC: Tony Lindgren <tony@atomide.com>, <grant.likely@secretlab.ca>,
+        Enric Balletbo i Serra <eballetbo@gmail.com>,
+        Ezequiel Garcia <elezegarcia@gmail.com>,
+        Enrico Butera <ebutera@gmail.com>,
+        Matthias Brugger <matthias.bgg@googlemail.com>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/3] ARM/dts: omap3: Add DT support for IGEP devices
+References: <1354270137-31538-1-git-send-email-javier.martinez@collabora.co.uk>
+In-Reply-To: <1354270137-31538-1-git-send-email-javier.martinez@collabora.co.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Dec 2012 11:19:52 +0100, Jiri Olsa wrote:
-> On Mon, Dec 03, 2012 at 10:41:08AM +0900, Namhyung Kim wrote:
->> On Thu, 29 Nov 2012 15:52:57 -0300, Arnaldo Carvalho de Melo wrote:
->> > doesn't this now gets inconsistent with the hist_entry__collapse() call?
->> > I.e. iter first, he after, also there is the case for callchains, below,
->> > care to elaborate here?
->> 
->> I meant it by consistent with hist_entry__cmp() and didn't consider
->> he_stat__add_stat and callchain_merge things - thought that they're
->> other kind of operation.
->> 
->> I needed this change because I introduced hists__{match,link}_collapsed
->> function in the patch 8 and I found that hist_entry__cmp and
->> hist_entry__collapse received same kind of arguments in different
->> order.  Sorry about missing this in the changelog.
->> 
->> However on the second thought, I feel like I don't need those _collapsed
->> functions at all and perf diff can be converted to use collapsed rb tree
->> directly instead.  IIUC perf diff use those functions to match entries
->> by sort keys and do additional resort output rb tree by sort keys (IMHO
->> the function names - _name_resort and _insert_by_name - are misnomers)
->> to do the match.
->> 
->> Since output resorting (by period) is only needed for the baseline,
->> other data files doesn't need to do this additional step.  So I can get
->> rid of those hists__{match,link}_collapsed functions and change plain
->> hists__{match,link} functions to use collapsed (or input) rb tree
->> directly.
->>
->> Jiri, what do you think?  What am I missing? :)
->
-> feels like I'm missing something now :))
->
-> right now I don't see a point in having sort__need_collapse enabled
-> for group report.. there seems to be no special processing as it was
-> in the initial patchset..?
+Hi Javier,
 
-Right.  It's not needed anymore, will remove.
+On 11/30/2012 11:08 AM, Javier Martinez Canillas wrote:
+> IGEP technology devices are TI OMAP3 SoC based industrial embedded
+> and computer-on-module boards. This patch-set adds initial device
+> tree support for these devices.
+> 
+> The device tree allows to boot from an MMC/SD and are working all
+> the components that already have device tree support on OMAP3 SoCs:
 
->
-> It seems like you could do only stadard period resort (collapsed if
-> needed) and afterwards run current hists__match and hists_link function
-> they are now.
+That's cool to have one more board DT converted.
 
-But hists__match/link needs the tree sorted by sort keys.  That means I
-have to do something like:
+That series looks good to me, I just have a comment on the DT mux stuff.
 
-(1) add_hist_entry (sort by keys)
-(2) (optionally) hists__collapse_resort (sort by keys)
-(3) hists__output_resort (sort by period)
-(4) manual resort (by keys)
-(5) hists__match/link
-(6) (duplicated) hists__output_resort (sort by period)
+Regards,
+Benoit
 
-I think the step (3) and (4) are unnecessary if we use input (or
-collapsed) tree directly.
+> 
+> - MMC/SD
+> - UARTs
+> - GPIO LEDs
+> - TWL4030 codec audio
+> - pinmux/pinconf pinctrl
+> 
+> Some peripheral are still not working such as Flash storage and
+> Ethernet but support for these will also be included once the
+> OMAP GPMC device tree binding patches hit mainline.
+> 
+> This is a v2 of the patch-set that solves issues pointed out by
+> Enric Balletbo and it is composed of the following patches:
+> 
+> [PATCH v2 1/3] ARM/dts: omap3: Add generic DT support for IGEP devices
+> [PATCH v2 2/3] ARM/dts: omap3: Add support for IGEPv2 board
+> [PATCH v2 3/3] ARM/dts: omap3: Add support for IGEP COM Module
+> 
+> Best regards,
+> Javier
+> 
 
->
-> All you need at the output callback is paired leader hist entry.. where
-> you do the temp array magic to get the data.
-
-Yeah, this is what I'm saying.  So we don't need to use output tree for
-matching and linking entries.
-
-Thanks,
-Namhyung
