@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932380Ab2LCOrb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:47:31 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43820 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932322Ab2LCOgf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932324Ab2LCOgf (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 3 Dec 2012 09:36:35 -0500
-Message-Id: <20121203143155.027542931@decadent.org.uk>
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43800 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932283Ab2LCOgc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 09:36:32 -0500
+Message-Id: <20121203143155.865207484@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Dec 2012 14:32:40 +0000
+Date: Mon, 03 Dec 2012 14:32:46 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Michel Lespinasse <walken@google.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 54/89] [PARISC] fix virtual aliasing issue in get_shared_area()
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 60/89] sparc64: not any error from do_sigaltstack() should fail
+ rt_sigreturn()
 In-Reply-To: <20121203143146.549859007@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,48 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 949a05d03490e39e773e8652ccab9157e6f595b4 upstream.
+commit fae2ae2a900a5c7bb385fe4075f343e7e2d5daa2 upstream.
 
-On Thu, 2012-11-01 at 16:45 -0700, Michel Lespinasse wrote:
-> Looking at the arch/parisc/kernel/sys_parisc.c implementation of
-> get_shared_area(), I do have a concern though. The function basically
-> ignores the pgoff argument, so that if one creates a shared mapping of
-> pages 0-N of a file, and then a separate shared mapping of pages 1-N
-> of that same file, both will have the same cache offset for their
-> starting address.
->
-> This looks like this would create obvious aliasing issues. Am I
-> misreading this ? I can't understand how this could work good enough
-> to be undetected, so there must be something I'm missing here ???
+If a signal handler is executed on altstack and another signal comes,
+we will end up with rt_sigreturn() on return from the second handler
+getting -EPERM from do_sigaltstack().  It's perfectly OK, since we
+are not asking to change the settings; in fact, they couldn't have been
+changed during the second handler execution exactly because we'd been
+on altstack all along.  64bit sigreturn on sparc treats any error from
+do_sigaltstack() as "SIGSEGV now"; we need to switch to the same semantics
+we are using on other architectures.
 
-This turns out to be correct and we need to pay attention to the pgoff as
-well as the address when creating the virtual address for the area.
-Fortunately, the bug is rarely triggered as most applications which use pgoff
-tend to use large values (git being the primary one, and it uses pgoff in
-multiples of 16MB) which are larger than our cache coherency modulus, so the
-problem isn't often seen in practise.
-
-Reported-by: Michel Lespinasse <walken@google.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/parisc/kernel/sys_parisc.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/sparc/kernel/signal_64.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/arch/parisc/kernel/sys_parisc.c b/arch/parisc/kernel/sys_parisc.c
-index 7426e40..f76c108 100644
---- a/arch/parisc/kernel/sys_parisc.c
-+++ b/arch/parisc/kernel/sys_parisc.c
-@@ -73,6 +73,8 @@ static unsigned long get_shared_area(struct address_space *mapping,
- 	struct vm_area_struct *vma;
- 	int offset = mapping ? get_offset(mapping) : 0;
+diff --git a/arch/sparc/kernel/signal_64.c b/arch/sparc/kernel/signal_64.c
+index 867de2f..689e1ba 100644
+--- a/arch/sparc/kernel/signal_64.c
++++ b/arch/sparc/kernel/signal_64.c
+@@ -295,9 +295,7 @@ void do_rt_sigreturn(struct pt_regs *regs)
+ 		err |= restore_fpu_state(regs, fpu_save);
  
-+	offset = (offset + (pgoff << PAGE_SHIFT)) & 0x3FF000;
-+
- 	addr = DCACHE_ALIGN(addr - offset) + offset;
+ 	err |= __copy_from_user(&set, &sf->mask, sizeof(sigset_t));
+-	err |= do_sigaltstack(&sf->stack, NULL, (unsigned long)sf);
+-
+-	if (err)
++	if (err || do_sigaltstack(&sf->stack, NULL, (unsigned long)sf) == -EFAULT)
+ 		goto segv;
  
- 	for (vma = find_vma(current->mm, addr); ; vma = vma->vm_next) {
+ 	err |= __get_user(rwin_save, &sf->rwin_save);
 
 
