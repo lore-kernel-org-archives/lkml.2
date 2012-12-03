@@ -1,135 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754437Ab2LCJ5R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 04:57:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31575 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751322Ab2LCJ5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 04:57:15 -0500
-Date: Mon, 3 Dec 2012 11:57:09 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        linux-next list <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
-        sasha.levin@oracle.com, avi@redhat.com
-Subject: Re: [RFC PATCH v3] Add rcu user eqs exception hooks for async page
- fault
-Message-ID: <20121203095708.GO8731@redhat.com>
-References: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
- <CAFTL4hx0fc_Jo8wkuRZedW4DVEeQceiHMrWVqTqB5k065Wsg8Q@mail.gmail.com>
- <1354090704.3054.13.camel@ThinkPad-T5421.cn.ibm.com>
- <CAFTL4hxPSp1fs4=2g0yFs0d5nFisfUsfDAA9bHWcu+-+tO_ySw@mail.gmail.com>
- <20121128135345.GG928@redhat.com>
- <CAFTL4hxoFBLNQCABBpJRBgV-r-Mg5GSq7HbPfWJRraSvtviz4A@mail.gmail.com>
- <20121129110717.GA9711@redhat.com>
- <CAFTL4hyHW3uJHvzxz1o4agtGbicFAP1DuUsifbOrp1Q3ODRBMA@mail.gmail.com>
- <1354267121.2552.65.camel@ThinkPad-T5421.cn.ibm.com>
+	id S1754623Ab2LCJ5e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 04:57:34 -0500
+Received: from mail.parknet.co.jp ([210.171.160.6]:44253 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754528Ab2LCJ5c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 04:57:32 -0500
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH v5 7/8] fat (exportfs): rebuild directory-inode if fat_dget() fails
+References: <1353504311-6020-1-git-send-email-linkinjeon@gmail.com>
+Date: Mon, 03 Dec 2012 18:57:28 +0900
+In-Reply-To: <1353504311-6020-1-git-send-email-linkinjeon@gmail.com> (Namjae
+	Jeon's message of "Wed, 21 Nov 2012 22:25:11 +0900")
+Message-ID: <878v9f5ugn.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354267121.2552.65.camel@ThinkPad-T5421.cn.ibm.com>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please regenerate the patch against
-git://git.kernel.org/pub/scm/virt/kvm/kvm.git queue.
+Namjae Jeon <linkinjeon@gmail.com> writes:
 
-On Fri, Nov 30, 2012 at 05:18:41PM +0800, Li Zhong wrote:
-> This patch adds user eqs exception hooks for async page fault page not
-> present code path, to exit the user eqs and re-enter it as necessary. 
-> 
-> Async page fault is different from other exceptions that it may be
-> triggered from idle process, so we still need rcu_irq_enter() and
-> rcu_irq_exit() to exit cpu idle eqs when needed, to protect the code
-> that needs use rcu.
-> 
-> As Frederic pointed out it would be safest and simplest to protect the
-> whole kvm_async_pf_task_wait(). Otherwise, "we need to check all the
-> code there deeply for potential RCU uses and ensure it will never be
-> extended later to use RCU.".
-> 
-> However, We'd better re-enter the cpu idle eqs if we get the exception
-> in cpu idle eqs, by calling rcu_irq_exit() before native_safe_halt(). 
-> 
-> So the patch does what Frederic suggested for rcu_irq_*() API usage
-> here, except that I moved the rcu_irq_*() pair originally in
-> do_async_page_fault() into kvm_async_pf_task_wait(). 
-> 
-> That's because, I think it's better to have rcu_irq_*() pairs to be in
-> one function ( rcu_irq_exit() after rcu_irq_enter() ), especially here,
-> kvm_async_pf_task_wait() has other callers, which might cause
-> rcu_irq_exit() be called without a matching rcu_irq_enter() before it,
-> which is illegal if the cpu happens to be in rcu idle state. 
-> 
-> Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+> From: Namjae Jeon <namjae.jeon@samsung.com>
+>
+> This patch enables rebuilding of directory inodes which are not present
+> in the cache.This is done by traversing the disk clusters to find the
+> directory entry of the parent directory and using its i_pos to build the
+> inode.
+> Do this only if the "nostale_ro" nfs mount option is specified.
+
+This became much better than before. However, we have to consolidate the
+code with fat_search_long() finally.
+
+E.g. this version is having the issue already fixed. If there is
+corruption in fat cluster-chain, it lead to infinite
+loop. fat_get_cluster() checks infinite loop by limit.
+
+> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+> Signed-off-by: Ravishankar N <ravi.n1@samsung.com>
+> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
 > ---
->  arch/x86/kernel/kvm.c | 12 ++++++++++--
->  1 file changed, 10 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-> index 4180a87..342b00b 100644
-> --- a/arch/x86/kernel/kvm.c
-> +++ b/arch/x86/kernel/kvm.c
-> @@ -42,6 +42,7 @@
->  #include <asm/apic.h>
->  #include <asm/apicdef.h>
->  #include <asm/hypervisor.h>
-> +#include <asm/rcu.h>
->  
->  static int kvmapf = 1;
->  
-> @@ -112,6 +113,8 @@ void kvm_async_pf_task_wait(u32 token)
->  	DEFINE_WAIT(wait);
->  	int cpu, idle;
->  
-> +	rcu_irq_enter();
-> +
->  	cpu = get_cpu();
->  	idle = idle_cpu(cpu);
->  	put_cpu();
-> @@ -123,6 +126,8 @@ void kvm_async_pf_task_wait(u32 token)
->  		hlist_del(&e->link);
->  		kfree(e);
->  		spin_unlock(&b->lock);
-> +
-> +		rcu_irq_exit();
->  		return;
->  	}
->  
-> @@ -147,13 +152,16 @@ void kvm_async_pf_task_wait(u32 token)
->  			/*
->  			 * We cannot reschedule. So halt.
->  			 */
-> +			rcu_irq_exit();
->  			native_safe_halt();
-> +			rcu_irq_enter();
->  			local_irq_disable();
->  		}
->  	}
->  	if (!n.halted)
->  		finish_wait(&n.wq, &wait);
->  
-> +	rcu_irq_exit();
->  	return;
+>  fs/fat/nfs.c |  119 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 118 insertions(+), 1 deletion(-)
+>
+> diff --git a/fs/fat/nfs.c b/fs/fat/nfs.c
+> index 898bef4..6a9933a 100644
+> --- a/fs/fat/nfs.c
+> +++ b/fs/fat/nfs.c
+> @@ -211,6 +211,120 @@ static struct dentry *fat_fh_to_parent_nostale(struct super_block *sb,
 >  }
->  EXPORT_SYMBOL_GPL(kvm_async_pf_task_wait);
-> @@ -247,10 +255,10 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
->  		break;
->  	case KVM_PV_REASON_PAGE_NOT_PRESENT:
->  		/* page is swapped out by the host. */
-> -		rcu_irq_enter();
-> +		exception_enter(regs);
->  		exit_idle();
->  		kvm_async_pf_task_wait((u32)read_cr2());
-> -		rcu_irq_exit();
-> +		exception_exit(regs);
->  		break;
->  	case KVM_PV_REASON_PAGE_READY:
->  		rcu_irq_enter();
-> -- 
-> 1.7.11.4
+>  
+>  /*
+> + * Read the directory entries of 'search_clus' and find the entry
+> + * which contains 'match_ipos' for the starting cluster.If the entry
+> + * is found, rebuild its inode.
+> + */
+> +static struct inode *fat_traverse_cluster(struct super_block *sb,
+> +				int search_clus, int match_ipos)
+> +{
+> +	struct msdos_sb_info *sbi = MSDOS_SB(sb);
+> +	struct buffer_head *bh;
+> +	sector_t blknr;
+> +	int parent_ipos, search_ipos;
+> +	int i;
+> +	struct msdos_dir_entry *de;
+> +	struct inode *inode = NULL;
+> +	int iterations = sbi->cluster_size >> sb->s_blocksize_bits;
+> +	blknr = fat_clus_to_blknr(sbi, search_clus);
+> +
+> +	do {
+> +		bh = sb_bread(sb, blknr);
+> +		if (!bh) {
+> +			fat_msg(sb, KERN_ERR,
+> +				"NFS:unable to read block(%llu) while traversing cluster(%d)",
+> +				(llu)blknr, search_clus);
+> +			inode = ERR_PTR(-EIO);
+> +			goto out;
+> +		}
+> +		de = (struct msdos_dir_entry *)bh->b_data;
+> +		for (i = 0; i < sbi->dir_per_block; i++) {
+> +			if (de[i].name[0] == FAT_ENT_FREE) {
+> +				/*Reached end of directory*/
+> +				brelse(bh);
+> +				inode = ERR_PTR(-ENODATA);
+> +				goto out;
+> +			}
+> +			if (de[i].name[0] == DELETED_FLAG)
+> +				continue;
+> +			if (de[i].attr == ATTR_EXT)
+> +				continue;
+> +			if (!(de[i].attr & ATTR_DIR))
+> +				continue;
+> +			else {
+> +				search_ipos = fat_get_start(sbi, &de[i]);
+> +				if (search_ipos == match_ipos) {
+> +					/*Success.Now build the inode*/
+> +					parent_ipos = (loff_t)i +
+> +					 (blknr << sbi->dir_per_block_bits);
+> +					inode = fat_build_inode(sb, &de[i],
+> +								parent_ipos);
+> +					brelse(bh);
+> +					goto out;
+> +				}
+> +			}
+> +		}
+> +		brelse(bh);
+> +		blknr += 1;
+> +	} while (--iterations > 0);
+> +out:
+> +	return inode;
+> +}
+> +
+> +/*
+> + * Rebuild the parent for a directory that is not connected
+> + *  to the filesystem root
+> + */
+> +static
+> +struct inode *fat_rebuild_parent(struct super_block *sb, int parent_logstart)
+> +{
+> +	int search_clus, clus_to_match;
+> +	struct msdos_dir_entry *de;
+> +	struct inode *parent;
+> +	struct fat_entry fatent;
+> +	struct msdos_sb_info *sbi = MSDOS_SB(sb);
+> +	sector_t blknr = fat_clus_to_blknr(sbi, parent_logstart);
+> +	struct buffer_head *parent_bh = sb_bread(sb, blknr);
+> +
+> +	if (!parent_bh) {
+> +		fat_msg(sb, KERN_ERR,
+> +			"NFS:unable to read cluster of parent directory");
+> +		return NULL;
+> +	}
+> +	de = (struct msdos_dir_entry *) parent_bh->b_data;
+> +	clus_to_match = fat_get_start(sbi, &de[0]);
+> +	search_clus = fat_get_start(sbi, &de[1]);
+> +	if (!search_clus) {
+> +		if (sbi->fat_bits == 32)
+> +			search_clus = sbi->root_cluster;
+> +		else
+> +			/* sbi->root_cluster is valid only for FAT32.
+> +			 * Compute search_cluster such that when
+> +			 * fat_traverse_cluster() is called for FAT 12/16,
+> +			 * fat_clus_to_blknr() in it gives us sbi->dir_start
+> +			 */
+> +			search_clus = ((int)(sbi->dir_start - sbi->data_start)
+> +					     >> ilog2(sbi->sec_per_clus))
+> +					     + FAT_START_ENT;
+> +	}
+> +	brelse(parent_bh);
+> +	do {
+> +		parent = fat_traverse_cluster(sb,
+> +					search_clus, clus_to_match);
+> +		if (IS_ERR(parent) || parent)
+> +			break;
+> +		fatent_init(&fatent);
+> +		search_clus = fat_ent_read(sb, &fatent, search_clus);
+> +		fatent_brelse(&fatent);
+> +		if (search_clus < 0 || search_clus == FAT_ENT_FREE)
+> +			break;
+> +	} while (search_clus != FAT_ENT_EOF);
+> +
+> +	return parent;
+> +
+> +}
+> +
+> +/*
+>   * Find the parent for a directory that is not currently connected to
+>   * the filesystem root.
+>   *
+> @@ -222,10 +336,13 @@ static struct dentry *fat_get_parent(struct dentry *child_dir)
+>  	struct buffer_head *bh = NULL;
+>  	struct msdos_dir_entry *de;
+>  	struct inode *parent_inode = NULL;
+> +	struct msdos_sb_info *sbi = MSDOS_SB(sb);
+>  
+>  	if (!fat_get_dotdot_entry(child_dir->d_inode, &bh, &de)) {
+> -		int parent_logstart = fat_get_start(MSDOS_SB(sb), de);
+> +		int parent_logstart = fat_get_start(sbi, de);
+>  		parent_inode = fat_dget(sb, parent_logstart);
+> +		if (!parent_inode && sbi->options.nfs == FAT_NFS_NOSTALE_RO)
+> +			parent_inode = fat_rebuild_parent(sb, parent_logstart);
+>  	}
+>  	brelse(bh);
 
---
-			Gleb.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
