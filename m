@@ -1,65 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932368Ab2LCOlo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:41:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1894 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754712Ab2LCOll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 09:41:41 -0500
-Message-ID: <50BCBA12.5030808@redhat.com>
-Date: Mon, 03 Dec 2012 12:41:22 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux EDAC Mailing List <linux-edac@vger.kernel.org>,
-        Doug Thompson <dougthompson@xmission.com>
-Subject: [GIT PULL for 3.8-final] EDAC fixes
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932540Ab2LCOmH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:42:07 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43913 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755492Ab2LCOgz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 09:36:55 -0500
+Message-Id: <20121203143151.959445796@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Mon, 03 Dec 2012 14:32:17 +0000
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Emil Tantilov <emil.s.tantilov@intel.com>,
+        Phil Schmitt <phillip.j.schmitt@intel.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [ 31/89] ixgbe: add support for new 82599 device id
+In-Reply-To: <20121203143146.549859007@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-Please pull from:
-   git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac.git master
+------------------
 
-For one EDAC core fix, and a few driver fixes (i7300, i9275x, i7core).
+From: Emil Tantilov <emil.s.tantilov@intel.com>
 
-Thank you!
-Mauro
+commit 9e791e4a04c08868f02cd579a428a7268492e1b4 upstream.
 
-The following changes since commit a0d271cbfed1dd50278c6b06bead3d00ba0a88f9:
+Support for new 82599 based quad port adapter.
 
-   Linux 3.6 (2012-09-30 16:47:46 -0700)
+Signed-off-by: Emil Tantilov <emil.s.tantilov@intel.com>
+Tested-by: Phil Schmitt <phillip.j.schmitt@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/net/ethernet/intel/ixgbe/ixgbe_82599.c |    1 +
+ drivers/net/ethernet/intel/ixgbe/ixgbe_main.c  |    1 +
+ drivers/net/ethernet/intel/ixgbe/ixgbe_type.h  |    1 +
+ 3 files changed, 3 insertions(+)
 
-are available in the git repository at:
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_82599.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_82599.c
+index 4ae26a7..7720721 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_82599.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_82599.c
+@@ -356,6 +356,7 @@ static enum ixgbe_media_type ixgbe_get_media_type_82599(struct ixgbe_hw *hw)
+ 	case IXGBE_DEV_ID_82599_SFP_FCOE:
+ 	case IXGBE_DEV_ID_82599_SFP_EM:
+ 	case IXGBE_DEV_ID_82599_SFP_SF2:
++	case IXGBE_DEV_ID_82599_SFP_SF_QP:
+ 	case IXGBE_DEV_ID_82599EN_SFP:
+ 		media_type = ixgbe_media_type_fiber;
+ 		break;
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+index cd1f893..e27e4d1 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+@@ -106,6 +106,7 @@ static DEFINE_PCI_DEVICE_TABLE(ixgbe_pci_tbl) = {
+ 	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_82599_SFP_SF2), board_82599 },
+ 	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_82599_LS), board_82599 },
+ 	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_82599EN_SFP), board_82599 },
++	{PCI_VDEVICE(INTEL, IXGBE_DEV_ID_82599_SFP_SF_QP), board_82599 },
+ 	/* required last entry */
+ 	{0, }
+ };
+diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h b/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
+index 242643a..7c5817f 100644
+--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
++++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
+@@ -65,6 +65,7 @@
+ #define IXGBE_SUBDEV_ID_82599_KX4_KR_MEZZ  0x000C
+ #define IXGBE_DEV_ID_82599_LS            0x154F
+ #define IXGBE_DEV_ID_X540T               0x1528
++#define IXGBE_DEV_ID_82599_SFP_SF_QP     0x154A
+ 
+ /* VF Device IDs */
+ #define IXGBE_DEV_ID_82599_VF           0x10ED
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-edac.git master
-
-for you to fetch changes up to 42709efb3a47524c6252e1bdc85e205f7bc356fb:
-
-   i7core_edac: fix panic when accessing sysfs files (2012-11-28 06:56:00 -0200)
-
-----------------------------------------------------------------
-Jean Delvare (1):
-       i7300_edac: Fix error flag testing
-
-Mauro Carvalho Chehab (3):
-       Merge tag 'v3.6' into fixes
-       i82975x_edac: Fix dimm label initialization
-       edac: Fix the dimm filling for csrows-based layouts
-
-Prarit Bhargava (1):
-       i7core_edac: fix panic when accessing sysfs files
-
-  drivers/edac/edac_mc.c      | 14 +++++++++++---
-  drivers/edac/i7300_edac.c   |  8 ++++----
-  drivers/edac/i7core_edac.c  |  6 +++---
-  drivers/edac/i82975x_edac.c | 11 ++++-------
-  4 files changed, 22 insertions(+), 17 deletions(-)
 
