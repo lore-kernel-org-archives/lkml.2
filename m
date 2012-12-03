@@ -1,67 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745Ab2LCQPs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 11:15:48 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:44587 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752651Ab2LCQPq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 11:15:46 -0500
-Message-ID: <50BCD030.7020908@gmail.com>
-Date: Mon, 03 Dec 2012 10:15:44 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1754701Ab2LCQSu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 11:18:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38837 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751758Ab2LCQSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 11:18:48 -0500
+Date: Mon, 3 Dec 2012 17:18:45 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, paul@paulmenage.org, glommer@parallels.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        peterz@infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] cpuset: replace cpuset->stack_list with
+ cpuset_for_each_descendant_pre()
+Message-ID: <20121203161845.GE17093@dhcp22.suse.cz>
+References: <1354141621-11906-1-git-send-email-tj@kernel.org>
+ <1354141621-11906-3-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Michal Marek <mmarek@suse.cz>, Grant Likely <grant.likely@secretlab.ca>,
-        linux-arch@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>, Stephen Warren <swarren@nvidia.com>,
-        Sam Ravnborg <sam@ravnborg.org>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH V7 2/7] ARM: dt: change .dtb build rules to build in dts
- directory
-References: <1354058956-7199-1-git-send-email-swarren@wwwdotorg.org> <1354058956-7199-2-git-send-email-swarren@wwwdotorg.org>
-In-Reply-To: <1354058956-7199-2-git-send-email-swarren@wwwdotorg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354141621-11906-3-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2012 05:29 PM, Stephen Warren wrote:
-> From: Grant Likely <grant.likely@secretlab.ca>
+On Wed 28-11-12 14:27:00, Tejun Heo wrote:
+> Implement cpuset_for_each_descendant_pre() and replace the
+> cpuset-specific tree walking using cpuset->stack_list with it.
 > 
-> The current rules have the .dtb files build in a different directory
-> from the .dts files. The only reason for this is that it was what
-> PowerPC has done historically. This patch changes ARM to use the generic
-> dtb rule which builds .dtb files in the same directory as the source .dts.
+> Signed-off-by: Tejun Heo <tj@kernel.org>
 
-[snip]
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
-> diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-> index a17d5ab..cb217f8 100644
-> --- a/arch/arm/boot/dts/Makefile
-> +++ b/arch/arm/boot/dts/Makefile
-> @@ -136,4 +136,12 @@ dtb-$(CONFIG_ARCH_VT8500) += vt8500-bv07.dtb \
->  	wm8650-mid.dtb
->  dtb-$(CONFIG_ARCH_ZYNQ) += zynq-zc702.dtb
+> ---
+>  kernel/cpuset.c | 123 ++++++++++++++++++++++----------------------------------
+>  1 file changed, 48 insertions(+), 75 deletions(-)
+> 
+> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+> index 2ee0e03..3a01730 100644
+> --- a/kernel/cpuset.c
+> +++ b/kernel/cpuset.c
+> @@ -103,9 +103,6 @@ struct cpuset {
+>  	/* for custom sched domain */
+>  	int relax_domain_level;
 >  
-> +targets += dtbs
->  endif
+> -	/* used for walking a cpuset hierarchy */
+> -	struct list_head stack_list;
+> -
+>  	struct work_struct hotplug_work;
+>  };
+>  
+> @@ -207,6 +204,20 @@ static struct cpuset top_cpuset = {
+>  	cgroup_for_each_child((pos_cgrp), (parent_cs)->css.cgroup)	\
+>  		if (is_cpuset_online(((child_cs) = cgroup_cs((pos_cgrp)))))
+>  
+> +/**
+> + * cpuset_for_each_descendant_pre - pre-order walk of a cpuset's descendants
+> + * @des_cs: loop cursor pointing to the current descendant
+> + * @pos_cgrp: used for iteration
+> + * @root_cs: target cpuset to walk ancestor of
+> + *
+> + * Walk @des_cs through the online descendants of @root_cs.  Must be used
+> + * with RCU read locked.  The caller may modify @pos_cgrp by calling
+> + * cgroup_rightmost_descendant() to skip subtree.
+> + */
+> +#define cpuset_for_each_descendant_pre(des_cs, pos_cgrp, root_cs)	\
+> +	cgroup_for_each_descendant_pre((pos_cgrp), (root_cs)->css.cgroup) \
+> +		if (is_cpuset_online(((des_cs) = cgroup_cs((pos_cgrp)))))
 > +
-> +dtbs: $(addprefix $(obj)/, $(dtb-y))
-> +	# *.dtb used to be generated in the directory above. Clean out the
-> +	# old build results so people don't accidentally use them.
-> +	rm -f $(obj)/../*.dtb
-
-Do you intend for this to print out? Seems a little noisy to me for a
-one-time problem. Are you trying to tell users the dtb files moved or
-just prevent them from using the old ones? Quietly removing them would
-still accomplish the latter.
-
-Rob
-
+>  /*
+>   * There are two global mutexes guarding cpuset structures - cpuset_mutex
+>   * and callback_mutex.  The latter may nest inside the former.  We also
+> @@ -507,31 +518,24 @@ update_domain_attr(struct sched_domain_attr *dattr, struct cpuset *c)
+>  	return;
+>  }
+>  
+> -static void
+> -update_domain_attr_tree(struct sched_domain_attr *dattr, struct cpuset *c)
+> +static void update_domain_attr_tree(struct sched_domain_attr *dattr,
+> +				    struct cpuset *root_cs)
+>  {
+> -	LIST_HEAD(q);
+> -
+> -	list_add(&c->stack_list, &q);
+> -	while (!list_empty(&q)) {
+> -		struct cpuset *cp;
+> -		struct cgroup *cont;
+> -		struct cpuset *child;
+> -
+> -		cp = list_first_entry(&q, struct cpuset, stack_list);
+> -		list_del(q.next);
+> +	struct cpuset *cp;
+> +	struct cgroup *pos_cgrp;
+>  
+> -		if (cpumask_empty(cp->cpus_allowed))
+> +	rcu_read_lock();
+> +	cpuset_for_each_descendant_pre(cp, pos_cgrp, root_cs) {
+> +		/* skip the whole subtree if @cp doesn't have any CPU */
+> +		if (cpumask_empty(cp->cpus_allowed)) {
+> +			pos_cgrp = cgroup_rightmost_descendant(pos_cgrp);
+>  			continue;
+> +		}
+>  
+>  		if (is_sched_load_balance(cp))
+>  			update_domain_attr(dattr, cp);
+> -
+> -		rcu_read_lock();
+> -		cpuset_for_each_child(child, cont, cp)
+> -			list_add_tail(&child->stack_list, &q);
+> -		rcu_read_unlock();
+>  	}
+> +	rcu_read_unlock();
+>  }
+>  
+>  /*
+> @@ -591,7 +595,6 @@ update_domain_attr_tree(struct sched_domain_attr *dattr, struct cpuset *c)
+>  static int generate_sched_domains(cpumask_var_t **domains,
+>  			struct sched_domain_attr **attributes)
+>  {
+> -	LIST_HEAD(q);		/* queue of cpusets to be scanned */
+>  	struct cpuset *cp;	/* scans q */
+>  	struct cpuset **csa;	/* array of all cpuset ptrs */
+>  	int csn;		/* how many cpuset ptrs in csa so far */
+> @@ -600,6 +603,7 @@ static int generate_sched_domains(cpumask_var_t **domains,
+>  	struct sched_domain_attr *dattr;  /* attributes for custom domains */
+>  	int ndoms = 0;		/* number of sched domains in result */
+>  	int nslot;		/* next empty doms[] struct cpumask slot */
+> +	struct cgroup *pos_cgrp;
+>  
+>  	doms = NULL;
+>  	dattr = NULL;
+> @@ -627,33 +631,27 @@ static int generate_sched_domains(cpumask_var_t **domains,
+>  		goto done;
+>  	csn = 0;
+>  
+> -	list_add(&top_cpuset.stack_list, &q);
+> -	while (!list_empty(&q)) {
+> -		struct cgroup *cont;
+> -		struct cpuset *child;   /* scans child cpusets of cp */
+> -
+> -		cp = list_first_entry(&q, struct cpuset, stack_list);
+> -		list_del(q.next);
+> -
+> -		if (cpumask_empty(cp->cpus_allowed))
+> -			continue;
+> -
+> +	rcu_read_lock();
+> +	cpuset_for_each_descendant_pre(cp, pos_cgrp, &top_cpuset) {
+>  		/*
+> -		 * All child cpusets contain a subset of the parent's cpus, so
+> -		 * just skip them, and then we call update_domain_attr_tree()
+> -		 * to calc relax_domain_level of the corresponding sched
+> -		 * domain.
+> +		 * Continue traversing beyond @cp iff @cp has some CPUs and
+> +		 * isn't load balancing.  The former is obvious.  The
+> +		 * latter: All child cpusets contain a subset of the
+> +		 * parent's cpus, so just skip them, and then we call
+> +		 * update_domain_attr_tree() to calc relax_domain_level of
+> +		 * the corresponding sched domain.
+>  		 */
+> -		if (is_sched_load_balance(cp)) {
+> -			csa[csn++] = cp;
+> +		if (!cpumask_empty(cp->cpus_allowed) &&
+> +		    !is_sched_load_balance(cp))
+>  			continue;
+> -		}
+>  
+> -		rcu_read_lock();
+> -		cpuset_for_each_child(child, cont, cp)
+> -			list_add_tail(&child->stack_list, &q);
+> -		rcu_read_unlock();
+> -  	}
+> +		if (is_sched_load_balance(cp))
+> +			csa[csn++] = cp;
 > +
-> +clean-files := *.dtb
+> +		/* skip @cp's subtree */
+> +		pos_cgrp = cgroup_rightmost_descendant(pos_cgrp);
+> +	}
+> +	rcu_read_unlock();
+>  
+>  	for (i = 0; i < csn; i++)
+>  		csa[i]->pn = i;
+> @@ -2059,31 +2057,6 @@ static void remove_tasks_in_empty_cpuset(struct cpuset *cs)
+>  	move_member_tasks_to_cpuset(cs, parent);
+>  }
+>  
+> -/*
+> - * Helper function to traverse cpusets.
+> - * It can be used to walk the cpuset tree from top to bottom, completing
+> - * one layer before dropping down to the next (thus always processing a
+> - * node before any of its children).
+> - */
+> -static struct cpuset *cpuset_next(struct list_head *queue)
+> -{
+> -	struct cpuset *cp;
+> -	struct cpuset *child;	/* scans child cpusets of cp */
+> -	struct cgroup *cont;
+> -
+> -	if (list_empty(queue))
+> -		return NULL;
+> -
+> -	cp = list_first_entry(queue, struct cpuset, stack_list);
+> -	list_del(queue->next);
+> -	rcu_read_lock();
+> -	cpuset_for_each_child(child, cont, cp)
+> -		list_add_tail(&child->stack_list, queue);
+> -	rcu_read_unlock();
+> -
+> -	return cp;
+> -}
+> -
+>  /**
+>   * cpuset_propagate_hotplug_workfn - propagate CPU/memory hotplug to a cpuset
+>   * @cs: cpuset in interest
+> @@ -2220,12 +2193,12 @@ static void cpuset_hotplug_workfn(struct work_struct *work)
+>  	/* if cpus or mems went down, we need to propagate to descendants */
+>  	if (cpus_offlined || mems_offlined) {
+>  		struct cpuset *cs;
+> -		LIST_HEAD(queue);
+> +		struct cgroup *pos_cgrp;
+>  
+> -		list_add_tail(&top_cpuset.stack_list, &queue);
+> -		while ((cs = cpuset_next(&queue)))
+> -			if (cs != &top_cpuset)
+> -				schedule_cpuset_propagate_hotplug(cs);
+> +		rcu_read_lock();
+> +		cpuset_for_each_descendant_pre(cs, pos_cgrp, &top_cpuset)
+> +			schedule_cpuset_propagate_hotplug(cs);
+> +		rcu_read_unlock();
+>  	}
+>  
+>  	mutex_unlock(&cpuset_mutex);
+> -- 
+> 1.7.11.7
 > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
+-- 
+Michal Hocko
+SUSE Labs
