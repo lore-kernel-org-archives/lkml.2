@@ -1,59 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754395Ab2LCJzJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 04:55:09 -0500
-Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:53063 "EHLO
-	95-31-19-74.broadband.corbina.ru" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754204Ab2LCJzH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 04:55:07 -0500
-Message-ID: <50BC76E9.2070703@ilyx.ru>
-Date: Mon, 03 Dec 2012 13:54:49 +0400
-From: Ilya Zykov <ilya@ilyx.ru>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	id S1754437Ab2LCJ5R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 04:57:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31575 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751322Ab2LCJ5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 04:57:15 -0500
+Date: Mon, 3 Dec 2012 11:57:09 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        linux-next list <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
+        sasha.levin@oracle.com, avi@redhat.com
+Subject: Re: [RFC PATCH v3] Add rcu user eqs exception hooks for async page
+ fault
+Message-ID: <20121203095708.GO8731@redhat.com>
+References: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
+ <CAFTL4hx0fc_Jo8wkuRZedW4DVEeQceiHMrWVqTqB5k065Wsg8Q@mail.gmail.com>
+ <1354090704.3054.13.camel@ThinkPad-T5421.cn.ibm.com>
+ <CAFTL4hxPSp1fs4=2g0yFs0d5nFisfUsfDAA9bHWcu+-+tO_ySw@mail.gmail.com>
+ <20121128135345.GG928@redhat.com>
+ <CAFTL4hxoFBLNQCABBpJRBgV-r-Mg5GSq7HbPfWJRraSvtviz4A@mail.gmail.com>
+ <20121129110717.GA9711@redhat.com>
+ <CAFTL4hyHW3uJHvzxz1o4agtGbicFAP1DuUsifbOrp1Q3ODRBMA@mail.gmail.com>
+ <1354267121.2552.65.camel@ThinkPad-T5421.cn.ibm.com>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Ben Hutchings <ben@decadent.org.uk>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: [PATCH] tty: Correct tty buffer flush.
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354267121.2552.65.camel@ThinkPad-T5421.cn.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  The root of problem is carelessly zeroing pointer(in function __tty_buffer_flush()),
-when another thread can use it. It can be cause of "NULL pointer dereference".
-  Main idea of the patch, this is never release last (struct tty_buffer) in the active buffer.
-Only flush data for ldisc(tty->buf.head->read = tty->buf.head->commit).
-At that moment driver can collect(write) data in buffer without conflict.
-It is repeat behavior of flush_to_ldisc(), only without feeding data to ldisc.
-Test program and bug report you can see:
-https://lkml.org/lkml/2012/11/29/368
+Please regenerate the patch against
+git://git.kernel.org/pub/scm/virt/kvm/kvm.git queue.
 
-Cc: stable@vger.kernel.org
-Signed-off-by: Ilya Zykov <ilya@ilyx.ru>
----
-diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
-index 6c9b7cd..4f02f9c 100644
---- a/drivers/tty/tty_buffer.c
-+++ b/drivers/tty/tty_buffer.c
-@@ -114,11 +114,14 @@ static void __tty_buffer_flush(struct tty_struct *tty)
- {
- 	struct tty_buffer *thead;
- 
--	while ((thead = tty->buf.head) != NULL) {
--		tty->buf.head = thead->next;
--		tty_buffer_free(tty, thead);
-+	if (tty->buf.head == NULL)
-+		return;
-+	while ((thead = tty->buf.head->next) != NULL) {
-+		tty_buffer_free(tty, tty->buf.head);
-+		tty->buf.head = thead;
- 	}
--	tty->buf.tail = NULL;
-+	WARN_ON(tty->buf.head != tty->buf.tail);
-+	tty->buf.head->read = tty->buf.head->commit;
- }
- 
- /**
+On Fri, Nov 30, 2012 at 05:18:41PM +0800, Li Zhong wrote:
+> This patch adds user eqs exception hooks for async page fault page not
+> present code path, to exit the user eqs and re-enter it as necessary. 
+> 
+> Async page fault is different from other exceptions that it may be
+> triggered from idle process, so we still need rcu_irq_enter() and
+> rcu_irq_exit() to exit cpu idle eqs when needed, to protect the code
+> that needs use rcu.
+> 
+> As Frederic pointed out it would be safest and simplest to protect the
+> whole kvm_async_pf_task_wait(). Otherwise, "we need to check all the
+> code there deeply for potential RCU uses and ensure it will never be
+> extended later to use RCU.".
+> 
+> However, We'd better re-enter the cpu idle eqs if we get the exception
+> in cpu idle eqs, by calling rcu_irq_exit() before native_safe_halt(). 
+> 
+> So the patch does what Frederic suggested for rcu_irq_*() API usage
+> here, except that I moved the rcu_irq_*() pair originally in
+> do_async_page_fault() into kvm_async_pf_task_wait(). 
+> 
+> That's because, I think it's better to have rcu_irq_*() pairs to be in
+> one function ( rcu_irq_exit() after rcu_irq_enter() ), especially here,
+> kvm_async_pf_task_wait() has other callers, which might cause
+> rcu_irq_exit() be called without a matching rcu_irq_enter() before it,
+> which is illegal if the cpu happens to be in rcu idle state. 
+> 
+> Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+> ---
+>  arch/x86/kernel/kvm.c | 12 ++++++++++--
+>  1 file changed, 10 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+> index 4180a87..342b00b 100644
+> --- a/arch/x86/kernel/kvm.c
+> +++ b/arch/x86/kernel/kvm.c
+> @@ -42,6 +42,7 @@
+>  #include <asm/apic.h>
+>  #include <asm/apicdef.h>
+>  #include <asm/hypervisor.h>
+> +#include <asm/rcu.h>
+>  
+>  static int kvmapf = 1;
+>  
+> @@ -112,6 +113,8 @@ void kvm_async_pf_task_wait(u32 token)
+>  	DEFINE_WAIT(wait);
+>  	int cpu, idle;
+>  
+> +	rcu_irq_enter();
+> +
+>  	cpu = get_cpu();
+>  	idle = idle_cpu(cpu);
+>  	put_cpu();
+> @@ -123,6 +126,8 @@ void kvm_async_pf_task_wait(u32 token)
+>  		hlist_del(&e->link);
+>  		kfree(e);
+>  		spin_unlock(&b->lock);
+> +
+> +		rcu_irq_exit();
+>  		return;
+>  	}
+>  
+> @@ -147,13 +152,16 @@ void kvm_async_pf_task_wait(u32 token)
+>  			/*
+>  			 * We cannot reschedule. So halt.
+>  			 */
+> +			rcu_irq_exit();
+>  			native_safe_halt();
+> +			rcu_irq_enter();
+>  			local_irq_disable();
+>  		}
+>  	}
+>  	if (!n.halted)
+>  		finish_wait(&n.wq, &wait);
+>  
+> +	rcu_irq_exit();
+>  	return;
+>  }
+>  EXPORT_SYMBOL_GPL(kvm_async_pf_task_wait);
+> @@ -247,10 +255,10 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
+>  		break;
+>  	case KVM_PV_REASON_PAGE_NOT_PRESENT:
+>  		/* page is swapped out by the host. */
+> -		rcu_irq_enter();
+> +		exception_enter(regs);
+>  		exit_idle();
+>  		kvm_async_pf_task_wait((u32)read_cr2());
+> -		rcu_irq_exit();
+> +		exception_exit(regs);
+>  		break;
+>  	case KVM_PV_REASON_PAGE_READY:
+>  		rcu_irq_enter();
+> -- 
+> 1.7.11.4
+
+--
+			Gleb.
