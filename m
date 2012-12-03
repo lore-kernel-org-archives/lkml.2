@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932454Ab2LCOmE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:42:04 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43920 "EHLO
+	id S932579Ab2LCOmz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:42:55 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43903 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755498Ab2LCOgz (ORCPT
+	by vger.kernel.org with ESMTP id S1755484Ab2LCOgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 09:36:55 -0500
-Message-Id: <20121203143152.758696735@decadent.org.uk>
+	Mon, 3 Dec 2012 09:36:54 -0500
+Message-Id: <20121203143152.494585915@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Dec 2012 14:32:23 +0000
+Date: Mon, 03 Dec 2012 14:32:21 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Arend van Spriel <arend@broadcom.com>,
-        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
-        Alwin Beukers <alwin@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 37/89] brcm80211: smac: only print block-ack timeout message at trace level
+        Andreas Schwab <schwab@linux-m68k.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [ 35/89] m68k: fix sigset_t accessor functions
 In-Reply-To: <20121203143146.549859007@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,38 +28,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arend van Spriel <arend@broadcom.com>
+From: Andreas Schwab <schwab@linux-m68k.org>
 
-commit 2b0a53d51b5f263bb581bbdb40ebb9f7e09609b1 upstream.
+commit 34fa78b59c52d1db3513db4c1a999db26b2e9ac2 upstream.
 
-In regular use block-ack timeouts can happen so it does not make
-sense to fill the log with these messages.
+The sigaddset/sigdelset/sigismember functions that are implemented with
+bitfield insn cannot allow the sigset argument to be placed in a data
+register since the sigset is wider than 32 bits.  Remove the "d"
+constraint from the asm statements.
 
-Reviewed-by: Pieter-Paul Giesberts <pieterpg@broadcom.com>
-Reviewed-by: Alwin Beukers <alwin@broadcom.com>
-Signed-off-by: Arend van Spriel <arend@broadcom.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+The effect of the bug is that sending RT signals does not work, the signal
+number is truncated modulo 32.
+
+Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/brcm80211/brcmsmac/ampdu.c |    6 +++---
+ arch/m68k/include/asm/signal.h |    6 +++---
  1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/wireless/brcm80211/brcmsmac/ampdu.c b/drivers/net/wireless/brcm80211/brcmsmac/ampdu.c
-index 9265226..30b5887 100644
---- a/drivers/net/wireless/brcm80211/brcmsmac/ampdu.c
-+++ b/drivers/net/wireless/brcm80211/brcmsmac/ampdu.c
-@@ -1070,9 +1070,9 @@ brcms_c_ampdu_dotxstatus_complete(struct ampdu_info *ampdu, struct scb *scb,
- 				    IEEE80211_TX_STAT_AMPDU_NO_BACK;
- 				skb_pull(p, D11_PHY_HDR_LEN);
- 				skb_pull(p, D11_TXH_LEN);
--				wiphy_err(wiphy, "%s: BA Timeout, seq %d, in_"
--					"transit %d\n", "AMPDU status", seq,
--					ini->tx_in_transit);
-+				BCMMSG(wiphy,
-+				       "BA Timeout, seq %d, in_transit %d\n",
-+				       seq, ini->tx_in_transit);
- 				ieee80211_tx_status_irqsafe(wlc->pub->ieee_hw,
- 							    p);
- 			}
+diff --git a/arch/m68k/include/asm/signal.h b/arch/m68k/include/asm/signal.h
+index 67e489d..2df26b5 100644
+--- a/arch/m68k/include/asm/signal.h
++++ b/arch/m68k/include/asm/signal.h
+@@ -41,7 +41,7 @@ struct k_sigaction {
+ static inline void sigaddset(sigset_t *set, int _sig)
+ {
+ 	asm ("bfset %0{%1,#1}"
+-		: "+od" (*set)
++		: "+o" (*set)
+ 		: "id" ((_sig - 1) ^ 31)
+ 		: "cc");
+ }
+@@ -49,7 +49,7 @@ static inline void sigaddset(sigset_t *set, int _sig)
+ static inline void sigdelset(sigset_t *set, int _sig)
+ {
+ 	asm ("bfclr %0{%1,#1}"
+-		: "+od" (*set)
++		: "+o" (*set)
+ 		: "id" ((_sig - 1) ^ 31)
+ 		: "cc");
+ }
+@@ -65,7 +65,7 @@ static inline int __gen_sigismember(sigset_t *set, int _sig)
+ 	int ret;
+ 	asm ("bfextu %1{%2,#1},%0"
+ 		: "=d" (ret)
+-		: "od" (*set), "id" ((_sig-1) ^ 31)
++		: "o" (*set), "id" ((_sig-1) ^ 31)
+ 		: "cc");
+ 	return ret;
+ }
 
 
