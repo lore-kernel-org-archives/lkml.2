@@ -1,36 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751511Ab2LCS2w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 13:28:52 -0500
-Received: from science.horizon.com ([71.41.210.146]:27333 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750792Ab2LCS2v (ORCPT
+	id S1751526Ab2LCSaB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 13:30:01 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:40004 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750792Ab2LCS37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 13:28:51 -0500
-Date: 3 Dec 2012 13:28:48 -0500
-Message-ID: <20121203182848.5536.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: linux@horizon.com, mgorman@suse.de
-Subject: Re: 3.7-rc6 soft lockup in kswapd0
-Cc: dave@linux.vnet.ibm.com, hannes@cmpxchg.org, jack@suse.cz,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, riel@redhat.com
-In-Reply-To: <20121129145414.9415.qmail@science.horizon.com>
+	Mon, 3 Dec 2012 13:29:59 -0500
+Message-ID: <50BCFDAD.6070209@mvista.com>
+Date: Mon, 03 Dec 2012 22:29:49 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+CC: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ata_piix: re-oder code and remove prototypes
+References: <201211301156.04953.b.zolnierkie@samsung.com>
+In-Reply-To: <201211301156.04953.b.zolnierkie@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Almost three days, when it wouldn't live overnight before.
-> As promised, I'm declaring victory.
-> 
-> The patch that worked (on top of -rc7) was Johannes Weiner's
-> "mm: vmscan: fix endless loop in kswapd balancing"
-> that added the zone_balanced() function to mm/vmscan.c:2400.
-> 
-> Thank you all very much!
+Hello.
 
-Further update, uptime is now 1 week with no more problems.
+On 11/30/2012 01:56 PM, Bartlomiej Zolnierkiewicz wrote:
 
-Just checked dmesg; no complaints.  And kswapd0 is showing 0:09.08 of
-CPU time for the week, more than cron but less than init.
+> From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Subject: [PATCH] ata_piix: re-oder code and remove prototypes
 
-Tested-by: George Spelvin <linux@horizon.com>
+   You meant "re-order", I think.
+
+> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+> Jeff, please apply.  Thanks!
+
+   Perhaps Jeff can correct the typo too...
+
+MBR, Sergei
+
