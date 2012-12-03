@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755467Ab2LCQea (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 11:34:30 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:34810 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753574Ab2LCQe2 (ORCPT
+	id S1754908Ab2LCQhf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 11:37:35 -0500
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:4941 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753169Ab2LCQhe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 11:34:28 -0500
-Date: Mon, 3 Dec 2012 08:34:23 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, lizefan@huawei.com
-Subject: Re: [PATCH RESEND] cgroup: remove subsystem files when remounting
- cgroup
-Message-ID: <20121203163423.GC19802@htj.dyndns.org>
-References: <1354292489-18434-2-git-send-email-gaofeng@cn.fujitsu.com>
- <1354498098-17312-1-git-send-email-gaofeng@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354498098-17312-1-git-send-email-gaofeng@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 3 Dec 2012 11:37:34 -0500
+From: Betty Dall <betty.dall@hp.com>
+To: bhelgaas@google.com, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Cc: wangyijing@huawei.com, jiang.liu@huawei.com,
+        Betty Dall <betty.dall@hp.com>
+Subject: [PATCH] PCI AER: pci_get_domain_bus_and_slot() call missing required pci_dev_put()
+Date: Mon,  3 Dec 2012 09:37:02 -0700
+Message-Id: <1354552622-687-1-git-send-email-betty.dall@hp.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 03, 2012 at 09:28:18AM +0800, Gao feng wrote:
-> cgroup_clear_directroy is called by cgroup_d_remove_dir
-> and cgroup_remount.
-> 
-> when we call cgroup_remount to remount the cgroup,the subsystem
-> may be unlinked from cgroupfs_root->subsys_list in rebind_subsystem,this
-> subsystem's files will not be removed in cgroup_clear_directroy.
-> And the system will panic when we try to access these files.
-> 
-> this patch removes subsystems's files before rebind_subsystems,
-> if rebind_subsystems failed, repopulate these removed files.
-> 
-> With help from Tejun.
-> 
-> Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+The function aer_recover_queue() makes a call to pci_get_domain_bus_and_slot().
+That function is documented to require that the caller decrement the
+reference count by calling pci_dev_put(). This patch adds the missing
+call to pci_dev_put().
 
-Applied to cgroup/for-3.8 with spaces added after commas.
+Signed-off-by: Betty Dall <betty.dall@hp.com>
+---
+ drivers/pci/pcie/aer/aerdrv_core.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Thanks!
-
+diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
+index af4e31c..43caf53 100644
+--- a/drivers/pci/pcie/aer/aerdrv_core.c
++++ b/drivers/pci/pcie/aer/aerdrv_core.c
+@@ -616,6 +616,7 @@ static void aer_recover_work_func(struct work_struct *work)
+ 			continue;
+ 		}
+ 		do_recovery(pdev, entry.severity);
++		pci_dev_put(pdev);
+ 	}
+ }
+ #endif
 -- 
-tejun
+1.7.7.6
+
