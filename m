@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932183Ab2LCO64 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:58:56 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43536 "EHLO
+	id S932131Ab2LCO6y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:58:54 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43537 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755248Ab2LCOfp (ORCPT
+	by vger.kernel.org with ESMTP id S1755257Ab2LCOfp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Dec 2012 09:35:45 -0500
-Message-Id: <20121203143147.095347645@decadent.org.uk>
+Message-Id: <20121203143149.695878618@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Dec 2012 14:31:49 +0000
+Date: Mon, 03 Dec 2012 14:32:04 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Darren Hart <dvhart@linux.intel.com>
-Subject: [ 03/89] futex: Handle futex_pi OWNER_DIED take over correctly
+        Jacob Shin <jacob.shin@amd.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 18/89] x86: Exclude E820_RESERVED regions and memory holes above 4 GB from
+ direct mapping.
 In-Reply-To: <20121203143146.549859007@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,226 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Jacob Shin <jacob.shin@amd.com>
 
-commit 59fa6245192159ab5e1e17b8e31f15afa9cff4bf upstream.
+commit 1bbbbe779aabe1f0768c2bf8f8c0a5583679b54a upstream.
 
-Siddhesh analyzed a failure in the take over of pi futexes in case the
-owner died and provided a workaround.
-See: http://sourceware.org/bugzilla/show_bug.cgi?id=14076
+On systems with very large memory (1 TB in our case), BIOS may report a
+reserved region or a hole in the E820 map, even above the 4 GB range. Exclude
+these from the direct mapping.
 
-The detailed problem analysis shows:
+[ hpa: this should be done not just for > 4 GB but for everything above the legacy
+  region (1 MB), at the very least.  That, however, turns out to require significant
+  restructuring.  That work is well underway, but is not suitable for rc/stable. ]
 
-Futex F is initialized with PTHREAD_PRIO_INHERIT and
-PTHREAD_MUTEX_ROBUST_NP attributes.
-
-T1 lock_futex_pi(F);
-
-T2 lock_futex_pi(F);
-   --> T2 blocks on the futex and creates pi_state which is associated
-       to T1.
-
-T1 exits
-   --> exit_robust_list() runs
-       --> Futex F userspace value TID field is set to 0 and
-           FUTEX_OWNER_DIED bit is set.
-
-T3 lock_futex_pi(F);
-   --> Succeeds due to the check for F's userspace TID field == 0
-   --> Claims ownership of the futex and sets its own TID into the
-       userspace TID field of futex F
-   --> returns to user space
-
-T1 --> exit_pi_state_list()
-       --> Transfers pi_state to waiter T2 and wakes T2 via
-       	   rt_mutex_unlock(&pi_state->mutex)
-
-T2 --> acquires pi_state->mutex and gains real ownership of the
-       pi_state
-   --> Claims ownership of the futex and sets its own TID into the
-       userspace TID field of futex F
-   --> returns to user space
-
-T3 --> observes inconsistent state
-
-This problem is independent of UP/SMP, preemptible/non preemptible
-kernels, or process shared vs. private. The only difference is that
-certain configurations are more likely to expose it.
-
-So as Siddhesh correctly analyzed the following check in
-futex_lock_pi_atomic() is the culprit:
-
-	if (unlikely(ownerdied || !(curval & FUTEX_TID_MASK))) {
-
-We check the userspace value for a TID value of 0 and take over the
-futex unconditionally if that's true.
-
-AFAICT this check is there as it is correct for a different corner
-case of futexes: the WAITERS bit became stale.
-
-Now the proposed change
-
--	if (unlikely(ownerdied || !(curval & FUTEX_TID_MASK))) {
-+       if (unlikely(ownerdied ||
-+                       !(curval & (FUTEX_TID_MASK | FUTEX_WAITERS)))) {
-
-solves the problem, but it's not obvious why and it wreckages the
-"stale WAITERS bit" case.
-
-What happens is, that due to the WAITERS bit being set (T2 is blocked
-on that futex) it enforces T3 to go through lookup_pi_state(), which
-in the above case returns an existing pi_state and therefor forces T3
-to legitimately fight with T2 over the ownership of the pi_state (via
-pi_state->mutex). Probelm solved!
-
-Though that does not work for the "WAITERS bit is stale" problem
-because if lookup_pi_state() does not find existing pi_state it
-returns -ERSCH (due to TID == 0) which causes futex_lock_pi() to
-return -ESRCH to user space because the OWNER_DIED bit is not set.
-
-Now there is a different solution to that problem. Do not look at the
-user space value at all and enforce a lookup of possibly available
-pi_state. If pi_state can be found, then the new incoming locker T3
-blocks on that pi_state and legitimately races with T2 to acquire the
-rt_mutex and the pi_state and therefor the proper ownership of the
-user space futex.
-
-lookup_pi_state() has the correct order of checks. It first tries to
-find a pi_state associated with the user space futex and only if that
-fails it checks for futex TID value = 0. If no pi_state is available
-nothing can create new state at that point because this happens with
-the hash bucket lock held.
-
-So the above scenario changes to:
-
-T1 lock_futex_pi(F);
-
-T2 lock_futex_pi(F);
-   --> T2 blocks on the futex and creates pi_state which is associated
-       to T1.
-
-T1 exits
-   --> exit_robust_list() runs
-       --> Futex F userspace value TID field is set to 0 and
-           FUTEX_OWNER_DIED bit is set.
-
-T3 lock_futex_pi(F);
-   --> Finds pi_state and blocks on pi_state->rt_mutex
-
-T1 --> exit_pi_state_list()
-       --> Transfers pi_state to waiter T2 and wakes it via
-       	   rt_mutex_unlock(&pi_state->mutex)
-
-T2 --> acquires pi_state->mutex and gains ownership of the pi_state
-   --> Claims ownership of the futex and sets its own TID into the
-       userspace TID field of futex F
-   --> returns to user space
-
-This covers all gazillion points on which T3 might come in between
-T1's exit_robust_list() clearing the TID field and T2 fixing it up. It
-also solves the "WAITERS bit stale" problem by forcing the take over.
-
-Another benefit of changing the code this way is that it makes it less
-dependent on untrusted user space values and therefor minimizes the
-possible wreckage which might be inflicted.
-
-As usual after staring for too long at the futex code my brain hurts
-so much that I really want to ditch that whole optimization of
-avoiding the syscall for the non contended case for PI futexes and rip
-out the maze of corner case handling code. Unfortunately we can't as
-user space relies on that existing behaviour, but at least thinking
-about it helps me to preserve my mental sanity. Maybe we should
-nevertheless :)
-
-Reported-and-tested-by: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
-Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1210232138540.2756@ionos
-Acked-by: Darren Hart <dvhart@linux.intel.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Jacob Shin <jacob.shin@amd.com>
+Link: http://lkml.kernel.org/r/1319145326-13902-1-git-send-email-jacob.shin@amd.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/futex.c |   41 ++++++++++++++++++++++-------------------
- 1 file changed, 22 insertions(+), 19 deletions(-)
+ arch/x86/kernel/setup.c |   17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index 3717e7b..20ef219 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -716,7 +716,7 @@ static int futex_lock_pi_atomic(u32 __user *uaddr, struct futex_hash_bucket *hb,
- 				struct futex_pi_state **ps,
- 				struct task_struct *task, int set_waiters)
- {
--	int lock_taken, ret, ownerdied = 0;
-+	int lock_taken, ret, force_take = 0;
- 	u32 uval, newval, curval, vpid = task_pid_vnr(task);
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index f4b9b80..198e774 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -919,8 +919,21 @@ void __init setup_arch(char **cmdline_p)
  
- retry:
-@@ -755,17 +755,15 @@ retry:
- 	newval = curval | FUTEX_WAITERS;
- 
- 	/*
--	 * There are two cases, where a futex might have no owner (the
--	 * owner TID is 0): OWNER_DIED. We take over the futex in this
--	 * case. We also do an unconditional take over, when the owner
--	 * of the futex died.
--	 *
--	 * This is safe as we are protected by the hash bucket lock !
-+	 * Should we force take the futex? See below.
- 	 */
--	if (unlikely(ownerdied || !(curval & FUTEX_TID_MASK))) {
--		/* Keep the OWNER_DIED bit */
-+	if (unlikely(force_take)) {
-+		/*
-+		 * Keep the OWNER_DIED and the WAITERS bit and set the
-+		 * new TID value.
-+		 */
- 		newval = (curval & ~FUTEX_TID_MASK) | vpid;
--		ownerdied = 0;
-+		force_take = 0;
- 		lock_taken = 1;
+ #ifdef CONFIG_X86_64
+ 	if (max_pfn > max_low_pfn) {
+-		max_pfn_mapped = init_memory_mapping(1UL<<32,
+-						     max_pfn<<PAGE_SHIFT);
++		int i;
++		for (i = 0; i < e820.nr_map; i++) {
++			struct e820entry *ei = &e820.map[i];
++
++			if (ei->addr + ei->size <= 1UL << 32)
++				continue;
++
++			if (ei->type == E820_RESERVED)
++				continue;
++
++			max_pfn_mapped = init_memory_mapping(
++				ei->addr < 1UL << 32 ? 1UL << 32 : ei->addr,
++				ei->addr + ei->size);
++		}
++
+ 		/* can we preseve max_low_pfn ?*/
+ 		max_low_pfn = max_pfn;
  	}
- 
-@@ -775,7 +773,7 @@ retry:
- 		goto retry;
- 
- 	/*
--	 * We took the lock due to owner died take over.
-+	 * We took the lock due to forced take over.
- 	 */
- 	if (unlikely(lock_taken))
- 		return 1;
-@@ -790,20 +788,25 @@ retry:
- 		switch (ret) {
- 		case -ESRCH:
- 			/*
--			 * No owner found for this futex. Check if the
--			 * OWNER_DIED bit is set to figure out whether
--			 * this is a robust futex or not.
-+			 * We failed to find an owner for this
-+			 * futex. So we have no pi_state to block
-+			 * on. This can happen in two cases:
-+			 *
-+			 * 1) The owner died
-+			 * 2) A stale FUTEX_WAITERS bit
-+			 *
-+			 * Re-read the futex value.
- 			 */
- 			if (get_futex_value_locked(&curval, uaddr))
- 				return -EFAULT;
- 
- 			/*
--			 * We simply start over in case of a robust
--			 * futex. The code above will take the futex
--			 * and return happy.
-+			 * If the owner died or we have a stale
-+			 * WAITERS bit the owner TID in the user space
-+			 * futex is 0.
- 			 */
--			if (curval & FUTEX_OWNER_DIED) {
--				ownerdied = 1;
-+			if (!(curval & FUTEX_TID_MASK)) {
-+				force_take = 1;
- 				goto retry;
- 			}
- 		default:
 
 
