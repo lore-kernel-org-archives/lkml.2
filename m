@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752859Ab2LCVFU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 16:05:20 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:59435 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752423Ab2LCU72 (ORCPT
+	id S1752748Ab2LCVFx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 16:05:53 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39673 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752409Ab2LCU7Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 15:59:28 -0500
+	Mon, 3 Dec 2012 15:59:25 -0500
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
         linux-fsdevel@vger.kernel.org
 Cc: zab@redhat.com, bcrl@kvack.org, jmoyer@redhat.com, axboe@kernel.dk,
         viro@zeniv.linux.org.uk, Kent Overstreet <koverstreet@google.com>
-Subject: [PATCH 09/26] aio: dprintk() -> pr_debug()
-Date: Mon,  3 Dec 2012 12:58:25 -0800
-Message-Id: <1354568322-29029-10-git-send-email-koverstreet@google.com>
+Subject: [PATCH 07/26] aio: kiocb_cancel()
+Date: Mon,  3 Dec 2012 12:58:23 -0800
+Message-Id: <1354568322-29029-8-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1354568322-29029-1-git-send-email-koverstreet@google.com>
 References: <1354568322-29029-1-git-send-email-koverstreet@google.com>
@@ -22,215 +22,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Minor refactoring, to get rid of some duplicated code
+
+v2: Fix return value for NULL kiocb, so it matches old code; change
+synchronization to use xchg() instead of a bit in ki_flags, so we can
+get rid of ki_flags.
+
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 ---
- fs/aio.c | 57 ++++++++++++++++++++++++---------------------------------
- 1 file changed, 24 insertions(+), 33 deletions(-)
+ fs/aio.c | 72 +++++++++++++++++++++++++++++++++++-----------------------------
+ 1 file changed, 39 insertions(+), 33 deletions(-)
 
 diff --git a/fs/aio.c b/fs/aio.c
-index 35a2153e..4cceba1 100644
+index 91879d4..786c904 100644
 --- a/fs/aio.c
 +++ b/fs/aio.c
-@@ -8,6 +8,8 @@
-  *
-  *	See ../COPYING for licensing terms.
-  */
-+#define pr_fmt(fmt) "%s: " fmt, __func__
+@@ -217,6 +217,29 @@ static inline void put_ioctx(struct kioctx *kioctx)
+ 		__put_ioctx(kioctx);
+ }
+ 
++static int kiocb_cancel(struct kioctx *ctx, struct kiocb *kiocb,
++			struct io_event *res)
++{
++	int (*cancel)(struct kiocb *, struct io_event *);
++	int ret = -EINVAL;
 +
- #include <linux/kernel.h>
- #include <linux/init.h>
- #include <linux/errno.h>
-@@ -18,8 +20,6 @@
- #include <linux/backing-dev.h>
- #include <linux/uio.h>
- 
--#define DEBUG 0
--
- #include <linux/sched.h>
- #include <linux/fs.h>
- #include <linux/file.h>
-@@ -39,12 +39,6 @@
- #include <asm/kmap_types.h>
- #include <asm/uaccess.h>
- 
--#if DEBUG > 1
--#define dprintk		printk
--#else
--#define dprintk(x...)	do { ; } while (0)
--#endif
--
- #define AIO_RING_MAGIC			0xa10a10a1
- #define AIO_RING_COMPAT_FEATURES	1
- #define AIO_RING_INCOMPAT_FEATURES	0
-@@ -124,7 +118,7 @@ static int __init aio_setup(void)
- 	kiocb_cachep = KMEM_CACHE(kiocb, SLAB_HWCACHE_ALIGN|SLAB_PANIC);
- 	kioctx_cachep = KMEM_CACHE(kioctx,SLAB_HWCACHE_ALIGN|SLAB_PANIC);
- 
--	pr_debug("aio_setup: sizeof(struct page) = %d\n", (int)sizeof(struct page));
-+	pr_debug("sizeof(struct page) = %zu\n", sizeof(struct page));
- 
- 	return 0;
- }
-@@ -178,7 +172,7 @@ static int aio_setup_ring(struct kioctx *ctx)
- 	}
- 
- 	info->mmap_size = nr_pages * PAGE_SIZE;
--	dprintk("attempting mmap of %lu bytes\n", info->mmap_size);
-+	pr_debug("attempting mmap of %lu bytes\n", info->mmap_size);
- 	down_write(&mm->mmap_sem);
- 	info->mmap_base = do_mmap_pgoff(NULL, 0, info->mmap_size, 
- 					PROT_READ|PROT_WRITE,
-@@ -190,7 +184,7 @@ static int aio_setup_ring(struct kioctx *ctx)
- 		return -EAGAIN;
- 	}
- 
--	dprintk("mmap address: 0x%08lx\n", info->mmap_base);
-+	pr_debug("mmap address: 0x%08lx\n", info->mmap_base);
- 	info->nr_pages = get_user_pages(current, mm, info->mmap_base, nr_pages, 
- 					1, 0, info->ring_pages, NULL);
- 	up_write(&mm->mmap_sem);
-@@ -262,7 +256,7 @@ static void __put_ioctx(struct kioctx *ctx)
- 		aio_nr -= nr_events;
- 		spin_unlock(&aio_nr_lock);
- 	}
--	pr_debug("__put_ioctx: freeing %p\n", ctx);
-+	pr_debug("freeing %p\n", ctx);
- 	call_rcu(&ctx->rcu_head, ctx_rcu_free);
- }
- 
-@@ -351,7 +345,7 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
- 	hlist_add_head_rcu(&ctx->list, &mm->ioctx_list);
- 	spin_unlock(&mm->ioctx_lock);
- 
--	dprintk("aio: allocated ioctx %p[%ld]: mm=%p mask=0x%x\n",
-+	pr_debug("allocated ioctx %p[%ld]: mm=%p mask=0x%x\n",
- 		ctx, ctx->user_id, mm, ctx->ring_info.nr);
- 	return ctx;
- 
-@@ -360,7 +354,7 @@ out_cleanup:
- 	aio_free_ring(ctx);
- out_freectx:
- 	kmem_cache_free(kioctx_cachep, ctx);
--	dprintk("aio: error allocating ioctx %d\n", err);
-+	pr_debug("error allocating ioctx %d\n", err);
- 	return ERR_PTR(err);
- }
- 
-@@ -607,8 +601,8 @@ static inline void really_put_req(struct kioctx *ctx, struct kiocb *req)
++	cancel = kiocb->ki_cancel;
++	kiocbSetCancelled(kiocb);
++	if (cancel) {
++		kiocb->ki_users++;
++		spin_unlock_irq(&ctx->ctx_lock);
++
++		memset(res, 0, sizeof(*res));
++		res->obj = (u64) kiocb->ki_obj.user;
++		res->data = kiocb->ki_user_data;
++		ret = cancel(kiocb, res);
++
++		spin_lock_irq(&ctx->ctx_lock);
++	}
++
++	return ret;
++}
++
+ /* ioctx_alloc
+  *	Allocates and initializes an ioctx.  Returns an ERR_PTR if it failed.
   */
- static void __aio_put_req(struct kioctx *ctx, struct kiocb *req)
+@@ -287,7 +310,6 @@ out_freectx:
+  */
+ static void kill_ctx(struct kioctx *ctx)
  {
--	dprintk(KERN_DEBUG "aio_put(%p): f_count=%ld\n",
--		req, atomic_long_read(&req->ki_filp->f_count));
-+	pr_debug("(%p): f_count=%ld\n",
-+		 req, atomic_long_read(&req->ki_filp->f_count));
- 
- 	assert_spin_locked(&ctx->ctx_lock);
- 
-@@ -721,9 +715,9 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
- 	event->res = res;
- 	event->res2 = res2;
- 
--	dprintk("aio_complete: %p[%lu]: %p: %p %Lx %lx %lx\n",
--		ctx, tail, iocb, iocb->ki_obj.user, iocb->ki_user_data,
--		res, res2);
-+	pr_debug("%p[%lu]: %p: %p %Lx %lx %lx\n",
-+		 ctx, tail, iocb, iocb->ki_obj.user, iocb->ki_user_data,
-+		 res, res2);
- 
- 	/* after flagging the request as done, we
- 	 * must never even look at it again
-@@ -779,9 +773,7 @@ static int aio_read_evt(struct kioctx *ioctx, struct io_event *ent)
- 	int ret = 0;
- 
- 	ring = kmap_atomic(info->ring_pages[0]);
--	dprintk("in aio_read_evt h%lu t%lu m%lu\n",
--		 (unsigned long)ring->head, (unsigned long)ring->tail,
--		 (unsigned long)ring->nr);
-+	pr_debug("h%u t%u m%u\n", ring->head, ring->tail, ring->nr);
- 
- 	if (ring->head == ring->tail)
- 		goto out;
-@@ -802,8 +794,7 @@ static int aio_read_evt(struct kioctx *ioctx, struct io_event *ent)
- 
- out:
- 	kunmap_atomic(ring);
--	dprintk("leaving aio_read_evt: %d  h%lu t%lu\n", ret,
--		 (unsigned long)ring->head, (unsigned long)ring->tail);
-+	pr_debug("%d  h%u t%u\n", ret, ring->head, ring->tail);
- 	return ret;
- }
- 
-@@ -866,13 +857,13 @@ static int read_events(struct kioctx *ctx,
- 		if (unlikely(ret <= 0))
- 			break;
- 
--		dprintk("read event: %Lx %Lx %Lx %Lx\n",
--			ent.data, ent.obj, ent.res, ent.res2);
-+		pr_debug("%Lx %Lx %Lx %Lx\n",
-+			 ent.data, ent.obj, ent.res, ent.res2);
- 
- 		/* Could we split the check in two? */
- 		ret = -EFAULT;
- 		if (unlikely(copy_to_user(event, &ent, sizeof(ent)))) {
--			dprintk("aio: lost an event due to EFAULT.\n");
-+			pr_debug("lost an event due to EFAULT.\n");
- 			break;
- 		}
- 		ret = 0;
-@@ -935,7 +926,7 @@ static int read_events(struct kioctx *ctx,
- 
- 		ret = -EFAULT;
- 		if (unlikely(copy_to_user(event, &ent, sizeof(ent)))) {
--			dprintk("aio: lost an event due to EFAULT.\n");
-+			pr_debug("lost an event due to EFAULT.\n");
- 			break;
- 		}
- 
-@@ -966,7 +957,7 @@ static void io_destroy(struct kioctx *ioctx)
- 	hlist_del_rcu(&ioctx->list);
- 	spin_unlock(&mm->ioctx_lock);
- 
--	dprintk("aio_release(%p)\n", ioctx);
-+	pr_debug("(%p)\n", ioctx);
- 	if (likely(!was_dead))
- 		put_ioctx(ioctx);	/* twice for the list */
- 
-@@ -1259,7 +1250,7 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb, bool compat)
- 			kiocb->ki_retry = aio_fsync;
- 		break;
- 	default:
--		dprintk("EINVAL: io_submit: no operation provided\n");
-+		pr_debug("EINVAL: no operation provided\n");
- 		ret = -EINVAL;
+-	int (*cancel)(struct kiocb *, struct io_event *);
+ 	struct task_struct *tsk = current;
+ 	DECLARE_WAITQUEUE(wait, tsk);
+ 	struct io_event res;
+@@ -298,14 +320,8 @@ static void kill_ctx(struct kioctx *ctx)
+ 		struct list_head *pos = ctx->active_reqs.next;
+ 		struct kiocb *iocb = list_kiocb(pos);
+ 		list_del_init(&iocb->ki_list);
+-		cancel = iocb->ki_cancel;
+-		kiocbSetCancelled(iocb);
+-		if (cancel) {
+-			iocb->ki_users++;
+-			spin_unlock_irq(&ctx->ctx_lock);
+-			cancel(iocb, &res);
+-			spin_lock_irq(&ctx->ctx_lock);
+-		}
++
++		kiocb_cancel(ctx, iocb, &res);
  	}
  
-@@ -1279,7 +1270,7 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
- 
- 	/* enforce forwards compatibility on users */
- 	if (unlikely(iocb->aio_reserved1 || iocb->aio_reserved2)) {
--		pr_debug("EINVAL: io_submit: reserve field set\n");
-+		pr_debug("EINVAL: reserve field set\n");
+ 	if (!ctx->reqs_active)
+@@ -1411,7 +1427,7 @@ static struct kiocb *lookup_kiocb(struct kioctx *ctx, struct iocb __user *iocb,
+ SYSCALL_DEFINE3(io_cancel, aio_context_t, ctx_id, struct iocb __user *, iocb,
+ 		struct io_event __user *, result)
+ {
+-	int (*cancel)(struct kiocb *iocb, struct io_event *res);
++	struct io_event res;
+ 	struct kioctx *ctx;
+ 	struct kiocb *kiocb;
+ 	u32 key;
+@@ -1426,32 +1442,22 @@ SYSCALL_DEFINE3(io_cancel, aio_context_t, ctx_id, struct iocb __user *, iocb,
  		return -EINVAL;
- 	}
  
-@@ -1320,7 +1311,7 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
+ 	spin_lock_irq(&ctx->ctx_lock);
+-	ret = -EAGAIN;
++
+ 	kiocb = lookup_kiocb(ctx, iocb, key);
+-	if (kiocb && kiocb->ki_cancel) {
+-		cancel = kiocb->ki_cancel;
+-		kiocb->ki_users ++;
+-		kiocbSetCancelled(kiocb);
+-	} else
+-		cancel = NULL;
++	if (kiocb)
++		ret = kiocb_cancel(ctx, kiocb, &res);
++	else
++		ret = -EINVAL;
++
+ 	spin_unlock_irq(&ctx->ctx_lock);
  
- 	ret = put_user(req->ki_key, &user_iocb->aio_key);
- 	if (unlikely(ret)) {
--		dprintk("EFAULT: aio_key\n");
-+		pr_debug("EFAULT: aio_key\n");
- 		goto out_put_req;
- 	}
+-	if (NULL != cancel) {
+-		struct io_event tmp;
+-		pr_debug("calling cancel\n");
+-		memset(&tmp, 0, sizeof(tmp));
+-		tmp.obj = (u64)(unsigned long)kiocb->ki_obj.user;
+-		tmp.data = kiocb->ki_user_data;
+-		ret = cancel(kiocb, &tmp);
+-		if (!ret) {
+-			/* Cancellation succeeded -- copy the result
+-			 * into the user's buffer.
+-			 */
+-			if (copy_to_user(result, &tmp, sizeof(tmp)))
+-				ret = -EFAULT;
+-		}
+-	} else
+-		ret = -EINVAL;
++	if (!ret) {
++		/* Cancellation succeeded -- copy the result
++		 * into the user's buffer.
++		 */
++		if (copy_to_user(result, &res, sizeof(res)))
++			ret = -EFAULT;
++	}
  
-@@ -1401,7 +1392,7 @@ long do_io_submit(aio_context_t ctx_id, long nr,
- 
- 	ctx = lookup_ioctx(ctx_id);
- 	if (unlikely(!ctx)) {
--		pr_debug("EINVAL: io_submit: invalid context id\n");
-+		pr_debug("EINVAL: invalid context id\n");
- 		return -EINVAL;
- 	}
+ 	put_ioctx(ctx);
  
 -- 
 1.7.12
