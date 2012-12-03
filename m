@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932558Ab2LCOih (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:38:37 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:44004 "EHLO
+	id S932463Ab2LCOhD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:37:03 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43926 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932478Ab2LCOhH (ORCPT
+	by vger.kernel.org with ESMTP id S1755511Ab2LCOg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 09:37:07 -0500
-Message-Id: <20121203143150.585465625@decadent.org.uk>
+	Mon, 3 Dec 2012 09:36:58 -0500
+Message-Id: <20121203143151.799012126@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Dec 2012 14:32:09 +0000
+Date: Mon, 03 Dec 2012 14:32:16 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ulrich Weber <ulrich.weber@sophos.com>,
-        Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [ 23/89] netfilter: nf_nat: dont check for port change on ICMP tuples
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Stefan Koch <stefan_koch@gmx.net>,
+        Alexander van Loon <a.vanloon@alexandervanloon.nl>,
+        Dmitry Torokhov <dtor@mail.ru>
+Subject: [ 30/89] Input: i8042 - also perform controller reset when suspending
 In-Reply-To: <20121203143146.549859007@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,46 +30,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ulrich Weber <ulrich.weber@sophos.com>
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-commit 38fe36a248ec3228f8e6507955d7ceb0432d2000 upstream.
+commit 1729ad1f4f9e167ade84ca8b5269695c42351160 upstream.
 
-ICMP tuples have id in src and type/code in dst.
-So comparing src.u.all with dst.u.all will always fail here
-and ip_xfrm_me_harder() is called for every ICMP packet,
-even if there was no NAT.
+In addition to some laptops needing i8042 reset after resuming from S2R to
+get their touchpads working there is another class of laptops - ones that
+need i8042 reset before going to S2R, otherwise they will simply reboot
+instead of resuming.
 
-Signed-off-by: Ulrich Weber <ulrich.weber@sophos.com>
-[Pablo Neira Ayuso: Backported to.3.0]
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+See https://bugzilla.kernel.org/show_bug.cgi?id=15612
+
+This change forces reset of i8042 before doing S2R.
+
+Reported-by: Stefan Koch <stefan_koch@gmx.net>
+Tested-by: Alexander van Loon <a.vanloon@alexandervanloon.nl>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/ipv4/netfilter/nf_nat_standalone.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/input/serio/i8042.c |   23 +++++++++++++++--------
+ 1 file changed, 15 insertions(+), 8 deletions(-)
 
-diff --git a/net/ipv4/netfilter/nf_nat_standalone.c b/net/ipv4/netfilter/nf_nat_standalone.c
-index 483b76d..b2c3ed7 100644
---- a/net/ipv4/netfilter/nf_nat_standalone.c
-+++ b/net/ipv4/netfilter/nf_nat_standalone.c
-@@ -194,7 +194,8 @@ nf_nat_out(unsigned int hooknum,
+diff --git a/drivers/input/serio/i8042.c b/drivers/input/serio/i8042.c
+index d37a48e..8656441 100644
+--- a/drivers/input/serio/i8042.c
++++ b/drivers/input/serio/i8042.c
+@@ -991,7 +991,7 @@ static int i8042_controller_init(void)
+  * Reset the controller and reset CRT to the original value set by BIOS.
+  */
  
- 		if ((ct->tuplehash[dir].tuple.src.u3.ip !=
- 		     ct->tuplehash[!dir].tuple.dst.u3.ip) ||
--		    (ct->tuplehash[dir].tuple.src.u.all !=
-+		    (ct->tuplehash[dir].tuple.dst.protonum != IPPROTO_ICMP &&
-+		     ct->tuplehash[dir].tuple.src.u.all !=
- 		     ct->tuplehash[!dir].tuple.dst.u.all)
- 		   )
- 			return ip_xfrm_me_harder(skb) == 0 ? ret : NF_DROP;
-@@ -230,7 +231,8 @@ nf_nat_local_fn(unsigned int hooknum,
- 				ret = NF_DROP;
- 		}
- #ifdef CONFIG_XFRM
--		else if (ct->tuplehash[dir].tuple.dst.u.all !=
-+		else if (ct->tuplehash[dir].tuple.dst.protonum != IPPROTO_ICMP &&
-+			 ct->tuplehash[dir].tuple.dst.u.all !=
- 			 ct->tuplehash[!dir].tuple.src.u.all)
- 			if (ip_xfrm_me_harder(skb))
- 				ret = NF_DROP;
+-static void i8042_controller_reset(void)
++static void i8042_controller_reset(bool force_reset)
+ {
+ 	i8042_flush();
+ 
+@@ -1016,7 +1016,7 @@ static void i8042_controller_reset(void)
+  * Reset the controller if requested.
+  */
+ 
+-	if (i8042_reset)
++	if (i8042_reset || force_reset)
+ 		i8042_controller_selftest();
+ 
+ /*
+@@ -1139,9 +1139,9 @@ static int i8042_controller_resume(bool force_reset)
+  * upsetting it.
+  */
+ 
+-static int i8042_pm_reset(struct device *dev)
++static int i8042_pm_suspend(struct device *dev)
+ {
+-	i8042_controller_reset();
++	i8042_controller_reset(true);
+ 
+ 	return 0;
+ }
+@@ -1163,13 +1163,20 @@ static int i8042_pm_thaw(struct device *dev)
+ 	return 0;
+ }
+ 
++static int i8042_pm_reset(struct device *dev)
++{
++	i8042_controller_reset(false);
++
++	return 0;
++}
++
+ static int i8042_pm_restore(struct device *dev)
+ {
+ 	return i8042_controller_resume(false);
+ }
+ 
+ static const struct dev_pm_ops i8042_pm_ops = {
+-	.suspend	= i8042_pm_reset,
++	.suspend	= i8042_pm_suspend,
+ 	.resume		= i8042_pm_resume,
+ 	.thaw		= i8042_pm_thaw,
+ 	.poweroff	= i8042_pm_reset,
+@@ -1185,7 +1192,7 @@ static const struct dev_pm_ops i8042_pm_ops = {
+ 
+ static void i8042_shutdown(struct platform_device *dev)
+ {
+-	i8042_controller_reset();
++	i8042_controller_reset(false);
+ }
+ 
+ static int __init i8042_create_kbd_port(void)
+@@ -1424,7 +1431,7 @@ static int __init i8042_probe(struct platform_device *dev)
+  out_fail:
+ 	i8042_free_aux_ports();	/* in case KBD failed but AUX not */
+ 	i8042_free_irqs();
+-	i8042_controller_reset();
++	i8042_controller_reset(false);
+ 	i8042_platform_device = NULL;
+ 
+ 	return error;
+@@ -1434,7 +1441,7 @@ static int __devexit i8042_remove(struct platform_device *dev)
+ {
+ 	i8042_unregister_ports();
+ 	i8042_free_irqs();
+-	i8042_controller_reset();
++	i8042_controller_reset(false);
+ 	i8042_platform_device = NULL;
+ 
+ 	return 0;
 
 
