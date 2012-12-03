@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379Ab2LCAzY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 19:55:24 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:42925 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754088Ab2LCAzW (ORCPT
+	id S1754524Ab2LCBEm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 20:04:42 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:52383 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754225Ab2LCBEl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 19:55:22 -0500
-X-AuditID: 85900ec0-d5e7ab900000152f-b3-50bbf8789cfc
-Message-ID: <50BBF877.9080801@hitachi.com>
-Date: Mon, 03 Dec 2012 09:55:19 +0900
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120604 Thunderbird/13.0
-MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, David Sharp <dhsharp@google.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, Joerg Roedel <joerg.roedel@amd.com>,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        Ingo Molnar <mingo@redhat.com>, Avi Kivity <avi@redhat.com>,
-        yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: Re: Re: Re: Re: Re: Re: Re: [RFC PATCH 0/2] kvm/vmx: Output
- TSC offset
-References: <20121116191537.GB28622@amt.cnet> <50AB5D31.7060305@hitachi.com> <20121120225148.GA6027@amt.cnet> <50ADB650.8080502@hitachi.com> <20121123224608.GA23093@amt.cnet> <50B34CE6.9070207@hitachi.com> <20121126231653.GA20391@amt.cnet> <50B49BBB.1020204@hitachi.com> <20121129225126.GA28555@amt.cnet> <50B80DAB.4030908@hitachi.com> <20121130204240.GC22662@amt.cnet>
-In-Reply-To: <20121130204240.GC22662@amt.cnet>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Sun, 2 Dec 2012 20:04:41 -0500
+Date: Mon, 3 Dec 2012 12:04:29 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Roland Dreier <roland@purestorage.com>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: linux-next: manual merge of the target-updates tree with Linus'
+ tree
+Message-Id: <20121203120429.e988d904019ac7ebd609e25e@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__3_Dec_2012_12_04_29_+1100_Nk19MFeqDeoNY5t_"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marcelo,
+--Signature=_Mon__3_Dec_2012_12_04_29_+1100_Nk19MFeqDeoNY5t_
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->>> That is, you can't feed distinct instances of guest kernel trace.
->>
->> I'm not clear for "distinct instances". Is this about SMP or multiple
->> guests? Would you explain about this?
->
-> Distinct boot instances. If the guest reboots TSC can be written to.
+Hi Nicholas,
 
-OK, I understood.
-I'll resend a patch series for this feature.
+Today's linux-next merge of the target-updates tree got a conflict in
+drivers/target/target_core_transport.c between commit 3ea160b3e8f0
+("target: Fix handling of aborted commands") from Linus' tree and commit
+019c4ca62148 ("target: kill dev->dev_task_attr_type") from the
+target-updates tree.
 
-Thanks!
+I just use the target-updates tree version and can carry the fix as
+necessary (no action is required).
 
--- 
-Yoshihiro YUNOMAE
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: yoshihiro.yunomae.ez@hitachi.com
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Mon__3_Dec_2012_12_04_29_+1100_Nk19MFeqDeoNY5t_
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQu/qdAAoJEECxmPOUX5FEUS4P/1FU/6kilyuhQHzVb9aOZAAs
+LzvtNcEsZNCDK0N0s/Minrb/GvCAiAxqoDgHdsT6zEG29D3PYDJi6ejOT5BGhT9n
+/ZsPTFlZ5qaMJhYkoGKfN1k6LsBgnEs223ePkT1YdQ3L7T+5t0SQYz89gLMTOtjM
+nEsKkG21Vnycm8kNED6RxfONIoNl+myWBEoEPb62h43IaCIS/CBCvQnqQIOAzByE
+m9xLLNN2gXKyH3m1ICt8R+AlcttmkDUGagOCqpW3QzsGBg+HmpC/I463lnY4p+Ja
+tv7HeIuvtUHRUeSIzGYRJ8+oJZ8yFoHEsQDHvZGUgQNpJJ1/5TOufACvUS+o5gKH
+1TXjbg7TQ5FvD2kIuITCPSvg8QDb6tqRpy7YdaICAKpoJeSxPHdUfoKP2XB+EzIU
+bNb2TG3Z0/giTY5eg3BkGSB802/5Oh79acGF7q/4KpWRe0bZ/IiQdhQHqLA3nwrG
+KhebvRgQfqxNjbKZBHs5yJ0lSLqkDqSTdbqVPm0V59SZCq4ZhFx+fRyVqW0Q8rKx
+xx8qYUQeiQMIhWAbythV6eCXmVcp74PaDL5ixQu0cWG9oFUNm3S6qX+Un+uUC5yD
+JTWJ7Muy0YcZAZZt3yFwkFtMzFSbOii7yXpHDSU/zNXQ4iIjEB5eGcBjqLYiH07C
+KPqfGa3tHqPcTLwOj8Nm
+=3Qm6
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__3_Dec_2012_12_04_29_+1100_Nk19MFeqDeoNY5t_--
