@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939Ab2LCO51 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:57:27 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43568 "EHLO
+	id S1755607Ab2LCO50 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:57:26 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43571 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932106Ab2LCOfr (ORCPT
+	by vger.kernel.org with ESMTP id S932107Ab2LCOfr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Dec 2012 09:35:47 -0500
-Message-Id: <20121203143148.127286902@decadent.org.uk>
+Message-Id: <20121203143147.274474404@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Dec 2012 14:31:55 +0000
+Date: Mon, 03 Dec 2012 14:31:50 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johannes Berg <johannes.berg@intel.com>,
-        Eddie Chapman <eddie@ehuk.net>,
-        "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>
-Subject: [ 09/89] wireless: allow 40 MHz on world roaming channels 12/13
+        Arik Nemtsov <arik@wizery.com>, Ido Yariv <ido@wizery.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 04/89] mac80211: sync acccess to tx_filtered/ps_tx_buf queues
 In-Reply-To: <20121203143146.549859007@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,38 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Arik Nemtsov <arik@wizery.com>
 
-commit 43c771a1963ab461a2f194e3c97fded1d5fe262f upstream.
+commit 987c285c2ae2e4e32aca3a9b3252d28171c75711 upstream.
 
-When in world roaming mode, allow 40 MHz to be used
-on channels 12 and 13 so that an AP that is, e.g.,
-using HT40+ on channel 9 (in the UK) can be used.
+These are accessed without a lock when ending STA PSM. If the
+sta_cleanup timer accesses these lists at the same time, we might crash.
 
-Reported-by: Eddie Chapman <eddie@ehuk.net>
-Tested-by: Eddie Chapman <eddie@ehuk.net>
-Acked-by: Luis R. Rodriguez <mcgrof@qca.qualcomm.com>
+This may fix some mysterious crashes we had during
+ieee80211_sta_ps_deliver_wakeup.
+
+Signed-off-by: Arik Nemtsov <arik@wizery.com>
+Signed-off-by: Ido Yariv <ido@wizery.com>
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/wireless/reg.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ net/mac80211/sta_info.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/net/wireless/reg.c b/net/wireless/reg.c
-index bcc7d7e..b75756b 100644
---- a/net/wireless/reg.c
-+++ b/net/wireless/reg.c
-@@ -141,9 +141,8 @@ static const struct ieee80211_regdomain world_regdom = {
- 	.reg_rules = {
- 		/* IEEE 802.11b/g, channels 1..11 */
- 		REG_RULE(2412-10, 2462+10, 40, 6, 20, 0),
--		/* IEEE 802.11b/g, channels 12..13. No HT40
--		 * channel fits here. */
--		REG_RULE(2467-10, 2472+10, 20, 6, 20,
-+		/* IEEE 802.11b/g, channels 12..13. */
-+		REG_RULE(2467-10, 2472+10, 40, 6, 20,
- 			NL80211_RRF_PASSIVE_SCAN |
- 			NL80211_RRF_NO_IBSS),
- 		/* IEEE 802.11 channel 14 - Only JP enables
+diff --git a/net/mac80211/sta_info.c b/net/mac80211/sta_info.c
+index 797dd36..89ccd3e 100644
+--- a/net/mac80211/sta_info.c
++++ b/net/mac80211/sta_info.c
+@@ -961,6 +961,7 @@ void ieee80211_sta_ps_deliver_wakeup(struct sta_info *sta)
+ 	struct ieee80211_local *local = sdata->local;
+ 	struct sk_buff_head pending;
+ 	int filtered = 0, buffered = 0, ac;
++	unsigned long flags;
+ 
+ 	clear_sta_flag(sta, WLAN_STA_SP);
+ 
+@@ -976,12 +977,16 @@ void ieee80211_sta_ps_deliver_wakeup(struct sta_info *sta)
+ 	for (ac = 0; ac < IEEE80211_NUM_ACS; ac++) {
+ 		int count = skb_queue_len(&pending), tmp;
+ 
++		spin_lock_irqsave(&sta->tx_filtered[ac].lock, flags);
+ 		skb_queue_splice_tail_init(&sta->tx_filtered[ac], &pending);
++		spin_unlock_irqrestore(&sta->tx_filtered[ac].lock, flags);
+ 		tmp = skb_queue_len(&pending);
+ 		filtered += tmp - count;
+ 		count = tmp;
+ 
++		spin_lock_irqsave(&sta->ps_tx_buf[ac].lock, flags);
+ 		skb_queue_splice_tail_init(&sta->ps_tx_buf[ac], &pending);
++		spin_unlock_irqrestore(&sta->ps_tx_buf[ac].lock, flags);
+ 		tmp = skb_queue_len(&pending);
+ 		buffered += tmp - count;
+ 	}
 
 
