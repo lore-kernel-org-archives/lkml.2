@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752359Ab2LCU2t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 15:28:49 -0500
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:49642 "EHLO
-	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751738Ab2LCU2s (ORCPT
+	id S1752225Ab2LCUd7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 15:33:59 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:40633 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751098Ab2LCUd6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 15:28:48 -0500
-From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-To: spi-devel-general@lists.sourceforge.net
-Cc: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH RESEND] spi: erase pointer to drvdata on removal
-Date: Mon,  3 Dec 2012 15:28:24 -0500
-Message-Id: <1354566504-17657-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-X-Mailer: git-send-email 1.7.11.7
+	Mon, 3 Dec 2012 15:33:58 -0500
+Date: Mon, 03 Dec 2012 15:33:56 -0500 (EST)
+Message-Id: <20121203.153356.1912477920174640312.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Sparc
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without this patch, a SPI device may keep its drvdata whereas it was unbound
-from its driver. This may result in accessing an invalid pointer.
 
-As for i2c-core, let the SPI core handle the removal of the device's drvdata,
-after a remove(), or a probe() failure.
+Two small fixes for Sparc, nobody uses sparc, so these are
+low risk :-)
 
-This is a resent of the previous patch https://lkml.org/lkml/2012/11/1/314
+1) Piggyback is too picky about the symbol types that _start
+   and _end have in the final kernel image, and it thus breaks
+   with newer binutils.  Future proof by getting rid of the
+   symbol type checks.
 
-Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
----
- drivers/spi/spi.c | 14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+2) exit_group() should kill register windows on sparc64 the same
+   way we do for plain exit().  Thanks to Al Viro for spotting
+   this.
 
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index 84c2861..fe636fe 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -233,15 +233,25 @@ EXPORT_SYMBOL_GPL(spi_bus_type);
- static int spi_drv_probe(struct device *dev)
- {
- 	const struct spi_driver		*sdrv = to_spi_driver(dev->driver);
-+	struct spi_device		*sdev = to_spi_device(dev);
-+	int				status;
- 
--	return sdrv->probe(to_spi_device(dev));
-+	status = sdrv->probe(sdev);
-+	if (status)
-+		spi_set_drvdata(sdev, NULL);
-+	return status;
- }
- 
- static int spi_drv_remove(struct device *dev)
- {
- 	const struct spi_driver		*sdrv = to_spi_driver(dev->driver);
-+	struct spi_device		*sdev = to_spi_device(dev);
-+	int				status;
- 
--	return sdrv->remove(to_spi_device(dev));
-+	status = sdrv->remove(sdev);
-+	if (status == 0)
-+		spi_set_drvdata(sdev, NULL);
-+	return status;
- }
- 
- static void spi_drv_shutdown(struct device *dev)
--- 
-1.7.11.7
+Please pull, thanks a lot!
+
+The following changes since commit 7e5530af11be68f3109672aed59243f82e1272f0:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2012-12-02 16:39:00 -0800)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc.git master
+
+for you to fetch changes up to 0032c857454581510de1ca12615de5e38e543c92:
+
+  sparc: Fix piggyback with newer binutils. (2012-12-03 11:24:25 -0800)
+
+----------------------------------------------------------------
+David S. Miller (2):
+      sparc64: exit_group should kill register windows just like plain exit.
+      sparc: Fix piggyback with newer binutils.
+
+ arch/sparc/boot/piggyback.c    | 12 ++++++------
+ arch/sparc/kernel/sys32.S      |  2 +-
+ arch/sparc/kernel/syscalls.S   | 14 ++++++++++++--
+ arch/sparc/kernel/systbls_64.S |  2 +-
+ 4 files changed, 20 insertions(+), 10 deletions(-)
 
