@@ -1,88 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754930Ab2LCPCP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 10:02:15 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:50505 "EHLO
+	id S1755200Ab2LCPCk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 10:02:40 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:50511 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753627Ab2LCPCM (ORCPT
+	with ESMTP id S1754999Ab2LCPCi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 10:02:12 -0500
-Subject: [PATCH 2/9] goldfish: add the goldfish virtual bus
+	Mon, 3 Dec 2012 10:02:38 -0500
+Subject: [PATCH 3/9] goldfish: tty driver
 To: arve@android.com, x86@kernel.org, linux-kernel@vger.kernel.org,
         mikechan@google.com
 From: Alan Cox <alan@linux.intel.com>
-Date: Mon, 03 Dec 2012 15:04:31 +0000
-Message-ID: <20121203150430.16826.33748.stgit@bob.linux.org.uk>
+Date: Mon, 03 Dec 2012 15:04:56 +0000
+Message-ID: <20121203150442.16826.82986.stgit@bob.linux.org.uk>
 In-Reply-To: <20121203150310.16826.3363.stgit@bob.linux.org.uk>
 References: <20121203150310.16826.3363.stgit@bob.linux.org.uk>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jun Nakajima <jnakajim@gmail.com>
+From: Arve Hjønnevåg <arve@google.com>
 
-This imports the current Google code and cleans it up slightly to use pr_ and
-to properly request its resources.
+This provides a console driver for the Goldfish virtual platform. The original
+is from Arve with changes from Jun Nakajima and Tom Keel. This has been then
+been ported to the current kernel and to the tty port mechanism by Alan Cox.
+In the process it gained proper POSIX semantics and vhangup works. The default
+name is not ttyS as this belongs to the 8250 driver. Instead ttyGFx is now used.
 
-Goldfish is an emulator used for Android development. It has a virtual bus where
-the emulator passes platform device information to the guest which then creates
-the appropriate devices.
+In the normal usage case the first port serves as a kernel logging console and
+the second one carries various other data streams for the emulation.
 
-This part of the emulation is not architecture specific so should not be hiding
-in architecture trees as it does in the Google Android tree. The constants it
-uses do depend on the platform and so live in arch/goldfish.h
-
+Signed-off-by: Arve Hjønnevåg <arve@google.com>
+[Cleaned up to handle x86]
 Signed-off-by: Sheng Yang <sheng@linux.intel.com>
 Signed-off-by: Yunhong Jiang <yunhong.jiang@intel.com>
 Signed-off-by: Xiaohui Xin <xiaohui.xin@intel.com>
 Signed-off-by: Jun Nakajima <jun.nakajima@intel.com>
 Signed-off-by: Bruce Beare <bruce.j.beare@intel.com>
-[Moved out of x86, cleaned up headers]
+[Moved to 3.7 and chunks rewritten to use tty_port layer]
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/platform/Makefile            |    1 
- drivers/platform/goldfish/Makefile   |    4 +
- drivers/platform/goldfish/pdev_bus.c |  267 ++++++++++++++++++++++++++++++++++
- 3 files changed, 272 insertions(+)
- create mode 100644 drivers/platform/goldfish/Makefile
- create mode 100644 drivers/platform/goldfish/pdev_bus.c
+ drivers/tty/Kconfig    |    6 +
+ drivers/tty/Makefile   |    1 
+ drivers/tty/goldfish.c |  342 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 349 insertions(+)
+ create mode 100644 drivers/tty/goldfish.c
 
 
-diff --git a/drivers/platform/Makefile b/drivers/platform/Makefile
-index b17c16c..8a44a4c 100644
---- a/drivers/platform/Makefile
-+++ b/drivers/platform/Makefile
-@@ -4,3 +4,4 @@
+diff --git a/drivers/tty/Kconfig b/drivers/tty/Kconfig
+index 0ecf22b..89a1007 100644
+--- a/drivers/tty/Kconfig
++++ b/drivers/tty/Kconfig
+@@ -388,3 +388,9 @@ config PPC_EARLY_DEBUG_EHV_BC_HANDLE
+ 	  If the number you specify is not a valid byte channel handle, then
+ 	  there simply will be no early console output.  This is true also
+ 	  if you don't boot under a hypervisor at all.
++
++config GOLDFISH_TTY
++	tristate "Goldfish TTY Driver"
++	depends on GOLDFISH
++	help
++	  Console and system TTY driver for the Goldfish virtual platform.
+diff --git a/drivers/tty/Makefile b/drivers/tty/Makefile
+index 2953059..f8e59ae 100644
+--- a/drivers/tty/Makefile
++++ b/drivers/tty/Makefile
+@@ -27,5 +27,6 @@ obj-$(CONFIG_SYNCLINK_GT)	+= synclink_gt.o
+ obj-$(CONFIG_SYNCLINKMP)	+= synclinkmp.o
+ obj-$(CONFIG_SYNCLINK)		+= synclink.o
+ obj-$(CONFIG_PPC_EPAPR_HV_BYTECHAN) += ehv_bytechan.o
++obj-$(CONFIG_GOLDFISH_TTY)	+= goldfish.o
  
- obj-$(CONFIG_X86)		+= x86/
- obj-$(CONFIG_OLPC)		+= olpc/
-+obj-$(CONFIG_GOLDFISH)		+= goldfish/
-diff --git a/drivers/platform/goldfish/Makefile b/drivers/platform/goldfish/Makefile
+ obj-y += ipwireless/
+diff --git a/drivers/tty/goldfish.c b/drivers/tty/goldfish.c
 new file mode 100644
-index 0000000..6c591f6
+index 0000000..0c2d36c
 --- /dev/null
-+++ b/drivers/platform/goldfish/Makefile
-@@ -0,0 +1,4 @@
-+#
-+# Makefile for Goldfish platform specific drivers
-+#
-+obj-$(CONFIG_GOLDFISH)	+=	pdev_bus.o
-diff --git a/drivers/platform/goldfish/pdev_bus.c b/drivers/platform/goldfish/pdev_bus.c
-new file mode 100644
-index 0000000..dc554d0
---- /dev/null
-+++ b/drivers/platform/goldfish/pdev_bus.c
-@@ -0,0 +1,267 @@
++++ b/drivers/tty/goldfish.c
+@@ -0,0 +1,342 @@
 +/*
-+ * drivers/platform/goldfish/pdev_bus.c
++ * drivers/char/goldfish_tty.c
 + *
 + * Copyright (C) 2007 Google, Inc.
-+ * Copyright (C) 2011 Intel, Inc.
++ * Copyright (C) 2012 Intel, Inc.
 + *
 + * This software is licensed under the terms of the GNU General Public
 + * License version 2, as published by the Free Software Foundation, and
@@ -95,254 +100,329 @@ index 0000000..dc554d0
 + *
 + */
 +
-+#include <linux/kernel.h>
++#include <linux/console.h>
 +#include <linux/init.h>
 +#include <linux/interrupt.h>
-+#include <linux/irq.h>
 +#include <linux/platform_device.h>
++#include <linux/tty.h>
++#include <linux/tty_flip.h>
 +#include <linux/slab.h>
 +#include <linux/io.h>
 +
-+#include <asm/goldfish.h>
++enum {
++	GOLDFISH_TTY_PUT_CHAR       = 0x00,
++	GOLDFISH_TTY_BYTES_READY    = 0x04,
++	GOLDFISH_TTY_CMD            = 0x08,
 +
-+#define PDEV_BUS_OP_DONE        (0x00)
-+#define PDEV_BUS_OP_REMOVE_DEV  (0x04)
-+#define PDEV_BUS_OP_ADD_DEV     (0x08)
++	GOLDFISH_TTY_DATA_PTR       = 0x10,
++	GOLDFISH_TTY_DATA_LEN       = 0x14,
 +
-+#define PDEV_BUS_OP_INIT        (0x00)
-+
-+#define PDEV_BUS_OP             (0x00)
-+#define PDEV_BUS_GET_NAME       (0x04)
-+#define PDEV_BUS_NAME_LEN       (0x08)
-+#define PDEV_BUS_ID             (0x0c)
-+#define PDEV_BUS_IO_BASE        (0x10)
-+#define PDEV_BUS_IO_SIZE        (0x14)
-+#define PDEV_BUS_IRQ            (0x18)
-+#define PDEV_BUS_IRQ_COUNT      (0x1c)
-+
-+struct pdev_bus_dev {
-+	struct list_head list;
-+	struct platform_device pdev;
-+	struct resource resources[0];
++	GOLDFISH_TTY_CMD_INT_DISABLE    = 0,
++	GOLDFISH_TTY_CMD_INT_ENABLE     = 1,
++	GOLDFISH_TTY_CMD_WRITE_BUFFER   = 2,
++	GOLDFISH_TTY_CMD_READ_BUFFER    = 3,
 +};
 +
-+static void goldfish_pdev_worker(struct work_struct *work);
++struct goldfish_tty {
++	struct tty_port port;
++	spinlock_t lock;
++	void __iomem *base;
++	u32 irq;
++	int opencount;
++	struct console console;
++};
 +
-+static void __iomem *pdev_bus_base;
-+static unsigned long pdev_bus_addr;
-+static u32 pdev_bus_irq;
-+static LIST_HEAD(pdev_bus_new_devices);
-+static LIST_HEAD(pdev_bus_registered_devices);
-+static LIST_HEAD(pdev_bus_removed_devices);
-+static DECLARE_WORK(pdev_bus_worker, goldfish_pdev_worker);
++static DEFINE_MUTEX(goldfish_tty_lock);
++static struct tty_driver *goldfish_tty_driver;
++static u32 goldfish_tty_line_count = 8;
++static u32 goldfish_tty_current_line_count;
++static struct goldfish_tty *goldfish_ttys;
 +
-+
-+static void goldfish_pdev_worker(struct work_struct *work)
++static void goldfish_tty_do_write(int line, const char *buf, unsigned count)
 +{
-+	int ret;
-+	struct pdev_bus_dev *pos, *n;
-+
-+	list_for_each_entry_safe(pos, n, &pdev_bus_removed_devices, list) {
-+		list_del(&pos->list);
-+		platform_device_unregister(&pos->pdev);
-+		kfree(pos);
-+	}
-+	list_for_each_entry_safe(pos, n, &pdev_bus_new_devices, list) {
-+		list_del(&pos->list);
-+		ret = platform_device_register(&pos->pdev);
-+		if (ret)
-+			pr_err("goldfish_pdev_worker failed to register device, %s\n",
-+								pos->pdev.name);
-+		list_add_tail(&pos->list, &pdev_bus_registered_devices);
-+	}
++	unsigned long irq_flags;
++	struct goldfish_tty *qtty = &goldfish_ttys[line];
++	void __iomem *base = qtty->base;
++	spin_lock_irqsave(&qtty->lock, irq_flags);
++	writel((u32)buf, base + GOLDFISH_TTY_DATA_PTR);
++	writel(count, base + GOLDFISH_TTY_DATA_LEN);
++	writel(GOLDFISH_TTY_CMD_WRITE_BUFFER, base + GOLDFISH_TTY_CMD);
++	spin_unlock_irqrestore(&qtty->lock, irq_flags);
 +}
 +
-+static void goldfish_pdev_remove(void)
++static irqreturn_t goldfish_tty_interrupt(int irq, void *dev_id)
 +{
-+	struct pdev_bus_dev *pos, *n;
-+	u32 base;
++	struct platform_device *pdev = dev_id;
++	struct goldfish_tty *qtty = &goldfish_ttys[pdev->id];
++	void __iomem *base = qtty->base;
++	unsigned long irq_flags;
++	unsigned char *buf;
++	u32 count;
++	struct tty_struct *tty;
 +
-+	base = readl(pdev_bus_base + PDEV_BUS_IO_BASE);
++	count = readl(base + GOLDFISH_TTY_BYTES_READY);
++	if(count == 0)
++		return IRQ_NONE;
 +
-+	list_for_each_entry_safe(pos, n, &pdev_bus_new_devices, list) {
-+		if (pos->resources[0].start == base) {
-+			list_del(&pos->list);
-+			kfree(pos);
-+			return;
-+		}
++	tty = tty_port_tty_get(&qtty->port);
++	if (tty) {
++		count = tty_prepare_flip_string(tty, &buf, count);
++		spin_lock_irqsave(&qtty->lock, irq_flags);
++		writel((u32)buf, base + GOLDFISH_TTY_DATA_PTR);
++		writel(count, base + GOLDFISH_TTY_DATA_LEN);
++		writel(GOLDFISH_TTY_CMD_READ_BUFFER, base + GOLDFISH_TTY_CMD);
++		spin_unlock_irqrestore(&qtty->lock, irq_flags);
++		tty_schedule_flip(tty);
++		tty_kref_put(tty);
 +	}
-+	list_for_each_entry_safe(pos, n, &pdev_bus_registered_devices, list) {
-+		if (pos->resources[0].start == base) {
-+			list_del(&pos->list);
-+			list_add_tail(&pos->list, &pdev_bus_removed_devices);
-+			schedule_work(&pdev_bus_worker);
-+			return;
-+		}
-+	};
-+	pr_err("goldfish_pdev_remove could not find device at %x\n", base);
++	return IRQ_HANDLED;
 +}
 +
-+static int goldfish_new_pdev(void)
++static int goldfish_tty_activate(struct tty_port *port, struct tty_struct *tty)
 +{
-+	struct pdev_bus_dev *dev;
-+	u32 name_len;
-+	u32 irq = -1, irq_count;
-+	int resource_count = 2;
-+	u32 base;
-+	char *name;
-+
-+	base = readl(pdev_bus_base + PDEV_BUS_IO_BASE);
-+
-+	irq_count = readl(pdev_bus_base + PDEV_BUS_IRQ_COUNT);
-+	name_len = readl(pdev_bus_base + PDEV_BUS_NAME_LEN);
-+	if (irq_count)
-+		resource_count++;
-+
-+	dev = kzalloc(sizeof(*dev) +
-+		sizeof(struct resource) * resource_count +
-+		name_len + 1 + sizeof(*dev->pdev.dev.dma_mask), GFP_ATOMIC);
-+	if (dev == NULL)
-+		return -ENOMEM;
-+
-+	dev->pdev.num_resources = resource_count;
-+	dev->pdev.resource = (struct resource *)(dev + 1);
-+	dev->pdev.name = name = (char *)(dev->pdev.resource + resource_count);
-+	dev->pdev.dev.coherent_dma_mask = ~0;
-+	dev->pdev.dev.dma_mask = (void *)(dev->pdev.name + name_len + 1);
-+	*dev->pdev.dev.dma_mask = ~0;
-+
-+	writel((unsigned long)name, pdev_bus_base + PDEV_BUS_GET_NAME);
-+	name[name_len] = '\0';
-+	dev->pdev.id = readl(pdev_bus_base + PDEV_BUS_ID);
-+	dev->pdev.resource[0].start = base;
-+	dev->pdev.resource[0].end = base +
-+				readl(pdev_bus_base + PDEV_BUS_IO_SIZE) - 1;
-+	dev->pdev.resource[0].flags = IORESOURCE_MEM;
-+	if (irq_count) {
-+		irq = readl(pdev_bus_base + PDEV_BUS_IRQ);
-+		dev->pdev.resource[1].start = irq;
-+		dev->pdev.resource[1].end = irq + irq_count - 1;
-+		dev->pdev.resource[1].flags = IORESOURCE_IRQ;
-+	}
-+
-+	pr_debug("goldfish_new_pdev %s at %x irq %d\n", name, base, irq);
-+	list_add_tail(&dev->list, &pdev_bus_new_devices);
-+	schedule_work(&pdev_bus_worker);
-+
++	struct goldfish_tty *qtty = container_of(port, struct goldfish_tty, port);
++	writel(GOLDFISH_TTY_CMD_INT_ENABLE, qtty->base + GOLDFISH_TTY_CMD);
 +	return 0;
 +}
 +
-+static irqreturn_t goldfish_pdev_bus_interrupt(int irq, void *dev_id)
++static void goldfish_tty_shutdown(struct tty_port *port)
 +{
-+	irqreturn_t ret = IRQ_NONE;
-+	while (1) {
-+		u32 op = readl(pdev_bus_base + PDEV_BUS_OP);
-+		switch (op) {
-+		case PDEV_BUS_OP_DONE:
-+			return IRQ_NONE;
-+
-+		case PDEV_BUS_OP_REMOVE_DEV:
-+			goldfish_pdev_remove();
-+			break;
-+
-+		case PDEV_BUS_OP_ADD_DEV:
-+			goldfish_new_pdev();
-+			break;
-+		}
-+		ret = IRQ_HANDLED;
-+	}
++	struct goldfish_tty *qtty = container_of(port, struct goldfish_tty, port);
++	writel(GOLDFISH_TTY_CMD_INT_DISABLE, qtty->base + GOLDFISH_TTY_CMD);
 +}
 +
-+static int __devinit goldfish_pdev_bus_probe(struct platform_device *pdev)
++static int goldfish_tty_open(struct tty_struct * tty, struct file * filp)
++{
++	struct goldfish_tty *qtty = &goldfish_ttys[tty->index];
++	return tty_port_open(&qtty->port, tty, filp);
++}
++
++static void goldfish_tty_close(struct tty_struct * tty, struct file * filp)
++{
++	tty_port_close(tty->port, tty, filp);
++}
++
++static void goldfish_tty_hangup(struct tty_struct *tty)
++{
++	tty_port_hangup(tty->port);
++}
++
++static int goldfish_tty_write(struct tty_struct * tty, const unsigned char *buf, int count)
++{
++	goldfish_tty_do_write(tty->index, buf, count);
++	return count;
++}
++
++static int goldfish_tty_write_room(struct tty_struct *tty)
++{
++	return 0x10000;
++}
++
++static int goldfish_tty_chars_in_buffer(struct tty_struct *tty)
++{
++	struct goldfish_tty *qtty = &goldfish_ttys[tty->index];
++	void __iomem *base = qtty->base;
++	return readl(base + GOLDFISH_TTY_BYTES_READY);
++}
++
++static void goldfish_tty_console_write(struct console *co, const char *b, unsigned count)
++{
++	goldfish_tty_do_write(co->index, b, count);
++}
++
++static struct tty_driver *goldfish_tty_console_device(struct console *c, int *index)
++{
++	*index = c->index;
++	return goldfish_tty_driver;
++}
++
++static int goldfish_tty_console_setup(struct console *co, char *options)
++{
++	if((unsigned)co->index > goldfish_tty_line_count)
++		return -ENODEV;
++	if(goldfish_ttys[co->index].base == 0)
++		return -ENODEV;
++	return 0;
++}
++
++static struct tty_port_operations goldfish_port_ops = {
++	.activate = goldfish_tty_activate,
++	.shutdown = goldfish_tty_shutdown
++};
++
++static struct tty_operations goldfish_tty_ops = {
++	.open = goldfish_tty_open,
++	.close = goldfish_tty_close,
++	.hangup = goldfish_tty_hangup,
++	.write = goldfish_tty_write,
++	.write_room = goldfish_tty_write_room,
++	.chars_in_buffer = goldfish_tty_chars_in_buffer,
++};
++
++static int __devinit goldfish_tty_create_driver(void)
 +{
 +	int ret;
-+	struct resource *r;
++	struct tty_driver *tty;
 +
-+	r = platform_get_resource(pdev, IORESOURCE_IO, 0);
-+	if (r == NULL)
-+		return -EINVAL;
-+
-+	pdev_bus_addr = GOLDFISH_IO_START + r->start;
-+
-+	if (request_region(pdev_bus_addr, GOLDFISH_IO_SIZE, "goldfish")) {
-+		pr_err("unable to reserve Goldfish MMIO.\n");
-+		return -EBUSY;
++	goldfish_ttys = kzalloc(sizeof(*goldfish_ttys) * goldfish_tty_line_count, GFP_KERNEL);
++	if(goldfish_ttys == NULL) {
++		ret = -ENOMEM;
++		goto err_alloc_goldfish_ttys_failed;
 +	}
-+
-+	pr_err("Goldfish bus at %lX\n", (long)pdev_bus_addr);
-+	pdev_bus_base = ioremap(pdev_bus_addr, GOLDFISH_IO_SIZE);
-+	if (pdev_bus_base == NULL) {
-+		pr_err("unable to map Goldfish MMIO.\n");
-+		return -EIO;
++	tty = alloc_tty_driver(goldfish_tty_line_count);
++	if(tty == NULL) {
++		ret = -ENOMEM;
++		goto err_alloc_tty_driver_failed;
 +	}
++	tty->driver_name = "goldfish";
++	tty->name = "ttyGF";
++	tty->type = TTY_DRIVER_TYPE_SERIAL;
++	tty->subtype = SERIAL_TYPE_NORMAL;
++	tty->init_termios = tty_std_termios;
++	tty->flags = TTY_DRIVER_RESET_TERMIOS | TTY_DRIVER_REAL_RAW | TTY_DRIVER_DYNAMIC_DEV;
++	tty_set_operations(tty, &goldfish_tty_ops);
++	ret = tty_register_driver(tty);
++	if(ret)
++		goto err_tty_register_driver_failed;
 +
-+	r = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-+	if (r == NULL)
-+		return -EINVAL;
-+	pdev_bus_irq = r->start;
++	goldfish_tty_driver = tty;
++	return 0;
 +
-+	ret = request_irq(pdev_bus_irq, goldfish_pdev_bus_interrupt,
-+				IRQF_SHARED, "goldfish_pdev_bus", pdev);
-+	if (ret)
-+		goto err_request_irq_failed;
-+
-+	writel(PDEV_BUS_OP_INIT, pdev_bus_base + PDEV_BUS_OP);
-+
-+err_request_irq_failed:
++err_tty_register_driver_failed:
++	put_tty_driver(tty);
++err_alloc_tty_driver_failed:
++	kfree(goldfish_ttys);
++	goldfish_ttys = NULL;
++err_alloc_goldfish_ttys_failed:
 +	return ret;
 +}
 +
-+static int __devexit goldfish_pdev_bus_remove(struct platform_device *pdev)
++static void goldfish_tty_delete_driver(void)
 +{
-+	free_irq(pdev_bus_irq, pdev);
-+	release_region(pdev_bus_addr, GOLDFISH_IO_SIZE);
++	tty_unregister_driver(goldfish_tty_driver);
++	put_tty_driver(goldfish_tty_driver);
++	goldfish_tty_driver = NULL;
++	kfree(goldfish_ttys);
++	goldfish_ttys = NULL;
++}
++
++static int __devinit goldfish_tty_probe(struct platform_device *pdev)
++{
++	struct goldfish_tty *qtty;
++	int ret = -EINVAL;
++	int i;
++	struct resource *r;
++	struct device *ttydev;
++	void __iomem *base;
++	u32 irq;
++
++	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if(r == NULL)
++		return -EINVAL;
++
++	base = ioremap(r->start, 0x1000);
++	if (base == NULL)
++		pr_err("goldfish_tty: unable to remap base\n");
++
++	r = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
++	if(r == NULL)
++		goto err_unmap;
++
++	irq = r->start;
++
++	if(pdev->id >= goldfish_tty_line_count)
++		goto err_unmap;
++
++	mutex_lock(&goldfish_tty_lock);
++	if(goldfish_tty_current_line_count == 0) {
++		ret = goldfish_tty_create_driver();
++		if(ret)
++			goto err_create_driver_failed;
++	}
++	goldfish_tty_current_line_count++;
++
++	qtty = &goldfish_ttys[pdev->id];
++	spin_lock_init(&qtty->lock);
++	tty_port_init(&qtty->port);
++	qtty->port.ops = &goldfish_port_ops;
++	qtty->base = base;
++	qtty->irq = irq;
++
++	writel(GOLDFISH_TTY_CMD_INT_DISABLE, base + GOLDFISH_TTY_CMD);
++
++	ret = request_irq(irq, goldfish_tty_interrupt, IRQF_SHARED, "goldfish_tty", pdev);
++	if(ret)
++		goto err_request_irq_failed;
++
++
++	ttydev = tty_port_register_device(&qtty->port, goldfish_tty_driver, pdev->id, &pdev->dev);
++	if(IS_ERR(ttydev)) {
++		ret = PTR_ERR(ttydev);
++		goto err_tty_register_device_failed;
++	}
++
++	strcpy(qtty->console.name, "ttyGF");
++	qtty->console.write = goldfish_tty_console_write;
++	qtty->console.device = goldfish_tty_console_device;
++	qtty->console.setup = goldfish_tty_console_setup;
++	qtty->console.flags = CON_PRINTBUFFER;
++	qtty->console.index = pdev->id;
++	register_console(&qtty->console);
++
++	mutex_unlock(&goldfish_tty_lock);
++	return 0;
++
++	tty_unregister_device(goldfish_tty_driver, i);
++err_tty_register_device_failed:
++	free_irq(irq, pdev);
++err_request_irq_failed:
++	goldfish_tty_current_line_count--;
++	if(goldfish_tty_current_line_count == 0)
++		goldfish_tty_delete_driver();
++err_create_driver_failed:
++	mutex_unlock(&goldfish_tty_lock);
++err_unmap:
++	iounmap(base);
++	return ret;
++}
++
++static int goldfish_tty_remove(struct platform_device *pdev)
++{
++	struct goldfish_tty *qtty;
++
++	mutex_lock(&goldfish_tty_lock);
++
++	qtty = &goldfish_ttys[pdev->id];
++	unregister_console(&qtty->console);
++	tty_unregister_device(goldfish_tty_driver, pdev->id);
++	iounmap(qtty->base);
++	qtty->base = 0;
++	free_irq(qtty->irq, pdev);
++	goldfish_tty_current_line_count--;
++	if(goldfish_tty_current_line_count == 0)
++		goldfish_tty_delete_driver();
++	mutex_unlock(&goldfish_tty_lock);
 +	return 0;
 +}
 +
-+static struct platform_driver goldfish_pdev_bus_driver = {
-+	.probe = goldfish_pdev_bus_probe,
-+	.remove = __devexit_p(goldfish_pdev_bus_remove),
++static struct platform_driver goldfish_tty_platform_driver = {
++	.probe = goldfish_tty_probe,
++	.remove = goldfish_tty_remove,
 +	.driver = {
-+		.name = "goldfish_pdev_bus"
++		.name = "goldfish_tty"
 +	}
 +};
 +
-+static int __init goldfish_pdev_bus_init(void)
++static int __init goldfish_tty_init(void)
 +{
-+	return platform_driver_register(&goldfish_pdev_bus_driver);
++	return platform_driver_register(&goldfish_tty_platform_driver);
 +}
 +
-+static void __exit goldfish_pdev_bus_exit(void)
++static void __exit goldfish_tty_exit(void)
 +{
-+	platform_driver_unregister(&goldfish_pdev_bus_driver);
++	platform_driver_unregister(&goldfish_tty_platform_driver);
 +}
 +
-+module_init(goldfish_pdev_bus_init);
-+module_exit(goldfish_pdev_bus_exit);
-+
-+static struct resource goldfish_pdev_bus_resources[] = {
-+	{
-+		.start  = GOLDFISH_PDEV_BUS_BASE,
-+		.end    = GOLDFISH_PDEV_BUS_BASE + GOLDFISH_PDEV_BUS_END - 1,
-+		.flags  = IORESOURCE_IO,
-+	},
-+	{
-+		.start	= GOLDFISH_PDEV_BUS_IRQ,
-+		.end	= GOLDFISH_PDEV_BUS_IRQ,
-+		.flags	= IORESOURCE_IRQ,
-+	}
-+};
-+
-+struct platform_device goldfish_pdev_bus_device = {
-+	.name = "goldfish_pdev_bus",
-+	.id = -1,
-+	.num_resources = ARRAY_SIZE(goldfish_pdev_bus_resources),
-+	.resource = goldfish_pdev_bus_resources
-+};
-+
-+static int __init goldfish_init(void)
-+{
-+	return platform_device_register(&goldfish_pdev_bus_device);
-+}
-+device_initcall(goldfish_init);
++module_init(goldfish_tty_init);
++module_exit(goldfish_tty_exit);
 
