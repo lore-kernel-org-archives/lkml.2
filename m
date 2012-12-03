@@ -1,64 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755448Ab2LCQv2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 11:51:28 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:48897 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752150Ab2LCQv1 (ORCPT
+	id S1755419Ab2LCQxq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 11:53:46 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:36462 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754884Ab2LCQxo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 11:51:27 -0500
-Date: Mon, 3 Dec 2012 11:51:24 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Armando Visconti <armando.visconti@st.com>
-cc: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        spear-devel <spear-devel@list.st.com>
-Subject: Re: [PATCH] nommu: Enable the strict alignment (CR_A) bit only if
- ARCH < v6
-In-Reply-To: <50BCD6DB.2030200@st.com>
-Message-ID: <alpine.LFD.2.02.1212031150580.4576@xanadu.home>
-References: <1354187042-28568-1-git-send-email-armando.visconti@st.com> <50BCD6DB.2030200@st.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Mon, 3 Dec 2012 11:53:44 -0500
+Date: Mon, 3 Dec 2012 08:53:38 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: lizefan@huawei.com, paul@paulmenage.org, glommer@parallels.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        peterz@infradead.org, bsingharora@gmail.com, hannes@cmpxchg.org,
+        kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET cgroup/for-3.8] cpuset: decouple cpuset locking from
+ cgroup core
+Message-ID: <20121203165338.GF19802@htj.dyndns.org>
+References: <1354138460-19286-1-git-send-email-tj@kernel.org>
+ <20121203152205.GB17093@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121203152205.GB17093@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Dec 2012, Armando Visconti wrote:
+Hello, Michal.
 
-> On 11/29/2012 12:04 PM, Armando VISCONTI wrote:
-> > This patch keeps disabled the strict alignment CP15 bit for
-> > all armv6 and armv7 processor without the mmu. This behaviour
-> > is now same as in the mmu case.
-> > 
-> > Signed-off-by: Armando Visconti<armando.visconti@st.com>
-> > ---
-> >   arch/arm/kernel/head-nommu.S |    2 +-
-> >   1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/arch/arm/kernel/head-nommu.S b/arch/arm/kernel/head-nommu.S
-> > index 278cfc1..2c228a0 100644
-> > --- a/arch/arm/kernel/head-nommu.S
-> > +++ b/arch/arm/kernel/head-nommu.S
-> > @@ -68,7 +68,7 @@ __after_proc_init:
-> >   	 * CP15 system control register value returned in r0 from
-> >   	 * the CPU init function.
-> >   	 */
-> > -#ifdef CONFIG_ALIGNMENT_TRAP
-> > +#if defined(CONFIG_ALIGNMENT_TRAP)&&  __LINUX_ARM_ARCH__<  6
-> >   	orr	r0, r0, #CR_A
-> >   #else
-> >   	bic	r0, r0, #CR_A
-> 
-> Any feedback on this simple patch?
+On Mon, Dec 03, 2012 at 04:22:05PM +0100, Michal Hocko wrote:
+> I have glanced through the series and spotten nothing obviously wrong. I
+> do not feel I could give my r-b because I am not familiar with cpusets
+> internals enough and some patches looks quite scary (like #8).
+> Anyway the resulting outcome seems nice.
 
-Acked-by: Nicolas Pitre <nico@linaro.org>
+Thanks a lot for looking at it and, yeah, it's a bit scary.  Li, Paul,
+can you guys please review the series?
 
+Thanks!
 
-Nicolas
+-- 
+tejun
