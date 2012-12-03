@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536Ab2LCOjl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:39:41 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43967 "EHLO
+	id S1755599Ab2LCOkG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:40:06 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43925 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932451Ab2LCOhC (ORCPT
+	by vger.kernel.org with ESMTP id S1755506Ab2LCOg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 09:37:02 -0500
-Message-Id: <20121203143151.652321547@decadent.org.uk>
+	Mon, 3 Dec 2012 09:36:58 -0500
+Message-Id: <20121203143152.231437786@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Dec 2012 14:32:15 +0000
+Date: Mon, 03 Dec 2012 14:32:19 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Yinghai Lu <yinghai@kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [ 29/89] PCI : Calculate right add_size
+        Takashi Iwai <tiwai@suse.de>, Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Rodrigo Vivi <rodrigo.vivi@gmail.com>, Adam Jackson <ajax@redhat.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 33/89] drm/i915: Check VBIOS value for determining LVDS dual channel mode,
+ too
 In-Reply-To: <20121203143146.549859007@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,107 +30,169 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit a4ac9fea016fc5c09227eb479bd35e34978323a4 upstream.
+commit b03543857fd75876b96e10d4320b775e95041bb7 upstream.
 
-During debug of one SRIOV enabled hotplug device, we found found that
-add_size is not passed properly.
+Currently i915 driver checks [PCH_]LVDS register bits to decide
+whether to set up the dual-link or the single-link mode.  This relies
+implicitly on that BIOS initializes the register properly at boot.
+However, BIOS doesn't initialize it always.  When the machine is
+booted with the closed lid, BIOS skips the LVDS reg initialization.
+This ends up in blank output on a machine with a dual-link LVDS when
+you open the lid after the boot.
 
-The device has devices under two level bridges:
+This patch adds a workaround for that problem by checking the initial
+LVDS register value in VBT.
 
- +-[0000:80]-+-00.0-[81-8f]--
- |           +-01.0-[90-9f]--
- |           +-02.0-[a0-af]----00.0-[a1-a3]--+-02.0-[a2]--+-00.0  Oracle Corporation Device
- |           |                               \-03.0-[a3]--+-00.0  Oracle Corporation Device
-
-Which means later the parent bridge will not try to add a big enough range:
-
-[  557.455077] pci 0000:a0:00.0: BAR 14: assigned [mem 0xf9000000-0xf93fffff]
-[  557.461974] pci 0000:a0:00.0: BAR 15: assigned [mem 0xf6000000-0xf61fffff pref]
-[  557.469340] pci 0000:a1:02.0: BAR 14: assigned [mem 0xf9000000-0xf91fffff]
-[  557.476231] pci 0000:a1:02.0: BAR 15: assigned [mem 0xf6000000-0xf60fffff pref]
-[  557.483582] pci 0000:a1:03.0: BAR 14: assigned [mem 0xf9200000-0xf93fffff]
-[  557.490468] pci 0000:a1:03.0: BAR 15: assigned [mem 0xf6100000-0xf61fffff pref]
-[  557.497833] pci 0000:a1:03.0: BAR 14: can't assign mem (size 0x200000)
-[  557.504378] pci 0000:a1:03.0: failed to add optional resources res=[mem 0xf9200000-0xf93fffff]
-[  557.513026] pci 0000:a1:02.0: BAR 14: can't assign mem (size 0x200000)
-[  557.519578] pci 0000:a1:02.0: failed to add optional resources res=[mem 0xf9000000-0xf91fffff]
-
-It turns out we did not calculate size1 properly.
-
-static resource_size_t calculate_memsize(resource_size_t size,
-                resource_size_t min_size,
-                resource_size_t size1,
-                resource_size_t old_size,
-                resource_size_t align)
-{
-        if (size < min_size)
-                size = min_size;
-        if (old_size == 1 )
-                old_size = 0;
-        if (size < old_size)
-                size = old_size;
-        size = ALIGN(size + size1, align);
-        return size;
-}
-
-We should not pass add_size with min_size in calculate_memsize since
-that will make add_size not contribute final add_size.
-
-So just pass add_size with size1 to calculate_memsize().
-
-With this change, we should have chance to remove extra addon in
-pci_reassign_resource.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=37742
+Tested-By: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Reviewed-by: Rodrigo Vivi <rodrigo.vivi@gmail.com>
+Reviewed-by: Adam Jackson <ajax@redhat.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/pci/setup-bus.c |    4 ++--
- drivers/pci/setup-res.c |    5 +++--
- 2 files changed, 5 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/i915/i915_drv.h      |    2 ++
+ drivers/gpu/drm/i915/intel_bios.c    |   36 ++++++++++++++++++++++++++++++++++
+ drivers/gpu/drm/i915/intel_display.c |   30 ++++++++++++++++++++++------
+ 3 files changed, 62 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
-index 86b69f85..9d932f4 100644
---- a/drivers/pci/setup-bus.c
-+++ b/drivers/pci/setup-bus.c
-@@ -612,7 +612,7 @@ static void pbus_size_io(struct pci_bus *bus, resource_size_t min_size,
- 	if (children_add_size > add_size)
- 		add_size = children_add_size;
- 	size1 = (!realloc_head || (realloc_head && !add_size)) ? size0 :
--		calculate_iosize(size, min_size+add_size, size1,
-+		calculate_iosize(size, min_size, add_size + size1,
- 			resource_size(b_res), 4096);
- 	if (!size0 && !size1) {
- 		if (b_res->start || b_res->end)
-@@ -726,7 +726,7 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
- 	if (children_add_size > add_size)
- 		add_size = children_add_size;
- 	size1 = (!realloc_head || (realloc_head && !add_size)) ? size0 :
--		calculate_memsize(size, min_size+add_size, 0,
-+		calculate_memsize(size, min_size, add_size,
- 				resource_size(b_res), min_align);
- 	if (!size0 && !size1) {
- 		if (b_res->start || b_res->end)
-diff --git a/drivers/pci/setup-res.c b/drivers/pci/setup-res.c
-index 6923a9b..241de6c 100644
---- a/drivers/pci/setup-res.c
-+++ b/drivers/pci/setup-res.c
-@@ -255,11 +255,12 @@ int pci_reassign_resource(struct pci_dev *dev, int resno, resource_size_t addsiz
- 		return -EINVAL;
- 	}
+diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
+index b6098b0..4cbed7f 100644
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -406,6 +406,8 @@ typedef struct drm_i915_private {
+ 	unsigned int lvds_use_ssc:1;
+ 	unsigned int display_clock_mode:1;
+ 	int lvds_ssc_freq;
++	unsigned int bios_lvds_val; /* initial [PCH_]LVDS reg val in VBIOS */
++	unsigned int lvds_val; /* used for checking LVDS channel mode */
+ 	struct {
+ 		int rate;
+ 		int lanes;
+diff --git a/drivers/gpu/drm/i915/intel_bios.c b/drivers/gpu/drm/i915/intel_bios.c
+index 0ae76d6..e4317da 100644
+--- a/drivers/gpu/drm/i915/intel_bios.c
++++ b/drivers/gpu/drm/i915/intel_bios.c
+@@ -173,6 +173,28 @@ get_lvds_dvo_timing(const struct bdb_lvds_lfp_data *lvds_lfp_data,
+ 	return (struct lvds_dvo_timing *)(entry + dvo_timing_offset);
+ }
  
--	new_size = resource_size(res) + addsize + min_align;
-+	/* already aligned with min_align */
-+	new_size = resource_size(res) + addsize;
- 	ret = _pci_assign_resource(dev, resno, new_size, min_align);
- 	if (!ret) {
- 		res->flags &= ~IORESOURCE_STARTALIGN;
--		dev_info(&dev->dev, "BAR %d: assigned %pR\n", resno, res);
-+		dev_info(&dev->dev, "BAR %d: reassigned %pR\n", resno, res);
- 		if (resno < PCI_BRIDGE_RESOURCES)
- 			pci_update_resource(dev, resno);
++/* get lvds_fp_timing entry
++ * this function may return NULL if the corresponding entry is invalid
++ */
++static const struct lvds_fp_timing *
++get_lvds_fp_timing(const struct bdb_header *bdb,
++		   const struct bdb_lvds_lfp_data *data,
++		   const struct bdb_lvds_lfp_data_ptrs *ptrs,
++		   int index)
++{
++	size_t data_ofs = (const u8 *)data - (const u8 *)bdb;
++	u16 data_size = ((const u16 *)data)[-1]; /* stored in header */
++	size_t ofs;
++
++	if (index >= ARRAY_SIZE(ptrs->ptr))
++		return NULL;
++	ofs = ptrs->ptr[index].fp_timing_offset;
++	if (ofs < data_ofs ||
++	    ofs + sizeof(struct lvds_fp_timing) > data_ofs + data_size)
++		return NULL;
++	return (const struct lvds_fp_timing *)((const u8 *)bdb + ofs);
++}
++
+ /* Try to find integrated panel data */
+ static void
+ parse_lfp_panel_data(struct drm_i915_private *dev_priv,
+@@ -182,6 +204,7 @@ parse_lfp_panel_data(struct drm_i915_private *dev_priv,
+ 	const struct bdb_lvds_lfp_data *lvds_lfp_data;
+ 	const struct bdb_lvds_lfp_data_ptrs *lvds_lfp_data_ptrs;
+ 	const struct lvds_dvo_timing *panel_dvo_timing;
++	const struct lvds_fp_timing *fp_timing;
+ 	struct drm_display_mode *panel_fixed_mode;
+ 	int i, downclock;
+ 
+@@ -243,6 +266,19 @@ parse_lfp_panel_data(struct drm_i915_private *dev_priv,
+ 			      "Normal Clock %dKHz, downclock %dKHz\n",
+ 			      panel_fixed_mode->clock, 10*downclock);
  	}
++
++	fp_timing = get_lvds_fp_timing(bdb, lvds_lfp_data,
++				       lvds_lfp_data_ptrs,
++				       lvds_options->panel_type);
++	if (fp_timing) {
++		/* check the resolution, just to be sure */
++		if (fp_timing->x_res == panel_fixed_mode->hdisplay &&
++		    fp_timing->y_res == panel_fixed_mode->vdisplay) {
++			dev_priv->bios_lvds_val = fp_timing->lvds_reg_val;
++			DRM_DEBUG_KMS("VBT initial LVDS value %x\n",
++				      dev_priv->bios_lvds_val);
++		}
++	}
+ }
+ 
+ /* Try to find sdvo panel data */
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 683002fb..a76ac2e 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -360,6 +360,27 @@ static const intel_limit_t intel_limits_ironlake_display_port = {
+ 	.find_pll = intel_find_pll_ironlake_dp,
+ };
+ 
++static bool is_dual_link_lvds(struct drm_i915_private *dev_priv,
++			      unsigned int reg)
++{
++	unsigned int val;
++
++	if (dev_priv->lvds_val)
++		val = dev_priv->lvds_val;
++	else {
++		/* BIOS should set the proper LVDS register value at boot, but
++		 * in reality, it doesn't set the value when the lid is closed;
++		 * we need to check "the value to be set" in VBT when LVDS
++		 * register is uninitialized.
++		 */
++		val = I915_READ(reg);
++		if (!(val & ~LVDS_DETECTED))
++			val = dev_priv->bios_lvds_val;
++		dev_priv->lvds_val = val;
++	}
++	return (val & LVDS_CLKB_POWER_MASK) == LVDS_CLKB_POWER_UP;
++}
++
+ static const intel_limit_t *intel_ironlake_limit(struct drm_crtc *crtc,
+ 						int refclk)
+ {
+@@ -368,8 +389,7 @@ static const intel_limit_t *intel_ironlake_limit(struct drm_crtc *crtc,
+ 	const intel_limit_t *limit;
+ 
+ 	if (intel_pipe_has_type(crtc, INTEL_OUTPUT_LVDS)) {
+-		if ((I915_READ(PCH_LVDS) & LVDS_CLKB_POWER_MASK) ==
+-		    LVDS_CLKB_POWER_UP) {
++		if (is_dual_link_lvds(dev_priv, PCH_LVDS)) {
+ 			/* LVDS dual channel */
+ 			if (refclk == 100000)
+ 				limit = &intel_limits_ironlake_dual_lvds_100m;
+@@ -397,8 +417,7 @@ static const intel_limit_t *intel_g4x_limit(struct drm_crtc *crtc)
+ 	const intel_limit_t *limit;
+ 
+ 	if (intel_pipe_has_type(crtc, INTEL_OUTPUT_LVDS)) {
+-		if ((I915_READ(LVDS) & LVDS_CLKB_POWER_MASK) ==
+-		    LVDS_CLKB_POWER_UP)
++		if (is_dual_link_lvds(dev_priv, LVDS))
+ 			/* LVDS with dual channel */
+ 			limit = &intel_limits_g4x_dual_channel_lvds;
+ 		else
+@@ -536,8 +555,7 @@ intel_find_best_PLL(const intel_limit_t *limit, struct drm_crtc *crtc,
+ 		 * reliably set up different single/dual channel state, if we
+ 		 * even can.
+ 		 */
+-		if ((I915_READ(LVDS) & LVDS_CLKB_POWER_MASK) ==
+-		    LVDS_CLKB_POWER_UP)
++		if (is_dual_link_lvds(dev_priv, LVDS))
+ 			clock.p2 = limit->p2.p2_fast;
+ 		else
+ 			clock.p2 = limit->p2.p2_slow;
 
 
