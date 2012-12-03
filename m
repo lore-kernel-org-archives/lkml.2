@@ -1,50 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531Ab2LCVTO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 16:19:14 -0500
-Received: from science.horizon.com ([71.41.210.146]:28054 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751034Ab2LCVTN (ORCPT
+	id S1752568Ab2LCVZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 16:25:58 -0500
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:32794 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752261Ab2LCVZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 16:19:13 -0500
-Date: 3 Dec 2012 16:19:11 -0500
-Message-ID: <20121203211911.20156.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: alan@linux.intel.com, chris@the-brannons.com, gregkh@linuxfoundation.org,
-        jslaby@suse.cz
-Subject: Caps lock XOR on multiple keyboards?
-Cc: linux@horizon.com, linux-kernel@vger.kernel.org
+	Mon, 3 Dec 2012 16:25:56 -0500
+From: Lance Ortiz <lance.ortiz@hp.com>
+Subject: [PATCH v5 1/3] aerdrv: Trace Event for AER
+To: bhelgaas@google.com, lance_ortiz@hotmail.com, jiang.liu@huawei.com,
+        tony.luck@intel.com, bp@alien8.de, rostedt@goodmis.org,
+        mchehab@redhat.com, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 03 Dec 2012 14:20:48 -0700
+Message-ID: <20121203212047.24373.8646.stgit@grignak.americas.hpqcorp.net>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Not sure who owns this; Cc: to the last few people to touch
-drivers/tty/vt/keyboard.c.)
+This header file will define a new trace event that will be triggered when
+a AER event occurs.  The following data will be provided to the trace
+event.
 
-I happen to have both a PS/2 and USB keyboard plugged, in, but was
-noticing that the caps lock key seemed inverted.  When the LED was off,
-I got all caps (unless I used shift), while when it was on I got normal
-lower-case letters.
+char * dev_name - The name of the slot where the device resides
+                  ([domain:]bus:device.function).
 
-This quite confused me, until I looked over and saw that someone had
-hit caps lock on the PS/2.
+u32 status - Either the correctable or uncorrectable register
+             indicating what error or errors have been see.
 
-Experimenting, it seems that each keyboard has its own caps lock LED
-state, and the XOR of the two controls the case of the letters.
+u8 severity - error severity 0:NONFATAL 1:FATAL 2:CORRECTED
 
-The corresponding shift keys have a shared logical state which depends
-on who last had a transition.  Holding down left-shift on one can be
-cancelled by pressing and releasing left-shift on the other.  (But
-left & right shift are tracked separately.)
+The trace event will also provide a trace string that may look like:
 
-It would make more sense if each keyboard's caps lock LED controlled
-the effect on its keys.  Either give each keyboard a completely separate
-caps lock state, or toggle both LEDs when either caps lock is pressed.
+"0000:05:00.0 PCIe Bus Error:severity=Uncorrected (Non-Fatal), Poisoned
+TLP"
 
-Perhaps the answer is "It's too much work to fix; stop doing something
-so stupid", but I thought I'd at least mention it.
+v1-v2 Move header from include/ras/aer_event.h to
+include/trace/events/ras.h
+v3-v4 Cleaned up comments and commit header
+v4-v5 More cleanup remove () from if statement in print.
+      Renamed string define to be more specific.
+Signed-off-by: Lance Ortiz <lance.ortiz@hp.com>
+---
 
-(Er... it appears that my XOR description was incomplete.  I now have
-the keyboard system in a state where *one* caps lock LED has to be on
-to get normal lower-case letters.  I was playing with down1/down2/up1/up2
-combinations, but I'm not quite sure what happened...)
+ include/trace/events/ras.h |   78 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 78 insertions(+), 0 deletions(-)
+ create mode 100644 include/trace/events/ras.h
+
+diff --git a/include/trace/events/ras.h b/include/trace/events/ras.h
+new file mode 100644
+index 0000000..e6f123e
+--- /dev/null
++++ b/include/trace/events/ras.h
+@@ -0,0 +1,78 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM aer_event
++#define TRACE_INCLUDE_FILE ras
++
++#if !defined(_TRACE_AER_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_AER_H
++
++#include <linux/tracepoint.h>
++#include <linux/edac.h>
++
++
++/*
++ * PCIe AER Trace event
++ *
++ * These events are generated when hardware detects a corrected or
++ * uncorrected event on a PCIe device. The event report has
++ * the following structure:
++ *
++ * char * dev_name -	The name of the slot where the device resides
++ *			([domain:]bus:device.function).
++ * u32 status -		Either the correctable or uncorrectable register
++ *			indicating what error or errors have been seen
++ * u8 severity -	error severity 0:NONFATAL 1:FATAL 2:CORRECTED
++ */
++
++#define aer_correctable_errors		\
++	{BIT(0),	"Receiver Error"},		\
++	{BIT(6),	"Bad TLP"},			\
++	{BIT(7),	"Bad DLLP"},			\
++	{BIT(8),	"RELAY_NUM Rollover"},		\
++	{BIT(12),	"Replay Timer Timeout"},	\
++	{BIT(13),	"Advisory Non-Fatal"}
++
++#define aer_uncorrectable_errors		\
++	{BIT(4),	"Data Link Protocol"},		\
++	{BIT(12),	"Poisoned TLP"},		\
++	{BIT(13),	"Flow Control Protocol"},	\
++	{BIT(14),	"Completion Timeout"},		\
++	{BIT(15),	"Completer Abort"},		\
++	{BIT(16),	"Unexpected Completion"},	\
++	{BIT(17),	"Receiver Overflow"},		\
++	{BIT(18),	"Malformed TLP"},		\
++	{BIT(19),	"ECRC"},			\
++	{BIT(20),	"Unsupported Request"}
++
++TRACE_EVENT(aer_event,
++	TP_PROTO(const char *dev_name,
++		 const u32 status,
++		 const u8 severity),
++
++	TP_ARGS(dev_name, status, severity),
++
++	TP_STRUCT__entry(
++		__string(	dev_name,	dev_name	)
++		__field(	u32,		status		)
++		__field(	u8,		severity	)
++	),
++
++	TP_fast_assign(
++		__assign_str(dev_name, dev_name);
++		__entry->status		= status;
++		__entry->severity	= severity;
++	),
++
++	TP_printk("%s PCIe Bus Error: severity=%s, %s\n",
++		__get_str(dev_name),
++		__entry->severity == HW_EVENT_ERR_CORRECTED ? "Corrected" :
++			__entry->severity == HW_EVENT_ERR_FATAL ?
++			"Fatal" : "Uncorrected",
++		__entry->severity == HW_EVENT_ERR_CORRECTED ?
++		__print_flags(__entry->status, "|", aer_correctable_errors) :
++		__print_flags(__entry->status, "|", aer_uncorrectable_errors))
++);
++
++#endif /* _TRACE_AER_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
+
