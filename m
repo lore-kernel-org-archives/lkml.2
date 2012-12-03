@@ -1,97 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754946Ab2LCPMw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 10:12:52 -0500
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:27383
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751670Ab2LCPMv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 10:12:51 -0500
-X-IronPort-AV: E=Sophos;i="4.84,208,1355094000"; 
-   d="scan'208";a="164615138"
-Date: Mon, 3 Dec 2012 16:12:47 +0100
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: linux-kernel@vger.kernel.org
-Subject: Hardware locality (hwloc) v1.6 released]
-Message-ID: <20121203151247.GG14085@type.bordeaux.inria.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	linux-kernel@vger.kernel.org
+	id S1755013Ab2LCPQH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 10:16:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35871 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752084Ab2LCPQD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 10:16:03 -0500
+Date: Mon, 3 Dec 2012 16:16:01 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: azurIt <azurit@pobox.sk>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH for 3.2.34] memcg: do not trigger OOM from
+ add_to_page_cache_locked
+Message-ID: <20121203151601.GA17093@dhcp22.suse.cz>
+References: <20121126131837.GC17860@dhcp22.suse.cz>
+ <20121126132149.GD17860@dhcp22.suse.cz>
+ <20121130032918.59B3F780@pobox.sk>
+ <20121130124506.GH29317@dhcp22.suse.cz>
+ <20121130144427.51A09169@pobox.sk>
+ <20121130144431.GI29317@dhcp22.suse.cz>
+ <20121130160811.6BB25BDD@pobox.sk>
+ <20121130153942.GL29317@dhcp22.suse.cz>
+ <20121130165937.F9564EBE@pobox.sk>
+ <20121130161923.GN29317@dhcp22.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
+In-Reply-To: <20121130161923.GN29317@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Hardware Locality (hwloc) team is pleased to announce the release
-of v1.6:
+On Fri 30-11-12 17:19:23, Michal Hocko wrote:
+[...]
+> The important question is why you see VM_FAULT_OOM and whether memcg
+> charging failure can trigger that. I don not see how this could happen
+> right now because __GFP_NORETRY is not used for user pages (except for
+> THP which disable memcg OOM already), file backed page faults (aka
+> __do_fault) use mem_cgroup_newpage_charge which doesn't disable OOM.
+> This is a real head scratcher.
 
-   http://www.open-mpi.org/projects/hwloc/
+The following should print the traces when we hand over ENOMEM to the
+caller. It should catch all charge paths (migration is not covered but
+that one is not important here). If we don't see any traces from here
+and there is still global OOM striking then there must be something else
+to trigger this.
+Could you test this with the patch which aims at fixing your deadlock,
+please? I realise that this is a production environment but I do not see
+anything relevant in the code.
+---
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index c8425b1..9e5b56b 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2397,6 +2397,7 @@ done:
+ 	return 0;
+ nomem:
+ 	*ptr = NULL;
++	__WARN();
+ 	return -ENOMEM;
+ bypass:
+ 	*ptr = NULL;
 
-v1.6 is a major new release series.  It includes many new features and
-changes over the v1.5.x series.  It brings a significant rework of the
-core which eases the combining of multiple topology discovery sources,
-and future additions of new sources. Some components may also now be
-built and loaded as separate plugins, which should make distribution
-packagers' life easier.
-
-Aside of this core rework, we have the usual set of small API additions
-(one may now export/import its own custom private data to XML), new
-command-line tools (hwloc-annotate), new command-line options, some
-small discovery improvements.
-
-
-Version 1.6.0
--------------
-* Major changes
-  + Reorganize the backend infrastructure to support dynamic selection
-    of components and dynamic loading of plugins. For details, see the
-    new documentation section Components and plugins.
-    - The HWLOC_COMPONENTS variable lets one replace the default discovery
-      components.
-    - Dynamic loading of plugins may be enabled with --enable-plugins
-      (except on AIX and Windows). It will build libxml2 and libpci
-      support as separated modules. This helps reducing the dependencies
-      of the core hwloc library when distributed as a binary package.
-* Backends
-  + Add CPUModel detection on Darwin and x86/FreeBSD.
-    Thanks to Robin Scher for providing ways to implement this.
-  + The x86 backend now adds CPUModel info attributes to socket objects
-    created by other backends that do not natively support this attribute.
-  + Fix detection on FreeBSD in case of cpuset restriction. Thanks to
-    Sebastian Kuzminsky for reporting the problem.
-* XML
-  + Add hwloc_topology_set_userdata_import/export_callback(),
-    hwloc_export_obj_userdata() and _userdata_base64() to let
-    applications specify how to save/restore the custom data they placed
-    in the userdata private pointer field of hwloc objects.
-* Tools
-  + Add hwloc-annotate program to add string info attributes to XML
-    topologies.
-  + Add --pid-cmd to hwloc-ps to append the output of a command to each
-    PID line. May be used for showing Open MPI process ranks, see the
-    hwloc-ps(1) manpage for details.
-  + hwloc-bind now exits with an error if binding fails; the executable
-    is not launched unless binding suceeeded or --force was given.
-  + Add --quiet to hwloc-calc and hwloc-bind to hide non-fatal error
-    messages.
-  + Fix command-line pid support in windows tools.
-  + All programs accept --verbose as a synonym to -v.
-* Misc
-  + Fix some DIR descriptor leaks on Linux.
-  + Fix I/O device lists when some were filtered out after a XML import.
-  + Fix the removal of I/O objects when importing a I/O-enabled XML topology
-    without any I/O topology flag.
-  + When merging objects with HWLOC_IGNORE_TYPE_KEEP_STRUCTURE or
-    lstopo --merge, compare object types before deciding which one of two
-    identical object to remove (e.g. keep sockets in favor of caches).
-  + Add some GUID- and LID-related info attributes to OpenFabrics
-    OS devices.
-  + Only add CPUType socket attributes on Solaris/Sparc. Other cases
-    don't report reliable information (Solaris/x86), and a replacement
-    is available as the Architecture string info in the Machine object.
-  + Add missing Backend string info on Solaris in most cases.
-  + Document object attributes and string infos in a new Attributes
-    section in the documentation.
-  + Add a section about Synthetic topologies in the documentation.
+-- 
+Michal Hocko
+SUSE Labs
