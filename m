@@ -1,44 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754751Ab2LCPn7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 10:43:59 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:64463 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753786Ab2LCPn6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 10:43:58 -0500
-Date: Mon, 3 Dec 2012 15:43:54 +0000
-From: Jamie Iles <jamie@jamieiles.com>
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>, Jamie Iles <jamie@jamieiles.com>,
-        linux-serial@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2 0/5] serial: 8250: 8250_dw changes and dynamic
- capabilities
-Message-ID: <20121203154354.GB20140@page>
-References: <1354533479-27306-1-git-send-email-heikki.krogerus@linux.intel.com>
+	id S1754864Ab2LCPpH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 10:45:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37257 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753835Ab2LCPpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 10:45:05 -0500
+Date: Mon, 3 Dec 2012 15:44:58 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Alex Shi <lkml.alex@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [PATCH 18/52] mm/numa: Migrate on reference policy
+Message-ID: <20121203154458.GO8218@suse.de>
+References: <1354473824-19229-1-git-send-email-mingo@kernel.org>
+ <1354473824-19229-19-git-send-email-mingo@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1354533479-27306-1-git-send-email-heikki.krogerus@linux.intel.com>
+In-Reply-To: <1354473824-19229-19-git-send-email-mingo@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Heikki,
-
-On Mon, Dec 03, 2012 at 01:17:54PM +0200, Heikki Krogerus wrote:
+On Sun, Dec 02, 2012 at 07:43:10PM +0100, Ingo Molnar wrote:
+> From: Mel Gorman <mgorman@suse.de>
 > 
-> Changes since v1:
-> - rebased on top of Greg's tty-next
+> This is the simplest possible policy that still does something
+> of note. When a pte_numa is faulted, it is moved immediately.
+> Any replacement policy must at least do better than this and in
+> all likelihood this policy regresses normal workloads.
 > 
-> These are mainly small 8250_dw.c changes. The interesting patch is
-> probable the first one that changes 8250.c so the drivers are able to
-> deliver their UART's capabilities when they are registering ports.
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> Acked-by: Rik van Riel <riel@redhat.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Paul Turner <pjt@google.com>
+> Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+> Cc: Alex Shi <lkml.alex@gmail.com>
+> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Signed-off-by: Ingo Molnar <mingo@kernel.org>
 
-Other than my comment on 3/5 it looks great.
+It is worth noting that at this point in your combined tree that this
+policy and patch does not and cannot do anything. It has none of the
+faulting machinery, pte scanning, two-stage filter etc that are necessary
+for it to work. So for example, you can not take this point of your tree,
+compare it with balancenuma and get a meaningful comparison.
 
-Reviewed-by: Jamie Iles <jamie@jamieiles.com>
+So while superfically this patch looks like a useful bisection point, it
+isn't. A plain rebase on top of balancenuma would have given us a comparison
+between "do nothing", "do the bare minimum to be useful (balancenuma)" and
+"do something complex (numacore)" even *if* you decided to revert parts
+of balancenuma during your rebase. For example, you might have decided
+to force the removal of migrate rate-limiting even though I stand by it
+being a valid decision to mitigate worst-case behaviour. The key is that
+it would have been possible to bisect parts of numacore to help identify
+the source of any regressions.
 
-Jamie
+This restructure is an all or nothing approach. It does not look like it's
+possible to do a comparison between "do nothing", "do the bare minimum
+(balancenuma)" and "do something complex (numacore)". It would also be
+impossible to do any sort of rebase of autonuma policies on top as was
+the case with balancenuma.
+
+FWIW, I pulled tip again this morning and rebased tip/numa/base to
+3.7-rc7 and queued the result. I had pulled tip/master but it didn't
+boot.
+
+-- 
+Mel Gorman
+SUSE Labs
