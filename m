@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932167Ab2LCOz7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:55:59 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43601 "EHLO
+	id S1755955Ab2LCO4X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:56:23 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43579 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932115Ab2LCOfv (ORCPT
+	by vger.kernel.org with ESMTP id S932108Ab2LCOfs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 09:35:51 -0500
-Message-Id: <20121203143200.474685476@decadent.org.uk>
+	Mon, 3 Dec 2012 09:35:48 -0500
+Message-Id: <20121203143149.339583242@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Dec 2012 14:33:15 +0000
+Date: Mon, 03 Dec 2012 14:32:02 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [ 89/89] intel_idle: enable IVB Xeon support
+Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 16/89] memcg: oom: fix totalpages calculation for memory.swappiness==0
 In-Reply-To: <20121203143146.549859007@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -26,29 +31,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Michal Hocko <mhocko@suse.cz>
 
-commit 23795e580cad5d6b73d47d51b9074ce3e58bf334 upstream.
+commit 9a5a8f19b43430752067ecaee62fc59e11e88fa6 upstream.
 
-IVB Xeon currently shares the same parameters IVB client.
+oom_badness() takes a totalpages argument which says how many pages are
+available and it uses it as a base for the score calculation.  The value
+is calculated by mem_cgroup_get_limit which considers both limit and
+total_swap_pages (resp.  memsw portion of it).
 
-For 3.2, add model number to the switch in intel_idle_probe(), as
-there is no device ID table.
+This is usually correct but since fe35004fbf9e ("mm: avoid swapping out
+with swappiness==0") we do not swap when swappiness is 0 which means
+that we cannot really use up all the totalpages pages.  This in turn
+confuses oom score calculation if the memcg limit is much smaller than
+the available swap because the used memory (capped by the limit) is
+negligible comparing to totalpages so the resulting score is too small
+if adj!=0 (typically task with CAP_SYS_ADMIN or non zero oom_score_adj).
+A wrong process might be selected as result.
 
+The problem can be worked around by checking mem_cgroup_swappiness==0
+and not considering swap at all in such a case.
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/idle/intel_idle.c |    1 +
- 1 file changed, 1 insertion(+)
+ Documentation/cgroups/memory.txt |    4 ++++
+ mm/memcontrol.c                  |   21 +++++++++++++++------
+ 2 files changed, 19 insertions(+), 6 deletions(-)
 
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@ -419,6 +419,7 @@ static int intel_idle_probe(void)
- 		break;
+--- a/Documentation/cgroups/memory.txt
++++ b/Documentation/cgroups/memory.txt
+@@ -440,6 +440,10 @@ Note:
+ 5.3 swappiness
  
- 	case 0x3A:	/* IVB */
-+	case 0x3E:	/* IVB Xeon */
- 		cpuidle_state_table = ivb_cstates;
- 		break;
+ Similar to /proc/sys/vm/swappiness, but affecting a hierarchy of groups only.
++Please note that unlike the global swappiness, memcg knob set to 0
++really prevents from any swapping even if there is a swap storage
++available. This might lead to memcg OOM killer if there are no file
++pages to reclaim.
  
+ Following cgroups' swappiness can't be changed.
+ - root cgroup (uses /proc/sys/vm/swappiness).
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1457,17 +1457,26 @@ static int mem_cgroup_count_children(str
+ u64 mem_cgroup_get_limit(struct mem_cgroup *memcg)
+ {
+ 	u64 limit;
+-	u64 memsw;
+ 
+ 	limit = res_counter_read_u64(&memcg->res, RES_LIMIT);
+-	limit += total_swap_pages << PAGE_SHIFT;
+ 
+-	memsw = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
+ 	/*
+-	 * If memsw is finite and limits the amount of swap space available
+-	 * to this memcg, return that limit.
++	 * Do not consider swap space if we cannot swap due to swappiness
+ 	 */
+-	return min(limit, memsw);
++	if (mem_cgroup_swappiness(memcg)) {
++		u64 memsw;
++
++		limit += total_swap_pages << PAGE_SHIFT;
++		memsw = res_counter_read_u64(&memcg->memsw, RES_LIMIT);
++
++		/*
++		 * If memsw is finite and limits the amount of swap space
++		 * available to this memcg, return that limit.
++		 */
++		limit = min(limit, memsw);
++	}
++
++	return limit;
+ }
+ 
+ /*
 
 
