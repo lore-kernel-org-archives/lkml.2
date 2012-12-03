@@ -1,131 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277Ab2LCJvY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 04:51:24 -0500
-Received: from mail.parknet.co.jp ([210.171.160.6]:44230 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868Ab2LCJvW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 04:51:22 -0500
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v5 5/8] fat: restructure export_operations
-References: <1353504277-5947-1-git-send-email-linkinjeon@gmail.com>
-Date: Mon, 03 Dec 2012 18:51:16 +0900
-In-Reply-To: <1353504277-5947-1-git-send-email-linkinjeon@gmail.com> (Namjae
-	Jeon's message of "Wed, 21 Nov 2012 22:24:37 +0900")
-Message-ID: <87hao35uqz.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	id S1754341Ab2LCJwA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 04:52:00 -0500
+Received: from mga14.intel.com ([143.182.124.37]:4281 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752614Ab2LCJv6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 04:51:58 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,205,1355126400"; 
+   d="asc'?scan'208";a="175348082"
+Date: Mon, 3 Dec 2012 11:53:16 +0200
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: Re: [PATCH v5 05/11] thp: change_huge_pmd(): keep huge zero page
+ write-protected
+Message-ID: <20121203095316.GA16630@otc-wbsnb-06>
+References: <1352300463-12627-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1352300463-12627-6-git-send-email-kirill.shutemov@linux.intel.com>
+ <alpine.DEB.2.00.1211141512400.22537@chino.kir.corp.google.com>
+ <20121115084635.GC9676@otc-wbsnb-06>
+ <alpine.DEB.2.00.1211151344100.27188@chino.kir.corp.google.com>
+ <20121116181321.GA18313@otc-wbsnb-06>
+ <alpine.DEB.2.00.1211161208120.2788@chino.kir.corp.google.com>
+ <20121120160040.GA15401@otc-wbsnb-06>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="dDRMvlgZJXvWKvBx"
+Content-Disposition: inline
+In-Reply-To: <20121120160040.GA15401@otc-wbsnb-06>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
 
-> +	if (MSDOS_SB(inode->i_sb)->options.nfs == FAT_NFS_NOSTALE_RO) {
-> +		/* Use i_pos for ino. This is used as fileid of nfs. */
-> +		stat->ino = fat_i_pos_read(MSDOS_SB(inode->i_sb), inode);
+--dDRMvlgZJXvWKvBx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-BTW, what number is used for root dir? If it is 0 (0 is special ino in
-glibc), we have to use MSDOS_ROOT_INO instead.
+On Tue, Nov 20, 2012 at 06:00:40PM +0200, Kirill A. Shutemov wrote:
+> On Fri, Nov 16, 2012 at 12:10:39PM -0800, David Rientjes wrote:
+> > On Fri, 16 Nov 2012, Kirill A. Shutemov wrote:
+> >=20
+> > > > > > > diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> > > > > > > index d767a7c..05490b3 100644
+> > > > > > > --- a/mm/huge_memory.c
+> > > > > > > +++ b/mm/huge_memory.c
+> > > > > > > @@ -1259,6 +1259,8 @@ int change_huge_pmd(struct vm_area_stru=
+ct *vma, pmd_t *pmd,
+> > > > > > >  		pmd_t entry;
+> > > > > > >  		entry =3D pmdp_get_and_clear(mm, addr, pmd);
+> > > > > > >  		entry =3D pmd_modify(entry, newprot);
+> > > > > > > +		if (is_huge_zero_pmd(entry))
+> > > > > > > +			entry =3D pmd_wrprotect(entry);
+> > > > > > >  		set_pmd_at(mm, addr, pmd, entry);
+> > > > > > >  		spin_unlock(&vma->vm_mm->page_table_lock);
+> > > > > > >  		ret =3D 1;
+> > > > > >=20
+> > > > > > Nack, this should be handled in pmd_modify().
+> > > > >=20
+> > > > > I disagree. It means we will have to enable hzp per arch. Bad ide=
+a.
+> > > > >=20
+> > > >=20
+> > > > pmd_modify() only exists for those architectures with thp support a=
+lready,=20
+> > > > so you've already implicitly enabled for all the necessary architec=
+tures=20
+> > > > with your patchset.
+> > >=20
+> > > Now we have huge zero page fully implemented inside mm/huge_memory.c.=
+ Push
+> > > this logic to pmd_modify() means we expose hzp implementation details=
+ to
+> > > arch code. Looks ugly for me.
+> > >=20
+> >=20
+> > So you are suggesting that anybody who ever does pmd_modify() in the=20
+> > future is responsible for knowing about the zero page and to protect=20
+> > against giving it write permission in the calling code??
+>=20
+> Looks like we don't need the patch at all.
+>=20
+> IIUC, if you ask for PROT_WRITE vm_get_page_prot() will translate it to
+> _PAGE_COPY or similar and you'll only get the page writable on pagefault.
+>=20
+> Could anybody confirm that it's correct?
+>=20
+> --=20
+>  Kirill A. Shutemov
 
-> +#define FAT_FID_SIZE_WITHOUT_PARENT (offsetof(struct fat_fid, \
-> +					      parent_i_pos_hi)/4)
+Andrew, please drop the patch or replace it with the patch below, if you
+wish.
 
-(offset parent_i_pos_hi) / 4 == 2. Wrong.
+=46rom 048e3d4c97202cfecab55ead2a816421dce4b382 Mon Sep 17 00:00:00 2001
+=46rom: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Date: Tue, 7 Aug 2012 06:09:56 -0700
+Subject: [PATCH] thp: change_huge_pmd(): make sure we don't try to make a
+ page writable
 
-> +#define FAT_FID_SIZE_WITH_PARENT (sizeof(struct fat_fid)/4)
+mprotect core never tries to make page writable using change_huge_pmd().
+Let's add an assert that the assumption is true. It's important to be
+sure we will not make huge zero page writable.
 
-4 should be sizeof(u32). Or simplely use immediate value.
+Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+---
+ mm/huge_memory.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-> +static int
-> +fat_encode_fh_nostale(struct inode *inode, __u32 *fh, int *lenp,
-> +		      struct inode *parent)
-> +{
-> +	int len = *lenp;
-> +	struct msdos_sb_info *sbi = MSDOS_SB(inode->i_sb);
-> +	struct fat_fid *fid = (struct fat_fid *) fh;
-> +	loff_t i_pos;
-> +	int type = FILEID_FAT_WITHOUT_PARENT;
-> +
-> +	if (parent && (len < FAT_FID_SIZE_WITH_PARENT)) {
-> +		*lenp = FAT_FID_SIZE_WITH_PARENT;
-> +		return 255;
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index f5589c0..5fba83b 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1245,6 +1245,7 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t=
+ *pmd,
+ 		pmd_t entry;
+ 		entry =3D pmdp_get_and_clear(mm, addr, pmd);
+ 		entry =3D pmd_modify(entry, newprot);
++		BUG_ON(pmd_write(entry));
+ 		set_pmd_at(mm, addr, pmd, entry);
+ 		spin_unlock(&vma->vm_mm->page_table_lock);
+ 		ret =3D 1;
+--=20
+ Kirill A. Shutemov
 
-255 is now FILEID_INVALID, I think.
+--dDRMvlgZJXvWKvBx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> +	} else if (len < FAT_FID_SIZE_WITHOUT_PARENT) {
-> +		*lenp = FAT_FID_SIZE_WITHOUT_PARENT;
-> +		return 255;
-> +	}
-> +
-> +	i_pos = fat_i_pos_read(sbi, inode);
-> +	*lenp = FAT_FID_SIZE_WITHOUT_PARENT;
-> +	fid->i_gen = inode->i_generation;
-> +	fid->i_pos_low = i_pos & 0xFFFFFFFF;
-> +	fid->i_pos_hi = (i_pos >> 32) & 0xFFFF;
-> +	if (parent) {
-> +		i_pos = fat_i_pos_read(sbi, parent);
-> +		fid->parent_i_pos_hi = (i_pos >> 32) & 0xFFFF;
-> +		fid->parent_i_pos_low = i_pos & 0xFFFFFFFF;
-> +		fid->parent_i_gen = parent->i_generation;
-> +		type = FILEID_FAT_WITH_PARENT;
-> +		*lenp = FAT_FID_SIZE_WITH_PARENT;
-> +	}
-> +
-> +	return type;
-> +}
-> +
->  /**
->   * Map a NFS file handle to a corresponding dentry.
->   * The dentry may or may not be connected to the filesystem root.
->   */
-> -struct dentry *fat_fh_to_dentry(struct super_block *sb, struct fid *fid,
-> +static struct dentry *fat_fh_to_dentry(struct super_block *sb, struct fid *fid,
->  				int fh_len, int fh_type)
->  {
->  	return generic_fh_to_dentry(sb, fid, fh_len, fh_type,
->  				    fat_nfs_get_inode);
->  }
->  
-> +static struct dentry *fat_fh_to_dentry_nostale(struct super_block *sb,
-> +					       struct fid *fh, int fh_len,
-> +					       int fh_type)
-> +{
-> +	struct inode *inode = NULL;
-> +	struct fat_fid *fid = (struct fat_fid *)fh;
-> +	loff_t i_pos;
-> +
-> +	switch (fh_type) {
-> +	case FILEID_FAT_WITHOUT_PARENT:
-> +		if (fh_len < FAT_FID_SIZE_WITHOUT_PARENT)
-> +			return NULL;
-> +	case FILEID_FAT_WITH_PARENT:
-> +		if ((fh_len < FAT_FID_SIZE_WITH_PARENT) &&
-> +			(fh_type == FILEID_FAT_WITH_PARENT))
-> +			return NULL;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Do we have to care (FILEID_FAT_WITH_PARENT and fh_len < 5) here?
+iQIcBAEBAgAGBQJQvHaMAAoJEAd+omnVudOMQsgP/07sICwPKwcv5Gz5fKuF+zM8
+aWysH2PmgmKRG6sgytwvWknjdEI704Qfa/suQ/keaoQmmT+JbamgOC5ZGln5F7vC
+ebDWAh3+wTK1oTKeg4b3KOUBRFuf6Gb4AD57ZVwa8O2jKdAxrbbCUGB9JlFbVdU7
+otwB3fBmOpuLUnD8spRJBmF4TxkUMe5mhvatqdS161GHMSg3At4zuwf8x1crG6DV
+2FsKDk/XazqwaECcScbf9UEObC0nR5tM8hqiNRNDs+RSt9TXIZI+/6ywcTckRJo1
+xu4OSUMbPW+00ZtHOvTShP48vSpZTK/RmHODBOJPVyDiJiQRX0gFBs636uVws+kv
+ZwVSFK30rCIq8ppW2Vas0Q3tHFjVvE5bZRwBNtQ1HkAY4YY2y9GxgukDs9qqahPC
+HNeeY8c7iLCbFQX3VChG6o4NoFj3wGsQkYdaXxbcowPQfmaiOKV2LgLl4P2hzB6L
+vS4CQPaklj2VD1nQRCmkl911uHxVtv0gHnaWEqABP1oMqfdwPUZvzskoZj23rgX6
+Tf0qGwfKzWEGm46FZBoq1NFrKU2in9ddLG4JpPMQ0WPK6G9fdWPqA2biUs5W0w0w
+IIfNW3t4PLdZcNEQdRk0LBD2JViFCpGwJoD64wngaIz91gJxFuhBTPclWOd1DhO7
+rBfCzovBdsrLZztcbsvP
+=Lv6W
+-----END PGP SIGNATURE-----
 
-	if (fh_len < 2)
-		return NULL;
-
-	switch (fh_type) {
-	case FILEID_INO32_GEN:
-	case FILEID_INO32_GEN_PARENT:
-		inode = get_inode(sb, fid->i32.ino, fid->i32.gen);
-		break;
-	}
-
-	return d_obtain_alias(inode);
-
-generic_fh_to_dentry() is above. I wonder why we have to care
-fat_fid->parent* here.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+--dDRMvlgZJXvWKvBx--
