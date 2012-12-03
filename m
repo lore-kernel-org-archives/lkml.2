@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752475Ab2LCVSB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 16:18:01 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:53470 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750923Ab2LCVR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 16:17:57 -0500
-Date: Mon, 3 Dec 2012 22:17:54 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: "Ortiz, Lance E" <lance.oritz@hp.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "lance_ortiz@hotmail.com" <lance_ortiz@hotmail.com>,
-        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Zhang Yanmin <yanmin.zhang@intel.com>
-Subject: Re: [PATCH v3 1/3] aerdrv: Trace Event for AER
-Message-ID: <20121203211754.GA15693@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"Ortiz, Lance E" <lance.oritz@hp.com>,
-	Mauro Carvalho Chehab <mchehab@redhat.com>,
-	"bhelgaas@google.com" <bhelgaas@google.com>,
-	"lance_ortiz@hotmail.com" <lance_ortiz@hotmail.com>,
-	"jiang.liu@huawei.com" <jiang.liu@huawei.com>,
-	"tony.luck@intel.com" <tony.luck@intel.com>,
-	"rostedt@goodmis.org" <rostedt@goodmis.org>,
-	"linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-	"linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	Zhang Yanmin <yanmin.zhang@intel.com>
-References: <20121130213330.7649.51101.stgit@grignak.americas.hpqcorp.net>
- <20121201093614.720aa96a@redhat.com>
- <A961433CDFF2F640A2866803152E61F9516EE717@G4W3218.americas.hpqcorp.net>
- <20121203202756.GB14798@liondog.tnic>
- <A961433CDFF2F640A2866803152E61F9516EE7B0@G4W3218.americas.hpqcorp.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <A961433CDFF2F640A2866803152E61F9516EE7B0@G4W3218.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752531Ab2LCVTO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 16:19:14 -0500
+Received: from science.horizon.com ([71.41.210.146]:28054 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751034Ab2LCVTN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 16:19:13 -0500
+Date: 3 Dec 2012 16:19:11 -0500
+Message-ID: <20121203211911.20156.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: alan@linux.intel.com, chris@the-brannons.com, gregkh@linuxfoundation.org,
+        jslaby@suse.cz
+Subject: Caps lock XOR on multiple keyboards?
+Cc: linux@horizon.com, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 03, 2012 at 09:13:49PM +0000, Ortiz, Lance E wrote:
-> This a fine idea. I'm thinking we might want to implement that in a
-> later patch since it is a bigger change and we still need to see about
-> adding additional strings.
+(Not sure who owns this; Cc: to the last few people to touch
+drivers/tty/vt/keyboard.c.)
 
-Yes, definitely in a later patch or more depending on how much changes
-are needed (haven't looked closely at the whole deal).
+I happen to have both a PS/2 and USB keyboard plugged, in, but was
+noticing that the caps lock key seemed inverted.  When the LED was off,
+I got all caps (unless I used shift), while when it was on I got normal
+lower-case letters.
 
-> I can send out one more version of the patch with the comment header
-> changes you suggested, and the comments Joe had and maybe we can move
-> forward with that.
+This quite confused me, until I looked over and saw that someone had
+hit caps lock on the PS/2.
 
-Sure, thanks.
+Experimenting, it seems that each keyboard has its own caps lock LED
+state, and the XOR of the two controls the case of the letters.
 
--- 
-Regards/Gruss,
-    Boris.
+The corresponding shift keys have a shared logical state which depends
+on who last had a transition.  Holding down left-shift on one can be
+cancelled by pressing and releasing left-shift on the other.  (But
+left & right shift are tracked separately.)
+
+It would make more sense if each keyboard's caps lock LED controlled
+the effect on its keys.  Either give each keyboard a completely separate
+caps lock state, or toggle both LEDs when either caps lock is pressed.
+
+Perhaps the answer is "It's too much work to fix; stop doing something
+so stupid", but I thought I'd at least mention it.
+
+(Er... it appears that my XOR description was incomplete.  I now have
+the keyboard system in a state where *one* caps lock LED has to be on
+to get normal lower-case letters.  I was playing with down1/down2/up1/up2
+combinations, but I'm not quite sure what happened...)
