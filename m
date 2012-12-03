@@ -1,56 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918Ab2LCUID (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 15:08:03 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:40362 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792Ab2LCUIB (ORCPT
+	id S1752020Ab2LCULX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 15:11:23 -0500
+Received: from shrek-wifi.podlesie.net ([93.179.225.50]:56796 "EHLO
+	shrek.podlesie.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751165Ab2LCULV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 15:08:01 -0500
-Date: Mon, 03 Dec 2012 15:07:59 -0500 (EST)
-Message-Id: <20121203.150759.585217844505239949.davem@davemloft.net>
-To: mst@redhat.com
-Cc: jasowang@redhat.com, nhorman@tuxdriver.com, ramirose@gmail.com,
-        davej@redhat.com, mtk.manpages@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3] tun: only queue packets on device
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20121203200714.GA2183@redhat.com>
-References: <20121203200714.GA2183@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Dec 2012 15:11:21 -0500
+Date: Mon, 3 Dec 2012 21:11:18 +0100
+From: Krzysztof Mazur <krzysiek@podlesie.net>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] atm: introduce vcc_pop_skb()
+Message-ID: <20121203201118.GB19460@shrek.podlesie.net>
+References: <20121127173906.GA11390@shrek.podlesie.net>
+ <1354039349.2534.11.camel@shinybook.infradead.org>
+ <20121127182843.GA11597@shrek.podlesie.net>
+ <20121128201837.GA912@shrek.podlesie.net>
+ <20121128162001.3f326720@thirdoffive.cmf.nrl.navy.mil>
+ <20121128214533.GA25486@shrek.podlesie.net>
+ <20121128165906.05ef5e2b@thirdoffive.cmf.nrl.navy.mil>
+ <20121128221040.GA24035@shrek.podlesie.net>
+ <20121128223300.GA12527@shrek.podlesie.net>
+ <1354540961.24281.82.camel@shinybook.infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354540961.24281.82.camel@shinybook.infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Date: Mon, 3 Dec 2012 22:07:14 +0200
+On Mon, Dec 03, 2012 at 01:22:41PM +0000, David Woodhouse wrote:
+> On Wed, 2012-11-28 at 23:33 +0100, Krzysztof Mazur wrote:
+> > 
+> > Many ATM drivers store vcc in ATM_SKB(skb)->vcc and use it for
+> > freeing skbs. Now they can just use atm_pop_skb() to free such
+> > buffers.
+> > 
+> > Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
+> 
+> Note that this one didn't make it into the tree that Dave just pulled.
+> 
+> Not that I didn't think it was a good idea, but it was just separate
+> from the other "real" fixes ??? and the tree had already grown into a big
+> enough pile from your original single patch!
 
-> Historically tun supported two modes of operation:
-> - in default mode, a small number of packets would get queued
->   at the device, the rest would be queued in qdisc
-> - in one queue mode, all packets would get queued at the device
-> 
-> This might have made sense up to a point where we made the
-> queue depth for both modes the same and set it to
-> a huge value (500) so unless the consumer
-> is stuck the chance of losing packets is small.
-> 
-> Thus in practice both modes behave the same, but the
-> default mode has some problems:
-> - if packets are never consumed, fragments are never orphaned
->   which cases a DOS for sender using zero copy transmit
-> - overrun errors are hard to diagnose: fifo error is incremented
->   only once so you can not distinguish between
->   userspace that is stuck and a transient failure,
->   tcpdump on the device does not show any traffic
-> 
-> Userspace solves this simply by enabling IFF_ONE_QUEUE
-> but there seems to be little point in not doing the
-> right thing for everyone, by default.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+That patch is a preparation of separate series. The current version
+(far from final version) is available at:
 
-Applied, thanks Michael.
+git://git.podlesie.net/km/linux.git atm-pop
+
+and
+
+http://git.podlesie.net/gitweb.cgi?p=km/linux.git;a=shortlog;h=refs/heads/atm-pop
+
+Patch 3 and especially patch 4 are far from being ready. They are also ugly
+because many ATM drivers use strange coding style and I tried to use that
+style because using different style for new code would be probably be even worse.
+
+Currently there are 4 patches:
+      atm: introduce vcc_pop()
+      atm: introduce vcc_pop_skb()
+      atm: convert drivers to use vcc_pop*()
+      atm: add missing vcc_pop*() calls in drivers
+
+The first two introduce two helpers vcc_pop() and vcc_pop_skb(). The third
+should be 1:1 conversion of vcc->pop() users to vcc_pop*() interface.
+The forth patch fixes some problems I've found. In all cases the bugs
+occurs in error handling code, in most cases dev_kfree_skb() is used
+instead of vcc_pop(), in some cases driver just returns some error
+code and skb is never freed, in two cases I removed the vcc->pop()
+call in code like:
+
+static int eni_send(struct atm_vcc *vcc,struct sk_buff *skb)
+{
+	[...]
+	if (!skb) {
+		printk(KERN_CRIT "!skb in eni_send ?\n");
+		if (vcc->pop) vcc->pop(vcc,skb);
+		return -EINVAL;
+	}
+
+I don't think that we should check for !skb and even if skb == NULL
+it's not a good idea to call vcc->pop() because it will crash.
+
+Current diffstat:
+ drivers/atm/adummy.c     |  5 +---
+ drivers/atm/ambassador.c | 34 ++++++++++++++--------------
+ drivers/atm/atmtcp.c     | 15 ++++--------
+ drivers/atm/eni.c        | 11 ++++-----
+ drivers/atm/firestream.c | 19 ++--------------
+ drivers/atm/fore200e.c   | 23 ++++---------------
+ drivers/atm/he.c         | 33 ++++++---------------------
+ drivers/atm/horizon.c    | 31 +++++++++----------------
+ drivers/atm/idt77252.c   | 32 +++++++-------------------
+ drivers/atm/iphase.c     | 59 +++++++++++++-----------------------------------
+ drivers/atm/lanai.c      | 18 ++++-----------
+ drivers/atm/nicstar.c    | 31 ++++++++-----------------
+ drivers/atm/solos-pci.c  |  5 +---
+ drivers/atm/zatm.c       | 13 ++++-------
+ drivers/usb/atm/usbatm.c | 17 ++++----------
+ include/linux/atmdev.h   | 16 +++++++++++++
+ net/atm/common.c         | 15 ++++++++++++
+ 17 files changed, 128 insertions(+), 249 deletions(-)
+
+> 
+> In <20121006154606.GA25588@shrek.podlesie.net> you posted another patch:
+> > I think there is another problem here. The pppoatm gets a reference
+> > to atmvcc, but I don't see anything that protects against removal
+> > of that vcc.
+> > 
+> > The vcc uses vcc->sk socket for reference counting, so sock_hold()
+> > and sock_put() should be used by pppoatm.
+> 
+> That one I think *isn't* needed, because we have properly fixed the
+> races with vcc_destroy_socket(). I just wanted to check you agree...?
+> 
+
+It was never really needed, I removed it from v3.
+
+Thanks,
+
+Krzysiek
