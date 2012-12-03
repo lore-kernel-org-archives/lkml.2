@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932471Ab2LCOiW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:38:22 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43992 "EHLO
+	id S932558Ab2LCOih (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:38:37 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:44004 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932496Ab2LCOhH (ORCPT
+	by vger.kernel.org with ESMTP id S932478Ab2LCOhH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 3 Dec 2012 09:37:07 -0500
-Message-Id: <20121203143150.410579422@decadent.org.uk>
+Message-Id: <20121203143150.585465625@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Dec 2012 14:32:08 +0000
+Date: Mon, 03 Dec 2012 14:32:09 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        Ulrich Weber <ulrich.weber@sophos.com>,
         Pablo Neira Ayuso <pablo@netfilter.org>
-Subject: [ 22/89] netfilter: Validate the sequence number of dataless ACK packets as
- well
+Subject: [ 23/89] netfilter: nf_nat: dont check for port change on ICMP tuples
 In-Reply-To: <20121203143146.549859007@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,44 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+From: Ulrich Weber <ulrich.weber@sophos.com>
 
-commit 4a70bbfaef0361d27272629d1a250a937edcafe4 upstream.
+commit 38fe36a248ec3228f8e6507955d7ceb0432d2000 upstream.
 
-We spare nothing by not validating the sequence number of dataless
-ACK packets and enabling it makes harder off-path attacks.
+ICMP tuples have id in src and type/code in dst.
+So comparing src.u.all with dst.u.all will always fail here
+and ip_xfrm_me_harder() is called for every ICMP packet,
+even if there was no NAT.
 
-See: "Reflection scan: an Off-Path Attack on TCP" by Jan Wrobel,
-http://arxiv.org/abs/1201.2074
-
-Signed-off-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+Signed-off-by: Ulrich Weber <ulrich.weber@sophos.com>
+[Pablo Neira Ayuso: Backported to.3.0]
 Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/netfilter/nf_conntrack_proto_tcp.c |   10 ++--------
- 1 file changed, 2 insertions(+), 8 deletions(-)
+ net/ipv4/netfilter/nf_nat_standalone.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/net/netfilter/nf_conntrack_proto_tcp.c b/net/netfilter/nf_conntrack_proto_tcp.c
-index 1eb458c..a9d5f50 100644
---- a/net/netfilter/nf_conntrack_proto_tcp.c
-+++ b/net/netfilter/nf_conntrack_proto_tcp.c
-@@ -625,15 +625,9 @@ static bool tcp_in_window(const struct nf_conn *ct,
- 		ack = sack = receiver->td_end;
- 	}
+diff --git a/net/ipv4/netfilter/nf_nat_standalone.c b/net/ipv4/netfilter/nf_nat_standalone.c
+index 483b76d..b2c3ed7 100644
+--- a/net/ipv4/netfilter/nf_nat_standalone.c
++++ b/net/ipv4/netfilter/nf_nat_standalone.c
+@@ -194,7 +194,8 @@ nf_nat_out(unsigned int hooknum,
  
--	if (seq == end
--	    && (!tcph->rst
--		|| (seq == 0 && state->state == TCP_CONNTRACK_SYN_SENT)))
-+	if (tcph->rst && seq == 0 && state->state == TCP_CONNTRACK_SYN_SENT)
- 		/*
--		 * Packets contains no data: we assume it is valid
--		 * and check the ack value only.
--		 * However RST segments are always validated by their
--		 * SEQ number, except when seq == 0 (reset sent answering
--		 * SYN.
-+		 * RST sent answering SYN.
- 		 */
- 		seq = end = sender->td_end;
- 
+ 		if ((ct->tuplehash[dir].tuple.src.u3.ip !=
+ 		     ct->tuplehash[!dir].tuple.dst.u3.ip) ||
+-		    (ct->tuplehash[dir].tuple.src.u.all !=
++		    (ct->tuplehash[dir].tuple.dst.protonum != IPPROTO_ICMP &&
++		     ct->tuplehash[dir].tuple.src.u.all !=
+ 		     ct->tuplehash[!dir].tuple.dst.u.all)
+ 		   )
+ 			return ip_xfrm_me_harder(skb) == 0 ? ret : NF_DROP;
+@@ -230,7 +231,8 @@ nf_nat_local_fn(unsigned int hooknum,
+ 				ret = NF_DROP;
+ 		}
+ #ifdef CONFIG_XFRM
+-		else if (ct->tuplehash[dir].tuple.dst.u.all !=
++		else if (ct->tuplehash[dir].tuple.dst.protonum != IPPROTO_ICMP &&
++			 ct->tuplehash[dir].tuple.dst.u.all !=
+ 			 ct->tuplehash[!dir].tuple.src.u.all)
+ 			if (ip_xfrm_me_harder(skb))
+ 				ret = NF_DROP;
 
 
