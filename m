@@ -1,122 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751543Ab2LCXIj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 18:08:39 -0500
-Received: from mga11.intel.com ([192.55.52.93]:3622 "EHLO mga11.intel.com"
+	id S1751573Ab2LCXOX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 18:14:23 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:54414 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751149Ab2LCXIi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 18:08:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,209,1355126400"; 
-   d="scan'208";a="256789392"
-From: Dave Jiang <dave.jiang@intel.com>
-Subject: [PATCH] ioat: Add alignment workaround for IVB platforms
-To: djbw@fb.com, vinod.koul@intel.com
-Cc: linux-kernel@vger.kernel.org
-Date: Mon, 03 Dec 2012 16:08:37 -0700
-Message-ID: <20121203230837.29219.20710.stgit@djiang5-linux.ch.intel.com>
-User-Agent: StGIT/0.14.3
+	id S1751327Ab2LCXOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 18:14:21 -0500
+Message-ID: <50BD3244.900@linaro.org>
+Date: Mon, 03 Dec 2012 15:14:12 -0800
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Heinz Wiesinger <HMWiesinger@gmx.at>
+CC: Greg KH <gregkh@linuxfoundation.org>, Jonathan Nieder <jrnieder@gmail.com>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Rabin Vincent <rabin.vincent@stericsson.com>,
+        Janne Boman <janne.m.boman@gmail.com>, rtc-linux@googlegroups.com
+Subject: Re: [regression] Re: [ 049/149] rtc: Disable the alarm in the hardware
+ (v2)
+References: <20120330195823.GA31857@kroah.com> <20121105091118.GA12721@elie.Belkin> <20121105101331.GA24688@kroah.com> <1672482.cmtUloFutg@callisto>
+In-Reply-To: <1672482.cmtUloFutg@callisto>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12120323-7182-0000-0000-0000037F0EBC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PCI IDs for IvyBridge IOAT DMA needs to go into a header file since
-dma_v3.c looks them up for certain hardware workarounds. Need to add to the
-alignment workaround for IOAT 3.2 since it wasn't fixed in IVB.
+On 11/05/2012 02:55 PM, Heinz Wiesinger wrote:
+> On Monday 05 November 2012 11:13:31 Greg KH wrote:
+>> On Mon, Nov 05, 2012 at 01:11:18AM -0800, Jonathan Nieder wrote:
+>>> Hi,
+>>>
+>>> In March, Greg KH wrote:
+>>>> 3.2-stable review patch.  If anyone has any objections, please let me
+>>>> know.
+>>> Sorry, I'm a little late.  This seems to be causing spurious wakeups
+>>> after shutdown on some systems just like v1 did. :/
+>>>
+>>> Janne Boman reports[1], using an HP EliteBook 8530w:
+>>> | I'm unable to shutdown my system via normal means. The system
+>>> | completes the shutdown process, all hardware lights are off, but then
+>>> | somehow it restarts.
+>>>
+>>> Based on a quick web search, Heinz Wiesinger, using the same model,
+>>>
+>>> ran into the same problem and bisected it to this patch:
+>>>    https://bugzilla.kernel.org/show_bug.cgi?id=44261
+>>>
+>>> Janne confirmed the same by testing kernels closely based on 3.2.13
+>>> and 3.2.14 --- 3.2.13 shut down fine, while on 3.2.14 "shutdown -h
+>>> now" behaved roughly speaking like "reboot".  A kernel close to 3.6.4
+>>> was also affected.
+>> So is 3.6.6 still and issue?  How about 3.7-rc4?  3.4.18?  Figuring out
+>> if this is still an issue in Linus's tree would be the best thing to do
+>> first.
+> I checked 3.7-rc4 and the issue is still there. Should I still test the other
+> versions as well? I can do so but it might take a bit.
+>
+> If you need anything else, I'll be happy to help wherever I can.
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
----
+Hey Heinz,
+   Sorry for being slow to respond to this, I was on leave when it 
+arrived, and it got buried under other items.
 
- drivers/dma/ioat/dma_v3.c |   22 +++++++++++++++++++++-
- drivers/dma/ioat/hw.h     |   11 +++++++++++
- drivers/dma/ioat/pci.c    |   11 -----------
- 3 files changed, 32 insertions(+), 12 deletions(-)
+This is peculiar.  I'm guessing something quirky with your hardware is 
+causing the alarm irq to trigger shortly after we supposedly disable it. 
+Could you send me your dmesg and kernel config?
 
-diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
-index f7f1dc6..c665e0a 100644
---- a/drivers/dma/ioat/dma_v3.c
-+++ b/drivers/dma/ioat/dma_v3.c
-@@ -1187,6 +1187,26 @@ static bool is_snb_ioat(struct pci_dev *pdev)
- 	}
- }
- 
-+static bool is_ivb_ioat(struct pci_dev *pdev)
-+{
-+	switch (pdev->device) {
-+	case PCI_DEVICE_ID_INTEL_IOAT_IVB0:
-+	case PCI_DEVICE_ID_INTEL_IOAT_IVB1:
-+	case PCI_DEVICE_ID_INTEL_IOAT_IVB2:
-+	case PCI_DEVICE_ID_INTEL_IOAT_IVB3:
-+	case PCI_DEVICE_ID_INTEL_IOAT_IVB4:
-+	case PCI_DEVICE_ID_INTEL_IOAT_IVB5:
-+	case PCI_DEVICE_ID_INTEL_IOAT_IVB6:
-+	case PCI_DEVICE_ID_INTEL_IOAT_IVB7:
-+	case PCI_DEVICE_ID_INTEL_IOAT_IVB8:
-+	case PCI_DEVICE_ID_INTEL_IOAT_IVB9:
-+		return true;
-+	default:
-+		return false;
-+	}
-+
-+}
-+
- int __devinit ioat3_dma_probe(struct ioatdma_device *device, int dca)
- {
- 	struct pci_dev *pdev = device->pdev;
-@@ -1207,7 +1227,7 @@ int __devinit ioat3_dma_probe(struct ioatdma_device *device, int dca)
- 	dma->device_alloc_chan_resources = ioat2_alloc_chan_resources;
- 	dma->device_free_chan_resources = ioat2_free_chan_resources;
- 
--	if (is_jf_ioat(pdev) || is_snb_ioat(pdev))
-+	if (is_jf_ioat(pdev) || is_snb_ioat(pdev) || is_ivb_ioat(pdev))
- 		dma->copy_align = 6;
- 
- 	dma_cap_set(DMA_INTERRUPT, dma->cap_mask);
-diff --git a/drivers/dma/ioat/hw.h b/drivers/dma/ioat/hw.h
-index 60e6754..e2db4c7 100644
---- a/drivers/dma/ioat/hw.h
-+++ b/drivers/dma/ioat/hw.h
-@@ -31,6 +31,17 @@
- #define IOAT_PCI_DID_SCNB       0x65FF
- #define IOAT_PCI_DID_SNB        0x402F
- 
-+#define PCI_DEVICE_ID_INTEL_IOAT_IVB0	0x0e20
-+#define PCI_DEVICE_ID_INTEL_IOAT_IVB1	0x0e21
-+#define PCI_DEVICE_ID_INTEL_IOAT_IVB2	0x0e22
-+#define PCI_DEVICE_ID_INTEL_IOAT_IVB3	0x0e23
-+#define PCI_DEVICE_ID_INTEL_IOAT_IVB4	0x0e24
-+#define PCI_DEVICE_ID_INTEL_IOAT_IVB5	0x0e25
-+#define PCI_DEVICE_ID_INTEL_IOAT_IVB6	0x0e26
-+#define PCI_DEVICE_ID_INTEL_IOAT_IVB7	0x0e27
-+#define PCI_DEVICE_ID_INTEL_IOAT_IVB8	0x0e2e
-+#define PCI_DEVICE_ID_INTEL_IOAT_IVB9	0x0e2f
-+
- #define IOAT_PCI_RID            0x00
- #define IOAT_PCI_SVID           0x8086
- #define IOAT_PCI_SID            0x8086
-diff --git a/drivers/dma/ioat/pci.c b/drivers/dma/ioat/pci.c
-index c057306..01be1c9 100644
---- a/drivers/dma/ioat/pci.c
-+++ b/drivers/dma/ioat/pci.c
-@@ -40,17 +40,6 @@ MODULE_VERSION(IOAT_DMA_VERSION);
- MODULE_LICENSE("Dual BSD/GPL");
- MODULE_AUTHOR("Intel Corporation");
- 
--#define PCI_DEVICE_ID_INTEL_IOAT_IVB0	0x0e20
--#define PCI_DEVICE_ID_INTEL_IOAT_IVB1	0x0e21
--#define PCI_DEVICE_ID_INTEL_IOAT_IVB2	0x0e22
--#define PCI_DEVICE_ID_INTEL_IOAT_IVB3	0x0e23
--#define PCI_DEVICE_ID_INTEL_IOAT_IVB4	0x0e24
--#define PCI_DEVICE_ID_INTEL_IOAT_IVB5	0x0e25
--#define PCI_DEVICE_ID_INTEL_IOAT_IVB6	0x0e26
--#define PCI_DEVICE_ID_INTEL_IOAT_IVB7	0x0e27
--#define PCI_DEVICE_ID_INTEL_IOAT_IVB8	0x0e2e
--#define PCI_DEVICE_ID_INTEL_IOAT_IVB9	0x0e2f
--
- static struct pci_device_id ioat_pci_tbl[] = {
- 	/* I/OAT v1 platforms */
- 	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_INTEL_IOAT) },
+After that I'll likely have to send you some debugging instructions 
+(commenting out various lines) to try to figure out what exactly is 
+triggering it.
+
+Sorry for the trouble!
+
+thanks
+-john
+
+
 
