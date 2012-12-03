@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333Ab2LCP6F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 10:58:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24498 "EHLO mx1.redhat.com"
+	id S1755329Ab2LCQCb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 11:02:31 -0500
+Received: from mail.vyatta.com ([76.74.103.46]:35958 "EHLO mail.vyatta.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754293Ab2LCP6D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 10:58:03 -0500
-Date: Mon, 3 Dec 2012 16:57:36 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 12/18] perf ui/hist: Add support for event group view
-Message-ID: <20121203155735.GC2637@krava.redhat.com>
-References: <1354171126-14387-1-git-send-email-namhyung@kernel.org>
- <1354171126-14387-14-git-send-email-namhyung@kernel.org>
- <20121130132943.GC1080@krava.brq.redhat.com>
- <CAM9d7ciOhUE9njWM2apYbiD-Ld3UP7JqhAzz76-DEemONR0OzA@mail.gmail.com>
- <20121203102327.GB1131@krava.redhat.com>
- <87a9tvifmk.fsf@sejong.aot.lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87a9tvifmk.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753528Ab2LCQCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 11:02:30 -0500
+Date: Mon, 3 Dec 2012 08:01:11 -0800
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: rusty@rustcorp.com.au, mst@redhat.com, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [net-next RFC] pktgen: don't wait for the device who doesn't
+ free skb immediately after sent
+Message-ID: <20121203080111.74acf7d7@nehalam.linuxnetplumber.net>
+In-Reply-To: <2663254.1vRFru9xhh@jason-thinkpad-t430s>
+References: <1353916612-6357-1-git-send-email-jasowang@redhat.com>
+	<50B46179.4040809@redhat.com>
+	<20121127084919.1587c647@nehalam.linuxnetplumber.net>
+	<2663254.1vRFru9xhh@jason-thinkpad-t430s>
+Organization: Vyatta
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 03, 2012 at 07:39:31PM +0900, Namhyung Kim wrote:
-> On Mon, 3 Dec 2012 11:23:27 +0100, Jiri Olsa wrote:
-> > On Mon, Dec 03, 2012 at 10:56:28AM +0900, Namhyung Kim wrote:
-> >> On Fri, Nov 30, 2012 at 10:29 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> >> > ok, so this is the part thats common for both multi diff and group
-> >> > report and hugely depends on how we link matching hist_entry
+On Mon, 03 Dec 2012 14:45:46 +0800
+Jason Wang <jasowang@redhat.com> wrote:
 
-SNIP
-
-> > we discussed with Arnaldo and decided to stay with current approach and
-> > make the change later if needed.. to be able to see/meassure the benefit
-> >
-> > I made some initial attempt to workaround this and it appears to be
-> > not that bad ;) I'll repost my changes shortly..
+> On Tuesday, November 27, 2012 08:49:19 AM Stephen Hemminger wrote:
+> > On Tue, 27 Nov 2012 14:45:13 +0800
+> > 
+> > Jason Wang <jasowang@redhat.com> wrote:
+> > > On 11/27/2012 01:37 AM, Stephen Hemminger wrote:
+> > > > On Mon, 26 Nov 2012 15:56:52 +0800
+> > > > 
+> > > > Jason Wang <jasowang@redhat.com> wrote:
+> > > >> Some deivces do not free the old tx skbs immediately after it has been
+> > > >> sent
+> > > >> (usually in tx interrupt). One such example is virtio-net which
+> > > >> optimizes for virt and only free the possible old tx skbs during the
+> > > >> next packet sending. This would lead the pktgen to wait forever in the
+> > > >> refcount of the skb if no other pakcet will be sent afterwards.
+> > > >> 
+> > > >> Solving this issue by introducing a new flag IFF_TX_SKB_FREE_DELAY
+> > > >> which could notify the pktgen that the device does not free skb
+> > > >> immediately after it has been sent and let it not to wait for the
+> > > >> refcount to be one.
+> > > >> 
+> > > >> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> > > > 
+> > > > Another alternative would be using skb_orphan() and skb->destructor.
+> > > > There are other cases where skb's are not freed right away.
+> > > > --
+> > > > To unsubscribe from this list: send the line "unsubscribe netdev" in
+> > > > the body of a message to majordomo@vger.kernel.org
+> > > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > 
+> > > Hi Stephen:
+> > > 
+> > > Do you mean registering a skb->destructor for pktgen then set and check
+> > > bits in skb->tx_flag?
+> > 
+> > Yes. Register a destructor that does something like update a counter (number
+> > of packets pending), then just spin while number of packets pending is over
+> > threshold.
 > 
-> Hmm.. so are you OK with this patch now?
+> Have some experiments on this, looks like it does not work weel when clone_skb 
+> is used. For driver that call skb_orphan() in ndo_start_xmit, the destructor 
+> is only called when the first packet were sent, but what we need to know is 
+> when the last were sent. Any thoughts on this or we can just introduce another 
+> flag (anyway we have something like IFF_TX_SKB_SHARING) ?
+> 
 
-yep, well except for following macros:
-
-	__HPP_COLOR_PERCENT_FN
-	__HPP_ENTRY_PERCENT_FN
-	__HPP_ENTRY_RAW_FN
-
-being so long.. any chance the main part of it being in function?
-
-Seems like '_type' is just in function name, but the '_field' might
-be the killer ;) maybe it could be 'used' in such function via PERF_HPP__*
-enums instead..?
-
-thanks,
-jirka
+The SKB_SHARING flag looks like the best solution then.
+Surprisingly, transmit buffer completion is a major bottleneck for 10G
+devices, and I suspect more changes will come.
