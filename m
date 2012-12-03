@@ -1,104 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754612Ab2LCBv4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 20:51:56 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:61041 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754277Ab2LCBvz (ORCPT
+	id S1754650Ab2LCByG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 20:54:06 -0500
+Received: from mga14.intel.com ([143.182.124.37]:32291 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754324Ab2LCByE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 20:51:55 -0500
-X-AuditID: 9c93016f-b7b86ae000003a75-81-50bc05b9ae54
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 12/18] perf ui/hist: Add support for event group view
-References: <1354171126-14387-1-git-send-email-namhyung@kernel.org>
-	<1354171126-14387-14-git-send-email-namhyung@kernel.org>
-	<20121130132943.GC1080@krava.brq.redhat.com>
-	<20121130135215.GG1957@ghostprotocols.net>
-Date: Mon, 03 Dec 2012 10:51:53 +0900
-In-Reply-To: <20121130135215.GG1957@ghostprotocols.net> (Arnaldo Carvalho de
-	Melo's message of "Fri, 30 Nov 2012 10:52:15 -0300")
-Message-ID: <87lidfykau.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Sun, 2 Dec 2012 20:54:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,202,1355126400"; 
+   d="scan'208";a="225616248"
+From: "Tc, Jenny" <jenny.tc@intel.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        anish kumar <anish198519851985@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+Subject: RE: [PATCH] EXTCON: Get and set cable properties
+Thread-Topic: [PATCH] EXTCON: Get and set cable properties
+Thread-Index: AQHNzLrkDMuiwiRHbU6SrIDfqYZ+tpgF8SMAgABmvWA=
+Date: Mon, 3 Dec 2012 01:53:43 +0000
+Message-ID: <20ADAB092842284E95860F279283C564E29388@BGSMSX101.gar.corp.intel.com>
+References: <1354052956-3394-1-git-send-email-jenny.tc@intel.com>
+ <50BBFCB8.4080903@samsung.com>
+In-Reply-To: <50BBFCB8.4080903@samsung.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Nov 2012 10:52:15 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Fri, Nov 30, 2012 at 02:29:43PM +0100, Jiri Olsa escreveu:
->> On Thu, Nov 29, 2012 at 03:38:40PM +0900, Namhyung Kim wrote:
->> > +#define __HPP_COLOR_PERCENT_FN(_type, _field)					\
->> > +static int hpp__color_##_type(struct perf_hpp *hpp, struct hist_entry *he) 	\
->> > +{										\
->> > +	int ret;								\
->> > +	double percent = 0.0;							\
->> > +	struct hists *hists = he->hists;					\
->> > +										\
->> > +	if (hists->stats.total_period)						\
->> > +		percent = 100.0 * he->stat._field / hists->stats.total_period; 	\
->> > +										\
->> > +	ret = percent_color_snprintf(hpp->buf, hpp->size, " %6.2f%%", percent);	\
->> > +										\
->> > +	if (symbol_conf.event_group) {						\
->> > +		int i;								\
->> > +		struct perf_evsel *evsel = hists_to_evsel(hists);		\
->> > +		struct hist_entry *pair;					\
->> > +		int nr_members = evsel->nr_members;				\
->> > +		double *percents;						\
->> > +										\
->> > +		if (nr_members <= 1)						\
->> > +			return ret;						\
->> > +										\
->> > +		percents = zalloc(sizeof(*percents) * nr_members);		\
->> > +		if (percents == NULL) {						\
->> > +			pr_warning("Not enough memory!\n");			\
->> > +			return ret;						\
->> > +		}								\
->
-> Why do we need to zalloc this percents array?
->
->> > +		list_for_each_entry(pair, &he->pairs.head, pairs.node) { 	\
->> > +			u64 period = pair->stat._field;				\
->> > +			u64 total = pair->hists->stats.total_period;		\
->> > +										\
->> > +			if (!total)						\
->> > +				continue;					\
->> > +										\
->> > +			evsel = hists_to_evsel(pair->hists);			\
->> > +			i = perf_evsel__group_idx(evsel);			\
->> > +			percents[i] = 100.0 * period / total;			\
->
-> Why not use percent_color_snprintf here, using some "%*s" thing that
-> uses i to position the output in the right column? This way the
-> following loop can be ditched as well. No?
+> We discussed about this patch and then suggest some method to resolve this
+> issue by Myungjoo Ham. Why don't you write additional feature or your
+> opinion based on following patch by Myungjoo Ham?
+> -
+> http://git.kernel.org/?p=linux/kernel/git/mzx/extcon.git;a=commitdiff;h=73
+> 12b79d69a2b9f06af4f1254bc4644751e3e3ea
+> 
 
-It's because it's possible that an entry didn't have pairs for every
-group member.  Say, there's a group consists of 3 members (1 leader + 2
-member).  It's quite legitimate that a leader hist entry has just one
-pair for a member and miss another.  So I allocated a zero-filled array,
-and filled what it has, and print them all in the for loop below.
+I replied on the thread and pointed out issues that I see with this solution. IMHO
+It's not fair to register a cable with power_supply/regulator/charger manager just to
+expose the cable properties. 
 
-Thanks,
-Namhyung
-
->
->> > +		}								\
->> > +										\
->> > +		for (i = 1; i < nr_members; i++) {				\
->> > +			ret += percent_color_snprintf(hpp->buf + ret,		\
->> > +						      hpp->size - ret,		\
->> > +						      " %6.2f%%", percents[i]);	\
->> > +		}								\
->> > +		free(percents);							\
->> > +	}									\
->> > +	return ret;								\
->
-> - Arnaldo
+> 
+> On 11/28/2012 06:49 AM, Jenny TC wrote:
+> > Existing EXTCON implementation doesn't give a mechanim to read the
+> > cable properties and extra states a cable needs to support. There are
+> > scenarios where a cable can have more than two
+> > states(CONNECT/DISCONNECT/SUSPEND/RESUME etc) and can have some
+> > properties associated with cables(mA)
+> >
+> > This patch introduces interface to get and set cable properties from
+> > EXTCON framework. The cable property can be set either by the extcon
+> > cable provider or by other subsystems who know the cable properties
+> > using eth API extcon_cable_set_data()
+> >
+> > When the consumer gets a notification from the extcon, it can use the
+> > extcon_cable_get_data() to get the cable properties irrespective of
+> > who provides the cable data.
+> >
+> > This gives a single interface for setting and getting the cable properties.
+> >
+> > Signed-off-by: Jenny TC <jenny.tc@intel.com>
+> > ---
+> >  drivers/extcon/extcon-class.c |   30
+> ++++++++++++++++++++++++++++++
+> >  include/linux/extcon.h        |   39
+> +++++++++++++++++++++++++++++++++++++++
+> >  2 files changed, 69 insertions(+)
+> >
+> > diff --git a/drivers/extcon/extcon-class.c
+> > b/drivers/extcon/extcon-class.c index d398821..304f343 100644
+> > --- a/drivers/extcon/extcon-class.c
+> > +++ b/drivers/extcon/extcon-class.c
+> > @@ -545,6 +545,36 @@ int extcon_unregister_notifier(struct extcon_dev
+> > *edev,  }  EXPORT_SYMBOL_GPL(extcon_unregister_notifier);
+> >
+> > +/**
+> > + * extcon_cable_set_data() - Set the data structure for a cable
+> > + * @edev:	the extcon device
+> > + * @cable_index:	the cable index of the correspondant
+> > + * @type:	type of the data structure
+> > + * @data:
+> > + */
+> > +void extcon_cable_set_data(struct extcon_dev *edev, int cable_index,
+> > +			   enum extcon_cable_name type,
+> > +			   union extcon_cable_data data)
+> > +{
+> > +	edev->cables[cable_index].type = type;
+> > +	edev->cables[cable_index].data = data; }
+> > +
+> > +/**
+> > + * extcon_cable_get_data() - Get the data structure for a cable
+> > + * @edev:	the extcon device
+> > + * @cable_index:	the cable index of the correspondant
+> > + * @type:	type of the data structure
+> > + * @data:	the corresponding data structure (e.g., regulator)
+> > + */
+> > +void extcon_cable_get_data(struct extcon_dev *edev, int cable_index,
+> > +			   enum extcon_cable_name *type,
+> > +			   union extcon_cable_data *data)
+> > +{
+> > +	*type = edev->cables[cable_index].type;
+> > +	*data = edev->cables[cable_index].data; }
+> > +
+> >  static struct device_attribute extcon_attrs[] = {
+> >  	__ATTR(state, S_IRUGO | S_IWUSR, state_show, state_store),
+> >  	__ATTR_RO(name),
+> > diff --git a/include/linux/extcon.h b/include/linux/extcon.h index
+> > 2c26c14..4556cc5 100644
+> > --- a/include/linux/extcon.h
+> > +++ b/include/linux/extcon.h
+> > @@ -135,6 +135,19 @@ struct extcon_dev {
+> >  	struct device_attribute *d_attrs_muex;  };
+> >
+> > +/* FIXME: Is this the right place for this structure definition?
+> > + * Do we need to move it to power_supply.h?
+> > + */
+> > +struct extcon_chrgr_cable_props {
+> > +	unsigned long state;
+> > +	int mA;
+> > +};
+> 
+> As I said, extcon provider driver didn't provide directly charging current(int
+> mA) and some state(unsigned long state) because the extcon provider
+> driver(Micro USB interface controller device or other device related to
+> external connector) haven't mechanism which detect dynamically charging
+> current immediately. If you wish to provide charging current data to extcon
+> consumer driver or framework, you should use regulator/power_supply
+> framework or other method in extcon provider driver.
+> 
+> The patch suggested by Myungjoo Ham define following struct:
+> 	union extcon_cable_data {
+> 		struct regualtor *reg;  /* EXTCON_CT_REGULATOR */
+> 		struct power_supply *psy; /* EXTCON_CT_PSY */
+> 		struct charger_cable *charger; /*
+> EXTCON_CT_CHARGER_MANAGER */
+> 		/* Please add accordingly with enum extcon_cable_type */
+> 	};
+> 
+> Also if you want to define 'struct extcon_chrgr_cable_props', you should
+> certainly show how detect dynamically charging current or state.
+> 
+> > +
+> > +union extcon_cable_data {
+> > +	struct extcon_chrgr_cable_props chrgr_cbl_props;
+> > +	/* Please add accordingly*/
+> > +};
+> > +
+> >  /**
+> >   * struct extcon_cable	- An internal data for each cable of extcon
+> device.
+> >   * @edev	The extcon device
+> > @@ -143,6 +156,8 @@ struct extcon_dev {
+> >   * @attr_name	"name" sysfs entry
+> >   * @attr_state	"state" sysfs entry
+> >   * @attrs	Array pointing to attr_name and attr_state for attr_g
+> > + * @type:	The type of @data.
+> > + * @data:	The data structure representing the status and states of this
+> cable.
+> >   */
+> >  struct extcon_cable {
+> >  	struct extcon_dev *edev;
+> > @@ -153,6 +168,11 @@ struct extcon_cable {
+> >  	struct device_attribute attr_state;
+> >
+> >  	struct attribute *attrs[3]; /* to be fed to attr_g.attrs */
+> > +
+> > +	union extcon_cable_data data;
+> > +
+> > +	/* extcon cable type */
+> > +	enum extcon_cable_name type;
+> It isn't correct. The 'enum extocn_cable_name' isn't type. For example, the
+> list of charger cable are TA/USB/Fast Charger/Slow Charger and so on.
+> The charger cables are charger type so, they has
+> EXTCON_CT_CHARGER_MANAGER as cable type.
+> 
+> The patch suggested by Myungjoo Ham define following struct:
+> 	enum extcon_cable_type {
+> 	       EXTCON_CT_NONE = 0,
+> 	       EXTCON_CT_REGULATOR,
+> 	       EXTCON_CT_PSY,
+> 	       EXTCON_CT_CHARGER_MANAGER,
+> 	       /* Please add other related standards when needed */
+> 	};
+> 
