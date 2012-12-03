@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754454Ab2LCMrF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 07:47:05 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:49566 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751161Ab2LCMrC (ORCPT
+	id S1754648Ab2LCMs7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 07:48:59 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:45781 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751008Ab2LCMs5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 07:47:02 -0500
-Date: Mon, 3 Dec 2012 10:46:54 -0200
-From: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, kernel-team@lists.ubuntu.com,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH 026/270] powerpc/eeh: Lock module while handling EEH event
-Message-ID: <20121203124653.GA3268@herton-Z68MA-D2H-B3>
-References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
- <1353949160-26803-27-git-send-email-herton.krzesinski@canonical.com>
- <1353982714.4266.36.camel@deadeye.wl.decadent.org.uk>
- <20121130014112.GC13478@kroah.com>
+	Mon, 3 Dec 2012 07:48:57 -0500
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121130014112.GC13478@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+	charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH v2] net/macb: Use non-coherent memory for rx buffers
+Date: Mon, 3 Dec 2012 12:43:51 -0000
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B70D5@saturn3.aculab.com>
+In-Reply-To: <1354536876-6274-1-git-send-email-nicolas.ferre@atmel.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH v2] net/macb: Use non-coherent memory for rx buffers
+Thread-Index: Ac3RT6OAW4vjzyLKTU6wOYDSlmuLswAAh5lw
+References: <CAGhQ9VwWmP_B17LnAEqDHcL8Yd-s0C-Bf35z3+=vnJmK_NoCSw@mail.gmail.com> <1354536876-6274-1-git-send-email-nicolas.ferre@atmel.com>
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Nicolas Ferre" <nicolas.ferre@atmel.com>,
+        "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        "Joachim Eastwood" <manabian@gmail.com>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        "Havard Skinnemoen" <havard@skinnemoen.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 05:41:12PM -0800, Greg Kroah-Hartman wrote:
-> On Tue, Nov 27, 2012 at 02:18:34AM +0000, Ben Hutchings wrote:
-> > [...]
-> > 
-> > Greg, you probably want this in 3.4 and 3.6.
-> 
-> Many thanks.  Herton, any reason why you didn't forward on this
-> backported version of the patch?
+> Allocate regular pages to use as backing for the RX ring and use the
+> DMA API to sync the caches. This should give a bit better performance
+> since it allows the CPU to do burst transfers from memory. It is also
+> a necessary step on the way to reduce the amount of copying done by
+> the driver.
 
-No specific reason, I just didn't have time to go through verifying
-other releases and see what was applied or not, and point out the
-specific patches needed in other releases.
+I've not tried to understand the patches, but you have to be
+very careful using non-snooped memory for descriptor rings.
+No amount of DMA API calls can sort out some of the issues.
 
-> 
-> greg k-h
-> 
+Basically you must not dirty a cache line that contains data
+that the MAC unit might still write to.
 
--- 
-[]'s
-Herton
+For the receive ring this means that you must not setup
+new rx buffers for ring entries until the MAC unit has
+filled all the ring entries in the same cache line.
+This probably means only adding rx buffers in blocks
+of 8 or 16 (or even more if there are large cache lines).
+
+I can't see any code in the patch that does this.
+
+Doing the same for the tx ring is more difficult, especially
+if you can't stop the MAC unit polling the TX ring on a
+timer basis.
+Basically you can only give the MAX tx packets if either
+it is idle, or if the tx ring containing the new entries
+starts on a cache line.
+If the MAC unit is polling the ring, then to give it
+multiple items you may need to update the 'owner' bit
+in the first ring entry last - just in case the cache
+line gets written out before you've finished.
+
+	David
+
+
+
+
