@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932439Ab2LCOg7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:36:59 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43851 "EHLO
+	id S1755553Ab2LCOhQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:37:16 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43983 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755100Ab2LCOgp (ORCPT
+	by vger.kernel.org with ESMTP id S932471Ab2LCOhE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 09:36:45 -0500
-Message-Id: <20121203143154.089088886@decadent.org.uk>
+	Mon, 3 Dec 2012 09:37:04 -0500
+Message-Id: <20121203143150.770591193@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Dec 2012 14:32:33 +0000
+Date: Mon, 03 Dec 2012 14:32:10 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chuansheng Liu <chuansheng.liu@intel.com>,
-        Don Zickus <dzickus@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 47/89] watchdog: using u64 in get_sample_period()
+        Xi Wang <xi.wang@gmail.com>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 24/89] ipv4: avoid undefined behavior in do_ip_setsockopt()
 In-Reply-To: <20121203143146.549859007@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,51 +27,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chuansheng Liu <chuansheng.liu@intel.com>
+From: Xi Wang <xi.wang@gmail.com>
 
-commit 8ffeb9b0e6369135bf03a073514f571ef10606b9 upstream.
+[ Upstream commit 0c9f79be295c99ac7e4b569ca493d75fdcc19e4e ]
 
-In get_sample_period(), unsigned long is not enough:
+(1<<optname) is undefined behavior in C with a negative optname or
+optname larger than 31.  In those cases the result of the shift is
+not necessarily zero (e.g., on x86).
 
-  watchdog_thresh * 2 * (NSEC_PER_SEC / 5)
+This patch simplifies the code with a switch statement on optname.
+It also allows the compiler to generate better code (e.g., using a
+64-bit mask).
 
-case1:
-  watchdog_thresh is 10 by default, the sample value will be: 0xEE6B2800
-
-case2:
- set watchdog_thresh is 20, the sample value will be: 0x1 DCD6 5000
-
-In case2, we need use u64 to express the sample period.  Otherwise,
-changing the threshold thru proc often can not be successful.
-
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-Acked-by: Don Zickus <dzickus@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/watchdog.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/ipv4/ip_sockglue.c | 33 +++++++++++++++++++++------------
+ 1 file changed, 21 insertions(+), 12 deletions(-)
 
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -113,7 +113,7 @@ static unsigned long get_timestamp(int t
- 	return cpu_clock(this_cpu) >> 30LL;  /* 2^30 ~= 10^9 */
- }
+diff --git a/net/ipv4/ip_sockglue.c b/net/ipv4/ip_sockglue.c
+index 09ff51b..0106d25 100644
+--- a/net/ipv4/ip_sockglue.c
++++ b/net/ipv4/ip_sockglue.c
+@@ -468,18 +468,27 @@ static int do_ip_setsockopt(struct sock *sk, int level,
+ 	struct inet_sock *inet = inet_sk(sk);
+ 	int val = 0, err;
  
--static unsigned long get_sample_period(void)
-+static u64 get_sample_period(void)
- {
- 	/*
- 	 * convert watchdog_thresh from seconds to ns
-@@ -121,7 +121,7 @@ static unsigned long get_sample_period(v
- 	 * increment before the hardlockup detector generates
- 	 * a warning
- 	 */
--	return get_softlockup_thresh() * (NSEC_PER_SEC / 5);
-+	return get_softlockup_thresh() * ((u64)NSEC_PER_SEC / 5);
- }
- 
- /* Commands for resetting the watchdog */
+-	if (((1<<optname) & ((1<<IP_PKTINFO) | (1<<IP_RECVTTL) |
+-			     (1<<IP_RECVOPTS) | (1<<IP_RECVTOS) |
+-			     (1<<IP_RETOPTS) | (1<<IP_TOS) |
+-			     (1<<IP_TTL) | (1<<IP_HDRINCL) |
+-			     (1<<IP_MTU_DISCOVER) | (1<<IP_RECVERR) |
+-			     (1<<IP_ROUTER_ALERT) | (1<<IP_FREEBIND) |
+-			     (1<<IP_PASSSEC) | (1<<IP_TRANSPARENT) |
+-			     (1<<IP_MINTTL) | (1<<IP_NODEFRAG))) ||
+-	    optname == IP_MULTICAST_TTL ||
+-	    optname == IP_MULTICAST_ALL ||
+-	    optname == IP_MULTICAST_LOOP ||
+-	    optname == IP_RECVORIGDSTADDR) {
++	switch (optname) {
++	case IP_PKTINFO:
++	case IP_RECVTTL:
++	case IP_RECVOPTS:
++	case IP_RECVTOS:
++	case IP_RETOPTS:
++	case IP_TOS:
++	case IP_TTL:
++	case IP_HDRINCL:
++	case IP_MTU_DISCOVER:
++	case IP_RECVERR:
++	case IP_ROUTER_ALERT:
++	case IP_FREEBIND:
++	case IP_PASSSEC:
++	case IP_TRANSPARENT:
++	case IP_MINTTL:
++	case IP_NODEFRAG:
++	case IP_MULTICAST_TTL:
++	case IP_MULTICAST_ALL:
++	case IP_MULTICAST_LOOP:
++	case IP_RECVORIGDSTADDR:
+ 		if (optlen >= sizeof(int)) {
+ 			if (get_user(val, (int __user *) optval))
+ 				return -EFAULT;
 
 
