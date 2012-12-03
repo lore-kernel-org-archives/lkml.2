@@ -1,51 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830Ab2LCOBk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:01:40 -0500
-Received: from webmail.solarflare.com ([12.187.104.25]:25528 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754234Ab2LCOBi (ORCPT
+	id S1754943Ab2LCOHH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:07:07 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:60322 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752888Ab2LCOHG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 09:01:38 -0500
-Message-ID: <1354543290.7030.26.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH] net/macb: Use dmapool to align descriptors on 64bits
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Joachim Eastwood <manabian@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Date: Mon, 3 Dec 2012 14:01:30 +0000
-In-Reply-To: <1354536914-6315-1-git-send-email-nicolas.ferre@atmel.com>
-References: <1354536914-6315-1-git-send-email-nicolas.ferre@atmel.com>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-MIME-Version: 1.0
+	Mon, 3 Dec 2012 09:07:06 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Mon, 3 Dec 2012 15:06:45 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: yongjun_wei@trendmicro.com.cn, linux1394-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -next] firewire: net: remove unused variable in
+ fwnet_receive_broadcast()
+Message-ID: <20121203150645.23054225@stein>
+In-Reply-To: <CAPgLHd87JfwfhHVyBSSsqCCay8=U5Szv1My-Dvtf93M+AtKAkQ@mail.gmail.com>
+References: <CAPgLHd87JfwfhHVyBSSsqCCay8=U5Szv1My-Dvtf93M+AtKAkQ@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.12; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [88.96.1.126]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-12-03 at 13:15 +0100, Nicolas Ferre wrote:
-> Depending on datapath, some revisions of GEM need
-> 64bits aligned descriptors. Use dmapool to allocate
-> these descriptors.
-> Note that different size between RX and TX rings
-> leads to the creation of two pools.
-> 
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-[...]
+On Dec 03 Wei Yongjun wrote:
+> The variable card is initialized but never used
+> otherwise, so remove the unused variable.
 
-dma_alloc_coherent() allocates whole pages, which I think is quite
-enough alignment.  You can't save memory by doing this, since each pool
-needs at least one page.  So what is this change meant to achieve?
-
-Ben.
-
+Committed to linux1394.git.
 -- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+Stefan Richter
+-=====-===-- ==-- ---==
+http://arcgraph.de/sr/
