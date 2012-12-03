@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755517Ab2LCOwO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:52:14 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43694 "EHLO
+	id S932250Ab2LCOxB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:53:01 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43677 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755337Ab2LCOgK (ORCPT
+	by vger.kernel.org with ESMTP id S1755328Ab2LCOgJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 09:36:10 -0500
-Message-Id: <20121203143159.168011143@decadent.org.uk>
+	Mon, 3 Dec 2012 09:36:09 -0500
+Message-Id: <20121203143159.672050798@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Dec 2012 14:33:08 +0000
+Date: Mon, 03 Dec 2012 14:33:11 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Andre Naujoks <nautsch2@googlemail.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [ 82/89] can: bcm: initialize ifindex for timeouts without previous frame
- reception
+        Johannes Weiner <hannes@cmpxchg.org>,
+        George Spelvin <linux@horizon.com>,
+        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
+        Tomas Racek <tracek@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 85/89] mm: vmscan: fix endless loop in kswapd balancing
 In-Reply-To: <20121203143146.549859007@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,36 +32,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Hartkopp <socketcan@hartkopp.net>
+From: Johannes Weiner <hannes@cmpxchg.org>
 
-commit 81b401100c01d2357031e874689f89bd788d13cd upstream.
+commit 60cefed485a02bd99b6299dad70666fe49245da7 upstream.
 
-Set in the rx_ifindex to pass the correct interface index in the case of a
-message timeout detection. Usually the rx_ifindex value is set at receive
-time. But when no CAN frame has been received the RX_TIMEOUT notification
-did not contain a valid value.
+Kswapd does not in all places have the same criteria for a balanced
+zone.  Zones are only being reclaimed when their high watermark is
+breached, but compaction checks loop over the zonelist again when the
+zone does not meet the low watermark plus two times the size of the
+allocation.  This gets kswapd stuck in an endless loop over a small
+zone, like the DMA zone, where the high watermark is smaller than the
+compaction requirement.
 
-Reported-by: Andre Naujoks <nautsch2@googlemail.com>
-Signed-off-by: Oliver Hartkopp <socketcan@hartkopp.net>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Add a function, zone_balanced(), that checks the watermark, and, for
+higher order allocations, if compaction has enough free memory.  Then
+use it uniformly to check for balanced zones.
+
+This makes sure that when the compaction watermark is not met, at least
+reclaim happens and progress is made - or the zone is declared
+unreclaimable at some point and skipped entirely.
+
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Reported-by: George Spelvin <linux@horizon.com>
+Reported-by: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
+Reported-by: Tomas Racek <tracek@redhat.com>
+Tested-by: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/can/bcm.c |    3 +++
- 1 file changed, 3 insertions(+)
+ mm/vmscan.c |   27 ++++++++++++++++++---------
+ 1 file changed, 18 insertions(+), 9 deletions(-)
 
-diff --git a/net/can/bcm.c b/net/can/bcm.c
-index 6f74758..969b7cd 100644
---- a/net/can/bcm.c
-+++ b/net/can/bcm.c
-@@ -1084,6 +1084,9 @@ static int bcm_rx_setup(struct bcm_msg_head *msg_head, struct msghdr *msg,
- 		op->sk = sk;
- 		op->ifindex = ifindex;
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2492,6 +2492,19 @@ unsigned long try_to_free_mem_cgroup_pag
+ }
+ #endif
  
-+		/* ifindex for timeout events w/o previous frame reception */
-+		op->rx_ifindex = ifindex;
++static bool zone_balanced(struct zone *zone, int order,
++			  unsigned long balance_gap, int classzone_idx)
++{
++	if (!zone_watermark_ok_safe(zone, order, high_wmark_pages(zone) +
++				    balance_gap, classzone_idx, 0))
++		return false;
 +
- 		/* initialize uninitialized (kzalloc) structure */
- 		hrtimer_init(&op->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
- 		op->timer.function = bcm_rx_timeout_handler;
++	if (COMPACTION_BUILD && order && !compaction_suitable(zone, order))
++		return false;
++
++	return true;
++}
++
+ /*
+  * pgdat_balanced is used when checking if a node is balanced for high-order
+  * allocations. Only zones that meet watermarks and are in a zone allowed
+@@ -2551,8 +2564,7 @@ static bool sleeping_prematurely(pg_data
+ 			continue;
+ 		}
+ 
+-		if (!zone_watermark_ok_safe(zone, order, high_wmark_pages(zone),
+-							i, 0))
++		if (!zone_balanced(zone, order, 0, i))
+ 			all_zones_ok = false;
+ 		else
+ 			balanced += zone->present_pages;
+@@ -2655,8 +2667,7 @@ loop_again:
+ 				shrink_active_list(SWAP_CLUSTER_MAX, zone,
+ 							&sc, priority, 0);
+ 
+-			if (!zone_watermark_ok_safe(zone, order,
+-					high_wmark_pages(zone), 0, 0)) {
++			if (!zone_balanced(zone, order, 0, 0)) {
+ 				end_zone = i;
+ 				break;
+ 			} else {
+@@ -2717,9 +2728,8 @@ loop_again:
+ 				(zone->present_pages +
+ 					KSWAPD_ZONE_BALANCE_GAP_RATIO-1) /
+ 				KSWAPD_ZONE_BALANCE_GAP_RATIO);
+-			if (!zone_watermark_ok_safe(zone, order,
+-					high_wmark_pages(zone) + balance_gap,
+-					end_zone, 0)) {
++			if (!zone_balanced(zone, order,
++					   balance_gap, end_zone)) {
+ 				shrink_zone(priority, zone, &sc);
+ 
+ 				reclaim_state->reclaimed_slab = 0;
+@@ -2746,8 +2756,7 @@ loop_again:
+ 				continue;
+ 			}
+ 
+-			if (!zone_watermark_ok_safe(zone, order,
+-					high_wmark_pages(zone), end_zone, 0)) {
++			if (!zone_balanced(zone, order, 0, end_zone)) {
+ 				all_zones_ok = 0;
+ 				/*
+ 				 * We are still under min water mark.  This
 
 
