@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab2LCU70 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 15:59:26 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62399 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752374Ab2LCU7U (ORCPT
+	id S1752591Ab2LCU7a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 15:59:30 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:49143 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752532Ab2LCU71 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 15:59:20 -0500
+	Mon, 3 Dec 2012 15:59:27 -0500
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
         linux-fsdevel@vger.kernel.org
 Cc: zab@redhat.com, bcrl@kvack.org, jmoyer@redhat.com, axboe@kernel.dk,
         viro@zeniv.linux.org.uk, Kent Overstreet <koverstreet@google.com>
-Subject: [PATCH 02/26] aio: remove dead code from aio.h
-Date: Mon,  3 Dec 2012 12:58:18 -0800
-Message-Id: <1354568322-29029-3-git-send-email-koverstreet@google.com>
+Subject: [PATCH 08/26] aio: Move private stuff out of aio.h
+Date: Mon,  3 Dec 2012 12:58:24 -0800
+Message-Id: <1354568322-29029-9-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1354568322-29029-1-git-send-email-koverstreet@google.com>
 References: <1354568322-29029-1-git-send-email-koverstreet@google.com>
@@ -22,72 +22,169 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zach Brown <zab@redhat.com>
-
-Signed-off-by: Zach Brown <zab@redhat.com>
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 ---
- include/linux/aio.h | 24 ------------------------
- 1 file changed, 24 deletions(-)
+ drivers/usb/gadget/inode.c |  1 +
+ fs/aio.c                   | 61 ++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/aio.h        | 61 ----------------------------------------------
+ 3 files changed, 62 insertions(+), 61 deletions(-)
 
+diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
+index 2a3f001..7640e01 100644
+--- a/drivers/usb/gadget/inode.c
++++ b/drivers/usb/gadget/inode.c
+@@ -25,6 +25,7 @@
+ #include <linux/slab.h>
+ #include <linux/poll.h>
+ #include <linux/mmu_context.h>
++#include <linux/aio.h>
+ 
+ #include <linux/device.h>
+ #include <linux/moduleparam.h>
+diff --git a/fs/aio.c b/fs/aio.c
+index 786c904..35a2153e 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -45,6 +45,67 @@
+ #define dprintk(x...)	do { ; } while (0)
+ #endif
+ 
++#define AIO_RING_MAGIC			0xa10a10a1
++#define AIO_RING_COMPAT_FEATURES	1
++#define AIO_RING_INCOMPAT_FEATURES	0
++struct aio_ring {
++	unsigned	id;	/* kernel internal index number */
++	unsigned	nr;	/* number of io_events */
++	unsigned	head;
++	unsigned	tail;
++
++	unsigned	magic;
++	unsigned	compat_features;
++	unsigned	incompat_features;
++	unsigned	header_length;	/* size of aio_ring */
++
++
++	struct io_event		io_events[0];
++}; /* 128 bytes + ring size */
++
++#define AIO_RING_PAGES	8
++struct aio_ring_info {
++	unsigned long		mmap_base;
++	unsigned long		mmap_size;
++
++	struct page		**ring_pages;
++	spinlock_t		ring_lock;
++	long			nr_pages;
++
++	unsigned		nr, tail;
++
++	struct page		*internal_pages[AIO_RING_PAGES];
++};
++
++static inline unsigned aio_ring_avail(struct aio_ring_info *info,
++					struct aio_ring *ring)
++{
++	return (ring->head + info->nr - 1 - ring->tail) % info->nr;
++}
++
++struct kioctx {
++	atomic_t		users;
++	int			dead;
++
++	/* This needs improving */
++	unsigned long		user_id;
++	struct hlist_node	list;
++
++	wait_queue_head_t	wait;
++
++	spinlock_t		ctx_lock;
++
++	int			reqs_active;
++	struct list_head	active_reqs;	/* used for cancellation */
++
++	/* sys_io_setup currently limits this to an unsigned int */
++	unsigned		max_reqs;
++
++	struct aio_ring_info	ring_info;
++
++	struct rcu_head		rcu_head;
++};
++
+ /*------ sysctl variables----*/
+ static DEFINE_SPINLOCK(aio_nr_lock);
+ unsigned long aio_nr;		/* current system wide number of aio requests */
 diff --git a/include/linux/aio.h b/include/linux/aio.h
-index 31ff6db..b46a09f 100644
+index 0ce99e8..f29de1f 100644
 --- a/include/linux/aio.h
 +++ b/include/linux/aio.h
-@@ -9,44 +9,22 @@
+@@ -104,67 +104,6 @@ static inline void init_sync_kiocb(struct kiocb *kiocb, struct file *filp)
+ 		};
+ }
  
- #include <linux/atomic.h>
- 
--#define AIO_MAXSEGS		4
--#define AIO_KIOGRP_NR_ATOMIC	8
+-#define AIO_RING_MAGIC			0xa10a10a1
+-#define AIO_RING_COMPAT_FEATURES	1
+-#define AIO_RING_INCOMPAT_FEATURES	0
+-struct aio_ring {
+-	unsigned	id;	/* kernel internal index number */
+-	unsigned	nr;	/* number of io_events */
+-	unsigned	head;
+-	unsigned	tail;
 -
- struct kioctx;
- 
--/* Notes on cancelling a kiocb:
-- *	If a kiocb is cancelled, aio_complete may return 0 to indicate 
-- *	that cancel has not yet disposed of the kiocb.  All cancel 
-- *	operations *must* call aio_put_req to dispose of the kiocb 
-- *	to guard against races with the completion code.
-- */
--#define KIOCB_C_CANCELLED	0x01
--#define KIOCB_C_COMPLETE	0x02
+-	unsigned	magic;
+-	unsigned	compat_features;
+-	unsigned	incompat_features;
+-	unsigned	header_length;	/* size of aio_ring */
 -
- #define KIOCB_SYNC_KEY		(~0U)
- 
- /* ki_flags bits */
--/*
-- * This may be used for cancel/retry serialization in the future, but
-- * for now it's unused and we probably don't want modules to even
-- * think they can use it.
-- */
--/* #define KIF_LOCKED		0 */
- #define KIF_KICKED		1
- #define KIF_CANCELLED		2
- 
--#define kiocbTryLock(iocb)	test_and_set_bit(KIF_LOCKED, &(iocb)->ki_flags)
- #define kiocbTryKick(iocb)	test_and_set_bit(KIF_KICKED, &(iocb)->ki_flags)
- 
--#define kiocbSetLocked(iocb)	set_bit(KIF_LOCKED, &(iocb)->ki_flags)
- #define kiocbSetKicked(iocb)	set_bit(KIF_KICKED, &(iocb)->ki_flags)
- #define kiocbSetCancelled(iocb)	set_bit(KIF_CANCELLED, &(iocb)->ki_flags)
- 
--#define kiocbClearLocked(iocb)	clear_bit(KIF_LOCKED, &(iocb)->ki_flags)
- #define kiocbClearKicked(iocb)	clear_bit(KIF_KICKED, &(iocb)->ki_flags)
- #define kiocbClearCancelled(iocb)	clear_bit(KIF_CANCELLED, &(iocb)->ki_flags)
- 
--#define kiocbIsLocked(iocb)	test_bit(KIF_LOCKED, &(iocb)->ki_flags)
- #define kiocbIsKicked(iocb)	test_bit(KIF_KICKED, &(iocb)->ki_flags)
- #define kiocbIsCancelled(iocb)	test_bit(KIF_CANCELLED, &(iocb)->ki_flags)
- 
-@@ -207,8 +185,6 @@ struct kioctx {
- };
- 
+-
+-	struct io_event		io_events[0];
+-}; /* 128 bytes + ring size */
+-
+-#define AIO_RING_PAGES	8
+-struct aio_ring_info {
+-	unsigned long		mmap_base;
+-	unsigned long		mmap_size;
+-
+-	struct page		**ring_pages;
+-	spinlock_t		ring_lock;
+-	long			nr_pages;
+-
+-	unsigned		nr, tail;
+-
+-	struct page		*internal_pages[AIO_RING_PAGES];
+-};
+-
+-static inline unsigned aio_ring_avail(struct aio_ring_info *info,
+-					struct aio_ring *ring)
+-{
+-	return (ring->head + info->nr - 1 - ring->tail) % info->nr;
+-}
+-
+-struct kioctx {
+-	atomic_t		users;
+-	int			dead;
+-
+-	/* This needs improving */
+-	unsigned long		user_id;
+-	struct hlist_node	list;
+-
+-	wait_queue_head_t	wait;
+-
+-	spinlock_t		ctx_lock;
+-
+-	int			reqs_active;
+-	struct list_head	active_reqs;	/* used for cancellation */
+-
+-	/* sys_io_setup currently limits this to an unsigned int */
+-	unsigned		max_reqs;
+-
+-	struct aio_ring_info	ring_info;
+-
+-	struct rcu_head		rcu_head;
+-};
+-
  /* prototypes */
--extern unsigned aio_max_size;
--
  #ifdef CONFIG_AIO
  extern ssize_t wait_on_sync_kiocb(struct kiocb *iocb);
- extern int aio_put_req(struct kiocb *iocb);
 -- 
 1.7.12
 
