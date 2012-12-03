@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705Ab2LCPCB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 10:02:01 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:50498 "EHLO
+	id S1754930Ab2LCPCP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 10:02:15 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:50505 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754360Ab2LCPB6 (ORCPT
+	with ESMTP id S1753627Ab2LCPCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 10:01:58 -0500
-Subject: [PATCH 1/9] goldfish: definitions for Goldfish on x86 platforms
+	Mon, 3 Dec 2012 10:02:12 -0500
+Subject: [PATCH 2/9] goldfish: add the goldfish virtual bus
 To: arve@android.com, x86@kernel.org, linux-kernel@vger.kernel.org,
         mikechan@google.com
 From: Alan Cox <alan@linux.intel.com>
-Date: Mon, 03 Dec 2012 15:04:19 +0000
-Message-ID: <20121203150417.16826.70816.stgit@bob.linux.org.uk>
+Date: Mon, 03 Dec 2012 15:04:31 +0000
+Message-ID: <20121203150430.16826.33748.stgit@bob.linux.org.uk>
 In-Reply-To: <20121203150310.16826.3363.stgit@bob.linux.org.uk>
 References: <20121203150310.16826.3363.stgit@bob.linux.org.uk>
 User-Agent: StGit/0.16
@@ -25,68 +25,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jun Nakajima <jnakajim@gmail.com>
 
-Based on code by Jun Nakajima but stripped of all the old x86 mach-foo
-stuff and turned into a single include file for the Goldfish virtual bus
-layer
+This imports the current Google code and cleans it up slightly to use pr_ and
+to properly request its resources.
+
+Goldfish is an emulator used for Android development. It has a virtual bus where
+the emulator passes platform device information to the guest which then creates
+the appropriate devices.
+
+This part of the emulation is not architecture specific so should not be hiding
+in architecture trees as it does in the Google Android tree. The constants it
+uses do depend on the platform and so live in arch/goldfish.h
 
 Signed-off-by: Sheng Yang <sheng@linux.intel.com>
 Signed-off-by: Yunhong Jiang <yunhong.jiang@intel.com>
 Signed-off-by: Xiaohui Xin <xiaohui.xin@intel.com>
 Signed-off-by: Jun Nakajima <jun.nakajima@intel.com>
 Signed-off-by: Bruce Beare <bruce.j.beare@intel.com>
-[Ported to 3.7 and reorganised so that we can keep most of the code
- shared properly]
+[Moved out of x86, cleaned up headers]
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- arch/x86/Kconfig                |   12 ++++++++++++
- arch/x86/include/asm/goldfish.h |   36 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 48 insertions(+)
- create mode 100644 arch/x86/include/asm/goldfish.h
+ drivers/platform/Makefile            |    1 
+ drivers/platform/goldfish/Makefile   |    4 +
+ drivers/platform/goldfish/pdev_bus.c |  267 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 272 insertions(+)
+ create mode 100644 drivers/platform/goldfish/Makefile
+ create mode 100644 drivers/platform/goldfish/pdev_bus.c
 
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index cd98a44..dbe8baa 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -326,6 +326,10 @@ config X86_BIGSMP
- 	---help---
- 	  This option is needed for the systems that have more than 8 CPUs
+diff --git a/drivers/platform/Makefile b/drivers/platform/Makefile
+index b17c16c..8a44a4c 100644
+--- a/drivers/platform/Makefile
++++ b/drivers/platform/Makefile
+@@ -4,3 +4,4 @@
  
-+config GOLDFISH
-+       def_bool y
-+       depends on X86_GOLDFISH
-+
- if X86_32
- config X86_EXTENDED_PLATFORM
- 	bool "Support for extended (non-PC) x86 platforms"
-@@ -407,6 +411,14 @@ config X86_UV
- # Following is an alphabetically sorted list of 32 bit extended platforms
- # Please maintain the alphabetic order if and when there are additions
- 
-+config X86_GOLDFISH
-+       bool "Goldfish (Virtual Platform)"
-+       depends on X86_32
-+       ---help---
-+	 Enable support for the Goldfish virtual platform used primarily
-+	 for Android development. Unless you are building for the Android
-+	 Goldfish emulator say N here.
-+
- config X86_INTEL_CE
- 	bool "CE4100 TV platform"
- 	depends on PCI
-diff --git a/arch/x86/include/asm/goldfish.h b/arch/x86/include/asm/goldfish.h
+ obj-$(CONFIG_X86)		+= x86/
+ obj-$(CONFIG_OLPC)		+= olpc/
++obj-$(CONFIG_GOLDFISH)		+= goldfish/
+diff --git a/drivers/platform/goldfish/Makefile b/drivers/platform/goldfish/Makefile
 new file mode 100644
-index 0000000..d5fcf6d
+index 0000000..6c591f6
 --- /dev/null
-+++ b/arch/x86/include/asm/goldfish.h
-@@ -0,0 +1,36 @@
++++ b/drivers/platform/goldfish/Makefile
+@@ -0,0 +1,4 @@
++#
++# Makefile for Goldfish platform specific drivers
++#
++obj-$(CONFIG_GOLDFISH)	+=	pdev_bus.o
+diff --git a/drivers/platform/goldfish/pdev_bus.c b/drivers/platform/goldfish/pdev_bus.c
+new file mode 100644
+index 0000000..dc554d0
+--- /dev/null
++++ b/drivers/platform/goldfish/pdev_bus.c
+@@ -0,0 +1,267 @@
 +/*
-+ *
-+ * arch/x86/include/asm/mach-goldfish/hardware.h
++ * drivers/platform/goldfish/pdev_bus.c
 + *
 + * Copyright (C) 2007 Google, Inc.
-+ * Copyright (C) 2012 Intel, Corp.
++ * Copyright (C) 2011 Intel, Inc.
 + *
 + * This software is licensed under the terms of the GNU General Public
 + * License version 2, as published by the Free Software Foundation, and
@@ -99,22 +95,254 @@ index 0000000..d5fcf6d
 + *
 + */
 +
-+#ifndef __X86_ARCH_HARDWARE_H
-+#define __X86_ARCH_HARDWARE_H
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++#include <linux/io.h>
 +
-+/*
-+ * Where in virtual memory the IO devices (timers, system controllers
-+ * and so on)
-+ */
++#include <asm/goldfish.h>
 +
-+#define GOLDFISH_IO_SIZE	0x00800000	/* How much? */
-+#define GOLDFISH_IO_START	0xff000000	/* PA of IO */
++#define PDEV_BUS_OP_DONE        (0x00)
++#define PDEV_BUS_OP_REMOVE_DEV  (0x04)
++#define PDEV_BUS_OP_ADD_DEV     (0x08)
 +
-+#define GOLDFISH_PDEV_BUS_BASE	(0x1000)
-+#define GOLDFISH_PDEV_BUS_END	(0x100)
-+#define GOLDFISH_PDEV_BUS_IRQ	(4)
++#define PDEV_BUS_OP_INIT        (0x00)
 +
-+#define GOLDFISH_TTY_BASE	(0x2000)
++#define PDEV_BUS_OP             (0x00)
++#define PDEV_BUS_GET_NAME       (0x04)
++#define PDEV_BUS_NAME_LEN       (0x08)
++#define PDEV_BUS_ID             (0x0c)
++#define PDEV_BUS_IO_BASE        (0x10)
++#define PDEV_BUS_IO_SIZE        (0x14)
++#define PDEV_BUS_IRQ            (0x18)
++#define PDEV_BUS_IRQ_COUNT      (0x1c)
 +
-+#endif
++struct pdev_bus_dev {
++	struct list_head list;
++	struct platform_device pdev;
++	struct resource resources[0];
++};
++
++static void goldfish_pdev_worker(struct work_struct *work);
++
++static void __iomem *pdev_bus_base;
++static unsigned long pdev_bus_addr;
++static u32 pdev_bus_irq;
++static LIST_HEAD(pdev_bus_new_devices);
++static LIST_HEAD(pdev_bus_registered_devices);
++static LIST_HEAD(pdev_bus_removed_devices);
++static DECLARE_WORK(pdev_bus_worker, goldfish_pdev_worker);
++
++
++static void goldfish_pdev_worker(struct work_struct *work)
++{
++	int ret;
++	struct pdev_bus_dev *pos, *n;
++
++	list_for_each_entry_safe(pos, n, &pdev_bus_removed_devices, list) {
++		list_del(&pos->list);
++		platform_device_unregister(&pos->pdev);
++		kfree(pos);
++	}
++	list_for_each_entry_safe(pos, n, &pdev_bus_new_devices, list) {
++		list_del(&pos->list);
++		ret = platform_device_register(&pos->pdev);
++		if (ret)
++			pr_err("goldfish_pdev_worker failed to register device, %s\n",
++								pos->pdev.name);
++		list_add_tail(&pos->list, &pdev_bus_registered_devices);
++	}
++}
++
++static void goldfish_pdev_remove(void)
++{
++	struct pdev_bus_dev *pos, *n;
++	u32 base;
++
++	base = readl(pdev_bus_base + PDEV_BUS_IO_BASE);
++
++	list_for_each_entry_safe(pos, n, &pdev_bus_new_devices, list) {
++		if (pos->resources[0].start == base) {
++			list_del(&pos->list);
++			kfree(pos);
++			return;
++		}
++	}
++	list_for_each_entry_safe(pos, n, &pdev_bus_registered_devices, list) {
++		if (pos->resources[0].start == base) {
++			list_del(&pos->list);
++			list_add_tail(&pos->list, &pdev_bus_removed_devices);
++			schedule_work(&pdev_bus_worker);
++			return;
++		}
++	};
++	pr_err("goldfish_pdev_remove could not find device at %x\n", base);
++}
++
++static int goldfish_new_pdev(void)
++{
++	struct pdev_bus_dev *dev;
++	u32 name_len;
++	u32 irq = -1, irq_count;
++	int resource_count = 2;
++	u32 base;
++	char *name;
++
++	base = readl(pdev_bus_base + PDEV_BUS_IO_BASE);
++
++	irq_count = readl(pdev_bus_base + PDEV_BUS_IRQ_COUNT);
++	name_len = readl(pdev_bus_base + PDEV_BUS_NAME_LEN);
++	if (irq_count)
++		resource_count++;
++
++	dev = kzalloc(sizeof(*dev) +
++		sizeof(struct resource) * resource_count +
++		name_len + 1 + sizeof(*dev->pdev.dev.dma_mask), GFP_ATOMIC);
++	if (dev == NULL)
++		return -ENOMEM;
++
++	dev->pdev.num_resources = resource_count;
++	dev->pdev.resource = (struct resource *)(dev + 1);
++	dev->pdev.name = name = (char *)(dev->pdev.resource + resource_count);
++	dev->pdev.dev.coherent_dma_mask = ~0;
++	dev->pdev.dev.dma_mask = (void *)(dev->pdev.name + name_len + 1);
++	*dev->pdev.dev.dma_mask = ~0;
++
++	writel((unsigned long)name, pdev_bus_base + PDEV_BUS_GET_NAME);
++	name[name_len] = '\0';
++	dev->pdev.id = readl(pdev_bus_base + PDEV_BUS_ID);
++	dev->pdev.resource[0].start = base;
++	dev->pdev.resource[0].end = base +
++				readl(pdev_bus_base + PDEV_BUS_IO_SIZE) - 1;
++	dev->pdev.resource[0].flags = IORESOURCE_MEM;
++	if (irq_count) {
++		irq = readl(pdev_bus_base + PDEV_BUS_IRQ);
++		dev->pdev.resource[1].start = irq;
++		dev->pdev.resource[1].end = irq + irq_count - 1;
++		dev->pdev.resource[1].flags = IORESOURCE_IRQ;
++	}
++
++	pr_debug("goldfish_new_pdev %s at %x irq %d\n", name, base, irq);
++	list_add_tail(&dev->list, &pdev_bus_new_devices);
++	schedule_work(&pdev_bus_worker);
++
++	return 0;
++}
++
++static irqreturn_t goldfish_pdev_bus_interrupt(int irq, void *dev_id)
++{
++	irqreturn_t ret = IRQ_NONE;
++	while (1) {
++		u32 op = readl(pdev_bus_base + PDEV_BUS_OP);
++		switch (op) {
++		case PDEV_BUS_OP_DONE:
++			return IRQ_NONE;
++
++		case PDEV_BUS_OP_REMOVE_DEV:
++			goldfish_pdev_remove();
++			break;
++
++		case PDEV_BUS_OP_ADD_DEV:
++			goldfish_new_pdev();
++			break;
++		}
++		ret = IRQ_HANDLED;
++	}
++}
++
++static int __devinit goldfish_pdev_bus_probe(struct platform_device *pdev)
++{
++	int ret;
++	struct resource *r;
++
++	r = platform_get_resource(pdev, IORESOURCE_IO, 0);
++	if (r == NULL)
++		return -EINVAL;
++
++	pdev_bus_addr = GOLDFISH_IO_START + r->start;
++
++	if (request_region(pdev_bus_addr, GOLDFISH_IO_SIZE, "goldfish")) {
++		pr_err("unable to reserve Goldfish MMIO.\n");
++		return -EBUSY;
++	}
++
++	pr_err("Goldfish bus at %lX\n", (long)pdev_bus_addr);
++	pdev_bus_base = ioremap(pdev_bus_addr, GOLDFISH_IO_SIZE);
++	if (pdev_bus_base == NULL) {
++		pr_err("unable to map Goldfish MMIO.\n");
++		return -EIO;
++	}
++
++	r = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
++	if (r == NULL)
++		return -EINVAL;
++	pdev_bus_irq = r->start;
++
++	ret = request_irq(pdev_bus_irq, goldfish_pdev_bus_interrupt,
++				IRQF_SHARED, "goldfish_pdev_bus", pdev);
++	if (ret)
++		goto err_request_irq_failed;
++
++	writel(PDEV_BUS_OP_INIT, pdev_bus_base + PDEV_BUS_OP);
++
++err_request_irq_failed:
++	return ret;
++}
++
++static int __devexit goldfish_pdev_bus_remove(struct platform_device *pdev)
++{
++	free_irq(pdev_bus_irq, pdev);
++	release_region(pdev_bus_addr, GOLDFISH_IO_SIZE);
++	return 0;
++}
++
++static struct platform_driver goldfish_pdev_bus_driver = {
++	.probe = goldfish_pdev_bus_probe,
++	.remove = __devexit_p(goldfish_pdev_bus_remove),
++	.driver = {
++		.name = "goldfish_pdev_bus"
++	}
++};
++
++static int __init goldfish_pdev_bus_init(void)
++{
++	return platform_driver_register(&goldfish_pdev_bus_driver);
++}
++
++static void __exit goldfish_pdev_bus_exit(void)
++{
++	platform_driver_unregister(&goldfish_pdev_bus_driver);
++}
++
++module_init(goldfish_pdev_bus_init);
++module_exit(goldfish_pdev_bus_exit);
++
++static struct resource goldfish_pdev_bus_resources[] = {
++	{
++		.start  = GOLDFISH_PDEV_BUS_BASE,
++		.end    = GOLDFISH_PDEV_BUS_BASE + GOLDFISH_PDEV_BUS_END - 1,
++		.flags  = IORESOURCE_IO,
++	},
++	{
++		.start	= GOLDFISH_PDEV_BUS_IRQ,
++		.end	= GOLDFISH_PDEV_BUS_IRQ,
++		.flags	= IORESOURCE_IRQ,
++	}
++};
++
++struct platform_device goldfish_pdev_bus_device = {
++	.name = "goldfish_pdev_bus",
++	.id = -1,
++	.num_resources = ARRAY_SIZE(goldfish_pdev_bus_resources),
++	.resource = goldfish_pdev_bus_resources
++};
++
++static int __init goldfish_init(void)
++{
++	return platform_device_register(&goldfish_pdev_bus_device);
++}
++device_initcall(goldfish_init);
 
