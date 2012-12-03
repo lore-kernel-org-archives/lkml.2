@@ -1,93 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750792Ab2LCFAq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 00:00:46 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:63002 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750710Ab2LCFAo (ORCPT
+	id S1750812Ab2LCFCf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 00:02:35 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:59062 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750710Ab2LCFCe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 00:00:44 -0500
-Date: Mon, 3 Dec 2012 13:00:33 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: linux-kbuild@vger.kernel.org, mmarek@suse.cz, linux-kernel@vger.kernel.org,
-        rdunlap@xenotime.net, bp@alien8.de, sakiwit@gmail.com,
-        lacombar@gmail.com, lucas.demarchi@profusion.mobi, dave@gnu.org,
-        paul.gortmaker@windriver.com, crquan@gmail.com, bpoirier@suse.de
-Subject: Re: [PATCH v4]menuconfig: Add Save button
-Message-ID: <20121203050033.GB3856@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>,
-	"Yann E. MORIN" <yann.morin.1998@free.fr>,
-	linux-kbuild@vger.kernel.org, mmarek@suse.cz,
-	linux-kernel@vger.kernel.org, rdunlap@xenotime.net, bp@alien8.de,
-	sakiwit@gmail.com, lacombar@gmail.com,
-	lucas.demarchi@profusion.mobi, dave@gnu.org,
-	paul.gortmaker@windriver.com, crquan@gmail.com, bpoirier@suse.de
-References: <20121201161316.GA15246@udknight>
- <201212021852.51113.yann.morin.1998@free.fr>
+	Mon, 3 Dec 2012 00:02:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201212021852.51113.yann.morin.1998@free.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1354155670-6267-1-git-send-email-chao.xie@marvell.com>
+References: <1354155670-6267-1-git-send-email-chao.xie@marvell.com>
+Date: Mon, 3 Dec 2012 00:02:33 -0500
+Message-ID: <CAHdPZaP+8wi6ZL5ugvgoEiq5AaLK8+V1SDbirMw0zj=C=w9ZNw@mail.gmail.com>
+Subject: Re: [PATCH 1/4] rtc: sa1100: enable/disable rtc when probe/remove the device
+From: "devendra.aaru" <devendra.aaru@gmail.com>
+To: Chao Xie <chao.xie@marvell.com>
+Cc: Alessandro Zummo <a.zummo@towertech.it>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        haojian.zhuang@gmail.com, linux-arm-kernel@lists.infradead.org,
+        xiechao.mail@gmail.com, Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yann, All,
-	
-On Sun, Dec 02, 2012 at 06:52:50PM +0100, Yann E. MORIN wrote:
-> To make the behavior consistent, may I suggest that you push the
-> concept even a bit further:
->   - add a "Load" *and* a "Save" buttons
->   - get rid of the top-level "Load an Alternate Configuration File"
->     and "Save an Alternate Configuration File" entries
-> 
-> For the "Save" and "Load" buttons, please mimick how the nconf frontend
-> behaves: prompt for the file to save to/load from, and prefill it with
-> the last filename that was entered (".config" per default).
-> 
-> Of course, two patches for that: one for the "Save/Load" buttons, one
-> to get rid of the top-level entries afterward.
-Thanks, very good suggestion, I will jump in.
+CCing Andrew as he is the maintainer of the rtc subsystem
 
-> Note: I do not state that your use-case is valid or not. That's your
-> call how you configure and test your kernel. However, I think that
-> having a consistent behavior across the frontends is a very nice goal
-> to pursue.
-I understand, I make a mistake in the comment in previous Email.
-
-> See other comments in-lined, below.
-> 
-> > V1-V2: Rewrite the most code to make it more correct
-> > V2-V3: Fix the behavior of conf_message_callback when exit.
-> > V3-V4:
-> > 1: Move Buttons a little left to make them look like symmetrical.
-> > 2: Exchange the position between Save button and Exit button.
-> > 3: Use conf_save instead of conf_write to make we can save
-> > an alternate configuration file with Save button.
-> > 
-> > Signed-off-by: Wang YanQing <udknight@gmail.com>
-> > ---
-> >  scripts/kconfig/lxdialog/menubox.c | 21 +++++++++---------
-> >  scripts/kconfig/mconf.c            | 45 ++++++++++++++++++++++++++++++--------
-> >  2 files changed, 47 insertions(+), 19 deletions(-)
-> > 
-> > diff --git a/scripts/kconfig/lxdialog/menubox.c b/scripts/kconfig/lxdialog/menubox.c
-> > index 1d60473..b445bda 100644
-> > --- a/scripts/kconfig/lxdialog/menubox.c
-> > +++ b/scripts/kconfig/lxdialog/menubox.c
-> > @@ -26,7 +26,7 @@
-> >   *
-> >   *    *)  A bugfix for the Page-Down problem
-> >   *
-> > - *    *)  Formerly when I used Page Down and Page Up, the cursor would be set 
-> > + *    *)  Formerly when I used Page Down and Page Up, the cursor would be set
-> 
-> Space-damage. Don't send trailing-space fixes, or at least add a quick
-> note for it at the end of the commit log (eg.: "remove trailing space
-> while at it").
-Ok, it is right.
-
-Thanks Yann E. MORIN, and All
-
+On Wed, Nov 28, 2012 at 9:21 PM, Chao Xie <chao.xie@marvell.com> wrote:
+> The original sa1100_rtc_open/sa1100_rtc_release will be called
+> when the /dev/rtc0 is opened or closed.
+> In fact, these two functions will enable/disable the clock, and
+> register/unregister the irqs.
+> User application will use /dev/rtc0 to read the rtc time or set
+> the alarm. The rtc should still run indepent of open/close the
+> rtc device.
+> So only enable clock and register the irqs when probe the device,
+> and disable clock and unregister the irqs when remove the device.
+>
+> Signed-off-by: Chao Xie <chao.xie@marvell.com>
+> ---
+>  drivers/rtc/rtc-sa1100.c |    9 +++++++--
+>  1 files changed, 7 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/rtc/rtc-sa1100.c b/drivers/rtc/rtc-sa1100.c
+> index 50a5c4a..e933327 100644
+> --- a/drivers/rtc/rtc-sa1100.c
+> +++ b/drivers/rtc/rtc-sa1100.c
+> @@ -218,8 +218,6 @@ static int sa1100_rtc_proc(struct device *dev, struct seq_file *seq)
+>  }
+>
+>  static const struct rtc_class_ops sa1100_rtc_ops = {
+> -       .open = sa1100_rtc_open,
+> -       .release = sa1100_rtc_release,
+>         .read_time = sa1100_rtc_read_time,
+>         .set_time = sa1100_rtc_set_time,
+>         .read_alarm = sa1100_rtc_read_alarm,
+> @@ -253,6 +251,10 @@ static int sa1100_rtc_probe(struct platform_device *pdev)
+>         spin_lock_init(&info->lock);
+>         platform_set_drvdata(pdev, info);
+>
+> +       ret = sa1100_rtc_open(&pdev->dev);
+> +       if (ret)
+> +               goto err_open;
+> +
+>         /*
+>          * According to the manual we should be able to let RTTR be zero
+>          * and then a default diviser for a 32.768KHz clock is used.
+> @@ -305,7 +307,9 @@ static int sa1100_rtc_probe(struct platform_device *pdev)
+>
+>         return 0;
+>  err_dev:
+> +       sa1100_rtc_release(&pdev->dev);
+>         platform_set_drvdata(pdev, NULL);
+> +err_open:
+>         clk_put(info->clk);
+>  err_clk:
+>         kfree(info);
+> @@ -318,6 +322,7 @@ static int sa1100_rtc_remove(struct platform_device *pdev)
+>
+>         if (info) {
+>                 rtc_device_unregister(info->rtc);
+> +               sa1100_rtc_release(&pdev->dev);
+>                 clk_put(info->clk);
+>                 platform_set_drvdata(pdev, NULL);
+>                 kfree(info);
+> --
+> 1.7.4.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
