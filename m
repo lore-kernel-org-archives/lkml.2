@@ -1,56 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123Ab2LCTpM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 14:45:12 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:42161 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751383Ab2LCTpL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 14:45:11 -0500
+	id S1752159Ab2LCTqK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 14:46:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47646 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751383Ab2LCTqJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 14:46:09 -0500
+Date: Mon, 3 Dec 2012 21:48:50 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Jason Wang <jasowang@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+        Rami Rosen <ramirose@gmail.com>, Dave Jones <davej@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv2] tun: only queue packets on device
+Message-ID: <20121203194850.GA920@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20121203193310.GA32762@rhlx01.hs-esslingen.de>
-References: <CA+55aFyetqyMa2BQu7kE=cqFdAysUh9gV=O5as5Chgg1EMCW7g@mail.gmail.com>
- <20121203193310.GA32762@rhlx01.hs-esslingen.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 3 Dec 2012 11:39:07 -0800
-X-Google-Sender-Auth: RFzasz5EtGf9z54gnz8fluspjQs
-Message-ID: <CA+55aFygWCxz=Mmogp8FoSr51rNct6ANw0Kw3y=u4Pu2iDK48Q@mail.gmail.com>
-Subject: Re: [YASB] Re: Linux 3.7-rc7
-To: Andreas Mohr <andi@lisas.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 3, 2012 at 11:33 AM, Andreas Mohr <andi@lisas.de> wrote:
-> Hello,
->
-> JFYI: Yet Another Suspend Breakage, it seems (hopefully someone
-> can contribute to and further nail down this issue).
->
->
-> Working:
-> vmlinuz-3.7.0-rc5-00068-gc5e35d6 (HEAD possibly unknown?)
->
-> Failing:
-> vmlinuz-3.7.0-rc7-00179-g2db18aa (HEAD 3c46f3d6406b1d0c53575774b2d1fd013cd7f76f)
->
->
-> Athlon XP 32bit VIA 8K5A2+.
->
->
-> Florian Fainelli (1):
->       x86/ce4100: Fix pm_poweroff
->
-> sounds like it *might* happen to be a candidate (I could try to add a
-> revert on top, of certain likely candidates).
+Historically tun supported two modes of operation:
+- in default mode, a small number of packets would get queued
+  at the device, the rest would be queued in qdisc
+- in one queue mode, all packets would get queued at the device
 
-That can only matter if you select support for CONFIG_X86_INTEL_CE
-("CE4100 TV platform") which you should never do unless you actually
-compile for that platform.
+This might have made sense up to a point where we made the
+queue depth for both modes the same and set it to
+a huge value (500) so unless the consumer
+is stuck the chance of losing packets is small.
 
-So it's something else (or you have an insane config file). Bisection
-would be wonderful.
+Thus in practice both modes behave the same, but the
+default mode has some problems:
+- if packets are never consumed, fragments are never orphaned
+  which cases a DOS for sender using zero copy transmit
+- overrun errors are hard to diagnose: fifo error is incremented
+  only once so you can not distinguish between
+  userspace that is stuck and a transient failure,
+  tcpdump on the device does not show any traffic
 
-                Linus
+Userspace solves this simply by enabling IFF_ONE_QUEUE
+but there seems to be little point in not doing the
+right thing for everyone, by default.
+
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+
+Changes from v1:
+	Address comment by David Miller:
+	Now that TUN_NO_QUEUE has no real effect and is a NOP,
+	document it as such both in if_tun.h and the places
+	in the driver that flip the bit based upon userspace requests.
+ drivers/net/tun.c           | 22 ++++++----------------
+ include/uapi/linux/if_tun.h |  2 ++
+ 2 files changed, 8 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index 607a3a5..4a88dad 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -693,21 +693,8 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	 * number of queues.
+ 	 */
+ 	if (skb_queue_len(&tfile->socket.sk->sk_receive_queue)
+-			  >= dev->tx_queue_len / tun->numqueues){
+-		if (!(tun->flags & TUN_ONE_QUEUE)) {
+-			/* Normal queueing mode. */
+-			/* Packet scheduler handles dropping of further packets. */
+-			netif_stop_subqueue(dev, txq);
+-
+-			/* We won't see all dropped packets individually, so overrun
+-			 * error is more appropriate. */
+-			dev->stats.tx_fifo_errors++;
+-		} else {
+-			/* Single queue mode.
+-			 * Driver handles dropping of all packets itself. */
+-			goto drop;
+-		}
+-	}
++			  >= dev->tx_queue_len / tun->numqueues)
++		goto drop;
+ 
+ 	/* Orphan the skb - required as we might hang on to it
+ 	 * for indefinite time. */
+@@ -1322,7 +1309,6 @@ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
+ 			schedule();
+ 			continue;
+ 		}
+-		netif_wake_subqueue(tun->dev, tfile->queue_index);
+ 
+ 		ret = tun_put_user(tun, tfile, skb, iv, len);
+ 		kfree_skb(skb);
+@@ -1485,6 +1471,8 @@ static int tun_flags(struct tun_struct *tun)
+ 	if (tun->flags & TUN_NO_PI)
+ 		flags |= IFF_NO_PI;
+ 
++	/* This flag has no real effect.  We track the value for backwards
++	 * compatibility. */
+ 	if (tun->flags & TUN_ONE_QUEUE)
+ 		flags |= IFF_ONE_QUEUE;
+ 
+@@ -1633,6 +1621,8 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+ 	else
+ 		tun->flags &= ~TUN_NO_PI;
+ 
++	/* This flag has no real effect.  We track the value for backwards
++	 * compatibility. */
+ 	if (ifr->ifr_flags & IFF_ONE_QUEUE)
+ 		tun->flags |= TUN_ONE_QUEUE;
+ 	else
+diff --git a/include/uapi/linux/if_tun.h b/include/uapi/linux/if_tun.h
+index 958497a..2835b85 100644
+--- a/include/uapi/linux/if_tun.h
++++ b/include/uapi/linux/if_tun.h
+@@ -31,6 +31,7 @@
+ #define TUN_FASYNC	0x0010
+ #define TUN_NOCHECKSUM	0x0020
+ #define TUN_NO_PI	0x0040
++/* This flag has no real effect */
+ #define TUN_ONE_QUEUE	0x0080
+ #define TUN_PERSIST 	0x0100	
+ #define TUN_VNET_HDR 	0x0200
+@@ -60,6 +61,7 @@
+ #define IFF_TUN		0x0001
+ #define IFF_TAP		0x0002
+ #define IFF_NO_PI	0x1000
++/* This flag has no real effect */
+ #define IFF_ONE_QUEUE	0x2000
+ #define IFF_VNET_HDR	0x4000
+ #define IFF_TUN_EXCL	0x8000
+-- 
+MST
