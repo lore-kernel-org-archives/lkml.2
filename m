@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755525Ab2LCOhI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:37:08 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43987 "EHLO
+	id S932471Ab2LCOiW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:38:22 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43992 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932472Ab2LCOhE (ORCPT
+	by vger.kernel.org with ESMTP id S932496Ab2LCOhH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 09:37:04 -0500
-Message-Id: <20121203143150.070434560@decadent.org.uk>
+	Mon, 3 Dec 2012 09:37:07 -0500
+Message-Id: <20121203143150.410579422@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Dec 2012 14:32:06 +0000
+Date: Mon, 03 Dec 2012 14:32:08 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Yinghai Lu <yinghai@kernel.org>, Jacob Shin <jacob.shin@amd.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 20/89] x86, mm: Undo incorrect revert in arch/x86/mm/init.c
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        Pablo Neira Ayuso <pablo@netfilter.org>
+Subject: [ 22/89] netfilter: Validate the sequence number of dataless ACK packets as
+ well
 In-Reply-To: <20121203143146.549859007@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,43 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yinghai Lu <yinghai@kernel.org>
+From: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
 
-commit f82f64dd9f485e13f29f369772d4a0e868e5633a upstream.
+commit 4a70bbfaef0361d27272629d1a250a937edcafe4 upstream.
 
-Commit
+We spare nothing by not validating the sequence number of dataless
+ACK packets and enabling it makes harder off-path attacks.
 
-    844ab6f9 x86, mm: Find_early_table_space based on ranges that are actually being mapped
+See: "Reflection scan: an Off-Path Attack on TCP" by Jan Wrobel,
+http://arxiv.org/abs/1201.2074
 
-added back some lines back wrongly that has been removed in commit
-
-    7b16bbf97 Revert "x86/mm: Fix the size calculation of mapping tables"
-
-remove them again.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Link: http://lkml.kernel.org/r/CAE9FiQW_vuaYQbmagVnxT2DGsYc=9tNeAbdBq53sYkitPOwxSQ@mail.gmail.com
-Acked-by: Jacob Shin <jacob.shin@amd.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/mm/init.c |    4 ----
- 1 file changed, 4 deletions(-)
+ net/netfilter/nf_conntrack_proto_tcp.c |   10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index bc287d6..d7aea41 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -65,10 +65,6 @@ static void __init find_early_table_space(struct map_range *mr, int nr_range)
- #ifdef CONFIG_X86_32
- 			extra += PMD_SIZE;
- #endif
--			/* The first 2/4M doesn't use large pages. */
--			if (mr[i].start < PMD_SIZE)
--				extra += range;
--
- 			ptes += (extra + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 		} else {
- 			ptes += (range + PAGE_SIZE - 1) >> PAGE_SHIFT;
+diff --git a/net/netfilter/nf_conntrack_proto_tcp.c b/net/netfilter/nf_conntrack_proto_tcp.c
+index 1eb458c..a9d5f50 100644
+--- a/net/netfilter/nf_conntrack_proto_tcp.c
++++ b/net/netfilter/nf_conntrack_proto_tcp.c
+@@ -625,15 +625,9 @@ static bool tcp_in_window(const struct nf_conn *ct,
+ 		ack = sack = receiver->td_end;
+ 	}
+ 
+-	if (seq == end
+-	    && (!tcph->rst
+-		|| (seq == 0 && state->state == TCP_CONNTRACK_SYN_SENT)))
++	if (tcph->rst && seq == 0 && state->state == TCP_CONNTRACK_SYN_SENT)
+ 		/*
+-		 * Packets contains no data: we assume it is valid
+-		 * and check the ack value only.
+-		 * However RST segments are always validated by their
+-		 * SEQ number, except when seq == 0 (reset sent answering
+-		 * SYN.
++		 * RST sent answering SYN.
+ 		 */
+ 		seq = end = sender->td_end;
+ 
 
 
