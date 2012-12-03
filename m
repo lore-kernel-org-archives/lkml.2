@@ -1,81 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751834Ab2LCXRY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 18:17:24 -0500
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:43991 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751719Ab2LCXRV (ORCPT
+	id S1751692Ab2LCXRS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 18:17:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49367 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751340Ab2LCXRQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 18:17:21 -0500
-Message-ID: <50BD32F7.5080601@linux.vnet.ibm.com>
-Date: Tue, 04 Dec 2012 07:17:11 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH] KVM: MMU: optimize for set_spte
-Content-Type: text/plain; charset=UTF-8
+	Mon, 3 Dec 2012 18:17:16 -0500
+Date: Mon, 3 Dec 2012 15:17:15 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Chris Clayton <chris2553@googlemail.com>
+Cc: Jiang Liu <liuj97@gmail.com>, Wen Congyang <wency@cn.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFT PATCH v2 4/5] mm: provide more accurate estimation of
+ pages occupied by memmap
+Message-Id: <20121203151715.8c536a7a.akpm@linux-foundation.org>
+In-Reply-To: <50BBB21D.3070005@googlemail.com>
+References: <20121120111942.c9596d3f.akpm@linux-foundation.org>
+	<1353510586-6393-1-git-send-email-jiang.liu@huawei.com>
+	<20121128155221.df369ce4.akpm@linux-foundation.org>
+	<50B73E56.4050603@googlemail.com>
+	<50BBB21D.3070005@googlemail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12120323-5816-0000-0000-000005AA925E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are two cases we need to adjust page size in set_spte:
-1): the one is other vcpu creates new sp in the window between mapping_level()
-    and acquiring mmu-lock.
-2): the another case is the new sp is created by itself (page-fault path) when
-    guest uses the target gfn as its page table.
+On Sun, 02 Dec 2012 19:55:09 +0000
+Chris Clayton <chris2553@googlemail.com> wrote:
 
-In current code, set_spte drop the spte and emulate the access for these case,
-it works not good:
-- for the case 1, it may destroy the mapping established by other vcpu, and
-  do expensive instruction emulation.
-- for the case 2, it may emulate the access even if the guest is accessing
-  the page which not used as page table. There is a example, 0~2M is used as
-  huge page in guest, in this huge page, only page 3 used as page table, then
-  guest read/writes on other pages can cause instruction emulation.
+> 
+> 
+> On 11/29/12 10:52, Chris Clayton wrote:
+> > On 11/28/12 23:52, Andrew Morton wrote:
+> >> On Wed, 21 Nov 2012 23:09:46 +0800
+> >> Jiang Liu <liuj97@gmail.com> wrote:
+> >>
+> >>> Subject: Re: [RFT PATCH v2 4/5] mm: provide more accurate estimation
+> >>> of pages occupied by memmap
+> >>
+> >> How are people to test this?  "does it boot"?
+> >>
+> >
+> > I've been running kernels with Gerry's 5 patches applied for 11 days
+> > now. This is on a 64bit laptop but with a 32bit kernel + HIGHMEM. I
+> > joined the conversation because my laptop would not resume from suspend
+> > to disk - it either froze or rebooted. With the patches applied the
+> > laptop does successfully resume and has been stable.
+> >
+> > Since Monday, I have have been running a kernel with the patches (plus,
+> > from today, the patch you mailed yesterday) applied to 3.7rc7, without
+> > problems.
+> >
+> 
+> I've been running 3.7-rc7 with the patches listed below for a week now 
+> and it has been perfectly stable. In particular, my laptop will now 
+> successfully resume from suspend to disk, which always failed without 
+> the patches.
+> 
+>  From Jiang Liu:
+> 1. [RFT PATCH v2 1/5] mm: introduce new field "managed_pages" to struct zone
+> 2. [RFT PATCH v1 2/5] mm: replace zone->present_pages with 
+> zone->managed_pages if appreciated
+> 3. [RFT PATCH v1 3/5] mm: set zone->present_pages to number of existing 
+> pages in the zone
+> 4. [RFT PATCH v2 4/5] mm: provide more accurate estimation of pages 
+> occupied by memmap
+> 5. [RFT PATCH v1 5/5] mm: increase totalram_pages when free pages 
+> allocated by bootmem allocator
+> 
+>  From Andrew Morton:
+> 6. mm-provide-more-accurate-estimation-of-pages-occupied-by-memmap.patch
+> 
+> Tested-by: Chris Clayton <chris2553@googlemail.com>
 
-Both of these cases can be fixed by allowing guest to retry the access, it
-will refault, then we can establish the mapping by using small page
+Thanks.
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
----
- arch/x86/kvm/mmu.c |   16 ++++++++++++----
- 1 files changed, 12 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index b875a9e..01d7c2a 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -2382,12 +2382,20 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
- 	    || (!vcpu->arch.mmu.direct_map && write_fault
- 		&& !is_write_protection(vcpu) && !user_fault)) {
-
-+		/*
-+		 * There are two cases:
-+		 * - the one is other vcpu creates new sp in the window
-+		 *   between mapping_level() and acquiring mmu-lock.
-+		 * - the another case is the new sp is created by itself
-+		 *   (page-fault path) when guest uses the target gfn as
-+		 *   its page table.
-+		 * Both of these cases can be fixed by allowing guest to
-+		 * retry the access, it will refault, then we can establish
-+		 * the mapping by using small page.
-+		 */
- 		if (level > PT_PAGE_TABLE_LEVEL &&
--		    has_wrprotected_page(vcpu->kvm, gfn, level)) {
--			ret = 1;
--			drop_spte(vcpu->kvm, sptep);
-+		    has_wrprotected_page(vcpu->kvm, gfn, level))
- 			goto done;
--		}
-
- 		spte |= PT_WRITABLE_MASK | SPTE_MMU_WRITEABLE;
-
--- 
-1.7.7.6
-
+I have only two of these five patches queued for 3.8:
+mm-introduce-new-field-managed_pages-to-struct-zone.patch and
+mm-provide-more-accurate-estimation-of-pages-occupied-by-memmap.patch. 
+I don't recall what happened with the other three.
