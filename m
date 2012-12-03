@@ -1,85 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752047Ab2LCUCp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 15:02:45 -0500
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:37308 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751111Ab2LCUCn convert rfc822-to-8bit (ORCPT
+	id S1752289Ab2LCUCu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 15:02:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:52015 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752053Ab2LCUCr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 15:02:43 -0500
-From: "Ortiz, Lance E" <lance.oritz@hp.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-CC: "bhelgaas@google.com" <bhelgaas@google.com>,
-        "lance_ortiz@hotmail.com" <lance_ortiz@hotmail.com>,
-        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "bp@alien8.de" <bp@alien8.de>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v3 1/3] aerdrv: Trace Event for AER
-Thread-Topic: [PATCH v3 1/3] aerdrv: Trace Event for AER
-Thread-Index: AQHNz7gRDx2yz86yDEOYhpMK9R3d+JgHgIAA
-Date: Mon, 3 Dec 2012 20:01:46 +0000
-Message-ID: <A961433CDFF2F640A2866803152E61F9516EE717@G4W3218.americas.hpqcorp.net>
-References: <20121130213330.7649.51101.stgit@grignak.americas.hpqcorp.net>
- <20121201093614.720aa96a@redhat.com>
-In-Reply-To: <20121201093614.720aa96a@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.25]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 3 Dec 2012 15:02:47 -0500
+Date: Mon, 3 Dec 2012 14:02:41 -0600
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-efi@vger.kernel.org,
+        mfleming@intel.com, dwmw2@infradead.org
+Subject: Re: Use PCI ROMs from EFI boot services
+Message-ID: <20121203200241.GG5906@thinkpad-t410>
+Mail-Followup-To: Bjorn Helgaas <bhelgaas@google.com>,
+	Matthew Garrett <mjg59@srcf.ucam.org>, linux-kernel@vger.kernel.org,
+	linux-pci@vger.kernel.org, linux-efi@vger.kernel.org,
+	mfleming@intel.com, dwmw2@infradead.org
+References: <1345739803-21017-1-git-send-email-mjg@redhat.com>
+ <CAErSpo6dn_0b8Ngx9VT=ARs_UXQftEx=2Kczeqemtmo0XyKzuQ@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo6dn_0b8Ngx9VT=ARs_UXQftEx=2Kczeqemtmo0XyKzuQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +#define correctable_error_string			\
-> > +	{BIT(0),	"Receiver Error"},		\
-> > +	{BIT(6),	"Bad TLP"},			\
-> > +	{BIT(7),	"Bad DLLP"},			\
-> > +	{BIT(8),	"RELAY_NUM Rollover"},		\
-> > +	{BIT(12),	"Replay Timer Timeout"},	\
-> > +	{BIT(13),	"Advisory Non-Fatal"}
+On Thu, Oct 25, 2012 at 11:35:57AM -0600, Bjorn Helgaas wrote:
+> On Thu, Aug 23, 2012 at 10:36 AM, Matthew Garrett <mjg@redhat.com> wrote:
+> > V3 just fixes all the casting issues and incorporates David's change in
+> > search ordering.
 > 
-> Hmm... isn't something missing here? I'm seeing more bits defined at
-> the
-> PCIe V3.0 spec for Offset 10h:
+> I think there's still a section mismatch issue with these patches, so
+> I haven't merged them yet.
 > 
-> bit 14 - Corrected Internal Error
-> bit 15 - Header Log Overflow
-> 
-> > +#define uncorrectable_error_string			\
-> > +	{BIT(4),	"Data Link Protocol"},		\
-> > +	{BIT(12),	"Poisoned TLP"},		\
-> > +	{BIT(13),	"Flow Control Protocol"},	\
-> > +	{BIT(14),	"Completion Timeout"},		\
-> > +	{BIT(15),	"Completer Abort"},		\
-> > +	{BIT(16),	"Unexpected Completion"},	\
-> > +	{BIT(17),	"Receiver Overflow"},		\
-> > +	{BIT(18),	"Malformed TLP"},		\
-> > +	{BIT(19),	"ECRC"},			\
-> > +	{BIT(20),	"Unsupported Request"}
-> 
-> Hmm... isn't something missing here? I'm seeing more bits defined at
-> the
-> PCIe V3.0 spec for Offset 04h:
-> 
-> bit 5 - Surprise Down Error
-> bit 21 - ACS Violation
-> bit 22 - Uncorrectable Internal Error
-> bit 23 - MC Blocked TLP
-> bit 24 - AtomicOp Egress Blocked
-> bit 25 - TLP Prefix Blocked Error
-> 
+> I rebased my pci/mjg-pci-roms-from-efi branch to v3.7-rc2, and if we
+> get this issue fixed I'll put it in -next as v3.8 material.
 
-I used the same errors defined in the string arrays at the top of aerdrv_errprint.c.  I am not sure why they were left out in that file.  I will investigate and probably add them as a later patch and then include them in aerdrv_errprint.c also.
+I still don't see this series in -next, so I take it the section
+mismatch was never fixed? How about the following?
 
-Sound good?
+Thanks,
+Seth
 
-Lance
+
+>From ece31852159a6b2cf9a059031638354e9817a6a6 Mon Sep 17 00:00:00 2001
+From: Seth Forshee <seth.forshee@canonical.com>
+Date: Mon, 3 Dec 2012 13:55:50 -0600
+Subject: [PATCH] x86: Don't discard boot_params
+
+boot_params is now used at runtime on EFI systems to stash option ROMs
+that aren't available after exiting boot services, so it can no longer
+be marked __initdata.
+
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+---
+ arch/x86/kernel/setup.c |    4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 468e98d..6e13035 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -143,11 +143,7 @@ int default_check_phys_apicid_present(int phys_apicid)
+ }
+ #endif
+ 
+-#ifndef CONFIG_DEBUG_BOOT_PARAMS
+-struct boot_params __initdata boot_params;
+-#else
+ struct boot_params boot_params;
+-#endif
+ 
+ /*
+  * Machine setup..
+-- 
+1.7.9.5
 
