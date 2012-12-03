@@ -1,103 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754218Ab2LCPBy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 10:01:54 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:50494 "EHLO
+	id S1754705Ab2LCPCB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 10:02:01 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:50498 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750733Ab2LCPBx (ORCPT
+	with ESMTP id S1754360Ab2LCPB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 10:01:53 -0500
-Subject: [RFC PATCH 0/9] Upstream merge of core of Goldfish AVD support
+	Mon, 3 Dec 2012 10:01:58 -0500
+Subject: [PATCH 1/9] goldfish: definitions for Goldfish on x86 platforms
 To: arve@android.com, x86@kernel.org, linux-kernel@vger.kernel.org,
         mikechan@google.com
 From: Alan Cox <alan@linux.intel.com>
-Date: Mon, 03 Dec 2012 15:04:04 +0000
-Message-ID: <20121203150310.16826.3363.stgit@bob.linux.org.uk>
+Date: Mon, 03 Dec 2012 15:04:19 +0000
+Message-ID: <20121203150417.16826.70816.stgit@bob.linux.org.uk>
+In-Reply-To: <20121203150310.16826.3363.stgit@bob.linux.org.uk>
+References: <20121203150310.16826.3363.stgit@bob.linux.org.uk>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a port and clean up of the core platform and driver code for
-the Goldfish AVD (Android Virtual Device).
+From: Jun Nakajima <jnakajim@gmail.com>
 
-With these patches applied you can boot Debian on Goldfish for minimal testing
-purposes. It won't boot Android as there are other drivers needed, some of
-which still need out of tree Android code.
+Based on code by Jun Nakajima but stripped of all the old x86 mach-foo
+stuff and turned into a single include file for the Goldfish virtual bus
+layer
 
-Goldfish is both an ARM and an x86 platform. These patches add the x86 code
-but they also add all the cleanups done to make most of the code portable. All
-the drivers therefore are put into drivers/platform/goldfish or into the 
-relevant driver directories  so they can be shared by other processors as
-needed in future.
-
-Once these drivers are in an upstream acceptable shape I'll look at feeding
-the other bits in.
-
-Alan
+Signed-off-by: Sheng Yang <sheng@linux.intel.com>
+Signed-off-by: Yunhong Jiang <yunhong.jiang@intel.com>
+Signed-off-by: Xiaohui Xin <xiaohui.xin@intel.com>
+Signed-off-by: Jun Nakajima <jun.nakajima@intel.com>
+Signed-off-by: Bruce Beare <bruce.j.beare@intel.com>
+[Ported to 3.7 and reorganised so that we can keep most of the code
+ shared properly]
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
-Arve Hjønnevåg (4):
-      goldfish: tty driver
-      goldfish: framebuffer
-      goldfish: real time clock
-      goldfish: NAND flash driver
-
-Brian Swetland (1):
-      goldfish: virtual input event driver
-
-Jun Nakajima (2):
-      goldfish: definitions for Goldfish on x86 platforms
-      goldfish: add the goldfish virtual bus
-
-Mike Lockwood (2):
-      goldfish: emulated MMC device
-      goldfish: power device
-
-
- arch/x86/Kconfig                         |   12 +
- arch/x86/include/asm/goldfish.h          |   43 ++
- drivers/input/keyboard/Kconfig           |   11 +
- drivers/input/keyboard/Makefile          |    1 
- drivers/input/keyboard/goldfish_events.c |  201 ++++++++++
- drivers/mmc/host/Kconfig                 |    7 
- drivers/mmc/host/Makefile                |    1 
- drivers/mmc/host/goldfish.c              |  579 ++++++++++++++++++++++++++++++
- drivers/mtd/devices/Kconfig              |    7 
- drivers/mtd/devices/Makefile             |    3 
- drivers/mtd/devices/goldfish_nand.c      |  475 +++++++++++++++++++++++++
- drivers/mtd/devices/goldfish_nand_reg.h  |   72 ++++
- drivers/platform/Makefile                |    1 
- drivers/platform/goldfish/Makefile       |    4 
- drivers/platform/goldfish/pdev_bus.c     |  267 ++++++++++++++
- drivers/power/Kconfig                    |    8 
- drivers/power/Makefile                   |    1 
- drivers/power/goldfish_battery.c         |  263 ++++++++++++++
- drivers/rtc/Kconfig                      |    9 
- drivers/rtc/Makefile                     |    1 
- drivers/rtc/rtc-goldfish.c               |  146 ++++++++
- drivers/tty/Kconfig                      |    6 
- drivers/tty/Makefile                     |    1 
- drivers/tty/goldfish.c                   |  342 ++++++++++++++++++
- drivers/video/Kconfig                    |    9 
- drivers/video/Makefile                   |    1 
- drivers/video/goldfishfb.c               |  327 +++++++++++++++++
- 27 files changed, 2796 insertions(+), 2 deletions(-)
+ arch/x86/Kconfig                |   12 ++++++++++++
+ arch/x86/include/asm/goldfish.h |   36 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 48 insertions(+)
  create mode 100644 arch/x86/include/asm/goldfish.h
- create mode 100644 drivers/input/keyboard/goldfish_events.c
- create mode 100644 drivers/mmc/host/goldfish.c
- create mode 100644 drivers/mtd/devices/goldfish_nand.c
- create mode 100644 drivers/mtd/devices/goldfish_nand_reg.h
- create mode 100644 drivers/platform/goldfish/Makefile
- create mode 100644 drivers/platform/goldfish/pdev_bus.c
- create mode 100644 drivers/power/goldfish_battery.c
- create mode 100644 drivers/rtc/rtc-goldfish.c
- create mode 100644 drivers/tty/goldfish.c
- create mode 100644 drivers/video/goldfishfb.c
 
--- 
-Moo!
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index cd98a44..dbe8baa 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -326,6 +326,10 @@ config X86_BIGSMP
+ 	---help---
+ 	  This option is needed for the systems that have more than 8 CPUs
+ 
++config GOLDFISH
++       def_bool y
++       depends on X86_GOLDFISH
++
+ if X86_32
+ config X86_EXTENDED_PLATFORM
+ 	bool "Support for extended (non-PC) x86 platforms"
+@@ -407,6 +411,14 @@ config X86_UV
+ # Following is an alphabetically sorted list of 32 bit extended platforms
+ # Please maintain the alphabetic order if and when there are additions
+ 
++config X86_GOLDFISH
++       bool "Goldfish (Virtual Platform)"
++       depends on X86_32
++       ---help---
++	 Enable support for the Goldfish virtual platform used primarily
++	 for Android development. Unless you are building for the Android
++	 Goldfish emulator say N here.
++
+ config X86_INTEL_CE
+ 	bool "CE4100 TV platform"
+ 	depends on PCI
+diff --git a/arch/x86/include/asm/goldfish.h b/arch/x86/include/asm/goldfish.h
+new file mode 100644
+index 0000000..d5fcf6d
+--- /dev/null
++++ b/arch/x86/include/asm/goldfish.h
+@@ -0,0 +1,36 @@
++/*
++ *
++ * arch/x86/include/asm/mach-goldfish/hardware.h
++ *
++ * Copyright (C) 2007 Google, Inc.
++ * Copyright (C) 2012 Intel, Corp.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef __X86_ARCH_HARDWARE_H
++#define __X86_ARCH_HARDWARE_H
++
++/*
++ * Where in virtual memory the IO devices (timers, system controllers
++ * and so on)
++ */
++
++#define GOLDFISH_IO_SIZE	0x00800000	/* How much? */
++#define GOLDFISH_IO_START	0xff000000	/* PA of IO */
++
++#define GOLDFISH_PDEV_BUS_BASE	(0x1000)
++#define GOLDFISH_PDEV_BUS_END	(0x100)
++#define GOLDFISH_PDEV_BUS_IRQ	(4)
++
++#define GOLDFISH_TTY_BASE	(0x2000)
++
++#endif
 
