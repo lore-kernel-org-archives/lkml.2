@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754024Ab2LCJkO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 04:40:14 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:62348 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784Ab2LCJkM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 04:40:12 -0500
+	id S1754231Ab2LCJpB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 04:45:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38434 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750868Ab2LCJo7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 04:44:59 -0500
+Date: Mon, 3 Dec 2012 11:47:35 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, krkumar2@in.ibm.com,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        bhutchings@solarflare.com, jwhan@filewood.snu.ac.kr, shiyer@redhat.com
+Subject: Re: [net-next rfc v7 2/3] virtio_net: multiqueue support
+Message-ID: <20121203094735.GA23009@redhat.com>
+References: <1354011360-39479-1-git-send-email-jasowang@redhat.com>
+ <1354011360-39479-3-git-send-email-jasowang@redhat.com>
+ <87vccjj3hj.fsf@rustcorp.com.au>
+ <20845723.CY8SZ4xV0F@jason-thinkpad-t430s>
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <50BC7118.9060407@gmail.com>
-References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com>
-	<1353935954-13763-9-git-send-email-tbergstrom@nvidia.com>
-	<CAPM=9tzvt3J6D3zLPV97w629q62CNhAxX8V+_JZ6kmXxxz5fVg@mail.gmail.com>
-	<50BC7118.9060407@gmail.com>
-Date: Mon, 3 Dec 2012 10:40:10 +0100
-X-Google-Sender-Auth: 70Dg8MHmOhjcTr4qRzdvx1NT8po
-Message-ID: <CAKMK7uF-sQ-HzA2Zek4VzWky=69LA3JqJR_+kyRQEO-JgwPQXQ@mail.gmail.com>
-Subject: Re: [RFC v2 8/8] drm: tegra: Add gr2d device
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Mark Zhang <nvmarkzhang@gmail.com>
-Cc: Dave Airlie <airlied@gmail.com>, Terje Bergstrom <tbergstrom@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Arto Merilainen <amerilainen@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20845723.CY8SZ4xV0F@jason-thinkpad-t430s>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 3, 2012 at 10:30 AM, Mark Zhang <nvmarkzhang@gmail.com> wrote:
-> I'm new in kernel development. Could you tell me or give me some
-> materials to read that why we need to align the size of IOCTL structures
-> to 64bit? I can understand if we're working in a 64bit kernel but why we
-> need to do this if we're in a 32bit arm kernel? Besides, why the
-> pointers in IOCTL structure should be declared as u64?
+On Mon, Dec 03, 2012 at 02:05:27PM +0800, Jason Wang wrote:
+> On Monday, December 03, 2012 12:34:08 PM Rusty Russell wrote:
+> > Jason Wang <jasowang@redhat.com> writes:
+> > > +static const struct ethtool_ops virtnet_ethtool_ops;
+> > > +
+> > > +/*
+> > > + * Converting between virtqueue no. and kernel tx/rx queue no.
+> > > + * 0:rx0 1:tx0 2:cvq 3:rx1 4:tx1 ... 2N+1:rxN 2N+2:txN
+> > > + */
+> > > +static int vq2txq(struct virtqueue *vq)
+> > > +{
+> > > +	int index = virtqueue_get_queue_index(vq);
+> > > +	return index == 1 ? 0 : (index - 2) / 2;
+> > > +}
+> > > +
+> > > +static int txq2vq(int txq)
+> > > +{
+> > > +	return txq ? 2 * txq + 2 : 1;
+> > > +}
+> > > +
+> > > +static int vq2rxq(struct virtqueue *vq)
+> > > +{
+> > > +	int index = virtqueue_get_queue_index(vq);
+> > > +	return index ? (index - 1) / 2 : 0;
+> > > +}
+> > > +
+> > > +static int rxq2vq(int rxq)
+> > > +{
+> > > +	return rxq ? 2 * rxq + 1 : 0;
+> > > +}
+> > > +
+> > 
+> > I thought MST changed the proposed spec to make the control queue always
+> > the last one, so this logic becomes trivial.
+> 
+> But it may break the support of legacy guest. If we boot a legacy single queue 
+> guest on a 2 queue virtio-net device. It may think vq 2 is cvq which is indeed 
+> rx1.
 
-Because in a few years/months you'll have arm64, but still the same
-driver with the same ioctls ... and if the ioctls are not _exactly_
-the same you get to write compat ioctl code which copies the old 32bit
-struct into the 64bit struct the kernel understands. Hence your ioctl
-must be laid out exactly the same for both 32bit and 64bit, which
-happens if you naturally align/pad everything to 64bits and only use
-fixed-sized integers and no pointers.
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Legacy guyest support should be handled by host using feature
+bits in the usual way: host should detect legacy guest
+by checking the VIRTIO_NET_F_RFS feature.
+
+If VIRTIO_NET_F_RFS is acked, cvq is vq max_virtqueue_pairs * 2.
+If it's not acked, cvq is vq 2.
+
