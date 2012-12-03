@@ -1,58 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754217Ab2LCGbw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 01:31:52 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:53632 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751130Ab2LCGbu (ORCPT
+	id S1754169Ab2LCGhV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 01:37:21 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37576 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751700Ab2LCGhU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 01:31:50 -0500
-From: Hyeonjun Lim <hjoon0510@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Doc: Update the naming of profiling based on sysfs
-Date: Mon,  3 Dec 2012 15:31:31 +0900
-Message-Id: <1354516291-15589-1-git-send-email-hjoon0510@gmail.com>
-X-Mailer: git-send-email 1.7.8.1
+	Mon, 3 Dec 2012 01:37:20 -0500
+Date: Mon, 3 Dec 2012 15:36:48 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Daniel Jeong <gshark.jeong@gmail.com>
+Cc: Liam Gridwood <lrg@ti.com>, Daniel Jeong <daniel.jeong@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] regulator: new driver for LP8755
+Message-ID: <20121203063642.GB9848@opensource.wolfsonmicro.com>
+References: <1354509864-30001-1-git-send-email-gshark.jeong@gmail.com>
+ <1354509864-30001-2-git-send-email-gshark.jeong@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354509864-30001-2-git-send-email-gshark.jeong@gmail.com>
+X-Cookie: Reply hazy, ask again later.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We setup and run 'profiling' feature under Linux system.
-The readprofile(1) command uses the /proc/profile information
-to display ascii data on standard output.
-sort -nr | head -5
+On Mon, Dec 03, 2012 at 01:44:24PM +0900, Daniel Jeong wrote:
 
-/proc/profile correctly. The ./kernel/ksysfs.c defines 'profiling'
-w/o 'profile' like "KERNEL_ATTR_RW(profiling)".
-We need to synchronize the content between ksys.c source and kernel doc. 
+> +	regval &= ~(0x01 << id);
+> +
+> +	/* mode fast means forced pwm mode.
+> +	   mode normal means not forced pwm mode, according to
+> +	   current load it could be one of modes, PWM/PFM/LPPFM. */
+> +	return regval ? REGULATOR_MODE_FAST : REGULATOR_MODE_NORMAL;
 
-Signed-off-by: Hyeonjun Lim <hjoon0510@gmail.com>
----
- Documentation/ABI/testing/sysfs-profiling |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+Your set_mode() implemented an idle mode as well but it can't be read
+back..
 
-diff --git a/Documentation/ABI/testing/sysfs-profiling b/Documentation/ABI/testing/sysfs-profiling
-index b02d8b8..8a8e466 100644
---- a/Documentation/ABI/testing/sysfs-profiling
-+++ b/Documentation/ABI/testing/sysfs-profiling
-@@ -1,13 +1,13 @@
--What:		/sys/kernel/profile
-+What:		/sys/kernel/profiling
- Date:		September 2008
- Contact:	Dave Hansen <dave@linux.vnet.ibm.com>
- Description:
--		/sys/kernel/profile is the runtime equivalent
-+		/sys/kernel/profiling is the runtime equivalent
- 		of the boot-time profile= option.
- 
- 		You can get the same effect running:
- 
--			echo 2 > /sys/kernel/profile
-+			echo 2 > /sys/kernel/profiling
- 
- 		as you would by issuing profile=2 on the boot
- 		command line.
--- 
-1.7.8.1
+> +err_i2c:
+> +	dev_err(pchip->dev, "i2c acceess error %s\n", __func__);
+> +	return -EINVAL;
 
+Your approach to errors throughout the driver is very unhelpful - the
+code returned by regmap will be discarded entirely, it's neither
+displayed nor returned to the caller.  I'd also be inclined to avoid the
+goto idiom, it normally means there's some unwinding to be done but
+that's not the case here, just return.
+
+> +/* buck voltage table */
+> +static const int lp8755_buck_vtbl[] = {
+> +	500000, 510000, 520000, 530000, 540000,
+> +	550000, 560000, 570000, 580000, 590000,
+
+There is no point in this being a table, as far as I can see it's a
+nice linear map of values with some extras at the end which could just
+be dropped.
+
+> +	/* check vendor id and write init value */
+
+There's no writes...
+
+> +	ret = lp8755_read(pchip, 0x18, &regval);
+
+Magic numbers!
+
+> +	if (ret < 0)
+> +		goto out_i2c_error;
+> +	dev_info(pchip->dev, "lp8755 : chip ID is 0x%x\n", regval);
+
+This isn't actually checking anything except the I/O.  Can the chip ID
+really vary?
+
+> +	}
+> +
+> +	dev_info(pchip->dev, "regulator init Done %s\n", __func__);
+
+This isn't adding anything, drop it.
+
+> +	/* read & clear flag register */
+> +	ret = lp8755_read(pchip, 0x0D, &flag0);
+> +	ret |= lp8755_write(pchip, 0x0D, 0x00);
+
+More magic numbers.
+
+> +	if (pdata == NULL) {
+> +		dev_err(&client->dev, "platform data is NULL.\n");
+> +		return -ENOMEM;
+> +	}
+
+Platform data should be optional, you should be able to read back the
+current regulator state even if you can't set it.
+
+> +	dev_info(&client->dev, "lp8755 init done.\n");
+> +	return ret;
+
+Again, drop these noisy prints.  They're not adding anything.
+
+> +/**
+> + * struct lp8755_platform_data
+> + * @mphase_type    : Multiphase Switcher Configurations 0~8
+> + * @buck_init_volt : buck0~6 init voltage in uV.
+> + */
+> +struct lp8755_platform_data {
+> +	int mphase;
+> +	struct regulator_init_data *buck_data[LP8755_BUCK_MAX];
+> +};
+
+The comments don't match the struct.
