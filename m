@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755608Ab2LCR1v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 12:27:51 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:59466 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755450Ab2LCR1t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 12:27:49 -0500
-Message-ID: <50BCE112.3050203@wwwdotorg.org>
-Date: Mon, 03 Dec 2012 10:27:46 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755686Ab2LCR2C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 12:28:02 -0500
+Received: from www.hansjkoch.de ([178.63.77.200]:51504 "EHLO www.hansjkoch.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755628Ab2LCR2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 12:28:00 -0500
+Date: Mon, 3 Dec 2012 18:27:57 +0100
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Vitalii Demianets <vitas@nppfactor.kiev.ua>
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Tux9 <tuxding@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] uio.c: Fix warning: 'ret' might be used uninitialized
+Message-ID: <20121203172757.GA2621@local>
+References: <201211271348.14603.vitas@nppfactor.kiev.ua>
+ <20121130213906.GB2603@local>
+ <201212031035.07778.vitas@nppfactor.kiev.ua>
+ <201212031053.45700.vitas@nppfactor.kiev.ua>
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Michal Marek <mmarek@suse.cz>, Grant Likely <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Sam Ravnborg <sam@ravnborg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH V7 3/7] arm64: use new common dtc rule
-References: <1354058956-7199-1-git-send-email-swarren@wwwdotorg.org> <1354058956-7199-3-git-send-email-swarren@wwwdotorg.org> <20121129143041.GC30437@arm.com>
-In-Reply-To: <20121129143041.GC30437@arm.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201212031053.45700.vitas@nppfactor.kiev.ua>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/29/2012 07:30 AM, Catalin Marinas wrote:
-> On Tue, Nov 27, 2012 at 11:29:12PM +0000, Stephen Warren wrote:
->> From: Stephen Warren <swarren@nvidia.com>
->>
->> The current rules have the .dtb files build in a different directory
->> from the .dts files. This patch changes arm64 to use the generic dtb
->> rule which builds .dtb files in the same directory as the source .dts.
->>
->> This requires moving parts of arch/arm64/boot/Makefile into newly created
->> arch/arm64/boot/dts/Makefile, and updating arch/arm64/Makefile to call the
->> new Makefile.
->>
->> Cc: Catalin Marinas <catalin.marinas@arm.com>
->> Cc: linux-arm-kernel@lists.infradead.org
->> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+On Mon, Dec 03, 2012 at 10:53:45AM +0200, Vitalii Demianets wrote:
+> > On Friday 30 November 2012 23:39:06 Hans J. Koch wrote:
+> > > Thanks a lot for reporting and discussing that problem. I'll add a
+> > >
+> > > Reported-by: Vitalii Demianets <vitas@nppfactor.kiev.ua>
+> > >
+> > > if you have no objections.
+> >
+> > No objections. Thanks, Hans.
 > 
-> I had a bit more clean-up in a local patch (see attached). Depending on
-> the timing, you can just fold it into your patch (basically removing the
-> MACHINE argument, adding KBUILD_DTBS and dtbs target help). It's been
-> derived from your arch/arm patch anyway ;).
+> By the way, what do you think about my revised version of uio_pdrv_genirq.c 
+> patch from November 29th?
 
-Thanks. Just to follow up on this, Rob has applied the series (minus
-Xtensa) to a local tree, I believe intending to take it for 3.8(?), and
-has included a modified version of this patch there (i.e. rebased onto
-my series and hence slightly adjusted for it).
+I hope I find the time to look at that later tonight. I'm a bit busy ATM.
+
+Hans
