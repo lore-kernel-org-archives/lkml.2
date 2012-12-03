@@ -1,220 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751351Ab2LCSBx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 13:01:53 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:33045 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751014Ab2LCSBv (ORCPT
+	id S1751396Ab2LCSD0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 13:03:26 -0500
+Received: from ngcobalt07.manitu.net ([217.11.48.107]:38365 "EHLO
+	ngcobalt07.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751054Ab2LCSDZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 13:01:51 -0500
-Date: Mon, 3 Dec 2012 10:01:45 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Aristeu Rozanski <aris@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Serge Hallyn <serge.hallyn@canonical.com>,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH 5/5] device_cgroup: propagate local changes down the
- hierarchy
-Message-ID: <20121203180145.GJ19802@htj.dyndns.org>
-References: <20121127193501.255267751@napanee.usersys.redhat.com>
- <20121127193503.114004167@napanee.usersys.redhat.com>
+	Mon, 3 Dec 2012 13:03:25 -0500
+X-manitu-Original-Sender-IP: 127.0.0.1
+X-manitu-Original-Receiver-Name: ngcobalt07.manitu.net
+Date: Mon, 3 Dec 2012 19:03:18 +0100
+From: Roland Eggner <edvx1@systemanalysen.net>
+To: Dimitrios Apostolou <jimis@gmx.net>
+Cc: linux-kernel@vger.kernel.org, Catalin Marinas <catalin.marinas@arm.com>,
+        "Theodore Ts'o" <tytso@mit.edu>
+Subject: Re: backing up ext4 fs, system unresponsive, thrashing like crazy
+ even though swap is unused
+Message-ID: <20121203180318.GA22323@mobil.systemanalysen.net>
+Reply-To: Roland Eggner <edvx1@systemanalysen.net>
+Mail-Followup-To: Dimitrios Apostolou <jimis@gmx.net>,
+	linux-kernel@vger.kernel.org,
+	Catalin Marinas <catalin.marinas@arm.com>,
+	Theodore Ts'o <tytso@mit.edu>
+References: <1353855815.22969.20.camel@soupermouf>
+ <1354452243.22969.48.camel@soupermouf>
+ <20121202225051.GA13685@mobil.systemanalysen.net>
+ <alpine.LFD.2.02.1212030120090.1646@soupermouf>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ikeVEW9yuYc//A+q"
 Content-Disposition: inline
-In-Reply-To: <20121127193503.114004167@napanee.usersys.redhat.com>
+In-Reply-To: <alpine.LFD.2.02.1212030120090.1646@soupermouf>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Aristeu.
 
-On Tue, Nov 27, 2012 at 02:35:06PM -0500, Aristeu Rozanski wrote:
-> This patch makes all changes propagate down in hierarchy respecting when
-> possible local configurations.
-> 
-> Behavior changes will clean up exceptions in all the children except when the
-> parent changes the behavior from allow to deny and the child's behavior was
-> already deny, in which case the local exceptions will be reused. The inverse
-> is not possible: you can't have a parent with behavior deny and a child with
-> behavior accept.
-> 
-> New exceptions allowing additional access to devices won't be propagated, but
-> it'll be possible to add an exception to access all of part of the newly
-> allowed device(s).
-> 
-> New exceptions disallowing access to devices will be propagated down and the
-> local group's exceptions will be revalidated for the new situation.
+--ikeVEW9yuYc//A+q
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I think the inheritance policy needs to be documented in detail
-listing the possible cases and the implemented behavior preferably
-with rationale.  Can you please do that?
+On 2012-12-03 Monday at 01:56 +0200 Dimitrios Apostolou wrote:
+> Dear Ronald,
+Excuse me, my name is Roland.
 
-> +/**
-> + * __revalidate_exceptions - walks through the exception list and revalidates
-> + *			     the exceptions based on parents' behavior and
-> + *			     exceptions. Called with devcgroup_mutex held.
+> sorry for not replying at your first message but I didn't consider changi=
+ng=20
+> kernel as a resolution to my problem.
+>
+> =E2=80=A6 =E2=80=A6
+> > =E2=80=A6 =E2=80=A6
+> > One advantage of Linux compared to other OS is much more support for old
+> > hardware, if a  _proper_  kernel version is selected.  Many years ago I=
+ used
+> > a notebook with 40 M total RAM, with a 2.4 kernel, Blackbox window mana=
+ger and
+> > Opera web browser =E2=80=A6 it worked flawlessly =E2=80=A6 just rather =
+slowly due to swapping.
+> > Your notebook has much more RAM than 40 M, thus there is surely a Linux=
+ solution
+> > for you.  Try a 2.6.27.62 kernel, it supports ext4 (=E2=80=9Cext4dev=E2=
+=80=9D), probably it
+> > supports all devices of your notebook, and with a slim window manager e=
+=2Eg.
+> > WindowMaker or OpenBox your notebook will probably =E2=80=9Cfly=E2=80=
+=9D.
+>=20
+> I appreciate your advice. I remember when we were running 2.4 much less=
+=20
+> memory was needed, but still I consider the kernel /fairly/ lean=20
+> considering the time passed and the bloat in userspace applications. I=20
+> choose to run latest kernels on old hardware, hopefully this will continu=
+e=20
+> to be the case, and if things deteriorate much then let's hope we'll have=
+=20
+> enough time to help and fix them! :-)
 
-new line
+Ok, this is another story:  You are not looking for a least-effort solution=
+ just=20
+for your notebook.  Instead you want to contribute to the LMKL community=20
+solutions how to run current kernel versions under extremly tight memory=20
+limitations like with your notebook, right?  If so:  This is highly appreci=
+ated,
+thank you!  I will interestingly read your findings :)
 
-> + * @devcg: cgroup which exceptions will be checked
-> + * returns: 0 in success, -ENOMEM in case of out of memory
-> + */
-> +static int __revalidate_exceptions(struct dev_cgroup *devcg)
+--=20
+Roland
 
-Why __?
+--ikeVEW9yuYc//A+q
+Content-Type: application/pgp-signature
 
-> +{
-> +	struct dev_exception_item *ex;
-> +	struct list_head *this, *tmp;
-> +
-> +	list_for_each_safe(this, tmp, &devcg->local.exceptions) {
-> +		ex = container_of(this, struct dev_exception_item, list);
-> +		if (parent_has_perm(devcg, ex)) {
-> +			if (dev_exception_copy(&devcg->exceptions, ex))
-> +				goto error;
-> +		}
-> +	}
-> +	return 0;
-> +
-> +error:
-> +	__dev_exception_clean(&devcg->exceptions);
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-Ditto.
+iEYEARECAAYFAlC86WYACgkQdN/hKfT7G/KiqwCdF5RGbecyQqDtnWxMSVVJSMxN
+eU0AoJ6PocAgR2EqSQuKDCVpsLl7T/1R
+=sqKF
+-----END PGP SIGNATURE-----
 
-> +	return -ENOMEM;
-> +}
-> +
-> +/**
-> + * propagate_behavior - propagates a change in the behavior to the children
-> + * @devcg: device cgroup that changed behavior
-> + *
-> + * returns: 0 in case of success, != 0 in case of error
-> + */
-> +static int propagate_behavior(struct dev_cgroup *devcg)
-> +{
-> +	struct cgroup *root = devcg->css.cgroup, *pos, *saved = NULL,
-> +			*prev = NULL;
-> +	struct dev_cgroup *parent;
-> +	int rc = 0;
-> +
-> +	while (1) {
-> +		rcu_read_lock();
-> +		cgroup_for_each_descendant_pre(pos, root) {
-> +			if (saved && prev != saved) {
-> +				prev = pos;
-> +				continue;
-> +			}
-> +			break;
-> +		}
-> +		rcu_read_unlock();
-
-Hmmm... this can race with new cgroup creation and a new child can
-escape propagation.  devcg currently inherits from css_alloc() at
-which it isn't visible to cgroup_for_each_*() iteration.  The
-inheriting step should be moved to css_online() with explicit online
-marking.  Please take a look at the recently posted cpuset for an
-example.
-
-> +
-> +		if (!pos)
-> +			break;
-> +
-> +		devcg = cgroup_to_devcgroup(pos);
-> +		parent = cgroup_to_devcgroup(pos->parent);
-> +
-> +		/* first copy parent's state */
-> +		devcg->behavior = parent->behavior;
-> +		__dev_exception_clean(&devcg->exceptions);
-> +		rc = dev_exceptions_copy(&devcg->exceptions, &parent->exceptions);
-> +		if (rc) {
-> +			devcg->behavior = DEVCG_DEFAULT_DENY;
-> +			break;
-> +		}
-> +
-> +		if (devcg->local.behavior == DEVCG_DEFAULT_DENY &&
-> +		    devcg->behavior == DEVCG_DEFAULT_ALLOW) {
-> +			devcg->behavior = DEVCG_DEFAULT_DENY;
-> +		}
-> +		if (devcg->local.behavior == devcg->behavior)
-> +			rc = __revalidate_exceptions(devcg);
-> +		if (rc)
-> +			break;
-> +		saved = pos;
-> +	}
-> +
-> +	return rc;
-> +}
-> +
-> +/**
-> + * propagate_exception - propagates a new exception to the children
-> + * @devcg: device cgroup that added a new exception
-> + *
-> + * returns: 0 in case of success, != 0 in case of error
-> + */
-> +static int propagate_exception(struct dev_cgroup *devcg)
-> +{
-> +	struct cgroup *root = devcg->css.cgroup, *pos, *saved = NULL,
-> +			*prev = NULL;
-> +	struct dev_cgroup *parent;
-> +	int rc = 0;
-> +
-> +	while(1) {
-> +		rcu_read_lock();
-> +		cgroup_for_each_descendant_pre(pos, root) {
-> +			if (saved && prev != saved) {
-> +				prev = pos;
-> +				continue;
-> +			}
-> +			break;
-> +		}
-> +		rcu_read_unlock();
-
-Ditto.  Racy.
-
-> +		if (!pos)
-> +			break;
-> +
-> +		devcg = cgroup_to_devcgroup(pos);
-> +		parent = cgroup_to_devcgroup(pos->parent);
-> +
-> +		__dev_exception_clean(&devcg->exceptions);
-> +		if (devcg->behavior == parent->behavior) {
-> +			rc = dev_exceptions_copy(&devcg->exceptions, &parent->exceptions);
-> +			if (rc) {
-> +				devcg->behavior = DEVCG_DEFAULT_DENY;
-> +				break;
-> +			}
-> +			rc = __revalidate_exceptions(devcg);
-> +			if (rc)
-> +				break;
-> +		} else {
-> +			/* we never give more permissions to the child */
-> +			WARN_ONCE(devcg->behavior == DEVCG_DEFAULT_ALLOW,
-> +				  "devcg: parent/child behavior is inconsistent");
-> +			rc = __revalidate_exceptions(devcg);
-> +			if (rc)
-> +				break;
-> +		}
-> +		saved = pos;
-> +	}
-> +	return rc;
-> +}
-
-Maybe I'm misunderstanding something but the behavior seems a bit
-inconsistent.  So, you can't add an exception which isn't allowed by
-your parent, right?  But, if your parent disallows an existing
-exception, you get to keep it?  I think it would be more consistent to
-go either
-
-* Allow all settings but apply only as allowed by the parent.
-
-* Deny settings disallowed by the parent.  If parent's config changes,
-  delete configs which fall outside the new config.
-
-It seems the implemented behavior is something inbetween which can be
-quite confusing.
-
-Thanks.
-
--- 
-tejun
+--ikeVEW9yuYc//A+q--
