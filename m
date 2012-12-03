@@ -1,93 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754535Ab2LCBQG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 20:16:06 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52816 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754373Ab2LCBQF (ORCPT
+	id S1754570Ab2LCBci (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 20:32:38 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:64678 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754374Ab2LCBch (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 20:16:05 -0500
-X-AuditID: 9c93016f-b7b86ae000003a75-81-50bbfd521a77
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 04/18] perf header: Add HEADER_GROUP_DESC feature
-References: <1354171126-14387-1-git-send-email-namhyung@kernel.org>
-	<1354171126-14387-6-git-send-email-namhyung@kernel.org>
-	<20121129184304.GB1957@ghostprotocols.net>
-Date: Mon, 03 Dec 2012 10:16:00 +0900
-In-Reply-To: <20121129184304.GB1957@ghostprotocols.net> (Arnaldo Carvalho de
-	Melo's message of "Thu, 29 Nov 2012 15:43:04 -0300")
-Message-ID: <87wqx0x7e7.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Sun, 2 Dec 2012 20:32:37 -0500
+Date: Sun, 2 Dec 2012 17:29:16 -0800
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: "Tc, Jenny" <jenny.tc@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        anish kumar <anish198519851985@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+Subject: Re: [PATCH] EXTCON: Get and set cable properties
+Message-ID: <20121203012916.GA7330@lizard.sbx05977.paloaca.wayport.net>
+References: <1354052956-3394-1-git-send-email-jenny.tc@intel.com>
+ <20ADAB092842284E95860F279283C564E2754F@BGSMSX101.gar.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20ADAB092842284E95860F279283C564E2754F@BGSMSX101.gar.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Nov 2012 15:43:04 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Thu, Nov 29, 2012 at 03:38:32PM +0900, Namhyung Kim escreveu:
->> From: Namhyung Kim <namhyung.kim@lge.com>
->> 
->> Save group relationship information so that it can be restored when
->> perf report is running.
->> 
-[snip]
->> +static int write_group_desc(int fd, struct perf_header *h __maybe_unused,
->> +			    struct perf_evlist *evlist)
->> +{
->> +	u32 nr_groups = evlist->nr_groups;
->> +	struct perf_evsel *evsel;
->> +
->> +	do_write(fd, &nr_groups, sizeof(nr_groups));
->> +
->> +	list_for_each_entry(evsel, &evlist->entries, node) {
->> +		if (perf_evsel__is_group_leader(evsel) &&
->> +		    evsel->nr_members > 1) {
->> +			const char *name = evsel->group_name ?: "{anon_group}";
->> +			u32 leader_idx = evsel->idx;
->> +			u32 nr_members = evsel->nr_members;
->> +
->> +			do_write_string(fd, name);
->> +			do_write(fd, &leader_idx, sizeof(leader_idx));
->> +			do_write(fd, &nr_members, sizeof(nr_members));
->
-> You need to check do_write() return, it can fail. There are some cases
-> in header.c that don't check it, those should be eventually fixed, most
-> cases check it tho.
+On Sun, Dec 02, 2012 at 06:53:17AM +0000, Tc, Jenny wrote:
+> Could you please review this. This is a follow up patch for "PATCH]
+> extcon : callback function to read cable property"
 
-Okay.
-
->
->> +		}
->> +	}
->> +	return 0;
->> +}
-[snip]
->> +static int process_group_desc(struct perf_file_section *section __maybe_unused,
->> +			      struct perf_header *ph, int fd,
->> +			      void *data __maybe_unused)
->> +{
->> +	size_t ret = -1;
->> +	u32 i, nr, nr_groups;
->> +	struct perf_session *session;
->> +	struct perf_evsel *evsel, *leader = NULL;
->> +	struct group_desc {
->> +		char *name;
->> +		u32 leader_idx;
->> +		u32 nr_members;
->> +	} *desc;
->> +
->> +	if (read(fd, &nr_groups, sizeof(nr_groups)) != sizeof(nr_groups))
->
-> Please use readn() instead in all read() cases in this function.
-
-Will do.
+While I see nothing wrong with the patch itself, I beg you to send some
+users for the new calls. Don't be obsessed with the extcon internals too
+much, think more about how things will interact (i.e. I really really want
+to see how you use these calls from the power supply drivers).
 
 Thanks,
-Namhyung
+Anton.
