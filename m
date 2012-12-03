@@ -1,53 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752359Ab2LCUDM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 15:03:12 -0500
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:4323
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751554Ab2LCUDJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 15:03:09 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(z551biz98dIzz1de0h1202h1d1ah1d2ahzzz2dh2a8h668h839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1155h)
-Message-ID: <50BD056F.7070701@freescale.com>
-Date: Mon, 3 Dec 2012 14:02:55 -0600
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Firefox/16.0 SeaMonkey/2.13.1
+	id S1752154Ab2LCUEd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 15:04:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5765 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751526Ab2LCUEc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 15:04:32 -0500
+Date: Mon, 3 Dec 2012 22:07:14 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: Jason Wang <jasowang@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Neil Horman <nhorman@tuxdriver.com>, Rami Rosen <ramirose@gmail.com>,
+        Dave Jones <davej@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHv3] tun: only queue packets on device
+Message-ID: <20121203200714.GA2183@redhat.com>
 MIME-Version: 1.0
-To: Varun Sethi <Varun.Sethi@freescale.com>
-CC: <joerg.roedel@amd.com>, <iommu@lists.linux-foundation.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <scottwood@freescale.com>
-Subject: Re: [PATCH 4/4 v6] iommu/fsl: Freescale PAMU driver and IOMMU API
- implementation.
-References: <1354360921-20850-1-git-send-email-Varun.Sethi@freescale.com>
-In-Reply-To: <1354360921-20850-1-git-send-email-Varun.Sethi@freescale.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Varun Sethi wrote:
+Historically tun supported two modes of operation:
+- in default mode, a small number of packets would get queued
+  at the device, the rest would be queued in qdisc
+- in one queue mode, all packets would get queued at the device
 
-> +	out_be32(&pamu_regs->ppbah, ((u64)ppaact_phys) >> 32);
-> +	out_be32(&pamu_regs->ppbal, ppaact_phys);
-> +	ppaact_phys = ppaact_phys + PAACT_SIZE;
-> +	out_be32(&pamu_regs->pplah, ((u64)ppaact_phys) >> 32);
-> +	out_be32(&pamu_regs->pplal, ppaact_phys);
+This might have made sense up to a point where we made the
+queue depth for both modes the same and set it to
+a huge value (500) so unless the consumer
+is stuck the chance of losing packets is small.
 
-Instead of  ((u64)ppaact_phys) >> 32, use upper_32_bits() and lower_32_bits().
+Thus in practice both modes behave the same, but the
+default mode has some problems:
+- if packets are never consumed, fragments are never orphaned
+  which cases a DOS for sender using zero copy transmit
+- overrun errors are hard to diagnose: fifo error is incremented
+  only once so you can not distinguish between
+  userspace that is stuck and a transient failure,
+  tcpdump on the device does not show any traffic
 
-> +#define PAACE_NUMBER_ENTRIES    0xFF
+Userspace solves this simply by enabling IFF_ONE_QUEUE
+but there seems to be little point in not doing the
+right thing for everyone, by default.
 
-This is going to break with large LIODNs.  Instead of hard-coding the size
-of the PPAACT, you need to scan the device tree for the largest LIODN, and
-make the array dynamically sized.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
+---
+Changes since v2:
+	Fix comment style
+
+Changes from v1:
+	Address comment by David Miller:
+	Now that TUN_NO_QUEUE has no real effect and is a NOP,
+	document it as such both in if_tun.h and the places
+	in the driver that flip the bit based upon userspace requests.
+
+ drivers/net/tun.c           | 24 ++++++++----------------
+ include/uapi/linux/if_tun.h |  2 ++
+ 2 files changed, 10 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index 607a3a5..038196b 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -693,21 +693,8 @@ static netdev_tx_t tun_net_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	 * number of queues.
+ 	 */
+ 	if (skb_queue_len(&tfile->socket.sk->sk_receive_queue)
+-			  >= dev->tx_queue_len / tun->numqueues){
+-		if (!(tun->flags & TUN_ONE_QUEUE)) {
+-			/* Normal queueing mode. */
+-			/* Packet scheduler handles dropping of further packets. */
+-			netif_stop_subqueue(dev, txq);
+-
+-			/* We won't see all dropped packets individually, so overrun
+-			 * error is more appropriate. */
+-			dev->stats.tx_fifo_errors++;
+-		} else {
+-			/* Single queue mode.
+-			 * Driver handles dropping of all packets itself. */
+-			goto drop;
+-		}
+-	}
++			  >= dev->tx_queue_len / tun->numqueues)
++		goto drop;
+ 
+ 	/* Orphan the skb - required as we might hang on to it
+ 	 * for indefinite time. */
+@@ -1322,7 +1309,6 @@ static ssize_t tun_do_read(struct tun_struct *tun, struct tun_file *tfile,
+ 			schedule();
+ 			continue;
+ 		}
+-		netif_wake_subqueue(tun->dev, tfile->queue_index);
+ 
+ 		ret = tun_put_user(tun, tfile, skb, iv, len);
+ 		kfree_skb(skb);
+@@ -1485,6 +1471,9 @@ static int tun_flags(struct tun_struct *tun)
+ 	if (tun->flags & TUN_NO_PI)
+ 		flags |= IFF_NO_PI;
+ 
++	/* This flag has no real effect.  We track the value for backwards
++	 * compatibility.
++	 */
+ 	if (tun->flags & TUN_ONE_QUEUE)
+ 		flags |= IFF_ONE_QUEUE;
+ 
+@@ -1633,6 +1622,9 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
+ 	else
+ 		tun->flags &= ~TUN_NO_PI;
+ 
++	/* This flag has no real effect.  We track the value for backwards
++	 * compatibility.
++	 */
+ 	if (ifr->ifr_flags & IFF_ONE_QUEUE)
+ 		tun->flags |= TUN_ONE_QUEUE;
+ 	else
+diff --git a/include/uapi/linux/if_tun.h b/include/uapi/linux/if_tun.h
+index 958497a..2835b85 100644
+--- a/include/uapi/linux/if_tun.h
++++ b/include/uapi/linux/if_tun.h
+@@ -31,6 +31,7 @@
+ #define TUN_FASYNC	0x0010
+ #define TUN_NOCHECKSUM	0x0020
+ #define TUN_NO_PI	0x0040
++/* This flag has no real effect */
+ #define TUN_ONE_QUEUE	0x0080
+ #define TUN_PERSIST 	0x0100	
+ #define TUN_VNET_HDR 	0x0200
+@@ -60,6 +61,7 @@
+ #define IFF_TUN		0x0001
+ #define IFF_TAP		0x0002
+ #define IFF_NO_PI	0x1000
++/* This flag has no real effect */
+ #define IFF_ONE_QUEUE	0x2000
+ #define IFF_VNET_HDR	0x4000
+ #define IFF_TUN_EXCL	0x8000
 -- 
-Timur Tabi
-Linux kernel developer at Freescale
-
+MST
