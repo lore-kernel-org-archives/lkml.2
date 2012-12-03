@@ -1,55 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab2LCKhA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 05:37:00 -0500
-Received: from ra.se.axis.com ([195.60.68.13]:56400 "EHLO ra.se.axis.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751235Ab2LCKg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 05:36:58 -0500
-Date: Mon, 3 Dec 2012 11:36:54 +0100
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: Steve French <smfrench@gmail.com>
-Cc: linux-cifs@vger.kernel.org, sfrench@samba.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] MAINTAINERS: Fix cifs-tree git url
-Message-ID: <20121203103654.GY27196@axis.com>
-References: <20121129173053.GQ27196@axis.com>
- <CAH2r5mvKGnZdUNb1-Msb10NBypG2cQm+5JrN-Ajv8VNvmX2+Pg@mail.gmail.com>
- <20121129184709.GR27196@axis.com>
+	id S1754335Ab2LCKip (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 05:38:45 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:61003 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752640Ab2LCKin (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 05:38:43 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121129184709.GR27196@axis.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1354270137-31538-2-git-send-email-javier.martinez@collabora.co.uk>
+References: <1354270137-31538-1-git-send-email-javier.martinez@collabora.co.uk>
+	<1354270137-31538-2-git-send-email-javier.martinez@collabora.co.uk>
+Date: Mon, 3 Dec 2012 11:38:42 +0100
+Message-ID: <CAFqH_537iZqH7WuGbMzOMLZqzYBwRw-AAPGgxW=oZ65Lkf4bow@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] ARM/dts: omap3: Add generic DT support for IGEP devices
+From: Enric Balletbo Serra <eballetbo@gmail.com>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Benoit Cousson <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
+        grant.likely@secretlab.ca, Ezequiel Garcia <elezegarcia@gmail.com>,
+        Enrico Butera <ebutera@gmail.com>,
+        Matthias Brugger <matthias.bgg@googlemail.com>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cifs-tree is no longer found on kernel.org,
-but linux-next uses the tree on samba.org, so use that instead.
+2012/11/30 Javier Martinez Canillas <javier.martinez@collabora.co.uk>:
+> Add a generic .dtsi device tree source file for the
+> common characteristics across IGEP Technology devices.
+>
+> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> Acked-by: Matthias Brugger <matthias.bgg@gmail.com>
+> ---
+>  arch/arm/boot/dts/omap3-igep.dtsi |   93 +++++++++++++++++++++++++++++++++++++
+>  1 files changed, 93 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/arm/boot/dts/omap3-igep.dtsi
+>
+> diff --git a/arch/arm/boot/dts/omap3-igep.dtsi b/arch/arm/boot/dts/omap3-igep.dtsi
+> new file mode 100644
+> index 0000000..a093bff
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/omap3-igep.dtsi
+> @@ -0,0 +1,93 @@
+> +/*
+> + * Device Tree Source for IGEP Technology devices
+> + *
+> + * Copyright (C) 2012 Javier Martinez Canillas <javier@collabora.co.uk>
+> + * Copyright (C) 2012 Enric Balletbo i Serra <eballetbo@gmail.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +/dts-v1/;
+> +
+> +/include/ "omap3.dtsi"
+> +
+> +/ {
+> +       memory {
+> +               device_type = "memory";
+> +               reg = <0x80000000 0x20000000>; /* 512 MB */
+> +       };
+> +
+> +       sound {
+> +               compatible = "ti,omap-twl4030";
+> +               ti,model = "igep2";
+> +               ti,mcbsp = <&mcbsp2>;
+> +               ti,codec = <&twl_audio>;
+> +       };
+> +};
+> +
+> +&omap3_pmx_core {
+> +       pinctrl-names = "default";
+> +       pinctrl-0 = <
+> +                 &mcbsp2_pins
+> +       >;
+> +
+> +       uart3_pins: pinmux_uart3_pins {
+> +               pinctrl-single,pins = <
+> +                       0x16e 0x100     /* uart3_rx.uart3_rx INPUT | MODE0 */
+> +                       0x170 0         /* uart3_tx.uart3_tx OUTPUT | MODE0 */
+> +               >;
+> +       };
+> +
+> +       mcbsp2_pins: pinmux_mcbsp2_pins {
+> +               pinctrl-single,pins = <
+> +                       0x1a2 0x0104    /* mcspi1_cs2.gpio_176 INPUT | MODE4 */
+> +               >;
+> +       };
+> +};
+> +
+> +&i2c1 {
+> +       clock-frequency = <2600000>;
+> +
+> +       twl: twl@48 {
+> +               reg = <0x48>;
+> +               interrupts = <7>; /* SYS_NIRQ cascaded to intc */
+> +               interrupt-parent = <&intc>;
+> +
+> +               vsim: regulator@10 {
+> +                       compatible = "ti,twl4030-vsim";
+> +                       regulator-min-microvolt = <1800000>;
+> +                       regulator-max-microvolt = <3000000>;
+> +               };
+> +
+> +               twl_audio: audio {
+> +                       compatible = "ti,twl4030-audio";
+> +                       codec {
+> +                             };
+> +               };
+> +       };
+> +};
+> +
+> +/include/ "twl4030.dtsi"
+> +
+> +&i2c2 {
+> +       clock-frequency = <400000>;
+> +};
+> +
+> +&mmc1 {
+> +       vmmc-supply = <&vmmc1>;
+> +       vmmc_aux-supply = <&vsim>;
+> +       bus-width = <8>;
+> +};
+> +
+> +&mmc2 {
+> +       status = "disabled";
+> +};
+> +
+> +&mmc3 {
+> +       status = "disabled";
+> +};
+> +
+> +&twl_gpio {
+> +       ti,use-leds;
+> +};
+> --
+> 1.7.7.6
+>
 
-Signed-off-by: Jesper Nilsson <jesper.nilsson@axis.com>
----
- MAINTAINERS | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 244b2f2..60d0e35 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2009,7 +2009,7 @@ L:	linux-cifs@vger.kernel.org
- L:	samba-technical@lists.samba.org (moderated for non-subscribers)
- W:	http://linux-cifs.samba.org/
- Q:	http://patchwork.ozlabs.org/project/linux-cifs-client/list/
--T:	git git://git.kernel.org/pub/scm/linux/kernel/git/sfrench/cifs-2.6.git
-+T:	git git://git.samba.org/sfrench/cifs-2.6.git
- S:	Supported
- F:	Documentation/filesystems/cifs.txt
- F:	fs/cifs/
--- 
-1.7.11.7
-
-
-/^JN - Jesper Nilsson
--- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+Tested-by: Enric Balletbo i Serra <eballetbo@gmail.com>
