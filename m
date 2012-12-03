@@ -1,160 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665Ab2LCCIn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 2 Dec 2012 21:08:43 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:48455 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754359Ab2LCCIl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 2 Dec 2012 21:08:41 -0500
-Message-ID: <1354500512.3243.16.camel@ThinkPad-T5421.cn.ibm.com>
-Subject: Re: [RFC PATCH v3] Add rcu user eqs exception hooks for async page
- fault
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        linux-next list <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
-        sasha.levin@oracle.com, avi@redhat.com
-Date: Mon, 03 Dec 2012 10:08:32 +0800
-In-Reply-To: <20121130102652.GG20873@redhat.com>
-References: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
-	 <CAFTL4hx0fc_Jo8wkuRZedW4DVEeQceiHMrWVqTqB5k065Wsg8Q@mail.gmail.com>
-	 <1354090704.3054.13.camel@ThinkPad-T5421.cn.ibm.com>
-	 <CAFTL4hxPSp1fs4=2g0yFs0d5nFisfUsfDAA9bHWcu+-+tO_ySw@mail.gmail.com>
-	 <20121128135345.GG928@redhat.com>
-	 <CAFTL4hxoFBLNQCABBpJRBgV-r-Mg5GSq7HbPfWJRraSvtviz4A@mail.gmail.com>
-	 <20121129110717.GA9711@redhat.com>
-	 <CAFTL4hyHW3uJHvzxz1o4agtGbicFAP1DuUsifbOrp1Q3ODRBMA@mail.gmail.com>
-	 <1354267121.2552.65.camel@ThinkPad-T5421.cn.ibm.com>
-	 <20121130102652.GG20873@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12120302-2674-0000-0000-000006F5033C
+	id S1754721Ab2LCCJJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 2 Dec 2012 21:09:09 -0500
+Received: from mga01.intel.com ([192.55.52.88]:25540 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754332Ab2LCCJI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 2 Dec 2012 21:09:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,202,1355126400"; 
+   d="scan'208";a="258018925"
+From: "Tc, Jenny" <jenny.tc@intel.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        anish kumar <anish198519851985@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+Subject: RE: [PATCH] EXTCON: Get and set cable properties
+Thread-Topic: [PATCH] EXTCON: Get and set cable properties
+Thread-Index: AQHNzLrkDMuiwiRHbU6SrIDfqYZ+tpgFGRSggADcegCAAGMxgA==
+Date: Mon, 3 Dec 2012 02:09:02 +0000
+Message-ID: <20ADAB092842284E95860F279283C564E293C9@BGSMSX101.gar.corp.intel.com>
+References: <1354052956-3394-1-git-send-email-jenny.tc@intel.com>
+ <20ADAB092842284E95860F279283C564E2754F@BGSMSX101.gar.corp.intel.com>
+ <20121203012916.GA7330@lizard.sbx05977.paloaca.wayport.net>
+In-Reply-To: <20121203012916.GA7330@lizard.sbx05977.paloaca.wayport.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qB329EDF032400
 
-On Fri, 2012-11-30 at 12:26 +0200, Gleb Natapov wrote:
-> On Fri, Nov 30, 2012 at 05:18:41PM +0800, Li Zhong wrote:
-> > This patch adds user eqs exception hooks for async page fault page not
-> > present code path, to exit the user eqs and re-enter it as necessary. 
-> > 
-> > Async page fault is different from other exceptions that it may be
-> > triggered from idle process, so we still need rcu_irq_enter() and
-> > rcu_irq_exit() to exit cpu idle eqs when needed, to protect the code
-> > that needs use rcu.
-> > 
-> > As Frederic pointed out it would be safest and simplest to protect the
-> > whole kvm_async_pf_task_wait(). Otherwise, "we need to check all the
-> > code there deeply for potential RCU uses and ensure it will never be
-> > extended later to use RCU.".
-> > 
-> > However, We'd better re-enter the cpu idle eqs if we get the exception
-> > in cpu idle eqs, by calling rcu_irq_exit() before native_safe_halt(). 
-> > 
-> > So the patch does what Frederic suggested for rcu_irq_*() API usage
-> > here, except that I moved the rcu_irq_*() pair originally in
-> > do_async_page_fault() into kvm_async_pf_task_wait(). 
-> > 
-> > That's because, I think it's better to have rcu_irq_*() pairs to be in
-> > one function ( rcu_irq_exit() after rcu_irq_enter() ), especially here,
-> > kvm_async_pf_task_wait() has other callers, which might cause
-> > rcu_irq_exit() be called without a matching rcu_irq_enter() before it,
-> > which is illegal if the cpu happens to be in rcu idle state. 
-> > 
-> > Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
-> > ---
-> >  arch/x86/kernel/kvm.c | 12 ++++++++++--
-> >  1 file changed, 10 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-> > index 4180a87..342b00b 100644
-> > --- a/arch/x86/kernel/kvm.c
-> > +++ b/arch/x86/kernel/kvm.c
-> > @@ -42,6 +42,7 @@
-> >  #include <asm/apic.h>
-> >  #include <asm/apicdef.h>
-> >  #include <asm/hypervisor.h>
-> > +#include <asm/rcu.h>
-> >  
-> >  static int kvmapf = 1;
-> >  
-> > @@ -112,6 +113,8 @@ void kvm_async_pf_task_wait(u32 token)
-> >  	DEFINE_WAIT(wait);
-> >  	int cpu, idle;
-> >  
-> > +	rcu_irq_enter();
-> > +
-> Why move rcu_irq_*() calls into kvm_async_pf_task_wait()?
-
-I think it is not good for a function to have a rcu_irq_exit(), which
-needs a matching rcu_irq_enter() in its caller. 
-
-Here, if not move rcu_irq_* in, then the rcu_irq_exit() before
-native_safe_halt() in kvm_async_pf_task_wait() is the one that needs the
-matching rcu_irq_enter() in do_async_page_fault(). And, for this case,
-kvm_async_pf_task_wait() even has other caller - pf_interception().
-Maybe it will always be rcu non-idle for pf_interception (so a matching
-rcu_irq_enter() is not needed), or maybe we could (or need) add
-rcu_irq_*() in pf_interception().  But I still think it's good to have
-those function calls that need to be matched be contained in one
-function.
-
-Thanks, Zhong
-
-> >  	cpu = get_cpu();
-> >  	idle = idle_cpu(cpu);
-> >  	put_cpu();
-> > @@ -123,6 +126,8 @@ void kvm_async_pf_task_wait(u32 token)
-> >  		hlist_del(&e->link);
-> >  		kfree(e);
-> >  		spin_unlock(&b->lock);
-> > +
-> > +		rcu_irq_exit();
-> We can skip that if  rcu_irq_*() will stay outside.
+> > Could you please review this. This is a follow up patch for "PATCH]
+> > extcon : callback function to read cable property"
 > 
-> >  		return;
-> >  	}
-> >  
-> > @@ -147,13 +152,16 @@ void kvm_async_pf_task_wait(u32 token)
-> >  			/*
-> >  			 * We cannot reschedule. So halt.
-> >  			 */
-> > +			rcu_irq_exit();
-> >  			native_safe_halt();
-> > +			rcu_irq_enter();
-> >  			local_irq_disable();
-> >  		}
-> >  	}
-> >  	if (!n.halted)
-> >  		finish_wait(&n.wq, &wait);
-> >  
-> > +	rcu_irq_exit();
-> >  	return;
-> >  }
-> >  EXPORT_SYMBOL_GPL(kvm_async_pf_task_wait);
-> > @@ -247,10 +255,10 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
-> >  		break;
-> >  	case KVM_PV_REASON_PAGE_NOT_PRESENT:
-> >  		/* page is swapped out by the host. */
-> > -		rcu_irq_enter();
-> > +		exception_enter(regs);
-> >  		exit_idle();
-> >  		kvm_async_pf_task_wait((u32)read_cr2());
-> > -		rcu_irq_exit();
-> > +		exception_exit(regs);
-> >  		break;
-> >  	case KVM_PV_REASON_PAGE_READY:
-> >  		rcu_irq_enter();
-> > -- 
-> > 1.7.11.4
-> 
-> --
-> 			Gleb.
-> 
+> While I see nothing wrong with the patch itself, I beg you to send some users
+> for the new calls. Don't be obsessed with the extcon internals too much,
+> think more about how things will interact (i.e. I really really want to see how
+> you use these calls from the power supply drivers).
 
+The usage of extcon cable property is captured in patch https://lkml.org/lkml/2012/10/18/219
+This patch uses a extcon_dev  callback function get_cable_properties() to get the
+cable properties. As discussed in the previous mail thread, it may not be good to have a extcon call
+back function since the extcon provider may not be aware of the cable properties. This patch replaces
+the callback function with an API, so that whoever knows the cable property, can set the property
+using the extcon API extcon_cable_set_data().
 
+The usage flow would be
+1)Consumer gets a notification from the extcon
+2)consumer reads the property using the API extcon_cable_get_data
+
+This way it doesn't mandatory for the extcon provider to give the cable property.
+Anyone who is aware of the cable property can set the cable property using the API.
+It makes the consumer and provider implementations very simple.
+
+With this new API, the callback function in patch https://lkml.org/lkml/2012/10/18/219 can be
+replaced by the API extcon_cable_set_data().
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
