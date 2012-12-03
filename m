@@ -1,88 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264Ab2LCOeF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:34:05 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:50961 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754778Ab2LCOeD convert rfc822-to-8bit (ORCPT
+	id S932088Ab2LCOfp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:35:45 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43531 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755198Ab2LCOfn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 09:34:03 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH v2] net/macb: Use non-coherent memory for rx buffers
-Date: Mon, 3 Dec 2012 14:25:40 -0000
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B70D6@saturn3.aculab.com>
-In-Reply-To: <50BCA746.1020705@atmel.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH v2] net/macb: Use non-coherent memory for rx buffers
-Thread-Index: Ac3RWOiOg9+UAE7XQVyE2jMhDhBqcgAB1IGQ
-References: <CAGhQ9VwWmP_B17LnAEqDHcL8Yd-s0C-Bf35z3+=vnJmK_NoCSw@mail.gmail.com> <1354536876-6274-1-git-send-email-nicolas.ferre@atmel.com> <AE90C24D6B3A694183C094C60CF0A2F6026B70D5@saturn3.aculab.com> <50BCA746.1020705@atmel.com>
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Nicolas Ferre" <nicolas.ferre@atmel.com>
-Cc: "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        "Joachim Eastwood" <manabian@gmail.com>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        "Havard Skinnemoen" <havard@skinnemoen.net>
+	Mon, 3 Dec 2012 09:35:43 -0500
+Message-Id: <20121203143146.764748762@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Mon, 03 Dec 2012 14:31:47 +0000
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [ 01/89] UBIFS: introduce categorized lprops counter
+In-Reply-To: <20121203143146.549859007@decadent.org.uk>
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 12/03/2012 01:43 PM, David Laight :
-> >> Allocate regular pages to use as backing for the RX ring and use the
-> >> DMA API to sync the caches. This should give a bit better performance
-> >> since it allows the CPU to do burst transfers from memory. It is also
-> >> a necessary step on the way to reduce the amount of copying done by
-> >> the driver.
-> >
-> > I've not tried to understand the patches, but you have to be
-> > very careful using non-snooped memory for descriptor rings.
-> > No amount of DMA API calls can sort out some of the issues.
-> 
-> David,
-> 
-> Maybe I have not described the patch properly but the non-coherent
-> memory is not used for descriptor rings. It is used for DMA buffers
-> pointed out by descriptors (that are allocated as coherent memory).
-> 
-> As buffers are filled up by the interface DMA and then, afterwards, used
-> by the driver to pass data to the net layer, it seems to me that the use
-> of non-coherent memory is sensible.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-Ah, ok - difficult to actually determine from a fast read of the code.
-So you invalidate (I think that is the right term) all the cache lines
-that are part of each rx buffer before giving it back to the MAC unit.
-(Maybe that first time, and just those cache lines that might have been
-written to after reception - I'd worry about whether the CRC is written
-into the rx buffer!)
+------------------
 
-I was wondering if the code needs to do per page allocations?
-Perhaps that is necessary to avoid needing a large block of
-contiguous physical memory (and virtual addresses)?
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-I know from some experiments done many years ago that a data
-copy in the MAC tx and rx path isn't necessarily as bad as
-people may think - especially if it removes complicated
-'buffer loaning' schemes and/or iommu setup (or bounce
-buffers due to limited hardware memory addressing).
+commit 98a1eebda3cb2a84ecf1f219bb3a95769033d1bf upstream.
 
-The rx copy can usually be made to be a 'whole word' copy
-(ie you copy the two bytes of garbage that (mis)align the
-destination MAC address, and some bytes after the CRC.
-With some hardware I believe it is possible for the cache
-controller to do cache-line aligned copies very quickly!
-(Some very new x86 cpus might be doing this for 'rep movsd'.)
+This commit is a preparation for a subsequent bugfix. We introduce a
+counter for categorized lprops.
 
-The copy in the rx path is also better for short packets
-the can end up queued for userspace (although a copy in
-the socket code would solve that one.
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ fs/ubifs/lprops.c |    6 ++++++
+ fs/ubifs/ubifs.h  |    3 +++
+ 2 files changed, 9 insertions(+)
 
-	David
-
+diff --git a/fs/ubifs/lprops.c b/fs/ubifs/lprops.c
+index e5a2a35..46190a7 100644
+--- a/fs/ubifs/lprops.c
++++ b/fs/ubifs/lprops.c
+@@ -300,8 +300,11 @@ void ubifs_add_to_cat(struct ubifs_info *c, struct ubifs_lprops *lprops,
+ 	default:
+ 		ubifs_assert(0);
+ 	}
++
+ 	lprops->flags &= ~LPROPS_CAT_MASK;
+ 	lprops->flags |= cat;
++	c->in_a_category_cnt += 1;
++	ubifs_assert(c->in_a_category_cnt <= c->main_lebs);
+ }
+ 
+ /**
+@@ -334,6 +337,9 @@ static void ubifs_remove_from_cat(struct ubifs_info *c,
+ 	default:
+ 		ubifs_assert(0);
+ 	}
++
++	c->in_a_category_cnt -= 1;
++	ubifs_assert(c->in_a_category_cnt >= 0);
+ }
+ 
+ /**
+diff --git a/fs/ubifs/ubifs.h b/fs/ubifs/ubifs.h
+index 5486346..d133c27 100644
+--- a/fs/ubifs/ubifs.h
++++ b/fs/ubifs/ubifs.h
+@@ -1183,6 +1183,8 @@ struct ubifs_debug_info;
+  * @freeable_list: list of freeable non-index LEBs (free + dirty == @leb_size)
+  * @frdi_idx_list: list of freeable index LEBs (free + dirty == @leb_size)
+  * @freeable_cnt: number of freeable LEBs in @freeable_list
++ * @in_a_category_cnt: count of lprops which are in a certain category, which
++ *                     basically meants that they were loaded from the flash
+  *
+  * @ltab_lnum: LEB number of LPT's own lprops table
+  * @ltab_offs: offset of LPT's own lprops table
+@@ -1412,6 +1414,7 @@ struct ubifs_info {
+ 	struct list_head freeable_list;
+ 	struct list_head frdi_idx_list;
+ 	int freeable_cnt;
++	int in_a_category_cnt;
+ 
+ 	int ltab_lnum;
+ 	int ltab_offs;
 
 
