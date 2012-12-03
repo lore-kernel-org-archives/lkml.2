@@ -1,119 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052Ab2LCG0i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 01:26:38 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:43993 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751024Ab2LCG0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 01:26:37 -0500
-X-IronPort-AV: E=Sophos;i="4.83,361,1352044800"; 
-   d="scan'208";a="6319905"
-Message-ID: <50BC45CA.20504@cn.fujitsu.com>
-Date: Mon, 03 Dec 2012 14:25:14 +0800
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Reply-To: gaowanlong@cn.fujitsu.com
-Organization: Fujitsu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1754100Ab2LCG1N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 01:27:13 -0500
+Received: from vaxjo.synopsys.com ([198.182.60.75]:40984 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751024Ab2LCG1L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 01:27:11 -0500
+Message-ID: <50BC462E.1080200@synopsys.com>
+Date: Mon, 3 Dec 2012 11:56:54 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Daniel Jeong <gshark.jeong@gmail.com>
-CC: Liam Gridwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Daniel Jeong <daniel.jeong@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] regulator: new driver for LP8755
-References: <1354509864-30001-1-git-send-email-gshark.jeong@gmail.com> <1354509864-30001-2-git-send-email-gshark.jeong@gmail.com>
-In-Reply-To: <1354509864-30001-2-git-send-email-gshark.jeong@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/03 14:26:00,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/03 14:26:01,
-	Serialize complete at 2012/12/03 14:26:01
+To: <chrubis@suse.cz>
+CC: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        Hugh Dickins <hughd@google.com>, Michel Lespinasse <walken@google.com>,
+        Ingo Molnar <mingo@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Partialy mapped page stays in page cache after unmap
+References: <20121030182420.GA17171@rei.Home>
+In-Reply-To: <20121030182420.GA17171@rei.Home>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-<...>
-> +
-> +static int __devinit lp8755_regulator_init(struct lp8755_chip *pchip)
+On Tuesday 30 October 2012 11:54 PM, chrubis@suse.cz wrote:
+> Hi!
+> I'm currently revisiting mmap related tests in LTP (Linux Test Project)
+> and I've came to the tests testing that writes to the partially
+> mapped page (at the end of mapping) are carried out correctly.
+> 
+> These tests fails because even after the object is unmapped and the
+> file-descriptor closed the pages still stays in the page cache so if
+> (possibly another process) opens and maps the file again the whole
+> content of the partial page is preserved.
+> 
+> Strictly speaking this is not a bug at least when sticking to regular
+> files as POSIX which says that the change is not written out. In this
+> case the file content is correct and forcing the data to be written out
+> by msync() makes the test pass.
 
-CONFIG_HOTPLUG is going away; it's already defined to always be 'Y'.
-So, please don't use __devinit anymore.
-refer to : http://marc.info/?l=linux-i2c&m=135341812915168&w=2
+Hi Cyril,
 
-> +{
-> +	int ret, icnt, buck_num;
-> +	struct lp8755_platform_data *pdata = pchip->pdata;
-> +
-> +	struct regulator_config rconfig = { };
-> +
-> +	rconfig.regmap = pchip->regmap;
-> +	rconfig.dev = pchip->dev;
-> +	rconfig.driver_data = pchip;
-<..>
-> +}
-> +
-> +static int __devinit lp8755_int_config(struct lp8755_chip *pchip)
+I've seen the LTP open posix mmap/{11-4,11-5} issues in the past myself
+and was something I wanted to discuss on the lists myself. Thanks for
+bringing this up.
 
-Ditto.
+Jut to reiterate: the expectations are
 
-> +{
-> +	int ret;
-> +	unsigned int regval;
-> +
-> +	if (pchip->irq == 0) {
-> +		dev_warn(pchip->dev, "not use interrupt : %s\n", __func__);
-> +		return 0;
-> +	}
-> +
-> +	ret = lp8755_read(pchip, 0x0F, &regval);
+1. zero filling of unmapped (trailing) partial page
+2. NO Writeout (to disk) of trailing partial page.
 
-> +}
-> +
-> +static int __devinit lp8755_probe(struct i2c_client *client,
+#1 is broken as your latter test case proves. We can have an alternate
+test case which starts with non empty file (preloaded with all 'a's),
+mmap partial page and then read out the trailing partial page, it will
+not be zeroes (it's probably ftruncate which does the trick in first place).
 
-Ditto.
+Regarding #2 - I did verify that msync indeed makes it pass - but I'm
+confused why. After all it is going to commit the buffer  with 'b' to
+on-disk - so a subsequent mmap is bound to see the update to file and
+hence would make the test fail. What am  I missing here ?
 
-> +				  const struct i2c_device_id *id)
-> +{
-> +	int ret, icnt;
-> +	struct lp8755_chip *pchip;
-> +	struct lp8755_platform_data *pdata = client->dev.platform_data;
-> +
-> +	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
-> +		dev_err(&client->dev, "i2c functionality check fail.\n");
-> +		return -EOPNOTSUPP;
-> +	}
-> +
-> +	if (pdata == NULL) {
-> +		dev_err(&client->dev, "platform data is NULL.\n");
-> +		return -ENOMEM;
+Thx,
+-Vineet
 
-> +
-> +	return ret;
-> +}
-> +
-> +static int __devexit lp8755_remove(struct i2c_client *client)
-
-Ditto.
-
-
-> +{
-> +	int icnt;
-> +	struct lp8755_chip *pchip = i2c_get_clientdata(client);
-> +
-> +	for (icnt = 0; icnt < mphase_buck[pchip->mphase].nreg; icnt++)
-<..>
-> +static struct i2c_driver lp8755_i2c_driver = {
-> +	.driver = {
-> +		   .name = LP8755_NAME,
-> +		   },
-> +	.probe = lp8755_probe,
-> +	.remove = __devexit_p(lp8755_remove),
-
-Ditto. remove __devexit_p.
-
-
-Thanks,
-Wanlong Gao
+ The SHM mappings seems to preserve the
+> content even after calling msync() which is, in my opinion, POSIX
+> violation although a minor one.
+> 
+> Looking at the test results I have, the file based mmap test worked fine
+> on 2.6.5 (or perhaps the page cache was working/setup differently and
+> the test succeeded by accidend).
+> 
+> Attached is a stripped down LTP test for the problem, uncommenting the
+> msync() makes the test succeed.
+> 
+> I would like to hear your opinions on this problems.
+> 
 
