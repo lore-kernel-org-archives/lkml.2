@@ -1,46 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750874Ab2LCFJp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 00:09:45 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:34656 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740Ab2LCFJn (ORCPT
+	id S1751048Ab2LCFZe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 00:25:34 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:52272 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750766Ab2LCFZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 00:09:43 -0500
-Date: Mon, 3 Dec 2012 06:09:37 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	Mon, 3 Dec 2012 00:25:32 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX180Ppd5/DQ0svdX5pWPgBq25sG9H+6YuEHANuYPzL
+	0Ug0L9prBgyUFe
+Message-ID: <1354512325.7203.12.camel@marge.simpson.net>
+Subject: [patch] Re: [RFC GIT PULL] scheduler fix for autogroups
+From: Mike Galbraith <efault@gmx.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 00/52] RFC: Unified NUMA balancing tree, v1
-Message-ID: <20121203050937.GA26629@gmail.com>
-References: <1354473824-19229-1-git-send-email-mingo@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354473824-19229-1-git-send-email-mingo@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        Andrew Morton <akpm@linux-foundation.org>,
+        Yong Zhang <yong.zhang0@gmail.com>
+Date: Mon, 03 Dec 2012 06:25:25 +0100
+In-Reply-To: <CA+55aFxcoLuVcrxmRQ8E2d6hXQZLrg8_rzmdSL2Qn3w8VthfSg@mail.gmail.com>
+References: <20121201111609.GA18679@gmail.com>
+	 <CA+55aFx_yJbonbEC5AYteyNv+qWbG-H=yj_=YaiJHwKyu4FH3Q@mail.gmail.com>
+	 <20121201214438.GA6544@gmail.com>
+	 <1354436468.7048.35.camel@marge.simpson.net>
+	 <20121202192733.GA19824@gmail.com>
+	 <CA+55aFxcoLuVcrxmRQ8E2d6hXQZLrg8_rzmdSL2Qn3w8VthfSg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 2012-12-02 at 11:36 -0800, Linus Torvalds wrote: 
+> On Sun, Dec 2, 2012 at 11:27 AM, Ingo Molnar <mingo@kernel.org> wrote:
+> >
+> > * Mike Galbraith <efault@gmx.de> wrote:
+> >
+> >> On Sat, 2012-12-01 at 22:44 +0100, Ingo Molnar wrote:
+> >>
+> >> > Should we use some other file for that - or no file at all and
+> >> > just emit a bootup printk for kernel hackers with a short
+> >> > attention span?
+> >>
+> >> Or, whack the file and don't bother with a printk either.  If
+> >> it's in your config, and your command line doesn't contain
+> >> noautogroup, it's on, so the info is already present (until
+> >> buffer gets full).  That makes for even fewer lines dedicated
+> >> to dinky sideline feature.
+> >>
+> >> Or (as previously mentioned) just depreciate (or rip out) the
+> >> whole thing since systemd is propagating everywhere anyway,
+> >> and offers the same functionality.
+> >>
+> >> For 3.7, a revert of 800d4d30c8f2 would prevent the explosion
+> >> when folks play with the now non-functional on/off switch
+> >> (task groups are required to _always_ exist, that commit
+> >> busted the autogroup assumption), so is perhaps a viable
+> >> quickfix until autogroups fate is decided?
+> >
+> > Linus, which one would be your preference? I'm fine with the
+> > first and third options - #2 that rips it all out looks like
+> > a sad removal of an otherwise useful feature.
+> 
+> I suspect #3 is the best option right now - just revert 800d4d30c8f2.
+> 
+> Willing to write a changelog with the pointer to the actual oops that
+> happens due to this issue?
 
-The unified NUMA Git tree can be found in the -tip numa/base 
-branch:
+I don't have a link, so reproduced/captured it.  With systemd-sysvinit
+(bleh) installed, it's trivial to reproduce:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git numa/base
+Add echo 0 > /proc/sys/kernel/sched_autogroup_enabled to /root/.bashrc
+(or wherever), boot box, type reboot, box explodes.
 
-The PROT_NONE -v18 numa/core tree can be found in tip:master:
+revert 800d4d30 sched, autogroup: Stop going ahead if autogroup is disabled
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git master
+Between 8323f26ce and 800d4d30, autogroup is a wreck.  With both
+applied, all you have to do to crash a box is disable autogroup
+during boot up, then reboot.. boom, NULL pointer dereference due
+to 800d4d30 not allowing autogroup to move things, and 8323f26ce
+making that the only way to switch runqueues.
+    
+[  202.187747] BUG: unable to handle kernel NULL pointer dereference at           (null)
+[  202.191644] IP: [<ffffffff81063ac0>] effective_load.isra.43+0x50/0x90
+[  202.191644] PGD 220a74067 PUD 220402067 PMD 0 
+[  202.191644] Oops: 0000 [#1] SMP 
+[  202.191644] Modules linked in: nfs nfsd fscache lockd nfs_acl auth_rpcgss sunrpc exportfs bridge stp cpufreq_conservative cpufreq_ondemand cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf ext3 jbd fuse nls_iso8859_1 snd_hda_codec_realtek nls_cp437 snd_hda_intel vfat fat snd_hda_codec e1000e sr_mod snd_hwdep cdrom snd_pcm sg snd_timer usb_storage snd firewire_ohci usb_libusual firewire_core soundcore uas snd_page_alloc i2c_i801 coretemp edd microcode hid_generic button crc_itu_t ipv6 autofs4 ext4 mbcache jbd2 crc16 usbhid hid sd_mod uhci_hcd ahci libahci libata rtc_cmos ehci_hcd scsi_mod thermal fan usbcore processor usb_common
+[  202.191644] CPU 0 
+[  202.191644] Pid: 7047, comm: systemd-user-se Not tainted 3.6.8-smp #7 MEDIONPC MS-7502/MS-7502
+[  202.191644] RIP: 0010:[<ffffffff81063ac0>]  [<ffffffff81063ac0>] effective_load.isra.43+0x50/0x90
+[  202.191644] RSP: 0018:ffff880221ddfbd8  EFLAGS: 00010086
+[  202.191644] RAX: 0000000000000400 RBX: ffff88022621d880 RCX: 0000000000000000
+[  202.191644] RDX: 0000000000000000 RSI: 0000000000000002 RDI: ffff880220a363a0
+[  202.191644] RBP: ffff880221ddfbd8 R08: 0000000000000400 R09: 00000000000115c0
+[  202.191644] R10: 0000000000000000 R11: 0000000000000400 R12: ffff8802214ed180
+[  202.191644] R13: 00000000000003fd R14: 0000000000000000 R15: 0000000000000003
+[  202.191644] FS:  00007f174a81c7a0(0000) GS:ffff88022fc00000(0000) knlGS:0000000000000000
+[  202.191644] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  202.191644] CR2: 0000000000000000 CR3: 0000000221fad000 CR4: 00000000000007f0
+[  202.191644] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  202.191644] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[  202.191644] Process systemd-user-se (pid: 7047, threadinfo ffff880221dde000, task ffff88022618b3a0)
+[  202.191644] Stack:
+[  202.191644]  ffff880221ddfc88 ffffffff81063d55 0000000000000400 00000000000115c0
+[  202.191644]  ffff88022235c218 ffffffff814ef9e8 ffffea0000000000 ffff88022621d880
+[  202.191644]  ffff880227007200 ffffffff00000003 0000000000000010 0000000000018f38
+[  202.191644] Call Trace:
+[  202.191644]  [<ffffffff81063d55>] select_task_rq_fair+0x255/0x780
+[  202.191644]  [<ffffffff810607e6>] try_to_wake_up+0x156/0x2c0
+[  202.191644]  [<ffffffff8106098b>] wake_up_state+0xb/0x10
+[  202.191644]  [<ffffffff81044f88>] signal_wake_up+0x28/0x40
+[  202.191644]  [<ffffffff81045406>] complete_signal+0x1d6/0x250
+[  202.191644]  [<ffffffff810455f0>] __send_signal+0x170/0x310
+[  202.191644]  [<ffffffff810457d0>] send_signal+0x40/0x80
+[  202.191644]  [<ffffffff81046257>] do_send_sig_info+0x47/0x90
+[  202.191644]  [<ffffffff8104649a>] group_send_sig_info+0x4a/0x70
+[  202.191644]  [<ffffffff810465ba>] kill_pid_info+0x3a/0x60
+[  202.191644]  [<ffffffff81047ac7>] sys_kill+0x97/0x1a0
+[  202.191644]  [<ffffffff810ebc10>] ? vfs_read+0x120/0x160
+[  202.191644]  [<ffffffff810ebc95>] ? sys_read+0x45/0x90
+[  202.191644]  [<ffffffff8134bde2>] system_call_fastpath+0x16/0x1b
+[  202.191644] Code: 49 0f af 41 50 31 d2 49 f7 f0 48 83 f8 01 48 0f 46 c6 48 2b 07 48 8b bf 40 01 00 00 48 85 ff 74 3a 45 31 c0 48 8b 8f 50 01 00 00 <48> 8b 11 4c 8b 89 80 00 00 00 49 89 d2 48 01 d0 45 8b 59 58 4c 
+[  202.191644] RIP  [<ffffffff81063ac0>] effective_load.isra.43+0x50/0x90
+[  202.191644]  RSP <ffff880221ddfbd8>
+[  202.191644] CR2: 0000000000000000
 
-Thanks,
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+Cc: Yong Zhang <yong.zhang0@gmail.com>
+Cc: stable@vger.kernel.org
 
-	Ingo
+---
+ kernel/sched/auto_group.c |    4 ----
+ kernel/sched/auto_group.h |    5 -----
+ 2 files changed, 9 deletions(-)
+
+--- a/kernel/sched/auto_group.c
++++ b/kernel/sched/auto_group.c
+@@ -143,15 +143,11 @@ autogroup_move_group(struct task_struct
+ 
+ 	p->signal->autogroup = autogroup_kref_get(ag);
+ 
+-	if (!ACCESS_ONCE(sysctl_sched_autogroup_enabled))
+-		goto out;
+-
+ 	t = p;
+ 	do {
+ 		sched_move_task(t);
+ 	} while_each_thread(p, t);
+ 
+-out:
+ 	unlock_task_sighand(p, &flags);
+ 	autogroup_kref_put(prev);
+ }
+--- a/kernel/sched/auto_group.h
++++ b/kernel/sched/auto_group.h
+@@ -4,11 +4,6 @@
+ #include <linux/rwsem.h>
+ 
+ struct autogroup {
+-	/*
+-	 * reference doesn't mean how many thread attach to this
+-	 * autogroup now. It just stands for the number of task
+-	 * could use this autogroup.
+-	 */
+ 	struct kref		kref;
+ 	struct task_group	*tg;
+ 	struct rw_semaphore	lock;
+
+
