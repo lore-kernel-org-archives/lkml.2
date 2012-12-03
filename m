@@ -1,39 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754783Ab2LCPWO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 10:22:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36152 "EHLO mx2.suse.de"
+	id S1755340Ab2LCPWX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 10:22:23 -0500
+Received: from tundra.namei.org ([65.99.196.166]:41390 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753748Ab2LCPWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 10:22:13 -0500
-Date: Mon, 3 Dec 2012 16:22:05 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, paul@paulmenage.org, glommer@parallels.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        peterz@infradead.org, bsingharora@gmail.com, hannes@cmpxchg.org,
-        kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET cgroup/for-3.8] cpuset: decouple cpuset locking from
- cgroup core
-Message-ID: <20121203152205.GB17093@dhcp22.suse.cz>
-References: <1354138460-19286-1-git-send-email-tj@kernel.org>
+	id S1755094Ab2LCPWU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 10:22:20 -0500
+Date: Tue, 4 Dec 2012 02:26:40 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: linux-next: unusual update of the security tree
+In-Reply-To: <CA+55aFwdk9FiW4u_f-Dq6+jtuD9kY-zBqPpMVc2OHJFnzaAbzA@mail.gmail.com>
+Message-ID: <alpine.LRH.2.02.1212040226090.13071@tundra.namei.org>
+References: <20121128101635.d5e864dffc4252ef9d5e1664@canb.auug.org.au> <50B5508D.7050409@schaufler-ca.com> <20121128110132.0082c87680b9b714b8c0689c@canb.auug.org.au> <CA+55aFwdk9FiW4u_f-Dq6+jtuD9kY-zBqPpMVc2OHJFnzaAbzA@mail.gmail.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354138460-19286-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
-I have glanced through the series and spotten nothing obviously wrong. I
-do not feel I could give my r-b because I am not familiar with cpusets
-internals enough and some patches looks quite scary (like #8).
-Anyway the resulting outcome seems nice.
+On Tue, 27 Nov 2012, Linus Torvalds wrote:
 
-Thanks!
+> On Nov 27, 2012 4:01 PM, "Stephen Rothwell" <sfr@canb.auug.org.au> wrote:
+> >
+> > Hi
+> > This is the shortlog for the changes in the security tree between
+> > yesterday and today;
+> 
+> This is an excellent example of the kind of tree I will not pull from.
+> 
+> There are more merges than actual work. No way, Jose.
+
+Ugh, I somehow missed this thread last week.
+
+
 -- 
-Michal Hocko
-SUSE Labs
+James Morris
+<jmorris@namei.org>
