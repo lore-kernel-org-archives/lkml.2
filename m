@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755013Ab2LCPQH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 10:16:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35871 "EHLO mx2.suse.de"
+	id S1754482Ab2LCPQF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 10:16:05 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:47936 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752084Ab2LCPQD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 10:16:03 -0500
-Date: Mon, 3 Dec 2012 16:16:01 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: azurIt <azurit@pobox.sk>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups mailinglist <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH for 3.2.34] memcg: do not trigger OOM from
- add_to_page_cache_locked
-Message-ID: <20121203151601.GA17093@dhcp22.suse.cz>
-References: <20121126131837.GC17860@dhcp22.suse.cz>
- <20121126132149.GD17860@dhcp22.suse.cz>
- <20121130032918.59B3F780@pobox.sk>
- <20121130124506.GH29317@dhcp22.suse.cz>
- <20121130144427.51A09169@pobox.sk>
- <20121130144431.GI29317@dhcp22.suse.cz>
- <20121130160811.6BB25BDD@pobox.sk>
- <20121130153942.GL29317@dhcp22.suse.cz>
- <20121130165937.F9564EBE@pobox.sk>
- <20121130161923.GN29317@dhcp22.suse.cz>
+	id S1751412Ab2LCPQC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 10:16:02 -0500
+Date: Mon, 3 Dec 2012 20:45:44 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: "Suzuki K. Poulose" <suzuki@in.ibm.com>
+Cc: bigeasy@linutronix.de, oleg@redhat.com, srikar@linux.vnet.ibm.com,
+        peterz@infradead.org, benh@kernel.crashing.org, mingo@elte.hu,
+        anton@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 3/4] uprobes/powerpc: Introduce routines for
+	save/restore context
+Message-ID: <20121203151544.GB6333@in.ibm.com>
+Reply-To: ananth@in.ibm.com
+References: <20121203150438.7727.74924.stgit@suzukikp> <20121203150849.7727.53296.stgit@suzukikp>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121130161923.GN29317@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121203150849.7727.53296.stgit@suzukikp>
+User-Agent: Mutt/1.5.17 (2007-11-01)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12120315-5806-0000-0000-00001C7BFBA8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 30-11-12 17:19:23, Michal Hocko wrote:
-[...]
-> The important question is why you see VM_FAULT_OOM and whether memcg
-> charging failure can trigger that. I don not see how this could happen
-> right now because __GFP_NORETRY is not used for user pages (except for
-> THP which disable memcg OOM already), file backed page faults (aka
-> __do_fault) use mem_cgroup_newpage_charge which doesn't disable OOM.
-> This is a real head scratcher.
+On Mon, Dec 03, 2012 at 08:39:35PM +0530, Suzuki K. Poulose wrote:
+> From: Suzuki K. Poulose <suzuki@in.ibm.com>
+> 
+> Introduce routines for saving and restoring the context
+> befre/after the single step. No functional changes involved.
+> 
+> These will be extended later to save/restore more info about
+> the process once we replace the ptrace helpers.
+> 
+> Signed-off-by: Suzuki K. Poulose <suzuki@in.ibm.com>
+> ---
+>  arch/powerpc/kernel/uprobes.c |   16 +++++++++++++---
+>  1 file changed, 13 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/powerpc/kernel/uprobes.c b/arch/powerpc/kernel/uprobes.c
+> index bc77834..1a62353 100644
+> --- a/arch/powerpc/kernel/uprobes.c
+> +++ b/arch/powerpc/kernel/uprobes.c
+> @@ -52,6 +52,16 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe,
+>  	return 0;
+>  }
+> 
+> +static void uprobe_save_context_sstep(struct arch_uprobe_task *autask)
+> +{
+> +	autask->saved_trap_nr = current->thread.trap_nr;
+> +}
+> +
+> +static void uprobe_restore_context_sstep(struct arch_uprobe_task *autask)
+> +{
+> +	current->thread.trap_nr = autask->saved_trap_nr;
+> +}
 
-The following should print the traces when we hand over ENOMEM to the
-caller. It should catch all charge paths (migration is not covered but
-that one is not important here). If we don't see any traces from here
-and there is still global OOM striking then there must be something else
-to trigger this.
-Could you test this with the patch which aims at fixing your deadlock,
-please? I realise that this is a production environment but I do not see
-anything relevant in the code.
----
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index c8425b1..9e5b56b 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2397,6 +2397,7 @@ done:
- 	return 0;
- nomem:
- 	*ptr = NULL;
-+	__WARN();
- 	return -ENOMEM;
- bypass:
- 	*ptr = NULL;
+Can't the two above be inline?
 
--- 
-Michal Hocko
-SUSE Labs
+Ananth
+
