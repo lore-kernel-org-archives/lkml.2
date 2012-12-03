@@ -1,38 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751991Ab2LCSmm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 13:42:42 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:39293 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751289Ab2LCSmk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 13:42:40 -0500
-Date: Mon, 03 Dec 2012 13:42:38 -0500 (EST)
-Message-Id: <20121203.134238.1861170350026259675.davem@davemloft.net>
-To: mst@redhat.com
-Cc: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vhost-net: initialize zcopy packet counters
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20121203173151.GA30949@redhat.com>
-References: <20121203173151.GA30949@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1751894Ab2LCSrE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 13:47:04 -0500
+Received: from [206.117.179.246] ([206.117.179.246]:59392 "EHLO labridge.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750874Ab2LCSrB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 13:47:01 -0500
+Message-ID: <1354560401.3524.3.camel@joe-AO722>
+Subject: Re: [PATCH 1/3] cifs: Remove unused cEVENT macro
+From: Joe Perches <joe@perches.com>
+To: Steve French <smfrench@gmail.com>, Theodore Tso <tytso@mit.edu>
+Cc: Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@samba.org>,
+        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 03 Dec 2012 10:46:41 -0800
+In-Reply-To: <CAH2r5mtbhZWJu1eoahDSo84Wr=6jrSDVdwEVnQWYxztU72T2nQ@mail.gmail.com>
+References: <cover.1354217746.git.joe@perches.com>
+	 <7176cb20d420849d72aa004e40a404049362da7f.1354217746.git.joe@perches.com>
+	 <20121130064710.1bcd227b@tlielax.poochiereds.net>
+	 <CAH2r5mtbhZWJu1eoahDSo84Wr=6jrSDVdwEVnQWYxztU72T2nQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Date: Mon, 3 Dec 2012 19:31:51 +0200
+On Fri, 2012-11-30 at 09:39 -0600, Steve French wrote:
+> But ... the need still remains for more tracing for cifs (I run into
+> this a few times a month at least when debugging) - does anyone have
+> any ideas for how to add dynamic trace points to cifs (has anyone even
+> done it for the vfs?) - is there any file system that does a good job
+> defining dynamic trace points?
 
-> These packet counters are used to drive the zercopy
-> selection heuristic so nothing too bad happens if they are off a bit -
-> and they are also reset once in a while.
-> But it's cleaner to clear them when backend is set so that
-> we start in a known state.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+I believe ext4 is the only filesystem with significant use of
+tracepoints.
 
-Applied to net-next, thanks.
+Ted? Any tips you care to give as to best implementation methods?
+
+
