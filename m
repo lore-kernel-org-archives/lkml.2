@@ -1,99 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751425Ab2LCH0V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 02:26:21 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:40104 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191Ab2LCH0U (ORCPT
+	id S1751554Ab2LCH1v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 02:27:51 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53706 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750978Ab2LCH1u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 02:26:20 -0500
-Message-ID: <50BC5419.6020903@googlemail.com>
-Date: Mon, 03 Dec 2012 07:26:17 +0000
-From: Chris Clayton <chris2553@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 3 Dec 2012 02:27:50 -0500
+Date: Mon, 3 Dec 2012 16:27:42 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: GShark Jeong <gshark.jeong@gmail.com>
+Cc: Liam Gridwood <lrg@ti.com>, Daniel Jeong <daniel.jeong@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] regulator: new driver for LP8755
+Message-ID: <20121203072741.GC9848@opensource.wolfsonmicro.com>
+References: <1354509864-30001-1-git-send-email-gshark.jeong@gmail.com>
+ <1354509864-30001-2-git-send-email-gshark.jeong@gmail.com>
+ <20121203063642.GB9848@opensource.wolfsonmicro.com>
+ <CAPqQCJW6TLhxRkOdw6JVe1qkepDDKdt+wagAgd5VCCsE3y6Qog@mail.gmail.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Jiang Liu <liuj97@gmail.com>, Wen Congyang <wency@cn.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFT PATCH v2 4/5] mm: provide more accurate estimation of pages
- occupied by memmap
-References: <20121120111942.c9596d3f.akpm@linux-foundation.org> <1353510586-6393-1-git-send-email-jiang.liu@huawei.com> <20121128155221.df369ce4.akpm@linux-foundation.org> <50B73E56.4050603@googlemail.com> <50BBB21D.3070005@googlemail.com>
-In-Reply-To: <50BBB21D.3070005@googlemail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPqQCJW6TLhxRkOdw6JVe1qkepDDKdt+wagAgd5VCCsE3y6Qog@mail.gmail.com>
+X-Cookie: Reply hazy, ask again later.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Dec 03, 2012 at 04:24:43PM +0900, GShark Jeong wrote:
+> 2012/12/3 Mark Brown <broonie@opensource.wolfsonmicro.com>
+> > On Mon, Dec 03, 2012 at 01:44:24PM +0900, Daniel Jeong wrote:
 
+> > > +     if (ret < 0)
+> > > +             goto out_i2c_error;
+> > > +     dev_info(pchip->dev, "lp8755 : chip ID is 0x%x\n", regval);
 
-On 12/02/12 19:55, Chris Clayton wrote:
->
->
-> On 11/29/12 10:52, Chris Clayton wrote:
->> On 11/28/12 23:52, Andrew Morton wrote:
->>> On Wed, 21 Nov 2012 23:09:46 +0800
->>> Jiang Liu <liuj97@gmail.com> wrote:
->>>
->>>> Subject: Re: [RFT PATCH v2 4/5] mm: provide more accurate estimation
->>>> of pages occupied by memmap
->>>
->>> How are people to test this?  "does it boot"?
->>>
->>
->> I've been running kernels with Gerry's 5 patches applied for 11 days
->> now. This is on a 64bit laptop but with a 32bit kernel + HIGHMEM. I
->> joined the conversation because my laptop would not resume from suspend
->> to disk - it either froze or rebooted. With the patches applied the
->> laptop does successfully resume and has been stable.
->>
->> Since Monday, I have have been running a kernel with the patches (plus,
->> from today, the patch you mailed yesterday) applied to 3.7rc7, without
->> problems.
->>
->
-> I've been running 3.7-rc7 with the patches listed below for a week now
-> and it has been perfectly stable. In particular, my laptop will now
-> successfully resume from suspend to disk, which always failed without
-> the patches.
->
+> > This isn't actually checking anything except the I/O.  Can the chip ID
+> > really vary?
 
-I should have said, of course, that it was -rc6 and earlier that would 
-not boot without Jiang Liu's patches. I applied those patches to rc-6 
-and my resume after suspend to disk problem was fixed. For a subsequent 
-week I have been running with the patches applied to -rc7, with Andrew's 
-patch also applied for the last 3 days. -rc7 was not subject to the 
-resume problem because the patch which broke it had been reverted.
-All this has been on a 64bit laptop, but running a 32bit kernel with 
-HIGHMEM.
+> My configurations are already programmed in otp memory of chip as default
+> values.
+> So this comment for to others who are using different initial values with
+> default data.
+> I will drop it.
 
-Apologies for yesterday's inaccuracy. I shouldn't send testing reports 
-when I'm in a hurry.
-
->  From Jiang Liu:
-> 1. [RFT PATCH v2 1/5] mm: introduce new field "managed_pages" to struct
-> zone
-> 2. [RFT PATCH v1 2/5] mm: replace zone->present_pages with
-> zone->managed_pages if appreciated
-> 3. [RFT PATCH v1 3/5] mm: set zone->present_pages to number of existing
-> pages in the zone
-> 4. [RFT PATCH v2 4/5] mm: provide more accurate estimation of pages
-> occupied by memmap
-> 5. [RFT PATCH v1 5/5] mm: increase totalram_pages when free pages
-> allocated by bootmem allocator
->
->  From Andrew Morton:
-> 6. mm-provide-more-accurate-estimation-of-pages-occupied-by-memmap.patch
->
-> Tested-by: Chris Clayton <chris2553@googlemail.com>
->
->> Thanks,
->> Chris
->>
->>
+It seems like a better fix would be to add a check for the ID and fail
+if the OTP value doesn't match, that way the driver won't try to run on
+unsupported hardware.
