@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755789Ab2LCOol (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 09:44:41 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43882 "EHLO
+	id S1755811Ab2LCOo4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 09:44:56 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:43866 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755448Ab2LCOgv (ORCPT
+	by vger.kernel.org with ESMTP id S1755410Ab2LCOgu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 09:36:51 -0500
-Message-Id: <20121203143153.956756838@decadent.org.uk>
+	Mon, 3 Dec 2012 09:36:50 -0500
+Message-Id: <20121203143155.727059539@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Mon, 03 Dec 2012 14:32:32 +0000
+Date: Mon, 03 Dec 2012 14:32:45 +0000
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jussi Pakkanen <jussi.pakkanen@canonical.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Dmitry Torokhov <dtor@mail.ru>
-Subject: [ 46/89] Input: bcm5974 - set BUTTONPAD property
+        Clemens Ladisch <clemens@ladisch.de>,
+        Colin Fletcher <colin.m.fletcher@googlemail.com>,
+        Devin Venable <venable.devin@gmail.com>,
+        Dr Nick Bailey <nicholas.bailey@glasgow.ac.uk>,
+        Jannis Achstetter <jannis_achstetter@web.de>,
+        Rui Nuno Capela <rncbc@rncbc.org>, Oliver Neukum <oliver@neukum.org>
+Subject: [ 59/89] ALSA: ua101, usx2y: fix broken MIDI output
 In-Reply-To: <20121203143146.549859007@decadent.org.uk>
 X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,34 +32,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jussi Pakkanen <jussi.pakkanen@canonical.com>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit 52965cc012f7a3cf35f06485ec275ebf3b3fddae upstream.
+commit e99ddfde6ae0dd2662bb40435696002b590e4057 upstream.
 
-Some bcm5974 trackpads have a physical button beneath the physical surface.
-This patch sets the property bit so user space applications can detect the
-trackpad type and act accordingly.
+Commit 88a8516a2128 (ALSA: usbaudio: implement USB autosuspend) added
+autosuspend code to all files making up the snd-usb-audio driver.
+However, midi.c is part of snd-usb-lib and is also used by other
+drivers, not all of which support autosuspend.  Thus, calls to
+usb_autopm_get_interface() could fail, and this unexpected error would
+result in the MIDI output being completely unusable.
 
-Signed-off-by: Jussi Pakkanen <jussi.pakkanen@canonical.com>
-Reviewed-by: Henrik Rydberg <rydberg@euromail.se>
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+Make it work by ignoring the error that is expected with drivers that do
+not support autosuspend.
+
+Reported-by: Colin Fletcher <colin.m.fletcher@googlemail.com>
+Reported-by: Devin Venable <venable.devin@gmail.com>
+Reported-by: Dr Nick Bailey <nicholas.bailey@glasgow.ac.uk>
+Reported-by: Jannis Achstetter <jannis_achstetter@web.de>
+Reported-by: Rui Nuno Capela <rncbc@rncbc.org>
+Cc: Oliver Neukum <oliver@neukum.org>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/input/mouse/bcm5974.c |    3 +++
- 1 file changed, 3 insertions(+)
+ sound/usb/midi.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/input/mouse/bcm5974.c b/drivers/input/mouse/bcm5974.c
-index 5ec617e..913e9fa 100644
---- a/drivers/input/mouse/bcm5974.c
-+++ b/drivers/input/mouse/bcm5974.c
-@@ -433,6 +433,9 @@ static void setup_events_to_report(struct input_dev *input_dev,
- 	__set_bit(BTN_TOOL_QUADTAP, input_dev->keybit);
- 	__set_bit(BTN_LEFT, input_dev->keybit);
+diff --git a/sound/usb/midi.c b/sound/usb/midi.c
+index c83f614..eeefbce 100644
+--- a/sound/usb/midi.c
++++ b/sound/usb/midi.c
+@@ -148,6 +148,7 @@ struct snd_usb_midi_out_endpoint {
+ 		struct snd_usb_midi_out_endpoint* ep;
+ 		struct snd_rawmidi_substream *substream;
+ 		int active;
++		bool autopm_reference;
+ 		uint8_t cable;		/* cable number << 4 */
+ 		uint8_t state;
+ #define STATE_UNKNOWN	0
+@@ -1076,7 +1077,8 @@ static int snd_usbmidi_output_open(struct snd_rawmidi_substream *substream)
+ 		return -ENXIO;
+ 	}
+ 	err = usb_autopm_get_interface(umidi->iface);
+-	if (err < 0)
++	port->autopm_reference = err >= 0;
++	if (err < 0 && err != -EACCES)
+ 		return -EIO;
+ 	substream->runtime->private_data = port;
+ 	port->state = STATE_UNKNOWN;
+@@ -1087,9 +1089,11 @@ static int snd_usbmidi_output_open(struct snd_rawmidi_substream *substream)
+ static int snd_usbmidi_output_close(struct snd_rawmidi_substream *substream)
+ {
+ 	struct snd_usb_midi* umidi = substream->rmidi->private_data;
++	struct usbmidi_out_port *port = substream->runtime->private_data;
  
-+	if (cfg->caps & HAS_INTEGRATED_BUTTON)
-+		__set_bit(INPUT_PROP_BUTTONPAD, input_dev->propbit);
-+
- 	input_set_events_per_packet(input_dev, 60);
+ 	substream_open(substream, 0);
+-	usb_autopm_put_interface(umidi->iface);
++	if (port->autopm_reference)
++		usb_autopm_put_interface(umidi->iface);
+ 	return 0;
  }
  
 
