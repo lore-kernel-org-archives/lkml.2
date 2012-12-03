@@ -1,103 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751396Ab2LCSD0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 13:03:26 -0500
-Received: from ngcobalt07.manitu.net ([217.11.48.107]:38365 "EHLO
-	ngcobalt07.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054Ab2LCSDZ (ORCPT
+	id S1751339Ab2LCSIM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 13:08:12 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:47568 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751033Ab2LCSIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 13:03:25 -0500
-X-manitu-Original-Sender-IP: 127.0.0.1
-X-manitu-Original-Receiver-Name: ngcobalt07.manitu.net
-Date: Mon, 3 Dec 2012 19:03:18 +0100
-From: Roland Eggner <edvx1@systemanalysen.net>
-To: Dimitrios Apostolou <jimis@gmx.net>
-Cc: linux-kernel@vger.kernel.org, Catalin Marinas <catalin.marinas@arm.com>,
-        "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: backing up ext4 fs, system unresponsive, thrashing like crazy
- even though swap is unused
-Message-ID: <20121203180318.GA22323@mobil.systemanalysen.net>
-Reply-To: Roland Eggner <edvx1@systemanalysen.net>
-Mail-Followup-To: Dimitrios Apostolou <jimis@gmx.net>,
-	linux-kernel@vger.kernel.org,
-	Catalin Marinas <catalin.marinas@arm.com>,
-	Theodore Ts'o <tytso@mit.edu>
-References: <1353855815.22969.20.camel@soupermouf>
- <1354452243.22969.48.camel@soupermouf>
- <20121202225051.GA13685@mobil.systemanalysen.net>
- <alpine.LFD.2.02.1212030120090.1646@soupermouf>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ikeVEW9yuYc//A+q"
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1212030120090.1646@soupermouf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 3 Dec 2012 13:08:11 -0500
+From: Joonsoo Kim <js1304@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>
+Subject: [PATCH v2 1/2] scripts/tags.sh: Support subarch for ARM
+Date: Tue,  4 Dec 2012 03:04:32 +0900
+Message-Id: <1354557873-21889-1-git-send-email-js1304@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Current tags.sh doesn't handle subarch for ARM.
+There are too many subarch on ARM, it is hard that we locate some
+functions which are defined in every subarch with tags util family.
+Therefore support subarch for removing this unconvenience.
 
---ikeVEW9yuYc//A+q
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+We can use ARM subarch functionality like below.
+"make cscope O=. SRCARCH=arm SUBARCH=xxx"
 
-On 2012-12-03 Monday at 01:56 +0200 Dimitrios Apostolou wrote:
-> Dear Ronald,
-Excuse me, my name is Roland.
+Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+---
+v2: change bash specific '[[]]' to 'case in' statement.
 
-> sorry for not replying at your first message but I didn't consider changi=
-ng=20
-> kernel as a resolution to my problem.
->
-> =E2=80=A6 =E2=80=A6
-> > =E2=80=A6 =E2=80=A6
-> > One advantage of Linux compared to other OS is much more support for old
-> > hardware, if a  _proper_  kernel version is selected.  Many years ago I=
- used
-> > a notebook with 40 M total RAM, with a 2.4 kernel, Blackbox window mana=
-ger and
-> > Opera web browser =E2=80=A6 it worked flawlessly =E2=80=A6 just rather =
-slowly due to swapping.
-> > Your notebook has much more RAM than 40 M, thus there is surely a Linux=
- solution
-> > for you.  Try a 2.6.27.62 kernel, it supports ext4 (=E2=80=9Cext4dev=E2=
-=80=9D), probably it
-> > supports all devices of your notebook, and with a slim window manager e=
-=2Eg.
-> > WindowMaker or OpenBox your notebook will probably =E2=80=9Cfly=E2=80=
-=9D.
->=20
-> I appreciate your advice. I remember when we were running 2.4 much less=
-=20
-> memory was needed, but still I consider the kernel /fairly/ lean=20
-> considering the time passed and the bloat in userspace applications. I=20
-> choose to run latest kernels on old hardware, hopefully this will continu=
-e=20
-> to be the case, and if things deteriorate much then let's hope we'll have=
-=20
-> enough time to help and fix them! :-)
+diff --git a/scripts/tags.sh b/scripts/tags.sh
+index 79fdafb..38483f4 100755
+--- a/scripts/tags.sh
++++ b/scripts/tags.sh
+@@ -48,13 +48,14 @@ find_arch_sources()
+ 	for i in $archincludedir; do
+ 		prune="$prune -wholename $i -prune -o"
+ 	done
+-	find ${tree}arch/$1 $ignore $prune -name "$2" -print;
++	find ${tree}arch/$1 $ignore $subarchprune $prune -name "$2" -print;
+ }
+ 
+ # find sources in arch/$1/include
+ find_arch_include_sources()
+ {
+-	include=$(find ${tree}arch/$1/ -name include -type d);
++	include=$(find ${tree}arch/$1/ $subarchprune \
++					-name include -type d -print);
+ 	if [ -n "$include" ]; then
+ 		archincludedir="$archincludedir $include"
+ 		find $include $ignore -name "$2" -print;
+@@ -234,6 +235,21 @@ if [ "${ARCH}" = "um" ]; then
+ 	else
+ 		archinclude=${SUBARCH}
+ 	fi
++elif [ "${SRCARCH}" = "arm" -a "${SUBARCH}" != "" ]; then
++	subarchdir=$(find ${tree}arch/$SRCARCH/ -name mach-* -type d -o \
++							-name plat-* -type d);
++	for i in $subarchdir; do
++		case "$i" in
++			*"mach-"${SUBARCH})
++				;;
++			*"plat-"${SUBARCH})
++				;;
++			*)
++				subarchprune="$subarchprune \
++						-wholename $i -prune -o"
++				;;
++		esac
++	done
+ fi
+ 
+ remove_structs=
+-- 
+1.7.9.5
 
-Ok, this is another story:  You are not looking for a least-effort solution=
- just=20
-for your notebook.  Instead you want to contribute to the LMKL community=20
-solutions how to run current kernel versions under extremly tight memory=20
-limitations like with your notebook, right?  If so:  This is highly appreci=
-ated,
-thank you!  I will interestingly read your findings :)
-
---=20
-Roland
-
---ikeVEW9yuYc//A+q
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iEYEARECAAYFAlC86WYACgkQdN/hKfT7G/KiqwCdF5RGbecyQqDtnWxMSVVJSMxN
-eU0AoJ6PocAgR2EqSQuKDCVpsLl7T/1R
-=sqKF
------END PGP SIGNATURE-----
-
---ikeVEW9yuYc//A+q--
