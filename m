@@ -1,100 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751497Ab2LCX2I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 18:28:08 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:34228 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142Ab2LCX2G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 18:28:06 -0500
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Mon, 03 Dec 2012 18:28:06 EST
+	id S1751705Ab2LCXjI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 18:39:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9426 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751193Ab2LCXjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 18:39:07 -0500
+Subject: [RFC PATCH 0/6] kvm: Growable memory slot array
+To: mtosatti@redhat.com, kvm@vger.kernel.org, gleb@redhat.com
+From: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Mon, 03 Dec 2012 16:39:05 -0700
+Message-ID: <20121203231912.3661.57179.stgit@bling.home>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-In-Reply-To: <CAK5ve-K3aEd57xV_pL36V5sL0FEhp4cWh0DX9zO1j9s1C+j_zg@mail.gmail.com>
-References: <1354312850-29264-1-git-send-email-marek.belisko@open-nandra.com>
-	<1354312850-29264-2-git-send-email-marek.belisko@open-nandra.com>
-	<CAK5ve-K3aEd57xV_pL36V5sL0FEhp4cWh0DX9zO1j9s1C+j_zg@mail.gmail.com>
-Date: Tue, 4 Dec 2012 00:21:26 +0100
-Message-ID: <CAAfyv37ic0GT65aD3wTpY7K=Y5jyOfnZ-ruSvb0zgf=xJgh-ig@mail.gmail.com>
-Subject: Re: [PATCH v4 2/2] Add documentation for tca6507 devicetree bindings.
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Bryan Wu <cooloney@gmail.com>
-Cc: rpurdie@rpsys.net, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 3, 2012 at 8:29 PM, Bryan Wu <cooloney@gmail.com> wrote:
-> On Fri, Nov 30, 2012 at 2:00 PM, Marek Belisko
-> <marek.belisko@open-nandra.com> wrote:
->> Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
->> ---
->>  Documentation/devicetree/bindings/leds/tca6507.txt |   33 ++++++++++++++++++++
->>  1 file changed, 33 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/leds/tca6507.txt
->>
->> diff --git a/Documentation/devicetree/bindings/leds/tca6507.txt b/Documentation/devicetree/bindings/leds/tca6507.txt
->> new file mode 100644
->> index 0000000..2b6693b
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/leds/tca6507.txt
->> @@ -0,0 +1,33 @@
->> +LEDs conected to tca6507
->> +
->> +Required properties:
->> +- compatible : should be : "ti,tca6507".
->> +
->> +Each led is represented as a sub-node of the ti,tca6507 device.
->> +
->> +LED sub-node properties:
->> +- label : (optional) see Documentation/devicetree/bindings/leds/common.txt
->> +- reg : number of LED line (could be from 0 to 6)
->> +- linux,default-trigger : (optional)
->> +   see Documentation/devicetree/bindings/leds/common.txt
->
-> Did you post patch to add this file? I failed to find it and overall
-> this patchset looks fine with me.
-Yes. I'ts in current next.
-https://lkml.org/lkml/2012/11/21/394
->
-> -Bryan
->
->> +
->> +Examples:
->> +
->> +tca6507@45 {
->> +       compatible = "ti,tca6507";
->> +       #address-cells = <1>;
->> +       #size-cells = <0>;
->> +       reg = <0x45>;
->> +
->> +       led0: red-aux@0 {
->> +               label = "red:aux";
->> +               reg = <0x0>;
->> +       };
->> +
->> +       led1: green-aux@1 {
->> +               label = "green:aux";
->> +               reg = <0x5>;
->> +               linux,default-trigger = "default-on";
->> +       };
->> +};
->> +
->> --
->> 1.7.10.4
->>
+Memory slots are currently a fixed resource with a relatively small
+limit.  When using PCI device assignment in a qemu guest it's fairly
+easy to exhaust the number of available slots.  I posted patches
+exploring growing the number of memory slots a while ago, but it was
+prior to caching memory slot array misses and thefore had potentially
+poor performance.  Now that we do that, Avi seemed receptive to
+increasing the memory slot array to arbitrary lengths.  I think we
+still don't want to impose unnecessary kernel memory consumptions on
+guests not making use of this, so I present again a growable memory
+slot array.
 
-Marek
+A couple notes/questions; in the previous version we had a
+kvm_arch_flush_shadow() call when we increased the number of slots.
+I'm not sure if this is still necessary.  I had also made the x86
+specific slot_bitmap dynamically grow as well and switch between a
+direct bitmap and indirect pointer to a bitmap.  That may have
+contributed to needing the flush.  I haven't done that yet here
+because it seems like an unnecessary complication if we have a max
+on the order of 512 or 1024 entries.  A bit per slot isn't a lot of
+overhead.  If we want to go more, maybe we should make it switch.
+That leads to the final question, we need an upper bound since this
+does allow consumption of extra kernel memory, what should it be?  A
+PCI bus filled with assigned devices can theorically use up to 2048
+slots (32 devices * 8 functions * (6 BARs + ROM + possibly split
+MSI-X BAR)).  For this RFC, I don't change the max, just make it
+grow up to 32 user slots.  Untested on anything but x86 so far.
+Thanks,
 
--- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
+Alex
+---
 
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-twitter: #opennandra
-web: http://open-nandra.com
+Alex Williamson (6):
+      kvm: Rename KVM_MEMORY_SLOTS -> KVM_USER_MEM_SLOTS
+      kvm: Make KVM_PRIVATE_MEM_SLOTS optional
+      kvm: Merge id_to_index into memslots
+      kvm: Move private memory slots to start of memslots array
+      kvm: Re-introduce memslots->nmemslots
+      kvm: Allow memory slots to grow
+
+
+ arch/ia64/include/asm/kvm_host.h    |    4 --
+ arch/ia64/kvm/kvm-ia64.c            |    6 +--
+ arch/powerpc/include/asm/kvm_host.h |    6 +--
+ arch/powerpc/kvm/book3s_hv.c        |    4 +-
+ arch/s390/include/asm/kvm_host.h    |    4 --
+ arch/x86/include/asm/kvm_host.h     |    8 ++-
+ arch/x86/include/asm/vmx.h          |    6 +--
+ arch/x86/kvm/vmx.c                  |    3 +
+ arch/x86/kvm/x86.c                  |   10 +++-
+ include/linux/kvm_host.h            |   20 +++++---
+ virt/kvm/kvm_main.c                 |   83 ++++++++++++++++++++++++-----------
+ 11 files changed, 93 insertions(+), 61 deletions(-)
