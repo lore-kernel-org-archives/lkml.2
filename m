@@ -1,95 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338Ab2LCT4x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 14:56:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54398 "EHLO mx1.redhat.com"
+	id S1752258Ab2LCT6M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 14:58:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30704 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752129Ab2LCT4v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 14:56:51 -0500
-Date: Mon, 3 Dec 2012 17:56:20 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        Chegu Vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Andrew Jones <drjones@redhat.com>
-Subject: Re: [PATCH V3 RFC 2/2] kvm: Handle yield_to failure return code for
- potential undercommit case
-Message-ID: <20121203195620.GB590@amt.cnet>
-References: <20121126120740.2595.33651.sendpatchset@codeblue>
- <20121126120804.2595.20280.sendpatchset@codeblue>
- <20121128011228.GH8295@amt.cnet>
- <50B59CE0.70305@linux.vnet.ibm.com>
+	id S1750828Ab2LCT6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 14:58:11 -0500
+Message-ID: <50BD03B7.2070401@redhat.com>
+Date: Mon, 03 Dec 2012 14:55:35 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50B59CE0.70305@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@kernel.org>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 29/52] sched: Implement NUMA scanning backoff
+References: <1354473824-19229-1-git-send-email-mingo@kernel.org> <1354473824-19229-30-git-send-email-mingo@kernel.org>
+In-Reply-To: <1354473824-19229-30-git-send-email-mingo@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 10:40:56AM +0530, Raghavendra K T wrote:
-> On 11/28/2012 06:42 AM, Marcelo Tosatti wrote:
-> >
-> >Don't understand the reasoning behind why 3 is a good choice.
-> 
-> Here is where I came from. (explaining from scratch for
-> completeness, forgive me :))
-> In moderate overcommits, we can falsely exit from ple handler even when
-> we have preempted task of same VM waiting on other cpus. To reduce this
-> problem, we try few times before exiting.
-> The problem boils down to:
-> what is the probability that we exit ple handler even when we have more
-> than 1 task in other cpus. Theoretical worst case should be around 1.5x
-> overcommit (As also pointed by Andrew Theurer). [But practical
-> worstcase may be around 2x,3x overcommits as indicated by the results
-> for the patch series]
-> 
-> So if p is the probability of finding rq length one on a particular cpu,
-> and if we do n tries, then probability of exiting ple handler is:
-> 
->  p^(n+1) [ because we would have come across one source with rq length
-> 1 and n target cpu rqs  with length 1 ]
-> 
-> so
-> num tries:         probability of aborting ple handler (1.5x overcommit)
->  1                 1/4
->  2                 1/8
->  3                 1/16
-> 
-> We can increase this probability with more tries, but the problem is
-> the overhead.
-> Also, If we have tried three times that means we would have iterated
-> over 3 good eligible vcpus along with many non-eligible candidates. In
-> worst case if we iterate all the vcpus, we reduce 1x performance and
-> overcommit performance get hit. [ as in results ].
-> 
-> I have tried num_tries = 1,2,3 and n already ( not 4 yet). So I
-> concluded 3 is enough.
-> 
-> Infact I have also run kernbench and hackbench which are giving 5-20%
-> improvement.
-> 
-> [ As a side note , I also thought how about having num_tries = f(n) =
-> ceil ( log(num_online_cpus)/2 ) But I thought calculation is too much
-> overhead and also there is no point in probably making it dependent on
-> online cpus ]
-> 
-> Please let me know if you are happy with this rationale/ or correct me
-> if you foresee some problem. (Infact Avi, Rik's concern about false
-> exiting made me arrive at 'try' logic which I did not have earlier).
-> 
-> I am currently trying out the result for 1.5x overcommit will post the
-> result.
+On 12/02/2012 01:43 PM, Ingo Molnar wrote:
+> Back off slowly from scanning, up to sysctl_sched_numa_scan_period_max
+> (1.6 seconds). Scan faster again if we were forced to switch to
+> another node.
 
-Raghavendra
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 8f0e6ba..59fea2e 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -865,8 +865,10 @@ static void task_numa_placement(struct task_struct *p)
+>   		}
+>   	}
+>
+> -	if (max_node != p->numa_max_node)
+> +	if (max_node != p->numa_max_node) {
+>   		sched_setnuma(p, max_node, task_numa_shared(p));
+> +		goto out_backoff;
+> +	}
+>
+>   	p->numa_migrate_seq++;
+>   	if (sched_feat(NUMA_SETTLE) &&
 
-Makes sense to me. Thanks.
+Is that correct?
+
+It looks like the code only jumps to the out_backoff label
+after resetting p->numa_scan_period to sysctl_sched_numa_scan_period_min
+in sched_setnuma?
+
+Should it not be the other way around, slowly increasing the process's
+numa_scan_period when we do NOT do a sched_setnuma call for the process
+at all?
+
+> @@ -882,7 +884,11 @@ static void task_numa_placement(struct task_struct *p)
+>   	if (shared != task_numa_shared(p)) {
+>   		sched_setnuma(p, p->numa_max_node, shared);
+>   		p->numa_migrate_seq = 0;
+> +		goto out_backoff;
+>   	}
+> +	return;
+
+We can never reach the backoff code, except by an explicit goto,
+which is only there after a call to sched_setnuma.
+
+That is the opposite from what the changelog suggests...
+
+> +out_backoff:
+> +	p->numa_scan_period = min(p->numa_scan_period * 2, sysctl_sched_numa_scan_period_max);
+>   }
+>
+>   /*
+>
+
