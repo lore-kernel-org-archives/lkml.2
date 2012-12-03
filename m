@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751945Ab2LCT7d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 14:59:33 -0500
-Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:63309 "EHLO
-	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751179Ab2LCT7b (ORCPT
+	id S1751864Ab2LCUAP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 15:00:15 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:56241 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751279Ab2LCUAO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 14:59:31 -0500
-X-Authority-Analysis: v=2.0 cv=GZOVbHrL c=1 sm=0 a=/DbS/tiKggfTkRRHPZEB4g==:17 a=Qsx_du5GiBkA:10 a=PJtIR_1cTkwA:10 a=S1A5HrydsesA:10 a=8nJEP1OIZ-IA:10 a=fxJcL_dCAAAA:8 a=q1AKSoAqX3wA:10 a=BB99dJHrAAAA:8 a=3DfWnJiXAAAA:8 a=QfKxxUxMAAAA:8 a=qQCFSBdpW3zXkHUApI8A:9 a=wPNLvfGTeEIA:10 a=a63yIOC1_90A:10 a=/DbS/tiKggfTkRRHPZEB4g==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.78.168.186
-Message-ID: <50BD04A1.7030107@ubuntu.com>
-Date: Mon, 03 Dec 2012 14:59:29 -0500
-From: Phillip Susi <psusi@ubuntu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 3 Dec 2012 15:00:14 -0500
+X-Authenticated: #4463548
+X-Provags-ID: V01U2FsdGVkX19M7zJ/Zp9MY4UwZwjBcZIF5okCY5rM8iOulCUAtC
+	62xLMUaJTkF3QC
+Date: Mon, 3 Dec 2012 22:00:06 +0200 (EET)
+From: Dimitrios Apostolou <jimis@gmx.net>
+X-X-Sender: jimis@soupermouf
+To: Eric Paris <eparis@parisplace.org>, "Theodore Ts'o" <tytso@mit.edu>
+cc: Roland Eggner <edvx1@systemanalysen.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: backing up ext4 fs, system unresponsive, thrashing like crazy
+ even though swap is unused
+In-Reply-To: <alpine.LFD.2.02.1212032125520.4173@soupermouf>
+Message-ID: <alpine.LFD.2.02.1212032157480.4173@soupermouf>
+References: <1353855815.22969.20.camel@soupermouf> <1354452243.22969.48.camel@soupermouf> <20121202225051.GA13685@mobil.systemanalysen.net> <alpine.LFD.2.02.1212030120090.1646@soupermouf> <20121203174342.GB20260@thunk.org>
+ <CACLa4psEfdA17mcjVHhUfgmARXTZ6AVA7QJ77DymXBeVtgjZ5w@mail.gmail.com> <alpine.LFD.2.02.1212032125520.4173@soupermouf>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-To: Anton Altaparmakov <aia21@cantab.net>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: LDM Documentation dead link
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Mon, 3 Dec 2012, Dimitrios Apostolou wrote:
+>
+> I've managed to reproduce the scenario with concurrent "du" commands running 
+> on the filesystems. I'll try doing it once more, but it may take a while to 
+> get the dmesg/slabinfo etc output, since even a realtime root shell is 
+> non-responsive for many minutes.
+>
+> What other debug output do you suggest to get, to find out why ext4 inodes 
+> are pinned?
 
-drivers/fs/partitions/ldm.[ch] refer to documentation at
-http://www.linux-ntfs.org/content/view/19/37/.  This link appears to
-be dead and just redirects to the main tuxera.com page.
+Important detail: one of the filesystems contains *huge* maildirs, 
+containing hundreds of thousands of messages.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (MingW32)
-Comment: Using GnuPG with undefined - http://www.enigmail.net/
 
-iQEcBAEBAgAGBQJQvQShAAoJEJrBOlT6nu75rNQIAM9ZTLTtrzdVNcO9biLGxyu6
-ROnUhIyWKRBTUddSfkv3WRcy+9SEQqlSRJpQ9tGp6IqdQbYXuTuy30fPq+crrZd7
-ccHCT2T3Uk0AMmVKBxZ/S1mZAFc0pKmWUdPrIuPLnoN/hhX9hGXRYJYsO8kFZgyj
-xaDTmgWxRKKfqy60uRHRyKYvhV/Jm0XL8GN7osVn5j0Zr3n3PHRDxqaTcnWkCtyM
-x5Fr0DZHAkpDC/NoWdwsvnlRNoXiVDQLenL5cnFim44qGsPJgj75RcnHX2BctOLI
-+ZdkzJmAvIRtOCsbbEUL/a9gebMH4RWaksg3bq4fHJoyUf2HuQXFTnsrMwAiAEU=
-=nE2+
------END PGP SIGNATURE-----
+Dimitris
+
