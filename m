@@ -1,87 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754864Ab2LCPpH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 10:45:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37257 "EHLO mx2.suse.de"
+	id S1754696Ab2LCPqi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 10:46:38 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:60081 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753835Ab2LCPpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 10:45:05 -0500
-Date: Mon, 3 Dec 2012 15:44:58 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Alex Shi <lkml.alex@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [PATCH 18/52] mm/numa: Migrate on reference policy
-Message-ID: <20121203154458.GO8218@suse.de>
-References: <1354473824-19229-1-git-send-email-mingo@kernel.org>
- <1354473824-19229-19-git-send-email-mingo@kernel.org>
+	id S1752051Ab2LCPqh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 10:46:37 -0500
+From: Vitaly Andrianov <vitalya@ti.com>
+To: <mina86@mina86.com>, <m.szyprowski@samsung.com>,
+        <kyungmin.park@samsung.com>, <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>, <linux-keystone@list.ti.com>
+CC: Vitaly Andrianov <vitalya@ti.com>, Cyril Chemparathy <cyril@ti.com>
+Subject: [PATCH v2] drivers: cma: fix addressing on PAE machines
+Date: Mon, 3 Dec 2012 10:46:10 -0500
+Message-ID: <1354549570-21445-1-git-send-email-vitalya@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1354473824-19229-19-git-send-email-mingo@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 02, 2012 at 07:43:10PM +0100, Ingo Molnar wrote:
-> From: Mel Gorman <mgorman@suse.de>
-> 
-> This is the simplest possible policy that still does something
-> of note. When a pte_numa is faulted, it is moved immediately.
-> Any replacement policy must at least do better than this and in
-> all likelihood this policy regresses normal workloads.
-> 
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Hugh Dickins <hughd@google.com>
-> Cc: Paul Turner <pjt@google.com>
-> Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-> Cc: Alex Shi <lkml.alex@gmail.com>
-> Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>
-> Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> Signed-off-by: Ingo Molnar <mingo@kernel.org>
+This patch fixes a couple of bugs that otherwise impair CMA functionality on
+PAE machines:
 
-It is worth noting that at this point in your combined tree that this
-policy and patch does not and cannot do anything. It has none of the
-faulting machinery, pte scanning, two-stage filter etc that are necessary
-for it to work. So for example, you can not take this point of your tree,
-compare it with balancenuma and get a meaningful comparison.
+  - alignment must be a 64-bit type when running on systems with 64-bit
+    physical addresses.  If this is not the case, the limit calculation thunks
+    allocations down to an address range < 4G.
 
-So while superfically this patch looks like a useful bisection point, it
-isn't. A plain rebase on top of balancenuma would have given us a comparison
-between "do nothing", "do the bare minimum to be useful (balancenuma)" and
-"do something complex (numacore)" even *if* you decided to revert parts
-of balancenuma during your rebase. For example, you might have decided
-to force the removal of migrate rate-limiting even though I stand by it
-being a valid decision to mitigate worst-case behaviour. The key is that
-it would have been possible to bisect parts of numacore to help identify
-the source of any regressions.
+  - The allocated range check is removed. On 32bit ARM kernel with LPAE
+    enabled the base may be allocated outside the fist 4GB of physical
+    memory (keystone SoC for example).
 
-This restructure is an all or nothing approach. It does not look like it's
-possible to do a comparison between "do nothing", "do the bare minimum
-(balancenuma)" and "do something complex (numacore)". It would also be
-impossible to do any sort of rebase of autonuma policies on top as was
-the case with balancenuma.
+Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
+Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+---
+ drivers/base/dma-contiguous.c  |   20 ++++++++------------
+ include/linux/dma-contiguous.h |    4 ++--
+ 2 files changed, 10 insertions(+), 14 deletions(-)
 
-FWIW, I pulled tip again this morning and rebased tip/numa/base to
-3.7-rc7 and queued the result. I had pulled tip/master but it didn't
-boot.
-
+diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
+index 9a14694..097dd44 100644
+--- a/drivers/base/dma-contiguous.c
++++ b/drivers/base/dma-contiguous.c
+@@ -60,8 +60,8 @@ struct cma *dma_contiguous_default_area;
+  * Users, who want to set the size of global CMA area for their system
+  * should use cma= kernel parameter.
+  */
+-static const unsigned long size_bytes = CMA_SIZE_MBYTES * SZ_1M;
+-static long size_cmdline = -1;
++static const phys_addr_t size_bytes = CMA_SIZE_MBYTES * SZ_1M;
++static phys_addr_t size_cmdline = -1;
+ 
+ static int __init early_cma(char *p)
+ {
+@@ -73,7 +73,7 @@ early_param("cma", early_cma);
+ 
+ #ifdef CONFIG_CMA_SIZE_PERCENTAGE
+ 
+-static unsigned long __init __maybe_unused cma_early_percent_memory(void)
++static phys_addr_t __init __maybe_unused cma_early_percent_memory(void)
+ {
+ 	struct memblock_region *reg;
+ 	unsigned long total_pages = 0;
+@@ -91,7 +91,7 @@ static unsigned long __init __maybe_unused cma_early_percent_memory(void)
+ 
+ #else
+ 
+-static inline __maybe_unused unsigned long cma_early_percent_memory(void)
++static inline __maybe_unused phys_addr_t cma_early_percent_memory(void)
+ {
+ 	return 0;
+ }
+@@ -109,7 +109,7 @@ static inline __maybe_unused unsigned long cma_early_percent_memory(void)
+  */
+ void __init dma_contiguous_reserve(phys_addr_t limit)
+ {
+-	unsigned long selected_size = 0;
++	phys_addr_t selected_size = 0;
+ 
+ 	pr_debug("%s(limit %08lx)\n", __func__, (unsigned long)limit);
+ 
+@@ -129,7 +129,7 @@ void __init dma_contiguous_reserve(phys_addr_t limit)
+ 
+ 	if (selected_size) {
+ 		pr_debug("%s: reserving %ld MiB for global area\n", __func__,
+-			 selected_size / SZ_1M);
++			 (unsigned long)selected_size / SZ_1M);
+ 
+ 		dma_declare_contiguous(NULL, selected_size, 0, limit);
+ 	}
+@@ -230,11 +230,11 @@ core_initcall(cma_init_reserved_areas);
+  * called by board specific code when early allocator (memblock or bootmem)
+  * is still activate.
+  */
+-int __init dma_declare_contiguous(struct device *dev, unsigned long size,
++int __init dma_declare_contiguous(struct device *dev, phys_addr_t size,
+ 				  phys_addr_t base, phys_addr_t limit)
+ {
+ 	struct cma_reserved *r = &cma_reserved[cma_reserved_count];
+-	unsigned long alignment;
++	phys_addr_t alignment;
+ 
+ 	pr_debug("%s(size %lx, base %08lx, limit %08lx)\n", __func__,
+ 		 (unsigned long)size, (unsigned long)base,
+@@ -271,10 +271,6 @@ int __init dma_declare_contiguous(struct device *dev, unsigned long size,
+ 		if (!addr) {
+ 			base = -ENOMEM;
+ 			goto err;
+-		} else if (addr + size > ~(unsigned long)0) {
+-			memblock_free(addr, size);
+-			base = -EINVAL;
+-			goto err;
+ 		} else {
+ 			base = addr;
+ 		}
+diff --git a/include/linux/dma-contiguous.h b/include/linux/dma-contiguous.h
+index 2f303e4..01b5c84 100644
+--- a/include/linux/dma-contiguous.h
++++ b/include/linux/dma-contiguous.h
+@@ -68,7 +68,7 @@ struct device;
+ extern struct cma *dma_contiguous_default_area;
+ 
+ void dma_contiguous_reserve(phys_addr_t addr_limit);
+-int dma_declare_contiguous(struct device *dev, unsigned long size,
++int dma_declare_contiguous(struct device *dev, phys_addr_t size,
+ 			   phys_addr_t base, phys_addr_t limit);
+ 
+ struct page *dma_alloc_from_contiguous(struct device *dev, int count,
+@@ -83,7 +83,7 @@ bool dma_release_from_contiguous(struct device *dev, struct page *pages,
+ static inline void dma_contiguous_reserve(phys_addr_t limit) { }
+ 
+ static inline
+-int dma_declare_contiguous(struct device *dev, unsigned long size,
++int dma_declare_contiguous(struct device *dev, phys_addr_t size,
+ 			   phys_addr_t base, phys_addr_t limit)
+ {
+ 	return -ENOSYS;
 -- 
-Mel Gorman
-SUSE Labs
+1.7.9.5
+
