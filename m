@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751977Ab2LCSju (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 13:39:50 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:59846 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751752Ab2LCSjq (ORCPT
+	id S1751959Ab2LCSlg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 13:41:36 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:39280 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751661Ab2LCSlf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 13:39:46 -0500
-Message-ID: <50BCF1EC.7090300@pobox.com>
-Date: Mon, 03 Dec 2012 13:39:40 -0500
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-CC: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ata_piix: re-oder code and remove prototypes
-References: <201211301156.04953.b.zolnierkie@samsung.com> <50BCFDAD.6070209@mvista.com>
-In-Reply-To: <50BCFDAD.6070209@mvista.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 3 Dec 2012 13:41:35 -0500
+Date: Mon, 03 Dec 2012 13:41:32 -0500 (EST)
+Message-Id: <20121203.134132.558381056546064453.davem@davemloft.net>
+To: mst@redhat.com
+Cc: netdev@vger.kernel.org, jasowang@redhat.com, nhorman@tuxdriver.com,
+        ramirose@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tun: only queue packets on device
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20121203131942.GA27953@redhat.com>
+References: <20121203131942.GA27953@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2012 02:29 PM, Sergei Shtylyov wrote:
-> Hello.
->
-> On 11/30/2012 01:56 PM, Bartlomiej Zolnierkiewicz wrote:
->
->> From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
->> Subject: [PATCH] ata_piix: re-oder code and remove prototypes
->
->     You meant "re-order", I think.
->
->> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> ---
->> Jeff, please apply.  Thanks!
->
->     Perhaps Jeff can correct the typo too...
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Date: Mon, 3 Dec 2012 15:19:43 +0200
 
-Yep, corrected and results in libata-dev.git already
+> Historically tun supported two modes of operation:
+> - in default mode, a small number of packets would get queued
+>   at the device, the rest would be queued in qdisc
+> - in one queue mode, all packets would get queued at the device
+> 
+> This might have made sense up to a point where we made the
+> queue depth for both modes the same and set it to
+> a huge value (500) so unless the consumer
+> is stuck the chance of losing packets is small.
+> 
+> Thus in practice both modes behave the same, but the
+> default mode has some problems:
+> - if packets are never consumed, fragments are never orphaned
+>   which cases a DOS for sender using zero copy transmit
+> - overrun errors are hard to diagnose: fifo error is incremented
+>   only once so you can not distinguish between
+>   userspace that is stuck and a transient failure,
+>   tcpdump on the device does not show any traffic
+> 
+> Userspace solves this simply by enabling IFF_ONE_QUEUE
+> but there seems to be little point in not doing the
+> right thing for everyone, by default.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
+Now that TUN_NO_QUEUE has no real effect and is a NOP, please document
+it as such both in if_tun.h and the places in the driver that flip the
+bit based upon userspace requests.
 
-
+Thanks.
