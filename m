@@ -1,480 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752987Ab2LCVER (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 16:04:17 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:39673 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752599Ab2LCU7c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 15:59:32 -0500
-From: Kent Overstreet <koverstreet@google.com>
-To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org
-Cc: zab@redhat.com, bcrl@kvack.org, jmoyer@redhat.com, axboe@kernel.dk,
-        viro@zeniv.linux.org.uk, Kent Overstreet <koverstreet@google.com>
-Subject: [PATCH 12/26] aio: Refcounting cleanup
-Date: Mon,  3 Dec 2012 12:58:28 -0800
-Message-Id: <1354568322-29029-13-git-send-email-koverstreet@google.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1354568322-29029-1-git-send-email-koverstreet@google.com>
-References: <1354568322-29029-1-git-send-email-koverstreet@google.com>
+	id S1753018Ab2LCVEc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 16:04:32 -0500
+Received: from mga03.intel.com ([143.182.124.21]:45065 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752641Ab2LCVE3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 16:04:29 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,209,1355126400"; 
+   d="asc'?scan'208";a="175607345"
+Message-ID: <1354568667.2030.9.camel@jtkirshe-mobl>
+Subject: Re: [PATCH] ixgbe: Use is_valid_ether_addr
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Reply-To: jeffrey.t.kirsher@intel.com
+To: Joe Perches <joe@perches.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 03 Dec 2012 13:04:27 -0800
+In-Reply-To: <1354556831.3524.0.camel@joe-AO722>
+References: <1350750159.10791.3.camel@joe-AO722>
+	 <1354556831.3524.0.camel@joe-AO722>
+Organization: Intel Corporation
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-GzXn3XQPzvz+EsF8hAPy"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The usage of ctx->dead was fubar - it makes no sense to explicitly
-check it all over the place, especially when we're already using RCU.
 
-Now, ctx->dead only indicates whether we've dropped the initial
-refcount. The new teardown sequence is:
-set ctx->dead
-hlist_del_rcu();
-synchronize_rcu();
+--=-GzXn3XQPzvz+EsF8hAPy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Now we know no system calls can take a new ref, and it's safe to drop
-the initial ref:
-put_ioctx();
+On Mon, 2012-12-03 at 09:47 -0800, Joe Perches wrote:
+> On Sat, 2012-10-20 at 09:22 -0700, Joe Perches wrote:
+> > Use the normal kernel test instead of a module specific one.
+>=20
+> ping?
 
-We also need to ensure there are no more outstanding kiocbs. This was
-done incorrectly - it was being done in kill_ctx(), and before dropping
-the initial refcount. At this point, other syscalls may still be
-submitting kiocbs!
+Your timely is perfect, I just cleared out all the ixgbe patches in my
+queue that were before yours, and your patch (along with several others)
+are finishing up validation.  So I should be pushing your patch along
+with other ixgbe patches this week sometime, as long as Dave's net-next
+remains open long enough for me to push. :-)
 
-Now, we cancel and wait for outstanding kiocbs in free_ioctx(), after
-kioctx->users has dropped to 0 and we know no more iocbs could be
-submitted.
+>=20
+> > Signed-off-by: Joe Perches <joe@perches.com>
+> > ---
+> > found when doing that larger style conversion,
+> > might as well submit it.
+> >=20
+> >  drivers/net/ethernet/intel/ixgbe/ixgbe_82599.c  |  2 +-
+> >  drivers/net/ethernet/intel/ixgbe/ixgbe_common.c | 27 +----------------=
+--------
+> >  drivers/net/ethernet/intel/ixgbe/ixgbe_common.h |  1 -
+> >  drivers/net/ethernet/intel/ixgbe/ixgbe_main.c   |  2 +-
+> >  drivers/net/ethernet/intel/ixgbe/ixgbe_type.h   |  9 ---------
+> >  drivers/net/ethernet/intel/ixgbe/ixgbe_x540.c   |  2 +-
+> >  6 files changed, 4 insertions(+), 39 deletions(-)
+> >=20
+> > diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_82599.c b/drivers/n=
+et/ethernet/intel/ixgbe/ixgbe_82599.c
+> > index 1077cb2..89fe00d 100644
+> > --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_82599.c
+> > +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_82599.c
+> > @@ -1022,7 +1022,7 @@ mac_reset_top:
+> >  	hw->mac.ops.get_san_mac_addr(hw, hw->mac.san_addr);
+> > =20
+> >  	/* Add the SAN MAC address to the RAR only if it's a valid address */
+> > -	if (ixgbe_validate_mac_addr(hw->mac.san_addr) =3D=3D 0) {
+> > +	if (is_valid_ether_addr(hw->mac.san_addr)) {
+> >  		hw->mac.ops.set_rar(hw, hw->mac.num_rar_entries - 1,
+> >  		                    hw->mac.san_addr, 0, IXGBE_RAH_AV);
+> > =20
+> > diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_common.c b/drivers/=
+net/ethernet/intel/ixgbe/ixgbe_common.c
+> > index dbf37e4..2d8f76d 100644
+> > --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_common.c
+> > +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_common.c
+> > @@ -1762,30 +1762,6 @@ s32 ixgbe_update_eeprom_checksum_generic(struct =
+ixgbe_hw *hw)
+> >  }
+> > =20
+> >  /**
+> > - *  ixgbe_validate_mac_addr - Validate MAC address
+> > - *  @mac_addr: pointer to MAC address.
+> > - *
+> > - *  Tests a MAC address to ensure it is a valid Individual Address
+> > - **/
+> > -s32 ixgbe_validate_mac_addr(u8 *mac_addr)
+> > -{
+> > -	s32 status =3D 0;
+> > -
+> > -	/* Make sure it is not a multicast address */
+> > -	if (IXGBE_IS_MULTICAST(mac_addr))
+> > -		status =3D IXGBE_ERR_INVALID_MAC_ADDR;
+> > -	/* Not a broadcast address */
+> > -	else if (IXGBE_IS_BROADCAST(mac_addr))
+> > -		status =3D IXGBE_ERR_INVALID_MAC_ADDR;
+> > -	/* Reject the zero address */
+> > -	else if (mac_addr[0] =3D=3D 0 && mac_addr[1] =3D=3D 0 && mac_addr[2] =
+=3D=3D 0 &&
+> > -	         mac_addr[3] =3D=3D 0 && mac_addr[4] =3D=3D 0 && mac_addr[5] =
+=3D=3D 0)
+> > -		status =3D IXGBE_ERR_INVALID_MAC_ADDR;
+> > -
+> > -	return status;
+> > -}
+> > -
+> > -/**
+> >   *  ixgbe_set_rar_generic - Set Rx address register
+> >   *  @hw: pointer to hardware structure
+> >   *  @index: Receive address register to write
+> > @@ -1889,8 +1865,7 @@ s32 ixgbe_init_rx_addrs_generic(struct ixgbe_hw *=
+hw)
+> >  	 * to the permanent address.
+> >  	 * Otherwise, use the permanent address from the eeprom.
+> >  	 */
+> > -	if (ixgbe_validate_mac_addr(hw->mac.addr) =3D=3D
+> > -	    IXGBE_ERR_INVALID_MAC_ADDR) {
+> > +	if (!is_valid_ether_addr(hw->mac.addr)) {
+> >  		/* Get the MAC address from the RAR0 for later reference */
+> >  		hw->mac.ops.get_mac_addr(hw, hw->mac.addr);
+> > =20
+> > diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_common.h b/drivers/=
+net/ethernet/intel/ixgbe/ixgbe_common.h
+> > index d813d11..f49ca84 100644
+> > --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_common.h
+> > +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_common.h
+> > @@ -80,7 +80,6 @@ s32 ixgbe_enable_rx_dma_generic(struct ixgbe_hw *hw, =
+u32 regval);
+> >  s32 ixgbe_fc_enable_generic(struct ixgbe_hw *hw);
+> >  void ixgbe_fc_autoneg(struct ixgbe_hw *hw);
+> > =20
+> > -s32 ixgbe_validate_mac_addr(u8 *mac_addr);
+> >  s32 ixgbe_acquire_swfw_sync(struct ixgbe_hw *hw, u16 mask);
+> >  void ixgbe_release_swfw_sync(struct ixgbe_hw *hw, u16 mask);
+> >  s32 ixgbe_get_san_mac_addr_generic(struct ixgbe_hw *hw, u8 *san_mac_ad=
+dr);
+> > diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/ne=
+t/ethernet/intel/ixgbe/ixgbe_main.c
+> > index e2a6691..3bb3485 100644
+> > --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+> > +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
+> > @@ -7345,7 +7345,7 @@ static int __devinit ixgbe_probe(struct pci_dev *=
+pdev,
+> >  	memcpy(netdev->dev_addr, hw->mac.perm_addr, netdev->addr_len);
+> >  	memcpy(netdev->perm_addr, hw->mac.perm_addr, netdev->addr_len);
+> > =20
+> > -	if (ixgbe_validate_mac_addr(netdev->perm_addr)) {
+> > +	if (!is_valid_ether_addr(netdev->perm_addr)) {
+> >  		e_dev_err("invalid MAC address\n");
+> >  		err =3D -EIO;
+> >  		goto err_sw_init;
+> > diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h b/drivers/ne=
+t/ethernet/intel/ixgbe/ixgbe_type.h
+> > index 0722f33..9ddac64 100644
+> > --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
+> > +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
+> > @@ -1833,15 +1833,6 @@ enum {
+> >  /* Number of 100 microseconds we wait for PCI Express master disable *=
+/
+> >  #define IXGBE_PCI_MASTER_DISABLE_TIMEOUT 800
+> > =20
+> > -/* Check whether address is multicast.  This is little-endian specific=
+ check.*/
+> > -#define IXGBE_IS_MULTICAST(Address) \
+> > -                (bool)(((u8 *)(Address))[0] & ((u8)0x01))
+> > -
+> > -/* Check whether an address is broadcast. */
+> > -#define IXGBE_IS_BROADCAST(Address)                      \
+> > -                ((((u8 *)(Address))[0] =3D=3D ((u8)0xff)) && \
+> > -                (((u8 *)(Address))[1] =3D=3D ((u8)0xff)))
+> > -
+> >  /* RAH */
+> >  #define IXGBE_RAH_VIND_MASK     0x003C0000
+> >  #define IXGBE_RAH_VIND_SHIFT    18
+> > diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_x540.c b/drivers/ne=
+t/ethernet/intel/ixgbe/ixgbe_x540.c
+> > index de4da52..c73b929 100644
+> > --- a/drivers/net/ethernet/intel/ixgbe/ixgbe_x540.c
+> > +++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_x540.c
+> > @@ -152,7 +152,7 @@ mac_reset_top:
+> >  	hw->mac.ops.get_san_mac_addr(hw, hw->mac.san_addr);
+> > =20
+> >  	/* Add the SAN MAC address to the RAR only if it's a valid address */
+> > -	if (ixgbe_validate_mac_addr(hw->mac.san_addr) =3D=3D 0) {
+> > +	if (is_valid_ether_addr(hw->mac.san_addr)) {
+> >  		hw->mac.ops.set_rar(hw, hw->mac.num_rar_entries - 1,
+> >  		                    hw->mac.san_addr, 0, IXGBE_RAH_AV);
+> > =20
+> >=20
+>=20
+>=20
+>=20
 
-v2: Kill a bogus BUG_ON(ctx->dead) in lookup_ioctx, use
-list_first_entry() instead of list_kiocb(), and convert
-synchronize_rcu() calls to call_rcu() (and document them)
 
-Signed-off-by: Kent Overstreet <koverstreet@google.com>
----
- fs/aio.c | 274 ++++++++++++++++++++++++++++-----------------------------------
- 1 file changed, 120 insertions(+), 154 deletions(-)
 
-diff --git a/fs/aio.c b/fs/aio.c
-index 4c9a5bf..7b75590 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -79,7 +79,7 @@ static inline unsigned aio_ring_avail(struct aio_ring_info *info,
- 
- struct kioctx {
- 	atomic_t		users;
--	int			dead;
-+	atomic_t		dead;
- 
- 	/* This needs improving */
- 	unsigned long		user_id;
-@@ -98,6 +98,7 @@ struct kioctx {
- 	struct aio_ring_info	ring_info;
- 
- 	struct rcu_head		rcu_head;
-+	struct work_struct	rcu_work;
- };
- 
- /*------ sysctl variables----*/
-@@ -234,44 +235,6 @@ static int aio_setup_ring(struct kioctx *ctx)
- 	kunmap_atomic((void *)((unsigned long)__event & PAGE_MASK)); \
- } while(0)
- 
--static void ctx_rcu_free(struct rcu_head *head)
--{
--	struct kioctx *ctx = container_of(head, struct kioctx, rcu_head);
--	kmem_cache_free(kioctx_cachep, ctx);
--}
--
--/* __put_ioctx
-- *	Called when the last user of an aio context has gone away,
-- *	and the struct needs to be freed.
-- */
--static void __put_ioctx(struct kioctx *ctx)
--{
--	unsigned nr_events = ctx->max_reqs;
--	BUG_ON(atomic_read(&ctx->reqs_active));
--
--	aio_free_ring(ctx);
--	if (nr_events) {
--		spin_lock(&aio_nr_lock);
--		BUG_ON(aio_nr - nr_events > aio_nr);
--		aio_nr -= nr_events;
--		spin_unlock(&aio_nr_lock);
--	}
--	pr_debug("freeing %p\n", ctx);
--	call_rcu(&ctx->rcu_head, ctx_rcu_free);
--}
--
--static inline int try_get_ioctx(struct kioctx *kioctx)
--{
--	return atomic_inc_not_zero(&kioctx->users);
--}
--
--static inline void put_ioctx(struct kioctx *kioctx)
--{
--	BUG_ON(atomic_read(&kioctx->users) <= 0);
--	if (unlikely(atomic_dec_and_test(&kioctx->users)))
--		__put_ioctx(kioctx);
--}
--
- static int kiocb_cancel(struct kioctx *ctx, struct kiocb *kiocb,
- 			struct io_event *res)
- {
-@@ -295,6 +258,61 @@ static int kiocb_cancel(struct kioctx *ctx, struct kiocb *kiocb,
- 	return ret;
- }
- 
-+static void free_ioctx_rcu(struct rcu_head *head)
-+{
-+	struct kioctx *ctx = container_of(head, struct kioctx, rcu_head);
-+	kmem_cache_free(kioctx_cachep, ctx);
-+}
-+
-+/*
-+ * When this function runs, the kioctx has been removed from the "hash table"
-+ * and ctx->users has dropped to 0, so we know no more kiocbs can be submitted -
-+ * now it's safe to cancel any that need to be.
-+ */
-+static void free_ioctx(struct kioctx *ctx)
-+{
-+	struct io_event res;
-+	struct kiocb *iocb;
-+
-+	spin_lock_irq(&ctx->ctx_lock);
-+
-+	while (!list_empty(&ctx->active_reqs)) {
-+		iocb = list_first_entry(&ctx->active_reqs,
-+					struct kiocb, ki_list);
-+
-+		list_del_init(&iocb->ki_list);
-+		kiocb_cancel(ctx, iocb, &res);
-+	}
-+
-+	spin_unlock_irq(&ctx->ctx_lock);
-+
-+	wait_event(ctx->wait, !atomic_read(&ctx->reqs_active));
-+
-+	aio_free_ring(ctx);
-+
-+	spin_lock(&aio_nr_lock);
-+	BUG_ON(aio_nr - ctx->max_reqs > aio_nr);
-+	aio_nr -= ctx->max_reqs;
-+	spin_unlock(&aio_nr_lock);
-+
-+	pr_debug("freeing %p\n", ctx);
-+
-+	/*
-+	 * Here the call_rcu() is between the wait_event() for reqs_active to
-+	 * hit 0, and freeing the ioctx.
-+	 *
-+	 * aio_complete() decrements reqs_active, but it has to touch the ioctx
-+	 * after to issue a wakeup so we use rcu.
-+	 */
-+	call_rcu(&ctx->rcu_head, free_ioctx_rcu);
-+}
-+
-+static void put_ioctx(struct kioctx *ctx)
-+{
-+	if (unlikely(atomic_dec_and_test(&ctx->users)))
-+		free_ioctx(ctx);
-+}
-+
- /* ioctx_alloc
-  *	Allocates and initializes an ioctx.  Returns an ERR_PTR if it failed.
-  */
-@@ -321,6 +339,7 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
- 	ctx->max_reqs = nr_events;
- 
- 	atomic_set(&ctx->users, 2);
-+	atomic_set(&ctx->dead, 0);
- 	spin_lock_init(&ctx->ctx_lock);
- 	spin_lock_init(&ctx->ring_info.ring_lock);
- 	init_waitqueue_head(&ctx->wait);
-@@ -358,43 +377,43 @@ out_freectx:
- 	return ERR_PTR(err);
- }
- 
--/* kill_ctx
-- *	Cancels all outstanding aio requests on an aio context.  Used 
-- *	when the processes owning a context have all exited to encourage 
-- *	the rapid destruction of the kioctx.
-- */
--static void kill_ctx(struct kioctx *ctx)
-+static void kill_ioctx_work(struct work_struct *work)
- {
--	struct task_struct *tsk = current;
--	DECLARE_WAITQUEUE(wait, tsk);
--	struct io_event res;
-+	struct kioctx *ctx = container_of(work, struct kioctx, rcu_work);
- 
--	spin_lock_irq(&ctx->ctx_lock);
--	ctx->dead = 1;
--	while (!list_empty(&ctx->active_reqs)) {
--		struct list_head *pos = ctx->active_reqs.next;
--		struct kiocb *iocb = list_kiocb(pos);
--		list_del_init(&iocb->ki_list);
-+	wake_up_all(&ctx->wait);
-+	put_ioctx(ctx);
-+}
- 
--		kiocb_cancel(ctx, iocb, &res);
--	}
-+static void kill_ioctx_rcu(struct rcu_head *head)
-+{
-+	struct kioctx *ctx = container_of(head, struct kioctx, rcu_head);
- 
--	if (!atomic_read(&ctx->reqs_active))
--		goto out;
-+	INIT_WORK(&ctx->rcu_work, kill_ioctx_work);
-+	schedule_work(&ctx->rcu_work);
-+}
- 
--	add_wait_queue(&ctx->wait, &wait);
--	set_task_state(tsk, TASK_UNINTERRUPTIBLE);
--	while (atomic_read(&ctx->reqs_active)) {
--		spin_unlock_irq(&ctx->ctx_lock);
--		io_schedule();
--		set_task_state(tsk, TASK_UNINTERRUPTIBLE);
--		spin_lock_irq(&ctx->ctx_lock);
--	}
--	__set_task_state(tsk, TASK_RUNNING);
--	remove_wait_queue(&ctx->wait, &wait);
-+/* kill_ioctx
-+ *	Cancels all outstanding aio requests on an aio context.  Used
-+ *	when the processes owning a context have all exited to encourage
-+ *	the rapid destruction of the kioctx.
-+ */
-+static void kill_ioctx(struct kioctx *ctx)
-+{
-+	if (!atomic_xchg(&ctx->dead, 1)) {
-+		hlist_del_rcu(&ctx->list);
-+		/* Between hlist_del_rcu() and dropping the initial ref */
-+		synchronize_rcu();
- 
--out:
--	spin_unlock_irq(&ctx->ctx_lock);
-+		/*
-+		 * We can't punt to workqueue here because put_ioctx() ->
-+		 * free_ioctx() will unmap the ringbuffer, and that has to be
-+		 * done in the original process's context. kill_ioctx_rcu/work()
-+		 * exist for exit_aio(), as in that path free_ioctx() won't do
-+		 * the unmap.
-+		 */
-+		kill_ioctx_work(&ctx->rcu_work);
-+	}
- }
- 
- /* wait_on_sync_kiocb:
-@@ -413,27 +432,25 @@ ssize_t wait_on_sync_kiocb(struct kiocb *iocb)
- }
- EXPORT_SYMBOL(wait_on_sync_kiocb);
- 
--/* exit_aio: called when the last user of mm goes away.  At this point, 
-- * there is no way for any new requests to be submited or any of the 
-- * io_* syscalls to be called on the context.  However, there may be 
-- * outstanding requests which hold references to the context; as they 
-- * go away, they will call put_ioctx and release any pinned memory
-- * associated with the request (held via struct page * references).
-+/*
-+ * exit_aio: called when the last user of mm goes away.  At this point, there is
-+ * no way for any new requests to be submited or any of the io_* syscalls to be
-+ * called on the context.
-+ *
-+ * There may be outstanding kiocbs, but free_ioctx() will explicitly wait on
-+ * them.
-  */
- void exit_aio(struct mm_struct *mm)
- {
- 	struct kioctx *ctx;
-+	struct hlist_node *p, *n;
- 
--	while (!hlist_empty(&mm->ioctx_list)) {
--		ctx = hlist_entry(mm->ioctx_list.first, struct kioctx, list);
--		hlist_del_rcu(&ctx->list);
--
--		kill_ctx(ctx);
--
-+	hlist_for_each_entry_safe(ctx, p, n, &mm->ioctx_list, list) {
- 		if (1 != atomic_read(&ctx->users))
- 			printk(KERN_DEBUG
- 				"exit_aio:ioctx still alive: %d %d %d\n",
--				atomic_read(&ctx->users), ctx->dead,
-+				atomic_read(&ctx->users),
-+				atomic_read(&ctx->dead),
- 				atomic_read(&ctx->reqs_active));
- 		/*
- 		 * We don't need to bother with munmap() here -
-@@ -444,7 +461,11 @@ void exit_aio(struct mm_struct *mm)
- 		 * place that uses ->mmap_size, so it's safe.
- 		 */
- 		ctx->ring_info.mmap_size = 0;
--		put_ioctx(ctx);
-+
-+		if (!atomic_xchg(&ctx->dead, 1)) {
-+			hlist_del_rcu(&ctx->list);
-+			call_rcu(&ctx->rcu_head, kill_ioctx_rcu);
-+		}
- 	}
- }
- 
-@@ -510,8 +531,6 @@ static void kiocb_batch_free(struct kioctx *ctx, struct kiocb_batch *batch)
- 		kmem_cache_free(kiocb_cachep, req);
- 		atomic_dec(&ctx->reqs_active);
- 	}
--	if (unlikely(!atomic_read(&ctx->reqs_active) && ctx->dead))
--		wake_up_all(&ctx->wait);
- 	spin_unlock_irq(&ctx->ctx_lock);
- }
- 
-@@ -607,18 +626,12 @@ static struct kioctx *lookup_ioctx(unsigned long ctx_id)
- 
- 	rcu_read_lock();
- 
--	hlist_for_each_entry_rcu(ctx, n, &mm->ioctx_list, list) {
--		/*
--		 * RCU protects us against accessing freed memory but
--		 * we have to be careful not to get a reference when the
--		 * reference count already dropped to 0 (ctx->dead test
--		 * is unreliable because of races).
--		 */
--		if (ctx->user_id == ctx_id && !ctx->dead && try_get_ioctx(ctx)){
-+	hlist_for_each_entry_rcu(ctx, n, &mm->ioctx_list, list)
-+		if (ctx->user_id == ctx_id){
-+			atomic_inc(&ctx->users);
- 			ret = ctx;
- 			break;
- 		}
--	}
- 
- 	rcu_read_unlock();
- 	return ret;
-@@ -655,12 +668,15 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
- 
- 	info = &ctx->ring_info;
- 
--	/* add a completion event to the ring buffer.
--	 * must be done holding ctx->ctx_lock to prevent
--	 * other code from messing with the tail
--	 * pointer since we might be called from irq
--	 * context.
-+	/*
-+	 * Add a completion event to the ring buffer. Must be done holding
-+	 * ctx->ctx_lock to prevent other code from messing with the tail
-+	 * pointer since we might be called from irq context.
-+	 *
-+	 * Take rcu_read_lock() in case the kioctx is being destroyed, as we
-+	 * need to issue a wakeup after decrementing reqs_active.
- 	 */
-+	rcu_read_lock();
- 	spin_lock_irqsave(&ctx->ctx_lock, flags);
- 
- 	list_del(&iocb->ki_list); /* remove from active_reqs */
-@@ -726,6 +742,7 @@ put_rq:
- 		wake_up(&ctx->wait);
- 
- 	spin_unlock_irqrestore(&ctx->ctx_lock, flags);
-+	rcu_read_unlock();
- }
- EXPORT_SYMBOL(aio_complete);
- 
-@@ -869,7 +886,7 @@ static int read_events(struct kioctx *ctx,
- 				break;
- 			if (min_nr <= i)
- 				break;
--			if (unlikely(ctx->dead)) {
-+			if (unlikely(atomic_read(&ctx->dead))) {
- 				ret = -EINVAL;
- 				break;
- 			}
-@@ -912,35 +929,6 @@ out:
- 	return i ? i : ret;
- }
- 
--/* Take an ioctx and remove it from the list of ioctx's.  Protects 
-- * against races with itself via ->dead.
-- */
--static void io_destroy(struct kioctx *ioctx)
--{
--	struct mm_struct *mm = current->mm;
--	int was_dead;
--
--	/* delete the entry from the list is someone else hasn't already */
--	spin_lock(&mm->ioctx_lock);
--	was_dead = ioctx->dead;
--	ioctx->dead = 1;
--	hlist_del_rcu(&ioctx->list);
--	spin_unlock(&mm->ioctx_lock);
--
--	pr_debug("(%p)\n", ioctx);
--	if (likely(!was_dead))
--		put_ioctx(ioctx);	/* twice for the list */
--
--	kill_ctx(ioctx);
--
--	/*
--	 * Wake up any waiters.  The setting of ctx->dead must be seen
--	 * by other CPUs at this point.  Right now, we rely on the
--	 * locking done by the above calls to ensure this consistency.
--	 */
--	wake_up_all(&ioctx->wait);
--}
--
- /* sys_io_setup:
-  *	Create an aio_context capable of receiving at least nr_events.
-  *	ctxp must not point to an aio_context that already exists, and
-@@ -976,7 +964,7 @@ SYSCALL_DEFINE2(io_setup, unsigned, nr_events, aio_context_t __user *, ctxp)
- 	if (!IS_ERR(ioctx)) {
- 		ret = put_user(ioctx->user_id, ctxp);
- 		if (ret)
--			io_destroy(ioctx);
-+			kill_ioctx(ioctx);
- 		put_ioctx(ioctx);
- 	}
- 
-@@ -994,7 +982,7 @@ SYSCALL_DEFINE1(io_destroy, aio_context_t, ctx)
- {
- 	struct kioctx *ioctx = lookup_ioctx(ctx);
- 	if (likely(NULL != ioctx)) {
--		io_destroy(ioctx);
-+		kill_ioctx(ioctx);
- 		put_ioctx(ioctx);
- 		return 0;
- 	}
-@@ -1297,25 +1285,6 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
- 	if (ret)
- 		goto out_put_req;
- 
--	spin_lock_irq(&ctx->ctx_lock);
--	/*
--	 * We could have raced with io_destroy() and are currently holding a
--	 * reference to ctx which should be destroyed. We cannot submit IO
--	 * since ctx gets freed as soon as io_submit() puts its reference.  The
--	 * check here is reliable: io_destroy() sets ctx->dead before waiting
--	 * for outstanding IO and the barrier between these two is realized by
--	 * unlock of mm->ioctx_lock and lock of ctx->ctx_lock.  Analogously we
--	 * increment ctx->reqs_active before checking for ctx->dead and the
--	 * barrier is realized by unlock and lock of ctx->ctx_lock. Thus if we
--	 * don't see ctx->dead set here, io_destroy() waits for our IO to
--	 * finish.
--	 */
--	if (ctx->dead)
--		ret = -EINVAL;
--	spin_unlock_irq(&ctx->ctx_lock);
--	if (ret)
--		goto out_put_req;
--
- 	if (unlikely(kiocbIsCancelled(req))) {
- 		ret = -EINTR;
- 	} else {
-@@ -1341,9 +1310,6 @@ out_put_req:
- 	spin_unlock_irq(&ctx->ctx_lock);
- 
- 	atomic_dec(&ctx->reqs_active);
--	if (unlikely(!atomic_read(&ctx->reqs_active) && ctx->dead))
--		wake_up_all(&ctx->wait);
--
- 	aio_put_req(req);	/* drop extra ref to req */
- 	aio_put_req(req);	/* drop i/o ref to req */
- 	return ret;
--- 
-1.7.12
+--=-GzXn3XQPzvz+EsF8hAPy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABCgAGBQJQvRPcAAoJEOVv75VaS+3OVdwQAIllmsvkp/eAYAsrCSH/sQrj
+l9JFYjtJDy2bdnk0KKzCLtdBCjfs8j0T5OwjaJzwR4TvTLFoRoISP1PikBxkT8VX
+tvYaRqDMqsUFIem6eNjMFZdXQrqfWwEkNA+45E5sfZWYr9kM4Az56L7WxMBRkQV2
+4E1WJd1VcJnoT252T1RW5LTMwcmaOduvF8HN0mLWeFgpTwkmeDkGykbZgzvQjJG5
+6WWhy89qx6abjJfXaheUCew8XAgLsQE8meRj/eW39YeipQ4trhZFGgs+V9JYP/+4
+Xm4XGCHrCxcBjsMD38D4+9BpZi97Pb//e0a7TWfdlAO0lrXXiNtFXC9jNiBW8nSb
+YnMLUHbmCz+GuVNryDdJXzM0pZ1qwrLB5YAYxhlS1SSEa4HNksIc9CLMZHe8NKux
+5/Sl2VwExArssf6hUDfrPuZUYrvbET978xgUkJjOUaHqG4z6SHPrSAVQNa37CU4S
+qRRyvkjKyMrb7B6mh/9zexJPBcJFuILjhNmjKQorwyqFu8+/wb2aOvUnvHhMuvzt
+zorUTKgHrJaUcAcMSrgXtvi/dcJVnqZVTnv+mV2fYdW9XfwYYQjtN+cNLgzdTKA2
+i4utjxbsVmIigp9hXQCXQExJyU0KHXBcHEqgcPbOHDFwB32h/iWRruD/X2PFGAPW
+3YPo6vlEzmyvZE7omn+h
+=HM2l
+-----END PGP SIGNATURE-----
+
+--=-GzXn3XQPzvz+EsF8hAPy--
 
