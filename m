@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755572Ab2LCR1R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 12:27:17 -0500
-Received: from 8bytes.org ([85.214.48.195]:46749 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755214Ab2LCR1Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 12:27:16 -0500
-Date: Mon, 3 Dec 2012 18:27:12 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Sethi Varun-B16395 <B16395@freescale.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        Wood Scott-B07421 <B07421@freescale.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Tabi Timur-B04825 <B04825@freescale.com>
-Subject: Re: [PATCH 3/4 v5] iommu/fsl: Add iommu domain attributes required
- by fsl PAMU driver.
-Message-ID: <20121203172712.GA18368@8bytes.org>
-References: <1353419697-31269-1-git-send-email-Varun.Sethi@freescale.com>
- <1353419697-31269-4-git-send-email-Varun.Sethi@freescale.com>
- <20121202140323.GO30633@8bytes.org>
- <C5ECD7A89D1DC44195F34B25E172658D2B2A51@039-SN2MPN1-013.039d.mgd.msft.net>
+	id S1755608Ab2LCR1v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 12:27:51 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59466 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755450Ab2LCR1t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 12:27:49 -0500
+Message-ID: <50BCE112.3050203@wwwdotorg.org>
+Date: Mon, 03 Dec 2012 10:27:46 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <C5ECD7A89D1DC44195F34B25E172658D2B2A51@039-SN2MPN1-013.039d.mgd.msft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Mon Dec  3 18:27:14 2012
-X-DSPAM-Confidence: 0.9993
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 50bce0f222979526839415
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Michal Marek <mmarek@suse.cz>, Grant Likely <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Sam Ravnborg <sam@ravnborg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH V7 3/7] arm64: use new common dtc rule
+References: <1354058956-7199-1-git-send-email-swarren@wwwdotorg.org> <1354058956-7199-3-git-send-email-swarren@wwwdotorg.org> <20121129143041.GC30437@arm.com>
+In-Reply-To: <20121129143041.GC30437@arm.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 03, 2012 at 04:57:29PM +0000, Sethi Varun-B16395 wrote:
+On 11/29/2012 07:30 AM, Catalin Marinas wrote:
+> On Tue, Nov 27, 2012 at 11:29:12PM +0000, Stephen Warren wrote:
+>> From: Stephen Warren <swarren@nvidia.com>
+>>
+>> The current rules have the .dtb files build in a different directory
+>> from the .dts files. This patch changes arm64 to use the generic dtb
+>> rule which builds .dtb files in the same directory as the source .dts.
+>>
+>> This requires moving parts of arch/arm64/boot/Makefile into newly created
+>> arch/arm64/boot/dts/Makefile, and updating arch/arm64/Makefile to call the
+>> new Makefile.
+>>
+>> Cc: Catalin Marinas <catalin.marinas@arm.com>
+>> Cc: linux-arm-kernel@lists.infradead.org
+>> Signed-off-by: Stephen Warren <swarren@nvidia.com>
 > 
-> 
-> > -----Original Message-----
-> > From: iommu-bounces@lists.linux-foundation.org [mailto:iommu-
-> > bounces@lists.linux-foundation.org] On Behalf Of Joerg Roedel
-> > Sent: Sunday, December 02, 2012 7:33 PM
-> > To: Sethi Varun-B16395
-> > Cc: linux-kernel@vger.kernel.org; iommu@lists.linux-foundation.org; Wood
-> > Scott-B07421; linuxppc-dev@lists.ozlabs.org; Tabi Timur-B04825
-> > Subject: Re: [PATCH 3/4 v5] iommu/fsl: Add iommu domain attributes
-> > required by fsl PAMU driver.
-> > 
-> > Hmm, we need to work out a good abstraction for this.
-> > 
-> > On Tue, Nov 20, 2012 at 07:24:56PM +0530, Varun Sethi wrote:
-> > > Added the following domain attributes required by FSL PAMU driver:
-> > > 1. Subwindows field added to the iommu domain geometry attribute.
-> > 
-> > Are the Subwindows mapped with full size or do you map only parts of the
-> > subwindows?
-> > 
-> [Sethi Varun-B16395] It's possible to map a part of the subwindow i.e.
-> size of the mapping can be less than the sub window size.
+> I had a bit more clean-up in a local patch (see attached). Depending on
+> the timing, you can just fold it into your patch (basically removing the
+> MACHINE argument, adding KBUILD_DTBS and dtbs target help). It's been
+> derived from your arch/arm patch anyway ;).
 
-Yes, I know that this is possible. But do you plan to support that or is
-it sufficient when the whole subwindow is mapped?
-
-
-	Joerg
-
-
+Thanks. Just to follow up on this, Rob has applied the series (minus
+Xtensa) to a local tree, I believe intending to take it for 3.8(?), and
+has included a modified version of this patch there (i.e. rebased onto
+my series and hence slightly adjusted for it).
