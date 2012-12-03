@@ -1,101 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787Ab2LCHgV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 02:36:21 -0500
+	id S1753234Ab2LCHgm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 02:36:42 -0500
 Received: from mail-da0-f46.google.com ([209.85.210.46]:37147 "EHLO
 	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751483Ab2LCHgU (ORCPT
+	with ESMTP id S1751483Ab2LCHgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 02:36:20 -0500
-From: Zhangfei Gao <zhangfei.gao@linaro.org>
-To: John Stultz <john.stultz@linaro.org>, Michal Marek <mmarek@suse.cz>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>
-Cc: Zhangfei Gao <zhangfei.gao@linaro.org>
-Subject: [PATCH] merge_config.sh: Add option to specify output dir
-Date: Mon,  3 Dec 2012 15:36:10 +0800
-Message-Id: <1354520170-12844-1-git-send-email-zhangfei.gao@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <50B82DA7.8030404@linaro.org>
-References: <50B82DA7.8030404@linaro.org>
+	Mon, 3 Dec 2012 02:36:40 -0500
+Date: Sun, 2 Dec 2012 23:36:36 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Kamal Mostafa <kamal@canonical.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Henrik Rydberg <rydberg@euromail.se>, David Solda <dso@cypress.com>,
+        Troy Abercrombia <ta@cypress.com>, Dudley Du <dudl@cypress.com>,
+        Cypress Semiconductor Corporation <customercare@cypress.com>,
+        Kyle Fazzari <git@status.e4ward.com>,
+        Mario Limonciello <mario_limonciello@dell.com>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Herton Krzesinski <herton.krzesinski@canonical.com>
+Subject: Re: [PATCH v3 0/4] Cypress PS/2 Trackpad driver
+Message-ID: <20121203073636.GA28682@core.coreip.homeip.net>
+References: <1354226281-3476-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354226281-3476-1-git-send-email-kamal@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide a -O option to specify dir to put generated .config
-Then merge_config.sh does not need to be copied to target dir,
-for easy re-usage in other script
+Hi Kamal,
 
-Signed-off-by: Zhangfei Gao <zhangfei.gao@linaro.org>
-Tested-by: Jon Medhurst (Tixy) <tixy@linaro.org>
----
- scripts/kconfig/merge_config.sh |   20 ++++++++++++++++----
- 1 file changed, 16 insertions(+), 4 deletions(-)
+On Thu, Nov 29, 2012 at 01:57:57PM -0800, Kamal Mostafa wrote:
+> This driver, submitted on behalf of Cypress Semiconductor Corporation and
+> additional contributors, provides support for the Cypress PS/2 Trackpad.
+> 
+> This [PATCH v3] version differs from my previous submitted version[1]:
+> 
+>   Patch #1 (cmdbuf to 8 bytes) and #3 (link in driver) are unchanged.
+> 
+>   Patch #2 (main driver), as recommended by Henrik Rydberg[2]:
+>   - use input_mt_assign_slots; drop cypress_cal_finger_id.
+>   - enable 2-finger-only SEMI_MT; drop cypress_simulate_fingers.
+>   - various code clean-ups.
+> 
+>   Henrik, does patch #2 appear to properly use assign_slots and SEMI_MT as
+>   you intended?  This SEMI_MT method does work (with 2 finger support only),
+>   but I'm not clear why we wouldn't want to handle >2 fingers also, so ...
+> 
+>   Patch #4 (new) reintroduces simulated multitouch for up to 5 fingers
+>   (#if CYPRESS_SIMULATE_MT), disabling SEMI_MT again.
+> 
+>   If that functionality (support for >2 fingers) can be acheived in some
+>   better way, please advise.
 
-diff --git a/scripts/kconfig/merge_config.sh b/scripts/kconfig/merge_config.sh
-index 974d5cb..05274fc 100755
---- a/scripts/kconfig/merge_config.sh
-+++ b/scripts/kconfig/merge_config.sh
-@@ -32,11 +32,13 @@ usage() {
- 	echo "  -m    only merge the fragments, do not execute the make command"
- 	echo "  -n    use allnoconfig instead of alldefconfig"
- 	echo "  -r    list redundant entries when merging fragments"
-+	echo "  -O    dir to put generated output files"
- }
- 
- MAKE=true
- ALLTARGET=alldefconfig
- WARNREDUN=false
-+OUTPUT=.
- 
- while true; do
- 	case $1 in
-@@ -59,6 +61,16 @@ while true; do
- 		shift
- 		continue
- 		;;
-+	"-O")
-+		if [ -d $2 ];then
-+			OUTPUT=$(echo $2 | sed 's/\/*$//')
-+		else
-+			echo "output directory $2 does not exist" 1>&2
-+			exit 1
-+		fi
-+		shift 2
-+		continue
-+		;;
- 	*)
- 		break
- 		;;
-@@ -100,9 +112,9 @@ for MERGE_FILE in $MERGE_LIST ; do
- done
- 
- if [ "$MAKE" = "false" ]; then
--	cp $TMP_FILE .config
-+	cp $TMP_FILE $OUTPUT/.config
- 	echo "#"
--	echo "# merged configuration written to .config (needs make)"
-+	echo "# merged configuration written to $OUTPUT/.config (needs make)"
- 	echo "#"
- 	clean_up
- 	exit
-@@ -111,14 +123,14 @@ fi
- # Use the merged file as the starting point for:
- # alldefconfig: Fills in any missing symbols with Kconfig default
- # allnoconfig: Fills in any missing symbols with # CONFIG_* is not set
--make KCONFIG_ALLCONFIG=$TMP_FILE $ALLTARGET
-+make KCONFIG_ALLCONFIG=$TMP_FILE O=$OUTPUT $ALLTARGET
- 
- 
- # Check all specified config values took (might have missed-dependency issues)
- for CFG in $(sed -n "$SED_CONFIG_EXP" $TMP_FILE); do
- 
- 	REQUESTED_VAL=$(grep -w -e "$CFG" $TMP_FILE)
--	ACTUAL_VAL=$(grep -w -e "$CFG" .config)
-+	ACTUAL_VAL=$(grep -w -e "$CFG" $OUTPUT/.config)
- 	if [ "x$REQUESTED_VAL" != "x$ACTUAL_VAL" ] ; then
- 		echo "Value requested for $CFG not in final .config"
- 		echo "Requested value:  $REQUESTED_VAL"
+You can still report true number of fingers on the pad via BTN_TOOL_*TAP
+while reporting the bounding box, the same way as Synaptics, Elantech,
+ALPS and Sentelic drivers are doing it.
+
+Thanks.
+
 -- 
-1.7.9.5
-
+Dmitry
