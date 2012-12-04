@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754314Ab2LDO5u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 09:57:50 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47456 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751945Ab2LDO5t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 09:57:49 -0500
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 1/3] perf hists: Exchange order of comparing items when collapsing hists
-References: <1354596265-9901-1-git-send-email-namhyung@kernel.org>
-	<1354596265-9901-2-git-send-email-namhyung@kernel.org>
-	<20121204134405.GA3159@ghostprotocols.net>
-Date: Tue, 04 Dec 2012 23:57:41 +0900
-In-Reply-To: <20121204134405.GA3159@ghostprotocols.net> (Arnaldo Carvalho de
-	Melo's message of "Tue, 4 Dec 2012 10:44:05 -0300")
-Message-ID: <87fw3lc1ay.fsf@kernel.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1752647Ab2LDPAS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 10:00:18 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:45228 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751762Ab2LDPAQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 10:00:16 -0500
+Message-ID: <50BE100E.1060007@ti.com>
+Date: Tue, 4 Dec 2012 20:30:30 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Michal Nazarewicz <mina86@mina86.com>
+CC: Vitaly Andrianov <vitalya@ti.com>, <m.szyprowski@samsung.com>,
+        <kyungmin.park@samsung.com>, <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>, <linux-keystone@list.ti.com>,
+        Cyril Chemparathy <cyril@ti.com>
+Subject: Re: [linux-keystone] [PATCH v2] drivers: cma: fix addressing on PAE
+ machines
+References: <1354549570-21445-1-git-send-email-vitalya@ti.com> <50BD9C45.7070501@ti.com> <xa1tsj7m3qza.fsf@mina86.com>
+In-Reply-To: <xa1tsj7m3qza.fsf@mina86.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 Dec 2012 10:44:05 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Tue, Dec 04, 2012 at 01:44:23PM +0900, Namhyung Kim escreveu:
->> From: Namhyung Kim <namhyung.kim@lge.com>
->> 
->> When comparing entries for collapsing put the given entry first, and
->> then the iterated entry.  This is not the case of hist_entry__cmp()
->> when called if given sort keys don't require collapsing.  So change
->> the order for the sake of consistency.  It will be required for
->> matching and/or linking multiple hist entries.
->> 
->> Cc: Jiri Olsa <jolsa@redhat.com>
->> Cc: Stephane Eranian <eranian@google.com>
->> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
->> ---
->>  tools/perf/util/hist.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->> 
->> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
->> index 82df1b26f0d4..161c35e7ed0e 100644
->> --- a/tools/perf/util/hist.c
->> +++ b/tools/perf/util/hist.c
->> @@ -433,7 +433,7 @@ static bool hists__collapse_insert_entry(struct hists *hists __maybe_unused,
->>  		parent = *p;
->>  		iter = rb_entry(parent, struct hist_entry, rb_node_in);
->>  
->> -		cmp = hist_entry__collapse(iter, he);
->> +		cmp = hist_entry__collapse(he, iter);
->>  
->>  		if (!cmp) {
->>  			he_stat__add_stat(&iter->stat, &he->stat);
+On Tuesday 04 December 2012 06:37 PM, Michal Nazarewicz wrote:
+>> On Monday 03 December 2012 09:16 PM, Vitaly Andrianov wrote:
+>>> This patch fixes a couple of bugs that otherwise impair CMA functionality on
+>>> PAE machines:
+>>>
+>>>     - alignment must be a 64-bit type when running on systems with 64-bit
+>>>       physical addresses.  If this is not the case, the limit calculation thunks
+>>>       allocations down to an address range < 4G.
+>>>
+>>>     - The allocated range check is removed. On 32bit ARM kernel with LPAE
+>>>       enabled the base may be allocated outside the fist 4GB of physical
+>>>       memory (keystone SoC for example).
 >
-> What about this he_stat__add_stat call? Now the hist_entry__collapse
-> receives (he, iter)  while this right next function call receives (iter,
-> he).
+> On Tue, Dec 04 2012, Santosh Shilimkar wrote:
+>> Any reason you have clubbed two fixes in one patch. Its better to keep
+>> the two fixes separate patches.
+>
+> They are all related to the very same issue, and what the whole patch
+> does is change the type used to store physical addresses from unsigned
+> long to phys_addr_t.  This is really a single change.
+>
+Thanks for clarification. 64 bit alignment fix and the allocation range 
+checks
+can be two separate fixes and that is exactly what change log describes.
+You have a last say though :-) No problem if you want to commit the
+patch as is.
 
-Hmm.. I thought they're diffent kind of operation.  hist_entry__collapse
-is in a process of iteration and he_stat__add_stat is not.  It's just
-adding or copying entry's stat, so I thought it's something like memcpy
-- hence the order.
-
-If you really concern about ordering between them, maybe I can change
-hist_entry__cmp() to receive (iter, he).
-
-Thanks,
-Namhyung
+Regards
+Santosh
