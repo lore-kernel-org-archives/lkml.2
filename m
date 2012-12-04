@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751989Ab2LDS0T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 13:26:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36906 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751308Ab2LDS0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 13:26:18 -0500
-Date: Tue, 4 Dec 2012 18:17:56 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Michel Lespinasse <walken@google.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 2/2] mm/migration: Make rmap_walk_anon() and
- try_to_unmap_anon() more scalable
-Message-ID: <20121204143714.GB2797@suse.de>
-References: <1354305521-11583-1-git-send-email-mingo@kernel.org>
- <CA+55aFwjxm7OYuucHeE2WFr4p+jwr63t=kSdHndta_QkyFbyBQ@mail.gmail.com>
- <20121201094927.GA12366@gmail.com>
- <20121201122649.GA20322@gmail.com>
- <CA+55aFx8QtP0hg8qxn__4vHQuzH7QkhTN-4fwgOpM-A=KuBBjA@mail.gmail.com>
- <20121201184135.GA32449@gmail.com>
- <CA+55aFyq7OaUxcEHXvJhp0T57KN14o-RGxqPmA+ks8ge6zJh5w@mail.gmail.com>
- <20121201201538.GB2704@gmail.com>
- <20121203141701.GN8218@suse.de>
- <CANN689Hm=g+PhJrVZ8mngPL58k45GfmwL_19F27WtwJC0G-=6g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <CANN689Hm=g+PhJrVZ8mngPL58k45GfmwL_19F27WtwJC0G-=6g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752300Ab2LDS0c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 13:26:32 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:53810 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752084Ab2LDS0a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 13:26:30 -0500
+Date: Tue, 04 Dec 2012 13:26:27 -0500 (EST)
+Message-Id: <20121204.132627.567823078168164756.davem@davemloft.net>
+To: serge.hallyn@canonical.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        ebiederm@xmission.com, dlezcano@free.fr
+Subject: Re: [PATCH] dev_change_net_namespace: send a KOBJ_REMOVED/KOBJ_ADD
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20121204021712.GA10268@sergelap>
+References: <20121204021712.GA10268@sergelap>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 04, 2012 at 06:37:41AM -0800, Michel Lespinasse wrote:
-> On Mon, Dec 3, 2012 at 6:17 AM, Mel Gorman <mgorman@suse.de> wrote:
-> > On Sat, Dec 01, 2012 at 09:15:38PM +0100, Ingo Molnar wrote:
-> >> @@ -732,7 +732,7 @@ static int page_referenced_anon(struct p
-> >>       struct anon_vma_chain *avc;
-> >>       int referenced = 0;
-> >>
-> >> -     anon_vma = page_lock_anon_vma(page);
-> >> +     anon_vma = page_lock_anon_vma_read(page);
-> >>       if (!anon_vma)
-> >>               return referenced;
-> >
-> > This is a slightly trickier one as this path is called from reclaim. It does
-> > open the possibility that reclaim can stall something like a parallel fork
-> > or anything that requires the anon_vma rwsem for a period of time. I very
-> > severely doubt it'll really be a problem but keep an eye out for bug reports
-> > related to delayed mmap/fork/anything_needing_write_lock during page reclaim.
-> 
-> I don't see why this would be a problem - rwsem does implement
-> reader/writer fairness, so having some sites do a read lock instead of
-> a write lock shouldn't cause the write lock sites to starve. Is this
-> what you were worried about ?
-> 
+From: Serge Hallyn <serge.hallyn@canonical.com>
+Date: Mon, 3 Dec 2012 20:17:12 -0600
 
-Yes. I did not expect they would be starved forever, just delayed longer
-than they might have been before. I would be very surprised if there is
-anything other than a synthetic case that will really care but I've been
-"very surprised" before :)
+> When a new nic is created in namespace ns1, the kernel sends a KOBJ_ADD uevent
+> to ns1.  When the nic is moved to ns2, we only send a KOBJ_MOVE to ns2, and
+> nothing to ns1.
+> 
+> This patch changes that behavior so that when moving a nic from ns1 to ns2, we
+> send a KOBJ_REMOVED to ns1 and KOBJ_ADD to ns2.  (The KOBJ_MOVE is still
+> sent to ns2).
+> 
+> The effects of this can be seen when starting and stopping containers in
+> an upstart based host.  Lxc will create a pair of veth nics, the kernel
+> sends KOBJ_ADD, and upstart starts network-instance jobs for each.  When
+> one nic is moved to the container, because no KOBJ_REMOVED event is
+> received, the network-instance job for that veth never goes away.  This
+> was reported at https://bugs.launchpad.net/ubuntu/+source/lxc/+bug/1065589
+> With this patch the networ-instance jobs properly go away.
+> 
+> The other oddness solved here is that if a nic is passed into a running
+> upstart-based container, without this patch no network-instance job is
+> started in the container.  But when the container creates a new nic
+> itself (ip link add new type veth) then network-interface jobs are
+> created.  With this patch, behavior comes in line with a regular host.
+> 
+> v2: also send KOBJ_ADD to new netns.  There will then be a
+> _MOVE event from the device_rename() call, but that should
+> be innocuous.
+> 
+> Signed-off-by: Serge Hallyn <serge.hallyn@canonical.com>
+> Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+> Acked-by: Daniel Lezcano <daniel.lezcano@free.fr>
 
--- 
-Mel Gorman
-SUSE Labs
+Applied, thanks.
