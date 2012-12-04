@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754087Ab2LDPf0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 10:35:26 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:62769 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752353Ab2LDPfX (ORCPT
+	id S1754099Ab2LDPjq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 10:39:46 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:48748 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751951Ab2LDPjo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 10:35:23 -0500
-X-Greylist: delayed 421 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Dec 2012 10:35:22 EST
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, Jean Delvare <khali@linux-fr.org>,
-        linux-input@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 05/14] HID: i2c-hid: fix i2c_hid_dbg macro
-Date: Tue,  4 Dec 2012 16:27:46 +0100
-Message-Id: <1354634875-5182-6-git-send-email-benjamin.tissoires@gmail.com>
-X-Mailer: git-send-email 1.8.0.1
-In-Reply-To: <1354634875-5182-1-git-send-email-benjamin.tissoires@gmail.com>
-References: <1354634875-5182-1-git-send-email-benjamin.tissoires@gmail.com>
+	Tue, 4 Dec 2012 10:39:44 -0500
+Date: Tue, 4 Dec 2012 07:39:39 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Xiaotian Feng <xtfeng@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Xiaotian Feng <dannyfeng@tencent.com>,
+        Neela Syam Kolli <megaraidlinux@lsi.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] megaraid: fix use of delayed work
+Message-ID: <20121204153939.GD3885@mtj.dyndns.org>
+References: <1354620834-2953-1-git-send-email-xtfeng@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354620834-2953-1-git-send-email-xtfeng@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This avoids the problematic case:
+On Tue, Dec 04, 2012 at 07:33:54PM +0800, Xiaotian Feng wrote:
+> megaraid use INIT_WORK to declare a hotplug_work, but cast the hotplug_work
+> from work_struct to delayed_work and schedule_delayed_work on it. This is
+> very dangerous, as other part of delayed_work might be kernel memories allocated
+> by others.
+> 
+> With commit 8852aac, schedule_delayed_work() will check dwork->timer before
+> queue_work, this will cause megaraid code to hit the BUG_ON in workqueue code.
+> Change megaraid code to use delayed work.
+> 
+> Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Neela Syam Kolli <megaraidlinux@lsi.com>
+> Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+> Cc: linux-scsi@vger.kernel.org
 
-if (condition)
-	i2c_hid_dbg(ihid, "Blah blah %d\n", i);
-else
-	do_something_very_important();
+Urgh... what the....  Didn't see that one coming.  I'm gonna push this
+to Linus through the workqueue tree.
 
-Which looks correct, however with the previous macro definition,
-this expands to the unexpected:
+Thanks for the fix.
 
-if (condition) {
-	if (debug)	\
-		dev_printk(KERN_DEBUG, &ihid->client->dev,
-				"Blah blah %d\n", i);
-	else
-		do_something_very_important();
-}
-
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
----
- drivers/hid/i2c-hid/i2c-hid.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-index 9ee6555..54950be 100644
---- a/drivers/hid/i2c-hid/i2c-hid.c
-+++ b/drivers/hid/i2c-hid/i2c-hid.c
-@@ -50,9 +50,11 @@ static bool debug;
- module_param(debug, bool, 0444);
- MODULE_PARM_DESC(debug, "print a lot of debug information");
- 
--#define i2c_hid_dbg(ihid, fmt, arg...)	\
--	if (debug)			\
--		dev_printk(KERN_DEBUG, &(ihid)->client->dev, fmt, ##arg)
-+#define i2c_hid_dbg(ihid, fmt, arg...)					  \
-+do {									  \
-+	if (debug)							  \
-+		dev_printk(KERN_DEBUG, &(ihid)->client->dev, fmt, ##arg); \
-+} while (0)
- 
- struct i2c_hid_desc {
- 	__le16 wHIDDescLength;
 -- 
-1.8.0.1
-
+tejun
