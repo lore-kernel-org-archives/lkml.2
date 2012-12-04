@@ -1,45 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab2LDIg7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 03:36:59 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:58515 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752293Ab2LDIg6 (ORCPT
+	id S1752706Ab2LDImA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 03:42:00 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:51498 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829Ab2LDIl7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 03:36:58 -0500
-Date: Tue, 4 Dec 2012 09:36:55 +0100
-From: Heinz Diehl <htd@fancy-poultry.org>
-To: linux-kernel@vger.kernel.org
-Cc: dri-devel@lists.freedesktop.org, intel-gfx@lists.freedesktop.org
-Subject: Re: i915 freakout with latest 3.7 git
-Message-ID: <20121204083655.GA21235@fancy-poultry.org>
-References: <20121203173951.GA25384@fancy-poultry.org>
- <CAHdPZaP6HvM=UqkAjyC8MFMv9ZFTyxjx-CsMQ+8QZaxPCaW1Hw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHdPZaP6HvM=UqkAjyC8MFMv9ZFTyxjx-CsMQ+8QZaxPCaW1Hw@mail.gmail.com>
-Organization: private site
-OpenPGP: id=BBAD7AE7; url=http://www.fritha.org/htd.asc
-User-Agent: Mutt/1.5.21+67 (d414971f0c48) (2011-07-01)
-X-Provags-ID: V02:K0:ipHr/hobKxmiIHVrQ9eHKfpEUJ4maITVKTrdX1RG9JY
- KIiN9iMABvGGpjCTrG8Qil2Vku/pjn9WXfzQk3V5bJtOoNNHAs
- TC202WAeS7JtNdXWD6l1O6il9dmVfMGzP8DTgtyIXwu3z+dSfm
- Q+dEt40WsXXM9maitHB7dTP30aBoZGPg6jwZwj1az2SeAkWiGK
- WT7XfFhFtzv5Yf7segkX/Ffcl8Rj+YDfq2xs9nMosIV1MZd6Do
- hifxpDSpVbUDMd2JCT/1gkxhfLzUMiSyZ7O5/KPOUyXCza66t9
- I+GCh3VdULXwgbo8Vi76h/rnsPBMR6Y6L3rmR7ufLphBNwsDjc
- 8Vp3kUN+NkLOcM9NKZZpbLnIEjRr49OjOLnh505V0
+	Tue, 4 Dec 2012 03:41:59 -0500
+Date: Tue, 4 Dec 2012 08:47:23 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Woody Wu <narkewoody@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Why a host not ping-able?
+Message-ID: <20121204084723.4b992d49@pyramind.ukuu.org.uk>
+In-Reply-To: <slrnkbr59r.us1.narkewoody@zuhnb712.local.com>
+References: <slrnkbr59r.us1.narkewoody@zuhnb712.local.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03.12.2012, devendra.aaru wrote: 
+On Tue, 4 Dec 2012 06:17:25 +0000 (UTC)
+Woody Wu <narkewoody@gmail.com> wrote:
 
-> Add more CC's
+> Hi, list
+> 
+> I am not sure this has something with kernel.  But the system I just
+> generated cannot be reached from ping.  It can ping outside, but if I
+> ping it from outside, I just get "Destination Host Unreachable".
+> 
+> I think there is not firewall in between, and the two host in the test
+> are in the same ethernet sub network.  Is that possible the strange
+> behavior caused by somehow misconfigured kernel?
 
-Thanks!
-
-This is a real showstopper for me, it occurs in every session now. 
-Booting with "i915.i915_enable_rc6=0" doesn't help either..
-
+Very unlikely. More likely you have a routing problem somewhere. tcpdump
+or similar network monitoring tools are probably what you need.
