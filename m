@@ -1,1081 +1,338 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170Ab2LDKpA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 05:45:00 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36091 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751452Ab2LDKoe (ORCPT
+	id S1753186Ab2LDKwG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 05:52:06 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:41475 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751963Ab2LDKwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 05:44:34 -0500
-From: Serban Constantinescu <serban.constantinescu@arm.com>
-To: gregkh@linuxfoundation.org, arve@android.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, john.stultz@linaro.org,
-        ccross@android.com, zach.pfeffer@linaro.org, Dave.Butcher@arm.com
-Cc: Serban Constantinescu <serban.constantinescu@arm.com>
-Subject: [PATCH 1/2] Staging: android: binder: Add support for 32bit binder calls in a 64bit kernel
-Date: Tue,  4 Dec 2012 10:44:13 +0000
-Message-Id: <1354617854-25296-2-git-send-email-serban.constantinescu@arm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1354617854-25296-1-git-send-email-serban.constantinescu@arm.com>
-References: <1354617854-25296-1-git-send-email-serban.constantinescu@arm.com>
+	Tue, 4 Dec 2012 05:52:03 -0500
+Message-ID: <50BDD5AB.9070706@gmail.com>
+Date: Tue, 04 Dec 2012 18:51:23 +0800
+From: wujianguo <wujianguo106@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+MIME-Version: 1.0
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: akpm@linux-foundation.org, mgorman@suse.de, mjg59@srcf.ucam.org,
+        paulmck@linux.vnet.ibm.com, dave@linux.vnet.ibm.com,
+        maxime.coquelin@stericsson.com, loic.pallardy@stericsson.com,
+        arjan@linux.intel.com, kmpark@infradead.org,
+        kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org, rjw@sisk.pl,
+        gargankita@gmail.com, amit.kachhap@linaro.org,
+        svaidy@linux.vnet.ibm.com, thomas.abraham@linaro.org,
+        santosh.shilimkar@ti.com, linux-pm@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/8][Sorted-buddy] mm: Linux VM Infrastructure to
+ support Memory Power Management
+References: <20121106195026.6941.24662.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <20121106195026.6941.24662.stgit@srivatsabhat.in.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Android's IPC, Binder, does not support calls from a 32-bit userspace
-in a 64 bit kernel. This patch adds support for syscalls coming from a
-32-bit userspace in a 64-bit kernel.
+Hi Srivatsa,
 
-Most of the changes were applied to types that change sizes between
-32 and 64 bit world. This will also fix some of the issues around
-checking the size of an incoming transaction package in the ioctl
-switch. Since  the transaction's ioctl number are generated using
-_IOC(dir,type,nr,size), a different userspace size will generate
-a different ioctl number, thus switching by _IOC_NR is a better
-solution.
+I applied this patchset, and run genload(from LTP) test: numactl --membind=1 ./genload -m 100,
+then got a "general protection fault", and system was going to reboot.
 
-The patch has been successfully tested on ARMv8 AEM and Versatile
-Express V2P-CA9.
+If I revert [RFC PATCH 7/8], and run this test again, genload will be killed due to OOM,
+but the system is OK, no coredump.
 
-Signed-off-by: Serban Constantinescu <serban.constantinescu@arm.com>
-Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
----
- drivers/staging/android/binder.c |  298 ++++++++++++++++++++------------------
- drivers/staging/android/binder.h |   56 +++----
- 2 files changed, 190 insertions(+), 164 deletions(-)
+ps: node1 has 8G memory.
 
-diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-index 5d4610b..efba042 100644
---- a/drivers/staging/android/binder.c
-+++ b/drivers/staging/android/binder.c
-@@ -223,8 +223,8 @@ struct binder_node {
- 	int internal_strong_refs;
- 	int local_weak_refs;
- 	int local_strong_refs;
--	void __user *ptr;
--	void __user *cookie;
-+	userptr32_t ptr;
-+	userptr32_t cookie;
- 	unsigned has_strong_ref:1;
- 	unsigned pending_strong_ref:1;
- 	unsigned has_weak_ref:1;
-@@ -237,7 +237,7 @@ struct binder_node {
- 
- struct binder_ref_death {
- 	struct binder_work work;
--	void __user *cookie;
-+	userptr32_t cookie;
- };
- 
- struct binder_ref {
-@@ -312,7 +312,7 @@ struct binder_proc {
- 	int requested_threads;
- 	int requested_threads_started;
- 	int ready_threads;
--	long default_priority;
-+	int default_priority;
- 	struct dentry *debugfs_entry;
- };
- 
-@@ -354,8 +354,8 @@ struct binder_transaction {
- 	struct binder_buffer *buffer;
- 	unsigned int	code;
- 	unsigned int	flags;
--	long	priority;
--	long	saved_priority;
-+	int	priority;
-+	int	saved_priority;
- 	kuid_t	sender_euid;
- };
- 
-@@ -411,17 +411,17 @@ static long task_close_fd(struct binder_proc *proc, unsigned int fd)
- 	return retval;
- }
- 
--static void binder_set_nice(long nice)
-+static void binder_set_nice(int nice)
- {
--	long min_nice;
-+	int min_nice;
- 	if (can_nice(current, nice)) {
- 		set_user_nice(current, nice);
- 		return;
- 	}
- 	min_nice = 20 - current->signal->rlim[RLIMIT_NICE].rlim_cur;
- 	binder_debug(BINDER_DEBUG_PRIORITY_CAP,
--		     "binder: %d: nice value %ld not allowed use "
--		     "%ld instead\n", current->pid, nice, min_nice);
-+		     "binder: %d: nice value %d not allowed use "
-+		     "%d instead\n", current->pid, nice, min_nice);
- 	set_user_nice(current, min_nice);
- 	if (min_nice < 20)
- 		return;
-@@ -497,13 +497,13 @@ static void binder_insert_allocated_buffer(struct binder_proc *proc,
- }
- 
- static struct binder_buffer *binder_buffer_lookup(struct binder_proc *proc,
--						  void __user *user_ptr)
-+						  userptr32_t user_ptr)
- {
- 	struct rb_node *n = proc->allocated_buffers.rb_node;
- 	struct binder_buffer *buffer;
- 	struct binder_buffer *kern_ptr;
- 
--	kern_ptr = user_ptr - proc->user_buffer_offset
-+	kern_ptr = (void *)(unsigned long)user_ptr - proc->user_buffer_offset
- 		- offsetof(struct binder_buffer, data);
- 
- 	while (n) {
-@@ -641,8 +641,8 @@ static struct binder_buffer *binder_alloc_buf(struct binder_proc *proc,
- 		return NULL;
- 	}
- 
--	size = ALIGN(data_size, sizeof(void *)) +
--		ALIGN(offsets_size, sizeof(void *));
-+	size = ALIGN(data_size, sizeof(userptr32_t)) +
-+		ALIGN(offsets_size, sizeof(userptr32_t));
- 
- 	if (size < data_size || size < offsets_size) {
- 		binder_user_error("binder: %d: got transaction with invalid "
-@@ -793,8 +793,8 @@ static void binder_free_buf(struct binder_proc *proc,
- 
- 	buffer_size = binder_buffer_size(proc, buffer);
- 
--	size = ALIGN(buffer->data_size, sizeof(void *)) +
--		ALIGN(buffer->offsets_size, sizeof(void *));
-+	size = ALIGN(buffer->data_size, sizeof(userptr32_t)) +
-+		ALIGN(buffer->offsets_size, sizeof(userptr32_t));
- 
- 	binder_debug(BINDER_DEBUG_BUFFER_ALLOC,
- 		     "binder: %d: binder_free_buf %p size %zd buffer"
-@@ -842,7 +842,7 @@ static void binder_free_buf(struct binder_proc *proc,
- }
- 
- static struct binder_node *binder_get_node(struct binder_proc *proc,
--					   void __user *ptr)
-+					   userptr32_t ptr)
- {
- 	struct rb_node *n = proc->nodes.rb_node;
- 	struct binder_node *node;
-@@ -861,8 +861,8 @@ static struct binder_node *binder_get_node(struct binder_proc *proc,
- }
- 
- static struct binder_node *binder_new_node(struct binder_proc *proc,
--					   void __user *ptr,
--					   void __user *cookie)
-+					   userptr32_t ptr,
-+					   userptr32_t cookie)
- {
- 	struct rb_node **p = &proc->nodes.rb_node;
- 	struct rb_node *parent = NULL;
-@@ -894,7 +894,7 @@ static struct binder_node *binder_new_node(struct binder_proc *proc,
- 	INIT_LIST_HEAD(&node->work.entry);
- 	INIT_LIST_HEAD(&node->async_todo);
- 	binder_debug(BINDER_DEBUG_INTERNAL_REFS,
--		     "binder: %d:%d node %d u%p c%p created\n",
-+		     "binder: %d:%d node %d u%x c%x created\n",
- 		     proc->pid, current->pid, node->debug_id,
- 		     node->ptr, node->cookie);
- 	return node;
-@@ -1220,9 +1220,9 @@ static void binder_send_failed_reply(struct binder_transaction *t,
- 
- static void binder_transaction_buffer_release(struct binder_proc *proc,
- 					      struct binder_buffer *buffer,
--					      size_t *failed_at)
-+					      uint32_t *failed_at)
- {
--	size_t *offp, *off_end;
-+	uint32_t *offp, *off_end;
- 	int debug_id = buffer->debug_id;
- 
- 	binder_debug(BINDER_DEBUG_TRANSACTION,
-@@ -1233,18 +1233,19 @@ static void binder_transaction_buffer_release(struct binder_proc *proc,
- 	if (buffer->target_node)
- 		binder_dec_node(buffer->target_node, 1, 0);
- 
--	offp = (size_t *)(buffer->data + ALIGN(buffer->data_size, sizeof(void *)));
-+	offp = (uint32_t *)(buffer->data +
-+			    ALIGN(buffer->data_size, sizeof(userptr32_t)));
- 	if (failed_at)
- 		off_end = failed_at;
- 	else
--		off_end = (void *)offp + buffer->offsets_size;
-+		off_end = (uint32_t *)offp + (buffer->offsets_size/4);
- 	for (; offp < off_end; offp++) {
- 		struct flat_binder_object *fp;
- 		if (*offp > buffer->data_size - sizeof(*fp) ||
- 		    buffer->data_size < sizeof(*fp) ||
--		    !IS_ALIGNED(*offp, sizeof(void *))) {
-+		    !IS_ALIGNED(*offp, sizeof(userptr32_t))) {
- 			pr_err("binder: transaction release %d bad"
--					"offset %zd, size %zd\n", debug_id,
-+					"offset %x, size %zd\n", debug_id,
- 					*offp, buffer->data_size);
- 			continue;
- 		}
-@@ -1255,11 +1256,11 @@ static void binder_transaction_buffer_release(struct binder_proc *proc,
- 			struct binder_node *node = binder_get_node(proc, fp->binder);
- 			if (node == NULL) {
- 				pr_err("binder: transaction release %d"
--				       " bad node %p\n", debug_id, fp->binder);
-+				       " bad node %x\n", debug_id, fp->binder);
- 				break;
- 			}
- 			binder_debug(BINDER_DEBUG_TRANSACTION,
--				     "        node %d u%p\n",
-+				     "        node %d u%x\n",
- 				     node->debug_id, node->ptr);
- 			binder_dec_node(node, fp->type == BINDER_TYPE_BINDER, 0);
- 		} break;
-@@ -1268,7 +1269,7 @@ static void binder_transaction_buffer_release(struct binder_proc *proc,
- 			struct binder_ref *ref = binder_get_ref(proc, fp->handle);
- 			if (ref == NULL) {
- 				pr_err("binder: transaction release %d"
--				       " bad handle %ld\n", debug_id,
-+				       " bad handle %d\n", debug_id,
- 				       fp->handle);
- 				break;
- 			}
-@@ -1280,14 +1281,14 @@ static void binder_transaction_buffer_release(struct binder_proc *proc,
- 
- 		case BINDER_TYPE_FD:
- 			binder_debug(BINDER_DEBUG_TRANSACTION,
--				     "        fd %ld\n", fp->handle);
-+				     "        fd %d\n", fp->handle);
- 			if (failed_at)
- 				task_close_fd(proc, fp->handle);
- 			break;
- 
- 		default:
- 			pr_err("binder: transaction release %d bad "
--			       "object type %lx\n", debug_id, fp->type);
-+			       "object type %x\n", debug_id, fp->type);
- 			break;
- 		}
- 	}
-@@ -1299,7 +1300,7 @@ static void binder_transaction(struct binder_proc *proc,
- {
- 	struct binder_transaction *t;
- 	struct binder_work *tcomplete;
--	size_t *offp, *off_end;
-+	uint32_t *offp, *off_end;
- 	struct binder_proc *target_proc;
- 	struct binder_thread *target_thread = NULL;
- 	struct binder_node *target_node = NULL;
-@@ -1437,7 +1438,7 @@ static void binder_transaction(struct binder_proc *proc,
- 	if (reply)
- 		binder_debug(BINDER_DEBUG_TRANSACTION,
- 			     "binder: %d:%d BC_REPLY %d -> %d:%d, "
--			     "data %p-%p size %zd-%zd\n",
-+			     "data %x-%x size %d-%d\n",
- 			     proc->pid, thread->pid, t->debug_id,
- 			     target_proc->pid, target_thread->pid,
- 			     tr->data.ptr.buffer, tr->data.ptr.offsets,
-@@ -1445,7 +1446,7 @@ static void binder_transaction(struct binder_proc *proc,
- 	else
- 		binder_debug(BINDER_DEBUG_TRANSACTION,
- 			     "binder: %d:%d BC_TRANSACTION %d -> "
--			     "%d - node %d, data %p-%p size %zd-%zd\n",
-+			     "%d - node %d, data %x-%x size %d-%d\n",
- 			     proc->pid, thread->pid, t->debug_id,
- 			     target_proc->pid, target_node->debug_id,
- 			     tr->data.ptr.buffer, tr->data.ptr.offsets,
-@@ -1474,35 +1475,36 @@ static void binder_transaction(struct binder_proc *proc,
- 	if (target_node)
- 		binder_inc_node(target_node, 1, 0, NULL);
- 
--	offp = (size_t *)(t->buffer->data + ALIGN(tr->data_size, sizeof(void *)));
-+	offp = (uint32_t *)(t->buffer->data +
-+			    ALIGN(tr->data_size, sizeof(userptr32_t)));
- 
--	if (copy_from_user(t->buffer->data, tr->data.ptr.buffer, tr->data_size)) {
-+	if (copy_from_user(t->buffer->data, (void *)(unsigned long)(tr->data.ptr.buffer),  tr->data_size)) {
- 		binder_user_error("binder: %d:%d got transaction with invalid "
- 			"data ptr\n", proc->pid, thread->pid);
- 		return_error = BR_FAILED_REPLY;
- 		goto err_copy_data_failed;
- 	}
--	if (copy_from_user(offp, tr->data.ptr.offsets, tr->offsets_size)) {
-+	if (copy_from_user(offp, (void *)(unsigned long)(tr->data.ptr.offsets), tr->offsets_size)) {
- 		binder_user_error("binder: %d:%d got transaction with invalid "
- 			"offsets ptr\n", proc->pid, thread->pid);
- 		return_error = BR_FAILED_REPLY;
- 		goto err_copy_data_failed;
- 	}
--	if (!IS_ALIGNED(tr->offsets_size, sizeof(size_t))) {
-+	if (!IS_ALIGNED(tr->offsets_size, sizeof(uint32_t))) {
- 		binder_user_error("binder: %d:%d got transaction with "
--			"invalid offsets size, %zd\n",
-+			"invalid offsets size, %d\n",
- 			proc->pid, thread->pid, tr->offsets_size);
- 		return_error = BR_FAILED_REPLY;
- 		goto err_bad_offset;
- 	}
--	off_end = (void *)offp + tr->offsets_size;
-+	off_end = (uint32_t *)offp + (tr->offsets_size/4);
- 	for (; offp < off_end; offp++) {
- 		struct flat_binder_object *fp;
- 		if (*offp > t->buffer->data_size - sizeof(*fp) ||
- 		    t->buffer->data_size < sizeof(*fp) ||
--		    !IS_ALIGNED(*offp, sizeof(void *))) {
-+		    !IS_ALIGNED(*offp, sizeof(userptr32_t))) {
- 			binder_user_error("binder: %d:%d got transaction with "
--				"invalid offset, %zd\n",
-+				"invalid offset, %x\n",
- 				proc->pid, thread->pid, *offp);
- 			return_error = BR_FAILED_REPLY;
- 			goto err_bad_offset;
-@@ -1523,8 +1525,8 @@ static void binder_transaction(struct binder_proc *proc,
- 				node->accept_fds = !!(fp->flags & FLAT_BINDER_FLAG_ACCEPTS_FDS);
- 			}
- 			if (fp->cookie != node->cookie) {
--				binder_user_error("binder: %d:%d sending u%p "
--					"node %d, cookie mismatch %p != %p\n",
-+				binder_user_error("binder: %d:%d sending u%x"
-+					"node %d, cookie mismatch %x != %x\n",
- 					proc->pid, thread->pid,
- 					fp->binder, node->debug_id,
- 					fp->cookie, node->cookie);
-@@ -1544,7 +1546,7 @@ static void binder_transaction(struct binder_proc *proc,
- 				       &thread->todo);
- 
- 			binder_debug(BINDER_DEBUG_TRANSACTION,
--				     "        node %d u%p -> ref %d desc %d\n",
-+				     "        node %d u%x -> ref %d desc %d\n",
- 				     node->debug_id, node->ptr, ref->debug_id,
- 				     ref->desc);
- 		} break;
-@@ -1554,7 +1556,7 @@ static void binder_transaction(struct binder_proc *proc,
- 			if (ref == NULL) {
- 				binder_user_error("binder: %d:%d got "
- 					"transaction with invalid "
--					"handle, %ld\n", proc->pid,
-+					"handle, %d\n", proc->pid,
- 					thread->pid, fp->handle);
- 				return_error = BR_FAILED_REPLY;
- 				goto err_binder_get_ref_failed;
-@@ -1568,7 +1570,7 @@ static void binder_transaction(struct binder_proc *proc,
- 				fp->cookie = ref->node->cookie;
- 				binder_inc_node(ref->node, fp->type == BINDER_TYPE_BINDER, 0, NULL);
- 				binder_debug(BINDER_DEBUG_TRANSACTION,
--					     "        ref %d desc %d -> node %d u%p\n",
-+					     "        ref %d desc %d -> node %d u%x\n",
- 					     ref->debug_id, ref->desc, ref->node->debug_id,
- 					     ref->node->ptr);
- 			} else {
-@@ -1593,13 +1595,13 @@ static void binder_transaction(struct binder_proc *proc,
- 
- 			if (reply) {
- 				if (!(in_reply_to->flags & TF_ACCEPT_FDS)) {
--					binder_user_error("binder: %d:%d got reply with fd, %ld, but target does not allow fds\n",
-+					binder_user_error("binder: %d:%d got reply with fd, %d, but target does not allow fds\n",
- 						proc->pid, thread->pid, fp->handle);
- 					return_error = BR_FAILED_REPLY;
- 					goto err_fd_not_allowed;
- 				}
- 			} else if (!target_node->accept_fds) {
--				binder_user_error("binder: %d:%d got transaction with fd, %ld, but target does not allow fds\n",
-+				binder_user_error("binder: %d:%d got transaction with fd, %d, but target does not allow fds\n",
- 					proc->pid, thread->pid, fp->handle);
- 				return_error = BR_FAILED_REPLY;
- 				goto err_fd_not_allowed;
-@@ -1607,7 +1609,7 @@ static void binder_transaction(struct binder_proc *proc,
- 
- 			file = fget(fp->handle);
- 			if (file == NULL) {
--				binder_user_error("binder: %d:%d got transaction with invalid fd, %ld\n",
-+				binder_user_error("binder: %d:%d got transaction with invalid fd, %d\n",
- 					proc->pid, thread->pid, fp->handle);
- 				return_error = BR_FAILED_REPLY;
- 				goto err_fget_failed;
-@@ -1620,14 +1622,14 @@ static void binder_transaction(struct binder_proc *proc,
- 			}
- 			task_fd_install(target_proc, target_fd, file);
- 			binder_debug(BINDER_DEBUG_TRANSACTION,
--				     "        fd %ld -> %d\n", fp->handle, target_fd);
-+				     "        fd %d -> %d\n", fp->handle, target_fd);
- 			/* TODO: fput? */
- 			fp->handle = target_fd;
- 		} break;
- 
- 		default:
- 			binder_user_error("binder: %d:%d got transactio"
--				"n with invalid object type, %lx\n",
-+				"n with invalid object type, %x\n",
- 				proc->pid, thread->pid, fp->type);
- 			return_error = BR_FAILED_REPLY;
- 			goto err_bad_object_type;
-@@ -1683,7 +1685,7 @@ err_dead_binder:
- err_invalid_target_handle:
- err_no_context_mgr_node:
- 	binder_debug(BINDER_DEBUG_FAILED_TRANSACTION,
--		     "binder: %d:%d transaction failed %d, size %zd-%zd\n",
-+		     "binder: %d:%d transaction failed %d, size %d-%d\n",
- 		     proc->pid, thread->pid, return_error,
- 		     tr->data_size, tr->offsets_size);
- 
-@@ -1702,7 +1704,7 @@ err_no_context_mgr_node:
- }
- 
- int binder_thread_write(struct binder_proc *proc, struct binder_thread *thread,
--			void __user *buffer, int size, signed long *consumed)
-+			void __user *buffer, int size, int *consumed)
- {
- 	uint32_t cmd;
- 	void __user *ptr = buffer + *consumed;
-@@ -1717,11 +1719,16 @@ int binder_thread_write(struct binder_proc *proc, struct binder_thread *thread,
- 			proc->stats.bc[_IOC_NR(cmd)]++;
- 			thread->stats.bc[_IOC_NR(cmd)]++;
- 		}
--		switch (cmd) {
--		case BC_INCREFS:
--		case BC_ACQUIRE:
--		case BC_RELEASE:
--		case BC_DECREFS: {
-+		/*
-+		 * since  the transaction's IOCTL number are generated using
-+		 * _IOC(dir,type,nr,size), a different userspace size will not
-+		 * fall through
-+		 */
-+		switch (_IOC_NR(cmd)) {
-+		case _IOC_NR(BC_INCREFS):
-+		case _IOC_NR(BC_ACQUIRE):
-+		case _IOC_NR(BC_RELEASE):
-+		case _IOC_NR(BC_DECREFS): {
- 			uint32_t target;
- 			struct binder_ref *ref;
- 			const char *debug_string;
-@@ -1749,20 +1756,20 @@ int binder_thread_write(struct binder_proc *proc, struct binder_thread *thread,
- 					proc->pid, thread->pid, target);
- 				break;
- 			}
--			switch (cmd) {
--			case BC_INCREFS:
-+			switch (_IOC_NR(cmd)) {
-+			case _IOC_NR(BC_INCREFS):
- 				debug_string = "IncRefs";
- 				binder_inc_ref(ref, 0, NULL);
- 				break;
--			case BC_ACQUIRE:
-+			case _IOC_NR(BC_ACQUIRE):
- 				debug_string = "Acquire";
- 				binder_inc_ref(ref, 1, NULL);
- 				break;
--			case BC_RELEASE:
-+			case _IOC_NR(BC_RELEASE):
- 				debug_string = "Release";
- 				binder_dec_ref(ref, 1);
- 				break;
--			case BC_DECREFS:
-+			case _IOC_NR(BC_DECREFS):
- 			default:
- 				debug_string = "DecRefs";
- 				binder_dec_ref(ref, 0);
-@@ -1774,22 +1781,26 @@ int binder_thread_write(struct binder_proc *proc, struct binder_thread *thread,
- 				     ref->desc, ref->strong, ref->weak, ref->node->debug_id);
- 			break;
- 		}
--		case BC_INCREFS_DONE:
--		case BC_ACQUIRE_DONE: {
--			void __user *node_ptr;
--			void *cookie;
-+		case _IOC_NR(BC_INCREFS_DONE):
-+		case _IOC_NR(BC_ACQUIRE_DONE): {
-+			userptr32_t node_ptr;
-+			userptr32_t cookie;
- 			struct binder_node *node;
- 
--			if (get_user(node_ptr, (void * __user *)ptr))
-+			if (_IOC_SIZE(cmd) != sizeof(struct binder_ptr_cookie)) {
-+				pr_err("binder: tranzaction structure size differs\n");
- 				return -EFAULT;
--			ptr += sizeof(void *);
--			if (get_user(cookie, (void * __user *)ptr))
-+			}
-+			if (get_user(node_ptr, (userptr32_t __user *)ptr))
-+				return -EFAULT;
-+			ptr += sizeof(userptr32_t);
-+			if (get_user(cookie, (userptr32_t __user *)ptr))
- 				return -EFAULT;
--			ptr += sizeof(void *);
-+			ptr += sizeof(userptr32_t);
- 			node = binder_get_node(proc, node_ptr);
- 			if (node == NULL) {
- 				binder_user_error("binder: %d:%d "
--					"%s u%p no match\n",
-+					"%s u%x no match\n",
- 					proc->pid, thread->pid,
- 					cmd == BC_INCREFS_DONE ?
- 					"BC_INCREFS_DONE" :
-@@ -1798,8 +1809,8 @@ int binder_thread_write(struct binder_proc *proc, struct binder_thread *thread,
- 				break;
- 			}
- 			if (cookie != node->cookie) {
--				binder_user_error("binder: %d:%d %s u%p node %d"
--					" cookie mismatch %p != %p\n",
-+				binder_user_error("binder: %d:%d %s u%x node %d"
-+					" cookie mismatch %x != %x\n",
- 					proc->pid, thread->pid,
- 					cmd == BC_INCREFS_DONE ?
- 					"BC_INCREFS_DONE" : "BC_ACQUIRE_DONE",
-@@ -1836,37 +1847,37 @@ int binder_thread_write(struct binder_proc *proc, struct binder_thread *thread,
- 				     node->debug_id, node->local_strong_refs, node->local_weak_refs);
- 			break;
- 		}
--		case BC_ATTEMPT_ACQUIRE:
-+		case _IOC_NR(BC_ATTEMPT_ACQUIRE):
- 			pr_err("binder: BC_ATTEMPT_ACQUIRE not supported\n");
- 			return -EINVAL;
--		case BC_ACQUIRE_RESULT:
-+		case _IOC_NR(BC_ACQUIRE_RESULT):
- 			pr_err("binder: BC_ACQUIRE_RESULT not supported\n");
- 			return -EINVAL;
- 
--		case BC_FREE_BUFFER: {
--			void __user *data_ptr;
-+		case _IOC_NR(BC_FREE_BUFFER): {
-+			userptr32_t data_ptr;
- 			struct binder_buffer *buffer;
- 
--			if (get_user(data_ptr, (void * __user *)ptr))
-+			if (get_user(data_ptr, (userptr32_t  __user *)ptr))
- 				return -EFAULT;
--			ptr += sizeof(void *);
-+			ptr += sizeof(userptr32_t);
- 
- 			buffer = binder_buffer_lookup(proc, data_ptr);
- 			if (buffer == NULL) {
- 				binder_user_error("binder: %d:%d "
--					"BC_FREE_BUFFER u%p no match\n",
-+					"BC_FREE_BUFFER u%x no match\n",
- 					proc->pid, thread->pid, data_ptr);
- 				break;
- 			}
- 			if (!buffer->allow_user_free) {
- 				binder_user_error("binder: %d:%d "
--					"BC_FREE_BUFFER u%p matched "
-+					"BC_FREE_BUFFER u%x matched "
- 					"unreturned buffer\n",
- 					proc->pid, thread->pid, data_ptr);
- 				break;
- 			}
- 			binder_debug(BINDER_DEBUG_FREE_BUFFER,
--				     "binder: %d:%d BC_FREE_BUFFER u%p found buffer %d for %s transaction\n",
-+				     "binder: %d:%d BC_FREE_BUFFER u%x found buffer %d for %s transaction\n",
- 				     proc->pid, thread->pid, data_ptr, buffer->debug_id,
- 				     buffer->transaction ? "active" : "finished");
- 
-@@ -1886,10 +1897,14 @@ int binder_thread_write(struct binder_proc *proc, struct binder_thread *thread,
- 			break;
- 		}
- 
--		case BC_TRANSACTION:
--		case BC_REPLY: {
-+		case _IOC_NR(BC_TRANSACTION):
-+		case _IOC_NR(BC_REPLY): {
- 			struct binder_transaction_data tr;
- 
-+			if (_IOC_SIZE(cmd) != sizeof(tr)) {
-+				pr_err("binder: tranzaction structure size differs\n");
-+				return -EFAULT;
-+			}
- 			if (copy_from_user(&tr, ptr, sizeof(tr)))
- 				return -EFAULT;
- 			ptr += sizeof(tr);
-@@ -1897,7 +1912,7 @@ int binder_thread_write(struct binder_proc *proc, struct binder_thread *thread,
- 			break;
- 		}
- 
--		case BC_REGISTER_LOOPER:
-+		case _IOC_NR(BC_REGISTER_LOOPER):
- 			binder_debug(BINDER_DEBUG_THREADS,
- 				     "binder: %d:%d BC_REGISTER_LOOPER\n",
- 				     proc->pid, thread->pid);
-@@ -1919,7 +1934,7 @@ int binder_thread_write(struct binder_proc *proc, struct binder_thread *thread,
- 			}
- 			thread->looper |= BINDER_LOOPER_STATE_REGISTERED;
- 			break;
--		case BC_ENTER_LOOPER:
-+		case _IOC_NR(BC_ENTER_LOOPER):
- 			binder_debug(BINDER_DEBUG_THREADS,
- 				     "binder: %d:%d BC_ENTER_LOOPER\n",
- 				     proc->pid, thread->pid);
-@@ -1932,26 +1947,26 @@ int binder_thread_write(struct binder_proc *proc, struct binder_thread *thread,
- 			}
- 			thread->looper |= BINDER_LOOPER_STATE_ENTERED;
- 			break;
--		case BC_EXIT_LOOPER:
-+		case _IOC_NR(BC_EXIT_LOOPER):
- 			binder_debug(BINDER_DEBUG_THREADS,
- 				     "binder: %d:%d BC_EXIT_LOOPER\n",
- 				     proc->pid, thread->pid);
- 			thread->looper |= BINDER_LOOPER_STATE_EXITED;
- 			break;
- 
--		case BC_REQUEST_DEATH_NOTIFICATION:
--		case BC_CLEAR_DEATH_NOTIFICATION: {
-+		case _IOC_NR(BC_REQUEST_DEATH_NOTIFICATION):
-+		case _IOC_NR(BC_CLEAR_DEATH_NOTIFICATION): {
- 			uint32_t target;
--			void __user *cookie;
-+			userptr32_t cookie;
- 			struct binder_ref *ref;
- 			struct binder_ref_death *death;
- 
- 			if (get_user(target, (uint32_t __user *)ptr))
- 				return -EFAULT;
- 			ptr += sizeof(uint32_t);
--			if (get_user(cookie, (void __user * __user *)ptr))
-+			if (get_user(cookie, (userptr32_t __user *)ptr))
- 				return -EFAULT;
--			ptr += sizeof(void *);
-+			ptr += sizeof(userptr32_t);
- 			ref = binder_get_ref(proc, target);
- 			if (ref == NULL) {
- 				binder_user_error("binder: %d:%d %s "
-@@ -1965,7 +1980,7 @@ int binder_thread_write(struct binder_proc *proc, struct binder_thread *thread,
- 			}
- 
- 			binder_debug(BINDER_DEBUG_DEATH_NOTIFICATION,
--				     "binder: %d:%d %s %p ref %d desc %d s %d w %d for node %d\n",
-+				     "binder: %d:%d %s %x ref %d desc %d s %d w %d for node %d\n",
- 				     proc->pid, thread->pid,
- 				     cmd == BC_REQUEST_DEATH_NOTIFICATION ?
- 				     "BC_REQUEST_DEATH_NOTIFICATION" :
-@@ -2019,7 +2034,7 @@ int binder_thread_write(struct binder_proc *proc, struct binder_thread *thread,
- 						"d BC_CLEAR_DEATH_NOTIFI"
- 						"CATION death notificat"
- 						"ion cookie mismatch "
--						"%p != %p\n",
-+						"%x != %x\n",
- 						proc->pid, thread->pid,
- 						death->cookie, cookie);
- 					break;
-@@ -2039,14 +2054,13 @@ int binder_thread_write(struct binder_proc *proc, struct binder_thread *thread,
- 				}
- 			}
- 		} break;
--		case BC_DEAD_BINDER_DONE: {
-+		case _IOC_NR(BC_DEAD_BINDER_DONE): {
- 			struct binder_work *w;
--			void __user *cookie;
-+			userptr32_t cookie;
- 			struct binder_ref_death *death = NULL;
--			if (get_user(cookie, (void __user * __user *)ptr))
-+			if (get_user(cookie, (userptr32_t __user *)ptr))
- 				return -EFAULT;
--
--			ptr += sizeof(void *);
-+			ptr += sizeof(userptr32_t);
- 			list_for_each_entry(w, &proc->delivered_death, entry) {
- 				struct binder_ref_death *tmp_death = container_of(w, struct binder_ref_death, work);
- 				if (tmp_death->cookie == cookie) {
-@@ -2055,11 +2069,11 @@ int binder_thread_write(struct binder_proc *proc, struct binder_thread *thread,
- 				}
- 			}
- 			binder_debug(BINDER_DEBUG_DEAD_BINDER,
--				     "binder: %d:%d BC_DEAD_BINDER_DONE %p found %p\n",
-+				     "binder: %d:%d BC_DEAD_BINDER_DONE %x found %p\n",
- 				     proc->pid, thread->pid, cookie, death);
- 			if (death == NULL) {
- 				binder_user_error("binder: %d:%d BC_DEAD"
--					"_BINDER_DONE %p not found\n",
-+					"_BINDER_DONE %x not found\n",
- 					proc->pid, thread->pid, cookie);
- 				break;
- 			}
-@@ -2112,7 +2126,7 @@ static int binder_has_thread_work(struct binder_thread *thread)
- static int binder_thread_read(struct binder_proc *proc,
- 			      struct binder_thread *thread,
- 			      void  __user *buffer, int size,
--			      signed long *consumed, int non_block)
-+			      int *consumed, int non_block)
- {
- 	void __user *ptr = buffer + *consumed;
- 	void __user *end = buffer + size;
-@@ -2251,22 +2265,22 @@ retry:
- 				if (put_user(cmd, (uint32_t __user *)ptr))
- 					return -EFAULT;
- 				ptr += sizeof(uint32_t);
--				if (put_user(node->ptr, (void * __user *)ptr))
-+				if (put_user((unsigned long)node->ptr, (userptr32_t __user *)ptr))
- 					return -EFAULT;
--				ptr += sizeof(void *);
--				if (put_user(node->cookie, (void * __user *)ptr))
-+				ptr += sizeof(userptr32_t);
-+				if (put_user((unsigned long)node->cookie, (userptr32_t __user *)ptr))
- 					return -EFAULT;
--				ptr += sizeof(void *);
-+				ptr += sizeof(userptr32_t);
- 
- 				binder_stat_br(proc, thread, cmd);
- 				binder_debug(BINDER_DEBUG_USER_REFS,
--					     "binder: %d:%d %s %d u%p c%p\n",
-+					     "binder: %d:%d %s %d u%x c%x\n",
- 					     proc->pid, thread->pid, cmd_name, node->debug_id, node->ptr, node->cookie);
- 			} else {
- 				list_del_init(&w->entry);
- 				if (!weak && !strong) {
- 					binder_debug(BINDER_DEBUG_INTERNAL_REFS,
--						     "binder: %d:%d node %d u%p c%p deleted\n",
-+						     "binder: %d:%d node %d u%x c%x deleted\n",
- 						     proc->pid, thread->pid, node->debug_id,
- 						     node->ptr, node->cookie);
- 					rb_erase(&node->rb_node, &proc->nodes);
-@@ -2274,7 +2288,7 @@ retry:
- 					binder_stats_deleted(BINDER_STAT_NODE);
- 				} else {
- 					binder_debug(BINDER_DEBUG_INTERNAL_REFS,
--						     "binder: %d:%d node %d u%p c%p state unchanged\n",
-+						     "binder: %d:%d node %d u%x c%x state unchanged\n",
- 						     proc->pid, thread->pid, node->debug_id, node->ptr,
- 						     node->cookie);
- 				}
-@@ -2294,11 +2308,11 @@ retry:
- 			if (put_user(cmd, (uint32_t __user *)ptr))
- 				return -EFAULT;
- 			ptr += sizeof(uint32_t);
--			if (put_user(death->cookie, (void * __user *)ptr))
-+			if (put_user((unsigned long)death->cookie, (userptr32_t __user *)ptr))
- 				return -EFAULT;
--			ptr += sizeof(void *);
-+			ptr += sizeof(userptr32_t);
- 			binder_debug(BINDER_DEBUG_DEATH_NOTIFICATION,
--				     "binder: %d:%d %s %p\n",
-+				     "binder: %d:%d %s %x\n",
- 				      proc->pid, thread->pid,
- 				      cmd == BR_DEAD_BINDER ?
- 				      "BR_DEAD_BINDER" :
-@@ -2333,8 +2347,8 @@ retry:
- 				binder_set_nice(target_node->min_priority);
- 			cmd = BR_TRANSACTION;
- 		} else {
--			tr.target.ptr = NULL;
--			tr.cookie = NULL;
-+			tr.target.ptr = 0;
-+			tr.cookie = 0;
- 			cmd = BR_REPLY;
- 		}
- 		tr.code = t->code;
-@@ -2349,13 +2363,14 @@ retry:
- 			tr.sender_pid = 0;
- 		}
- 
--		tr.data_size = t->buffer->data_size;
--		tr.offsets_size = t->buffer->offsets_size;
--		tr.data.ptr.buffer = (void *)t->buffer->data +
--					proc->user_buffer_offset;
--		tr.data.ptr.offsets = tr.data.ptr.buffer +
-+		tr.data_size = (userptr32_t)t->buffer->data_size;
-+		tr.offsets_size = (userptr32_t)t->buffer->offsets_size;
-+		tr.data.ptr.buffer = (unsigned long)((void *)t->buffer->data +
-+					proc->user_buffer_offset);
-+
-+		tr.data.ptr.offsets = (userptr32_t)(tr.data.ptr.buffer +
- 					ALIGN(t->buffer->data_size,
--					    sizeof(void *));
-+					    sizeof(userptr32_t)));
- 
- 		if (put_user(cmd, (uint32_t __user *)ptr))
- 			return -EFAULT;
-@@ -2367,7 +2382,7 @@ retry:
- 		binder_stat_br(proc, thread, cmd);
- 		binder_debug(BINDER_DEBUG_TRANSACTION,
- 			     "binder: %d:%d %s %d %d:%d, cmd %d"
--			     "size %zd-%zd ptr %p-%p\n",
-+			     "size %zd-%zd ptr %x-%x\n",
- 			     proc->pid, thread->pid,
- 			     (cmd == BR_TRANSACTION) ? "BR_TRANSACTION" :
- 			     "BR_REPLY",
-@@ -2584,10 +2599,16 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 		goto err;
- 	}
- 
--	switch (cmd) {
--	case BINDER_WRITE_READ: {
-+	/*
-+	 * since  the transaction's IOCTL number are generated using
-+	 * _IOC(dir,type,nr,size), a different userspace size will not
-+	 * fall through
-+	 */
-+	switch (_IOC_NR(cmd)) {
-+	case _IOC_NR(BINDER_WRITE_READ): {
- 		struct binder_write_read bwr;
- 		if (size != sizeof(struct binder_write_read)) {
-+			pr_err("binder: BINDER_WRITE_READ transaction size differs\n");
- 			ret = -EINVAL;
- 			goto err;
- 		}
-@@ -2596,12 +2617,12 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 			goto err;
- 		}
- 		binder_debug(BINDER_DEBUG_READ_WRITE,
--			     "binder: %d:%d write %ld at %08lx, read %ld at %08lx\n",
-+			     "binder: %d:%d write %d at %08x, read %d at %08x\n",
- 			     proc->pid, thread->pid, bwr.write_size, bwr.write_buffer,
- 			     bwr.read_size, bwr.read_buffer);
- 
- 		if (bwr.write_size > 0) {
--			ret = binder_thread_write(proc, thread, (void __user *)bwr.write_buffer, bwr.write_size, &bwr.write_consumed);
-+			ret = binder_thread_write(proc, thread, (void __user *)(unsigned long)(bwr.write_buffer), bwr.write_size, &bwr.write_consumed);
- 			if (ret < 0) {
- 				bwr.read_consumed = 0;
- 				if (copy_to_user(ubuf, &bwr, sizeof(bwr)))
-@@ -2610,7 +2631,7 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 			}
- 		}
- 		if (bwr.read_size > 0) {
--			ret = binder_thread_read(proc, thread, (void __user *)bwr.read_buffer, bwr.read_size, &bwr.read_consumed, filp->f_flags & O_NONBLOCK);
-+			ret = binder_thread_read(proc, thread, (void __user *)(unsigned long)(bwr.read_buffer), bwr.read_size, &bwr.read_consumed, filp->f_flags & O_NONBLOCK);
- 			if (!list_empty(&proc->todo))
- 				wake_up_interruptible(&proc->wait);
- 			if (ret < 0) {
-@@ -2620,7 +2641,7 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 			}
- 		}
- 		binder_debug(BINDER_DEBUG_READ_WRITE,
--			     "binder: %d:%d wrote %ld of %ld, read return %ld of %ld\n",
-+			     "binder: %d:%d wrote %d of %d, read return %d of %d\n",
- 			     proc->pid, thread->pid, bwr.write_consumed, bwr.write_size,
- 			     bwr.read_consumed, bwr.read_size);
- 		if (copy_to_user(ubuf, &bwr, sizeof(bwr))) {
-@@ -2629,13 +2650,13 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 		}
- 		break;
- 	}
--	case BINDER_SET_MAX_THREADS:
-+	case _IOC_NR(BINDER_SET_MAX_THREADS):
- 		if (copy_from_user(&proc->max_threads, ubuf, sizeof(proc->max_threads))) {
- 			ret = -EINVAL;
- 			goto err;
- 		}
- 		break;
--	case BINDER_SET_CONTEXT_MGR:
-+	case _IOC_NR(BINDER_SET_CONTEXT_MGR):
- 		if (binder_context_mgr_node != NULL) {
- 			pr_err("binder: BINDER_SET_CONTEXT_MGR already set\n");
- 			ret = -EBUSY;
-@@ -2652,7 +2673,7 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 			}
- 		} else
- 			binder_context_mgr_uid = current->cred->euid;
--		binder_context_mgr_node = binder_new_node(proc, NULL, NULL);
-+		binder_context_mgr_node = binder_new_node(proc, 0, 0);
- 		if (binder_context_mgr_node == NULL) {
- 			ret = -ENOMEM;
- 			goto err;
-@@ -2662,14 +2683,15 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 		binder_context_mgr_node->has_strong_ref = 1;
- 		binder_context_mgr_node->has_weak_ref = 1;
- 		break;
--	case BINDER_THREAD_EXIT:
-+	case _IOC_NR(BINDER_THREAD_EXIT):
- 		binder_debug(BINDER_DEBUG_THREADS, "binder: %d:%d exit\n",
- 			     proc->pid, thread->pid);
- 		binder_free_thread(proc, thread);
- 		thread = NULL;
- 		break;
--	case BINDER_VERSION:
-+	case _IOC_NR(BINDER_VERSION):
- 		if (size != sizeof(struct binder_version)) {
-+			pr_err("binder: BINDER_VERSION size differs\n");
- 			ret = -EINVAL;
- 			goto err;
- 		}
-@@ -2679,6 +2701,7 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 		}
- 		break;
- 	default:
-+		pr_err("binder: IOCTL No. not found\n");
- 		ret = -EINVAL;
- 		goto err;
- 	}
-@@ -3074,7 +3097,7 @@ static void print_binder_transaction(struct seq_file *m, const char *prefix,
- 				     struct binder_transaction *t)
- {
- 	seq_printf(m,
--		   "%s %d: %p from %d:%d to %d:%d code %x flags %x pri %ld r%d",
-+		   "%s %d: %p from %d:%d to %d:%d code %x flags %x pri %d r%d",
- 		   prefix, t->debug_id, t,
- 		   t->from ? t->from->proc->pid : 0,
- 		   t->from ? t->from->pid : 0,
-@@ -3119,7 +3142,7 @@ static void print_binder_work(struct seq_file *m, const char *prefix,
- 		break;
- 	case BINDER_WORK_NODE:
- 		node = container_of(w, struct binder_node, work);
--		seq_printf(m, "%snode work %d: u%p c%p\n",
-+		seq_printf(m, "%snode work %d: u%x c%x\n",
- 			   prefix, node->debug_id, node->ptr, node->cookie);
- 		break;
- 	case BINDER_WORK_DEAD_BINDER:
-@@ -3181,7 +3204,7 @@ static void print_binder_node(struct seq_file *m, struct binder_node *node)
- 	hlist_for_each_entry(ref, pos, &node->refs, node_entry)
- 		count++;
- 
--	seq_printf(m, "  node %d: u%p c%p hs %d hw %d ls %d lw %d is %d iw %d",
-+	seq_printf(m, "  node %d: u%x c%x hs %d hw %d ls %d lw %d is %d iw %d",
- 		   node->debug_id, node->ptr, node->cookie,
- 		   node->has_strong_ref, node->has_weak_ref,
- 		   node->local_strong_refs, node->local_weak_refs,
-@@ -3487,6 +3510,7 @@ static const struct file_operations binder_fops = {
- 	.owner = THIS_MODULE,
- 	.poll = binder_poll,
- 	.unlocked_ioctl = binder_ioctl,
-+	.compat_ioctl = binder_ioctl,	/* handler for 32-bit compat layer */
- 	.mmap = binder_mmap,
- 	.open = binder_open,
- 	.flush = binder_flush,
-diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
-index 2f7d195..982b30d 100644
---- a/drivers/staging/android/binder.h
-+++ b/drivers/staging/android/binder.h
-@@ -26,6 +26,8 @@
- 	((((c1)<<24)) | (((c2)<<16)) | (((c3)<<8)) | (c4))
- #define B_TYPE_LARGE 0x85
- 
-+typedef uint32_t userptr32_t;
-+
- enum {
- 	BINDER_TYPE_BINDER	= B_PACK_CHARS('s', 'b', '*', B_TYPE_LARGE),
- 	BINDER_TYPE_WEAK_BINDER	= B_PACK_CHARS('w', 'b', '*', B_TYPE_LARGE),
-@@ -48,17 +50,17 @@ enum {
-  */
- struct flat_binder_object {
- 	/* 8 bytes for large_flat_header. */
--	unsigned long		type;
--	unsigned long		flags;
-+	uint32_t		type;
-+	uint32_t		flags;
- 
- 	/* 8 bytes of data. */
- 	union {
--		void __user	*binder;	/* local object */
--		signed long	handle;		/* remote object */
-+		userptr32_t	binder;		/* local object */
-+		int32_t		handle;		/* remote object */
- 	};
- 
- 	/* extra data associated with local object */
--	void __user		*cookie;
-+	userptr32_t		cookie;
- };
- 
- /*
-@@ -67,18 +69,18 @@ struct flat_binder_object {
-  */
- 
- struct binder_write_read {
--	signed long	write_size;	/* bytes to write */
--	signed long	write_consumed;	/* bytes consumed by driver */
--	unsigned long	write_buffer;
--	signed long	read_size;	/* bytes to read */
--	signed long	read_consumed;	/* bytes consumed by driver */
--	unsigned long	read_buffer;
-+	int32_t		write_size;	/* bytes to write */
-+	int32_t		write_consumed;	/* bytes consumed by driver */
-+	uint32_t	write_buffer;
-+	int32_t		read_size;	/* bytes to read */
-+	int32_t		read_consumed;	/* bytes consumed by driver */
-+	uint32_t	read_buffer;
- };
- 
- /* Use with BINDER_VERSION, driver fills in fields. */
- struct binder_version {
- 	/* driver protocol version -- increment with incompatible change */
--	signed long	protocol_version;
-+	int32_t		protocol_version;
- };
- 
- /* This is the current protocol version. */
-@@ -86,7 +88,7 @@ struct binder_version {
- 
- #define BINDER_WRITE_READ		_IOWR('b', 1, struct binder_write_read)
- #define	BINDER_SET_IDLE_TIMEOUT		_IOW('b', 3, int64_t)
--#define	BINDER_SET_MAX_THREADS		_IOW('b', 5, size_t)
-+#define	BINDER_SET_MAX_THREADS		_IOW('b', 5, uint32_t)
- #define	BINDER_SET_IDLE_PRIORITY	_IOW('b', 6, int)
- #define	BINDER_SET_CONTEXT_MGR		_IOW('b', 7, int)
- #define	BINDER_THREAD_EXIT		_IOW('b', 8, int)
-@@ -119,18 +121,18 @@ struct binder_transaction_data {
- 	 * identifying the target and contents of the transaction.
- 	 */
- 	union {
--		size_t	handle;	/* target descriptor of command transaction */
--		void	*ptr;	/* target descriptor of return transaction */
-+		uint32_t	handle;	/* target descriptor of command transaction */
-+		userptr32_t	ptr;	/* target descriptor of return transaction */
- 	} target;
--	void		*cookie;	/* target object cookie */
-+	userptr32_t     cookie;	/* target object cookie */
- 	unsigned int	code;		/* transaction command */
- 
- 	/* General information about the transaction. */
- 	unsigned int	flags;
- 	pid_t		sender_pid;
- 	uid_t		sender_euid;
--	size_t		data_size;	/* number of bytes of data */
--	size_t		offsets_size;	/* number of bytes of offsets */
-+	uint32_t	data_size;	/* number of bytes of data */
-+	uint32_t	offsets_size;	/* number of bytes of offsets */
- 
- 	/* If this transaction is inline, the data immediately
- 	 * follows here; otherwise, it ends with a pointer to
-@@ -139,17 +141,17 @@ struct binder_transaction_data {
- 	union {
- 		struct {
- 			/* transaction data */
--			const void __user	*buffer;
-+			userptr32_t	buffer;
- 			/* offsets from buffer to flat_binder_object structs */
--			const void __user	*offsets;
-+			userptr32_t 	offsets;
- 		} ptr;
- 		uint8_t	buf[8];
- 	} data;
- };
- 
- struct binder_ptr_cookie {
--	void *ptr;
--	void *cookie;
-+	userptr32_t tr;
-+	userptr32_t cookie;
- };
- 
- struct binder_pri_desc {
-@@ -159,8 +161,8 @@ struct binder_pri_desc {
- 
- struct binder_pri_ptr_cookie {
- 	int priority;
--	void *ptr;
--	void *cookie;
-+	userptr32_t ptr;
-+	userptr32_t cookie;
- };
- 
- enum BinderDriverReturnProtocol {
-@@ -235,11 +237,11 @@ enum BinderDriverReturnProtocol {
- 	 * stop threadpool thread
- 	 */
- 
--	BR_DEAD_BINDER = _IOR('r', 15, void *),
-+	BR_DEAD_BINDER = _IOR('r', 15, userptr32_t),
- 	/*
- 	 * void *: cookie
- 	 */
--	BR_CLEAR_DEATH_NOTIFICATION_DONE = _IOR('r', 16, void *),
-+	BR_CLEAR_DEATH_NOTIFICATION_DONE = _IOR('r', 16, userptr32_t),
- 	/*
- 	 * void *: cookie
- 	 */
-@@ -320,7 +322,7 @@ enum BinderDriverCommandProtocol {
- 	 * void *: cookie
- 	 */
- 
--	BC_DEAD_BINDER_DONE = _IOW('c', 16, void *),
-+	BC_DEAD_BINDER_DONE = _IOW('c', 16, userptr32_t),
- 	/*
- 	 * void *: cookie
- 	 */
--- 
-1.7.9.5
+[ 3647.020666] general protection fault: 0000 [#1] SMP
+[ 3647.026232] Modules linked in: edd cpufreq_conservative cpufreq_userspace cpu
+freq_powersave acpi_cpufreq mperf fuse vfat fat loop dm_mod coretemp kvm crc32c_
+intel ixgbe ipv6 i7core_edac igb iTCO_wdt i2c_i801 iTCO_vendor_support ioatdma e
+dac_core tpm_tis joydev lpc_ich i2c_core microcode mfd_core rtc_cmos pcspkr sr_m
+od tpm sg dca hid_generic mdio tpm_bios cdrom button ext3 jbd mbcache usbhid hid
+ uhci_hcd ehci_hcd usbcore usb_common sd_mod crc_t10dif processor thermal_sys hw
+mon scsi_dh_alua scsi_dh_hp_sw scsi_dh_rdac scsi_dh_emc scsi_dh ata_generic ata_
+piix libata megaraid_sas scsi_mod
+[ 3647.084565] CPU 19
+[ 3647.086709] Pid: 33708, comm: genload Not tainted 3.7.0-rc7-mem-region+ #11 Q
+CI QSSC-S4R/QSSC-S4R
+[ 3647.096799] RIP: 0010:[<ffffffff8110979c>]  [<ffffffff8110979c>] add_to_freel
+ist+0x8c/0x100
+[ 3647.106125] RSP: 0000:ffff880a7f6c3e58  EFLAGS: 00010086
+[ 3647.112042] RAX: dead000000200200 RBX: 0000000000000001 RCX: 0000000000000000
+
+[ 3647.119990] RDX: ffffea001211a3a0 RSI: ffffea001211ffa0 RDI: 0000000000000001
+
+[ 3647.127936] RBP: ffff880a7f6c3e58 R08: ffff88067ff6d240 R09: ffff88067ff6b180
+
+[ 3647.135884] R10: 0000000000000002 R11: 0000000000000001 R12: 00000000000007fe
+
+[ 3647.143831] R13: 0000000000000001 R14: 0000000000000001 R15: ffffea001211ff80
+
+[ 3647.151778] FS:  00007f0b2a674700(0000) GS:ffff880a7f6c0000(0000) knlGS:00000
+00000000000
+[ 3647.160790] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 3647.167188] CR2: 00007f0b1a000000 CR3: 0000000484723000 CR4: 00000000000007e0
+
+[ 3647.175136] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+
+[ 3647.183083] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+
+[ 3647.191030] Process genload (pid: 33708, threadinfo ffff8806852bc000, task ff
+ff880688288000)
+[ 3647.200428] Stack:
+[ 3647.202667]  ffff880a7f6c3f08 ffffffff8110e9c0 ffff88067ff66100 0000000000000
+7fe
+[ 3647.210954]  ffff880a7f6d5bb0 0000000000000030 0000000000002030 ffff88067ff66
+168
+[ 3647.219244]  0000000000000002 ffff880a7f6d5b78 0000000e88288000 ffff88067ff66
+100
+[ 3647.227530] Call Trace:
+[ 3647.230252]  <IRQ>
+[ 3647.232394]  [<ffffffff8110e9c0>] free_pcppages_bulk+0x350/0x450
+[ 3647.239297]  [<ffffffff8110f0d0>] ? drain_pages+0xd0/0xd0
+[ 3647.245313]  [<ffffffff8110f0c3>] drain_pages+0xc3/0xd0
+[ 3647.251135]  [<ffffffff8110f0e6>] drain_local_pages+0x16/0x20
+[ 3647.257540]  [<ffffffff810a3bce>] generic_smp_call_function_interrupt+0xae/0x
+260
+[ 3647.265783]  [<ffffffff810282c7>] smp_call_function_interrupt+0x27/0x40
+[ 3647.273156]  [<ffffffff8147f272>] call_function_interrupt+0x72/0x80
+[ 3647.280136]  <EOI>
+[ 3647.282278]  [<ffffffff81077936>] ? mutex_spin_on_owner+0x76/0xa0
+[ 3647.289292]  [<ffffffff81473116>] __mutex_lock_slowpath+0x66/0x180
+[ 3647.296181]  [<ffffffff8113afe7>] ? try_to_unmap_one+0x277/0x440
+[ 3647.302872]  [<ffffffff81472b93>] mutex_lock+0x23/0x40
+[ 3647.308595]  [<ffffffff8113b657>] rmap_walk+0x137/0x240
+[ 3647.314417]  [<ffffffff8115c230>] ? get_page+0x40/0x40
+[ 3647.320133]  [<ffffffff8115d036>] move_to_new_page+0xb6/0x110
+[ 3647.326526]  [<ffffffff8115d452>] __unmap_and_move+0x192/0x230
+[ 3647.333023]  [<ffffffff8115d612>] unmap_and_move+0x122/0x140
+[ 3647.339328]  [<ffffffff8115d6c9>] migrate_pages+0x99/0x150
+[ 3647.345433]  [<ffffffff81129f10>] ? isolate_freepages+0x220/0x220
+[ 3647.352220]  [<ffffffff8112ace2>] compact_zone+0x2f2/0x5d0
+[ 3647.358332]  [<ffffffff8112b4a0>] try_to_compact_pages+0x180/0x240
+[ 3647.365218]  [<ffffffff8110f1e7>] __alloc_pages_direct_compact+0x97/0x200
+[ 3647.372780]  [<ffffffff810a45a3>] ? on_each_cpu_mask+0x63/0xb0
+[ 3647.379279]  [<ffffffff8110f84f>] __alloc_pages_slowpath+0x4ff/0x780
+[ 3647.386349]  [<ffffffff8110fbf1>] __alloc_pages_nodemask+0x121/0x180
+[ 3647.393430]  [<ffffffff811500d6>] alloc_pages_vma+0xd6/0x170
+[ 3647.399737]  [<ffffffff81162198>] do_huge_pmd_anonymous_page+0x148/0x210
+[ 3647.407203]  [<ffffffff81132f6b>] handle_mm_fault+0x33b/0x340
+[ 3647.413609]  [<ffffffff814799d3>] __do_page_fault+0x2a3/0x4e0
+[ 3647.420017]  [<ffffffff8126316a>] ? trace_hardirqs_off_thunk+0x3a/0x6c
+[ 3647.427290]  [<ffffffff81479c1e>] do_page_fault+0xe/0x10
+[ 3647.433208]  [<ffffffff81475f68>] page_fault+0x28/0x30
+[ 3647.438921] Code: 8d 78 01 48 89 f8 48 c1 e0 04 49 8d 04 00 48 8b 50 08 48 83
+ 40 10 01 48 85 d2 74 1b 48 8b 42 08 48 89 72 08 48 89 16 48 89 46 08 <48> 89 30
+ c9 c3 0f 1f 80 00 00 00 00 4d 3b 00 74 4b 83 e9 01 79
+[ 3647.460607] RIP  [<ffffffff8110979c>] add_to_freelist+0x8c/0x100
+[ 3647.467308]  RSP <ffff880a7f6c3e58>
+[    0.000000] Linux version 3.7.0-rc7-mem-region+ (root@linux-intel) (gcc versi
+on 4.3.4 [gcc-4_3-branch revision 152973] (SUSE Linux) ) #11 SMP Tue Dec 4 15:23
+:15 CST 2012
+.
+
+Thanks,
+Jianguo Wu
+
+On 2012-11-7 3:52, Srivatsa S. Bhat wrote:
+> Hi,
+> 
+> This is an alternative design for Memory Power Management, developed based on
+> some of the suggestions[1] received during the review of the earlier patchset
+> ("Hierarchy" design) on Memory Power Management[2]. This alters the buddy-lists
+> to keep them region-sorted, and is hence identified as the "Sorted-buddy" design.
+> 
+> One of the key aspects of this design is that it avoids the zone-fragmentation
+> problem that was present in the earlier design[3].
+> 
+> 
+> Quick overview of Memory Power Management and Memory Regions:
+> ------------------------------------------------------------
+> 
+> Today memory subsystems are offer a wide range of capabilities for managing
+> memory power consumption. As a quick example, if a block of memory is not
+> referenced for a threshold amount of time, the memory controller can decide to
+> put that chunk into a low-power content-preserving state. And the next
+> reference to that memory chunk would bring it back to full power for read/write.
+> With this capability in place, it becomes important for the OS to understand
+> the boundaries of such power-manageable chunks of memory and to ensure that
+> references are consolidated to a minimum number of such memory power management
+> domains.
+> 
+> ACPI 5.0 has introduced MPST tables (Memory Power State Tables) [5] so that
+> the firmware can expose information regarding the boundaries of such memory
+> power management domains to the OS in a standard way.
+> 
+> How can Linux VM help memory power savings?
+> 
+> o Consolidate memory allocations and/or references such that they are
+> not spread across the entire memory address space.  Basically area of memory
+> that is not being referenced, can reside in low power state.
+> 
+> o Support targeted memory reclaim, where certain areas of memory that can be
+> easily freed can be offlined, allowing those areas of memory to be put into
+> lower power states.
+> 
+> Memory Regions:
+> ---------------
+> 
+> "Memory Regions" is a way of capturing the boundaries of power-managable
+> chunks of memory, within the MM subsystem.
+> 
+> 
+> Short description of the "Sorted-buddy" design:
+> -----------------------------------------------
+> 
+> In this design, the memory region boundaries are captured in a parallel
+> data-structure instead of fitting regions between nodes and zones in the
+> hierarchy. Further, the buddy allocator is altered, such that we maintain the
+> zones' freelists in region-sorted-order and thus do page allocation in the
+> order of increasing memory regions. (The freelists need not be fully
+> address-sorted, they just need to be region-sorted. Patch 6 explains this
+> in more detail).
+> 
+> The idea is to do page allocation in increasing order of memory regions
+> (within a zone) and perform page reclaim in the reverse order, as illustrated
+> below.
+> 
+> ---------------------------- Increasing region number---------------------->
+> 
+> Direction of allocation--->                         <---Direction of reclaim
+> 
+> 
+> The sorting logic (to maintain freelist pageblocks in region-sorted-order)
+> lies in the page-free path and not the page-allocation path and hence the
+> critical page allocation paths remain fast. Moreover, the heart of the page
+> allocation algorithm itself remains largely unchanged, and the region-related
+> data-structures are optimized to avoid unnecessary updates during the
+> page-allocator's runtime.
+> 
+> Advantages of this design:
+> --------------------------
+> 1. No zone-fragmentation (IOW, we don't create more zones than necessary) and
+>    hence we avoid its associated problems (like too many zones, extra page
+>    reclaim threads, question of choosing watermarks etc).
+>    [This is an advantage over the "Hierarchy" design]
+> 
+> 2. Performance overhead is expected to be low: Since we retain the simplicity
+>    of the algorithm in the page allocation path, page allocation can
+>    potentially remain as fast as it would be without memory regions. The
+>    overhead is pushed to the page-freeing paths which are not that critical.
+> 
+> 
+> Results:
+> =======
+> 
+> Test setup:
+> -----------
+> This patchset applies cleanly on top of 3.7-rc3.
+> 
+> x86 dual-socket quad core HT-enabled machine booted with mem=8G
+> Memory region size = 512 MB
+> 
+> Functional testing:
+> -------------------
+> 
+> Ran pagetest, a simple C program that allocates and touches a required number
+> of pages.
+> 
+> Below is the statistics from the regions within ZONE_NORMAL, at various sizes
+> of allocations from pagetest.
+> 
+> 	     Present pages   |	Free pages at various allocations        |
+> 			     |  start	|  512 MB  |  1024 MB | 2048 MB  |
+>   Region 0      16	     |   0      |    0     |     0    |    0     |
+>   Region 1      131072       |  87219   |  8066    |   7892   |  7387    |
+>   Region 2      131072       | 131072   |  79036   |     0    |    0     |
+>   Region 3      131072       | 131072   | 131072   |   79061  |    0     |
+>   Region 4      131072       | 131072   | 131072   |  131072  |    0     |
+>   Region 5      131072       | 131072   | 131072   |  131072  |  79051   |
+>   Region 6      131072       | 131072   | 131072   |  131072  |  131072  |
+>   Region 7      131072       | 131072   | 131072   |  131072  |  131072  |
+>   Region 8      131056       | 105475   | 105472   |  105472  |  105472  |
+> 
+> This shows that page allocation occurs in the order of increasing region
+> numbers, as intended in this design.
+> 
+> Performance impact:
+> -------------------
+> 
+> Kernbench results didn't show much of a difference between the performance
+> of vanilla 3.7-rc3 and this patchset.
+> 
+> 
+> Todos:
+> =====
+> 
+> 1. Memory-region aware page-reclamation:
+> ----------------------------------------
+> 
+> We would like to do page reclaim in the reverse order of page allocation
+> within a zone, ie., in the order of decreasing region numbers.
+> To achieve that, while scanning lru pages to reclaim, we could potentially
+> look for pages belonging to higher regions (considering region boundaries)
+> or perhaps simply prefer pages of higher pfns (and skip lower pfns) as
+> reclaim candidates.
+> 
+> 2. Compile-time exclusion of Memory Power Management, and extending the
+> support to also work with other features such as Mem cgroups, kexec etc.
+> 
+> References:
+> ----------
+> 
+> [1]. Review comments suggesting modifying the buddy allocator to be aware of
+>      memory regions:
+>      http://article.gmane.org/gmane.linux.power-management.general/24862
+>      http://article.gmane.org/gmane.linux.power-management.general/25061
+>      http://article.gmane.org/gmane.linux.kernel.mm/64689
+> 
+> [2]. Patch series that implemented the node-region-zone hierarchy design:
+>      http://lwn.net/Articles/445045/
+>      http://thread.gmane.org/gmane.linux.kernel.mm/63840
+> 
+>      Summary of the discussion on that patchset:
+>      http://article.gmane.org/gmane.linux.power-management.general/25061
+> 
+>      Forward-port of that patchset to 3.7-rc3 (minimal x86 config)
+>      http://thread.gmane.org/gmane.linux.kernel.mm/89202
+> 
+> [3]. Disadvantages of having memory regions in the hierarchy between nodes and
+>      zones:
+>      http://article.gmane.org/gmane.linux.kernel.mm/63849
+> 
+> [4]. Estimate of potential power savings on Samsung exynos board
+>      http://article.gmane.org/gmane.linux.kernel.mm/65935
+> 
+> [5]. ACPI 5.0 and MPST support
+>      http://www.acpi.info/spec.htm
+>      Section 5.2.21 Memory Power State Table (MPST)
+> 
+>  Srivatsa S. Bhat (8):
+>       mm: Introduce memory regions data-structure to capture region boundaries within node
+>       mm: Initialize node memory regions during boot
+>       mm: Introduce and initialize zone memory regions
+>       mm: Add helpers to retrieve node region and zone region for a given page
+>       mm: Add data-structures to describe memory regions within the zones' freelists
+>       mm: Demarcate and maintain pageblocks in region-order in the zones' freelists
+>       mm: Add an optimized version of del_from_freelist to keep page allocation fast
+>       mm: Print memory region statistics to understand the buddy allocator behavior
+> 
+> 
+>   include/linux/mm.h     |   38 +++++++
+>  include/linux/mmzone.h |   52 +++++++++
+>  mm/compaction.c        |    8 +
+>  mm/page_alloc.c        |  263 ++++++++++++++++++++++++++++++++++++++++++++----
+>  mm/vmstat.c            |   59 ++++++++++-
+>  5 files changed, 390 insertions(+), 30 deletions(-)
+> 
+> 
+> Thanks,
+> Srivatsa S. Bhat
+> IBM Linux Technology Center
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
 
