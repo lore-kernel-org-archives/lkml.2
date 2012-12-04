@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751919Ab2LDP26 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 10:28:58 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:50038 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753661Ab2LDP2g (ORCPT
+	id S1753873Ab2LDP2z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 10:28:55 -0500
+Received: from mga02.intel.com ([134.134.136.20]:53337 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753801Ab2LDP2w convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 10:28:36 -0500
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, Jean Delvare <khali@linux-fr.org>,
-        linux-input@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 13/14] HID: i2c-hid: also call i2c_hid_free_buffers in i2c_hid_remove
-Date: Tue,  4 Dec 2012 16:27:54 +0100
-Message-Id: <1354634875-5182-14-git-send-email-benjamin.tissoires@gmail.com>
-X-Mailer: git-send-email 1.8.0.1
-In-Reply-To: <1354634875-5182-1-git-send-email-benjamin.tissoires@gmail.com>
-References: <1354634875-5182-1-git-send-email-benjamin.tissoires@gmail.com>
+	Tue, 4 Dec 2012 10:28:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,215,1355126400"; 
+   d="scan'208";a="251773862"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stanislaw Gruszka <sgruszka@redhat.com>
+Subject: RE: [char-misc-next 07/15] mei: use wrietl/readl instead of io
+ wrappers
+Thread-Topic: [char-misc-next 07/15] mei: use wrietl/readl instead of io
+ wrappers
+Thread-Index: AQHN0ihwqEeZmpNWmk6M50CYz937qJgIklqAgAArpVA=
+Date: Tue, 4 Dec 2012 15:28:23 +0000
+Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B01E9DED6@HASMSX106.ger.corp.intel.com>
+References: <1354629884-3202-1-git-send-email-tomas.winkler@intel.com>
+	<1354629884-3202-7-git-send-email-tomas.winkler@intel.com>
+ <20121204143151.1cce530a@pyramind.ukuu.org.uk>
+In-Reply-To: <20121204143151.1cce530a@pyramind.ukuu.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the case where the hid driver in charge of handling the hid part
-of the device (hid-generic for instance) fails at probe, neither
-i2c_hid_start nor i2c_hid_stop are called.
-Thus, the buffers allocated in i2c_hid_probe are never freed.
+> >
+> >  /**
+> > @@ -451,7 +451,7 @@ static inline u32 mei_reg_read(const struct
+> > mei_device *dev,  static inline void mei_reg_write(const struct mei_device
+> *dev,
+> >  				 unsigned long offset, u32 value)  {
+> > -	iowrite32(value, dev->mem_addr + offset);
+> > +	writel(value, dev->mem_addr + offset);
+> 
+> ioremap should match readl/writel
+> iomap iowrite32/ioread32
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
----
- drivers/hid/i2c-hid/i2c-hid.c | 3 +++
- 1 file changed, 3 insertions(+)
+Thanks, I can replace pci_iomap with pci_ioremap_bar although in low level it is doing just the same.
 
-diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-index bea4b13..62988f1 100644
---- a/drivers/hid/i2c-hid/i2c-hid.c
-+++ b/drivers/hid/i2c-hid/i2c-hid.c
-@@ -891,6 +891,9 @@ static int __devexit i2c_hid_remove(struct i2c_client *client)
+
+> so you need to tweak the map/unmap if you do this.
+> 
+> As to overhead. I'd love to see a measurement that can detect the
+> difference. Do you have a benchmark that shows it ?
+
+Don't have any numbers but it seems reasonable to me.
+ I did following this example
+
+commit 05f5b97ee0013fefbd9139cf8c3eda5f2a88c04a
+Author: Stanislaw Gruszka <sgruszka@redhat.com>
+Date:   Wed Mar 7 09:52:26 2012 -0800
  
- 	free_irq(client->irq, ihid);
- 
-+	if (ihid->bufsize)
-+		i2c_hid_free_buffers(ihid);
-+
- 	kfree(ihid);
- 
- 	return 0;
--- 
-1.8.0.1
+    iwlwifi: use writeb,writel,readl directly
+    
+    That change will save us some CPU cycles at run time. Having port-based
+    I/O seems to be not possible for PCIe devices.
+    
+    Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+
+Thanks
+Tomas
 
