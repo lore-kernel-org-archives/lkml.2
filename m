@@ -1,66 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752827Ab2LDUgu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 15:36:50 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:45852 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751436Ab2LDUgo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 15:36:44 -0500
-Date: Tue, 4 Dec 2012 21:36:40 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: "Ortiz, Lance E" <lance.oritz@hp.com>,
-        "bhelgaas@google.com" <bhelgaas@google.com>,
-        "lance_ortiz@hotmail.com" <lance_ortiz@hotmail.com>,
-        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6 2/3] aerdrv: Enhanced AER logging
-Message-ID: <20121204203640.GB6242@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Mauro Carvalho Chehab <mchehab@redhat.com>,
-	"Ortiz, Lance E" <lance.oritz@hp.com>,
-	"bhelgaas@google.com" <bhelgaas@google.com>,
-	"lance_ortiz@hotmail.com" <lance_ortiz@hotmail.com>,
-	"jiang.liu@huawei.com" <jiang.liu@huawei.com>,
-	"tony.luck@intel.com" <tony.luck@intel.com>,
-	"rostedt@goodmis.org" <rostedt@goodmis.org>,
-	"linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-	"linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <20121204170429.31397.50068.stgit@grignak.americas.hpqcorp.net>
- <20121204170436.31397.40857.stgit@grignak.americas.hpqcorp.net>
- <20121204164151.66b9bb37@redhat.com>
- <A961433CDFF2F640A2866803152E61F9516EEACD@G4W3218.americas.hpqcorp.net>
- <20121204183110.3de876de@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20121204183110.3de876de@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753061Ab2LDUk0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 15:40:26 -0500
+Received: from mail.work-microwave.de ([62.245.205.51]:57056 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751436Ab2LDUkY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 15:40:24 -0500
+From: Roland Stigge <stigge@antcom.de>
+To: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
+        jbe@pengutronix.de, plagnioj@jcrosoft.com, highguy@gmail.com,
+        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
+        rmallon@gmail.com, tru@work-microwave.de, sr@denx.de,
+        wg@grandegger.com
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH 0/6 v9] gpio: Add block GPIO
+Date: Tue,  4 Dec 2012 21:39:42 +0100
+Message-Id: <1354653588-4018-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 04, 2012 at 06:31:10PM -0200, Mauro Carvalho Chehab wrote:
-> However, in this particular case, if PCI AER got an error, but the
-> device is not found when trying to handle it, it can be an indication
-> that the PCI device has a more serious issue. So, I'm in favor
-> of changing it, and likely be more verbose at the error message,
-> saying that the device was not found while trying to report an error
-> condition that happened there. It could make sense to even send a
-> trace for the daemon to be aware of the error, on some pci device that
-> vanished likely due to the error.
+This set of patches adds:
 
-Let's leave it at pr_err now and if we actually start seeing errors like
-that and decide that they need more verbose reporting, then to change it
-to whatever's best. IOW, do the empirical approach.
+* Block GPIO API to gpiolib
+* Sysfs support for GPIO API, to provide userland access
+* Device interface for userland access (alternative to sysfs)
+* Devicetree support to instantiate GPIO blocks via DT
+* Example implementations in several gpio drivers since they need
+  special accessor functions for block wise GPIO access
+* Fix for race condition in gpiolib on device creation
 
-Thanks.
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+--
 
--- 
-Regards/Gruss,
-    Boris.
+Changed since v8:
+* Added poll() function to dev interface for IRQ handling
+* Fixed gpio_block_register() in case of missing CONFIG_GPIO_SYSFS
+* Fixed mask handling in sysfs interface
+* Fixed get_user/put_user pointer (cast)
+
+Changes since v7:
+* Fixed error in API documentation (name arg missing in prototype)
+* Fixed compile error if sysfs is missing: Moved gpio_block_is_output()
+  out of sysfs-ifdef
+* Added error handling to gpio_block_register()
+* Added mask attribute to sysfs (although dev interface exists now)
+
+Changes since v6:
+* Changed realloc to list handling
+* Added mask to kernel API
+* Added device interface as userspace API
+* Changed sizeof() to BITS_PER_LONG
+* Fixed multiline comment style
+* Documented direction setting by the user
+* Documented order of handled chips in case of multiple chips in one block
+
+Changes since v5:
+* Documented sysfs: elaborated on "exported" and "values" attributes
+* Documented sysfs: gpiochip is a separate class now
+* Aggregated driver support patches for block gpio into one single patch
+* Added gpio block driver support for twl6040 and pch
+
+Changes since v4:
+* Documented word width
+* Bugfix: export/unexport on register/unregister
+* Using default dev_attrs for gpio_block_class
+* Fix gpiolib: race condition on device creation
+* Added driver support for ucb14500, vt8500, xilinx
+
+Changes since v3:
+* Added driver support for pca953x, em, pl061, max732x, pcf857x
+* Coding style improvements
+* Fixed krealloc memory leak in error case
+* sysfs: values in hex
+* Register blocks in a list
+* Narrowing lock scope
+* Use S_IWUSR and S_IRUGO instead of direct octal values
+* Use for_each_set_bit()
+* Change from unsigned to unsigned long for masks and values
+
+Changes since v2:
+* Added sysfs support
+* Added devicetree support
+* Added support for lpc32xx, generic
+* Added functions for GPIO block registration
+* Added more error checking
+* Bit remapping bugfix
+
+Changes since v1:
+* API change to 32/64 bit word, bit masks
+
+Thanks to Ryan Mallon, Linus Walleij, Stijn Devriendt, Jean-Christophe
+Plagniol-Villard, Mark Brown, Greg Kroah-Hartman, Grant Likely, Stefan
+Roese and Wolfgang Grandegger for reviewing!
+
+Roland Stigge (6):
+ gpio: Add a block GPIO API to gpiolib
+ gpio: Add sysfs support to block GPIO API
+ gpio: Add userland device interface to block GPIO
+ gpiolib: Fix default attributes for class
+ gpio: Add device tree support to block GPIO API
+ gpio: Add block gpio to several gpio drivers
+
+ Documentation/ABI/testing/dev-gpioblock               |   34 
+ Documentation/ABI/testing/sysfs-gpio                  |   31 
+ Documentation/devicetree/bindings/gpio/gpio-block.txt |   36 
+ Documentation/gpio.txt                                |   58 +
+ drivers/gpio/Makefile                                 |    1 
+ drivers/gpio/gpio-em.c                                |   23 
+ drivers/gpio/gpio-generic.c                           |   56 +
+ drivers/gpio/gpio-lpc32xx.c                           |   82 +
+ drivers/gpio/gpio-max730x.c                           |   61 +
+ drivers/gpio/gpio-max732x.c                           |   59 +
+ drivers/gpio/gpio-pca953x.c                           |   64 +
+ drivers/gpio/gpio-pcf857x.c                           |   24 
+ drivers/gpio/gpio-pch.c                               |   27 
+ drivers/gpio/gpio-pl061.c                             |   17 
+ drivers/gpio/gpio-twl6040.c                           |   32 
+ drivers/gpio/gpio-ucb1400.c                           |   23 
+ drivers/gpio/gpio-vt8500.c                            |   24 
+ drivers/gpio/gpio-xilinx.c                            |   44 +
+ drivers/gpio/gpioblock-of.c                           |   84 +
+ drivers/gpio/gpiolib.c                                |  764 ++++++++++++++++--
+ include/asm-generic/gpio.h                            |   28 
+ include/linux/gpio.h                                  |  122 ++
+ 22 files changed, 1647 insertions(+), 47 deletions(-)
