@@ -1,169 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312Ab2LDSm2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 13:42:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40932 "EHLO mx1.redhat.com"
+	id S1752118Ab2LDSwi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 13:52:38 -0500
+Received: from smtp4-g21.free.fr ([212.27.42.4]:36310 "EHLO smtp4-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752944Ab2LDSm1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 13:42:27 -0500
-Date: Tue, 4 Dec 2012 16:41:51 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Lance Ortiz <lance.ortiz@hp.com>
-Cc: bhelgaas@google.com, lance_ortiz@hotmail.com, jiang.liu@huawei.com,
-        tony.luck@intel.com, bp@alien8.de, rostedt@goodmis.org,
-        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v6 2/3] aerdrv: Enhanced AER logging
-Message-ID: <20121204164151.66b9bb37@redhat.com>
-In-Reply-To: <20121204170436.31397.40857.stgit@grignak.americas.hpqcorp.net>
-References: <20121204170429.31397.50068.stgit@grignak.americas.hpqcorp.net>
-	<20121204170436.31397.40857.stgit@grignak.americas.hpqcorp.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751566Ab2LDSwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 13:52:37 -0500
+From: Philippe Reynes <tremyfr@yahoo.fr>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net
+Cc: otavio@ossystems.com.br, javier@dowhile0.org, jkosina@suse.cz,
+        eric.jarrige@armadeus.org, julien.boibessot@armadeus.com,
+        thomas.petazzoni@free-electrons.com,
+        Philippe Reynes <tremyfr@yahoo.fr>
+Subject: [PATCH v2] net: phy: smsc: force all capable mode if the phy is started in powerdown mode
+Date: Tue,  4 Dec 2012 19:52:10 +0100
+Message-Id: <1354647130-1854-1-git-send-email-tremyfr@yahoo.fr>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, 04 Dec 2012 10:04:36 -0700
-Lance Ortiz <lance.ortiz@hp.com> escreveu:
+A SMSC PHY in power down mode can't be used.
+If a SMSC PHY is in this mode in the config_init
+stage, the mode "all capable" is set. So the PHY
+could then be used.
 
-> This patch will provide a more reliable and easy way for user-space
-> applications to have access to AER logs rather than reading them from the
-> message buffer. It also provides a way to notify user-space when an AER
-> event occurs.
-> 
-> The aer driver is updated to generate a trace event of function 'aer_event'
-> when a PCIe error is reported over the AER interface.  The trace event was
-> added to both the interrupt based aer path and the firmware first path.
-> 
-> v1-v2 fix compile errors in ifdefs.
-> v2-v3 Update to new location of trace header. Update print to remove
-> warning.
-> v3-v4 Reworked logic when getting ready to call cper_print_aer
-> Signed-off-by: Lance Ortiz <lance.ortiz@hp.com>
-> ---
-> 
->  0 files changed, 0 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/acpi/apei/cper.c b/drivers/acpi/apei/cper.c
-> index e6defd8..4a3e945 100644
-> --- a/drivers/acpi/apei/cper.c
-> +++ b/drivers/acpi/apei/cper.c
-> @@ -29,6 +29,7 @@
->  #include <linux/time.h>
->  #include <linux/cper.h>
->  #include <linux/acpi.h>
-> +#include <linux/pci.h>
->  #include <linux/aer.h>
->  
->  /*
-> @@ -249,6 +250,10 @@ static const char *cper_pcie_port_type_strs[] = {
->  static void cper_print_pcie(const char *pfx, const struct cper_sec_pcie *pcie,
->  			    const struct acpi_hest_generic_data *gdata)
->  {
-> +#ifdef CONFIG_ACPI_APEI_PCIEAER
-> +	struct pci_dev *dev;
-> +#endif
-> +
->  	if (pcie->validation_bits & CPER_PCIE_VALID_PORT_TYPE)
->  		printk("%s""port_type: %d, %s\n", pfx, pcie->port_type,
->  		       pcie->port_type < ARRAY_SIZE(cper_pcie_port_type_strs) ?
-> @@ -281,10 +286,18 @@ static void cper_print_pcie(const char *pfx, const struct cper_sec_pcie *pcie,
->  	"%s""bridge: secondary_status: 0x%04x, control: 0x%04x\n",
->  	pfx, pcie->bridge.secondary_status, pcie->bridge.control);
->  #ifdef CONFIG_ACPI_APEI_PCIEAER
-> -	if (pcie->validation_bits & CPER_PCIE_VALID_AER_INFO) {
-> -		struct aer_capability_regs *aer_regs = (void *)pcie->aer_info;
-> -		cper_print_aer(pfx, gdata->error_severity, aer_regs);
-> +	dev = pci_get_domain_bus_and_slot(pcie->device_id.segment,
-> +			pcie->device_id.bus, pcie->device_id.function);
-> +	if (!dev) {
-> +		pr_info("PCI AER Cannot get PCI device %04x:%02x:%02x.%d\n",
-> +			pcie->device_id.segment, pcie->device_id.bus,
-> +			pcie->device_id.slot, pcie->device_id.function);
+Signed-off-by: Philippe Reynes <tremyfr@yahoo.fr>
+---
+Difference between v1 and v2:
+- move comment after first block
+- update comment to network rules
 
-Hmm... please correct if I'm wrong, but an error happened at PCI, and also a 
-kernel bug that prevented it to get the proper PCI device... 
+ drivers/net/phy/smsc.c  |   26 +++++++++++++++++++++++++-
+ include/linux/smscphy.h |    5 +++++
+ 2 files changed, 30 insertions(+), 1 deletions(-)
 
-IMHO, the message here should be stronger, and likely printed via pr_err().
-
-> +		return;
->  	}
-> +	if (pcie->validation_bits & CPER_PCIE_VALID_AER_INFO)
-> +		cper_print_aer(dev, gdata->error_severity,
-> +				(struct aer_capability_regs *) pcie->aer_info);
-> +	pci_dev_put(dev);
->  #endif
->  }
->  
-> diff --git a/drivers/pci/pcie/aer/aerdrv_errprint.c b/drivers/pci/pcie/aer/aerdrv_errprint.c
-> index 3ea5173..34d96e4 100644
-> --- a/drivers/pci/pcie/aer/aerdrv_errprint.c
-> +++ b/drivers/pci/pcie/aer/aerdrv_errprint.c
-> @@ -23,6 +23,9 @@
->  
->  #include "aerdrv.h"
->  
-> +#define CREATE_TRACE_POINTS
-> +#include <trace/events/ras.h>
-> +
->  #define AER_AGENT_RECEIVER		0
->  #define AER_AGENT_REQUESTER		1
->  #define AER_AGENT_COMPLETER		2
-> @@ -194,6 +197,8 @@ void aer_print_error(struct pci_dev *dev, struct aer_err_info *info)
->  	if (info->id && info->error_dev_num > 1 && info->id == id)
->  		printk("%s""  Error of this Agent(%04x) is reported first\n",
->  			prefix, id);
-> +	trace_aer_event(dev_name(&dev->dev), (info->status & ~info->mask),
-> +			info->severity);
->  }
->  
->  void aer_print_port_info(struct pci_dev *dev, struct aer_err_info *info)
-> @@ -217,12 +222,13 @@ int cper_severity_to_aer(int cper_severity)
->  }
->  EXPORT_SYMBOL_GPL(cper_severity_to_aer);
->  
-> -void cper_print_aer(const char *prefix, int cper_severity,
-> +void cper_print_aer(struct pci_dev *dev, int cper_severity,
->  		    struct aer_capability_regs *aer)
->  {
->  	int aer_severity, layer, agent, status_strs_size, tlp_header_valid = 0;
->  	u32 status, mask;
->  	const char **status_strs;
-> +	char *prefix = NULL;
->  
->  	aer_severity = cper_severity_to_aer(cper_severity);
->  	if (aer_severity == AER_CORRECTABLE) {
-> @@ -259,5 +265,7 @@ void cper_print_aer(const char *prefix, int cper_severity,
->  			*(tlp + 8), *(tlp + 15), *(tlp + 14),
->  			*(tlp + 13), *(tlp + 12));
->  	}
-> +	trace_aer_event(dev_name(&dev->dev), (status & ~mask),
-> +			aer_severity);
->  }
->  #endif
-> diff --git a/include/linux/aer.h b/include/linux/aer.h
-> index 544abdb..7b86dc6 100644
-> --- a/include/linux/aer.h
-> +++ b/include/linux/aer.h
-> @@ -49,7 +49,7 @@ static inline int pci_cleanup_aer_uncorrect_error_status(struct pci_dev *dev)
->  }
->  #endif
->  
-> -extern void cper_print_aer(const char *prefix, int cper_severity,
-> +extern void cper_print_aer(struct pci_dev *dev, int cper_severity,
->  			   struct aer_capability_regs *aer);
->  extern int cper_severity_to_aer(int cper_severity);
->  extern void aer_recover_queue(int domain, unsigned int bus, unsigned int devfn,
-> 
-
-After addressing the above:
-
-Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-
-
+diff --git a/drivers/net/phy/smsc.c b/drivers/net/phy/smsc.c
+index 88e3991..ad4fa0e 100644
+--- a/drivers/net/phy/smsc.c
++++ b/drivers/net/phy/smsc.c
+@@ -43,7 +43,31 @@ static int smsc_phy_ack_interrupt(struct phy_device *phydev)
+ 
+ static int smsc_phy_config_init(struct phy_device *phydev)
+ {
+-	int rc = phy_read(phydev, MII_LAN83C185_CTRL_STATUS);
++	int rc = phy_read(phydev, MII_LAN83C185_SPECIAL_MODES);
++	if (rc < 0)
++		return rc;
++
++	/* If the SMSC PHY is in power down mode, then set it
++	 * in all capable mode before using it.
++	 */
++	if ((rc & MII_LAN83C185_MODE_MASK) == MII_LAN83C185_MODE_POWERDOWN) {
++		int timeout = 50000;
++
++		/* set "all capable" mode and reset the phy */
++		rc |= MII_LAN83C185_MODE_ALL;
++		phy_write(phydev, MII_LAN83C185_SPECIAL_MODES, rc);
++		phy_write(phydev, MII_BMCR, BMCR_RESET);
++
++		/* wait end of reset (max 500 ms) */
++		do {
++			udelay(10);
++			if (timeout-- == 0)
++				return -1;
++			rc = phy_read(phydev, MII_BMCR);
++		} while (rc & BMCR_RESET);
++	}
++
++	rc = phy_read(phydev, MII_LAN83C185_CTRL_STATUS);
+ 	if (rc < 0)
+ 		return rc;
+ 
+diff --git a/include/linux/smscphy.h b/include/linux/smscphy.h
+index ce718cb..f4bf16e 100644
+--- a/include/linux/smscphy.h
++++ b/include/linux/smscphy.h
+@@ -4,6 +4,7 @@
+ #define MII_LAN83C185_ISF 29 /* Interrupt Source Flags */
+ #define MII_LAN83C185_IM  30 /* Interrupt Mask */
+ #define MII_LAN83C185_CTRL_STATUS 17 /* Mode/Status Register */
++#define MII_LAN83C185_SPECIAL_MODES 18 /* Special Modes Register */
+ 
+ #define MII_LAN83C185_ISF_INT1 (1<<1) /* Auto-Negotiation Page Received */
+ #define MII_LAN83C185_ISF_INT2 (1<<2) /* Parallel Detection Fault */
+@@ -22,4 +23,8 @@
+ #define MII_LAN83C185_EDPWRDOWN (1 << 13) /* EDPWRDOWN */
+ #define MII_LAN83C185_ENERGYON  (1 << 1)  /* ENERGYON */
+ 
++#define MII_LAN83C185_MODE_MASK      0xE0
++#define MII_LAN83C185_MODE_POWERDOWN 0xC0 /* Power Down mode */
++#define MII_LAN83C185_MODE_ALL       0xE0 /* All capable mode */
++
+ #endif /* __LINUX_SMSCPHY_H__ */
 -- 
+1.7.4.4
 
-Cheers,
-Mauro
