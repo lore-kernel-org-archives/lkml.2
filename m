@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753656Ab2LDM3j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 07:29:39 -0500
-Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:8398
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751989Ab2LDM3h convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 07:29:37 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(z551biz98dIzz1de0h1202h1d1ah1d2ahzzz2dh2a8h668h839h8e2h8e3h947hd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631hbe9i1155h)
-From: Tabi Timur-B04825 <B04825@freescale.com>
-To: Sethi Varun-B16395 <B16395@freescale.com>
-CC: "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wood Scott-B07421 <B07421@freescale.com>
-Subject: Re: [PATCH 4/4 v6] iommu/fsl: Freescale PAMU driver and IOMMU API
- implementation.
-Thread-Topic: [PATCH 4/4 v6] iommu/fsl: Freescale PAMU driver and IOMMU API
- implementation.
-Thread-Index: AQHNz7bIwVXO7Gwzb0qI4toHcJfWV5gHHlqAgAFzFwCAAAUiAA==
-Date: Tue, 4 Dec 2012 12:29:29 +0000
-Message-ID: <6AE080B68D46FC4BA2D2769E68D765B7081C2466@039-SN2MPN1-023.039d.mgd.msft.net>
-References: <1354360921-20850-1-git-send-email-Varun.Sethi@freescale.com>
- <50BD056F.7070701@freescale.com>
- <C5ECD7A89D1DC44195F34B25E172658D2B715D@039-SN2MPN1-013.039d.mgd.msft.net>
-In-Reply-To: <C5ECD7A89D1DC44195F34B25E172658D2B715D@039-SN2MPN1-013.039d.mgd.msft.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:17.0)
- Gecko/20100101 Firefox/17.0 SeaMonkey/2.14.1
-x-originating-ip: [70.112.99.80]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <2324A115B6900642B3AE38FF6D849B9B@mgd.freescale.com>
-Content-Transfer-Encoding: 7BIT
+	id S1752422Ab2LDMbk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 07:31:40 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:53764 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751751Ab2LDMbj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 07:31:39 -0500
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+In-Reply-To: <20121204091215.GD2718@gmail.com>
+References: <1354289099-17931-1-git-send-email-lee.jones@linaro.org>
+	<CACRpkdafvpnyq7YMV=iSjN4+u1hpt3xntAb-daJZifG9VpgnOw@mail.gmail.com>
+	<20121204091215.GD2718@gmail.com>
+Date: Tue, 4 Dec 2012 13:31:37 +0100
+Message-ID: <CACRpkdYn7tuCjNiy0KpDEefC3tMDjKSnaWKzM38URN9HQALT7Q@mail.gmail.com>
+Subject: Re: [PATCH 1/1] ARM: ux500: Change IRQ from low-to-high edge
+ triggered to high-to-low
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sethi Varun-B16395 wrote:
+On Tue, Dec 4, 2012 at 10:12 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> On Sat, 01 Dec 2012, Linus Walleij wrote:
+>
+>> On Fri, Nov 30, 2012 at 4:24 PM, Lee Jones <lee.jones@linaro.org> wrote:
+>>
+>> > When the STMPE IRQ is triggered to be active high level-sensitive, the
+>> > Nomadik GPIO controller it uses complains, although it still works.
+>> > Recently we attempted to move triggering to low-to-high in an attempt
+>> > to prevent the warning; however, this ensured that the IRQ was actually
+>> > missed completely. Now we have a solution which both works and keeps the
+>> > GPIO controller happy.
+>> >
+>> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>>
+>> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+>>
+>> Is this something I should put into the ux500 tree or will you
+>> take care of this in a separate pull request?
+>
+> Can you still get this into the RCs, as it's a bugfix?
 
-> This would in any case change with the new LIODN allocation scheme. I
-> intend on introducing the new scheme as a separate patch.
+Well it doesn't apply to the -rc:s since it's patching
+arch/arm/boot/dts/stuib.dtsi which does not exist in
+the v3.7 series.
 
-At the very least, you should detect when an LIODN is too large and print 
-an error message.
+Either what you want is to submit a fix to Arnd & Olof
+on top of your previous DT patches, or you need to send
+a rebased version...
 
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+Yours,
+Linus Walleij
