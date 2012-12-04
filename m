@@ -1,61 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751724Ab2LDG1y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 01:27:54 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:61421 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663Ab2LDG1w (ORCPT
+	id S1751607Ab2LDGgZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 01:36:25 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52699 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751381Ab2LDGgY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 01:27:52 -0500
-Message-ID: <1354602461.3286.1.camel@phoenix>
-Subject: [PATCH RFT] spi: spi-xcomm: Fix wrong setting for
- SPI_XCOMM_SETTINGS_CPHA
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Cc: Lars-Peter Clausen <lars@metafoo.de>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Date: Tue, 04 Dec 2012 14:27:41 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 4 Dec 2012 01:36:24 -0500
+From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+To: Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        "Valkeinen, Tomi" <tomi.valkeinen@ti.com>
+CC: "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        "Porter, Matt" <mporter@ti.com>, "Dill, Russ" <russ.dill@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: RE: [PATCH] da8xx: Fix revision check on the da8xx driver
+Thread-Topic: [PATCH] da8xx: Fix revision check on the da8xx driver
+Thread-Index: AQHNtsqfCgc9UO0H5UCB7Zm0ApPz9pfSxjAAgDWalHA=
+Date: Tue, 4 Dec 2012 06:36:15 +0000
+Message-ID: <A73F36158E33644199EB82C5EC81C7BC3EA13286@DBDE01.ent.ti.com>
+References: <1351698984-4007-1-git-send-email-panto@antoniou-consulting.com>
+ <A73F36158E33644199EB82C5EC81C7BC3E9E10D6@DBDE01.ent.ti.com>
+In-Reply-To: <A73F36158E33644199EB82C5EC81C7BC3E9E10D6@DBDE01.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The logic of setting SPI_XCOMM_SETTINGS_CPHA bit is reversed.
+Hi Tomi,
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
-Hi Lars,
-The logic of setting SPI_XCOMM_SETTINGS_CPHA bit looks wrong to me.
-Can you check if this patch works?
+On Wed, Oct 31, 2012 at 09:21:35, Manjunathappa, Prakash wrote:
+> On Wed, Oct 31, 2012 at 21:26:24, Pantelis Antoniou wrote:
+> > The revision check fails for the beaglebone; Add new revision ID.
+> > 
+> > Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+> > ---
+> >  drivers/video/da8xx-fb.c | 1 +
+> >  1 file changed, 1 insertion(+)
+> > 
+> > diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
+> > index 80665f6..866d804 100644
+> > --- a/drivers/video/da8xx-fb.c
+> > +++ b/drivers/video/da8xx-fb.c
+> > @@ -1283,6 +1283,7 @@ static int __devinit fb_probe(struct platform_device *device)
+> >  		lcd_revision = LCD_VERSION_1;
+> >  		break;
+> >  	case 0x4F200800:
+> > +	case 0x4F201000:
+> 
+> Thanks for Correcting. This is the LCDC revision on am335x silicon in comparison
+> with to one read(0x4F200800) on emulator platform.
+> 
+> Acked-by: Manjunathappa, Prakash <prakash.pm@ti.com>
+> 
+
+This patch is necessary for am335x FB, I could not see in your for-next branch,
+could you please consider this patch for 3.8 merge window. There are no pending
+review comments on this.
 
 Thanks,
-Axel
+Prakash
 
- drivers/spi/spi-xcomm.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/spi/spi-xcomm.c b/drivers/spi/spi-xcomm.c
-index 266a847..c2a3e8f 100644
---- a/drivers/spi/spi-xcomm.c
-+++ b/drivers/spi/spi-xcomm.c
-@@ -99,9 +99,9 @@ static int spi_xcomm_setup_transfer(struct spi_xcomm *spi_xcomm,
- 		*settings &= ~SPI_XCOMM_SETTINGS_CPOL;
- 
- 	if (spi->mode & SPI_CPHA)
--		*settings &= ~SPI_XCOMM_SETTINGS_CPHA;
--	else
- 		*settings |= SPI_XCOMM_SETTINGS_CPHA;
-+	else
-+		*settings &= ~SPI_XCOMM_SETTINGS_CPHA;
- 
- 	if (spi->mode & SPI_3WIRE)
- 		*settings |= SPI_XCOMM_SETTINGS_3WIRE;
--- 
-1.7.9.5
-
-
+> >  		lcd_revision = LCD_VERSION_2;
+> >  		break;
+> >  	default:
+> > -- 
+> > 1.7.12
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
