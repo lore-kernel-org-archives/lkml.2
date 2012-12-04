@@ -1,62 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753254Ab2LDVnL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 16:43:11 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:39433 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037Ab2LDVnI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 16:43:08 -0500
-Date: Tue, 4 Dec 2012 22:43:02 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/14] HID: i2c-hid: enhance Kconfig
-Message-ID: <20121204224302.2846b007@endymion.delvare>
-In-Reply-To: <1354634875-5182-4-git-send-email-benjamin.tissoires@gmail.com>
-References: <1354634875-5182-1-git-send-email-benjamin.tissoires@gmail.com>
-	<1354634875-5182-4-git-send-email-benjamin.tissoires@gmail.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753326Ab2LDVnS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 16:43:18 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:35732 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751817Ab2LDVnP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 16:43:15 -0500
+Date: Tue, 4 Dec 2012 16:42:10 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Thorsten Leemhuis <fedora@leemhuis.info>
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, George Spelvin <linux@horizon.com>,
+        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
+        Tomas Racek <tracek@redhat.com>, Jan Kara <jack@suse.cz>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Josh Boyer <jwboyer@gmail.com>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Jiri Slaby <jslaby@suse.cz>, Zdenek Kabelac <zkabelac@redhat.com>,
+        Bruno Wolff III <bruno@wolff.to>, linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        John Ellson <john.ellson@comcast.net>
+Subject: Re: kswapd craziness in 3.7
+Message-ID: <20121204214210.GB20253@cmpxchg.org>
+References: <CA+55aFyrNRF8nWyozDPi4O1bdjzO189YAgMukyhTOZ9fwKqOpA@mail.gmail.com>
+ <20121128101359.GT8218@suse.de>
+ <20121128145215.d23aeb1b.akpm@linux-foundation.org>
+ <20121128235412.GW8218@suse.de>
+ <50B77F84.1030907@leemhuis.info>
+ <20121129170512.GI2301@cmpxchg.org>
+ <50B8A8E7.4030108@leemhuis.info>
+ <20121201004520.GK2301@cmpxchg.org>
+ <50BC6314.7060106@leemhuis.info>
+ <20121203194208.GZ24381@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121203194208.GZ24381@cmpxchg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  4 Dec 2012 16:27:44 +0100, Benjamin Tissoires wrote:
-> The "comment" part can never be displayed, so we can remove it.
+On Mon, Dec 03, 2012 at 02:42:08PM -0500, Johannes Weiner wrote:
+> On Mon, Dec 03, 2012 at 09:30:12AM +0100, Thorsten Leemhuis wrote:
+> > >> John was able to reproduce the problem quickly with a kernel that 
+> > >> contained the patch from your mail. For details see
+> > >
+> > > [stripped: all the glory details of what likely went wrong and lead
+> > > to the problem john sees or saw]
+> > >
+> > > ---
+> > > From: Johannes Weiner <hannes@cmpxchg.org>
+> > > Subject: [patch] mm: vmscan: do not keep kswapd looping forever due
+> > >  to individual uncompactable zones
+> > > 
+> > > When a zone meets its high watermark and is compactable in case of
+> > > higher order allocations, it contributes to the percentage of the
+> > > node's memory that is considered balanced.
+> > > [...]
+> > 
+> > FYI: I built a kernel with that patch. I've been running on my x86_64
+> > machine at home over the weekend and everything was working fine (just
+> > as without the patch). John gave it a quick try and in
+> > https://bugzilla.redhat.com/show_bug.cgi?id=866988#c57 reported:
+> > 
+> > """
+> > I just installed
+> > kernel-3.7.0-0.rc7.git1.2.van.main.knurd.kswap.4.fc18.i686 and ran my
+> > usual load that triggers the problem.  OK so far.  I'll check again in
+> > 24hours, but looking good so far.
+> > """
 > 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> ---
->  drivers/hid/i2c-hid/Kconfig | 7 ++-----
->  1 file changed, 2 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/hid/i2c-hid/Kconfig b/drivers/hid/i2c-hid/Kconfig
-> index 5b7d4d8..64ce108 100644
-> --- a/drivers/hid/i2c-hid/Kconfig
-> +++ b/drivers/hid/i2c-hid/Kconfig
-> @@ -7,15 +7,12 @@ config I2C_HID
->  	depends on I2C && INPUT
->  	select HID
->  	---help---
-> -	  Say Y here if you want to use the HID over i2c protocol
-> -	  implementation.
-> +	  Say Y here if you use a keyboard, a touchpad, a touchscreen, or any
-> +	  other HID based devices which is connected to your computer via I2C.
->  
->  	  If unsure, say N.
->  
->  	  This support is also available as a module.  If so, the module
->  	  will be called i2c-hid.
->  
-> -comment "Input core support is needed for HID over I2C input layer"
-> -	depends on I2C_HID && INPUT=n
-> -
->  endmenu
+> w00t!
 
-Reviewed-by: Jean Delvare <khali@linux-fr.org>
+Update from John in the BZ
+(https://bugzilla.redhat.com/show_bug.cgi?id=866988#c62):
 
--- 
-Jean Delvare
+"Good news.
+
+I've now been running both
+  kernel-3.7.0-0.rc7.git1.2.van.main.knurd.kswap.4.fc18.i686
+and
+  kernel-3.7.0-0.rc7.git1.2.van.main.knurd.kswap.4.fc18.x86_64
+for over 24hours with no evidence of problems with kswapd"
+
+Now waiting for results from Jiri, Zdenek and Bruno...
