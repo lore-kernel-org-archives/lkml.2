@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754112Ab2LDRab (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 12:30:31 -0500
-Received: from www.linutronix.de ([62.245.132.108]:44972 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951Ab2LDRaa (ORCPT
+	id S1754272Ab2LDRef (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 12:34:35 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:58003 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751997Ab2LDRee (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 12:30:30 -0500
-Date: Tue, 4 Dec 2012 18:30:17 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mel Gorman <mgorman@suse.de>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 00/10] Latest numa/core release, v18
-In-Reply-To: <20121203134110.GL8218@suse.de>
-Message-ID: <alpine.LFD.2.02.1212041825140.2701@ionos>
-References: <1354305521-11583-1-git-send-email-mingo@kernel.org> <CA+55aFwjxm7OYuucHeE2WFr4p+jwr63t=kSdHndta_QkyFbyBQ@mail.gmail.com> <20121203134110.GL8218@suse.de>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Tue, 4 Dec 2012 12:34:34 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+In-Reply-To: <50BDB016.7010908@ti.com>
+References: <1352731270-27534-1-git-send-email-peter.ujfalusi@ti.com>
+ <1352731270-27534-2-git-send-email-peter.ujfalusi@ti.com> <CAK5ve-JDCSSOKHQG-F1RoDii62=-DiPevaD6SafndYVvOgB6Fw@mail.gmail.com>
+ <50BCB391.1070305@ti.com> <CAK5ve-+1eQ3mPLAu2Qxw4LjNA85oEtJE-wZcL=YpQ0xBFJ6+hQ@mail.gmail.com>
+ <50BDB016.7010908@ti.com>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Tue, 4 Dec 2012 09:34:12 -0800
+Message-ID: <CAK5ve-K69=NqApFTFOZB7Z_KXcRLaWExzbkUhP=GeASMB7JYqw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/3] leds: leds-pwm: Convert to use devm_get_pwm
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Dec 2012, Mel Gorman wrote:
-> On Fri, Nov 30, 2012 at 12:37:49PM -0800, Linus Torvalds wrote:
-> > So if this is a migration-specific scalability issue, then it might be
-> > possible to solve by making the mutex be a rwsem instead, and have
-> > migration only take it for reading.
-> > 
-> > Of course, I'm quite possibly wrong, and the code depends on full
-> > mutual exclusion.
-> > 
-> > Just a thought, in case it makes somebody go "Hmm.."
-> > 
-> 
-> Offhand, I cannot think of a reason why a rwsem would not work. This
-> thing originally became a mutex because the RT people (Peter in
-> particular) cared about being able to preempt faster. It'd be nice if
-> they confirmed that rwsem is not be a problem for them.
+On Tue, Dec 4, 2012 at 12:11 AM, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
+> Hi Bryan,
+>
+> On 12/03/2012 07:32 PM, Bryan Wu wrote:
+>> On Mon, Dec 3, 2012 at 6:13 AM, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
+>> Actually, I'm waiting for some feedback from DT maintainers about this
+>> new binding. But it looks find to me.
+>
+> Would it be possible to have the first (or even better the first two) patch
+> going for 3.8 and we can leave the DT bindings for 3.9?
+> I would like to clean up, fix some of the OMAP related board files for 3.9
+> which would need the patches for the leds-pwm driver itself.
+>
 
-rwsems are preemptable as well. So I don't think this was Peter's main
-concern. If it works with an rwsem, then go ahead.
+What's best thing I can do is I can merge these patchset into my
+-devel branch, after 3.8 merge window close I will move this -devel
+branch to my for-next branch for 3.9 merge window.
 
-rwsems degrade on RT because we cannot do multiple reader boosting, so
-they allow only a single reader which can take it recursive. But
-that's an RT specific issue and nothing you should worry about.
+Does this make sense to you?
 
 Thanks,
-
-	tglx
+-Bryan
