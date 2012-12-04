@@ -1,54 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754497Ab2LDQHa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 11:07:30 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:9250 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754335Ab2LDQHZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 11:07:25 -0500
-Date: Tue, 4 Dec 2012 17:07:12 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/14] HID: i2c-hid: change I2C name
-Message-ID: <20121204170712.1bcdcddb@endymion.delvare>
-In-Reply-To: <1354634875-5182-2-git-send-email-benjamin.tissoires@gmail.com>
-References: <1354634875-5182-1-git-send-email-benjamin.tissoires@gmail.com>
-	<1354634875-5182-2-git-send-email-benjamin.tissoires@gmail.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754527Ab2LDQMm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 11:12:42 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:35672 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750765Ab2LDQMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 11:12:40 -0500
+Date: Tue, 4 Dec 2012 11:11:31 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Zdenek Kabelac <zkabelac@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, George Spelvin <linux@horizon.com>,
+        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
+        Thorsten Leemhuis <fedora@leemhuis.info>,
+        Tomas Racek <tracek@redhat.com>, Jan Kara <jack@suse.cz>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Josh Boyer <jwboyer@gmail.com>,
+        Valdis.Kletnieks@vt.edu, Bruno Wolff III <bruno@wolff.to>,
+        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: kswapd craziness in 3.7
+Message-ID: <20121204161131.GB24381@cmpxchg.org>
+References: <1354049315-12874-1-git-send-email-hannes@cmpxchg.org>
+ <20121128094511.GS8218@suse.de>
+ <50BCC3E3.40804@redhat.com>
+ <20121203191858.GY24381@cmpxchg.org>
+ <50BDBCD9.9060509@redhat.com>
+ <50BDBF1D.60105@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50BDBF1D.60105@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  4 Dec 2012 16:27:42 +0100, Benjamin Tissoires wrote:
-> no I2C driver has "i2c" in its name. It makes more sense to call this
-> i2c driver "hid".
+On Tue, Dec 04, 2012 at 10:15:09AM +0100, Jiri Slaby wrote:
+> On 12/04/2012 10:05 AM, Zdenek Kabelac wrote:
+> > Dne 3.12.2012 20:18, Johannes Weiner napsal(a):
+> >> Szia Zdenek,
+> >>
+> >> On Mon, Dec 03, 2012 at 04:23:15PM +0100, Zdenek Kabelac wrote:
+> >>> Ok, bad news - I've been hit by  kswapd0 loop again -
+> >>> my kernel git commit cc19528bd3084c3c2d870b31a3578da8c69952f3 again
+> >>> shown kswapd0 for couple minutes on CPU.
+> >>>
+> >>> It seemed to go instantly away when I've drop caches
+> >>> (echo 3 >/proc/sys/vm/drop_cache)
+> >>> (After that I've had over 1G free memory)
+> >>
+> >> Any chance you could retry with this patch on top?
 > 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> ---
->  drivers/hid/i2c-hid/i2c-hid.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-> index 67ab5b7..0fbb229 100644
-> --- a/drivers/hid/i2c-hid/i2c-hid.c
-> +++ b/drivers/hid/i2c-hid/i2c-hid.c
-> @@ -949,7 +949,7 @@ static int i2c_hid_resume(struct device *dev)
->  static SIMPLE_DEV_PM_OPS(i2c_hid_pm, i2c_hid_suspend, i2c_hid_resume);
->  
->  static const struct i2c_device_id i2c_hid_id_table[] = {
-> -	{ "i2c_hid", 0 },
-> +	{ "hid", 0 },
->  	{ },
->  };
->  MODULE_DEVICE_TABLE(i2c, i2c_hid_id_table);
+> It does not apply to -next :/. Should I try anything else?
 
-Reviewed-by: Jean Delvare <khali@linux-fr.org>
+The COMPACTION_BUILD changed to IS_ENABLED(CONFIG_COMPACTION), below
+is a -next patch.  I hope you don't run into other problems that come
+out of -next craziness, because Linus is kinda waiting for this to be
+resolved to release 3.8.  If you've always tested against -next so far
+and it worked otherwise, don't change the environment now, please.  If
+you just started, it would make more sense to test based on 3.7-rc8.
 
+Thanks!
+
+---
+From: Johannes Weiner <hannes@cmpxchg.org>
+Subject: [patch] mm: vmscan: do not keep kswapd looping forever due
+ to individual uncompactable zones
+
+When a zone meets its high watermark and is compactable in case of
+higher order allocations, it contributes to the percentage of the
+node's memory that is considered balanced.
+
+This requirement, that a node be only partially balanced, came about
+when kswapd was desparately trying to balance tiny zones when all
+bigger zones in the node had plenty of free memory.  Arguably, the
+same should apply to compaction: if a significant part of the node is
+balanced enough to run compaction, do not get hung up on that tiny
+zone that might never get in shape.
+
+When the compaction logic in kswapd is reached, we know that at least
+25% of the node's memory is balanced properly for compaction (see
+zone_balanced and pgdat_balanced).  Remove the individual zone checks
+that restart the kswapd cycle.
+
+Otherwise, we may observe more endless looping in kswapd where the
+compaction code loops back to reclaim because of a single zone and
+reclaim does nothing because the node is considered balanced overall.
+
+Reported-by: Thorsten Leemhuis <fedora@leemhuis.info>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+---
+ mm/vmscan.c | 16 ----------------
+ 1 file changed, 16 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 3b0aef4..486100f 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2806,22 +2806,6 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+ 			if (!populated_zone(zone))
+ 				continue;
+ 
+-			if (zone->all_unreclaimable &&
+-			    sc.priority != DEF_PRIORITY)
+-				continue;
+-
+-			/* Would compaction fail due to lack of free memory? */
+-			if (IS_ENABLED(CONFIG_COMPACTION) &&
+-			    compaction_suitable(zone, order) == COMPACT_SKIPPED)
+-				goto loop_again;
+-
+-			/* Confirm the zone is balanced for order-0 */
+-			if (!zone_watermark_ok(zone, 0,
+-					high_wmark_pages(zone), 0, 0)) {
+-				order = sc.order = 0;
+-				goto loop_again;
+-			}
+-
+ 			/* Check if the memory needs to be defragmented. */
+ 			if (zone_watermark_ok(zone, order,
+ 				    low_wmark_pages(zone), *classzone_idx, 0))
 -- 
-Jean Delvare
+1.7.11.7
+
+
