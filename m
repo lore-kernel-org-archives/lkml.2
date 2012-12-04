@@ -1,98 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752975Ab2LDNIL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 08:08:11 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:54214 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347Ab2LDNIE (ORCPT
+	id S1753377Ab2LDNLA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 08:11:00 -0500
+Received: from oproxy9.bluehost.com ([69.89.24.6]:48800 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753282Ab2LDNK6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 08:08:04 -0500
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Vitaly Andrianov <vitalya@ti.com>
-Cc: m.szyprowski@samsung.com, kyungmin.park@samsung.com, arnd@arndb.de,
-        linux-kernel@vger.kernel.org, linux-keystone@list.ti.com,
-        Cyril Chemparathy <cyril@ti.com>
-Subject: Re: [linux-keystone] [PATCH v2] drivers: cma: fix addressing on PAE machines
-In-Reply-To: <50BD9C45.7070501@ti.com>
-Organization: http://mina86.com/
-References: <1354549570-21445-1-git-send-email-vitalya@ti.com> <50BD9C45.7070501@ti.com>
-User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.2.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-Date: Tue, 04 Dec 2012 14:07:53 +0100
-Message-ID: <xa1tsj7m3qza.fsf@mina86.com>
+	Tue, 4 Dec 2012 08:10:58 -0500
+Message-ID: <50BDF654.8090903@tao.ma>
+Date: Tue, 04 Dec 2012 21:10:44 +0800
+From: Tao Ma <tm@tao.ma>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: "Theodore Ts'o" <tytso@mit.edu>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tao Ma <boyu.mt@taobao.com>,
+        Joel Becker <jlbec@evilplan.org>
+Subject: Re: linux-next: build failure after merge of the final tree (ext4
+ tree related)
+References: <20121204171313.119c931c616ff2a782ab1bac@canb.auug.org.au>
+In-Reply-To: <20121204171313.119c931c616ff2a782ab1bac@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 124.65.207.217 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+Hi Stephen,
+	Thanks for the report.
 
-> On Monday 03 December 2012 09:16 PM, Vitaly Andrianov wrote:
->> This patch fixes a couple of bugs that otherwise impair CMA functionalit=
-y on
->> PAE machines:
->>
->>    - alignment must be a 64-bit type when running on systems with 64-bit
->>      physical addresses.  If this is not the case, the limit calculation=
- thunks
->>      allocations down to an address range < 4G.
->>
->>    - The allocated range check is removed. On 32bit ARM kernel with LPAE
->>      enabled the base may be allocated outside the fist 4GB of physical
->>      memory (keystone SoC for example).
+	the corresponding fix is already sent to Ted in the patch named "ext4:
+Fix inline data build warning found by kernel build testing.", but it
+seems that Ted hasn't pushed it into ext4dev yet.
 
-On Tue, Dec 04 2012, Santosh Shilimkar wrote:
-> Any reason you have clubbed two fixes in one patch. Its better to keep
-> the two fixes separate patches.
+Thanks
+Tao
+On 12/04/2012 02:13 PM, Stephen Rothwell wrote:
+> Hi all,
+> 
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+> 
+> fs/ocfs2/built-in.o: In function `.walk_page_buffers':
+> (.text+0x2c104): multiple definition of `.walk_page_buffers'
+> fs/ext4/built-in.o:(.text+0x10c1c): first defined here
+> fs/ocfs2/built-in.o: In function `walk_page_buffers':
+> (.opd+0x1020): multiple definition of `walk_page_buffers'
+> fs/ext4/built-in.o:(.opd+0xa68): first defined here
+> 
+> Caused by commit c99dcc3889f5 ("ext4: add normal write support for inline
+> data") from the ext4 tree.  Who would have thought that a generic name
+> like that would clash? ;-(
+> 
+> Grep is your friend ...
+> 
+> I have added this patch for today (ocfs2 might like to apply something
+> similar):
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Tue, 4 Dec 2012 17:06:30 +1100
+> Subject: [PATCH] ext4: use a less generic version of the name walk_page_buffers
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  fs/ext4/ext4.h   |    2 +-
+>  fs/ext4/inline.c |    2 +-
+>  fs/ext4/inode.c  |   20 ++++++++++----------
+>  3 files changed, 12 insertions(+), 12 deletions(-)
+> 
+> diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+> index 9e30958..b1a169a 100644
+> --- a/fs/ext4/ext4.h
+> +++ b/fs/ext4/ext4.h
+> @@ -2057,7 +2057,7 @@ int ext4_get_block(struct inode *inode, sector_t iblock,
+>  				struct buffer_head *bh_result, int create);
+>  int ext4_da_get_block_prep(struct inode *inode, sector_t iblock,
+>  			   struct buffer_head *bh, int create);
+> -int walk_page_buffers(handle_t *handle,
+> +int ext4_walk_page_buffers(handle_t *handle,
+>  			     struct buffer_head *head,
+>  			     unsigned from,
+>  			     unsigned to,
+> diff --git a/fs/ext4/inline.c b/fs/ext4/inline.c
+> index 811457e..1fe0cc4 100644
+> --- a/fs/ext4/inline.c
+> +++ b/fs/ext4/inline.c
+> @@ -583,7 +583,7 @@ retry:
+>  		ret = __block_write_begin(page, from, to, ext4_get_block);
+>  
+>  	if (!ret && ext4_should_journal_data(inode)) {
+> -		ret = walk_page_buffers(handle, page_buffers(page),
+> +		ret = ext4_walk_page_buffers(handle, page_buffers(page),
+>  				from, to, NULL, do_journal_get_write_access);
+>  	}
+>  
+> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+> index f92bd69..1a190e0 100644
+> --- a/fs/ext4/inode.c
+> +++ b/fs/ext4/inode.c
+> @@ -770,7 +770,7 @@ struct buffer_head *ext4_bread(handle_t *handle, struct inode *inode,
+>  	return NULL;
+>  }
+>  
+> -int walk_page_buffers(handle_t *handle,
+> +int ext4_walk_page_buffers(handle_t *handle,
+>  			     struct buffer_head *head,
+>  			     unsigned from,
+>  			     unsigned to,
+> @@ -911,7 +911,7 @@ retry:
+>  		ret = __block_write_begin(page, pos, len, ext4_get_block);
+>  
+>  	if (!ret && ext4_should_journal_data(inode)) {
+> -		ret = walk_page_buffers(handle, page_buffers(page),
+> +		ret = ext4_walk_page_buffers(handle, page_buffers(page),
+>  				from, to, NULL, do_journal_get_write_access);
+>  	}
+>  
+> @@ -1133,7 +1133,7 @@ static int ext4_journalled_write_end(struct file *file,
+>  			page_zero_new_buffers(page, from+copied, to);
+>  		}
+>  
+> -		ret = walk_page_buffers(handle, page_buffers(page), from,
+> +		ret = ext4_walk_page_buffers(handle, page_buffers(page), from,
+>  					to, &partial, write_end_fn);
+>  		if (!partial)
+>  			SetPageUptodate(page);
+> @@ -1942,7 +1942,7 @@ static int __ext4_journalled_writepage(struct page *page,
+>  	} else {
+>  		page_bufs = page_buffers(page);
+>  		BUG_ON(!page_bufs);
+> -		walk_page_buffers(handle, page_bufs, 0, len, NULL, bget_one);
+> +		ext4_walk_page_buffers(handle, page_bufs, 0, len, NULL, bget_one);
+>  	}
+>  	/* As soon as we unlock the page, it can go away, but we have
+>  	 * references to buffers so we are safe */
+> @@ -1962,10 +1962,10 @@ static int __ext4_journalled_writepage(struct page *page,
+>  		err = ext4_handle_dirty_metadata(handle, inode, inode_bh);
+>  
+>  	} else {
+> -		ret = walk_page_buffers(handle, page_bufs, 0, len, NULL,
+> +		ret = ext4_walk_page_buffers(handle, page_bufs, 0, len, NULL,
+>  					do_journal_get_write_access);
+>  
+> -		err = walk_page_buffers(handle, page_bufs, 0, len, NULL,
+> +		err = ext4_walk_page_buffers(handle, page_bufs, 0, len, NULL,
+>  					write_end_fn);
+>  	}
+>  
+> @@ -1977,7 +1977,7 @@ static int __ext4_journalled_writepage(struct page *page,
+>  		ret = err;
+>  
+>  	if (!ext4_has_inline_data(inode))
+> -		walk_page_buffers(handle, page_bufs, 0, len, NULL, bput_one);
+> +		ext4_walk_page_buffers(handle, page_bufs, 0, len, NULL, bput_one);
+>  	ext4_set_inode_state(inode, EXT4_STATE_JDATA);
+>  out:
+>  	brelse(inode_bh);
+> @@ -2057,7 +2057,7 @@ static int ext4_writepage(struct page *page,
+>  		commit_write = 1;
+>  	}
+>  	page_bufs = page_buffers(page);
+> -	if (walk_page_buffers(NULL, page_bufs, 0, len, NULL,
+> +	if (ext4_walk_page_buffers(NULL, page_bufs, 0, len, NULL,
+>  			      ext4_bh_delay_or_unwritten)) {
+>  		/*
+>  		 * We don't want to do block allocation, so redirty
+> @@ -4888,7 +4888,7 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+>  	 * journal_start/journal_stop which can block and take a long time
+>  	 */
+>  	if (page_has_buffers(page)) {
+> -		if (!walk_page_buffers(NULL, page_buffers(page), 0, len, NULL,
+> +		if (!ext4_walk_page_buffers(NULL, page_buffers(page), 0, len, NULL,
+>  					ext4_bh_unmapped)) {
+>  			/* Wait so that we don't change page under IO */
+>  			wait_on_page_writeback(page);
+> @@ -4910,7 +4910,7 @@ retry_alloc:
+>  	}
+>  	ret = __block_page_mkwrite(vma, vmf, get_block);
+>  	if (!ret && ext4_should_journal_data(inode)) {
+> -		if (walk_page_buffers(handle, page_buffers(page), 0,
+> +		if (ext4_walk_page_buffers(handle, page_buffers(page), 0,
+>  			  PAGE_CACHE_SIZE, NULL, do_journal_get_write_access)) {
+>  			unlock_page(page);
+>  			ret = VM_FAULT_SIGBUS;
+> 
 
-They are all related to the very same issue, and what the whole patch
-does is change the type used to store physical addresses from unsigned
-long to phys_addr_t.  This is really a single change.
-
->> Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
->> Signed-off-by: Cyril Chemparathy <cyril@ti.com>
-
---=20
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
-..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
- (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
---=-=-=
-Content-Type: multipart/signed; boundary="==-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
-
---==-=-=
-Content-Type: text/plain
-
-
---==-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQvfWpAAoJECBgQBJQdR/0r/8P/2APcdinX1PdoI8McwE+7pDO
-VZJS3kefGGc4KH6KgbtHiXsmpctTWtBHb0dBOTpU/YsAUt0RKMKX0871cWZOQS1l
-U6TESUESvYDA/Se1UVEgZbSakVRX5npRECeyqUttG9/xg/WDQdbnDs8WPvxbmrlX
-krTTL3e6Mtwi3AdzD3xNu7j5v21YfDn7QFkKibEMUuQLsNbTdknt+MYyMlXv/MOJ
-4NpaJV84byjyiN+3rJNbVElYo3FfbX1ko9p+z7wBUv+76n8avBuzZbkv3Em63QuC
-B2uEm6SLYtttyMLArOzqTnwdaf67b5oocM5wYywIzNeg3cbSU5jhBqiKTQNTlSOZ
-QTz9tmNku2GFhCHzvZHiztjvuLrRXhtRjycgj0IJyOeYMehnCF6Fqh4x+8Wcquv8
-aguOBRK2GFpu3T9EfWc/axGmUn+kajdTnwVwiMUeC5MPIxmJnGC4Mzr/o8w+1K3P
-nAdWNY6GTtZhXQ9XeT8RQXvoAndvNwNtCL0M90yAD1aOBCz+IAqGnDOQEZ8WzsLa
-iXYrPDP9HckTLYQ/bmq/VsWUVBAZhQj2BlPpAAwuXnCqnRYPFqKpCiA1AwZiLRAS
-ZEBq/Sz2k7oGEIS8xWBg1PriZjYH1acCC6V38WRK/Y4mpZ5+DePmyuxcYgsKAGg7
-2hLTADyc4xHxMpA0SLLi
-=QGtM
------END PGP SIGNATURE-----
---==-=-=--
-
---=-=-=--
