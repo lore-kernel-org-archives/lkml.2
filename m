@@ -1,70 +1,360 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab2LDJOZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 04:14:25 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:59478 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750940Ab2LDJOX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 04:14:23 -0500
-Date: Tue, 4 Dec 2012 09:14:17 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com, viresh.kumar@linaro.org,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 1/1] gpio: Provide the STMPE GPIO driver with its own IRQ
- Domain
-Message-ID: <20121204091417.GE2718@gmail.com>
-References: <1353683949-9275-1-git-send-email-lee.jones@linaro.org>
- <CACRpkdbdCsx_SJvD9i+Geniy_McJb1dujzrSLu+o6bvcjUp_cw@mail.gmail.com>
+	id S1752768Ab2LDJOh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 04:14:37 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:56882 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752597Ab2LDJO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 04:14:29 -0500
+X-IronPort-AV: E=Sophos;i="4.83,370,1352044800"; 
+   d="scan'208";a="6329875"
+Message-ID: <50BDBEB7.3070807@cn.fujitsu.com>
+Date: Tue, 04 Dec 2012 17:13:27 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdbdCsx_SJvD9i+Geniy_McJb1dujzrSLu+o6bvcjUp_cw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jianguo Wu <wujianguo@huawei.com>
+CC: Wen Congyang <wency@cn.fujitsu.com>, x86@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
+        cmetcalf@tilera.com, sparclinux@vger.kernel.org,
+        David Rientjes <rientjes@google.com>, Jiang Liu <liuj97@gmail.com>,
+        Len Brown <len.brown@intel.com>, benh@kernel.crashing.org,
+        paulus@samba.org, Christoph Lameter <cl@linux.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: Re: [Patch v4 08/12] memory-hotplug: remove memmap of sparse-vmemmap
+References: <1354010422-19648-1-git-send-email-wency@cn.fujitsu.com> <1354010422-19648-9-git-send-email-wency@cn.fujitsu.com> <50B5DC00.20103@huawei.com> <50B80FB1.6040906@cn.fujitsu.com> <50BC0D2D.8040008@huawei.com>
+In-Reply-To: <50BC0D2D.8040008@huawei.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/04 17:13:48,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/04 17:13:50,
+	Serialize complete at 2012/12/04 17:13:50
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 01 Dec 2012, Linus Walleij wrote:
+Hi Wu,
 
-> On Fri, Nov 23, 2012 at 4:19 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> 
-> > The STMPE GPIO driver can be used as an IRQ controller by some
-> > related devices. Here we provide it with its very own IRQ Domain
-> > so that IRQs can be issued dynamically. This will stand the
-> > driver in good stead when it is enabled for Device Tree, as this
-> > it a prerequisite.
-> >
-> > Cc: Grant Likely <grant.likely@secretlab.ca>
-> > Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> 
-> The patch looks bogus since there is no code exercising the added
-> irqdomain code in this patch, it's basically a no-op in the irq
-> path, which is wrong for an irqdomain.
-> 
-> It is lacking a irq_create_mapping() in stmpe_gpio_to_irq(),
-> removal of the irq_base member and usage of
-> irq_find_mapping() in stmpe_gpio_irq().
-> 
-> Only then will the irqdomain actually be used for what it's
-> intended for.
-> 
-> So I get the impression that this is one of these "let's
-> just throw a dummy irqdomain in there so we can use
-> it with devicetree" kind of things...
+Sorry to make noise here. Please see below. :)
 
-It's not meant to be bogus, as it will be used.
+On 12/03/2012 10:23 AM, Jianguo Wu wrote:
+> Signed-off-by: Jianguo Wu<wujianguo@huawei.com>
+> Signed-off-by: Jiang Liu<jiang.liu@huawei.com>
+> ---
+>   include/linux/mm.h  |    1 +
+>   mm/sparse-vmemmap.c |  231 +++++++++++++++++++++++++++++++++++++++++++++++++++
+>   mm/sparse.c         |    3 +-
+>   3 files changed, 234 insertions(+), 1 deletions(-)
+>
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index 5657670..1f26af5 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -1642,6 +1642,7 @@ int vmemmap_populate(struct page *start_page, unsigned long pages, int node);
+>   void vmemmap_populate_print_last(void);
+>   void register_page_bootmem_memmap(unsigned long section_nr, struct page *map,
+>   				  unsigned long size);
+> +void vmemmap_free(struct page *memmap, unsigned long nr_pages);
+>
+>   enum mf_flags {
+>   	MF_COUNT_INCREASED = 1<<  0,
+> diff --git a/mm/sparse-vmemmap.c b/mm/sparse-vmemmap.c
+> index 1b7e22a..748732d 100644
+> --- a/mm/sparse-vmemmap.c
+> +++ b/mm/sparse-vmemmap.c
+> @@ -29,6 +29,10 @@
+>   #include<asm/pgalloc.h>
+>   #include<asm/pgtable.h>
+>
+> +#ifdef CONFIG_MEMORY_HOTREMOVE
+> +#include<asm/tlbflush.h>
+> +#endif
+> +
+>   /*
+>    * Allocate a block of memory to be used to back the virtual memory map
+>    * or to back the page tables that are used to create the mapping.
+> @@ -224,3 +228,230 @@ void __init sparse_mem_maps_populate_node(struct page **map_map,
+>   		vmemmap_buf_end = NULL;
+>   	}
+>   }
+> +
+> +#ifdef CONFIG_MEMORY_HOTREMOVE
+> +
+> +#define PAGE_INUSE 0xFD
+> +
+> +static void vmemmap_free_pages(struct page *page, int order)
+> +{
+> +	struct zone *zone;
+> +	unsigned long magic;
+> +
+> +	magic = (unsigned long) page->lru.next;
+> +	if (magic == SECTION_INFO || magic == MIX_SECTION_INFO) {
+> +		put_page_bootmem(page);
+> +
+> +		zone = page_zone(page);
+> +		zone_span_writelock(zone);
+> +		zone->present_pages++;
+> +		zone_span_writeunlock(zone);
+> +		totalram_pages++;
 
-Albeit, we are not uses of the GPIO functionality AFAICT.
+Seems that we have different ways to handle pages allocated by bootmem
+or by regular allocator. Is the checking way in [PATCH 09/12] available
+here ?
 
-I'll look at your comments in a bit and fixup.
++	/* bootmem page has reserved flag */
++	if (PageReserved(page)) {
+......
++	}
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+If so, I think we can just merge these two functions.
+
+> +	} else
+> +		free_pages((unsigned long)page_address(page), order);
+> +}
+> +
+> +static void free_pte_table(pmd_t *pmd)
+> +{
+> +	pte_t *pte, *pte_start;
+> +	int i;
+> +
+> +	pte_start = (pte_t *)pmd_page_vaddr(*pmd);
+> +	for (i = 0; i<  PTRS_PER_PTE; i++) {
+> +		pte = pte_start + i;
+> +		if (pte_val(*pte))
+> +			return;
+> +	}
+> +
+> +	/* free a pte talbe */
+> +	vmemmap_free_pages(pmd_page(*pmd), 0);
+> +	spin_lock(&init_mm.page_table_lock);
+> +	pmd_clear(pmd);
+> +	spin_unlock(&init_mm.page_table_lock);
+> +}
+> +
+> +static void free_pmd_table(pud_t *pud)
+> +{
+> +	pmd_t *pmd, *pmd_start;
+> +	int i;
+> +
+> +	pmd_start = (pmd_t *)pud_page_vaddr(*pud);
+> +	for (i = 0; i<  PTRS_PER_PMD; i++) {
+> +		pmd = pmd_start + i;
+> +		if (pmd_val(*pmd))
+> +			return;
+> +	}
+> +
+> +	/* free a pmd talbe */
+> +	vmemmap_free_pages(pud_page(*pud), 0);
+> +	spin_lock(&init_mm.page_table_lock);
+> +	pud_clear(pud);
+> +	spin_unlock(&init_mm.page_table_lock);
+> +}
+> +
+> +static void free_pud_table(pgd_t *pgd)
+> +{
+> +	pud_t *pud, *pud_start;
+> +	int i;
+> +
+> +	pud_start = (pud_t *)pgd_page_vaddr(*pgd);
+> +	for (i = 0; i<  PTRS_PER_PUD; i++) {
+> +		pud = pud_start + i;
+> +		if (pud_val(*pud))
+> +			return;
+> +	}
+> +
+> +	/* free a pud table */
+> +	vmemmap_free_pages(pgd_page(*pgd), 0);
+> +	spin_lock(&init_mm.page_table_lock);
+> +	pgd_clear(pgd);
+> +	spin_unlock(&init_mm.page_table_lock);
+> +}
+
+All the free_xxx_table() are very similar to the functions in
+[PATCH 09/12]. Could we reuse them anyway ?
+
+> +
+> +static int split_large_page(pte_t *kpte, unsigned long address, pte_t *pbase)
+> +{
+> +	struct page *page = pmd_page(*(pmd_t *)kpte);
+> +	int i = 0;
+> +	unsigned long magic;
+> +	unsigned long section_nr;
+> +
+> +	__split_large_page(kpte, address, pbase);
+
+Is this patch going to replace [PATCH 08/12] ?
+
+If so, __split_large_page() was added and exported in [PATCH 09/12],
+then we should move it here, right ?
+
+If not, free_map_bootmem() and __kfree_section_memmap() were changed in
+[PATCH 08/12], and we need to handle this.
+
+> +	__flush_tlb_all();
+> +
+> +	magic = (unsigned long) page->lru.next;
+> +	if (magic == SECTION_INFO) {
+> +		section_nr = pfn_to_section_nr(page_to_pfn(page));
+> +		while (i<  PTRS_PER_PMD) {
+> +			page++;
+> +			i++;
+> +			get_page_bootmem(section_nr, page, SECTION_INFO);
+> +		}
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static void vmemmap_pte_remove(pmd_t *pmd, unsigned long addr, unsigned long end)
+> +{
+> +	pte_t *pte;
+> +	unsigned long next;
+> +	void *page_addr;
+> +
+> +	pte = pte_offset_kernel(pmd, addr);
+> +	for (; addr<  end; pte++, addr += PAGE_SIZE) {
+> +		next = (addr + PAGE_SIZE)&  PAGE_MASK;
+> +		if (next>  end)
+> +			next = end;
+> +
+> +		if (pte_none(*pte))
+> +			continue;
+> +		if (IS_ALIGNED(addr, PAGE_SIZE)&&
+> +		    IS_ALIGNED(next, PAGE_SIZE)) {
+> +			vmemmap_free_pages(pte_page(*pte), 0);
+> +			spin_lock(&init_mm.page_table_lock);
+> +			pte_clear(&init_mm, addr, pte);
+> +			spin_unlock(&init_mm.page_table_lock);
+> +		} else {
+> +			/*
+> +			 * Removed page structs are filled with 0xFD.
+> +			 */
+> +			memset((void *)addr, PAGE_INUSE, next - addr);
+> +			page_addr = page_address(pte_page(*pte));
+> +
+> +			if (!memchr_inv(page_addr, PAGE_INUSE, PAGE_SIZE)) {
+> +				spin_lock(&init_mm.page_table_lock);
+> +				pte_clear(&init_mm, addr, pte);
+> +				spin_unlock(&init_mm.page_table_lock);
+> +			}
+> +		}
+> +	}
+> +
+> +	free_pte_table(pmd);
+> +	__flush_tlb_all();
+> +}
+> +
+> +static void vmemmap_pmd_remove(pud_t *pud, unsigned long addr, unsigned long end)
+> +{
+> +	unsigned long next;
+> +	pmd_t *pmd;
+> +
+> +	pmd = pmd_offset(pud, addr);
+> +	for (; addr<  end; addr = next, pmd++) {
+> +		next = pmd_addr_end(addr, end);
+> +		if (pmd_none(*pmd))
+> +			continue;
+> +
+> +		if (cpu_has_pse) {
+> +			unsigned long pte_base;
+> +
+> +			if (IS_ALIGNED(addr, PMD_SIZE)&&
+> +			    IS_ALIGNED(next, PMD_SIZE)) {
+> +				vmemmap_free_pages(pmd_page(*pmd),
+> +						   get_order(PMD_SIZE));
+> +				spin_lock(&init_mm.page_table_lock);
+> +				pmd_clear(pmd);
+> +				spin_unlock(&init_mm.page_table_lock);
+> +				continue;
+> +			}
+> +
+> +			/*
+> +			 * We use 2M page, but we need to remove part of them,
+> +			 * so split 2M page to 4K page.
+> +			 */
+> +			pte_base = get_zeroed_page(GFP_ATOMIC | __GFP_NOTRACK);
+> +			if (!pte_base) {
+> +				WARN_ON(1);
+> +				continue;
+> +			}
+> +
+> +			split_large_page((pte_t *)pmd, addr, (pte_t *)pte_base);
+> +			__flush_tlb_all();
+> +
+> +			spin_lock(&init_mm.page_table_lock);
+> +			pmd_populate_kernel(&init_mm, pmd, (pte_t *)pte_base);
+> +			spin_unlock(&init_mm.page_table_lock);
+> +		}
+> +
+> +		vmemmap_pte_remove(pmd, addr, next);
+> +	}
+> +
+> +	free_pmd_table(pud);
+> +	__flush_tlb_all();
+> +}
+> +
+> +static void vmemmap_pud_remove(pgd_t *pgd, unsigned long addr, unsigned long end)
+> +{
+> +	unsigned long next;
+> +	pud_t *pud;
+> +
+> +	pud = pud_offset(pgd, addr);
+> +	for (; addr<  end; addr = next, pud++) {
+> +		next = pud_addr_end(addr, end);
+> +		if (pud_none(*pud))
+> +			continue;
+> +
+> +		vmemmap_pmd_remove(pud, addr, next);
+> +	}
+> +
+> +	free_pud_table(pgd);
+> +	__flush_tlb_all();
+> +}
+> +
+> +void vmemmap_free(struct page *memmap, unsigned long nr_pages)
+> +{
+> +	unsigned long addr = (unsigned long)memmap;
+> +	unsigned long end = (unsigned long)(memmap + nr_pages);
+> +	unsigned long next;
+> +
+> +	for (; addr<  end; addr = next) {
+> +		pgd_t *pgd = pgd_offset_k(addr);
+> +
+> +		next = pgd_addr_end(addr, end);
+> +		if (!pgd_present(*pgd))
+> +			continue;
+> +
+> +		vmemmap_pud_remove(pgd, addr, next);
+> +		sync_global_pgds(addr, next - 1);
+> +	}
+> +}
+> +#endif
+> diff --git a/mm/sparse.c b/mm/sparse.c
+> index fac95f2..4060229 100644
+> --- a/mm/sparse.c
+> +++ b/mm/sparse.c
+> @@ -615,10 +615,11 @@ static inline struct page *kmalloc_section_memmap(unsigned long pnum, int nid,
+>   }
+>   static void __kfree_section_memmap(struct page *memmap, unsigned long nr_pages)
+>   {
+> -	return; /* XXX: Not implemented yet */
+> +	vmemmap_free(memmap, nr_pages);
+>   }
+>   static void free_map_bootmem(struct page *page, unsigned long nr_pages)
+
+In the latest kernel, this line was:
+static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
+
+>   {
+> +	vmemmap_free(page, nr_pages);
+>   }
+>   #else
+>   static struct page *__kmalloc_section_memmap(unsigned long nr_pages)
+
