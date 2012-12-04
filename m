@@ -1,43 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751976Ab2LDKRO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 05:17:14 -0500
-Received: from ozlabs.org ([203.10.76.45]:58527 "EHLO ozlabs.org"
+	id S1752064Ab2LDKTO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 05:19:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44176 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751757Ab2LDKRN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 05:17:13 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Linus Torvalds" <torvalds@linux-foundation.org>
-Cc: "James Hogan" <james.hogan@imgtec.com>,
-        "LKML" <linux-kernel@vger.kernel.org>
-Subject: [PULL] Module signing build fixes for blackfin and metag
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Tue, 04 Dec 2012 20:47:03 +1030
-Message-ID: <87wqwygm00.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751757Ab2LDKTN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 05:19:13 -0500
+From: Michal Marek <mmarek@suse.cz>
+To: dhowells@redhat.com
+Cc: linux-kernel@vger.kernel.org, rusty@ozlabs.org
+Subject: [PATCH 1/3] MODSIGN: Fix comparison erros in scripts/sign-file
+Date: Tue,  4 Dec 2012 11:18:39 +0100
+Message-Id: <1354616321-13520-1-git-send-email-mmarek@suse.cz>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 3c46f3d6406b1d0c53575774b2d1fd013cd7f76f:
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+---
+ scripts/sign-file |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-  Merge branch 'for-3.7-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq (2012-12-01 17:55:13 -0800)
+diff --git a/scripts/sign-file b/scripts/sign-file
+index 87ca59d..974a20b 100755
+--- a/scripts/sign-file
++++ b/scripts/sign-file
+@@ -156,12 +156,12 @@ sub asn1_extract($$@)
+ 
+ 	if ($l == 0x1) {
+ 	    $len = unpack("C", substr(${$cursor->[2]}, $cursor->[0], 1));
+-	} elsif ($l = 0x2) {
++	} elsif ($l == 0x2) {
+ 	    $len = unpack("n", substr(${$cursor->[2]}, $cursor->[0], 2));
+-	} elsif ($l = 0x3) {
++	} elsif ($l == 0x3) {
+ 	    $len = unpack("C", substr(${$cursor->[2]}, $cursor->[0], 1)) << 16;
+ 	    $len = unpack("n", substr(${$cursor->[2]}, $cursor->[0] + 1, 2));
+-	} elsif ($l = 0x4) {
++	} elsif ($l == 0x4) {
+ 	    $len = unpack("N", substr(${$cursor->[2]}, $cursor->[0], 4));
+ 	} else {
+ 	    die $x509, ": ", $cursor->[0], ": ASN.1 element too long (", $l, ")\n";
+-- 
+1.7.10.4
 
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git fixes
-
-for you to fetch changes up to 84ecfd15f5547c992c901df6ec14b4d507eb2c6e:
-
-  modsign: add symbol prefix to certificate list (2012-12-03 13:06:25 +1030)
-
-----------------------------------------------------------------
-James Hogan (2):
-      linux/kernel.h: define SYMBOL_PREFIX
-      modsign: add symbol prefix to certificate list
-
- include/linux/kernel.h  |    7 +++++++
- kernel/modsign_pubkey.c |    4 ++--
- 2 files changed, 9 insertions(+), 2 deletions(-)
