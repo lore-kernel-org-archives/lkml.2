@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753783Ab2LDPep (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 10:34:45 -0500
-Received: from mga02.intel.com ([134.134.136.20]:23575 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753558Ab2LDPen (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 10:34:43 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,215,1355126400"; 
-   d="scan'208";a="228802726"
-Date: Tue, 4 Dec 2012 15:37:16 +0000
-From: Alan Cox <alan@linux.intel.com>
-To: "Winkler, Tomas" <tomas.winkler@intel.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stanislaw Gruszka <sgruszka@redhat.com>
-Subject: Re: [char-misc-next 07/15] mei: use wrietl/readl instead of io
- wrappers
-Message-ID: <20121204153716.322b2cc7@bob.linux.org.uk>
-In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B01E9DED6@HASMSX106.ger.corp.intel.com>
-References: <1354629884-3202-1-git-send-email-tomas.winkler@intel.com>
-	<1354629884-3202-7-git-send-email-tomas.winkler@intel.com>
-	<20121204143151.1cce530a@pyramind.ukuu.org.uk>
-	<5B8DA87D05A7694D9FA63FD143655C1B01E9DED6@HASMSX106.ger.corp.intel.com>
-Organization: Intel
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-redhat-linux-gnu)
-Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
- Registered office Pipers Way, Swindon, SN3 1RJ
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754028Ab2LDPe4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 10:34:56 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:54690 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753851Ab2LDPew (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 10:34:52 -0500
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, Jean Delvare <khali@linux-fr.org>,
+        linux-input@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 09/14] HID: i2c-hid: i2c_hid_get_report may fail
+Date: Tue,  4 Dec 2012 16:27:50 +0100
+Message-Id: <1354634875-5182-10-git-send-email-benjamin.tissoires@gmail.com>
+X-Mailer: git-send-email 1.8.0.1
+In-Reply-To: <1354634875-5182-1-git-send-email-benjamin.tissoires@gmail.com>
+References: <1354634875-5182-1-git-send-email-benjamin.tissoires@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > so you need to tweak the map/unmap if you do this.
-> > 
-> > As to overhead. I'd love to see a measurement that can detect the
-> > difference. Do you have a benchmark that shows it ?
-> 
-> Don't have any numbers but it seems reasonable to me.
+If i2c_hid_get_report fails, exit i2c_hid_init_report.
+The printk log is already called by i2c_hid_get_report, so no need
+to add some more printks.
 
-Processors are pretty good at prediction these days. I've not seen any
-evidence to support the assumption.
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+---
+ drivers/hid/i2c-hid/i2c-hid.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
+index da04948..dcacfc4 100644
+--- a/drivers/hid/i2c-hid/i2c-hid.c
++++ b/drivers/hid/i2c-hid/i2c-hid.c
+@@ -400,9 +400,10 @@ static void i2c_hid_init_report(struct hid_report *report, u8 *buffer,
+ 	unsigned int size, ret_size;
+ 
+ 	size = i2c_hid_get_report_length(report);
+-	i2c_hid_get_report(client,
++	if (i2c_hid_get_report(client,
+ 			report->type == HID_FEATURE_REPORT ? 0x03 : 0x01,
+-			report->id, buffer, size);
++			report->id, buffer, size))
++		return;
+ 
+ 	i2c_hid_dbg(ihid, "report (len=%d): %*ph\n", size, size, ihid->inbuf);
+ 
+-- 
+1.8.0.1
 
