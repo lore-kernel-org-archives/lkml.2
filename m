@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918Ab2LDBrE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 20:47:04 -0500
-Received: from dupo.coraid.com ([208.71.232.133]:59222 "EHLO coraid.com"
+	id S1751793Ab2LDBtD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 20:49:03 -0500
+Received: from dupo.coraid.com ([208.71.232.133]:38415 "EHLO coraid.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751845Ab2LDBrC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 20:47:02 -0500
-Message-Id: <551d7117c59f82c9e176f333bee56c59f19c1fa9.1354501189.git.ecashin@coraid.com>
+	id S1751511Ab2LDBtC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 20:49:02 -0500
+Message-Id: <05ea4d2d22748c65234f20dbfacf6ac69377d147.1354501189.git.ecashin@coraid.com>
 In-Reply-To: <cover.1354501189.git.ecashin@coraid.com>
 References: <cover.1354501189.git.ecashin@coraid.com>
 From: Ed Cashin <ecashin@coraid.com>
-Subject: [PATCH 4/7] aoe: allow user to disable target failure timeout
+Subject: [PATCH 5/7] aoe: allow comma separator in aoe_iflist value
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, ecashin@coraid.com
 From: Ed Cashin <ecashin@coraid.com>
 X-Mailer: nedmail
-Date: Mon, 3 Dec 2012 20:46:57 -0500
+Date: Mon, 3 Dec 2012 20:48:58 -0500
 MIME-Version: 1.0
 Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
@@ -23,52 +23,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With this change, the aoe driver treats the value zero as special
-for the aoe_deadsecs module parameter.  Normally, this value
-specifies the number of seconds during which the driver will
-continue to attempt retransmits to an unresponsive AoE target.
-After aoe_deadsecs has elapsed, the aoe driver marks the aoe
-device as "down" and fails all I/O.
+By default, the aoe driver uses any ethernet interface for AoE,
+but the aoe_iflist module parameter provides a convenient way to
+limit AoE traffic to a specific list of local network interfaces.
 
-The new meaning of an aoe_deadsecs of zero is for the driver to
-retransmit commands indefinitely.
+This change allows a list to be specified using the comma
+character as a separator.  For example,
+
+  modprobe aoe aoe_iflist=eth2,eth3
+
+Before, it was inconvenient to get the quoting right in shell
+scripts when setting aoe_iflist to have more than one network
+interface.
 
 Signed-off-by: Ed Cashin <ecashin@coraid.com>
 ---
- Documentation/aoe/aoe.txt  |    4 +++-
- drivers/block/aoe/aoecmd.c |    4 +++-
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ drivers/block/aoe/aoe.h    |    2 +-
+ drivers/block/aoe/aoenet.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/aoe/aoe.txt b/Documentation/aoe/aoe.txt
-index bfc9cb1..c71487d 100644
---- a/Documentation/aoe/aoe.txt
-+++ b/Documentation/aoe/aoe.txt
-@@ -125,7 +125,9 @@ DRIVER OPTIONS
-   The aoe_deadsecs module parameter determines the maximum number of
-   seconds that the driver will wait for an AoE device to provide a
-   response to an AoE command.  After aoe_deadsecs seconds have
--  elapsed, the AoE device will be marked as "down".
-+  elapsed, the AoE device will be marked as "down".  A value of zero
-+  is supported for testing purposes and makes the aoe driver keep
-+  trying AoE commands forever.
+diff --git a/drivers/block/aoe/aoe.h b/drivers/block/aoe/aoe.h
+index 0f478dc..f8d6c7e 100644
+--- a/drivers/block/aoe/aoe.h
++++ b/drivers/block/aoe/aoe.h
+@@ -11,7 +11,7 @@
+ #define AOE_PARTITIONS (16)
+ #endif
  
-   The aoe_maxout module parameter has a default of 128.  This is the
-   maximum number of unresponded packets that will be sent to an AoE
-diff --git a/drivers/block/aoe/aoecmd.c b/drivers/block/aoe/aoecmd.c
-index da360f9..abf4ad2 100644
---- a/drivers/block/aoe/aoecmd.c
-+++ b/drivers/block/aoe/aoecmd.c
-@@ -812,7 +812,9 @@ rexmit_timer(ulong vp)
- 		since = tsince_hr(f);
- 		n = f->waited_total + since;
- 		n /= USEC_PER_SEC;
--		if (n > aoe_deadsecs && !(f->flags & FFL_PROBE)) {
-+		if (aoe_deadsecs
-+		&& n > aoe_deadsecs
-+		&& !(f->flags & FFL_PROBE)) {
- 			/* Waited too long.  Device failure.
- 			 * Hang all frames on first hash bucket for downdev
- 			 * to clean up.
+-#define WHITESPACE " \t\v\f\n"
++#define WHITESPACE " \t\v\f\n,"
+ 
+ enum {
+ 	AOECMD_ATA,
+diff --git a/drivers/block/aoe/aoenet.c b/drivers/block/aoe/aoenet.c
+index 2e47404..71d3ea8 100644
+--- a/drivers/block/aoe/aoenet.c
++++ b/drivers/block/aoe/aoenet.c
+@@ -31,7 +31,7 @@ enum {
+ 
+ static char aoe_iflist[IFLISTSZ];
+ module_param_string(aoe_iflist, aoe_iflist, IFLISTSZ, 0600);
+-MODULE_PARM_DESC(aoe_iflist, "aoe_iflist=\"dev1 [dev2 ...]\"");
++MODULE_PARM_DESC(aoe_iflist, "aoe_iflist=dev1[,dev2...]");
+ 
+ static wait_queue_head_t txwq;
+ static struct ktstate kts;
 -- 
 1.7.1
 
