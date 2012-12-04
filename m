@@ -1,129 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753802Ab2LDPai (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 10:30:38 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:50038 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751795Ab2LDP2Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 10:28:25 -0500
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, Jean Delvare <khali@linux-fr.org>,
-        linux-input@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 07/14] HID: i2c-hid: fix return paths
-Date: Tue,  4 Dec 2012 16:27:48 +0100
-Message-Id: <1354634875-5182-8-git-send-email-benjamin.tissoires@gmail.com>
-X-Mailer: git-send-email 1.8.0.1
-In-Reply-To: <1354634875-5182-1-git-send-email-benjamin.tissoires@gmail.com>
-References: <1354634875-5182-1-git-send-email-benjamin.tissoires@gmail.com>
+	id S1753864Ab2LDPbG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 10:31:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23259 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753539Ab2LDPbD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 10:31:03 -0500
+Date: Tue, 4 Dec 2012 17:30:43 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: mtosatti@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/6] kvm: Growable memory slot array
+Message-ID: <20121204153043.GA14176@redhat.com>
+References: <20121203231912.3661.57179.stgit@bling.home>
+ <20121204114803.GH19514@redhat.com>
+ <1354634515.1809.406.camel@bling.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354634515.1809.406.camel@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Forwards appropriate return values.
-As noone use the error returned by i2c_hid_get_input, let's make it
-returning void.
+On Tue, Dec 04, 2012 at 08:21:55AM -0700, Alex Williamson wrote:
+> On Tue, 2012-12-04 at 13:48 +0200, Gleb Natapov wrote:
+> > On Mon, Dec 03, 2012 at 04:39:05PM -0700, Alex Williamson wrote:
+> > > Memory slots are currently a fixed resource with a relatively small
+> > > limit.  When using PCI device assignment in a qemu guest it's fairly
+> > > easy to exhaust the number of available slots.  I posted patches
+> > > exploring growing the number of memory slots a while ago, but it was
+> > > prior to caching memory slot array misses and thefore had potentially
+> > > poor performance.  Now that we do that, Avi seemed receptive to
+> > > increasing the memory slot array to arbitrary lengths.  I think we
+> > > still don't want to impose unnecessary kernel memory consumptions on
+> > > guests not making use of this, so I present again a growable memory
+> > > slot array.
+> > > 
+> > > A couple notes/questions; in the previous version we had a
+> > > kvm_arch_flush_shadow() call when we increased the number of slots.
+> > > I'm not sure if this is still necessary.  I had also made the x86
+> > > specific slot_bitmap dynamically grow as well and switch between a
+> > > direct bitmap and indirect pointer to a bitmap.  That may have
+> > > contributed to needing the flush.  I haven't done that yet here
+> > > because it seems like an unnecessary complication if we have a max
+> > > on the order of 512 or 1024 entries.  A bit per slot isn't a lot of
+> > > overhead.  If we want to go more, maybe we should make it switch.
+> > > That leads to the final question, we need an upper bound since this
+> > > does allow consumption of extra kernel memory, what should it be?  A
+> > This is the most important question :) If we want to have 1000s of
+> > them or 100 is enough?
+> 
+> We can certainly hit respectable numbers of assigned devices in the
+> hundreds.  Worst case is 8 slots per assigned device, typical case is 4
+> or less.  So 512 slots would more or less guarantee 64 devices (we do
+> need some slots for actual memory), and more typically allow at least
+> 128 devices.  Philosophically, supporting a full PCI bus, 256 functions,
+> 2048 slots, is an attractive target, but it's probably no practical.
+> 
+> I think on x86 a slot is 72 bytes w/ alignment padding, so a maximum of
+> 36k @512 slots.
+> 
+> >  Also what about changing kvm_memslots->memslots[]
+> > array to be "struct kvm_memory_slot *memslots[KVM_MEM_SLOTS_NUM]"? It
+> > will save us good amount of memory for unused slots.
+> 
+> I'm not following where that results in memory savings.  Can you
+> clarify.  Thanks,
+> 
+We will waste sizeof(void*) for each unused slot instead of
+sizeof(struct kvm_memory_slot).
 
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
----
- drivers/hid/i2c-hid/i2c-hid.c | 24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-index 4452611..d6fdb3e 100644
---- a/drivers/hid/i2c-hid/i2c-hid.c
-+++ b/drivers/hid/i2c-hid/i2c-hid.c
-@@ -245,7 +245,7 @@ static int i2c_hid_get_report(struct i2c_client *client, u8 reportType,
- 	if (ret) {
- 		dev_err(&client->dev,
- 			"failed to retrieve report from device.\n");
--		return -EINVAL;
-+		return ret;
- 	}
- 
- 	return 0;
-@@ -290,7 +290,7 @@ static int i2c_hid_set_report(struct i2c_client *client, u8 reportType,
- 		reportType, args, args_len, NULL, 0);
- 	if (ret) {
- 		dev_err(&client->dev, "failed to set a report to device.\n");
--		return -EINVAL;
-+		return ret;
- 	}
- 
- 	return data_len;
-@@ -334,7 +334,7 @@ static int i2c_hid_hwreset(struct i2c_client *client)
- 	return 0;
- }
- 
--static int i2c_hid_get_input(struct i2c_hid *ihid)
-+static void i2c_hid_get_input(struct i2c_hid *ihid)
- {
- 	int ret, ret_size;
- 	int size = le16_to_cpu(ihid->hdesc.wMaxInputLength);
-@@ -342,11 +342,11 @@ static int i2c_hid_get_input(struct i2c_hid *ihid)
- 	ret = i2c_master_recv(ihid->client, ihid->inbuf, size);
- 	if (ret != size) {
- 		if (ret < 0)
--			return ret;
-+			return;
- 
- 		dev_err(&ihid->client->dev, "%s: got %d data instead of %d\n",
- 			__func__, ret, size);
--		return ret;
-+		return;
- 	}
- 
- 	ret_size = ihid->inbuf[0] | ihid->inbuf[1] << 8;
-@@ -355,13 +355,13 @@ static int i2c_hid_get_input(struct i2c_hid *ihid)
- 		/* host or device initiated RESET completed */
- 		if (test_and_clear_bit(I2C_HID_RESET_PENDING, &ihid->flags))
- 			wake_up(&ihid->wait);
--		return 0;
-+		return;
- 	}
- 
- 	if (ret_size > size) {
- 		dev_err(&ihid->client->dev, "%s: incomplete report (%d/%d)\n",
- 			__func__, size, ret_size);
--		return -EIO;
-+		return;
- 	}
- 
- 	i2c_hid_dbg(ihid, "input: %*ph\n", ret_size, ihid->inbuf);
-@@ -370,7 +370,7 @@ static int i2c_hid_get_input(struct i2c_hid *ihid)
- 		hid_input_report(ihid->hid, HID_INPUT_REPORT, ihid->inbuf + 2,
- 				ret_size - 2, 1);
- 
--	return 0;
-+	return;
- }
- 
- static irqreturn_t i2c_hid_irq(int irq, void *dev_id)
-@@ -430,8 +430,10 @@ static void i2c_hid_init_reports(struct hid_device *hid)
- 	struct i2c_hid *ihid = i2c_get_clientdata(client);
- 	u8 *inbuf = kzalloc(ihid->bufsize, GFP_KERNEL);
- 
--	if (!inbuf)
-+	if (!inbuf) {
-+		dev_err(&client->dev, "can not retrieve initial reports\n");
- 		return;
-+	}
- 
- 	list_for_each_entry(report,
- 		&hid->report_enum[HID_INPUT_REPORT].report_list, list)
-@@ -715,9 +717,7 @@ static int i2c_hid_hidinput_input_event(struct input_dev *dev,
- 		return -1;
- 	}
- 
--	hid_set_field(field, offset, value);
--
--	return 0;
-+	return hid_set_field(field, offset, value);
- }
- 
- static struct hid_ll_driver i2c_hid_ll_driver = {
--- 
-1.8.0.1
-
+--
+			Gleb.
