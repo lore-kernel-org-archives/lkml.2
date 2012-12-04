@@ -1,198 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807Ab2LDVEs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 16:04:48 -0500
-Received: from www.hansjkoch.de ([178.63.77.200]:51511 "EHLO www.hansjkoch.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753783Ab2LDVEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 16:04:47 -0500
-Date: Tue, 4 Dec 2012 22:04:40 +0100
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Vitalii Demianets <vitas@nppfactor.kiev.ua>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Cong Ding <dinggnu@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH] drivers/uio/uio_pdrv_genirq.c: Fix memory freeing issues
-Message-ID: <20121204210440.GA4720@local>
-References: <201211271929.32315.vitas@nppfactor.kiev.ua>
- <201211281137.23623.vitas@nppfactor.kiev.ua>
- <20121128211407.GC2590@local>
- <201211291347.28273.vitas@nppfactor.kiev.ua>
+	id S1752946Ab2LDVIU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 16:08:20 -0500
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:18266 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751807Ab2LDVIR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 16:08:17 -0500
+From: Lance Ortiz <lance.ortiz@hp.com>
+Subject: [PATCH v7 1/3] aerdrv: Trace Event for AER
+To: bhelgaas@google.com, lance_ortiz@hotmail.com, jiang.liu@huawei.com,
+        tony.luck@intel.com, bp@alien8.de, rostedt@goodmis.org,
+        mchehab@redhat.com, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 04 Dec 2012 14:03:05 -0700
+Message-ID: <20121204210305.4515.91100.stgit@grignak.americas.hpqcorp.net>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201211291347.28273.vitas@nppfactor.kiev.ua>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 29, 2012 at 01:47:28PM +0200, Vitalii Demianets wrote:
-> 1. uioinfo was kfreed based on the presence of pdev->dev.of_node, which was
-> obviously wrong and unrelated to the fact if uioinfo was allocated statically
-> or dynamically. This patch introduces new flag which clearly shows if uioinfo
-> was allocated dynamically and kfrees uioinfo based on that flag;
-> 2. Fix: priv data was not freed in case platform_get_irq() failed. As it was
-> caused mainly by improper exit labels naming, labels were renamed too;
-> 3. The case of uioinfo AND pdev->dev.of_node both NULL (not initialized
-> in platform data) was not treated properly.
+This header file will define a new trace event that will be triggered when
+a AER event occurs.  The following data will be provided to the trace
+event.
 
-Your arguments sound right to me. But there are some minor issues, see below.
+char * dev_name - The name of the slot where the device resides
+                  ([domain:]bus:device.function).
 
-Otherwise looks good.
-Thanks,
-Hans
+u32 status - Either the correctable or uncorrectable register
+             indicating what error or errors have been see.
 
-> 
-> Signed-off-by: Vitalii Demianets <vitas@nppfactor.kiev.ua>
-> ---
->  drivers/uio/uio_pdrv_genirq.c |   44 ++++++++++++++++++++++++----------------
->  1 files changed, 26 insertions(+), 18 deletions(-)
-> 
-> diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
-> index 42202cd..45126e3 100644
-> --- a/drivers/uio/uio_pdrv_genirq.c
-> +++ b/drivers/uio/uio_pdrv_genirq.c
-> @@ -30,6 +30,11 @@
->  
->  #define DRIVER_NAME "uio_pdrv_genirq"
->  
-> +enum {
-> +	bitIRQDisabled = 0,
-> +	bitUioinfoAlloced = 1,
+u8 severity - error severity 0:NONFATAL 1:FATAL 2:CORRECTED
 
-Please do not use CamelCase. This is neither Windows nor C++ or Java.
-And you don't need to tell users about the type (like "bit"). That should
-be clear by looking at the code. I'd prefer UPPERCASE to make it clear that
-these are constants, e.g. IRQ_IS_DISABLED and UIO_INFO_IS_ALLOCATED or
-something like that.
+The trace event will also provide a trace string that may look like:
 
-> +};
-> +
->  struct uio_pdrv_genirq_platdata {
->  	struct uio_info *uioinfo;
->  	spinlock_t lock;
-> @@ -63,7 +68,7 @@ static irqreturn_t uio_pdrv_genirq_handler(int irq, struct uio_info *dev_info)
->  	 * remember the state so we can allow user space to enable it later.
->  	 */
->  
-> -	if (!test_and_set_bit(0, &priv->flags))
-> +	if (!test_and_set_bit(bitIRQDisabled, &priv->flags))
->  		disable_irq_nosync(irq);
->  
->  	return IRQ_HANDLED;
-> @@ -83,10 +88,10 @@ static int uio_pdrv_genirq_irqcontrol(struct uio_info *dev_info, s32 irq_on)
->  
->  	spin_lock_irqsave(&priv->lock, flags);
->  	if (irq_on) {
-> -		if (test_and_clear_bit(0, &priv->flags))
-> +		if (test_and_clear_bit(bitIRQDisabled, &priv->flags))
->  			enable_irq(dev_info->irq);
->  	} else {
-> -		if (!test_and_set_bit(0, &priv->flags))
-> +		if (!test_and_set_bit(bitIRQDisabled, &priv->flags))
->  			disable_irq(dev_info->irq);
->  	}
->  	spin_unlock_irqrestore(&priv->lock, flags);
-> @@ -101,8 +106,9 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
->  	struct uio_mem *uiomem;
->  	int ret = -EINVAL;
->  	int i;
-> +	bool uioinfo_alloced = false;
->  
-> -	if (!uioinfo) {
-> +	if (!uioinfo && pdev->dev.of_node) {
->  		int irq;
->  
->  		/* alloc uioinfo for one device */
-> @@ -110,10 +116,11 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
->  		if (!uioinfo) {
->  			ret = -ENOMEM;
->  			dev_err(&pdev->dev, "unable to kmalloc\n");
-> -			goto bad2;
-> +			goto out;
->  		}
->  		uioinfo->name = pdev->dev.of_node->name;
->  		uioinfo->version = "devicetree";
-> +		uioinfo_alloced = true;
->  
->  		/* Multiple IRQs are not supported */
->  		irq = platform_get_irq(pdev, 0);
-> @@ -125,32 +132,33 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
->  
->  	if (!uioinfo || !uioinfo->name || !uioinfo->version) {
->  		dev_err(&pdev->dev, "missing platform_data\n");
-> -		goto bad0;
-> +		goto out_uioinfo;
->  	}
->  
->  	if (uioinfo->handler || uioinfo->irqcontrol ||
->  	    uioinfo->irq_flags & IRQF_SHARED) {
->  		dev_err(&pdev->dev, "interrupt configuration error\n");
-> -		goto bad0;
-> +		goto out_uioinfo;
->  	}
->  
->  	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
->  	if (!priv) {
->  		ret = -ENOMEM;
->  		dev_err(&pdev->dev, "unable to kmalloc\n");
-> -		goto bad0;
-> +		goto out_uioinfo;
->  	}
->  
->  	priv->uioinfo = uioinfo;
->  	spin_lock_init(&priv->lock);
-> -	priv->flags = 0; /* interrupt is enabled to begin with */
-> +	/* interrupt is enabled to begin with */
-> +	priv->flags = uioinfo_alloced ? (1 << bitUioinfoAlloced) : 0;
->  	priv->pdev = pdev;
->  
->  	if (!uioinfo->irq) {
->  		ret = platform_get_irq(pdev, 0);
->  		if (ret < 0) {
->  			dev_err(&pdev->dev, "failed to get IRQ\n");
-> -			goto bad0;
-> +			goto out_priv;
->  		}
->  		uioinfo->irq = ret;
->  	}
-> @@ -205,19 +213,19 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
->  	ret = uio_register_device(&pdev->dev, priv->uioinfo);
->  	if (ret) {
->  		dev_err(&pdev->dev, "unable to register uio device\n");
-> -		goto bad1;
-> +		goto out_pm;
->  	}
->  
->  	platform_set_drvdata(pdev, priv);
->  	return 0;
-> - bad1:
-> -	kfree(priv);
-> +out_pm:
->  	pm_runtime_disable(&pdev->dev);
-> - bad0:
-> -	/* kfree uioinfo for OF */
-> -	if (pdev->dev.of_node)
-> +out_priv:
-> +	kfree(priv);
-> +out_uioinfo:
-> +	if (uioinfo_alloced)
->  		kfree(uioinfo);
-> - bad2:
-> +out:
->  	return ret;
->  }
->  
-> @@ -232,7 +240,7 @@ static int uio_pdrv_genirq_remove(struct platform_device *pdev)
->  	priv->uioinfo->irqcontrol = NULL;
->  
->  	/* kfree uioinfo for OF */
-> -	if (pdev->dev.of_node)
-> +	if (priv->flags & (1 << bitUioinfoAlloced))
->  		kfree(priv->uioinfo);
->  
->  	kfree(priv);
-> -- 
-> 1.7.8.6
-> 
+"0000:05:00.0 PCIe Bus Error:severity=Uncorrected (Non-Fatal), Poisoned
+TLP"
+
+v1-v2 Move header from include/ras/aer_event.h to
+include/trace/events/ras.h
+v3-v4 Cleaned up comments and commit header
+v4-v5 More cleanup remove () from if statement in print.
+      Renamed string define to be more specific.
+v5-v6 change TRACE_SYSTEM define to be ras and not aer.
+Signed-off-by: Lance Ortiz <lance.ortiz@hp.com>
+---
+
+ include/trace/events/ras.h |   77 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 77 insertions(+), 0 deletions(-)
+ create mode 100644 include/trace/events/ras.h
+
+diff --git a/include/trace/events/ras.h b/include/trace/events/ras.h
+new file mode 100644
+index 0000000..88b8783
+--- /dev/null
++++ b/include/trace/events/ras.h
+@@ -0,0 +1,77 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM ras
++
++#if !defined(_TRACE_AER_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_AER_H
++
++#include <linux/tracepoint.h>
++#include <linux/edac.h>
++
++
++/*
++ * PCIe AER Trace event
++ *
++ * These events are generated when hardware detects a corrected or
++ * uncorrected event on a PCIe device. The event report has
++ * the following structure:
++ *
++ * char * dev_name -	The name of the slot where the device resides
++ *			([domain:]bus:device.function).
++ * u32 status -		Either the correctable or uncorrectable register
++ *			indicating what error or errors have been seen
++ * u8 severity -	error severity 0:NONFATAL 1:FATAL 2:CORRECTED
++ */
++
++#define aer_correctable_errors		\
++	{BIT(0),	"Receiver Error"},		\
++	{BIT(6),	"Bad TLP"},			\
++	{BIT(7),	"Bad DLLP"},			\
++	{BIT(8),	"RELAY_NUM Rollover"},		\
++	{BIT(12),	"Replay Timer Timeout"},	\
++	{BIT(13),	"Advisory Non-Fatal"}
++
++#define aer_uncorrectable_errors		\
++	{BIT(4),	"Data Link Protocol"},		\
++	{BIT(12),	"Poisoned TLP"},		\
++	{BIT(13),	"Flow Control Protocol"},	\
++	{BIT(14),	"Completion Timeout"},		\
++	{BIT(15),	"Completer Abort"},		\
++	{BIT(16),	"Unexpected Completion"},	\
++	{BIT(17),	"Receiver Overflow"},		\
++	{BIT(18),	"Malformed TLP"},		\
++	{BIT(19),	"ECRC"},			\
++	{BIT(20),	"Unsupported Request"}
++
++TRACE_EVENT(aer_event,
++	TP_PROTO(const char *dev_name,
++		 const u32 status,
++		 const u8 severity),
++
++	TP_ARGS(dev_name, status, severity),
++
++	TP_STRUCT__entry(
++		__string(	dev_name,	dev_name	)
++		__field(	u32,		status		)
++		__field(	u8,		severity	)
++	),
++
++	TP_fast_assign(
++		__assign_str(dev_name, dev_name);
++		__entry->status		= status;
++		__entry->severity	= severity;
++	),
++
++	TP_printk("%s PCIe Bus Error: severity=%s, %s\n",
++		__get_str(dev_name),
++		__entry->severity == HW_EVENT_ERR_CORRECTED ? "Corrected" :
++			__entry->severity == HW_EVENT_ERR_FATAL ?
++			"Fatal" : "Uncorrected",
++		__entry->severity == HW_EVENT_ERR_CORRECTED ?
++		__print_flags(__entry->status, "|", aer_correctable_errors) :
++		__print_flags(__entry->status, "|", aer_uncorrectable_errors))
++);
++
++#endif /* _TRACE_AER_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
+
