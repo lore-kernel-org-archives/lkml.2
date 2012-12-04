@@ -1,106 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752967Ab2LDJSy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 04:18:54 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:55305 "EHLO comal.ext.ti.com"
+	id S1753030Ab2LDJWK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 04:22:10 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:59613 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752300Ab2LDJSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 04:18:32 -0500
-Message-ID: <50BDBFDD.302@ti.com>
-Date: Tue, 4 Dec 2012 11:18:21 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751418Ab2LDJWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 04:22:08 -0500
+Date: Tue, 4 Dec 2012 10:22:04 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Lance Ortiz <lance.ortiz@hp.com>
+Cc: bhelgaas@google.com, lance_ortiz@hotmail.com, jiang.liu@huawei.com,
+        tony.luck@intel.com, rostedt@goodmis.org, mchehab@redhat.com,
+        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 1/3] aerdrv: Trace Event for AER
+Message-ID: <20121204092204.GF4369@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Lance Ortiz <lance.ortiz@hp.com>, bhelgaas@google.com,
+	lance_ortiz@hotmail.com, jiang.liu@huawei.com, tony.luck@intel.com,
+	rostedt@goodmis.org, mchehab@redhat.com, linux-acpi@vger.kernel.org,
+	linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20121203212047.24373.8646.stgit@grignak.americas.hpqcorp.net>
 MIME-Version: 1.0
-To: "Manjunathappa, Prakash" <prakash.pm@ti.com>
-CC: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        "Porter, Matt" <mporter@ti.com>, "Dill, Russ" <russ.dill@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] da8xx: Fix revision check on the da8xx driver
-References: <1351698984-4007-1-git-send-email-panto@antoniou-consulting.com> <A73F36158E33644199EB82C5EC81C7BC3E9E10D6@DBDE01.ent.ti.com> <A73F36158E33644199EB82C5EC81C7BC3EA13286@DBDE01.ent.ti.com>
-In-Reply-To: <A73F36158E33644199EB82C5EC81C7BC3EA13286@DBDE01.ent.ti.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="------------enigCF3063E8CEE3ADA48BCD1830"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20121203212047.24373.8646.stgit@grignak.americas.hpqcorp.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------enigCF3063E8CEE3ADA48BCD1830
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Mon, Dec 03, 2012 at 02:20:48PM -0700, Lance Ortiz wrote:
+> This header file will define a new trace event that will be triggered when
+> a AER event occurs.  The following data will be provided to the trace
+> event.
+> 
+> char * dev_name - The name of the slot where the device resides
+>                   ([domain:]bus:device.function).
+> 
+> u32 status - Either the correctable or uncorrectable register
+>              indicating what error or errors have been see.
+> 
+> u8 severity - error severity 0:NONFATAL 1:FATAL 2:CORRECTED
+> 
+> The trace event will also provide a trace string that may look like:
+> 
+> "0000:05:00.0 PCIe Bus Error:severity=Uncorrected (Non-Fatal), Poisoned
+> TLP"
+> 
+> v1-v2 Move header from include/ras/aer_event.h to
+> include/trace/events/ras.h
+> v3-v4 Cleaned up comments and commit header
+> v4-v5 More cleanup remove () from if statement in print.
+>       Renamed string define to be more specific.
+> Signed-off-by: Lance Ortiz <lance.ortiz@hp.com>
+> ---
+> 
+>  include/trace/events/ras.h |   78 ++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 78 insertions(+), 0 deletions(-)
+>  create mode 100644 include/trace/events/ras.h
+> 
+> diff --git a/include/trace/events/ras.h b/include/trace/events/ras.h
+> new file mode 100644
+> index 0000000..e6f123e
+> --- /dev/null
+> +++ b/include/trace/events/ras.h
+> @@ -0,0 +1,78 @@
+> +#undef TRACE_SYSTEM
+> +#define TRACE_SYSTEM aer_event
+> +#define TRACE_INCLUDE_FILE ras
 
-On 2012-12-04 08:36, Manjunathappa, Prakash wrote:
-> Hi Tomi,
->=20
-> On Wed, Oct 31, 2012 at 09:21:35, Manjunathappa, Prakash wrote:
->> On Wed, Oct 31, 2012 at 21:26:24, Pantelis Antoniou wrote:
->>> The revision check fails for the beaglebone; Add new revision ID.
->>>
->>> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
->>> ---
->>>  drivers/video/da8xx-fb.c | 1 +
->>>  1 file changed, 1 insertion(+)
->>>
->>> diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
->>> index 80665f6..866d804 100644
->>> --- a/drivers/video/da8xx-fb.c
->>> +++ b/drivers/video/da8xx-fb.c
->>> @@ -1283,6 +1283,7 @@ static int __devinit fb_probe(struct platform_d=
-evice *device)
->>>  		lcd_revision =3D LCD_VERSION_1;
->>>  		break;
->>>  	case 0x4F200800:
->>> +	case 0x4F201000:
->>
->> Thanks for Correcting. This is the LCDC revision on am335x silicon in =
-comparison
->> with to one read(0x4F200800) on emulator platform.
->>
->> Acked-by: Manjunathappa, Prakash <prakash.pm@ti.com>
->>
->=20
-> This patch is necessary for am335x FB, I could not see in your for-next=
- branch,
+Whoops, I somehow missed that the last time:
 
-I have only applied the patches that have been sent to me.
+TRACE_SYSTEM should be "ras" and then you don't need to define
+TRACE_INCLUDE_FILE at all.
 
-> could you please consider this patch for 3.8 merge window. There are no=
- pending
-> review comments on this.
+Thanks.
 
-Applied.
-
- Tomi
-
-
-
---------------enigCF3063E8CEE3ADA48BCD1830
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with undefined - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJQvb/gAAoJEPo9qoy8lh7172kP/Rw4A26ddBaPFd0b6ztvU3bo
-KpKmCA3Ny40q88y0ulrawfKqfnbsC7fPfdUm79+ei4YlPqn3hAi8ORdZNMn0kQso
-CRRkAJnCYVeQB+lydCF6FrwFFLRfgFiyK3IRKxpRWcOwRjc/ujUOTIpBm2FuBlJ2
-NCHga7n4blK2OkZNxUrpKsm5+aa5u4ukKMkMfGYL7WIhQ8bOaQbS4fEschPXBPne
-JsklNQG4Un72Yn+dNt6TGD73VwfESF9BGYjZ3oYcGATeFNobEZxT3lEFrRBZ71YP
-EXMO0sUqtP9ngWoW9cZIqVymcdVS3nFjV/KRZX24hSI+Q4Fu0YhVIb4Ua7PDi2XC
-kPctOo0y13XKoRWi5OjhLXoapJgHKKJzYZ5N+eCxMbvI2fa/0MS3SyKlvo10y1Cv
-k/81AhSXa7GfIUciqC3CYwRNtp6wHgQb/Slwz1S4GRDaIgiUs0HBipW/cv+tl+Uw
-0k2tUfHTPmh5cVbBtCYU4MmeJBLgDlWIrmkVoW6O5OMyQKU1vJ2PX3mmIk5FH2Oz
-QdoWCcVcM5uBP4rKN3m0a7JHsdbCTyg6Pvi44iFkwrTqWSjQLR7HgaQl5UJA32nE
-iiD5VXDn9XpV+guYOFcBjFQdfdGu3OGOU8q7VAPGYVvu9KdLVY29gvFUQBRYs9DO
-IyQi7Iy6SklQUXndp/WU
-=hzAr
------END PGP SIGNATURE-----
-
---------------enigCF3063E8CEE3ADA48BCD1830--
+-- 
+Regards/Gruss,
+    Boris.
