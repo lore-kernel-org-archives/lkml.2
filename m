@@ -1,86 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647Ab2LDLus (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 06:50:48 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:57950 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751723Ab2LDLuo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 06:50:44 -0500
+	id S1752954Ab2LDLxj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 06:53:39 -0500
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:35840 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751308Ab2LDLxh convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 06:53:37 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -10
+X-BigFish: VS-10(zzbb2dI98dI9371I179dN542I1432Izz1de0h1202h1d1ah1d2ahzz8275dhz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631hbe9i1155h)
+From: Sethi Varun-B16395 <B16395@freescale.com>
+To: Wood Scott-B07421 <B07421@freescale.com>
+CC: Joerg Roedel <joro@8bytes.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Tabi Timur-B04825 <B04825@freescale.com>
+Subject: RE: [PATCH 3/4 v5] iommu/fsl: Add iommu domain attributes required
+ by fsl PAMU driver.
+Thread-Topic: [PATCH 3/4 v5] iommu/fsl: Add iommu domain attributes required
+ by fsl PAMU driver.
+Thread-Index: AQHN0XgmreXJamSE4kOq4mmamJ54mJgIhoDg
+Date: Tue, 4 Dec 2012 11:53:33 +0000
+Message-ID: <C5ECD7A89D1DC44195F34B25E172658D2B70EE@039-SN2MPN1-013.039d.mgd.msft.net>
+References: <1353419697-31269-1-git-send-email-Varun.Sethi@freescale.com>
+	<1353419697-31269-4-git-send-email-Varun.Sethi@freescale.com>
+	<20121202140323.GO30633@8bytes.org>
+	<C5ECD7A89D1DC44195F34B25E172658D2B2A51@039-SN2MPN1-013.039d.mgd.msft.net>
+ <1354554223.2960.7@snotra>
+In-Reply-To: <1354554223.2960.7@snotra>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.232.132.77]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1212041129530.17055@pobox.suse.cz>
-References: <1352731379-24683-1-git-send-email-benjamin.tissoires@gmail.com>
-	<20121130155650.69407e9f@endymion.delvare>
-	<CAN+gG=FjVswyx1W4y6NtbNnBu2AWgZZfxVr0h00ZYujCOz3v7Q@mail.gmail.com>
-	<20121203140226.0fede51e@endymion.delvare>
-	<CAN+gG=F5jae=UFDR4-zZY-dt6KGE22QgmWiF2RkVvqN0ySX-kQ@mail.gmail.com>
-	<alpine.LNX.2.00.1212041129530.17055@pobox.suse.cz>
-Date: Tue, 4 Dec 2012 12:50:39 +0100
-Message-ID: <CAN+gG=G+ymEdfAf3Ub6n8ErhPBz1BB3XYyEPixz9sWbNeRnPDQ@mail.gmail.com>
-Subject: Re: [PATCH v3] i2c-hid: introduce HID over i2c specification implementation
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Jean Delvare <khali@linux-fr.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Stephane Chatty <chatty@enac.fr>, fabien.andre@gmail.com,
-        scott.liu@emc.com.tw, JJ Ding <jj_ding@emc.com.tw>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        linux-i2c@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 4, 2012 at 11:31 AM, Jiri Kosina <jkosina@suse.cz> wrote:
-> On Mon, 3 Dec 2012, Benjamin Tissoires wrote:
->
->> >> I know that it already have been used by one Nvidia team and by Elan
->> >> for internal tests. So I don't know if it's possible to change it now
->> >> (though it's not a big deal).
->> >
->> > Yes it is possible, as long as the code isn't in Linus' tree (and I'd
->> > even say: as long as it is not in any kernel released by Linus.)
->> > Whoever is already using your driver will have to adjust their code.
->> > They'll certainly want to anyway, in order to get the bug fixes.
->> >
->> >> Anyway, "hid" is a little weird to me (but this is because I started
->> >> hacking the kernel from there), as it's really short and does not
->> >> contain i2c :)
->> >
->> > This is exactly my point: no other i2c client (to my knowledge) has
->> > "i2c" in its name, because it is redundant.
->> >
->> > I would agree that this is kind of a special case as this is a generic
->> > driver and not a device-specific driver. I would still prefer "hid" but
->> > if you don't feel like changing it, I guess I can live with that.
->>
->> Ok, I'll change the name.
->> My concerns were just because from my point of view, "hid" refers to
->> the core implementation. But for OEMs, they need to declare a "hid"
->> device, so it makes sense. Anyway, when I'll be able to get my hand on
->> an ACPI 5 device with hid over i2c, I'll be able to write the missing
->> autoloading code, and this name will be only used by a small part of
->> OEMs (I hope).
->
-> If you are going to change the name, please either send me the patch
-> before merge window for 3.8 opens, or explicitly ask me not to include
-> this driver in pull request that goes to Linus yet.
 
-Sure, I intend to send some patches today (with the change of the name
-included). I'll send the patch related to the name in the first
-position so that you can safely pick it up even if you are not
-satisfied with the other changes.
 
-Thanks,
-Benjamin
+> -----Original Message-----
+> From: Wood Scott-B07421
+> Sent: Monday, December 03, 2012 10:34 PM
+> To: Sethi Varun-B16395
+> Cc: Joerg Roedel; linux-kernel@vger.kernel.org; iommu@lists.linux-
+> foundation.org; Wood Scott-B07421; linuxppc-dev@lists.ozlabs.org; Tabi
+> Timur-B04825
+> Subject: Re: [PATCH 3/4 v5] iommu/fsl: Add iommu domain attributes
+> required by fsl PAMU driver.
+> 
+> On 12/03/2012 10:57:29 AM, Sethi Varun-B16395 wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: iommu-bounces@lists.linux-foundation.org [mailto:iommu-
+> > > bounces@lists.linux-foundation.org] On Behalf Of Joerg Roedel
+> > > Sent: Sunday, December 02, 2012 7:33 PM
+> > > To: Sethi Varun-B16395
+> > > Cc: linux-kernel@vger.kernel.org; iommu@lists.linux-foundation.org;
+> > Wood
+> > > Scott-B07421; linuxppc-dev@lists.ozlabs.org; Tabi Timur-B04825
+> > > Subject: Re: [PATCH 3/4 v5] iommu/fsl: Add iommu domain attributes
+> > > required by fsl PAMU driver.
+> > >
+> > > Hmm, we need to work out a good abstraction for this.
+> > >
+> > > On Tue, Nov 20, 2012 at 07:24:56PM +0530, Varun Sethi wrote:
+> > > > Added the following domain attributes required by FSL PAMU driver:
+> > > > 1. Subwindows field added to the iommu domain geometry attribute.
+> > >
+> > > Are the Subwindows mapped with full size or do you map only parts
+> > of the
+> > > subwindows?
+> > >
+> > [Sethi Varun-B16395] It's possible to map a part of the subwindow i.e.
+> > size of the mapping can be less than the sub window size.
+> >
+> > > > +	 * This attribute indicates number of DMA subwindows
+> supported
+> > by
+> > > > +	 * the geometry. If there is a single window that maps the
+> > entire
+> > > > +	 * geometry, attribute must be set to "1". A value of "0"
+> > implies
+> > > > +	 * that this mechanism is not used at all(normal paging is
+> > used).
+> > > > +	 * Value other than* "0" or "1" indicates the actual number
+> of
+> > > > +	 * subwindows.
+> > > > +	 */
+> > >
+> > > This semantic is ugly, how about a feature detection mechanism?
+> > >
+> > [Sethi Varun-B16395] A feature mechanism to query the type of IOMMU?
+> 
+> A feature mechanism to determine whether this subwindow mechanism is
+> available, and what the limits are.
+> 
+So, we use the IOMMU capability interface to find out if IOMMU supports sub windows or not, right? But still number of sub windows would be specified as a part of the geometry and the valid value for sub windows would  0,1 or actual number of sub windows.
 
->
-> Once the driver is in Linus' tree, I'd rather not change the name.
->
-> Thanks,
->
-> --
-> Jiri Kosina
-> SUSE Labs
+-Varun
+ 
+
