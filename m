@@ -1,113 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751719Ab2LDDQW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 22:16:22 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:28084 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751260Ab2LDDQU (ORCPT
+	id S1751687Ab2LDD3j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 22:29:39 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63930 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751418Ab2LDD3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 22:16:20 -0500
-From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "wim@iguana.be" <wim@iguana.be>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
-        "Lin, JM" <JM.Lin@atmel.com>
-Subject: RE: [PATCH 00/11] watchdog/at91sam9_wdt: use watchdog framework,
- support DT
-Thread-Topic: [PATCH 00/11] watchdog/at91sam9_wdt: use watchdog framework,
- support DT
-Thread-Index: AQHNxAGpskznYGdGQU+VpqTPoKwQHZgIEfDg
-Date: Tue, 4 Dec 2012 03:12:06 +0000
-Message-ID: <B256D81BAE5131468A838E5D7A2436413A01CE70@penmbx01>
-References: <1352877369-19740-1-git-send-email-wenyou.yang@atmel.com>
- <20121116135043.GI4398@game.jcrosoft.org>
-In-Reply-To: <20121116135043.GI4398@game.jcrosoft.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.168.5.13]
-Content-Type: text/plain; charset="gb2312"
+	Mon, 3 Dec 2012 22:29:38 -0500
+Date: Mon, 3 Dec 2012 19:31:29 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: "Peng, Tao" <tao.peng@emc.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "kernel-team@lists.ubuntu.com" <kernel-team@lists.ubuntu.com>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: Re: [PATCH 041/270] pnfsblock: fix partial page buffer wirte
+Message-ID: <20121204033129.GA4810@kroah.com>
+References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
+ <1353949160-26803-42-git-send-email-herton.krzesinski@canonical.com>
+ <1353983604.4266.44.camel@deadeye.wl.decadent.org.uk>
+ <20121130014607.GD13478@kroah.com>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA90B32EE5D@SACEXCMBX04-PRD.hq.netapp.com>
+ <1882637210201641A747464075FFC649037C07@MX101CL02.corp.emc.com>
+ <1882637210201641A747464075FFC64903815F@MX101CL02.corp.emc.com>
+ <1882637210201641A747464075FFC649038FA5@MX101CL02.corp.emc.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1882637210201641A747464075FFC649038FA5@MX101CL02.corp.emc.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qB43GM6t006705
 
-Hi JC
-> -----Original Message-----
-> From: Jean-Christophe PLAGNIOL-VILLARD [mailto:plagnioj@jcrosoft.com]
-> Sent: 2012Äê11ÔÂ16ÈÕ 21:51
-> To: Yang, Wenyou
-> Cc: linux-arm-kernel@lists.infradead.org; wim@iguana.be;
-> linux-watchdog@vger.kernel.org; linux-kernel@vger.kernel.org; Ferre, Nicolas; Lin,
-> JM
-> Subject: Re: [PATCH 00/11] watchdog/at91sam9_wdt: use watchdog framework,
-> support DT
+On Tue, Dec 04, 2012 at 02:55:14AM +0000, Peng, Tao wrote:
+> > -----Original Message-----
+> > From: Peng, Tao
+> > Sent: Saturday, December 01, 2012 11:47 PM
+> > To: Myklebust, Trond; Greg Kroah-Hartman; Ben Hutchings
+> > Cc: linux-kernel@vger.kernel.org; stable@vger.kernel.org; kernel-team@lists.ubuntu.com; Herton Ronaldo
+> > Krzesinski
+> > Subject: RE: [PATCH 041/270] pnfsblock: fix partial page buffer wirte
+> > 
+> > Hi Greg and Ben,
+> > 
+> > Attached is the patch of upstream commit fe6e1e8d9fad86873eb74a26e80a8f91f9e870b5 backported to 3.4.20
+> > stable branch (head 0f4475cfaaf80e34ea5496a93ce579fe8c6950d5).
+> > 
+> Hi Greg,
 > 
-> On 15:15 Wed 14 Nov     , Wenyou Yang wrote:
-> > Hi, All
-> >
-> > The patch series is intended to convert to use the watchdog framework,
-> > and add support to device tree.
-> > It has been tested on sam9m10g45ek, sam9g20ek, sam9263ek and sam9g25ek.
-> you need to check Fabio wrok which is present on the ML for a while and  was
-> reviewed and binding too
->
-OK, I will do it, thanks.
- 
-> Best Regards,
-> J.
-> >
-> > It is based on v3.7-rc5.
-> >
-> > Best Regards
-> > Wenyou Yang
-> >
+> Somehow the patch got dropped? I just scanned through the newly
+> released 3.4.21 and it doesn't have the patch.
 
-Best Regards
-Wenyou Yang
+Yes, because it came after I started the -rc cycle, it will be in the
+next 3.4-stable release.
 
-> > Wenyou Yang (11):
-> >   watchdog/at91sam9_wdt: remove the file_operations struct
-> >   watchdog/at91sam9_wdt: change the at91wdt_private struct to the
-> >     at91wdt_drvdata struct
-> >   watchdog/at91sam9_wdt: change the wdt_read and wdt_write macro to the
-> >     inline function
-> >   watchdog/at91sam9_wdt: change "at91_wdt_settimeout" function name to
-> >     "at91wdt_enable"
-> >   watchdog/at91sam9_wdt: add to use the watchdog framework
-> >   watchdog/at91sam9_wdt: change the timer function name
-> >   watchdog/at91sam9_wdt: add nowayout helpers to Watchdog Timer Driver
-> >     Kernel API
-> >   watchdog/at91sam9_wdt: use module_platform_driver()
-> >   watchdog/at91sam9_wdt: add support to device tree
-> >   watchdog/at91sam9_wdt: using dev_info replaces pr_info, dev_crit
-> >     repalces pr_crit
-> >   ARM: dts: add the watchdog nodes for atmel SoC
-> >
-> >  .../devicetree/bindings/watchdog/atmel-wdt.txt     |   14 +
-> >  arch/arm/boot/dts/at91sam9260.dtsi                 |    6 +
-> >  arch/arm/boot/dts/at91sam9263.dtsi                 |    6 +
-> >  arch/arm/boot/dts/at91sam9263ek.dts                |    4 +
-> >  arch/arm/boot/dts/at91sam9g20ek_common.dtsi        |    4 +
-> >  arch/arm/boot/dts/at91sam9g25ek.dts                |    4 +
-> >  arch/arm/boot/dts/at91sam9g45.dtsi                 |    5 +
-> >  arch/arm/boot/dts/at91sam9m10g45ek.dts             |    4 +
-> >  arch/arm/boot/dts/at91sam9n12.dtsi                 |    6 +
-> >  arch/arm/boot/dts/at91sam9n12ek.dts                |    4 +
-> >  arch/arm/boot/dts/at91sam9x5.dtsi                  |    6 +
-> >  drivers/watchdog/Kconfig                           |    1 +
-> >  drivers/watchdog/at91sam9_wdt.c                    |  294 ++++++++------------
-> >  13 files changed, 185 insertions(+), 173 deletions(-)
-> >  create mode 100644 Documentation/devicetree/bindings/watchdog/atmel-wdt.txt
-> >
-> > --
-> > 1.7.9.5
-> >
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+thanks,
+
+greg k-h
