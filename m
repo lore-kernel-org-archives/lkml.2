@@ -1,73 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753873Ab2LDVIy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 16:08:54 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:50746 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752962Ab2LDVIu (ORCPT
+	id S1753903Ab2LDVJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 16:09:29 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:49761 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753326Ab2LDVJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 16:08:50 -0500
-Date: Tue, 4 Dec 2012 22:08:45 +0100
-From: Heinz Diehl <htd@fritha.org>
-To: Lekensteyn <lekensteyn@gmail.com>
-Cc: dri-devel@lists.freedesktop.org, Daniel Vetter <daniel@ffwll.ch>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Heinz Diehl <htd@fancy-poultry.org>
-Subject: Re: i915 freakout with latest 3.7 git
-Message-ID: <20121204210845.GA2092@fritha.org>
-References: <20121203173951.GA25384@fancy-poultry.org>
- <CAKMK7uEGTWgPO-wf7aNLC+y9zLYPyy6f_djn6D-Gx-n6bFqcJA@mail.gmail.com>
- <20121204123522.GA32419@fritha.org>
- <1498848.rM1KKK5er8@al>
+	Tue, 4 Dec 2012 16:09:27 -0500
+Date: Tue, 4 Dec 2012 13:09:22 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Eric =?iso-8859-1?Q?B=E9nard?= <ebenard@eukrea.com>
+Subject: Re: [PATCH v2] ARM: eukrea_mbimx27-baseboard - use stock
+ get_pendown_state() in ads7846
+Message-ID: <20121204210922.GA8620@core.coreip.homeip.net>
+References: <20121124082529.GA7687@core.coreip.homeip.net>
+ <20121127074209.GL10369@pengutronix.de>
+ <20121127090356.GA25658@core.coreip.homeip.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1498848.rM1KKK5er8@al>
-Organization: private site
-OpenPGP: id=BBAD7AE7; url=http://www.fritha.org/htd.asc
-User-Agent: Mutt/1.5.21+67 (d414971f0c48) (2011-07-01)
-X-Provags-ID: V02:K0:AVGm86Tv20UYavMkowwwG4hUyBd/3vS4X0DFIFcVEF8
- HnYtM2K4XYqPFbzZfi+rZgyYctnfICnogfpRQp4bHtqLcBdEV2
- K5jxjRFc/ebFpYBd6VHkBjCRfI5DzU/W3LE574cMmsBewVULks
- 15tQk7G5PawdtZW+SfJVVXW/U0kKSJ/Qvy6O/eVpkAtIAPDJSm
- PPJM5MoWF6XKh6N+zBRZkV4zxZ9MGhS/tCxXYIZa0dHzX+qkZ3
- nGTFif0kUtLOMcreRYaaunl8ltACR5O/iMvFAy4vC6Wahtu9Tv
- TE/3F5dMGN6gE98nDf3X7umoX7aPT/IRHwXpyEf9JWqfpnYp82
- +4BKTqJLFvU7CCmWNZbWU7AnP6gwrN/sdnk9TvOKL
+In-Reply-To: <20121127090356.GA25658@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04.12.2012, Lekensteyn wrote: 
-
-> As mentioned in the linked bug [1], I bisected it to:
+On Tue, Nov 27, 2012 at 01:03:56AM -0800, Dmitry Torokhov wrote:
+> The default implementation matches exactly our custom one so we can switch
+> to using the default one. As a bonus the driver will take care of setting
+> GPIO line for us.
 > 
-> commit 504c7267a1e84b157cbd7e9c1b805e1bc0c2c846
-> Author: Chris Wilson <chris@chris-wilson.co.uk>
-> Date:   Thu Aug 23 13:12:52 2012 +0100
+> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+
+Eric, Sascha, could I get a formal ack on this one please ?
+
+> ---
 > 
->     drm/i915: Use cpu relocations if the object is in the GTT but not mappable
+> Adjusted to use IMX_GPIO_NR() macro.
+> 
+>  arch/arm/mach-imx/eukrea_mbimx27-baseboard.c |   19 +------------------
+>  1 file changed, 1 insertion(+), 18 deletions(-)
+> 
+> diff --git a/arch/arm/mach-imx/eukrea_mbimx27-baseboard.c b/arch/arm/mach-imx/eukrea_mbimx27-baseboard.c
+> index 98aef57..f361143 100644
+> --- a/arch/arm/mach-imx/eukrea_mbimx27-baseboard.c
+> +++ b/arch/arm/mach-imx/eukrea_mbimx27-baseboard.c
+> @@ -238,24 +238,8 @@ static const struct imxuart_platform_data uart_pdata __initconst = {
+>  	.flags = IMXUART_HAVE_RTSCTS,
+>  };
+>  
+> -#define ADS7846_PENDOWN (GPIO_PORTD | 25)
+> -
+> -static void __maybe_unused ads7846_dev_init(void)
+> -{
+> -	if (gpio_request(ADS7846_PENDOWN, "ADS7846 pendown") < 0) {
+> -		printk(KERN_ERR "can't get ads7846 pen down GPIO\n");
+> -		return;
+> -	}
+> -	gpio_direction_input(ADS7846_PENDOWN);
+> -}
+> -
+> -static int ads7846_get_pendown_state(void)
+> -{
+> -	return !gpio_get_value(ADS7846_PENDOWN);
+> -}
+> -
+>  static struct ads7846_platform_data ads7846_config __initdata = {
+> -	.get_pendown_state	= ads7846_get_pendown_state,
+> +	.gpio_pendown		= IMX_GPIO_NR(4, 25),
+>  	.keep_vref_on		= 1,
+>  };
+>  
+> @@ -323,7 +307,6 @@ void __init eukrea_mbimx27_baseboard_init(void)
+>  	|| defined(CONFIG_TOUCHSCREEN_ADS7846_MODULE)
+>  	/* ADS7846 Touchscreen controller init */
+>  	mxc_gpio_mode(GPIO_PORTD | 25 | GPIO_GPIO | GPIO_IN);
+> -	ads7846_dev_init();
+>  #endif
+>  
+>  	/* SPI_CS0 init */
 
-Ok, but in comment 11 in the same thread you mention that reverting
-this patch didn't fix the issue for you:
-
-"Reverting that commit on top of 3.7-rc4 did not fix the hang issue."
-
-> i5-420M is not SB, but ILK. i5-2xxx is SB. I have a i5-460M myself. 
-
-Yes, you're right, my bad! Don't know what I was thinking as I wrote that. I
-don't have any i5-420M either, but an i5-450M. It was clearly not my
-day..
-
-[htd@wildsau ~]$ cat /proc/cpuinfo | grep model
-model	     	 : 37
-model name	 : Intel(R) Core(TM) i5 CPU       M 450  @ 2.40GHz
-[....]
-
-> i915.i915_enable_rc6=0 worked for me, if it does not work for you, then you 
-> probably hit another bug.
-
-I have now i915.i915_enable_rc6=0 in grub.cfg and disabled the XFCE
-compositor. Now I'm trying to hit the bug again...
-
-Heinz
+-- 
+Dmitry
