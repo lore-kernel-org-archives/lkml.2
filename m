@@ -1,15 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146Ab2LDI5i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 03:57:38 -0500
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:45645 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753113Ab2LDI5e (ORCPT
+	id S1753185Ab2LDI5x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 03:57:53 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:36880 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753150Ab2LDI5u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 03:57:34 -0500
+	Tue, 4 Dec 2012 03:57:50 -0500
 From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [RFC PATCH 09/10] KVM: VMX: fix unsyc vmcs status when cpu is going
- down
+Subject: [RFC PATCH 10/10] cpu: No more __stop_machine() in _cpu_down()
 To: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
         rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
         namhyung@kernel.org, vincent.guittot@linaro.org
@@ -18,8 +17,8 @@ Cc: sbw@mit.edu, tj@kernel.org, amit.kucheria@linaro.org, rostedt@goodmis.org,
         wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
         nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date: Tue, 04 Dec 2012 14:26:05 +0530
-Message-ID: <20121204085600.25919.21644.stgit@srivatsabhat.in.ibm.com>
+Date: Tue, 04 Dec 2012 14:26:21 +0530
+Message-ID: <20121204085615.25919.98054.stgit@srivatsabhat.in.ibm.com>
 In-Reply-To: <20121204085149.25919.29920.stgit@srivatsabhat.in.ibm.com>
 References: <20121204085149.25919.29920.stgit@srivatsabhat.in.ibm.com>
 User-Agent: StGIT/0.14.3
@@ -27,73 +26,66 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12120408-5490-0000-0000-000002975748
+x-cbid: 12120408-0260-0000-0000-0000023FF6FF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+From: Paul E. McKenney <paul.mckenney@linaro.org>
 
-When vcpu is scheduled to the different cpu, it should sent IPI to
-the cpu which the vcpu ran to clear the vcpu->vmcs
+The _cpu_down() function invoked as part of the CPU-hotplug offlining
+process currently invokes __stop_machine(), which is slow and inflicts
+substantial real-time latencies on the entire system.  This patch
+substitutes stop_cpus() for __stop_machine() in order to improve
+both performance and real-time latency.
 
-It is safe since cpu-offline path can not concurrently run with
-other cpu. After implementing stop_machine()-free, smp_call_function_sing
-will return -ENXIO immediately when the target cpu is going down, that
-means, we can load the vmcs but it is not cleared on target cpu and corrupt
-per_cpu(loaded_vmcss_on_cpu, cpu). This bug can be triggered under this case:
+This is currently unsafe, because there are a number of uses of
+preempt_disable() that are intended to block CPU-hotplug offlining.
+These will be fixed by using get/put_online_cpus_stable_atomic(), but in the
+meantime, this commit is one way to help locate them.
 
-# general protection fault: 0000 [#1] PREEMPT SMP
-
-[......]
-
-Call Trace:
- [<ffffffffa052980f>] kvm_arch_hardware_disable+0x1f/0x50 [kvm]
- [<ffffffffa050ef43>] hardware_disable_nolock+0x33/0x40 [kvm]
- [<ffffffffa050efa3>] kvm_cpu_hotplug+0x53/0xb0 [kvm]
- [<ffffffff81548b1d>] notifier_call_chain+0x4d/0x70
- [<ffffffff81517fe0>] ? spp_getpage+0xb0/0xb0
- [<ffffffff8108459e>] __raw_notifier_call_chain+0xe/0x10
- [<ffffffff810599f0>] __cpu_notify+0x20/0x40
- [<ffffffff8151802e>] take_cpu_down+0x4e/0x90
- [<ffffffff810d184b>] cpu_stopper_thread+0xdb/0x1d0
- [<ffffffff8108b3ce>] ? finish_task_switch+0x4e/0xe0
- [<ffffffff815438d0>] ? __schedule+0x460/0x740
- [<ffffffff810d1770>] ? cpu_stop_signal_done+0x40/0x40
- [<ffffffff8107de30>] kthread+0xc0/0xd0
- [<ffffffff8107dd70>] ? flush_kthread_worker+0xb0/0xb0
- [<ffffffff8154cc6c>] ret_from_fork+0x7c/0xb0
- [<ffffffff8107dd70>] ? flush_kthread_worker+0xb0/0xb0
-
-Fix it by waiting for target vcpu to clear the vmcs
-
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+[ Srivatsa: Refer to get/put_online_cpus_stable_atomic() in the changelog ]
 Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 ---
 
- arch/x86/kvm/vmx.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ kernel/cpu.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 95e502b..4fb4e51 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -1019,8 +1019,15 @@ static void loaded_vmcs_clear(struct loaded_vmcs *loaded_vmcs)
- 	int cpu = loaded_vmcs->cpu;
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index aaf2393..59592e5 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -352,15 +352,20 @@ static int __ref take_cpu_down(void *_param)
+ {
+ 	struct take_cpu_down_param *param = _param;
+ 	int err, cpu = (long)(param->hcpu);
++	unsigned long flags;
  
- 	if (cpu != -1)
--		smp_call_function_single(cpu,
--			 __loaded_vmcs_clear, loaded_vmcs, 1);
-+		if (smp_call_function_single(cpu,
-+			 __loaded_vmcs_clear, loaded_vmcs, 1))
-+
-+			/*
-+			 * The target cpu is going down, we should
-+			 * wait for it to clear the vmcs status.
-+			 */
-+			while (ACCESS_ONCE(loaded_vmcs->cpu) != -1)
-+				cpu_relax();
+ 	prepare_cpu_take_down(cpu);
+ 
+ 	/* Ensure this CPU doesn't handle any more interrupts. */
++	local_irq_save(flags);
+ 	err = __cpu_disable();
+-	if (err < 0)
++	if (err < 0) {
++		local_irq_restore(flags);
+ 		return err;
++	}
+ 
+ 	cpu_notify(CPU_DYING | param->mod, param->hcpu);
++	local_irq_restore(flags);
+ 	return 0;
  }
  
- static inline void vpid_sync_vcpu_single(struct vcpu_vmx *vmx)
+@@ -393,7 +398,7 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
+ 	}
+ 	smpboot_park_threads(cpu);
+ 
+-	err = __stop_machine(take_cpu_down, &tcd_param, cpumask_of(cpu));
++	err = stop_cpus(cpumask_of(cpu), take_cpu_down, &tcd_param);
+ 	if (err) {
+ 		/* CPU didn't die: tell everyone.  Can't complain. */
+ 		smpboot_unpark_threads(cpu);
 
