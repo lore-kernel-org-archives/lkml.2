@@ -1,91 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224Ab2LDUHq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 15:07:46 -0500
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:17389 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751144Ab2LDUHn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 15:07:43 -0500
-From: "Ortiz, Lance E" <lance.oritz@hp.com>
-To: Joe Perches <joe@perches.com>
-CC: "bhelgaas@google.com" <bhelgaas@google.com>,
-        "lance_ortiz@hotmail.com" <lance_ortiz@hotmail.com>,
-        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "bp@alien8.de" <bp@alien8.de>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "mchehab@redhat.com" <mchehab@redhat.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v6 3/3] aerdrv: Cleanup log output for CPER based AER
-Thread-Topic: [PATCH v6 3/3] aerdrv: Cleanup log output for CPER based AER
-Thread-Index: AQHN0kZT7OGOdKXJTk6UBaMIOmzAsZgJD/AQ
-Date: Tue, 4 Dec 2012 20:06:48 +0000
-Message-ID: <A961433CDFF2F640A2866803152E61F9516EEAB4@G4W3218.americas.hpqcorp.net>
-References: <20121204170429.31397.50068.stgit@grignak.americas.hpqcorp.net>
-	 <20121204170442.31397.21190.stgit@grignak.americas.hpqcorp.net>
- <1354642763.6973.15.camel@joe-AO722>
-In-Reply-To: <1354642763.6973.15.camel@joe-AO722>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [16.210.48.25]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753285Ab2LDUOJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 15:14:09 -0500
+Received: from mx2.fusionio.com ([66.114.96.31]:35575 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751836Ab2LDUOG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 15:14:06 -0500
+X-ASG-Debug-ID: 1354652044-0421b549eb5c340001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <50BE5988.3050501@fusionio.com>
+Date: Tue, 4 Dec 2012 21:14:00 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>, Zach Brown <zab@redhat.com>
+Subject: Re: [patch,v2] bdi: add a user-tunable cpu_list for the bdi flusher
+ threads
+References: <x49lidfnf0s.fsf@segfault.boston.devel.redhat.com>
+X-ASG-Orig-Subj: Re: [patch,v2] bdi: add a user-tunable cpu_list for the bdi flusher
+ threads
+In-Reply-To: <x49lidfnf0s.fsf@segfault.boston.devel.redhat.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1354652044
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.116098
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hi again Lance.
+On 2012-12-03 19:53, Jeff Moyer wrote:
+> Hi,
 > 
-> > diff --git a/drivers/pci/pcie/aer/aerdrv_errprint.c
-> b/drivers/pci/pcie/aer/aerdrv_errprint.c
-> []
-> > @@ -228,9 +228,14 @@ void cper_print_aer(struct pci_dev *dev, int
-> cper_severity,
-> >  	int aer_severity, layer, agent, status_strs_size,
-> tlp_header_valid = 0;
-> >  	u32 status, mask;
-> >  	const char **status_strs;
-> > -	char *prefix = NULL;
-> > +	char prefix[44];
-> >
-> >  	aer_severity = cper_severity_to_aer(cper_severity);
-> > +	snprintf(prefix, sizeof(prefix), "%s%s %s: ",
-> > +		(aer_severity == AER_CORRECTABLE) ?
-> > +		KERN_WARNING : KERN_ERR,
-> > +		dev_driver_string(&dev->dev), dev_name(&dev->dev));
-> > +
-> >  	if (aer_severity == AER_CORRECTABLE) {
-> >  		status = aer->cor_status;
-> >  		mask = aer->cor_mask;
-> 
-> Perhaps this would be better just using dev_printk
-> instead of snprintf into a prefix with printk to
-> emulate dev_printk.
-> 
-> Also, perhaps KERN_NOTICE is preferable to KERN_WARNING
-> in the CORRECTABLE case.
-> 
-> Maybe something like:
-> 
-> 	const char *level = KERN_ERR;
-> 	if (aer_severity == AER_CORRECTABLE)
-> 		level = KERN_NOTICE;
-> 
-> 	...
-> 
-> 	dev_printk(level, &dev->dev, etc...);
-> 
-> Maybe do this after this series of patches is accepted.
-> Enough with the revisions for awhile...
+> In realtime environments, it may be desirable to keep the per-bdi
+> flusher threads from running on certain cpus.  This patch adds a
+> cpu_list file to /sys/class/bdi/* to enable this.  The default is to tie
+> the flusher threads to the same numa node as the backing device (though
+> I could be convinced to make it a mask of all cpus to avoid a change in
+> behaviour).
 
-Hi Joe,
+Looks sane, and I think defaulting to the home node is a sane default.
+One comment:
 
-The reason I did it this way was I was trying to be consistent with what was done for the AER interrupt case.  The function aer_print_error()in the same file uses sprintf this way.  I'm not sure why they chose that instead of dev_printk.  I think if we did make the change we should do it in both places to keep them the same.  
+> +	ret = cpulist_parse(buf, newmask);
+> +	if (!ret) {
+> +		spin_lock(&bdi->wb_lock);
+> +		task = wb->task;
+> +		if (task)
+> +			get_task_struct(task);
+> +		spin_unlock(&bdi->wb_lock);
 
-Lance
+bdi->wb_lock needs to be bh safe. The above should have caused lockdep
+warnings for you.
+
+> +		if (task) {
+> +			ret = set_cpus_allowed_ptr(task, newmask);
+> +			put_task_struct(task);
+> +		}
+> +		if (ret == 0) {
+> +			mutex_lock(&bdi->flusher_cpumask_mutex);
+> +			cpumask_copy(bdi->flusher_cpumask, newmask);
+> +			mutex_unlock(&bdi->flusher_cpumask_mutex);
+> +			ret = count;
+> +		}
+> +	}
+
+> @@ -437,6 +488,14 @@ static int bdi_forker_thread(void *ptr)
+>  				spin_lock_bh(&bdi->wb_lock);
+>  				bdi->wb.task = task;
+>  				spin_unlock_bh(&bdi->wb_lock);
+> +				mutex_lock(&bdi->flusher_cpumask_mutex);
+> +				ret = set_cpus_allowed_ptr(task,
+> +							bdi->flusher_cpumask);
+> +				mutex_unlock(&bdi->flusher_cpumask_mutex);
+
+It'd be very useful if we had a kthread_create_cpu_on_cpumask() instead
+of a _node() variant, since the latter could easily be implemented on
+top of the former. But not really a show stopper for the patch...
+
+-- 
+Jens Axboe
+
