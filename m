@@ -1,162 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751109Ab2LDFLb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 00:11:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34428 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750753Ab2LDFL3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 00:11:29 -0500
-Date: Tue, 4 Dec 2012 07:11:24 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        linux-next list <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
-        sasha.levin@oracle.com, avi@redhat.com
-Subject: Re: [RFC PATCH v3] Add rcu user eqs exception hooks for async page
- fault
-Message-ID: <20121204051124.GA27858@redhat.com>
-References: <CAFTL4hx0fc_Jo8wkuRZedW4DVEeQceiHMrWVqTqB5k065Wsg8Q@mail.gmail.com>
- <1354090704.3054.13.camel@ThinkPad-T5421.cn.ibm.com>
- <CAFTL4hxPSp1fs4=2g0yFs0d5nFisfUsfDAA9bHWcu+-+tO_ySw@mail.gmail.com>
- <20121128135345.GG928@redhat.com>
- <CAFTL4hxoFBLNQCABBpJRBgV-r-Mg5GSq7HbPfWJRraSvtviz4A@mail.gmail.com>
- <20121129110717.GA9711@redhat.com>
- <CAFTL4hyHW3uJHvzxz1o4agtGbicFAP1DuUsifbOrp1Q3ODRBMA@mail.gmail.com>
- <1354267121.2552.65.camel@ThinkPad-T5421.cn.ibm.com>
- <20121203095708.GO8731@redhat.com>
- <1354588562.2649.11.camel@ThinkPad-T5421.cn.ibm.com>
+	id S1751388Ab2LDFPY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 00:15:24 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:46871 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751219Ab2LDFPW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 00:15:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354588562.2649.11.camel@ThinkPad-T5421.cn.ibm.com>
+In-Reply-To: <CAOesGMgzBGieYJ131sUX7u8EWPEusxareFzC0XPt48+oNuh-xA@mail.gmail.com>
+References: <1354165536-18529-1-git-send-email-ch.naveen@samsung.com>
+ <1354165536-18529-3-git-send-email-ch.naveen@samsung.com> <20121129163448.GA3761@sirena.org.uk>
+ <CAPnjgZ0atD3k=gT0vjgkLO_SA8DMak6SiT6nZ_2T6WFqtK0szQ@mail.gmail.com>
+ <CAOesGMgE0JEHsdySpua34_kbWi1+z4n4UdW0kumiJEROi7O2pQ@mail.gmail.com>
+ <20121201132632.GA17981@opensource.wolfsonmicro.com> <CAOesGMgzBGieYJ131sUX7u8EWPEusxareFzC0XPt48+oNuh-xA@mail.gmail.com>
+From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
+Date: Tue, 4 Dec 2012 10:45:01 +0530
+Message-ID: <CAHfPSqBcpAA8fLcLjOAMkSPGmm=b1mHaVgfYfjAbLAtLbrXB+A@mail.gmail.com>
+Subject: Re: [PATCH 2/2] i2c-s3c2410: Add bus arbitration implementation
+To: Olof Johansson <olof@lixom.net>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Simon Glass <sjg@chromium.org>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-i2c@vger.kernel.org,
+        grundler@chromium.org, naveen@chromium.org, w.sang@pengutronix.de,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 04, 2012 at 10:36:02AM +0800, Li Zhong wrote:
-> On Mon, 2012-12-03 at 11:57 +0200, Gleb Natapov wrote:
-> > Please regenerate the patch against
-> > git://git.kernel.org/pub/scm/virt/kvm/kvm.git queue.
-> 
-> Done.
-> 
-> By the way, the included file <asm/rcu.h> is replaced with
-> <asm/context_tracking.h> in latest next tree(91d1aa43 from rcu tree). 
-> 
-What is the url of the rcu tree?
+On 4 December 2012 05:41, Olof Johansson <olof@lixom.net> wrote:
+> On Sat, Dec 1, 2012 at 5:26 AM, Mark Brown
+> <broonie@opensource.wolfsonmicro.com> wrote:
+>> On Thu, Nov 29, 2012 at 10:14:58PM -0800, Olof Johansson wrote:
+>>> On Thu, Nov 29, 2012 at 6:13 PM, Simon Glass <sjg@chromium.org> wrote:
+>>
+>>> > It was originally done separately but I think it was felt that this
+>>> > was overly complex. Olof can you please comment on this?
+>>
+>>> it is indeed not controller specific per se, but we are unaware of any
+>>> other platform/driver using it. So, it seemed reasonable to implement
+>>> it in the driver as long as we have only one user; if another one
+>>> comes along it's of course better to move it to the common i2c code.
+>>
+>>> At least that was my opinion at the time. I could be convinced
+>>> otherwise if someone else has strong opinions on the matter.
+>>
+>> This sort of approach is half the reason SPI ended up being so fun...  I
+>> suspect if you look hard enough you'll find that this is just the first
+>> time someone tried to upstream such a scheme.  This is all especially
+>> true for the DT bindings, even if the implementation is driver local for
+>> now it'd be better to define generic bindings.
+>
+> Ok, sounds like we might as well make it generic then. Naveen?
+Thanks for the comments.
 
-> Seems if they are merged, there won't be conflicts, but we need change
-> the including file name after that. I don't know how to handle this kind
-> of thing... 
-> 
-> Thanks, Zhong
-> 
-> > 
-> > On Fri, Nov 30, 2012 at 05:18:41PM +0800, Li Zhong wrote:
-> > > This patch adds user eqs exception hooks for async page fault page not
-> > > present code path, to exit the user eqs and re-enter it as necessary. 
-> > > 
-> > > Async page fault is different from other exceptions that it may be
-> > > triggered from idle process, so we still need rcu_irq_enter() and
-> > > rcu_irq_exit() to exit cpu idle eqs when needed, to protect the code
-> > > that needs use rcu.
-> > > 
-> > > As Frederic pointed out it would be safest and simplest to protect the
-> > > whole kvm_async_pf_task_wait(). Otherwise, "we need to check all the
-> > > code there deeply for potential RCU uses and ensure it will never be
-> > > extended later to use RCU.".
-> > > 
-> > > However, We'd better re-enter the cpu idle eqs if we get the exception
-> > > in cpu idle eqs, by calling rcu_irq_exit() before native_safe_halt(). 
-> > > 
-> > > So the patch does what Frederic suggested for rcu_irq_*() API usage
-> > > here, except that I moved the rcu_irq_*() pair originally in
-> > > do_async_page_fault() into kvm_async_pf_task_wait(). 
-> > > 
-> > > That's because, I think it's better to have rcu_irq_*() pairs to be in
-> > > one function ( rcu_irq_exit() after rcu_irq_enter() ), especially here,
-> > > kvm_async_pf_task_wait() has other callers, which might cause
-> > > rcu_irq_exit() be called without a matching rcu_irq_enter() before it,
-> > > which is illegal if the cpu happens to be in rcu idle state. 
-> > > 
-> > > Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
-> > > ---
-> > >  arch/x86/kernel/kvm.c | 12 ++++++++++--
-> > >  1 file changed, 10 insertions(+), 2 deletions(-)
-> > > 
-> > > diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-> > > index 4180a87..342b00b 100644
-> > > --- a/arch/x86/kernel/kvm.c
-> > > +++ b/arch/x86/kernel/kvm.c
-> > > @@ -42,6 +42,7 @@
-> > >  #include <asm/apic.h>
-> > >  #include <asm/apicdef.h>
-> > >  #include <asm/hypervisor.h>
-> > > +#include <asm/rcu.h>
-> > >  
-> > >  static int kvmapf = 1;
-> > >  
-> > > @@ -112,6 +113,8 @@ void kvm_async_pf_task_wait(u32 token)
-> > >  	DEFINE_WAIT(wait);
-> > >  	int cpu, idle;
-> > >  
-> > > +	rcu_irq_enter();
-> > > +
-> > >  	cpu = get_cpu();
-> > >  	idle = idle_cpu(cpu);
-> > >  	put_cpu();
-> > > @@ -123,6 +126,8 @@ void kvm_async_pf_task_wait(u32 token)
-> > >  		hlist_del(&e->link);
-> > >  		kfree(e);
-> > >  		spin_unlock(&b->lock);
-> > > +
-> > > +		rcu_irq_exit();
-> > >  		return;
-> > >  	}
-> > >  
-> > > @@ -147,13 +152,16 @@ void kvm_async_pf_task_wait(u32 token)
-> > >  			/*
-> > >  			 * We cannot reschedule. So halt.
-> > >  			 */
-> > > +			rcu_irq_exit();
-> > >  			native_safe_halt();
-> > > +			rcu_irq_enter();
-> > >  			local_irq_disable();
-> > >  		}
-> > >  	}
-> > >  	if (!n.halted)
-> > >  		finish_wait(&n.wq, &wait);
-> > >  
-> > > +	rcu_irq_exit();
-> > >  	return;
-> > >  }
-> > >  EXPORT_SYMBOL_GPL(kvm_async_pf_task_wait);
-> > > @@ -247,10 +255,10 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
-> > >  		break;
-> > >  	case KVM_PV_REASON_PAGE_NOT_PRESENT:
-> > >  		/* page is swapped out by the host. */
-> > > -		rcu_irq_enter();
-> > > +		exception_enter(regs);
-> > >  		exit_idle();
-> > >  		kvm_async_pf_task_wait((u32)read_cr2());
-> > > -		rcu_irq_exit();
-> > > +		exception_exit(regs);
-> > >  		break;
-> > >  	case KVM_PV_REASON_PAGE_READY:
-> > >  		rcu_irq_enter();
-> > > -- 
-> > > 1.7.11.4
-> > 
-> > --
-> > 			Gleb.
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> > 
-> 
+Sure, Will send an RFC soon.
+>
+>
+> -Olof
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
---
-			Gleb.
+
+
+-- 
+Shine bright,
+(: Nav :)
