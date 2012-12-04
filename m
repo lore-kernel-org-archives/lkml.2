@@ -1,169 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707Ab2LDOqt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 09:46:49 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:42245 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752040Ab2LDOqs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 09:46:48 -0500
+	id S1754724Ab2LDOrG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 09:47:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10114 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751764Ab2LDOrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 09:47:03 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        davem@davemloft.net, krkumar2@in.ibm.com, kvm@vger.kernel.org,
+        bhutchings@solarflare.com, jwhan@filewood.snu.ac.kr, shiyer@redhat.com
+Subject: Re: [PATCH net-next 3/3] virtio-net: change the number of queues through ethtool
+Date: Tue, 04 Dec 2012 22:46:47 +0800
+Message-ID: <8635859.yLm7QNO6or@jason-thinkpad-t430s>
+User-Agent: KMail/4.9.2 (Linux/3.7.0-rc6+; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <20121204134959.GG7499@redhat.com>
+References: <1354619278-35702-1-git-send-email-jasowang@redhat.com> <1354619278-35702-4-git-send-email-jasowang@redhat.com> <20121204134959.GG7499@redhat.com>
 MIME-Version: 1.0
-X-Originating-IP: [121.7.72.46]
-In-Reply-To: <s5hsj7lx6on.wl%tiwai@suse.de>
-References: <CAMVG2st4KZOYk9qMK6FFRnJt0bCEz-0nFsQAa4zXc+sed_eVhQ@mail.gmail.com>
-	<s5hwqx69kuk.wl%tiwai@suse.de>
-	<s5ha9tv1j2a.wl%tiwai@suse.de>
-	<CAMVG2svAdYxJqj=7oA8XpYfaV6MP14Ff_DR3ZwVG0cm-FV_0sA@mail.gmail.com>
-	<s5hip8jyza2.wl%tiwai@suse.de>
-	<CAMVG2suWOAXJYWJb+QrLH2KV3CJw+Ut6fRRuy0U_F6-9oV9YyA@mail.gmail.com>
-	<s5ha9tvyuio.wl%tiwai@suse.de>
-	<CAMVG2svjXk-dbhjuiAX4SpTctNbwPkyzOa47n9vA2o1rLiWbBw@mail.gmail.com>
-	<s5h38znysbx.wl%tiwai@suse.de>
-	<CAMVG2sse7VN31gVjGuQr+7R6To8Nwk-OPwFs5Nhauxh7-J=jOg@mail.gmail.com>
-	<s5h1uf6x87a.wl%tiwai@suse.de>
-	<s5hsj7lx6on.wl%tiwai@suse.de>
-Date: Tue, 4 Dec 2012 22:46:47 +0800
-Message-ID: <CAMVG2su62GRKwO=948WZq8AUxB7DTv0794m+MNGFe9ZFJxHwiQ@mail.gmail.com>
-Subject: Re: switcheroo registration vs switching race...
-From: Daniel J Blueman <daniel@quora.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Seth Forshee <seth.forshee@canonical.com>, Dave Airlie <airlied@linux.ie>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 December 2012 21:55, Takashi Iwai <tiwai@suse.de> wrote:
-> At Tue, 04 Dec 2012 14:23:05 +0100,
-> Takashi Iwai wrote:
->>
->> At Tue, 4 Dec 2012 20:58:55 +0800,
->> Daniel J Blueman wrote:
->> >
->> > On 4 December 2012 01:10, Takashi Iwai <tiwai@suse.de> wrote:
->> > > At Tue, 4 Dec 2012 00:50:56 +0800,
->> > > Daniel J Blueman wrote:
->> > >>
->> > >> On 4 December 2012 00:23, Takashi Iwai <tiwai@suse.de> wrote:
->> > >> > At Mon, 3 Dec 2012 23:08:28 +0800,
->> > >> > Daniel J Blueman wrote:
->> > >> >>
->> > >> >> On 3 December 2012 22:40, Takashi Iwai <tiwai@suse.de> wrote:
->> > >> >> > At Mon, 3 Dec 2012 22:25:52 +0800,
->> > >> >> > Daniel J Blueman wrote:
->> > >> >> >>
->> > >> >> >> On 3 December 2012 19:17, Takashi Iwai <tiwai@suse.de> wrote:
->> > >> >> >> > At Wed, 28 Nov 2012 09:45:39 +0100,
->> > >> >> >> > Takashi Iwai wrote:
->> > >> >> >> >>
->> > >> >> >> >> At Wed, 28 Nov 2012 11:45:07 +0800,
->> > >> >> >> >> Daniel J Blueman wrote:
->> > >> >> >> >> >
->> > >> >> >> >> > Hi Seth, Dave, Takashi,
->> > >> >> >> >> >
->> > >> >> >> >> > If I power down the unused discrete GPU before lightdm starts by
->> > >> >> >> >> > fiddling with the sysfs file [1] in the upstart script, I see a race
->> > >> >> >> >> > manifesting as the discrete GPU's HDA controller timing out to
->> > >> >> >> >> > commands [2].
->> > >> >> >> >> >
->> > >> >> >> >> > Adding some debug, I see that the registered audio devices are put
->> > >> >> >> >> > into D3 before the GPU is, but it turns out that the discrete (and
->> > >> >> >> >> > internal) GPU's HDA controller gets registered a bit later, so the
->> > >> >> >> >> > list is empty. The symptom is since the HDA driver it's talking to
->> > >> >> >> >> > hardware which is now in D3.
->> > >> >> >> >> >
->> > >> >> >> >> > We could add a mutex to nouveau to allow us to wait for the DGPU HDA
->> > >> >> >> >> > controller, but perhaps this should be solved at a higher level in the
->> > >> >> >> >> > vgaswitcheroo code; what do you think?
->> > >> >> >> >>
->> > >> >> >> >> Maybe it's a side effect for the recent effort to fix another race in
->> > >> >> >> >> the probe.  A part of them problem is that the registration is done at
->> > >> >> >> >> the very last of probing.
->> > >> >> >> >>
->> > >> >> >> >> Instead of delaying the registration, how about the patch below?
->> > >> >> >> >
->> > >> >> >> > Ping.  If this really works, I'd like to queue it for 3.8 merge, at
->> > >> >> >> > least...
->> > >> >> >>
->> > >> >> >> Ping ack; I was trying to find time to understand another race that
->> > >> >> >> occurs with GPU probing after switching, but is separate from the
->> > >> >> >> situation before switching, here.
->> > >> >> >>
->> > >> >> >> In the context of writing the switch, it looks like struct azx isn't
->> > >> >> >> allocated by the time azx_vs_set_state accesses it [1,2]; racing with
->> > >> >> >> azx_codec_create?
->> > >> >> >
->> > >> >> > It was allocated, but it wasn't assigned properly in pci drvdata.
->> > >> >> >
->> > >> >> > Below is the revised patch.  Just moved pci_set_drvdata() before
->> > >> >> > register_vga_switcheroo().  Could you retest with it?
->> > >> >>
->> > >> >> Superb; this addresses the oops.
->> > >> >
->> > >> > OK, I'll queue it to sound tree for 3.8 kernel with Cc to stable.
->> > >> >
->> > >> >> ~1 second after the DGPU is put into D3, I still often see "hda-intel:
->> > >> >> spurious response 0x0:0x0, last cmd=0x170500":
->> > >> >> http://quora.org/2012/hda-switch-spurious.txt
->> > >> >
->> > >> > Hm, it's not clear who triggers these messages.  I'll try to check the
->> > >> > code paths.
->> > >> >
->> > >> >> Presumably this implies the read of the ring-buffer pointer returned
->> > >> >> 0xffffffff, so the HDA driver understands the pointer to have wrapped
->> > >> >> and processes the 191 unwritten entries?
->> > >> >
->> > >> > Good point.  Actually there is one bug that looks obviously wrong
->> > >> > (writing 32bit value to CORBWP).  Maybe it has been working just
->> > >> > because writing CORBRP doesn't influence except for the reset bit.
->> > >> >
->> > >> > Reading CORBWP as a byte is OK, but this could be better in a word so
->> > >> > that we can check 0xffff as invalid.
->> > >> >
->> > >> > A test patch is below.  Hopefully this improves the situation...
->> > >>
->> > >> I'll check this out tomorrow and also instrument the code to get a
->> > >> backtrace, since there may still be an underlying race with the
->> > >> previous patches:
->> >
->> > [...]
->> >
->> > > That's odd.  The Cirrus one (0000:00:1b.0) must be independent from
->> > > the vga switcheroo things for Nvidia...
->> > >
->> > > The patch below is the revised patch of the first one.  Now the vga
->> > > switcheroo registration is done before the video controller D3 check,
->> > > so the race should be smaller.
->> >
->> > This patch improves things further of course; a major improvement over
->> > without. ~15% of the time, I still get the 'spurious response'
->> > messages in this callpath:
->>
->> A possible scenario is that the graphics went in D3 before probing
->> hd-audio, and the hd-audio continues to initialize the hardware
->> without knowing the graphics counterpart is disabled.
->>
->> There is a code check_hdmi_disabled() in hda_intel.c that checks the
->> availability of the video driver, and it might be that this doesn't
->> work as expected...
->
-> I think I understand this path.  You are setting "OFF", right?
-> This will set the audio client OFF before can_switch() is called.
-> Thus it can be called even before the probing process finished.
->
-> In short, wait_for_completion() must be put at the beginning of
-> azx_vs_set_state() in addition to azx_vs_can_switch().
->
-> The revised patch is attached below.  Hopefully this sorts out all
-> races.
+On Tuesday, December 04, 2012 03:49:59 PM Michael S. Tsirkin wrote:
+> On Tue, Dec 04, 2012 at 07:07:58PM +0800, Jason Wang wrote:
+> > This patch implement the ethtool_{set|get}_channels method of ethool to
+> > allow user to change the number of queues dymaically when the device is
+> > running. This would let the user to configure it on demand.
+> > 
+> > Signed-off-by: Jason Wang <jasowang@redhat.com>
+> > ---
+> > 
+> >  drivers/net/virtio_net.c |   44
+> >  ++++++++++++++++++++++++++++++++++++++++++++ 1 files changed, 44
+> >  insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> > index 912f5b2..b9f9887 100644
+> > --- a/drivers/net/virtio_net.c
+> > +++ b/drivers/net/virtio_net.c
+> > @@ -1589,10 +1589,54 @@ static struct virtio_driver virtio_net_driver = {
+> > 
+> >  #endif
+> >  };
+> > 
+> > +/* TODO: Eliminate OOO packets during switching */
+> > +static int virtnet_set_channels(struct net_device *dev,
+> > +				struct ethtool_channels *channels)
+> > +{
+> > +	struct virtnet_info *vi = netdev_priv(dev);
+> > +	u16 queue_pairs = channels->combined_count;
+> > +	u16 old_queue_pairs = vi->curr_queue_pairs;
+> > +
+> > +	/* We don't support separate rx/tx channels.
+> > +	 * We don't allow setting 'other' channels.
+> > +	 */
+> > +	if (channels->rx_count || channels->tx_count || channels->other_count)
+> > +		return -EINVAL;
+> > +
+> > +	if (queue_pairs > vi->max_queue_pairs)
+> > +		return -EINVAL;
+> > +
+> > +	vi->curr_queue_pairs = queue_pairs;
+> > +	if (virtnet_set_queues(vi) == 0) {
+> > +		netif_set_real_num_tx_queues(dev, vi->curr_queue_pairs);
+> > +		netif_set_real_num_rx_queues(dev, vi->curr_queue_pairs);
+> 
+> Just use queue_pairs - it's shorter.
 
-This works great and instead, I get "Cannot lock devices!" sometimes
-(see http://quora.org/2012/hda-switch-lock.txt ). Feel free to add my
-'Tested-by: Daniel J Blueman <daniel@quora.org>' or ping me if
-anything else to test.
+Ok.
+> 
+> > +
+> > +		virtnet_set_affinity(vi, true);
+> > +	} else
+> > +		vi->curr_queue_pairs = old_queue_pairs;
+> 
+> Should be
+> 	ret = virtnet_set_queues(vi);
+> 	if (ret) {
+> 		vi->curr_queue_pairs = old_queue_pairs;
+> 		return ret;
+> 	}
+> otherwise we loose error reporting.
+> 
 
-Thanks again!
-  Daniel
---
-Daniel J Blueman
+Right.
+> Also it's better if virtnet_set_queues
+> gets queue_pairs as parameter and set curr_queue_pairs
+> on success.
+
+True, looks simpler than current method, will do it in next version.
+> 
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static void virtnet_get_channels(struct net_device *dev,
+> > +				 struct ethtool_channels *channels)
+> > +{
+> > +	struct virtnet_info *vi = netdev_priv(dev);
+> > +
+> > +	channels->combined_count = vi->curr_queue_pairs;
+> > +	channels->max_combined = vi->max_queue_pairs;
+> > +	channels->max_other = 0;
+> > +	channels->rx_count = 0;
+> > +	channels->tx_count = 0;
+> > +	channels->other_count = 0;
+> > +}
+> > +
+> > 
+> >  static const struct ethtool_ops virtnet_ethtool_ops = {
+> >  
+> >  	.get_drvinfo = virtnet_get_drvinfo,
+> >  	.get_link = ethtool_op_get_link,
+> >  	.get_ringparam = virtnet_get_ringparam,
+> > 
+> > +	.set_channels = virtnet_set_channels,
+> > +	.get_channels = virtnet_get_channels,
+> > 
+> >  };
+> >  
+> >  static int __init init(void)
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
