@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753014Ab2LDPUd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 10:20:33 -0500
-Received: from mga11.intel.com ([192.55.52.93]:51052 "EHLO mga11.intel.com"
+	id S1753292Ab2LDPV7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 10:21:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23936 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751090Ab2LDPUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 10:20:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,215,1355126400"; 
-   d="scan'208";a="258842627"
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Alan Cox <alan@linux.intel.com>, Jamie Iles <jamie@jamieiles.com>,
-        linux-serial@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCHv3 3/5] serial: 8250_dw: Map IO memory
-Date: Tue,  4 Dec 2012 17:21:52 +0200
-Message-Id: <1354634512-19299-1-git-send-email-heikki.krogerus@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20121204081713.GA8071@xps8300>
-References: <20121204081713.GA8071@xps8300>
+	id S1751479Ab2LDPV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 10:21:56 -0500
+Message-ID: <1354634515.1809.406.camel@bling.home>
+Subject: Re: [RFC PATCH 0/6] kvm: Growable memory slot array
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: mtosatti@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 04 Dec 2012 08:21:55 -0700
+In-Reply-To: <20121204114803.GH19514@redhat.com>
+References: <20121203231912.3661.57179.stgit@bling.home>
+	 <20121204114803.GH19514@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This needs to be done in order to later access the
-Designware specific registers.
+On Tue, 2012-12-04 at 13:48 +0200, Gleb Natapov wrote:
+> On Mon, Dec 03, 2012 at 04:39:05PM -0700, Alex Williamson wrote:
+> > Memory slots are currently a fixed resource with a relatively small
+> > limit.  When using PCI device assignment in a qemu guest it's fairly
+> > easy to exhaust the number of available slots.  I posted patches
+> > exploring growing the number of memory slots a while ago, but it was
+> > prior to caching memory slot array misses and thefore had potentially
+> > poor performance.  Now that we do that, Avi seemed receptive to
+> > increasing the memory slot array to arbitrary lengths.  I think we
+> > still don't want to impose unnecessary kernel memory consumptions on
+> > guests not making use of this, so I present again a growable memory
+> > slot array.
+> > 
+> > A couple notes/questions; in the previous version we had a
+> > kvm_arch_flush_shadow() call when we increased the number of slots.
+> > I'm not sure if this is still necessary.  I had also made the x86
+> > specific slot_bitmap dynamically grow as well and switch between a
+> > direct bitmap and indirect pointer to a bitmap.  That may have
+> > contributed to needing the flush.  I haven't done that yet here
+> > because it seems like an unnecessary complication if we have a max
+> > on the order of 512 or 1024 entries.  A bit per slot isn't a lot of
+> > overhead.  If we want to go more, maybe we should make it switch.
+> > That leads to the final question, we need an upper bound since this
+> > does allow consumption of extra kernel memory, what should it be?  A
+> This is the most important question :) If we want to have 1000s of
+> them or 100 is enough?
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
----
- drivers/tty/serial/8250/8250_dw.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+We can certainly hit respectable numbers of assigned devices in the
+hundreds.  Worst case is 8 slots per assigned device, typical case is 4
+or less.  So 512 slots would more or less guarantee 64 devices (we do
+need some slots for actual memory), and more typically allow at least
+128 devices.  Philosophically, supporting a full PCI bus, 256 functions,
+2048 slots, is an attractive target, but it's probably no practical.
 
-diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
-index ff83ea5..e174901 100644
---- a/drivers/tty/serial/8250/8250_dw.c
-+++ b/drivers/tty/serial/8250/8250_dw.c
-@@ -111,10 +111,13 @@ static int dw8250_probe(struct platform_device *pdev)
- 	uart.port.irq = irq->start;
- 	uart.port.handle_irq = dw8250_handle_irq;
- 	uart.port.type = PORT_8250;
--	uart.port.flags = UPF_SHARE_IRQ | UPF_BOOT_AUTOCONF | UPF_IOREMAP |
--		UPF_FIXED_PORT;
-+	uart.port.flags = UPF_SHARE_IRQ | UPF_BOOT_AUTOCONF | UPF_FIXED_PORT;
- 	uart.port.dev = &pdev->dev;
- 
-+	uart.port.membase = ioremap(regs->start, resource_size(regs));
-+	if (!uart.port.membase)
-+		return -ENOMEM;
-+
- 	uart.port.iotype = UPIO_MEM;
- 	uart.port.serial_in = dw8250_serial_in;
- 	uart.port.serial_out = dw8250_serial_out;
--- 
-1.7.10.4
+I think on x86 a slot is 72 bytes w/ alignment padding, so a maximum of
+36k @512 slots.
+
+>  Also what about changing kvm_memslots->memslots[]
+> array to be "struct kvm_memory_slot *memslots[KVM_MEM_SLOTS_NUM]"? It
+> will save us good amount of memory for unused slots.
+
+I'm not following where that results in memory savings.  Can you
+clarify.  Thanks,
+
+Alex
+
 
