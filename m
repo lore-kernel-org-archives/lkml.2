@@ -1,71 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846Ab2LDLpu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 06:45:50 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:24417 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765Ab2LDLps (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 06:45:48 -0500
-Date: Tue, 4 Dec 2012 14:45:11 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Serban Constantinescu <serban.constantinescu@arm.com>
-Cc: gregkh@linuxfoundation.org, arve@android.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, john.stultz@linaro.org,
-        ccross@android.com, zach.pfeffer@linaro.org, Dave.Butcher@arm.com
-Subject: Re: [PATCH 2/2] Staging: android: ashmem: Add support for 32bit
- ashmem calls in a 64bit kernel
-Message-ID: <20121204114511.GI6568@mwanda>
-References: <1354617854-25296-1-git-send-email-serban.constantinescu@arm.com>
- <1354617854-25296-3-git-send-email-serban.constantinescu@arm.com>
+	id S1752966Ab2LDLsI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 06:48:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:65515 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752677Ab2LDLsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 06:48:05 -0500
+Date: Tue, 4 Dec 2012 13:48:03 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: mtosatti@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 0/6] kvm: Growable memory slot array
+Message-ID: <20121204114803.GH19514@redhat.com>
+References: <20121203231912.3661.57179.stgit@bling.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1354617854-25296-3-git-send-email-serban.constantinescu@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <20121203231912.3661.57179.stgit@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I don't understand this, and I'm going to embarrass myself by
-displaying my ignorance for all to see.  Why is this code so
-different from all the other 32 bit compat code that we have in the
-kernel?
+On Mon, Dec 03, 2012 at 04:39:05PM -0700, Alex Williamson wrote:
+> Memory slots are currently a fixed resource with a relatively small
+> limit.  When using PCI device assignment in a qemu guest it's fairly
+> easy to exhaust the number of available slots.  I posted patches
+> exploring growing the number of memory slots a while ago, but it was
+> prior to caching memory slot array misses and thefore had potentially
+> poor performance.  Now that we do that, Avi seemed receptive to
+> increasing the memory slot array to arbitrary lengths.  I think we
+> still don't want to impose unnecessary kernel memory consumptions on
+> guests not making use of this, so I present again a growable memory
+> slot array.
+> 
+> A couple notes/questions; in the previous version we had a
+> kvm_arch_flush_shadow() call when we increased the number of slots.
+> I'm not sure if this is still necessary.  I had also made the x86
+> specific slot_bitmap dynamically grow as well and switch between a
+> direct bitmap and indirect pointer to a bitmap.  That may have
+> contributed to needing the flush.  I haven't done that yet here
+> because it seems like an unnecessary complication if we have a max
+> on the order of 512 or 1024 entries.  A bit per slot isn't a lot of
+> overhead.  If we want to go more, maybe we should make it switch.
+> That leads to the final question, we need an upper bound since this
+> does allow consumption of extra kernel memory, what should it be?  A
+This is the most important question :) If we want to have 1000s of
+them or 100 is enough? Also what about changing kvm_memslots->memslots[]
+array to be "struct kvm_memory_slot *memslots[KVM_MEM_SLOTS_NUM]"? It
+will save us good amount of memory for unused slots.
 
-On Tue, Dec 04, 2012 at 10:44:14AM +0000, Serban Constantinescu wrote:
-> -static int set_name(struct ashmem_area *asma, void __user *name)
-> +static int set_name(struct ashmem_area *asma, userptr32_t name)
+> PCI bus filled with assigned devices can theorically use up to 2048
+> slots (32 devices * 8 functions * (6 BARs + ROM + possibly split
+> MSI-X BAR)).  For this RFC, I don't change the max, just make it
+> grow up to 32 user slots.  Untested on anything but x86 so far.
+> Thanks,
+> 
+> Alex
+> ---
+> 
+> Alex Williamson (6):
+>       kvm: Rename KVM_MEMORY_SLOTS -> KVM_USER_MEM_SLOTS
+>       kvm: Make KVM_PRIVATE_MEM_SLOTS optional
+>       kvm: Merge id_to_index into memslots
+>       kvm: Move private memory slots to start of memslots array
+>       kvm: Re-introduce memslots->nmemslots
+>       kvm: Allow memory slots to grow
+> 
+> 
+>  arch/ia64/include/asm/kvm_host.h    |    4 --
+>  arch/ia64/kvm/kvm-ia64.c            |    6 +--
+>  arch/powerpc/include/asm/kvm_host.h |    6 +--
+>  arch/powerpc/kvm/book3s_hv.c        |    4 +-
+>  arch/s390/include/asm/kvm_host.h    |    4 --
+>  arch/x86/include/asm/kvm_host.h     |    8 ++-
+>  arch/x86/include/asm/vmx.h          |    6 +--
+>  arch/x86/kvm/vmx.c                  |    3 +
+>  arch/x86/kvm/x86.c                  |   10 +++-
+>  include/linux/kvm_host.h            |   20 +++++---
+>  virt/kvm/kvm_main.c                 |   83 ++++++++++++++++++++++++-----------
+>  11 files changed, 93 insertions(+), 61 deletions(-)
 
-The user passes in a value which is a 32 pointer.  ashmem_ioctl()
-accepts it as "unsigned long arg".  We pass it to set_name() which
-truncates away the high zeros so now its a u32 (userptr32_t).  We
-then cast it to (unsigned long) and then we cast it to a void
-pointer.
-
-What's the point?  Why not just take"unsigned long arg" and cast it
-to a pointer directly?
-
->  	if (unlikely(copy_from_user(asma->name + ASHMEM_NAME_PREFIX_LEN,
-> -				    name, ASHMEM_NAME_LEN)))
-> +				    (void *)(unsigned long)name, ASHMEM_NAME_LEN)))
->  		ret = -EFAULT;
-
-This will introduce a Sparse complaint.  It should be:
-				(void __user *)(unsigned long)name.
-
-But actually we shouldn't need to do this casting.  Any casting
-which we need to do should be done in one place instead of pushed
-out to every function.
-
-> +	switch (_IOC_NR(cmd)) {
-> +	case _IOC_NR(ASHMEM_SET_NAME):
-> +		if (_IOC_SIZE(cmd) != sizeof(char[ASHMEM_NAME_LEN]))
-> +			pr_err("ashmem: ASHMEM_SET_NAME transaction size differs\n");
-
-Don't merge debug code into the kernel.  It just means people can
-spam /var/log/messages.
-
-regards,
-dan carpenter
-
+--
+			Gleb.
