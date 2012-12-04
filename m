@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752223Ab2LDH6v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 02:58:51 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:13850 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752152Ab2LDH6p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752169Ab2LDH6p (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 4 Dec 2012 02:58:45 -0500
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, nicolas.ferre@atmel.com,
-        plagnioj@jcrosoft.com, richard.genoud@gmail.com, JM.Lin@atmel.com,
-        wenyou.yang@atmel.com, grant.likely@secretlab.ca,
-        spi-devel-general@lists.sourceforge.net
-Subject: [v2 PATCH 04/14] spi/atmel_spi: call unmapping on transfers buffers
-Date: Tue,  4 Dec 2012 15:53:50 +0800
-Message-Id: <1354607640-13229-5-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1354607640-13229-1-git-send-email-wenyou.yang@atmel.com>
-References: <1354607640-13229-1-git-send-email-wenyou.yang@atmel.com>
-X-OriginalArrivalTime: 04 Dec 2012 07:58:27.0671 (UTC) FILETIME=[24B5F670:01CDD1F5]
+Received: from smtp-out-241.synserver.de ([212.40.185.241]:1167 "EHLO
+	smtp-out-239.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752055Ab2LDH6l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 02:58:41 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 4322
+Message-ID: <50BDAD3D.9020209@metafoo.de>
+Date: Tue, 04 Dec 2012 08:58:53 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Mark Salter <msalter@redhat.com>, Aurelien Jacquiot <a-jacquiot@ti.com>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>,
+        linux-c6x-dev@linux-c6x.org, linux-kernel@vger.kernel.org,
+        linux-xtensa@linux-xtensa.org, linux-arch@vger.kernel.org
+Subject: Re: [PATCH 1/5] asm-generic/mmu.h: Remove unused vmlist field from
+ mm_context_t
+References: <1351765467-29244-1-git-send-email-lars@metafoo.de> <201212032354.10573.arnd@arndb.de>
+In-Reply-To: <201212032354.10573.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
+On 12/04/2012 12:54 AM, Arnd Bergmann wrote:
+> On Thursday 01 November 2012, Lars-Peter Clausen wrote:
+>> Nothing is using the vmlist field in mm_context_t anymore. It has been removed
+>> from the non-generic versions over 3 years ago 8feae1311 ("NOMMU: Make VMAs per
+>> MM as for MMU-mode linux").
+>>
+>> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> 
+> Whole series:
+> 
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> 
+> Do you want to include the patches in a patch set of your own, or should I put them
+> into the asm-generic tree?
+> 
+> 	Arnd
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: grant.likely@secretlab.ca
-Cc: spi-devel-general@lists.sourceforge.net
----
- drivers/spi/spi-atmel.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+Hi Arnd,
 
-diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
-index 2e040be..fc1222a 100644
---- a/drivers/spi/spi-atmel.c
-+++ b/drivers/spi/spi-atmel.c
-@@ -1010,6 +1010,7 @@ static int __devexit atmel_spi_remove(struct platform_device *pdev)
- 	struct spi_master	*master = platform_get_drvdata(pdev);
- 	struct atmel_spi	*as = spi_master_get_devdata(master);
- 	struct spi_message	*msg;
-+	struct spi_transfer	*xfer;
- 
- 	/* reset the hardware and block queue progress */
- 	spin_lock_irq(&as->lock);
-@@ -1021,9 +1022,10 @@ static int __devexit atmel_spi_remove(struct platform_device *pdev)
- 
- 	/* Terminate remaining queued transfers */
- 	list_for_each_entry(msg, &as->queue, queue) {
--		/* REVISIT unmapping the dma is a NOP on ARM and AVR32
--		 * but we shouldn't depend on that...
--		 */
-+		list_for_each_entry(xfer, &msg->transfers, transfer_list) {
-+			if (!msg->is_dma_mapped)
-+				atmel_spi_dma_unmap_xfer(master, xfer);
-+		}
- 		msg->status = -ESHUTDOWN;
- 		msg->complete(msg->context);
- 	}
--- 
-1.7.9.5
+The plan was to let it go through the asm-generic tree.
 
+Thanks,
+- Lars
