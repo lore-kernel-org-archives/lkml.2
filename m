@@ -1,63 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753008Ab2LDTvN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 14:51:13 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:35707 "EHLO zene.cmpxchg.org"
+	id S1753103Ab2LDTwp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 14:52:45 -0500
+Received: from mail.tpi.com ([70.99.223.143]:2718 "EHLO mail.tpi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752407Ab2LDTvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 14:51:12 -0500
-Date: Tue, 4 Dec 2012 14:50:08 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Zdenek Kabelac <zkabelac@redhat.com>, Mel Gorman <mgorman@suse.de>,
+	id S1752291Ab2LDTwo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 14:52:44 -0500
+From: Tim Gardner <tim.gardner@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tim Gardner <tim.gardner@canonical.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, George Spelvin <linux@horizon.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        Thorsten Leemhuis <fedora@leemhuis.info>,
-        Tomas Racek <tracek@redhat.com>, Jan Kara <jack@suse.cz>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Josh Boyer <jwboyer@gmail.com>,
-        Valdis.Kletnieks@vt.edu, Bruno Wolff III <bruno@wolff.to>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: kswapd craziness in 3.7
-Message-ID: <20121204195008.GD24381@cmpxchg.org>
-References: <1354049315-12874-1-git-send-email-hannes@cmpxchg.org>
- <20121128094511.GS8218@suse.de>
- <50BCC3E3.40804@redhat.com>
- <20121203191858.GY24381@cmpxchg.org>
- <50BDBCD9.9060509@redhat.com>
- <50BDBF1D.60105@suse.cz>
- <20121204161131.GB24381@cmpxchg.org>
- <50BE234E.7000603@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50BE234E.7000603@suse.cz>
+        Akinobu Mita <akinobu.mita@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        David Howells <dhowells@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.7-rc8] lib/Makefile: Fix oid_registry build dependency
+Date: Tue,  4 Dec 2012 12:52:28 -0700
+Message-Id: <1354650748-11032-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 04, 2012 at 05:22:38PM +0100, Jiri Slaby wrote:
-> On 12/04/2012 05:11 PM, Johannes Weiner wrote:
-> >>>> Any chance you could retry with this patch on top?
-> >>
-> >> It does not apply to -next :/. Should I try anything else?
-> > 
-> > The COMPACTION_BUILD changed to IS_ENABLED(CONFIG_COMPACTION), below
-> > is a -next patch.  I hope you don't run into other problems that come
-> > out of -next craziness, because Linus is kinda waiting for this to be
-> > resolved to release 3.8.  If you've always tested against -next so far
-> > and it worked otherwise, don't change the environment now, please.  If
-> > you just started, it would make more sense to test based on 3.7-rc8.
-> 
-> I reported the issue as soon as it appeared in -next for the first time
-> on Oct 12. Since then I'm constantly hitting the issue (well, there were
-> more than one I suppose, but not all of them were fixed by now) until
-> now. I run only -next...
+It is $(obj)/oid_registry.o that is dependent on $(obj)/oid_registry_data.c.
+The object file cannot be built until $(obj)/oid_registry_data.c has been
+generated.
 
-Okay.  Yes, it was a couple of problems, but not everybody hit the
-same subset.
+A periodic and hard to reproduce parallel build failure is due to
+this incorrect lib/Makefile dependency. The compile error is completely
+disingenuous.
 
-> Going to apply the patch now.
+  GEN     lib/oid_registry_data.c
+Compiling 49 OIDs
+  CC      lib/oid_registry.o
+gcc: error: lib/oid_registry.c: No such file or directory
+gcc: fatal error: no input files
+compilation terminated.
+make[3]: *** [lib/oid_registry.o] Error 4
 
-Thanks!
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+---
+
+I've only ever been able to reproduce this build failure on an Ubuntu PPA, 
+and then only infrequently. Restarting the build generally succeeds.
+I beleive the root of the issue to be an incorrect dependency, though
+I'm not sure why it doesn't fail more often. Its never failed when run by hand,
+even on large N-way systems. Commit a77ad6ea0b0bb1f9d1f52ed494bd72a5fdde208e
+which introduced this change came in with 3.7-rc1, so this patch is not
+applicable for stable.
+
+ lib/Makefile |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lib/Makefile b/lib/Makefile
+index 821a162..a08b791 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -163,7 +163,7 @@ $(obj)/crc32table.h: $(obj)/gen_crc32table
+ #
+ obj-$(CONFIG_OID_REGISTRY) += oid_registry.o
+ 
+-$(obj)/oid_registry.c: $(obj)/oid_registry_data.c
++$(obj)/oid_registry.o: $(obj)/oid_registry_data.c
+ 
+ $(obj)/oid_registry_data.c: $(srctree)/include/linux/oid_registry.h \
+ 			    $(src)/build_OID_registry
+-- 
+1.7.9.5
+
