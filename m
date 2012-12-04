@@ -1,116 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752461Ab2LDKfV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 05:35:21 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:55842 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752000Ab2LDKfR (ORCPT
+	id S1752709Ab2LDKh1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 05:37:27 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54499 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751444Ab2LDKhZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 05:35:17 -0500
-X-Authenticated: #2269360
-X-Provags-ID: V01U2FsdGVkX1+19htZqYS1ngoPn+EYuKqBgMUImudgJh2TJiieeZ
-	Zh9etN+4DYH0v1
-From: Heinz Wiesinger <HMWiesinger@gmx.at>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Greg KH <gregkh@linuxfoundation.org>, Jonathan Nieder <jrnieder@gmail.com>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Rabin Vincent <rabin.vincent@stericsson.com>,
-        Janne Boman <janne.m.boman@gmail.com>, rtc-linux@googlegroups.com
-Subject: Re: [regression] Re: [ 049/149] rtc: Disable the alarm in the hardware (v2)
-Date: Tue, 04 Dec 2012 11:34:38 +0100
-Message-ID: <2740175.6ysWXbEv9n@callisto>
-User-Agent: KMail/4.9.2 (Linux/3.2.32; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <50BD3244.900@linaro.org>
-References: <20120330195823.GA31857@kroah.com> <1672482.cmtUloFutg@callisto> <50BD3244.900@linaro.org>
+	Tue, 4 Dec 2012 05:37:25 -0500
+Message-ID: <50BDD262.80206@canonical.com>
+Date: Tue, 04 Dec 2012 11:37:22 +0100
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart1661613.RLzFefDs0x"; micalg="pgp-sha256"; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7Bit
-X-Y-GMX-Trusted: 0
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Revert "__d_unalias() should refuse to move mountpoints"
+References: <50609C43.1070702@canonical.com> <87txumrct6.fsf@xmission.com> <50615268.1040805@canonical.com> <8db34325-e8e4-4e24-85dd-c8951769e2b6@email.android.com> <506173A6.2050705@canonical.com> <87ipb2pemt.fsf@xmission.com> <50618F96.1020204@canonical.com> <87sja6nxvt.fsf@xmission.com> <20121129200612.GP4939@ZenIV.linux.org.uk> <50BDD163.4040302@canonical.com>
+In-Reply-To: <50BDD163.4040302@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Op 04-12-12 11:33, Maarten Lankhorst schreef:
+> Hey,
+>
+> Op 29-11-12 21:06, Al Viro schreef:
+>> On Tue, Sep 25, 2012 at 04:29:58AM -0700, Eric W. Biederman wrote:
+>>> Maarten Lankhorst <maarten.lankhorst@canonical.com> writes:
+>>>
+>>>>> Could you try the following patch?  This should report what directories
+>>>>> cannot be renamed because one of them is a mount point and it gives some
+>>>>> real insight into what is going on.
+>>>> ls /
+>>>> __d_unalias: /dev -> /dev
+>>>> __d_unalias: /proc -> /proc
+>>>> __d_unalias: /sys -> /sys
+>>> Ok.  That is what I thought was going on.  For some reason nfs is
+>>> attempting to recreate an existing dentry.
+>>>
+>>> Does this fix the nfs problem for you?
+>>>
+>>> Eric
+>>>
+>>> diff --git a/fs/dcache.c b/fs/dcache.c
+>>> index 8086636..6390f0f 100644
+>>> --- a/fs/dcache.c
+>>> +++ b/fs/dcache.c
+>>> @@ -2404,6 +2404,9 @@ out_unalias:
+>>>  	if (likely(!d_mountpoint(alias))) {
+>>>  		__d_move(alias, dentry);
+>>>  		ret = alias;
+>>> +	} else if ((alias->d_parent == dentry->d_parent) &&
+>>> +		   !dentry_cmp(alias, dentry->d_name.name, dentry->d_name.len))
+>>> +		ret = alias;
+>>>  	}
+>> The interesting question is why the hell had it decided that preexisting
+>> dentry was not good enough for it?  Note that we have arrived to nfs_lookup()
+>> after we'd decided *not* to use the damn alias.  The trace posted upthread
+>> went __lookup_hash() -> lookup_real().  It means that lookup_dcache()
+>> has not produced this one.  And no, even if ->d_revalidate() decided it
+>> was no good, the logics in d_invalidate() would've said "busy" and we'd
+>> gone with that dentry anyway.  So it means that d_lookup() has not
+>> found it at all.
+>>
+>> IOW, something out there is blindly unhashing mountpoint dentries; that's
+>> where the real root of the problem seems to be.  Could you slap
+>> WARN_ON(d_mountpoint(dentry)) in __d_drop() and see what it catches?
+>>
+> Sorry for replying so late, I thought I wasn't hitting the bug any more, I was wrong..
+>
+> ------------[ cut here ]------------
+> WARNING: at fs/dcache.c:452 d_drop+0x58/0x60()
+> Hardware name: Aspire M3985
+> Modules linked in: snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq kvm_intel kvm snd_timer snd_seq_device radeon snd usb_storage parport_pc ttm soundcore drm_kms_helper snd_page_alloc ppdev drm parport mei agpgart netconsole configfs nfsd
+> Pid: 1497, comm: ls Not tainted 3.7.0-rc4-patser+ #517
+> Call Trace:
+>  [<ffffffff8104cd8f>] warn_slowpath_common+0x7f/0xc0
+>  [<ffffffff8104cdea>] warn_slowpath_null+0x1a/0x20
+>  [<ffffffff81187be8>] d_drop+0x58/0x60
+>  [<ffffffff81256881>] nfs_readdir_page_filler+0x271/0x460
+>  [<ffffffff81257e59>] nfs_readdir_xdr_to_array+0x1f9/0x2e0
+>  [<ffffffff81257f66>] nfs_readdir_filler+0x26/0x90
+>  [<ffffffff81119e15>] ? add_to_page_cache_lru+0x35/0x50
+>  [<ffffffff8111a622>] do_read_cache_page+0x82/0x1a0
+>  [<ffffffff81257f40>] ? nfs_readdir_xdr_to_array+0x2e0/0x2e0
+>  [<ffffffff81183d40>] ? sys_ioctl+0xb0/0xb0
+>  [<ffffffff8111a78c>] read_cache_page_async+0x1c/0x20
+>  [<ffffffff8111a79e>] read_cache_page+0xe/0x20
+>  [<ffffffff81258327>] nfs_readdir+0x137/0x510
+>  [<ffffffff811840e1>] ? vfs_readdir+0x81/0xf0
+>  [<ffffffff8126dfe0>] ? nfs3_xdr_dec_getattr3res+0x80/0x80
+>  [<ffffffff81183d40>] ? sys_ioctl+0xb0/0xb0
+>  [<ffffffff81184118>] vfs_readdir+0xb8/0xf0
+>  [<ffffffff8118426e>] sys_getdents+0x8e/0x120
+>  [<ffffffff81753394>] tracesys+0xdd/0xe2
+> ---[ end trace 61d6a607ecd4e587 ]---
+> ------------[ cut here ]------------
+>
+Using addr2line, it is indeed nfs_prime_dcache dropping the entry, in the !nfs_same_file case.
 
---nextPart1661613.RLzFefDs0x
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-
-On Monday 03 December 2012 15:14:12 you wrote:
-> On 11/05/2012 02:55 PM, Heinz Wiesinger wrote:
-> > On Monday 05 November 2012 11:13:31 Greg KH wrote:
-> >> On Mon, Nov 05, 2012 at 01:11:18AM -0800, Jonathan Nieder wrote:
-> >>> Hi,
-> >>> 
-> >>> In March, Greg KH wrote:
-> >>>> 3.2-stable review patch.  If anyone has any objections, please let me
-> >>>> know.
-> >>> 
-> >>> Sorry, I'm a little late.  This seems to be causing spurious wakeups
-> >>> after shutdown on some systems just like v1 did. :/
-> >>> 
-> >>> Janne Boman reports[1], using an HP EliteBook 8530w:
-> >>> | I'm unable to shutdown my system via normal means. The system
-> >>> | completes the shutdown process, all hardware lights are off, but then
-> >>> | somehow it restarts.
-> >>> 
-> >>> Based on a quick web search, Heinz Wiesinger, using the same model,
-> >>> 
-> >>> ran into the same problem and bisected it to this patch:
-> >>>    https://bugzilla.kernel.org/show_bug.cgi?id=44261
-> >>> 
-> >>> Janne confirmed the same by testing kernels closely based on 3.2.13
-> >>> and 3.2.14 --- 3.2.13 shut down fine, while on 3.2.14 "shutdown -h
-> >>> now" behaved roughly speaking like "reboot".  A kernel close to 3.6.4
-> >>> was also affected.
-> >> 
-> >> So is 3.6.6 still and issue?  How about 3.7-rc4?  3.4.18?  Figuring out
-> >> if this is still an issue in Linus's tree would be the best thing to do
-> >> first.
-> > 
-> > I checked 3.7-rc4 and the issue is still there. Should I still test the
-> > other versions as well? I can do so but it might take a bit.
-> > 
-> > If you need anything else, I'll be happy to help wherever I can.
-> 
-> Hey Heinz,
->    Sorry for being slow to respond to this, I was on leave when it
-> arrived, and it got buried under other items.
-> 
-> This is peculiar.  I'm guessing something quirky with your hardware is
-> causing the alarm irq to trigger shortly after we supposedly disable it.
-> Could you send me your dmesg and kernel config?
-> 
-> After that I'll likely have to send you some debugging instructions
-> (commenting out various lines) to try to figure out what exactly is
-> triggering it.
-> 
-> Sorry for the trouble!
-
-Hey John,
-
-Don't worry, I know how it is to be busy.
-
-For the dmesg/kernel config is it fine if I send you the one from 3.7-rc4 or 
-should I update to a more recent version?
-
-I've also now seen this behaviour on another notebook with completely different 
-hardware (Asus VX1). I can send you dmesg output from that one too if you 
-want. Kernel config should be almost identical, but it's running 3.2.29 still.
-
-Grs,
-Heinz
---nextPart1661613.RLzFefDs0x
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iF4EABEIAAYFAlC90b8ACgkQjjMixa08Y5TWOQEAtU1oCg1U56kHBawCBufzsqEG
-OHGd3fWI3sQuyhJXMfIBAKxavM4EiFNS5L/8TKUCk2/A3Ht3IWPGoL+U4GJpKt3S
-=c9TK
------END PGP SIGNATURE-----
-
---nextPart1661613.RLzFefDs0x--
-
+~Maarten
