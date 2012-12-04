@@ -1,95 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312Ab2LDJZT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 04:25:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55379 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751732Ab2LDJZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 04:25:16 -0500
-From: Jason Wang <jasowang@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, krkumar2@in.ibm.com,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        bhutchings@solarflare.com, jwhan@filewood.snu.ac.kr, shiyer@redhat.com
-Subject: Re: [net-next rfc v7 2/3] virtio_net: multiqueue support
-Date: Tue, 04 Dec 2012 17:24:54 +0800
-Message-ID: <1836549.oV9l61gUO6@jason-thinkpad-t430s>
-User-Agent: KMail/4.9.2 (Linux/3.7.0-rc6+; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <20121203111118.GC26167@redhat.com>
-References: <1354011360-39479-1-git-send-email-jasowang@redhat.com> <50BC7896.4010504@redhat.com> <20121203111118.GC26167@redhat.com>
+	id S1752430Ab2LDJ1T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 04:27:19 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:44349 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347Ab2LDJ1Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 04:27:16 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <20121204083655.GA21235@fancy-poultry.org>
+References: <20121203173951.GA25384@fancy-poultry.org>
+	<CAHdPZaP6HvM=UqkAjyC8MFMv9ZFTyxjx-CsMQ+8QZaxPCaW1Hw@mail.gmail.com>
+	<20121204083655.GA21235@fancy-poultry.org>
+Date: Tue, 4 Dec 2012 19:27:15 +1000
+Message-ID: <CAPM=9twQZUWBf9FZdAwz5NuaTvfgJSA=bjgHq9rpTMMU3ABRVw@mail.gmail.com>
+Subject: Re: i915 freakout with latest 3.7 git
+From: Dave Airlie <airlied@gmail.com>
+To: Heinz Diehl <htd@fancy-poultry.org>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        intel-gfx@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, December 03, 2012 01:11:18 PM Michael S. Tsirkin wrote:
-> On Mon, Dec 03, 2012 at 06:01:58PM +0800, Jason Wang wrote:
-> > On 12/03/2012 05:47 PM, Michael S. Tsirkin wrote:
-> > > On Mon, Dec 03, 2012 at 02:05:27PM +0800, Jason Wang wrote:
-> > >> On Monday, December 03, 2012 12:34:08 PM Rusty Russell wrote:
-> > >>> Jason Wang <jasowang@redhat.com> writes:
-> > >>>> +static const struct ethtool_ops virtnet_ethtool_ops;
-> > >>>> +
-> > >>>> +/*
-> > >>>> + * Converting between virtqueue no. and kernel tx/rx queue no.
-> > >>>> + * 0:rx0 1:tx0 2:cvq 3:rx1 4:tx1 ... 2N+1:rxN 2N+2:txN
-> > >>>> + */
-> > >>>> +static int vq2txq(struct virtqueue *vq)
-> > >>>> +{
-> > >>>> +	int index = virtqueue_get_queue_index(vq);
-> > >>>> +	return index == 1 ? 0 : (index - 2) / 2;
-> > >>>> +}
-> > >>>> +
-> > >>>> +static int txq2vq(int txq)
-> > >>>> +{
-> > >>>> +	return txq ? 2 * txq + 2 : 1;
-> > >>>> +}
-> > >>>> +
-> > >>>> +static int vq2rxq(struct virtqueue *vq)
-> > >>>> +{
-> > >>>> +	int index = virtqueue_get_queue_index(vq);
-> > >>>> +	return index ? (index - 1) / 2 : 0;
-> > >>>> +}
-> > >>>> +
-> > >>>> +static int rxq2vq(int rxq)
-> > >>>> +{
-> > >>>> +	return rxq ? 2 * rxq + 1 : 0;
-> > >>>> +}
-> > >>>> +
-> > >>> 
-> > >>> I thought MST changed the proposed spec to make the control queue
-> > >>> always
-> > >>> the last one, so this logic becomes trivial.
-> > >> 
-> > >> But it may break the support of legacy guest. If we boot a legacy
-> > >> single queue guest on a 2 queue virtio-net device. It may think vq 2
-> > >> is cvq which is indeed rx1.
-> > > 
-> > > Legacy guyest support should be handled by host using feature
-> > > bits in the usual way: host should detect legacy guest
-> > > by checking the VIRTIO_NET_F_RFS feature.
-> > > 
-> > > If VIRTIO_NET_F_RFS is acked, cvq is vq max_virtqueue_pairs * 2.
-> > > If it's not acked, cvq is vq 2.
-> > 
-> > We could, but we didn't gain much from this.
-> 
-> It just seems cleaner and easier to understand.
-> 
-> > Furthermore, we need also
-> > do the dynamic creation/destroying of virtqueues during feature
-> > negotiation which seems not supported in qemu now.
-> 
-> It's not *done* in qemu now, but it seems easy: just call
-> virtio_add_queue for vq2 and on from virtio_net_set_features.
-> As features can be modified multiple times, we
-> should add virtio_del_queue and call that beforehand
-> to get to the known state (two vqs).
+On Tue, Dec 4, 2012 at 6:36 PM, Heinz Diehl <htd@fancy-poultry.org> wrote:
+> On 03.12.2012, devendra.aaru wrote:
+>
+>> Add more CC's
+>
+> Thanks!
+>
+> This is a real showstopper for me, it occurs in every session now.
+> Booting with "i915.i915_enable_rc6=0" doesn't help
 
-And also need some work after migration like what we need in setting features. 
-I'm ok with this method, will change to follow spec v5.
+https://bugs.freedesktop.org/show_bug.cgi?id=55984
 
-Thanks
+intel guys are as lost as anyone.
+
+Dave.
