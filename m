@@ -1,165 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143Ab2LDJXG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 04:23:06 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:4259 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751773Ab2LDJXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 04:23:02 -0500
-X-IronPort-AV: E=Sophos;i="4.83,370,1352044800"; 
-   d="scan'208";a="6329943"
-Message-ID: <50BDC0B9.50007@cn.fujitsu.com>
-Date: Tue, 04 Dec 2012 17:22:01 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1753245Ab2LDJXi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 04:23:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16873 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752036Ab2LDJXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 04:23:34 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: mst@redhat.com, krkumar2@in.ibm.com,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        bhutchings@solarflare.com, jwhan@filewood.snu.ac.kr, shiyer@redhat.com
+Subject: Re: [net-next rfc v7 1/3] virtio-net: separate fields of sending/receiving queue from virtnet_info
+Date: Tue, 04 Dec 2012 17:23:21 +0800
+Message-ID: <1586636.MnKZJZo7n1@jason-thinkpad-t430s>
+User-Agent: KMail/4.9.2 (Linux/3.7.0-rc6+; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <87zk1uh48g.fsf@rustcorp.com.au>
+References: <1354011360-39479-1-git-send-email-jasowang@redhat.com> <3524590.ZWGua7A8ne@jason-thinkpad-t430s> <87zk1uh48g.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org, David Rientjes <rientjes@google.com>,
-        Jiang Liu <liuj97@gmail.com>, Len Brown <len.brown@intel.com>,
-        benh@kernel.crashing.org, paulus@samba.org,
-        Christoph Lameter <cl@linux.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Jianguo Wu <wujianguo@huawei.com>
-Subject: Re: [Patch v4 02/12] memory-hotplug: check whether all memory blocks
- are offlined or not when removing memory
-References: <1354010422-19648-1-git-send-email-wency@cn.fujitsu.com> <1354010422-19648-3-git-send-email-wency@cn.fujitsu.com>
-In-Reply-To: <1354010422-19648-3-git-send-email-wency@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/04 17:22:22,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/04 17:22:23,
-	Serialize complete at 2012/12/04 17:22:23
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2012 06:00 PM, Wen Congyang wrote:
-> From: Yasuaki Ishimatsu<isimatu.yasuaki@jp.fujitsu.com>
->
-> We remove the memory like this:
-> 1. lock memory hotplug
-> 2. offline a memory block
-> 3. unlock memory hotplug
-> 4. repeat 1-3 to offline all memory blocks
-> 5. lock memory hotplug
-> 6. remove memory(TODO)
-> 7. unlock memory hotplug
->
-> All memory blocks must be offlined before removing memory. But we don't hold
-> the lock in the whole operation. So we should check whether all memory blocks
-> are offlined before step6. Otherwise, kernel maybe panicked.
->
-> CC: David Rientjes<rientjes@google.com>
-> CC: Jiang Liu<liuj97@gmail.com>
-> CC: Len Brown<len.brown@intel.com>
-> CC: Christoph Lameter<cl@linux.com>
-> Cc: Minchan Kim<minchan.kim@gmail.com>
-> CC: Andrew Morton<akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
-> Signed-off-by: Wen Congyang<wency@cn.fujitsu.com>
-> Signed-off-by: Yasuaki Ishimatsu<isimatu.yasuaki@jp.fujitsu.com>
+On Tuesday, December 04, 2012 02:13:11 PM Rusty Russell wrote:
+> Jason Wang <jasowang@redhat.com> writes:
+> > On Monday, December 03, 2012 12:25:42 PM Rusty Russell wrote:
+> >> > +
+> >> > +	/* Work struct for refilling if we run low on memory. */
+> >> > +	struct delayed_work refill;
+> >> 
+> >> I can't really see the justificaiton for a refill per queue.  Just have
+> >> one work iterate all the queues if it happens, unless it happens often
+> >> (in which case, we need to look harder at this anyway).
+> > 
+> > But during this kind of iteration, we may need enable/disable the napi
+> > regardless of whether the receive queue has lots to be refilled. This may
+> > add extra latency.
+> 
+> Sure, but does it actually happen?  We only use the work when we run out
+> of memory.  If this happens in normal behaviour we need to change
+> something else...
 
-Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
+True, I will change to use a global one.
 
-> ---
->   drivers/base/memory.c          |  6 ++++++
->   include/linux/memory_hotplug.h |  1 +
->   mm/memory_hotplug.c            | 47 ++++++++++++++++++++++++++++++++++++++++++
->   3 files changed, 54 insertions(+)
->
-> diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-> index 86c8821..badb025 100644
-> --- a/drivers/base/memory.c
-> +++ b/drivers/base/memory.c
-> @@ -675,6 +675,12 @@ int offline_memory_block(struct memory_block *mem)
->   	return ret;
->   }
->
-> +/* return true if the memory block is offlined, otherwise, return false */
-> +bool is_memblock_offlined(struct memory_block *mem)
-> +{
-> +	return mem->state == MEM_OFFLINE;
-> +}
-> +
->   /*
->    * Initialize the sysfs support for memory devices...
->    */
-> diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
-> index 95573ec..38675e9 100644
-> --- a/include/linux/memory_hotplug.h
-> +++ b/include/linux/memory_hotplug.h
-> @@ -236,6 +236,7 @@ extern int add_memory(int nid, u64 start, u64 size);
->   extern int arch_add_memory(int nid, u64 start, u64 size);
->   extern int offline_pages(unsigned long start_pfn, unsigned long nr_pages);
->   extern int offline_memory_block(struct memory_block *mem);
-> +extern bool is_memblock_offlined(struct memory_block *mem);
->   extern int remove_memory(u64 start, u64 size);
->   extern int sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
->   								int nr_pages);
-> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-> index b825dbc..b6d1101 100644
-> --- a/mm/memory_hotplug.c
-> +++ b/mm/memory_hotplug.c
-> @@ -1054,6 +1054,53 @@ repeat:
->   		goto repeat;
->   	}
->
-> +	lock_memory_hotplug();
-> +
-> +	/*
-> +	 * we have offlined all memory blocks like this:
-> +	 *   1. lock memory hotplug
-> +	 *   2. offline a memory block
-> +	 *   3. unlock memory hotplug
-> +	 *
-> +	 * repeat step1-3 to offline the memory block. All memory blocks
-> +	 * must be offlined before removing memory. But we don't hold the
-> +	 * lock in the whole operation. So we should check whether all
-> +	 * memory blocks are offlined.
-> +	 */
-> +
-> +	for (pfn = start_pfn; pfn<  end_pfn; pfn += PAGES_PER_SECTION) {
-> +		section_nr = pfn_to_section_nr(pfn);
-> +		if (!present_section_nr(section_nr))
-> +			continue;
-> +
-> +		section = __nr_to_section(section_nr);
-> +		/* same memblock? */
-> +		if (mem)
-> +			if ((section_nr>= mem->start_section_nr)&&
-> +			    (section_nr<= mem->end_section_nr))
-> +				continue;
-> +
-> +		mem = find_memory_block_hinted(section, mem);
-> +		if (!mem)
-> +			continue;
-> +
-> +		ret = is_memblock_offlined(mem);
-> +		if (!ret) {
-> +			pr_warn("removing memory fails, because memory "
-> +				"[%#010llx-%#010llx] is onlined\n",
-> +				PFN_PHYS(section_nr_to_pfn(mem->start_section_nr)),
-> +				PFN_PHYS(section_nr_to_pfn(mem->end_section_nr + 1)) - 1);
-> +
-> +			kobject_put(&mem->dev.kobj);
-> +			unlock_memory_hotplug();
-> +			return ret;
-> +		}
-> +	}
-> +
-> +	if (mem)
-> +		kobject_put(&mem->dev.kobj);
-> +	unlock_memory_hotplug();
-> +
->   	return 0;
->   }
->   #else
-
+Thanks
+> 
+> Thanks,
+> Rusty.
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
