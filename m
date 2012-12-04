@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753567Ab2LDQCG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 11:02:06 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:46474 "EHLO mail.skyhub.de"
+	id S1754322Ab2LDQDL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 11:03:11 -0500
+Received: from mga03.intel.com ([143.182.124.21]:18335 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752115Ab2LDQCA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 11:02:00 -0500
-Date: Tue, 4 Dec 2012 17:01:56 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Daniel J Blueman <daniel@numascale-asia.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        H Peter Anvin <hpa@zytor.com>, Steffen Persvold <sp@numascale.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4 v8] AMD64 EDAC: Fix type usage in NB IDs and memory
- ranges
-Message-ID: <20121204160156.GH4369@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Daniel J Blueman <daniel@numascale-asia.com>,
-	Ingo Molnar <mingo@redhat.com>,
-	Thomas Gleixner <tglx@linutronix.de>, H Peter Anvin <hpa@zytor.com>,
-	Steffen Persvold <sp@numascale.com>, x86@kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1354265060-22956-1-git-send-email-daniel@numascale-asia.com>
- <1354265060-22956-2-git-send-email-daniel@numascale-asia.com>
- <20121130171749.GB23034@liondog.tnic>
- <50BDC140.8060004@numascale-asia.com>
+	id S1751986Ab2LDQDH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 11:03:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,215,1355126400"; 
+   d="scan'208";a="226434574"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: Alan Cox <alan@linux.intel.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stanislaw Gruszka <sgruszka@redhat.com>
+Subject: RE: [char-misc-next 07/15] mei: use wrietl/readl instead of io
+ wrappers
+Thread-Topic: [char-misc-next 07/15] mei: use wrietl/readl instead of io
+ wrappers
+Thread-Index: AQHN0ihwqEeZmpNWmk6M50CYz937qJgIklqAgAArpVD//+aiAIAAJCKg
+Date: Tue, 4 Dec 2012 16:02:17 +0000
+Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B01E9DF12@HASMSX106.ger.corp.intel.com>
+References: <1354629884-3202-1-git-send-email-tomas.winkler@intel.com>
+	<1354629884-3202-7-git-send-email-tomas.winkler@intel.com>
+	<20121204143151.1cce530a@pyramind.ukuu.org.uk>
+	<5B8DA87D05A7694D9FA63FD143655C1B01E9DED6@HASMSX106.ger.corp.intel.com>
+ <20121204153716.322b2cc7@bob.linux.org.uk>
+In-Reply-To: <20121204153716.322b2cc7@bob.linux.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <50BDC140.8060004@numascale-asia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 04, 2012 at 05:24:16PM +0800, Daniel J Blueman wrote:
-> It works well on fam10h and fam15h boxes, with and without Numaconnect.
+> > > As to overhead. I'd love to see a measurement that can detect the
+> > > difference. Do you have a benchmark that shows it ?
+> >
+> > Don't have any numbers but it seems reasonable to me.
+> 
+> Processors are pretty good at prediction these days. I've not seen any
+> evidence to support the assumption.
 
-Good, thanks for testing.
+I don't have strong opinion about it, yet what would be benefit of keeping the io abstraction layer,
+In case we are sure it is not used with io ports?
 
-I will send it upstream after the upcoming merge window closes since it
-is too late for this one now and I wouldn't want to rush it if it is not
-necessary to do so and it hasn't seen enough testing in linux-next and
--tip trees. Which means that it will end up in 3.9; I hope that is OK
-with you guys.
+Anyhow If time permits I will try to run the stress again. 
 
-Thanks.
+Greg, can you pleased just drop this patch for now, I don't believe it creates any conflict. 
 
--- 
-Regards/Gruss,
-    Boris.
+Thanks
+Tomas
+
+
+
