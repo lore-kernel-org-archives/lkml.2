@@ -1,67 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610Ab2LDO0l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 09:26:41 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:51981 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753000Ab2LDO0k (ORCPT
+	id S1754591Ab2LDOcB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 09:32:01 -0500
+Received: from smtp.eu.citrix.com ([46.33.159.39]:61728 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347Ab2LDOcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 09:26:40 -0500
-Date: Tue, 4 Dec 2012 14:31:51 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Tomas Winkler <tomas.winkler@intel.com>
-Cc: gregkh@linuxfoundation.org, arnd@arndb.de, alan@linux.intel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [char-misc-next 07/15] mei: use wrietl/readl instead of io
- wrappers
-Message-ID: <20121204143151.1cce530a@pyramind.ukuu.org.uk>
-In-Reply-To: <1354629884-3202-7-git-send-email-tomas.winkler@intel.com>
-References: <1354629884-3202-1-git-send-email-tomas.winkler@intel.com>
-	<1354629884-3202-7-git-send-email-tomas.winkler@intel.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 4 Dec 2012 09:32:00 -0500
+X-Greylist: delayed 597 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Dec 2012 09:32:00 EST
+X-IronPort-AV: E=Sophos;i="4.84,215,1355097600"; 
+   d="scan'208";a="16149110"
+From: Roger Pau Monne <roger.pau@citrix.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Roger Pau Monne <roger.pau@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>, <xen-devel@lists.xen.org>
+Subject: [PATCH 1/2] xen-blkback: implement safe iterator for the list of persistent grants
+Date: Tue, 4 Dec 2012 15:21:52 +0100
+Message-ID: <1354630913-17287-1-git-send-email-roger.pau@citrix.com>
+X-Mailer: git-send-email 1.7.7.5 (Apple Git-26)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  4 Dec 2012 16:04:36 +0200
-Tomas Winkler <tomas.winkler@intel.com> wrote:
+Change foreach_grant iterator to a safe version, that allows freeing
+the element while iterating. Also move the free code in
+free_persistent_gnts to prevent freeing the element before the rb_next
+call.
 
-> on intel registers are alwasy memory mapped so drop
-> the overhead of iowrite32 and ioread32
-> 
-> Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-> ---
->  drivers/misc/mei/mei_dev.h |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-> index 92a5d9a..37eb041 100644
-> --- a/drivers/misc/mei/mei_dev.h
-> +++ b/drivers/misc/mei/mei_dev.h
-> @@ -438,7 +438,7 @@ int mei_amthif_irq_read(struct mei_device *dev, s32 *slots);
->  static inline u32 mei_reg_read(const struct mei_device *dev,
->  			       unsigned long offset)
->  {
-> -	return ioread32(dev->mem_addr + offset);
-> +	return readl(dev->mem_addr + offset);
->  }
->  
->  /**
-> @@ -451,7 +451,7 @@ static inline u32 mei_reg_read(const struct mei_device *dev,
->  static inline void mei_reg_write(const struct mei_device *dev,
->  				 unsigned long offset, u32 value)
->  {
-> -	iowrite32(value, dev->mem_addr + offset);
-> +	writel(value, dev->mem_addr + offset);
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>
+Cc: xen-devel@lists.xen.org
+---
+ drivers/block/xen-blkback/blkback.c |   18 +++++++++++-------
+ 1 files changed, 11 insertions(+), 7 deletions(-)
 
-ioremap should match readl/writel
-iomap iowrite32/ioread32 
+diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+index 74374fb..5ac841f 100644
+--- a/drivers/block/xen-blkback/blkback.c
++++ b/drivers/block/xen-blkback/blkback.c
+@@ -161,10 +161,12 @@ static int dispatch_rw_block_io(struct xen_blkif *blkif,
+ static void make_response(struct xen_blkif *blkif, u64 id,
+ 			  unsigned short op, int st);
+ 
+-#define foreach_grant(pos, rbtree, node) \
+-	for ((pos) = container_of(rb_first((rbtree)), typeof(*(pos)), node); \
++#define foreach_grant_safe(pos, n, rbtree, node) \
++	for ((pos) = container_of(rb_first((rbtree)), typeof(*(pos)), node), \
++	     (n) = rb_next(&(pos)->node); \
+ 	     &(pos)->node != NULL; \
+-	     (pos) = container_of(rb_next(&(pos)->node), typeof(*(pos)), node))
++	     (pos) = container_of(n, typeof(*(pos)), node), \
++	     (n) = (&(pos)->node != NULL) ? rb_next(&(pos)->node) : NULL)
+ 
+ 
+ static void add_persistent_gnt(struct rb_root *root,
+@@ -217,10 +219,11 @@ static void free_persistent_gnts(struct rb_root *root, unsigned int num)
+ 	struct gnttab_unmap_grant_ref unmap[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+ 	struct page *pages[BLKIF_MAX_SEGMENTS_PER_REQUEST];
+ 	struct persistent_gnt *persistent_gnt;
++	struct rb_node *n;
+ 	int ret = 0;
+ 	int segs_to_unmap = 0;
+ 
+-	foreach_grant(persistent_gnt, root, node) {
++	foreach_grant_safe(persistent_gnt, n, root, node) {
+ 		BUG_ON(persistent_gnt->handle ==
+ 			BLKBACK_INVALID_HANDLE);
+ 		gnttab_set_unmap_op(&unmap[segs_to_unmap],
+@@ -230,9 +233,6 @@ static void free_persistent_gnts(struct rb_root *root, unsigned int num)
+ 			persistent_gnt->handle);
+ 
+ 		pages[segs_to_unmap] = persistent_gnt->page;
+-		rb_erase(&persistent_gnt->node, root);
+-		kfree(persistent_gnt);
+-		num--;
+ 
+ 		if (++segs_to_unmap == BLKIF_MAX_SEGMENTS_PER_REQUEST ||
+ 			!rb_next(&persistent_gnt->node)) {
+@@ -241,6 +241,10 @@ static void free_persistent_gnts(struct rb_root *root, unsigned int num)
+ 			BUG_ON(ret);
+ 			segs_to_unmap = 0;
+ 		}
++
++		rb_erase(&persistent_gnt->node, root);
++		kfree(persistent_gnt);
++		num--;
+ 	}
+ 	BUG_ON(num != 0);
+ }
+-- 
+1.7.7.5 (Apple Git-26)
 
-so you need to tweak the map/unmap if you do this.
-
-As to overhead. I'd love to see a measurement that can detect the
-difference. Do you have a benchmark that shows it ?
