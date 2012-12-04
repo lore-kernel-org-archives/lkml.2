@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176Ab2LDP3f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 10:29:35 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:63552 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753638Ab2LDP2e (ORCPT
+	id S1753762Ab2LDPaR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 10:30:17 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:45789 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753570Ab2LDP21 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 10:28:34 -0500
+	Tue, 4 Dec 2012 10:28:27 -0500
 From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
 To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
         Jiri Kosina <jkosina@suse.cz>, Jean Delvare <khali@linux-fr.org>,
         linux-input@vger.kernel.org, linux-i2c@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 12/14] HID: i2c-hid: remove extra .irq field in struct i2c_hid
-Date: Tue,  4 Dec 2012 16:27:53 +0100
-Message-Id: <1354634875-5182-13-git-send-email-benjamin.tissoires@gmail.com>
+Subject: [PATCH 08/14] HID: i2c-hid: fix error messages
+Date: Tue,  4 Dec 2012 16:27:49 +0100
+Message-Id: <1354634875-5182-9-git-send-email-benjamin.tissoires@gmail.com>
 X-Mailer: git-send-email 1.8.0.1
 In-Reply-To: <1354634875-5182-1-git-send-email-benjamin.tissoires@gmail.com>
 References: <1354634875-5182-1-git-send-email-benjamin.tissoires@gmail.com>
@@ -22,77 +22,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no point in keeping the irq in i2c_hid as it's already
-there in client.
-
 Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
 ---
- drivers/hid/i2c-hid/i2c-hid.c | 17 ++++++-----------
- 1 file changed, 6 insertions(+), 11 deletions(-)
+ drivers/hid/i2c-hid/i2c-hid.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-index 2b49929..bea4b13 100644
+index d6fdb3e..da04948 100644
 --- a/drivers/hid/i2c-hid/i2c-hid.c
 +++ b/drivers/hid/i2c-hid/i2c-hid.c
-@@ -136,8 +136,6 @@ struct i2c_hid {
+@@ -741,10 +741,10 @@ static int __devinit i2c_hid_init_irq(struct i2c_client *client)
+ 			IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+ 			client->name, ihid);
+ 	if (ret < 0) {
+-		dev_dbg(&client->dev,
++		dev_warn(&client->dev,
+ 			"Could not register for %s interrupt, irq = %d,"
+ 			" ret = %d\n",
+-		client->name, client->irq, ret);
++			client->name, client->irq, ret);
  
- 	unsigned long		flags;		/* device flags */
- 
--	int			irq;		/* the interrupt line irq */
--
- 	wait_queue_head_t	wait;		/* For waiting the interrupt */
- };
- 
-@@ -737,8 +735,6 @@ static int __devinit i2c_hid_init_irq(struct i2c_client *client)
  		return ret;
  	}
+@@ -770,7 +770,8 @@ static int __devinit i2c_hid_fetch_hid_descriptor(struct i2c_hid *ihid)
+ 			__func__, 4, ihid->hdesc_buffer);
  
--	ihid->irq = client->irq;
--
- 	return 0;
- }
- 
-@@ -841,12 +837,12 @@ static int __devinit i2c_hid_probe(struct i2c_client *client,
- 
- 	ret = i2c_hid_init_irq(client);
- 	if (ret < 0)
--		goto err;
-+		goto err_irq;
- 
- 	hid = hid_allocate_device();
- 	if (IS_ERR(hid)) {
- 		ret = PTR_ERR(hid);
--		goto err;
-+		goto err_irq;
+ 	if (ret) {
+-		dev_err(&client->dev, "HID_DESCR_LENGTH_CMD Fail (ret=%d)\n",
++		dev_err(&client->dev,
++			"unable to fetch the size of HID descriptor (ret=%d)\n",
+ 			ret);
+ 		return -ENODEV;
  	}
+@@ -785,7 +786,7 @@ static int __devinit i2c_hid_fetch_hid_descriptor(struct i2c_hid *ihid)
+ 	/* check bcdVersion == 1.0 */
+ 	if (le16_to_cpu(hdesc->bcdVersion) != 0x0100) {
+ 		dev_err(&client->dev,
+-			"unexpected HID descriptor bcdVersion (0x%04x)\n",
++			"unexpected HID descriptor bcdVersion (0x%04hx)\n",
+ 			le16_to_cpu(hdesc->bcdVersion));
+ 		return -ENODEV;
+ 	}
+@@ -871,7 +872,7 @@ static int __devinit i2c_hid_probe(struct i2c_client *client,
+ 	hid->vendor = le16_to_cpu(ihid->hdesc.wVendorID);
+ 	hid->product = le16_to_cpu(ihid->hdesc.wProductID);
  
- 	ihid->hid = hid;
-@@ -876,10 +872,10 @@ static int __devinit i2c_hid_probe(struct i2c_client *client,
- err_mem_free:
- 	hid_destroy_device(hid);
+-	snprintf(hid->name, sizeof(hid->name), "%s %04X:%04X",
++	snprintf(hid->name, sizeof(hid->name), "%s %04hX:%04hX",
+ 		 client->name, hid->vendor, hid->product);
  
--err:
--	if (ihid->irq)
--		free_irq(ihid->irq, ihid);
-+err_irq:
-+	free_irq(client->irq, ihid);
- 
-+err:
- 	i2c_hid_free_buffers(ihid);
- 	kfree(ihid);
- 	return ret;
-@@ -904,10 +900,9 @@ static int __devexit i2c_hid_remove(struct i2c_client *client)
- static int i2c_hid_suspend(struct device *dev)
- {
- 	struct i2c_client *client = to_i2c_client(dev);
--	struct i2c_hid *ihid = i2c_get_clientdata(client);
- 
- 	if (device_may_wakeup(&client->dev))
--		enable_irq_wake(ihid->irq);
-+		enable_irq_wake(client->irq);
- 
- 	/* Save some power */
- 	i2c_hid_set_power(client, I2C_HID_PWR_SLEEP);
+ 	ret = hid_add_device(hid);
 -- 
 1.8.0.1
 
