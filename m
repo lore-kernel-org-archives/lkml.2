@@ -1,91 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931Ab2LDMzy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 07:55:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37557 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752670Ab2LDMzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 07:55:52 -0500
-From: Jason Wang <jasowang@redhat.com>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: rusty@rustcorp.com.au, mst@redhat.com, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [net-next RFC] pktgen: don't wait for the device who doesn't free skb immediately after sent
-Date: Tue, 04 Dec 2012 20:55:41 +0800
-Message-ID: <8021685.WXSMsUXlMe@jason-thinkpad-t430s>
-User-Agent: KMail/4.9.2 (Linux/3.7.0-rc6+; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <20121203080111.74acf7d7@nehalam.linuxnetplumber.net>
-References: <1353916612-6357-1-git-send-email-jasowang@redhat.com> <2663254.1vRFru9xhh@jason-thinkpad-t430s> <20121203080111.74acf7d7@nehalam.linuxnetplumber.net>
+	id S1752245Ab2LDM46 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 07:56:58 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:38288 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090Ab2LDM45 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 07:56:57 -0500
+Date: Tue, 4 Dec 2012 13:58:23 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Heinz Diehl <htd@fritha.org>
+Cc: Daniel Vetter <daniel@ffwll.ch>, Dave Airlie <airlied@gmail.com>,
+        Heinz Diehl <htd@fancy-poultry.org>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: i915 freakout with latest 3.7 git
+Message-ID: <20121204125823.GC11556@phenom.ffwll.local>
+Mail-Followup-To: Heinz Diehl <htd@fritha.org>,
+	Dave Airlie <airlied@gmail.com>,
+	Heinz Diehl <htd@fancy-poultry.org>,
+	intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+	dri-devel@lists.freedesktop.org
+References: <20121203173951.GA25384@fancy-poultry.org>
+ <CAHdPZaP6HvM=UqkAjyC8MFMv9ZFTyxjx-CsMQ+8QZaxPCaW1Hw@mail.gmail.com>
+ <20121204083655.GA21235@fancy-poultry.org>
+ <CAPM=9twQZUWBf9FZdAwz5NuaTvfgJSA=bjgHq9rpTMMU3ABRVw@mail.gmail.com>
+ <CAKMK7uEGTWgPO-wf7aNLC+y9zLYPyy6f_djn6D-Gx-n6bFqcJA@mail.gmail.com>
+ <20121204123522.GA32419@fritha.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121204123522.GA32419@fritha.org>
+X-Operating-System: Linux phenom 3.7.0-rc2+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, December 03, 2012 08:01:11 AM Stephen Hemminger wrote:
-> On Mon, 03 Dec 2012 14:45:46 +0800
+On Tue, Dec 04, 2012 at 01:35:22PM +0100, Heinz Diehl wrote:
+> On 04.12.2012, Daniel Vetter wrote: 
 > 
-> Jason Wang <jasowang@redhat.com> wrote:
-> > On Tuesday, November 27, 2012 08:49:19 AM Stephen Hemminger wrote:
-> > > On Tue, 27 Nov 2012 14:45:13 +0800
-> > > 
-> > > Jason Wang <jasowang@redhat.com> wrote:
-> > > > On 11/27/2012 01:37 AM, Stephen Hemminger wrote:
-> > > > > On Mon, 26 Nov 2012 15:56:52 +0800
-> > > > > 
-> > > > > Jason Wang <jasowang@redhat.com> wrote:
-> > > > >> Some deivces do not free the old tx skbs immediately after it has
-> > > > >> been
-> > > > >> sent
-> > > > >> (usually in tx interrupt). One such example is virtio-net which
-> > > > >> optimizes for virt and only free the possible old tx skbs during
-> > > > >> the
-> > > > >> next packet sending. This would lead the pktgen to wait forever in
-> > > > >> the
-> > > > >> refcount of the skb if no other pakcet will be sent afterwards.
-> > > > >> 
-> > > > >> Solving this issue by introducing a new flag IFF_TX_SKB_FREE_DELAY
-> > > > >> which could notify the pktgen that the device does not free skb
-> > > > >> immediately after it has been sent and let it not to wait for the
-> > > > >> refcount to be one.
-> > > > >> 
-> > > > >> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> > > > > 
-> > > > > Another alternative would be using skb_orphan() and skb->destructor.
-> > > > > There are other cases where skb's are not freed right away.
-> > > > > --
-> > > > > To unsubscribe from this list: send the line "unsubscribe netdev" in
-> > > > > the body of a message to majordomo@vger.kernel.org
-> > > > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > > > 
-> > > > Hi Stephen:
-> > > > 
-> > > > Do you mean registering a skb->destructor for pktgen then set and
-> > > > check
-> > > > bits in skb->tx_flag?
-> > > 
-> > > Yes. Register a destructor that does something like update a counter
-> > > (number of packets pending), then just spin while number of packets
-> > > pending is over threshold.
-> > 
-> > Have some experiments on this, looks like it does not work weel when
-> > clone_skb is used. For driver that call skb_orphan() in ndo_start_xmit,
-> > the destructor is only called when the first packet were sent, but what
-> > we need to know is when the last were sent. Any thoughts on this or we
-> > can just introduce another flag (anyway we have something like
-> > IFF_TX_SKB_SHARING) ?
+> > Yeah, if anyone can somewhat reliably reproduce this
 > 
-> The SKB_SHARING flag looks like the best solution then.
-> Surprisingly, transmit buffer completion is a major bottleneck for 10G
-> devices, and I suspect more changes will come.
+> Ok, I see. So the beginning would be to reliably reproduce the the
+> hang. I have encountered it in any possbile situasjon, both when
+> watching videos on Youtube and right after booting the machine and
+> doing absolutely nothing.
+> 
+> I'll try around a little bit and see if I can find something that
+> triggers this hang. 
+> 
+> Btw: which kernel is known to be the "last good one"?
 
-It works, but we may lose some chances to use clone_skb and stress the device 
-and driver more. I'm thinking maybe we can turn back to my original RFC to 
-introduce another flag. This flag maybe also useful for BQL and zerocopy in the 
-future since both of them are sensitive to the transmit buffer completion. 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+If it's the ilk one we only know that 3.6.x series seems to be solid, and
+something in 3.7-rc (probably before -rc1) broke stuff. So not too useful.
+
+> > (you need to disable rc6 on ilk to not hit another issue which seems much easier to
+> > hit) 
+> 
+> Ilk? If this stands for "Ironlake": I'm on Sandybridge.
+
+Hm, then it could very well be something different, so I think we need to
+track this one as a separate bug. Can you please file a new one on
+bugs.freedesktop.org against DRI -> DRM (Intel) and attach dmesg when
+booting with drm.debug=0xe (just so we know what's in your box) plus the
+i915_error_state from debugfs once the gpu is hung (if you can get at that
+file, reboot kills it).
+
+Thanks, Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
