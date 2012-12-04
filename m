@@ -1,143 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533Ab2LDMfX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 07:35:23 -0500
-Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:43839 "EHLO
-	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751613Ab2LDMfV (ORCPT
+	id S1752765Ab2LDMfc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 07:35:32 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:55694 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752565Ab2LDMf0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 07:35:21 -0500
-Message-ID: <50BDEDE8.4030105@st.com>
-Date: Tue, 04 Dec 2012 13:34:48 +0100
-From: Giuseppe CAVALLARO <peppe.cavallaro@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:15.0) Gecko/20120907 Thunderbird/15.0.1
+	Tue, 4 Dec 2012 07:35:26 -0500
+Date: Tue, 4 Dec 2012 13:35:22 +0100
+From: Heinz Diehl <htd@fritha.org>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Dave Airlie <airlied@gmail.com>, Heinz Diehl <htd@fancy-poultry.org>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: i915 freakout with latest 3.7 git
+Message-ID: <20121204123522.GA32419@fritha.org>
+References: <20121203173951.GA25384@fancy-poultry.org>
+ <CAHdPZaP6HvM=UqkAjyC8MFMv9ZFTyxjx-CsMQ+8QZaxPCaW1Hw@mail.gmail.com>
+ <20121204083655.GA21235@fancy-poultry.org>
+ <CAPM=9twQZUWBf9FZdAwz5NuaTvfgJSA=bjgHq9rpTMMU3ABRVw@mail.gmail.com>
+ <CAKMK7uEGTWgPO-wf7aNLC+y9zLYPyy6f_djn6D-Gx-n6bFqcJA@mail.gmail.com>
 MIME-Version: 1.0
-To: Byungho An <bh74.an@samsung.com>
-Cc: davem@davemloft.net, jeffrey.t.kirsher@intel.com, netdev@vger.kernel.org,
-        kgene.kim@samsung.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] net: stmmac: change GMAC control register for SGMII
-References: <004b01cdc959$80af8030$820e8090$%an@samsung.com> <50B344FC.4070405@st.com> <009401cdcd57$18b275d0$4a176170$%an@samsung.com>
-In-Reply-To: <009401cdcd57$18b275d0$4a176170$%an@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKMK7uEGTWgPO-wf7aNLC+y9zLYPyy6f_djn6D-Gx-n6bFqcJA@mail.gmail.com>
+Organization: private site
+OpenPGP: id=BBAD7AE7; url=http://www.fritha.org/htd.asc
+User-Agent: Mutt/1.5.21+67 (d414971f0c48) (2011-07-01)
+X-Provags-ID: V02:K0:VSNCjrXrJ0Z4khmpA1Sm/70H6h+RCm04GxCgE3Hd5Bt
+ 4tlSOvTteG6XyU3OnY3+2LChPp2hMYrOW+tt8K/eHNaiAiALpS
+ 41faYq3DXdsNk5OTFANmleqFTaERl90Pt/7+SJPxC5+rA6QkXU
+ 3gvmbju1klLdfZ9WfhVtuXvotuSZRwojk59r/+oL4QVviIJTZ6
+ 1IbdudD4DOzthn9n/eWloH5mlg6JjRKaIQ1EKtbaf5vC2utTSH
+ 4AS8UNFprbIRY2k5YGQgjSKldXhNnQbMLg79KeDBYesiFbdfUL
+ nMtb7tPyk06nUANBnGBNRiJ5fbfy8bUanD+tdDglAOycyhTOpw
+ swB0/LjTQXNLGvjCXBPOosXdA5SHvbnNlakiaFMsO
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/28/2012 11:57 AM, Byungho An wrote:
-> On 11/26/2012 07:31 PM, Giuseppe CABALLARO wrote:
->> On 11/23/2012 10:04 AM, Byungho An wrote:
->>>
->>> This patch changes GMAC control register (TC(Transmit
->>> Configuration) and PS(Port Selection) bit for SGMII.
->>> In case of SGMII, TC bit is '1' and PS bit is 0.
->>
->> IMO this new support that should be released for net-next and further
->> effort is actually needed.
->>
-> OK, I see but if possible, I want to support the new features which is
-> included in this patch from v3.8
+On 04.12.2012, Daniel Vetter wrote: 
 
-ok I agree and I can support you.
+> Yeah, if anyone can somewhat reliably reproduce this
 
->
->> The availability of the PCS registers is given by looking at the HW
->> feature register. In fact, these are optional registers.
->> I don't want to break the compatibility with old chips.
->>
-> It means that old chip doesn't have this bit or this register? If that, how
-> about using compatible in DT blob like snps,dwmac-3.70a and then in just
-> this case trying to read this bit and this register.
+Ok, I see. So the beginning would be to reliably reproduce the the
+hang. I have encountered it in any possbile situasjon, both when
+watching videos on Youtube and right after booting the machine and
+doing absolutely nothing.
 
-The driver also works on mac 10/100 Databook 2.0 that has not these 
-registers.
+I'll try around a little bit and see if I can find something that
+triggers this hang. 
 
->> I do not see why we have to use Kconfig macro to select ANE etc (as
->> you do in your patches).
-> OK. I agree with you.
+Btw: which kernel is known to be the "last good one"?
 
-we have to use the HW feature reg.
+> (you need to disable rc6 on ilk to not hit another issue which seems much easier to
+> hit) 
 
->
->> The driver could directly manage the phy device by itself if possible
->> and the stmmac_init_phy should be reworked.
->>
-> Could you explain more detail? As I understood, after set ANE bit in MAC
-> side then PHY auto-negotiation can be enabled. If I'm wrong let me know.
-> According to your mention, MAC and PHY auto-negotiation can be managed in
-> stmmac_init_phy?
+Ilk? If this stands for "Ironlake": I'm on Sandybridge.
 
-Currently the driver uses the Physical Abstraction Layer (PAL) to dialog 
-with a PHY. On all the platforms supported (not only ST) we have always 
-used it. Personally, I tested several phy devices with different MII 
-interfaces (MII/RMII/GMII/RGMII ... ) but not TBI/RTBI/SGMII interfaces.
+> and bisect it, this would be _very_ much appreciated - we've
+> pretty much tested all possible "disable stuff" and "revert random
+> patch" we could thing of, and we can't reproduce these hangs no matter
+> how hard we bang our heads against this.
 
->> There are several things that need to be implemented. For example:
->>
->> The ISR (e.g. priv->hw->mac->host_irq_status) should be able to manage
->> these new interrupts.
-> I think that there would be two additional interrupts."PCS Auto-Negotiation
-> Complete" and "PCS Link Status Changed". These two interrupts are added to
-> "stmmac_interrupt". In my opinion, there are no specific processing for
-> these two irqs. What do you think about it?
+Bisecting will be a pain without being able to reproduce
+the hang reliably.
 
-if the link changes this has to be logged in the driver.
-For example, depending on the link speed on some platforms we need to 
-call dedicated call-back to set sysconfig registers or custom clocks.
+> Atm we're trying to come up with ways to dump more debug
+> information, >but with no clue whatsoever what's going on that's slow-going.
 
->> The code has to be able to maintain the user interface.
->> For example if you want to enable ANE or manage Advertisement caps.
->>
-> Does it mean that command line or other network command(e.g. ifconfig...) or
-> ioctol? Actually I don't understand exact user interface way. Could you
-> recommend the method for user interface?
+Is there anything at the moment I can do to help you to get a grip on
+this problem? My machine is a Core i5-420M laptop with 4GB RAM (Asus
+U45-JC). 
 
-Using ethtool or mii-tool the user want to know the link status. So 
-these kind of information have to be maintained.
-
-Take a look at the stmmac_adjust_link that is called by the PAL.
-
->>> Signed-off-by: Byungho An <bh74.an@samsung.com>
->>> ---
->>
->> [snip]
->>
->>> +	if (priv->phydev->interface == PHY_INTERFACE_MODE_SGMII) {
->>> +		value = readl(priv->ioaddr);
->>> +		/* GMAC_CONTROL_TC : transmit config in RGMII/SGMII */
->>> +		value |= 0x1000000;
->>> +		/* GMAC_CONTROL_PS : Port Selection for GMII */
->>> +		value &= ~(0x8000);
->>> +		writel(value, priv->ioaddr);
->>> +	}
->>> +
->>
->>
->> This parts of code have to be moved in
->> drivers/net/ethernet/stmicro/stmmac/dwmac1000_core.c
->>
-> OK.
->
->> Pls, do not use value |= 0x1000000 but provide the appropriate defines.
->>
-> OK.
->
->>>    	/* Request the IRQ lines */
->>>    	ret = request_irq(dev->irq, stmmac_interrupt,
->>>    			 IRQF_SHARED, dev->name, dev);
->>>
-> Thank you.
-
-you are welcome
-Peppe
-
-> Byungho An.
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
-
+Heinz
