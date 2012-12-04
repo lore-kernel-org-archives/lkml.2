@@ -1,55 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751692Ab2LDCvw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 21:51:52 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:43418 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751340Ab2LDCvv (ORCPT
+	id S1751865Ab2LDCwZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 21:52:25 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:30615 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751497Ab2LDCwY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 21:51:51 -0500
+	Mon, 3 Dec 2012 21:52:24 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AiQKAEhkvVB5LPYI/2dsb2JhbABEhUOyW4YXF3OCHgEBBAEnExwjEAgDFQMuFCUDIROICgWuX5A3FIwsIYM/YQOWAJBIgwaBUA
+Date: Tue, 4 Dec 2012 13:52:21 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zach Brown <zab@zabbo.net>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>
+Subject: Re: [PATCH v4 16/31] loop: use aio to perform io on the underlying
+ file
+Message-ID: <20121204025221.GF32450@dastard>
+References: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
+ <1353537671-26284-17-git-send-email-dave.kleikamp@oracle.com>
+ <20121122230628.GV2591@dastard>
+ <50BCDA7B.7080000@oracle.com>
 MIME-Version: 1.0
-In-Reply-To: <20121203094828.GA14363@n2100.arm.linux.org.uk>
-References: <1354155670-6267-1-git-send-email-chao.xie@marvell.com>
-	<20121129102519.GG19440@n2100.arm.linux.org.uk>
-	<CAN1soZxUA2PPy4694ByX1FTyWiJkha8QpKFK5Jc3Wf3zT0huOA@mail.gmail.com>
-	<CADApbejZXach=YaiL5rEWA5+uc+mO8PzQzUKN+k90HfxEsqgtA@mail.gmail.com>
-	<CADApbegrJDe5SiO255WdKYai1U7WjBYfMHuCm-hTNfx5p6Wz-Q@mail.gmail.com>
-	<20121203094828.GA14363@n2100.arm.linux.org.uk>
-Date: Tue, 4 Dec 2012 10:51:50 +0800
-Message-ID: <CADApbegRJO+CJJYotP9vL4-kp5qmf4OZEzmqFAR6xu5yhRReFA@mail.gmail.com>
-Subject: Re: [PATCH 1/4] rtc: sa1100: enable/disable rtc when probe/remove the device
-From: Chao Xie <xiechao.mail@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>, Chao Xie <chao.xie@marvell.com>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50BCDA7B.7080000@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 3, 2012 at 5:48 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Mon, Dec 03, 2012 at 10:53:07AM +0800, Chao Xie wrote:
->> I want to correct what i said. For the irq register/unregister i think
->> can be done at open/release. But for clock enable/disable, i do not
->> think so. If clock is disabled, as i think RTC will not work. User API
->> still use open->get_time->close for "date" command. It means that RTC
->> will not return correct date to user.
->
-> "I think" is not good enough for patches like this.  Please test it.
->
-> On SA11x0 and PXA platforms, the clock for the sa1100-rtc is a dummy
-> clock; it has no effect.  For MMP, I don't have access to the TRMs so
-> that's something you're going to have to find out.
+On Mon, Dec 03, 2012 at 10:59:39AM -0600, Dave Kleikamp wrote:
+> On 11/22/2012 05:06 PM, Dave Chinner wrote:
+> > On Wed, Nov 21, 2012 at 04:40:56PM -0600, Dave Kleikamp wrote:
+> >> From: Zach Brown <zab@zabbo.net>
+> >>
+> >> This uses the new kernel aio interface to process loopback IO by
+> >> submitting concurrent direct aio.  Previously loop's IO was serialized
+> >> by synchronous processing in a thread.
+> >>
+> >> The aio operations specify the memory for the IO with the bio_vec arrays
+> >> directly instead of mappings of the pages.
+> >>
+> >> The use of aio operations is enabled when the backing file supports the
+> >> read_iter and write_iter methods.  These methods must only be added when
+> >> O_DIRECT on bio_vecs is supported.
+> >>
+> >> Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+> >> Cc: Zach Brown <zab@zabbo.net>
+> > 
+> > I suspect aio iocompetion here doesn't work for FUA write IO.
+> 
+> Since the underlying file system is doing direct IO, we at least know
+> that the IO has been performed to the underlying device. It could still
+> be in the devices write cache, so maybe an fsync is still needed. It
+> wouldn't be hard to fix if that's the right thing to do.
 
-I tested at pxa910 which uses rtc-sa1100 as driver.
-the test procedure is simple
-open->ioctl(RTC_RD_TIME)->close
-With the original code, the rtc will not update, i always get the same value
+FUA means the write is all the way to stable storage when completion
+is signalled by the underlying device. That means the loop device
+needs to (at least) fdatasync after the write completes...
 
-remove clock disable/enable in release/open, and enable/disable clock
-at probe/remove.
-the rtc can update, and i can read the correct rtc value.
+> >> +static void lo_rw_aio_complete(u64 data, long res)
+> >> +{
+> >> +	struct bio *bio = (struct bio *)(uintptr_t)data;
+> >> +
+> >> +	if (res > 0)
+> >> +		res = 0;
+> >> +	else if (res < 0)
+> >> +		res = -EIO;
+> >> +
+> >> +	bio_endio(bio, res);
+> >> +}
+> > 
+> > This effectively does nothing...
+> 
+> It passes the IO completion from the underlying device to the caller.
+
+Yes, I know. What I'm saying is that it does nothing on completion
+of a FUA write when it should be doing a fsync.....
+
+> >> -			    lo->lo_encrypt_key_size) {
+> >> -				ret = -EOPNOTSUPP;
+> >> -				goto out;
+> >> -			}
+> >> -			ret = file->f_op->fallocate(file, mode, pos,
+> >> -						    bio->bi_size);
+> >> -			if (unlikely(ret && ret != -EINVAL &&
+> >> -				     ret != -EOPNOTSUPP))
+> >> -				ret = -EIO;
+> >> -			goto out;
+> >> -		}
+> >> -
+> >>  		ret = lo_send(lo, bio, pos);
+> >>  
+> >>  		if ((bio->bi_rw & REQ_FUA) && !ret) {
+> > 
+> > And as you can see here that after writing the data in the filebacked
+> > path, there's special handling for REQ_FUA (i.e. another fsync).
+> > ....
+> 
+> In this path, the data may still be in the underlying filesystem's page
+> cache.
+
+Sure, but fsync means that it ends up on stable storage, as per the
+requirement of an FUA write. Direct IO does not mean the data is on
+stable storage, just that it bypasses the page cache.
+
+> > And this extra fsync is now not done in the aio path. I.e. the AIO
+> > completion path needs to issue the fsync to maintain correct REQ_FUA
+> > semantics...
+> 
+> If this is really necessary, I can fix it.
+
+Absolutely. If we don't implement FUA properly, we'll end up with
+corrupted filesystems and/or data loss when kernel crashes or
+powerloss occurs. That's not an acceptable outcome, so we need FUA
+to be implemented properly.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
