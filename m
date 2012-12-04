@@ -1,224 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752568Ab2LDXcJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 18:32:09 -0500
-Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:11783 "EHLO
-	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751865Ab2LDXcF (ORCPT
+	id S1752774Ab2LDXjO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 18:39:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33756 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751937Ab2LDXjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 18:32:05 -0500
-Message-ID: <1354663411.21585.135.camel@misato.fc.hp.com>
-Subject: Re: [RFC PATCH v3 0/3] acpi: Introduce prepare_remove device
- operation
-From: Toshi Kani <toshi.kani@hp.com>
-To: Hanjun Guo <guohanjun@huawei.com>
-Cc: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com, rjw@sisk.pl, lenb@kernel.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Tang Chen <tangchen@cn.fujitsu.com>,
-        Liujiang <jiang.liu@huawei.com>, Huxinwei <huxinwei@huawei.com>
-Date: Tue, 04 Dec 2012 16:23:31 -0700
-In-Reply-To: <50BDBF5A.8040407@huawei.com>
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
-	    <50B5EFE9.3040206@huawei.com>
-	   <1354128096.26955.276.camel@misato.fc.hp.com>
-	  <50B6E936.2080308@huawei.com> <1354228028.7776.56.camel@misato.fc.hp.com>
-	  <50BC29C6.6050706@huawei.com> <1354579848.21585.54.camel@misato.fc.hp.com>
-	 <50BDBF5A.8040407@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+	Tue, 4 Dec 2012 18:39:13 -0500
+Date: Tue, 4 Dec 2012 15:39:12 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ed Cashin <ecashin@coraid.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/7] aoe: improve handling of misbehaving network paths
+Message-Id: <20121204153912.2e6b4d2f.akpm@linux-foundation.org>
+In-Reply-To: <f7df7cd5fe1a303debe7cbf086853663e3c59366.1354501189.git.ecashin@coraid.com>
+References: <cover.1354501189.git.ecashin@coraid.com>
+	<f7df7cd5fe1a303debe7cbf086853663e3c59366.1354501189.git.ecashin@coraid.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-12-04 at 17:16 +0800, Hanjun Guo wrote:
-> On 2012/12/4 8:10, Toshi Kani wrote:
-> > On Mon, 2012-12-03 at 12:25 +0800, Hanjun Guo wrote:
-> >> On 2012/11/30 6:27, Toshi Kani wrote:
-> >>> On Thu, 2012-11-29 at 12:48 +0800, Hanjun Guo wrote:
-> >>>> On 2012/11/29 2:41, Toshi Kani wrote:
-> >>>>> On Wed, 2012-11-28 at 19:05 +0800, Hanjun Guo wrote:
-> >>>>>> On 2012/11/24 1:50, Vasilis Liaskovitis wrote:
-> >>>>>> As you may know, the ACPI based hotplug framework we are working on already addressed
-> >>>>>> this problem, and the way we slove this problem is a bit like yours.
-> >>>>>>
-> >>>>>> We introduce hp_ops in struct acpi_device_ops:
-> >>>>>> struct acpi_device_ops {
-> >>>>>> 	acpi_op_add add;
-> >>>>>> 	acpi_op_remove remove;
-> >>>>>> 	acpi_op_start start;
-> >>>>>> 	acpi_op_bind bind;
-> >>>>>> 	acpi_op_unbind unbind;
-> >>>>>> 	acpi_op_notify notify;
-> >>>>>> #ifdef	CONFIG_ACPI_HOTPLUG
-> >>>>>> 	struct acpihp_dev_ops *hp_ops;
-> >>>>>> #endif	/* CONFIG_ACPI_HOTPLUG */
-> >>>>>> };
-> >>>>>>
-> >>>>>> in hp_ops, we divide the prepare_remove into six small steps, that is:
-> >>>>>> 1) pre_release(): optional step to mark device going to be removed/busy
-> >>>>>> 2) release(): reclaim device from running system
-> >>>>>> 3) post_release(): rollback if cancelled by user or error happened
-> >>>>>> 4) pre_unconfigure(): optional step to solve possible dependency issue
-> >>>>>> 5) unconfigure(): remove devices from running system
-> >>>>>> 6) post_unconfigure(): free resources used by devices
-> >>>>>>
-> >>>>>> In this way, we can easily rollback if error happens.
-> >>>>>> How do you think of this solution, any suggestion ? I think we can achieve
-> >>>>>> a better way for sharing ideas. :)
-> >>>>>
-> >>>>> Yes, sharing idea is good. :)  I do not know if we need all 6 steps (I
-> >>>>> have not looked at all your changes yet..), but in my mind, a hot-plug
-> >>>>> operation should be composed with the following 3 phases.
-> >>>>
-> >>>> Good idea ! we also implement a hot-plug operation in 3 phases:
-> >>>> 1) acpihp_drv_pre_execute
-> >>>> 2) acpihp_drv_execute
-> >>>> 3) acpihp_drv_post_execute
-> >>>> you may refer to :
-> >>>> https://lkml.org/lkml/2012/11/4/79
-> >>>
-> >>> Great.  Yes, I will take a look.
-> >>
-> >> Thanks, any comments are welcomed :)
-> > 
-> > If I read the code right, the framework calls ACPI drivers differently
-> > at boot-time and hot-add as follows.  That is, the new entry points are
-> > called at hot-add only, but .add() is called at both cases.  This
-> > requires .add() to work differently.
+On Mon, 3 Dec 2012 20:40:55 -0500
+Ed Cashin <ecashin@coraid.com> wrote:
+
+> An AoE target can have multiple network ports used for AoE, and
+> in the aoe driver, those are tracked by the aoetgt struct.  These
+> changes allow the aoe driver to handle network paths, or aoetgts,
+> that are not working well, compared to the others.
 > 
-> Hi Toshi,
-> Thanks for your comments!
+> Paths that do not get responses despite the retransmission of AoE
+> commands are marked as "tainted", and non-tainted paths are
+> preferred.
 > 
-> > 
-> > Boot    : .add()
+> Meanwhile, the aoe driver attempts to "probe" the tainted path in
+> the background by issuing reads of LBA 0 that are padded out to
+> full (possibly jumbo-frame) size.  If the probes get responses,
+> then the path is "redeemed", and its taint is removed.
 > 
-> Actually, at boot time: .add(), .start()
-
-Right.
-
-> > Hot-Add : .add(), .pre_configure(), configure(), etc.
+> This mechanism has been shown to be helpful in transparently
+> handling and recovering from real-world network "brown outs" in
+> ways that the earlier "shoot the help-needing target in the head"
+> mechanism could not.
 > 
-> Yes, we did it as you said in the framework. We use .pre_configure(), configure(),
-> and post_configure() to instead of .start() for better error handling and recovery.
+>
+> ...
+>
+> +static void
+> +ata_rw_frameinit(struct frame *f)
+> +{
+> +	struct aoetgt *t;
+> +	struct aoe_hdr *h;
+> +	struct aoe_atahdr *ah;
+> +	struct sk_buff *skb;
+> +	char writebit, extbit;
+> +
+> +	skb = f->skb;
+> +	h = (struct aoe_hdr *) skb_mac_header(skb);
+> +	ah = (struct aoe_atahdr *) (h + 1);
 
-I think we should have hot-plug interfaces at the module level, not at
-the ACPI-internal level.  In this way, the interfaces can be
-platform-neutral and allow any modules to register, which makes it more
-consistent with the boot-up sequence.  It can also allow ordering of the
-sequence among the registered modules.  Right now, we initiate all
-procedures from ACPI during hot-plug, which I think is inflexible and
-steps into other module's role.
+Well.  It would be neater to have a
 
-I am also concerned about the slot handling, which is the core piece of
-the infrastructure and only allows hot-plug operations on ACPI objects
-where slot objects are previously created by checking _EJ0.  The
-infrastructure should allow hot-plug operations on any objects, and it
-should not be dependent on the slot design.
+struct whatever {
+	struct aoe_hdr hdr;
+	struct aoe_atahdr atahdr;
+};
 
-I have some rough idea, and it may be easier to review / explain if I
-make some code changes.  So, let me prototype it, and send it you all if
-that works out.  Hopefully, it won't take too long.
+> +	skb_put(skb, sizeof(*h) + sizeof(*ah));
+> +	memset(h, 0, skb->len);
+> +
+> +	writebit = 0x10;
+> +	extbit = 0x4;
+> +
+>
+> ...
+>
+> @@ -462,11 +488,14 @@ resend(struct aoedev *d, struct frame *f)
+>  	h = (struct aoe_hdr *) skb_mac_header(skb);
+>  	ah = (struct aoe_atahdr *) (h+1);
+>  
+> -	snprintf(buf, sizeof buf,
+> -		"%15s e%ld.%d oldtag=%08x@%08lx newtag=%08x s=%pm d=%pm nout=%d\n",
+> -		"retransmit", d->aoemajor, d->aoeminor, f->tag, jiffies, n,
+> -		h->src, h->dst, t->nout);
+> -	aoechr_error(buf);
+> +	if (!(f->flags & FFL_PROBE)) {
+> +		snprintf(buf, sizeof(buf),
+> +			"%15s e%ld.%d oldtag=%08x@%08lx newtag=%08x s=%pm d=%pm nout=%d\n",
+> +			"retransmit", d->aoemajor, d->aoeminor,
+> +			f->tag, jiffies, n,
+> +			h->src, h->dst, t->nout);
+> +		aoechr_error(buf);
 
-> > I think the boot-time and hot-add initialization should be done
-> > consistently.  While there is difficulty with the current boot sequence,
-> > the framework should be designed to allow them consistent, not make them
-> > diverged.
-> > 
-> >>>>> 1. Validate phase - Verify if the request is a supported operation.  All
-> >>>>> known restrictions are verified at this phase.  For instance, if a
-> >>>>> hot-remove request involves kernel memory, it is failed in this phase.
-> >>>>> Since this phase makes no change, no rollback is necessary to fail. 
-> >>>>
-> >>>> Yes, we have done this in acpihp_drv_pre_execute, and check following things:
-> >>>>
-> >>>> 1) Hot-plugble or not. the instance kernel memory you mentioned is also checked
-> >>>>    when memory device remove;
-> >>>
-> >>> Agreed.
-> >>>
-> >>>> 2) Dependency check involved. For instance, if hot-add a memory device,
-> >>>>    processor should be added first, otherwise it's not valid to this operation.
-> >>>
-> >>> I think FW should be the one that assures such dependency.  That is,
-> >>> when a memory device object is marked as present/enabled/functioning, it
-> >>> should be ready for the OS to use.
-> >>
-> >> Yes, BIOS should do something for the dependency, because BIOS knows the
-> >> actual hardware topology. 
-> > 
-> > Right.
-> > 
-> >> The ACPI specification provides _EDL method to
-> >> tell OS the eject device list, but still has no method to tell OS the add device
-> >> list now.
-> > 
-> > Yes, but I do not think the OS needs special handling for add...
-> 
-> Hmm, how about trigger a hot add operation by OS ? we have eject interface for OS, but
-> have no add interface now, do you think this feature is useful? If it is, I think OS
-> should analyze the dependency first and tell the user.
+Could use kasprintf() here.  That avoids the fixed-size local buffer
+and avoids the GFP_ATOMIC allocation and copy in aoechr_error().
 
-The OS can eject an ACPI device because a target device is owned by the
-OS (i.e. enabled).  For hot-add, a target ACPI device is not owned by
-the OS (i.e. disabled).  Therefore, the OS is not supposed to change its
-state.  So, I do not think we should support a hot-add operation by the
-OS.
- 
-> >> For some cases, OS should analyze the dependency in the validate phase. For example,
-> >> when hot remove a node (container device), OS should analyze the dependency to get
-> >> the remove order as following:
-> >> 1) Host bridge;
-> >> 2) Memory devices;
-> >> 3) Processor devices;
-> >> 4) Container device itself;
-> > 
-> > This may be off-topic, but how do you plan to delete I/O devices under a
-> > node?  Are you planning to delete all I/O devices along with the node?
-> 
-> Yes, we delete all I/O devices under the node. we delete I/O devices as
-> following steps:
-> 1) Offline PCI devices;
-> 2) Offline IOAPIC and IOMMU;
-> and offline I/O devices no matter in use or not.
+> +	}
+>  
+>  	f->tag = n;
+>  	fhash(f);
+>
+> ...
+>
+>  aoecmd_init(void)
+>  {
+> +	void *p;
+> +
+> +	/* get_zeroed_page returns page with ref count 1 */
+> +	p = (void *) get_zeroed_page(GFP_KERNEL | __GFP_REPEAT);
+> +	if (!p)
+> +		return -ENOMEM;
+> +	empty_page = virt_to_page(p);
 
-Oh, off-lining no matter what would be problematic for enterprise
-customers... 
- 
-> > On other OS, we made a separate step called I/O chassis delete, which
-> > off-lines all I/O devices under the node, and is required before a node
-> > hot-remove.  It basically triggers PCIe hot-remove to detach drivers
-> > from all devices.  It does not eject the devices so that they do not
-> > have to be on hot-plug slots.  This step runs user-space scripts to
-> > verify if the devices can be off-lined without disrupting user's
-> > applications, and provides comprehensive reports if any of them are in
-> 
-> Great! we also have a plan to implement this feature.
+Could use alloc_pages() and remove `p' and the virt_to_page().
 
-That's great!
+Why is __GFP_REPEAT used?  I don't think this __init function is more
+important than all the other ones in the kernel?
 
-> > use.  Not sure if Linux's PCI hot-remove has such check, but I thought
-> > I'd mention it. :)
-> 
-> Have no such check, I'm sure :)
-> 
-> > 
-> >> In this way, we can check that all the devices are hot-plugble or not under the
-> >> container device before execute phase, and further more, we can remove devices
-> >> in order to avoid some crash problems.
-> > 
-> > Yes, we should check if all the resources under the node can be
-> > off-lined at validate phase.  (note, all the devices do not have to have
-> > _EJ0 if that's what you meant by hot-pluggable.)
-> 
-> Yes, agreed. For node hotplug, no need for all the devices have _EJ0 method.
 
-Right.
-
-Thanks,
--Toshi
-
+>  	INIT_LIST_HEAD(&iocq.head);
+>  	spin_lock_init(&iocq.lock);
+>  	init_waitqueue_head(&ktiowq);
+>
+> ...
+>
 
