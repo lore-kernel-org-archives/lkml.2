@@ -1,84 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966Ab2LDLsI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 06:48:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:65515 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752677Ab2LDLsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 06:48:05 -0500
-Date: Tue, 4 Dec 2012 13:48:03 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: mtosatti@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 0/6] kvm: Growable memory slot array
-Message-ID: <20121204114803.GH19514@redhat.com>
-References: <20121203231912.3661.57179.stgit@bling.home>
+	id S1752647Ab2LDLus (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 06:50:48 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:57950 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751723Ab2LDLuo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 06:50:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121203231912.3661.57179.stgit@bling.home>
+In-Reply-To: <alpine.LNX.2.00.1212041129530.17055@pobox.suse.cz>
+References: <1352731379-24683-1-git-send-email-benjamin.tissoires@gmail.com>
+	<20121130155650.69407e9f@endymion.delvare>
+	<CAN+gG=FjVswyx1W4y6NtbNnBu2AWgZZfxVr0h00ZYujCOz3v7Q@mail.gmail.com>
+	<20121203140226.0fede51e@endymion.delvare>
+	<CAN+gG=F5jae=UFDR4-zZY-dt6KGE22QgmWiF2RkVvqN0ySX-kQ@mail.gmail.com>
+	<alpine.LNX.2.00.1212041129530.17055@pobox.suse.cz>
+Date: Tue, 4 Dec 2012 12:50:39 +0100
+Message-ID: <CAN+gG=G+ymEdfAf3Ub6n8ErhPBz1BB3XYyEPixz9sWbNeRnPDQ@mail.gmail.com>
+Subject: Re: [PATCH v3] i2c-hid: introduce HID over i2c specification implementation
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Jean Delvare <khali@linux-fr.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Stephane Chatty <chatty@enac.fr>, fabien.andre@gmail.com,
+        scott.liu@emc.com.tw, JJ Ding <jj_ding@emc.com.tw>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        linux-i2c@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 03, 2012 at 04:39:05PM -0700, Alex Williamson wrote:
-> Memory slots are currently a fixed resource with a relatively small
-> limit.  When using PCI device assignment in a qemu guest it's fairly
-> easy to exhaust the number of available slots.  I posted patches
-> exploring growing the number of memory slots a while ago, but it was
-> prior to caching memory slot array misses and thefore had potentially
-> poor performance.  Now that we do that, Avi seemed receptive to
-> increasing the memory slot array to arbitrary lengths.  I think we
-> still don't want to impose unnecessary kernel memory consumptions on
-> guests not making use of this, so I present again a growable memory
-> slot array.
-> 
-> A couple notes/questions; in the previous version we had a
-> kvm_arch_flush_shadow() call when we increased the number of slots.
-> I'm not sure if this is still necessary.  I had also made the x86
-> specific slot_bitmap dynamically grow as well and switch between a
-> direct bitmap and indirect pointer to a bitmap.  That may have
-> contributed to needing the flush.  I haven't done that yet here
-> because it seems like an unnecessary complication if we have a max
-> on the order of 512 or 1024 entries.  A bit per slot isn't a lot of
-> overhead.  If we want to go more, maybe we should make it switch.
-> That leads to the final question, we need an upper bound since this
-> does allow consumption of extra kernel memory, what should it be?  A
-This is the most important question :) If we want to have 1000s of
-them or 100 is enough? Also what about changing kvm_memslots->memslots[]
-array to be "struct kvm_memory_slot *memslots[KVM_MEM_SLOTS_NUM]"? It
-will save us good amount of memory for unused slots.
+On Tue, Dec 4, 2012 at 11:31 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Mon, 3 Dec 2012, Benjamin Tissoires wrote:
+>
+>> >> I know that it already have been used by one Nvidia team and by Elan
+>> >> for internal tests. So I don't know if it's possible to change it now
+>> >> (though it's not a big deal).
+>> >
+>> > Yes it is possible, as long as the code isn't in Linus' tree (and I'd
+>> > even say: as long as it is not in any kernel released by Linus.)
+>> > Whoever is already using your driver will have to adjust their code.
+>> > They'll certainly want to anyway, in order to get the bug fixes.
+>> >
+>> >> Anyway, "hid" is a little weird to me (but this is because I started
+>> >> hacking the kernel from there), as it's really short and does not
+>> >> contain i2c :)
+>> >
+>> > This is exactly my point: no other i2c client (to my knowledge) has
+>> > "i2c" in its name, because it is redundant.
+>> >
+>> > I would agree that this is kind of a special case as this is a generic
+>> > driver and not a device-specific driver. I would still prefer "hid" but
+>> > if you don't feel like changing it, I guess I can live with that.
+>>
+>> Ok, I'll change the name.
+>> My concerns were just because from my point of view, "hid" refers to
+>> the core implementation. But for OEMs, they need to declare a "hid"
+>> device, so it makes sense. Anyway, when I'll be able to get my hand on
+>> an ACPI 5 device with hid over i2c, I'll be able to write the missing
+>> autoloading code, and this name will be only used by a small part of
+>> OEMs (I hope).
+>
+> If you are going to change the name, please either send me the patch
+> before merge window for 3.8 opens, or explicitly ask me not to include
+> this driver in pull request that goes to Linus yet.
 
-> PCI bus filled with assigned devices can theorically use up to 2048
-> slots (32 devices * 8 functions * (6 BARs + ROM + possibly split
-> MSI-X BAR)).  For this RFC, I don't change the max, just make it
-> grow up to 32 user slots.  Untested on anything but x86 so far.
+Sure, I intend to send some patches today (with the change of the name
+included). I'll send the patch related to the name in the first
+position so that you can safely pick it up even if you are not
+satisfied with the other changes.
+
+Thanks,
+Benjamin
+
+>
+> Once the driver is in Linus' tree, I'd rather not change the name.
+>
 > Thanks,
-> 
-> Alex
-> ---
-> 
-> Alex Williamson (6):
->       kvm: Rename KVM_MEMORY_SLOTS -> KVM_USER_MEM_SLOTS
->       kvm: Make KVM_PRIVATE_MEM_SLOTS optional
->       kvm: Merge id_to_index into memslots
->       kvm: Move private memory slots to start of memslots array
->       kvm: Re-introduce memslots->nmemslots
->       kvm: Allow memory slots to grow
-> 
-> 
->  arch/ia64/include/asm/kvm_host.h    |    4 --
->  arch/ia64/kvm/kvm-ia64.c            |    6 +--
->  arch/powerpc/include/asm/kvm_host.h |    6 +--
->  arch/powerpc/kvm/book3s_hv.c        |    4 +-
->  arch/s390/include/asm/kvm_host.h    |    4 --
->  arch/x86/include/asm/kvm_host.h     |    8 ++-
->  arch/x86/include/asm/vmx.h          |    6 +--
->  arch/x86/kvm/vmx.c                  |    3 +
->  arch/x86/kvm/x86.c                  |   10 +++-
->  include/linux/kvm_host.h            |   20 +++++---
->  virt/kvm/kvm_main.c                 |   83 ++++++++++++++++++++++++-----------
->  11 files changed, 93 insertions(+), 61 deletions(-)
-
---
-			Gleb.
+>
+> --
+> Jiri Kosina
+> SUSE Labs
