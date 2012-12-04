@@ -1,91 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751793Ab2LDA6w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 19:58:52 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:39057 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236Ab2LDA6v (ORCPT
+	id S1751554Ab2LDBT6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 20:19:58 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:53631 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211Ab2LDBT4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 19:58:51 -0500
-Message-ID: <50BD4A70.9060506@linaro.org>
-Date: Mon, 03 Dec 2012 16:57:20 -0800
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 3 Dec 2012 20:19:56 -0500
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Christoph Lameter <cl@linux.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [RFC v2] Support volatile range for anon vma
-References: <1351560594-18366-1-git-send-email-minchan@kernel.org> <50AD739A.30804@linaro.org> <50B6E1F9.5010301@linaro.org> <20121204000042.GB20395@bbox>
-In-Reply-To: <20121204000042.GB20395@bbox>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12120400-7282-0000-0000-00000FA505BA
+In-Reply-To: <1354312850-29264-1-git-send-email-marek.belisko@open-nandra.com>
+References: <1354312850-29264-1-git-send-email-marek.belisko@open-nandra.com>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Mon, 3 Dec 2012 17:19:34 -0800
+Message-ID: <CAK5ve-Jx=_gq+teFRRjDYqt+dceo9YoNGwRXNcopDr93mCE6dQ@mail.gmail.com>
+Subject: Re: [PATCH v4 1/2] leds/tca6507: Add support for devicetree.
+To: Marek Belisko <marek.belisko@open-nandra.com>
+Cc: rpurdie@rpsys.net, linux-leds@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03/2012 04:00 PM, Minchan Kim wrote:
-> On Wed, Nov 28, 2012 at 08:18:01PM -0800, John Stultz wrote:
->> On 11/21/2012 04:36 PM, John Stultz wrote:
->>> 2) Being able to use this with tmpfs files. I'm currently trying
->>> to better understand the rmap code, looking to see if there's a
->>> way to have try_to_unmap_file() work similarly to
->>> try_to_unmap_anon(), to allow allow users to madvise() on mmapped
->>> tmpfs files. This would provide a very similar interface as to
->>> what I've been proposing with fadvise/fallocate, but just using
->>> process virtual addresses instead of (fd, offset) pairs.   The
->>> benefit with (fd,offset) pairs for Android is that its easier to
->>> manage shared volatile ranges between two processes that are
->>> sharing data via an mmapped tmpfs file (although this actual use
->>> case may be fairly rare).  I believe we should still be able to
->>> rework the ashmem internals to use madvise (which would provide
->>> legacy support for existing android apps), so then its just a
->>> question of if we could then eventually convince Android apps to
->>> use the madvise interface directly, rather then the ashmem unpin
->>> ioctl.
->> Hey Minchan,
->>      I've been playing around with your patch trying to better
->> understand your approach and to extend it to support tmpfs files. In
->> doing so I've found a few bugs, and have some rough fixes I wanted
->> to share. There's still a few edge cases I need to deal with (the
->> vma-purged flag isn't being properly handled through vma merge/split
->> operations), but its starting to come along.
-> Hmm, my patch doesn't allow to merge volatile with another one by
-> inserting VM_VOLATILE into VM_SPECIAL so I guess merge isn't problem.
-> In case of split, __split_vma copy old vma to new vma like this
+Looks like this patch is based on linux-next tree, I fixed this. And I
+will solve the conflict when we do actually merge in next cycle.
+
+-Bryan
+
+On Fri, Nov 30, 2012 at 2:00 PM, Marek Belisko
+<marek.belisko@open-nandra.com> wrote:
+> Support added only for leds (not for gpio's).
 >
->          *new = *vma;
+> Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
+> ---
+> Changes from v3:
+> - fix code according Bryan suggestions
+> - use common leds binding description instead copy'n'paste
+> - use "-" instead "_" in bindings example for leds names
 >
-> So the problem shouldn't happen, I guess.
-> Did you see the real problem about that?
-Yes, depending on the pattern that MADV_VOLATILE and MADV_NOVOLATILE is 
-applied, we can get a result where data is purged, but we aren't 
-notified of it.  Also, since madvise returns early if it encounters an 
-error, in the case where you have checkerboard volatile regions (say 
-every other page is volatile), which you mark non-volatile with one 
-large MADV_NOVOLATILE call, the first volatile vma will be marked 
-non-volatile, but since it returns purged, the madvise loop will stop 
-and the following volatile regions will be left volatile.
-
-The patches in the git tree below which handle the perged state better 
-seem to work for my tests, as far as resolving any overlapping calls. Of 
-course there may yet still be problems I've not found.
-
->> Anyway, take a look at the tree here and let me know what you think.
->> http://git.linaro.org/gitweb?p=people/jstultz/android-dev.git;a=shortlog;h=refs/heads/dev/minchan-anonvol
-
-Eager to hear what you think!
-
-Thanks again!
--john
-
+> Changes from v2:
+> - change compatible property to "ti,tca6507"
+> - add documentation for linux,default-trigger
+>
+> Changes from v1:
+> - return proper error value not NULL from tca6507_led_dt_init()
+>         - remove empty lines
+>         - remove kfree()
+>  drivers/leds/leds-tca6507.c |   74 +++++++++++++++++++++++++++++++++++++++++--
+>  1 file changed, 71 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/leds/leds-tca6507.c b/drivers/leds/leds-tca6507.c
+> index b26a63b..3ad46fb 100644
+> --- a/drivers/leds/leds-tca6507.c
+> +++ b/drivers/leds/leds-tca6507.c
+> @@ -667,6 +667,70 @@ static void tca6507_remove_gpio(struct tca6507_chip *tca)
+>  }
+>  #endif /* CONFIG_GPIOLIB */
+>
+> +#ifdef CONFIG_OF
+> +static struct tca6507_platform_data *
+> +tca6507_led_dt_init(struct i2c_client *client)
+> +{
+> +       struct device_node *np = client->dev.of_node, *child;
+> +       struct tca6507_platform_data *pdata;
+> +       struct led_info *tca_leds;
+> +       int count = 0;
+> +
+> +       for_each_child_of_node(np, child)
+> +               count++;
+> +       if (!count)
+> +               return ERR_PTR(-ENODEV);
+> +
+> +       if (count > NUM_LEDS)
+> +               return ERR_PTR(-ENODEV);
+> +
+> +       tca_leds = devm_kzalloc(&client->dev,
+> +                               sizeof(struct led_info) * count, GFP_KERNEL);
+> +       if (!tca_leds)
+> +               return ERR_PTR(-ENOMEM);
+> +
+> +       for_each_child_of_node(np, child) {
+> +               struct led_info led;
+> +               u32 reg;
+> +               int ret;
+> +
+> +               led.name =
+> +                       of_get_property(child, "label", NULL) ? : child->name;
+> +               led.default_trigger =
+> +                       of_get_property(child, "linux,default-trigger", NULL);
+> +
+> +               ret = of_property_read_u32(child, "reg", &reg);
+> +               if (ret != 0)
+> +                       continue;
+> +
+> +               tca_leds[reg] = led;
+> +       }
+> +       pdata = devm_kzalloc(&client->dev,
+> +                       sizeof(struct tca6507_platform_data), GFP_KERNEL);
+> +       if (!pdata)
+> +               return ERR_PTR(-ENOMEM);
+> +
+> +       pdata->leds.leds = tca_leds;
+> +       pdata->leds.num_leds = count;
+> +
+> +       return pdata;
+> +}
+> +
+> +static const struct of_device_id of_tca6507_leds_match[] = {
+> +       { .compatible = "ti,tca6507", },
+> +       {},
+> +};
+> +
+> +#else
+> +static tca6507_platform_data *
+> +tca6507_led_dt_init(struct i2c_client *client)
+> +{
+> +       return ERR_PRT(-ENODEV);
+> +}
+> +
+> +#define of_tca6507_leds_match NULL
+> +#endif
+> +
+>  static int tca6507_probe(struct i2c_client *client,
+>                                    const struct i2c_device_id *id)
+>  {
+> @@ -683,9 +747,12 @@ static int tca6507_probe(struct i2c_client *client,
+>                 return -EIO;
+>
+>         if (!pdata || pdata->leds.num_leds != NUM_LEDS) {
+> -               dev_err(&client->dev, "Need %d entries in platform-data list\n",
+> -                       NUM_LEDS);
+> -               return -ENODEV;
+> +               pdata = tca6507_led_dt_init(client);
+> +               if (IS_ERR(pdata)) {
+> +                       dev_err(&client->dev, "Need %d entries in platform-data list\n",
+> +                               NUM_LEDS);
+> +                       return PTR_ERR(pdata);
+> +               }
+>         }
+>         tca = devm_kzalloc(&client->dev, sizeof(*tca), GFP_KERNEL);
+>         if (!tca)
+> @@ -750,6 +817,7 @@ static struct i2c_driver tca6507_driver = {
+>         .driver   = {
+>                 .name    = "leds-tca6507",
+>                 .owner   = THIS_MODULE,
+> +               .of_match_table = of_tca6507_leds_match,
+>         },
+>         .probe    = tca6507_probe,
+>         .remove   = tca6507_remove,
+> --
+> 1.7.10.4
+>
