@@ -1,61 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab2LDOvN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 09:51:13 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:40599 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753398Ab2LDOvJ (ORCPT
+	id S1754242Ab2LDO4j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 09:56:39 -0500
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:57727 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752484Ab2LDO4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 09:51:09 -0500
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 12/18] perf ui/hist: Add support for event group view
-References: <1354171126-14387-1-git-send-email-namhyung@kernel.org>
-	<1354171126-14387-14-git-send-email-namhyung@kernel.org>
-	<20121130132943.GC1080@krava.brq.redhat.com>
-	<20121130135215.GG1957@ghostprotocols.net>
-	<CAM9d7cgZMfbYOdcELNXdGPT9tOzbKLZbNWjZ8g3Sug6_88pGnA@mail.gmail.com>
-	<20121204135049.GC3159@ghostprotocols.net>
-Date: Tue, 04 Dec 2012 23:51:00 +0900
-In-Reply-To: <20121204135049.GC3159@ghostprotocols.net> (Arnaldo Carvalho de
-	Melo's message of "Tue, 4 Dec 2012 10:50:49 -0300")
-Message-ID: <87k3sxc1m3.fsf@kernel.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Tue, 4 Dec 2012 09:56:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <1354566504-17657-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+References: <1354566504-17657-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 4 Dec 2012 14:56:15 +0000
+X-Google-Sender-Auth: ZWjI594xgP2M_SLVW1WjPM_oj1E
+Message-ID: <CACxGe6tgMFd8XujkK9qFdkXC_ASA0-2H=vFopkCp+oaFCyTg9A@mail.gmail.com>
+Subject: Re: [PATCH RESEND] spi: erase pointer to drvdata on removal
+To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Cc: spi-devel-general@lists.sourceforge.net,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo,
-
-On Tue, 4 Dec 2012 10:50:49 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Tue, Dec 04, 2012 at 06:16:59PM +0900, Namhyung Kim escreveu:
->> On Fri, Nov 30, 2012 at 10:52 PM, Arnaldo Carvalho de Melo wrote:
+On Mon, Dec 3, 2012 at 8:28 PM, Vivien Didelot
+<vivien.didelot@savoirfairelinux.com> wrote:
+> Without this patch, a SPI device may keep its drvdata whereas it was unbound
+> from its driver. This may result in accessing an invalid pointer.
 >
->> Ah, I missed your point.  Just got it now, will try this approach.  So
->> you want to see no "0.00%" for a dummy entry, right?
+> As for i2c-core, let the SPI core handle the removal of the device's drvdata,
+> after a remove(), or a probe() failure.
 >
-> That wasn't the point, and perhaps printing 0.00% pollutes the screen
-> needlessly or may be a help in seeing the columns more clearly, no
-> strong opinion at this point, please experiment.
+> This is a resent of the previous patch https://lkml.org/lkml/2012/11/1/314
 >
-> The point was that there seems to be no need for the temporary array.
+> Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
 
-Yeah, it shows my really bad writing skill. :(
+Are you seeing a real bug without this patch? If so, then that is a
+driver bug. I don't want to mask over bugs silently. The kernel should
+complain.
 
-I meant I got your point of not using a temporary array.  And asked
-additional question of your preference in a dummy entry.
+There are actually lots of things that drivers should/should-not do
+that could be checked by the probe/remove hooks, and not just in the
+SPI code. spi_set_drvdata() is actually just a wrapper around
+dev_set_drvdata().
 
-Sorry for confusing you.
+Instead of clearing the pointer only in the spi code, perhaps the
+checks should be in really_probe() and __device_release_driver() so it
+covers all bus types. Also, don't clear the pointer. Just use
+dev_err() to report on the driver bug so that it gets fixed properly.
 
-Btw, I found that printing 0.00% is useful for a case of field_sep and
-GTK+ output.  So unless someone objects, I'll keep it.
+g.
 
-Thanks,
-Namhyung
+> ---
+>  drivers/spi/spi.c | 14 ++++++++++++--
+>  1 file changed, 12 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+> index 84c2861..fe636fe 100644
+> --- a/drivers/spi/spi.c
+> +++ b/drivers/spi/spi.c
+> @@ -233,15 +233,25 @@ EXPORT_SYMBOL_GPL(spi_bus_type);
+>  static int spi_drv_probe(struct device *dev)
+>  {
+>         const struct spi_driver         *sdrv = to_spi_driver(dev->driver);
+> +       struct spi_device               *sdev = to_spi_device(dev);
+> +       int                             status;
+>
+> -       return sdrv->probe(to_spi_device(dev));
+> +       status = sdrv->probe(sdev);
+> +       if (status)
+> +               spi_set_drvdata(sdev, NULL);
+> +       return status;
+>  }
+>
+>  static int spi_drv_remove(struct device *dev)
+>  {
+>         const struct spi_driver         *sdrv = to_spi_driver(dev->driver);
+> +       struct spi_device               *sdev = to_spi_device(dev);
+> +       int                             status;
+>
+> -       return sdrv->remove(to_spi_device(dev));
+> +       status = sdrv->remove(sdev);
+> +       if (status == 0)
+> +               spi_set_drvdata(sdev, NULL);
+> +       return status;
+>  }
+>
+>  static void spi_drv_shutdown(struct device *dev)
+> --
+> 1.7.11.7
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
+--
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
