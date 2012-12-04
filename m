@@ -1,112 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751972Ab2LDErT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 23:47:19 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:50863 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751688Ab2LDErS (ORCPT
+	id S1751040Ab2LDFHW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 00:07:22 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50020 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750918Ab2LDFHU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 23:47:18 -0500
-Message-ID: <50BD8028.1040909@linux.vnet.ibm.com>
-Date: Tue, 04 Dec 2012 10:16:32 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com, vincent.guittot@linaro.org,
-        a.p.zijlstra@chello.nl, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, amit.kucheria@linaro.org,
-        Morten.Rasmussen@arm.com, paul.mckenney@linaro.org,
-        akpm@linux-foundation.org, svaidy@linux.vnet.ibm.com,
-        arjan@linux.intel.com, mingo@kernel.org, pjt@google.com
-CC: venki@google.com, robin.randhawa@arm.com, linaro-dev@lists.linaro.org,
-        suresh.b.siddha@intel.com, mjg59@srcf.ucam.org,
-        deepthi@linux.vnet.ibm.com, srivatsa.bhat@linux.vnet.ibm.com,
-        Arvind.Chauhan@arm.com, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC v2 PATCH 2.1] sched: Use Per-Entity-Load-Tracking metric
- for load balancing
-References: <20121115164730.17426.36051.stgit@preeti.in.ibm.com> <20121115165422.17426.3978.stgit@preeti.in.ibm.com>
-In-Reply-To: <20121115165422.17426.3978.stgit@preeti.in.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12120404-5564-0000-0000-0000059F9623
+	Tue, 4 Dec 2012 00:07:20 -0500
+Message-ID: <1354597630.17107.42.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [GIT PULL] linux-firmware: cx23885: update to Version 2.06.139
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Tim Gardner <rtg.canonical@gmail.com>
+Cc: tim.gardner@canonical.com, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Date: Tue, 04 Dec 2012 05:07:10 +0000
+In-Reply-To: <50BCEBCB.4080303@gmail.com>
+References: <50BCEBCB.4080303@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-HhT6AtSnLrSekVnwOFHD"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-sched: Use Per-Entity-Load-Tracking metric for load balancing
+--=-HhT6AtSnLrSekVnwOFHD
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+On Mon, 2012-12-03 at 11:13 -0700, Tim Gardner wrote:
+> Ben - what is your policy on extracting firmware from Windows drivers?
 
-Currently the load balancer weighs a task based upon its priority,and this
-weight consequently gets added up to the weight of the run queue that it is
-on.It is this weight of the runqueue that sums up to a sched group's load
-which is used to decide the busiest or the idlest group and the runqueue
-thereof.
+I suppose the policy should be that the driver's licence must allow
+extracting and then distributing the result.  Which I wouldn't expect
+ever to be the case, in practice.
 
-The Per-Entity-Load-Tracking metric however measures how long a task has
-been runnable over the duration of its lifetime.This gives us a hint of
-the amount of CPU time that the task can demand.This metric takes care of the
-task priority as well.Therefore apart from the priority of a task we also
-have an idea of the live behavior of the task.This seems to be a more
-realistic metric to use to compute task weight which adds upto the run queue
-weight and the weight of the sched group.Consequently they can be used for
-load balancing.
+Your commit message refers to the Hauppuage driver package at
+<http://steventoth.net/linux/hvr1800/HVR-12x0-14x0-17x0_1_25_25271_WHQL.zip=
+>.  I didn't find any licence text, other than 'All rights reserved', in ei=
+ther that or the currently distributed version of the same driver <http://w=
+ww.wintvcd.co.uk/drivers/HVR-12x0-14x0-17x0-33x0-44x0_1_48_29272_SIGNED.zip=
+>.
 
-The semantics of load balancing is left untouched.The two functions
-load_balance() and select_task_rq_fair() perform the task of load
-balancing.These two paths have been browsed through in this patch to make
-necessary changes.
+> It seems like it ought to be OK, and they _are_ the same files that are
+> covered under the license in WHENCE.
 
-weighted_cpuload() and task_h_load() provide the run queue weight and the
-weight of the task respectively.They have been modified to provide the
-Per-Entity-Load-Tracking metric as relevant for each.
-The rest of the modifications had to be made to suit these two changes.
+I'm not sure how you can say they are the same files, as you're
+proposing to change the contents.  The copyright on the current files
+belongs to the chipset vendor, Conexant, and Hauppuage *presumably* used
+firmware supplied by Conexant, but either of them might have chosen a
+different licence for the versions in this driver package.
 
-Completely Fair Scheduler class is the only sched_class which contributes to
-the run queue load.Therefore the rq->load.weight==cfs_rq->load.weight when
-the cfs_rq is the root cfs_rq (rq->cfs) of the hierarchy.When replacing this
-with Per-Entity-Load-Tracking metric,cfs_rq->runnable_load_avg needs to be
-used as this is the right reflection of the run queue load when
-the cfs_rq is the root cfs_rq (rq->cfs) of the hierarchy.This metric reflects
-the percentage uptime of the tasks that are queued on it and hence that contribute
-to the load.Thus cfs_rq->runnable_load_avg replaces the metric earlier used in
-weighted_cpuload().
+> The following changes since commit bda53ca96deb3cacbef10a7a84bbaee2d09c7f=
+34:
+>=20
+>   brcm: new firmware version for brcmsmac (2012-12-03 14:46:28 +0000)
+>=20
+> are available in the git repository at:
+>=20
+>   git://kernel.ubuntu.com/rtg/linux-firmware.git master
+>=20
+> for you to fetch changes up to 3c592f80519a7e82eadeccfad7a5cd1604ca463c:
+>=20
+>   cx23885: update to Version 2.06.139 (2012-12-03 11:07:43 -0700)
+>=20
+> ----------------------------------------------------------------
+> Tim Gardner (1):
+>       cx23885: update to Version 2.06.139
+>=20
+>  v4l-cx23885-avcore-01.fw |  Bin 16382 -> 16382 bytes
+>  v4l-cx23885-enc.fw       |  Bin 16382 -> 376836 bytes
+>  2 files changed, 0 insertions(+), 0 deletions(-)
 
-The task load is aptly captured by se.avg.load_avg_contrib which captures the
-runnable time vs the alive time of the task against its priority.This metric
-replaces the earlier metric used in task_h_load().
+How odd, these two files are currently identical to each other...
 
-The consequent changes appear as data type changes for the helper variables;
-they abound in number.Because cfs_rq->runnable_load_avg needs to be big enough
-to capture the tasks' load often and accurately.
+Ben.
 
-The following patch does not consider CONFIG_FAIR_GROUP_SCHED AND
-CONFIG_SCHED_NUMA.This is done so as to evaluate this approach starting from the
-simplest scenario.Earlier discussions can be found in the link below.
+--=20
+Ben Hutchings
+Always try to do things in chronological order;
+it's less confusing that way.
 
-Link: https://lkml.org/lkml/2012/10/25/162
-Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
----
-I apologise about having overlooked this one change in the patchset.This needs to
-be applied on top of patch2 of this patchset.The experiment results that have been
-posted in reply to this thread are done after having applied this patch.
+--=-HhT6AtSnLrSekVnwOFHD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
- kernel/sched/fair.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index f8f3a29..19094eb 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4362,7 +4362,7 @@ struct sd_lb_stats {
-  * sg_lb_stats - stats of a sched_group required for load_balancing
-  */
- struct sg_lb_stats {
--	unsigned long avg_load; /*Avg load across the CPUs of the group */
-+	u64 avg_load; /*Avg load across the CPUs of the group */
- 	u64 group_load; /* Total load over the CPUs of the group */
- 	unsigned long sum_nr_running; /* Nr tasks running in the group */
- 	u64 sum_weighted_load; /* Weighted load of group's tasks */
+iQIVAwUAUL2E/ue/yOyVhhEJAQrnsBAAmwD3kF3P5GByRFQVqsNPr3whghomTECm
+QeLmh2ac0J8NcwjYL/U02SMtO1i+XcU0D7hAHBfFZNyaGcUZVvEL8KSbnvN8pCI7
+9zpdYMDDIc7tv4gkKBaD4SQ/wIeiVyhBRRVG1w3Tep03FsUQAyPL+FAUlY8LcAdy
+A2aarC+S70epphK22Kz5Pxsxgnup+MBhs5gWJWiEg3bslAV24TRJZCkFnmx5S9OP
+dYSi0H9YKZ0EFcJT01+phPFmj4iMCiv82J5VQrXCVuQ46+eAniyGXTcgH4Ug7bZ9
+B0T3InJlWONub5MhuPZvuvvFw7V5I5SZNjs2df30B7fkxes4cIjzVSmUYy7ZypJn
+QnBnKWtG6lYuVgjIrhpSyqGhI0dL94OnkZ2QUIg4cidvGhZDHQMqCy5mUB5lnTfF
+07VLBp6LIGPXpHz0L2xHLFvPX9bTWyCWnrHwkQSdguMY2bWCjaOOcVd14ov7/fPU
+a+5na+43ywEV29rkNEuBcuy5jyj+CftBGwM7MVEwn9cPjfBraHwpt8VyklFNh8Mp
+oBjdZtJChrTJo3819CKpnpC3bVRGdJu4FF62ERkhdQWDRLCmgD+20t8XJllaZTsv
+MDlEZ4Lc7Jn7aLfKQHzoEPOPk9KRBfK9TGr2Qayz/ZWH2vR6O25mXlEqXRZCvsJ8
+jMl+xh63lJA=
+=g677
+-----END PGP SIGNATURE-----
 
+--=-HhT6AtSnLrSekVnwOFHD--
