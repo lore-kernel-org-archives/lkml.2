@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751736Ab2LDH0I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 02:26:08 -0500
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:50882 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751438Ab2LDH0G (ORCPT
+	id S1751704Ab2LDH2m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 02:28:42 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:42171 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072Ab2LDH2k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 02:26:06 -0500
-Date: Tue, 4 Dec 2012 08:26:04 +0100
-From: Andreas Mohr <andi@lisas.de>
-To: Andreas Mohr <andi@lisas.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [YASB] Re: Linux 3.7-rc7
-Message-ID: <20121204072604.GA7467@rhlx01.hs-esslingen.de>
-References: <CA+55aFyetqyMa2BQu7kE=cqFdAysUh9gV=O5as5Chgg1EMCW7g@mail.gmail.com>
- <20121203193310.GA32762@rhlx01.hs-esslingen.de>
- <CA+55aFygWCxz=Mmogp8FoSr51rNct6ANw0Kw3y=u4Pu2iDK48Q@mail.gmail.com>
- <20121203194817.GA14594@rhlx01.hs-esslingen.de>
+	Tue, 4 Dec 2012 02:28:40 -0500
+Date: Mon, 3 Dec 2012 23:28:36 -0800
+From: "Guillermo A. Amaral" <g@maral.me>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: gregkh@linuxfoundation.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Input: xpad - Minor coding style errors fixed.
+Message-ID: <20121204072836.GA16676@MellowWarrior.localdomain>
+Reply-To: g@maral.me
+References: <1354433779-16274-1-git-send-email-g@maral.me>
+ <20121204052400.GB23964@core.coreip.homeip.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121203194817.GA14594@rhlx01.hs-esslingen.de>
-X-Priority: none
+In-Reply-To: <20121204052400.GB23964@core.coreip.homeip.net>
+X-Operating-System: Gentoo Linux/3.6.8-gentoo-MW (x86_64)
+X-Crypto: GnuPG/2.0.11 http://www.gnupg.org
+X-GPG-Key: http://dl.guillermoamaral.com/public.asc
+X-GPG-Fingerprint: E068 811D 4AA2 7FDA A327 38BD 640D 014C 76FE 7D5A
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Mon, Dec 03, 2012 at 08:48:17PM +0100, Andreas Mohr wrote:
-> Will try script to unload half of all drivers etc.
-> (heavy amounts of bisection wouldn't be joyful on this box).
+On Mon, Dec 03, 2012 at 09:24:00PM -0800, Dmitry Torokhov wrote:
+> On Sat, Dec 01, 2012 at 11:36:19PM -0800, Guillermo A. Amaral wrote:
+> > From: "Guillermo A. Amaral" <g@maral.me>
+> > 
+> > Fixed a few minor coding style issues in xpad driver.
 > 
-> 
-> I failed to mention the effects:
-> Suspend starts, disk does spin down, yet display backlight stays
-> until finally monitor blanks.
+> Applied both, thanks Guillermo.
 
-Unloading *all* unloadable modules didn't help.
+Thanks! Sorry about the double email btw, I thought it failed to send the
+first one.
 
-Current status:
+I've getting quite a few gamepad donations for my game console project, so
+expect more patches. ;)
 
-$ git bisect log
-git bisect start
-# good: [f4a75d2eb7b1e2206094b901be09adb31ba63681] Linux 3.7-rc6
-git bisect good f4a75d2eb7b1e2206094b901be09adb31ba63681
-# bad: [3c46f3d6406b1d0c53575774b2d1fd013cd7f76f] Merge branch
-# 'for-3.7-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq
-git bisect bad 3c46f3d6406b1d0c53575774b2d1fd013cd7f76f
-# good: [35f95d228e55eebdc87b5c0dbdecc46884f476a6] Merge tag
-# 'for-linus-20121123' of git://git.infradead.org/mtd-2.6
-git bisect good 35f95d228e55eebdc87b5c0dbdecc46884f476a6
-# good: [e9296e89b85604862bd9ec2d54dc43edad775c0d] Merge
-# git://git.kernel.org/pub/scm/linux/kernel/git/davem/net
-git bisect good e9296e89b85604862bd9ec2d54dc43edad775c0d
+Cheers,
+G
 
-
-Currently processing a95251b8bac4a91a43db795a7193545dac65f4f4 .
-
-
-So far everything in the normal, no interim (build) breakage etc.
-
-Andreas Mohr
+-- 
+gamaral http://about.me/gamaral
