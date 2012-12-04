@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753162Ab2LDNth (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 08:49:37 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:19479 "EHLO relay.sw.ru"
+	id S1752518Ab2LDNzW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 08:55:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6048 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751007Ab2LDNtf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 08:49:35 -0500
-Subject: [PATCH 0/6] nfsd: cleanup "init_net" references
-To: bfields@fieldses.org
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Tue, 04 Dec 2012 16:50:00 +0300
-Message-ID: <20121204134920.24504.95261.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	id S1751418Ab2LDNzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 08:55:17 -0500
+Date: Tue, 4 Dec 2012 14:54:55 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 0/3] perf hists: Changes on hists__{link,match}
+Message-ID: <20121204135454.GA1041@krava.brq.redhat.com>
+References: <1354596265-9901-1-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354596265-9901-1-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hard-coded "init_net" pointer is widely used in NFSd code.
-This patch replaces "init_net" references by passed struct net pointer where
-requied.
-In future, proper network namespace context will be taken from NFSd file
-system superblock private data or, where it's impossible, from current.
+On Tue, Dec 04, 2012 at 01:44:22PM +0900, Namhyung Kim wrote:
+> Hi Arnaldo,
+> 
+> This is what I talked to Jiri yesterday, and it can be a common basis
+> of both event group and multiple diff patchset.  The point is using
+> internal input or collapsed rb tree to sort hist entries rather than
+> output tree with unnessary resort.
+> 
+> Please take a look.
+> 
+> Thanks,
+> Namhyung
+> 
+> 
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Stephane Eranian <eranian@google.com>
+> Cc: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> Namhyung Kim (3):
+>   perf hists: Exchange order of comparing items when collapsing hists
+>   perf hists: Link hist entries before inserting to an output tree
+>   perf diff: Use internal rb tree for compute resort
+hi,
+could you please push branch with this?
 
-The following series implements...
-
----
-
-Stanislav Kinsbursky (6):
-      nfsd: pass net to nfsd_init_socks()
-      nfsd: pass net to nfsd_startup() and nfsd_shutdown()
-      nfsd: pass net to nfsd_create_serv()
-      nfsd: pass net to nfsd_svc()
-      nfsd: pass net to nfsd_set_nrthreads()
-      nfsd: pass net to __write_ports() and down
-
-
- fs/nfsd/nfsctl.c |   27 +++++++++++++++------------
- fs/nfsd/nfsd.h   |    6 +++---
- fs/nfsd/nfssvc.c |   34 ++++++++++++++--------------------
- 3 files changed, 32 insertions(+), 35 deletions(-)
-
+thanks,
+jirka
