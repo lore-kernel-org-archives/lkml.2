@@ -1,28 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751784Ab2LDCen (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 21:34:43 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:39314 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751393Ab2LDCem (ORCPT
+	id S1751735Ab2LDCf3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 21:35:29 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:55632 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751705Ab2LDCf1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 21:34:42 -0500
-MIME-Version: 1.0
-Date: Tue, 4 Dec 2012 15:34:42 +1300
-Message-ID: <CAKaWdxYi_RpjSAp9sL9oeM2i1sCR5foKpvV2bCHDrbM0Dj3DtA@mail.gmail.com>
-Subject: data=guarded mode in ext3
-From: Keith Chew <keith.chew@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 3 Dec 2012 21:35:27 -0500
+Message-ID: <1354588513.2649.10.camel@ThinkPad-T5421.cn.ibm.com>
+Subject: [ PATCH] Add rcu user eqs exception hooks for async page fault
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        linux-next list <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
+        sasha.levin@oracle.com, avi@redhat.com
+Date: Tue, 04 Dec 2012 10:35:13 +0800
+In-Reply-To: <20121203095708.GO8731@redhat.com>
+References: <1353993325.14050.49.camel@ThinkPad-T5421.cn.ibm.com>
+	 <CAFTL4hx0fc_Jo8wkuRZedW4DVEeQceiHMrWVqTqB5k065Wsg8Q@mail.gmail.com>
+	 <1354090704.3054.13.camel@ThinkPad-T5421.cn.ibm.com>
+	 <CAFTL4hxPSp1fs4=2g0yFs0d5nFisfUsfDAA9bHWcu+-+tO_ySw@mail.gmail.com>
+	 <20121128135345.GG928@redhat.com>
+	 <CAFTL4hxoFBLNQCABBpJRBgV-r-Mg5GSq7HbPfWJRraSvtviz4A@mail.gmail.com>
+	 <20121129110717.GA9711@redhat.com>
+	 <CAFTL4hyHW3uJHvzxz1o4agtGbicFAP1DuUsifbOrp1Q3ODRBMA@mail.gmail.com>
+	 <1354267121.2552.65.camel@ThinkPad-T5421.cn.ibm.com>
+	 <20121203095708.GO8731@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12120402-5564-0000-0000-0000059F478D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+This patch adds user eqs exception hooks for async page fault page not
+present code path, to exit the user eqs and re-enter it as necessary.
 
-Just wanted to check if the "'Data=guarded' mode in Ext3" work started
-by Chris Mason, is still being considered for merging to the mainline
-kernel? Or has that effort stopped?
+Async page fault is different from other exceptions that it may be
+triggered from idle process, so we still need rcu_irq_enter() and
+rcu_irq_exit() to exit cpu idle eqs when needed, to protect the code
+that needs use rcu.
 
-Regards
-Keith
+As Frederic pointed out it would be safest and simplest to protect the
+whole kvm_async_pf_task_wait(). Otherwise, "we need to check all the
+code there deeply for potential RCU uses and ensure it will never be
+extended later to use RCU.".
+
+However, We'd better re-enter the cpu idle eqs if we get the exception
+in cpu idle eqs, by calling rcu_irq_exit() before native_safe_halt().
+
+So the patch does what Frederic suggested for rcu_irq_*() API usage
+here, except that I moved the rcu_irq_*() pair originally in
+do_async_page_fault() into kvm_async_pf_task_wait().
+
+That's because, I think it's better to have rcu_irq_*() pairs to be in
+one function ( rcu_irq_exit() after rcu_irq_enter() ), especially here,
+kvm_async_pf_task_wait() has other callers, which might cause
+rcu_irq_exit() be called without a matching rcu_irq_enter() before it,
+which is illegal if the cpu happens to be in rcu idle state.
+
+Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+---
+ arch/x86/kernel/kvm.c | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index 08b973f..e99af60 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -43,6 +43,7 @@
+ #include <asm/apicdef.h>
+ #include <asm/hypervisor.h>
+ #include <asm/kvm_guest.h>
++#include <asm/rcu.h>
+ 
+ static int kvmapf = 1;
+ 
+@@ -121,6 +122,8 @@ void kvm_async_pf_task_wait(u32 token)
+ 	struct kvm_task_sleep_node n, *e;
+ 	DEFINE_WAIT(wait);
+ 
++	rcu_irq_enter();
++
+ 	spin_lock(&b->lock);
+ 	e = _find_apf_task(b, token);
+ 	if (e) {
+@@ -128,6 +131,8 @@ void kvm_async_pf_task_wait(u32 token)
+ 		hlist_del(&e->link);
+ 		kfree(e);
+ 		spin_unlock(&b->lock);
++
++		rcu_irq_exit();
+ 		return;
+ 	}
+ 
+@@ -152,13 +157,16 @@ void kvm_async_pf_task_wait(u32 token)
+ 			/*
+ 			 * We cannot reschedule. So halt.
+ 			 */
++			rcu_irq_exit();
+ 			native_safe_halt();
++			rcu_irq_enter();
+ 			local_irq_disable();
+ 		}
+ 	}
+ 	if (!n.halted)
+ 		finish_wait(&n.wq, &wait);
+ 
++	rcu_irq_exit();
+ 	return;
+ }
+ EXPORT_SYMBOL_GPL(kvm_async_pf_task_wait);
+@@ -252,10 +260,10 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
+ 		break;
+ 	case KVM_PV_REASON_PAGE_NOT_PRESENT:
+ 		/* page is swapped out by the host. */
+-		rcu_irq_enter();
++		exception_enter(regs);
+ 		exit_idle();
+ 		kvm_async_pf_task_wait((u32)read_cr2());
+-		rcu_irq_exit();
++		exception_exit(regs);
+ 		break;
+ 	case KVM_PV_REASON_PAGE_READY:
+ 		rcu_irq_enter();
+-- 
+1.7.11.4
+
