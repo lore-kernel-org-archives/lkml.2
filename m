@@ -1,179 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752671Ab2LDL3D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 06:29:03 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:15888 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751836Ab2LDL27 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 06:28:59 -0500
-Subject: [PATCH] nfsd: make NFSv4 recovery client tracking options per net
-To: bfields@fieldses.org
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Tue, 04 Dec 2012 14:29:27 +0300
-Message-ID: <20121204112925.23999.28249.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1752544Ab2LDLeW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 06:34:22 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:47936 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751689Ab2LDLeT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 06:34:19 -0500
+From: Xiaotian Feng <xtfeng@gmail.com>
+To: linux-kernel@vger.kernel.org, tj@kernel.org
+Cc: Xiaotian Feng <xtfeng@gmail.com>, Xiaotian Feng <dannyfeng@tencent.com>,
+        Neela Syam Kolli <megaraidlinux@lsi.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org
+Subject: [PATCH] megaraid: fix use of delayed work
+Date: Tue,  4 Dec 2012 19:33:54 +0800
+Message-Id: <1354620834-2953-1-git-send-email-xtfeng@gmail.com>
+X-Mailer: git-send-email 1.7.9.6 (Apple Git-31.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pointer to client tracking operations - client_tracking_ops - have to be
-containerized, because different environment can support different trackers
-(for example, legacy tracker currently is not suported in container).
+megaraid use INIT_WORK to declare a hotplug_work, but cast the hotplug_work
+from work_struct to delayed_work and schedule_delayed_work on it. This is
+very dangerous, as other part of delayed_work might be kernel memories allocated
+by others.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+With commit 8852aac, schedule_delayed_work() will check dwork->timer before
+queue_work, this will cause megaraid code to hit the BUG_ON in workqueue code.
+Change megaraid code to use delayed work.
+
+Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Neela Syam Kolli <megaraidlinux@lsi.com>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: linux-scsi@vger.kernel.org
 ---
- fs/nfsd/netns.h       |    2 ++
- fs/nfsd/nfs4recover.c |   48 ++++++++++++++++++++++++++++--------------------
- 2 files changed, 30 insertions(+), 20 deletions(-)
+ drivers/scsi/megaraid/megaraid_sas.h      |    2 +-
+ drivers/scsi/megaraid/megaraid_sas_base.c |   14 ++++++--------
+ 2 files changed, 7 insertions(+), 9 deletions(-)
 
-diff --git a/fs/nfsd/netns.h b/fs/nfsd/netns.h
-index 2c4b2e2..bca789d 100644
---- a/fs/nfsd/netns.h
-+++ b/fs/nfsd/netns.h
-@@ -35,6 +35,7 @@
- #define SESSION_HASH_SIZE	512
+diff --git a/drivers/scsi/megaraid/megaraid_sas.h b/drivers/scsi/megaraid/megaraid_sas.h
+index 16b7a72..3b2365c 100644
+--- a/drivers/scsi/megaraid/megaraid_sas.h
++++ b/drivers/scsi/megaraid/megaraid_sas.h
+@@ -1276,7 +1276,7 @@ struct megasas_evt_detail {
+ } __attribute__ ((packed));
  
- struct cld_net;
-+struct nfsd4_client_tracking_ops;
+ struct megasas_aen_event {
+-	struct work_struct hotplug_work;
++	struct delayed_work hotplug_work;
+ 	struct megasas_instance *instance;
+ };
  
- struct nfsd_net {
- 	struct cld_net *cld_net;
-@@ -87,6 +88,7 @@ struct nfsd_net {
- 
- 	struct file *rec_file;
- 	bool in_grace;
-+	struct nfsd4_client_tracking_ops *client_tracking_ops;
- 
- 	time_t nfsd4_lease;
- 	time_t nfsd4_grace;
-diff --git a/fs/nfsd/nfs4recover.c b/fs/nfsd/nfs4recover.c
-index 359793f..ba6fdd4 100644
---- a/fs/nfsd/nfs4recover.c
-+++ b/fs/nfsd/nfs4recover.c
-@@ -63,7 +63,6 @@ struct nfsd4_client_tracking_ops {
- 
- /* Globals */
- static char user_recovery_dirname[PATH_MAX] = "/var/lib/nfs/v4recovery";
--static struct nfsd4_client_tracking_ops *client_tracking_ops;
- 
- static int
- nfs4_save_creds(const struct cred **original_creds)
-@@ -1262,17 +1261,18 @@ nfsd4_client_tracking_init(struct net *net)
- {
- 	int status;
- 	struct path path;
-+	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
- 
- 	/* just run the init if it the method is already decided */
--	if (client_tracking_ops)
-+	if (nn->client_tracking_ops)
- 		goto do_init;
- 
- 	/*
- 	 * First, try a UMH upcall. It should succeed or fail quickly, so
- 	 * there's little harm in trying that first.
- 	 */
--	client_tracking_ops = &nfsd4_umh_tracking_ops;
--	status = client_tracking_ops->init(net);
-+	nn->client_tracking_ops = &nfsd4_umh_tracking_ops;
-+	status = nn->client_tracking_ops->init(net);
- 	if (!status)
- 		return status;
- 
-@@ -1280,7 +1280,7 @@ nfsd4_client_tracking_init(struct net *net)
- 	 * See if the recoverydir exists and is a directory. If it is,
- 	 * then use the legacy ops.
- 	 */
--	client_tracking_ops = &nfsd4_legacy_tracking_ops;
-+	nn->client_tracking_ops = &nfsd4_legacy_tracking_ops;
- 	status = kern_path(nfs4_recoverydir(), LOOKUP_FOLLOW, &path);
- 	if (!status) {
- 		status = S_ISDIR(path.dentry->d_inode->i_mode);
-@@ -1290,16 +1290,16 @@ nfsd4_client_tracking_init(struct net *net)
- 	}
- 
- 	/* Finally, try to use nfsdcld */
--	client_tracking_ops = &nfsd4_cld_tracking_ops;
-+	nn->client_tracking_ops = &nfsd4_cld_tracking_ops;
- 	printk(KERN_WARNING "NFSD: the nfsdcld client tracking upcall will be "
- 			"removed in 3.10. Please transition to using "
- 			"nfsdcltrack.\n");
- do_init:
--	status = client_tracking_ops->init(net);
-+	status = nn->client_tracking_ops->init(net);
- 	if (status) {
- 		printk(KERN_WARNING "NFSD: Unable to initialize client "
- 				    "recovery tracking! (%d)\n", status);
--		client_tracking_ops = NULL;
-+		nn->client_tracking_ops = NULL;
- 	}
- 	return status;
- }
-@@ -1307,32 +1307,40 @@ do_init:
- void
- nfsd4_client_tracking_exit(struct net *net)
- {
--	if (client_tracking_ops) {
--		if (client_tracking_ops->exit)
--			client_tracking_ops->exit(net);
--		client_tracking_ops = NULL;
-+	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
-+
-+	if (nn->client_tracking_ops) {
-+		if (nn->client_tracking_ops->exit)
-+			nn->client_tracking_ops->exit(net);
-+		nn->client_tracking_ops = NULL;
+diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c b/drivers/scsi/megaraid/megaraid_sas_base.c
+index d2c5366..e4f2baa 100644
+--- a/drivers/scsi/megaraid/megaraid_sas_base.c
++++ b/drivers/scsi/megaraid/megaraid_sas_base.c
+@@ -2060,9 +2060,9 @@ megasas_service_aen(struct megasas_instance *instance, struct megasas_cmd *cmd)
+ 		} else {
+ 			ev->instance = instance;
+ 			instance->ev = ev;
+-			INIT_WORK(&ev->hotplug_work, megasas_aen_polling);
+-			schedule_delayed_work(
+-				(struct delayed_work *)&ev->hotplug_work, 0);
++			INIT_DELAYED_WORK(&ev->hotplug_work,
++					  megasas_aen_polling);
++			schedule_delayed_work(&ev->hotplug_work, 0);
+ 		}
  	}
  }
+@@ -4352,8 +4352,7 @@ megasas_suspend(struct pci_dev *pdev, pm_message_t state)
+ 	/* cancel the delayed work if this work still in queue */
+ 	if (instance->ev != NULL) {
+ 		struct megasas_aen_event *ev = instance->ev;
+-		cancel_delayed_work_sync(
+-			(struct delayed_work *)&ev->hotplug_work);
++		cancel_delayed_work_sync(&ev->hotplug_work);
+ 		instance->ev = NULL;
+ 	}
  
- void
- nfsd4_client_record_create(struct nfs4_client *clp)
+@@ -4545,8 +4544,7 @@ static void __devexit megasas_detach_one(struct pci_dev *pdev)
+ 	/* cancel the delayed work if this work still in queue*/
+ 	if (instance->ev != NULL) {
+ 		struct megasas_aen_event *ev = instance->ev;
+-		cancel_delayed_work_sync(
+-			(struct delayed_work *)&ev->hotplug_work);
++		cancel_delayed_work_sync(&ev->hotplug_work);
+ 		instance->ev = NULL;
+ 	}
+ 
+@@ -5190,7 +5188,7 @@ static void
+ megasas_aen_polling(struct work_struct *work)
  {
--	if (client_tracking_ops)
--		client_tracking_ops->create(clp);
-+	struct nfsd_net *nn = net_generic(clp->net, nfsd_net_id);
-+
-+	if (nn->client_tracking_ops)
-+		nn->client_tracking_ops->create(clp);
- }
- 
- void
- nfsd4_client_record_remove(struct nfs4_client *clp)
- {
--	if (client_tracking_ops)
--		client_tracking_ops->remove(clp);
-+	struct nfsd_net *nn = net_generic(clp->net, nfsd_net_id);
-+
-+	if (nn->client_tracking_ops)
-+		nn->client_tracking_ops->remove(clp);
- }
- 
- int
- nfsd4_client_record_check(struct nfs4_client *clp)
- {
--	if (client_tracking_ops)
--		return client_tracking_ops->check(clp);
-+	struct nfsd_net *nn = net_generic(clp->net, nfsd_net_id);
-+
-+	if (nn->client_tracking_ops)
-+		return nn->client_tracking_ops->check(clp);
- 
- 	return -EOPNOTSUPP;
- }
-@@ -1340,8 +1348,8 @@ nfsd4_client_record_check(struct nfs4_client *clp)
- void
- nfsd4_record_grace_done(struct nfsd_net *nn, time_t boot_time)
- {
--	if (client_tracking_ops)
--		client_tracking_ops->grace_done(nn, boot_time);
-+	if (nn->client_tracking_ops)
-+		nn->client_tracking_ops->grace_done(nn, boot_time);
- }
- 
- static int
+ 	struct megasas_aen_event *ev =
+-		container_of(work, struct megasas_aen_event, hotplug_work);
++		container_of(work, struct megasas_aen_event, hotplug_work.work);
+ 	struct megasas_instance *instance = ev->instance;
+ 	union megasas_evt_class_locale class_locale;
+ 	struct  Scsi_Host *host;
+-- 
+1.7.9.6 (Apple Git-31.1)
 
