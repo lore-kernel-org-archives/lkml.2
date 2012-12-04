@@ -1,46 +1,298 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752679Ab2LDKHn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 05:07:43 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:37299 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752408Ab2LDKHl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 05:07:41 -0500
+	id S1752882Ab2LDKKl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 05:10:41 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:21124 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752170Ab2LDKKj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 05:10:39 -0500
+X-IronPort-AV: E=Sophos;i="4.83,370,1352044800"; 
+   d="scan'208";a="6330559"
+Message-ID: <50BDCBE1.7030001@cn.fujitsu.com>
+Date: Tue, 04 Dec 2012 18:09:37 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <20121203150417.16826.70816.stgit@bob.linux.org.uk>
-References: <20121203150310.16826.3363.stgit@bob.linux.org.uk>
-	<20121203150417.16826.70816.stgit@bob.linux.org.uk>
-Date: Tue, 4 Dec 2012 11:07:41 +0100
-X-Google-Sender-Auth: fOdMYFyehWzE0YGudPhU1KcOWa8
-Message-ID: <CAMuHMdVJHA+nMNgnY1g1OGqYpSifoeR7u_6s0cCN-jczZSZmKA@mail.gmail.com>
-Subject: Re: [PATCH 1/9] goldfish: definitions for Goldfish on x86 platforms
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Alan Cox <alan@linux.intel.com>, Jun Nakajima <jnakajim@gmail.com>
-Cc: arve@android.com, x86@kernel.org, linux-kernel@vger.kernel.org,
-        mikechan@google.com
-Content-Type: text/plain; charset=UTF-8
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        Jiang Liu <liuj97@gmail.com>, Len Brown <len.brown@intel.com>,
+        benh@kernel.crashing.org, paulus@samba.org,
+        Christoph Lameter <cl@linux.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Jianguo Wu <wujianguo@huawei.com>
+Subject: Re: [Patch v4 10/12] memory-hotplug: memory_hotplug: clear zone when
+ removing the memory
+References: <1354010422-19648-1-git-send-email-wency@cn.fujitsu.com> <1354010422-19648-11-git-send-email-wency@cn.fujitsu.com>
+In-Reply-To: <1354010422-19648-11-git-send-email-wency@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/04 18:09:58,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/04 18:09:59,
+	Serialize complete at 2012/12/04 18:09:59
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 3, 2012 at 4:04 PM, Alan Cox <alan@linux.intel.com> wrote:
-> --- /dev/null
-> +++ b/arch/x86/include/asm/goldfish.h
-> @@ -0,0 +1,36 @@
-> +/*
-> + *
-> + * arch/x86/include/asm/mach-goldfish/hardware.h
+On 11/27/2012 06:00 PM, Wen Congyang wrote:
+> From: Yasuaki Ishimatsu<isimatu.yasuaki@jp.fujitsu.com>
+>
+> When a memory is added, we update zone's and pgdat's start_pfn and
+> spanned_pages in the function __add_zone(). So we should revert them
+> when the memory is removed.
+>
+> The patch adds a new function __remove_zone() to do this.
+>
+> CC: David Rientjes<rientjes@google.com>
+> CC: Jiang Liu<liuj97@gmail.com>
+> CC: Len Brown<len.brown@intel.com>
+> CC: Christoph Lameter<cl@linux.com>
+> Cc: Minchan Kim<minchan.kim@gmail.com>
+> CC: Andrew Morton<akpm@linux-foundation.org>
+> CC: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
+> Signed-off-by: Yasuaki Ishimatsu<isimatu.yasuaki@jp.fujitsu.com>
+> Signed-off-by: Wen Congyang<wency@cn.fujitsu.com>
 
-Please don't put file names in header files, they get out of sync too easily.
+Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
 
-Gr{oetje,eeting}s,
+> ---
+>   mm/memory_hotplug.c | 207 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+>   1 file changed, 207 insertions(+)
+>
+> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+> index 7797e91..aa97d56 100644
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -301,10 +301,213 @@ static int __meminit __add_section(int nid, struct zone *zone,
+>   	return register_new_memory(nid, __pfn_to_section(phys_start_pfn));
+>   }
+>
+> +/* find the smallest valid pfn in the range [start_pfn, end_pfn) */
+> +static int find_smallest_section_pfn(int nid, struct zone *zone,
+> +				     unsigned long start_pfn,
+> +				     unsigned long end_pfn)
+> +{
+> +	struct mem_section *ms;
+> +
+> +	for (; start_pfn<  end_pfn; start_pfn += PAGES_PER_SECTION) {
+> +		ms = __pfn_to_section(start_pfn);
+> +
+> +		if (unlikely(!valid_section(ms)))
+> +			continue;
+> +
+> +		if (unlikely(pfn_to_nid(start_pfn) != nid))
+> +			continue;
+> +
+> +		if (zone&&  zone != page_zone(pfn_to_page(start_pfn)))
+> +			continue;
+> +
+> +		return start_pfn;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +/* find the biggest valid pfn in the range [start_pfn, end_pfn). */
+> +static int find_biggest_section_pfn(int nid, struct zone *zone,
+> +				    unsigned long start_pfn,
+> +				    unsigned long end_pfn)
+> +{
+> +	struct mem_section *ms;
+> +	unsigned long pfn;
+> +
+> +	/* pfn is the end pfn of a memory section. */
+> +	pfn = end_pfn - 1;
+> +	for (; pfn>= start_pfn; pfn -= PAGES_PER_SECTION) {
+> +		ms = __pfn_to_section(pfn);
+> +
+> +		if (unlikely(!valid_section(ms)))
+> +			continue;
+> +
+> +		if (unlikely(pfn_to_nid(pfn) != nid))
+> +			continue;
+> +
+> +		if (zone&&  zone != page_zone(pfn_to_page(pfn)))
+> +			continue;
+> +
+> +		return pfn;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static void shrink_zone_span(struct zone *zone, unsigned long start_pfn,
+> +			     unsigned long end_pfn)
+> +{
+> +	unsigned long zone_start_pfn =  zone->zone_start_pfn;
+> +	unsigned long zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
+> +	unsigned long pfn;
+> +	struct mem_section *ms;
+> +	int nid = zone_to_nid(zone);
+> +
+> +	zone_span_writelock(zone);
+> +	if (zone_start_pfn == start_pfn) {
+> +		/*
+> +		 * If the section is smallest section in the zone, it need
+> +		 * shrink zone->zone_start_pfn and zone->zone_spanned_pages.
+> +		 * In this case, we find second smallest valid mem_section
+> +		 * for shrinking zone.
+> +		 */
+> +		pfn = find_smallest_section_pfn(nid, zone, end_pfn,
+> +						zone_end_pfn);
+> +		if (pfn) {
+> +			zone->zone_start_pfn = pfn;
+> +			zone->spanned_pages = zone_end_pfn - pfn;
+> +		}
+> +	} else if (zone_end_pfn == end_pfn) {
+> +		/*
+> +		 * If the section is biggest section in the zone, it need
+> +		 * shrink zone->spanned_pages.
+> +		 * In this case, we find second biggest valid mem_section for
+> +		 * shrinking zone.
+> +		 */
+> +		pfn = find_biggest_section_pfn(nid, zone, zone_start_pfn,
+> +					       start_pfn);
+> +		if (pfn)
+> +			zone->spanned_pages = pfn - zone_start_pfn + 1;
+> +	}
+> +
+> +	/*
+> +	 * The section is not biggest or smallest mem_section in the zone, it
+> +	 * only creates a hole in the zone. So in this case, we need not
+> +	 * change the zone. But perhaps, the zone has only hole data. Thus
+> +	 * it check the zone has only hole or not.
+> +	 */
+> +	pfn = zone_start_pfn;
+> +	for (; pfn<  zone_end_pfn; pfn += PAGES_PER_SECTION) {
+> +		ms = __pfn_to_section(pfn);
+> +
+> +		if (unlikely(!valid_section(ms)))
+> +			continue;
+> +
+> +		if (page_zone(pfn_to_page(pfn)) != zone)
+> +			continue;
+> +
+> +		 /* If the section is current section, it continues the loop */
+> +		if (start_pfn == pfn)
+> +			continue;
+> +
+> +		/* If we find valid section, we have nothing to do */
+> +		zone_span_writeunlock(zone);
+> +		return;
+> +	}
+> +
+> +	/* The zone has no valid section */
+> +	zone->zone_start_pfn = 0;
+> +	zone->spanned_pages = 0;
+> +	zone_span_writeunlock(zone);
+> +}
+> +
+> +static void shrink_pgdat_span(struct pglist_data *pgdat,
+> +			      unsigned long start_pfn, unsigned long end_pfn)
+> +{
+> +	unsigned long pgdat_start_pfn =  pgdat->node_start_pfn;
+> +	unsigned long pgdat_end_pfn =
+> +		pgdat->node_start_pfn + pgdat->node_spanned_pages;
+> +	unsigned long pfn;
+> +	struct mem_section *ms;
+> +	int nid = pgdat->node_id;
+> +
+> +	if (pgdat_start_pfn == start_pfn) {
+> +		/*
+> +		 * If the section is smallest section in the pgdat, it need
+> +		 * shrink pgdat->node_start_pfn and pgdat->node_spanned_pages.
+> +		 * In this case, we find second smallest valid mem_section
+> +		 * for shrinking zone.
+> +		 */
+> +		pfn = find_smallest_section_pfn(nid, NULL, end_pfn,
+> +						pgdat_end_pfn);
+> +		if (pfn) {
+> +			pgdat->node_start_pfn = pfn;
+> +			pgdat->node_spanned_pages = pgdat_end_pfn - pfn;
+> +		}
+> +	} else if (pgdat_end_pfn == end_pfn) {
+> +		/*
+> +		 * If the section is biggest section in the pgdat, it need
+> +		 * shrink pgdat->node_spanned_pages.
+> +		 * In this case, we find second biggest valid mem_section for
+> +		 * shrinking zone.
+> +		 */
+> +		pfn = find_biggest_section_pfn(nid, NULL, pgdat_start_pfn,
+> +					       start_pfn);
+> +		if (pfn)
+> +			pgdat->node_spanned_pages = pfn - pgdat_start_pfn + 1;
+> +	}
+> +
+> +	/*
+> +	 * If the section is not biggest or smallest mem_section in the pgdat,
+> +	 * it only creates a hole in the pgdat. So in this case, we need not
+> +	 * change the pgdat.
+> +	 * But perhaps, the pgdat has only hole data. Thus it check the pgdat
+> +	 * has only hole or not.
+> +	 */
+> +	pfn = pgdat_start_pfn;
+> +	for (; pfn<  pgdat_end_pfn; pfn += PAGES_PER_SECTION) {
+> +		ms = __pfn_to_section(pfn);
+> +
+> +		if (unlikely(!valid_section(ms)))
+> +			continue;
+> +
+> +		if (pfn_to_nid(pfn) != nid)
+> +			continue;
+> +
+> +		 /* If the section is current section, it continues the loop */
+> +		if (start_pfn == pfn)
+> +			continue;
+> +
+> +		/* If we find valid section, we have nothing to do */
+> +		return;
+> +	}
+> +
+> +	/* The pgdat has no valid section */
+> +	pgdat->node_start_pfn = 0;
+> +	pgdat->node_spanned_pages = 0;
+> +}
+> +
+> +static void __remove_zone(struct zone *zone, unsigned long start_pfn)
+> +{
+> +	struct pglist_data *pgdat = zone->zone_pgdat;
+> +	int nr_pages = PAGES_PER_SECTION;
+> +	int zone_type;
+> +	unsigned long flags;
+> +
+> +	zone_type = zone - pgdat->node_zones;
+> +
+> +	pgdat_resize_lock(zone->zone_pgdat,&flags);
+> +	shrink_zone_span(zone, start_pfn, start_pfn + nr_pages);
+> +	shrink_pgdat_span(pgdat, start_pfn, start_pfn + nr_pages);
+> +	pgdat_resize_unlock(zone->zone_pgdat,&flags);
+> +}
+> +
+>   static int __remove_section(struct zone *zone, struct mem_section *ms)
+>   {
+>   	unsigned long flags;
+>   	struct pglist_data *pgdat = zone->zone_pgdat;
+> +	unsigned long start_pfn;
+> +	int scn_nr;
+>   	int ret = -EINVAL;
+>
+>   	if (!valid_section(ms))
+> @@ -314,6 +517,10 @@ static int __remove_section(struct zone *zone, struct mem_section *ms)
+>   	if (ret)
+>   		return ret;
+>
+> +	scn_nr = __section_nr(ms);
+> +	start_pfn = section_nr_to_pfn(scn_nr);
+> +	__remove_zone(zone, start_pfn);
+> +
+>   	pgdat_resize_lock(pgdat,&flags);
+>   	sparse_remove_one_section(zone, ms);
+>   	pgdat_resize_unlock(pgdat,&flags);
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
