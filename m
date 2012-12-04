@@ -1,84 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341Ab2LDUOd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 15:14:33 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:46378 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753290Ab2LDUOa (ORCPT
+	id S1752842Ab2LDUPe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 15:15:34 -0500
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:16022 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751452Ab2LDUPc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 15:14:30 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: "x86\@kernel.org" <x86@kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Gleb Natapov <gleb@redhat.com>,
-        "kexec\@lists.infradead.org" <kexec@lists.infradead.org>,
-        "kvm\@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <50B43299.9030409@cn.fujitsu.com> <50B432CA.70804@cn.fujitsu.com>
-Date: Tue, 04 Dec 2012 12:14:15 -0800
-In-Reply-To: <50B432CA.70804@cn.fujitsu.com> (Zhang Yanfei's message of "Tue,
-	27 Nov 2012 11:26:02 +0800")
-Message-ID: <87zk1t4lt4.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 4 Dec 2012 15:15:32 -0500
+From: "Ortiz, Lance E" <lance.oritz@hp.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+CC: "bhelgaas@google.com" <bhelgaas@google.com>,
+        "lance_ortiz@hotmail.com" <lance_ortiz@hotmail.com>,
+        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "bp@alien8.de" <bp@alien8.de>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v6 2/3] aerdrv: Enhanced AER logging
+Thread-Topic: [PATCH v6 2/3] aerdrv: Enhanced AER logging
+Thread-Index: AQHN0k8aVa3PxcUcQEiyZTOCi6RVGJgJEWMg
+Date: Tue, 4 Dec 2012 20:14:10 +0000
+Message-ID: <A961433CDFF2F640A2866803152E61F9516EEACD@G4W3218.americas.hpqcorp.net>
+References: <20121204170429.31397.50068.stgit@grignak.americas.hpqcorp.net>
+	<20121204170436.31397.40857.stgit@grignak.americas.hpqcorp.net>
+ <20121204164151.66b9bb37@redhat.com>
+In-Reply-To: <20121204164151.66b9bb37@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [16.210.48.25]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/5EBvJlll1rYVbFbz1h1y+Vl4Az6lWz64=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_XMDrugObfuBody_12 obfuscated drug references
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH v9 1/2] x86/kexec: VMCLEAR VMCSs loaded on all cpus if necessary
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zhang Yanfei <zhangyanfei@cn.fujitsu.com> writes:
+> > +	if (!dev) {
+> > +		pr_info("PCI AER Cannot get PCI device
+> %04x:%02x:%02x.%d\n",
+> > +			pcie->device_id.segment, pcie->device_id.bus,
+> > +			pcie->device_id.slot, pcie->device_id.function);
+> 
+> Hmm... please correct if I'm wrong, but an error happened at PCI, and
+> also a
+> kernel bug that prevented it to get the proper PCI device...
+> 
+> IMHO, the message here should be stronger, and likely printed via
+> pr_err().
+> 
 
-> This patch provides a way to VMCLEAR VMCSs related to guests
-> on all cpus before executing the VMXOFF when doing kdump. This
-> is used to ensure the VMCSs in the vmcore updated and
-> non-corrupted.
+Mauro,
 
-Apologies for the delay I have been travelling, and I wanted
-to at least read through the code.
-
-Overall I think this is good but I have one nit, and I see one real
-problem with this code.
-
-> +/*
-> + * This is used to VMCLEAR all VMCSs loaded on the
-> + * processor. And when loading kvm_intel module, the
-> + * callback function pointer will be assigned.
-> + */
-> +void (*crash_vmclear_loaded_vmcss)(void) = NULL;
-> +EXPORT_SYMBOL_GPL(crash_vmclear_loaded_vmcss);
-> +
-> +static inline void cpu_emergency_vmclear_loaded_vmcss(void)
-> +{
-> +	if (crash_vmclear_loaded_vmcss)
-> +		crash_vmclear_loaded_vmcss();
-> +}
-
-The nit is the use of emergency instead of crash in the name.
-
-The problem is that this is potentially a NULL pointer dereference if
-kvm-intel is removed.  The easist fix would be in your second patch to
-just make it impossible to unload the kvm-intel module.  Otherwise
-there the deference of crash_vmclear_loaded_vmcss needs to be rcu
-protected, with a syncrhonize_rcu after the pointer is set to NULL in
-the unload path.
-
-Otherwise I have no objections to this code.
-
-Eric
+I modeled this message after other places in the kernel where this function failed.  So I figured it would be safe to be consistent there.  I agree though that it should be pr_err().  I can make that change.
