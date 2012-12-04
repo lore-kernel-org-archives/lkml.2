@@ -1,93 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751670Ab2LDCeJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 21:34:09 -0500
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:18305 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751340Ab2LDCeI (ORCPT
+	id S1751784Ab2LDCen (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 21:34:43 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:39314 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751393Ab2LDCem (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 21:34:08 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AiUKAKlfvVB5LPYI/2dsb2JhbABEhUOyWoYXF3OCHgEBBAEnExwjBQsIAw4KLhQlAyETiAoFrlaQNRSMLINgYQOWAIlOhnqDBg
-Date: Tue, 4 Dec 2012 13:34:05 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Zach Brown <zab@redhat.com>
-Subject: Re: [patch,v2] bdi: add a user-tunable cpu_list for the bdi flusher
- threads
-Message-ID: <20121204023405.GE32450@dastard>
-References: <x49lidfnf0s.fsf@segfault.boston.devel.redhat.com>
+	Mon, 3 Dec 2012 21:34:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <x49lidfnf0s.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Tue, 4 Dec 2012 15:34:42 +1300
+Message-ID: <CAKaWdxYi_RpjSAp9sL9oeM2i1sCR5foKpvV2bCHDrbM0Dj3DtA@mail.gmail.com>
+Subject: data=guarded mode in ext3
+From: Keith Chew <keith.chew@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 03, 2012 at 01:53:39PM -0500, Jeff Moyer wrote:
-> Hi,
-> 
-> In realtime environments, it may be desirable to keep the per-bdi
-> flusher threads from running on certain cpus.  This patch adds a
-> cpu_list file to /sys/class/bdi/* to enable this.  The default is to tie
-> the flusher threads to the same numa node as the backing device (though
-> I could be convinced to make it a mask of all cpus to avoid a change in
-> behaviour).
+Hi
 
-The default seems reasonable to me.
+Just wanted to check if the "'Data=guarded' mode in Ext3" work started
+by Chris Mason, is still being considered for merging to the mainline
+kernel? Or has that effort stopped?
 
-> Comments, as always, are appreciated.
-.....
-
-> +static ssize_t cpu_list_store(struct device *dev,
-> +		struct device_attribute *attr, const char *buf, size_t count)
-> +{
-> +	struct backing_dev_info *bdi = dev_get_drvdata(dev);
-> +	struct bdi_writeback *wb = &bdi->wb;
-> +	cpumask_var_t newmask;
-> +	ssize_t ret;
-> +	struct task_struct *task;
-> +
-> +	if (!alloc_cpumask_var(&newmask, GFP_KERNEL))
-> +		return -ENOMEM;
-> +
-> +	ret = cpulist_parse(buf, newmask);
-> +	if (!ret) {
-> +		spin_lock(&bdi->wb_lock);
-> +		task = wb->task;
-> +		if (task)
-> +			get_task_struct(task);
-> +		spin_unlock(&bdi->wb_lock);
-> +		if (task) {
-> +			ret = set_cpus_allowed_ptr(task, newmask);
-> +			put_task_struct(task);
-> +		}
-
-Why is this set here outside the bdi->flusher_cpumask_mutex?
-
-Also, I'd prefer it named "..._lock" as that is the normal
-convention for such variables. You can tell the type of lock from
-the declaration or the use...
-
-....
-
-> @@ -437,6 +488,14 @@ static int bdi_forker_thread(void *ptr)
->  				spin_lock_bh(&bdi->wb_lock);
->  				bdi->wb.task = task;
->  				spin_unlock_bh(&bdi->wb_lock);
-> +				mutex_lock(&bdi->flusher_cpumask_mutex);
-> +				ret = set_cpus_allowed_ptr(task,
-> +							bdi->flusher_cpumask);
-> +				mutex_unlock(&bdi->flusher_cpumask_mutex);
-
-As it is set under the lock here....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Regards
+Keith
