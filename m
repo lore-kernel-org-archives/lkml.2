@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab2LDOBh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 09:01:37 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:23341 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752990Ab2LDOBe (ORCPT
+	id S1754107Ab2LDOBl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 09:01:41 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:13802 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754073Ab2LDOBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 09:01:34 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-b2-50be023c63b1
+	Tue, 4 Dec 2012 09:01:37 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-d2-50be023f2388
 From: Marek Szyprowski <m.szyprowski@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
 Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
@@ -15,82 +15,54 @@ Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Liam Girdwood <lrg@ti.com>, Chris Ball <cjb@laptop.org>,
         Kevin Liu <keyuan.liu@gmail.com>
-Subject: [PATCH 1/3] regulators: add regulator_can_change_voltage() function
-Date: Tue, 04 Dec 2012 15:01:01 +0100
-Message-id: <1354629663-29091-2-git-send-email-m.szyprowski@samsung.com>
+Subject: [PATCH 2/3] mmc: use regulator_can_change_voltage() instead of
+ regulator_count_voltages() hacks
+Date: Tue, 04 Dec 2012 15:01:02 +0100
+Message-id: <1354629663-29091-3-git-send-email-m.szyprowski@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1354629663-29091-1-git-send-email-m.szyprowski@samsung.com>
 References: <1354629663-29091-1-git-send-email-m.szyprowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIJMWRmVeSWpSXmKPExsVy+t9jQV0bpn0BBpMPSVpc3jWHzeLI/35G
-	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDLeL7vCXHBesOLZNpEGxj98XYwcHBICJhK92+26GDmB
-	TDGJC/fWs3UxcnEICUxnlHj5cwsrSEJIoJ1Jom1ZFIjNJmAo0fW2iw2kV0TAWmLvQl+QemaB
-	t4wSy29tZwGJCwv4SNx7YApSziKgKvH+3l12EJtXwEOicecmFoi1ChJzJtmAmJwCnhJvfzJC
-	LPKQuLd8HeMERt4FjAyrGEVTC5ILipPScw31ihNzi0vz0vWS83M3MYI9/kxqB+PKBotDjAIc
-	jEo8vDMe7gkQYk0sK67MPcQowcGsJMKr8GFvgBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXHeZo+U
-	ACGB9MSS1OzU1ILUIpgsEwenVANjnpDA3FsnshdvdHi7TfbqtxOcKg5cLv83ex28NeWiik9K
-	AV/srKUenmExh13ZSq6kvDr9cNqb4vDfdkdX1qznCj8+gYlXtrl1xzZO04o9a+J6glTF2uOv
-	cxa22Kq6zDv6Jm37HLn3EwsqrrGndjTuOZ995NaN9U/W6rrKff/g97ExMS56/uf5SizFGYmG
-	WsxFxYkAID/KnfQBAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKJMWRmVeSWpSXmKPExsVy+t9jQV17pn0BBu/vGVtc3jWHzeLI/35G
+	ByaPz5vkAhijuGxSUnMyy1KL9O0SuDL+LNnFXHCSo2L6n93MDYwT2bsYOTkkBEwkzh3fzQxh
+	i0lcuLeerYuRi0NIYDqjRP/HdSwQTjuTxKo1U1hBqtgEDCW63nYBVXFwiAhYS+xd6AtSwyzw
+	llFi+a3tLCA1wgJZEncOHWUEsVkEVCWuTZrOBGLzCnhIfGieywjSKyGgIDFnkg2IySngKfH2
+	J1i1EFDFveXrGCcw8i5gZFjFKJpakFxQnJSea6RXnJhbXJqXrpecn7uJEez5Z9I7GFc1WBxi
+	FOBgVOLhXfBiT4AQa2JZcWXuIUYJDmYlEV6FD3sDhHhTEiurUovy44tKc1KLDzFKc7AoifM2
+	e6QECAmkJ5akZqemFqQWwWSZODilGhh1j0zbbHrptsGTi8vPfdi9gCdh+hYDJo2N4uwGcpnX
+	jD6/uO1129zIYkLZ/5j55a2loZ5+d6/6qXVxOTx9U3n3QMErNk7ubfZHSitfqL1W/XOmryDn
+	k0/Yes9H5Uru2wysn9S6GLw/W/f06K7GPZNeVn1WSUwolDReVdA+TUhsZ3sQz/T1fg+VWIoz
+	Eg21mIuKEwFTe3k0+AEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a regulator_can_change_voltage() function for the subsytems or
-drivers which might check if applying voltage change is possible and use
-special workaround code when the driver is used with fixed regulators or
-regulators with disabled ability to change the voltage.
+mmc_regulator_set_ocr() depends on the ability of regulator to change the
+voltage value. When regulator cannot change its voltage output, some code is
+skipped to avoid reporting false errors on some boards, which use MMC hosts
+with fixed regulators (example: Samsung Goni and UniversalC210 boards).
+
+This patch replaces a hacky workaround based on regulator_count_voltages()
+value with the correct call to recently introduced
+regulator_can_change_voltage() function in regulators core.
 
 Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 ---
- drivers/regulator/core.c           |   22 ++++++++++++++++++++++
- include/linux/regulator/consumer.h |    1 +
- 2 files changed, 23 insertions(+)
+ drivers/mmc/core/core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 5c4829c..24623b8 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1861,6 +1861,28 @@ int regulator_is_enabled(struct regulator *regulator)
- EXPORT_SYMBOL_GPL(regulator_is_enabled);
+diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+index aaed768..f5a0493 100644
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -1137,7 +1137,7 @@ int mmc_regulator_set_ocr(struct mmc_host *mmc,
+ 		 */
+ 		voltage = regulator_get_voltage(supply);
  
- /**
-+ * regulator_can_change_voltage - check if regulator can change voltage
-+ * @regulator: regulator source
-+ *
-+ * Returns positive if the regulator driver backing the source/client
-+ * can change its voltage, false otherwise. Usefull for detecting fixed
-+ * or dummy regulators and disabling voltage change logic in the client
-+ * driver.
-+ */
-+int regulator_can_change_voltage(struct regulator *regulator)
-+{
-+	struct regulator_dev	*rdev = regulator->rdev;
-+
-+	if (rdev->constraints &&
-+	    rdev->constraints->valid_ops_mask & REGULATOR_CHANGE_VOLTAGE &&
-+	    rdev->desc->n_voltages > 1)
-+		return 1;
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(regulator_can_change_voltage);
-+
-+/**
-  * regulator_count_voltages - count regulator_list_voltage() selectors
-  * @regulator: regulator source
-  *
-diff --git a/include/linux/regulator/consumer.h b/include/linux/regulator/consumer.h
-index c43cd35..5d0f7c1 100644
---- a/include/linux/regulator/consumer.h
-+++ b/include/linux/regulator/consumer.h
-@@ -160,6 +160,7 @@ int regulator_bulk_force_disable(int num_consumers,
- void regulator_bulk_free(int num_consumers,
- 			 struct regulator_bulk_data *consumers);
+-		if (regulator_count_voltages(supply) == 1)
++		if (!regulator_can_change_voltage(supply))
+ 			min_uV = max_uV = voltage;
  
-+int regulator_can_change_voltage(struct regulator *regulator);
- int regulator_count_voltages(struct regulator *regulator);
- int regulator_list_voltage(struct regulator *regulator, unsigned selector);
- int regulator_is_supported_voltage(struct regulator *regulator,
+ 		if (voltage < 0)
 -- 
 1.7.9.5
 
