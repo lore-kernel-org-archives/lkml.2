@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab2LDP0r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 10:26:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41187 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751945Ab2LDP0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 10:26:44 -0500
-Message-ID: <1354634801.1809.411.camel@bling.home>
-Subject: Re: [RFC PATCH 0/6] kvm: Growable memory slot array
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-Cc: mtosatti@redhat.com, kvm@vger.kernel.org, gleb@redhat.com,
+	id S1753326Ab2LDP2S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 10:28:18 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:42161 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751728Ab2LDP2O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 10:28:14 -0500
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, Jean Delvare <khali@linux-fr.org>,
+        linux-input@vger.kernel.org, linux-i2c@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date: Tue, 04 Dec 2012 08:26:41 -0700
-In-Reply-To: <20121204234829.65472b5ec4aedcf86cccc05f@gmail.com>
-References: <20121203231912.3661.57179.stgit@bling.home>
-	 <20121204234829.65472b5ec4aedcf86cccc05f@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Subject: [PATCH 00/14] i2c-hid cleanup and bug fixes
+Date: Tue,  4 Dec 2012 16:27:41 +0100
+Message-Id: <1354634875-5182-1-git-send-email-benjamin.tissoires@gmail.com>
+X-Mailer: git-send-email 1.8.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-12-04 at 23:48 +0900, Takuya Yoshikawa wrote:
-> On Mon, 03 Dec 2012 16:39:05 -0700
-> Alex Williamson <alex.williamson@redhat.com> wrote:
-> 
-> > A couple notes/questions; in the previous version we had a
-> > kvm_arch_flush_shadow() call when we increased the number of slots.
-> > I'm not sure if this is still necessary.  I had also made the x86
-> > specific slot_bitmap dynamically grow as well and switch between a
-> > direct bitmap and indirect pointer to a bitmap.  That may have
-> > contributed to needing the flush.  I haven't done that yet here
-> > because it seems like an unnecessary complication if we have a max
-> > on the order of 512 or 1024 entries.  A bit per slot isn't a lot of
-> > overhead.  If we want to go more, maybe we should make it switch.
-> 
-> I have a patch set which removes the slot_bitmap in kvm mmu page
-> by using reverse mappings for write protecting a memslot.
-> 
-> A bit of concern I still have is the total write protection time
-> for large memslots.  But since this approach allows us to control
-> mmu_lock hold time, I think this is a reasonable trade-off.
-> ... and this should be much better than introducing any complication
-> for slot_bitmap handling.
+Hi guys,
 
-Great!  A bi-modal bitmap would be rather ugly, so I look forward to
-your patches to remove it entirely ;)  Thanks,
+Jean made a recent review of i2c-hid, and before this driver goes into
+Linus' tree, here are some cleanups.
 
-Alex
+Patch 2 has not been detected by Jean, but it appeared while playing with
+buffers allocation. So this is the only change not asked by the previous
+review.
+
+I still need to work on the mutex to protect the potential race on .open and
+.close, but meanwhile, here is a first batch of patches.
+
+Cheers,
+Benjamin
+
+Benjamin Tissoires (14):
+  HID: i2c-hid: change I2C name
+  HID: i2c-hid: fix memory corruption due to missing hid declarations
+  HID: i2c-hid: enhance Kconfig
+  HID: i2c-hid: fix checkpatch.pl warning
+  HID: i2c-hid: fix i2c_hid_dbg macro
+  HID: i2c-hid: remove unused static declarations
+  HID: i2c-hid: fix return paths
+  HID: i2c-hid: fix error messages
+  HID: i2c-hid: i2c_hid_get_report may fail
+  HID: i2c-hid: reorder allocation/free of buffers
+  HID: i2c-hid: remove unneeded test in i2c_hid_remove
+  HID: i2c-hid: remove extra .irq field in struct i2c_hid
+  HID: i2c-hid: also call i2c_hid_free_buffers in i2c_hid_remove
+  HID: i2c-hid: fix i2c_hid_get_raw_report count mismatches
+
+ drivers/hid/i2c-hid/Kconfig   |   7 +-
+ drivers/hid/i2c-hid/i2c-hid.c | 184 ++++++++++++++++++++----------------------
+ 2 files changed, 89 insertions(+), 102 deletions(-)
+
+-- 
+1.8.0.1
 
