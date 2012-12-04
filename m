@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753096Ab2LDSTI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 13:19:08 -0500
-Received: from [206.117.179.246] ([206.117.179.246]:59455 "EHLO labridge.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751762Ab2LDSTG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 13:19:06 -0500
-Message-ID: <1354645124.6973.16.camel@joe-AO722>
-Subject: Re: [PATCH 1/3] cifs: Remove unused cEVENT macro
-From: Joe Perches <joe@perches.com>
-To: Steve French <smfrench@gmail.com>, Theodore Tso <tytso@mit.edu>
-Cc: Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@samba.org>,
-        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org,
+	id S1753287Ab2LDSV4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 13:21:56 -0500
+Received: from mo-p00-ob.rzone.de ([81.169.146.162]:34738 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751997Ab2LDSVz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 13:21:55 -0500
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFHjy0MEysz
+X-RZG-CLASS-ID: mo00
+Date: Tue, 4 Dec 2012 19:21:51 +0100
+From: Olaf Hering <olaf@aepfle.de>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: konrad.wilk@oracle.com, xen-devel@lists.xen.org,
         linux-kernel@vger.kernel.org
-Date: Tue, 04 Dec 2012 10:18:44 -0800
-In-Reply-To: <CAH2r5mtbhZWJu1eoahDSo84Wr=6jrSDVdwEVnQWYxztU72T2nQ@mail.gmail.com>
-References: <cover.1354217746.git.joe@perches.com>
-	 <7176cb20d420849d72aa004e40a404049362da7f.1354217746.git.joe@perches.com>
-	 <20121130064710.1bcd227b@tlielax.poochiereds.net>
-	 <CAH2r5mtbhZWJu1eoahDSo84Wr=6jrSDVdwEVnQWYxztU72T2nQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] xen/blkback: do not leak mode property
+Message-ID: <20121204182151.GA25878@aepfle.de>
+References: <1354563168-6609-1-git-send-email-olaf@aepfle.de>
+ <50BDDEBF02000078000ADAAC@nat28.tlf.novell.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <50BDDEBF02000078000ADAAC@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21.rev5558 (2012-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(resending due to bounces, sorry for any inconvenience)
+On Tue, Dec 04, Jan Beulich wrote:
 
-On Fri, 2012-11-30 at 09:39 -0600, Steve French wrote:
-> But ... the need still remains for more tracing for cifs (I run into
-> this a few times a month at least when debugging) - does anyone have
-> any ideas for how to add dynamic trace points to cifs (has anyone even
-> done it for the vfs?) - is there any file system that does a good job
-> defining dynamic trace points?
+> This looks necessary but insufficient - there's nothing really
+> preventing backend_changed() from being called more than once
+> for a given device (is simply the handler of xenbus watch). Hence
+> I think either that function needs to be guarded against multiple
+> execution (e.g. by removing the watch from that function itself,
+> if that's permitted by xenbus), or to properly deal with the
+> effects this has (including but probably not limited to the leaking
+> of be->mode).
 
-I believe ext4 is the only filesystem with significant use of
-tracepoints.
+If another watch does really trigger after the kfree(be) in
+xen_blkbk_remove(), wouldnt backend_changed access stale memory?
+So if that can really happen in practice, shouldnt the backend_watch be
+a separate allocation instead being contained within backend_info?
 
-Ted? Any tips you care to give as to best implementation methods?
+Looking at unregister_xenbus_watch, it clears removes the watch from the
+list, so that process_msg will not see it anymore.
 
-
-
+Olaf
