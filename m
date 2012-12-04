@@ -1,93 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804Ab2LDU1O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 15:27:14 -0500
-Received: from mx1.fusionio.com ([66.114.96.30]:35077 "EHLO mx1.fusionio.com"
+	id S1752967Ab2LDUbt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 15:31:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59674 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751795Ab2LDU1J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 15:27:09 -0500
-X-ASG-Debug-ID: 1354652828-03d6a57f9b279190001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <50BE5C99.6070703@fusionio.com>
-Date: Tue, 4 Dec 2012 21:27:05 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, Zach Brown <zab@redhat.com>
-Subject: Re: [patch,v2] bdi: add a user-tunable cpu_list for the bdi flusher
- threads
-References: <x49lidfnf0s.fsf@segfault.boston.devel.redhat.com> <50BE5988.3050501@fusionio.com> <x498v9dpnwu.fsf@segfault.boston.devel.redhat.com>
-X-ASG-Orig-Subj: Re: [patch,v2] bdi: add a user-tunable cpu_list for the bdi flusher
- threads
-In-Reply-To: <x498v9dpnwu.fsf@segfault.boston.devel.redhat.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1752853Ab2LDUbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 15:31:47 -0500
+Date: Tue, 4 Dec 2012 18:31:10 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: "Ortiz, Lance E" <lance.oritz@hp.com>
+Cc: "bhelgaas@google.com" <bhelgaas@google.com>,
+        "lance_ortiz@hotmail.com" <lance_ortiz@hotmail.com>,
+        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "bp@alien8.de" <bp@alien8.de>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v6 2/3] aerdrv: Enhanced AER logging
+Message-ID: <20121204183110.3de876de@redhat.com>
+In-Reply-To: <A961433CDFF2F640A2866803152E61F9516EEACD@G4W3218.americas.hpqcorp.net>
+References: <20121204170429.31397.50068.stgit@grignak.americas.hpqcorp.net>
+	<20121204170436.31397.40857.stgit@grignak.americas.hpqcorp.net>
+	<20121204164151.66b9bb37@redhat.com>
+	<A961433CDFF2F640A2866803152E61F9516EEACD@G4W3218.americas.hpqcorp.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1354652828
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
-X-Barracuda-Spam-Score: -2.02
-X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.116098
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-12-04 21:23, Jeff Moyer wrote:
-> Jens Axboe <jaxboe@fusionio.com> writes:
-> 
->> On 2012-12-03 19:53, Jeff Moyer wrote:
->>> Hi,
->>>
->>> In realtime environments, it may be desirable to keep the per-bdi
->>> flusher threads from running on certain cpus.  This patch adds a
->>> cpu_list file to /sys/class/bdi/* to enable this.  The default is to tie
->>> the flusher threads to the same numa node as the backing device (though
->>> I could be convinced to make it a mask of all cpus to avoid a change in
->>> behaviour).
->>
->> Looks sane, and I think defaulting to the home node is a sane default.
->> One comment:
->>
->>> +	ret = cpulist_parse(buf, newmask);
->>> +	if (!ret) {
->>> +		spin_lock(&bdi->wb_lock);
->>> +		task = wb->task;
->>> +		if (task)
->>> +			get_task_struct(task);
->>> +		spin_unlock(&bdi->wb_lock);
->>
->> bdi->wb_lock needs to be bh safe. The above should have caused lockdep
->> warnings for you.
-> 
-> No lockdep complaints.  I'll double check that's enabled (but I usually
-> have it enabled...).
-> 
->>> @@ -437,6 +488,14 @@ static int bdi_forker_thread(void *ptr)
->>>  				spin_lock_bh(&bdi->wb_lock);
->>>  				bdi->wb.task = task;
->>>  				spin_unlock_bh(&bdi->wb_lock);
->>> +				mutex_lock(&bdi->flusher_cpumask_mutex);
->>> +				ret = set_cpus_allowed_ptr(task,
->>> +							bdi->flusher_cpumask);
->>> +				mutex_unlock(&bdi->flusher_cpumask_mutex);
->>
->> It'd be very useful if we had a kthread_create_cpu_on_cpumask() instead
->> of a _node() variant, since the latter could easily be implemented on
->> top of the former. But not really a show stopper for the patch...
-> 
-> Hmm, if it isn't too scary, I might give this a try.
+Em Tue, 4 Dec 2012 20:14:10 +0000
+"Ortiz, Lance E" <lance.oritz@hp.com> escreveu:
 
-Should not be, pretty much just removing the node part of the create
-struct passed in and making it a cpumask. And for the on_node() case,
-cpumask_of_ndoe() will do the trick.
+> > > +	if (!dev) {
+> > > +		pr_info("PCI AER Cannot get PCI device
+> > %04x:%02x:%02x.%d\n",
+> > > +			pcie->device_id.segment, pcie->device_id.bus,
+> > > +			pcie->device_id.slot, pcie->device_id.function);
+> > 
+> > Hmm... please correct if I'm wrong, but an error happened at PCI, and
+> > also a
+> > kernel bug that prevented it to get the proper PCI device...
+> > 
+> > IMHO, the message here should be stronger, and likely printed via
+> > pr_err().
+> > 
+> 
+> Mauro,
+> 
+> I modeled this message after other places in the kernel where this function failed.  So I figured it would be safe to be consistent there.  I agree though that it should be pr_err().  I can make that change.
 
--- 
-Jens Axboe
+I understand. On most cases, this may not be a critical issue.
 
+However, in this particular case, if PCI AER got an error, but the device
+is not found when trying to handle it, it can be an indication that 
+the PCI device has a more serious issue. So, I'm in favor of changing it,
+and likely be more verbose at the error message, saying that the device
+was not found while trying to report an error condition that happened
+there. It could make sense to even send a trace for the daemon to be
+aware of the error, on some pci device that vanished likely due to the
+error.
+
+Regards,
+Mauro
