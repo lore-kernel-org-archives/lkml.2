@@ -1,74 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752568Ab2LDJY2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 04:24:28 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:63921 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751723Ab2LDJYW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 04:24:22 -0500
-Message-ID: <50BDC140.8060004@numascale-asia.com>
-Date: Tue, 04 Dec 2012 17:24:16 +0800
-From: Daniel J Blueman <daniel@numascale-asia.com>
-Organization: Numascale Asia
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753312Ab2LDJZT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 04:25:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55379 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751732Ab2LDJZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 04:25:16 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, krkumar2@in.ibm.com,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        bhutchings@solarflare.com, jwhan@filewood.snu.ac.kr, shiyer@redhat.com
+Subject: Re: [net-next rfc v7 2/3] virtio_net: multiqueue support
+Date: Tue, 04 Dec 2012 17:24:54 +0800
+Message-ID: <1836549.oV9l61gUO6@jason-thinkpad-t430s>
+User-Agent: KMail/4.9.2 (Linux/3.7.0-rc6+; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <20121203111118.GC26167@redhat.com>
+References: <1354011360-39479-1-git-send-email-jasowang@redhat.com> <50BC7896.4010504@redhat.com> <20121203111118.GC26167@redhat.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        H Peter Anvin <hpa@zytor.com>, Steffen Persvold <sp@numascale.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4 v8] AMD64 EDAC: Fix type usage in NB IDs and memory
- ranges
-References: <1354265060-22956-1-git-send-email-daniel@numascale-asia.com> <1354265060-22956-2-git-send-email-daniel@numascale-asia.com> <20121130171749.GB23034@liondog.tnic>
-In-Reply-To: <20121130171749.GB23034@liondog.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/2012 01:17, Borislav Petkov wrote:
-> On Fri, Nov 30, 2012 at 04:44:20PM +0800, Daniel J Blueman wrote:
->> Use appropriate types for northbridge IDs and memory ranges. Mark immutable
->> data const and keep within compilation unit on related structures. Tested on
->> multi-socket server and multi-server, multi-socket NumaConnect setup.
->>
->> v7: Refactor patches grouping changes
->> v8: Drop unneeded change; use const and static where appropriate
->>
->> Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
->> ---
->>   arch/x86/include/asm/amd_nb.h |    2 +-
->>   drivers/edac/amd64_edac.c     |   26 +++++++++++++-------------
->>   drivers/edac/amd64_edac.h     |    6 +++---
->>   3 files changed, 17 insertions(+), 17 deletions(-)
->>
->> diff --git a/arch/x86/include/asm/amd_nb.h b/arch/x86/include/asm/amd_nb.h
->> index 417eb24..d2e703b 100644
->> --- a/arch/x86/include/asm/amd_nb.h
->> +++ b/arch/x86/include/asm/amd_nb.h
->> @@ -76,7 +76,7 @@ static inline bool amd_nb_has_feature(unsigned feature)
->>   	return ((amd_northbridges.flags & feature) == feature);
->>   }
->>
->> -static inline struct amd_northbridge *node_to_amd_nb(int node)
->> +static inline struct amd_northbridge *node_to_amd_nb(u16 node)
->
-> I'm dropping this change from this patch because if we go with it,
-> we'll have to change all callsites of node_to_amd_nb which would cause
-> unnecessary churn.
+On Monday, December 03, 2012 01:11:18 PM Michael S. Tsirkin wrote:
+> On Mon, Dec 03, 2012 at 06:01:58PM +0800, Jason Wang wrote:
+> > On 12/03/2012 05:47 PM, Michael S. Tsirkin wrote:
+> > > On Mon, Dec 03, 2012 at 02:05:27PM +0800, Jason Wang wrote:
+> > >> On Monday, December 03, 2012 12:34:08 PM Rusty Russell wrote:
+> > >>> Jason Wang <jasowang@redhat.com> writes:
+> > >>>> +static const struct ethtool_ops virtnet_ethtool_ops;
+> > >>>> +
+> > >>>> +/*
+> > >>>> + * Converting between virtqueue no. and kernel tx/rx queue no.
+> > >>>> + * 0:rx0 1:tx0 2:cvq 3:rx1 4:tx1 ... 2N+1:rxN 2N+2:txN
+> > >>>> + */
+> > >>>> +static int vq2txq(struct virtqueue *vq)
+> > >>>> +{
+> > >>>> +	int index = virtqueue_get_queue_index(vq);
+> > >>>> +	return index == 1 ? 0 : (index - 2) / 2;
+> > >>>> +}
+> > >>>> +
+> > >>>> +static int txq2vq(int txq)
+> > >>>> +{
+> > >>>> +	return txq ? 2 * txq + 2 : 1;
+> > >>>> +}
+> > >>>> +
+> > >>>> +static int vq2rxq(struct virtqueue *vq)
+> > >>>> +{
+> > >>>> +	int index = virtqueue_get_queue_index(vq);
+> > >>>> +	return index ? (index - 1) / 2 : 0;
+> > >>>> +}
+> > >>>> +
+> > >>>> +static int rxq2vq(int rxq)
+> > >>>> +{
+> > >>>> +	return rxq ? 2 * rxq + 1 : 0;
+> > >>>> +}
+> > >>>> +
+> > >>> 
+> > >>> I thought MST changed the proposed spec to make the control queue
+> > >>> always
+> > >>> the last one, so this logic becomes trivial.
+> > >> 
+> > >> But it may break the support of legacy guest. If we boot a legacy
+> > >> single queue guest on a 2 queue virtio-net device. It may think vq 2
+> > >> is cvq which is indeed rx1.
+> > > 
+> > > Legacy guyest support should be handled by host using feature
+> > > bits in the usual way: host should detect legacy guest
+> > > by checking the VIRTIO_NET_F_RFS feature.
+> > > 
+> > > If VIRTIO_NET_F_RFS is acked, cvq is vq max_virtqueue_pairs * 2.
+> > > If it's not acked, cvq is vq 2.
+> > 
+> > We could, but we didn't gain much from this.
+> 
+> It just seems cleaner and easier to understand.
+> 
+> > Furthermore, we need also
+> > do the dynamic creation/destroying of virtqueues during feature
+> > negotiation which seems not supported in qemu now.
+> 
+> It's not *done* in qemu now, but it seems easy: just call
+> virtio_add_queue for vq2 and on from virtio_net_set_features.
+> As features can be modified multiple times, we
+> should add virtio_del_queue and call that beforehand
+> to get to the known state (two vqs).
 
-> So, I've applied the final patchset and uploaded a branch here:
->
-> git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git numascale
->
-> Please give it a run on both configurations and let me know if something
-> is still amiss.
+And also need some work after migration like what we need in setting features. 
+I'm ok with this method, will change to follow spec v5.
 
-It works well on fam10h and fam15h boxes, with and without Numaconnect.
-
-Thanks,
-   Daniel
--- 
-Daniel J Blueman
-Principal Software Engineer, Numascale Asia
+Thanks
