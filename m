@@ -1,346 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932136Ab2LDOeu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 09:34:50 -0500
-Received: from smtp145.dfw.emailsrvr.com ([67.192.241.145]:53741 "EHLO
-	smtp145.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751723Ab2LDOdt (ORCPT
+	id S932163Ab2LDOfK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 09:35:10 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:63615 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932138Ab2LDOfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 09:33:49 -0500
-From: Mark Langsdorf <mark.langsdorf@calxeda.com>
-To: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Omar Ramirez Luna <omar.luna@linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 4/6 v7] arm highbank: add support for pl320 IPC
-Date: Tue,  4 Dec 2012 08:34:00 -0600
-Message-Id: <1354631642-30433-5-git-send-email-mark.langsdorf@calxeda.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1354631642-30433-1-git-send-email-mark.langsdorf@calxeda.com>
-References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com>
- <1354631642-30433-1-git-send-email-mark.langsdorf@calxeda.com>
+	Tue, 4 Dec 2012 09:35:05 -0500
+MIME-Version: 1.0
+In-Reply-To: <A3397C8B8B789E45844E7EC5DEAD89D02DC1B172@sausexdag04.amd.com>
+References: <20121203143146.549859007@decadent.org.uk>
+	<20121203143156.904709715@decadent.org.uk>
+	<CA+5PVA6P9EDYgt2WSXyX_fNsN26rG3a9j=7vk4b2SncwQ7am+A@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DC1AF91@sausexdag04.amd.com>
+	<CA+5PVA5TcMC7LyinWyK8mQww7RDT87MTetNY0jb2DqXh0b4zCw@mail.gmail.com>
+	<A3397C8B8B789E45844E7EC5DEAD89D02DC1B172@sausexdag04.amd.com>
+Date: Tue, 4 Dec 2012 09:35:04 -0500
+Message-ID: <CA+5PVA4UGePVRD7VPqiTb4UDKQMyMeJvWkgPZ+U7e0oBCmYr9A@mail.gmail.com>
+Subject: Re: [ 67/89] drm/radeon: properly track the crtc not_enabled case evergreen_mc_stop()
+From: Josh Boyer <jwboyer@gmail.com>
+To: "Deucher, Alexander" <Alexander.Deucher@amd.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>, Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <rob.herring@calxeda.com>
+On Mon, Dec 3, 2012 at 6:40 PM, Deucher, Alexander
+<Alexander.Deucher@amd.com> wrote:
+>> > The original patches should go into 3.6 kernels as well:
+>> >
+>> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=4
+>> a15903db02026728d0cf2755c6fabae16b8db6a
+>> >
+>> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=6
+>> 2444b7462a2b98bc78d68736c03a7c4e66ba7e2
+>> >
+>> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=8
+>> 04cc4a0ad3a896ca295f771a28c6eb36ced7903
+>> >
+>> > I've been meaning to follow up on it, but I haven't had the time.  Do I need
+>> to send explicit patches to stable@vger or can I just ask the above commits
+>> be cherrypicked to 3.6?
+>> >
+>>
+>> Normally the CC tag works.  Not entirely sure why it didn't for the one
+>> patch I asked about.  The other two commits you've highlighted here are
+>> lacking any sort of stable tag, so you'd have to pipe up here about them.
+>
+> The patches were not initially a bug fix per se, so I didn't cc stable.  It was only later that I got reports of the patches fixing issues for some people. Normally I add the stable cc if the patch is a bug fix.
+>
+>>
+>> I went ahead and tried the cherry-pick myself on top of 3.6.9, in the
+>> order you specified above.  The 62444b7462a has a trivial conflict coming
+>> back.  I've attached an mbox with these three patches.  If you want to
+>> give them a glance over and OK them, that would be great.
+>
+> They look good to me.  Thanks!
+>
+> Reviewed-by: Alex Deucher <alexander.deucher@amd.com>
 
-The pl320 IPC allows for interprocessor communication between the highbank A9
-and the EnergyCore Management Engine. The pl320 implements a straightforward
-mailbox protocol.
+Thanks Alex.
 
-This patch depends on Omar Ramirez Luna's <omar.luna@linaro.org>
-mailbox driver patch series.
+We've had a couple of users successfully test a kernel with these 3
+patches applied for rhbz 855275.
 
-Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Cc: Omar Ramirez Luna <omar.luna@linaro.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
----
-Changes from v6
-	None.
-Changes from v5
-        Renamed ipc_transmit() to pl320_ipc_transmit().
-        Properly exported pl320_ipc_{un}register_notifier().
-Changes from v4
-        Moved pl320-ipc.c from arch/arm/mach-highbank to drivers/mailbox.
-        Moved header information to include/linux/mailbox.h.
-        Added Kconfig options to reflect the new code location.
-        Change drivers/mailbox/Makefile to build the omap mailboxes only 
-        when they are configured.
-        Removed ipc_call_fast and renamed ipc_call_slow ipc_transmit.
-Changes from v3, v2
-        None.
-Changes from v1
-        Removed erroneous changes for cpufreq Kconfig.
+Greg, is the mbox enough or would you like me to send them separately
+to the list?
 
- arch/arm/mach-highbank/Kconfig |   2 +
- drivers/mailbox/Kconfig        |   9 ++
- drivers/mailbox/Makefile       |   4 +
- drivers/mailbox/pl320-ipc.c    | 199 +++++++++++++++++++++++++++++++++++++++++
- include/linux/mailbox.h        |  19 +++-
- 5 files changed, 232 insertions(+), 1 deletion(-)
- create mode 100644 drivers/mailbox/Makefile
- create mode 100644 drivers/mailbox/pl320-ipc.c
-
-diff --git a/arch/arm/mach-highbank/Kconfig b/arch/arm/mach-highbank/Kconfig
-index 0e1d0a4..2896881 100644
---- a/arch/arm/mach-highbank/Kconfig
-+++ b/arch/arm/mach-highbank/Kconfig
-@@ -11,5 +11,7 @@ config ARCH_HIGHBANK
- 	select GENERIC_CLOCKEVENTS
- 	select HAVE_ARM_SCU
- 	select HAVE_SMP
-+	select MAILBOX
-+	select PL320_MBOX
- 	select SPARSE_IRQ
- 	select USE_OF
-diff --git a/drivers/mailbox/Kconfig b/drivers/mailbox/Kconfig
-index be8cac0..e89fdb4 100644
---- a/drivers/mailbox/Kconfig
-+++ b/drivers/mailbox/Kconfig
-@@ -34,4 +34,13 @@ config OMAP_MBOX_KFIFO_SIZE
- 	  This can also be changed at runtime (via the mbox_kfifo_size
- 	  module parameter).
- 
-+config PL320_MBOX
-+	bool "ARM PL320 Mailbox"
-+	help
-+	  An implementation of the ARM PL320 Interprocessor Communication
-+	  Mailbox (IPCM), tailored for the Calxeda Highbank. It is used to
-+	  send short messages between Highbank's A9 cores and the EnergyCore
-+	  Management Engine, primarily for cpufreq. Say Y here if you want
-+	  to use the PL320 IPCM support.
-+
- endif
-diff --git a/drivers/mailbox/Makefile b/drivers/mailbox/Makefile
-new file mode 100644
-index 0000000..c9f14c3
---- /dev/null
-+++ b/drivers/mailbox/Makefile
-@@ -0,0 +1,4 @@
-+obj-$(CONFIG_OMAP1_MBOX)	+= mailbox.o mailbox-omap1.o
-+obj-$(CONFIG_OMAP2PLUS_MBOX)	+= mailbox.o mailbox-omap2.o
-+obj-$(CONFIG_PL320_MBOX)	+= pl320-ipc.o
-+
-diff --git a/drivers/mailbox/pl320-ipc.c b/drivers/mailbox/pl320-ipc.c
-new file mode 100644
-index 0000000..1a9d8e4
---- /dev/null
-+++ b/drivers/mailbox/pl320-ipc.c
-@@ -0,0 +1,199 @@
-+/*
-+ * Copyright 2012 Calxeda, Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#include <linux/types.h>
-+#include <linux/err.h>
-+#include <linux/delay.h>
-+#include <linux/export.h>
-+#include <linux/io.h>
-+#include <linux/interrupt.h>
-+#include <linux/completion.h>
-+#include <linux/mutex.h>
-+#include <linux/notifier.h>
-+#include <linux/spinlock.h>
-+#include <linux/device.h>
-+#include <linux/amba/bus.h>
-+
-+#include <linux/mailbox.h>
-+
-+#define IPCMxSOURCE(m)		((m) * 0x40)
-+#define IPCMxDSET(m)		(((m) * 0x40) + 0x004)
-+#define IPCMxDCLEAR(m)		(((m) * 0x40) + 0x008)
-+#define IPCMxDSTATUS(m)		(((m) * 0x40) + 0x00C)
-+#define IPCMxMODE(m)		(((m) * 0x40) + 0x010)
-+#define IPCMxMSET(m)		(((m) * 0x40) + 0x014)
-+#define IPCMxMCLEAR(m)		(((m) * 0x40) + 0x018)
-+#define IPCMxMSTATUS(m)		(((m) * 0x40) + 0x01C)
-+#define IPCMxSEND(m)		(((m) * 0x40) + 0x020)
-+#define IPCMxDR(m, dr)		(((m) * 0x40) + ((dr) * 4) + 0x024)
-+
-+#define IPCMMIS(irq)		(((irq) * 8) + 0x800)
-+#define IPCMRIS(irq)		(((irq) * 8) + 0x804)
-+
-+#define MBOX_MASK(n)		(1 << (n))
-+#define IPC_TX_MBOX		1
-+#define IPC_RX_MBOX		2
-+
-+#define CHAN_MASK(n)		(1 << (n))
-+#define A9_SOURCE		1
-+#define M3_SOURCE		0
-+
-+static void __iomem *ipc_base;
-+static int ipc_irq;
-+static DEFINE_MUTEX(ipc_m1_lock);
-+static DECLARE_COMPLETION(ipc_completion);
-+static ATOMIC_NOTIFIER_HEAD(ipc_notifier);
-+
-+static inline void set_destination(int source, int mbox)
-+{
-+	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxDSET(mbox));
-+	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxMSET(mbox));
-+}
-+
-+static inline void clear_destination(int source, int mbox)
-+{
-+	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxDCLEAR(mbox));
-+	__raw_writel(CHAN_MASK(source), ipc_base + IPCMxMCLEAR(mbox));
-+}
-+
-+static void __ipc_send(int mbox, u32 *data)
-+{
-+	int i;
-+	for (i = 0; i < 7; i++)
-+		__raw_writel(data[i], ipc_base + IPCMxDR(mbox, i));
-+	__raw_writel(0x1, ipc_base + IPCMxSEND(mbox));
-+}
-+
-+static u32 __ipc_rcv(int mbox, u32 *data)
-+{
-+	int i;
-+	for (i = 0; i < 7; i++)
-+		data[i] = __raw_readl(ipc_base + IPCMxDR(mbox, i));
-+	return data[1];
-+}
-+
-+/* blocking implmentation from the A9 side, not usuable in interrupts! */
-+int pl320_ipc_transmit(u32 *data)
-+{
-+	int ret;
-+
-+	mutex_lock(&ipc_m1_lock);
-+
-+	init_completion(&ipc_completion);
-+	__ipc_send(IPC_TX_MBOX, data);
-+	ret = wait_for_completion_timeout(&ipc_completion,
-+					  msecs_to_jiffies(1000));
-+	if (ret == 0) {
-+		ret = -ETIMEDOUT;
-+		goto out;
-+	}
-+
-+	ret = __ipc_rcv(IPC_TX_MBOX, data);
-+out:
-+	mutex_unlock(&ipc_m1_lock);
-+	return ret;
-+}
-+EXPORT_SYMBOL(pl320_ipc_transmit);
-+
-+irqreturn_t ipc_handler(int irq, void *dev)
-+{
-+	u32 irq_stat;
-+	u32 data[7];
-+
-+	irq_stat = __raw_readl(ipc_base + IPCMMIS(1));
-+	if (irq_stat & MBOX_MASK(IPC_TX_MBOX)) {
-+		__raw_writel(0, ipc_base + IPCMxSEND(IPC_TX_MBOX));
-+		complete(&ipc_completion);
-+	}
-+	if (irq_stat & MBOX_MASK(IPC_RX_MBOX)) {
-+		__ipc_rcv(IPC_RX_MBOX, data);
-+		atomic_notifier_call_chain(&ipc_notifier, data[0], data + 1);
-+		__raw_writel(2, ipc_base + IPCMxSEND(IPC_RX_MBOX));
-+	}
-+
-+	return IRQ_HANDLED;
-+}
-+
-+int pl320_ipc_register_notifier(struct notifier_block *nb)
-+{
-+	return atomic_notifier_chain_register(&ipc_notifier, nb);
-+}
-+EXPORT_SYMBOL(pl320_ipc_register_notifier);
-+
-+int pl320_ipc_unregister_notifier(struct notifier_block *nb)
-+{
-+	return atomic_notifier_chain_unregister(&ipc_notifier, nb);
-+}
-+EXPORT_SYMBOL(pl320_ipc_unregister_notifier);
-+
-+static int __devinit pl320_probe(struct amba_device *adev,
-+				const struct amba_id *id)
-+{
-+	int ret;
-+
-+	ipc_base = ioremap(adev->res.start, resource_size(&adev->res));
-+	if (ipc_base == NULL)
-+		return -ENOMEM;
-+
-+	__raw_writel(0, ipc_base + IPCMxSEND(IPC_TX_MBOX));
-+
-+	ipc_irq = adev->irq[0];
-+	ret = request_irq(ipc_irq, ipc_handler, 0, dev_name(&adev->dev), NULL);
-+	if (ret < 0)
-+		goto err;
-+
-+	/* Init slow mailbox */
-+	__raw_writel(CHAN_MASK(A9_SOURCE),
-+			ipc_base + IPCMxSOURCE(IPC_TX_MBOX));
-+	__raw_writel(CHAN_MASK(M3_SOURCE),
-+			ipc_base + IPCMxDSET(IPC_TX_MBOX));
-+	__raw_writel(CHAN_MASK(M3_SOURCE) | CHAN_MASK(A9_SOURCE),
-+		     ipc_base + IPCMxMSET(IPC_TX_MBOX));
-+
-+	/* Init receive mailbox */
-+	__raw_writel(CHAN_MASK(M3_SOURCE),
-+			ipc_base + IPCMxSOURCE(IPC_RX_MBOX));
-+	__raw_writel(CHAN_MASK(A9_SOURCE),
-+			ipc_base + IPCMxDSET(IPC_RX_MBOX));
-+	__raw_writel(CHAN_MASK(M3_SOURCE) | CHAN_MASK(A9_SOURCE),
-+		     ipc_base + IPCMxMSET(IPC_RX_MBOX));
-+
-+	return 0;
-+err:
-+	iounmap(ipc_base);
-+	return ret;
-+}
-+
-+static struct amba_id pl320_ids[] = {
-+	{
-+		.id	= 0x00041320,
-+		.mask	= 0x000fffff,
-+	},
-+	{ 0, 0 },
-+};
-+
-+static struct amba_driver pl320_driver = {
-+	.drv = {
-+		.name	= "pl320",
-+	},
-+	.id_table	= pl320_ids,
-+	.probe		= pl320_probe,
-+};
-+
-+static int __init ipc_init(void)
-+{
-+	return amba_driver_register(&pl320_driver);
-+}
-+module_init(ipc_init);
-diff --git a/include/linux/mailbox.h b/include/linux/mailbox.h
-index e8e4131..e7829e5 100644
---- a/include/linux/mailbox.h
-+++ b/include/linux/mailbox.h
-@@ -1,4 +1,16 @@
--/* mailbox.h */
-+/*
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
- 
- typedef u32 mbox_msg_t;
- struct omap_mbox;
-@@ -20,3 +32,8 @@ void omap_mbox_save_ctx(struct omap_mbox *mbox);
- void omap_mbox_restore_ctx(struct omap_mbox *mbox);
- void omap_mbox_enable_irq(struct omap_mbox *mbox, omap_mbox_irq_t irq);
- void omap_mbox_disable_irq(struct omap_mbox *mbox, omap_mbox_irq_t irq);
-+
-+int pl320_ipc_transmit(u32 *data);
-+int pl320_ipc_register_notifier(struct notifier_block *nb);
-+int pl320_ipc_unregister_notifier(struct notifier_block *nb);
-+
--- 
-1.7.11.7
-
+josh
