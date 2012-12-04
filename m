@@ -1,61 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284Ab2LDJbU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 04:31:20 -0500
-Received: from mail.parknet.co.jp ([210.171.160.6]:40258 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751287Ab2LDJbS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 04:31:18 -0500
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v5 7/8] fat (exportfs): rebuild directory-inode if fat_dget() fails
-References: <1353504311-6020-1-git-send-email-linkinjeon@gmail.com>
-	<878v9f5ugn.fsf@devron.myhome.or.jp>
-	<CAKYAXd-ydXkwDq6vkECEKPUQiNgg2+GKbL+ah9sn+uqr8BT1kQ@mail.gmail.com>
-Date: Tue, 04 Dec 2012 18:31:11 +0900
-In-Reply-To: <CAKYAXd-ydXkwDq6vkECEKPUQiNgg2+GKbL+ah9sn+uqr8BT1kQ@mail.gmail.com>
-	(Namjae Jeon's message of "Tue, 4 Dec 2012 15:27:34 +0900")
-Message-ID: <87k3sy17vk.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	id S1752836Ab2LDJb5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 04:31:57 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:3809 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751554Ab2LDJbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 04:31:52 -0500
+X-IronPort-AV: E=Sophos;i="4.83,370,1352044800"; 
+   d="scan'208";a="6330005"
+Message-ID: <50BDC2CB.2030802@cn.fujitsu.com>
+Date: Tue, 04 Dec 2012 17:30:51 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        Jiang Liu <liuj97@gmail.com>, Len Brown <len.brown@intel.com>,
+        benh@kernel.crashing.org, paulus@samba.org,
+        Christoph Lameter <cl@linux.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Jianguo Wu <wujianguo@huawei.com>
+Subject: Re: [Patch v4 05/12] memory-hotplug: introduce new function arch_remove_memory()
+ for removing page table depends on architecture
+References: <1354010422-19648-1-git-send-email-wency@cn.fujitsu.com> <1354010422-19648-6-git-send-email-wency@cn.fujitsu.com>
+In-Reply-To: <1354010422-19648-6-git-send-email-wency@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/04 17:31:12,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/04 17:31:13,
+	Serialize complete at 2012/12/04 17:31:13
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
-
-> 2012/12/3, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
->> Namjae Jeon <linkinjeon@gmail.com> writes:
->>
->>> From: Namjae Jeon <namjae.jeon@samsung.com>
->>>
->>> This patch enables rebuilding of directory inodes which are not present
->>> in the cache.This is done by traversing the disk clusters to find the
->>> directory entry of the parent directory and using its i_pos to build the
->>> inode.
->>> Do this only if the "nostale_ro" nfs mount option is specified.
->>
->> This became much better than before. However, we have to consolidate the
->> code with fat_search_long() finally.
->>
->> E.g. this version is having the issue already fixed. If there is
->> corruption in fat cluster-chain, it lead to infinite
->> loop. fat_get_cluster() checks infinite loop by limit.
-> since, the focus this time was for NFS functionality for FAT (removing
-> ESTALE error). The changes were made in that context.
+On 11/27/2012 06:00 PM, Wen Congyang wrote:
+> For removing memory, we need to remove page table. But it depends
+> on architecture. So the patch introduce arch_remove_memory() for
+> removing page table. Now it only calls __remove_pages().
 >
-> Later, we can make the changes as part of code reorganizing which can
-> be controlled via. Separate patches which do not have any impact on
-> default functionality and verification can be carried out in that
-> scope.
+> Note: __remove_pages() for some archtecuture is not implemented
+>        (I don't know how to implement it for s390).
+>
+> CC: David Rientjes<rientjes@google.com>
+> CC: Jiang Liu<liuj97@gmail.com>
+> CC: Len Brown<len.brown@intel.com>
+> CC: Benjamin Herrenschmidt<benh@kernel.crashing.org>
+> CC: Paul Mackerras<paulus@samba.org>
+> CC: Christoph Lameter<cl@linux.com>
+> Cc: Minchan Kim<minchan.kim@gmail.com>
+> CC: Andrew Morton<akpm@linux-foundation.org>
+> CC: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
+> CC: Yasuaki Ishimatsu<isimatu.yasuaki@jp.fujitsu.com>
+> Signed-off-by: Wen Congyang<wency@cn.fujitsu.com>
+> ---
+>   arch/ia64/mm/init.c            | 18 ++++++++++++++++++
+>   arch/powerpc/mm/mem.c          | 12 ++++++++++++
+>   arch/s390/mm/init.c            | 12 ++++++++++++
+>   arch/sh/mm/init.c              | 17 +++++++++++++++++
+>   arch/tile/mm/init.c            |  8 ++++++++
+>   arch/x86/mm/init_32.c          | 12 ++++++++++++
+>   arch/x86/mm/init_64.c          | 15 +++++++++++++++
+>   include/linux/memory_hotplug.h |  1 +
+>   mm/memory_hotplug.c            |  2 ++
+>   9 files changed, 97 insertions(+)
+>
+> diff --git a/arch/ia64/mm/init.c b/arch/ia64/mm/init.c
+> index 082e383..e333822 100644
+> --- a/arch/ia64/mm/init.c
+> +++ b/arch/ia64/mm/init.c
+> @@ -689,6 +689,24 @@ int arch_add_memory(int nid, u64 start, u64 size)
+>
+>   	return ret;
+>   }
+> +
+> +#ifdef CONFIG_MEMORY_HOTREMOVE
+> +int arch_remove_memory(u64 start, u64 size)
+> +{
+> +	unsigned long start_pfn = start>>  PAGE_SHIFT;
+> +	unsigned long nr_pages = size>>  PAGE_SHIFT;
+> +	struct zone *zone;
+> +	int ret;
+> +
+> +	zone = page_zone(pfn_to_page(start_pfn));
+> +	ret = __remove_pages(zone, start_pfn, nr_pages);
+> +	if (ret)
+> +		pr_warn("%s: Problem encountered in __remove_pages() as"
+> +			" ret=%d\n", __func__,  ret);
+> +
+> +	return ret;
 
-Right. But non-production code shouldn't go into linus tree. I meant, we
-can test this patch series, but not yet production quality.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Just a little question, why do we have different handlers for ret on
+different platforms ?  Sometimes we print a msg, sometimes we just
+return, and sometimes we give a WARN_ON(). But no big deal. :)
+
+Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
+
+> +}
+> +#endif
+>   #endif
+>
+>   /*
+> diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
+> index 0dba506..09c6451 100644
+> --- a/arch/powerpc/mm/mem.c
+> +++ b/arch/powerpc/mm/mem.c
+> @@ -133,6 +133,18 @@ int arch_add_memory(int nid, u64 start, u64 size)
+>
+>   	return __add_pages(nid, zone, start_pfn, nr_pages);
+>   }
+> +
+> +#ifdef CONFIG_MEMORY_HOTREMOVE
+> +int arch_remove_memory(u64 start, u64 size)
+> +{
+> +	unsigned long start_pfn = start>>  PAGE_SHIFT;
+> +	unsigned long nr_pages = size>>  PAGE_SHIFT;
+> +	struct zone *zone;
+> +
+> +	zone = page_zone(pfn_to_page(start_pfn));
+> +	return __remove_pages(zone, start_pfn, nr_pages);
+> +}
+> +#endif
+>   #endif /* CONFIG_MEMORY_HOTPLUG */
+>
+>   /*
+> diff --git a/arch/s390/mm/init.c b/arch/s390/mm/init.c
+> index 81e596c..b565190 100644
+> --- a/arch/s390/mm/init.c
+> +++ b/arch/s390/mm/init.c
+> @@ -257,4 +257,16 @@ int arch_add_memory(int nid, u64 start, u64 size)
+>   		vmem_remove_mapping(start, size);
+>   	return rc;
+>   }
+> +
+> +#ifdef CONFIG_MEMORY_HOTREMOVE
+> +int arch_remove_memory(u64 start, u64 size)
+> +{
+> +	/*
+> +	 * There is no hardware or firmware interface which could trigger a
+> +	 * hot memory remove on s390. So there is nothing that needs to be
+> +	 * implemented.
+> +	 */
+> +	return -EBUSY;
+> +}
+> +#endif
+>   #endif /* CONFIG_MEMORY_HOTPLUG */
+> diff --git a/arch/sh/mm/init.c b/arch/sh/mm/init.c
+> index 82cc576..1057940 100644
+> --- a/arch/sh/mm/init.c
+> +++ b/arch/sh/mm/init.c
+> @@ -558,4 +558,21 @@ int memory_add_physaddr_to_nid(u64 addr)
+>   EXPORT_SYMBOL_GPL(memory_add_physaddr_to_nid);
+>   #endif
+>
+> +#ifdef CONFIG_MEMORY_HOTREMOVE
+> +int arch_remove_memory(u64 start, u64 size)
+> +{
+> +	unsigned long start_pfn = start>>  PAGE_SHIFT;
+> +	unsigned long nr_pages = size>>  PAGE_SHIFT;
+> +	struct zone *zone;
+> +	int ret;
+> +
+> +	zone = page_zone(pfn_to_page(start_pfn));
+> +	ret = __remove_pages(zone, start_pfn, nr_pages);
+> +	if (unlikely(ret))
+> +		pr_warn("%s: Failed, __remove_pages() == %d\n", __func__,
+> +			ret);
+> +
+> +	return ret;
+> +}
+> +#endif
+>   #endif /* CONFIG_MEMORY_HOTPLUG */
+> diff --git a/arch/tile/mm/init.c b/arch/tile/mm/init.c
+> index ef29d6c..2749515 100644
+> --- a/arch/tile/mm/init.c
+> +++ b/arch/tile/mm/init.c
+> @@ -935,6 +935,14 @@ int remove_memory(u64 start, u64 size)
+>   {
+>   	return -EINVAL;
+>   }
+> +
+> +#ifdef CONFIG_MEMORY_HOTREMOVE
+> +int arch_remove_memory(u64 start, u64 size)
+> +{
+> +	/* TODO */
+> +	return -EBUSY;
+> +}
+> +#endif
+>   #endif
+>
+>   struct kmem_cache *pgd_cache;
+> diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+> index 11a5800..b19eba4 100644
+> --- a/arch/x86/mm/init_32.c
+> +++ b/arch/x86/mm/init_32.c
+> @@ -839,6 +839,18 @@ int arch_add_memory(int nid, u64 start, u64 size)
+>
+>   	return __add_pages(nid, zone, start_pfn, nr_pages);
+>   }
+> +
+> +#ifdef CONFIG_MEMORY_HOTREMOVE
+> +int arch_remove_memory(u64 start, u64 size)
+> +{
+> +	unsigned long start_pfn = start>>  PAGE_SHIFT;
+> +	unsigned long nr_pages = size>>  PAGE_SHIFT;
+> +	struct zone *zone;
+> +
+> +	zone = page_zone(pfn_to_page(start_pfn));
+> +	return __remove_pages(zone, start_pfn, nr_pages);
+> +}
+> +#endif
+>   #endif
+>
+>   /*
+> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+> index 3baff25..5675335 100644
+> --- a/arch/x86/mm/init_64.c
+> +++ b/arch/x86/mm/init_64.c
+> @@ -680,6 +680,21 @@ int arch_add_memory(int nid, u64 start, u64 size)
+>   }
+>   EXPORT_SYMBOL_GPL(arch_add_memory);
+>
+> +#ifdef CONFIG_MEMORY_HOTREMOVE
+> +int __ref arch_remove_memory(u64 start, u64 size)
+> +{
+> +	unsigned long start_pfn = start>>  PAGE_SHIFT;
+> +	unsigned long nr_pages = size>>  PAGE_SHIFT;
+> +	struct zone *zone;
+> +	int ret;
+> +
+> +	zone = page_zone(pfn_to_page(start_pfn));
+> +	ret = __remove_pages(zone, start_pfn, nr_pages);
+> +	WARN_ON_ONCE(ret);
+> +
+> +	return ret;
+> +}
+> +#endif
+>   #endif /* CONFIG_MEMORY_HOTPLUG */
+>
+>   static struct kcore_list kcore_vsyscall;
+> diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+> index 38675e9..191b2d9 100644
+> --- a/include/linux/memory_hotplug.h
+> +++ b/include/linux/memory_hotplug.h
+> @@ -85,6 +85,7 @@ extern void __online_page_free(struct page *page);
+>
+>   #ifdef CONFIG_MEMORY_HOTREMOVE
+>   extern bool is_pageblock_removable_nolock(struct page *page);
+> +extern int arch_remove_memory(u64 start, u64 size);
+>   #endif /* CONFIG_MEMORY_HOTREMOVE */
+>
+>   /* reasonably generic interface to expand the physical pages in a zone  */
+> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+> index 63d5388..e741732 100644
+> --- a/mm/memory_hotplug.c
+> +++ b/mm/memory_hotplug.c
+> @@ -1111,6 +1111,8 @@ repeat:
+>   	/* remove memmap entry */
+>   	firmware_map_remove(start, start + size, "System RAM");
+>
+> +	arch_remove_memory(start, size);
+> +
+>   	unlock_memory_hotplug();
+>
+>   	return 0;
+
