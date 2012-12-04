@@ -1,59 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751719Ab2LDBcP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 20:32:15 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:60983 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751099Ab2LDBcO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 20:32:14 -0500
+	id S1751692Ab2LDBjG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 20:39:06 -0500
+Received: from dupo.coraid.com ([208.71.232.133]:40621 "EHLO coraid.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751211Ab2LDBjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 20:39:05 -0500
+Subject: [PATCH 0/7] aoe: driver improvements and fixes through v81
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, ecashin@coraid.com
+From: Ed Cashin <ecashin@coraid.com>
+X-Mailer: nedmail
+Date: Mon, 3 Dec 2012 20:38:55 -0500
+Message-ID: <3183cff4071d83972c722ad3655209d5@coraid.com>
 MIME-Version: 1.0
-In-Reply-To: <1354522477-11991-1-git-send-email-haojian.zhuang@gmail.com>
-References: <1354522477-11991-1-git-send-email-haojian.zhuang@gmail.com>
-Date: Tue, 4 Dec 2012 09:32:12 +0800
-Message-ID: <CAN1soZze6Ogn_zi7JJN0JNzoMFkHLJyKyjTV7rSWUmQhwRU0NQ@mail.gmail.com>
-Subject: Re: [PATCH] clk: factor: calculate rate by do_div
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        mike.turquette@linaro.org
-Cc: Haojian Zhuang <haojian.zhuang@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 3, 2012 at 4:14 PM, Haojian Zhuang <haojian.zhuang@gmail.com> wrote:
-> clk->rate = parent->rate / div * mult
->
-> The formula is OK. But it may overflow while we do operate with
-> unsigned long. So use do_div instead.
->
-> Signed-off-by: Haojian Zhuang <haojian.zhuang@gmail.com>
-> ---
->  drivers/clk/clk-fixed-factor.c |    5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/clk/clk-fixed-factor.c b/drivers/clk/clk-fixed-factor.c
-> index a489985..1ef271e 100644
-> --- a/drivers/clk/clk-fixed-factor.c
-> +++ b/drivers/clk/clk-fixed-factor.c
-> @@ -28,8 +28,11 @@ static unsigned long clk_factor_recalc_rate(struct clk_hw *hw,
->                 unsigned long parent_rate)
->  {
->         struct clk_fixed_factor *fix = to_clk_fixed_factor(hw);
-> +       unsigned long long int rate;
->
-> -       return parent_rate * fix->mult / fix->div;
-> +       rate = (unsigned long long int)parent_rate * fix->mult;
-> +       do_div(rate, fix->div);
-> +       return (unsigned long)rate;
->  }
->
->  static long clk_factor_round_rate(struct clk_hw *hw, unsigned long rate,
-> --
-> 1.7.10.4
->
+This patch series applies to today's linux-next/akpm, commit
+a5944abc848a1b8e5329a631a84e35a3b0249ecb.
 
-Correct Mike's email address.
+Ed L. Cashin (7):
+  aoe: improve handling of misbehaving network paths
+  aoe: avoid races between device destruction and discovery
+  aoe: use dynamic number of remote ports for AoE storage target
+  aoe: allow user to disable target failure timeout
+  aoe: allow comma separator in aoe_iflist value
+  aoe: identify source of runt AoE packets
+  aoe: update internal version number to 81
+
+ Documentation/aoe/aoe.txt  |    4 +-
+ drivers/block/aoe/aoe.h    |   29 ++-
+ drivers/block/aoe/aoeblk.c |   38 ++++-
+ drivers/block/aoe/aoecmd.c |  439 ++++++++++++++++++++++++++++++--------------
+ drivers/block/aoe/aoedev.c |  177 ++++++++++++------
+ drivers/block/aoe/aoenet.c |    2 +-
+ 6 files changed, 477 insertions(+), 212 deletions(-)
+
