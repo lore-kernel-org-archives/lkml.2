@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931Ab2LDPRp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 10:17:45 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:50922 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751723Ab2LDPRn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 10:17:43 -0500
-Date: Tue, 4 Dec 2012 07:17:34 -0800
-From: Tejun Heo <tj@kernel.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
-        namhyung@kernel.org, vincent.guittot@linaro.org, sbw@mit.edu,
-        amit.kucheria@linaro.org, rostedt@goodmis.org, rjw@sisk.pl,
-        wangyun@linux.vnet.ibm.com, xiaoguangrong@linux.vnet.ibm.com,
-        nikunj@linux.vnet.ibm.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 01/10] CPU hotplug: Introduce "stable" cpu online
- mask, for atomic hotplug readers
-Message-ID: <20121204151734.GB3885@mtj.dyndns.org>
-References: <20121204085149.25919.29920.stgit@srivatsabhat.in.ibm.com>
- <20121204085324.25919.53090.stgit@srivatsabhat.in.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121204085324.25919.53090.stgit@srivatsabhat.in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753014Ab2LDPUd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 10:20:33 -0500
+Received: from mga11.intel.com ([192.55.52.93]:51052 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751090Ab2LDPUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 10:20:31 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,215,1355126400"; 
+   d="scan'208";a="258842627"
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alan Cox <alan@linux.intel.com>, Jamie Iles <jamie@jamieiles.com>,
+        linux-serial@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCHv3 3/5] serial: 8250_dw: Map IO memory
+Date: Tue,  4 Dec 2012 17:21:52 +0200
+Message-Id: <1354634512-19299-1-git-send-email-heikki.krogerus@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <20121204081713.GA8071@xps8300>
+References: <20121204081713.GA8071@xps8300>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Srivatsa.
+This needs to be done in order to later access the
+Designware specific registers.
 
-On Tue, Dec 04, 2012 at 02:23:41PM +0530, Srivatsa S. Bhat wrote:
->  extern const struct cpumask *const cpu_possible_mask;
->  extern const struct cpumask *const cpu_online_mask;
-> +extern const struct cpumask *const cpu_online_stable_mask;
->  extern const struct cpumask *const cpu_present_mask;
->  extern const struct cpumask *const cpu_active_mask;
+Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+---
+ drivers/tty/serial/8250/8250_dw.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-This is a bit nasty.  The distinction between cpu_online_mask and the
-stable one is quite subtle and there's no mechanism to verify the
-right one is in use.  IIUC, the only time cpu_online_mask and
-cpu_online_stable_mask can deviate is during the final stage CPU take
-down, right?  If so, why not just make cpu_online_mask the stable one
-and the few cases where the actual online state matters deal with the
-internal version?  Anyone outside cpu hotplug proper should be happy
-with the stable version anyway, no?
-
-Thanks.
-
+diff --git a/drivers/tty/serial/8250/8250_dw.c b/drivers/tty/serial/8250/8250_dw.c
+index ff83ea5..e174901 100644
+--- a/drivers/tty/serial/8250/8250_dw.c
++++ b/drivers/tty/serial/8250/8250_dw.c
+@@ -111,10 +111,13 @@ static int dw8250_probe(struct platform_device *pdev)
+ 	uart.port.irq = irq->start;
+ 	uart.port.handle_irq = dw8250_handle_irq;
+ 	uart.port.type = PORT_8250;
+-	uart.port.flags = UPF_SHARE_IRQ | UPF_BOOT_AUTOCONF | UPF_IOREMAP |
+-		UPF_FIXED_PORT;
++	uart.port.flags = UPF_SHARE_IRQ | UPF_BOOT_AUTOCONF | UPF_FIXED_PORT;
+ 	uart.port.dev = &pdev->dev;
+ 
++	uart.port.membase = ioremap(regs->start, resource_size(regs));
++	if (!uart.port.membase)
++		return -ENOMEM;
++
+ 	uart.port.iotype = UPIO_MEM;
+ 	uart.port.serial_in = dw8250_serial_in;
+ 	uart.port.serial_out = dw8250_serial_out;
 -- 
-tejun
+1.7.10.4
+
