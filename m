@@ -1,53 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752429Ab2LDWKF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 17:10:05 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:44241 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751436Ab2LDWKC (ORCPT
+	id S1752725Ab2LDWKL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 17:10:11 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:59783 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752449Ab2LDWKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 17:10:02 -0500
-From: Lekensteyn <lekensteyn@gmail.com>
-To: Heinz Diehl <htd@fritha.org>
-Cc: dri-devel@lists.freedesktop.org, Daniel Vetter <daniel@ffwll.ch>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Heinz Diehl <htd@fancy-poultry.org>
-Subject: Re: i915 freakout with latest 3.7 git
-Date: Tue, 04 Dec 2012 23:09:58 +0100
-Message-ID: <2102240.hdkK7C4k4g@al>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-1-custom; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <20121204210845.GA2092@fritha.org>
-References: <20121203173951.GA25384@fancy-poultry.org> <1498848.rM1KKK5er8@al> <20121204210845.GA2092@fritha.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Tue, 4 Dec 2012 17:10:06 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6916"; a="11788695"
+From: Laura Abbott <lauraa@codeaurora.org>
+To: Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Laura Abbott <lauraa@codeaurora.org>
+Subject: [PATCH] mm: Use aligned zone start for pfn_to_bitidx calculation
+Date: Tue,  4 Dec 2012 14:10:01 -0800
+Message-Id: <1354659001-13673-1-git-send-email-lauraa@codeaurora.org>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 04 December 2012 22:08:45 Heinz Diehl wrote:
-> Ok, but in comment 11 in the same thread you mention that reverting
-> this patch didn't fix the issue for you:
-> 
-> "Reverting that commit on top of 3.7-rc4 did not fix the hang issue."
-The bisected commit was from between rc2 and rc3:
-$ git describe 504c7267a1e84b157cbd7e9c1b805e1bc0c2c846
-v3.6-rc2-88-g504c726
-The fact that reverting that commit does not help implies that some commits 
-thereafter also expose the bug.
+The current calculation in pfn_to_bitidx assumes that
+(pfn - zone->zone_start_pfn) >> pageblock_order will return the
+same bit for all pfn in a pageblock. If zone_start_pfn is not
+aligned to pageblock_nr_pages, this may not always be correct.
 
-> > i915.i915_enable_rc6=0 worked for me, if it does not work for you, then
-> > you  probably hit another bug.
-> 
-> I have now i915.i915_enable_rc6=0 in grub.cfg and disabled the XFCE
-> compositor. Now I'm trying to hit the bug again...
-Do you have a reliable reproduce method? As you can see in the linked bug it 
-was caused by relatively low memory pressure combined with high I/O (caching? 
-delays? Who knows).
+Consider the following with pageblock order = 10, zone start 2MB:
 
-> A shot in the dark: could it be that all the machines wich encounter
-> this hang have nvidia's optimus? Mine has. Could that somehow be
-> related? (I'm by no means a programmer or a kernel hacker..).
-It is unlikely that Optimus has anything to do with this.
+pfn     | pfn - zone start | (pfn - zone start) >> page block order
+----------------------------------------------------------------
+0x26000 | 0x25e00	   |  0x97
+0x26100 | 0x25f00	   |  0x97
+0x26200 | 0x26000	   |  0x98
+0x26300 | 0x26100	   |  0x98
 
-Peter
+This means that calling {get,set}_pageblock_migratetype on a single
+page will not set the migratetype for the full block. The correct
+fix is to round down zone_start_pfn for the bit index calculation.
+Rather than do this calculation everytime, store this precalcualted
+algined start in the zone structure to allow the actual start_pfn to
+be used elsewhere.
+
+Change-Id: I13e2f53f50db294f38ec86138c17c6fe29f0ee82
+Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+---
+ include/linux/mmzone.h |    6 ++++++
+ mm/page_alloc.c        |    4 +++-
+ 2 files changed, 9 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 08f74e6..0a5471b 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -467,6 +467,12 @@ struct zone {
+ 	struct pglist_data	*zone_pgdat;
+ 	/* zone_start_pfn == zone_start_paddr >> PAGE_SHIFT */
+ 	unsigned long		zone_start_pfn;
++	/*
++	 * the starting pfn of the zone may not be aligned to the pageblock
++	 * size which can throw off calculation of the pageblock flags.
++	 * This is the precomputed aligned start of the zone
++	 */
++	unsigned long		aligned_start_pfn;
+ 
+ 	/*
+ 	 * zone_start_pfn, spanned_pages and present_pages are all
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index c3142e8..d78e1d6 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -3968,6 +3968,8 @@ __meminit int init_currently_empty_zone(struct zone *zone,
+ 	pgdat->nr_zones = zone_idx(zone) + 1;
+ 
+ 	zone->zone_start_pfn = zone_start_pfn;
++	zone->aligned_start_pfn = round_down(zone_start_pfn,
++						pageblock_nr_pages);
+ 
+ 	mminit_dprintk(MMINIT_TRACE, "memmap_init",
+ 			"Initialising map node %d zone %lu pfns %lu -> %lu\n",
+@@ -5424,7 +5426,7 @@ static inline int pfn_to_bitidx(struct zone *zone, unsigned long pfn)
+ 	pfn &= (PAGES_PER_SECTION-1);
+ 	return (pfn >> pageblock_order) * NR_PAGEBLOCK_BITS;
+ #else
+-	pfn = pfn - zone->zone_start_pfn;
++	pfn = pfn - zone->aligned_start_pfn;
+ 	return (pfn >> pageblock_order) * NR_PAGEBLOCK_BITS;
+ #endif /* CONFIG_SPARSEMEM */
+ }
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
