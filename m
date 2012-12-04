@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751656Ab2LDAnZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 19:43:25 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50452 "EHLO
+	id S1751751Ab2LDAyj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 19:54:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50468 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236Ab2LDAnY (ORCPT
+	with ESMTP id S1751409Ab2LDAyi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 19:43:24 -0500
-Date: Mon, 3 Dec 2012 16:43:22 -0800
+	Mon, 3 Dec 2012 19:54:38 -0500
+Date: Mon, 3 Dec 2012 16:54:36 -0800
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Michel Lespinasse <walken@google.com>
-Cc: linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: protect against concurrent vma expansion
-Message-Id: <20121203164322.b967d461.akpm@linux-foundation.org>
-In-Reply-To: <CANN689FfWVV4MyTUPKZQgQAWW9Dfdw9f0fqx98kc+USKj9g7TA@mail.gmail.com>
-References: <1354344987-28203-1-git-send-email-walken@google.com>
-	<20121203150110.39c204ff.akpm@linux-foundation.org>
-	<CANN689FfWVV4MyTUPKZQgQAWW9Dfdw9f0fqx98kc+USKj9g7TA@mail.gmail.com>
+To: Josh Hunt <johunt@akamai.com>
+Cc: "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
+        "kay.sievers@vrfy.org" <kay.sievers@vrfy.org>,
+        "tj@kernel.org" <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH] block: Restore /proc/partitions to not display
+ non-partitionable removable devices
+Message-Id: <20121203165436.0542933f.akpm@linux-foundation.org>
+In-Reply-To: <50BD4680.7090103@akamai.com>
+References: <1353380209-23799-1-git-send-email-johunt@akamai.com>
+	<20121203160647.11ad34d8.akpm@linux-foundation.org>
+	<50BD4680.7090103@akamai.com>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -26,78 +30,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Dec 2012 16:35:01 -0800
-Michel Lespinasse <walken@google.com> wrote:
+On Mon, 03 Dec 2012 18:40:32 -0600
+Josh Hunt <johunt@akamai.com> wrote:
 
-> On Mon, Dec 3, 2012 at 3:01 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> > On Fri, 30 Nov 2012 22:56:27 -0800
-> > Michel Lespinasse <walken@google.com> wrote:
+> On 12/03/2012 06:06 PM, Andrew Morton wrote:
+> > On Mon, 19 Nov 2012 18:56:49 -0800
+> > Josh Hunt <johunt@akamai.com> wrote:
 > >
-> >> expand_stack() runs with a shared mmap_sem lock. Because of this, there
-> >> could be multiple concurrent stack expansions in the same mm, which may
-> >> cause problems in the vma gap update code.
-> >>
-> >> I propose to solve this by taking the mm->page_table_lock around such vma
-> >> expansions, in order to avoid the concurrency issue. We only have to worry
-> >> about concurrent expand_stack() calls here, since we hold a shared mmap_sem
-> >> lock and all vma modificaitons other than expand_stack() are done under
-> >> an exclusive mmap_sem lock.
-> >>
-> >> I previously tried to achieve the same effect by making sure all
-> >> growable vmas in a given mm would share the same anon_vma, which we
-> >> already lock here. However this turned out to be difficult - all of the
-> >> schemes I tried for refcounting the growable anon_vma and clearing
-> >> turned out ugly. So, I'm now proposing only the minimal fix.
+> >> We found with newer kernels we started seeing the cdrom device showing
+> >> up in /proc/partitions, but it was not there before. Looking into this I found
+> >> that commit d27769ec... block: add GENHD_FL_NO_PART_SCAN introduces this change
+> >> in behavior. It's not clear to me from the commit's changelog if this change was
+> >> intentional or not. This comment still remains:
+> >> /* Don't show non-partitionable removeable devices or empty devices */
+> >> so I've decided to send a patch to restore the behavior of not printing
+> >> unpartitionable removable devices.
 > >
-> > I think I don't understand the problem fully.  Let me demonstrate:
+> > d27769ec was merged in August 2011, so I after all this time, your fix
+> > could be viewed as "changing existing behaviour".
 > >
-> > a) vma_lock_anon_vma() doesn't take a lock which is specific to
-> >    "this" anon_vma.  It takes anon_vma->root->mutex.  That mutex is
-> >    shared with vma->vm_next, yes?  If so, we have no problem here?
-> >    (which makes me suspect that the races lies other than where I think
-> >    it lies).
+> > So perhaps it would be best to leave things alone.  Is there any
+> > particular problem with the post-Aug, 2011 behaviour?
+> >
 > 
-> So, the first thing I need to mention is that this fix is NOT for any
-> problem that has been reported (and in particular, not for Sasha's
-> trinity fuzzing issue). It's just me looking at the code and noticing
-> I haven't gotten locking right for the case of concurrent stack
-> expansion.
+> We caught this by a script that parses /proc/partitions and made some 
+> assumptions about the contents therein. It had worked fine up until when 
+> this behavior changed. We were able to modify our script to get what we 
+> needed.
 > 
-> Regarding vma and vma->vm_next sharing the same root anon_vma mutex -
-> this will often be the case, but not always. find_mergeable_anon_vma()
-> will try to make it so, but it could fail if there was another vma
-> in-between at the time the stack's anon_vmas got assigned (either a
-> non-stack vma that later gets unmapped, or another stack vma that
-> didn't get its own anon_vma assigned yet).
+> The patch was meant to do two things: 1) understand if this was an 
+> unintended change and 2) if so, propose a solution to resolve it. Since 
+> the comment was left in the source I believe either a) my patch should 
+> be applied or b) a new patch with the comment removed should be put in 
+> since it's no longer correct. I did not think this type of change to 
+> kernel abi was generally acceptable.
 > 
-> > b) I can see why a broader lock is needed in expand_upwards(): it
-> >    plays with a different vma: vma->vm_next.  But expand_downwards()
-> >    doesn't do that - it only alters "this" vma.  So I'd have thought
-> >    that vma_lock_anon_vma("this" vma) would be sufficient.
+> While the commit is over a year old, it changes behavior which had been 
+> in tact for a while (years?) from what I can tell. We were running 3.0 
+> with stable updates until we upgraded to 3.2 and hit this. Neither of 
+> these are what I would consider "old" kernels.
 > 
-> The issue there is that vma_gap_update() accesses vma->vm_prev, so the
-> issue is actually symetrical with expand_upwards().
-> 
-> > What are the performance costs of this change?
-> 
-> It's expected to be small. glibc doesn't use expandable stacks for the
-> threads it creates, so having multiple growable stacks is actually
-> uncommon (another reason why the problem hasn't been observed in
-> practice). Because of this, I don't expect the page table lock to get
-> bounced between threads, so the cost of taking it should be small
-> (compared to the cost of delivering the #PF, let alone handling it in
-> software).
-> 
-> But yes, the initial idea of forcing all growable vmas in an mm to
-> share the same root anon_vma sounded much more appealing at first.
-> Unfortunately I haven't been able to make that work in a simple enough
-> way to be comfortable submitting it this late in the release cycle :/
 
-hm, OK.  Could you please cook up a new changelog which explains these
-things to the next puzzled reader and send it along?
+Yes, this is difficult.  Removing existing entries is more likely to
+cause damage than adding new ones, so I suspect the safest approach is
+to just leave things as they now are.
 
-Ingo is playing in the same area with "mm/rmap: Convert the struct
-anon_vma::mutex to an rwsem", but as that patch changes
-vma_lock_anon_vma() to use down_write(), I expect it won't affect
-anything.  But please check it over.
-
+In which case yes, we should repair that comment.  ie: change it to a
+comment which explains *why* we display removable devices.  Unlike the
+existing comment which tells us "what" but not "why", when "why" is
+what we wanted to know, sigh.
