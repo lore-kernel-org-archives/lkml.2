@@ -1,106 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753771Ab2LDVDY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 16:03:24 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:36969 "EHLO comal.ext.ti.com"
+	id S1753807Ab2LDVEs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 16:04:48 -0500
+Received: from www.hansjkoch.de ([178.63.77.200]:51511 "EHLO www.hansjkoch.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751757Ab2LDVDW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 16:03:22 -0500
-From: "Andrianov, Vitaly" <vitalya@ti.com>
-To: Michal Nazarewicz <mina86@mina86.com>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-CC: "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-keystone@list.ti.com - Linux developers for Keystone family of
-	devices (May contain non-TIers)" <linux-keystone@list.ti.com>,
-        "Chemparathy, Cyril" <cyril@ti.com>
-Subject: RE: [linux-keystone] [PATCH v2] drivers: cma: fix addressing on PAE
- machines
-Thread-Topic: [linux-keystone] [PATCH v2] drivers: cma: fix addressing on
- PAE machines
-Thread-Index: AQHN0W1bb/yPlKolKEKNpzP1xL0znJgIl+eAgABqkICAAB93AIAARCwA//+qlMA=
-Date: Tue, 4 Dec 2012 21:03:11 +0000
-Message-ID: <C279DA448D408F43B343F09155C1EE9B0C228FC7@DFLE09.ent.ti.com>
-References: <1354549570-21445-1-git-send-email-vitalya@ti.com>
- <50BD9C45.7070501@ti.com> <xa1tsj7m3qza.fsf@mina86.com>
- <50BE100E.1060007@ti.com> <xa1tsj7l3agx.fsf@mina86.com>
-In-Reply-To: <xa1tsj7l3agx.fsf@mina86.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.170.170.90]
-Content-Type: text/plain; charset="utf-8"
+	id S1753783Ab2LDVEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 16:04:47 -0500
+Date: Tue, 4 Dec 2012 22:04:40 +0100
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Vitalii Demianets <vitas@nppfactor.kiev.ua>
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Cong Ding <dinggnu@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] drivers/uio/uio_pdrv_genirq.c: Fix memory freeing issues
+Message-ID: <20121204210440.GA4720@local>
+References: <201211271929.32315.vitas@nppfactor.kiev.ua>
+ <201211281137.23623.vitas@nppfactor.kiev.ua>
+ <20121128211407.GC2590@local>
+ <201211291347.28273.vitas@nppfactor.kiev.ua>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201211291347.28273.vitas@nppfactor.kiev.ua>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qB4L3Sf9011124
 
+On Thu, Nov 29, 2012 at 01:47:28PM +0200, Vitalii Demianets wrote:
+> 1. uioinfo was kfreed based on the presence of pdev->dev.of_node, which was
+> obviously wrong and unrelated to the fact if uioinfo was allocated statically
+> or dynamically. This patch introduces new flag which clearly shows if uioinfo
+> was allocated dynamically and kfrees uioinfo based on that flag;
+> 2. Fix: priv data was not freed in case platform_get_irq() failed. As it was
+> caused mainly by improper exit labels naming, labels were renamed too;
+> 3. The case of uioinfo AND pdev->dev.of_node both NULL (not initialized
+> in platform data) was not treated properly.
 
+Your arguments sound right to me. But there are some minor issues, see below.
 
-> -----Original Message-----
-> From: Michal Nazarewicz [mailto:mpn@google.com] On Behalf Of Michal
-> Nazarewicz
-> Sent: Tuesday, December 04, 2012 2:05 PM
-> To: Andrianov, Vitaly; Shilimkar, Santosh
-> Cc: m.szyprowski@samsung.com; kyungmin.park@samsung.com; arnd@arndb.de;
-> linux-kernel@vger.kernel.org; linux-keystone@list.ti.com - Linux
-> developers for Keystone family of devices (May contain non-TIers);
-> Chemparathy, Cyril
-> Subject: Re: [linux-keystone] [PATCH v2] drivers: cma: fix addressing
-> on PAE machines
-> 
-> > On Tuesday 04 December 2012 06:37 PM, Michal Nazarewicz wrote:
-> >> They are all related to the very same issue, and what the whole
-> patch
-> >> does is change the type used to store physical addresses from
-> >> unsigned long to phys_addr_t.  This is really a single change.
-> 
-> On Tue, Dec 04 2012, Santosh Shilimkar wrote:
-> > Thanks for clarification. 64 bit alignment fix and the allocation
-> > range checks can be two separate fixes and that is exactly what
-> change
-> > log describes.  You have a last say though :-) No problem if you want
-> > to commit the patch as is.
-> 
-> I don't have strong feelings on this one, but I feel like it's really a
-> single change which manifests itself in a few ways.  If this is
-> confusing, maybe commit message could be improved, to something like:
-> 
-> ------------- >8 ------------------------------------------------------
-> -
-> drivers: cma: represent physicall addresses as phys_addr_t
-> 
-> This commit changes the CMA early initialisation code to use
-> phys_addr_t for representing physical addresses instead of unsigned
-> long.
-> 
-> Without this change, among other things, dma_declare_contiguous()
-> simply discards any memory regions whose address is not represtible as
-> unsigned long.
-> 
-> This is a problem on 32-bit PAE machines where unsigned long is 32-bit
-> but physical address space is larger.
-> ------------- 8< ------------------------------------------------------
-> -
-> 
-> Vitaly, if you could resend with that description, it would be awesome,
-> and sorry for so much trouble in what appears to be a trivial patch. :P
-> 
+Otherwise looks good.
+Thanks,
+Hans
 
-Sure, I'll do that.
+> 
+> Signed-off-by: Vitalii Demianets <vitas@nppfactor.kiev.ua>
+> ---
+>  drivers/uio/uio_pdrv_genirq.c |   44 ++++++++++++++++++++++++----------------
+>  1 files changed, 26 insertions(+), 18 deletions(-)
+> 
+> diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
+> index 42202cd..45126e3 100644
+> --- a/drivers/uio/uio_pdrv_genirq.c
+> +++ b/drivers/uio/uio_pdrv_genirq.c
+> @@ -30,6 +30,11 @@
+>  
+>  #define DRIVER_NAME "uio_pdrv_genirq"
+>  
+> +enum {
+> +	bitIRQDisabled = 0,
+> +	bitUioinfoAlloced = 1,
 
-> --
-> Best regards,                                         _     _
-> .o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-> ..o | Computer Science,  MichaÅ‚ â€œmina86â€ Nazarewicz    (o o)
-> ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+Please do not use CamelCase. This is neither Windows nor C++ or Java.
+And you don't need to tell users about the type (like "bit"). That should
+be clear by looking at the code. I'd prefer UPPERCASE to make it clear that
+these are constants, e.g. IRQ_IS_DISABLED and UIO_INFO_IS_ALLOCATED or
+something like that.
 
-Regards,
-Vitaly
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> +};
+> +
+>  struct uio_pdrv_genirq_platdata {
+>  	struct uio_info *uioinfo;
+>  	spinlock_t lock;
+> @@ -63,7 +68,7 @@ static irqreturn_t uio_pdrv_genirq_handler(int irq, struct uio_info *dev_info)
+>  	 * remember the state so we can allow user space to enable it later.
+>  	 */
+>  
+> -	if (!test_and_set_bit(0, &priv->flags))
+> +	if (!test_and_set_bit(bitIRQDisabled, &priv->flags))
+>  		disable_irq_nosync(irq);
+>  
+>  	return IRQ_HANDLED;
+> @@ -83,10 +88,10 @@ static int uio_pdrv_genirq_irqcontrol(struct uio_info *dev_info, s32 irq_on)
+>  
+>  	spin_lock_irqsave(&priv->lock, flags);
+>  	if (irq_on) {
+> -		if (test_and_clear_bit(0, &priv->flags))
+> +		if (test_and_clear_bit(bitIRQDisabled, &priv->flags))
+>  			enable_irq(dev_info->irq);
+>  	} else {
+> -		if (!test_and_set_bit(0, &priv->flags))
+> +		if (!test_and_set_bit(bitIRQDisabled, &priv->flags))
+>  			disable_irq(dev_info->irq);
+>  	}
+>  	spin_unlock_irqrestore(&priv->lock, flags);
+> @@ -101,8 +106,9 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+>  	struct uio_mem *uiomem;
+>  	int ret = -EINVAL;
+>  	int i;
+> +	bool uioinfo_alloced = false;
+>  
+> -	if (!uioinfo) {
+> +	if (!uioinfo && pdev->dev.of_node) {
+>  		int irq;
+>  
+>  		/* alloc uioinfo for one device */
+> @@ -110,10 +116,11 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+>  		if (!uioinfo) {
+>  			ret = -ENOMEM;
+>  			dev_err(&pdev->dev, "unable to kmalloc\n");
+> -			goto bad2;
+> +			goto out;
+>  		}
+>  		uioinfo->name = pdev->dev.of_node->name;
+>  		uioinfo->version = "devicetree";
+> +		uioinfo_alloced = true;
+>  
+>  		/* Multiple IRQs are not supported */
+>  		irq = platform_get_irq(pdev, 0);
+> @@ -125,32 +132,33 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+>  
+>  	if (!uioinfo || !uioinfo->name || !uioinfo->version) {
+>  		dev_err(&pdev->dev, "missing platform_data\n");
+> -		goto bad0;
+> +		goto out_uioinfo;
+>  	}
+>  
+>  	if (uioinfo->handler || uioinfo->irqcontrol ||
+>  	    uioinfo->irq_flags & IRQF_SHARED) {
+>  		dev_err(&pdev->dev, "interrupt configuration error\n");
+> -		goto bad0;
+> +		goto out_uioinfo;
+>  	}
+>  
+>  	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+>  	if (!priv) {
+>  		ret = -ENOMEM;
+>  		dev_err(&pdev->dev, "unable to kmalloc\n");
+> -		goto bad0;
+> +		goto out_uioinfo;
+>  	}
+>  
+>  	priv->uioinfo = uioinfo;
+>  	spin_lock_init(&priv->lock);
+> -	priv->flags = 0; /* interrupt is enabled to begin with */
+> +	/* interrupt is enabled to begin with */
+> +	priv->flags = uioinfo_alloced ? (1 << bitUioinfoAlloced) : 0;
+>  	priv->pdev = pdev;
+>  
+>  	if (!uioinfo->irq) {
+>  		ret = platform_get_irq(pdev, 0);
+>  		if (ret < 0) {
+>  			dev_err(&pdev->dev, "failed to get IRQ\n");
+> -			goto bad0;
+> +			goto out_priv;
+>  		}
+>  		uioinfo->irq = ret;
+>  	}
+> @@ -205,19 +213,19 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+>  	ret = uio_register_device(&pdev->dev, priv->uioinfo);
+>  	if (ret) {
+>  		dev_err(&pdev->dev, "unable to register uio device\n");
+> -		goto bad1;
+> +		goto out_pm;
+>  	}
+>  
+>  	platform_set_drvdata(pdev, priv);
+>  	return 0;
+> - bad1:
+> -	kfree(priv);
+> +out_pm:
+>  	pm_runtime_disable(&pdev->dev);
+> - bad0:
+> -	/* kfree uioinfo for OF */
+> -	if (pdev->dev.of_node)
+> +out_priv:
+> +	kfree(priv);
+> +out_uioinfo:
+> +	if (uioinfo_alloced)
+>  		kfree(uioinfo);
+> - bad2:
+> +out:
+>  	return ret;
+>  }
+>  
+> @@ -232,7 +240,7 @@ static int uio_pdrv_genirq_remove(struct platform_device *pdev)
+>  	priv->uioinfo->irqcontrol = NULL;
+>  
+>  	/* kfree uioinfo for OF */
+> -	if (pdev->dev.of_node)
+> +	if (priv->flags & (1 << bitUioinfoAlloced))
+>  		kfree(priv->uioinfo);
+>  
+>  	kfree(priv);
+> -- 
+> 1.7.8.6
+> 
