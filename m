@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752669Ab2LDKkS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 05:40:18 -0500
-Received: from georges.telenet-ops.be ([195.130.137.68]:34480 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751689Ab2LDKkO (ORCPT
+	id S1752982Ab2LDKof (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 05:44:35 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36090 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751963Ab2LDKoe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 05:40:14 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-cris-kernel@axis.com, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Hans-Peter Nilsson <hans-peter.nilsson@axis.com>
-Subject: [PATCH -resend] cris: Use "int" for ssize_t to match size_t
-Date: Tue,  4 Dec 2012 11:39:56 +0100
-Message-Id: <1354617596-2457-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
+	Tue, 4 Dec 2012 05:44:34 -0500
+From: Serban Constantinescu <serban.constantinescu@arm.com>
+To: gregkh@linuxfoundation.org, arve@android.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, john.stultz@linaro.org,
+        ccross@android.com, zach.pfeffer@linaro.org, Dave.Butcher@arm.com
+Cc: Serban Constantinescu <serban.constantinescu@arm.com>
+Subject: [PATCH 0/2] Android: Add support for a 32bit Android file system in a 64bit kernel
+Date: Tue,  4 Dec 2012 10:44:12 +0000
+Message-Id: <1354617854-25296-1-git-send-email-serban.constantinescu@arm.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On cris-linux-gcc, __SIZE_TYPE__ expands to "unsigned int", as
-gcc-4.6.3-nolibc/cris-linux/lib/gcc/cris-linux/4.6.3/plugin/include/config/cris/linux.h
-has
+Hi all,
 
-    #define SIZE_TYPE "unsigned int"
+The following set of patches will provide support for a 32-bit Android file
+system running on top of 64-bit kernel. We have tested them successfully on
+64-bit platforms (Real Time Simulation Model ARMv8) as well as on 32-bit ones
+(4xA9 Versatile Express). For RTSMv8 we have been using 64-bit kernel build,
+running the CPU in the AArch64 state, and an ARMv7 file system build, running
+in AArch32 state of ARMv8.
 
-Hence __kernel_size_t is also "unsigned int".  But __kernel_ssize_t is
-"long", which has a different base type, causing compiler warnings like:
+Please take a look and let me know if you have any feedback.
 
-    fs/quota/quota_tree.c:372:4: warning: format '%zd' expects argument of type 'signed size_t', but argument 4 has type 'ssize_t' [-Wformat]
+Note: This set of patches will affect only an Android build of the Linux
+kernel, the drivers(binder, ashmem) are not pulled in for a default Linux
+build.
 
-To fix this, __kernel_ssize_t should be changed to "int". Hence cris can
-just use the generic 32-bit versions from include/asm-generic/posix_types.h
-for all size-related types.
+Best Regards,
+Serban Constantinescu
+PDSW Engineer ARM Ltd.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Mikael Starvik <starvik@axis.com>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: Hans-Peter Nilsson <hans-peter.nilsson@axis.com>
-Cc: linux-cris-kernel@axis.com
----
- arch/cris/include/asm/posix_types.h |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
+Serban Constantinescu (2):
+  Staging: android: binder: Add support for 32bit binder calls in a
+    64bit kernel
+  Staging: android: ashmem: Add support for 32bit ashmem calls in a
+    64bit kernel
 
-diff --git a/arch/cris/include/asm/posix_types.h b/arch/cris/include/asm/posix_types.h
-index ce4e517..0f22e6a 100644
---- a/arch/cris/include/asm/posix_types.h
-+++ b/arch/cris/include/asm/posix_types.h
-@@ -22,11 +22,6 @@ typedef unsigned short	__kernel_uid_t;
- typedef unsigned short	__kernel_gid_t;
- #define __kernel_uid_t __kernel_uid_t
- 
--typedef __SIZE_TYPE__	__kernel_size_t;
--typedef long		__kernel_ssize_t;
--typedef int		__kernel_ptrdiff_t;
--#define __kernel_size_t __kernel_size_t
--
- typedef unsigned short	__kernel_old_dev_t;
- #define __kernel_old_dev_t __kernel_old_dev_t
- 
+ drivers/staging/android/ashmem.c |   60 +++++---
+ drivers/staging/android/ashmem.h |    6 +-
+ drivers/staging/android/binder.c |  298 ++++++++++++++++++++------------------
+ drivers/staging/android/binder.h |   56 +++----
+ 4 files changed, 233 insertions(+), 187 deletions(-)
+
 -- 
-1.7.0.4
+1.7.9.5
 
