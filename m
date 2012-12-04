@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753103Ab2LDTwp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 14:52:45 -0500
-Received: from mail.tpi.com ([70.99.223.143]:2718 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752291Ab2LDTwo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 14:52:44 -0500
-From: Tim Gardner <tim.gardner@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tim Gardner <tim.gardner@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Akinobu Mita <akinobu.mita@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        David Howells <dhowells@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.7-rc8] lib/Makefile: Fix oid_registry build dependency
-Date: Tue,  4 Dec 2012 12:52:28 -0700
-Message-Id: <1354650748-11032-1-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752532Ab2LDT5a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 14:57:30 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:58804 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751751Ab2LDT53 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 14:57:29 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAPgLHd-GK0ZO97vhaNhFuHBxuHf+s+7YQ1kw_-+7pUVoqNwgdw@mail.gmail.com>
+References: <CAPgLHd-GK0ZO97vhaNhFuHBxuHf+s+7YQ1kw_-+7pUVoqNwgdw@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 4 Dec 2012 12:57:07 -0700
+Message-ID: <CAErSpo7apCKg0ADSV2w1uGsFFAWi3-E4mbf8HLW8V+Gj9YNdsg@mail.gmail.com>
+Subject: Re: [PATCH -next] tile/PCI: use for_each_pci_dev to simplify the code
+To: Wei Yongjun <weiyj.lk@gmail.com>
+Cc: cmetcalf@tilera.com, yongjun_wei@trendmicro.com.cn,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is $(obj)/oid_registry.o that is dependent on $(obj)/oid_registry_data.c.
-The object file cannot be built until $(obj)/oid_registry_data.c has been
-generated.
+On Mon, Dec 3, 2012 at 6:28 AM, Wei Yongjun <weiyj.lk@gmail.com> wrote:
+> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+>
+> Use for_each_pci_dev to simplify the code.
+>
+> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> ---
+>  arch/tile/kernel/pci.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/tile/kernel/pci.c b/arch/tile/kernel/pci.c
+> index 7598226..aac1cd5 100644
+> --- a/arch/tile/kernel/pci.c
+> +++ b/arch/tile/kernel/pci.c
+> @@ -245,7 +245,7 @@ static void __devinit fixup_read_and_payload_sizes(void)
+>         u16 new_values;
+>
+>         /* Scan for the smallest maximum payload size. */
+> -       while ((dev = pci_get_device(PCI_ANY_ID, PCI_ANY_ID, dev)) != NULL) {
+> +       for_each_pci_dev(dev) {
+>                 u32 devcap;
+>                 int max_payload;
+>
+> @@ -260,7 +260,7 @@ static void __devinit fixup_read_and_payload_sizes(void)
+>
+>         /* Now, set the max_payload_size for all devices to that value. */
+>         new_values = (max_read_size << 12) | (smallest_max_payload << 5);
+> -       while ((dev = pci_get_device(PCI_ANY_ID, PCI_ANY_ID, dev)) != NULL)
+> +       for_each_pci_dev(dev)
+>                 pcie_capability_clear_and_set_word(dev, PCI_EXP_DEVCTL,
+>                                 PCI_EXP_DEVCTL_PAYLOAD | PCI_EXP_DEVCTL_READRQ,
+>                                 new_values);
+>
+>
 
-A periodic and hard to reproduce parallel build failure is due to
-this incorrect lib/Makefile dependency. The compile error is completely
-disingenuous.
+This patch looks correct to me, as far as it goes.
 
-  GEN     lib/oid_registry_data.c
-Compiling 49 OIDs
-  CC      lib/oid_registry.o
-gcc: error: lib/oid_registry.c: No such file or directory
-gcc: fatal error: no input files
-compilation terminated.
-make[3]: *** [lib/oid_registry.o] Error 4
+Of course, any time we use for_each_pci_dev(), it's a good clue that
+this code won't work for hotplug, so presumably you don't care about
+hotplug on this system.
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
+tile/kernel/pci_gx.c has a function of the same name, implemented
+completely differently, which suggests that some unification or
+refactoring might be possible.
 
-I've only ever been able to reproduce this build failure on an Ubuntu PPA, 
-and then only infrequently. Restarting the build generally succeeds.
-I beleive the root of the issue to be an incorrect dependency, though
-I'm not sure why it doesn't fail more often. Its never failed when run by hand,
-even on large N-way systems. Commit a77ad6ea0b0bb1f9d1f52ed494bd72a5fdde208e
-which introduced this change came in with 3.7-rc1, so this patch is not
-applicable for stable.
+In general, I think the PCI_EXP_DEVCAP and PCI_EXP_DEVCTL code for MPS
+and MRRS management belongs in the PCI core, not in drivers or
+architectures (it's fine if they provide device- or platform-specific
+constraints), so anything you can do to move in that direction would
+be good.
 
- lib/Makefile |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/lib/Makefile b/lib/Makefile
-index 821a162..a08b791 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -163,7 +163,7 @@ $(obj)/crc32table.h: $(obj)/gen_crc32table
- #
- obj-$(CONFIG_OID_REGISTRY) += oid_registry.o
- 
--$(obj)/oid_registry.c: $(obj)/oid_registry_data.c
-+$(obj)/oid_registry.o: $(obj)/oid_registry_data.c
- 
- $(obj)/oid_registry_data.c: $(srctree)/include/linux/oid_registry.h \
- 			    $(src)/build_OID_registry
--- 
-1.7.9.5
-
+Bjorn
