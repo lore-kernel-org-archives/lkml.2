@@ -1,153 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751554Ab2LDBT6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 20:19:58 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:53631 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211Ab2LDBT4 (ORCPT
+	id S1751573Ab2LDBVh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 20:21:37 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:9899 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751099Ab2LDBVg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 20:19:56 -0500
+	Mon, 3 Dec 2012 20:21:36 -0500
+Message-ID: <50BD5001.9000203@huawei.com>
+Date: Tue, 4 Dec 2012 09:21:05 +0800
+From: Jiang Liu <jiang.liu@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-In-Reply-To: <1354312850-29264-1-git-send-email-marek.belisko@open-nandra.com>
-References: <1354312850-29264-1-git-send-email-marek.belisko@open-nandra.com>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Mon, 3 Dec 2012 17:19:34 -0800
-Message-ID: <CAK5ve-Jx=_gq+teFRRjDYqt+dceo9YoNGwRXNcopDr93mCE6dQ@mail.gmail.com>
-Subject: Re: [PATCH v4 1/2] leds/tca6507: Add support for devicetree.
-To: Marek Belisko <marek.belisko@open-nandra.com>
-Cc: rpurdie@rpsys.net, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Chris Clayton <chris2553@googlemail.com>, Jiang Liu <liuj97@gmail.com>,
+        Wen Congyang <wency@cn.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
+        Minchan Kim <minchan@kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [RFT PATCH v2 4/5] mm: provide more accurate estimation of pages
+ occupied by memmap
+References: <20121120111942.c9596d3f.akpm@linux-foundation.org> <1353510586-6393-1-git-send-email-jiang.liu@huawei.com> <20121128155221.df369ce4.akpm@linux-foundation.org> <50B73E56.4050603@googlemail.com> <50BBB21D.3070005@googlemail.com> <20121203151715.8c536a7a.akpm@linux-foundation.org>
+In-Reply-To: <20121203151715.8c536a7a.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.108.108.229]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks like this patch is based on linux-next tree, I fixed this. And I
-will solve the conflict when we do actually merge in next cycle.
+On 2012-12-4 7:17, Andrew Morton wrote:
+> On Sun, 02 Dec 2012 19:55:09 +0000
+> Chris Clayton <chris2553@googlemail.com> wrote:
+> 
+>>
+>>
+>> On 11/29/12 10:52, Chris Clayton wrote:
+>>> On 11/28/12 23:52, Andrew Morton wrote:
+>>>> On Wed, 21 Nov 2012 23:09:46 +0800
+>>>> Jiang Liu <liuj97@gmail.com> wrote:
+>>>>
+>>>>> Subject: Re: [RFT PATCH v2 4/5] mm: provide more accurate estimation
+>>>>> of pages occupied by memmap
+>>>>
+>>>> How are people to test this?  "does it boot"?
+>>>>
+>>>
+>>> I've been running kernels with Gerry's 5 patches applied for 11 days
+>>> now. This is on a 64bit laptop but with a 32bit kernel + HIGHMEM. I
+>>> joined the conversation because my laptop would not resume from suspend
+>>> to disk - it either froze or rebooted. With the patches applied the
+>>> laptop does successfully resume and has been stable.
+>>>
+>>> Since Monday, I have have been running a kernel with the patches (plus,
+>>> from today, the patch you mailed yesterday) applied to 3.7rc7, without
+>>> problems.
+>>>
+>>
+>> I've been running 3.7-rc7 with the patches listed below for a week now 
+>> and it has been perfectly stable. In particular, my laptop will now 
+>> successfully resume from suspend to disk, which always failed without 
+>> the patches.
+>>
+>>  From Jiang Liu:
+>> 1. [RFT PATCH v2 1/5] mm: introduce new field "managed_pages" to struct zone
+>> 2. [RFT PATCH v1 2/5] mm: replace zone->present_pages with 
+>> zone->managed_pages if appreciated
+>> 3. [RFT PATCH v1 3/5] mm: set zone->present_pages to number of existing 
+>> pages in the zone
+>> 4. [RFT PATCH v2 4/5] mm: provide more accurate estimation of pages 
+>> occupied by memmap
+>> 5. [RFT PATCH v1 5/5] mm: increase totalram_pages when free pages 
+>> allocated by bootmem allocator
+>>
+>>  From Andrew Morton:
+>> 6. mm-provide-more-accurate-estimation-of-pages-occupied-by-memmap.patch
+>>
+>> Tested-by: Chris Clayton <chris2553@googlemail.com>
+> 
+> Thanks.
+> 
+> I have only two of these five patches queued for 3.8:
+> mm-introduce-new-field-managed_pages-to-struct-zone.patch and
+> mm-provide-more-accurate-estimation-of-pages-occupied-by-memmap.patch. 
+> I don't recall what happened with the other three.
 
--Bryan
+Hi Andrew,
+	I think the story that,
+1) I sent out all five patches for the first version.
+2) Later updated and resend the first and forth patches according to 
+   review comments without touching the other three patches.
+	So you may just get the updated two without noticing the other
+three from the initial patchset.
+	Sorry for the trouble.
+Regards!
+Gerry
 
-On Fri, Nov 30, 2012 at 2:00 PM, Marek Belisko
-<marek.belisko@open-nandra.com> wrote:
-> Support added only for leds (not for gpio's).
->
-> Signed-off-by: Marek Belisko <marek.belisko@open-nandra.com>
-> ---
-> Changes from v3:
-> - fix code according Bryan suggestions
-> - use common leds binding description instead copy'n'paste
-> - use "-" instead "_" in bindings example for leds names
->
-> Changes from v2:
-> - change compatible property to "ti,tca6507"
-> - add documentation for linux,default-trigger
->
-> Changes from v1:
-> - return proper error value not NULL from tca6507_led_dt_init()
->         - remove empty lines
->         - remove kfree()
->  drivers/leds/leds-tca6507.c |   74 +++++++++++++++++++++++++++++++++++++++++--
->  1 file changed, 71 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/leds/leds-tca6507.c b/drivers/leds/leds-tca6507.c
-> index b26a63b..3ad46fb 100644
-> --- a/drivers/leds/leds-tca6507.c
-> +++ b/drivers/leds/leds-tca6507.c
-> @@ -667,6 +667,70 @@ static void tca6507_remove_gpio(struct tca6507_chip *tca)
->  }
->  #endif /* CONFIG_GPIOLIB */
->
-> +#ifdef CONFIG_OF
-> +static struct tca6507_platform_data *
-> +tca6507_led_dt_init(struct i2c_client *client)
-> +{
-> +       struct device_node *np = client->dev.of_node, *child;
-> +       struct tca6507_platform_data *pdata;
-> +       struct led_info *tca_leds;
-> +       int count = 0;
-> +
-> +       for_each_child_of_node(np, child)
-> +               count++;
-> +       if (!count)
-> +               return ERR_PTR(-ENODEV);
-> +
-> +       if (count > NUM_LEDS)
-> +               return ERR_PTR(-ENODEV);
-> +
-> +       tca_leds = devm_kzalloc(&client->dev,
-> +                               sizeof(struct led_info) * count, GFP_KERNEL);
-> +       if (!tca_leds)
-> +               return ERR_PTR(-ENOMEM);
-> +
-> +       for_each_child_of_node(np, child) {
-> +               struct led_info led;
-> +               u32 reg;
-> +               int ret;
-> +
-> +               led.name =
-> +                       of_get_property(child, "label", NULL) ? : child->name;
-> +               led.default_trigger =
-> +                       of_get_property(child, "linux,default-trigger", NULL);
-> +
-> +               ret = of_property_read_u32(child, "reg", &reg);
-> +               if (ret != 0)
-> +                       continue;
-> +
-> +               tca_leds[reg] = led;
-> +       }
-> +       pdata = devm_kzalloc(&client->dev,
-> +                       sizeof(struct tca6507_platform_data), GFP_KERNEL);
-> +       if (!pdata)
-> +               return ERR_PTR(-ENOMEM);
-> +
-> +       pdata->leds.leds = tca_leds;
-> +       pdata->leds.num_leds = count;
-> +
-> +       return pdata;
-> +}
-> +
-> +static const struct of_device_id of_tca6507_leds_match[] = {
-> +       { .compatible = "ti,tca6507", },
-> +       {},
-> +};
-> +
-> +#else
-> +static tca6507_platform_data *
-> +tca6507_led_dt_init(struct i2c_client *client)
-> +{
-> +       return ERR_PRT(-ENODEV);
-> +}
-> +
-> +#define of_tca6507_leds_match NULL
-> +#endif
-> +
->  static int tca6507_probe(struct i2c_client *client,
->                                    const struct i2c_device_id *id)
->  {
-> @@ -683,9 +747,12 @@ static int tca6507_probe(struct i2c_client *client,
->                 return -EIO;
->
->         if (!pdata || pdata->leds.num_leds != NUM_LEDS) {
-> -               dev_err(&client->dev, "Need %d entries in platform-data list\n",
-> -                       NUM_LEDS);
-> -               return -ENODEV;
-> +               pdata = tca6507_led_dt_init(client);
-> +               if (IS_ERR(pdata)) {
-> +                       dev_err(&client->dev, "Need %d entries in platform-data list\n",
-> +                               NUM_LEDS);
-> +                       return PTR_ERR(pdata);
-> +               }
->         }
->         tca = devm_kzalloc(&client->dev, sizeof(*tca), GFP_KERNEL);
->         if (!tca)
-> @@ -750,6 +817,7 @@ static struct i2c_driver tca6507_driver = {
->         .driver   = {
->                 .name    = "leds-tca6507",
->                 .owner   = THIS_MODULE,
-> +               .of_match_table = of_tca6507_leds_match,
->         },
->         .probe    = tca6507_probe,
->         .remove   = tca6507_remove,
-> --
-> 1.7.10.4
->
