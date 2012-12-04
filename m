@@ -1,145 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752656Ab2LDI0S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 03:26:18 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62645 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752001Ab2LDI0Q (ORCPT
+	id S1752529Ab2LDIg7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 03:36:59 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:58515 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752293Ab2LDIg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 03:26:16 -0500
-Message-ID: <50BDB372.50106@gmail.com>
-Date: Tue, 04 Dec 2012 16:25:22 +0800
-From: wujianguo <wujianguo106@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:14.0) Gecko/20120713 Thunderbird/14.0
+	Tue, 4 Dec 2012 03:36:58 -0500
+Date: Tue, 4 Dec 2012 09:36:55 +0100
+From: Heinz Diehl <htd@fancy-poultry.org>
+To: linux-kernel@vger.kernel.org
+Cc: dri-devel@lists.freedesktop.org, intel-gfx@lists.freedesktop.org
+Subject: Re: i915 freakout with latest 3.7 git
+Message-ID: <20121204083655.GA21235@fancy-poultry.org>
+References: <20121203173951.GA25384@fancy-poultry.org>
+ <CAHdPZaP6HvM=UqkAjyC8MFMv9ZFTyxjx-CsMQ+8QZaxPCaW1Hw@mail.gmail.com>
 MIME-Version: 1.0
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-CC: akpm@linux-foundation.org, mgorman@suse.de, mjg59@srcf.ucam.org,
-        paulmck@linux.vnet.ibm.com, dave@linux.vnet.ibm.com,
-        maxime.coquelin@stericsson.com, loic.pallardy@stericsson.com,
-        arjan@linux.intel.com, kmpark@infradead.org,
-        kamezawa.hiroyu@jp.fujitsu.com, lenb@kernel.org, rjw@sisk.pl,
-        gargankita@gmail.com, amit.kachhap@linaro.org,
-        svaidy@linux.vnet.ibm.com, thomas.abraham@linaro.org,
-        santosh.shilimkar@ti.com, linux-pm@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 2/8] mm: Initialize node memory regions during boot
-References: <20121106195026.6941.24662.stgit@srivatsabhat.in.ibm.com> <20121106195241.6941.43309.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20121106195241.6941.43309.stgit@srivatsabhat.in.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHdPZaP6HvM=UqkAjyC8MFMv9ZFTyxjx-CsMQ+8QZaxPCaW1Hw@mail.gmail.com>
+Organization: private site
+OpenPGP: id=BBAD7AE7; url=http://www.fritha.org/htd.asc
+User-Agent: Mutt/1.5.21+67 (d414971f0c48) (2011-07-01)
+X-Provags-ID: V02:K0:ipHr/hobKxmiIHVrQ9eHKfpEUJ4maITVKTrdX1RG9JY
+ KIiN9iMABvGGpjCTrG8Qil2Vku/pjn9WXfzQk3V5bJtOoNNHAs
+ TC202WAeS7JtNdXWD6l1O6il9dmVfMGzP8DTgtyIXwu3z+dSfm
+ Q+dEt40WsXXM9maitHB7dTP30aBoZGPg6jwZwj1az2SeAkWiGK
+ WT7XfFhFtzv5Yf7segkX/Ffcl8Rj+YDfq2xs9nMosIV1MZd6Do
+ hifxpDSpVbUDMd2JCT/1gkxhfLzUMiSyZ7O5/KPOUyXCza66t9
+ I+GCh3VdULXwgbo8Vi76h/rnsPBMR6Y6L3rmR7ufLphBNwsDjc
+ 8Vp3kUN+NkLOcM9NKZZpbLnIEjRr49OjOLnh505V0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Srivatsa,
+On 03.12.2012, devendra.aaru wrote: 
 
-I got following compile waring:
+> Add more CC's
 
-WARNING: vmlinux.o(.text+0x10b320): Section mismatch in reference from the function init_zone_memory_regions() to the function .meminit.text:__absent_pages_in_range()
-The function init_zone_memory_regions() references
-the function __meminit __absent_pages_in_range().
-This is often because init_zone_memory_regions lacks a __meminit
-annotation or the annotation of __absent_pages_in_range is wrong.
+Thanks!
 
-WARNING: vmlinux.o(.text+0x10b457): Section mismatch in reference from the function init_node_memory_regions() to the function .meminit.text:__absent_pages_in_range()
-The function init_node_memory_regions() references
-the function __meminit __absent_pages_in_range().
-This is often because init_node_memory_regions lacks a __meminit
-annotation or the annotation of __absent_pages_in_range is wrong.
-
-I think should add *__paginginit* to the following three functions:
-init_memory_regions()
-init_node_memory_regions()
-init_zone_memory_regions()
-
-Thanks,
-Jianguo wu
-
-On 2012-11-7 3:52, Srivatsa S. Bhat wrote:
-> Initialize the node's memory regions structures with the information about
-> the region-boundaries, at boot time.
-> 
-> Based-on-patch-by: Ankita Garg <gargankita@gmail.com>
-> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-> ---
-> 
->  include/linux/mm.h |    4 ++++
->  mm/page_alloc.c    |   35 +++++++++++++++++++++++++++++++++++
->  2 files changed, 39 insertions(+)
-> 
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index fa06804..19c4fb0 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -657,6 +657,10 @@ static inline pte_t maybe_mkwrite(pte_t pte, struct vm_area_struct *vma)
->  #define SECTIONS_MASK		((1UL << SECTIONS_WIDTH) - 1)
->  #define ZONEID_MASK		((1UL << ZONEID_SHIFT) - 1)
->  
-> +/* Hard-code memory regions size to be 512 MB for now. */
-> +#define MEM_REGION_SHIFT	(29 - PAGE_SHIFT)
-> +#define MEM_REGION_SIZE		(1UL << MEM_REGION_SHIFT)
-> +
->  static inline enum zone_type page_zonenum(const struct page *page)
->  {
->  	return (page->flags >> ZONES_PGSHIFT) & ZONES_MASK;
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index bb90971..709e3c1 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -4560,6 +4560,40 @@ static void __init_refok alloc_node_mem_map(struct pglist_data *pgdat)
->  #endif /* CONFIG_FLAT_NODE_MEM_MAP */
->  }
->  
-> +void init_node_memory_regions(struct pglist_data *pgdat)
-> +{
-> +	int nid = pgdat->node_id;
-> +	unsigned long start_pfn = pgdat->node_start_pfn;
-> +	unsigned long end_pfn = start_pfn + pgdat->node_spanned_pages;
-> +	unsigned long i, absent;
-> +	int idx;
-> +	struct node_mem_region *region;
-> +
-> +	for (i = start_pfn, idx = 0; i < end_pfn;
-> +				i += region->spanned_pages, idx++) {
-> +
-> +		region = &pgdat->node_regions[idx];
-> +
-> +		if (i + MEM_REGION_SIZE <= end_pfn) {
-> +			region->start_pfn = i;
-> +			region->spanned_pages = MEM_REGION_SIZE;
-> +		} else {
-> +			region->start_pfn = i;
-> +			region->spanned_pages = end_pfn - i;
-> +		}
-> +
-> +		absent = __absent_pages_in_range(nid, region->start_pfn,
-> +						 region->start_pfn +
-> +						 region->spanned_pages);
-> +
-> +		region->present_pages = region->spanned_pages - absent;
-> +		region->idx = idx;
-> +		region->node = nid;
-> +		region->pgdat = pgdat;
-> +		pgdat->nr_node_regions++;
-> +	}
-> +}
-> +
->  void __paginginit free_area_init_node(int nid, unsigned long *zones_size,
->  		unsigned long node_start_pfn, unsigned long *zholes_size)
->  {
-> @@ -4581,6 +4615,7 @@ void __paginginit free_area_init_node(int nid, unsigned long *zones_size,
->  #endif
->  
->  	free_area_init_core(pgdat, zones_size, zholes_size);
-> +	init_node_memory_regions(pgdat);
->  }
->  
->  #ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+This is a real showstopper for me, it occurs in every session now. 
+Booting with "i915.i915_enable_rc6=0" doesn't help either..
 
