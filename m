@@ -1,124 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752911Ab2LDJSe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 04:18:34 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:19911 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751370Ab2LDJSa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 04:18:30 -0500
-X-IronPort-AV: E=Sophos;i="4.83,370,1352044800"; 
-   d="scan'208";a="6329907"
-Message-ID: <50BDBFAA.7040008@cn.fujitsu.com>
-Date: Tue, 04 Dec 2012 17:17:30 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752967Ab2LDJSy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 04:18:54 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:55305 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752300Ab2LDJSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 04:18:32 -0500
+Message-ID: <50BDBFDD.302@ti.com>
+Date: Tue, 4 Dec 2012 11:18:21 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org, David Rientjes <rientjes@google.com>,
-        Jiang Liu <liuj97@gmail.com>, Len Brown <len.brown@intel.com>,
-        benh@kernel.crashing.org, paulus@samba.org,
-        Christoph Lameter <cl@linux.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Jianguo Wu <wujianguo@huawei.com>
-Subject: Re: [Patch v4 01/12] memory-hotplug: try to offline the memory twice
- to avoid dependence
-References: <1354010422-19648-1-git-send-email-wency@cn.fujitsu.com> <1354010422-19648-2-git-send-email-wency@cn.fujitsu.com>
-In-Reply-To: <1354010422-19648-2-git-send-email-wency@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/04 17:17:51,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/04 17:17:52,
-	Serialize complete at 2012/12/04 17:17:52
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+CC: Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        "Porter, Matt" <mporter@ti.com>, "Dill, Russ" <russ.dill@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH] da8xx: Fix revision check on the da8xx driver
+References: <1351698984-4007-1-git-send-email-panto@antoniou-consulting.com> <A73F36158E33644199EB82C5EC81C7BC3E9E10D6@DBDE01.ent.ti.com> <A73F36158E33644199EB82C5EC81C7BC3EA13286@DBDE01.ent.ti.com>
+In-Reply-To: <A73F36158E33644199EB82C5EC81C7BC3EA13286@DBDE01.ent.ti.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="------------enigCF3063E8CEE3ADA48BCD1830"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2012 06:00 PM, Wen Congyang wrote:
-> memory can't be offlined when CONFIG_MEMCG is selected.
-> For example: there is a memory device on node 1. The address range
-> is [1G, 1.5G). You will find 4 new directories memory8, memory9, memory10,
-> and memory11 under the directory /sys/devices/system/memory/.
->
-> If CONFIG_MEMCG is selected, we will allocate memory to store page cgroup
-> when we online pages. When we online memory8, the memory stored page cgroup
-> is not provided by this memory device. But when we online memory9, the memory
-> stored page cgroup may be provided by memory8. So we can't offline memory8
-> now. We should offline the memory in the reversed order.
->
-> When the memory device is hotremoved, we will auto offline memory provided
-> by this memory device. But we don't know which memory is onlined first, so
-> offlining memory may fail. In such case, iterate twice to offline the memory.
-> 1st iterate: offline every non primary memory block.
-> 2nd iterate: offline primary (i.e. first added) memory block.
->
-> This idea is suggested by KOSAKI Motohiro.
->
-> CC: David Rientjes<rientjes@google.com>
-> CC: Jiang Liu<liuj97@gmail.com>
-> CC: Len Brown<len.brown@intel.com>
-> CC: Christoph Lameter<cl@linux.com>
-> Cc: Minchan Kim<minchan.kim@gmail.com>
-> CC: Andrew Morton<akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
-> CC: Yasuaki Ishimatsu<isimatu.yasuaki@jp.fujitsu.com>
-> Signed-off-by: Wen Congyang<wency@cn.fujitsu.com>
+--------------enigCF3063E8CEE3ADA48BCD1830
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
+On 2012-12-04 08:36, Manjunathappa, Prakash wrote:
+> Hi Tomi,
+>=20
+> On Wed, Oct 31, 2012 at 09:21:35, Manjunathappa, Prakash wrote:
+>> On Wed, Oct 31, 2012 at 21:26:24, Pantelis Antoniou wrote:
+>>> The revision check fails for the beaglebone; Add new revision ID.
+>>>
+>>> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+>>> ---
+>>>  drivers/video/da8xx-fb.c | 1 +
+>>>  1 file changed, 1 insertion(+)
+>>>
+>>> diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
+>>> index 80665f6..866d804 100644
+>>> --- a/drivers/video/da8xx-fb.c
+>>> +++ b/drivers/video/da8xx-fb.c
+>>> @@ -1283,6 +1283,7 @@ static int __devinit fb_probe(struct platform_d=
+evice *device)
+>>>  		lcd_revision =3D LCD_VERSION_1;
+>>>  		break;
+>>>  	case 0x4F200800:
+>>> +	case 0x4F201000:
+>>
+>> Thanks for Correcting. This is the LCDC revision on am335x silicon in =
+comparison
+>> with to one read(0x4F200800) on emulator platform.
+>>
+>> Acked-by: Manjunathappa, Prakash <prakash.pm@ti.com>
+>>
+>=20
+> This patch is necessary for am335x FB, I could not see in your for-next=
+ branch,
 
-> ---
->   mm/memory_hotplug.c | 16 ++++++++++++++--
->   1 file changed, 14 insertions(+), 2 deletions(-)
->
-> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-> index e4eeaca..b825dbc 100644
-> --- a/mm/memory_hotplug.c
-> +++ b/mm/memory_hotplug.c
-> @@ -1012,10 +1012,13 @@ int remove_memory(u64 start, u64 size)
->   	unsigned long start_pfn, end_pfn;
->   	unsigned long pfn, section_nr;
->   	int ret;
-> +	int return_on_error = 0;
-> +	int retry = 0;
->
->   	start_pfn = PFN_DOWN(start);
->   	end_pfn = start_pfn + PFN_DOWN(size);
->
-> +repeat:
->   	for (pfn = start_pfn; pfn<  end_pfn; pfn += PAGES_PER_SECTION) {
->   		section_nr = pfn_to_section_nr(pfn);
->   		if (!present_section_nr(section_nr))
-> @@ -1034,14 +1037,23 @@ int remove_memory(u64 start, u64 size)
->
->   		ret = offline_memory_block(mem);
->   		if (ret) {
-> -			kobject_put(&mem->dev.kobj);
-> -			return ret;
-> +			if (return_on_error) {
-> +				kobject_put(&mem->dev.kobj);
-> +				return ret;
-> +			} else {
-> +				retry = 1;
-> +			}
->   		}
->   	}
->
->   	if (mem)
->   		kobject_put(&mem->dev.kobj);
->
-> +	if (retry) {
-> +		return_on_error = 1;
-> +		goto repeat;
-> +	}
-> +
->   	return 0;
->   }
->   #else
+I have only applied the patches that have been sent to me.
 
+> could you please consider this patch for 3.8 merge window. There are no=
+ pending
+> review comments on this.
+
+Applied.
+
+ Tomi
+
+
+
+--------------enigCF3063E8CEE3ADA48BCD1830
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with undefined - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJQvb/gAAoJEPo9qoy8lh7172kP/Rw4A26ddBaPFd0b6ztvU3bo
+KpKmCA3Ny40q88y0ulrawfKqfnbsC7fPfdUm79+ei4YlPqn3hAi8ORdZNMn0kQso
+CRRkAJnCYVeQB+lydCF6FrwFFLRfgFiyK3IRKxpRWcOwRjc/ujUOTIpBm2FuBlJ2
+NCHga7n4blK2OkZNxUrpKsm5+aa5u4ukKMkMfGYL7WIhQ8bOaQbS4fEschPXBPne
+JsklNQG4Un72Yn+dNt6TGD73VwfESF9BGYjZ3oYcGATeFNobEZxT3lEFrRBZ71YP
+EXMO0sUqtP9ngWoW9cZIqVymcdVS3nFjV/KRZX24hSI+Q4Fu0YhVIb4Ua7PDi2XC
+kPctOo0y13XKoRWi5OjhLXoapJgHKKJzYZ5N+eCxMbvI2fa/0MS3SyKlvo10y1Cv
+k/81AhSXa7GfIUciqC3CYwRNtp6wHgQb/Slwz1S4GRDaIgiUs0HBipW/cv+tl+Uw
+0k2tUfHTPmh5cVbBtCYU4MmeJBLgDlWIrmkVoW6O5OMyQKU1vJ2PX3mmIk5FH2Oz
+QdoWCcVcM5uBP4rKN3m0a7JHsdbCTyg6Pvi44iFkwrTqWSjQLR7HgaQl5UJA32nE
+iiD5VXDn9XpV+guYOFcBjFQdfdGu3OGOU8q7VAPGYVvu9KdLVY29gvFUQBRYs9DO
+IyQi7Iy6SklQUXndp/WU
+=hzAr
+-----END PGP SIGNATURE-----
+
+--------------enigCF3063E8CEE3ADA48BCD1830--
