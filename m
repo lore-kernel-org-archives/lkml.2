@@ -1,74 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752731Ab2LDLIc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 06:08:32 -0500
-Received: from mailout05.t-online.de ([194.25.134.82]:39296 "EHLO
-	mailout05.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751757Ab2LDLIb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 06:08:31 -0500
-Message-ID: <50BDD9A2.3000004@t-online.de>
-Date: Tue, 04 Dec 2012 12:08:18 +0100
-From: Knut Petersen <Knut_Petersen@t-online.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753258Ab2LDLKQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 06:10:16 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:18754 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752137Ab2LDLKN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 06:10:13 -0500
+Subject: [PATCH] SUNRPC: connect to UNIX sockets synchronously
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: bfields@fieldses.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Tue, 04 Dec 2012 14:10:27 +0300
+Message-ID: <20121204111006.23758.22102.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-To: Chris Wilson <chris@chris-wilson.co.uk>
-CC: "xorg-devel@lists.x.org Development" <xorg-devel@lists.x.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: drm_gem_create_mmap_offset / intel_uxa_prepare_access bo problems
-References: <50AE44C4.1060606@t-online.de> <84c8a8$6kot4e@orsmga001.jf.intel.com>
-In-Reply-To: <84c8a8$6kot4e@orsmga001.jf.intel.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-ID: SreCguZUZhxIXsLZKvWBr+eWZMm3l2Ez5L5luWiJSf2Lna54PH5HTjKBGATCb0mgPm
-X-TOI-MSGID: 6538aa2e-88c3-4a03-8377-679cec5fb47b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everybody!
+Local tranports uses UNIX sockets and connecting of these sockets is done in
+context of file system namespace (i.e. task file system root).
+Currenly, all sockets connect operations are performed by rpciod work queue,
+which actually means, that any service will be registered in the same
+rpcbind instance regardless to process file system root.
+This is not suitable for containers, which usually have it's own nested root.
+There are 2 approaches, how the problem can be solved.
 
-xrestop is functional again in xorg master, so I remembered to have a look at
-the problem reported two weeks ago. It is caused by qinternet.
+First one is to store proper root in transport and switch to it in rpciod
+workqueue function for connect operations. But this looks ugly and such
+approach was rejected by community.
 
-qinternet is a small utility  that is frequently used in opensuse systems to control
-network connections. It attaches itself to the system tray of the kde panel, but it
-also might be used with other desktop environments.
+The second one is to connect to unix sockets synchronously, which is
+implemented by this patch.
 
-xrestop, proc/sys/fs/file-nr and /sys/kernel/debug/dri/0/i915_gem_objects
-show that qinternet allocates one small pixmap every second. So it steadily
-increases the number of inactive gem objects, the memory usage and the
-number of used file descriptors. It is clear that this causes problems after
-some time.
+But there should be noted, that such implementation introduces limitation
+(Trond's quote):
+"That approach can fall afoul of the selinux restrictions on the process
+context. Processes that are allowed to write data, may not be allowed to
+create sockets or call connect(). That is the main reason for doing it
+in the rpciod context, which is a clean kernel process context."
 
-If someone at opensuse is reading this: This is an opensuse problem.
-opensuse is a nice distribution, but as long as you do require people to
-create a Novell acount with full address, phone number etc. to be able to
-access the opensuse bugzilla I will not report bugs there.
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+---
+ net/sunrpc/xprtsock.c |   46 ++++++++++++++++++++++++++++++++++++++--------
+ 1 files changed, 38 insertions(+), 8 deletions(-)
 
-cu,
-  Knut
-
-
-
-On 22.11.2012 16:37, Chris Wilson wrote:
-> On Thu, 22 Nov 2012 16:29:08 +0100, Knut Petersen <Knut_Petersen@t-online.de> wrote:
->> Hi Chris!
->>
->> Problem:
->> =======
->> Slowdown of system, missing icons after 16 days kernel uptime and 12 days Xserver uptime.
->> Xorg log: flooded with "(WW) intel(0): intel_uxa_prepare_access: bo map (use gtt? 1, access 1) failed: No space left on device" lines
->> dmesg: flooded with "[drm:drm_gem_create_mmap_offset] *ERROR* failed to allocate offset for bo 0" entries
->>
->>
-> Well you kernel and drm has all the latest protections, which is good
-> because it's usually a bo leak of some sort. First stop is to check
-> xrestop, /sys/kernel/debug/dri/0/i915_gem_objects and
-> intel-gpu-tools/scripts/who.sh
->
-> That will undoubtably reveal a large number of objects being held by the
-> X server...
-> -Chris
->
+diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
+index aaaadfb..362a5a6 100644
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -1882,12 +1882,10 @@ static int xs_local_finish_connecting(struct rpc_xprt *xprt,
+  * @transport: socket transport to connect
+  * @create_sock: function to create a socket of the correct type
+  *
+- * Invoked by a work queue tasklet.
++ * Used to synchronously connect to UNIX sockets.
+  */
+-static void xs_local_setup_socket(struct work_struct *work)
++static void xs_local_setup_socket(struct sock_xprt *transport)
+ {
+-	struct sock_xprt *transport =
+-		container_of(work, struct sock_xprt, connect_worker.work);
+ 	struct rpc_xprt *xprt = &transport->xprt;
+ 	struct socket *sock;
+ 	int status = -EIO;
+@@ -2463,19 +2461,53 @@ static void bc_destroy(struct rpc_xprt *xprt)
+ {
+ }
+ 
++/**
++ * xs_local_connect - connect a socket to a remote endpoint
++ * @task: address of RPC task that manages state of connect request
++ *
++ * Used for UNIX transports only.
++ */
++static void xs_local_connect(struct rpc_task *task)
++{
++	struct rpc_xprt *xprt = task->tk_xprt;
++	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
++
++	if (transport->sock != NULL) {
++		printk(KERN_WARNING "Local xprt %p is connected already\n", xprt);
++		return;
++	}
++	dprintk("RPC:       xs_local_connect for xprt %p\n", xprt);
++	xs_local_setup_socket(transport);
++}
++
++/**
++ * xs_local_destroy - prepare to shutdown a local transport
++ * @xprt: doomed transport
++ *
++ */
++static void xs_local_destroy(struct rpc_xprt *xprt)
++{
++	dprintk("RPC:       xs_local_destroy xprt %p\n", xprt);
++
++	xs_close(xprt);
++	xs_free_peer_addresses(xprt);
++	xprt_free(xprt);
++	module_put(THIS_MODULE);
++}
++
+ static struct rpc_xprt_ops xs_local_ops = {
+ 	.reserve_xprt		= xprt_reserve_xprt,
+ 	.release_xprt		= xs_tcp_release_xprt,
+ 	.alloc_slot		= xprt_alloc_slot,
+ 	.rpcbind		= xs_local_rpcbind,
+ 	.set_port		= xs_local_set_port,
+-	.connect		= xs_connect,
++	.connect		= xs_local_connect,
+ 	.buf_alloc		= rpc_malloc,
+ 	.buf_free		= rpc_free,
+ 	.send_request		= xs_local_send_request,
+ 	.set_retrans_timeout	= xprt_set_retrans_timeout_def,
+ 	.close			= xs_close,
+-	.destroy		= xs_destroy,
++	.destroy		= xs_local_destroy,
+ 	.print_stats		= xs_local_print_stats,
+ };
+ 
+@@ -2642,8 +2674,6 @@ static struct rpc_xprt *xs_setup_local(struct xprt_create *args)
+ 			goto out_err;
+ 		}
+ 		xprt_set_bound(xprt);
+-		INIT_DELAYED_WORK(&transport->connect_worker,
+-					xs_local_setup_socket);
+ 		xs_format_peer_addresses(xprt, "local", RPCBIND_NETID_LOCAL);
+ 		break;
+ 	default:
 
