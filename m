@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312Ab2LDNtl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 08:49:41 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:35815 "EHLO relay.sw.ru"
+	id S1753162Ab2LDNth (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 08:49:37 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:19479 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751737Ab2LDNtg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 08:49:36 -0500
-Subject: [PATCH 1/6] nfsd: pass net to nfsd_init_socks()
+	id S1751007Ab2LDNtf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 08:49:35 -0500
+Subject: [PATCH 0/6] nfsd: cleanup "init_net" references
 To: bfields@fieldses.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
         linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Tue, 04 Dec 2012 16:50:06 +0300
-Message-ID: <20121204135006.24504.77394.stgit@localhost.localdomain>
-In-Reply-To: <20121204134920.24504.95261.stgit@localhost.localdomain>
-References: <20121204134920.24504.95261.stgit@localhost.localdomain>
+Date: Tue, 04 Dec 2012 16:50:00 +0300
+Message-ID: <20121204134920.24504.95261.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -23,47 +21,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Precursor patch. Hard-coded "init_net" will be replaced by proper one in
-future.
+Hard-coded "init_net" pointer is widely used in NFSd code.
+This patch replaces "init_net" references by passed struct net pointer where
+requied.
+In future, proper network namespace context will be taken from NFSd file
+system superblock private data or, where it's impossible, from current.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+The following series implements...
+
 ---
- fs/nfsd/nfssvc.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
-index 9beace6..9fd8496 100644
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -182,18 +182,18 @@ int nfsd_nrthreads(void)
- 	return rv;
- }
- 
--static int nfsd_init_socks(void)
-+static int nfsd_init_socks(struct net *net)
- {
- 	int error;
- 	if (!list_empty(&nfsd_serv->sv_permsocks))
- 		return 0;
- 
--	error = svc_create_xprt(nfsd_serv, "udp", &init_net, PF_INET, NFS_PORT,
-+	error = svc_create_xprt(nfsd_serv, "udp", net, PF_INET, NFS_PORT,
- 					SVC_SOCK_DEFAULTS);
- 	if (error < 0)
- 		return error;
- 
--	error = svc_create_xprt(nfsd_serv, "tcp", &init_net, PF_INET, NFS_PORT,
-+	error = svc_create_xprt(nfsd_serv, "tcp", net, PF_INET, NFS_PORT,
- 					SVC_SOCK_DEFAULTS);
- 	if (error < 0)
- 		return error;
-@@ -218,7 +218,7 @@ static int nfsd_startup(int nrservs)
- 	ret = nfsd_racache_init(2*nrservs);
- 	if (ret)
- 		return ret;
--	ret = nfsd_init_socks();
-+	ret = nfsd_init_socks(net);
- 	if (ret)
- 		goto out_racache;
- 	ret = lockd_up(net);
+Stanislav Kinsbursky (6):
+      nfsd: pass net to nfsd_init_socks()
+      nfsd: pass net to nfsd_startup() and nfsd_shutdown()
+      nfsd: pass net to nfsd_create_serv()
+      nfsd: pass net to nfsd_svc()
+      nfsd: pass net to nfsd_set_nrthreads()
+      nfsd: pass net to __write_ports() and down
+
+
+ fs/nfsd/nfsctl.c |   27 +++++++++++++++------------
+ fs/nfsd/nfsd.h   |    6 +++---
+ fs/nfsd/nfssvc.c |   34 ++++++++++++++--------------------
+ 3 files changed, 32 insertions(+), 35 deletions(-)
 
