@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751388Ab2LDFPY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 00:15:24 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:46871 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751219Ab2LDFPW (ORCPT
+	id S1751449Ab2LDFPq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 00:15:46 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:47352 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751044Ab2LDFPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 00:15:22 -0500
+	Tue, 4 Dec 2012 00:15:44 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAOesGMgzBGieYJ131sUX7u8EWPEusxareFzC0XPt48+oNuh-xA@mail.gmail.com>
-References: <1354165536-18529-1-git-send-email-ch.naveen@samsung.com>
- <1354165536-18529-3-git-send-email-ch.naveen@samsung.com> <20121129163448.GA3761@sirena.org.uk>
- <CAPnjgZ0atD3k=gT0vjgkLO_SA8DMak6SiT6nZ_2T6WFqtK0szQ@mail.gmail.com>
- <CAOesGMgE0JEHsdySpua34_kbWi1+z4n4UdW0kumiJEROi7O2pQ@mail.gmail.com>
- <20121201132632.GA17981@opensource.wolfsonmicro.com> <CAOesGMgzBGieYJ131sUX7u8EWPEusxareFzC0XPt48+oNuh-xA@mail.gmail.com>
-From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Tue, 4 Dec 2012 10:45:01 +0530
-Message-ID: <CAHfPSqBcpAA8fLcLjOAMkSPGmm=b1mHaVgfYfjAbLAtLbrXB+A@mail.gmail.com>
-Subject: Re: [PATCH 2/2] i2c-s3c2410: Add bus arbitration implementation
-To: Olof Johansson <olof@lixom.net>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Simon Glass <sjg@chromium.org>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-i2c@vger.kernel.org,
-        grundler@chromium.org, naveen@chromium.org, w.sang@pengutronix.de,
+Date: Tue, 4 Dec 2012 00:15:42 -0500
+Message-ID: <CAPgLHd9xtF36732aozVOupf4cyF0RxgSncRzAxF=3WhGV779cw@mail.gmail.com>
+Subject: [PATCH -next] Drivers: hv: remove unused variable in vmbus_recvpacket_raw()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: kys@microsoft.com, haiyangz@microsoft.com
+Cc: yongjun_wei@trendmicro.com.cn, devel@linuxdriverproject.org,
         linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 December 2012 05:41, Olof Johansson <olof@lixom.net> wrote:
-> On Sat, Dec 1, 2012 at 5:26 AM, Mark Brown
-> <broonie@opensource.wolfsonmicro.com> wrote:
->> On Thu, Nov 29, 2012 at 10:14:58PM -0800, Olof Johansson wrote:
->>> On Thu, Nov 29, 2012 at 6:13 PM, Simon Glass <sjg@chromium.org> wrote:
->>
->>> > It was originally done separately but I think it was felt that this
->>> > was overly complex. Olof can you please comment on this?
->>
->>> it is indeed not controller specific per se, but we are unaware of any
->>> other platform/driver using it. So, it seemed reasonable to implement
->>> it in the driver as long as we have only one user; if another one
->>> comes along it's of course better to move it to the common i2c code.
->>
->>> At least that was my opinion at the time. I could be convinced
->>> otherwise if someone else has strong opinions on the matter.
->>
->> This sort of approach is half the reason SPI ended up being so fun...  I
->> suspect if you look hard enough you'll find that this is just the first
->> time someone tried to upstream such a scheme.  This is all especially
->> true for the DT bindings, even if the implementation is driver local for
->> now it'd be better to define generic bindings.
->
-> Ok, sounds like we might as well make it generic then. Naveen?
-Thanks for the comments.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Sure, Will send an RFC soon.
->
->
-> -Olof
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+The variable userlen is initialized but never used
+otherwise, so remove the unused variable.
 
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/hv/channel.c | 2 --
+ 1 file changed, 2 deletions(-)
 
+diff --git a/drivers/hv/channel.c b/drivers/hv/channel.c
+index 773a2f2..3148d80 100644
+--- a/drivers/hv/channel.c
++++ b/drivers/hv/channel.c
+@@ -774,7 +774,6 @@ int vmbus_recvpacket_raw(struct vmbus_channel *channel, void *buffer,
+ {
+ 	struct vmpacket_descriptor desc;
+ 	u32 packetlen;
+-	u32 userlen;
+ 	int ret;
+ 
+ 	*buffer_actual_len = 0;
+@@ -788,7 +787,6 @@ int vmbus_recvpacket_raw(struct vmbus_channel *channel, void *buffer,
+ 
+ 
+ 	packetlen = desc.len8 << 3;
+-	userlen = packetlen - (desc.offset8 << 3);
+ 
+ 	*buffer_actual_len = packetlen;
+ 
 
--- 
-Shine bright,
-(: Nav :)
