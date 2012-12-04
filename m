@@ -1,126 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865Ab2LDCwZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 21:52:25 -0500
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:30615 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751497Ab2LDCwY (ORCPT
+	id S1751751Ab2LDCx0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 21:53:26 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:46944 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751425Ab2LDCxZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 21:52:24 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AiQKAEhkvVB5LPYI/2dsb2JhbABEhUOyW4YXF3OCHgEBBAEnExwjEAgDFQMuFCUDIROICgWuX5A3FIwsIYM/YQOWAJBIgwaBUA
-Date: Tue, 4 Dec 2012 13:52:21 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zach Brown <zab@zabbo.net>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>
-Subject: Re: [PATCH v4 16/31] loop: use aio to perform io on the underlying
- file
-Message-ID: <20121204025221.GF32450@dastard>
-References: <1353537671-26284-1-git-send-email-dave.kleikamp@oracle.com>
- <1353537671-26284-17-git-send-email-dave.kleikamp@oracle.com>
- <20121122230628.GV2591@dastard>
- <50BCDA7B.7080000@oracle.com>
+	Mon, 3 Dec 2012 21:53:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50BCDA7B.7080000@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CADApbehR9TcrGU-t2ZqT58O0OswVmJPQ1paceO6k1+ADvU026A@mail.gmail.com>
+References: <1354155670-6267-1-git-send-email-chao.xie@marvell.com>
+	<1354155670-6267-2-git-send-email-chao.xie@marvell.com>
+	<87r4nc18i1.fsf@free.fr>
+	<CADApbehR9TcrGU-t2ZqT58O0OswVmJPQ1paceO6k1+ADvU026A@mail.gmail.com>
+Date: Tue, 4 Dec 2012 10:53:24 +0800
+Message-ID: <CADApbehEPZNYA6yO0TJ2mqVXtiSWheTXk-HKvFz6Ddj=ypmo9Q@mail.gmail.com>
+Subject: Re: [PATCH 2/4] rtc: pxa: fix rtc caculation issue
+From: Chao Xie <xiechao.mail@gmail.com>
+To: Robert Jarzmik <robert.jarzmik@free.fr>
+Cc: Chao Xie <chao.xie@marvell.com>, a.zummo@towertech.it,
+        rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+        haojian.zhuang@gmail.com, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 03, 2012 at 10:59:39AM -0600, Dave Kleikamp wrote:
-> On 11/22/2012 05:06 PM, Dave Chinner wrote:
-> > On Wed, Nov 21, 2012 at 04:40:56PM -0600, Dave Kleikamp wrote:
-> >> From: Zach Brown <zab@zabbo.net>
-> >>
-> >> This uses the new kernel aio interface to process loopback IO by
-> >> submitting concurrent direct aio.  Previously loop's IO was serialized
-> >> by synchronous processing in a thread.
-> >>
-> >> The aio operations specify the memory for the IO with the bio_vec arrays
-> >> directly instead of mappings of the pages.
-> >>
-> >> The use of aio operations is enabled when the backing file supports the
-> >> read_iter and write_iter methods.  These methods must only be added when
-> >> O_DIRECT on bio_vecs is supported.
-> >>
-> >> Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-> >> Cc: Zach Brown <zab@zabbo.net>
-> > 
-> > I suspect aio iocompetion here doesn't work for FUA write IO.
-> 
-> Since the underlying file system is doing direct IO, we at least know
-> that the IO has been performed to the underlying device. It could still
-> be in the devices write cache, so maybe an fsync is still needed. It
-> wouldn't be hard to fix if that's the right thing to do.
+On Mon, Dec 3, 2012 at 10:40 AM, Chao Xie <xiechao.mail@gmail.com> wrote:
+> On Fri, Nov 30, 2012 at 4:04 AM, Robert Jarzmik <robert.jarzmik@free.fr> wrote:
+>> Chao Xie <chao.xie@marvell.com> writes:
+>>
+>> Hi Chao Xie,
+>>
+>> First of all, could you please send patches from rtc-pxa to me also, as I'm
+>> maintaining that driver ?
+>>
+>> Second point, the original design of the driver relies on the special case of
+>> writing zeroes to WOM and DOM, as mentionned in PXA27x Developers Guide, chapter
+>> 21.4.2.3.5 "Writing Alarm Registers with Invalid (Zero) Data", which states :
+>>> Day-Of-Week (DOW), or Week-Of-Month (WOM), Day of Month (DOM), Month or Year
+>>> fields—Zero is not valid for these fields. If zero is written into any of
+>>> these fields, it is ignored while generating the alarm.
+>>
+>> I'd like to know if your patch fixes something, or is an enhancement ?
+>>
+>> Cheers.
+>>
+>> --
+>> Robert
+>>
+>> PS: I've not checked the patch yet, that's just a prelimary comment on the patch
+>> message.
+>
+> hi
+> I am sorry, i just use get_maintainer.pl to get the "to" list.
+> I have go through the spec. The spec has the desctiption about the
+> invalid data writing.
+> I am a little confused about the "wrting 0 to DOW". The descrption is
+> confused. first it said that "If zero is written into any of these
+> fields, it is ignored
+> while generating the alarm", then it gives a example, that if writing
+> 0 to DOW, "For example, if a zero is written into a DOW field, the
+> alarm is set
+> every day at the time written in the Hours, Minutes, and Seconds
+> field”. It seems that the Year/Month/Week will not take effect.
+> I will do the test on the board again, and send out the update.
 
-FUA means the write is all the way to stable storage when completion
-is signalled by the underlying device. That means the loop device
-needs to (at least) fdatasync after the write completes...
-
-> >> +static void lo_rw_aio_complete(u64 data, long res)
-> >> +{
-> >> +	struct bio *bio = (struct bio *)(uintptr_t)data;
-> >> +
-> >> +	if (res > 0)
-> >> +		res = 0;
-> >> +	else if (res < 0)
-> >> +		res = -EIO;
-> >> +
-> >> +	bio_endio(bio, res);
-> >> +}
-> > 
-> > This effectively does nothing...
-> 
-> It passes the IO completion from the underlying device to the caller.
-
-Yes, I know. What I'm saying is that it does nothing on completion
-of a FUA write when it should be doing a fsync.....
-
-> >> -			    lo->lo_encrypt_key_size) {
-> >> -				ret = -EOPNOTSUPP;
-> >> -				goto out;
-> >> -			}
-> >> -			ret = file->f_op->fallocate(file, mode, pos,
-> >> -						    bio->bi_size);
-> >> -			if (unlikely(ret && ret != -EINVAL &&
-> >> -				     ret != -EOPNOTSUPP))
-> >> -				ret = -EIO;
-> >> -			goto out;
-> >> -		}
-> >> -
-> >>  		ret = lo_send(lo, bio, pos);
-> >>  
-> >>  		if ((bio->bi_rw & REQ_FUA) && !ret) {
-> > 
-> > And as you can see here that after writing the data in the filebacked
-> > path, there's special handling for REQ_FUA (i.e. another fsync).
-> > ....
-> 
-> In this path, the data may still be in the underlying filesystem's page
-> cache.
-
-Sure, but fsync means that it ends up on stable storage, as per the
-requirement of an FUA write. Direct IO does not mean the data is on
-stable storage, just that it bypasses the page cache.
-
-> > And this extra fsync is now not done in the aio path. I.e. the AIO
-> > completion path needs to issue the fsync to maintain correct REQ_FUA
-> > semantics...
-> 
-> If this is really necessary, I can fix it.
-
-Absolutely. If we don't implement FUA properly, we'll end up with
-corrupted filesystems and/or data loss when kernel crashes or
-powerloss occurs. That's not an acceptable outcome, so we need FUA
-to be implemented properly.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+hi, Robert
+You are right. it does not matter to set WOM and DOW. please ignore this patch.
