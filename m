@@ -1,101 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab2LDRu7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 12:50:59 -0500
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:44838 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753741Ab2LDRu4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 12:50:56 -0500
-Message-ID: <50BE379F.3000405@linux.vnet.ibm.com>
-Date: Tue, 04 Dec 2012 23:19:19 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        Chegu Vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Andrew Jones <drjones@redhat.com>
-Subject: Re: [PATCH V3 RFC 2/2] kvm: Handle yield_to failure return code for
- potential undercommit case
-References: <20121126120740.2595.33651.sendpatchset@codeblue> <20121126120804.2595.20280.sendpatchset@codeblue> <20121128011228.GH8295@amt.cnet> <50B59CE0.70305@linux.vnet.ibm.com> <20121203195620.GB590@amt.cnet>
-In-Reply-To: <20121203195620.GB590@amt.cnet>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1754200Ab2LDR46 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 12:56:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42123 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751913Ab2LDR4z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 12:56:55 -0500
+Message-ID: <1354643814.1809.469.camel@bling.home>
+Subject: Re: [RFC PATCH 0/6] kvm: Growable memory slot array
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: mtosatti@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 04 Dec 2012 10:56:54 -0700
+In-Reply-To: <20121204164243.GC14176@redhat.com>
+References: <20121203231912.3661.57179.stgit@bling.home>
+	 <20121204114803.GH19514@redhat.com> <1354634515.1809.406.camel@bling.home>
+	 <20121204153043.GA14176@redhat.com> <1354635587.1809.422.camel@bling.home>
+	 <20121204164243.GC14176@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12120417-8878-0000-0000-000005095753
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2012 01:26 AM, Marcelo Tosatti wrote:
-> On Wed, Nov 28, 2012 at 10:40:56AM +0530, Raghavendra K T wrote:
->> On 11/28/2012 06:42 AM, Marcelo Tosatti wrote:
->>>
->>> Don't understand the reasoning behind why 3 is a good choice.
->>
->> Here is where I came from. (explaining from scratch for
->> completeness, forgive me :))
->> In moderate overcommits, we can falsely exit from ple handler even when
->> we have preempted task of same VM waiting on other cpus. To reduce this
->> problem, we try few times before exiting.
->> The problem boils down to:
->> what is the probability that we exit ple handler even when we have more
->> than 1 task in other cpus. Theoretical worst case should be around 1.5x
->> overcommit (As also pointed by Andrew Theurer). [But practical
->> worstcase may be around 2x,3x overcommits as indicated by the results
->> for the patch series]
->>
->> So if p is the probability of finding rq length one on a particular cpu,
->> and if we do n tries, then probability of exiting ple handler is:
->>
->>   p^(n+1) [ because we would have come across one source with rq length
->> 1 and n target cpu rqs  with length 1 ]
->>
->> so
->> num tries:         probability of aborting ple handler (1.5x overcommit)
->>   1                 1/4
->>   2                 1/8
->>   3                 1/16
->>
->> We can increase this probability with more tries, but the problem is
->> the overhead.
->> Also, If we have tried three times that means we would have iterated
->> over 3 good eligible vcpus along with many non-eligible candidates. In
->> worst case if we iterate all the vcpus, we reduce 1x performance and
->> overcommit performance get hit. [ as in results ].
->>
->> I have tried num_tries = 1,2,3 and n already ( not 4 yet). So I
->> concluded 3 is enough.
->>
->> Infact I have also run kernbench and hackbench which are giving 5-20%
->> improvement.
->>
->> [ As a side note , I also thought how about having num_tries = f(n) =
->> ceil ( log(num_online_cpus)/2 ) But I thought calculation is too much
->> overhead and also there is no point in probably making it dependent on
->> online cpus ]
->>
->> Please let me know if you are happy with this rationale/ or correct me
->> if you foresee some problem. (Infact Avi, Rik's concern about false
->> exiting made me arrive at 'try' logic which I did not have earlier).
->>
->> I am currently trying out the result for 1.5x overcommit will post the
->> result.
->
-> Raghavendra
->
-> Makes sense to me. Thanks.
->
+On Tue, 2012-12-04 at 18:42 +0200, Gleb Natapov wrote:
+> On Tue, Dec 04, 2012 at 08:39:47AM -0700, Alex Williamson wrote:
+> > On Tue, 2012-12-04 at 17:30 +0200, Gleb Natapov wrote:
+> > > On Tue, Dec 04, 2012 at 08:21:55AM -0700, Alex Williamson wrote:
+> > > > On Tue, 2012-12-04 at 13:48 +0200, Gleb Natapov wrote:
+> > > > > On Mon, Dec 03, 2012 at 04:39:05PM -0700, Alex Williamson wrote:
+> > > > > > Memory slots are currently a fixed resource with a relatively small
+> > > > > > limit.  When using PCI device assignment in a qemu guest it's fairly
+> > > > > > easy to exhaust the number of available slots.  I posted patches
+> > > > > > exploring growing the number of memory slots a while ago, but it was
+> > > > > > prior to caching memory slot array misses and thefore had potentially
+> > > > > > poor performance.  Now that we do that, Avi seemed receptive to
+> > > > > > increasing the memory slot array to arbitrary lengths.  I think we
+> > > > > > still don't want to impose unnecessary kernel memory consumptions on
+> > > > > > guests not making use of this, so I present again a growable memory
+> > > > > > slot array.
+> > > > > > 
+> > > > > > A couple notes/questions; in the previous version we had a
+> > > > > > kvm_arch_flush_shadow() call when we increased the number of slots.
+> > > > > > I'm not sure if this is still necessary.  I had also made the x86
+> > > > > > specific slot_bitmap dynamically grow as well and switch between a
+> > > > > > direct bitmap and indirect pointer to a bitmap.  That may have
+> > > > > > contributed to needing the flush.  I haven't done that yet here
+> > > > > > because it seems like an unnecessary complication if we have a max
+> > > > > > on the order of 512 or 1024 entries.  A bit per slot isn't a lot of
+> > > > > > overhead.  If we want to go more, maybe we should make it switch.
+> > > > > > That leads to the final question, we need an upper bound since this
+> > > > > > does allow consumption of extra kernel memory, what should it be?  A
+> > > > > This is the most important question :) If we want to have 1000s of
+> > > > > them or 100 is enough?
+> > > > 
+> > > > We can certainly hit respectable numbers of assigned devices in the
+> > > > hundreds.  Worst case is 8 slots per assigned device, typical case is 4
+> > > > or less.  So 512 slots would more or less guarantee 64 devices (we do
+> > > > need some slots for actual memory), and more typically allow at least
+> > > > 128 devices.  Philosophically, supporting a full PCI bus, 256 functions,
+> > > > 2048 slots, is an attractive target, but it's probably no practical.
+> > > > 
+> > > > I think on x86 a slot is 72 bytes w/ alignment padding, so a maximum of
+> > > > 36k @512 slots.
+> > > > 
+> > > > >  Also what about changing kvm_memslots->memslots[]
+> > > > > array to be "struct kvm_memory_slot *memslots[KVM_MEM_SLOTS_NUM]"? It
+> > > > > will save us good amount of memory for unused slots.
+> > > > 
+> > > > I'm not following where that results in memory savings.  Can you
+> > > > clarify.  Thanks,
+> > > > 
+> > > We will waste sizeof(void*) for each unused slot instead of
+> > > sizeof(struct kvm_memory_slot).
+> > 
+> > Ah, of course.  That means for 512 slots we're wasting a full page just
+> > for the pointers, whereas we can fit 56 slots in the same space.  Given
+> > that most users get by just fine w/ 32 slots, I don't think that's a win
+> > in the typical case.  Maybe if we want to support sparse arrays, but a
+> You can look at it differently :). We can increase number of slots to 288
+> with the same memory footprint we have now. And 288 looks like a lot of
+> slots.
 
-Hi Marcelo, Thanks for looking into patches.
+I could settle for 288 slots, but...
+
+288*8 = 2304
+2304/72 = 32
+
+So yes, we can fit the pointer array into the same size as 32 slots, but
+we haven't allocated the slots themselves yet, so the footprint is not
+the same.  Are you thinking we'd re-use the slots between generations
+and only allocate new/changed ones?  That still comes out to more memory
+per update for the typical case, but we're also adding the indirection
+overhead.
+
+> Memory is cheap and getting cheaper and complicated code stays
+> complicated. Of course we should not go crazy with wisting memory, but
+> not go crazy to save each byte either.
+
+Yep, we could just bump the number of slots and ignore everything else.
+512 slots would be 36k on x86.  As above, we're currently using 2.25k.
+Is it worth it?  If not, at what point would it be worth it?  50k?
+100k?  I think the first 3, maybe 4 patches in this series are still
+worthwhile even if we decide not to do anything clever with saving
+memory.
+
+> > tree would probably be better at that point.  A drawback of the growable
+> > array is that userspace can subvert any savings by using slot N-1 first,
+> > but that's why we put a limit at a reasonable size.  Thanks,
+> > 
+> Why using slot as an index? May be changing id_to_index[] into hash
+> table and use that to map from slot id to array index?
+
+It was just to keep thing simple, but yes, we could fix it by allocating
+only as necessary.  id_to_index would have more overhead, but maybe we
+could restrict ourselves to a short (or byte?) for indexes to save
+space.  If we assume 512 slots and use a short for id_to_index[], that's
+1k overhead, but we can still allocate 17 slots in the same 2304 bytes
+we have now, which likely easily covers typical usage.  I can give it a
+try.  Thanks,
+
+Alex
 
