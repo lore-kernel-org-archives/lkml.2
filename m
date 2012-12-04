@@ -1,103 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751573Ab2LDBVh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 20:21:37 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:9899 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751099Ab2LDBVg (ORCPT
+	id S1751688Ab2LDB1c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 20:27:32 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:52505 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751099Ab2LDB1b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 20:21:36 -0500
-Message-ID: <50BD5001.9000203@huawei.com>
-Date: Tue, 4 Dec 2012 09:21:05 +0800
-From: Jiang Liu <jiang.liu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Chris Clayton <chris2553@googlemail.com>, Jiang Liu <liuj97@gmail.com>,
-        Wen Congyang <wency@cn.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan@kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Jianguo Wu <wujianguo@huawei.com>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFT PATCH v2 4/5] mm: provide more accurate estimation of pages
- occupied by memmap
-References: <20121120111942.c9596d3f.akpm@linux-foundation.org> <1353510586-6393-1-git-send-email-jiang.liu@huawei.com> <20121128155221.df369ce4.akpm@linux-foundation.org> <50B73E56.4050603@googlemail.com> <50BBB21D.3070005@googlemail.com> <20121203151715.8c536a7a.akpm@linux-foundation.org>
-In-Reply-To: <20121203151715.8c536a7a.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.108.108.229]
-X-CFilter-Loop: Reflected
+	Mon, 3 Dec 2012 20:27:31 -0500
+From: Cong Ding <dinggnu@gmail.com>
+To: Steve Underwood <steveu@coppice.org>, David Rowe <david@rowetel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jesper Juhl <jj@chaosbits.net>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Cc: Cong Ding <dinggnu@gmail.com>
+Subject: [PATCH] staging: echo: remove unused variable
+Date: Tue,  4 Dec 2012 01:21:44 +0000
+Message-Id: <1354584111-1513-1-git-send-email-dinggnu@gmail.com>
+X-Mailer: git-send-email 1.7.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-12-4 7:17, Andrew Morton wrote:
-> On Sun, 02 Dec 2012 19:55:09 +0000
-> Chris Clayton <chris2553@googlemail.com> wrote:
-> 
->>
->>
->> On 11/29/12 10:52, Chris Clayton wrote:
->>> On 11/28/12 23:52, Andrew Morton wrote:
->>>> On Wed, 21 Nov 2012 23:09:46 +0800
->>>> Jiang Liu <liuj97@gmail.com> wrote:
->>>>
->>>>> Subject: Re: [RFT PATCH v2 4/5] mm: provide more accurate estimation
->>>>> of pages occupied by memmap
->>>>
->>>> How are people to test this?  "does it boot"?
->>>>
->>>
->>> I've been running kernels with Gerry's 5 patches applied for 11 days
->>> now. This is on a 64bit laptop but with a 32bit kernel + HIGHMEM. I
->>> joined the conversation because my laptop would not resume from suspend
->>> to disk - it either froze or rebooted. With the patches applied the
->>> laptop does successfully resume and has been stable.
->>>
->>> Since Monday, I have have been running a kernel with the patches (plus,
->>> from today, the patch you mailed yesterday) applied to 3.7rc7, without
->>> problems.
->>>
->>
->> I've been running 3.7-rc7 with the patches listed below for a week now 
->> and it has been perfectly stable. In particular, my laptop will now 
->> successfully resume from suspend to disk, which always failed without 
->> the patches.
->>
->>  From Jiang Liu:
->> 1. [RFT PATCH v2 1/5] mm: introduce new field "managed_pages" to struct zone
->> 2. [RFT PATCH v1 2/5] mm: replace zone->present_pages with 
->> zone->managed_pages if appreciated
->> 3. [RFT PATCH v1 3/5] mm: set zone->present_pages to number of existing 
->> pages in the zone
->> 4. [RFT PATCH v2 4/5] mm: provide more accurate estimation of pages 
->> occupied by memmap
->> 5. [RFT PATCH v1 5/5] mm: increase totalram_pages when free pages 
->> allocated by bootmem allocator
->>
->>  From Andrew Morton:
->> 6. mm-provide-more-accurate-estimation-of-pages-occupied-by-memmap.patch
->>
->> Tested-by: Chris Clayton <chris2553@googlemail.com>
-> 
-> Thanks.
-> 
-> I have only two of these five patches queued for 3.8:
-> mm-introduce-new-field-managed_pages-to-struct-zone.patch and
-> mm-provide-more-accurate-estimation-of-pages-occupied-by-memmap.patch. 
-> I don't recall what happened with the other three.
+the variable j isn't used in the loop
 
-Hi Andrew,
-	I think the story that,
-1) I sent out all five patches for the first version.
-2) Later updated and resend the first and forth patches according to 
-   review comments without touching the other three patches.
-	So you may just get the updated two without noticing the other
-three from the initial patchset.
-	Sorry for the trouble.
-Regards!
-Gerry
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
+---
+ drivers/staging/echo/echo.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/echo/echo.c b/drivers/staging/echo/echo.c
+index ca87ce9..14dfd91 100644
+--- a/drivers/staging/echo/echo.c
++++ b/drivers/staging/echo/echo.c
+@@ -119,7 +119,6 @@
+ static inline void lms_adapt_bg(struct oslec_state *ec, int clean, int shift)
+ {
+ 	int i;
+-	int j;
+ 	int offset1;
+ 	int offset2;
+ 	int factor;
+@@ -142,7 +141,7 @@ static inline void lms_adapt_bg(struct oslec_state *ec, int clean, int shift)
+ 
+ 	/* asm("st:"); */
+ 	n = ec->taps;
+-	for (i = 0, j = offset2; i < n; i++, j++) {
++	for (i = 0; i < n; i++) {
+ 		exp = *phist++ * factor;
+ 		ec->fir_taps16[1][i] += (int16_t) ((exp + (1 << 14)) >> 15);
+ 	}
+-- 
+1.7.4.5
 
