@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751556Ab2LDG1g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 01:27:36 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:63270 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750980Ab2LDG1f (ORCPT
+	id S1751724Ab2LDG1y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 01:27:54 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:61421 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663Ab2LDG1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 01:27:35 -0500
-MIME-Version: 1.0
-In-Reply-To: <878v9f5ugn.fsf@devron.myhome.or.jp>
-References: <1353504311-6020-1-git-send-email-linkinjeon@gmail.com>
-	<878v9f5ugn.fsf@devron.myhome.or.jp>
-Date: Tue, 4 Dec 2012 15:27:34 +0900
-Message-ID: <CAKYAXd-ydXkwDq6vkECEKPUQiNgg2+GKbL+ah9sn+uqr8BT1kQ@mail.gmail.com>
-Subject: Re: [PATCH v5 7/8] fat (exportfs): rebuild directory-inode if
- fat_dget() fails
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 4 Dec 2012 01:27:52 -0500
+Message-ID: <1354602461.3286.1.camel@phoenix>
+Subject: [PATCH RFT] spi: spi-xcomm: Fix wrong setting for
+ SPI_XCOMM_SETTINGS_CPHA
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: Lars-Peter Clausen <lars@metafoo.de>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Date: Tue, 04 Dec 2012 14:27:41 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/12/3, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
->
->> From: Namjae Jeon <namjae.jeon@samsung.com>
->>
->> This patch enables rebuilding of directory inodes which are not present
->> in the cache.This is done by traversing the disk clusters to find the
->> directory entry of the parent directory and using its i_pos to build the
->> inode.
->> Do this only if the "nostale_ro" nfs mount option is specified.
->
-> This became much better than before. However, we have to consolidate the
-> code with fat_search_long() finally.
->
-> E.g. this version is having the issue already fixed. If there is
-> corruption in fat cluster-chain, it lead to infinite
-> loop. fat_get_cluster() checks infinite loop by limit.
-since, the focus this time was for NFS functionality for FAT (removing
-ESTALE error). The changes were made in that context.
+The logic of setting SPI_XCOMM_SETTINGS_CPHA bit is reversed.
 
-Later, we can make the changes as part of code reorganizing which can
-be controlled via. Separate patches which do not have any impact on
-default functionality and verification can be carried out in that
-scope.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+Hi Lars,
+The logic of setting SPI_XCOMM_SETTINGS_CPHA bit looks wrong to me.
+Can you check if this patch works?
+
+Thanks,
+Axel
+
+ drivers/spi/spi-xcomm.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/spi/spi-xcomm.c b/drivers/spi/spi-xcomm.c
+index 266a847..c2a3e8f 100644
+--- a/drivers/spi/spi-xcomm.c
++++ b/drivers/spi/spi-xcomm.c
+@@ -99,9 +99,9 @@ static int spi_xcomm_setup_transfer(struct spi_xcomm *spi_xcomm,
+ 		*settings &= ~SPI_XCOMM_SETTINGS_CPOL;
+ 
+ 	if (spi->mode & SPI_CPHA)
+-		*settings &= ~SPI_XCOMM_SETTINGS_CPHA;
+-	else
+ 		*settings |= SPI_XCOMM_SETTINGS_CPHA;
++	else
++		*settings &= ~SPI_XCOMM_SETTINGS_CPHA;
+ 
+ 	if (spi->mode & SPI_3WIRE)
+ 		*settings |= SPI_XCOMM_SETTINGS_3WIRE;
+-- 
+1.7.9.5
 
 
 
->
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->
