@@ -1,81 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751751Ab2LDAyj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 19:54:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50468 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409Ab2LDAyi (ORCPT
+	id S1751845Ab2LDA4O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 19:56:14 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:37037 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236Ab2LDA4M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 19:54:38 -0500
-Date: Mon, 3 Dec 2012 16:54:36 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Josh Hunt <johunt@akamai.com>
-Cc: "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
-        "kay.sievers@vrfy.org" <kay.sievers@vrfy.org>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCH] block: Restore /proc/partitions to not display
- non-partitionable removable devices
-Message-Id: <20121203165436.0542933f.akpm@linux-foundation.org>
-In-Reply-To: <50BD4680.7090103@akamai.com>
-References: <1353380209-23799-1-git-send-email-johunt@akamai.com>
-	<20121203160647.11ad34d8.akpm@linux-foundation.org>
-	<50BD4680.7090103@akamai.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 3 Dec 2012 19:56:12 -0500
+Date: Mon, 3 Dec 2012 16:56:08 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Ingo Molnar <mingo@kernel.org>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Sasha Levin <levinsasha928@gmail.com>
+Subject: [patch] mm, mempolicy: Introduce spinlock to read shared policy
+ tree
+In-Reply-To: <1353624594-1118-19-git-send-email-mingo@kernel.org>
+Message-ID: <alpine.DEB.2.00.1212031644440.32354@chino.kir.corp.google.com>
+References: <1353624594-1118-1-git-send-email-mingo@kernel.org> <1353624594-1118-19-git-send-email-mingo@kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 03 Dec 2012 18:40:32 -0600
-Josh Hunt <johunt@akamai.com> wrote:
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-> On 12/03/2012 06:06 PM, Andrew Morton wrote:
-> > On Mon, 19 Nov 2012 18:56:49 -0800
-> > Josh Hunt <johunt@akamai.com> wrote:
-> >
-> >> We found with newer kernels we started seeing the cdrom device showing
-> >> up in /proc/partitions, but it was not there before. Looking into this I found
-> >> that commit d27769ec... block: add GENHD_FL_NO_PART_SCAN introduces this change
-> >> in behavior. It's not clear to me from the commit's changelog if this change was
-> >> intentional or not. This comment still remains:
-> >> /* Don't show non-partitionable removeable devices or empty devices */
-> >> so I've decided to send a patch to restore the behavior of not printing
-> >> unpartitionable removable devices.
-> >
-> > d27769ec was merged in August 2011, so I after all this time, your fix
-> > could be viewed as "changing existing behaviour".
-> >
-> > So perhaps it would be best to leave things alone.  Is there any
-> > particular problem with the post-Aug, 2011 behaviour?
-> >
-> 
-> We caught this by a script that parses /proc/partitions and made some 
-> assumptions about the contents therein. It had worked fine up until when 
-> this behavior changed. We were able to modify our script to get what we 
-> needed.
-> 
-> The patch was meant to do two things: 1) understand if this was an 
-> unintended change and 2) if so, propose a solution to resolve it. Since 
-> the comment was left in the source I believe either a) my patch should 
-> be applied or b) a new patch with the comment removed should be put in 
-> since it's no longer correct. I did not think this type of change to 
-> kernel abi was generally acceptable.
-> 
-> While the commit is over a year old, it changes behavior which had been 
-> in tact for a while (years?) from what I can tell. We were running 3.0 
-> with stable updates until we upgraded to 3.2 and hit this. Neither of 
-> these are what I would consider "old" kernels.
-> 
+Sasha was fuzzing with trinity and reported the following problem:
 
-Yes, this is difficult.  Removing existing entries is more likely to
-cause damage than adding new ones, so I suspect the safest approach is
-to just leave things as they now are.
+BUG: sleeping function called from invalid context at kernel/mutex.c:269
+in_atomic(): 1, irqs_disabled(): 0, pid: 6361, name: trinity-main
+2 locks held by trinity-main/6361:
+ #0:  (&mm->mmap_sem){++++++}, at: [<ffffffff810aa314>] __do_page_fault+0x1e4/0x4f0
+ #1:  (&(&mm->page_table_lock)->rlock){+.+...}, at: [<ffffffff8122f017>] handle_pte_fault+0x3f7/0x6a0
+Pid: 6361, comm: trinity-main Tainted: G        W 3.7.0-rc2-next-20121024-sasha-00001-gd95ef01-dirty #74
+Call Trace:
+ [<ffffffff8114e393>] __might_sleep+0x1c3/0x1e0
+ [<ffffffff83ae5209>] mutex_lock_nested+0x29/0x50
+ [<ffffffff8124fc3e>] mpol_shared_policy_lookup+0x2e/0x90
+ [<ffffffff81219ebe>] shmem_get_policy+0x2e/0x30
+ [<ffffffff8124e99a>] get_vma_policy+0x5a/0xa0
+ [<ffffffff8124fce1>] mpol_misplaced+0x41/0x1d0
+ [<ffffffff8122f085>] handle_pte_fault+0x465/0x6a0
 
-In which case yes, we should repair that comment.  ie: change it to a
-comment which explains *why* we display removable devices.  Unlike the
-existing comment which tells us "what" but not "why", when "why" is
-what we wanted to know, sigh.
+do_numa_page() calls the new mpol_misplaced() function introduced by 
+"sched, numa, mm: Add the scanning page fault machinery" in the page fault 
+patch while holding mm->page_table_lock and then 
+mpol_shared_policy_lookup() ends up trying to take the shared policy 
+mutex.
+
+The fix is to protect the shared policy tree with both a spinlock and 
+mutex; both must be held to modify the tree, but only one is required to 
+read the tree.  This allows sp_lookup() to grab the spinlock for read.
+
+[rientjes@google.com: wrote changelog]
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
+Tested-by: Sasha Levin <levinsasha928@gmail.com>
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ include/linux/mempolicy.h |    1 +
+ mm/mempolicy.c            |   23 ++++++++++++++++++-----
+ 2 files changed, 19 insertions(+), 5 deletions(-)
+
+diff --git a/include/linux/mempolicy.h b/include/linux/mempolicy.h
+--- a/include/linux/mempolicy.h
++++ b/include/linux/mempolicy.h
+@@ -133,6 +133,7 @@ struct sp_node {
+ 
+ struct shared_policy {
+ 	struct rb_root root;
++	spinlock_t lock;
+ 	struct mutex mutex;
+ };
+ 
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2090,12 +2090,20 @@ bool __mpol_equal(struct mempolicy *a, struct mempolicy *b)
+  *
+  * Remember policies even when nobody has shared memory mapped.
+  * The policies are kept in Red-Black tree linked from the inode.
+- * They are protected by the sp->lock spinlock, which should be held
+- * for any accesses to the tree.
++ *
++ * The rb-tree is locked using both a mutex and a spinlock. Every modification
++ * to the tree must hold both the mutex and the spinlock, lookups can hold
++ * either to observe a stable tree.
++ *
++ * In particular, sp_insert() and sp_delete() take the spinlock, whereas
++ * sp_lookup() doesn't, this so users have choice.
++ *
++ * shared_policy_replace() and mpol_free_shared_policy() take the mutex
++ * and call sp_insert(), sp_delete().
+  */
+ 
+ /* lookup first element intersecting start-end */
+-/* Caller holds sp->mutex */
++/* Caller holds either sp->lock and/or sp->mutex */
+ static struct sp_node *
+ sp_lookup(struct shared_policy *sp, unsigned long start, unsigned long end)
+ {
+@@ -2134,6 +2142,7 @@ static void sp_insert(struct shared_policy *sp, struct sp_node *new)
+ 	struct rb_node *parent = NULL;
+ 	struct sp_node *nd;
+ 
++	spin_lock(&sp->lock);
+ 	while (*p) {
+ 		parent = *p;
+ 		nd = rb_entry(parent, struct sp_node, nd);
+@@ -2146,6 +2155,7 @@ static void sp_insert(struct shared_policy *sp, struct sp_node *new)
+ 	}
+ 	rb_link_node(&new->nd, parent, p);
+ 	rb_insert_color(&new->nd, &sp->root);
++	spin_unlock(&sp->lock);
+ 	pr_debug("inserting %lx-%lx: %d\n", new->start, new->end,
+ 		 new->policy ? new->policy->mode : 0);
+ }
+@@ -2159,13 +2169,13 @@ mpol_shared_policy_lookup(struct shared_policy *sp, unsigned long idx)
+ 
+ 	if (!sp->root.rb_node)
+ 		return NULL;
+-	mutex_lock(&sp->mutex);
++	spin_lock(&sp->lock);
+ 	sn = sp_lookup(sp, idx, idx+1);
+ 	if (sn) {
+ 		mpol_get(sn->policy);
+ 		pol = sn->policy;
+ 	}
+-	mutex_unlock(&sp->mutex);
++	spin_unlock(&sp->lock);
+ 	return pol;
+ }
+ 
+@@ -2178,8 +2188,10 @@ static void sp_free(struct sp_node *n)
+ static void sp_delete(struct shared_policy *sp, struct sp_node *n)
+ {
+ 	pr_debug("deleting %lx-l%lx\n", n->start, n->end);
++	spin_lock(&sp->lock);
+ 	rb_erase(&n->nd, &sp->root);
+ 	sp_free(n);
++	spin_unlock(&sp->lock);
+ }
+ 
+ static struct sp_node *sp_alloc(unsigned long start, unsigned long end,
+@@ -2264,6 +2276,7 @@ void mpol_shared_policy_init(struct shared_policy *sp, struct mempolicy *mpol)
+ 	int ret;
+ 
+ 	sp->root = RB_ROOT;		/* empty tree == default mempolicy */
++	spin_lock_init(&sp->lock);
+ 	mutex_init(&sp->mutex);
+ 
+ 	if (mpol) {
