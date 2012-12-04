@@ -1,144 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929Ab2LDHWK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 02:22:10 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:43105 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142Ab2LDHWJ (ORCPT
+	id S1751736Ab2LDH0I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 02:26:08 -0500
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:50882 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751438Ab2LDH0G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 02:22:09 -0500
-X-AuditID: 9c930179-b7b25ae0000031c2-d8-50bda49f9f7a
-Date: Tue, 4 Dec 2012 16:22:07 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Christoph Lameter <cl@linux.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [RFC v2] Support volatile range for anon vma
-Message-ID: <20121204072207.GA9782@blaptop>
-References: <1351560594-18366-1-git-send-email-minchan@kernel.org>
- <50AD739A.30804@linaro.org>
- <50B6E1F9.5010301@linaro.org>
- <20121204000042.GB20395@bbox>
- <50BD4A70.9060506@linaro.org>
+	Tue, 4 Dec 2012 02:26:06 -0500
+Date: Tue, 4 Dec 2012 08:26:04 +0100
+From: Andreas Mohr <andi@lisas.de>
+To: Andreas Mohr <andi@lisas.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [YASB] Re: Linux 3.7-rc7
+Message-ID: <20121204072604.GA7467@rhlx01.hs-esslingen.de>
+References: <CA+55aFyetqyMa2BQu7kE=cqFdAysUh9gV=O5as5Chgg1EMCW7g@mail.gmail.com>
+ <20121203193310.GA32762@rhlx01.hs-esslingen.de>
+ <CA+55aFygWCxz=Mmogp8FoSr51rNct6ANw0Kw3y=u4Pu2iDK48Q@mail.gmail.com>
+ <20121203194817.GA14594@rhlx01.hs-esslingen.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50BD4A70.9060506@linaro.org>
+In-Reply-To: <20121203194817.GA14594@rhlx01.hs-esslingen.de>
+X-Priority: none
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 03, 2012 at 04:57:20PM -0800, John Stultz wrote:
-> On 12/03/2012 04:00 PM, Minchan Kim wrote:
-> >On Wed, Nov 28, 2012 at 08:18:01PM -0800, John Stultz wrote:
-> >>On 11/21/2012 04:36 PM, John Stultz wrote:
-> >>>2) Being able to use this with tmpfs files. I'm currently trying
-> >>>to better understand the rmap code, looking to see if there's a
-> >>>way to have try_to_unmap_file() work similarly to
-> >>>try_to_unmap_anon(), to allow allow users to madvise() on mmapped
-> >>>tmpfs files. This would provide a very similar interface as to
-> >>>what I've been proposing with fadvise/fallocate, but just using
-> >>>process virtual addresses instead of (fd, offset) pairs.   The
-> >>>benefit with (fd,offset) pairs for Android is that its easier to
-> >>>manage shared volatile ranges between two processes that are
-> >>>sharing data via an mmapped tmpfs file (although this actual use
-> >>>case may be fairly rare).  I believe we should still be able to
-> >>>rework the ashmem internals to use madvise (which would provide
-> >>>legacy support for existing android apps), so then its just a
-> >>>question of if we could then eventually convince Android apps to
-> >>>use the madvise interface directly, rather then the ashmem unpin
-> >>>ioctl.
-> >>Hey Minchan,
-> >>     I've been playing around with your patch trying to better
-> >>understand your approach and to extend it to support tmpfs files. In
-> >>doing so I've found a few bugs, and have some rough fixes I wanted
-> >>to share. There's still a few edge cases I need to deal with (the
-> >>vma-purged flag isn't being properly handled through vma merge/split
-> >>operations), but its starting to come along.
-> >Hmm, my patch doesn't allow to merge volatile with another one by
-> >inserting VM_VOLATILE into VM_SPECIAL so I guess merge isn't problem.
-> >In case of split, __split_vma copy old vma to new vma like this
-> >
-> >         *new = *vma;
-> >
-> >So the problem shouldn't happen, I guess.
-> >Did you see the real problem about that?
-> Yes, depending on the pattern that MADV_VOLATILE and MADV_NOVOLATILE
-> is applied, we can get a result where data is purged, but we aren't
-> notified of it.  Also, since madvise returns early if it encounters
-> an error, in the case where you have checkerboard volatile regions
-> (say every other page is volatile), which you mark non-volatile with
-> one large MADV_NOVOLATILE call, the first volatile vma will be
-> marked non-volatile, but since it returns purged, the madvise loop
-> will stop and the following volatile regions will be left volatile.
+Hi,
+
+On Mon, Dec 03, 2012 at 08:48:17PM +0100, Andreas Mohr wrote:
+> Will try script to unload half of all drivers etc.
+> (heavy amounts of bisection wouldn't be joyful on this box).
 > 
-> The patches in the git tree below which handle the perged state
-> better seem to work for my tests, as far as resolving any
-> overlapping calls. Of course there may yet still be problems I've
-> not found.
 > 
-> >>Anyway, take a look at the tree here and let me know what you think.
-> >>http://git.linaro.org/gitweb?p=people/jstultz/android-dev.git;a=shortlog;h=refs/heads/dev/minchan-anonvol
-> 
-> Eager to hear what you think!
+> I failed to mention the effects:
+> Suspend starts, disk does spin down, yet display backlight stays
+> until finally monitor blanks.
 
-Below two patches look good to me.
+Unloading *all* unloadable modules didn't help.
 
-[rmap: Simplify volatility checking by moving it out of try_to_unmap_one]
-[rmap: ClearPageDirty() when returning SWAP_DISCARD]
+Current status:
 
-[madvise: Fix NOVOLATILE bug]
-I can't understand description of the patch.
-Could you elaborate it with example?
+$ git bisect log
+git bisect start
+# good: [f4a75d2eb7b1e2206094b901be09adb31ba63681] Linux 3.7-rc6
+git bisect good f4a75d2eb7b1e2206094b901be09adb31ba63681
+# bad: [3c46f3d6406b1d0c53575774b2d1fd013cd7f76f] Merge branch
+# 'for-3.7-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq
+git bisect bad 3c46f3d6406b1d0c53575774b2d1fd013cd7f76f
+# good: [35f95d228e55eebdc87b5c0dbdecc46884f476a6] Merge tag
+# 'for-linus-20121123' of git://git.infradead.org/mtd-2.6
+git bisect good 35f95d228e55eebdc87b5c0dbdecc46884f476a6
+# good: [e9296e89b85604862bd9ec2d54dc43edad775c0d] Merge
+# git://git.kernel.org/pub/scm/linux/kernel/git/davem/net
+git bisect good e9296e89b85604862bd9ec2d54dc43edad775c0d
 
-[madvise: Fixup vma->purged handling]
-I included VM_VOLATILE into VM_SPECIAL intentionally.
-If comment of VM_SPECIAL is right, merge with volatile vmas shouldn't happen.
-So I guess you see other problem. When I see my source code today, locking
-scheme/purge handling is totally broken. I will look at it. Maybe you are seeing
-bug related that. Part of patch is needed. It could be separate patch.
-I will merge it.
 
-ff --git a/mm/madvise.c b/mm/madvise.c
-index 65af0b5..5469d76 100644
---- a/mm/madvise.c
-+++ b/mm/madvise.c
-@@ -139,8 +139,10 @@ success:
-        if (behavior == MADV_NOVOLATILE || behavior == MADV_VOLATILE)
-                volatile_lock(vma);
-        vma->vm_flags = new_flags;
--       if (behavior == MADV_NOVOLATILE)
-+       if (behavior == MADV_NOVOLATILE) {
-                error = vma->purged;
-+               vma->purged = 0;
-+       }
-        if (behavior == MADV_NOVOLATILE || behavior == MADV_VOLATILE)
-                volatile_unlock(vma);
- out:
+Currently processing a95251b8bac4a91a43db795a7193545dac65f4f4 .
 
-First of all, after I resolve above issue, let's talk about tmpfs volatile.
-Thanks for the fix, John!
 
-> 
-> Thanks again!
-> -john
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+So far everything in the normal, no interim (build) breakage etc.
 
--- 
-Kind regards,
-Minchan Kim
+Andreas Mohr
