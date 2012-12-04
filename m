@@ -1,44 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751486Ab2LDGNi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 01:13:38 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:19998 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816Ab2LDGNg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 01:13:36 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 03 Dec 2012 22:12:36 -0800
-Message-ID: <50BD9573.2080802@nvidia.com>
-Date: Tue, 4 Dec 2012 08:17:23 +0200
-From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC v2 1/8] video: tegra: Add nvhost driver
-References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com> <1353935954-13763-2-git-send-email-tbergstrom@nvidia.com> <20121128212301.GA25531@avionic-0098.adnet.avionic-design.de> <50B73710.2040102@nvidia.com> <20121129114704.GB6150@avionic-0098.adnet.avionic-design.de> <50B874C7.5030208@nvidia.com> <20121130103850.GA28367@avionic-0098.adnet.avionic-design.de> <50BCFB7E.4020007@wwwdotorg.org> <20121203210328.GA20884@avionic-0098.adnet.avionic-design.de>
-In-Reply-To: <20121203210328.GA20884@avionic-0098.adnet.avionic-design.de>
-Content-Type: text/plain; charset="UTF-8"
+	id S1751128Ab2LDGRp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 01:17:45 -0500
+Received: from plane.gmane.org ([80.91.229.3]:57707 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750765Ab2LDGRo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 01:17:44 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Woody Wu <narkewoody@gmail.com>
+Subject: Why a host not ping-able?
+Date: Tue, 4 Dec 2012 06:17:25 +0000 (UTC)
+Message-ID: <slrnkbr59r.us1.narkewoody@zuhnb712.local.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: 59.37.26.98
+User-Agent: slrn/0.9.9p1 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03.12.2012 23:03, Thierry Reding wrote:
-> What's really difficult to follow is if an ops structure is accessed via
-> some global macro. It also breaks encapsulation because you have a
-> global ops structure. That may even work fine for now, but it will break
-> once you have more than a single host1x in a system. I know this will
-> never happen, but all of a sudden it happens anyway and the code breaks.
-> Doing this right isn't very hard and it will lead to a better design and
-> is less likely to break at some point.
+Hi, list
 
-I agree that the chip ops access goes through too much indirection and
-macro magic (which I already declared I hate), so we're going to design
-something simpler.
+I am not sure this has something with kernel.  But the system I just
+generated cannot be reached from ping.  It can ping outside, but if I
+ping it from outside, I just get "Destination Host Unreachable".
 
-Terje
+I think there is not firewall in between, and the two host in the test
+are in the same ethernet sub network.  Is that possible the strange
+behavior caused by somehow misconfigured kernel?
+
+-- 
+woody
+I can't go back to yesterday - because I was a different person then.
+
