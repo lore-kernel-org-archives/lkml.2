@@ -1,40 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725Ab2LDIv4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 03:51:56 -0500
-Received: from mga02.intel.com ([134.134.136.20]:51164 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752530Ab2LDIvy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 03:51:54 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,213,1355126400"; 
-   d="scan'208";a="251563721"
-Date: Tue, 4 Dec 2012 08:54:26 +0000
-From: Alan Cox <alan@linux.intel.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -next 0/9] tty: Fix buffer work access-after-free
-Message-ID: <20121204085426.389ca79b@bob.linux.org.uk>
-In-Reply-To: <1354604865-10278-1-git-send-email-peter@hurleysoftware.com>
-References: <1354604865-10278-1-git-send-email-peter@hurleysoftware.com>
-Organization: Intel
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-redhat-linux-gnu)
-Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
- Registered office Pipers Way, Swindon, SN3 1RJ
+	id S1751731Ab2LDIxs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 03:53:48 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58337 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750765Ab2LDIxq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 03:53:46 -0500
+Subject: Re: [PATCH v7 0/4] Add generic driver for on-chip SRAM
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Richard Zhao <richard.zhao@freescale.com>,
+        Huang Shijie <shijie8@gmail.com>,
+        Dong Aisheng <dong.aisheng@linaro.org>, Matt Porter <mporter@ti.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Javier Martin <javier.martin@vista-silicon.com>, kernel@pengutronix.de,
+        devicetree-discuss@lists.ozlabs.org
+In-Reply-To: <1353680655-21624-1-git-send-email-p.zabel@pengutronix.de>
+References: <1353680655-21624-1-git-send-email-p.zabel@pengutronix.de>
+Content-Type: text/plain; charset="us-ascii"
+Date: Tue, 04 Dec 2012 09:53:38 +0100
+Message-ID: <1354611218.3410.11.camel@pizza.hi.pengutronix.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  4 Dec 2012 02:07:36 -0500
-Peter Hurley <peter@hurleysoftware.com> wrote:
+Hi,
 
-> This patch series addresses the causes of flush_to_ldisc accessing
-> the tty after freeing.
+On Fri, 2012-11-23 at 15:24 +0100, Philipp Zabel wrote:
+> These patches add support to configure on-chip SRAM via device-tree
+> node or platform data and to obtain the resulting genalloc pool from
+> the physical address or a phandle pointing at the device tree node.
+> This allows drivers to allocate SRAM with the genalloc API without
+> hard-coding the genalloc pool pointer.
 
-Looks good to me. Would be nice to keep a copy of the test that shows
-it up in the comments of the patches somewhere.
+are there any further comments on this series?
+
+> The on-chip SRAM on i.MX53 and i.MX6q can be registered via device tree
+> and changed to use the simple generic SRAM driver:
+> 
+>                 ocram: ocram@00900000 {
+>                         compatible = "fsl,imx-ocram", "sram";
+>                         reg = <0x00900000 0x3f000>;
+>                 };
+> 
+> A driver that needs to allocate SRAM buffers, like the video processing
+> unit on i.MX53, can retrieve the genalloc pool from a phandle in the
+> device tree using of_get_named_gen_pool(node, "iram", 0) from patch 1:
+> 
+>                 vpu@63ff4000 {
+>                         /* ... */
+>                         iram = <&ocram>;
+>                 };
+> 
+> The allocation granularity is hard-coded to 32 bytes for now,
+> until a way to configure it can be agreed upon. There is overhead
+> for bigger SRAMs, where only a much coarser allocation granularity
+> is needed: At 32 bytes minimum allocation size, a 256 KiB SRAM
+> needs a 1 KiB bitmap to track allocations.
+> 
+> Once everybody is ok with it, could the first two patches be merged
+> through the char-misc tree? I'll resend the i.MX and coda patches to
+> the respective lists afterwards.
+
+Arnd, Greg, would you take the first patch "genalloc: add a global pool
+list, allow to find pools by phys address" into the char-misc tree if
+there are no vetoes? Or should I try and get it merged separately,
+first?
+
+regards
+Philipp
+
+> Changes since v6:
+>  - Reduced the hard coded allocation granularity to 32 bytes.
+> 
+> regards
+> Philipp
+> 
+> ---
+>  Documentation/devicetree/bindings/misc/sram.txt |   17 ++++
+>  arch/arm/boot/dts/imx53.dtsi                    |    5 +
+>  arch/arm/boot/dts/imx6q.dtsi                    |    6 ++
+>  drivers/media/platform/Kconfig                  |    3 +-
+>  drivers/media/platform/coda.c                   |   47 ++++++---
+>  drivers/misc/Kconfig                            |    9 ++
+>  drivers/misc/Makefile                           |    1 +
+>  drivers/misc/sram.c                             |  121 +++++++++++++++++++++++
+>  include/linux/genalloc.h                        |   14 +++
+>  lib/genalloc.c                                  |   67 +++++++++++++
+>  10 files changed, 274 insertions(+), 16 deletions(-)
+
+
