@@ -1,92 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285Ab2LDUOJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 15:14:09 -0500
-Received: from mx2.fusionio.com ([66.114.96.31]:35575 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751836Ab2LDUOG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 15:14:06 -0500
-X-ASG-Debug-ID: 1354652044-0421b549eb5c340001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <50BE5988.3050501@fusionio.com>
-Date: Tue, 4 Dec 2012 21:14:00 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1753341Ab2LDUOd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 15:14:33 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:46378 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753290Ab2LDUOa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 15:14:30 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: "x86\@kernel.org" <x86@kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Gleb Natapov <gleb@redhat.com>,
+        "kexec\@lists.infradead.org" <kexec@lists.infradead.org>,
+        "kvm\@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <50B43299.9030409@cn.fujitsu.com> <50B432CA.70804@cn.fujitsu.com>
+Date: Tue, 04 Dec 2012 12:14:15 -0800
+In-Reply-To: <50B432CA.70804@cn.fujitsu.com> (Zhang Yanfei's message of "Tue,
+	27 Nov 2012 11:26:02 +0800")
+Message-ID: <87zk1t4lt4.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, Zach Brown <zab@redhat.com>
-Subject: Re: [patch,v2] bdi: add a user-tunable cpu_list for the bdi flusher
- threads
-References: <x49lidfnf0s.fsf@segfault.boston.devel.redhat.com>
-X-ASG-Orig-Subj: Re: [patch,v2] bdi: add a user-tunable cpu_list for the bdi flusher
- threads
-In-Reply-To: <x49lidfnf0s.fsf@segfault.boston.devel.redhat.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1354652044
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.116098
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1/5EBvJlll1rYVbFbz1h1y+Vl4Az6lWz64=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_XMDrugObfuBody_12 obfuscated drug references
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v9 1/2] x86/kexec: VMCLEAR VMCSs loaded on all cpus if necessary
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-12-03 19:53, Jeff Moyer wrote:
-> Hi,
-> 
-> In realtime environments, it may be desirable to keep the per-bdi
-> flusher threads from running on certain cpus.  This patch adds a
-> cpu_list file to /sys/class/bdi/* to enable this.  The default is to tie
-> the flusher threads to the same numa node as the backing device (though
-> I could be convinced to make it a mask of all cpus to avoid a change in
-> behaviour).
+Zhang Yanfei <zhangyanfei@cn.fujitsu.com> writes:
 
-Looks sane, and I think defaulting to the home node is a sane default.
-One comment:
+> This patch provides a way to VMCLEAR VMCSs related to guests
+> on all cpus before executing the VMXOFF when doing kdump. This
+> is used to ensure the VMCSs in the vmcore updated and
+> non-corrupted.
 
-> +	ret = cpulist_parse(buf, newmask);
-> +	if (!ret) {
-> +		spin_lock(&bdi->wb_lock);
-> +		task = wb->task;
-> +		if (task)
-> +			get_task_struct(task);
-> +		spin_unlock(&bdi->wb_lock);
+Apologies for the delay I have been travelling, and I wanted
+to at least read through the code.
 
-bdi->wb_lock needs to be bh safe. The above should have caused lockdep
-warnings for you.
+Overall I think this is good but I have one nit, and I see one real
+problem with this code.
 
-> +		if (task) {
-> +			ret = set_cpus_allowed_ptr(task, newmask);
-> +			put_task_struct(task);
-> +		}
-> +		if (ret == 0) {
-> +			mutex_lock(&bdi->flusher_cpumask_mutex);
-> +			cpumask_copy(bdi->flusher_cpumask, newmask);
-> +			mutex_unlock(&bdi->flusher_cpumask_mutex);
-> +			ret = count;
-> +		}
-> +	}
+> +/*
+> + * This is used to VMCLEAR all VMCSs loaded on the
+> + * processor. And when loading kvm_intel module, the
+> + * callback function pointer will be assigned.
+> + */
+> +void (*crash_vmclear_loaded_vmcss)(void) = NULL;
+> +EXPORT_SYMBOL_GPL(crash_vmclear_loaded_vmcss);
+> +
+> +static inline void cpu_emergency_vmclear_loaded_vmcss(void)
+> +{
+> +	if (crash_vmclear_loaded_vmcss)
+> +		crash_vmclear_loaded_vmcss();
+> +}
 
-> @@ -437,6 +488,14 @@ static int bdi_forker_thread(void *ptr)
->  				spin_lock_bh(&bdi->wb_lock);
->  				bdi->wb.task = task;
->  				spin_unlock_bh(&bdi->wb_lock);
-> +				mutex_lock(&bdi->flusher_cpumask_mutex);
-> +				ret = set_cpus_allowed_ptr(task,
-> +							bdi->flusher_cpumask);
-> +				mutex_unlock(&bdi->flusher_cpumask_mutex);
+The nit is the use of emergency instead of crash in the name.
 
-It'd be very useful if we had a kthread_create_cpu_on_cpumask() instead
-of a _node() variant, since the latter could easily be implemented on
-top of the former. But not really a show stopper for the patch...
+The problem is that this is potentially a NULL pointer dereference if
+kvm-intel is removed.  The easist fix would be in your second patch to
+just make it impossible to unload the kvm-intel module.  Otherwise
+there the deference of crash_vmclear_loaded_vmcss needs to be rcu
+protected, with a syncrhonize_rcu after the pointer is set to NULL in
+the unload path.
 
--- 
-Jens Axboe
+Otherwise I have no objections to this code.
 
+Eric
