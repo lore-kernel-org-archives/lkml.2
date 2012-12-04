@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880Ab2LDHc3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 02:32:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44161 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750940Ab2LDHc1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 02:32:27 -0500
-Date: Tue, 4 Dec 2012 09:35:03 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: rusty@rustcorp.com.au, krkumar2@in.ibm.com,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        bhutchings@solarflare.com, jwhan@filewood.snu.ac.kr, shiyer@redhat.com
-Subject: Re: [net-next rfc v7 2/3] virtio_net: multiqueue support
-Message-ID: <20121204073503.GB7499@redhat.com>
-References: <1354011360-39479-1-git-send-email-jasowang@redhat.com>
- <1354011360-39479-3-git-send-email-jasowang@redhat.com>
- <20121203101436.GB23009@redhat.com>
- <50BC7F59.301@redhat.com>
+	id S1752071Ab2LDHka (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 02:40:30 -0500
+Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:53154 "EHLO
+	95-31-19-74.broadband.corbina.ru" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751406Ab2LDHk2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 02:40:28 -0500
+Message-ID: <50BDA8DA.7070109@ilyx.ru>
+Date: Tue, 04 Dec 2012 11:40:10 +0400
+From: Ilya Zykov <ilya@ilyx.ru>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50BC7F59.301@redhat.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: Alan Cox <alan@linux.intel.com>, Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -next 0/9] tty: Fix buffer work access-after-free
+References: <1354604865-10278-1-git-send-email-peter@hurleysoftware.com>
+In-Reply-To: <1354604865-10278-1-git-send-email-peter@hurleysoftware.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 03, 2012 at 06:30:49PM +0800, Jason Wang wrote:
-> On 12/03/2012 06:14 PM, Michael S. Tsirkin wrote:
-> > On Tue, Nov 27, 2012 at 06:15:59PM +0800, Jason Wang wrote:
-> >> > -	if (!try_fill_recv(&vi->rq, GFP_KERNEL))
-> >> > -		schedule_delayed_work(&vi->rq.refill, 0);
-> >> > +	for (i = 0; i < vi->max_queue_pairs; i++)
-> >> > +		if (!try_fill_recv(&vi->rq[i], GFP_KERNEL))
-> >> > +			schedule_delayed_work(&vi->rq[i].refill, 0);
-> >> >  
-> >> >  	mutex_lock(&vi->config_lock);
-> >> >  	vi->config_enable = true;
-> >> >  	mutex_unlock(&vi->config_lock);
-> >> >  
-> >> > +	BUG_ON(virtnet_set_queues(vi));
-> >> > +
-> >> >  	return 0;
-> >> >  }
-> >> >  #endif
-> > Also crashing on device nack of command is also not nice.
-> > In this case it seems we can just switch to
-> > single-queue mode which should always be safe.
+On 04.12.2012 11:07, Peter Hurley wrote:
+> This patch series addresses the causes of flush_to_ldisc accessing
+> the tty after freeing.
 > 
-> Not sure it's safe. It depends on the reason why this call fails. If we
-> left a state that the driver only use single queue but the device use
-> multi queues, we may still lost the network.
 
-Looks like we won't: napi will stay enabled on all queues
-so we will process incoming packets.
+I think, it is have sense only if you can take effect,
+with this patch or something like. I can't. :)
 
--- 
-MST
+Signed-off-by: Ilya Zykov <ilya@ilyx.ru>
+---
+diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
+index 2ea176b..f24751d 100644
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -170,6 +170,10 @@ struct tty_struct *alloc_tty_struct(void)
+ 	return kzalloc(sizeof(struct tty_struct), GFP_KERNEL);
+ }
+
++static void flush_to_ldisc2(struct work_struct *work)
++{
++	printk(KERN_WARNING "Possible intrusion detected.\n");
++}
+ /**
+  *	free_tty_struct		-	free a disused tty
+  *	@tty: tty struct to free
+@@ -188,6 +192,8 @@ void free_tty_struct(struct tty_struct *tty)
+ 	kfree(tty->write_buf);
+ 	tty_buffer_free_all(tty);
+ 	tty->magic = 0xDEADDEAD;
++	PREPARE_WORK(&tty->buf.work,flush_to_ldisc2);
++	//memset(tty, 0, sizeof(struct tty_struct));
+ 	kfree(tty);
+ }
