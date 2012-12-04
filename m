@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751204Ab2LDGqT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 01:46:19 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:49340 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750826Ab2LDGqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 01:46:18 -0500
-Message-ID: <50BD9C45.7070501@ti.com>
-Date: Tue, 4 Dec 2012 12:16:29 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751364Ab2LDHBm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 02:01:42 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:63580 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090Ab2LDHBk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 02:01:40 -0500
 MIME-Version: 1.0
-To: Vitaly Andrianov <vitalya@ti.com>
-CC: <mina86@mina86.com>, <m.szyprowski@samsung.com>,
-        <kyungmin.park@samsung.com>, <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>, <linux-keystone@list.ti.com>,
-        Cyril Chemparathy <cyril@ti.com>
-Subject: Re: [linux-keystone] [PATCH v2] drivers: cma: fix addressing on PAE
- machines
-References: <1354549570-21445-1-git-send-email-vitalya@ti.com>
-In-Reply-To: <1354549570-21445-1-git-send-email-vitalya@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CADApbegRJO+CJJYotP9vL4-kp5qmf4OZEzmqFAR6xu5yhRReFA@mail.gmail.com>
+References: <1354155670-6267-1-git-send-email-chao.xie@marvell.com>
+	<20121129102519.GG19440@n2100.arm.linux.org.uk>
+	<CAN1soZxUA2PPy4694ByX1FTyWiJkha8QpKFK5Jc3Wf3zT0huOA@mail.gmail.com>
+	<CADApbejZXach=YaiL5rEWA5+uc+mO8PzQzUKN+k90HfxEsqgtA@mail.gmail.com>
+	<CADApbegrJDe5SiO255WdKYai1U7WjBYfMHuCm-hTNfx5p6Wz-Q@mail.gmail.com>
+	<20121203094828.GA14363@n2100.arm.linux.org.uk>
+	<CADApbegRJO+CJJYotP9vL4-kp5qmf4OZEzmqFAR6xu5yhRReFA@mail.gmail.com>
+Date: Tue, 4 Dec 2012 15:01:39 +0800
+Message-ID: <CAN1soZzP5nH31teq3bZ2sXgnPimjvDZ8rEO6J01XbigowUQHvQ@mail.gmail.com>
+Subject: Re: [PATCH 1/4] rtc: sa1100: enable/disable rtc when probe/remove the device
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: Chao Xie <xiechao.mail@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Chao Xie <chao.xie@marvell.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 03 December 2012 09:16 PM, Vitaly Andrianov wrote:
-> This patch fixes a couple of bugs that otherwise impair CMA functionality on
-> PAE machines:
+On Tuesday, December 4, 2012, Chao Xie wrote:
 >
->    - alignment must be a 64-bit type when running on systems with 64-bit
->      physical addresses.  If this is not the case, the limit calculation thunks
->      allocations down to an address range < 4G.
+> On Mon, Dec 3, 2012 at 5:48 PM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+> > On Mon, Dec 03, 2012 at 10:53:07AM +0800, Chao Xie wrote:
+> >> I want to correct what i said. For the irq register/unregister i think
+> >> can be done at open/release. But for clock enable/disable, i do not
+> >> think so. If clock is disabled, as i think RTC will not work. User API
+> >> still use open->get_time->close for "date" command. It means that RTC
+> >> will not return correct date to user.
+> >
+> > "I think" is not good enough for patches like this.  Please test it.
+> >
+> > On SA11x0 and PXA platforms, the clock for the sa1100-rtc is a dummy
+> > clock; it has no effect.  For MMP, I don't have access to the TRMs so
+> > that's something you're going to have to find out.
 >
->    - The allocated range check is removed. On 32bit ARM kernel with LPAE
->      enabled the base may be allocated outside the fist 4GB of physical
->      memory (keystone SoC for example).
+> I tested at pxa910 which uses rtc-sa1100 as driver.
+> the test procedure is simple
+> open->ioctl(RTC_RD_TIME)->close
+> With the original code, the rtc will not update, i always get the same value
 >
-Any reason you have clubbed two fixes in one patch. Its better to keep
-the two fixes separate patches.
+> remove clock disable/enable in release/open, and enable/disable clock
+> at probe/remove.
+> the rtc can update, and i can read the correct rtc value.
 
-> Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
-> Signed-off-by: Cyril Chemparathy <cyril@ti.com>
-> ---
-Other than that, patch looks good to my eyes.
+Yes, clock shouldn't be controlled in open/close. Otherwise, RTC can't
+work since
+clock is already gated. I didn't find the issue since there're two RTC
+enabled in my
+board. The default one impacts the test.
 
-Regards,
-Santosh
-
-
+I think that you need send the patch that only move clock operation
+into probe().
