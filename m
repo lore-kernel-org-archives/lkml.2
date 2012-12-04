@@ -1,64 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751645Ab2LDCcT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 21:32:19 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:47298 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751099Ab2LDCcS (ORCPT
+	id S1751670Ab2LDCeJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 21:34:09 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:18305 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751340Ab2LDCeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 21:32:18 -0500
-Message-ID: <1354588325.16068.1.camel@phoenix>
-Subject: [PATCH] regulator: gpio-regulator: Add ifdef CONFIG_OF guard for
- regulator_gpio_of_match
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Frank Li <Frank.Li@freescale.com>, Lee Jones <lee.jones@linaro.org>,
-        Heiko Stuebner <heiko@sntech.de>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 04 Dec 2012 10:32:05 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 3 Dec 2012 21:34:08 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AiUKAKlfvVB5LPYI/2dsb2JhbABEhUOyWoYXF3OCHgEBBAEnExwjBQsIAw4KLhQlAyETiAoFrlaQNRSMLINgYQOWAIlOhnqDBg
+Date: Tue, 4 Dec 2012 13:34:05 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Zach Brown <zab@redhat.com>
+Subject: Re: [patch,v2] bdi: add a user-tunable cpu_list for the bdi flusher
+ threads
+Message-ID: <20121204023405.GE32450@dastard>
+References: <x49lidfnf0s.fsf@segfault.boston.devel.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <x49lidfnf0s.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use of_match_ptr and add ifdef CONFIG_OF guard for regulator_gpio_of_match.
+On Mon, Dec 03, 2012 at 01:53:39PM -0500, Jeff Moyer wrote:
+> Hi,
+> 
+> In realtime environments, it may be desirable to keep the per-bdi
+> flusher threads from running on certain cpus.  This patch adds a
+> cpu_list file to /sys/class/bdi/* to enable this.  The default is to tie
+> the flusher threads to the same numa node as the backing device (though
+> I could be convinced to make it a mask of all cpus to avoid a change in
+> behaviour).
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/gpio-regulator.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+The default seems reasonable to me.
 
-diff --git a/drivers/regulator/gpio-regulator.c b/drivers/regulator/gpio-regulator.c
-index 3ee79c8..2cfd9d3 100644
---- a/drivers/regulator/gpio-regulator.c
-+++ b/drivers/regulator/gpio-regulator.c
-@@ -364,10 +364,12 @@ static int gpio_regulator_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+#if defined(CONFIG_OF)
- static const struct of_device_id regulator_gpio_of_match[] __devinitconst = {
- 	{ .compatible = "regulator-gpio", },
- 	{},
- };
-+#endif
- 
- static struct platform_driver gpio_regulator_driver = {
- 	.probe		= gpio_regulator_probe,
-@@ -375,7 +377,7 @@ static struct platform_driver gpio_regulator_driver = {
- 	.driver		= {
- 		.name		= "gpio-regulator",
- 		.owner		= THIS_MODULE,
--		.of_match_table = regulator_gpio_of_match,
-+		.of_match_table = of_match_ptr(regulator_gpio_of_match),
- 	},
- };
- 
+> Comments, as always, are appreciated.
+.....
+
+> +static ssize_t cpu_list_store(struct device *dev,
+> +		struct device_attribute *attr, const char *buf, size_t count)
+> +{
+> +	struct backing_dev_info *bdi = dev_get_drvdata(dev);
+> +	struct bdi_writeback *wb = &bdi->wb;
+> +	cpumask_var_t newmask;
+> +	ssize_t ret;
+> +	struct task_struct *task;
+> +
+> +	if (!alloc_cpumask_var(&newmask, GFP_KERNEL))
+> +		return -ENOMEM;
+> +
+> +	ret = cpulist_parse(buf, newmask);
+> +	if (!ret) {
+> +		spin_lock(&bdi->wb_lock);
+> +		task = wb->task;
+> +		if (task)
+> +			get_task_struct(task);
+> +		spin_unlock(&bdi->wb_lock);
+> +		if (task) {
+> +			ret = set_cpus_allowed_ptr(task, newmask);
+> +			put_task_struct(task);
+> +		}
+
+Why is this set here outside the bdi->flusher_cpumask_mutex?
+
+Also, I'd prefer it named "..._lock" as that is the normal
+convention for such variables. You can tell the type of lock from
+the declaration or the use...
+
+....
+
+> @@ -437,6 +488,14 @@ static int bdi_forker_thread(void *ptr)
+>  				spin_lock_bh(&bdi->wb_lock);
+>  				bdi->wb.task = task;
+>  				spin_unlock_bh(&bdi->wb_lock);
+> +				mutex_lock(&bdi->flusher_cpumask_mutex);
+> +				ret = set_cpus_allowed_ptr(task,
+> +							bdi->flusher_cpumask);
+> +				mutex_unlock(&bdi->flusher_cpumask_mutex);
+
+As it is set under the lock here....
+
+Cheers,
+
+Dave.
 -- 
-1.7.9.5
-
-
-
+Dave Chinner
+david@fromorbit.com
