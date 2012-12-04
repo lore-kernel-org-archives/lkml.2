@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752457Ab2LDKaR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 05:30:17 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:44537 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751968Ab2LDKaM convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Tue, 4 Dec 2012 05:30:12 -0500
-Message-Id: <50BDDEBF02000078000ADAAC@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Tue, 04 Dec 2012 10:30:07 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Olaf Hering" <olaf@aepfle.de>, <konrad.wilk@oracle.com>
-Cc: <xen-devel@lists.xen.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] xen/blkback: do not leak mode property
-References: <1354563168-6609-1-git-send-email-olaf@aepfle.de>
-In-Reply-To: <1354563168-6609-1-git-send-email-olaf@aepfle.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1752597Ab2LDKbx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 05:31:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44670 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751918Ab2LDKbv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 05:31:51 -0500
+Date: Tue, 4 Dec 2012 11:31:41 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Jean Delvare <khali@linux-fr.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Stephane Chatty <chatty@enac.fr>, fabien.andre@gmail.com,
+        scott.liu@emc.com.tw, JJ Ding <jj_ding@emc.com.tw>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        linux-i2c@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] i2c-hid: introduce HID over i2c specification
+ implementation
+In-Reply-To: <CAN+gG=F5jae=UFDR4-zZY-dt6KGE22QgmWiF2RkVvqN0ySX-kQ@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1212041129530.17055@pobox.suse.cz>
+References: <1352731379-24683-1-git-send-email-benjamin.tissoires@gmail.com> <20121130155650.69407e9f@endymion.delvare> <CAN+gG=FjVswyx1W4y6NtbNnBu2AWgZZfxVr0h00ZYujCOz3v7Q@mail.gmail.com> <20121203140226.0fede51e@endymion.delvare>
+ <CAN+gG=F5jae=UFDR4-zZY-dt6KGE22QgmWiF2RkVvqN0ySX-kQ@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 03.12.12 at 20:32, Olaf Hering <olaf@aepfle.de> wrote:
-> be->mode is obtained from xenbus_read, which does a kmalloc for the
-> message body. The short string is never released, so do it on blkbk
-> remove.
+On Mon, 3 Dec 2012, Benjamin Tissoires wrote:
+
+> >> I know that it already have been used by one Nvidia team and by Elan
+> >> for internal tests. So I don't know if it's possible to change it now
+> >> (though it's not a big deal).
+> >
+> > Yes it is possible, as long as the code isn't in Linus' tree (and I'd
+> > even say: as long as it is not in any kernel released by Linus.)
+> > Whoever is already using your driver will have to adjust their code.
+> > They'll certainly want to anyway, in order to get the bug fixes.
+> >
+> >> Anyway, "hid" is a little weird to me (but this is because I started
+> >> hacking the kernel from there), as it's really short and does not
+> >> contain i2c :)
+> >
+> > This is exactly my point: no other i2c client (to my knowledge) has
+> > "i2c" in its name, because it is redundant.
+> >
+> > I would agree that this is kind of a special case as this is a generic
+> > driver and not a device-specific driver. I would still prefer "hid" but
+> > if you don't feel like changing it, I guess I can live with that.
 > 
-> Signed-off-by: Olaf Hering <olaf@aepfle.de>
-> ---
-> 
-> !! Not compile tested !!
-> 
->  drivers/block/xen-blkback/xenbus.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/block/xen-blkback/xenbus.c 
-> b/drivers/block/xen-blkback/xenbus.c
-> index f58434c..a6585a4 100644
-> --- a/drivers/block/xen-blkback/xenbus.c
-> +++ b/drivers/block/xen-blkback/xenbus.c
-> @@ -366,6 +366,7 @@ static int xen_blkbk_remove(struct xenbus_device *dev)
->  		be->blkif = NULL;
->  	}
->  
-> +	kfree(be->mode);
+> Ok, I'll change the name.
+> My concerns were just because from my point of view, "hid" refers to
+> the core implementation. But for OEMs, they need to declare a "hid"
+> device, so it makes sense. Anyway, when I'll be able to get my hand on
+> an ACPI 5 device with hid over i2c, I'll be able to write the missing
+> autoloading code, and this name will be only used by a small part of
+> OEMs (I hope).
 
-This looks necessary but insufficient - there's nothing really
-preventing backend_changed() from being called more than once
-for a given device (is simply the handler of xenbus watch). Hence
-I think either that function needs to be guarded against multiple
-execution (e.g. by removing the watch from that function itself,
-if that's permitted by xenbus), or to properly deal with the
-effects this has (including but probably not limited to the leaking
-of be->mode).
+If you are going to change the name, please either send me the patch 
+before merge window for 3.8 opens, or explicitly ask me not to include 
+this driver in pull request that goes to Linus yet.
 
-Jan
+Once the driver is in Linus' tree, I'd rather not change the name.
 
->  	kfree(be);
->  	dev_set_drvdata(&dev->dev, NULL);
->  	return 0;
-> -- 
-> 1.8.0.1
+Thanks,
 
-
-
+-- 
+Jiri Kosina
+SUSE Labs
