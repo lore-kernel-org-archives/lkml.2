@@ -1,116 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751838Ab2LDB4G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 3 Dec 2012 20:56:06 -0500
-Received: from mga02.intel.com ([134.134.136.20]:19822 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751444Ab2LDB4E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 3 Dec 2012 20:56:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,211,1355126400"; 
-   d="scan'208";a="251402012"
-Subject: [PATCH] watchdog: store the watchdog sample period as a variable
-From: Chuansheng Liu <chuansheng.liu@intel.com>
-To: dzickus@redhat.com, akpm@linux-foundation.org
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, chuansheng.liu@intel.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 04 Dec 2012 18:58:42 +0800
-Message-ID: <1354618722.15558.1705.camel@cliu38-desktop-build>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1751795Ab2LDCCi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 3 Dec 2012 21:02:38 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:56111 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751393Ab2LDCCh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 3 Dec 2012 21:02:37 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFxrf=wx=fbvCRbFxt_=C4ne1-j3T=5JeLYzUG3SmpaECQ@mail.gmail.com>
+References: <CA+55aFyFLG+SxRq2=wY=8tyuQzQSHkKxonXwMmCOs=CWyOo=Mg@mail.gmail.com>
+ <874nk2u69u.fsf@silenus.orebokech.com> <CA+55aFxO+nOM--EJmrT+_54jF8AL2YZ7GhbwCT2cg2qxM2Md+A@mail.gmail.com>
+ <CA+8MBbJGy7xQFqi1VXPuPNHJnoZUcxjWDkmyRKeajXGAA_Q+GA@mail.gmail.com>
+ <CA+55aFyAvpCKPWV9Mh34aV6Q4DRjATQky939vYaPBfx6+65Nxw@mail.gmail.com> <CA+55aFxrf=wx=fbvCRbFxt_=C4ne1-j3T=5JeLYzUG3SmpaECQ@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 3 Dec 2012 18:02:15 -0800
+X-Google-Sender-Auth: gqPcUSP6Q1CgtiZfyJuZxFISpuc
+Message-ID: <CA+55aFyD2c2oBPX7XFoYvFP1k6j0ScYevndh19Rj1GwkG67Dgg@mail.gmail.com>
+Subject: Re: Linux 3.7-rc8
+To: Tony Luck <tony.luck@intel.com>
+Cc: Romain Francoise <romain@orebokech.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=f46d04428eae84b85604cffd4298
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--f46d04428eae84b85604cffd4298
+Content-Type: text/plain; charset=ISO-8859-1
 
-Currently getting the sample period is always thru complex
-calculation: get_softlockup_thresh() * ((u64)NSEC_PER_SEC / 5).
-But just like the watchdog_thresh, which is not changed often.
+On Mon, Dec 3, 2012 at 3:40 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Yup, I can reproduce it with that.
+>
+> I'll shut the printk up some way. In the meantime, you can ignore it.
 
-So we can store the sample period as a variable, and set it as
-__read_mostly type.
+Here's a patch to handle the "buffer head crosses the end of the disk" case.
 
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
----
- kernel/watchdog.c |   13 ++++++++-----
- 1 files changed, 8 insertions(+), 5 deletions(-)
+It works for me, and in fact it should allow us to basically always
+set the default block size to the PAGE_CACHE_SIZE (see bd_set_size()).
+But it doesn't do that part yet, this is just the "guard against
+crossing bh" part.
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index dd4b80a..7a32b20 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -31,6 +31,7 @@
- int watchdog_enabled = 1;
- int __read_mostly watchdog_thresh = 10;
- static int __read_mostly watchdog_disabled;
-+static u64 __read_mostly sample_period;
- 
- static DEFINE_PER_CPU(unsigned long, watchdog_touch_ts);
- static DEFINE_PER_CPU(struct task_struct *, softlockup_watchdog);
-@@ -116,7 +117,7 @@ static unsigned long get_timestamp(int this_cpu)
- 	return cpu_clock(this_cpu) >> 30LL;  /* 2^30 ~= 10^9 */
- }
- 
--static u64 get_sample_period(void)
-+static void set_sample_period(void)
- {
- 	/*
- 	 * convert watchdog_thresh from seconds to ns
-@@ -125,7 +126,7 @@ static u64 get_sample_period(void)
- 	 * and hard thresholds) to increment before the
- 	 * hardlockup detector generates a warning
- 	 */
--	return get_softlockup_thresh() * ((u64)NSEC_PER_SEC / 5);
-+	sample_period = get_softlockup_thresh() * ((u64)NSEC_PER_SEC / 5);
- }
- 
- /* Commands for resetting the watchdog */
-@@ -275,7 +276,7 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
- 	wake_up_process(__this_cpu_read(softlockup_watchdog));
- 
- 	/* .. and repeat */
--	hrtimer_forward_now(hrtimer, ns_to_ktime(get_sample_period()));
-+	hrtimer_forward_now(hrtimer, ns_to_ktime(sample_period));
- 
- 	if (touch_ts == 0) {
- 		if (unlikely(__this_cpu_read(softlockup_touch_sync))) {
-@@ -356,7 +357,7 @@ static void watchdog_enable(unsigned int cpu)
- 	hrtimer->function = watchdog_timer_fn;
- 
- 	/* done here because hrtimer_start can only pin to smp_processor_id() */
--	hrtimer_start(hrtimer, ns_to_ktime(get_sample_period()),
-+	hrtimer_start(hrtimer, ns_to_ktime(sample_period),
- 		      HRTIMER_MODE_REL_PINNED);
- 
- 	/* initialize timestamp */
-@@ -383,7 +384,7 @@ static int watchdog_should_run(unsigned int cpu)
- /*
-  * The watchdog thread function - touches the timestamp.
-  *
-- * It only runs once every get_sample_period() seconds (4 seconds by
-+ * It only runs once every sample_period seconds (4 seconds by
-  * default) to reset the softlockup timestamp. If this gets delayed
-  * for more than 2*watchdog_thresh seconds then the debug-printout
-  * triggers in watchdog_timer_fn().
-@@ -516,6 +517,7 @@ int proc_dowatchdog(struct ctl_table *table, int write,
- 	if (ret || !write)
- 		return ret;
- 
-+	set_sample_period();
- 	if (watchdog_enabled && watchdog_thresh)
- 		watchdog_enable_all_cpus();
- 	else
-@@ -537,6 +539,7 @@ static struct smp_hotplug_thread watchdog_threads = {
- 
- void __init lockup_detector_init(void)
- {
-+	set_sample_period();
- 	if (smpboot_register_percpu_thread(&watchdog_threads)) {
- 		pr_err("Failed to create watchdog threads, disabled\n");
- 		watchdog_disabled = -ENODEV;
--- 
-1.7.0.4
+Does that fix the printk's for you too?
 
+                    Linus
 
+--f46d04428eae84b85604cffd4298
+Content-Type: application/octet-stream; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_haadub600
 
+IGZzL2J1ZmZlci5jIHwgNTIgKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysr
+KysrKysrKysrKysrKwogMSBmaWxlIGNoYW5nZWQsIDUyIGluc2VydGlvbnMoKykKCmRpZmYgLS1n
+aXQgYS9mcy9idWZmZXIuYyBiL2ZzL2J1ZmZlci5jCmluZGV4IDM1ODZmYjA1YzhjZS4uYzRlMTEz
+OTBhNDRjIDEwMDY0NAotLS0gYS9mcy9idWZmZXIuYworKysgYi9mcy9idWZmZXIuYwpAQCAtMjg5
+Myw2ICsyODkzLDU1IEBAIHN0YXRpYyB2b2lkIGVuZF9iaW9fYmhfaW9fc3luYyhzdHJ1Y3QgYmlv
+ICpiaW8sIGludCBlcnIpCiAJYmlvX3B1dChiaW8pOwogfQogCisvKgorICogVGhpcyBhbGxvd3Mg
+dXMgdG8gZG8gSU8gZXZlbiBvbiB0aGUgb2RkIGxhc3Qgc2VjdG9ycworICogb2YgYSBkZXZpY2Us
+IGV2ZW4gaWYgdGhlIGJoIGJsb2NrIHNpemUgaXMgc29tZSBtdWx0aXBsZQorICogb2YgdGhlIHBo
+eXNpY2FsIHNlY3RvciBzaXplLgorICoKKyAqIFdlJ2xsIGp1c3QgdHJ1bmNhdGUgdGhlIGJpbyB0
+byB0aGUgc2l6ZSBvZiB0aGUgZGV2aWNlLAorICogYW5kIGNsZWFyIHRoZSBlbmQgb2YgdGhlIGJ1
+ZmZlciBoZWFkIG1hbnVhbGx5LgorICoKKyAqIFRydWx5IG91dC1vZi1yYW5nZSBhY2Nlc3NlcyB3
+aWxsIHR1cm4gaW50byBhY3R1YWwgSU8KKyAqIGVycm9ycywgdGhpcyBvbmx5IGhhbmRsZXMgdGhl
+ICJ3ZSBuZWVkIHRvIGJlIGFibGUgdG8KKyAqIGRvIElPIGF0IHRoZSBmaW5hbCBzZWN0b3IiIGNh
+c2UuCisgKi8KK3N0YXRpYyB2b2lkIGd1YXJkX2JoX2VvZChpbnQgcncsIHN0cnVjdCBiaW8gKmJp
+bywgc3RydWN0IGJ1ZmZlcl9oZWFkICpiaCkKK3sKKwlzZWN0b3JfdCBtYXhzZWN0b3I7CisJdW5z
+aWduZWQgYnl0ZXM7CisKKwltYXhzZWN0b3IgPSBpX3NpemVfcmVhZChiaW8tPmJpX2JkZXYtPmJk
+X2lub2RlKSA+PiA5OworCWlmICghbWF4c2VjdG9yKQorCQlyZXR1cm47CisKKwkvKgorCSAqIElm
+IHRoZSAqd2hvbGUqIElPIGlzIHBhc3QgdGhlIGVuZCBvZiB0aGUgZGV2aWNlLAorCSAqIGxldCBp
+dCB0aHJvdWdoLCBhbmQgdGhlIElPIGxheWVyIHdpbGwgdHVybiBpdCBpbnRvCisJICogYW4gRUlP
+LgorCSAqLworCWlmICh1bmxpa2VseShiaW8tPmJpX3NlY3RvciA+PSBtYXhzZWN0b3IpKQorCQly
+ZXR1cm47CisKKwltYXhzZWN0b3IgLT0gYmlvLT5iaV9zZWN0b3I7CisJYnl0ZXMgPSBiaW8tPmJp
+X3NpemU7CisJaWYgKGxpa2VseSgoYnl0ZXMgPj4gOSkgPD0gbWF4c2VjdG9yKSkKKwkJcmV0dXJu
+OworCisJLyogVWhodWguIFdlJ3ZlIGdvdCBhIGJoIHRoYXQgc3RyYWRkbGVzIHRoZSBkZXZpY2Ug
+c2l6ZSEgKi8KKwlieXRlcyA9IG1heHNlY3RvciA8PCA5OworCisJLyogVHJ1bmNhdGUgdGhlIGJp
+by4uICovCisJYmlvLT5iaV9zaXplID0gYnl0ZXM7CisJYmlvLT5iaV9pb192ZWNbMF0uYnZfbGVu
+ID0gYnl0ZXM7CisKKwkvKiAuLmFuZCBjbGVhciB0aGUgZW5kIG9mIHRoZSBidWZmZXIgZm9yIHJl
+YWRzICovCisJaWYgKHJ3ICYgUkVBRCkgeworCQl2b2lkICprYWRkciA9IGttYXBfYXRvbWljKGJo
+LT5iX3BhZ2UpOworCQltZW1zZXQoa2FkZHIgKyBiaF9vZmZzZXQoYmgpICsgYnl0ZXMsIDAsIGJo
+LT5iX3NpemUgLSBieXRlcyk7CisJCWt1bm1hcF9hdG9taWMoa2FkZHIpOworCX0KK30KKwogaW50
+IHN1Ym1pdF9iaChpbnQgcncsIHN0cnVjdCBidWZmZXJfaGVhZCAqIGJoKQogewogCXN0cnVjdCBi
+aW8gKmJpbzsKQEAgLTI5MjksNiArMjk3OCw5IEBAIGludCBzdWJtaXRfYmgoaW50IHJ3LCBzdHJ1
+Y3QgYnVmZmVyX2hlYWQgKiBiaCkKIAliaW8tPmJpX2VuZF9pbyA9IGVuZF9iaW9fYmhfaW9fc3lu
+YzsKIAliaW8tPmJpX3ByaXZhdGUgPSBiaDsKIAorCS8qIFRha2UgY2FyZSBvZiBiaCdzIHRoYXQg
+c3RyYWRkbGUgdGhlIGVuZCBvZiB0aGUgZGV2aWNlICovCisJZ3VhcmRfYmhfZW9kKHJ3LCBiaW8s
+IGJoKTsKKwogCWJpb19nZXQoYmlvKTsKIAlzdWJtaXRfYmlvKHJ3LCBiaW8pOwogCg==
+--f46d04428eae84b85604cffd4298--
