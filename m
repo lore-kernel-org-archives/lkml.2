@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752518Ab2LDNzW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 08:55:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6048 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751418Ab2LDNzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 08:55:17 -0500
-Date: Tue, 4 Dec 2012 14:54:55 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 0/3] perf hists: Changes on hists__{link,match}
-Message-ID: <20121204135454.GA1041@krava.brq.redhat.com>
-References: <1354596265-9901-1-git-send-email-namhyung@kernel.org>
+	id S1753611Ab2LDNzl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 08:55:41 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39001 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752496Ab2LDNzk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 08:55:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354596265-9901-1-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50BDE224.8000301@ti.com>
+References: <1354620448-14317-1-git-send-email-dinggnu@gmail.com> <50BDE224.8000301@ti.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 4 Dec 2012 13:55:18 +0000
+X-Google-Sender-Auth: 2ldPvK48uJM5o_AFvx7vYzq0LYk
+Message-ID: <CACxGe6viwuyfYm2RBfcj233U6-xmJJTQgu=DUu_11iPAckUzqg@mail.gmail.com>
+Subject: Re: [PATCH] memory: of_memory.c: remove unnecessary initialization
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Cong Ding <dinggnu@gmail.com>, Benoit Cousson <b-cousson@ti.com>,
+        Aneesh V <aneesh@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 04, 2012 at 01:44:22PM +0900, Namhyung Kim wrote:
-> Hi Arnaldo,
-> 
-> This is what I talked to Jiri yesterday, and it can be a common basis
-> of both event group and multiple diff patchset.  The point is using
-> internal input or collapsed rb tree to sort hist entries rather than
-> output tree with unnessary resort.
-> 
-> Please take a look.
-> 
-> Thanks,
-> Namhyung
-> 
-> 
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> Cc: Stephane Eranian <eranian@google.com>
-> Cc: Namhyung Kim <namhyung.kim@lge.com>
-> 
-> Namhyung Kim (3):
->   perf hists: Exchange order of comparing items when collapsing hists
->   perf hists: Link hist entries before inserting to an output tree
->   perf diff: Use internal rb tree for compute resort
-hi,
-could you please push branch with this?
+On Tue, Dec 4, 2012 at 11:44 AM, Santosh Shilimkar
+<santosh.shilimkar@ti.com> wrote:
+> On Tuesday 04 December 2012 04:56 PM, Cong Ding wrote:
+>>
+>> the initialization of variable ret is unnecessary, we can remove it while
+>> save
+>> one time "or" operation.
+>>
+>> Signed-off-by: Cong Ding <dinggnu@gmail.com>
+>> ---
+>
+> Looks ok.
+> Acked-by: Santosh Shilimkar<santosh.shilimkar@ti.com>
+>
 
-thanks,
-jirka
+Thanks for the patch, but I don't think it matters enough to apply it.
+The existing code isn't wrong.
+
+g.
+
+--
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
