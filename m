@@ -1,135 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258Ab2LDLKQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 06:10:16 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:18754 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752137Ab2LDLKN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 06:10:13 -0500
-Subject: [PATCH] SUNRPC: connect to UNIX sockets synchronously
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: bfields@fieldses.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Tue, 04 Dec 2012 14:10:27 +0300
-Message-ID: <20121204111006.23758.22102.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	id S1753324Ab2LDLKk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 06:10:40 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:62693 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752905Ab2LDLKi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 06:10:38 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [85.250.12.145]
+In-Reply-To: <20121204110655.GE18368@8bytes.org>
+References: <20121204154203.f0e7e87d1ae99e5c528434f8@canb.auug.org.au> <20121204110655.GE18368@8bytes.org>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Tue, 4 Dec 2012 13:10:16 +0200
+Message-ID: <CAK=WgbYDKN1deDTw3KvymvhoE1h_apX2E8zK=cDbu68+Gwcayw@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the iommu tree
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        linux-next@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Omar Ramirez Luna <omar.luna@linaro.org>,
+        Paul Walmsley <paul@pwsan.com>, Mike Turquette <mturquette@ti.com>,
+        Tony Lindgren <tony@atomide.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Local tranports uses UNIX sockets and connecting of these sockets is done in
-context of file system namespace (i.e. task file system root).
-Currenly, all sockets connect operations are performed by rpciod work queue,
-which actually means, that any service will be registered in the same
-rpcbind instance regardless to process file system root.
-This is not suitable for containers, which usually have it's own nested root.
-There are 2 approaches, how the problem can be solved.
+On Tue, Dec 4, 2012 at 1:06 PM, Joerg Roedel <joro@8bytes.org> wrote:
+> On Tue, Dec 04, 2012 at 03:42:03PM +1100, Stephen Rothwell wrote:
+>> Today's linux-next merge of the arm-soc tree got a conflict in
+>> arch/arm/mach-omap2/clock44xx_data.c between commit 298ea44f211d ("ARM:
+>> OMAP4: hwmod data: ipu and dsp to use parent clocks instead of leaf
+>> clocks") from the iommu tree and commit 13a5b6228679 ("ARM: OMAP44xx:
+>> clock: drop obsolete clock data") from the arm-soc tree.
+>>
+>> I just deleted the file as the latter did and can carry the fix as
+>> necessary (no action is required).
+>
+> Ohad, Omar, any comment on this?
 
-First one is to store proper root in transport and switch to it in rpciod
-workqueue function for connect operations. But this looks ugly and such
-approach was rejected by community.
+I'd prefer Omar or Paul to have a look here. Looping in Tony as well.
 
-The second one is to connect to unix sockets synchronously, which is
-implemented by this patch.
-
-But there should be noted, that such implementation introduces limitation
-(Trond's quote):
-"That approach can fall afoul of the selinux restrictions on the process
-context. Processes that are allowed to write data, may not be allowed to
-create sockets or call connect(). That is the main reason for doing it
-in the rpciod context, which is a clean kernel process context."
-
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
----
- net/sunrpc/xprtsock.c |   46 ++++++++++++++++++++++++++++++++++++++--------
- 1 files changed, 38 insertions(+), 8 deletions(-)
-
-diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
-index aaaadfb..362a5a6 100644
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -1882,12 +1882,10 @@ static int xs_local_finish_connecting(struct rpc_xprt *xprt,
-  * @transport: socket transport to connect
-  * @create_sock: function to create a socket of the correct type
-  *
-- * Invoked by a work queue tasklet.
-+ * Used to synchronously connect to UNIX sockets.
-  */
--static void xs_local_setup_socket(struct work_struct *work)
-+static void xs_local_setup_socket(struct sock_xprt *transport)
- {
--	struct sock_xprt *transport =
--		container_of(work, struct sock_xprt, connect_worker.work);
- 	struct rpc_xprt *xprt = &transport->xprt;
- 	struct socket *sock;
- 	int status = -EIO;
-@@ -2463,19 +2461,53 @@ static void bc_destroy(struct rpc_xprt *xprt)
- {
- }
- 
-+/**
-+ * xs_local_connect - connect a socket to a remote endpoint
-+ * @task: address of RPC task that manages state of connect request
-+ *
-+ * Used for UNIX transports only.
-+ */
-+static void xs_local_connect(struct rpc_task *task)
-+{
-+	struct rpc_xprt *xprt = task->tk_xprt;
-+	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
-+
-+	if (transport->sock != NULL) {
-+		printk(KERN_WARNING "Local xprt %p is connected already\n", xprt);
-+		return;
-+	}
-+	dprintk("RPC:       xs_local_connect for xprt %p\n", xprt);
-+	xs_local_setup_socket(transport);
-+}
-+
-+/**
-+ * xs_local_destroy - prepare to shutdown a local transport
-+ * @xprt: doomed transport
-+ *
-+ */
-+static void xs_local_destroy(struct rpc_xprt *xprt)
-+{
-+	dprintk("RPC:       xs_local_destroy xprt %p\n", xprt);
-+
-+	xs_close(xprt);
-+	xs_free_peer_addresses(xprt);
-+	xprt_free(xprt);
-+	module_put(THIS_MODULE);
-+}
-+
- static struct rpc_xprt_ops xs_local_ops = {
- 	.reserve_xprt		= xprt_reserve_xprt,
- 	.release_xprt		= xs_tcp_release_xprt,
- 	.alloc_slot		= xprt_alloc_slot,
- 	.rpcbind		= xs_local_rpcbind,
- 	.set_port		= xs_local_set_port,
--	.connect		= xs_connect,
-+	.connect		= xs_local_connect,
- 	.buf_alloc		= rpc_malloc,
- 	.buf_free		= rpc_free,
- 	.send_request		= xs_local_send_request,
- 	.set_retrans_timeout	= xprt_set_retrans_timeout_def,
- 	.close			= xs_close,
--	.destroy		= xs_destroy,
-+	.destroy		= xs_local_destroy,
- 	.print_stats		= xs_local_print_stats,
- };
- 
-@@ -2642,8 +2674,6 @@ static struct rpc_xprt *xs_setup_local(struct xprt_create *args)
- 			goto out_err;
- 		}
- 		xprt_set_bound(xprt);
--		INIT_DELAYED_WORK(&transport->connect_worker,
--					xs_local_setup_socket);
- 		xs_format_peer_addresses(xprt, "local", RPCBIND_NETID_LOCAL);
- 		break;
- 	default:
-
+Ohad.
