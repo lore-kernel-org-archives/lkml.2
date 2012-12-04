@@ -1,95 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751212Ab2LDFiK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 00:38:10 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:36328 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750833Ab2LDFiI (ORCPT
+	id S1751391Ab2LDFkc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 00:40:32 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:41799 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750999Ab2LDFka (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 00:38:08 -0500
-Date: Tue, 4 Dec 2012 16:37:50 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        James Hogan <james.hogan@imgtec.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: linux-next: manual merge of the akpm tree with the rr-fixes tree
-Message-Id: <20121204163750.2dd78499285ede7157b1d5b8@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Tue, 4 Dec 2012 00:40:30 -0500
+Message-ID: <1354599618.2649.19.camel@ThinkPad-T5421.cn.ibm.com>
+Subject: Re: [RFC PATCH v3] Add rcu user eqs exception hooks for async page
+ fault
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        linux-next list <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, paulmck@linux.vnet.ibm.com,
+        sasha.levin@oracle.com, avi@redhat.com
+Date: Tue, 04 Dec 2012 13:40:18 +0800
+In-Reply-To: <20121204051124.GA27858@redhat.com>
+References: <CAFTL4hx0fc_Jo8wkuRZedW4DVEeQceiHMrWVqTqB5k065Wsg8Q@mail.gmail.com>
+	 <1354090704.3054.13.camel@ThinkPad-T5421.cn.ibm.com>
+	 <CAFTL4hxPSp1fs4=2g0yFs0d5nFisfUsfDAA9bHWcu+-+tO_ySw@mail.gmail.com>
+	 <20121128135345.GG928@redhat.com>
+	 <CAFTL4hxoFBLNQCABBpJRBgV-r-Mg5GSq7HbPfWJRraSvtviz4A@mail.gmail.com>
+	 <20121129110717.GA9711@redhat.com>
+	 <CAFTL4hyHW3uJHvzxz1o4agtGbicFAP1DuUsifbOrp1Q3ODRBMA@mail.gmail.com>
+	 <1354267121.2552.65.camel@ThinkPad-T5421.cn.ibm.com>
+	 <20121203095708.GO8731@redhat.com>
+	 <1354588562.2649.11.camel@ThinkPad-T5421.cn.ibm.com>
+	 <20121204051124.GA27858@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__4_Dec_2012_16_37_50_+1100_4twI4MGJQ3hkD=Lh"
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12120405-1618-0000-0000-000002F74A22
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__4_Dec_2012_16_37_50_+1100_4twI4MGJQ3hkD=Lh
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2012-12-04 at 07:11 +0200, Gleb Natapov wrote:
+> On Tue, Dec 04, 2012 at 10:36:02AM +0800, Li Zhong wrote:
+> > On Mon, 2012-12-03 at 11:57 +0200, Gleb Natapov wrote:
+> > > Please regenerate the patch against
+> > > git://git.kernel.org/pub/scm/virt/kvm/kvm.git queue.
+> > 
+> > Done.
+> > 
+> > By the way, the included file <asm/rcu.h> is replaced with
+> > <asm/context_tracking.h> in latest next tree(91d1aa43 from rcu tree). 
+> > 
+> What is the url of the rcu tree?
 
-Hi Andrew,
+git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
 
-Today's linux-next merge of the akpm tree got a conflict in
-include/linux/kernel.h between commit cbdbf2abb784 ("linux/kernel.h:
-define SYMBOL_PREFIX") from the rr-fixes tree and commit "mm: use
-IS_ENABLED(CONFIG_COMPACTION) instead of COMPACTION_BUILD" from the akpm
-tree.
+and the url of the commit:
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+git.kernel.org/?p=linux/kernel/git/paulmck/linux-rcu.git;a=commit;h=91d1aa43d30505b0b825db8898ffc80a8eca96c7
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Thanks, Zhong
 
-diff --cc include/linux/kernel.h
-index 69ddcb3,1e98564..0000000
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@@ -684,20 -684,6 +684,13 @@@ static inline void ftrace_dump(enum ftr
-  /* Trap pasters of __FUNCTION__ at compile-time */
-  #define __FUNCTION__ (__func__)
- =20
-- /* This helps us avoid #ifdef CONFIG_COMPACTION */
-- #ifdef CONFIG_COMPACTION
-- #define COMPACTION_BUILD 1
-- #else
-- #define COMPACTION_BUILD 0
-- #endif
--=20
- +/* This helps us to avoid #ifdef CONFIG_SYMBOL_PREFIX */
- +#ifdef CONFIG_SYMBOL_PREFIX
- +#define SYMBOL_PREFIX CONFIG_SYMBOL_PREFIX
- +#else
- +#define SYMBOL_PREFIX ""
- +#endif
- +
-  /* Rebuild everything on CONFIG_FTRACE_MCOUNT_RECORD */
-  #ifdef CONFIG_FTRACE_MCOUNT_RECORD
-  # define REBUILD_DUE_TO_FTRACE_MCOUNT_RECORD
+> 
+> > Seems if they are merged, there won't be conflicts, but we need change
+> > the including file name after that. I don't know how to handle this kind
+> > of thing... 
+> > 
+> > Thanks, Zhong
+> > 
+> > > 
+> > > On Fri, Nov 30, 2012 at 05:18:41PM +0800, Li Zhong wrote:
+> > > > This patch adds user eqs exception hooks for async page fault page not
+> > > > present code path, to exit the user eqs and re-enter it as necessary. 
+> > > > 
+> > > > Async page fault is different from other exceptions that it may be
+> > > > triggered from idle process, so we still need rcu_irq_enter() and
+> > > > rcu_irq_exit() to exit cpu idle eqs when needed, to protect the code
+> > > > that needs use rcu.
+> > > > 
+> > > > As Frederic pointed out it would be safest and simplest to protect the
+> > > > whole kvm_async_pf_task_wait(). Otherwise, "we need to check all the
+> > > > code there deeply for potential RCU uses and ensure it will never be
+> > > > extended later to use RCU.".
+> > > > 
+> > > > However, We'd better re-enter the cpu idle eqs if we get the exception
+> > > > in cpu idle eqs, by calling rcu_irq_exit() before native_safe_halt(). 
+> > > > 
+> > > > So the patch does what Frederic suggested for rcu_irq_*() API usage
+> > > > here, except that I moved the rcu_irq_*() pair originally in
+> > > > do_async_page_fault() into kvm_async_pf_task_wait(). 
+> > > > 
+> > > > That's because, I think it's better to have rcu_irq_*() pairs to be in
+> > > > one function ( rcu_irq_exit() after rcu_irq_enter() ), especially here,
+> > > > kvm_async_pf_task_wait() has other callers, which might cause
+> > > > rcu_irq_exit() be called without a matching rcu_irq_enter() before it,
+> > > > which is illegal if the cpu happens to be in rcu idle state. 
+> > > > 
+> > > > Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+> > > > ---
+> > > >  arch/x86/kernel/kvm.c | 12 ++++++++++--
+> > > >  1 file changed, 10 insertions(+), 2 deletions(-)
+> > > > 
+> > > > diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+> > > > index 4180a87..342b00b 100644
+> > > > --- a/arch/x86/kernel/kvm.c
+> > > > +++ b/arch/x86/kernel/kvm.c
+> > > > @@ -42,6 +42,7 @@
+> > > >  #include <asm/apic.h>
+> > > >  #include <asm/apicdef.h>
+> > > >  #include <asm/hypervisor.h>
+> > > > +#include <asm/rcu.h>
+> > > >  
+> > > >  static int kvmapf = 1;
+> > > >  
+> > > > @@ -112,6 +113,8 @@ void kvm_async_pf_task_wait(u32 token)
+> > > >  	DEFINE_WAIT(wait);
+> > > >  	int cpu, idle;
+> > > >  
+> > > > +	rcu_irq_enter();
+> > > > +
+> > > >  	cpu = get_cpu();
+> > > >  	idle = idle_cpu(cpu);
+> > > >  	put_cpu();
+> > > > @@ -123,6 +126,8 @@ void kvm_async_pf_task_wait(u32 token)
+> > > >  		hlist_del(&e->link);
+> > > >  		kfree(e);
+> > > >  		spin_unlock(&b->lock);
+> > > > +
+> > > > +		rcu_irq_exit();
+> > > >  		return;
+> > > >  	}
+> > > >  
+> > > > @@ -147,13 +152,16 @@ void kvm_async_pf_task_wait(u32 token)
+> > > >  			/*
+> > > >  			 * We cannot reschedule. So halt.
+> > > >  			 */
+> > > > +			rcu_irq_exit();
+> > > >  			native_safe_halt();
+> > > > +			rcu_irq_enter();
+> > > >  			local_irq_disable();
+> > > >  		}
+> > > >  	}
+> > > >  	if (!n.halted)
+> > > >  		finish_wait(&n.wq, &wait);
+> > > >  
+> > > > +	rcu_irq_exit();
+> > > >  	return;
+> > > >  }
+> > > >  EXPORT_SYMBOL_GPL(kvm_async_pf_task_wait);
+> > > > @@ -247,10 +255,10 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
+> > > >  		break;
+> > > >  	case KVM_PV_REASON_PAGE_NOT_PRESENT:
+> > > >  		/* page is swapped out by the host. */
+> > > > -		rcu_irq_enter();
+> > > > +		exception_enter(regs);
+> > > >  		exit_idle();
+> > > >  		kvm_async_pf_task_wait((u32)read_cr2());
+> > > > -		rcu_irq_exit();
+> > > > +		exception_exit(regs);
+> > > >  		break;
+> > > >  	case KVM_PV_REASON_PAGE_READY:
+> > > >  		rcu_irq_enter();
+> > > > -- 
+> > > > 1.7.11.4
+> > > 
+> > > --
+> > > 			Gleb.
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > > the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > Please read the FAQ at  http://www.tux.org/lkml/
+> > > 
+> > 
+> 
+> --
+> 			Gleb.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
---Signature=_Tue__4_Dec_2012_16_37_50_+1100_4twI4MGJQ3hkD=Lh
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQvYwuAAoJEECxmPOUX5FE/BUQAJ6QqMXnppeo93c4zPzsJeyH
-0qIYNJwl/23y71pQIwzws1hqDjOVf4+O2Nu0WEqHwyMmCELz8GwtgRflzXd+NqmH
-lUkFScE3A+ocqE6jHVtVcRw6LPtqz3mb/OVXTXyJq9AG/fJbnJjuoRTncDrA5zGm
-p6RmSlYvBadGWV7e5na6LuKze7vkb7sylaLnWIBuGTXRU4JyK0KvgSirOzLYZI/b
-rGi5wzxY8e6umYQh7WoOr0GoKf5OFbcXCTtKBhViEvlI57RY76HLvLVwfXQo3PM+
-2zsVOyKOcvyfi2gRCJG3vgPNefGLL1Eosb7lqp4HGU/9Wzdsi3DiIRXH7U5kJaRg
-prpy+1XZ9l3rd8o7GxNAMzBdsOUjez1fW5lr4sDfqIWW8Uy8ru0L1FOQRXULMjH0
-KvTt+cGPZSCO798kUONhTSCiUCT5i98V6Nmb1UjjKVrQCSP8fLNUK8Aam1vh5yyL
-7B0byVoTF2WmFK6ULjEF2rg/oNSOQZ+piubUKa5GQt8CgZQNKyQRdQTKk/EpxU/6
-IhbK5qKf1l8fwnHH3QTUykwfRLttrrca1amZMk/q3opq9QLSJ6kclFP+EBlGThhy
-h6Mk+T6DcsajaYdLDjnxwgArsFSDh2tVk8QTW2s0ZFd5N34UAOV42FzZQB6BxbGF
-vzMCaqeSg/X7bavvCs4q
-=jVLF
------END PGP SIGNATURE-----
-
---Signature=_Tue__4_Dec_2012_16_37_50_+1100_4twI4MGJQ3hkD=Lh--
