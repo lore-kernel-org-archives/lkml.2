@@ -1,90 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751607Ab2LDGgZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 01:36:25 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52699 "EHLO arroyo.ext.ti.com"
+	id S1751204Ab2LDGqT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 01:46:19 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:49340 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751381Ab2LDGgY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 01:36:24 -0500
-From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
-To: Pantelis Antoniou <panto@antoniou-consulting.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        "Valkeinen, Tomi" <tomi.valkeinen@ti.com>
-CC: "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        "Porter, Matt" <mporter@ti.com>, "Dill, Russ" <russ.dill@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: RE: [PATCH] da8xx: Fix revision check on the da8xx driver
-Thread-Topic: [PATCH] da8xx: Fix revision check on the da8xx driver
-Thread-Index: AQHNtsqfCgc9UO0H5UCB7Zm0ApPz9pfSxjAAgDWalHA=
-Date: Tue, 4 Dec 2012 06:36:15 +0000
-Message-ID: <A73F36158E33644199EB82C5EC81C7BC3EA13286@DBDE01.ent.ti.com>
-References: <1351698984-4007-1-git-send-email-panto@antoniou-consulting.com>
- <A73F36158E33644199EB82C5EC81C7BC3E9E10D6@DBDE01.ent.ti.com>
-In-Reply-To: <A73F36158E33644199EB82C5EC81C7BC3E9E10D6@DBDE01.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1750826Ab2LDGqS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 01:46:18 -0500
+Message-ID: <50BD9C45.7070501@ti.com>
+Date: Tue, 4 Dec 2012 12:16:29 +0530
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
+To: Vitaly Andrianov <vitalya@ti.com>
+CC: <mina86@mina86.com>, <m.szyprowski@samsung.com>,
+        <kyungmin.park@samsung.com>, <arnd@arndb.de>,
+        <linux-kernel@vger.kernel.org>, <linux-keystone@list.ti.com>,
+        Cyril Chemparathy <cyril@ti.com>
+Subject: Re: [linux-keystone] [PATCH v2] drivers: cma: fix addressing on PAE
+ machines
+References: <1354549570-21445-1-git-send-email-vitalya@ti.com>
+In-Reply-To: <1354549570-21445-1-git-send-email-vitalya@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomi,
+On Monday 03 December 2012 09:16 PM, Vitaly Andrianov wrote:
+> This patch fixes a couple of bugs that otherwise impair CMA functionality on
+> PAE machines:
+>
+>    - alignment must be a 64-bit type when running on systems with 64-bit
+>      physical addresses.  If this is not the case, the limit calculation thunks
+>      allocations down to an address range < 4G.
+>
+>    - The allocated range check is removed. On 32bit ARM kernel with LPAE
+>      enabled the base may be allocated outside the fist 4GB of physical
+>      memory (keystone SoC for example).
+>
+Any reason you have clubbed two fixes in one patch. Its better to keep
+the two fixes separate patches.
 
-On Wed, Oct 31, 2012 at 09:21:35, Manjunathappa, Prakash wrote:
-> On Wed, Oct 31, 2012 at 21:26:24, Pantelis Antoniou wrote:
-> > The revision check fails for the beaglebone; Add new revision ID.
-> > 
-> > Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
-> > ---
-> >  drivers/video/da8xx-fb.c | 1 +
-> >  1 file changed, 1 insertion(+)
-> > 
-> > diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
-> > index 80665f6..866d804 100644
-> > --- a/drivers/video/da8xx-fb.c
-> > +++ b/drivers/video/da8xx-fb.c
-> > @@ -1283,6 +1283,7 @@ static int __devinit fb_probe(struct platform_device *device)
-> >  		lcd_revision = LCD_VERSION_1;
-> >  		break;
-> >  	case 0x4F200800:
-> > +	case 0x4F201000:
-> 
-> Thanks for Correcting. This is the LCDC revision on am335x silicon in comparison
-> with to one read(0x4F200800) on emulator platform.
-> 
-> Acked-by: Manjunathappa, Prakash <prakash.pm@ti.com>
-> 
+> Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
+> Signed-off-by: Cyril Chemparathy <cyril@ti.com>
+> ---
+Other than that, patch looks good to my eyes.
 
-This patch is necessary for am335x FB, I could not see in your for-next branch,
-could you please consider this patch for 3.8 merge window. There are no pending
-review comments on this.
+Regards,
+Santosh
 
-Thanks,
-Prakash
-
-> >  		lcd_revision = LCD_VERSION_2;
-> >  		break;
-> >  	default:
-> > -- 
-> > 1.7.12
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
 
