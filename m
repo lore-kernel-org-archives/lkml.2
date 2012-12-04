@@ -1,120 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753447Ab2LDSXH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 13:23:07 -0500
-Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:36295
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751731Ab2LDSXE convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 13:23:04 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -11
-X-BigFish: VS-11(zzbb2dI98dI9371I179dN542I1432Izz1de0h1202h1d1ah1d2ahzz8275dhz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1155h)
-Date: Tue, 4 Dec 2012 12:22:51 -0600
-From: Scott Wood <scottwood@freescale.com>
-Subject: Re: [PATCH 3/4 v5] iommu/fsl: Add iommu domain attributes required
- by fsl PAMU driver.
-To: Sethi Varun-B16395 <B16395@freescale.com>
-CC: Wood Scott-B07421 <B07421@freescale.com>, Joerg Roedel <joro@8bytes.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Tabi Timur-B04825 <B04825@freescale.com>
-In-Reply-To: <C5ECD7A89D1DC44195F34B25E172658D2B70EE@039-SN2MPN1-013.039d.mgd.msft.net>
-	(from B16395@freescale.com on Tue Dec  4 05:53:33 2012)
-X-Mailer: Balsa 2.4.11
-Message-ID: <1354645371.16710.15@snotra>
+	id S1751989Ab2LDS0T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 13:26:19 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36906 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751308Ab2LDS0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 13:26:18 -0500
+Date: Tue, 4 Dec 2012 18:17:56 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Michel Lespinasse <walken@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 2/2] mm/migration: Make rmap_walk_anon() and
+ try_to_unmap_anon() more scalable
+Message-ID: <20121204143714.GB2797@suse.de>
+References: <1354305521-11583-1-git-send-email-mingo@kernel.org>
+ <CA+55aFwjxm7OYuucHeE2WFr4p+jwr63t=kSdHndta_QkyFbyBQ@mail.gmail.com>
+ <20121201094927.GA12366@gmail.com>
+ <20121201122649.GA20322@gmail.com>
+ <CA+55aFx8QtP0hg8qxn__4vHQuzH7QkhTN-4fwgOpM-A=KuBBjA@mail.gmail.com>
+ <20121201184135.GA32449@gmail.com>
+ <CA+55aFyq7OaUxcEHXvJhp0T57KN14o-RGxqPmA+ks8ge6zJh5w@mail.gmail.com>
+ <20121201201538.GB2704@gmail.com>
+ <20121203141701.GN8218@suse.de>
+ <CANN689Hm=g+PhJrVZ8mngPL58k45GfmwL_19F27WtwJC0G-=6g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
+In-Reply-To: <CANN689Hm=g+PhJrVZ8mngPL58k45GfmwL_19F27WtwJC0G-=6g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2012 05:53:33 AM, Sethi Varun-B16395 wrote:
+On Tue, Dec 04, 2012 at 06:37:41AM -0800, Michel Lespinasse wrote:
+> On Mon, Dec 3, 2012 at 6:17 AM, Mel Gorman <mgorman@suse.de> wrote:
+> > On Sat, Dec 01, 2012 at 09:15:38PM +0100, Ingo Molnar wrote:
+> >> @@ -732,7 +732,7 @@ static int page_referenced_anon(struct p
+> >>       struct anon_vma_chain *avc;
+> >>       int referenced = 0;
+> >>
+> >> -     anon_vma = page_lock_anon_vma(page);
+> >> +     anon_vma = page_lock_anon_vma_read(page);
+> >>       if (!anon_vma)
+> >>               return referenced;
+> >
+> > This is a slightly trickier one as this path is called from reclaim. It does
+> > open the possibility that reclaim can stall something like a parallel fork
+> > or anything that requires the anon_vma rwsem for a period of time. I very
+> > severely doubt it'll really be a problem but keep an eye out for bug reports
+> > related to delayed mmap/fork/anything_needing_write_lock during page reclaim.
 > 
+> I don't see why this would be a problem - rwsem does implement
+> reader/writer fairness, so having some sites do a read lock instead of
+> a write lock shouldn't cause the write lock sites to starve. Is this
+> what you were worried about ?
 > 
-> > -----Original Message-----
-> > From: Wood Scott-B07421
-> > Sent: Monday, December 03, 2012 10:34 PM
-> > To: Sethi Varun-B16395
-> > Cc: Joerg Roedel; linux-kernel@vger.kernel.org; iommu@lists.linux-
-> > foundation.org; Wood Scott-B07421; linuxppc-dev@lists.ozlabs.org;  
-> Tabi
-> > Timur-B04825
-> > Subject: Re: [PATCH 3/4 v5] iommu/fsl: Add iommu domain attributes
-> > required by fsl PAMU driver.
-> >
-> > On 12/03/2012 10:57:29 AM, Sethi Varun-B16395 wrote:
-> > >
-> > >
-> > > > -----Original Message-----
-> > > > From: iommu-bounces@lists.linux-foundation.org [mailto:iommu-
-> > > > bounces@lists.linux-foundation.org] On Behalf Of Joerg Roedel
-> > > > Sent: Sunday, December 02, 2012 7:33 PM
-> > > > To: Sethi Varun-B16395
-> > > > Cc: linux-kernel@vger.kernel.org;  
-> iommu@lists.linux-foundation.org;
-> > > Wood
-> > > > Scott-B07421; linuxppc-dev@lists.ozlabs.org; Tabi Timur-B04825
-> > > > Subject: Re: [PATCH 3/4 v5] iommu/fsl: Add iommu domain  
-> attributes
-> > > > required by fsl PAMU driver.
-> > > >
-> > > > Hmm, we need to work out a good abstraction for this.
-> > > >
-> > > > On Tue, Nov 20, 2012 at 07:24:56PM +0530, Varun Sethi wrote:
-> > > > > Added the following domain attributes required by FSL PAMU  
-> driver:
-> > > > > 1. Subwindows field added to the iommu domain geometry  
-> attribute.
-> > > >
-> > > > Are the Subwindows mapped with full size or do you map only  
-> parts
-> > > of the
-> > > > subwindows?
-> > > >
-> > > [Sethi Varun-B16395] It's possible to map a part of the subwindow  
-> i.e.
-> > > size of the mapping can be less than the sub window size.
-> > >
-> > > > > +	 * This attribute indicates number of DMA subwindows
-> > supported
-> > > by
-> > > > > +	 * the geometry. If there is a single window that maps  
-> the
-> > > entire
-> > > > > +	 * geometry, attribute must be set to "1". A value of  
-> "0"
-> > > implies
-> > > > > +	 * that this mechanism is not used at all(normal paging  
-> is
-> > > used).
-> > > > > +	 * Value other than* "0" or "1" indicates the actual  
-> number
-> > of
-> > > > > +	 * subwindows.
-> > > > > +	 */
-> > > >
-> > > > This semantic is ugly, how about a feature detection mechanism?
-> > > >
-> > > [Sethi Varun-B16395] A feature mechanism to query the type of  
-> IOMMU?
-> >
-> > A feature mechanism to determine whether this subwindow mechanism is
-> > available, and what the limits are.
-> >
-> So, we use the IOMMU capability interface to find out if IOMMU  
-> supports sub windows or not, right? But still number of sub windows  
-> would be specified as a part of the geometry and the valid value for  
-> sub windows would  0,1 or actual number of sub windows.
 
-How does a user of the interface find out what values are possible for  
-the "actual number of subwindows"?  How does a user of the interface  
-find out whether there are any limitations on specifying a value of  
-zero (in the case of PAMU, that would be a maximum 1 MiB  
-naturally-aligned aperture to support arbitrary 4KiB mappings)?
+Yes. I did not expect they would be starved forever, just delayed longer
+than they might have been before. I would be very surprised if there is
+anything other than a synthetic case that will really care but I've been
+"very surprised" before :)
 
--Scott
+-- 
+Mel Gorman
+SUSE Labs
