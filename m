@@ -1,67 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954Ab2LDRIv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 12:08:51 -0500
-Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:47566
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751938Ab2LDRIt (ORCPT
+	id S1754023Ab2LDRJm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 12:09:42 -0500
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:30423 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752954Ab2LDRJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 12:08:49 -0500
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VPS0(zzzz1de0h1202h1d1ah1d2ahzz8275bhz2dh668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h162dh1631h1155h)
-X-WSS-ID: 0MEINME-02-H0Y-02
-X-M-MSG: 
-From: Boris Ostrovsky <boris.ostrovsky@amd.com>
-To: <herrmann.der.user@googlemail.com>, <khali@linux-fr.org>,
-        <bhelgaas@google.com>
-CC: <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
-        <boris.ostrovsky@amd.com>
-Subject: [PATCH] x86,AMD: Power driver support for AMD's family 16h processors
-Date: Tue, 4 Dec 2012 07:10:04 -0500
-Message-ID: <1354623004-8169-1-git-send-email-boris.ostrovsky@amd.com>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 4 Dec 2012 12:09:40 -0500
+From: Lance Ortiz <lance.ortiz@hp.com>
+Subject: [PATCH v6 1/3] aerdrv: Trace Event for AER
+To: bhelgaas@google.com, lance_ortiz@hotmail.com, jiang.liu@huawei.com,
+        tony.luck@intel.com, bp@alien8.de, rostedt@goodmis.org,
+        mchehab@redhat.com, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 04 Dec 2012 10:04:30 -0700
+Message-ID: <20121204170429.31397.50068.stgit@grignak.americas.hpqcorp.net>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add family 16h PCI ID to AMD's power driver to allow it report
-power consumption on these processors.
+This header file will define a new trace event that will be triggered when
+a AER event occurs.  The following data will be provided to the trace
+event.
 
-Signed-off-by: Boris Ostrovsky <boris.ostrovsky@amd.com>
+char * dev_name - The name of the slot where the device resides
+                  ([domain:]bus:device.function).
+
+u32 status - Either the correctable or uncorrectable register
+             indicating what error or errors have been see.
+
+u8 severity - error severity 0:NONFATAL 1:FATAL 2:CORRECTED
+
+The trace event will also provide a trace string that may look like:
+
+"0000:05:00.0 PCIe Bus Error:severity=Uncorrected (Non-Fatal), Poisoned
+TLP"
+
+v1-v2 Move header from include/ras/aer_event.h to
+include/trace/events/ras.h
+v3-v4 Cleaned up comments and commit header
+v4-v5 More cleanup remove () from if statement in print.
+      Renamed string define to be more specific.
+v5-v6 change TRACE_SYSTEM define to be ras and not aer.
+Signed-off-by: Lance Ortiz <lance.ortiz@hp.com>
 ---
- drivers/hwmon/fam15h_power.c |    1 +
- include/linux/pci_ids.h      |    1 +
- 2 files changed, 2 insertions(+)
 
-diff --git a/drivers/hwmon/fam15h_power.c b/drivers/hwmon/fam15h_power.c
-index 4f41104..dda1113 100644
---- a/drivers/hwmon/fam15h_power.c
-+++ b/drivers/hwmon/fam15h_power.c
-@@ -248,6 +248,7 @@ static void __devexit fam15h_power_remove(struct pci_dev *pdev)
- 
- static DEFINE_PCI_DEVICE_TABLE(fam15h_power_id_table) = {
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) },
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_NB_F4) },
- 	{}
- };
- MODULE_DEVICE_TABLE(pci, fam15h_power_id_table);
-diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-index 9d36b82..9c9a464 100644
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -524,6 +524,7 @@
- #define PCI_DEVICE_ID_AMD_15H_NB_F3	0x1603
- #define PCI_DEVICE_ID_AMD_15H_NB_F4	0x1604
- #define PCI_DEVICE_ID_AMD_15H_NB_F5	0x1605
-+#define PCI_DEVICE_ID_AMD_16H_NB_F4	0x1534
- #define PCI_DEVICE_ID_AMD_CNB17H_F3	0x1703
- #define PCI_DEVICE_ID_AMD_LANCE		0x2000
- #define PCI_DEVICE_ID_AMD_LANCE_HOME	0x2001
--- 
-1.7.10.4
+ 0 files changed, 0 insertions(+), 0 deletions(-)
 
+diff --git a/include/trace/events/ras.h b/include/trace/events/ras.h
+new file mode 100644
+index 0000000..88b8783
+--- /dev/null
++++ b/include/trace/events/ras.h
+@@ -0,0 +1,77 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM ras
++
++#if !defined(_TRACE_AER_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_AER_H
++
++#include <linux/tracepoint.h>
++#include <linux/edac.h>
++
++
++/*
++ * PCIe AER Trace event
++ *
++ * These events are generated when hardware detects a corrected or
++ * uncorrected event on a PCIe device. The event report has
++ * the following structure:
++ *
++ * char * dev_name -	The name of the slot where the device resides
++ *			([domain:]bus:device.function).
++ * u32 status -		Either the correctable or uncorrectable register
++ *			indicating what error or errors have been seen
++ * u8 severity -	error severity 0:NONFATAL 1:FATAL 2:CORRECTED
++ */
++
++#define aer_correctable_errors		\
++	{BIT(0),	"Receiver Error"},		\
++	{BIT(6),	"Bad TLP"},			\
++	{BIT(7),	"Bad DLLP"},			\
++	{BIT(8),	"RELAY_NUM Rollover"},		\
++	{BIT(12),	"Replay Timer Timeout"},	\
++	{BIT(13),	"Advisory Non-Fatal"}
++
++#define aer_uncorrectable_errors		\
++	{BIT(4),	"Data Link Protocol"},		\
++	{BIT(12),	"Poisoned TLP"},		\
++	{BIT(13),	"Flow Control Protocol"},	\
++	{BIT(14),	"Completion Timeout"},		\
++	{BIT(15),	"Completer Abort"},		\
++	{BIT(16),	"Unexpected Completion"},	\
++	{BIT(17),	"Receiver Overflow"},		\
++	{BIT(18),	"Malformed TLP"},		\
++	{BIT(19),	"ECRC"},			\
++	{BIT(20),	"Unsupported Request"}
++
++TRACE_EVENT(aer_event,
++	TP_PROTO(const char *dev_name,
++		 const u32 status,
++		 const u8 severity),
++
++	TP_ARGS(dev_name, status, severity),
++
++	TP_STRUCT__entry(
++		__string(	dev_name,	dev_name	)
++		__field(	u32,		status		)
++		__field(	u8,		severity	)
++	),
++
++	TP_fast_assign(
++		__assign_str(dev_name, dev_name);
++		__entry->status		= status;
++		__entry->severity	= severity;
++	),
++
++	TP_printk("%s PCIe Bus Error: severity=%s, %s\n",
++		__get_str(dev_name),
++		__entry->severity == HW_EVENT_ERR_CORRECTED ? "Corrected" :
++			__entry->severity == HW_EVENT_ERR_FATAL ?
++			"Fatal" : "Uncorrected",
++		__entry->severity == HW_EVENT_ERR_CORRECTED ?
++		__print_flags(__entry->status, "|", aer_correctable_errors) :
++		__print_flags(__entry->status, "|", aer_uncorrectable_errors))
++);
++
++#endif /* _TRACE_AER_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
 
