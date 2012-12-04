@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753287Ab2LDSV4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 13:21:56 -0500
-Received: from mo-p00-ob.rzone.de ([81.169.146.162]:34738 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751997Ab2LDSVz (ORCPT
+	id S1753398Ab2LDSWi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 13:22:38 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:53767 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752449Ab2LDSWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 13:21:55 -0500
-X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmztM8TOFHjy0MEysz
-X-RZG-CLASS-ID: mo00
-Date: Tue, 4 Dec 2012 19:21:51 +0100
-From: Olaf Hering <olaf@aepfle.de>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: konrad.wilk@oracle.com, xen-devel@lists.xen.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] xen/blkback: do not leak mode property
-Message-ID: <20121204182151.GA25878@aepfle.de>
-References: <1354563168-6609-1-git-send-email-olaf@aepfle.de>
- <50BDDEBF02000078000ADAAC@nat28.tlf.novell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <50BDDEBF02000078000ADAAC@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21.rev5558 (2012-10-16)
+	Tue, 4 Dec 2012 13:22:34 -0500
+Date: Tue, 04 Dec 2012 13:22:27 -0500 (EST)
+Message-Id: <20121204.132227.1430662061932892582.davem@davemloft.net>
+To: nicolas.ferre@atmel.com
+Cc: netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, manabian@gmail.com,
+        plagnioj@jcrosoft.com
+Subject: Re: [PATCH] net/macb: increase RX buffer size for GEM
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1354536943-6356-1-git-send-email-nicolas.ferre@atmel.com>
+References: <1354536943-6356-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 04, Jan Beulich wrote:
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Date: Mon, 3 Dec 2012 13:15:43 +0100
 
-> This looks necessary but insufficient - there's nothing really
-> preventing backend_changed() from being called more than once
-> for a given device (is simply the handler of xenbus watch). Hence
-> I think either that function needs to be guarded against multiple
-> execution (e.g. by removing the watch from that function itself,
-> if that's permitted by xenbus), or to properly deal with the
-> effects this has (including but probably not limited to the leaking
-> of be->mode).
+> Macb Ethernet controller requires a RX buffer of 128 bytes. It is
+> highly sub-optimal for Gigabit-capable GEM that is able to use
+> a bigger DMA buffer. Change this constant and associated macros
+> with data stored in the private structure.
+> I also kept the result of buffers per page calculation to lower the
+> impact of this move to a variable rx buffer size on rx hot path.
+> RX DMA buffer size has to be multiple of 64 bytes as indicated in
+> DMA Configuration Register specification.
+> 
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-If another watch does really trigger after the kfree(be) in
-xen_blkbk_remove(), wouldnt backend_changed access stale memory?
-So if that can really happen in practice, shouldnt the backend_watch be
-a separate allocation instead being contained within backend_info?
-
-Looking at unregister_xenbus_watch, it clears removes the watch from the
-list, so that process_msg will not see it anymore.
-
-Olaf
+This looks like it will waste a couple hundred bytes for 1500 MTU
+frames, am I right?
