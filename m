@@ -1,41 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752111Ab2LDHKe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 02:10:34 -0500
-Received: from stringer.orebokech.com ([88.190.240.207]:35830 "EHLO
-	stringer.orebokech.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751486Ab2LDHKc (ORCPT
+	id S1752170Ab2LDHKm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 02:10:42 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:60222 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751486Ab2LDHKk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 02:10:32 -0500
-From: Romain Francoise <romain@orebokech.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Tony Luck <tony.luck@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.7-rc8
-Organization: orebokech dot com
-References: <CA+55aFyFLG+SxRq2=wY=8tyuQzQSHkKxonXwMmCOs=CWyOo=Mg@mail.gmail.com>
-	<874nk2u69u.fsf@silenus.orebokech.com>
-	<CA+55aFxO+nOM--EJmrT+_54jF8AL2YZ7GhbwCT2cg2qxM2Md+A@mail.gmail.com>
-	<CA+8MBbJGy7xQFqi1VXPuPNHJnoZUcxjWDkmyRKeajXGAA_Q+GA@mail.gmail.com>
-	<CA+55aFyAvpCKPWV9Mh34aV6Q4DRjATQky939vYaPBfx6+65Nxw@mail.gmail.com>
-	<CA+55aFxrf=wx=fbvCRbFxt_=C4ne1-j3T=5JeLYzUG3SmpaECQ@mail.gmail.com>
-	<CA+55aFyD2c2oBPX7XFoYvFP1k6j0ScYevndh19Rj1GwkG67Dgg@mail.gmail.com>
-Date: Tue, 04 Dec 2012 08:10:31 +0100
-In-Reply-To: <CA+55aFyD2c2oBPX7XFoYvFP1k6j0ScYevndh19Rj1GwkG67Dgg@mail.gmail.com>
-	(Linus Torvalds's message of "Mon, 3 Dec 2012 18:02:15 -0800")
-Message-ID: <87txs2s36g.fsf@silenus.orebokech.com>
+	Tue, 4 Dec 2012 02:10:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1354168359-19459-1-git-send-email-qingx@marvell.com>
+References: <1354168359-19459-1-git-send-email-qingx@marvell.com>
+Date: Tue, 4 Dec 2012 15:10:39 +0800
+Message-ID: <CAN1soZyVCV6RWX4yq7BSuP2UcpBMYDuncfo9o5QDNW0o2W2rSQ@mail.gmail.com>
+Subject: Re: [PATCH] Documentation: add docs for max8925 dt
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: Qing Xu <qingx@marvell.com>
+Cc: rob@landley.net, linux-doc@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, cxie4@marvell.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Nov 29, 2012 at 1:52 PM, Qing Xu <qingx@marvell.com> wrote:
+> From: Qing Xu <qingx@marvell.com>
+>
+> add docs for dt of max8925-mfd, max8925-backlight, and
+> max8925-battery
+>
+> Signed-off-by: Qing Xu <qingx@marvell.com>
+> ---
+>  Documentation/devicetree/bindings/mfd/max8925.txt  |   64 ++++++++++++++++++++
+>  .../bindings/power_supply/max8925_batter.txt       |   18 ++++++
+>  .../bindings/video/backlight/max8925-backlight.txt |   10 +++
+>  3 files changed, 92 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/max8925.txt
+>  create mode 100644 Documentation/devicetree/bindings/power_supply/max8925_batter.txt
+>  create mode 100644 Documentation/devicetree/bindings/video/backlight/max8925-backlight.txt
+>
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
-
-> Does that fix the printk's for you too?
-
-Yep, works for me, thanks!
-
-Tested-by: Romain Francoise <romain@orebokech.com>
+Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
