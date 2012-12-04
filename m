@@ -1,85 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753553Ab2LDNSB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 08:18:01 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:39312 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752118Ab2LDNR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 08:17:57 -0500
-From: "Philip, Avinash" <avinashphilip@ti.com>
-To: "artem.bityutskiy@linux.intel.com" <artem.bityutskiy@linux.intel.com>
-CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "Mohammed, Afzal" <afzal@ti.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        "rmk+kernel@arm.linux.org.uk" <rmk+kernel@arm.linux.org.uk>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "Hebbar, Gururaja" <gururaja.hebbar@ti.com>,
-        "ivan.djelic@parrot.com" <ivan.djelic@parrot.com>
-Subject: RE: [PATCH v2 3/3] mtd: nand: omap2: Support for hardware BCH error
- correction
-Thread-Topic: [PATCH v2 3/3] mtd: nand: omap2: Support for hardware BCH
- error correction
-Thread-Index: AQHNtzjXuTV6Me2Mjkybsf/6HC7XhZgCIZ8AgAaurAA=
-Date: Tue, 4 Dec 2012 13:16:27 +0000
-Deferred-Delivery: Tue, 4 Dec 2012 13:16:00 +0000
-Message-ID: <518397C60809E147AF5323E0420B992E3EA108A9@DBDE01.ent.ti.com>
-References: <1351667307-447-1-git-send-email-avinashphilip@ti.com>
-	 <1351667307-447-4-git-send-email-avinashphilip@ti.com>
- <1354278480.30168.116.camel@sauron.fi.intel.com>
-In-Reply-To: <1354278480.30168.116.camel@sauron.fi.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1753601Ab2LDNTb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 08:19:31 -0500
+Received: from netconsequence.de ([85.214.40.104]:36341 "EHLO
+	mx.netconsequence.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752369Ab2LDNT2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 08:19:28 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 6.2 \(1499\))
+Subject: Re: [PATCH] smsc: RFC: Workaround for problems with lan8710 phy auto MDI-X
+From: Peter Turczak <pt@netconsequence.de>
+In-Reply-To: <alpine.LNX.2.00.1211301622110.25639@pobox.suse.cz>
+Date: Tue, 4 Dec 2012 14:19:27 +0100
+Cc: David Miller <davem@davemloft.net>,
+        Otavio Salvador <otavio@ossystems.com.br>,
+        Javier Martinez Canillas <javier@dowhile0.org>,
+        Christian Hohnstaedt <chohnstaedt@innominate.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <8DC2CA71-8F4C-4C92-BEF8-7B881414B7B1@netconsequence.de>
+References: <8D7E9026-6276-452B-9E0C-AEB8CF38C9FD@netconsequence.de> <alpine.LNX.2.00.1211301622110.25639@pobox.suse.cz>
+To: Jiri Kosina <jkosina@suse.cz>
+X-Mailer: Apple Mail (2.1499)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qB4DI2Sp008861
 
-On Fri, Nov 30, 2012 at 17:58:00, Artem Bityutskiy wrote:
-> On Wed, 2012-10-31 at 12:38 +0530, Philip, Avinash wrote:
-> > +static int erased_sector_bitflips(u_char *data, u_char *oob,
-> > +               struct omap_nand_info *info)
-> > +{
-> > +       int flip_bits = 0, i;
-> > +
-> > +       for (i = 0; i < info->nand.ecc.size; i++) {
-> > +               flip_bits += hweight8(~data[i]);
-> > +               if (flip_bits > info->nand.ecc.strength)
-> > +                       return 0;
-> > +       }
-> > +
-> > +       for (i = 0; i < info->nand.ecc.bytes - 1; i++) {
-> > +               flip_bits += hweight8(~oob[i]);
-> > +               if (flip_bits > info->nand.ecc.strength)
-> > +                       return 0;
-> > +       }
+
+On Nov 30, 2012, at 4:23 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+
+> I am not sure whether compile-time option for something like this is 
+> appropriate. Kernel module parameter, perhaps?
 > 
-> Why do you need the second for loop?
+> Of course it'd be far better if faulty hardware can be autodetected in 
+> runtime.
+Thanks for the input. Currently only the symbol error counter seems to give 
+a good indication that there might be a problem. So I suggest monitoring
+the symbol error counter. When a certain amount of symbol errors per
+poll interval is exceeded the auto MDI-X will be disabled.
 
-BCH ecc is self protected & can correct bit flips in ecc bytes.
-So here checking bit flips in read_ecc. I will rename variable
-"oob" to "read_ecc"
+Signed-off-by: Peter Turczak <pt@netconsequence.de>
+---
+ drivers/net/phy/smsc.c  |   57 ++++++++++++++++++++++++++++++++++++++++++++++-
+ include/linux/smscphy.h |    7 +++++
+ 2 files changed, 64 insertions(+), 1 deletions(-)
 
-Thanks
-Avinash
+diff --git a/drivers/net/phy/smsc.c b/drivers/net/phy/smsc.c
+index 88e3991..0748266 100644
+--- a/drivers/net/phy/smsc.c
++++ b/drivers/net/phy/smsc.c
+@@ -24,6 +24,16 @@
+ #include <linux/netdevice.h>
+ #include <linux/smscphy.h>
+ 
++/* Maximum number of symbol errors between two lan8720_read_status calls. */
++#define LAN8720_MAX_SYM_ERR_CNT 100
++
++static struct phy_driver lan8710_driver;
++
++struct smsc_phy_private {
++	/* Keeps track of the number of the broken received packets */
++	int sym_err_count;
++};
++
+ static int smsc_phy_config_intr(struct phy_device *phydev)
+ {
+ 	int rc = phy_write (phydev, MII_LAN83C185_IM,
+@@ -58,6 +68,7 @@ static int smsc_phy_config_init(struct phy_device *phydev)
+ 
+ static int lan87xx_config_init(struct phy_device *phydev)
+ {
++	struct smsc_phy_private *privdata;
+ 	/*
+ 	 * Make sure the EDPWRDOWN bit is NOT set. Setting this bit on
+ 	 * LAN8710/LAN8720 PHY causes the PHY to misbehave, likely due
+@@ -79,6 +90,12 @@ static int lan87xx_config_init(struct phy_device *phydev)
+ 	if (rc < 0)
+ 		return rc;
+ 
++	privdata = kzalloc(sizeof(*privdata), GFP_KERNEL);
++	if (!privdata)
++		return -ENOMEM;
++
++	phydev->priv = privdata;
++
+ 	return smsc_phy_ack_interrupt(phydev);
+ }
+ 
+@@ -87,6 +104,44 @@ static int lan911x_config_init(struct phy_device *phydev)
+ 	return smsc_phy_ack_interrupt(phydev);
+ }
+ 
++int lan8720_read_status(struct phy_device *phydev)
++{
++	int err_count, err_since_last, rc;
++	struct smsc_phy_private *priv = phydev->priv;
++
++	if (priv != NULL) {
++
++		err_count = phy_read(phydev, MII_LAN8710_SYM_ERR_CNT);
++		err_since_last = err_count - priv->sym_err_count;
++
++		if (err_since_last < 0)
++				err_since_last += 65535;
++
++		priv->sym_err_count = err_count;
++		if (err_since_last > LAN8720_MAX_SYM_ERR_CNT) {
++			rc = phy_read(phydev, MII_LAN8710_SCSI);
++
++			if (rc < 0)
++				return rc;
++
++			if (!(rc & MII_LAN8710_SCSI_AMDIXCTRL)) {
++
++				pr_warn("%s: Too may RX errors.",
++					phydev->bus->name);
++				pr_warn("Disabling MDI-X\n");
++
++				rc = phy_write(phydev, MII_LAN8710_SCSI,
++					rc | MII_LAN8710_SCSI_AMDIXCTRL);
++				}
++
++			if (rc < 0)
++				return rc;
++			}
++	}
++
++	return genphy_read_status(phydev);
++}
++
+ static struct phy_driver smsc_phy_driver[] = {
+ {
+ 	.phy_id		= 0x0007c0a0, /* OUI=0x00800f, Model#=0x0a */
+@@ -187,7 +242,7 @@ static struct phy_driver smsc_phy_driver[] = {
+ 
+ 	/* basic functions */
+ 	.config_aneg	= genphy_config_aneg,
+-	.read_status	= genphy_read_status,
++	.read_status	= lan8720_read_status,
+ 	.config_init	= lan87xx_config_init,
+ 
+ 	/* IRQ related */
+diff --git a/include/linux/smscphy.h b/include/linux/smscphy.h
+index ce718cb..a0d3893 100644
+--- a/include/linux/smscphy.h
++++ b/include/linux/smscphy.h
+@@ -22,4 +22,11 @@
+ #define MII_LAN83C185_EDPWRDOWN (1 << 13) /* EDPWRDOWN */
+ #define MII_LAN83C185_ENERGYON  (1 << 1)  /* ENERGYON */
+ 
++#define MII_LAN8710_SCSI  27 /* Special Control/Status register */
++
++#define MII_LAN8710_SCSI_AMDIXCTRL (1<<15) /* Flag to disable Auto-MDIX */
++
++#define MII_LAN8710_SYM_ERR_CNT	26 /* Amount of invalid code symbols received */
++
++
+ #endif /* __LINUX_SMSCPHY_H__ */
+-- 
+1.7.0.4
 
-> 
-> -- 
-> Best Regards,
-> Artem Bityutskiy
-> 
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
