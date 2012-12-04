@@ -1,51 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751453Ab2LDFUd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 00:20:33 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:40061 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109Ab2LDFUc (ORCPT
+	id S1751571Ab2LDFYH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 00:24:07 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:49054 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751297Ab2LDFYF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 00:20:32 -0500
-MIME-Version: 1.0
-Date: Tue, 4 Dec 2012 00:20:31 -0500
-Message-ID: <CAPgLHd-4S=mcXuNzs9ULZ7KZ3cs95Z2OevoOZsWt4-G0oFa+cw@mail.gmail.com>
-Subject: [PATCH -next] powerpc/82xx: use for_each_compatible_node() macro
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: benh@kernel.crashing.org, paulus@samba.org
-Cc: yongjun_wei@trendmicro.com.cn, linuxppc-dev@lists.ozlabs.org,
+	Tue, 4 Dec 2012 00:24:05 -0500
+Date: Mon, 3 Dec 2012 21:24:00 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: "Guillermo A. Amaral" <g@maral.me>
+Cc: gregkh@linuxfoundation.org, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [PATCH 1/2] Input: xpad - Minor coding style errors fixed.
+Message-ID: <20121204052400.GB23964@core.coreip.homeip.net>
+References: <1354433779-16274-1-git-send-email-g@maral.me>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354433779-16274-1-git-send-email-g@maral.me>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Sat, Dec 01, 2012 at 11:36:19PM -0800, Guillermo A. Amaral wrote:
+> From: "Guillermo A. Amaral" <g@maral.me>
+> 
+> Fixed a few minor coding style issues in xpad driver.
 
-Use for_each_compatible_node() macro instead of open coding it.
+Applied both, thanks Guillermo.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- arch/powerpc/platforms/82xx/pq2.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/powerpc/platforms/82xx/pq2.c b/arch/powerpc/platforms/82xx/pq2.c
-index fb94d10..fc8b2d6 100644
---- a/arch/powerpc/platforms/82xx/pq2.c
-+++ b/arch/powerpc/platforms/82xx/pq2.c
-@@ -71,11 +71,11 @@ err:
- 
- void __init pq2_init_pci(void)
- {
--	struct device_node *np = NULL;
-+	struct device_node *np;
- 
- 	ppc_md.pci_exclude_device = pq2_pci_exclude_device;
- 
--	while ((np = of_find_compatible_node(np, NULL, "fsl,pq2-pci")))
-+	for_each_compatible_node(np, NULL, "fsl,pq2-pci")
- 		pq2_pci_add_bridge(np);
- }
- #endif
-
-
+-- 
+Dmitry
