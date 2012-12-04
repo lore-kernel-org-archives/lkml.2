@@ -1,81 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341Ab2LDR7h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 12:59:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6246 "EHLO mx1.redhat.com"
+	id S1752510Ab2LDSOk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 13:14:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23740 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751986Ab2LDR7e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 12:59:34 -0500
-Date: Tue, 4 Dec 2012 18:59:33 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: u3557@miso.sublimeip.com
-Cc: Denys Vlasenko <dvlasenk@redhat.com>, Pedro Alves <palves@redhat.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
-Subject: Re: PTRACE_SYSCALL && vsyscall (Was: arch_check_bp_in_kernelspace:
-	fix the range check)
-Message-ID: <20121204175933.GA11537@redhat.com>
-References: <20121125225533.GA24905@redhat.com> <20121125234834.DAC34592076@miso.sublimeip.com> <20121202193058.GA4264@redhat.com> <841b7a319f9d22402d269eed23d03835.squirrel@mail.sublimeip.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <841b7a319f9d22402d269eed23d03835.squirrel@mail.sublimeip.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751829Ab2LDSOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 13:14:37 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <877gp0j5kn.fsf@rustcorp.com.au>
+References: <877gp0j5kn.fsf@rustcorp.com.au> <1353939786-4829-1-git-send-email-zohar@linux.vnet.ibm.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: dhowells@redhat.com, Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        linux-security-module@vger.kernel.org,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        linux-kernel@vger.kernel.org, Mimi Zohar <zohar@us.ibm.com>
+Subject: Re: [RFC][PATCH 1/2] modsig: add support to sign kernel modules using ephemeral keys
+Date: Tue, 04 Dec 2012 18:14:27 +0000
+Message-ID: <22345.1354644867@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/03, u3557@miso.sublimeip.com wrote:
->
-> > However. Of course it would be nice to avoid the new option. IMO it
-> > would be better to do nothing ;) vsyscall is deprecated, and EMULATE
-> > is x86-specific.
->
-> The problem is that the current static glibc invokes the vsyscall page,
+Rusty Russell <rusty@rustcorp.com.au> wrote:
 
-Yes I know.
+> > +PHONY += _newmodpubkey_
+> > +_newmodpubkey_: 
+> > +	@rm -f $(MODSECKEY) $(MODPUBKEY)
+> > +	$(Q)$(MAKE) -W kernel/modsign_pubkey.o
 
-Still I'd like to avoid to change the ptrace API, even if the change is
-simple. This emulate_vsyscall() is too "exotic" imho.
+Please don't do this.  It can muck up the dependencies as make thinks it has
+already done this file at this point.  Also, rebuilding bzImage yet again
+wouldn't be the best.  We already do it a number of times.  Further, if
+vmlinux is already installed when you rebuild, you may confuse gdb if the
+debuginfo then no longer matches vmlinux.
 
-> > You forgot again that EMULATE does not execute the code in the
-> > vsyscall page.
->
-> The beauty of using the x86 debug-registers, is that they do not
-> trap the instruction, but rather the fact that the program-counter
-> has a given value.
+You have to expose the private key *anyway* - so how much does this actually
+gain you?  Especially with a one-shot transient key.
 
-Yes, I understand, so DR_RW_EXECUTE should probably work. And I even
-sent the patch (untested/uncompiled). But given that even the simple
-bugfix which started this thread was ignored by maintainers, I am
-not sure how we can convince them this change makes sense ;)
-
-However. This looks like a hack to me, because this code is never
-executed. But this is sudjective and I am not saying this can't work.
-And yes, this doesn't add new ptrace hacks.
-
-
-
-But If we want to allow to trace vsyscall's, hw bp doesn't look very
-nice imo. HBP_NUM = 4 and you need to setup 3 bp's to trace them all.
-
-And what about strace? It won't be easy to change it to use hwbp.
-
-
-That is why I think PTRACE_SYSCALL should "simply work" somehow. And
-so far I think that "just report syscall_exit with orig_ax = -1" is
-the best (and simple) solution.
-
-OK. We can do more. We can report both syscall_enter/exit and we can
-change orig_ax/ax temporary to "fool" the tracer, so that everything
-will look as a "normal" syscall. Like vsyscall_seccomp() does.
-
-But this needs much more changes.
-
-Oleg.
-
+David
