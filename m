@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753292Ab2LDPV7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 10:21:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23936 "EHLO mx1.redhat.com"
+	id S1753442Ab2LDP0r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 10:26:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41187 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751479Ab2LDPV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 10:21:56 -0500
-Message-ID: <1354634515.1809.406.camel@bling.home>
+	id S1751945Ab2LDP0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 10:26:44 -0500
+Message-ID: <1354634801.1809.411.camel@bling.home>
 Subject: Re: [RFC PATCH 0/6] kvm: Growable memory slot array
 From: Alex Williamson <alex.williamson@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: mtosatti@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 04 Dec 2012 08:21:55 -0700
-In-Reply-To: <20121204114803.GH19514@redhat.com>
+To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+Cc: mtosatti@redhat.com, kvm@vger.kernel.org, gleb@redhat.com,
+        linux-kernel@vger.kernel.org
+Date: Tue, 04 Dec 2012 08:26:41 -0700
+In-Reply-To: <20121204234829.65472b5ec4aedcf86cccc05f@gmail.com>
 References: <20121203231912.3661.57179.stgit@bling.home>
-	 <20121204114803.GH19514@redhat.com>
+	 <20121204234829.65472b5ec4aedcf86cccc05f@gmail.com>
 Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
@@ -22,19 +23,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-12-04 at 13:48 +0200, Gleb Natapov wrote:
-> On Mon, Dec 03, 2012 at 04:39:05PM -0700, Alex Williamson wrote:
-> > Memory slots are currently a fixed resource with a relatively small
-> > limit.  When using PCI device assignment in a qemu guest it's fairly
-> > easy to exhaust the number of available slots.  I posted patches
-> > exploring growing the number of memory slots a while ago, but it was
-> > prior to caching memory slot array misses and thefore had potentially
-> > poor performance.  Now that we do that, Avi seemed receptive to
-> > increasing the memory slot array to arbitrary lengths.  I think we
-> > still don't want to impose unnecessary kernel memory consumptions on
-> > guests not making use of this, so I present again a growable memory
-> > slot array.
-> > 
+On Tue, 2012-12-04 at 23:48 +0900, Takuya Yoshikawa wrote:
+> On Mon, 03 Dec 2012 16:39:05 -0700
+> Alex Williamson <alex.williamson@redhat.com> wrote:
+> 
 > > A couple notes/questions; in the previous version we had a
 > > kvm_arch_flush_shadow() call when we increased the number of slots.
 > > I'm not sure if this is still necessary.  I had also made the x86
@@ -44,28 +36,18 @@ On Tue, 2012-12-04 at 13:48 +0200, Gleb Natapov wrote:
 > > because it seems like an unnecessary complication if we have a max
 > > on the order of 512 or 1024 entries.  A bit per slot isn't a lot of
 > > overhead.  If we want to go more, maybe we should make it switch.
-> > That leads to the final question, we need an upper bound since this
-> > does allow consumption of extra kernel memory, what should it be?  A
-> This is the most important question :) If we want to have 1000s of
-> them or 100 is enough?
+> 
+> I have a patch set which removes the slot_bitmap in kvm mmu page
+> by using reverse mappings for write protecting a memslot.
+> 
+> A bit of concern I still have is the total write protection time
+> for large memslots.  But since this approach allows us to control
+> mmu_lock hold time, I think this is a reasonable trade-off.
+> ... and this should be much better than introducing any complication
+> for slot_bitmap handling.
 
-We can certainly hit respectable numbers of assigned devices in the
-hundreds.  Worst case is 8 slots per assigned device, typical case is 4
-or less.  So 512 slots would more or less guarantee 64 devices (we do
-need some slots for actual memory), and more typically allow at least
-128 devices.  Philosophically, supporting a full PCI bus, 256 functions,
-2048 slots, is an attractive target, but it's probably no practical.
-
-I think on x86 a slot is 72 bytes w/ alignment padding, so a maximum of
-36k @512 slots.
-
->  Also what about changing kvm_memslots->memslots[]
-> array to be "struct kvm_memory_slot *memslots[KVM_MEM_SLOTS_NUM]"? It
-> will save us good amount of memory for unused slots.
-
-I'm not following where that results in memory savings.  Can you
-clarify.  Thanks,
+Great!  A bi-modal bitmap would be rather ugly, so I look forward to
+your patches to remove it entirely ;)  Thanks,
 
 Alex
-
 
