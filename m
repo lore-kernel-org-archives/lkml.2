@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457Ab2LDUlp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 15:41:45 -0500
-Received: from mail.work-microwave.de ([62.245.205.51]:40598 "EHLO
+	id S1753500Ab2LDUlu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 15:41:50 -0500
+Received: from mail.work-microwave.de ([62.245.205.51]:30354 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753211Ab2LDUkh (ORCPT
+	with ESMTP id S1753170Ab2LDUkg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 15:40:37 -0500
+	Tue, 4 Dec 2012 15:40:36 -0500
 From: Roland Stigge <stigge@antcom.de>
 To: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
         linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ To: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
         rmallon@gmail.com, tru@work-microwave.de, sr@denx.de,
         wg@grandegger.com
 Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH 3/6 v9] gpio: Add userland device interface to block GPIO
-Date: Tue,  4 Dec 2012 21:39:45 +0100
-Message-Id: <1354653588-4018-4-git-send-email-stigge@antcom.de>
+Subject: [PATCH 2/6 v9] gpio: Add sysfs support to block GPIO API
+Date: Tue,  4 Dec 2012 21:39:44 +0100
+Message-Id: <1354653588-4018-3-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1354653588-4018-1-git-send-email-stigge@antcom.de>
 References: <1354653588-4018-1-git-send-email-stigge@antcom.de>
@@ -27,325 +27,405 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a character device interface to the block GPIO system.
+This patch adds sysfs support to the block GPIO API.
 
 Signed-off-by: Roland Stigge <stigge@antcom.de>
----
- Documentation/ABI/testing/dev-gpioblock |   34 +++++
- drivers/gpio/gpiolib.c                  |  208 +++++++++++++++++++++++++++++++-
- include/linux/gpio.h                    |   10 +
- 3 files changed, 251 insertions(+), 1 deletion(-)
 
---- /dev/null
-+++ linux-2.6/Documentation/ABI/testing/dev-gpioblock
-@@ -0,0 +1,34 @@
-+What:		/dev/<gpioblock>
-+Date:		Nov 2012
+---
+ Documentation/ABI/testing/sysfs-gpio |   20 ++
+ drivers/gpio/gpiolib.c               |  250 ++++++++++++++++++++++++++++++++++-
+ include/asm-generic/gpio.h           |   11 +
+ include/linux/gpio.h                 |   15 ++
+ 4 files changed, 295 insertions(+), 1 deletion(-)
+
+--- linux-2.6.orig/Documentation/ABI/testing/sysfs-gpio
++++ linux-2.6/Documentation/ABI/testing/sysfs-gpio
+@@ -25,3 +25,23 @@ Description:
+ 	    /label ... (r/o) descriptive, not necessarily unique
+ 	    /ngpio ... (r/o) number of GPIOs; numbered N to N + (ngpio - 1)
+ 
++What:		/sys/class/gpioblock/
++Date:		October 2012
 +KernelVersion:	3.7
 +Contact:	Roland Stigge <stigge@antcom.de>
-+Description:	The /dev/<gpioblock> character device node provides userspace
-+		access to GPIO blocks, named exactly as the block, e.g.
-+		/dev/block0.
++Description:
 +
-+		Reading:
-+		When reading sizeof(unsigned long) bytes from the device, the
-+		current state of the block, masked by the current mask (see
-+		below) can be obtained as a word. When the device is opened
-+		with O_NONBLOCK, read() always returns with data immediately,
-+		otherwise it blocks until data is available, see IRQ handling
-+		below.
++  Block GPIO devices are visible in sysfs as soon as they are registered
++  (e.g. via devicetree definition). For actual I/O use, their "exported"
++  boolean attribute must be set to "1". Then, the attribute "values" is
++  created and at the same time, the GPIOs in the block are requested for
++  exclusive use by sysfs.
 +
-+		Writing:
-+		By writing sizeof(unsigned long) bytes to the device, the
-+		current state of the block can be set. This operation is
-+		masked by the current mask (see below).
-+
-+		IRQ handling:
-+		When one or more IRQs in the block are IRQ capable, you can
-+		poll() on the device to check/wait for this IRQ. If no IRQ
-+		is available, poll() returns -ENOSYS and userspace needs to
-+		(busy) poll itself if necessary.
-+
-+		Setting the mask (default: all bits set):
-+		By doing an ioctl(fd, 0, &mask) with an unsigned long mask, the
-+		current mask for read and write operations on this gpio block
-+		can be set.
-+
-+		See also Documentation/gpio.txt for an explanation of block
-+		GPIO.
++    /sys/class/gpioblock
++	/BLOCKNAME ... for each GPIO block name
++	    /ngpio ... (r/o) number of GPIOs in this group
++	    /exported ... sysfs export state of this group (0, 1)
++	    /value ... current value as 32 or 64 bit integer in hex
++                       (only available if /exported is 1)
++	    /mask ... current mask as 32 or 64 bit integer in hex
++                       (only available if /exported is 1)
 --- linux-2.6.orig/drivers/gpio/gpiolib.c
 +++ linux-2.6/drivers/gpio/gpiolib.c
-@@ -11,6 +11,8 @@
- #include <linux/of_gpio.h>
- #include <linux/idr.h>
- #include <linux/slab.h>
-+#include <linux/uaccess.h>
-+#include <linux/poll.h>
+@@ -198,7 +198,8 @@ static bool gpio_block_is_output(struct
+ 	int i;
  
- #define CREATE_TRACE_POINTS
- #include <trace/events/gpio.h>
-@@ -2122,6 +2124,190 @@ struct gpio_block *gpio_block_find_by_na
+ 	for (i = 0; i < block->ngpio; i++)
+-		if (!test_bit(FLAG_IS_OUT, &gpio_desc[block->gpio[i]].flags))
++		if ((block->cur_mask & BIT(i)) &&
++		    !test_bit(FLAG_IS_OUT, &gpio_desc[block->gpio[i]].flags))
+ 			return false;
+ 	return true;
  }
- EXPORT_SYMBOL_GPL(gpio_block_find_by_name);
+@@ -984,6 +985,238 @@ static void gpiochip_unexport(struct gpi
+ 				chip->label, status);
+ }
  
-+static struct gpio_block *gpio_block_find_by_minor(int minor)
++static ssize_t gpio_block_ngpio_show(struct device *dev,
++				     struct device_attribute *attr, char *buf)
 +{
-+	struct gpio_block *i;
++	const struct gpio_block	*block = dev_get_drvdata(dev);
 +
-+	list_for_each_entry(i, &gpio_block_list, list)
-+		if (i->miscdev.minor == minor)
-+			return i;
-+	return NULL;
++	return sprintf(buf, "%u\n", block->ngpio);
 +}
 +
-+static bool gpio_block_is_irq_duplicate(struct gpio_block *block, int index)
++static ssize_t gpio_block_value_show(struct device *dev,
++				     struct device_attribute *attr, char *buf)
 +{
-+	int irq = gpio_to_irq(block->gpio[index]);
-+	int i;
++	const struct gpio_block *block = dev_get_drvdata(dev);
 +
-+	for (i = 0; i < index; i++)
-+		if (gpio_to_irq(block->gpio[i]) == irq)
-+			return true;
-+	return false;
++	return sprintf(buf, sizeof(unsigned long) == 4 ? "0x%08lx\n" :
++		       "0x%016lx\n", gpio_block_get(block, block->cur_mask));
 +}
 +
-+static irqreturn_t gpio_block_irq_handler(int irq, void *dev)
++static ssize_t gpio_block_value_store(struct device *dev,
++				      struct device_attribute *attr,
++				      const char *buf, size_t size)
 +{
-+	struct gpio_block *block = dev;
++	ssize_t			status;
++	struct gpio_block	*block = dev_get_drvdata(dev);
++	unsigned long		value;
 +
-+	wake_up_interruptible(&block->wait_queue);
-+	block->got_int = true;
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static int gpio_block_fop_open(struct inode *in, struct file *f)
-+{
-+	int i;
-+	struct gpio_block *block = gpio_block_find_by_minor(MINOR(in->i_rdev));
-+	int status;
-+	int irq;
-+
-+	if (!block)
-+		return -ENOENT;
-+
-+	block->irq_controlled = false;
-+	block->got_int = false;
-+	init_waitqueue_head(&block->wait_queue);
-+	f->private_data = block;
-+
-+	for (i = 0; i < block->ngpio; i++) {
-+		status = gpio_request(block->gpio[i], "gpioblock dev");
-+		if (status)
-+			goto err1;
-+
-+		irq = gpio_to_irq(block->gpio[i]);
-+		if (irq >= 0 &&
-+		    !test_bit(FLAG_IS_OUT, &gpio_desc[block->gpio[i]].flags) &&
-+		    !gpio_block_is_irq_duplicate(block, i)) {
-+			status = request_irq(irq, gpio_block_irq_handler,
-+					     IRQF_TRIGGER_FALLING,
-+					     block->name, block);
-+			if (status)
-+				goto err2;
-+
-+			block->irq_controlled = true;
++	status = kstrtoul(buf, 0, &value);
++	if (status == 0) {
++		mutex_lock(&sysfs_lock);
++		if (gpio_block_is_output(block)) {
++			gpio_block_set(block, block->cur_mask, value);
++			status = size;
++		} else {
++			status = -EPERM;
 +		}
-+	}
-+
-+	return 0;
-+
-+err1:
-+	while (i > 0) {
-+		i--;
-+
-+		irq = gpio_to_irq(block->gpio[i]);
-+		if (irq >= 0 &&
-+		    !test_bit(FLAG_IS_OUT, &gpio_desc[block->gpio[i]].flags) &&
-+		    !gpio_block_is_irq_duplicate(block, i))
-+			free_irq(irq, block);
-+err2:
-+		gpio_free(block->gpio[i]);
++		mutex_unlock(&sysfs_lock);
 +	}
 +	return status;
 +}
 +
-+static int gpio_block_fop_release(struct inode *in, struct file *f)
++static struct device_attribute
++dev_attr_block_value = __ATTR(value, S_IWUSR | S_IRUGO, gpio_block_value_show,
++			      gpio_block_value_store);
++
++static ssize_t gpio_block_mask_show(struct device *dev,
++				    struct device_attribute *attr, char *buf)
 +{
-+	int i;
-+	struct gpio_block *block = (struct gpio_block *)f->private_data;
++	const struct gpio_block *block = dev_get_drvdata(dev);
++
++	return sprintf(buf, sizeof(unsigned long) == 4 ? "0x%08lx\n" :
++		       "0x%016lx\n", block->cur_mask);
++}
++
++static ssize_t gpio_block_mask_store(struct device *dev,
++				     struct device_attribute *attr,
++				     const char *buf, size_t size)
++{
++	ssize_t			status;
++	struct gpio_block	*block = dev_get_drvdata(dev);
++	unsigned long		mask;
++
++	status = kstrtoul(buf, 0, &mask);
++	if (status == 0)
++		block->cur_mask = mask;
++	return status;
++}
++
++static struct device_attribute
++dev_attr_block_mask = __ATTR(mask, S_IWUSR | S_IRUGO, gpio_block_mask_show,
++			     gpio_block_mask_store);
++
++static struct class gpio_block_class;
++
++static int gpio_block_value_is_exported(struct gpio_block *block)
++{
++	struct device		*dev;
++	struct sysfs_dirent	*sd = NULL;
++
++	mutex_lock(&sysfs_lock);
++	dev = class_find_device(&gpio_block_class, NULL, block, match_export);
++	if (!dev)
++		goto out;
++
++	sd = sysfs_get_dirent(dev->kobj.sd, NULL, "value");
++
++out:
++	mutex_unlock(&sysfs_lock);
++	return !!sd;
++}
++
++static ssize_t gpio_block_exported_show(struct device *dev,
++					struct device_attribute *attr,
++					char *buf)
++{
++	struct gpio_block	*block = dev_get_drvdata(dev);
++
++	return sprintf(buf, "%u\n", gpio_block_value_is_exported(block));
++}
++
++static int gpio_block_value_export(struct gpio_block *block)
++{
++	struct device	*dev;
++	int		status;
++	int		i;
++
++	mutex_lock(&sysfs_lock);
 +
 +	for (i = 0; i < block->ngpio; i++) {
-+		int irq = gpio_to_irq(block->gpio[i]);
++		status = gpio_request(block->gpio[i], "sysfs");
++		if (status)
++			goto out1;
++	}
 +
-+		if (irq >= 0 &&
-+		    !test_bit(FLAG_IS_OUT, &gpio_desc[block->gpio[i]].flags) &&
-+		    !gpio_block_is_irq_duplicate(block, i))
-+			free_irq(irq, block);
++	dev = class_find_device(&gpio_block_class, NULL, block, match_export);
++	if (!dev) {
++		status = -ENODEV;
++		goto out1;
++	}
 +
++	status = device_create_file(dev, &dev_attr_block_value);
++	if (status)
++		goto out1;
++
++	status = device_create_file(dev, &dev_attr_block_mask);
++	if (status)
++		goto out2;
++
++	mutex_unlock(&sysfs_lock);
++	return 0;
++
++out2:
++	device_remove_file(dev, &dev_attr_block_value);
++out1:
++	while (--i >= 0)
 +		gpio_free(block->gpio[i]);
-+	}
++
++	mutex_unlock(&sysfs_lock);
++	return status;
++}
++
++static int gpio_block_value_unexport(struct gpio_block *block)
++{
++	struct device	*dev;
++	int		i;
++
++	dev = class_find_device(&gpio_block_class, NULL, block, match_export);
++	if (!dev)
++		return -ENODEV;
++
++	for (i = 0; i < block->ngpio; i++)
++		gpio_free(block->gpio[i]);
++
++	device_remove_file(dev, &dev_attr_block_value);
++	device_remove_file(dev, &dev_attr_block_mask);
 +
 +	return 0;
 +}
 +
-+static ssize_t gpio_block_fop_read(struct file *f, char __user *buf, size_t n,
-+				   loff_t *offset)
++static ssize_t gpio_block_exported_store(struct device *dev,
++					 struct device_attribute *attr,
++					 const char *buf, size_t size)
 +{
-+	struct gpio_block *block = (struct gpio_block *)f->private_data;
-+	int err;
++	long	value;
++	int	status;
++	struct	gpio_block *block = dev_get_drvdata(dev);
++	int	exported = gpio_block_value_is_exported(block);
 +
-+	if (block->irq_controlled) {
-+		if (!(f->f_flags & O_NONBLOCK))
-+			wait_event_interruptible(block->wait_queue,
-+						 block->got_int);
-+		block->got_int = 0;
-+	}
++	status = kstrtoul(buf, 0, &value);
++	if (status < 0)
++		goto err;
 +
-+	if (n >= sizeof(unsigned long)) {
-+		unsigned long values = gpio_block_get(block, block->cur_mask);
-+
-+		err = put_user(values, (unsigned long __user *)buf);
-+		if (err)
-+			return err;
-+
-+		return sizeof(unsigned long);
-+	}
-+	return 0;
-+}
-+
-+static ssize_t gpio_block_fop_write(struct file *f, const char __user *buf,
-+				    size_t n, loff_t *offset)
-+{
-+	struct gpio_block *block = (struct gpio_block *)f->private_data;
-+	int err;
-+
-+	if (n >= sizeof(unsigned long)) {
-+		unsigned long values;
-+
-+		err = get_user(values, (unsigned long __user *)buf);
-+		if (err)
-+			return err;
-+		if (gpio_block_is_output(block))
-+			gpio_block_set(block, block->cur_mask, values);
++	if (value != exported) {
++		if (value)
++			status = gpio_block_value_export(block);
 +		else
-+			return -EPERM;
-+		return sizeof(unsigned long);
++			status = gpio_block_value_unexport(block);
++		if (!status)
++			status = size;
++	} else {
++		status = size;
 +	}
-+	return 0;
++err:
++	return status;
 +}
 +
-+static long gpio_block_fop_ioctl(struct file *f, unsigned int cmd,
-+				 unsigned long arg)
-+{
-+	struct gpio_block *block = (struct gpio_block *)f->private_data;
-+	unsigned long __user *x = (unsigned long __user *)arg;
-+
-+	if (cmd == 0)
-+		return get_user(block->cur_mask, x);
-+
-+	return -EINVAL;
-+}
-+
-+unsigned int gpio_block_fop_poll(struct file *f, struct poll_table_struct *pt)
-+{
-+	struct gpio_block *block = (struct gpio_block *)f->private_data;
-+
-+	if (!block->irq_controlled)
-+		return -ENOSYS;
-+
-+	if (!block->got_int)
-+		poll_wait(f, &block->wait_queue, pt);
-+
-+	if (block->got_int)
-+		return POLLIN;
-+
-+	return 0;
-+}
-+
-+static const struct file_operations gpio_block_fops = {
-+	.open = gpio_block_fop_open,
-+	.release = gpio_block_fop_release,
-+	.read = gpio_block_fop_read,
-+	.write = gpio_block_fop_write,
-+	.unlocked_ioctl = gpio_block_fop_ioctl,
-+	.poll = gpio_block_fop_poll,
++static struct device_attribute gpio_block_attrs[] = {
++	__ATTR(exported, S_IWUSR | S_IRUGO, gpio_block_exported_show,
++	       gpio_block_exported_store),
++	__ATTR(ngpio, S_IRUGO, gpio_block_ngpio_show, NULL),
++	__ATTR_NULL,
 +};
 +
++static struct class gpio_block_class = {
++	.name =         "gpioblock",
++	.owner =        THIS_MODULE,
++
++	.dev_attrs =  gpio_block_attrs,
++};
++
++int gpio_block_export(struct gpio_block *block)
++{
++	int		status = 0;
++	struct device	*dev;
++
++	/* can't export until sysfs is available ... */
++	if (!gpio_block_class.p) {
++		pr_debug("%s: called too early!\n", __func__);
++		return -ENOENT;
++	}
++
++	mutex_lock(&sysfs_lock);
++	dev = device_create(&gpio_block_class, NULL, MKDEV(0, 0), block,
++			    block->name);
++	if (IS_ERR(dev))
++		status = PTR_ERR(dev);
++	mutex_unlock(&sysfs_lock);
++
++	return status;
++}
++EXPORT_SYMBOL_GPL(gpio_block_export);
++
++void gpio_block_unexport(struct gpio_block *block)
++{
++	struct device *dev;
++
++	mutex_lock(&sysfs_lock);
++	dev = class_find_device(&gpio_block_class, NULL, block, match_export);
++	if (dev)
++		device_unregister(dev);
++	mutex_unlock(&sysfs_lock);
++}
++EXPORT_SYMBOL_GPL(gpio_block_unexport);
++
+ static int __init gpiolib_sysfs_init(void)
+ {
+ 	int		status;
+@@ -994,6 +1227,10 @@ static int __init gpiolib_sysfs_init(voi
+ 	if (status < 0)
+ 		return status;
+ 
++	status = class_register(&gpio_block_class);
++	if (status < 0)
++		return status;
++
+ 	/* Scan and register the gpio_chips which registered very
+ 	 * early (e.g. before the class_register above was called).
+ 	 *
+@@ -1724,6 +1961,7 @@ struct gpio_block *gpio_block_create(uns
+ 
+ 	block->name = name;
+ 	block->ngpio = size;
++	block->cur_mask = ~0;
+ 	INIT_LIST_HEAD(&block->gbc_list);
+ 	block->gpio = kzalloc(sizeof(*block->gpio) * size, GFP_KERNEL);
+ 	if (!block->gpio)
+@@ -1886,12 +2124,21 @@ EXPORT_SYMBOL_GPL(gpio_block_find_by_nam
+ 
  int gpio_block_register(struct gpio_block *block)
  {
- 	int ret;
-@@ -2132,12 +2318,31 @@ int gpio_block_register(struct gpio_bloc
++	int ret;
++
+ 	if (gpio_block_find_by_name(block->name))
+ 		return -EBUSY;
+ 
  	list_add(&block->list, &gpio_block_list);
  
- 	ret = gpio_block_export(block);
--	if (ret)
-+
-+	/*
-+	 * ret == ENOSYS is the case where GPIO_SYSFS is deactivated. In this
-+	 * case, we can continue safely anyway, since we can provide the device
-+	 * interface.
-+	 */
-+	if (ret && ret != -ENOSYS)
- 		goto err1;
- 
-+	block->miscdev.name = block->name;
-+	block->miscdev.nodename = block->name;
-+	block->miscdev.minor = MISC_DYNAMIC_MINOR;
-+	block->miscdev.fops = &gpio_block_fops;
-+	block->miscdev.mode = S_IWUSR | S_IRUGO;
-+
-+	ret = misc_register(&block->miscdev);
++	ret = gpio_block_export(block);
 +	if (ret)
-+		goto err2;
++		goto err1;
 +
  	return 0;
-+err2:
-+	gpio_block_unexport(block);
- err1:
- 	list_del(&block->list);
-+
- 	return ret;
++err1:
++	list_del(&block->list);
++	return ret;
  }
  EXPORT_SYMBOL_GPL(gpio_block_register);
-@@ -2150,6 +2355,7 @@ void gpio_block_unregister(struct gpio_b
+ 
+@@ -1902,6 +2149,7 @@ void gpio_block_unregister(struct gpio_b
+ 	list_for_each_entry(i, &gpio_block_list, list)
  		if (i == block) {
  			list_del(&i->list);
- 			gpio_block_unexport(block);
-+			misc_deregister(&block->miscdev);
++			gpio_block_unexport(block);
  			break;
  		}
  }
+--- linux-2.6.orig/include/asm-generic/gpio.h
++++ linux-2.6/include/asm-generic/gpio.h
+@@ -213,6 +213,8 @@ extern int gpio_export_link(struct devic
+ 			unsigned gpio);
+ extern int gpio_sysfs_set_active_low(unsigned gpio, int value);
+ extern void gpio_unexport(unsigned gpio);
++extern int gpio_block_export(struct gpio_block *block);
++extern void gpio_block_unexport(struct gpio_block *block);
+ 
+ #endif	/* CONFIG_GPIO_SYSFS */
+ 
+@@ -272,6 +274,15 @@ static inline int gpio_sysfs_set_active_
+ static inline void gpio_unexport(unsigned gpio)
+ {
+ }
++
++static inline int gpio_block_export(struct gpio_block *block)
++{
++	return -ENOSYS;
++}
++
++static inline void gpio_block_unexport(struct gpio_block *block)
++{
++}
+ #endif	/* CONFIG_GPIO_SYSFS */
+ 
+ #endif /* _ASM_GENERIC_GPIO_H */
 --- linux-2.6.orig/include/linux/gpio.h
 +++ linux-2.6/include/linux/gpio.h
-@@ -4,6 +4,8 @@
- #include <linux/errno.h>
- #include <linux/types.h>
- #include <linux/list.h>
-+#include <linux/sched.h>
-+#include <linux/miscdevice.h>
- 
- /* see Documentation/gpio.txt */
- 
-@@ -89,6 +91,10 @@ struct gpio_block_chip {
+@@ -88,6 +88,7 @@ struct gpio_block_chip {
+  * @ngpio:      number of gpios in this block
   * @gpio:       list of gpios in this block
   * @list:       global list of blocks, maintained by gpiolib
-  * @cur_mask:   currently used gpio mask used by userspace API
-+ * @miscdev:    userspace API: device
-+ * @wait_queue: userspace API: wait queue waiting for IRQ
-+ * @irq_controlled: userspace API: flag: using IRQ or not
-+ * @got_int:    userspace API: change detection via IRQ
++ * @cur_mask:   currently used gpio mask used by userspace API
   */
  struct gpio_block {
  	struct list_head	gbc_list;
-@@ -99,6 +105,10 @@ struct gpio_block {
+@@ -97,6 +98,7 @@ struct gpio_block {
+ 	unsigned		*gpio;
  
  	struct list_head	list;
- 	unsigned long		cur_mask;
-+	struct miscdevice	miscdev;
-+	wait_queue_head_t	wait_queue;
-+	bool			irq_controlled;
-+	bool			got_int;
++	unsigned long		cur_mask;
  };
  
  #ifdef CONFIG_GENERIC_GPIO
+@@ -314,6 +316,19 @@ static inline void gpio_unexport(unsigne
+ 	WARN_ON(1);
+ }
+ 
++static inline int gpio_block_export(struct gpio_block *block)
++{
++	/* GPIO block can never have been requested or set as {in,out}put */
++	WARN_ON(1);
++	return -EINVAL;
++}
++
++static inline void gpio_block_unexport(struct gpio_block *block)
++{
++	/* GPIO block can never have been exported */
++	WARN_ON(1);
++}
++
+ static inline int gpio_to_irq(unsigned gpio)
+ {
+ 	/* GPIO can never have been requested or set as input */
