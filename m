@@ -1,139 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754621Ab2LDQYP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 11:24:15 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:35257 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753413Ab2LDQYO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 11:24:14 -0500
-Date: Tue, 4 Dec 2012 08:24:08 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Xiaotian Feng <xtfeng@gmail.com>,
-        Neela Syam Kolli <megaraidlinux@lsi.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
-Subject: [GIT PULL] workqueue fixes for 3.7-rc8
-Message-ID: <20121204162408.GH3885@mtj.dyndns.org>
+	id S1753412Ab2LDQfp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 11:35:45 -0500
+Received: from mail.tpi.com ([70.99.223.143]:4667 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751005Ab2LDQfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 11:35:44 -0500
+X-Greylist: delayed 1779 seconds by postgrey-1.27 at vger.kernel.org; Tue, 04 Dec 2012 11:35:44 EST
+Message-ID: <50BE1F6B.8030909@canonical.com>
+Date: Tue, 04 Dec 2012 09:06:03 -0700
+From: Tim Gardner <tim.gardner@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: Tim Gardner <rtg.canonical@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: Re: [GIT PULL] linux-firmware: cx23885: update to Version 2.06.139
+References: <50BCEBCB.4080303@gmail.com> <1354597630.17107.42.camel@deadeye.wl.decadent.org.uk>
+In-Reply-To: <1354597630.17107.42.camel@deadeye.wl.decadent.org.uk>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
 
-So, safe fixes my ass.  8852aac ("workqueue: mod_delayed_work_on()
-shouldn't queue timer on 0 delay") had the side-effect of performing
-delayed_work sanity checks even when @delay is 0, which should be fine
-for any sane use cases.
+On 12/03/2012 10:07 PM, Ben Hutchings wrote:
+> On Mon, 2012-12-03 at 11:13 -0700, Tim Gardner wrote:
+>> Ben - what is your policy on extracting firmware from Windows 
+>> drivers?
+> 
+<snip>
+> 
+> I'm not sure how you can say they are the same files, as you're 
+> proposing to change the contents.  The copyright on the current 
+> files belongs to the chipset vendor, Conexant, and Hauppuage 
+> *presumably* used firmware supplied by Conexant, but either of
+> them might have chosen a different licence for the versions in this
+> driver package.
+> 
 
-Unfortunately, megaraid was being overly ingenious.  It seemingly
-wanted to use cancel_delayed_work_sync() before cancel_work_sync() was
-introduced, but didn't want to waste the space for full delayed_work
-as it was only gonna use 0 @delay.  So, it only allocated space for
-struct work_struct and then casted it to struct delayed_work and
-passed it into delayed_work functions - truly awesome engineering
-tradeoff to save some bytes.
+I guess that is the root of the issue. In light of the licensing
+uncertainty I think you should just drop this pull request.
 
-Xiaotian fixed it by making megraid allocate full delayed_work for
-now.  It should be converted to use work_struct and cancel_work_sync()
-but I think we better do that after 3.7.
+>> ----------------------------------------------------------------
+>>  Tim Gardner (1): cx23885: update to Version 2.06.139
+>> 
+>> v4l-cx23885-avcore-01.fw |  Bin 16382 -> 16382 bytes 
+>> v4l-cx23885-enc.fw       |  Bin 16382 -> 376836 bytes 2 files 
+>> changed, 0 insertions(+), 0 deletions(-)
+> 
+> How odd, these two files are currently identical to each other...
+> 
+> Ben.
+> 
 
-I added another commit to change BUG_ON()s in __queue_delayed_work()
-to WARN_ON_ONCE()s so that the kernel doens't crash even if there are
-more such abuses.
+Indeed they are. The comment in the bug report [0] indicates that
+those files should not be identical.
 
-Please pull from the following branch to receive the two patches.
+[0]
+https://bugs.launchpad.net/ubuntu/+source/linux-firmware/+bug/569615/comments/4
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.7-fixes
+rtg
+- -- 
+Tim Gardner tim.gardner@canonical.com
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with undefined - http://www.enigmail.net/
 
-----------------------------------------------------------------
-Tejun Heo (1):
-      workqueue: convert BUG_ON()s in __queue_delayed_work() to WARN_ON_ONCE()s
-
-Xiaotian Feng (1):
-      megaraid: fix BUG_ON() from incorrect use of delayed work
-
- drivers/scsi/megaraid/megaraid_sas.h      |  2 +-
- drivers/scsi/megaraid/megaraid_sas_base.c | 14 ++++++--------
- kernel/workqueue.c                        |  4 ++--
- 3 files changed, 9 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/scsi/megaraid/megaraid_sas.h b/drivers/scsi/megaraid/megaraid_sas.h
-index 16b7a72..3b2365c 100644
---- a/drivers/scsi/megaraid/megaraid_sas.h
-+++ b/drivers/scsi/megaraid/megaraid_sas.h
-@@ -1276,7 +1276,7 @@ struct megasas_evt_detail {
- } __attribute__ ((packed));
- 
- struct megasas_aen_event {
--	struct work_struct hotplug_work;
-+	struct delayed_work hotplug_work;
- 	struct megasas_instance *instance;
- };
- 
-diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c b/drivers/scsi/megaraid/megaraid_sas_base.c
-index d2c5366..e4f2baa 100644
---- a/drivers/scsi/megaraid/megaraid_sas_base.c
-+++ b/drivers/scsi/megaraid/megaraid_sas_base.c
-@@ -2060,9 +2060,9 @@ megasas_service_aen(struct megasas_instance *instance, struct megasas_cmd *cmd)
- 		} else {
- 			ev->instance = instance;
- 			instance->ev = ev;
--			INIT_WORK(&ev->hotplug_work, megasas_aen_polling);
--			schedule_delayed_work(
--				(struct delayed_work *)&ev->hotplug_work, 0);
-+			INIT_DELAYED_WORK(&ev->hotplug_work,
-+					  megasas_aen_polling);
-+			schedule_delayed_work(&ev->hotplug_work, 0);
- 		}
- 	}
- }
-@@ -4352,8 +4352,7 @@ megasas_suspend(struct pci_dev *pdev, pm_message_t state)
- 	/* cancel the delayed work if this work still in queue */
- 	if (instance->ev != NULL) {
- 		struct megasas_aen_event *ev = instance->ev;
--		cancel_delayed_work_sync(
--			(struct delayed_work *)&ev->hotplug_work);
-+		cancel_delayed_work_sync(&ev->hotplug_work);
- 		instance->ev = NULL;
- 	}
- 
-@@ -4545,8 +4544,7 @@ static void __devexit megasas_detach_one(struct pci_dev *pdev)
- 	/* cancel the delayed work if this work still in queue*/
- 	if (instance->ev != NULL) {
- 		struct megasas_aen_event *ev = instance->ev;
--		cancel_delayed_work_sync(
--			(struct delayed_work *)&ev->hotplug_work);
-+		cancel_delayed_work_sync(&ev->hotplug_work);
- 		instance->ev = NULL;
- 	}
- 
-@@ -5190,7 +5188,7 @@ static void
- megasas_aen_polling(struct work_struct *work)
- {
- 	struct megasas_aen_event *ev =
--		container_of(work, struct megasas_aen_event, hotplug_work);
-+		container_of(work, struct megasas_aen_event, hotplug_work.work);
- 	struct megasas_instance *instance = ev->instance;
- 	union megasas_evt_class_locale class_locale;
- 	struct  Scsi_Host *host;
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 084aa47..1dae900 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1361,8 +1361,8 @@ static void __queue_delayed_work(int cpu, struct workqueue_struct *wq,
- 
- 	WARN_ON_ONCE(timer->function != delayed_work_timer_fn ||
- 		     timer->data != (unsigned long)dwork);
--	BUG_ON(timer_pending(timer));
--	BUG_ON(!list_empty(&work->entry));
-+	WARN_ON_ONCE(timer_pending(timer));
-+	WARN_ON_ONCE(!list_empty(&work->entry));
- 
- 	/*
- 	 * If @delay is 0, queue @dwork->work immediately.  This is for
+iQIcBAEBCgAGBQJQvh9lAAoJED12yEX6FEfKYD8P/ih3NovJAZqndS8ljG/X7Pcw
+7pgQNM0WWiiwjNxcxQK+s+w/XV1QJGztLgXDduUEb3jD8nNH2qvAGXVgBKWZNSqQ
+alSF6yqvRUq8G2h6CJc6/T9MVmhaYm1GkgXRVFViLFyvjh9wc6xxD/O5SA3Fr0Q2
+J0Js4/vExIoFd8ps+9cB4+AzDqWmiEGk5FBseNLwO2zrDyzziO7tXH6K3W34n1EW
+ztVOnkFbrvVBuf/QOQFBbt06ziKINwPsyZkCyUHCWs7WXmWLLH1rvrH2CSGvQkXY
+S5fk/H1j5LRCellURpAbs9x50OWdShOQs05mSpd4eZmD1lvFqjMCCYWHn4AR2fvk
+yXi71uendvfVFfFHlN3kWHnCLICLJUa8urMRDSts3XRUFXZDijeJVWpJZJXK5m+W
+40NIkDOQVvVHWxL+W1bCiM36uE0f+9klsqfs0nWB1xERol9peaoqJhoW1VyzHEmK
+7QSt1+nezFuURfaSktG2W/WsRZuo6RI9ElOWrOVGrmnA3PoYun8KlanGyGiS+ezu
+/b2l/yxPAlanHXcAtpCcV7h+sLL9k7z5rIUZDuseHazAw14jATGu7LLpac7nvPCB
+cuYvKUeVOSPi/fkC5A+pSWMDznjr92bgTf71tlzzGTNDIq/MQCwpotxJUfOXr3Oh
+5dZzEgczjDDdYMniC6rl
+=egal
+-----END PGP SIGNATURE-----
