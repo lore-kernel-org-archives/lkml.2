@@ -1,207 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285Ab2LDJXo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 04:23:44 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:37024 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752369Ab2LDJXj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 04:23:39 -0500
-X-IronPort-AV: E=Sophos;i="4.83,370,1352044800"; 
-   d="scan'208";a="6329947"
-Message-ID: <50BDC0DE.4010103@cn.fujitsu.com>
-Date: Tue, 04 Dec 2012 17:22:38 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752568Ab2LDJY2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 04:24:28 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:63921 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751723Ab2LDJYW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 04:24:22 -0500
+Message-ID: <50BDC140.8060004@numascale-asia.com>
+Date: Tue, 04 Dec 2012 17:24:16 +0800
+From: Daniel J Blueman <daniel@numascale-asia.com>
+Organization: Numascale Asia
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org, David Rientjes <rientjes@google.com>,
-        Jiang Liu <liuj97@gmail.com>, Len Brown <len.brown@intel.com>,
-        benh@kernel.crashing.org, paulus@samba.org,
-        Christoph Lameter <cl@linux.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Jianguo Wu <wujianguo@huawei.com>
-Subject: Re: [Patch v4 03/12] memory-hotplug: remove redundant codes
-References: <1354010422-19648-1-git-send-email-wency@cn.fujitsu.com> <1354010422-19648-4-git-send-email-wency@cn.fujitsu.com>
-In-Reply-To: <1354010422-19648-4-git-send-email-wency@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/04 17:22:59,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/04 17:23:00,
-	Serialize complete at 2012/12/04 17:23:00
+To: Borislav Petkov <bp@alien8.de>
+CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        H Peter Anvin <hpa@zytor.com>, Steffen Persvold <sp@numascale.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4 v8] AMD64 EDAC: Fix type usage in NB IDs and memory
+ ranges
+References: <1354265060-22956-1-git-send-email-daniel@numascale-asia.com> <1354265060-22956-2-git-send-email-daniel@numascale-asia.com> <20121130171749.GB23034@liondog.tnic>
+In-Reply-To: <20121130171749.GB23034@liondog.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/27/2012 06:00 PM, Wen Congyang wrote:
-> offlining memory blocks and checking whether memory blocks are offlined
-> are very similar. This patch introduces a new function to remove
-> redundant codes.
+On 01/12/2012 01:17, Borislav Petkov wrote:
+> On Fri, Nov 30, 2012 at 04:44:20PM +0800, Daniel J Blueman wrote:
+>> Use appropriate types for northbridge IDs and memory ranges. Mark immutable
+>> data const and keep within compilation unit on related structures. Tested on
+>> multi-socket server and multi-server, multi-socket NumaConnect setup.
+>>
+>> v7: Refactor patches grouping changes
+>> v8: Drop unneeded change; use const and static where appropriate
+>>
+>> Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
+>> ---
+>>   arch/x86/include/asm/amd_nb.h |    2 +-
+>>   drivers/edac/amd64_edac.c     |   26 +++++++++++++-------------
+>>   drivers/edac/amd64_edac.h     |    6 +++---
+>>   3 files changed, 17 insertions(+), 17 deletions(-)
+>>
+>> diff --git a/arch/x86/include/asm/amd_nb.h b/arch/x86/include/asm/amd_nb.h
+>> index 417eb24..d2e703b 100644
+>> --- a/arch/x86/include/asm/amd_nb.h
+>> +++ b/arch/x86/include/asm/amd_nb.h
+>> @@ -76,7 +76,7 @@ static inline bool amd_nb_has_feature(unsigned feature)
+>>   	return ((amd_northbridges.flags & feature) == feature);
+>>   }
+>>
+>> -static inline struct amd_northbridge *node_to_amd_nb(int node)
+>> +static inline struct amd_northbridge *node_to_amd_nb(u16 node)
 >
-> CC: David Rientjes<rientjes@google.com>
-> CC: Jiang Liu<liuj97@gmail.com>
-> CC: Len Brown<len.brown@intel.com>
-> CC: Christoph Lameter<cl@linux.com>
-> Cc: Minchan Kim<minchan.kim@gmail.com>
-> CC: Andrew Morton<akpm@linux-foundation.org>
-> CC: KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>
-> CC: Yasuaki Ishimatsu<isimatu.yasuaki@jp.fujitsu.com>
-> Signed-off-by: Wen Congyang<wency@cn.fujitsu.com>
+> I'm dropping this change from this patch because if we go with it,
+> we'll have to change all callsites of node_to_amd_nb which would cause
+> unnecessary churn.
 
-Can we merge this patch with [PATCH 03/12] ?
+> So, I've applied the final patchset and uploaded a branch here:
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git numascale
+>
+> Please give it a run on both configurations and let me know if something
+> is still amiss.
 
-Reviewed-by: Tang Chen <tangchen@cn.fujitsu.com>
+It works well on fam10h and fam15h boxes, with and without Numaconnect.
 
-> ---
->   mm/memory_hotplug.c | 101 ++++++++++++++++++++++++++++------------------------
->   1 file changed, 55 insertions(+), 46 deletions(-)
->
-> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-> index b6d1101..6d06488 100644
-> --- a/mm/memory_hotplug.c
-> +++ b/mm/memory_hotplug.c
-> @@ -1005,20 +1005,14 @@ int offline_pages(unsigned long start_pfn, unsigned long nr_pages)
->   	return __offline_pages(start_pfn, start_pfn + nr_pages, 120 * HZ);
->   }
->
-> -int remove_memory(u64 start, u64 size)
-> +static int walk_memory_range(unsigned long start_pfn, unsigned long end_pfn,
-> +		void *arg, int (*func)(struct memory_block *, void *))
->   {
->   	struct memory_block *mem = NULL;
->   	struct mem_section *section;
-> -	unsigned long start_pfn, end_pfn;
->   	unsigned long pfn, section_nr;
->   	int ret;
-> -	int return_on_error = 0;
-> -	int retry = 0;
-> -
-> -	start_pfn = PFN_DOWN(start);
-> -	end_pfn = start_pfn + PFN_DOWN(size);
->
-> -repeat:
->   	for (pfn = start_pfn; pfn<  end_pfn; pfn += PAGES_PER_SECTION) {
->   		section_nr = pfn_to_section_nr(pfn);
->   		if (!present_section_nr(section_nr))
-> @@ -1035,22 +1029,61 @@ repeat:
->   		if (!mem)
->   			continue;
->
-> -		ret = offline_memory_block(mem);
-> +		ret = func(mem, arg);
->   		if (ret) {
-> -			if (return_on_error) {
-> -				kobject_put(&mem->dev.kobj);
-> -				return ret;
-> -			} else {
-> -				retry = 1;
-> -			}
-> +			kobject_put(&mem->dev.kobj);
-> +			return ret;
->   		}
->   	}
->
->   	if (mem)
->   		kobject_put(&mem->dev.kobj);
->
-> -	if (retry) {
-> -		return_on_error = 1;
-> +	return 0;
-> +}
-> +
-> +static int offline_memory_block_cb(struct memory_block *mem, void *arg)
-> +{
-> +	int *ret = arg;
-> +	int error = offline_memory_block(mem);
-> +
-> +	if (error != 0&&  *ret == 0)
-> +		*ret = error;
-> +
-> +	return 0;
-> +}
-> +
-> +static int is_memblock_offlined_cb(struct memory_block *mem, void *arg)
-> +{
-> +	int ret = !is_memblock_offlined(mem);
-> +
-> +	if (unlikely(ret))
-> +		pr_warn("removing memory fails, because memory "
-> +			"[%#010llx-%#010llx] is onlined\n",
-> +			PFN_PHYS(section_nr_to_pfn(mem->start_section_nr)),
-> +			PFN_PHYS(section_nr_to_pfn(mem->end_section_nr + 1))-1);
-> +
-> +	return ret;
-> +}
-> +
-> +int remove_memory(u64 start, u64 size)
-> +{
-> +	unsigned long start_pfn, end_pfn;
-> +	int ret = 0;
-> +	int retry = 1;
-> +
-> +	start_pfn = PFN_DOWN(start);
-> +	end_pfn = start_pfn + PFN_DOWN(size);
-> +
-> +repeat:
-> +	walk_memory_range(start_pfn, end_pfn,&ret,
-> +			  offline_memory_block_cb);
-> +	if (ret) {
-> +		if (!retry)
-> +			return ret;
-> +
-> +		retry = 0;
-> +		ret = 0;
->   		goto repeat;
->   	}
->
-> @@ -1068,37 +1101,13 @@ repeat:
->   	 * memory blocks are offlined.
->   	 */
->
-> -	for (pfn = start_pfn; pfn<  end_pfn; pfn += PAGES_PER_SECTION) {
-> -		section_nr = pfn_to_section_nr(pfn);
-> -		if (!present_section_nr(section_nr))
-> -			continue;
-> -
-> -		section = __nr_to_section(section_nr);
-> -		/* same memblock? */
-> -		if (mem)
-> -			if ((section_nr>= mem->start_section_nr)&&
-> -			    (section_nr<= mem->end_section_nr))
-> -				continue;
-> -
-> -		mem = find_memory_block_hinted(section, mem);
-> -		if (!mem)
-> -			continue;
-> -
-> -		ret = is_memblock_offlined(mem);
-> -		if (!ret) {
-> -			pr_warn("removing memory fails, because memory "
-> -				"[%#010llx-%#010llx] is onlined\n",
-> -				PFN_PHYS(section_nr_to_pfn(mem->start_section_nr)),
-> -				PFN_PHYS(section_nr_to_pfn(mem->end_section_nr + 1)) - 1);
-> -
-> -			kobject_put(&mem->dev.kobj);
-> -			unlock_memory_hotplug();
-> -			return ret;
-> -		}
-> +	ret = walk_memory_range(start_pfn, end_pfn, NULL,
-> +				is_memblock_offlined_cb);
-> +	if (ret) {
-> +		unlock_memory_hotplug();
-> +		return ret;
->   	}
->
-> -	if (mem)
-> -		kobject_put(&mem->dev.kobj);
->   	unlock_memory_hotplug();
->
->   	return 0;
-
+Thanks,
+   Daniel
+-- 
+Daniel J Blueman
+Principal Software Engineer, Numascale Asia
