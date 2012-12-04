@@ -1,51 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754099Ab2LDPjq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 10:39:46 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:48748 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951Ab2LDPjo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 10:39:44 -0500
-Date: Tue, 4 Dec 2012 07:39:39 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Xiaotian Feng <xtfeng@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Xiaotian Feng <dannyfeng@tencent.com>,
-        Neela Syam Kolli <megaraidlinux@lsi.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
-Subject: Re: [PATCH] megaraid: fix use of delayed work
-Message-ID: <20121204153939.GD3885@mtj.dyndns.org>
-References: <1354620834-2953-1-git-send-email-xtfeng@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354620834-2953-1-git-send-email-xtfeng@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754148Ab2LDPjx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 10:39:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1191 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754106Ab2LDPjs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 10:39:48 -0500
+Message-ID: <1354635587.1809.422.camel@bling.home>
+Subject: Re: [RFC PATCH 0/6] kvm: Growable memory slot array
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: mtosatti@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 04 Dec 2012 08:39:47 -0700
+In-Reply-To: <20121204153043.GA14176@redhat.com>
+References: <20121203231912.3661.57179.stgit@bling.home>
+	 <20121204114803.GH19514@redhat.com> <1354634515.1809.406.camel@bling.home>
+	 <20121204153043.GA14176@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 04, 2012 at 07:33:54PM +0800, Xiaotian Feng wrote:
-> megaraid use INIT_WORK to declare a hotplug_work, but cast the hotplug_work
-> from work_struct to delayed_work and schedule_delayed_work on it. This is
-> very dangerous, as other part of delayed_work might be kernel memories allocated
-> by others.
-> 
-> With commit 8852aac, schedule_delayed_work() will check dwork->timer before
-> queue_work, this will cause megaraid code to hit the BUG_ON in workqueue code.
-> Change megaraid code to use delayed work.
-> 
-> Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Neela Syam Kolli <megaraidlinux@lsi.com>
-> Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-> Cc: linux-scsi@vger.kernel.org
+On Tue, 2012-12-04 at 17:30 +0200, Gleb Natapov wrote:
+> On Tue, Dec 04, 2012 at 08:21:55AM -0700, Alex Williamson wrote:
+> > On Tue, 2012-12-04 at 13:48 +0200, Gleb Natapov wrote:
+> > > On Mon, Dec 03, 2012 at 04:39:05PM -0700, Alex Williamson wrote:
+> > > > Memory slots are currently a fixed resource with a relatively small
+> > > > limit.  When using PCI device assignment in a qemu guest it's fairly
+> > > > easy to exhaust the number of available slots.  I posted patches
+> > > > exploring growing the number of memory slots a while ago, but it was
+> > > > prior to caching memory slot array misses and thefore had potentially
+> > > > poor performance.  Now that we do that, Avi seemed receptive to
+> > > > increasing the memory slot array to arbitrary lengths.  I think we
+> > > > still don't want to impose unnecessary kernel memory consumptions on
+> > > > guests not making use of this, so I present again a growable memory
+> > > > slot array.
+> > > > 
+> > > > A couple notes/questions; in the previous version we had a
+> > > > kvm_arch_flush_shadow() call when we increased the number of slots.
+> > > > I'm not sure if this is still necessary.  I had also made the x86
+> > > > specific slot_bitmap dynamically grow as well and switch between a
+> > > > direct bitmap and indirect pointer to a bitmap.  That may have
+> > > > contributed to needing the flush.  I haven't done that yet here
+> > > > because it seems like an unnecessary complication if we have a max
+> > > > on the order of 512 or 1024 entries.  A bit per slot isn't a lot of
+> > > > overhead.  If we want to go more, maybe we should make it switch.
+> > > > That leads to the final question, we need an upper bound since this
+> > > > does allow consumption of extra kernel memory, what should it be?  A
+> > > This is the most important question :) If we want to have 1000s of
+> > > them or 100 is enough?
+> > 
+> > We can certainly hit respectable numbers of assigned devices in the
+> > hundreds.  Worst case is 8 slots per assigned device, typical case is 4
+> > or less.  So 512 slots would more or less guarantee 64 devices (we do
+> > need some slots for actual memory), and more typically allow at least
+> > 128 devices.  Philosophically, supporting a full PCI bus, 256 functions,
+> > 2048 slots, is an attractive target, but it's probably no practical.
+> > 
+> > I think on x86 a slot is 72 bytes w/ alignment padding, so a maximum of
+> > 36k @512 slots.
+> > 
+> > >  Also what about changing kvm_memslots->memslots[]
+> > > array to be "struct kvm_memory_slot *memslots[KVM_MEM_SLOTS_NUM]"? It
+> > > will save us good amount of memory for unused slots.
+> > 
+> > I'm not following where that results in memory savings.  Can you
+> > clarify.  Thanks,
+> > 
+> We will waste sizeof(void*) for each unused slot instead of
+> sizeof(struct kvm_memory_slot).
 
-Urgh... what the....  Didn't see that one coming.  I'm gonna push this
-to Linus through the workqueue tree.
+Ah, of course.  That means for 512 slots we're wasting a full page just
+for the pointers, whereas we can fit 56 slots in the same space.  Given
+that most users get by just fine w/ 32 slots, I don't think that's a win
+in the typical case.  Maybe if we want to support sparse arrays, but a
+tree would probably be better at that point.  A drawback of the growable
+array is that userspace can subvert any savings by using slot N-1 first,
+but that's why we put a limit at a reasonable size.  Thanks,
 
-Thanks for the fix.
+Alex
 
--- 
-tejun
