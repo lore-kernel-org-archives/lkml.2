@@ -1,89 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752946Ab2LDNs3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 08:48:29 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:45554 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751865Ab2LDNs2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 08:48:28 -0500
+	id S1753838Ab2LDNtp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 08:49:45 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:40786 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753310Ab2LDNtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 08:49:41 -0500
+Subject: [PATCH 2/6] nfsd: pass net to nfsd_startup() and nfsd_shutdown()
+To: bfields@fieldses.org
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Tue, 04 Dec 2012 16:50:11 +0300
+Message-ID: <20121204135011.24504.43375.stgit@localhost.localdomain>
+In-Reply-To: <20121204134920.24504.95261.stgit@localhost.localdomain>
+References: <20121204134920.24504.95261.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Date: Tue, 4 Dec 2012 05:48:27 -0800
-Message-ID: <CAAmnkz=gJ02Uad6bgbCAuE0EPjcWXK9VrWo-3C1yK_XbmA4Xow@mail.gmail.com>
-Subject: BUG: wait_task_zombie NULL dereference
-From: "Bill Huey (hui)" <bill.huey@gmail.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: ebiederm@xmission.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm hitting this under a heavy scheduler test load with SCHED_RR tasks
-exiting normally after completion and the parent exiting with some of
-the pthreads still running:
+Precursor patch. Hard-coded "init_net" will be replaced by proper one in
+future.
 
-(gdb) bt
-#0  no_context (regs=0xffff880018c55d58, error_code=0, address=4,
-signal=signal@entry=11,
-    si_code=si_code@entry=196609) at arch/x86/mm/fault.c:630
-#1  0xffffffff816a02fe in __bad_area_nosemaphore
-(regs=regs@entry=0xffff880018c55d58,
-    error_code=error_code@entry=0, address=address@entry=4,
-si_code=si_code@entry=196609)
-    at arch/x86/mm/fault.c:767
-#2  0xffffffff816a0565 in __bad_area (si_code=196609, address=4,
-error_code=0, regs=0xffff880018c55d58)
-    at arch/x86/mm/fault.c:789
-#3  bad_area (regs=regs@entry=0xffff880018c55d58,
-error_code=error_code@entry=0, address=address@entry=4)
-    at arch/x86/mm/fault.c:795
-#4  0xffffffff816b381c in do_page_fault
-(regs=regs@entry=0xffff880018c55d58, error_code=error_code@entry=0)
-    at arch/x86/mm/fault.c:1159
-#5  0xffffffff816b2ff5 in do_async_page_fault
-(regs=0xffff880018c55d58, error_code=0) at arch/x86/kernel/kvm.c:246
-#6  <signal handler called>
-#7  wait_task_zombie (p=0xffff88003a034500, wo=0xffff880018c55f00) at
-kernel/exit.c:1224
-#8  wait_consider_task (p=0xffff88003a034500, ptrace=0,
-wo=0xffff880018c55f00) at kernel/exit.c:1591
-#9  wait_consider_task (wo=0xffff880018c55f00, ptrace=0,
-p=0xffff88003a034500) at kernel/exit.c:1544
-#10 0xffffffff8105a910 in do_wait_thread (tsk=0xffff88002f510000,
-wo=0xffff880018c55f00) at kernel/exit.c:1666
-#11 do_wait (wo=wo@entry=0xffff880018c55f00) at kernel/exit.c:1735
-#12 0xffffffff8105bd45 in sys_wait4 (upid=<optimized out>,
-stat_addr=0x7fff40f4168c, options=<optimized out>,
-    ru=0x0 <irq_stack_union>) at kernel/exit.c:1865
-#13 <signal handler called>
-#14 0x00007f58c4d7f4ea in ?? ()
-#15 0xffff88000000001b in ?? ()
-#16 0xdead4ead001e001e in ?? ()
-#17 0x00000000ffffffff in ?? ()
-#18 0xffffffffffffffff in ?? ()
-#19 0xffffffff8280e5e8 in __key.30461 ()
-#20 0xffffffff8205f850 in lock_classes ()
-#21 0x0000000000000000 in ?? ()
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+---
+ fs/nfsd/nfssvc.c |   15 ++++++---------
+ 1 files changed, 6 insertions(+), 9 deletions(-)
 
+diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
+index 9fd8496..21cba3d 100644
+--- a/fs/nfsd/nfssvc.c
++++ b/fs/nfsd/nfssvc.c
+@@ -203,10 +203,9 @@ static int nfsd_init_socks(struct net *net)
+ 
+ static bool nfsd_up = false;
+ 
+-static int nfsd_startup(int nrservs)
++static int nfsd_startup(int nrservs, struct net *net)
+ {
+ 	int ret;
+-	struct net *net = &init_net;
+ 
+ 	if (nfsd_up)
+ 		return 0;
+@@ -237,16 +236,14 @@ static int nfsd_startup(int nrservs)
+ out_net_state:
+ 	nfs4_state_shutdown();
+ out_lockd:
+-	lockd_down(&init_net);
++	lockd_down(net);
+ out_racache:
+ 	nfsd_racache_shutdown();
+ 	return ret;
+ }
+ 
+-static void nfsd_shutdown(void)
++static void nfsd_shutdown(struct net *net)
+ {
+-	struct net *net = &init_net;
+-
+ 	/*
+ 	 * write_ports can create the server without actually starting
+ 	 * any threads--if we get shut down before any threads are
+@@ -264,7 +261,7 @@ static void nfsd_shutdown(void)
+ 
+ static void nfsd_last_thread(struct svc_serv *serv, struct net *net)
+ {
+-	nfsd_shutdown();
++	nfsd_shutdown(net);
+ 
+ 	svc_rpcb_cleanup(serv, net);
+ 
+@@ -468,7 +465,7 @@ nfsd_svc(int nrservs)
+ 
+ 	nfsd_up_before = nfsd_up;
+ 
+-	error = nfsd_startup(nrservs);
++	error = nfsd_startup(nrservs, net);
+ 	if (error)
+ 		goto out_destroy;
+ 	error = svc_set_num_threads(nfsd_serv, NULL, nrservs);
+@@ -481,7 +478,7 @@ nfsd_svc(int nrservs)
+ 	error = nfsd_serv->sv_nrthreads - 1;
+ out_shutdown:
+ 	if (error < 0 && !nfsd_up_before)
+-		nfsd_shutdown();
++		nfsd_shutdown(net);
+ out_destroy:
+ 	nfsd_destroy(net);		/* Release server */
+ out:
 
-
-(gdb) down
-#7  wait_task_zombie (p=0xffff88003a034500, wo=0xffff880018c55f00) at
-kernel/exit.c:1224
-1224            kuid_t two= task_uid(p);
-
-
-[   23.324284] BUG: unable to handle kernel NULL pointer dereference
-at 0000000000000004
-[   23.324284] IP: [<ffffffff8105a1a0>] wait_consider_task+0x5b0/0xc20
-[   23.324284] PGD 2fa48067 PUD 39ff4067 PMD 0
-[   23.324284] Oops: 0000 [#1] SMP
-
-......
-
-It crashes at that point with a NULL dereference it looks like. I
-expanded out the arguments for from_kuid_munged() so that gdb can get
-at a specific line.
-
-bill
