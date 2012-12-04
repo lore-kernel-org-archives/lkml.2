@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754272Ab2LDRef (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 12:34:35 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:58003 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751997Ab2LDRee (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 12:34:34 -0500
-MIME-Version: 1.0
-In-Reply-To: <50BDB016.7010908@ti.com>
-References: <1352731270-27534-1-git-send-email-peter.ujfalusi@ti.com>
- <1352731270-27534-2-git-send-email-peter.ujfalusi@ti.com> <CAK5ve-JDCSSOKHQG-F1RoDii62=-DiPevaD6SafndYVvOgB6Fw@mail.gmail.com>
- <50BCB391.1070305@ti.com> <CAK5ve-+1eQ3mPLAu2Qxw4LjNA85oEtJE-wZcL=YpQ0xBFJ6+hQ@mail.gmail.com>
- <50BDB016.7010908@ti.com>
-From: Bryan Wu <cooloney@gmail.com>
-Date: Tue, 4 Dec 2012 09:34:12 -0800
-Message-ID: <CAK5ve-K69=NqApFTFOZB7Z_KXcRLaWExzbkUhP=GeASMB7JYqw@mail.gmail.com>
-Subject: Re: [PATCH v2 1/3] leds: leds-pwm: Convert to use devm_get_pwm
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>, linux-leds@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754381Ab2LDRjm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 12:39:42 -0500
+Received: from [206.117.179.246] ([206.117.179.246]:32774 "EHLO labridge.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752277Ab2LDRjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 12:39:39 -0500
+Message-ID: <1354642763.6973.15.camel@joe-AO722>
+Subject: Re: [PATCH v6 3/3] aerdrv: Cleanup log output for CPER based AER
+From: Joe Perches <joe@perches.com>
+To: Lance Ortiz <lance.ortiz@hp.com>
+Cc: bhelgaas@google.com, lance_ortiz@hotmail.com, jiang.liu@huawei.com,
+        tony.luck@intel.com, bp@alien8.de, rostedt@goodmis.org,
+        mchehab@redhat.com, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 04 Dec 2012 09:39:23 -0800
+In-Reply-To: <20121204170442.31397.21190.stgit@grignak.americas.hpqcorp.net>
+References: <20121204170429.31397.50068.stgit@grignak.americas.hpqcorp.net>
+	 <20121204170442.31397.21190.stgit@grignak.americas.hpqcorp.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 4, 2012 at 12:11 AM, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
-> Hi Bryan,
->
-> On 12/03/2012 07:32 PM, Bryan Wu wrote:
->> On Mon, Dec 3, 2012 at 6:13 AM, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
->> Actually, I'm waiting for some feedback from DT maintainers about this
->> new binding. But it looks find to me.
->
-> Would it be possible to have the first (or even better the first two) patch
-> going for 3.8 and we can leave the DT bindings for 3.9?
-> I would like to clean up, fix some of the OMAP related board files for 3.9
-> which would need the patches for the leds-pwm driver itself.
->
+On Tue, 2012-12-04 at 10:04 -0700, Lance Ortiz wrote:
+> These changes make cper_print_aer more consistent with aer_print_error
+> which is called in the AER interrupt case. The string in the variable
+> 'prefix' is printed at the beginning of each print statement in
+> cper_print_aer(). The prefix is a string containing the driver name
+> and the device's slot location.  From the callers the value of prefix
+> is never assigned and is NULL, so when cper_print_aer prints data the
+> initial string does not get printed.  This string is important because
+> it identifies the device that the error is on.
 
-What's best thing I can do is I can merge these patchset into my
--devel branch, after 3.8 merge window close I will move this -devel
-branch to my for-next branch for 3.9 merge window.
+Hi again Lance.
 
-Does this make sense to you?
+> diff --git a/drivers/pci/pcie/aer/aerdrv_errprint.c b/drivers/pci/pcie/aer/aerdrv_errprint.c
+[]
+> @@ -228,9 +228,14 @@ void cper_print_aer(struct pci_dev *dev, int cper_severity,
+>  	int aer_severity, layer, agent, status_strs_size, tlp_header_valid = 0;
+>  	u32 status, mask;
+>  	const char **status_strs;
+> -	char *prefix = NULL;
+> +	char prefix[44];
+>  
+>  	aer_severity = cper_severity_to_aer(cper_severity);
+> +	snprintf(prefix, sizeof(prefix), "%s%s %s: ",
+> +		(aer_severity == AER_CORRECTABLE) ?
+> +		KERN_WARNING : KERN_ERR,
+> +		dev_driver_string(&dev->dev), dev_name(&dev->dev));
+> +
+>  	if (aer_severity == AER_CORRECTABLE) {
+>  		status = aer->cor_status;
+>  		mask = aer->cor_mask;
 
-Thanks,
--Bryan
+Perhaps this would be better just using dev_printk
+instead of snprintf into a prefix with printk to
+emulate dev_printk.
+
+Also, perhaps KERN_NOTICE is preferable to KERN_WARNING
+in the CORRECTABLE case.
+
+Maybe something like:
+
+	const char *level = KERN_ERR;
+	if (aer_severity == AER_CORRECTABLE)
+		level = KERN_NOTICE;
+
+	...
+
+	dev_printk(level, &dev->dev, etc...);
+
+Maybe do this after this series of patches is accepted.
+Enough with the revisions for awhile...
+
