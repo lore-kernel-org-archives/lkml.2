@@ -1,57 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752359Ab2LDQWo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 11:22:44 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:63628 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988Ab2LDQWn (ORCPT
+	id S1754621Ab2LDQYP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 11:24:15 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:35257 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753413Ab2LDQYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 11:22:43 -0500
-Message-ID: <50BE234E.7000603@suse.cz>
-Date: Tue, 04 Dec 2012 17:22:38 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
+	Tue, 4 Dec 2012 11:24:14 -0500
+Date: Tue, 4 Dec 2012 08:24:08 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Xiaotian Feng <xtfeng@gmail.com>,
+        Neela Syam Kolli <megaraidlinux@lsi.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org
+Subject: [GIT PULL] workqueue fixes for 3.7-rc8
+Message-ID: <20121204162408.GH3885@mtj.dyndns.org>
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Zdenek Kabelac <zkabelac@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, George Spelvin <linux@horizon.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        Thorsten Leemhuis <fedora@leemhuis.info>,
-        Tomas Racek <tracek@redhat.com>, Jan Kara <jack@suse.cz>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Josh Boyer <jwboyer@gmail.com>,
-        Valdis.Kletnieks@vt.edu, Bruno Wolff III <bruno@wolff.to>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: kswapd craziness in 3.7
-References: <1354049315-12874-1-git-send-email-hannes@cmpxchg.org> <20121128094511.GS8218@suse.de> <50BCC3E3.40804@redhat.com> <20121203191858.GY24381@cmpxchg.org> <50BDBCD9.9060509@redhat.com> <50BDBF1D.60105@suse.cz> <20121204161131.GB24381@cmpxchg.org>
-In-Reply-To: <20121204161131.GB24381@cmpxchg.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2012 05:11 PM, Johannes Weiner wrote:
->>>> Any chance you could retry with this patch on top?
->>
->> It does not apply to -next :/. Should I try anything else?
-> 
-> The COMPACTION_BUILD changed to IS_ENABLED(CONFIG_COMPACTION), below
-> is a -next patch.  I hope you don't run into other problems that come
-> out of -next craziness, because Linus is kinda waiting for this to be
-> resolved to release 3.8.  If you've always tested against -next so far
-> and it worked otherwise, don't change the environment now, please.  If
-> you just started, it would make more sense to test based on 3.7-rc8.
+Hello, Linus.
 
-I reported the issue as soon as it appeared in -next for the first time
-on Oct 12. Since then I'm constantly hitting the issue (well, there were
-more than one I suppose, but not all of them were fixed by now) until
-now. I run only -next...
+So, safe fixes my ass.  8852aac ("workqueue: mod_delayed_work_on()
+shouldn't queue timer on 0 delay") had the side-effect of performing
+delayed_work sanity checks even when @delay is 0, which should be fine
+for any sane use cases.
 
-Going to apply the patch now.
+Unfortunately, megaraid was being overly ingenious.  It seemingly
+wanted to use cancel_delayed_work_sync() before cancel_work_sync() was
+introduced, but didn't want to waste the space for full delayed_work
+as it was only gonna use 0 @delay.  So, it only allocated space for
+struct work_struct and then casted it to struct delayed_work and
+passed it into delayed_work functions - truly awesome engineering
+tradeoff to save some bytes.
 
--- 
-js
-suse labs
+Xiaotian fixed it by making megraid allocate full delayed_work for
+now.  It should be converted to use work_struct and cancel_work_sync()
+but I think we better do that after 3.7.
+
+I added another commit to change BUG_ON()s in __queue_delayed_work()
+to WARN_ON_ONCE()s so that the kernel doens't crash even if there are
+more such abuses.
+
+Please pull from the following branch to receive the two patches.
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.7-fixes
+
+----------------------------------------------------------------
+Tejun Heo (1):
+      workqueue: convert BUG_ON()s in __queue_delayed_work() to WARN_ON_ONCE()s
+
+Xiaotian Feng (1):
+      megaraid: fix BUG_ON() from incorrect use of delayed work
+
+ drivers/scsi/megaraid/megaraid_sas.h      |  2 +-
+ drivers/scsi/megaraid/megaraid_sas_base.c | 14 ++++++--------
+ kernel/workqueue.c                        |  4 ++--
+ 3 files changed, 9 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/scsi/megaraid/megaraid_sas.h b/drivers/scsi/megaraid/megaraid_sas.h
+index 16b7a72..3b2365c 100644
+--- a/drivers/scsi/megaraid/megaraid_sas.h
++++ b/drivers/scsi/megaraid/megaraid_sas.h
+@@ -1276,7 +1276,7 @@ struct megasas_evt_detail {
+ } __attribute__ ((packed));
+ 
+ struct megasas_aen_event {
+-	struct work_struct hotplug_work;
++	struct delayed_work hotplug_work;
+ 	struct megasas_instance *instance;
+ };
+ 
+diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c b/drivers/scsi/megaraid/megaraid_sas_base.c
+index d2c5366..e4f2baa 100644
+--- a/drivers/scsi/megaraid/megaraid_sas_base.c
++++ b/drivers/scsi/megaraid/megaraid_sas_base.c
+@@ -2060,9 +2060,9 @@ megasas_service_aen(struct megasas_instance *instance, struct megasas_cmd *cmd)
+ 		} else {
+ 			ev->instance = instance;
+ 			instance->ev = ev;
+-			INIT_WORK(&ev->hotplug_work, megasas_aen_polling);
+-			schedule_delayed_work(
+-				(struct delayed_work *)&ev->hotplug_work, 0);
++			INIT_DELAYED_WORK(&ev->hotplug_work,
++					  megasas_aen_polling);
++			schedule_delayed_work(&ev->hotplug_work, 0);
+ 		}
+ 	}
+ }
+@@ -4352,8 +4352,7 @@ megasas_suspend(struct pci_dev *pdev, pm_message_t state)
+ 	/* cancel the delayed work if this work still in queue */
+ 	if (instance->ev != NULL) {
+ 		struct megasas_aen_event *ev = instance->ev;
+-		cancel_delayed_work_sync(
+-			(struct delayed_work *)&ev->hotplug_work);
++		cancel_delayed_work_sync(&ev->hotplug_work);
+ 		instance->ev = NULL;
+ 	}
+ 
+@@ -4545,8 +4544,7 @@ static void __devexit megasas_detach_one(struct pci_dev *pdev)
+ 	/* cancel the delayed work if this work still in queue*/
+ 	if (instance->ev != NULL) {
+ 		struct megasas_aen_event *ev = instance->ev;
+-		cancel_delayed_work_sync(
+-			(struct delayed_work *)&ev->hotplug_work);
++		cancel_delayed_work_sync(&ev->hotplug_work);
+ 		instance->ev = NULL;
+ 	}
+ 
+@@ -5190,7 +5188,7 @@ static void
+ megasas_aen_polling(struct work_struct *work)
+ {
+ 	struct megasas_aen_event *ev =
+-		container_of(work, struct megasas_aen_event, hotplug_work);
++		container_of(work, struct megasas_aen_event, hotplug_work.work);
+ 	struct megasas_instance *instance = ev->instance;
+ 	union megasas_evt_class_locale class_locale;
+ 	struct  Scsi_Host *host;
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 084aa47..1dae900 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1361,8 +1361,8 @@ static void __queue_delayed_work(int cpu, struct workqueue_struct *wq,
+ 
+ 	WARN_ON_ONCE(timer->function != delayed_work_timer_fn ||
+ 		     timer->data != (unsigned long)dwork);
+-	BUG_ON(timer_pending(timer));
+-	BUG_ON(!list_empty(&work->entry));
++	WARN_ON_ONCE(timer_pending(timer));
++	WARN_ON_ONCE(!list_empty(&work->entry));
+ 
+ 	/*
+ 	 * If @delay is 0, queue @dwork->work immediately.  This is for
