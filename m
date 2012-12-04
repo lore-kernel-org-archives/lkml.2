@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977Ab2LDNu7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 08:50:59 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:56574 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752005Ab2LDNuz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 08:50:55 -0500
-Date: Tue, 4 Dec 2012 10:50:49 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Namhyung Kim <namhyung.kim@lge.com>
-Subject: Re: [PATCH 12/18] perf ui/hist: Add support for event group view
-Message-ID: <20121204135049.GC3159@ghostprotocols.net>
-References: <1354171126-14387-1-git-send-email-namhyung@kernel.org>
- <1354171126-14387-14-git-send-email-namhyung@kernel.org>
- <20121130132943.GC1080@krava.brq.redhat.com>
- <20121130135215.GG1957@ghostprotocols.net>
- <CAM9d7cgZMfbYOdcELNXdGPT9tOzbKLZbNWjZ8g3Sug6_88pGnA@mail.gmail.com>
+	id S1753312Ab2LDNtl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 08:49:41 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:35815 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751737Ab2LDNtg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 08:49:36 -0500
+Subject: [PATCH 1/6] nfsd: pass net to nfsd_init_socks()
+To: bfields@fieldses.org
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
+        linux-kernel@vger.kernel.org, devel@openvz.org
+Date: Tue, 04 Dec 2012 16:50:06 +0300
+Message-ID: <20121204135006.24504.77394.stgit@localhost.localdomain>
+In-Reply-To: <20121204134920.24504.95261.stgit@localhost.localdomain>
+References: <20121204134920.24504.95261.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAM9d7cgZMfbYOdcELNXdGPT9tOzbKLZbNWjZ8g3Sug6_88pGnA@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Dec 04, 2012 at 06:16:59PM +0900, Namhyung Kim escreveu:
-> On Fri, Nov 30, 2012 at 10:52 PM, Arnaldo Carvalho de Melo wrote:
+Precursor patch. Hard-coded "init_net" will be replaced by proper one in
+future.
 
-> Ah, I missed your point.  Just got it now, will try this approach.  So
-> you want to see no "0.00%" for a dummy entry, right?
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+---
+ fs/nfsd/nfssvc.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-That wasn't the point, and perhaps printing 0.00% pollutes the screen
-needlessly or may be a help in seeing the columns more clearly, no
-strong opinion at this point, please experiment.
+diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
+index 9beace6..9fd8496 100644
+--- a/fs/nfsd/nfssvc.c
++++ b/fs/nfsd/nfssvc.c
+@@ -182,18 +182,18 @@ int nfsd_nrthreads(void)
+ 	return rv;
+ }
+ 
+-static int nfsd_init_socks(void)
++static int nfsd_init_socks(struct net *net)
+ {
+ 	int error;
+ 	if (!list_empty(&nfsd_serv->sv_permsocks))
+ 		return 0;
+ 
+-	error = svc_create_xprt(nfsd_serv, "udp", &init_net, PF_INET, NFS_PORT,
++	error = svc_create_xprt(nfsd_serv, "udp", net, PF_INET, NFS_PORT,
+ 					SVC_SOCK_DEFAULTS);
+ 	if (error < 0)
+ 		return error;
+ 
+-	error = svc_create_xprt(nfsd_serv, "tcp", &init_net, PF_INET, NFS_PORT,
++	error = svc_create_xprt(nfsd_serv, "tcp", net, PF_INET, NFS_PORT,
+ 					SVC_SOCK_DEFAULTS);
+ 	if (error < 0)
+ 		return error;
+@@ -218,7 +218,7 @@ static int nfsd_startup(int nrservs)
+ 	ret = nfsd_racache_init(2*nrservs);
+ 	if (ret)
+ 		return ret;
+-	ret = nfsd_init_socks();
++	ret = nfsd_init_socks(net);
+ 	if (ret)
+ 		goto out_racache;
+ 	ret = lockd_up(net);
 
-The point was that there seems to be no need for the temporary array.
-
-- Arnaldo
