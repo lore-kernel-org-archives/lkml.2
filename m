@@ -1,131 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754724Ab2LDOrG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 09:47:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10114 "EHLO mx1.redhat.com"
+	id S1754743Ab2LDOrU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 09:47:20 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:35476 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751764Ab2LDOrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 09:47:03 -0500
-From: Jason Wang <jasowang@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, krkumar2@in.ibm.com, kvm@vger.kernel.org,
-        bhutchings@solarflare.com, jwhan@filewood.snu.ac.kr, shiyer@redhat.com
-Subject: Re: [PATCH net-next 3/3] virtio-net: change the number of queues through ethtool
-Date: Tue, 04 Dec 2012 22:46:47 +0800
-Message-ID: <8635859.yLm7QNO6or@jason-thinkpad-t430s>
-User-Agent: KMail/4.9.2 (Linux/3.7.0-rc6+; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <20121204134959.GG7499@redhat.com>
-References: <1354619278-35702-1-git-send-email-jasowang@redhat.com> <1354619278-35702-4-git-send-email-jasowang@redhat.com> <20121204134959.GG7499@redhat.com>
+	id S1751764Ab2LDOrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 09:47:16 -0500
+Date: Tue, 4 Dec 2012 06:28:08 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Li Zhong <zhong@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        linux-next list <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, sasha.levin@oracle.com,
+        avi@redhat.com
+Subject: Re: [RFC PATCH v3] Add rcu user eqs exception hooks for async page
+ fault
+Message-ID: <20121204142808.GQ2605@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1354090704.3054.13.camel@ThinkPad-T5421.cn.ibm.com>
+ <CAFTL4hxPSp1fs4=2g0yFs0d5nFisfUsfDAA9bHWcu+-+tO_ySw@mail.gmail.com>
+ <20121128135345.GG928@redhat.com>
+ <CAFTL4hxoFBLNQCABBpJRBgV-r-Mg5GSq7HbPfWJRraSvtviz4A@mail.gmail.com>
+ <20121129110717.GA9711@redhat.com>
+ <CAFTL4hyHW3uJHvzxz1o4agtGbicFAP1DuUsifbOrp1Q3ODRBMA@mail.gmail.com>
+ <1354267121.2552.65.camel@ThinkPad-T5421.cn.ibm.com>
+ <20121203095708.GO8731@redhat.com>
+ <1354588562.2649.11.camel@ThinkPad-T5421.cn.ibm.com>
+ <20121204130251.GJ19514@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121204130251.GJ19514@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12120414-7182-0000-0000-00000382C980
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, December 04, 2012 03:49:59 PM Michael S. Tsirkin wrote:
-> On Tue, Dec 04, 2012 at 07:07:58PM +0800, Jason Wang wrote:
-> > This patch implement the ethtool_{set|get}_channels method of ethool to
-> > allow user to change the number of queues dymaically when the device is
-> > running. This would let the user to configure it on demand.
+On Tue, Dec 04, 2012 at 03:02:51PM +0200, Gleb Natapov wrote:
+> On Tue, Dec 04, 2012 at 10:36:02AM +0800, Li Zhong wrote:
+> > On Mon, 2012-12-03 at 11:57 +0200, Gleb Natapov wrote:
+> > > Please regenerate the patch against
+> > > git://git.kernel.org/pub/scm/virt/kvm/kvm.git queue.
 > > 
-> > Signed-off-by: Jason Wang <jasowang@redhat.com>
-> > ---
+> > Done.
 > > 
-> >  drivers/net/virtio_net.c |   44
-> >  ++++++++++++++++++++++++++++++++++++++++++++ 1 files changed, 44
-> >  insertions(+), 0 deletions(-)
+> > By the way, the included file <asm/rcu.h> is replaced with
+> > <asm/context_tracking.h> in latest next tree(91d1aa43 from rcu tree). 
 > > 
-> > diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> > index 912f5b2..b9f9887 100644
-> > --- a/drivers/net/virtio_net.c
-> > +++ b/drivers/net/virtio_net.c
-> > @@ -1589,10 +1589,54 @@ static struct virtio_driver virtio_net_driver = {
+> > Seems if they are merged, there won't be conflicts, but we need change
+> > the including file name after that. I don't know how to handle this kind
+> > of thing... 
 > > 
-> >  #endif
-> >  };
-> > 
-> > +/* TODO: Eliminate OOO packets during switching */
-> > +static int virtnet_set_channels(struct net_device *dev,
-> > +				struct ethtool_channels *channels)
-> > +{
-> > +	struct virtnet_info *vi = netdev_priv(dev);
-> > +	u16 queue_pairs = channels->combined_count;
-> > +	u16 old_queue_pairs = vi->curr_queue_pairs;
-> > +
-> > +	/* We don't support separate rx/tx channels.
-> > +	 * We don't allow setting 'other' channels.
-> > +	 */
-> > +	if (channels->rx_count || channels->tx_count || channels->other_count)
-> > +		return -EINVAL;
-> > +
-> > +	if (queue_pairs > vi->max_queue_pairs)
-> > +		return -EINVAL;
-> > +
-> > +	vi->curr_queue_pairs = queue_pairs;
-> > +	if (virtnet_set_queues(vi) == 0) {
-> > +		netif_set_real_num_tx_queues(dev, vi->curr_queue_pairs);
-> > +		netif_set_real_num_rx_queues(dev, vi->curr_queue_pairs);
-> 
-> Just use queue_pairs - it's shorter.
+> Either merge rcu/next into kvm/next before sending to Linus, or waiting
+> for -rc1 and ask Linus to pull this one patch separately.
 
-Ok.
-> 
-> > +
-> > +		virtnet_set_affinity(vi, true);
-> > +	} else
-> > +		vi->curr_queue_pairs = old_queue_pairs;
-> 
-> Should be
-> 	ret = virtnet_set_queues(vi);
-> 	if (ret) {
-> 		vi->curr_queue_pairs = old_queue_pairs;
-> 		return ret;
-> 	}
-> otherwise we loose error reporting.
-> 
+I just sent a pull request for 91d1aa43 to -tip, so hopefully things will
+resolve reasonably.
 
-Right.
-> Also it's better if virtnet_set_queues
-> gets queue_pairs as parameter and set curr_queue_pairs
-> on success.
+							Thanx, Paul
 
-True, looks simpler than current method, will do it in next version.
-> 
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +static void virtnet_get_channels(struct net_device *dev,
-> > +				 struct ethtool_channels *channels)
-> > +{
-> > +	struct virtnet_info *vi = netdev_priv(dev);
-> > +
-> > +	channels->combined_count = vi->curr_queue_pairs;
-> > +	channels->max_combined = vi->max_queue_pairs;
-> > +	channels->max_other = 0;
-> > +	channels->rx_count = 0;
-> > +	channels->tx_count = 0;
-> > +	channels->other_count = 0;
-> > +}
-> > +
+> > Thanks, Zhong
 > > 
-> >  static const struct ethtool_ops virtnet_ethtool_ops = {
-> >  
-> >  	.get_drvinfo = virtnet_get_drvinfo,
-> >  	.get_link = ethtool_op_get_link,
-> >  	.get_ringparam = virtnet_get_ringparam,
+> > > 
+> > > On Fri, Nov 30, 2012 at 05:18:41PM +0800, Li Zhong wrote:
+> > > > This patch adds user eqs exception hooks for async page fault page not
+> > > > present code path, to exit the user eqs and re-enter it as necessary. 
+> > > > 
+> > > > Async page fault is different from other exceptions that it may be
+> > > > triggered from idle process, so we still need rcu_irq_enter() and
+> > > > rcu_irq_exit() to exit cpu idle eqs when needed, to protect the code
+> > > > that needs use rcu.
+> > > > 
+> > > > As Frederic pointed out it would be safest and simplest to protect the
+> > > > whole kvm_async_pf_task_wait(). Otherwise, "we need to check all the
+> > > > code there deeply for potential RCU uses and ensure it will never be
+> > > > extended later to use RCU.".
+> > > > 
+> > > > However, We'd better re-enter the cpu idle eqs if we get the exception
+> > > > in cpu idle eqs, by calling rcu_irq_exit() before native_safe_halt(). 
+> > > > 
+> > > > So the patch does what Frederic suggested for rcu_irq_*() API usage
+> > > > here, except that I moved the rcu_irq_*() pair originally in
+> > > > do_async_page_fault() into kvm_async_pf_task_wait(). 
+> > > > 
+> > > > That's because, I think it's better to have rcu_irq_*() pairs to be in
+> > > > one function ( rcu_irq_exit() after rcu_irq_enter() ), especially here,
+> > > > kvm_async_pf_task_wait() has other callers, which might cause
+> > > > rcu_irq_exit() be called without a matching rcu_irq_enter() before it,
+> > > > which is illegal if the cpu happens to be in rcu idle state. 
+> > > > 
+> > > > Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+> > > > ---
+> > > >  arch/x86/kernel/kvm.c | 12 ++++++++++--
+> > > >  1 file changed, 10 insertions(+), 2 deletions(-)
+> > > > 
+> > > > diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+> > > > index 4180a87..342b00b 100644
+> > > > --- a/arch/x86/kernel/kvm.c
+> > > > +++ b/arch/x86/kernel/kvm.c
+> > > > @@ -42,6 +42,7 @@
+> > > >  #include <asm/apic.h>
+> > > >  #include <asm/apicdef.h>
+> > > >  #include <asm/hypervisor.h>
+> > > > +#include <asm/rcu.h>
+> > > >  
+> > > >  static int kvmapf = 1;
+> > > >  
+> > > > @@ -112,6 +113,8 @@ void kvm_async_pf_task_wait(u32 token)
+> > > >  	DEFINE_WAIT(wait);
+> > > >  	int cpu, idle;
+> > > >  
+> > > > +	rcu_irq_enter();
+> > > > +
+> > > >  	cpu = get_cpu();
+> > > >  	idle = idle_cpu(cpu);
+> > > >  	put_cpu();
+> > > > @@ -123,6 +126,8 @@ void kvm_async_pf_task_wait(u32 token)
+> > > >  		hlist_del(&e->link);
+> > > >  		kfree(e);
+> > > >  		spin_unlock(&b->lock);
+> > > > +
+> > > > +		rcu_irq_exit();
+> > > >  		return;
+> > > >  	}
+> > > >  
+> > > > @@ -147,13 +152,16 @@ void kvm_async_pf_task_wait(u32 token)
+> > > >  			/*
+> > > >  			 * We cannot reschedule. So halt.
+> > > >  			 */
+> > > > +			rcu_irq_exit();
+> > > >  			native_safe_halt();
+> > > > +			rcu_irq_enter();
+> > > >  			local_irq_disable();
+> > > >  		}
+> > > >  	}
+> > > >  	if (!n.halted)
+> > > >  		finish_wait(&n.wq, &wait);
+> > > >  
+> > > > +	rcu_irq_exit();
+> > > >  	return;
+> > > >  }
+> > > >  EXPORT_SYMBOL_GPL(kvm_async_pf_task_wait);
+> > > > @@ -247,10 +255,10 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
+> > > >  		break;
+> > > >  	case KVM_PV_REASON_PAGE_NOT_PRESENT:
+> > > >  		/* page is swapped out by the host. */
+> > > > -		rcu_irq_enter();
+> > > > +		exception_enter(regs);
+> > > >  		exit_idle();
+> > > >  		kvm_async_pf_task_wait((u32)read_cr2());
+> > > > -		rcu_irq_exit();
+> > > > +		exception_exit(regs);
+> > > >  		break;
+> > > >  	case KVM_PV_REASON_PAGE_READY:
+> > > >  		rcu_irq_enter();
+> > > > -- 
+> > > > 1.7.11.4
+> > > 
+> > > --
+> > > 			Gleb.
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > > the body of a message to majordomo@vger.kernel.org
+> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > > Please read the FAQ at  http://www.tux.org/lkml/
+> > > 
 > > 
-> > +	.set_channels = virtnet_set_channels,
-> > +	.get_channels = virtnet_get_channels,
-> > 
-> >  };
-> >  
-> >  static int __init init(void)
 > 
 > --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 			Gleb.
+> 
+
