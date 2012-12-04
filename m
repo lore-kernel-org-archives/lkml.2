@@ -1,176 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743Ab2LDOrU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 09:47:20 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:35476 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751764Ab2LDOrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 09:47:16 -0500
-Date: Tue, 4 Dec 2012 06:28:08 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        linux-next list <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, sasha.levin@oracle.com,
-        avi@redhat.com
-Subject: Re: [RFC PATCH v3] Add rcu user eqs exception hooks for async page
- fault
-Message-ID: <20121204142808.GQ2605@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1354090704.3054.13.camel@ThinkPad-T5421.cn.ibm.com>
- <CAFTL4hxPSp1fs4=2g0yFs0d5nFisfUsfDAA9bHWcu+-+tO_ySw@mail.gmail.com>
- <20121128135345.GG928@redhat.com>
- <CAFTL4hxoFBLNQCABBpJRBgV-r-Mg5GSq7HbPfWJRraSvtviz4A@mail.gmail.com>
- <20121129110717.GA9711@redhat.com>
- <CAFTL4hyHW3uJHvzxz1o4agtGbicFAP1DuUsifbOrp1Q3ODRBMA@mail.gmail.com>
- <1354267121.2552.65.camel@ThinkPad-T5421.cn.ibm.com>
- <20121203095708.GO8731@redhat.com>
- <1354588562.2649.11.camel@ThinkPad-T5421.cn.ibm.com>
- <20121204130251.GJ19514@redhat.com>
+	id S1753222Ab2LDOsZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 09:48:25 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:33273 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751608Ab2LDOsY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 09:48:24 -0500
+Date: Tue, 4 Dec 2012 06:48:20 -0800
+From: Michel Lespinasse <walken@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, Rik van Riel <riel@redhat.com>,
+        Hugh Dickins <hughd@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: protect against concurrent vma expansion
+Message-ID: <20121204144820.GA13916@google.com>
+References: <1354344987-28203-1-git-send-email-walken@google.com>
+ <20121203150110.39c204ff.akpm@linux-foundation.org>
+ <CANN689FfWVV4MyTUPKZQgQAWW9Dfdw9f0fqx98kc+USKj9g7TA@mail.gmail.com>
+ <20121203164322.b967d461.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121204130251.GJ19514@redhat.com>
+In-Reply-To: <20121203164322.b967d461.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12120414-7182-0000-0000-00000382C980
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 04, 2012 at 03:02:51PM +0200, Gleb Natapov wrote:
-> On Tue, Dec 04, 2012 at 10:36:02AM +0800, Li Zhong wrote:
-> > On Mon, 2012-12-03 at 11:57 +0200, Gleb Natapov wrote:
-> > > Please regenerate the patch against
-> > > git://git.kernel.org/pub/scm/virt/kvm/kvm.git queue.
-> > 
-> > Done.
-> > 
-> > By the way, the included file <asm/rcu.h> is replaced with
-> > <asm/context_tracking.h> in latest next tree(91d1aa43 from rcu tree). 
-> > 
-> > Seems if they are merged, there won't be conflicts, but we need change
-> > the including file name after that. I don't know how to handle this kind
-> > of thing... 
-> > 
-> Either merge rcu/next into kvm/next before sending to Linus, or waiting
-> for -rc1 and ask Linus to pull this one patch separately.
+expand_stack() runs with a shared mmap_sem lock. Because of this, there
+could be multiple concurrent stack expansions in the same mm, which may
+cause problems in the vma gap update code.
 
-I just sent a pull request for 91d1aa43 to -tip, so hopefully things will
-resolve reasonably.
+I propose to solve this by taking the mm->page_table_lock around such vma
+expansions, in order to avoid the concurrency issue. We only have to worry
+about concurrent expand_stack() calls here, since we hold a shared mmap_sem
+lock and all vma modificaitons other than expand_stack() are done under
+an exclusive mmap_sem lock.
 
-							Thanx, Paul
+I previously tried to achieve the same effect by making sure all
+growable vmas in a given mm would share the same anon_vma, which we
+already lock here. However this turned out to be difficult - all of the
+schemes I tried for refcounting the growable anon_vma and clearing
+turned out ugly. So, I'm now proposing only the minimal fix.
 
-> > Thanks, Zhong
-> > 
-> > > 
-> > > On Fri, Nov 30, 2012 at 05:18:41PM +0800, Li Zhong wrote:
-> > > > This patch adds user eqs exception hooks for async page fault page not
-> > > > present code path, to exit the user eqs and re-enter it as necessary. 
-> > > > 
-> > > > Async page fault is different from other exceptions that it may be
-> > > > triggered from idle process, so we still need rcu_irq_enter() and
-> > > > rcu_irq_exit() to exit cpu idle eqs when needed, to protect the code
-> > > > that needs use rcu.
-> > > > 
-> > > > As Frederic pointed out it would be safest and simplest to protect the
-> > > > whole kvm_async_pf_task_wait(). Otherwise, "we need to check all the
-> > > > code there deeply for potential RCU uses and ensure it will never be
-> > > > extended later to use RCU.".
-> > > > 
-> > > > However, We'd better re-enter the cpu idle eqs if we get the exception
-> > > > in cpu idle eqs, by calling rcu_irq_exit() before native_safe_halt(). 
-> > > > 
-> > > > So the patch does what Frederic suggested for rcu_irq_*() API usage
-> > > > here, except that I moved the rcu_irq_*() pair originally in
-> > > > do_async_page_fault() into kvm_async_pf_task_wait(). 
-> > > > 
-> > > > That's because, I think it's better to have rcu_irq_*() pairs to be in
-> > > > one function ( rcu_irq_exit() after rcu_irq_enter() ), especially here,
-> > > > kvm_async_pf_task_wait() has other callers, which might cause
-> > > > rcu_irq_exit() be called without a matching rcu_irq_enter() before it,
-> > > > which is illegal if the cpu happens to be in rcu idle state. 
-> > > > 
-> > > > Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
-> > > > ---
-> > > >  arch/x86/kernel/kvm.c | 12 ++++++++++--
-> > > >  1 file changed, 10 insertions(+), 2 deletions(-)
-> > > > 
-> > > > diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-> > > > index 4180a87..342b00b 100644
-> > > > --- a/arch/x86/kernel/kvm.c
-> > > > +++ b/arch/x86/kernel/kvm.c
-> > > > @@ -42,6 +42,7 @@
-> > > >  #include <asm/apic.h>
-> > > >  #include <asm/apicdef.h>
-> > > >  #include <asm/hypervisor.h>
-> > > > +#include <asm/rcu.h>
-> > > >  
-> > > >  static int kvmapf = 1;
-> > > >  
-> > > > @@ -112,6 +113,8 @@ void kvm_async_pf_task_wait(u32 token)
-> > > >  	DEFINE_WAIT(wait);
-> > > >  	int cpu, idle;
-> > > >  
-> > > > +	rcu_irq_enter();
-> > > > +
-> > > >  	cpu = get_cpu();
-> > > >  	idle = idle_cpu(cpu);
-> > > >  	put_cpu();
-> > > > @@ -123,6 +126,8 @@ void kvm_async_pf_task_wait(u32 token)
-> > > >  		hlist_del(&e->link);
-> > > >  		kfree(e);
-> > > >  		spin_unlock(&b->lock);
-> > > > +
-> > > > +		rcu_irq_exit();
-> > > >  		return;
-> > > >  	}
-> > > >  
-> > > > @@ -147,13 +152,16 @@ void kvm_async_pf_task_wait(u32 token)
-> > > >  			/*
-> > > >  			 * We cannot reschedule. So halt.
-> > > >  			 */
-> > > > +			rcu_irq_exit();
-> > > >  			native_safe_halt();
-> > > > +			rcu_irq_enter();
-> > > >  			local_irq_disable();
-> > > >  		}
-> > > >  	}
-> > > >  	if (!n.halted)
-> > > >  		finish_wait(&n.wq, &wait);
-> > > >  
-> > > > +	rcu_irq_exit();
-> > > >  	return;
-> > > >  }
-> > > >  EXPORT_SYMBOL_GPL(kvm_async_pf_task_wait);
-> > > > @@ -247,10 +255,10 @@ do_async_page_fault(struct pt_regs *regs, unsigned long error_code)
-> > > >  		break;
-> > > >  	case KVM_PV_REASON_PAGE_NOT_PRESENT:
-> > > >  		/* page is swapped out by the host. */
-> > > > -		rcu_irq_enter();
-> > > > +		exception_enter(regs);
-> > > >  		exit_idle();
-> > > >  		kvm_async_pf_task_wait((u32)read_cr2());
-> > > > -		rcu_irq_exit();
-> > > > +		exception_exit(regs);
-> > > >  		break;
-> > > >  	case KVM_PV_REASON_PAGE_READY:
-> > > >  		rcu_irq_enter();
-> > > > -- 
-> > > > 1.7.11.4
-> > > 
-> > > --
-> > > 			Gleb.
-> > > --
-> > > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > > the body of a message to majordomo@vger.kernel.org
-> > > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > > Please read the FAQ at  http://www.tux.org/lkml/
-> > > 
-> > 
-> 
-> --
-> 			Gleb.
-> 
+The overhead of taking the page table lock during stack expansion is
+expected to be small: glibc doesn't use expandable stacks for the
+threads it creates, so having multiple growable stacks is actually
+uncommon and we don't expect the page table lock to get bounced
+between threads.
 
+Signed-off-by: Michel Lespinasse <walken@google.com>
+
+---
+ mm/mmap.c |   28 ++++++++++++++++++++++++++++
+ 1 files changed, 28 insertions(+), 0 deletions(-)
+
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 9ed3a06242a0..2b7d9e78a569 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -2069,6 +2069,18 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
+ 		if (vma->vm_pgoff + (size >> PAGE_SHIFT) >= vma->vm_pgoff) {
+ 			error = acct_stack_growth(vma, size, grow);
+ 			if (!error) {
++				/*
++				 * vma_gap_update() doesn't support concurrent
++				 * updates, but we only hold a shared mmap_sem
++				 * lock here, so we need to protect against
++				 * concurrent vma expansions.
++				 * vma_lock_anon_vma() doesn't help here, as
++				 * we don't guarantee that all growable vmas
++				 * in a mm share the same root anon vma.
++				 * So, we reuse mm->page_table_lock to guard
++				 * against concurrent vma expansions.
++				 */
++				spin_lock(&vma->vm_mm->page_table_lock);
+ 				anon_vma_interval_tree_pre_update_vma(vma);
+ 				vma->vm_end = address;
+ 				anon_vma_interval_tree_post_update_vma(vma);
+@@ -2076,6 +2088,8 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
+ 					vma_gap_update(vma->vm_next);
+ 				else
+ 					vma->vm_mm->highest_vm_end = address;
++				spin_unlock(&vma->vm_mm->page_table_lock);
++
+ 				perf_event_mmap(vma);
+ 			}
+ 		}
+@@ -2126,11 +2140,25 @@ int expand_downwards(struct vm_area_struct *vma,
+ 		if (grow <= vma->vm_pgoff) {
+ 			error = acct_stack_growth(vma, size, grow);
+ 			if (!error) {
++				/*
++				 * vma_gap_update() doesn't support concurrent
++				 * updates, but we only hold a shared mmap_sem
++				 * lock here, so we need to protect against
++				 * concurrent vma expansions.
++				 * vma_lock_anon_vma() doesn't help here, as
++				 * we don't guarantee that all growable vmas
++				 * in a mm share the same root anon vma.
++				 * So, we reuse mm->page_table_lock to guard
++				 * against concurrent vma expansions.
++				 */
++				spin_lock(&vma->vm_mm->page_table_lock);
+ 				anon_vma_interval_tree_pre_update_vma(vma);
+ 				vma->vm_start = address;
+ 				vma->vm_pgoff -= grow;
+ 				anon_vma_interval_tree_post_update_vma(vma);
+ 				vma_gap_update(vma);
++				spin_unlock(&vma->vm_mm->page_table_lock);
++
+ 				perf_event_mmap(vma);
+ 			}
+ 		}
+-- 
+1.7.7.3
