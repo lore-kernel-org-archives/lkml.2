@@ -1,115 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754117Ab2LDPyn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 10:54:43 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:58829 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753170Ab2LDPyk (ORCPT
+	id S1754180Ab2LDPys (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 10:54:48 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:48290 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752912Ab2LDPyk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 4 Dec 2012 10:54:40 -0500
-Date: Tue, 4 Dec 2012 07:54:34 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Xiaotian Feng <xtfeng@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Xiaotian Feng <dannyfeng@tencent.com>,
-        Neela Syam Kolli <megaraidlinux@lsi.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
-Subject: [PATCH 1/2] megaraid: fix BUG_ON() from incorrect use of delayed work
-Message-ID: <20121204155434.GE3885@mtj.dyndns.org>
-References: <1354620834-2953-1-git-send-email-xtfeng@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354620834-2953-1-git-send-email-xtfeng@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [121.7.72.46]
+In-Reply-To: <s5hehj5x3ke.wl%tiwai@suse.de>
+References: <CAMVG2st4KZOYk9qMK6FFRnJt0bCEz-0nFsQAa4zXc+sed_eVhQ@mail.gmail.com>
+	<s5hwqx69kuk.wl%tiwai@suse.de>
+	<s5ha9tv1j2a.wl%tiwai@suse.de>
+	<CAMVG2svAdYxJqj=7oA8XpYfaV6MP14Ff_DR3ZwVG0cm-FV_0sA@mail.gmail.com>
+	<s5hip8jyza2.wl%tiwai@suse.de>
+	<CAMVG2suWOAXJYWJb+QrLH2KV3CJw+Ut6fRRuy0U_F6-9oV9YyA@mail.gmail.com>
+	<s5ha9tvyuio.wl%tiwai@suse.de>
+	<CAMVG2svjXk-dbhjuiAX4SpTctNbwPkyzOa47n9vA2o1rLiWbBw@mail.gmail.com>
+	<s5h38znysbx.wl%tiwai@suse.de>
+	<CAMVG2sse7VN31gVjGuQr+7R6To8Nwk-OPwFs5Nhauxh7-J=jOg@mail.gmail.com>
+	<s5h1uf6x87a.wl%tiwai@suse.de>
+	<s5hsj7lx6on.wl%tiwai@suse.de>
+	<CAMVG2su62GRKwO=948WZq8AUxB7DTv0794m+MNGFe9ZFJxHwiQ@mail.gmail.com>
+	<s5hehj5x3ke.wl%tiwai@suse.de>
+Date: Tue, 4 Dec 2012 23:54:39 +0800
+Message-ID: <CAMVG2svTDCzyVsJT+drpGUJOpNbSOSTWnNPbSdZdFFrbcx42tA@mail.gmail.com>
+Subject: Re: switcheroo registration vs switching race...
+From: Daniel J Blueman <daniel@quora.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Seth Forshee <seth.forshee@canonical.com>, Dave Airlie <airlied@linux.ie>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From c1d390d8e6128b050f0f66b1c33d390760deb3f4 Mon Sep 17 00:00:00 2001
-From: Xiaotian Feng <xtfeng@gmail.com>
-Date: Tue, 4 Dec 2012 19:33:54 +0800
+On 4 December 2012 23:03, Takashi Iwai <tiwai@suse.de> wrote:
+> At Tue, 4 Dec 2012 22:46:47 +0800,
+> Daniel J Blueman wrote:
+>>
+>> On 4 December 2012 21:55, Takashi Iwai <tiwai@suse.de> wrote:
+>> > At Tue, 04 Dec 2012 14:23:05 +0100,
+>> > Takashi Iwai wrote:
+>> >>
+>> >> At Tue, 4 Dec 2012 20:58:55 +0800,
+>> >> Daniel J Blueman wrote:
+>> >> >
+>> >> > On 4 December 2012 01:10, Takashi Iwai <tiwai@suse.de> wrote:
+>> >> > > At Tue, 4 Dec 2012 00:50:56 +0800,
+>> >> > > Daniel J Blueman wrote:
+>> >> > >>
+>> >> > >> On 4 December 2012 00:23, Takashi Iwai <tiwai@suse.de> wrote:
+>> >> > >> > At Mon, 3 Dec 2012 23:08:28 +0800,
+>> >> > >> > Daniel J Blueman wrote:
+>> >> > >> >>
+>> >> > >> >> On 3 December 2012 22:40, Takashi Iwai <tiwai@suse.de> wrote:
+>> >> > >> >> > At Mon, 3 Dec 2012 22:25:52 +0800,
+>> >> > >> >> > Daniel J Blueman wrote:
+>> >> > >> >> >>
+>> >> > >> >> >> On 3 December 2012 19:17, Takashi Iwai <tiwai@suse.de> wrote:
+>> >> > >> >> >> > At Wed, 28 Nov 2012 09:45:39 +0100,
+>> >> > >> >> >> > Takashi Iwai wrote:
+>> >> > >> >> >> >>
+>> >> > >> >> >> >> At Wed, 28 Nov 2012 11:45:07 +0800,
+>> >> > >> >> >> >> Daniel J Blueman wrote:
+>> >> > >> >> >> >> >
+>> >> > >> >> >> >> > Hi Seth, Dave, Takashi,
+>> >> > >> >> >> >> >
+>> >> > >> >> >> >> > If I power down the unused discrete GPU before lightdm starts by
+>> >> > >> >> >> >> > fiddling with the sysfs file [1] in the upstart script, I see a race
+>> >> > >> >> >> >> > manifesting as the discrete GPU's HDA controller timing out to
+>> >> > >> >> >> >> > commands [2].
+>> >> > >> >> >> >> >
+>> >> > >> >> >> >> > Adding some debug, I see that the registered audio devices are put
+>> >> > >> >> >> >> > into D3 before the GPU is, but it turns out that the discrete (and
+>> >> > >> >> >> >> > internal) GPU's HDA controller gets registered a bit later, so the
+>> >> > >> >> >> >> > list is empty. The symptom is since the HDA driver it's talking to
+>> >> > >> >> >> >> > hardware which is now in D3.
+>> >> > >> >> >> >> >
+>> >> > >> >> >> >> > We could add a mutex to nouveau to allow us to wait for the DGPU HDA
+>> >> > >> >> >> >> > controller, but perhaps this should be solved at a higher level in the
+>> >> > >> >> >> >> > vgaswitcheroo code; what do you think?
+>> >> > >> >> >> >>
+>> >> > >> >> >> >> Maybe it's a side effect for the recent effort to fix another race in
+>> >> > >> >> >> >> the probe.  A part of them problem is that the registration is done at
+>> >> > >> >> >> >> the very last of probing.
+>> >> > >> >> >> >>
+>> >> > >> >> >> >> Instead of delaying the registration, how about the patch below?
+>> >> > >> >> >> >
+>> >> > >> >> >> > Ping.  If this really works, I'd like to queue it for 3.8 merge, at
+>> >> > >> >> >> > least...
+>> >> > >> >> >>
+>> >> > >> >> >> Ping ack; I was trying to find time to understand another race that
+>> >> > >> >> >> occurs with GPU probing after switching, but is separate from the
+>> >> > >> >> >> situation before switching, here.
+>> >> > >> >> >>
+>> >> > >> >> >> In the context of writing the switch, it looks like struct azx isn't
+>> >> > >> >> >> allocated by the time azx_vs_set_state accesses it [1,2]; racing with
+>> >> > >> >> >> azx_codec_create?
+>> >> > >> >> >
+>> >> > >> >> > It was allocated, but it wasn't assigned properly in pci drvdata.
+>> >> > >> >> >
+>> >> > >> >> > Below is the revised patch.  Just moved pci_set_drvdata() before
+>> >> > >> >> > register_vga_switcheroo().  Could you retest with it?
+>> >> > >> >>
+>> >> > >> >> Superb; this addresses the oops.
+>> >> > >> >
+>> >> > >> > OK, I'll queue it to sound tree for 3.8 kernel with Cc to stable.
+>> >> > >> >
+>> >> > >> >> ~1 second after the DGPU is put into D3, I still often see "hda-intel:
+>> >> > >> >> spurious response 0x0:0x0, last cmd=0x170500":
+>> >> > >> >> http://quora.org/2012/hda-switch-spurious.txt
+>> >> > >> >
+>> >> > >> > Hm, it's not clear who triggers these messages.  I'll try to check the
+>> >> > >> > code paths.
+>> >> > >> >
+>> >> > >> >> Presumably this implies the read of the ring-buffer pointer returned
+>> >> > >> >> 0xffffffff, so the HDA driver understands the pointer to have wrapped
+>> >> > >> >> and processes the 191 unwritten entries?
+>> >> > >> >
+>> >> > >> > Good point.  Actually there is one bug that looks obviously wrong
+>> >> > >> > (writing 32bit value to CORBWP).  Maybe it has been working just
+>> >> > >> > because writing CORBRP doesn't influence except for the reset bit.
+>> >> > >> >
+>> >> > >> > Reading CORBWP as a byte is OK, but this could be better in a word so
+>> >> > >> > that we can check 0xffff as invalid.
+>> >> > >> >
+>> >> > >> > A test patch is below.  Hopefully this improves the situation...
+>> >> > >>
+>> >> > >> I'll check this out tomorrow and also instrument the code to get a
+>> >> > >> backtrace, since there may still be an underlying race with the
+>> >> > >> previous patches:
+>> >> >
+>> >> > [...]
+>> >> >
+>> >> > > That's odd.  The Cirrus one (0000:00:1b.0) must be independent from
+>> >> > > the vga switcheroo things for Nvidia...
+>> >> > >
+>> >> > > The patch below is the revised patch of the first one.  Now the vga
+>> >> > > switcheroo registration is done before the video controller D3 check,
+>> >> > > so the race should be smaller.
+>> >> >
+>> >> > This patch improves things further of course; a major improvement over
+>> >> > without. ~15% of the time, I still get the 'spurious response'
+>> >> > messages in this callpath:
+>> >>
+>> >> A possible scenario is that the graphics went in D3 before probing
+>> >> hd-audio, and the hd-audio continues to initialize the hardware
+>> >> without knowing the graphics counterpart is disabled.
+>> >>
+>> >> There is a code check_hdmi_disabled() in hda_intel.c that checks the
+>> >> availability of the video driver, and it might be that this doesn't
+>> >> work as expected...
+>> >
+>> > I think I understand this path.  You are setting "OFF", right?
+>> > This will set the audio client OFF before can_switch() is called.
+>> > Thus it can be called even before the probing process finished.
+>> >
+>> > In short, wait_for_completion() must be put at the beginning of
+>> > azx_vs_set_state() in addition to azx_vs_can_switch().
+>> >
+>> > The revised patch is attached below.  Hopefully this sorts out all
+>> > races.
+>>
+>> This works great and instead, I get "Cannot lock devices!" sometimes
+>> (see http://quora.org/2012/hda-switch-lock.txt ).
+>
+> This means that some apps (likely udev, PulseAudio or whatever) are
+> accessing sound devices during you turn off the audio / D-GPU.  It
+> wouldn't be too big trouble, but it's still a bit risky.
 
-megaraid use INIT_WORK to declare a hotplug_work, but cast the
-hotplug_work from work_struct to delayed_work and
-schedule_delayed_work on it.  This is very dangerous, as other part of
-delayed_work might be kernel memories allocated by others.
+It looks like this prevents suspending, since the waiting process is
+sleeping uninterruptably in snd_power_wait (updated
+http://quora.org/2012/hda-switch-lock.txt with the details).
 
-With commit 8852aac ("workqueue: mod_delayed_work_on() shouldn't queue
-timer on 0 delay"), schedule_delayed_work() will check dwork->timer
-before queue_work even when @delay is 0, this causes megaraid code to
-hit the BUG_ON() in workqueue code.  Change megaraid code to use
-delayed work.
+I'll workaround it for now by disabling HDMI audio.
 
-Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Neela Syam Kolli <megaraidlinux@lsi.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: linux-scsi@vger.kernel.org
----
- drivers/scsi/megaraid/megaraid_sas.h      |  2 +-
- drivers/scsi/megaraid/megaraid_sas_base.c | 14 ++++++--------
- 2 files changed, 7 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/scsi/megaraid/megaraid_sas.h b/drivers/scsi/megaraid/megaraid_sas.h
-index 16b7a72..3b2365c 100644
---- a/drivers/scsi/megaraid/megaraid_sas.h
-+++ b/drivers/scsi/megaraid/megaraid_sas.h
-@@ -1276,7 +1276,7 @@ struct megasas_evt_detail {
- } __attribute__ ((packed));
- 
- struct megasas_aen_event {
--	struct work_struct hotplug_work;
-+	struct delayed_work hotplug_work;
- 	struct megasas_instance *instance;
- };
- 
-diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c b/drivers/scsi/megaraid/megaraid_sas_base.c
-index d2c5366..e4f2baa 100644
---- a/drivers/scsi/megaraid/megaraid_sas_base.c
-+++ b/drivers/scsi/megaraid/megaraid_sas_base.c
-@@ -2060,9 +2060,9 @@ megasas_service_aen(struct megasas_instance *instance, struct megasas_cmd *cmd)
- 		} else {
- 			ev->instance = instance;
- 			instance->ev = ev;
--			INIT_WORK(&ev->hotplug_work, megasas_aen_polling);
--			schedule_delayed_work(
--				(struct delayed_work *)&ev->hotplug_work, 0);
-+			INIT_DELAYED_WORK(&ev->hotplug_work,
-+					  megasas_aen_polling);
-+			schedule_delayed_work(&ev->hotplug_work, 0);
- 		}
- 	}
- }
-@@ -4352,8 +4352,7 @@ megasas_suspend(struct pci_dev *pdev, pm_message_t state)
- 	/* cancel the delayed work if this work still in queue */
- 	if (instance->ev != NULL) {
- 		struct megasas_aen_event *ev = instance->ev;
--		cancel_delayed_work_sync(
--			(struct delayed_work *)&ev->hotplug_work);
-+		cancel_delayed_work_sync(&ev->hotplug_work);
- 		instance->ev = NULL;
- 	}
- 
-@@ -4545,8 +4544,7 @@ static void __devexit megasas_detach_one(struct pci_dev *pdev)
- 	/* cancel the delayed work if this work still in queue*/
- 	if (instance->ev != NULL) {
- 		struct megasas_aen_event *ev = instance->ev;
--		cancel_delayed_work_sync(
--			(struct delayed_work *)&ev->hotplug_work);
-+		cancel_delayed_work_sync(&ev->hotplug_work);
- 		instance->ev = NULL;
- 	}
- 
-@@ -5190,7 +5188,7 @@ static void
- megasas_aen_polling(struct work_struct *work)
- {
- 	struct megasas_aen_event *ev =
--		container_of(work, struct megasas_aen_event, hotplug_work);
-+		container_of(work, struct megasas_aen_event, hotplug_work.work);
- 	struct megasas_instance *instance = ev->instance;
- 	union megasas_evt_class_locale class_locale;
- 	struct  Scsi_Host *host;
--- 
-1.7.11.7
-
+Thanks,
+  Daniel
+--
+Daniel J Blueman
