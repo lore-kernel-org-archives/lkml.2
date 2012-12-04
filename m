@@ -1,124 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752300Ab2LDX17 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 18:27:59 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:42253 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751880Ab2LDX15 (ORCPT
+	id S1752568Ab2LDXcJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 18:32:09 -0500
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:11783 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751865Ab2LDXcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 18:27:57 -0500
-MIME-Version: 1.0
-In-Reply-To: <000b01cdd1e0$293f0d90$7bbd28b0$%han@samsung.com>
-References: <000b01cdd1e0$293f0d90$7bbd28b0$%han@samsung.com>
-Date: Wed, 5 Dec 2012 00:27:56 +0100
-Message-ID: <CAHod+Gf6TSAS7+543prWb8To8UGevYFMZnZoN7weWu36Mws8ow@mail.gmail.com>
-Subject: Re: [PATCH v3] backlight: corgi_lcd: Use gpio_set_value_cansleep() to
- avoid WARN_ON
-From: =?UTF-8?B?TWFya28gS2F0acSH?= <dromede@gmail.com>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 4 Dec 2012 18:32:05 -0500
+Message-ID: <1354663411.21585.135.camel@misato.fc.hp.com>
+Subject: Re: [RFC PATCH v3 0/3] acpi: Introduce prepare_remove device
+ operation
+From: Toshi Kani <toshi.kani@hp.com>
+To: Hanjun Guo <guohanjun@huawei.com>
+Cc: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
+        wency@cn.fujitsu.com, rjw@sisk.pl, lenb@kernel.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Tang Chen <tangchen@cn.fujitsu.com>,
+        Liujiang <jiang.liu@huawei.com>, Huxinwei <huxinwei@huawei.com>
+Date: Tue, 04 Dec 2012 16:23:31 -0700
+In-Reply-To: <50BDBF5A.8040407@huawei.com>
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
+	    <50B5EFE9.3040206@huawei.com>
+	   <1354128096.26955.276.camel@misato.fc.hp.com>
+	  <50B6E936.2080308@huawei.com> <1354228028.7776.56.camel@misato.fc.hp.com>
+	  <50BC29C6.6050706@huawei.com> <1354579848.21585.54.camel@misato.fc.hp.com>
+	 <50BDBF5A.8040407@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 4, 2012 at 6:28 AM, Jingoo Han <jg1.han@samsung.com> wrote:
-> From: Marko Katic <dromede@gmail.com>
->
-> Changing backlight intensity on an Akita (Sharp Zaurus C-1000)
-> triggers WARN_ON message:
->
-> WARNING: at drivers/gpio/gpiolib.c:1672 __gpio_set_value+0x38/0xa4()
-> Modules linked in:
-> Backtrace:
-> [<c000c0ac>] (dump_backtrace+0x0/0x110) from [<c02c8278>] (dump_stack+0x18/0x1c)
->  r6:c0158fc8 r5:00000009 r4:00000000 r3:c03d4f70
-> [<c02c8260>] (dump_stack+0x0/0x1c) from [<c0019194>] (warn_slowpath_common+0x54/0x6c)
-> [<c0019140>] (warn_slowpath_common+0x0/0x6c) from [<c00191d0>] (warn_slowpath_null+0x24/0x2c)
->  r8:c38d5c00 r7:c03f82c0 r6:00000000 r5:000000d0 r4:c384e4fc
-> r3:00000009
-> [<c00191ac>] (warn_slowpath_null+0x0/0x2c) from [<c0158fc8>] (__gpio_set_value+0x38/0xa4)
-> [<c0158f90>] (__gpio_set_value+0x0/0xa4) from [<c0169b4c>] (corgi_bl_set_intensity+0x44/0x74)
->  r7:c3933418 r6:c3933400 r5:c392cdf0 r4:0000002f
-> [<c0169b08>] (corgi_bl_set_intensity+0x0/0x74) from [<c0169c1c>] (corgi_bl_update_status+0x5c/0x64)
->  r5:c03d31f0 r4:c3933400
-> [<c0169bc0>] (corgi_bl_update_status+0x0/0x64) from [<c02c3a68>] (corgi_lcd_probe+0x1a8/0x258)
->  r4:c392cdf0 r3:c0169bc0
-> [<c02c38c0>] (corgi_lcd_probe+0x0/0x258) from [<c01da7a4>] (spi_drv_probe+0x20/0x24)
->  r8:00000052 r7:c0192d9c r6:c03da6e8 r5:c38d5c34 r4:c38d5c00
-> [<c01da784>] (spi_drv_probe+0x0/0x24) from [<c0192c44>] (driver_probe_device+0xb0/0x208)
-> [<c0192b94>] (driver_probe_device+0x0/0x208) from [<c0192e0c>] (__driver_attach+0x70/0x94)
->  r6:c03da6e8 r5:c38d5c34 r4:c38d5c00 r3:00000000
-> [<c0192d9c>] (__driver_attach+0x0/0x94) from [<c0191268>] (bus_for_each_dev+0x54/0x90)
->  r6:c03da6e8 r5:c3827e80 r4:00000000 r3:00000000
-> [<c0191214>] (bus_for_each_dev+0x0/0x90) from [<c01927a4>] (driver_attach+0x20/0x28)
->  r7:00000000 r6:c03e29ec r5:c3932980 r4:c03da6e8
-> [<c0192784>] (driver_attach+0x0/0x28) from [<c0192340>] (bus_add_driver+0xd4/0x22c)
-> [<c019226c>] (bus_add_driver+0x0/0x22c) from [<c019335c>] (driver_register+0xa4/0x134)
->  r8:00000052 r7:c03ea900 r6:c03c32ac r5:c03bdfc8 r4:c03da6e8
-> [<c01932b8>] (driver_register+0x0/0x134) from [<c01db7ec>] (spi_register_driver+0x4c/0x60)
-> [<c01db7a0>] (spi_register_driver+0x0/0x60) from [<c03b3ce0>] (corgi_lcd_driver_init+0x14/0x1c)
-> [<c03b3ccc>] (corgi_lcd_driver_init+0x0/0x1c) from [<c000868c>] (do_one_initcall+0x9c/0x174)
-> [<c00085f0>] (do_one_initcall+0x0/0x174) from [<c02c1b94>] (kernel_init+0xf4/0x2a8)
-> [<c02c1aa0>] (kernel_init+0x0/0x2a8) from [<c0009270>] (ret_from_fork+0x14/0x24)
-> ---[ end trace a863a63f242ee38c ]---
->
-> Akita machines have backlight controls hooked to a gpio expander chip,
-> max7310. In this case, pca953x_gpio_set_value() can be called to control
-> gpio, and pca953x_setup_gpio() sets can_sleep flag. Therefore,
-> gpio_set_value_cansleep() should be used in order to avoid WARN_ON on
-> akita machines.
->
-> Akita is the only exception in this case since other users of corgi_lcd
-> access backlight gpio controls through a different gpio expander such as
-> max7310 which does not set the can_sleep flag.
+On Tue, 2012-12-04 at 17:16 +0800, Hanjun Guo wrote:
+> On 2012/12/4 8:10, Toshi Kani wrote:
+> > On Mon, 2012-12-03 at 12:25 +0800, Hanjun Guo wrote:
+> >> On 2012/11/30 6:27, Toshi Kani wrote:
+> >>> On Thu, 2012-11-29 at 12:48 +0800, Hanjun Guo wrote:
+> >>>> On 2012/11/29 2:41, Toshi Kani wrote:
+> >>>>> On Wed, 2012-11-28 at 19:05 +0800, Hanjun Guo wrote:
+> >>>>>> On 2012/11/24 1:50, Vasilis Liaskovitis wrote:
+> >>>>>> As you may know, the ACPI based hotplug framework we are working on already addressed
+> >>>>>> this problem, and the way we slove this problem is a bit like yours.
+> >>>>>>
+> >>>>>> We introduce hp_ops in struct acpi_device_ops:
+> >>>>>> struct acpi_device_ops {
+> >>>>>> 	acpi_op_add add;
+> >>>>>> 	acpi_op_remove remove;
+> >>>>>> 	acpi_op_start start;
+> >>>>>> 	acpi_op_bind bind;
+> >>>>>> 	acpi_op_unbind unbind;
+> >>>>>> 	acpi_op_notify notify;
+> >>>>>> #ifdef	CONFIG_ACPI_HOTPLUG
+> >>>>>> 	struct acpihp_dev_ops *hp_ops;
+> >>>>>> #endif	/* CONFIG_ACPI_HOTPLUG */
+> >>>>>> };
+> >>>>>>
+> >>>>>> in hp_ops, we divide the prepare_remove into six small steps, that is:
+> >>>>>> 1) pre_release(): optional step to mark device going to be removed/busy
+> >>>>>> 2) release(): reclaim device from running system
+> >>>>>> 3) post_release(): rollback if cancelled by user or error happened
+> >>>>>> 4) pre_unconfigure(): optional step to solve possible dependency issue
+> >>>>>> 5) unconfigure(): remove devices from running system
+> >>>>>> 6) post_unconfigure(): free resources used by devices
+> >>>>>>
+> >>>>>> In this way, we can easily rollback if error happens.
+> >>>>>> How do you think of this solution, any suggestion ? I think we can achieve
+> >>>>>> a better way for sharing ideas. :)
+> >>>>>
+> >>>>> Yes, sharing idea is good. :)  I do not know if we need all 6 steps (I
+> >>>>> have not looked at all your changes yet..), but in my mind, a hot-plug
+> >>>>> operation should be composed with the following 3 phases.
+> >>>>
+> >>>> Good idea ! we also implement a hot-plug operation in 3 phases:
+> >>>> 1) acpihp_drv_pre_execute
+> >>>> 2) acpihp_drv_execute
+> >>>> 3) acpihp_drv_post_execute
+> >>>> you may refer to :
+> >>>> https://lkml.org/lkml/2012/11/4/79
+> >>>
+> >>> Great.  Yes, I will take a look.
+> >>
+> >> Thanks, any comments are welcomed :)
+> > 
+> > If I read the code right, the framework calls ACPI drivers differently
+> > at boot-time and hot-add as follows.  That is, the new entry points are
+> > called at hot-add only, but .add() is called at both cases.  This
+> > requires .add() to work differently.
+> 
+> Hi Toshi,
+> Thanks for your comments!
+> 
+> > 
+> > Boot    : .add()
+> 
+> Actually, at boot time: .add(), .start()
 
-I think you forgot to delete "such as max7310". Akita has
-the max7310, all the other models have a different expander.
+Right.
 
->
-> [jg1.han@samsung.com: used gpio_cansleep()]
-> Signed-off-by: Marko Katic <dromede@gmail.com>
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> ---
->  drivers/video/backlight/corgi_lcd.c |   17 +++++++++++++----
->  1 files changed, 13 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/video/backlight/corgi_lcd.c b/drivers/video/backlight/corgi_lcd.c
-> index e2e1b62..e5168f4 100644
-> --- a/drivers/video/backlight/corgi_lcd.c
-> +++ b/drivers/video/backlight/corgi_lcd.c
-> @@ -408,11 +408,20 @@ static int corgi_bl_set_intensity(struct corgi_lcd *lcd, int intensity)
->         /* Bit 5 via GPIO_BACKLIGHT_CONT */
->         cont = !!(intensity & 0x20) ^ lcd->gpio_backlight_cont_inverted;
->
-> -       if (gpio_is_valid(lcd->gpio_backlight_cont))
-> -               gpio_set_value(lcd->gpio_backlight_cont, cont);
-> +       if (gpio_is_valid(lcd->gpio_backlight_cont)) {
-> +               if (gpio_cansleep(lcd->gpio_backlight_cont))
-> +                       gpio_set_value_cansleep(lcd->gpio_backlight_cont, cont);
-> +               else
-> +                       gpio_set_value(lcd->gpio_backlight_cont, cont);
-> +       }
->
-> -       if (gpio_is_valid(lcd->gpio_backlight_on))
-> -               gpio_set_value(lcd->gpio_backlight_on, intensity);
-> +       if (gpio_is_valid(lcd->gpio_backlight_on)) {
-> +               if (gpio_cansleep(lcd->gpio_backlight_on))
-> +                       gpio_set_value_cansleep(lcd->gpio_backlight_on,
-> +                                               intensity);
-> +               else
-> +                       gpio_set_value(lcd->gpio_backlight_on, intensity);
-> +       }
->
->         if (lcd->kick_battery)
->                 lcd->kick_battery();
-> --
-> 1.7.2.5
->
->
+> > Hot-Add : .add(), .pre_configure(), configure(), etc.
+> 
+> Yes, we did it as you said in the framework. We use .pre_configure(), configure(),
+> and post_configure() to instead of .start() for better error handling and recovery.
+
+I think we should have hot-plug interfaces at the module level, not at
+the ACPI-internal level.  In this way, the interfaces can be
+platform-neutral and allow any modules to register, which makes it more
+consistent with the boot-up sequence.  It can also allow ordering of the
+sequence among the registered modules.  Right now, we initiate all
+procedures from ACPI during hot-plug, which I think is inflexible and
+steps into other module's role.
+
+I am also concerned about the slot handling, which is the core piece of
+the infrastructure and only allows hot-plug operations on ACPI objects
+where slot objects are previously created by checking _EJ0.  The
+infrastructure should allow hot-plug operations on any objects, and it
+should not be dependent on the slot design.
+
+I have some rough idea, and it may be easier to review / explain if I
+make some code changes.  So, let me prototype it, and send it you all if
+that works out.  Hopefully, it won't take too long.
+
+> > I think the boot-time and hot-add initialization should be done
+> > consistently.  While there is difficulty with the current boot sequence,
+> > the framework should be designed to allow them consistent, not make them
+> > diverged.
+> > 
+> >>>>> 1. Validate phase - Verify if the request is a supported operation.  All
+> >>>>> known restrictions are verified at this phase.  For instance, if a
+> >>>>> hot-remove request involves kernel memory, it is failed in this phase.
+> >>>>> Since this phase makes no change, no rollback is necessary to fail. 
+> >>>>
+> >>>> Yes, we have done this in acpihp_drv_pre_execute, and check following things:
+> >>>>
+> >>>> 1) Hot-plugble or not. the instance kernel memory you mentioned is also checked
+> >>>>    when memory device remove;
+> >>>
+> >>> Agreed.
+> >>>
+> >>>> 2) Dependency check involved. For instance, if hot-add a memory device,
+> >>>>    processor should be added first, otherwise it's not valid to this operation.
+> >>>
+> >>> I think FW should be the one that assures such dependency.  That is,
+> >>> when a memory device object is marked as present/enabled/functioning, it
+> >>> should be ready for the OS to use.
+> >>
+> >> Yes, BIOS should do something for the dependency, because BIOS knows the
+> >> actual hardware topology. 
+> > 
+> > Right.
+> > 
+> >> The ACPI specification provides _EDL method to
+> >> tell OS the eject device list, but still has no method to tell OS the add device
+> >> list now.
+> > 
+> > Yes, but I do not think the OS needs special handling for add...
+> 
+> Hmm, how about trigger a hot add operation by OS ? we have eject interface for OS, but
+> have no add interface now, do you think this feature is useful? If it is, I think OS
+> should analyze the dependency first and tell the user.
+
+The OS can eject an ACPI device because a target device is owned by the
+OS (i.e. enabled).  For hot-add, a target ACPI device is not owned by
+the OS (i.e. disabled).  Therefore, the OS is not supposed to change its
+state.  So, I do not think we should support a hot-add operation by the
+OS.
+ 
+> >> For some cases, OS should analyze the dependency in the validate phase. For example,
+> >> when hot remove a node (container device), OS should analyze the dependency to get
+> >> the remove order as following:
+> >> 1) Host bridge;
+> >> 2) Memory devices;
+> >> 3) Processor devices;
+> >> 4) Container device itself;
+> > 
+> > This may be off-topic, but how do you plan to delete I/O devices under a
+> > node?  Are you planning to delete all I/O devices along with the node?
+> 
+> Yes, we delete all I/O devices under the node. we delete I/O devices as
+> following steps:
+> 1) Offline PCI devices;
+> 2) Offline IOAPIC and IOMMU;
+> and offline I/O devices no matter in use or not.
+
+Oh, off-lining no matter what would be problematic for enterprise
+customers... 
+ 
+> > On other OS, we made a separate step called I/O chassis delete, which
+> > off-lines all I/O devices under the node, and is required before a node
+> > hot-remove.  It basically triggers PCIe hot-remove to detach drivers
+> > from all devices.  It does not eject the devices so that they do not
+> > have to be on hot-plug slots.  This step runs user-space scripts to
+> > verify if the devices can be off-lined without disrupting user's
+> > applications, and provides comprehensive reports if any of them are in
+> 
+> Great! we also have a plan to implement this feature.
+
+That's great!
+
+> > use.  Not sure if Linux's PCI hot-remove has such check, but I thought
+> > I'd mention it. :)
+> 
+> Have no such check, I'm sure :)
+> 
+> > 
+> >> In this way, we can check that all the devices are hot-plugble or not under the
+> >> container device before execute phase, and further more, we can remove devices
+> >> in order to avoid some crash problems.
+> > 
+> > Yes, we should check if all the resources under the node can be
+> > off-lined at validate phase.  (note, all the devices do not have to have
+> > _EJ0 if that's what you meant by hot-pluggable.)
+> 
+> Yes, agreed. For node hotplug, no need for all the devices have _EJ0 method.
+
+Right.
+
+Thanks,
+-Toshi
+
+
