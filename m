@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753738Ab2LESwQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 13:52:16 -0500
-Received: from mdfmta005.mxout.tbr.inty.net ([91.221.168.46]:58127 "EHLO
-	smtp.demon.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752096Ab2LESwP (ORCPT
+	id S1753907Ab2LESwe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 13:52:34 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:46848 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751996Ab2LESwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 13:52:15 -0500
-X-Greylist: delayed 584 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Dec 2012 13:52:15 EST
-Message-ID: <50BF9544.7060401@ramsay1.demon.co.uk>
-Date: Wed, 05 Dec 2012 18:41:08 +0000
-From: Ramsay Jones <ramsay@ramsay1.demon.co.uk>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Wed, 5 Dec 2012 13:52:32 -0500
+Message-ID: <50BF979A.50304@linux.vnet.ibm.com>
+Date: Thu, 06 Dec 2012 00:21:06 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: Junio C Hamano <gitster@pobox.com>
-CC: git@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [ANNOUNCE] Git v1.8.1-rc0
-References: <7vip8iq1vs.fsf@alter.siamese.dyndns.org>
-In-Reply-To: <7vip8iq1vs.fsf@alter.siamese.dyndns.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
+        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
+        oleg@redhat.com, sbw@mit.edu, amit.kucheria@linaro.org,
+        rostedt@goodmis.org, rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v2 01/10] CPU hotplug: Provide APIs for "light" atomic
+ readers to prevent CPU offline
+References: <20121205184041.3750.64945.stgit@srivatsabhat.in.ibm.com> <20121205184258.3750.31879.stgit@srivatsabhat.in.ibm.com> <50BF96DF.3000500@linux.vnet.ibm.com>
+In-Reply-To: <50BF96DF.3000500@linux.vnet.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-MDF-HostID: 8
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12120518-9574-0000-0000-000005A0A93B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Junio C Hamano wrote:
-> A release candidate preview, Git v1.8.1-rc0, is now available for
-> testing at the usual places.
-> 
-> This cycle has been a bit slow (perhaps because it had a major US
-> holiday to slow people down) but we seem to have managed to apply
-> reasonably large number of usability improvement changes, with a
-> handful of new features.  There are several new and large-ish topics
-> that are cooking in 'next', but I think we would better keep them
-> cooking there without merging them to 'master' before the upcoming
-> release to happen before the year end.  So as far as features goes,
-> this preview release is pretty much *it*.
-> 
-> The release tarballs are found at:
-> 
->     http://code.google.com/p/git-core/downloads/list
-> 
-> and their SHA-1 checksums are:
-> 
-> 39faaa15bc71f8eb52048e77ea564cecf78c7adf  git-1.8.1.rc0.tar.gz
-> 2eeba24488337de02b58dc442258d58b79e2b8f4  git-htmldocs-1.8.1.rc0.tar.gz
-> b28d1f8e8b9268b712b33fbdfb67dd6f14afb499  git-manpages-1.8.1.rc0.tar.gz
-> 
-> Also the following public repositories all have a copy of the v1.8.1-rc0
-> tag and the master branch that the tag points at:
-> 
->   url = git://repo.or.cz/alt-git.git
->   url = https://code.google.com/p/git-core/
->   url = git://git.sourceforge.jp/gitroot/git-core/git.git
->   url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
->   url = https://github.com/gitster/git
+Replaying what Oleg wrote:
+
+Hi,
+
+Sorry I don't understand the context and I can't find this thread
+anywhere, so I am not sure I understand...
+
+> Replaying what Tejun wrote:
+> So, we basically need percpu_rwlock.  We already have percpu_rwsem.
+
+Yes, and with -mm patches it becomes reader-friendly. In particular
+see http://marc.info/?l=linux-mm-commits&m=135240650828875
+
+> Oleg, it seems
+> CPU hotplug needs big-reader rwlock, ideas on how to proceed?
 > 
 
-I fetch git from 'git://git.kernel.org/pub/scm/git/git.git' which has
-commit ee26a6e2 ("Git 1.8.1-rc0", 03-12-2012), but is missing the v1.8.1-rc0
-tag. Is this just an oversight (the above list suggests not), or should I not
-be using kernel.org?
+I am going to convert get_online_cpus() to use percpu_down_read(),
+this looks simple.
 
-ATB,
-Ramsay Jones
+We already discussed this with Paul, see
 
+	http://marc.info/?l=linux-kernel&m=135248463226031
 
+and the whole thread.
+
+In short, all we need is percpu_down_write_recursive_readers() and
+afaics the only complication is lockdep, we need down_read_no_lockdep()
+which (like __up_read) doesn't do rwsem_acquire_read().
+
+Oleg.
 
