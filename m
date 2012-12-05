@@ -1,66 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752380Ab2LEJCs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 04:02:48 -0500
-Received: from mail.parknet.co.jp ([210.171.160.6]:45628 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751850Ab2LEJCn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 04:02:43 -0500
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v5 7/8] fat (exportfs): rebuild directory-inode if fat_dget() fails
-References: <1353504311-6020-1-git-send-email-linkinjeon@gmail.com>
-	<878v9f5ugn.fsf@devron.myhome.or.jp>
-	<CAKYAXd-ydXkwDq6vkECEKPUQiNgg2+GKbL+ah9sn+uqr8BT1kQ@mail.gmail.com>
-	<87k3sy17vk.fsf@devron.myhome.or.jp>
-	<CAKYAXd8=7BG8NsVyvUP5xW48Y9FJpD7M95_MiJVGcwYOfYsrLA@mail.gmail.com>
-Date: Wed, 05 Dec 2012 18:02:40 +0900
-In-Reply-To: <CAKYAXd8=7BG8NsVyvUP5xW48Y9FJpD7M95_MiJVGcwYOfYsrLA@mail.gmail.com>
-	(Namjae Jeon's message of "Wed, 5 Dec 2012 15:01:39 +0900")
-Message-ID: <87txs0x45r.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	id S1752497Ab2LEJXK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 04:23:10 -0500
+Received: from mx3.cyfra.ua ([62.80.160.182]:34002 "EHLO mx3.cyfra.ua"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751765Ab2LEJXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 04:23:07 -0500
+From: Vitalii Demianets <vitas@nppfactor.kiev.ua>
+Organization: Factor-SPE
+To: "Hans J. Koch" <hjk@hansjkoch.de>
+Subject: [PATCH v2] drivers/uio/uio_pdrv_genirq.c: Fix memory freeing issues
+Date: Wed, 5 Dec 2012 11:22:57 +0200
+User-Agent: KMail/1.9.10
+Cc: Cong Ding <dinggnu@gmail.com>, linux-kernel@vger.kernel.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+References: <201211271929.32315.vitas@nppfactor.kiev.ua> <201211291347.28273.vitas@nppfactor.kiev.ua> <20121204210440.GA4720@local>
+In-Reply-To: <20121204210440.GA4720@local>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Disposition: inline
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201212051122.57724.vitas@nppfactor.kiev.ua>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namjae Jeon <linkinjeon@gmail.com> writes:
+1. uioinfo was kfreed based on the presence of pdev->dev.of_node, which was
+obviously wrong and unrelated to the fact if uioinfo was allocated statically
+or dynamically. This patch introduces new flag which clearly shows if uioinfo
+was allocated dynamically and kfrees uioinfo based on that flag;
+2. Fix: priv data was not freed in case platform_get_irq() failed. As it was
+caused mainly by improper exit labels naming, labels were renamed too;
+3. The case of uioinfo AND pdev->dev.of_node both NULL (not initialized
+in platform data) was not treated properly.
 
->>>> This became much better than before. However, we have to consolidate the
->>>> code with fat_search_long() finally.
->>>>
->>>> E.g. this version is having the issue already fixed. If there is
->>>> corruption in fat cluster-chain, it lead to infinite
->>>> loop. fat_get_cluster() checks infinite loop by limit.
->>> since, the focus this time was for NFS functionality for FAT (removing
->>> ESTALE error). The changes were made in that context.
->>>
->>> Later, we can make the changes as part of code reorganizing which can
->>> be controlled via. Separate patches which do not have any impact on
->>> default functionality and verification can be carried out in that
->>> scope.
->>
->> Right. But non-production code shouldn't go into linus tree. I meant, we
->> can test this patch series, but not yet production quality.
-> Is there any other thing which seems potential issue than offsetof()?
-> if yes, which problem didn't lead to production quality do you think ?
->
-> +#define FAT_FID_SIZE_WITHOUT_PARENT (offsetof(struct fat_fid, \
-> +					      parent_i_pos_hi)/4)
-> Since this expression does not result proper integer value, so will it
-> be correct to directly put the value like
-> +#define FAT_FID_SIZE_WITHOUT_PARENT 3
+Signed-off-by: Vitalii Demianets <vitas@nppfactor.kiev.ua>
 
-The issue is what I explained in the above "E.g.".
+---
+v2: Constants naming style
 
-Directory traversal logic should be consolidate with fat_search_log().
-Otherwise, like this nfs implement, we will introduce already-fixed-problem
-again. And we will be bothered to fix same issue in future.
+---
+ drivers/uio/uio_pdrv_genirq.c |   44 ++++++++++++++++++++++++----------------
+ 1 files changed, 26 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
+index 42202cd..75aaeee 100644
+--- a/drivers/uio/uio_pdrv_genirq.c
++++ b/drivers/uio/uio_pdrv_genirq.c
+@@ -30,6 +30,11 @@
+ 
+ #define DRIVER_NAME "uio_pdrv_genirq"
+ 
++enum {
++	UIO_IRQ_DISABLED = 0,
++	UIO_INFO_ALLOCED = 1,
++};
++
+ struct uio_pdrv_genirq_platdata {
+ 	struct uio_info *uioinfo;
+ 	spinlock_t lock;
+@@ -63,7 +68,7 @@ static irqreturn_t uio_pdrv_genirq_handler(int irq, struct uio_info *dev_info)
+ 	 * remember the state so we can allow user space to enable it later.
+ 	 */
+ 
+-	if (!test_and_set_bit(0, &priv->flags))
++	if (!test_and_set_bit(UIO_IRQ_DISABLED, &priv->flags))
+ 		disable_irq_nosync(irq);
+ 
+ 	return IRQ_HANDLED;
+@@ -83,10 +88,10 @@ static int uio_pdrv_genirq_irqcontrol(struct uio_info *dev_info, s32 irq_on)
+ 
+ 	spin_lock_irqsave(&priv->lock, flags);
+ 	if (irq_on) {
+-		if (test_and_clear_bit(0, &priv->flags))
++		if (test_and_clear_bit(UIO_IRQ_DISABLED, &priv->flags))
+ 			enable_irq(dev_info->irq);
+ 	} else {
+-		if (!test_and_set_bit(0, &priv->flags))
++		if (!test_and_set_bit(UIO_IRQ_DISABLED, &priv->flags))
+ 			disable_irq(dev_info->irq);
+ 	}
+ 	spin_unlock_irqrestore(&priv->lock, flags);
+@@ -101,8 +106,9 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+ 	struct uio_mem *uiomem;
+ 	int ret = -EINVAL;
+ 	int i;
++	bool uioinfo_alloced = false;
+ 
+-	if (!uioinfo) {
++	if (!uioinfo && pdev->dev.of_node) {
+ 		int irq;
+ 
+ 		/* alloc uioinfo for one device */
+@@ -110,10 +116,11 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+ 		if (!uioinfo) {
+ 			ret = -ENOMEM;
+ 			dev_err(&pdev->dev, "unable to kmalloc\n");
+-			goto bad2;
++			goto out;
+ 		}
+ 		uioinfo->name = pdev->dev.of_node->name;
+ 		uioinfo->version = "devicetree";
++		uioinfo_alloced = true;
+ 
+ 		/* Multiple IRQs are not supported */
+ 		irq = platform_get_irq(pdev, 0);
+@@ -125,32 +132,33 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+ 
+ 	if (!uioinfo || !uioinfo->name || !uioinfo->version) {
+ 		dev_err(&pdev->dev, "missing platform_data\n");
+-		goto bad0;
++		goto out_uioinfo;
+ 	}
+ 
+ 	if (uioinfo->handler || uioinfo->irqcontrol ||
+ 	    uioinfo->irq_flags & IRQF_SHARED) {
+ 		dev_err(&pdev->dev, "interrupt configuration error\n");
+-		goto bad0;
++		goto out_uioinfo;
+ 	}
+ 
+ 	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+ 	if (!priv) {
+ 		ret = -ENOMEM;
+ 		dev_err(&pdev->dev, "unable to kmalloc\n");
+-		goto bad0;
++		goto out_uioinfo;
+ 	}
+ 
+ 	priv->uioinfo = uioinfo;
+ 	spin_lock_init(&priv->lock);
+-	priv->flags = 0; /* interrupt is enabled to begin with */
++	/* interrupt is enabled to begin with */
++	priv->flags = uioinfo_alloced ? (1 << UIO_INFO_ALLOCED) : 0;
+ 	priv->pdev = pdev;
+ 
+ 	if (!uioinfo->irq) {
+ 		ret = platform_get_irq(pdev, 0);
+ 		if (ret < 0) {
+ 			dev_err(&pdev->dev, "failed to get IRQ\n");
+-			goto bad0;
++			goto out_priv;
+ 		}
+ 		uioinfo->irq = ret;
+ 	}
+@@ -205,19 +213,19 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+ 	ret = uio_register_device(&pdev->dev, priv->uioinfo);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "unable to register uio device\n");
+-		goto bad1;
++		goto out_pm;
+ 	}
+ 
+ 	platform_set_drvdata(pdev, priv);
+ 	return 0;
+- bad1:
+-	kfree(priv);
++out_pm:
+ 	pm_runtime_disable(&pdev->dev);
+- bad0:
+-	/* kfree uioinfo for OF */
+-	if (pdev->dev.of_node)
++out_priv:
++	kfree(priv);
++out_uioinfo:
++	if (uioinfo_alloced)
+ 		kfree(uioinfo);
+- bad2:
++out:
+ 	return ret;
+ }
+ 
+@@ -232,7 +240,7 @@ static int uio_pdrv_genirq_remove(struct platform_device *pdev)
+ 	priv->uioinfo->irqcontrol = NULL;
+ 
+ 	/* kfree uioinfo for OF */
+-	if (pdev->dev.of_node)
++	if (priv->flags & (1 << UIO_INFO_ALLOCED))
+ 		kfree(priv->uioinfo);
+ 
+ 	kfree(priv);
 -- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+1.7.8.6
