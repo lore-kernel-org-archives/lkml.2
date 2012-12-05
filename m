@@ -1,186 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753971Ab2LERPB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 12:15:01 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:48564 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752097Ab2LERO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 12:14:59 -0500
-Date: Wed, 5 Dec 2012 11:13:51 -0600
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: Mathias LEBLANC <Mathias.LEBLANC@st.com>
-Cc: Peter =?iso-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>,
-        Kent Yoder <shpedoikal@gmail.com>,
-        Jean-Luc BLANC <jean-luc.blanc@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rajiv Andrade <mail@srajiv.net>,
-        "tpmdd-devel@lists.sourceforge.net" 
-	<tpmdd-devel@lists.sourceforge.net>,
-        "Sirrix@jasper.es" <Sirrix@jasper.es>
-Subject: Re: [tpmdd-devel] [PATCH 1/1] TPM: STMicroelectronics ST33 I2C
- KERNEL 3.x.x
-Message-ID: <20121205171350.GD21050@ennui.austin.ibm.com>
-References: <1353363322-2923-1-git-send-email-mathias.leblanc@st.com>
- <35286B1AE75A7C47BFF0870081A31B4B3A9B501757@SAFEX1MAIL4.st.com>
- <201211290104.53049.PeterHuewe@gmx.de>
- <35286B1AE75A7C47BFF0870081A31B4B3A9B64E89C@SAFEX1MAIL4.st.com>
+	id S1754033Ab2LERQN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 12:16:13 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:36520 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752449Ab2LERQK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 12:16:10 -0500
+Date: Wed, 5 Dec 2012 17:16:09 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v2 19/44] metag: Signal handling
+Message-ID: <20121205171609.GW4939@ZenIV.linux.org.uk>
+References: <1354723742-6195-1-git-send-email-james.hogan@imgtec.com>
+ <1354723742-6195-20-git-send-email-james.hogan@imgtec.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <35286B1AE75A7C47BFF0870081A31B4B3A9B64E89C@SAFEX1MAIL4.st.com>
+In-Reply-To: <1354723742-6195-20-git-send-email-james.hogan@imgtec.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12120517-7182-0000-0000-0000038D01AC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 05, 2012 at 05:11:40PM +0100, Mathias LEBLANC wrote:
-> Hi Peter,
-> 
-> Thanks for your contribution.
-> I have modified the driver files name and descriptions.
-> Regarding the warnings, it's strange. 
-> 
-> @Kent, could you confirm that you have the same?
+> +	if (__copy_from_user(&st, &frame->uc.uc_stack, sizeof(st)))
+> +		goto badframe;
+> +	/* It is more difficult to avoid calling this function than to
+> +	   call it and ignore errors.  */
+> +	do_sigaltstack((__force const stack_t __user *)&st, NULL, regs->REG_SP);
 
-  Yep, I see these too. They're a side effect of storing the i2c_client
-pointer in vendor->iobase, which is __iomem.  The i2c_client struct
-isn't __iomem at all though, writes in the i2c subsystem are done
-through client->addr.  So i2c_client should really be stored somewhere
-else, no?
+"Dear sparse, please shut the fuck up.  This function might expect a userland
+pointer for some reason, but I've just copied the damn thing on stack and
+if I say that it's at userland address, at userland address it is".
 
-  vendor->data seems like the right place.  I'm on the hook to update
-the other drivers with a macro for accessing vendor->data in tpm.h.
-I'll make these updates and send out a patch.
+1) __force-cast will make sparse to STFU, indeed
+2) address of local variable is not a userland pointer.  In particular,
+copy_from_user() will barf on it, unless you play with set_fs(), which
+you don't do.
+3) do_sigaltstack() *does* copy_from_user(), so it'll simply fail and do
+nothing; adding set_fs() games would have prevented that, but why the hell
+bother creating a local copy in the first place?  Just give &frame->uc.uc_stack
+to do_sigaltstack() and check that it hasn't returned -EFAULT.
+4) sh et.al. were broken in exactly the same way.  Fixed in mainline now.
+5) if you need a force-cast, it might be worth figuring out what's going on.
 
-Kent
+> +static void do_signal(struct pt_regs *regs, int from_syscall,
+> +		      unsigned int orig_syscall)
+> +{
+> +	struct k_sigaction ka;
+> +	siginfo_t info;
+> +	int signr;
+> +
+> +	/*
+> +	 * We want the common case to go fast, which
+> +	 * is why we may in certain cases get here from
+> +	 * kernel mode. Just return without doing anything
+> +	 * if so.
+> +	 */
+> +	if (!user_mode(regs))
+> +		return;
 
-> Regards,
-> 
-> Mathias Leblanc
-> 
-> -----Original Message-----
-> From: Peter Hüwe [mailto:PeterHuewe@gmx.de] 
-> Sent: 29 November, 2012 01:05
-> To: Mathias LEBLANC
-> Cc: Kent Yoder; Kent Yoder; Jean-Luc BLANC; linux-kernel@vger.kernel.org; Rajiv Andrade; tpmdd-devel@lists.sourceforge.net; Sirrix@jasper.es
-> Subject: Re: [tpmdd-devel] [PATCH 1/1] TPM: STMicroelectronics ST33 I2C KERNEL 3.x.x
-> 
-> Hi Mathias,
-> 
-> please note: 
-> I'm writing this email on behalf of myself only and nobody else, especially not my employer - and I'm doing this in my spare time.
-> I'm working for a direct competitor of yours, but I'm not using any knowledge that I've picked up at work or that is considered secret in any way.
-> I have a personal interest in the TPM subsystem and want to keep it as clean as possible.
-> So please don't see my review as something negative, but rather something positive.
-> 
-> 
-> Am Mittwoch, 28. November 2012, 18:48:57 schrieb Mathias LEBLANC:
-> > Ok, so i have patch the ST33 I2C driver on this branch and correct 
-> > some errors. I send you the patch for the kernel 3.x I have no error 
-> > on compilation, tell me if you have problems.
-> > I have implemented the tpm_do_selftest function to get the tpm ready, 
-> > but it can be removed ________________________________________
-> 
-> Unfortunately you attached the patch instead of sending it in plaintext which is the usual practice -> care to resend in plain text? 
-> Makes the review far easier.
-> 
-> (btw.: Please also have a look at
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=blob;f=Documentation/SubmittingPatches;hb=HEAD
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=blob;f=Documentation/SubmitChecklist;hb=HEAD
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=blob;f=Documentation/SubmittingDrivers;hb=HEAD
-> which describes the process in detail)
-> 
-> When you resend the patch, can you please include the "metadata" as well - i.e. your modifications to the Kconfig / Makefile etc.
-> I do not see a reason why to keep it in a seperate patch.
-> 
-> 
-> 
-> 
-> I tried the patch you've posted and it applies cleanly and now (finally) compiles as well - so now I can start with my review:
-> 
-> = The name =
-> There's already one i2c tpm driver in the tree, so maybe it would be a good idea to keep the naming scheme consistent? 
-> -> How about tpm_i2c_stm_st33.c ?
-> Eventually this is something Kent as a maintainer has to decice - but I would really like to see the name change.
-> I hope we can eventually consolidate all the 'tis' based drivers.
-> 
-> 
-> = Compiling / License =
-> When compiling the driver I get the following warning
->    WARNING: modpost: missing MODULE_LICENSE() in /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.o
-> Please include the appropriate MODULE_LICENSE as my kernel otherwise gets tainted by your driver.
-> 
-> Also this:
-> + * STMicroelectronics TPM I2C Linux driver for TPM ST33ZP24
-> + * Copyright (C) 2009, 2010  STMicroelectronics
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> 
-> is not possible afaik - kernel code must be under GPL v2 _only_ without the "or (at your option) any later version." addition.
-> 
-> 
-> 
-> = sparse warnings =
-> When running sparse against your code I get the following warnings:
->  make -C /data/data-old/linux-2.6/ M=`pwd`  modules C=1
-> make: Entering directory `/data/data-old/linux-2.6'
->   CHECK   /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c
-> /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c:167:19: warning: cast removes address space of expression
-> /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c:187:19: warning: cast removes address space of expression
-> /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c:180:5: warning: symbol 'wait_for_serirq_timeout' was not declared. Should it be static?
-> /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c:210:19: warning: cast removes address space of expression
-> /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c:227:19: warning: cast removes address space of expression
-> /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c:245:19: warning: cast removes address space of expression
-> /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c:269:19: warning: cast removes address space of expression
-> /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c:307:19: warning: cast removes address space of expression
-> /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c:324:38: warning: cast removes address space of expression
-> /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c:394:19: warning: cast removes address space of expression
-> /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c:424:19: warning: cast removes address space of expression
-> /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c:456:19: warning: cast removes address space of expression
-> /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c:531:19: warning: cast removes address space of expression
-> /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c:672:29: warning: incorrect type in assignment (different address spaces)
-> /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c:672:29:    expected void [noderef] <asn:2>*iobase
-> /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c:672:29:    got struct i2c_client *client
-> /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c:781:19: warning: cast removes address space of expression
-> /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c:818:19: warning: cast removes address space of expression
-> /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c:841:19: warning: cast removes address space of expression
->   CC [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.o
->   Building modules, stage 2.
->   MODPOST 8 modules
-> 
-> 
-> Please fix these if applicable - otherwise you'll probably get a friendly reminder to do so by fengguang's build test ;)
-> 
-> 
-> = smatch =
-> Same applies to smatch
-> make -C /data/data-old/linux-2.6/ M=`pwd`  modules C=1 CHECK=smatch
-> make: Entering directory `/data/data-old/linux-2.6'
->   CHECK   /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c
-> /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c:535 tpm_stm_i2c_recv() warn: variable dereferenced before check 'chip' (see line 531)
-> /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c:748 tpm_st33_i2c_probe() warn: variable dereferenced before check 'platform_data' (see line 659)
-> /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c:848 tpm_st33_i2c_pm_resume() warn: should this be a bitwise op?
-> /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c:848 tpm_st33_i2c_pm_resume() warn: should this be a bitwise op?
->   CC [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.o
-> 
-> Please fix these if applicable - otherwise you'll probably get a friendly reminder to do so by fengguang's build test ;)
-> 
-> = checkpatch =
-> Also please run .../scripts/checkpatch.pl -strict before submission - not everything that is reported might be applicable, but quite often it is.
-> 
-> 
-> 
-> Looking forward to your v2 so I can give a more detailed code review of your code.
-> 
-> 
-> Thanks,
-> Peter
-> 
-> 
+Can you really get here with !user_mode(regs)?  If so, you are very likely
+screwed and badly.
 
+> +	if (from_syscall) {
+> +		/* Restart the system call - no handlers present */
+> +		switch (syscall_get_error(current, regs)) {
+> +		case -ERESTARTNOHAND:
+> +		case -ERESTARTSYS:
+> +		case -ERESTARTNOINTR:
+> +			regs->REG_SYSCALL = orig_syscall;
+> +			regs->REG_PC -= 4;
+
+... and what's to prevent getting here again?  Unless you only handle one
+signal and bugger off to userland immediately, which is also quite broken.
+BTW, what's to stop the syscall restart triggering if you catch a signal
+while in rt_sigreturn(2)?
