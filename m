@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753018Ab2LEBgt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 20:36:49 -0500
-Received: from gmmr4.centrum.cz ([46.255.227.253]:36842 "EHLO gmmr4.centrum.cz"
+	id S1753377Ab2LEBjB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 20:39:01 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:2248 "EHLO sjogate2.atmel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752000Ab2LEBgr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 20:36:47 -0500
-To: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>
-Subject: =?utf-8?q?Re=3A_=5BPATCH_for_3=2E2=2E34=5D_memcg=3A_do_not_trigger_OOM_from_add=5Fto=5Fpage=5Fcache=5Flocked?=
-Date: Wed, 05 Dec 2012 02:36:44 +0100
-From: "azurIt" <azurit@pobox.sk>
-Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        =?utf-8?q?cgroups_mailinglist?= <cgroups@vger.kernel.org>,
-        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
-        =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
-References: <20121126131837.GC17860@dhcp22.suse.cz>, <20121126132149.GD17860@dhcp22.suse.cz>, <20121130032918.59B3F780@pobox.sk>, <20121130124506.GH29317@dhcp22.suse.cz>, <20121130144427.51A09169@pobox.sk>, <20121130144431.GI29317@dhcp22.suse.cz>, <20121130160811.6BB25BDD@pobox.sk>, <20121130153942.GL29317@dhcp22.suse.cz>, <20121130165937.F9564EBE@pobox.sk>, <20121130161923.GN29317@dhcp22.suse.cz> <20121203151601.GA17093@dhcp22.suse.cz>
-In-Reply-To: <20121203151601.GA17093@dhcp22.suse.cz>
-X-Mailer: Centrum Email 5.3
-X-Priority: 3
-X-Original-From: azurit@pobox.sk
-MIME-Version: 1.0
-Message-Id: <20121205023644.18C3006B@pobox.sk>
-X-Maser: Georgo
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1752731Ab2LEBiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 20:38:55 -0500
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: nicolas.ferre@atmel.com, plagnioj@jcrosoft.com, JM.Lin@atmel.com,
+        wenyou.yang@atmel.com, wim@iguana.be, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [v2 PATCH 4/8] watchdog/at91sam9_wdt: Add nowayout helpers to Watchdog Timer Driver Kernel API
+Date: Wed,  5 Dec 2012 09:34:23 +0800
+Message-Id: <1354671267-19277-5-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1354671267-19277-1-git-send-email-wenyou.yang@atmel.com>
+References: <1354671267-19277-1-git-send-email-wenyou.yang@atmel.com>
+X-OriginalArrivalTime: 05 Dec 2012 01:38:42.0835 (UTC) FILETIME=[424DA630:01CDD289]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->The following should print the traces when we hand over ENOMEM to the
->caller. It should catch all charge paths (migration is not covered but
->that one is not important here). If we don't see any traces from here
->and there is still global OOM striking then there must be something else
->to trigger this.
->Could you test this with the patch which aims at fixing your deadlock,
->please? I realise that this is a production environment but I do not see
->anything relevant in the code.
+Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+Cc: wim@iguana.be
+Cc: linux-watchdog@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/watchdog/at91sam9_wdt.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
+diff --git a/drivers/watchdog/at91sam9_wdt.c b/drivers/watchdog/at91sam9_wdt.c
+index 4dc6d61..f1e21dd 100644
+--- a/drivers/watchdog/at91sam9_wdt.c
++++ b/drivers/watchdog/at91sam9_wdt.c
+@@ -240,6 +240,8 @@ static int __init at91wdt_probe(struct platform_device *pdev)
+ 		return ret;
+ 	}
+ 
++	watchdog_set_nowayout(&at91wdt_wdd, nowayout);
++
+ 	watchdog_init_timeout(&at91wdt_wdd, heartbeat, pdev->dev.of_node);
+ 
+ 	ret = at91wdt_enable(&at91wdt_wdd, ms_to_ticks(WDT_HW_TIMEOUT * 1000));
+-- 
+1.7.9.5
 
-Michal,
-
-i think/hope this is what you wanted:
-http://www.watchdog.sk/lkml/oom_mysqld2
