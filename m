@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487Ab2LEBrs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 20:47:48 -0500
-Received: from ozlabs.org ([203.10.76.45]:49015 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752516Ab2LEBrn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 20:47:43 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Linus Torvalds" <torvalds@linux-foundation.org>
-Cc: "LKML" <linux-kernel@vger.kernel.org>,
-        "David Howells" <dhowells@redhat.com>
-Subject: [PULL] More module signing fixes.
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Wed, 05 Dec 2012 12:15:19 +1030
-Message-ID: <87624hgtlc.fsf@rustcorp.com.au>
+	id S1753796Ab2LEBse (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 20:48:34 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58694 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752000Ab2LEBsd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 20:48:33 -0500
+Date: Wed, 5 Dec 2012 10:48:25 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Kevin Liu <keyuan.liu@gmail.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        Liam Girdwood <lrg@ti.com>, Chris Ball <cjb@laptop.org>
+Subject: Re: [PATCH 3/3] mmc: sdhci: check voltage range only on regulators
+ aware of voltage value
+Message-ID: <20121205014823.GA28474@opensource.wolfsonmicro.com>
+References: <1354629663-29091-1-git-send-email-m.szyprowski@samsung.com>
+ <1354629663-29091-4-git-send-email-m.szyprowski@samsung.com>
+ <CADz5_gLAWyD-3nYEV5HJad11wxEmxO867LkWOXDBn1_XmcOA_w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CADz5_gLAWyD-3nYEV5HJad11wxEmxO867LkWOXDBn1_XmcOA_w@mail.gmail.com>
+X-Cookie: Chess tonight.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David gave me these a month ago, during my git workflow churn :(
+On Tue, Dec 04, 2012 at 10:50:03PM +0800, Kevin Liu wrote:
+> 2012/12/4 Marek Szyprowski <m.szyprowski@samsung.com>:
 
-The following changes since commit df2fc246c8ee8b6067af1fa55d3bc23107457f61:
+> > +       if (host->vmmc && regulator_get_voltage(host->vmmc) > 0) {
+> >                 ret = regulator_is_supported_voltage(host->vmmc, 2700000,
+> >                         3600000);
+> >                 if ((ret <= 0) || (!(caps[0] & SDHCI_CAN_VDD_330)))
 
-  Merge branch 'fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux (2012-12-04 09:32:12 -0800)
+> Good idea. But how about the regulator is disabled at this point? So I
+> suggest to change to
+>      if (host->vmmc && regulator_get_voltage(host->vmmc) >= 0)
 
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git 
-
-for you to fetch changes up to f3537f91f9be2ce5fcbaa1aa6d787ad0436daec6:
-
-  ASN.1: Fix an indefinite length skip error (2012-12-05 11:27:39 +1030)
-
-----------------------------------------------------------------
-David Howells (2):
-      MODSIGN: Don't use enum-type bitfields in module signature info block
-      ASN.1: Fix an indefinite length skip error
-
- kernel/module_signing.c |   14 +++++++-------
- lib/asn1_decoder.c      |    2 +-
- 2 files changed, 8 insertions(+), 8 deletions(-)
+I'd not expect regulator_get_voltage() to return 0 for disabled
+regulators, I'd expect it to return the voltage the regulator will have
+when enabled.
