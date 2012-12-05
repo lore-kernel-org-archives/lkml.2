@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753399Ab2LEHJF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 02:09:05 -0500
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:33408 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751880Ab2LEHJD (ORCPT
+	id S1753468Ab2LEHJK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 02:09:10 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:51044 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753413Ab2LEHJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 02:09:03 -0500
-Date: Wed, 5 Dec 2012 08:09:01 +0100
-From: Andreas Mohr <andi@lisas.de>
-To: linux-kernel@vger.kernel.org
-Cc: Li Shaohua <shaohua.li@intel.com>, linux-acpi@vger.kernel.org
-Subject: Look Ma, da kernel is b0rken
-Message-ID: <20121205070901.GA12123@rhlx01.hs-esslingen.de>
+	Wed, 5 Dec 2012 02:09:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Priority: none
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1354542848-29638-1-git-send-email-alex.shi@intel.com>
+References: <1354542848-29638-1-git-send-email-alex.shi@intel.com>
+Date: Wed, 5 Dec 2012 15:09:06 +0800
+Message-ID: <CAGjg+kE9dFSfnridN_5ngtuC1r5rbnkLVfyqkdTwWCE0LOG4OQ@mail.gmail.com>
+Subject: Re: [PATCH 0/4] sched: fork/exec/wake clean up
+From: Alex Shi <lkml.alex@gmail.com>
+To: Alex Shi <alex.shi@intel.com>
+Cc: npiggin@kernel.dk, mingo@redhat.com, peterz@infradead.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Dec 3, 2012 at 9:54 PM, Alex Shi <alex.shi@intel.com> wrote:
+> This patchset try to clean up select_task_rq_fair which used for
+> fork/exec/wake scheduling.
+>
+> With this patchset, our system NHM EX and SNB EP 4 socket machine
+> has 10% hackbench performance increase.
 
-drivers/pnp/pnpacpi/core.c: In function 'ispnpidacpi':
-drivers/pnp/pnpacpi/core.c:65:2: warning: logical 'or' of collectively
-exhaustive tests is always true [-Wlogical-op]
-drivers/pnp/pnpacpi/core.c:66:2: warning: logical 'or' of collectively
-exhaustive tests is always true [-Wlogical-op]
-drivers/pnp/pnpacpi/core.c:67:2: warning: logical 'or' of collectively
-exhaustive tests is always true [-Wlogical-op]
-
-
-That's already the second less enticing -Wlogical-op issue
-which was discovered by accident during less than two days
-of my happy(?) activity of kernel suspend breakage bisection.
-
-
-Why oh why, as a rather *very* critical piece of software,
-can't the kernel use sufficiently aggressive warning levels *by default*??
-IMHO it's simply NOT ACCEPTABLE to have such sloppiness creep into
-the daily bandwagon of kernel development life
-(or should I say: being mandated to creep in?).
-
-Result: whichever default warning level you set
-*will* end up as The New Normal,
-and all those warnings which then remain able to rear their ugly heads
-according to the chosen default level
-will be fixed by the community eventually,
-and *most others won't* (or at least not in time).
-
-The amount of warnings spewn by make W=3 (or even W=2) is simply
-shocking IMNSHO.
-And there can always be an argument that most of such warnings
-are fixable. If not directly (e.g. because analysis of that warning type
-is partially unreliable), then by actively reworking code
-into something slightly different.
-
-So, unless there are very hard and *justified* reasons
-for keeping builds at such lame-*ss defaults
-(such as automated compliance test runs which may not fail -
-but in such cases one could argue that *those* uses
-should then be required to manually lessen *their* warning level settings),
-I would strongly vote for having a hard discussion about the status
-quo.
+Any comments for this patchset?
+>
+> Regards
+> Alex
+>
+> [PATCH 01/4] sched: select_task_rq_fair clean up
+> [PATCH 02/4] sched: fix find_idlest_group mess logical
+> [PATCH 03/4] sched: don't need go to smaller sched domain
+> [PATCH 04/4] sched: remove domain iterations in fork/exec/wake
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 
-As a somewhat aggravating comment, please note that this warning
-actually seems to date back to 1da177e (initial repository build)
-according to blame on that file.
 
-Andreas Mohr
-
-P.S.: sorry for the subject line ;)
+-- 
+Thanks
+    Alex
