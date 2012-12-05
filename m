@@ -1,162 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753708Ab2LETV6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 14:21:58 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55067 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752096Ab2LETV5 (ORCPT
+	id S1753851Ab2LETXo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 14:23:44 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:35432 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752932Ab2LETXn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 14:21:57 -0500
-Date: Wed, 5 Dec 2012 19:21:41 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Marko =?utf-8?B?S2F0acSH?= <dromede@gmail.com>
-Cc: Jingoo Han <jg1.han@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        linux-arm-kernel@lists.infradead.org,
-        Marek =?utf-8?B?VmHFoXV0?= <marek.vasut@gmail.com>
-Subject: Re: [PATCH v4] backlight: corgi_lcd: Use gpio_set_value_cansleep()
-	to avoid WARN_ON
-Message-ID: <20121205192141.GQ14363@n2100.arm.linux.org.uk>
-References: <000201cdd283$baf50160$30df0420$%han@samsung.com> <20121205093027.GK14363@n2100.arm.linux.org.uk> <CAHod+Gdb_LEnhx5cz9j=q9PyS4L=Yjxs303dHon9i-tgjJRtDA@mail.gmail.com>
+	Wed, 5 Dec 2012 14:23:43 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAHod+Gdb_LEnhx5cz9j=q9PyS4L=Yjxs303dHon9i-tgjJRtDA@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <alpine.DEB.2.00.1211181453550.5080@chino.kir.corp.google.com>
+References: <CALCETrVgbx-8Ex1Q6YgEYv-Oxjoa1oprpsQE-Ww6iuwf7jFeGg@mail.gmail.com>
+ <alpine.DEB.2.00.1211131507370.17623@chino.kir.corp.google.com>
+ <CALCETrU=7+pk_rMKKuzgW1gafWfv6v7eQtVw3p8JryaTkyVQYQ@mail.gmail.com>
+ <alpine.DEB.2.00.1211131530020.17623@chino.kir.corp.google.com>
+ <20121114100154.GI8218@suse.de> <20121114132940.GA13196@offline.be>
+ <alpine.DEB.2.00.1211141342460.13515@chino.kir.corp.google.com>
+ <20121115011449.GA20858@offline.be> <20121117001826.GC9816@offline.be> <alpine.DEB.2.00.1211181453550.5080@chino.kir.corp.google.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 5 Dec 2012 11:23:20 -0800
+Message-ID: <CALCETrUMMkaz-N=7TZbvJFAPrSGKZTuUC0Vi-uWM6-TeaUfFeg@mail.gmail.com>
+Subject: Re: [3.6 regression?] THP + migration/compaction livelock (I think)
+To: David Rientjes <rientjes@google.com>
+Cc: Marc Duponcheel <marc@offline.be>, Mel Gorman <mgorman@suse.de>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 05, 2012 at 07:20:00PM +0100, Marko Katić wrote:
-> On Wed, Dec 5, 2012 at 10:30 AM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> > On Wed, Dec 05, 2012 at 09:59:07AM +0900, Jingoo Han wrote:
-> >> -     if (gpio_is_valid(lcd->gpio_backlight_cont))
-> >> -             gpio_set_value(lcd->gpio_backlight_cont, cont);
-> >> +     if (gpio_is_valid(lcd->gpio_backlight_cont)) {
-> >> +             if (gpio_cansleep(lcd->gpio_backlight_cont))
-> >> +                     gpio_set_value_cansleep(lcd->gpio_backlight_cont, cont);
-> >> +             else
-> >> +                     gpio_set_value(lcd->gpio_backlight_cont, cont);
-> >> +     }
-> >
-> > Why not simply:
-> >
-> > +       if (gpio_is_valid(lcd->gpio_backlight_cont))
-> > +               gpio_set_value_cansleep(lcd->gpio_backlight_cont, cont);
-> 
-> My first patch did exactly this but there were complains about it's
-> commit message.
+On Sun, Nov 18, 2012 at 2:55 PM, David Rientjes <rientjes@google.com> wrote:
+> On Sat, 17 Nov 2012, Marc Duponcheel wrote:
+>
+>> # echo always >/sys/kernel/mm/transparent_hugepage/enabled
+>> # while [ 1 ]
+>>   do
+>>    sleep 10
+>>    date
+>>    echo = vmstat
+>>    egrep "(thp|compact)" /proc/vmstat
+>>    echo = khugepaged stack
+>>    cat /proc/501/stack
+>>  done > /tmp/49361.xxxx
+>> # emerge icedtea
+>> (where 501 = pidof khugepaged)
+>>
+>> for xxxx = base = 3.6.6
+>> and xxxx = test = 3.6.6 + diff you provided
+>>
+>> I attach
+>>  /tmp/49361.base.gz
+>> and
+>>  /tmp/49361.test.gz
+>>
+>> Note:
+>>
+>>  with xxx=base, I could see
+>>   PID USER      PR  NI  VIRT  RES  SHR S  %CPU %MEM     TIME+ COMMAND
+>>  8617 root      20   0 3620m  41m  10m S 988.3  0.5   6:19.06 javac
+>>     1 root      20   0  4208  588  556 S   0.0  0.0   0:03.25 init
+>>  already during configure and I needed to kill -9 javac
+>>
+>>  with xxx=test, I could see
+>>   PID USER      PR  NI  VIRT  RES  SHR S  %CPU %MEM     TIME+ COMMAND
+>> 9275 root      20   0 2067m 474m  10m S 304.2  5.9   0:32.81 javac
+>>  710 root       0 -20     0    0    0 S   0.3  0.0   0:01.07 kworker/0:1H
+>>  later when processing >700 java files
+>>
+>> Also note that with xxx=test compact_blocks_moved stays 0
+>>
+>
+> Sounds good!  Andy, have you had the opportunity to try to reproduce your
+> issue with the backports that Mel listed?  I think he'll be considering
+> asking for some of these to be backported for a future stable release so
+> any input you can provide would certainly be helpful.
 
-So that's a reason to drop the patch?  Err, forgive me for being thick
-as a medieval castle wall, but what does complaints about the commit
-message have to do with the contents of the patch?  Why can't you just
-fix the commit message?
+I've had an impressive amount of trouble even reproducing it on 3.6.
+Apparently I haven't hid the magic combination yet.  I'll give it
+another try soon.
 
-> And i just found out that Marek Vasut posted the exact same patch more
-> than a year ago.
-> 
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2011-April/046955.html
-> 
-> It was not applied for various reasons.
-
-Looking at that thread (which is corrupted btw, probably thanks to the
-crappy python based locking in mailman) - here's a better archiver:
-
-http://lists.arm.linux.org.uk/lurker/thread/20110402.014316.74101499.en.html
-
-it didn't go anywhere because the discussion was distracted by the loss
-of David Brownell.
-
-Eric shares my opinion of the _cansleep() mess, but unfortunately it's
-what we have and no one's come up with any better solutions to it.  (I
-argued from the outset that the gpio_xxx_cansleep() should've been
-gpio_xxx() and the non-cansleep() version should be called
-gpio_xxx_atomic() so that by default people use the version which _can_
-sleep, but have to think about it when they want to manipulate GPIOs in
-non-task contexts.)
-
-That's off-topic though.  Using just the _cansleep() version is far
-better than messing around with stuff like:
-
-	if (gpio_cansleep(gpio))
-		gpio_xxx_cansleep(gpio);
-	else
-		gpio_xxx(gpio);
-
-> > If you read the gpiolib code and documentation, what you will realise is
-> > that the two calls are identical except for the "might_sleep_if()" in
-> > gpio_set_value_cansleep().  You will also note that gpiolib itself _only_
-> > calls gpio_set_value_cansleep() without checking gpio_cansleep() in
-> > contexts where sleeping is possible.  So if it's good enough for gpiolib,
-> > it should be good enough here.
-> 
-> The documentation tells which calls to use when you don't need to sleep
-> and which calls to use when you might sleep. And here we have a case
-> where the same call to gpio_set_value might sleep or doesn't have to,
-> depending on the model.
-> In this case, i'd rather use gpio_cansleep check as Andrew proposed.
-> 
-> I will also say that the distinction between gpio_set_value and
-> gpio_set_value_cansleep.
-> is rather confusing at this point. Is it really necessary to have both ?
-
-No.  You can call gpio_set_value_cansleep() from task contexts for any
-GPIO just fine, but you can't call it from atomic contexts (it will
-complain).  It doesn't matter whether the GPIO can sleep or not.
-
-You can call gpio_set_value() from any context without it complaining,
-however, gpio_set_value() can't be used with a GPIO which sleeps.
-
-Look, when it comes down to it, in _task_ context, where sleeps are
-permissible:
-
-	gpio_set_value(gpio, xxx);
-and
-	gpio_set_value_cansleep(gpio, xxx);
-
-are exactly the same thing; they will both set the value of a GPIO
-output, whether it be an atomic or a sleeping gpio to the requested
-value.
-
-The difference between the two becomes important if you're not in task
-context, where only the non-_cansleep() versions can be used.  This is
-enforced by the _cansleep() versions issuing a WARN_ON() if they're
-used in non-task contexts.  And conversely, the non-_cansleep() versions
-will warn (as you've found) if you use that call with a GPIO which will
-sleep.
-
-There is another solution to this mess:
-
-void __gpio_set_value(unsigned gpio, int value)
-{
-	struct gpio_chip	*chip;
-
-	chip = gpio_to_chip(gpio);
-	/* Should be using gpio_set_value_cansleep() */
--	WARN_ON(chip->can_sleep);
-+	might_sleep_if(chip->can_sleep);
-	trace_gpio_value(gpio, 0, value);
-	if (test_bit(FLAG_OPEN_DRAIN,  &gpio_desc[gpio].flags))
-		_gpio_set_open_drain_value(gpio, chip, value);
-	else if (test_bit(FLAG_OPEN_SOURCE,  &gpio_desc[gpio].flags))
-		_gpio_set_open_source_value(gpio, chip, value);
-	else
-		chip->set(chip, gpio - chip->base, value);
-}
-EXPORT_SYMBOL_GPL(__gpio_set_value);
-
-With the above change (and an equivalent change everywhere else), it means
-gpio_set_value() is callable from task contexts on GPIOs which can sleep.
-
-However, it loses us some checking - we no longer have the cross-platform
-checking that we get with the existing API, and that's why it's undesirable.
-
-As I say above, IMHO it would've been much better to rename these functions
-to be the other way around but David was always very dismissive of any
-comments I had against any code he'd written.
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
