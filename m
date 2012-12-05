@@ -1,212 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781Ab2LEC2t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 21:28:49 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:38865 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753162Ab2LEC2s (ORCPT
+	id S1753762Ab2LECax (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 21:30:53 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:45094 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752516Ab2LECav (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 21:28:48 -0500
-MIME-Version: 1.0
-In-Reply-To: <1354674196-1998-1-git-send-email-qingx@marvell.com>
-References: <1354674196-1998-1-git-send-email-qingx@marvell.com>
-Date: Wed, 5 Dec 2012 10:28:46 +0800
-Message-ID: <CAN1soZzZ-XB2P9Hp=dc3pr9+iHAUFvYh36yt8TEx5VT9kFTYzQ@mail.gmail.com>
-Subject: Re: [PATCH] mfd: 88pm80x: add dt support
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Qing Xu <qingx@marvell.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Qiao Zhou <zhouqiao@marvell.com>, cxie4@marvell.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 4 Dec 2012 21:30:51 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6916"; a="11723105"
+From: Stepan Moskovchenko <stepanm@codeaurora.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Rob Herring <rob.herring@calxeda.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org, Bryan Huntsman <bryanh@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        David Brown <davidb@codeaurora.org>, mbohan@codeaurora.org,
+        Stepan Moskovchenko <stepanm@codeaurora.org>
+Subject: [PATCH] of: Output devicetree alias names in uevent
+Date: Tue,  4 Dec 2012 18:30:37 -0800
+Message-Id: <1354674637-6448-1-git-send-email-stepanm@codeaurora.org>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 5, 2012 at 10:23 AM, Qing Xu <qingx@marvell.com> wrote:
-> From: Qing Xu <qingx@marvell.com>
->
-> add dt support for 88pm800 and 88pm805
->
-> Signed-off-by: Qing Xu <qingx@marvell.com>
-> ---
->  drivers/mfd/88pm800.c       |   26 +++++++++++++++++++++++---
->  drivers/mfd/88pm805.c       |   26 +++++++++++++++++++++++---
->  drivers/mfd/88pm80x.c       |   32 ++++++++++++++++++++++++++++++++
->  include/linux/mfd/88pm80x.h |    3 +++
->  4 files changed, 81 insertions(+), 6 deletions(-)
->
-> diff --git a/drivers/mfd/88pm800.c b/drivers/mfd/88pm800.c
-> index 3fcc8dd..20b67d7 100644
-> --- a/drivers/mfd/88pm800.c
-> +++ b/drivers/mfd/88pm800.c
-> @@ -506,6 +506,22 @@ static int __devinit pm800_probe(struct i2c_client *client,
->         struct pm80x_chip *chip;
->         struct pm80x_platform_data *pdata = client->dev.platform_data;
->         struct pm80x_subchip *subchip;
-> +       struct device_node *node = client->dev.of_node;
-> +
-> +       if (node && !pdata) {
-> +               /* parse DT to get platform data */
-> +               pdata = devm_kzalloc(&client->dev,
-> +                                    sizeof(struct pm80x_platform_data),
-> +                                    GFP_KERNEL);
-> +               if (!pdata)
-> +                       return -ENOMEM;
-> +               ret = pm80x_dt_init(node, &client->dev, pdata);
-> +               if (ret)
-> +                       return -EINVAL;
-> +       } else if (!pdata) {
-> +               pr_info("No platform data in %s!\n", __func__);
-> +               return -EINVAL;
-> +       }
->
->         ret = pm80x_init(client, id);
->         if (ret) {
-> @@ -540,9 +556,6 @@ static int __devinit pm800_probe(struct i2c_client *client,
->                 goto err_800_init;
->         }
->
-> -       if (pdata->plat_config)
-> -               pdata->plat_config(chip, pdata);
-> -
->         return 0;
->
->  err_800_init:
-> @@ -570,11 +583,18 @@ static int __devexit pm800_remove(struct i2c_client *client)
->         return 0;
->  }
->
-> +static const struct of_device_id pm800_dt_ids[] = {
-> +       { .compatible = "marvell,88pm800", },
-> +       {},
-> +};
-> +MODULE_DEVICE_TABLE(of, pm800_dt_ids);
-> +
->  static struct i2c_driver pm800_driver = {
->         .driver = {
->                 .name = "88PM800",
->                 .owner = THIS_MODULE,
->                 .pm = &pm80x_pm_ops,
-> +               .of_match_table = of_match_ptr(pm800_dt_ids),
->                 },
->         .probe = pm800_probe,
->         .remove = __devexit_p(pm800_remove),
-> diff --git a/drivers/mfd/88pm805.c b/drivers/mfd/88pm805.c
-> index 39a91bd..b0fb3ff 100644
-> --- a/drivers/mfd/88pm805.c
-> +++ b/drivers/mfd/88pm805.c
-> @@ -239,6 +239,22 @@ static int __devinit pm805_probe(struct i2c_client *client,
->         int ret = 0;
->         struct pm80x_chip *chip;
->         struct pm80x_platform_data *pdata = client->dev.platform_data;
-> +       struct device_node *node = client->dev.of_node;
-> +
-> +       if (node && !pdata) {
-> +               /* parse DT to get platform data */
-> +               pdata = devm_kzalloc(&client->dev,
-> +                                    sizeof(struct pm80x_platform_data),
-> +                                    GFP_KERNEL);
-> +               if (!pdata)
-> +                       return -ENOMEM;
-> +               ret = pm80x_dt_init(node, &client->dev, pdata);
-> +               if (ret)
-> +                       return -EINVAL;
-> +       } else if (!pdata) {
-> +               pr_info("No platform data in %s!\n", __func__);
-> +               return -EINVAL;
-> +       }
->
->         ret = pm80x_init(client, id);
->         if (ret) {
-> @@ -254,9 +270,6 @@ static int __devinit pm805_probe(struct i2c_client *client,
->                 goto err_805_init;
->         }
->
-> -       if (pdata->plat_config)
-> -               pdata->plat_config(chip, pdata);
-> -
->         return 0;
->
->  err_805_init:
-> @@ -277,11 +290,18 @@ static int __devexit pm805_remove(struct i2c_client *client)
->         return 0;
->  }
->
-> +static const struct of_device_id pm805_dt_ids[] = {
-> +       { .compatible = "marvell,88pm805", },
-> +       {},
-> +};
-> +MODULE_DEVICE_TABLE(of, pm805_dt_ids);
-> +
->  static struct i2c_driver pm805_driver = {
->         .driver = {
->                 .name = "88PM805",
->                 .owner = THIS_MODULE,
->                 .pm = &pm80x_pm_ops,
-> +               .of_match_table = of_match_ptr(pm805_dt_ids),
->                 },
->         .probe = pm805_probe,
->         .remove = __devexit_p(pm805_remove),
-> diff --git a/drivers/mfd/88pm80x.c b/drivers/mfd/88pm80x.c
-> index 1adb355..bd59202 100644
-> --- a/drivers/mfd/88pm80x.c
-> +++ b/drivers/mfd/88pm80x.c
-> @@ -111,6 +111,38 @@ int pm80x_deinit(struct i2c_client *client)
->  }
->  EXPORT_SYMBOL_GPL(pm80x_deinit);
->
-> +int pm80x_dt_init(struct device_node *np,
-> +                                   struct device *dev,
-> +                                   struct pm80x_platform_data *pdata)
-> +{
-> +       int ret;
-> +       ret = of_property_read_u32(np, "marvell,88pm80x-irqmode",
-> +                                  &pdata->irq_mode);
-> +       if (ret) {
-> +               dev_err(dev, "Not found \"marvell,88pm80x-irqmode\" "
-> +                       "property\n");
-> +               return -EINVAL;
-> +       }
-> +
-> +       ret = of_property_read_u32(np, "marvell,88pm80x-poweraddr",
-> +                                  (u32*)(&pdata->power_page_addr));
-> +       if (ret) {
-> +               dev_err(dev, "Not found \"marvell,88pm80x-poweraddr\" "
-> +                       "property\n");
-> +               return -EINVAL;
-> +       }
-> +
-> +       ret = of_property_read_u32(np, "marvell,88pm80x-gpadcaddr",
-> +                                  (u32*)(&pdata->gpadc_page_addr));
-> +       if (ret) {
-> +               dev_err(dev, "Not found \"marvell,88pm80x-gpadcaddr\" "
-> +                       "property\n");
-> +               return -EINVAL;
-> +       }
-> +       return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(pm80x_dt_init);
-> +
->  #ifdef CONFIG_PM_SLEEP
->  static int pm80x_suspend(struct device *dev)
->  {
-> diff --git a/include/linux/mfd/88pm80x.h b/include/linux/mfd/88pm80x.h
-> index 904efb9..153f492 100644
-> --- a/include/linux/mfd/88pm80x.h
-> +++ b/include/linux/mfd/88pm80x.h
-> @@ -367,4 +367,7 @@ static inline int pm80x_dev_resume(struct device *dev)
->  extern int pm80x_init(struct i2c_client *client,
->                              const struct i2c_device_id *id) __devinit;
->  extern int pm80x_deinit(struct i2c_client *client);
-> +extern int pm80x_dt_init(struct device_node *np,
-> +                                               struct device *dev,
-> +                                               struct pm80x_platform_data *pdata);
->  #endif /* __LINUX_MFD_88PM80X_H */
-> --
-> 1.7.0.4
->
+In some situations, userspace may want to resolve a
+device by function and logical number (ie, "serial0")
+rather than by the base address or full device path. Being
+able to resolve a device by alias frees userspace from the
+burden of otherwise having to maintain a mapping between
+device addresses and their logical assignments on each
+platform when multiple instances of the same hardware block
+are present in the system.
 
-Document?
+Although the uevent device attribute contains devicetree
+compatible information and the full device path, the uevent
+does not list the alises that may have been defined for the
+device.
+
+Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
+---
+I have followed the OF_COMPATIBLE convention for adding the
+uevent variables for the alias names, but I can follow some
+other convention if people feel something else is more
+appropriate.
+
+ drivers/of/base.c         |   25 +++++++++++++++++++++++++
+ drivers/of/device.c       |    1 +
+ include/linux/of_device.h |    2 ++
+ 3 files changed, 28 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index 5806449..291f0a0 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -19,6 +19,7 @@
+  */
+ #include <linux/ctype.h>
+ #include <linux/module.h>
++#include <linux/device.h>
+ #include <linux/of.h>
+ #include <linux/spinlock.h>
+ #include <linux/slab.h>
+@@ -1177,6 +1178,30 @@ static void of_alias_add(struct alias_prop *ap, struct device_node *np,
+ }
+
+ /**
++ * of_device_uevent_aliases - Display OF alises in uevent
++ */
++void of_device_uevent_aliases(struct device_node *node,
++			      struct kobj_uevent_env *env)
++{
++	struct alias_prop *app;
++	int seen = 0;
++
++	mutex_lock(&of_aliases_mutex);
++	list_for_each_entry(app, &aliases_lookup, link) {
++		if (node == app->np) {
++			add_uevent_var(env, "OF_ALIAS_%d=%s%d", seen, app->stem,
++				       app->id);
++			seen++;
++		}
++	}
++
++	if (seen)
++		add_uevent_var(env, "OF_ALIAS_N=%d", seen);
++
++	mutex_unlock(&of_aliases_mutex);
++}
++
++/**
+  * of_alias_scan - Scan all properties of 'aliases' node
+  *
+  * The function scans all the properties of 'aliases' node and populate
+diff --git a/drivers/of/device.c b/drivers/of/device.c
+index 4c74e4f..06e122d 100644
+--- a/drivers/of/device.c
++++ b/drivers/of/device.c
+@@ -153,6 +153,7 @@ void of_device_uevent(struct device *dev, struct kobj_uevent_env *env)
+ 		seen++;
+ 	}
+ 	add_uevent_var(env, "OF_COMPATIBLE_N=%d", seen);
++	of_device_uevent_aliases(dev->of_node, env);
+ }
+
+ int of_device_uevent_modalias(struct device *dev, struct kobj_uevent_env *env)
+diff --git a/include/linux/of_device.h b/include/linux/of_device.h
+index 901b743..748056d 100644
+--- a/include/linux/of_device.h
++++ b/include/linux/of_device.h
+@@ -36,6 +36,8 @@ extern ssize_t of_device_get_modalias(struct device *dev,
+ 					char *str, ssize_t len);
+
+ extern void of_device_uevent(struct device *dev, struct kobj_uevent_env *env);
++extern void of_device_uevent_aliases(struct device_node *node,
++					struct kobj_uevent_env *env);
+ extern int of_device_uevent_modalias(struct device *dev, struct kobj_uevent_env *env);
+
+ static inline void of_device_node_put(struct device *dev)
+--
+The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
