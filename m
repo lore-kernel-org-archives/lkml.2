@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753734Ab2LEWMJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 17:12:09 -0500
-Received: from antcom.de ([188.40.178.216]:38577 "EHLO chuck.antcom.de"
+	id S1753865Ab2LEWNq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 17:13:46 -0500
+Received: from mga03.intel.com ([143.182.124.21]:53406 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753622Ab2LEWMH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 17:12:07 -0500
-Message-ID: <50BFC664.8080708@antcom.de>
-Date: Wed, 05 Dec 2012 23:10:44 +0100
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM Open Source Research and Development
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
+	id S1751765Ab2LEWNp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 17:13:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,224,1355126400"; 
+   d="scan'208";a="176667883"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Kleen, Andi" <andi.kleen@intel.com>
+CC: "Wu, Fengguang" <fengguang.wu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: RE: [PATCH 1/3] HWPOISON, hugetlbfs: fix warning on freeing
+ hwpoisoned hugepage
+Thread-Topic: [PATCH 1/3] HWPOISON, hugetlbfs: fix warning on freeing
+ hwpoisoned hugepage
+Thread-Index: AQHN0zI/ecpD0PErxkGvnJQuX5k39ZgKwsyQ
+Date: Wed, 5 Dec 2012 22:13:42 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F1C963B5E@ORSMSX108.amr.corp.intel.com>
+References: <1354744058-26373-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1354744058-26373-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1354744058-26373-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Wolfgang Grandegger <wg@grandegger.com>
-CC: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
-        jbe@pengutronix.de, plagnioj@jcrosoft.com, highguy@gmail.com,
-        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
-        rmallon@gmail.com, tru@work-microwave.de, sr@denx.de
-Subject: Re: [PATCH 0/6 v8] gpio: Add block GPIO
-References: <1354298637-25058-1-git-send-email-stigge@antcom.de> <50BC6E11.3040203@grandegger.com> <50BE5F8A.2000903@antcom.de> <50BF9627.4050102@grandegger.com>
-In-Reply-To: <50BF9627.4050102@grandegger.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfgang,
+> This patch fixes the warning from __list_del_entry() which is triggered
+> when a process tries to do free_huge_page() for a hwpoisoned hugepage.
 
-On 05/12/12 19:44, Wolfgang Grandegger wrote:
->> * There is probably an explicit interrupt configuration necessary (via
->> struct gpio_block, and devicetree, respectively) since there are
->> constellations where gpio_to_irq() isn't working. E.g., in contrast to
->> controllers which are aware of their IRQs and providing to_irq(), there
->> is typically independent wiring from GPIO expander chips' interrupt line
->> to individual IRQ inputs on SoCs/CPUs. Or should all this be solved via
->> devicetree and drivers (which should support IRQ config where possible)?
-> 
-> Yes, I think it's up to the device tree or platform code to properly setup
-> the interrupt... like for defining the GPIO block.
+Ultimately it would be nice to avoid poisoning huge pages. Generally we know the
+location of the poison to a cache line granularity (but sometimes only to a 4K
+granularity) ... and it is rather inefficient to take an entire 2M page out of service.
+With 1G pages things would be even worse!!
 
-OK, sounds reasonable. Luckily, in reality it already works fine in this
-regard with many current drivers.
+It also makes life harder for applications that would like to catch the SIGBUS
+and try to take their own recovery actions. Losing more data than they really
+need to will make it less likely that they can do something to work around the
+loss.
 
->> * For the same reason, the IRQ flags are currently IRQF_TRIGGER_FALLING,
->> which isn't flexible. Instead, either preset by board setup/firmware, or
->> via interrupts config in devicetree (optional property of a GPIO block?)
-> 
-> Yes, and it did fail on my setup.
+Has anyone looked at how hard it might be to have the code in memory-failure.c
+break up a huge page and only poison the 4K that needs to be taken out of service?
 
-OK, will replace the flags with 0 (and need to fix my own board setup ;-) ).
-
->> * Some GPIOs' IRQs are not suitable for GPI input change detection. E.g.
->> on LPC32xx, I can configure the IRQ which is controlled directly by the
->> GPI's values as FALLING, RISING, HIGH /exclusive/ or LOW. I.e., this way
->> it's not possible to detect both 0->1 and 1->0 changes without
->> reconfiguring the GPIO controller inbetween. Other controllers provide a
->> dedicated interrupt on all values changes.
-> 
-> Hm.
-
-For now, we are expecting IRQs to fire on "changes". Otherwise, the user
-needs to handle the issue manually, using busy polling, manual
-reconfiguration of the GPIO controller etc.
-
->> * Would IRQF_SHARED be appropriate to enable opening IRQ enabled GPIO
->> blocks multiple times?
-> 
-> Sounds reasonable for me. Some more comments in the patch mails...
-
-OK, will do in the next update.
-
-Thanks for your feedback,
-
-Roland
+-Tony
