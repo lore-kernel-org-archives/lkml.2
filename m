@@ -1,135 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab2LECWz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 21:22:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58882 "EHLO
+	id S1753661Ab2LECYN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 21:24:13 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58900 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752810Ab2LECWu (ORCPT
+	with ESMTP id S1753441Ab2LECYF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 21:22:50 -0500
-Message-ID: <1354674169.11174.87.camel@fourier>
-Subject: Re: [PATCH v3 2/4] input: Cypress PS/2 Trackpad psmouse driver
+	Tue, 4 Dec 2012 21:24:05 -0500
 From: Kamal Mostafa <kamal@canonical.com>
-To: Henrik Rydberg <rydberg@euromail.se>,
+To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Dudley Du <dudl@cypress.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Solda <dso@cypress.com>, Troy Abercrombia <ta@cypress.com>,
+        Henrik Rydberg <rydberg@euromail.se>
+Cc: Dudley Du <dudl@cypress.com>, David Solda <dso@cypress.com>,
+        Troy Abercrombia <ta@cypress.com>, Kamal Mostafa <kamal@canonical.com>,
         Kyle Fazzari <git@status.e4ward.com>,
         Mario Limonciello <mario_limonciello@dell.com>,
         Tim Gardner <tim.gardner@canonical.com>,
         Herton Krzesinski <herton.krzesinski@canonical.com>
-Date: Tue, 04 Dec 2012 18:22:49 -0800
-In-Reply-To: <20121203074520.GA2687@polaris.bitmath.org>
-References: <1354226281-3476-1-git-send-email-kamal@canonical.com>
-	 <1354226281-3476-3-git-send-email-kamal@canonical.com>
-	 <20121203074520.GA2687@polaris.bitmath.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Subject: [PATCH v4 0/4] Cypress PS/2 Trackpad driver
+Date: Tue,  4 Dec 2012 18:24:01 -0800
+Message-Id: <1354674245-25768-1-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Henrik-
+This driver, submitted on behalf of Cypress Semiconductor Corporation and
+additional contributors, provides support for the Cypress PS/2 Trackpad.
 
-Thanks again for your review.  The forthcoming PATCH v4 includes the
-majority of your change requests, except where noted below (and
-considering my email "Subject: SEMI_MT vs. simulated mt")...
+This [PATCH v4] version differs from my previous submitted version[2]:
 
+  Patch #1 (cmdbuf to 8 bytes) and #3 (link in driver) are unchanged.
 
-On Mon, 2012-12-03 at 08:45 +0100, Henrik Rydberg wrote:
+  Patch #2 (main driver) changes, as recommended by Henrik Rydberg,
+  Dmitry Torokhov, and Dudley Du:
 
-> > +		/*
-> > +		 * send extension command 0xE8 or 0xF3,
-> > +		 * if send extension command failed,
-> > +		 * try to send recovery command to make
-> > +		 * trackpad device return to ready wait command state.
-> > +		 * It alwasy success based on this recovery commands.
-> 
-> -EPARSE
+  - call input_mt_report_finger_count() directly; drop INPUT_MT_POINTER.
+  - #ifdef out all the CYTP_RELATIVE_SUPPORT code.
+  - convert CYTP_ macros to functions.
+  - propagate error return codes.
+  - fixed tp_res_y typo.
+  - list Dudley Du <dudl@cypress.com> as the primary author of the driver.
+  - additional misc cleanups.
 
-I don't understand the meaning of that comment either.  Perhaps the
-original author Dudley Du can explain it.
+  Patch #4 (selectable simulated multitouch instead of SEMI_MT):
 
-
-> > +static int cypress_read_vital_statistics(struct psmouse *psmouse)
-> 
-> Why do you call this statistics?
-
-Perhaps "cypress_read_tp_metrics" would be a better name.  Any thoughts
-on this, Dudley?
+  - this is now #ifdef-disabled by default but needed for (older?) userspace
+    X/Unity-desktop which does not support the input_mt_report_finger_count
+    events (e.g. BTN_TOOL_TRIPLETAP).
 
 
-> > +/*
-> > + * reset trackpad device to standard relative mode.
-> > + * This is also the defalut mode when trackpad powered on.
-> > + */
-> > +static void cypress_reset(struct psmouse *psmouse)
-> > +{
-> > +	struct cytp_data *cytp = psmouse->private;
-> > +
-> > +	psmouse_reset(psmouse);
-> > +
-> > +	CYTP_SET_MODE_BIT(CYTP_BIT_STANDARD_REL);
-> > +	CYTP_SET_PACKET_SIZE(3);
-> > +
-> > +	cytp->prev_contact_cnt = 0;
-> > +}
-> 
-> I suppose it is, but is it necessary to reset to default mode?
+Remaining known problems (assistance or advice appreciated):
 
-I left this unchanged, as I think you and Dmitry agreed.
+  - Patch #4 (simulated multitouch) does not work after rmmod/insmod, and
+    stops working after suspend/resume.  Restarting X fixes it in both
+    cases.  SEMI_MT appears to work normally in any case (per input-events).
+
+  - cypress_reconnect() doesn't actually work after suspend/resume, but
+    psmouse re-inits the driver after _reconnect fails.  Per Dudley Du,
+    this routine does work when physically disconnecting the device though
+    and its harmless regardless, so I am leaving it in pending further
+    investigation.
 
 
-> > +
-> > +static int cypress_set_input_params(struct input_dev *input,
-> > +				    struct cytp_data *cytp)
-> > +{
-> > +	int ret;
-> > +
-> > +	if (cytp->mode & CYTP_BIT_ABS_MASK) {
-> 
-> It seems the device will always operate in this mode, so please simplify.
+ -Kamal Mostafa <kamal@canonical.com>
 
-I #ifdef'd out the unused relative-mode code, as opposed to deleting it.
-Will that be acceptable?
+[0] PATCH v1: http://www.spinics.net/lists/linux-input/msg23690.html
+[1] PATCH v2: http://www.spinics.net/lists/linux-input/msg23718.html
+[2] PATCH v3: http://www.spinics.net/lists/linux-input/msg23943.html
 
 
-> > +		/* Remove HSCROLL bit */
-> > +		if (report_data->contact_cnt == 4)
-> > +			header_byte &= ~(ABS_HSCROLL_BIT);
-> 
-> Why conditionally?
 
-Dudley, can you answer this?  I left this (and all the scroll code)
-unchanged.
+Dudley Du (2):
+  input: Cypress PS/2 Trackpad psmouse driver
+  input: Cypress PS/2 Trackpad link into psmouse-base
 
+Kamal Mostafa (2):
+  input: increase struct ps2dev cmdbuf[] to 8 bytes
+  input: Cypress PS/2 Trackpad simulated multitouch (disabled)
 
-> > +#if 0
-> > +	/* FIXME: cypress_reconnect() never works...
-> > +	 * just let psmouse re-init() us for now.
-> > +	 */
-> > +	psmouse->reconnect = cypress_reconnect;
-> > +#endif
-> 
-> This needs to be removed or fixed, of course.
+ drivers/input/mouse/Kconfig        |   10 +
+ drivers/input/mouse/Makefile       |    1 +
+ drivers/input/mouse/cypress_ps2.c  |  853 ++++++++++++++++++++++++++++++++++++
+ drivers/input/mouse/cypress_ps2.h  |  231 ++++++++++
+ drivers/input/mouse/psmouse-base.c |   32 ++
+ drivers/input/mouse/psmouse.h      |    1 +
+ include/linux/libps2.h             |    2 +-
+ 7 files changed, 1129 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/input/mouse/cypress_ps2.c
+ create mode 100644 drivers/input/mouse/cypress_ps2.h
 
-Per Dudley, this does work in his disconnect/reconnect scenario, so I
-re-enabled it.  We will continue to investigate why it fails
-(harmlessly) in my suspend/resume scenario.
-
-
-> > +	int tp_max_abs_x;  /* Max X absolution units can be reported. */
-> > +	int tp_max_abs_y;  /* Max Y absolution units can be reported. */
-> 
-> I do not think we are seeking absolution here. :-)
-
-Ha!  Speak for yourself, Henrik!  ;-)  I'm starting to feel like maybe I
-should be seeking absolution here!
-
-
- -Kamal
-
+-- 
+1.7.10.4
 
