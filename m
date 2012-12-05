@@ -1,190 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932190Ab2LEXCz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 18:02:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27791 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753915Ab2LEXCy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 18:02:54 -0500
-Message-ID: <1354748573.3224.63.camel@bling.home>
-Subject: Re: [RFC PATCH 5/6] kvm: Re-introduce memslots->nmemslots
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: kvm@vger.kernel.org, gleb@redhat.com, linux-kernel@vger.kernel.org
-Date: Wed, 05 Dec 2012 16:02:53 -0700
-In-Reply-To: <20121205212629.GD20260@amt.cnet>
-References: <20121203231912.3661.57179.stgit@bling.home>
-	 <20121203233936.3661.69261.stgit@bling.home>
-	 <20121205212629.GD20260@amt.cnet>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932207Ab2LEXDY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 18:03:24 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:50296 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754029Ab2LEXDX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 18:03:23 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] of: Output devicetree alias names in uevent
+To: Stepan Moskovchenko <stepanm@codeaurora.org>
+Cc: Rob Herring <rob.herring@calxeda.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org, Bryan Huntsman <bryanh@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        David Brown <davidb@codeaurora.org>, mbohan@codeaurora.org,
+        Stepan Moskovchenko <stepanm@codeaurora.org>
+In-Reply-To: <1354674637-6448-1-git-send-email-stepanm@codeaurora.org>
+References: <1354674637-6448-1-git-send-email-stepanm@codeaurora.org>
+Date: Wed, 05 Dec 2012 23:03:17 +0000
+Message-Id: <20121205230318.013053E0E22@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-12-05 at 19:26 -0200, Marcelo Tosatti wrote:
-> On Mon, Dec 03, 2012 at 04:39:36PM -0700, Alex Williamson wrote:
-> > struct kvm_memory_slot is currently 52 bytes (LP64), not counting the
-> > arch data.  On x86 this means the memslot array to support a tiny 32+3
-> > entries (user+private) is over 2k.  We'd like to support more slots
-> > so that we can support more assigned devices, but it doesn't make
-> > sense to penalize everyone by using a statically allocated array.
-> > This allows us to start introducing a grow-able array.
-> > 
-> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > ---
-> >  arch/ia64/kvm/kvm-ia64.c     |    2 +-
-> >  arch/powerpc/kvm/book3s_hv.c |    2 +-
-> >  arch/x86/kvm/vmx.c           |    1 +
-> >  arch/x86/kvm/x86.c           |    4 +++-
-> >  include/linux/kvm_host.h     |    9 ++++++---
-> >  virt/kvm/kvm_main.c          |   10 ++++++----
-> >  6 files changed, 18 insertions(+), 10 deletions(-)
-> > 
-> > diff --git a/arch/ia64/kvm/kvm-ia64.c b/arch/ia64/kvm/kvm-ia64.c
-> > index 012e5dd..96401b5 100644
-> > --- a/arch/ia64/kvm/kvm-ia64.c
-> > +++ b/arch/ia64/kvm/kvm-ia64.c
-> > @@ -1836,7 +1836,7 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
-> >  
-> >  	memslot = id_to_memslot(kvm->memslots, log->slot);
-> >  	r = -ENOENT;
-> > -	if (!memslot->dirty_bitmap)
-> > +	if (!memslots || !memslot->dirty_bitmap)
-> >  		goto out;
-> >  
-> >  	kvm_ia64_sync_dirty_log(kvm, memslot);
-> > diff --git a/arch/powerpc/kvm/book3s_hv.c b/arch/powerpc/kvm/book3s_hv.c
-> > index 56067db..0417190 100644
-> > --- a/arch/powerpc/kvm/book3s_hv.c
-> > +++ b/arch/powerpc/kvm/book3s_hv.c
-> > @@ -1267,7 +1267,7 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm, struct kvm_dirty_log *log)
-> >  
-> >  	memslot = id_to_memslot(kvm->memslots, log->slot);
-> >  	r = -ENOENT;
-> > -	if (!memslot->dirty_bitmap)
-> > +	if (!memslot || !memslot->dirty_bitmap)
-> >  		goto out;
-> >  
-> >  	n = kvm_dirty_bitmap_bytes(memslot);
-> > diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> > index 2bb9157..07fdd90 100644
-> > --- a/arch/x86/kvm/vmx.c
-> > +++ b/arch/x86/kvm/vmx.c
-> > @@ -2751,6 +2751,7 @@ static gva_t rmode_tss_base(struct kvm *kvm)
-> >  
-> >  		slots = kvm_memslots(kvm);
-> >  		slot = id_to_memslot(slots, KVM_PRIVATE_MEM_SLOTS);
-> > +		BUG_ON(!slot);
-> >  		base_gfn = slot->base_gfn + slot->npages - 3;
-> >  
-> >  		return base_gfn << PAGE_SHIFT;
-> > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> > index 8765485..53fe9b2 100644
-> > --- a/arch/x86/kvm/x86.c
-> > +++ b/arch/x86/kvm/x86.c
-> > @@ -3139,9 +3139,11 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm, struct kvm_dirty_log *log)
-> >  		goto out;
-> >  
-> >  	memslot = id_to_memslot(kvm->memslots, log->slot);
-> > +	r = -ENOENT;
-> > +	if (!memslot)
-> > +		goto out;
-> >  
-> >  	dirty_bitmap = memslot->dirty_bitmap;
-> > -	r = -ENOENT;
-> >  	if (!dirty_bitmap)
-> >  		goto out;
-> >  
-> > diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> > index 7b3d5c4..1955a4e 100644
-> > --- a/include/linux/kvm_host.h
-> > +++ b/include/linux/kvm_host.h
-> > @@ -313,6 +313,7 @@ struct kvm_irq_routing_table {};
-> >   * to get the memslot by its id.
-> >   */
-> >  struct kvm_memslots {
-> > +	int nmemslots;
-> >  	u64 generation;
-> >  	struct kvm_memory_slot memslots[KVM_MEM_SLOTS_NUM];
-> >  };
-> > @@ -397,7 +398,7 @@ static inline struct kvm_vcpu *kvm_get_vcpu(struct kvm *kvm, int i)
-> >  
-> >  #define kvm_for_each_memslot(memslot, slots)	\
-> >  	for (memslot = &slots->memslots[0];	\
-> > -	      memslot < slots->memslots + KVM_MEM_SLOTS_NUM && memslot->npages;\
-> > +	      memslot < slots->memslots + slots->nmemslots && memslot->npages;\
-> >  		memslot++)
-> >  
-> >  int kvm_vcpu_init(struct kvm_vcpu *vcpu, struct kvm *kvm, unsigned id);
-> > @@ -424,10 +425,12 @@ static inline struct kvm_memslots *kvm_memslots(struct kvm *kvm)
-> >  static inline struct kvm_memory_slot *
-> >  id_to_memslot(struct kvm_memslots *slots, int id)
-> >  {
-> > -	int index = slots->memslots[id].id_to_index;
-> >  	struct kvm_memory_slot *slot;
-> >  
-> > -	slot = &slots->memslots[index];
-> > +	if (id >= slots->nmemslots)
-> > +		return NULL;
-> > +
-> > +	slot = &slots->memslots[slots->memslots[id].id_to_index];
-> >  
-> >  	WARN_ON(slot->id != id);
-> >  	return slot;
-> > diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> > index 3ce2664..ebd3960 100644
-> > --- a/virt/kvm/kvm_main.c
-> > +++ b/virt/kvm/kvm_main.c
-> > @@ -444,7 +444,9 @@ static void kvm_init_memslots_id(struct kvm *kvm)
-> >  	int i;
-> >  	struct kvm_memslots *slots = kvm->memslots;
-> >  
-> > -	for (i = 0; i < KVM_MEM_SLOTS_NUM; i++)
-> > +	slots->nmemslots = KVM_MEM_SLOTS_NUM;
-> > +
-> > +	for (i = 0; i < kvm->memslots->nmemslots; i++)
-> >  		slots->memslots[i].id_to_index = slots->memslots[i].id = i;
-> >  }
-> >  
-> > @@ -658,10 +660,10 @@ static void sort_memslots(struct kvm_memslots *slots)
-> >  {
-> >  	int i;
-> >  
-> > -	sort(slots->memslots, KVM_MEM_SLOTS_NUM,
-> > +	sort(slots->memslots, slots->nmemslots,
-> >  	      sizeof(struct kvm_memory_slot), cmp_memslot, NULL);
-> >  
-> > -	for (i = 0; i < KVM_MEM_SLOTS_NUM; i++)
-> > +	for (i = 0; i < slots->nmemslots; i++)
-> >  		slots->memslots[slots->memslots[i].id].id_to_index = i;
-> >  }
-> >  
-> > @@ -898,7 +900,7 @@ int kvm_get_dirty_log(struct kvm *kvm,
-> >  
-> >  	memslot = id_to_memslot(kvm->memslots, log->slot);
-> >  	r = -ENOENT;
-> > -	if (!memslot->dirty_bitmap)
-> > +	if (!memslot || !memslot->dirty_bitmap)
-> >  		goto out;
-> >  
-> >  	n = kvm_dirty_bitmap_bytes(memslot);
+On Tue,  4 Dec 2012 18:30:37 -0800, Stepan Moskovchenko <stepanm@codeaurora.org> wrote:
+> In some situations, userspace may want to resolve a
+> device by function and logical number (ie, "serial0")
+> rather than by the base address or full device path. Being
+> able to resolve a device by alias frees userspace from the
+> burden of otherwise having to maintain a mapping between
+> device addresses and their logical assignments on each
+> platform when multiple instances of the same hardware block
+> are present in the system.
 > 
-> I suppose this should be checked earlier, not at id_to_memslot time.
-> eg for kvm_get_dirty_log at 
+> Although the uevent device attribute contains devicetree
+> compatible information and the full device path, the uevent
+> does not list the alises that may have been defined for the
+> device.
 > 
->         r = -EINVAL;
->         if (log->slot >= KVM_MEMORY_SLOTS)
->                 goto out;
+> Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
+> ---
+> I have followed the OF_COMPATIBLE convention for adding the
+> uevent variables for the alias names, but I can follow some
+> other convention if people feel something else is more
+> appropriate.
+
+No, this seems fine. Comments below.
+
+>  drivers/of/base.c         |   25 +++++++++++++++++++++++++
+>  drivers/of/device.c       |    1 +
+>  include/linux/of_device.h |    2 ++
+>  3 files changed, 28 insertions(+), 0 deletions(-)
 > 
-> time
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> index 5806449..291f0a0 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -19,6 +19,7 @@
+>   */
+>  #include <linux/ctype.h>
+>  #include <linux/module.h>
+> +#include <linux/device.h>
+>  #include <linux/of.h>
+>  #include <linux/spinlock.h>
+>  #include <linux/slab.h>
+> @@ -1177,6 +1178,30 @@ static void of_alias_add(struct alias_prop *ap, struct device_node *np,
+>  }
+> 
+>  /**
+> + * of_device_uevent_aliases - Display OF alises in uevent
+> + */
+> +void of_device_uevent_aliases(struct device_node *node,
+> +			      struct kobj_uevent_env *env)
+> +{
+> +	struct alias_prop *app;
+> +	int seen = 0;
+> +
+> +	mutex_lock(&of_aliases_mutex);
+> +	list_for_each_entry(app, &aliases_lookup, link) {
+> +		if (node == app->np) {
+> +			add_uevent_var(env, "OF_ALIAS_%d=%s%d", seen, app->stem,
+> +				       app->id);
 
-id_to_memslot seems like a good place to catch all the users since
-that's the only way to get a slot from a slot id after the array is
-sorted.  We need to check both is the slot in bounds (EINVAL), but also
-is it allocated (ENOENT).  id_to_memslot could both of these if we
-wanted to switch it to ERR_PTR.  Thanks,
+add_uevent_var(env, "OF_ALIAS_%d=%s", seen, app->alias);
 
-Alex
+> +			seen++;
+> +		}
+> +	}
+> +
+> +	if (seen)
+> +		add_uevent_var(env, "OF_ALIAS_N=%d", seen);
+> +
+> +	mutex_unlock(&of_aliases_mutex);
+> +}
 
+Why is this implemented as a separate function? Do you forsee it being
+called by something else? If not, then just roll it into the body of
+of_device_uevent_aliases() please.
+
+Oh, wait, alias_prop is only defined in drivers/of/base.c. Rats. Can you
+create a header named drivers/of/of_private.h to move it into please? I
+don't want the uevent stuff to appear in drivers/of/base.c.
+
+> +
+> +/**
+>   * of_alias_scan - Scan all properties of 'aliases' node
+>   *
+>   * The function scans all the properties of 'aliases' node and populate
+> diff --git a/drivers/of/device.c b/drivers/of/device.c
+> index 4c74e4f..06e122d 100644
+> --- a/drivers/of/device.c
+> +++ b/drivers/of/device.c
+> @@ -153,6 +153,7 @@ void of_device_uevent(struct device *dev, struct kobj_uevent_env *env)
+>  		seen++;
+>  	}
+>  	add_uevent_var(env, "OF_COMPATIBLE_N=%d", seen);
+> +	of_device_uevent_aliases(dev->of_node, env);
+>  }
+> 
+>  int of_device_uevent_modalias(struct device *dev, struct kobj_uevent_env *env)
+> diff --git a/include/linux/of_device.h b/include/linux/of_device.h
+> index 901b743..748056d 100644
+> --- a/include/linux/of_device.h
+> +++ b/include/linux/of_device.h
+> @@ -36,6 +36,8 @@ extern ssize_t of_device_get_modalias(struct device *dev,
+>  					char *str, ssize_t len);
+> 
+>  extern void of_device_uevent(struct device *dev, struct kobj_uevent_env *env);
+> +extern void of_device_uevent_aliases(struct device_node *node,
+> +					struct kobj_uevent_env *env);
+>  extern int of_device_uevent_modalias(struct device *dev, struct kobj_uevent_env *env);
+> 
+>  static inline void of_device_node_put(struct device *dev)
+> --
+> The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+> hosted by The Linux Foundation
+> 
+
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
