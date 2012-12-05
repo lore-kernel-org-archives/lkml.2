@@ -1,157 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512Ab2LEKKQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 05:10:16 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:16585 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753239Ab2LEKKM (ORCPT
+	id S1753665Ab2LEKK7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 05:10:59 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:39127 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753352Ab2LEKK4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 05:10:12 -0500
-Date: Wed, 5 Dec 2012 11:10:04 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+	Wed, 5 Dec 2012 05:10:56 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121204224205.58420e3f@endymion.delvare>
+References: <1354634875-5182-1-git-send-email-benjamin.tissoires@gmail.com>
+	<1354634875-5182-3-git-send-email-benjamin.tissoires@gmail.com>
+	<20121204224205.58420e3f@endymion.delvare>
+Date: Wed, 5 Dec 2012 11:10:54 +0100
+Message-ID: <CAN+gG=Hk+BCexxUif2Eqt9sQ4-_K1dfiUx5xD52-Hj2k5hUPug@mail.gmail.com>
+Subject: Re: [PATCH 02/14] HID: i2c-hid: fix memory corruption due to missing
+ hid declaration
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Jean Delvare <khali@linux-fr.org>
 Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
         linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 10/14] HID: i2c-hid: reorder allocation/free of buffers
-Message-ID: <20121205111004.4c18e29e@endymion.delvare>
-In-Reply-To: <1354634875-5182-11-git-send-email-benjamin.tissoires@gmail.com>
-References: <1354634875-5182-1-git-send-email-benjamin.tissoires@gmail.com>
-	<1354634875-5182-11-git-send-email-benjamin.tissoires@gmail.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  4 Dec 2012 16:27:51 +0100, Benjamin Tissoires wrote:
-> Simplifies i2c_hid_alloc_buffers tests, and makes this function
-> responsible of the assignment of ihid->bufsize.
-> The condition for the reallocation in i2c_hid_start is then simpler.
-> 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> ---
->  drivers/hid/i2c-hid/i2c-hid.c | 68 ++++++++++++++++++-------------------------
->  1 file changed, 28 insertions(+), 40 deletions(-)
-> 
-> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-> index dcacfc4..4e3f80b 100644
-> --- a/drivers/hid/i2c-hid/i2c-hid.c
-> +++ b/drivers/hid/i2c-hid/i2c-hid.c
-> @@ -465,48 +465,38 @@ static void i2c_hid_find_max_report(struct hid_device *hid, unsigned int type,
->  	}
->  }
->  
-> -static int i2c_hid_alloc_buffers(struct i2c_hid *ihid)
-> +static void i2c_hid_free_buffers(struct i2c_hid *ihid)
-> +{
-> +	kfree(ihid->inbuf);
-> +	kfree(ihid->argsbuf);
-> +	kfree(ihid->cmdbuf);
-> +	ihid->inbuf = NULL;
-> +	ihid->cmdbuf = NULL;
-> +	ihid->argsbuf = NULL;
-> +	ihid->bufsize = 0;
-> +}
-> +
-> +static int i2c_hid_alloc_buffers(struct i2c_hid *ihid, size_t report_size)
->  {
->  	/* the worst case is computed from the set_report command with a
->  	 * reportID > 15 and the maximum report length */
->  	int args_len = sizeof(__u8) + /* optional ReportID byte */
->  		       sizeof(__u16) + /* data register */
->  		       sizeof(__u16) + /* size of the report */
-> -		       ihid->bufsize; /* report */
-> -
-> -	ihid->inbuf = kzalloc(ihid->bufsize, GFP_KERNEL);
-> -
-> -	if (!ihid->inbuf)
-> -		return -ENOMEM;
-> +		       report_size; /* report */
->  
-> +	ihid->inbuf = kzalloc(report_size, GFP_KERNEL);
->  	ihid->argsbuf = kzalloc(args_len, GFP_KERNEL);
-> -
-> -	if (!ihid->argsbuf) {
-> -		kfree(ihid->inbuf);
-> -		return -ENOMEM;
-> -	}
-> -
->  	ihid->cmdbuf = kzalloc(sizeof(union command) + args_len, GFP_KERNEL);
->  
-> -	if (!ihid->cmdbuf) {
-> -		kfree(ihid->inbuf);
-> -		kfree(ihid->argsbuf);
-> -		ihid->inbuf = NULL;
-> -		ihid->argsbuf = NULL;
-> +	if (!ihid->inbuf || !ihid->argsbuf || !ihid->cmdbuf) {
-> +		i2c_hid_free_buffers(ihid);
->  		return -ENOMEM;
->  	}
->  
-> -	return 0;
-> -}
-> +	ihid->bufsize = report_size;
->  
-> -static void i2c_hid_free_buffers(struct i2c_hid *ihid)
-> -{
-> -	kfree(ihid->inbuf);
-> -	kfree(ihid->argsbuf);
-> -	kfree(ihid->cmdbuf);
-> -	ihid->inbuf = NULL;
-> -	ihid->cmdbuf = NULL;
-> -	ihid->argsbuf = NULL;
-> +	return 0;
->  }
->  
->  static int i2c_hid_get_raw_report(struct hid_device *hid,
-> @@ -611,22 +601,19 @@ static int i2c_hid_start(struct hid_device *hid)
->  	struct i2c_client *client = hid->driver_data;
->  	struct i2c_hid *ihid = i2c_get_clientdata(client);
->  	int ret;
-> -	int old_bufsize = ihid->bufsize;
-> +	unsigned int bufsize = HID_MIN_BUFFER_SIZE;
->  
-> -	ihid->bufsize = HID_MIN_BUFFER_SIZE;
-> -	i2c_hid_find_max_report(hid, HID_INPUT_REPORT, &ihid->bufsize);
-> -	i2c_hid_find_max_report(hid, HID_OUTPUT_REPORT, &ihid->bufsize);
-> -	i2c_hid_find_max_report(hid, HID_FEATURE_REPORT, &ihid->bufsize);
-> +	i2c_hid_find_max_report(hid, HID_INPUT_REPORT, &bufsize);
-> +	i2c_hid_find_max_report(hid, HID_OUTPUT_REPORT, &bufsize);
-> +	i2c_hid_find_max_report(hid, HID_FEATURE_REPORT, &bufsize);
->  
-> -	if (ihid->bufsize > old_bufsize || !ihid->inbuf || !ihid->cmdbuf) {
-> +	if (bufsize > ihid->bufsize) {
->  		i2c_hid_free_buffers(ihid);
->  
-> -		ret = i2c_hid_alloc_buffers(ihid);
-> +		ret = i2c_hid_alloc_buffers(ihid, bufsize);
->  
-> -		if (ret) {
-> -			ihid->bufsize = old_bufsize;
-> +		if (ret)
->  			return ret;
-> -		}
->  	}
->  
->  	if (!(hid->quirks & HID_QUIRK_NO_INIT_REPORTS))
-> @@ -844,8 +831,9 @@ static int __devinit i2c_hid_probe(struct i2c_client *client,
->  	/* we need to allocate the command buffer without knowing the maximum
->  	 * size of the reports. Let's use HID_MIN_BUFFER_SIZE, then we do the
->  	 * real computation later. */
-> -	ihid->bufsize = HID_MIN_BUFFER_SIZE;
-> -	i2c_hid_alloc_buffers(ihid);
-> +	ret = i2c_hid_alloc_buffers(ihid, HID_MIN_BUFFER_SIZE);
-> +	if (ret < 0)
-> +		goto err;
->  
->  	ret = i2c_hid_fetch_hid_descriptor(ihid);
->  	if (ret < 0)
+On Tue, Dec 4, 2012 at 10:42 PM, Jean Delvare <khali@linux-fr.org> wrote:
+> On Tue,  4 Dec 2012 16:27:43 +0100, Benjamin Tissoires wrote:
+>> HID descriptors contains 4 bytes of reserved field.
+>> The previous implementation was overriding the next fields in struct i2c_hid.
+>>
+>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+>> ---
+>>  drivers/hid/i2c-hid/i2c-hid.c | 3 ++-
+>>  1 file changed, 2 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
+>> index 0fbb229..ad771a7 100644
+>> --- a/drivers/hid/i2c-hid/i2c-hid.c
+>> +++ b/drivers/hid/i2c-hid/i2c-hid.c
+>> @@ -68,6 +68,7 @@ struct i2c_hid_desc {
+>>       __le16 wVendorID;
+>>       __le16 wProductID;
+>>       __le16 wVersionID;
+>> +     __le32 reserved;
+>>  } __packed;
+>>
+>>  struct i2c_hid_cmd {
+>> @@ -778,7 +779,7 @@ static int __devinit i2c_hid_fetch_hid_descriptor(struct i2c_hid *ihid)
+>>       }
+>>
+>>       dsize = le16_to_cpu(hdesc->wHIDDescLength);
+>> -     if (!dsize || dsize > HID_MAX_DESCRIPTOR_SIZE) {
+>> +     if (!dsize || dsize > sizeof(struct i2c_hid_desc)) {
+>
+> Shouldn't !dsize rather be dsize < 4? You're reading hdesc->bcdVersion,
+> which is only defined if dsize >= 4 if I understand the code correctly.
 
-Yes, looks much better.
+Yes, you are right. Thanks.
 
-Reviewed-by: Jean Delvare <khali@linux-fr.org>
+Jiri, this patch is a prerequisite for "[PATCH 10/14] HID: i2c-hid:
+reorder allocation/free of buffers".
+could you please what for a v2 before applying 10/14?
 
--- 
-Jean Delvare
+Cheers,
+Benjamin
+
+>
+>>               dev_err(&client->dev, "weird size of HID descriptor (%u)\n",
+>>                       dsize);
+>>               return -ENODEV;
+>
+>
+> --
+> Jean Delvare
