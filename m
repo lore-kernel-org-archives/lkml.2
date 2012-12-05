@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221Ab2LEPXx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 10:23:53 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:34943 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752183Ab2LEPXv convert rfc822-to-8bit (ORCPT
+	id S932184Ab2LEPZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 10:25:58 -0500
+Received: from mail.karo-electronics.de ([81.173.242.67]:64374 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932071Ab2LEPZ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 10:23:51 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Wed, 5 Dec 2012 10:25:57 -0500
+From: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+To: Alessandro Zummo <a.zummo@towertech.it>
+Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+Subject: [BUGFIX PATCH] rtc: eliminate extra call of ida_simple_remove()
+Date: Wed,  5 Dec 2012 16:25:31 +0100
+Message-Id: <1354721131-31177-1-git-send-email-LW@KARO-electronics.de>
+X-Mailer: git-send-email 1.7.2.5
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH v2] net/macb: Use non-coherent memory for rx buffers
-Date: Wed, 5 Dec 2012 15:22:14 -0000
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B70DB@saturn3.aculab.com>
-In-Reply-To: <50BF6467.5060701@atmel.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH v2] net/macb: Use non-coherent memory for rx buffers
-Thread-Index: Ac3S+tNQBB1VasVESWKUxbKg8XuASQAAMm+w
-References: <CAGhQ9VwWmP_B17LnAEqDHcL8Yd-s0C-Bf35z3+=vnJmK_NoCSw@mail.gmail.com> <1354536876-6274-1-git-send-email-nicolas.ferre@atmel.com> <AE90C24D6B3A694183C094C60CF0A2F6026B70D5@saturn3.aculab.com> <50BCA746.1020705@atmel.com> <AE90C24D6B3A694183C094C60CF0A2F6026B70D6@saturn3.aculab.com> <50BE2FEC.2070500@atmel.com> <AE90C24D6B3A694183C094C60CF0A2F6026B70D9@saturn3.aculab.com> <50BF6467.5060701@atmel.com>
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Nicolas Ferre" <nicolas.ferre@atmel.com>
-Cc: "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        "Joachim Eastwood" <manabian@gmail.com>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        "Havard Skinnemoen" <havard@skinnemoen.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Well, for the 10/100 MACB interface, I am stuck with 128 Bytes buffers!
-> So this use of pages seems sensible.
+Unbinding an RTC chip driver from its device leads to the error
+message:
+|ida_remove called for id=0 which is not allocated.
 
-If you have dma coherent memory you can make the rx buffer space
-be an array of short buffers referenced by adjacent ring entries
-(possibly with the last one slightly short to allow for the
-2 byte offset).
-Then, when a big frame ends up in multiple buffers, you need
-a maximum of two copies to extract the data.
+This is caused by a redundant call to ida_simple_remove() in
+rtc_device_unregister().
+Eliminate the call in rtc_device_unregister() and only call the
+function in rtc_device_release().
 
-	David
+Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
+---
+ drivers/rtc/class.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-
+diff --git a/drivers/rtc/class.c b/drivers/rtc/class.c
+index f8a0aab..5143629 100644
+--- a/drivers/rtc/class.c
++++ b/drivers/rtc/class.c
+@@ -244,7 +244,6 @@ void rtc_device_unregister(struct rtc_device *rtc)
+ 		rtc_proc_del_device(rtc);
+ 		device_unregister(&rtc->dev);
+ 		rtc->ops = NULL;
+-		ida_simple_remove(&rtc_ida, rtc->id);
+ 		mutex_unlock(&rtc->ops_lock);
+ 		put_device(&rtc->dev);
+ 	}
+-- 
+1.7.2.5
 
