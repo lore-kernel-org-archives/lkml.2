@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754200Ab2LENXA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 08:23:00 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:53788 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753405Ab2LENW6 (ORCPT
+	id S1754215Ab2LENYb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 08:24:31 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:57569 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753352Ab2LENY3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 08:22:58 -0500
-From: Federico Vaga <federico.vaga@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Pawel Osciak <pawel@osciak.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: Re: [PATCH v3 3/4] sta2x11_vip: convert to videobuf2 and control framework
-Date: Wed, 05 Dec 2012 14:27:35 +0100
-Message-ID: <1773237.zC2M0dmkYp@harkonnen>
-User-Agent: KMail/4.9.3 (Linux/3.6.8-2.fc17.x86_64; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <50BF47CA.5070205@redhat.com>
-References: <1348484332-8106-1-git-send-email-federico.vaga@gmail.com> <2637992.xolQO8ly5c@harkonnen> <50BF47CA.5070205@redhat.com>
+	Wed, 5 Dec 2012 08:24:29 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <20121205131904.GJ2718@gmail.com>
+References: <2dcd7cb4c4022fa24b5328974e4226f5aaf89419.1354199865.git.viresh.kumar@linaro.org>
+	<121653def4e985b0c1b59045637dd4518f97e73a.1354199865.git.viresh.kumar@linaro.org>
+	<20121130105731.GN3176@sortiz-mobl>
+	<20121130154542.GG23648@gmail.com>
+	<CAKohpokLVEH+4F_VXh5auUm48cWWe0mumZME8yOCcAezcwJbCQ@mail.gmail.com>
+	<CAKohpom-9fFwvCQXdJNXELZC1rfDT0-N+XoYQdTOG2Mo=SyiYw@mail.gmail.com>
+	<20121205131904.GJ2718@gmail.com>
+Date: Wed, 5 Dec 2012 18:54:29 +0530
+Message-ID: <CAKohponvxHhKTtA5ipqmk4QkGdDH9YatT=7rfBqH_OJJRiMBOw@mail.gmail.com>
+Subject: Re: [PATCH V5 2/2] mfd: stmpe: Update DT support in stmpe driver
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: grant.likely@secretlab.ca, Samuel Ortiz <sameo@linux.intel.com>,
+        rabin.vincent@stericsson.com, shiraz.hashim@st.com,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, linus.walleij@linaro.org,
+        Vipul Kumar Samar <vipulkumar.samar@st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Ok, I understand. I will write something like this.
-> > 
-> >   * Copyright (C) 2012       ST Microelectronics
-> >   *      author: Federico Vaga <federico.vaga@gmail.com>
-> >   * Copyright (C) 2010       WindRiver Systems, Inc.
-> >   *      authors: Andreas Kies <andreas.kies@windriver.com>
-> >   *               Vlad Lungu <vlad.lungu@windriver.com>
-> 
-> Sounds perfect to me.
+On 5 December 2012 18:49, Lee Jones <lee.jones@linaro.org> wrote:
+>> Ping!!!
+>
+> Documentation/development-process/2.Process:
+>
+> - Avoid top-posting (the practice of putting your answer above the quoted
+>   text you are responding to).  It makes your response harder to read and
+>   makes a poor impression.
 
-I will answer to this with a patch
+Yes, i know that. Did that in hurry, as it was just an ping and wasn't answering
+any question.
 
-> As you said, the best place to discuss about it is likely at LKML.
-> [...]
-> Btw, this is why it is called "git blame", and not "git authorship":
-> it is a tool to identify who was the last one that modified the code.
-> Its main usage is to identify who might have introduced a bug on the
-> code.
-
-I know I know, it was just a stupid example to expose the problem that I have 
-in my mind. I know that it is very difficult (impossible?) to assign the 
-authorship of a single line, and git blame it is not the tool to do this :)
-
-I think you understand what I mean despite the stupid example
-
--- 
-Federico Vaga
+--
+viresh
