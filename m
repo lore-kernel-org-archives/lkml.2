@@ -1,198 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752464Ab2LEMKd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 07:10:33 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:1066 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347Ab2LEMKa (ORCPT
+	id S1752672Ab2LEML3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 07:11:29 -0500
+Received: from mail.parknet.co.jp ([210.171.160.6]:45662 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751522Ab2LEML2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 07:10:30 -0500
-Message-ID: <50BF399B.7010404@huawei.com>
-Date: Wed, 5 Dec 2012 20:10:03 +0800
-From: Hanjun Guo <guohanjun@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	Wed, 5 Dec 2012 07:11:28 -0500
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH v5 5/8] fat: restructure export_operations
+References: <1353504277-5947-1-git-send-email-linkinjeon@gmail.com>
+	<87hao35uqz.fsf@devron.myhome.or.jp>
+	<CAKYAXd_X8Jkq=PdV+dVPTO_EAPHoZ37MynpjvkrPTDahWyUOTA@mail.gmail.com>
+	<87obia17zr.fsf@devron.myhome.or.jp>
+	<CAKYAXd-8ay4m6vsH1ztmomOrnXN+ThDi3w+jASyyUGOO12v6YA@mail.gmail.com>
+	<871uf4yizs.fsf@devron.myhome.or.jp>
+	<CAKYAXd_T2yGRXd3bk5HXXuVhx_ikO1xzinOy0d8TobokyiCRsA@mail.gmail.com>
+Date: Wed, 05 Dec 2012 21:11:22 +0900
+In-Reply-To: <CAKYAXd_T2yGRXd3bk5HXXuVhx_ikO1xzinOy0d8TobokyiCRsA@mail.gmail.com>
+	(Namjae Jeon's message of "Wed, 5 Dec 2012 20:45:40 +0900")
+Message-ID: <87pq2owvf9.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        <linux-acpi@vger.kernel.org>, <isimatu.yasuaki@jp.fujitsu.com>,
-        <wency@cn.fujitsu.com>, <rjw@sisk.pl>, <lenb@kernel.org>,
-        <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>, Tang Chen <tangchen@cn.fujitsu.com>,
-        Liujiang <jiang.liu@huawei.com>, Huxinwei <huxinwei@huawei.com>
-Subject: Re: [RFC PATCH v3 0/3] acpi: Introduce prepare_remove device operation
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>     <50B5EFE9.3040206@huawei.com>    <1354128096.26955.276.camel@misato.fc.hp.com>   <50B6E936.2080308@huawei.com> <1354228028.7776.56.camel@misato.fc.hp.com>   <50BC29C6.6050706@huawei.com> <1354579848.21585.54.camel@misato.fc.hp.com>  <50BDBF5A.8040407@huawei.com> <1354663411.21585.135.camel@misato.fc.hp.com>
-In-Reply-To: <1354663411.21585.135.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.69.25]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=iso-2022-jp
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/12/5 7:23, Toshi Kani wrote:
-> On Tue, 2012-12-04 at 17:16 +0800, Hanjun Guo wrote:
->> On 2012/12/4 8:10, Toshi Kani wrote:
->>> On Mon, 2012-12-03 at 12:25 +0800, Hanjun Guo wrote:
->>>> On 2012/11/30 6:27, Toshi Kani wrote:
->>>>> On Thu, 2012-11-29 at 12:48 +0800, Hanjun Guo wrote:
->>>>>> On 2012/11/29 2:41, Toshi Kani wrote:
->>>>>>> On Wed, 2012-11-28 at 19:05 +0800, Hanjun Guo wrote:
->>>>>>>> On 2012/11/24 1:50, Vasilis Liaskovitis wrote:
->>>>>>>> As you may know, the ACPI based hotplug framework we are working on already addressed
->>>>>>>> this problem, and the way we slove this problem is a bit like yours.
->>>>>>>>
->>>>>>>> We introduce hp_ops in struct acpi_device_ops:
->>>>>>>> struct acpi_device_ops {
->>>>>>>> 	acpi_op_add add;
->>>>>>>> 	acpi_op_remove remove;
->>>>>>>> 	acpi_op_start start;
->>>>>>>> 	acpi_op_bind bind;
->>>>>>>> 	acpi_op_unbind unbind;
->>>>>>>> 	acpi_op_notify notify;
->>>>>>>> #ifdef	CONFIG_ACPI_HOTPLUG
->>>>>>>> 	struct acpihp_dev_ops *hp_ops;
->>>>>>>> #endif	/* CONFIG_ACPI_HOTPLUG */
->>>>>>>> };
->>>>>>>>
->>>>>>>> in hp_ops, we divide the prepare_remove into six small steps, that is:
->>>>>>>> 1) pre_release(): optional step to mark device going to be removed/busy
->>>>>>>> 2) release(): reclaim device from running system
->>>>>>>> 3) post_release(): rollback if cancelled by user or error happened
->>>>>>>> 4) pre_unconfigure(): optional step to solve possible dependency issue
->>>>>>>> 5) unconfigure(): remove devices from running system
->>>>>>>> 6) post_unconfigure(): free resources used by devices
->>>>>>>>
->>>>>>>> In this way, we can easily rollback if error happens.
->>>>>>>> How do you think of this solution, any suggestion ? I think we can achieve
->>>>>>>> a better way for sharing ideas. :)
->>>>>>>
->>>>>>> Yes, sharing idea is good. :)  I do not know if we need all 6 steps (I
->>>>>>> have not looked at all your changes yet..), but in my mind, a hot-plug
->>>>>>> operation should be composed with the following 3 phases.
->>>>>>
->>>>>> Good idea ! we also implement a hot-plug operation in 3 phases:
->>>>>> 1) acpihp_drv_pre_execute
->>>>>> 2) acpihp_drv_execute
->>>>>> 3) acpihp_drv_post_execute
->>>>>> you may refer to :
->>>>>> https://lkml.org/lkml/2012/11/4/79
->>>>>
->>>>> Great.  Yes, I will take a look.
->>>>
->>>> Thanks, any comments are welcomed :)
->>>
->>> If I read the code right, the framework calls ACPI drivers differently
->>> at boot-time and hot-add as follows.  That is, the new entry points are
->>> called at hot-add only, but .add() is called at both cases.  This
->>> requires .add() to work differently.
+Namjae Jeon <linkinjeon@gmail.com> writes:
+
+>> I can understand what is doing. I'm asking why there is difference.
 >>
->> Hi Toshi,
->> Thanks for your comments!
+>> 1) generic_fh_to_dentry() allows (*_PARENT && fh_len == 2).
+>> 2) fat_fh_to_dentry_nostale() doesn't allows (*_PARENT && fh_len == 3).
 >>
->>>
->>> Boot    : .add()
->>
->> Actually, at boot time: .add(), .start()
-> 
-> Right.
-> 
->>> Hot-Add : .add(), .pre_configure(), configure(), etc.
->>
->> Yes, we did it as you said in the framework. We use .pre_configure(), configure(),
->> and post_configure() to instead of .start() for better error handling and recovery.
-> 
-> I think we should have hot-plug interfaces at the module level, not at
-> the ACPI-internal level.  In this way, the interfaces can be
-> platform-neutral and allow any modules to register, which makes it more
-> consistent with the boot-up sequence.  It can also allow ordering of the
-> sequence among the registered modules.  Right now, we initiate all
-> procedures from ACPI during hot-plug, which I think is inflexible and
-> steps into other module's role.
-> 
-> I am also concerned about the slot handling, which is the core piece of
-> the infrastructure and only allows hot-plug operations on ACPI objects
-> where slot objects are previously created by checking _EJ0.  The
-> infrastructure should allow hot-plug operations on any objects, and it
-> should not be dependent on the slot design.
-> 
-> I have some rough idea, and it may be easier to review / explain if I
-> make some code changes.  So, let me prototype it, and send it you all if
-> that works out.  Hopefully, it won't take too long.
+>> Why does logic has difference?
+>
+> When we consider the generic routine of encode_fh() and the structure ‘fid’
+>
+> struct fid {
+>       struct {
+>             u32 ino;
+>             u32 gen;
+>             u32 parent_ino;
+>             u32 parent_gen;
+>       } i32;
+> };
+>
+> fh_len= 2(without parent)
+> fh_len=4(with parent)
+>
+> Condition checking in export_encode_fh()
+> {
+>
+>    if (parent && (len < 4)) {
+>                 *max_len = 4;
+>                 return FILEID_INVALID;
+>         } else if (len < 2) {
+>                 *max_len = 2;
+>                 return FILEID_INVALID;
+>         }
+>         ...
+>                 len = 2;
+>         ...
+>                 if (parent) {
+> ..
+>                                 len = 4;
+>                                 type = FILEID_INO32_GEN_PARENT;
+>                 }
+> …
+> }
+>
+> The logic does take care of altering the length for the ‘2’ cases
+> with/without parent.
+> So, while encoding -> the care has been taken for length checking but
+> while decoding(generic_fh_to_dentry) the length check is not put in
+> place.
+> I think it should be done in the generic routine also.
+>
+> It should be:
+> if ((fh_len != 2 && fh_len != 4) ||
+>                 (fh_type != FILEID_INO32_GEN && fh_type !=
+> FILEID_INO32_GEN_PARENT))
+>     return NULL;
+>
+> Please share your opinion.
 
-Great! If any thing I can do, please let me know it.
+I know encode_fh(). But NFS is network protocol, and network can input
+any data, and I guess the userland interface (open_by_handle()?) can be
+any too.
 
-> 
->>> I think the boot-time and hot-add initialization should be done
->>> consistently.  While there is difficulty with the current boot sequence,
->>> the framework should be designed to allow them consistent, not make them
->>> diverged.
->>>
->>>>>>> 1. Validate phase - Verify if the request is a supported operation.  All
->>>>>>> known restrictions are verified at this phase.  For instance, if a
->>>>>>> hot-remove request involves kernel memory, it is failed in this phase.
->>>>>>> Since this phase makes no change, no rollback is necessary to fail. 
->>>>>>
->>>>>> Yes, we have done this in acpihp_drv_pre_execute, and check following things:
->>>>>>
->>>>>> 1) Hot-plugble or not. the instance kernel memory you mentioned is also checked
->>>>>>    when memory device remove;
->>>>>
->>>>> Agreed.
->>>>>
->>>>>> 2) Dependency check involved. For instance, if hot-add a memory device,
->>>>>>    processor should be added first, otherwise it's not valid to this operation.
->>>>>
->>>>> I think FW should be the one that assures such dependency.  That is,
->>>>> when a memory device object is marked as present/enabled/functioning, it
->>>>> should be ready for the OS to use.
->>>>
->>>> Yes, BIOS should do something for the dependency, because BIOS knows the
->>>> actual hardware topology. 
->>>
->>> Right.
->>>
->>>> The ACPI specification provides _EDL method to
->>>> tell OS the eject device list, but still has no method to tell OS the add device
->>>> list now.
->>>
->>> Yes, but I do not think the OS needs special handling for add...
->>
->> Hmm, how about trigger a hot add operation by OS ? we have eject interface for OS, but
->> have no add interface now, do you think this feature is useful? If it is, I think OS
->> should analyze the dependency first and tell the user.
-> 
-> The OS can eject an ACPI device because a target device is owned by the
-> OS (i.e. enabled).  For hot-add, a target ACPI device is not owned by
-> the OS (i.e. disabled).  Therefore, the OS is not supposed to change its
-> state.  So, I do not think we should support a hot-add operation by the
-> OS.
->  
->>>> For some cases, OS should analyze the dependency in the validate phase. For example,
->>>> when hot remove a node (container device), OS should analyze the dependency to get
->>>> the remove order as following:
->>>> 1) Host bridge;
->>>> 2) Memory devices;
->>>> 3) Processor devices;
->>>> 4) Container device itself;
->>>
->>> This may be off-topic, but how do you plan to delete I/O devices under a
->>> node?  Are you planning to delete all I/O devices along with the node?
->>
->> Yes, we delete all I/O devices under the node. we delete I/O devices as
->> following steps:
->> 1) Offline PCI devices;
->> 2) Offline IOAPIC and IOMMU;
->> and offline I/O devices no matter in use or not.
-> 
-> Oh, off-lining no matter what would be problematic for enterprise
-> customers... 
+And generic_fh_to_dentry()'s input verify choose to check the minimum
+length only. But your logic choose the exact length.
 
-Agreed. I think we should do more in user space to check such things, not in the kernel.
-
-Thanks
-Hanjun
-
-
-
-
+I think the both is sane and correct. But I wonder why did you changed it.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
