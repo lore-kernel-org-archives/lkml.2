@@ -1,112 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753571Ab2LEDYB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 22:24:01 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:9430 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752808Ab2LEDX6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 22:23:58 -0500
-Message-ID: <50BEBE35.4040807@huawei.com>
-Date: Wed, 5 Dec 2012 11:23:33 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Tang Chen <tangchen@cn.fujitsu.com>
-CC: Wen Congyang <wency@cn.fujitsu.com>, <x86@kernel.org>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>,
-        <linux-s390@vger.kernel.org>, <linux-sh@vger.kernel.org>,
-        <linux-ia64@vger.kernel.org>, <cmetcalf@tilera.com>,
-        <sparclinux@vger.kernel.org>, David Rientjes <rientjes@google.com>,
-        Jiang Liu <liuj97@gmail.com>, Len Brown <len.brown@intel.com>,
-        <benh@kernel.crashing.org>, <paulus@samba.org>,
-        Christoph Lameter <cl@linux.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Subject: Re: [Patch v4 08/12] memory-hotplug: remove memmap of sparse-vmemmap
-References: <1354010422-19648-1-git-send-email-wency@cn.fujitsu.com> <1354010422-19648-9-git-send-email-wency@cn.fujitsu.com> <50B5DC00.20103@huawei.com> <50B80FB1.6040906@cn.fujitsu.com> <50BC0D2D.8040008@huawei.com> <50BDBEB7.3070807@cn.fujitsu.com> <50BDEA82.4050809@huawei.com> <50BEAC66.8020500@cn.fujitsu.com>
-In-Reply-To: <50BEAC66.8020500@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
+	id S1753742Ab2LEDYX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 22:24:23 -0500
+Received: from plane.gmane.org ([80.91.229.3]:34507 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752810Ab2LEDYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 22:24:20 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Woody Wu <narkewoody@gmail.com>
+Subject: Re: Why a host not ping-able?
+Date: Wed, 5 Dec 2012 03:24:00 +0000 (UTC)
+Message-ID: <slrnkbtfgm.us1.narkewoody@zuhnb712.local.com>
+References: <slrnkbr59r.us1.narkewoody@zuhnb712.local.com>
+ <1354620894.27682.5@driftwood>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.216]
-X-CFilter-Loop: Reflected
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: 59.37.26.98
+User-Agent: slrn/0.9.9p1 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tang,
-
-On 2012/12/5 10:07, Tang Chen wrote:
-
-> Hi Wu,
-> 
-> On 12/04/2012 08:20 PM, Jianguo Wu wrote:
-> (snip)
->>>
->>> Seems that we have different ways to handle pages allocated by bootmem
->>> or by regular allocator. Is the checking way in [PATCH 09/12] available
->>> here ?
->>>
->>> +    /* bootmem page has reserved flag */
->>> +    if (PageReserved(page)) {
->>> ......
->>> +    }
->>>
->>> If so, I think we can just merge these two functions.
->>
->> Hmm, direct mapping table isn't allocated by bootmem allocator such as memblock, can't be free by put_page_bootmem().
->> But I will try to merge these two functions.
->>
-> 
-> Oh, I didn't notice this, thanks. :)
-> 
-> (snip)
-> 
->>>> +
->>>> +    __split_large_page(kpte, address, pbase);
->>>
->>> Is this patch going to replace [PATCH 08/12] ?
->>>
->>
->> I wish to replace [PATCH 08/12], but need Congyang and Yasuaki to confirm first:)
->>
->>> If so, __split_large_page() was added and exported in [PATCH 09/12],
->>> then we should move it here, right ?
->>
->> yes.
->>
->> and what do you think about moving vmemmap_pud[pmd/pte]_remove() to arch/x86/mm/init_64.c,
->> to be consistent with vmemmap_populate() ?
-> 
-> It is a good idea since pud/pmd/pte related code could be platform
-> dependent. And I'm also trying to move vmemmap_free() to
-> arch/x86/mm/init_64.c too. I want to have a common interface just
-> like vmemmap_populate(). :)
-> 
-
-Great.
-
->>
->> I will rework [PATCH 08/12] and [PATCH 09/12] soon.
-> 
-> I am rebasing the whole patch set now. And I think I chould finish part
-> of your work too. A new patch-set is coming soon, and your rework is
-> also welcome. :)
+On 2012-12-04, Rob Landley <rob@landley.net> wrote:
+> On 12/04/2012 12:17:25 AM, Woody Wu wrote:
+>> Hi, list
+>> 
+>> I am not sure this has something with kernel.
+>
+> It doesn't.
+>
+>> But the system I just
+>> generated cannot be reached from ping.  It can ping outside, but if I
+>> ping it from outside, I just get "Destination Host Unreachable".
+>
+> Some distributions' default firewall rules respond to icmp packets with  
+> a host unreachable packet. This is a system/network administration  
+> thing (iptables) and nothing to do with kernel development.
+>
+>> I think there is not firewall in between,
+>
+> There's a firewall  built into linux, read the man page for the  
+> "iptables" command. The "iptables-save" command dumps your entire  
+> current ruleset to stdout so you can see what's in there. (You might  
+> have to run it as root, I forget.)
+>
+> https://help.ubuntu.com/community/IptablesHowTo
 >
 
-Since you are rebasing now, I will wait for your new patche-set :).
+This 'distribution' I am running is a tailor linux 3.4.19 on an embedded
+system (Samsung S3C2410).  Because this is a very small system, I
+believe I did not add any ip-table options in the kernel. And, I did not
+install any user space firware packet for it.  So maybe this is really a
+firewall play in between.
 
-Thanks.
-Jianguo Wu
+Now I run tcpdump on the target system with 'tcpdump -i eth0'. Then when
+I ping it from another Linux box, I see nothing from the tcpdump output.
+Does this confirm there is a firewall blocked the ping packets?
 
-> Thanks. :)
-> 
-> 
-> 
-> .
-> 
+Thanks in advance.
 
 
+-- 
+woody
+I can't go back to yesterday - because I was a different person then.
 
