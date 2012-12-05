@@ -1,56 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932138Ab2LEWWB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 17:22:01 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:35108 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753733Ab2LEWV5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 17:21:57 -0500
+	id S1754193Ab2LEWWV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 17:22:21 -0500
+Received: from antcom.de ([188.40.178.216]:42827 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752515Ab2LEWWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 17:22:19 -0500
+Message-ID: <50BFC8C9.5070504@antcom.de>
+Date: Wed, 05 Dec 2012 23:20:57 +0100
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM Open Source Research and Development
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
 MIME-Version: 1.0
-In-Reply-To: <20121205202254.GA25398@srcf.ucam.org>
-References: <1345739803-21017-1-git-send-email-mjg@redhat.com>
- <CAErSpo6dn_0b8Ngx9VT=ARs_UXQftEx=2Kczeqemtmo0XyKzuQ@mail.gmail.com>
- <20121203200241.GG5906@thinkpad-t410> <CAErSpo7S2+Vt+9bkGLx_=AY9aSGCvAnkHfqu01gTj=eKs7btNw@mail.gmail.com>
- <20121205202254.GA25398@srcf.ucam.org>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 5 Dec 2012 15:21:35 -0700
-Message-ID: <CAErSpo7c5Ph+GufivPt2XFoTbRnAoLnNdZwcc69QMCFdavNJjA@mail.gmail.com>
-Subject: Re: Use PCI ROMs from EFI boot services
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-efi@vger.kernel.org, dwmw2@infradead.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Seth Forshee <seth.forshee@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Wolfgang Grandegger <wg@grandegger.com>
+CC: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
+        jbe@pengutronix.de, plagnioj@jcrosoft.com, highguy@gmail.com,
+        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
+        rmallon@gmail.com, tru@work-microwave.de, sr@denx.de
+Subject: Re: [PATCH 3/6 v9] gpio: Add userland device interface to block GPIO
+References: <1354653588-4018-1-git-send-email-stigge@antcom.de> <1354653588-4018-4-git-send-email-stigge@antcom.de> <50BF99F3.4060207@grandegger.com>
+In-Reply-To: <50BF99F3.4060207@grandegger.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 5, 2012 at 1:22 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> On Wed, Dec 05, 2012 at 01:09:25PM -0700, Bjorn Helgaas wrote:
->
->> That's right; nobody stepped up to fix the section mismatch.  I'm
->> happy to fold in your fix, especially if Matthew acks it.
->
-> Yes, sorry, I've been way behind on pretty much everything for the past
-> few months. Please do add my Ack.
->
->> David, Eric, what about the kexec question?  It looks to me like this
->> wouldn't make things worse than they are today.  If I understand
->> correctly, today we don't use ROM data from EFI on either an initial
->> boot or a kexec.  After this patch, we could use EFI ROM data on the
->> initial boot, but not after a kexec.  So it's worse in the sense that
->> the kexec case doesn't match the initial boot, but at least it's not
->> something that used to work and is now broken.
->
-> I think I'd agree here - it's not ideal, but it's no more broken than
-> the current situation.
+Hi Wolfgang,
 
-OK, I applied Seth's fix, added his Tested-by, and put this series in
-my -next branch.  I plan to merge it during the v3.8 merge window next
-week.
+On 05/12/12 20:01, Wolfgang Grandegger wrote:
+>> +	for (i = 0; i < block->ngpio; i++) {
+>> +		status = gpio_request(block->gpio[i], "gpioblock dev");
+> 
+> You could use the name of the GPIO block.
 
-Thanks!
+OK.
 
-Bjorn
+>> +		if (status)
+>> +			goto err1;
+>> +
+>> +		irq = gpio_to_irq(block->gpio[i]);
+>> +		if (irq >= 0 &&
+>> +		    !test_bit(FLAG_IS_OUT, &gpio_desc[block->gpio[i]].flags) &&
+>> +		    !gpio_block_is_irq_duplicate(block, i)) {
+>> +			status = request_irq(irq, gpio_block_irq_handler,
+>> +					     IRQF_TRIGGER_FALLING,
+>> +					     block->name, block);
+>> +			if (status)
+>> +				goto err2;
+>> +
+>> +			block->irq_controlled = true;
+>> +		}
+>> +	}
+> 
+> There is no need to request IRQs if "O_NONBLOCK" is specified.
+
+Sure? Regarding this, I found: "The poll() function shall not be
+affected by the O_NONBLOCK flag." [1]
+
+> I observed that the read returns once immediately (without blocking)
+> after reboot. I did not look into that yet.
+
+Didn't happen to me. Can you tell how this can be reproduced?
+
+Thanks,
+
+Roland
+
+
+[1] http://pubs.opengroup.org/onlinepubs/009695399/functions/poll.html
