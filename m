@@ -1,42 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932201Ab2LEPgu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 10:36:50 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:33661 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751909Ab2LEPgt (ORCPT
+	id S1754519Ab2LEPmm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 10:42:42 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53521 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752055Ab2LEPml (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 10:36:49 -0500
-Message-ID: <50BF6A04.4040204@ti.com>
-Date: Wed, 5 Dec 2012 16:36:36 +0100
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Bryan Wu <cooloney@gmail.com>
-CC: Richard Purdie <rpurdie@rpsys.net>, <linux-leds@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [PATCH v2 1/3] leds: leds-pwm: Convert to use devm_get_pwm
-References: <1352731270-27534-1-git-send-email-peter.ujfalusi@ti.com> <1352731270-27534-2-git-send-email-peter.ujfalusi@ti.com> <CAK5ve-JDCSSOKHQG-F1RoDii62=-DiPevaD6SafndYVvOgB6Fw@mail.gmail.com> <50BCB391.1070305@ti.com> <CAK5ve-+1eQ3mPLAu2Qxw4LjNA85oEtJE-wZcL=YpQ0xBFJ6+hQ@mail.gmail.com> <50BDB016.7010908@ti.com> <CAK5ve-K69=NqApFTFOZB7Z_KXcRLaWExzbkUhP=GeASMB7JYqw@mail.gmail.com>
-In-Reply-To: <CAK5ve-K69=NqApFTFOZB7Z_KXcRLaWExzbkUhP=GeASMB7JYqw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+	Wed, 5 Dec 2012 10:42:41 -0500
+Date: Wed, 5 Dec 2012 15:47:49 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Andreas Mohr <andi@lisas.de>,
+        linux-kernel@vger.kernel.org, Li Shaohua <shaohua.li@intel.com>,
+        linux-acpi@vger.kernel.org
+Subject: Re: Look Ma, da kernel is b0rken
+Message-ID: <20121205154749.2af4ef36@pyramind.ukuu.org.uk>
+In-Reply-To: <20121205153121.GA28556@liondog.tnic>
+References: <20121205070901.GA12123@rhlx01.hs-esslingen.de>
+	<20121205142935.GA12119@liondog.tnic>
+	<20121205152756.5afec12c@pyramind.ukuu.org.uk>
+	<20121205153121.GA28556@liondog.tnic>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2012 06:34 PM, Bryan Wu wrote:
-> What's best thing I can do is I can merge these patchset into my
-> -devel branch, after 3.8 merge window close I will move this -devel
-> branch to my for-next branch for 3.9 merge window.
+> Hillarious!
 > 
-> Does this make sense to you?
+> Andrew, would you please pick up Alan's patch? It clearly fixes an
+> ancient bug in the pnpacpi code.
 
-Not sure if I can get changes related to leds-pwm through linux-omap in this
-way. The practice is that l-o should be 'in a working condition' alone -
-without linux-next.
+And yes btw we should turn this option on in -next, and get these sort of
+things out of the tree for good. More importantly it'll mean anyone
+adding another one gets a whine on the spot.
 
-But I'll find something else while waiting for 3.10 to clean up the omap board
-files related to this.
-
--- 
-Péter
+Alan
