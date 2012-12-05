@@ -1,160 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152Ab2LENDf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 08:03:35 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:43760 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754134Ab2LENDe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 08:03:34 -0500
+	id S1754191Ab2LENLJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 08:11:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49040 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752065Ab2LENLH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 08:11:07 -0500
+Message-ID: <50BF47CA.5070205@redhat.com>
+Date: Wed, 05 Dec 2012 11:10:34 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <CAKohpokLVEH+4F_VXh5auUm48cWWe0mumZME8yOCcAezcwJbCQ@mail.gmail.com>
-References: <2dcd7cb4c4022fa24b5328974e4226f5aaf89419.1354199865.git.viresh.kumar@linaro.org>
-	<121653def4e985b0c1b59045637dd4518f97e73a.1354199865.git.viresh.kumar@linaro.org>
-	<20121130105731.GN3176@sortiz-mobl>
-	<20121130154542.GG23648@gmail.com>
-	<CAKohpokLVEH+4F_VXh5auUm48cWWe0mumZME8yOCcAezcwJbCQ@mail.gmail.com>
-Date: Wed, 5 Dec 2012 18:33:33 +0530
-Message-ID: <CAKohpom-9fFwvCQXdJNXELZC1rfDT0-N+XoYQdTOG2Mo=SyiYw@mail.gmail.com>
-Subject: Re: [PATCH V5 2/2] mfd: stmpe: Update DT support in stmpe driver
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: grant.likely@secretlab.ca, Lee Jones <lee.jones@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, rabin.vincent@stericsson.com,
-        shiraz.hashim@st.com, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, spear-devel@list.st.com,
-        linus.walleij@linaro.org, Vipul Kumar Samar <vipulkumar.samar@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Federico Vaga <federico.vaga@gmail.com>
+CC: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Pawel Osciak <pawel@osciak.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jonathan Corbet <corbet@lwn.net>
+Subject: Re: [PATCH v3 3/4] sta2x11_vip: convert to videobuf2 and control
+ framework
+References: <1348484332-8106-1-git-send-email-federico.vaga@gmail.com> <8113379.Pqy1l62Utl@number-5> <50BF315C.8090203@redhat.com> <2637992.xolQO8ly5c@harkonnen>
+In-Reply-To: <2637992.xolQO8ly5c@harkonnen>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping!!!
+Em 05-12-2012 10:24, Federico Vaga escreveu:
+> Thank you Mauro for the good explanation
+>
+>> Yeah, there are many changes there that justifies adding you at its
+>> authorship, and that's ok. Also, anyone saying the size of your patch
+>> will recognize your and ST efforts to improve the driver.
+>>
+>> However, as some parts of the code were preserved, dropping the old
+>> authors doesn't sound right (and can even be illegal, in the light
+>> of the GPL license). It would be ok, though, if you would be
+>> changing it to something like:
+>>
+>> 	Copyright (c) 2010 by ...
+>> or
+>> 	Original driver from ...
+>
+> Ok, I understand. I will write something like this.
+>   * Copyright (C) 2012       ST Microelectronics
+>   *      author: Federico Vaga <federico.vaga@gmail.com>
+>   * Copyright (C) 2010       WindRiver Systems, Inc.
+>   *      authors: Andreas Kies <andreas.kies@windriver.com>
+>   *               Vlad Lungu <vlad.lungu@windriver.com>
 
-On 1 December 2012 00:33, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 30 November 2012 21:15, Lee Jones <lee.jones@linaro.org> wrote:
->> But ... I don't see how the changes in the -i2c and -spi files
->> are of benefit either. When I boot without the ID table I still
->> get "stmpe-i2c 0-0040: stmpe1601 detected, chip id: 0x212".
->>
->> What is it that actually uses the IDs?
->>
->> Perhaps Viresh can shine some light on the matter?
+Sounds perfect to me.
+
+>> So, IMHO, there's not much point on dropping authorship messages.
 >
-> As you can see, i wasn't the author of this patch and when you asked
-> this question, i didn't had an answer to it. I went through code and
-> formed some theory/story :) .
+> So the MODULE_AUTHOR will be Windriver forever until they drop authorship?
+> Also if in the next future 0 windriver lines will be in the code?
 >
-> @Grant: i need your help to check if my theory is correct or not. Question
-> is about adding below code in any i2c client driver:
->
-> +#ifdef CONFIG_OF
-> +static const struct of_device_id stmpe_dt_ids[] = {
-> +       { .compatible = "st,stmpe610", .data = &stmpe_i2c_id[0], },
-> +       { .compatible = "st,stmpe801", .data = &stmpe_i2c_id[1], },
-> +       { .compatible = "st,stmpe811", .data = &stmpe_i2c_id[2], },
-> +       { .compatible = "st,stmpe1601", .data = &stmpe_i2c_id[3], },
-> +       { .compatible = "st,stmpe2401", .data = &stmpe_i2c_id[4], },
-> +       { .compatible = "st,stmpe2403", .data = &stmpe_i2c_id[5], },
-> +       { }
-> +};
-> +MODULE_DEVICE_TABLE(of, stmpe_dt_ids);
-> +#endif
-> +
->  static struct i2c_driver stmpe_i2c_driver = {
->         .driver = {
->                 .name = "stmpe-i2c",
-> @@ -88,6 +102,7 @@ static struct i2c_driver stmpe_i2c_driver = {
->  #ifdef CONFIG_PM
->                 .pm = &stmpe_dev_pm_ops,
->  #endif
-> +               .of_match_table = of_match_ptr(stmpe_dt_ids),
->
-> So, what is the use of this table when we already have i2c_driver.id_table
-> populated.
->
-> This is my theory:
-> ---------------------
-> Adapter drivers supporting DT will call:
-> of_i2c_register_devices()
-> {
->         for_each_child_of_node(adap->dev.of_node, node) {
->                 if (of_modalias_node(node, info.type, sizeof(info.type)) < 0)
->                      error condition
->
->                 ...
->                 result = i2c_new_device(adap, &info);
->
->           ...
-> }
->
-> of_modalias_node(): expects compatible in child node, i.e. stmpe node in our
-> case. If it is not there, then that node is skipped. then it copies
-> string after ','
-> to info.type. So, for us only "stmpe810" out of "st,stmpe810" is copied.
->
-> Now this name, i.e. "stmpe810" is copied as client.name in i2c_new_device()
-> and device_register() is called, which will eventually call:
->
-> i2c_device_match()
-> {
->         /* Attempt an OF style match */
->         if (of_driver_match_device(dev, drv))
->                 return 1;
->
->         driver = to_i2c_driver(drv);
->         /* match on an id table if there is one */
->         if (driver->id_table)
->                 return i2c_match_id(driver->id_table, client) != NULL;
-> }
->
-> This first tries to match the table my patch added, _BUT_ the string will
-> never match as we had "st,stmpe810" in table and "stmpe810" in dev.
->
-> So, we fall back to i2c_match_id(), which will match it against
-> i2c_driver.id_table present in driver, which has entry for "stmpe810" and
-> so strings matched.
->
-> @Lee: This is what happened in your case. :)
->
-> So, whether its DT or non DT, true is returned from here if something
-> matched.
->
-> Later on, this will be called:
->
-> static int i2c_device_probe(struct device *dev)
-> {
->         .....
->         status = driver->probe(client, i2c_match_id(driver->id_table, client));
->         ....
-> }
->
-> Which will again match the legacy table to find correct struct i2c_device_id *id
-> to pass to probe().
->
-> So, the final question: WTF is of_match_table for?
->
-> Then i thought maybe it is used when  we don't have child nodes inside parent,
-> something related to the phandle way ? I grep'd i2c in arch/arm/boot/dts and
-> couldn't find anything of that sort, the way i2c clients are added is:
->
-> in dtsi file:
->
-> i2c0: i2c@address {
->          ...
-> }
->
-> in dts file:
-> &i2c0 {
->           stmpe810 {
->           ........
->           }
-> }
->
-> which i believe will be taken care by dtc and will fold client nodes
-> as child nodes
-> of i2c0.
->
-> @Grant: Please throw some light here :)
->
-> --
-> viresh
+> (general talking, not about this driver)
+> If I do git blame on a driver with MODULE_AUTHOR("Mr. X"); but only the
+> MODULE_AUTHOR line is from Mr X; there is not an automatically system which
+> remove the MODULE_AUTHOR? Ok, probably it was the original author of the code
+> and the comment header with the copyright history gives to Mr X all the
+> honours, but there is nothing from him in the code. It is not better to remove
+> MODULE_AUTHOR or replace it with who wrotes most of the code?
+> I know that this is not the best place to talk about this, just a little
+> curiosity
+
+As you said, the best place to discuss about it is likely at LKML.
+It could make sense to have some policy with regards to MODULE_AUTHOR(),
+stating when it could be modified, preferably reviewed by some experienced
+open source lawyers. I'm not aware of any.
+
+In any case, I don't think anyone should rely on "git blame" for it.
+The tool that helps to get code authorship is "git log -M", but
+to get the real authorship requires a lot more of just calling it.
+
+A trivial case where git blame will likely be giving wrong "credits"
+is if a driver has all functions reordered. It may happen that git blame
+will give credits to the one that reordered the functions, and not to
+the original code's author.
+
+There are more subtle cases, though. For example, please assume that
+the original driver has to call a certain function to do some needed
+work to initialize the device:
+
+	call_function_foo();
+
+And a reviewer latter add a logic to deal with errors, like:
+
+	ret = call_function_foo();
+	if (ret)
+		return ret;
+
+The reviewer wrote 2 additional lines, and modified 1 original line.
+Yet, his contribution didn't make the code to work. The one that did it
+was the single-line patch that added call_function_foo(). So, in this
+case, a single line change was more significant for the driver than a
+3 line addition[1]. Also, again, git blame will give the "credits"
+for the line that calls call_function_foo() to the wrong guy.
+
+Btw, this is why it is called "git blame", and not "git authorship":
+it is a tool to identify who was the last one that modified the code.
+Its main usage is to identify who might have introduced a bug on the
+code.
+
+Let's assume that call_function_foo() could be returning some non-error
+positive values, under certain circumstances. In that case, the above
+code would actually be introducing a bug by using:
+	if (ret)
+instead of
+	if (ret < 0)
+
+So, the 3 line patch is not only be less relevant for the driver to
+work than the original author's code, but it is actually wrong
+and introduced a serious driver regression, preventing it to work.
+Git blame was made to address such cases: once a bug got bisected, it
+helps to get the changelog that made the change, pointing to who made
+the changes and why. So, a proper fix for the bug can be better
+prepared, to not only fix the bug, but to also address the issue
+pointed by the blamed patchset.
+
+Regards,
+Mauro
+
+[1] Please, don't get be wrong on that: we do want patches adding
+proper error handling. They are important to improve the driver's
+reliability.
