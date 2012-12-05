@@ -1,104 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753211Ab2LEG5Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 01:57:25 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:44066 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752495Ab2LEG4t (ORCPT
+	id S1753245Ab2LEHBO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 02:01:14 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:47821 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751482Ab2LEHBM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 01:56:49 -0500
-X-AuditID: 9c93016f-b7b86ae000003a75-40-50bef02e5b70
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 3/3] perf diff: Use internal rb tree for compute resort
-Date: Wed,  5 Dec 2012 15:56:43 +0900
-Message-Id: <1354690603-31364-4-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1354690603-31364-1-git-send-email-namhyung@kernel.org>
-References: <1354690603-31364-1-git-send-email-namhyung@kernel.org>
+	Wed, 5 Dec 2012 02:01:12 -0500
+X-AuditID: 9c930179-b7b25ae0000031c2-02-50bef136b6e5
+Date: Wed, 5 Dec 2012 16:01:10 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Christoph Lameter <cl@linux.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
+        Taras Glek <tglek@mozilla.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [RFC v2] Support volatile range for anon vma
+Message-ID: <20121205070110.GC9782@blaptop>
+References: <1351560594-18366-1-git-send-email-minchan@kernel.org>
+ <50AD739A.30804@linaro.org>
+ <50B6E1F9.5010301@linaro.org>
+ <20121204000042.GB20395@bbox>
+ <50BD4A70.9060506@linaro.org>
+ <20121204072207.GA9782@blaptop>
+ <50BE4B64.6000003@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50BE4B64.6000003@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+Hi John,
 
-There's no reason to run hists_compute_resort() using output tree.
-Convert it to use internal tree so that it can remove unnecessary
-_output_resort.  Also move position computation below the resort since
-it changes the output ordering.
+On Tue, Dec 04, 2012 at 11:13:40AM -0800, John Stultz wrote:
+> On 12/03/2012 11:22 PM, Minchan Kim wrote:
+> >On Mon, Dec 03, 2012 at 04:57:20PM -0800, John Stultz wrote:
+> >>On 12/03/2012 04:00 PM, Minchan Kim wrote:
+> >>>On Wed, Nov 28, 2012 at 08:18:01PM -0800, John Stultz wrote:
+> >>>>On 11/21/2012 04:36 PM, John Stultz wrote:
+> >>>>>2) Being able to use this with tmpfs files. I'm currently trying
+> >>>>>to better understand the rmap code, looking to see if there's a
+> >>>>>way to have try_to_unmap_file() work similarly to
+> >>>>>try_to_unmap_anon(), to allow allow users to madvise() on mmapped
+> >>>>>tmpfs files. This would provide a very similar interface as to
+> >>>>>what I've been proposing with fadvise/fallocate, but just using
+> >>>>>process virtual addresses instead of (fd, offset) pairs.   The
+> >>>>>benefit with (fd,offset) pairs for Android is that its easier to
+> >>>>>manage shared volatile ranges between two processes that are
+> >>>>>sharing data via an mmapped tmpfs file (although this actual use
+> >>>>>case may be fairly rare).  I believe we should still be able to
+> >>>>>rework the ashmem internals to use madvise (which would provide
+> >>>>>legacy support for existing android apps), so then its just a
+> >>>>>question of if we could then eventually convince Android apps to
+> >>>>>use the madvise interface directly, rather then the ashmem unpin
+> >>>>>ioctl.
+> >>>>Hey Minchan,
+> >>>>     I've been playing around with your patch trying to better
+> >>>>understand your approach and to extend it to support tmpfs files. In
+> >>>>doing so I've found a few bugs, and have some rough fixes I wanted
+> >>>>to share. There's still a few edge cases I need to deal with (the
+> >>>>vma-purged flag isn't being properly handled through vma merge/split
+> >>>>operations), but its starting to come along.
+> >>>Hmm, my patch doesn't allow to merge volatile with another one by
+> >>>inserting VM_VOLATILE into VM_SPECIAL so I guess merge isn't problem.
+> >>>In case of split, __split_vma copy old vma to new vma like this
+> >>>
+> >>>         *new = *vma;
+> >>>
+> >>>So the problem shouldn't happen, I guess.
+> >>>Did you see the real problem about that?
+> >>Yes, depending on the pattern that MADV_VOLATILE and MADV_NOVOLATILE
+> >>is applied, we can get a result where data is purged, but we aren't
+> >>notified of it.  Also, since madvise returns early if it encounters
+> >>an error, in the case where you have checkerboard volatile regions
+> >>(say every other page is volatile), which you mark non-volatile with
+> >>one large MADV_NOVOLATILE call, the first volatile vma will be
+> >>marked non-volatile, but since it returns purged, the madvise loop
+> >>will stop and the following volatile regions will be left volatile.
+> >>
+> >>The patches in the git tree below which handle the perged state
+> >>better seem to work for my tests, as far as resolving any
+> >>overlapping calls. Of course there may yet still be problems I've
+> >>not found.
+> >>
+> >>>>Anyway, take a look at the tree here and let me know what you think.
+> >>>>http://git.linaro.org/gitweb?p=people/jstultz/android-dev.git;a=shortlog;h=refs/heads/dev/minchan-anonvol
+> >>Eager to hear what you think!
+> >Below two patches look good to me.
+> >
+> >[rmap: Simplify volatility checking by moving it out of try_to_unmap_one]
+> >[rmap: ClearPageDirty() when returning SWAP_DISCARD]
+> >
+> >[madvise: Fix NOVOLATILE bug]
+> >I can't understand description of the patch.
+> >Could you elaborate it with example?
+> The case I ran into here is if you have a range where you mark every
+> other page as volatile. Then mark all the pages in that range as
+> non-volatile in one madvise call.
+> 
+> sys_madvise() will then find the first vma in the range, and call
+> madvise_vma(), which marks the first vma non-volatile and return the
+> purged state.  If the page has been purged, sys_madvise code will
+> note that as an error, and break out of the vma iteration loop,
+> leaving the following vmas in the range volatile.
+> 
+> >[madvise: Fixup vma->purged handling]
+> >I included VM_VOLATILE into VM_SPECIAL intentionally.
+> >If comment of VM_SPECIAL is right, merge with volatile vmas shouldn't happen.
+> >So I guess you see other problem. When I see my source code today, locking
+> >scheme/purge handling is totally broken. I will look at it. Maybe you are seeing
+> >bug related that. Part of patch is needed. It could be separate patch.
+> >I will merge it.
+> I don't think the problem is when vmas being marked VM_VOLATILE are
+> being merged, its that when we mark the vma as *non-volatile*, and
+> remove the VM_VOLATILE flag we merge the non-volatile vmas with
+> neighboring vmas. So preserving the purged flag during that merge is
+> important. Again, the example I used to trigger this was an
+> alternating pattern of volatile and non volatile vmas, then marking
+> the entire range non-volatile (though sometimes in two overlapping
+> passes).
 
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/builtin-diff.c | 32 +++++++++++++++++++-------------
- 1 file changed, 19 insertions(+), 13 deletions(-)
+If I understand correctly, you mean following as.
 
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index b52f5d8c4a6b..4e18cea7c845 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -435,19 +435,25 @@ static void insert_hist_entry_by_compute(struct rb_root *root,
- 
- static void hists__compute_resort(struct hists *hists)
- {
--	struct rb_root tmp = RB_ROOT;
--	struct rb_node *next = rb_first(&hists->entries);
-+	struct rb_root *root;
-+	struct rb_node *next;
-+
-+	if (sort__need_collapse)
-+		root = &hists->entries_collapsed;
-+	else
-+		root = hists->entries_in;
-+
-+	hists->entries = RB_ROOT;
-+	next = rb_first(root);
- 
- 	while (next != NULL) {
--		struct hist_entry *he = rb_entry(next, struct hist_entry, rb_node);
-+		struct hist_entry *he;
- 
--		next = rb_next(&he->rb_node);
-+		he = rb_entry(next, struct hist_entry, rb_node_in);
-+		next = rb_next(&he->rb_node_in);
- 
--		rb_erase(&he->rb_node, &hists->entries);
--		insert_hist_entry_by_compute(&tmp, he, compute);
-+		insert_hist_entry_by_compute(&hists->entries, he, compute);
- 	}
--
--	hists->entries = tmp;
- }
- 
- static void hists__process(struct hists *old, struct hists *new)
-@@ -459,16 +465,16 @@ static void hists__process(struct hists *old, struct hists *new)
- 	else
- 		hists__link(new, old);
- 
--	hists__output_resort(new);
--
--	if (show_displacement)
--		hists__compute_position(new);
--
- 	if (sort_compute) {
- 		hists__precompute(new);
- 		hists__compute_resort(new);
-+	} else {
-+		hists__output_resort(new);
- 	}
- 
-+	if (show_displacement)
-+		hists__compute_position(new);
-+
- 	hists__fprintf(new, true, 0, 0, stdout);
- }
- 
+chunk1 = mmap(8M)
+chunk2 = chunk1 + 2M;
+chunk3 = chunk2 + 2M
+chunk4 = chunk3 + 2M
+
+madvise(chunk1, 2M, VOLATILE);
+madvise(chunk4, 2M, VOLATILE);
+
+/*
+ * V : volatile vma
+ * N : non volatile vma
+ * So Now vma is VNVN.
+ */
+And chunk4 is purged.
+
+int ret = madvise(chunk1, 8M, NOVOLATILE);
+ASSERT(ret == 1);
+/* And you expect VNVN->N ?*/
+
+Right?
+If so, why should non-volatile function semantic allow it which cross over
+non-volatile areas in a range? I would like to fail such case because
+in case of MADV_REMOVE, it fails in the middle of operation if it encounter
+VM_LOCKED.
+
+What do you think about it?
+
+> 
+> thanks
+> -john
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
 -- 
-1.7.11.7
-
+Kind regards,
+Minchan Kim
