@@ -1,121 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754398Ab2LEVxi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 16:53:38 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:50533 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752647Ab2LEVxh (ORCPT
+	id S1752205Ab2LEV7X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 16:59:23 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:49173 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803Ab2LEV7W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 16:53:37 -0500
-Date: Wed, 5 Dec 2012 16:53:08 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+	Wed, 5 Dec 2012 16:59:22 -0500
+Date: Wed, 5 Dec 2012 13:59:20 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Tommi Rantala <tt.rantala@gmail.com>
+cc: Mel Gorman <mgorman@suse.de>, Andi Kleen <ak@linux.intel.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 21/46] x86, mm: setup page table in top-down
-Message-ID: <20121205215308.GB1284@phenom.dumpdata.com>
-References: <1353123563-3103-1-git-send-email-yinghai@kernel.org>
- <1353123563-3103-22-git-send-email-yinghai@kernel.org>
- <20121128175007.GN21266@phenom.dumpdata.com>
- <CAE9FiQWVL3mq7dCP1g_euK_7PK2gUE+1XXNoZPsqt+wnFdtFhw@mail.gmail.com>
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Dave Jones <davej@redhat.com>, Christoph Lameter <cl@linux.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
+Subject: Re: [PATCH] tmpfs: fix shared mempolicy leak
+In-Reply-To: <CA+ydwtoduPVnkzL4cgRdaNjhTYa1HV2KUi6CjXsap_qOuu_SQQ@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1212051357140.4383@eggly.anvils>
+References: <1349801921-16598-1-git-send-email-mgorman@suse.de> <1349801921-16598-6-git-send-email-mgorman@suse.de> <CA+ydwtqQ7iK_1E+7ctLxYe8JZY+SzMfuRagjyHJ12OYsxbMcaA@mail.gmail.com> <20121204141501.GA2797@suse.de> <alpine.LNX.2.00.1212042042130.13895@eggly.anvils>
+ <alpine.LNX.2.00.1212042211340.892@eggly.anvils> <alpine.LNX.2.00.1212042320050.19453@eggly.anvils> <20121205095221.GB2489@suse.de> <CA+ydwtoduPVnkzL4cgRdaNjhTYa1HV2KUi6CjXsap_qOuu_SQQ@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQWVL3mq7dCP1g_euK_7PK2gUE+1XXNoZPsqt+wnFdtFhw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 28, 2012 at 12:16:16PM -0800, Yinghai Lu wrote:
-> On Wed, Nov 28, 2012 at 9:50 AM, Konrad Rzeszutek Wilk
-> <konrad.wilk@oracle.com> wrote:
-> >>  /*
-> >> - * Iterate through E820 memory map and create direct mappings for only E820_RAM
-> >> - * regions. We cannot simply create direct mappings for all pfns from
-> >> - * [0 to max_low_pfn) and [4GB to max_pfn) because of possible memory holes in
-> >> - * high addresses that cannot be marked as UC by fixed/variable range MTRRs.
-> >> - * Depending on the alignment of E820 ranges, this may possibly result in using
-> >> - * smaller size (i.e. 4K instead of 2M or 1G) page tables.
-> >> + * would have hole in the middle or ends, and only ram parts will be mapped.
+On Wed, 5 Dec 2012, Tommi Rantala wrote:
+> 2012/12/5 Mel Gorman <mgorman@suse.de>:
+> > On Tue, Dec 04, 2012 at 11:24:30PM -0800, Hugh Dickins wrote:
+> >> From: Mel Gorman <mgorman@suse.de>
+> >>
+> >> Commit 00442ad04a5e ("mempolicy: fix a memory corruption by refcount
+> >> imbalance in alloc_pages_vma()") changed get_vma_policy() to raise the
+> >> refcount on a shmem shared mempolicy; whereas shmem_alloc_page() went
+> >> on expecting alloc_page_vma() to drop the refcount it had acquired.
+> >> This deserves a rework: but for now fix the leak in shmem_alloc_page().
 > >
+> > Thanks Hugh for turning gibber into a patch!
 > >
-> > What? What is the 'would' refering to? Why remove a good comment that explains
-> > the function. Why not just modify it a bit please?
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
 > >
+> > Tommi, just in case, can you confirm this fixes the problem for you please?
 > 
-> ==> update to
-> 
-> /*
->  * We need to iterate through E820 memory map and create direct mappings
->  * for only E820_RAM and E820_KERN_RESERVED regions. We cannot simply
->  * create direct mappings for all pfns from [0 to max_low_pfn) and
->  * [4GB to max_pfn) because of possible memory holes in high addresses
->  * that cannot be marked as UC by fixed/variable range MTRRs.
->  * Depending on the alignment of E820 ranges, this may possibly result
->  * in using smaller size (i.e. 4K instead of 2M or 1G) page tables.
->  *
->  * init_mem_mapping call init_range_memory_mapping with big range.
->  * That range would have hole in the middle or ends, and only ram parts
->  * will be mapped in init_range_memory_mapping.
->  */
-> 
-> 
-> 
-> >> -     max_pfn_mapped = 0; /* will get exact value next */
-> >>       /* the ISA range is always mapped regardless of memory holes */
-> >>       init_memory_mapping(0, ISA_END_ADDRESS);
-> >> -     init_range_memory_mapping(ISA_END_ADDRESS, end);
-> >> +
-> >> +     /* xen has big range in reserved near end of ram, skip it at first */
-> >
-> > I am not seeing the logic for doing it? The loop is quite generic
-> > in doing it in reverse order, and the memblock_find_in_range
-> > gets a nice PMD_SIZE region from the end of the memory.
-> >
-> > If the memory at the end is reserved, then it looks like it won't
-> > be even considered in the loop, but it does get included in the fallback:
-> >
-> >         if (real_end < end)
-> >                 init_range_memory_mapping(real_end, end);
-> 
-> that reserved in in memblock.reserved and it is not in e820.
-> 
-> so memblock.memory will have that range too. then if we use all of
-> first 2M to map
-> 
-> those reserved range, we would not have enough mapped pages to be used
-> as new page tables.
+> Confirmed! No more complaints from kmemleak.
 
-You should include that nice explanation as part of the comment. It is
-rather suddle (or would be for me in 6 months when I would look at this
-code).
+Great, thanks.  I'll update the tags and send straight to Linus now.
 
-> 
-> >
-> >
-> >
-> >> +     addr = memblock_find_in_range(ISA_END_ADDRESS, end, PMD_SIZE,
-> >> +                      PAGE_SIZE);
-> >> +     real_end = addr + PMD_SIZE;
-> >> +
-> >> +     /* step_size need to be small so pgt_buf from BRK could cover it */
-> >> +     step_size = PMD_SIZE;
-> >> +     max_pfn_mapped = 0; /* will get exact value next */
-> >> +     min_pfn_mapped = real_end >> PAGE_SHIFT;
-> >> +     last_start = start = real_end;
-> >
-> > Everytime I look at this loop, I keep on forgetting that it goes in reverse.
-> > I am not sure if it is just me, but it might be useful for other
-> > folks who are going to look at this in a year or so to have
-> > a little hint:
-> >
-> > N.B. We start from the top (end of memory) and go to the bottom. The
-> > memblock_find_in_range gets us a block of RAM from the end
-> > of RAM.
-> 
-> put the that in the comments.
+Hugh
