@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932162Ab2LEUvl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 15:51:41 -0500
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:37438 "EHLO
+	id S964788Ab2LEUwu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 15:52:50 -0500
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:37430 "EHLO
 	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754436Ab2LEUvc (ORCPT
+	by vger.kernel.org with ESMTP id S1754082Ab2LEUva (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 15:51:32 -0500
+	Wed, 5 Dec 2012 15:51:30 -0500
 From: Sebastian Hahn <snsehahn@cip.cs.fau.de>
 To: gregkh@linuxfoundation.org
 Cc: Jennifer.Naumann@informatik.stud.uni-erlangen.de, dan.carpenter@oracle.com,
@@ -15,11 +15,10 @@ Cc: Jennifer.Naumann@informatik.stud.uni-erlangen.de, dan.carpenter@oracle.com,
         adam.buchbinder@gmail.com, amwang@redhat.com, justinmattock@gmail.com,
         wfp5p@virginia.edu, jim.cromie@gmail.com, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org,
-        linux-kernel@i4.informatik.uni-erlangen.de,
-        Sebastian Hahn <snsehahn@cip.cs.fau.de>
-Subject: [PATCH 5/6] staging/rtl8192u: use same indent for switch and case
-Date: Wed,  5 Dec 2012 21:40:22 +0100
-Message-Id: <1354740023-30849-6-git-send-email-snsehahn@cip.cs.fau.de>
+        linux-kernel@i4.informatik.uni-erlangen.de
+Subject: [PATCH 2/6] staging/rtl8192u: put { on same line as struct
+Date: Wed,  5 Dec 2012 21:40:19 +0100
+Message-Id: <1354740023-30849-3-git-send-email-snsehahn@cip.cs.fau.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1354740023-30849-1-git-send-email-snsehahn@cip.cs.fau.de>
 References: <1354740023-30849-1-git-send-email-snsehahn@cip.cs.fau.de>
@@ -27,1022 +26,463 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the checkpatch error "switch and case should be at the same indent"
+From: Jennifer Naumann <Jennifer.Naumann@informatik.stud.uni-erlangen.de>
 
-Signed-off-by: Sebastian Hahn <snsehahn@cip.cs.fau.de>
+This fixes the checkpatch error "open brace '{' following struct go on the
+same line" in staging/rtl8192u
+
+Signed-off-by: Jennifer Naumann <Jennifer.Naumann@informatik.stud.uni-erlangen.de>
 ---
- .../staging/rtl8192u/ieee80211/ieee80211_softmac.c |  272 ++++++++--------
- drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c  |   32 +-
- drivers/staging/rtl8192u/ieee80211/ieee80211_wx.c  |    2 +-
- drivers/staging/rtl8192u/r8192U_core.c             |  338 ++++++++++----------
- drivers/staging/rtl8192u/r8192U_wx.c               |   12 +-
- drivers/staging/rtl8192u/r819xU_firmware.c         |   96 +++---
- drivers/staging/rtl8192u/r819xU_phy.c              |   78 ++---
- 7 files changed, 415 insertions(+), 415 deletions(-)
+ drivers/staging/rtl8192u/ieee80211/ieee80211.h   |   12 ++---
+ drivers/staging/rtl8192u/ieee80211/rtl819x_BA.h  |    3 +-
+ drivers/staging/rtl8192u/ieee80211/rtl819x_Qos.h |   51 ++++++++--------------
+ drivers/staging/rtl8192u/r8192U.h                |   27 ++++--------
+ drivers/staging/rtl8192u/r8192U_core.c           |    3 +-
+ drivers/staging/rtl8192u/r8192U_dm.h             |    9 ++--
+ drivers/staging/rtl8192u/r8192U_wx.c             |    3 +-
+ drivers/staging/rtl8192u/r819xU_cmdpkt.h         |   18 +++-----
+ 8 files changed, 42 insertions(+), 84 deletions(-)
 
-diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac.c b/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac.c
-index e83c310..7062f9d 100644
---- a/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac.c
-+++ b/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac.c
-@@ -1948,166 +1948,166 @@ ieee80211_rx_frame_softmac(struct ieee80211_device *ieee, struct sk_buff *skb,
+diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211.h b/drivers/staging/rtl8192u/ieee80211/ieee80211.h
+index bb0e4fe..b85e3e3 100644
+--- a/drivers/staging/rtl8192u/ieee80211/ieee80211.h
++++ b/drivers/staging/rtl8192u/ieee80211/ieee80211.h
+@@ -1655,8 +1655,7 @@ typedef struct tx_pending_t{
+ 	struct ieee80211_txb *txb;
+ }tx_pending_t;
  
- 	switch (WLAN_FC_GET_STYPE(header->frame_ctl)) {
+-typedef struct _bandwidth_autoswitch
+-{
++typedef struct _bandwidth_autoswitch {
+ 	long threshold_20Mhzto40Mhz;
+ 	long	threshold_40Mhzto20Mhz;
+ 	bool bforced_tx20Mhz;
+@@ -1668,8 +1667,7 @@ typedef struct _bandwidth_autoswitch
  
--		case IEEE80211_STYPE_ASSOC_RESP:
--		case IEEE80211_STYPE_REASSOC_RESP:
--
--			IEEE80211_DEBUG_MGMT("received [RE]ASSOCIATION RESPONSE (%d)\n",
--					WLAN_FC_GET_STYPE(header->frame_ctl));
--			if ((ieee->softmac_features & IEEE_SOFTMAC_ASSOCIATE) &&
--				ieee->state == IEEE80211_ASSOCIATING_AUTHENTICATED &&
--				ieee->iw_mode == IW_MODE_INFRA){
--				struct ieee80211_network network_resp;
--				struct ieee80211_network *network = &network_resp;
--
--				if (0 == (errcode=assoc_parse(ieee,skb, &aid))){
--					ieee->state=IEEE80211_LINKED;
--					ieee->assoc_id = aid;
--					ieee->softmac_stats.rx_ass_ok++;
--					/* station support qos */
--					/* Let the register setting defaultly with Legacy station */
--					if(ieee->qos_support) {
--						assoc_resp = (struct ieee80211_assoc_response_frame*)skb->data;
--						memset(network, 0, sizeof(*network));
--						if (ieee80211_parse_info_param(ieee,assoc_resp->info_element,\
--									rx_stats->len - sizeof(*assoc_resp),\
--									network,rx_stats)){
--							return 1;
--						}
--						else
--						{	//filling the PeerHTCap. //maybe not necessary as we can get its info from current_network.
--							memcpy(ieee->pHTInfo->PeerHTCapBuf, network->bssht.bdHTCapBuf, network->bssht.bdHTCapLen);
--							memcpy(ieee->pHTInfo->PeerHTInfoBuf, network->bssht.bdHTInfoBuf, network->bssht.bdHTInfoLen);
--						}
--						if (ieee->handle_assoc_response != NULL)
--							ieee->handle_assoc_response(ieee->dev, (struct ieee80211_assoc_response_frame*)header, network);
-+	case IEEE80211_STYPE_ASSOC_RESP:
-+	case IEEE80211_STYPE_REASSOC_RESP:
-+
-+		IEEE80211_DEBUG_MGMT("received [RE]ASSOCIATION RESPONSE (%d)\n",
-+				WLAN_FC_GET_STYPE(header->frame_ctl));
-+		if ((ieee->softmac_features & IEEE_SOFTMAC_ASSOCIATE) &&
-+			ieee->state == IEEE80211_ASSOCIATING_AUTHENTICATED &&
-+			ieee->iw_mode == IW_MODE_INFRA){
-+			struct ieee80211_network network_resp;
-+			struct ieee80211_network *network = &network_resp;
-+
-+			if (0 == (errcode=assoc_parse(ieee,skb, &aid))){
-+				ieee->state=IEEE80211_LINKED;
-+				ieee->assoc_id = aid;
-+				ieee->softmac_stats.rx_ass_ok++;
-+				/* station support qos */
-+				/* Let the register setting defaultly with Legacy station */
-+				if(ieee->qos_support) {
-+					assoc_resp = (struct ieee80211_assoc_response_frame*)skb->data;
-+					memset(network, 0, sizeof(*network));
-+					if (ieee80211_parse_info_param(ieee,assoc_resp->info_element,\
-+								rx_stats->len - sizeof(*assoc_resp),\
-+								network,rx_stats)){
-+						return 1;
- 					}
--					ieee80211_associate_complete(ieee);
--				} else {
--					/* aid could not been allocated */
--					ieee->softmac_stats.rx_ass_err++;
--					printk(
--						"Association response status code 0x%x\n",
--						errcode);
--					IEEE80211_DEBUG_MGMT(
--						"Association response status code 0x%x\n",
--						errcode);
--					if(ieee->AsocRetryCount < RT_ASOC_RETRY_LIMIT) {
--						queue_work(ieee->wq, &ieee->associate_procedure_wq);
--					} else {
--						ieee80211_associate_abort(ieee);
-+					else
-+					{	//filling the PeerHTCap. //maybe not necessary as we can get its info from current_network.
-+						memcpy(ieee->pHTInfo->PeerHTCapBuf, network->bssht.bdHTCapBuf, network->bssht.bdHTCapLen);
-+						memcpy(ieee->pHTInfo->PeerHTInfoBuf, network->bssht.bdHTInfoBuf, network->bssht.bdHTInfoLen);
- 					}
-+					if (ieee->handle_assoc_response != NULL)
-+						ieee->handle_assoc_response(ieee->dev, (struct ieee80211_assoc_response_frame*)header, network);
-+				}
-+				ieee80211_associate_complete(ieee);
-+			} else {
-+				/* aid could not been allocated */
-+				ieee->softmac_stats.rx_ass_err++;
-+				printk(
-+					"Association response status code 0x%x\n",
-+					errcode);
-+				IEEE80211_DEBUG_MGMT(
-+					"Association response status code 0x%x\n",
-+					errcode);
-+				if(ieee->AsocRetryCount < RT_ASOC_RETRY_LIMIT) {
-+					queue_work(ieee->wq, &ieee->associate_procedure_wq);
-+				} else {
-+					ieee80211_associate_abort(ieee);
- 				}
- 			}
--			break;
-+		}
-+		break;
+ #define REORDER_WIN_SIZE	128
+ #define REORDER_ENTRY_NUM	128
+-typedef struct _RX_REORDER_ENTRY
+-{
++typedef struct _RX_REORDER_ENTRY {
+ 	struct list_head	List;
+ 	u16			SeqNum;
+ 	struct ieee80211_rxb* prxb;
+@@ -1709,15 +1707,13 @@ typedef struct _IbssParms{
+ #define MAX_NUM_RATES	264 // Max num of support rates element: 8,  Max num of ext. support rate: 255. 061122, by rcnjko.
  
--		case IEEE80211_STYPE_ASSOC_REQ:
--		case IEEE80211_STYPE_REASSOC_REQ:
-+	case IEEE80211_STYPE_ASSOC_REQ:
-+	case IEEE80211_STYPE_REASSOC_REQ:
+ // RF state.
+-typedef	enum _RT_RF_POWER_STATE
+-{
++typedef	enum _RT_RF_POWER_STATE {
+ 	eRfOn,
+ 	eRfSleep,
+ 	eRfOff
+ }RT_RF_POWER_STATE;
  
--			if ((ieee->softmac_features & IEEE_SOFTMAC_ASSOCIATE) &&
--				ieee->iw_mode == IW_MODE_MASTER)
-+		if ((ieee->softmac_features & IEEE_SOFTMAC_ASSOCIATE) &&
-+			ieee->iw_mode == IW_MODE_MASTER)
+-typedef struct _RT_POWER_SAVE_CONTROL
+-{
++typedef struct _RT_POWER_SAVE_CONTROL {
  
--				ieee80211_rx_assoc_rq(ieee, skb);
--			break;
-+			ieee80211_rx_assoc_rq(ieee, skb);
-+		break;
+ 	//
+ 	// Inactive Power Save(IPS) : Disable RF when disconnected
+diff --git a/drivers/staging/rtl8192u/ieee80211/rtl819x_BA.h b/drivers/staging/rtl8192u/ieee80211/rtl819x_BA.h
+index ffd1c0c..2c398ca 100644
+--- a/drivers/staging/rtl8192u/ieee80211/rtl819x_BA.h
++++ b/drivers/staging/rtl8192u/ieee80211/rtl819x_BA.h
+@@ -28,8 +28,7 @@ struct ieee80211_ADDBA_Req{
+ //Is this need?I put here just to make it easier to define structure BA_RECORD //WB
+ typedef union _SEQUENCE_CONTROL{
+ 	u16 ShortData;
+-	struct
+-	{
++	struct {
+ 		u16	FragNum:4;
+ 		u16	SeqNum:12;
+ 	}field;
+diff --git a/drivers/staging/rtl8192u/ieee80211/rtl819x_Qos.h b/drivers/staging/rtl8192u/ieee80211/rtl819x_Qos.h
+index 2625cde..2348ccd 100644
+--- a/drivers/staging/rtl8192u/ieee80211/rtl819x_Qos.h
++++ b/drivers/staging/rtl8192u/ieee80211/rtl819x_Qos.h
+@@ -81,8 +81,7 @@ typedef	union _QOS_CTRL_FIELD{
+ 	u16	shortData;
  
--		case IEEE80211_STYPE_AUTH:
-+	case IEEE80211_STYPE_AUTH:
+ 	// WMM spec
+-	struct
+-	{
++	struct {
+ 		u8		UP:3;
+ 		u8		usRsvd1:1;
+ 		u8		EOSP:1;
+@@ -92,8 +91,7 @@ typedef	union _QOS_CTRL_FIELD{
+ 	}WMM;
  
--			if (ieee->softmac_features & IEEE_SOFTMAC_ASSOCIATE){
--				if (ieee->state == IEEE80211_ASSOCIATING_AUTHENTICATING &&
--				ieee->iw_mode == IW_MODE_INFRA){
-+		if (ieee->softmac_features & IEEE_SOFTMAC_ASSOCIATE){
-+			if (ieee->state == IEEE80211_ASSOCIATING_AUTHENTICATING &&
-+			ieee->iw_mode == IW_MODE_INFRA){
+ 	// 802.11e: QoS data type frame sent by non-AP QSTAs.
+-	struct
+-	{
++	struct {
+ 		u8		TID:4;
+ 		u8		bIsQsize:1;// 0: BIT[8:15] is TXOP Duration Requested, 1: BIT[8:15] is Queue Size.
+ 		u8		AckPolicy:2;
+@@ -102,8 +100,7 @@ typedef	union _QOS_CTRL_FIELD{
+ 	}BySta;
  
--						IEEE80211_DEBUG_MGMT("Received authentication response");
-+					IEEE80211_DEBUG_MGMT("Received authentication response");
+ 	// 802.11e: QoS data, QoS Null, and QoS Data+CF-Ack frames sent by HC.
+-	struct
+-	{
++	struct {
+ 		u8		TID:4;
+ 		u8		EOSP:1;
+ 		u8		AckPolicy:2;
+@@ -112,8 +109,7 @@ typedef	union _QOS_CTRL_FIELD{
+ 	}ByHc_Data;
  
--						if (0 == (errcode=auth_parse(skb, &challenge, &chlen))){
--							if(ieee->open_wep || !challenge){
--								ieee->state = IEEE80211_ASSOCIATING_AUTHENTICATED;
--								ieee->softmac_stats.rx_auth_rs_ok++;
--								if(!(ieee->pHTInfo->IOTAction&HT_IOT_ACT_PURE_N_MODE))
-+					if (0 == (errcode=auth_parse(skb, &challenge, &chlen))){
-+						if(ieee->open_wep || !challenge){
-+							ieee->state = IEEE80211_ASSOCIATING_AUTHENTICATED;
-+							ieee->softmac_stats.rx_auth_rs_ok++;
-+							if(!(ieee->pHTInfo->IOTAction&HT_IOT_ACT_PURE_N_MODE))
-+							{
-+								if (!ieee->GetNmodeSupportBySecCfg(ieee->dev))
- 								{
--									if (!ieee->GetNmodeSupportBySecCfg(ieee->dev))
-+											// WEP or TKIP encryption
-+									if(IsHTHalfNmodeAPs(ieee))
- 									{
--												// WEP or TKIP encryption
--										if(IsHTHalfNmodeAPs(ieee))
--										{
--											bSupportNmode = true;
--											bHalfSupportNmode = true;
--										}
--										else
--										{
--											bSupportNmode = false;
--											bHalfSupportNmode = false;
--										}
--									printk("==========>to link with AP using SEC(%d, %d)", bSupportNmode, bHalfSupportNmode);
-+										bSupportNmode = true;
-+										bHalfSupportNmode = true;
- 									}
-+									else
-+									{
-+										bSupportNmode = false;
-+										bHalfSupportNmode = false;
-+									}
-+								printk("==========>to link with AP using SEC(%d, %d)", bSupportNmode, bHalfSupportNmode);
- 								}
--								/* Dummy wirless mode setting to avoid encryption issue */
--								if(bSupportNmode) {
--									//N mode setting
--									ieee->SetWirelessMode(ieee->dev, \
--											ieee->current_network.mode);
--								}else{
--									//b/g mode setting
--									/*TODO*/
--									ieee->SetWirelessMode(ieee->dev, IEEE_G);
--								}
--
--								if (ieee->current_network.mode == IEEE_N_24G && bHalfSupportNmode == true)
--								{
--									printk("===============>entern half N mode\n");
--									ieee->bHalfWirelessN24GMode = true;
--								}
--								else
--									ieee->bHalfWirelessN24GMode = false;
--
--								ieee80211_associate_step2(ieee);
-+							}
-+							/* Dummy wirless mode setting to avoid encryption issue */
-+							if(bSupportNmode) {
-+								//N mode setting
-+								ieee->SetWirelessMode(ieee->dev, \
-+										ieee->current_network.mode);
- 							}else{
--								ieee80211_auth_challenge(ieee, challenge, chlen);
-+								//b/g mode setting
-+								/*TODO*/
-+								ieee->SetWirelessMode(ieee->dev, IEEE_G);
-+							}
-+
-+							if (ieee->current_network.mode == IEEE_N_24G && bHalfSupportNmode == true)
-+							{
-+								printk("===============>entern half N mode\n");
-+								ieee->bHalfWirelessN24GMode = true;
- 							}
-+							else
-+								ieee->bHalfWirelessN24GMode = false;
-+
-+							ieee80211_associate_step2(ieee);
- 						}else{
--							ieee->softmac_stats.rx_auth_rs_err++;
--							IEEE80211_DEBUG_MGMT("Authentication response status code 0x%x",errcode);
--							ieee80211_associate_abort(ieee);
-+							ieee80211_auth_challenge(ieee, challenge, chlen);
- 						}
--
--					}else if (ieee->iw_mode == IW_MODE_MASTER){
--						ieee80211_rx_auth_rq(ieee, skb);
-+					}else{
-+						ieee->softmac_stats.rx_auth_rs_err++;
-+						IEEE80211_DEBUG_MGMT("Authentication response status code 0x%x",errcode);
-+						ieee80211_associate_abort(ieee);
- 					}
-+
-+				}else if (ieee->iw_mode == IW_MODE_MASTER){
-+					ieee80211_rx_auth_rq(ieee, skb);
- 				}
--			break;
-+			}
-+		break;
+ 	// 802.11e: QoS (+) CF-Poll frames sent by HC.
+-	struct
+-	{
++	struct {
+ 		u8		TID:4;
+ 		u8		EOSP:1;
+ 		u8		AckPolicy:2;
+@@ -133,14 +129,12 @@ typedef	union _QOS_CTRL_FIELD{
+ typedef	union _QOS_INFO_FIELD{
+ 	u8	charData;
  
--		case IEEE80211_STYPE_PROBE_REQ:
-+	case IEEE80211_STYPE_PROBE_REQ:
+-	struct
+-	{
++	struct {
+ 		u8		ucParameterSetCount:4;
+ 		u8		ucReserved:4;
+ 	}WMM;
  
--			if ((ieee->softmac_features & IEEE_SOFTMAC_PROBERS) &&
--				((ieee->iw_mode == IW_MODE_ADHOC ||
--				ieee->iw_mode == IW_MODE_MASTER) &&
--				ieee->state == IEEE80211_LINKED)){
--				ieee80211_rx_probe_rq(ieee, skb);
--			}
--			break;
-+		if ((ieee->softmac_features & IEEE_SOFTMAC_PROBERS) &&
-+			((ieee->iw_mode == IW_MODE_ADHOC ||
-+			ieee->iw_mode == IW_MODE_MASTER) &&
-+			ieee->state == IEEE80211_LINKED)){
-+			ieee80211_rx_probe_rq(ieee, skb);
-+		}
-+		break;
+-	struct
+-	{
++	struct {
+ 		//Ref WMM_Specification_1-1.pdf, 2006-06-13 Isaiah
+ 		u8		ucAC_VO_UAPSD:1;
+ 		u8		ucAC_VI_UAPSD:1;
+@@ -152,16 +146,14 @@ typedef	union _QOS_INFO_FIELD{
  
--		case IEEE80211_STYPE_DISASSOC:
--		case IEEE80211_STYPE_DEAUTH:
--			/* FIXME for now repeat all the association procedure
--			* both for disassociation and deauthentication
--			*/
--			if ((ieee->softmac_features & IEEE_SOFTMAC_ASSOCIATE) &&
--				ieee->state == IEEE80211_LINKED &&
--				ieee->iw_mode == IW_MODE_INFRA){
--
--				ieee->state = IEEE80211_ASSOCIATING;
--				ieee->softmac_stats.reassoc++;
--
--				notify_wx_assoc_event(ieee);
--				//HTSetConnectBwMode(ieee, HT_CHANNEL_WIDTH_20, HT_EXTCHNL_OFFSET_NO_EXT);
--				RemovePeerTS(ieee, header->addr2);
--				queue_work(ieee->wq, &ieee->associate_procedure_wq);
--			}
--			break;
--		case IEEE80211_STYPE_MANAGE_ACT:
--			ieee80211_process_action(ieee,skb);
--			break;
--		default:
--			return -1;
--			break;
-+	case IEEE80211_STYPE_DISASSOC:
-+	case IEEE80211_STYPE_DEAUTH:
-+		/* FIXME for now repeat all the association procedure
-+		* both for disassociation and deauthentication
-+		*/
-+		if ((ieee->softmac_features & IEEE_SOFTMAC_ASSOCIATE) &&
-+			ieee->state == IEEE80211_LINKED &&
-+			ieee->iw_mode == IW_MODE_INFRA){
-+
-+			ieee->state = IEEE80211_ASSOCIATING;
-+			ieee->softmac_stats.reassoc++;
-+
-+			notify_wx_assoc_event(ieee);
-+			//HTSetConnectBwMode(ieee, HT_CHANNEL_WIDTH_20, HT_EXTCHNL_OFFSET_NO_EXT);
-+			RemovePeerTS(ieee, header->addr2);
-+			queue_work(ieee->wq, &ieee->associate_procedure_wq);
-+		}
-+		break;
-+	case IEEE80211_STYPE_MANAGE_ACT:
-+		ieee80211_process_action(ieee,skb);
-+		break;
-+	default:
-+		return -1;
-+		break;
- 	}
+ 	}ByWmmPsSta;
  
- 	//dev_kfree_skb_any(skb);
-diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c b/drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c
-index 7214361..c39e680 100644
---- a/drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c
-+++ b/drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c
-@@ -283,22 +283,22 @@ ieee80211_classify(struct sk_buff *skb, struct ieee80211_network *network)
- //	IEEE80211_DEBUG_DATA(IEEE80211_DL_DATA, skb->data, skb->len);
- 	ip = ip_hdr(skb);
- 	switch (ip->tos & 0xfc) {
--		case 0x20:
--			return 2;
--		case 0x40:
--			return 1;
--		case 0x60:
--			return 3;
--		case 0x80:
--			return 4;
--		case 0xa0:
--			return 5;
--		case 0xc0:
--			return 6;
--		case 0xe0:
--			return 7;
--		default:
--			return 0;
-+	case 0x20:
-+		return 2;
-+	case 0x40:
-+		return 1;
-+	case 0x60:
-+		return 3;
-+	case 0x80:
-+		return 4;
-+	case 0xa0:
-+		return 5;
-+	case 0xc0:
-+		return 6;
-+	case 0xe0:
-+		return 7;
-+	default:
-+		return 0;
- 	}
- }
+-	struct
+-	{
++	struct {
+ 		//Ref WMM_Specification_1-1.pdf, 2006-06-13 Isaiah
+ 		u8		ucParameterSetCount:4;
+ 		u8		ucReserved:3;
+ 		u8		ucApUapsd:1;
+ 	}ByWmmPsAp;
  
-diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211_wx.c b/drivers/staging/rtl8192u/ieee80211/ieee80211_wx.c
-index f0ba7f4..e1fe54a 100644
---- a/drivers/staging/rtl8192u/ieee80211/ieee80211_wx.c
-+++ b/drivers/staging/rtl8192u/ieee80211/ieee80211_wx.c
-@@ -761,7 +761,7 @@ int ieee80211_wx_set_mlme(struct ieee80211_device *ieee,
- 	case IW_MLME_DISASSOC:
- 		ieee80211_disassociate(ieee);
- 		break;
--	 default:
-+	default:
- 		return -EOPNOTSUPP;
- 	}
- 	return 0;
+-	struct
+-	{
++	struct {
+ 		u8		ucAC3_UAPSD:1;
+ 		u8		ucAC2_UAPSD:1;
+ 		u8		ucAC1_UAPSD:1;
+@@ -171,8 +163,7 @@ typedef	union _QOS_INFO_FIELD{
+ 		u8		ucMoreDataAck:1;
+ 	} By11eSta;
+ 
+-	struct
+-	{
++	struct {
+ 		u8		ucParameterSetCount:4;
+ 		u8		ucQAck:1;
+ 		u8		ucQueueReq:1;
+@@ -180,16 +171,14 @@ typedef	union _QOS_INFO_FIELD{
+ 		u8		ucReserved:1;
+ 	} By11eAp;
+ 
+-	struct
+-	{
++	struct {
+ 		u8		ucReserved1:4;
+ 		u8		ucQAck:1;
+ 		u8		ucReserved2:2;
+ 		u8		ucMoreDataAck:1;
+ 	} ByWmmsaSta;
+ 
+-	struct
+-	{
++	struct {
+ 		u8		ucReserved1:4;
+ 		u8		ucQAck:1;
+ 		u8		ucQueueReq:1;
+@@ -197,8 +186,7 @@ typedef	union _QOS_INFO_FIELD{
+ 		u8		ucReserved2:1;
+ 	} ByWmmsaAp;
+ 
+-	struct
+-	{
++	struct {
+ 		u8		ucAC3_UAPSD:1;
+ 		u8		ucAC2_UAPSD:1;
+ 		u8		ucAC1_UAPSD:1;
+@@ -208,8 +196,7 @@ typedef	union _QOS_INFO_FIELD{
+ 		u8		ucMoreDataAck:1;
+ 	} ByAllSta;
+ 
+-	struct
+-	{
++	struct {
+ 		u8		ucParameterSetCount:4;
+ 		u8		ucQAck:1;
+ 		u8		ucQueueReq:1;
+@@ -246,8 +233,7 @@ typedef u32 AC_CODING;
+ typedef	union _ACI_AIFSN{
+ 	u8	charData;
+ 
+-	struct
+-	{
++	struct {
+ 		u8	AIFSN:4;
+ 		u8	ACM:1;
+ 		u8	ACI:2;
+@@ -261,8 +247,7 @@ typedef	union _ACI_AIFSN{
+ //
+ typedef	union _ECW{
+ 	u8	charData;
+-	struct
+-	{
++	struct {
+ 		u8	ECWmin:4;
+ 		u8	ECWmax:4;
+ 	}f;	// Field
+@@ -276,8 +261,7 @@ typedef	union _AC_PARAM{
+ 	u32	longData;
+ 	u8	charData[4];
+ 
+-	struct
+-	{
++	struct {
+ 		ACI_AIFSN	AciAifsn;
+ 		ECW		Ecw;
+ 		u16		TXOPLimit;
+@@ -336,8 +320,7 @@ typedef union _QOS_TSINFO{
+ typedef union _TSPEC_BODY{
+ 	u8		charData[55];
+ 
+-	struct
+-	{
++	struct {
+ 		QOS_TSINFO	TSInfo;	//u8	TSInfo[3];
+ 		u16	NominalMSDUsize;
+ 		u16	MaxMSDUsize;
+diff --git a/drivers/staging/rtl8192u/r8192U.h b/drivers/staging/rtl8192u/r8192U.h
+index 80ab937..837edb6 100644
+--- a/drivers/staging/rtl8192u/r8192U.h
++++ b/drivers/staging/rtl8192u/r8192U.h
+@@ -559,8 +559,7 @@ typedef enum _WIRELESS_MODE {
+ 
+ #define RTL_IOCTL_WPA_SUPPLICANT		SIOCIWFIRSTPRIV+30
+ 
+-typedef struct buffer
+-{
++typedef struct buffer {
+ 	struct buffer *next;
+ 	u32 *buf;
+ 
+@@ -600,8 +599,7 @@ typedef struct _RT_SMOOTH_DATA_4RF {
+ 
+ #define MAX_8192U_RX_SIZE			8192    // This maybe changed for D-cut larger aggregation size
+ //stats seems messed up, clean it ASAP
+-typedef struct Stats
+-{
++typedef struct Stats {
+ 	unsigned long txrdu;
+ //	unsigned long rxrdu;
+ 	//unsigned long rxnolast;
+@@ -748,8 +746,7 @@ typedef enum _RT_RF_TYPE_819xU{
+         RF_PSEUDO_11N = 4,
+ }RT_RF_TYPE_819xU, *PRT_RF_TYPE_819xU;
+ 
+-typedef struct _rate_adaptive
+-{
++typedef struct _rate_adaptive {
+ 	u8				rate_adaptive_disabled;
+ 	u8				ratr_state;
+ 	u16				reserve;
+@@ -775,21 +772,18 @@ typedef struct _rate_adaptive
+ #define TxBBGainTableLength 37
+ #define	CCKTxBBGainTableLength 23
+ 
+-typedef struct _txbbgain_struct
+-{
++typedef struct _txbbgain_struct {
+ 	long	txbb_iq_amplifygain;
+ 	u32	txbbgain_value;
+ } txbbgain_struct, *ptxbbgain_struct;
+ 
+-typedef struct _ccktxbbgain_struct
+-{
++typedef struct _ccktxbbgain_struct {
+ 	//The Value is from a22 to a29 one Byte one time is much Safer
+ 	u8	ccktxbb_valuearray[8];
+ } ccktxbbgain_struct,*pccktxbbgain_struct;
+ 
+ 
+-typedef struct _init_gain
+-{
++typedef struct _init_gain {
+ 	u8				xaagccore1;
+ 	u8				xbagccore1;
+ 	u8				xcagccore1;
+@@ -799,8 +793,7 @@ typedef struct _init_gain
+ } init_gain, *pinit_gain;
+ //by amy 0606
+ 
+-typedef struct _phy_ofdm_rx_status_report_819xusb
+-{
++typedef struct _phy_ofdm_rx_status_report_819xusb {
+ 	u8	trsw_gain_X[4];
+ 	u8	pwdb_all;
+ 	u8	cfosho_X[4];
+@@ -816,8 +809,7 @@ typedef struct _phy_ofdm_rx_status_report_819xusb
+ 	u8  rxsc_sgien_exflg;
+ }phy_sts_ofdm_819xusb_t;
+ 
+-typedef struct _phy_cck_rx_status_report_819xusb
+-{
++typedef struct _phy_cck_rx_status_report_819xusb {
+ 	/* For CCK rate descriptor. This is a unsigned 8:1 variable. LSB bit presend
+ 	   0.5. And MSB 7 bts presend a signed value. Range from -64~+63.5. */
+ 	u8	adc_pwdb_X[4];
+@@ -881,8 +873,7 @@ typedef enum _tag_TxCmd_Config_Index{
+ 	TXCMD_XXXX_CTRL,
+ }DCMD_TXCMD_OP;
+ 
+-typedef struct r8192_priv
+-{
++typedef struct r8192_priv {
+ 	struct usb_device *udev;
+ 	//added for maintain info from eeprom
+ 	short epromtype;
 diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
-index 93fffea..f59bd92 100644
+index 1887dde..abedae7 100644
 --- a/drivers/staging/rtl8192u/r8192U_core.c
 +++ b/drivers/staging/rtl8192u/r8192U_core.c
-@@ -1875,43 +1875,43 @@ u8 MapHwQueueToFirmwareQueue(u8 QueueID)
- 	u8 QueueSelect = 0x0;       //defualt set to
+@@ -164,8 +164,7 @@ static struct usb_driver rtl8192_usb_driver = {
+ };
  
- 	switch(QueueID) {
--		case BE_QUEUE:
--			QueueSelect = QSLT_BE;  //or QSelect = pTcb->priority;
--			break;
-+	case BE_QUEUE:
-+		QueueSelect = QSLT_BE;  //or QSelect = pTcb->priority;
-+		break;
  
--		case BK_QUEUE:
--			QueueSelect = QSLT_BK;  //or QSelect = pTcb->priority;
--			break;
-+	case BK_QUEUE:
-+		QueueSelect = QSLT_BK;  //or QSelect = pTcb->priority;
-+		break;
+-typedef struct _CHANNEL_LIST
+-{
++typedef struct _CHANNEL_LIST {
+ 	u8	Channel[32];
+ 	u8	Len;
+ }CHANNEL_LIST, *PCHANNEL_LIST;
+diff --git a/drivers/staging/rtl8192u/r8192U_dm.h b/drivers/staging/rtl8192u/r8192U_dm.h
+index 8a96e9f..ffb083c 100644
+--- a/drivers/staging/rtl8192u/r8192U_dm.h
++++ b/drivers/staging/rtl8192u/r8192U_dm.h
+@@ -67,8 +67,7 @@
  
--		case VO_QUEUE:
--			QueueSelect = QSLT_VO;  //or QSelect = pTcb->priority;
--			break;
-+	case VO_QUEUE:
-+		QueueSelect = QSLT_VO;  //or QSelect = pTcb->priority;
-+		break;
+ /*------------------------------Define structure----------------------------*/
+ /* 2007/10/04 MH Define upper and lower threshold of DIG enable or disable. */
+-typedef struct _dynamic_initial_gain_threshold_
+-{
++typedef struct _dynamic_initial_gain_threshold_ {
+ 	u8		dig_enable_flag;
+ 	u8		dig_algorithm;
+ 	u8		dbg_mode;
+@@ -172,8 +171,7 @@ typedef enum tag_dig_cck_cs_ratio_state_definition
+ 	DIG_CS_RATIO_HIGHER = 1,
+ 	DIG_CS_MAX
+ }dm_dig_cs_ratio_e;
+-typedef struct _Dynamic_Rx_Path_Selection_
+-{
++typedef struct _Dynamic_Rx_Path_Selection_ {
+ 	u8		Enable;
+ 	u8		DbgMode;
+ 	u8		cck_method;
+@@ -203,8 +201,7 @@ typedef enum tag_DM_DbgMode_Definition
+ 	DM_DBG_MAX
+ }DM_DBG_E;
  
--		case VI_QUEUE:
--			QueueSelect = QSLT_VI;  //or QSelect = pTcb->priority;
--			break;
--		case MGNT_QUEUE:
--			QueueSelect = QSLT_MGNT;
--			break;
-+	case VI_QUEUE:
-+		QueueSelect = QSLT_VI;  //or QSelect = pTcb->priority;
-+		break;
-+	case MGNT_QUEUE:
-+		QueueSelect = QSLT_MGNT;
-+		break;
- 
--		case BEACON_QUEUE:
--			QueueSelect = QSLT_BEACON;
--			break;
-+	case BEACON_QUEUE:
-+		QueueSelect = QSLT_BEACON;
-+		break;
- 
--			// TODO: 2006.10.30 mark other queue selection until we verify it is OK
--			// TODO: Remove Assertions
-+		// TODO: 2006.10.30 mark other queue selection until we verify it is OK
-+		// TODO: Remove Assertions
- //#if (RTL819X_FPGA_VER & RTL819X_FPGA_GUANGAN_070502)
--		case TXCMD_QUEUE:
--			QueueSelect = QSLT_CMD;
--			break;
-+	case TXCMD_QUEUE:
-+		QueueSelect = QSLT_CMD;
-+		break;
- //#endif
--		case HIGH_QUEUE:
--			QueueSelect = QSLT_HIGH;
--			break;
-+	case HIGH_QUEUE:
-+		QueueSelect = QSLT_HIGH;
-+		break;
- 
--		default:
--			RT_TRACE(COMP_ERR, "TransmitTCB(): Impossible Queue Selection: %d \n", QueueID);
--			break;
-+	default:
-+		RT_TRACE(COMP_ERR, "TransmitTCB(): Impossible Queue Selection: %d \n", QueueID);
-+		break;
- 	}
- 	return QueueSelect;
- }
-@@ -1921,39 +1921,39 @@ u8 MRateToHwRate8190Pci(u8 rate)
- 	u8  ret = DESC90_RATE1M;
- 
- 	switch(rate) {
--		case MGN_1M:    ret = DESC90_RATE1M;    break;
--		case MGN_2M:    ret = DESC90_RATE2M;    break;
--		case MGN_5_5M:  ret = DESC90_RATE5_5M;  break;
--		case MGN_11M:   ret = DESC90_RATE11M;   break;
--		case MGN_6M:    ret = DESC90_RATE6M;    break;
--		case MGN_9M:    ret = DESC90_RATE9M;    break;
--		case MGN_12M:   ret = DESC90_RATE12M;   break;
--		case MGN_18M:   ret = DESC90_RATE18M;   break;
--		case MGN_24M:   ret = DESC90_RATE24M;   break;
--		case MGN_36M:   ret = DESC90_RATE36M;   break;
--		case MGN_48M:   ret = DESC90_RATE48M;   break;
--		case MGN_54M:   ret = DESC90_RATE54M;   break;
--
--		// HT rate since here
--		case MGN_MCS0:  ret = DESC90_RATEMCS0;  break;
--		case MGN_MCS1:  ret = DESC90_RATEMCS1;  break;
--		case MGN_MCS2:  ret = DESC90_RATEMCS2;  break;
--		case MGN_MCS3:  ret = DESC90_RATEMCS3;  break;
--		case MGN_MCS4:  ret = DESC90_RATEMCS4;  break;
--		case MGN_MCS5:  ret = DESC90_RATEMCS5;  break;
--		case MGN_MCS6:  ret = DESC90_RATEMCS6;  break;
--		case MGN_MCS7:  ret = DESC90_RATEMCS7;  break;
--		case MGN_MCS8:  ret = DESC90_RATEMCS8;  break;
--		case MGN_MCS9:  ret = DESC90_RATEMCS9;  break;
--		case MGN_MCS10: ret = DESC90_RATEMCS10; break;
--		case MGN_MCS11: ret = DESC90_RATEMCS11; break;
--		case MGN_MCS12: ret = DESC90_RATEMCS12; break;
--		case MGN_MCS13: ret = DESC90_RATEMCS13; break;
--		case MGN_MCS14: ret = DESC90_RATEMCS14; break;
--		case MGN_MCS15: ret = DESC90_RATEMCS15; break;
--		case (0x80|0x20): ret = DESC90_RATEMCS32; break;
--
--		default:       break;
-+	case MGN_1M:    ret = DESC90_RATE1M;    break;
-+	case MGN_2M:    ret = DESC90_RATE2M;    break;
-+	case MGN_5_5M:  ret = DESC90_RATE5_5M;  break;
-+	case MGN_11M:   ret = DESC90_RATE11M;   break;
-+	case MGN_6M:    ret = DESC90_RATE6M;    break;
-+	case MGN_9M:    ret = DESC90_RATE9M;    break;
-+	case MGN_12M:   ret = DESC90_RATE12M;   break;
-+	case MGN_18M:   ret = DESC90_RATE18M;   break;
-+	case MGN_24M:   ret = DESC90_RATE24M;   break;
-+	case MGN_36M:   ret = DESC90_RATE36M;   break;
-+	case MGN_48M:   ret = DESC90_RATE48M;   break;
-+	case MGN_54M:   ret = DESC90_RATE54M;   break;
-+
-+	// HT rate since here
-+	case MGN_MCS0:  ret = DESC90_RATEMCS0;  break;
-+	case MGN_MCS1:  ret = DESC90_RATEMCS1;  break;
-+	case MGN_MCS2:  ret = DESC90_RATEMCS2;  break;
-+	case MGN_MCS3:  ret = DESC90_RATEMCS3;  break;
-+	case MGN_MCS4:  ret = DESC90_RATEMCS4;  break;
-+	case MGN_MCS5:  ret = DESC90_RATEMCS5;  break;
-+	case MGN_MCS6:  ret = DESC90_RATEMCS6;  break;
-+	case MGN_MCS7:  ret = DESC90_RATEMCS7;  break;
-+	case MGN_MCS8:  ret = DESC90_RATEMCS8;  break;
-+	case MGN_MCS9:  ret = DESC90_RATEMCS9;  break;
-+	case MGN_MCS10: ret = DESC90_RATEMCS10; break;
-+	case MGN_MCS11: ret = DESC90_RATEMCS11; break;
-+	case MGN_MCS12: ret = DESC90_RATEMCS12; break;
-+	case MGN_MCS13: ret = DESC90_RATEMCS13; break;
-+	case MGN_MCS14: ret = DESC90_RATEMCS14; break;
-+	case MGN_MCS15: ret = DESC90_RATEMCS15; break;
-+	case (0x80|0x20): ret = DESC90_RATEMCS32; break;
-+
-+	default:       break;
- 	}
- 	return ret;
- }
-@@ -4364,66 +4364,66 @@ int rtl8192_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
- 	}
- 
- 	switch (cmd) {
--	    case RTL_IOCTL_WPA_SUPPLICANT:
-+	case RTL_IOCTL_WPA_SUPPLICANT:
- 	//parse here for HW security
--			if (ipw->cmd == IEEE_CMD_SET_ENCRYPTION)
-+		if (ipw->cmd == IEEE_CMD_SET_ENCRYPTION)
-+		{
-+			if (ipw->u.crypt.set_tx)
- 			{
--				if (ipw->u.crypt.set_tx)
-+				if (strcmp(ipw->u.crypt.alg, "CCMP") == 0)
-+					ieee->pairwise_key_type = KEY_TYPE_CCMP;
-+				else if (strcmp(ipw->u.crypt.alg, "TKIP") == 0)
-+					ieee->pairwise_key_type = KEY_TYPE_TKIP;
-+				else if (strcmp(ipw->u.crypt.alg, "WEP") == 0)
- 				{
--					if (strcmp(ipw->u.crypt.alg, "CCMP") == 0)
--						ieee->pairwise_key_type = KEY_TYPE_CCMP;
--					else if (strcmp(ipw->u.crypt.alg, "TKIP") == 0)
--						ieee->pairwise_key_type = KEY_TYPE_TKIP;
--					else if (strcmp(ipw->u.crypt.alg, "WEP") == 0)
--					{
--						if (ipw->u.crypt.key_len == 13)
--							ieee->pairwise_key_type = KEY_TYPE_WEP104;
--						else if (ipw->u.crypt.key_len == 5)
--							ieee->pairwise_key_type = KEY_TYPE_WEP40;
--					}
--					else
--						ieee->pairwise_key_type = KEY_TYPE_NA;
--
--					if (ieee->pairwise_key_type)
--					{
--						memcpy((u8*)key, ipw->u.crypt.key, 16);
--						EnableHWSecurityConfig8192(dev);
--					//we fill both index entry and 4th entry for pairwise key as in IPW interface, adhoc will only get here, so we need index entry for its default key serching!
--					//added by WB.
--						setKey(dev, 4, ipw->u.crypt.idx, ieee->pairwise_key_type, (u8*)ieee->ap_mac_addr, 0, key);
--						if (ieee->auth_mode != 2)
--						setKey(dev, ipw->u.crypt.idx, ipw->u.crypt.idx, ieee->pairwise_key_type, (u8*)ieee->ap_mac_addr, 0, key);
--					}
-+					if (ipw->u.crypt.key_len == 13)
-+						ieee->pairwise_key_type = KEY_TYPE_WEP104;
-+					else if (ipw->u.crypt.key_len == 5)
-+						ieee->pairwise_key_type = KEY_TYPE_WEP40;
- 				}
--				else //if (ipw->u.crypt.idx) //group key use idx > 0
-+				else
-+					ieee->pairwise_key_type = KEY_TYPE_NA;
-+
-+				if (ieee->pairwise_key_type)
- 				{
- 					memcpy((u8*)key, ipw->u.crypt.key, 16);
--					if (strcmp(ipw->u.crypt.alg, "CCMP") == 0)
--						ieee->group_key_type= KEY_TYPE_CCMP;
--					else if (strcmp(ipw->u.crypt.alg, "TKIP") == 0)
--						ieee->group_key_type = KEY_TYPE_TKIP;
--					else if (strcmp(ipw->u.crypt.alg, "WEP") == 0)
--					{
--						if (ipw->u.crypt.key_len == 13)
--							ieee->group_key_type = KEY_TYPE_WEP104;
--						else if (ipw->u.crypt.key_len == 5)
--							ieee->group_key_type = KEY_TYPE_WEP40;
--					}
--					else
--						ieee->group_key_type = KEY_TYPE_NA;
-+					EnableHWSecurityConfig8192(dev);
-+				//we fill both index entry and 4th entry for pairwise key as in IPW interface, adhoc will only get here, so we need index entry for its default key serching!
-+				//added by WB.
-+					setKey(dev, 4, ipw->u.crypt.idx, ieee->pairwise_key_type, (u8*)ieee->ap_mac_addr, 0, key);
-+					if (ieee->auth_mode != 2)
-+					setKey(dev, ipw->u.crypt.idx, ipw->u.crypt.idx, ieee->pairwise_key_type, (u8*)ieee->ap_mac_addr, 0, key);
-+				}
-+			}
-+			else //if (ipw->u.crypt.idx) //group key use idx > 0
-+			{
-+				memcpy((u8*)key, ipw->u.crypt.key, 16);
-+				if (strcmp(ipw->u.crypt.alg, "CCMP") == 0)
-+					ieee->group_key_type= KEY_TYPE_CCMP;
-+				else if (strcmp(ipw->u.crypt.alg, "TKIP") == 0)
-+					ieee->group_key_type = KEY_TYPE_TKIP;
-+				else if (strcmp(ipw->u.crypt.alg, "WEP") == 0)
-+				{
-+					if (ipw->u.crypt.key_len == 13)
-+						ieee->group_key_type = KEY_TYPE_WEP104;
-+					else if (ipw->u.crypt.key_len == 5)
-+						ieee->group_key_type = KEY_TYPE_WEP40;
-+				}
-+				else
-+					ieee->group_key_type = KEY_TYPE_NA;
- 
--					if (ieee->group_key_type)
--					{
--							setKey(	dev,
--								ipw->u.crypt.idx,
--								ipw->u.crypt.idx,		//KeyIndex
--								ieee->group_key_type,	//KeyType
--								broadcast_addr,	//MacAddr
--								0,		//DefaultKey
--								key);		//KeyContent
--					}
-+				if (ieee->group_key_type)
-+				{
-+						setKey(	dev,
-+							ipw->u.crypt.idx,
-+							ipw->u.crypt.idx,		//KeyIndex
-+							ieee->group_key_type,	//KeyType
-+							broadcast_addr,	//MacAddr
-+							0,		//DefaultKey
-+							key);		//KeyContent
- 				}
- 			}
-+		}
- #ifdef JOHN_HWSEC_DEBUG
- 		//john's test 0711
- 		printk("@@ wrq->u pointer = ");
-@@ -4436,7 +4436,7 @@ int rtl8192_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
- 		ret = ieee80211_wpa_supplicant_ioctl(priv->ieee80211, &wrq->u.data);
- 		break;
- 
--	    default:
-+	default:
- 		ret = -EOPNOTSUPP;
- 		break;
- 	}
-@@ -4453,49 +4453,49 @@ u8 HwRateToMRate90(bool bIsHT, u8 rate)
- 
- 	if(!bIsHT) {
- 		switch(rate) {
--			case DESC90_RATE1M:   ret_rate = MGN_1M;         break;
--			case DESC90_RATE2M:   ret_rate = MGN_2M;         break;
--			case DESC90_RATE5_5M: ret_rate = MGN_5_5M;       break;
--			case DESC90_RATE11M:  ret_rate = MGN_11M;        break;
--			case DESC90_RATE6M:   ret_rate = MGN_6M;         break;
--			case DESC90_RATE9M:   ret_rate = MGN_9M;         break;
--			case DESC90_RATE12M:  ret_rate = MGN_12M;        break;
--			case DESC90_RATE18M:  ret_rate = MGN_18M;        break;
--			case DESC90_RATE24M:  ret_rate = MGN_24M;        break;
--			case DESC90_RATE36M:  ret_rate = MGN_36M;        break;
--			case DESC90_RATE48M:  ret_rate = MGN_48M;        break;
--			case DESC90_RATE54M:  ret_rate = MGN_54M;        break;
--
--			default:
--				ret_rate = 0xff;
--				RT_TRACE(COMP_RECV, "HwRateToMRate90(): Non supported Rate [%x], bIsHT = %d!!!\n", rate, bIsHT);
--				break;
-+		case DESC90_RATE1M:   ret_rate = MGN_1M;         break;
-+		case DESC90_RATE2M:   ret_rate = MGN_2M;         break;
-+		case DESC90_RATE5_5M: ret_rate = MGN_5_5M;       break;
-+		case DESC90_RATE11M:  ret_rate = MGN_11M;        break;
-+		case DESC90_RATE6M:   ret_rate = MGN_6M;         break;
-+		case DESC90_RATE9M:   ret_rate = MGN_9M;         break;
-+		case DESC90_RATE12M:  ret_rate = MGN_12M;        break;
-+		case DESC90_RATE18M:  ret_rate = MGN_18M;        break;
-+		case DESC90_RATE24M:  ret_rate = MGN_24M;        break;
-+		case DESC90_RATE36M:  ret_rate = MGN_36M;        break;
-+		case DESC90_RATE48M:  ret_rate = MGN_48M;        break;
-+		case DESC90_RATE54M:  ret_rate = MGN_54M;        break;
-+
-+		default:
-+			ret_rate = 0xff;
-+			RT_TRACE(COMP_RECV, "HwRateToMRate90(): Non supported Rate [%x], bIsHT = %d!!!\n", rate, bIsHT);
-+			break;
- 		}
- 
- 	} else {
- 		switch(rate) {
--			case DESC90_RATEMCS0:   ret_rate = MGN_MCS0;    break;
--			case DESC90_RATEMCS1:   ret_rate = MGN_MCS1;    break;
--			case DESC90_RATEMCS2:   ret_rate = MGN_MCS2;    break;
--			case DESC90_RATEMCS3:   ret_rate = MGN_MCS3;    break;
--			case DESC90_RATEMCS4:   ret_rate = MGN_MCS4;    break;
--			case DESC90_RATEMCS5:   ret_rate = MGN_MCS5;    break;
--			case DESC90_RATEMCS6:   ret_rate = MGN_MCS6;    break;
--			case DESC90_RATEMCS7:   ret_rate = MGN_MCS7;    break;
--			case DESC90_RATEMCS8:   ret_rate = MGN_MCS8;    break;
--			case DESC90_RATEMCS9:   ret_rate = MGN_MCS9;    break;
--			case DESC90_RATEMCS10:  ret_rate = MGN_MCS10;   break;
--			case DESC90_RATEMCS11:  ret_rate = MGN_MCS11;   break;
--			case DESC90_RATEMCS12:  ret_rate = MGN_MCS12;   break;
--			case DESC90_RATEMCS13:  ret_rate = MGN_MCS13;   break;
--			case DESC90_RATEMCS14:  ret_rate = MGN_MCS14;   break;
--			case DESC90_RATEMCS15:  ret_rate = MGN_MCS15;   break;
--			case DESC90_RATEMCS32:  ret_rate = (0x80|0x20); break;
--
--			default:
--				ret_rate = 0xff;
--				RT_TRACE(COMP_RECV, "HwRateToMRate90(): Non supported Rate [%x], bIsHT = %d!!!\n",rate, bIsHT);
--				break;
-+		case DESC90_RATEMCS0:   ret_rate = MGN_MCS0;    break;
-+		case DESC90_RATEMCS1:   ret_rate = MGN_MCS1;    break;
-+		case DESC90_RATEMCS2:   ret_rate = MGN_MCS2;    break;
-+		case DESC90_RATEMCS3:   ret_rate = MGN_MCS3;    break;
-+		case DESC90_RATEMCS4:   ret_rate = MGN_MCS4;    break;
-+		case DESC90_RATEMCS5:   ret_rate = MGN_MCS5;    break;
-+		case DESC90_RATEMCS6:   ret_rate = MGN_MCS6;    break;
-+		case DESC90_RATEMCS7:   ret_rate = MGN_MCS7;    break;
-+		case DESC90_RATEMCS8:   ret_rate = MGN_MCS8;    break;
-+		case DESC90_RATEMCS9:   ret_rate = MGN_MCS9;    break;
-+		case DESC90_RATEMCS10:  ret_rate = MGN_MCS10;   break;
-+		case DESC90_RATEMCS11:  ret_rate = MGN_MCS11;   break;
-+		case DESC90_RATEMCS12:  ret_rate = MGN_MCS12;   break;
-+		case DESC90_RATEMCS13:  ret_rate = MGN_MCS13;   break;
-+		case DESC90_RATEMCS14:  ret_rate = MGN_MCS14;   break;
-+		case DESC90_RATEMCS15:  ret_rate = MGN_MCS15;   break;
-+		case DESC90_RATEMCS32:  ret_rate = (0x80|0x20); break;
-+
-+		default:
-+			ret_rate = 0xff;
-+			RT_TRACE(COMP_RECV, "HwRateToMRate90(): Non supported Rate [%x], bIsHT = %d!!!\n",rate, bIsHT);
-+			break;
- 		}
- 	}
- 
-@@ -5696,25 +5696,25 @@ void rtl8192_irq_rx_tasklet(struct r8192_priv *priv)
- 		info = (struct rtl8192_rx_info *)skb->cb;
- 		switch (info->out_pipe) {
- 		/* Nomal packet pipe */
--			case 3:
--				//RT_TRACE(COMP_RECV, "normal in-pipe index(%d)\n",info->out_pipe);
--				priv->IrpPendingCount--;
--				rtl8192_rx_nomal(skb);
--				break;
-+		case 3:
-+			//RT_TRACE(COMP_RECV, "normal in-pipe index(%d)\n",info->out_pipe);
-+			priv->IrpPendingCount--;
-+			rtl8192_rx_nomal(skb);
-+			break;
- 
--				/* Command packet pipe */
--			case 9:
--				RT_TRACE(COMP_RECV, "command in-pipe index(%d)\n",\
--						info->out_pipe);
-+			/* Command packet pipe */
-+		case 9:
-+			RT_TRACE(COMP_RECV, "command in-pipe index(%d)\n",\
-+					info->out_pipe);
- 
--				rtl8192_rx_cmd(skb);
--				break;
-+			rtl8192_rx_cmd(skb);
-+			break;
- 
--			default: /* should never get here! */
--				RT_TRACE(COMP_ERR, "Unknown in-pipe index(%d)\n",\
--						info->out_pipe);
--				dev_kfree_skb(skb);
--				break;
-+		default: /* should never get here! */
-+			RT_TRACE(COMP_ERR, "Unknown in-pipe index(%d)\n",\
-+					info->out_pipe);
-+			dev_kfree_skb(skb);
-+			break;
- 
- 		}
- 	}
+-typedef struct tag_Tx_Config_Cmd_Format
+-{
++typedef struct tag_Tx_Config_Cmd_Format {
+ 	u32	Op;										/* Command packet type. */
+ 	u32	Length;									/* Command packet length. */
+ 	u32	Value;
 diff --git a/drivers/staging/rtl8192u/r8192U_wx.c b/drivers/staging/rtl8192u/r8192U_wx.c
-index c1ab5cf..c904aa8 100644
+index 6df5f75..c1ab5cf 100644
 --- a/drivers/staging/rtl8192u/r8192U_wx.c
 +++ b/drivers/staging/rtl8192u/r8192U_wx.c
-@@ -710,12 +710,12 @@ static int r8192_wx_set_enc(struct net_device *dev,
- 		#define CONF_WEP104 0x14
- 
- 		switch(wrqu->encoding.flags & IW_ENCODE_INDEX){
--			case 0: key_idx = ieee->tx_keyidx; break;
--			case 1:	key_idx = 0; break;
--			case 2:	key_idx = 1; break;
--			case 3:	key_idx = 2; break;
--			case 4:	key_idx	= 3; break;
--			default: break;
-+		case 0: key_idx = ieee->tx_keyidx; break;
-+		case 1:	key_idx = 0; break;
-+		case 2:	key_idx = 1; break;
-+		case 3:	key_idx = 2; break;
-+		case 4:	key_idx	= 3; break;
-+		default: break;
- 		}
- 
- 		if(wrqu->encoding.length==0x5){
-diff --git a/drivers/staging/rtl8192u/r819xU_firmware.c b/drivers/staging/rtl8192u/r819xU_firmware.c
-index 46b8043..573e9cd 100644
---- a/drivers/staging/rtl8192u/r819xU_firmware.c
-+++ b/drivers/staging/rtl8192u/r819xU_firmware.c
-@@ -334,56 +334,56 @@ bool init_firmware(struct net_device *dev)
- 		}
- 
- 		switch(init_step) {
--			case FW_INIT_STEP0_BOOT:
--				/* Download boot
--				 * initialize command descriptor.
--				 * will set polling bit when firmware code is also configured
--				 */
--				pfirmware->firmware_status = FW_STATUS_1_MOVE_BOOT_CODE;
-+		case FW_INIT_STEP0_BOOT:
-+			/* Download boot
-+			 * initialize command descriptor.
-+			 * will set polling bit when firmware code is also configured
-+			 */
-+			pfirmware->firmware_status = FW_STATUS_1_MOVE_BOOT_CODE;
- #ifdef RTL8190P
--				// To initialize IMEM, CPU move code  from 0x80000080, hence, we send 0x80 byte packet
--				rt_status = fwSendNullPacket(dev, RTL8190_CPU_START_OFFSET);
--				if(rt_status != true)
--				{
--					RT_TRACE(COMP_INIT, "fwSendNullPacket() fail ! \n");
--					goto  download_firmware_fail;
--				}
-+			// To initialize IMEM, CPU move code  from 0x80000080, hence, we send 0x80 byte packet
-+			rt_status = fwSendNullPacket(dev, RTL8190_CPU_START_OFFSET);
-+			if(rt_status != true)
-+			{
-+				RT_TRACE(COMP_INIT, "fwSendNullPacket() fail ! \n");
-+				goto  download_firmware_fail;
-+			}
- #endif
--				//mdelay(1000);
--				/*
--				 * To initialize IMEM, CPU move code  from 0x80000080,
--				 * hence, we send 0x80 byte packet
--				 */
--				break;
--
--			case FW_INIT_STEP1_MAIN:
--				/* Download firmware code. Wait until Boot Ready and Turn on CPU */
--				pfirmware->firmware_status = FW_STATUS_2_MOVE_MAIN_CODE;
--
--				/* Check Put Code OK and Turn On CPU */
--				rt_status = CPUcheck_maincodeok_turnonCPU(dev);
--				if(rt_status != TRUE) {
--					RT_TRACE(COMP_ERR, "CPUcheck_maincodeok_turnonCPU fail!\n");
--					goto download_firmware_fail;
--				}
--
--				pfirmware->firmware_status = FW_STATUS_3_TURNON_CPU;
--				break;
--
--			case FW_INIT_STEP2_DATA:
--				/* download initial data code */
--				pfirmware->firmware_status = FW_STATUS_4_MOVE_DATA_CODE;
--				mdelay(1);
--
--				rt_status = CPUcheck_firmware_ready(dev);
--				if(rt_status != TRUE) {
--					RT_TRACE(COMP_ERR, "CPUcheck_firmware_ready fail(%d)!\n",rt_status);
--					goto download_firmware_fail;
--				}
--
--				/* wait until data code is initialized ready.*/
--				pfirmware->firmware_status = FW_STATUS_5_READY;
--				break;
-+			//mdelay(1000);
-+			/*
-+			 * To initialize IMEM, CPU move code  from 0x80000080,
-+			 * hence, we send 0x80 byte packet
-+			 */
-+			break;
-+
-+		case FW_INIT_STEP1_MAIN:
-+			/* Download firmware code. Wait until Boot Ready and Turn on CPU */
-+			pfirmware->firmware_status = FW_STATUS_2_MOVE_MAIN_CODE;
-+
-+			/* Check Put Code OK and Turn On CPU */
-+			rt_status = CPUcheck_maincodeok_turnonCPU(dev);
-+			if(rt_status != TRUE) {
-+				RT_TRACE(COMP_ERR, "CPUcheck_maincodeok_turnonCPU fail!\n");
-+				goto download_firmware_fail;
-+			}
-+
-+			pfirmware->firmware_status = FW_STATUS_3_TURNON_CPU;
-+			break;
-+
-+		case FW_INIT_STEP2_DATA:
-+			/* download initial data code */
-+			pfirmware->firmware_status = FW_STATUS_4_MOVE_DATA_CODE;
-+			mdelay(1);
-+
-+			rt_status = CPUcheck_firmware_ready(dev);
-+			if(rt_status != TRUE) {
-+				RT_TRACE(COMP_ERR, "CPUcheck_firmware_ready fail(%d)!\n",rt_status);
-+				goto download_firmware_fail;
-+			}
-+
-+			/* wait until data code is initialized ready.*/
-+			pfirmware->firmware_status = FW_STATUS_5_READY;
-+			break;
- 		}
- 	}
- 
-diff --git a/drivers/staging/rtl8192u/r819xU_phy.c b/drivers/staging/rtl8192u/r819xU_phy.c
-index 2ff851f..17fac41 100644
---- a/drivers/staging/rtl8192u/r819xU_phy.c
-+++ b/drivers/staging/rtl8192u/r819xU_phy.c
-@@ -957,56 +957,56 @@ u8 rtl8192_phy_ConfigRFWithHeaderFile(struct net_device* dev, RF90_RADIO_PATH_E
- 	u8 ret = 0;
- 
- 	switch(eRFPath){
--		case RF90_PATH_A:
--			for(i = 0;i<RadioA_ArrayLength; i=i+2){
--
--				if(rtl819XRadioA_Array[i] == 0xfe){
--						mdelay(100);
--						continue;
--				}
--				rtl8192_phy_SetRFReg(dev, eRFPath, rtl819XRadioA_Array[i], bMask12Bits, rtl819XRadioA_Array[i+1]);
--				mdelay(1);
-+	case RF90_PATH_A:
-+		for(i = 0;i<RadioA_ArrayLength; i=i+2){
- 
-+			if(rtl819XRadioA_Array[i] == 0xfe){
-+					mdelay(100);
-+					continue;
- 			}
--			break;
--		case RF90_PATH_B:
--			for(i = 0;i<RadioB_ArrayLength; i=i+2){
-+			rtl8192_phy_SetRFReg(dev, eRFPath, rtl819XRadioA_Array[i], bMask12Bits, rtl819XRadioA_Array[i+1]);
-+			mdelay(1);
- 
--				if(rtl819XRadioB_Array[i] == 0xfe){
--						mdelay(100);
--						continue;
--				}
--				rtl8192_phy_SetRFReg(dev, eRFPath, rtl819XRadioB_Array[i], bMask12Bits, rtl819XRadioB_Array[i+1]);
--				mdelay(1);
-+		}
-+		break;
-+	case RF90_PATH_B:
-+		for(i = 0;i<RadioB_ArrayLength; i=i+2){
- 
-+			if(rtl819XRadioB_Array[i] == 0xfe){
-+					mdelay(100);
-+					continue;
- 			}
--			break;
--		case RF90_PATH_C:
--			for(i = 0;i<RadioC_ArrayLength; i=i+2){
-+			rtl8192_phy_SetRFReg(dev, eRFPath, rtl819XRadioB_Array[i], bMask12Bits, rtl819XRadioB_Array[i+1]);
-+			mdelay(1);
- 
--				if(rtl819XRadioC_Array[i] == 0xfe){
--						mdelay(100);
--						continue;
--				}
--				rtl8192_phy_SetRFReg(dev, eRFPath, rtl819XRadioC_Array[i], bMask12Bits, rtl819XRadioC_Array[i+1]);
--				mdelay(1);
-+		}
-+		break;
-+	case RF90_PATH_C:
-+		for(i = 0;i<RadioC_ArrayLength; i=i+2){
- 
-+			if(rtl819XRadioC_Array[i] == 0xfe){
-+					mdelay(100);
-+					continue;
- 			}
--			break;
--		case RF90_PATH_D:
--			for(i = 0;i<RadioD_ArrayLength; i=i+2){
-+			rtl8192_phy_SetRFReg(dev, eRFPath, rtl819XRadioC_Array[i], bMask12Bits, rtl819XRadioC_Array[i+1]);
-+			mdelay(1);
- 
--				if(rtl819XRadioD_Array[i] == 0xfe){
--						mdelay(100);
--						continue;
--				}
--				rtl8192_phy_SetRFReg(dev, eRFPath, rtl819XRadioD_Array[i], bMask12Bits, rtl819XRadioD_Array[i+1]);
--				mdelay(1);
-+		}
-+		break;
-+	case RF90_PATH_D:
-+		for(i = 0;i<RadioD_ArrayLength; i=i+2){
- 
-+			if(rtl819XRadioD_Array[i] == 0xfe){
-+					mdelay(100);
-+					continue;
- 			}
--			break;
--		default:
--			break;
-+			rtl8192_phy_SetRFReg(dev, eRFPath, rtl819XRadioD_Array[i], bMask12Bits, rtl819XRadioD_Array[i+1]);
-+			mdelay(1);
-+
-+		}
-+		break;
-+	default:
-+		break;
- 	}
- 
+@@ -354,8 +354,7 @@ static int r8192_wx_set_mode(struct net_device *dev, struct iw_request_info *a,
  	return ret;
+ }
+ 
+-struct  iw_range_with_scan_capa
+-{
++struct  iw_range_with_scan_capa {
+ 	/* Informative stuff (to choose between different interface) */
+ 	__u32           throughput;     /* To give an idea... */
+ 	/* In theory this value should be the maximum benchmarked
+diff --git a/drivers/staging/rtl8192u/r819xU_cmdpkt.h b/drivers/staging/rtl8192u/r819xU_cmdpkt.h
+index fbbd270..59caa4e 100644
+--- a/drivers/staging/rtl8192u/r819xU_cmdpkt.h
++++ b/drivers/staging/rtl8192u/r819xU_cmdpkt.h
+@@ -19,8 +19,7 @@
+ /*------------------------------Define structure----------------------------*/
+ /* Define different command packet structure. */
+ /* 1. RX side: TX feedback packet. */
+-typedef struct tag_cmd_pkt_tx_feedback
+-{
++typedef struct tag_cmd_pkt_tx_feedback {
+ 	// DWORD 0
+ 	u8	element_id;			/* Command packet type. */
+ 	u8	length;				/* Command packet length. */
+@@ -57,8 +56,7 @@ typedef struct tag_cmd_pkt_tx_feedback
+ 
+ /* 2. RX side: Interrupt status packet. It includes Beacon State,
+ 	  Beacon Timer Interrupt and other useful informations in MAC ISR Reg. */
+-typedef struct tag_cmd_pkt_interrupt_status
+-{
++typedef struct tag_cmd_pkt_interrupt_status {
+ 	u8	element_id;			/* Command packet type. */
+ 	u8	length;				/* Command packet length. */
+ 	u16	reserve;
+@@ -67,8 +65,7 @@ typedef struct tag_cmd_pkt_interrupt_status
+ 
+ 
+ /* 3. TX side: Set configuration packet. */
+-typedef struct tag_cmd_pkt_set_configuration
+-{
++typedef struct tag_cmd_pkt_set_configuration {
+ 	u8	element_id;			/* Command packet type. */
+ 	u8	length;				/* Command packet length. */
+ 	u16	reserve1;			/* */
+@@ -89,8 +86,7 @@ typedef struct tag_cmd_pkt_set_configuration
+ #define		cmpk_query_cfg_t	cmpk_set_cfg_t
+ 
+ /* 5. Multi packet feedback status. */
+-typedef struct tag_tx_stats_feedback // PJ quick rxcmd 09042007
+-{
++typedef struct tag_tx_stats_feedback { // PJ quick rxcmd 09042007
+ 	// For endian transfer --> Driver will not the same as firmware structure.
+ 	// DW 0
+ 	u16	reserve1;
+@@ -130,8 +126,7 @@ typedef struct tag_tx_stats_feedback // PJ quick rxcmd 09042007
+ 
+ /* 6. Debug feedback message. */
+ /* 2007/10/23 MH Define RX debug message  */
+-typedef struct tag_rx_debug_message_feedback
+-{
++typedef struct tag_rx_debug_message_feedback {
+ 	// For endian transfer --> for driver
+ 	// DW 0
+ 	u16	reserve1;
+@@ -144,8 +139,7 @@ typedef struct tag_rx_debug_message_feedback
+ }cmpk_rx_dbginfo_t;
+ 
+ /* 2008/03/20 MH Define transmit rate history. For big endian format. */
+-typedef struct tag_tx_rate_history
+-{
++typedef struct tag_tx_rate_history {
+ 	// For endian transfer --> for driver
+ 	// DW 0
+ 	u8	element_id;			// Command packet type
 -- 
 1.7.10.4
 
