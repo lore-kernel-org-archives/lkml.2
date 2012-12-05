@@ -1,193 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752801Ab2LEMSs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 07:18:48 -0500
-Received: from ams-iport-3.cisco.com ([144.254.224.146]:11472 "EHLO
-	ams-iport-3.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751587Ab2LEMSr (ORCPT
+	id S1752992Ab2LEMTq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 07:19:46 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:53924 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803Ab2LEMTo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 07:18:47 -0500
-X-Greylist: delayed 588 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Dec 2012 07:18:46 EST
-X-IronPort-AV: E=McAfee;i="5400,1158,6916"; a="10162919"
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Subject: Re: [PATCH RFC v2] media: v4l2-ctrl: Add gain controls
-Date: Wed, 5 Dec 2012 13:08:34 +0100
-User-Agent: KMail/1.13.7 (Linux/3.6-7.slh.1-aptosid-amd64; KDE/4.8.4; x86_64; ; )
-Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        LDOC <linux-doc@vger.kernel.org>, Sakari Ailus <sakari.ailus@iki.fi>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+	Wed, 5 Dec 2012 07:19:44 -0500
+From: Federico Vaga <federico.vaga@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Pawel Osciak <pawel@osciak.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
         Hans Verkuil <hans.verkuil@cisco.com>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Chris MacGregor <chris@cybermato.com>, Rob Landley <rob@landley.net>,
-        Jeongtae Park <jtp.park@samsung.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-References: <1354708169-1139-1-git-send-email-prabhakar.csengg@gmail.com>
-In-Reply-To: <1354708169-1139-1-git-send-email-prabhakar.csengg@gmail.com>
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jonathan Corbet <corbet@lwn.net>
+Subject: Re: [PATCH v3 3/4] sta2x11_vip: convert to videobuf2 and control framework
+Date: Wed, 05 Dec 2012 13:24:20 +0100
+Message-ID: <2637992.xolQO8ly5c@harkonnen>
+User-Agent: KMail/4.9.3 (Linux/3.6.8-2.fc17.x86_64; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <50BF315C.8090203@redhat.com>
+References: <1348484332-8106-1-git-send-email-federico.vaga@gmail.com> <8113379.Pqy1l62Utl@number-5> <50BF315C.8090203@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201212051308.34309.hverkuil@xs4all.nl>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(resend without HTML formatting)
+Thank you Mauro for the good explanation
 
-On Wed 5 December 2012 12:49:29 Prabhakar Lad wrote:
-> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> Yeah, there are many changes there that justifies adding you at its
+> authorship, and that's ok. Also, anyone saying the size of your patch
+> will recognize your and ST efforts to improve the driver.
 > 
-> add support for per color component digital/analog gain controls
-> and also their corresponding offset.
-
-Some obvious questions below...
-
+> However, as some parts of the code were preserved, dropping the old
+> authors doesn't sound right (and can even be illegal, in the light
+> of the GPL license). It would be ok, though, if you would be
+> changing it to something like:
 > 
-> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-> Cc: Sakari Ailus <sakari.ailus@iki.fi>
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
-> Cc: Hans Verkuil <hans.verkuil@cisco.com>
-> Cc: Hans de Goede <hdegoede@redhat.com>
-> Cc: Chris MacGregor <chris@cybermato.com>
-> Cc: Rob Landley <rob@landley.net>
-> Cc: Jeongtae Park <jtp.park@samsung.com>
-> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-> ---
->  Changes for v2:
->  1: Fixed review comments pointed by Laurent.
->  2: Rebased on latest tree.
+> 	Copyright (c) 2010 by ...
+> or
+> 	Original driver from ...
+
+Ok, I understand. I will write something like this.
+ * Copyright (C) 2012       ST Microelectronics
+ *      author: Federico Vaga <federico.vaga@gmail.com>
+ * Copyright (C) 2010       WindRiver Systems, Inc.
+ *      authors: Andreas Kies <andreas.kies@windriver.com>
+ *               Vlad Lungu <vlad.lungu@windriver.com>
+
+
+> The only way of not preserving the original authors here were if you
+> start from scratch, without looking at the original code (and you can
+> somehow, be able to proof it), otherwise, the code will be fit as a
+> "derivative work", in the light of GPL, and should be preserving the
+> original authorship.
 > 
->  Documentation/DocBook/media/v4l/controls.xml |   54 ++++++++++++++++++++++++++
->  drivers/media/v4l2-core/v4l2-ctrls.c         |   11 +++++
->  include/uapi/linux/v4l2-controls.h           |   11 +++++
->  3 files changed, 76 insertions(+), 0 deletions(-)
+> Something started from scratch like that will hardly be accepted upstream,
+> as regressions will likely be introduced, and previously supported
+> hardware/features may be lost in the process.
+
+I understand
+ 
+> Of course the original author can abdicate to his rights of keeping his
+> name on it. Yet, even if he opt/accept to not keep his name explicitly
+> there, his copyrights are preserved, with the help of the git history.
 > 
-> diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
-> index 7fe5be1..847a9bb 100644
-> --- a/Documentation/DocBook/media/v4l/controls.xml
-> +++ b/Documentation/DocBook/media/v4l/controls.xml
-> @@ -4543,6 +4543,60 @@ interface and may change in the future.</para>
->  	    specific test patterns can be used to test if a device is working
->  	    properly.</entry>
->  	  </row>
-> +	  <row>
-> +	    <entry spanname="id"><constant>V4L2_CID_GAIN_RED</constant></entry>
-> +	    <entry>integer</entry>
-> +	  </row>
-> +	  <row>
-> +	    <entry spanname="id"><constant>V4L2_CID_GAIN_GREEN_RED</constant></entry>
-> +	    <entry>integer</entry>
-> +	  </row>
-> +	  <row>
-> +	    <entry spanname="id"><constant>V4L2_CID_GAIN_GREEN_BLUE</constant></entry>
-> +	    <entry>integer</entry>
-> +	  </row>
-> +	  <row>
-> +	    <entry spanname="id"><constant>V4L2_CID_GAIN_BLUE</constant></entry>
-> +	    <entry>integer</entry>
-> +	  </row>
-> +	  <row>
-> +	    <entry spanname="id"><constant>V4L2_CID_GAIN_GREEN</constant></entry>
-> +	    <entry>integer</entry>
-> +	  </row>
-> +	  <row>
-> +	    <entry spanname="descr"> Some capture/sensor devices have
-> +	    the capability to set per color component digital/analog gain values.</entry>
-> +	  </row>
-> +	  <row>
-> +	    <entry spanname="id"><constant>V4L2_CID_GAIN_OFFSET</constant></entry>
-> +	    <entry>integer</entry>
-> +	  </row>
-> +	  <row>
-> +	    <entry spanname="id"><constant>V4L2_CID_BLUE_OFFSET</constant></entry>
-> +	    <entry>integer</entry>
-> +	  </row>
-> +	  <row>
-> +	    <entry spanname="id"><constant>V4L2_CID_RED_OFFSET</constant></entry>
-> +	    <entry>integer</entry>
-> +	  </row>
-> +	  <row>
-> +	    <entry spanname="id"><constant>V4L2_CID_GREEN_OFFSET</constant></entry>
-> +	    <entry>integer</entry>
-> +	  </row>
-> +	  <row>
-> +	    <entry spanname="id"><constant>V4L2_CID_GREEN_RED_OFFSET</constant></entry>
-> +	    <entry>integer</entry>
-> +	  </row>
-> +	  <row>
-> +	    <entry spanname="id"><constant>V4L2_CID_GREEN_BLUE_OFFSET</constant></entry>
-> +	    <entry>integer</entry>
-> +	  </row>
-> +	  <row>
-> +	    <entry spanname="descr"> Some capture/sensor devices have the
-> +	    capability to set per color component digital/analog gain offset values.
-> +	    V4L2_CID_GAIN_OFFSET is the global gain offset and the rest are per
-> +	    color component gain offsets.</entry>
+> That's said, no single kernel developer/company has full copyrights on
+> any part of the Kernel, as their code are based on someone else's work.
+> For example, all Kernel drivers depend on drivers/base, with in turn,
+> depends on memory management, generic helper functions, arch code, etc.
 
-If I set both V4L2_CID_GAIN_RED and V4L2_CID_RED_OFFSET, how are they supposed
-to interact? Or are they mutually exclusive?
+yeah I know :)
 
-And if I set both V4L2_CID_GAIN_OFFSET and V4L2_CID_RED_OFFSET, how are they supposed
-to interact?
+> So, IMHO, there's not much point on dropping authorship messages.
 
-This questions should be answered in the documentation...
+So the MODULE_AUTHOR will be Windriver forever until they drop authorship? 
+Also if in the next future 0 windriver lines will be in the code?
 
-Regards,
+(general talking, not about this driver)
+If I do git blame on a driver with MODULE_AUTHOR("Mr. X"); but only the 
+MODULE_AUTHOR line is from Mr X; there is not an automatically system which 
+remove the MODULE_AUTHOR? Ok, probably it was the original author of the code 
+and the comment header with the copyright history gives to Mr X all the 
+honours, but there is nothing from him in the code. It is not better to remove 
+MODULE_AUTHOR or replace it with who wrotes most of the code?
+I know that this is not the best place to talk about this, just a little 
+curiosity
 
-        Hans
-
-> +	  </row>
->  	  <row><entry></entry></row>
->  	</tbody>
->        </tgroup>
-> diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
-> index f6ee201..05e3708 100644
-> --- a/drivers/media/v4l2-core/v4l2-ctrls.c
-> +++ b/drivers/media/v4l2-core/v4l2-ctrls.c
-> @@ -790,6 +790,17 @@ const char *v4l2_ctrl_get_name(u32 id)
->  	case V4L2_CID_LINK_FREQ:		return "Link Frequency";
->  	case V4L2_CID_PIXEL_RATE:		return "Pixel Rate";
->  	case V4L2_CID_TEST_PATTERN:		return "Test Pattern";
-> +	case V4L2_CID_GAIN_RED:			return "Gain Red";
-> +	case V4L2_CID_GAIN_GREEN_RED:		return "Gain Green Red";
-> +	case V4L2_CID_GAIN_GREEN_BLUE:		return "Gain Green Blue";
-> +	case V4L2_CID_GAIN_BLUE:		return "Gain Blue";
-> +	case V4L2_CID_GAIN_GREEN:		return "Gain Green";
-> +	case V4L2_CID_GAIN_OFFSET:		return "Gain Offset";
-> +	case V4L2_CID_BLUE_OFFSET:		return "Gain Blue Offset";
-> +	case V4L2_CID_RED_OFFSET:		return "Gain Red Offset";
-> +	case V4L2_CID_GREEN_OFFSET:		return "Gain Green Offset";
-> +	case V4L2_CID_GREEN_RED_OFFSET:		return "Gain Green Red Offset";
-> +	case V4L2_CID_GREEN_BLUE_OFFSET:	return "Gain Green Blue Offset";
->  
->  	/* DV controls */
->  	case V4L2_CID_DV_CLASS:			return "Digital Video Controls";
-> diff --git a/include/uapi/linux/v4l2-controls.h b/include/uapi/linux/v4l2-controls.h
-> index f56c945..9b6b233 100644
-> --- a/include/uapi/linux/v4l2-controls.h
-> +++ b/include/uapi/linux/v4l2-controls.h
-> @@ -799,5 +799,16 @@ enum v4l2_jpeg_chroma_subsampling {
->  #define V4L2_CID_LINK_FREQ			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 1)
->  #define V4L2_CID_PIXEL_RATE			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 2)
->  #define V4L2_CID_TEST_PATTERN			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 3)
-> +#define V4L2_CID_GAIN_RED			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 4)
-> +#define V4L2_CID_GAIN_GREEN_RED			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 5)
-> +#define V4L2_CID_GAIN_GREEN_BLUE		(V4L2_CID_IMAGE_PROC_CLASS_BASE + 6)
-> +#define V4L2_CID_GAIN_BLUE			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 7)
-> +#define V4L2_CID_GAIN_GREEN			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 8)
-> +#define V4L2_CID_GAIN_OFFSET			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 9)
-> +#define V4L2_CID_BLUE_OFFSET			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 10)
-> +#define V4L2_CID_RED_OFFSET			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 11)
-> +#define V4L2_CID_GREEN_OFFSET			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 12)
-> +#define V4L2_CID_GREEN_RED_OFFSET		(V4L2_CID_IMAGE_PROC_CLASS_BASE + 13)
-> +#define V4L2_CID_GREEN_BLUE_OFFSET		(V4L2_CID_IMAGE_PROC_CLASS_BASE + 14)
->  
->  #endif
-> 
+-- 
+Federico Vaga
