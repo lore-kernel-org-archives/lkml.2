@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753492Ab2LEPqD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 10:46:03 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52778 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752495Ab2LEPp7 (ORCPT
+	id S1753143Ab2LEPqB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 10:46:01 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:41522 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751828Ab2LEPp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Dec 2012 10:45:59 -0500
-Date: Wed, 5 Dec 2012 07:48:00 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Eli Billauer <eli.billauer@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] New driver: Xillybus generic interface for FPGA
- (programmable logic)
-Message-ID: <20121205154800.GA4025@kroah.com>
-References: <1354117293-13632-1-git-send-email-eli.billauer@gmail.com>
- <20121204034128.GC911@kroah.com>
- <50BDCCCA.4000000@gmail.com>
- <201212042043.18221.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201212042043.18221.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201212051148.28039.Martin@lichtvoll.de>
+References: <1353366267-15629-1-git-send-email-david@fromorbit.com>
+ <20121126025520.GC22858@thunk.org> <20121126091202.GO32450@dastard> <201212051148.28039.Martin@lichtvoll.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 5 Dec 2012 07:45:39 -0800
+X-Google-Sender-Auth: pMr26-n03-LYlXJAP-q-A-g7cTs
+Message-ID: <CA+55aFzgP29WfB1yvnj+Q9-TsbX+b-TCCjTS_vPJ16DxMy6aDQ@mail.gmail.com>
+Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate UAPI
+To: Martin Steigerwald <Martin@lichtvoll.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 04, 2012 at 08:43:18PM +0000, Arnd Bergmann wrote:
-> On Tuesday 04 December 2012, Eli Billauer wrote:
-> > I'm currently writing some documentation which will cover the API and 
-> > also help reading the code, I hope. It takes some time...
-> > 
-> > Until it's done, let's look at a usage example: Suppose that the FPGA's 
-> > application is to receive a high-speed bitstream with time multiplexed 
-> > data, demultiplex the bitstream into individual channel streams, and 
-> > send each channel's data to the host. And let's say that there are 64 
-> > channels in original bitstream. So the FPGA has now 64 independent 
-> > sources of data.
-> > 
-> > For that purpose, the Xillybus IP core (on the FPGA) is configured to 
-> > create 64 pipes for FPGA to host communication. The names of these pipes 
-> > (say, "chan00", "chan01", ...) are also stored in the FPGA.
-> > 
-> > When the driver starts, it queries the FPGA for its Xillybus 
-> > configuration, and creates 64 device nodes: /dev/xillybus_chan00, 
-> > /dev/xillybus_chan01, ... /dev/xillybus_chan63.
-> > 
-> > If the user wants to dump the data in channel 43 into a file, it's just:
-> > 
-> > $ cat /dev/xillybus_chan43 > mydump.dat
-> > 
-> > I hope this clarified things a bit.
-> > 
-> > I can't see how the firmware interface would help here.
-> 
-> I think a lot of us (including Greg and me) were confused about
-> the purpose of the driver, since you did not include much documentation.
-> 
-> The request_firmware interface would be useful for loading a model
-> into the FPGA, but that doesn't seem to be what your driver is
-> concerned with. It's also a bit confusing because it doesn't appear
-> to be a "bus" in the Linux sense of being something that provides
-> an abstract interface between hardware and kernel device drivers.
+On Wed, Dec 5, 2012 at 2:48 AM, Martin Steigerwald <Martin@lichtvoll.de> wrote:
+>
+> Linus, while I am interested in an answer I think that Dave and Christoph
+> as Linux filesystem developers actually deserve one (instead of silently
+> being ignored which is also a decision in this matter).
+>
+> I did not see an answer in linux-2.6 commit log as of today so far.
 
-Yes, that's what I was confused about as well.  I'll wait for a new
-patch with new documentation, before commenting further.
+Christ guys. This whole thread is retarded.
 
-greg k-h
+The *ONLY* reason people seem to have for reverting that is a "ooh, my
+feelings are hurt by how this was done, and now I'm a pissy bitch and
+I want to get this reverted".
+
+Stop the f*cking around already.
+
+If you want something reverted, you show me the *technical* reason for
+it. Not the "ooh, I'm so annoyed by how this was done" reason for it.
+
+And if your little feelings got hurt, get your mommy to tuck you in,
+don't email me about it. Because I'm not exactly known for my deep
+emotional understanding and supportive personality, am I?
+
+               Linus
