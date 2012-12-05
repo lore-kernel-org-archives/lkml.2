@@ -1,66 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753698Ab2LEDYU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 22:24:20 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44052 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753626Ab2LEDYQ convert rfc822-to-8bit (ORCPT
+	id S1753621Ab2LED3M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 22:29:12 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:42323 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752795Ab2LED3J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 22:24:16 -0500
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-References: <1354557399-6202-1-git-send-email-sickamd@gmail.com> <20121204202416.GB9451@dastard>
-In-Reply-To: <20121204202416.GB9451@dastard>
-Mime-Version: 1.0 (1.0)
-Message-Id: <424C1F3A-E96F-485B-BAE5-02CE41C0DBFF@whamcloud.com>
-Cc: yangsheng <sickamd@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "adilger@dilger.ca" <adilger@dilger.ca>
-From: Andreas Dilger <adilger@whamcloud.com>
-Subject: Re: [PATCH] Update atime from future.
-Date: Tue, 4 Dec 2012 17:22:32 -0700
-To: Dave Chinner <david@fromorbit.com>
-X-Mailer: iPhone Mail (10A523)
+	Tue, 4 Dec 2012 22:29:09 -0500
+Message-ID: <50BEBF72.80906@linux.vnet.ibm.com>
+Date: Wed, 05 Dec 2012 11:28:50 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, tglx@linutronix.de,
+        peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, namhyung@kernel.org,
+        vincent.guittot@linaro.org, sbw@mit.edu, tj@kernel.org,
+        amit.kucheria@linaro.org, rostedt@goodmis.org, rjw@sisk.pl,
+        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 01/10] CPU hotplug: Introduce "stable" cpu online
+ mask, for atomic hotplug readers
+References: <20121204085149.25919.29920.stgit@srivatsabhat.in.ibm.com> <20121204085324.25919.53090.stgit@srivatsabhat.in.ibm.com> <20121204141017.94a559f1.akpm@linux-foundation.org> <50BEB7C4.9080906@linux.vnet.ibm.com>
+In-Reply-To: <50BEB7C4.9080906@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12120503-6102-0000-0000-000002AAE675
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-12-04, at 13:24, Dave Chinner <david@fromorbit.com> wrote:
-> On Tue, Dec 04, 2012 at 01:56:39AM +0800, yangsheng wrote:
->> Relatime should update the inode atime if it is more than a day in the
->> future.  The original problem seen was a tarball that had a bad atime,
->> but could also happen if someone fat-fingers a "touch".  The future
->> atime will never be fixed.  Before the relatime patch, the future atime
->> would be updated back to the current time on the next access.
+On 12/05/2012 10:56 AM, Michael Wang wrote:
+[...]
+>>
+>> I wonder about the cpu-online case.  A typical caller might want to do:
+>>
+>>
+>> /*
+>>  * Set each online CPU's "foo" to "bar"
+>>  */
+>>
+>> int global_bar;
+>>
+>> void set_cpu_foo(int bar)
+>> {
+>> 	get_online_cpus_stable_atomic();
+>> 	global_bar = bar;
+>> 	for_each_online_cpu_stable()
+>> 		cpu->foo = bar;
+>> 	put_online_cpus_stable_atomic()
+>> }
+>>
+>> void_cpu_online_notifier_handler(void)
+>> {
+>> 	cpu->foo = global_bar;
+>> }
+
+Oh, forgive me for misunderstanding your question :(
+
+In this case, we have to prevent hotplug happen, not just ensure the
+online mask is correct.
+
+Hmm..., we need more consideration.
+
+Regards,
+Michael Wang
+
+>>
+>> And I think that set_cpu_foo() would be buggy, because a CPU could come
+>> online before global_bar was altered, and that newly-online CPU would
+>> pick up the old value of `bar'.
+>>
+>> So what's the rule here?  global_bar must be written before we run
+>> get_online_cpus_stable_atomic()?
+>>
+>> Anyway, please have a think and spell all this out?
 > 
-> So if someone accidentally changes time back a few days, access
-> times go backwards for everything?
-
-And they will go forward again if the files are accessed again in the future. 
-
-> That doesn't sound right to me -
-> it's going to seriously screw up backups and other scanners that use
-> atime to determine "newly accessed files"....
-
-I think it is equally as easy to say that if someone accidentally sets the time too far in the future (e.g. 2102 instead of 2012) for a while, then the atimes will be even more broken since the kernel will never update them again even after the clock is fixed. 
-
-The point is that the behaviour before the relatime patch was that the kernel updated the atime to the current time as the kernel knows about it, it didn't make any decision about "the past" or "the future".
-
-Relatime is about reducing the frequency of atime updates, not about deciding that one timestamp is more correct than another. 
-
-I'd be ok to change the margin for what constitutes a "future" time (a few days or a week?), but if atime updates happen once a day for times in the past  I don't think it is incorrect to update the atime if it is more than a day in the future. 
-
-Cheers, Andreas
-
-> IMO, if you fat-finger a manual atime update or use atimes direct
-> from tarballs, then that's your problem as a user and not the
-> responsibility of the kernel to magically fix for you....
+> That's right, actually this related to one question, should the hotplug
+> happen during get_online and put_online?
 > 
-> Cheers,
+> Answer will be YES according to old API which using mutex, the hotplug
+> won't happen in critical section, but the cost is get_online() will
+> block, which will kill the performance.
 > 
-> Dave.
-> -- 
-> Dave Chinner
-> david@fromorbit.com
+> So we designed this mechanism to do acceleration, but as you pointed
+> out, although the result will never be wrong, but the 'stable' mask is
+> not stable since it could be changed in critical section.
+> 
+> And we have two solution.
+> 
+> One is from Srivatsa, using 'read_lock' and 'write_lock', it will
+> prevent hotplug happen just like the old rule, the cost is we need a
+> global 'rw_lock' which perform bad on NUMA system, and no doubt,
+> get_online() will block for short time when doing hotplug.
+> 
+> Another is to maintain a per-cpu cache mask, this mask will only be
+> updated in get_online(), and be used in critical section, then we will
+> get a real stable mask, but one flaw is, on different cpu in critical
+> section, online mask will be different.
+> 
+> We will be appreciate if we could collect some comments on which one to
+> be used in next version.
+> 
+> Regards,
+> Michael Wang
+> 
+>>
+>>>  struct take_cpu_down_param {
+>>>  	unsigned long mod;
+>>>  	void *hcpu;
+>>> @@ -246,7 +351,9 @@ struct take_cpu_down_param {
+>>>  static int __ref take_cpu_down(void *_param)
+>>>  {
+>>>  	struct take_cpu_down_param *param = _param;
+>>> -	int err;
+>>> +	int err, cpu = (long)(param->hcpu);
+>>> +
+>>
+>> Like this please:
+>>
+>> 	int err;
+>> 	int cpu = (long)(param->hcpu);
+>>
+>>> +	prepare_cpu_take_down(cpu);
+>>>  
+>>>  	/* Ensure this CPU doesn't handle any more interrupts. */
+>>>  	err = __cpu_disable();
+>>>
+>>> ...
+>>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+> 
+
