@@ -1,90 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753699Ab2LEKHX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 05:07:23 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:35533 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753648Ab2LEKHT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 05:07:19 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121205105917.291f483f@endymion.delvare>
-References: <1354634875-5182-1-git-send-email-benjamin.tissoires@gmail.com>
-	<1354634875-5182-10-git-send-email-benjamin.tissoires@gmail.com>
-	<20121205105917.291f483f@endymion.delvare>
-Date: Wed, 5 Dec 2012 11:07:17 +0100
-Message-ID: <CAN+gG=EqRgaUCg=Af_LtU6ez+x+gf=s+TM2h5v9dtTx0uQwLHg@mail.gmail.com>
-Subject: Re: [PATCH 09/14] HID: i2c-hid: i2c_hid_get_report may fail
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+	id S1753767Ab2LEKHo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 05:07:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59851 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753732Ab2LEKHm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 05:07:42 -0500
+Date: Wed, 5 Dec 2012 11:07:38 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
 To: Jean Delvare <khali@linux-fr.org>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        linux-input@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 08/14] HID: i2c-hid: fix error messages
+In-Reply-To: <20121205105158.666a19a8@endymion.delvare>
+Message-ID: <alpine.LNX.2.00.1212051107290.17055@pobox.suse.cz>
+References: <1354634875-5182-1-git-send-email-benjamin.tissoires@gmail.com> <1354634875-5182-9-git-send-email-benjamin.tissoires@gmail.com> <20121205105158.666a19a8@endymion.delvare>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 5, 2012 at 10:59 AM, Jean Delvare <khali@linux-fr.org> wrote:
-> On Tue,  4 Dec 2012 16:27:50 +0100, Benjamin Tissoires wrote:
->> If i2c_hid_get_report fails, exit i2c_hid_init_report.
->> The printk log is already called by i2c_hid_get_report, so no need
->> to add some more printks.
->>
->> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
->> ---
->>  drivers/hid/i2c-hid/i2c-hid.c | 5 +++--
->>  1 file changed, 3 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
->> index da04948..dcacfc4 100644
->> --- a/drivers/hid/i2c-hid/i2c-hid.c
->> +++ b/drivers/hid/i2c-hid/i2c-hid.c
->> @@ -400,9 +400,10 @@ static void i2c_hid_init_report(struct hid_report *report, u8 *buffer,
->>       unsigned int size, ret_size;
->>
->>       size = i2c_hid_get_report_length(report);
->> -     i2c_hid_get_report(client,
->> +     if (i2c_hid_get_report(client,
->>                       report->type == HID_FEATURE_REPORT ? 0x03 : 0x01,
->> -                     report->id, buffer, size);
->> +                     report->id, buffer, size))
->> +             return;
->>
->>       i2c_hid_dbg(ihid, "report (len=%d): %*ph\n", size, size, ihid->inbuf);
->>
->
-> OK, although I don't quite get the rationale for not reporting the
-> errors from i2c_hid_init_report() and i2c_hid_init_reports() to their
-> respective callers. Does the device have any chance to work properly if
-> i2c_hid_init_reports() fails?
+On Wed, 5 Dec 2012, Jean Delvare wrote:
 
-Hi Jean,
-
-first thanks for the review you have started.
-
-For your question, the answer is yes, the device works properly even
-if i2c_hid_init_reports().
-IIRC, the only required steps are:
-- get HID descriptor
-- get HID report descriptors
-- send reset
-- set power on
-
- i2c_hid_init_reports is not part of the specification for the boot
-process, and the Windows driver does not retrieve the reports for
-input reports at all (it does it though for the features).
-Actually, the device I have does not implement get_report for inputs
-(it returns 0), but it's not a problem for it to work.
-
-I put the whole init_reports in place to get the features values
-before sending them to the hid driver, and also to copy the behavior
-of usbhid.
-
-Cheers,
-Benjamin
-
->
+> > Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+> > ---
+> >  drivers/hid/i2c-hid/i2c-hid.c | 11 ++++++-----
+> >  1 file changed, 6 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
+> > index d6fdb3e..da04948 100644
+> > --- a/drivers/hid/i2c-hid/i2c-hid.c
+> > +++ b/drivers/hid/i2c-hid/i2c-hid.c
+> > @@ -741,10 +741,10 @@ static int __devinit i2c_hid_init_irq(struct i2c_client *client)
+> >  			IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+> >  			client->name, ihid);
+> >  	if (ret < 0) {
+> > -		dev_dbg(&client->dev,
+> > +		dev_warn(&client->dev,
+> >  			"Could not register for %s interrupt, irq = %d,"
+> >  			" ret = %d\n",
+> > -		client->name, client->irq, ret);
+> > +			client->name, client->irq, ret);
+> >  
+> >  		return ret;
+> >  	}
+> > @@ -770,7 +770,8 @@ static int __devinit i2c_hid_fetch_hid_descriptor(struct i2c_hid *ihid)
+> >  			__func__, 4, ihid->hdesc_buffer);
+> >  
+> >  	if (ret) {
+> > -		dev_err(&client->dev, "HID_DESCR_LENGTH_CMD Fail (ret=%d)\n",
+> > +		dev_err(&client->dev,
+> > +			"unable to fetch the size of HID descriptor (ret=%d)\n",
+> >  			ret);
+> >  		return -ENODEV;
+> >  	}
+> > @@ -785,7 +786,7 @@ static int __devinit i2c_hid_fetch_hid_descriptor(struct i2c_hid *ihid)
+> >  	/* check bcdVersion == 1.0 */
+> >  	if (le16_to_cpu(hdesc->bcdVersion) != 0x0100) {
+> >  		dev_err(&client->dev,
+> > -			"unexpected HID descriptor bcdVersion (0x%04x)\n",
+> > +			"unexpected HID descriptor bcdVersion (0x%04hx)\n",
+> >  			le16_to_cpu(hdesc->bcdVersion));
+> >  		return -ENODEV;
+> >  	}
+> > @@ -871,7 +872,7 @@ static int __devinit i2c_hid_probe(struct i2c_client *client,
+> >  	hid->vendor = le16_to_cpu(ihid->hdesc.wVendorID);
+> >  	hid->product = le16_to_cpu(ihid->hdesc.wProductID);
+> >  
+> > -	snprintf(hid->name, sizeof(hid->name), "%s %04X:%04X",
+> > +	snprintf(hid->name, sizeof(hid->name), "%s %04hX:%04hX",
+> >  		 client->name, hid->vendor, hid->product);
+> >  
+> >  	ret = hid_add_device(hid);
+> 
 > Reviewed-by: Jean Delvare <khali@linux-fr.org>
->
-> --
-> Jean Delvare
+
+Applied.
+
+-- 
+Jiri Kosina
+SUSE Labs
