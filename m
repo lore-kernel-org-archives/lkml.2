@@ -1,155 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752884Ab2LEMMj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 07:12:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37396 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752449Ab2LEMMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 07:12:35 -0500
-Date: Wed, 5 Dec 2012 13:12:28 +0100
-From: Jan Kara <jack@suse.cz>
-To: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: Jan Kara <jack@suse.cz>, NeilBrown <neilb@suse.de>, axboe@kernel.dk,
-        lucho@ionkov.net, ericvh@gmail.com, tytso@mit.edu, rminnich@sandia.gov,
-        viro@zeniv.linux.org.uk, martin.petersen@oracle.com,
-        david@fromorbit.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, adilger.kernel@dilger.ca,
-        bharrosh@panasas.com, jlayton@samba.org,
-        v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 4/4] ext3: Warn if mounting rw on a disk requiring
- stable page writes
-Message-ID: <20121205121228.GB5706@quack.suse.cz>
-References: <20121121020027.10225.43206.stgit@blackbox.djwong.org>
- <20121121020056.10225.15220.stgit@blackbox.djwong.org>
- <20121121021543.GI10507@quack.suse.cz>
- <20121121211319.GA32202@blackbox.djwong.org>
- <20121121213333.GF30250@quack.suse.cz>
- <20121122084713.69e5b1fc@notabene.brown>
- <20121122014755.GH8740@blackbox.djwong.org>
- <20121122091240.GA11154@quack.suse.cz>
- <20121127021740.GA11869@blackbox.djwong.org>
+	id S1752801Ab2LEMSs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 07:18:48 -0500
+Received: from ams-iport-3.cisco.com ([144.254.224.146]:11472 "EHLO
+	ams-iport-3.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751587Ab2LEMSr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 07:18:47 -0500
+X-Greylist: delayed 588 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Dec 2012 07:18:46 EST
+X-IronPort-AV: E=McAfee;i="5400,1158,6916"; a="10162919"
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+Subject: Re: [PATCH RFC v2] media: v4l2-ctrl: Add gain controls
+Date: Wed, 5 Dec 2012 13:08:34 +0100
+User-Agent: KMail/1.13.7 (Linux/3.6-7.slh.1-aptosid-amd64; KDE/4.8.4; x86_64; ; )
+Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        LDOC <linux-doc@vger.kernel.org>, Sakari Ailus <sakari.ailus@iki.fi>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Chris MacGregor <chris@cybermato.com>, Rob Landley <rob@landley.net>,
+        Jeongtae Park <jtp.park@samsung.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+References: <1354708169-1139-1-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1354708169-1139-1-git-send-email-prabhakar.csengg@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121127021740.GA11869@blackbox.djwong.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201212051308.34309.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 26-11-12 18:17:40, Darrick J. Wong wrote:
-> On Thu, Nov 22, 2012 at 10:12:40AM +0100, Jan Kara wrote:
-> > On Wed 21-11-12 17:47:55, Darrick J. Wong wrote:
-> > > On Thu, Nov 22, 2012 at 08:47:13AM +1100, NeilBrown wrote:
-> > > > On Wed, 21 Nov 2012 22:33:33 +0100 Jan Kara <jack@suse.cz> wrote:
-> > > > 
-> > > > > On Wed 21-11-12 13:13:19, Darrick J. Wong wrote:
-> > > > > > On Wed, Nov 21, 2012 at 03:15:43AM +0100, Jan Kara wrote:
-> > > > > > > On Tue 20-11-12 18:00:56, Darrick J. Wong wrote:
-> > > > > > > > ext3 doesn't properly isolate pages from changes during writeback.  Since the
-> > > > > > > > recommended fix is to use ext4, for now we'll just print a warning if the user
-> > > > > > > > tries to mount in write mode.
-> > > > > > > > 
-> > > > > > > > Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-> > > > > > > > ---
-> > > > > > > >  fs/ext3/super.c |    8 ++++++++
-> > > > > > > >  1 file changed, 8 insertions(+)
-> > > > > > > > 
-> > > > > > > > 
-> > > > > > > > diff --git a/fs/ext3/super.c b/fs/ext3/super.c
-> > > > > > > > index 5366393..5b3725d 100644
-> > > > > > > > --- a/fs/ext3/super.c
-> > > > > > > > +++ b/fs/ext3/super.c
-> > > > > > > > @@ -1325,6 +1325,14 @@ static int ext3_setup_super(struct super_block *sb, struct ext3_super_block *es,
-> > > > > > > >  			"forcing read-only mode");
-> > > > > > > >  		res = MS_RDONLY;
-> > > > > > > >  	}
-> > > > > > > > +	if (!read_only &&
-> > > > > > > > +	    queue_requires_stable_pages(bdev_get_queue(sb->s_bdev))) {
-> > > > > > > > +		ext3_msg(sb, KERN_ERR,
-> > > > > > > > +			"error: ext3 cannot safely write data to a disk "
-> > > > > > > > +			"requiring stable pages writes; forcing read-only "
-> > > > > > > > +			"mode.  Upgrading to ext4 is recommended.");
-> > > > > > > > +		res = MS_RDONLY;
-> > > > > > > > +	}
-> > > > > > > >  	if (read_only)
-> > > > > > > >  		return res;
-> > > > > > > >  	if (!(sbi->s_mount_state & EXT3_VALID_FS))
-> > > > > > >   Why this? ext3 should be fixed by your change to
-> > > > > > > filemap_page_mkwrite()... Or does testing show otherwise?
-> > > > > > 
-> > > > > > Yes, it's still broken even with this new set of changes.  Now that I think
-> > > > > > about it a little more, I recall that writeback mode was actually fine, so this
-> > > > > > is a little harsh.
-> > > > > > 
-> > > > > > Hm... looking at the ordered code a little more, it looks like
-> > > > > > ext3_ordered_write_end is calling journal_dirty_data_fn, which (I guess?) tries
-> > > > > > to write mapped buffers back through the journal?  Taking it out seems to fix
-> > > > > > ordered mode, though I have a suspicion that it might very well break ordered
-> > > > > > mode too.
-> > > > >   Oh, right. kjournald writing buffers directly (without setting
-> > > > > PageWriteback) will break things. So please, change warning to:
-> > > 
-> > > Maybe we should just fix this anyway?
-> > > 
-> > > I still have the patch that adds PG_stable (and changes the
-> > > wait_for_page_stable() test to use this flag instead of PG_writeback) kicking
-> > > around in my tree.  I wrote a patch to jbd that changes journal_do_submit_data
-> > > to set PG_stable, call clear_page_dirty_for_io(), and unsets the stable bit in
-> > > the end_io processing.
-> > > 
-> > > It seems to get rid of the checksum-after-write errors, though I'm not
-> > > convinced it's correct.  But, I'll send both patches along.
-> >   I'll check the patches. Fixing PageWriteback logic for ext3 is not easily
-> > doable due to lock ranking constraints - PageWriteback has to be set under
-> > PageLocked but that ranks above transaction start so kjournald cannot grab
-> > page locks so it cannot set PageWriteback... And changing the lock ordering
-> > is a major surgery.
-> > 
-> > What could be doable is waiting for buffer locks from ext3's ->write_begin
-> > and ->page_mkwrite implementations in case stable writes are required. If
-> > your approach with a separate page bit doesn't work out (and I have some
-> > doubts about that as mm people are *really* thrifty with page bits).
-> > 
-> > > > > 	/*
-> > > > > 	 * In data=ordered mode, kjournald writes buffers without setting
-> > > > > 	 * PageWriteback bit thus generic code does not properly wait for
-> > > > > 	 * writeback of those buffers to finish.
-> > > > > 	 */
-> > > > > 	if (!read_only &&
-> > > > > 	    test_opt(sb, DATA_FLAGS) == EXT3_MOUNT_ORDERED_DATA &&
-> > > 
-> > > test_opt(sb, DATA_FLAGS) != EXT3_MOUNT_WRITEBACK_DATA
-> > > 
-> > > since I bet data=journal mode is also borken wrt PageWriteback.
-> >   It is broken wrt PageWriteback but it actually waits for buffer locks in
-> > ->write_begin() so at least write path should be properly protected. But
-> > mmap is not handled properly there (although that wouldn't be that hard to
-> > fix). So I agree the condition should rather be what you suggest.
-  Sorry for late reply. I was on vacation...
+(resend without HTML formatting)
 
-> Hm.  In journal mode, write_begin calls do_journal_get_write_access on each
-> buffer for a given page, and in turn, jbd's do_get_write_access calls
-> lock_buffer.  Is that what you're referring to by "actually waits for buffer
-> locks"?  I'm wondering how that helps us, since afaict PG_writeback doesn't get
-> set in that path, and I think it's a little early to be setting PG_writeback
-> anyway.
-  It does help us. In ext3 data writeback is done either by flusher thread,
-that happens under PG_Writeback and generic code waits for that as need, or
-by kjournald - that happens under buffer lock and as you properly observed
-do_get_write_access() waits for that (and actually copies data that should
-go to disk to a separate buffer if needed).
+On Wed 5 December 2012 12:49:29 Prabhakar Lad wrote:
+> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> 
+> add support for per color component digital/analog gain controls
+> and also their corresponding offset.
 
-> If the page has to be locked before the transaction starts, how much of a
-> problem is it to set PG_writeback?  Even though that seems a bit early to be
-> doing that?
-  Well, what you would need to make things consistent is to set
-PG_writeback from kjournald so that all writeback happens with PG_writeback
-set on the page. But setting has to happen while the page is locked and
-kjournald can never block on page lock because that would cause
-deadlocks...
+Some obvious questions below...
 
-									Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> 
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> Cc: Sakari Ailus <sakari.ailus@iki.fi>
+> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Cc: Hans Verkuil <hans.verkuil@cisco.com>
+> Cc: Hans de Goede <hdegoede@redhat.com>
+> Cc: Chris MacGregor <chris@cybermato.com>
+> Cc: Rob Landley <rob@landley.net>
+> Cc: Jeongtae Park <jtp.park@samsung.com>
+> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+> ---
+>  Changes for v2:
+>  1: Fixed review comments pointed by Laurent.
+>  2: Rebased on latest tree.
+> 
+>  Documentation/DocBook/media/v4l/controls.xml |   54 ++++++++++++++++++++++++++
+>  drivers/media/v4l2-core/v4l2-ctrls.c         |   11 +++++
+>  include/uapi/linux/v4l2-controls.h           |   11 +++++
+>  3 files changed, 76 insertions(+), 0 deletions(-)
+> 
+> diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
+> index 7fe5be1..847a9bb 100644
+> --- a/Documentation/DocBook/media/v4l/controls.xml
+> +++ b/Documentation/DocBook/media/v4l/controls.xml
+> @@ -4543,6 +4543,60 @@ interface and may change in the future.</para>
+>  	    specific test patterns can be used to test if a device is working
+>  	    properly.</entry>
+>  	  </row>
+> +	  <row>
+> +	    <entry spanname="id"><constant>V4L2_CID_GAIN_RED</constant></entry>
+> +	    <entry>integer</entry>
+> +	  </row>
+> +	  <row>
+> +	    <entry spanname="id"><constant>V4L2_CID_GAIN_GREEN_RED</constant></entry>
+> +	    <entry>integer</entry>
+> +	  </row>
+> +	  <row>
+> +	    <entry spanname="id"><constant>V4L2_CID_GAIN_GREEN_BLUE</constant></entry>
+> +	    <entry>integer</entry>
+> +	  </row>
+> +	  <row>
+> +	    <entry spanname="id"><constant>V4L2_CID_GAIN_BLUE</constant></entry>
+> +	    <entry>integer</entry>
+> +	  </row>
+> +	  <row>
+> +	    <entry spanname="id"><constant>V4L2_CID_GAIN_GREEN</constant></entry>
+> +	    <entry>integer</entry>
+> +	  </row>
+> +	  <row>
+> +	    <entry spanname="descr"> Some capture/sensor devices have
+> +	    the capability to set per color component digital/analog gain values.</entry>
+> +	  </row>
+> +	  <row>
+> +	    <entry spanname="id"><constant>V4L2_CID_GAIN_OFFSET</constant></entry>
+> +	    <entry>integer</entry>
+> +	  </row>
+> +	  <row>
+> +	    <entry spanname="id"><constant>V4L2_CID_BLUE_OFFSET</constant></entry>
+> +	    <entry>integer</entry>
+> +	  </row>
+> +	  <row>
+> +	    <entry spanname="id"><constant>V4L2_CID_RED_OFFSET</constant></entry>
+> +	    <entry>integer</entry>
+> +	  </row>
+> +	  <row>
+> +	    <entry spanname="id"><constant>V4L2_CID_GREEN_OFFSET</constant></entry>
+> +	    <entry>integer</entry>
+> +	  </row>
+> +	  <row>
+> +	    <entry spanname="id"><constant>V4L2_CID_GREEN_RED_OFFSET</constant></entry>
+> +	    <entry>integer</entry>
+> +	  </row>
+> +	  <row>
+> +	    <entry spanname="id"><constant>V4L2_CID_GREEN_BLUE_OFFSET</constant></entry>
+> +	    <entry>integer</entry>
+> +	  </row>
+> +	  <row>
+> +	    <entry spanname="descr"> Some capture/sensor devices have the
+> +	    capability to set per color component digital/analog gain offset values.
+> +	    V4L2_CID_GAIN_OFFSET is the global gain offset and the rest are per
+> +	    color component gain offsets.</entry>
+
+If I set both V4L2_CID_GAIN_RED and V4L2_CID_RED_OFFSET, how are they supposed
+to interact? Or are they mutually exclusive?
+
+And if I set both V4L2_CID_GAIN_OFFSET and V4L2_CID_RED_OFFSET, how are they supposed
+to interact?
+
+This questions should be answered in the documentation...
+
+Regards,
+
+        Hans
+
+> +	  </row>
+>  	  <row><entry></entry></row>
+>  	</tbody>
+>        </tgroup>
+> diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
+> index f6ee201..05e3708 100644
+> --- a/drivers/media/v4l2-core/v4l2-ctrls.c
+> +++ b/drivers/media/v4l2-core/v4l2-ctrls.c
+> @@ -790,6 +790,17 @@ const char *v4l2_ctrl_get_name(u32 id)
+>  	case V4L2_CID_LINK_FREQ:		return "Link Frequency";
+>  	case V4L2_CID_PIXEL_RATE:		return "Pixel Rate";
+>  	case V4L2_CID_TEST_PATTERN:		return "Test Pattern";
+> +	case V4L2_CID_GAIN_RED:			return "Gain Red";
+> +	case V4L2_CID_GAIN_GREEN_RED:		return "Gain Green Red";
+> +	case V4L2_CID_GAIN_GREEN_BLUE:		return "Gain Green Blue";
+> +	case V4L2_CID_GAIN_BLUE:		return "Gain Blue";
+> +	case V4L2_CID_GAIN_GREEN:		return "Gain Green";
+> +	case V4L2_CID_GAIN_OFFSET:		return "Gain Offset";
+> +	case V4L2_CID_BLUE_OFFSET:		return "Gain Blue Offset";
+> +	case V4L2_CID_RED_OFFSET:		return "Gain Red Offset";
+> +	case V4L2_CID_GREEN_OFFSET:		return "Gain Green Offset";
+> +	case V4L2_CID_GREEN_RED_OFFSET:		return "Gain Green Red Offset";
+> +	case V4L2_CID_GREEN_BLUE_OFFSET:	return "Gain Green Blue Offset";
+>  
+>  	/* DV controls */
+>  	case V4L2_CID_DV_CLASS:			return "Digital Video Controls";
+> diff --git a/include/uapi/linux/v4l2-controls.h b/include/uapi/linux/v4l2-controls.h
+> index f56c945..9b6b233 100644
+> --- a/include/uapi/linux/v4l2-controls.h
+> +++ b/include/uapi/linux/v4l2-controls.h
+> @@ -799,5 +799,16 @@ enum v4l2_jpeg_chroma_subsampling {
+>  #define V4L2_CID_LINK_FREQ			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 1)
+>  #define V4L2_CID_PIXEL_RATE			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 2)
+>  #define V4L2_CID_TEST_PATTERN			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 3)
+> +#define V4L2_CID_GAIN_RED			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 4)
+> +#define V4L2_CID_GAIN_GREEN_RED			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 5)
+> +#define V4L2_CID_GAIN_GREEN_BLUE		(V4L2_CID_IMAGE_PROC_CLASS_BASE + 6)
+> +#define V4L2_CID_GAIN_BLUE			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 7)
+> +#define V4L2_CID_GAIN_GREEN			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 8)
+> +#define V4L2_CID_GAIN_OFFSET			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 9)
+> +#define V4L2_CID_BLUE_OFFSET			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 10)
+> +#define V4L2_CID_RED_OFFSET			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 11)
+> +#define V4L2_CID_GREEN_OFFSET			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 12)
+> +#define V4L2_CID_GREEN_RED_OFFSET		(V4L2_CID_IMAGE_PROC_CLASS_BASE + 13)
+> +#define V4L2_CID_GREEN_BLUE_OFFSET		(V4L2_CID_IMAGE_PROC_CLASS_BASE + 14)
+>  
+>  #endif
+> 
