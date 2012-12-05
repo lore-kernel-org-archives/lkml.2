@@ -1,62 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753499Ab2LEDCt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 22:02:49 -0500
-Received: from wolff.to ([65.117.131.163]:54264 "HELO wolff.to"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752451Ab2LEDCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 22:02:48 -0500
-Date: Tue, 4 Dec 2012 21:01:33 -0600
-From: Bruno Wolff III <bruno@wolff.to>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Thorsten Leemhuis <fedora@leemhuis.info>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, George Spelvin <linux@horizon.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        Tomas Racek <tracek@redhat.com>, Jan Kara <jack@suse.cz>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Josh Boyer <jwboyer@gmail.com>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Jiri Slaby <jslaby@suse.cz>, Zdenek Kabelac <zkabelac@redhat.com>,
-        linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        John Ellson <john.ellson@comcast.net>
-Subject: Re: kswapd craziness in 3.7
-Message-ID: <20121205030133.GA17438@wolff.to>
-References: <20121128101359.GT8218@suse.de>
- <20121128145215.d23aeb1b.akpm@linux-foundation.org>
- <20121128235412.GW8218@suse.de>
- <50B77F84.1030907@leemhuis.info>
- <20121129170512.GI2301@cmpxchg.org>
- <50B8A8E7.4030108@leemhuis.info>
- <20121201004520.GK2301@cmpxchg.org>
- <50BC6314.7060106@leemhuis.info>
- <20121203194208.GZ24381@cmpxchg.org>
- <20121204214210.GB20253@cmpxchg.org>
+	id S1753554Ab2LEDFF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 22:05:05 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:54592 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752808Ab2LEDFB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 22:05:01 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <20121204214210.GB20253@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <loom.20121204T170759-102@post.gmane.org>
+References: <1354264973-11214-1-git-send-email-a.kesavan@samsung.com>
+	<000101cdd202$dc6e8310$954b8930$%choi@samsung.com>
+	<loom.20121204T170759-102@post.gmane.org>
+Date: Wed, 5 Dec 2012 08:35:00 +0530
+Message-ID: <CAM4voamXYaULm0WEA1EnHbAa5feOkouSvtSiuJ0u4wWrgjeQ4A@mail.gmail.com>
+Subject: Re: [PATCH RFC] PM/Devfreq: Add Exynos5-bus devfreq driver for Exynos5250.
+From: Abhilash Kesavan <kesavan.abhilash@gmail.com>
+To: jhbird.choi@samsung.com, myungjoo.ham@samsung.com,
+        Kukjin Kim <kgene.kim@samsung.com>
+Cc: kyungmin.park@samsung.com, rjw@sisk.pl, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 04, 2012 at 16:42:10 -0500,
-   Johannes Weiner <hannes@cmpxchg.org> wrote:
->  kernel-3.7.0-0.rc7.git1.2.van.main.knurd.kswap.4.fc18.i686
->and
->  kernel-3.7.0-0.rc7.git1.2.van.main.knurd.kswap.4.fc18.x86_64
->for over 24hours with no evidence of problems with kswapd"
+Cc'ing missed out recipients
+
+---------- Forwarded message ----------
+From: Abhilash Kesavan <kesavan.abhilash@gmail.com>
+Date: Tue, Dec 4, 2012 at 9:48 PM
+Subject: Re: [PATCH RFC] PM/Devfreq: Add Exynos5-bus devfreq driver
+for Exynos5250.
+To: linux-pm@vger.kernel.org
+
+
+Jonghwan Choi <jhbird.choi <at> samsung.com> writes:
+
 >
->Now waiting for results from Jiri, Zdenek and Bruno...
+>
+> Hi Abhilash Kesavan.
+Hi,
+>
+> I compiled in 3.7-rc8
+> I got a compile error & warning.
+>
+> Compile error.
+>
+> CC      drivers/devfreq/exynos5_ppmu.o
+> drivers/devfreq/exynos5_ppmu.c:56:14: error: 'S5P_VA_PPMU_DDR_C' undeclared
+> here (not in a function)
+> drivers/devfreq/exynos5_ppmu.c:59:14: error: 'S5P_VA_PPMU_DDR_R1' undeclared
+> here (not in a function)
+> drivers/devfreq/exynos5_ppmu.c:62:13: error: 'S5P_VA_PPMU_DDR_L' undeclared
+> here (not in a function)
+> drivers/devfreq/exynos5_ppmu.c:65:13: error: 'S5P_VA_PPMU_RIGHT' undeclared
+> here (not in a function)
+> drivers/devfreq/exynos5_ppmu.c:68:14: error: 'S5P_VA_PPMU_CPU' undeclared
+> here (not in a function)
+> make[2]: *** [drivers/devfreq/exynos5_ppmu.o] Error 1
+I have submitted only the driver changes. As mentioned in the commit message I
+will post the arch side changes after the drivers gets a complete review.
+However, if you want to test the driver I will post it tommorrow.
 
-I have been running 3.7.0-0.rc7.git1.2.van.main.knurd.kswap.4.fc18.i686.PAE 
-a bit over 23 hours and kswapd has accumalated one minute 8 seconds of 
-CPU time. I did several yum operations during that time and didn't see 
-kswapd spike to 90+% CPU usage as I had seen in the past. With some kernels 
-I wasn't reliably triggering the kswapd issue, so it may not be long enough 
-to know for sure that the problem is fixed.
+[...]
+> drivers/devfreq/exynos5_bus.c: In function 'exynos5_busfreq_int_probe':
+> drivers/devfreq/exynos5_bus.c:388:9: warning: passing argument 3 of
+> 'devfreq_add_device' from incompatible pointer type [enabled by default]
+> include/linux/devfreq.h:170:24: note: expected 'struct devfreq_governor
+> const *' but argument is of type 'char *'
+[...]
+> Need change?
+These changes are based on
+git://git.kernel.org/pub/scm/linux/kernel/git/mzx/devfreq.git : for-rafael
+devfreq_add_device prototype has recently changed and that might be the cause of
+the compilation error. Can you please try on this tree.
 
-I also should note that when I tried 3.7.0-0.rc7.git3.2.fc19.i686.PAE I 
-did see problems with kswapd hitting 90+% usage of a CPU.
+> How to change the INT clock? I think you have to change
+> arch/arm/mach-exynos/clock-exynos5250.c
+> (If you want to control via clock framework.)
+[...]
+> exynos5_int_clk.ops = &exynos5_clk_int_ops;
+This is part of the arch side patch that has not been posted.
+
+Regards,
+Abhilash
+
+--
+To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
