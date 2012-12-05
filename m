@@ -1,109 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754006Ab2LETgJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 14:36:09 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:47691 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728Ab2LETgH (ORCPT
+	id S1754127Ab2LETvz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 14:51:55 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54430 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752131Ab2LETvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 14:36:07 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        "kexec\@lists.infradead.org" <kexec@lists.infradead.org>,
-        "kvm\@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <50BEFEBA.6070602@cn.fujitsu.com>
-Date: Wed, 05 Dec 2012 11:35:58 -0800
-In-Reply-To: <50BEFEBA.6070602@cn.fujitsu.com> (Zhang Yanfei's message of
-	"Wed, 05 Dec 2012 15:58:50 +0800")
-Message-ID: <87boe8qokh.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 5 Dec 2012 14:51:54 -0500
+Date: Wed, 5 Dec 2012 20:51:34 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
+        "swarren@nvidia.com" <swarren@nvidia.com>,
+        "nico@linaro.org" <nico@linaro.org>,
+        Armando Visconti <armando.visconti@st.com>,
+        spear-devel <spear-devel@list.st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] nommu: Enable the strict alignment (CR_A) bit only if
+ ARCH < v6
+Message-ID: <20121205195134.GD3384@pengutronix.de>
+References: <1354187042-28568-1-git-send-email-armando.visconti@st.com>
+ <50BCD6DB.2030200@st.com>
+ <20121203172553.GC14363@n2100.arm.linux.org.uk>
+ <20121203174617.GL20074@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18FMIwCfN0mZGsj3VU8YsSz69ZWELbSObg=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH v10 0/2] x86: vmclear vmcss on all cpus when doing kdump if necessary
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20121203174617.GL20074@mudshark.cambridge.arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zhang Yanfei <zhangyanfei@cn.fujitsu.com> writes:
+Hello,
 
-> Currently, kdump just makes all the logical processors leave VMX operation by
-> executing VMXOFF instruction, so any VMCSs active on the logical processors may
-> be corrupted. But, sometimes, we need the VMCSs to debug guest images contained
-> in the host vmcore. To prevent the corruption, we should VMCLEAR the VMCSs before
-> executing the VMXOFF instruction.
->
-> The patch set provides a way to VMCLEAR vmcss related to guests on all cpus before
-> executing the VMXOFF when doing kdump. This is used to ensure the VMCSs in the
-> vmcore updated and non-corrupted.
+On Mon, Dec 03, 2012 at 05:46:17PM +0000, Will Deacon wrote:
+> On Mon, Dec 03, 2012 at 05:25:53PM +0000, Russell King - ARM Linux wrote:
+> > On Mon, Dec 03, 2012 at 05:44:11PM +0100, Armando Visconti wrote:
+> > > On 11/29/2012 12:04 PM, Armando VISCONTI wrote:
+> > >> This patch keeps disabled the strict alignment CP15 bit for
+> > >> all armv6 and armv7 processor without the mmu. This behaviour
+> > >> is now same as in the mmu case.
+> > >>
+> > >> Signed-off-by: Armando Visconti<armando.visconti@st.com>
+> > >> ---
+> > >>   arch/arm/kernel/head-nommu.S |    2 +-
+> > >>   1 files changed, 1 insertions(+), 1 deletions(-)
+> > >>
+> > >> diff --git a/arch/arm/kernel/head-nommu.S b/arch/arm/kernel/head-nommu.S
+> > >> index 278cfc1..2c228a0 100644
+> > >> --- a/arch/arm/kernel/head-nommu.S
+> > >> +++ b/arch/arm/kernel/head-nommu.S
+> > >> @@ -68,7 +68,7 @@ __after_proc_init:
+> > >>   	 * CP15 system control register value returned in r0 from
+> > >>   	 * the CPU init function.
+> > >>   	 */
+> > >> -#ifdef CONFIG_ALIGNMENT_TRAP
+> > >> +#if defined(CONFIG_ALIGNMENT_TRAP)&&  __LINUX_ARM_ARCH__<  6
+> > >>   	orr	r0, r0, #CR_A
+> > >>   #else
+> > >>   	bic	r0, r0, #CR_A
+> > >
+> > > Any feedback on this simple patch?
+> > 
+> > Well, it brings the nommu version into line with the mmu version, so
+> > it's sensible.  Please put it in the patch system, thanks.
+> 
+> In which case, I'll definitely dust-off the patches to prevent unaligned
+> accesses to strongly-ordered memory because that results in good ol'
+> UNPREDICTABLE behaviour.
+> 
+> I think Uwe also requires some of the stuff there for his M3 port.
+I didn't check more context than available in the patch and I also
+didn't double-check the M3-docs, but AFAIK the M3 doesn't have a cp15
+and I noopt this code out.
 
-Skimming through it looks like the important things have been addressed.
+Best regards
+Uwe
 
-Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
-
-
-> Changelog from v9 to v10:
-> 1. add rcu protect to the callback function
->
-> Changelog from v8 to v9:
-> 1. KEXEC: use a callback function instead of a notifier.
-> 2. KVM-INTEL: use a new vmclear function instead of just calling 
->    vmclear_local_loaded_vmcss to make sure we just do the core vmclear
->    operation in kdump.
->
-> Changelog from v7 to v8:
-> 1. KEXEC: regression for using name crash_notifier_list
->    and remove comments related to KVM
->    and just call function atomic_notifier_call_chain directly.
->
-> Changelog from v6 to v7:
-> 1. KVM-INTEL: in hardware_disable, we needn't disable the
->    vmclear, so remove it.
->
-> Changelog from v5 to v6:
-> 1. KEXEC: the atomic notifier list renamed:
->    crash_notifier_list --> vmclear_notifier_list
-> 2. KVM-INTEL: provide empty functions if CONFIG_KEXEC is
->    not defined and remove unnecessary #ifdef's.
->
-> Changelog from v4 to v5:
-> 1. use an atomic notifier instead of function call, so
->    have all the vmclear codes in vmx.c.
->
-> Changelog from v3 to v4:
-> 1. add a new percpu variable vmclear_skipped to skip
->    vmclear in kdump in some conditions.
->
-> Changelog from v2 to v3:
-> 1. remove unnecessary conditions in function
->    cpu_emergency_clear_loaded_vmcss as Marcelo suggested.
->
-> Changelog from v1 to v2:
-> 1. remove the sysctl and clear VMCSs unconditionally.
->
-> Zhang Yanfei (2):
->   x86/kexec: VMCLEAR VMCSs loaded on all cpus if necessary
->   KVM-INTEL: provide the vmclear function and a bitmap to support
->     VMCLEAR in kdump
->
->  arch/x86/include/asm/kexec.h |    2 +
->  arch/x86/kernel/crash.c      |   32 ++++++++++++++++++++
->  arch/x86/kvm/vmx.c           |   67 ++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 101 insertions(+), 0 deletions(-)
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
