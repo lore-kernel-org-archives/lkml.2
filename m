@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787Ab2LEBeV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 20:34:21 -0500
-Received: from intranet.asianux.com ([58.214.24.6]:51094 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752329Ab2LEBeS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 20:34:18 -0500
-X-Spam-Score: -100.8
-Message-ID: <50BEA4CF.2030207@asianux.com>
-Date: Wed, 05 Dec 2012 09:35:11 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1753018Ab2LEBgt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 20:36:49 -0500
+Received: from gmmr4.centrum.cz ([46.255.227.253]:36842 "EHLO gmmr4.centrum.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752000Ab2LEBgr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 20:36:47 -0500
+To: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>
+Subject: =?utf-8?q?Re=3A_=5BPATCH_for_3=2E2=2E34=5D_memcg=3A_do_not_trigger_OOM_from_add=5Fto=5Fpage=5Fcache=5Flocked?=
+Date: Wed, 05 Dec 2012 02:36:44 +0100
+From: "azurIt" <azurit@pobox.sk>
+Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        =?utf-8?q?cgroups_mailinglist?= <cgroups@vger.kernel.org>,
+        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
+        =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
+References: <20121126131837.GC17860@dhcp22.suse.cz>, <20121126132149.GD17860@dhcp22.suse.cz>, <20121130032918.59B3F780@pobox.sk>, <20121130124506.GH29317@dhcp22.suse.cz>, <20121130144427.51A09169@pobox.sk>, <20121130144431.GI29317@dhcp22.suse.cz>, <20121130160811.6BB25BDD@pobox.sk>, <20121130153942.GL29317@dhcp22.suse.cz>, <20121130165937.F9564EBE@pobox.sk>, <20121130161923.GN29317@dhcp22.suse.cz> <20121203151601.GA17093@dhcp22.suse.cz>
+In-Reply-To: <20121203151601.GA17093@dhcp22.suse.cz>
+X-Mailer: Centrum Email 5.3
+X-Priority: 3
+X-Original-From: azurit@pobox.sk
 MIME-Version: 1.0
-To: Paul Fulghum <paulkf@microgate.com>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-serial@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH] synclink fix ldisc buffer argument
-References: <50B6E751.9000000@asianux.com> <20121129051335.GA4375@kroah.com> <50B6F967.3050000@asianux.com> <20121129183207.GA4688@kroah.com> <50B81F76.8020508@asianux.com> <50B8DDAC.8070901@microgate.com> <50B90D0D.9040401@microgate.com> <50BCDDB4.6010608@microgate.com>
-In-Reply-To: <50BCDDB4.6010608@microgate.com>
+Message-Id: <20121205023644.18C3006B@pobox.sk>
+X-Maser: Georgo
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2012年12月04日 01:13, Paul Fulghum 写道:
-> Fix call to line discipline receive_buf by synclink drivers.
-> Dummy flag buffer argument is ignored by N_HDLC line discipline but might
-> be of insufficient size if accessed by a different line discipline
-> selected by mistake. flag buffer allocation now matches max size of data
-> buffer. Unused char_buf buffers are removed.
-> 
-> Signed-off-by: Paul Fulghum <paulkf@microgate.com>
-> 
-
-  thank you very much.
+>The following should print the traces when we hand over ENOMEM to the
+>caller. It should catch all charge paths (migration is not covered but
+>that one is not important here). If we don't see any traces from here
+>and there is still global OOM striking then there must be something else
+>to trigger this.
+>Could you test this with the patch which aims at fixing your deadlock,
+>please? I realise that this is a production environment but I do not see
+>anything relevant in the code.
 
 
-  might we use macro instead of hard code number ? (such as 4096,
-65535). it is only an idea, not means need regression.
+Michal,
 
-  thanks.
-
--- 
-Chen Gang
-
-Asianux Corporation
+i think/hope this is what you wanted:
+http://www.watchdog.sk/lkml/oom_mysqld2
