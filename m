@@ -1,1153 +1,739 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753871Ab2LEQOQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 11:14:16 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:51591 "EHLO multi.imgtec.com"
+	id S1753254Ab2LEQOO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 11:14:14 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:55554 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753292Ab2LEQJl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753447Ab2LEQJl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Dec 2012 11:09:41 -0500
 From: James Hogan <james.hogan@imgtec.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: Arnd Bergmann <arnd@arndb.de>, James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH v2 30/44] metag: SMP support
-Date: Wed, 5 Dec 2012 16:08:48 +0000
-Message-ID: <1354723742-6195-31-git-send-email-james.hogan@imgtec.com>
+Subject: [PATCH v2 31/44] metag: DMA
+Date: Wed, 5 Dec 2012 16:08:49 +0000
+Message-ID: <1354723742-6195-32-git-send-email-james.hogan@imgtec.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1354723742-6195-1-git-send-email-james.hogan@imgtec.com>
 References: <1354723742-6195-1-git-send-email-james.hogan@imgtec.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2012_12_05_16_09_32
+X-SEF-Processed: 7_3_0_01181__2012_12_05_16_09_33
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add SMP support for metag. This allows Linux to take control of multiple
-hardware threads on a single Meta core, treating them as separate Linux
-CPUs.
+Add DMA mapping code.
 
 Signed-off-by: James Hogan <james.hogan@imgtec.com>
 ---
- arch/metag/include/asm/cachepart.h |   42 +++
- arch/metag/include/asm/core_reg.h  |    7 +
- arch/metag/include/asm/smp.h       |   31 ++
- arch/metag/include/asm/topology.h  |   53 ++++
- arch/metag/kernel/cachepart.c      |  124 ++++++++
- arch/metag/kernel/core_reg.c       |  117 +++++++
- arch/metag/kernel/head.S           |   12 +
- arch/metag/kernel/smp.c            |  582 ++++++++++++++++++++++++++++++++++++
- arch/metag/kernel/topology.c       |   77 +++++
- 9 files changed, 1045 insertions(+), 0 deletions(-)
- create mode 100644 arch/metag/include/asm/cachepart.h
- create mode 100644 arch/metag/include/asm/core_reg.h
- create mode 100644 arch/metag/include/asm/smp.h
- create mode 100644 arch/metag/include/asm/topology.h
- create mode 100644 arch/metag/kernel/cachepart.c
- create mode 100644 arch/metag/kernel/core_reg.c
- create mode 100644 arch/metag/kernel/smp.c
- create mode 100644 arch/metag/kernel/topology.c
+ arch/metag/include/asm/dma-mapping.h |  183 ++++++++++++
+ arch/metag/kernel/dma.c              |  507 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 690 insertions(+), 0 deletions(-)
+ create mode 100644 arch/metag/include/asm/dma-mapping.h
+ create mode 100644 arch/metag/kernel/dma.c
 
-diff --git a/arch/metag/include/asm/cachepart.h b/arch/metag/include/asm/cachepart.h
+diff --git a/arch/metag/include/asm/dma-mapping.h b/arch/metag/include/asm/dma-mapping.h
 new file mode 100644
-index 0000000..cf6b44e
+index 0000000..b5f80a6
 --- /dev/null
-+++ b/arch/metag/include/asm/cachepart.h
-@@ -0,0 +1,42 @@
-+/*
-+ * Meta cache partition manipulation.
-+ *
-+ * Copyright 2010 Imagination Technologies Ltd.
-+ */
++++ b/arch/metag/include/asm/dma-mapping.h
+@@ -0,0 +1,183 @@
++#ifndef _ASM_METAG_DMA_MAPPING_H
++#define _ASM_METAG_DMA_MAPPING_H
 +
-+#ifndef _METAG_CACHEPART_H_
-+#define _METAG_CACHEPART_H_
++#include <linux/mm.h>
 +
-+/**
-+ * get_dcache_size() - Get size of data cache.
-+ */
-+unsigned int get_dcache_size(void);
-+
-+/**
-+ * get_icache_size() - Get size of code cache.
-+ */
-+unsigned int get_icache_size(void);
-+
-+/**
-+ * get_global_dcache_size() - Get the thread's global dcache.
-+ *
-+ * Returns the size of the current thread's global dcache partition.
-+ */
-+unsigned int get_global_dcache_size(void);
-+
-+/**
-+ * get_global_icache_size() - Get the thread's global icache.
-+ *
-+ * Returns the size of the current thread's global icache partition.
-+ */
-+unsigned int get_global_icache_size(void);
-+
-+/**
-+ * check_for_dache_aliasing() - Ensure that the bootloader has configured the
-+ * dache and icache properly to avoid aliasing
-+ * @thread_id: Hardware thread ID
-+ *
-+ */
-+void check_for_cache_aliasing(int thread_id);
-+
-+#endif
-diff --git a/arch/metag/include/asm/core_reg.h b/arch/metag/include/asm/core_reg.h
-new file mode 100644
-index 0000000..62a4a3a
---- /dev/null
-+++ b/arch/metag/include/asm/core_reg.h
-@@ -0,0 +1,7 @@
-+#ifndef __ASM_METAG_CORE_REG_H_
-+#define __ASM_METAG_CORE_REG_H_
-+
-+extern void core_reg_write(int unit, int reg, int thread, unsigned int val);
-+extern unsigned int core_reg_read(int unit, int reg, int thread);
-+
-+#endif
-diff --git a/arch/metag/include/asm/smp.h b/arch/metag/include/asm/smp.h
-new file mode 100644
-index 0000000..b35fa84
---- /dev/null
-+++ b/arch/metag/include/asm/smp.h
-@@ -0,0 +1,31 @@
-+#ifndef __ASM_SMP_H
-+#define __ASM_SMP_H
-+
-+#include <linux/cpumask.h>
-+
-+#define raw_smp_processor_id() (current_thread_info()->cpu)
-+
-+extern void local_timer_setup(unsigned int cpu);
-+
-+enum ipi_msg_type {
-+	IPI_CALL_FUNC,
-+	IPI_CALL_FUNC_SINGLE,
-+	IPI_RESCHEDULE,
-+};
-+
-+extern void arch_send_call_function_single_ipi(int cpu);
-+extern void arch_send_call_function_ipi_mask(const struct cpumask *mask);
-+#define arch_send_call_function_ipi_mask arch_send_call_function_ipi_mask
-+
-+asmlinkage void secondary_start_kernel(void);
-+
-+extern void secondary_startup(void);
-+
-+#ifdef CONFIG_HOTPLUG_CPU
-+extern void __cpu_die(unsigned int cpu);
-+extern int __cpu_disable(void);
-+extern void cpu_die(void);
-+#endif
-+
-+extern void smp_init_cpus(void);
-+#endif /* __ASM_SMP_H */
-diff --git a/arch/metag/include/asm/topology.h b/arch/metag/include/asm/topology.h
-new file mode 100644
-index 0000000..23f5118
---- /dev/null
-+++ b/arch/metag/include/asm/topology.h
-@@ -0,0 +1,53 @@
-+#ifndef _ASM_METAG_TOPOLOGY_H
-+#define _ASM_METAG_TOPOLOGY_H
-+
-+#ifdef CONFIG_NUMA
-+
-+/* sched_domains SD_NODE_INIT for Meta machines */
-+#define SD_NODE_INIT (struct sched_domain) {		\
-+	.parent			= NULL,			\
-+	.child			= NULL,			\
-+	.groups			= NULL,			\
-+	.min_interval		= 8,			\
-+	.max_interval		= 32,			\
-+	.busy_factor		= 32,			\
-+	.imbalance_pct		= 125,			\
-+	.cache_nice_tries	= 2,			\
-+	.busy_idx		= 3,			\
-+	.idle_idx		= 2,			\
-+	.newidle_idx		= 0,			\
-+	.wake_idx		= 0,			\
-+	.forkexec_idx		= 0,			\
-+	.flags			= SD_LOAD_BALANCE	\
-+				| SD_BALANCE_FORK	\
-+				| SD_BALANCE_EXEC	\
-+				| SD_BALANCE_NEWIDLE	\
-+				| SD_SERIALIZE,		\
-+	.last_balance		= jiffies,		\
-+	.balance_interval	= 1,			\
-+	.nr_balance_failed	= 0,			\
-+}
-+
-+#define cpu_to_node(cpu)	((void)(cpu), 0)
-+#define parent_node(node)	((void)(node), 0)
-+
-+#define cpumask_of_node(node)	((void)node, cpu_online_mask)
-+
-+#define pcibus_to_node(bus)	((void)(bus), -1)
-+#define cpumask_of_pcibus(bus)	(pcibus_to_node(bus) == -1 ? \
-+					cpu_all_mask : \
-+					cpumask_of_node(pcibus_to_node(bus)))
-+
-+#endif
-+
-+#define mc_capable()    (1)
-+
-+const struct cpumask *cpu_coregroup_mask(unsigned int cpu);
-+
-+extern cpumask_t cpu_core_map[NR_CPUS];
-+
-+#define topology_core_cpumask(cpu)	(&cpu_core_map[cpu])
-+
-+#include <asm-generic/topology.h>
-+
-+#endif /* _ASM_METAG_TOPOLOGY_H */
-diff --git a/arch/metag/kernel/cachepart.c b/arch/metag/kernel/cachepart.c
-new file mode 100644
-index 0000000..3a589dfb
---- /dev/null
-+++ b/arch/metag/kernel/cachepart.c
-@@ -0,0 +1,124 @@
-+/*
-+ * Meta cache partition manipulation.
-+ *
-+ * Copyright 2010 Imagination Technologies Ltd.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/io.h>
-+#include <linux/errno.h>
-+#include <asm/processor.h>
-+#include <asm/cachepart.h>
-+#include <asm/metag_isa.h>
-+#include <asm/metag_mem.h>
-+
-+#define SYSC_DCPART(n)	(SYSC_DCPART0 + SYSC_xCPARTn_STRIDE * (n))
-+#define SYSC_ICPART(n)	(SYSC_ICPART0 + SYSC_xCPARTn_STRIDE * (n))
-+
-+#define CACHE_ASSOCIATIVITY 4 /* 4 way set-assosiative */
-+#define ICACHE 0
-+#define DCACHE 1
-+
-+/* The CORE_CONFIG2 register is not available on Meta 1 */
-+#ifdef CONFIG_METAG_META21
-+unsigned int get_dcache_size(void)
-+{
-+	unsigned int config2 = metag_in32(METAC_CORE_CONFIG2);
-+	return 0x1000 << ((config2 & METAC_CORECFG2_DCSZ_BITS)
-+				>> METAC_CORECFG2_DCSZ_S);
-+}
-+
-+unsigned int get_icache_size(void)
-+{
-+	unsigned int config2 = metag_in32(METAC_CORE_CONFIG2);
-+	return 0x1000 << ((config2 & METAC_CORE_C2ICSZ_BITS)
-+				>> METAC_CORE_C2ICSZ_S);
-+}
-+
-+unsigned int get_global_dcache_size(void)
-+{
-+	unsigned int cpart = metag_in32(SYSC_DCPART(hard_processor_id()));
-+	unsigned int temp = cpart & SYSC_xCPARTG_AND_BITS;
-+	return (get_dcache_size() * ((temp >> SYSC_xCPARTG_AND_S) + 1)) >> 4;
-+}
-+
-+unsigned int get_global_icache_size(void)
-+{
-+	unsigned int cpart = metag_in32(SYSC_ICPART(hard_processor_id()));
-+	unsigned int temp = cpart & SYSC_xCPARTG_AND_BITS;
-+	return (get_icache_size() * ((temp >> SYSC_xCPARTG_AND_S) + 1)) >> 4;
-+}
-+
-+static unsigned int get_thread_cache_size(unsigned int cache, int thread_id)
-+{
-+	unsigned int cache_size;
-+	unsigned int t_cache_part;
-+	unsigned int isEnabled;
-+	unsigned int offset = 0;
-+	isEnabled = (cache == DCACHE ? metag_in32(MMCU_DCACHE_CTRL_ADDR) & 0x1 :
-+		metag_in32(MMCU_ICACHE_CTRL_ADDR) & 0x1);
-+	if (!isEnabled)
-+		return 0;
-+#if PAGE_OFFSET >= LINGLOBAL_BASE
-+	/* Checking for global cache */
-+	cache_size = (cache == DCACHE ? get_global_dache_size() :
-+		get_global_icache_size());
-+	offset = 8;
-+#else
-+	cache_size = (cache == DCACHE ? get_dcache_size() :
-+		get_icache_size());
-+#endif
-+	t_cache_part = (cache == DCACHE ?
-+		(metag_in32(SYSC_DCPART(thread_id)) >> offset) & 0xF :
-+		(metag_in32(SYSC_ICPART(thread_id)) >> offset) & 0xF);
-+	switch (t_cache_part) {
-+	case 0xF:
-+		return cache_size;
-+	case 0x7:
-+		return cache_size / 2;
-+	case 0x3:
-+		return cache_size / 4;
-+	case 0x1:
-+		return cache_size / 8;
-+	case 0:
-+		return cache_size / 16;
-+	}
-+	return -1;
-+}
-+
-+void check_for_cache_aliasing(int thread_id)
-+{
-+	unsigned int thread_cache_size;
-+	unsigned int cache_type;
-+	for (cache_type = ICACHE; cache_type <= DCACHE; cache_type++) {
-+		thread_cache_size =
-+				get_thread_cache_size(cache_type, thread_id);
-+		if (thread_cache_size < 0)
-+			pr_emerg("Can't read %s cache size", \
-+				 cache_type ? "DCACHE" : "ICACHE");
-+		else if (thread_cache_size == 0)
-+			/* Cache is off. No need to check for aliasing */
-+			continue;
-+		if (thread_cache_size / CACHE_ASSOCIATIVITY > PAGE_SIZE) {
-+			pr_emerg("Cache aliasing detected in %s on Thread %d",
-+				 cache_type ? "DCACHE" : "ICACHE", thread_id);
-+			pr_warn("Total %s size: %u bytes",
-+				cache_type ? "DCACHE" : "ICACHE ",
-+				cache_type ? get_dcache_size()
-+				: get_icache_size());
-+			pr_warn("Thread %s size: %d bytes",
-+				cache_type ? "CACHE" : "ICACHE",
-+				thread_cache_size);
-+			pr_warn("Page Size: %lu bytes", PAGE_SIZE);
-+		}
-+	}
-+}
-+
-+#else
-+
-+void check_for_cache_aliasing(int thread_id)
-+{
-+	return;
-+}
-+
-+#endif
-diff --git a/arch/metag/kernel/core_reg.c b/arch/metag/kernel/core_reg.c
-new file mode 100644
-index 0000000..2b40538
---- /dev/null
-+++ b/arch/metag/kernel/core_reg.c
-@@ -0,0 +1,117 @@
-+/*
-+ *  Support for reading and writing Meta core internal registers.
-+ *
-+ *  Copyright (C) 2011 Imagination Technologies Ltd.
-+ *
-+ */
-+
-+#include <linux/delay.h>
-+#include <linux/export.h>
-+
-+#include <asm/core_reg.h>
-+#include <asm/hwthread.h>
++#include <asm/cache.h>
 +#include <asm/io.h>
-+#include <asm/metag_mem.h>
-+#include <asm/metag_regs.h>
-+#include <asm/tbx.h>
++#include <linux/scatterlist.h>
++#include <asm/bug.h>
 +
-+#define UNIT_BIT_MASK		TXUXXRXRQ_UXX_BITS
-+#define REG_BIT_MASK		TXUXXRXRQ_RX_BITS
-+#define THREAD_BIT_MASK		TXUXXRXRQ_TX_BITS
++#define dma_alloc_noncoherent(d, s, h, f) dma_alloc_coherent(d, s, h, f)
++#define dma_free_noncoherent(d, s, v, h) dma_free_coherent(d, s, v, h)
 +
-+#define UNIT_SHIFTS		TXUXXRXRQ_UXX_S
-+#define REG_SHIFTS		TXUXXRXRQ_RX_S
-+#define THREAD_SHIFTS		TXUXXRXRQ_TX_S
++void *dma_alloc_coherent(struct device *dev, size_t size,
++			 dma_addr_t *dma_handle, gfp_t flag);
 +
-+#define UNIT_VAL(x)		(((x) << UNIT_SHIFTS) & UNIT_BIT_MASK)
-+#define REG_VAL(x)		(((x) << REG_SHIFTS) & REG_BIT_MASK)
-+#define THREAD_VAL(x)		(((x) << THREAD_SHIFTS) & THREAD_BIT_MASK)
++void dma_free_coherent(struct device *dev, size_t size,
++		       void *vaddr, dma_addr_t dma_handle);
 +
-+/*
-+ * core_reg_write() - modify the content of a register in a core unit.
-+ * @unit:	The unit to be modified.
-+ * @reg:	Register number within the unit.
-+ * @thread:	The thread we want to access.
-+ * @val:	The new value to write.
-+ *
-+ * Check asm/metag_regs.h for a list/defines of supported units (ie: TXUPC_ID,
-+ * TXUTR_ID, etc), and regnums within the units (ie: TXMASKI_REGNUM,
-+ * TXPOLLI_REGNUM, etc).
-+ */
-+void core_reg_write(int unit, int reg, int thread, unsigned int val)
++void dma_sync_for_device(void *vaddr, size_t size, int dma_direction);
++void dma_sync_for_cpu(void *vaddr, size_t size, int dma_direction);
++
++int dma_mmap_coherent(struct device *dev, struct vm_area_struct *vma,
++		      void *cpu_addr, dma_addr_t dma_addr, size_t size);
++
++int dma_mmap_writecombine(struct device *dev, struct vm_area_struct *vma,
++			  void *cpu_addr, dma_addr_t dma_addr, size_t size);
++
++static inline dma_addr_t
++dma_map_single(struct device *dev, void *ptr, size_t size,
++	       enum dma_data_direction direction)
 +{
-+	unsigned long flags;
++	BUG_ON(!valid_dma_direction(direction));
++	WARN_ON(size == 0);
++	dma_sync_for_device(ptr, size, direction);
++	return virt_to_phys(ptr);
++}
 +
-+	/* TXUCT_ID has its own memory mapped registers */
-+	if (unit == TXUCT_ID) {
-+		void __iomem *cu_reg = __CU_addr(thread, reg);
-+		metag_out32(val, cu_reg);
-+		return;
++static inline void
++dma_unmap_single(struct device *dev, dma_addr_t dma_addr, size_t size,
++		 enum dma_data_direction direction)
++{
++	BUG_ON(!valid_dma_direction(direction));
++	dma_sync_for_cpu(phys_to_virt(dma_addr), size, direction);
++}
++
++static inline int
++dma_map_sg(struct device *dev, struct scatterlist *sglist, int nents,
++	   enum dma_data_direction direction)
++{
++	struct scatterlist *sg;
++	int i;
++
++	BUG_ON(!valid_dma_direction(direction));
++	WARN_ON(nents == 0 || sglist[0].length == 0);
++
++	for_each_sg(sglist, sg, nents, i) {
++		BUG_ON(!sg_page(sg));
++
++		sg->dma_address = sg_phys(sg);
++		dma_sync_for_device(sg_virt(sg), sg->length, direction);
 +	}
 +
-+	TBI_LOCK(flags);
-+
-+	/* wait for ready */
-+	while (!(metag_in32(TXUXXRXRQ) & TXUXXRXRQ_DREADY_BIT))
-+		udelay(10);
-+
-+	/* set the value to write */
-+	metag_out32(val, TXUXXRXDT);
-+
-+	/* set the register to write */
-+	val = UNIT_VAL(unit) | REG_VAL(reg) | THREAD_VAL(thread);
-+	metag_out32(val, TXUXXRXRQ);
-+
-+	/* wait for finish */
-+	while (!(metag_in32(TXUXXRXRQ) & TXUXXRXRQ_DREADY_BIT))
-+		udelay(10);
-+
-+	TBI_UNLOCK(flags);
++	return nents;
 +}
-+EXPORT_SYMBOL(core_reg_write);
++
++static inline dma_addr_t
++dma_map_page(struct device *dev, struct page *page, unsigned long offset,
++	     size_t size, enum dma_data_direction direction)
++{
++	BUG_ON(!valid_dma_direction(direction));
++	dma_sync_for_device((void *)(page_to_phys(page) + offset), size,
++			    direction);
++	return page_to_phys(page) + offset;
++}
++
++static inline void
++dma_unmap_page(struct device *dev, dma_addr_t dma_address, size_t size,
++	       enum dma_data_direction direction)
++{
++	BUG_ON(!valid_dma_direction(direction));
++	dma_sync_for_cpu(phys_to_virt(dma_address), size, direction);
++}
++
++
++static inline void
++dma_unmap_sg(struct device *dev, struct scatterlist *sglist, int nhwentries,
++	     enum dma_data_direction direction)
++{
++	struct scatterlist *sg;
++	int i;
++
++	BUG_ON(!valid_dma_direction(direction));
++	WARN_ON(nhwentries == 0 || sglist[0].length == 0);
++
++	for_each_sg(sglist, sg, nhwentries, i) {
++		BUG_ON(!sg_page(sg));
++
++		sg->dma_address = sg_phys(sg);
++		dma_sync_for_cpu(sg_virt(sg), sg->length, direction);
++	}
++}
++
++static inline void
++dma_sync_single_for_cpu(struct device *dev, dma_addr_t dma_handle, size_t size,
++			enum dma_data_direction direction)
++{
++	dma_sync_for_cpu(phys_to_virt(dma_handle), size, direction);
++}
++
++static inline void
++dma_sync_single_for_device(struct device *dev, dma_addr_t dma_handle,
++			   size_t size, enum dma_data_direction direction)
++{
++	dma_sync_for_device(phys_to_virt(dma_handle), size, direction);
++}
++
++static inline void
++dma_sync_single_range_for_cpu(struct device *dev, dma_addr_t dma_handle,
++			      unsigned long offset, size_t size,
++			      enum dma_data_direction direction)
++{
++	dma_sync_for_cpu(phys_to_virt(dma_handle)+offset, size,
++			 direction);
++}
++
++static inline void
++dma_sync_single_range_for_device(struct device *dev, dma_addr_t dma_handle,
++				 unsigned long offset, size_t size,
++				 enum dma_data_direction direction)
++{
++	dma_sync_for_device(phys_to_virt(dma_handle)+offset, size,
++			    direction);
++}
++
++static inline void
++dma_sync_sg_for_cpu(struct device *dev, struct scatterlist *sg, int nelems,
++		    enum dma_data_direction direction)
++{
++	int i;
++	for (i = 0; i < nelems; i++, sg++)
++		dma_sync_for_cpu(sg_virt(sg), sg->length, direction);
++}
++
++static inline void
++dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg, int nelems,
++		       enum dma_data_direction direction)
++{
++	int i;
++	for (i = 0; i < nelems; i++, sg++)
++		dma_sync_for_device(sg_virt(sg), sg->length, direction);
++}
++
++static inline int
++dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
++{
++	return 0;
++}
++
++#define dma_supported(dev, mask)        (1)
++
++static inline int
++dma_set_mask(struct device *dev, u64 mask)
++{
++	if (!dev->dma_mask || !dma_supported(dev, mask))
++		return -EIO;
++
++	*dev->dma_mask = mask;
++
++	return 0;
++}
 +
 +/*
-+ * core_reg_read() - read the content of a register in a core unit.
-+ * @unit:	The unit to be modified.
-+ * @reg:	Register number within the unit.
-+ * @thread:	The thread we want to access.
-+ *
-+ * Check asm/metag_regs.h for a list/defines of supported units (ie: TXUPC_ID,
-+ * TXUTR_ID, etc), and regnums within the units (ie: TXMASKI_REGNUM,
-+ * TXPOLLI_REGNUM, etc).
++ * dma_alloc_noncoherent() returns non-cacheable memory, so there's no need to
++ * do any flushing here.
 + */
-+unsigned int core_reg_read(int unit, int reg, int thread)
++static inline void
++dma_cache_sync(struct device *dev, void *vaddr, size_t size,
++	       enum dma_data_direction direction)
 +{
-+	unsigned long flags;
-+	unsigned int val;
-+
-+	/* TXUCT_ID has its own memory mapped registers */
-+	if (unit == TXUCT_ID) {
-+		void __iomem *cu_reg = __CU_addr(thread, reg);
-+		val = metag_in32(cu_reg);
-+		return val;
-+	}
-+
-+	TBI_LOCK(flags);
-+
-+	/* wait for ready */
-+	while (!(metag_in32(TXUXXRXRQ) & TXUXXRXRQ_DREADY_BIT))
-+		udelay(10);
-+
-+	/* set the register to read */
-+	val = (UNIT_VAL(unit) | REG_VAL(reg) | THREAD_VAL(thread) |
-+							TXUXXRXRQ_RDnWR_BIT);
-+	metag_out32(val, TXUXXRXRQ);
-+
-+	/* wait for finish */
-+	while (!(metag_in32(TXUXXRXRQ) & TXUXXRXRQ_DREADY_BIT))
-+		udelay(10);
-+
-+	/* read the register value */
-+	val = metag_in32(TXUXXRXDT);
-+
-+	TBI_UNLOCK(flags);
-+
-+	return val;
 +}
-+EXPORT_SYMBOL(core_reg_read);
-diff --git a/arch/metag/kernel/head.S b/arch/metag/kernel/head.S
-index 8b13886..969dffa 100644
---- a/arch/metag/kernel/head.S
-+++ b/arch/metag/kernel/head.S
-@@ -43,3 +43,15 @@ __start:
- __exit:
- 	XOR     TXENABLE,D0Re0,D0Re0
- 	.size	__exit,.-__exit
 +
-+#ifdef CONFIG_SMP
-+	.global _secondary_startup
-+	.type _secondary_startup,function
-+_secondary_startup:
-+	MOVT	A0StP,#HI(_secondary_data_stack)
-+	ADD	A0StP,A0StP,#LO(_secondary_data_stack)
-+	GETD	A0StP,[A0StP]
-+	ADD	A0StP,A0StP,#THREAD_INFO_SIZE
-+	B	_secondary_start_kernel
-+	.size	_secondary_startup,.-_secondary_startup
 +#endif
-diff --git a/arch/metag/kernel/smp.c b/arch/metag/kernel/smp.c
+diff --git a/arch/metag/kernel/dma.c b/arch/metag/kernel/dma.c
 new file mode 100644
-index 0000000..92335fe
+index 0000000..8c00ded
 --- /dev/null
-+++ b/arch/metag/kernel/smp.c
-@@ -0,0 +1,582 @@
++++ b/arch/metag/kernel/dma.c
+@@ -0,0 +1,507 @@
 +/*
-+ *  Copyright (C) 2009,2010,2011 Imagination Technologies Ltd.
++ *  Meta version derived from arch/powerpc/lib/dma-noncoherent.c
++ *    Copyright (C) 2008 Imagination Technologies Ltd.
 + *
-+ *  Copyright (C) 2002 ARM Limited, All Rights Reserved.
++ *  PowerPC version derived from arch/arm/mm/consistent.c
++ *    Copyright (C) 2001 Dan Malek (dmalek@jlc.net)
++ *
++ *  Copyright (C) 2000 Russell King
++ *
++ * Consistent memory allocators.  Used for DMA devices that want to
++ * share uncached memory with the processor core.  The function return
++ * is the virtual address and 'dma_handle' is the physical address.
++ * Mostly stolen from the ARM port, with some changes for PowerPC.
++ *						-- Dan
++ *
++ * Reorganized to get rid of the arch-specific consistent_* functions
++ * and provide non-coherent implementations for the DMA API. -Matt
++ *
++ * Added in_interrupt() safe dma_alloc_coherent()/dma_free_coherent()
++ * implementation. This is pulled straight from ARM and barely
++ * modified. -Matt
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + */
-+#include <linux/atomic.h>
-+#include <linux/delay.h>
-+#include <linux/init.h>
-+#include <linux/spinlock.h>
++
 +#include <linux/sched.h>
-+#include <linux/interrupt.h>
-+#include <linux/cache.h>
-+#include <linux/profile.h>
++#include <linux/kernel.h>
 +#include <linux/errno.h>
-+#include <linux/mm.h>
-+#include <linux/err.h>
-+#include <linux/cpu.h>
-+#include <linux/smp.h>
-+#include <linux/seq_file.h>
-+#include <linux/irq.h>
-+#include <linux/bootmem.h>
++#include <linux/export.h>
++#include <linux/string.h>
++#include <linux/types.h>
++#include <linux/highmem.h>
++#include <linux/dma-mapping.h>
++#include <linux/slab.h>
 +
-+#include <asm/cacheflush.h>
-+#include <asm/cachepart.h>
-+#include <asm/core_reg.h>
-+#include <asm/cpu.h>
-+#include <asm/mmu_context.h>
-+#include <asm/pgtable.h>
-+#include <asm/pgalloc.h>
-+#include <asm/processor.h>
-+#include <asm/setup.h>
 +#include <asm/tlbflush.h>
-+#include <asm/hwthread.h>
-+#include <asm/traps.h>
++#include <asm/mmu.h>
 +
-+DECLARE_PER_CPU(PTBI, pTBI);
++#define CONSISTENT_OFFSET(x)	(((unsigned long)(x) - CONSISTENT_START) \
++					>> PAGE_SHIFT)
 +
-+void *secondary_data_stack;
-+
-+/*
-+ * structures for inter-processor calls
-+ * - A collection of single bit ipi messages.
-+ */
-+struct ipi_data {
-+	spinlock_t lock;
-+	unsigned long ipi_count;
-+	unsigned long bits;
-+};
-+
-+static DEFINE_PER_CPU(struct ipi_data, ipi_data) = {
-+	.lock	= __SPIN_LOCK_UNLOCKED(ipi_data.lock),
-+};
-+
-+static DEFINE_SPINLOCK(boot_lock);
-+
-+/*
-+ * "thread" is assumed to be a valid Meta hardware thread ID.
-+ */
-+int __cpuinit boot_secondary(unsigned int thread, struct task_struct *idle)
++static u64 get_coherent_dma_mask(struct device *dev)
 +{
-+	u32 val;
++	u64 mask = ~0ULL;
 +
++	if (dev) {
++		mask = dev->coherent_dma_mask;
++
++		/*
++		 * Sanity check the DMA mask - it must be non-zero, and
++		 * must be able to be satisfied by a DMA allocation.
++		 */
++		if (mask == 0) {
++			dev_warn(dev, "coherent DMA mask is unset\n");
++			return 0;
++		}
++	}
++
++	return mask;
++}
++/*
++ * This is the page table (2MB) covering uncached, DMA consistent allocations
++ */
++static pte_t *consistent_pte;
++static DEFINE_SPINLOCK(consistent_lock);
++
++/*
++ * VM region handling support.
++ *
++ * This should become something generic, handling VM region allocations for
++ * vmalloc and similar (ioremap, module space, etc).
++ *
++ * I envisage vmalloc()'s supporting vm_struct becoming:
++ *
++ *  struct vm_struct {
++ *    struct metag_vm_region	region;
++ *    unsigned long	flags;
++ *    struct page	**pages;
++ *    unsigned int	nr_pages;
++ *    unsigned long	phys_addr;
++ *  };
++ *
++ * get_vm_area() would then call metag_vm_region_alloc with an appropriate
++ * struct metag_vm_region head (eg):
++ *
++ *  struct metag_vm_region vmalloc_head = {
++ *	.vm_list	= LIST_HEAD_INIT(vmalloc_head.vm_list),
++ *	.vm_start	= VMALLOC_START,
++ *	.vm_end		= VMALLOC_END,
++ *  };
++ *
++ * However, vmalloc_head.vm_start is variable (typically, it is dependent on
++ * the amount of RAM found at boot time.)  I would imagine that get_vm_area()
++ * would have to initialise this each time prior to calling
++ * metag_vm_region_alloc().
++ */
++struct metag_vm_region {
++	struct list_head vm_list;
++	unsigned long vm_start;
++	unsigned long vm_end;
++	struct page		*vm_pages;
++	int			vm_active;
++};
++
++static struct metag_vm_region consistent_head = {
++	.vm_list = LIST_HEAD_INIT(consistent_head.vm_list),
++	.vm_start = CONSISTENT_START,
++	.vm_end = CONSISTENT_END,
++};
++
++static struct metag_vm_region *metag_vm_region_alloc(struct metag_vm_region
++						     *head, size_t size,
++						     gfp_t gfp)
++{
++	unsigned long addr = head->vm_start, end = head->vm_end - size;
++	unsigned long flags;
++	struct metag_vm_region *c, *new;
++
++	new = kmalloc(sizeof(struct metag_vm_region), gfp);
++	if (!new)
++		goto out;
++
++	spin_lock_irqsave(&consistent_lock, flags);
++
++	list_for_each_entry(c, &head->vm_list, vm_list) {
++		if ((addr + size) < addr)
++			goto nospc;
++		if ((addr + size) <= c->vm_start)
++			goto found;
++		addr = c->vm_end;
++		if (addr > end)
++			goto nospc;
++	}
++
++found:
 +	/*
-+	 * set synchronisation state between this boot processor
-+	 * and the secondary one
++	 * Insert this entry _before_ the one we found.
 +	 */
-+	spin_lock(&boot_lock);
++	list_add_tail(&new->vm_list, &c->vm_list);
++	new->vm_start = addr;
++	new->vm_end = addr + size;
++	new->vm_active = 1;
 +
-+	core_reg_write(TXUPC_ID, 0, thread, (unsigned int)secondary_startup);
-+	core_reg_write(TXUPC_ID, 1, thread, 0);
++	spin_unlock_irqrestore(&consistent_lock, flags);
++	return new;
 +
-+	/*
-+	 * Give the thread privilege (PSTAT) and clear potentially problematic
-+	 * bits in the process (namely ISTAT, CBMarker, CBMarkerI, LSM_STEP).
-+	 */
-+	core_reg_write(TXUCT_ID, TXSTATUS_REGNUM, thread, TXSTATUS_PSTAT_BIT);
-+
-+	/* Clear the minim enable bit. */
-+	val = core_reg_read(TXUCT_ID, TXPRIVEXT_REGNUM, thread);
-+	core_reg_write(TXUCT_ID, TXPRIVEXT_REGNUM, thread, val & ~0x80);
-+
-+	/*
-+	 * set the ThreadEnable bit (0x1) in the TXENABLE register
-+	 * for the specified thread - off it goes!
-+	 */
-+	val = core_reg_read(TXUCT_ID, TXENABLE_REGNUM, thread);
-+	core_reg_write(TXUCT_ID, TXENABLE_REGNUM, thread, val | 0x1);
-+
-+	/*
-+	 * now the secondary core is starting up let it run its
-+	 * calibrations, then wait for it to finish
-+	 */
-+	spin_unlock(&boot_lock);
-+
-+	return 0;
++nospc:
++	spin_unlock_irqrestore(&consistent_lock, flags);
++	kfree(new);
++out:
++	return NULL;
 +}
 +
-+int __cpuinit __cpu_up(unsigned int cpu, struct task_struct *idle)
++static struct metag_vm_region *metag_vm_region_find(struct metag_vm_region
++						    *head, unsigned long addr)
 +{
-+	unsigned int thread = cpu_2_hwthread_id[cpu];
-+	int ret;
++	struct metag_vm_region *c;
 +
-+	load_pgd(swapper_pg_dir, thread);
++	list_for_each_entry(c, &head->vm_list, vm_list) {
++		if (c->vm_active && c->vm_start == addr)
++			goto out;
++	}
++	c = NULL;
++out:
++	return c;
++}
 +
-+	flush_tlb_all();
++/*
++ * Allocate DMA-coherent memory space and return both the kernel remapped
++ * virtual and bus address for that space.
++ */
++void *dma_alloc_coherent(struct device *dev, size_t size,
++			 dma_addr_t *handle, gfp_t gfp)
++{
++	struct page *page;
++	struct metag_vm_region *c;
++	unsigned long order;
++	u64 mask = get_coherent_dma_mask(dev);
++	u64 limit;
++
++	if (!consistent_pte) {
++		pr_err("%s: not initialised\n", __func__);
++		dump_stack();
++		return NULL;
++	}
++
++	if (!mask)
++		goto no_page;
++	size = PAGE_ALIGN(size);
++	limit = (mask + 1) & ~mask;
++	if ((limit && size >= limit)
++	    || size >= (CONSISTENT_END - CONSISTENT_START)) {
++		pr_warn("coherent allocation too big (requested %#x mask %#Lx)\n",
++			size, mask);
++		return NULL;
++	}
++
++	order = get_order(size);
++
++	if (mask != 0xffffffff)
++		gfp |= GFP_DMA;
++
++	page = alloc_pages(gfp, order);
++	if (!page)
++		goto no_page;
 +
 +	/*
-+	 * Tell the secondary CPU where to find its idle threads's stack.
++	 * Invalidate any data that might be lurking in the
++	 * kernel direct-mapped region for device DMA.
 +	 */
-+	secondary_data_stack = task_stack_page(idle);
++	{
++		void *kaddr = page_address(page);
++		memset(kaddr, 0, size);
++		flush_dcache_region(kaddr, size);
++	}
++
++	/*
++	 * Allocate a virtual address in the consistent mapping region.
++	 */
++	c = metag_vm_region_alloc(&consistent_head, size,
++				  gfp & ~(__GFP_DMA | __GFP_HIGHMEM));
++	if (c) {
++		unsigned long vaddr = c->vm_start;
++		pte_t *pte = consistent_pte + CONSISTENT_OFFSET(vaddr);
++		struct page *end = page + (1 << order);
++
++		c->vm_pages = page;
++		split_page(page, order);
++
++		/*
++		 * Set the "dma handle"
++		 */
++		*handle = page_to_bus(page);
++
++		do {
++			BUG_ON(!pte_none(*pte));
++
++			SetPageReserved(page);
++			set_pte_at(&init_mm, vaddr,
++				   pte, mk_pte(page,
++					       pgprot_writecombine
++					       (PAGE_KERNEL)));
++			page++;
++			pte++;
++			vaddr += PAGE_SIZE;
++		} while (size -= PAGE_SIZE);
++
++		/*
++		 * Free the otherwise unused pages.
++		 */
++		while (page < end) {
++			__free_page(page);
++			page++;
++		}
++
++		return (void *)c->vm_start;
++	}
++
++	if (page)
++		__free_pages(page, order);
++no_page:
++	return NULL;
++}
++EXPORT_SYMBOL(dma_alloc_coherent);
++
++/*
++ * free a page as defined by the above mapping.
++ */
++void dma_free_coherent(struct device *dev, size_t size,
++		       void *vaddr, dma_addr_t dma_handle)
++{
++	struct metag_vm_region *c;
++	unsigned long flags, addr;
++	pte_t *ptep;
++
++	size = PAGE_ALIGN(size);
++
++	spin_lock_irqsave(&consistent_lock, flags);
++
++	c = metag_vm_region_find(&consistent_head, (unsigned long)vaddr);
++	if (!c)
++		goto no_area;
++
++	c->vm_active = 0;
++	if ((c->vm_end - c->vm_start) != size) {
++		pr_err("%s: freeing wrong coherent size (%ld != %d)\n",
++		       __func__, c->vm_end - c->vm_start, size);
++		dump_stack();
++		size = c->vm_end - c->vm_start;
++	}
++
++	ptep = consistent_pte + CONSISTENT_OFFSET(c->vm_start);
++	addr = c->vm_start;
++	do {
++		pte_t pte = ptep_get_and_clear(&init_mm, addr, ptep);
++		unsigned long pfn;
++
++		ptep++;
++		addr += PAGE_SIZE;
++
++		if (!pte_none(pte) && pte_present(pte)) {
++			pfn = pte_pfn(pte);
++
++			if (pfn_valid(pfn)) {
++				struct page *page = pfn_to_page(pfn);
++				ClearPageReserved(page);
++
++				__free_page(page);
++				continue;
++			}
++		}
++
++		pr_crit("%s: bad page in kernel page table\n",
++			__func__);
++	} while (size -= PAGE_SIZE);
++
++	flush_tlb_kernel_range(c->vm_start, c->vm_end);
++
++	list_del(&c->vm_list);
++
++	spin_unlock_irqrestore(&consistent_lock, flags);
++
++	kfree(c);
++	return;
++
++no_area:
++	spin_unlock_irqrestore(&consistent_lock, flags);
++	pr_err("%s: trying to free invalid coherent area: %p\n",
++	       __func__, vaddr);
++	dump_stack();
++}
++EXPORT_SYMBOL(dma_free_coherent);
++
++
++static int dma_mmap(struct device *dev, struct vm_area_struct *vma,
++		    void *cpu_addr, dma_addr_t dma_addr, size_t size)
++{
++	int ret = -ENXIO;
++
++	unsigned long flags, user_size, kern_size;
++	struct metag_vm_region *c;
++
++	user_size = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
++
++	spin_lock_irqsave(&consistent_lock, flags);
++	c = metag_vm_region_find(&consistent_head, (unsigned long)cpu_addr);
++	spin_unlock_irqrestore(&consistent_lock, flags);
++
++	if (c) {
++		unsigned long off = vma->vm_pgoff;
++
++		kern_size = (c->vm_end - c->vm_start) >> PAGE_SHIFT;
++
++		if (off < kern_size &&
++		    user_size <= (kern_size - off)) {
++			ret = remap_pfn_range(vma, vma->vm_start,
++					      page_to_pfn(c->vm_pages) + off,
++					      user_size << PAGE_SHIFT,
++					      vma->vm_page_prot);
++		}
++	}
++
++
++	return ret;
++}
++
++int dma_mmap_coherent(struct device *dev, struct vm_area_struct *vma,
++		      void *cpu_addr, dma_addr_t dma_addr, size_t size)
++{
++	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
++	return dma_mmap(dev, vma, cpu_addr, dma_addr, size);
++}
++EXPORT_SYMBOL(dma_mmap_coherent);
++
++int dma_mmap_writecombine(struct device *dev, struct vm_area_struct *vma,
++			  void *cpu_addr, dma_addr_t dma_addr, size_t size)
++{
++	vma->vm_page_prot = pgprot_writecombine(vma->vm_page_prot);
++	return dma_mmap(dev, vma, cpu_addr, dma_addr, size);
++}
++EXPORT_SYMBOL(dma_mmap_writecombine);
++
++
++
++
++/*
++ * Initialise the consistent memory allocation.
++ */
++static int __init dma_alloc_init(void)
++{
++	pgd_t *pgd, *pgd_k;
++	pud_t *pud, *pud_k;
++	pmd_t *pmd, *pmd_k;
++	pte_t *pte;
++	int ret = 0;
++
++	do {
++		int offset = pgd_index(CONSISTENT_START);
++		pgd = pgd_offset(&init_mm, CONSISTENT_START);
++		pud = pud_alloc(&init_mm, pgd, CONSISTENT_START);
++		pmd = pmd_alloc(&init_mm, pud, CONSISTENT_START);
++		if (!pmd) {
++			pr_err("%s: no pmd tables\n", __func__);
++			ret = -ENOMEM;
++			break;
++		}
++		WARN_ON(!pmd_none(*pmd));
++
++		pte = pte_alloc_kernel(pmd, CONSISTENT_START);
++		if (!pte) {
++			pr_err("%s: no pte tables\n", __func__);
++			ret = -ENOMEM;
++			break;
++		}
++
++		pgd_k = ((pgd_t *) mmu_get_base()) + offset;
++		pud_k = pud_offset(pgd_k, CONSISTENT_START);
++		pmd_k = pmd_offset(pud_k, CONSISTENT_START);
++		set_pmd(pmd_k, *pmd);
++
++		consistent_pte = pte;
++	} while (0);
++
++	return ret;
++}
++early_initcall(dma_alloc_init);
++
++/*
++ * make an area consistent to devices.
++ */
++void dma_sync_for_device(void *vaddr, size_t size, int dma_direction)
++{
++	/*
++	 * Ensure any writes get through the write combiner. This is necessary
++	 * even with DMA_FROM_DEVICE, or the write may dirty the cache after
++	 * we've invalidated it and get written back during the DMA.
++	 */
++
++	barrier();
++
++	switch (dma_direction) {
++	case DMA_BIDIRECTIONAL:
++		/*
++		 * Writeback to ensure the device can see our latest changes and
++		 * so that we have no dirty lines, and invalidate the cache
++		 * lines too in preparation for receiving the buffer back
++		 * (dma_sync_for_cpu) later.
++		 */
++		flush_dcache_region(vaddr, size);
++		break;
++	case DMA_TO_DEVICE:
++		/*
++		 * Writeback to ensure the device can see our latest changes.
++		 * There's no need to invalidate as the device shouldn't write
++		 * to the buffer.
++		 */
++		writeback_dcache_region(vaddr, size);
++		break;
++	case DMA_FROM_DEVICE:
++		/*
++		 * Invalidate to ensure we have no dirty lines that could get
++		 * written back during the DMA. It's also safe to flush
++		 * (writeback) here if necessary.
++		 */
++		invalidate_dcache_region(vaddr, size);
++		break;
++	case DMA_NONE:
++		BUG();
++	}
 +
 +	wmb();
-+
-+	/*
-+	 * Now bring the CPU into our world.
-+	 */
-+	ret = boot_secondary(thread, idle);
-+	if (ret == 0) {
-+		unsigned long timeout;
-+
-+		/*
-+		 * CPU was successfully started, wait for it
-+		 * to come online or time out.
-+		 */
-+		timeout = jiffies + HZ;
-+		while (time_before(jiffies, timeout)) {
-+			if (cpu_online(cpu))
-+				break;
-+
-+			udelay(10);
-+			barrier();
-+		}
-+
-+		if (!cpu_online(cpu))
-+			ret = -EIO;
-+	}
-+
-+	secondary_data_stack = NULL;
-+
-+	if (ret) {
-+		pr_crit("CPU%u: processor failed to boot\n", cpu);
-+
-+		/*
-+		 * FIXME: We need to clean up the new idle thread. --rmk
-+		 */
-+	}
-+
-+	return ret;
 +}
-+
-+#ifdef CONFIG_HOTPLUG_CPU
-+static DECLARE_COMPLETION(cpu_killed);
++EXPORT_SYMBOL(dma_sync_for_device);
 +
 +/*
-+ * __cpu_disable runs on the processor to be shutdown.
++ * make an area consistent to the core.
 + */
-+int __cpuexit __cpu_disable(void)
++void dma_sync_for_cpu(void *vaddr, size_t size, int dma_direction)
 +{
-+	unsigned int cpu = smp_processor_id();
-+	struct task_struct *p;
-+
 +	/*
-+	 * Take this CPU offline.  Once we clear this, we can't return,
-+	 * and we must not schedule until we're ready to give up the cpu.
-+	 */
-+	set_cpu_online(cpu, false);
-+
-+	/*
-+	 * OK - migrate IRQs away from this CPU
-+	 */
-+	migrate_irqs();
-+
-+	/*
-+	 * Flush user cache and TLB mappings, and then remove this CPU
-+	 * from the vm mask set of all processes.
-+	 */
-+	flush_cache_all();
-+	local_flush_tlb_all();
-+
-+	read_lock(&tasklist_lock);
-+	for_each_process(p) {
-+		if (p->mm)
-+			cpumask_clear_cpu(cpu, mm_cpumask(p->mm));
-+	}
-+	read_unlock(&tasklist_lock);
-+
-+	return 0;
-+}
-+
-+/*
-+ * called on the thread which is asking for a CPU to be shutdown -
-+ * waits until shutdown has completed, or it is timed out.
-+ */
-+void __cpuexit __cpu_die(unsigned int cpu)
-+{
-+	if (!wait_for_completion_timeout(&cpu_killed, msecs_to_jiffies(1)))
-+		pr_err("CPU%u: unable to kill\n", cpu);
-+}
-+
-+/*
-+ * Called from the idle thread for the CPU which has been shutdown.
-+ *
-+ * Note that we do not return from this function. If this cpu is
-+ * brought online again it will need to run secondary_startup().
-+ */
-+void __cpuexit cpu_die(void)
-+{
-+	local_irq_disable();
-+	idle_task_exit();
-+
-+	complete(&cpu_killed);
-+
-+	__asm__("XOR	TXENABLE, D0Re0,D0Re0\n");
-+}
-+#endif /* CONFIG_HOTPLUG_CPU */
-+
-+/*
-+ * Called by both boot and secondaries to move global data into
-+ * per-processor storage.
-+ */
-+void __cpuinit smp_store_cpu_info(unsigned int cpuid)
-+{
-+	struct cpuinfo_metag *cpu_info = &per_cpu(cpu_data, cpuid);
-+
-+	cpu_info->loops_per_jiffy = loops_per_jiffy;
-+}
-+
-+/*
-+ * This is the secondary CPU boot entry.  We're using this CPUs
-+ * idle thread stack and the global page tables.
-+ */
-+asmlinkage void secondary_start_kernel(void)
-+{
-+	struct mm_struct *mm = &init_mm;
-+	unsigned int cpu = smp_processor_id();
-+
-+	/*
-+	 * All kernel threads share the same mm context; grab a
-+	 * reference and switch to it.
-+	 */
-+	atomic_inc(&mm->mm_users);
-+	atomic_inc(&mm->mm_count);
-+	current->active_mm = mm;
-+	cpumask_set_cpu(cpu, mm_cpumask(mm));
-+	enter_lazy_tlb(mm, current);
-+	local_flush_tlb_all();
-+
-+	/*
-+	 * TODO: Some day it might be useful for each Linux CPU to
-+	 * have its own TBI structure. That would allow each Linux CPU
-+	 * to run different interrupt handlers for the same IRQ
-+	 * number.
++	 * Hardware L2 cache prefetch doesn't occur across 4K physical
++	 * boundaries, however according to Documentation/DMA-API-HOWTO.txt
++	 * kmalloc'd memory is DMA'able, so accesses in nearby memory could
++	 * trigger a cache fill in the DMA buffer.
 +	 *
-+	 * For now, simply copying the pointer to the boot CPU's TBI
-+	 * structure is sufficient because we always want to run the
-+	 * same interrupt handler whatever CPU takes the interrupt.
++	 * This should never cause dirty lines, so a flush or invalidate should
++	 * be safe to allow us to see data from the device.
 +	 */
-+	per_cpu(pTBI, cpu) = __TBI(TBID_ISTAT_BIT);
-+
-+	if (!per_cpu(pTBI, cpu))
-+		panic("No TBI found!");
-+
-+	per_cpu_trap_init(cpu);
-+
-+	preempt_disable();
-+
-+	setup_txprivext();
-+
-+	/*
-+	 * Enable local interrupts.
-+	 */
-+	tbi_startup_interrupt(TBID_SIGNUM_TRT);
-+	notify_cpu_starting(cpu);
-+	local_irq_enable();
-+
-+	/*
-+	 * Start local timers for this CPU.
-+	 */
-+	local_timer_setup(cpu);
-+
-+	pr_info("CPU%u (thread %u): Booted secondary processor\n",
-+		cpu, cpu_2_hwthread_id[cpu]);
-+
-+	calibrate_delay();
-+	smp_store_cpu_info(cpu);
-+
-+	/*
-+	 * OK, now it's safe to let the boot CPU continue
-+	 */
-+	notify_cpu_starting(cpu);
-+
-+	set_cpu_online(cpu, true);
-+
-+	/*
-+	 * Check for cache aliasing.
-+	 * Preemption is disabled
-+	 */
-+	check_for_cache_aliasing(cpu);
-+
-+	/*
-+	 * OK, it's off to the idle thread for us
-+	 */
-+	cpu_idle();
-+}
-+
-+void __init smp_cpus_done(unsigned int max_cpus)
-+{
-+	int cpu;
-+	unsigned long bogosum = 0;
-+
-+	for_each_online_cpu(cpu)
-+		bogosum += per_cpu(cpu_data, cpu).loops_per_jiffy;
-+
-+	pr_info("SMP: Total of %d processors activated (%lu.%02lu BogoMIPS).\n",
-+		num_online_cpus(),
-+		bogosum / (500000/HZ),
-+		(bogosum / (5000/HZ)) % 100);
-+}
-+
-+void __init smp_prepare_cpus(unsigned int max_cpus)
-+{
-+	unsigned int cpu = smp_processor_id();
-+
-+	init_new_context(current, &init_mm);
-+	current_thread_info()->cpu = cpu;
-+
-+	smp_store_cpu_info(cpu);
-+	init_cpu_present(cpu_possible_mask);
-+}
-+
-+void __init smp_prepare_boot_cpu(void)
-+{
-+	unsigned int cpu = smp_processor_id();
-+
-+	per_cpu(pTBI, cpu) = __TBI(TBID_ISTAT_BIT);
-+
-+	if (!per_cpu(pTBI, cpu))
-+		panic("No TBI found!");
-+}
-+
-+static void smp_cross_call(cpumask_t callmap, enum ipi_msg_type msg);
-+
-+static void send_ipi_message(const struct cpumask *mask, enum ipi_msg_type msg)
-+{
-+	unsigned long flags;
-+	unsigned int cpu;
-+	cpumask_t map;
-+
-+	cpumask_clear(&map);
-+	local_irq_save(flags);
-+
-+	for_each_cpu(cpu, mask) {
-+		struct ipi_data *ipi = &per_cpu(ipi_data, cpu);
-+
-+		spin_lock(&ipi->lock);
-+
-+		/*
-+		 * KICK interrupts are queued in hardware so we'll get
-+		 * multiple interrupts if we call smp_cross_call()
-+		 * multiple times for one msg. The problem is that we
-+		 * only have one bit for each message - we can't queue
-+		 * them in software.
-+		 *
-+		 * The first time through ipi_handler() we'll clear
-+		 * the msg bit, having done all the work. But when we
-+		 * return we'll get _another_ interrupt (and another,
-+		 * and another until we've handled all the queued
-+		 * KICKs). Running ipi_handler() when there's no work
-+		 * to do is bad because that's how kick handler
-+		 * chaining detects who the KICK was intended for.
-+		 * See arch/metag/kernel/kick.c for more details.
-+		 *
-+		 * So only add 'cpu' to 'map' if we haven't already
-+		 * queued a KICK interrupt for 'msg'.
-+		 */
-+		if (!(ipi->bits & (1 << msg))) {
-+			ipi->bits |= 1 << msg;
-+			cpumask_set_cpu(cpu, &map);
-+		}
-+
-+		spin_unlock(&ipi->lock);
-+	}
-+
-+	/*
-+	 * Call the platform specific cross-CPU call function.
-+	 */
-+	smp_cross_call(map, msg);
-+
-+	local_irq_restore(flags);
-+}
-+
-+void arch_send_call_function_ipi_mask(const struct cpumask *mask)
-+{
-+	send_ipi_message(mask, IPI_CALL_FUNC);
-+}
-+
-+void arch_send_call_function_single_ipi(int cpu)
-+{
-+	send_ipi_message(cpumask_of(cpu), IPI_CALL_FUNC_SINGLE);
-+}
-+
-+void show_ipi_list(struct seq_file *p)
-+{
-+	unsigned int cpu;
-+
-+	seq_puts(p, "IPI:");
-+
-+	for_each_present_cpu(cpu)
-+		seq_printf(p, " %10lu", per_cpu(ipi_data, cpu).ipi_count);
-+
-+	seq_putc(p, '\n');
-+}
-+
-+static DEFINE_SPINLOCK(stop_lock);
-+
-+/*
-+ * Main handler for inter-processor interrupts
-+ *
-+ * For Meta, the ipimask now only identifies a single
-+ * category of IPI (Bit 1 IPIs have been replaced by a
-+ * different mechanism):
-+ *
-+ *  Bit 0 - Inter-processor function call
-+ */
-+static int do_IPI(struct pt_regs *regs)
-+{
-+	unsigned int cpu = smp_processor_id();
-+	struct ipi_data *ipi = &per_cpu(ipi_data, cpu);
-+	struct pt_regs *old_regs = set_irq_regs(regs);
-+	unsigned long msgs, nextmsg;
-+	int handled = 0;
-+
-+	ipi->ipi_count++;
-+
-+	spin_lock(&ipi->lock);
-+	msgs = ipi->bits;
-+	nextmsg = msgs & -msgs;
-+	ipi->bits &= ~nextmsg;
-+	spin_unlock(&ipi->lock);
-+
-+	if (nextmsg) {
-+		handled = 1;
-+
-+		nextmsg = ffz(~nextmsg);
-+		switch (nextmsg) {
-+		case IPI_RESCHEDULE:
-+			scheduler_ipi();
++	if (_meta_l2c_pf_is_enabled()) {
++		switch (dma_direction) {
++		case DMA_BIDIRECTIONAL:
++		case DMA_FROM_DEVICE:
++			invalidate_dcache_region(vaddr, size);
 +			break;
-+
-+		case IPI_CALL_FUNC:
-+			generic_smp_call_function_interrupt();
++		case DMA_TO_DEVICE:
++			/* The device shouldn't have written to the buffer */
 +			break;
-+
-+		case IPI_CALL_FUNC_SINGLE:
-+			generic_smp_call_function_single_interrupt();
-+			break;
-+
-+		default:
-+			pr_crit("CPU%u: Unknown IPI message 0x%lx\n",
-+				cpu, nextmsg);
-+			break;
++		case DMA_NONE:
++			BUG();
 +		}
 +	}
 +
-+	set_irq_regs(old_regs);
-+
-+	return handled;
++	rmb();
 +}
-+
-+void smp_send_reschedule(int cpu)
-+{
-+	send_ipi_message(cpumask_of(cpu), IPI_RESCHEDULE);
-+}
-+
-+static void stop_this_cpu(void *data)
-+{
-+	unsigned int cpu = smp_processor_id();
-+
-+	if (system_state == SYSTEM_BOOTING ||
-+	    system_state == SYSTEM_RUNNING) {
-+		spin_lock(&stop_lock);
-+		pr_crit("CPU%u: stopping\n", cpu);
-+		dump_stack();
-+		spin_unlock(&stop_lock);
-+	}
-+
-+	set_cpu_online(cpu, false);
-+
-+	local_irq_disable();
-+
-+	hard_processor_halt(HALT_OK);
-+}
-+
-+void smp_send_stop(void)
-+{
-+	smp_call_function(stop_this_cpu, NULL, 0);
-+}
-+
-+/*
-+ * not supported here
-+ */
-+int setup_profiling_timer(unsigned int multiplier)
-+{
-+	return -EINVAL;
-+}
-+
-+/*
-+ * We use KICKs for inter-processor interrupts.
-+ *
-+ * For every CPU in "callmap" the IPI data must already have been
-+ * stored in that CPU's "ipi_data" member prior to calling this
-+ * function.
-+ */
-+static void kick_raise_softirq(cpumask_t callmap, unsigned int irq)
-+{
-+	int cpu;
-+
-+	for_each_cpu(cpu, &callmap) {
-+		unsigned int thread;
-+
-+		thread = cpu_2_hwthread_id[cpu];
-+
-+		BUG_ON(thread == BAD_HWTHREAD_ID);
-+
-+		metag_out32(1, T0KICKI + (thread * TnXKICK_STRIDE));
-+	}
-+}
-+
-+static TBIRES ipi_handler(TBIRES State, int SigNum, int Triggers,
-+		   int Inst, PTBI pTBI, int *handled)
-+{
-+	*handled = do_IPI((struct pt_regs *)State.Sig.pCtx);
-+
-+	return State;
-+}
-+
-+static struct kick_irq_handler ipi_irq = {
-+	.func = ipi_handler,
-+};
-+
-+static void smp_cross_call(cpumask_t callmap, enum ipi_msg_type msg)
-+{
-+	kick_raise_softirq(callmap, 1);
-+}
-+
-+static inline unsigned int get_core_count(void)
-+{
-+	int i;
-+	unsigned int ret = 0;
-+
-+	for (i = 0; i < CONFIG_NR_CPUS; i++) {
-+		if (core_reg_read(TXUCT_ID, TXENABLE_REGNUM, i))
-+			ret++;
-+	}
-+
-+	return ret;
-+}
-+
-+/*
-+ * Initialise the CPU possible map early - this describes the CPUs
-+ * which may be present or become present in the system.
-+ */
-+void __init smp_init_cpus(void)
-+{
-+	unsigned int i, ncores = get_core_count();
-+
-+	/* If no hwthread_map early param was set use default mapping */
-+	for (i = 0; i < NR_CPUS; i++)
-+		if (cpu_2_hwthread_id[i] == BAD_HWTHREAD_ID) {
-+			cpu_2_hwthread_id[i] = i;
-+			hwthread_id_2_cpu[i] = i;
-+		}
-+
-+	for (i = 0; i < ncores; i++)
-+		set_cpu_possible(i, true);
-+
-+	kick_register_func(&ipi_irq);
-+}
-diff --git a/arch/metag/kernel/topology.c b/arch/metag/kernel/topology.c
-new file mode 100644
-index 0000000..bec3dec
---- /dev/null
-+++ b/arch/metag/kernel/topology.c
-@@ -0,0 +1,77 @@
-+/*
-+ *  Copyright (C) 2007  Paul Mundt
-+ *  Copyright (C) 2010  Imagination Technolohies Ltd.
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+#include <linux/cpu.h>
-+#include <linux/cpumask.h>
-+#include <linux/init.h>
-+#include <linux/percpu.h>
-+#include <linux/node.h>
-+#include <linux/nodemask.h>
-+#include <linux/topology.h>
-+
-+#include <asm/cpu.h>
-+
-+DEFINE_PER_CPU(struct cpuinfo_metag, cpu_data);
-+
-+cpumask_t cpu_core_map[NR_CPUS];
-+
-+static cpumask_t cpu_coregroup_map(unsigned int cpu)
-+{
-+	return *cpu_possible_mask;
-+}
-+
-+const struct cpumask *cpu_coregroup_mask(unsigned int cpu)
-+{
-+	return &cpu_core_map[cpu];
-+}
-+
-+int arch_update_cpu_topology(void)
-+{
-+	unsigned int cpu;
-+
-+	for_each_possible_cpu(cpu)
-+		cpu_core_map[cpu] = cpu_coregroup_map(cpu);
-+
-+	return 0;
-+}
-+
-+static int __init topology_init(void)
-+{
-+	int i, ret;
-+
-+#ifdef CONFIG_NEED_MULTIPLE_NODES
-+	for_each_online_node(i)
-+		register_one_node(i);
-+#endif
-+
-+	for_each_present_cpu(i) {
-+		struct cpuinfo_metag *cpuinfo = &per_cpu(cpu_data, i);
-+#ifdef CONFIG_HOTPLUG_CPU
-+		cpuinfo->cpu.hotpluggable = 1;
-+#endif
-+		ret = register_cpu(&cpuinfo->cpu, i);
-+		if (unlikely(ret))
-+			pr_warn("%s: register_cpu %d failed (%d)\n",
-+				__func__, i, ret);
-+	}
-+
-+#if defined(CONFIG_NUMA) && !defined(CONFIG_SMP)
-+	/*
-+	 * In the UP case, make sure the CPU association is still
-+	 * registered under each node. Without this, sysfs fails
-+	 * to make the connection between nodes other than node0
-+	 * and cpu0.
-+	 */
-+	for_each_online_node(i)
-+		if (i != numa_node_id())
-+			register_cpu_under_node(raw_smp_processor_id(), i);
-+#endif
-+
-+	return 0;
-+}
-+subsys_initcall(topology_init);
++EXPORT_SYMBOL(dma_sync_for_cpu);
 -- 
 1.7.7.6
 
