@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917Ab2LEL0l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 06:26:41 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:52218 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752380Ab2LEL0f (ORCPT
+	id S1753176Ab2LEL1J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 06:27:09 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:11101 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752475Ab2LEL0K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 06:26:35 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-4c-50bf2f50c54a
+	Wed, 5 Dec 2012 06:26:10 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-ca-50bf2f4f0f67
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 To: Vinod Koul <vinod.koul@intel.com>
-Subject: [PATCH resend 2/2] DMA: remove dma_async_memcpy_complete() macro
-Date: Wed, 05 Dec 2012 12:22:37 +0100
+Subject: [PATCH resend 1/2] DMA: remove dma_async_memcpy_issue_pending() macro
+Date: Wed, 05 Dec 2012 12:21:33 +0100
 User-Agent: KMail/1.13.2 (Linux/3.5.0-rc2+; KDE/4.4.5; i686; ; )
 Cc: linux-kernel@vger.kernel.org, Dan Williams <djbw@fb.com>,
         Tomasz Figa <t.figa@samsung.com>,
@@ -19,25 +19,25 @@ Cc: linux-kernel@vger.kernel.org, Dan Williams <djbw@fb.com>,
 MIME-version: 1.0
 Content-type: Text/Plain; charset=us-ascii
 Content-transfer-encoding: 7bit
-Message-id: <201212051222.37864.b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprELMWRmVeSWpSXmKPExsVy+t9jQd0A/f0BBp9nS1pc3jWHzYHR4/Mm
-	uQDGKC6blNSczLLUIn27BK6MJw9eMxcsFKg4uHQqcwPjbd4uRk4OCQETienT7zFD2GISF+6t
-	Z+ti5OIQEpjOKLHzxmYWkISQwFImiQv/5EBsNgEriYntqxhBbBEBVYktPzvAbGEBT4mfEz+D
-	2SxA8SfvjrGB2KICDhKdUyeADWUW6GaUOP3pANhQXgFBiR+T74HZzAJaEs1vNjFC2PISm9e8
-	ZYaosQS67hrTBEa+WUhaZiFpmYWkZQEj8ypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2M4JB6
-	JrWDcWWDxSFGAQ5GJR7eLL19AUKsiWXFlbmHGCU4mJVEeOfJ7A8Q4k1JrKxKLcqPLyrNSS0+
-	xCjNwaIkztvskRIgJJCeWJKanZpakFoEk2Xi4JRqYJz6Tc2Hw29C0ESZG1cWuMsaH1rZdqW8
-	vFh0Te+z2H9WVYvmlH/NfXsqeVZfy4zqOU7PvtZcSJdj33Yms9NDuLNrv8Xz9vMimxKWcL6Q
-	fbOUYenE+Z5zD+p/C9m779RC9k0CL0VEOvevvLZo8RyFkG0HGB0uqbjJdFn9i7Fvs//VPnPh
-	L1mrCV+UWIozEg21mIuKEwEcwgwmJQIAAA==
+Message-id: <201212051221.34185.b.zolnierkie@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMLMWRmVeSWpSXmKPExsVy+t9jQV1//f0BBs1T9S0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfGz1nX2Qv+SVasereGrYHxm2gXIyeHhICJxLuHH9khbDGJC/fW
+	s3UxcnEICUxnlFjctpQJwlnKJLG/bzFYFZuAlcTE9lWMILaIgKrElp8dYLawgJ/E71NzwWwW
+	oPijpXNYQWxRAQeJzqkTwKYyC3QzSpz+dIAFJMErICjxY/I9MJtZQEui+c0mRghbXmLzmrfM
+	EDWWEs8anjNOYOSbhaRlFpKWWUhaFjAyr2IUTS1ILihOSs810itOzC0uzUvXS87P3cQIDqpn
+	0jsYVzVYHGIU4GBU4uGVMN4XIMSaWFZcmXuIUYKDWUmEd57M/gAh3pTEyqrUovz4otKc1OJD
+	jNIcLErivM0eKQFCAumJJanZqakFqUUwWSYOTqkGxnBBiytOPsf2rtdZskAz6eQd9v9PK2SF
+	79Ue23N+v9qmvwZTpkT+8e+Zc3XVSt8gZxXNbzU2D6an7uKve8gz75zl+9rHBx2M2m8u9J8a
+	yhZ1f6eQPs9JUS5OudRlN66JTmj+GPHosOmPHbP+xf0sPmmWFuHTVOH2PVX0wPYt2oz/Nt14
+	o9HzPlGJpTgj0VCLuag4EQALZdslJgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: [PATCH 2/2] DMA: remove dma_async_memcpy_complete() macro
+Subject: [PATCH 1/2] DMA: remove dma_async_memcpy_issue_pending() macro
 
-Just use dma_async_is_tx_complete() directly.
+Just use dma_async_issue_pending() directly.
 
 Cc: Vinod Koul <vinod.koul@intel.com>
 Cc: Dan Williams <djbw@fb.com>
@@ -45,42 +45,79 @@ Cc: Tomasz Figa <t.figa@samsung.com>
 Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- include/linux/dmaengine.h |    5 +----
- net/ipv4/tcp.c            |    2 +-
- 2 files changed, 2 insertions(+), 5 deletions(-)
+ drivers/misc/carma/carma-fpga-program.c |    2 +-
+ drivers/misc/carma/carma-fpga.c         |    2 +-
+ include/linux/dmaengine.h               |    2 --
+ net/ipv4/tcp.c                          |    6 +++---
+ 4 files changed, 5 insertions(+), 7 deletions(-)
 
+Index: b/drivers/misc/carma/carma-fpga-program.c
+===================================================================
+--- a/drivers/misc/carma/carma-fpga-program.c	2012-11-07 16:00:59.680876184 +0100
++++ b/drivers/misc/carma/carma-fpga-program.c	2012-11-07 16:01:05.612876185 +0100
+@@ -546,7 +546,7 @@ static noinline int fpga_program_dma(str
+ 		goto out_dma_unmap;
+ 	}
+ 
+-	dma_async_memcpy_issue_pending(chan);
++	dma_async_issue_pending(chan);
+ 
+ 	/* Set the total byte count */
+ 	fpga_set_byte_count(priv->regs, priv->bytes);
+Index: b/drivers/misc/carma/carma-fpga.c
+===================================================================
+--- a/drivers/misc/carma/carma-fpga.c	2012-11-07 16:01:17.304876183 +0100
++++ b/drivers/misc/carma/carma-fpga.c	2012-11-07 16:01:23.568876183 +0100
+@@ -749,7 +749,7 @@ static irqreturn_t data_irq(int irq, voi
+ 	submitted = true;
+ 
+ 	/* Start the DMA Engine */
+-	dma_async_memcpy_issue_pending(priv->chan);
++	dma_async_issue_pending(priv->chan);
+ 
+ out:
+ 	/* If no DMA was submitted, re-enable interrupts */
 Index: b/include/linux/dmaengine.h
 ===================================================================
---- a/include/linux/dmaengine.h	2012-11-07 16:04:41.028876159 +0100
-+++ b/include/linux/dmaengine.h	2012-11-07 16:05:22.004876153 +0100
-@@ -927,16 +927,13 @@ static inline enum dma_status dma_async_
- 	return status;
+--- a/include/linux/dmaengine.h	2012-11-07 16:01:31.720876180 +0100
++++ b/include/linux/dmaengine.h	2012-11-07 16:01:45.072876180 +0100
+@@ -902,8 +902,6 @@ static inline void dma_async_issue_pendi
+ 	chan->device->device_issue_pending(chan);
  }
  
--#define dma_async_memcpy_complete(chan, cookie, last, used)\
--	dma_async_is_tx_complete(chan, cookie, last, used)
+-#define dma_async_memcpy_issue_pending(chan) dma_async_issue_pending(chan)
 -
  /**
-  * dma_async_is_complete - test a cookie against chan state
-  * @cookie: transaction identifier to test status of
-  * @last_complete: last know completed transaction
-  * @last_used: last cookie value handed out
-  *
-- * dma_async_is_complete() is used in dma_async_memcpy_complete()
-+ * dma_async_is_complete() is used in dma_async_is_tx_complete()
-  * the test logic is separated for lightweight testing of multiple cookies
-  */
- static inline enum dma_status dma_async_is_complete(dma_cookie_t cookie,
+  * dma_async_is_tx_complete - poll for transaction completion
+  * @chan: DMA channel
 Index: b/net/ipv4/tcp.c
 ===================================================================
---- a/net/ipv4/tcp.c	2012-11-07 16:04:11.700876163 +0100
-+++ b/net/ipv4/tcp.c	2012-11-07 16:04:26.444876161 +0100
-@@ -1413,7 +1413,7 @@ static void tcp_service_net_dma(struct s
- 	dma_async_issue_pending(tp->ucopy.dma_chan);
+--- a/net/ipv4/tcp.c	2012-11-07 16:01:52.496876179 +0100
++++ b/net/ipv4/tcp.c	2012-11-07 16:02:13.924876175 +0100
+@@ -1410,7 +1410,7 @@ static void tcp_service_net_dma(struct s
+ 		return;
+ 
+ 	last_issued = tp->ucopy.dma_cookie;
+-	dma_async_memcpy_issue_pending(tp->ucopy.dma_chan);
++	dma_async_issue_pending(tp->ucopy.dma_chan);
  
  	do {
--		if (dma_async_memcpy_complete(tp->ucopy.dma_chan,
-+		if (dma_async_is_tx_complete(tp->ucopy.dma_chan,
- 					      last_issued, &done,
- 					      &used) == DMA_SUCCESS) {
- 			/* Safe to free early-copied skbs now */
+ 		if (dma_async_memcpy_complete(tp->ucopy.dma_chan,
+@@ -1744,7 +1744,7 @@ int tcp_recvmsg(struct kiocb *iocb, stru
+ 				tcp_service_net_dma(sk, true);
+ 				tcp_cleanup_rbuf(sk, copied);
+ 			} else
+-				dma_async_memcpy_issue_pending(tp->ucopy.dma_chan);
++				dma_async_issue_pending(tp->ucopy.dma_chan);
+ 		}
+ #endif
+ 		if (copied >= target) {
+@@ -1837,7 +1837,7 @@ do_prequeue:
+ 					break;
+ 				}
+ 
+-				dma_async_memcpy_issue_pending(tp->ucopy.dma_chan);
++				dma_async_issue_pending(tp->ucopy.dma_chan);
+ 
+ 				if ((offset + used) == skb->len)
+ 					copied_early = true;
