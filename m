@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754358Ab2LEWsV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 17:48:21 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:34529 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752361Ab2LEWsT (ORCPT
+	id S1752539Ab2LEWzo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 17:55:44 -0500
+Received: from mail-we0-f194.google.com ([74.125.82.194]:65442 "EHLO
+	mail-we0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751545Ab2LEWzn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 17:48:19 -0500
+	Wed, 5 Dec 2012 17:55:43 -0500
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] gpio: twl4030: Correct status reporting when the GPIO is used as output
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-In-Reply-To: <1354700985-4453-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1354700985-4453-1-git-send-email-peter.ujfalusi@ti.com>
-Date: Wed, 05 Dec 2012 22:48:13 +0000
-Message-Id: <20121205224813.584123E0E22@localhost>
+Subject: Re: [PATCH 2/2] Documentation: add docs for 88pm80x dt
+To: Qing Xu <qingx@marvell.com>, qingx@marvell.com, rob@landley.net,
+        sameo@linux.intel.com, haojian.zhuang@gmail.com,
+        rob.herring@calxeda.com, zhouqiao@marvell.com, cxie4@marvell.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1354686120-26169-1-git-send-email-qingx@marvell.com>
+References: <1354686120-26169-1-git-send-email-qingx@marvell.com>
+Date: Wed, 05 Dec 2012 22:55:38 +0000
+Message-Id: <20121205225538.731E73E0E22@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Dec 2012 10:49:45 +0100, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
-> When the GPIO is configured as output we need to read the GPIODATAOUT*
-> register to get correct information. When the GPIO is output the GPIODATAIN*
-> registers report 0 all the time (no feedback from output path).
+On Wed,  5 Dec 2012 13:42:00 +0800, Qing Xu <qingx@marvell.com> wrote:
+> From: Qing Xu <qingx@marvell.com>
 > 
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> ---
->  drivers/gpio/gpio-twl4030.c | 8 +++++++-
->  1 file changed, 7 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/gpio/gpio-twl4030.c b/drivers/gpio/gpio-twl4030.c
-> index 55b4fe4..e7aa620 100644
-> --- a/drivers/gpio/gpio-twl4030.c
-> +++ b/drivers/gpio/gpio-twl4030.c
-> @@ -191,13 +191,19 @@ static int twl4030_get_gpio_datain(int gpio)
->  	u8 d_bnk = gpio >> 3;
->  	u8 d_off = gpio & 0x7;
->  	u8 base = 0;
-> +	int direction;
->  	int ret = 0;
->  
->  	if (unlikely((gpio >= TWL4030_GPIO_MAX)
->  		|| !(gpio_usage_count & BIT(gpio))))
->  		return -EPERM;
->  
-> -	base = REG_GPIODATAIN1 + d_bnk;
-> +	direction = gpio_twl4030_read(REG_GPIODATADIR1 + d_bnk);
-> +	if (direction > 0 && (direction >> d_off) & 0x1)
-> +		base = REG_SETGPIODATAOUT1 + d_bnk;
-> +	else
-> +		base = REG_GPIODATAIN1 + d_bnk;
-> +
+> Signed-off-by: Qing Xu <qingx@marvell.com>
 
-This is probably quite expensive considering that reads need to go out
-the i2c bus. Things like the output state and the pin direction should
-be cached by the driver in its private data structure so that you don't
-add an additional i2c round trip.
+No commit text?
+
+This patch needs to be squashed together with the patch that changes the
+driver. There is no value in separating them.
+
+> ---
+>  Documentation/devicetree/bindings/mfd/88pm80x.txt |   52 +++++++++++++++++++++
+>  1 files changed, 52 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/88pm80x.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/mfd/88pm80x.txt b/Documentation/devicetree/bindings/mfd/88pm80x.txt
+> new file mode 100644
+> index 0000000..8a0ed07
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mfd/88pm80x.txt
+> @@ -0,0 +1,52 @@
+> +* Marvell 88pm80x Power Management IC
+> +
+> +Required parent device properties:
+> +- compatible : "marvell,88pm80x"
+> +- reg : the I2C slave address for the 88pm80x chip
+> +- interrupts : IRQ line for the 88pm80x chip
+> +- interrupt-controller: describes the 88pm80x as an interrupt controller (has its own domain)
+> +- #interrupt-cells : should be 1.
+> +	- The cell is the 88pm80x local IRQ number
+> +
+> +Optional parent device properties:
+> +- marvell,88pm80x-irqmode: inicates whether interrupt status is cleared by read
+> +- marvell,88pm80x-poweraddr: 88pm80x are multi-chips solution. <reg> stores the I2C address
+> +				of one chip, and this property stores the I2C address of
+> +				power related chip.
+> +- marvell,88pm80x-gpadcaddr: 88pm80x are multi-chips solution. <reg> stores the I2C address
+> +				of one chip, and this property stores the I2C address of
+> +				gpadc related chip.
+
+If it is multichip, then I would expect either a separate node for each
+chip and these properties use phandles (instead of i2c addresses) to
+point to the other chip nodes.
+
+Alternately, if the cluster is described using a single node, then you
+can put all three i2c addresses into the 'reg' property.
 
 g.
-
