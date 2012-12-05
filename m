@@ -1,119 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932118Ab2LEOZx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 09:25:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47332 "EHLO mx1.redhat.com"
+	id S1754285Ab2LEO3k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 09:29:40 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:42863 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754030Ab2LEOZv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 09:25:51 -0500
-Message-ID: <50BF5950.2040805@redhat.com>
-Date: Wed, 05 Dec 2012 12:25:20 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751674Ab2LEO3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 09:29:38 -0500
+Date: Wed, 5 Dec 2012 15:29:35 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Andreas Mohr <andi@lisas.de>
+Cc: linux-kernel@vger.kernel.org, Li Shaohua <shaohua.li@intel.com>,
+        linux-acpi@vger.kernel.org
+Subject: Re: Look Ma, da kernel is b0rken
+Message-ID: <20121205142935.GA12119@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Andreas Mohr <andi@lisas.de>, linux-kernel@vger.kernel.org,
+	Li Shaohua <shaohua.li@intel.com>, linux-acpi@vger.kernel.org
+References: <20121205070901.GA12123@rhlx01.hs-esslingen.de>
 MIME-Version: 1.0
-To: Federico Vaga <federico.vaga@gmail.com>
-CC: Marek Szyprowski <m.szyprowski@samsung.com>,
-        "'Mauro Carvalho Chehab'" <mchehab@infradead.org>,
-        "'Pawel Osciak'" <pawel@osciak.com>,
-        "'Hans Verkuil'" <hans.verkuil@cisco.com>,
-        "'Giancarlo Asnaghi'" <giancarlo.asnaghi@st.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Jonathan Corbet'" <corbet@lwn.net>,
-        sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: Re: [PATCH v3 2/4] videobuf2-dma-streaming: new videobuf2 memory
- allocator
-References: <1348484332-8106-1-git-send-email-federico.vaga@gmail.com> <055901cd9a52$5995fcd0$0cc1f670$%szyprowski@samsung.com> <50BE1F06.10308@redhat.com> <1685240.Ttn3DTWMJc@harkonnen>
-In-Reply-To: <1685240.Ttn3DTWMJc@harkonnen>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20121205070901.GA12123@rhlx01.hs-esslingen.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 05-12-2012 10:50, Federico Vaga escreveu:
-> On Tuesday 04 December 2012 14:04:22 Mauro Carvalho Chehab wrote:
->> Em 24-09-2012 09:44, Marek Szyprowski escreveu:
->>> Hello,
->>>
->>> On Monday, September 24, 2012 12:59 PM Federico Vaga wrote:
->>>> The DMA streaming allocator is similar to the DMA contig but it use the
->>>> DMA streaming interface (dma_map_single, dma_unmap_single). The
->>>> allocator allocates buffers and immediately map the memory for DMA
->>>> transfer. For each buffer prepare/finish it does a DMA synchronization.
->>
->> Hmm.. the explanation didn't convince me, e. g.:
->> 	1) why is it needed;
->
-> This allocator is needed because some device (like STA2X11 VIP) cannot work
-> with DMA sg or DMA coherent. Some other device (like the one used by Jonathan
-> when he proposes vb2-dma-nc allocator) can obtain much better performance with
-> DMA streaming than coherent.
+On Wed, Dec 05, 2012 at 08:09:01AM +0100, Andreas Mohr wrote:
+> Hi,
+> 
+> drivers/pnp/pnpacpi/core.c: In function 'ispnpidacpi':
+> drivers/pnp/pnpacpi/core.c:65:2: warning: logical 'or' of collectively
+> exhaustive tests is always true [-Wlogical-op]
+> drivers/pnp/pnpacpi/core.c:66:2: warning: logical 'or' of collectively
+> exhaustive tests is always true [-Wlogical-op]
+> drivers/pnp/pnpacpi/core.c:67:2: warning: logical 'or' of collectively
+> exhaustive tests is always true [-Wlogical-op]
+> 
+> 
+> That's already the second less enticing -Wlogical-op issue
+> which was discovered by accident during less than two days
+> of my happy(?) activity of kernel suspend breakage bisection.
+> 
+> 
+> Why oh why, as a rather *very* critical piece of software,
+> can't the kernel use sufficiently aggressive warning levels *by default*??
+> IMHO it's simply NOT ACCEPTABLE to have such sloppiness creep into
+> the daily bandwagon of kernel development life
+> (or should I say: being mandated to creep in?).
+> 
+> Result: whichever default warning level you set
+> *will* end up as The New Normal,
+> and all those warnings which then remain able to rear their ugly heads
+> according to the chosen default level
+> will be fixed by the community eventually,
+> and *most others won't* (or at least not in time).
+> 
+> The amount of warnings spewn by make W=3 (or even W=2) is simply
+> shocking IMNSHO.
+> And there can always be an argument that most of such warnings
+> are fixable. If not directly (e.g. because analysis of that warning type
+> is partially unreliable), then by actively reworking code
+> into something slightly different.
 
-Ok, please add such explanations at the patch's descriptions, as it is
-important not only for me, but to others that may need to use it..
+Can we all relax ourselves first?
 
->
->> 	2) why vb2-dma-config can't be patched to use dma_map_single
->> (eventually using a different vb2_io_modes bit?);
->
-> I did not modify vb2-dma-contig because I was thinking that each DMA memory
-> allocator should reflect a DMA API.
+Now, I admit that ispnpidacpi() is a rather clumsy way of testing
+string sanity but whatever, it is there.
 
-The basic reason for having more than one VB low-level handling (vb2 was
-inspired on this concept) is that some DMA APIs are very different than
-the other ones (see vmalloc x DMA S/G for example).
+Then, we added W= exactly for inquisitive and adventurous people like
+yourself to build kernel compilation units with, to *verify* the
+*sanity* of the compiler's error messages (yes, gcc has been wrong a lot
+in the past too) and fix them.
 
-I didn't make a diff between videobuf2-dma-streaming and videobuf2-dma-contig,
-so I can't tell if it makes sense to merge them or not, but the above
-argument seems too weak. I was expecting for a technical reason why
-it wouldn't make sense for merging them.
+So why not write a patch that fixes this, *test* it correctly and then
+submit it to the proper maintainer instead of ranting about it without
+any constructive help and thus piss off everybody on the ML?
 
->
->> 	3) what are the usecases for it.
->>
->> Could you please detail it? Without that, one that would be needing to
->> write a driver will have serious doubts about what would be the right
->> driver for its usage. Also, please document it at the driver itself.
->
-> I did not write all this details because the reasons to use vb2-dma-contig,
-> vb2-dma-sg or vb2-dma-streaming are the same reasons because someone choose
-> SG, coherent or streaming API. This is already documented in the DMA-*.txt
-> files, so I did not rewrite it to avoid duplication.
+And yes, bugs happen and this is the reality of it - programmers are
+people and they make mistakes too. So I think helping out fix bugs is a
+much more constructive way of spending your time instead of pissing off
+the only people who can actually help you with your problem.
 
-I see. It doesn't hurt to add a short explanation then at the patch description,
-pointing to Documentation/DMA-API-HOWTO.txt, describing when using it instead
-of vb2-dma-config (or vb2-dma-sg) would likely give better performance results,
-and when the reverse is true.
+HTH.
 
-Btw, from Documentation/DMA-API-HOWTO.txt:
-
-   "Good examples of what to use streaming mappings for are:
-
-	- Networking buffers transmitted/received by a device.
-	- Filesystem buffers written/read by a SCSI device.
-
-    The interfaces for using this type of mapping were designed in
-    such a way that an implementation can make whatever performance
-    optimizations the hardware allows.  To this end, when using
-    such mappings you must be explicit about what you want to happen."
-
-I'm not a DMA performance expert. As such, from that comment, it sounded to me
-that replacing dma-config/dma-sg by dma streaming will always give "performance
-optimizations the hardware allow".
-
-If this is always true, why to preserve the old vb2-dma-config/vb2-dma-sg?
-
-In other words, I suspect that the above is just half of the history ;)
-
-On a separate but related issue, while doing DMABUF tests with an Exynos4
-hardware, using a s5p sensor, sending data to s5p-tv, I noticed a CPU
-consumption of about 42%, which seems too high. Could it be related to
-not using the DMA streaming API?
-
-(c/c Sylwester, due to this last comment)
-
-Regards,
-Mauro
-
-
-
+-- 
+Regards/Gruss,
+    Boris.
