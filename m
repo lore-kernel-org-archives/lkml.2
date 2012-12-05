@@ -1,87 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598Ab2LEH5j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 02:57:39 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:19726 "EHLO song.cn.fujitsu.com"
+	id S1752648Ab2LEIAz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 03:00:55 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:44827 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751585Ab2LEH5g convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 02:57:36 -0500
+	id S1751585Ab2LEIAy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 03:00:54 -0500
 X-IronPort-AV: E=Sophos;i="4.83,376,1352044800"; 
-   d="scan'208";a="6337406"
-Message-ID: <50BEFDF9.9080601@cn.fujitsu.com>
-Date: Wed, 05 Dec 2012 15:55:37 +0800
+   d="scan'208";a="6337454"
+Message-ID: <50BEFEBA.6070602@cn.fujitsu.com>
+Date: Wed, 05 Dec 2012 15:58:50 +0800
 From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: "x86@kernel.org" <x86@kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Gleb Natapov <gleb@redhat.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+To: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+CC: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
         "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v9 1/2] x86/kexec: VMCLEAR VMCSs loaded on all cpus if
+Subject: [PATCH v10 0/2] x86: vmclear vmcss on all cpus when doing kdump if
  necessary
-References: <50B43299.9030409@cn.fujitsu.com> <50B432CA.70804@cn.fujitsu.com> <87zk1t4lt4.fsf@xmission.com>
-In-Reply-To: <87zk1t4lt4.fsf@xmission.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/05 15:56:55,
+ 2012/12/05 16:00:08,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/05 15:56:56
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8BIT
+ 2012/12/05 16:00:15,
+	Serialize complete at 2012/12/05 16:00:15
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2012年12月05日 04:14, Eric W. Biederman 写道:
-> Zhang Yanfei <zhangyanfei@cn.fujitsu.com> writes:
-> 
->> This patch provides a way to VMCLEAR VMCSs related to guests
->> on all cpus before executing the VMXOFF when doing kdump. This
->> is used to ensure the VMCSs in the vmcore updated and
->> non-corrupted.
-> 
-> Apologies for the delay I have been travelling, and I wanted
-> to at least read through the code.
-> 
-> Overall I think this is good but I have one nit, and I see one real
-> problem with this code.
-> 
->> +/*
->> + * This is used to VMCLEAR all VMCSs loaded on the
->> + * processor. And when loading kvm_intel module, the
->> + * callback function pointer will be assigned.
->> + */
->> +void (*crash_vmclear_loaded_vmcss)(void) = NULL;
->> +EXPORT_SYMBOL_GPL(crash_vmclear_loaded_vmcss);
->> +
->> +static inline void cpu_emergency_vmclear_loaded_vmcss(void)
->> +{
->> +	if (crash_vmclear_loaded_vmcss)
->> +		crash_vmclear_loaded_vmcss();
->> +}
-> 
-> The nit is the use of emergency instead of crash in the name.
+Currently, kdump just makes all the logical processors leave VMX operation by
+executing VMXOFF instruction, so any VMCSs active on the logical processors may
+be corrupted. But, sometimes, we need the VMCSs to debug guest images contained
+in the host vmcore. To prevent the corruption, we should VMCLEAR the VMCSs before
+executing the VMXOFF instruction.
 
-ok, emergency -> crash
+The patch set provides a way to VMCLEAR vmcss related to guests on all cpus before
+executing the VMXOFF when doing kdump. This is used to ensure the VMCSs in the
+vmcore updated and non-corrupted.
 
-> 
-> The problem is that this is potentially a NULL pointer dereference if
-> kvm-intel is removed.  The easist fix would be in your second patch to
-> just make it impossible to unload the kvm-intel module.  Otherwise
-> there the deference of crash_vmclear_loaded_vmcss needs to be rcu
-> protected, with a syncrhonize_rcu after the pointer is set to NULL in
-> the unload path.
+Changelog from v9 to v10:
+1. add rcu protect to the callback function
 
-Ah, thanks for this comment.
+Changelog from v8 to v9:
+1. KEXEC: use a callback function instead of a notifier.
+2. KVM-INTEL: use a new vmclear function instead of just calling 
+   vmclear_local_loaded_vmcss to make sure we just do the core vmclear
+   operation in kdump.
 
-I think I will use the rcu machanism to solve the problem.
+Changelog from v7 to v8:
+1. KEXEC: regression for using name crash_notifier_list
+   and remove comments related to KVM
+   and just call function atomic_notifier_call_chain directly.
 
-> 
-> Otherwise I have no objections to this code.
+Changelog from v6 to v7:
+1. KVM-INTEL: in hardware_disable, we needn't disable the
+   vmclear, so remove it.
 
-Thanks for your review. I will update the patch and resend it.
+Changelog from v5 to v6:
+1. KEXEC: the atomic notifier list renamed:
+   crash_notifier_list --> vmclear_notifier_list
+2. KVM-INTEL: provide empty functions if CONFIG_KEXEC is
+   not defined and remove unnecessary #ifdef's.
 
-Thanks
-Zhang Yanfei
+Changelog from v4 to v5:
+1. use an atomic notifier instead of function call, so
+   have all the vmclear codes in vmx.c.
+
+Changelog from v3 to v4:
+1. add a new percpu variable vmclear_skipped to skip
+   vmclear in kdump in some conditions.
+
+Changelog from v2 to v3:
+1. remove unnecessary conditions in function
+   cpu_emergency_clear_loaded_vmcss as Marcelo suggested.
+
+Changelog from v1 to v2:
+1. remove the sysctl and clear VMCSs unconditionally.
+
+Zhang Yanfei (2):
+  x86/kexec: VMCLEAR VMCSs loaded on all cpus if necessary
+  KVM-INTEL: provide the vmclear function and a bitmap to support
+    VMCLEAR in kdump
+
+ arch/x86/include/asm/kexec.h |    2 +
+ arch/x86/kernel/crash.c      |   32 ++++++++++++++++++++
+ arch/x86/kvm/vmx.c           |   67 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 101 insertions(+), 0 deletions(-)
