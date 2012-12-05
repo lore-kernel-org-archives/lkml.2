@@ -1,51 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143Ab2LEPqB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 10:46:01 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:41522 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751828Ab2LEPp7 (ORCPT
+	id S1754569Ab2LEPqk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 10:46:40 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:54888 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752700Ab2LEPqi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 10:45:59 -0500
+	Wed, 5 Dec 2012 10:46:38 -0500
+Message-ID: <50BF6C57.1050805@gmail.com>
+Date: Wed, 05 Dec 2012 23:46:31 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <201212051148.28039.Martin@lichtvoll.de>
-References: <1353366267-15629-1-git-send-email-david@fromorbit.com>
- <20121126025520.GC22858@thunk.org> <20121126091202.GO32450@dastard> <201212051148.28039.Martin@lichtvoll.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 5 Dec 2012 07:45:39 -0800
-X-Google-Sender-Auth: pMr26-n03-LYlXJAP-q-A-g7cTs
-Message-ID: <CA+55aFzgP29WfB1yvnj+Q9-TsbX+b-TCCjTS_vPJ16DxMy6aDQ@mail.gmail.com>
-Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate UAPI
-To: Martin Steigerwald <Martin@lichtvoll.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+CC: hpa@zytor.com, akpm@linux-foundation.org, rob@landley.net,
+        isimatu.yasuaki@jp.fujitsu.com, laijs@cn.fujitsu.com,
+        wency@cn.fujitsu.com, linfeng@cn.fujitsu.com, jiang.liu@huawei.com,
+        yinghai@kernel.org, kosaki.motohiro@jp.fujitsu.com,
+        minchan.kim@gmail.com, mgorman@suse.de, rientjes@google.com,
+        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH v2 3/5] page_alloc: Introduce zone_movable_limit[] to
+ keep movable limit for nodes
+References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <1353667445-7593-4-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1353667445-7593-4-git-send-email-tangchen@cn.fujitsu.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 5, 2012 at 2:48 AM, Martin Steigerwald <Martin@lichtvoll.de> wrote:
->
-> Linus, while I am interested in an answer I think that Dave and Christoph
-> as Linux filesystem developers actually deserve one (instead of silently
-> being ignored which is also a decision in this matter).
->
-> I did not see an answer in linux-2.6 commit log as of today so far.
+On 11/23/2012 06:44 PM, Tang Chen wrote:
+> This patch introduces a new array zone_movable_limit[] to store the
+> ZONE_MOVABLE limit from movablecore_map boot option for all nodes.
+> The function sanitize_zone_movable_limit() will find out to which
+> node the ranges in movable_map.map[] belongs, and calculates the
+> low boundary of ZONE_MOVABLE for each node.
+> 
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+> Reviewed-by: Wen Congyang <wency@cn.fujitsu.com>
+> Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Tested-by: Lin Feng <linfeng@cn.fujitsu.com>
+> ---
+>  mm/page_alloc.c |   55 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 55 insertions(+), 0 deletions(-)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index fb5cf12..f23d76a 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -206,6 +206,7 @@ static unsigned long __meminitdata arch_zone_highest_possible_pfn[MAX_NR_ZONES];
+>  static unsigned long __initdata required_kernelcore;
+>  static unsigned long __initdata required_movablecore;
+>  static unsigned long __meminitdata zone_movable_pfn[MAX_NUMNODES];
+> +static unsigned long __meminitdata zone_movable_limit[MAX_NUMNODES];
+>  
+>  /* movable_zone is the "real" zone pages in ZONE_MOVABLE are taken from */
+>  int movable_zone;
+> @@ -4323,6 +4324,55 @@ static unsigned long __meminit zone_absent_pages_in_node(int nid,
+>  	return __absent_pages_in_range(nid, zone_start_pfn, zone_end_pfn);
+>  }
+>  
+> +/**
+> + * sanitize_zone_movable_limit - Sanitize the zone_movable_limit array.
+> + *
+> + * zone_movable_limit is initialized as 0. This function will try to get
+> + * the first ZONE_MOVABLE pfn of each node from movablecore_map, and
+> + * assigne them to zone_movable_limit.
+> + * zone_movable_limit[nid] == 0 means no limit for the node.
+> + *
+> + * Note: Each range is represented as [start_pfn, end_pfn)
+> + */
+> +static void __meminit sanitize_zone_movable_limit(void)
+> +{
+> +	int map_pos = 0, i, nid;
+> +	unsigned long start_pfn, end_pfn;
+> +
+> +	if (!movablecore_map.nr_map)
+> +		return;
+> +
+> +	/* Iterate all ranges from minimum to maximum */
+> +	for_each_mem_pfn_range(i, MAX_NUMNODES, &start_pfn, &end_pfn, &nid) {
+> +		/*
+> +		 * If we have found lowest pfn of ZONE_MOVABLE of the node
+> +		 * specified by user, just go on to check next range.
+> +		 */
+> +		if (zone_movable_limit[nid])
+> +			continue;
+Need special handling of low memory here on systems with highmem, otherwise
+it will cause us to configure both lowmem and highmem as movable_zone.
 
-Christ guys. This whole thread is retarded.
+> +
+> +		while (map_pos < movablecore_map.nr_map) {
+> +			if (end_pfn <= movablecore_map.map[map_pos].start)
+> +				break;
+> +
+> +			if (start_pfn >= movablecore_map.map[map_pos].end) {
+> +				map_pos++;
+> +				continue;
+> +			}
+> +
+> +			/*
+> +			 * The start_pfn of ZONE_MOVABLE is either the minimum
+> +			 * pfn specified by movablecore_map, or 0, which means
+> +			 * the node has no ZONE_MOVABLE.
+> +			 */
+> +			zone_movable_limit[nid] = max(start_pfn,
+> +					movablecore_map.map[map_pos].start);
+> +
+> +			break;
+> +		}
+> +	}
+> +}
+> +
+>  #else /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+>  static inline unsigned long __meminit zone_spanned_pages_in_node(int nid,
+>  					unsigned long zone_type,
+> @@ -4341,6 +4391,10 @@ static inline unsigned long __meminit zone_absent_pages_in_node(int nid,
+>  	return zholes_size[zone_type];
+>  }
+>  
+> +static void __meminit sanitize_zone_movable_limit(void)
+> +{
+> +}
+> +
+>  #endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+>  
+>  static void __meminit calculate_node_totalpages(struct pglist_data *pgdat,
+> @@ -4906,6 +4960,7 @@ void __init free_area_init_nodes(unsigned long *max_zone_pfn)
+>  
+>  	/* Find the PFNs that ZONE_MOVABLE begins at in each node */
+>  	memset(zone_movable_pfn, 0, sizeof(zone_movable_pfn));
+> +	sanitize_zone_movable_limit();
+>  	find_zone_movable_pfns_for_nodes();
+>  
+>  	/* Print out the zone ranges */
+> 
 
-The *ONLY* reason people seem to have for reverting that is a "ooh, my
-feelings are hurt by how this was done, and now I'm a pissy bitch and
-I want to get this reverted".
-
-Stop the f*cking around already.
-
-If you want something reverted, you show me the *technical* reason for
-it. Not the "ooh, I'm so annoyed by how this was done" reason for it.
-
-And if your little feelings got hurt, get your mommy to tuck you in,
-don't email me about it. Because I'm not exactly known for my deep
-emotional understanding and supportive personality, am I?
-
-               Linus
