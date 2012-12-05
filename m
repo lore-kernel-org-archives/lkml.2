@@ -1,703 +1,1053 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984Ab2LEQJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 11:09:59 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:55554 "EHLO multi.imgtec.com"
+	id S1753499Ab2LEQJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 11:09:58 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:55566 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753844Ab2LEQJu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 11:09:50 -0500
+	id S1753718Ab2LEQJv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 11:09:51 -0500
 From: James Hogan <james.hogan@imgtec.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: Arnd Bergmann <arnd@arndb.de>, James Hogan <james.hogan@imgtec.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH v2 43/44] tty/metag_da: Add metag DA TTY driver
-Date: Wed, 5 Dec 2012 16:09:01 +0000
-Message-ID: <1354723742-6195-44-git-send-email-james.hogan@imgtec.com>
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH v2 44/44] fs: imgdafs: Add IMG DAFS filesystem for metag
+Date: Wed, 5 Dec 2012 16:09:02 +0000
+Message-ID: <1354723742-6195-45-git-send-email-james.hogan@imgtec.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1354723742-6195-1-git-send-email-james.hogan@imgtec.com>
 References: <1354723742-6195-1-git-send-email-james.hogan@imgtec.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2012_12_05_16_09_42
+X-SEF-Processed: 7_3_0_01181__2012_12_05_16_09_43
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a TTY driver for communicating over a Meta DA (Debug Adapter)
-channel using the bios channel SWITCH operation.
+Add the IMG Debug Adapter File System (DAFS) for metag, which uses
+SWITCH operations to communicate with a file server on a host computer
+via a JTAG debug adapter.
 
 Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org
 ---
- MAINTAINERS                            |    1 +
- arch/metag/Kconfig                     |    4 +-
- arch/metag/configs/meta1_defconfig     |    2 +
- arch/metag/configs/meta2_defconfig     |    2 +
- arch/metag/configs/meta2_smp_defconfig |    2 +
- arch/metag/kernel/setup.c              |   12 +
- drivers/tty/Kconfig                    |   13 +
- drivers/tty/Makefile                   |    1 +
- drivers/tty/metag_da.c                 |  523 ++++++++++++++++++++++++++++++++
- 9 files changed, 559 insertions(+), 1 deletions(-)
- create mode 100644 drivers/tty/metag_da.c
+ MAINTAINERS          |    1 +
+ arch/metag/Kconfig   |    1 +
+ fs/Kconfig           |    1 +
+ fs/Makefile          |    1 +
+ fs/imgdafs/Kconfig   |    6 +
+ fs/imgdafs/Makefile  |    7 +
+ fs/imgdafs/imgdafs.h |   80 +++++
+ fs/imgdafs/inode.c   |  840 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 8 files changed, 937 insertions(+), 0 deletions(-)
+ create mode 100644 fs/imgdafs/Kconfig
+ create mode 100644 fs/imgdafs/Makefile
+ create mode 100644 fs/imgdafs/imgdafs.h
+ create mode 100644 fs/imgdafs/inode.c
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index b2b64ea..9ed766d 100644
+index 9ed766d..07294e0 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -4856,6 +4856,7 @@ S:	Maintained
- F:	arch/metag/
+@@ -4857,6 +4857,7 @@ F:	arch/metag/
  F:	Documentation/metag/
  F:	Documentation/devicetree/bindings/metag/
-+F:	drivers/tty/metag_da.c
+ F:	drivers/tty/metag_da.c
++F:	fs/imgdafs/
  
  MICROBLAZE ARCHITECTURE
  M:	Michal Simek <monstr@monstr.eu>
 diff --git a/arch/metag/Kconfig b/arch/metag/Kconfig
-index 5807964..9489431 100644
+index 9489431..29787c8 100644
 --- a/arch/metag/Kconfig
 +++ b/arch/metag/Kconfig
-@@ -220,7 +220,9 @@ config METAG_DA
- 	  of the DA will be detected automatically at boot, so it is safe to say
- 	  Y to this option even when booting without a DA.
- 
--	  This enables support for services provided by DA JTAG debug adapters.
-+	  This enables support for services provided by DA JTAG debug adapters,
-+	  such as:
-+	  - communication over DA channels (such as the console driver).
+@@ -223,6 +223,7 @@ config METAG_DA
+ 	  This enables support for services provided by DA JTAG debug adapters,
+ 	  such as:
+ 	  - communication over DA channels (such as the console driver).
++	  - use of the DA filesystem.
  
  menu "Boot options"
  
-diff --git a/arch/metag/configs/meta1_defconfig b/arch/metag/configs/meta1_defconfig
-index 76a2d5f..f440e5a 100644
---- a/arch/metag/configs/meta1_defconfig
-+++ b/arch/metag/configs/meta1_defconfig
-@@ -28,6 +28,8 @@ CONFIG_BLK_DEV_RAM_SIZE=16384
- # CONFIG_SERIO is not set
- # CONFIG_VT is not set
- # CONFIG_LEGACY_PTYS is not set
-+CONFIG_DA_TTY=y
-+CONFIG_DA_CONSOLE=y
- # CONFIG_DEVKMEM is not set
- # CONFIG_HW_RANDOM is not set
- # CONFIG_HWMON is not set
-diff --git a/arch/metag/configs/meta2_defconfig b/arch/metag/configs/meta2_defconfig
-index 0b46722..b9ecdd2 100644
---- a/arch/metag/configs/meta2_defconfig
-+++ b/arch/metag/configs/meta2_defconfig
-@@ -29,6 +29,8 @@ CONFIG_BLK_DEV_RAM_SIZE=16384
- # CONFIG_SERIO is not set
- # CONFIG_VT is not set
- # CONFIG_LEGACY_PTYS is not set
-+CONFIG_DA_TTY=y
-+CONFIG_DA_CONSOLE=y
- # CONFIG_DEVKMEM is not set
- # CONFIG_HW_RANDOM is not set
- # CONFIG_HWMON is not set
-diff --git a/arch/metag/configs/meta2_smp_defconfig b/arch/metag/configs/meta2_smp_defconfig
-index b254e6c..87b60eb 100644
---- a/arch/metag/configs/meta2_smp_defconfig
-+++ b/arch/metag/configs/meta2_smp_defconfig
-@@ -30,6 +30,8 @@ CONFIG_BLK_DEV_RAM_SIZE=16384
- # CONFIG_SERIO is not set
- # CONFIG_VT is not set
- # CONFIG_LEGACY_PTYS is not set
-+CONFIG_DA_TTY=y
-+CONFIG_DA_CONSOLE=y
- # CONFIG_DEVKMEM is not set
- # CONFIG_HW_RANDOM is not set
- # CONFIG_HWMON is not set
-diff --git a/arch/metag/kernel/setup.c b/arch/metag/kernel/setup.c
-index 65e8641..35d129f 100644
---- a/arch/metag/kernel/setup.c
-+++ b/arch/metag/kernel/setup.c
-@@ -61,6 +61,11 @@ extern char _heap_start[];
- extern u32 __dtb_start[];
- #endif
+diff --git a/fs/Kconfig b/fs/Kconfig
+index f95ae3a..b2d09b0 100644
+--- a/fs/Kconfig
++++ b/fs/Kconfig
+@@ -220,6 +220,7 @@ source "fs/pstore/Kconfig"
+ source "fs/sysv/Kconfig"
+ source "fs/ufs/Kconfig"
+ source "fs/exofs/Kconfig"
++source "fs/imgdafs/Kconfig"
  
-+#ifdef CONFIG_DA_CONSOLE
-+/* Our early channel based console driver */
-+extern struct console dash_console;
-+#endif
-+
- struct machine_desc *machine_desc __initdata;
+ endif # MISC_FILESYSTEMS
  
- /*
-@@ -184,6 +189,13 @@ void __init setup_arch(char **cmdline_p)
- 	int heap_id, i;
- 
- 	metag_da_probe();
-+#ifdef CONFIG_DA_CONSOLE
-+	if (metag_da_enabled()) {
-+		/* An early channel based console driver */
-+		register_console(&dash_console);
-+		add_preferred_console("ttyDA", 1, NULL);
-+	}
-+#endif
- 
- 	/* try interpreting the argument as a device tree */
- 	machine_desc = setup_machine_fdt(original_cmd_line);
-diff --git a/drivers/tty/Kconfig b/drivers/tty/Kconfig
-index d8e05ee..182f92b 100644
---- a/drivers/tty/Kconfig
-+++ b/drivers/tty/Kconfig
-@@ -387,3 +387,16 @@ config PPC_EARLY_DEBUG_EHV_BC_HANDLE
- 	  If the number you specify is not a valid byte channel handle, then
- 	  there simply will be no early console output.  This is true also
- 	  if you don't boot under a hypervisor at all.
-+
-+config DA_TTY
-+	bool "DA TTY"
-+	depends on METAG_DA
-+	select SERIAL_NONSTANDARD
-+	help
-+	  This enables a TTY on a Dash channel.
-+
-+config DA_CONSOLE
-+	bool "DA Console"
-+	depends on DA_TTY
-+	help
-+	  This enables a console on a Dash channel.
-diff --git a/drivers/tty/Makefile b/drivers/tty/Makefile
-index 2953059..dbd7745 100644
---- a/drivers/tty/Makefile
-+++ b/drivers/tty/Makefile
-@@ -27,5 +27,6 @@ obj-$(CONFIG_SYNCLINK_GT)	+= synclink_gt.o
- obj-$(CONFIG_SYNCLINKMP)	+= synclinkmp.o
- obj-$(CONFIG_SYNCLINK)		+= synclink.o
- obj-$(CONFIG_PPC_EPAPR_HV_BYTECHAN) += ehv_bytechan.o
-+obj-$(CONFIG_DA_TTY)	+= metag_da.o
- 
- obj-y += ipwireless/
-diff --git a/drivers/tty/metag_da.c b/drivers/tty/metag_da.c
+diff --git a/fs/Makefile b/fs/Makefile
+index 1d7af79..7b478a5 100644
+--- a/fs/Makefile
++++ b/fs/Makefile
+@@ -126,3 +126,4 @@ obj-$(CONFIG_GFS2_FS)           += gfs2/
+ obj-y				+= exofs/ # Multiple modules
+ obj-$(CONFIG_CEPH_FS)		+= ceph/
+ obj-$(CONFIG_PSTORE)		+= pstore/
++obj-$(CONFIG_IMGDAFS_FS)	+= imgdafs/
+diff --git a/fs/imgdafs/Kconfig b/fs/imgdafs/Kconfig
 new file mode 100644
-index 0000000..e46d80b
+index 0000000..5293adb
 --- /dev/null
-+++ b/drivers/tty/metag_da.c
-@@ -0,0 +1,523 @@
++++ b/fs/imgdafs/Kconfig
+@@ -0,0 +1,6 @@
++config IMGDAFS_FS
++	bool "Meta DA filesystem support"
++	depends on METAG_DA
++	help
++	  This enables the DA filesystem, which allows Linux to
++	  to access files on a system attached via a debug adapter.
+diff --git a/fs/imgdafs/Makefile b/fs/imgdafs/Makefile
+new file mode 100644
+index 0000000..169a3c6
+--- /dev/null
++++ b/fs/imgdafs/Makefile
+@@ -0,0 +1,7 @@
++#
++# Makefile for DAfs the Debug Adapter filesystem.
++#
++
++obj-$(CONFIG_IMGDAFS_FS) += imgdafs.o
++
++imgdafs-objs := inode.o
+diff --git a/fs/imgdafs/imgdafs.h b/fs/imgdafs/imgdafs.h
+new file mode 100644
+index 0000000..6c1da13
+--- /dev/null
++++ b/fs/imgdafs/imgdafs.h
+@@ -0,0 +1,80 @@
++#ifndef _IMGDAFS_H_
++#define _IMGDAFS_H_
++
++#define DA_OP_OPEN 0
++#define DA_OP_CREAT 1
++#define DA_OP_READ 2
++#define DA_OP_WRITE 3
++#define DA_OP_CLOSE 4
++#define DA_OP_LINK 5
++#define DA_OP_LSEEK 6
++#define DA_OP_UNLINK 7
++#define DA_OP_ISATTY 8
++#define DA_OP_FCNTL 9
++#define DA_OP_STAT 10
++#define DA_OP_FSTAT 11
++#define DA_OP_GETCWD 12
++#define DA_OP_CHDIR 13
++#define DA_OP_MKDIR 14
++#define DA_OP_RMDIR 15
++#define DA_OP_FINDFIRST 16
++#define DA_OP_FINDNEXT 17
++#define DA_OP_FINDCLOSE 18
++#define DA_OP_CHMOD 19
++#define DA_OP_PREAD 20
++#define DA_OP_PWRITE 21
++
++#define OS_TYPE_FILE 1
++#define OS_TYPE_DIR 2
++#define OS_TYPE_SYMLINK 3
++#define OS_TYPE_CHARDEV 4
++#define OS_TYPE_BLOCKDEV 5
++#define OS_TYPE_FIFO 6
++#define OS_TYPE_SOCK 7
++
++#define DA_O_RDONLY 0
++#define DA_O_WRONLY 1
++#define DA_O_RDWR 2
++#define DA_O_APPEND 8
++#define DA_O_CREAT 0x0200
++#define DA_O_TRUNC 0x0400
++#define DA_O_EXCL 0x0800
++
++#define DA_O_AFFINITY_THREAD_0 0x10000
++#define DA_O_AFFINITY_THREAD_1 0x20000
++#define DA_O_AFFINITY_THREAD_2 0x40000
++#define DA_O_AFFINITY_THREAD_3 0x80000
++#define DA_O_AFFINITY_SHIFT 16
++
++#define DA_S_IWUSR	0200	/* 0x80 */
++#define DA_S_IRUSR	0400	/* 0x100 */
++
++struct da_stat {
++	short st_dev;
++	unsigned short st_ino;
++	unsigned st_mode;
++	unsigned short st_nlink;
++	unsigned short st_uid;
++	unsigned short st_gid;
++	short st_rdev;
++	int st_size;
++	int st_atime;
++	int st_spare1;
++	int st_mtime;
++	int st_spare2;
++	int st_ctime;
++	int st_spare3;
++	int st_blksize;
++	int st_blocks;
++	int st_spare4[2];
++};
++
++#define _A_SUBDIR 0x10
++
++struct da_finddata {
++	unsigned long size;
++	unsigned long attrib;
++	char name[260];
++};
++
++#endif
+diff --git a/fs/imgdafs/inode.c b/fs/imgdafs/inode.c
+new file mode 100644
+index 0000000..b7d7199
+--- /dev/null
++++ b/fs/imgdafs/inode.c
+@@ -0,0 +1,840 @@
 +/*
-+ *  dashtty.c - tty driver for Dash channels interface.
++ * Copyright (C) 2008,2009,2010 Imagination Technologies Ltd.
++ * Licensed under the GPL
 + *
-+ *  Copyright (C) 2007,2008,2012 Imagination Technologies
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file COPYING in the main directory of this archive
-+ * for more details.
++ * Based on hostfs for UML.
 + *
 + */
 +
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/export.h>
++#include <linux/fs.h>
++#include <linux/module.h>
++#include <linux/mm.h>
++#include <linux/pagemap.h>
++#include <linux/seq_file.h>
++#include <linux/mount.h>
 +#include <linux/slab.h>
-+#include <linux/timer.h>
-+#include <linux/tty.h>
-+#include <linux/tty_driver.h>
-+#include <linux/tty_flip.h>
-+#include <linux/string.h>
-+#include <linux/sched.h>
-+#include <linux/console.h>
-+#include <linux/uaccess.h>
-+#include <linux/kthread.h>
 +
 +#include <asm/da.h>
++#include <asm/hwthread.h>
 +
-+/* Channel error codes */
-+#define CONAOK	0
-+#define CONERR	1
-+#define CONBAD	2
-+#define CONPRM	3
-+#define CONADR	4
-+#define CONCNT	5
-+#define CONCBF	6
-+#define CONCBE	7
-+#define CONBSY	8
++#include "imgdafs.h"
 +
-+/* Default channel for the console */
-+#define CONSOLE_CHANNEL      1
-+
-+/* First channel available for tty use. */
-+#define FIRST_TTY_CHANNEL    0
-+
-+#define NUM_TTY_CHANNELS     6
-+
-+/* Auto allocate */
-+#define DA_TTY_MAJOR        0
-+
-+/* A speedy poll rate helps the userland debug process connection response.
-+ * But, if you set it too high then no other userland processes get much
-+ * of a look in.
-+ */
-+#define DA_TTY_POLL (HZ / 50)
-+
-+static int num_channels_need_poll;
-+
-+static struct timer_list poll_timer;
-+
-+static struct tty_driver *channel_driver;
-+
-+static struct task_struct *dashtty_thread;
-+
-+#define RX_BUF_SIZE 1024
-+
-+enum {
-+	INCHR = 1,
-+	OUTCHR,
-+	RDBUF,
-+	WRBUF,
-+	RDSTAT
-+};
-+
-+/* One struct dashtty exists per open channel. */
-+struct dashtty {
-+	struct tty_struct *tty;
-+	struct tty_port *port;
-+};
-+
-+static struct tty_port dashtty_ports[NUM_TTY_CHANNELS];
-+
-+struct dashbuf {
-+	struct list_head entry;
-+	struct dashtty *tty;
-+	unsigned char *buf;
-+	int count;
-+	int chan;
-+};
-+
-+static struct dashtty *dashtty_ttys[NUM_TTY_CHANNELS];
-+static struct list_head dashtty_output_queue;
-+static spinlock_t dashtty_q_lock;
-+static wait_queue_head_t dashtty_waitqueue;
-+
-+static DEFINE_MUTEX(dashtty_mutex);
-+
-+/*
-+ * Low-level DA channel access routines
-+ */
-+static int chancall(int bios_function, int channel, int arg2, void *arg3,
-+			void *arg4)
++static int fscall(int system_call, int arg1, int arg2, int arg3, int arg4,
++		  int arg5, int *fserrno)
 +{
-+	register int   bios_function__ __asm__("D1Ar1") = bios_function;
-+	register int   channel__       __asm__("D0Ar2") = channel;
-+	register int   arg2__          __asm__("D1Ar3") = arg2;
-+	register void *arg3__          __asm__("D0Ar4") = arg3;
-+	register void *arg4__          __asm__("D1Ar5") = arg4;
-+	register int   bios_call       __asm__("D0Ar6") = 3;
-+	register int   result          __asm__("D0Re0");
++	register int arg1_           __asm__("D1Ar1") = arg1;
++	register int arg2_           __asm__("D0Ar2") = arg2;
++	register int arg3_           __asm__("D1Ar3") = arg3;
++	register int arg4_           __asm__("D0Ar4") = arg4;
++	register int arg5_           __asm__("D1Ar5") = arg5;
++	register int system_call_    __asm__("D0Ar6") = system_call;
++	register int result          __asm__("D0Re0");
++	register int errno           __asm__("D1Re0");
 +
 +	__asm__ volatile (
-+		"SETL   [A0StP++], %6,%5\n\t"
-+		"SETL   [A0StP++], %4,%3\n\t"
-+		"SETL   [A0StP++], %2,%1\n\t"
++		"SETL   [A0StP++], %7,%6\n\t"
++		"SETL   [A0StP++], %5,%4\n\t"
++		"SETL   [A0StP++], %3,%2\n\t"
 +		"ADD    A0StP, A0StP, #8\n\t"
-+		"SWITCH #0x0C30208\n\t"
-+		"GETD   %0, [A0StP+#-8]\n\t"
++		"SWITCH #0x0C00208\n\t"
++		"GETL   %0, %1, [A0StP+#-8]\n\t"
 +		"SUB    A0StP, A0StP, #(4*6)+8\n\t"
-+		: "=r" (result)/* outs */
-+		: "r" (bios_function__), "r" (channel__), "r" (arg2__),
-+		  "r" (arg3__), "r" (arg4__), "r" (bios_call) /* ins */
++		: "=r" (result), "=r" (errno)
++		: "r" (arg1_), "r" (arg2_), "r" (arg3_),
++		  "r" (arg4_), "r" (arg5_), "r" (system_call_)
 +		: "memory");
++
++	if (fserrno)
++		*fserrno = errno;
 +
 +	return result;
 +}
 +
-+/*
-+ * Attempts to fetch count bytes from channel channel and returns actual count.
-+ */
-+static int fetch_data(int channel)
-+{
-+	struct dashtty *dashtty = dashtty_ttys[channel];
-+	struct tty_struct *tty = dashtty->tty;
-+	int received = 0;
-+
-+	if (chancall(RDBUF, channel, RX_BUF_SIZE,
-+		     (void *)dashtty->port->xmit_buf, &received) == CONAOK) {
-+		if (received) {
-+			int space;
-+			unsigned char *cbuf;
-+
-+			space = tty_prepare_flip_string(tty, &cbuf, received);
-+
-+			if (space <= 0)
-+				return 0;
-+
-+			memcpy(cbuf, dashtty->port->xmit_buf, space);
-+			tty_flip_buffer_push(tty);
-+		}
-+	}
-+
-+	return received;
-+}
-+
-+/*
-+ *	Finds the next channel to poll
-+ */
-+static int find_channel_to_poll(void)
-+{
-+	static int last_polled_channel = FIRST_TTY_CHANNEL;
-+
-+	int this_channel = last_polled_channel;
-+
-+	while (++this_channel != last_polled_channel) {
-+		if (this_channel >= NUM_TTY_CHANNELS)
-+			this_channel = 0;
-+
-+		if (dashtty_ttys[this_channel]) {
-+			last_polled_channel = this_channel;
-+			break;
-+		}
-+	}
-+	return last_polled_channel;
-+}
-+
-+static int put_data(void *arg)
-+{
-+	struct dashbuf *dbuf;
-+	int number_written;
-+
-+	__set_current_state(TASK_RUNNING);
-+	while (!kthread_should_stop()) {
-+		/*
-+		 * Pick up all the output buffers and write them out.
-+		 *
-+		 * FIXME: should we check with ASE how much room we have?
-+		 * Ideally, this will already have been done by write_room ??
-+		 */
-+		spin_lock(&dashtty_q_lock);
-+
-+		while (!list_empty(&dashtty_output_queue)) {
-+			dbuf = list_entry(dashtty_output_queue.next,
-+					  struct dashbuf, entry);
-+
-+			chancall(WRBUF, dbuf->chan, dbuf->count,
-+				 (void *)dbuf->buf, &number_written);
-+
-+			if (list_is_last(&dbuf->entry,
-+					 &dashtty_output_queue))
-+				list_del_init(&dashtty_output_queue);
-+			else
-+				list_del(&dbuf->entry);
-+
-+			/*
-+			 * FIXME: should we only be doing wake when we
-+			 * know something is sleeping?
-+			 */
-+			tty_wakeup(dbuf->tty->tty);
-+
-+			kfree(dbuf->buf);
-+			kfree(dbuf);
-+		}
-+		spin_unlock(&dashtty_q_lock);
-+
-+		wait_event_interruptible(dashtty_waitqueue,
-+					 !list_empty(&dashtty_output_queue));
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-+ *	This gets called every DA_TTY_POLL and polls the channels for data
-+ */
-+static void dashtty_timer(unsigned long ignored)
-+{
-+	struct dashtty *dtty;
-+	int this_channel;
-+
-+	/* If there are no ports open do nothing and don't poll again. */
-+	if (num_channels_need_poll == 0)
-+		return;
-+
-+	this_channel = find_channel_to_poll();
-+	dtty = dashtty_ttys[this_channel];
-+
-+	/* Did we find a channel to poll ? */
-+	if (dtty)
-+		fetch_data(this_channel);
-+
-+	mod_timer_pinned(&poll_timer, jiffies + DA_TTY_POLL);
-+}
-+
-+static void add_poll_timer(struct timer_list *poll_timer)
-+{
-+	init_timer(poll_timer);
-+
-+	poll_timer->function = dashtty_timer;
-+	poll_timer->expires = jiffies + DA_TTY_POLL;
-+
-+	/*
-+	 * Always attach the timer to the boot CPU.
-+	 */
-+	add_timer_on(poll_timer, 0);
-+}
-+
-+static int dashtty_open(struct tty_struct *tty, struct file *filp)
-+{
-+	struct dashtty *dashtty;
-+	int line;
-+
-+	if (!tty)
-+		return -ENODEV;
-+
-+	line = tty->index;
-+
-+	if (line < 0 || line >= NUM_TTY_CHANNELS)
-+		return -ENODEV;
-+
-+	mutex_lock(&dashtty_mutex);
-+	dashtty = dashtty_ttys[line];
-+	if (!dashtty) {
-+		dashtty = kzalloc(sizeof(struct dashtty), GFP_KERNEL);
-+
-+		if (!dashtty)
-+			return -ENOMEM;
-+
-+		dashtty->port = &dashtty_ports[line];
-+
-+		dashtty->port->xmit_buf = kzalloc(RX_BUF_SIZE, GFP_KERNEL);
-+		dashtty->tty = tty;
-+		dashtty_ttys[line] = dashtty;
-+	}
-+
-+	dashtty->port->count++;
-+	tty_port_tty_set(dashtty->port, tty);
-+
-+	mutex_unlock(&dashtty_mutex);
-+
-+	/*
-+	 * Don't add the poll timer if we're opening a console. This
-+	 * avoids the overhead of polling the Dash but means it is not
-+	 * possible to have a login on /dev/console.
-+	 *
-+	 */
-+	if (line == CONSOLE_CHANNEL)
-+		return 0;
-+
-+	if (num_channels_need_poll == 0)
-+		add_poll_timer(&poll_timer);
-+
-+	num_channels_need_poll++;
-+
-+	return 0;
-+}
-+
-+static void dashtty_close(struct tty_struct *tty, struct file *filp)
-+{
-+	int line;
-+
-+	if (!tty)
-+		return;
-+
-+	line = tty->index;
-+
-+	if (line < 0 || line >= NUM_TTY_CHANNELS)
-+		return;
-+
-+	mutex_lock(&dashtty_mutex);
-+	dashtty_ttys[line]->port->count--;
-+
-+	if (!dashtty_ttys[line]->port->count) {
-+		tty_port_tty_set(dashtty_ttys[line]->port, NULL);
-+		kfree(dashtty_ttys[line]->port->xmit_buf);
-+		kfree(dashtty_ttys[line]);
-+		dashtty_ttys[line] = NULL;
-+	}
-+
-+	mutex_unlock(&dashtty_mutex);
-+
-+	if (line == CONSOLE_CHANNEL)
-+		return;
-+
-+	num_channels_need_poll--;
-+
-+	if (num_channels_need_poll <= 0)
-+		del_timer(&poll_timer);
-+}
-+
-+static int dashtty_write(struct tty_struct *tty, const unsigned char *buf,
-+			 int count)
-+{
-+	struct dashtty *dtty;
-+	struct dashbuf *dbuf;
-+	int channel;
-+
-+	if (count <= 0)
-+		return 0;
-+
-+	/* Determine the channel */
-+	channel = FIRST_TTY_CHANNEL + tty->index;
-+	dtty = dashtty_ttys[channel];
-+	BUG_ON(!dtty);
-+
-+	dbuf = kzalloc(sizeof(*dbuf), GFP_KERNEL);
-+	if (!dbuf)
-+		return 0;
-+
-+	dbuf->buf = kzalloc(count, GFP_KERNEL);
-+	if (!dbuf->buf) {
-+		kfree(dbuf);
-+		return 0;
-+	}
-+
-+	memcpy(dbuf->buf, buf, count);
-+	dbuf->count = count;
-+	dbuf->chan = channel;
-+	dbuf->tty = dtty;
-+
-+	/*
-+	 * Enqueue the output buffer.
-+	 *
-+	 * The reason that we asynchronously write the buffer is because
-+	 * there's no way to tell what CPU we're currently executing on.
-+	 * If we were to write the buffer synchornously then because dash
-+	 * channels are per-CPU the buffer would be written to the channel
-+	 * of whatever CPU we're running on.
-+	 *
-+	 * What we actually want to happen is have all input and output
-+	 * done on one CPU.
-+	 */
-+	spin_lock(&dashtty_q_lock);
-+	list_add_tail(&dbuf->entry, &dashtty_output_queue);
-+	spin_unlock(&dashtty_q_lock);
-+
-+	wake_up_interruptible(&dashtty_waitqueue);
-+
-+	/*
-+	 * FIXME: This is slightly optimistic. Because we're deferring
-+	 * the output until later it is impossible to predict whether we
-+	 * will actually write "count" bytes.
-+	 */
-+	return count;
-+}
-+
-+/*
-+ * Ask the stub how much room there is in the channel
-+ */
-+static int dashtty_write_room(struct tty_struct *tty)
-+{
-+	unsigned int data[2];
-+	static unsigned int actual_space;
-+	int channel;
-+
-+	if (actual_space)
-+		return actual_space;
-+
-+	channel = FIRST_TTY_CHANNEL + tty->index;
-+
-+	/* Is there any data waiting ? */
-+	if (chancall(RDSTAT, channel, 0, NULL, &data[0]) == CONAOK) {
-+		/* There was a bug in LogieDash (1.2.8a at least) where
-+		 * the two values were returned the WRONG WAY AROUND!!!
-+		 */
-+		actual_space = data[1];
-+	}
-+
-+	return actual_space;
-+}
-+
-+static int dashtty_chars_in_buffer(struct tty_struct *tty)
-+{
-+	return 0;               /* we're not buffering */
-+}
-+
-+static const struct tty_operations dashtty_ops = {
-+	.open = dashtty_open,
-+	.close = dashtty_close,
-+	.write = dashtty_write,
-+	.write_room = dashtty_write_room,
-+	.chars_in_buffer = dashtty_chars_in_buffer,
++struct dafs_inode_info {
++	int fd;
++	int mode;
++	struct inode vfs_inode;
 +};
 +
-+static int __init dashtty_init(void)
++static inline struct dafs_inode_info *DAFS_I(struct inode *inode)
++{
++	return container_of(inode, struct dafs_inode_info, vfs_inode);
++}
++
++#define FILE_DAFS_I(file) DAFS_I((file)->f_path.dentry->d_inode)
++
++static int dafs_d_delete(const struct dentry *dentry)
++{
++	return 1;
++}
++
++static const struct dentry_operations dafs_dentry_ops = {
++	.d_delete		= dafs_d_delete,
++};
++
++#define DAFS_SUPER_MAGIC 0xdadadaf5
++
++static const struct inode_operations dafs_iops;
++static const struct inode_operations dafs_dir_iops;
++
++static char *__dentry_name(struct dentry *dentry, char *name)
++{
++	char *p = dentry_path_raw(dentry, name, PATH_MAX);
++	char *root;
++	size_t len;
++
++	root = dentry->d_sb->s_fs_info;
++	len = strlen(root);
++	if (IS_ERR(p)) {
++		__putname(name);
++		return NULL;
++	}
++
++	strlcpy(name, root, PATH_MAX);
++	if (len > p - name) {
++		__putname(name);
++		return NULL;
++	}
++	if (p > name + len) {
++		char *s = name + len;
++		while ((*s++ = *p++) != '\0')
++			;
++	}
++	return name;
++}
++
++static char *dentry_name(struct dentry *dentry)
++{
++	char *name = __getname();
++	if (!name)
++		return NULL;
++
++	return __dentry_name(dentry, name); /* will unlock */
++}
++
++static int stat_file(const char *path, struct da_stat *p, int fd)
 +{
 +	int ret;
-+	int nport;
++	int fserrno;
++	memset(p, 0, sizeof(*p));
 +
-+	if (!metag_da_enabled())
-+		return -ENODEV;
-+
-+	channel_driver = tty_alloc_driver(NUM_TTY_CHANNELS, 0);
-+	if (IS_ERR(channel_driver))
-+		return PTR_ERR(channel_driver);
-+
-+	channel_driver->owner = THIS_MODULE;
-+	channel_driver->driver_name = "ttyDA";
-+	channel_driver->name = "ttyDA";
-+	channel_driver->major = DA_TTY_MAJOR;
-+	channel_driver->minor_start = 0;
-+	channel_driver->type = TTY_DRIVER_TYPE_SERIAL;
-+	channel_driver->subtype = SERIAL_TYPE_NORMAL;
-+	channel_driver->init_termios = tty_std_termios;
-+	channel_driver->init_termios.c_cflag =
-+	    B38400 | CS8 | CREAD | HUPCL | CLOCAL;
-+	channel_driver->flags = TTY_DRIVER_REAL_RAW;
-+
-+	tty_set_operations(channel_driver, &dashtty_ops);
-+	for (nport = 0; nport < NUM_TTY_CHANNELS; nport++) {
-+		tty_port_init(&dashtty_ports[nport]);
-+		tty_port_link_device(&dashtty_ports[nport], channel_driver,
-+				     nport);
-+	}
-+
-+	spin_lock_init(&dashtty_q_lock);
-+	INIT_LIST_HEAD(&dashtty_output_queue);
-+	init_waitqueue_head(&dashtty_waitqueue);
-+	dashtty_thread = kthread_create(put_data, NULL, "ttyDA");
-+	if (IS_ERR(dashtty_thread)) {
-+		pr_info("Couldn't create dashtty thread\n");
-+		return PTR_ERR(dashtty_thread);
-+	}
-+	kthread_bind(dashtty_thread, 0);
-+	wake_up_process(dashtty_thread);
-+
-+	ret = tty_register_driver(channel_driver);
-+
-+	if (ret < 0) {
-+		pr_info("Couldn't install dashtty driver: err %d\n",
-+			ret);
-+		put_tty_driver(channel_driver);
-+		return ret;
++	if (fd >= 0) {
++		ret = fscall(DA_OP_FSTAT, fd, (int)p, 0, 0, 0, &fserrno);
++		if (ret < 0) {
++			/* Some versions of Codescape do not fill out errno. */
++			if (ret < 0 && fserrno == 0)
++				fserrno = ENOENT;
++			return -fserrno;
++		}
++	} else {
++		ret = fscall(DA_OP_STAT, (int)path, (int)p, strlen(path), 0, 0,
++			     &fserrno);
++		if (ret < 0) {
++			/* Some versions of Codescape do not fill out errno. */
++			if (ret < 0 && fserrno == 0)
++				fserrno = ENOENT;
++			return -fserrno;
++		}
 +	}
 +
 +	return 0;
 +}
 +
-+static void dashtty_exit(void)
++static struct inode *dafs_iget(struct super_block *sb)
 +{
-+	kthread_stop(dashtty_thread);
-+	del_timer(&poll_timer);
-+	tty_unregister_driver(channel_driver);
-+	put_tty_driver(channel_driver);
++	struct inode *inode = new_inode(sb);
++	if (!inode)
++		return ERR_PTR(-ENOMEM);
++	return inode;
 +}
 +
-+module_init(dashtty_init);
-+module_exit(dashtty_exit);
-+
-+#ifdef CONFIG_DA_CONSOLE
-+
-+static void dash_console_write(struct console *co, const char *s,
-+			       unsigned int count)
++static struct inode *dafs_alloc_inode(struct super_block *sb)
 +{
-+	int actually_written;
++	struct dafs_inode_info *hi;
 +
-+	chancall(WRBUF, CONSOLE_CHANNEL, count, (void *)s, &actually_written);
++	hi = kzalloc(sizeof(*hi), GFP_KERNEL);
++	if (hi == NULL)
++		return NULL;
++
++	hi->fd = -1;
++	inode_init_once(&hi->vfs_inode);
++	return &hi->vfs_inode;
 +}
 +
-+static struct tty_driver *dash_console_device(struct console *c, int *index)
++static void close_file(void *stream)
 +{
-+	*index = c->index;
-+	return channel_driver;
++	int fd = *((int *) stream);
++
++	fscall(DA_OP_CLOSE, fd, 0, 0, 0, 0, NULL);
 +}
 +
-+struct console dash_console = {
-+	.name = "ttyDA",
-+	.write = dash_console_write,
-+	.device = dash_console_device,
-+	.flags = CON_PRINTBUFFER,
-+	.index = 1,
++static void dafs_evict_inode(struct inode *inode)
++{
++	truncate_inode_pages(&inode->i_data, 0);
++	clear_inode(inode);
++	if (DAFS_I(inode)->fd != -1) {
++		close_file(&DAFS_I(inode)->fd);
++		DAFS_I(inode)->fd = -1;
++	}
++}
++
++static void dafs_i_callback(struct rcu_head *head)
++{
++	struct inode *inode = container_of(head, struct inode, i_rcu);
++	kfree(DAFS_I(inode));
++}
++
++static void dafs_destroy_inode(struct inode *inode)
++{
++	call_rcu(&inode->i_rcu, dafs_i_callback);
++}
++
++static const struct super_operations dafs_sbops = {
++	.alloc_inode	= dafs_alloc_inode,
++	.drop_inode	= generic_delete_inode,
++	.evict_inode	= dafs_evict_inode,
++	.destroy_inode	= dafs_destroy_inode,
 +};
 +
-+#endif
++static int open_dir(char *path, struct da_finddata *finddata, int *fserrno)
++{
++	int len = strlen(path);
++	char buf[len + 3];
++
++	strcpy(buf, path);
++	if (buf[len - 1] != '/')
++		strcat(buf, "/*");
++	else
++		strcat(buf, "*");
++
++	return fscall(DA_OP_FINDFIRST, (int)buf, (int)finddata, 0, 0, 0,
++		      fserrno);
++}
++
++static void close_dir(int handle)
++{
++	fscall(DA_OP_FINDCLOSE, handle, 0, 0, 0, 0, NULL);
++}
++
++static int read_dir(int handle, struct da_finddata *finddata)
++{
++	return fscall(DA_OP_FINDNEXT, handle, (int)finddata, 0, 0, 0, NULL);
++}
++
++static int dafs_readdir(struct file *file, void *ent, filldir_t filldir)
++{
++	struct inode *inode = file->f_path.dentry->d_inode;
++	struct super_block *sb = inode->i_sb;
++	char *name;
++	int handle;
++	int fserrno;
++	unsigned long long next, ino;
++	int error = 0;
++	struct da_finddata finddata;
++
++	name = dentry_name(file->f_path.dentry);
++	if (name == NULL)
++		return -ENOMEM;
++	handle = open_dir(name, &finddata, &fserrno);
++	__putname(name);
++	if (handle == -1)
++		return -fserrno;
++
++	next = 1;
++
++	if (file->f_pos == 0) {
++		error = (*filldir)(ent, ".", file->f_pos + 1,
++				   file->f_pos, inode->i_ino,
++				   DT_DIR);
++		if (error < 0)
++			goto out;
++		file->f_pos++;
++	}
++
++	while (1) {
++		error = read_dir(handle, &finddata);
++		if (error)
++			break;
++
++		if (next >= file->f_pos) {
++			size_t len = strlen(finddata.name);
++			ino = iunique(sb, 100);
++			error = (*filldir)(ent, finddata.name, len,
++					   file->f_pos, ino,
++					   (finddata.attrib & _A_SUBDIR) ?
++					    DT_DIR : DT_REG);
++			if (error)
++				break;
++			file->f_pos++;
++		}
++		next++;
++	}
++out:
++	close_dir(handle);
++	return 0;
++}
++
++static int dafs_file_open(struct inode *ino, struct file *file)
++{
++	static DEFINE_MUTEX(open_mutex);
++	char *name;
++	int mode, fmode, flags = 0, r = 0, w = 0, fd;
++	int cpu;
++
++	fmode = file->f_mode & (FMODE_READ | FMODE_WRITE);
++	if ((fmode & DAFS_I(ino)->mode) == fmode)
++		return 0;
++
++	mode = ino->i_mode & (DA_S_IWUSR | DA_S_IRUSR);
++
++	mode |= DAFS_I(ino)->mode;
++
++	DAFS_I(ino)->mode |= fmode;
++	if (DAFS_I(ino)->mode & FMODE_READ)
++		r = 1;
++	if (DAFS_I(ino)->mode & FMODE_WRITE) {
++		w = 1;
++		r = 1;
++	}
++
++retry:
++	if (r && !w)
++		flags |= DA_O_RDONLY;
++	else if (!r && w)
++		flags |= DA_O_WRONLY;
++	else if (r && w)
++		flags |= DA_O_RDWR;
++
++	if (file->f_flags & O_CREAT)
++		flags |= DA_O_CREAT;
++
++	if (file->f_flags & O_TRUNC)
++		flags |= DA_O_TRUNC;
++
++	/*
++	 * Set the affinity for this file handle to all CPUs. If we
++	 * don't do this then, if the process that opened the file
++	 * migrates to a different cpu, the FileServer will not accept
++	 * the file handle.
++	 */
++	for_each_possible_cpu(cpu) {
++		u8 hwthread = cpu_2_hwthread_id[cpu];
++		flags |= (1 << (DA_O_AFFINITY_SHIFT + hwthread));
++	}
++
++	name = dentry_name(file->f_path.dentry);
++	if (name == NULL)
++		return -ENOMEM;
++
++	fd = fscall(DA_OP_OPEN, (int)name, flags, mode, strlen(name), 0, NULL);
++	__putname(name);
++	if (fd < 0)
++		return fd;
++
++	mutex_lock(&open_mutex);
++	/* somebody else had handled it first? */
++	if ((mode & DAFS_I(ino)->mode) == mode) {
++		mutex_unlock(&open_mutex);
++		return 0;
++	}
++	if ((mode | DAFS_I(ino)->mode) != mode) {
++		mode |= DAFS_I(ino)->mode;
++		mutex_unlock(&open_mutex);
++		close_file(&fd);
++		goto retry;
++	}
++	DAFS_I(ino)->fd = fd;
++	DAFS_I(ino)->mode = mode;
++	mutex_unlock(&open_mutex);
++
++	return 0;
++}
++
++static const struct file_operations dafs_file_fops = {
++	.llseek		= generic_file_llseek,
++	.read		= do_sync_read,
++	.splice_read	= generic_file_splice_read,
++	.aio_read	= generic_file_aio_read,
++	.aio_write	= generic_file_aio_write,
++	.write		= do_sync_write,
++	.mmap		= generic_file_mmap,
++	.open		= dafs_file_open,
++	.release	= NULL,
++};
++
++static const struct file_operations dafs_dir_fops = {
++	.llseek		= generic_file_llseek,
++	.readdir	= dafs_readdir,
++	.read		= generic_read_dir,
++};
++
++static int read_file(int fd, unsigned long long *offset, const char *buf,
++		     int len)
++{
++	int n;
++	int fserrno;
++
++	n = fscall(DA_OP_PREAD, fd, (int)buf, len, (int)*offset, 0, &fserrno);
++
++	if (n < 0)
++		return -fserrno;
++
++	return n;
++}
++
++static int write_file(int fd, unsigned long long *offset, const char *buf,
++		      int len)
++{
++	int n;
++	int fserrno;
++
++	n = fscall(DA_OP_PWRITE, fd, (int)buf, len, (int)*offset, 0, &fserrno);
++
++	if (n < 0)
++		return -fserrno;
++
++	return n;
++}
++
++static int dafs_writepage(struct page *page, struct writeback_control *wbc)
++{
++	struct address_space *mapping = page->mapping;
++	struct inode *inode = mapping->host;
++	char *buffer;
++	unsigned long long base;
++	int count = PAGE_CACHE_SIZE;
++	int end_index = inode->i_size >> PAGE_CACHE_SHIFT;
++	int err;
++
++	if (page->index >= end_index)
++		count = inode->i_size & (PAGE_CACHE_SIZE-1);
++
++	buffer = kmap(page);
++	base = ((unsigned long long) page->index) << PAGE_CACHE_SHIFT;
++
++	err = write_file(DAFS_I(inode)->fd, &base, buffer, count);
++	if (err != count) {
++		ClearPageUptodate(page);
++		goto out;
++	}
++
++	if (base > inode->i_size)
++		inode->i_size = base;
++
++	if (PageError(page))
++		ClearPageError(page);
++	err = 0;
++
++ out:
++	kunmap(page);
++
++	unlock_page(page);
++	return err;
++}
++
++static int dafs_readpage(struct file *file, struct page *page)
++{
++	char *buffer;
++	long long start;
++	int err = 0;
++
++	start = (long long) page->index << PAGE_CACHE_SHIFT;
++	buffer = kmap(page);
++	err = read_file(FILE_DAFS_I(file)->fd, &start, buffer,
++			PAGE_CACHE_SIZE);
++	if (err < 0)
++		goto out;
++
++	memset(&buffer[err], 0, PAGE_CACHE_SIZE - err);
++
++	flush_dcache_page(page);
++	SetPageUptodate(page);
++	if (PageError(page))
++		ClearPageError(page);
++	err = 0;
++ out:
++	kunmap(page);
++	unlock_page(page);
++	return err;
++}
++
++static int dafs_write_begin(struct file *file, struct address_space *mapping,
++			loff_t pos, unsigned len, unsigned flags,
++			struct page **pagep, void **fsdata)
++{
++	pgoff_t index = pos >> PAGE_CACHE_SHIFT;
++
++	*pagep = grab_cache_page_write_begin(mapping, index, flags);
++	if (!*pagep)
++		return -ENOMEM;
++	return 0;
++}
++
++static int dafs_write_end(struct file *file, struct address_space *mapping,
++			loff_t pos, unsigned len, unsigned copied,
++			struct page *page, void *fsdata)
++{
++	struct inode *inode = mapping->host;
++	void *buffer;
++	unsigned from = pos & (PAGE_CACHE_SIZE - 1);
++	int err;
++
++	buffer = kmap(page);
++	err = write_file(FILE_DAFS_I(file)->fd, &pos, buffer + from, copied);
++	kunmap(page);
++
++	if (!PageUptodate(page) && err == PAGE_CACHE_SIZE)
++		SetPageUptodate(page);
++
++	/*
++	 * If err > 0, write_file has added err to pos, so we are comparing
++	 * i_size against the last byte written.
++	 */
++	if (err > 0 && (pos > inode->i_size))
++		inode->i_size = pos;
++	unlock_page(page);
++	page_cache_release(page);
++
++	return err;
++}
++
++static const struct address_space_operations dafs_aops = {
++	.writepage	= dafs_writepage,
++	.readpage	= dafs_readpage,
++	.set_page_dirty	= __set_page_dirty_nobuffers,
++	.write_begin	= dafs_write_begin,
++	.write_end	= dafs_write_end,
++};
++
++static int read_name(struct inode *ino, char *name)
++{
++	dev_t rdev;
++	struct da_stat st;
++	int err = stat_file(name, &st, -1);
++	if (err)
++		return err;
++
++	/* No valid maj and min from DA.*/
++	rdev = MKDEV(0, 0);
++
++	switch (st.st_mode & S_IFMT) {
++	case S_IFDIR:
++		ino->i_op = &dafs_dir_iops;
++		ino->i_fop = &dafs_dir_fops;
++		break;
++	case S_IFCHR:
++	case S_IFBLK:
++	case S_IFIFO:
++	case S_IFSOCK:
++		init_special_inode(ino, st.st_mode & S_IFMT, rdev);
++		ino->i_op = &dafs_iops;
++		break;
++
++	case S_IFLNK:
++	default:
++		ino->i_op = &dafs_iops;
++		ino->i_fop = &dafs_file_fops;
++		ino->i_mapping->a_ops = &dafs_aops;
++	}
++
++	ino->i_ino = st.st_ino;
++	ino->i_mode = st.st_mode;
++	set_nlink(ino, st.st_nlink);
++
++	i_uid_write(ino, st.st_uid);
++	i_gid_write(ino, st.st_gid);
++	ino->i_atime.tv_sec = st.st_atime;
++	ino->i_atime.tv_nsec = 0;
++	ino->i_mtime.tv_sec = st.st_mtime;
++	ino->i_mtime.tv_nsec = 0;
++	ino->i_ctime.tv_sec = st.st_ctime;
++	ino->i_ctime.tv_nsec = 0;
++	ino->i_size = st.st_size;
++	ino->i_blocks = st.st_blocks;
++	return 0;
++}
++
++static int dafs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
++		       bool excl)
++{
++	struct inode *inode;
++	char *name;
++	int error, fd;
++	int damode;
++	int creat_flags = DA_O_TRUNC | DA_O_CREAT | DA_O_WRONLY;
++	int cpu;
++
++	inode = dafs_iget(dir->i_sb);
++	if (IS_ERR(inode)) {
++		error = PTR_ERR(inode);
++		goto out;
++	}
++
++	damode = mode & (DA_S_IWUSR | DA_S_IRUSR);
++
++	error = -ENOMEM;
++	name = dentry_name(dentry);
++	if (name == NULL)
++		goto out_put;
++
++	/*
++	 * creat() will only create text mode files on a Windows host
++	 * at present.  Replicate the creat() functionality with an
++	 * open() call, which always creates binary files. Set the
++	 * affinity to all hardware threads.
++	 */
++	for_each_possible_cpu(cpu) {
++		u8 hwthread = cpu_2_hwthread_id[cpu];
++		creat_flags |= (1 << (DA_O_AFFINITY_SHIFT + hwthread));
++	}
++
++	fd = fscall(DA_OP_OPEN, (int)name, creat_flags, damode, strlen(name),
++		    0, NULL);
++	if (fd < 0)
++		error = fd;
++	else
++		error = read_name(inode, name);
++
++	kfree(name);
++	if (error)
++		goto out_put;
++
++	DAFS_I(inode)->fd = fd;
++	DAFS_I(inode)->mode = FMODE_READ | FMODE_WRITE;
++	d_instantiate(dentry, inode);
++	return 0;
++
++ out_put:
++	iput(inode);
++ out:
++	return error;
++}
++
++static struct dentry *dafs_lookup(struct inode *ino, struct dentry *dentry,
++				  unsigned int flags)
++{
++	struct inode *inode;
++	char *name;
++	int err;
++
++	inode = dafs_iget(ino->i_sb);
++	if (IS_ERR(inode)) {
++		err = PTR_ERR(inode);
++		goto out;
++	}
++
++	err = -ENOMEM;
++	name = dentry_name(dentry);
++	if (name == NULL)
++		goto out_put;
++
++	err = read_name(inode, name);
++
++	__putname(name);
++	if (err == -ENOENT) {
++		iput(inode);
++		inode = NULL;
++	} else if (err)
++		goto out_put;
++
++	d_add(dentry, inode);
++	return NULL;
++
++ out_put:
++	iput(inode);
++ out:
++	return ERR_PTR(err);
++}
++
++static int dafs_link(struct dentry *to, struct inode *ino, struct dentry *from)
++{
++	char *from_name, *to_name;
++	int err;
++
++	from_name = dentry_name(from);
++	if (from_name == NULL)
++		return -ENOMEM;
++	to_name = dentry_name(to);
++	if (to_name == NULL) {
++		__putname(from_name);
++		return -ENOMEM;
++	}
++	err = -EINVAL;
++	__putname(from_name);
++	__putname(to_name);
++	return err;
++}
++
++static int dafs_unlink(struct inode *ino, struct dentry *dentry)
++{
++	char *file;
++	int err;
++	int fserrno;
++
++	file = dentry_name(dentry);
++	if (file == NULL)
++		return -ENOMEM;
++
++	err = fscall(DA_OP_UNLINK, (int)file, 0, 0, 0, 0, &fserrno);
++	__putname(file);
++	if (err)
++		return -fserrno;
++	return 0;
++}
++
++static int do_mkdir(const char *file, int mode)
++{
++	int err;
++	int fserrno;
++
++	err = fscall(DA_OP_MKDIR, (int)file, mode, strlen(file), 0, 0,
++		     &fserrno);
++	if (err)
++		return -fserrno;
++	return 0;
++}
++
++static int dafs_mkdir(struct inode *ino, struct dentry *dentry, umode_t mode)
++{
++	char *file;
++	int err;
++
++	file = dentry_name(dentry);
++	if (file == NULL)
++		return -ENOMEM;
++	err = do_mkdir(file, mode);
++	__putname(file);
++	return err;
++}
++
++static int do_rmdir(const char *file)
++{
++	int err;
++	int fserrno;
++
++	err = fscall(DA_OP_RMDIR, (int)file, strlen(file), 0, 0, 0, &fserrno);
++	if (err)
++		return -fserrno;
++	return 0;
++}
++
++static int dafs_rmdir(struct inode *ino, struct dentry *dentry)
++{
++	char *file;
++	int err;
++
++	file = dentry_name(dentry);
++	if (file == NULL)
++		return -ENOMEM;
++	err = do_rmdir(file);
++	__putname(file);
++	return err;
++}
++
++static int dafs_rename(struct inode *from_ino, struct dentry *from,
++		  struct inode *to_ino, struct dentry *to)
++{
++	char *from_name, *to_name;
++	int err;
++
++	from_name = dentry_name(from);
++	if (from_name == NULL)
++		return -ENOMEM;
++	to_name = dentry_name(to);
++	if (to_name == NULL) {
++		__putname(from_name);
++		return -ENOMEM;
++	}
++	err = -EINVAL;
++	__putname(from_name);
++	__putname(to_name);
++	return err;
++}
++
++static const struct inode_operations dafs_iops = {
++	.create		= dafs_create,
++	.link		= dafs_link,
++	.unlink		= dafs_unlink,
++	.mkdir		= dafs_mkdir,
++	.rmdir		= dafs_rmdir,
++	.rename		= dafs_rename,
++};
++
++static const struct inode_operations dafs_dir_iops = {
++	.create		= dafs_create,
++	.lookup		= dafs_lookup,
++	.link		= dafs_link,
++	.unlink		= dafs_unlink,
++	.mkdir		= dafs_mkdir,
++	.rmdir		= dafs_rmdir,
++	.rename		= dafs_rename,
++};
++
++static char *host_root_path = ".";
++
++static int dafs_fill_sb_common(struct super_block *sb, void *d, int silent)
++{
++	struct inode *root_inode;
++	int err;
++
++	sb->s_blocksize = 1024;
++	sb->s_blocksize_bits = 10;
++	sb->s_magic = DAFS_SUPER_MAGIC;
++	sb->s_op = &dafs_sbops;
++	sb->s_d_op = &dafs_dentry_ops;
++	sb->s_maxbytes = MAX_LFS_FILESIZE;
++
++	err = -ENOMEM;
++
++	root_inode = new_inode(sb);
++	if (!root_inode)
++		goto out;
++
++	err = read_name(root_inode, host_root_path);
++	if (err)
++		goto out_put;
++
++	err = -ENOMEM;
++	sb->s_fs_info = host_root_path;
++	sb->s_root = d_make_root(root_inode);
++	if (sb->s_root == NULL)
++		goto out;
++
++	return 0;
++
++out_put:
++	iput(root_inode);
++out:
++	return err;
++}
++
++static struct dentry *dafs_read_sb(struct file_system_type *type,
++				   int flags, const char *dev_name,
++				   void *data)
++{
++	if (!metag_da_enabled())
++		return ERR_PTR(-ENODEV);
++	return mount_nodev(type, flags, data, dafs_fill_sb_common);
++}
++
++static struct file_system_type dafs_type = {
++	.owner		= THIS_MODULE,
++	.name		= "imgdafs",
++	.mount		= dafs_read_sb,
++	.kill_sb	= kill_anon_super,
++	.fs_flags	= 0,
++};
++
++static int __init init_dafs(void)
++{
++	return register_filesystem(&dafs_type);
++}
++
++static void __exit exit_dafs(void)
++{
++	unregister_filesystem(&dafs_type);
++}
++
++module_init(init_dafs)
++module_exit(exit_dafs)
++MODULE_LICENSE("GPL");
 -- 
 1.7.7.6
 
