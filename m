@@ -1,135 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab2LEScz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 13:32:55 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:35733 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752579Ab2LEScy (ORCPT
+	id S1752466Ab2LESeN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 13:34:13 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:49649 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751717Ab2LESeL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 13:32:54 -0500
-Date: Wed, 05 Dec 2012 13:32:53 -0500 (EST)
-Message-Id: <20121205.133253.1408250042985203804.davem@davemloft.net>
-To: acme@ghostprotocols.net
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix perf mmap limitations on 32-bit.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20121110.141219.582924082787523608.davem@davemloft.net>
-References: <20121110.141219.582924082787523608.davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Wed, 5 Dec 2012 13:34:11 -0500
+Message-ID: <50BF9349.6010205@linux.vnet.ibm.com>
+Date: Thu, 06 Dec 2012 00:02:41 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Oleg Nesterov <oleg@redhat.com>, tglx@linutronix.de, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, namhyung@kernel.org,
+        vincent.guittot@linaro.org, sbw@mit.edu, amit.kucheria@linaro.org,
+        rostedt@goodmis.org, rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH v2 01/10] CPU hotplug: Provide APIs for "light" atomic
+ readers to prevent CPU offline
+References: <20121205131038.17383.55472.stgit@srivatsabhat.in.ibm.com> <20121205131136.17383.23318.stgit@srivatsabhat.in.ibm.com> <20121205142316.GI3885@mtj.dyndns.org> <20121205164640.GA7382@redhat.com> <20121205165356.GL3885@mtj.dyndns.org>
+In-Reply-To: <20121205165356.GL3885@mtj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12120518-9574-0000-0000-000005A09E7B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Miller <davem@davemloft.net>
-Date: Sat, 10 Nov 2012 14:12:19 -0500 (EST)
+On 12/05/2012 10:23 PM, Tejun Heo wrote:
+> Hello, Oleg.
+> 
+> On Wed, Dec 05, 2012 at 05:46:40PM +0100, Oleg Nesterov wrote:
+>> Sorry I don't understand the context and I can't find this thread
+>> anywhere, so I am not sure I understand...
+> 
+> Weird, lkml cc is missing.  Srivatsa?
+> 
 
+Argh! I forgot to CC mailing lists :-(
+Sorry about that! I'll repost the patchset (and I'll probably even
+try to post the comments that you and Oleg have already given, for
+the benefit of other readers).
 
-Ping?
+Regards,
+Srivatsa S. Bhat
 
-> This is a suggested patch to fix the bug I reported at:
+>> On 12/05, Tejun Heo wrote:
+>>>
+>>> So, we basically need percpu_rwlock.  We already have percpu_rwsem.
+>>
+>> Yes, and with -mm patches it becomes reader-friendly. In particular
+>> see http://marc.info/?l=linux-mm-commits&m=135240650828875
+>>
+>>> Oleg, it seems
+>>> CPU hotplug needs big-reader rwlock, ideas on how to proceed?
+>>
+>> I am going to convert get_online_cpus() to use percpu_down_read(),
+>> this looks simple.
+>>
+>> We already discussed this with Paul, see
+>>
+>> 	http://marc.info/?l=linux-kernel&m=135248463226031
+>>
+>> and the whole thread.
+>>
+>> In short, all we need is percpu_down_write_recursive_readers() and
+>> afaics the only complication is lockdep, we need down_read_no_lockdep()
+>> which (like __up_read) doesn't do rwsem_acquire_read().
 > 
-> 	http://marc.info/?l=linux-kernel&m=135033028924652&w=2
+> So, it's a different thing.  There are two mechanism protecting
+> against cpu hotplug - get_online_cpus() and preempt_disable().  The
+> former can be used by ones which can sleep and need to protect against
+> the whole up/down process (DOWN_PREPARE and so on).  The latter
+> protects the last step and can be used when the caller can't sleep.
+> Replacing get_online_cpus() w/ percpu_rwsem is great but this thread
+> is about replacing preempt_disable with something finer grained and
+> less heavy on the writer side - IOW, percpu_rwlock as opposed to
+> percpu_rwsem, so, I think the end result would be that CPU hotplug
+> will be protected by percpu_rwsem for the whole part and by
+> percpu_rwlock for the last commit stage.
 > 
-> Essentially, there is a hard requirement that when perf analyzes a
-> trace, it must have the entire thing mmap()'d.
+> The problem seems that we don't have percpu_rwlock yet.  It shouldn't
+> be too difficult to implement, right?
 > 
-> Therefore the scheme used on 32-bit where we have a fixed (8) number
-> of 32MB mmaps, and cycle through them, simply does not work.
+> Thanks.
 > 
-> One of the reasons this requirement exists is because the iterators
-> maintain references to perf entry objects and those references don't
-> just simply go away when this mmap code decides to cycle an old mmap
-> area out and reuse it.  At this point, those entry pointers now point
-> to garbage resulting in unpredictable behavior and crashes.
-> 
-> It is better to try to mmap() as much as we can and if we do actually
-> run into address space limitations, the failure of the mmap() call
-> will indicate that and stop processing.
-> 
-> I noticed that perf_session->mmap_window is set to a constant in one
-> location, and only used in one other location.  So I got rid of it
-> altogether.
-> 
-> So we adjust the size of the mmaps[] array to the maximum we could
-> need.  On 64-bit we only need one slot.  On 32-bit we could need
-> up to 128 (128 * 32MB == 4GB).
-> 
-> I've verified that this allows a large (~600MB) perf.data file to
-> be analyzed properly with a 32-bit perf binary, which previously
-> was not possible.
-> 
-> Signed-off-by: David S. Miller <davem@davemloft.net>
-> 
-> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-> index 8cdd232..2cd3cc3 100644
-> --- a/tools/perf/util/session.c
-> +++ b/tools/perf/util/session.c
-> @@ -128,15 +128,6 @@ struct perf_session *perf_session__new(const char *filename, int mode,
->  		goto out;
->  
->  	memcpy(self->filename, filename, len);
-> -	/*
-> -	 * On 64bit we can mmap the data file in one go. No need for tiny mmap
-> -	 * slices. On 32bit we use 32MB.
-> -	 */
-> -#if BITS_PER_LONG == 64
-> -	self->mmap_window = ULLONG_MAX;
-> -#else
-> -	self->mmap_window = 32 * 1024 * 1024ULL;
-> -#endif
->  	self->machines = RB_ROOT;
->  	self->repipe = repipe;
->  	INIT_LIST_HEAD(&self->ordered_samples.samples);
-> @@ -1369,6 +1360,18 @@ fetch_mmaped_event(struct perf_session *session,
->  	return event;
->  }
->  
-> +/*
-> + * On 64bit we can mmap the data file in one go. No need for tiny mmap
-> + * slices. On 32bit we use 32MB.
-> + */
-> +#if BITS_PER_LONG == 64
-> +#define MMAP_SIZE ULLONG_MAX
-> +#define NUM_MMAPS 1
-> +#else
-> +#define MMAP_SIZE (32 * 1024 * 1024ULL)
-> +#define NUM_MMAPS 128
-> +#endif
-> +
->  int __perf_session__process_events(struct perf_session *session,
->  				   u64 data_offset, u64 data_size,
->  				   u64 file_size, struct perf_tool *tool)
-> @@ -1376,7 +1379,7 @@ int __perf_session__process_events(struct perf_session *session,
->  	u64 head, page_offset, file_offset, file_pos, progress_next;
->  	int err, mmap_prot, mmap_flags, map_idx = 0;
->  	size_t	page_size, mmap_size;
-> -	char *buf, *mmaps[8];
-> +	char *buf, *mmaps[NUM_MMAPS];
->  	union perf_event *event;
->  	uint32_t size;
->  
-> @@ -1393,7 +1396,7 @@ int __perf_session__process_events(struct perf_session *session,
->  
->  	progress_next = file_size / 16;
->  
-> -	mmap_size = session->mmap_window;
-> +	mmap_size = MMAP_SIZE;
->  	if (mmap_size > file_size)
->  		mmap_size = file_size;
->  
-> diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-> index dd64261..903966b 100644
-> --- a/tools/perf/util/session.h
-> +++ b/tools/perf/util/session.h
-> @@ -29,7 +29,6 @@ struct ordered_samples {
->  struct perf_session {
->  	struct perf_header	header;
->  	unsigned long		size;
-> -	unsigned long		mmap_window;
->  	struct machine		host_machine;
->  	struct rb_root		machines;
->  	struct perf_evlist	*evlist;
+
