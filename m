@@ -1,110 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372Ab2LEC7k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 21:59:40 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:58307 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752795Ab2LEC7j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 21:59:39 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121202151232.GB12911@gmail.com>
-References: <1354305521-11583-1-git-send-email-mingo@kernel.org>
-	<CA+55aFwjxm7OYuucHeE2WFr4p+jwr63t=kSdHndta_QkyFbyBQ@mail.gmail.com>
-	<20121201094927.GA12366@gmail.com>
-	<20121201122649.GA20322@gmail.com>
-	<CA+55aFx8QtP0hg8qxn__4vHQuzH7QkhTN-4fwgOpM-A=KuBBjA@mail.gmail.com>
-	<20121201184135.GA32449@gmail.com>
-	<CA+55aFyq7OaUxcEHXvJhp0T57KN14o-RGxqPmA+ks8ge6zJh5w@mail.gmail.com>
-	<20121201201538.GB2704@gmail.com>
-	<50BA69B7.30002@redhat.com>
-	<20121202151232.GB12911@gmail.com>
-Date: Tue, 4 Dec 2012 18:59:38 -0800
-Message-ID: <CANN689H1yckQyTZMWBexdU-u=T=RrLDCpoua3HU09mXx+CVpvg@mail.gmail.com>
-Subject: Re: [PATCH 2/2, v2] mm/migration: Make rmap_walk_anon() and
- try_to_unmap_anon() more scalable
-From: Michel Lespinasse <walken@google.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Mel Gorman <mgorman@suse.de>,
+	id S1753499Ab2LEDCt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 22:02:49 -0500
+Received: from wolff.to ([65.117.131.163]:54264 "HELO wolff.to"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752451Ab2LEDCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 22:02:48 -0500
+Date: Tue, 4 Dec 2012 21:01:33 -0600
+From: Bruno Wolff III <bruno@wolff.to>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Thorsten Leemhuis <fedora@leemhuis.info>, Mel Gorman <mgorman@suse.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, George Spelvin <linux@horizon.com>,
+        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
+        Tomas Racek <tracek@redhat.com>, Jan Kara <jack@suse.cz>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Josh Boyer <jwboyer@gmail.com>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Jiri Slaby <jslaby@suse.cz>, Zdenek Kabelac <zkabelac@redhat.com>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        John Ellson <john.ellson@comcast.net>
+Subject: Re: kswapd craziness in 3.7
+Message-ID: <20121205030133.GA17438@wolff.to>
+References: <20121128101359.GT8218@suse.de>
+ <20121128145215.d23aeb1b.akpm@linux-foundation.org>
+ <20121128235412.GW8218@suse.de>
+ <50B77F84.1030907@leemhuis.info>
+ <20121129170512.GI2301@cmpxchg.org>
+ <50B8A8E7.4030108@leemhuis.info>
+ <20121201004520.GK2301@cmpxchg.org>
+ <50BC6314.7060106@leemhuis.info>
+ <20121203194208.GZ24381@cmpxchg.org>
+ <20121204214210.GB20253@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <20121204214210.GB20253@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 2, 2012 at 7:12 AM, Ingo Molnar <mingo@kernel.org> wrote:
-> Subject: [PATCH] mm/rmap, migration: Make rmap_walk_anon() and
->  try_to_unmap_anon() more scalable
+On Tue, Dec 04, 2012 at 16:42:10 -0500,
+   Johannes Weiner <hannes@cmpxchg.org> wrote:
+>  kernel-3.7.0-0.rc7.git1.2.van.main.knurd.kswap.4.fc18.i686
+>and
+>  kernel-3.7.0-0.rc7.git1.2.van.main.knurd.kswap.4.fc18.x86_64
+>for over 24hours with no evidence of problems with kswapd"
 >
-> rmap_walk_anon() and try_to_unmap_anon() appears to be too
-> careful about locking the anon vma: while it needs protection
-> against anon vma list modifications, it does not need exclusive
-> access to the list itself.
->
-> Transforming this exclusive lock to a read-locked rwsem removes
-> a global lock from the hot path of page-migration intense
-> threaded workloads which can cause pathological performance like
-> this:
->
->     96.43%        process 0  [kernel.kallsyms]  [k] perf_trace_sched_switch
->                   |
->                   --- perf_trace_sched_switch
->                       __schedule
->                       schedule
->                       schedule_preempt_disabled
->                       __mutex_lock_common.isra.6
->                       __mutex_lock_slowpath
->                       mutex_lock
->                      |
->                      |--50.61%-- rmap_walk
->                      |          move_to_new_page
->                      |          migrate_pages
->                      |          migrate_misplaced_page
->                      |          __do_numa_page.isra.69
->                      |          handle_pte_fault
->                      |          handle_mm_fault
->                      |          __do_page_fault
->                      |          do_page_fault
->                      |          page_fault
->                      |          __memset_sse2
->                      |          |
->                      |           --100.00%-- worker_thread
->                      |                     |
->                      |                      --100.00%-- start_thread
->                      |
->                       --49.39%-- page_lock_anon_vma
->                                 try_to_unmap_anon
->                                 try_to_unmap
->                                 migrate_pages
->                                 migrate_misplaced_page
->                                 __do_numa_page.isra.69
->                                 handle_pte_fault
->                                 handle_mm_fault
->                                 __do_page_fault
->                                 do_page_fault
->                                 page_fault
->                                 __memset_sse2
->                                 |
->                                  --100.00%-- worker_thread
->                                            start_thread
->
-> With this change applied the profile is now nicely flat
-> and there's no anon-vma related scheduling/blocking.
+>Now waiting for results from Jiri, Zdenek and Bruno...
 
-Wouldn't the same reasoning apply to i_mmap_mutex ? Should we make
-that a rwsem as well ? I take it that Ingo's test case does not show
-this, but i_mmap_mutex's role with file pages is actually quite
-similar to the anon_vma lock with anon pages...
+I have been running 3.7.0-0.rc7.git1.2.van.main.knurd.kswap.4.fc18.i686.PAE 
+a bit over 23 hours and kswapd has accumalated one minute 8 seconds of 
+CPU time. I did several yum operations during that time and didn't see 
+kswapd spike to 90+% CPU usage as I had seen in the past. With some kernels 
+I wasn't reliably triggering the kswapd issue, so it may not be long enough 
+to know for sure that the problem is fixed.
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+I also should note that when I tried 3.7.0-0.rc7.git3.2.fc19.i686.PAE I 
+did see problems with kswapd hitting 90+% usage of a CPU.
