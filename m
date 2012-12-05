@@ -1,55 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751685Ab2LEFK6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 00:10:58 -0500
-Received: from mx100.chinaemail.cn ([173.192.37.18]:45280 "EHLO
-	mx100.chinaemail.cn" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751243Ab2LEFK5 (ORCPT
+	id S1751771Ab2LEFkl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 00:40:41 -0500
+Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:44736 "EHLO
+	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751669Ab2LEFkj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 00:10:57 -0500
-X-Greylist: delayed 463 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Dec 2012 00:10:57 EST
-Date: Wed, 5 Dec 2012 13:01:47 +0800
-From: "Wjqw" <ella@huachuangtape.com>
-Reply-To: admin@hc-rubber.com
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: Supply Rubbers
-Message-ID: <201212051301477620246@huachuangtape.com>
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
-X-MID: 1995754570.637041419.34.1354683705.268891.2391
-X-Rate: Yes
-X-Real-From: ella@huachuangtape.com
-X-Rcpt: ,linux-kernel@vger.kernel.org,
+	Wed, 5 Dec 2012 00:40:39 -0500
+From: Qing Xu <qingx@marvell.com>
+To: qingx@marvell.com, sameo@linux.intel.com, haojian.zhuang@gmail.com,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        zhouqiao@marvell.com, cxie4@marvell.com, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] mfd: 88pm80x: add dt support
+Date: Wed,  5 Dec 2012 13:40:42 +0800
+Message-Id: <1354686042-26117-1-git-send-email-qingx@marvell.com>
+X-Mailer: git-send-email 1.7.0.4
+X-OriginalArrivalTime: 05 Dec 2012 05:40:34.0870 (UTC) FILETIME=[0C267560:01CDD2AB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qB55B2wv012651
 
-Dear Sirs,
+From: Qing Xu <qingx@marvell.com>
 
-Glad to hear that you're on the market for rubber products. We are the manufacturer 
-of it and specialize in rubber products for several years, with good quality and pretty 
-competitive price. 
+add dt support for 88pm800 and 88pm805
 
-This is our main rubber raw materials as follows,
+Signed-off-by: Qing Xu <qingx@marvell.com>
+---
+ drivers/mfd/88pm800.c       |   26 +++++++++++++++++++++++---
+ drivers/mfd/88pm805.c       |   26 +++++++++++++++++++++++---
+ drivers/mfd/88pm80x.c       |   32 ++++++++++++++++++++++++++++++++
+ include/linux/mfd/88pm80x.h |    3 +++
+ 4 files changed, 81 insertions(+), 6 deletions(-)
 
-                   Synthetic Rubber: SBR, IIR,BR,CR,NBR,EPDM;
-                   Reclaimed Rubber
-                   Rubber products:Rubber Sheet,Rubber tires,Rubber hose,Rubber strip; 
+diff --git a/drivers/mfd/88pm800.c b/drivers/mfd/88pm800.c
+index 3fcc8dd..20b67d7 100644
+--- a/drivers/mfd/88pm800.c
++++ b/drivers/mfd/88pm800.c
+@@ -506,6 +506,22 @@ static int __devinit pm800_probe(struct i2c_client *client,
+ 	struct pm80x_chip *chip;
+ 	struct pm80x_platform_data *pdata = client->dev.platform_data;
+ 	struct pm80x_subchip *subchip;
++	struct device_node *node = client->dev.of_node;
++
++	if (node && !pdata) {
++		/* parse DT to get platform data */
++		pdata = devm_kzalloc(&client->dev,
++				     sizeof(struct pm80x_platform_data),
++				     GFP_KERNEL);
++		if (!pdata)
++			return -ENOMEM;
++		ret = pm80x_dt_init(node, &client->dev, pdata);
++		if (ret)
++			return -EINVAL;
++	} else if (!pdata) {
++		pr_info("No platform data in %s!\n", __func__);
++		return -EINVAL;
++	}
+ 
+ 	ret = pm80x_init(client, id);
+ 	if (ret) {
+@@ -540,9 +556,6 @@ static int __devinit pm800_probe(struct i2c_client *client,
+ 		goto err_800_init;
+ 	}
+ 
+-	if (pdata->plat_config)
+-		pdata->plat_config(chip, pdata);
+-
+ 	return 0;
+ 
+ err_800_init:
+@@ -570,11 +583,18 @@ static int __devexit pm800_remove(struct i2c_client *client)
+ 	return 0;
+ }
+ 
++static const struct of_device_id pm800_dt_ids[] = {
++	{ .compatible = "marvell,88pm800", },
++	{},
++};
++MODULE_DEVICE_TABLE(of, pm800_dt_ids);
++
+ static struct i2c_driver pm800_driver = {
+ 	.driver = {
+ 		.name = "88PM800",
+ 		.owner = THIS_MODULE,
+ 		.pm = &pm80x_pm_ops,
++		.of_match_table	= of_match_ptr(pm800_dt_ids),
+ 		},
+ 	.probe = pm800_probe,
+ 	.remove = __devexit_p(pm800_remove),
+diff --git a/drivers/mfd/88pm805.c b/drivers/mfd/88pm805.c
+index 39a91bd..b0fb3ff 100644
+--- a/drivers/mfd/88pm805.c
++++ b/drivers/mfd/88pm805.c
+@@ -239,6 +239,22 @@ static int __devinit pm805_probe(struct i2c_client *client,
+ 	int ret = 0;
+ 	struct pm80x_chip *chip;
+ 	struct pm80x_platform_data *pdata = client->dev.platform_data;
++	struct device_node *node = client->dev.of_node;
++
++	if (node && !pdata) {
++		/* parse DT to get platform data */
++		pdata = devm_kzalloc(&client->dev,
++				     sizeof(struct pm80x_platform_data),
++				     GFP_KERNEL);
++		if (!pdata)
++			return -ENOMEM;
++		ret = pm80x_dt_init(node, &client->dev, pdata);
++		if (ret)
++			return -EINVAL;
++	} else if (!pdata) {
++		pr_info("No platform data in %s!\n", __func__);
++		return -EINVAL;
++	}
+ 
+ 	ret = pm80x_init(client, id);
+ 	if (ret) {
+@@ -254,9 +270,6 @@ static int __devinit pm805_probe(struct i2c_client *client,
+ 		goto err_805_init;
+ 	}
+ 
+-	if (pdata->plat_config)
+-		pdata->plat_config(chip, pdata);
+-
+ 	return 0;
+ 
+ err_805_init:
+@@ -277,11 +290,18 @@ static int __devexit pm805_remove(struct i2c_client *client)
+ 	return 0;
+ }
+ 
++static const struct of_device_id pm805_dt_ids[] = {
++	{ .compatible = "marvell,88pm805", },
++	{},
++};
++MODULE_DEVICE_TABLE(of, pm805_dt_ids);
++
+ static struct i2c_driver pm805_driver = {
+ 	.driver = {
+ 		.name = "88PM805",
+ 		.owner = THIS_MODULE,
+ 		.pm = &pm80x_pm_ops,
++		.of_match_table	= of_match_ptr(pm805_dt_ids),
+ 		},
+ 	.probe = pm805_probe,
+ 	.remove = __devexit_p(pm805_remove),
+diff --git a/drivers/mfd/88pm80x.c b/drivers/mfd/88pm80x.c
+index 1adb355..ad42d2a 100644
+--- a/drivers/mfd/88pm80x.c
++++ b/drivers/mfd/88pm80x.c
+@@ -111,6 +111,38 @@ int pm80x_deinit(struct i2c_client *client)
+ }
+ EXPORT_SYMBOL_GPL(pm80x_deinit);
+ 
++int pm80x_dt_init(struct device_node *np,
++				    struct device *dev,
++				    struct pm80x_platform_data *pdata)
++{
++	int ret;
++	ret = of_property_read_u32(np, "marvell,88pm80x-irqmode",
++				   &pdata->irq_mode);
++	if (ret) {
++		dev_err(dev, "Not found \"marvell,88pm80x-irqmode\" "
++			"property\n");
++		return -EINVAL;
++	}
++
++	ret = of_property_read_u32(np, "marvell,88pm80x-poweraddr",
++				   (u32*)(&pdata->power_page_addr));
++	if (ret) {
++		dev_err(dev, "Not found \"marvell,88pm80x-poweraddr\" "
++			"property\n");
++		return 0;
++	}
++
++	ret = of_property_read_u32(np, "marvell,88pm80x-gpadcaddr",
++				   (u32*)(&pdata->gpadc_page_addr));
++	if (ret) {
++		dev_err(dev, "Not found \"marvell,88pm80x-gpadcaddr\" "
++			"property\n");
++		return 0;
++	}
++	return 0;
++}
++EXPORT_SYMBOL_GPL(pm80x_dt_init);
++
+ #ifdef CONFIG_PM_SLEEP
+ static int pm80x_suspend(struct device *dev)
+ {
+diff --git a/include/linux/mfd/88pm80x.h b/include/linux/mfd/88pm80x.h
+index 904efb9..153f492 100644
+--- a/include/linux/mfd/88pm80x.h
++++ b/include/linux/mfd/88pm80x.h
+@@ -367,4 +367,7 @@ static inline int pm80x_dev_resume(struct device *dev)
+ extern int pm80x_init(struct i2c_client *client,
+ 			     const struct i2c_device_id *id) __devinit;
+ extern int pm80x_deinit(struct i2c_client *client);
++extern int pm80x_dt_init(struct device_node *np,
++						struct device *dev,
++						struct pm80x_platform_data *pdata);
+ #endif /* __LINUX_MFD_88PM80X_H */
+-- 
+1.7.0.4
 
-We shall be glad to send you best quotations upon receipt of your concrete enquiries.
-
-Your early reply will be highly appreciated.
-
-Yours sincerely,
-Doris 
-
-Mail: admin@hc-rubber.com
-Web: hc-rubber.com 
-Tel:86-0532-80914700
-Msn: adaline218@hotmail.com 
-Skype: doris218211
-Qingdao Huachuang rubber Co., Ltdÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
