@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468Ab2LEDxW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 22:53:22 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:50438 "EHLO
+	id S1753244Ab2LEEHU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 23:07:20 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:35349 "EHLO
 	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752818Ab2LEDxT (ORCPT
+	with ESMTP id S1752497Ab2LEEHR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 22:53:19 -0500
+	Tue, 4 Dec 2012 23:07:17 -0500
+Message-ID: <50BEC867.7090209@lwfinger.net>
+Date: Tue, 04 Dec 2012 22:07:03 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Date: Wed, 5 Dec 2012 01:52:57 -0200
-Message-ID: <CAMOw1v6gc-NV8M8cHX9novwDv57zWMtoLHn6P22GGJ0QW2wFww@mail.gmail.com>
-Subject: [ANNOUNCE] kmod 12
-To: linux-modules <linux-modules@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-hotplug <linux-hotplug@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Cyril Roelandt <tipecaml@gmail.com>
+CC: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        florian.c.schilhabel@googlemail.com, gregkh@linuxfoundation.org,
+        yongjun_wei@trendmicro.com.cn, jim.cromie@gmail.com,
+        marcos.souza.org@gmail.com, devel@driverdev.osuosl.org
+Subject: Re: [PATCH] staging: rtl8712: avoid a useless call to memset().
+References: <1354670522-27144-1-git-send-email-tipecaml@gmail.com>
+In-Reply-To: <1354670522-27144-1-git-send-email-tipecaml@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kmod 12 is out:
+On 12/04/2012 07:22 PM, Cyril Roelandt wrote:
+> In r8711_wx_get_wap(), make sure we do not call memcpy() on a memory area that
+> has just been zeroed by a call to memset().
+>
+> Signed-off-by: Cyril Roelandt <tipecaml@gmail.com>
+> ---
+>   drivers/staging/rtl8712/rtl871x_ioctl_linux.c |    3 ++-
+>   1 file changed, 2 insertions(+), 1 deletion(-)
 
-ftp://ftp.kernel.org/pub/linux/utils/kernel/kmod/kmod-12.tar.xz
-ftp://ftp.kernel.org/pub/linux/utils/kernel/kmod/kmod-12.tar.sign
+Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
 
+Thanks,
 
-Bug fix release only. Copying the NEWS section here for brevity:
+Larry
 
-       - Fix removing vermagic from module when told to force load a module
-       - Fix removing __versions section when told to force load a module: we
-         need to mangle the section header, not the section.
-       - modinfo no longer fails while loading a module from file when path
-         contains ".ko" substring
+>
+> diff --git a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+> index 3a64790..2c73319 100644
+> --- a/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+> +++ b/drivers/staging/rtl8712/rtl871x_ioctl_linux.c
+> @@ -1131,10 +1131,11 @@ static int r8711_wx_get_wap(struct net_device *dev,
+>   	struct ndis_wlan_bssid_ex *pcur_bss = &pmlmepriv->cur_network.network;
+>
+>   	wrqu->ap_addr.sa_family = ARPHRD_ETHER;
+> -	memset(wrqu->ap_addr.sa_data, 0, ETH_ALEN);
+>   	if (check_fwstate(pmlmepriv, _FW_LINKED |
+>   	    WIFI_ADHOC_MASTER_STATE|WIFI_AP_STATE)) {
+>   		memcpy(wrqu->ap_addr.sa_data, pcur_bss->MacAddress, ETH_ALEN);
+> +	} else {
+> +		memset(wrqu->ap_addr.sa_data, 0, ETH_ALEN);
+>   	}
+>   	return 0;
+>   }
+>
 
-Interesting that there was no previous bug report of "modprobe -f"
-failing, yet before this release it was not working properly. Maybe
-people are not tainting their kernel as frequently as I imagined.
-
-Shortlog is below.
-
-
-Cheers
-Lucas De Marchi
-
----
-
-Aleksey Makarov (1):
-      fix is_module_filename()
-
-Lucas De Marchi (7):
-      depmod: fix hash lookup by relpath instead of uncrelpath
-      depmod: fix asserting mod->kmod == NULL
-      libkmod-module: Remove key+value vermagic from .modinfo section
-      libkmod-module: mangle the section header, not the section
-      Use bool instead of int
-      depmod: fix checking file extension
-      kmod 12
