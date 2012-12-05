@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752634Ab2LEJfZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 04:35:25 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:47176 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751771Ab2LEJfW (ORCPT
+	id S1750803Ab2LEJks (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 04:40:48 -0500
+Received: from mx0.aculab.com ([213.249.233.131]:56109 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751148Ab2LEJko convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 04:35:22 -0500
-Message-ID: <50BF1554.50303@suse.cz>
-Date: Wed, 05 Dec 2012 10:35:16 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
+	Wed, 5 Dec 2012 04:40:44 -0500
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-To: Ilya Zykov <ilya@ilyx.ru>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH -next 2/2] tty: Correct tty buffer flush.
-References: <50BF0A56.9050209@ilyx.ru>
-In-Reply-To: <50BF0A56.9050209@ilyx.ru>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH v2] net/macb: Use non-coherent memory for rx buffers
+Date: Wed, 5 Dec 2012 09:35:39 -0000
+Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6026B70D9@saturn3.aculab.com>
+In-Reply-To: <50BE2FEC.2070500@atmel.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH v2] net/macb: Use non-coherent memory for rx buffers
+Thread-Index: Ac3SQvIWJKWSFt+CQJuBZikvA3IQGwAh7Jqw
+References: <CAGhQ9VwWmP_B17LnAEqDHcL8Yd-s0C-Bf35z3+=vnJmK_NoCSw@mail.gmail.com> <1354536876-6274-1-git-send-email-nicolas.ferre@atmel.com> <AE90C24D6B3A694183C094C60CF0A2F6026B70D5@saturn3.aculab.com> <50BCA746.1020705@atmel.com> <AE90C24D6B3A694183C094C60CF0A2F6026B70D6@saturn3.aculab.com> <50BE2FEC.2070500@atmel.com>
+From: "David Laight" <David.Laight@ACULAB.COM>
+To: "Nicolas Ferre" <nicolas.ferre@atmel.com>
+Cc: "David S. Miller" <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        "Joachim Eastwood" <manabian@gmail.com>,
+        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
+        "Havard Skinnemoen" <havard@skinnemoen.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2012 09:48 AM, Ilya Zykov wrote:
-> tty: Correct tty buffer flush.
-
-NAK just because of the insufficient commit log. That line does not
-belong here. Instead, please add here proper description as you have
-already done before. IOW what is in 0/2 should be here so that we know
-the reasons. 0/2 text is not stored in git. This one is.
-
-> Signed-off-by: Ilya Zykov <ilya@ilyx.ru>
-> ---
->  drivers/tty/tty_buffer.c |   11 +++++++----
->  1 files changed, 7 insertions(+), 4 deletions(-)
+> If I understand well, you mean that the call to:
 > 
-> diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
-> index 7602df8..8a3333d 100644
-> --- a/drivers/tty/tty_buffer.c
-> +++ b/drivers/tty/tty_buffer.c
-> @@ -119,11 +119,14 @@ static void __tty_buffer_flush(struct tty_port *port)
->  	struct tty_bufhead *buf = &port->buf;
->  	struct tty_buffer *thead;
->  
-> -	while ((thead = buf->head) != NULL) {
-> -		buf->head = thead->next;
-> -		tty_buffer_free(port, thead);
-> +	if (unlikely(buf->head == NULL))
-> +		return;
-> +	while ((thead = buf->head->next) != NULL) {
-> +		tty_buffer_free(port, buf->head);
-> +		buf->head = thead;
->  	}
-> -	buf->tail = NULL;
-> +	WARN_ON(buf->head != buf->tail);
-> +	buf->head->read = buf->head->commit;
->  }
->  
->  /**
+> 		dma_sync_single_range_for_device(&bp->pdev->dev, phys,
+> 				pg_offset, frag_len, DMA_FROM_DEVICE);
 > 
+> in the rx path after having copied the data to skb is not needed?
+> That is also the conclusion that I found after having thinking about
+> this again... I will check this.
 
-thanks,
--- 
-js
-suse labs
+You need to make sure that the memory isn't in the data cache
+when you give the rx buffer back to the MAC.
+(and ensure the cpu doesn't read it until the rx is complete.)
+I've NFI what that dma_sync call does - you need to invalidate
+the cache lines.
+ 
+> For the CRC, my driver is not using the CRC offloading feature for the
+> moment. So no CRC is written by the device.
+
+I was thinking it would matter if the MAC wrote the CRC into the
+buffer (even though it was excluded from the length).
+It doesn't - you only need to worry about data you've read.
+
+> > I was wondering if the code needs to do per page allocations?
+> > Perhaps that is necessary to avoid needing a large block of
+> > contiguous physical memory (and virtual addresses)?
+> 
+> The page management seems interesting for future management of RX
+> buffers as skb fragments: that will allow to avoid copying received data.
+
+Dunno - the complexities of such buffer loaning schemes often
+exceed the gain of avoiding the data copy.
+Using buffers allocated to the skb is a bit different - since
+you completely forget about the memory once you pass the skb
+upstream.
+
+Some quick sums indicate you might want to allocate 8k memory
+blocks and split into 5 buffers.
+
+	David
+
+
+
