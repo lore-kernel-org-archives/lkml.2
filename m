@@ -1,185 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752497Ab2LEJXK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 04:23:10 -0500
-Received: from mx3.cyfra.ua ([62.80.160.182]:34002 "EHLO mx3.cyfra.ua"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751765Ab2LEJXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 04:23:07 -0500
-From: Vitalii Demianets <vitas@nppfactor.kiev.ua>
-Organization: Factor-SPE
-To: "Hans J. Koch" <hjk@hansjkoch.de>
-Subject: [PATCH v2] drivers/uio/uio_pdrv_genirq.c: Fix memory freeing issues
-Date: Wed, 5 Dec 2012 11:22:57 +0200
-User-Agent: KMail/1.9.10
-Cc: Cong Ding <dinggnu@gmail.com>, linux-kernel@vger.kernel.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-References: <201211271929.32315.vitas@nppfactor.kiev.ua> <201211291347.28273.vitas@nppfactor.kiev.ua> <20121204210440.GA4720@local>
-In-Reply-To: <20121204210440.GA4720@local>
+	id S1752535Ab2LEJao (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 04:30:44 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54740 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751762Ab2LEJal (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 04:30:41 -0500
+Date: Wed, 5 Dec 2012 09:30:27 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'LKML'" <linux-kernel@vger.kernel.org>,
+        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
+        "'Marko Katic'" <dromede@gmail.com>,
+        "'Grant Likely'" <grant.likely@secretlab.ca>,
+        "'Richard Purdie'" <rpurdie@rpsys.net>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4] backlight: corgi_lcd: Use gpio_set_value_cansleep()
+	to avoid WARN_ON
+Message-ID: <20121205093027.GK14363@n2100.arm.linux.org.uk>
+References: <000201cdd283$baf50160$30df0420$%han@samsung.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201212051122.57724.vitas@nppfactor.kiev.ua>
+In-Reply-To: <000201cdd283$baf50160$30df0420$%han@samsung.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. uioinfo was kfreed based on the presence of pdev->dev.of_node, which was
-obviously wrong and unrelated to the fact if uioinfo was allocated statically
-or dynamically. This patch introduces new flag which clearly shows if uioinfo
-was allocated dynamically and kfrees uioinfo based on that flag;
-2. Fix: priv data was not freed in case platform_get_irq() failed. As it was
-caused mainly by improper exit labels naming, labels were renamed too;
-3. The case of uioinfo AND pdev->dev.of_node both NULL (not initialized
-in platform data) was not treated properly.
+On Wed, Dec 05, 2012 at 09:59:07AM +0900, Jingoo Han wrote:
+> -	if (gpio_is_valid(lcd->gpio_backlight_cont))
+> -		gpio_set_value(lcd->gpio_backlight_cont, cont);
+> +	if (gpio_is_valid(lcd->gpio_backlight_cont)) {
+> +		if (gpio_cansleep(lcd->gpio_backlight_cont))
+> +			gpio_set_value_cansleep(lcd->gpio_backlight_cont, cont);
+> +		else
+> +			gpio_set_value(lcd->gpio_backlight_cont, cont);
+> +	}
 
-Signed-off-by: Vitalii Demianets <vitas@nppfactor.kiev.ua>
+Why not simply:
 
----
-v2: Constants naming style
++	if (gpio_is_valid(lcd->gpio_backlight_cont))
++		gpio_set_value_cansleep(lcd->gpio_backlight_cont, cont);
 
----
- drivers/uio/uio_pdrv_genirq.c |   44 ++++++++++++++++++++++++----------------
- 1 files changed, 26 insertions(+), 18 deletions(-)
-
-diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
-index 42202cd..75aaeee 100644
---- a/drivers/uio/uio_pdrv_genirq.c
-+++ b/drivers/uio/uio_pdrv_genirq.c
-@@ -30,6 +30,11 @@
- 
- #define DRIVER_NAME "uio_pdrv_genirq"
- 
-+enum {
-+	UIO_IRQ_DISABLED = 0,
-+	UIO_INFO_ALLOCED = 1,
-+};
-+
- struct uio_pdrv_genirq_platdata {
- 	struct uio_info *uioinfo;
- 	spinlock_t lock;
-@@ -63,7 +68,7 @@ static irqreturn_t uio_pdrv_genirq_handler(int irq, struct uio_info *dev_info)
- 	 * remember the state so we can allow user space to enable it later.
- 	 */
- 
--	if (!test_and_set_bit(0, &priv->flags))
-+	if (!test_and_set_bit(UIO_IRQ_DISABLED, &priv->flags))
- 		disable_irq_nosync(irq);
- 
- 	return IRQ_HANDLED;
-@@ -83,10 +88,10 @@ static int uio_pdrv_genirq_irqcontrol(struct uio_info *dev_info, s32 irq_on)
- 
- 	spin_lock_irqsave(&priv->lock, flags);
- 	if (irq_on) {
--		if (test_and_clear_bit(0, &priv->flags))
-+		if (test_and_clear_bit(UIO_IRQ_DISABLED, &priv->flags))
- 			enable_irq(dev_info->irq);
- 	} else {
--		if (!test_and_set_bit(0, &priv->flags))
-+		if (!test_and_set_bit(UIO_IRQ_DISABLED, &priv->flags))
- 			disable_irq(dev_info->irq);
- 	}
- 	spin_unlock_irqrestore(&priv->lock, flags);
-@@ -101,8 +106,9 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
- 	struct uio_mem *uiomem;
- 	int ret = -EINVAL;
- 	int i;
-+	bool uioinfo_alloced = false;
- 
--	if (!uioinfo) {
-+	if (!uioinfo && pdev->dev.of_node) {
- 		int irq;
- 
- 		/* alloc uioinfo for one device */
-@@ -110,10 +116,11 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
- 		if (!uioinfo) {
- 			ret = -ENOMEM;
- 			dev_err(&pdev->dev, "unable to kmalloc\n");
--			goto bad2;
-+			goto out;
- 		}
- 		uioinfo->name = pdev->dev.of_node->name;
- 		uioinfo->version = "devicetree";
-+		uioinfo_alloced = true;
- 
- 		/* Multiple IRQs are not supported */
- 		irq = platform_get_irq(pdev, 0);
-@@ -125,32 +132,33 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
- 
- 	if (!uioinfo || !uioinfo->name || !uioinfo->version) {
- 		dev_err(&pdev->dev, "missing platform_data\n");
--		goto bad0;
-+		goto out_uioinfo;
- 	}
- 
- 	if (uioinfo->handler || uioinfo->irqcontrol ||
- 	    uioinfo->irq_flags & IRQF_SHARED) {
- 		dev_err(&pdev->dev, "interrupt configuration error\n");
--		goto bad0;
-+		goto out_uioinfo;
- 	}
- 
- 	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
- 	if (!priv) {
- 		ret = -ENOMEM;
- 		dev_err(&pdev->dev, "unable to kmalloc\n");
--		goto bad0;
-+		goto out_uioinfo;
- 	}
- 
- 	priv->uioinfo = uioinfo;
- 	spin_lock_init(&priv->lock);
--	priv->flags = 0; /* interrupt is enabled to begin with */
-+	/* interrupt is enabled to begin with */
-+	priv->flags = uioinfo_alloced ? (1 << UIO_INFO_ALLOCED) : 0;
- 	priv->pdev = pdev;
- 
- 	if (!uioinfo->irq) {
- 		ret = platform_get_irq(pdev, 0);
- 		if (ret < 0) {
- 			dev_err(&pdev->dev, "failed to get IRQ\n");
--			goto bad0;
-+			goto out_priv;
- 		}
- 		uioinfo->irq = ret;
- 	}
-@@ -205,19 +213,19 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
- 	ret = uio_register_device(&pdev->dev, priv->uioinfo);
- 	if (ret) {
- 		dev_err(&pdev->dev, "unable to register uio device\n");
--		goto bad1;
-+		goto out_pm;
- 	}
- 
- 	platform_set_drvdata(pdev, priv);
- 	return 0;
-- bad1:
--	kfree(priv);
-+out_pm:
- 	pm_runtime_disable(&pdev->dev);
-- bad0:
--	/* kfree uioinfo for OF */
--	if (pdev->dev.of_node)
-+out_priv:
-+	kfree(priv);
-+out_uioinfo:
-+	if (uioinfo_alloced)
- 		kfree(uioinfo);
-- bad2:
-+out:
- 	return ret;
- }
- 
-@@ -232,7 +240,7 @@ static int uio_pdrv_genirq_remove(struct platform_device *pdev)
- 	priv->uioinfo->irqcontrol = NULL;
- 
- 	/* kfree uioinfo for OF */
--	if (pdev->dev.of_node)
-+	if (priv->flags & (1 << UIO_INFO_ALLOCED))
- 		kfree(priv->uioinfo);
- 
- 	kfree(priv);
--- 
-1.7.8.6
+If you read the gpiolib code and documentation, what you will realise is
+that the two calls are identical except for the "might_sleep_if()" in
+gpio_set_value_cansleep().  You will also note that gpiolib itself _only_
+calls gpio_set_value_cansleep() without checking gpio_cansleep() in
+contexts where sleeping is possible.  So if it's good enough for gpiolib,
+it should be good enough here.
