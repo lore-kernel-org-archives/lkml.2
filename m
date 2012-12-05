@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752371Ab2LETJT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 14:09:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31216 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751029Ab2LETJS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 14:09:18 -0500
-Date: Wed, 5 Dec 2012 20:08:36 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
-        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
-        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
-        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v2 10/10] cpu: No more __stop_machine() in
-	_cpu_down()
-Message-ID: <20121205190836.GB13795@redhat.com>
-References: <20121205184041.3750.64945.stgit@srivatsabhat.in.ibm.com> <20121205184456.3750.35005.stgit@srivatsabhat.in.ibm.com>
+	id S1752984Ab2LETMR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 14:12:17 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:54581 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752040Ab2LETMQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 14:12:16 -0500
+Date: Wed, 5 Dec 2012 16:12:09 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 2/3] perf hists: Link hist entries before inserting to an
+ output tree
+Message-ID: <20121205191209.GE6629@ghostprotocols.net>
+References: <1354690603-31364-1-git-send-email-namhyung@kernel.org>
+ <1354690603-31364-3-git-send-email-namhyung@kernel.org>
+ <20121205190646.GB1037@krava.brq.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121205184456.3750.35005.stgit@srivatsabhat.in.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20121205190646.GB1037@krava.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06, Srivatsa S. Bhat wrote:
->
-> @@ -418,7 +418,7 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
->  	}
->  	smpboot_park_threads(cpu);
->
-> -	err = __stop_machine(take_cpu_down, &tcd_param, cpumask_of(cpu));
-> +	err = stop_cpus(cpumask_of(cpu), take_cpu_down, &tcd_param);
+Em Wed, Dec 05, 2012 at 08:06:46PM +0100, Jiri Olsa escreveu:
+> On Wed, Dec 05, 2012 at 03:56:42PM +0900, Namhyung Kim wrote:
+> > From: Namhyung Kim <namhyung.kim@lge.com>
+> > @@ -481,6 +459,11 @@ static void hists__process(struct hists *old, struct hists *new)
+> >  	else
+> >  		hists__link(new, old);
+> >  
+> > +	hists__output_resort(new);
+> > +
+> > +	if (show_displacement)
+> > +		hists__compute_position(new);
+> > +
+> 
+> Computing the position after hists__link screws up the position data,
+> because we likely have new entries in.
+> 
+> However, I wonder if anyone is actualy using displacement info..?
 
-stop_one_cpu(cpu) ?
+IIRC that was used long ago in the first version of 'perf diff', that
+is not the default, probably we can just ditch it to simplify things,
+can you check?
 
-Oleg.
-
+- Arnaldo
