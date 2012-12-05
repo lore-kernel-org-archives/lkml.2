@@ -1,1965 +1,1148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932090Ab2LEQUw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 11:20:52 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:55549 "EHLO multi.imgtec.com"
+	id S1753960Ab2LEQVg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 11:21:36 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:51591 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752845Ab2LEQJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 11:09:28 -0500
+	id S1752617Ab2LEQJW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 11:09:22 -0500
 From: James Hogan <james.hogan@imgtec.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 CC: Arnd Bergmann <arnd@arndb.de>, James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH v2 14/44] metag: Memory management
-Date: Wed, 5 Dec 2012 16:08:32 +0000
-Message-ID: <1354723742-6195-15-git-send-email-james.hogan@imgtec.com>
+Subject: [PATCH v2 09/44] metag: Header for core memory mapped registers
+Date: Wed, 5 Dec 2012 16:08:27 +0000
+Message-ID: <1354723742-6195-10-git-send-email-james.hogan@imgtec.com>
 X-Mailer: git-send-email 1.7.7.6
 In-Reply-To: <1354723742-6195-1-git-send-email-james.hogan@imgtec.com>
 References: <1354723742-6195-1-git-send-email-james.hogan@imgtec.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-SEF-Processed: 7_3_0_01181__2012_12_05_16_09_20
+X-SEF-Processed: 7_3_0_01181__2012_12_05_16_09_16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add memory management files for metag.
-
-Meta's 32bit virtual address space is split into two halves:
- - local (0x08000000-0x7fffffff): traditionally local to a hardware
-   thread and incoherent between hardware threads. Each hardware thread
-   has it's own local MMU table. On Meta2 the local space can be
-   globally coherent (GCOn) if the cache partitions coincide.
- - global (0x88000000-0xffff0000): coherent and traditionally global
-   between hardware threads. On Meta2, each hardware thread has it's own
-   global MMU table.
-
-The low 128MiB of each half is non-MMUable and maps directly to the
-physical address space:
- - 0x00010000-0x07ffffff: contains Meta core registers and maps SoC bus
- - 0x80000000-0x87ffffff: contains low latency global core memories
-
-Linux usually further splits the local virtual address space like this:
- - 0x08000000-0x3fffffff: user mappings
- - 0x40000000-0x7fffffff: kernel mappings
+Add the header <asm/metag_mem.h> describing addresses, fields, and bits
+of various core memory mapped registers in the low non-MMU region.
 
 Signed-off-by: James Hogan <james.hogan@imgtec.com>
 ---
- arch/metag/include/asm/mmu.h         |   77 ++++++
- arch/metag/include/asm/mmu_context.h |  113 +++++++++
- arch/metag/include/asm/page.h        |  128 ++++++++++
- arch/metag/include/asm/pgalloc.h     |   79 ++++++
- arch/metag/include/asm/pgtable.h     |  370 ++++++++++++++++++++++++++++
- arch/metag/mm/extable.c              |   15 ++
- arch/metag/mm/fault.c                |  239 ++++++++++++++++++
- arch/metag/mm/init.c                 |  448 ++++++++++++++++++++++++++++++++++
- arch/metag/mm/mmu-meta1.c            |  157 ++++++++++++
- arch/metag/mm/mmu-meta2.c            |  208 ++++++++++++++++
- 10 files changed, 1834 insertions(+), 0 deletions(-)
- create mode 100644 arch/metag/include/asm/mmu.h
- create mode 100644 arch/metag/include/asm/mmu_context.h
- create mode 100644 arch/metag/include/asm/page.h
- create mode 100644 arch/metag/include/asm/pgalloc.h
- create mode 100644 arch/metag/include/asm/pgtable.h
- create mode 100644 arch/metag/mm/extable.c
- create mode 100644 arch/metag/mm/fault.c
- create mode 100644 arch/metag/mm/init.c
- create mode 100644 arch/metag/mm/mmu-meta1.c
- create mode 100644 arch/metag/mm/mmu-meta2.c
+ arch/metag/include/asm/metag_mem.h | 1106 ++++++++++++++++++++++++++++++++++++
+ 1 files changed, 1106 insertions(+), 0 deletions(-)
+ create mode 100644 arch/metag/include/asm/metag_mem.h
 
-diff --git a/arch/metag/include/asm/mmu.h b/arch/metag/include/asm/mmu.h
+diff --git a/arch/metag/include/asm/metag_mem.h b/arch/metag/include/asm/metag_mem.h
 new file mode 100644
-index 0000000..9c32114
+index 0000000..3f7b54d
 --- /dev/null
-+++ b/arch/metag/include/asm/mmu.h
-@@ -0,0 +1,77 @@
-+#ifndef __MMU_H
-+#define __MMU_H
-+
-+#ifdef CONFIG_METAG_USER_TCM
-+#include <linux/list.h>
-+#endif
-+
-+#ifdef CONFIG_HUGETLB_PAGE
-+#include <asm/page.h>
-+#endif
-+
-+typedef struct {
-+	/* Software pgd base pointer used for Meta 1.x MMU. */
-+	unsigned long pgd_base;
-+#ifdef CONFIG_METAG_USER_TCM
-+	struct list_head tcm;
-+#endif
-+#ifdef CONFIG_HUGETLB_PAGE
-+#if HPAGE_SHIFT < HUGEPT_SHIFT
-+	/* last partially filled huge page table address */
-+	unsigned long part_huge;
-+#endif
-+#endif
-+} mm_context_t;
-+
-+/* Given a virtual address, return the pte for the top level 4meg entry
-+ * that maps that address.
-+ * Returns 0 (an empty pte) if that range is not mapped.
-+ */
-+unsigned long mmu_read_first_level_page(unsigned long vaddr);
-+
-+/* Given a linear (virtual) address, return the second level 4k pte
-+ * that maps that address.  Returns 0 if the address is not mapped.
-+ */
-+unsigned long mmu_read_second_level_page(unsigned long vaddr);
-+
-+/* Get the virtual base address of the MMU */
-+unsigned long mmu_get_base(void);
-+
-+/* Initialize the MMU. */
-+void mmu_init(unsigned long mem_end);
-+
-+#ifdef CONFIG_METAG_META21_MMU
++++ b/arch/metag/include/asm/metag_mem.h
+@@ -0,0 +1,1106 @@
 +/*
-+ * For cpu "cpu" calculate and return the address of the
-+ * MMCU_TnLOCAL_TABLE_PHYS0 if running in local-space or
-+ * MMCU_TnGLOBAL_TABLE_PHYS0 if running in global-space.
-+ */
-+static inline unsigned long mmu_phys0_addr(unsigned int cpu)
-+{
-+	unsigned long phys0;
-+
-+	phys0 = (MMCU_T0LOCAL_TABLE_PHYS0 +
-+		(MMCU_TnX_TABLE_PHYSX_STRIDE * cpu)) +
-+		(MMCU_TXG_TABLE_PHYSX_OFFSET * is_global_space(PAGE_OFFSET));
-+
-+	return phys0;
-+}
-+
-+/*
-+ * For cpu "cpu" calculate and return the address of the
-+ * MMCU_TnLOCAL_TABLE_PHYS1 if running in local-space or
-+ * MMCU_TnGLOBAL_TABLE_PHYS1 if running in global-space.
-+ */
-+static inline unsigned long mmu_phys1_addr(unsigned int cpu)
-+{
-+	unsigned long phys1;
-+
-+	phys1 = (MMCU_T0LOCAL_TABLE_PHYS1 +
-+		(MMCU_TnX_TABLE_PHYSX_STRIDE * cpu)) +
-+		(MMCU_TXG_TABLE_PHYSX_OFFSET * is_global_space(PAGE_OFFSET));
-+
-+	return phys1;
-+}
-+#endif /* CONFIG_METAG_META21_MMU */
-+
-+#endif
-diff --git a/arch/metag/include/asm/mmu_context.h b/arch/metag/include/asm/mmu_context.h
-new file mode 100644
-index 0000000..ae2a71b
---- /dev/null
-+++ b/arch/metag/include/asm/mmu_context.h
-@@ -0,0 +1,113 @@
-+#ifndef __METAG_MMU_CONTEXT_H
-+#define __METAG_MMU_CONTEXT_H
-+
-+#include <asm-generic/mm_hooks.h>
-+
-+#include <asm/page.h>
-+#include <asm/mmu.h>
-+#include <asm/tlbflush.h>
-+#include <asm/cacheflush.h>
-+
-+#include <linux/io.h>
-+
-+static inline void enter_lazy_tlb(struct mm_struct *mm,
-+				  struct task_struct *tsk)
-+{
-+}
-+
-+static inline int init_new_context(struct task_struct *tsk,
-+				   struct mm_struct *mm)
-+{
-+#ifndef CONFIG_METAG_META21_MMU
-+	/* We use context to store a pointer to the page holding the
-+	 * pgd of a process while it is running. While a process is not
-+	 * running the pgd and context fields should be equal.
-+	 */
-+	mm->context.pgd_base = (unsigned long) mm->pgd;
-+#endif
-+#ifdef CONFIG_METAG_USER_TCM
-+	INIT_LIST_HEAD(&mm->context.tcm);
-+#endif
-+	return 0;
-+}
-+
-+#ifdef CONFIG_METAG_USER_TCM
-+
-+#include <linux/slab.h>
-+#include <asm/tcm.h>
-+
-+static inline void destroy_context(struct mm_struct *mm)
-+{
-+	struct tcm_allocation *pos, *n;
-+
-+	list_for_each_entry_safe(pos, n,  &mm->context.tcm, list) {
-+		tcm_free(pos->tag, pos->addr, pos->size);
-+		list_del(&pos->list);
-+		kfree(pos);
-+	}
-+}
-+#else
-+#define destroy_context(mm)		do { } while (0)
-+#endif
-+
-+#ifdef CONFIG_METAG_META21_MMU
-+static inline void load_pgd(pgd_t *pgd, int thread)
-+{
-+	unsigned long phys0 = mmu_phys0_addr(thread);
-+	unsigned long phys1 = mmu_phys1_addr(thread);
-+
-+	/*
-+	 *  0x900 2Gb address space
-+	 *  The permission bits apply to MMU table region which gives a 2MB
-+	 *  window into physical memory. We especially don't want userland to be
-+	 *  able to access this.
-+	 */
-+	metag_out32(0x900 | _PAGE_CACHEABLE | _PAGE_PRIV | _PAGE_WRITE |
-+		    _PAGE_PRESENT, phys0);
-+	/* Set new MMU base address */
-+	metag_out32(__pa(pgd) & MMCU_TBLPHYS1_ADDR_BITS, phys1);
-+}
-+#endif
-+
-+static inline void switch_mmu(struct mm_struct *prev, struct mm_struct *next)
-+{
-+#ifdef CONFIG_METAG_META21_MMU
-+	load_pgd(next->pgd, hard_processor_id());
-+#else
-+	unsigned int i;
-+
-+	/* prev->context == prev->pgd in the case where we are initially
-+	   switching from the init task to the first process. */
-+	if (prev->context.pgd_base != (unsigned long) prev->pgd) {
-+		for (i = FIRST_USER_PGD_NR; i < USER_PTRS_PER_PGD; i++)
-+			((pgd_t *) prev->context.pgd_base)[i] = prev->pgd[i];
-+	} else
-+		prev->pgd = (pgd_t *)mmu_get_base();
-+
-+	next->pgd = prev->pgd;
-+	prev->pgd = (pgd_t *) prev->context.pgd_base;
-+
-+	for (i = FIRST_USER_PGD_NR; i < USER_PTRS_PER_PGD; i++)
-+		next->pgd[i] = ((pgd_t *) next->context.pgd_base)[i];
-+
-+	flush_cache_all();
-+#endif
-+	flush_tlb_all();
-+}
-+
-+static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
-+			     struct task_struct *tsk)
-+{
-+	if (prev != next)
-+		switch_mmu(prev, next);
-+}
-+
-+static inline void activate_mm(struct mm_struct *prev_mm,
-+			       struct mm_struct *next_mm)
-+{
-+	switch_mmu(prev_mm, next_mm);
-+}
-+
-+#define deactivate_mm(tsk, mm)   do { } while (0)
-+
-+#endif
-diff --git a/arch/metag/include/asm/page.h b/arch/metag/include/asm/page.h
-new file mode 100644
-index 0000000..b12345b
---- /dev/null
-+++ b/arch/metag/include/asm/page.h
-@@ -0,0 +1,128 @@
-+#ifndef _METAG_PAGE_H
-+#define _METAG_PAGE_H
-+
-+#include <linux/const.h>
-+
-+#include <asm/metag_mem.h>
-+
-+/* PAGE_SHIFT determines the page size */
-+#if defined(CONFIG_PAGE_SIZE_4K)
-+#define PAGE_SHIFT	12
-+#elif defined(CONFIG_PAGE_SIZE_8K)
-+#define PAGE_SHIFT	13
-+#elif defined(CONFIG_PAGE_SIZE_16K)
-+#define PAGE_SHIFT	14
-+#endif
-+
-+#define PAGE_SIZE	(_AC(1, UL) << PAGE_SHIFT)
-+#define PAGE_MASK	(~(PAGE_SIZE-1))
-+
-+#if defined(CONFIG_HUGETLB_PAGE_SIZE_8K)
-+# define HPAGE_SHIFT	13
-+#elif defined(CONFIG_HUGETLB_PAGE_SIZE_16K)
-+# define HPAGE_SHIFT	14
-+#elif defined(CONFIG_HUGETLB_PAGE_SIZE_32K)
-+# define HPAGE_SHIFT	15
-+#elif defined(CONFIG_HUGETLB_PAGE_SIZE_64K)
-+# define HPAGE_SHIFT	16
-+#elif defined(CONFIG_HUGETLB_PAGE_SIZE_128K)
-+# define HPAGE_SHIFT	17
-+#elif defined(CONFIG_HUGETLB_PAGE_SIZE_256K)
-+# define HPAGE_SHIFT	18
-+#elif defined(CONFIG_HUGETLB_PAGE_SIZE_512K)
-+# define HPAGE_SHIFT	19
-+#elif defined(CONFIG_HUGETLB_PAGE_SIZE_1M)
-+# define HPAGE_SHIFT	20
-+#elif defined(CONFIG_HUGETLB_PAGE_SIZE_2M)
-+# define HPAGE_SHIFT	21
-+#elif defined(CONFIG_HUGETLB_PAGE_SIZE_4M)
-+# define HPAGE_SHIFT	22
-+#endif
-+
-+#ifdef CONFIG_HUGETLB_PAGE
-+# define HPAGE_SIZE		(1UL << HPAGE_SHIFT)
-+# define HPAGE_MASK		(~(HPAGE_SIZE-1))
-+# define HUGETLB_PAGE_ORDER	(HPAGE_SHIFT-PAGE_SHIFT)
-+/*
-+ * We define our own hugetlb_get_unmapped_area so we don't corrupt 2nd level
-+ * page tables with normal pages in them.
-+ */
-+# define HUGEPT_SHIFT		(22)
-+# define HUGEPT_ALIGN		(1 << HUGEPT_SHIFT)
-+# define HUGEPT_MASK		(HUGEPT_ALIGN - 1)
-+# define ALIGN_HUGEPT(x)	ALIGN(x, HUGEPT_ALIGN)
-+# define HAVE_ARCH_HUGETLB_UNMAPPED_AREA
-+#endif
-+
-+#ifndef __ASSEMBLY__
-+
-+/* On the Meta, we would like to know if the address (heap) we have is
-+ * in local or global space.
-+ */
-+#define is_global_space(addr)	((addr) > 0x7fffffff)
-+#define is_local_space(addr)	(!(is_global_space(addr))
-+
-+extern void clear_page(void *to);
-+extern void copy_page(void *to, void *from);
-+
-+#define clear_user_page(page, vaddr, pg)        clear_page(page)
-+#define copy_user_page(to, from, vaddr, pg)     copy_page(to, from)
-+
-+/*
-+ * These are used to make use of C type-checking..
-+ */
-+typedef struct { unsigned long pte; } pte_t;
-+typedef struct { unsigned long pgd; } pgd_t;
-+typedef struct { unsigned long pgprot; } pgprot_t;
-+typedef struct page *pgtable_t;
-+
-+#define pte_val(x)	((x).pte)
-+#define pgd_val(x)	((x).pgd)
-+#define pgprot_val(x)	((x).pgprot)
-+
-+#define __pte(x)	((pte_t) { (x) } )
-+#define __pgd(x)	((pgd_t) { (x) } )
-+#define __pgprot(x)	((pgprot_t) { (x) } )
-+
-+/* The kernel must now ALWAYS live at either 0xC0000000 or 0x40000000 - that
-+ * being either global or local space.
-+ */
-+#define PAGE_OFFSET		(CONFIG_PAGE_OFFSET)
-+
-+#if PAGE_OFFSET >= LINGLOBAL_BASE
-+#define META_MEMORY_BASE  LINGLOBAL_BASE
-+#define META_MEMORY_LIMIT LINGLOBAL_LIMIT
-+#else
-+#define META_MEMORY_BASE  LINLOCAL_BASE
-+#define META_MEMORY_LIMIT LINLOCAL_LIMIT
-+#endif
-+
-+/* Offset between physical and virtual mapping of kernel memory. */
-+extern unsigned int meta_memoffset;
-+
-+#define __pa(x) ((unsigned long)(((unsigned long)(x)) - meta_memoffset))
-+#define __va(x) ((void *)((unsigned long)(((unsigned long)(x)) + meta_memoffset)))
-+
-+extern unsigned long pfn_base;
-+#define ARCH_PFN_OFFSET         (pfn_base)
-+#define virt_to_page(kaddr)     pfn_to_page(__pa(kaddr) >> PAGE_SHIFT)
-+#define page_to_virt(page)      __va(page_to_pfn(page) << PAGE_SHIFT)
-+#define virt_addr_valid(kaddr)  pfn_valid(__pa(kaddr) >> PAGE_SHIFT)
-+#define page_to_phys(page)      (page_to_pfn(page) << PAGE_SHIFT)
-+#ifdef CONFIG_FLATMEM
-+extern unsigned long max_pfn;
-+extern unsigned long min_low_pfn;
-+#define pfn_valid(pfn)		((pfn) >= min_low_pfn && (pfn) < max_pfn)
-+#endif
-+
-+#define pfn_to_kaddr(pfn)	__va((pfn) << PAGE_SHIFT)
-+
-+#define VM_DATA_DEFAULT_FLAGS   (VM_READ | VM_WRITE | VM_EXEC | \
-+				 VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
-+
-+#include <asm-generic/memory_model.h>
-+#include <asm-generic/getorder.h>
-+
-+#endif /* __ASSMEBLY__ */
-+
-+#endif /* _METAG_PAGE_H */
-diff --git a/arch/metag/include/asm/pgalloc.h b/arch/metag/include/asm/pgalloc.h
-new file mode 100644
-index 0000000..275d928
---- /dev/null
-+++ b/arch/metag/include/asm/pgalloc.h
-@@ -0,0 +1,79 @@
-+#ifndef _METAG_PGALLOC_H
-+#define _METAG_PGALLOC_H
-+
-+#include <linux/threads.h>
-+#include <linux/mm.h>
-+
-+#define pmd_populate_kernel(mm, pmd, pte) \
-+	set_pmd(pmd, __pmd(_PAGE_TABLE | __pa(pte)))
-+
-+#define pmd_populate(mm, pmd, pte) \
-+	set_pmd(pmd, __pmd(_PAGE_TABLE | page_to_phys(pte)))
-+
-+#define pmd_pgtable(pmd) pmd_page(pmd)
-+
-+/*
-+ * Allocate and free page tables.
-+ */
-+#ifdef CONFIG_METAG_META21_MMU
-+static inline void pgd_ctor(pgd_t *pgd)
-+{
-+	memcpy(pgd + USER_PTRS_PER_PGD,
-+	       swapper_pg_dir + USER_PTRS_PER_PGD,
-+	       (PTRS_PER_PGD - USER_PTRS_PER_PGD) * sizeof(pgd_t));
-+}
-+#else
-+#define pgd_ctor(x)	do { } while (0)
-+#endif
-+
-+static inline pgd_t *pgd_alloc(struct mm_struct *mm)
-+{
-+	pgd_t *pgd = (pgd_t *)get_zeroed_page(GFP_KERNEL);
-+	if (pgd)
-+		pgd_ctor(pgd);
-+	return pgd;
-+}
-+
-+static inline void pgd_free(struct mm_struct *mm, pgd_t *pgd)
-+{
-+	free_page((unsigned long)pgd);
-+}
-+
-+static inline pte_t *pte_alloc_one_kernel(struct mm_struct *mm,
-+					  unsigned long address)
-+{
-+	pte_t *pte = (pte_t *)__get_free_page(GFP_KERNEL | __GFP_REPEAT |
-+					      __GFP_ZERO);
-+	return pte;
-+}
-+
-+static inline pgtable_t pte_alloc_one(struct mm_struct *mm,
-+				      unsigned long address)
-+{
-+	struct page *pte;
-+	pte = alloc_pages(GFP_KERNEL | __GFP_REPEAT | __GFP_ZERO, 0);
-+	if (pte)
-+		pgtable_page_ctor(pte);
-+	return pte;
-+}
-+
-+static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
-+{
-+	free_page((unsigned long)pte);
-+}
-+
-+static inline void pte_free(struct mm_struct *mm, pgtable_t pte)
-+{
-+	pgtable_page_dtor(pte);
-+	__free_page(pte);
-+}
-+
-+#define __pte_free_tlb(tlb, pte, addr)				\
-+	do {							\
-+		pgtable_page_dtor(pte);				\
-+		tlb_remove_page((tlb), (pte));			\
-+	} while (0)
-+
-+#define check_pgt_cache()	do { } while (0)
-+
-+#endif
-diff --git a/arch/metag/include/asm/pgtable.h b/arch/metag/include/asm/pgtable.h
-new file mode 100644
-index 0000000..1cd13d5
---- /dev/null
-+++ b/arch/metag/include/asm/pgtable.h
-@@ -0,0 +1,370 @@
-+/*
-+ * Macros and functions to manipulate Meta page tables.
-+ */
-+
-+#ifndef _METAG_PGTABLE_H
-+#define _METAG_PGTABLE_H
-+
-+#include <asm-generic/pgtable-nopmd.h>
-+
-+/* Invalid regions on Meta: 0x00000000-0x001FFFFF and 0xFFFF0000-0xFFFFFFFF */
-+#if PAGE_OFFSET >= LINGLOBAL_BASE
-+#define CONSISTENT_START	0xF7000000
-+#define CONSISTENT_END		0xF73FFFFF
-+#define VMALLOC_START		0xF8000000
-+#define VMALLOC_END		0xFFFEFFFF
-+#else
-+#define CONSISTENT_START	0x77000000
-+#define CONSISTENT_END		0x773FFFFF
-+#define VMALLOC_START		0x78000000
-+#define VMALLOC_END		0x7FFFFFFF
-+#endif
-+
-+/*
-+ * Definitions for MMU descriptors
++ * asm/metag_mem.h
 + *
-+ * These are the hardware bits in the MMCU pte entries.
-+ * Derived from the Meta toolkit headers.
++ * Copyright (C) 2000-2007, 2012 Imagination Technologies.
++ *
++ * This program is free software; you can redistribute it and/or modify it under
++ * the terms of the GNU General Public License version 2 as published by the
++ * Free Software Foundation.
++ *
++ * Various defines for Meta (memory-mapped) registers.
 + */
-+#define _PAGE_PRESENT		MMCU_ENTRY_VAL_BIT
-+#define _PAGE_WRITE		MMCU_ENTRY_WR_BIT
-+#define _PAGE_PRIV		MMCU_ENTRY_PRIV_BIT
-+/* Write combine bit - this can cause writes to occur out of order */
-+#define _PAGE_WR_COMBINE	MMCU_ENTRY_WRC_BIT
-+/* Sys coherent bit - this bit is never used by Linux */
-+#define _PAGE_SYS_COHERENT	MMCU_ENTRY_SYS_BIT
-+#define _PAGE_ALWAYS_ZERO_1	0x020
-+#define _PAGE_CACHE_CTRL0	0x040
-+#define _PAGE_CACHE_CTRL1	0x080
-+#define _PAGE_ALWAYS_ZERO_2	0x100
-+#define _PAGE_ALWAYS_ZERO_3	0x200
-+#define _PAGE_ALWAYS_ZERO_4	0x400
-+#define _PAGE_ALWAYS_ZERO_5	0x800
 +
-+/* These are software bits that we stuff into the gaps in the hardware
-+ * pte entries that are not used.  Note, these DO get stored in the actual
-+ * hardware, but the hardware just does not use them.
++#ifndef _ASM_METAG_MEM_H_
++#define _ASM_METAG_MEM_H_
++
++/*****************************************************************************
++ *                   META MEMORY MAP LINEAR ADDRESS VALUES
++ ****************************************************************************/
++/*
++ * COMMON MEMORY MAP
++ * -----------------
 + */
-+#define _PAGE_ACCESSED		_PAGE_ALWAYS_ZERO_1
-+#define _PAGE_DIRTY		_PAGE_ALWAYS_ZERO_2
-+#define _PAGE_FILE		_PAGE_ALWAYS_ZERO_3
 +
-+/* Pages owned, and protected by, the kernel. */
-+#define _PAGE_KERNEL		_PAGE_PRIV
++#define LINSYSTEM_BASE  0x00200000
++#define LINSYSTEM_LIMIT 0x07FFFFFF
 +
-+/* No cacheing of this page */
-+#define _PAGE_CACHE_WIN0	(MMCU_CWIN_UNCACHED << MMCU_ENTRY_CWIN_S)
-+/* burst cacheing - good for data streaming */
-+#define _PAGE_CACHE_WIN1	(MMCU_CWIN_BURST << MMCU_ENTRY_CWIN_S)
-+/* One cache way per thread */
-+#define _PAGE_CACHE_WIN2	(MMCU_CWIN_C1SET << MMCU_ENTRY_CWIN_S)
-+/* Full on cacheing */
-+#define _PAGE_CACHE_WIN3	(MMCU_CWIN_CACHED << MMCU_ENTRY_CWIN_S)
++/* Linear cache flush now implemented via DCACHE instruction. These defines
++   related to a special region that used to exist for achieving cache flushes.
++ */
++#define         LINSYSLFLUSH_S 0
 +
-+#define _PAGE_CACHEABLE		(_PAGE_CACHE_WIN3 | _PAGE_WR_COMBINE)
++#define     LINSYSRES0_BASE     0x00200000
++#define     LINSYSRES0_LIMIT    0x01FFFFFF
 +
-+/* which bits are used for cache control ... */
-+#define _PAGE_CACHE_MASK	(_PAGE_CACHE_CTRL0 | _PAGE_CACHE_CTRL1 | \
-+				 _PAGE_WR_COMBINE)
++#define     LINSYSCUSTOM_BASE 0x02000000
++#define     LINSYSCUSTOM_LIMIT   0x02FFFFFF
 +
-+/* This is a mask of the bits that pte_modify is allowed to change. */
-+#define _PAGE_CHG_MASK		(PAGE_MASK)
++#define     LINSYSEXPAND_BASE 0x03000000
++#define     LINSYSEXPAND_LIMIT   0x03FFFFFF
 +
-+#define _PAGE_SZ_SHIFT		1
-+#define _PAGE_SZ_4K		(0x0)
-+#define _PAGE_SZ_8K		(0x1 << _PAGE_SZ_SHIFT)
-+#define _PAGE_SZ_16K		(0x2 << _PAGE_SZ_SHIFT)
-+#define _PAGE_SZ_32K		(0x3 << _PAGE_SZ_SHIFT)
-+#define _PAGE_SZ_64K		(0x4 << _PAGE_SZ_SHIFT)
-+#define _PAGE_SZ_128K		(0x5 << _PAGE_SZ_SHIFT)
-+#define _PAGE_SZ_256K		(0x6 << _PAGE_SZ_SHIFT)
-+#define _PAGE_SZ_512K		(0x7 << _PAGE_SZ_SHIFT)
-+#define _PAGE_SZ_1M		(0x8 << _PAGE_SZ_SHIFT)
-+#define _PAGE_SZ_2M		(0x9 << _PAGE_SZ_SHIFT)
-+#define _PAGE_SZ_4M		(0xa << _PAGE_SZ_SHIFT)
-+#define _PAGE_SZ_MASK		(0xf << _PAGE_SZ_SHIFT)
++#define     LINSYSEVENT_BASE  0x04000000
++#define         LINSYSEVENT_WR_ATOMIC_UNLOCK    0x04000000
++#define         LINSYSEVENT_WR_ATOMIC_LOCK      0x04000040
++#define         LINSYSEVENT_WR_CACHE_DISABLE    0x04000080
++#define         LINSYSEVENT_WR_CACHE_ENABLE     0x040000C0
++#define         LINSYSEVENT_WR_COMBINE_FLUSH    0x04000100
++#define         LINSYSEVENT_WR_FENCE            0x04000140
++#define     LINSYSEVENT_LIMIT   0x04000FFF
 +
-+#if defined(CONFIG_PAGE_SIZE_4K)
-+#define _PAGE_SZ		(_PAGE_SZ_4K)
-+#elif defined(CONFIG_PAGE_SIZE_8K)
-+#define _PAGE_SZ		(_PAGE_SZ_8K)
-+#elif defined(CONFIG_PAGE_SIZE_16K)
-+#define _PAGE_SZ		(_PAGE_SZ_16K)
++#define     LINSYSCFLUSH_BASE   0x04400000
++#define         LINSYSCFLUSH_DCACHE_LINE    0x04400000
++#define         LINSYSCFLUSH_ICACHE_LINE    0x04500000
++#define         LINSYSCFLUSH_MMCU           0x04700000
++#ifndef METAC_1_2
++#define         LINSYSCFLUSH_TxMMCU_BASE    0x04700020
++#define         LINSYSCFLUSH_TxMMCU_STRIDE  0x00000008
 +#endif
-+#define _PAGE_TABLE		(_PAGE_SZ | _PAGE_PRESENT)
++#define         LINSYSCFLUSH_ADDR_BITS      0x000FFFFF
++#define         LINSYSCFLUSH_ADDR_S         0
++#define     LINSYSCFLUSH_LIMIT  0x047FFFFF
 +
-+#if defined(CONFIG_HUGETLB_PAGE_SIZE_8K)
-+# define _PAGE_SZHUGE		(_PAGE_SZ_8K)
-+#elif defined(CONFIG_HUGETLB_PAGE_SIZE_16K)
-+# define _PAGE_SZHUGE		(_PAGE_SZ_16K)
-+#elif defined(CONFIG_HUGETLB_PAGE_SIZE_32K)
-+# define _PAGE_SZHUGE		(_PAGE_SZ_32K)
-+#elif defined(CONFIG_HUGETLB_PAGE_SIZE_64K)
-+# define _PAGE_SZHUGE		(_PAGE_SZ_64K)
-+#elif defined(CONFIG_HUGETLB_PAGE_SIZE_128K)
-+# define _PAGE_SZHUGE		(_PAGE_SZ_128K)
-+#elif defined(CONFIG_HUGETLB_PAGE_SIZE_256K)
-+# define _PAGE_SZHUGE		(_PAGE_SZ_256K)
-+#elif defined(CONFIG_HUGETLB_PAGE_SIZE_512K)
-+# define _PAGE_SZHUGE		(_PAGE_SZ_512K)
-+#elif defined(CONFIG_HUGETLB_PAGE_SIZE_1M)
-+# define _PAGE_SZHUGE		(_PAGE_SZ_1M)
-+#elif defined(CONFIG_HUGETLB_PAGE_SIZE_2M)
-+# define _PAGE_SZHUGE		(_PAGE_SZ_2M)
-+#elif defined(CONFIG_HUGETLB_PAGE_SIZE_4M)
-+# define _PAGE_SZHUGE		(_PAGE_SZ_4M)
-+#endif
++#define     LINSYSCTRL_BASE     0x04800000
++#define     LINSYSCTRL_LIMIT    0x04FFFFFF
 +
-+/*
-+ * The Linux memory management assumes a three-level page table setup. On
-+ * Meta, we use that, but "fold" the mid level into the top-level page
-+ * table.
-+ */
++#define     LINSYSMTABLE_BASE   0x05000000
++#define     LINSYSMTABLE_LIMIT  0x05FFFFFF
 +
-+/* PGDIR_SHIFT determines the size of the area a second-level page table can
-+ * map. This is always 4MB.
-+ */
++#define     LINSYSDIRECT_BASE   0x06000000
++#define     LINSYSDIRECT_LIMIT  0x07FFFFFF
 +
-+#define PGDIR_SHIFT	22
-+#define PGDIR_SIZE	(1UL << PGDIR_SHIFT)
-+#define PGDIR_MASK	(~(PGDIR_SIZE-1))
++#define LINLOCAL_BASE   0x08000000
++#define LINLOCAL_LIMIT  0x7FFFFFFF
 +
-+/*
-+ * Entries per page directory level: we use a two-level, so
-+ * we don't really have any PMD directory physically. First level tables
-+ * always map 2Gb (local or global) at a granularity of 4MB, second-level
-+ * tables map 4MB with a granularity between 4MB and 4kB (between 1 and
-+ * 1024 entries).
-+ */
-+#define PTRS_PER_PTE	(PGDIR_SIZE/PAGE_SIZE)
-+#define HPTRS_PER_PTE	(PGDIR_SIZE/HPAGE_SIZE)
-+#define PTRS_PER_PGD	512
++#define LINCORE_BASE    0x80000000
++#define LINCORE_LIMIT   0x87FFFFFF
 +
-+#define USER_PTRS_PER_PGD	256
-+#define FIRST_USER_ADDRESS	META_MEMORY_BASE
-+#define FIRST_USER_PGD_NR	pgd_index(FIRST_USER_ADDRESS)
++#define LINCORE_CODE_BASE  0x80000000
++#define LINCORE_CODE_LIMIT 0x81FFFFFF
 +
-+#define PAGE_NONE	__pgprot(_PAGE_PRESENT | _PAGE_ACCESSED | \
-+				 _PAGE_CACHEABLE)
++#define LINCORE_DATA_BASE  0x82000000
++#define LINCORE_DATA_LIMIT 0x83FFFFFF
 +
-+#define PAGE_SHARED	__pgprot(_PAGE_PRESENT | _PAGE_WRITE | \
-+				 _PAGE_ACCESSED | _PAGE_CACHEABLE)
-+#define PAGE_SHARED_C	PAGE_SHARED
-+#define PAGE_COPY	__pgprot(_PAGE_PRESENT | _PAGE_ACCESSED | \
-+				 _PAGE_CACHEABLE)
-+#define PAGE_COPY_C	PAGE_COPY
 +
-+#define PAGE_READONLY	__pgprot(_PAGE_PRESENT | _PAGE_ACCESSED | \
-+				 _PAGE_CACHEABLE)
-+#define PAGE_KERNEL	__pgprot(_PAGE_PRESENT | _PAGE_DIRTY | \
-+				 _PAGE_ACCESSED | _PAGE_WRITE | \
-+				 _PAGE_CACHEABLE | _PAGE_KERNEL)
++/* The core can support locked icache lines in this region */
++#define LINCORE_ICACHE_BASE  0x84000000
++#define LINCORE_ICACHE_LIMIT 0x85FFFFFF
 +
-+#define __P000	PAGE_NONE
-+#define __P001	PAGE_READONLY
-+#define __P010	PAGE_COPY
-+#define __P011	PAGE_COPY
-+#define __P100	PAGE_READONLY
-+#define __P101	PAGE_READONLY
-+#define __P110	PAGE_COPY_C
-+#define __P111	PAGE_COPY_C
++/* The core can support locked dcache lines in this region */
++#define LINCORE_DCACHE_BASE  0x86000000
++#define LINCORE_DCACHE_LIMIT 0x87FFFFFF
 +
-+#define __S000	PAGE_NONE
-+#define __S001	PAGE_READONLY
-+#define __S010	PAGE_SHARED
-+#define __S011	PAGE_SHARED
-+#define __S100	PAGE_READONLY
-+#define __S101	PAGE_READONLY
-+#define __S110	PAGE_SHARED_C
-+#define __S111	PAGE_SHARED_C
-+
-+#ifndef __ASSEMBLY__
-+
-+#include <asm/page.h>
-+
-+/* zero page used for uninitialized stuff */
-+extern unsigned long empty_zero_page;
-+#define ZERO_PAGE(vaddr)	(virt_to_page(empty_zero_page))
-+
-+/* Certain architectures need to do special things when pte's
-+ * within a page table are directly modified.  Thus, the following
-+ * hook is made available.
-+ */
-+#define set_pte(pteptr, pteval) ((*(pteptr)) = (pteval))
-+#define set_pte_at(mm, addr, ptep, pteval) set_pte(ptep, pteval)
-+
-+#define set_pmd(pmdptr, pmdval) (*(pmdptr) = pmdval)
-+
-+#define pte_pfn(pte)		(pte_val(pte) >> PAGE_SHIFT)
-+
-+#define pfn_pte(pfn, prot)	__pte(((pfn) << PAGE_SHIFT) | pgprot_val(prot))
-+
-+#define pte_none(x)		(!pte_val(x))
-+#define pte_present(x)		(pte_val(x) & _PAGE_PRESENT)
-+#define pte_clear(mm, addr, xp)	do { pte_val(*(xp)) = 0; } while (0)
-+
-+#define pmd_none(x)		(!pmd_val(x))
-+#define pmd_bad(x)		((pmd_val(x) & ~(PAGE_MASK | _PAGE_SZ_MASK)) \
-+					!= (_PAGE_TABLE & ~_PAGE_SZ_MASK))
-+#define pmd_present(x)		(pmd_val(x) & _PAGE_PRESENT)
-+#define pmd_clear(xp)		do { pmd_val(*(xp)) = 0; } while (0)
-+
-+#define pte_page(x)		pfn_to_page(pte_pfn(x))
++#define LINGLOBAL_BASE  0x88000000
++#define LINGLOBAL_LIMIT 0xFFFDFFFF
 +
 +/*
-+ * The following only work if pte_present() is true.
-+ * Undefined behaviour if not..
++ * CHIP Core Register Map
++ * ----------------------
++ */
++#define CORE_HWBASE     0x04800000
++#define PRIV_HWBASE     0x04810000
++#define TRIG_HWBASE     0x04820000
++#define SYSC_HWBASE     0x04830000
++
++/*****************************************************************************
++ *         INTER-THREAD KICK REGISTERS FOR SOFTWARE EVENT GENERATION
++ ****************************************************************************/
++/*
++ * These values define memory mapped registers that can be used to supply
++ * kicks to threads that service arbitrary software events.
 + */
 +
-+static inline int pte_write(pte_t pte)   { return pte_val(pte) & _PAGE_WRITE; }
-+static inline int pte_dirty(pte_t pte)   { return pte_val(pte) & _PAGE_DIRTY; }
-+static inline int pte_young(pte_t pte)   { return pte_val(pte) & _PAGE_ACCESSED; }
-+static inline int pte_file(pte_t pte)    { return pte_val(pte) & _PAGE_FILE; }
-+static inline int pte_special(pte_t pte) { return 0; }
++#define T0KICK     0x04800800   /* Background kick 0     */
++#define     TXXKICK_MAX 0xFFFF  /* Maximum kicks */
++#define     TnXKICK_STRIDE      0x00001000  /* Thread scale value    */
++#define     TnXKICK_STRIDE_S    12
++#define T0KICKI    0x04800808   /* Interrupt kick 0      */
++#define     TXIKICK_OFFSET  0x00000008  /* Int level offset value */
++#define T1KICK     0x04801800   /* Background kick 1     */
++#define T1KICKI    0x04801808   /* Interrupt kick 1      */
++#define T2KICK     0x04802800   /* Background kick 2     */
++#define T2KICKI    0x04802808   /* Interrupt kick 2      */
++#define T3KICK     0x04803800   /* Background kick 3     */
++#define T3KICKI    0x04803808   /* Interrupt kick 3      */
 +
-+static inline pte_t pte_wrprotect(pte_t pte) { pte_val(pte) &= (~_PAGE_WRITE); return pte; }
-+static inline pte_t pte_mkclean(pte_t pte)   { pte_val(pte) &= ~_PAGE_DIRTY; return pte; }
-+static inline pte_t pte_mkold(pte_t pte)     { pte_val(pte) &= ~_PAGE_ACCESSED; return pte; }
-+static inline pte_t pte_mkwrite(pte_t pte)   { pte_val(pte) |= _PAGE_WRITE; return pte; }
-+static inline pte_t pte_mkdirty(pte_t pte)   { pte_val(pte) |= _PAGE_DIRTY; return pte; }
-+static inline pte_t pte_mkyoung(pte_t pte)   { pte_val(pte) |= _PAGE_ACCESSED; return pte; }
-+static inline pte_t pte_mkspecial(pte_t pte) { return pte; }
-+static inline pte_t pte_mkhuge(pte_t pte)    { return pte; }
++/*****************************************************************************
++ *                GLOBAL REGISTER ACCESS RESOURCES
++ ****************************************************************************/
++/*
++ * These values define memory mapped registers that allow access to the
++ * internal state of all threads in order to allow global set-up of thread
++ * state and external handling of thread events, errors, or debugging.
++ *
++ * The actual unit and register index values needed to access individul
++ * registers are chip specific see - METAC_TXUXX_VALUES in metac_x_y.h.
++ * However two C array initialisers TXUXX_MASKS and TGUXX_MASKS will always be
++ * defined to allow arbitrary loading, display, and saving of all valid
++ * register states without detailed knowledge of their purpose - TXUXX sets
++ * bits for all valid registers and TGUXX sets bits for the sub-set which are
++ * global.
++ */
++
++#define T0UCTREG0   0x04800000  /* Access to all CT regs */
++#define TnUCTRX_STRIDE      0x00001000  /* Thread scale value    */
++#define TXUCTREGn_STRIDE    0x00000008  /* Register scale value  */
++
++#define TXUXXRXDT  0x0480FFF0   /* Data to/from any threads reg */
++#define TXUXXRXRQ  0x0480FFF8
++#define     TXUXXRXRQ_DREADY_BIT 0x80000000  /* Poll for done */
++#define     TXUXXRXRQ_DSPEXT_BIT 0x00020000  /* Addr DSP Regs */
++#define     TXUXXRXRQ_RDnWR_BIT  0x00010000  /* Set for read  */
++#define     TXUXXRXRQ_TX_BITS    0x00003000  /* Thread number */
++#define     TXUXXRXRQ_TX_S       12
++#define     TXUXXRXRQ_RX_BITS    0x000001F0  /* Register num  */
++#define     TXUXXRXRQ_RX_S       4
++#define         TXUXXRXRQ_DSPRARD0    0      /* DSP RAM A Read Pointer 0 */
++#define         TXUXXRXRQ_DSPRARD1    1      /* DSP RAM A Read Pointer 1 */
++#define         TXUXXRXRQ_DSPRAWR0    2      /* DSP RAM A Write Pointer 0 */
++#define         TXUXXRXRQ_DSPRAWR2    3      /* DSP RAM A Write Pointer 1 */
++#define         TXUXXRXRQ_DSPRBRD0    4      /* DSP RAM B Read Pointer 0 */
++#define         TXUXXRXRQ_DSPRBRD1    5      /* DSP RAM B Read Pointer 1 */
++#define         TXUXXRXRQ_DSPRBWR0    6      /* DSP RAM B Write Pointer 0 */
++#define         TXUXXRXRQ_DSPRBWR1    7      /* DSP RAM B Write Pointer 1 */
++#define         TXUXXRXRQ_DSPRARINC0  8      /* DSP RAM A Read Increment 0 */
++#define         TXUXXRXRQ_DSPRARINC1  9      /* DSP RAM A Read Increment 1 */
++#define         TXUXXRXRQ_DSPRAWINC0 10      /* DSP RAM A Write Increment 0 */
++#define         TXUXXRXRQ_DSPRAWINC1 11      /* DSP RAM A Write Increment 1 */
++#define         TXUXXRXRQ_DSPRBRINC0 12      /* DSP RAM B Read Increment 0 */
++#define         TXUXXRXRQ_DSPRBRINC1 13      /* DSP RAM B Read Increment 1 */
++#define         TXUXXRXRQ_DSPRBWINC0 14      /* DSP RAM B Write Increment 0 */
++#define         TXUXXRXRQ_DSPRBWINC1 15      /* DSP RAM B Write Increment 1 */
++
++#define         TXUXXRXRQ_ACC0L0     16      /* Accumulator 0 bottom 32-bits */
++#define         TXUXXRXRQ_ACC1L0     17      /* Accumulator 1 bottom 32-bits */
++#define         TXUXXRXRQ_ACC2L0     18      /* Accumulator 2 bottom 32-bits */
++#define         TXUXXRXRQ_ACC3L0     19      /* Accumulator 3 bottom 32-bits */
++#define         TXUXXRXRQ_ACC0HI     20      /* Accumulator 0 top 8-bits */
++#define         TXUXXRXRQ_ACC1HI     21      /* Accumulator 1 top 8-bits */
++#define         TXUXXRXRQ_ACC2HI     22      /* Accumulator 2 top 8-bits */
++#define         TXUXXRXRQ_ACC3HI     23      /* Accumulator 3 top 8-bits */
++#define     TXUXXRXRQ_UXX_BITS   0x0000000F  /* Unit number   */
++#define     TXUXXRXRQ_UXX_S      0
++
++/*****************************************************************************
++ *          PRIVILEGE CONTROL VALUES FOR MEMORY MAPPED RESOURCES
++ ****************************************************************************/
++/*
++ * These values define memory mapped registers that give control over and
++ * the privilege required to access other memory mapped resources. These
++ * registers themselves always require privilege to update them.
++ */
++
++#define TXPRIVREG_STRIDE    0x8 /* Delta between per-thread regs */
++#define TXPRIVREG_STRIDE_S  3
 +
 +/*
-+ * Macro and implementation to make a page protection as uncacheable.
++ * Each bit 0 to 15 defines privilege required to access internal register
++ * regions 0x04800000 to 0x048FFFFF in 64k chunks
 + */
-+#define pgprot_writecombine(prot)					\
-+	__pgprot(pgprot_val(prot) & ~(_PAGE_CACHE_CTRL1 | _PAGE_CACHE_CTRL0))
-+
-+#define pgprot_noncached(prot)						\
-+	__pgprot(pgprot_val(prot) & ~_PAGE_CACHEABLE)
-+
++#define T0PIOREG    0x04810100
++#define T1PIOREG    0x04810108
++#define T2PIOREG    0x04810110
++#define T3PIOREG    0x04810118
 +
 +/*
-+ * Conversion functions: convert a page and protection to a page entry,
-+ * and a page entry and page directory to the page they refer to.
++ * Each bit 0 to 31 defines privilege required to use the pair of
++ * system events implemented as writee in the regions 0x04000000 to
++ * 0x04000FFF in 2*64 byte chunks.
 + */
-+
-+#define mk_pte(page, pgprot)	pfn_pte(page_to_pfn(page), (pgprot))
-+
-+static inline pte_t pte_modify(pte_t pte, pgprot_t newprot)
-+{
-+	pte_val(pte) = (pte_val(pte) & _PAGE_CHG_MASK) | pgprot_val(newprot);
-+	return pte;
-+}
-+
-+static inline unsigned long pmd_page_vaddr(pmd_t pmd)
-+{
-+	unsigned long paddr = pmd_val(pmd) & PAGE_MASK;
-+	if (!paddr)
-+		return 0;
-+	return (unsigned long)__va(paddr);
-+}
-+
-+#define pmd_page(pmd)		(pfn_to_page(pmd_val(pmd) >> PAGE_SHIFT))
-+#define pmd_page_shift(pmd)	(12 + ((pmd_val(pmd) & _PAGE_SZ_MASK) \
-+					>> _PAGE_SZ_SHIFT))
-+#define pmd_num_ptrs(pmd)	(PGDIR_SIZE >> pmd_page_shift(pmd))
++#define T0PSYREG    0x04810180
++#define T1PSYREG    0x04810188
++#define T2PSYREG    0x04810190
++#define T3PSYREG    0x04810198
 +
 +/*
-+ * Each pgd is only 2k, mapping 2Gb (local or global). If we're in global
-+ * space drop the top bit before indexing the pgd.
++ * CHIP PRIV CONTROLS
++ * ------------------
 + */
-+#if PAGE_OFFSET >= LINGLOBAL_BASE
-+#define pgd_index(address)	((((address) & ~0x80000000) >> PGDIR_SHIFT) \
-+							& (PTRS_PER_PGD-1))
++
++/* The TXPIOREG register holds a bit mask directly mappable to
++   corresponding addresses in the range 0x04800000 to 049FFFFF */
++#define     TXPIOREG_ADDR_BITS  0x1F0000 /* Up to 32x64K bytes */
++#define     TXPIOREG_ADDR_S     16
++
++/* Hence based on the _HWBASE values ... */
++#define     TXPIOREG_CORE_BIT       (1<<((0x04800000>>16)&0x1F))
++#define     TXPIOREG_PRIV_BIT       (1<<((0x04810000>>16)&0x1F))
++#define     TXPIOREG_TRIG_BIT       (1<<((0x04820000>>16)&0x1F))
++#define     TXPIOREG_SYSC_BIT       (1<<((0x04830000>>16)&0x1F))
++
++#define     TXPIOREG_WRC_BIT          0x00080000  /* Wr combiner reg priv */
++#define     TXPIOREG_LOCALBUS_RW_BIT  0x00040000  /* Local bus rd/wr priv */
++#define     TXPIOREG_SYSREGBUS_RD_BIT 0x00020000  /* Sys reg bus write priv */
++#define     TXPIOREG_SYSREGBUS_WR_BIT 0x00010000  /* Sys reg bus read priv */
++
++/* CORE region privilege controls */
++#define T0PRIVCORE 0x04800828
++#define         TXPRIVCORE_TXBKICK_BIT   0x001  /* Background kick priv */
++#define         TXPRIVCORE_TXIKICK_BIT   0x002  /* Interrupt kick priv  */
++#define         TXPRIVCORE_TXAMAREGX_BIT 0x004  /* TXAMAREG4|5|6 priv   */
++#define TnPRIVCORE_STRIDE 0x00001000
++
++#define T0PRIVSYSR 0x04810000
++#define     TnPRIVSYSR_STRIDE   0x00000008
++#define     TnPRIVSYSR_STRIDE_S 3
++#define     TXPRIVSYSR_CFLUSH_BIT     0x01
++#define     TXPRIVSYSR_MTABLE_BIT     0x02
++#define     TXPRIVSYSR_DIRECT_BIT     0x04
++#ifdef METAC_1_2
++#define     TXPRIVSYSR_ALL_BITS       0x07
 +#else
-+#define pgd_index(address)	(((address) >> PGDIR_SHIFT) & (PTRS_PER_PGD-1))
++#define     TXPRIVSYSR_CORE_BIT       0x08
++#define     TXPRIVSYSR_CORECODE_BIT   0x10
++#define     TXPRIVSYSR_ALL_BITS       0x1F
 +#endif
++#define T1PRIVSYSR 0x04810008
++#define T2PRIVSYSR 0x04810010
++#define T3PRIVSYSR 0x04810018
 +
-+#define pgd_offset(mm, address)	((mm)->pgd + pgd_index(address))
++/*****************************************************************************
++ *          H/W TRIGGER STATE/LEVEL REGISTERS AND H/W TRIGGER VECTORS
++ ****************************************************************************/
++/*
++ * These values define memory mapped registers that give control over and
++ * the state of hardware trigger sources both external to the META processor
++ * and internal to it.
++ */
 +
-+#define pgd_offset_k(address)	pgd_offset(&init_mm, address)
++#define HWSTATMETA  0x04820000  /* Hardware status/clear META trig */
++#define         HWSTATMETA_T0HALT_BITS 0xF
++#define         HWSTATMETA_T0HALT_S    0
++#define     HWSTATMETA_T0BHALT_BIT 0x1  /* Background HALT */
++#define     HWSTATMETA_T0IHALT_BIT 0x2  /* Interrupt HALT  */
++#define     HWSTATMETA_T0PHALT_BIT 0x4  /* PF/RO Memory HALT */
++#define     HWSTATMETA_T0AMATR_BIT 0x8  /* AMA trigger */
++#define     HWSTATMETA_TnINT_S     4    /* Shift by (thread*4) */
++#define HWSTATEXT   0x04820010  /* H/W status/clear external trigs  0-31 */
++#define HWSTATEXT2  0x04820018  /* H/W status/clear external trigs 32-63 */
++#define HWSTATEXT4  0x04820020  /* H/W status/clear external trigs 64-95 */
++#define HWSTATEXT6  0x04820028  /* H/W status/clear external trigs 96-128 */
++#define HWLEVELEXT  0x04820030  /* Edge/Level type of external trigs  0-31 */
++#define HWLEVELEXT2 0x04820038  /* Edge/Level type of external trigs 32-63 */
++#define HWLEVELEXT4 0x04820040  /* Edge/Level type of external trigs 64-95 */
++#define HWLEVELEXT6 0x04820048  /* Edge/Level type of external trigs 96-128 */
++#define     HWLEVELEXT_XXX_LEVEL 1  /* Level sense logic in HWSTATEXTn */
++#define     HWLEVELEXT_XXX_EDGE  0
++#define HWMASKEXT   0x04820050  /* Enable/disable of external trigs  0-31 */
++#define HWMASKEXT2  0x04820058  /* Enable/disable of external trigs 32-63 */
++#define HWMASKEXT4  0x04820060  /* Enable/disable of external trigs 64-95 */
++#define HWMASKEXT6  0x04820068  /* Enable/disable of external trigs 96-128 */
++#define T0VECINT_BHALT  0x04820500  /* Background HALT trigger vector */
++#define     TXVECXXX_BITS   0xF       /* Per-trigger vector vals 0,1,4-15 */
++#define     TXVECXXX_S  0
++#define T0VECINT_IHALT  0x04820508  /* Interrupt HALT */
++#define T0VECINT_PHALT  0x04820510  /* PF/RO memory fault */
++#define T0VECINT_AMATR  0x04820518  /* AMA trigger */
++#define     TnVECINT_STRIDE 0x00000020  /* Per thread stride */
++#define HWVEC0EXT   0x04820700  /* Vectors for external triggers  0-31 */
++#define HWVEC20EXT  0x04821700  /* Vectors for external triggers 32-63 */
++#define HWVEC40EXT  0x04822700  /* Vectors for external triggers 64-95 */
++#define HWVEC60EXT  0x04823700  /* Vectors for external triggers 96-127 */
++#define     HWVECnEXT_STRIDE 0x00000008 /* Per trigger stride */
++#define HWVECnEXT_DEBUG 0x1         /* Redirect trigger to debug i/f */
 +
-+#define pmd_index(address)	(((address) >> PMD_SHIFT) & (PTRS_PER_PMD-1))
++/*
++ * CORE HWCODE-BREAKPOINT REGISTERS/VALUES
++ * ---------------------------------------
++ */
++#define CODEB0ADDR         0x0480FF00  /* Address specifier */
++#define     CODEBXADDR_MATCHX_BITS 0xFFFFFFFC
++#define     CODEBXADDR_MATCHX_S    2
++#define CODEB0CTRL         0x0480FF08  /* Control */
++#define     CODEBXCTRL_MATEN_BIT   0x80000000   /* Match 'Enable'  */
++#define     CODEBXCTRL_MATTXEN_BIT 0x10000000   /* Match threadn enable */
++#define     CODEBXCTRL_HITC_BITS   0x00FF0000   /* Hit counter   */
++#define     CODEBXCTRL_HITC_S      16
++#define           CODEBXHITC_NEXT  0xFF     /* Next 'hit' will trigger */
++#define           CODEBXHITC_HIT1  0x00     /* No 'hits' after trigger */
++#define     CODEBXCTRL_MMASK_BITS  0x0000FFFC   /* Mask ADDR_MATCH bits */
++#define     CODEBXCTRL_MMASK_S     2
++#define     CODEBXCTRL_MATLTX_BITS 0x00000003   /* Match threadn LOCAL addr */
++#define     CODEBXCTRL_MATLTX_S    0            /* Match threadn LOCAL addr */
++#define CODEBnXXXX_STRIDE      0x00000010  /* Stride between CODEB reg sets */
++#define CODEBnXXXX_STRIDE_S    4
++#define CODEBnXXXX_LIMIT       3           /* Sets 0-3 */
 +
-+/* Find an entry in the second-level page table.. */
-+#if !defined(CONFIG_HUGETLB_PAGE)
-+  /* all pages are of size (1 << PAGE_SHIFT), so no need to read 1st level pt */
-+# define pte_index(pmd, address) \
-+	(((address) >> PAGE_SHIFT) & (PTRS_PER_PTE - 1))
-+#else
-+  /* some pages are huge, so read 1st level pt to find out */
-+# define pte_index(pmd, address) \
-+	(((address) >> pmd_page_shift(pmd)) & (pmd_num_ptrs(pmd) - 1))
++/*
++ * CORE DATA-WATCHPOINT REGISTERS/VALUES
++ * -------------------------------------
++ */
++#define DATAW0ADDR         0x0480FF40  /* Address specifier */
++#define     DATAWXADDR_MATCHR_BITS 0xFFFFFFF8
++#define     DATAWXADDR_MATCHR_S    3
++#define     DATAWXADDR_MATCHW_BITS 0xFFFFFFFF
++#define     DATAWXADDR_MATCHW_S    0
++#define DATAW0CTRL         0x0480FF48  /* Control */
++#define     DATAWXCTRL_MATRD_BIT   0x80000000   /* Match 'Read'  */
++#ifndef METAC_1_2
++#define     DATAWXCTRL_MATNOTTX_BIT 0x20000000  /* Invert threadn enable */
 +#endif
-+#define pte_offset_kernel(dir, address) \
-+	((pte_t *) pmd_page_vaddr(*(dir)) + pte_index(*(dir), address))
-+#define pte_offset_map(dir, address)		pte_offset_kernel(dir, address)
-+#define pte_offset_map_nested(dir, address)	pte_offset_kernel(dir, address)
-+
-+#define pte_unmap(pte)		do { } while (0)
-+#define pte_unmap_nested(pte)	do { } while (0)
-+
-+#define pte_ERROR(e) \
-+	pr_err("%s:%d: bad pte %08lx.\n", __FILE__, __LINE__, pte_val(e))
-+#define pgd_ERROR(e) \
-+	pr_err("%s:%d: bad pgd %08lx.\n", __FILE__, __LINE__, pgd_val(e))
-+
-+/*
-+ * Meta doesn't have any external MMU info: the kernel page
-+ * tables contain all the necessary information.
-+ */
-+static inline void update_mmu_cache(struct vm_area_struct *vma,
-+				    unsigned long address, pte_t *pte)
-+{
-+}
-+
-+/*
-+ * Encode and decode a swap entry (must be !pte_none(e) && !pte_present(e))
-+ * Since PAGE_PRESENT is bit 1, we can use the bits above that.
-+ */
-+#define __swp_type(x)			(((x).val >> 1) & 0xff)
-+#define __swp_offset(x)			((x).val >> 10)
-+#define __swp_entry(type, offset)	((swp_entry_t) { ((type) << 1) | \
-+					 ((offset) << 10) })
-+#define __pte_to_swp_entry(pte)		((swp_entry_t) { pte_val(pte) })
-+#define __swp_entry_to_pte(x)		((pte_t) { (x).val })
-+
-+#define PTE_FILE_MAX_BITS	22
-+#define pte_to_pgoff(x)		(pte_val(x) >> 10)
-+#define pgoff_to_pte(x)		__pte(((x) << 10) | _PAGE_FILE)
-+
-+#define kern_addr_valid(addr)	(1)
-+
-+#define io_remap_pfn_range(vma, vaddr, pfn, size, prot)		\
-+	remap_pfn_range(vma, vaddr, pfn, size, prot)
++#define     DATAWXCTRL_MATWR_BIT   0x40000000   /* Match 'Write' */
++#define     DATAWXCTRL_MATTXEN_BIT 0x10000000   /* Match threadn enable */
++#define     DATAWXCTRL_WRSIZE_BITS 0x0F000000   /* Write Match Size */
++#define     DATAWXCTRL_WRSIZE_S    24
++#define         DATAWWRSIZE_ANY   0         /* Any size transaction matches */
++#define         DATAWWRSIZE_8BIT  1     /* Specific sizes ... */
++#define         DATAWWRSIZE_16BIT 2
++#define         DATAWWRSIZE_32BIT 3
++#define         DATAWWRSIZE_64BIT 4
++#define     DATAWXCTRL_HITC_BITS   0x00FF0000   /* Hit counter   */
++#define     DATAWXCTRL_HITC_S      16
++#define           DATAWXHITC_NEXT  0xFF     /* Next 'hit' will trigger */
++#define           DATAWXHITC_HIT1  0x00     /* No 'hits' after trigger */
++#define     DATAWXCTRL_MMASK_BITS 0x0000FFF8    /* Mask ADDR_MATCH bits */
++#define     DATAWXCTRL_MMASK_S    3
++#define     DATAWXCTRL_MATLTX_BITS 0x00000003   /* Match threadn LOCAL addr */
++#define     DATAWXCTRL_MATLTX_S    0            /* Match threadn LOCAL addr */
++#define DATAW0DMATCH0       0x0480FF50 /* Write match data */
++#define DATAW0DMATCH1       0x0480FF58
++#define DATAW0DMASK0        0x0480FF60 /* Write match data mask */
++#define DATAW0DMASK1        0x0480FF68
++#define DATAWnXXXX_STRIDE      0x00000040  /* Stride between DATAW reg sets */
++#define DATAWnXXXX_STRIDE_S    6
++#define DATAWnXXXX_LIMIT       1           /* Sets 0,1 */
 +
 +/*
-+ * No page table caches to initialise
++ * CHIP Automatic Mips Allocation control registers
++ * ------------------------------------------------
 + */
-+#define pgtable_cache_init()	do { } while (0)
 +
-+extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
-+void paging_init(unsigned long mem_end);
++/* CORE memory mapped AMA registers */
++#define T0AMAREG4   0x04800810
++#define     TXAMAREG4_POOLSIZE_BITS 0x3FFFFF00
++#define     TXAMAREG4_POOLSIZE_S    8
++#define     TXAMAREG4_AVALUE_BITS   0x000000FF
++#define     TXAMAREG4_AVALUE_S  0
++#define T0AMAREG5   0x04800818
++#define     TXAMAREG5_POOLC_BITS    0x07FFFFFF
++#define         TXAMAREG5_POOLC_S       0
++#define T0AMAREG6   0x04800820
++#define     TXAMAREG6_DLINEDEF_BITS 0x00FFFFF0
++#define         TXAMAREG6_DLINEDEF_S    0
++#define TnAMAREGX_STRIDE    0x00001000
 +
-+#ifdef CONFIG_METAG_META12
-+/* This is a workaround for an issue in Meta 1 cores. These cores cache
-+ * invalid entries in the TLB so we always need to flush whenever we add
-+ * a new pte. Unfortunately we can only flush the whole TLB not shoot down
-+ * single entries so this is sub-optimal. This implementation ensures that
-+ * we will get a flush at the second attempt, so we may still get repeated
-+ * faults, we just don't overflow the kernel stack handling them.
++/*
++ * Memory Management Control Unit Table Entries
++ * --------------------------------------------
 + */
-+#define __HAVE_ARCH_PTEP_SET_ACCESS_FLAGS
-+#define ptep_set_access_flags(__vma, __address, __ptep, __entry, __dirty) \
-+({									  \
-+	int __changed = !pte_same(*(__ptep), __entry);			  \
-+	if (__changed) {						  \
-+		set_pte_at((__vma)->vm_mm, (__address), __ptep, __entry); \
-+	}								  \
-+	flush_tlb_page(__vma, __address);				  \
-+	__changed;							  \
-+})
++#define MMCU_ENTRY_S         4            /* -> Entry size                */
++#define MMCU_ENTRY_ADDR_BITS 0xFFFFF000   /* Physical address             */
++#define MMCU_ENTRY_ADDR_S    12           /* -> Page size                 */
++#define MMCU_ENTRY_CWIN_BITS 0x000000C0   /* Caching 'window' selection   */
++#define MMCU_ENTRY_CWIN_S    6
++#define     MMCU_CWIN_UNCACHED  0 /* May not be memory etc.  */
++#define     MMCU_CWIN_BURST     1 /* Cached but LRU unset */
++#define     MMCU_CWIN_C1SET     2 /* Cached in 1 set only */
++#define     MMCU_CWIN_CACHED    3 /* Fully cached            */
++#define MMCU_ENTRY_CACHE_BIT 0x00000080   /* Set for cached region         */
++#define     MMCU_ECACHE1_FULL_BIT  0x00000040 /* Use all the sets */
++#define     MMCU_ECACHE0_BURST_BIT 0x00000040 /* Match bursts     */
++#define MMCU_ENTRY_SYS_BIT   0x00000010   /* Sys-coherent access required  */
++#define MMCU_ENTRY_WRC_BIT   0x00000008   /* Write combining allowed       */
++#define MMCU_ENTRY_PRIV_BIT  0x00000004   /* Privilege required            */
++#define MMCU_ENTRY_WR_BIT    0x00000002   /* Writes allowed                */
++#define MMCU_ENTRY_VAL_BIT   0x00000001   /* Entry is valid                */
++
++#ifdef METAC_2_1
++/*
++ * Extended first-level/top table entries have extra/larger fields in later
++ * cores as bits 11:0 previously had no effect in such table entries.
++ */
++#define MMCU_E1ENT_ADDR_BITS 0xFFFFFFC0   /* Physical address             */
++#define MMCU_E1ENT_ADDR_S    6            /*   -> resolution < page size  */
++#define MMCU_E1ENT_PGSZ_BITS 0x0000001E   /* Page size for 2nd level      */
++#define MMCU_E1ENT_PGSZ_S    1
++#define     MMCU_E1ENT_PGSZ0_POWER   12   /* PgSz  0 -> 4K */
++#define     MMCU_E1ENT_PGSZ_MAX      10   /* PgSz 10 -> 4M maximum */
++#define MMCU_E1ENT_MINIM_BIT 0x00000020
++#endif /* METAC_2_1 */
++
++/* MMCU control register in SYSC region */
++#define MMCU_TABLE_PHYS_ADDR        0x04830010
++#define     MMCU_TABLE_PHYS_ADDR_BITS   0xFFFFFFFC
++#ifdef METAC_2_1
++#define     MMCU_TABLE_PHYS_EXTEND      0x00000001     /* See below */
 +#endif
++#define MMCU_DCACHE_CTRL_ADDR       0x04830018
++#define     MMCU_xCACHE_CTRL_ENABLE_BIT     0x00000001
++#define     MMCU_xCACHE_CTRL_PARTITION_BIT  0x00000000 /* See xCPART below */
++#define MMCU_ICACHE_CTRL_ADDR       0x04830020
 +
-+#include <asm-generic/pgtable.h>
++#ifdef METAC_2_1
 +
-+#endif /* __ASSEMBLY__ */
-+#endif /* _METAG_PGTABLE_H */
-diff --git a/arch/metag/mm/extable.c b/arch/metag/mm/extable.c
-new file mode 100644
-index 0000000..2a21eae
---- /dev/null
-+++ b/arch/metag/mm/extable.c
-@@ -0,0 +1,15 @@
-+
-+#include <linux/module.h>
-+#include <linux/uaccess.h>
-+
-+int fixup_exception(struct pt_regs *regs)
-+{
-+	const struct exception_table_entry *fixup;
-+	unsigned long pc = instruction_pointer(regs);
-+
-+	fixup = search_exception_tables(pc);
-+	if (fixup)
-+		regs->ctx.CurrPC = fixup->fixup;
-+
-+	return fixup != NULL;
-+}
-diff --git a/arch/metag/mm/fault.c b/arch/metag/mm/fault.c
-new file mode 100644
-index 0000000..2c75bf7
---- /dev/null
-+++ b/arch/metag/mm/fault.c
-@@ -0,0 +1,239 @@
 +/*
-+ *  Meta page fault handling.
++ * Allow direct access to physical memory used to implement MMU table.
 + *
-+ *  Copyright (C) 2005-2012 Imagination Technologies Ltd.
++ * Each is based on a corresponding MMCU_TnLOCAL_TABLE_PHYSn or similar
++ *    MMCU_TnGLOBAL_TABLE_PHYSn register pair (see next).
 + */
++#define LINSYSMEMT0L_BASE   0x05000000
++#define LINSYSMEMT0L_LIMIT  0x051FFFFF
++#define     LINSYSMEMTnX_STRIDE     0x00200000  /*  2MB Local per thread */
++#define     LINSYSMEMTnX_STRIDE_S   21
++#define     LINSYSMEMTXG_OFFSET     0x00800000  /* +2MB Global per thread */
++#define     LINSYSMEMTXG_OFFSET_S   23
++#define LINSYSMEMT1L_BASE   0x05200000
++#define LINSYSMEMT1L_LIMIT  0x053FFFFF
++#define LINSYSMEMT2L_BASE   0x05400000
++#define LINSYSMEMT2L_LIMIT  0x055FFFFF
++#define LINSYSMEMT3L_BASE   0x05600000
++#define LINSYSMEMT3L_LIMIT  0x057FFFFF
++#define LINSYSMEMT0G_BASE   0x05800000
++#define LINSYSMEMT0G_LIMIT  0x059FFFFF
++#define LINSYSMEMT1G_BASE   0x05A00000
++#define LINSYSMEMT1G_LIMIT  0x05BFFFFF
++#define LINSYSMEMT2G_BASE   0x05C00000
++#define LINSYSMEMT2G_LIMIT  0x05DFFFFF
++#define LINSYSMEMT3G_BASE   0x05E00000
++#define LINSYSMEMT3G_LIMIT  0x05FFFFFF
 +
-+#include <linux/mman.h>
-+#include <linux/mm.h>
-+#include <linux/kernel.h>
-+#include <linux/ptrace.h>
-+#include <linux/interrupt.h>
-+#include <linux/uaccess.h>
-+
-+#include <asm/tlbflush.h>
-+#include <asm/mmu.h>
-+#include <asm/traps.h>
-+
-+/* Clear any pending catch buffer state. */
-+static void clear_cbuf_entry(struct pt_regs *regs, unsigned long addr,
-+			     unsigned int trapno)
-+{
-+	PTBICTXEXTCB0 cbuf = regs->extcb0;
-+
-+	switch (trapno) {
-+		/* Instruction fetch faults leave no catch buffer state. */
-+	case TBIXXF_SIGNUM_IGF:
-+	case TBIXXF_SIGNUM_IPF:
-+		return;
-+	default:
-+		if (cbuf[0].CBAddr == addr) {
-+			cbuf[0].CBAddr = 0;
-+			cbuf[0].CBFlags &= ~TXCATCH0_FAULT_BITS;
-+
-+			/* And, as this is the ONLY catch entry, we
-+			 * need to clear the cbuf bit from the context!
-+			 */
-+			regs->ctx.SaveMask &= ~(TBICTX_CBUF_BIT |
-+						TBICTX_XCBF_BIT);
-+
-+			return;
-+		}
-+		pr_err("Failed to clear cbuf entry!\n");
-+	}
-+}
-+
-+int show_unhandled_signals = 1;
-+
-+int do_page_fault(struct pt_regs *regs, unsigned long address,
-+		  unsigned int write_access, unsigned int trapno)
-+{
-+	struct task_struct *tsk;
-+	struct mm_struct *mm;
-+	struct vm_area_struct *vma, *prev_vma;
-+	siginfo_t info;
-+	int fault;
-+	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
-+				(write_access ? FAULT_FLAG_WRITE : 0);
-+
-+	tsk = current;
-+
-+	if ((address >= VMALLOC_START) && (address < VMALLOC_END)) {
-+		/*
-+		 * Synchronize this task's top level page-table
-+		 * with the 'reference' page table.
-+		 *
-+		 * Do _not_ use "tsk" here. We might be inside
-+		 * an interrupt in the middle of a task switch..
-+		 */
-+		int offset = pgd_index(address);
-+		pgd_t *pgd, *pgd_k;
-+		pud_t *pud, *pud_k;
-+		pmd_t *pmd, *pmd_k;
-+		pte_t *pte_k;
-+
-+		pgd = ((pgd_t *)mmu_get_base()) + offset;
-+		pgd_k = swapper_pg_dir + offset;
-+
-+		/* This will never happen with the folded page table. */
-+		if (!pgd_present(*pgd)) {
-+			if (!pgd_present(*pgd_k))
-+				goto bad_area_nosemaphore;
-+			set_pgd(pgd, *pgd_k);
-+			return 0;
-+		}
-+
-+		pud = pud_offset(pgd, address);
-+		pud_k = pud_offset(pgd_k, address);
-+		if (!pud_present(*pud_k))
-+			goto bad_area_nosemaphore;
-+		set_pud(pud, *pud_k);
-+
-+		pmd = pmd_offset(pud, address);
-+		pmd_k = pmd_offset(pud_k, address);
-+		if (!pmd_present(*pmd_k))
-+			goto bad_area_nosemaphore;
-+		set_pmd(pmd, *pmd_k);
-+
-+		pte_k = pte_offset_kernel(pmd_k, address);
-+		if (!pte_present(*pte_k))
-+			goto bad_area_nosemaphore;
-+
-+		/* May only be needed on Chorus2 */
-+		flush_tlb_all();
-+		return 0;
-+	}
-+
-+	mm = tsk->mm;
-+
-+	if (in_atomic() || !mm)
-+		goto no_context;
-+
-+retry:
-+	down_read(&mm->mmap_sem);
-+
-+	vma = find_vma_prev(mm, address, &prev_vma);
-+
-+	if (!vma || address < vma->vm_start)
-+		goto check_expansion;
-+
-+good_area:
-+	if (write_access) {
-+		if (!(vma->vm_flags & VM_WRITE))
-+			goto bad_area;
-+	} else {
-+		if (!(vma->vm_flags & (VM_READ | VM_EXEC | VM_WRITE)))
-+			goto bad_area;
-+	}
-+
-+	/*
-+	 * If for any reason at all we couldn't handle the fault,
-+	 * make sure we exit gracefully rather than endlessly redo
-+	 * the fault.
-+	 */
-+	fault = handle_mm_fault(mm, vma, address, flags);
-+
-+	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
-+		return 0;
-+
-+	if (unlikely(fault & VM_FAULT_ERROR)) {
-+		if (fault & VM_FAULT_OOM)
-+			goto out_of_memory;
-+		else if (fault & VM_FAULT_SIGBUS)
-+			goto do_sigbus;
-+		BUG();
-+	}
-+	if (flags & FAULT_FLAG_ALLOW_RETRY) {
-+		if (fault & VM_FAULT_MAJOR)
-+			tsk->maj_flt++;
-+		else
-+			tsk->min_flt++;
-+		if (fault & VM_FAULT_RETRY) {
-+			flags &= ~FAULT_FLAG_ALLOW_RETRY;
-+			flags |= FAULT_FLAG_TRIED;
-+
-+			/*
-+			 * No need to up_read(&mm->mmap_sem) as we would
-+			 * have already released it in __lock_page_or_retry
-+			 * in mm/filemap.c.
-+			 */
-+
-+			goto retry;
-+		}
-+	}
-+
-+	up_read(&mm->mmap_sem);
-+	return 0;
-+
-+check_expansion:
-+	vma = prev_vma;
-+	if (vma && (expand_stack(vma, address) == 0))
-+		goto good_area;
-+
-+bad_area:
-+	up_read(&mm->mmap_sem);
-+
-+bad_area_nosemaphore:
-+	if (user_mode(regs)) {
-+		info.si_signo = SIGSEGV;
-+		info.si_errno = 0;
-+		info.si_code = SEGV_MAPERR;
-+		info.si_addr = (__force void __user *)address;
-+		info.si_trapno = trapno;
-+
-+		if (show_unhandled_signals && unhandled_signal(tsk, SIGSEGV) &&
-+		    printk_ratelimit()) {
-+			pr_info("%s%s[%d]: segfault at %lx pc %08x sp %08x write %d trap %#x (%s)",
-+			       task_pid_nr(tsk) > 1 ? KERN_INFO : KERN_EMERG,
-+			       tsk->comm, task_pid_nr(tsk), address,
-+			       regs->ctx.CurrPC, regs->ctx.AX[0].U0,
-+			       write_access, trapno, trap_name(trapno));
-+			print_vma_addr(" in ", regs->ctx.CurrPC);
-+			print_vma_addr(" rtp in ", regs->ctx.DX[4].U1);
-+			printk("\n");
-+			show_regs(regs);
-+		}
-+		force_sig_info(SIGSEGV, &info, tsk);
-+		return 1;
-+	}
-+	goto no_context;
-+
-+do_sigbus:
-+	up_read(&mm->mmap_sem);
-+
-+	/*
-+	 * Send a sigbus, regardless of whether we were in kernel
-+	 * or user mode.
-+	 */
-+	info.si_signo = SIGBUS;
-+	info.si_errno = 0;
-+	info.si_code = BUS_ADRERR;
-+	info.si_addr = (__force void __user *)address;
-+	info.si_trapno = trapno;
-+	force_sig_info(SIGBUS, &info, tsk);
-+
-+	/* Kernel mode? Handle exceptions or die */
-+	if (!user_mode(regs))
-+		goto no_context;
-+
-+	return 1;
-+
-+	/*
-+	 * We ran out of memory, or some other thing happened to us that made
-+	 * us unable to handle the page fault gracefully.
-+	 */
-+out_of_memory:
-+	up_read(&mm->mmap_sem);
-+	if (user_mode(regs))
-+		do_group_exit(SIGKILL);
-+
-+no_context:
-+	/* Are we prepared to handle this kernel fault?  */
-+	if (fixup_exception(regs)) {
-+		clear_cbuf_entry(regs, address, trapno);
-+		return 1;
-+	}
-+
-+	die("Oops", regs, (write_access << 15) | trapno, address);
-+	do_exit(SIGKILL);
-+}
-diff --git a/arch/metag/mm/init.c b/arch/metag/mm/init.c
-new file mode 100644
-index 0000000..514376d
---- /dev/null
-+++ b/arch/metag/mm/init.c
-@@ -0,0 +1,448 @@
 +/*
-+ *  Copyright (C) 2005,2006,2007,2008,2009,2010 Imagination Technologies
++ * Extended MMU table functionality allows a sparse or flat table to be
++ * described much more efficiently than before.
++ */
++#define MMCU_T0LOCAL_TABLE_PHYS0    0x04830700
++#define   MMCU_TnX_TABLE_PHYSX_STRIDE    0x20   /* Offset per thread */
++#define   MMCU_TnX_TABLE_PHYSX_STRIDE_S  5
++#define   MMCU_TXG_TABLE_PHYSX_OFFSET    0x10   /* Global versus local */
++#define   MMCU_TXG_TABLE_PHYSX_OFFSET_S  4
++#define     MMCU_TBLPHYS0_DCCTRL_BITS       0x000000DF  /* DC controls  */
++#define     MMCU_TBLPHYS0_ENTLB_BIT         0x00000020  /* Cache in TLB */
++#define     MMCU_TBLPHYS0_TBLSZ_BITS        0x00000F00  /* Area supported */
++#define     MMCU_TBLPHYS0_TBLSZ_S           8
++#define         MMCU_TBLPHYS0_TBLSZ0_POWER      22  /* 0 -> 4M */
++#define         MMCU_TBLPHYS0_TBLSZ_MAX         9   /* 9 -> 2G */
++#define     MMCU_TBLPHYS0_LINBASE_BITS      0xFFC00000  /* Linear base */
++#define     MMCU_TBLPHYS0_LINBASE_S         22
++
++#define MMCU_T0LOCAL_TABLE_PHYS1    0x04830708
++#define     MMCU_TBLPHYS1_ADDR_BITS         0xFFFFFFFC  /* Physical base */
++#define     MMCU_TBLPHYS1_ADDR_S            2
++
++#define MMCU_T0GLOBAL_TABLE_PHYS0   0x04830710
++#define MMCU_T0GLOBAL_TABLE_PHYS1   0x04830718
++#define MMCU_T1LOCAL_TABLE_PHYS0    0x04830720
++#define MMCU_T1LOCAL_TABLE_PHYS1    0x04830728
++#define MMCU_T1GLOBAL_TABLE_PHYS0   0x04830730
++#define MMCU_T1GLOBAL_TABLE_PHYS1   0x04830738
++#define MMCU_T2LOCAL_TABLE_PHYS0    0x04830740
++#define MMCU_T2LOCAL_TABLE_PHYS1    0x04830748
++#define MMCU_T2GLOBAL_TABLE_PHYS0   0x04830750
++#define MMCU_T2GLOBAL_TABLE_PHYS1   0x04830758
++#define MMCU_T3LOCAL_TABLE_PHYS0    0x04830760
++#define MMCU_T3LOCAL_TABLE_PHYS1    0x04830768
++#define MMCU_T3GLOBAL_TABLE_PHYS0   0x04830770
++#define MMCU_T3GLOBAL_TABLE_PHYS1   0x04830778
++
++#define MMCU_T0EBWCCTRL             0x04830640
++#define     MMCU_TnEBWCCTRL_BITS    0x00000007
++#define     MMCU_TnEBWCCTRL_S       0
++#define         MMCU_TnEBWCCCTRL_DISABLE_ALL 0
++#define         MMCU_TnEBWCCCTRL_ABIT25      1
++#define         MMCU_TnEBWCCCTRL_ABIT26      2
++#define         MMCU_TnEBWCCCTRL_ABIT27      3
++#define         MMCU_TnEBWCCCTRL_ABIT28      4
++#define         MMCU_TnEBWCCCTRL_ABIT29      5
++#define         MMCU_TnEBWCCCTRL_ABIT30      6
++#define         MMCU_TnEBWCCCTRL_ENABLE_ALL  7
++#define MMCU_TnEBWCCTRL_STRIDE      8
++
++#endif /* METAC_2_1 */
++
++
++/* Registers within the SYSC register region */
++#define METAC_ID                0x04830000
++#define     METAC_ID_MAJOR_BITS     0xFF000000
++#define     METAC_ID_MAJOR_S        24
++#define     METAC_ID_MINOR_BITS     0x00FF0000
++#define     METAC_ID_MINOR_S        16
++#define     METAC_ID_REV_BITS       0x0000FF00
++#define     METAC_ID_REV_S          8
++#define     METAC_ID_MAINT_BITS     0x000000FF
++#define     METAC_ID_MAINT_S        0
++
++#ifdef METAC_2_1
++/* Use of this section is strongly deprecated */
++#define METAC_ID2               0x04830008
++#define     METAC_ID2_DESIGNER_BITS 0xFFFF0000  /* Modified by customer */
++#define     METAC_ID2_DESIGNER_S    16
++#define     METAC_ID2_MINOR2_BITS   0x00000F00  /* 3rd digit of prod rev */
++#define     METAC_ID2_MINOR2_S      8
++#define     METAC_ID2_CONFIG_BITS   0x000000FF  /* Wrapper configuration */
++#define     METAC_ID2_CONFIG_S      0
++
++/* Primary core identification and configuration information */
++#define METAC_CORE_ID           0x04831000
++#define     METAC_COREID_GROUP_BITS   0xFF000000
++#define     METAC_COREID_GROUP_S      24
++#define         METAC_COREID_GROUP_METAG  0x14
++#define     METAC_COREID_ID_BITS      0x00FF0000
++#define     METAC_COREID_ID_S         16
++#define         METAC_COREID_ID_W32       0x10   /* >= for 32-bit pipeline */
++#define     METAC_COREID_CONFIG_BITS  0x0000FFFF
++#define     METAC_COREID_CONFIG_S     0
++#define       METAC_COREID_CFGCACHE_BITS    0x0007
++#define       METAC_COREID_CFGCACHE_S       0
++#define           METAC_COREID_CFGCACHE_NOM       0
++#define           METAC_COREID_CFGCACHE_TYPE0     1
++#define           METAC_COREID_CFGCACHE_NOMMU     1 /* Alias for TYPE0 */
++#define           METAC_COREID_CFGCACHE_NOCACHE   2
++#define           METAC_COREID_CFGCACHE_PRIVNOMMU 3
++#define       METAC_COREID_CFGDSP_BITS      0x0038
++#define       METAC_COREID_CFGDSP_S         3
++#define           METAC_COREID_CFGDSP_NOM       0
++#define           METAC_COREID_CFGDSP_MIN       1
++#define       METAC_COREID_NOFPACC_BIT      0x0040 /* Set if no FPU accum */
++#define       METAC_COREID_CFGFPU_BITS      0x0180
++#define       METAC_COREID_CFGFPU_S         7
++#define           METAC_COREID_CFGFPU_NOM       0
++#define           METAC_COREID_CFGFPU_SNGL      1
++#define           METAC_COREID_CFGFPU_DBL       2
++#define       METAC_COREID_NOAMA_BIT        0x0200 /* Set if no AMA present */
++#define       METAC_COREID_NOCOH_BIT        0x0400 /* Set if no Gbl coherency */
++
++/* Core revision information */
++#define METAC_CORE_REV          0x04831008
++#define     METAC_COREREV_DESIGN_BITS   0xFF000000
++#define     METAC_COREREV_DESIGN_S      24
++#define     METAC_COREREV_MAJOR_BITS    0x00FF0000
++#define     METAC_COREREV_MAJOR_S       16
++#define     METAC_COREREV_MINOR_BITS    0x0000FF00
++#define     METAC_COREREV_MINOR_S       8
++#define     METAC_COREREV_MAINT_BITS    0x000000FF
++#define     METAC_COREREV_MAINT_S       0
++
++/* Configuration information control outside the core */
++#define METAC_CORE_DESIGNER1    0x04831010      /* Arbitrary value */
++#define METAC_CORE_DESIGNER2    0x04831018      /* Arbitrary value */
++
++/* Configuration information covering presence/number of various features */
++#define METAC_CORE_CONFIG2      0x04831020
++#define     METAC_CORECFG2_COREDBGTYPE_BITS 0x60000000   /* Core debug type */
++#define     METAC_CORECFG2_COREDBGTYPE_S    29
++#define     METAC_CORECFG2_DCSMALL_BIT      0x04000000   /* Data cache small */
++#define     METAC_CORECFG2_ICSMALL_BIT      0x02000000   /* Inst cache small */
++#define     METAC_CORECFG2_DCSZNP_BITS      0x01C00000   /* Data cache size np */
++#define     METAC_CORECFG2_DCSZNP_S         22
++#define     METAC_CORECFG2_ICSZNP_BITS      0x00380000  /* Inst cache size np */
++#define     METAC_CORECFG2_ICSZNP_S         19
++#define     METAC_CORECFG2_DCSZ_BITS        0x00070000   /* Data cache size */
++#define     METAC_CORECFG2_DCSZ_S           16
++#define         METAC_CORECFG2_xCSZ_4K          0        /* Allocated values */
++#define         METAC_CORECFG2_xCSZ_8K          1
++#define         METAC_CORECFG2_xCSZ_16K         2
++#define         METAC_CORECFG2_xCSZ_32K         3
++#define         METAC_CORECFG2_xCSZ_64K         4
++#define     METAC_CORE_C2ICSZ_BITS          0x0000E000   /* Inst cache size */
++#define     METAC_CORE_C2ICSZ_S             13
++#define     METAC_CORE_GBLACC_BITS          0x00001800   /* Number of Global Acc */
++#define     METAC_CORE_GBLACC_S             11
++#define     METAC_CORE_GBLDXR_BITS          0x00000700   /* 0 -> 0, R -> 2^(R-1) */
++#define     METAC_CORE_GBLDXR_S             8
++#define     METAC_CORE_GBLAXR_BITS          0x000000E0   /* 0 -> 0, R -> 2^(R-1) */
++#define     METAC_CORE_GBLAXR_S             5
++#define     METAC_CORE_RTTRACE_BIT          0x00000010
++#define     METAC_CORE_WATCHN_BITS          0x0000000C   /* 0 -> 0, N -> 2^N */
++#define     METAC_CORE_WATCHN_S             2
++#define     METAC_CORE_BREAKN_BITS          0x00000003   /* 0 -> 0, N -> 2^N */
++#define     METAC_CORE_BREAKN_S             0
++
++/* Configuration information covering presence/number of various features */
++#define METAC_CORE_CONFIG3      0x04831028
++#define     METAC_CORECFG3_L2C_REV_ID_BITS          0x000F0000   /* Revision of L2 cache */
++#define     METAC_CORECFG3_L2C_REV_ID_S             16
++#define     METAC_CORECFG3_L2C_LINE_SIZE_BITS       0x00003000   /* L2 line size */
++#define     METAC_CORECFG3_L2C_LINE_SIZE_S          12
++#define         METAC_CORECFG3_L2C_LINE_SIZE_64B    0x0          /* 64 bytes */
++#define     METAC_CORECFG3_L2C_NUM_WAYS_BITS        0x00000F00   /* L2 number of ways (2^n) */
++#define     METAC_CORECFG3_L2C_NUM_WAYS_S           8
++#define     METAC_CORECFG3_L2C_SIZE_BITS            0x000000F0   /* L2 size (2^n) */
++#define     METAC_CORECFG3_L2C_SIZE_S               4
++#define     METAC_CORECFG3_L2C_UNIFIED_BIT          0x00000004   /* Unified cache: */
++#define     METAC_CORECFG3_L2C_UNIFIED_S            2
++#define       METAC_CORECFG3_L2C_UNIFIED_UNIFIED    1            /* - Unified D/I cache */
++#define       METAC_CORECFG3_L2C_UNIFIED_SEPARATE   0            /* - Separate D/I cache */
++#define     METAC_CORECFG3_L2C_MODE_BIT             0x00000002   /* Cache Mode: */
++#define     METAC_CORECFG3_L2C_MODE_S               1
++#define       METAC_CORECFG3_L2C_MODE_WRITE_BACK    1            /* - Write back */
++#define       METAC_CORECFG3_L2C_MODE_WRITE_THROUGH 0            /* - Write through */
++#define     METAC_CORECFG3_L2C_HAVE_L2C_BIT         0x00000001   /* Have L2C */
++#define     METAC_CORECFG3_L2C_HAVE_L2C_S           0
++
++#endif /* METAC_2_1 */
++
++#define SYSC_CACHE_MMU_CONFIG       0x04830028
++#ifdef METAC_2_1
++#define     SYSC_CMMUCFG_DCSKEWABLE_BIT 0x00000040
++#define     SYSC_CMMUCFG_ICSKEWABLE_BIT 0x00000020
++#define     SYSC_CMMUCFG_DCSKEWOFF_BIT  0x00000010  /* Skew association override  */
++#define     SYSC_CMMUCFG_ICSKEWOFF_BIT  0x00000008  /* -> default 0 on if present */
++#define     SYSC_CMMUCFG_MODE_BITS      0x00000007  /* Access to old state */
++#define     SYSC_CMMUCFG_MODE_S         0
++#define         SYSC_CMMUCFG_ON             0x7
++#define         SYSC_CMMUCFG_EBYPASS        0x6   /* Enhanced by-pass mode */
++#define         SYSC_CMMUCFG_EBYPASSIC      0x4   /* EB just inst cache */
++#define         SYSC_CMMUCFG_EBYPASSDC      0x2   /* EB just data cache */
++#endif /* METAC_2_1 */
++/* Old definitions, Keep them for now */
++#define         SYSC_CMMUCFG_MMU_ON_BIT     0x1
++#define         SYSC_CMMUCFG_DC_ON_BIT      0x2
++#define         SYSC_CMMUCFG_IC_ON_BIT      0x4
++
++#define SYSC_JTAG_THREAD            0x04830030
++#define     SYSC_JTAG_TX_BITS           0x00000003 /* Read only bits! */
++#define     SYSC_JTAG_TX_S              0
++#define     SYSC_JTAG_PRIV_BIT          0x00000004
++#ifdef METAC_2_1
++#define     SYSC_JTAG_SLAVETX_BITS      0x00000018
++#define     SYSC_JTAG_SLAVETX_S         3
++#endif /* METAC_2_1 */
++
++#define SYSC_DCACHE_FLUSH           0x04830038
++#define SYSC_ICACHE_FLUSH           0x04830040
++#define  SYSC_xCACHE_FLUSH_INIT     0x1
++#define MMCU_DIRECTMAP0_ADDR        0x04830080 /* LINSYSDIRECT_BASE -> */
++#define     MMCU_DIRECTMAPn_STRIDE      0x00000010 /* 4 Region settings */
++#define     MMCU_DIRECTMAPn_S           4
++#define         MMCU_DIRECTMAPn_ADDR_BITS       0xFF800000
++#define         MMCU_DIRECTMAPn_ADDR_S          23
++#define         MMCU_DIRECTMAPn_ADDR_SCALE      0x00800000 /* 8M Regions */
++#ifdef METAC_2_1
++/*
++ * These fields in the above registers provide MMCU_ENTRY_* values
++ *   for each direct mapped region to enable optimisation of these areas.
++ *       (LSB similar to VALID must be set for enhancments to be active)
++ */
++#define         MMCU_DIRECTMAPn_ENHANCE_BIT     0x00000001 /* 0 = no optim */
++#define         MMCU_DIRECTMAPn_DCCTRL_BITS     0x000000DF /* Get DC Ctrl */
++#define         MMCU_DIRECTMAPn_DCCTRL_S        0
++#define         MMCU_DIRECTMAPn_ICCTRL_BITS     0x0000C000 /* Get IC Ctrl */
++#define         MMCU_DIRECTMAPn_ICCTRL_S        8
++#define         MMCU_DIRECTMAPn_ENTLB_BIT       0x00000020 /* Cache in TLB */
++#define         MMCU_DIRECTMAPn_ICCWIN_BITS     0x0000C000 /* Get IC Win Bits */
++#define         MMCU_DIRECTMAPn_ICCWIN_S        14
++#endif /* METAC_2_1 */
++
++#define MMCU_DIRECTMAP1_ADDR        0x04830090
++#define MMCU_DIRECTMAP2_ADDR        0x048300a0
++#define MMCU_DIRECTMAP3_ADDR        0x048300b0
++
++/*
++ * These bits partion each threads use of data cache or instruction cache
++ * resource by modifying the top 4 bits of the address within the cache
++ * storage area.
++ */
++#define SYSC_DCPART0 0x04830200
++#define     SYSC_xCPARTn_STRIDE   0x00000008
++#define     SYSC_xCPARTL_AND_BITS 0x0000000F /* Masks top 4 bits */
++#define     SYSC_xCPARTL_AND_S    0
++#define     SYSC_xCPARTG_AND_BITS 0x00000F00 /* Masks top 4 bits */
++#define     SYSC_xCPARTG_AND_S    8
++#define     SYSC_xCPARTL_OR_BITS  0x000F0000 /* Ors into top 4 bits */
++#define     SYSC_xCPARTL_OR_S     16
++#define     SYSC_xCPARTG_OR_BITS  0x0F000000 /* Ors into top 4 bits */
++#define     SYSC_xCPARTG_OR_S     24
++#define     SYSC_CWRMODE_BIT      0x80000000 /* Write cache mode bit */
++
++#define SYSC_DCPART1 0x04830208
++#define SYSC_DCPART2 0x04830210
++#define SYSC_DCPART3 0x04830218
++#define SYSC_ICPART0 0x04830220
++#define SYSC_ICPART1 0x04830228
++#define SYSC_ICPART2 0x04830230
++#define SYSC_ICPART3 0x04830238
++
++/*
++ * META Core Memory and Cache Update registers
++ */
++#define SYSC_MCMDATAX  0x04830300   /* 32-bit read/write data register */
++#define SYSC_MCMDATAT  0x04830308   /* Read or write data triggers oper */
++#define SYSC_MCMGCTRL  0x04830310   /* Control register */
++#define     SYSC_MCMGCTRL_READ_BIT  0x00000001 /* Set to issue 1st read */
++#define     SYSC_MCMGCTRL_AINC_BIT  0x00000002 /* Set for auto-increment */
++#define     SYSC_MCMGCTRL_ADDR_BITS 0x000FFFFC /* Address or index */
++#define     SYSC_MCMGCTRL_ADDR_S    2
++#define     SYSC_MCMGCTRL_ID_BITS   0x0FF00000 /* Internal memory block Id */
++#define     SYSC_MCMGCTRL_ID_S      20
++#define         SYSC_MCMGID_NODEV       0xFF /* No Device Selected */
++#define         SYSC_MCMGID_DSPRAM0A    0x04 /* DSP RAM D0 block A access */
++#define         SYSC_MCMGID_DSPRAM0B    0x05 /* DSP RAM D0 block B access */
++#define         SYSC_MCMGID_DSPRAM1A    0x06 /* DSP RAM D1 block A access */
++#define         SYSC_MCMGID_DSPRAM1B    0x07 /* DSP RAM D1 block B access */
++#define         SYSC_MCMGID_DCACHEL     0x08 /* DCACHE lines (64-bytes/line) */
++#ifdef METAC_2_1
++#define         SYSC_MCMGID_DCACHETLB   0x09 /* DCACHE TLB ( Read Only )     */
++#endif /* METAC_2_1 */
++#define         SYSC_MCMGID_DCACHET     0x0A /* DCACHE tags (32-bits/line)   */
++#define         SYSC_MCMGID_DCACHELRU   0x0B /* DCACHE LRU (8-bits/line)     */
++#define         SYSC_MCMGID_ICACHEL     0x0C /* ICACHE lines (64-bytes/line  */
++#ifdef METAC_2_1
++#define         SYSC_MCMGID_ICACHETLB   0x0D /* ICACHE TLB (Read Only )     */
++#endif /* METAC_2_1 */
++#define         SYSC_MCMGID_ICACHET     0x0E /* ICACHE Tags (32-bits/line)   */
++#define         SYSC_MCMGID_ICACHELRU   0x0F /* ICACHE LRU (8-bits/line )    */
++#define         SYSC_MCMGID_COREIRAM0   0x10 /* Core code mem id 0 */
++#define         SYSC_MCMGID_COREIRAMn   0x17
++#define         SYSC_MCMGID_COREDRAM0   0x18 /* Core data mem id 0 */
++#define         SYSC_MCMGID_COREDRAMn   0x1F
++#ifdef METAC_2_1
++#define         SYSC_MCMGID_DCACHEST    0x20 /* DCACHE ST ( Read Only )      */
++#define         SYSC_MCMGID_ICACHEST    0x21 /* ICACHE ST ( Read Only )      */
++#define         SYSC_MCMGID_DCACHETLBLRU 0x22 /* DCACHE TLB LRU ( Read Only )*/
++#define         SYSC_MCMGID_ICACHETLBLRU 0x23 /* ICACHE TLB LRU( Read Only ) */
++#define         SYSC_MCMGID_DCACHESTLRU 0x24 /* DCACHE ST LRU ( Read Only )  */
++#define         SYSC_MCMGID_ICACHESTLRU 0x25 /* ICACHE ST LRU ( Read Only )  */
++#define         SYSC_MCMGID_DEBUGTLB    0x26 /* DEBUG TLB ( Read Only )      */
++#define         SYSC_MCMGID_DEBUGST     0x27 /* DEBUG ST ( Read Only )       */
++#define         SYSC_MCMGID_L2CACHEL    0x30 /* L2 Cache Lines (64-bytes/line) */
++#define         SYSC_MCMGID_L2CACHET    0x31 /* L2 Cache Tags (32-bits/line) */
++#define         SYSC_MCMGID_COPROX0     0x70 /* Coprocessor port id 0 */
++#define         SYSC_MCMGID_COPROXn     0x77
++#endif /* METAC_2_1 */
++#define     SYSC_MCMGCTRL_TR31_BIT  0x80000000 /* Trigger 31 on completion */
++#define SYSC_MCMSTATUS 0x04830318   /* Status read only */
++#define     SYSC_MCMSTATUS_IDLE_BIT 0x00000001
++
++/* META System Events */
++#define SYSC_SYS_EVENT            0x04830400
++#define     SYSC_SYSEVT_ATOMIC_BIT      0x00000001
++#define     SYSC_SYSEVT_CACHEX_BIT      0x00000002
++#define SYSC_ATOMIC_LOCK          0x04830408
++#define     SYSC_ATOMIC_STATE_TX_BITS 0x0000000F
++#define     SYSC_ATOMIC_STATE_TX_S    0
++#ifdef METAC_1_2
++#define     SYSC_ATOMIC_STATE_DX_BITS 0x000000F0
++#define     SYSC_ATOMIC_STATE_DX_S    4
++#else /* METAC_1_2 */
++#define     SYSC_ATOMIC_SOURCE_BIT    0x00000010
++#endif /* !METAC_1_2 */
++
++
++#ifdef METAC_2_1
++
++/* These definitions replace the EXPAND_TIMER_DIV register defines which are to
++ * be deprecated.
++ */
++#define SYSC_TIMER_DIV            0x04830140
++#define     SYSC_TIMDIV_BITS      0x000000FF
++#define     SYSC_TIMDIV_S         0
++
++/* META Enhanced by-pass control for local and global region */
++#define MMCU_LOCAL_EBCTRL   0x04830600
++#define MMCU_GLOBAL_EBCTRL  0x04830608
++#define     MMCU_EBCTRL_SINGLE_BIT      0x00000020 /* TLB Uncached */
++/*
++ * These fields in the above registers provide MMCU_ENTRY_* values
++ *   for each direct mapped region to enable optimisation of these areas.
++ */
++#define     MMCU_EBCTRL_DCCTRL_BITS     0x000000C0 /* Get DC Ctrl */
++#define     MMCU_EBCTRL_DCCTRL_S        0
++#define     MMCU_EBCTRL_ICCTRL_BITS     0x0000C000 /* Get DC Ctrl */
++#define     MMCU_EBCTRL_ICCTRL_S        8
++
++/* META Cached Core Mode Registers */
++#define MMCU_T0CCM_ICCTRL   0x04830680     /* Core cached code control */
++#define     MMCU_TnCCM_xxCTRL_STRIDE    8
++#define     MMCU_TnCCM_xxCTRL_STRIDE_S  3
++#define MMCU_T1CCM_ICCTRL   0x04830688
++#define MMCU_T2CCM_ICCTRL   0x04830690
++#define MMCU_T3CCM_ICCTRL   0x04830698
++#define MMCU_T0CCM_DCCTRL   0x048306C0     /* Core cached data control */
++#define MMCU_T1CCM_DCCTRL   0x048306C8
++#define MMCU_T2CCM_DCCTRL   0x048306D0
++#define MMCU_T3CCM_DCCTRL   0x048306D8
++#define     MMCU_TnCCM_ENABLE_BIT       0x00000001
++#define     MMCU_TnCCM_WIN3_BIT         0x00000002
++#define     MMCU_TnCCM_DCWRITE_BIT      0x00000004  /* In DCCTRL only */
++#define     MMCU_TnCCM_REGSZ_BITS       0x00000F00
++#define     MMCU_TnCCM_REGSZ_S          8
++#define         MMCU_TnCCM_REGSZ0_POWER      12     /* RegSz 0 -> 4K */
++#define         MMCU_TnCCM_REGSZ_MAXBYTES    0x00080000  /* 512K max */
++#define     MMCU_TnCCM_ADDR_BITS        0xFFFFF000
++#define     MMCU_TnCCM_ADDR_S           12
++
++#endif /* METAC_2_1 */
++
++/*
++ * Hardware performance counter registers
++ * --------------------------------------
++ */
++#ifdef METAC_2_1
++/* Two Performance Counter Internal Core Events Control registers */
++#define PERF_ICORE0   0x0480FFD0
++#define PERF_ICORE1   0x0480FFD8
++#define     PERFI_CTRL_BITS    0x0000000F
++#define     PERFI_CTRL_S       0
++#define         PERFI_CAH_DMISS    0x0  /* Dcache Misses in cache (TLB Hit) */
++#define         PERFI_CAH_IMISS    0x1  /* Icache Misses in cache (TLB Hit) */
++#define         PERFI_TLB_DMISS    0x2  /* Dcache Misses in per-thread TLB */
++#define         PERFI_TLB_IMISS    0x3  /* Icache Misses in per-thread TLB */
++#define         PERFI_TLB_DWRHITS  0x4  /* DC Write-Hits in per-thread TLB */
++#define         PERFI_TLB_DWRMISS  0x5  /* DC Write-Miss in per-thread TLB */
++#define         PERFI_CAH_DLFETCH  0x8  /* DC Read cache line fetch */
++#define         PERFI_CAH_ILFETCH  0x9  /* DC Read cache line fetch */
++#define         PERFI_CAH_DWFETCH  0xA  /* DC Read cache word fetch */
++#define         PERFI_CAH_IWFETCH  0xB  /* DC Read cache word fetch */
++#endif /* METAC_2_1 */
++
++/* Two memory-mapped hardware performance counter registers */
++#define PERF_COUNT0 0x0480FFE0
++#define PERF_COUNT1 0x0480FFE8
++
++/* Fields in PERF_COUNTn registers */
++#define PERF_COUNT_BITS  0x00ffffff /* Event count value */
++
++#define PERF_THREAD_BITS 0x0f000000 /* Thread mask selects threads */
++#define PERF_THREAD_S    24
++
++#define PERF_CTRL_BITS   0xf0000000 /* Event filter control */
++#define PERF_CTRL_S      28
++
++#define    PERFCTRL_SUPER   0  /* Superthread cycles */
++#define    PERFCTRL_REWIND  1  /* Rewinds due to Dcache Misses */
++#ifdef METAC_2_1
++#define    PERFCTRL_SUPREW  2  /* Rewinds of superthreaded cycles (no mask) */
++
++#define    PERFCTRL_CYCLES  3  /* Counts all cycles (no mask) */
++
++#define    PERFCTRL_PREDBC  4  /* Conditional branch predictions */
++#define    PERFCTRL_MISPBC  5  /* Conditional branch mispredictions */
++#define    PERFCTRL_PREDRT  6  /* Return predictions */
++#define    PERFCTRL_MISPRT  7  /* Return mispredictions */
++#endif /* METAC_2_1 */
++
++#define    PERFCTRL_DHITS   8  /* Dcache Hits */
++#define    PERFCTRL_IHITS   9  /* Icache Hits */
++#define    PERFCTRL_IMISS   10 /* Icache Misses in cache or TLB */
++#ifdef METAC_2_1
++#define    PERFCTRL_DCSTALL 11 /* Dcache+TLB o/p delayed (per-thread) */
++#define    PERFCTRL_ICSTALL 12 /* Icache+TLB o/p delayed (per-thread) */
++
++#define    PERFCTRL_INT     13 /* Internal core delailed events (see next) */
++#define    PERFCTRL_EXT     15 /* External source in core periphery */
++#endif /* METAC_2_1 */
++
++#ifdef METAC_2_1
++/* These definitions replace the EXPAND_PERFCHANx register defines which are to
++ * be deprecated.
++ */
++#define PERF_CHAN0 0x04830150
++#define PERF_CHAN1 0x04830158
++#define     PERF_CHAN_BITS    0x0000000F
++#define     PERF_CHAN_S       0
++#define         PERFCHAN_WRC_WRBURST   0x0   /* Write combiner write burst */
++#define         PERFCHAN_WRC_WRITE     0x1   /* Write combiner write       */
++#define         PERFCHAN_WRC_RDBURST   0x2   /* Write combiner read burst  */
++#define         PERFCHAN_WRC_READ      0x3   /* Write combiner read        */
++#define         PERFCHAN_PREARB_DELAY  0x4   /* Pre-arbiter delay cycle    */
++					     /* Cross-bar hold-off cycle:  */
++#define         PERFCHAN_XBAR_HOLDWRAP 0x5   /*    wrapper register        */
++#define         PERFCHAN_XBAR_HOLDSBUS 0x6   /*    system bus (ATP only)   */
++#define         PERFCHAN_XBAR_HOLDCREG 0x9   /*    core registers          */
++#define         PERFCHAN_L2C_MISS      0x6   /* L2 Cache miss              */
++#define         PERFCHAN_L2C_HIT       0x7   /* L2 Cache hit               */
++#define         PERFCHAN_L2C_WRITEBACK 0x8   /* L2 Cache writeback         */
++					     /* Admission delay cycle:     */
++#define         PERFCHAN_INPUT_CREG    0xB   /*    core registers          */
++#define         PERFCHAN_INPUT_INTR    0xC   /*    internal ram            */
++#define         PERFCHAN_INPUT_WRC     0xD   /*    write combiners(memory) */
++
++/* Should following be removed as not in TRM anywhere? */
++#define         PERFCHAN_XBAR_HOLDINTR 0x8   /*    internal ram            */
++#define         PERFCHAN_INPUT_SBUS    0xA   /*    register port           */
++/* End of remove section. */
++
++#define         PERFCHAN_MAINARB_DELAY 0xF   /* Main arbiter delay cycle   */
++
++#endif /* METAC_2_1 */
++
++#ifdef METAC_2_1
++/*
++ * Write combiner registers
++ * ------------------------
 + *
++ * These replace the EXPAND_T0WRCOMBINE register defines, which will be
++ * deprecated.
 + */
++#define WRCOMB_CONFIG0             0x04830100
++#define     WRCOMB_LFFEn_BIT           0x00004000  /* Enable auto line full flush */
++#define     WRCOMB_ENABLE_BIT          0x00002000  /* Enable write combiner */
++#define     WRCOMB_TIMEOUT_ENABLE_BIT  0x00001000  /* Timeout flush enable */
++#define     WRCOMB_TIMEOUT_COUNT_BITS  0x000003FF
++#define     WRCOMB_TIMEOUT_COUNT_S     0
++#define WRCOMB_CONFIG4             0x04830180
++#define     WRCOMB_PARTALLOC_BITS      0x000000C0
++#define     WRCOMB_PARTALLOC_S         64
++#define     WRCOMB_PARTSIZE_BITS       0x00000030
++#define     WRCOMB_PARTSIZE_S          4
++#define     WRCOMB_PARTOFFSET_BITS     0x0000000F
++#define     WRCOMB_PARTOFFSET_S        0
++#define WRCOMB_CONFIG_STRIDE       8
++#endif /* METAC_2_1 */
 +
-+#include <linux/mm.h>
-+#include <linux/swap.h>
-+#include <linux/init.h>
-+#include <linux/bootmem.h>
-+#include <linux/pagemap.h>
-+#include <linux/percpu.h>
-+#include <linux/memblock.h>
-+#include <linux/initrd.h>
-+#include <linux/of_fdt.h>
-+
-+#include <asm/setup.h>
-+#include <asm/page.h>
-+#include <asm/pgalloc.h>
-+#include <asm/mmu.h>
-+#include <asm/mmu_context.h>
-+#include <asm/sections.h>
-+#include <asm/tlb.h>
-+#include <asm/user_gateway.h>
-+#include <asm/mmzone.h>
-+#include <asm/fixmap.h>
-+
-+unsigned long pfn_base;
-+
-+pgd_t swapper_pg_dir[PTRS_PER_PGD] __page_aligned_data;
-+
-+unsigned long empty_zero_page;
-+
-+extern char __user_gateway_start;
-+extern char __user_gateway_end;
-+
-+void *gateway_page;
-+
++#ifdef METAC_2_1
 +/*
-+ * Insert the gateway page into a set of page tables, creating the
-+ * page tables if necessary.
-+ */
-+static void insert_gateway_page(pgd_t *pgd, unsigned long address)
-+{
-+	pud_t *pud;
-+	pmd_t *pmd;
-+	pte_t *pte;
-+
-+	BUG_ON(!pgd_present(*pgd));
-+
-+	pud = pud_offset(pgd, address);
-+	BUG_ON(!pud_present(*pud));
-+
-+	pmd = pmd_offset(pud, address);
-+	if (!pmd_present(*pmd)) {
-+		pte = alloc_bootmem_pages(PAGE_SIZE);
-+		set_pmd(pmd, __pmd(_PAGE_TABLE | __pa(pte)));
-+	}
-+
-+	pte = pte_offset_kernel(pmd, address);
-+	set_pte(pte, pfn_pte(__pa(gateway_page) >> PAGE_SHIFT, PAGE_READONLY));
-+}
-+
-+/* Alloc and map a page in a known location accessible to userspace. */
-+static void __init user_gateway_init(void)
-+{
-+	unsigned long address = USER_GATEWAY_PAGE;
-+	int offset = pgd_index(address);
-+	pgd_t *pgd;
-+
-+	gateway_page = alloc_bootmem_pages(PAGE_SIZE);
-+
-+	pgd = swapper_pg_dir + offset;
-+	insert_gateway_page(pgd, address);
-+
-+#ifdef CONFIG_METAG_META12
-+	/*
-+	 * Insert the gateway page into our current page tables even
-+	 * though we've already inserted it into our reference page
-+	 * table (swapper_pg_dir). This is because with a META1 mmu we
-+	 * copy just the user address range and not the gateway page
-+	 * entry on context switch, see switch_mmu().
-+	 */
-+	pgd = (pgd_t *)mmu_get_base() + offset;
-+	insert_gateway_page(pgd, address);
-+#endif /* CONFIG_METAG_META12 */
-+
-+	BUG_ON((&__user_gateway_end - &__user_gateway_start) > PAGE_SIZE);
-+
-+	gateway_page += (address & ~PAGE_MASK);
-+
-+	memcpy(gateway_page, &__user_gateway_start,
-+	       &__user_gateway_end - &__user_gateway_start);
-+
-+	/*
-+	 * We don't need to flush the TLB here, there should be no mapping
-+	 * present at boot for this address and only valid mappings are in
-+	 * the TLB (apart from on Meta 1.x, but those cached invalid
-+	 * mappings should be impossible to hit here).
-+	 *
-+	 * We don't flush the code cache here even though we have written
-+	 * code through the data cache and they may not be coherent. At
-+	 * this point we assume there is no stale data in the code cache
-+	 * for this address so there is no need to flush.
-+	 */
-+}
-+
-+static void __init allocate_pgdat(unsigned int nid)
-+{
-+	unsigned long start_pfn, end_pfn;
-+#ifdef CONFIG_NEED_MULTIPLE_NODES
-+	unsigned long phys;
-+#endif
-+
-+	get_pfn_range_for_nid(nid, &start_pfn, &end_pfn);
-+
-+#ifdef CONFIG_NEED_MULTIPLE_NODES
-+	phys = __memblock_alloc_base(sizeof(struct pglist_data),
-+				SMP_CACHE_BYTES, end_pfn << PAGE_SHIFT);
-+	/* Retry with all of system memory */
-+	if (!phys)
-+		phys = __memblock_alloc_base(sizeof(struct pglist_data),
-+					     SMP_CACHE_BYTES,
-+					     memblock_end_of_DRAM());
-+	if (!phys)
-+		panic("Can't allocate pgdat for node %d\n", nid);
-+
-+	NODE_DATA(nid) = __va(phys);
-+	memset(NODE_DATA(nid), 0, sizeof(struct pglist_data));
-+
-+	NODE_DATA(nid)->bdata = &bootmem_node_data[nid];
-+#endif
-+
-+	NODE_DATA(nid)->node_start_pfn = start_pfn;
-+	NODE_DATA(nid)->node_spanned_pages = end_pfn - start_pfn;
-+}
-+
-+static void __init bootmem_init_one_node(unsigned int nid)
-+{
-+	unsigned long total_pages, paddr;
-+	unsigned long end_pfn;
-+	struct pglist_data *p;
-+
-+	p = NODE_DATA(nid);
-+
-+	/* Nothing to do.. */
-+	if (!p->node_spanned_pages)
-+		return;
-+
-+	end_pfn = p->node_start_pfn + p->node_spanned_pages;
-+#ifdef CONFIG_HIGHMEM
-+	if (end_pfn > max_low_pfn)
-+		end_pfn = max_low_pfn;
-+#endif
-+
-+	total_pages = bootmem_bootmap_pages(end_pfn - p->node_start_pfn);
-+
-+	paddr = memblock_alloc(total_pages << PAGE_SHIFT, PAGE_SIZE);
-+	if (!paddr)
-+		panic("Can't allocate bootmap for nid[%d]\n", nid);
-+
-+	init_bootmem_node(p, paddr >> PAGE_SHIFT, p->node_start_pfn, end_pfn);
-+
-+	free_bootmem_with_active_regions(nid, end_pfn);
-+
-+	/*
-+	 * XXX Handle initial reservations for the system memory node
-+	 * only for the moment, we'll refactor this later for handling
-+	 * reservations in other nodes.
-+	 */
-+	if (nid == 0) {
-+		struct memblock_region *reg;
-+
-+		/* Reserve the sections we're already using. */
-+		for_each_memblock(reserved, reg) {
-+			unsigned long size = reg->size;
-+
-+#ifdef CONFIG_HIGHMEM
-+			/* ...but not highmem */
-+			if (PFN_DOWN(reg->base) >= highstart_pfn)
-+				continue;
-+
-+			if (PFN_UP(reg->base + size) > highstart_pfn)
-+				size = (highstart_pfn - PFN_DOWN(reg->base))
-+				       << PAGE_SHIFT;
-+#endif
-+
-+			reserve_bootmem(reg->base, size, BOOTMEM_DEFAULT);
-+		}
-+	}
-+
-+	sparse_memory_present_with_active_regions(nid);
-+}
-+
-+static void __init do_init_bootmem(void)
-+{
-+	struct memblock_region *reg;
-+	int i;
-+
-+	/* Add active regions with valid PFNs. */
-+	for_each_memblock(memory, reg) {
-+		unsigned long start_pfn, end_pfn;
-+		start_pfn = memblock_region_memory_base_pfn(reg);
-+		end_pfn = memblock_region_memory_end_pfn(reg);
-+		memblock_set_node(PFN_PHYS(start_pfn),
-+				  PFN_PHYS(end_pfn - start_pfn), 0);
-+	}
-+
-+	/* All of system RAM sits in node 0 for the non-NUMA case */
-+	allocate_pgdat(0);
-+	node_set_online(0);
-+
-+	soc_mem_setup();
-+
-+	for_each_online_node(i)
-+		bootmem_init_one_node(i);
-+
-+	sparse_init();
-+}
-+
-+extern char _heap_start[];
-+
-+static void __init init_and_reserve_mem(void)
-+{
-+	unsigned long start_pfn, heap_start;
-+	u64 base = min_low_pfn << PAGE_SHIFT;
-+	u64 size = (max_low_pfn << PAGE_SHIFT) - base;
-+
-+	heap_start = (unsigned long) &_heap_start;
-+
-+	memblock_add(base, size);
-+
-+	/*
-+	 * Partially used pages are not usable - thus
-+	 * we are rounding upwards:
-+	 */
-+	start_pfn = PFN_UP(__pa(heap_start));
-+
-+	/*
-+	 * Reserve the kernel text.
-+	 */
-+	memblock_reserve(base, (PFN_PHYS(start_pfn) + PAGE_SIZE - 1) - base);
-+
-+#ifdef CONFIG_HIGHMEM
-+	/*
-+	 * Add & reserve highmem, so page structures are initialised.
-+	 */
-+	base = highstart_pfn << PAGE_SHIFT;
-+	size = (highend_pfn << PAGE_SHIFT) - base;
-+	if (size) {
-+		memblock_add(base, size);
-+		memblock_reserve(base, size);
-+	}
-+#endif
-+}
-+
-+#ifdef CONFIG_HIGHMEM
-+/*
-+ * Ensure we have allocated page tables in swapper_pg_dir for the
-+ * fixed mappings range from 'start' to 'end'.
-+ */
-+static void __init allocate_pgtables(unsigned long start, unsigned long end)
-+{
-+	pgd_t *pgd;
-+	pmd_t *pmd;
-+	pte_t *pte;
-+	int i, j;
-+	unsigned long vaddr;
-+
-+	vaddr = start;
-+	i = pgd_index(vaddr);
-+	j = pmd_index(vaddr);
-+	pgd = swapper_pg_dir + i;
-+
-+	for ( ; (i < PTRS_PER_PGD) && (vaddr != end); pgd++, i++) {
-+		pmd = (pmd_t *)pgd;
-+		for (; (j < PTRS_PER_PMD) && (vaddr != end); pmd++, j++) {
-+			vaddr += PMD_SIZE;
-+
-+			if (!pmd_none(*pmd))
-+				continue;
-+
-+			pte = (pte_t *)alloc_bootmem_low_pages(PAGE_SIZE);
-+			pmd_populate_kernel(&init_mm, pmd, pte);
-+		}
-+		j = 0;
-+	}
-+}
-+
-+static void __init fixedrange_init(void)
-+{
-+	unsigned long vaddr, end;
-+	pgd_t *pgd;
-+	pud_t *pud;
-+	pmd_t *pmd;
-+	pte_t *pte;
-+
-+	/*
-+	 * Fixed mappings:
-+	 */
-+	vaddr = __fix_to_virt(__end_of_fixed_addresses - 1) & PMD_MASK;
-+	end = (FIXADDR_TOP + PMD_SIZE - 1) & PMD_MASK;
-+	allocate_pgtables(vaddr, end);
-+
-+	/*
-+	 * Permanent kmaps:
-+	 */
-+	vaddr = PKMAP_BASE;
-+	allocate_pgtables(vaddr, vaddr + PAGE_SIZE*LAST_PKMAP);
-+
-+	pgd = swapper_pg_dir + pgd_index(vaddr);
-+	pud = pud_offset(pgd, vaddr);
-+	pmd = pmd_offset(pud, vaddr);
-+	pte = pte_offset_kernel(pmd, vaddr);
-+	pkmap_page_table = pte;
-+}
-+#endif /* CONFIG_HIGHMEM */
-+
-+/*
-+ * paging_init() continues the virtual memory environment setup which
-+ * was begun by the code in arch/metag/kernel/setup.c.
-+ */
-+void __init paging_init(unsigned long mem_end)
-+{
-+	unsigned long max_zone_pfns[MAX_NR_ZONES];
-+	int nid;
-+
-+	init_and_reserve_mem();
-+
-+	memblock_allow_resize();
-+
-+	memblock_dump_all();
-+
-+	nodes_clear(node_online_map);
-+
-+	init_new_context(&init_task, &init_mm);
-+
-+	memset(swapper_pg_dir, 0, sizeof(swapper_pg_dir));
-+
-+	do_init_bootmem();
-+	mmu_init(mem_end);
-+
-+#ifdef CONFIG_HIGHMEM
-+	fixedrange_init();
-+	kmap_init();
-+#endif
-+
-+	/* Initialize the zero page to a bootmem page, already zeroed. */
-+	empty_zero_page = (unsigned long)alloc_bootmem_pages(PAGE_SIZE);
-+
-+	user_gateway_init();
-+
-+	memset(max_zone_pfns, 0, sizeof(max_zone_pfns));
-+
-+	for_each_online_node(nid) {
-+		pg_data_t *pgdat = NODE_DATA(nid);
-+		unsigned long low, start_pfn;
-+
-+		start_pfn = pgdat->bdata->node_min_pfn;
-+		low = pgdat->bdata->node_low_pfn;
-+
-+		if (max_zone_pfns[ZONE_NORMAL] < low)
-+			max_zone_pfns[ZONE_NORMAL] = low;
-+
-+#ifdef CONFIG_HIGHMEM
-+		max_zone_pfns[ZONE_HIGHMEM] = highend_pfn;
-+#endif
-+		pr_info("Node %u: start_pfn = 0x%lx, low = 0x%lx\n",
-+			nid, start_pfn, low);
-+	}
-+
-+	free_area_init_nodes(max_zone_pfns);
-+}
-+
-+void __init mem_init(void)
-+{
-+	int nid;
-+
-+#ifdef CONFIG_HIGHMEM
-+	unsigned long tmp;
-+	for (tmp = highstart_pfn; tmp < highend_pfn; tmp++) {
-+		struct page *page = pfn_to_page(tmp);
-+		ClearPageReserved(page);
-+		init_page_count(page);
-+		__free_page(page);
-+		totalhigh_pages++;
-+	}
-+	totalram_pages += totalhigh_pages;
-+	num_physpages += totalhigh_pages;
-+#endif /* CONFIG_HIGHMEM */
-+
-+	for_each_online_node(nid) {
-+		pg_data_t *pgdat = NODE_DATA(nid);
-+		unsigned long node_pages = 0;
-+
-+		num_physpages += pgdat->node_present_pages;
-+
-+		if (pgdat->node_spanned_pages)
-+			node_pages = free_all_bootmem_node(pgdat);
-+
-+		totalram_pages += node_pages;
-+	}
-+
-+	pr_info("Memory: %luk/%luk available\n",
-+		(unsigned long)nr_free_pages() << (PAGE_SHIFT - 10),
-+		num_physpages << (PAGE_SHIFT - 10));
-+
-+	show_mem(0);
-+
-+	return;
-+}
-+
-+static void free_init_pages(char *what, unsigned long begin, unsigned long end)
-+{
-+	unsigned long addr;
-+
-+	for (addr = begin; addr < end; addr += PAGE_SIZE) {
-+		ClearPageReserved(virt_to_page(addr));
-+		init_page_count(virt_to_page(addr));
-+		memset((void *)addr, POISON_FREE_INITMEM, PAGE_SIZE);
-+		free_page(addr);
-+		totalram_pages++;
-+	}
-+	pr_info("Freeing %s: %luk freed\n", what, (end - begin) >> 10);
-+}
-+
-+void free_initmem(void)
-+{
-+	free_init_pages("unused kernel memory",
-+			(unsigned long)(&__init_begin),
-+			(unsigned long)(&__init_end));
-+}
-+
-+#ifdef CONFIG_BLK_DEV_INITRD
-+void free_initrd_mem(unsigned long start, unsigned long end)
-+{
-+	end = end & PAGE_MASK;
-+	free_init_pages("initrd memory", start, end);
-+}
-+#endif
-+
-+#ifdef CONFIG_OF_FLATTREE
-+void __init early_init_dt_setup_initrd_arch(unsigned long start,
-+					    unsigned long end)
-+{
-+	pr_err("%s(%lx, %lx)\n",
-+	       __func__, start, end);
-+}
-+#endif /* CONFIG_OF_FLATTREE */
-diff --git a/arch/metag/mm/mmu-meta1.c b/arch/metag/mm/mmu-meta1.c
-new file mode 100644
-index 0000000..91f4255
---- /dev/null
-+++ b/arch/metag/mm/mmu-meta1.c
-@@ -0,0 +1,157 @@
-+/*
-+ *  Copyright (C) 2005,2006,2007,2008,2009 Imagination Technologies
++ * Thread arbiter registers
++ * ------------------------
 + *
-+ * Meta 1 MMU handling code.
-+ *
++ * These replace the EXPAND_T0ARBITER register defines, which will be
++ * deprecated.
 + */
-+
-+#include <linux/sched.h>
-+#include <linux/mm.h>
-+#include <linux/io.h>
-+
-+#include <asm/mmu.h>
-+
-+#define DM3_BASE (LINSYSDIRECT_BASE + (MMCU_DIRECTMAPn_ADDR_SCALE * 3))
++#define ARBITER_ARBCONFIG0       0x04830120
++#define     ARBCFG_BPRIORITY_BIT     0x02000000
++#define     ARBCFG_IPRIORITY_BIT     0x01000000
++#define     ARBCFG_PAGE_BITS         0x00FF0000
++#define     ARBCFG_PAGE_S            16
++#define     ARBCFG_BBASE_BITS        0x0000FF00
++#define     ARGCFG_BBASE_S           8
++#define     ARBCFG_IBASE_BITS        0x000000FF
++#define     ARBCFG_IBASE_S           0
++#define ARBITER_TTECONFIG0       0x04820160
++#define     ARBTTE_IUPPER_BITS       0xFF000000
++#define     ARBTTE_IUPPER_S          24
++#define     ARBTTE_ILOWER_BITS       0x00FF0000
++#define     ARBTTE_ILOWER_S          16
++#define     ARBTTE_BUPPER_BITS       0x0000FF00
++#define     ARBTTE_BUPPER_S          8
++#define     ARBTTE_BLOWER_BITS       0x000000FF
++#define     ARBTTE_BLOWER_S          0
++#define ARBITER_STRIDE           8
++#endif /* METAC_2_1 */
 +
 +/*
-+ * This contains the physical address of the top level 2k pgd table.
++ * Expansion area registers
++ * --------------------------------------
 + */
-+static unsigned long mmu_base_phys;
++
++/* These defines are to be deprecated. See above instead. */
++#define EXPAND_T0WRCOMBINE         0x03000000
++#ifdef METAC_2_1
++#define     EXPWRC_LFFEn_BIT           0x00004000  /* Enable auto line full flush */
++#endif /* METAC_2_1 */
++#define     EXPWRC_ENABLE_BIT          0x00002000  /* Enable write combiner */
++#define     EXPWRC_TIMEOUT_ENABLE_BIT  0x00001000  /* Timeout flush enable */
++#define     EXPWRC_TIMEOUT_COUNT_BITS  0x000003FF
++#define     EXPWRC_TIMEOUT_COUNT_S     0
++#define EXPAND_TnWRCOMBINE_STRIDE  0x00000008
++
++/* These defines are to be deprecated. See above instead. */
++#define EXPAND_T0ARBITER         0x03000020
++#define     EXPARB_BPRIORITY_BIT 0x02000000
++#define     EXPARB_IPRIORITY_BIT 0x01000000
++#define     EXPARB_PAGE_BITS     0x00FF0000
++#define     EXPARB_PAGE_S        16
++#define     EXPARB_BBASE_BITS    0x0000FF00
++#define     EXPARB_BBASE_S       8
++#define     EXPARB_IBASE_BITS    0x000000FF
++#define     EXPARB_IBASE_S       0
++#define EXPAND_TnARBITER_STRIDE  0x00000008
++
++/* These definitions are to be deprecated. See above instead. */
++#define EXPAND_TIMER_DIV   0x03000040
++#define     EXPTIM_DIV_BITS      0x000000FF
++#define     EXPTIM_DIV_S         0
++
++/* These definitions are to be deprecated. See above instead. */
++#define EXPAND_PERFCHAN0   0x03000050
++#define EXPAND_PERFCHAN1   0x03000058
++#define     EXPPERF_CTRL_BITS    0x0000000F
++#define     EXPPERF_CTRL_S       0
++#define         EXPPERF_WRC_WRBURST   0x0   /* Write combiner write burst */
++#define         EXPPERF_WRC_WRITE     0x1   /* Write combiner write       */
++#define         EXPPERF_WRC_RDBURST   0x2   /* Write combiner read burst  */
++#define         EXPPERF_WRC_READ      0x3   /* Write combiner read        */
++#define         EXPPERF_PREARB_DELAY  0x4   /* Pre-arbiter delay cycle    */
++					    /* Cross-bar hold-off cycle:  */
++#define         EXPPERF_XBAR_HOLDWRAP 0x5   /*    wrapper register        */
++#define         EXPPERF_XBAR_HOLDSBUS 0x6   /*    system bus              */
++#ifdef METAC_1_2
++#define         EXPPERF_XBAR_HOLDLBUS 0x7   /*    local bus               */
++#else /* METAC_1_2 */
++#define         EXPPERF_XBAR_HOLDINTR 0x8   /*    internal ram            */
++#define         EXPPERF_XBAR_HOLDCREG 0x9   /*    core registers          */
++					    /* Admission delay cycle:     */
++#define         EXPPERF_INPUT_SBUS    0xA   /*    register port           */
++#define         EXPPERF_INPUT_CREG    0xB   /*    core registers          */
++#define         EXPPERF_INPUT_INTR    0xC   /*    internal ram            */
++#define         EXPPERF_INPUT_WRC     0xD   /*    write combiners(memory) */
++#endif /* !METAC_1_2 */
++#define         EXPPERF_MAINARB_DELAY 0xF   /* Main arbiter delay cycle   */
 +
 +/*
-+ * Given a physical address, return a mapped virtual address that can be used
-+ * to access that location.
-+ * In practice, we use the DirectMap region to make this happen.
-+ */
-+static unsigned long map_addr(unsigned long phys)
-+{
-+	static unsigned long dm_base = 0xFFFFFFFF;
-+	int offset;
-+
-+	offset = phys - dm_base;
-+
-+	/* Are we in the current map range ? */
-+	if ((offset < 0) || (offset >= MMCU_DIRECTMAPn_ADDR_SCALE)) {
-+		/* Calculate new DM area */
-+		dm_base = phys & ~(MMCU_DIRECTMAPn_ADDR_SCALE - 1);
-+
-+		/* Actually map it in! */
-+		metag_out32(dm_base, MMCU_DIRECTMAP3_ADDR);
-+
-+		/* And calculate how far into that area our reference is */
-+		offset = phys - dm_base;
-+	}
-+
-+	return DM3_BASE + offset;
-+}
-+
-+/*
-+ * Return the physical address of the base of our pgd table.
-+ */
-+static inline unsigned long __get_mmu_base(void)
-+{
-+	unsigned long base_phys;
-+	unsigned int stride;
-+
-+	if (is_global_space(PAGE_OFFSET))
-+		stride = 4;
-+	else
-+		stride = hard_processor_id();	/* [0..3] */
-+
-+	base_phys = metag_in32(MMCU_TABLE_PHYS_ADDR);
-+	base_phys += (0x800 * stride);
-+
-+	return base_phys;
-+}
-+
-+/* Given a virtual address, return the virtual address of the relevant pgd */
-+static unsigned long pgd_entry_addr(unsigned long virt)
-+{
-+	unsigned long pgd_phys;
-+	unsigned long pgd_virt;
-+
-+	if (!mmu_base_phys)
-+		mmu_base_phys = __get_mmu_base();
-+
-+	/*
-+	 * Are we trying to map a global address.  If so, then index
-+	 * the global pgd table instead of our local one.
-+	 */
-+	if (is_global_space(virt)) {
-+		/* Scale into 2gig map */
-+		virt &= ~0x80000000;
-+	}
-+
-+	/* Base of the pgd table plus our 4Meg entry, 4bytes each */
-+	pgd_phys = mmu_base_phys + ((virt >> PGDIR_SHIFT) * 4);
-+
-+	pgd_virt = map_addr(pgd_phys);
-+
-+	return pgd_virt;
-+}
-+
-+/* Given a virtual address, return the virtual address of the relevant pte */
-+static unsigned long pgtable_entry_addr(unsigned long virt)
-+{
-+	unsigned long pgtable_phys;
-+	unsigned long pgtable_virt, pte_virt;
-+
-+	/* Find the physical address of the 4MB page table*/
-+	pgtable_phys = metag_in32(pgd_entry_addr(virt)) & MMCU_ENTRY_ADDR_BITS;
-+
-+	/* Map it to a virtual address */
-+	pgtable_virt = map_addr(pgtable_phys);
-+
-+	/* And index into it for our pte */
-+	pte_virt = pgtable_virt + ((virt >> PAGE_SHIFT) & 0x3FF) * 4;
-+
-+	return pte_virt;
-+}
-+
-+unsigned long mmu_read_first_level_page(unsigned long vaddr)
-+{
-+	return metag_in32(pgd_entry_addr(vaddr));
-+}
-+
-+unsigned long mmu_read_second_level_page(unsigned long vaddr)
-+{
-+	return metag_in32(pgtable_entry_addr(vaddr));
-+}
-+
-+unsigned long mmu_get_base(void)
-+{
-+	static unsigned long __base;
-+
-+	/* Find the base of our MMU pgd table */
-+	if (!__base)
-+		__base = pgd_entry_addr(0);
-+
-+	return __base;
-+}
-+
-+void __init mmu_init(unsigned long mem_end)
-+{
-+	unsigned long entry, addr;
-+	pgd_t *p_swapper_pg_dir;
-+
-+	/*
-+	 * Now copy over any MMU pgd entries already in the mmu page tables
-+	 * over to our root init process (swapper_pg_dir) map.  This map is
-+	 * then inherited by all other processes, which means all processes
-+	 * inherit a map of the kernel space.
-+	 */
-+	addr = PAGE_OFFSET;
-+	entry = pgd_index(PAGE_OFFSET);
-+	p_swapper_pg_dir = pgd_offset_k(0) + entry;
-+
-+	while (addr <= META_MEMORY_LIMIT) {
-+		unsigned long pgd_entry;
-+		/* copy over the current MMU value */
-+		pgd_entry = mmu_read_first_level_page(addr);
-+		pgd_val(*p_swapper_pg_dir) = pgd_entry;
-+
-+		p_swapper_pg_dir++;
-+		addr += PGDIR_SIZE;
-+		entry++;
-+	}
-+}
-diff --git a/arch/metag/mm/mmu-meta2.c b/arch/metag/mm/mmu-meta2.c
-new file mode 100644
-index 0000000..f3d38c4
---- /dev/null
-+++ b/arch/metag/mm/mmu-meta2.c
-@@ -0,0 +1,208 @@
-+/*
-+ * Copyright (C) 2008,2009,2010,2011 Imagination Technologies Ltd.
-+ *
-+ * Meta 2 enhanced mode MMU handling code.
-+ *
++ * Debug port registers
++ * --------------------------------------
 + */
 +
-+#include <linux/mm.h>
-+#include <linux/init.h>
-+#include <linux/kernel.h>
-+#include <linux/io.h>
-+#include <linux/bootmem.h>
-+#include <linux/syscore_ops.h>
++/* Data Exchange Register */
++#define DBGPORT_MDBGDATAX                    0x0
 +
-+#include <asm/mmu.h>
-+#include <asm/mmu_context.h>
++/* Data Transfer register */
++#define DBGPORT_MDBGDATAT                    0x4
 +
-+unsigned long mmu_read_first_level_page(unsigned long vaddr)
-+{
-+	unsigned int cpu = hard_processor_id();
-+	unsigned long offset, linear_base, linear_limit;
-+	unsigned int phys0;
-+	pgd_t *pgd, entry;
++/* Control Register 0 */
++#define DBGPORT_MDBGCTRL0                    0x8
++#define     DBGPORT_MDBGCTRL0_ADDR_BITS      0xFFFFFFFC
++#define     DBGPORT_MDBGCTRL0_ADDR_S         2
++#define     DBGPORT_MDBGCTRL0_AUTOINCR_BIT   0x00000002
++#define     DBGPORT_MDBGCTRL0_RD_BIT         0x00000001
 +
-+	if (is_global_space(vaddr))
-+		vaddr &= ~0x80000000;
++/* Control Register 1 */
++#define DBGPORT_MDBGCTRL1                    0xC
++#ifdef METAC_2_1
++#define    DBGPORT_MDBGCTRL1_DEFERRTHREAD_BITS      0xC0000000
++#define    DBGPORT_MDBGCTRL1_DEFERRTHREAD_S         30
++#endif /* METAC_2_1 */
++#define     DBGPORT_MDBGCTRL1_LOCK2_INTERLOCK_BIT   0x20000000
++#define     DBGPORT_MDBGCTRL1_ATOMIC_INTERLOCK_BIT  0x10000000
++#define     DBGPORT_MDBGCTRL1_TRIGSTATUS_BIT        0x08000000
++#define     DBGPORT_MDBGCTRL1_GBLPORT_IDLE_BIT      0x04000000
++#define     DBGPORT_MDBGCTRL1_COREMEM_IDLE_BIT      0x02000000
++#define     DBGPORT_MDBGCTRL1_READY_BIT             0x01000000
++#ifdef METAC_2_1
++#define     DBGPORT_MDBGCTRL1_DEFERRID_BITS         0x00E00000
++#define     DBGPORT_MDBGCTRL1_DEFERRID_S            21
++#define     DBGPORT_MDBGCTRL1_DEFERR_BIT            0x00100000
++#endif /* METAC_2_1 */
++#define     DBGPORT_MDBGCTRL1_WR_ACTIVE_BIT         0x00040000
++#define     DBGPORT_MDBGCTRL1_COND_LOCK2_BIT        0x00020000
++#define     DBGPORT_MDBGCTRL1_LOCK2_BIT             0x00010000
++#define     DBGPORT_MDBGCTRL1_DIAGNOSE_BIT          0x00008000
++#define     DBGPORT_MDBGCTRL1_FORCEDIAG_BIT         0x00004000
++#define     DBGPORT_MDBGCTRL1_MEMFAULT_BITS         0x00003000
++#define     DBGPORT_MDBGCTRL1_MEMFAULT_S            12
++#define     DBGPORT_MDBGCTRL1_TRIGGER_BIT           0x00000100
++#ifdef METAC_2_1
++#define     DBGPORT_MDBGCTRL1_INTSPECIAL_BIT        0x00000080
++#define     DBGPORT_MDBGCTRL1_INTRUSIVE_BIT         0x00000040
++#endif /* METAC_2_1 */
++#define     DBGPORT_MDBGCTRL1_THREAD_BITS           0x00000030 /* Thread mask selects threads */
++#define     DBGPORT_MDBGCTRL1_THREAD_S              4
++#define     DBGPORT_MDBGCTRL1_TRANS_SIZE_BITS       0x0000000C
++#define     DBGPORT_MDBGCTRL1_TRANS_SIZE_S          2
++#define         DBGPORT_MDBGCTRL1_TRANS_SIZE_32_BIT 0x00000000
++#define         DBGPORT_MDBGCTRL1_TRANS_SIZE_16_BIT 0x00000004
++#define         DBGPORT_MDBGCTRL1_TRANS_SIZE_8_BIT  0x00000008
++#define     DBGPORT_MDBGCTRL1_BYTE_ROUND_BITS       0x00000003
++#define     DBGPORT_MDBGCTRL1_BYTE_ROUND_S          0
++#define         DBGPORT_MDBGCTRL1_BYTE_ROUND_8_BIT  0x00000001
++#define         DBGPORT_MDBGCTRL1_BYTE_ROUND_16_BIT 0x00000002
 +
-+	offset = vaddr >> PGDIR_SHIFT;
 +
-+	phys0 = metag_in32(mmu_phys0_addr(cpu));
++/* L2 Cache registers */
++#define SYSC_L2C_INIT              0x048300C0
++#define SYSC_L2C_INIT_INIT                  1
++#define SYSC_L2C_INIT_IN_PROGRESS           0
++#define SYSC_L2C_INIT_COMPLETE              1
 +
-+	/* Top bit of linear base is always zero. */
-+	linear_base = (phys0 >> PGDIR_SHIFT) & 0x1ff;
++#define SYSC_L2C_ENABLE            0x048300D0
++#define SYSC_L2C_ENABLE_ENABLE_BIT     0x00000001
++#define SYSC_L2C_ENABLE_PFENABLE_BIT   0x00000002
 +
-+	/* Limit in the range 0 (4MB) to 9 (2GB). */
-+	linear_limit = 1 << ((phys0 >> 8) & 0xf);
-+	linear_limit += linear_base;
++#define SYSC_L2C_PURGE             0x048300C8
++#define SYSC_L2C_PURGE_PURGE                1
++#define SYSC_L2C_PURGE_IN_PROGRESS          0
++#define SYSC_L2C_PURGE_COMPLETE             1
 +
-+	/*
-+	 * If offset is below linear base or above the limit then no
-+	 * mapping exists.
-+	 */
-+	if (offset < linear_base || offset > linear_limit)
-+		return 0;
-+
-+	offset -= linear_base;
-+	pgd = (pgd_t *)mmu_get_base();
-+	entry = pgd[offset];
-+
-+	return pgd_val(entry);
-+}
-+
-+unsigned long mmu_read_second_level_page(unsigned long vaddr)
-+{
-+	unsigned long entry = TBIXCACHE_RD(vaddr & PAGE_MASK);
-+	return entry;
-+}
-+
-+unsigned long mmu_get_base(void)
-+{
-+	unsigned int cpu = hard_processor_id();
-+	unsigned long stride;
-+
-+	stride = cpu * LINSYSMEMTnX_STRIDE;
-+
-+	/*
-+	 * Bits 18:2 of the MMCU_TnLocal_TABLE_PHYS1 register should be
-+	 * used as an offset to the start of the top-level pgd table.
-+	 */
-+	stride += (metag_in32(mmu_phys1_addr(cpu)) & 0x7fffc);
-+
-+	if (is_global_space(PAGE_OFFSET))
-+		stride += LINSYSMEMTXG_OFFSET;
-+
-+	return LINSYSMEMT0L_BASE + stride;
-+}
-+
-+#define FIRST_LEVEL_MASK	0xffffffc0
-+#define SECOND_LEVEL_MASK	0xfffff000
-+#define SECOND_LEVEL_ALIGN	64
-+
-+static void repriv_mmu_tables(void)
-+{
-+	unsigned long phys0_addr;
-+	unsigned int g;
-+
-+	/*
-+	 * Check that all the mmu table regions are priv protected, and if not
-+	 * fix them and emit a warning. If we left them without priv protection
-+	 * then userland processes would have access to a 2M window into
-+	 * physical memory near where the page tables are.
-+	 */
-+	phys0_addr = MMCU_T0LOCAL_TABLE_PHYS0;
-+	for (g = 0; g < 2; ++g) {
-+		unsigned int t, phys0;
-+		unsigned long flags;
-+		for (t = 0; t < 4; ++t) {
-+			__global_lock2(flags);
-+			phys0 = metag_in32(phys0_addr);
-+			if ((phys0 & _PAGE_PRESENT) && !(phys0 & _PAGE_PRIV)) {
-+				pr_warn("Fixing priv protection on T%d %s MMU table region\n",
-+					t,
-+					g ? "global" : "local");
-+				phys0 |= _PAGE_PRIV;
-+				metag_out32(phys0, phys0_addr);
-+			}
-+			__global_unlock2(flags);
-+
-+			phys0_addr += MMCU_TnX_TABLE_PHYSX_STRIDE;
-+		}
-+
-+		phys0_addr += MMCU_TXG_TABLE_PHYSX_OFFSET
-+			    - 4*MMCU_TnX_TABLE_PHYSX_STRIDE;
-+	}
-+}
-+
-+#ifdef CONFIG_METAG_SUSPEND_MEM
-+static void mmu_resume(void)
-+{
-+	/*
-+	 * If a full suspend to RAM has happened then the original bad MMU table
-+	 * priv may have been restored, so repriv them again.
-+	 */
-+	repriv_mmu_tables();
-+}
-+#else
-+#define mmu_resume NULL
-+#endif	/* CONFIG_METAG_SUSPEND_MEM */
-+
-+static struct syscore_ops mmu_syscore_ops = {
-+	.resume  = mmu_resume,
-+};
-+
-+void __init mmu_init(unsigned long mem_end)
-+{
-+	unsigned long entry, addr;
-+	pgd_t *p_swapper_pg_dir;
-+#ifdef CONFIG_KERNEL_4M_PAGES
-+	unsigned long mem_size = mem_end - PAGE_OFFSET;
-+	unsigned int pages = DIV_ROUND_UP(mem_size, 1 << 22);
-+	unsigned int second_level_entry = 0;
-+	unsigned long *second_level_table;
-+#endif
-+
-+	/*
-+	 * Now copy over any MMU pgd entries already in the mmu page tables
-+	 * over to our root init process (swapper_pg_dir) map.  This map is
-+	 * then inherited by all other processes, which means all processes
-+	 * inherit a map of the kernel space.
-+	 */
-+	addr = META_MEMORY_BASE;
-+	entry = pgd_index(META_MEMORY_BASE);
-+	p_swapper_pg_dir = pgd_offset_k(0) + entry;
-+
-+	while (entry < (PTRS_PER_PGD - pgd_index(META_MEMORY_BASE))) {
-+		unsigned long pgd_entry;
-+		/* copy over the current MMU value */
-+		pgd_entry = mmu_read_first_level_page(addr);
-+		pgd_val(*p_swapper_pg_dir) = pgd_entry;
-+
-+		p_swapper_pg_dir++;
-+		addr += PGDIR_SIZE;
-+		entry++;
-+	}
-+
-+#ifdef CONFIG_KERNEL_4M_PAGES
-+	/*
-+	 * At this point we can also map the kernel with 4MB pages to
-+	 * reduce TLB pressure.
-+	 */
-+	second_level_table = alloc_bootmem_pages(SECOND_LEVEL_ALIGN * pages);
-+
-+	addr = PAGE_OFFSET;
-+	entry = pgd_index(PAGE_OFFSET);
-+	p_swapper_pg_dir = pgd_offset_k(0) + entry;
-+
-+	while (pages > 0) {
-+		unsigned long phys_addr, second_level_phys;
-+		pte_t *pte = (pte_t *)&second_level_table[second_level_entry];
-+
-+		phys_addr = __pa(addr);
-+
-+		second_level_phys = __pa(pte);
-+
-+		pgd_val(*p_swapper_pg_dir) = ((second_level_phys &
-+					       FIRST_LEVEL_MASK) |
-+					      _PAGE_SZ_4M |
-+					      _PAGE_PRESENT);
-+
-+		pte_val(*pte) = ((phys_addr & SECOND_LEVEL_MASK) |
-+				 _PAGE_PRESENT | _PAGE_DIRTY |
-+				 _PAGE_ACCESSED | _PAGE_WRITE |
-+				 _PAGE_CACHEABLE | _PAGE_KERNEL);
-+
-+		p_swapper_pg_dir++;
-+		addr += PGDIR_SIZE;
-+		/* Second level pages must be 64byte aligned. */
-+		second_level_entry += (SECOND_LEVEL_ALIGN /
-+				       sizeof(unsigned long));
-+		pages--;
-+	}
-+	load_pgd(swapper_pg_dir, hard_processor_id());
-+	flush_tlb_all();
-+#endif
-+
-+	repriv_mmu_tables();
-+	register_syscore_ops(&mmu_syscore_ops);
-+}
++#endif /* _ASM_METAG_MEM_H_ */
 -- 
 1.7.7.6
 
