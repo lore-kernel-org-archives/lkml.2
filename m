@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552Ab2LENk1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 08:40:27 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:49125 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752119Ab2LENkY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 08:40:24 -0500
-From: Federico Vaga <federico.vaga@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Pawel Osciak <pawel@osciak.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: Re: [PATCH v3 3/4] sta2x11_vip: convert to videobuf2 and control framework
-Date: Wed, 05 Dec 2012 14:45:01 +0100
-Message-ID: <7613127.WGiHT7h3dc@harkonnen>
-User-Agent: KMail/4.9.3 (Linux/3.6.8-2.fc17.x86_64; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <50BF4E25.3010207@redhat.com>
-References: <1348484332-8106-1-git-send-email-federico.vaga@gmail.com> <1773237.zC2M0dmkYp@harkonnen> <50BF4E25.3010207@redhat.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1753165Ab2LENk0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 08:40:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42067 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751648Ab2LENkX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 08:40:23 -0500
+From: Jan Kara <jack@suse.cz>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>, stable@vger.kernel.org
+Subject: [PATCH] fs: Fix imbalance in freeze protection in mark_files_ro()
+Date: Wed,  5 Dec 2012 14:40:14 +0100
+Message-Id: <1354714814-7492-1-git-send-email-jack@suse.cz>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Not sure if you got my point: the main point of removing MODULE_AUTHOR
-> and other copyright stuff is that such patch may easily be doing something
-> that could be considered a copyright violation, being bad not only to
-> the affected driver, but to the entire Kernel.
-> 
-> So, we need to handle it with due care. Getting other authors's
-> acks on such patch seems to be the only safe way of doing that.
+File descriptors (even those for writing) do not hold freeze protection.
+Thus mark_files_ro() must call __mnt_drop_write() to only drop protection
+against remount read-only. Calling mnt_drop_write_file() as we do now
+results in:
 
-Yes I got the point.
+[ BUG: bad unlock balance detected! ]
+3.7.0-rc6-00028-g88e75b6 #101 Not tainted
+-------------------------------------
+kworker/1:2/79 is trying to release lock (sb_writers) at:
+[<ffffffff811b33b4>] mnt_drop_write+0x24/0x30
+but there are no more locks to release!
 
-Thank you
+Reported-by: Zdenek Kabelac <zkabelac@redhat.com>
+CC: stable@vger.kernel.org
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ fs/file_table.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+  Umm, this got lost for some reason...
+
+diff --git a/fs/file_table.c b/fs/file_table.c
+index a72bf9d..de9e965 100644
+--- a/fs/file_table.c
++++ b/fs/file_table.c
+@@ -458,8 +458,8 @@ void mark_files_ro(struct super_block *sb)
+ 		spin_unlock(&f->f_lock);
+ 		if (file_check_writeable(f) != 0)
+ 			continue;
++		__mnt_drop_write(f->f_path.mnt);
+ 		file_release_write(f);
+-		mnt_drop_write_file(f);
+ 	} while_file_list_for_each_entry;
+ 	lg_global_unlock(&files_lglock);
+ }
 -- 
-Federico Vaga
+1.7.1
+
