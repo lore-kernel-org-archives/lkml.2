@@ -1,125 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127Ab2LEWUw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 17:20:52 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35181 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753867Ab2LEWUt (ORCPT
+	id S932138Ab2LEWWB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 17:22:01 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:35108 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753733Ab2LEWV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 17:20:49 -0500
-Date: Wed, 5 Dec 2012 16:20:40 -0600
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        "Andrew G. Morgan" <morgan@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@redhat.com>,
-        "Serge E. Hallyn" <serge@canonical.com>,
-        Markku Savela <msa@moth.iki.fi>
-Subject: Re: [RFC] Capabilities still can't be inherited by normal programs
-Message-ID: <20121205222040.GB14884@sergelap>
-References: <CALQRfL67LX5owxo=SMuRNAm1Jds53zY-moLpXE=wCTF4Epu4_w@mail.gmail.com>
- <CALCETrXyX2aYjbLRCpzp-h_CXBb=K7OWkO1b+tVTRz9LQQOzdQ@mail.gmail.com>
- <CALQRfL5EeqRFykLGVLJx3pfKdP4iF8r-8Ys7pVadOaCc3j1=iQ@mail.gmail.com>
- <CALCETrXYPjow3geVBnYK_ZOhnuU_wZkdebumJ=Hv3-T=fHaPNA@mail.gmail.com>
- <CALQRfL7e160D+vzVhT-fUS-_Yp55wqnWkRFJdDTOOVjjStd9Jw@mail.gmail.com>
- <CALCETrXUSz9EN-tGMfJkw9+1kO0hfmQk4E5XPF0cg9nmpPXepg@mail.gmail.com>
- <20121204135445.GA7420@mail.hallyn.com>
- <CALCETrW05JtRZSSJ0v=jz8B7_av1QS+D5qux5=q8aO3iWZHB1A@mail.gmail.com>
- <20121205210528.GA9047@sergelap>
- <CALCETrVsrJSt8oYnh+y32Lrxw6Yk=Cp_e07Qf=fLbVfORvzUNg@mail.gmail.com>
+	Wed, 5 Dec 2012 17:21:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrVsrJSt8oYnh+y32Lrxw6Yk=Cp_e07Qf=fLbVfORvzUNg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121205202254.GA25398@srcf.ucam.org>
+References: <1345739803-21017-1-git-send-email-mjg@redhat.com>
+ <CAErSpo6dn_0b8Ngx9VT=ARs_UXQftEx=2Kczeqemtmo0XyKzuQ@mail.gmail.com>
+ <20121203200241.GG5906@thinkpad-t410> <CAErSpo7S2+Vt+9bkGLx_=AY9aSGCvAnkHfqu01gTj=eKs7btNw@mail.gmail.com>
+ <20121205202254.GA25398@srcf.ucam.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 5 Dec 2012 15:21:35 -0700
+Message-ID: <CAErSpo7c5Ph+GufivPt2XFoTbRnAoLnNdZwcc69QMCFdavNJjA@mail.gmail.com>
+Subject: Re: Use PCI ROMs from EFI boot services
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-efi@vger.kernel.org, dwmw2@infradead.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Seth Forshee <seth.forshee@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Andy Lutomirski (luto@amacapital.net):
-> On Wed, Dec 5, 2012 at 1:05 PM, Serge Hallyn <serge.hallyn@canonical.com> wrote:
-> > Quoting Andy Lutomirski (luto@amacapital.net):
-> >> On Tue, Dec 4, 2012 at 5:54 AM, Serge E. Hallyn <serge@hallyn.com> wrote:
-> >> > Quoting Andy Lutomirski (luto@amacapital.net):
-> >> >> >> d) If I really wanted, I could emulate execve without actually doing
-> >> >> >> execve, and capabilities would be inherited.
-> >> >> >
-> >> >> > If you could modify the executable properties of the binary that has
-> >> >> > the privilege to wield a privilege then you are either exploiting an
-> >> >> > app bug, or doing something the privileged binary has been trusted to
-> >> >> > do.
-> >> >>
-> >> >> That's not what I mean.  I would:
-> >> >>
-> >> >> fork()
-> >> >> munmap everything
-> >> >> mmap ld.so
-> >> >> set up a fake initial stack and the right fd or mapping or whatever
-> >> >> just to ld-linux.so
-> >> >>
-> >> >> That's almost execve, and privilege inheritance works.
-> >> >
-> >> > But of course that is why you only want to fill fI on programs you trust
-> >> > not to do that.  What you are arguing is that you want to give fI on
-> >> > programs you don't trust anyway, and so heck why not just give it on
-> >> > everything.
-> >> >
-> >>
-> >> Huh?  I'd set fP on a program I expect to do *exactly* that (or use
-> >> actual in-kernel capability inheritance, which I would find vastly
-> >> more pleasant).  If I give a program a capability (via fP or fI & pI),
-> >> then I had better trust it not to abuse that capability.  Having it
-> >> pass that capability on to a child helper process would be just fine
-> >> with me *because it already has that capability*.
-> >>
-> >> The problem with the current inheritance mechanism is that it's very
-> >> difficult to understand what it means for an fI bit or a pI bit to be
-> >> set.  Saying "set a pI bit using pam if you want to grant permission
-> >> to that user to run a particular program with fI set" is crap -- it
-> >> only works if there is exactly one binary on the system with that bit
-> >> set.  In any case, a different administrator or package might use it
-> >> for something different.
-> >>
-> >> Suppose I use the (apparently) current suggested approach: I install a
-> >> fI=cap_net_raw copy of tcpdump somewhere.  Then I write a helper that
-> >> has fP=cap_new_raw and invokes that copy of tcpdump after appropriate
-> >> validation of parameters.  All is well.
-> >
-> > Since you're writing a special helper, you can surely have it validate
-> > the userid and make it so the calling user doesn't have to have
-> > cap_net_raw in pI?
-> 
-> I can and did.
+On Wed, Dec 5, 2012 at 1:22 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> On Wed, Dec 05, 2012 at 01:09:25PM -0700, Bjorn Helgaas wrote:
+>
+>> That's right; nobody stepped up to fix the section mismatch.  I'm
+>> happy to fold in your fix, especially if Matthew acks it.
+>
+> Yes, sorry, I've been way behind on pretty much everything for the past
+> few months. Please do add my Ack.
+>
+>> David, Eric, what about the kexec question?  It looks to me like this
+>> wouldn't make things worse than they are today.  If I understand
+>> correctly, today we don't use ROM data from EFI on either an initial
+>> boot or a kexec.  After this patch, we could use EFI ROM data on the
+>> initial boot, but not after a kexec.  So it's worse in the sense that
+>> the kexec case doesn't match the initial boot, but at least it's not
+>> something that used to work and is now broken.
+>
+> I think I'd agree here - it's not ideal, but it's no more broken than
+> the current situation.
 
-Oh, oops, I mis-understood what you meant was the problem.
+OK, I applied Seth's fix, added his Tested-by, and put this series in
+my -next branch.  I plan to merge it during the v3.8 merge window next
+week.
 
-Yup, that is a real limitation.
+Thanks!
 
-Yes, with the posix file caps you will be disappointed unless you see
-pI=X as "this user may run any program which is Inh-trusted with X" and
-fI=X as "this program may be run with X by any user Inh-trusted with X".
-
-It almost makes me want to say that there should be an execve-analogue
-to prctl(PR_SET_KEEPCAPS), which says caps will remain unchanged for one
-execve.  Or perhaps an intermediate securebits state between
-!SECBIT_NOROOT and SECBIT_NOROOT, which automatically transitions after
-the first execve to SECBIT_NOROOT.
-
-> The mere presence of a cap_net_raw+i tcpdump binary is more or less
-> equivalent to saying that users with cap_net_raw in pI can capture
-> packets.  I've just prevented pI=cap_net_raw from meaning anything
-> less than "can capture packets".  So I think we should bite the bullet
-> and just let programs opt in (via some appropriately careful
-> mechanism) to real capability inheritance.
-
-By real you mean more precise.  I think it'd be very interesting to get
-together with Markku and learn more from the N9 experiment!
-
-Markku, are there any post-mortem analysis papers we can read for
-starters?  Andy would not be trying to restrict root in general, so
-the ramification you cited may not necessarily be relevant.
-
--serge
+Bjorn
