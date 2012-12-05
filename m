@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753165Ab2LENk0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 08:40:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42067 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751648Ab2LENkX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 08:40:23 -0500
-From: Jan Kara <jack@suse.cz>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>, stable@vger.kernel.org
-Subject: [PATCH] fs: Fix imbalance in freeze protection in mark_files_ro()
-Date: Wed,  5 Dec 2012 14:40:14 +0100
-Message-Id: <1354714814-7492-1-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.7.1
+	id S1752617Ab2LEODK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 09:03:10 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:51151 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751669Ab2LEODI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 09:03:08 -0500
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>, Jean Delvare <khali@linux-fr.org>,
+        linux-input@vger.kernel.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/4] i2c-hid cleanup and bug fixes
+Date: Wed,  5 Dec 2012 15:02:52 +0100
+Message-Id: <1354716176-12558-1-git-send-email-benjamin.tissoires@gmail.com>
+X-Mailer: git-send-email 1.8.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-File descriptors (even those for writing) do not hold freeze protection.
-Thus mark_files_ro() must call __mnt_drop_write() to only drop protection
-against remount read-only. Calling mnt_drop_write_file() as we do now
-results in:
+Hi Jiri, Jean,
 
-[ BUG: bad unlock balance detected! ]
-3.7.0-rc6-00028-g88e75b6 #101 Not tainted
--------------------------------------
-kworker/1:2/79 is trying to release lock (sb_writers) at:
-[<ffffffff811b33b4>] mnt_drop_write+0x24/0x30
-but there are no more locks to release!
+This is the v2 of the cleanup of i2c-hid.
 
-Reported-by: Zdenek Kabelac <zkabelac@redhat.com>
-CC: stable@vger.kernel.org
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- fs/file_table.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Changes since v1:
+* patch 1: check if dsize < 4
+* patch 2: no changes
+* patch 3: fixed irq return path
+* patch 4: correct *_count handling (much more tested this time).
 
-  Umm, this got lost for some reason...
+Cheers,
+Benjamin
 
-diff --git a/fs/file_table.c b/fs/file_table.c
-index a72bf9d..de9e965 100644
---- a/fs/file_table.c
-+++ b/fs/file_table.c
-@@ -458,8 +458,8 @@ void mark_files_ro(struct super_block *sb)
- 		spin_unlock(&f->f_lock);
- 		if (file_check_writeable(f) != 0)
- 			continue;
-+		__mnt_drop_write(f->f_path.mnt);
- 		file_release_write(f);
--		mnt_drop_write_file(f);
- 	} while_file_list_for_each_entry;
- 	lg_global_unlock(&files_lglock);
- }
+Benjamin Tissoires (4):
+  HID: i2c-hid: fix memory corruption due to missing hid declaration
+  HID: i2c-hid: reorder allocation/free of buffers
+  HID: i2c-hid: remove extra .irq field in struct i2c_hid
+  HID: i2c-hid: fix i2c_hid_get_raw_report count mismatches
+
+ drivers/hid/i2c-hid/i2c-hid.c | 108 +++++++++++++++++++++---------------------
+ 1 file changed, 53 insertions(+), 55 deletions(-)
+
 -- 
-1.7.1
+1.8.0.1
 
