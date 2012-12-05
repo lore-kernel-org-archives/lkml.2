@@ -1,42 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470Ab2LEAig (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 19:38:36 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:39785 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752731Ab2LEAhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 19:37:50 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Len Brown <lenb@kernel.org>
-Subject: [PATCH 0/3] ACPI / PM: Export ACPI power states of devices via sysfs
-Date: Wed, 05 Dec 2012 01:39:26 +0100
-Message-ID: <1464990.iyrX0DeZyT@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc8; KDE/4.9.3; x86_64; ; )
+	id S1752510Ab2LEAzT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 19:55:19 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:63311 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751945Ab2LEAzQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 4 Dec 2012 19:55:16 -0500
+Date: Tue, 4 Dec 2012 16:55:13 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Ingo Molnar <mingo@kernel.org>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 20/52] mm, numa: Implement migrate-on-fault lazy NUMA
+ strategy for regular and THP pages
+In-Reply-To: <1354473824-19229-21-git-send-email-mingo@kernel.org>
+Message-ID: <alpine.DEB.2.00.1212041652240.13029@chino.kir.corp.google.com>
+References: <1354473824-19229-1-git-send-email-mingo@kernel.org> <1354473824-19229-21-git-send-email-mingo@kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+Commit "mm, numa: Implement migrate-on-fault lazy NUMA strategy for 
+regular and THP pages" breaks the build because HPAGE_PMD_SHIFT and 
+HPAGE_PMD_MASK defined to explode without CONFIG_TRANSPARENT_HUGEPAGE:
 
-In some situations it is very useful to know the current ACPI power states of
-devices.  For this reason, the following series of patches makes it possible
-to retrieve that information via sysfs.
+mm/migrate.c: In function 'migrate_misplaced_transhuge_page_put':
+mm/migrate.c:1549: error: call to '__build_bug_failed' declared with attribute error: BUILD_BUG failed
+mm/migrate.c:1564: error: call to '__build_bug_failed' declared with attribute error: BUILD_BUG failed
+mm/migrate.c:1566: error: call to '__build_bug_failed' declared with attribute error: BUILD_BUG failed
+mm/migrate.c:1573: error: call to '__build_bug_failed' declared with attribute error: BUILD_BUG failed
+mm/migrate.c:1606: error: call to '__build_bug_failed' declared with attribute error: BUILD_BUG failed
+mm/migrate.c:1648: error: call to '__build_bug_failed' declared with attribute error: BUILD_BUG failed
 
-Patches [1-2/3] are trivial function renames, patch [3/3] is the real thing.
+CONFIG_NUMA_BALANCING allows compilation without enabling transparent 
+hugepages, so define the dummy function for such a configuration and only 
+define migrate_misplaced_transhuge_page_put() when transparent hugepages 
+are enabled.
 
-The series is on top of the master branch of linux-pm.git.
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ include/linux/migrate.h |   18 +++++++++++-------
+ mm/migrate.c            |    3 +++
+ 2 files changed, 14 insertions(+), 7 deletions(-)
 
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+diff --git a/include/linux/migrate.h b/include/linux/migrate.h
+--- a/include/linux/migrate.h
++++ b/include/linux/migrate.h
+@@ -78,12 +78,6 @@ static inline int migrate_huge_page_move_mapping(struct address_space *mapping,
+ #ifdef CONFIG_NUMA_BALANCING
+ extern bool migrate_balanced_pgdat(struct pglist_data *pgdat, int nr_migrate_pages);
+ extern int migrate_misplaced_page_put(struct page *page, int node);
+-extern int migrate_misplaced_transhuge_page_put(struct mm_struct *mm,
+-			struct vm_area_struct *vma,
+-			pmd_t *pmd, pmd_t entry,
+-			unsigned long address,
+-			struct page *page, int node);
+-
+ #else
+ static inline bool migrate_balanced_pgdat(struct pglist_data *pgdat, int nr_migrate_pages)
+ {
+@@ -93,6 +87,16 @@ static inline int migrate_misplaced_page_put(struct page *page, int node)
+ {
+ 	return -EAGAIN; /* can't migrate now */
+ }
++#endif /* CONFIG_NUMA_BALANCING */
++
++#if defined(CONFIG_NUMA_BALANCING) && defined(CONFIG_TRANSPARENT_HUGEPAGE)
++extern int migrate_misplaced_transhuge_page_put(struct mm_struct *mm,
++			struct vm_area_struct *vma,
++			pmd_t *pmd, pmd_t entry,
++			unsigned long address,
++			struct page *page, int node);
++
++#else
+ static inline int migrate_misplaced_transhuge_page_put(struct mm_struct *mm,
+ 			struct vm_area_struct *vma,
+ 			pmd_t *pmd, pmd_t entry,
+@@ -101,6 +105,6 @@ static inline int migrate_misplaced_transhuge_page_put(struct mm_struct *mm,
+ {
+ 	return -EAGAIN;
+ }
+-#endif /* CONFIG_NUMA_BALANCING */
++#endif /* CONFIG_NUMA_BALANCING && CONFIG_TRANSPARENT_HUGEPAGE */
+ 
+ #endif /* _LINUX_MIGRATE_H */
+diff --git a/mm/migrate.c b/mm/migrate.c
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -1540,6 +1540,7 @@ out:
+ 	return isolated;
+ }
+ 
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ int migrate_misplaced_transhuge_page_put(struct mm_struct *mm,
+ 				struct vm_area_struct *vma,
+ 				pmd_t *pmd, pmd_t entry,
+@@ -1653,6 +1654,8 @@ out_dropref:
+ out_keep_locked:
+ 	return 0;
+ }
++#endif /* CONFIG_TRANSPARENT_HUGEPAGE */
++
+ #endif /* CONFIG_NUMA_BALANCING */
+ 
+ #endif /* CONFIG_NUMA */
