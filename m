@@ -1,186 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623Ab2LEXK5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 18:10:57 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:50650 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754143Ab2LEXKz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 18:10:55 -0500
-Date: Wed, 5 Dec 2012 17:09:41 -0600
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: Peter =?iso-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>
-Cc: Mathias LEBLANC <Mathias.LEBLANC@st.com>,
-        Jean-Luc BLANC <jean-luc.blanc@st.com>,
-        "Sirrix@jasper.es" <Sirrix@jasper.es>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rajiv Andrade <mail@srajiv.net>,
-        "tpmdd-devel@lists.sourceforge.net" 
-	<tpmdd-devel@lists.sourceforge.net>,
-        Kent Yoder <shpedoikal@gmail.com>
-Subject: Re: [tpmdd-devel] [PATCH 1/1] TPM: STMicroelectronics ST33 I2C
- KERNEL 3.x.x
-Message-ID: <20121205230941.GA30394@ennui.austin.ibm.com>
-References: <1353363322-2923-1-git-send-email-mathias.leblanc@st.com>
- <20121205174527.GF21050@ennui.austin.ibm.com>
- <20121205180720.GG21050@ennui.austin.ibm.com>
- <201212052214.48840.PeterHuewe@gmx.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201212052214.48840.PeterHuewe@gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12120523-5806-0000-0000-00001C996523
+	id S1754648Ab2LEXRO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 18:17:14 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:45873 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751980Ab2LEXRM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 18:17:12 -0500
+Date: Thu, 6 Dec 2012 10:17:03 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: linux-next: manual merge of the arm64 tree with Linus' tree
+Message-Id: <20121206101703.6f2625b08d8e1a0640f04c40@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__6_Dec_2012_10_17_03_+1100_lQr==KfINQH+CWL_"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 05, 2012 at 10:14:48PM +0100, Peter Hüwe wrote:
-> Hi Kent, Matthias,
-> 
-> Am Mittwoch, 5. Dezember 2012, 19:07:20 schrieb Kent Yoder:
-> >   Heh, duh, well of course it is. I've now staged everything I'm
-> > planning on pushing at:
-> > 
-> > git://github.com/shpedoikal/linux.git tpmdd-12-05-12
-> > 
-> > Please test and let me know if I missed anything.
-> 
-> 
-> I just checked out your commit from github.
-> 
-> Here's a part of the review:
-> 
-> Smatch still complains a bit, sparse is fine.:
-> 
->  make -C /data/data-old/linux-2.6/ M=`pwd` C=1 CHECK=smatch modules
-> make: Entering directory `/data/data-old/linux-2.6'
->   CHECK   /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c
-> /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c:535 tpm_stm_i2c_recv() warn: variable dereferenced before check 'chip' (see line 531)
-> /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c:748 tpm_st33_i2c_probe() warn: variable dereferenced before check 'platform_data' (see line 659)
-> /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c:848 tpm_st33_i2c_pm_resume() warn: should this be a bitwise op?
-> /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.c:848 tpm_st33_i2c_pm_resume() warn: should this be a bitwise op?
->   CC [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.o
->   Building modules, stage 2.
->   MODPOST 6 modules
->   LD [M]  /data/data-old/linux-2.6/drivers/char/tpm/tpm_stm_st33_i2c.ko
-> make: Leaving directory `/data/data-old/linux-2.6'
-> 
-> Please check.
-> 
-> 
-> (maybe also fix the checkpatch -strict stuff as well? Would be nice ;)
-> 
-> 
-> 
-> 
-> 
-> drivers/char/tpm/tpm_stm_st33_i2c.h 
-> - Does the driver really need a seperate headerfile in drivers/char/tpm/ ? for me it seems everything can be included into the c-file.
-> 
-> > struct st_tpm_hash {
-> >	int size;
-> >	u8 *data;
-> > };
-> is unused - please remove.
-> 
-> > #define MINOR_NUM_I2C		224
-> Please remove, it's unused and if you really need it use the one from tpm.h
-> 
-> include/linux/i2c/tpm_stm_st33_i2c.h
-> I'm not sure if this is needed publicly? Or does only your driver need this?
-> 
-> >struct st33zp24_platform_data {
-> Telling from the name I have no idea what this device is.
-> 
-> 
-> 
-> 
-> 
-> drivers/char/tpm/tpm_stm_st33_i2c.c
-> 
-> >enum stm33zp24_int_flags {
-> >	TPM_GLOBAL_INT_ENABLE = 0x80,
-> >	TPM_INTF_CMD_READY_INT = 0x080,
-> >	TPM_INTF_FIFO_AVALAIBLE_INT = 0x040,
-> >	TPM_INTF_WAKE_UP_READY_INT = 0x020,
-> >	TPM_INTF_LOCALITY_CHANGE_INT = 0x004,
-> >	TPM_INTF_STS_VALID_INT = 0x002,
-> >	TPM_INTF_DATA_AVAIL_INT = 0x001,
-> >};
-> 
-> Why the leading zeros? please remove.
-> 
-> 
-> > static int tpm_st33_i2c_pm_suspend(struct i2c_client *client, pm_message_t mesg)
-> >...
-> > static int tpm_st33_i2c_pm_resume(struct i2c_client *client)
-> >,,,
-> >static struct i2c_driver tpm_st33_i2c_driver = {
-> >	.driver = {
-> >		   .owner = THIS_MODULE,
-> >		   .name = TPM_ST33_I2C,
-> >		   },
-> >	.probe = tpm_st33_i2c_probe,
-> >	.remove = tpm_st33_i2c_remove,
-> >	.resume = tpm_st33_i2c_pm_resume,
-> >	.suspend = tpm_st33_i2c_pm_suspend,
-> >	.id_table = tpm_st33_i2c_id
-> >};
-> 
-> Please convert resume/suspend  to .driver.pm 
-> 
-> It's pretty easy.
-> See this post  for details
-> http://sourceforge.net/mailarchive/message.php?msg_id=29516784
-> Rafael did spent quite a lot of effort to convert almost every driver back then, so we should 'fix' new ones.
+--Signature=_Thu__6_Dec_2012_10_17_03_+1100_lQr==KfINQH+CWL_
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Not sure how easy this will be considering these routines are
-i2c-specific -- they don't just call the tpm_tpm_* functions like the
-other drivers.
+Hi Catalin,
 
-Anyway, I left this off but I believe I've fixed up the other major
-issues. We can leave the more nit-picky stuff for another day.
+Today's linux-next merge of the arm64 tree got a conflict in
+arch/arm64/include/asm/unistd32.h between commit 9d73fc2d641f ("open*(2)
+compat fixes (s390, arm64)") from Linus' tree and commit 18a80376ddb0
+("arm64: compat for clock_adjtime(2) is miswired") from the arm64 tree.
 
-Please test:
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-git://github.com/shpedoikal/linux.git tpmdd-12-06-12
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Kent
+diff --cc arch/arm64/include/asm/unistd32.h
+index 656a6f2,e067f9d..0000000
+--- a/arch/arm64/include/asm/unistd32.h
++++ b/arch/arm64/include/asm/unistd32.h
+@@@ -392,8 -392,8 +392,8 @@@ __SYSCALL(367, sys_fanotify_init
+  __SYSCALL(368, compat_sys_fanotify_mark_wrapper)
+  __SYSCALL(369, sys_prlimit64)
+  __SYSCALL(370, sys_name_to_handle_at)
+ -__SYSCALL(371, sys_open_by_handle_at)
+ +__SYSCALL(371, compat_sys_open_by_handle_at)
+- __SYSCALL(372, sys_clock_adjtime)
++ __SYSCALL(372, compat_sys_clock_adjtime)
+  __SYSCALL(373, sys_syncfs)
+ =20
+  #define __NR_compat_syscalls		374
 
-> 
-> 
-> > /*
-> >  * tpm_st33_i2c_init initialize driver
-> >  * @return: 0 if successful, else non zero value.
-> >  */
-> > static int __init tpm_st33_i2c_init(void)
-> > {
-> > 	return i2c_add_driver(&tpm_st33_i2c_driver);
-> > }
-> > 
-> > /*
-> >  * tpm_st33_i2c_exit The kernel calls this function during unloading the
-> >  * module or during shut down process
-> >  */
-> > static void __exit tpm_st33_i2c_exit(void)
-> > {
-> > 	i2c_del_driver(&tpm_st33_i2c_driver);
-> > }
-> > 
-> > module_init(tpm_st33_i2c_init);
-> > module_exit(tpm_st33_i2c_exit);
-> 
-> Hooray for oneliners ;)
-> + module_i2c_driver(tpm_st33_i2c_driver);
-> 
-> 
-> 
-> Keep on hacking ;)
-> 
-> Thanks,
-> PeterH
-> 
-> 
+--Signature=_Thu__6_Dec_2012_10_17_03_+1100_lQr==KfINQH+CWL_
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQv9XvAAoJEECxmPOUX5FECsUP/A6Gxpo9Ft9Ecq9LsHnpCaG0
+i10VTh7Oe2JwbsUCa5b+85OYmmsLIpk7ZgPA8QSpzHEin3PwqifUdjJdOD3mwV2v
+MtxSvPhOv8XmxHwV2oCzQqYjprcoK129R1fO4uTd22emJYSW10HXP/73VGLRRzVG
+RCASp8Jhro14rEfS0icr7/lk5GZ8iinUYEwmKdjGzNouUkHTjlkqp1v8GXqN+ziV
+XNy21JnEkw9huWul60f0Mgk5Y9PardTHwEVgTunoFRntpBrh+FltxOLA/SVKdtxG
+jRTeFEZg4mXyqGX8aOJWVqdItBehD3NGcjplVQrEnkx8BgKfMj5c2iIVF3vUG7v5
+mSRLc3eIg8Ra7nJgmhOhV7LP58Ynvkxn9v2N39sSFdswnpmLz5fs7Ff69lpuFDdm
+AfzVVYsArrNDZdz/TZHRLqhwh9mIU2Bm04u2hnVgXSnZ1A6V3DKKaqki2c8WVkM/
+BZ7Q1ABJvAJF1DeGcfv8xCVzBVSaVCnBm0IPo8EA/o6suplPKDgrWYJOCT1AqBkw
+dA4rDteGl1WAtjAP0OabGBgVv40TcaEnB66qedHsQGObWJjB+fW+dATUD/El64cr
+Ca7nIpYdXsDiXge2BFcsYf94zVErmi4J3yitEQ8fy3vIKb4fYR89AmlaPPcS/wit
+zwz5EsIwoQsqzueW4PU2
+=lYgA
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__6_Dec_2012_10_17_03_+1100_lQr==KfINQH+CWL_--
