@@ -1,219 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322Ab2LESoC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 13:44:02 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22838 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752516Ab2LESoA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 13:44:00 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Jens Axboe <jaxboe@fusionio.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Cc: Zach Brown <zab@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        jeder@redhat.com
-Subject: [patch,v3] bdi: add a user-tunable cpu_list for the bdi flusher threads
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 05 Dec 2012 13:43:45 -0500
-Message-ID: <x49ip8g9w66.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1753506Ab2LESoW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 13:44:22 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:32900 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752787Ab2LESoU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 13:44:20 -0500
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Subject: [RFC PATCH v2 00/10][RESEND] CPU hotplug: stop_machine()-free CPU
+ hotplug
+To: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
+        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
+        oleg@redhat.com
+Cc: sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org, rjw@sisk.pl,
+        srivatsa.bhat@linux.vnet.ibm.com, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 06 Dec 2012 00:12:50 +0530
+Message-ID: <20121205184041.3750.64945.stgit@srivatsabhat.in.ibm.com>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12120518-9574-0000-0000-000005A0A490
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In realtime environments, it may be desirable to keep the per-bdi
-flusher threads from running on certain cpus.  This patch adds a
-cpu_list file to /sys/class/bdi/* to enable this.  The default is to tie
-the flusher threads to the same numa node as the backing device (though
-I could be convinced to make it a mask of all cpus to avoid a change in
-behaviour).
+[Resending because I forgot to CC lkml last time. Please send your replies to
+this thread instead of the previous (non-public) one. Sorry for the trouble!]
 
-Thanks to Jeremy Eder for the original idea.
+Hi,
 
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+This patchset removes CPU hotplug's dependence on stop_machine() from the CPU
+offline path and provides an alternative (set of APIs) to preempt_disable() to
+prevent CPUs from going offline, which can be invoked from atomic context.
+
+This is an RFC patchset with only a few call-sites of preempt_disable()
+converted to the new APIs for now, and the main goal is to get feedback on the
+design of the new atomic APIs and see if it serves as a viable replacement for
+stop_machine()-free CPU hotplug.
+
+Overview of the patches:
+-----------------------
+
+Patch 1 introduces the new APIs that can be used from atomic context, to
+prevent CPUs from going offline. This set of APIs is for "light" atomic
+hotplug readers (the term "light" is explained in the changelog/comments).
+
+Patch 2 introduces the new APIs for "full" atomic hotplug readers.
+
+Patch 3 is a cleanup; it converts preprocessor macros to static inline
+functions.
+
+Patches 4 to 9 convert various call-sites to use the new APIs.
+(Patches 4 to 8 deal with "light" readers, patch 9 deals with a "full"
+reader. Together, they demonstrate how to use these APIs effectively).
+
+Patch 10 is the one which actually removes stop_machine() from the CPU
+offline path.
+
+
+Changes in v2:
+-------------
+* Completely redesigned the synchronization scheme to avoid using any extra
+  cpumasks.
+
+* Provided APIs for 2 types of atomic hotplug readers: "light" (for
+  light-weight) and "full". We wish to have more "light" readers than
+  the "full" ones, to avoid indirectly inducing the "stop_machine effect"
+  without even actually using stop_machine().
+
+  And the patches show that it _is_ generally true: 5 patches deal with
+  "light" readers, whereas only 1 patch deals with a "full" reader.
+
+  Also, the "light" readers happen to be in very hot paths. So it makes a
+  lot of sense to have such a distinction and a corresponding light-weight
+  API.
+
+v1: https://lkml.org/lkml/2012/12/4/88
+
+Comments and suggestions welcome!
 
 --
-changes from v2->v3:
-- expanded the mutex coverage to include set_cpus_allowed
-- use spin_lock_bh for bdi->wb_lock
-- changed the name of the mutex
+ Paul E. McKenney (1):
+      cpu: No more __stop_machine() in _cpu_down()
 
-changes from v1->v2:
-- fixed missing free in error path of bdi_init
-- fixed up unchecked references to task in the store function
+Srivatsa S. Bhat (9):
+      CPU hotplug: Provide APIs for "light" atomic readers to prevent CPU offline
+      CPU hotplug: Provide APIs for "full" atomic readers to prevent CPU offline
+      CPU hotplug: Convert preprocessor macros to static inline functions
+      smp, cpu hotplug: Fix smp_call_function_*() to prevent CPU offline properly
+      smp, cpu hotplug: Fix on_each_cpu_*() to prevent CPU offline properly
+      sched, cpu hotplug: Use stable online cpus in try_to_wake_up() & select_task_rq()
+      kick_process(), cpu-hotplug: Prevent offlining of target CPU properly
+      yield_to(), cpu-hotplug: Prevent offlining of other CPUs properly
+      kvm, vmx: Add full atomic synchronization with CPU Hotplug
 
-diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
-index 2a9a9ab..238521a 100644
---- a/include/linux/backing-dev.h
-+++ b/include/linux/backing-dev.h
-@@ -18,6 +18,7 @@
- #include <linux/writeback.h>
- #include <linux/atomic.h>
- #include <linux/sysctl.h>
-+#include <linux/mutex.h>
- 
- struct page;
- struct device;
-@@ -105,6 +106,9 @@ struct backing_dev_info {
- 
- 	struct timer_list laptop_mode_wb_timer;
- 
-+	cpumask_t *flusher_cpumask; /* used for writeback thread scheduling */
-+	struct mutex flusher_cpumask_lock;
-+
- #ifdef CONFIG_DEBUG_FS
- 	struct dentry *debug_dir;
- 	struct dentry *debug_stats;
-diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index d3ca2b3..bd6a6ca 100644
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -10,6 +10,7 @@
- #include <linux/module.h>
- #include <linux/writeback.h>
- #include <linux/device.h>
-+#include <linux/slab.h>
- #include <trace/events/writeback.h>
- 
- static atomic_long_t bdi_seq = ATOMIC_LONG_INIT(0);
-@@ -221,12 +222,63 @@ static ssize_t max_ratio_store(struct device *dev,
- }
- BDI_SHOW(max_ratio, bdi->max_ratio)
- 
-+static ssize_t cpu_list_store(struct device *dev,
-+		struct device_attribute *attr, const char *buf, size_t count)
-+{
-+	struct backing_dev_info *bdi = dev_get_drvdata(dev);
-+	struct bdi_writeback *wb = &bdi->wb;
-+	cpumask_var_t newmask;
-+	ssize_t ret;
-+	struct task_struct *task;
-+
-+	if (!alloc_cpumask_var(&newmask, GFP_KERNEL))
-+		return -ENOMEM;
-+
-+	ret = cpulist_parse(buf, newmask);
-+	if (!ret) {
-+		spin_lock_bh(&bdi->wb_lock);
-+		task = wb->task;
-+		if (task)
-+			get_task_struct(task);
-+		spin_unlock_bh(&bdi->wb_lock);
-+
-+		mutex_lock(&bdi->flusher_cpumask_lock);
-+		if (task) {
-+			ret = set_cpus_allowed_ptr(task, newmask);
-+			put_task_struct(task);
-+		}
-+		if (ret == 0) {
-+			cpumask_copy(bdi->flusher_cpumask, newmask);
-+			ret = count;
-+		}
-+		mutex_unlock(&bdi->flusher_cpumask_lock);
-+
-+	}
-+	free_cpumask_var(newmask);
-+
-+	return ret;
-+}
-+
-+static ssize_t cpu_list_show(struct device *dev,
-+		struct device_attribute *attr, char *page)
-+{
-+	struct backing_dev_info *bdi = dev_get_drvdata(dev);
-+	ssize_t ret;
-+
-+	mutex_lock(&bdi->flusher_cpumask_lock);
-+	ret = cpulist_scnprintf(page, PAGE_SIZE-1, bdi->flusher_cpumask);
-+	mutex_unlock(&bdi->flusher_cpumask_lock);
-+
-+	return ret;
-+}
-+
- #define __ATTR_RW(attr) __ATTR(attr, 0644, attr##_show, attr##_store)
- 
- static struct device_attribute bdi_dev_attrs[] = {
- 	__ATTR_RW(read_ahead_kb),
- 	__ATTR_RW(min_ratio),
- 	__ATTR_RW(max_ratio),
-+	__ATTR_RW(cpu_list),
- 	__ATTR_NULL,
- };
- 
-@@ -428,6 +480,7 @@ static int bdi_forker_thread(void *ptr)
- 				writeback_inodes_wb(&bdi->wb, 1024,
- 						    WB_REASON_FORKER_THREAD);
- 			} else {
-+				int ret;
- 				/*
- 				 * The spinlock makes sure we do not lose
- 				 * wake-ups when racing with 'bdi_queue_work()'.
-@@ -437,6 +490,14 @@ static int bdi_forker_thread(void *ptr)
- 				spin_lock_bh(&bdi->wb_lock);
- 				bdi->wb.task = task;
- 				spin_unlock_bh(&bdi->wb_lock);
-+				mutex_lock(&bdi->flusher_cpumask_lock);
-+				ret = set_cpus_allowed_ptr(task,
-+							bdi->flusher_cpumask);
-+				mutex_unlock(&bdi->flusher_cpumask_lock);
-+				if (ret)
-+					printk_once("%s: failed to bind flusher"
-+						    " thread %s, error %d\n",
-+						    __func__, task->comm, ret);
- 				wake_up_process(task);
- 			}
- 			bdi_clear_pending(bdi);
-@@ -509,6 +570,17 @@ int bdi_register(struct backing_dev_info *bdi, struct device *parent,
- 						dev_name(dev));
- 		if (IS_ERR(wb->task))
- 			return PTR_ERR(wb->task);
-+	} else {
-+		int node;
-+		/*
-+		 * Set up a default cpumask for the flusher threads that
-+		 * includes all cpus on the same numa node as the device.
-+		 * The mask may be overridden via sysfs.
-+		 */
-+		node = dev_to_node(bdi->dev);
-+		if (node != NUMA_NO_NODE)
-+			cpumask_copy(bdi->flusher_cpumask,
-+				     cpumask_of_node(node));
- 	}
- 
- 	bdi_debug_register(bdi, dev_name(dev));
-@@ -634,6 +706,15 @@ int bdi_init(struct backing_dev_info *bdi)
- 
- 	bdi_wb_init(&bdi->wb, bdi);
- 
-+	if (!bdi_cap_flush_forker(bdi)) {
-+		bdi->flusher_cpumask = kmalloc(sizeof(cpumask_t), GFP_KERNEL);
-+		if (!bdi->flusher_cpumask)
-+			return -ENOMEM;
-+		cpumask_setall(bdi->flusher_cpumask);
-+		mutex_init(&bdi->flusher_cpumask_lock);
-+	} else
-+		bdi->flusher_cpumask = NULL;
-+
- 	for (i = 0; i < NR_BDI_STAT_ITEMS; i++) {
- 		err = percpu_counter_init(&bdi->bdi_stat[i], 0);
- 		if (err)
-@@ -656,6 +737,7 @@ int bdi_init(struct backing_dev_info *bdi)
- err:
- 		while (i--)
- 			percpu_counter_destroy(&bdi->bdi_stat[i]);
-+		kfree(bdi->flusher_cpumask);
- 	}
- 
- 	return err;
-@@ -683,6 +765,8 @@ void bdi_destroy(struct backing_dev_info *bdi)
- 
- 	bdi_unregister(bdi);
- 
-+	kfree(bdi->flusher_cpumask);
-+
- 	/*
- 	 * If bdi_unregister() had already been called earlier, the
- 	 * wakeup_timer could still be armed because bdi_prune_sb()
+
+  arch/x86/kvm/vmx.c  |    8 ++-
+ include/linux/cpu.h |   12 ++++-
+ kernel/cpu.c        |  136 ++++++++++++++++++++++++++++++++++++++++++++++++++-
+ kernel/sched/core.c |   22 +++++++-
+ kernel/smp.c        |   64 +++++++++++++++---------
+ 5 files changed, 210 insertions(+), 32 deletions(-)
+
+
+
+Thanks,
+Srivatsa S. Bhat
+IBM Linux Technology Center
+
