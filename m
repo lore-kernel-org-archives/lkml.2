@@ -1,85 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753543Ab2LEUJt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 15:09:49 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:56806 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751869Ab2LEUJr (ORCPT
+	id S1753842Ab2LEULJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 15:11:09 -0500
+Received: from smtprelay-h31.telenor.se ([213.150.131.4]:50504 "EHLO
+	smtprelay-h31.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751989Ab2LEULH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 15:09:47 -0500
+	Wed, 5 Dec 2012 15:11:07 -0500
+X-SENDER-IP: [85.230.168.206]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvZeAJapv1BV5qjOPGdsb2JhbABEhW0BhQCzNxcDAQEBATg0gh4BAQQBOhwjBQsIA0YUJQoaE4gKCsJQFJADYQOWAoV7jUA
+X-IronPort-AV: E=Sophos;i="4.83,380,1352070000"; 
+   d="scan'208";a="458794689"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Wed, 5 Dec 2012 21:13:07 +0100
+To: Kamal Mostafa <kamal@canonical.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Dudley Du <dudl@cypress.com>, David Solda <dso@cypress.com>,
+        Troy Abercrombia <ta@cypress.com>,
+        Kyle Fazzari <git@status.e4ward.com>,
+        Mario Limonciello <mario_limonciello@dell.com>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Herton Krzesinski <herton.krzesinski@canonical.com>
+Subject: Re: [PATCH v4 4/4] input: Cypress PS/2 Trackpad simulated multitouch
+ (disabled)
+Message-ID: <20121205201307.GA1357@polaris.bitmath.org>
+References: <1354674245-25768-1-git-send-email-kamal@canonical.com>
+ <1354674245-25768-5-git-send-email-kamal@canonical.com>
 MIME-Version: 1.0
-In-Reply-To: <20121203200241.GG5906@thinkpad-t410>
-References: <1345739803-21017-1-git-send-email-mjg@redhat.com>
- <CAErSpo6dn_0b8Ngx9VT=ARs_UXQftEx=2Kczeqemtmo0XyKzuQ@mail.gmail.com> <20121203200241.GG5906@thinkpad-t410>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 5 Dec 2012 13:09:25 -0700
-Message-ID: <CAErSpo7S2+Vt+9bkGLx_=AY9aSGCvAnkHfqu01gTj=eKs7btNw@mail.gmail.com>
-Subject: Re: Use PCI ROMs from EFI boot services
-To: Bjorn Helgaas <bhelgaas@google.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-efi@vger.kernel.org, mfleming@intel.com, dwmw2@infradead.org
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354674245-25768-5-git-send-email-kamal@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 3, 2012 at 1:02 PM, Seth Forshee <seth.forshee@canonical.com> wrote:
-> On Thu, Oct 25, 2012 at 11:35:57AM -0600, Bjorn Helgaas wrote:
->> On Thu, Aug 23, 2012 at 10:36 AM, Matthew Garrett <mjg@redhat.com> wrote:
->> > V3 just fixes all the casting issues and incorporates David's change in
->> > search ordering.
->>
->> I think there's still a section mismatch issue with these patches, so
->> I haven't merged them yet.
->>
->> I rebased my pci/mjg-pci-roms-from-efi branch to v3.7-rc2, and if we
->> get this issue fixed I'll put it in -next as v3.8 material.
->
-> I still don't see this series in -next, so I take it the section
-> mismatch was never fixed? How about the following?
+Hi Kamal,
 
-That's right; nobody stepped up to fix the section mismatch.  I'm
-happy to fold in your fix, especially if Matthew acks it.
-
-David, Eric, what about the kexec question?  It looks to me like this
-wouldn't make things worse than they are today.  If I understand
-correctly, today we don't use ROM data from EFI on either an initial
-boot or a kexec.  After this patch, we could use EFI ROM data on the
-initial boot, but not after a kexec.  So it's worse in the sense that
-the kexec case doesn't match the initial boot, but at least it's not
-something that used to work and is now broken.
-
-> From ece31852159a6b2cf9a059031638354e9817a6a6 Mon Sep 17 00:00:00 2001
-> From: Seth Forshee <seth.forshee@canonical.com>
-> Date: Mon, 3 Dec 2012 13:55:50 -0600
-> Subject: [PATCH] x86: Don't discard boot_params
->
-> boot_params is now used at runtime on EFI systems to stash option ROMs
-> that aren't available after exiting boot services, so it can no longer
-> be marked __initdata.
->
-> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+> This feature is disabled by default; enable with CYPRESS_SIMULATED_MT.
+> 
+> Instead of SEMI_MT, present a full mt interface with simulated contact
+> positions for >=3 fingers.  Enables e.g. multi-finger tap and drag for
+> old userspace applications which only count the contact positions.
+> 
+> Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 > ---
->  arch/x86/kernel/setup.c |    4 ----
->  1 file changed, 4 deletions(-)
->
-> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-> index 468e98d..6e13035 100644
-> --- a/arch/x86/kernel/setup.c
-> +++ b/arch/x86/kernel/setup.c
-> @@ -143,11 +143,7 @@ int default_check_phys_apicid_present(int phys_apicid)
->  }
->  #endif
->
-> -#ifndef CONFIG_DEBUG_BOOT_PARAMS
-> -struct boot_params __initdata boot_params;
-> -#else
->  struct boot_params boot_params;
-> -#endif
->
->  /*
->   * Machine setup..
-> --
-> 1.7.9.5
->
+>  drivers/input/mouse/cypress_ps2.c |   18 ++++++++++++++++++
+>  drivers/input/mouse/cypress_ps2.h |   16 ++++++++++++++--
+>  2 files changed, 32 insertions(+), 2 deletions(-)
+
+No thanks. Millions of devices are supported via semi-mt, there is no
+reason why this one should be different. If there are userland issues,
+something broke recently. You may want to check with Chase, for
+instance, for the full history of commodity trackpad MT support.
+
+Thanks.
+Henrik
