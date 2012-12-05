@@ -1,57 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753336Ab2LESXc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 13:23:32 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:55470 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752673Ab2LESXa (ORCPT
+	id S1753366Ab2LESZG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 13:25:06 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:33393 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751029Ab2LESZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 13:23:30 -0500
+	Wed, 5 Dec 2012 13:25:04 -0500
+X-Greylist: delayed 1348 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Dec 2012 13:25:04 EST
 MIME-Version: 1.0
-X-Originating-IP: [85.143.161.18]
-In-Reply-To: <20121205181353.GA2042@kroah.com>
-References: <CACaajQux0owmraiWmRbMLiO1oxFefP+PdiQKs1zgzrj7kcD=AA@mail.gmail.com>
- <20121126183538.GA18590@kroah.com> <CACaajQsqKDNkMQ6+1bPNgVf6A7DAfC1ZiMBVwQKODHnq2yS-OA@mail.gmail.com>
- <20121205181353.GA2042@kroah.com>
-From: Vasiliy Tolstov <v.tolstov@selfip.ru>
-Date: Wed, 5 Dec 2012 22:23:13 +0400
-X-Google-Sender-Auth: JTIGv2zrmQGUXPi9kZPm19_Xn1Y
-Message-ID: <CACaajQs1es2iS0aeH-QT0OXHdw1XQsb1_nF_9SH24t+vaja3xg@mail.gmail.com>
-Subject: Re: sles 11 sp2 srp and multipath issues
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1354726121-17190-3-git-send-email-mark.langsdorf@calxeda.com>
+References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com>
+ <1354726121-17190-1-git-send-email-mark.langsdorf@calxeda.com> <1354726121-17190-3-git-send-email-mark.langsdorf@calxeda.com>
+From: Mike Turquette <mturquette@linaro.org>
+Date: Wed, 5 Dec 2012 10:02:14 -0800
+Message-ID: <CAPtuhTjsvSs5cif4yiDXwzET-hygqQk5yMn3WvqxiBHDgbpfcQ@mail.gmail.com>
+Subject: Re: [PATCH 2/6 v8] clk, highbank: Prevent glitches in non-bypass
+ reset mode
+To: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Rob Herring <rob.herring@calxeda.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, i'm try latest 3.6 and send results.
-
-2012/12/5 Greg KH <gregkh@linuxfoundation.org>:
-> On Wed, Dec 05, 2012 at 10:06:45PM +0400, Vasiliy Tolstov wrote:
->> 2012/11/26 Greg KH <gregkh@linuxfoundation.org>:
->> >
->> > If you use a kernel.org released kernel, then we can help you out.
->> >
->> > Best of luck,
->>
->> Okay. I'm use kernel from you git tree (3.0.53 stable branch). But
->> have no luck. Ahen i'm force reboot storage server multipath -ll on
->> initiator side locked.
->> echo w > /proc/sysrq-trigger says:
+On Wed, Dec 5, 2012 at 8:48 AM, Mark Langsdorf
+<mark.langsdorf@calxeda.com> wrote:
+> The highbank clock will glitch with the current code if the
+> clock rate is reset without relocking the PLL. Program the PLL
+> correctly to prevent glitches.
 >
-> 3.0-stable is still quite old, can you duplicate this on the latest 3.6
-> kernel?
+> Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
+> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> Cc: mturquette@linaro.org
+> ---
+> Changes from v6, v7
+>         None.
+> Changes from v5
+>         Added Mike Turquette's ack.
+
+It appears that my Ack has not been added to this version of the patch.
+
+Regards,
+Mike
+
+> Changes from v4
+>         None.
+> Changes from v3
+>         Changelog text and patch name now correspond to the actual patch.
+>         was clk, highbank: remove non-bypass reset mode.
+> Changes from v2
+>         None.
+> Changes from v1
+>         Removed erroneous reformating.
 >
-> Also, if you have multipath issues, please cc: the multipath developers,
-> they are the ones that can best help you out here.
+>  drivers/clk/clk-highbank.c | 2 ++
+>  1 file changed, 2 insertions(+)
 >
-> greg k-h
-
-
-
--- 
-Vasiliy Tolstov,
-Clodo.ru
-e-mail: v.tolstov@selfip.ru
-jabber: vase@selfip.ru
+> diff --git a/drivers/clk/clk-highbank.c b/drivers/clk/clk-highbank.c
+> index 52fecad..3a0b723 100644
+> --- a/drivers/clk/clk-highbank.c
+> +++ b/drivers/clk/clk-highbank.c
+> @@ -182,8 +182,10 @@ static int clk_pll_set_rate(struct clk_hw *hwclk, unsigned long rate,
+>                 reg |= HB_PLL_EXT_ENA;
+>                 reg &= ~HB_PLL_EXT_BYPASS;
+>         } else {
+> +               writel(reg | HB_PLL_EXT_BYPASS, hbclk->reg);
+>                 reg &= ~HB_PLL_DIVQ_MASK;
+>                 reg |= divq << HB_PLL_DIVQ_SHIFT;
+> +               writel(reg | HB_PLL_EXT_BYPASS, hbclk->reg);
+>         }
+>         writel(reg, hbclk->reg);
+>
+> --
+> 1.7.11.7
+>
