@@ -1,138 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753487Ab2LEKFU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 05:05:20 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59643 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753245Ab2LEKFS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 05:05:18 -0500
-Date: Wed, 5 Dec 2012 11:05:14 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Jean Delvare <khali@linux-fr.org>, linux-input@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 07/14] HID: i2c-hid: fix return paths
-In-Reply-To: <1354634875-5182-8-git-send-email-benjamin.tissoires@gmail.com>
-Message-ID: <alpine.LNX.2.00.1212051105090.17055@pobox.suse.cz>
-References: <1354634875-5182-1-git-send-email-benjamin.tissoires@gmail.com> <1354634875-5182-8-git-send-email-benjamin.tissoires@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753527Ab2LEKGa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 05:06:30 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:36629 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752968Ab2LEKG1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 05:06:27 -0500
+Date: Wed, 5 Dec 2012 10:06:18 +0000
+From: Cong Ding <dinggnu@gmail.com>
+To: "Li, Zhen-Hua" <lizhenhua.dev@gmail.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Benoit Cousson <b-cousson@ti.com>, Aneesh V <aneesh@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] memory: of_memory.c: remove unnecessary initialization
+Message-ID: <20121205100617.GA12812@gmail.com>
+References: <1354620448-14317-1-git-send-email-dinggnu@gmail.com>
+ <50BDE224.8000301@ti.com>
+ <CACxGe6viwuyfYm2RBfcj233U6-xmJJTQgu=DUu_11iPAckUzqg@mail.gmail.com>
+ <50BE0CC3.7060800@ti.com>
+ <CAEk7JKakQRPKEoi+vkF2KexB1d_G+BN-PZQT-QDNEeOrkVm0Vg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAEk7JKakQRPKEoi+vkF2KexB1d_G+BN-PZQT-QDNEeOrkVm0Vg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 Dec 2012, Benjamin Tissoires wrote:
-
-> Forwards appropriate return values.
-> As noone use the error returned by i2c_hid_get_input, let's make it
-> returning void.
+On Wed, Dec 05, 2012 at 03:26:36PM +0800, Li, Zhen-Hua wrote:
+> Infact, your patch does remove an orl operation, but add a new "move" operation.
 > 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-
-Applied.
-
-> ---
->  drivers/hid/i2c-hid/i2c-hid.c | 24 ++++++++++++------------
->  1 file changed, 12 insertions(+), 12 deletions(-)
+> You can test such two functions:
+> int func1(int rm1, int rm2){
+>         int i = 0;
+>         i |= rm1;
+>         i |= rm2;
+> }
 > 
-> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-> index 4452611..d6fdb3e 100644
-> --- a/drivers/hid/i2c-hid/i2c-hid.c
-> +++ b/drivers/hid/i2c-hid/i2c-hid.c
-> @@ -245,7 +245,7 @@ static int i2c_hid_get_report(struct i2c_client *client, u8 reportType,
->  	if (ret) {
->  		dev_err(&client->dev,
->  			"failed to retrieve report from device.\n");
-> -		return -EINVAL;
-> +		return ret;
->  	}
->  
->  	return 0;
-> @@ -290,7 +290,7 @@ static int i2c_hid_set_report(struct i2c_client *client, u8 reportType,
->  		reportType, args, args_len, NULL, 0);
->  	if (ret) {
->  		dev_err(&client->dev, "failed to set a report to device.\n");
-> -		return -EINVAL;
-> +		return ret;
->  	}
->  
->  	return data_len;
-> @@ -334,7 +334,7 @@ static int i2c_hid_hwreset(struct i2c_client *client)
->  	return 0;
->  }
->  
-> -static int i2c_hid_get_input(struct i2c_hid *ihid)
-> +static void i2c_hid_get_input(struct i2c_hid *ihid)
->  {
->  	int ret, ret_size;
->  	int size = le16_to_cpu(ihid->hdesc.wMaxInputLength);
-> @@ -342,11 +342,11 @@ static int i2c_hid_get_input(struct i2c_hid *ihid)
->  	ret = i2c_master_recv(ihid->client, ihid->inbuf, size);
->  	if (ret != size) {
->  		if (ret < 0)
-> -			return ret;
-> +			return;
->  
->  		dev_err(&ihid->client->dev, "%s: got %d data instead of %d\n",
->  			__func__, ret, size);
-> -		return ret;
-> +		return;
->  	}
->  
->  	ret_size = ihid->inbuf[0] | ihid->inbuf[1] << 8;
-> @@ -355,13 +355,13 @@ static int i2c_hid_get_input(struct i2c_hid *ihid)
->  		/* host or device initiated RESET completed */
->  		if (test_and_clear_bit(I2C_HID_RESET_PENDING, &ihid->flags))
->  			wake_up(&ihid->wait);
-> -		return 0;
-> +		return;
->  	}
->  
->  	if (ret_size > size) {
->  		dev_err(&ihid->client->dev, "%s: incomplete report (%d/%d)\n",
->  			__func__, size, ret_size);
-> -		return -EIO;
-> +		return;
->  	}
->  
->  	i2c_hid_dbg(ihid, "input: %*ph\n", ret_size, ihid->inbuf);
-> @@ -370,7 +370,7 @@ static int i2c_hid_get_input(struct i2c_hid *ihid)
->  		hid_input_report(ihid->hid, HID_INPUT_REPORT, ihid->inbuf + 2,
->  				ret_size - 2, 1);
->  
-> -	return 0;
-> +	return;
->  }
->  
->  static irqreturn_t i2c_hid_irq(int irq, void *dev_id)
-> @@ -430,8 +430,10 @@ static void i2c_hid_init_reports(struct hid_device *hid)
->  	struct i2c_hid *ihid = i2c_get_clientdata(client);
->  	u8 *inbuf = kzalloc(ihid->bufsize, GFP_KERNEL);
->  
-> -	if (!inbuf)
-> +	if (!inbuf) {
-> +		dev_err(&client->dev, "can not retrieve initial reports\n");
->  		return;
-> +	}
->  
->  	list_for_each_entry(report,
->  		&hid->report_enum[HID_INPUT_REPORT].report_list, list)
-> @@ -715,9 +717,7 @@ static int i2c_hid_hidinput_input_event(struct input_dev *dev,
->  		return -1;
->  	}
->  
-> -	hid_set_field(field, offset, value);
-> -
-> -	return 0;
-> +	return hid_set_field(field, offset, value);
->  }
->  
->  static struct hid_ll_driver i2c_hid_ll_driver = {
-> -- 
-> 1.8.0.1
+> and
 > 
+> int func(int rm1, int rm2){
+>         int i;
+>         i = rm1;
+>         i |= rm2;
+> }
+> 
+> Use gcc to compile them to assemble with "-S" operation, and you will find it.
+you are wrong. if we use O0 parameter in gcc, it really reduces an "OR"
+operation; and you are correct if we use O2 in gcc, the assemble code is the
+same. you can refer to the following screen snapshot.
 
--- 
-Jiri Kosina
-SUSE Labs
+But we should not rely on compilers, right? But in this situation, this simple
+optimization should be done by any compiler, so it doesn't matter we patch it
+or not. 
+
+[ding@GNU ~]$ gcc --version
+gcc (GCC) 4.6.2 20111027 (Red Hat 4.6.2-2)
+Copyright (C) 2011 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+[ding@GNU ~]$ cat main1.c
+#include<stdio.h>
+
+int foo(int arg1, int arg2) {
+        int ret = 0;
+        ret |= arg1;
+        ret |= arg2;
+        return ret;
+}
+
+int main(int argc, char **argv) {
+        int o = foo(57, 89);
+        printf(value is %d.n, o);
+}
+[ding@GNU ~]$ cat main2.c
+#include<stdio.h>
+
+int foo(int arg1, int arg2) {
+        int ret;
+        ret = arg1;
+        ret |= arg2;
+        return ret;
+}
+
+int main(int argc, char **argv) {
+        int o = foo(57, 89);
+        printf(value is %d.n, o);
+}
+[ding@GNU ~]$ gcc -S main1.c -o main1.s
+[ding@GNU ~]$ gcc -S main2.c -o main2.s
+[ding@GNU ~]$ diff -up main1.s main2.s
+--- main1.s     2012-12-05 09:23:18.487007457 +0000
++++ main2.s     2012-12-05 09:23:25.742997827 +0000
+@@ -1,4 +1,4 @@
+-       .file   main1.c
++       .file   main2.c
+        .text
+        .globl  foo
+        .type   foo, @function
+@@ -12,9 +12,8 @@ foo:
+        .cfi_def_cfa_register 6
+        movl    %edi, -20(%rbp)
+        movl    %esi, -24(%rbp)
+-       movl    -bash, -4(%rbp)
+        movl    -20(%rbp), %eax
+-       orl     %eax, -4(%rbp)
++       movl    %eax, -4(%rbp)
+        movl    -24(%rbp), %eax
+        orl     %eax, -4(%rbp)
+        movl    -4(%rbp), %eax
+[ding@GNU ~]$ gcc -S -O2 main1.c -o main1O2.s
+[ding@GNU ~]$ gcc -S -O2 main2.c -o main2O2.s
+[ding@GNU ~]$ diff -up main1O2.s main2O2.s
+--- main1O2.s	2012-12-05 09:24:12.718928945 +0000
++++ main2O2.s	2012-12-05 09:24:22.590911258 +0000
+@@ -1,4 +1,4 @@
+-	.file	"main1.c"
++	.file	"main2.c"
+ 	.text
+ 	.p2align 4,,15
+ 	.globl	foo
+[ding@GNU ~]$
+
+> On Tue, Dec 4, 2012 at 10:46 PM, Santosh Shilimkar
+> <santosh.shilimkar@ti.com> wrote:
+> > On Tuesday 04 December 2012 07:25 PM, Grant Likely wrote:
+> >>
+> >> On Tue, Dec 4, 2012 at 11:44 AM, Santosh Shilimkar
+> >> <santosh.shilimkar@ti.com> wrote:
+> >>>
+> >>> On Tuesday 04 December 2012 04:56 PM, Cong Ding wrote:
+> >>>>
+> >>>>
+> >>>> the initialization of variable ret is unnecessary, we can remove it
+> >>>> while
+> >>>> save
+> >>>> one time "or" operation.
+> >>>>
+> >>>> Signed-off-by: Cong Ding <dinggnu@gmail.com>
+> >>>> ---
+> >>>
+> >>>
+> >>> Looks ok.
+> >>> Acked-by: Santosh Shilimkar<santosh.shilimkar@ti.com>
+> >>>
+> >>
+> >> Thanks for the patch, but I don't think it matters enough to apply it.
+> >> The existing code isn't wrong.
+> >>
+> > The patch was removing an additional operation and hence i didn't
+> > contest it. I agree with your comment though.
+> >
+> > Regards
+> > Santosh
+> >
+> >
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
