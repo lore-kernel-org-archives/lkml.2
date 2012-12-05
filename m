@@ -1,58 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753873Ab2LEKc3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 05:32:29 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:6837 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753806Ab2LEKcZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 05:32:25 -0500
-Date: Wed, 5 Dec 2012 11:32:18 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 13/14] HID: i2c-hid: also call i2c_hid_free_buffers in
- i2c_hid_remove
-Message-ID: <20121205113218.3518878e@endymion.delvare>
-In-Reply-To: <1354634875-5182-14-git-send-email-benjamin.tissoires@gmail.com>
-References: <1354634875-5182-1-git-send-email-benjamin.tissoires@gmail.com>
-	<1354634875-5182-14-git-send-email-benjamin.tissoires@gmail.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752516Ab2LEKeQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 05:34:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39382 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751590Ab2LEKeN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 05:34:13 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1354650748-11032-1-git-send-email-tim.gardner@canonical.com>
+References: <1354650748-11032-1-git-send-email-tim.gardner@canonical.com>
+To: Tim Gardner <tim.gardner@canonical.com>, Rusty Russell <rusty@ozlabs.org>
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Akinobu Mita <akinobu.mita@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 3.7-rc8] lib/Makefile: Fix oid_registry build dependency
+Date: Wed, 05 Dec 2012 10:34:04 +0000
+Message-ID: <7018.1354703644@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  4 Dec 2012 16:27:54 +0100, Benjamin Tissoires wrote:
-> In the case where the hid driver in charge of handling the hid part
-> of the device (hid-generic for instance) fails at probe, neither
-> i2c_hid_start nor i2c_hid_stop are called.
-> Thus, the buffers allocated in i2c_hid_probe are never freed.
-> 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> ---
->  drivers/hid/i2c-hid/i2c-hid.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-> index bea4b13..62988f1 100644
-> --- a/drivers/hid/i2c-hid/i2c-hid.c
-> +++ b/drivers/hid/i2c-hid/i2c-hid.c
-> @@ -891,6 +891,9 @@ static int __devexit i2c_hid_remove(struct i2c_client *client)
->  
->  	free_irq(client->irq, ihid);
->  
-> +	if (ihid->bufsize)
-> +		i2c_hid_free_buffers(ihid);
-> +
->  	kfree(ihid);
->  
->  	return 0;
+Tim Gardner <tim.gardner@canonical.com> wrote:
 
-Reviewed-by: Jean Delvare <khali@linux-fr.org>
+> It is $(obj)/oid_registry.o that is dependent on $(obj)/oid_registry_data.c.
+> The object file cannot be built until $(obj)/oid_registry_data.c has been
+> generated.
+> 
+> A periodic and hard to reproduce parallel build failure is due to
+> this incorrect lib/Makefile dependency. The compile error is completely
+> disingenuous.
 
--- 
-Jean Delvare
+Good catch.  This patch could go via Rusty's module signing tree.
+
+Acked-by: David Howells <dhowells@redhat.com>
