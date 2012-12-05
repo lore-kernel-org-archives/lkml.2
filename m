@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724Ab2LEJwJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 04:52:09 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:43227 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752168Ab2LEJwF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 04:52:05 -0500
-Date: Wed, 5 Dec 2012 10:51:58 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 08/14] HID: i2c-hid: fix error messages
-Message-ID: <20121205105158.666a19a8@endymion.delvare>
-In-Reply-To: <1354634875-5182-9-git-send-email-benjamin.tissoires@gmail.com>
-References: <1354634875-5182-1-git-send-email-benjamin.tissoires@gmail.com>
-	<1354634875-5182-9-git-send-email-benjamin.tissoires@gmail.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752853Ab2LEJw0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 04:52:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59004 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752731Ab2LEJwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 04:52:21 -0500
+Date: Wed, 5 Dec 2012 09:43:58 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: David Rientjes <rientjes@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 20/52] mm, numa: Implement migrate-on-fault lazy NUMA
+ strategy for regular and THP pages
+Message-ID: <20121205094332.GA2489@suse.de>
+References: <1354473824-19229-1-git-send-email-mingo@kernel.org>
+ <1354473824-19229-21-git-send-email-mingo@kernel.org>
+ <alpine.DEB.2.00.1212041652240.13029@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1212041652240.13029@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  4 Dec 2012 16:27:49 +0100, Benjamin Tissoires wrote:
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> ---
->  drivers/hid/i2c-hid/i2c-hid.c | 11 ++++++-----
->  1 file changed, 6 insertions(+), 5 deletions(-)
+On Tue, Dec 04, 2012 at 04:55:13PM -0800, David Rientjes wrote:
+> Commit "mm, numa: Implement migrate-on-fault lazy NUMA strategy for 
+> regular and THP pages" breaks the build because HPAGE_PMD_SHIFT and 
+> HPAGE_PMD_MASK defined to explode without CONFIG_TRANSPARENT_HUGEPAGE:
 > 
-> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-> index d6fdb3e..da04948 100644
-> --- a/drivers/hid/i2c-hid/i2c-hid.c
-> +++ b/drivers/hid/i2c-hid/i2c-hid.c
-> @@ -741,10 +741,10 @@ static int __devinit i2c_hid_init_irq(struct i2c_client *client)
->  			IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
->  			client->name, ihid);
->  	if (ret < 0) {
-> -		dev_dbg(&client->dev,
-> +		dev_warn(&client->dev,
->  			"Could not register for %s interrupt, irq = %d,"
->  			" ret = %d\n",
-> -		client->name, client->irq, ret);
-> +			client->name, client->irq, ret);
->  
->  		return ret;
->  	}
-> @@ -770,7 +770,8 @@ static int __devinit i2c_hid_fetch_hid_descriptor(struct i2c_hid *ihid)
->  			__func__, 4, ihid->hdesc_buffer);
->  
->  	if (ret) {
-> -		dev_err(&client->dev, "HID_DESCR_LENGTH_CMD Fail (ret=%d)\n",
-> +		dev_err(&client->dev,
-> +			"unable to fetch the size of HID descriptor (ret=%d)\n",
->  			ret);
->  		return -ENODEV;
->  	}
-> @@ -785,7 +786,7 @@ static int __devinit i2c_hid_fetch_hid_descriptor(struct i2c_hid *ihid)
->  	/* check bcdVersion == 1.0 */
->  	if (le16_to_cpu(hdesc->bcdVersion) != 0x0100) {
->  		dev_err(&client->dev,
-> -			"unexpected HID descriptor bcdVersion (0x%04x)\n",
-> +			"unexpected HID descriptor bcdVersion (0x%04hx)\n",
->  			le16_to_cpu(hdesc->bcdVersion));
->  		return -ENODEV;
->  	}
-> @@ -871,7 +872,7 @@ static int __devinit i2c_hid_probe(struct i2c_client *client,
->  	hid->vendor = le16_to_cpu(ihid->hdesc.wVendorID);
->  	hid->product = le16_to_cpu(ihid->hdesc.wProductID);
->  
-> -	snprintf(hid->name, sizeof(hid->name), "%s %04X:%04X",
-> +	snprintf(hid->name, sizeof(hid->name), "%s %04hX:%04hX",
->  		 client->name, hid->vendor, hid->product);
->  
->  	ret = hid_add_device(hid);
+> mm/migrate.c: In function 'migrate_misplaced_transhuge_page_put':
+> mm/migrate.c:1549: error: call to '__build_bug_failed' declared with attribute error: BUILD_BUG failed
+> mm/migrate.c:1564: error: call to '__build_bug_failed' declared with attribute error: BUILD_BUG failed
+> mm/migrate.c:1566: error: call to '__build_bug_failed' declared with attribute error: BUILD_BUG failed
+> mm/migrate.c:1573: error: call to '__build_bug_failed' declared with attribute error: BUILD_BUG failed
+> mm/migrate.c:1606: error: call to '__build_bug_failed' declared with attribute error: BUILD_BUG failed
+> mm/migrate.c:1648: error: call to '__build_bug_failed' declared with attribute error: BUILD_BUG failed
+> 
+> CONFIG_NUMA_BALANCING allows compilation without enabling transparent 
+> hugepages, so define the dummy function for such a configuration and only 
+> define migrate_misplaced_transhuge_page_put() when transparent hugepages 
+> are enabled.
+> 
+> Signed-off-by: David Rientjes <rientjes@google.com>
 
-Reviewed-by: Jean Delvare <khali@linux-fr.org>
+Thanks David. I pushed the equivalent for the balancenuma tree and
+should be included in the balancenuma-v10 tag or mm-balancenuma-v10r3
+branch at
+git://git.kernel.org/pub/scm/linux/kernel/git/mel/linux-balancenuma.git
 
 -- 
-Jean Delvare
+Mel Gorman
+SUSE Labs
