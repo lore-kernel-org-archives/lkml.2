@@ -1,159 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932142Ab2LEO34 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 09:29:56 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:57175 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754305Ab2LEO3z (ORCPT
+	id S1754317Ab2LEOaw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 09:30:52 -0500
+Received: from service88.mimecast.com ([195.130.217.12]:38745 "EHLO
+	service88.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347Ab2LEOav convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 09:29:55 -0500
-From: Vitaly Andrianov <vitalya@ti.com>
-To: <mina86@mina86.com>, <m.szyprowski@samsung.com>,
-        <kyungmin.park@samsung.com>, <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>, <linux-keystone@list.ti.com>
-CC: Vitaly Andrianov <vitalya@ti.com>, Cyril Chemparathy <cyril@ti.com>
-Subject: [PATCH v3] drivers: cma: represent physical addresses as phys_addr_t
-Date: Wed, 5 Dec 2012 09:29:25 -0500
-Message-ID: <1354717766-8071-1-git-send-email-vitalya@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 5 Dec 2012 09:30:51 -0500
+Message-ID: <50BF5AA6.5080103@arm.com>
+Date: Wed, 5 Dec 2012 14:31:02 +0000
+From: Serban Constantinescu <serban.constantinescu@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "arve@android.com" <arve@android.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "john.stultz@linaro.org" <john.stultz@linaro.org>,
+        "ccross@android.com" <ccross@android.com>,
+        "zach.pfeffer@linaro.org" <zach.pfeffer@linaro.org>,
+        Dave Butcher <Dave.Butcher@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "arve@android.com" <arve@android.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Re: [PATCH 1/2] Staging: android: binder: Add support for 32bit binder
+ calls in a 64bit kernel
+References: <1354617854-25296-1-git-send-email-serban.constantinescu@arm.com> <1354617854-25296-2-git-send-email-serban.constantinescu@arm.com> <20121204161756.GB17860@kroah.com>
+In-Reply-To: <20121204161756.GB17860@kroah.com>
+X-MC-Unique: 112120514304903802
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit changes the CMA early initialization code to use phys_addr_t
-for representing physical addresses instead of unsigned long.
+On 04/12/12 16:17, Greg KH wrote:
+> On Tue, Dec 04, 2012 at 10:44:13AM +0000, Serban Constantinescu wrote:
+>> Android's IPC, Binder, does not support calls from a 32-bit userspace
+>> in a 64 bit kernel. This patch adds support for syscalls coming from a
+>> 32-bit userspace in a 64-bit kernel.
+>>
+>> Most of the changes were applied to types that change sizes between
+>> 32 and 64 bit world. This will also fix some of the issues around
+>> checking the size of an incoming transaction package in the ioctl
+>> switch. Since  the transaction's ioctl number are generated using
+>> _IOC(dir,type,nr,size), a different userspace size will generate
+>> a different ioctl number, thus switching by _IOC_NR is a better
+>> solution.
+>>
+>> The patch has been successfully tested on ARMv8 AEM and Versatile
+>> Express V2P-CA9.
+>
+> Has it also been properly tested on a 32bit kernel and userspace to
+> verify that nothing broke?
 
-Without this change, among other things, dma_declare_contiguous() simply
-discards any memory regions whose address is not representable as unsigned
-long.
+We have tested this patch set with a 32-bit kernel (on a Versatile
+Express platform with an 4xA9 (ARMv7a)) as well as a 64-bit kernel (on
+ARMv8 simulation platform). For both test cases we used the same 32-bit
+Android file system (ICS, JB). Both platforms have been running browser
+loads for days without any problems. We are currently extending the test
+cases by running Android CTS test.
 
-This is a problem on 32-bit PAE machines where unsigned long is 32-bit
-but physical address space is larger.
+>
+> I was wondering when someone would notice that this code was not going
+> to work for this type of system, nice to see that you are working to fix
+> it up.  But, I'll reask Dan's question here, why not use the compat32
+> ioctl interface instead?  Shouldn't that be the easier way to do this?
 
-Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
-Signed-off-by: Cyril Chemparathy <cyril@ti.com>
----
- drivers/base/dma-contiguous.c  |   24 ++++++++++--------------
- include/linux/dma-contiguous.h |    4 ++--
- 2 files changed, 12 insertions(+), 16 deletions(-)
+Binder uses a 2 layer ioctl structure i.e. you can't know from the top
+of the ioctl handler the size of the incoming package. Therefore adding
+a wrapper for a 64bit kernel is not an option. Should a 64bit Android
+ever appear we would probably want to support 32bit legacy applications.
+For this we will need the same binder/ashmem driver to service both a
+32bit application as well as a 64bit application in a 64bit kernel.
+Therefore I guess the way forward will be to support 32bit file systems
+in a 64bit kernel without any change to the existing user space
+(implemented in this patch) and at some point extend the ioctl range
+with the needed functionality for 64bit user space.
 
-diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
-index 9a14694..9b841e2 100644
---- a/drivers/base/dma-contiguous.c
-+++ b/drivers/base/dma-contiguous.c
-@@ -60,8 +60,8 @@ struct cma *dma_contiguous_default_area;
-  * Users, who want to set the size of global CMA area for their system
-  * should use cma= kernel parameter.
-  */
--static const unsigned long size_bytes = CMA_SIZE_MBYTES * SZ_1M;
--static long size_cmdline = -1;
-+static const phys_addr_t size_bytes = CMA_SIZE_MBYTES * SZ_1M;
-+static phys_addr_t size_cmdline = -1;
- 
- static int __init early_cma(char *p)
- {
-@@ -73,7 +73,7 @@ early_param("cma", early_cma);
- 
- #ifdef CONFIG_CMA_SIZE_PERCENTAGE
- 
--static unsigned long __init __maybe_unused cma_early_percent_memory(void)
-+static phys_addr_t __init __maybe_unused cma_early_percent_memory(void)
- {
- 	struct memblock_region *reg;
- 	unsigned long total_pages = 0;
-@@ -91,7 +91,7 @@ static unsigned long __init __maybe_unused cma_early_percent_memory(void)
- 
- #else
- 
--static inline __maybe_unused unsigned long cma_early_percent_memory(void)
-+static inline __maybe_unused phys_addr_t cma_early_percent_memory(void)
- {
- 	return 0;
- }
-@@ -109,7 +109,7 @@ static inline __maybe_unused unsigned long cma_early_percent_memory(void)
-  */
- void __init dma_contiguous_reserve(phys_addr_t limit)
- {
--	unsigned long selected_size = 0;
-+	phys_addr_t selected_size = 0;
- 
- 	pr_debug("%s(limit %08lx)\n", __func__, (unsigned long)limit);
- 
-@@ -129,7 +129,7 @@ void __init dma_contiguous_reserve(phys_addr_t limit)
- 
- 	if (selected_size) {
- 		pr_debug("%s: reserving %ld MiB for global area\n", __func__,
--			 selected_size / SZ_1M);
-+			 (unsigned long)selected_size / SZ_1M);
- 
- 		dma_declare_contiguous(NULL, selected_size, 0, limit);
- 	}
-@@ -230,11 +230,11 @@ core_initcall(cma_init_reserved_areas);
-  * called by board specific code when early allocator (memblock or bootmem)
-  * is still activate.
-  */
--int __init dma_declare_contiguous(struct device *dev, unsigned long size,
-+int __init dma_declare_contiguous(struct device *dev, phys_addr_t size,
- 				  phys_addr_t base, phys_addr_t limit)
- {
- 	struct cma_reserved *r = &cma_reserved[cma_reserved_count];
--	unsigned long alignment;
-+	phys_addr_t alignment;
- 
- 	pr_debug("%s(size %lx, base %08lx, limit %08lx)\n", __func__,
- 		 (unsigned long)size, (unsigned long)base,
-@@ -271,10 +271,6 @@ int __init dma_declare_contiguous(struct device *dev, unsigned long size,
- 		if (!addr) {
- 			base = -ENOMEM;
- 			goto err;
--		} else if (addr + size > ~(unsigned long)0) {
--			memblock_free(addr, size);
--			base = -EINVAL;
--			goto err;
- 		} else {
- 			base = addr;
- 		}
-@@ -288,14 +284,14 @@ int __init dma_declare_contiguous(struct device *dev, unsigned long size,
- 	r->size = size;
- 	r->dev = dev;
- 	cma_reserved_count++;
--	pr_info("CMA: reserved %ld MiB at %08lx\n", size / SZ_1M,
-+	pr_info("CMA: reserved %ld MiB at %08lx\n", (unsigned long)size / SZ_1M,
- 		(unsigned long)base);
- 
- 	/* Architecture specific contiguous memory fixup. */
- 	dma_contiguous_early_fixup(base, size);
- 	return 0;
- err:
--	pr_err("CMA: failed to reserve %ld MiB\n", size / SZ_1M);
-+	pr_err("CMA: failed to reserve %ld MiB\n", (unsigned long)size / SZ_1M);
- 	return base;
- }
- 
-diff --git a/include/linux/dma-contiguous.h b/include/linux/dma-contiguous.h
-index 2f303e4..01b5c84 100644
---- a/include/linux/dma-contiguous.h
-+++ b/include/linux/dma-contiguous.h
-@@ -68,7 +68,7 @@ struct device;
- extern struct cma *dma_contiguous_default_area;
- 
- void dma_contiguous_reserve(phys_addr_t addr_limit);
--int dma_declare_contiguous(struct device *dev, unsigned long size,
-+int dma_declare_contiguous(struct device *dev, phys_addr_t size,
- 			   phys_addr_t base, phys_addr_t limit);
- 
- struct page *dma_alloc_from_contiguous(struct device *dev, int count,
-@@ -83,7 +83,7 @@ bool dma_release_from_contiguous(struct device *dev, struct page *pages,
- static inline void dma_contiguous_reserve(phys_addr_t limit) { }
- 
- static inline
--int dma_declare_contiguous(struct device *dev, unsigned long size,
-+int dma_declare_contiguous(struct device *dev, phys_addr_t size,
- 			   phys_addr_t base, phys_addr_t limit)
- {
- 	return -ENOSYS;
--- 
-1.7.9.5
+>
+> Also, one meta comment, never use the uint32_t types, use the native
+> kernel types (u32 and the like.)  If you are crossing the user/kernel
+> boundry, use the other correct types for those data structures (__u32
+> and the like).  What you did here is mix and match things so much that I
+> really can't verify that it is all correct.
+
+I have tried to in-line my changes with the types already used in the
+driver but I will update to using the suggested types.
+
+>
+> thanks,
+>
+> greg k-h
+>
+
+Thanks for the feedback,
+Serban Constantinescu
+`
+
+-- IMPORTANT NOTICE: The contents of this email and any attachments are confidential and may also be privileged. If you are not the intended recipient, please notify the sender immediately and do not disclose the contents to any other person, use it for any purpose, or store or copy the information in any medium.  Thank you.
 
