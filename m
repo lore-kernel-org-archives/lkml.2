@@ -1,92 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554Ab2LEDFF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 22:05:05 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:54592 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752808Ab2LEDFB (ORCPT
+	id S1753571Ab2LEDYB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 22:24:01 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:9430 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752808Ab2LEDX6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 22:05:01 -0500
+	Tue, 4 Dec 2012 22:23:58 -0500
+Message-ID: <50BEBE35.4040807@huawei.com>
+Date: Wed, 5 Dec 2012 11:23:33 +0800
+From: Jianguo Wu <wujianguo@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <loom.20121204T170759-102@post.gmane.org>
-References: <1354264973-11214-1-git-send-email-a.kesavan@samsung.com>
-	<000101cdd202$dc6e8310$954b8930$%choi@samsung.com>
-	<loom.20121204T170759-102@post.gmane.org>
-Date: Wed, 5 Dec 2012 08:35:00 +0530
-Message-ID: <CAM4voamXYaULm0WEA1EnHbAa5feOkouSvtSiuJ0u4wWrgjeQ4A@mail.gmail.com>
-Subject: Re: [PATCH RFC] PM/Devfreq: Add Exynos5-bus devfreq driver for Exynos5250.
-From: Abhilash Kesavan <kesavan.abhilash@gmail.com>
-To: jhbird.choi@samsung.com, myungjoo.ham@samsung.com,
-        Kukjin Kim <kgene.kim@samsung.com>
-Cc: kyungmin.park@samsung.com, rjw@sisk.pl, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tang Chen <tangchen@cn.fujitsu.com>
+CC: Wen Congyang <wency@cn.fujitsu.com>, <x86@kernel.org>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>,
+        <linux-s390@vger.kernel.org>, <linux-sh@vger.kernel.org>,
+        <linux-ia64@vger.kernel.org>, <cmetcalf@tilera.com>,
+        <sparclinux@vger.kernel.org>, David Rientjes <rientjes@google.com>,
+        Jiang Liu <liuj97@gmail.com>, Len Brown <len.brown@intel.com>,
+        <benh@kernel.crashing.org>, <paulus@samba.org>,
+        Christoph Lameter <cl@linux.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: Re: [Patch v4 08/12] memory-hotplug: remove memmap of sparse-vmemmap
+References: <1354010422-19648-1-git-send-email-wency@cn.fujitsu.com> <1354010422-19648-9-git-send-email-wency@cn.fujitsu.com> <50B5DC00.20103@huawei.com> <50B80FB1.6040906@cn.fujitsu.com> <50BC0D2D.8040008@huawei.com> <50BDBEB7.3070807@cn.fujitsu.com> <50BDEA82.4050809@huawei.com> <50BEAC66.8020500@cn.fujitsu.com>
+In-Reply-To: <50BEAC66.8020500@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.74.216]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc'ing missed out recipients
+Hi Tang,
 
----------- Forwarded message ----------
-From: Abhilash Kesavan <kesavan.abhilash@gmail.com>
-Date: Tue, Dec 4, 2012 at 9:48 PM
-Subject: Re: [PATCH RFC] PM/Devfreq: Add Exynos5-bus devfreq driver
-for Exynos5250.
-To: linux-pm@vger.kernel.org
+On 2012/12/5 10:07, Tang Chen wrote:
 
+> Hi Wu,
+> 
+> On 12/04/2012 08:20 PM, Jianguo Wu wrote:
+> (snip)
+>>>
+>>> Seems that we have different ways to handle pages allocated by bootmem
+>>> or by regular allocator. Is the checking way in [PATCH 09/12] available
+>>> here ?
+>>>
+>>> +    /* bootmem page has reserved flag */
+>>> +    if (PageReserved(page)) {
+>>> ......
+>>> +    }
+>>>
+>>> If so, I think we can just merge these two functions.
+>>
+>> Hmm, direct mapping table isn't allocated by bootmem allocator such as memblock, can't be free by put_page_bootmem().
+>> But I will try to merge these two functions.
+>>
+> 
+> Oh, I didn't notice this, thanks. :)
+> 
+> (snip)
+> 
+>>>> +
+>>>> +    __split_large_page(kpte, address, pbase);
+>>>
+>>> Is this patch going to replace [PATCH 08/12] ?
+>>>
+>>
+>> I wish to replace [PATCH 08/12], but need Congyang and Yasuaki to confirm first:)
+>>
+>>> If so, __split_large_page() was added and exported in [PATCH 09/12],
+>>> then we should move it here, right ?
+>>
+>> yes.
+>>
+>> and what do you think about moving vmemmap_pud[pmd/pte]_remove() to arch/x86/mm/init_64.c,
+>> to be consistent with vmemmap_populate() ?
+> 
+> It is a good idea since pud/pmd/pte related code could be platform
+> dependent. And I'm also trying to move vmemmap_free() to
+> arch/x86/mm/init_64.c too. I want to have a common interface just
+> like vmemmap_populate(). :)
+> 
 
-Jonghwan Choi <jhbird.choi <at> samsung.com> writes:
+Great.
 
+>>
+>> I will rework [PATCH 08/12] and [PATCH 09/12] soon.
+> 
+> I am rebasing the whole patch set now. And I think I chould finish part
+> of your work too. A new patch-set is coming soon, and your rework is
+> also welcome. :)
 >
->
-> Hi Abhilash Kesavan.
-Hi,
->
-> I compiled in 3.7-rc8
-> I got a compile error & warning.
->
-> Compile error.
->
-> CC      drivers/devfreq/exynos5_ppmu.o
-> drivers/devfreq/exynos5_ppmu.c:56:14: error: 'S5P_VA_PPMU_DDR_C' undeclared
-> here (not in a function)
-> drivers/devfreq/exynos5_ppmu.c:59:14: error: 'S5P_VA_PPMU_DDR_R1' undeclared
-> here (not in a function)
-> drivers/devfreq/exynos5_ppmu.c:62:13: error: 'S5P_VA_PPMU_DDR_L' undeclared
-> here (not in a function)
-> drivers/devfreq/exynos5_ppmu.c:65:13: error: 'S5P_VA_PPMU_RIGHT' undeclared
-> here (not in a function)
-> drivers/devfreq/exynos5_ppmu.c:68:14: error: 'S5P_VA_PPMU_CPU' undeclared
-> here (not in a function)
-> make[2]: *** [drivers/devfreq/exynos5_ppmu.o] Error 1
-I have submitted only the driver changes. As mentioned in the commit message I
-will post the arch side changes after the drivers gets a complete review.
-However, if you want to test the driver I will post it tommorrow.
 
-[...]
-> drivers/devfreq/exynos5_bus.c: In function 'exynos5_busfreq_int_probe':
-> drivers/devfreq/exynos5_bus.c:388:9: warning: passing argument 3 of
-> 'devfreq_add_device' from incompatible pointer type [enabled by default]
-> include/linux/devfreq.h:170:24: note: expected 'struct devfreq_governor
-> const *' but argument is of type 'char *'
-[...]
-> Need change?
-These changes are based on
-git://git.kernel.org/pub/scm/linux/kernel/git/mzx/devfreq.git : for-rafael
-devfreq_add_device prototype has recently changed and that might be the cause of
-the compilation error. Can you please try on this tree.
+Since you are rebasing now, I will wait for your new patche-set :).
 
-> How to change the INT clock? I think you have to change
-> arch/arm/mach-exynos/clock-exynos5250.c
-> (If you want to control via clock framework.)
-[...]
-> exynos5_int_clk.ops = &exynos5_clk_int_ops;
-This is part of the arch side patch that has not been posted.
+Thanks.
+Jianguo Wu
 
-Regards,
-Abhilash
+> Thanks. :)
+> 
+> 
+> 
+> .
+> 
 
---
-To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
