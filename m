@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366Ab2LESZG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 13:25:06 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:33393 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751029Ab2LESZE (ORCPT
+	id S1753457Ab2LESZk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 13:25:40 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:57831 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753308Ab2LESZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 13:25:04 -0500
-X-Greylist: delayed 1348 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Dec 2012 13:25:04 EST
+	Wed, 5 Dec 2012 13:25:39 -0500
 MIME-Version: 1.0
-In-Reply-To: <1354726121-17190-3-git-send-email-mark.langsdorf@calxeda.com>
-References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com>
- <1354726121-17190-1-git-send-email-mark.langsdorf@calxeda.com> <1354726121-17190-3-git-send-email-mark.langsdorf@calxeda.com>
-From: Mike Turquette <mturquette@linaro.org>
-Date: Wed, 5 Dec 2012 10:02:14 -0800
-Message-ID: <CAPtuhTjsvSs5cif4yiDXwzET-hygqQk5yMn3WvqxiBHDgbpfcQ@mail.gmail.com>
-Subject: Re: [PATCH 2/6 v8] clk, highbank: Prevent glitches in non-bypass
- reset mode
-To: Mark Langsdorf <mark.langsdorf@calxeda.com>
-Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Rob Herring <rob.herring@calxeda.com>
+In-Reply-To: <201212051718.44017.Martin@lichtvoll.de>
+References: <1353366267-15629-1-git-send-email-david@fromorbit.com>
+ <201212051148.28039.Martin@lichtvoll.de> <CA+55aFzgP29WfB1yvnj+Q9-TsbX+b-TCCjTS_vPJ16DxMy6aDQ@mail.gmail.com>
+ <201212051718.44017.Martin@lichtvoll.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 5 Dec 2012 10:25:17 -0800
+X-Google-Sender-Auth: rzIPyjGK8ZO90N8QCpUrFXJjl2s
+Message-ID: <CA+55aFxsPBo4TZEPq+14NBE8Snmd9qiTjAiEP0fFXBzaJ9y+gw@mail.gmail.com>
+Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate UAPI
+To: Martin Steigerwald <Martin@lichtvoll.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 5, 2012 at 8:48 AM, Mark Langsdorf
-<mark.langsdorf@calxeda.com> wrote:
-> The highbank clock will glitch with the current code if the
-> clock rate is reset without relocking the PLL. Program the PLL
-> correctly to prevent glitches.
+On Wed, Dec 5, 2012 at 8:18 AM, Martin Steigerwald <Martin@lichtvoll.de> wrote:
 >
-> Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> Cc: mturquette@linaro.org
-> ---
-> Changes from v6, v7
->         None.
-> Changes from v5
->         Added Mike Turquette's ack.
+> Did you actually *read* the thread, Linus?
 
-It appears that my Ack has not been added to this version of the patch.
+I did. And I actually understood it. Unlike some people.
 
-Regards,
-Mike
+> Dave provided technical reasons.
+>
+> First in the patch description and then in:
+>
+> https://lkml.org/lkml/2012/11/26/700
 
-> Changes from v4
->         None.
-> Changes from v3
->         Changelog text and patch name now correspond to the actual patch.
->         was clk, highbank: remove non-bypass reset mode.
-> Changes from v2
->         None.
-> Changes from v1
->         Removed erroneous reformating.
->
->  drivers/clk/clk-highbank.c | 2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/drivers/clk/clk-highbank.c b/drivers/clk/clk-highbank.c
-> index 52fecad..3a0b723 100644
-> --- a/drivers/clk/clk-highbank.c
-> +++ b/drivers/clk/clk-highbank.c
-> @@ -182,8 +182,10 @@ static int clk_pll_set_rate(struct clk_hw *hwclk, unsigned long rate,
->                 reg |= HB_PLL_EXT_ENA;
->                 reg &= ~HB_PLL_EXT_BYPASS;
->         } else {
-> +               writel(reg | HB_PLL_EXT_BYPASS, hbclk->reg);
->                 reg &= ~HB_PLL_DIVQ_MASK;
->                 reg |= divq << HB_PLL_DIVQ_SHIFT;
-> +               writel(reg | HB_PLL_EXT_BYPASS, hbclk->reg);
->         }
->         writel(reg, hbclk->reg);
->
-> --
-> 1.7.11.7
->
+No. That technical argument is an argument *against* changing the
+current "specific bit meaning" reservation into a "generic fs private
+use" bit.
+
+The current one actually has a specific meaning (documented in the
+name, if very little else), and is *not* some kind of "generic fs
+private use" bit.  So the email you quote was actually an argument
+against changing the current status quo.
+
+And there is an actual technical reason for the current situation,
+described in the original commit. Now, people may not *like* the fact
+that the bit is commonly used out-of-tree (and used that way, rather
+than with an ioctl), but it's a fact.  And quite frankly, ioctl's
+aren't any better. They are just another different way of messing
+things up.
+
+Everything else in that thread has basically been whining about "I
+don't like the current reality".
+
+Yes, people can argue that "process" is about technical issues too,
+but let's be honest: our process is fluid. Not everything gets
+reviewed on the mailing list, and people *do* talk about things
+face-to-face at conferences. And none of that changes the current
+actual situation.
+
+                 Linus
