@@ -1,73 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752295Ab2LEMIr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 07:08:47 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:65300 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717Ab2LEMIp convert rfc822-to-8bit (ORCPT
+	id S1752464Ab2LEMKd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 07:10:33 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:1066 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347Ab2LEMKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 07:08:45 -0500
+	Wed, 5 Dec 2012 07:10:30 -0500
+Message-ID: <50BF399B.7010404@huawei.com>
+Date: Wed, 5 Dec 2012 20:10:03 +0800
+From: Hanjun Guo <guohanjun@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <CAKMK7uGPf=TEW8DL-K1KYPhMZALTZhFsSb2DBxDVgFct1kUjSA@mail.gmail.com>
-References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com>
-	<1353935954-13763-7-git-send-email-tbergstrom@nvidia.com>
-	<20121205083335.GA20984@avionic-0098.adnet.avionic-design.de>
-	<50BF1DAA.8030805@nvidia.com>
-	<20121205111332.GA25676@avionic-0098.adnet.avionic-design.de>
-	<50BF345A.8050201@nvidia.com>
-	<CAKMK7uGPf=TEW8DL-K1KYPhMZALTZhFsSb2DBxDVgFct1kUjSA@mail.gmail.com>
-Date: Wed, 5 Dec 2012 13:08:43 +0100
-X-Google-Sender-Auth: zNmKDxIuREdYOu7quon2UZ6rfO4
-Message-ID: <CAKMK7uFsv6vaTSkWe7PoHAvLO95uTvNWN7WO82RGgn5o6wToTw@mail.gmail.com>
-Subject: Re: [RFC v2 6/8] gpu: drm: tegra: Remove redundant host1x
-From: Daniel Vetter <daniel@ffwll.ch>
-To: =?ISO-8859-1?Q?Terje_Bergstr=F6m?= <tbergstrom@nvidia.com>
-Cc: Thierry Reding <thierry.reding@avionic-design.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Arto Merilainen <amerilainen@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Toshi Kani <toshi.kani@hp.com>
+CC: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        <linux-acpi@vger.kernel.org>, <isimatu.yasuaki@jp.fujitsu.com>,
+        <wency@cn.fujitsu.com>, <rjw@sisk.pl>, <lenb@kernel.org>,
+        <gregkh@linuxfoundation.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, Tang Chen <tangchen@cn.fujitsu.com>,
+        Liujiang <jiang.liu@huawei.com>, Huxinwei <huxinwei@huawei.com>
+Subject: Re: [RFC PATCH v3 0/3] acpi: Introduce prepare_remove device operation
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>     <50B5EFE9.3040206@huawei.com>    <1354128096.26955.276.camel@misato.fc.hp.com>   <50B6E936.2080308@huawei.com> <1354228028.7776.56.camel@misato.fc.hp.com>   <50BC29C6.6050706@huawei.com> <1354579848.21585.54.camel@misato.fc.hp.com>  <50BDBF5A.8040407@huawei.com> <1354663411.21585.135.camel@misato.fc.hp.com>
+In-Reply-To: <1354663411.21585.135.camel@misato.fc.hp.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.69.25]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 5, 2012 at 1:03 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
-> On Wed, Dec 5, 2012 at 12:47 PM, Terje Bergström <tbergstrom@nvidia.com> wrote:
->> You're right in that binding to a sub-device is not a nice way. DRM
->> framework just needs a "struct device" to bind to. exynos seems to solve
->> this by introducing a virtual device and bind to that. I'm not sure if
->> this is the best way, but worth considering?
->
-> Note that I'm not too happy about the fact that drm wants a struct
-> device to register a drm device. This all made a lot of sense back in
-> the days when drm drivers this this fancy shadow attaching to allow
-> drm to use a driver for rendering cooperatively with a fbdev driver.
-> Today there's not much reason for that anymore imo, and I'd welcome
-> patches to allow drivers to simply register a drm device (and remove
-> all the newer registration functions for usb/platform/whatever
-> drivers, moving the device handling into drivers). Note that it's a
-> bit work, since not-really-required abstraction (which was useful back
-> when the drm drivers have been shared with *BSD, but pointless now)
-> like the drm irq support needs to be moved away to a pci-dev legacy
-> thing only - it doesn't really buy a kms driver anything above&beyond
-> calling request_irq() itself.
->
-> So feel free to burn this down, I'll be happy to carry wood to the
-> pyre in the from of reviews (not much time for more right now ...).
+On 2012/12/5 7:23, Toshi Kani wrote:
+> On Tue, 2012-12-04 at 17:16 +0800, Hanjun Guo wrote:
+>> On 2012/12/4 8:10, Toshi Kani wrote:
+>>> On Mon, 2012-12-03 at 12:25 +0800, Hanjun Guo wrote:
+>>>> On 2012/11/30 6:27, Toshi Kani wrote:
+>>>>> On Thu, 2012-11-29 at 12:48 +0800, Hanjun Guo wrote:
+>>>>>> On 2012/11/29 2:41, Toshi Kani wrote:
+>>>>>>> On Wed, 2012-11-28 at 19:05 +0800, Hanjun Guo wrote:
+>>>>>>>> On 2012/11/24 1:50, Vasilis Liaskovitis wrote:
+>>>>>>>> As you may know, the ACPI based hotplug framework we are working on already addressed
+>>>>>>>> this problem, and the way we slove this problem is a bit like yours.
+>>>>>>>>
+>>>>>>>> We introduce hp_ops in struct acpi_device_ops:
+>>>>>>>> struct acpi_device_ops {
+>>>>>>>> 	acpi_op_add add;
+>>>>>>>> 	acpi_op_remove remove;
+>>>>>>>> 	acpi_op_start start;
+>>>>>>>> 	acpi_op_bind bind;
+>>>>>>>> 	acpi_op_unbind unbind;
+>>>>>>>> 	acpi_op_notify notify;
+>>>>>>>> #ifdef	CONFIG_ACPI_HOTPLUG
+>>>>>>>> 	struct acpihp_dev_ops *hp_ops;
+>>>>>>>> #endif	/* CONFIG_ACPI_HOTPLUG */
+>>>>>>>> };
+>>>>>>>>
+>>>>>>>> in hp_ops, we divide the prepare_remove into six small steps, that is:
+>>>>>>>> 1) pre_release(): optional step to mark device going to be removed/busy
+>>>>>>>> 2) release(): reclaim device from running system
+>>>>>>>> 3) post_release(): rollback if cancelled by user or error happened
+>>>>>>>> 4) pre_unconfigure(): optional step to solve possible dependency issue
+>>>>>>>> 5) unconfigure(): remove devices from running system
+>>>>>>>> 6) post_unconfigure(): free resources used by devices
+>>>>>>>>
+>>>>>>>> In this way, we can easily rollback if error happens.
+>>>>>>>> How do you think of this solution, any suggestion ? I think we can achieve
+>>>>>>>> a better way for sharing ideas. :)
+>>>>>>>
+>>>>>>> Yes, sharing idea is good. :)  I do not know if we need all 6 steps (I
+>>>>>>> have not looked at all your changes yet..), but in my mind, a hot-plug
+>>>>>>> operation should be composed with the following 3 phases.
+>>>>>>
+>>>>>> Good idea ! we also implement a hot-plug operation in 3 phases:
+>>>>>> 1) acpihp_drv_pre_execute
+>>>>>> 2) acpihp_drv_execute
+>>>>>> 3) acpihp_drv_post_execute
+>>>>>> you may refer to :
+>>>>>> https://lkml.org/lkml/2012/11/4/79
+>>>>>
+>>>>> Great.  Yes, I will take a look.
+>>>>
+>>>> Thanks, any comments are welcomed :)
+>>>
+>>> If I read the code right, the framework calls ACPI drivers differently
+>>> at boot-time and hot-add as follows.  That is, the new entry points are
+>>> called at hot-add only, but .add() is called at both cases.  This
+>>> requires .add() to work differently.
+>>
+>> Hi Toshi,
+>> Thanks for your comments!
+>>
+>>>
+>>> Boot    : .add()
+>>
+>> Actually, at boot time: .add(), .start()
+> 
+> Right.
+> 
+>>> Hot-Add : .add(), .pre_configure(), configure(), etc.
+>>
+>> Yes, we did it as you said in the framework. We use .pre_configure(), configure(),
+>> and post_configure() to instead of .start() for better error handling and recovery.
+> 
+> I think we should have hot-plug interfaces at the module level, not at
+> the ACPI-internal level.  In this way, the interfaces can be
+> platform-neutral and allow any modules to register, which makes it more
+> consistent with the boot-up sequence.  It can also allow ordering of the
+> sequence among the registered modules.  Right now, we initiate all
+> procedures from ACPI during hot-plug, which I think is inflexible and
+> steps into other module's role.
+> 
+> I am also concerned about the slot handling, which is the core piece of
+> the infrastructure and only allows hot-plug operations on ACPI objects
+> where slot objects are previously created by checking _EJ0.  The
+> infrastructure should allow hot-plug operations on any objects, and it
+> should not be dependent on the slot design.
+> 
+> I have some rough idea, and it may be easier to review / explain if I
+> make some code changes.  So, let me prototype it, and send it you all if
+> that works out.  Hopefully, it won't take too long.
 
-Part of the reasons I haven't tackled this is that for drm/i915 we
-can't use this alone (since we still need to support the shadow attach
-for old ums), but I regard it as a smaller part of the general
-midlayer/inversion of control problem in the drm driver setup/teardown
-sequence. Which all results in ridiculous amounts of races between the
-interfaces regsiter in the drm core (dev node, sysfs files, debugfs
-files) and the driver itself. Especially module unload is totally
-broken.
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Great! If any thing I can do, please let me know it.
+
+> 
+>>> I think the boot-time and hot-add initialization should be done
+>>> consistently.  While there is difficulty with the current boot sequence,
+>>> the framework should be designed to allow them consistent, not make them
+>>> diverged.
+>>>
+>>>>>>> 1. Validate phase - Verify if the request is a supported operation.  All
+>>>>>>> known restrictions are verified at this phase.  For instance, if a
+>>>>>>> hot-remove request involves kernel memory, it is failed in this phase.
+>>>>>>> Since this phase makes no change, no rollback is necessary to fail. 
+>>>>>>
+>>>>>> Yes, we have done this in acpihp_drv_pre_execute, and check following things:
+>>>>>>
+>>>>>> 1) Hot-plugble or not. the instance kernel memory you mentioned is also checked
+>>>>>>    when memory device remove;
+>>>>>
+>>>>> Agreed.
+>>>>>
+>>>>>> 2) Dependency check involved. For instance, if hot-add a memory device,
+>>>>>>    processor should be added first, otherwise it's not valid to this operation.
+>>>>>
+>>>>> I think FW should be the one that assures such dependency.  That is,
+>>>>> when a memory device object is marked as present/enabled/functioning, it
+>>>>> should be ready for the OS to use.
+>>>>
+>>>> Yes, BIOS should do something for the dependency, because BIOS knows the
+>>>> actual hardware topology. 
+>>>
+>>> Right.
+>>>
+>>>> The ACPI specification provides _EDL method to
+>>>> tell OS the eject device list, but still has no method to tell OS the add device
+>>>> list now.
+>>>
+>>> Yes, but I do not think the OS needs special handling for add...
+>>
+>> Hmm, how about trigger a hot add operation by OS ? we have eject interface for OS, but
+>> have no add interface now, do you think this feature is useful? If it is, I think OS
+>> should analyze the dependency first and tell the user.
+> 
+> The OS can eject an ACPI device because a target device is owned by the
+> OS (i.e. enabled).  For hot-add, a target ACPI device is not owned by
+> the OS (i.e. disabled).  Therefore, the OS is not supposed to change its
+> state.  So, I do not think we should support a hot-add operation by the
+> OS.
+>  
+>>>> For some cases, OS should analyze the dependency in the validate phase. For example,
+>>>> when hot remove a node (container device), OS should analyze the dependency to get
+>>>> the remove order as following:
+>>>> 1) Host bridge;
+>>>> 2) Memory devices;
+>>>> 3) Processor devices;
+>>>> 4) Container device itself;
+>>>
+>>> This may be off-topic, but how do you plan to delete I/O devices under a
+>>> node?  Are you planning to delete all I/O devices along with the node?
+>>
+>> Yes, we delete all I/O devices under the node. we delete I/O devices as
+>> following steps:
+>> 1) Offline PCI devices;
+>> 2) Offline IOAPIC and IOMMU;
+>> and offline I/O devices no matter in use or not.
+> 
+> Oh, off-lining no matter what would be problematic for enterprise
+> customers... 
+
+Agreed. I think we should do more in user space to check such things, not in the kernel.
+
+Thanks
+Hanjun
+
+
+
+
