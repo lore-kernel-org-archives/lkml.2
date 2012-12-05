@@ -1,51 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753180Ab2LECTl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 4 Dec 2012 21:19:41 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:58211 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752590Ab2LECTj (ORCPT
+	id S1753327Ab2LECWX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 4 Dec 2012 21:22:23 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58874 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752451Ab2LECWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 4 Dec 2012 21:19:39 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121205014823.GA28474@opensource.wolfsonmicro.com>
-References: <1354629663-29091-1-git-send-email-m.szyprowski@samsung.com>
-	<1354629663-29091-4-git-send-email-m.szyprowski@samsung.com>
-	<CADz5_gLAWyD-3nYEV5HJad11wxEmxO867LkWOXDBn1_XmcOA_w@mail.gmail.com>
-	<20121205014823.GA28474@opensource.wolfsonmicro.com>
-Date: Wed, 5 Dec 2012 10:12:11 +0800
-Message-ID: <CADz5_g+nuAenwt46xuYbYE3vubqHWFBda3=GFAQe65-vjYo46g@mail.gmail.com>
-Subject: Re: [PATCH 3/3] mmc: sdhci: check voltage range only on regulators
- aware of voltage value
-From: Kevin Liu <keyuan.liu@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        Liam Girdwood <lrg@ti.com>, Chris Ball <cjb@laptop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 4 Dec 2012 21:22:20 -0500
+Message-ID: <1354674138.11174.86.camel@fourier>
+Subject: SEMI_MT vs. simulated mt (was Re: [PATCH v3 0/4] Cypress PS/2
+ Trackpad driver)
+From: Kamal Mostafa <kamal@canonical.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Dudley Du <dudl@cypress.com>
+Cc: linux-kernel@vger.kernel.org, David Solda <dso@cypress.com>,
+        Troy Abercrombia <ta@cypress.com>,
+        Kyle Fazzari <git@status.e4ward.com>,
+        Mario Limonciello <mario_limonciello@dell.com>,
+        Herton Krzesinski <herton.krzesinski@canonical.com>,
+        linux-input@vger.kernel.org, Tim Gardner <tim.gardner@canonical.com>
+Date: Tue, 04 Dec 2012 18:22:18 -0800
+In-Reply-To: <20121203073636.GA28682@core.coreip.homeip.net>
+References: <1354226281-3476-1-git-send-email-kamal@canonical.com>
+	 <20121203073636.GA28682@core.coreip.homeip.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/12/5 Mark Brown <broonie@opensource.wolfsonmicro.com>
->
-> On Tue, Dec 04, 2012 at 10:50:03PM +0800, Kevin Liu wrote:
-> > 2012/12/4 Marek Szyprowski <m.szyprowski@samsung.com>:
->
-> > > +       if (host->vmmc && regulator_get_voltage(host->vmmc) > 0) {
-> > >                 ret = regulator_is_supported_voltage(host->vmmc,
-> > > 2700000,
-> > >                         3600000);
-> > >                 if ((ret <= 0) || (!(caps[0] & SDHCI_CAN_VDD_330)))
->
-> > Good idea. But how about the regulator is disabled at this point? So I
-> > suggest to change to
-> >      if (host->vmmc && regulator_get_voltage(host->vmmc) >= 0)
->
-> I'd not expect regulator_get_voltage() to return 0 for disabled
-> regulators, I'd expect it to return the voltage the regulator will have
-> when enabled.
-Understand.
+Hi Dmitry and Henrik-
 
-Thanks
-Kevin
+Regarding SEMI_MT vs. "simulated multitouch" . . .
+
+> > 
+> >   Patch #4 (new) reintroduces simulated multitouch for up to 5 fingers
+> >   (#if CYPRESS_SIMULATE_MT), disabling SEMI_MT again.
+> > 
+> >   If that functionality (support for >2 fingers) can be acheived in some
+> >   better way, please advise.
+
+
+On Sun, 2012-12-02 at 23:36 -0800, Dmitry Torokhov wrote:
+> You can still report true number of fingers on the pad via BTN_TOOL_*TAP
+> while reporting the bounding box, the same way as Synaptics, Elantech,
+> ALPS and Sentelic drivers are doing it.
+
+
+On Mon, 2012-12-03 at 08:45 +0100, Henrik Rydberg wrote:
+> +		ret = input_mt_init_slots(input, CYTP_MAX_MT_SLOTS,
+> +			INPUT_MT_POINTER|INPUT_MT_DROP_UNUSED|INPUT_MT_TRACK);
+> 
+> Here, INPUT_MT_POINTER needs to be dropped; for semi-mt devices, the
+> number of fingers is propagated separately using
+> 
+>    input_mt_report_finger_count(dev, finger_count_as_reported_by_the_device),
+> 
+> which conflicts with automatic handling of pointer logic.
+
+
+Well...  The forthcoming PATCH v4 version now implements all that ^^ as
+you requested, but it appears that my desktop (X with Unity desktop in
+Ubuntu 12.10) does not actually respond to input_mt_report_finger_count
+events (e.g. BTN_TOOL_TRIPLETAP).
+
+I asked a colleague test a couple of other semi-mt touchpads (Synaptics
+and ALPS) and we found the same result:  The desktop doesn't see >2
+finger events with any of these semi-mt devices, even though
+'input-events' does show that the BTN_TOOL_*TAP events are in the input
+stream.  (Do other X desktops actually support BTN_TOOL_*TAP?)
+
+I understand that this may be "a userspace problem", but from my
+perspective the "simulated multitouch" patch is still necessary for >2
+finger tap/drag.  I have left it in my PATCH v4 set for that reason
+(patch 4/4; disabled by an ifdef).  It can be included and left
+disabled, or enabled, or dropped as you see fit.
+
+ -Kamal
+
+
