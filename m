@@ -1,125 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932219Ab2LEPnl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 10:43:41 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:62568 "EHLO
+	id S1753492Ab2LEPqD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 10:46:03 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52778 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751990Ab2LEPnh (ORCPT
+	with ESMTP id S1752495Ab2LEPp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 10:43:37 -0500
-Message-ID: <50BF6BA0.8060505@gmail.com>
-Date: Wed, 05 Dec 2012 23:43:28 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 5 Dec 2012 10:45:59 -0500
+Date: Wed, 5 Dec 2012 07:48:00 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Eli Billauer <eli.billauer@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] New driver: Xillybus generic interface for FPGA
+ (programmable logic)
+Message-ID: <20121205154800.GA4025@kroah.com>
+References: <1354117293-13632-1-git-send-email-eli.billauer@gmail.com>
+ <20121204034128.GC911@kroah.com>
+ <50BDCCCA.4000000@gmail.com>
+ <201212042043.18221.arnd@arndb.de>
 MIME-Version: 1.0
-To: Tang Chen <tangchen@cn.fujitsu.com>
-CC: hpa@zytor.com, akpm@linux-foundation.org, rob@landley.net,
-        isimatu.yasuaki@jp.fujitsu.com, laijs@cn.fujitsu.com,
-        wency@cn.fujitsu.com, linfeng@cn.fujitsu.com, jiang.liu@huawei.com,
-        yinghai@kernel.org, kosaki.motohiro@jp.fujitsu.com,
-        minchan.kim@gmail.com, mgorman@suse.de, rientjes@google.com,
-        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH v2 4/5] page_alloc: Make movablecore_map has higher priority
-References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <1353667445-7593-5-git-send-email-tangchen@cn.fujitsu.com>
-In-Reply-To: <1353667445-7593-5-git-send-email-tangchen@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201212042043.18221.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we make "movablecore_map" take precedence over "movablecore/kernelcore",
-the logic could be simplified. I think it's not so attractive to support
-both "movablecore_map" and "movablecore/kernelcore" at the same time.
+On Tue, Dec 04, 2012 at 08:43:18PM +0000, Arnd Bergmann wrote:
+> On Tuesday 04 December 2012, Eli Billauer wrote:
+> > I'm currently writing some documentation which will cover the API and 
+> > also help reading the code, I hope. It takes some time...
+> > 
+> > Until it's done, let's look at a usage example: Suppose that the FPGA's 
+> > application is to receive a high-speed bitstream with time multiplexed 
+> > data, demultiplex the bitstream into individual channel streams, and 
+> > send each channel's data to the host. And let's say that there are 64 
+> > channels in original bitstream. So the FPGA has now 64 independent 
+> > sources of data.
+> > 
+> > For that purpose, the Xillybus IP core (on the FPGA) is configured to 
+> > create 64 pipes for FPGA to host communication. The names of these pipes 
+> > (say, "chan00", "chan01", ...) are also stored in the FPGA.
+> > 
+> > When the driver starts, it queries the FPGA for its Xillybus 
+> > configuration, and creates 64 device nodes: /dev/xillybus_chan00, 
+> > /dev/xillybus_chan01, ... /dev/xillybus_chan63.
+> > 
+> > If the user wants to dump the data in channel 43 into a file, it's just:
+> > 
+> > $ cat /dev/xillybus_chan43 > mydump.dat
+> > 
+> > I hope this clarified things a bit.
+> > 
+> > I can't see how the firmware interface would help here.
+> 
+> I think a lot of us (including Greg and me) were confused about
+> the purpose of the driver, since you did not include much documentation.
+> 
+> The request_firmware interface would be useful for loading a model
+> into the FPGA, but that doesn't seem to be what your driver is
+> concerned with. It's also a bit confusing because it doesn't appear
+> to be a "bus" in the Linux sense of being something that provides
+> an abstract interface between hardware and kernel device drivers.
 
-On 11/23/2012 06:44 PM, Tang Chen wrote:
-> If kernelcore or movablecore is specified at the same time
-> with movablecore_map, movablecore_map will have higher
-> priority to be satisfied.
-> This patch will make find_zone_movable_pfns_for_nodes()
-> calculate zone_movable_pfn[] with the limit from
-> zone_movable_limit[].
-> 
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> Reviewed-by: Wen Congyang <wency@cn.fujitsu.com>
-> Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> Tested-by: Lin Feng <linfeng@cn.fujitsu.com>
-> ---
->  mm/page_alloc.c |   35 +++++++++++++++++++++++++++++++----
->  1 files changed, 31 insertions(+), 4 deletions(-)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index f23d76a..05bafbb 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -4800,12 +4800,25 @@ static void __init find_zone_movable_pfns_for_nodes(void)
->  		required_kernelcore = max(required_kernelcore, corepages);
->  	}
->  
-> -	/* If kernelcore was not specified, there is no ZONE_MOVABLE */
-> -	if (!required_kernelcore)
-> +	/*
-> +	 * No matter kernelcore/movablecore was limited or not, movable_zone
-> +	 * should always be set to a usable zone index.
-> +	 */
-> +	find_usable_zone_for_movable();
-> +
-> +	/*
-> +	 * If neither kernelcore/movablecore nor movablecore_map is specified,
-> +	 * there is no ZONE_MOVABLE. But if movablecore_map is specified, the
-> +	 * start pfn of ZONE_MOVABLE has been stored in zone_movable_limit[].
-> +	 */
-> +	if (!required_kernelcore) {
-> +		if (movablecore_map.nr_map)
-> +			memcpy(zone_movable_pfn, zone_movable_limit,
-> +				sizeof(zone_movable_pfn));
->  		goto out;
-> +	}
->  
->  	/* usable_startpfn is the lowest possible pfn ZONE_MOVABLE can be at */
-> -	find_usable_zone_for_movable();
->  	usable_startpfn = arch_zone_lowest_possible_pfn[movable_zone];
->  
->  restart:
-> @@ -4833,10 +4846,24 @@ restart:
->  		for_each_mem_pfn_range(i, nid, &start_pfn, &end_pfn, NULL) {
->  			unsigned long size_pages;
->  
-> +			/*
-> +			 * Find more memory for kernelcore in
-> +			 * [zone_movable_pfn[nid], zone_movable_limit[nid]).
-> +			 */
->  			start_pfn = max(start_pfn, zone_movable_pfn[nid]);
->  			if (start_pfn >= end_pfn)
->  				continue;
->  
-> +			if (zone_movable_limit[nid]) {
-> +				end_pfn = min(end_pfn, zone_movable_limit[nid]);
-> +				/* No range left for kernelcore in this node */
-> +				if (start_pfn >= end_pfn) {
-> +					zone_movable_pfn[nid] =
-> +							zone_movable_limit[nid];
-> +					break;
-> +				}
-> +			}
-> +
->  			/* Account for what is only usable for kernelcore */
->  			if (start_pfn < usable_startpfn) {
->  				unsigned long kernel_pages;
-> @@ -4896,12 +4923,12 @@ restart:
->  	if (usable_nodes && required_kernelcore > usable_nodes)
->  		goto restart;
->  
-> +out:
->  	/* Align start of ZONE_MOVABLE on all nids to MAX_ORDER_NR_PAGES */
->  	for (nid = 0; nid < MAX_NUMNODES; nid++)
->  		zone_movable_pfn[nid] =
->  			roundup(zone_movable_pfn[nid], MAX_ORDER_NR_PAGES);
->  
-> -out:
->  	/* restore the node_state */
->  	node_states[N_HIGH_MEMORY] = saved_node_state;
->  }
-> 
+Yes, that's what I was confused about as well.  I'll wait for a new
+patch with new documentation, before commenting further.
 
+greg k-h
