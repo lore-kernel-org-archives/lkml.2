@@ -1,91 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752501Ab2LEKkH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 05:40:07 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:51129 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382Ab2LEKkD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 05:40:03 -0500
-MIME-Version: 1.0
-In-Reply-To: <1354634875-5182-15-git-send-email-benjamin.tissoires@gmail.com>
-References: <1354634875-5182-1-git-send-email-benjamin.tissoires@gmail.com>
-	<1354634875-5182-15-git-send-email-benjamin.tissoires@gmail.com>
-Date: Wed, 5 Dec 2012 11:40:02 +0100
-Message-ID: <CAN+gG=Fjyhf-DGcC1=rL_zzjecVCfdmhsV0OWha=uODM94vNXA@mail.gmail.com>
-Subject: Re: [PATCH 14/14] HID: i2c-hid: fix i2c_hid_get_raw_report count mismatches
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, Jean Delvare <khali@linux-fr.org>,
-        linux-input@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752774Ab2LEKqN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 05:46:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52859 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751217Ab2LEKqL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 05:46:11 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: mst@redhat.com, rusty@rustcorp.com.au, davem@davemloft.net,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, krkumar2@in.ibm.com
+Cc: kvm@vger.kernel.org, bhutchings@solarflare.com, jwhan@filewood.snu.ac.kr,
+        shiyer@redhat.com, Jason Wang <jasowang@redhat.com>
+Subject: [PATCH net-next v2 0/3] Multiqueue support in virtio-net
+Date: Wed,  5 Dec 2012 18:37:49 +0800
+Message-Id: <1354703872-25677-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi all:
 
-sorry, but when I re-read it, it seems that I missed a +2 in the call
-of i2c_hid_get_report.
+This series is an update version of multiqueue virtio-net driver based on
+Krishna Kumar's work to let virtio-net use multiple rx/tx queues to do the
+packets reception and transmission. Please review and comments.
 
-So Jean, Jiri, please ignore this one. I'm really sorry if you already
-started reviewing it.
+A protype implementation of qemu-kvm support could by found in
+git://github.com/jasowang/qemu-kvm-mq.git. To start a guest with two queues, you
+could specify the queues parameters to both tap and virtio-net like:
 
-I'll send a v2 with the missing patches early this afternoon.
+./qemu-kvm -netdev tap,queues=2,... -device virtio-net-pci,queues=2,...
 
-Cheers,
-Benjamin
+then enable the multiqueue through ethtool by:
 
-On Tue, Dec 4, 2012 at 4:27 PM, Benjamin Tissoires
-<benjamin.tissoires@gmail.com> wrote:
-> The previous memcpy implementation relied on the size advertized by the
-> device. There were no guarantees that buf was big enough.
->
-> Some gymnastic is also required with the +2/-2 to take into account
-> the first 2 bytes where the total length is supplied by the device.
->
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> ---
->  drivers/hid/i2c-hid/i2c-hid.c | 13 ++++++++++---
->  1 file changed, 10 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-> index 62988f1..de3566f 100644
-> --- a/drivers/hid/i2c-hid/i2c-hid.c
-> +++ b/drivers/hid/i2c-hid/i2c-hid.c
-> @@ -503,13 +503,14 @@ static int i2c_hid_get_raw_report(struct hid_device *hid,
->  {
->         struct i2c_client *client = hid->driver_data;
->         struct i2c_hid *ihid = i2c_get_clientdata(client);
-> +       size_t rcount;
->         int ret;
->
->         if (report_type == HID_OUTPUT_REPORT)
->                 return -EINVAL;
->
-> -       if (count > ihid->bufsize)
-> -               count = ihid->bufsize;
-> +       if (count > ihid->bufsize - 2)
-> +               count = ihid->bufsize - 2;
->
->         ret = i2c_hid_get_report(client,
->                         report_type == HID_FEATURE_REPORT ? 0x03 : 0x01,
-> @@ -518,7 +519,13 @@ static int i2c_hid_get_raw_report(struct hid_device *hid,
->         if (ret < 0)
->                 return ret;
->
-> -       count = ihid->inbuf[0] | (ihid->inbuf[1] << 8);
-> +       rcount = ihid->inbuf[0] | (ihid->inbuf[1] << 8);
-> +
-> +       if (!rcount)
-> +               return 0;
-> +
-> +       if (count > rcount - 2)
-> +               count = rcount - 2;
->
->         memcpy(buf, ihid->inbuf + 2, count);
->
-> --
-> 1.8.0.1
->
+ethtool -L eth0 combined 2
+
+Changes from V1:
+Addressing Michael's comments:
+- fix typos in commit log
+- don't move virtnet_open()
+- don't set to NULL in virtnet_free_queues()
+- style & comment fixes
+- conditionally set the irq affinity hint based on online cpus and queue pairs
+- move the virnet_del_vqs to patch 1
+- change the meaningless kzalloc() to kmalloc()
+- open code the err handling
+- store the name of virtqueue in send/receive queue
+- avoid type cast in virtnet_find_vqs()
+- fix the mem leak and freeing issue of names in virtnet_find_vqs()
+- check cvq during before setting the max_queue_pairs in virtnet_probe()
+- check the cvq and VIRTIO_NET_F_RFS in virtnet_set_queues()
+- set the curr_queue_pairs in virtnet_set_queue()
+- use the err report by virtnet_set_queue() as the return value of
+  ethtool_set_channels()
+
+Changes from RFC v7:
+Addressing Rusty's comments:
+- align the implementation (location of cvq) to v5.
+- fix the style issue.
+- use a global refill instead of per-vq one.
+- check the VIRTIO_NET_F_RFS before calling virtnet_set_queues()
+
+Addresing Michael's comments
+- rename the curr_queue_pairs in virtnet_probe() to max_queue_pairs
+- validate the number of queue pairs supported by the device against
+  VIRTIO_NET_CTRL_RFS_VQ_PAIRS_MIN and VIRTIO_NET_CTRL_RFS_VQ_PAIRS_MAX.
+- don't crash when failing to change the number of virtqueues
+- don't set the affinity hint when onle single queue is used or there's too much
+  virtqueues
+- add a TODO of handling cpu hotplug
+- allow user to set the nubmer of queue pairs between 1 and max_queue_pairs
+
+Changes from RFC v6:
+- Align the implementation with the RFC spec update v5
+- Addressing Rusty's comments:
+  * split the patches
+  * rename to max_queue_pairs and curr_queue_pairs
+  * remove the useless status
+  * fix the hibernation bug
+- Addressing Ben's comments:
+  * check other parameters in ethtool_set_queues
+
+Changes from RFC v5:
+- Align the implementation with the RFC spec update v4
+- Switch the mode between single mode and multiqueue mode without reset
+- Remove the 256 limitation of queues
+- Use helpers to do the mapping between virtqueues and tx/rx queues
+- Use commbined channels instead of separated rx/tx queus when do the queue
+  number configuartion
+- Other coding style comments from Michael
+
+Changes from RFC v4:
+- Add ability to negotiate the number of queues through control virtqueue
+- Ethtool -{L|l} support and default the tx/rx queue number to 1
+- Expose the API to set irq affinity instead of irq itself
+
+Changes from RFC v3:
+- Rebase to the net-next
+- Let queue 2 to be the control virtqueue to obey the spec
+- Prodives irq affinity
+- Choose txq based on processor id
+
+Reference:
+- Virtio spec RFC: http://patchwork.ozlabs.org/patch/201303/
+- V1: https://lkml.org/lkml/2012/11/27/177
+- RFC V7: https://lkml.org/lkml/2012/11/27/177a
+- RFC V6: https://lkml.org/lkml/2012/10/30/127
+- RFC V5: http://lwn.net/Articles/505388/
+- RFC V4: https://lkml.org/lkml/2012/6/25/120
+- RFC V2: http://lwn.net/Articles/467283/
+
+Perf Numbers:
+
+Will do some basic test and post as a reply to this mail.
+
+Jason Wang (3):
+  virtio-net: separate fields of sending/receiving queue from
+    virtnet_info
+  virtio_net: multiqueue support
+  virtio-net: support changing the number of queue pairs through
+    ethtool
+
+ drivers/net/virtio_net.c        |  726 +++++++++++++++++++++++++++++----------
+ include/uapi/linux/virtio_net.h |   27 ++
+ 2 files changed, 567 insertions(+), 186 deletions(-)
+
