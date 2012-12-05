@@ -1,87 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753724Ab2LESt2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 13:49:28 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:46496 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752446Ab2LESt1 (ORCPT
+	id S1753768Ab2LESuL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 13:50:11 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:48823 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753514Ab2LESuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 13:49:27 -0500
-Message-ID: <50BF96DF.3000500@linux.vnet.ibm.com>
-Date: Thu, 06 Dec 2012 00:17:59 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Wed, 5 Dec 2012 13:50:08 -0500
 MIME-Version: 1.0
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-CC: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
-        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
-        oleg@redhat.com, sbw@mit.edu, amit.kucheria@linaro.org,
-        rostedt@goodmis.org, rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v2 01/10] CPU hotplug: Provide APIs for "light" atomic
- readers to prevent CPU offline
-References: <20121205184041.3750.64945.stgit@srivatsabhat.in.ibm.com> <20121205184258.3750.31879.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20121205184258.3750.31879.stgit@srivatsabhat.in.ibm.com>
+In-Reply-To: <1354726121-17190-7-git-send-email-mark.langsdorf@calxeda.com>
+References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com>
+ <1354726121-17190-1-git-send-email-mark.langsdorf@calxeda.com> <1354726121-17190-7-git-send-email-mark.langsdorf@calxeda.com>
+From: Mike Turquette <mturquette@linaro.org>
+Date: Wed, 5 Dec 2012 10:49:47 -0800
+Message-ID: <CAPtuhTg4N7zAMf_Vfw1Xfbn3OmZ7hVffVuc=kMByxf_hJLkpPw@mail.gmail.com>
+Subject: Re: [PATCH 6/6 v8] cpufreq, highbank: add support for highbank cpufreq
+To: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org, Shawn Guo <shawn.guo@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12120518-5564-0000-0000-000005A7115C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replaying what Tejun wrote:
+On Wed, Dec 5, 2012 at 8:48 AM, Mark Langsdorf
+<mark.langsdorf@calxeda.com> wrote:
+> diff --git a/drivers/cpufreq/highbank-cpufreq.c b/drivers/cpufreq/highbank-cpufreq.c
+> new file mode 100644
+> index 0000000..1f28fa6
+> --- /dev/null
+> +++ b/drivers/cpufreq/highbank-cpufreq.c
+> @@ -0,0 +1,102 @@
 
-(cc'ing Oleg)
+Looks pretty good to me.  Some tedious nitpicks and discussion below.
+<snip>
 
-Hello, Srivatsa.
+> +static int hb_voltage_change(unsigned int freq)
+> +{
+> +       int i;
+> +       u32 msg[7];
+> +
+> +       msg[0] = HB_CPUFREQ_CHANGE_NOTE;
+> +       msg[1] = freq / 1000000;
+> +       for (i = 2; i < 7; i++)
+> +               msg[i] = 0;
+> +
+> +       return pl320_ipc_transmit(msg);
+> +}
+> +
+> +static int hb_cpufreq_clk_notify(struct notifier_block *nb,
+> +                               unsigned long action, void *hclk)
+> +{
+> +       struct clk_notifier_data *clk_data = hclk;
+> +       int i = 0;
+> +
+> +       if (action == PRE_RATE_CHANGE) {
+> +               if (clk_data->new_rate > clk_data->old_rate)
+> +                       while (hb_voltage_change(clk_data->new_rate))
+> +                               if (i++ > 15)
 
-On 12/06/2012 12:13 AM, Srivatsa S. Bhat wrote:
-> Also, since we don't use per-cpu locks (because rwlocks themselves are quite
-> scalable for readers), we don't end up in any lock ordering problems that can
-> occur if we try to use per-cpu locks.
-> 
+There are a few magic numbers here.  How about something like:
 
-Read-lock really isn't that scalable when you compare it to
-preempt_disable/enable().  When used on hot paths, it's gonna generate
-a lot of cacheline pingpongs.  This patch is essentially creating a
-new big lock which has potential for being very hot.
+#define HB_VOLT_CHANGE_MAX_TRIES 15
 
-preempt_disable/enable() + stop_machine() essentially works as percpu
-rwlock with very heavy penalty on the writer side.  Because the reader
-side doesn't even implement spinning while writer is in progress, the
-writer side has to preempt the readers before entering critical
-section and that's what the "stopping machine" is about.
+Maybe do the same for the i2c message length?
 
-Note that the resolution on the reader side is very low.  Any section
-w/ preemption disabled is protected against stop_machine().  Also, the
-stop_machine() itself is extremely heavy involving essentially locking
-up the machine until all CPUs can reach the same condition via
-scheduling the stop_machine tasks.  So, I *think* all you need to do
-here is making cpu online locking finer grained (separated from
-preemption) and lighten the writer side a bit.  I'm quite doubtful
-that you would need to go hunting donw all get_online_cpus().  They
-aren't used that often anyway.
+> +                                       return NOTIFY_STOP;
 
-Anyways, so, separating out cpu hotplug locking from preemption is the
-right thing to do but I think rwlock is likely to be too heavy on the
-reader side.  I think percpu reader accounting + reader spinning while
-writer in progress should be a good combination.  It's a bit heavier
-than preempt_disable() - it'll have an extra conditional jump on the
-hot path, but there won't be any cacheline bouncing.  The writer side
-would need to synchronize against all CPUs but only against the ones
-actually read locking cpu hotplug.  As long as reader side critical
-sections don't go crazy, it should be okay.
+How about NOTIFY_BAD?  It more clearly signals that an error has occurred.
 
-So, we basically need percpu_rwlock.  We already have percpu_rwsem.
-We used to have some different variants of writer-heavy locks.  Dunno
-what happened to them.  Maybe we still have it somewhere.  Oleg has
-been working on the area lately and should know more.  Oleg, it seems
-CPU hotplug needs big-reader rwlock, ideas on how to proceed?
+You could also return notifier_from_errno(-ETIMEDOUT) here if you
+prefer but that would only be for the sake of readability.
+clk_set_rate doesn't actually return the notifier error code in the
+event of a notifier abort.
 
-Thanks.
+> +       } else if (action == POST_RATE_CHANGE) {
+> +               if (clk_data->new_rate < clk_data->old_rate)
+> +                       while (hb_voltage_change(clk_data->new_rate))
+> +                               if (i++ > 15)
+> +                                       break;
 
--- tejun 
+Same as above.  It is true that the clock framework does nothing with
+post-rate change notifier aborts but that might change in the future.
 
+> +       }
+> +
+> +       return NOTIFY_DONE;
+> +}
+> +
+> +static struct notifier_block hb_cpufreq_clk_nb = {
+> +       .notifier_call = hb_cpufreq_clk_notify,
+> +};
+> +
+
+Do you have any plans to convert your voltage change routine over to
+the regulator framework?  Likewise do you plan to use the OPP library
+in the future?  I can understand if you do not do that since your
+regulator/dvfs programming model makes things very simple for you.
+
+The reason I bring this up is that I did float a patch a while back
+for a generalized dvfs notifier handler.  The prereqs for using it are
+1) ccf, 2) regulator fwk, 3) opp definitions.  Here is the patch:
+https://github.com/mturquette/linux/commit/05a280bbc0819a6858d73088a632666f0c7f68a4
+
+And an example usage in the OMAP CPUfreq driver:
+https://github.com/mturquette/linux/commit/958f10bb98a293aa912e7eb9cd6edbdc51c1c04a
+
+I understand if this approach incurs too much software overhead for
+you but I wanted to throw it out there.  It might working nicely in
+the cpufreq-cpu0 driver or some other "generic" CPUfreq driver for
+implementing DVFS.
+
+Regards,
+Mike
