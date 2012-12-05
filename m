@@ -1,56 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886Ab2LEVgI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 16:36:08 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:54039 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751980Ab2LEVgF (ORCPT
+	id S1752529Ab2LEVia (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 16:38:30 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:45863 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751765Ab2LEVi3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 16:36:05 -0500
-Date: Wed, 5 Dec 2012 21:41:14 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Mohr <andi@lisas.de>, linux-kernel@vger.kernel.org,
-        Li Shaohua <shaohua.li@intel.com>, linux-acpi@vger.kernel.org
-Subject: Re: Look Ma, da kernel is b0rken
-Message-ID: <20121205214114.0bb545f1@pyramind.ukuu.org.uk>
-In-Reply-To: <20121205211244.GA6239@liondog.tnic>
-References: <20121205070901.GA12123@rhlx01.hs-esslingen.de>
-	<20121205142935.GA12119@liondog.tnic>
-	<20121205152756.5afec12c@pyramind.ukuu.org.uk>
-	<20121205153121.GA28556@liondog.tnic>
-	<20121205154749.2af4ef36@pyramind.ukuu.org.uk>
-	<20121206075721.18c0c05aa767b330f47d77eb@canb.auug.org.au>
-	<20121205211244.GA6239@liondog.tnic>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 5 Dec 2012 16:38:29 -0500
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1/AS6t/DgfAOxDBFzk3Mdt5IwViFJRpmvdAwexLZY
+	bM1IKaHMot04E8
+From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
+To: Kent Yoder <key@linux.vnet.ibm.com>
+Subject: Re: [tpmdd-devel] [PATCH 1/1] TPM: STMicroelectronics ST33 I2C KERNEL 3.x.x
+Date: Wed, 5 Dec 2012 22:39:02 +0100
+User-Agent: KMail/1.13.7 (Linux/3.6.9; KDE/4.8.5; x86_64; ; )
+Cc: Mathias LEBLANC <Mathias.LEBLANC@st.com>,
+        "Jean-Luc BLANC" <jean-luc.blanc@st.com>,
+        "Sirrix@jasper.es" <Sirrix@jasper.es>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rajiv Andrade <mail@srajiv.net>,
+        "tpmdd-devel@lists.sourceforge.net" 
+	<tpmdd-devel@lists.sourceforge.net>,
+        Kent Yoder <shpedoikal@gmail.com>
+References: <1353363322-2923-1-git-send-email-mathias.leblanc@st.com> <201212052120.47955.PeterHuewe@gmx.de> <20121205210048.GA6109@ennui.austin.ibm.com>
+In-Reply-To: <20121205210048.GA6109@ennui.austin.ibm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201212052239.02710.PeterHuewe@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Dec 2012 22:12:45 +0100
-Borislav Petkov <bp@alien8.de> wrote:
+Hi Kent,
 
-> On Thu, Dec 06, 2012 at 07:57:21AM +1100, Stephen Rothwell wrote:
-> > On Wed, 5 Dec 2012 15:47:49 +0000 Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> > > And yes btw we should turn this option on in -next, and get these sort of
-> > > things out of the tree for good. More importantly it'll mean anyone
-> > > adding another one gets a whine on the spot.
+Am Mittwoch, 5. Dezember 2012, 22:00:48 schrieb Kent Yoder:
+>   This is already at least v3 of the driver IIRC. And its not fully
+> committed at all, its just in a staging tree. I can blow it away at any
+> time if we find problems.
+> 
+>   Not a problem. usually I'd attach any updates I planned to commit for
+> public review, then if anything wasn't made public before I issue my
+> pull request to send them to security-next, I'd append the full diff to
+> the pull request at that time. Either way, all changes will hit a list
+> at some point in time.
+Ok - great ;) maybe my I got the 'planning on pushing'  wrong.
+
+
+> > I thought the Mathias has changed the naming of the files? I don't see
+> > that in your commit.
+> 
+>   Good catch, this is the kind of review I was asking for. :-)
+
+Hehe. Glad to hear.
+You know I care for the tpm subsystem ;)
+
+> 
+> > The version you committed to that branch still has some of the items of
+> > my first review. (e.g.
 > > 
-> > While I appreciate your confidence, I don't notice quite a few new
-> > warnings (because there are so many of them already :-().  Is there some
-> > reason to not turn this on in our "normal" builds?  Does it produce many
-> > false positives?
+> >  * This program is free software; you can redistribute it and/or modify
+> > 
+> > * it under the terms of the GNU General Public License as published by
+> > * the Free Software Foundation; either version 2 of the License, or
+> > * (at your option) any later version.)
+> > 
+> > -> The (possible) GPL v3 clause has to go away for the kernel, but I'm
+> > not a lawyer.
 > 
-> Yes, it produces a huge number of warnings which need weeding out (some
-> of them are false positives and some of them are simply unfixable due to
-> design decisions in the kernel, etc, etc):
-> 
-> $ make W=123 drivers/pnp/pnpacpi/core.o 2> w.log
+>   A GPLv3 clause would say "v3 or any later version". This should be
+> fine.
 
-I was just talking about the always true/always false stuff !
+Hmm, okay. 
+I just googled for it on lkml, there are some files and drivers.
+So I guess it's okay - sorry for the noise.
+But I'm not a lawyer, personally I'd go for GPLv2 only but that's my personal 
+opinion. 
+
+
+Thanks,
+Peter
+
+
