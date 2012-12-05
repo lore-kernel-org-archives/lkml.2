@@ -1,100 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753944Ab2LETcx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 14:32:53 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:38056 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753290Ab2LETcu (ORCPT
+	id S1754006Ab2LETgJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 14:36:09 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:47691 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751728Ab2LETgH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 14:32:50 -0500
+	Wed, 5 Dec 2012 14:36:07 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        "kexec\@lists.infradead.org" <kexec@lists.infradead.org>,
+        "kvm\@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <50BEFEBA.6070602@cn.fujitsu.com>
+Date: Wed, 05 Dec 2012 11:35:58 -0800
+In-Reply-To: <50BEFEBA.6070602@cn.fujitsu.com> (Zhang Yanfei's message of
+	"Wed, 05 Dec 2012 15:58:50 +0800")
+Message-ID: <87boe8qokh.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20121204135445.GA7420@mail.hallyn.com>
-References: <CALCETrVQxPDfU83-LUWrf330wOBbSsMvKdFXMR3CL4LmDvyfMw@mail.gmail.com>
- <CALQRfL67LX5owxo=SMuRNAm1Jds53zY-moLpXE=wCTF4Epu4_w@mail.gmail.com>
- <CALCETrXyX2aYjbLRCpzp-h_CXBb=K7OWkO1b+tVTRz9LQQOzdQ@mail.gmail.com>
- <CALQRfL5EeqRFykLGVLJx3pfKdP4iF8r-8Ys7pVadOaCc3j1=iQ@mail.gmail.com>
- <CALCETrXYPjow3geVBnYK_ZOhnuU_wZkdebumJ=Hv3-T=fHaPNA@mail.gmail.com>
- <CALQRfL7e160D+vzVhT-fUS-_Yp55wqnWkRFJdDTOOVjjStd9Jw@mail.gmail.com>
- <CALCETrXUSz9EN-tGMfJkw9+1kO0hfmQk4E5XPF0cg9nmpPXepg@mail.gmail.com> <20121204135445.GA7420@mail.hallyn.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 5 Dec 2012 11:32:28 -0800
-Message-ID: <CALCETrW05JtRZSSJ0v=jz8B7_av1QS+D5qux5=q8aO3iWZHB1A@mail.gmail.com>
-Subject: Re: [RFC] Capabilities still can't be inherited by normal programs
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: "Andrew G. Morgan" <morgan@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@redhat.com>,
-        "Serge E. Hallyn" <serge@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX18FMIwCfN0mZGsj3VU8YsSz69ZWELbSObg=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.1 XMSolicitRefs_0 Weightloss drug
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v10 0/2] x86: vmclear vmcss on all cpus when doing kdump if necessary
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 4, 2012 at 5:54 AM, Serge E. Hallyn <serge@hallyn.com> wrote:
-> Quoting Andy Lutomirski (luto@amacapital.net):
->> >> d) If I really wanted, I could emulate execve without actually doing
->> >> execve, and capabilities would be inherited.
->> >
->> > If you could modify the executable properties of the binary that has
->> > the privilege to wield a privilege then you are either exploiting an
->> > app bug, or doing something the privileged binary has been trusted to
->> > do.
->>
->> That's not what I mean.  I would:
->>
->> fork()
->> munmap everything
->> mmap ld.so
->> set up a fake initial stack and the right fd or mapping or whatever
->> just to ld-linux.so
->>
->> That's almost execve, and privilege inheritance works.
+Zhang Yanfei <zhangyanfei@cn.fujitsu.com> writes:
+
+> Currently, kdump just makes all the logical processors leave VMX operation by
+> executing VMXOFF instruction, so any VMCSs active on the logical processors may
+> be corrupted. But, sometimes, we need the VMCSs to debug guest images contained
+> in the host vmcore. To prevent the corruption, we should VMCLEAR the VMCSs before
+> executing the VMXOFF instruction.
 >
-> But of course that is why you only want to fill fI on programs you trust
-> not to do that.  What you are arguing is that you want to give fI on
-> programs you don't trust anyway, and so heck why not just give it on
-> everything.
+> The patch set provides a way to VMCLEAR vmcss related to guests on all cpus before
+> executing the VMXOFF when doing kdump. This is used to ensure the VMCSs in the
+> vmcore updated and non-corrupted.
+
+Skimming through it looks like the important things have been addressed.
+
+Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+
+
+> Changelog from v9 to v10:
+> 1. add rcu protect to the callback function
 >
-
-Huh?  I'd set fP on a program I expect to do *exactly* that (or use
-actual in-kernel capability inheritance, which I would find vastly
-more pleasant).  If I give a program a capability (via fP or fI & pI),
-then I had better trust it not to abuse that capability.  Having it
-pass that capability on to a child helper process would be just fine
-with me *because it already has that capability*.
-
-The problem with the current inheritance mechanism is that it's very
-difficult to understand what it means for an fI bit or a pI bit to be
-set.  Saying "set a pI bit using pam if you want to grant permission
-to that user to run a particular program with fI set" is crap -- it
-only works if there is exactly one binary on the system with that bit
-set.  In any case, a different administrator or package might use it
-for something different.
-
-Suppose I use the (apparently) current suggested approach: I install a
-fI=cap_net_raw copy of tcpdump somewhere.  Then I write a helper that
-has fP=cap_new_raw and invokes that copy of tcpdump after appropriate
-validation of parameters.  All is well.
-
-Now I want to grant only a subset of users permission to run ping.  So
-I modify ping so it's cap_net_raw=i (not p) and grant those users
-pI=cap_net_raw.
-
-The end result: I introduced a security hole: the users with
-cap_net_raw=i can run tcpdump *without validation via the helper*.
-Oops.
-
-The fundamental problem as I see it is that fI and pI's behavior is so
-odd that the significance of setting some of those bits varies and is
-likely to be used, if at all, in conflicting ways.
-
-> Anyway, implementing the features you want in a new module is encouraged,
-> so long as the behavior of existing module stays the same.
-
-I'll think about it some more and do it possibly using a sysctl.
-Adding this kind of stuff in a module is asking for even worse
-incomprehensibility of which capability bit means what.
-
---Andy
+> Changelog from v8 to v9:
+> 1. KEXEC: use a callback function instead of a notifier.
+> 2. KVM-INTEL: use a new vmclear function instead of just calling 
+>    vmclear_local_loaded_vmcss to make sure we just do the core vmclear
+>    operation in kdump.
+>
+> Changelog from v7 to v8:
+> 1. KEXEC: regression for using name crash_notifier_list
+>    and remove comments related to KVM
+>    and just call function atomic_notifier_call_chain directly.
+>
+> Changelog from v6 to v7:
+> 1. KVM-INTEL: in hardware_disable, we needn't disable the
+>    vmclear, so remove it.
+>
+> Changelog from v5 to v6:
+> 1. KEXEC: the atomic notifier list renamed:
+>    crash_notifier_list --> vmclear_notifier_list
+> 2. KVM-INTEL: provide empty functions if CONFIG_KEXEC is
+>    not defined and remove unnecessary #ifdef's.
+>
+> Changelog from v4 to v5:
+> 1. use an atomic notifier instead of function call, so
+>    have all the vmclear codes in vmx.c.
+>
+> Changelog from v3 to v4:
+> 1. add a new percpu variable vmclear_skipped to skip
+>    vmclear in kdump in some conditions.
+>
+> Changelog from v2 to v3:
+> 1. remove unnecessary conditions in function
+>    cpu_emergency_clear_loaded_vmcss as Marcelo suggested.
+>
+> Changelog from v1 to v2:
+> 1. remove the sysctl and clear VMCSs unconditionally.
+>
+> Zhang Yanfei (2):
+>   x86/kexec: VMCLEAR VMCSs loaded on all cpus if necessary
+>   KVM-INTEL: provide the vmclear function and a bitmap to support
+>     VMCLEAR in kdump
+>
+>  arch/x86/include/asm/kexec.h |    2 +
+>  arch/x86/kernel/crash.c      |   32 ++++++++++++++++++++
+>  arch/x86/kvm/vmx.c           |   67 ++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 101 insertions(+), 0 deletions(-)
