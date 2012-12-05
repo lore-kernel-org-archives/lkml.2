@@ -1,50 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753903Ab2LEKtl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 05:49:41 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:39454 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751936Ab2LEKtj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 05:49:39 -0500
-From: Florian Fainelli <florian@openwrt.org>
-To: Wenyou Yang <wenyou.yang@atmel.com>
-Cc: linux-arm-kernel@lists.infradead.org, nicolas.ferre@atmel.com,
-        plagnioj@jcrosoft.com, JM.Lin@atmel.com, wim@iguana.be,
-        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [v2 PATCH 2/8] watchdog/at91sam9_wdt: Convert to use the watchdog framework
-Date: Wed, 05 Dec 2012 11:47:39 +0100
-Message-ID: <3976223.KImVV2lC5B@flexo>
-Organization: OpenWrt
-User-Agent: KMail/4.9.2 (Linux/3.5.0-17-generic; KDE/4.9.2; x86_64; ; )
-In-Reply-To: <1354671267-19277-3-git-send-email-wenyou.yang@atmel.com>
-References: <1354671267-19277-1-git-send-email-wenyou.yang@atmel.com> <1354671267-19277-3-git-send-email-wenyou.yang@atmel.com>
+	id S1753145Ab2LEKy1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 05:54:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33817 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751936Ab2LEKyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 05:54:25 -0500
+Message-ID: <50BF27D5.6050606@suse.cz>
+Date: Wed, 05 Dec 2012 11:54:13 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120825 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: David Howells <dhowells@redhat.com>
+Cc: Takashi Iwai <tiwai@suse.de>, Rusty Russell <rusty@ozlabs.org>,
+        linux-kernel@vger.kernel.org, James Hogan <james.hogan@imgtec.com>
+Subject: Re: [PATCH 2/3] MODSIGN: Avoid using .incbin in C source
+References: <s5hobi9aqxs.wl%tiwai@suse.de> <1354616321-13520-2-git-send-email-mmarek@suse.cz> <1354616321-13520-1-git-send-email-mmarek@suse.cz> <22396.1354645048@warthog.procyon.org.uk> <87hao1gyiv.fsf@rustcorp.com.au> <6935.1354703447@warthog.procyon.org.uk>
+In-Reply-To: <6935.1354703447@warthog.procyon.org.uk>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Wenyou,
-
-On Wednesday 05 December 2012 09:34:21 Wenyou Yang wrote:
-> According to the kernel document: convert_drivers_to_kernel_api.txt,
-> remove the file_operations struct, miscdevice, and obsolete includes
+Dne 5.12.2012 11:30, David Howells napsal(a):
+> Takashi Iwai <tiwai@suse.de> wrote:
 > 
-> Since the at91sam watchdog inherent characteristics, add the watchdog
-> operations: at91wdt_start, at91wdt_stop and at91wdt_ping.
+>> +#ifndef SYMBOL_PREFIX
 > 
+> This comes via the command line?
 
-[snip]
+Yes, see scripts/Makefile.lib:
 
->  
-> +static inline bool watchdog_is_open(struct watchdog_device *wddev)
-> +{
-> +	return test_bit(WDOG_DEV_OPEN, &wddev->status);
-> +}
+ifdef CONFIG_SYMBOL_PREFIX
+_sym_flags = -DSYMBOL_PREFIX=$(patsubst "%",%,$(CONFIG_SYMBOL_PREFIX))
+_cpp_flags += $(_sym_flags)
+_a_flags += $(_sym_flags)
+endif
 
-This helper should be moved to include/linux/watchdog.h as it can be useful
-for other watchdog drivers as well. 
---
-Florian
+Michal
