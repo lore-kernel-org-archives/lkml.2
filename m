@@ -1,198 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598Ab2LEJvE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 04:51:04 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58951 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752168Ab2LEJvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 04:51:00 -0500
-Date: Wed, 5 Dec 2012 10:50:57 +0100
-From: Michal Marek <mmarek@suse.cz>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Rusty Russell <rusty@ozlabs.org>, David Howells <dhowells@redhat.com>,
-        linux-kernel@vger.kernel.org, James Hogan <james.hogan@imgtec.com>
-Subject: Re: [PATCH 2/3] MODSIGN: Avoid using .incbin in C source
-Message-ID: <20121205095057.GA26543@sepie.suse.cz>
-References: <1354616321-13520-2-git-send-email-mmarek@suse.cz>
- <1354616321-13520-1-git-send-email-mmarek@suse.cz>
- <22396.1354645048@warthog.procyon.org.uk>
- <87hao1gyiv.fsf@rustcorp.com.au>
- <s5hobi9aqxs.wl%tiwai@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5hobi9aqxs.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752724Ab2LEJwJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 04:52:09 -0500
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:43227 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752168Ab2LEJwF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 04:52:05 -0500
+Date: Wed, 5 Dec 2012 10:51:58 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 08/14] HID: i2c-hid: fix error messages
+Message-ID: <20121205105158.666a19a8@endymion.delvare>
+In-Reply-To: <1354634875-5182-9-git-send-email-benjamin.tissoires@gmail.com>
+References: <1354634875-5182-1-git-send-email-benjamin.tissoires@gmail.com>
+	<1354634875-5182-9-git-send-email-benjamin.tissoires@gmail.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 05, 2012 at 08:39:11AM +0100, Takashi Iwai wrote:
-> At Wed, 05 Dec 2012 10:28:48 +1030,
-> Rusty Russell wrote:
-> > 
-> > David Howells <dhowells@redhat.com> writes:
-> > 
-> > > Michal Marek <mmarek@suse.cz> wrote:
-> > >
-> > >> Using the asm .incbin statement in C sources breaks any gcc wrapper which
-> > >> assumes that preprocessed C source is self-contained. Use a separate .S
-> > >> file to include the siging key and certificate.
-> > >
-> > > I was trying to avoid that as .S files generally don't crop up in generic
-> > > code and the format of the assembly varies with the arch.  However, you don't
-> > > seem to have anything that should cause a problem - so:
-> > >
-> > > Acked-by: David Howells <dhowells@redhat.com>
-> > 
-> > GLOBAL() is defined in x86 only, AFAICT.
+On Tue,  4 Dec 2012 16:27:49 +0100, Benjamin Tissoires wrote:
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+> ---
+>  drivers/hid/i2c-hid/i2c-hid.c | 11 ++++++-----
+>  1 file changed, 6 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
+> index d6fdb3e..da04948 100644
+> --- a/drivers/hid/i2c-hid/i2c-hid.c
+> +++ b/drivers/hid/i2c-hid/i2c-hid.c
+> @@ -741,10 +741,10 @@ static int __devinit i2c_hid_init_irq(struct i2c_client *client)
+>  			IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+>  			client->name, ihid);
+>  	if (ret < 0) {
+> -		dev_dbg(&client->dev,
+> +		dev_warn(&client->dev,
+>  			"Could not register for %s interrupt, irq = %d,"
+>  			" ret = %d\n",
+> -		client->name, client->irq, ret);
+> +			client->name, client->irq, ret);
+>  
+>  		return ret;
+>  	}
+> @@ -770,7 +770,8 @@ static int __devinit i2c_hid_fetch_hid_descriptor(struct i2c_hid *ihid)
+>  			__func__, 4, ihid->hdesc_buffer);
+>  
+>  	if (ret) {
+> -		dev_err(&client->dev, "HID_DESCR_LENGTH_CMD Fail (ret=%d)\n",
+> +		dev_err(&client->dev,
+> +			"unable to fetch the size of HID descriptor (ret=%d)\n",
+>  			ret);
+>  		return -ENODEV;
+>  	}
+> @@ -785,7 +786,7 @@ static int __devinit i2c_hid_fetch_hid_descriptor(struct i2c_hid *ihid)
+>  	/* check bcdVersion == 1.0 */
+>  	if (le16_to_cpu(hdesc->bcdVersion) != 0x0100) {
+>  		dev_err(&client->dev,
+> -			"unexpected HID descriptor bcdVersion (0x%04x)\n",
+> +			"unexpected HID descriptor bcdVersion (0x%04hx)\n",
+>  			le16_to_cpu(hdesc->bcdVersion));
+>  		return -ENODEV;
+>  	}
+> @@ -871,7 +872,7 @@ static int __devinit i2c_hid_probe(struct i2c_client *client,
+>  	hid->vendor = le16_to_cpu(ihid->hdesc.wVendorID);
+>  	hid->product = le16_to_cpu(ihid->hdesc.wProductID);
+>  
+> -	snprintf(hid->name, sizeof(hid->name), "%s %04X:%04X",
+> +	snprintf(hid->name, sizeof(hid->name), "%s %04hX:%04hX",
+>  		 client->name, hid->vendor, hid->product);
+>  
+>  	ret = hid_add_device(hid);
 
-Sorry for that, the Tested-by actually meant Tested-on-x86_64-by :/
+Reviewed-by: Jean Delvare <khali@linux-fr.org>
 
-
-> How about the revised patch below?
-[...]
-> diff --git a/kernel/modsign_certificate.S b/kernel/modsign_certificate.S
-> new file mode 100644
-> index 0000000..695d4e3
-> --- /dev/null
-> +++ b/kernel/modsign_certificate.S
-> @@ -0,0 +1,18 @@
-> +#ifndef SYMBOL_PREFIX
-> +#define ASM_SYMBOL(sym) sym
-> +#else
-> +#define PASTE2(x,y) x##y
-> +#define PASTE(x,y) PASTE2(x,y)
-> +#define ASM_SYMBOL(sym) PASTE(SYMBOL_PREFIX, sym)
-> +#endif
-
-
-It looks good, but looking at your patch, I just noticed that we have two
-versions of the SYMBOL_PREFIX macro in the kernel now:
-
-scripts/Makefile.lib has had since some time
-
-ifdef CONFIG_SYMBOL_PREFIX
-_sym_flags = -DSYMBOL_PREFIX=$(patsubst "%",%,$(CONFIG_SYMBOL_PREFIX))
-_cpp_flags += $(_sym_flags)
-_a_flags += $(_sym_flags)
-endif
-
-while include/linux/kernel.h now has
-
-/* This helps us to avoid #ifdef CONFIG_SYMBOL_PREFIX */
-#ifdef CONFIG_SYMBOL_PREFIX
-#define SYMBOL_PREFIX CONFIG_SYMBOL_PREFIX
-#else
-#define SYMBOL_PREFIX ""
-#endif
-
-So depending on whether you include <linux/kernel.h> or not,
-SYMBOL_PREFIX expands to either a string or a token. James, Rusty, how
-about the patch below? If Takashi's patch is applied first, then
-obviously the modsign_pubkey.c part should be dropped and the ASM_SYMBOL
-definition in modsign_certificate.S can be simplified instead.
-
-Michal
-
->From df545c46fb89c085387f4d98c7a4fb06a7f678a9 Mon Sep 17 00:00:00 2001
-From: Michal Marek <mmarek@suse.cz>
-Date: Wed, 5 Dec 2012 10:03:15 +0100
-Subject: [PATCH] linux/kernel.h: Avoid conflicting SYMBOL_PREFIX definition
-
-scripts/Makefile.lib already defines SYMBOL_PREFIX to the token _ if
-CONFIG_SYMBOL_PREFIX is defined. Drop the string definition in
-linux/kernel.h and change scripts/Makefile.lib to define SYMBOL_PREFIX
-on all architectures.
-
-Signed-off-by: Michal Marek <mmarek@suse.cz>
----
- include/asm-generic/vmlinux.lds.h |    4 ----
- include/linux/kernel.h            |    7 -------
- kernel/modsign_pubkey.c           |    5 +++--
- scripts/Makefile.lib              |    5 ++---
- 4 files changed, 5 insertions(+), 16 deletions(-)
-
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index d1ea7ce..7756a0c 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -52,13 +52,9 @@
- #define LOAD_OFFSET 0
- #endif
- 
--#ifndef SYMBOL_PREFIX
--#define VMLINUX_SYMBOL(sym) sym
--#else
- #define PASTE2(x,y) x##y
- #define PASTE(x,y) PASTE2(x,y)
- #define VMLINUX_SYMBOL(sym) PASTE(SYMBOL_PREFIX, sym)
--#endif
- 
- /* Align . to a 8 byte boundary equals to maximum function alignment. */
- #define ALIGN_FUNCTION()  . = ALIGN(8)
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index d140e8f..9a6bccb 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -717,13 +717,6 @@ static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
- /* Trap pasters of __FUNCTION__ at compile-time */
- #define __FUNCTION__ (__func__)
- 
--/* This helps us to avoid #ifdef CONFIG_SYMBOL_PREFIX */
--#ifdef CONFIG_SYMBOL_PREFIX
--#define SYMBOL_PREFIX CONFIG_SYMBOL_PREFIX
--#else
--#define SYMBOL_PREFIX ""
--#endif
--
- /* Rebuild everything on CONFIG_FTRACE_MCOUNT_RECORD */
- #ifdef CONFIG_FTRACE_MCOUNT_RECORD
- # define REBUILD_DUE_TO_FTRACE_MCOUNT_RECORD
-diff --git a/kernel/modsign_pubkey.c b/kernel/modsign_pubkey.c
-index 767e559..93ce84b 100644
---- a/kernel/modsign_pubkey.c
-+++ b/kernel/modsign_pubkey.c
-@@ -9,6 +9,7 @@
-  * 2 of the Licence, or (at your option) any later version.
-  */
- 
-+#include <linux/stringify.h>
- #include <linux/kernel.h>
- #include <linux/sched.h>
- #include <linux/cred.h>
-@@ -21,10 +22,10 @@ struct key *modsign_keyring;
- extern __initdata const u8 modsign_certificate_list[];
- extern __initdata const u8 modsign_certificate_list_end[];
- asm(".section .init.data,\"aw\"\n"
--    SYMBOL_PREFIX "modsign_certificate_list:\n"
-+    __stringify(SYMBOL_PREFIX) "modsign_certificate_list:\n"
-     ".incbin \"signing_key.x509\"\n"
-     ".incbin \"extra_certificates\"\n"
--    SYMBOL_PREFIX "modsign_certificate_list_end:"
-+    __stringify(SYMBOL_PREFIX) "modsign_certificate_list_end:"
-     );
- 
- /*
-diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-index bdf42fd..1138e77 100644
---- a/scripts/Makefile.lib
-+++ b/scripts/Makefile.lib
-@@ -119,11 +119,10 @@ _c_flags += $(if $(patsubst n%,, \
- 		$(CFLAGS_GCOV))
- endif
- 
--ifdef CONFIG_SYMBOL_PREFIX
- _sym_flags = -DSYMBOL_PREFIX=$(patsubst "%",%,$(CONFIG_SYMBOL_PREFIX))
--_cpp_flags += $(_sym_flags)
-+_c_flags += $(_sym_flags)
- _a_flags += $(_sym_flags)
--endif
-+_cpp_flags += $(_sym_flags)
- 
- 
- # If building the kernel in a separate objtree expand all occurrences
 -- 
-1.7.10.4
-
-
+Jean Delvare
