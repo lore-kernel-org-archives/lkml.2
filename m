@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab2LERJD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 12:09:03 -0500
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:35582 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751718Ab2LERJB (ORCPT
+	id S1753035Ab2LERLQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 12:11:16 -0500
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:51651 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752193Ab2LERLP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 12:09:01 -0500
-Date: Wed, 5 Dec 2012 18:09:00 +0100
-From: Andreas Mohr <andi@lisas.de>
-To: Borislav Petkov <bp@alien8.de>, Andreas Mohr <andi@lisas.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: Look Ma, da kernel is b0rken
-Message-ID: <20121205170900.GA17276@rhlx01.hs-esslingen.de>
-References: <20121205070901.GA12123@rhlx01.hs-esslingen.de>
- <20121205142935.GA12119@liondog.tnic>
- <20121205152756.5afec12c@pyramind.ukuu.org.uk>
- <20121205163905.GA18522@rhlx01.hs-esslingen.de>
- <20121205164410.GD28556@liondog.tnic>
+	Wed, 5 Dec 2012 12:11:15 -0500
+From: Cong Ding <dinggnu@gmail.com>
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org
+Cc: Cong Ding <dinggnu@gmail.com>
+Subject: [PATCH] sched: fix compilation warning
+Date: Wed,  5 Dec 2012 17:10:40 +0000
+Message-Id: <1354727440-20157-1-git-send-email-dinggnu@gmail.com>
+X-Mailer: git-send-email 1.7.4.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121205164410.GD28556@liondog.tnic>
-X-Priority: none
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 05, 2012 at 05:44:10PM +0100, Borislav Petkov wrote:
-> On Wed, Dec 05, 2012 at 05:39:05PM +0100, Andreas Mohr wrote:
-> > Thanks to Borislav Petkov for his reply, too -
-> > however I'd like to state that given this lack of tooling/attention
-> > writing a mail in this more special manner was fully justified IMPHO.
-> 
-> Ok, you've stated more than clearly that you're pissed with the current
-> situation - I think we all got that.
+the following compilation warning is caused by Commit-ID:
+c566e8e9e44b72b53091da20e2dedefc730f2ee2
 
-Hohumm.
+kernel/sched/debug.c: In function ‘print_cfs_rq’:
+kernel/sched/debug.c:225:2: warning: format ‘%ld’ expects argument of type
+‘long int’, but argument 4 has type ‘long long int’ [-Wformat]
+kernel/sched/debug.c:225:2: warning: format ‘%ld’ expects argument of type
+‘long int’, but argument 3 has type ‘long long int’ [-Wformat]
 
-> Now, how do you suggest we change it constructively and how are you
-> willing to help?
+where function atomic64_read returns long long int, but %ld was used in the
+printf
 
-IMHO that's some common "misconception" - namely that innocent observing
-by-standers are fully expected to get involved in the process.
-Not necessarily, however (that's what domain experts are there for -
-since people are well-advised to concentrate on the activities
-that they are commonly involved with/do best).
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
+---
+ kernel/sched/debug.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I would be willing to handle corrections in the areas of drivers
-I was working on (some corrections were already queued locally).
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index 2cd3c1b..83ec463 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -222,7 +222,7 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
+ 			cfs_rq->runnable_load_avg);
+ 	SEQ_printf(m, "  .%-30s: %lld\n", "blocked_load_avg",
+ 			cfs_rq->blocked_load_avg);
+-	SEQ_printf(m, "  .%-30s: %ld\n", "tg_load_avg",
++	SEQ_printf(m, "  .%-30s: %lld\n", "tg_load_avg",
+ 			atomic64_read(&cfs_rq->tg->load_avg));
+ 	SEQ_printf(m, "  .%-30s: %lld\n", "tg_load_contrib",
+ 			cfs_rq->tg_load_contrib);
+-- 
+1.7.4.5
 
-For scripted mechanisms (e.g. usefully nagging people as stated
-in another posting), someone else would have to work on it I'm afraid.
-
-Thanks,
-
-Andreas Mohr
