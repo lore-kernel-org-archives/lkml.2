@@ -1,85 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992Ab2LETcy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 14:32:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58153 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753772Ab2LETcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753944Ab2LETcx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 14:32:53 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:38056 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753290Ab2LETcu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 5 Dec 2012 14:32:50 -0500
-Date: Wed, 5 Dec 2012 20:15:47 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 2/3] perf hists: Link hist entries before inserting to an
- output tree
-Message-ID: <20121205191547.GC1037@krava.brq.redhat.com>
-References: <1354690603-31364-1-git-send-email-namhyung@kernel.org>
- <1354690603-31364-3-git-send-email-namhyung@kernel.org>
- <20121205190646.GB1037@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121205190646.GB1037@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121204135445.GA7420@mail.hallyn.com>
+References: <CALCETrVQxPDfU83-LUWrf330wOBbSsMvKdFXMR3CL4LmDvyfMw@mail.gmail.com>
+ <CALQRfL67LX5owxo=SMuRNAm1Jds53zY-moLpXE=wCTF4Epu4_w@mail.gmail.com>
+ <CALCETrXyX2aYjbLRCpzp-h_CXBb=K7OWkO1b+tVTRz9LQQOzdQ@mail.gmail.com>
+ <CALQRfL5EeqRFykLGVLJx3pfKdP4iF8r-8Ys7pVadOaCc3j1=iQ@mail.gmail.com>
+ <CALCETrXYPjow3geVBnYK_ZOhnuU_wZkdebumJ=Hv3-T=fHaPNA@mail.gmail.com>
+ <CALQRfL7e160D+vzVhT-fUS-_Yp55wqnWkRFJdDTOOVjjStd9Jw@mail.gmail.com>
+ <CALCETrXUSz9EN-tGMfJkw9+1kO0hfmQk4E5XPF0cg9nmpPXepg@mail.gmail.com> <20121204135445.GA7420@mail.hallyn.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 5 Dec 2012 11:32:28 -0800
+Message-ID: <CALCETrW05JtRZSSJ0v=jz8B7_av1QS+D5qux5=q8aO3iWZHB1A@mail.gmail.com>
+Subject: Re: [RFC] Capabilities still can't be inherited by normal programs
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: "Andrew G. Morgan" <morgan@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@redhat.com>,
+        "Serge E. Hallyn" <serge@canonical.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 05, 2012 at 08:06:46PM +0100, Jiri Olsa wrote:
-> On Wed, Dec 05, 2012 at 03:56:42PM +0900, Namhyung Kim wrote:
-> > From: Namhyung Kim <namhyung.kim@lge.com>
-> > 
-> 
-> SNIP
-> 
-> > -	struct rb_node *next = rb_first(&hists->entries);
-> > +	struct rb_root *root;
-> > +	struct rb_node *next;
-> > +
-> > +	if (sort__need_collapse)
-> > +		root = &hists->entries_collapsed;
-> > +	else
-> > +		root = hists->entries_in;
-> >  
-> > +	next = rb_first(root);
-> >  	while (next != NULL) {
-> > -		struct hist_entry *he = rb_entry(next, struct hist_entry, rb_node);
-> > +		struct hist_entry *he = rb_entry(next, struct hist_entry, rb_node_in);
-> >  
-> > -		next = rb_next(&he->rb_node);
-> > +		next = rb_next(&he->rb_node_in);
-> >  		if (!hist_entry__next_pair(he)) {
-> > -			rb_erase(&he->rb_node, &hists->entries);
-> > +			rb_erase(&he->rb_node_in, root);
-> >  			hist_entry__free(he);
-> >  		}
-> >  	}
-> > @@ -481,6 +459,11 @@ static void hists__process(struct hists *old, struct hists *new)
-> >  	else
-> >  		hists__link(new, old);
-> >  
-> > +	hists__output_resort(new);
-> > +
-> > +	if (show_displacement)
-> > +		hists__compute_position(new);
-> > +
-> 
-> Computing the position after hists__link screws up the position data,
-> because we likely have new entries in.
-> 
-> However, I wonder if anyone is actualy using displacement info..?
+On Tue, Dec 4, 2012 at 5:54 AM, Serge E. Hallyn <serge@hallyn.com> wrote:
+> Quoting Andy Lutomirski (luto@amacapital.net):
+>> >> d) If I really wanted, I could emulate execve without actually doing
+>> >> execve, and capabilities would be inherited.
+>> >
+>> > If you could modify the executable properties of the binary that has
+>> > the privilege to wield a privilege then you are either exploiting an
+>> > app bug, or doing something the privileged binary has been trusted to
+>> > do.
+>>
+>> That's not what I mean.  I would:
+>>
+>> fork()
+>> munmap everything
+>> mmap ld.so
+>> set up a fake initial stack and the right fd or mapping or whatever
+>> just to ld-linux.so
+>>
+>> That's almost execve, and privilege inheritance works.
+>
+> But of course that is why you only want to fill fI on programs you trust
+> not to do that.  What you are arguing is that you want to give fI on
+> programs you don't trust anyway, and so heck why not just give it on
+> everything.
+>
 
-hum,
+Huh?  I'd set fP on a program I expect to do *exactly* that (or use
+actual in-kernel capability inheritance, which I would find vastly
+more pleasant).  If I give a program a capability (via fP or fI & pI),
+then I had better trust it not to abuse that capability.  Having it
+pass that capability on to a child helper process would be just fine
+with me *because it already has that capability*.
 
-the point of the displacement is to show how far is the matching entry
-in baseline wrt report output -> after hists__output_resort.. that goes
-in opposite way of what we try do to in here.
+The problem with the current inheritance mechanism is that it's very
+difficult to understand what it means for an fI bit or a pI bit to be
+set.  Saying "set a pI bit using pam if you want to grant permission
+to that user to run a particular program with fI set" is crap -- it
+only works if there is exactly one binary on the system with that bit
+set.  In any case, a different administrator or package might use it
+for something different.
 
-Anyone else in favour of removing 'Displ.' column? ;-)
+Suppose I use the (apparently) current suggested approach: I install a
+fI=cap_net_raw copy of tcpdump somewhere.  Then I write a helper that
+has fP=cap_new_raw and invokes that copy of tcpdump after appropriate
+validation of parameters.  All is well.
 
-jirka
+Now I want to grant only a subset of users permission to run ping.  So
+I modify ping so it's cap_net_raw=i (not p) and grant those users
+pI=cap_net_raw.
+
+The end result: I introduced a security hole: the users with
+cap_net_raw=i can run tcpdump *without validation via the helper*.
+Oops.
+
+The fundamental problem as I see it is that fI and pI's behavior is so
+odd that the significance of setting some of those bits varies and is
+likely to be used, if at all, in conflicting ways.
+
+> Anyway, implementing the features you want in a new module is encouraged,
+> so long as the behavior of existing module stays the same.
+
+I'll think about it some more and do it possibly using a sysctl.
+Adding this kind of stuff in a module is asking for even worse
+incomprehensibility of which capability bit means what.
+
+--Andy
