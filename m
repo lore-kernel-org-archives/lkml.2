@@ -1,65 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932079Ab2LEPng (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 10:43:36 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:8959 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751990Ab2LEPnf convert rfc822-to-8bit (ORCPT
+	id S932219Ab2LEPnl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 10:43:41 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62568 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751990Ab2LEPnh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 10:43:35 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 05 Dec 2012 07:43:28 -0800
-Message-ID: <50BF6B9C.3020006@nvidia.com>
-Date: Wed, 5 Dec 2012 17:43:24 +0200
-From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
+	Wed, 5 Dec 2012 10:43:37 -0500
+Message-ID: <50BF6BA0.8060505@gmail.com>
+Date: Wed, 05 Dec 2012 23:43:28 +0800
+From: Jiang Liu <liuj97@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arto Merilainen <amerilainen@nvidia.com>
-Subject: Re: [RFC v2 6/8] gpu: drm: tegra: Remove redundant host1x
-References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com> <1353935954-13763-7-git-send-email-tbergstrom@nvidia.com> <20121205083335.GA20984@avionic-0098.adnet.avionic-design.de> <50BF1DAA.8030805@nvidia.com> <20121205111332.GA25676@avionic-0098.adnet.avionic-design.de> <50BF345A.8050201@nvidia.com> <20121205120429.GA29943@avionic-0098.adnet.avionic-design.de>
-In-Reply-To: <20121205120429.GA29943@avionic-0098.adnet.avionic-design.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
+To: Tang Chen <tangchen@cn.fujitsu.com>
+CC: hpa@zytor.com, akpm@linux-foundation.org, rob@landley.net,
+        isimatu.yasuaki@jp.fujitsu.com, laijs@cn.fujitsu.com,
+        wency@cn.fujitsu.com, linfeng@cn.fujitsu.com, jiang.liu@huawei.com,
+        yinghai@kernel.org, kosaki.motohiro@jp.fujitsu.com,
+        minchan.kim@gmail.com, mgorman@suse.de, rientjes@google.com,
+        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH v2 4/5] page_alloc: Make movablecore_map has higher priority
+References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <1353667445-7593-5-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1353667445-7593-5-git-send-email-tangchen@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05.12.2012 14:04, Thierry Reding wrote:
-> On Wed, Dec 05, 2012 at 01:47:38PM +0200, Terje Bergström wrote:
-> Yes, but there's more. For instance I went to great lengths to make sure
-> there's no global data whatsoever. So all the data is bound to the
-> host1x device in the current code. I know many other drivers like to
-> take a shortcut and just put these things into global variables but I
-> didn't want to.
+If we make "movablecore_map" take precedence over "movablecore/kernelcore",
+the logic could be simplified. I think it's not so attractive to support
+both "movablecore_map" and "movablecore/kernelcore" at the same time.
 
-Sure, that feedback is in the todo list. For some parts I already have a
-proposed solution, but for chip ops not yet.
-
->> The problem with doing drm_platform_init() with host1x device as
->> parameter is that drm_get_platform_dev() will take control of drvdata.
->> We'd need to put host1x specific struct host1x pointer to some other
->> place and I'm not sure what that place could be.
+On 11/23/2012 06:44 PM, Tang Chen wrote:
+> If kernelcore or movablecore is specified at the same time
+> with movablecore_map, movablecore_map will have higher
+> priority to be satisfied.
+> This patch will make find_zone_movable_pfns_for_nodes()
+> calculate zone_movable_pfn[] with the limit from
+> zone_movable_limit[].
 > 
-> Not anymore. I submitted a patch so that it no longer does that. The
-> patch was merged about a month and a half ago.
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+> Reviewed-by: Wen Congyang <wency@cn.fujitsu.com>
+> Reviewed-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Tested-by: Lin Feng <linfeng@cn.fujitsu.com>
+> ---
+>  mm/page_alloc.c |   35 +++++++++++++++++++++++++++++++----
+>  1 files changed, 31 insertions(+), 4 deletions(-)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index f23d76a..05bafbb 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -4800,12 +4800,25 @@ static void __init find_zone_movable_pfns_for_nodes(void)
+>  		required_kernelcore = max(required_kernelcore, corepages);
+>  	}
+>  
+> -	/* If kernelcore was not specified, there is no ZONE_MOVABLE */
+> -	if (!required_kernelcore)
+> +	/*
+> +	 * No matter kernelcore/movablecore was limited or not, movable_zone
+> +	 * should always be set to a usable zone index.
+> +	 */
+> +	find_usable_zone_for_movable();
+> +
+> +	/*
+> +	 * If neither kernelcore/movablecore nor movablecore_map is specified,
+> +	 * there is no ZONE_MOVABLE. But if movablecore_map is specified, the
+> +	 * start pfn of ZONE_MOVABLE has been stored in zone_movable_limit[].
+> +	 */
+> +	if (!required_kernelcore) {
+> +		if (movablecore_map.nr_map)
+> +			memcpy(zone_movable_pfn, zone_movable_limit,
+> +				sizeof(zone_movable_pfn));
+>  		goto out;
+> +	}
+>  
+>  	/* usable_startpfn is the lowest possible pfn ZONE_MOVABLE can be at */
+> -	find_usable_zone_for_movable();
+>  	usable_startpfn = arch_zone_lowest_possible_pfn[movable_zone];
+>  
+>  restart:
+> @@ -4833,10 +4846,24 @@ restart:
+>  		for_each_mem_pfn_range(i, nid, &start_pfn, &end_pfn, NULL) {
+>  			unsigned long size_pages;
+>  
+> +			/*
+> +			 * Find more memory for kernelcore in
+> +			 * [zone_movable_pfn[nid], zone_movable_limit[nid]).
+> +			 */
+>  			start_pfn = max(start_pfn, zone_movable_pfn[nid]);
+>  			if (start_pfn >= end_pfn)
+>  				continue;
+>  
+> +			if (zone_movable_limit[nid]) {
+> +				end_pfn = min(end_pfn, zone_movable_limit[nid]);
+> +				/* No range left for kernelcore in this node */
+> +				if (start_pfn >= end_pfn) {
+> +					zone_movable_pfn[nid] =
+> +							zone_movable_limit[nid];
+> +					break;
+> +				}
+> +			}
+> +
+>  			/* Account for what is only usable for kernelcore */
+>  			if (start_pfn < usable_startpfn) {
+>  				unsigned long kernel_pages;
+> @@ -4896,12 +4923,12 @@ restart:
+>  	if (usable_nodes && required_kernelcore > usable_nodes)
+>  		goto restart;
+>  
+> +out:
+>  	/* Align start of ZONE_MOVABLE on all nids to MAX_ORDER_NR_PAGES */
+>  	for (nid = 0; nid < MAX_NUMNODES; nid++)
+>  		zone_movable_pfn[nid] =
+>  			roundup(zone_movable_pfn[nid], MAX_ORDER_NR_PAGES);
+>  
+> -out:
+>  	/* restore the node_state */
+>  	node_states[N_HIGH_MEMORY] = saved_node_state;
+>  }
+> 
 
-Oops, I must've checked the status from a stale tree. Thanks for that.
-In this case there's no technical reason why host1x couldn't act as the
-device to register for drm, as drm wouldn't touch host1x device data in
-any way.
-
-How about if we treat the host1x driver as utility library, and move the
-code for host1x probe altogether to tegradrm/host1x.c? I haven't yet
-checked how bad the dependencies between host1x's driver's host1x.c and
-the rest of the driver are, so I'm not sure if it's feasible and if
-there would be a clear design. Just tossing in ideas.
-
-That would solve the circular dependency problem. I've already committed
-to contents of host1x.c being very different in downstream and upstream,
-so this change would just emphasize that.
-
-Terje
