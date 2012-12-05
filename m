@@ -1,114 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753448Ab2LEQjL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 11:39:11 -0500
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:33974 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752495Ab2LEQjI (ORCPT
+	id S1753543Ab2LEQjj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 11:39:39 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:46573 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752120Ab2LEQjh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 11:39:08 -0500
-Date: Wed, 5 Dec 2012 17:39:05 +0100
-From: Andreas Mohr <andi@lisas.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Borislav Petkov <bp@alien8.de>, Andreas Mohr <andi@lisas.de>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: Look Ma, da kernel is b0rken
-Message-ID: <20121205163905.GA18522@rhlx01.hs-esslingen.de>
-References: <20121205070901.GA12123@rhlx01.hs-esslingen.de>
- <20121205142935.GA12119@liondog.tnic>
- <20121205152756.5afec12c@pyramind.ukuu.org.uk>
+	Wed, 5 Dec 2012 11:39:37 -0500
+Message-ID: <50BF78D5.4060003@arm.com>
+Date: Wed, 05 Dec 2012 16:39:49 +0000
+From: Serban Constantinescu <Serban.Constantinescu@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121205152756.5afec12c@pyramind.ukuu.org.uk>
-X-Priority: none
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "arve@android.com" <arve@android.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "john.stultz@linaro.org" <john.stultz@linaro.org>,
+        "ccross@android.com" <ccross@android.com>,
+        "zach.pfeffer@linaro.org" <zach.pfeffer@linaro.org>,
+        Dave Butcher <Dave.Butcher@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "arve@android.com" <arve@android.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Subject: Fwd: Re: [PATCH 1/2] Staging: android: binder: Add support for 32bit
+ binder calls in a 64bit kernel
+References: <50BF5AA6.5080103@arm.com>
+In-Reply-To: <50BF5AA6.5080103@arm.com>
+X-Forwarded-Message-Id: <50BF5AA6.5080103@arm.com>
+X-OriginalArrivalTime: 05 Dec 2012 16:39:33.0794 (UTC) FILETIME=[1B2F7820:01CDD307]
+X-MC-Unique: 112120516393601801
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Sorry for the disclaimer e-mail.
 
-On Wed, Dec 05, 2012 at 03:27:56PM +0000, Alan Cox wrote:
-> > On Wed, Dec 05, 2012 at 08:09:01AM +0100, Andreas Mohr wrote:
-> > > Hi,
-> > > 
-> > > drivers/pnp/pnpacpi/core.c: In function 'ispnpidacpi':
-> > > drivers/pnp/pnpacpi/core.c:65:2: warning: logical 'or' of collectively
-> > > exhaustive tests is always true [-Wlogical-op]
-> > > drivers/pnp/pnpacpi/core.c:66:2: warning: logical 'or' of collectively
-> > > exhaustive tests is always true [-Wlogical-op]
-> > > drivers/pnp/pnpacpi/core.c:67:2: warning: logical 'or' of collectively
-> > > exhaustive tests is always true [-Wlogical-op]
-> > > 
-> > > 
-> > > That's already the second less enticing -Wlogical-op issue
-> > > which was discovered by accident during less than two days
-> 
-> No it's not. It's been reported in bugzilla. I sent patches ages ago.
-> They were ignored. Coverity has had it tagged for years (and a ton more
-> of them you've not noticed yet)
+On 04/12/12 16:17, Greg KH wrote:
+> On Tue, Dec 04, 2012 at 10:44:13AM +0000, Serban Constantinescu wrote:
+>> Android's IPC, Binder, does not support calls from a 32-bit userspace
+>> in a 64 bit kernel. This patch adds support for syscalls coming from a
+>> 32-bit userspace in a 64-bit kernel.
+>>
+>> Most of the changes were applied to types that change sizes between
+>> 32 and 64 bit world. This will also fix some of the issues around
+>> checking the size of an incoming transaction package in the ioctl
+>> switch. Since  the transaction's ioctl number are generated using
+>> _IOC(dir,type,nr,size), a different userspace size will generate
+>> a different ioctl number, thus switching by _IOC_NR is a better
+>> solution.
+>>
+>> The patch has been successfully tested on ARMv8 AEM and Versatile
+>> Express V2P-CA9.
+>
+> Has it also been properly tested on a 32bit kernel and userspace to
+> verify that nothing broke?
 
-And that additional new info bit now arriving
-is supposed to improve on the total set of the general state of affairs
-as I'm observing it (and thus to appease me, sufficiently), how exactly? ;)
-(well, admittedly it was new to me since I didn't bother with doing
-any more research after discovering that bug
-after also having endured countless pages of dangerously obscuring
-completely *superfluous* warning spew scrolling by)
+We have tested this patch set with a 32-bit kernel (on a Versatile
+Express platform with an 4xA9 (ARMv7a)) as well as a 64-bit kernel (on
+ARMv8 simulation platform). For both test cases we used the same 32-bit
+Android file system (ICS, JB). Both platforms have been running browser
+loads for days without any problems. We are currently extending the test
+cases by running Android CTS test.
 
-Let's see:
+>
+> I was wondering when someone would notice that this code was not going
+> to work for this type of system, nice to see that you are working to fix
+> it up.  But, I'll reask Dan's question here, why not use the compat32
+> ioctl interface instead?  Shouldn't that be the easier way to do this?
 
-- we've got this *core layer* (right?) bug
-  originally appearing in <= 2.6.10 (2004, i.e. 8+ years).
-- we've got a janitorial project which does not (possibly "cannot"?)
-  do a sufficiently clean work (as evidenced by a metric crap ton of
-  header-side woefully repeated warnings persisting over perhaps half a year
-  in my observation, with W=2 or W=3)
-- we've got how many dozen dozen kernel maintainers or "interested" persons
-  who I'd imagine would be a sure-fire method to get such issues fixed
-  in due time, and how many distributors or embedded companies
-  who I'd imagine would help towards doing a quite large amount of effective
-  testing/verification/housekeeping work in a controlled manner?
-  (which would include regularly/mechanically keeping an eye
-  on a larger set of *non-default* compiler warnings, too)
-- we've got how many kernel-related tools to assist in such efforts,
-  which then were not being followed sufficiently? [Coverity]
-- and now your reply seems to indicate we additionally have
-  a less optimal response time for such fixes, too?
+Binder uses a 2 layer ioctl structure i.e. you can't know from the top
+of the ioctl handler the size of the incoming package. Therefore adding
+a wrapper for a 64bit kernel is not an option. Should a 64bit Android
+ever appear we would probably want to support 32bit legacy applications.
+For this we will need the same binder/ashmem driver to service both a
+32bit application as well as a 64bit application in a 64bit kernel.
+Therefore I guess the way forward will be to support 32bit file systems
+in a 64bit kernel without any change to the existing user space
+(implemented in this patch) and at some point extend the ioctl range
+with the needed functionality for 64bit user space.
 
+>
+> Also, one meta comment, never use the uint32_t types, use the native
+> kernel types (u32 and the like.)  If you are crossing the user/kernel
+> boundry, use the other correct types for those data structures (__u32
+> and the like).  What you did here is mix and match things so much that I
+> really can't verify that it is all correct.
 
-If that isn't a strong indicator of having to spend some time on
-rethinking possibly automated kernel development core infrastructure
-or due process...
+I have tried to in-line my changes with the types already used in the
+driver but I will update to using the suggested types.
 
+>
+> thanks,
+>
+> greg k-h
+>
 
-Heck, the Linux kernel isn't a "Joe's Garage works" effort -
-it's a *very* widely used *very* public project, thus you'd think
-with its clout and resulting manpower
-it should be able to easily afford things such as near-eradication of warnings
-(and thus the resulting much improved precision in *successfully* letting
-mere users pinpoint single critical warnings as near-soon as they newly appear, due to a low amount of warnings even on a high warning level).
+Thanks for the feedback,
+Serban Constantinescu
+`
 
-
-I'm afraid even with my measly very specific project/laughable manpower
-I've got certain parts in place which go beyond of what the kernel
-chooses to use.
-
-
-As an additional factor, the C-based kernel has the convenience of
-not even having to spend effort on the large set
-of additional compiler warnings that the developer is gifted with in C++ space!
-
-
-For gcc -Wlogical-op, it seems many articles/discussions were in 2009 time,
-thus there admittedly probably wasn't such a large window of opportunity
-to get this bug discovered - however that's still no excuse for the very
-visible showering of simple warnings when enabling advanced levels.
-
-
-Thanks to Borislav Petkov for his reply, too -
-however I'd like to state that given this lack of tooling/attention
-writing a mail in this more special manner was fully justified IMPHO.
-
-Andreas Mohr
