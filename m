@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752672Ab2LELLU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 06:11:20 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:60567 "EHLO
+	id S1753056Ab2LELL2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 06:11:28 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:60573 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751765Ab2LELLT (ORCPT
+	with ESMTP id S1751765Ab2LELLW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 06:11:19 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-3d-50bf2bd5cb52
+	Wed, 5 Dec 2012 06:11:22 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-55-50bf2bd97c38
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 To: vinod.koul@intel.com
 Cc: linux-kernel@vger.kernel.org, djbw@fb.com, dwmw2@infradead.org,
         hskinnemoen@gmail.com, iws@ovro.caltech.edu, vipin.kumar@st.com,
         t.figa@samsung.com, kyungmin.park@samsung.com,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: [PATCH resend 0/7] DMA: DMA unmap fixes for v3.8
-Date: Wed, 05 Dec 2012 12:10:38 +0100
-Message-id: <1354705845-29439-1-git-send-email-b.zolnierkie@samsung.com>
+Subject: [PATCH resend 1/7] async_tx: add missing DMA unmap to async_memcpy()
+Date: Wed, 05 Dec 2012 12:10:39 +0100
+Message-id: <1354705845-29439-2-git-send-email-b.zolnierkie@samsung.com>
 X-Mailer: git-send-email 1.7.10
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNJMWRmVeSWpSXmKPExsVy+t9jAd2r2vsDDC7MlrS4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZDz7OZyvo565oalzE1MD4jaOLkZNDQsBEYsa9DlYIW0ziwr31
-	bF2MXBxCAosYJW5tPc8M4axmkvg3dTkTSBWbgJXExPZVjCC2iICExPZnfewgRcwC7xglmtb9
-	BSsSFrCUuP66B2wsi4CqRO+6v2ANvAIeEtO2XWSGWCcv8fR+H9sERu4FjAyrGEVTC5ILipPS
-	c430ihNzi0vz0vWS83M3MYK9+Ex6B+OqBotDjAIcjEo8vBLG+wKEWBPLiitzDzFKcDArifDO
-	k9kfIMSbklhZlVqUH19UmpNafIhRmoNFSZy32SMlQEggPbEkNTs1tSC1CCbLxMEp1cBYFP7e
-	9FzRka/rF0mWHF+d/MO/6XvZ5uOTxJo3yDtz/ljBUdY930RNvDiRoeRv+NNWbYOtbpcqPrQ+
-	yEzqunrzwEKmSPdPc28pltX9P5/PatkptdliBjMry0pe4VbGM7zf9KbXPjLzZq9UOHtFRVP1
-	8s6IB81Nd2/ECB1foRg5cfJpzXsNexYpsRRnJBpqMRcVJwIAz0x3j94BAAA=
+In-reply-to: <1354705845-29439-1-git-send-email-b.zolnierkie@samsung.com>
+References: <1354705845-29439-1-git-send-email-b.zolnierkie@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEJMWRmVeSWpSXmKPExsVy+t9jAd2b2vsDDG78lrK4vGsOmwOjx+dN
+	cgGMUVw2Kak5mWWpRfp2CVwZHw9+ZCrYwF7x88QNlgbGVrYuRk4OCQETibN3djBC2GISF+6t
+	B4pzcQgJLGKU6D72mh3CWc0kcWrva2aQKjYBK4mJ7avAOkQEJCS2P+sDK2IWeMco0bTuLxNI
+	QljAV+LHykdgRSwCqhJP/3xhB7F5BTwkDj+/yw6xTl7i6f0+sDM4BTwlHkydydLFyAG0zUNi
+	1oGQCYy8CxgZVjGKphYkFxQnpeca6RUn5haX5qXrJefnbmIE+/yZ9A7GVQ0WhxgFOBiVeHgl
+	jPcFCLEmlhVX5h5ilOBgVhLhnSezP0CINyWxsiq1KD++qDQntfgQozQHi5I4b7NHSoCQQHpi
+	SWp2ampBahFMlomDU6qBkc/j8gG9O7/b/ESyDnD+eyzaP2lVxVt17ZbW2iXMrtv6m88bKVvu
+	M7h1Y8tvn6f6c+vK+Jd+tnTysL69N2On1rsFe/d0bIhOOtShu7hTqlGN9WNlqZ7NWbM7qzQP
+	SLw44Pnl38vFe5cqTdW5vbuklPfU6cWSnL9bk3SXhh7d0y/AlOrNfP7OMyWW4oxEQy3mouJE
+	ALbcfSf1AQAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Do DMA unmap on ->device_prep_dma_memcpy failure.
 
-This is a minimal set of patches from a larger DMA unmap
-rework (http://lkml.org/lkml/2012/11/5/111).  There are no
-changes from the previous posting (except added Acked-by
-and Reviewed-by tags).
+Acked-by: Dan Williams <djbw@fb.com>
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ crypto/async_tx/async_memcpy.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-Vinod, could you please apply them to v3.8?  Thanks!
-
-
-patches #1-3 add missing DMA unmap on failure to async_tx core
-code (async_memcpy()), ioat and fsmc_nand drivers
-
-patch #4 fixes DMA flags used by carma-fpga driver
-
-patch #5 adds missing DMA unmap on failure to ioat3 driver
-
-patch #6 fixes build for async_memset.c
-
-patch #7 adds missing DMA unmap on failure to async tx core
-code (async_memset())
-
-
-Bartlomiej Zolnierkiewicz (7):
-  async_tx: add missing DMA unmap to async_memcpy()
-  ioat: add missing DMA unmap to ioat_dma_self_test()
-  mtd: fsmc_nand: add missing DMA unmap to dma_xfer()
-  carma-fpga: pass correct flags to ->device_prep_dma_memcpy()
-  ioat3: add missing DMA unmap to ioat_xor_val_self_test()
-  async_tx: fix build for async_memset
-  async_tx: add missing DMA unmap to async_memset()
-
- crypto/async_tx/async_memcpy.c  |  6 ++++
- crypto/async_tx/async_memset.c  |  4 +++
- drivers/dma/ioat/dma.c          | 11 +++---
- drivers/dma/ioat/dma_v3.c       | 76 ++++++++++++++++++++++++++++++++---------
- drivers/misc/carma/carma-fpga.c |  4 ++-
- drivers/mtd/nand/fsmc_nand.c    | 22 +++++++-----
- 6 files changed, 93 insertions(+), 30 deletions(-)
-
+diff --git a/crypto/async_tx/async_memcpy.c b/crypto/async_tx/async_memcpy.c
+index 361b5e8..9e62fef 100644
+--- a/crypto/async_tx/async_memcpy.c
++++ b/crypto/async_tx/async_memcpy.c
+@@ -67,6 +67,12 @@ async_memcpy(struct page *dest, struct page *src, unsigned int dest_offset,
+ 
+ 		tx = device->device_prep_dma_memcpy(chan, dma_dest, dma_src,
+ 						    len, dma_prep_flags);
++		if (!tx) {
++			dma_unmap_page(device->dev, dma_dest, len,
++				       DMA_FROM_DEVICE);
++			dma_unmap_page(device->dev, dma_src, len,
++				       DMA_TO_DEVICE);
++		}
+ 	}
+ 
+ 	if (tx) {
 -- 
 1.8.0
 
