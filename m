@@ -1,270 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752307Ab2LEMCq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 07:02:46 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36457 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752060Ab2LEMCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 07:02:43 -0500
-Date: Wed, 5 Dec 2012 13:02:41 +0100
-From: Jan Kara <jack@suse.cz>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH 019/270] jbd: Fix assertion failure in commit code due
- to lacking transaction credits
-Message-ID: <20121205120240.GA5706@quack.suse.cz>
-References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
- <1353949160-26803-20-git-send-email-herton.krzesinski@canonical.com>
+	id S1752568Ab2LEMDR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 07:03:17 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:42719 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752370Ab2LEMDP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 07:03:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353949160-26803-20-git-send-email-herton.krzesinski@canonical.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <50BF345A.8050201@nvidia.com>
+References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com>
+	<1353935954-13763-7-git-send-email-tbergstrom@nvidia.com>
+	<20121205083335.GA20984@avionic-0098.adnet.avionic-design.de>
+	<50BF1DAA.8030805@nvidia.com>
+	<20121205111332.GA25676@avionic-0098.adnet.avionic-design.de>
+	<50BF345A.8050201@nvidia.com>
+Date: Wed, 5 Dec 2012 13:03:14 +0100
+X-Google-Sender-Auth: G24JY4-um7Gnl00zkmDUjcLfYCw
+Message-ID: <CAKMK7uGPf=TEW8DL-K1KYPhMZALTZhFsSb2DBxDVgFct1kUjSA@mail.gmail.com>
+Subject: Re: [RFC v2 6/8] gpu: drm: tegra: Remove redundant host1x
+From: Daniel Vetter <daniel@ffwll.ch>
+To: =?ISO-8859-1?Q?Terje_Bergstr=F6m?= <tbergstrom@nvidia.com>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Arto Merilainen <amerilainen@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 26-11-12 14:55:09, Herton Ronaldo Krzesinski wrote:
-> 3.5.7u1 -stable review patch.  If anyone has any objections, please let me know.
-  Note that this fix causes another problem which is fixed by
-25389bb207987b5774182f763b9fb65ff08761c8 upstream.
-									Honza
+On Wed, Dec 5, 2012 at 12:47 PM, Terje Bergström <tbergstrom@nvidia.com> wrote:
+> You're right in that binding to a sub-device is not a nice way. DRM
+> framework just needs a "struct device" to bind to. exynos seems to solve
+> this by introducing a virtual device and bind to that. I'm not sure if
+> this is the best way, but worth considering?
 
-> 
-> ------------------
-> 
-> From: Jan Kara <jack@suse.cz>
-> 
-> commit 09e05d4805e6c524c1af74e524e5d0528bb3fef3 upstream.
-> 
-> ext3 users of data=journal mode with blocksize < pagesize were occasionally
-> hitting assertion failure in journal_commit_transaction() checking whether the
-> transaction has at least as many credits reserved as buffers attached.  The
-> core of the problem is that when a file gets truncated, buffers that still need
-> checkpointing or that are attached to the committing transaction are left with
-> buffer_mapped set. When this happens to buffers beyond i_size attached to a
-> page stradding i_size, subsequent write extending the file will see these
-> buffers and as they are mapped (but underlying blocks were freed) things go
-> awry from here.
-> 
-> The assertion failure just coincidentally (and in this case luckily as we would
-> start corrupting filesystem) triggers due to journal_head not being properly
-> cleaned up as well.
-> 
-> Under some rare circumstances this bug could even hit data=ordered mode users.
-> There the assertion won't trigger and we would end up corrupting the
-> filesystem.
-> 
-> We fix the problem by unmapping buffers if possible (in lots of cases we just
-> need a buffer attached to a transaction as a place holder but it must not be
-> written out anyway). And in one case, we just have to bite the bullet and wait
-> for transaction commit to finish.
-> 
-> Reviewed-by: Josef Bacik <jbacik@fusionio.com>
-> Signed-off-by: Jan Kara <jack@suse.cz>
-> Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-> ---
->  fs/jbd/commit.c      |   45 ++++++++++++++++++++++++++---------
->  fs/jbd/transaction.c |   64 ++++++++++++++++++++++++++++++++++----------------
->  2 files changed, 78 insertions(+), 31 deletions(-)
-> 
-> diff --git a/fs/jbd/commit.c b/fs/jbd/commit.c
-> index 52c15c7..86b39b1 100644
-> --- a/fs/jbd/commit.c
-> +++ b/fs/jbd/commit.c
-> @@ -86,7 +86,12 @@ nope:
->  static void release_data_buffer(struct buffer_head *bh)
->  {
->  	if (buffer_freed(bh)) {
-> +		WARN_ON_ONCE(buffer_dirty(bh));
->  		clear_buffer_freed(bh);
-> +		clear_buffer_mapped(bh);
-> +		clear_buffer_new(bh);
-> +		clear_buffer_req(bh);
-> +		bh->b_bdev = NULL;
->  		release_buffer_page(bh);
->  	} else
->  		put_bh(bh);
-> @@ -866,17 +871,35 @@ restart_loop:
->  		 * there's no point in keeping a checkpoint record for
->  		 * it. */
->  
-> -		/* A buffer which has been freed while still being
-> -		 * journaled by a previous transaction may end up still
-> -		 * being dirty here, but we want to avoid writing back
-> -		 * that buffer in the future after the "add to orphan"
-> -		 * operation been committed,  That's not only a performance
-> -		 * gain, it also stops aliasing problems if the buffer is
-> -		 * left behind for writeback and gets reallocated for another
-> -		 * use in a different page. */
-> -		if (buffer_freed(bh) && !jh->b_next_transaction) {
-> -			clear_buffer_freed(bh);
-> -			clear_buffer_jbddirty(bh);
-> +		/*
-> +		 * A buffer which has been freed while still being journaled by
-> +		 * a previous transaction.
-> +		 */
-> +		if (buffer_freed(bh)) {
-> +			/*
-> +			 * If the running transaction is the one containing
-> +			 * "add to orphan" operation (b_next_transaction !=
-> +			 * NULL), we have to wait for that transaction to
-> +			 * commit before we can really get rid of the buffer.
-> +			 * So just clear b_modified to not confuse transaction
-> +			 * credit accounting and refile the buffer to
-> +			 * BJ_Forget of the running transaction. If the just
-> +			 * committed transaction contains "add to orphan"
-> +			 * operation, we can completely invalidate the buffer
-> +			 * now. We are rather throughout in that since the
-> +			 * buffer may be still accessible when blocksize <
-> +			 * pagesize and it is attached to the last partial
-> +			 * page.
-> +			 */
-> +			jh->b_modified = 0;
-> +			if (!jh->b_next_transaction) {
-> +				clear_buffer_freed(bh);
-> +				clear_buffer_jbddirty(bh);
-> +				clear_buffer_mapped(bh);
-> +				clear_buffer_new(bh);
-> +				clear_buffer_req(bh);
-> +				bh->b_bdev = NULL;
-> +			}
->  		}
->  
->  		if (buffer_jbddirty(bh)) {
-> diff --git a/fs/jbd/transaction.c b/fs/jbd/transaction.c
-> index febc10d..78b7f84 100644
-> --- a/fs/jbd/transaction.c
-> +++ b/fs/jbd/transaction.c
-> @@ -1843,15 +1843,16 @@ static int __dispose_buffer(struct journal_head *jh, transaction_t *transaction)
->   * We're outside-transaction here.  Either or both of j_running_transaction
->   * and j_committing_transaction may be NULL.
->   */
-> -static int journal_unmap_buffer(journal_t *journal, struct buffer_head *bh)
-> +static int journal_unmap_buffer(journal_t *journal, struct buffer_head *bh,
-> +				int partial_page)
->  {
->  	transaction_t *transaction;
->  	struct journal_head *jh;
->  	int may_free = 1;
-> -	int ret;
->  
->  	BUFFER_TRACE(bh, "entry");
->  
-> +retry:
->  	/*
->  	 * It is safe to proceed here without the j_list_lock because the
->  	 * buffers cannot be stolen by try_to_free_buffers as long as we are
-> @@ -1879,10 +1880,18 @@ static int journal_unmap_buffer(journal_t *journal, struct buffer_head *bh)
->  	 * clear the buffer dirty bit at latest at the moment when the
->  	 * transaction marking the buffer as freed in the filesystem
->  	 * structures is committed because from that moment on the
-> -	 * buffer can be reallocated and used by a different page.
-> +	 * block can be reallocated and used by a different page.
->  	 * Since the block hasn't been freed yet but the inode has
->  	 * already been added to orphan list, it is safe for us to add
->  	 * the buffer to BJ_Forget list of the newest transaction.
-> +	 *
-> +	 * Also we have to clear buffer_mapped flag of a truncated buffer
-> +	 * because the buffer_head may be attached to the page straddling
-> +	 * i_size (can happen only when blocksize < pagesize) and thus the
-> +	 * buffer_head can be reused when the file is extended again. So we end
-> +	 * up keeping around invalidated buffers attached to transactions'
-> +	 * BJ_Forget list just to stop checkpointing code from cleaning up
-> +	 * the transaction this buffer was modified in.
->  	 */
->  	transaction = jh->b_transaction;
->  	if (transaction == NULL) {
-> @@ -1909,13 +1918,9 @@ static int journal_unmap_buffer(journal_t *journal, struct buffer_head *bh)
->  			 * committed, the buffer won't be needed any
->  			 * longer. */
->  			JBUFFER_TRACE(jh, "checkpointed: add to BJ_Forget");
-> -			ret = __dispose_buffer(jh,
-> +			may_free = __dispose_buffer(jh,
->  					journal->j_running_transaction);
-> -			journal_put_journal_head(jh);
-> -			spin_unlock(&journal->j_list_lock);
-> -			jbd_unlock_bh_state(bh);
-> -			spin_unlock(&journal->j_state_lock);
-> -			return ret;
-> +			goto zap_buffer;
->  		} else {
->  			/* There is no currently-running transaction. So the
->  			 * orphan record which we wrote for this file must have
-> @@ -1923,13 +1928,9 @@ static int journal_unmap_buffer(journal_t *journal, struct buffer_head *bh)
->  			 * the committing transaction, if it exists. */
->  			if (journal->j_committing_transaction) {
->  				JBUFFER_TRACE(jh, "give to committing trans");
-> -				ret = __dispose_buffer(jh,
-> +				may_free = __dispose_buffer(jh,
->  					journal->j_committing_transaction);
-> -				journal_put_journal_head(jh);
-> -				spin_unlock(&journal->j_list_lock);
-> -				jbd_unlock_bh_state(bh);
-> -				spin_unlock(&journal->j_state_lock);
-> -				return ret;
-> +				goto zap_buffer;
->  			} else {
->  				/* The orphan record's transaction has
->  				 * committed.  We can cleanse this buffer */
-> @@ -1950,10 +1951,24 @@ static int journal_unmap_buffer(journal_t *journal, struct buffer_head *bh)
->  		}
->  		/*
->  		 * The buffer is committing, we simply cannot touch
-> -		 * it. So we just set j_next_transaction to the
-> -		 * running transaction (if there is one) and mark
-> -		 * buffer as freed so that commit code knows it should
-> -		 * clear dirty bits when it is done with the buffer.
-> +		 * it. If the page is straddling i_size we have to wait
-> +		 * for commit and try again.
-> +		 */
-> +		if (partial_page) {
-> +			tid_t tid = journal->j_committing_transaction->t_tid;
-> +
-> +			journal_put_journal_head(jh);
-> +			spin_unlock(&journal->j_list_lock);
-> +			jbd_unlock_bh_state(bh);
-> +			spin_unlock(&journal->j_state_lock);
-> +			log_wait_commit(journal, tid);
-> +			goto retry;
-> +		}
-> +		/*
-> +		 * OK, buffer won't be reachable after truncate. We just set
-> +		 * j_next_transaction to the running transaction (if there is
-> +		 * one) and mark buffer as freed so that commit code knows it
-> +		 * should clear dirty bits when it is done with the buffer.
->  		 */
->  		set_buffer_freed(bh);
->  		if (journal->j_running_transaction && buffer_jbddirty(bh))
-> @@ -1976,6 +1991,14 @@ static int journal_unmap_buffer(journal_t *journal, struct buffer_head *bh)
->  	}
->  
->  zap_buffer:
-> +	/*
-> +	 * This is tricky. Although the buffer is truncated, it may be reused
-> +	 * if blocksize < pagesize and it is attached to the page straddling
-> +	 * EOF. Since the buffer might have been added to BJ_Forget list of the
-> +	 * running transaction, journal_get_write_access() won't clear
-> +	 * b_modified and credit accounting gets confused. So clear b_modified
-> +	 * here. */
-> +	jh->b_modified = 0;
->  	journal_put_journal_head(jh);
->  zap_buffer_no_jh:
->  	spin_unlock(&journal->j_list_lock);
-> @@ -2024,7 +2047,8 @@ void journal_invalidatepage(journal_t *journal,
->  		if (offset <= curr_off) {
->  			/* This block is wholly outside the truncation point */
->  			lock_buffer(bh);
-> -			may_free &= journal_unmap_buffer(journal, bh);
-> +			may_free &= journal_unmap_buffer(journal, bh,
-> +							 offset > 0);
->  			unlock_buffer(bh);
->  		}
->  		curr_off = next_off;
-> -- 
-> 1.7.9.5
-> 
+Note that I'm not too happy about the fact that drm wants a struct
+device to register a drm device. This all made a lot of sense back in
+the days when drm drivers this this fancy shadow attaching to allow
+drm to use a driver for rendering cooperatively with a fbdev driver.
+Today there's not much reason for that anymore imo, and I'd welcome
+patches to allow drivers to simply register a drm device (and remove
+all the newer registration functions for usb/platform/whatever
+drivers, moving the device handling into drivers). Note that it's a
+bit work, since not-really-required abstraction (which was useful back
+when the drm drivers have been shared with *BSD, but pointless now)
+like the drm irq support needs to be moved away to a pci-dev legacy
+thing only - it doesn't really buy a kms driver anything above&beyond
+calling request_irq() itself.
+
+So feel free to burn this down, I'll be happy to carry wood to the
+pyre in the from of reviews (not much time for more right now ...).
+
+Cheers, Daniel
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
