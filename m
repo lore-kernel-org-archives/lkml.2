@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754118Ab2LEMxY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 07:53:24 -0500
-Received: from 95-31-19-74.broadband.corbina.ru ([95.31.19.74]:53762 "EHLO
-	95-31-19-74.broadband.corbina.ru" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752171Ab2LEMxW (ORCPT
+	id S1754127Ab2LEM7M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 07:59:12 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:62325 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752801Ab2LEM7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 07:53:22 -0500
-Message-ID: <50BF43BF.3050506@ilyx.ru>
-Date: Wed, 05 Dec 2012 16:53:19 +0400
-From: Ilya Zykov <ilya@ilyx.ru>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Alan Cox <alan@linux.intel.com>, Jiri Slaby <jslaby@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: [PATCH -next 2/2] tty: Correct tty buffer flush.
-References: <50BF0A56.9050209@ilyx.ru>
-In-Reply-To: <50BF0A56.9050209@ilyx.ru>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 5 Dec 2012 07:59:11 -0500
+Message-ID: <1354712340.4261.0.camel@phoenix>
+Subject: [PATCH] mfd: tps80031: Add terminating entry for tps80031_id_table
+From: Axel Lin <axel.lin@ingics.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, linux-kernel@vger.kernel.org
+Date: Wed, 05 Dec 2012 20:59:00 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  The root of problem is carelessly zeroing pointer(in function __tty_buffer_flush()),
-when another thread can use it. It can be cause of "NULL pointer dereference".
-  Main idea of the patch, this is never free last (struct tty_buffer) in the active buffer.
-Only flush the data for ldisc(tty->buf.head->read = tty->buf.head->commit).
-At that moment driver can collect(write) data in buffer without conflict.
-It is repeat behavior of flush_to_ldisc(), only without feeding data to ldisc.
+The i2c_device_id table is supposed to be zero-terminated.
 
-Signed-off-by: Ilya Zykov <ilya@ilyx.ru>
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
 ---
-diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
-index 7602df8..8a3333d 100644
---- a/drivers/tty/tty_buffer.c
-+++ b/drivers/tty/tty_buffer.c
-@@ -119,11 +119,14 @@ static void __tty_buffer_flush(struct tty_port *port)
- 	struct tty_bufhead *buf = &port->buf;
- 	struct tty_buffer *thead;
+ drivers/mfd/tps80031.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/mfd/tps80031.c b/drivers/mfd/tps80031.c
+index f64005e..10b51f7 100644
+--- a/drivers/mfd/tps80031.c
++++ b/drivers/mfd/tps80031.c
+@@ -543,6 +543,7 @@ static int __devexit tps80031_remove(struct i2c_client *client)
+ static const struct i2c_device_id tps80031_id_table[] = {
+ 	{ "tps80031", TPS80031 },
+ 	{ "tps80032", TPS80032 },
++	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, tps80031_id_table);
  
--	while ((thead = buf->head) != NULL) {
--		buf->head = thead->next;
--		tty_buffer_free(port, thead);
-+	if (unlikely(buf->head == NULL))
-+		return;
-+	while ((thead = buf->head->next) != NULL) {
-+		tty_buffer_free(port, buf->head);
-+		buf->head = thead;
- 	}
--	buf->tail = NULL;
-+	WARN_ON(buf->head != buf->tail);
-+	buf->head->read = buf->head->commit;
- }
- 
- /**
+-- 
+1.7.9.5
+
+
+
