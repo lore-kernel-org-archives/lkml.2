@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752845Ab2LERYK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 12:24:10 -0500
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:33236 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751587Ab2LERYI convert rfc822-to-8bit (ORCPT
+	id S1752509Ab2LERZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 12:25:59 -0500
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:33048 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751718Ab2LERZ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 12:24:08 -0500
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate UAPI
-Date: Wed, 5 Dec 2012 18:24:05 +0100
-User-Agent: KMail/1.13.7 (Linux/3.7.0-rc7-f2fs-tp520+; KDE/4.8.4; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Chinner <david@fromorbit.com>,
-        "linux-fsdevel" <linux-fsdevel@vger.kernel.org>
-References: <1353366267-15629-1-git-send-email-david@fromorbit.com> <201212051718.44017.Martin@lichtvoll.de> <20121205163303.GG18885@thunk.org> (sfid-20121205_181332_034477_2335FA49)
-In-Reply-To: <20121205163303.GG18885@thunk.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201212051824.05621.Martin@lichtvoll.de>
+	Wed, 5 Dec 2012 12:25:57 -0500
+Date: Wed, 5 Dec 2012 18:25:43 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/4] HID: i2c-hid: fix memory corruption due to
+ missing hid declaration
+Message-ID: <20121205182543.0db92d3e@endymion.delvare>
+In-Reply-To: <1354716176-12558-2-git-send-email-benjamin.tissoires@gmail.com>
+References: <1354716176-12558-1-git-send-email-benjamin.tissoires@gmail.com>
+	<1354716176-12558-2-git-send-email-benjamin.tissoires@gmail.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 5. Dezember 2012 schrieb Theodore Ts'o:
-> On Wed, Dec 05, 2012 at 05:18:43PM +0100, Martin Steigerwald wrote:
-> > Dave provided technical reasons.
-> > 
-> > First in the patch description and then in:
-> > 
-> > https://lkml.org/lkml/2012/11/26/700
+On Wed,  5 Dec 2012 15:02:53 +0100, Benjamin Tissoires wrote:
+> HID descriptors contains 4 bytes of reserved field.
+> The previous implementation was overriding the next fields in struct i2c_hid.
 > 
-> There were no technical reasons.  We are only reserving a bit.  And
-> different file systems don't support all of the various different
-> fallocate flags already --- for example, not all file systems support
-> the punch system call.
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+> ---
+>  drivers/hid/i2c-hid/i2c-hid.c | 9 ++++++++-
+>  1 file changed, 8 insertions(+), 1 deletion(-)
 > 
-> Yes, I could create an entrely new ioctl() that looks just like
-> fallocate, but supports the extra bit, just so that Dave and others
-> don't have to be offended about the existence of that extra bit ---
-> but Linus (and others) have considered ioctl()'s evil, since there is
-> no type checking, and it's just silly to create a separate interface
-> just because somebody doesn't think some other file system shouldn't
-> implement a particular feature --- especially since it's not like
-> we're have any kind of shortage of bits in the fallocate field.
+> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
+> index 7062df2..34cca42 100644
+> --- a/drivers/hid/i2c-hid/i2c-hid.c
+> +++ b/drivers/hid/i2c-hid/i2c-hid.c
+> @@ -69,6 +69,7 @@ struct i2c_hid_desc {
+>  	__le16 wVendorID;
+>  	__le16 wProductID;
+>  	__le16 wVersionID;
+> +	__le32 reserved;
+>  } __packed;
+>  
+>  struct i2c_hid_cmd {
+> @@ -776,7 +777,13 @@ static int __devinit i2c_hid_fetch_hid_descriptor(struct i2c_hid *ihid)
+>  	}
+>  
+>  	dsize = le16_to_cpu(hdesc->wHIDDescLength);
+> -	if (!dsize || dsize > HID_MAX_DESCRIPTOR_SIZE) {
+> +	/*
+> +	 * the size of the HID descriptor should at least contain
+> +	 * its size and the bcdVersion (4 bytes), and should not be greater
+> +	 * than sizeof(struct i2c_hid_desc) as we directly fill this struct
+> +	 * through i2c_hid_command.
+> +	 */
+> +	if (dsize < 4 || dsize > sizeof(struct i2c_hid_desc)) {
+>  		dev_err(&client->dev, "weird size of HID descriptor (%u)\n",
+>  			dsize);
+>  		return -ENODEV;
 
-Thanks for explaining your technical view about this. I appreciate it.
-
-> Heck, I probably have more to complain about with the inode flags
-> field, which were originally created specifically for ext2/3/4, and
-> which has since been grabbed for use by other file systems, including
-> btrfs.  You haven't heard me kvetching because btrfs has grabbed
-> btrfs-specific inode flags for nocow and notail... no one even bother
-> to try to get it past the fs-devel shed painting crew before *those*
-> bits were allocated --- and I am absolutely fine with that.
-
-Thats no technical reason – thats exactly the process / patch review stuff 
-Linus does not seem to give a shit about at least with this topic.
-
-That aside I wondered about that inode flags in earlier days already. At 
-some time chattr +i worked with XFS and then it only worked in Ext3. 
-Before that I thought that chattr stuff would work with all filesystems.
+Reviewed-by: Jean Delvare <khali@linux-fr.org>
 
 -- 
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+Jean Delvare
