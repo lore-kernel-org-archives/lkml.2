@@ -1,45 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570Ab2LELC6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 06:02:58 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:42750 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752549Ab2LELC4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 06:02:56 -0500
+	id S1753143Ab2LELD1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 06:03:27 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:40203 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752338Ab2LELDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 06:03:20 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH] ACPI / PM: Fix header of acpi_dev_pm_detach() in acpi.h
+Date: Wed, 05 Dec 2012 12:08:12 +0100
+Message-ID: <3898205.CQSHFfLUWL@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc8; KDE/4.9.3; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <20121204155434.GE3885@mtj.dyndns.org>
-References: <1354620834-2953-1-git-send-email-xtfeng@gmail.com>
-	<20121204155434.GE3885@mtj.dyndns.org>
-Date: Wed, 5 Dec 2012 12:02:56 +0100
-Message-ID: <CAA7rmPF0NNxRQr0N7FgP=7NW7iy77HhEy46_T74kTcAdB6rvSg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] megaraid: fix BUG_ON() from incorrect use of delayed work
-From: Daniel Vacek <neelx.g@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Xiaotian Feng <xtfeng@gmail.com>, linux-kernel@vger.kernel.org,
-        Xiaotian Feng <dannyfeng@tencent.com>,
-        Neela Syam Kolli <megaraidlinux@lsi.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 4, 2012 at 4:54 PM, Tejun Heo <tj@kernel.org> wrote:
-> @@ -5190,7 +5188,7 @@ static void
->  megasas_aen_polling(struct work_struct *work)
->  {
->         struct megasas_aen_event *ev =
-> -               container_of(work, struct megasas_aen_event, hotplug_work);
-> +               container_of(work, struct megasas_aen_event, hotplug_work.work);
->         struct megasas_instance *instance = ev->instance;
->         union megasas_evt_class_locale class_locale;
->         struct  Scsi_Host *host;
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
--megasas_aen_polling(struct work_struct *work)
-+megasas_aen_polling(struct delayed_work *work)
+The header of acpi_dev_pm_detach() in include/linux/acpi.h has an
+incorrect return type, which should be void.  Fix that.
 
-Not really sure. Just asking?
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ include/linux/acpi.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---nX
+Index: linux/include/linux/acpi.h
+===================================================================
+--- linux.orig/include/linux/acpi.h
++++ linux/include/linux/acpi.h
+@@ -506,7 +506,7 @@ static inline int acpi_subsys_resume_ear
+ 
+ #if defined(CONFIG_ACPI) && defined(CONFIG_PM)
+ int acpi_dev_pm_attach(struct device *dev, bool power_on);
+-int acpi_dev_pm_detach(struct device *dev, bool power_off);
++void acpi_dev_pm_detach(struct device *dev, bool power_off);
+ #else
+ static inline int acpi_dev_pm_attach(struct device *dev, bool power_on)
+ {
+
