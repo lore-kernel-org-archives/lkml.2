@@ -1,41 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754519Ab2LEPmm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 10:42:42 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53521 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752055Ab2LEPml (ORCPT
+	id S932079Ab2LEPng (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 10:43:36 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:8959 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751990Ab2LEPnf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 10:42:41 -0500
-Date: Wed, 5 Dec 2012 15:47:49 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Andreas Mohr <andi@lisas.de>,
-        linux-kernel@vger.kernel.org, Li Shaohua <shaohua.li@intel.com>,
-        linux-acpi@vger.kernel.org
-Subject: Re: Look Ma, da kernel is b0rken
-Message-ID: <20121205154749.2af4ef36@pyramind.ukuu.org.uk>
-In-Reply-To: <20121205153121.GA28556@liondog.tnic>
-References: <20121205070901.GA12123@rhlx01.hs-esslingen.de>
-	<20121205142935.GA12119@liondog.tnic>
-	<20121205152756.5afec12c@pyramind.ukuu.org.uk>
-	<20121205153121.GA28556@liondog.tnic>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Dec 2012 10:43:35 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 05 Dec 2012 07:43:28 -0800
+Message-ID: <50BF6B9C.3020006@nvidia.com>
+Date: Wed, 5 Dec 2012 17:43:24 +0200
+From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arto Merilainen <amerilainen@nvidia.com>
+Subject: Re: [RFC v2 6/8] gpu: drm: tegra: Remove redundant host1x
+References: <1353935954-13763-1-git-send-email-tbergstrom@nvidia.com> <1353935954-13763-7-git-send-email-tbergstrom@nvidia.com> <20121205083335.GA20984@avionic-0098.adnet.avionic-design.de> <50BF1DAA.8030805@nvidia.com> <20121205111332.GA25676@avionic-0098.adnet.avionic-design.de> <50BF345A.8050201@nvidia.com> <20121205120429.GA29943@avionic-0098.adnet.avionic-design.de>
+In-Reply-To: <20121205120429.GA29943@avionic-0098.adnet.avionic-design.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hillarious!
+On 05.12.2012 14:04, Thierry Reding wrote:
+> On Wed, Dec 05, 2012 at 01:47:38PM +0200, Terje Bergström wrote:
+> Yes, but there's more. For instance I went to great lengths to make sure
+> there's no global data whatsoever. So all the data is bound to the
+> host1x device in the current code. I know many other drivers like to
+> take a shortcut and just put these things into global variables but I
+> didn't want to.
+
+Sure, that feedback is in the todo list. For some parts I already have a
+proposed solution, but for chip ops not yet.
+
+>> The problem with doing drm_platform_init() with host1x device as
+>> parameter is that drm_get_platform_dev() will take control of drvdata.
+>> We'd need to put host1x specific struct host1x pointer to some other
+>> place and I'm not sure what that place could be.
 > 
-> Andrew, would you please pick up Alan's patch? It clearly fixes an
-> ancient bug in the pnpacpi code.
+> Not anymore. I submitted a patch so that it no longer does that. The
+> patch was merged about a month and a half ago.
 
-And yes btw we should turn this option on in -next, and get these sort of
-things out of the tree for good. More importantly it'll mean anyone
-adding another one gets a whine on the spot.
+Oops, I must've checked the status from a stale tree. Thanks for that.
+In this case there's no technical reason why host1x couldn't act as the
+device to register for drm, as drm wouldn't touch host1x device data in
+any way.
 
-Alan
+How about if we treat the host1x driver as utility library, and move the
+code for host1x probe altogether to tegradrm/host1x.c? I haven't yet
+checked how bad the dependencies between host1x's driver's host1x.c and
+the rest of the driver are, so I'm not sure if it's feasible and if
+there would be a clear design. Just tossing in ideas.
+
+That would solve the circular dependency problem. I've already committed
+to contents of host1x.c being very different in downstream and upstream,
+so this change would just emphasize that.
+
+Terje
