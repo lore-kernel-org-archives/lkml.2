@@ -1,131 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191Ab2LENLJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 08:11:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49040 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752065Ab2LENLH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 08:11:07 -0500
-Message-ID: <50BF47CA.5070205@redhat.com>
-Date: Wed, 05 Dec 2012 11:10:34 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752099Ab2LENOk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 08:14:40 -0500
+Received: from miso.sublimeip.com ([203.12.5.51]:14150 "EHLO
+	miso.sublimeip.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751347Ab2LENOi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 08:14:38 -0500
+Message-ID: <8e2e79d5d683f9a774965e47acb20992.squirrel@mail.sublimeip.com>
+In-Reply-To: <20121205092951.GA14280@host2.jankratochvil.net>
+References: <20121205092951.GA14280@host2.jankratochvil.net>
+Date: Thu, 6 Dec 2012 00:14:35 +1100
+Subject: Re: PTRACE_SYSCALL && vsyscall (Was: arch_check_bp_in_kernelspace:
+ fix the range check)
+From: u3557@miso.sublimeip.com
+To: "Jan Kratochvil" <jan.kratochvil@redhat.com>
+Cc: "Oleg Nesterov" <oleg@redhat.com>,
+        "Amnon Shiloh" <u3557@miso.sublimeip.com>,
+        "Denys Vlasenko" <dvlasenk@redhat.com>,
+        "Pedro Alves" <palves@redhat.com>,
+        "Cyrill Gorcunov" <gorcunov@openvz.org>,
+        "Pavel Emelyanov" <xemul@parallels.com>,
+        "Steven Rostedt" <rostedt@goodmis.org>,
+        "Frederic Weisbecker" <fweisbec@gmail.com>,
+        "Ingo Molnar" <mingo@redhat.com>,
+        "Peter Zijlstra" <a.p.zijlstra@chello.nl>,
+        linux-kernel@vger.kernel.org
+Reply-To: mosix@mosix.com.au
+User-Agent: SquirrelMail/1.4.22
 MIME-Version: 1.0
-To: Federico Vaga <federico.vaga@gmail.com>
-CC: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Pawel Osciak <pawel@osciak.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: Re: [PATCH v3 3/4] sta2x11_vip: convert to videobuf2 and control
- framework
-References: <1348484332-8106-1-git-send-email-federico.vaga@gmail.com> <8113379.Pqy1l62Utl@number-5> <50BF315C.8090203@redhat.com> <2637992.xolQO8ly5c@harkonnen>
-In-Reply-To: <2637992.xolQO8ly5c@harkonnen>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 05-12-2012 10:24, Federico Vaga escreveu:
-> Thank you Mauro for the good explanation
+Dear Jan,
+
+> x86 debug registers are already very scarce.  Besides that userland
+> applications know they have 4 of them available so it would also break
+> them.
+
+If a userland application wants to cheat, then it has no need to bypass
+the debug registers: even if there were 4096 of them, covering the whole
+vsyscall page, it could simply copy the whole vsyscall page somewhere
+else, then run (or emulate) it, or look directly at the raw data within
+the vsyscall page.  The only way to overcome that would be to make the
+vsyscall page either non-existent or unreadable.
+
+Personally, allowing userland applications to read the vsyscall page
+can't hurt me and my applications, but if someone else is concerned with
+such malicious programs (does anyone?), if they need to construct the
+strictest-of-strict jail, where jailed applications cannot glimpse
+any information from the kernel they run on no matter how hard they try,
+then they must at least make the vsyscall page unreadable, then rely
+either on kernel emulation or a SIGSEGV (the later would be quite
+sufficient for my own needs as a substitute for debug-registers,
+but unfortunately not for the current version of "strace").
+
+If, as I was told, it's too hard to remove the vsyscall page on a
+per-process basis, then it's sufficient to make it unreadable on
+context-switch.
+
+My concern, however, is not with the bad guys, but with good honest
+programs that would run incorrectly if allowed to call "time()" or
+"gettimeofday()" unsupervised.  No good program or library jumps into
+the vsyscall page except into its 3 official entry points.
+
+In summary, it should be decided:
+
+If it is important enough for Linux to support paranoidically strict
+jails, then full kernel emulation of PTRACE_SYSCALL (and PTRACE_SYSEMU)
+is inescapable.
+
+If, on the other hand, there is only a need to allow applications such as
+mine and "strace"/"gdb" to trap system-calls that occur via the vsyscall
+page, then in principle a variety of options are possible:
+
+1. Allow setting the x86 hardware-debug registers into the vsyscall page.
+2. Optional (per-process) removal of execute-permission from the vsyscall
+   page.
+3. Optional (per-process) removal of both read and execute permissions
+   from the vsyscall page.
+4. Optional (per-process) elimination of the vsyscall page altogether.
+5. Kernel vsyscall emulation code to send some signal or event to traced
+   processes if the ptracer asked for it (using a new ptrace option).
+6. Complete and transparent emulation of PTRACE_SYSCALL/PTRACE_SYSEMU.
+
+Option #1 requires the least effort (a 2-line fix).
+Option #6 requires the most effort.
+
+Best Regards,
+Amnon.
+
+> On Sun, 02 Dec 2012 20:30:58 +0100, Oleg Nesterov wrote:
+>> Yes, that is why I said this needs the new option.
 >
->> Yeah, there are many changes there that justifies adding you at its
->> authorship, and that's ok. Also, anyone saying the size of your patch
->> will recognize your and ST efforts to improve the driver.
->>
->> However, as some parts of the code were preserved, dropping the old
->> authors doesn't sound right (and can even be illegal, in the light
->> of the GPL license). It would be ok, though, if you would be
->> changing it to something like:
->>
->> 	Copyright (c) 2010 by ...
->> or
->> 	Original driver from ...
+> I do not mind new options although personally I do not find them
+> meaningful
+> for an already deprecated ABI compatibility-only issue.
 >
-> Ok, I understand. I will write something like this.
->   * Copyright (C) 2012       ST Microelectronics
->   *      author: Federico Vaga <federico.vaga@gmail.com>
->   * Copyright (C) 2010       WindRiver Systems, Inc.
->   *      authors: Andreas Kies <andreas.kies@windriver.com>
->   *               Vlad Lungu <vlad.lungu@windriver.com>
-
-Sounds perfect to me.
-
->> So, IMHO, there's not much point on dropping authorship messages.
 >
-> So the MODULE_AUTHOR will be Windriver forever until they drop authorship?
-> Also if in the next future 0 windriver lines will be in the code?
+>> If the tracer does PTRACE_SYSCALL the tracee reports syscall exit
+>> _after_ gettimeofday/etc. The tracer can look at regs->orig_ax == -1
+>> and detect that this is not syscall but vsyscall, it can look at
+>> regs->ip then (not with the patch below).
 >
-> (general talking, not about this driver)
-> If I do git blame on a driver with MODULE_AUTHOR("Mr. X"); but only the
-> MODULE_AUTHOR line is from Mr X; there is not an automatically system which
-> remove the MODULE_AUTHOR? Ok, probably it was the original author of the code
-> and the comment header with the copyright history gives to Mr X all the
-> honours, but there is nothing from him in the code. It is not better to remove
-> MODULE_AUTHOR or replace it with who wrotes most of the code?
-> I know that this is not the best place to talk about this, just a little
-> curiosity
+> I believe applications just call PTRACE_SYSCALL twice, without checking
+> orig_eax.  At least strace and its TCB_INSYSCALL looks so.
+>
+>
+> On Mon, 03 Dec 2012 00:54:58 +0100, u3557@miso.sublimeip.com wrote:
+>> The beauty of using the x86 debug-registers,
+>
+> x86 debug registers are already very scarce.  Besides that userland
+> applications know they have 4 of them available so it would also break
+> them.
+>
+>
+> Regards,
+> Jan
+>
 
-As you said, the best place to discuss about it is likely at LKML.
-It could make sense to have some policy with regards to MODULE_AUTHOR(),
-stating when it could be modified, preferably reviewed by some experienced
-open source lawyers. I'm not aware of any.
 
-In any case, I don't think anyone should rely on "git blame" for it.
-The tool that helps to get code authorship is "git log -M", but
-to get the real authorship requires a lot more of just calling it.
-
-A trivial case where git blame will likely be giving wrong "credits"
-is if a driver has all functions reordered. It may happen that git blame
-will give credits to the one that reordered the functions, and not to
-the original code's author.
-
-There are more subtle cases, though. For example, please assume that
-the original driver has to call a certain function to do some needed
-work to initialize the device:
-
-	call_function_foo();
-
-And a reviewer latter add a logic to deal with errors, like:
-
-	ret = call_function_foo();
-	if (ret)
-		return ret;
-
-The reviewer wrote 2 additional lines, and modified 1 original line.
-Yet, his contribution didn't make the code to work. The one that did it
-was the single-line patch that added call_function_foo(). So, in this
-case, a single line change was more significant for the driver than a
-3 line addition[1]. Also, again, git blame will give the "credits"
-for the line that calls call_function_foo() to the wrong guy.
-
-Btw, this is why it is called "git blame", and not "git authorship":
-it is a tool to identify who was the last one that modified the code.
-Its main usage is to identify who might have introduced a bug on the
-code.
-
-Let's assume that call_function_foo() could be returning some non-error
-positive values, under certain circumstances. In that case, the above
-code would actually be introducing a bug by using:
-	if (ret)
-instead of
-	if (ret < 0)
-
-So, the 3 line patch is not only be less relevant for the driver to
-work than the original author's code, but it is actually wrong
-and introduced a serious driver regression, preventing it to work.
-Git blame was made to address such cases: once a bug got bisected, it
-helps to get the changelog that made the change, pointing to who made
-the changes and why. So, a proper fix for the bug can be better
-prepared, to not only fix the bug, but to also address the issue
-pointed by the blamed patchset.
-
-Regards,
-Mauro
-
-[1] Please, don't get be wrong on that: we do want patches adding
-proper error handling. They are important to improve the driver's
-reliability.
