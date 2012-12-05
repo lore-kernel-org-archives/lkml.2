@@ -1,55 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752932Ab2LESjZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 13:39:25 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:38903 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751860Ab2LESjY (ORCPT
+	id S1753093Ab2LESmv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 13:42:51 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:41248 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751828Ab2LESmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 13:39:24 -0500
-Date: Wed, 5 Dec 2012 18:39:23 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v2 00/44] Meta Linux Kernel Port
-Message-ID: <20121205183923.GY4939@ZenIV.linux.org.uk>
-References: <1354723742-6195-1-git-send-email-james.hogan@imgtec.com>
- <20121205171131.GV4939@ZenIV.linux.org.uk>
+	Wed, 5 Dec 2012 13:42:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121205171131.GV4939@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87624hgtlc.fsf@rustcorp.com.au>
+References: <87624hgtlc.fsf@rustcorp.com.au>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 5 Dec 2012 10:42:29 -0800
+X-Google-Sender-Auth: HNpjTtqphryV7F7E9ZPmJKGNuho
+Message-ID: <CA+55aFyhuC4hp-T7v8XOeaDf2N_DKThg-NpsShkJakyxLy42ww@mail.gmail.com>
+Subject: Re: [PULL] More module signing fixes.
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Howells <dhowells@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 05, 2012 at 05:11:32PM +0000, Al Viro wrote:
-> On Wed, Dec 05, 2012 at 04:08:18PM +0000, James Hogan wrote:
-> 
-> > other work not included:
-> > * switch to generic kernel_{thread,execve} (will be posted separately to
-> >   aid review)
-> 
-> > other changes:
-> ...
-> > * switch to generic sys_execve
-> 
-> ... which should've broken your kernel_execve().
+On Tue, Dec 4, 2012 at 5:45 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>
+> are available in the git repository at:
+>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux.git
 
-BTW, one general note: lose the magical 7th argument.  In the few syscalls
-that do need pt_regs, you can bloody well use current_pt_regs() instead;
-it's what, (register & constant) + constant?  Passing it as explicit
-argument is saving at most two arithmetical insns on those syscalls.
-Moreover, for fork/clone/vfork we really don't need it until copy_thread();
-one of the changes in -next kills passing pt_regs * to do_fork() and through
-all that call chain (furthermore, if you make that
-	childregs->ctx.AX[0].U0 = ALIGN(usp, 8);
-in copy_thread() conditional on usp != 0, you can go with generic
-variants from kernel/fork.c; again, see linux-next for examples of that).
-What's left?  sigreturn and sigaltstack?
+Nothing there. Forgot to push? Forgot to send me the proper tag/branch name?
 
-Seriously, drop that struct pt_regs *; it makes things uglier, (slightly)
-hurts the syscall overhead and doesn't help the few syscalls that even
-look at that argument.
+           Linus
