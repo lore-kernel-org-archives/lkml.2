@@ -1,60 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752509Ab2LEJtw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 04:49:52 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:44204 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751989Ab2LEJtv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 04:49:51 -0500
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>
-Subject: [PATCH] gpio: twl4030: Correct status reporting when the GPIO is used as output
-Date: Wed, 5 Dec 2012 10:49:45 +0100
-Message-ID: <1354700985-4453-1-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.8.0
+	id S1752598Ab2LEJvE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 04:51:04 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58951 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752168Ab2LEJvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 04:51:00 -0500
+Date: Wed, 5 Dec 2012 10:50:57 +0100
+From: Michal Marek <mmarek@suse.cz>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Rusty Russell <rusty@ozlabs.org>, David Howells <dhowells@redhat.com>,
+        linux-kernel@vger.kernel.org, James Hogan <james.hogan@imgtec.com>
+Subject: Re: [PATCH 2/3] MODSIGN: Avoid using .incbin in C source
+Message-ID: <20121205095057.GA26543@sepie.suse.cz>
+References: <1354616321-13520-2-git-send-email-mmarek@suse.cz>
+ <1354616321-13520-1-git-send-email-mmarek@suse.cz>
+ <22396.1354645048@warthog.procyon.org.uk>
+ <87hao1gyiv.fsf@rustcorp.com.au>
+ <s5hobi9aqxs.wl%tiwai@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hobi9aqxs.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the GPIO is configured as output we need to read the GPIODATAOUT*
-register to get correct information. When the GPIO is output the GPIODATAIN*
-registers report 0 all the time (no feedback from output path).
+On Wed, Dec 05, 2012 at 08:39:11AM +0100, Takashi Iwai wrote:
+> At Wed, 05 Dec 2012 10:28:48 +1030,
+> Rusty Russell wrote:
+> > 
+> > David Howells <dhowells@redhat.com> writes:
+> > 
+> > > Michal Marek <mmarek@suse.cz> wrote:
+> > >
+> > >> Using the asm .incbin statement in C sources breaks any gcc wrapper which
+> > >> assumes that preprocessed C source is self-contained. Use a separate .S
+> > >> file to include the siging key and certificate.
+> > >
+> > > I was trying to avoid that as .S files generally don't crop up in generic
+> > > code and the format of the assembly varies with the arch.  However, you don't
+> > > seem to have anything that should cause a problem - so:
+> > >
+> > > Acked-by: David Howells <dhowells@redhat.com>
+> > 
+> > GLOBAL() is defined in x86 only, AFAICT.
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Sorry for that, the Tested-by actually meant Tested-on-x86_64-by :/
+
+
+> How about the revised patch below?
+[...]
+> diff --git a/kernel/modsign_certificate.S b/kernel/modsign_certificate.S
+> new file mode 100644
+> index 0000000..695d4e3
+> --- /dev/null
+> +++ b/kernel/modsign_certificate.S
+> @@ -0,0 +1,18 @@
+> +#ifndef SYMBOL_PREFIX
+> +#define ASM_SYMBOL(sym) sym
+> +#else
+> +#define PASTE2(x,y) x##y
+> +#define PASTE(x,y) PASTE2(x,y)
+> +#define ASM_SYMBOL(sym) PASTE(SYMBOL_PREFIX, sym)
+> +#endif
+
+
+It looks good, but looking at your patch, I just noticed that we have two
+versions of the SYMBOL_PREFIX macro in the kernel now:
+
+scripts/Makefile.lib has had since some time
+
+ifdef CONFIG_SYMBOL_PREFIX
+_sym_flags = -DSYMBOL_PREFIX=$(patsubst "%",%,$(CONFIG_SYMBOL_PREFIX))
+_cpp_flags += $(_sym_flags)
+_a_flags += $(_sym_flags)
+endif
+
+while include/linux/kernel.h now has
+
+/* This helps us to avoid #ifdef CONFIG_SYMBOL_PREFIX */
+#ifdef CONFIG_SYMBOL_PREFIX
+#define SYMBOL_PREFIX CONFIG_SYMBOL_PREFIX
+#else
+#define SYMBOL_PREFIX ""
+#endif
+
+So depending on whether you include <linux/kernel.h> or not,
+SYMBOL_PREFIX expands to either a string or a token. James, Rusty, how
+about the patch below? If Takashi's patch is applied first, then
+obviously the modsign_pubkey.c part should be dropped and the ASM_SYMBOL
+definition in modsign_certificate.S can be simplified instead.
+
+Michal
+
+>From df545c46fb89c085387f4d98c7a4fb06a7f678a9 Mon Sep 17 00:00:00 2001
+From: Michal Marek <mmarek@suse.cz>
+Date: Wed, 5 Dec 2012 10:03:15 +0100
+Subject: [PATCH] linux/kernel.h: Avoid conflicting SYMBOL_PREFIX definition
+
+scripts/Makefile.lib already defines SYMBOL_PREFIX to the token _ if
+CONFIG_SYMBOL_PREFIX is defined. Drop the string definition in
+linux/kernel.h and change scripts/Makefile.lib to define SYMBOL_PREFIX
+on all architectures.
+
+Signed-off-by: Michal Marek <mmarek@suse.cz>
 ---
- drivers/gpio/gpio-twl4030.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ include/asm-generic/vmlinux.lds.h |    4 ----
+ include/linux/kernel.h            |    7 -------
+ kernel/modsign_pubkey.c           |    5 +++--
+ scripts/Makefile.lib              |    5 ++---
+ 4 files changed, 5 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/gpio/gpio-twl4030.c b/drivers/gpio/gpio-twl4030.c
-index 55b4fe4..e7aa620 100644
---- a/drivers/gpio/gpio-twl4030.c
-+++ b/drivers/gpio/gpio-twl4030.c
-@@ -191,13 +191,19 @@ static int twl4030_get_gpio_datain(int gpio)
- 	u8 d_bnk = gpio >> 3;
- 	u8 d_off = gpio & 0x7;
- 	u8 base = 0;
-+	int direction;
- 	int ret = 0;
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index d1ea7ce..7756a0c 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -52,13 +52,9 @@
+ #define LOAD_OFFSET 0
+ #endif
  
- 	if (unlikely((gpio >= TWL4030_GPIO_MAX)
- 		|| !(gpio_usage_count & BIT(gpio))))
- 		return -EPERM;
+-#ifndef SYMBOL_PREFIX
+-#define VMLINUX_SYMBOL(sym) sym
+-#else
+ #define PASTE2(x,y) x##y
+ #define PASTE(x,y) PASTE2(x,y)
+ #define VMLINUX_SYMBOL(sym) PASTE(SYMBOL_PREFIX, sym)
+-#endif
  
--	base = REG_GPIODATAIN1 + d_bnk;
-+	direction = gpio_twl4030_read(REG_GPIODATADIR1 + d_bnk);
-+	if (direction > 0 && (direction >> d_off) & 0x1)
-+		base = REG_SETGPIODATAOUT1 + d_bnk;
-+	else
-+		base = REG_GPIODATAIN1 + d_bnk;
-+
- 	ret = gpio_twl4030_read(base);
- 	if (ret > 0)
- 		ret = (ret >> d_off) & 0x1;
+ /* Align . to a 8 byte boundary equals to maximum function alignment. */
+ #define ALIGN_FUNCTION()  . = ALIGN(8)
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index d140e8f..9a6bccb 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -717,13 +717,6 @@ static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
+ /* Trap pasters of __FUNCTION__ at compile-time */
+ #define __FUNCTION__ (__func__)
+ 
+-/* This helps us to avoid #ifdef CONFIG_SYMBOL_PREFIX */
+-#ifdef CONFIG_SYMBOL_PREFIX
+-#define SYMBOL_PREFIX CONFIG_SYMBOL_PREFIX
+-#else
+-#define SYMBOL_PREFIX ""
+-#endif
+-
+ /* Rebuild everything on CONFIG_FTRACE_MCOUNT_RECORD */
+ #ifdef CONFIG_FTRACE_MCOUNT_RECORD
+ # define REBUILD_DUE_TO_FTRACE_MCOUNT_RECORD
+diff --git a/kernel/modsign_pubkey.c b/kernel/modsign_pubkey.c
+index 767e559..93ce84b 100644
+--- a/kernel/modsign_pubkey.c
++++ b/kernel/modsign_pubkey.c
+@@ -9,6 +9,7 @@
+  * 2 of the Licence, or (at your option) any later version.
+  */
+ 
++#include <linux/stringify.h>
+ #include <linux/kernel.h>
+ #include <linux/sched.h>
+ #include <linux/cred.h>
+@@ -21,10 +22,10 @@ struct key *modsign_keyring;
+ extern __initdata const u8 modsign_certificate_list[];
+ extern __initdata const u8 modsign_certificate_list_end[];
+ asm(".section .init.data,\"aw\"\n"
+-    SYMBOL_PREFIX "modsign_certificate_list:\n"
++    __stringify(SYMBOL_PREFIX) "modsign_certificate_list:\n"
+     ".incbin \"signing_key.x509\"\n"
+     ".incbin \"extra_certificates\"\n"
+-    SYMBOL_PREFIX "modsign_certificate_list_end:"
++    __stringify(SYMBOL_PREFIX) "modsign_certificate_list_end:"
+     );
+ 
+ /*
+diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
+index bdf42fd..1138e77 100644
+--- a/scripts/Makefile.lib
++++ b/scripts/Makefile.lib
+@@ -119,11 +119,10 @@ _c_flags += $(if $(patsubst n%,, \
+ 		$(CFLAGS_GCOV))
+ endif
+ 
+-ifdef CONFIG_SYMBOL_PREFIX
+ _sym_flags = -DSYMBOL_PREFIX=$(patsubst "%",%,$(CONFIG_SYMBOL_PREFIX))
+-_cpp_flags += $(_sym_flags)
++_c_flags += $(_sym_flags)
+ _a_flags += $(_sym_flags)
+-endif
++_cpp_flags += $(_sym_flags)
+ 
+ 
+ # If building the kernel in a separate objtree expand all occurrences
 -- 
-1.8.0
+1.7.10.4
+
 
