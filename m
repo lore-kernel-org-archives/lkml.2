@@ -1,79 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754503Ab2LEU5g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 15:57:36 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:58326 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754260Ab2LEU5e (ORCPT
+	id S1030184Ab2LEU5z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 15:57:55 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:49218 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964817Ab2LEU5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 15:57:34 -0500
-Date: Thu, 6 Dec 2012 07:57:21 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Borislav Petkov <bp@alien8.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Mohr <andi@lisas.de>, linux-kernel@vger.kernel.org,
-        Li Shaohua <shaohua.li@intel.com>, linux-acpi@vger.kernel.org
-Subject: Re: Look Ma, da kernel is b0rken
-Message-Id: <20121206075721.18c0c05aa767b330f47d77eb@canb.auug.org.au>
-In-Reply-To: <20121205154749.2af4ef36@pyramind.ukuu.org.uk>
-References: <20121205070901.GA12123@rhlx01.hs-esslingen.de>
-	<20121205142935.GA12119@liondog.tnic>
-	<20121205152756.5afec12c@pyramind.ukuu.org.uk>
-	<20121205153121.GA28556@liondog.tnic>
-	<20121205154749.2af4ef36@pyramind.ukuu.org.uk>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__6_Dec_2012_07_57_21_+1100_tu00Vcn7E_X5rhhb"
+	Wed, 5 Dec 2012 15:57:51 -0500
+Date: Wed, 5 Dec 2012 12:57:44 -0800
+From: Tejun Heo <tj@kernel.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
+        namhyung@kernel.org, vincent.guittot@linaro.org, oleg@redhat.com,
+        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
+        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v2 02/10] CPU hotplug: Provide APIs for "full" atomic
+ readers to prevent CPU offline
+Message-ID: <20121205205744.GB27465@mtj.dyndns.org>
+References: <20121205184041.3750.64945.stgit@srivatsabhat.in.ibm.com>
+ <20121205184313.3750.17752.stgit@srivatsabhat.in.ibm.com>
+ <50BF99FA.8060109@linux.vnet.ibm.com>
+ <50BFAF27.9060203@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50BFAF27.9060203@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__6_Dec_2012_07_57_21_+1100_tu00Vcn7E_X5rhhb
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello,
 
-Hi Alan,
+On Thu, Dec 06, 2012 at 02:01:35AM +0530, Srivatsa S. Bhat wrote:
+> Yes, that _sounds_ sufficient, but IMHO it won't be, in practice. The
+> *number* of call-sites that you need to convert from preempt_disable/enable
+> to get/put_online_cpus_atomic() won't be too many, however the *frequency*
+> of usage of those call-sites can potentially be very high.
 
-On Wed, 5 Dec 2012 15:47:49 +0000 Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->
-> And yes btw we should turn this option on in -next, and get these sort of
-> things out of the tree for good. More importantly it'll mean anyone
-> adding another one gets a whine on the spot.
+I don't think that will be the case and, even if it is, doing it this
+way would make it difficult to tell.  The right thing to do is
+replacing stop_machine with finer grained percpu locking first.
+Refining it further should happen iff that isn't enough and there
+isn't an simpler solution.  So, let's please do the simple conversion
+first.
 
-While I appreciate your confidence, I don't notice quite a few new
-warnings (because there are so many of them already :-().  Is there some
-reason to not turn this on in our "normal" builds?  Does it produce many
-false positives?  What compiler version is required?
+Thanks.
 
-I also currently don't carry patches that only ever appear in linux-next
-(well, not intentionally anyway).  I assume it would require a patch to
-the Makefile(s) to turn this on.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__6_Dec_2012_07_57_21_+1100_tu00Vcn7E_X5rhhb
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQv7UxAAoJEECxmPOUX5FEn3EP/jUAaiB0LFqa7ZuDRj1IvpGG
-9qshPdPuYbJrwsYMJlZqDMrE5v+DhJrrqIga2jWMM2YqWxlczjMZXjMsKSCKIJ0g
-RNohUww1oCuZRqNHLFx6kWFUASQUYrNJp5+AORTbzu5B48QGYnl+VeqbR2h+vD5G
-pABE4ypkAqFtvO7ZWPj05E4aBJMpFOqfd54dLptSGfnJhPKfH59WFSHqOottMX2b
-+RiWdBDefWQmldvFGNpC+jfBWPhCeDXx5GXPXvXLNv7kRvsMiEOWIZCQbqFEhx+/
-rYBvX89gV5dNbQWCEVm/j2mcRzqYMJq/+yLQxmRo2CyZdw8NpZlmiEcVQPFn4eF7
-JAr7CNTxbUZYFKELbQReOKpC8gCbUauwyFriWjnBsZ+Lv75nn3JrdppFaB+6fbuE
-xZnpF3HmmAQhpA2RP6uwG/c3Olkahx4mrnfVONIcNRbmNE2cBg75dYjuzD5P1EYt
-Jxz4RrKNKyre+uViJU/qGKoBA2WDA9wTKdw9Y3TeOxw8GjGz5OmXkzVsMeGCeoqF
-dmBx+ZUQdLw9ZUfn5Ohk4mTxP57wz5xekJCW/XOLiHfU2RJnyQcIRMPFaEMfPPJx
-YStbIW+XFhtk3maPU14J5TO+d9x/bnSyH7HuYnjsbAnZzzMbDdrQqDCUOB/fW1TH
-9uVJjikt2Mj/MzMRfHnV
-=/YOx
------END PGP SIGNATURE-----
-
---Signature=_Thu__6_Dec_2012_07_57_21_+1100_tu00Vcn7E_X5rhhb--
+-- 
+tejun
