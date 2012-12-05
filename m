@@ -1,227 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721Ab2LEGwp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 01:52:45 -0500
-Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:59435 "EHLO
-	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752119Ab2LEGwo (ORCPT
+	id S1752987Ab2LEG4x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 01:56:53 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:44066 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752813Ab2LEG4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 01:52:44 -0500
-From: Chao Xie <chao.xie@marvell.com>
-To: haojian.zhuang@gmail.com, xiechao.mail@gmail.com, linux@arm.linux.org.uk,
-        a.zummo@towertech.it, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead,
-        robert.jarzmik@free.fr
-Cc: Chao Xie <chao.xie@marvell.com>
-Subject: [V2 PATCH 2/2] rtc: pxa: add pxa95x rtc support
-Date: Wed,  5 Dec 2012 01:49:09 -0500
-Message-Id: <1354690149-3043-2-git-send-email-chao.xie@marvell.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1354690149-3043-1-git-send-email-chao.xie@marvell.com>
-References: <1354690149-3043-1-git-send-email-chao.xie@marvell.com>
-X-OriginalArrivalTime: 05 Dec 2012 06:49:20.0230 (UTC) FILETIME=[A70E7060:01CDD2B4]
+	Wed, 5 Dec 2012 01:56:48 -0500
+X-AuditID: 9c93016f-b7b86ae000003a75-35-50bef02da20c
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 2/3] perf hists: Link hist entries before inserting to an output tree
+Date: Wed,  5 Dec 2012 15:56:42 +0900
+Message-Id: <1354690603-31364-3-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1354690603-31364-1-git-send-email-namhyung@kernel.org>
+References: <1354690603-31364-1-git-send-email-namhyung@kernel.org>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-the pxa95x rtc need access PBSR register before write to
-RTTR, RCNR, RDCR, and RYCR registers.
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Signed-off-by: Chao Xie <chao.xie@marvell.com>
+For matching and/or linking hist entries, they need to be sorted by
+given sort keys.  However current hists__match/link did this on the
+output trees, so that the entries in the output tree need to be resort
+before doing it.
+
+This looks not so good since we have trees for collecting or
+collapsing entries before passing them to an output tree and they're
+already sorted by the given sort keys.  Since we don't need to print
+anything at the time of matching/linking, we can use these internal
+trees directly instead of bothering with double resort on the output
+tree.
+
+Its only user - at the time of this writing - perf diff can be easily
+converted to use the internal tree and can save some lines too by
+getting rid of unnecessary resorting codes.
+
+It seems we need to do output resort on baseline hists for
+displacement prior to the match/link.  But AFAIK it's okay since the
+resort doesn't make any change to the internal tree - i.e. every
+entries in the internal tree remain as is and just linked to both of
+internal and output tree using different keys.  So linking entries in
+the internal tree after output resorting will not cause any harm IMHO.
+
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Stephane Eranian <eranian@google.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- drivers/rtc/rtc-pxa.c |  100 +++++++++++++++++++++++++++++++++++++++++-------
- 1 files changed, 85 insertions(+), 15 deletions(-)
+ tools/perf/builtin-diff.c | 73 ++++++++++++++++++-----------------------------
+ tools/perf/util/hist.c    | 49 +++++++++++++++++++++++--------
+ 2 files changed, 65 insertions(+), 57 deletions(-)
 
-diff --git a/drivers/rtc/rtc-pxa.c b/drivers/rtc/rtc-pxa.c
-index f771b2e..aee23cb 100644
---- a/drivers/rtc/rtc-pxa.c
-+++ b/drivers/rtc/rtc-pxa.c
-@@ -29,6 +29,7 @@
- #include <linux/slab.h>
- #include <linux/of.h>
- #include <linux/of_device.h>
-+#include <linux/delay.h>
- 
- #include <mach/hardware.h>
- 
-@@ -77,14 +78,28 @@
- #define RTCPICR		0x34
- #define PIAR		0x38
- 
-+#define PSBR_RTC	0x00
-+
- #define rtc_readl(pxa_rtc, reg)	\
- 	__raw_readl((pxa_rtc)->base + (reg))
- #define rtc_writel(pxa_rtc, reg, value)	\
- 	__raw_writel((value), (pxa_rtc)->base + (reg))
-+#define rtc_readl_psbr(pxa_rtc, reg)	\
-+	__raw_readl((pxa_rtc)->base_psbr + (reg))
-+#define rtc_writel_psbr(pxa_rtc, reg, value)	\
-+	__raw_writel((value), (pxa_rtc)->base_psbr + (reg))
-+
-+enum {
-+	RTC_PXA27X,
-+	RTC_PXA95X,
-+};
- 
- struct pxa_rtc {
- 	struct resource	*ress;
-+	struct resource *ress_psbr;
-+	unsigned int		id;
- 	void __iomem		*base;
-+	void __iomem		*base_psbr;
- 	int			irq_1Hz;
- 	int			irq_Alrm;
- 	struct rtc_device	*rtc;
-@@ -242,9 +257,26 @@ static int pxa_rtc_set_time(struct device *dev, struct rtc_time *tm)
- {
- 	struct pxa_rtc *pxa_rtc = dev_get_drvdata(dev);
- 
-+	/*
-+	 * sequence to wirte pxa rtc register RCNR RDCR RYCR is
-+	 * 1. set PSBR[RWE] bit, take 2x32-khz to complete
-+	 * 2. write to RTC register,take 2x32-khz to complete
-+	 * 3. clear PSBR[RWE] bit,take 2x32-khz to complete
-+	 */
-+	if (pxa_rtc->id == RTC_PXA95X) {
-+		rtc_writel_psbr(pxa_rtc, PSBR_RTC, 0x01);
-+		udelay(100);
-+	}
-+
- 	rtc_writel(pxa_rtc, RYCR, ryxr_calc(tm));
- 	rtc_writel(pxa_rtc, RDCR, rdxr_calc(tm));
- 
-+	if (pxa_rtc->id == RTC_PXA95X) {
-+		udelay(100);
-+		rtc_writel_psbr(pxa_rtc, PSBR_RTC, 0x00);
-+		udelay(100);
-+	}
-+
- 	return 0;
- }
- 
-@@ -310,6 +342,20 @@ static const struct rtc_class_ops pxa_rtc_ops = {
- 	.proc = pxa_rtc_proc,
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index d869029fb75e..b52f5d8c4a6b 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -276,46 +276,19 @@ static struct perf_tool tool = {
+ 	.ordering_requires_timestamps = true,
  };
  
-+static struct of_device_id pxa_rtc_dt_ids[] = {
-+	{ .compatible = "marvell,pxa-rtc", .data = (void *)RTC_PXA27X },
-+	{ .compatible = "marvell,pxa95x-rtc", .data = (void *)RTC_PXA95X },
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, pxa_rtc_dt_ids);
-+
-+static const struct platform_device_id pxa_rtc_id_table[] = {
-+	{ "pxa-rtc", RTC_PXA27X },
-+	{ "pxa95x-rtc", RTC_PXA95X },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(platform, pxa_rtc_id_table);
-+
- static int __init pxa_rtc_probe(struct platform_device *pdev)
- {
- 	struct device *dev = &pdev->dev;
-@@ -324,13 +370,34 @@ static int __init pxa_rtc_probe(struct platform_device *pdev)
- 	spin_lock_init(&pxa_rtc->lock);
- 	platform_set_drvdata(pdev, pxa_rtc);
- 
-+	if (pdev->dev.of_node) {
-+		const struct of_device_id *of_id =
-+				of_match_device(pxa_rtc_dt_ids, &pdev->dev);
-+
-+		pxa_rtc->id = (unsigned int)(of_id->data);
-+	} else {
-+		const struct platform_device_id *id =
-+				platform_get_device_id(pdev);
-+
-+		pxa_rtc->id = id->driver_data;
-+	}
-+
- 	ret = -ENXIO;
- 	pxa_rtc->ress = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!pxa_rtc->ress) {
--		dev_err(dev, "No I/O memory resource defined\n");
-+		dev_err(dev, "No I/O memory resource(id=0) defined\n");
- 		goto err_ress;
- 	}
- 
-+	if (pxa_rtc->id == RTC_PXA95X) {
-+		pxa_rtc->ress_psbr =
-+			platform_get_resource(pdev, IORESOURCE_MEM, 1);
-+		if (!pxa_rtc->ress_psbr) {
-+			dev_err(dev, "No I/O memory resource(id=1) defined\n");
-+			goto err_ress;
-+		}
-+	}
-+
- 	pxa_rtc->irq_1Hz = platform_get_irq(pdev, 0);
- 	if (pxa_rtc->irq_1Hz < 0) {
- 		dev_err(dev, "No 1Hz IRQ resource defined\n");
-@@ -347,7 +414,17 @@ static int __init pxa_rtc_probe(struct platform_device *pdev)
- 				resource_size(pxa_rtc->ress));
- 	if (!pxa_rtc->base) {
- 		dev_err(&pdev->dev, "Unable to map pxa RTC I/O memory\n");
--		goto err_map;
-+		goto err_map_base;
-+	}
-+
-+	if (pxa_rtc->id == RTC_PXA95X) {
-+		pxa_rtc->base_psbr = ioremap(pxa_rtc->ress_psbr->start,
-+					resource_size(pxa_rtc->ress_psbr));
-+		if (!pxa_rtc->base_psbr) {
-+			dev_err(&pdev->dev,
-+				"Unable to map pxa RTC PSBR I/O memory\n");
-+			goto err_map_base_psbr;
-+		}
- 	}
- 
- 	/*
-@@ -376,9 +453,12 @@ static int __init pxa_rtc_probe(struct platform_device *pdev)
- 	return 0;
- 
- err_rtc_reg:
-+	if (pxa_rtc->id == RTC_PXA95X)
-+		iounmap(pxa_rtc->base_psbr);
-+err_map_base_psbr:
- 	 iounmap(pxa_rtc->base);
-+err_map_base:
- err_ress:
--err_map:
- 	kfree(pxa_rtc);
- 	return ret;
- }
-@@ -398,14 +478,6 @@ static int __exit pxa_rtc_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
--#ifdef CONFIG_OF
--static struct of_device_id pxa_rtc_dt_ids[] = {
--	{ .compatible = "marvell,pxa-rtc" },
--	{}
--};
--MODULE_DEVICE_TABLE(of, pxa_rtc_dt_ids);
--#endif
+-static void insert_hist_entry_by_name(struct rb_root *root,
+-				      struct hist_entry *he)
+-{
+-	struct rb_node **p = &root->rb_node;
+-	struct rb_node *parent = NULL;
+-	struct hist_entry *iter;
 -
- #ifdef CONFIG_PM
- static int pxa_rtc_suspend(struct device *dev)
- {
-@@ -440,14 +512,12 @@ static struct platform_driver pxa_rtc_driver = {
- 		.pm	= &pxa_rtc_pm_ops,
- #endif
- 	},
-+	.id_table	= pxa_rtc_id_table,
- };
- 
- static int __init pxa_rtc_init(void)
- {
--	if (cpu_is_pxa27x() || cpu_is_pxa3xx())
--		return platform_driver_probe(&pxa_rtc_driver, pxa_rtc_probe);
+-	while (*p != NULL) {
+-		parent = *p;
+-		iter = rb_entry(parent, struct hist_entry, rb_node);
+-		if (hist_entry__cmp(he, iter) < 0)
+-			p = &(*p)->rb_left;
+-		else
+-			p = &(*p)->rb_right;
+-	}
 -
--	return -ENODEV;
-+	return platform_driver_probe(&pxa_rtc_driver, pxa_rtc_probe);
+-	rb_link_node(&he->rb_node, parent, p);
+-	rb_insert_color(&he->rb_node, root);
+-}
+-
+-static void hists__name_resort(struct hists *self, bool sort)
++static void hists__compute_position(struct hists *hists)
+ {
+ 	unsigned long position = 1;
+-	struct rb_root tmp = RB_ROOT;
+-	struct rb_node *next = rb_first(&self->entries);
++	struct rb_node *next = rb_first(&hists->entries);
+ 
+ 	while (next != NULL) {
+-		struct hist_entry *n = rb_entry(next, struct hist_entry, rb_node);
++		struct hist_entry *he;
+ 
+-		next = rb_next(&n->rb_node);
+-		n->position = position++;
++		he = rb_entry(next, struct hist_entry, rb_node);
++		he->position = position++;
+ 
+-		if (sort) {
+-			rb_erase(&n->rb_node, &self->entries);
+-			insert_hist_entry_by_name(&tmp, n);
+-		}
++		next = rb_next(next);
+ 	}
+-
+-	if (sort)
+-		self->entries = tmp;
  }
  
- static void __exit pxa_rtc_exit(void)
+ static struct perf_evsel *evsel_match(struct perf_evsel *evsel,
+@@ -330,34 +303,39 @@ static struct perf_evsel *evsel_match(struct perf_evsel *evsel,
+ 	return NULL;
+ }
+ 
+-static void perf_evlist__resort_hists(struct perf_evlist *evlist, bool name)
++static void perf_evlist__resort_hists(struct perf_evlist *evlist, bool base)
+ {
+ 	struct perf_evsel *evsel;
+ 
+ 	list_for_each_entry(evsel, &evlist->entries, node) {
+ 		struct hists *hists = &evsel->hists;
+ 
+-		hists__output_resort(hists);
++		hists__collapse_resort(hists);
+ 
+-		/*
+-		 * The hists__name_resort only sets possition
+-		 * if name is false.
+-		 */
+-		if (name || ((!name) && show_displacement))
+-			hists__name_resort(hists, name);
++		if (base && show_displacement) {
++			hists__output_resort(hists);
++			hists__compute_position(hists);
++		}
+ 	}
+ }
+ 
+ static void hists__baseline_only(struct hists *hists)
+ {
+-	struct rb_node *next = rb_first(&hists->entries);
++	struct rb_root *root;
++	struct rb_node *next;
++
++	if (sort__need_collapse)
++		root = &hists->entries_collapsed;
++	else
++		root = hists->entries_in;
+ 
++	next = rb_first(root);
+ 	while (next != NULL) {
+-		struct hist_entry *he = rb_entry(next, struct hist_entry, rb_node);
++		struct hist_entry *he = rb_entry(next, struct hist_entry, rb_node_in);
+ 
+-		next = rb_next(&he->rb_node);
++		next = rb_next(&he->rb_node_in);
+ 		if (!hist_entry__next_pair(he)) {
+-			rb_erase(&he->rb_node, &hists->entries);
++			rb_erase(&he->rb_node_in, root);
+ 			hist_entry__free(he);
+ 		}
+ 	}
+@@ -481,6 +459,11 @@ static void hists__process(struct hists *old, struct hists *new)
+ 	else
+ 		hists__link(new, old);
+ 
++	hists__output_resort(new);
++
++	if (show_displacement)
++		hists__compute_position(new);
++
+ 	if (sort_compute) {
+ 		hists__precompute(new);
+ 		hists__compute_resort(new);
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index d4471c21ed17..b0c9952d7c3f 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -720,16 +720,24 @@ void hists__inc_nr_events(struct hists *hists, u32 type)
+ static struct hist_entry *hists__add_dummy_entry(struct hists *hists,
+ 						 struct hist_entry *pair)
+ {
+-	struct rb_node **p = &hists->entries.rb_node;
++	struct rb_root *root;
++	struct rb_node **p;
+ 	struct rb_node *parent = NULL;
+ 	struct hist_entry *he;
+ 	int cmp;
+ 
++	if (sort__need_collapse)
++		root = &hists->entries_collapsed;
++	else
++		root = hists->entries_in;
++
++	p = &root->rb_node;
++
+ 	while (*p != NULL) {
+ 		parent = *p;
+-		he = rb_entry(parent, struct hist_entry, rb_node);
++		he = rb_entry(parent, struct hist_entry, rb_node_in);
+ 
+-		cmp = hist_entry__cmp(he, pair);
++		cmp = hist_entry__collapse(he, pair);
+ 
+ 		if (!cmp)
+ 			goto out;
+@@ -744,8 +752,8 @@ static struct hist_entry *hists__add_dummy_entry(struct hists *hists,
+ 	if (he) {
+ 		memset(&he->stat, 0, sizeof(he->stat));
+ 		he->hists = hists;
+-		rb_link_node(&he->rb_node, parent, p);
+-		rb_insert_color(&he->rb_node, &hists->entries);
++		rb_link_node(&he->rb_node_in, parent, p);
++		rb_insert_color(&he->rb_node_in, root);
+ 		hists__inc_nr_entries(hists, he);
+ 	}
+ out:
+@@ -755,11 +763,16 @@ out:
+ static struct hist_entry *hists__find_entry(struct hists *hists,
+ 					    struct hist_entry *he)
+ {
+-	struct rb_node *n = hists->entries.rb_node;
++	struct rb_node *n;
++
++	if (sort__need_collapse)
++		n = hists->entries_collapsed.rb_node;
++	else
++		n = hists->entries_in->rb_node;
+ 
+ 	while (n) {
+-		struct hist_entry *iter = rb_entry(n, struct hist_entry, rb_node);
+-		int64_t cmp = hist_entry__cmp(iter, he);
++		struct hist_entry *iter = rb_entry(n, struct hist_entry, rb_node_in);
++		int64_t cmp = hist_entry__collapse(iter, he);
+ 
+ 		if (cmp < 0)
+ 			n = n->rb_left;
+@@ -777,11 +790,17 @@ static struct hist_entry *hists__find_entry(struct hists *hists,
+  */
+ void hists__match(struct hists *leader, struct hists *other)
+ {
++	struct rb_root *root;
+ 	struct rb_node *nd;
+ 	struct hist_entry *pos, *pair;
+ 
+-	for (nd = rb_first(&leader->entries); nd; nd = rb_next(nd)) {
+-		pos  = rb_entry(nd, struct hist_entry, rb_node);
++	if (sort__need_collapse)
++		root = &leader->entries_collapsed;
++	else
++		root = leader->entries_in;
++
++	for (nd = rb_first(root); nd; nd = rb_next(nd)) {
++		pos  = rb_entry(nd, struct hist_entry, rb_node_in);
+ 		pair = hists__find_entry(other, pos);
+ 
+ 		if (pair)
+@@ -796,11 +815,17 @@ void hists__match(struct hists *leader, struct hists *other)
+  */
+ int hists__link(struct hists *leader, struct hists *other)
+ {
++	struct rb_root *root;
+ 	struct rb_node *nd;
+ 	struct hist_entry *pos, *pair;
+ 
+-	for (nd = rb_first(&other->entries); nd; nd = rb_next(nd)) {
+-		pos = rb_entry(nd, struct hist_entry, rb_node);
++	if (sort__need_collapse)
++		root = &other->entries_collapsed;
++	else
++		root = other->entries_in;
++
++	for (nd = rb_first(root); nd; nd = rb_next(nd)) {
++		pos = rb_entry(nd, struct hist_entry, rb_node_in);
+ 
+ 		if (!hist_entry__has_pairs(pos)) {
+ 			pair = hists__add_dummy_entry(leader, pos);
 -- 
-1.7.4.1
+1.7.11.7
 
