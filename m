@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab2LEMfG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 07:35:06 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:56232 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752018Ab2LEMfD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 07:35:03 -0500
-Date: Wed, 5 Dec 2012 13:34:59 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Philip Balister <philip@balister.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Greg KH <gregkh@linuxfoundation.org>,
-        Eli Billauer <eli.billauer@gmail.com>, linux-kernel@vger.kernel.org,
-        John Linn <john.linn@xilinx.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "Ira W. Snyder" <iws@ovro.caltech.edu>,
-        Josh Cartwright <josh.cartwright@ni.com>, dinguyen@altera.com
-Subject: Re: [PATCH 2/2] New driver: Xillybus generic interface for FPGA
- (programmable logic)
-Message-ID: <20121205123459.GB30445@amd.pavel.ucw.cz>
-References: <1354117293-13632-1-git-send-email-eli.billauer@gmail.com>
- <20121130173644.GA9841@kroah.com>
- <50B97734.3090207@balister.org>
- <201212012048.51012.arnd@arndb.de>
- <50BE53E4.1040303@balister.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50BE53E4.1040303@balister.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753574Ab2LEMhP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 07:37:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40457 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752535Ab2LEMhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 07:37:13 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <s5hobi9aqxs.wl%tiwai@suse.de>
+References: <s5hobi9aqxs.wl%tiwai@suse.de> <1354616321-13520-2-git-send-email-mmarek@suse.cz> <1354616321-13520-1-git-send-email-mmarek@suse.cz> <22396.1354645048@warthog.procyon.org.uk> <87hao1gyiv.fsf@rustcorp.com.au>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: dhowells@redhat.com, Rusty Russell <rusty@ozlabs.org>,
+        Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
+        James Hogan <james.hogan@imgtec.com>
+Subject: Re: [PATCH 2/3] MODSIGN: Avoid using .incbin in C source
+Date: Wed, 05 Dec 2012 12:35:42 +0000
+Message-ID: <10107.1354710942@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Takashi Iwai <tiwai@suse.de> wrote:
 
-> >Agreed. If I understand you correctly though, your approach is specific
-> >to a particular hardware implementation (Zynq) on the user interface layer,
-> >which I think is exactly what we should avoid. Obviously, there is
-> >always a driver involved that is specific to the IP block you load into
-> >an FPGA at runtime, and that is ok. The two parts that I think we
-> >should agree on are:
+> From: Takashi Iwai <tiwai@suse.de>
+> Subject: [PATCH v2] MODSIGN: Avoid using .incbin in C source
+> 
+> Using the asm .incbin statement in C sources breaks any gcc wrapper which
+> assumes that preprocessed C source is self-contained. Use a separate .S
+> file to include the siging key and certificate.
+> 
+> Tested-by: Michal Marek <mmarek@suse.cz>
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
 
-> The approach I am taking is not Zynq specific. The only Zynq
-> specific bits will be range checking data from the device tree to
-> make sure the user is mapping address space that is used by the FPGA
-> and a similar validation of the IRQ numbers. I have not looked at
-> the Altera part closely, but I suspect their fpga/processor
-> interface may use similar concepts.
+Acked-by: David Howells <dhowells@redhat.com>
 
-So... the arch may be called socfpga, but I don't think we managed to
-merge actual fpga parts, yet ;-). In fact, I'm not sure if I actually
-seen those... Dinh should know more about status there.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+> +#define GLOBAL(name)	\
+> +	.globl ASM_SYMBOL(name);	\
+> +	ASM_SYMBOL(name):
+
+This should perhaps be moved into a global header.
