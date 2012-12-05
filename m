@@ -1,127 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099Ab2LENOk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 08:14:40 -0500
-Received: from miso.sublimeip.com ([203.12.5.51]:14150 "EHLO
-	miso.sublimeip.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751347Ab2LENOi (ORCPT
+	id S1752471Ab2LENTL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 08:19:11 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:40463 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751657Ab2LENTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 08:14:38 -0500
-Message-ID: <8e2e79d5d683f9a774965e47acb20992.squirrel@mail.sublimeip.com>
-In-Reply-To: <20121205092951.GA14280@host2.jankratochvil.net>
-References: <20121205092951.GA14280@host2.jankratochvil.net>
-Date: Thu, 6 Dec 2012 00:14:35 +1100
-Subject: Re: PTRACE_SYSCALL && vsyscall (Was: arch_check_bp_in_kernelspace:
- fix the range check)
-From: u3557@miso.sublimeip.com
-To: "Jan Kratochvil" <jan.kratochvil@redhat.com>
-Cc: "Oleg Nesterov" <oleg@redhat.com>,
-        "Amnon Shiloh" <u3557@miso.sublimeip.com>,
-        "Denys Vlasenko" <dvlasenk@redhat.com>,
-        "Pedro Alves" <palves@redhat.com>,
-        "Cyrill Gorcunov" <gorcunov@openvz.org>,
-        "Pavel Emelyanov" <xemul@parallels.com>,
-        "Steven Rostedt" <rostedt@goodmis.org>,
-        "Frederic Weisbecker" <fweisbec@gmail.com>,
-        "Ingo Molnar" <mingo@redhat.com>,
-        "Peter Zijlstra" <a.p.zijlstra@chello.nl>,
-        linux-kernel@vger.kernel.org
-Reply-To: mosix@mosix.com.au
-User-Agent: SquirrelMail/1.4.22
+	Wed, 5 Dec 2012 08:19:10 -0500
+Date: Wed, 5 Dec 2012 13:19:04 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: grant.likely@secretlab.ca, Samuel Ortiz <sameo@linux.intel.com>,
+        rabin.vincent@stericsson.com, shiraz.hashim@st.com,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, linus.walleij@linaro.org,
+        Vipul Kumar Samar <vipulkumar.samar@st.com>
+Subject: Re: [PATCH V5 2/2] mfd: stmpe: Update DT support in stmpe driver
+Message-ID: <20121205131904.GJ2718@gmail.com>
+References: <2dcd7cb4c4022fa24b5328974e4226f5aaf89419.1354199865.git.viresh.kumar@linaro.org>
+ <121653def4e985b0c1b59045637dd4518f97e73a.1354199865.git.viresh.kumar@linaro.org>
+ <20121130105731.GN3176@sortiz-mobl>
+ <20121130154542.GG23648@gmail.com>
+ <CAKohpokLVEH+4F_VXh5auUm48cWWe0mumZME8yOCcAezcwJbCQ@mail.gmail.com>
+ <CAKohpom-9fFwvCQXdJNXELZC1rfDT0-N+XoYQdTOG2Mo=SyiYw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
+In-Reply-To: <CAKohpom-9fFwvCQXdJNXELZC1rfDT0-N+XoYQdTOG2Mo=SyiYw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Jan,
+> Ping!!!
 
-> x86 debug registers are already very scarce.  Besides that userland
-> applications know they have 4 of them available so it would also break
-> them.
+Documentation/development-process/2.Process:
 
-If a userland application wants to cheat, then it has no need to bypass
-the debug registers: even if there were 4096 of them, covering the whole
-vsyscall page, it could simply copy the whole vsyscall page somewhere
-else, then run (or emulate) it, or look directly at the raw data within
-the vsyscall page.  The only way to overcome that would be to make the
-vsyscall page either non-existent or unreadable.
+- Avoid top-posting (the practice of putting your answer above the quoted
+  text you are responding to).  It makes your response harder to read and
+  makes a poor impression.
 
-Personally, allowing userland applications to read the vsyscall page
-can't hurt me and my applications, but if someone else is concerned with
-such malicious programs (does anyone?), if they need to construct the
-strictest-of-strict jail, where jailed applications cannot glimpse
-any information from the kernel they run on no matter how hard they try,
-then they must at least make the vsyscall page unreadable, then rely
-either on kernel emulation or a SIGSEGV (the later would be quite
-sufficient for my own needs as a substitute for debug-registers,
-but unfortunately not for the current version of "strace").
+:)
 
-If, as I was told, it's too hard to remove the vsyscall page on a
-per-process basis, then it's sufficient to make it unreadable on
-context-switch.
+> On 1 December 2012 00:33, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> > On 30 November 2012 21:15, Lee Jones <lee.jones@linaro.org> wrote:
+> >> But ... I don't see how the changes in the -i2c and -spi files
+> >> are of benefit either. When I boot without the ID table I still
+> >> get "stmpe-i2c 0-0040: stmpe1601 detected, chip id: 0x212".
+> >>
+> >> What is it that actually uses the IDs?
+> >>
+> >> Perhaps Viresh can shine some light on the matter?
+> >
+> > As you can see, i wasn't the author of this patch and when you asked
+> > this question, i didn't had an answer to it. I went through code and
+> > formed some theory/story :) .
+> >
+> > @Grant: i need your help to check if my theory is correct or not. Question
+> > is about adding below code in any i2c client driver:
+> >
+> > +#ifdef CONFIG_OF
+> > +static const struct of_device_id stmpe_dt_ids[] = {
+> > +       { .compatible = "st,stmpe610", .data = &stmpe_i2c_id[0], },
+> > +       { .compatible = "st,stmpe801", .data = &stmpe_i2c_id[1], },
+> > +       { .compatible = "st,stmpe811", .data = &stmpe_i2c_id[2], },
+> > +       { .compatible = "st,stmpe1601", .data = &stmpe_i2c_id[3], },
+> > +       { .compatible = "st,stmpe2401", .data = &stmpe_i2c_id[4], },
+> > +       { .compatible = "st,stmpe2403", .data = &stmpe_i2c_id[5], },
+> > +       { }
+> > +};
+> > +MODULE_DEVICE_TABLE(of, stmpe_dt_ids);
+> > +#endif
+> > +
+> >  static struct i2c_driver stmpe_i2c_driver = {
+> >         .driver = {
+> >                 .name = "stmpe-i2c",
+> > @@ -88,6 +102,7 @@ static struct i2c_driver stmpe_i2c_driver = {
+> >  #ifdef CONFIG_PM
+> >                 .pm = &stmpe_dev_pm_ops,
+> >  #endif
+> > +               .of_match_table = of_match_ptr(stmpe_dt_ids),
+> >
+> > So, what is the use of this table when we already have i2c_driver.id_table
+> > populated.
+> >
+> > This is my theory:
+> > ---------------------
+> > Adapter drivers supporting DT will call:
+> > of_i2c_register_devices()
+> > {
+> >         for_each_child_of_node(adap->dev.of_node, node) {
+> >                 if (of_modalias_node(node, info.type, sizeof(info.type)) < 0)
+> >                      error condition
+> >
+> >                 ...
+> >                 result = i2c_new_device(adap, &info);
+> >
+> >           ...
+> > }
+> >
+> > of_modalias_node(): expects compatible in child node, i.e. stmpe node in our
+> > case. If it is not there, then that node is skipped. then it copies
+> > string after ','
+> > to info.type. So, for us only "stmpe810" out of "st,stmpe810" is copied.
+> >
+> > Now this name, i.e. "stmpe810" is copied as client.name in i2c_new_device()
+> > and device_register() is called, which will eventually call:
+> >
+> > i2c_device_match()
+> > {
+> >         /* Attempt an OF style match */
+> >         if (of_driver_match_device(dev, drv))
+> >                 return 1;
+> >
+> >         driver = to_i2c_driver(drv);
+> >         /* match on an id table if there is one */
+> >         if (driver->id_table)
+> >                 return i2c_match_id(driver->id_table, client) != NULL;
+> > }
+> >
+> > This first tries to match the table my patch added, _BUT_ the string will
+> > never match as we had "st,stmpe810" in table and "stmpe810" in dev.
+> >
+> > So, we fall back to i2c_match_id(), which will match it against
+> > i2c_driver.id_table present in driver, which has entry for "stmpe810" and
+> > so strings matched.
+> >
+> > @Lee: This is what happened in your case. :)
+> >
+> > So, whether its DT or non DT, true is returned from here if something
+> > matched.
+> >
+> > Later on, this will be called:
+> >
+> > static int i2c_device_probe(struct device *dev)
+> > {
+> >         .....
+> >         status = driver->probe(client, i2c_match_id(driver->id_table, client));
+> >         ....
+> > }
+> >
+> > Which will again match the legacy table to find correct struct i2c_device_id *id
+> > to pass to probe().
+> >
+> > So, the final question: WTF is of_match_table for?
+> >
+> > Then i thought maybe it is used when  we don't have child nodes inside parent,
+> > something related to the phandle way ? I grep'd i2c in arch/arm/boot/dts and
+> > couldn't find anything of that sort, the way i2c clients are added is:
+> >
+> > in dtsi file:
+> >
+> > i2c0: i2c@address {
+> >          ...
+> > }
+> >
+> > in dts file:
+> > &i2c0 {
+> >           stmpe810 {
+> >           ........
+> >           }
+> > }
+> >
+> > which i believe will be taken care by dtc and will fold client nodes
+> > as child nodes
+> > of i2c0.
+> >
+> > @Grant: Please throw some light here :)
+> >
+> > --
+> > viresh
 
-My concern, however, is not with the bad guys, but with good honest
-programs that would run incorrectly if allowed to call "time()" or
-"gettimeofday()" unsupervised.  No good program or library jumps into
-the vsyscall page except into its 3 official entry points.
-
-In summary, it should be decided:
-
-If it is important enough for Linux to support paranoidically strict
-jails, then full kernel emulation of PTRACE_SYSCALL (and PTRACE_SYSEMU)
-is inescapable.
-
-If, on the other hand, there is only a need to allow applications such as
-mine and "strace"/"gdb" to trap system-calls that occur via the vsyscall
-page, then in principle a variety of options are possible:
-
-1. Allow setting the x86 hardware-debug registers into the vsyscall page.
-2. Optional (per-process) removal of execute-permission from the vsyscall
-   page.
-3. Optional (per-process) removal of both read and execute permissions
-   from the vsyscall page.
-4. Optional (per-process) elimination of the vsyscall page altogether.
-5. Kernel vsyscall emulation code to send some signal or event to traced
-   processes if the ptracer asked for it (using a new ptrace option).
-6. Complete and transparent emulation of PTRACE_SYSCALL/PTRACE_SYSEMU.
-
-Option #1 requires the least effort (a 2-line fix).
-Option #6 requires the most effort.
-
-Best Regards,
-Amnon.
-
-> On Sun, 02 Dec 2012 20:30:58 +0100, Oleg Nesterov wrote:
->> Yes, that is why I said this needs the new option.
->
-> I do not mind new options although personally I do not find them
-> meaningful
-> for an already deprecated ABI compatibility-only issue.
->
->
->> If the tracer does PTRACE_SYSCALL the tracee reports syscall exit
->> _after_ gettimeofday/etc. The tracer can look at regs->orig_ax == -1
->> and detect that this is not syscall but vsyscall, it can look at
->> regs->ip then (not with the patch below).
->
-> I believe applications just call PTRACE_SYSCALL twice, without checking
-> orig_eax.  At least strace and its TCB_INSYSCALL looks so.
->
->
-> On Mon, 03 Dec 2012 00:54:58 +0100, u3557@miso.sublimeip.com wrote:
->> The beauty of using the x86 debug-registers,
->
-> x86 debug registers are already very scarce.  Besides that userland
-> applications know they have 4 of them available so it would also break
-> them.
->
->
-> Regards,
-> Jan
->
-
-
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
