@@ -1,74 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932268Ab2LEW2a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 17:28:30 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:47880 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932073Ab2LEW22 (ORCPT
+	id S932286Ab2LEWjo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 17:39:44 -0500
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:27082 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754292Ab2LEWjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 17:28:28 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v2 06/44] of/vendor-prefixes: add Imagination Technologies
-To: James Hogan <james.hogan@imgtec.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, James Hogan <james.hogan@imgtec.com>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        devicetree-discuss@lists.ozlabs.org
-In-Reply-To: <1354723742-6195-7-git-send-email-james.hogan@imgtec.com>
-References: <1354723742-6195-1-git-send-email-james.hogan@imgtec.com> <1354723742-6195-7-git-send-email-james.hogan@imgtec.com>
-Date: Wed, 05 Dec 2012 22:28:23 +0000
-Message-Id: <20121205222824.005C53E0E22@localhost>
+	Wed, 5 Dec 2012 17:39:43 -0500
+Message-ID: <1354746668.21585.147.camel@misato.fc.hp.com>
+Subject: Re: [RFC PATCH v3 0/3] acpi: Introduce prepare_remove device
+ operation
+From: Toshi Kani <toshi.kani@hp.com>
+To: Hanjun Guo <guohanjun@huawei.com>
+Cc: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
+        wency@cn.fujitsu.com, rjw@sisk.pl, lenb@kernel.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Tang Chen <tangchen@cn.fujitsu.com>,
+        Liujiang <jiang.liu@huawei.com>, Huxinwei <huxinwei@huawei.com>
+Date: Wed, 05 Dec 2012 15:31:08 -0700
+In-Reply-To: <50BF399B.7010404@huawei.com>
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
+	     <50B5EFE9.3040206@huawei.com>
+	    <1354128096.26955.276.camel@misato.fc.hp.com>
+	   <50B6E936.2080308@huawei.com> <1354228028.7776.56.camel@misato.fc.hp.com>
+	   <50BC29C6.6050706@huawei.com>
+	 <1354579848.21585.54.camel@misato.fc.hp.com>  <50BDBF5A.8040407@huawei.com>
+	 <1354663411.21585.135.camel@misato.fc.hp.com> <50BF399B.7010404@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 5 Dec 2012 16:08:24 +0000, James Hogan <james.hogan@imgtec.com> wrote:
-> The "powervr" prefix which is currently described as "Imagination
-> Technologies" isn't really appropriate for non-PowerVR hardware, so
-> deprecate it, changing the description of "powervr" to "PowerVR
-> (deprecated, use img)", and add a separate "img" prefix for "Imagination
-> Technologies Ltd.".
+On Wed, 2012-12-05 at 20:10 +0800, Hanjun Guo wrote:
+> On 2012/12/5 7:23, Toshi Kani wrote:
+> > On Tue, 2012-12-04 at 17:16 +0800, Hanjun Guo wrote:
+> >> On 2012/12/4 8:10, Toshi Kani wrote:
+> >>> On Mon, 2012-12-03 at 12:25 +0800, Hanjun Guo wrote:
+> >>>> On 2012/11/30 6:27, Toshi Kani wrote:
+> >>>
+> >>> If I read the code right, the framework calls ACPI drivers differently
+> >>> at boot-time and hot-add as follows.  That is, the new entry points are
+> >>> called at hot-add only, but .add() is called at both cases.  This
+> >>> requires .add() to work differently.
+> >>
+> >> Hi Toshi,
+> >> Thanks for your comments!
+> >>
+> >>>
+> >>> Boot    : .add()
+> >>
+> >> Actually, at boot time: .add(), .start()
+> > 
+> > Right.
+> > 
+> >>> Hot-Add : .add(), .pre_configure(), configure(), etc.
+> >>
+> >> Yes, we did it as you said in the framework. We use .pre_configure(), configure(),
+> >> and post_configure() to instead of .start() for better error handling and recovery.
+> > 
+> > I think we should have hot-plug interfaces at the module level, not at
+> > the ACPI-internal level.  In this way, the interfaces can be
+> > platform-neutral and allow any modules to register, which makes it more
+> > consistent with the boot-up sequence.  It can also allow ordering of the
+> > sequence among the registered modules.  Right now, we initiate all
+> > procedures from ACPI during hot-plug, which I think is inflexible and
+> > steps into other module's role.
+> > 
+> > I am also concerned about the slot handling, which is the core piece of
+> > the infrastructure and only allows hot-plug operations on ACPI objects
+> > where slot objects are previously created by checking _EJ0.  The
+> > infrastructure should allow hot-plug operations on any objects, and it
+> > should not be dependent on the slot design.
+> > 
+> > I have some rough idea, and it may be easier to review / explain if I
+> > make some code changes.  So, let me prototype it, and send it you all if
+> > that works out.  Hopefully, it won't take too long.
 > 
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Cc: Rob Landley <rob@landley.net>
-> Cc: devicetree-discuss@lists.ozlabs.org
+> Great! If any thing I can do, please let me know it.
 
-Applied, thanks.
+Cool.  Yes, if the prototype turns out to be a good one, we can work
+together to improve it. :)
+ 
+Thanks,
+-Toshi
 
-g.
-
-> ---
->  .../devicetree/bindings/vendor-prefixes.txt        |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> index 9de2b9f..aab2993 100644
-> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> @@ -25,6 +25,7 @@ gef	GE Fanuc Intelligent Platforms Embedded Systems, Inc.
->  hp	Hewlett Packard
->  ibm	International Business Machines (IBM)
->  idt	Integrated Device Technologies, Inc.
-> +img	Imagination Technologies Ltd.
->  intercontrol	Inter Control Group
->  linux	Linux-specific binding
->  marvell	Marvell Technology Group Ltd.
-> @@ -35,7 +36,7 @@ nintendo	Nintendo
->  nvidia	NVIDIA
->  nxp	NXP Semiconductors
->  picochip	Picochip Ltd
-> -powervr	Imagination Technologies
-> +powervr	PowerVR (deprecated, use img)
->  qcom	Qualcomm, Inc.
->  ramtron	Ramtron International
->  realtek Realtek Semiconductor Corp.
-> -- 
-> 1.7.7.6
-> 
-> 
-
--- 
-Grant Likely, B.Sc, P.Eng.
-Secret Lab Technologies, Ltd.
