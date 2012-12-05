@@ -1,87 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab2LEVia (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 16:38:30 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:45863 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751765Ab2LEVi3 (ORCPT
+	id S1753539Ab2LEVi6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 16:38:58 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47956 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751980Ab2LEVi4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 16:38:29 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1/AS6t/DgfAOxDBFzk3Mdt5IwViFJRpmvdAwexLZY
-	bM1IKaHMot04E8
-From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: Kent Yoder <key@linux.vnet.ibm.com>
-Subject: Re: [tpmdd-devel] [PATCH 1/1] TPM: STMicroelectronics ST33 I2C KERNEL 3.x.x
-Date: Wed, 5 Dec 2012 22:39:02 +0100
-User-Agent: KMail/1.13.7 (Linux/3.6.9; KDE/4.8.5; x86_64; ; )
-Cc: Mathias LEBLANC <Mathias.LEBLANC@st.com>,
-        "Jean-Luc BLANC" <jean-luc.blanc@st.com>,
-        "Sirrix@jasper.es" <Sirrix@jasper.es>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rajiv Andrade <mail@srajiv.net>,
-        "tpmdd-devel@lists.sourceforge.net" 
-	<tpmdd-devel@lists.sourceforge.net>,
-        Kent Yoder <shpedoikal@gmail.com>
-References: <1353363322-2923-1-git-send-email-mathias.leblanc@st.com> <201212052120.47955.PeterHuewe@gmx.de> <20121205210048.GA6109@ennui.austin.ibm.com>
-In-Reply-To: <20121205210048.GA6109@ennui.austin.ibm.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Wed, 5 Dec 2012 16:38:56 -0500
+Date: Wed, 5 Dec 2012 13:38:53 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Andreas Mohr <andi@lisas.de>,
+        linux-kernel@vger.kernel.org, Li Shaohua <shaohua.li@intel.com>,
+        linux-acpi@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: Look Ma, da kernel is b0rken
+Message-Id: <20121205133853.770451ca.akpm@linux-foundation.org>
+In-Reply-To: <20121205153121.GA28556@liondog.tnic>
+References: <20121205070901.GA12123@rhlx01.hs-esslingen.de>
+	<20121205142935.GA12119@liondog.tnic>
+	<20121205152756.5afec12c@pyramind.ukuu.org.uk>
+	<20121205153121.GA28556@liondog.tnic>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201212052239.02710.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kent,
+On Wed, 5 Dec 2012 16:31:21 +0100
+Borislav Petkov <bp@alien8.de> wrote:
 
-Am Mittwoch, 5. Dezember 2012, 22:00:48 schrieb Kent Yoder:
->   This is already at least v3 of the driver IIRC. And its not fully
-> committed at all, its just in a staging tree. I can blow it away at any
-> time if we find problems.
-> 
->   Not a problem. usually I'd attach any updates I planned to commit for
-> public review, then if anything wasn't made public before I issue my
-> pull request to send them to security-next, I'd append the full diff to
-> the pull request at that time. Either way, all changes will hit a list
-> at some point in time.
-Ok - great ;) maybe my I got the 'planning on pushing'  wrong.
-
-
-> > I thought the Mathias has changed the naming of the files? I don't see
-> > that in your commit.
-> 
->   Good catch, this is the kind of review I was asking for. :-)
-
-Hehe. Glad to hear.
-You know I care for the tpm subsystem ;)
-
-> 
-> > The version you committed to that branch still has some of the items of
-> > my first review. (e.g.
+> On Wed, Dec 05, 2012 at 03:27:56PM +0000, Alan Cox wrote:
+> > On Wed, 5 Dec 2012 15:29:35 +0100
+> > Borislav Petkov <bp@alien8.de> wrote:
 > > 
-> >  * This program is free software; you can redistribute it and/or modify
+> > > On Wed, Dec 05, 2012 at 08:09:01AM +0100, Andreas Mohr wrote:
+> > > > Hi,
+> > > > 
+> > > > drivers/pnp/pnpacpi/core.c: In function 'ispnpidacpi':
+> > > > drivers/pnp/pnpacpi/core.c:65:2: warning: logical 'or' of collectively
+> > > > exhaustive tests is always true [-Wlogical-op]
+> > > > drivers/pnp/pnpacpi/core.c:66:2: warning: logical 'or' of collectively
+> > > > exhaustive tests is always true [-Wlogical-op]
+> > > > drivers/pnp/pnpacpi/core.c:67:2: warning: logical 'or' of collectively
+> > > > exhaustive tests is always true [-Wlogical-op]
+> > > > 
+> > > > 
+> > > > That's already the second less enticing -Wlogical-op issue
+> > > > which was discovered by accident during less than two days
 > > 
-> > * it under the terms of the GNU General Public License as published by
-> > * the Free Software Foundation; either version 2 of the License, or
-> > * (at your option) any later version.)
+> > No it's not. It's been reported in bugzilla. I sent patches ages ago.
+> > They were ignored. Coverity has had it tagged for years (and a ton more
+> > of them you've not noticed yet)
 > > 
-> > -> The (possible) GPL v3 clause has to go away for the kernel, but I'm
-> > not a lawyer.
+> > http://article.gmane.org/gmane.linux.acpi.devel/56753/match=test_alpha
+> > 
+> > This isn't discovered, this is in the "If you stick your fingers in your
+> > ears and hum you can't hear the screaming" category.
 > 
->   A GPLv3 clause would say "v3 or any later version". This should be
-> fine.
+> Hillarious!
+> 
+> Andrew, would you please pick up Alan's patch? It clearly fixes an
+> ancient bug in the pnpacpi code.
+> 
 
-Hmm, okay. 
-I just googled for it on lkml, there are some files and drivers.
-So I guess it's okay - sorry for the noise.
-But I'm not a lawyer, personally I'd go for GPLv2 only but that's my personal 
-opinion. 
+Bjorn had a review comment which appears to remain unaddressed:
 
+: The original is definitely broken.
+: 
+: I think the corrected test allows PNP IDs containing '@', which
+: doesn't appear legal per sec 6.1.5 of the ACPI 5.0 spec.  Should this
+: be
+: 
+: +       if (!('A' <= (c) && (c) <= 'Z')) \
+: 
+: instead?
 
-Thanks,
-Peter
+Also, the original patch is missing a signed-off-by.  Here's what I
+have queued:
 
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: pnpacpi: fix incorrect TEST_ALPHA() test
+
+TEST_ALPHA() is broken and always returns 0.
+
+[akpm@linux-foundation.org: return false for '@' as well, per Bjorn]
+Signed-off-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Borislav Petkov <bp@alien8.de>
+Cc: Andreas Mohr <andi@lisas.de>
+Cc: Li Shaohua <shaohua.li@intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ drivers/pnp/pnpacpi/core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff -puN drivers/pnp/pnpacpi/core.c~pnpacpi-fix-incorrect-test_alpha-test drivers/pnp/pnpacpi/core.c
+--- a/drivers/pnp/pnpacpi/core.c~pnpacpi-fix-incorrect-test_alpha-test
++++ a/drivers/pnp/pnpacpi/core.c
+@@ -58,7 +58,7 @@ static inline int __init is_exclusive_de
+ 	if (!(('0' <= (c) && (c) <= '9') || ('A' <= (c) && (c) <= 'F'))) \
+ 		return 0
+ #define TEST_ALPHA(c) \
+-	if (!('@' <= (c) || (c) <= 'Z')) \
++	if (!('A' <= (c) && (c) <= 'Z')) \
+ 		return 0
+ static int __init ispnpidacpi(const char *id)
+ {
+_
 
