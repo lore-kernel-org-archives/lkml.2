@@ -1,233 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753543Ab2LETBN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 14:01:13 -0500
-Received: from ngcobalt02.manitu.net ([217.11.48.102]:42873 "EHLO
-	ngcobalt02.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752806Ab2LETBM (ORCPT
+	id S1753805Ab2LETBp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 14:01:45 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:49229 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752471Ab2LETBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 14:01:12 -0500
-X-manitu-Original-Sender-IP: 93.104.11.153
-X-manitu-Original-Receiver-Name: ngcobalt02.manitu.net
-Message-ID: <50BF99F3.4060207@grandegger.com>
-Date: Wed, 05 Dec 2012 20:01:07 +0100
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 5 Dec 2012 14:01:41 -0500
+From: dirk.brandewie@gmail.com
+To: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Cc: rjw@sisk.pl, deneen.t.dock@intel.com, arjan@linux.intel.com,
+        Dirk Brandewie <dirk.brandewie@gmail.com>
+Subject: =?UTF-8?q?=5BPATCH=20RFC=200/1=5D=20cpufreq/x86=3A=20Add=20P-state=20driver=20for=20sandy=20bridge=2E=20?=
+Date: Wed,  5 Dec 2012 11:01:30 -0800
+Message-Id: <1354734091-29870-1-git-send-email-dirk.brandewie@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
 MIME-Version: 1.0
-To: Roland Stigge <stigge@antcom.de>
-CC: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
-        jbe@pengutronix.de, plagnioj@jcrosoft.com, highguy@gmail.com,
-        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
-        rmallon@gmail.com, tru@work-microwave.de, sr@denx.de
-Subject: Re: [PATCH 3/6 v9] gpio: Add userland device interface to block GPIO
-References: <1354653588-4018-1-git-send-email-stigge@antcom.de> <1354653588-4018-4-git-send-email-stigge@antcom.de>
-In-Reply-To: <1354653588-4018-4-git-send-email-stigge@antcom.de>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/04/2012 09:39 PM, Roland Stigge wrote:
-> This patch adds a character device interface to the block GPIO system.
-> 
-> Signed-off-by: Roland Stigge <stigge@antcom.de>
-> ---
->  Documentation/ABI/testing/dev-gpioblock |   34 +++++
->  drivers/gpio/gpiolib.c                  |  208 +++++++++++++++++++++++++++++++-
->  include/linux/gpio.h                    |   10 +
->  3 files changed, 251 insertions(+), 1 deletion(-)
-> 
-> --- /dev/null
-> +++ linux-2.6/Documentation/ABI/testing/dev-gpioblock
-> @@ -0,0 +1,34 @@
-> +What:		/dev/<gpioblock>
-> +Date:		Nov 2012
-> +KernelVersion:	3.7
-> +Contact:	Roland Stigge <stigge@antcom.de>
-> +Description:	The /dev/<gpioblock> character device node provides userspace
-> +		access to GPIO blocks, named exactly as the block, e.g.
-> +		/dev/block0.
-> +
-> +		Reading:
-> +		When reading sizeof(unsigned long) bytes from the device, the
-> +		current state of the block, masked by the current mask (see
-> +		below) can be obtained as a word. When the device is opened
-> +		with O_NONBLOCK, read() always returns with data immediately,
-> +		otherwise it blocks until data is available, see IRQ handling
-> +		below.
-> +
-> +		Writing:
-> +		By writing sizeof(unsigned long) bytes to the device, the
-> +		current state of the block can be set. This operation is
-> +		masked by the current mask (see below).
-> +
-> +		IRQ handling:
-> +		When one or more IRQs in the block are IRQ capable, you can
-> +		poll() on the device to check/wait for this IRQ. If no IRQ
-> +		is available, poll() returns -ENOSYS and userspace needs to
-> +		(busy) poll itself if necessary.
-> +
-> +		Setting the mask (default: all bits set):
-> +		By doing an ioctl(fd, 0, &mask) with an unsigned long mask, the
-> +		current mask for read and write operations on this gpio block
-> +		can be set.
-> +
-> +		See also Documentation/gpio.txt for an explanation of block
-> +		GPIO.
-> --- linux-2.6.orig/drivers/gpio/gpiolib.c
-> +++ linux-2.6/drivers/gpio/gpiolib.c
-> @@ -11,6 +11,8 @@
->  #include <linux/of_gpio.h>
->  #include <linux/idr.h>
->  #include <linux/slab.h>
-> +#include <linux/uaccess.h>
-> +#include <linux/poll.h>
->  
->  #define CREATE_TRACE_POINTS
->  #include <trace/events/gpio.h>
-> @@ -2122,6 +2124,190 @@ struct gpio_block *gpio_block_find_by_na
->  }
->  EXPORT_SYMBOL_GPL(gpio_block_find_by_name);
->  
-> +static struct gpio_block *gpio_block_find_by_minor(int minor)
-> +{
-> +	struct gpio_block *i;
-> +
-> +	list_for_each_entry(i, &gpio_block_list, list)
-> +		if (i->miscdev.minor == minor)
-> +			return i;
-> +	return NULL;
-> +}
-> +
-> +static bool gpio_block_is_irq_duplicate(struct gpio_block *block, int index)
-> +{
-> +	int irq = gpio_to_irq(block->gpio[index]);
-> +	int i;
-> +
-> +	for (i = 0; i < index; i++)
-> +		if (gpio_to_irq(block->gpio[i]) == irq)
-> +			return true;
-> +	return false;
-> +}
-> +
-> +static irqreturn_t gpio_block_irq_handler(int irq, void *dev)
-> +{
-> +	struct gpio_block *block = dev;
-> +
-> +	wake_up_interruptible(&block->wait_queue);
-> +	block->got_int = true;
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static int gpio_block_fop_open(struct inode *in, struct file *f)
-> +{
-> +	int i;
-> +	struct gpio_block *block = gpio_block_find_by_minor(MINOR(in->i_rdev));
-> +	int status;
-> +	int irq;
-> +
-> +	if (!block)
-> +		return -ENOENT;
-> +
-> +	block->irq_controlled = false;
-> +	block->got_int = false;
-> +	init_waitqueue_head(&block->wait_queue);
-> +	f->private_data = block;
-> +
-> +	for (i = 0; i < block->ngpio; i++) {
-> +		status = gpio_request(block->gpio[i], "gpioblock dev");
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
 
-You could use the name of the GPIO block.
+This driver provides a P state driver for Sandybridge and Ivybridge
+processors.
+ 
+Motivation:
+The goal of this driver is to improve the power efficiency of
+Sandybridge/Ivybridge based systems.  As the investigation into how to
+achieve this goal progressed it became apparent (to me) that some of the
+design assumptions of the cpufreq subsystem are no longer valid and
+that a micro-architecure specific P state driver would be less complex
+and potentially more effiecent.  As Intel continues to innovate in the
+area of freqency/power control this will become more true IMHO.
 
-> +		if (status)
-> +			goto err1;
-> +
-> +		irq = gpio_to_irq(block->gpio[i]);
-> +		if (irq >= 0 &&
-> +		    !test_bit(FLAG_IS_OUT, &gpio_desc[block->gpio[i]].flags) &&
-> +		    !gpio_block_is_irq_duplicate(block, i)) {
-> +			status = request_irq(irq, gpio_block_irq_handler,
-> +					     IRQF_TRIGGER_FALLING,
-> +					     block->name, block);
-> +			if (status)
-> +				goto err2;
-> +
-> +			block->irq_controlled = true;
-> +		}
-> +	}
+General info:
+The driver uses a PID controller to adjust the core frequency based on
+the presented load. The driver exposes the tuning parameters for the
+controller in the /sys/devices/system/cpu/cpufreq/snb directory.  The
+controller code is being used in PI mode with the default tuning
+parmeters.
 
-There is no need to request IRQs if "O_NONBLOCK" is specified.
+Tuning parmeters:
+   setpoint - load in percent on the core will attempt to maintain.	
+   sample_rate_ms - rate at which the driver will sample the load on the core. 
+   deadband  - percent ± around the setpoint the controller will
+               consider zero error.
+   p_gain_pct - Proportional gain in percent. 
+   i_gain_pct - Integral gain in percent. 
+   d_gain_pct - Derivative gain in percent
 
-> +
-> +	return 0;
-> +
-> +err1:
-> +	while (i > 0) {
-> +		i--;
-> +
-> +		irq = gpio_to_irq(block->gpio[i]);
-> +		if (irq >= 0 &&
-> +		    !test_bit(FLAG_IS_OUT, &gpio_desc[block->gpio[i]].flags) &&
-> +		    !gpio_block_is_irq_duplicate(block, i))
-> +			free_irq(irq, block);
-> +err2:
-> +		gpio_free(block->gpio[i]);
-> +	}
-> +	return status;
-> +}
-> +
-> +static int gpio_block_fop_release(struct inode *in, struct file *f)
-> +{
-> +	int i;
-> +	struct gpio_block *block = (struct gpio_block *)f->private_data;
-> +
-> +	for (i = 0; i < block->ngpio; i++) {
-> +		int irq = gpio_to_irq(block->gpio[i]);
-> +
-> +		if (irq >= 0 &&
-> +		    !test_bit(FLAG_IS_OUT, &gpio_desc[block->gpio[i]].flags) &&
-> +		    !gpio_block_is_irq_duplicate(block, i))
-> +			free_irq(irq, block);
-> +
-> +		gpio_free(block->gpio[i]);
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static ssize_t gpio_block_fop_read(struct file *f, char __user *buf, size_t n,
-> +				   loff_t *offset)
-> +{
-> +	struct gpio_block *block = (struct gpio_block *)f->private_data;
-> +	int err;
-> +
-> +	if (block->irq_controlled) {
-> +		if (!(f->f_flags & O_NONBLOCK))
-> +			wait_event_interruptible(block->wait_queue,
-> +						 block->got_int);
-> +		block->got_int = 0;
-> +	}
-> +
-> +	if (n >= sizeof(unsigned long)) {
-> +		unsigned long values = gpio_block_get(block, block->cur_mask);
-> +
-> +		err = put_user(values, (unsigned long __user *)buf);
-> +		if (err)
-> +			return err;
-> +
-> +		return sizeof(unsigned long);
-> +	}
-> +	return 0;
-> +}
+To use the driver as root run the following shell script:
+   #!/bin/sh
+   for file in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+   do 
+      echo snb > $file
+   done
 
-I observed that the read returns once immediately (without blocking)
-after reboot. I did not look into that yet.
+Limitations:
 
-Wolfgang.
+ATM this driver will only run on SandyBridge systems testing on
+Ivybridge systems is not complete.
+ 
+Open Questions:
 
+What is the correct way to integrate this driver into the system?  The
+current implementation registers as a cpufreq frequency governor, this
+was done to streamline testing using cpufreq to load/unload governors.
+
+What tuning parameters should be exposed via sysfs (if any)?  ATM all
+the PID parameters are exposed to enable tuning of the driver.
+
+
+Performance information:
+
+ --- Kernel build ---
+The following is data collected for a bzImage kernel build.  The
+commands used were:
+	 make -j8 clean
+	 sysctl -w vm.drop_caches=3
+	 /usr/bin/time -f "%E %c" make -j8 bzImage
+
+Time and context switches measured with /usr/bin/time -f "%E %c"
+
+Energy measured with package energy status MSR described in section
+14.7 in the Intel® 64 and IA-32 Architectures Software Developer’s
+Manual Volume 3.
+       http://download.intel.com/products/processor/manual/325384.pdf
+
+Average watts calculated with energy/time in seconds
+
+           time		ctx sw	energy	avg watts
+perf      02:24.49	116721	6660	46.09
+snb       02:27.03	114940	6591	44.83
+ondemand  02:26.83	190948	6683	45.51
+
+A graph of the power usage during the kernel build for each governor
+is available here:
+    http://git.fenrus.org/dirk/kernel.png
+
+ --- Power benchmark ---
+I used industry standard power bench suite to compare the performance and
+ondemand governors against the Sandybridge governor.
+
+  Governor    | ssj_ops/watt
+ -----------------------------
+  performance |   1855
+  ondemand    |   1839
+  snb         |   2016
+ 
+A graph of the power usage for each governor is avavailable here:
+    http://git.fenrus.org/dirk/power_benchmark.png
+
+A graph showing the results of cpufreq-bench tool shipped with the
+kernel Collected with
+   cpufreq-bench -l 6000 -s 6000 -x 2000 -y 2000 -c 0 \
+               -g {ondemand | snb} -n 40 -r 40 
+is available here:
+    http://git.fenrus.org/dirk/cpufreq-bench.png
+
+Dirk Brandewie (1):
+  cpufreq/x86: Add P-state driver for sandy bridge.
+
+ drivers/cpufreq/Kconfig.x86   |    8 +
+ drivers/cpufreq/Makefile      |    1 +
+ drivers/cpufreq/cpufreq_snb.c |  727 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 736 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/cpufreq/cpufreq_snb.c
+
+-- 
+1.7.7.6
 
