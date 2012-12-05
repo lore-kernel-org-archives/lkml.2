@@ -1,98 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753661Ab2LETSR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 14:18:17 -0500
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:48480 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752444Ab2LETSO (ORCPT
+	id S1753708Ab2LETV6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 14:21:58 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55067 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752096Ab2LETV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 14:18:14 -0500
-Message-ID: <50BF9D98.6060609@linux.vnet.ibm.com>
-Date: Thu, 06 Dec 2012 00:46:40 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Wed, 5 Dec 2012 14:21:57 -0500
+Date: Wed, 5 Dec 2012 19:21:41 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Marko =?utf-8?B?S2F0acSH?= <dromede@gmail.com>
+Cc: Jingoo Han <jg1.han@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        linux-arm-kernel@lists.infradead.org,
+        Marek =?utf-8?B?VmHFoXV0?= <marek.vasut@gmail.com>
+Subject: Re: [PATCH v4] backlight: corgi_lcd: Use gpio_set_value_cansleep()
+	to avoid WARN_ON
+Message-ID: <20121205192141.GQ14363@n2100.arm.linux.org.uk>
+References: <000201cdd283$baf50160$30df0420$%han@samsung.com> <20121205093027.GK14363@n2100.arm.linux.org.uk> <CAHod+Gdb_LEnhx5cz9j=q9PyS4L=Yjxs303dHon9i-tgjJRtDA@mail.gmail.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
-        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
-        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
-        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v2 01/10] CPU hotplug: Provide APIs for "light"	atomic
- readers to prevent CPU offline
-References: <20121205184041.3750.64945.stgit@srivatsabhat.in.ibm.com> <20121205184258.3750.31879.stgit@srivatsabhat.in.ibm.com> <20121205190703.GA13795@redhat.com>
-In-Reply-To: <20121205190703.GA13795@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12120519-8878-0000-0000-0000050D260E
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAHod+Gdb_LEnhx5cz9j=q9PyS4L=Yjxs303dHon9i-tgjJRtDA@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2012 12:37 AM, Oleg Nesterov wrote:
-> I'll try to read this series later,
+On Wed, Dec 05, 2012 at 07:20:00PM +0100, Marko Katić wrote:
+> On Wed, Dec 5, 2012 at 10:30 AM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+> > On Wed, Dec 05, 2012 at 09:59:07AM +0900, Jingoo Han wrote:
+> >> -     if (gpio_is_valid(lcd->gpio_backlight_cont))
+> >> -             gpio_set_value(lcd->gpio_backlight_cont, cont);
+> >> +     if (gpio_is_valid(lcd->gpio_backlight_cont)) {
+> >> +             if (gpio_cansleep(lcd->gpio_backlight_cont))
+> >> +                     gpio_set_value_cansleep(lcd->gpio_backlight_cont, cont);
+> >> +             else
+> >> +                     gpio_set_value(lcd->gpio_backlight_cont, cont);
+> >> +     }
+> >
+> > Why not simply:
+> >
+> > +       if (gpio_is_valid(lcd->gpio_backlight_cont))
+> > +               gpio_set_value_cansleep(lcd->gpio_backlight_cont, cont);
 > 
-> one minor and almost offtopic nit.
-> 
-> On 12/06, Srivatsa S. Bhat wrote:
->>
->>  static int __ref take_cpu_down(void *_param)
->>  {
->>  	struct take_cpu_down_param *param = _param;
->> +	unsigned long flags;
->>  	int err;
->>
->> +	/*
->> +	 *  __cpu_disable() is the step where the CPU is removed from the
->> +	 *  cpu_online_mask. Protect it with the light-lock held for write.
->> +	 */
->> +	write_lock_irqsave(&light_hotplug_rwlock, flags);
->> +
->>  	/* Ensure this CPU doesn't handle any more interrupts. */
->>  	err = __cpu_disable();
->> -	if (err < 0)
->> +	if (err < 0) {
->> +		write_unlock_irqrestore(&light_hotplug_rwlock, flags);
->>  		return err;
->> +	}
->> +
->> +	/*
->> +	 * We have successfully removed the CPU from the cpu_online_mask.
->> +	 * So release the light-lock, so that the light-weight atomic readers
->> +	 * (who care only about the cpu_online_mask updates, and not really
->> +	 * about the actual cpu-take-down operation) can continue.
->> +	 *
->> +	 * But don't enable interrupts yet, because we still have work left to
->> +	 * do, to actually bring the CPU down.
->> +	 */
->> +	write_unlock(&light_hotplug_rwlock);
->>
->>  	cpu_notify(CPU_DYING | param->mod, param->hcpu);
->> +
->> +	local_irq_restore(flags);
->>  	return 0;
-> 
-> This is subjective, but imho _irqsave and the fat comment look confusing.
-> 
-> Currently take_cpu_down() is always called with irqs disabled, so you
-> do not need to play with interrupts.
-> 
-> 10/10 does s/__stop_machine/stop_cpus/ and that patch could simply add
-> local_irq_disable/enable into take_cpu_down().
-> 
+> My first patch did exactly this but there were complains about it's
+> commit message.
 
-Hmm, we could certainly do that, but somehow I felt it would be easier to
-read if we tinker and fix up the take_cpu_down() logic at one place, as a
-whole, instead of breaking up into pieces in different patches. And that
-also makes the last patch look really cute: it just replaces stop_machine()
-with stop_cpus(), as the changelog intended.
+So that's a reason to drop the patch?  Err, forgive me for being thick
+as a medieval castle wall, but what does complaints about the commit
+message have to do with the contents of the patch?  Why can't you just
+fix the commit message?
 
-I'll see if doing like what you suggested improves the readability, and
-if yes, I'll change it. Thank you!
+> And i just found out that Marek Vasut posted the exact same patch more
+> than a year ago.
+> 
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2011-April/046955.html
+> 
+> It was not applied for various reasons.
 
-Regards,
-Srivatsa S. Bhat
+Looking at that thread (which is corrupted btw, probably thanks to the
+crappy python based locking in mailman) - here's a better archiver:
 
+http://lists.arm.linux.org.uk/lurker/thread/20110402.014316.74101499.en.html
+
+it didn't go anywhere because the discussion was distracted by the loss
+of David Brownell.
+
+Eric shares my opinion of the _cansleep() mess, but unfortunately it's
+what we have and no one's come up with any better solutions to it.  (I
+argued from the outset that the gpio_xxx_cansleep() should've been
+gpio_xxx() and the non-cansleep() version should be called
+gpio_xxx_atomic() so that by default people use the version which _can_
+sleep, but have to think about it when they want to manipulate GPIOs in
+non-task contexts.)
+
+That's off-topic though.  Using just the _cansleep() version is far
+better than messing around with stuff like:
+
+	if (gpio_cansleep(gpio))
+		gpio_xxx_cansleep(gpio);
+	else
+		gpio_xxx(gpio);
+
+> > If you read the gpiolib code and documentation, what you will realise is
+> > that the two calls are identical except for the "might_sleep_if()" in
+> > gpio_set_value_cansleep().  You will also note that gpiolib itself _only_
+> > calls gpio_set_value_cansleep() without checking gpio_cansleep() in
+> > contexts where sleeping is possible.  So if it's good enough for gpiolib,
+> > it should be good enough here.
+> 
+> The documentation tells which calls to use when you don't need to sleep
+> and which calls to use when you might sleep. And here we have a case
+> where the same call to gpio_set_value might sleep or doesn't have to,
+> depending on the model.
+> In this case, i'd rather use gpio_cansleep check as Andrew proposed.
+> 
+> I will also say that the distinction between gpio_set_value and
+> gpio_set_value_cansleep.
+> is rather confusing at this point. Is it really necessary to have both ?
+
+No.  You can call gpio_set_value_cansleep() from task contexts for any
+GPIO just fine, but you can't call it from atomic contexts (it will
+complain).  It doesn't matter whether the GPIO can sleep or not.
+
+You can call gpio_set_value() from any context without it complaining,
+however, gpio_set_value() can't be used with a GPIO which sleeps.
+
+Look, when it comes down to it, in _task_ context, where sleeps are
+permissible:
+
+	gpio_set_value(gpio, xxx);
+and
+	gpio_set_value_cansleep(gpio, xxx);
+
+are exactly the same thing; they will both set the value of a GPIO
+output, whether it be an atomic or a sleeping gpio to the requested
+value.
+
+The difference between the two becomes important if you're not in task
+context, where only the non-_cansleep() versions can be used.  This is
+enforced by the _cansleep() versions issuing a WARN_ON() if they're
+used in non-task contexts.  And conversely, the non-_cansleep() versions
+will warn (as you've found) if you use that call with a GPIO which will
+sleep.
+
+There is another solution to this mess:
+
+void __gpio_set_value(unsigned gpio, int value)
+{
+	struct gpio_chip	*chip;
+
+	chip = gpio_to_chip(gpio);
+	/* Should be using gpio_set_value_cansleep() */
+-	WARN_ON(chip->can_sleep);
++	might_sleep_if(chip->can_sleep);
+	trace_gpio_value(gpio, 0, value);
+	if (test_bit(FLAG_OPEN_DRAIN,  &gpio_desc[gpio].flags))
+		_gpio_set_open_drain_value(gpio, chip, value);
+	else if (test_bit(FLAG_OPEN_SOURCE,  &gpio_desc[gpio].flags))
+		_gpio_set_open_source_value(gpio, chip, value);
+	else
+		chip->set(chip, gpio - chip->base, value);
+}
+EXPORT_SYMBOL_GPL(__gpio_set_value);
+
+With the above change (and an equivalent change everywhere else), it means
+gpio_set_value() is callable from task contexts on GPIOs which can sleep.
+
+However, it loses us some checking - we no longer have the cross-platform
+checking that we get with the existing API, and that's why it's undesirable.
+
+As I say above, IMHO it would've been much better to rename these functions
+to be the other way around but David was always very dismissive of any
+comments I had against any code he'd written.
