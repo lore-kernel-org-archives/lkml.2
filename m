@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753383Ab2LEKDt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 05:03:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59559 "EHLO mx2.suse.de"
+	id S1753448Ab2LEKEQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 05:04:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6917 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753312Ab2LEKDr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 05:03:47 -0500
-Date: Wed, 5 Dec 2012 11:03:44 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        linux-input@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 06/14] HID: i2c-hid: remove unused static declarations
-In-Reply-To: <20121204225132.2b7b6f6f@endymion.delvare>
-Message-ID: <alpine.LNX.2.00.1212051103360.17055@pobox.suse.cz>
-References: <1354634875-5182-1-git-send-email-benjamin.tissoires@gmail.com> <1354634875-5182-7-git-send-email-benjamin.tissoires@gmail.com> <20121204225132.2b7b6f6f@endymion.delvare>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753312Ab2LEKEJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 05:04:09 -0500
+Date: Wed, 5 Dec 2012 10:29:51 +0100
+From: Jan Kratochvil <jan.kratochvil@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>, mosix@mosix.com.au
+Cc: Amnon Shiloh <u3557@miso.sublimeip.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>, Pedro Alves <palves@redhat.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
+Subject: Re: PTRACE_SYSCALL && vsyscall (Was: arch_check_bp_in_kernelspace:
+ fix the range check)
+Message-ID: <20121205092951.GA14280@host2.jankratochvil.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <841b7a319f9d22402d269eed23d03835.squirrel@mail.sublimeip.com>
+ <20121202193058.GA4264@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 4 Dec 2012, Jean Delvare wrote:
+On Sun, 02 Dec 2012 20:30:58 +0100, Oleg Nesterov wrote:
+> Yes, that is why I said this needs the new option.
 
-> > These definitions are not used here, but are defined by the specification.
-> > Keeping some of them for documentation purposes.
-> > 
-> > Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> > ---
-> >  drivers/hid/i2c-hid/i2c-hid.c | 25 ++++++++++---------------
-> >  1 file changed, 10 insertions(+), 15 deletions(-)
-> > 
-> > diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-> > index 54950be..4452611 100644
-> > --- a/drivers/hid/i2c-hid/i2c-hid.c
-> > +++ b/drivers/hid/i2c-hid/i2c-hid.c
-> > @@ -106,22 +106,17 @@ static const struct i2c_hid_cmd hid_reset_cmd =		{ I2C_HID_CMD(0x01),
-> >  							  .wait = true };
-> >  static const struct i2c_hid_cmd hid_get_report_cmd =	{ I2C_HID_CMD(0x02) };
-> >  static const struct i2c_hid_cmd hid_set_report_cmd =	{ I2C_HID_CMD(0x03) };
-> > -static const struct i2c_hid_cmd hid_get_idle_cmd =	{ I2C_HID_CMD(0x04) };
-> > -static const struct i2c_hid_cmd hid_set_idle_cmd =	{ I2C_HID_CMD(0x05) };
-> > -static const struct i2c_hid_cmd hid_get_protocol_cmd =	{ I2C_HID_CMD(0x06) };
-> > -static const struct i2c_hid_cmd hid_set_protocol_cmd =	{ I2C_HID_CMD(0x07) };
-> >  static const struct i2c_hid_cmd hid_set_power_cmd =	{ I2C_HID_CMD(0x08) };
-> > -/* read/write data register */
-> > -static const struct i2c_hid_cmd hid_data_cmd = {
-> > -		.registerIndex = offsetof(struct i2c_hid_desc, wDataRegister),
-> > -		.opcode = 0x00,
-> > -		.length = 2 };
-> > -/* write output reports */
-> > -static const struct i2c_hid_cmd hid_out_cmd = {
-> > -		.registerIndex = offsetof(struct i2c_hid_desc,
-> > -			wOutputRegister),
-> > -		.opcode = 0x00,
-> > -		.length = 2 };
-> > +
-> > +/*
-> > + * These definitions are not used here, but are defined by the spec.
-> > + * Keeping them here for documentation purposes.
-> > + *
-> > + * static const struct i2c_hid_cmd hid_get_idle_cmd = { I2C_HID_CMD(0x04) };
-> > + * static const struct i2c_hid_cmd hid_set_idle_cmd = { I2C_HID_CMD(0x05) };
-> > + * static const struct i2c_hid_cmd hid_get_protocol_cmd = { I2C_HID_CMD(0x06) };
-> > + * static const struct i2c_hid_cmd hid_set_protocol_cmd = { I2C_HID_CMD(0x07) };
-> > + */
-> >  
-> >  /* The main device structure */
-> >  struct i2c_hid {
-> 
-> Reviewed-by: Jean Delvare <khali@linux-fr.org>
+I do not mind new options although personally I do not find them meaningful
+for an already deprecated ABI compatibility-only issue.
 
-Applied.
 
--- 
-Jiri Kosina
-SUSE Labs
+> If the tracer does PTRACE_SYSCALL the tracee reports syscall exit
+> _after_ gettimeofday/etc. The tracer can look at regs->orig_ax == -1
+> and detect that this is not syscall but vsyscall, it can look at
+> regs->ip then (not with the patch below).
+
+I believe applications just call PTRACE_SYSCALL twice, without checking
+orig_eax.  At least strace and its TCB_INSYSCALL looks so.
+
+
+On Mon, 03 Dec 2012 00:54:58 +0100, u3557@miso.sublimeip.com wrote:
+> The beauty of using the x86 debug-registers,
+
+x86 debug registers are already very scarce.  Besides that userland
+applications know they have 4 of them available so it would also break them.
+
+
+Regards,
+Jan
