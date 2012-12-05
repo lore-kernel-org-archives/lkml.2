@@ -1,101 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857Ab2LER2W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 12:28:22 -0500
-Received: from zoneX.GCU-Squad.org ([194.213.125.0]:27893 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752097Ab2LER2T (ORCPT
+	id S1752345Ab2LEReX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 12:34:23 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:36972 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751545Ab2LEReW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 12:28:19 -0500
-Date: Wed, 5 Dec 2012 18:28:12 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/4] HID: i2c-hid: remove extra .irq field in struct
- i2c_hid
-Message-ID: <20121205182812.57262216@endymion.delvare>
-In-Reply-To: <1354716176-12558-4-git-send-email-benjamin.tissoires@gmail.com>
-References: <1354716176-12558-1-git-send-email-benjamin.tissoires@gmail.com>
-	<1354716176-12558-4-git-send-email-benjamin.tissoires@gmail.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Dec 2012 12:34:22 -0500
+Date: Wed, 5 Dec 2012 12:34:15 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Martin Steigerwald <Martin@lichtvoll.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
+ UAPI
+Message-ID: <20121205173415.GI18885@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Martin Steigerwald <Martin@lichtvoll.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Dave Chinner <david@fromorbit.com>,
+	linux-fsdevel <linux-fsdevel@vger.kernel.org>
+References: <1353366267-15629-1-git-send-email-david@fromorbit.com>
+ <201212051718.44017.Martin@lichtvoll.de>
+ <20121205163303.GG18885@thunk.org>
+ <201212051824.05621.Martin@lichtvoll.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <201212051824.05621.Martin@lichtvoll.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  5 Dec 2012 15:02:55 +0100, Benjamin Tissoires wrote:
-> There is no point in keeping the irq in i2c_hid as it's already
-> there in client.
+On Wed, Dec 05, 2012 at 06:24:05PM +0100, Martin Steigerwald wrote:
+> > Heck, I probably have more to complain about with the inode flags
+> > field, which were originally created specifically for ext2/3/4, and
+> > which has since been grabbed for use by other file systems, including
+> > btrfs.  You haven't heard me kvetching because btrfs has grabbed
+> > btrfs-specific inode flags for nocow and notail... no one even bother
+> > to try to get it past the fs-devel shed painting crew before *those*
+> > bits were allocated --- and I am absolutely fine with that.
 > 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-> ---
->  drivers/hid/i2c-hid/i2c-hid.c | 15 +++++----------
->  1 file changed, 5 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
-> index d00f185..c6630d4 100644
-> --- a/drivers/hid/i2c-hid/i2c-hid.c
-> +++ b/drivers/hid/i2c-hid/i2c-hid.c
-> @@ -135,8 +135,6 @@ struct i2c_hid {
->  
->  	unsigned long		flags;		/* device flags */
->  
-> -	int			irq;		/* the interrupt line irq */
-> -
->  	wait_queue_head_t	wait;		/* For waiting the interrupt */
->  };
->  
-> @@ -736,8 +734,6 @@ static int __devinit i2c_hid_init_irq(struct i2c_client *client)
->  		return ret;
->  	}
->  
-> -	ihid->irq = client->irq;
-> -
->  	return 0;
->  }
->  
-> @@ -851,7 +847,7 @@ static int __devinit i2c_hid_probe(struct i2c_client *client,
->  	hid = hid_allocate_device();
->  	if (IS_ERR(hid)) {
->  		ret = PTR_ERR(hid);
-> -		goto err;
-> +		goto err_irq;
->  	}
->  
->  	ihid->hid = hid;
-> @@ -881,10 +877,10 @@ static int __devinit i2c_hid_probe(struct i2c_client *client,
->  err_mem_free:
->  	hid_destroy_device(hid);
->  
-> -err:
-> -	if (ihid->irq)
-> -		free_irq(ihid->irq, ihid);
-> +err_irq:
-> +	free_irq(client->irq, ihid);
->  
-> +err:
->  	i2c_hid_free_buffers(ihid);
->  	kfree(ihid);
->  	return ret;
-> @@ -912,10 +908,9 @@ static int __devexit i2c_hid_remove(struct i2c_client *client)
->  static int i2c_hid_suspend(struct device *dev)
->  {
->  	struct i2c_client *client = to_i2c_client(dev);
-> -	struct i2c_hid *ihid = i2c_get_clientdata(client);
->  
->  	if (device_may_wakeup(&client->dev))
-> -		enable_irq_wake(ihid->irq);
-> +		enable_irq_wake(client->irq);
->  
->  	/* Save some power */
->  	i2c_hid_set_power(client, I2C_HID_PWR_SLEEP);
+> Thats no technical reason – thats exactly the process / patch review stuff 
+> Linus does not seem to give a shit about at least with this topic.
 
-Nice clean-up.
+Exactly; just as Dave's complaint is not technical.
 
-Reviewed-by: Jean Delvare <khali@linux-fr.org>
+> That aside I wondered about that inode flags in earlier days already. At 
+> some time chattr +i worked with XFS and then it only worked in Ext3. 
+> Before that I thought that chattr stuff would work with all filesystems.
 
--- 
-Jean Delvare
+Historically, they were created only for ext2/3/4 file systems.  Over
+time, other file systems have used it as a common interface.  It's for
+historical reasons that it's still an ioctl, as opposed to a system
+call.  For ext2/3/4 the inode flags is actually the on-disk encoding,
+not just the userspace ABI.  For other file systems, it might be just
+the ABI, or it might also be something that they use for their on-disk
+encoding.
+
+Because it's the on-disk encoding, when btrfs uses extra bits for its
+btrfs-specific inode flags, it means that I need to avoid using those
+bits in ext4, if it's a flag that needs to also be exposed via
+chattr/lsattr.  That being said, you'll note that unlike Dave, I have
+**not** thrown a hissy fit when btrfs grabbed bits from the inode
+field, even though quite a bit more bits allocated for the inode flags
+than the fallocate flags.
+
+						- Ted
+
+P.S.  The main reason why it would have been better for btrfs
+developers to have consulted me is that they also depend on
+lsattr/chattr, and those programs are part of e2fsprogs.  Since no one
+told me about the nocow flag when it first went into the kernel, I
+didn't add it to e2fsprogs until relatively recently --- with the
+result that Ubuntu Lucid doesnt have a version of chattr which
+supports the nocow flag.  (Not a big deal, I just have to convince
+Canoncal to upgrade to a newer version of e2fsprogs.)  So I only get
+annoyed when some btrfs users complain about the lack of support in
+chattr, when the main reason why there was no support at least at
+first was no one bothered to ask me to add support; it was not because
+I had anything against btrfs.  As soon as I found out about the nocow
+flag, I added support to chattr and lsattr and pushed out a new
+release of e2fsprogs.
