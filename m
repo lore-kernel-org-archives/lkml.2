@@ -1,174 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245Ab2LEHBO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 02:01:14 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:47821 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482Ab2LEHBM (ORCPT
+	id S1753318Ab2LEHEU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 02:04:20 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:38126 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751880Ab2LEHES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 02:01:12 -0500
-X-AuditID: 9c930179-b7b25ae0000031c2-02-50bef136b6e5
-Date: Wed, 5 Dec 2012 16:01:10 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Christoph Lameter <cl@linux.com>,
-        Android Kernel Team <kernel-team@android.com>,
-        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
-        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
-        Taras Glek <tglek@mozilla.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [RFC v2] Support volatile range for anon vma
-Message-ID: <20121205070110.GC9782@blaptop>
-References: <1351560594-18366-1-git-send-email-minchan@kernel.org>
- <50AD739A.30804@linaro.org>
- <50B6E1F9.5010301@linaro.org>
- <20121204000042.GB20395@bbox>
- <50BD4A70.9060506@linaro.org>
- <20121204072207.GA9782@blaptop>
- <50BE4B64.6000003@linaro.org>
+	Wed, 5 Dec 2012 02:04:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50BE4B64.6000003@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <1354690149-3043-2-git-send-email-chao.xie@marvell.com>
+References: <1354690149-3043-1-git-send-email-chao.xie@marvell.com>
+	<1354690149-3043-2-git-send-email-chao.xie@marvell.com>
+Date: Wed, 5 Dec 2012 15:04:16 +0800
+Message-ID: <CAN1soZxkqFFb-1YrwGoCYcLp734BOcLcgBZD8nTEQcjoQ05XSg@mail.gmail.com>
+Subject: Re: [V2 PATCH 2/2] rtc: pxa: add pxa95x rtc support
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: Chao Xie <chao.xie@marvell.com>
+Cc: xie chao <xiechao.mail@gmail.com>, Linux Russell <linux@arm.linux.org.uk>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Robert Jarzmik <robert.jarzmik@free.fr>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John,
+On Wed, Dec 5, 2012 at 2:49 PM, Chao Xie <chao.xie@marvell.com> wrote:
+> the pxa95x rtc need access PBSR register before write to
+> RTTR, RCNR, RDCR, and RYCR registers.
+>
+> Signed-off-by: Chao Xie <chao.xie@marvell.com>
+> ---
+>  drivers/rtc/rtc-pxa.c |  100 +++++++++++++++++++++++++++++++++++++++++-------
+>  1 files changed, 85 insertions(+), 15 deletions(-)
+>
+> diff --git a/drivers/rtc/rtc-pxa.c b/drivers/rtc/rtc-pxa.c
+> index f771b2e..aee23cb 100644
+> --- a/drivers/rtc/rtc-pxa.c
+> +++ b/drivers/rtc/rtc-pxa.c
+> @@ -29,6 +29,7 @@
+>  #include <linux/slab.h>
+>  #include <linux/of.h>
+>  #include <linux/of_device.h>
+> +#include <linux/delay.h>
+>
+>  #include <mach/hardware.h>
+>
+> @@ -77,14 +78,28 @@
+>  #define RTCPICR                0x34
+>  #define PIAR           0x38
+>
+> +#define PSBR_RTC       0x00
+> +
+>  #define rtc_readl(pxa_rtc, reg)        \
+>         __raw_readl((pxa_rtc)->base + (reg))
+>  #define rtc_writel(pxa_rtc, reg, value)        \
+>         __raw_writel((value), (pxa_rtc)->base + (reg))
+> +#define rtc_readl_psbr(pxa_rtc, reg)   \
+> +       __raw_readl((pxa_rtc)->base_psbr + (reg))
+> +#define rtc_writel_psbr(pxa_rtc, reg, value)   \
+> +       __raw_writel((value), (pxa_rtc)->base_psbr + (reg))
+> +
+> +enum {
+> +       RTC_PXA27X,
+> +       RTC_PXA95X,
+> +};
+>
+>  struct pxa_rtc {
+>         struct resource *ress;
+> +       struct resource *ress_psbr;
+> +       unsigned int            id;
+>         void __iomem            *base;
+> +       void __iomem            *base_psbr;
+>         int                     irq_1Hz;
+>         int                     irq_Alrm;
+>         struct rtc_device       *rtc;
+> @@ -242,9 +257,26 @@ static int pxa_rtc_set_time(struct device *dev, struct rtc_time *tm)
+>  {
+>         struct pxa_rtc *pxa_rtc = dev_get_drvdata(dev);
+>
+> +       /*
+> +        * sequence to wirte pxa rtc register RCNR RDCR RYCR is
+> +        * 1. set PSBR[RWE] bit, take 2x32-khz to complete
+> +        * 2. write to RTC register,take 2x32-khz to complete
+> +        * 3. clear PSBR[RWE] bit,take 2x32-khz to complete
+> +        */
+> +       if (pxa_rtc->id == RTC_PXA95X) {
+> +               rtc_writel_psbr(pxa_rtc, PSBR_RTC, 0x01);
+> +               udelay(100);
+> +       }
 
-On Tue, Dec 04, 2012 at 11:13:40AM -0800, John Stultz wrote:
-> On 12/03/2012 11:22 PM, Minchan Kim wrote:
-> >On Mon, Dec 03, 2012 at 04:57:20PM -0800, John Stultz wrote:
-> >>On 12/03/2012 04:00 PM, Minchan Kim wrote:
-> >>>On Wed, Nov 28, 2012 at 08:18:01PM -0800, John Stultz wrote:
-> >>>>On 11/21/2012 04:36 PM, John Stultz wrote:
-> >>>>>2) Being able to use this with tmpfs files. I'm currently trying
-> >>>>>to better understand the rmap code, looking to see if there's a
-> >>>>>way to have try_to_unmap_file() work similarly to
-> >>>>>try_to_unmap_anon(), to allow allow users to madvise() on mmapped
-> >>>>>tmpfs files. This would provide a very similar interface as to
-> >>>>>what I've been proposing with fadvise/fallocate, but just using
-> >>>>>process virtual addresses instead of (fd, offset) pairs.   The
-> >>>>>benefit with (fd,offset) pairs for Android is that its easier to
-> >>>>>manage shared volatile ranges between two processes that are
-> >>>>>sharing data via an mmapped tmpfs file (although this actual use
-> >>>>>case may be fairly rare).  I believe we should still be able to
-> >>>>>rework the ashmem internals to use madvise (which would provide
-> >>>>>legacy support for existing android apps), so then its just a
-> >>>>>question of if we could then eventually convince Android apps to
-> >>>>>use the madvise interface directly, rather then the ashmem unpin
-> >>>>>ioctl.
-> >>>>Hey Minchan,
-> >>>>     I've been playing around with your patch trying to better
-> >>>>understand your approach and to extend it to support tmpfs files. In
-> >>>>doing so I've found a few bugs, and have some rough fixes I wanted
-> >>>>to share. There's still a few edge cases I need to deal with (the
-> >>>>vma-purged flag isn't being properly handled through vma merge/split
-> >>>>operations), but its starting to come along.
-> >>>Hmm, my patch doesn't allow to merge volatile with another one by
-> >>>inserting VM_VOLATILE into VM_SPECIAL so I guess merge isn't problem.
-> >>>In case of split, __split_vma copy old vma to new vma like this
-> >>>
-> >>>         *new = *vma;
-> >>>
-> >>>So the problem shouldn't happen, I guess.
-> >>>Did you see the real problem about that?
-> >>Yes, depending on the pattern that MADV_VOLATILE and MADV_NOVOLATILE
-> >>is applied, we can get a result where data is purged, but we aren't
-> >>notified of it.  Also, since madvise returns early if it encounters
-> >>an error, in the case where you have checkerboard volatile regions
-> >>(say every other page is volatile), which you mark non-volatile with
-> >>one large MADV_NOVOLATILE call, the first volatile vma will be
-> >>marked non-volatile, but since it returns purged, the madvise loop
-> >>will stop and the following volatile regions will be left volatile.
-> >>
-> >>The patches in the git tree below which handle the perged state
-> >>better seem to work for my tests, as far as resolving any
-> >>overlapping calls. Of course there may yet still be problems I've
-> >>not found.
-> >>
-> >>>>Anyway, take a look at the tree here and let me know what you think.
-> >>>>http://git.linaro.org/gitweb?p=people/jstultz/android-dev.git;a=shortlog;h=refs/heads/dev/minchan-anonvol
-> >>Eager to hear what you think!
-> >Below two patches look good to me.
-> >
-> >[rmap: Simplify volatility checking by moving it out of try_to_unmap_one]
-> >[rmap: ClearPageDirty() when returning SWAP_DISCARD]
-> >
-> >[madvise: Fix NOVOLATILE bug]
-> >I can't understand description of the patch.
-> >Could you elaborate it with example?
-> The case I ran into here is if you have a range where you mark every
-> other page as volatile. Then mark all the pages in that range as
-> non-volatile in one madvise call.
-> 
-> sys_madvise() will then find the first vma in the range, and call
-> madvise_vma(), which marks the first vma non-volatile and return the
-> purged state.  If the page has been purged, sys_madvise code will
-> note that as an error, and break out of the vma iteration loop,
-> leaving the following vmas in the range volatile.
-> 
-> >[madvise: Fixup vma->purged handling]
-> >I included VM_VOLATILE into VM_SPECIAL intentionally.
-> >If comment of VM_SPECIAL is right, merge with volatile vmas shouldn't happen.
-> >So I guess you see other problem. When I see my source code today, locking
-> >scheme/purge handling is totally broken. I will look at it. Maybe you are seeing
-> >bug related that. Part of patch is needed. It could be separate patch.
-> >I will merge it.
-> I don't think the problem is when vmas being marked VM_VOLATILE are
-> being merged, its that when we mark the vma as *non-volatile*, and
-> remove the VM_VOLATILE flag we merge the non-volatile vmas with
-> neighboring vmas. So preserving the purged flag during that merge is
-> important. Again, the example I used to trigger this was an
-> alternating pattern of volatile and non volatile vmas, then marking
-> the entire range non-volatile (though sometimes in two overlapping
-> passes).
+How about define PSBP operation as a new clock, rtc interface clock.
+Then you could put
+the enable/disable into clock framework. And you only need to check
+whether the interface
+clock is NULL or not at here. If it's available, you can call
+clk_prepare_enable().
 
-If I understand correctly, you mean following as.
-
-chunk1 = mmap(8M)
-chunk2 = chunk1 + 2M;
-chunk3 = chunk2 + 2M
-chunk4 = chunk3 + 2M
-
-madvise(chunk1, 2M, VOLATILE);
-madvise(chunk4, 2M, VOLATILE);
-
-/*
- * V : volatile vma
- * N : non volatile vma
- * So Now vma is VNVN.
- */
-And chunk4 is purged.
-
-int ret = madvise(chunk1, 8M, NOVOLATILE);
-ASSERT(ret == 1);
-/* And you expect VNVN->N ?*/
-
-Right?
-If so, why should non-volatile function semantic allow it which cross over
-non-volatile areas in a range? I would like to fail such case because
-in case of MADV_REMOVE, it fails in the middle of operation if it encounter
-VM_LOCKED.
-
-What do you think about it?
-
-> 
-> thanks
-> -john
-> 
+> +
+>         rtc_writel(pxa_rtc, RYCR, ryxr_calc(tm));
+>         rtc_writel(pxa_rtc, RDCR, rdxr_calc(tm));
+>
+> +       if (pxa_rtc->id == RTC_PXA95X) {
+> +               udelay(100);
+> +               rtc_writel_psbr(pxa_rtc, PSBR_RTC, 0x00);
+> +               udelay(100);
+> +       }
+> +
+>         return 0;
+>  }
+>
+> @@ -310,6 +342,20 @@ static const struct rtc_class_ops pxa_rtc_ops = {
+>         .proc = pxa_rtc_proc,
+>  };
+>
+> +static struct of_device_id pxa_rtc_dt_ids[] = {
+> +       { .compatible = "marvell,pxa-rtc", .data = (void *)RTC_PXA27X },
+> +       { .compatible = "marvell,pxa95x-rtc", .data = (void *)RTC_PXA95X },
+> +       {}
+> +};
+> +MODULE_DEVICE_TABLE(of, pxa_rtc_dt_ids);
+> +
+> +static const struct platform_device_id pxa_rtc_id_table[] = {
+> +       { "pxa-rtc", RTC_PXA27X },
+> +       { "pxa95x-rtc", RTC_PXA95X },
+> +       { },
+> +};
+> +MODULE_DEVICE_TABLE(platform, pxa_rtc_id_table);
+> +
+>  static int __init pxa_rtc_probe(struct platform_device *pdev)
+>  {
+>         struct device *dev = &pdev->dev;
+> @@ -324,13 +370,34 @@ static int __init pxa_rtc_probe(struct platform_device *pdev)
+>         spin_lock_init(&pxa_rtc->lock);
+>         platform_set_drvdata(pdev, pxa_rtc);
+>
+> +       if (pdev->dev.of_node) {
+> +               const struct of_device_id *of_id =
+> +                               of_match_device(pxa_rtc_dt_ids, &pdev->dev);
+> +
+> +               pxa_rtc->id = (unsigned int)(of_id->data);
+> +       } else {
+> +               const struct platform_device_id *id =
+> +                               platform_get_device_id(pdev);
+> +
+> +               pxa_rtc->id = id->driver_data;
+> +       }
+> +
+>         ret = -ENXIO;
+>         pxa_rtc->ress = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>         if (!pxa_rtc->ress) {
+> -               dev_err(dev, "No I/O memory resource defined\n");
+> +               dev_err(dev, "No I/O memory resource(id=0) defined\n");
+>                 goto err_ress;
+>         }
+>
+> +       if (pxa_rtc->id == RTC_PXA95X) {
+> +               pxa_rtc->ress_psbr =
+> +                       platform_get_resource(pdev, IORESOURCE_MEM, 1);
+> +               if (!pxa_rtc->ress_psbr) {
+> +                       dev_err(dev, "No I/O memory resource(id=1) defined\n");
+> +                       goto err_ress;
+> +               }
+> +       }
+> +
+>         pxa_rtc->irq_1Hz = platform_get_irq(pdev, 0);
+>         if (pxa_rtc->irq_1Hz < 0) {
+>                 dev_err(dev, "No 1Hz IRQ resource defined\n");
+> @@ -347,7 +414,17 @@ static int __init pxa_rtc_probe(struct platform_device *pdev)
+>                                 resource_size(pxa_rtc->ress));
+>         if (!pxa_rtc->base) {
+>                 dev_err(&pdev->dev, "Unable to map pxa RTC I/O memory\n");
+> -               goto err_map;
+> +               goto err_map_base;
+> +       }
+> +
+> +       if (pxa_rtc->id == RTC_PXA95X) {
+> +               pxa_rtc->base_psbr = ioremap(pxa_rtc->ress_psbr->start,
+> +                                       resource_size(pxa_rtc->ress_psbr));
+> +               if (!pxa_rtc->base_psbr) {
+> +                       dev_err(&pdev->dev,
+> +                               "Unable to map pxa RTC PSBR I/O memory\n");
+> +                       goto err_map_base_psbr;
+> +               }
+>         }
+>
+>         /*
+> @@ -376,9 +453,12 @@ static int __init pxa_rtc_probe(struct platform_device *pdev)
+>         return 0;
+>
+>  err_rtc_reg:
+> +       if (pxa_rtc->id == RTC_PXA95X)
+> +               iounmap(pxa_rtc->base_psbr);
+> +err_map_base_psbr:
+>          iounmap(pxa_rtc->base);
+> +err_map_base:
+>  err_ress:
+> -err_map:
+>         kfree(pxa_rtc);
+>         return ret;
+>  }
+> @@ -398,14 +478,6 @@ static int __exit pxa_rtc_remove(struct platform_device *pdev)
+>         return 0;
+>  }
+>
+> -#ifdef CONFIG_OF
+> -static struct of_device_id pxa_rtc_dt_ids[] = {
+> -       { .compatible = "marvell,pxa-rtc" },
+> -       {}
+> -};
+> -MODULE_DEVICE_TABLE(of, pxa_rtc_dt_ids);
+> -#endif
+> -
+>  #ifdef CONFIG_PM
+>  static int pxa_rtc_suspend(struct device *dev)
+>  {
+> @@ -440,14 +512,12 @@ static struct platform_driver pxa_rtc_driver = {
+>                 .pm     = &pxa_rtc_pm_ops,
+>  #endif
+>         },
+> +       .id_table       = pxa_rtc_id_table,
+>  };
+>
+>  static int __init pxa_rtc_init(void)
+>  {
+> -       if (cpu_is_pxa27x() || cpu_is_pxa3xx())
+> -               return platform_driver_probe(&pxa_rtc_driver, pxa_rtc_probe);
+> -
+> -       return -ENODEV;
+> +       return platform_driver_probe(&pxa_rtc_driver, pxa_rtc_probe);
+>  }
+>
+>  static void __exit pxa_rtc_exit(void)
 > --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+> 1.7.4.1
+>
