@@ -1,79 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752375Ab2LEHwz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 02:52:55 -0500
-Received: from ozlabs.org ([203.10.76.45]:59192 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751643Ab2LEHwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 02:52:54 -0500
-Message-ID: <1354693989.27132.3.camel@concordia>
-Subject: Re: ccache: FATAL: Could not create /scratch/kisskb/ccache
-From: Michael Ellerman <michael@ellerman.id.au>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linux-Next <linux-next@vger.kernel.org>, linux-kernel@vger.kernel.org
-Date: Wed, 05 Dec 2012 18:53:09 +1100
-In-Reply-To: <CAMuHMdWeDsAtmUq_TEFRAEY_gikAVoh=-mqwwp9OzOXobyWo+A@mail.gmail.com>
-References: <CAMuHMdXhYNQ_7JOC3u7CS41mxgSKkuFYA7QdjZgeBawqMZQ9-g@mail.gmail.com>
-	 <20121103101926.4e48cf8e7f3f1d3de90e45a2@canb.auug.org.au>
-	 <CAMuHMdWeDsAtmUq_TEFRAEY_gikAVoh=-mqwwp9OzOXobyWo+A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752598Ab2LEH5j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 02:57:39 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:19726 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751585Ab2LEH5g convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 02:57:36 -0500
+X-IronPort-AV: E=Sophos;i="4.83,376,1352044800"; 
+   d="scan'208";a="6337406"
+Message-ID: <50BEFDF9.9080601@cn.fujitsu.com>
+Date: Wed, 05 Dec 2012 15:55:37 +0800
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
+MIME-Version: 1.0
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: "x86@kernel.org" <x86@kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Gleb Natapov <gleb@redhat.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v9 1/2] x86/kexec: VMCLEAR VMCSs loaded on all cpus if
+ necessary
+References: <50B43299.9030409@cn.fujitsu.com> <50B432CA.70804@cn.fujitsu.com> <87zk1t4lt4.fsf@xmission.com>
+In-Reply-To: <87zk1t4lt4.fsf@xmission.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/05 15:56:55,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/05 15:56:56
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-11-14 at 09:03 +0100, Geert Uytterhoeven wrote:
-> Hi Stephen,
+于 2012年12月05日 04:14, Eric W. Biederman 写道:
+> Zhang Yanfei <zhangyanfei@cn.fujitsu.com> writes:
 > 
-> On Sat, Nov 3, 2012 at 12:19 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > On Fri, 2 Nov 2012 19:44:48 +0100 Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> >> http://kisskb.ellerman.id.au/kisskb/buildresult/7458505/
-> >>
-> >> ccache: FATAL: Could not create
-> >> /scratch/kisskb/ccache/d/7/f9e308f728ef43aaa482aefb9a00a2-852386.o.tmp.stdout.Sprygo.5748
-> >> (permission denied?)
-> >> make[4]: *** [drivers/media/rc/ene_ir.o] Error 1
-> >>
-> >> http://kisskb.ellerman.id.au/kisskb/buildresult/7461979/
-> >>
-> >> ccache: FATAL: Could not create
-> >> /scratch/kisskb/ccache/5/e/47d893acad42c07542edec1f826579-1842636.o.tmp.stdout.Sprygo.557
-> >> (permission denied?)
-> >> make[3]: *** [net/core/sock.o] Error 1
-> >
-> > Well, that is weird.  I can't find any reason for that to happen :-(
-> >
-> > I'll have a chat with the kisskb guy when I next see him.  Thanks for the
-> > heads up.
+>> This patch provides a way to VMCLEAR VMCSs related to guests
+>> on all cpus before executing the VMXOFF when doing kdump. This
+>> is used to ensure the VMCSs in the vmcore updated and
+>> non-corrupted.
 > 
-> As code is migrating to Linus' tree, it's spreading from the linux-next to the
-> linus branch, e.g.:
-> http://kisskb.ellerman.id.au/kisskb/buildresult/7536268/
-> ccache: FATAL: Could not create
-> /scratch/kisskb/ccache/1/3/a44cddb2457ad89fe496b0c82b0a09-1211932.o.tmp.stdout.Sprygo.2788
-> (permission denied?)
-> make[3]: *** [drivers/block/aoe/aoecmd.o] Error 1
+> Apologies for the delay I have been travelling, and I wanted
+> to at least read through the code.
+> 
+> Overall I think this is good but I have one nit, and I see one real
+> problem with this code.
+> 
+>> +/*
+>> + * This is used to VMCLEAR all VMCSs loaded on the
+>> + * processor. And when loading kvm_intel module, the
+>> + * callback function pointer will be assigned.
+>> + */
+>> +void (*crash_vmclear_loaded_vmcss)(void) = NULL;
+>> +EXPORT_SYMBOL_GPL(crash_vmclear_loaded_vmcss);
+>> +
+>> +static inline void cpu_emergency_vmclear_loaded_vmcss(void)
+>> +{
+>> +	if (crash_vmclear_loaded_vmcss)
+>> +		crash_vmclear_loaded_vmcss();
+>> +}
+> 
+> The nit is the use of emergency instead of crash in the name.
 
-Hi Geert,
+ok, emergency -> crash
 
-This has started happening because of a change in ccache (v3.1.7). It
-has always checked that the stdout file exists (via stat), but
-previously if it was missing it would fall back to a full compile,
-whereas now it is a fatal error.
+> 
+> The problem is that this is potentially a NULL pointer dereference if
+> kvm-intel is removed.  The easist fix would be in your second patch to
+> just make it impossible to unload the kvm-intel module.  Otherwise
+> there the deference of crash_vmclear_loaded_vmcss needs to be rcu
+> protected, with a syncrhonize_rcu after the pointer is set to NULL in
+> the unload path.
 
-However looking at the ccache code it makes no sense for the file not to
-exist, because we just created it. So it's a bit of a mystery.
+Ah, thanks for this comment.
 
-At the moment I'm running with a slightly hacked ccache (too much and
-the bug vanishes), and auditing enabled, to try and work out if someone
-is actually unlinking the file or what.
+I think I will use the rcu machanism to solve the problem.
 
-Hopefully we can sort it out in the next few days.
+> 
+> Otherwise I have no objections to this code.
 
-cheers
+Thanks for your review. I will update the patch and resend it.
 
-
-
+Thanks
+Zhang Yanfei
