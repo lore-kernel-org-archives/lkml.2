@@ -1,99 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424680Ab2LFTJb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 14:09:31 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:37819 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1424565Ab2LFTJ3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 14:09:29 -0500
-Date: Thu, 6 Dec 2012 16:09:20 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 2/5] perf hists: Exchange order of comparing items when
- collapsing hists
-Message-ID: <20121206190920.GA1899@ghostprotocols.net>
-References: <1354806581-5316-1-git-send-email-namhyung@kernel.org>
- <1354806581-5316-3-git-send-email-namhyung@kernel.org>
- <20121206165325.GE1080@krava.brq.redhat.com>
+	id S1946893Ab2LFTJk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 14:09:40 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43799 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1424565Ab2LFTJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 14:09:38 -0500
+Date: Thu, 6 Dec 2012 19:01:14 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Henrik Rydberg <rydberg@euromail.se>, Jan Kara <jack@suse.cz>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Oops in 3.7-rc8 isolate_free_pages_block()
+Message-ID: <20121206190114.GE17258@suse.de>
+References: <20121206091744.GA1397@polaris.bitmath.org>
+ <20121206144821.GC18547@quack.suse.cz>
+ <20121206161934.GA17258@suse.de>
+ <CA+55aFw9WQN-MYFKzoGXF9Z70h1XsMu5X4hLy0GPJopBVuE=Yg@mail.gmail.com>
+ <20121206175451.GC17258@suse.de>
+ <CA+55aFwDZHXf2FkWugCy4DF+mPTjxvjZH87ydhE5cuFFcJ-dJg@mail.gmail.com>
+ <20121206183259.GA591@polaris.bitmath.org>
+ <CA+55aFzievpA_b5p-bXwW11a89eC-ucpzKUuSqb2PNQOLrqaPg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20121206165325.GE1080@krava.brq.redhat.com>
-X-Url: http://acmel.wordpress.com
+In-Reply-To: <CA+55aFzievpA_b5p-bXwW11a89eC-ucpzKUuSqb2PNQOLrqaPg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Dec 06, 2012 at 05:53:25PM +0100, Jiri Olsa escreveu:
-> On Fri, Dec 07, 2012 at 12:09:38AM +0900, Namhyung Kim wrote:
-> > From: Namhyung Kim <namhyung.kim@lge.com>
-> > 
-> > When comparing entries for collapsing put the given entry first, and
-> > then the iterated entry.  This is not the case of hist_entry__cmp()
-> > when called if given sort keys don't require collapsing.  So change
-> > the order for the sake of consistency.  It will be required for
-> > matching and/or linking multiple hist entries.
+On Thu, Dec 06, 2012 at 10:41:14AM -0800, Linus Torvalds wrote:
+> On Thu, Dec 6, 2012 at 10:32 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
+> >>
+> >> Henrik, does that - corrected - patch (*instead* of the previous one,
+> >> not in addition to) also fix your issue?
+> >
+> > Yes - I can no longer trigger the failpath, so it seems to work. Mel,
+> > enjoy the rest of the talk. ;-)
+> >
+> > Generally, I am a bit surprised that noone hit this before, given that
+> > it was quite easy to trigger. I will check 3.6 as well.
 > 
-> As discussed with Arnadlo, this change seems like changing the
-> sort order... could you ellaborate how it is usefull in future?
+> Actually, looking at it some more, I think that two-liner patch had
+> *ANOTHER* bug.
+> 
+> Because the other line seems buggy as well.
+> 
+> Instead of
+> 
+>         end_pfn = ALIGN(pfn + pageblock_nr_pages, pageblock_nr_pages);
+> 
+> I think it should be
+> 
+>         end_pfn = ALIGN(pfn+1, pageblock_nr_pages);
+> 
+> instead. ALIGN() already aligns upwards (but the "+1" is needed in
+> case pfn is already at a pageblock_nr_pages boundary, at which point
+> ALIGN() would have just returned that same boundary.
+> 
+> Hmm? Mel, please confirm.
 
-In several places the order is (he, iter) then it became (iter, he),
-something like that, so he inverted it for consistency, but then he
-needs to invert in the cmp function too, unsure if this is worth the
-trouble now, perhaps some comment placed in the right spot clarifies
-things,
+FFS. Yes, confirmed.
 
-- Arnaldo
+In answer to Henrik's wondering why others have reported this -- reproducing
+this requires a large enough hole with the right aligment to have compaction
+walk into a PFN range with no memmap. Size and alignment depends in the
+memory model - 4M for FLATMEM and 128M for SPARSEMEM on x86. It needs a
+"lucky" machine.
+
+---8<---
+mm: compaction: check pfn_valid when entering a new MAX_ORDER_NR_PAGES block during isolation for free
+
+Commit 0bf380bc (mm: compaction: check pfn_valid when entering a new
+MAX_ORDER_NR_PAGES block during isolation for migration) added a check
+for pfn_valid() when isolating pages for migration as the scanner does not
+necessarily start pageblock-aligned. Since commit c89511ab (mm: compaction:
+Restart compaction from near where it left off), the free scanner has
+the same problem. This patch makes sure that the pfn range passed to
+isolate_freepages_block() is within the same block so that pfn_valid()
+checks are unnecessary.
+
+Reported-by: Henrik Rydberg <rydberg@euromail.se>
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/compaction.c |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
+
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 9eef558..694eaab 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -713,7 +713,15 @@ static void isolate_freepages(struct zone *zone,
  
-> thanks,
-> jirka
-> 
-> > 
-> > Cc: Jiri Olsa <jolsa@redhat.com>
-> > Cc: Stephane Eranian <eranian@google.com>
-> > Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> > ---
-> >  tools/perf/util/hist.c |    6 +++---
-> >  1 file changed, 3 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-> > index 82df1b26f0d4..d4471c21ed17 100644
-> > --- a/tools/perf/util/hist.c
-> > +++ b/tools/perf/util/hist.c
-> > @@ -285,7 +285,7 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
-> >  		parent = *p;
-> >  		he = rb_entry(parent, struct hist_entry, rb_node_in);
-> >  
-> > -		cmp = hist_entry__cmp(entry, he);
-> > +		cmp = hist_entry__cmp(he, entry);
-> >  
-> >  		if (!cmp) {
-> >  			he_stat__add_period(&he->stat, period);
-> > @@ -729,7 +729,7 @@ static struct hist_entry *hists__add_dummy_entry(struct hists *hists,
-> >  		parent = *p;
-> >  		he = rb_entry(parent, struct hist_entry, rb_node);
-> >  
-> > -		cmp = hist_entry__cmp(pair, he);
-> > +		cmp = hist_entry__cmp(he, pair);
-> >  
-> >  		if (!cmp)
-> >  			goto out;
-> > @@ -759,7 +759,7 @@ static struct hist_entry *hists__find_entry(struct hists *hists,
-> >  
-> >  	while (n) {
-> >  		struct hist_entry *iter = rb_entry(n, struct hist_entry, rb_node);
-> > -		int64_t cmp = hist_entry__cmp(he, iter);
-> > +		int64_t cmp = hist_entry__cmp(iter, he);
-> >  
-> >  		if (cmp < 0)
-> >  			n = n->rb_left;
-> > -- 
-> > 1.7.9.2
-> > 
+ 		/* Found a block suitable for isolating free pages from */
+ 		isolated = 0;
+-		end_pfn = min(pfn + pageblock_nr_pages, zone_end_pfn);
++
++		/*
++		 * As pfn may not start aligned, pfn+pageblock_nr_page
++		 * may cross a MAX_ORDER_NR_PAGES boundary and miss
++		 * a pfn_valid check. Ensure isolate_freepages_block()
++		 * only scans within a pageblock
++		 */
++		end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
++		end_pfn = min(end_pfn, zone_end_pfn);
+ 		isolated = isolate_freepages_block(cc, pfn, end_pfn,
+ 						   freelist, false);
+ 		nr_freepages += isolated;
