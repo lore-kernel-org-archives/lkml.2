@@ -1,95 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424419Ab2LFQ15 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 11:27:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38095 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422879Ab2LFQ14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 11:27:56 -0500
-Date: Thu, 6 Dec 2012 16:19:34 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Jan Kara <jack@suse.cz>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Oops in 3.7-rc8 isolate_free_pages_block()
-Message-ID: <20121206161934.GA17258@suse.de>
-References: <20121206091744.GA1397@polaris.bitmath.org>
- <20121206144821.GC18547@quack.suse.cz>
+	id S1424433Ab2LFQ2f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 11:28:35 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:47437 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422879Ab2LFQ2d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 11:28:33 -0500
+Date: Thu, 6 Dec 2012 10:27:02 -0600
+From: Kent Yoder <key@linux.vnet.ibm.com>
+To: Peter Huewe <peterhuewe@gmx.de>
+Cc: Mathias LEBLANC <Mathias.LEBLANC@st.com>,
+        Jean-Luc BLANC <jean-luc.blanc@st.com>,
+        "Sirrix@jasper.es" <Sirrix@jasper.es>, linux-kernel@vger.kernel.org,
+        Rajiv Andrade <mail@srajiv.net>,
+        "tpmdd-devel@lists.sourceforge.net" 
+	<tpmdd-devel@lists.sourceforge.net>,
+        Kent Yoder <shpedoikal@gmail.com>
+Subject: Re: [PATCH] char/tpm: Use struct dev_pm_ops for power management
+Message-ID: <20121206162702.GC27430@ennui.austin.ibm.com>
+References: <20121205230941.GA30394@ennui.austin.ibm.com>
+ <1354753251-27561-1-git-send-email-peterhuewe@gmx.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121206144821.GC18547@quack.suse.cz>
+In-Reply-To: <1354753251-27561-1-git-send-email-peterhuewe@gmx.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12120616-5406-0000-0000-000002D1C59A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 06, 2012 at 03:48:21PM +0100, Jan Kara wrote:
-> On Thu 06-12-12 10:17:44, Henrik Rydberg wrote:
-> > Hi Linus,
-> > 
-> > This is the third time I encounter this oops in 3.7, but the first
-> > time I managed to get a decent screenshot:
-> > 
-> > http://bitmath.org/test/oops-3.7-rc8.jpg
-> > 
-> > It seems to have to do with page migration. I run with transparent
-> > hugepages configured, just for the fun of it.
-> > 
-> > I am happy to test any suggestions.
->   Adding linux-mm and Mel as an author of compaction in particular to CC...
-> It seems that while traversing struct page structures, we entered into a new
-> huge page (note that RBX is 0xffffea0001c00000 - just the beginning of
-> a huge page) and oopsed on PageBuddy test (_mapcount is at offset 0x18 in
-> struct page). It might be useful if you provide disassembly of
-> isolate_freepages_block() function in your kernel so that we can guess more
-> from other register contents...
+On Thu, Dec 06, 2012 at 01:20:51AM +0100, Peter Huewe wrote:
+> This patch converts the suspend and resume functions for
+> tpm_i2c_stm_st33 to the new dev_pm_ops.
+> 
+> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+
+  One minor tweak, the PM funcs need to be inside CONFIG_PM_SLEEP to
+avoid warnings when compiled without PM support.  Applied with that
+change only.
+
+Thanks Peter!
+Kent
+
+> ---
+> Note:
+> I'm sending this patch on behalf of myself only and nobody else, 
+> especially not my employer - and I'm doing this in my spare time.
+> I have to inform you that I'm working for a direct competitor of the driver author,
+> but I'm not using any knowledge that is considered secret in any way.
+> I have a personal interest in the TPM subsystem and want to keep it as clean as possible.
+> 
+> 
+>  drivers/char/tpm/tpm_i2c_stm_st33.c |   25 ++++++++++---------------
+>  1 files changed, 10 insertions(+), 15 deletions(-)
+> 
+> diff --git a/drivers/char/tpm/tpm_i2c_stm_st33.c b/drivers/char/tpm/tpm_i2c_stm_st33.c
+> index b11201f..ecbb81e 100644
+> --- a/drivers/char/tpm/tpm_i2c_stm_st33.c
+> +++ b/drivers/char/tpm/tpm_i2c_stm_st33.c
+> @@ -826,12 +826,10 @@ static __devexit int tpm_st33_i2c_remove(struct i2c_client *client)
+>   * @param: mesg, the power management message.
+>   * @return: 0 in case of success.
+>   */
+> -static int tpm_st33_i2c_pm_suspend(struct i2c_client *client, pm_message_t mesg)
+> +static int tpm_st33_i2c_pm_suspend(struct device *dev)
+>  {
+> -	struct tpm_chip *chip =
+> -	    (struct tpm_chip *)i2c_get_clientdata(client);
+> -	struct st33zp24_platform_data *pin_infos =
+> -		((struct i2c_client *)TPM_VPRIV(chip))->dev.platform_data;
+> +	struct tpm_chip *chip = dev_get_drvdata(dev);
+> +	struct st33zp24_platform_data *pin_infos = dev->platform_data;
+>  	int ret = 0;
+> 
+>  	if (power_mgt)
+> @@ -839,7 +837,7 @@ static int tpm_st33_i2c_pm_suspend(struct i2c_client *client, pm_message_t mesg)
+>  	else{
+>  		if (chip->data_buffer == NULL)
+>  			chip->data_buffer = pin_infos->tpm_i2c_buffer[0];
+> -		ret = tpm_pm_suspend(&client->dev);
+> +		ret = tpm_pm_suspend(dev);
+>  	}
+>  	return ret;
+>  }				/* tpm_st33_i2c_suspend() */
+> @@ -849,12 +847,10 @@ static int tpm_st33_i2c_pm_suspend(struct i2c_client *client, pm_message_t mesg)
+>   * @param: client, the i2c_client drescription (TPM I2C description).
+>   * @return: 0 in case of success.
+>   */
+> -static int tpm_st33_i2c_pm_resume(struct i2c_client *client)
+> +static int tpm_st33_i2c_pm_resume(struct device *dev)
+>  {
+> -	struct tpm_chip *chip =
+> -	    (struct tpm_chip *)i2c_get_clientdata(client);
+> -	struct st33zp24_platform_data *pin_infos =
+> -		((struct i2c_client *)TPM_VPRIV(chip))->dev.platform_data;
+> +	struct tpm_chip *chip = dev_get_drvdata(dev);
+> +	struct st33zp24_platform_data *pin_infos = dev->platform_data;
+> 
+>  	int ret = 0;
+> 
+> @@ -867,7 +863,7 @@ static int tpm_st33_i2c_pm_resume(struct i2c_client *client)
+>  	} else{
+>  	if (chip->data_buffer == NULL)
+>  		chip->data_buffer = pin_infos->tpm_i2c_buffer[0];
+> -	ret = tpm_pm_resume(&client->dev);
+> +	ret = tpm_pm_resume(dev);
+>  	if (!ret)
+>  		tpm_do_selftest(chip);
+>  	}
+> @@ -880,16 +876,15 @@ static const struct i2c_device_id tpm_st33_i2c_id[] = {
+>  };
+> 
+>  MODULE_DEVICE_TABLE(i2c, tpm_st33_i2c_id);
+> -
+> +static SIMPLE_DEV_PM_OPS(tpm_st33_i2c_ops, tpm_st33_i2c_pm_suspend, tpm_st33_i2c_pm_resume);
+>  static struct i2c_driver tpm_st33_i2c_driver = {
+>  	.driver = {
+>  		   .owner = THIS_MODULE,
+>  		   .name = TPM_ST33_I2C,
+> +		   .pm = &tpm_st33_i2c_ops,
+>  		   },
+>  	.probe = tpm_st33_i2c_probe,
+>  	.remove = tpm_st33_i2c_remove,
+> -	.resume = tpm_st33_i2c_pm_resume,
+> -	.suspend = tpm_st33_i2c_pm_suspend,
+>  	.id_table = tpm_st33_i2c_id
+>  };
+> 
+> -- 
+> 1.7.8.6
 > 
 
-Still travelling and am not in a position to test this properly :(.
-However, this bug feels very similar to a bug in the migration scanner where
-a pfn_valid check is missed because the start is not aligned.  Henrik, when
-did this start happening? I would be a little surprised if it started between
-3.6 and 3.7-rcX but maybe it's just easier to hit now for some reason. How
-reproducible is this? Is there anything in particular you do to trigger the
-oops? Does the following patch help any? It's only compile tested I'm afraid.
-
----8<---
-mm: compaction: check pfn_valid when entering a new MAX_ORDER_NR_PAGES block during isolation for free
-
-Commit 0bf380bc (mm: compaction: check pfn_valid when entering a new
-MAX_ORDER_NR_PAGES block during isolation for migration) added a check
-for pfn_valid() when isolating pages for migration as the scanner does
-not necessarily start pageblock-aligned. However, the free scanner has
-the same problem. If it encounters a hole, it can also trigger an oops
-when is calls PageBuddy(page) on a page that is within an hole.
-
-Reported-by: Henrik Rydberg <rydberg@euromail.se>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
-Cc: stable@vger.kernel.org
----
- mm/compaction.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
-
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 9eef558..7d85ad485 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -298,6 +298,16 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
- 			continue;
- 		if (!valid_page)
- 			valid_page = page;
-+
-+		/*
-+		 * As blockpfn may not start aligned, blockpfn->end_pfn
-+		 * may cross a MAX_ORDER_NR_PAGES boundary and a pfn_valid
-+		 * check is necessary. If the pfn is not valid, stop
-+		 * isolation.
-+		 */
-+		if ((blockpfn & (MAX_ORDER_NR_PAGES - 1)) == 0 &&
-+		    !pfn_valid(blockpfn))
-+			break;
- 		if (!PageBuddy(page))
- 			continue;
- 
