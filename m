@@ -1,199 +1,744 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754536Ab2LFEyl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 23:54:41 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:56654 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751552Ab2LFEyj convert rfc822-to-8bit (ORCPT
+	id S1751451Ab2LFFIQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 00:08:16 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:44218 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159Ab2LFFIO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 23:54:39 -0500
-MIME-Version: 1.0
-In-Reply-To: <201212051308.34309.hverkuil@xs4all.nl>
-References: <1354708169-1139-1-git-send-email-prabhakar.csengg@gmail.com> <201212051308.34309.hverkuil@xs4all.nl>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Thu, 6 Dec 2012 10:24:18 +0530
-Message-ID: <CA+V-a8t+KxCYunkrT715zQks=5HOrFk2PSM2Ss_kTj4iXg=PJg@mail.gmail.com>
-Subject: Re: [PATCH RFC v2] media: v4l2-ctrl: Add gain controls
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        LDOC <linux-doc@vger.kernel.org>, Sakari Ailus <sakari.ailus@iki.fi>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Chris MacGregor <chris@cybermato.com>, Rob Landley <rob@landley.net>,
-        Jeongtae Park <jtp.park@samsung.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	Thu, 6 Dec 2012 00:08:14 -0500
+From: Daniel Jeong <gshark.jeong@gmail.com>
+To: Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: <daniel.jeong@ti.com>, <linux-kernel@vger.kernel.org>,
+        Daniel Jeong <gshark.jeong@gmail.com>
+Subject: [PATCH v1 resend] regulator: new driver for LP8755
+Date: Thu,  6 Dec 2012 14:07:43 +0900
+Message-Id: <1354770463-4629-1-git-send-email-gshark.jeong@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hans,
+This driver is a general version for lp8755 regulator driver of TI.
 
-On Wed, Dec 5, 2012 at 5:38 PM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
-> (resend without HTML formatting)
->
-> On Wed 5 December 2012 12:49:29 Prabhakar Lad wrote:
->> From: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->>
->> add support for per color component digital/analog gain controls
->> and also their corresponding offset.
->
-> Some obvious questions below...
->
->>
->> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->> Cc: Sakari Ailus <sakari.ailus@iki.fi>
->> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
->> Cc: Kyungmin Park <kyungmin.park@samsung.com>
->> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
->> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
->> Cc: Hans Verkuil <hans.verkuil@cisco.com>
->> Cc: Hans de Goede <hdegoede@redhat.com>
->> Cc: Chris MacGregor <chris@cybermato.com>
->> Cc: Rob Landley <rob@landley.net>
->> Cc: Jeongtae Park <jtp.park@samsung.com>
->> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
->> ---
->>  Changes for v2:
->>  1: Fixed review comments pointed by Laurent.
->>  2: Rebased on latest tree.
->>
->>  Documentation/DocBook/media/v4l/controls.xml |   54 ++++++++++++++++++++++++++
->>  drivers/media/v4l2-core/v4l2-ctrls.c         |   11 +++++
->>  include/uapi/linux/v4l2-controls.h           |   11 +++++
->>  3 files changed, 76 insertions(+), 0 deletions(-)
->>
->> diff --git a/Documentation/DocBook/media/v4l/controls.xml b/Documentation/DocBook/media/v4l/controls.xml
->> index 7fe5be1..847a9bb 100644
->> --- a/Documentation/DocBook/media/v4l/controls.xml
->> +++ b/Documentation/DocBook/media/v4l/controls.xml
->> @@ -4543,6 +4543,60 @@ interface and may change in the future.</para>
->>           specific test patterns can be used to test if a device is working
->>           properly.</entry>
->>         </row>
->> +       <row>
->> +         <entry spanname="id"><constant>V4L2_CID_GAIN_RED</constant></entry>
->> +         <entry>integer</entry>
->> +       </row>
->> +       <row>
->> +         <entry spanname="id"><constant>V4L2_CID_GAIN_GREEN_RED</constant></entry>
->> +         <entry>integer</entry>
->> +       </row>
->> +       <row>
->> +         <entry spanname="id"><constant>V4L2_CID_GAIN_GREEN_BLUE</constant></entry>
->> +         <entry>integer</entry>
->> +       </row>
->> +       <row>
->> +         <entry spanname="id"><constant>V4L2_CID_GAIN_BLUE</constant></entry>
->> +         <entry>integer</entry>
->> +       </row>
->> +       <row>
->> +         <entry spanname="id"><constant>V4L2_CID_GAIN_GREEN</constant></entry>
->> +         <entry>integer</entry>
->> +       </row>
->> +       <row>
->> +         <entry spanname="descr"> Some capture/sensor devices have
->> +         the capability to set per color component digital/analog gain values.</entry>
->> +       </row>
->> +       <row>
->> +         <entry spanname="id"><constant>V4L2_CID_GAIN_OFFSET</constant></entry>
->> +         <entry>integer</entry>
->> +       </row>
->> +       <row>
->> +         <entry spanname="id"><constant>V4L2_CID_BLUE_OFFSET</constant></entry>
->> +         <entry>integer</entry>
->> +       </row>
->> +       <row>
->> +         <entry spanname="id"><constant>V4L2_CID_RED_OFFSET</constant></entry>
->> +         <entry>integer</entry>
->> +       </row>
->> +       <row>
->> +         <entry spanname="id"><constant>V4L2_CID_GREEN_OFFSET</constant></entry>
->> +         <entry>integer</entry>
->> +       </row>
->> +       <row>
->> +         <entry spanname="id"><constant>V4L2_CID_GREEN_RED_OFFSET</constant></entry>
->> +         <entry>integer</entry>
->> +       </row>
->> +       <row>
->> +         <entry spanname="id"><constant>V4L2_CID_GREEN_BLUE_OFFSET</constant></entry>
->> +         <entry>integer</entry>
->> +       </row>
->> +       <row>
->> +         <entry spanname="descr"> Some capture/sensor devices have the
->> +         capability to set per color component digital/analog gain offset values.
->> +         V4L2_CID_GAIN_OFFSET is the global gain offset and the rest are per
->> +         color component gain offsets.</entry>
->
-> If I set both V4L2_CID_GAIN_RED and V4L2_CID_RED_OFFSET, how are they supposed
-> to interact? Or are they mutually exclusive?
->
-> And if I set both V4L2_CID_GAIN_OFFSET and V4L2_CID_RED_OFFSET, how are they supposed
-> to interact?
->
-> This questions should be answered in the documentation...
->
-I haven’t worked on the hardware which supports both, What is the general
-behaviour when the hardware supports both per color component and global
-and both of them are set ? That could be helpful for me to document.
+LP8755 :
+The LP8755 is a high performance power management unit.It contains
+six step-down DC-DC converters which can can be filexibly bundled
+together in multiphase converters as required by application.
+www.ti.com
 
-Regards,
---Prabhakar Lad
+Signed-off-by: Daniel Jeong <gshark.jeong@gmail.com>
+---
+ drivers/regulator/Kconfig            |    9 +
+ drivers/regulator/Makefile           |    1 +
+ drivers/regulator/lp8755.c           |  586 ++++++++++++++++++++++++++++++++++
+ include/linux/platform_data/lp8755.h |   71 ++++
+ 4 files changed, 667 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/regulator/lp8755.c
+ create mode 100644 include/linux/platform_data/lp8755.h
 
-> Regards,
->
->         Hans
->
->> +       </row>
->>         <row><entry></entry></row>
->>       </tbody>
->>        </tgroup>
->> diff --git a/drivers/media/v4l2-core/v4l2-ctrls.c b/drivers/media/v4l2-core/v4l2-ctrls.c
->> index f6ee201..05e3708 100644
->> --- a/drivers/media/v4l2-core/v4l2-ctrls.c
->> +++ b/drivers/media/v4l2-core/v4l2-ctrls.c
->> @@ -790,6 +790,17 @@ const char *v4l2_ctrl_get_name(u32 id)
->>       case V4L2_CID_LINK_FREQ:                return "Link Frequency";
->>       case V4L2_CID_PIXEL_RATE:               return "Pixel Rate";
->>       case V4L2_CID_TEST_PATTERN:             return "Test Pattern";
->> +     case V4L2_CID_GAIN_RED:                 return "Gain Red";
->> +     case V4L2_CID_GAIN_GREEN_RED:           return "Gain Green Red";
->> +     case V4L2_CID_GAIN_GREEN_BLUE:          return "Gain Green Blue";
->> +     case V4L2_CID_GAIN_BLUE:                return "Gain Blue";
->> +     case V4L2_CID_GAIN_GREEN:               return "Gain Green";
->> +     case V4L2_CID_GAIN_OFFSET:              return "Gain Offset";
->> +     case V4L2_CID_BLUE_OFFSET:              return "Gain Blue Offset";
->> +     case V4L2_CID_RED_OFFSET:               return "Gain Red Offset";
->> +     case V4L2_CID_GREEN_OFFSET:             return "Gain Green Offset";
->> +     case V4L2_CID_GREEN_RED_OFFSET:         return "Gain Green Red Offset";
->> +     case V4L2_CID_GREEN_BLUE_OFFSET:        return "Gain Green Blue Offset";
->>
->>       /* DV controls */
->>       case V4L2_CID_DV_CLASS:                 return "Digital Video Controls";
->> diff --git a/include/uapi/linux/v4l2-controls.h b/include/uapi/linux/v4l2-controls.h
->> index f56c945..9b6b233 100644
->> --- a/include/uapi/linux/v4l2-controls.h
->> +++ b/include/uapi/linux/v4l2-controls.h
->> @@ -799,5 +799,16 @@ enum v4l2_jpeg_chroma_subsampling {
->>  #define V4L2_CID_LINK_FREQ                   (V4L2_CID_IMAGE_PROC_CLASS_BASE + 1)
->>  #define V4L2_CID_PIXEL_RATE                  (V4L2_CID_IMAGE_PROC_CLASS_BASE + 2)
->>  #define V4L2_CID_TEST_PATTERN                        (V4L2_CID_IMAGE_PROC_CLASS_BASE + 3)
->> +#define V4L2_CID_GAIN_RED                    (V4L2_CID_IMAGE_PROC_CLASS_BASE + 4)
->> +#define V4L2_CID_GAIN_GREEN_RED                      (V4L2_CID_IMAGE_PROC_CLASS_BASE + 5)
->> +#define V4L2_CID_GAIN_GREEN_BLUE             (V4L2_CID_IMAGE_PROC_CLASS_BASE + 6)
->> +#define V4L2_CID_GAIN_BLUE                   (V4L2_CID_IMAGE_PROC_CLASS_BASE + 7)
->> +#define V4L2_CID_GAIN_GREEN                  (V4L2_CID_IMAGE_PROC_CLASS_BASE + 8)
->> +#define V4L2_CID_GAIN_OFFSET                 (V4L2_CID_IMAGE_PROC_CLASS_BASE + 9)
->> +#define V4L2_CID_BLUE_OFFSET                 (V4L2_CID_IMAGE_PROC_CLASS_BASE + 10)
->> +#define V4L2_CID_RED_OFFSET                  (V4L2_CID_IMAGE_PROC_CLASS_BASE + 11)
->> +#define V4L2_CID_GREEN_OFFSET                        (V4L2_CID_IMAGE_PROC_CLASS_BASE + 12)
->> +#define V4L2_CID_GREEN_RED_OFFSET            (V4L2_CID_IMAGE_PROC_CLASS_BASE + 13)
->> +#define V4L2_CID_GREEN_BLUE_OFFSET           (V4L2_CID_IMAGE_PROC_CLASS_BASE + 14)
->>
->>  #endif
->>
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 67d47b59..63e37ff 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -257,6 +257,15 @@ config REGULATOR_LP872X
+ 	help
+ 	  This driver supports LP8720/LP8725 PMIC
+ 
++config REGULATOR_LP8755
++	tristate "TI LP8755 Hihg Performance PMU driver"
++	depends on I2C
++	select REGMAP_I2C
++	help
++	  This driver supports LP8755 High Performance PMU driver. This
++	  chip contains six step-down DC/DC converters which can support
++	  9 mode multiphase configuration.
++
+ config REGULATOR_LP8788
+ 	bool "TI LP8788 Power Regulators"
+ 	depends on MFD_LP8788
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index e431eed..bf346b7 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -28,6 +28,7 @@ obj-$(CONFIG_REGULATOR_LP3972) += lp3972.o
+ obj-$(CONFIG_REGULATOR_LP872X) += lp872x.o
+ obj-$(CONFIG_REGULATOR_LP8788) += lp8788-buck.o
+ obj-$(CONFIG_REGULATOR_LP8788) += lp8788-ldo.o
++obj-$(CONFIG_REGULATOR_LP8755) += lp8755.o
+ obj-$(CONFIG_REGULATOR_MAX1586) += max1586.o
+ obj-$(CONFIG_REGULATOR_MAX8649)	+= max8649.o
+ obj-$(CONFIG_REGULATOR_MAX8660) += max8660.o
+diff --git a/drivers/regulator/lp8755.c b/drivers/regulator/lp8755.c
+new file mode 100644
+index 0000000..0dfb2a8
+--- /dev/null
++++ b/drivers/regulator/lp8755.c
+@@ -0,0 +1,586 @@
++/*
++ * LP8755 High Performance Power Management Unit : System Interface Driver
++ * (based on rev. 0.26)
++ * Copyright 2012 Texas Instruments
++ *
++ * Author: Daniel(Geon Si) Jeong <daniel.jeong@ti.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/i2c.h>
++#include <linux/err.h>
++#include <linux/irq.h>
++#include <linux/interrupt.h>
++#include <linux/gpio.h>
++#include <linux/regmap.h>
++#include <linux/delay.h>
++#include <linux/uaccess.h>
++#include <linux/regulator/driver.h>
++#include <linux/regulator/machine.h>
++#include <linux/platform_data/lp8755.h>
++
++#define LP8755_REG_BUCK0	0x00
++#define LP8755_REG_BUCK1	0x03
++#define LP8755_REG_BUCK2	0x04
++#define LP8755_REG_BUCK3	0x01
++#define LP8755_REG_BUCK4	0x05
++#define LP8755_REG_BUCK5	0x02
++#define LP8755_REG_MAX		0xFF
++
++#define LP8755_BUCK_EN_M	BIT(7)
++#define LP8755_BUCK_LINEAR_OUT_MAX	0x76
++#define LP8755_BUCK_VOUT_M	0x7F
++
++enum bucks {
++	BUCK0 = 0,
++	BUCK1,
++	BUCK2,
++	BUCK3,
++	BUCK4,
++	BUCK5,
++};
++
++struct lp8755_mphase {
++	int nreg;
++	int buck_num[LP8755_BUCK_MAX];
++};
++
++struct lp8755_chip {
++	struct device *dev;
++	struct regmap *regmap;
++	struct lp8755_platform_data *pdata;
++
++	int irq;
++	unsigned int irqmask;
++
++	int num_reg;
++	int mphase;
++	struct regulator_dev *rdev[LP8755_BUCK_MAX];
++};
++
++/**
++ *lp8755_read : read a single register value from lp8755.
++ */
++static int lp8755_read(struct lp8755_chip *pchip, unsigned int reg,
++		       unsigned int *val)
++{
++	return regmap_read(pchip->regmap, reg, val);
++}
++
++/**
++ *lp8755_write : write a single register value to lp8755.
++ */
++static int lp8755_write(struct lp8755_chip *pchip, unsigned int reg,
++			unsigned int val)
++{
++	return regmap_write(pchip->regmap, reg, val);
++}
++
++/**
++ *lp8755_update_bits : set the values of bit fields in lp8755 register.
++ */
++static int lp8755_update_bits(struct lp8755_chip *pchip, unsigned int reg,
++			      unsigned int mask, unsigned int val)
++{
++	return regmap_update_bits(pchip->regmap, reg, mask, val);
++}
++
++static int lp8755_buck_enable_time(struct regulator_dev *rdev)
++{
++	int ret;
++	unsigned int regval;
++	enum lp8755_bucks id = rdev_get_id(rdev);
++	struct lp8755_chip *pchip = rdev_get_drvdata(rdev);
++
++	ret = lp8755_read(pchip, 0x12 + id, &regval);
++	if (ret < 0) {
++		dev_err(pchip->dev, "i2c acceess error %s\n", __func__);
++		return ret;
++	}
++	return (regval & 0xff) * 100;
++}
++
++static int lp8755_buck_set_mode(struct regulator_dev *rdev, unsigned int mode)
++{
++	int ret;
++	unsigned int regbval = 0x0;
++	enum lp8755_bucks id = rdev_get_id(rdev);
++	struct lp8755_chip *pchip = rdev_get_drvdata(rdev);
++
++	switch (mode) {
++	case REGULATOR_MODE_FAST:
++		/* forced pwm mode */
++		regbval = (0x01 << id);
++		break;
++	case REGULATOR_MODE_NORMAL:
++		/* enable automatic pwm/pfm mode */
++		ret = lp8755_update_bits(pchip, 0x08 + id, 0x20, 0x00);
++		if (ret < 0)
++			goto err_i2c;
++		break;
++	case REGULATOR_MODE_IDLE:
++		/* enable automatic pwm/pfm/lppfm mode */
++		ret = lp8755_update_bits(pchip, 0x08 + id, 0x20, 0x20);
++		if (ret < 0)
++			goto err_i2c;
++
++		ret = lp8755_update_bits(pchip, 0x10, 0x01, 0x01);
++		if (ret < 0)
++			goto err_i2c;
++		break;
++	default:
++		dev_err(pchip->dev, "Not supported buck mode %s\n", __func__);
++		/* forced pwm mode */
++		regbval = (0x01 << id);
++	}
++
++	ret = lp8755_update_bits(pchip, 0x06, 0x01 << id, regbval);
++	if (ret < 0)
++		goto err_i2c;
++	return ret;
++err_i2c:
++	dev_err(pchip->dev, "i2c acceess error %s\n", __func__);
++	return ret;
++}
++
++static unsigned int lp8755_buck_get_mode(struct regulator_dev *rdev)
++{
++	int ret;
++	unsigned int regval;
++	enum lp8755_bucks id = rdev_get_id(rdev);
++	struct lp8755_chip *pchip = rdev_get_drvdata(rdev);
++
++	ret = lp8755_read(pchip, 0x06, &regval);
++	if (ret < 0)
++		goto err_i2c;
++	/* mode fast means forced pwm mode */
++	if (regval & (0x01 << id))
++		return REGULATOR_MODE_FAST;
++
++	ret = lp8755_read(pchip, 0x10, &regval);
++	if (ret < 0)
++		goto err_i2c;
++	/* mode normal means automatic pwm/pfm mode */
++	if ((regval & 0x01) == 0)
++		return REGULATOR_MODE_NORMAL;
++
++	ret = lp8755_read(pchip, 0x08 + id, &regval);
++	if (ret < 0)
++		goto err_i2c;
++	/* mode idle means automatic pwm/pfm/lppfm mode */
++	if (regval & 0x20)
++		return REGULATOR_MODE_IDLE;
++
++err_i2c:
++	dev_err(pchip->dev, "i2c acceess error %s\n", __func__);
++	return ret;
++}
++
++static int lp8755_buck_set_ramp(struct regulator_dev *rdev, int ramp)
++{
++	int ret;
++	unsigned int regval = 0x00;
++	enum lp8755_bucks id = rdev_get_id(rdev);
++	struct lp8755_chip *pchip = rdev_get_drvdata(rdev);
++
++	/* uV/us */
++	switch (ramp) {
++	case 0 ... 230:
++		regval = 0x07;
++		break;
++	case 231 ... 470:
++		regval = 0x06;
++		break;
++	case 471 ... 940:
++		regval = 0x05;
++		break;
++	case 941 ... 1900:
++		regval = 0x04;
++		break;
++	case 1901 ... 3800:
++		regval = 0x03;
++		break;
++	case 3801 ... 7500:
++		regval = 0x02;
++		break;
++	case 7501 ... 15000:
++		regval = 0x01;
++		break;
++	case 15001 ... 30000:
++		regval = 0x00;
++		break;
++	default:
++		dev_err(pchip->dev,
++			"Not supported ramp value %d %s\n", ramp, __func__);
++		return -EINVAL;
++	}
++
++	ret = lp8755_update_bits(pchip, 0x07 + id, 0x07, regval);
++	if (ret < 0)
++		goto err_i2c;
++	return ret;
++err_i2c:
++	dev_err(pchip->dev, "i2c acceess error %s\n", __func__);
++	return ret;
++}
++
++static struct regulator_ops lp8755_buck_ops = {
++	.list_voltage = regulator_list_voltage_linear,
++	.set_voltage_sel = regulator_set_voltage_sel_regmap,
++	.get_voltage_sel = regulator_get_voltage_sel_regmap,
++	.enable = regulator_enable_regmap,
++	.disable = regulator_disable_regmap,
++	.is_enabled = regulator_is_enabled_regmap,
++	.enable_time = lp8755_buck_enable_time,
++	.set_mode = lp8755_buck_set_mode,
++	.get_mode = lp8755_buck_get_mode,
++	.set_ramp_delay = lp8755_buck_set_ramp,
++};
++
++#define lp8755_rail(_id) "lp8755_buck"#_id
++#define lp8755_buck_init(_id)\
++{\
++	.constraints = {\
++		.name = lp8755_rail(_id),\
++		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,\
++		.min_uV = 500000,\
++		.max_uV = 1675000,\
++	},\
++}
++
++static struct regulator_init_data lp8755_reg_default[LP8755_BUCK_MAX] = {
++	[BUCK0] = lp8755_buck_init(0),
++	[BUCK1] = lp8755_buck_init(1),
++	[BUCK2] = lp8755_buck_init(2),
++	[BUCK3] = lp8755_buck_init(3),
++	[BUCK4] = lp8755_buck_init(4),
++	[BUCK5] = lp8755_buck_init(5),
++};
++
++static const struct lp8755_mphase mphase_buck[MPHASE_CONF_MAX] = {
++	{3, {BUCK0, BUCK3, BUCK5}
++	 },
++	{6, {BUCK0, BUCK1, BUCK2, BUCK3, BUCK4, BUCK5}
++	 },
++	{5, {BUCK0, BUCK2, BUCK3, BUCK4, BUCK5}
++	 },
++	{4, {BUCK0, BUCK3, BUCK4, BUCK5}
++	 },
++	{3, {BUCK0, BUCK4, BUCK5}
++	 },
++	{2, {BUCK0, BUCK5}
++	 },
++	{1, {BUCK0}
++	 },
++	{2, {BUCK0, BUCK3}
++	 },
++	{4, {BUCK0, BUCK2, BUCK3, BUCK5}
++	 },
++};
++
++static int lp8755_init_data(struct lp8755_chip *pchip)
++{
++	unsigned int regval;
++	int ret, icnt, buck_num;
++	struct lp8755_platform_data *pdata = pchip->pdata;
++
++	/* read back  muti-phase configuration */
++	ret = lp8755_read(pchip, 0x3D, &regval);
++	if (ret < 0)
++		goto out_i2c_error;
++	pchip->mphase = regval & 0x07;
++
++	/* set default data based on multi-phase config */
++	for (icnt = 0; icnt < mphase_buck[pchip->mphase].nreg; icnt++) {
++		buck_num = mphase_buck[pchip->mphase].buck_num[icnt];
++		pdata->buck_data[buck_num] = &lp8755_reg_default[buck_num];
++	}
++	return ret;
++
++out_i2c_error:
++	dev_err(pchip->dev, "i2c acceess error %s\n", __func__);
++	return ret;
++}
++
++#define lp8755_buck_desc(_id)\
++{\
++	.name = lp8755_rail(_id),\
++	.id   = LP8755_BUCK##_id,\
++	.ops  = &lp8755_buck_ops,\
++	.n_voltages = LP8755_BUCK_LINEAR_OUT_MAX+1,\
++	.uV_step = 10000,\
++	.min_uV = 500000,\
++	.type = REGULATOR_VOLTAGE,\
++	.owner = THIS_MODULE,\
++	.enable_reg = LP8755_REG_BUCK##_id,\
++	.enable_mask = LP8755_BUCK_EN_M,\
++	.vsel_reg = LP8755_REG_BUCK##_id,\
++	.vsel_mask = LP8755_BUCK_VOUT_M,\
++}
++
++static struct regulator_desc lp8755_regulators[] = {
++	lp8755_buck_desc(0),
++	lp8755_buck_desc(1),
++	lp8755_buck_desc(2),
++	lp8755_buck_desc(3),
++	lp8755_buck_desc(4),
++	lp8755_buck_desc(5),
++};
++
++static int lp8755_regulator_init(struct lp8755_chip *pchip)
++{
++	int ret, icnt, buck_num;
++	struct lp8755_platform_data *pdata = pchip->pdata;
++	struct regulator_config rconfig = { };
++
++	rconfig.regmap = pchip->regmap;
++	rconfig.dev = pchip->dev;
++	rconfig.driver_data = pchip;
++
++	for (icnt = 0; icnt < mphase_buck[pchip->mphase].nreg; icnt++) {
++		buck_num = mphase_buck[pchip->mphase].buck_num[icnt];
++		rconfig.init_data = pdata->buck_data[buck_num];
++		rconfig.of_node = pchip->dev->of_node;
++		pchip->rdev[buck_num] =
++		    regulator_register(&lp8755_regulators[buck_num], &rconfig);
++		if (IS_ERR(pchip->rdev[buck_num])) {
++			ret = PTR_ERR(pchip->rdev[buck_num]);
++			dev_err(pchip->dev, "regulator init failed: buck 0\n");
++			goto err_buck;
++		}
++	}
++
++	return 0;
++
++err_buck:
++	for (icnt = 0; icnt < LP8755_BUCK_MAX; icnt++)
++		if (pchip->rdev[icnt] != NULL)
++			regulator_unregister(pchip->rdev[icnt]);
++	return ret;
++}
++
++/* interrupts */
++enum lp8755_irq {
++	LP8755_IRQ_OCP = 0,
++	LP8755_IRQ_OVP,
++	LP8755_IRQ_B0,
++	LP8755_IRQ_B1,
++	LP8755_IRQ_B2,
++	LP8755_IRQ_B3,
++	LP8755_IRQ_B4,
++	LP8755_IRQ_B5,
++	LP8755_IRQ_MAX,
++};
++
++static irqreturn_t lp8755_irq_handler(int irq, void *data)
++{
++	int ret, icnt;
++	unsigned int flag0, flag1;
++	struct lp8755_chip *pchip = data;
++
++	/* read flag0 register */
++	ret = lp8755_read(pchip, 0x0D, &flag0);
++	if (ret < 0)
++		goto err_i2c;
++	/* clear flag register to pull up int. pin */
++	ret = lp8755_write(pchip, 0x0D, 0x00);
++	if (ret < 0)
++		goto err_i2c;
++
++	/* sent power fault detection event to specific regulator */
++	for (icnt = 0; icnt < 6; icnt++)
++		if ((flag0 & (0x4 << icnt))
++		    && (pchip->irqmask & (0x04 << icnt))
++		    && (pchip->rdev[icnt] != NULL))
++			regulator_notifier_call_chain(pchip->rdev[icnt],
++						      LP8755_EVENT_PWR_FAULT,
++						      NULL);
++
++	/* read flag1 register */
++	ret = lp8755_read(pchip, 0x0E, &flag1);
++	if (ret < 0)
++		goto err_i2c;
++	/* clear flag register to pull up int. pin */
++	ret = lp8755_write(pchip, 0x0E, 0x00);
++	if (ret < 0)
++		goto err_i2c;
++
++	/* send OCP event to all regualtor devices */
++	if ((flag1 & 0x01) && (pchip->irqmask & 0x01))
++		for (icnt = 0; icnt < LP8755_BUCK_MAX; icnt++)
++			if (pchip->rdev[icnt] != NULL)
++				regulator_notifier_call_chain(pchip->rdev[icnt],
++							      LP8755_EVENT_OCP,
++							      NULL);
++
++	/* send OVP event to all regualtor devices */
++	if ((flag1 & 0x02) && (pchip->irqmask & 0x02))
++		for (icnt = 0; icnt < LP8755_BUCK_MAX; icnt++)
++			if (pchip->rdev[icnt] != NULL)
++				regulator_notifier_call_chain(pchip->rdev[icnt],
++							      LP8755_EVENT_OVP,
++							      NULL);
++	return IRQ_HANDLED;
++
++err_i2c:
++	dev_err(pchip->dev, "i2c acceess error %s\n", __func__);
++	return IRQ_NONE;
++}
++
++static int lp8755_int_config(struct lp8755_chip *pchip)
++{
++	int ret;
++	unsigned int regval;
++
++	if (pchip->irq == 0) {
++		dev_warn(pchip->dev, "not use interrupt : %s\n", __func__);
++		return 0;
++	}
++
++	ret = lp8755_read(pchip, 0x0F, &regval);
++	if (ret < 0)
++		goto err_i2c;
++	pchip->irqmask = regval;
++	ret = request_threaded_irq(pchip->irq, NULL, lp8755_irq_handler,
++				   IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
++				   "lp8755-irq", pchip);
++	if (ret)
++		return -1;
++
++	return 0;
++
++err_i2c:
++	dev_err(pchip->dev, "i2c acceess error %s\n", __func__);
++	return ret;
++}
++
++static const struct regmap_config lp8755_regmap = {
++	.reg_bits = 8,
++	.val_bits = 8,
++	.max_register = LP8755_REG_MAX,
++};
++
++static int lp8755_probe(struct i2c_client *client,
++			const struct i2c_device_id *id)
++{
++	int ret, icnt;
++	struct lp8755_chip *pchip;
++	struct lp8755_platform_data *pdata = client->dev.platform_data;
++
++	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
++		dev_err(&client->dev, "i2c functionality check fail.\n");
++		return -EOPNOTSUPP;
++	}
++
++	pchip = devm_kzalloc(&client->dev,
++			     sizeof(struct lp8755_chip), GFP_KERNEL);
++	if (!pchip)
++		return -ENOMEM;
++
++	pchip->dev = &client->dev;
++	pchip->regmap = devm_regmap_init_i2c(client, &lp8755_regmap);
++	if (IS_ERR(pchip->regmap)) {
++		ret = PTR_ERR(pchip->regmap);
++		dev_err(&client->dev, "fail to allocate regmap %d\n", ret);
++		return ret;
++	}
++	i2c_set_clientdata(client, pchip);
++
++	if (pdata != NULL) {
++		pchip->pdata = pdata;
++		pchip->mphase = pdata->mphase;
++	} else {
++		pchip->pdata = devm_kzalloc(pchip->dev,
++					    sizeof(struct lp8755_platform_data),
++					    GFP_KERNEL);
++		if (!pchip->pdata)
++			return -ENOMEM;
++		ret = lp8755_init_data(pchip);
++		if (ret < 0)
++			goto err_chip_init;
++	}
++
++	ret = lp8755_regulator_init(pchip);
++	if (ret < 0)
++		goto err_regulator;
++
++	pchip->irq = client->irq;
++	ret = lp8755_int_config(pchip);
++	if (ret < 0)
++		goto err_irq;
++
++	return ret;
++
++err_irq:
++	dev_err(&client->dev, "fail to irq config\n");
++
++	for (icnt = 0; icnt < mphase_buck[pchip->mphase].nreg; icnt++)
++		regulator_unregister(pchip->rdev[icnt]);
++
++err_regulator:
++	dev_err(&client->dev, "fail to initialize regulators\n");
++	/* output disable */
++	for (icnt = 0; icnt < 0x06; icnt++)
++		lp8755_write(pchip, icnt, 0x80);
++
++err_chip_init:
++	dev_err(&client->dev, "fail to initialize chip\n");
++	return ret;
++}
++
++static int lp8755_remove(struct i2c_client *client)
++{
++	int icnt;
++	struct lp8755_chip *pchip = i2c_get_clientdata(client);
++
++	for (icnt = 0; icnt < mphase_buck[pchip->mphase].nreg; icnt++)
++		regulator_unregister(pchip->rdev[icnt]);
++
++	for (icnt = 0; icnt < 0x06; icnt++)
++		lp8755_write(pchip, icnt, 0x00);
++
++	if (pchip->irq != 0)
++		free_irq(pchip->irq, pchip);
++
++	return 0;
++}
++
++static const struct i2c_device_id lp8755_id[] = {
++	{LP8755_NAME, 0},
++	{}
++};
++
++MODULE_DEVICE_TABLE(i2c, lp8755_id);
++
++static struct i2c_driver lp8755_i2c_driver = {
++	.driver = {
++		   .name = LP8755_NAME,
++		   },
++	.probe = lp8755_probe,
++	.remove = __devexit_p(lp8755_remove),
++	.id_table = lp8755_id,
++};
++
++static int __init lp8755_init(void)
++{
++	return i2c_add_driver(&lp8755_i2c_driver);
++}
++
++subsys_initcall(lp8755_init);
++
++static void __exit lp8755_exit(void)
++{
++	i2c_del_driver(&lp8755_i2c_driver);
++}
++
++module_exit(lp8755_exit);
++
++MODULE_DESCRIPTION("Texas Instruments lp8755 driver");
++MODULE_AUTHOR("Daniel Jeong <daniel.jeong@ti.com>");
++MODULE_LICENSE("GPL v2");
+diff --git a/include/linux/platform_data/lp8755.h b/include/linux/platform_data/lp8755.h
+new file mode 100644
+index 0000000..a7fd077
+--- /dev/null
++++ b/include/linux/platform_data/lp8755.h
+@@ -0,0 +1,71 @@
++/*
++ * LP8755 High Performance Power Management Unit Driver:System Interface Driver
++ *
++ *			Copyright (C) 2012 Texas Instruments
++ *
++ * Author: Daniel(Geon Si) Jeong <daniel.jeong@ti.com>
++ *             G.Shark Jeong <gshark.jeong@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#ifndef _LP8755_H
++#define _LP8755_H
++
++#include <linux/regulator/consumer.h>
++
++#define LP8755_NAME "lp8755-regulator"
++/*
++ *PWR FAULT : power fault detected
++ *OCP : over current protect activated
++ *OVP : over voltage protect activated
++ *TEMP_WARN : thermal warning
++ *TEMP_SHDN : thermal shutdonw detected
++ *I_LOAD : current measured
++ */
++#define LP8755_EVENT_PWR_FAULT REGULATOR_EVENT_FAIL
++#define LP8755_EVENT_OCP REGULATOR_EVENT_OVER_CURRENT
++#define LP8755_EVENT_OVP 0x10000
++#define LP8755_EVENT_TEMP_WARN 0x2000
++#define LP8755_EVENT_TEMP_SHDN REGULATOR_EVENT_OVER_TEMP
++#define LP8755_EVENT_I_LOAD	0x40000
++
++enum lp8755_bucks {
++	LP8755_BUCK0 = 0,
++	LP8755_BUCK1,
++	LP8755_BUCK2,
++	LP8755_BUCK3,
++	LP8755_BUCK4,
++	LP8755_BUCK5,
++	LP8755_BUCK_MAX,
++};
++
++/**
++ * multiphase configuration options
++ */
++enum lp8755_mphase_config {
++	MPHASE_CONF0,
++	MPHASE_CONF1,
++	MPHASE_CONF2,
++	MPHASE_CONF3,
++	MPHASE_CONF4,
++	MPHASE_CONF5,
++	MPHASE_CONF6,
++	MPHASE_CONF7,
++	MPHASE_CONF8,
++	MPHASE_CONF_MAX
++};
++
++/**
++ * struct lp8755_platform_data
++ * @mphase_type : Multiphase Switcher Configurations.
++ * @buck_data   : buck0~6 init voltage in uV
++ */
++struct lp8755_platform_data {
++	int mphase;
++	struct regulator_init_data *buck_data[LP8755_BUCK_MAX];
++};
++#endif
+-- 
+1.7.5.4
+
