@@ -1,51 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754515Ab2LFCgW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 21:36:22 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:33801 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753838Ab2LFCgV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 21:36:21 -0500
+	id S1754538Ab2LFClQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 21:41:16 -0500
+Received: from www.hansjkoch.de ([178.63.77.200]:51521 "EHLO www.hansjkoch.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753811Ab2LFClO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 21:41:14 -0500
+Date: Thu, 6 Dec 2012 03:41:01 +0100
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Vitalii Demianets <vitas@nppfactor.kiev.ua>
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Cong Ding <dinggnu@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v2] drivers/uio/uio_pdrv_genirq.c: Fix memory freeing
+ issues
+Message-ID: <20121206024101.GB7175@local>
+References: <201211271929.32315.vitas@nppfactor.kiev.ua>
+ <201211291347.28273.vitas@nppfactor.kiev.ua>
+ <20121204210440.GA4720@local>
+ <201212051122.57724.vitas@nppfactor.kiev.ua>
 MIME-Version: 1.0
-In-Reply-To: <20121205224203.691153E0E22@localhost>
-References: <2dcd7cb4c4022fa24b5328974e4226f5aaf89419.1354199865.git.viresh.kumar@linaro.org>
-	<121653def4e985b0c1b59045637dd4518f97e73a.1354199865.git.viresh.kumar@linaro.org>
-	<20121130105731.GN3176@sortiz-mobl>
-	<20121130154542.GG23648@gmail.com>
-	<CAKohpokLVEH+4F_VXh5auUm48cWWe0mumZME8yOCcAezcwJbCQ@mail.gmail.com>
-	<20121205224203.691153E0E22@localhost>
-Date: Thu, 6 Dec 2012 08:06:20 +0530
-Message-ID: <CAKohponBkA+bg7B4TKaU6WbcVBNDHPe4AWqAEE6JGD7zctoULw@mail.gmail.com>
-Subject: Re: [PATCH V5 2/2] mfd: stmpe: Update DT support in stmpe driver
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        rabin.vincent@stericsson.com, shiraz.hashim@st.com,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, linus.walleij@linaro.org,
-        Vipul Kumar Samar <vipulkumar.samar@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201212051122.57724.vitas@nppfactor.kiev.ua>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 December 2012 04:12, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Sat, 1 Dec 2012 00:33:46 +0530, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->> This first tries to match the table my patch added, _BUT_ the string will
->> never match as we had "st,stmpe810" in table and "stmpe810" in dev.
->
-> of_driver_match_device() matches against the compatible list in
-> dev->of_node, not against the device name. So, if the compatible
-> property has a string that is in the table, then it really should match
-> against it.
+On Wed, Dec 05, 2012 at 11:22:57AM +0200, Vitalii Demianets wrote:
+> 1. uioinfo was kfreed based on the presence of pdev->dev.of_node, which was
+> obviously wrong and unrelated to the fact if uioinfo was allocated statically
+> or dynamically. This patch introduces new flag which clearly shows if uioinfo
+> was allocated dynamically and kfrees uioinfo based on that flag;
+> 2. Fix: priv data was not freed in case platform_get_irq() failed. As it was
+> caused mainly by improper exit labels naming, labels were renamed too;
+> 3. The case of uioinfo AND pdev->dev.of_node both NULL (not initialized
+> in platform data) was not treated properly.
 
-Grant, but isn't it true that the final device's name would not be the DT
-way of names? It would simply be "stmpe810" for us and so if we have
-multiple instances of stmpe on a board, we need to distinguish them
-ourselves? One way for that was passing id for these instances, which
-would finally be used, when we create platform devices for sub-modules
-of stmpe (gpio, keypad, ts, etc).
+I noticed two more issues. See below.
 
---
-viresh
+> 
+> Signed-off-by: Vitalii Demianets <vitas@nppfactor.kiev.ua>
+> 
+> ---
+> v2: Constants naming style
+> 
+> ---
+>  drivers/uio/uio_pdrv_genirq.c |   44 ++++++++++++++++++++++++----------------
+>  1 files changed, 26 insertions(+), 18 deletions(-)
+> 
+> diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
+> index 42202cd..75aaeee 100644
+> --- a/drivers/uio/uio_pdrv_genirq.c
+> +++ b/drivers/uio/uio_pdrv_genirq.c
+> @@ -30,6 +30,11 @@
+>  
+>  #define DRIVER_NAME "uio_pdrv_genirq"
+>  
+> +enum {
+> +	UIO_IRQ_DISABLED = 0,
+> +	UIO_INFO_ALLOCED = 1,
+> +};
+> +
+>  struct uio_pdrv_genirq_platdata {
+>  	struct uio_info *uioinfo;
+>  	spinlock_t lock;
+> @@ -63,7 +68,7 @@ static irqreturn_t uio_pdrv_genirq_handler(int irq, struct uio_info *dev_info)
+>  	 * remember the state so we can allow user space to enable it later.
+>  	 */
+>  
+> -	if (!test_and_set_bit(0, &priv->flags))
+> +	if (!test_and_set_bit(UIO_IRQ_DISABLED, &priv->flags))
+>  		disable_irq_nosync(irq);
+
+That is not safe. That flag can only be changed by userspace, and if the
+userspace part is not running, the CPU on which the irq is pending will hang.
+The handler has to disable the interrupt in any case.
+(The original version had the same problem, I know...)
+
+>  
+>  	return IRQ_HANDLED;
+> @@ -83,10 +88,10 @@ static int uio_pdrv_genirq_irqcontrol(struct uio_info *dev_info, s32 irq_on)
+>  
+>  	spin_lock_irqsave(&priv->lock, flags);
+>  	if (irq_on) {
+> -		if (test_and_clear_bit(0, &priv->flags))
+> +		if (test_and_clear_bit(UIO_IRQ_DISABLED, &priv->flags))
+>  			enable_irq(dev_info->irq);
+>  	} else {
+> -		if (!test_and_set_bit(0, &priv->flags))
+> +		if (!test_and_set_bit(UIO_IRQ_DISABLED, &priv->flags))
+>  			disable_irq(dev_info->irq);
+>  	}
+>  	spin_unlock_irqrestore(&priv->lock, flags);
+> @@ -101,8 +106,9 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+>  	struct uio_mem *uiomem;
+>  	int ret = -EINVAL;
+>  	int i;
+> +	bool uioinfo_alloced = false;
+>  
+> -	if (!uioinfo) {
+> +	if (!uioinfo && pdev->dev.of_node) {
+>  		int irq;
+>  
+>  		/* alloc uioinfo for one device */
+> @@ -110,10 +116,11 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+>  		if (!uioinfo) {
+>  			ret = -ENOMEM;
+>  			dev_err(&pdev->dev, "unable to kmalloc\n");
+> -			goto bad2;
+> +			goto out;
+>  		}
+>  		uioinfo->name = pdev->dev.of_node->name;
+>  		uioinfo->version = "devicetree";
+> +		uioinfo_alloced = true;
+>  
+>  		/* Multiple IRQs are not supported */
+>  		irq = platform_get_irq(pdev, 0);
+> @@ -125,32 +132,33 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+>  
+>  	if (!uioinfo || !uioinfo->name || !uioinfo->version) {
+>  		dev_err(&pdev->dev, "missing platform_data\n");
+> -		goto bad0;
+> +		goto out_uioinfo;
+>  	}
+>  
+>  	if (uioinfo->handler || uioinfo->irqcontrol ||
+>  	    uioinfo->irq_flags & IRQF_SHARED) {
+>  		dev_err(&pdev->dev, "interrupt configuration error\n");
+> -		goto bad0;
+> +		goto out_uioinfo;
+>  	}
+>  
+>  	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+>  	if (!priv) {
+>  		ret = -ENOMEM;
+>  		dev_err(&pdev->dev, "unable to kmalloc\n");
+> -		goto bad0;
+> +		goto out_uioinfo;
+>  	}
+>  
+>  	priv->uioinfo = uioinfo;
+>  	spin_lock_init(&priv->lock);
+> -	priv->flags = 0; /* interrupt is enabled to begin with */
+> +	/* interrupt is enabled to begin with */
+> +	priv->flags = uioinfo_alloced ? (1 << UIO_INFO_ALLOCED) : 0;
+
+The comment doesn't describe the line it's supposed to comment.
+
+>  	priv->pdev = pdev;
+>  
+>  	if (!uioinfo->irq) {
+>  		ret = platform_get_irq(pdev, 0);
+>  		if (ret < 0) {
+>  			dev_err(&pdev->dev, "failed to get IRQ\n");
+> -			goto bad0;
+> +			goto out_priv;
+>  		}
+>  		uioinfo->irq = ret;
+>  	}
+> @@ -205,19 +213,19 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
+>  	ret = uio_register_device(&pdev->dev, priv->uioinfo);
+>  	if (ret) {
+>  		dev_err(&pdev->dev, "unable to register uio device\n");
+> -		goto bad1;
+> +		goto out_pm;
+>  	}
+>  
+>  	platform_set_drvdata(pdev, priv);
+>  	return 0;
+> - bad1:
+> -	kfree(priv);
+> +out_pm:
+>  	pm_runtime_disable(&pdev->dev);
+> - bad0:
+> -	/* kfree uioinfo for OF */
+> -	if (pdev->dev.of_node)
+> +out_priv:
+> +	kfree(priv);
+> +out_uioinfo:
+> +	if (uioinfo_alloced)
+>  		kfree(uioinfo);
+> - bad2:
+> +out:
+>  	return ret;
+>  }
+>  
+> @@ -232,7 +240,7 @@ static int uio_pdrv_genirq_remove(struct platform_device *pdev)
+>  	priv->uioinfo->irqcontrol = NULL;
+>  
+>  	/* kfree uioinfo for OF */
+> -	if (pdev->dev.of_node)
+> +	if (priv->flags & (1 << UIO_INFO_ALLOCED))
+>  		kfree(priv->uioinfo);
+>  
+>  	kfree(priv);
+> -- 
+> 1.7.8.6
+> 
