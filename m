@@ -1,67 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754147Ab2LFBkf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 20:40:35 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8074 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753298Ab2LFBke (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 20:40:34 -0500
-X-Authority-Analysis: v=2.0 cv=dttZ+ic4 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=UWsWV8ZGD4sA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=RU5-hctH5AsA:10 a=1aGfSQ-rvtFeL2DRSz4A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1354758031.17101.7.camel@gandalf.local.home>
-Subject: Re: [PATCH v5 2/3] aerdrv: Enhanced AER logging
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Lance Ortiz <lance.ortiz@hp.com>, bhelgaas@google.com,
-        lance_ortiz@hotmail.com, jiang.liu@huawei.com, tony.luck@intel.com,
-        mchehab@redhat.com, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 05 Dec 2012 20:40:31 -0500
-In-Reply-To: <20121204093007.GG4369@liondog.tnic>
-References: <20121203212047.24373.8646.stgit@grignak.americas.hpqcorp.net>
-	 <20121203212053.24373.10914.stgit@grignak.americas.hpqcorp.net>
-	 <20121204093007.GG4369@liondog.tnic>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754351Ab2LFBpW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 20:45:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8684 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753288Ab2LFBpV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 20:45:21 -0500
+Date: Wed, 5 Dec 2012 23:45:07 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: kvm@vger.kernel.org, gleb@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 5/6] kvm: Re-introduce memslots->nmemslots
+Message-ID: <20121206014507.GA9890@amt.cnet>
+References: <20121203231912.3661.57179.stgit@bling.home>
+ <20121203233936.3661.69261.stgit@bling.home>
+ <20121205212629.GD20260@amt.cnet>
+ <1354748573.3224.63.camel@bling.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354748573.3224.63.camel@bling.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-12-04 at 10:30 +0100, Borislav Petkov wrote:
-
-> Steve,
+On Wed, Dec 05, 2012 at 04:02:53PM -0700, Alex Williamson wrote:
+> On Wed, 2012-12-05 at 19:26 -0200, Marcelo Tosatti wrote:
+> > On Mon, Dec 03, 2012 at 04:39:36PM -0700, Alex Williamson wrote:
+> > > struct kvm_memory_slot is currently 52 bytes (LP64), not counting the
+> > > arch data.  On x86 this means the memslot array to support a tiny 32+3
+> > > entries (user+private) is over 2k.  We'd like to support more slots
+> > > so that we can support more assigned devices, but it doesn't make
+> > > sense to penalize everyone by using a statically allocated array.
+> > > This allows us to start introducing a grow-able array.
+> > > 
+> > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > > ---
+> > >  arch/ia64/kvm/kvm-ia64.c     |    2 +-
+> > >  arch/powerpc/kvm/book3s_hv.c |    2 +-
+> > >  arch/x86/kvm/vmx.c           |    1 +
+> > >  arch/x86/kvm/x86.c           |    4 +++-
+> > >  include/linux/kvm_host.h     |    9 ++++++---
+> > >  virt/kvm/kvm_main.c          |   10 ++++++----
+> > >  6 files changed, 18 insertions(+), 10 deletions(-)
+> > > 
+> > > diff --git a/arch/ia64/kvm/kvm-ia64.c b/arch/ia64/kvm/kvm-ia64.c
+> > > index 012e5dd..96401b5 100644
+> > > --- a/arch/ia64/kvm/kvm-ia64.c
+> > > +++ b/arch/ia64/kvm/kvm-ia64.c
+> > > @@ -1836,7 +1836,7 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
+> > >  
+> > >  	memslot = id_to_memslot(kvm->memslots, log->slot);
+> > >  	r = -ENOENT;
+> > > -	if (!memslot->dirty_bitmap)
+> > > +	if (!memslots || !memslot->dirty_bitmap)
+> > >  		goto out;
+> > >  
+> > >  	kvm_ia64_sync_dirty_log(kvm, memslot);
+> > > diff --git a/arch/powerpc/kvm/book3s_hv.c b/arch/powerpc/kvm/book3s_hv.c
+> > > index 56067db..0417190 100644
+> > > --- a/arch/powerpc/kvm/book3s_hv.c
+> > > +++ b/arch/powerpc/kvm/book3s_hv.c
+> > > @@ -1267,7 +1267,7 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm, struct kvm_dirty_log *log)
+> > >  
+> > >  	memslot = id_to_memslot(kvm->memslots, log->slot);
+> > >  	r = -ENOENT;
+> > > -	if (!memslot->dirty_bitmap)
+> > > +	if (!memslot || !memslot->dirty_bitmap)
+> > >  		goto out;
+> > >  
+> > >  	n = kvm_dirty_bitmap_bytes(memslot);
+> > > diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> > > index 2bb9157..07fdd90 100644
+> > > --- a/arch/x86/kvm/vmx.c
+> > > +++ b/arch/x86/kvm/vmx.c
+> > > @@ -2751,6 +2751,7 @@ static gva_t rmode_tss_base(struct kvm *kvm)
+> > >  
+> > >  		slots = kvm_memslots(kvm);
+> > >  		slot = id_to_memslot(slots, KVM_PRIVATE_MEM_SLOTS);
+> > > +		BUG_ON(!slot);
+> > >  		base_gfn = slot->base_gfn + slot->npages - 3;
+> > >  
+> > >  		return base_gfn << PAGE_SHIFT;
+> > > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> > > index 8765485..53fe9b2 100644
+> > > --- a/arch/x86/kvm/x86.c
+> > > +++ b/arch/x86/kvm/x86.c
+> > > @@ -3139,9 +3139,11 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm, struct kvm_dirty_log *log)
+> > >  		goto out;
+> > >  
+> > >  	memslot = id_to_memslot(kvm->memslots, log->slot);
+> > > +	r = -ENOENT;
+> > > +	if (!memslot)
+> > > +		goto out;
+> > >  
+> > >  	dirty_bitmap = memslot->dirty_bitmap;
+> > > -	r = -ENOENT;
+> > >  	if (!dirty_bitmap)
+> > >  		goto out;
+> > >  
+> > > diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> > > index 7b3d5c4..1955a4e 100644
+> > > --- a/include/linux/kvm_host.h
+> > > +++ b/include/linux/kvm_host.h
+> > > @@ -313,6 +313,7 @@ struct kvm_irq_routing_table {};
+> > >   * to get the memslot by its id.
+> > >   */
+> > >  struct kvm_memslots {
+> > > +	int nmemslots;
+> > >  	u64 generation;
+> > >  	struct kvm_memory_slot memslots[KVM_MEM_SLOTS_NUM];
+> > >  };
+> > > @@ -397,7 +398,7 @@ static inline struct kvm_vcpu *kvm_get_vcpu(struct kvm *kvm, int i)
+> > >  
+> > >  #define kvm_for_each_memslot(memslot, slots)	\
+> > >  	for (memslot = &slots->memslots[0];	\
+> > > -	      memslot < slots->memslots + KVM_MEM_SLOTS_NUM && memslot->npages;\
+> > > +	      memslot < slots->memslots + slots->nmemslots && memslot->npages;\
+> > >  		memslot++)
+> > >  
+> > >  int kvm_vcpu_init(struct kvm_vcpu *vcpu, struct kvm *kvm, unsigned id);
+> > > @@ -424,10 +425,12 @@ static inline struct kvm_memslots *kvm_memslots(struct kvm *kvm)
+> > >  static inline struct kvm_memory_slot *
+> > >  id_to_memslot(struct kvm_memslots *slots, int id)
+> > >  {
+> > > -	int index = slots->memslots[id].id_to_index;
+> > >  	struct kvm_memory_slot *slot;
+> > >  
+> > > -	slot = &slots->memslots[index];
+> > > +	if (id >= slots->nmemslots)
+> > > +		return NULL;
+> > > +
+> > > +	slot = &slots->memslots[slots->memslots[id].id_to_index];
+> > >  
+> > >  	WARN_ON(slot->id != id);
+> > >  	return slot;
+> > > diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> > > index 3ce2664..ebd3960 100644
+> > > --- a/virt/kvm/kvm_main.c
+> > > +++ b/virt/kvm/kvm_main.c
+> > > @@ -444,7 +444,9 @@ static void kvm_init_memslots_id(struct kvm *kvm)
+> > >  	int i;
+> > >  	struct kvm_memslots *slots = kvm->memslots;
+> > >  
+> > > -	for (i = 0; i < KVM_MEM_SLOTS_NUM; i++)
+> > > +	slots->nmemslots = KVM_MEM_SLOTS_NUM;
+> > > +
+> > > +	for (i = 0; i < kvm->memslots->nmemslots; i++)
+> > >  		slots->memslots[i].id_to_index = slots->memslots[i].id = i;
+> > >  }
+> > >  
+> > > @@ -658,10 +660,10 @@ static void sort_memslots(struct kvm_memslots *slots)
+> > >  {
+> > >  	int i;
+> > >  
+> > > -	sort(slots->memslots, KVM_MEM_SLOTS_NUM,
+> > > +	sort(slots->memslots, slots->nmemslots,
+> > >  	      sizeof(struct kvm_memory_slot), cmp_memslot, NULL);
+> > >  
+> > > -	for (i = 0; i < KVM_MEM_SLOTS_NUM; i++)
+> > > +	for (i = 0; i < slots->nmemslots; i++)
+> > >  		slots->memslots[slots->memslots[i].id].id_to_index = i;
+> > >  }
+> > >  
+> > > @@ -898,7 +900,7 @@ int kvm_get_dirty_log(struct kvm *kvm,
+> > >  
+> > >  	memslot = id_to_memslot(kvm->memslots, log->slot);
+> > >  	r = -ENOENT;
+> > > -	if (!memslot->dirty_bitmap)
+> > > +	if (!memslot || !memslot->dirty_bitmap)
+> > >  		goto out;
+> > >  
+> > >  	n = kvm_dirty_bitmap_bytes(memslot);
+> > 
+> > I suppose this should be checked earlier, not at id_to_memslot time.
+> > eg for kvm_get_dirty_log at 
+> > 
+> >         r = -EINVAL;
+> >         if (log->slot >= KVM_MEMORY_SLOTS)
+> >                 goto out;
+> > 
+> > time
 > 
-> AFAIU, this will create all tracepoint code from the ras.h header
-> in this compilation unit, i.e. aerdrv_errprint.c. It has only one
-> tracepoint now but with time, as more RAS TPs are being added, it would
-> make sense to have that CREATE_TRACE_POINTS code at a more central place
-> in the kernel, right?
-
-Yes.
-
+> id_to_memslot seems like a good place to catch all the users since
+> that's the only way to get a slot from a slot id after the array is
+> sorted.  We need to check both is the slot in bounds (EINVAL), but also
+> is it allocated (ENOENT).  id_to_memslot could both of these if we
+> wanted to switch it to ERR_PTR.  Thanks,
 > 
-> And, on configs with PCIEAER disabled, we won't have the TPs available
-> so the CREATE_TRACE_POINTS thing should be in a compilation unit which
-> gets included unconditionally, correct?
+> Alex
 
-You can have a config that enables these trace points, and when you
-enable one of the systems that uses them, have that config select the
-config that enables tracepoints. Have that config compile the file for
-tracepoints. For example, in a Makefile:
-
-obj-$(CONFIG_RAS_TRACE_POINTS) += ras-trace.o
-
-
-Use #ifdef CONFIG_FOO_BAR around tracepoints that are required for
-specific systems if the tracepoints in the header file are for different
-subsystems that can be enabled or disabled separately by configs.
-
--- Steve
-
-
+There should never be a reference to a slot out of bounds by KVM itself
+(BUG_ON). Only userspace can attempt a reference to such slot.
 
