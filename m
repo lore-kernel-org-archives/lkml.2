@@ -1,46 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424341Ab2LFQR3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 11:17:29 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:42007 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423988Ab2LFQR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 11:17:28 -0500
-Date: Thu, 6 Dec 2012 17:17:25 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [PATCH] x86: ptrace.c only needs export.h and not the full
- module.h
-Message-ID: <20121206161725.GA10351@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Paul Gortmaker <paul.gortmaker@windriver.com>,
-	linux-kernel@vger.kernel.org,
-	"H. Peter Anvin" <hpa@linux.intel.com>
-References: <1354793622-8497-1-git-send-email-paul.gortmaker@windriver.com>
+	id S1424354Ab2LFQST (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 11:18:19 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:42665 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423988Ab2LFQSR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 11:18:17 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1354793622-8497-1-git-send-email-paul.gortmaker@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1354033730-850-1-git-send-email-js1304@gmail.com>
+References: <1354033730-850-1-git-send-email-js1304@gmail.com>
+Date: Fri, 7 Dec 2012 01:18:16 +0900
+Message-ID: <CAAmzW4Ng8S_O4SEoANCWz3jsW3h3ucGSM9=Ld-n9aLuHcdgprw@mail.gmail.com>
+Subject: Re: [PATCH v2 0/3] introduce static_vm for ARM-specific static mapped area
+From: JoonSoo Kim <js1304@gmail.com>
+To: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-arm-kernel@lists.infradead.org, Joonsoo Kim <js1304@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 06, 2012 at 06:33:42AM -0500, Paul Gortmaker wrote:
-> Commit cb57a2b4cff7edf2a4e32c0163200e9434807e0a ("x86-32: Export
-> kernel_stack_pointer() for modules") added an include of the
-> module.h header in conjunction with adding an EXPORT_SYMBOL_GPL
-> of kernel_stack_pointer.
-> 
-> But module.h should be avoided for simple exports, since it in turn
-> includes the world.  Swap the module.h for export.h instead.
+2012/11/28 Joonsoo Kim <js1304@gmail.com>:
+> In current implementation, we used ARM-specific flag, that is,
+> VM_ARM_STATIC_MAPPING, for distinguishing ARM specific static mapped area.
+> The purpose of static mapped area is to re-use static mapped area when
+> entire physical address range of the ioremap request can be covered
+> by this area.
+>
+> This implementation causes needless overhead for some cases.
+> For example, assume that there is only one static mapped area and
+> vmlist has 300 areas. Every time we call ioremap, we check 300 areas for
+> deciding whether it is matched or not. Moreover, even if there is
+> no static mapped area and vmlist has 300 areas, every time we call
+> ioremap, we check 300 areas in now.
+>
+> If we construct a extra list for static mapped area, we can eliminate
+> above mentioned overhead.
+> With a extra list, if there is one static mapped area,
+> we just check only one area and proceed next operation quickly.
+>
+> In fact, it is not a critical problem, because ioremap is not frequently
+> used. But reducing overhead is better idea.
+>
+> Another reason for doing this work is for removing architecture dependency
+> on vmalloc layer. I think that vmlist and vmlist_lock is internal data
+> structure for vmalloc layer. Some codes for debugging and stat inevitably
+> use vmlist and vmlist_lock. But it is preferable that they are used
+> as least as possible in outside of vmalloc.c
+>
+> Changelog
+> v1->v2:
+>   [2/3]: patch description is improved.
+>   Rebased on v3.7-rc7
+>
+> Joonsoo Kim (3):
+>   ARM: vmregion: remove vmregion code entirely
+>   ARM: static_vm: introduce an infrastructure for static mapped area
+>   ARM: mm: use static_vm for managing static mapped areas
+>
+>  arch/arm/include/asm/mach/static_vm.h |   51 ++++++++
+>  arch/arm/mm/Makefile                  |    2 +-
+>  arch/arm/mm/ioremap.c                 |   69 ++++-------
+>  arch/arm/mm/mm.h                      |   10 --
+>  arch/arm/mm/mmu.c                     |   55 +++++----
+>  arch/arm/mm/static_vm.c               |   97 ++++++++++++++++
+>  arch/arm/mm/vmregion.c                |  205 ---------------------------------
+>  arch/arm/mm/vmregion.h                |   31 -----
+>  8 files changed, 208 insertions(+), 312 deletions(-)
+>  create mode 100644 arch/arm/include/asm/mach/static_vm.h
+>  create mode 100644 arch/arm/mm/static_vm.c
+>  delete mode 100644 arch/arm/mm/vmregion.c
+>  delete mode 100644 arch/arm/mm/vmregion.h
+>
+> --
+> 1.7.9.5
+>
 
-If this is the preferred include for EXPORT_SYMBOL* stuff now, maybe we
-should hold this down somewhere in writing or add it to checkpatch?
+Hello, Russell.
+
+Could you review this patchset, please?
+I send another patchset to mm community on top of this.
+That one is related to this patchset,
+so I want to get a review about this patchset :)
 
 Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
