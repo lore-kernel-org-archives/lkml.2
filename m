@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422893Ab2LFJsx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 04:48:53 -0500
-Received: from outmail025.ash2.facebook.com ([66.220.155.159]:44818 "EHLO
+	id S1422752Ab2LFJpm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 04:45:42 -0500
+Received: from outmail015.ash2.facebook.com ([66.220.155.149]:48755 "EHLO
 	mx-out.facebook.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1422758Ab2LFJpo (ORCPT
+	with ESMTP id S1422739Ab2LFJpi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 04:45:44 -0500
-Subject: [PATCH 05/12] async_memset: convert to dmaengine_unmap_data
+	Thu, 6 Dec 2012 04:45:38 -0500
+Subject: [PATCH 03/12] dmaengine: reference counted unmap data
 To: linux-kernel@vger.kernel.org
 From: Dan Williams <djbw@fb.com>
 Cc: linux@arm.linux.org.uk,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        vinod.koul@intel.com, Tomasz Figa <t.figa@samsung.com>,
+        Vinod Koul <vinod.koul@intel.com>, Tomasz Figa <t.figa@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>, dave.jiang@intel.com
-Date: Thu, 06 Dec 2012 01:25:37 -0800
-Message-ID: <20121206092536.17085.7308.stgit@dev279.prn1.facebook.com>
+Date: Thu, 06 Dec 2012 01:25:26 -0800
+Message-ID: <20121206092525.17085.63225.stgit@dev279.prn1.facebook.com>
 In-Reply-To: <20121206091055.17085.47979.stgit@dev279.prn1.facebook.com>
 References: <20121206091055.17085.47979.stgit@dev279.prn1.facebook.com>
 User-Agent: StGit/0.16-38-g167d
@@ -26,63 +26,234 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the generic unmap object to unmap dma buffers.
+hang a common 'unmap' object off of dma descriptors for the purpose of
+providing a unified unmapping interface.  The lifetime of a mapping may
+span multiple descriptors, so these unmap objects are reference counted
+by related descriptor.
 
+Cc: Vinod Koul <vinod.koul@intel.com>
 Cc: Tomasz Figa <t.figa@samsung.com>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Reported-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 Signed-off-by: Dan Williams <djbw@fb.com>
 ---
- crypto/async_tx/async_memset.c |   18 +++++++++++++-----
- 1 file changed, 13 insertions(+), 5 deletions(-)
+ drivers/dma/dmaengine.c   |  157 ++++++++++++++++++++++++++++++++++++++++++---
+ include/linux/dmaengine.h |    3 +
+ 2 files changed, 151 insertions(+), 9 deletions(-)
 
-diff --git a/crypto/async_tx/async_memset.c b/crypto/async_tx/async_memset.c
-index 05a4d1e..ffca53b 100644
---- a/crypto/async_tx/async_memset.c
-+++ b/crypto/async_tx/async_memset.c
-@@ -47,17 +47,22 @@ async_memset(struct page *dest, int val, unsigned int offset, size_t len,
- 						      &dest, 1, NULL, 0, len);
- 	struct dma_device *device = chan ? chan->device : NULL;
- 	struct dma_async_tx_descriptor *tx = NULL;
-+	struct dmaengine_unmap_data *unmap = NULL;
+diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
+index f3cadc6..00f0baf 100644
+--- a/drivers/dma/dmaengine.c
++++ b/drivers/dma/dmaengine.c
+@@ -62,6 +62,7 @@
+ #include <linux/rculist.h>
+ #include <linux/idr.h>
+ #include <linux/slab.h>
++#include <linux/mempool.h>
  
--	if (device && is_dma_fill_aligned(device, offset, 0, len)) {
--		dma_addr_t dma_dest;
--		unsigned long dma_prep_flags = 0;
-+	if (device)
-+		unmap = dmaengine_get_unmap_data(device->dev, 1, GFP_NOIO);
+ static DEFINE_MUTEX(dma_list_mutex);
+ static DEFINE_IDR(dma_idr);
+@@ -856,6 +857,131 @@ void dma_async_device_unregister(struct dma_device *device)
+ }
+ EXPORT_SYMBOL(dma_async_device_unregister);
+ 
++struct dmaengine_unmap_pool {
++	struct kmem_cache *cache;
++	const char *name;
++	mempool_t *pool;
++	size_t size;
++};
 +
-+	if (unmap && is_dma_fill_aligned(device, offset, 0, len)) {
-+		unsigned long dma_prep_flags = DMA_COMPL_SKIP_SRC_UNMAP |
-+					       DMA_COMPL_SKIP_DEST_UNMAP;
- 
- 		if (submit->cb_fn)
- 			dma_prep_flags |= DMA_PREP_INTERRUPT;
- 		if (submit->flags & ASYNC_TX_FENCE)
- 			dma_prep_flags |= DMA_PREP_FENCE;
--		dma_dest = dma_map_page(device->dev, dest, offset, len,
--					DMA_FROM_DEVICE);
-+		unmap->from_cnt = 1;
-+		unmap->addr[0] = dma_map_page(device->dev, dest, offset, len,
-+					      DMA_FROM_DEVICE);
- 
- 		tx = device->device_prep_dma_memset(chan, dma_dest, val, len,
- 						    dma_prep_flags);
-@@ -65,6 +70,8 @@ async_memset(struct page *dest, int val, unsigned int offset, size_t len,
- 
- 	if (tx) {
- 		pr_debug("%s: (async) len: %zu\n", __func__, len);
++#define __UNMAP_POOL(x) { .size = x, .name = "dmaengine-unmap-" __stringify(x) }
++static struct dmaengine_unmap_pool unmap_pool[] = {
++	__UNMAP_POOL(2),
++	#if IS_ENABLED(ASYNC_TX_DMA)
++	__UNMAP_POOL(16),
++	__UNMAP_POOL(128),
++	__UNMAP_POOL(256),
++	#endif
++};
 +
-+		dma_set_unmap(tx, unmap);
- 		async_tx_submit(chan, tx, submit);
- 	} else { /* run the memset synchronously */
- 		void *dest_buf;
-@@ -79,6 +86,7 @@ async_memset(struct page *dest, int val, unsigned int offset, size_t len,
++static struct dmaengine_unmap_pool *__get_unmap_pool(int nr)
++{
++	int order = get_count_order(nr);
++
++	switch (order) {
++	case 0 ... 1:
++		return &unmap_pool[0];
++	case 2 ... 4:
++		return &unmap_pool[1];
++	case 5 ... 7:
++		return &unmap_pool[2];
++	case 8:
++		return &unmap_pool[3];
++	default:
++		BUG();
++		return NULL;
++	}
++
++}
++
++static void dmaengine_unmap(struct kref *kref)
++{
++	struct dmaengine_unmap_data *unmap = container_of(kref, typeof(*unmap), kref);
++	struct device *dev = unmap->dev;
++	int cnt, i;
++
++	cnt = unmap->to_cnt;
++	for (i = 0; i < cnt; i++)
++		dma_unmap_page(dev, unmap->addr[i], unmap->len,
++			       DMA_TO_DEVICE);
++	cnt += unmap->from_cnt;
++	for (; i < cnt; i++)
++		dma_unmap_page(dev, unmap->addr[i], unmap->len,
++			       DMA_FROM_DEVICE);
++	cnt += unmap->bidi_cnt;
++	for (; i < cnt; i++)
++		dma_unmap_page(dev, unmap->addr[i], unmap->len,
++			       DMA_BIDIRECTIONAL);
++	kmem_cache_free(__get_unmap_pool(cnt)->cache, unmap);
++}
++
++void dmaengine_unmap_put(struct dmaengine_unmap_data *unmap)
++{
++	if (unmap)
++		kref_put(&unmap->kref, dmaengine_unmap);
++}
++EXPORT_SYMBOL_GPL(dmaengine_unmap_put);
++
++static void dmaengine_destroy_unmap_pool(void)
++{
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(unmap_pool); i++) {
++		struct dmaengine_unmap_pool *p = &unmap_pool[i];
++
++		if (p->cache)
++			kmem_cache_destroy(p->cache);
++		p->cache = NULL;
++		if (p->pool)
++			mempool_destroy(p->pool);
++		p->pool = NULL;
++	}
++}
++
++static int dmaengine_init_unmap_pool(void)
++{
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(unmap_pool); i++) {
++		struct dmaengine_unmap_pool *p = &unmap_pool[i];
++		size_t size;
++
++		size = sizeof(struct dmaengine_unmap_data) +
++		       sizeof(dma_addr_t) * p->size;
++
++		p->cache = kmem_cache_create(p->name, size, 0,
++					     SLAB_HWCACHE_ALIGN, NULL);
++		if (!p->cache)
++			break;
++		p->pool = mempool_create_slab_pool(1, p->cache);
++		if (!p->pool)
++			break;
++	}
++
++	if (i > ARRAY_SIZE(unmap_pool))
++		return 0;
++
++	dmaengine_destroy_unmap_pool();
++	return -ENOMEM;
++}
++
++static struct dmaengine_unmap_data *
++dmaengine_get_unmap_data(struct device *dev, int nr, gfp_t flags)
++{
++	struct dmaengine_unmap_data *unmap;
++
++	unmap = mempool_alloc(__get_unmap_pool(nr)->pool, flags);
++	if (!unmap)
++		return NULL;
++	unmap->to_cnt = 0;
++	unmap->from_cnt = 0;
++	unmap->bidi_cnt = 0;
++	kref_init(&unmap->kref);
++	unmap->dev = dev;
++
++	return unmap;
++}
++
+ /**
+  * dma_async_memcpy_pg_to_pg - offloaded copy from page to page
+  * @chan: DMA channel to offload copy to
+@@ -877,24 +1003,33 @@ dma_async_memcpy_pg_to_pg(struct dma_chan *chan, struct page *dest_pg,
+ {
+ 	struct dma_device *dev = chan->device;
+ 	struct dma_async_tx_descriptor *tx;
+-	dma_addr_t dma_dest, dma_src;
++	struct dmaengine_unmap_data *unmap;
+ 	dma_cookie_t cookie;
+ 	unsigned long flags;
  
- 		async_tx_sync_epilog(submit);
+-	dma_src = dma_map_page(dev->dev, src_pg, src_off, len, DMA_TO_DEVICE);
+-	dma_dest = dma_map_page(dev->dev, dest_pg, dest_off, len,
+-				DMA_FROM_DEVICE);
+-	flags = DMA_CTRL_ACK;
+-	tx = dev->device_prep_dma_memcpy(chan, dma_dest, dma_src, len, flags);
++	unmap = dmaengine_get_unmap_data(dev->dev, 2, GFP_NOIO);
++	if (!unmap)
++		return -ENOMEM;
++
++	unmap->to_cnt = 1;
++	unmap->from_cnt = 1;
++	unmap->addr[0] = dma_map_page(dev->dev, src_pg, src_off, len,
++				      DMA_TO_DEVICE);
++	unmap->addr[1] = dma_map_page(dev->dev, dest_pg, dest_off, len,
++				      DMA_FROM_DEVICE);
++	flags = DMA_CTRL_ACK | DMA_COMPL_SKIP_SRC_UNMAP |
++		DMA_COMPL_SKIP_DEST_UNMAP;
++	tx = dev->device_prep_dma_memcpy(chan, unmap->addr[1], unmap->addr[0],
++					 len, flags);
+ 
+ 	if (!tx) {
+-		dma_unmap_page(dev->dev, dma_src, len, DMA_TO_DEVICE);
+-		dma_unmap_page(dev->dev, dma_dest, len, DMA_FROM_DEVICE);
++		dmaengine_unmap_put(unmap);
+ 		return -ENOMEM;
  	}
+ 
+-	tx->callback = NULL;
++	dma_set_unmap(tx, unmap);
+ 	cookie = tx->tx_submit(tx);
 +	dmaengine_unmap_put(unmap);
  
- 	return tx;
+ 	preempt_disable();
+ 	__this_cpu_add(chan->local->bytes_transferred, len);
+@@ -1024,6 +1159,10 @@ EXPORT_SYMBOL_GPL(dma_run_dependencies);
+ 
+ static int __init dma_bus_init(void)
+ {
++	int err = dmaengine_init_unmap_pool();
++
++	if (err)
++		return err;
+ 	return class_register(&dma_devclass);
+ }
+ arch_initcall(dma_bus_init);
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index da58d79..c90d6b6 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -443,9 +443,12 @@ static inline void dma_set_unmap(struct dma_async_tx_descriptor *tx,
+ 	tx->unmap = unmap;
+ }
+ 
++void dmaengine_unmap_put(struct dmaengine_unmap_data *unmap);
++
+ static inline void dma_descriptor_unmap(struct dma_async_tx_descriptor *tx)
+ {
+ 	if (tx->unmap) {
++		dmaengine_unmap_put(tx->unmap);
+ 		tx->unmap = NULL;
+ 	}
  }
 
