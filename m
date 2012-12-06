@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946041Ab2LFQul (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 11:50:41 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:37146 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1424218Ab2LFQuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 11:50:39 -0500
-Date: Thu, 6 Dec 2012 11:50:24 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Dave Chinner <david@fromorbit.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
- UAPI
-Message-ID: <20121206165024.GA30273@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Christoph Hellwig <hch@infradead.org>,
-	Dave Chinner <david@fromorbit.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Martin Steigerwald <Martin@lichtvoll.de>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	linux-fsdevel <linux-fsdevel@vger.kernel.org>
-References: <1353366267-15629-1-git-send-email-david@fromorbit.com>
- <201212051148.28039.Martin@lichtvoll.de>
- <CA+55aFzgP29WfB1yvnj+Q9-TsbX+b-TCCjTS_vPJ16DxMy6aDQ@mail.gmail.com>
- <201212051718.44017.Martin@lichtvoll.de>
- <CA+55aFxsPBo4TZEPq+14NBE8Snmd9qiTjAiEP0fFXBzaJ9y+gw@mail.gmail.com>
- <20121206011402.GB27172@dastard>
- <20121206120645.GB14100@infradead.org>
+	id S1946054Ab2LFQvW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 11:51:22 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:35135 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1424218Ab2LFQvT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 11:51:19 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121206120645.GB14100@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <20121206161934.GA17258@suse.de>
+References: <20121206091744.GA1397@polaris.bitmath.org> <20121206144821.GC18547@quack.suse.cz>
+ <20121206161934.GA17258@suse.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 6 Dec 2012 08:50:54 -0800
+X-Google-Sender-Auth: IkKARusN7uttb4oFtWu1FDXEsVk
+Message-ID: <CA+55aFw9WQN-MYFKzoGXF9Z70h1XsMu5X4hLy0GPJopBVuE=Yg@mail.gmail.com>
+Subject: Re: Oops in 3.7-rc8 isolate_free_pages_block()
+To: Mel Gorman <mgorman@suse.de>
+Cc: Jan Kara <jack@suse.cz>, Henrik Rydberg <rydberg@euromail.se>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 06, 2012 at 07:06:45AM -0500, Christoph Hellwig wrote:
-> 
-> Also the only conference outcome I remember is that everyone at LSF
-> except for Ted basically said "no fucking way".
-> 
+On Thu, Dec 6, 2012 at 8:19 AM, Mel Gorman <mgorman@suse.de> wrote:
+>
+> Still travelling and am not in a position to test this properly :(.
+> However, this bug feels very similar to a bug in the migration scanner where
+> a pfn_valid check is missed because the start is not aligned.
 
-At LSF, that's correct.  And as a result, the people who need this --
-Google and Tao Bao -- have decided to keep the patch as an out-of-tree
-patch, much like the Android wakelock patch was out of tree, and for
-similar reasons --- because the community has rejected the
-functionality.
+Ugh. This patch makes my eyes bleed.
 
-At this point, I've only asked that the bit be reserved, so we don't
-have to worry about codepoint collisions.  (We'd have the same issue
-with an ioctl, BTW --- we would need to reserve an ioctl number to
-avoid collisions, although granted there are ways to cleverly choose
-an ioctl number that would reduce the chance of collisions even if it
-isn't formally reserved.)
+Is there no way to do this nicely in the caller? IOW, fix the
+'end_pfn' logic way upstream where it is computed, and just cap it at
+the MAX_ORDER_NR_PAGES boundary?
 
-Note that this is not a kernel fork the same way the android wakelock
-is not a kernel fork.  It's an out of tree patch which has been
-rejected by upstream.
+For example, isolate_freepages_range() seems to have this *other*
+end-point alignment thing going on, and does it in a loop. Wouldn't it
+be much better to have a separate loop that looped up to the next
+MAX_ORDER_NR_PAGES boundary instead of having this kind of very random
+test in the middle of a loop.
 
-						- Ted
+Even the name ("isolate_freepages_block") implies that we have a
+"block" of pages. Having to have a random "oops, this block can have
+other blocks inside of it that aren't mapped" test in the middle of
+that function really makes me go "Uhh, no".
+
+Plus, is it even guaranteed that the *first* pfn (that we get called
+with) is pfnvalid to begin with?
+
+So I guess this patch fixes things, but it does make me go "That's
+really *really* ugly".
+
+                  Linus
