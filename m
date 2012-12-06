@@ -1,50 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423543Ab2LFOUr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 09:20:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60425 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932710Ab2LFOUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 09:20:46 -0500
-Date: Thu, 6 Dec 2012 15:20:44 +0100
-From: Jan Kara <jack@suse.cz>
-To: Dimitrios Apostolou <jimis@gmx.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: backing up ext4 fs, system unresponsive, thrashing like crazy
- even though swap is unused
-Message-ID: <20121206142044.GB18547@quack.suse.cz>
-References: <1353851735.22969.18.camel@soupermouf>
- <1353871800.22969.28.camel@soupermouf>
+	id S1755070Ab2LFOXR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 09:23:17 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:40107 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754520Ab2LFOXP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 09:23:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1353871800.22969.28.camel@soupermouf>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Thu, 6 Dec 2012 15:23:14 +0100
+X-Google-Sender-Auth: ZESLV8gqm9EqjwPo1BntX1zhrJA
+Message-ID: <CAHTX3dLxbVxn+D+AV7L0VsGYFOjas3AJ_3M_xncVfxp02FCy=Q@mail.gmail.com>
+Subject: Sharing PCIE driver between Microblaze and Arm zynq
+From: Michal Simek <michal.simek@xilinx.com>
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        linux-arch@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: John Linn <John.Linn@xilinx.com>, John Williams <jwilliams@xilinx.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 25-11-12 21:30:00, Dimitrios Apostolou wrote:
-> On Sun, 2012-11-25 at 15:55 +0200, Dimitrios Apostolou wrote:
-> > on an old PIII-500MHz laptop, 128MB RAM, kernel 3.6.6, I started a
-> > backup process (tar|xz -4, nice'd and ionice'd -c3) from ext4 on local
-> > ATA disk to ext3 on external USB disk (USB-2.0 port on PCMCIA card).
-> > Even though earlier system load was minimal, free memory was plenty, the
-> > system now is unresponsive and is thrashing the disk, but the swapfile
-> > is rarely touched.
-> 
-> I'm now having the same experience even though I replaced xz (which
-> needed ~50MB RAM) with gzip. Even though I feel the realtime root shell
-> is a bit more responsive than before, the OOM killer is out killing 
-> small processes like syslog-ng and systemd-logind... The
-> ext4_inode_cache slab is taking almost all my memory (117MB). Please
-> advise!
-  Hmm, it seems commit 4eff96dd5283a102e0c1cac95247090be74a38ed might be
-interesting for you. It landed in -stable kernels recently as well if I
-remember right...
+Hi guys,
 
-								Honza
+I have a question regarding to sharing generic OF pcie driver between
+two architectures MB and ARM Zynq.
+Is drivers/pci/pcie location good for it?
+Make no sense to have the same driver in two locations.
+Is using readl/writel IO functions in this driver the best option
+which we can have?
+Or is there any other recommendation?
 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Also just want to check if it is correct to use pcie device_type.
+The rest should be the same with pci description:
+(http://devicetree.org/MPC5200:PCI#PCI_Address_Translation).
+
+Thanks,
+Michal
