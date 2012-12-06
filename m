@@ -1,44 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946899Ab2LFTZk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 14:25:40 -0500
-Received: from mail-ia0-f170.google.com ([209.85.210.170]:61664 "EHLO
-	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423240Ab2LFTZh (ORCPT
+	id S1755389Ab2LFTZH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 14:25:07 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:56676 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755353Ab2LFTZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 14:25:37 -0500
-X-Greylist: delayed 503 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Dec 2012 14:25:37 EST
-Date: Thu, 6 Dec 2012 11:18:07 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, jmoyer@redhat.com
-Subject: Re: [PATCH 3/6] cfq-iosched: Rename "service_tree" to "st" at some
- places
-Message-ID: <20121206191807.GB3676@htj.dyndns.org>
-References: <1349297821-30078-1-git-send-email-vgoyal@redhat.com>
- <1349297821-30078-4-git-send-email-vgoyal@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349297821-30078-4-git-send-email-vgoyal@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 6 Dec 2012 14:25:05 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v2] of: Output devicetree alias names in uevent
+To: Stepan Moskovchenko <stepanm@codeaurora.org>
+Cc: Rob Herring <rob.herring@calxeda.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org, Bryan Huntsman <bryanh@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        David Brown <davidb@codeaurora.org>, mbohan@codeaurora.org,
+        Stepan Moskovchenko <stepanm@codeaurora.org>
+In-Reply-To: <1354780165-872-1-git-send-email-stepanm@codeaurora.org>
+References: <20121205230318.013053E0E22@localhost> <1354780165-872-1-git-send-email-stepanm@codeaurora.org>
+Date: Thu, 06 Dec 2012 19:24:59 +0000
+Message-Id: <20121206192500.0BF073E3A5E@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 03, 2012 at 04:56:58PM -0400, Vivek Goyal wrote:
-> At quite a few places we use the keyword "service_tree". At some places,
-> especially local variables, I have abbreviated it to "st".
+On Wed,  5 Dec 2012 23:49:25 -0800, Stepan Moskovchenko <stepanm@codeaurora.org> wrote:
+> In some situations, userspace may want to resolve a
+> device by function and logical number (ie, "serial0")
+> rather than by the base address or full device path. Being
+> able to resolve a device by alias frees userspace from the
+> burden of otherwise having to maintain a mapping between
+> device addresses and their logical assignments on each
+> platform when multiple instances of the same hardware block
+> are present in the system.
 > 
-> Also at couple of places moved binary operator "+" from beginning of line
-> to end of previous line, as per Tejun's feedback.
+> Although the uevent device attribute contains devicetree
+> compatible information and the full device path, the uevent
+> does not list the alises that may have been defined for the
+> device.
 > 
-> v2:
->  Reverted most of the service tree name change based on Jeff Moyer's feedback.
+> Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
+> ---
+> v2: Create of_private.h and move struct alias_prop there
+>     Add alias uevent variables from of_device_uevent
+>     Use app->alias instead of app->stem / app->id directly
+>     Expose alias_lookup and of_alias_mutex
 > 
-> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+>  drivers/of/base.c       |   23 +++--------------------
+>  drivers/of/device.c     |   17 +++++++++++++++++
+>  drivers/of/of_private.h |   33 +++++++++++++++++++++++++++++++++
+>  3 files changed, 53 insertions(+), 20 deletions(-)
+>  create mode 100644 drivers/of/of_private.h
+> 
+> diff --git a/drivers/of/base.c b/drivers/of/base.c
+> index 5806449..715aef2 100644
+> --- a/drivers/of/base.c
+> +++ b/drivers/of/base.c
+> @@ -24,32 +24,15 @@
+>  #include <linux/slab.h>
+>  #include <linux/proc_fs.h>
+> 
+> -/**
+> - * struct alias_prop - Alias property in 'aliases' node
+> - * @link:	List node to link the structure in aliases_lookup list
+> - * @alias:	Alias property name
+> - * @np:		Pointer to device_node that the alias stands for
+> - * @id:		Index value from end of alias name
+> - * @stem:	Alias string without the index
+> - *
+> - * The structure represents one alias property of 'aliases' node as
+> - * an entry in aliases_lookup list.
+> - */
+> -struct alias_prop {
+> -	struct list_head link;
+> -	const char *alias;
+> -	struct device_node *np;
+> -	int id;
+> -	char stem[0];
+> -};
+> +#include "of_private.h"
+> 
+> -static LIST_HEAD(aliases_lookup);
+> +LIST_HEAD(aliases_lookup);
+> 
+>  struct device_node *allnodes;
+>  struct device_node *of_chosen;
+>  struct device_node *of_aliases;
+> 
+> -static DEFINE_MUTEX(of_aliases_mutex);
+> +DEFINE_MUTEX(of_aliases_mutex);
+> 
+>  /* use when traversing tree through the allnext, child, sibling,
+>   * or parent members of struct device_node.
+> diff --git a/drivers/of/device.c b/drivers/of/device.c
+> index 4c74e4f..b8d31db 100644
+> --- a/drivers/of/device.c
+> +++ b/drivers/of/device.c
+> @@ -8,6 +8,7 @@
+>  #include <linux/slab.h>
+> 
+>  #include <asm/errno.h>
+> +#include "of_private.h"
+> 
+>  /**
+>   * of_match_device - Tell if a struct device matches an of_device_id list
+> @@ -131,6 +132,7 @@ ssize_t of_device_get_modalias(struct device *dev, char *str, ssize_t len)
+>  void of_device_uevent(struct device *dev, struct kobj_uevent_env *env)
+>  {
+>  	const char *compat;
+> +	struct alias_prop *app;
+>  	int seen = 0, cplen, sl;
+> 
+>  	if ((!dev) || (!dev->of_node))
+> @@ -153,6 +155,21 @@ void of_device_uevent(struct device *dev, struct kobj_uevent_env *env)
+>  		seen++;
+>  	}
+>  	add_uevent_var(env, "OF_COMPATIBLE_N=%d", seen);
+> +
+> +	seen = 0;
+> +	mutex_lock(&of_aliases_mutex);
+> +	list_for_each_entry(app, &aliases_lookup, link) {
+> +		if (dev->of_node == app->np) {
+> +			add_uevent_var(env, "OF_ALIAS_%d=%s", seen,
+> +				       app->alias);
+> +			seen++;
+> +		}
+> +	}
+> +
+> +	if (seen)
+> +		add_uevent_var(env, "OF_ALIAS_N=%d", seen);
+> +
+> +	mutex_unlock(&of_aliases_mutex);
+>  }
+> 
+>  int of_device_uevent_modalias(struct device *dev, struct kobj_uevent_env *env)
+> diff --git a/drivers/of/of_private.h b/drivers/of/of_private.h
+> new file mode 100644
+> index 0000000..031608f
+> --- /dev/null
+> +++ b/drivers/of/of_private.h
+> @@ -0,0 +1,33 @@
+> +/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
 
-Acked-by: Tejun Heo <tj@kernel.org>
+Oops, that doesn't look right. You need to preserve the copyright
+messages from the file this came from. You didn't write this code, you
+only moved it about.
 
--- 
-tejun
+Otherwise the patch looks good. Can you please respin with that change?
+
+g.
