@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946688Ab2LFSeI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 13:34:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33533 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1946675Ab2LFSeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 13:34:06 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <jaxboe@fusionio.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm\@kvack.org" <linux-mm@kvack.org>,
-        Zach Brown <zab@redhat.com>, Peter Zijlstra <pzijlstr@redhat.com>,
-        Ingo <mingo@redhat.com>
-Subject: Re: [patch,v2] bdi: add a user-tunable cpu_list for the bdi flusher threads
-References: <x49lidfnf0s.fsf@segfault.boston.devel.redhat.com>
-	<50BE5988.3050501@fusionio.com>
-	<x498v9dpnwu.fsf@segfault.boston.devel.redhat.com>
-	<50BE5C99.6070703@fusionio.com>
-	<x494nk1pi7h.fsf@segfault.boston.devel.redhat.com>
-	<20121206180150.GQ19802@htj.dyndns.org>
-	<50C0E1B6.5060602@fusionio.com>
-	<20121206182239.GS19802@htj.dyndns.org>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 06 Dec 2012 13:33:57 -0500
-In-Reply-To: <20121206182239.GS19802@htj.dyndns.org> (Tejun Heo's message of
-	"Thu, 6 Dec 2012 10:22:39 -0800")
-Message-ID: <x49zk1rvxm2.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1946705Ab2LFSjK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 13:39:10 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:53106 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946405Ab2LFSjI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 13:39:08 -0500
+Date: Thu, 6 Dec 2012 10:39:04 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: g.esp@free.fr
+Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: Linux 3.4.21
+Message-ID: <20121206183904.GC2862@kroah.com>
+References: <20121203215412.GA5178@kroah.com>
+ <925922542.101553160.1354660241220.JavaMail.root@zimbra33-e6.priv.proxad.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <925922542.101553160.1354660241220.JavaMail.root@zimbra33-e6.priv.proxad.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo <tj@kernel.org> writes:
+On Tue, Dec 04, 2012 at 11:30:41PM +0100, g.esp@free.fr wrote:
+> 
+> 
+> ----- Mail original -----
+> > De: "Greg KH" <gregkh@linuxfoundation.org>
+> > À: linux-kernel@vger.kernel.org, "Andrew Morton" <akpm@linux-foundation.org>, torvalds@linux-foundation.org,
+> > stable@vger.kernel.org
+> > Cc: lwn@lwn.net, "Jiri Slaby" <jslaby@suse.cz>
+> > Envoyé: Lundi 3 Décembre 2012 22:54:12
+> > Objet: Linux 3.4.21
+> > 
+> > I'm announcing the release of the 3.4.21 kernel.
+> > 
+> > All users of the 3.4 kernel series must upgrade.
+> > 
+> > The updated 3.4.y git tree can be found at:
+> >         git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+> >         linux-3.4.y
+> > and can be browsed at the normal kernel.org git web browser:
+> >         http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
+> > 
+> > thanks,
+> > 
+> > greg k-h
+> > 
+> ...
+> > 
+> > Robert Richter (1):
+> >       x86-32: Fix invalid stack address while in softirq
+> > 
+> ...
+> 
+> 
+> My build on x86-32 fail with the attached config, should be related to the patch above
 
-> Hello, Jens.
->
-> On Thu, Dec 06, 2012 at 07:19:34PM +0100, Jens Axboe wrote:
->> We need to expose it. Once the binding is set from the kernel side on a
->> kernel thread, it can't be modified.
->
-> That's only if kthread_bind() is used.  Caling set_cpus_allowed_ptr()
-> doesn't set PF_THREAD_BOUND and userland can adjust affinity like any
-> other tasks.
->
->> Binding either for performance reasons or for ensuring that we
->> explicitly don't run in some places is a very useful feature.
->
-> Sure, but I think this is too specific.  Something more generic would
-> be much better.  It can be as simple as generating a uevent.
+Should now be fixed in 3.4.22.
 
-I'm in favor of a more general approach.  For now, I'm still going to
-push a patch that at least binds to the proper numa node.  I'll post
-that after I've tested it.
+thanks,
 
-Cheers,
-Jeff
+greg k-h
