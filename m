@@ -1,108 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754211Ab2LFE2d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 23:28:33 -0500
-Received: from mga02.intel.com ([134.134.136.20]:3645 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752471Ab2LFE2b convert rfc822-to-8bit (ORCPT
+	id S1754401Ab2LFEdD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 23:33:03 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:45408 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753211Ab2LFEdB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 23:28:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,227,1355126400"; 
-   d="scan'208";a="252749691"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "lenb@kernel.org" <lenb@kernel.org>
-Subject: RE: [PATCH V1 1/2] Xen acpi memory hotplug driver
-Thread-Topic: [PATCH V1 1/2] Xen acpi memory hotplug driver
-Thread-Index: AQHN0xANUNtbxbdZSkG9MqBQJp2L85gLG13g
-Date: Thu, 6 Dec 2012 04:27:36 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923353A2366@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC82923353942F9@SHSMSX101.ccr.corp.intel.com>
- <20121128192601.GA15871@phenom.dumpdata.com>
- <DE8DF0795D48FD4CA783C40EC829233539AC1D@SHSMSX101.ccr.corp.intel.com>
- <20121205174307.GC16072@phenom.dumpdata.com>
-In-Reply-To: <20121205174307.GC16072@phenom.dumpdata.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 5 Dec 2012 23:33:01 -0500
+Message-ID: <50C01F9B.1020107@linux.vnet.ibm.com>
+Date: Thu, 06 Dec 2012 10:01:23 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
+        namhyung@kernel.org, vincent.guittot@linaro.org, oleg@redhat.com,
+        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
+        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v2 02/10] CPU hotplug: Provide APIs for "full" atomic
+ readers to prevent CPU offline
+References: <20121205184041.3750.64945.stgit@srivatsabhat.in.ibm.com> <20121205184313.3750.17752.stgit@srivatsabhat.in.ibm.com> <50BF99FA.8060109@linux.vnet.ibm.com> <50BFAF27.9060203@linux.vnet.ibm.com> <20121205205744.GB27465@mtj.dyndns.org>
+In-Reply-To: <20121205205744.GB27465@mtj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12120604-5140-0000-0000-00000278C143
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>> diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
->>>> index 126d8ce..abd0396 100644
->>>> --- a/drivers/xen/Kconfig
->>>> +++ b/drivers/xen/Kconfig
->>>> @@ -206,4 +206,15 @@ config XEN_MCE_LOG
->>>>  	  Allow kernel fetching MCE error from Xen platform and
->>>>  	  converting it into Linux mcelog format for mcelog tools
->>>> 
->>>> +config XEN_ACPI_MEMORY_HOTPLUG
->>>> +	bool "Xen ACPI memory hotplug"
->>> 
->>> There should be a way to make this a module.
->> 
->> I have some concerns to make it a module:
->> 1. xen and native memhotplug driver both work as module, while we
->> need early load xen driver. 
->> 2. if possible, a xen stub driver may solve load sequence issue, but
->>   it may involve other issues * if xen driver load then unload,
->> native driver may have chance to load successfully; 
+On 12/06/2012 02:27 AM, Tejun Heo wrote:
+> Hello,
 > 
-> The stub driver would still "occupy" the ACPI bus for the memory
-> hotplug PnP, so I think this would not be a problem.
+> On Thu, Dec 06, 2012 at 02:01:35AM +0530, Srivatsa S. Bhat wrote:
+>> Yes, that _sounds_ sufficient, but IMHO it won't be, in practice. The
+>> *number* of call-sites that you need to convert from preempt_disable/enable
+>> to get/put_online_cpus_atomic() won't be too many, however the *frequency*
+>> of usage of those call-sites can potentially be very high.
+> 
+> I don't think that will be the case and, even if it is, doing it this
+> way would make it difficult to tell.  The right thing to do is
+> replacing stop_machine with finer grained percpu locking first.
+> Refining it further should happen iff that isn't enough and there
+> isn't an simpler solution.  So, let's please do the simple conversion
+> first.
 > 
 
-I'm not quite clear your mean here, do you mean it has
-1. xen_stub driver + xen_memhoplug driver, then xen_strub driver unload and entirely replaced by xen_memhotplug driver, or
-2. xen_stub driver (w/ stub ops) + xen_memhotplug ops (not driver), then xen_stub driver keep occupying but its stub ops later replaced by xen_memhotplug ops?
+Hmm, OK, that sounds like a good plan. So I'll drop the "light" and
+"full" variants for now and work on providing a straight-forward
+get/put_online_cpus_atomic() APIs.
 
-If in way #1, it has risk that native driver may load (if xen driver unload).
-If in way #2, xen_memhotplug ops lose the chance to probe/add/bind existed memory devices (since it's done when driver registerred).
+Thank you!
+ 
+Regards,
+Srivatsa S. Bhat
 
->>   * if xen driver load --> unload --> load again, then it will lose
->> hotplug notification during unload period; 
-> 
-> Sure. But I think we can do it with this driver? After all the
-> function of 
-> it is to just tell the firmware to turn on/off sockets - and if we
-> miss 
-> one notification we won't take advantage of the power savings - but we
-> can do that later on.
-> 
-
-Not only inform firmware.
-Hotplug notify callback will invoke acpi_bus_add -> ... -> implicitly invoke drv->ops.add method to add the hotadded memory device.
-
-> 
->>   * if xen driver load --> unload --> load again, then it will
->> re-add all memory devices, but the handle for 'booting memory
->> device' and 'hotplug memory device' are different while we have no
->> way to distinguish these 2 kind of devices.   
-> 
-> Wouldn't the stub driver hold onto that?
-> 
-
-Same question as comment #1. Do you mean it has a xen_stub driver (w/ stub ops) and a xen_memhotplug ops?
-
->> 
->> IMHO I think to make xen hotplug logic as module may involves
->> unexpected result. Is there any obvious advantages of doing so?
->> after all we have provided config choice to user. Thoughts?  
-> 
-> Yes, it becomes a module - which is what we want.
-> 
-
-What I meant here is, module will bring some unexpected issues for xen hotplug.
-We can provide user 'bool' config choice, let them decide to build-in or not, but not 'tristate' choice.
-
-Thanks
-Jinsong
