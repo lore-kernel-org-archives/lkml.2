@@ -1,91 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946078Ab2LFQwe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 11:52:34 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:60946 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1424204Ab2LFQwc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 11:52:32 -0500
-Message-ID: <50C0CD4A.90101@gmail.com>
-Date: Fri, 07 Dec 2012 00:52:26 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1946098Ab2LFQxe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 11:53:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2410 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1422960Ab2LFQxd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 11:53:33 -0500
+Date: Thu, 6 Dec 2012 17:53:25 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 2/5] perf hists: Exchange order of comparing items when
+ collapsing hists
+Message-ID: <20121206165325.GE1080@krava.brq.redhat.com>
+References: <1354806581-5316-1-git-send-email-namhyung@kernel.org>
+ <1354806581-5316-3-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: Hanjun Guo <guohanjun@huawei.com>,
-        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com, rjw@sisk.pl, lenb@kernel.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Tang Chen <tangchen@cn.fujitsu.com>
-Subject: Re: [RFC PATCH v3 0/3] acpi: Introduce prepare_remove device operation
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>    <50B5EFE9.3040206@huawei.com>   <1354128096.26955.276.camel@misato.fc.hp.com> <50C0C13A.1040905@gmail.com>  <1354809803.21116.4.camel@misato.fc.hp.com> <50C0C6E1.4000102@gmail.com> <1354811493.21116.10.camel@misato.fc.hp.com>
-In-Reply-To: <1354811493.21116.10.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354806581-5316-3-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/2012 12:31 AM, Toshi Kani wrote:
-> On Fri, 2012-12-07 at 00:25 +0800, Jiang Liu wrote:
->> On 12/07/2012 12:03 AM, Toshi Kani wrote:
->>> On Fri, 2012-12-07 at 00:00 +0800, Jiang Liu wrote:
->>>> On 11/29/2012 02:41 AM, Toshi Kani wrote:
->>>>> On Wed, 2012-11-28 at 19:05 +0800, Hanjun Guo wrote:
->  : 
->>>>> Yes, sharing idea is good. :)  I do not know if we need all 6 steps (I
->>>>> have not looked at all your changes yet..), but in my mind, a hot-plug
->>>>> operation should be composed with the following 3 phases.
->>>>>
->>>>> 1. Validate phase - Verify if the request is a supported operation.  All
->>>>> known restrictions are verified at this phase.  For instance, if a
->>>>> hot-remove request involves kernel memory, it is failed in this phase.
->>>>> Since this phase makes no change, no rollback is necessary to fail.  
->>>>>
->>>>> 2. Execute phase - Perform hot-add / hot-remove operation that can be
->>>>> rolled-back in case of error or cancel.
->>>>>
->>>>> 3. Commit phase - Perform the final hot-add / hot-remove operation that
->>>>> cannot be rolled-back.  No error / cancel is allowed in this phase.  For
->>>>> instance, eject operation is performed at this phase.  
->>>> Hi Toshi,
->>>> 	There are one more step needed. Linux provides sysfs interfaces to
->>>> online/offline CPU/memory sections, so we need to protect from concurrent
->>>> operations from those interfaces when doing physical hotplug. Think about
->>>> following sequence:
->>>> Thread 1
->>>> 1. validate conditions for hot-removal
->>>> 2. offline memory section A
->>>> 3.						online memory section A			
->>>> 4. offline memory section B
->>>> 5 hot-remove memory device hosting A and B.
->>>
->>> Hi Gerry,
->>>
->>> I agree.  And I am working on a proposal that tries to address this
->>> issue by integrating both sysfs and hotplug operations into a framework.
->> Hi Toshi,
->> 	But the sysfs for CPU and memory online/offline are platform independent
->> interfaces, and the ACPI based hotplug is platform dependent interfaces. I'm not
->> sure whether it's feasible to merge them. For example we still need offline interface
->> to stop using faulty CPUs on platform without physical hotplug capabilities.
->> 	We have solved this by adding a "busy" flag to the device, so the sysfs
->> will just return -EBUSY if the busy flag is set.
+On Fri, Dec 07, 2012 at 12:09:38AM +0900, Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
 > 
-> I am making the framework code platform-independent so that it can
-> handle both cases.  Well, I am still prototyping, so hopefully it will
-> work. :)
-Do you mean implementing a framework to manage hotplug of any type of devices?
-That sounds like a huge plan:)
+> When comparing entries for collapsing put the given entry first, and
+> then the iterated entry.  This is not the case of hist_entry__cmp()
+> when called if given sort keys don't require collapsing.  So change
+> the order for the sake of consistency.  It will be required for
+> matching and/or linking multiple hist entries.
 
-Otherwise there may be a gap. CPU online/offline interface deals with logical
-CPU, and hotplug driver deals with physical devices(processor). They may be different
-by related objects.
+As discussed with Arnadlo, this change seems like changing the
+sort order... could you ellaborate how it is usefull in future?
+
+thanks,
+jirka
 
 > 
-> Thanks,
-> -Toshi
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Stephane Eranian <eranian@google.com>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/util/hist.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
 > 
-
+> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+> index 82df1b26f0d4..d4471c21ed17 100644
+> --- a/tools/perf/util/hist.c
+> +++ b/tools/perf/util/hist.c
+> @@ -285,7 +285,7 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
+>  		parent = *p;
+>  		he = rb_entry(parent, struct hist_entry, rb_node_in);
+>  
+> -		cmp = hist_entry__cmp(entry, he);
+> +		cmp = hist_entry__cmp(he, entry);
+>  
+>  		if (!cmp) {
+>  			he_stat__add_period(&he->stat, period);
+> @@ -729,7 +729,7 @@ static struct hist_entry *hists__add_dummy_entry(struct hists *hists,
+>  		parent = *p;
+>  		he = rb_entry(parent, struct hist_entry, rb_node);
+>  
+> -		cmp = hist_entry__cmp(pair, he);
+> +		cmp = hist_entry__cmp(he, pair);
+>  
+>  		if (!cmp)
+>  			goto out;
+> @@ -759,7 +759,7 @@ static struct hist_entry *hists__find_entry(struct hists *hists,
+>  
+>  	while (n) {
+>  		struct hist_entry *iter = rb_entry(n, struct hist_entry, rb_node);
+> -		int64_t cmp = hist_entry__cmp(he, iter);
+> +		int64_t cmp = hist_entry__cmp(iter, he);
+>  
+>  		if (cmp < 0)
+>  			n = n->rb_left;
+> -- 
+> 1.7.9.2
+> 
