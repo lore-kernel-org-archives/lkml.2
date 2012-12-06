@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423066Ab2LFKUo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 05:20:44 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51193 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754704Ab2LFKUn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 05:20:43 -0500
-Date: Thu, 6 Dec 2012 10:12:20 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Laura Abbott <lauraa@codeaurora.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] mm: Use aligned zone start for pfn_to_bitidx calculation
-Message-ID: <20121206101220.GB2580@suse.de>
-References: <1354659001-13673-1-git-send-email-lauraa@codeaurora.org>
+	id S1423082Ab2LFKUy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 05:20:54 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:63247 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423069Ab2LFKUv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 05:20:51 -0500
+X-Greylist: delayed 1487 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Dec 2012 05:20:51 EST
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1354659001-13673-1-git-send-email-lauraa@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121206095019.GN2718@gmail.com>
+References: <2dcd7cb4c4022fa24b5328974e4226f5aaf89419.1354199865.git.viresh.kumar@linaro.org>
+	<121653def4e985b0c1b59045637dd4518f97e73a.1354199865.git.viresh.kumar@linaro.org>
+	<20121130105731.GN3176@sortiz-mobl>
+	<20121130154542.GG23648@gmail.com>
+	<CAKohpokLVEH+4F_VXh5auUm48cWWe0mumZME8yOCcAezcwJbCQ@mail.gmail.com>
+	<20121205224203.691153E0E22@localhost>
+	<CAKohponjLp214EPKgNHqP2N8Tje9U8ZxgywUTSvsjE-TqHy+xw@mail.gmail.com>
+	<20121206095019.GN2718@gmail.com>
+Date: Thu, 6 Dec 2012 15:26:02 +0530
+Message-ID: <CAKohpokNQB6L2vvjmvA7_3KomFXnV9wZ-uBjrfRVuBL=QWgr_Q@mail.gmail.com>
+Subject: Re: [PATCH V5 2/2] mfd: stmpe: Update DT support in stmpe driver
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Samuel Ortiz <sameo@linux.intel.com>, rabin.vincent@stericsson.com,
+        shiraz.hashim@st.com, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, spear-devel@list.st.com,
+        linus.walleij@linaro.org, Vipul Kumar Samar <vipulkumar.samar@st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 04, 2012 at 02:10:01PM -0800, Laura Abbott wrote:
-> The current calculation in pfn_to_bitidx assumes that
-> (pfn - zone->zone_start_pfn) >> pageblock_order will return the
-> same bit for all pfn in a pageblock. If zone_start_pfn is not
-> aligned to pageblock_nr_pages, this may not always be correct.
-> 
-> Consider the following with pageblock order = 10, zone start 2MB:
-> 
-> pfn     | pfn - zone start | (pfn - zone start) >> page block order
-> ----------------------------------------------------------------
-> 0x26000 | 0x25e00	   |  0x97
-> 0x26100 | 0x25f00	   |  0x97
-> 0x26200 | 0x26000	   |  0x98
-> 0x26300 | 0x26100	   |  0x98
-> 
-> This means that calling {get,set}_pageblock_migratetype on a single
-> page will not set the migratetype for the full block. The correct
-> fix is to round down zone_start_pfn for the bit index calculation.
-> Rather than do this calculation everytime, store this precalcualted
-> algined start in the zone structure to allow the actual start_pfn to
-> be used elsewhere.
-> 
-> Change-Id: I13e2f53f50db294f38ec86138c17c6fe29f0ee82
-> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+On 6 December 2012 15:20, Lee Jones <lee.jones@linaro.org> wrote:
+>> > But regardless, it is the responsiblity of the probe function to go and
+>> > look if of_driver_match_device() matches against anything if it cares
+>> > about the of_match_table entries (for instance, if there is extra data
+>> > attached).
+>>
+>> Ok, so filling .data field in of_device_id[] is not required for our case as
+>> we aren't doing anything special in our drivers.
+>
+> This is exactly my point, and the reason I bought it up in the
+> first place. Normally when you specify an ID table and populate
+> the .data attribute, you parse for it in the code and then cast
+> it back to some kind of useful data. However, you're not doing
+> that, which is precisely why I wondered if the table was
+> necessary at all. In all my testing, the DT portion worked and
+> the correct STMPE chip was identified without it.
 
-Hi Laura,
+Probably Vipul (Author of this patch), copied it from existing i2c/spi
+clients, which have also added this blindly :)
 
-There should be no need to add a new zone field. It's probably ok in terms
-of functionality but it does mean that we have to worry about things like
-hotplug (FWIW, should be fine) and the memory overhead is added even on
-CONFIG_SPARSEMEM where it is not needed. Instead, mask out the lower bits
-in pfn_to_bitidx() using the same round_down trick you already do. The
-cost is negligible.
+> So, are you adding the table for good reason, or because you
+> think it's the right thing to do?
 
-Thanks.
+I would be keeping the table as that's the right thing to do. By chance
+our non-DT and DT tables had a difference of "st," only in the name
+of instances and so it worked without tables. Otherwise it couldn't
+have worked.
 
--- 
-Mel Gorman
-SUSE Labs
+Over that, i am looking to bring the "stmpe,id" binding back again (unless
+you have a better option), as device name is not coming from DT currently,
+which we discussed earlier.
+
+--
+viresh
