@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932452Ab2LFJf0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 04:35:26 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:52749 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932377Ab2LFJfZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 04:35:25 -0500
-Message-ID: <50C066D9.9010700@imgtec.com>
-Date: Thu, 6 Dec 2012 09:35:21 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1422652Ab2LFJfy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 04:35:54 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:55468 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932377Ab2LFJfw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 04:35:52 -0500
+Date: Thu, 6 Dec 2012 10:35:44 +0100
+From: Heinz Diehl <htd@fancy-poultry.org>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Lekensteyn <lekensteyn@gmail.com>, Heinz Diehl <htd@fritha.org>,
+        dri-devel@lists.freedesktop.org, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: i915 freakout with latest 3.7 git
+Message-ID: <20121206093544.GA22915@fancy-poultry.org>
+References: <20121203173951.GA25384@fancy-poultry.org>
+ <1498848.rM1KKK5er8@al>
+ <20121204210845.GA2092@fritha.org>
+ <2102240.hdkK7C4k4g@al>
+ <CAKMK7uEaT1H0DUszYqxbp_8WdLWs2quQbSJVqir0eAibYKvN+A@mail.gmail.com>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "Arnd Bergmann" <arnd@arndb.de>
-Subject: Re: [PATCH v2 12/44] metag: TBX source
-References: <1354723742-6195-1-git-send-email-james.hogan@imgtec.com>  <1354723742-6195-13-git-send-email-james.hogan@imgtec.com> <1354733607.8320.3.camel@joe-AO722>
-In-Reply-To: <1354733607.8320.3.camel@joe-AO722>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2012_12_06_09_35_22
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKMK7uEaT1H0DUszYqxbp_8WdLWs2quQbSJVqir0eAibYKvN+A@mail.gmail.com>
+Organization: private site
+OpenPGP: id=BBAD7AE7; url=http://www.fritha.org/htd.asc
+User-Agent: Mutt/1.5.21+67 (d414971f0c48) (2011-07-01)
+X-Provags-ID: V02:K0:fVqAscXZVp6Aw2Zop+boqTOTR2chb9qmwPeedUFGz/G
+ G2cZYx+to3IXX7/O3rMXBGHq1cWo4hINiclo3g5qHNlvL109wo
+ JC8OSriFkR2kvvdK4uxsEa3Ptp8zfJ0Jgv7A/lt2Xcr7CJj74o
+ IXoBz3KMT0XqRP8nFfEi4QyBS88ZrANoZMc5x9qsHdWq/vWbUB
+ BoDWLYKzqOWgoGVghUSq21nLOqU9397UUjxze7WcjgGHwF6bQo
+ rKXfcZQmPDA23HcUSVp0IcRdHTJHtk5zw/zyF3CWLrhgZNF2p9
+ skRAR8HNFT53OtMujxcaCmJxFcbxdYTsndcOPTIgpDya+u8+rT
+ gQ4ud49pjX14X76VHGuTCZcQDMt9WIp6phkiwQbnv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/12/12 18:53, Joe Perches wrote:
-> On Wed, 2012-12-05 at 16:08 +0000, James Hogan wrote:
->> Add source files from the Thread Binary Interface (TBI) library which
->> provides useful low level operations and traps/context management.
-> []
->>  arch/metag/tbx/tbicache.c  |  462 ++++++++++++++++++++++++++++++++++++++++++++
-> 
-> Could you please run checkpatch on this file?
+On 05.12.2012, Daniel Vetter wrote:
 
-Hi Joe,
+> Nope, we could only reproduce quickly with rc6 enabled :(
 
-Thanks for taking a look.
+Could reproduce it today this way:
 
-I'd prefer to avoid making style modifications to the tbx/ files if
-possible to ease maintenance, as the code is shared with other projects
-and maintained by a separate group.
+ dd if=/dev/zero of=deleteme bs=1M count=50000
 
-Of course if cleaning up the style is deemed absolutely necessary then
-so be it.
+while watching several HD videos on Youtube. Just tried	once, so I'm
+not shure if this will work all the way. Will try again now.
 
-Cheers
-James
+My "i915_error_state" is here:
 
+http://www.fritha.org/i915/error-01.tar.bz2
+
+Heinz
