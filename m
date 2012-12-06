@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424890Ab2LFVdg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 16:33:36 -0500
-Received: from fn.samba.org ([216.83.154.106]:38929 "EHLO mail.samba.org"
+	id S1947046Ab2LFVfW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 16:35:22 -0500
+Received: from void.printf.net ([89.145.121.20]:38942 "EHLO void.printf.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1424779Ab2LFVde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 16:33:34 -0500
-Date: Thu, 6 Dec 2012 13:33:29 -0800
-From: Jeremy Allison <jra@samba.org>
-To: "Theodore Ts'o" <tytso@mit.edu>, Jeremy Allison <jra@samba.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Pavel Shilovsky <piastry@etersoft.ru>, linux-cifs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        wine-devel@winehq.org, linux-nfs@vger.kernel.org
-Subject: Re: [PATCH 0/3] Add O_DENY* flags to fcntl and cifs
-Message-ID: <20121206213329.GB24076@samba2>
-Reply-To: Jeremy Allison <jra@samba.org>
-References: <1354818391-7968-1-git-send-email-piastry@etersoft.ru>
- <20121206194949.7ab20d56@pyramind.ukuu.org.uk>
- <20121206195752.GA18585@samba2>
- <20121206213133.GB4821@thunk.org>
+	id S1424897Ab2LFVfU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 16:35:20 -0500
+From: Chris Ball <cjb@laptop.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] MMC fixes for 3.7
+Date: Thu, 06 Dec 2012 16:35:14 -0500
+Message-ID: <87txrydfu5.fsf@octavius.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121206213133.GB4821@thunk.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 06, 2012 at 04:31:33PM -0500, Theodore Ts'o wrote:
-> On Thu, Dec 06, 2012 at 11:57:52AM -0800, Jeremy Allison wrote:
-> > 
-> > And this is where things get really ugly of course :-).
-> > 
-> > For the CIFSFS client they're expecting to be able to
-> > just ship them to a Windows server, where they'll
-> > get the (insane) Windows semantics. These semantics
-> > are not what would be wanted on a local filesystem.
-> 
-> I'm confused; why would a userspace application need to be able to
-> request this behavior?
+Hi Linus,
 
-This isn't my proposal Ted, I'm just commenting on it :-).
+Please pull from:
 
-Jeremy.
+  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git tags/mmc-fixes-for-3.7
+
+to receive two small regression fixes for 3.7.  There are no merge
+conflicts.  Thanks.
+
+
+The following changes since commit 0aa55c2367f082876f92660312214cd20c6a024b:
+
+  mmc: sdhci-s3c: fix the card detection in runtime-pm (2012-11-07 15:40:52 -0500)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git tags/mmc-fixes-for-3.7
+
+for you to fetch changes up to 91ab252ac5a5c3461dd6910797611e9172626aed:
+
+  mmc: sh-mmcif: avoid oops on spurious interrupts (second try) (2012-12-06 13:54:35 -0500)
+
+----------------------------------------------------------------
+MMC fixes for 3.7:
+ - sdhci-s3c: Fix runtime PM regression against 3.7-rc1
+ - sh-mmcif: Fix oops against 3.6
+
+----------------------------------------------------------------
+Chris Ball (1):
+      Revert misapplied "mmc: sh-mmcif: avoid oops on spurious interrupts"
+
+Guennadi Liakhovetski (1):
+      mmc: sh-mmcif: avoid oops on spurious interrupts (second try)
+
+Heiko Stübner (1):
+      mmc: sdhci-s3c: fix missing clock for gpio card-detect
+
+ drivers/mmc/host/sdhci-s3c.c | 7 +++++++
+ drivers/mmc/host/sh_mmcif.c  | 8 ++------
+ 2 files changed, 9 insertions(+), 6 deletions(-)
+
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
