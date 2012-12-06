@@ -1,53 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534Ab2LEXvj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 18:51:39 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:40110 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751850Ab2LEXvh (ORCPT
+	id S1752908Ab2LFAAx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 19:00:53 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:57588 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752539Ab2LFAAw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 18:51:37 -0500
+	Wed, 5 Dec 2012 19:00:52 -0500
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH -next] powerpc/85xx: use for_each_compatible_node() macro
-To: Wei Yongjun <weiyj.lk@gmail.com>, galak@kernel.crashing.org,
-        benh@kernel.crashing.org, paulus@samba.org, rob.herring@calxeda.com
-Cc: yongjun_wei@trendmicro.com.cn, linuxppc-dev@lists.ozlabs.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org
-In-Reply-To: <CAPgLHd_esknTwVv4EeehwSJz6ee5eFJ+zf6xntH-vaNwdxkrvg@mail.gmail.com>
-References: <CAPgLHd_esknTwVv4EeehwSJz6ee5eFJ+zf6xntH-vaNwdxkrvg@mail.gmail.com>
-Date: Wed, 05 Dec 2012 23:51:27 +0000
-Message-Id: <20121205235127.DB25F3E0E22@localhost>
+Subject: Re: [PATCH] spi: Remove SPI_BUFSIZ restriction on spi_write_then_read()
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <1354420465-29315-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1354420465-29315-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+Date: Thu, 06 Dec 2012 00:00:26 +0000
+Message-Id: <20121206000026.A620D3E0E22@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 3 Dec 2012 08:36:03 -0500, Wei Yongjun <weiyj.lk@gmail.com> wrote:
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Sun,  2 Dec 2012 12:54:25 +0900, Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
+> In order to avoid constantly allocating and deallocating there is a fixed
+> buffer which spi_write_then_read() uses for transfers, with an early error
+> check to ensure that the transfer fits within the buffer. This limits the
+> size of transfers to this size, currently max(32, SMP_CACHE_BYTES).
 > 
-> Use for_each_compatible_node() macro instead of open coding it.
+> Since we can dynamically allocate and in fact already have a fallback
+> to do so when there is contention for the fixed buffer remove this
+> restriction and instead dynamically allocate a suitably sized buffer if
+> the transfer won't fit.
 > 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+
+Looks good to me. Probably 3.9 material though.
 
 Acked-by: Grant Likely <grant.likely@secretlab.ca>
+
 > ---
->  arch/powerpc/platforms/85xx/mpc85xx_mds.c | 4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
+>  drivers/spi/spi.c |   24 +++++++++++-------------
+>  1 file changed, 11 insertions(+), 13 deletions(-)
 > 
-> diff --git a/arch/powerpc/platforms/85xx/mpc85xx_mds.c b/arch/powerpc/platforms/85xx/mpc85xx_mds.c
-> index bd12588..a7b3621 100644
-> --- a/arch/powerpc/platforms/85xx/mpc85xx_mds.c
-> +++ b/arch/powerpc/platforms/85xx/mpc85xx_mds.c
-> @@ -206,9 +206,7 @@ static void __init mpc85xx_mds_reset_ucc_phys(void)
->  		setbits8(&bcsr_regs[7], BCSR7_UCC12_GETHnRST);
->  		clrbits8(&bcsr_regs[8], BCSR8_UEM_MARVELL_RST);
+> diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+> index c4f7d71..224b7bc 100644
+> --- a/drivers/spi/spi.c
+> +++ b/drivers/spi/spi.c
+> @@ -1646,12 +1646,18 @@ int spi_write_then_read(struct spi_device *spi,
+>  	struct spi_transfer	x[2];
+>  	u8			*local_buf;
 >  
-> -		for (np = NULL; (np = of_find_compatible_node(np,
-> -						"network",
-> -						"ucc_geth")) != NULL;) {
-> +		for_each_compatible_node(np, "network", "ucc_geth") {
->  			const unsigned int *prop;
->  			int ucc_num;
+> -	/* Use preallocated DMA-safe buffer.  We can't avoid copying here,
+> -	 * (as a pure convenience thing), but we can keep heap costs
+> -	 * out of the hot path ...
+> +	/* Use preallocated DMA-safe buffer if we can.  We can't avoid
+> +	 * copying here, (as a pure convenience thing), but we can
+> +	 * keep heap costs out of the hot path unless someone else is
+> +	 * using the pre-allocated buffer or the transfer is too large.
+>  	 */
+> -	if ((n_tx + n_rx) > SPI_BUFSIZ)
+> -		return -EINVAL;
+> +	if ((n_tx + n_rx) > SPI_BUFSIZ || !mutex_trylock(&lock)) {
+> +		local_buf = kmalloc(max(SPI_BUFSIZ, n_tx + n_rx), GFP_KERNEL);
+> +		if (!local_buf)
+> +			return -ENOMEM;
+> +	} else {
+> +		local_buf = buf;
+> +	}
 >  
+>  	spi_message_init(&message);
+>  	memset(x, 0, sizeof x);
+> @@ -1664,14 +1670,6 @@ int spi_write_then_read(struct spi_device *spi,
+>  		spi_message_add_tail(&x[1], &message);
+>  	}
+>  
+> -	/* ... unless someone else is using the pre-allocated buffer */
+> -	if (!mutex_trylock(&lock)) {
+> -		local_buf = kmalloc(SPI_BUFSIZ, GFP_KERNEL);
+> -		if (!local_buf)
+> -			return -ENOMEM;
+> -	} else
+> -		local_buf = buf;
+> -
+>  	memcpy(local_buf, txbuf, n_tx);
+>  	x[0].tx_buf = local_buf;
+>  	x[1].rx_buf = local_buf + n_tx;
+> -- 
+> 1.7.10.4
 > 
 
 -- 
