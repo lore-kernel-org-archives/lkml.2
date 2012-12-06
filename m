@@ -1,73 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755052Ab2LFNxd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 08:53:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12194 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755031Ab2LFNxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 08:53:32 -0500
-Message-ID: <50C0A2EF.6010404@redhat.com>
-Date: Thu, 06 Dec 2012 14:51:43 +0100
-From: Zdenek Kabelac <zkabelac@redhat.com>
-Organization: Red Hat
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, George Spelvin <linux@horizon.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        Thorsten Leemhuis <fedora@leemhuis.info>,
-        Tomas Racek <tracek@redhat.com>, Jan Kara <jack@suse.cz>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Josh Boyer <jwboyer@gmail.com>,
-        Valdis.Kletnieks@vt.edu, Jiri Slaby <jslaby@suse.cz>,
-        Bruno Wolff III <bruno@wolff.to>,
-        Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: kswapd craziness in 3.7
-References: <1354049315-12874-1-git-send-email-hannes@cmpxchg.org> <20121128094511.GS8218@suse.de> <50BCC3E3.40804@redhat.com> <20121203191858.GY24381@cmpxchg.org> <50BDBCD9.9060509@redhat.com>
-In-Reply-To: <50BDBCD9.9060509@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1423532Ab2LFN7x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 08:59:53 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:54892 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754771Ab2LFN7w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 08:59:52 -0500
+Date: Thu, 6 Dec 2012 14:04:58 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org, Borislav Petkov <bp@alien8.de>,
+        Andreas Mohr <andi@lisas.de>, linux-kernel@vger.kernel.org,
+        Li Shaohua <shaohua.li@intel.com>, Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: Look Ma, da kernel is b0rken
+Message-ID: <20121206140458.45e7153e@pyramind.ukuu.org.uk>
+In-Reply-To: <1430313.WKsQn6gbID@vostro.rjw.lan>
+References: <20121205070901.GA12123@rhlx01.hs-esslingen.de>
+	<20121205142935.GA12119@liondog.tnic>
+	<20121205152756.5afec12c@pyramind.ukuu.org.uk>
+	<1430313.WKsQn6gbID@vostro.rjw.lan>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 4.12.2012 10:05, Zdenek Kabelac napsal(a):
-> Dne 3.12.2012 20:18, Johannes Weiner napsal(a):
->> Szia Zdenek,
->>
->> On Mon, Dec 03, 2012 at 04:23:15PM +0100, Zdenek Kabelac wrote:
->>> Ok, bad news - I've been hit by  kswapd0 loop again -
->>> my kernel git commit cc19528bd3084c3c2d870b31a3578da8c69952f3 again
->>> shown kswapd0 for couple minutes on CPU.
->>>
->>> It seemed to go instantly away when I've drop caches
->>> (echo 3 >/proc/sys/vm/drop_cache)
->>> (After that I've had over 1G free memory)
->>
->> Any chance you could retry with this patch on top?
->>
->> ---
->> From: Johannes Weiner <hannes@cmpxchg.org>
->> Subject: [patch] mm: vmscan: do not keep kswapd looping forever due
->>   to individual uncompactable zones
->>
->> ---
->>   mm/vmscan.c | 16 ----------------
->>   1 file changed, 16 deletions(-)
->>
->> diff --git a/mm/vmscan.c b/mm/vmscan.c
->
->
-> Ok, I'm running now b69f0859dc8e633c5d8c06845811588fe17e68b3 (-rc8)
-> with your patch.  I'll be able to give some feedback after couple
-> days (if I keep my machine running without reboot - since before
+> The last patch you sent wasn't ignored.  You got this comment from Bjorn:
+> 
+> http://thread.gmane.org/gmane.linux.acpi.devel/56753
 
-So to just give some positive info -
+Ok that one never made it to me for some reason.
 
-with  2 1/2 day uptime, several suspend/resumes, ff at 1.4GB
-I still have just 29 seconds for kswapd0 process.
+> that you didn't respond to, so I'm still unsure what to do with that patch.
 
-So the patch above might have helped - but I'll look for a few more days.
+I think Bjorn is correct.
 
-Zdenek
+Alan
