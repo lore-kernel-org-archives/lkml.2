@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755274Ab2LFSUA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 13:20:00 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:62743 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752922Ab2LFST6 (ORCPT
+	id S1754507Ab2LFST7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 13:19:59 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:39412 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752883Ab2LFSTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 13:19:58 -0500
+	Thu, 6 Dec 2012 13:19:55 -0500
 MIME-Version: 1.0
-In-Reply-To: <20121206175451.GC17258@suse.de>
-References: <20121206091744.GA1397@polaris.bitmath.org> <20121206144821.GC18547@quack.suse.cz>
- <20121206161934.GA17258@suse.de> <CA+55aFw9WQN-MYFKzoGXF9Z70h1XsMu5X4hLy0GPJopBVuE=Yg@mail.gmail.com>
- <20121206175451.GC17258@suse.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 6 Dec 2012 10:19:35 -0800
-X-Google-Sender-Auth: q02krgAHQ6nPjjANrTMs5jyfkOU
-Message-ID: <CA+55aFwDZHXf2FkWugCy4DF+mPTjxvjZH87ydhE5cuFFcJ-dJg@mail.gmail.com>
-Subject: Re: Oops in 3.7-rc8 isolate_free_pages_block()
-To: Mel Gorman <mgorman@suse.de>
-Cc: Jan Kara <jack@suse.cz>, Henrik Rydberg <rydberg@euromail.se>,
-        linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAE9FiQX+aJi5XEyjfjc=K4eXLbQNqE-vd+coyt1dmuujsi_eoQ@mail.gmail.com>
+References: <1345739803-21017-1-git-send-email-mjg@redhat.com>
+ <CAErSpo6dn_0b8Ngx9VT=ARs_UXQftEx=2Kczeqemtmo0XyKzuQ@mail.gmail.com>
+ <20121203200241.GG5906@thinkpad-t410> <CAE9FiQVdpmmExrPrLf7HYVuo0cTY9Xjn6bWzObbuSSeQ-e1PbA@mail.gmail.com>
+ <50BFE88D.1000800@zytor.com> <CAE9FiQXwZAAMkWYT8EjsewpuZ-OWqoaFscyzGS_pSuO9C3bf9A@mail.gmail.com>
+ <CAE9FiQX+aJi5XEyjfjc=K4eXLbQNqE-vd+coyt1dmuujsi_eoQ@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 6 Dec 2012 11:19:33 -0700
+Message-ID: <CAErSpo7-hUbvvCYPSwtSYKMKWqu99A5H5R4004rSj5Bmv0593g@mail.gmail.com>
+Subject: Re: Use PCI ROMs from EFI boot services
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-efi@vger.kernel.org, dwmw2@infradead.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 6, 2012 at 9:55 AM, Mel Gorman <mgorman@suse.de> wrote:
+On Wed, Dec 5, 2012 at 5:52 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Wed, Dec 5, 2012 at 4:51 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> On Wed, Dec 5, 2012 at 4:36 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>> On 12/05/2012 04:15 PM, Yinghai Lu wrote:
+>>>>
+>>>
+>>> I don't see why that isn't the right fix.  We copy the data into
+>>> boot_params early in the boot; that *is* the official copy as far as the
+>>> kernel is concerned.
+>>>
+>>> So this patch very much seems like The Right Thing.
+>>
+>> it moves boot_params from __initdata  to data.
 >
-> Yeah. I was listening to a talk while I was writing it, a bit cranky and
-> didn't see why I should suffer alone.
+>    should be from __initdata to bss
+>
+>> and just for using pointer to setup_data.
+>>
+>> should add setup_data pointer instead. so will not waste (4096 - 8) bytes.
 
-Makes sense.
+I'm not following the whole discussion here, but my impression is that
+what's in my -next branch is acceptable
+(http://git.kernel.org/?p=linux/kernel/git/helgaas/pci.git;a=commitdiff;h=328949ff10f2e3fcb11472571294beed39488342)
 
-> Quasimoto strikes again
+If not, please explain further and provide a patch to fix it.
 
-Is that Quasimodo's Japanese cousin?
-
-> -               end_pfn = min(pfn + pageblock_nr_pages, zone_end_pfn);
-> +
-> +               /*
-> +                * As pfn may not start aligned, pfn+pageblock_nr_page
-> +                * may cross a MAX_ORDER_NR_PAGES boundary and miss
-> +                * a pfn_valid check. Ensure isolate_freepages_block()
-> +                * only scans within a pageblock.
-> +                */
-> +               end_pfn = ALIGN(pfn + pageblock_nr_pages, pageblock_nr_pages);
-> +               end_pfn = min(end_pfn, end_pfn);
-
-Ok, this looks much nicer, except it's obviously buggy. The
-min(end_pfn, end_pfn) thing is insane, and I'm sure you meant for that
-line to be
-
-+               end_pfn = min(end_pfn, zone_end_pfn);
-
-Henrik, does that - corrected - patch (*instead* of the previous one,
-not in addition to) also fix your issue?
-
-                  Linus
+Bjorn
