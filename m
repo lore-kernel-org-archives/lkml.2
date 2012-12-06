@@ -1,196 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351Ab2LFBpW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 20:45:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8684 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753288Ab2LFBpV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 20:45:21 -0500
-Date: Wed, 5 Dec 2012 23:45:07 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: kvm@vger.kernel.org, gleb@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 5/6] kvm: Re-introduce memslots->nmemslots
-Message-ID: <20121206014507.GA9890@amt.cnet>
-References: <20121203231912.3661.57179.stgit@bling.home>
- <20121203233936.3661.69261.stgit@bling.home>
- <20121205212629.GD20260@amt.cnet>
- <1354748573.3224.63.camel@bling.home>
+	id S1754406Ab2LFBy3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 20:54:29 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:44110 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752097Ab2LFBy2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 20:54:28 -0500
+X-IronPort-AV: E=Sophos;i="4.84,226,1355068800"; 
+   d="scan'208";a="6341542"
+Message-ID: <50BFF443.3090504@cn.fujitsu.com>
+Date: Thu, 06 Dec 2012 09:26:27 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354748573.3224.63.camel@bling.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jiang Liu <liuj97@gmail.com>
+CC: hpa@zytor.com, akpm@linux-foundation.org, rob@landley.net,
+        isimatu.yasuaki@jp.fujitsu.com, laijs@cn.fujitsu.com,
+        wency@cn.fujitsu.com, linfeng@cn.fujitsu.com, jiang.liu@huawei.com,
+        yinghai@kernel.org, kosaki.motohiro@jp.fujitsu.com,
+        minchan.kim@gmail.com, mgorman@suse.de, rientjes@google.com,
+        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH v2 4/5] page_alloc: Make movablecore_map has higher priority
+References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <1353667445-7593-5-git-send-email-tangchen@cn.fujitsu.com> <50BF6BA0.8060505@gmail.com>
+In-Reply-To: <50BF6BA0.8060505@gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/06 09:26:44,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/06 09:27:10,
+	Serialize complete at 2012/12/06 09:27:10
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 05, 2012 at 04:02:53PM -0700, Alex Williamson wrote:
-> On Wed, 2012-12-05 at 19:26 -0200, Marcelo Tosatti wrote:
-> > On Mon, Dec 03, 2012 at 04:39:36PM -0700, Alex Williamson wrote:
-> > > struct kvm_memory_slot is currently 52 bytes (LP64), not counting the
-> > > arch data.  On x86 this means the memslot array to support a tiny 32+3
-> > > entries (user+private) is over 2k.  We'd like to support more slots
-> > > so that we can support more assigned devices, but it doesn't make
-> > > sense to penalize everyone by using a statically allocated array.
-> > > This allows us to start introducing a grow-able array.
-> > > 
-> > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > > ---
-> > >  arch/ia64/kvm/kvm-ia64.c     |    2 +-
-> > >  arch/powerpc/kvm/book3s_hv.c |    2 +-
-> > >  arch/x86/kvm/vmx.c           |    1 +
-> > >  arch/x86/kvm/x86.c           |    4 +++-
-> > >  include/linux/kvm_host.h     |    9 ++++++---
-> > >  virt/kvm/kvm_main.c          |   10 ++++++----
-> > >  6 files changed, 18 insertions(+), 10 deletions(-)
-> > > 
-> > > diff --git a/arch/ia64/kvm/kvm-ia64.c b/arch/ia64/kvm/kvm-ia64.c
-> > > index 012e5dd..96401b5 100644
-> > > --- a/arch/ia64/kvm/kvm-ia64.c
-> > > +++ b/arch/ia64/kvm/kvm-ia64.c
-> > > @@ -1836,7 +1836,7 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm,
-> > >  
-> > >  	memslot = id_to_memslot(kvm->memslots, log->slot);
-> > >  	r = -ENOENT;
-> > > -	if (!memslot->dirty_bitmap)
-> > > +	if (!memslots || !memslot->dirty_bitmap)
-> > >  		goto out;
-> > >  
-> > >  	kvm_ia64_sync_dirty_log(kvm, memslot);
-> > > diff --git a/arch/powerpc/kvm/book3s_hv.c b/arch/powerpc/kvm/book3s_hv.c
-> > > index 56067db..0417190 100644
-> > > --- a/arch/powerpc/kvm/book3s_hv.c
-> > > +++ b/arch/powerpc/kvm/book3s_hv.c
-> > > @@ -1267,7 +1267,7 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm, struct kvm_dirty_log *log)
-> > >  
-> > >  	memslot = id_to_memslot(kvm->memslots, log->slot);
-> > >  	r = -ENOENT;
-> > > -	if (!memslot->dirty_bitmap)
-> > > +	if (!memslot || !memslot->dirty_bitmap)
-> > >  		goto out;
-> > >  
-> > >  	n = kvm_dirty_bitmap_bytes(memslot);
-> > > diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> > > index 2bb9157..07fdd90 100644
-> > > --- a/arch/x86/kvm/vmx.c
-> > > +++ b/arch/x86/kvm/vmx.c
-> > > @@ -2751,6 +2751,7 @@ static gva_t rmode_tss_base(struct kvm *kvm)
-> > >  
-> > >  		slots = kvm_memslots(kvm);
-> > >  		slot = id_to_memslot(slots, KVM_PRIVATE_MEM_SLOTS);
-> > > +		BUG_ON(!slot);
-> > >  		base_gfn = slot->base_gfn + slot->npages - 3;
-> > >  
-> > >  		return base_gfn << PAGE_SHIFT;
-> > > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> > > index 8765485..53fe9b2 100644
-> > > --- a/arch/x86/kvm/x86.c
-> > > +++ b/arch/x86/kvm/x86.c
-> > > @@ -3139,9 +3139,11 @@ int kvm_vm_ioctl_get_dirty_log(struct kvm *kvm, struct kvm_dirty_log *log)
-> > >  		goto out;
-> > >  
-> > >  	memslot = id_to_memslot(kvm->memslots, log->slot);
-> > > +	r = -ENOENT;
-> > > +	if (!memslot)
-> > > +		goto out;
-> > >  
-> > >  	dirty_bitmap = memslot->dirty_bitmap;
-> > > -	r = -ENOENT;
-> > >  	if (!dirty_bitmap)
-> > >  		goto out;
-> > >  
-> > > diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> > > index 7b3d5c4..1955a4e 100644
-> > > --- a/include/linux/kvm_host.h
-> > > +++ b/include/linux/kvm_host.h
-> > > @@ -313,6 +313,7 @@ struct kvm_irq_routing_table {};
-> > >   * to get the memslot by its id.
-> > >   */
-> > >  struct kvm_memslots {
-> > > +	int nmemslots;
-> > >  	u64 generation;
-> > >  	struct kvm_memory_slot memslots[KVM_MEM_SLOTS_NUM];
-> > >  };
-> > > @@ -397,7 +398,7 @@ static inline struct kvm_vcpu *kvm_get_vcpu(struct kvm *kvm, int i)
-> > >  
-> > >  #define kvm_for_each_memslot(memslot, slots)	\
-> > >  	for (memslot = &slots->memslots[0];	\
-> > > -	      memslot < slots->memslots + KVM_MEM_SLOTS_NUM && memslot->npages;\
-> > > +	      memslot < slots->memslots + slots->nmemslots && memslot->npages;\
-> > >  		memslot++)
-> > >  
-> > >  int kvm_vcpu_init(struct kvm_vcpu *vcpu, struct kvm *kvm, unsigned id);
-> > > @@ -424,10 +425,12 @@ static inline struct kvm_memslots *kvm_memslots(struct kvm *kvm)
-> > >  static inline struct kvm_memory_slot *
-> > >  id_to_memslot(struct kvm_memslots *slots, int id)
-> > >  {
-> > > -	int index = slots->memslots[id].id_to_index;
-> > >  	struct kvm_memory_slot *slot;
-> > >  
-> > > -	slot = &slots->memslots[index];
-> > > +	if (id >= slots->nmemslots)
-> > > +		return NULL;
-> > > +
-> > > +	slot = &slots->memslots[slots->memslots[id].id_to_index];
-> > >  
-> > >  	WARN_ON(slot->id != id);
-> > >  	return slot;
-> > > diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> > > index 3ce2664..ebd3960 100644
-> > > --- a/virt/kvm/kvm_main.c
-> > > +++ b/virt/kvm/kvm_main.c
-> > > @@ -444,7 +444,9 @@ static void kvm_init_memslots_id(struct kvm *kvm)
-> > >  	int i;
-> > >  	struct kvm_memslots *slots = kvm->memslots;
-> > >  
-> > > -	for (i = 0; i < KVM_MEM_SLOTS_NUM; i++)
-> > > +	slots->nmemslots = KVM_MEM_SLOTS_NUM;
-> > > +
-> > > +	for (i = 0; i < kvm->memslots->nmemslots; i++)
-> > >  		slots->memslots[i].id_to_index = slots->memslots[i].id = i;
-> > >  }
-> > >  
-> > > @@ -658,10 +660,10 @@ static void sort_memslots(struct kvm_memslots *slots)
-> > >  {
-> > >  	int i;
-> > >  
-> > > -	sort(slots->memslots, KVM_MEM_SLOTS_NUM,
-> > > +	sort(slots->memslots, slots->nmemslots,
-> > >  	      sizeof(struct kvm_memory_slot), cmp_memslot, NULL);
-> > >  
-> > > -	for (i = 0; i < KVM_MEM_SLOTS_NUM; i++)
-> > > +	for (i = 0; i < slots->nmemslots; i++)
-> > >  		slots->memslots[slots->memslots[i].id].id_to_index = i;
-> > >  }
-> > >  
-> > > @@ -898,7 +900,7 @@ int kvm_get_dirty_log(struct kvm *kvm,
-> > >  
-> > >  	memslot = id_to_memslot(kvm->memslots, log->slot);
-> > >  	r = -ENOENT;
-> > > -	if (!memslot->dirty_bitmap)
-> > > +	if (!memslot || !memslot->dirty_bitmap)
-> > >  		goto out;
-> > >  
-> > >  	n = kvm_dirty_bitmap_bytes(memslot);
-> > 
-> > I suppose this should be checked earlier, not at id_to_memslot time.
-> > eg for kvm_get_dirty_log at 
-> > 
-> >         r = -EINVAL;
-> >         if (log->slot >= KVM_MEMORY_SLOTS)
-> >                 goto out;
-> > 
-> > time
-> 
-> id_to_memslot seems like a good place to catch all the users since
-> that's the only way to get a slot from a slot id after the array is
-> sorted.  We need to check both is the slot in bounds (EINVAL), but also
-> is it allocated (ENOENT).  id_to_memslot could both of these if we
-> wanted to switch it to ERR_PTR.  Thanks,
-> 
-> Alex
+On 12/05/2012 11:43 PM, Jiang Liu wrote:
+> If we make "movablecore_map" take precedence over "movablecore/kernelcore",
+> the logic could be simplified. I think it's not so attractive to support
+> both "movablecore_map" and "movablecore/kernelcore" at the same time.
 
-There should never be a reference to a slot out of bounds by KVM itself
-(BUG_ON). Only userspace can attempt a reference to such slot.
+Hi Liu,
+
+Thanks for you advice. :)
+
+Memory hotplug needs different support on different hardware. We are
+trying to figure out a way to satisfy as many users as we can.
+Since it is a little difficult, it may take sometime. :)
+
+But I still think we need a boot option to support it. Just a metter of
+how to make it easier to use. :)
+
+Thanks. :)
+
+>
+> On 11/23/2012 06:44 PM, Tang Chen wrote:
+>> If kernelcore or movablecore is specified at the same time
+>> with movablecore_map, movablecore_map will have higher
+>> priority to be satisfied.
+>> This patch will make find_zone_movable_pfns_for_nodes()
+>> calculate zone_movable_pfn[] with the limit from
+>> zone_movable_limit[].
+>>
+>> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
+>> Reviewed-by: Wen Congyang<wency@cn.fujitsu.com>
+>> Reviewed-by: Lai Jiangshan<laijs@cn.fujitsu.com>
+>> Tested-by: Lin Feng<linfeng@cn.fujitsu.com>
+>> ---
+>>   mm/page_alloc.c |   35 +++++++++++++++++++++++++++++++----
+>>   1 files changed, 31 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+>> index f23d76a..05bafbb 100644
+>> --- a/mm/page_alloc.c
+>> +++ b/mm/page_alloc.c
+>> @@ -4800,12 +4800,25 @@ static void __init find_zone_movable_pfns_for_nodes(void)
+>>   		required_kernelcore = max(required_kernelcore, corepages);
+>>   	}
+>>
+>> -	/* If kernelcore was not specified, there is no ZONE_MOVABLE */
+>> -	if (!required_kernelcore)
+>> +	/*
+>> +	 * No matter kernelcore/movablecore was limited or not, movable_zone
+>> +	 * should always be set to a usable zone index.
+>> +	 */
+>> +	find_usable_zone_for_movable();
+>> +
+>> +	/*
+>> +	 * If neither kernelcore/movablecore nor movablecore_map is specified,
+>> +	 * there is no ZONE_MOVABLE. But if movablecore_map is specified, the
+>> +	 * start pfn of ZONE_MOVABLE has been stored in zone_movable_limit[].
+>> +	 */
+>> +	if (!required_kernelcore) {
+>> +		if (movablecore_map.nr_map)
+>> +			memcpy(zone_movable_pfn, zone_movable_limit,
+>> +				sizeof(zone_movable_pfn));
+>>   		goto out;
+>> +	}
+>>
+>>   	/* usable_startpfn is the lowest possible pfn ZONE_MOVABLE can be at */
+>> -	find_usable_zone_for_movable();
+>>   	usable_startpfn = arch_zone_lowest_possible_pfn[movable_zone];
+>>
+>>   restart:
+>> @@ -4833,10 +4846,24 @@ restart:
+>>   		for_each_mem_pfn_range(i, nid,&start_pfn,&end_pfn, NULL) {
+>>   			unsigned long size_pages;
+>>
+>> +			/*
+>> +			 * Find more memory for kernelcore in
+>> +			 * [zone_movable_pfn[nid], zone_movable_limit[nid]).
+>> +			 */
+>>   			start_pfn = max(start_pfn, zone_movable_pfn[nid]);
+>>   			if (start_pfn>= end_pfn)
+>>   				continue;
+>>
+>> +			if (zone_movable_limit[nid]) {
+>> +				end_pfn = min(end_pfn, zone_movable_limit[nid]);
+>> +				/* No range left for kernelcore in this node */
+>> +				if (start_pfn>= end_pfn) {
+>> +					zone_movable_pfn[nid] =
+>> +							zone_movable_limit[nid];
+>> +					break;
+>> +				}
+>> +			}
+>> +
+>>   			/* Account for what is only usable for kernelcore */
+>>   			if (start_pfn<  usable_startpfn) {
+>>   				unsigned long kernel_pages;
+>> @@ -4896,12 +4923,12 @@ restart:
+>>   	if (usable_nodes&&  required_kernelcore>  usable_nodes)
+>>   		goto restart;
+>>
+>> +out:
+>>   	/* Align start of ZONE_MOVABLE on all nids to MAX_ORDER_NR_PAGES */
+>>   	for (nid = 0; nid<  MAX_NUMNODES; nid++)
+>>   		zone_movable_pfn[nid] =
+>>   			roundup(zone_movable_pfn[nid], MAX_ORDER_NR_PAGES);
+>>
+>> -out:
+>>   	/* restore the node_state */
+>>   	node_states[N_HIGH_MEMORY] = saved_node_state;
+>>   }
+>>
+>
+>
 
