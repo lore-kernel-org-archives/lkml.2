@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754383Ab2LFBNx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 20:13:53 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:44064 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751963Ab2LFBNv convert rfc822-to-8bit (ORCPT
+	id S1754435Ab2LFBOJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 20:14:09 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:36032 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754400Ab2LFBOH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 20:13:51 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <50BFEF09.9000408@zytor.com>
-References: <1345739803-21017-1-git-send-email-mjg@redhat.com> <CAErSpo6dn_0b8Ngx9VT=ARs_UXQftEx=2Kczeqemtmo0XyKzuQ@mail.gmail.com> <20121203200241.GG5906@thinkpad-t410> <CAE9FiQVdpmmExrPrLf7HYVuo0cTY9Xjn6bWzObbuSSeQ-e1PbA@mail.gmail.com> <20121206001819.GA30527@srcf.ucam.org> <50BFE50C.8030008@zytor.com> <CAE9FiQX+M+VynyERC0W3y8rvr1tBxWnuBqJ6E-ywC_=HvJE66g@mail.gmail.com> <50BFE890.5070109@zytor.com> <d8d553fb-1571-4fdc-833c-92b80e15bc25@email.android.com> <50BFEF09.9000408@zytor.com>
+	Wed, 5 Dec 2012 20:14:07 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlMMAJfwv1B5LLKS/2dsb2JhbABEuCaGABdzgh4BAQU6HBIGCxAIAxguFCUDIROID8JnFIwjg2BhA5YCkEiDBg
+Date: Thu, 6 Dec 2012 12:14:02 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Martin Steigerwald <Martin@lichtvoll.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
+ UAPI
+Message-ID: <20121206011402.GB27172@dastard>
+References: <1353366267-15629-1-git-send-email-david@fromorbit.com>
+ <201212051148.28039.Martin@lichtvoll.de>
+ <CA+55aFzgP29WfB1yvnj+Q9-TsbX+b-TCCjTS_vPJ16DxMy6aDQ@mail.gmail.com>
+ <201212051718.44017.Martin@lichtvoll.de>
+ <CA+55aFxsPBo4TZEPq+14NBE8Snmd9qiTjAiEP0fFXBzaJ9y+gw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: Use PCI ROMs from EFI boot services
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-Date: Wed, 05 Dec 2012 20:13:29 -0500
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-efi@vger.kernel.org, mfleming@intel.com, dwmw2@infradead.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Message-ID: <cd3b2e67-92af-494d-ba2d-4179ead6e06b@email.android.com>
-X-cavan-blacklisted-at: zen.spamhaus.org
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 208.54.37.202
-X-SA-Exim-Mail-From: mjg59@srcf.ucam.org
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxsPBo4TZEPq+14NBE8Snmd9qiTjAiEP0fFXBzaJ9y+gw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Dec 05, 2012 at 10:25:17AM -0800, Linus Torvalds wrote:
+> Yes, people can argue that "process" is about technical issues too,
+> but let's be honest: our process is fluid. Not everything gets
+> reviewed on the mailing list, and people *do* talk about things
+> face-to-face at conferences.
 
+Yes, that is true.
 
-"H. Peter Anvin" <hpa@zytor.com> wrote:
+But we don't review code at conferences. We have mailing lists for
+that.  I've lost count of the number of times I've heard "post your
+code" or "let's take it to the list" or "better to discuss this on
+the list where everyone can comment" at conferences such as
+Plumbers. It's a standard practise - talk at conferences, review
+on mailing lists.
 
->And that presumably would be something that cannot be exposed to root?
->If so we may want to use one of the bits in the setup_data type field
->as
->a security flag, perhaps...
+And for changes to syscalls? That's something that must be peer
+reviewed because we are going to be stuck with those changes forever
+as we can't undo them at a later date. It doesn't matter who made the
+change in question, I would have done exactly the same thing....
 
-Yeah, it needs to be hidden from root - but ideally we'd be passing it to the second kernel if we kexec. Alternative would be for it to be capability bounded to a trusted signed kexec binary if we implement Vivek's IMA-based approach. 
+Cheers,
 
+Dave.
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Dave Chinner
+david@fromorbit.com
