@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947108Ab2LFTp0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 14:45:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34984 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1947077Ab2LFTpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 14:45:24 -0500
-Message-ID: <50C0F55F.6030405@redhat.com>
-Date: Thu, 06 Dec 2012 14:43:27 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1947122Ab2LFTpf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 14:45:35 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:45758 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1947077Ab2LFTpc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 14:45:32 -0500
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Bruno Wolff III <bruno@wolff.to>, Johannes Weiner <hannes@cmpxchg.org>,
-        Thorsten Leemhuis <fedora@leemhuis.info>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        George Spelvin <linux@horizon.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        Tomas Racek <tracek@redhat.com>, Jan Kara <jack@suse.cz>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Josh Boyer <jwboyer@gmail.com>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        Jiri Slaby <jslaby@suse.cz>, Zdenek Kabelac <zkabelac@redhat.com>,
-        linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        John Ellson <john.ellson@comcast.net>
-Subject: Re: kswapd craziness in 3.7
-References: <20121128145215.d23aeb1b.akpm@linux-foundation.org> <20121128235412.GW8218@suse.de> <50B77F84.1030907@leemhuis.info> <20121129170512.GI2301@cmpxchg.org> <50B8A8E7.4030108@leemhuis.info> <20121201004520.GK2301@cmpxchg.org> <50BC6314.7060106@leemhuis.info> <20121203194208.GZ24381@cmpxchg.org> <20121204214210.GB20253@cmpxchg.org> <20121205030133.GA17438@wolff.to> <20121206173742.GA27297@wolff.to> <CA+55aFzZsCUk6snrsopWQJQTXLO__G7=SjrGNyK3ePCEtZo7Sw@mail.gmail.com>
-In-Reply-To: <CA+55aFzZsCUk6snrsopWQJQTXLO__G7=SjrGNyK3ePCEtZo7Sw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAK=WgbYF1RWoH-QxOAuO89h3P1BE84Oqs2fsUXF5eLDPPuLsAA@mail.gmail.com>
+References: <1340375470-13097-1-git-send-email-sjur.brandeland@stericsson.com>
+	<1340375470-13097-2-git-send-email-sjur.brandeland@stericsson.com>
+	<CAJK669adq29ipOCTOyXNoqW=gF4pOJZZgZ_0tnjm75JY22Gvag@mail.gmail.com>
+	<CAK=WgbbK+p3BGcohzgoY9Y57xD1kYHyGDu-FXFXaLFoA9xz7ow@mail.gmail.com>
+	<CAJK669bpog-nNCZ5F5dGWqrS8p5ibob_5eq51r8+6NNimYgpGQ@mail.gmail.com>
+	<CAK=WgbYxr66xUA0SsGO5b5PowRpH+mHeOSOuW+6V_S90tu=Ntg@mail.gmail.com>
+	<CAK=WgbYF1RWoH-QxOAuO89h3P1BE84Oqs2fsUXF5eLDPPuLsAA@mail.gmail.com>
+Date: Thu, 6 Dec 2012 20:45:31 +0100
+Message-ID: <CAJK669ZcH-GTrkCZRMjDnr2pBjODifCHcSXCvceFPQtqZyZftg@mail.gmail.com>
+Subject: Re: [RFC 1/4] remoteproc: Bugfix assign device address to carveout (noiommu)
+From: =?UTF-8?Q?Sjur_Br=C3=A6ndeland?= <sjurbren@gmail.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: linux-kernel@vger.kernel.org, Omar Ramirez Luna <omar.ramirez@ti.com>,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>,
+        Suman Anna <s-anna@ti.com>, Bhavin Shah <bshah@ti.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2012 02:31 PM, Linus Torvalds wrote:
-> Ok, people seem to be reporting success.
->
-> I've applied Johannes' last patch with the new tested-by tags.
->
-> Johannes (or anybody else, for that matter), please holler LOUDLY if
-> you disagreed.. (or if I used the wrong version of the patch, there's
-> been several, afaik).
+Hi Ohad,
 
-Johannes's patch is a fairly big hammer, with kswapd not looping
-back to the start when zones are still unbalanced.
+On Sat, Aug 11, 2012 at 2:34 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+> On Fri, Aug 10, 2012 at 6:30 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+>> This will solve all sort of open issues we have (or going to have soon):
+>>
+...
+> 1. dynamically-allocated address of the vrings can be communicated
+> 2. vdev statuses can be communicated
+> 3. virtio config space will finally become bi-directional as it should
 
-However, the next allocation will wake up kswapd again, and
-having kswapd stop early beats having it in an infinite loop.
+I just posted a RFC patch-set on this to linux-kernel@vger.kernel.org.
+Review comments is welcomed :-)
 
-I believe Johannes's patch will be fine for 3.7.
+> and 5. let the remote processor know about the notifyids that we've
+> dynamically allocated.
 
--- 
-All rights reversed
+I have run into one issue with the dynamically allocated notifyids. When
+allocating multiple virtio devices, only ids for the first virtio
+device is allocated
+when the remote device is started.  This is fails for me, because I need to know
+all of the kick-ids before starting the remote device.
+
+Do you have any preference on how to solve this, Ohad?
+
+One idea could be to call rproc->start from a work-queue and wait for completion
+of firmware loading before actually starting. In this way we will not
+trigger start-up
+of the remote device before all virtio devices and their kick-ids are allocated.
+
+Thanks,
+Sjur
