@@ -1,64 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754666Ab2LFHCZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 02:02:25 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:64203 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752361Ab2LFHCZ (ORCPT
+	id S1754685Ab2LFHDg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 02:03:36 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:35687 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753930Ab2LFHDf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 02:02:25 -0500
+	Thu, 6 Dec 2012 02:03:35 -0500
+Date: Thu, 6 Dec 2012 10:01:31 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Sebastian Hahn <snsehahn@cip.cs.fau.de>
+Cc: gregkh@linuxfoundation.org,
+        Jennifer.Naumann@informatik.stud.uni-erlangen.de,
+        standby24x7@gmail.com, Julia.Lawall@lip6.fr, jkosina@suse.cz,
+        joe@perches.com, yongjun_wei@trendmicro.com.cn,
+        adam.buchbinder@gmail.com, amwang@redhat.com, justinmattock@gmail.com,
+        wfp5p@virginia.edu, jim.cromie@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        linux-kernel@i4.informatik.uni-erlangen.de
+Subject: Re: [PATCH 3/6] staging/rtl8192u: indent with tabs, not spaces
+Message-ID: <20121206070131.GL22569@mwanda>
+References: <1354740023-30849-1-git-send-email-snsehahn@cip.cs.fau.de>
+ <1354740023-30849-4-git-send-email-snsehahn@cip.cs.fau.de>
 MIME-Version: 1.0
-In-Reply-To: <20121206062836.GH10867@opensource.wolfsonmicro.com>
-References: <CAM4voa=X_rBkSXRHd=oEOnXhgyfSAeD8LmYnsTeQtd-SYKWwPg@mail.gmail.com>
-	<20121206062836.GH10867@opensource.wolfsonmicro.com>
-Date: Thu, 6 Dec 2012 12:32:24 +0530
-Message-ID: <CAM4voakrYQYrj2do0sYr_h0ZsRifAaLnDgeSxp6Z2e_F+_23uQ@mail.gmail.com>
-Subject: Re: Regulator suspend state dt question
-From: Abhilash Kesavan <kesavan.abhilash@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        grant.likely@secretlab.ca, lrg@ti.com,
-        Doug Anderson <dianders@chromium.org>,
-        Olof Johansson <olofj@google.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354740023-30849-4-git-send-email-snsehahn@cip.cs.fau.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Wed, Dec 05, 2012 at 09:40:20PM +0100, Sebastian Hahn wrote:
+> Converted staging/rtl8187se to use tabs instead of spaces for
+> indentation to fix the checkpatch error "code indent should use tabs
+> where possible".
+> 
+> Signed-off-by: Sebastian Hahn <snsehahn@cip.cs.fau.de>
+> ---
+>  drivers/staging/rtl8192u/ieee80211/ieee80211.h     |   14 +-
+>  drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c  |  370 ++++++++++----------
+>  .../staging/rtl8192u/ieee80211/ieee80211_softmac.c |    4 +-
+>  drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c  |   14 +-
+>  drivers/staging/rtl8192u/ieee80211/rtl_crypto.h    |   84 ++---
+>  drivers/staging/rtl8192u/r8180_93cx6.c             |    2 +-
+>  drivers/staging/rtl8192u/r8180_93cx6.c.bak         |  146 ++++++++
 
-On Thu, Dec 6, 2012 at 11:58 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Thu, Dec 06, 2012 at 11:55:11AM +0530, Abhilash Kesavan wrote:
->
->> As of now there is no support in the regulator core to specify the suspend state
->> (mode, enabled/disabled) using dt. I can add new properties specifying
->> the intial_state,
->> mode, enable/disable but I am not too sure if it is appropriate to add
->> such bindings to
->> the device tree as they are not actually describing the hardware.
->
-> Well, it does depend on the hardware a bit - some hardware is hard wired
-> to only have one possible suspend state due to power up requirements.
-> But for a lot of hardware it's flexible...
-So, adding such new properties to the drivers/regulator/of_regulator.c
-file would
-not be acceptable right ?
->
->> Is calling regulator_suspend_prepare from a machine specific file an option ?
->
-> This is not really relevant, it's an orthogonal thing about when we
-> trigger the state transition in the regulator.
-OK
->
-> It's not clear what a good solution is here, sorry.
-Would it be acceptable that I add a new optional "op_mode" property
-for max77686 ?
-If the property is found in dt then assign the value to
-max77686->opmode[i] else use
-enable_mask. I'll be doing this in probe for all the regulators.
+You merged a .c.bak file into the kernel.
 
-Thanks for your help.
+>  drivers/staging/rtl8192u/r8180_pm.h                |    2 +-
+>  drivers/staging/rtl8192u/r8192U.h                  |  198 +++++------
+>  drivers/staging/rtl8192u/r8192U_core.c             |   42 +--
+>  10 files changed, 511 insertions(+), 365 deletions(-)
 
-Abhilash
+regards,
+dan carpenter
