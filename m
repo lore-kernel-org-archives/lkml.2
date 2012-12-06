@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422652Ab2LFJfy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 04:35:54 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:55468 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932377Ab2LFJfw (ORCPT
+	id S1422670Ab2LFJiB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 04:38:01 -0500
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:59357 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932459Ab2LFJh6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 04:35:52 -0500
-Date: Thu, 6 Dec 2012 10:35:44 +0100
-From: Heinz Diehl <htd@fancy-poultry.org>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: Lekensteyn <lekensteyn@gmail.com>, Heinz Diehl <htd@fritha.org>,
-        dri-devel@lists.freedesktop.org, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: i915 freakout with latest 3.7 git
-Message-ID: <20121206093544.GA22915@fancy-poultry.org>
-References: <20121203173951.GA25384@fancy-poultry.org>
- <1498848.rM1KKK5er8@al>
- <20121204210845.GA2092@fritha.org>
- <2102240.hdkK7C4k4g@al>
- <CAKMK7uEaT1H0DUszYqxbp_8WdLWs2quQbSJVqir0eAibYKvN+A@mail.gmail.com>
+	Thu, 6 Dec 2012 04:37:58 -0500
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate UAPI
+Date: Thu, 6 Dec 2012 10:37:56 +0100
+User-Agent: KMail/1.13.7 (Linux/3.7.0-rc8-f2fs-tp520+; KDE/4.8.4; x86_64; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        "linux-fsdevel" <linux-fsdevel@vger.kernel.org>
+References: <1353366267-15629-1-git-send-email-david@fromorbit.com> <20121206011402.GB27172@dastard> <CA+55aFzjOr1tw4UAdWazgvzOu6if8hOc4PqgLeX4Um_k-kuguw@mail.gmail.com> (sfid-20121206_101846_967501_50CDB52C)
+In-Reply-To: <CA+55aFzjOr1tw4UAdWazgvzOu6if8hOc4PqgLeX4Um_k-kuguw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKMK7uEaT1H0DUszYqxbp_8WdLWs2quQbSJVqir0eAibYKvN+A@mail.gmail.com>
-Organization: private site
-OpenPGP: id=BBAD7AE7; url=http://www.fritha.org/htd.asc
-User-Agent: Mutt/1.5.21+67 (d414971f0c48) (2011-07-01)
-X-Provags-ID: V02:K0:fVqAscXZVp6Aw2Zop+boqTOTR2chb9qmwPeedUFGz/G
- G2cZYx+to3IXX7/O3rMXBGHq1cWo4hINiclo3g5qHNlvL109wo
- JC8OSriFkR2kvvdK4uxsEa3Ptp8zfJ0Jgv7A/lt2Xcr7CJj74o
- IXoBz3KMT0XqRP8nFfEi4QyBS88ZrANoZMc5x9qsHdWq/vWbUB
- BoDWLYKzqOWgoGVghUSq21nLOqU9397UUjxze7WcjgGHwF6bQo
- rKXfcZQmPDA23HcUSVp0IcRdHTJHtk5zw/zyF3CWLrhgZNF2p9
- skRAR8HNFT53OtMujxcaCmJxFcbxdYTsndcOPTIgpDya+u8+rT
- gQ4ud49pjX14X76VHGuTCZcQDMt9WIp6phkiwQbnv
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201212061037.56597.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05.12.2012, Daniel Vetter wrote:
+Am Donnerstag, 6. Dezember 2012 schrieb Linus Torvalds:
+> On Wed, Dec 5, 2012 at 5:14 PM, Dave Chinner <david@fromorbit.com> 
+wrote:
+> > And for changes to syscalls? That's something that must be peer
+> > reviewed because we are going to be stuck with those changes forever
+> > as we can't undo them at a later date. It doesn't matter who made the
+> > change in question, I would have done exactly the same thing....
+> 
+> The thing that people are complaining about is exactly the reverse of
+> this. It's *protecting* us from making mistakes, and doesn't actually
+> add any new interfaces in itself.
+>
+> This is why I'm so annoyed with this stupid thread. It's been going on
+> forever, and reverting that change WOULD BE OBJECTIVELY A BAD IDEA.
 
-> Nope, we could only reproduce quickly with rc6 enabled :(
+See, thats where you have a problem with "reality".
 
-Could reproduce it today this way:
+It seems you cannot accept the fact that some developers disliked the 
+process in which this change was pushed. It seems to be that you want this 
+thread to vanish in thin air immediately. But unfortunately it didn´t.
 
- dd if=/dev/zero of=deleteme bs=1M count=50000
+So while the process generally is fluid, I agree to that, it wasn´t fluid 
+here. Or would you call this fluid here?
 
-while watching several HD videos on Youtube. Just tried	once, so I'm
-not shure if this will work all the way. Will try again now.
+I accept the fact that a decision has been made. And I am not deeply 
+enough into the technical matters to have to continue discussing it. I 
+also think all arguments have been said.
 
-My "i915_error_state" is here:
+The process has been the way it is. Noted. For the future there is 
+potential to do it differently with less churn involved. Will you, Ted and 
+others involved take the chance? Up to you entirely. And depending on what 
+effect you want to create.
 
-http://www.fritha.org/i915/error-01.tar.bz2
+BTW: I do not buy into your tough guy number. Scare someone else with 
+that, if it makes you feel better about yourself. So thanks for the 
+factual stuff that you delivered after your first post to the thread.
 
-Heinz
+-- 
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
