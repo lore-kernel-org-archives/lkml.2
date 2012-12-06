@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932484Ab2LFXgA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 18:36:00 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:36309 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932156Ab2LFXf6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 18:35:58 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-To: linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] spi: Fix comparison of different integer types
-Date: Thu,  6 Dec 2012 23:35:47 +0000
-Message-Id: <1354836947-31078-1-git-send-email-grant.likely@secretlab.ca>
-X-Mailer: git-send-email 1.7.10.4
+	id S1754960Ab2LFXhd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 18:37:33 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:52651 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754547Ab2LFXhc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 18:37:32 -0500
+Message-ID: <1354837050.22463.4.camel@joe-AO722>
+Subject: Re: [PATCH v2 00/14] printk() fixes, optimizations, and clean ups
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan =?ISO-8859-1?Q?H=2ESch=F6nherr?= <schnhrr@cs.tu-berlin.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 06 Dec 2012 15:37:30 -0800
+In-Reply-To: <20121206133907.37c255e9.akpm@linux-foundation.org>
+References: <1354813571-11253-1-git-send-email-schnhrr@cs.tu-berlin.de>
+	 <20121206133907.37c255e9.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix problem discovered with sparse:
-+ drivers/spi/spi.c:1554:37: sparse: incompatible types in comparison expression (different signedness)
-drivers/spi/spi.c: In function 'spi_write_then_read':
-drivers/spi/spi.c:1554:23: warning: comparison of distinct pointer types lacks a cast [enabled by default]
+On Thu, 2012-12-06 at 13:39 -0800, Andrew Morton wrote:
+> On Thu,  6 Dec 2012 18:05:57 +0100
+> Jan H. Sch__nherr <schnhrr@cs.tu-berlin.de> wrote:
+> 
+> > This is the second iteration of my try to clean up and fix some bugs around
+> > printk().
+> 
+> We're a few days away from 3.7, which is not a good time to be sending
+> large patchsets.  Please resend after -rc1 and I'll take a look.
 
-The change to SPI_BUFSIZ was introduced in commit b3a223ee2, "spi:
-Remove SPI_BUFSIZ restriction on spi_write_then_read()"
+Hi Andrew, 
 
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
----
- drivers/spi/spi.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I'm pretty sure this isn't for 3.7 but is for 3.8.
 
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index 22c71e2..b370d292 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -1551,7 +1551,7 @@ int spi_write_then_read(struct spi_device *spi,
- 	 * using the pre-allocated buffer or the transfer is too large.
- 	 */
- 	if ((n_tx + n_rx) > SPI_BUFSIZ || !mutex_trylock(&lock)) {
--		local_buf = kmalloc(max(SPI_BUFSIZ, n_tx + n_rx), GFP_KERNEL);
-+		local_buf = kmalloc(max((unsigned)SPI_BUFSIZ, n_tx + n_rx), GFP_KERNEL);
- 		if (!local_buf)
- 			return -ENOMEM;
- 	} else {
--- 
-1.7.10.4
+> But be aware that Joe is also planning on sending a large
+> printk patchset at that time, and the two patchsets will conflict
+> massively.
+
+Can you please pick this up for -next now and I'll
+redo my patches against -next for -rc1 so I'm not
+delayed until 3.9?
+
+cheers, Joe
+
 
