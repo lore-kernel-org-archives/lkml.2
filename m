@@ -1,45 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422908Ab2LFKzG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 05:55:06 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:60317 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965076Ab2LFKzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 05:55:05 -0500
-Message-ID: <50C07984.8000003@ti.com>
-Date: Thu, 6 Dec 2012 11:55:00 +0100
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1423137Ab2LFLNA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 06:13:00 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:50636 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423082Ab2LFLM6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 06:12:58 -0500
+Date: Thu, 6 Dec 2012 11:12:52 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Samuel Ortiz <sameo@linux.intel.com>, rabin.vincent@stericsson.com,
+        shiraz.hashim@st.com, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, spear-devel@list.st.com,
+        linus.walleij@linaro.org, Vipul Kumar Samar <vipulkumar.samar@st.com>
+Subject: Re: [PATCH V5 2/2] mfd: stmpe: Update DT support in stmpe driver
+Message-ID: <20121206111252.GR2718@gmail.com>
+References: <20121130154542.GG23648@gmail.com>
+ <CAKohpokLVEH+4F_VXh5auUm48cWWe0mumZME8yOCcAezcwJbCQ@mail.gmail.com>
+ <20121205224203.691153E0E22@localhost>
+ <CAKohponjLp214EPKgNHqP2N8Tje9U8ZxgywUTSvsjE-TqHy+xw@mail.gmail.com>
+ <20121206095019.GN2718@gmail.com>
+ <CAKohpokNQB6L2vvjmvA7_3KomFXnV9wZ-uBjrfRVuBL=QWgr_Q@mail.gmail.com>
+ <20121206101131.GP2718@gmail.com>
+ <CAKohpom9NK0Tg9fKdddkP-0H8FuVd-=yhHzZr-sWNb_zTVymWw@mail.gmail.com>
+ <20121206103515.GQ2718@gmail.com>
+ <CAKohponeU539FR+XCKJQTFnoNKJCnAh5ESB1NGP7ZK0u4Tqwyg@mail.gmail.com>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Linus Walleij <linus.walleij@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] gpio: twl4030: Correct status reporting when the GPIO
- is used as output
-References: <1354700985-4453-1-git-send-email-peter.ujfalusi@ti.com> <20121205224813.584123E0E22@localhost>
-In-Reply-To: <20121205224813.584123E0E22@localhost>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAKohponeU539FR+XCKJQTFnoNKJCnAh5ESB1NGP7ZK0u4Tqwyg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2012 11:48 PM, Grant Likely wrote:
->> -	base = REG_GPIODATAIN1 + d_bnk;
->> +	direction = gpio_twl4030_read(REG_GPIODATADIR1 + d_bnk);
->> +	if (direction > 0 && (direction >> d_off) & 0x1)
->> +		base = REG_SETGPIODATAOUT1 + d_bnk;
->> +	else
->> +		base = REG_GPIODATAIN1 + d_bnk;
->> +
-> 
-> This is probably quite expensive considering that reads need to go out
-> the i2c bus. Things like the output state and the pin direction should
-> be cached by the driver in its private data structure so that you don't
-> add an additional i2c round trip.
+On Thu, 06 Dec 2012, Viresh Kumar wrote:
 
-True. I have sent the v2, which grown a bit since I did not wanted to add more
-global variable to this driver.
+> On 6 December 2012 16:05, Lee Jones <lee.jones@linaro.org> wrote:
+> >> > Or you could not put unnecessary bindings into the Device Tree
+> >> > by putting two and two together and realise that using the table
+> >> > is the correct thing to do instead. This actually gives reason
+> >> > to you previous patch, but should probably be fixed-up into it
+> >> > so it has some proper meaning/purpose. ;)
+> >>
+> >> Couldn't understand this one :(
+> >
+> > Really?
+> 
+> I tried again, but couldn't get it :(
+> 
+> > Let's break it down - what do you need "stmpe,id" for?
+> 
+> To distinguish two instances of of stmpe811 (for instance) on a board.
+> Names of stmpe sub-modules would contain .0, .1, if we have an id
+> passed to it. Passing -1 would create same names for both gpio blocks
+> which belonged to different stmpe811's.
+
+I thought we'd be over this? The 'ID' will be represented by the
+address of the chip i.e. stmpe1601@40, where '40' will be
+distinguishing factor?
 
 -- 
-Péter
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org â”‚ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
