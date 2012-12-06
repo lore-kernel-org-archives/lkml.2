@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424273Ab2LFQM1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 11:12:27 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:59636 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1424257Ab2LFQMU (ORCPT
+	id S1424300Ab2LFQNG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 11:13:06 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:55812 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1424224Ab2LFQMF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 11:12:20 -0500
+	Thu, 6 Dec 2012 11:12:05 -0500
 From: Joonsoo Kim <js1304@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Russell King <rmk+kernel@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, kexec@lists.infradead.org,
         Joonsoo Kim <js1304@gmail.com>
-Subject: [RFC PATCH 8/8] mm, vmalloc: remove list management operation after initializing vmalloc
-Date: Fri,  7 Dec 2012 01:09:35 +0900
-Message-Id: <1354810175-4338-9-git-send-email-js1304@gmail.com>
+Subject: [RFC PATCH 4/8] mm, vmalloc: iterate vmap_area_list, instead of vmlist in vread/vwrite()
+Date: Fri,  7 Dec 2012 01:09:31 +0900
+Message-Id: <1354810175-4338-5-git-send-email-js1304@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1354810175-4338-1-git-send-email-js1304@gmail.com>
 References: <1354810175-4338-1-git-send-email-js1304@gmail.com>
@@ -22,138 +22,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, there is no need to maintain vmlist_early after initializing vmalloc.
-So remove related code and data structure.
+Now, when we hold a vmap_area_lock, va->vm can't be discarded. So we can
+safely access to va->vm when iterating a vmap_area_list with holding a
+vmap_area_lock. With this property, change iterating vmlist codes in
+vread/vwrite() to iterating vmap_area_list.
+
+There is a little difference relate to lock, because vmlist_lock is mutex,
+but, vmap_area_lock is spin_lock. It may introduce a spinning overhead
+during vread/vwrite() is executing. But, these are debug-oriented
+functions, so this overhead is not real problem for common case.
 
 Signed-off-by: Joonsoo Kim <js1304@gmail.com>
 
-diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
-index 698b1e5..10d19c9 100644
---- a/include/linux/vmalloc.h
-+++ b/include/linux/vmalloc.h
-@@ -130,7 +130,6 @@ extern long vwrite(char *buf, char *addr, unsigned long count);
- /*
-  *	Internals.  Dont't use..
-  */
--extern rwlock_t vmlist_lock;
- extern struct vm_struct *vmlist;
- extern __init void vm_area_add_early(struct vm_struct *vm);
- extern __init void vm_area_register_early(struct vm_struct *vm, size_t align);
 diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 8a1b959..957a098 100644
+index a0b85a6..d21167f 100644
 --- a/mm/vmalloc.c
 +++ b/mm/vmalloc.c
-@@ -272,8 +272,6 @@ static unsigned long cached_align;
+@@ -2009,7 +2009,8 @@ static int aligned_vwrite(char *buf, char *addr, unsigned long count)
  
- static unsigned long vmap_area_pcpu_hole;
- 
--/*** Old vmalloc interfaces ***/
--DEFINE_RWLOCK(vmlist_lock);
- /* vmlist is only for kexec */
- struct vm_struct *vmlist;
- static struct vm_struct dummy_vm;
-@@ -334,7 +332,7 @@ static void __insert_vmap_area(struct vmap_area *va)
- 	rb_link_node(&va->rb_node, parent, p);
- 	rb_insert_color(&va->rb_node, &vmap_area_root);
- 
--	/* address-sort this list so it is usable like the vmlist_early */
-+	/* address-sort this list */
- 	tmp = rb_prev(&va->rb_node);
- 	if (tmp) {
- 		struct vmap_area *prev;
-@@ -1150,7 +1148,7 @@ void *vm_map_ram(struct page **pages, unsigned int count, int node, pgprot_t pro
- }
- EXPORT_SYMBOL(vm_map_ram);
- 
--static struct vm_struct *vmlist_early;
-+static struct vm_struct *vmlist_early __initdata;
- 
- /**
-  * vm_area_add_early - add vmap area early during boot
-@@ -1323,7 +1321,7 @@ static void setup_vmalloc_vm(struct vm_struct *vm, struct vmap_area *va,
- 	spin_unlock(&vmap_area_lock);
- }
- 
--static void insert_vmalloc_vmlist(struct vm_struct *vm)
-+static void remove_vm_unlist(struct vm_struct *vm)
+ long vread(char *buf, char *addr, unsigned long count)
  {
- 	struct vm_struct *tmp, **p;
+-	struct vm_struct *tmp;
++	struct vmap_area *va;
++	struct vm_struct *vm;
+ 	char *vaddr, *buf_start = buf;
+ 	unsigned long buflen = count;
+ 	unsigned long n;
+@@ -2018,10 +2019,17 @@ long vread(char *buf, char *addr, unsigned long count)
+ 	if ((unsigned long) addr + count < count)
+ 		count = -(unsigned long) addr;
  
-@@ -1334,22 +1332,13 @@ static void insert_vmalloc_vmlist(struct vm_struct *vm)
- 	 */
- 	smp_wmb();
- 	vm->flags &= ~VM_UNLIST;
--
--	write_lock(&vmlist_lock);
--	for (p = &vmlist_early; (tmp = *p) != NULL; p = &tmp->next) {
--		if (tmp->addr >= vm->addr)
--			break;
--	}
--	vm->next = *p;
--	*p = vm;
--	write_unlock(&vmlist_lock);
- }
+-	read_lock(&vmlist_lock);
+-	for (tmp = vmlist; count && tmp; tmp = tmp->next) {
+-		vaddr = (char *) tmp->addr;
+-		if (addr >= vaddr + tmp->size - PAGE_SIZE)
++	spin_lock(&vmap_area_lock);
++	list_for_each_entry(va, &vmap_area_list, list) {
++		if (!count)
++			break;
++
++		if (!(va->flags & VM_VM_AREA))
++			continue;
++
++		vm = va->vm;
++		vaddr = (char *) vm->addr;
++		if (addr >= vaddr + vm->size - PAGE_SIZE)
+ 			continue;
+ 		while (addr < vaddr) {
+ 			if (count == 0)
+@@ -2031,10 +2039,10 @@ long vread(char *buf, char *addr, unsigned long count)
+ 			addr++;
+ 			count--;
+ 		}
+-		n = vaddr + tmp->size - PAGE_SIZE - addr;
++		n = vaddr + vm->size - PAGE_SIZE - addr;
+ 		if (n > count)
+ 			n = count;
+-		if (!(tmp->flags & VM_IOREMAP))
++		if (!(vm->flags & VM_IOREMAP))
+ 			aligned_vread(buf, addr, n);
+ 		else /* IOREMAP area is treated as memory hole */
+ 			memset(buf, 0, n);
+@@ -2043,7 +2051,7 @@ long vread(char *buf, char *addr, unsigned long count)
+ 		count -= n;
+ 	}
+ finished:
+-	read_unlock(&vmlist_lock);
++	spin_unlock(&vmap_area_lock);
  
- static void insert_vmalloc_vm(struct vm_struct *vm, struct vmap_area *va,
- 			      unsigned long flags, const void *caller)
+ 	if (buf == buf_start)
+ 		return 0;
+@@ -2082,7 +2090,8 @@ finished:
+ 
+ long vwrite(char *buf, char *addr, unsigned long count)
  {
- 	setup_vmalloc_vm(vm, va, flags, caller);
--	insert_vmalloc_vmlist(vm);
-+	remove_vm_unlist(vm);
- }
+-	struct vm_struct *tmp;
++	struct vmap_area *va;
++	struct vm_struct *vm;
+ 	char *vaddr;
+ 	unsigned long n, buflen;
+ 	int copied = 0;
+@@ -2092,10 +2101,17 @@ long vwrite(char *buf, char *addr, unsigned long count)
+ 		count = -(unsigned long) addr;
+ 	buflen = count;
  
- static struct vm_struct *__get_vm_area_node(unsigned long size,
-@@ -1392,10 +1381,9 @@ static struct vm_struct *__get_vm_area_node(unsigned long size,
- 
- 	/*
- 	 * When this function is called from __vmalloc_node_range,
--	 * we do not add vm_struct to vmlist_early here to avoid
--	 * accessing uninitialized members of vm_struct such as
--	 * pages and nr_pages fields. They will be set later.
--	 * To distinguish it from others, we use a VM_UNLIST flag.
-+	 * we add VM_UNLIST flag to avoid accessing uninitialized
-+	 * members of vm_struct such as pages and nr_pages fields.
-+	 * They will be set later.
- 	 */
- 	if (flags & VM_UNLIST)
- 		setup_vmalloc_vm(area, va, flags, caller);
-@@ -1483,21 +1471,6 @@ struct vm_struct *remove_vm_area(const void *addr)
- 		va->flags &= ~VM_VM_AREA;
- 		spin_unlock(&vmap_area_lock);
- 
--		if (!(vm->flags & VM_UNLIST)) {
--			struct vm_struct *tmp, **p;
--			/*
--			 * remove from list and disallow access to
--			 * this vm_struct before unmap. (address range
--			 * confliction is maintained by vmap.)
--			 */
--			write_lock(&vmlist_lock);
--			for (p = &vmlist_early; (tmp = *p) != vm;
--							p = &tmp->next)
--				;
--			*p = tmp->next;
--			write_unlock(&vmlist_lock);
--		}
--
- 		vmap_debug_free_range(va->va_start, va->va_end);
- 		free_unmap_vmap_area(va);
- 		vm->size -= PAGE_SIZE;
-@@ -1717,10 +1690,11 @@ void *__vmalloc_node_range(unsigned long size, unsigned long align,
- 		return NULL;
- 
- 	/*
--	 * In this function, newly allocated vm_struct is not added
--	 * to vmlist_early at __get_vm_area_node(). so, it is added here.
-+	 * In this function, newly allocated vm_struct has VM_UNLIST flag.
-+	 * It means that vm_struct is not fully initialized.
-+	 * Now, it is fully initialized, so remove this flag here.
- 	 */
--	insert_vmalloc_vmlist(area);
-+	remove_vm_unlist(area);
- 
- 	/*
- 	 * A ref_count = 3 is needed because the vm_struct and vmap_area
+-	read_lock(&vmlist_lock);
+-	for (tmp = vmlist; count && tmp; tmp = tmp->next) {
+-		vaddr = (char *) tmp->addr;
+-		if (addr >= vaddr + tmp->size - PAGE_SIZE)
++	spin_lock(&vmap_area_lock);
++	list_for_each_entry(va, &vmap_area_list, list) {
++		if (!count)
++			break;
++
++		if (!(va->flags & VM_VM_AREA))
++			continue;
++
++		vm = va->vm;
++		vaddr = (char *) vm->addr;
++		if (addr >= vaddr + vm->size - PAGE_SIZE)
+ 			continue;
+ 		while (addr < vaddr) {
+ 			if (count == 0)
+@@ -2104,10 +2120,10 @@ long vwrite(char *buf, char *addr, unsigned long count)
+ 			addr++;
+ 			count--;
+ 		}
+-		n = vaddr + tmp->size - PAGE_SIZE - addr;
++		n = vaddr + vm->size - PAGE_SIZE - addr;
+ 		if (n > count)
+ 			n = count;
+-		if (!(tmp->flags & VM_IOREMAP)) {
++		if (!(vm->flags & VM_IOREMAP)) {
+ 			aligned_vwrite(buf, addr, n);
+ 			copied++;
+ 		}
+@@ -2116,7 +2132,7 @@ long vwrite(char *buf, char *addr, unsigned long count)
+ 		count -= n;
+ 	}
+ finished:
+-	read_unlock(&vmlist_lock);
++	spin_unlock(&vmap_area_lock);
+ 	if (!copied)
+ 		return 0;
+ 	return buflen;
 -- 
 1.7.9.5
 
