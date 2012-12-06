@@ -1,77 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813Ab2LFWqb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 17:46:31 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:60148 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753784Ab2LFWqa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 17:46:30 -0500
+	id S932447Ab2LFWrU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 17:47:20 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:42812 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752501Ab2LFWrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 17:47:17 -0500
+Date: Thu, 6 Dec 2012 15:47:09 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Kent Yoder <key@linux.vnet.ibm.com>
+Subject: [PATCH] TPM: Wait for TPM_ACCESS tpmRegValidSts to go high at startup
+Message-ID: <20121206224709.GC25069@obsidianresearch.com>
 MIME-Version: 1.0
-In-Reply-To: <1354810806-81681-1-git-send-email-tim.gardner@canonical.com>
-References: <1354810806-81681-1-git-send-email-tim.gardner@canonical.com>
-Date: Thu, 6 Dec 2012 22:46:29 +0000
-Message-ID: <CAPM=9ty_PfiQ9Cd5CRNnQbZ7Ea-69qCUR7JM=BA-n_egDnOE5g@mail.gmail.com>
-Subject: Re: [PATCH 3.7-rc8] ttm: Fix possible _manager memory allocation oops
-From: Dave Airlie <airlied@gmail.com>
-To: Tim Gardner <tim.gardner@canonical.com>
-Cc: linux-kernel@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        dri-devel@lists.freedesktop.org, David Howells <dhowells@redhat.com>,
-        Dave Airlie <airlied@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 6, 2012 at 4:20 PM, Tim Gardner <tim.gardner@canonical.com> wrote:
-> Memory for _manager is allocated using kzalloc() but the result is not checked.
->
-> Free _manager on error lest memory become orphaned.
->
-> I was led to scrutinize ttm_page_alloc_init() from a smatch warning:
->
-> drivers/gpu/drm/ttm/ttm_page_alloc.c:799 ttm_page_alloc_init() error: potential null dereference '_manager'.  (kzalloc returns null)
->
-> Cc: David Airlie <airlied@linux.ie>
-> Cc: Dave Airlie <airlied@redhat.com>
-> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> Cc: Zhao Yakui <yakui.zhao@intel.com>
-> Cc: David Howells <dhowells@redhat.com>
-> Cc: dri-devel@lists.freedesktop.org
-> Cc: stable@vger.kernel.org # 3.5+
-> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
-> ---
->
-> This patch applies to stable 3.5 and newer.
->
->  drivers/gpu/drm/ttm/ttm_page_alloc.c |    5 +++++
->  1 file changed, 5 insertions(+)
->
-> diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-> index bd2a3b4..2c73d0a 100644
-> --- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
-> +++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-> @@ -798,6 +798,10 @@ int ttm_page_alloc_init(struct ttm_mem_global *glob, unsigned max_pages)
->         pr_info("Initializing pool allocator\n");
->
->         _manager = kzalloc(sizeof(*_manager), GFP_KERNEL);
-> +       if (!_manager) {
-> +               pr_err("ttm: Could not allocate _manager.\n");
-> +               return -ENOMEM;
-> +       }
+The TIS specification (pg 47) says the valid bit must be set, but
+the TPM will not set it until it has completed its internal startup.
 
-This is fine,
->
->         ttm_page_pool_init_locked(&_manager->wc_pool, GFP_HIGHUSER, "wc");
->
-> @@ -817,6 +821,7 @@ int ttm_page_alloc_init(struct ttm_mem_global *glob, unsigned max_pages)
->                                    &glob->kobj, "pool");
->         if (unlikely(ret != 0)) {
->                 kobject_put(&_manager->kobj);
-> +               kfree(_manager);
->                 _manager = NULL;
+The driver checks that the valid bit is set during request_locality,
+but it issues a TPM_ACCESS_REQUEST_USE without validating the
+valid bit is set.
 
-I don;t think this is, since the kobject_put shuold free it.
+Some TPMs will ignore the TPM_ACCESS_REQUEST_USE, until valid is
+set which causes the request_locality to timeout, which breaks the
+driver attach.
 
-Dave.
+Wait one timeout unit for valid to assert. If valid does not assert
+then assume -ENODEV.
+
+Seen on embedded with a:
+1.2 TPM (device-id 0x3204, rev-id 64)
+
+Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+---
+ drivers/char/tpm/tpm_tis.c |   21 +++++++++++++++++++++
+ 1 files changed, 21 insertions(+), 0 deletions(-)
+
+Note: This does not change the requirement of the driver,
+request_locality already will bail if valid is not set. All this does
+is wait for valid to be set before attempting to write any TPM
+registers.
+
+diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
+index 23c6562..2bc3aab 100644
+--- a/drivers/char/tpm/tpm_tis.c
++++ b/drivers/char/tpm/tpm_tis.c
+@@ -99,6 +99,22 @@ static inline int is_itpm(struct pnp_dev *dev)
+ }
+ #endif
+ 
++/* Before we attempt to access the TPM we must see that the valid bit is set.
++ * The specification says that this bit is 0 at reset and remains 0 until the
++ * 'TPM has gone through its self test and initialization and has established
++ * correct values in the other bits.' */
++static int wait_startup(struct tpm_chip *chip, int l)
++{
++	unsigned long stop = jiffies + chip->vendor.timeout_a;
++	do {
++		if (ioread8(chip->vendor.iobase + TPM_ACCESS(l)) &
++		    TPM_ACCESS_VALID)
++			return 0;
++		msleep(TPM_TIMEOUT);
++	} while (time_before(jiffies, stop));
++	return -1;
++}
++
+ static int check_locality(struct tpm_chip *chip, int l)
+ {
+ 	if ((ioread8(chip->vendor.iobase + TPM_ACCESS(l)) &
+@@ -529,6 +545,11 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
+ 	chip->vendor.timeout_c = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
+ 	chip->vendor.timeout_d = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
+ 
++	if (wait_startup(chip, 0) != 0) {
++		rc = -ENODEV;
++		goto out_err;
++	}
++
+ 	if (request_locality(chip, 0) != 0) {
+ 		rc = -ENODEV;
+ 		goto out_err;
+-- 
+1.7.5.4
+
