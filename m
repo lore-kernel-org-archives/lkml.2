@@ -1,44 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946931Ab2LFTTP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 14:19:15 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:46720 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946899Ab2LFTTL (ORCPT
+	id S1946945Ab2LFTTr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 14:19:47 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30618 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946899Ab2LFTTo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 14:19:11 -0500
-Date: Thu, 6 Dec 2012 11:19:04 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, jmoyer@redhat.com
-Subject: Re: [PATCH 4/6] cfq-iosched: Rename few functions related to
- selecting workload
-Message-ID: <20121206191904.GC3676@htj.dyndns.org>
-References: <1349297821-30078-1-git-send-email-vgoyal@redhat.com>
- <1349297821-30078-5-git-send-email-vgoyal@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349297821-30078-5-git-send-email-vgoyal@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 6 Dec 2012 14:19:44 -0500
+X-Authority-Analysis: v=2.0 cv=f9bK9ZOM c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=0q0mCv_Vr9gA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=lrIq2vSOvhQA:10 a=KKAkSRfTAAAA:8 a=qyRwAtYM7W7NhZJjX_kA:9 a=PUjeQqilurYA:10 a=WwgC8nHKvroA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1354821581.17101.17.camel@gandalf.local.home>
+Subject: Re: [PATCH] ARM: ftrace: Ensure code modifications are synchronised
+ across all cpus
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Rabin Vincent <rabin@rab.in>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 06 Dec 2012 14:19:41 -0500
+In-Reply-To: <1354817466.30905.13.camel@linaro1.home>
+References: <1354817466.30905.13.camel@linaro1.home>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 03, 2012 at 04:56:59PM -0400, Vivek Goyal wrote:
-> choose_service_tree() selects/sets both wl_class and wl_type.  Rename it to
-> choose_wl_class_and_type() to make it very clear.
+On Thu, 2012-12-06 at 18:11 +0000, Jon Medhurst (Tixy) wrote:
+> When the generic ftrace implementation modifies code for trace-points it
+> uses stop_machine() to call ftrace_modify_all_code() on one CPU. This
+> ultimately calls the ARM specific function ftrace_modify_code() which
+> updates the instruction and then does flush_icache_range(). As this
+> cache flushing only operates on the local CPU then other cores may end
+> up executing the old instruction if it's still in their icaches.
 > 
-> cfq_choose_wl() only selects and sets wl_type. It is easy to confuse
-> it with choose_st(). So rename it to cfq_choose_wl_type() to make
-> it clear what does it do.
-> 
-> Just renaming. No functionality change.
-> 
-> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-> Acked-by: Jeff Moyer <jmoyer@redhat.com>
+> This may or may not cause problems for the use of ftrace on kernels
+> compiled for ARM instructions. However, Thumb2 instructions can straddle
+> two cache lines so its possible for half the old instruction to be in
+> the cache and half the new one, leading to the CPU executing garbage.
 
-Acked-by: Tejun Heo <tj@kernel.org>
+Hmm, your use of "may or may not" seems as you may not know this answer.
+I wonder if you can use the break point method as x86 does now, and
+remove the stop machine completely. Basically this is how it works:
 
--- 
-tejun
+add sw breakpoints to all locations to modify (the bp handler just does
+a nop over the instruction).
+
+send an IPI to all CPUs to flush their icache.
+
+Modify the non breakpoint part of the instruction with the new
+instruction.
+
+send an IPI to all CPUs to flush their icache
+
+Replace the breakpoint with the finished instruction.
+
+Then you don't suffer the stomp_machine() latency hit. The system will
+slow a bit due to the breakpoints but there wont be a huge "halt" in the
+middle of processing.
+
+-- Steve
+
+> 
+> This patch fixes this situation by providing an arch-specific
+> implementation of arch_ftrace_update_code() which ensures that after one
+> core has modified all the code, the other cores invalidate their icaches
+> before continuing.
+> 
+> Signed-off-by: Jon Medhurst <tixy@linaro.org>
+> ---
+
+
