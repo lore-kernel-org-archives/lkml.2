@@ -1,156 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422957Ab2LFJ66 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 04:58:58 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:55532 "EHLO
+	id S1422971Ab2LFKBm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 05:01:42 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:59390 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753468Ab2LFJ64 (ORCPT
+	with ESMTP id S1754619Ab2LFKBk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 04:58:56 -0500
+	Thu, 6 Dec 2012 05:01:40 -0500
 From: Grant Likely <grant.likely@secretlab.ca>
-To: linux-kernel@vger.kernel.org
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH] devicetree/bindings: Move gpio-leds binding into leds directory
-Date: Thu,  6 Dec 2012 09:58:50 +0000
-Message-Id: <1354787930-10931-1-git-send-email-grant.likely@secretlab.ca>
-X-Mailer: git-send-email 1.7.10.4
+Subject: Re: [PATCH v2 3/3] leds: leds-pwm: Add device tree bindings
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>, Bryan Wu <cooloney@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>
+Cc: linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+In-Reply-To: <1352731270-27534-4-git-send-email-peter.ujfalusi@ti.com>
+References: <1352731270-27534-1-git-send-email-peter.ujfalusi@ti.com> <1352731270-27534-4-git-send-email-peter.ujfalusi@ti.com>
+Date: Thu, 06 Dec 2012 10:00:52 +0000
+Message-Id: <20121206100052.EC8293E0E22@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Merely reorganizing documentation. No functional changes. It makes more
-sense for the gpio-leds binding to be grouped with other led bindings
-than with gpio drivers.
+On Mon, 12 Nov 2012 15:41:10 +0100, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
+> Support for device tree booted kernel.
+> When the kernel is booted with DeviceTree blob we support one led per
+> leds-pwm device to have cleaner integration with the PWM subsystem.
+> 
+> For usage see:
+> Documentation/devicetree/bindings/leds/leds-pwm.txt
+> 
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> ---
+>  .../devicetree/bindings/leds/leds-pwm.txt          |  34 ++++++
+>  drivers/leds/leds-pwm.c                            | 125 +++++++++++++++------
+>  2 files changed, 127 insertions(+), 32 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/leds/leds-pwm.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/leds/leds-pwm.txt b/Documentation/devicetree/bindings/leds/leds-pwm.txt
+> new file mode 100644
+> index 0000000..9fe3040
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/leds/leds-pwm.txt
+> @@ -0,0 +1,34 @@
+> +LED connected to PWM
+> +
+> +Required properties:
+> +- compatible : should be "pwm-leds".
+> +- pwms : PWM property, please refer to: 
+> +  Documentation/devicetree/bindings/pwm/pwm.txt
+> +- pwm-names : (optional) Name to be used by the PWM subsystem for the PWM device
+> +- label : (optional) The label for this LED.  If omitted, the label is
+> +  taken from the node name (excluding the unit address).
+> +- max-brightness : Maximum brightness possible for the LED
+> +- linux,default-trigger :  (optional) This parameter, if present, is a
+> +  string defining the trigger assigned to the LED.  Current triggers are:
+> +    "backlight" - LED will act as a back-light, controlled by the framebuffer
+> +		  system
+> +    "default-on" - LED will turn on, but see "default-state" below
+> +    "heartbeat" - LED "double" flashes at a load average based rate
+> +    "ide-disk" - LED indicates disk activity
+> +    "timer" - LED flashes at a fixed, configurable rate
 
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
----
+The binding mostly looks good. However, it seems to be gratuitously
+different from the gpio-leds binding and it duplicates property
+definitions. Please match the gpio-leds behaviour with each led defined
+as a sub node of the pwm-leds node.
 
-Posting for reference. I've applied this to my tree already
+Also, please reference the common properties in bindings/leds/common.txt
+(This is a new file in linux-next. See how leds-gpio references it).
 
-g.
-
- Documentation/devicetree/bindings/gpio/led.txt     |   52 --------------------
- .../devicetree/bindings/leds/leds-gpio.txt         |   52 ++++++++++++++++++++
- 2 files changed, 52 insertions(+), 52 deletions(-)
- delete mode 100644 Documentation/devicetree/bindings/gpio/led.txt
- create mode 100644 Documentation/devicetree/bindings/leds/leds-gpio.txt
-
-diff --git a/Documentation/devicetree/bindings/gpio/led.txt b/Documentation/devicetree/bindings/gpio/led.txt
-deleted file mode 100644
-index df1b308..0000000
---- a/Documentation/devicetree/bindings/gpio/led.txt
-+++ /dev/null
-@@ -1,52 +0,0 @@
--LEDs connected to GPIO lines
--
--Required properties:
--- compatible : should be "gpio-leds".
--
--Each LED is represented as a sub-node of the gpio-leds device.  Each
--node's name represents the name of the corresponding LED.
--
--LED sub-node properties:
--- gpios :  Should specify the LED's GPIO, see "gpios property" in
--  Documentation/devicetree/bindings/gpio/gpio.txt.  Active low LEDs should be
--  indicated using flags in the GPIO specifier.
--- label :  (optional)
--  see Documentation/devicetree/bindings/leds/common.txt
--- linux,default-trigger :  (optional)
--  see Documentation/devicetree/bindings/leds/common.txt
--- default-state:  (optional) The initial state of the LED.  Valid
--  values are "on", "off", and "keep".  If the LED is already on or off
--  and the default-state property is set the to same value, then no
--  glitch should be produced where the LED momentarily turns off (or
--  on).  The "keep" setting will keep the LED at whatever its current
--  state is, without producing a glitch.  The default is off if this
--  property is not present.
--
--Examples:
--
--leds {
--	compatible = "gpio-leds";
--	hdd {
--		label = "IDE Activity";
--		gpios = <&mcu_pio 0 1>; /* Active low */
--		linux,default-trigger = "ide-disk";
--	};
--
--	fault {
--		gpios = <&mcu_pio 1 0>;
--		/* Keep LED on if BIOS detected hardware fault */
--		default-state = "keep";
--	};
--};
--
--run-control {
--	compatible = "gpio-leds";
--	red {
--		gpios = <&mpc8572 6 0>;
--		default-state = "off";
--	};
--	green {
--		gpios = <&mpc8572 7 0>;
--		default-state = "on";
--	};
--};
-diff --git a/Documentation/devicetree/bindings/leds/leds-gpio.txt b/Documentation/devicetree/bindings/leds/leds-gpio.txt
-new file mode 100644
-index 0000000..df1b308
---- /dev/null
-+++ b/Documentation/devicetree/bindings/leds/leds-gpio.txt
-@@ -0,0 +1,52 @@
-+LEDs connected to GPIO lines
-+
-+Required properties:
-+- compatible : should be "gpio-leds".
-+
-+Each LED is represented as a sub-node of the gpio-leds device.  Each
-+node's name represents the name of the corresponding LED.
-+
-+LED sub-node properties:
-+- gpios :  Should specify the LED's GPIO, see "gpios property" in
-+  Documentation/devicetree/bindings/gpio/gpio.txt.  Active low LEDs should be
-+  indicated using flags in the GPIO specifier.
-+- label :  (optional)
-+  see Documentation/devicetree/bindings/leds/common.txt
-+- linux,default-trigger :  (optional)
-+  see Documentation/devicetree/bindings/leds/common.txt
-+- default-state:  (optional) The initial state of the LED.  Valid
-+  values are "on", "off", and "keep".  If the LED is already on or off
-+  and the default-state property is set the to same value, then no
-+  glitch should be produced where the LED momentarily turns off (or
-+  on).  The "keep" setting will keep the LED at whatever its current
-+  state is, without producing a glitch.  The default is off if this
-+  property is not present.
-+
-+Examples:
-+
-+leds {
-+	compatible = "gpio-leds";
-+	hdd {
-+		label = "IDE Activity";
-+		gpios = <&mcu_pio 0 1>; /* Active low */
-+		linux,default-trigger = "ide-disk";
-+	};
-+
-+	fault {
-+		gpios = <&mcu_pio 1 0>;
-+		/* Keep LED on if BIOS detected hardware fault */
-+		default-state = "keep";
-+	};
-+};
-+
-+run-control {
-+	compatible = "gpio-leds";
-+	red {
-+		gpios = <&mpc8572 6 0>;
-+		default-state = "off";
-+	};
-+	green {
-+		gpios = <&mpc8572 7 0>;
-+		default-state = "on";
-+	};
-+};
--- 
-1.7.10.4
+Otherwise the binding looks okay to me.
 
