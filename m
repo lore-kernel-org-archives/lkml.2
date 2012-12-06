@@ -1,64 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423472Ab2LFMz3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 07:55:29 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:51341 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755005Ab2LFMz2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 07:55:28 -0500
+	id S1423488Ab2LFM5J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 07:57:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18575 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754992Ab2LFM5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 07:57:07 -0500
+Date: Thu, 6 Dec 2012 15:00:04 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Asias He <asias@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+        Christoph Hellwig <hch@infradead.org>,
+        "David S. Miller" <davem@davemloft.net>, kvm@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] vhost-blk: Add vhost-blk support v6
+Message-ID: <20121206130004.GA21312@redhat.com>
+References: <1354412033-32372-1-git-send-email-asias@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1354792983-8120-1-git-send-email-snsehahn@cip.cs.fau.de>
-References: <20121206070131.GL22569@mwanda>
-	<1354792983-8120-1-git-send-email-snsehahn@cip.cs.fau.de>
-Date: Thu, 6 Dec 2012 07:55:27 -0500
-Message-ID: <CAHdPZaPGKPGDB-1=3KX3zrop9Hr42JB-GcD4F-wLKRi5SygqdQ@mail.gmail.com>
-Subject: Re: [PATCH 3/6 v2] staging/rtl8192u: indent with tabs, not spaces
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: Sebastian Hahn <snsehahn@cip.cs.fau.de>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org, amwang@redhat.com,
-        Jennifer.Naumann@informatik.stud.uni-erlangen.de, jkosina@suse.cz,
-        linux-kernel@vger.kernel.org, Julia.Lawall@lip6.fr,
-        yongjun_wei@trendmicro.com.cn, justinmattock@gmail.com,
-        joe@perches.com, adam.buchbinder@gmail.com, dan.carpenter@oracle.com,
-        linux-kernel@i4.informatik.uni-erlangen.de
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354412033-32372-1-git-send-email-asias@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Dec 02, 2012 at 09:33:53AM +0800, Asias He wrote:
+> diff --git a/drivers/vhost/Kconfig.blk b/drivers/vhost/Kconfig.blk
+> new file mode 100644
+> index 0000000..ff8ab76
+> --- /dev/null
+> +++ b/drivers/vhost/Kconfig.blk
+> @@ -0,0 +1,10 @@
+> +config VHOST_BLK
+> +	tristate "Host kernel accelerator for virtio blk (EXPERIMENTAL)"
+> +	depends on BLOCK &&  EXPERIMENTAL && m
 
->From the next time onward while you put a patch with updated code
-change as mentioned by reviewers, you tell what changed in the next
-interation.
 
-like the below,
-
-otherthan that your patch is good,
-
-On Thu, Dec 6, 2012 at 6:23 AM, Sebastian Hahn <snsehahn@cip.cs.fau.de> wrote:
-> Converted staging/rtl8187se to use tabs instead of spaces for
-> indentation to fix the checkpatch error "code indent should use tabs
-> where possible".
->
-> Signed-off-by: Sebastian Hahn <snsehahn@cip.cs.fau.de>
-> ---
-V2:
-    Removed .c.bak file as suggested by Dan.
-
->  drivers/staging/rtl8192u/ieee80211/ieee80211.h     |   14 +-
->  drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c  |  370 ++++++++++----------
->  .../staging/rtl8192u/ieee80211/ieee80211_softmac.c |    4 +-
->  drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c  |   14 +-
->  drivers/staging/rtl8192u/ieee80211/rtl_crypto.h    |   84 ++---
->  drivers/staging/rtl8192u/r8180_93cx6.c             |    2 +-
->  drivers/staging/rtl8192u/r8180_pm.h                |    2 +-
->  drivers/staging/rtl8192u/r8192U.h                  |  198 +++++------
->  drivers/staging/rtl8192u/r8192U_core.c             |   42 +--
->  9 files changed, 365 insertions(+), 365 deletions(-)
->
-
-> devel mailing list
-> devel@linuxdriverproject.org
-> http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
+should depend on eventfd as well.
