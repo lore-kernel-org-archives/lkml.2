@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755366Ab2LFTYb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 14:24:31 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:60962 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755353Ab2LFTYa (ORCPT
+	id S1755408Ab2LFTZI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 14:25:08 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:41563 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755370Ab2LFTZG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 14:24:30 -0500
-Date: Thu, 6 Dec 2012 11:17:06 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, jmoyer@redhat.com
-Subject: Re: [PATCH 2/6] cfq-iosched: More renaming to better represent
- wl_class and wl_type
-Message-ID: <20121206191706.GA3676@htj.dyndns.org>
-References: <1349297821-30078-1-git-send-email-vgoyal@redhat.com>
- <1349297821-30078-3-git-send-email-vgoyal@redhat.com>
+	Thu, 6 Dec 2012 14:25:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1349297821-30078-3-git-send-email-vgoyal@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1354765784.12428.3.camel@trivette.home.lan>
+References: <1348620130-25987-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+	<CACRpkdaaD6HY2o-NNBRZYCXm97Dts7Njzz13Zj7m2ZycV-Ar5g@mail.gmail.com>
+	<1349720405.23690.45.camel@trivette>
+	<CACRpkdbbungMiZ74o=-CfRoLQj127CaWaYr7adKKSquFd=x5qg@mail.gmail.com>
+	<1354765784.12428.3.camel@trivette.home.lan>
+Date: Thu, 6 Dec 2012 20:25:04 +0100
+Message-ID: <CACRpkdYZXvjwcu3=7=KY6gd8b7dY7hPE=KGPMXpPELLym3A_gw@mail.gmail.com>
+Subject: Re: [PATCH] gpio: add TS-5500 DIO headers support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Jerome Oufella <jerome.oufella@savoirfairelinux.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 03, 2012 at 04:56:57PM -0400, Vivek Goyal wrote:
-> Some more renaming. Again making the code uniform w.r.t use of
-> wl_class/class to represent IO class (RT, BE, IDLE) and using
-> wl_type/type to represent subclass (SYNC, SYNC-IDLE, ASYNC).
-> 
-> At places this patch shortens the string "workload" to "wl".
-> Renamed "saved_workload" to "saved_wl_type". Renamed
-> "saved_serving_class" to "saved_wl_class".
-> 
-> For uniformity with "saved_wl_*" variables, renamed "serving_class"
-> to "serving_wl_class" and renamed "serving_type" to "serving_wl_type".
-> 
-> Again, just trying to improve upon code uniformity and improve
-> readability. No functional change.
-> 
-> v2:
-> - Restored the usage of keyword "service" based on Jeff Moyer's feedback.
-> 
-> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+On Thu, Dec 6, 2012 at 4:49 AM, Vivien Didelot
+<vivien.didelot@savoirfairelinux.com> wrote:
 
-Acked-by: Tejun Heo <tj@kernel.org>
+> I looked at some drivers and if I'm not mistaken, this case is
+> different. Technologic Systems platforms (such as the TS-5500) have
+> several pin blocks. Each block has input-only, input-output or
+> output-only pins. Only one pin per block is connected to an interrupt
+> line. But sadly, these interrupt-connected lines are input only.
+> Here are the details about the TS-5500 pin block "DIO1":
+>
+> http://wiki.embeddedarm.com/wiki/TS-5500#DIO1_Header
 
-Thanks.
+Aha I get it now. How odd ... OK we need to support this too.
 
--- 
-tejun
+> That's why I previously used a dio1_irq platform data field, to return
+> the interrupt connected to the IRQ-able pin for any GPIO on DIO1, in the
+> gpio_to_irq() implementation.
+
+OK I get it.
+
+> A Linux IRQ per pin doesn't seem to be possible because the
+> irq_create_mapping() documentation says that "Only one mapping per
+> hardware interrupt is permitted." Should I still implement the
+> irq_chip/irqdomain for a single IRQ per block? For each pin?
+> What do you think about this implementation?
+
+So basically there are in total three pins and yeah this is too
+little and too strange to warrant an irqdomain so go ahead
+with it as it looks and fix the other comments. I'm happy with
+keeping this now.
+
+Linus Walleij
