@@ -1,161 +1,446 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946277Ab2LFRKM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 12:10:12 -0500
-Received: from mail.eecsit.tu-berlin.de ([130.149.17.13]:65308 "EHLO
-	mail.cs.tu-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754725Ab2LFRKG (ORCPT
+	id S1946275Ab2LFRKD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 12:10:03 -0500
+Received: from 12.mo3.mail-out.ovh.net ([188.165.41.191]:52424 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1946252Ab2LFRJx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 12:10:06 -0500
-From: =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kay Sievers <kay@vrfy.org>
-Cc: linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
-Subject: [PATCH v2 08/14] printk: refactor locking in console_unlock()
-Date: Thu,  6 Dec 2012 18:06:05 +0100
-Message-Id: <1354813571-11253-9-git-send-email-schnhrr@cs.tu-berlin.de>
-X-Mailer: git-send-email 1.8.0.1.20.g7c65b2e.dirty
-In-Reply-To: <1354813571-11253-1-git-send-email-schnhrr@cs.tu-berlin.de>
-References: <1354813571-11253-1-git-send-email-schnhrr@cs.tu-berlin.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Thu, 6 Dec 2012 12:09:53 -0500
+X-Greylist: delayed 1439 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Dec 2012 12:09:52 EST
+From: Boris BREZILLON <linux-arm@overkiz.com>
+To: Thierry Reding <thierry.reding@avionic-design.de>,
+        Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Boris BREZILLON <linux-arm@overkiz.com>
+X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
+Subject: [PATCH 1/1] pwm: atmel: add Timer Counter Block PWM driver
+Date: Thu,  6 Dec 2012 17:45:23 +0100
+Message-Id: <2ab3d3afe800febece9994d55813ab71b27c2d25.1354810562.git.linux-arm@overkiz.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <cover.1354810562.git.linux-arm@overkiz.com>
+References: <cover.1354810562.git.linux-arm@overkiz.com>
+In-Reply-To: <cover.1354810562.git.linux-arm@overkiz.com>
+References: <cover.1354810562.git.linux-arm@overkiz.com>
+X-Ovh-Tracer-Id: 14678357086457213974
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehiedrtdejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomhepuehorhhishcuueftgfgkkffnnffqpfcuoehlihhnuhigqdgrrhhmsehovhgvrhhkihiirdgtohhmqeenucfjughrpefhvffufffkofgjfhgjfhestddtredtredttd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehiedrudefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomhepuehorhhishcuueftgfgkkffnnffqpfcuoehlihhnuhigqdgrrhhmsehovhgvrhhkihiirdgtohhmqeenucfjughrpefhvffufffkofgjfhgjfhestddtredtredttd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, console_unlock() acquires and releases the logbuf_lock quite
-often, including saving and restoring the interrupt state. While we can
-do only so much about the former, because we should not block logging
-while writing to the console, the latter is unnecessary and can be
-avoided.
+Add TCB PWM driver.
+Add device tree binding.
 
-Still, whenever we released the logbuf_lock for a moment, other threads
-might have added new data that we must process. This might include the
-continuation buffer. That means, after we reacquire the lock, we must
-check the continuation buffer again. And, equally important, if the
-continuation buffer turns out to be empty, we must proceed to the
-check for remaining logged messages without dropping the lock.
+Signed-off-by: Boris BREZILLON <linux-arm@overkiz.com>
+--
+ create mode 100644 Documentation/devicetree/bindings/pwm/atmel-tcb-pwm.txt
+ create mode 100644 drivers/pwm/pwm-atmel-tcb.c
 
-(And, at the end, the retry check must include the continuation buffer.)
-
-This resolves an issue where console message are output in the wrong order,
-because after the retry jump at the bottom the continuation buffer is not
-checked again, but left until another call to console_unlock().
-
-Signed-off-by: Jan H. Schönherr <schnhrr@cs.tu-berlin.de>
----
-This is not yet the final state I envision for this function, but it is
-a working middle step. That is, the loop in console_cont_flush() is
-rather ugly, and call_console_drivers() is still called from two places
-with the same code around. This calls for even more refactoring.
-
-v2:
-- add cont buffer to retry check
----
- kernel/printk.c | 32 +++++++++++++++++---------------
- 1 file changed, 17 insertions(+), 15 deletions(-)
-
-diff --git a/kernel/printk.c b/kernel/printk.c
-index b6c4eae..075fbd4 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -1726,6 +1726,7 @@ static struct cont {
- 	size_t cons;
- 	u8 level;
- 	bool flushed:1;
-+	enum log_flags flags;
- } cont;
- static struct log *log_from_idx(u32 idx) { return NULL; }
- static u32 log_next(u32 idx) { return 0; }
-@@ -2005,13 +2006,11 @@ void wake_up_klogd(void)
- 
- static void console_cont_flush(char *text, size_t size)
- {
--	unsigned long flags;
- 	size_t len;
- 
--	raw_spin_lock_irqsave(&logbuf_lock, flags);
--
-+again:
- 	if (!cont.len)
--		goto out;
-+		return;
- 
- 	/*
- 	 * We still queue earlier records, likely because the console was
-@@ -2019,17 +2018,18 @@ static void console_cont_flush(char *text, size_t size)
- 	 * did not flush any fragment so far, so just let it queue up.
- 	 */
- 	if (console_seq < log_next_seq && !cont.cons)
--		goto out;
-+		return;
- 
- 	len = cont_print_text(text, size);
-+	if (!len)
-+		return;
+diff --git a/Documentation/devicetree/bindings/pwm/atmel-tcb-pwm.txt b/Documentation/devicetree/bindings/pwm/atmel-tcb-pwm.txt
+new file mode 100644
+index 0000000..7644889
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pwm/atmel-tcb-pwm.txt
+@@ -0,0 +1,15 @@
++Atmel TCB PWM controller
 +
- 	raw_spin_unlock(&logbuf_lock);
- 	stop_critical_timings();
- 	call_console_drivers(cont.level, text, len);
- 	start_critical_timings();
--	local_irq_restore(flags);
--	return;
--out:
--	raw_spin_unlock_irqrestore(&logbuf_lock, flags);
-+	raw_spin_lock(&logbuf_lock);
-+	goto again;
- }
++Required properties:
++- compatible: should be "atmel,tcb-pwm"
++- #pwm-cells: should be 2.  The first cell specifies the per-chip index
++  of the PWM to use and the second cell is the period in nanoseconds.
++- atmel,tc-block: the Timer Counter block to use as a PWM chip.
++
++Example:
++
++pwm: pwm@80064000 {
++	compatible = "fsl,imx28-pwm", "fsl,imx23-pwm";
++	#pwm-cells = <2>;
++	atmel,tc-block = <1>;
++};
+diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+index e513cd9..bda52f7 100644
+--- a/drivers/pwm/Kconfig
++++ b/drivers/pwm/Kconfig
+@@ -37,6 +37,14 @@ config PWM_AB8500
+ 	  To compile this driver as a module, choose M here: the module
+ 	  will be called pwm-ab8500.
  
- /**
-@@ -2061,15 +2061,15 @@ void console_unlock(void)
- 
- 	console_may_schedule = 0;
- 
--	/* flush buffered message fragment immediately to console */
--	console_cont_flush(text, sizeof(text));
- again:
-+	raw_spin_lock_irqsave(&logbuf_lock, flags);
- 	for (;;) {
- 		struct log *msg;
- 		size_t len;
- 		int level;
- 
--		raw_spin_lock_irqsave(&logbuf_lock, flags);
-+		/* flush buffered message fragment immediately to console */
-+		console_cont_flush(text, sizeof(text));
- 
- 		if (console_seq < log_first_seq) {
- 			/* messages are gone, move to first one */
-@@ -2105,12 +2105,12 @@ skip:
- 		console_idx = log_next(console_idx);
- 		console_seq++;
- 		console_prev = msg->flags;
--		raw_spin_unlock(&logbuf_lock);
- 
-+		raw_spin_unlock(&logbuf_lock);
- 		stop_critical_timings();	/* don't trace print latency */
- 		call_console_drivers(level, text, len);
- 		start_critical_timings();
--		local_irq_restore(flags);
-+		raw_spin_lock(&logbuf_lock);
- 	}
- 	console_locked = 0;
- 
-@@ -2129,7 +2129,9 @@ skip:
- 	 * flush, no worries.
- 	 */
- 	raw_spin_lock(&logbuf_lock);
--	retry = console_seq != log_next_seq;
-+	retry = console_seq != log_next_seq ||
-+		(cont.len && (cont.cons != cont.len ||
-+			      cont.flags & LOG_NEWLINE));
- 	if (seen_seq != log_next_seq) {
- 		wake_klogd = true;
- 		seen_seq = log_next_seq;
++config PWM_ATMEL_TCB
++	bool "TC Block PWM"
++	depends on ATMEL_TCLIB
++	select HAVE_PWM
++	default y
++	help
++	  Select this to get 6 PWM devices.
++
+ config PWM_BFIN
+ 	tristate "Blackfin PWM support"
+ 	depends on BFIN_GPTIMERS
+diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
+index 62a2963..94ba21e 100644
+--- a/drivers/pwm/Makefile
++++ b/drivers/pwm/Makefile
+@@ -1,5 +1,6 @@
+ obj-$(CONFIG_PWM)		+= core.o
+ obj-$(CONFIG_PWM_AB8500)	+= pwm-ab8500.o
++obj-$(CONFIG_PWM_ATMEL_TCB)	+= pwm-atmel-tcb.o
+ obj-$(CONFIG_PWM_BFIN)		+= pwm-bfin.o
+ obj-$(CONFIG_PWM_IMX)		+= pwm-imx.o
+ obj-$(CONFIG_PWM_JZ4740)	+= pwm-jz4740.o
+diff --git a/drivers/pwm/pwm-atmel-tcb.c b/drivers/pwm/pwm-atmel-tcb.c
+new file mode 100644
+index 0000000..d5a87cc
+--- /dev/null
++++ b/drivers/pwm/pwm-atmel-tcb.c
+@@ -0,0 +1,335 @@
++/*
++ * Copyright (C) Overkiz SAS 2012
++ *
++ * Author: Boris BREZILLON <b.brezillon@overkiz.com>
++ * License terms: GNU General Public License (GPL) version 2
++ */
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/clocksource.h>
++#include <linux/clockchips.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++
++#include <linux/clk.h>
++#include <linux/err.h>
++#include <linux/ioport.h>
++#include <linux/io.h>
++#include <linux/platform_device.h>
++#include <linux/atmel_tc.h>
++#include <linux/pwm.h>
++#include <linux/of_device.h>
++#include <linux/slab.h>
++
++#define NPWM	6
++
++struct atmel_tcb_pwm_device {
++	u8 polarity : 1;
++	u8 clk : 3;
++	u32 duty;
++	u32 period;
++};
++
++struct atmel_tcb_pwm_chip {
++	struct pwm_chip chip;
++	spinlock_t lock;
++	struct atmel_tc *tc;
++	struct atmel_tcb_pwm_device pwms[NPWM];
++};
++
++static inline struct atmel_tcb_pwm_chip *to_atmel_tcb_pwm_chip(struct pwm_chip *chip)
++{
++	return container_of(chip, struct atmel_tcb_pwm_chip, chip);
++}
++
++static int atmel_tcb_pwm_set_polarity (struct pwm_chip *chip, struct pwm_device *pwm,
++					  enum pwm_polarity polarity)
++{
++	struct atmel_tcb_pwm_device *tcbpwm =
++			(struct atmel_tcb_pwm_device *)pwm_get_chip_data(pwm);
++
++	tcbpwm->polarity = polarity;
++
++	return 0;
++}
++
++static int atmel_tcb_pwm_request (struct pwm_chip *chip, struct pwm_device *pwm)
++{
++	struct atmel_tcb_pwm_chip *tcbpwmc = to_atmel_tcb_pwm_chip(chip);
++	struct atmel_tcb_pwm_device *tcbpwm = &(tcbpwmc->pwms[pwm->hwpwm]);
++	struct atmel_tc *tc = tcbpwmc->tc;
++	void __iomem *regs = tc->regs;
++	u32 reg;
++
++	pwm_set_chip_data(pwm, tcbpwm);
++	tcbpwm->polarity = PWM_POLARITY_NORMAL;
++	tcbpwm->duty = 0;
++	tcbpwm->period = 0;
++	tcbpwm->clk = 0;
++	spin_lock(&tcbpwmc->lock);
++	reg = __raw_readl (regs + ATMEL_TC_REG(pwm->hwpwm / 2, CMR));
++	if (reg & ATMEL_TC_WAVE) {
++		tcbpwm->duty = __raw_readl (regs + ((pwm->hwpwm % 2) ?
++				ATMEL_TC_REG(pwm->hwpwm / 2, RB) :
++				ATMEL_TC_REG(pwm->hwpwm / 2, RA)));
++
++
++		tcbpwm->clk = reg & ATMEL_TC_TCCLKS;
++		tcbpwm->period = __raw_readl (regs + ATMEL_TC_REG(pwm->hwpwm / 2, RC));
++		reg &= (ATMEL_TC_TCCLKS |
++				ATMEL_TC_ACPA | ATMEL_TC_ACPC | ATMEL_TC_AEEVT | ATMEL_TC_ASWTRG |
++				ATMEL_TC_BCPB | ATMEL_TC_BCPC | ATMEL_TC_BEEVT | ATMEL_TC_BSWTRG);
++	}
++	else
++		reg = 0;
++	reg |= ATMEL_TC_WAVE | ATMEL_TC_WAVESEL_UP_AUTO | ATMEL_TC_EEVT_XC0;
++	__raw_writel (reg, regs + ATMEL_TC_REG(pwm->hwpwm / 2, CMR));
++	spin_unlock(&tcbpwmc->lock);
++
++	clk_enable (tc->clk[pwm->hwpwm / 2]);
++
++	return 0;
++}
++
++static void atmel_tcb_pwm_free (struct pwm_chip *chip, struct pwm_device *pwm)
++{
++	struct atmel_tcb_pwm_chip *tcbpwmc = to_atmel_tcb_pwm_chip(chip);
++	struct atmel_tc *tc = tcbpwmc->tc;
++
++	clk_disable (tc->clk[pwm->hwpwm / 2]);
++}
++
++static void atmel_tcb_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
++{
++	struct atmel_tcb_pwm_chip *tcbpwmc = to_atmel_tcb_pwm_chip(chip);
++	struct atmel_tcb_pwm_device *tcbpwm =
++			(struct atmel_tcb_pwm_device *)pwm_get_chip_data(pwm);
++	struct atmel_tc *tc = tcbpwmc->tc;
++	void __iomem *regs = tc->regs;
++	u32 reg;
++	u32 cmr = 0;
++	u8 shift = pwm->hwpwm % 2 ? 8 : 0;
++	enum pwm_polarity polarity = tcbpwm->polarity;
++
++	if (tcbpwm->duty == 0)
++		polarity = !polarity;
++
++	if (polarity)
++		cmr |= ATMEL_TC_ASWTRG_CLEAR;
++	else
++		cmr |= ATMEL_TC_ASWTRG_SET;
++
++	cmr <<= shift;
++
++	spin_lock(&tcbpwmc->lock);
++	reg = __raw_readl(regs + ATMEL_TC_REG(pwm->hwpwm / 2, CMR));
++	reg &= ~((ATMEL_TC_ACPA | ATMEL_TC_ACPC | ATMEL_TC_AEEVT | ATMEL_TC_BSWTRG) << shift);
++	reg |= cmr;
++	__raw_writel (reg, regs + ATMEL_TC_REG(pwm->hwpwm / 2, CMR));
++	__raw_writel (ATMEL_TC_SWTRG, regs + ATMEL_TC_REG(pwm->hwpwm / 2, CCR));
++	if (!(reg & (ATMEL_TC_ACPC | ATMEL_TC_BCPC)))
++		__raw_writel(ATMEL_TC_SWTRG | ATMEL_TC_CLKDIS, regs + ATMEL_TC_REG(pwm->hwpwm / 2, CCR));
++	else
++		__raw_writel (ATMEL_TC_SWTRG, regs + ATMEL_TC_REG(pwm->hwpwm / 2, CCR));
++	spin_unlock(&tcbpwmc->lock);
++}
++
++static int atmel_tcb_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
++{
++	struct atmel_tcb_pwm_chip *tcbpwmc = to_atmel_tcb_pwm_chip(chip);
++	struct atmel_tcb_pwm_device *tcbpwm =
++			(struct atmel_tcb_pwm_device *)pwm_get_chip_data(pwm);
++	struct atmel_tc *tc = tcbpwmc->tc;
++	void __iomem *regs = tc->regs;
++	u32 reg;
++	u32 cmr = 0;
++	u8 shift = pwm->hwpwm % 2 ? 8 : 0;
++	enum pwm_polarity polarity = tcbpwm->polarity;
++
++	if (tcbpwm->duty == 0)
++		polarity = !polarity;
++
++	if (polarity)
++		cmr |= ATMEL_TC_ASWTRG_CLEAR;
++	else
++		cmr |= ATMEL_TC_ASWTRG_SET;
++
++	if (tcbpwm->duty != tcbpwm->period && tcbpwm->duty > 0) {
++		if (polarity)
++			cmr |= ATMEL_TC_ACPA_SET | ATMEL_TC_ACPC_CLEAR;
++		else
++			cmr |= ATMEL_TC_ACPA_CLEAR | ATMEL_TC_ACPC_SET;
++	}
++
++	cmr <<= shift;
++	cmr |= tcbpwm->clk;
++
++	spin_lock(&tcbpwmc->lock);
++	reg = __raw_readl(regs + ATMEL_TC_REG(pwm->hwpwm / 2, CMR));
++	reg &= ~(((ATMEL_TC_ACPA |
++				ATMEL_TC_ACPC |
++				ATMEL_TC_AEEVT |
++				ATMEL_TC_ASWTRG) << shift) |
++			ATMEL_TC_TCCLKS);
++	reg |= cmr;
++	__raw_writel (reg, regs + ATMEL_TC_REG(pwm->hwpwm / 2, CMR));
++	__raw_writel(tcbpwm->duty, regs + ((pwm->hwpwm % 2) ? ATMEL_TC_REG(pwm->hwpwm / 2, RB) : ATMEL_TC_REG(pwm->hwpwm / 2, RA)));
++	__raw_writel(tcbpwm->period, regs + ATMEL_TC_REG(pwm->hwpwm / 2, RC));
++	__raw_writel (ATMEL_TC_CLKEN | ATMEL_TC_SWTRG, regs + ATMEL_TC_REG(pwm->hwpwm / 2, CCR));
++	spin_unlock(&tcbpwmc->lock);
++	return 0;
++}
++
++static int atmel_tcb_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
++		int duty_ns, int period_ns)
++{
++	struct atmel_tcb_pwm_chip *tcbpwmc = to_atmel_tcb_pwm_chip(chip);
++	struct atmel_tcb_pwm_device *tcbpwm =
++			(struct atmel_tcb_pwm_device *)pwm_get_chip_data(pwm);
++	struct atmel_tcb_pwm_device *atcbpwm = &(tcbpwmc->pwms[pwm->hwpwm % 2 ? pwm->hwpwm - 1 : pwm->hwpwm + 1]);
++	struct atmel_tc *tc = tcbpwmc->tc;
++	int i;
++	int slowclk = 0;
++	u32 period;
++	u32 rate = clk_get_rate(tc->clk[pwm->hwpwm / 2]);
++	u64 min;
++	u64 max;
++	u64 duty;
++
++	for (i = 0; i < 5; ++i) {
++		if (atmel_tc_divisors[i] == 0) {
++			slowclk = i;
++			continue;
++		}
++		min = div_u64 (1000000000, div_u64 (rate, atmel_tc_divisors[i]));
++		max = min << tc->tcb_config->counter_width;
++		if (max >= period_ns)
++			break;
++	}
++
++	if (i == 5) {
++		i = slowclk;
++		rate = 32768;
++		min = div_u64 (1000000000, rate);
++		max = min << 16;
++
++		if (max < period_ns)
++			return -ERANGE;
++	}
++
++	duty = div_u64 (duty_ns, min);
++	duty &=  ((u64)(1 << tc->tcb_config->counter_width) - 1);
++
++	period = div_u64 (period_ns, min);
++	period &= ((u64)(1 << tc->tcb_config->counter_width) - 1);
++
++	if ((atcbpwm->duty > 0 && atcbpwm->duty != atcbpwm->period) &&
++		(atcbpwm->clk != i || atcbpwm->period != period)) {
++		dev_err(chip->dev, "failed to configure period_ns\n");
++		return -EINVAL;
++	}
++
++	tcbpwm->period = period;
++	tcbpwm->clk = i;
++	tcbpwm->duty = duty;
++
++	if (test_bit(PWMF_ENABLED, &pwm->flags))
++		atmel_tcb_pwm_enable(chip, pwm);
++
++	return 0;
++}
++
++static const struct pwm_ops atmel_tcb_pwm_ops = {
++	.set_polarity = atmel_tcb_pwm_set_polarity,
++	.request = atmel_tcb_pwm_request,
++	.free = atmel_tcb_pwm_free,
++	.config = atmel_tcb_pwm_config,
++	.enable = atmel_tcb_pwm_enable,
++	.disable = atmel_tcb_pwm_disable,
++};
++
++static int __devinit atmel_tcb_pwm_probe(struct platform_device *pdev)
++{
++	struct atmel_tcb_pwm_chip *tcbpwm;
++	struct device_node *np = pdev->dev.of_node;
++	struct atmel_tc *tc;
++	int err;
++	int tcblock;
++
++
++	err = of_property_read_u32(np, "tc-block", &tcblock);
++	if (err < 0) {
++		dev_err(&pdev->dev,
++				"failed to get tc block number from device tree (error: %d)\n", err);
++		return err;
++	}
++
++	tc = atmel_tc_alloc(tcblock, "tcb-pwm");
++	if (tc == NULL) {
++		dev_err(&pdev->dev, "failed to allocate Timer Counter Block\n");
++		return -ENOMEM;
++	}
++
++	tcbpwm = kzalloc(sizeof(*tcbpwm), GFP_KERNEL);
++	if (tcbpwm == NULL) {
++		dev_err(&pdev->dev, "failed to allocate memory\n");
++		return -ENOMEM;
++	}
++
++	tcbpwm->chip.dev = &pdev->dev;
++	tcbpwm->chip.ops = &atmel_tcb_pwm_ops;
++	tcbpwm->chip.base = pdev->id;
++	tcbpwm->chip.npwm = NPWM;
++	tcbpwm->tc = tc;
++
++	spin_lock_init(&tcbpwm->lock);
++
++	err = pwmchip_add(&tcbpwm->chip);
++	if (err < 0) {
++		kfree(tcbpwm);
++		return err;
++	}
++
++	dev_dbg(&pdev->dev, "pwm probe successful\n");
++	platform_set_drvdata(pdev, tcbpwm);
++
++	return 0;
++}
++
++static int __devexit atmel_tcb_pwm_remove(struct platform_device *pdev)
++{
++	struct atmel_tcb_pwm_chip *tcbpwm = platform_get_drvdata(pdev);
++	int err;
++
++	err = pwmchip_remove(&tcbpwm->chip);
++	if (err < 0)
++		return err;
++
++	atmel_tc_free(tcbpwm->tc);
++
++	dev_dbg(&pdev->dev, "pwm driver removed\n");
++	kfree(tcbpwm);
++
++	return 0;
++}
++
++static struct of_device_id atmel_tcb_pwm_dt_ids[] = {
++	{ .compatible = "atmel,tcb-pwm", },
++	{ /* sentinel */ }
++};
++MODULE_DEVICE_TABLE(of, mxs_pwm_dt_ids);
++
++static struct platform_driver atmel_tcb_pwm_driver = {
++	.driver = {
++		.name = "atmel-tcb-pwm",
++		.of_match_table = of_match_ptr(atmel_tcb_pwm_dt_ids),
++	},
++	.probe = atmel_tcb_pwm_probe,
++	.remove = __devexit_p(atmel_tcb_pwm_remove),
++};
++module_platform_driver(atmel_tcb_pwm_driver);
++
++MODULE_AUTHOR("Boris BREZILLON <b.brezillon@overkiz.com>");
++MODULE_DESCRIPTION("Atmel Timer Counter Pulse Width Modulation Driver");
++MODULE_ALIAS("platform:atmel-tcb-pwm");
++MODULE_LICENSE("GPL v2");
 -- 
-1.8.0.1.20.g7c65b2e.dirty
+1.7.0.4
 
