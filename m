@@ -1,121 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423374Ab2LFMgl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 07:36:41 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:41431 "EHLO comal.ext.ti.com"
+	id S1423399Ab2LFMmK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 07:42:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48479 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751485Ab2LFMgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 07:36:40 -0500
-Message-ID: <50C0913B.9070802@ti.com>
-Date: Thu, 6 Dec 2012 13:36:11 +0100
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1423362Ab2LFMmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 07:42:08 -0500
+Date: Thu, 6 Dec 2012 13:42:01 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Herton Krzesinski <herton.krzesinski@canonical.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: freezer: exec should clear PF_NOFREEZE along with PF_KTHREAD
+Message-ID: <20121206124201.GA30705@redhat.com>
+References: <50BF9CC2.7070705@canonical.com> <1354762294.17107.157.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        <linux-leds@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH v2 3/3] leds: leds-pwm: Add device tree bindings
-References: <1352731270-27534-1-git-send-email-peter.ujfalusi@ti.com> <1352731270-27534-4-git-send-email-peter.ujfalusi@ti.com> <20121206100052.EC8293E0E22@localhost>
-In-Reply-To: <20121206100052.EC8293E0E22@localhost>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354762294.17107.157.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+Hi,
 
-On 12/06/2012 11:00 AM, Grant Likely wrote:
-> On Mon, 12 Nov 2012 15:41:10 +0100, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
->> Support for device tree booted kernel.
->> When the kernel is booted with DeviceTree blob we support one led per
->> leds-pwm device to have cleaner integration with the PWM subsystem.
->>
->> For usage see:
->> Documentation/devicetree/bindings/leds/leds-pwm.txt
->>
->> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
->> ---
->>  .../devicetree/bindings/leds/leds-pwm.txt          |  34 ++++++
->>  drivers/leds/leds-pwm.c                            | 125 +++++++++++++++------
->>  2 files changed, 127 insertions(+), 32 deletions(-)
->>  create mode 100644 Documentation/devicetree/bindings/leds/leds-pwm.txt
->>
->> diff --git a/Documentation/devicetree/bindings/leds/leds-pwm.txt b/Documentation/devicetree/bindings/leds/leds-pwm.txt
->> new file mode 100644
->> index 0000000..9fe3040
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/leds/leds-pwm.txt
->> @@ -0,0 +1,34 @@
->> +LED connected to PWM
->> +
->> +Required properties:
->> +- compatible : should be "pwm-leds".
->> +- pwms : PWM property, please refer to: 
->> +  Documentation/devicetree/bindings/pwm/pwm.txt
->> +- pwm-names : (optional) Name to be used by the PWM subsystem for the PWM device
->> +- label : (optional) The label for this LED.  If omitted, the label is
->> +  taken from the node name (excluding the unit address).
->> +- max-brightness : Maximum brightness possible for the LED
->> +- linux,default-trigger :  (optional) This parameter, if present, is a
->> +  string defining the trigger assigned to the LED.  Current triggers are:
->> +    "backlight" - LED will act as a back-light, controlled by the framebuffer
->> +		  system
->> +    "default-on" - LED will turn on, but see "default-state" below
->> +    "heartbeat" - LED "double" flashes at a load average based rate
->> +    "ide-disk" - LED indicates disk activity
->> +    "timer" - LED flashes at a fixed, configurable rate
-> 
-> The binding mostly looks good. However, it seems to be gratuitously
-> different from the gpio-leds binding and it duplicates property
-> definitions. Please match the gpio-leds behaviour with each led defined
-> as a sub node of the pwm-leds node.
+(add lkml)
 
-The GPIO and PWM bindings are substantially different. For start in pwm we do
-not have of_get_pwm* helpers. To get the PWM itself we need to use wpm_get()
-which uses the pwms = <>; pwm-names = <>; properties on the device's main node.
-This is what I could do at the moment:
+On 12/06, Ben Hutchings wrote:
+>
+> On Wed, 2012-12-05 at 14:13 -0500, Joseph Salisbury wrote:
+>
+> > Hi Oleg,
+> >
+> > A bug was opened against the Ubuntu kernel[0].  It was found that
+> > reverting commit b40a79591ca918e7b91b0d9b6abd5d00f2e88c19 resolved this
+> > bug, and allowed suspend/resume to work properly.
+> >
+> > I see that you are the author of this patch, so I wanted to run it by
+> > you.  I was thinking of requesting a revert for 3.2 stable, but I wanted
+> > to get your feedback first.
+> >
+> > Thanks,
+> >
+> > Joe
+> >
+> >
+> > [0] https://bugs.launchpad.net/ubuntu/+source/v86d/+bug/1080530
+>
+> If I understand this rightly:
+> 1. Suspend is aborted because the v86d usermodehelper cannot be frozen.
+> 2. Before this fix, usermodehelpers could inherit PF_NOFREEZE (what
+> could possibly go wrong with that?!), which is why this didn't
+> previously happen.
 
-twl_pwm: pwm {
-	compatible = "ti,twl4030-pwm";
-	#pwm-cells = <2>;
-};
+Yes, try_to_freeze_tasks() ignores PF_NOFREEZE tasks
 
-twl_led: pwmled {
-	compatible = "ti,twl4030-pwmled";
-	#pwm-cells = <2>;
-};
+> 3. However, usermodehelpers are supposed to be disabled while the
+> freezer is running.  Why is this one still running?
 
-pwmleds {
-	compatible = "pwm-leds";
-	pwms = <&twl_pwm 0 7812500
-		&twl_pwmled 0 7812500>;
-	pwm-names = "omap4::keypad",
-		    "omap4:green:chrg";
-	kpad {
-		label = "omap4::keypad";
-		max-brightness = <127>;
-	};
+__usermodehelper_disable() doesn't try to kill/stop/whatever the already
+spawned tasks...
 
-	charging {
-		label = "omap4:green:chrg";
-		max-brightness = <255>;
-	};
+The question is, why v86d refuses to freeze? It sleeps in TASK_INTERRUPTIBLE.
 
 
-};
+Oh... I seem to understand. This is 3.2 kernel, it also has PF_FREEZER_NOSIG.
+which should be cleared along with PF_NOFREEZE.
 
-The string in pwm-names and under the led section's label must match in order
-to be able to get the correct PWM for the led to drive it.
-If this is good, I can make the change and resend the series soon.
+This flag was removed upstream, but the older kernel need the fix. Could
+you test the patch below?
 
-> Also, please reference the common properties in bindings/leds/common.txt
-> (This is a new file in linux-next. See how leds-gpio references it).
+Oleg.
 
-Will do that.
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1084,7 +1084,7 @@ int flush_old_exec(struct linux_binprm *
+ 
+ 	set_fs(USER_DS);
+ 	current->flags &=
+-		~(PF_RANDOMIZE | PF_FORKNOEXEC | PF_KTHREAD | PF_NOFREEZE);
++		~(PF_RANDOMIZE | PF_FORKNOEXEC | PF_KTHREAD | PF_NOFREEZE | PF_FREEZER_NOSIG);
+ 	flush_thread();
+ 	current->personality &= ~bprm->per_clear;
+ 
 
--- 
-Péter
