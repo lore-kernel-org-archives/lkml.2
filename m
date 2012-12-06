@@ -1,95 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945907Ab2LFQ2r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 11:28:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41250 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422879Ab2LFQ2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 11:28:44 -0500
-Date: Thu, 6 Dec 2012 18:28:39 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, kexec@lists.infradead.org,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v11 0/2] x86: vmclear vmcss on all cpus when doing kdump
- if necessary
-Message-ID: <20121206162839.GG19514@redhat.com>
-References: <50C0BB90.1080804@gmail.com>
+	id S1945917Ab2LFQbo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 11:31:44 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:61003 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932815Ab2LFQbm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 11:31:42 -0500
+Date: Thu, 6 Dec 2012 16:31:39 +0000
+From: Cong Ding <dinggnu@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Bin Wang <wbin00@gmail.com>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org
+Subject: Re: [PATCH RFC -next] Fix the trailing blank space issue
+Message-ID: <20121206163138.GC2510@gmail.com>
+References: <1354784936-5647-1-git-send-email-wbin00@gmail.com>
+ <20121206154219.GA24788@gmail.com>
+ <20121206160606.GA15256@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50C0BB90.1080804@gmail.com>
+In-Reply-To: <20121206160606.GA15256@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 06, 2012 at 11:36:48PM +0800, Zhang Yanfei wrote:
-> Currently, kdump just makes all the logical processors leave VMX operation by
-> executing VMXOFF instruction, so any VMCSs active on the logical processors may
-> be corrupted. But, sometimes, we need the VMCSs to debug guest images contained
-> in the host vmcore. To prevent the corruption, we should VMCLEAR the VMCSs before
-> executing the VMXOFF instruction.
+On Thu, Dec 06, 2012 at 08:06:06AM -0800, Greg Kroah-Hartman wrote:
+> On Thu, Dec 06, 2012 at 03:42:20PM +0000, Cong Ding wrote:
+> > On Thu, Dec 06, 2012 at 05:08:56PM +0800, Bin Wang wrote:
+> > > This patch removes the trailing white space in fs/sysfs/mount.c.
+> > > 
+> > > Signed-off-by: Bin Wang <wbin00@gmail.com>
+> > > ---
+> > >  fs/sysfs/mount.c | 2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > > 
+> > Hi Greg,
+> > 
+> > I am not sure it is really necessary to remove all the trailing blank spaces
+> > in the project. I have done a try by this shell command
+> > $ find . -iname '*.[ch]' | xargs sed 's/\s\+$//g' -i
+> > and find there are 2812 files/31712 lines with this issue. 
 > 
-> The patch set provides a way to VMCLEAR vmcss related to guests on all cpus before
-> executing the VMXOFF when doing kdump. This is used to ensure the VMCSs in the
-> vmcore updated and non-corrupted.
+> That's very true, why would you want to do this?
 > 
-Applied to queue. Thanks.
+> This comes up every 6 months or so on the linux-kernel mailing list,
+> please see the archives for previous responses to the topic.
+> 
+> If you want, just slowly send patches to the different subsystem
+> maintainers, to clean the issue up.
+sorry for forgetting press "reply all" in the former email...
 
-> Changelog from v10 to v11:
-> 1. regenerate the patch set against current queue branch in
->    git://git.kernel.org/pub/scm/virt/kvm/kvm.git
-> 
-> Changelog from v9 to v10:
-> 1. add rcu protect to the callback function
-> 
-> Changelog from v8 to v9:
-> 1. KEXEC: use a callback function instead of a notifier.
-> 2. KVM-INTEL: use a new vmclear function instead of just calling 
->    vmclear_local_loaded_vmcss to make sure we just do the core vmclear
->    operation in kdump.
-> 
-> Changelog from v7 to v8:
-> 1. KEXEC: regression for using name crash_notifier_list
->    and remove comments related to KVM
->    and just call function atomic_notifier_call_chain directly.
-> 
-> Changelog from v6 to v7:
-> 1. KVM-INTEL: in hardware_disable, we needn't disable the
->    vmclear, so remove it.
-> 
-> Changelog from v5 to v6:
-> 1. KEXEC: the atomic notifier list renamed:
->    crash_notifier_list --> vmclear_notifier_list
-> 2. KVM-INTEL: provide empty functions if CONFIG_KEXEC is
->    not defined and remove unnecessary #ifdef's.
-> 
-> Changelog from v4 to v5:
-> 1. use an atomic notifier instead of function call, so
->    have all the vmclear codes in vmx.c.
-> 
-> Changelog from v3 to v4:
-> 1. add a new percpu variable vmclear_skipped to skip
->    vmclear in kdump in some conditions.
-> 
-> Changelog from v2 to v3:
-> 1. remove unnecessary conditions in function
->    cpu_emergency_clear_loaded_vmcss as Marcelo suggested.
-> 
-> Changelog from v1 to v2:
-> 1. remove the sysctl and clear VMCSs unconditionally.
-> 
-> Zhang Yanfei (2):
->   x86/kexec: VMCLEAR VMCSs loaded on all cpus if necessary
->   KVM-INTEL: provide the vmclear function and a bitmap to support
->     VMCLEAR in kdump
-> 
->  arch/x86/include/asm/kexec.h |    2 + 
->  arch/x86/kernel/crash.c      |   32 ++++++++++++++++++++
->  arch/x86/kvm/vmx.c           |   67 ++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 101 insertions(+), 0 deletions(-)
+Sending them slowly to different subsystem maintainers is a very bad idea,
+because it wastes lots of time for both me and them. But the current situation
+is that there are some people send this kind of patches in random time which
+also is a kind of wasting their time.
 
---
-			Gleb.
+I think we'd better to find a solution, not only for the blank space issue,
+but also all the coding style issues able to be fixed by scripts.
+
+I would suggest to write a series of scripts. And then announce a date
+(preferably some holiday like Xmas) to run these scripts. The announce is to
+avoid conflicts with other developers. It will save both developers' and
+subsystem maintains' time, do you agree?
+
+- cong
