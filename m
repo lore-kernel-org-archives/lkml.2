@@ -1,19 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946657Ab2LFS31 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 13:29:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42381 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1946537Ab2LFS30 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 13:29:26 -0500
-Date: Thu, 6 Dec 2012 18:21:03 +0000
-From: Mel Gorman <mgorman@suse.de>
+	id S1946670Ab2LFSaz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 13:30:55 -0500
+Received: from smtprelay-h22.telenor.se ([195.54.99.197]:50670 "EHLO
+	smtprelay-h22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946537Ab2LFSay (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 13:30:54 -0500
+X-SENDER-IP: [85.230.168.206]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnNKACHjwFBV5qjOPGdsb2JhbABEhUuFI7M6FwMBAQEBODSCHgEBBTocIxAIAxguFCUKGhOIFMJqFIwlg2JhA5YChXuDU4lu
+X-IronPort-AV: E=Sophos;i="4.84,231,1355094000"; 
+   d="scan'208";a="165437439"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Thu, 6 Dec 2012 19:32:59 +0100
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, Henrik Rydberg <rydberg@euromail.se>,
+Cc: Mel Gorman <mgorman@suse.de>, Jan Kara <jack@suse.cz>,
         linux-mm <linux-mm@kvack.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Subject: Re: Oops in 3.7-rc8 isolate_free_pages_block()
-Message-ID: <20121206182103.GD17258@suse.de>
+Message-ID: <20121206183259.GA591@polaris.bitmath.org>
 References: <20121206091744.GA1397@polaris.bitmath.org>
  <20121206144821.GC18547@quack.suse.cz>
  <20121206161934.GA17258@suse.de>
@@ -21,7 +28,7 @@ References: <20121206091744.GA1397@polaris.bitmath.org>
  <20121206175451.GC17258@suse.de>
  <CA+55aFwDZHXf2FkWugCy4DF+mPTjxvjZH87ydhE5cuFFcJ-dJg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 In-Reply-To: <CA+55aFwDZHXf2FkWugCy4DF+mPTjxvjZH87ydhE5cuFFcJ-dJg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
@@ -41,9 +48,6 @@ On Thu, Dec 06, 2012 at 10:19:35AM -0800, Linus Torvalds wrote:
 > 
 > Is that Quasimodo's Japanese cousin?
 > 
-
-Yes, he's tried to escape his terrible legacy with a name change.
-
 > > -               end_pfn = min(pfn + pageblock_nr_pages, zone_end_pfn);
 > > +
 > > +               /*
@@ -61,9 +65,15 @@ Yes, he's tried to escape his terrible legacy with a name change.
 > 
 > +               end_pfn = min(end_pfn, zone_end_pfn);
 > 
+> Henrik, does that - corrected - patch (*instead* of the previous one,
+> not in addition to) also fix your issue?
 
-*sigh* Yes, I did. Thanks.
+Yes - I can no longer trigger the failpath, so it seems to work. Mel,
+enjoy the rest of the talk. ;-)
 
--- 
-Mel Gorman
-SUSE Labs
+Generally, I am a bit surprised that noone hit this before, given that
+it was quite easy to trigger. I will check 3.6 as well.
+
+Thanks,
+Henrik
+
