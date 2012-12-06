@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932172Ab2LFB6Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 20:58:24 -0500
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:62117 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932107Ab2LFB6X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 20:58:23 -0500
+	id S1754082Ab2LFCPA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 21:15:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28753 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753286Ab2LFCO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 21:14:59 -0500
+Date: Wed, 5 Dec 2012 21:14:53 -0500
+From: Jason Baron <jbaron@redhat.com>
+To: Joe Perches <joe@perches.com>
+Cc: gregkh@linuxfoundation.org, jim.cromie@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] dynamic_debug: Add print_hex_dump_bytes/debug
+ support and cleanups
+Message-ID: <20121206021453.GA2834@redhat.com>
+References: <cover.1354741891.git.jbaron@redhat.com>
+ <1354745106.8320.12.camel@joe-AO722>
 MIME-Version: 1.0
-In-Reply-To: <20121205224203.691153E0E22@localhost>
-References: <2dcd7cb4c4022fa24b5328974e4226f5aaf89419.1354199865.git.viresh.kumar@linaro.org>
-	<121653def4e985b0c1b59045637dd4518f97e73a.1354199865.git.viresh.kumar@linaro.org>
-	<20121130105731.GN3176@sortiz-mobl>
-	<20121130154542.GG23648@gmail.com>
-	<CAKohpokLVEH+4F_VXh5auUm48cWWe0mumZME8yOCcAezcwJbCQ@mail.gmail.com>
-	<20121205224203.691153E0E22@localhost>
-Date: Thu, 6 Dec 2012 07:28:22 +0530
-Message-ID: <CAKohponjLp214EPKgNHqP2N8Tje9U8ZxgywUTSvsjE-TqHy+xw@mail.gmail.com>
-Subject: Re: [PATCH V5 2/2] mfd: stmpe: Update DT support in stmpe driver
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        rabin.vincent@stericsson.com, shiraz.hashim@st.com,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, linus.walleij@linaro.org,
-        Vipul Kumar Samar <vipulkumar.samar@st.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354745106.8320.12.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-First of all, thanks for explaining :)
+On Wed, Dec 05, 2012 at 02:05:06PM -0800, Joe Perches wrote:
+> On Wed, 2012-12-05 at 16:48 -0500, Jason Baron wrote:
+> > Here's a collection of the latest dynamic debug patches that I have
+> > pending. 
+> 
+> Any update on the jump table support?
+> 
 
-On 6 December 2012 04:12, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Sat, 1 Dec 2012 00:33:46 +0530, Viresh Kumar <viresh.kumar@linaro.org> wrote:
->> This first tries to match the table my patch added, _BUT_ the string will
->> never match as we had "st,stmpe810" in table and "stmpe810" in dev.
->
-> of_driver_match_device() matches against the compatible list in
-> dev->of_node, not against the device name. So, if the compatible
-> property has a string that is in the table, then it really should match
-> against it.
+I have patches that implement the support, although they are a bit hacky
+due to header dependencies. However, the main reason I didn't post them
+yet is that the 'data' section increases quite a bit due to the
+increased table size (text section is reduced, since we are saving
+instructions). On x86_64, the the upper 32-bits of each table entry are
+always '0xffffffff', so the table could be reduced by a factor of 2.
+Although, I haven't figured out a simple way of doing so. Perhaps, the
+'data' section bloat is ok, due to the runtime savings, though. I can
+dig out the % increase data.
 
-How could i misread it? Yes you are correct.
+While we're on new features, I think it would be nice to have the ability
+to enable the core dynamic debug library - lib/dynamic_debug.c,
+independently from the debug statements that use it. So, having
+CONFIG_DYNAMIC_DEBUG would just configure the infrastructure bits, and
+something such as CONFIG_DYNAMIC_DEBUG_PRINTK could enable pr_debug() and
+friends. In that way subsystems that want to use dynamic output can be
+enabled/disabled independently. So they could do:
 
->> static int i2c_device_probe(struct device *dev)
->> {
->>         .....
->>       status = driver->probe(client, i2c_match_id(driver->id_table, client));
->
-> Here things are a bit wonky. Even if matched against the table, it is
+#ifdef CONFIG_DRIVER_FOO_DEBUG
+ #define drv_foo_debug() dev_dbg()
+#else
+ #define drv_foo_debug() {}
 
-table means of_device_id table ?
 
-> possible that it also matches against i2c_match_id() and that data is
-> passed to the driver.
+where CONFIG_DRIVER_FOO_DEBUG would enable CONFIG_DYNAMIC_DEBUG.
 
-It is a possibility or guarantee ? And so whatever device name we got from
-modalias routine, should match with the names in driver->id_table.
+Thanks,
 
-> But regardless, it is the responsiblity of the probe function to go and
-> look if of_driver_match_device() matches against anything if it cares
-> about the of_match_table entries (for instance, if there is extra data
-> attached).
-
-Ok, so filling .data field in of_device_id[] is not required for our case as
-we aren't doing anything special in our drivers.
-
->> Which will again match the legacy table to find correct struct i2c_device_id *id
->> to pass to probe().
->>
->> So, the final question: WTF is of_match_table for?
->
-> A bit of history is valuable here. The whole of_modalias_node() thing is
-> really just a best-effort heuristic for figuring out which driver
-> *might* work against a device described in the device tree. It won't
-> work in all circumstances (and it was created at a time when there was
-> resistance to adding DT knowledge to drivers). An of_match_table is the
-> robust way of identifying specific devices and allows for matching
-> against any entry in the compatible list.
-
-Got it.
+-Jason
