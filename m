@@ -1,60 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754401Ab2LFEdD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 23:33:03 -0500
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:45408 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753211Ab2LFEdB (ORCPT
+	id S932125Ab2LFEke (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 23:40:34 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37316 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753974Ab2LFEkc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 23:33:01 -0500
-Message-ID: <50C01F9B.1020107@linux.vnet.ibm.com>
-Date: Thu, 06 Dec 2012 10:01:23 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
-        namhyung@kernel.org, vincent.guittot@linaro.org, oleg@redhat.com,
-        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
-        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v2 02/10] CPU hotplug: Provide APIs for "full" atomic
- readers to prevent CPU offline
-References: <20121205184041.3750.64945.stgit@srivatsabhat.in.ibm.com> <20121205184313.3750.17752.stgit@srivatsabhat.in.ibm.com> <50BF99FA.8060109@linux.vnet.ibm.com> <50BFAF27.9060203@linux.vnet.ibm.com> <20121205205744.GB27465@mtj.dyndns.org>
-In-Reply-To: <20121205205744.GB27465@mtj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12120604-5140-0000-0000-00000278C143
+	Wed, 5 Dec 2012 23:40:32 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] regmap: Cache register and value sizes for debugfs
+Date: Thu,  6 Dec 2012 13:40:22 +0900
+Message-Id: <1354768822-17626-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2012 02:27 AM, Tejun Heo wrote:
-> Hello,
-> 
-> On Thu, Dec 06, 2012 at 02:01:35AM +0530, Srivatsa S. Bhat wrote:
->> Yes, that _sounds_ sufficient, but IMHO it won't be, in practice. The
->> *number* of call-sites that you need to convert from preempt_disable/enable
->> to get/put_online_cpus_atomic() won't be too many, however the *frequency*
->> of usage of those call-sites can potentially be very high.
-> 
-> I don't think that will be the case and, even if it is, doing it this
-> way would make it difficult to tell.  The right thing to do is
-> replacing stop_machine with finer grained percpu locking first.
-> Refining it further should happen iff that isn't enough and there
-> isn't an simpler solution.  So, let's please do the simple conversion
-> first.
-> 
+No point in calculating them every time.
 
-Hmm, OK, that sounds like a good plan. So I'll drop the "light" and
-"full" variants for now and work on providing a straight-forward
-get/put_online_cpus_atomic() APIs.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/base/regmap/internal.h       |    4 ++++
+ drivers/base/regmap/regmap-debugfs.c |   24 ++++++++++++++----------
+ 2 files changed, 18 insertions(+), 10 deletions(-)
 
-Thank you!
+diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
+index 288e135..7cf8c64 100644
+--- a/drivers/base/regmap/internal.h
++++ b/drivers/base/regmap/internal.h
+@@ -48,6 +48,10 @@ struct regmap {
+ #ifdef CONFIG_DEBUG_FS
+ 	struct dentry *debugfs;
+ 	const char *debugfs_name;
++
++	unsigned int debugfs_reg_len;
++	unsigned int debugfs_val_len;
++	unsigned int debugfs_tot_len;
+ #endif
  
-Regards,
-Srivatsa S. Bhat
+ 	unsigned int max_register;
+diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
+index f4b9dd0..00fbd58 100644
+--- a/drivers/base/regmap/regmap-debugfs.c
++++ b/drivers/base/regmap/regmap-debugfs.c
+@@ -60,7 +60,6 @@ static ssize_t regmap_read_debugfs(struct regmap *map, unsigned int from,
+ 				   unsigned int to, char __user *user_buf,
+ 				   size_t count, loff_t *ppos)
+ {
+-	int reg_len, val_len, tot_len;
+ 	size_t buf_pos = 0;
+ 	loff_t p = 0;
+ 	ssize_t ret;
+@@ -76,9 +75,13 @@ static ssize_t regmap_read_debugfs(struct regmap *map, unsigned int from,
+ 		return -ENOMEM;
+ 
+ 	/* Calculate the length of a fixed format  */
+-	reg_len = regmap_calc_reg_len(map->max_register, buf, count);
+-	val_len = 2 * map->format.val_bytes;
+-	tot_len = reg_len + val_len + 3;      /* : \n */
++	if (!map->debugfs_tot_len) {
++		map->debugfs_reg_len = regmap_calc_reg_len(map->max_register,
++							   buf, count);
++		map->debugfs_val_len = 2 * map->format.val_bytes;
++		map->debugfs_tot_len = map->debugfs_reg_len +
++			map->debugfs_val_len + 3;      /* : \n */
++	}
+ 
+ 	for (i = from; i <= to; i += map->reg_stride) {
+ 		if (!regmap_readable(map, i))
+@@ -90,26 +93,27 @@ static ssize_t regmap_read_debugfs(struct regmap *map, unsigned int from,
+ 		/* If we're in the region the user is trying to read */
+ 		if (p >= *ppos) {
+ 			/* ...but not beyond it */
+-			if (buf_pos >= count - 1 - tot_len)
++			if (buf_pos >= count - 1 - map->debugfs_tot_len)
+ 				break;
+ 
+ 			/* Format the register */
+ 			snprintf(buf + buf_pos, count - buf_pos, "%.*x: ",
+-				 reg_len, i - from);
+-			buf_pos += reg_len + 2;
++				 map->debugfs_reg_len, i - from);
++			buf_pos += map->debugfs_reg_len + 2;
+ 
+ 			/* Format the value, write all X if we can't read */
+ 			ret = regmap_read(map, i, &val);
+ 			if (ret == 0)
+ 				snprintf(buf + buf_pos, count - buf_pos,
+-					 "%.*x", val_len, val);
++					 "%.*x", map->debugfs_val_len, val);
+ 			else
+-				memset(buf + buf_pos, 'X', val_len);
++				memset(buf + buf_pos, 'X',
++				       map->debugfs_val_len);
+ 			buf_pos += 2 * map->format.val_bytes;
+ 
+ 			buf[buf_pos++] = '\n';
+ 		}
+-		p += tot_len;
++		p += map->debugfs_tot_len;
+ 	}
+ 
+ 	ret = buf_pos;
+-- 
+1.7.10.4
 
