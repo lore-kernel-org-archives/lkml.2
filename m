@@ -1,72 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424382Ab2LFQUY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 11:20:24 -0500
-Received: from mail.tpi.com ([70.99.223.143]:4518 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1424087Ab2LFQUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 11:20:23 -0500
-From: Tim Gardner <tim.gardner@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tim Gardner <tim.gardner@canonical.com>, David Airlie <airlied@linux.ie>,
-        Dave Airlie <airlied@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Zhao Yakui <yakui.zhao@intel.com>, David Howells <dhowells@redhat.com>,
-        dri-devel@lists.freedesktop.org
-Subject: [PATCH 3.7-rc8] ttm: Fix possible _manager memory allocation oops
-Date: Thu,  6 Dec 2012 09:20:06 -0700
-Message-Id: <1354810806-81681-1-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1422828Ab2LFQXJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 11:23:09 -0500
+Received: from mo-p00-ob.rzone.de ([81.169.146.162]:47275 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754059Ab2LFQXI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 11:23:08 -0500
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmwtM48/lk2c7ofw==
+X-RZG-CLASS-ID: mo00
+Date: Thu, 6 Dec 2012 17:23:04 +0100
+From: Olaf Hering <olaf@aepfle.de>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: konrad.wilk@oracle.com, xen-devel@lists.xen.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] xen/blkback: prevent leak of mode during multiple
+ backend_changed calls
+Message-ID: <20121206162304.GA3989@aepfle.de>
+References: <1354701697-5815-1-git-send-email-olaf@aepfle.de>
+ <50BF2E3802000078000AE162@nat28.tlf.novell.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <50BF2E3802000078000AE162@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21.rev5558 (2012-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Memory for _manager is allocated using kzalloc() but the result is not checked.
+On Wed, Dec 05, Jan Beulich wrote:
 
-Free _manager on error lest memory become orphaned.
+> >>> On 05.12.12 at 11:01, Olaf Hering <olaf@aepfle.de> wrote:
+> > backend_changed might be called multiple times, which will leak
+> > be->mode. free the previous value before storing the current mode value.
+> 
+> As said before - this is one possible route to take. But did you
+> consider at all the alternative of preventing the function from
+> getting called more than once for a given device? As also said
+> before, I think that would have other bad effects, and hence
+> should be preferred (and would likely also result in a smaller
+> patch).
 
-I was led to scrutinize ttm_page_alloc_init() from a smatch warning:
+Maybe it could be done like this, adding a flag to the backend device
+and exit early if its called twice.
 
-drivers/gpu/drm/ttm/ttm_page_alloc.c:799 ttm_page_alloc_init() error: potential null dereference '_manager'.  (kzalloc returns null)
+Olaf
 
-Cc: David Airlie <airlied@linux.ie>
-Cc: Dave Airlie <airlied@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Zhao Yakui <yakui.zhao@intel.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: dri-devel@lists.freedesktop.org
-Cc: stable@vger.kernel.org # 3.5+
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
 
-This patch applies to stable 3.5 and newer.
-
- drivers/gpu/drm/ttm/ttm_page_alloc.c |    5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-index bd2a3b4..2c73d0a 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-@@ -798,6 +798,10 @@ int ttm_page_alloc_init(struct ttm_mem_global *glob, unsigned max_pages)
- 	pr_info("Initializing pool allocator\n");
+diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
+index a6585a4..2822e73 100644
+--- a/drivers/block/xen-blkback/xenbus.c
++++ b/drivers/block/xen-blkback/xenbus.c
+@@ -28,6 +28,7 @@ struct backend_info {
+ 	unsigned		major;
+ 	unsigned		minor;
+ 	char			*mode;
++	unsigned		alive;
+ };
  
- 	_manager = kzalloc(sizeof(*_manager), GFP_KERNEL);
-+	if (!_manager) {
-+		pr_err("ttm: Could not allocate _manager.\n");
-+		return -ENOMEM;
-+	}
+ static struct kmem_cache *xen_blkif_cachep;
+@@ -506,6 +507,9 @@ static void backend_changed(struct xenbus_watch *watch,
  
- 	ttm_page_pool_init_locked(&_manager->wc_pool, GFP_HIGHUSER, "wc");
+ 	DPRINTK("");
  
-@@ -817,6 +821,7 @@ int ttm_page_alloc_init(struct ttm_mem_global *glob, unsigned max_pages)
- 				   &glob->kobj, "pool");
- 	if (unlikely(ret != 0)) {
- 		kobject_put(&_manager->kobj);
-+		kfree(_manager);
- 		_manager = NULL;
- 		return ret;
++	if (be->alive)
++		return;
++
+ 	err = xenbus_scanf(XBT_NIL, dev->nodename, "physical-device", "%x:%x",
+ 			   &major, &minor);
+ 	if (XENBUS_EXIST_ERR(err)) {
+@@ -548,8 +552,11 @@ static void backend_changed(struct xenbus_watch *watch,
+ 		char *p = strrchr(dev->otherend, '/') + 1;
+ 		long handle;
+ 		err = strict_strtoul(p, 0, &handle);
+-		if (err)
++		if (err) {
++			kfree(be->mode);
++			be->mode = NULL;
+ 			return;
++		}
+ 
+ 		be->major = major;
+ 		be->minor = minor;
+@@ -560,6 +567,8 @@ static void backend_changed(struct xenbus_watch *watch,
+ 			be->major = 0;
+ 			be->minor = 0;
+ 			xenbus_dev_fatal(dev, err, "creating vbd structure");
++			kfree(be->mode);
++			be->mode = NULL;
+ 			return;
+ 		}
+ 
+@@ -569,10 +578,13 @@ static void backend_changed(struct xenbus_watch *watch,
+ 			be->major = 0;
+ 			be->minor = 0;
+ 			xenbus_dev_fatal(dev, err, "creating sysfs entries");
++			kfree(be->mode);
++			be->mode = NULL;
+ 			return;
+ 		}
+ 
+ 		/* We're potentially connected now */
++		be->alive = 1;
+ 		xen_update_blkif_status(be->blkif);
  	}
+ }
 -- 
-1.7.9.5
+1.8.0.1
 
