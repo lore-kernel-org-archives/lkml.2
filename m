@@ -1,65 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423923Ab2LFPm3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 10:42:29 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:40584 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423892Ab2LFPm1 (ORCPT
+	id S1423940Ab2LFPnd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 10:43:33 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:59696 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423910Ab2LFPnc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 10:42:27 -0500
-Date: Thu, 6 Dec 2012 15:42:20 +0000
-From: Cong Ding <dinggnu@gmail.com>
-To: Bin Wang <wbin00@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Subject: [PATCH RFC -next] Fix the trailing blank space issue
-Message-ID: <20121206154219.GA24788@gmail.com>
-References: <1354784936-5647-1-git-send-email-wbin00@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354784936-5647-1-git-send-email-wbin00@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	Thu, 6 Dec 2012 10:43:32 -0500
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: sameo@linux.intel.com
+Cc: lee.jones@linaro.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, spear-devel@list.st.com,
+        Vipul Kumar Samar <vipulkumar.samar@st.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V6] mfd: stmpe: Update DT support for stmpe driver
+Date: Thu,  6 Dec 2012 21:13:23 +0530
+Message-Id: <3db3266122f4c54f624477b3fb6763e5821bd3d0.1354807084.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 06, 2012 at 05:08:56PM +0800, Bin Wang wrote:
-> This patch removes the trailing white space in fs/sysfs/mount.c.
-> 
-> Signed-off-by: Bin Wang <wbin00@gmail.com>
-> ---
->  fs/sysfs/mount.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-Hi Greg,
+From: Vipul Kumar Samar <vipulkumar.samar@st.com>
 
-I am not sure it is really necessary to remove all the trailing blank spaces
-in the project. I have done a try by this shell command
-$ find . -iname '*.[ch]' | xargs sed 's/\s\+$//g' -i
-and find there are 2812 files/31712 lines with this issue. 
+This patch extends existing DT support for stmpe devices. This updates:
+- missing header files in stmpe.c
+- stmpe_of_probe() with pwm, rotator and new bindings.
+- Bindings are updated in binding document.
 
-If necessary, I think it's better to run this shell code by yourself in the
-whole linux-next tree and commit it. Nevertheless, the patch file of my try is
-available from gist: https://gist.github.com/4225286
-
-Even the diff summary is very large, hence I attach a simple version diff
-result and commit information here. 
-
-- cong
-
+Acked-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Vipul Kumar Samar <vipulkumar.samar@st.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
->From 30ed9bb0e6f7c8866447d27c86f466c44749116e Mon Sep 17 00:00:00 2001
-From: Cong Ding <dinggnu@gmail.com>
-Date: Thu, 6 Dec 2012 15:58:15 +0100
-Subject: [PATCH RFC -next] remove all the trailing blank space
+Hi Samuel,
 
-clean all the trailing blank space by using shell command
-$ find . -iname '*.[ch]' | xargs sed 's/\s\+$//g' -i
+I have added acked by Lee as he earlier Acked this patch, most of the part is
+still the same. And nothing new added.
 
-I have manually checked a random set of all the changes, and find no error.
-I also compiled the whole system and tested many times by randconfig.
+V5->V6:
+- Removed of_devide_id tables from stmpe-i2c[spi].c
 
-Signed-off-by: Cong Ding <dinggnu@gmail.com>
----
- 2812 files changed, 31712 insertions(+), 31712 deletions(-)
+ Documentation/devicetree/bindings/mfd/stmpe.txt |  9 ++++++---
+ drivers/mfd/stmpe.c                             | 27 +++++++++++++++++++------
+ 2 files changed, 27 insertions(+), 9 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/mfd/stmpe.txt b/Documentation/devicetree/bindings/mfd/stmpe.txt
+index 8f0aeda..d2d88d9 100644
+--- a/Documentation/devicetree/bindings/mfd/stmpe.txt
++++ b/Documentation/devicetree/bindings/mfd/stmpe.txt
+@@ -1,8 +1,11 @@
+-* STMPE Multi-Functional Device
++* ST Microelectronics STMPE Multi-Functional Device
++
++STMPE is an MFD device which may expose following inbuilt devices: gpio, keypad,
++touchscreen, adc, pwm, rotator.
+ 
+ Required properties:
+- - compatible                   : "st,stmpe[811|1601|2401|2403]"
+- - reg                          : I2C address of the device
++ - compatible                   : "st,stmpe[610|801|811|1601|2401|2403]"
++ - reg                          : I2C/SPI address of the device
+ 
+ Optional properties:
+  - interrupts                   : The interrupt outputs from the controller
+diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
+index 34408b4..bb2dfdb 100644
+--- a/drivers/mfd/stmpe.c
++++ b/drivers/mfd/stmpe.c
+@@ -7,12 +7,15 @@
+  * Author: Rabin Vincent <rabin.vincent@stericsson.com> for ST-Ericsson
+  */
+ 
++#include <linux/err.h>
+ #include <linux/gpio.h>
+ #include <linux/export.h>
+ #include <linux/kernel.h>
+ #include <linux/interrupt.h>
+ #include <linux/irq.h>
+ #include <linux/irqdomain.h>
++#include <linux/of.h>
++#include <linux/of_gpio.h>
+ #include <linux/pm.h>
+ #include <linux/slab.h>
+ #include <linux/mfd/core.h>
+@@ -1019,6 +1022,14 @@ void __devinit stmpe_of_probe(struct stmpe_platform_data *pdata,
+ {
+ 	struct device_node *child;
+ 
++	/*
++	 * Distinct names of same cell-type within multiple instances of stmpe
++	 * will be guaranteed by DT.
++	 */
++	pdata->id = -1;
++
++	pdata->irq_trigger = IRQF_TRIGGER_NONE;
++
+ 	of_property_read_u32(np, "st,autosleep-timeout",
+ 			&pdata->autosleep_timeout);
+ 
+@@ -1027,15 +1038,16 @@ void __devinit stmpe_of_probe(struct stmpe_platform_data *pdata,
+ 	for_each_child_of_node(np, child) {
+ 		if (!strcmp(child->name, "stmpe_gpio")) {
+ 			pdata->blocks |= STMPE_BLOCK_GPIO;
+-		}
+-		if (!strcmp(child->name, "stmpe_keypad")) {
++		} else if (!strcmp(child->name, "stmpe_keypad")) {
+ 			pdata->blocks |= STMPE_BLOCK_KEYPAD;
+-		}
+-		if (!strcmp(child->name, "stmpe_touchscreen")) {
++		} else if (!strcmp(child->name, "stmpe_touchscreen")) {
+ 			pdata->blocks |= STMPE_BLOCK_TOUCHSCREEN;
+-		}
+-		if (!strcmp(child->name, "stmpe_adc")) {
++		} else if (!strcmp(child->name, "stmpe_adc")) {
+ 			pdata->blocks |= STMPE_BLOCK_ADC;
++		} else if (!strcmp(child->name, "stmpe_pwm")) {
++			pdata->blocks |= STMPE_BLOCK_PWM;
++		} else if (!strcmp(child->name, "stmpe_rotator")) {
++			pdata->blocks |= STMPE_BLOCK_ROTATOR;
+ 		}
+ 	}
+ }
+@@ -1106,6 +1118,9 @@ int __devinit stmpe_probe(struct stmpe_client_info *ci, int partnum)
+ 			return -ENODEV;
+ 		}
+ 		stmpe->variant = stmpe_noirq_variant_info[stmpe->partnum];
++	} else if (pdata->irq_trigger == IRQF_TRIGGER_NONE) {
++		pdata->irq_trigger =
++			irqd_get_trigger_type(irq_get_irq_data(stmpe->irq));
+ 	}
+ 
+ 	ret = stmpe_chip_init(stmpe);
+-- 
+1.7.12.rc2.18.g61b472e
+
