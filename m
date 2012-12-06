@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946230Ab2LFRJi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 12:09:38 -0500
-Received: from mail.eecsit.tu-berlin.de ([130.149.17.13]:65181 "EHLO
-	mail.cs.tu-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946199Ab2LFRJe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 12:09:34 -0500
-From: =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kay Sievers <kay@vrfy.org>
-Cc: linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
-Subject: [PATCH v2 06/14] printk: move wake_klogd-check out of the loop
-Date: Thu,  6 Dec 2012 18:06:03 +0100
-Message-Id: <1354813571-11253-7-git-send-email-schnhrr@cs.tu-berlin.de>
-X-Mailer: git-send-email 1.8.0.1.20.g7c65b2e.dirty
-In-Reply-To: <1354813571-11253-1-git-send-email-schnhrr@cs.tu-berlin.de>
-References: <1354813571-11253-1-git-send-email-schnhrr@cs.tu-berlin.de>
+	id S1946261Ab2LFRJy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 12:09:54 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:37154 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1946199Ab2LFRJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 12:09:48 -0500
+Date: Thu, 6 Dec 2012 12:09:38 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Ashish Sangwan <ashishsangwan2@gmail.com>
+Cc: Namjae Jeon <linkinjeon@gmail.com>,
+        ext4 development <linux-ext4@vger.kernel.org>,
+        Ashish Sangwan <ashish.sangwan2@gmail.com>,
+        =?utf-8?B?THVrw6HFoQ==?= Czerner <lczerner@redhat.com>,
+        Eric Sandeen <sandeen@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH, RFC] Ext4: Mount partition as read only if during orphan
+ cleanup truncate fails to obtain journal handle.
+Message-ID: <20121206170938.GC30273@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Ashish Sangwan <ashishsangwan2@gmail.com>,
+	Namjae Jeon <linkinjeon@gmail.com>,
+	ext4 development <linux-ext4@vger.kernel.org>,
+	Ashish Sangwan <ashish.sangwan2@gmail.com>,
+	=?utf-8?B?THVrw6HFoQ==?= Czerner <lczerner@redhat.com>,
+	Eric Sandeen <sandeen@redhat.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1351075240-2725-1-git-send-email-ashish.sangwan2@gmail.com>
+ <CAKYAXd_6pHdPtOgOS4=_c6naWwPdMhna29OOKD919HrYM-+kaA@mail.gmail.com>
+ <CAOiN93nKkFAc_t6J+c1w4F3V-MYaq9cv2wfAq3hyniWz5wYFMw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOiN93nKkFAc_t6J+c1w4F3V-MYaq9cv2wfAq3hyniWz5wYFMw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The checked criterion is loop-independent and we hold the lock necessary
-to do the check also outside the loop. So, move that piece of code more
-towards the end where the result is used.
+On Thu, Dec 06, 2012 at 04:59:43PM +0530, Ashish Sangwan wrote:
+> 
+> Did you get any time to look into this patch?
+> This problem is with ext4 only as ext4_truncate does not clean the
+> orphan list unlike that of ext3_truncate.
+> Instead, in case of failure to obtain handle, orphan list cleanup is
+> done in ext4_setattr.
+> But during mount, ext4_truncate is not called via ext4_setattr and
+> hence the problem.
+> What do you think?
 
-Signed-off-by: Jan H. Schönherr <schnhrr@cs.tu-berlin.de>
----
- kernel/printk.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+In the patch description, you mentioned that this occurs when the
+there is a failure to obtain a journal handle.  Is this a hypothetical
+thing that you exposed via some kind of tester which checks to see
+what happens if kmalloc() randomly fails some number of allocation
+requests?  Or was it happening in real life?  And if it is happening
+in real life, do we understand why it's happening, and is there
+something we should be doing to mitigate against the root cause of the
+failure?
 
-diff --git a/kernel/printk.c b/kernel/printk.c
-index 7328348..4f3c355 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -2060,10 +2060,6 @@ again:
- 		int level;
- 
- 		raw_spin_lock_irqsave(&logbuf_lock, flags);
--		if (seen_seq != log_next_seq) {
--			wake_klogd = true;
--			seen_seq = log_next_seq;
--		}
- 
- 		if (console_seq < log_first_seq) {
- 			/* messages are gone, move to first one */
-@@ -2124,6 +2120,10 @@ skip:
- 	 */
- 	raw_spin_lock(&logbuf_lock);
- 	retry = console_seq != log_next_seq;
-+	if (seen_seq != log_next_seq) {
-+		wake_klogd = true;
-+		seen_seq = log_next_seq;
-+	}
- 	raw_spin_unlock_irqrestore(&logbuf_lock, flags);
- 
- 	if (retry && console_trylock())
--- 
-1.8.0.1.20.g7c65b2e.dirty
+The alternative to your patch is to do something similar to what ext3
+does.  That is, if there are any inodes left on the orphan list, to
+iterate through them all and then clean up the orphan list.  Perhaps
+we should then also call ext4_error() since technically the file
+system may very well be inconsistent (there may be allocated inodes
+holding blocks which are no longer connected the directory hierarchy,
+which e2fsck would be able to clean up).  But that could potentially
+cause the system to panic or remount the file system read-only,
+depending on what the errors= behavior is set to.  Which is why I go
+back to the original question; do we understand why ext4_truncate()
+was failing during orphan cleanup in the first place?
 
+    	    	   	  	     	       - Ted
