@@ -1,105 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754621Ab2LFNU4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 08:20:56 -0500
-Received: from tundra.namei.org ([65.99.196.166]:51318 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752093Ab2LFNUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 08:20:54 -0500
-Date: Fri, 7 Dec 2012 00:25:48 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-cc: Casey Schaufler <casey@schaufler-ca.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: linux-next: unusual update of the security tree
-In-Reply-To: <20121128110132.0082c87680b9b714b8c0689c@canb.auug.org.au>
-Message-ID: <alpine.LRH.2.02.1212070024460.4693@tundra.namei.org>
-References: <20121128101635.d5e864dffc4252ef9d5e1664@canb.auug.org.au> <50B5508D.7050409@schaufler-ca.com> <20121128110132.0082c87680b9b714b8c0689c@canb.auug.org.au>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932535Ab2LFNVv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 08:21:51 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:56824 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932125Ab2LFNVt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 08:21:49 -0500
+From: Christian Gmeiner <christian.gmeiner@gmail.com>
+To: linux-next@vger.kernel.org, akpm@linux-foundation.org, rpurdie@rpsys.net,
+        linux-kernel@vger.kernel.org
+Cc: Christian Gmeiner <christian.gmeiner@gmail.com>
+Subject: [PATCH] leds-ot200: Fix error caused by shifted mask
+Date: Thu,  6 Dec 2012 14:21:38 +0100
+Message-Id: <1354800098-4118-1-git-send-email-christian.gmeiner@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any suggestions on how to fix this?  That branch is public, and what 
-people use to develop against, so I can't rebase it.
+During the development of this driver an in-house register
+documentation was used. The last weeks some integration tests
+were done and this problem was found. It turned out that
+the released register documentation is wrong.
 
+The fix is very simple: shift all masks by one.
 
+Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
+---
+ drivers/leds/leds-ot200.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-On Wed, 28 Nov 2012, Stephen Rothwell wrote:
-
-> Hi Casey,
-> 
-> On Tue, 27 Nov 2012 15:45:17 -0800 Casey Schaufler <casey@schaufler-ca.com> wrote:
-> >
-> > On 11/27/2012 3:16 PM, Stephen Rothwell wrote:
-> > 
-> > > The security tree
-> > > (git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git#next)
-> > > looks a bit strange today ... It appears to have been created by Casey
-> > > Schaufler (cc'd) and contains some quite old commits and back merges of
-> > > your tree.  I *guess* you have merged in Casey's tree after he merged in
-> > > your tree from yesterday.
-> > 
-> > I *thought* that I had used the same procedures that worked before.
-> > In fact, I still do think that, but if it's a problem I can purge my
-> > smack-next tree and start over.
-> > 
-> > James, the two changes that came from smack-next are pretty minor. I
-> > don't think you should hesitate to back them out if that helps.
-> 
-> This is the shortlog for the changes in the security tree between
-> yesterday and today;
-> 
-> Casey Schaufler (32):
->       Commit 272cd7a8c67dd40a31ecff76a503bbb84707f757 introduced     a change to the way rule lists are handled and reported in     the smackfs filesystem. One of the issues addressed had to     do with the termination of read requests on /smack/load.     This change introduced a error in /smack/cipso, which shares     some of the same list processing code.
->       Revert "Commit 272cd7a8c67dd40a31ecff76a503bbb84707f757 introduced"
->       Smack: smackfs cipso seq read repair
->       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
->       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
->       Smack: recursive tramsmute
->       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
->       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
->       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
->       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
->       Smack: allow for significantly longer Smack labels v4
->       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
->       Smack: fix smack_new_inode bogosities
->       Smack: Maintainer Record
->       Smack: onlycap limits on CAP_MAC_ADMIN
->       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
->       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
->       Smack: user access check bounds
->       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
->       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
->       Smack: remove task_wait() hook.
->       Smack: setprocattr memory leak fix
->       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
->       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
->       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
->       Merge branch 'for-1209'
->       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
->       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
->       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
->       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security into for-1211
->       Smack: use select not depends in Kconfig
->       Smack: create a sysfs mount point for smackfs
-> 
-> Rafal Krypa (2):
->       Smack: don't show empty rules when /smack/load or /smack/load2 is read
->       Smack: implement revoking all rules for a subject label
-> 
-> Tetsuo Handa (1):
->       gfp flags for security_inode_alloc()?
-> 
-> It's a bit of a mess :-(
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-
+diff --git a/drivers/leds/leds-ot200.c b/drivers/leds/leds-ot200.c
+index c464682..676e729 100644
+--- a/drivers/leds/leds-ot200.c
++++ b/drivers/leds/leds-ot200.c
+@@ -47,37 +47,37 @@ static struct ot200_led leds[] = {
+ 	{
+ 		.name = "led_1",
+ 		.port = 0x49,
+-		.mask = BIT(7),
++		.mask = BIT(6),
+ 	},
+ 	{
+ 		.name = "led_2",
+ 		.port = 0x49,
+-		.mask = BIT(6),
++		.mask = BIT(5),
+ 	},
+ 	{
+ 		.name = "led_3",
+ 		.port = 0x49,
+-		.mask = BIT(5),
++		.mask = BIT(4),
+ 	},
+ 	{
+ 		.name = "led_4",
+ 		.port = 0x49,
+-		.mask = BIT(4),
++		.mask = BIT(3),
+ 	},
+ 	{
+ 		.name = "led_5",
+ 		.port = 0x49,
+-		.mask = BIT(3),
++		.mask = BIT(2),
+ 	},
+ 	{
+ 		.name = "led_6",
+ 		.port = 0x49,
+-		.mask = BIT(2),
++		.mask = BIT(1),
+ 	},
+ 	{
+ 		.name = "led_7",
+ 		.port = 0x49,
+-		.mask = BIT(1),
++		.mask = BIT(0),
+ 	}
+ };
+ 
 -- 
-James Morris
-<jmorris@namei.org>
+1.7.10.4
+
