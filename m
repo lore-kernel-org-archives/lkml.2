@@ -1,60 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423010Ab2LFKMy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 05:12:54 -0500
-Received: from gmmr7.centrum.cz ([46.255.225.249]:36837 "EHLO gmmr7.centrum.cz"
+	id S1423038Ab2LFKRK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 05:17:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63324 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422686Ab2LFKMw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 05:12:52 -0500
-To: =?utf-8?q?Michal_Hocko?= <mhocko@suse.cz>
-Subject: =?utf-8?q?Re=3A_=5BPATCH_for_3=2E2=2E34=5D_memcg=3A_do_not_trigger_OOM_from_add=5Fto=5Fpage=5Fcache=5Flocked?=
-Date: Thu, 06 Dec 2012 11:12:49 +0100
-From: "azurIt" <azurit@pobox.sk>
-Cc: <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        =?utf-8?q?cgroups_mailinglist?= <cgroups@vger.kernel.org>,
-        =?utf-8?q?KAMEZAWA_Hiroyuki?= <kamezawa.hiroyu@jp.fujitsu.com>,
-        =?utf-8?q?Johannes_Weiner?= <hannes@cmpxchg.org>
-References: <20121130144427.51A09169@pobox.sk>, <20121130144431.GI29317@dhcp22.suse.cz>, <20121130160811.6BB25BDD@pobox.sk>, <20121130153942.GL29317@dhcp22.suse.cz>, <20121130165937.F9564EBE@pobox.sk>, <20121130161923.GN29317@dhcp22.suse.cz>, <20121203151601.GA17093@dhcp22.suse.cz>, <20121205023644.18C3006B@pobox.sk>, <20121205141722.GA9714@dhcp22.suse.cz>, <20121206012924.FE077FD7@pobox.sk> <20121206095423.GB10931@dhcp22.suse.cz>
-In-Reply-To: <20121206095423.GB10931@dhcp22.suse.cz>
-X-Mailer: Centrum Email 5.3
-X-Priority: 3
-X-Original-From: azurit@pobox.sk
+	id S1423020Ab2LFKRH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 05:17:07 -0500
+Date: Thu, 6 Dec 2012 11:39:59 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v10 0/2] x86: vmclear vmcss on all cpus when doing kdump
+ if necessary
+Message-ID: <20121206093959.GF19514@redhat.com>
+References: <50BEFEBA.6070602@cn.fujitsu.com>
 MIME-Version: 1.0
-Message-Id: <20121206111249.58F013EA@pobox.sk>
-X-Maser: oho
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50BEFEBA.6070602@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->Dohh. The very same stack mem_cgroup_newpage_charge called from the page
->fault. The heavy inlining is not particularly helping here... So there
->must be some other THP charge leaking out.
->[/me is diving into the code again]
->
->* do_huge_pmd_anonymous_page falls back to handle_pte_fault
->* do_huge_pmd_wp_page_fallback falls back to simple pages so it doesn't
->  charge the huge page
->* do_huge_pmd_wp_page splits the huge page and retries with fallback to
->  handle_pte_fault
->* collapse_huge_page is not called in the page fault path
->* do_wp_page, do_anonymous_page and __do_fault  operate on a single page
->  so the memcg charging cannot return ENOMEM
->
->There are no other callers AFAICS so I am getting clueless. Maybe more
->debugging will tell us something (the inlining has been reduced for thp
->paths which can reduce performance in thp page fault heavy workloads but
->this will give us better traces - I hope).
+Can you regenerate against current queue branch in
+git://git.kernel.org/pub/scm/virt/kvm/kvm.git please?
 
+On Wed, Dec 05, 2012 at 03:58:50PM +0800, Zhang Yanfei wrote:
+> Currently, kdump just makes all the logical processors leave VMX operation by
+> executing VMXOFF instruction, so any VMCSs active on the logical processors may
+> be corrupted. But, sometimes, we need the VMCSs to debug guest images contained
+> in the host vmcore. To prevent the corruption, we should VMCLEAR the VMCSs before
+> executing the VMXOFF instruction.
+> 
+> The patch set provides a way to VMCLEAR vmcss related to guests on all cpus before
+> executing the VMXOFF when doing kdump. This is used to ensure the VMCSs in the
+> vmcore updated and non-corrupted.
+> 
+> Changelog from v9 to v10:
+> 1. add rcu protect to the callback function
+> 
+> Changelog from v8 to v9:
+> 1. KEXEC: use a callback function instead of a notifier.
+> 2. KVM-INTEL: use a new vmclear function instead of just calling 
+>    vmclear_local_loaded_vmcss to make sure we just do the core vmclear
+>    operation in kdump.
+> 
+> Changelog from v7 to v8:
+> 1. KEXEC: regression for using name crash_notifier_list
+>    and remove comments related to KVM
+>    and just call function atomic_notifier_call_chain directly.
+> 
+> Changelog from v6 to v7:
+> 1. KVM-INTEL: in hardware_disable, we needn't disable the
+>    vmclear, so remove it.
+> 
+> Changelog from v5 to v6:
+> 1. KEXEC: the atomic notifier list renamed:
+>    crash_notifier_list --> vmclear_notifier_list
+> 2. KVM-INTEL: provide empty functions if CONFIG_KEXEC is
+>    not defined and remove unnecessary #ifdef's.
+> 
+> Changelog from v4 to v5:
+> 1. use an atomic notifier instead of function call, so
+>    have all the vmclear codes in vmx.c.
+> 
+> Changelog from v3 to v4:
+> 1. add a new percpu variable vmclear_skipped to skip
+>    vmclear in kdump in some conditions.
+> 
+> Changelog from v2 to v3:
+> 1. remove unnecessary conditions in function
+>    cpu_emergency_clear_loaded_vmcss as Marcelo suggested.
+> 
+> Changelog from v1 to v2:
+> 1. remove the sysctl and clear VMCSs unconditionally.
+> 
+> Zhang Yanfei (2):
+>   x86/kexec: VMCLEAR VMCSs loaded on all cpus if necessary
+>   KVM-INTEL: provide the vmclear function and a bitmap to support
+>     VMCLEAR in kdump
+> 
+>  arch/x86/include/asm/kexec.h |    2 +
+>  arch/x86/kernel/crash.c      |   32 ++++++++++++++++++++
+>  arch/x86/kvm/vmx.c           |   67 ++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 101 insertions(+), 0 deletions(-)
 
-Should i apply all patches togather? (fix for this bug, more log messages, backported fix from 3.5 and this new one)
-
-
->Anyway do you see the same problem if transparent huge pages are
->disabled?
->echo never > /sys/kernel/mm/transparent_hugepage/enabled)
-
-
-# cat /sys/kernel/mm/transparent_hugepage/enabled
-cat: /sys/kernel/mm/transparent_hugepage/enabled: No such file or directory
+--
+			Gleb.
