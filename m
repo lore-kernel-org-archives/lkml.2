@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932720Ab2LFOjP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 09:39:15 -0500
-Received: from smtp4-g21.free.fr ([212.27.42.4]:52705 "EHLO smtp4-g21.free.fr"
+	id S932734Ab2LFOj3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 09:39:29 -0500
+Received: from smtp4-g21.free.fr ([212.27.42.4]:53217 "EHLO smtp4-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751321Ab2LFOjO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 09:39:14 -0500
+	id S1751321Ab2LFOj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 09:39:26 -0500
 From: Nicolas Schichan <nschichan@freebox.fr>
 To: mgherzan@gmail.com, rmk+kernel@arm.linux.org.uk
 Cc: Nicolas Schichan <nschichan@freebox.fr>,
@@ -13,56 +13,60 @@ Cc: Nicolas Schichan <nschichan@freebox.fr>,
         Eric Dumazet <eric.dumazet@gmail.com>,
         "David S. Miller" <davem@davemloft.net>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] ARM: net: bpf_jit_32: fix kzalloc gfp/size mismatch.
-Date: Thu,  6 Dec 2012 15:38:31 +0100
-Message-Id: <1354804718-1662-1-git-send-email-nschichan@freebox.fr>
+Subject: [PATCH 2/2] ARM: net: bpf_jit_32: fix sp-relative load/stores offsets.
+Date: Thu,  6 Dec 2012 15:38:32 +0100
+Message-Id: <1354804718-1662-2-git-send-email-nschichan@freebox.fr>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1354804718-1662-1-git-send-email-nschichan@freebox.fr>
+References: <1354804718-1662-1-git-send-email-nschichan@freebox.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Official prototype for kzalloc is:
+The offset must be multiplied by 4 to be sure to access the correct
+32bit word in the stack scratch space.
 
-void *kzalloc(size_t, gfp_t);
+For instance, a store at scratch memory cell #1 was generating the
+following:
 
-The ARM bpf_jit code was having the assumption that it was:
+st	r4, [sp, #1]
 
-void *kzalloc(gfp_t, size);
+While the correct code for this is:
 
-This was resulting the use of some random GFP flags depending on the
-size requested and some random overflows once the really needed size
-was more than the value of GFP_KERNEL.
+st	r4, [sp, #4]
+
+To reproduce the bug (assuming your system has a NIC with the mac
+address 52:54:00:12:34:56):
+
+echo 0 > /proc/sys/net/core/bpf_jit_enable
+tcpdump -ni eth0 "ether[1] + ether[2] - ether[3] * ether[4] - ether[5] \
+	== -0x3AA" # this will capture packets as expected
+
+echo 1 > /proc/sys/net/core/bpf_jit_enable
+tcpdump -ni eth0 "ether[1] + ether[2] - ether[3] * ether[4] - ether[5] \
+	== -0x3AA" # this will not.
 
 This bug was present since the original inclusion of bpf_jit for ARM
 (ddecdfce: ARM: 7259/3: net: JIT compiler for packet filters).
 
 Signed-off-by: Nicolas Schichan <nschichan@freebox.fr>
 ---
- arch/arm/net/bpf_jit_32.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/net/bpf_jit_32.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/arch/arm/net/bpf_jit_32.c b/arch/arm/net/bpf_jit_32.c
-index c641fb6..a64d349 100644
+index a64d349..b6f305e 100644
 --- a/arch/arm/net/bpf_jit_32.c
 +++ b/arch/arm/net/bpf_jit_32.c
-@@ -845,7 +845,7 @@ void bpf_jit_compile(struct sk_filter *fp)
- 	ctx.skf		= fp;
- 	ctx.ret0_fp_idx = -1;
+@@ -42,7 +42,7 @@
+ #define r_skb_hl	ARM_R8
  
--	ctx.offsets = kzalloc(GFP_KERNEL, 4 * (ctx.skf->len + 1));
-+	ctx.offsets = kzalloc(4 * (ctx.skf->len + 1), GFP_KERNEL);
- 	if (ctx.offsets == NULL)
- 		return;
+ #define SCRATCH_SP_OFFSET	0
+-#define SCRATCH_OFF(k)		(SCRATCH_SP_OFFSET + (k))
++#define SCRATCH_OFF(k)		(SCRATCH_SP_OFFSET + 4 * (k))
  
-@@ -864,7 +864,7 @@ void bpf_jit_compile(struct sk_filter *fp)
- 
- 	ctx.idx += ctx.imm_count;
- 	if (ctx.imm_count) {
--		ctx.imms = kzalloc(GFP_KERNEL, 4 * ctx.imm_count);
-+		ctx.imms = kzalloc(4 * ctx.imm_count, GFP_KERNEL);
- 		if (ctx.imms == NULL)
- 			goto out;
- 	}
+ #define SEEN_MEM		((1 << BPF_MEMWORDS) - 1)
+ #define SEEN_MEM_WORD(k)	(1 << (k))
 -- 
 1.7.5.4
 
