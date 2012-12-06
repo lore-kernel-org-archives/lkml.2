@@ -1,64 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424121Ab2LFPzw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 10:55:52 -0500
-Received: from smtp-out-243.synserver.de ([212.40.185.243]:1037 "EHLO
-	smtp-out-243.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423878Ab2LFPzv (ORCPT
+	id S1424131Ab2LFP6J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 10:58:09 -0500
+Received: from mga11.intel.com ([192.55.52.93]:14952 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932199Ab2LFP6G convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 10:55:51 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 21383
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Rob Herring <rob.herring@calxeda.com>, devicetree-discuss@lists.ozlabs.org,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH resend] spi: Add support for specifying 3-wire mode via device tree
-Date: Thu,  6 Dec 2012 16:55:33 +0100
-Message-Id: <1354809333-18364-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.8.0
+	Thu, 6 Dec 2012 10:58:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,230,1355126400"; 
+   d="scan'208";a="258207184"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: RE: [PATCH] X86/acpi: remove redundant logic of acpi memory hotadd
+Thread-Topic: [PATCH] X86/acpi: remove redundant logic of acpi memory hotadd
+Thread-Index: Ac3RwEJoPVBNd0EOSNivpcZOpMzv7wCCiKLQ
+Date: Thu, 6 Dec 2012 15:58:02 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC82923353A30A4@SHSMSX101.ccr.corp.intel.com>
+References: <DE8DF0795D48FD4CA783C40EC829233539DED4@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC829233539DED4@SHSMSX101.ccr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch allows to specify that a SPI device is connected in 3-wire mode via
-device tree.
+Ping?
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Acked-by: Rob Herring <rob.herring@calxeda.com>
----
- Documentation/devicetree/bindings/spi/spi-bus.txt | 2 ++
- drivers/spi/spi.c                                 | 2 ++
- 2 files changed, 4 insertions(+)
+Thanks,
+Jinsong
 
-diff --git a/Documentation/devicetree/bindings/spi/spi-bus.txt b/Documentation/devicetree/bindings/spi/spi-bus.txt
-index 77a8b0d..296015e 100644
---- a/Documentation/devicetree/bindings/spi/spi-bus.txt
-+++ b/Documentation/devicetree/bindings/spi/spi-bus.txt
-@@ -53,6 +53,8 @@ contain the following properties.
-     		shifted clock phase (CPHA) mode
- - spi-cs-high     - (optional) Empty property indicating device requires
-     		chip select active high
-+- spi-3wire       - (optional) Empty property indicating device requires
-+    		    3-wire mode.
- 
- If a gpio chipselect is used for the SPI slave the gpio number will be passed
- via the cs_gpio
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index 22c71e2..cb61ada 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -861,6 +861,8 @@ static void of_register_spi_devices(struct spi_master *master)
- 			spi->mode |= SPI_CPOL;
- 		if (of_find_property(nc, "spi-cs-high", NULL))
- 			spi->mode |= SPI_CS_HIGH;
-+		if (of_find_property(nc, "spi-3wire", NULL))
-+			spi->mode |= SPI_3WIRE;
- 
- 		/* Device speed */
- 		prop = of_get_property(nc, "spi-max-frequency", &len);
--- 
-1.8.0
+
+Liu, Jinsong wrote:
+> Resend it, add Rafael and linux-acpi@vger.kernel.org
+> 
+> Thanks,
+> Jinsong
+> 
+> ===============
+> From 1d39279e45c54ce531691da5ffe261e7689dd92c Mon Sep 17 00:00:00 2001
+> From: Liu Jinsong <jinsong.liu@intel.com>
+> Date: Wed, 14 Nov 2012 18:52:06 +0800
+> Subject: [PATCH] X86/acpi: remove redundant logic of acpi memory
+> hotadd 
+> 
+> When memory hotadd, acpi_memory_enable_device has already been done
+> at drv->ops.add (acpi_memory_device_add), no need to do it again
+> at notify callback.
+> 
+> At acpi_memory_enable_device, acpi_memory_get_device_resources
+> is also a redundant action, since it has been done at drv->ops.add.
+> 
+> Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
+> ---
+>  drivers/acpi/acpi_memhotplug.c |   17 -----------------
+>  1 files changed, 0 insertions(+), 17 deletions(-)
+> 
+> diff --git a/drivers/acpi/acpi_memhotplug.c
+> b/drivers/acpi/acpi_memhotplug.c 
+> index 24c807f..a6489fd 100644
+> --- a/drivers/acpi/acpi_memhotplug.c
+> +++ b/drivers/acpi/acpi_memhotplug.c
+> @@ -220,15 +220,6 @@ static int acpi_memory_enable_device(struct
+>  	acpi_memory_device *mem_device) struct acpi_memory_info *info;
+>  	int node;
+> 
+> -
+> -	/* Get the range from the _CRS */
+> -	result = acpi_memory_get_device_resources(mem_device);
+> -	if (result) {
+> -		printk(KERN_ERR PREFIX "get_device_resources failed\n");
+> -		mem_device->state = MEMORY_INVALID_STATE;
+> -		return result;
+> -	}
+> -
+>  	node = acpi_get_node(mem_device->device->handle);
+>  	/*
+>  	 * Tell the VM there is more memory here...
+> @@ -357,14 +348,6 @@ static void
+>  			acpi_memory_device_notify(acpi_handle handle, u32 event, void
+>  		*data) break; }
+> 
+> -		if (acpi_memory_check_device(mem_device))
+> -			break;
+> -
+> -		if (acpi_memory_enable_device(mem_device)) {
+> -			printk(KERN_ERR PREFIX "Cannot enable memory device\n");
+> -			break;
+> -		}
+> -
+>  		ost_code = ACPI_OST_SC_SUCCESS;
+>  		break;
 
