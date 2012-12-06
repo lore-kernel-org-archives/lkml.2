@@ -1,142 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932834Ab2LFQZQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 11:25:16 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:41998 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932820Ab2LFQZO (ORCPT
+	id S932849Ab2LFQZp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 11:25:45 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:53838 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932820Ab2LFQZn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 11:25:14 -0500
-Message-ID: <50C0C6E1.4000102@gmail.com>
-Date: Fri, 07 Dec 2012 00:25:05 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 6 Dec 2012 11:25:43 -0500
 MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: Hanjun Guo <guohanjun@huawei.com>,
-        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com, rjw@sisk.pl, lenb@kernel.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Tang Chen <tangchen@cn.fujitsu.com>
-Subject: Re: [RFC PATCH v3 0/3] acpi: Introduce prepare_remove device operation
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>   <50B5EFE9.3040206@huawei.com>  <1354128096.26955.276.camel@misato.fc.hp.com> <50C0C13A.1040905@gmail.com> <1354809803.21116.4.camel@misato.fc.hp.com>
-In-Reply-To: <1354809803.21116.4.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.LRH.2.02.1212070024460.4693@tundra.namei.org>
+References: <20121128101635.d5e864dffc4252ef9d5e1664@canb.auug.org.au>
+ <50B5508D.7050409@schaufler-ca.com> <20121128110132.0082c87680b9b714b8c0689c@canb.auug.org.au>
+ <alpine.LRH.2.02.1212070024460.4693@tundra.namei.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 6 Dec 2012 08:25:21 -0800
+X-Google-Sender-Auth: xC5dbGKlC7Bu6YbQFRNwIE1UzoQ
+Message-ID: <CA+55aFwJDtofV36R_ot8qj31BCGwBgDsGOKRkMRhRLamf5M+mw@mail.gmail.com>
+Subject: Re: linux-next: unusual update of the security tree
+To: James Morris <jmorris@namei.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Casey Schaufler <casey@schaufler-ca.com>, linux-next@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/2012 12:03 AM, Toshi Kani wrote:
-> On Fri, 2012-12-07 at 00:00 +0800, Jiang Liu wrote:
->> On 11/29/2012 02:41 AM, Toshi Kani wrote:
->>> On Wed, 2012-11-28 at 19:05 +0800, Hanjun Guo wrote:
->>>> On 2012/11/24 1:50, Vasilis Liaskovitis wrote:
->>>>> As discussed in https://patchwork.kernel.org/patch/1581581/
->>>>> the driver core remove function needs to always succeed. This means we need
->>>>> to know that the device can be successfully removed before acpi_bus_trim / 
->>>>> acpi_bus_hot_remove_device are called. This can cause panics when OSPM-initiated
->>>>> or SCI-initiated eject of memory devices fail e.g with:
->>>>> echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
->>>>>
->>>>> since the ACPI core goes ahead and ejects the device regardless of whether the
->>>>> the memory is still in use or not.
->>>>>
->>>>> For this reason a new acpi_device operation called prepare_remove is introduced.
->>>>> This operation should be registered for acpi devices whose removal (from kernel
->>>>> perspective) can fail.  Memory devices fall in this category.
->>>>>
->>>>> acpi_bus_remove() is changed to handle removal in 2 steps:
->>>>> - preparation for removal i.e. perform part of removal that can fail. Should
->>>>>   succeed for device and all its children.
->>>>> - if above step was successfull, proceed to actual device removal
->>>>
->>>> Hi Vasilis,
->>>> We met the same problem when we doing computer node hotplug, It is a good idea
->>>> to introduce prepare_remove before actual device removal.
->>>>
->>>> I think we could do more in prepare_remove, such as rollback. In most cases, we can
->>>> offline most of memory sections except kernel used pages now, should we rollback
->>>> and online the memory sections when prepare_remove failed ?
->>>
->>> I think hot-plug operation should have all-or-nothing semantics.  That
->>> is, an operation should either complete successfully, or rollback to the
->>> original state.
->>>
->>>> As you may know, the ACPI based hotplug framework we are working on already addressed
->>>> this problem, and the way we slove this problem is a bit like yours.
->>>>
->>>> We introduce hp_ops in struct acpi_device_ops:
->>>> struct acpi_device_ops {
->>>> 	acpi_op_add add;
->>>> 	acpi_op_remove remove;
->>>> 	acpi_op_start start;
->>>> 	acpi_op_bind bind;
->>>> 	acpi_op_unbind unbind;
->>>> 	acpi_op_notify notify;
->>>> #ifdef	CONFIG_ACPI_HOTPLUG
->>>> 	struct acpihp_dev_ops *hp_ops;
->>>> #endif	/* CONFIG_ACPI_HOTPLUG */
->>>> };
->>>>
->>>> in hp_ops, we divide the prepare_remove into six small steps, that is:
->>>> 1) pre_release(): optional step to mark device going to be removed/busy
->>>> 2) release(): reclaim device from running system
->>>> 3) post_release(): rollback if cancelled by user or error happened
->>>> 4) pre_unconfigure(): optional step to solve possible dependency issue
->>>> 5) unconfigure(): remove devices from running system
->>>> 6) post_unconfigure(): free resources used by devices
->>>>
->>>> In this way, we can easily rollback if error happens.
->>>> How do you think of this solution, any suggestion ? I think we can achieve
->>>> a better way for sharing ideas. :)
->>>
->>> Yes, sharing idea is good. :)  I do not know if we need all 6 steps (I
->>> have not looked at all your changes yet..), but in my mind, a hot-plug
->>> operation should be composed with the following 3 phases.
->>>
->>> 1. Validate phase - Verify if the request is a supported operation.  All
->>> known restrictions are verified at this phase.  For instance, if a
->>> hot-remove request involves kernel memory, it is failed in this phase.
->>> Since this phase makes no change, no rollback is necessary to fail.  
->>>
->>> 2. Execute phase - Perform hot-add / hot-remove operation that can be
->>> rolled-back in case of error or cancel.
->>>
->>> 3. Commit phase - Perform the final hot-add / hot-remove operation that
->>> cannot be rolled-back.  No error / cancel is allowed in this phase.  For
->>> instance, eject operation is performed at this phase.  
->> Hi Toshi,
->> 	There are one more step needed. Linux provides sysfs interfaces to
->> online/offline CPU/memory sections, so we need to protect from concurrent
->> operations from those interfaces when doing physical hotplug. Think about
->> following sequence:
->> Thread 1
->> 1. validate conditions for hot-removal
->> 2. offline memory section A
->> 3.						online memory section A			
->> 4. offline memory section B
->> 5 hot-remove memory device hosting A and B.
-> 
-> Hi Gerry,
-> 
-> I agree.  And I am working on a proposal that tries to address this
-> issue by integrating both sysfs and hotplug operations into a framework.
-Hi Toshi,
-	But the sysfs for CPU and memory online/offline are platform independent
-interfaces, and the ACPI based hotplug is platform dependent interfaces. I'm not
-sure whether it's feasible to merge them. For example we still need offline interface
-to stop using faulty CPUs on platform without physical hotplug capabilities.
-	We have solved this by adding a "busy" flag to the device, so the sysfs
-will just return -EBUSY if the busy flag is set.
+On Thu, Dec 6, 2012 at 5:25 AM, James Morris <jmorris@namei.org> wrote:
+> Any suggestions on how to fix this?  That branch is public, and what
+> people use to develop against, so I can't rebase it.
 
-Regards!
-Gerry
+Quite frankly, I really am not going to pull that. It has random crazy
+merges for no reason what-so-ever. This is *exactly* the kind of stuff
+I used to speak out against years ago, and I thought we had long since
+put behind us. Do
 
-> 
-> 
-> Thanks,
-> -Toshi
-> 
+    git fetch git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security
+next
+    gitk ..FETCH_HEAD
 
+from mainline to see what I'm talking about. It has all those random
+merges interspersed with random sporadic development. This is not how
+we make history make sense.
+
+It looks like Casey has for the last year+ just had his own tree, done
+his own thing, and then pulled from the 'next' branch of security at
+random points to intermix his occasional commits with everything
+else.So now all his sporadic commits are randomly intermixed together
+with *everything* else that happened over the last year. It's kind of
+the epitome of not-a-feature-branch.
+
+There are 26 "normal" commits spread out over the year, coupled with
+22 merges that have been done bi-weekly or something, and have
+altogether brought in 13 *thousand* commits that have very little to
+do with the 26 commits that are new work. And with many of the merges
+done despite that development tree having *no* development in it of
+its own, so you have those repeated "let's merge upstream code" pulls
+that only add upstream code with no development in between.
+
+This is the kind of development that should be kept private, and maybe
+using a "git pull --rebase" to maintain the private commits on top of
+whatever upstream. NOT be used to say "ok, I now have more than a year
+of messy development history of 22 changes randomly interspersed with
+the thirteen thousand commits that went into mainline during that
+year+ time".
+
+Or it should just have been a development branch that only did its own
+development and never pulled from upstream.
+
+Have people pulled that thing into anything else? Because quite
+frankly, I think it's unsalvageable except with a rebase.
+
+                  Linus
