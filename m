@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965391Ab2LFWVY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 17:21:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12609 "EHLO mx1.redhat.com"
+	id S965408Ab2LFWVa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 17:21:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13211 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965375Ab2LFWVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 17:21:21 -0500
-Subject: [PATCH 09/10] kvm: struct kvm_memory_slot.id -> short
+	id S965375Ab2LFWV1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 17:21:27 -0500
+Subject: [PATCH 10/10] kvm: Increase user memory slots on x86 to 125
 To: mtosatti@redhat.com, gleb@redhat.com
 From: Alex Williamson <alex.williamson@redhat.com>
 Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Date: Thu, 06 Dec 2012 15:21:20 -0700
-Message-ID: <20121206222120.24968.66982.stgit@bling.home>
+Date: Thu, 06 Dec 2012 15:21:26 -0700
+Message-ID: <20121206222126.24968.17280.stgit@bling.home>
 In-Reply-To: <20121206214722.24968.6043.stgit@bling.home>
 References: <20121206214722.24968.6043.stgit@bling.home>
 User-Agent: StGit/0.16
@@ -22,49 +22,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We're currently offering a whopping 32 memory slots to user space, an
-int is a bit excessive for storing this.  We would like to increase
-our memslots, but SHRT_MAX should be more than enough.
+With the 3 private slots, this gives us a nice round 128 slots total.
+The primary motivation for this is to support more assigned devices.
+Each assigned device can theoretically use up to 8 slots (6 MMIO BARs,
+1 ROM BAR, 1 spare for a split MSI-X table mapping) though it's far
+more typical for a device to use 3-4 slots.  If we assume a typical VM
+uses a dozen slots for non-assigned devices purposes, we should always
+be able to support 14 worst case assigned devices or 28 to 37 typical
+devices.
 
 Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
 ---
- include/linux/kvm_host.h |    4 ++--
- virt/kvm/kvm_main.c      |    2 ++
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 641f5fb..87089dd 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -255,7 +255,7 @@ struct kvm_memory_slot {
- 	struct kvm_arch_memory_slot arch;
- 	unsigned long userspace_addr;
- 	u32 flags;
--	int id;
-+	short id;
- 	bool user_alloc;
- };
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index ce8b037..9558a1e 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -31,7 +31,7 @@
  
-@@ -315,7 +315,7 @@ struct kvm_memslots {
- 	u64 generation;
- 	struct kvm_memory_slot memslots[KVM_MEM_SLOTS_NUM];
- 	/* The mapping table from slot id to the index in memslots[]. */
--	int id_to_index[KVM_MEM_SLOTS_NUM];
-+	short id_to_index[KVM_MEM_SLOTS_NUM];
- };
- 
- struct kvm {
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 6eeb101..6e4709f 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -469,6 +469,8 @@ static struct kvm *kvm_create_vm(unsigned long type)
- 	INIT_HLIST_HEAD(&kvm->irq_ack_notifier_list);
- #endif
- 
-+	BUILD_BUG_ON(KVM_MEM_SLOTS_NUM > SHRT_MAX);
-+
- 	r = -ENOMEM;
- 	kvm->memslots = kzalloc(sizeof(struct kvm_memslots), GFP_KERNEL);
- 	if (!kvm->memslots)
+ #define KVM_MAX_VCPUS 254
+ #define KVM_SOFT_MAX_VCPUS 160
+-#define KVM_USER_MEM_SLOTS 32
++#define KVM_USER_MEM_SLOTS 125
+ /* memory slots that are not exposed to userspace */
+ #define KVM_PRIVATE_MEM_SLOTS 3
+ #define KVM_MEM_SLOTS_NUM (KVM_USER_MEM_SLOTS + KVM_PRIVATE_MEM_SLOTS)
 
