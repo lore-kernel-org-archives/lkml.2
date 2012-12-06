@@ -1,96 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422686Ab2LFJng (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 04:43:36 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:63468 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932480Ab2LFJnd (ORCPT
+	id S1422705Ab2LFJpN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 04:45:13 -0500
+Received: from outmail006.ash2.facebook.com ([66.220.155.140]:48704 "EHLO
+	mx-out.facebook.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1422691Ab2LFJpK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 04:43:33 -0500
+	Thu, 6 Dec 2012 04:45:10 -0500
+X-Greylist: delayed 1201 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Dec 2012 04:45:10 EST
+Subject: [PATCH 00/12] dmaengine_unmap_data
+To: linux-kernel@vger.kernel.org
+From: Dan Williams <djbw@fb.com>
+Cc: vinod.koul@intel.com, linux@arm.linux.org.uk, dave.jiang@intel.com
+Date: Thu, 06 Dec 2012 01:25:08 -0800
+Message-ID: <20121206091055.17085.47979.stgit@dev279.prn1.facebook.com>
+User-Agent: StGit/0.16-38-g167d
 MIME-Version: 1.0
-In-Reply-To: <87mwxrttwf.fsf@devron.myhome.or.jp>
-References: <1353504277-5947-1-git-send-email-linkinjeon@gmail.com>
-	<87hao35uqz.fsf@devron.myhome.or.jp>
-	<CAKYAXd_X8Jkq=PdV+dVPTO_EAPHoZ37MynpjvkrPTDahWyUOTA@mail.gmail.com>
-	<87obia17zr.fsf@devron.myhome.or.jp>
-	<CAKYAXd-8ay4m6vsH1ztmomOrnXN+ThDi3w+jASyyUGOO12v6YA@mail.gmail.com>
-	<871uf4yizs.fsf@devron.myhome.or.jp>
-	<CAKYAXd_T2yGRXd3bk5HXXuVhx_ikO1xzinOy0d8TobokyiCRsA@mail.gmail.com>
-	<87pq2owvf9.fsf@devron.myhome.or.jp>
-	<CAKYAXd-CAhBDNYRTF22Yh8iGDb1_6+0V-U2wJsSuAjU3Q4q-SQ@mail.gmail.com>
-	<87mwxrttwf.fsf@devron.myhome.or.jp>
-Date: Thu, 6 Dec 2012 18:43:32 +0900
-Message-ID: <CAKYAXd-_wRwZQUAOfGfKkUoCagmYRnnrUanyF-rzRAJ0oXVDbA@mail.gmail.com>
-Subject: Re: [PATCH v5 5/8] fat: restructure export_operations
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/12/6, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
->
->>> I know encode_fh(). But NFS is network protocol, and network can input
->>> any data, and I guess the userland interface (open_by_handle()?) can be
->>> any too.
->>>
->>> And generic_fh_to_dentry()'s input verify choose to check the minimum
->>> length only. But your logic choose the exact length.
->>>
->>> I think the both is sane and correct. But I wonder why did you changed
->>> it.
->> There was no particular reason for us to put those conditions. It is
->> just we knew what fh lengths we have chosen for the 2 cases
->> WITH/WITHOUT parent.
->> i.e., we checked with encoded length.
->> Now, when I check the export functions of other filesystems(btrfs,
->> nilfs2, udf). They also adopt the same method of checking the exact
->> length and type.
->> If there is any particular reason, we will look into that and can also
->> updated on that.
->
-> OK. Then, just cleanup code, and let's use strict checking version.
->
-> Removing strange fallthrou, something like the following.
->
-> static struct dentry *fat_fh_to_dentry_nostale(struct super_block *sb,
-> 					       struct fid *fh, int fh_len,
-> 					       int fh_type)
-> {
-> 	struct inode *inode = NULL;
-> 	struct fat_fid *fid = (struct fat_fid *)fh;
-> 	loff_t i_pos;
->
-> 	switch (fh_type) {
-> 	case FILEID_FAT_WITHOUT_PARENT:
-> 		if (fh_len < FAT_FID_SIZE_WITHOUT_PARENT)
-> 			return NULL;
-> 		break;
-> 	case FILEID_FAT_WITH_PARENT:
-> 		if (fh_len < FAT_FID_SIZE_WITH_PARENT)
-> 			return NULL;
-> 		break;
-> 	default:
-> 		return NULL;
-> 	}
->
-> 	i_pos = fid->i_pos_hi;
-> 	i_pos = (i_pos << 32) | (fid->i_pos_low);
-> 	inode = __fat_nfs_get_inode(sb, 0, fid->i_gen, i_pos);
->
-> 	return d_obtain_alias(inode);
-> }
-Okay. I will change like this on next patch-set.
+dmaengine from the beginning has placed the burden of unmapping dma
+buffers on the individual drivers.  The thought being that since the dma
+driver already has the descriptor it can use that information for
+unmapping.  This results in a lot of cruft to read back data from
+descriptors, places a burden on channels that need to break up an
+operation internally into multiple descriptors, and makes it difficult
+to have dma mappings with different lifetimes than the current
+operation.
 
-Thanks OGAWA!
->
->
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->
+For example an xor->copy->xor chain wants to leave all buffers
+mapped until completion, async_tx currently performs invalid overlapping
+mappings.  With dmaengine_unmap_data map once and take a reference for
+descriptor that uses the mapping.
+
+Thanks to Bart for getting this cleanup started!
+
+I'll also push this out to the 'unmap' branch:
+git://git.kernel.org/pub/scm/linux/kernel/git/djbw/dmaengine unmap
+
+--
+Dan
+
+
+---
+
+Bartlomiej Zolnierkiewicz (2):
+      dmaengine: remove DMA unmap from drivers
+      dmaengine: remove DMA unmap flags
+
+Dan Williams (10):
+      dmaengine: consolidate memcpy apis
+      dmaengine: prepare for generic 'unmap' data
+      dmaengine: reference counted unmap data
+      async_memcpy: convert to dmaengine_unmap_data
+      async_memset: convert to dmaengine_unmap_data
+      async_xor: convert to dmaengine_unmap_data
+      async_xor_val: convert to dmaengine_unmap_data
+      async_raid6_recov: convert to dmaengine_unmap_data
+      async_pq: convert to dmaengine_unmap_data
+      async_pq_val: convert to dmaengine_unmap_data
+
+
+ arch/arm/include/asm/hardware/iop3xx-adma.h |   30 ---
+ arch/arm/include/asm/hardware/iop_adma.h    |    4 
+ arch/arm/mach-iop13xx/include/mach/adma.h   |   26 ---
+ crypto/async_tx/async_memcpy.c              |   36 ++--
+ crypto/async_tx/async_memset.c              |   15 +-
+ crypto/async_tx/async_pq.c                  |  174 ++++++++++-------
+ crypto/async_tx/async_raid6_recov.c         |   61 ++++--
+ crypto/async_tx/async_xor.c                 |  122 +++++++-----
+ drivers/ata/pata_arasan_cf.c                |    3 
+ drivers/dma/amba-pl08x.c                    |   32 ---
+ drivers/dma/at_hdmac.c                      |   26 ---
+ drivers/dma/dmaengine.c                     |  261 ++++++++++++++++++--------
+ drivers/dma/dmatest.c                       |    3 
+ drivers/dma/dw_dmac.c                       |   21 --
+ drivers/dma/ep93xx_dma.c                    |   30 ---
+ drivers/dma/fsldma.c                        |   17 --
+ drivers/dma/ioat/dma.c                      |   20 --
+ drivers/dma/ioat/dma.h                      |   12 -
+ drivers/dma/ioat/dma_v2.c                   |    2 
+ drivers/dma/ioat/dma_v3.c                   |  143 +-------------
+ drivers/dma/iop-adma.c                      |   99 ----------
+ drivers/dma/mv_xor.c                        |   46 -----
+ drivers/dma/ppc4xx/adma.c                   |  270 ---------------------------
+ drivers/dma/timb_dma.c                      |   37 ----
+ drivers/dma/txx9dmac.c                      |   25 ---
+ drivers/media/platform/m2m-deinterlace.c    |    3 
+ drivers/media/platform/timblogiw.c          |    2 
+ drivers/misc/carma/carma-fpga.c             |    3 
+ drivers/mtd/nand/atmel_nand.c               |    3 
+ drivers/mtd/nand/fsmc_nand.c                |    2 
+ drivers/net/ethernet/micrel/ks8842.c        |    6 -
+ drivers/spi/spi-dw-mid.c                    |    4 
+ include/linux/dmaengine.h                   |   49 ++++-
+ 33 files changed, 481 insertions(+), 1106 deletions(-)
