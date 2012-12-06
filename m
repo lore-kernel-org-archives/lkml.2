@@ -1,43 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964783Ab2LFGZO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 01:25:14 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:46800 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932125Ab2LFGZM (ORCPT
+	id S932282Ab2LFGZZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 01:25:25 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:40390 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932125Ab2LFGZV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 01:25:12 -0500
+	Thu, 6 Dec 2012 01:25:21 -0500
+Message-ID: <50C03A3F.7070605@huawei.com>
+Date: Thu, 6 Dec 2012 14:25:03 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Date: Thu, 6 Dec 2012 11:55:11 +0530
-Message-ID: <CAM4voa=X_rBkSXRHd=oEOnXhgyfSAeD8LmYnsTeQtd-SYKWwPg@mail.gmail.com>
-Subject: Regulator suspend state dt question
-From: Abhilash Kesavan <kesavan.abhilash@gmail.com>
-To: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        grant.likely@secretlab.ca, lrg@ti.com,
-        broonie@opensource.wolfsonmicro.com
-Cc: Doug Anderson <dianders@chromium.org>, Olof Johansson <olofj@google.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: Michal Hocko <mhocko@suse.cz>, <paul@paulmenage.org>,
+        <glommer@parallels.com>, <containers@lists.linux-foundation.org>,
+        <cgroups@vger.kernel.org>, <peterz@infradead.org>,
+        <bsingharora@gmail.com>, <hannes@cmpxchg.org>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHSET cgroup/for-3.8] cpuset: decouple cpuset locking from
+ cgroup core
+References: <1354138460-19286-1-git-send-email-tj@kernel.org> <20121203152205.GB17093@dhcp22.suse.cz> <20121203165338.GF19802@htj.dyndns.org>
+In-Reply-To: <20121203165338.GF19802@htj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 2012/12/4 0:53, Tejun Heo wrote:
+> Hello, Michal.
+> 
+> On Mon, Dec 03, 2012 at 04:22:05PM +0100, Michal Hocko wrote:
+>> I have glanced through the series and spotten nothing obviously wrong. I
+>> do not feel I could give my r-b because I am not familiar with cpusets
+>> internals enough and some patches looks quite scary (like #8).
+>> Anyway the resulting outcome seems nice.
+> 
+> Thanks a lot for looking at it and, yeah, it's a bit scary.  Li, Paul,
+> can you guys please review the series?
+> 
 
-Max77686 PMIC has dt support and I wanted to specify the suspend state of the
-regulator via dt. set_suspend_disable and set_suspend_mode call-backs are
-already implemented in drivers/regulator/max77686.c.
+We shoudn't haste to target this for 3.8, given that we're in late -rc and
+Michal felt some patches scary and they hasn't got enough review.
 
-As of now there is no support in the regulator core to specify the suspend state
-(mode, enabled/disabled) using dt. I can add new properties specifying
-the intial_state,
-mode, enable/disable but I am not too sure if it is appropriate to add
-such bindings to
-the device tree as they are not actually describing the hardware.
+I'll squeeze time to review them, but currently I've been backlogged with
+internal work.
 
-Is calling regulator_suspend_prepare from a machine specific file an option ?
-
-Kindly provide me with suggestions as to how I may proceed with this.
-
-Regards,
-Abhilash
