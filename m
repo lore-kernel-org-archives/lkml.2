@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932707Ab2LFOPQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 09:15:16 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:43854 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932088Ab2LFOPO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 09:15:14 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] spi: make sure all transfer has bits_per_word set
-To: Jonas Gorski <jonas.gorski@gmail.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Cc: broonie@opensource.wolfsonmicro.com,
-        spi-devel-general@lists.sourceforge.net, swarren@nvidia.com,
-        linux-kernel@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>
-In-Reply-To: <CAOiHx=nEmd9dQ297Oho=gmZTYfYgJ3o_+J2OFK=sRuRYNqzPxg@mail.gmail.com>
-References: <1352452005-13789-1-git-send-email-ldewangan@nvidia.com> <CAOiHx=nEmd9dQ297Oho=gmZTYfYgJ3o_+J2OFK=sRuRYNqzPxg@mail.gmail.com>
-Date: Thu, 06 Dec 2012 14:15:07 +0000
-Message-Id: <20121206141507.86DCF3E0948@localhost>
+	id S1423543Ab2LFOUr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 09:20:47 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60425 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932710Ab2LFOUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 09:20:46 -0500
+Date: Thu, 6 Dec 2012 15:20:44 +0100
+From: Jan Kara <jack@suse.cz>
+To: Dimitrios Apostolou <jimis@gmx.net>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: backing up ext4 fs, system unresponsive, thrashing like crazy
+ even though swap is unused
+Message-ID: <20121206142044.GB18547@quack.suse.cz>
+References: <1353851735.22969.18.camel@soupermouf>
+ <1353871800.22969.28.camel@soupermouf>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1353871800.22969.28.camel@soupermouf>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Nov 2012 11:03:56 +0100, Jonas Gorski <jonas.gorski@gmail.com> wrote:
-> Hi,
+On Sun 25-11-12 21:30:00, Dimitrios Apostolou wrote:
+> On Sun, 2012-11-25 at 15:55 +0200, Dimitrios Apostolou wrote:
+> > on an old PIII-500MHz laptop, 128MB RAM, kernel 3.6.6, I started a
+> > backup process (tar|xz -4, nice'd and ionice'd -c3) from ext4 on local
+> > ATA disk to ext3 on external USB disk (USB-2.0 port on PCMCIA card).
+> > Even though earlier system load was minimal, free memory was plenty, the
+> > system now is unresponsive and is thrashing the disk, but the swapfile
+> > is rarely touched.
 > 
-> On 9 November 2012 10:06, Laxman Dewangan <ldewangan@nvidia.com> wrote:
-> > When spi client does the spi transfer and does not sets
-> > the bits_per_word for each transfer then set it as default
-> > of spi device in spi core before calling low level transfer.
-> 
-> I like that (not that it counts ... )!
-> 
-> > Removing the similar code from spi-tegra20-slink driver as
-> > it is not required.
-> 
-> Not sure if this should be part of *this* patch.
-> Also spi-tegra20-slink isn't the only one fixing up the bits_per_word
-> for transfers, so it would be nice if you could remove it from the
-> other drivers, too.
-> 
-> In a future patch, maybe even do the same with speed_hz?
+> I'm now having the same experience even though I replaced xz (which
+> needed ~50MB RAM) with gzip. Even though I feel the realtime root shell
+> is a bit more responsive than before, the OOM killer is out killing 
+> small processes like syslog-ng and systemd-logind... The
+> ext4_inode_cache slab is taking almost all my memory (117MB). Please
+> advise!
+  Hmm, it seems commit 4eff96dd5283a102e0c1cac95247090be74a38ed might be
+interesting for you. It landed in -stable kernels recently as well if I
+remember right...
 
-That sounds reasonable. Could you craft one up and see how it looks?
+								Honza
 
-Thanks,
-g.
-
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
