@@ -1,48 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752673Ab2LFAZe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 19:25:34 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51570 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803Ab2LFAZd (ORCPT
+	id S1753093Ab2LFA1s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 19:27:48 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:44722 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803Ab2LFA1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 19:25:33 -0500
-Date: Wed, 5 Dec 2012 16:25:30 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, ltsi-dev@lists.linuxfoundation.org
-Subject: Re: LTSI 3.4.21-rc1 kernel now released
-Message-ID: <20121206002530.GC17646@kroah.com>
-References: <20121206002328.GA17646@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121206002328.GA17646@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 5 Dec 2012 19:27:47 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 000/493] remove CONFIG_HOTPLUG as an option
+To: Bill Pemberton <wfp5p@viridian.itc.virginia.edu>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20121122010723.F111E80150@viridian.itc.virginia.edu>
+References: <20121122010723.F111E80150@viridian.itc.virginia.edu>
+Date: Thu, 06 Dec 2012 00:27:42 +0000
+Message-Id: <20121206002742.80C2A3E0E22@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 05, 2012 at 04:23:28PM -0800, Greg KH wrote:
-> Hi all,
+On Wed, 21 Nov 2012 20:07:23 -0500, wfp5p@viridian.itc.virginia.edu (Bill Pemberton) wrote:
+> Grant Likely writes:
+> > 
+> > You mean this series wasn't created with a script? You did this by
+> > hand? If so then I must say kudos on your dedication!
+> >
+> > But it makes me more nervous about the series. Too easy to fat
+> > finger many things when touching that many files.
+> >
 > 
-> I'd like to announce the LTSI 3.4.21-rc1 kernel.  It's a first cut at
-> the patches that have been submitted to be included in the LTSI 3.4
-> kernel branch.  I've tested it out on my machine, but it really needs
-> testing from those who want to be running the LTSI kernel series.
+> No, I didn't do them by hand, it was a script.  Originally, it was a
+> couple, all basically the same, but removing each __dev*.  Then I'd do
+> a word diff to eyeball them to make sure the script didn't do
+> something goofy.
 > 
-> The diffstat for the patch is below, but the highlights of it are:
-> 	- AF_BUS patches
-> 	- LTTng
-> 	- pramfs (but disabled due to build problems)
-> 	- azfs (also disabled due to build problems)
-> 	- Board support for Armadillo 800, AT91, kzm9d, kzm9g, and
-> 	  Marzen platforms.
+> The whack-a-mole part came along because I was working against
+> linux-next and whatever patch series was right for one day wouldn't be
+> right for the next day because of some of the faster moving trees.
+> 
+> 
+> > Please do write a script and post that for review.
+> > 
+> 
+> The all-in-one version of the script:
+> 
+> #! /usr/bin/perl
+> 
+> use strict;
+> use IO::InSitu;
+> 
+> sub processfile
+> {
+>     my $fn = shift;
+> 
+>     my ($in, $out) = open_rw($fn, $fn);
+> 
+>     while (<$in>) {
+> 	s|__devexit_p\(([^)]+)\)|$1|;
+> 	s|\s__devexit\b||;
+> 	s|\s__devinitconst\b||;
+> 	s|\s__devinitdata\b||;
+> 	s|\s__devinit\b||;
 
-Oops, I forgot the big dma-mapping patches that are also included here,
-lots of people were wanting them, many thanks to Damian Hobson-Garcia
-for doing the hard work of backporting all of them and merging them
-properly to get it to work well.
+Pretty straight forward, and works against the files I tried.  :-)
 
-thanks,
+Greg, I'd much rather see the change applied all at once in this manner.
+If that isn't possible, then at the least I'll use the script against
+the code that I maintain and push th result out to Linus.
 
-greg k-h
+g.
+
