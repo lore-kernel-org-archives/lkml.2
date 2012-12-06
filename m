@@ -1,53 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424004Ab2LFPuD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 10:50:03 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:16233 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423981Ab2LFPt7 (ORCPT
+	id S1424034Ab2LFPub (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 10:50:31 -0500
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:27925 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423981Ab2LFPuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 10:49:59 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-24-50c0bea67e4a
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Dan Williams <djbw@fb.com>
-Subject: Re: [PATCH 07/12] async_xor_val: convert to dmaengine_unmap_data
-Date: Thu, 06 Dec 2012 16:48:04 +0100
-User-Agent: KMail/1.13.2 (Linux/3.5.0-rc2+; KDE/4.4.5; i686; ; )
-Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk, vinod.koul@intel.com,
-        Tomasz Figa <t.figa@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>, dave.jiang@intel.com
-References: <20121206091055.17085.47979.stgit@dev279.prn1.facebook.com>
- <20121206092548.17085.19899.stgit@dev279.prn1.facebook.com>
-In-reply-to: <20121206092548.17085.19899.stgit@dev279.prn1.facebook.com>
-MIME-version: 1.0
-Message-id: <201212061648.04486.b.zolnierkie@samsung.com>
-Content-type: Text/Plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNLMWRmVeSWpSXmKPExsVy+t9jAd1l+w4EGLTuEbG4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZ+6ZvYSw4y1yx48561gbGduYuRk4OCQETiecNjSwQtpjEhXvr
-	2boYuTiEBBYxSpxbexXKWcoksf7LQ7AONgEriYntqxhBbBEBOYnVt6eAxYUFPCW+T7kAZHNw
-	sAioShycEgsSFhVwkOicOgFsDrPAVkaJ7092skIMbWWU6J5+gQmkilPAQ2LehnWsIDavgKDE
-	j8n3WCBsS4n3jd/YQWxmAS2J5jebGCFseYnNa94yT2AUmIWkZRaSsllIyhYwMq9iFE0tSC4o
-	TkrPNdIrTswtLs1L10vOz93ECA7CZ9I7GFc1WBxiFOBgVOLhtajeHyDEmlhWXJl7iFGCg1lJ
-	hDem40CAEG9KYmVValF+fFFpTmrxIUZpDhYlcd5mj5QAIYH0xJLU7NTUgtQimCwTB6dUA+OM
-	kiz9U486Zdptlx9ovL1yr/Mk9ZLT+j0V90WDX5jM7WP+9vDCkr1f1nWWJ7U2tyicydogs2eH
-	3IyLZhd+BSc+TRBiiJNTyW9zFOVfzbRT6trD0+smmvVx5V3rs0zqdom+0ljbmFQY6LZm4tNd
-	RdN/m18998p3NU99YVKZ1Z15WpdyL9r3aCqxFGckGmoxFxUnAgCar/vBPgIAAA==
+	Thu, 6 Dec 2012 10:50:04 -0500
+Message-ID: <1354808489.20543.31.camel@misato.fc.hp.com>
+Subject: Re: [RFC PATCH v3 3/3] acpi_memhotplug: Allow eject to proceed on
+ rebind scenario
+From: Toshi Kani <toshi.kani@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        linux-acpi@vger.kernel.org, Wen Congyang <wency@cn.fujitsu.com>,
+        Wen Congyang <wencongyang@gmail.com>, isimatu.yasuaki@jp.fujitsu.com,
+        lenb@kernel.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Date: Thu, 06 Dec 2012 08:41:29 -0700
+In-Reply-To: <14429189.LmXxfguqbu@vostro.rjw.lan>
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
+	 <1354211051.26955.435.camel@misato.fc.hp.com>
+	 <20121206093019.GA4584@dhcp-192-168-178-175.profitbricks.localdomain>
+	 <14429189.LmXxfguqbu@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 06 December 2012 10:25:48 Dan Williams wrote:
-> Use the generic unmap object to unmap dma buffers.
+On Thu, 2012-12-06 at 13:50 +0100, Rafael J. Wysocki wrote:
+> On Thursday, December 06, 2012 10:30:19 AM Vasilis Liaskovitis wrote:
+> > Hi,
+> > On Thu, Nov 29, 2012 at 10:44:11AM -0700, Toshi Kani wrote:
+> > > On Thu, 2012-11-29 at 12:04 +0100, Vasilis Liaskovitis wrote:
+> > > 
+> > > Yes, that's what I had in mind along with device_lock().  I think the
+> > > lock is necessary to close the window.
+> > > http://www.spinics.net/lists/linux-mm/msg46973.html
+> > > 
+> > > But as I mentioned in other email, I prefer option 3 with
+> > > suppress_bind_attrs.  So, yes, please take a look to see how it works
+> > > out.
+> > 
+> > I tested the suppress_bind_attrs and it works by simply setting it to true
+> > before driver registration e.g. 
+> > 
+> > --- a/drivers/acpi/scan.c
+> > +++ b/drivers/acpi/scan.c
+> > @@ -783,7 +783,8 @@ int acpi_bus_register_driver(struct acpi_driver *driver)
+> >  	driver->drv.name = driver->name;
+> >  	driver->drv.bus = &acpi_bus_type;
+> >  	driver->drv.owner = driver->owner;
+> > -
+> > +    if (!strcmp(driver->class, "memory"))
+> > +        driver->drv.suppress_bind_attrs = true;
+> >  	ret = driver_register(&driver->drv);
+> >  	return ret;
+> >  }
+> > 
+> > No bind/unbind sysfs files are created when using this, as expected.
+> > I assume we only want to suppress for acpi_memhotplug
+> > (class=ACPI_MEMORY_DEVICE_CLASS i.e. "memory") devices.
+> > 
+> > Is there agreement on what acpi_bus_trim behaviour and rollback (if any) we
+> > want to have for the current ACPI framework (partial trim or full trim on
+> > failure)?
 > 
-> Cc: Tomasz Figa <t.figa@samsung.com>
-> Cc: Kyungmin Park <kyungmin.park@samsung.com>
-> Reported-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Signed-off-by: Dan Williams <djbw@fb.com>
+> Last time I suggested to split the trimming so that first we only unbind
+> drivers (and roll back that part, ie. rebind the drivers on errors) and
+> next we remove the struct acpi_device objects, just before doing the actual
+> eject.  So there would be two walks of the hierarchy below the device we want
+> to eject, one for driver unbinding (that can be rolled back) and one for the
+> actual removal.
+> 
+> Toshi Kani seemed to agree with that and there were no follow-ups.
 
-Acked-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+I was hoping to have a short term solution to fix the panic on
+attempting to delete a kernel memory range, assuming that the memory
+hot-plug feature is going to make into 3.8.  It's a blocker issue for
+testing the feature.  Now that the VM patchset does not seem to make
+into 3.8, I think we can step back and focus on a long term solution
+toward 3.9.
 
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung Poland R&D Center
+I agree that we should separate resource online/offlining step and
+acpi_device creation/deletion step.  It can address the panic and make
+rollback easier to handle.  For 3.9, we should have a better framework
+in place to handle it in general.  So, I am currently working on a
+framework proposal, and hopefully able to send it out in a week or so.
+
+Lastly, thanks Vasilis for testing the suppress_bind_attrs change.  I
+think we may still need it for 3.9.
+
+Thanks,
+-Toshi
+
