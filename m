@@ -1,97 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946869Ab2LFS54 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 13:57:56 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:43088 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946465Ab2LFS5x (ORCPT
+	id S1946883Ab2LFTE0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 14:04:26 -0500
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:64351 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754533Ab2LFTEZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 13:57:53 -0500
+	Thu, 6 Dec 2012 14:04:25 -0500
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+zrwiavkK6tmQaLfmwtM48/lk2c7ofw==
+X-RZG-CLASS-ID: mo00
+Date: Thu, 6 Dec 2012 20:04:23 +0100
+From: Olaf Hering <olaf@aepfle.de>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: xen-devel@lists.xen.org, konrad.wilk@oracle.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] xen/blkback: prevent leak of mode during multiple
+ backend_changed calls
+Message-ID: <20121206190423.GA27952@aepfle.de>
+References: <1354701697-5815-1-git-send-email-olaf@aepfle.de>
+ <50BF2E3802000078000AE162@nat28.tlf.novell.com>
+ <20121206162304.GA3989@aepfle.de>
+ <50C0DDCA02000078000AEBA9@nat28.tlf.novell.com>
 MIME-Version: 1.0
-In-Reply-To: <20121206185439.GA17381@srcf.ucam.org>
-References: <1345739803-21017-1-git-send-email-mjg@redhat.com>
-	<CAErSpo6dn_0b8Ngx9VT=ARs_UXQftEx=2Kczeqemtmo0XyKzuQ@mail.gmail.com>
-	<20121203200241.GG5906@thinkpad-t410>
-	<CAE9FiQVdpmmExrPrLf7HYVuo0cTY9Xjn6bWzObbuSSeQ-e1PbA@mail.gmail.com>
-	<50BFE88D.1000800@zytor.com>
-	<CAE9FiQXwZAAMkWYT8EjsewpuZ-OWqoaFscyzGS_pSuO9C3bf9A@mail.gmail.com>
-	<CAE9FiQX+aJi5XEyjfjc=K4eXLbQNqE-vd+coyt1dmuujsi_eoQ@mail.gmail.com>
-	<CAErSpo7-hUbvvCYPSwtSYKMKWqu99A5H5R4004rSj5Bmv0593g@mail.gmail.com>
-	<50C0E339.4030607@zytor.com>
-	<20121206185439.GA17381@srcf.ucam.org>
-Date: Thu, 6 Dec 2012 10:57:51 -0800
-X-Google-Sender-Auth: uLUFzSQDmOnhF7mDMdJrV2Gi-5E
-Message-ID: <CAE9FiQWrfp4ptabLiGTv+tH2Nc9i+opX2O9Kk32MbwhF3vCOqg@mail.gmail.com>
-Subject: Re: Use PCI ROMs from EFI boot services
-From: Yinghai Lu <yinghai@kernel.org>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-efi@vger.kernel.org, dwmw2@infradead.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Content-Type: multipart/mixed; boundary=00151747821603b65004d033adfa
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <50C0DDCA02000078000AEBA9@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21.rev5558 (2012-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00151747821603b65004d033adfa
-Content-Type: text/plain; charset=ISO-8859-1
+On Thu, Dec 06, Jan Beulich wrote:
 
-On Thu, Dec 6, 2012 at 10:54 AM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> On Thu, Dec 06, 2012 at 10:26:01AM -0800, H. Peter Anvin wrote:
->
->> NAK on this bit:
->>
->> +       if (boot_params.hdr.version < 0x0209)
->> +               return 0;
->>
->> This field is kernel->bootloader documentation.  If a nonmaching
->> value somehow leaks into the kernel, the kernel could either
->> panic("Bootloader written by moron") or it should clear some fields,
->> but littering the kernel with these kinds of tests is just plain
->> braindead.
->
-> Dropping that should be fine. Bjorn, would you prefer a patch from me to
-> do that?
+> >>> On 06.12.12 at 17:23, Olaf Hering <olaf@aepfle.de> wrote:
+> > On Wed, Dec 05, Jan Beulich wrote:
+> > 
+> >> >>> On 05.12.12 at 11:01, Olaf Hering <olaf@aepfle.de> wrote:
+> >> > backend_changed might be called multiple times, which will leak
+> >> > be->mode. free the previous value before storing the current mode value.
+> >> 
+> >> As said before - this is one possible route to take. But did you
+> >> consider at all the alternative of preventing the function from
+> >> getting called more than once for a given device? As also said
+> >> before, I think that would have other bad effects, and hence
+> >> should be preferred (and would likely also result in a smaller
+> >> patch).
+> > 
+> > Maybe it could be done like this, adding a flag to the backend device
+> > and exit early if its called twice.
+> 
+> Maybe, but it looks odd to me. But then again I had hoped Konrad
+> would have an opinion here...
 
-the one : use pointer for setup_pci instead.
+Looking at this some more, if backend_changed is supposed to be called
+exactly once then major/minor checks can be removed because they will be
+always zero, like this:
 
---00151747821603b65004d033adfa
-Content-Type: application/octet-stream; name="pa_data_setup_pci.patch"
-Content-Disposition: attachment; filename="pa_data_setup_pci.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hae8zzxq0
 
-U3ViamVjdDogW1BBVENIXSB4ODYsIHBjaTogbW92ZSBib290X3BhcmFtcyBiYWNrIHRvIF9faW5p
-dGRhdGEKCkRvbid0IHdhc3RlIDRrIGZvciA4IGJ5dGVzLgoKQWxzbyBJIGRvbid0IHNlZSB0aGUg
-cmVhc29uIHdoeSBEVEIgY291bGQgb25seSBoYXZlIG9uZSBlbnRyeQpidXQgU0VUVVBfVVAgZGF0
-YSBoYXZlIG11bHRpcGxlLgoKZGlmZiAtLWdpdCBhL2FyY2gveDg2L2luY2x1ZGUvYXNtL3BjaS5o
-IGIvYXJjaC94ODYvaW5jbHVkZS9hc20vcGNpLmgKaW5kZXggZGJhNzgwNS4uNTQzNThmOCAxMDA2
-NDQKLS0tIGEvYXJjaC94ODYvaW5jbHVkZS9hc20vcGNpLmgKKysrIGIvYXJjaC94ODYvaW5jbHVk
-ZS9hc20vcGNpLmgKQEAgLTE4Myw0ICsxODMsNiBAQCBzdHJ1Y3QgcGNpX3NldHVwX3JvbSB7CiAJ
-dWludDhfdCByb21kYXRhWzBdOwogfTsKIAorZXh0ZXJuIHU2NCBwYV9kYXRhX3NldHVwX3BjaTsK
-KwogI2VuZGlmIC8qIF9BU01fWDg2X1BDSV9IICovCmRpZmYgLS1naXQgYS9hcmNoL3g4Ni9rZXJu
-ZWwvc2V0dXAuYyBiL2FyY2gveDg2L2tlcm5lbC9zZXR1cC5jCmluZGV4IDJiZDQwZmQuLjgwNjJm
-MjUgMTAwNjQ0Ci0tLSBhL2FyY2gveDg2L2tlcm5lbC9zZXR1cC5jCisrKyBiL2FyY2gveDg2L2tl
-cm5lbC9zZXR1cC5jCkBAIC0xNDMsNyArMTQzLDExIEBAIGludCBkZWZhdWx0X2NoZWNrX3BoeXNf
-YXBpY2lkX3ByZXNlbnQoaW50IHBoeXNfYXBpY2lkKQogfQogI2VuZGlmCiAKKyNpZm5kZWYgQ09O
-RklHX0RFQlVHX0JPT1RfUEFSQU1TCitzdHJ1Y3QgYm9vdF9wYXJhbXMgX19pbml0ZGF0YSBib290
-X3BhcmFtczsKKyNlbHNlCiBzdHJ1Y3QgYm9vdF9wYXJhbXMgYm9vdF9wYXJhbXM7CisjZW5kaWYK
-IAogLyoKICAqIE1hY2hpbmUgc2V0dXAuLgpAQCAtNDE0LDYgKzQxOCw4IEBAIHN0YXRpYyB2b2lk
-IF9faW5pdCByZXNlcnZlX2luaXRyZCh2b2lkKQogfQogI2VuZGlmIC8qIENPTkZJR19CTEtfREVW
-X0lOSVRSRCAqLwogCit1NjQgcGFfZGF0YV9zZXR1cF9wY2k7CisKIHN0YXRpYyB2b2lkIF9faW5p
-dCBwYXJzZV9zZXR1cF9kYXRhKHZvaWQpCiB7CiAJc3RydWN0IHNldHVwX2RhdGEgKmRhdGE7CkBA
-IC00NDIsNiArNDQ4LDEwIEBAIHN0YXRpYyB2b2lkIF9faW5pdCBwYXJzZV9zZXR1cF9kYXRhKHZv
-aWQpCiAJCWNhc2UgU0VUVVBfRFRCOgogCQkJYWRkX2R0YihwYV9kYXRhKTsKIAkJCWJyZWFrOwor
-CQljYXNlIFNFVFVQX1BDSToKKwkJCWlmICghc2V0dXBfZGF0YV9wY2kpCisJCQkJcGFfZGF0YV9z
-ZXR1cF9wY2kgPSBwYV9kYXRhOworCQkJYnJlYWs7CiAJCWRlZmF1bHQ6CiAJCQlicmVhazsKIAkJ
-fQpkaWZmIC0tZ2l0IGEvYXJjaC94ODYvcGNpL2NvbW1vbi5jIGIvYXJjaC94ODYvcGNpL2NvbW1v
-bi5jCmluZGV4IDQ3NTg0ZjQuLjRlMTY2NTEgMTAwNjQ0Ci0tLSBhL2FyY2gveDg2L3BjaS9jb21t
-b24uYworKysgYi9hcmNoL3g4Ni9wY2kvY29tbW9uLmMKQEAgLTYxMywxMiArNjEzLDggQEAgaW50
-IHBjaWJpb3NfYWRkX2RldmljZShzdHJ1Y3QgcGNpX2RldiAqZGV2KQogewogCXN0cnVjdCBzZXR1
-cF9kYXRhICpkYXRhOwogCXN0cnVjdCBwY2lfc2V0dXBfcm9tICpyb207Ci0JdTY0IHBhX2RhdGE7
-CisJdTY0IHBhX2RhdGEgPSBwYV9kYXRhX3NldHVwX3BjaTsKIAotCWlmIChib290X3BhcmFtcy5o
-ZHIudmVyc2lvbiA8IDB4MDIwOSkKLQkJcmV0dXJuIDA7Ci0KLQlwYV9kYXRhID0gYm9vdF9wYXJh
-bXMuaGRyLnNldHVwX2RhdGE7CiAJd2hpbGUgKHBhX2RhdGEpIHsKIAkJZGF0YSA9IHBoeXNfdG9f
-dmlydChwYV9kYXRhKTsKIAo=
---00151747821603b65004d033adfa--
+ drivers/block/xen-blkback/xenbus.c | 68 ++++++++++++++++++--------------------
+ 1 file changed, 32 insertions(+), 36 deletions(-)
+
+diff --git a/drivers/block/xen-blkback/xenbus.c b/drivers/block/xen-blkback/xenbus.c
+index a6585a4..5ca77c3 100644
+--- a/drivers/block/xen-blkback/xenbus.c
++++ b/drivers/block/xen-blkback/xenbus.c
+@@ -28,6 +28,7 @@ struct backend_info {
+ 	unsigned		major;
+ 	unsigned		minor;
+ 	char			*mode;
++	unsigned		alive;
+ };
+ 
+ static struct kmem_cache *xen_blkif_cachep;
+@@ -502,10 +503,14 @@ static void backend_changed(struct xenbus_watch *watch,
+ 		= container_of(watch, struct backend_info, backend_watch);
+ 	struct xenbus_device *dev = be->dev;
+ 	int cdrom = 0;
+-	char *device_type;
++	char *device_type, *p;
++	long handle;
+ 
+ 	DPRINTK("");
+ 
++	if (be->alive)
++		return;
++
+ 	err = xenbus_scanf(XBT_NIL, dev->nodename, "physical-device", "%x:%x",
+ 			   &major, &minor);
+ 	if (XENBUS_EXIST_ERR(err)) {
+@@ -521,12 +526,7 @@ static void backend_changed(struct xenbus_watch *watch,
+ 		return;
+ 	}
+ 
+-	if ((be->major || be->minor) &&
+-	    ((be->major != major) || (be->minor != minor))) {
+-		pr_warn(DRV_PFX "changing physical device (from %x:%x to %x:%x) not supported.\n",
+-			be->major, be->minor, major, minor);
+-		return;
+-	}
++	be->alive = 1;
+ 
+ 	be->mode = xenbus_read(XBT_NIL, dev->nodename, "mode", NULL);
+ 	if (IS_ERR(be->mode)) {
+@@ -542,39 +542,35 @@ static void backend_changed(struct xenbus_watch *watch,
+ 		kfree(device_type);
+ 	}
+ 
+-	if (be->major == 0 && be->minor == 0) {
+-		/* Front end dir is a number, which is used as the handle. */
+-
+-		char *p = strrchr(dev->otherend, '/') + 1;
+-		long handle;
+-		err = strict_strtoul(p, 0, &handle);
+-		if (err)
+-			return;
+-
+-		be->major = major;
+-		be->minor = minor;
++	/* Front end dir is a number, which is used as the handle. */
++	p = strrchr(dev->otherend, '/') + 1;
++	err = strict_strtoul(p, 0, &handle);
++	if (err)
++		return;
+ 
+-		err = xen_vbd_create(be->blkif, handle, major, minor,
+-				 (NULL == strchr(be->mode, 'w')), cdrom);
+-		if (err) {
+-			be->major = 0;
+-			be->minor = 0;
+-			xenbus_dev_fatal(dev, err, "creating vbd structure");
+-			return;
+-		}
++	be->major = major;
++	be->minor = minor;
+ 
+-		err = xenvbd_sysfs_addif(dev);
+-		if (err) {
+-			xen_vbd_free(&be->blkif->vbd);
+-			be->major = 0;
+-			be->minor = 0;
+-			xenbus_dev_fatal(dev, err, "creating sysfs entries");
+-			return;
+-		}
++	err = xen_vbd_create(be->blkif, handle, major, minor,
++			 (NULL == strchr(be->mode, 'w')), cdrom);
++	if (err) {
++		be->major = 0;
++		be->minor = 0;
++		xenbus_dev_fatal(dev, err, "creating vbd structure");
++		return;
++	}
+ 
+-		/* We're potentially connected now */
+-		xen_update_blkif_status(be->blkif);
++	err = xenvbd_sysfs_addif(dev);
++	if (err) {
++		xen_vbd_free(&be->blkif->vbd);
++		be->major = 0;
++		be->minor = 0;
++		xenbus_dev_fatal(dev, err, "creating sysfs entries");
++		return;
+ 	}
++
++	/* We're potentially connected now */
++	xen_update_blkif_status(be->blkif);
+ }
+ 
+ 
+-- 
+1.8.0.1
+
+
