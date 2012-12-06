@@ -1,60 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755408Ab2LFTZI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 14:25:08 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:41563 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755370Ab2LFTZG (ORCPT
+	id S1946899Ab2LFTZk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 14:25:40 -0500
+Received: from mail-ia0-f170.google.com ([209.85.210.170]:61664 "EHLO
+	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423240Ab2LFTZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 14:25:06 -0500
+	Thu, 6 Dec 2012 14:25:37 -0500
+X-Greylist: delayed 503 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Dec 2012 14:25:37 EST
+Date: Thu, 6 Dec 2012 11:18:07 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, jmoyer@redhat.com
+Subject: Re: [PATCH 3/6] cfq-iosched: Rename "service_tree" to "st" at some
+ places
+Message-ID: <20121206191807.GB3676@htj.dyndns.org>
+References: <1349297821-30078-1-git-send-email-vgoyal@redhat.com>
+ <1349297821-30078-4-git-send-email-vgoyal@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1354765784.12428.3.camel@trivette.home.lan>
-References: <1348620130-25987-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-	<CACRpkdaaD6HY2o-NNBRZYCXm97Dts7Njzz13Zj7m2ZycV-Ar5g@mail.gmail.com>
-	<1349720405.23690.45.camel@trivette>
-	<CACRpkdbbungMiZ74o=-CfRoLQj127CaWaYr7adKKSquFd=x5qg@mail.gmail.com>
-	<1354765784.12428.3.camel@trivette.home.lan>
-Date: Thu, 6 Dec 2012 20:25:04 +0100
-Message-ID: <CACRpkdYZXvjwcu3=7=KY6gd8b7dY7hPE=KGPMXpPELLym3A_gw@mail.gmail.com>
-Subject: Re: [PATCH] gpio: add TS-5500 DIO headers support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-Cc: linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Jerome Oufella <jerome.oufella@savoirfairelinux.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1349297821-30078-4-git-send-email-vgoyal@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 6, 2012 at 4:49 AM, Vivien Didelot
-<vivien.didelot@savoirfairelinux.com> wrote:
+On Wed, Oct 03, 2012 at 04:56:58PM -0400, Vivek Goyal wrote:
+> At quite a few places we use the keyword "service_tree". At some places,
+> especially local variables, I have abbreviated it to "st".
+> 
+> Also at couple of places moved binary operator "+" from beginning of line
+> to end of previous line, as per Tejun's feedback.
+> 
+> v2:
+>  Reverted most of the service tree name change based on Jeff Moyer's feedback.
+> 
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 
-> I looked at some drivers and if I'm not mistaken, this case is
-> different. Technologic Systems platforms (such as the TS-5500) have
-> several pin blocks. Each block has input-only, input-output or
-> output-only pins. Only one pin per block is connected to an interrupt
-> line. But sadly, these interrupt-connected lines are input only.
-> Here are the details about the TS-5500 pin block "DIO1":
->
-> http://wiki.embeddedarm.com/wiki/TS-5500#DIO1_Header
+Acked-by: Tejun Heo <tj@kernel.org>
 
-Aha I get it now. How odd ... OK we need to support this too.
-
-> That's why I previously used a dio1_irq platform data field, to return
-> the interrupt connected to the IRQ-able pin for any GPIO on DIO1, in the
-> gpio_to_irq() implementation.
-
-OK I get it.
-
-> A Linux IRQ per pin doesn't seem to be possible because the
-> irq_create_mapping() documentation says that "Only one mapping per
-> hardware interrupt is permitted." Should I still implement the
-> irq_chip/irqdomain for a single IRQ per block? For each pin?
-> What do you think about this implementation?
-
-So basically there are in total three pins and yeah this is too
-little and too strange to warrant an irqdomain so go ahead
-with it as it looks and fix the other comments. I'm happy with
-keeping this now.
-
-Linus Walleij
+-- 
+tejun
