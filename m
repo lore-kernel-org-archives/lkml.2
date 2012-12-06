@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755221Ab2LFUFa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 15:05:30 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:56596 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751578Ab2LFUF3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 15:05:29 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6918"; a="12300833"
-From: Laura Abbott <lauraa@codeaurora.org>
-To: Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Laura Abbott <lauraa@codeaurora.org>
-Subject: [PATCH v2] mm: Use aligned zone start for pfn_to_bitidx calculation
-Date: Thu,  6 Dec 2012 12:05:24 -0800
-Message-Id: <1354824324-21993-1-git-send-email-lauraa@codeaurora.org>
-X-Mailer: git-send-email 1.7.8.3
+	id S965046Ab2LFUIK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 15:08:10 -0500
+Received: from fn.samba.org ([216.83.154.106]:32955 "EHLO mail.samba.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755452Ab2LFUII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 15:08:08 -0500
+X-Greylist: delayed 613 seconds by postgrey-1.27 at vger.kernel.org; Thu, 06 Dec 2012 15:08:08 EST
+Date: Thu, 6 Dec 2012 11:57:52 -0800
+From: Jeremy Allison <jra@samba.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Pavel Shilovsky <piastry@etersoft.ru>, linux-cifs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        wine-devel@winehq.org, linux-nfs@vger.kernel.org
+Subject: Re: [PATCH 0/3] Add O_DENY* flags to fcntl and cifs
+Message-ID: <20121206195752.GA18585@samba2>
+Reply-To: Jeremy Allison <jra@samba.org>
+References: <1354818391-7968-1-git-send-email-piastry@etersoft.ru>
+ <20121206194949.7ab20d56@pyramind.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121206194949.7ab20d56@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current calculation in pfn_to_bitidx assumes that
-(pfn - zone->zone_start_pfn) >> pageblock_order will return the
-same bit for all pfn in a pageblock. If zone_start_pfn is not
-aligned to pageblock_nr_pages, this may not always be correct.
+On Thu, Dec 06, 2012 at 07:49:49PM +0000, Alan Cox wrote:
+> On Thu,  6 Dec 2012 22:26:28 +0400
+> Pavel Shilovsky <piastry@etersoft.ru> wrote:
+> 
+> > Network filesystems CIFS, SMB2.0, SMB3.0 and NFSv4 have such flags - this change can benefit cifs and nfs modules. While this change is ok for network filesystems, itsn't not targeted for local filesystems due security problems (e.g. when a user process can deny root to delete a file).
+> 
+> If I have my root fs on NFS then the same applies does it not.
+> 
+> Your patches fail to describe the security semantics and what file rights
+> I must have to apply each option. How do I track down a lock user, what
+> tools are provided ? How do the new options interact with the security
+> layer?
+> 
+> I don't have a problem with the idea, but it needs a lot more clear
+> description of how it works so the model can be checked and if need be
+> things tweaked (eg needing write to denywrite etc)
 
-Consider the following with pageblock order = 10, zone start 2MB:
+And this is where things get really ugly of course :-).
 
-pfn     | pfn - zone start | (pfn - zone start) >> page block order
-----------------------------------------------------------------
-0x26000 | 0x25e00	   |  0x97
-0x26100 | 0x25f00	   |  0x97
-0x26200 | 0x26000	   |  0x98
-0x26300 | 0x26100	   |  0x98
+For the CIFSFS client they're expecting to be able to
+just ship them to a Windows server, where they'll
+get the (insane) Windows semantics. These semantics
+are not what would be wanted on a local filesystem.
 
-This means that calling {get,set}_pageblock_migratetype on a single
-page will not set the migratetype for the full block. Fix this by
-rounding down zone_start_pfn when doing the bitidx calculation.
+So unless we just say "these things have Windows
+semantics" (where openers of files can lock out others
+under dubious circumstances) there'll be this horrible
+difference between (I'm assuming) the sane semantics that
+are defined for local filesystems and the insane ones
+that you get when you're connecting remotely.
 
-Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
----
- mm/page_alloc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I don't know a good way to fix that, but I'm pretty
+sure you don't want the Windows semantics defined
+locally :-).
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 92dd060..2e06abd 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5422,7 +5422,7 @@ static inline int pfn_to_bitidx(struct zone *zone, unsigned long pfn)
- 	pfn &= (PAGES_PER_SECTION-1);
- 	return (pfn >> pageblock_order) * NR_PAGEBLOCK_BITS;
- #else
--	pfn = pfn - zone->zone_start_pfn;
-+	pfn = pfn - round_down(zone->start_pfn, pageblock_nr_pages);
- 	return (pfn >> pageblock_order) * NR_PAGEBLOCK_BITS;
- #endif /* CONFIG_SPARSEMEM */
- }
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
-
+Jeremy.
