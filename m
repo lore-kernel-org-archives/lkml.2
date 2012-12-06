@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423504Ab2LFNAA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 08:00:00 -0500
-Received: from [206.117.179.246] ([206.117.179.246]:42272 "EHLO labridge.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755010Ab2LFM77 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 07:59:59 -0500
-Message-ID: <1354798778.17565.8.camel@joe-AO722>
-Subject: Re: [PATCH v2 12/44] metag: TBX source
-From: Joe Perches <joe@perches.com>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Date: Thu, 06 Dec 2012 04:59:38 -0800
-In-Reply-To: <50C066D9.9010700@imgtec.com>
-References: <1354723742-6195-1-git-send-email-james.hogan@imgtec.com>
-	 <1354723742-6195-13-git-send-email-james.hogan@imgtec.com>
-	 <1354733607.8320.3.camel@joe-AO722> <50C066D9.9010700@imgtec.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1423528Ab2LFNJM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 08:09:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57674 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755010Ab2LFNJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 08:09:10 -0500
+Date: Thu, 6 Dec 2012 14:09:04 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Tejun Heo <tj@kernel.org>, paul@paulmenage.org, glommer@parallels.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        peterz@infradead.org, bsingharora@gmail.com, hannes@cmpxchg.org,
+        kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET cgroup/for-3.8] cpuset: decouple cpuset locking from
+ cgroup core
+Message-ID: <20121206130904.GC10931@dhcp22.suse.cz>
+References: <1354138460-19286-1-git-send-email-tj@kernel.org>
+ <20121203152205.GB17093@dhcp22.suse.cz>
+ <20121203165338.GF19802@htj.dyndns.org>
+ <50C03A3F.7070605@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50C03A3F.7070605@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-12-06 at 09:35 +0000, James Hogan wrote:
-> On 05/12/12 18:53, Joe Perches wrote:
-> > On Wed, 2012-12-05 at 16:08 +0000, James Hogan wrote:
-> >> Add source files from the Thread Binary Interface (TBI) library which
-> >> provides useful low level operations and traps/context management.
-> > []
-> >>  arch/metag/tbx/tbicache.c  |  462 ++++++++++++++++++++++++++++++++++++++++++++
+On Thu 06-12-12 14:25:03, Li Zefan wrote:
+> On 2012/12/4 0:53, Tejun Heo wrote:
+> > Hello, Michal.
 > > 
-> > Could you please run checkpatch on this file?
+> > On Mon, Dec 03, 2012 at 04:22:05PM +0100, Michal Hocko wrote:
+> >> I have glanced through the series and spotten nothing obviously wrong. I
+> >> do not feel I could give my r-b because I am not familiar with cpusets
+> >> internals enough and some patches looks quite scary (like #8).
+> >> Anyway the resulting outcome seems nice.
+> > 
+> > Thanks a lot for looking at it and, yeah, it's a bit scary.  Li, Paul,
+> > can you guys please review the series?
+> > 
 > 
-> Hi Joe,
-> 
-> Thanks for taking a look.
-> 
-> I'd prefer to avoid making style modifications to the tbx/ files if
-> possible to ease maintenance, as the code is shared with other projects
-> and maintained by a separate group.
-> 
-> Of course if cleaning up the style is deemed absolutely necessary then
-> so be it.
+> We shoudn't haste to target this for 3.8, given that we're in late -rc and
+> Michal felt some patches scary and they hasn't got enough review.
 
-Your choice though the file looks to me to be linux
-specific as it uses #include <linux/stddef.h>
-
-Also, two functions, __TBIDataCacheFlush and
-__TBICodeCacheFlush, have an unnecessary indentation
-level after a test and return.
-
-void __TBICodeCacheFlush( const void *pStart, int Bytes )
-{
-	volatile int *pCtrl = (volatile int *) SYSC_CACHE_MMU_CONFIG;
-
-	if ( !__TBICacheDoneInit )
-		__TBICacheInit();
-
-	if ( (pCtrl[0] & SYSC_CMMUCFG_IC_ON_BIT) == 0 )
-	{
-		/* No need to flush the code cache it's not actually enabled */
-		return;
-	} 
-
-	{
-		/* Use a sequence of writes to flush the cache region requested */	
-		int Loops, Step;
-
-		etc.
-
-I believe the automatics in the second blocks should
-be moved to the start of the function and the
-unnecessary braces and extra indentation removed.
-
+Well, even the original code is scary enough so if the decision should
+be made just based on my feeling then it would be too sensitive
+probably. Anyway I do agree that the series should see review from
+others who are more familiar with the code before considering for
+merging.
+-- 
+Michal Hocko
+SUSE Labs
