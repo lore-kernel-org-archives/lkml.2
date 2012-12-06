@@ -1,124 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753903Ab2LFARI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 19:17:08 -0500
-Received: from newmail.cct.lsu.edu ([130.39.21.13]:52067 "EHLO
-	envelope.cct.lsu.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753788Ab2LFARE (ORCPT
+	id S1753954Ab2LFAS1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 19:18:27 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:45638 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753372Ab2LFASZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 19:17:04 -0500
-X-Greylist: delayed 1711 seconds by postgrey-1.27 at vger.kernel.org; Wed, 05 Dec 2012 19:17:03 EST
-Date: Wed, 5 Dec 2012 17:48:24 -0600
-From: Bryce Lelbach <blelbach@cct.lsu.edu>
-To: Compiling the Linux Kernel with Clang/LLVM 
-	<llvmlinux@lists.linuxfoundation.org>
-Cc: Behan Webster <behanw@converseincode.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        netfilter-devel@vger.kernel.org, davem@davemloft.net
-Subject: Re: [llvmlinux] [PATCH V2 2/3] Remove VLAIS usage from gadget code
-Message-ID: <20121205234822.GB1887@pyxis.br.cox.net>
-References: <1351631937-21455-1-git-send-email-behanw@converseincode.com>
- <1351631937-21455-3-git-send-email-behanw@converseincode.com>
- <20121031132838.GQ10998@arwen.pp.htv.fi>
- <509144C0.8000601@converseincode.com>
- <20121101072116.GA32013@arwen.pp.htv.fi>
- <20121203115706.GA4760@breakpoint.cc>
- <50BCF61D.5000707@converseincode.com>
- <20121204222438.GA7624@breakpoint.cc>
+	Wed, 5 Dec 2012 19:18:25 -0500
+Date: Thu, 6 Dec 2012 00:18:19 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-efi@vger.kernel.org,
+        mfleming@intel.com, dwmw2@infradead.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: Use PCI ROMs from EFI boot services
+Message-ID: <20121206001819.GA30527@srcf.ucam.org>
+References: <1345739803-21017-1-git-send-email-mjg@redhat.com>
+ <CAErSpo6dn_0b8Ngx9VT=ARs_UXQftEx=2Kczeqemtmo0XyKzuQ@mail.gmail.com>
+ <20121203200241.GG5906@thinkpad-t410>
+ <CAE9FiQVdpmmExrPrLf7HYVuo0cTY9Xjn6bWzObbuSSeQ-e1PbA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mojUlQ0s9EVzWg2t"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121204222438.GA7624@breakpoint.cc>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAE9FiQVdpmmExrPrLf7HYVuo0cTY9Xjn6bWzObbuSSeQ-e1PbA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Dec 05, 2012 at 04:15:56PM -0800, Yinghai Lu wrote:
 
---mojUlQ0s9EVzWg2t
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> at the same time we should export setup_data into /sys, so kexec could
+> append this pointer to command of
+> second kernel, just like kexec append acpi_rsdp.
+> That should address DavidW's concern.
 
-On 2012.12.04 23.24, Sebastian Andrzej Siewior wrote:
-> > VLAIS is not something they are willing to accept (for various
-> > reasons). There are other patches to LLVM that are still working
-> Is this not described in C99 6.7.2.1p16?
+Why should the kernel export data to userspace just so that that data 
+can be passed back into the kernel?
 
-No, this is not the case - flexible array members are a very different beas=
-t,
-which are in-and-of-themselves of debatable merit. C99 6.7.2.1p8 explicitly
-states that VLAIS are illegal. The same language is present in C11 (same
-section):
-
-	A member of a structure or union may have any object type other than a var=
-iably
-	modified type.
-
-In C99 6.7.5.1p3, the definition of a variably modified type is given:
-
-	.. [snip] ... If the nested sequence of declarators in a full declarator
-	contains a variable length array type, the type specified by the full
-	declarator is said to be variably modified.
-
-It would require incredible, earth-moving acts for VLAIS to become a part o=
-f the
-ISO/IEC standard for the C programming language.
-
-P.S. As a general note, while I do agree that it is preferable to rewrite c=
-ode
-using VLAIS instead of utilizing a macro, I would ask that some reconsidera=
-tion
-be given, unless there are Linux kernel developers who are willing and able
-to implement the necessary rewrites. The LLVMLinux project does not wish to
-decrease the code quality of the Linux kernel, and certainly we do not inte=
-nd to
-cause any GCC breakage.
-
-However, I think that rewrites to all the relevant VLAIS code would be quite
-time consuming for the LLVMLinux team, and the proposed macro does not appe=
-ar
-to me to present any particular evil, other than by nature of being a macro.
-
-If faced between the choice of either accepting this VLAIS patch, or not be=
-ing
-able to compile the Linux kernel with standard-compliant, largely GCC-compa=
-tible
-compilers such as Clang and icc, I would think that accepting the VLAIS pat=
-ch
-would be preferable.
-
-(note also that I have only come in on the end of this thread, and I may ha=
-ve
-missed part of the context).
-
---=20
-Bryce Adelstein-Lelbach aka wash
-STE||AR Group, Center for Computation and Technology, LSU
---
-860-808-7497 - Cell
-225-578-6182 - Work (no voicemail)
---
-stellar.cct.lsu.edu
-boost-spirit.com
-llvm.linuxfoundation.org
---
-
---mojUlQ0s9EVzWg2t
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQEcBAEBAgAGBQJQv91GAAoJEBLaNmtPI4b80aQH/jhT2LSCzvdFIxdcwwjdiu12
-422Izl4TxLIVy/7DOB0NEWcL4rugdURLmhAZy+W7oIKj3fa9JS/crNt2gdLvIO/V
-MIJz2mo2bCzSY/ukwTTxCLt3FDNJsQSxS4IjMC0qc47e+mO8Fj26cJ5ninatMzZZ
-IMVtjID1qwhopErMvI6sxpOtHH8Okh4YDy5VO1McaSt7sESuu1HXTK8EG137KPT/
-oFqGeMxpy7EoKWXthS8/JyHUDRRIvHIXjBHi8OQ5G1qbvInP0hCzoNtI9aglyBtH
-XX4ncHM3BZOXF4//hsBdKmX2ZulvX11l0fXlJqqoDNOQFVQaelImnsvpwymngjU=
-=UNVU
------END PGP SIGNATURE-----
-
---mojUlQ0s9EVzWg2t--
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
