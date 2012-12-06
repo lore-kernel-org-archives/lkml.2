@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965075Ab2LFKuc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 05:50:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52547 "EHLO mx2.suse.de"
+	id S965094Ab2LFKwN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 05:52:13 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:36537 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965008Ab2LFKub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 05:50:31 -0500
-Message-ID: <50C07871.5060404@suse.cz>
-Date: Thu, 06 Dec 2012 11:50:25 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S965008Ab2LFKwM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 05:52:12 -0500
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>
+Subject: [PATCH v2 0/3] gpio: twl4030: Correct status reporting for outputs
+Date: Thu, 6 Dec 2012 11:52:04 +0100
+Message-ID: <1354791127-20545-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Yacine Belkadi <yacine.belkadi.1@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Daniel Santos <daniel.santos@pobox.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>
-Subject: Re: [PATCHv2 2/2] scripts/kernel-doc: check that non-void fcts describe
- their return value
-References: <1353964883-3121-1-git-send-email-yacine.belkadi.1@gmail.com> <1353964947-3152-1-git-send-email-yacine.belkadi.1@gmail.com> <50B41AC7.8030904@infradead.org>
-In-Reply-To: <50B41AC7.8030904@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.11.2012 02:43, Randy Dunlap wrote:
-> On 11/26/2012 01:22 PM, Yacine Belkadi wrote:
-> 
->> If a function has a return value, but its kernel-doc comment doesn't contain a
->> "Return" section, then emit the following warning:
->>
->>    Warning(file.h:129): No description found for return value of 'fct'
->>
->> Note: This check emits a lot of warnings at the moment, because many functions
->> don't have a 'Return' doc section. So until the number of warnings goes
->> sufficiently down, the check is only performed in verbose mode.
->>
->> Signed-off-by: Yacine Belkadi <yacine.belkadi.1@gmail.com>
-> 
-> 
-> Both patches:
-> Acked-by: Randy Dunlap <rdunlap@infradead.org>
-> 
-> Michal, please merge patches 1 and 2.
+Hi,
 
-Done.
+As Grant commneted on the first version:
+https://lkml.org/lkml/2012/12/5/53
 
-Michal
+Introduce bitfields to cache the directionand output status of the pins so we
+can report them correctly.
+To do this I did some cleanup within the driver to get rid of the global
+variables and moved them under a private structure, changed the locking as well
+to protect the bitfield operation.
+As a last patch I added a note that the PWMA/B handling should not be in this
+driver at all.
+
+Regards,
+Peter
+---
+Peter Ujfalusi (3):
+  gpio: twl4030: Introduce private structure to store variables needed
+    runtime
+  gpio: twl4030: Cache the direction and output states in private data
+  gpio: twl4030: TODO comment to remove the PWMA/B (LEDA/B) handling
+
+ drivers/gpio/gpio-twl4030.c | 177 ++++++++++++++++++++++++++++----------------
+ 1 file changed, 115 insertions(+), 62 deletions(-)
+
+-- 
+1.8.0
+
