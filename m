@@ -1,136 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424433Ab2LFQ2f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 11:28:35 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:47437 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422879Ab2LFQ2d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 11:28:33 -0500
-Date: Thu, 6 Dec 2012 10:27:02 -0600
-From: Kent Yoder <key@linux.vnet.ibm.com>
-To: Peter Huewe <peterhuewe@gmx.de>
-Cc: Mathias LEBLANC <Mathias.LEBLANC@st.com>,
-        Jean-Luc BLANC <jean-luc.blanc@st.com>,
-        "Sirrix@jasper.es" <Sirrix@jasper.es>, linux-kernel@vger.kernel.org,
-        Rajiv Andrade <mail@srajiv.net>,
-        "tpmdd-devel@lists.sourceforge.net" 
-	<tpmdd-devel@lists.sourceforge.net>,
-        Kent Yoder <shpedoikal@gmail.com>
-Subject: Re: [PATCH] char/tpm: Use struct dev_pm_ops for power management
-Message-ID: <20121206162702.GC27430@ennui.austin.ibm.com>
-References: <20121205230941.GA30394@ennui.austin.ibm.com>
- <1354753251-27561-1-git-send-email-peterhuewe@gmx.de>
+	id S1945907Ab2LFQ2r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 11:28:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41250 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1422879Ab2LFQ2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 11:28:44 -0500
+Date: Thu, 6 Dec 2012 18:28:39 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, kexec@lists.infradead.org,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v11 0/2] x86: vmclear vmcss on all cpus when doing kdump
+ if necessary
+Message-ID: <20121206162839.GG19514@redhat.com>
+References: <50C0BB90.1080804@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1354753251-27561-1-git-send-email-peterhuewe@gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12120616-5406-0000-0000-000002D1C59A
+In-Reply-To: <50C0BB90.1080804@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 06, 2012 at 01:20:51AM +0100, Peter Huewe wrote:
-> This patch converts the suspend and resume functions for
-> tpm_i2c_stm_st33 to the new dev_pm_ops.
+On Thu, Dec 06, 2012 at 11:36:48PM +0800, Zhang Yanfei wrote:
+> Currently, kdump just makes all the logical processors leave VMX operation by
+> executing VMXOFF instruction, so any VMCSs active on the logical processors may
+> be corrupted. But, sometimes, we need the VMCSs to debug guest images contained
+> in the host vmcore. To prevent the corruption, we should VMCLEAR the VMCSs before
+> executing the VMXOFF instruction.
 > 
-> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+> The patch set provides a way to VMCLEAR vmcss related to guests on all cpus before
+> executing the VMXOFF when doing kdump. This is used to ensure the VMCSs in the
+> vmcore updated and non-corrupted.
+> 
+Applied to queue. Thanks.
 
-  One minor tweak, the PM funcs need to be inside CONFIG_PM_SLEEP to
-avoid warnings when compiled without PM support.  Applied with that
-change only.
+> Changelog from v10 to v11:
+> 1. regenerate the patch set against current queue branch in
+>    git://git.kernel.org/pub/scm/virt/kvm/kvm.git
+> 
+> Changelog from v9 to v10:
+> 1. add rcu protect to the callback function
+> 
+> Changelog from v8 to v9:
+> 1. KEXEC: use a callback function instead of a notifier.
+> 2. KVM-INTEL: use a new vmclear function instead of just calling 
+>    vmclear_local_loaded_vmcss to make sure we just do the core vmclear
+>    operation in kdump.
+> 
+> Changelog from v7 to v8:
+> 1. KEXEC: regression for using name crash_notifier_list
+>    and remove comments related to KVM
+>    and just call function atomic_notifier_call_chain directly.
+> 
+> Changelog from v6 to v7:
+> 1. KVM-INTEL: in hardware_disable, we needn't disable the
+>    vmclear, so remove it.
+> 
+> Changelog from v5 to v6:
+> 1. KEXEC: the atomic notifier list renamed:
+>    crash_notifier_list --> vmclear_notifier_list
+> 2. KVM-INTEL: provide empty functions if CONFIG_KEXEC is
+>    not defined and remove unnecessary #ifdef's.
+> 
+> Changelog from v4 to v5:
+> 1. use an atomic notifier instead of function call, so
+>    have all the vmclear codes in vmx.c.
+> 
+> Changelog from v3 to v4:
+> 1. add a new percpu variable vmclear_skipped to skip
+>    vmclear in kdump in some conditions.
+> 
+> Changelog from v2 to v3:
+> 1. remove unnecessary conditions in function
+>    cpu_emergency_clear_loaded_vmcss as Marcelo suggested.
+> 
+> Changelog from v1 to v2:
+> 1. remove the sysctl and clear VMCSs unconditionally.
+> 
+> Zhang Yanfei (2):
+>   x86/kexec: VMCLEAR VMCSs loaded on all cpus if necessary
+>   KVM-INTEL: provide the vmclear function and a bitmap to support
+>     VMCLEAR in kdump
+> 
+>  arch/x86/include/asm/kexec.h |    2 + 
+>  arch/x86/kernel/crash.c      |   32 ++++++++++++++++++++
+>  arch/x86/kvm/vmx.c           |   67 ++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 101 insertions(+), 0 deletions(-)
 
-Thanks Peter!
-Kent
-
-> ---
-> Note:
-> I'm sending this patch on behalf of myself only and nobody else, 
-> especially not my employer - and I'm doing this in my spare time.
-> I have to inform you that I'm working for a direct competitor of the driver author,
-> but I'm not using any knowledge that is considered secret in any way.
-> I have a personal interest in the TPM subsystem and want to keep it as clean as possible.
-> 
-> 
->  drivers/char/tpm/tpm_i2c_stm_st33.c |   25 ++++++++++---------------
->  1 files changed, 10 insertions(+), 15 deletions(-)
-> 
-> diff --git a/drivers/char/tpm/tpm_i2c_stm_st33.c b/drivers/char/tpm/tpm_i2c_stm_st33.c
-> index b11201f..ecbb81e 100644
-> --- a/drivers/char/tpm/tpm_i2c_stm_st33.c
-> +++ b/drivers/char/tpm/tpm_i2c_stm_st33.c
-> @@ -826,12 +826,10 @@ static __devexit int tpm_st33_i2c_remove(struct i2c_client *client)
->   * @param: mesg, the power management message.
->   * @return: 0 in case of success.
->   */
-> -static int tpm_st33_i2c_pm_suspend(struct i2c_client *client, pm_message_t mesg)
-> +static int tpm_st33_i2c_pm_suspend(struct device *dev)
->  {
-> -	struct tpm_chip *chip =
-> -	    (struct tpm_chip *)i2c_get_clientdata(client);
-> -	struct st33zp24_platform_data *pin_infos =
-> -		((struct i2c_client *)TPM_VPRIV(chip))->dev.platform_data;
-> +	struct tpm_chip *chip = dev_get_drvdata(dev);
-> +	struct st33zp24_platform_data *pin_infos = dev->platform_data;
->  	int ret = 0;
-> 
->  	if (power_mgt)
-> @@ -839,7 +837,7 @@ static int tpm_st33_i2c_pm_suspend(struct i2c_client *client, pm_message_t mesg)
->  	else{
->  		if (chip->data_buffer == NULL)
->  			chip->data_buffer = pin_infos->tpm_i2c_buffer[0];
-> -		ret = tpm_pm_suspend(&client->dev);
-> +		ret = tpm_pm_suspend(dev);
->  	}
->  	return ret;
->  }				/* tpm_st33_i2c_suspend() */
-> @@ -849,12 +847,10 @@ static int tpm_st33_i2c_pm_suspend(struct i2c_client *client, pm_message_t mesg)
->   * @param: client, the i2c_client drescription (TPM I2C description).
->   * @return: 0 in case of success.
->   */
-> -static int tpm_st33_i2c_pm_resume(struct i2c_client *client)
-> +static int tpm_st33_i2c_pm_resume(struct device *dev)
->  {
-> -	struct tpm_chip *chip =
-> -	    (struct tpm_chip *)i2c_get_clientdata(client);
-> -	struct st33zp24_platform_data *pin_infos =
-> -		((struct i2c_client *)TPM_VPRIV(chip))->dev.platform_data;
-> +	struct tpm_chip *chip = dev_get_drvdata(dev);
-> +	struct st33zp24_platform_data *pin_infos = dev->platform_data;
-> 
->  	int ret = 0;
-> 
-> @@ -867,7 +863,7 @@ static int tpm_st33_i2c_pm_resume(struct i2c_client *client)
->  	} else{
->  	if (chip->data_buffer == NULL)
->  		chip->data_buffer = pin_infos->tpm_i2c_buffer[0];
-> -	ret = tpm_pm_resume(&client->dev);
-> +	ret = tpm_pm_resume(dev);
->  	if (!ret)
->  		tpm_do_selftest(chip);
->  	}
-> @@ -880,16 +876,15 @@ static const struct i2c_device_id tpm_st33_i2c_id[] = {
->  };
-> 
->  MODULE_DEVICE_TABLE(i2c, tpm_st33_i2c_id);
-> -
-> +static SIMPLE_DEV_PM_OPS(tpm_st33_i2c_ops, tpm_st33_i2c_pm_suspend, tpm_st33_i2c_pm_resume);
->  static struct i2c_driver tpm_st33_i2c_driver = {
->  	.driver = {
->  		   .owner = THIS_MODULE,
->  		   .name = TPM_ST33_I2C,
-> +		   .pm = &tpm_st33_i2c_ops,
->  		   },
->  	.probe = tpm_st33_i2c_probe,
->  	.remove = tpm_st33_i2c_remove,
-> -	.resume = tpm_st33_i2c_pm_resume,
-> -	.suspend = tpm_st33_i2c_pm_suspend,
->  	.id_table = tpm_st33_i2c_id
->  };
-> 
-> -- 
-> 1.7.8.6
-> 
-
+--
+			Gleb.
