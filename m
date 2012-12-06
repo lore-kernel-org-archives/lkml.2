@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965104Ab2LFVjs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 16:39:48 -0500
-Received: from fn.samba.org ([216.83.154.106]:39047 "EHLO mail.samba.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754672Ab2LFVjq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 16:39:46 -0500
-Date: Thu, 6 Dec 2012 13:39:44 -0800
-From: Jeremy Allison <jra@samba.org>
-To: "Theodore Ts'o" <tytso@mit.edu>, Jeremy Allison <jra@samba.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Pavel Shilovsky <piastry@etersoft.ru>, linux-cifs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        wine-devel@winehq.org, linux-nfs@vger.kernel.org
-Subject: Re: [PATCH 0/3] Add O_DENY* flags to fcntl and cifs
-Message-ID: <20121206213944.GD24076@samba2>
-Reply-To: Jeremy Allison <jra@samba.org>
-References: <1354818391-7968-1-git-send-email-piastry@etersoft.ru>
- <20121206194949.7ab20d56@pyramind.ukuu.org.uk>
- <20121206195752.GA18585@samba2>
- <20121206213133.GB4821@thunk.org>
- <20121206213329.GB24076@samba2>
- <20121206213727.GC4821@thunk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121206213727.GC4821@thunk.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S965245Ab2LFVlk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 16:41:40 -0500
+Received: from he.sipsolutions.net ([78.46.109.217]:54104 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754545Ab2LFVlj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 16:41:39 -0500
+Message-ID: <1354830114.18211.4.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH wireless-next] iwlwifi: iwlagn_request_scan: Fix check
+ for NULL priv->scan_request
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Tim Gardner <tim.gardner@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Don Fry <donald.h.fry@intel.com>, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org
+Date: Thu, 06 Dec 2012 22:41:54 +0100
+In-Reply-To: <1354825445-79551-1-git-send-email-tim.gardner@canonical.com> (sfid-20121206_214912_422543_9C67DD48)
+References: <1354825445-79551-1-git-send-email-tim.gardner@canonical.com>
+	 (sfid-20121206_214912_422543_9C67DD48)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.1-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 06, 2012 at 04:37:27PM -0500, Theodore Ts'o wrote:
-> On Thu, Dec 06, 2012 at 01:33:29PM -0800, Jeremy Allison wrote:
-> > > I'm confused; why would a userspace application need to be able to
-> > > request this behavior?
-> > 
-> > This isn't my proposal Ted, I'm just commenting on it :-).
-> 
-> Ah, sorry, I thought was coming from the Samba team.  :-)
 
-Well it sort of is, as the people working on cifsfs are also
-Samba Team members, but this isn't an official "Samba" thing,
-as I can't see exactly what apps would want this either (other
-than Samba smbd running on top of smbd, re-exporting a cifsfs
-share, pointing to a Samba server, running on a... ERROR STACK
-OVERFLOW :-).
+> --- a/drivers/net/wireless/iwlwifi/dvm/scan.c
+> +++ b/drivers/net/wireless/iwlwifi/dvm/scan.c
+> @@ -673,8 +673,9 @@ static int iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
+>  	const u8 *ssid = NULL;
+>  	u8 ssid_len = 0;
+>  
+> -	if (WARN_ON_ONCE(priv->scan_request &&
+> -			 priv->scan_request->n_channels > MAX_SCAN_CHANNEL))
+> +	if (WARN_ON(priv->scan_type == IWL_SCAN_NORMAL &&
+> +		(!priv->scan_request ||
+> +		priv->scan_request->n_channels > MAX_SCAN_CHANNEL)))
+>  		return -EINVAL;
 
-> Hmm... I see wine-devel is cc'ed; is this coming from the Wine team,
-> wanting to do SMB paravirtualization?  It would be useful if the
-> commit description described how these flags are intended to be used....
+I'll pick it up if you fix the indentation :P
 
-Indeed :-).
+johannes
 
-Jeremy.
