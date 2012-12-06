@@ -1,157 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424739Ab2LFThJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 14:37:09 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:53392 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1947003Ab2LFTfj (ORCPT
+	id S1424756Ab2LFTiP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 14:38:15 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:46629 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1424743Ab2LFTiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 14:35:39 -0500
-From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        sjurbren@gmail.com,
-        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [RFC 1/5] remoteproc: Refactor function rproc_elf_find_rsc_table
-Date: Thu,  6 Dec 2012 20:35:20 +0100
-Message-Id: <1354822524-4497-2-git-send-email-sjur.brandeland@stericsson.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1354822524-4497-1-git-send-email-sjur.brandeland@stericsson.com>
-References: <1354822524-4497-1-git-send-email-sjur.brandeland@stericsson.com>
+	Thu, 6 Dec 2012 14:38:10 -0500
+Message-ID: <50C0F3CA.7070105@linux.vnet.ibm.com>
+Date: Fri, 07 Dec 2012 01:06:42 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Oleg Nesterov <oleg@redhat.com>, tj@kernel.org, tglx@linutronix.de,
+        peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
+        namhyung@kernel.org, vincent.guittot@linaro.org, sbw@mit.edu,
+        amit.kucheria@linaro.org, rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v2 01/10] CPU hotplug: Provide APIs for "light"	atomic
+ readers to prevent CPU offline
+References: <20121205184041.3750.64945.stgit@srivatsabhat.in.ibm.com> <20121205184258.3750.31879.stgit@srivatsabhat.in.ibm.com> <50BF96DF.3000500@linux.vnet.ibm.com> <50BF979A.50304@linux.vnet.ibm.com> <50BF982D.7090704@linux.vnet.ibm.com> <50BF98F7.3030600@linux.vnet.ibm.com> <50BF999C.6030707@linux.vnet.ibm.com> <50BFAB17.3090603@linux.vnet.ibm.com> <20121206161850.GA6710@redhat.com> <50C0E88E.9050909@linux.vnet.ibm.com> <1354822103.17101.24.camel@gandalf.local.home>
+In-Reply-To: <1354822103.17101.24.camel@gandalf.local.home>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12120619-5564-0000-0000-000005ABF457
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Refatcor rproc_elf_find_rsc_table and split out the scanning
-for the section header named resource table. This is done to
-prepare for loading firmware once when rproc is registered.
+On 12/07/2012 12:58 AM, Steven Rostedt wrote:
+> On Fri, 2012-12-07 at 00:18 +0530, Srivatsa S. Bhat wrote:
+>> On 12/06/2012 09:48 PM, Oleg Nesterov wrote:
+>>> On 12/06, Srivatsa S. Bhat wrote:
+>>>>
+>>>> +void get_online_cpus_atomic(void)
+>>>> +{
+>>>> +	int c, old;
+>>>> +
+>>>> +	preempt_disable();
+>>>> +	read_lock(&hotplug_rwlock);
+>>>
+>>> Confused... Why it also takes hotplug_rwlock?
+>>
+>> To avoid ABBA deadlocks.
+>>
+>> hotplug_rwlock was meant for the "light" readers.
+>> The atomic counters were meant for the "heavy/full" readers.
+>> I wanted them to be able to nest in any manner they wanted,
+>> such as:
+>>
+>> Full inside light:
+>>
+>> get_online_cpus_atomic_light()
+>> 	...
+>> 	get_online_cpus_atomic_full()
+>> 	...
+>> 	put_online_cpus_atomic_full()
+>> 	...
+>> put_online_cpus_atomic_light()
+>>
+>> Or, light inside full:
+>>
+>> get_online_cpus_atomic_full()
+>> 	...
+>> 	get_online_cpus_atomic_light()
+>> 	...
+>> 	put_online_cpus_atomic_light()
+>> 	...
+>> put_online_cpus_atomic_full()
+>>
+>> To allow this, I made the two sets of APIs take the locks
+>> in the same order internally.
+>>
+>> (I had some more description of this logic in the changelog
+>> of 2/10; the only difference there is that instead of atomic
+>> counters, I used rwlocks for the full-readers as well.
+>> https://lkml.org/lkml/2012/12/5/320)
+>>
+> 
+> You know reader locks can deadlock with each other, right? And this
+> isn't caught be lockdep yet. This is because rwlocks have been made to
+> be fair with writers. Before writers could be starved if a CPU always
+> let a reader in. Now if a writer is waiting, a reader will block behind
+> the writer. But this has introduced new issues with the kernel as
+> follows:
+> 
+> 
+>    CPU0			   CPU1	 	   CPU2		   CPU3
+>    ----			   ----		   ----		   ----
+> read_lock(A);
+> 			read_lock(B)
+> 					write_lock(A) <- block
+> 							write_lock(B) <- block
+> read_lock(B) <-block
+> 
+> 			read_lock(A) <- block
+> 
+> DEADLOCK!
+> 
 
-Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
----
- drivers/remoteproc/remoteproc_elf_loader.c |   83 +++++++++++++++++-----------
- 1 file changed, 51 insertions(+), 32 deletions(-)
+The root-cause of this deadlock is again lock-ordering mismatch right?
+CPU0 takes locks in order A, B
+CPU1 takes locks in order B, A
 
-diff --git a/drivers/remoteproc/remoteproc_elf_loader.c b/drivers/remoteproc/remoteproc_elf_loader.c
-index e1f89d6..69832d9 100644
---- a/drivers/remoteproc/remoteproc_elf_loader.c
-+++ b/drivers/remoteproc/remoteproc_elf_loader.c
-@@ -208,38 +208,19 @@ rproc_elf_load_segments(struct rproc *rproc, const struct firmware *fw)
- 	return ret;
- }
- 
--/**
-- * rproc_elf_find_rsc_table() - find the resource table
-- * @rproc: the rproc handle
-- * @fw: the ELF firmware image
-- * @tablesz: place holder for providing back the table size
-- *
-- * This function finds the resource table inside the remote processor's
-- * firmware. It is used both upon the registration of @rproc (in order
-- * to look for and register the supported virito devices), and when the
-- * @rproc is booted.
-- *
-- * Returns the pointer to the resource table if it is found, and write its
-- * size into @tablesz. If a valid table isn't found, NULL is returned
-- * (and @tablesz isn't set).
-- */
--static struct resource_table *
--rproc_elf_find_rsc_table(struct rproc *rproc, const struct firmware *fw,
--							int *tablesz)
-+static struct elf32_shdr *
-+find_rsc_shdr(struct device *dev, struct elf32_hdr *ehdr)
- {
--	struct elf32_hdr *ehdr;
- 	struct elf32_shdr *shdr;
-+	int i;
- 	const char *name_table;
--	struct device *dev = &rproc->dev;
- 	struct resource_table *table = NULL;
--	int i;
--	const u8 *elf_data = fw->data;
-+	const u8 *elf_data = (void *)ehdr;
- 
--	ehdr = (struct elf32_hdr *)elf_data;
-+	/* look for the resource table and handle it */
- 	shdr = (struct elf32_shdr *)(elf_data + ehdr->e_shoff);
- 	name_table = elf_data + shdr[ehdr->e_shstrndx].sh_offset;
- 
--	/* look for the resource table and handle it */
- 	for (i = 0; i < ehdr->e_shnum; i++, shdr++) {
- 		int size = shdr->sh_size;
- 		int offset = shdr->sh_offset;
-@@ -249,12 +230,6 @@ rproc_elf_find_rsc_table(struct rproc *rproc, const struct firmware *fw,
- 
- 		table = (struct resource_table *)(elf_data + offset);
- 
--		/* make sure we have the entire table */
--		if (offset + size > fw->size) {
--			dev_err(dev, "resource table truncated\n");
--			return NULL;
--		}
--
- 		/* make sure table has at least the header */
- 		if (sizeof(struct resource_table) > size) {
- 			dev_err(dev, "header-less resource table\n");
-@@ -280,10 +255,54 @@ rproc_elf_find_rsc_table(struct rproc *rproc, const struct firmware *fw,
- 			return NULL;
- 		}
- 
--		*tablesz = shdr->sh_size;
--		break;
-+		return shdr;
-+	}
-+
-+	return NULL;
-+}
-+
-+/**
-+ * rproc_elf_find_rsc_table() - find the resource table
-+ * @rproc: the rproc handle
-+ * @fw: the ELF firmware image
-+ * @tablesz: place holder for providing back the table size
-+ *
-+ * This function finds the resource table inside the remote processor's
-+ * firmware. It is used both upon the registration of @rproc (in order
-+ * to look for and register the supported virito devices), and when the
-+ * @rproc is booted.
-+ *
-+ * Returns the pointer to the resource table if it is found, and write its
-+ * size into @tablesz. If a valid table isn't found, NULL is returned
-+ * (and @tablesz isn't set).
-+ */
-+static struct resource_table *
-+rproc_elf_find_rsc_table(struct rproc *rproc, const struct firmware *fw,
-+							int *tablesz)
-+{
-+	struct elf32_hdr *ehdr;
-+	struct elf32_shdr *shdr;
-+
-+	struct device *dev = &rproc->dev;
-+	struct resource_table *table = NULL;
-+
-+	const u8 *elf_data = fw->data;
-+
-+	ehdr = (struct elf32_hdr *)elf_data;
-+
-+	shdr = find_rsc_shdr(dev, ehdr);
-+	if (!shdr)
-+		return NULL;
-+
-+	/* make sure we have the entire table */
-+	if (shdr->sh_offset + shdr->sh_size > fw->size) {
-+		dev_err(dev, "resource table truncated\n");
-+		return NULL;
- 	}
- 
-+	table = (struct resource_table *)(elf_data + shdr->sh_offset);
-+	*tablesz = shdr->sh_size;
-+
- 	return table;
- }
- 
--- 
-1.7.9.5
+And the writer facilitates in actually getting deadlocked.
+
+I avoid this in this patchset by always taking the locks in the same
+order. So we won't be deadlocking like this.
+
+Regards,
+Srivatsa S. Bhat
+
 
