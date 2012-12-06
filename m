@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947046Ab2LFVfW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 16:35:22 -0500
-Received: from void.printf.net ([89.145.121.20]:38942 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1424897Ab2LFVfU convert rfc822-to-8bit (ORCPT
+	id S1424917Ab2LFVhO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 16:37:14 -0500
+Received: from smtprelay-b21.telenor.se ([195.54.99.212]:36377 "EHLO
+	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1424897Ab2LFVhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 16:35:20 -0500
-From: Chris Ball <cjb@laptop.org>
+	Thu, 6 Dec 2012 16:37:11 -0500
+X-SENDER-IP: [85.230.168.206]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: At9NAMMPwVBV5qjOPGdsb2JhbABEim6zQBcDAQEBATg0gh4BAQQBOhwjBQsIA0YUJQoaiB0KwmsUjEiDP2EDlgKFe4NTiW4
+X-IronPort-AV: E=Sophos;i="4.84,233,1355094000"; 
+   d="scan'208";a="462904698"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Thu, 6 Dec 2012 22:39:09 +0100
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] MMC fixes for 3.7
-Date: Thu, 06 Dec 2012 16:35:14 -0500
-Message-ID: <87txrydfu5.fsf@octavius.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
+Cc: Mel Gorman <mgorman@suse.de>, Jan Kara <jack@suse.cz>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Oops in 3.7-rc8 isolate_free_pages_block()
+Message-ID: <20121206213909.GA625@polaris.bitmath.org>
+References: <20121206091744.GA1397@polaris.bitmath.org>
+ <20121206144821.GC18547@quack.suse.cz>
+ <20121206161934.GA17258@suse.de>
+ <CA+55aFw9WQN-MYFKzoGXF9Z70h1XsMu5X4hLy0GPJopBVuE=Yg@mail.gmail.com>
+ <20121206175451.GC17258@suse.de>
+ <CA+55aFwDZHXf2FkWugCy4DF+mPTjxvjZH87ydhE5cuFFcJ-dJg@mail.gmail.com>
+ <20121206183259.GA591@polaris.bitmath.org>
+ <CA+55aFzievpA_b5p-bXwW11a89eC-ucpzKUuSqb2PNQOLrqaPg@mail.gmail.com>
+ <20121206192845.GA599@polaris.bitmath.org>
+ <CA+55aFy4Lv+_aPEakOJNR2F9PR=09jviT6Z70_NkWV5bSH5ABw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFy4Lv+_aPEakOJNR2F9PR=09jviT6Z70_NkWV5bSH5ABw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+> There is also a
+> 
+>     low_pfn += pageblock_nr_pages;
+>     low_pfn = ALIGN(low_pfn, pageblock_nr_pages) - 1;
+> 
+> that looks suspicious for similar reasons. Maybe
+> 
+>     low_pfn = ALIGN(low_pfn + 1, pageblock_nr_pages) - 1;
+> 
+> instead? Although that *can* result in the same low_pfn in the end, so
+> maybe that one was correct after all? I just did some grepping, no
+> actual semantic analysis...
 
-Please pull from:
+Here is a totally obscure version:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git tags/mmc-fixes-for-3.7
+	low_pfn |= pageblock_nr_pages - 1;
 
-to receive two small regression fixes for 3.7.  There are no merge
-conflicts.  Thanks.
+It simply moves to the very end of the block, which seems to be what
+was intended.
 
-
-The following changes since commit 0aa55c2367f082876f92660312214cd20c6a024b:
-
-  mmc: sdhci-s3c: fix the card detection in runtime-pm (2012-11-07 15:40:52 -0500)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git tags/mmc-fixes-for-3.7
-
-for you to fetch changes up to 91ab252ac5a5c3461dd6910797611e9172626aed:
-
-  mmc: sh-mmcif: avoid oops on spurious interrupts (second try) (2012-12-06 13:54:35 -0500)
-
-----------------------------------------------------------------
-MMC fixes for 3.7:
- - sdhci-s3c: Fix runtime PM regression against 3.7-rc1
- - sh-mmcif: Fix oops against 3.6
-
-----------------------------------------------------------------
-Chris Ball (1):
-      Revert misapplied "mmc: sh-mmcif: avoid oops on spurious interrupts"
-
-Guennadi Liakhovetski (1):
-      mmc: sh-mmcif: avoid oops on spurious interrupts (second try)
-
-Heiko Stübner (1):
-      mmc: sdhci-s3c: fix missing clock for gpio card-detect
-
- drivers/mmc/host/sdhci-s3c.c | 7 +++++++
- drivers/mmc/host/sh_mmcif.c  | 8 ++------
- 2 files changed, 9 insertions(+), 6 deletions(-)
-
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Henrik
