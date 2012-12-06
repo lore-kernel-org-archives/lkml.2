@@ -1,79 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946144Ab2LFRH6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 12:07:58 -0500
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:50757 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1424341Ab2LFRH4 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 12:07:56 -0500
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VPS-3(zz98dI9371Id6eah542Izz1de0h1202h1d1ah1d2ahzz8275dhz2dh668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh15d0h162dh1631h1155h)
-X-WSS-ID: 0MEMCX3-01-C78-02
-X-M-MSG: 
-From: "Kinney, Steven" <Steven.Kinney@amd.com>
-To: Joerg Roedel <joro@8bytes.org>
-CC: Hiroshi DOYU <hdoyu@nvidia.com>, Stephen Warren <swarren@wwwdotorg.org>,
-        Jiri Kosina <jkosina@suse.cz>, Kukjin Kim <kgene.kim@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>
-Subject: RE: [PATCH 1/1] iommuv2/amd: Enable Performance Counters On Family
- 15h Models 10h-1Fh
-Thread-Topic: [PATCH 1/1] iommuv2/amd: Enable Performance Counters On Family
- 15h Models 10h-1Fh
-Thread-Index: AQHN0m1gXsaBYG37VECoS39fp5EsGZgL+cAAgAAIb/A=
-Date: Thu, 6 Dec 2012 17:07:49 +0000
-Message-ID: <57D41218901B4442B4AFF404D215911636E15F@sausexdag02.amd.com>
-References: <1354659546-9700-1-git-send-email-steven.kinney@amd.com>
- <20121206103238.GF1806@8bytes.org>
-In-Reply-To: <20121206103238.GF1806@8bytes.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.236.70.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1946157Ab2LFRIS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 12:08:18 -0500
+Received: from mail.eecsit.tu-berlin.de ([130.149.17.13]:64878 "EHLO
+	mail.cs.tu-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1424578Ab2LFRIQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 12:08:16 -0500
+From: =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kay Sievers <kay@vrfy.org>
+Cc: linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        =?UTF-8?q?Jan=20H=2E=20Sch=C3=B6nherr?= <schnhrr@cs.tu-berlin.de>
+Subject: [PATCH v2 01/14] printk: drop ambiguous LOG_CONT flag
+Date: Thu,  6 Dec 2012 18:05:58 +0100
+Message-Id: <1354813571-11253-2-git-send-email-schnhrr@cs.tu-berlin.de>
+X-Mailer: git-send-email 1.8.0.1.20.g7c65b2e.dirty
+In-Reply-To: <1354813571-11253-1-git-send-email-schnhrr@cs.tu-berlin.de>
+References: <1354813571-11253-1-git-send-email-schnhrr@cs.tu-berlin.de>
 MIME-Version: 1.0
-X-OriginatorOrg: amd.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joerg,
+The meaning of LOG_CONT is unclear, i. e., whether a message is a starting,
+ending, or middle fragment. Unfortunately, this cannot be inferred from
+the LOG_PREFIX and LOG_NEWLINE flags, as they are not always kept.
+Furthermore, in some cases LOG_CONT is set, although it is unknown if
+there will be a continuation. This leads to wrongly concatenated output.
 
-                       I see your point(s).  First, to the second point, I should (and will) add a check to the AMD Family/Model coupled to this change.  Also, I will append the patch(es) to include the perf IOMMU PMU so that this change is put into context.
+Fix this by dropping LOG_CONT and rely on LOG_PREFIX and LOG_NEWLINE to
+distinguish the type of fragment. That is, if LOG_PREFIX is set, this
+fragment does not continue the previous fragment. And if LOG_NEWLINE is
+set, this fragment is not continued by the next fragment.
 
-Thanks for your time and advise.
+(Unfortunately, we still have to look at the previous fragment to catch the
+case of an unset LOG_PREFIX on this fragment, but a set LOG_NEWLINE on
+the previous fragment -- and vice versa)
 
-Best Regards,
+Tested-by: Kay Sievers <kay@vrfy.org>
+Signed-off-by: Jan H. Schönherr <schnhrr@cs.tu-berlin.de>
+---
+v2:
+- minor commit message clarification
+v1b:
+- fixed check for flushed buffer
+- minor code adjustment
+- coding style fixes
+---
+ kernel/printk.c | 58 ++++++++++++++++++++++++++++++++-------------------------
+ 1 file changed, 33 insertions(+), 25 deletions(-)
 
-Steve
-
------Original Message-----
-From: Joerg Roedel [mailto:joro@8bytes.org] 
-Sent: Thursday, December 06, 2012 4:33 AM
-To: Kinney, Steven
-Cc: Hiroshi DOYU; Stephen Warren; Jiri Kosina; Kukjin Kim; linux-kernel@vger.kernel.org; iommu@lists.linux-foundation.org
-Subject: Re: [PATCH 1/1] iommuv2/amd: Enable Performance Counters On Family 15h Models 10h-1Fh
-
-On Tue, Dec 04, 2012 at 04:19:06PM -0600, Steven Kinney wrote:
->  drivers/iommu/Kconfig           |   10 +++++
->  drivers/iommu/amd_iommu_init.c  |   85 +++++++++++++++++++++++++++++++++++++++
->  drivers/iommu/amd_iommu_types.h |   13 +++++-
->  3 files changed, 107 insertions(+), 1 deletion(-)
-
-So first of all, this patch alone doesn't make sense. You should submit it in a patch-set that enabled IOMMUv2 performance counters for the end-user. This means together with the PMU implementation and tools support.
-
-Further I don't see how this patch is specific to Family 15h Models 10h-1Fh as described in the subject-line.
-
-Any comments on these two points?
-
-Cheers,
-
-	Joerg
-
-
-
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 2d607f4..857ff7c 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -197,7 +197,6 @@ enum log_flags {
+ 	LOG_NOCONS	= 1,	/* already flushed, do not print to console */
+ 	LOG_NEWLINE	= 2,	/* text ended with a newline */
+ 	LOG_PREFIX	= 4,	/* text started with a prefix */
+-	LOG_CONT	= 8,	/* text is a fragment of a continuation line */
+ };
+ 
+ struct log {
+@@ -481,10 +480,9 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
+ 	 * better readable output. 'c' in the record flags mark the first
+ 	 * fragment of a line, '+' the following.
+ 	 */
+-	if (msg->flags & LOG_CONT && !(user->prev & LOG_CONT))
++	if (!(msg->flags & LOG_NEWLINE) && msg->flags & LOG_PREFIX)
+ 		cont = 'c';
+-	else if ((msg->flags & LOG_CONT) ||
+-		 ((user->prev & LOG_CONT) && !(msg->flags & LOG_PREFIX)))
++	else if (!(user->prev & LOG_NEWLINE) && !(msg->flags & LOG_PREFIX))
+ 		cont = '+';
+ 
+ 	len = sprintf(user->buf, "%u,%llu,%llu,%c;",
+@@ -887,15 +885,16 @@ static size_t msg_print_text(const struct log *msg, enum log_flags prev,
+ 	bool newline = true;
+ 	size_t len = 0;
+ 
+-	if ((prev & LOG_CONT) && !(msg->flags & LOG_PREFIX))
++	if (!(prev & LOG_NEWLINE) && !(msg->flags & LOG_PREFIX))
+ 		prefix = false;
+ 
+-	if (msg->flags & LOG_CONT) {
+-		if ((prev & LOG_CONT) && !(prev & LOG_NEWLINE))
+-			prefix = false;
++	if (!(msg->flags & LOG_NEWLINE))
++		newline = false;
+ 
+-		if (!(msg->flags & LOG_NEWLINE))
+-			newline = false;
++	if (!(prev & LOG_NEWLINE) && prefix) {
++		if (buf)
++			buf[len] = '\n';
++		len++;
+ 	}
+ 
+ 	do {
+@@ -1400,35 +1399,36 @@ static void cont_flush(enum log_flags flags)
+ 	if (cont.len == 0)
+ 		return;
+ 
++	cont.flags |= flags;
+ 	if (cont.cons) {
+ 		/*
+ 		 * If a fragment of this line was directly flushed to the
+ 		 * console; wait for the console to pick up the rest of the
+ 		 * line. LOG_NOCONS suppresses a duplicated output.
+ 		 */
+-		log_store(cont.facility, cont.level, flags | LOG_NOCONS,
++		log_store(cont.facility, cont.level, cont.flags | LOG_NOCONS,
+ 			  cont.ts_nsec, NULL, 0, cont.buf, cont.len);
+-		cont.flags = flags;
+ 		cont.flushed = true;
+ 	} else {
+ 		/*
+ 		 * If no fragment of this line ever reached the console,
+ 		 * just submit it to the store and free the buffer.
+ 		 */
+-		log_store(cont.facility, cont.level, flags, 0,
++		log_store(cont.facility, cont.level, cont.flags, 0,
+ 			  NULL, 0, cont.buf, cont.len);
+ 		cont.len = 0;
+ 	}
+ }
+ 
+-static bool cont_add(int facility, int level, const char *text, size_t len)
++static bool cont_add(int facility, int level, enum log_flags flags,
++		     const char *text, size_t len)
+ {
+ 	if (cont.len && cont.flushed)
+ 		return false;
+ 
+ 	if (cont.len + len > sizeof(cont.buf)) {
+ 		/* the line gets too long, split it up in separate records */
+-		cont_flush(LOG_CONT);
++		cont_flush(0);
+ 		return false;
+ 	}
+ 
+@@ -1437,7 +1437,7 @@ static bool cont_add(int facility, int level, const char *text, size_t len)
+ 		cont.level = level;
+ 		cont.owner = current;
+ 		cont.ts_nsec = local_clock();
+-		cont.flags = 0;
++		cont.flags = flags;
+ 		cont.cons = 0;
+ 		cont.flushed = false;
+ 	}
+@@ -1446,7 +1446,7 @@ static bool cont_add(int facility, int level, const char *text, size_t len)
+ 	cont.len += len;
+ 
+ 	if (cont.len > (sizeof(cont.buf) * 80) / 100)
+-		cont_flush(LOG_CONT);
++		cont_flush(0);
+ 
+ 	return true;
+ }
+@@ -1456,8 +1456,11 @@ static size_t cont_print_text(char *text, size_t size)
+ 	size_t textlen = 0;
+ 	size_t len;
+ 
+-	if (cont.cons == 0 && (console_prev & LOG_NEWLINE)) {
+-		textlen += print_time(cont.ts_nsec, text);
++	if (cont.cons == 0 && (console_prev & LOG_NEWLINE ||
++			       cont.flags & LOG_PREFIX)) {
++		if (!(console_prev & LOG_NEWLINE))
++			text[textlen++] = '\n';
++		textlen += print_time(cont.ts_nsec, text + textlen);
+ 		size -= textlen;
+ 	}
+ 
+@@ -1575,12 +1578,16 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 		 * Flush the conflicting buffer. An earlier newline was missing,
+ 		 * or another task also prints continuation lines.
+ 		 */
+-		if (cont.len && (lflags & LOG_PREFIX || cont.owner != current))
+-			cont_flush(LOG_NEWLINE);
++		if (cont.len && !cont.flushed) {
++			if (cont.owner != current)
++				lflags |= LOG_PREFIX;
++			if (lflags & LOG_PREFIX)
++				cont_flush(LOG_NEWLINE);
++		}
+ 
+ 		/* buffer line if possible, otherwise store it right away */
+-		if (!cont_add(facility, level, text, text_len))
+-			log_store(facility, level, lflags | LOG_CONT, 0,
++		if (!cont_add(facility, level, lflags, text, text_len))
++			log_store(facility, level, lflags, 0,
+ 				  dict, dictlen, text, text_len);
+ 	} else {
+ 		bool stored = false;
+@@ -1591,9 +1598,10 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 		 * there was a race with interrupts (prefix == true) then just
+ 		 * flush it out and store this line separately.
+ 		 */
+-		if (cont.len && cont.owner == current) {
++		if (cont.len && !cont.flushed && cont.owner == current) {
+ 			if (!(lflags & LOG_PREFIX))
+-				stored = cont_add(facility, level, text, text_len);
++				stored = cont_add(facility, level, lflags,
++							text, text_len);
+ 			cont_flush(LOG_NEWLINE);
+ 		}
+ 
+-- 
+1.8.0.1.20.g7c65b2e.dirty
 
