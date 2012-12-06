@@ -1,38 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752301Ab2LFFds (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 00:33:48 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33801 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752003Ab2LFFdr (ORCPT
+	id S1752538Ab2LFFeV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 00:34:21 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:15745 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751980Ab2LFFeU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 00:33:47 -0500
-Date: Thu, 6 Dec 2012 14:33:41 +0900
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Daniel Jeong <gshark.jeong@gmail.com>
-Cc: Liam Girdwood <lrg@ti.com>, daniel.jeong@ti.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 resend] regulator: new driver for LP8755
-Message-ID: <20121206053340.GC10867@opensource.wolfsonmicro.com>
-References: <1354770463-4629-1-git-send-email-gshark.jeong@gmail.com>
+	Thu, 6 Dec 2012 00:34:20 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 05 Dec 2012 21:34:20 -0800
+Message-ID: <50C02E5A.8030700@nvidia.com>
+Date: Thu, 6 Dec 2012 11:04:18 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354770463-4629-1-git-send-email-gshark.jeong@gmail.com>
-X-Cookie: Exercise caution in your daily affairs.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Axel Lin <axel.lin@ingics.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mfd: tps80031: MFD_TPS80031 needs to select REGMAP_IRQ
+References: <1354713588.14255.1.camel@phoenix>
+In-Reply-To: <1354713588.14255.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 06, 2012 at 02:07:43PM +0900, Daniel Jeong wrote:
-> This driver is a general version for lp8755 regulator driver of TI.
-> 
-> LP8755 :
-> The LP8755 is a high performance power management unit.It contains
-> six step-down DC-DC converters which can can be filexibly bundled
-> together in multiphase converters as required by application.
-> www.ti.com
+On Wednesday 05 December 2012 06:49 PM, Axel Lin wrote:
+> This driver uses regmap_irq APIs, thus need to select REGMAP_IRQ.
+> IRQ_DOMAIN will be selected if select REGMAP_IRQ, thus remove it here.
+>
+> This fixes below build errors:
+>
+> drivers/built-in.o: In function `tps80031_remove':
+> drivers/mfd/tps80031.c:534: undefined reference to `regmap_del_irq_chip'
+> drivers/built-in.o: In function `tps80031_irq_init':
+> drivers/mfd/tps80031.c:305: undefined reference to `regmap_add_irq_chip'
+> drivers/built-in.o: In function `tps80031_probe':
+> drivers/mfd/tps80031.c:496: undefined reference to `regmap_irq_get_domain'
+> drivers/mfd/tps80031.c:512: undefined reference to `regmap_del_irq_chip'
+> make: *** [vmlinux] Error 1
+>
+> Signed-off-by: Axel Lin<axel.lin@ingics.com>
 
-You've resent this after about 24 hours, please allow sane times for a
-response.
+Acked-by: Laxman Dewangan <ldewangan@nvidia.com>
