@@ -1,56 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754910Ab2LFJY4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 04:24:56 -0500
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:45220 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754891Ab2LFJYx convert rfc822-to-8bit (ORCPT
+	id S932377Ab2LFJZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 04:25:26 -0500
+Received: from mail.parknet.co.jp ([210.171.160.6]:45914 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754892Ab2LFJYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 04:24:53 -0500
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: Dave Chinner <david@fromorbit.com>
-Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate UAPI
-Date: Thu, 6 Dec 2012 10:24:41 +0100
-User-Agent: KMail/1.13.7 (Linux/3.7.0-rc8-f2fs-tp520+; KDE/4.8.4; x86_64; ; )
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel" <linux-fsdevel@vger.kernel.org>
-References: <1353366267-15629-1-git-send-email-david@fromorbit.com> <20121205173415.GI18885@thunk.org> <20121206004234.GA27172@dastard> (sfid-20121206_101901_489446_B4DF2252)
-In-Reply-To: <20121206004234.GA27172@dastard>
+	Thu, 6 Dec 2012 04:24:54 -0500
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH v5 5/8] fat: restructure export_operations
+References: <1353504277-5947-1-git-send-email-linkinjeon@gmail.com>
+	<87hao35uqz.fsf@devron.myhome.or.jp>
+	<CAKYAXd_X8Jkq=PdV+dVPTO_EAPHoZ37MynpjvkrPTDahWyUOTA@mail.gmail.com>
+	<87obia17zr.fsf@devron.myhome.or.jp>
+	<CAKYAXd-8ay4m6vsH1ztmomOrnXN+ThDi3w+jASyyUGOO12v6YA@mail.gmail.com>
+	<871uf4yizs.fsf@devron.myhome.or.jp>
+	<CAKYAXd_T2yGRXd3bk5HXXuVhx_ikO1xzinOy0d8TobokyiCRsA@mail.gmail.com>
+	<87pq2owvf9.fsf@devron.myhome.or.jp>
+	<CAKYAXd-CAhBDNYRTF22Yh8iGDb1_6+0V-U2wJsSuAjU3Q4q-SQ@mail.gmail.com>
+Date: Thu, 06 Dec 2012 18:24:48 +0900
+In-Reply-To: <CAKYAXd-CAhBDNYRTF22Yh8iGDb1_6+0V-U2wJsSuAjU3Q4q-SQ@mail.gmail.com>
+	(Namjae Jeon's message of "Thu, 6 Dec 2012 16:37:41 +0900")
+Message-ID: <87mwxrttwf.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201212061024.41760.Martin@lichtvoll.de>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 6. Dezember 2012 schrieb Dave Chinner:
-> > That being said, you'll note that unlike Dave, I have
-> > **not** thrown a hissy fit when btrfs grabbed bits from the inode
-> > field, even though quite a bit more bits allocated for the inode
-> > flags than the fallocate flags.
-> 
-> IOWs, pointing out that the standard peer review process has been
-> bypassed is "throwing a hissy fit"? And Linus calls it "being a
-> pissy bitch". To me this is acknoweldgement of the fact that
-> something wrong was done, but the actors can't bring themselves to
-> directly admit it and so are resorting to name calling and
-> blame-shifting to discredit the messenger and therefore the message.
+Namjae Jeon <linkinjeon@gmail.com> writes:
 
-+1
+>> I know encode_fh(). But NFS is network protocol, and network can input
+>> any data, and I guess the userland interface (open_by_handle()?) can be
+>> any too.
+>>
+>> And generic_fh_to_dentry()'s input verify choose to check the minimum
+>> length only. But your logic choose the exact length.
+>>
+>> I think the both is sane and correct. But I wonder why did you changed it.
+> There was no particular reason for us to put those conditions. It is
+> just we knew what fh lengths we have chosen for the 2 cases
+> WITH/WITHOUT parent.
+> i.e., we checked with encoded length.
+> Now, when I check the export functions of other filesystems(btrfs,
+> nilfs2, udf). They also adopt the same method of checking the exact
+> length and type.
+> If there is any particular reason, we will look into that and can also
+> updated on that.
 
-Anyway, the decision seems to be set, so indeed waste of energy to discuss 
-it further.
+OK. Then, just cleanup code, and let's use strict checking version.
 
-I agree the process is usually fluid. Cause I did not recognize a thread 
-like this every day here on this list. And what happened, happened.
+Removing strange fallthrou, something like the following.
 
-But for the future I´d like that patches are posted.
+static struct dentry *fat_fh_to_dentry_nostale(struct super_block *sb,
+					       struct fid *fh, int fh_len,
+					       int fh_type)
+{
+	struct inode *inode = NULL;
+	struct fat_fid *fid = (struct fat_fid *)fh;
+	loff_t i_pos;
 
-Ciao,
+	switch (fh_type) {
+	case FILEID_FAT_WITHOUT_PARENT:
+		if (fh_len < FAT_FID_SIZE_WITHOUT_PARENT)
+			return NULL;
+		break;
+	case FILEID_FAT_WITH_PARENT:
+		if (fh_len < FAT_FID_SIZE_WITH_PARENT)
+			return NULL;
+		break;
+	default:
+		return NULL;
+	}
+
+	i_pos = fid->i_pos_hi;
+	i_pos = (i_pos << 32) | (fid->i_pos_low);
+	inode = __fat_nfs_get_inode(sb, 0, fid->i_gen, i_pos);
+
+	return d_obtain_alias(inode);
+}
+
+
 -- 
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
