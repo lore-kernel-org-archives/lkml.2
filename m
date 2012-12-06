@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1947094Ab2LFTog (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 14:44:36 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55415 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1947077Ab2LFTod (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 14:44:33 -0500
-Date: Thu, 6 Dec 2012 19:49:49 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Pavel Shilovsky <piastry@etersoft.ru>
-Cc: linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, wine-devel@winehq.org,
-        linux-nfs@vger.kernel.org
-Subject: Re: [PATCH 0/3] Add O_DENY* flags to fcntl and cifs
-Message-ID: <20121206194949.7ab20d56@pyramind.ukuu.org.uk>
-In-Reply-To: <1354818391-7968-1-git-send-email-piastry@etersoft.ru>
-References: <1354818391-7968-1-git-send-email-piastry@etersoft.ru>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1947108Ab2LFTp0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 14:45:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34984 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1947077Ab2LFTpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 14:45:24 -0500
+Message-ID: <50C0F55F.6030405@redhat.com>
+Date: Thu, 06 Dec 2012 14:43:27 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Bruno Wolff III <bruno@wolff.to>, Johannes Weiner <hannes@cmpxchg.org>,
+        Thorsten Leemhuis <fedora@leemhuis.info>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        George Spelvin <linux@horizon.com>,
+        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
+        Tomas Racek <tracek@redhat.com>, Jan Kara <jack@suse.cz>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Josh Boyer <jwboyer@gmail.com>,
+        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        Jiri Slaby <jslaby@suse.cz>, Zdenek Kabelac <zkabelac@redhat.com>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        John Ellson <john.ellson@comcast.net>
+Subject: Re: kswapd craziness in 3.7
+References: <20121128145215.d23aeb1b.akpm@linux-foundation.org> <20121128235412.GW8218@suse.de> <50B77F84.1030907@leemhuis.info> <20121129170512.GI2301@cmpxchg.org> <50B8A8E7.4030108@leemhuis.info> <20121201004520.GK2301@cmpxchg.org> <50BC6314.7060106@leemhuis.info> <20121203194208.GZ24381@cmpxchg.org> <20121204214210.GB20253@cmpxchg.org> <20121205030133.GA17438@wolff.to> <20121206173742.GA27297@wolff.to> <CA+55aFzZsCUk6snrsopWQJQTXLO__G7=SjrGNyK3ePCEtZo7Sw@mail.gmail.com>
+In-Reply-To: <CA+55aFzZsCUk6snrsopWQJQTXLO__G7=SjrGNyK3ePCEtZo7Sw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  6 Dec 2012 22:26:28 +0400
-Pavel Shilovsky <piastry@etersoft.ru> wrote:
+On 12/06/2012 02:31 PM, Linus Torvalds wrote:
+> Ok, people seem to be reporting success.
+>
+> I've applied Johannes' last patch with the new tested-by tags.
+>
+> Johannes (or anybody else, for that matter), please holler LOUDLY if
+> you disagreed.. (or if I used the wrong version of the patch, there's
+> been several, afaik).
 
-> Network filesystems CIFS, SMB2.0, SMB3.0 and NFSv4 have such flags - this change can benefit cifs and nfs modules. While this change is ok for network filesystems, itsn't not targeted for local filesystems due security problems (e.g. when a user process can deny root to delete a file).
+Johannes's patch is a fairly big hammer, with kswapd not looping
+back to the start when zones are still unbalanced.
 
-If I have my root fs on NFS then the same applies does it not.
+However, the next allocation will wake up kswapd again, and
+having kswapd stop early beats having it in an infinite loop.
 
-Your patches fail to describe the security semantics and what file rights
-I must have to apply each option. How do I track down a lock user, what
-tools are provided ? How do the new options interact with the security
-layer?
+I believe Johannes's patch will be fine for 3.7.
 
-I don't have a problem with the idea, but it needs a lot more clear
-description of how it works so the model can be checked and if need be
-things tweaked (eg needing write to denywrite etc)
-
-Alan
+-- 
+All rights reversed
