@@ -1,54 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932815Ab2LFQED (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 11:04:03 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:36847 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932100Ab2LFQEB (ORCPT
+	id S1424175Ab2LFQKg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 11:10:36 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:53363 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423381Ab2LFQKf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 11:04:01 -0500
-Date: Thu, 6 Dec 2012 08:06:06 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Cong Ding <dinggnu@gmail.com>
-Cc: Bin Wang <wbin00@gmail.com>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org
-Subject: Re: [PATCH RFC -next] Fix the trailing blank space issue
-Message-ID: <20121206160606.GA15256@kroah.com>
-References: <1354784936-5647-1-git-send-email-wbin00@gmail.com>
- <20121206154219.GA24788@gmail.com>
+	Thu, 6 Dec 2012 11:10:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121206154219.GA24788@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121206152234.GA5309@polaris.bitmath.org>
+References: <20121206091744.GA1397@polaris.bitmath.org> <20121206144821.GC18547@quack.suse.cz>
+ <20121206152234.GA5309@polaris.bitmath.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 6 Dec 2012 08:10:13 -0800
+X-Google-Sender-Auth: Cw3PjqhsnQWm6VvwueJxcZS8D_E
+Message-ID: <CA+55aFwuuAQdoBx_R4CaHJp1ZdRTAwG8n1ZfiKmpZUwwZ9iUkw@mail.gmail.com>
+Subject: Re: Oops in 3.7-rc8 isolate_free_pages_block()
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Jan Kara <jack@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 06, 2012 at 03:42:20PM +0000, Cong Ding wrote:
-> On Thu, Dec 06, 2012 at 05:08:56PM +0800, Bin Wang wrote:
-> > This patch removes the trailing white space in fs/sysfs/mount.c.
-> > 
-> > Signed-off-by: Bin Wang <wbin00@gmail.com>
-> > ---
-> >  fs/sysfs/mount.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> Hi Greg,
-> 
-> I am not sure it is really necessary to remove all the trailing blank spaces
-> in the project. I have done a try by this shell command
-> $ find . -iname '*.[ch]' | xargs sed 's/\s\+$//g' -i
-> and find there are 2812 files/31712 lines with this issue. 
+Ok, so it's isolate_freepages_block+0x88, and as Jan Kara already
+guessed from just the offset, that is indeed likely the PageBuddy()
+test.
 
-That's very true, why would you want to do this?
+On Thu, Dec 6, 2012 at 7:22 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
+>
+>  http://bitmath.org/test/oops-3.7-rc8.jpg
+>
+> ffffffff810a6d6a:       eb 1c                   jmp    ffffffff810a6d88 <isolate_freepages_block+0x88>
+> ffffffff810a6d6c:       0f 1f 40 00             nopl   0x0(%rax)
 
-This comes up every 6 months or so on the linux-kernel mailing list,
-please see the archives for previous responses to the topic.
+On the first entry to the loop, we jump *into* the loop, over the end
+condition (the compiler has basically turned. And we jump directly to
+the faulting instruction. Looking at the register state, though, we're
+not at the first iteration of the loop, so we don't have to worry
+about that case. The loop itself then starts with:
 
-If you want, just slowly send patches to the different subsystem
-maintainers, to clean the issue up.
+> ffffffff810a6d70:       48 83 c5 01             add    $0x1,%rbp
+> ffffffff810a6d74:       48 83 c3 40             add    $0x40,%rbx
 
-best of luck,
+The above is the "blockpfn++, cursor++" part of the loop, while the
+test below is the loop condition ("blockpfn < end_pfn"):
 
-greg k-h
+> ffffffff810a6d78:       49 39 ed                cmp    %rbp,%r13
+> ffffffff810a6d7b:       0f 86 cf 00 00 00       jbe    ffffffff810a6e50 <isolate_freepages_block+0x150>
+
+>From your image, %rbp is 0x070000 and %r13 is 0x0702f9.
+
+The "pfn_valid_within()" test is a no-op because we don't have holes
+in zones on x86, so then we have
+
+                if (!valid_page)
+                        valid_page = page;
+
+which generates a test+cmove:
+
+> ffffffff810a6d81:       4d 85 e4                test   %r12,%r12
+> ffffffff810a6d84:       4c 0f 44 e3             cmove  %rbx,%r12
+
+(which is how we can tell we're not at the beginning: 'valid_page' is
+0xffffea0001bfbe40, while the current page is 0xffffea0001c00000).
+
+.. and finally the oopsing instruction from PageBuddy(), which is the
+read of the 'page->_mapcount'
+
+> ffffffff810a6d88:       8b 43 18                mov    0x18(%rbx),%eax
+> ffffffff810a6d8b:       83 f8 80                cmp    $0xffffff80,%eax
+> ffffffff810a6d8e:       75 e0                   jne    ffffffff810a6d70 <isolate_freepages_block+0x70>
+
+So yeah, that loop has apparently wandered into la-la-land. end_pfn
+must be somehow wrong.
+
+Mel, does any of this ring a bell (Andrew also added to the cc, since
+the patches came through him).
+
+                  Linus
