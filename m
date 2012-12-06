@@ -1,250 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932125Ab2LFB2j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 20:28:39 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:47107 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752362Ab2LFB2h (ORCPT
+	id S1754147Ab2LFBkf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 20:40:35 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8074 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753298Ab2LFBke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 20:28:37 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAN1soZxkqFFb-1YrwGoCYcLp734BOcLcgBZD8nTEQcjoQ05XSg@mail.gmail.com>
-References: <1354690149-3043-1-git-send-email-chao.xie@marvell.com>
-	<1354690149-3043-2-git-send-email-chao.xie@marvell.com>
-	<CAN1soZxkqFFb-1YrwGoCYcLp734BOcLcgBZD8nTEQcjoQ05XSg@mail.gmail.com>
-Date: Thu, 6 Dec 2012 09:28:36 +0800
-Message-ID: <CADApbehmSpa+uLSEBeM5TD+wON=NT_jPJbO7QxGLYLVFLBS5-A@mail.gmail.com>
-Subject: Re: [V2 PATCH 2/2] rtc: pxa: add pxa95x rtc support
-From: Chao Xie <xiechao.mail@gmail.com>
-To: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: Chao Xie <chao.xie@marvell.com>, Linux Russell <linux@arm.linux.org.uk>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Robert Jarzmik <robert.jarzmik@free.fr>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 5 Dec 2012 20:40:34 -0500
+X-Authority-Analysis: v=2.0 cv=dttZ+ic4 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=UWsWV8ZGD4sA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=RU5-hctH5AsA:10 a=1aGfSQ-rvtFeL2DRSz4A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1354758031.17101.7.camel@gandalf.local.home>
+Subject: Re: [PATCH v5 2/3] aerdrv: Enhanced AER logging
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Lance Ortiz <lance.ortiz@hp.com>, bhelgaas@google.com,
+        lance_ortiz@hotmail.com, jiang.liu@huawei.com, tony.luck@intel.com,
+        mchehab@redhat.com, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 05 Dec 2012 20:40:31 -0500
+In-Reply-To: <20121204093007.GG4369@liondog.tnic>
+References: <20121203212047.24373.8646.stgit@grignak.americas.hpqcorp.net>
+	 <20121203212053.24373.10914.stgit@grignak.americas.hpqcorp.net>
+	 <20121204093007.GG4369@liondog.tnic>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 5, 2012 at 3:04 PM, Haojian Zhuang <haojian.zhuang@gmail.com> wrote:
-> On Wed, Dec 5, 2012 at 2:49 PM, Chao Xie <chao.xie@marvell.com> wrote:
->> the pxa95x rtc need access PBSR register before write to
->> RTTR, RCNR, RDCR, and RYCR registers.
->>
->> Signed-off-by: Chao Xie <chao.xie@marvell.com>
->> ---
->>  drivers/rtc/rtc-pxa.c |  100 +++++++++++++++++++++++++++++++++++++++++-------
->>  1 files changed, 85 insertions(+), 15 deletions(-)
->>
->> diff --git a/drivers/rtc/rtc-pxa.c b/drivers/rtc/rtc-pxa.c
->> index f771b2e..aee23cb 100644
->> --- a/drivers/rtc/rtc-pxa.c
->> +++ b/drivers/rtc/rtc-pxa.c
->> @@ -29,6 +29,7 @@
->>  #include <linux/slab.h>
->>  #include <linux/of.h>
->>  #include <linux/of_device.h>
->> +#include <linux/delay.h>
->>
->>  #include <mach/hardware.h>
->>
->> @@ -77,14 +78,28 @@
->>  #define RTCPICR                0x34
->>  #define PIAR           0x38
->>
->> +#define PSBR_RTC       0x00
->> +
->>  #define rtc_readl(pxa_rtc, reg)        \
->>         __raw_readl((pxa_rtc)->base + (reg))
->>  #define rtc_writel(pxa_rtc, reg, value)        \
->>         __raw_writel((value), (pxa_rtc)->base + (reg))
->> +#define rtc_readl_psbr(pxa_rtc, reg)   \
->> +       __raw_readl((pxa_rtc)->base_psbr + (reg))
->> +#define rtc_writel_psbr(pxa_rtc, reg, value)   \
->> +       __raw_writel((value), (pxa_rtc)->base_psbr + (reg))
->> +
->> +enum {
->> +       RTC_PXA27X,
->> +       RTC_PXA95X,
->> +};
->>
->>  struct pxa_rtc {
->>         struct resource *ress;
->> +       struct resource *ress_psbr;
->> +       unsigned int            id;
->>         void __iomem            *base;
->> +       void __iomem            *base_psbr;
->>         int                     irq_1Hz;
->>         int                     irq_Alrm;
->>         struct rtc_device       *rtc;
->> @@ -242,9 +257,26 @@ static int pxa_rtc_set_time(struct device *dev, struct rtc_time *tm)
->>  {
->>         struct pxa_rtc *pxa_rtc = dev_get_drvdata(dev);
->>
->> +       /*
->> +        * sequence to wirte pxa rtc register RCNR RDCR RYCR is
->> +        * 1. set PSBR[RWE] bit, take 2x32-khz to complete
->> +        * 2. write to RTC register,take 2x32-khz to complete
->> +        * 3. clear PSBR[RWE] bit,take 2x32-khz to complete
->> +        */
->> +       if (pxa_rtc->id == RTC_PXA95X) {
->> +               rtc_writel_psbr(pxa_rtc, PSBR_RTC, 0x01);
->> +               udelay(100);
->> +       }
->
-> How about define PSBP operation as a new clock, rtc interface clock.
-> Then you could put
-> the enable/disable into clock framework. And you only need to check
-> whether the interface
-> clock is NULL or not at here. If it's available, you can call
-> clk_prepare_enable().
->
->> +
->>         rtc_writel(pxa_rtc, RYCR, ryxr_calc(tm));
->>         rtc_writel(pxa_rtc, RDCR, rdxr_calc(tm));
->>
->> +       if (pxa_rtc->id == RTC_PXA95X) {
->> +               udelay(100);
->> +               rtc_writel_psbr(pxa_rtc, PSBR_RTC, 0x00);
->> +               udelay(100);
->> +       }
->> +
->>         return 0;
->>  }
->>
->> @@ -310,6 +342,20 @@ static const struct rtc_class_ops pxa_rtc_ops = {
->>         .proc = pxa_rtc_proc,
->>  };
->>
->> +static struct of_device_id pxa_rtc_dt_ids[] = {
->> +       { .compatible = "marvell,pxa-rtc", .data = (void *)RTC_PXA27X },
->> +       { .compatible = "marvell,pxa95x-rtc", .data = (void *)RTC_PXA95X },
->> +       {}
->> +};
->> +MODULE_DEVICE_TABLE(of, pxa_rtc_dt_ids);
->> +
->> +static const struct platform_device_id pxa_rtc_id_table[] = {
->> +       { "pxa-rtc", RTC_PXA27X },
->> +       { "pxa95x-rtc", RTC_PXA95X },
->> +       { },
->> +};
->> +MODULE_DEVICE_TABLE(platform, pxa_rtc_id_table);
->> +
->>  static int __init pxa_rtc_probe(struct platform_device *pdev)
->>  {
->>         struct device *dev = &pdev->dev;
->> @@ -324,13 +370,34 @@ static int __init pxa_rtc_probe(struct platform_device *pdev)
->>         spin_lock_init(&pxa_rtc->lock);
->>         platform_set_drvdata(pdev, pxa_rtc);
->>
->> +       if (pdev->dev.of_node) {
->> +               const struct of_device_id *of_id =
->> +                               of_match_device(pxa_rtc_dt_ids, &pdev->dev);
->> +
->> +               pxa_rtc->id = (unsigned int)(of_id->data);
->> +       } else {
->> +               const struct platform_device_id *id =
->> +                               platform_get_device_id(pdev);
->> +
->> +               pxa_rtc->id = id->driver_data;
->> +       }
->> +
->>         ret = -ENXIO;
->>         pxa_rtc->ress = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->>         if (!pxa_rtc->ress) {
->> -               dev_err(dev, "No I/O memory resource defined\n");
->> +               dev_err(dev, "No I/O memory resource(id=0) defined\n");
->>                 goto err_ress;
->>         }
->>
->> +       if (pxa_rtc->id == RTC_PXA95X) {
->> +               pxa_rtc->ress_psbr =
->> +                       platform_get_resource(pdev, IORESOURCE_MEM, 1);
->> +               if (!pxa_rtc->ress_psbr) {
->> +                       dev_err(dev, "No I/O memory resource(id=1) defined\n");
->> +                       goto err_ress;
->> +               }
->> +       }
->> +
->>         pxa_rtc->irq_1Hz = platform_get_irq(pdev, 0);
->>         if (pxa_rtc->irq_1Hz < 0) {
->>                 dev_err(dev, "No 1Hz IRQ resource defined\n");
->> @@ -347,7 +414,17 @@ static int __init pxa_rtc_probe(struct platform_device *pdev)
->>                                 resource_size(pxa_rtc->ress));
->>         if (!pxa_rtc->base) {
->>                 dev_err(&pdev->dev, "Unable to map pxa RTC I/O memory\n");
->> -               goto err_map;
->> +               goto err_map_base;
->> +       }
->> +
->> +       if (pxa_rtc->id == RTC_PXA95X) {
->> +               pxa_rtc->base_psbr = ioremap(pxa_rtc->ress_psbr->start,
->> +                                       resource_size(pxa_rtc->ress_psbr));
->> +               if (!pxa_rtc->base_psbr) {
->> +                       dev_err(&pdev->dev,
->> +                               "Unable to map pxa RTC PSBR I/O memory\n");
->> +                       goto err_map_base_psbr;
->> +               }
->>         }
->>
->>         /*
->> @@ -376,9 +453,12 @@ static int __init pxa_rtc_probe(struct platform_device *pdev)
->>         return 0;
->>
->>  err_rtc_reg:
->> +       if (pxa_rtc->id == RTC_PXA95X)
->> +               iounmap(pxa_rtc->base_psbr);
->> +err_map_base_psbr:
->>          iounmap(pxa_rtc->base);
->> +err_map_base:
->>  err_ress:
->> -err_map:
->>         kfree(pxa_rtc);
->>         return ret;
->>  }
->> @@ -398,14 +478,6 @@ static int __exit pxa_rtc_remove(struct platform_device *pdev)
->>         return 0;
->>  }
->>
->> -#ifdef CONFIG_OF
->> -static struct of_device_id pxa_rtc_dt_ids[] = {
->> -       { .compatible = "marvell,pxa-rtc" },
->> -       {}
->> -};
->> -MODULE_DEVICE_TABLE(of, pxa_rtc_dt_ids);
->> -#endif
->> -
->>  #ifdef CONFIG_PM
->>  static int pxa_rtc_suspend(struct device *dev)
->>  {
->> @@ -440,14 +512,12 @@ static struct platform_driver pxa_rtc_driver = {
->>                 .pm     = &pxa_rtc_pm_ops,
->>  #endif
->>         },
->> +       .id_table       = pxa_rtc_id_table,
->>  };
->>
->>  static int __init pxa_rtc_init(void)
->>  {
->> -       if (cpu_is_pxa27x() || cpu_is_pxa3xx())
->> -               return platform_driver_probe(&pxa_rtc_driver, pxa_rtc_probe);
->> -
->> -       return -ENODEV;
->> +       return platform_driver_probe(&pxa_rtc_driver, pxa_rtc_probe);
->>  }
->>
->>  static void __exit pxa_rtc_exit(void)
->> --
->> 1.7.4.1
->>
-I do not think so.
-First, from solicon, PBSR is not a clock. it only prorect RDCR, RYCR,
-RNCR. There are still some other registers that do not need its
-protection.
-Second, in fact, the RTC has its own clock which is similar with
-sa1100-rtc. define PBSR operation in the clock will finally make the
-driver to handle two clocks. It will make the driver harder to handle
-it, and even impact the clock device tree support for devices.
+On Tue, 2012-12-04 at 10:30 +0100, Borislav Petkov wrote:
+
+> Steve,
+> 
+> AFAIU, this will create all tracepoint code from the ras.h header
+> in this compilation unit, i.e. aerdrv_errprint.c. It has only one
+> tracepoint now but with time, as more RAS TPs are being added, it would
+> make sense to have that CREATE_TRACE_POINTS code at a more central place
+> in the kernel, right?
+
+Yes.
+
+> 
+> And, on configs with PCIEAER disabled, we won't have the TPs available
+> so the CREATE_TRACE_POINTS thing should be in a compilation unit which
+> gets included unconditionally, correct?
+
+You can have a config that enables these trace points, and when you
+enable one of the systems that uses them, have that config select the
+config that enables tracepoints. Have that config compile the file for
+tracepoints. For example, in a Makefile:
+
+obj-$(CONFIG_RAS_TRACE_POINTS) += ras-trace.o
+
+
+Use #ifdef CONFIG_FOO_BAR around tracepoints that are required for
+specific systems if the tracepoints in the header file are for different
+subsystems that can be enabled or disabled separately by configs.
+
+-- Steve
+
+
+
