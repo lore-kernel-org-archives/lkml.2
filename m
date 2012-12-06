@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424917Ab2LFVhO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 16:37:14 -0500
-Received: from smtprelay-b21.telenor.se ([195.54.99.212]:36377 "EHLO
-	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1424897Ab2LFVhL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 16:37:11 -0500
-X-SENDER-IP: [85.230.168.206]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: At9NAMMPwVBV5qjOPGdsb2JhbABEim6zQBcDAQEBATg0gh4BAQQBOhwjBQsIA0YUJQoaiB0KwmsUjEiDP2EDlgKFe4NTiW4
-X-IronPort-AV: E=Sophos;i="4.84,233,1355094000"; 
-   d="scan'208";a="462904698"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Thu, 6 Dec 2012 22:39:09 +0100
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>, Jan Kara <jack@suse.cz>,
-        linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Oops in 3.7-rc8 isolate_free_pages_block()
-Message-ID: <20121206213909.GA625@polaris.bitmath.org>
-References: <20121206091744.GA1397@polaris.bitmath.org>
- <20121206144821.GC18547@quack.suse.cz>
- <20121206161934.GA17258@suse.de>
- <CA+55aFw9WQN-MYFKzoGXF9Z70h1XsMu5X4hLy0GPJopBVuE=Yg@mail.gmail.com>
- <20121206175451.GC17258@suse.de>
- <CA+55aFwDZHXf2FkWugCy4DF+mPTjxvjZH87ydhE5cuFFcJ-dJg@mail.gmail.com>
- <20121206183259.GA591@polaris.bitmath.org>
- <CA+55aFzievpA_b5p-bXwW11a89eC-ucpzKUuSqb2PNQOLrqaPg@mail.gmail.com>
- <20121206192845.GA599@polaris.bitmath.org>
- <CA+55aFy4Lv+_aPEakOJNR2F9PR=09jviT6Z70_NkWV5bSH5ABw@mail.gmail.com>
+	id S932346Ab2LFVhi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 16:37:38 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:37221 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753179Ab2LFVhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 16:37:35 -0500
+Date: Thu, 6 Dec 2012 16:37:27 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Jeremy Allison <jra@samba.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Pavel Shilovsky <piastry@etersoft.ru>,
+        linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, wine-devel@winehq.org,
+        linux-nfs@vger.kernel.org
+Subject: Re: [PATCH 0/3] Add O_DENY* flags to fcntl and cifs
+Message-ID: <20121206213727.GC4821@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Jeremy Allison <jra@samba.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+	Pavel Shilovsky <piastry@etersoft.ru>, linux-cifs@vger.kernel.org,
+	linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+	wine-devel@winehq.org, linux-nfs@vger.kernel.org
+References: <1354818391-7968-1-git-send-email-piastry@etersoft.ru>
+ <20121206194949.7ab20d56@pyramind.ukuu.org.uk>
+ <20121206195752.GA18585@samba2>
+ <20121206213133.GB4821@thunk.org>
+ <20121206213329.GB24076@samba2>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFy4Lv+_aPEakOJNR2F9PR=09jviT6Z70_NkWV5bSH5ABw@mail.gmail.com>
+In-Reply-To: <20121206213329.GB24076@samba2>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> There is also a
+On Thu, Dec 06, 2012 at 01:33:29PM -0800, Jeremy Allison wrote:
+> > I'm confused; why would a userspace application need to be able to
+> > request this behavior?
 > 
->     low_pfn += pageblock_nr_pages;
->     low_pfn = ALIGN(low_pfn, pageblock_nr_pages) - 1;
-> 
-> that looks suspicious for similar reasons. Maybe
-> 
->     low_pfn = ALIGN(low_pfn + 1, pageblock_nr_pages) - 1;
-> 
-> instead? Although that *can* result in the same low_pfn in the end, so
-> maybe that one was correct after all? I just did some grepping, no
-> actual semantic analysis...
+> This isn't my proposal Ted, I'm just commenting on it :-).
 
-Here is a totally obscure version:
+Ah, sorry, I thought was coming from the Samba team.  :-)
 
-	low_pfn |= pageblock_nr_pages - 1;
+Hmm... I see wine-devel is cc'ed; is this coming from the Wine team,
+wanting to do SMB paravirtualization?  It would be useful if the
+commit description described how these flags are intended to be used....
 
-It simply moves to the very end of the block, which seems to be what
-was intended.
-
-Henrik
+       		   	     	       	     - Ted
