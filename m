@@ -1,89 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423399Ab2LFMmK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 07:42:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48479 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423362Ab2LFMmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 07:42:08 -0500
-Date: Thu, 6 Dec 2012 13:42:01 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Herton Krzesinski <herton.krzesinski@canonical.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: freezer: exec should clear PF_NOFREEZE along with PF_KTHREAD
-Message-ID: <20121206124201.GA30705@redhat.com>
-References: <50BF9CC2.7070705@canonical.com> <1354762294.17107.157.camel@deadeye.wl.decadent.org.uk>
+	id S1754992Ab2LFMpT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 07:45:19 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:62884 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751419Ab2LFMpR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 07:45:17 -0500
+Date: Thu, 6 Dec 2012 13:45:06 +0100
+From: Heinz Diehl <htd@fancy-poultry.org>
+To: Daniel Vetter <daniel@ffwll.ch>, Dave Airlie <airlied@gmail.com>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: i915 freakout with latest 3.7 git
+Message-ID: <20121206124506.GA4364@fancy-poultry.org>
+References: <20121203173951.GA25384@fancy-poultry.org>
+ <CAHdPZaP6HvM=UqkAjyC8MFMv9ZFTyxjx-CsMQ+8QZaxPCaW1Hw@mail.gmail.com>
+ <20121204083655.GA21235@fancy-poultry.org>
+ <CAPM=9twQZUWBf9FZdAwz5NuaTvfgJSA=bjgHq9rpTMMU3ABRVw@mail.gmail.com>
+ <CAKMK7uEGTWgPO-wf7aNLC+y9zLYPyy6f_djn6D-Gx-n6bFqcJA@mail.gmail.com>
+ <20121204123522.GA32419@fritha.org>
+ <20121204125823.GC11556@phenom.ffwll.local>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1354762294.17107.157.camel@deadeye.wl.decadent.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20121204125823.GC11556@phenom.ffwll.local>
+Organization: private site
+OpenPGP: id=BBAD7AE7; url=http://www.fritha.org/htd.asc
+User-Agent: Mutt/1.5.21+67 (d414971f0c48) (2011-07-01)
+X-Provags-ID: V02:K0:oRx6dxkfnx29MM7doOuFOFTUTRq6h3mev9XQtRfmO56
+ U67hzV8XTOFEnVMMdp3aIlKIIH85bwU6/vuve17ewxKg9IimQy
+ hSoJPTbfFomV/dXMIIOtRAuCdcoAlKN1oVrWFj2wyZCTVsoOn/
+ Las8Ah118PCgCK7r0XVWcNt27RGGjLeEaCFM+r6awsIN/3gWj7
+ 0Sp1Ma9cLAmWdU9CWDZhWhqF4mZvlA15LOPdiRLfWS0uqdlERY
+ tMe9cax/ZDNQu1+s+nnHANhEtglWsYKuiXzVJXE34PN6O6n7A9
+ WiNzVNZQtqjB+8AM1Z6wpUQX893mpA9mCnJElI/mbK4UsimD4H
+ 0q21PpuETyOUUiJmd1TksLATmQ560LVTBuOQxSEL8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 04.12.2012, Daniel Vetter wrote: 
 
-(add lkml)
+> Yeah, if anyone can somewhat reliably reproduce this
 
-On 12/06, Ben Hutchings wrote:
->
-> On Wed, 2012-12-05 at 14:13 -0500, Joseph Salisbury wrote:
->
-> > Hi Oleg,
-> >
-> > A bug was opened against the Ubuntu kernel[0].  It was found that
-> > reverting commit b40a79591ca918e7b91b0d9b6abd5d00f2e88c19 resolved this
-> > bug, and allowed suspend/resume to work properly.
-> >
-> > I see that you are the author of this patch, so I wanted to run it by
-> > you.  I was thinking of requesting a revert for 3.2 stable, but I wanted
-> > to get your feedback first.
-> >
-> > Thanks,
-> >
-> > Joe
-> >
-> >
-> > [0] https://bugs.launchpad.net/ubuntu/+source/v86d/+bug/1080530
->
-> If I understand this rightly:
-> 1. Suspend is aborted because the v86d usermodehelper cannot be frozen.
-> 2. Before this fix, usermodehelpers could inherit PF_NOFREEZE (what
-> could possibly go wrong with that?!), which is why this didn't
-> previously happen.
+While writing a big file with dd and watching high resolution videos
+on youtube, I've managed to reproduce the hang. Unfortunately, it
+doesn't occur within seconds. Some playing around is neccessary, and
+it takes between 30 sec. and 20 min.
 
-Yes, try_to_freeze_tasks() ignores PF_NOFREEZE tasks
+> > Btw: which kernel is known to be the "last good one"?
 
-> 3. However, usermodehelpers are supposed to be disabled while the
-> freezer is running.  Why is this one still running?
+> If it's the ilk one we only know that 3.6.x series seems to be solid, and
+> something in 3.7-rc (probably before -rc1) broke stuff. So not too useful.
 
-__usermodehelper_disable() doesn't try to kill/stop/whatever the already
-spawned tasks...
+I tried 3.6.9 several times over a few hours and could not trigger the
+hang, which clearly adds evidence to this statement. I don't want to
+scream out too loud, but 3.6.9 seems not to be affected. Will try
+some more hours to get a 3.6.9 box to hang, though.. Just in case..
 
-The question is, why v86d refuses to freeze? It sleeps in TASK_INTERRUPTIBLE.
-
-
-Oh... I seem to understand. This is 3.2 kernel, it also has PF_FREEZER_NOSIG.
-which should be cleared along with PF_NOFREEZE.
-
-This flag was removed upstream, but the older kernel need the fix. Could
-you test the patch below?
-
-Oleg.
-
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1084,7 +1084,7 @@ int flush_old_exec(struct linux_binprm *
- 
- 	set_fs(USER_DS);
- 	current->flags &=
--		~(PF_RANDOMIZE | PF_FORKNOEXEC | PF_KTHREAD | PF_NOFREEZE);
-+		~(PF_RANDOMIZE | PF_FORKNOEXEC | PF_KTHREAD | PF_NOFREEZE | PF_FREEZER_NOSIG);
- 	flush_thread();
- 	current->personality &= ~bprm->per_clear;
- 
-
+Heinz
