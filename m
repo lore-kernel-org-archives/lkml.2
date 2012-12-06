@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462Ab2LFVJp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 16:09:45 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:22827 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857Ab2LFVJo (ORCPT
+	id S1755539Ab2LFVLJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 16:11:09 -0500
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:21234
+	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753057Ab2LFVLH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 16:09:44 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6918"; a="12203148"
-Message-ID: <50C10997.8090801@codeaurora.org>
-Date: Thu, 06 Dec 2012 13:09:43 -0800
-From: Laura Abbott <lauraa@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Laura Abbott <lauraa@codeaurora.org>
-CC: Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v2] mm: Use aligned zone start for pfn_to_bitidx calculation
-References: <1354824324-21993-1-git-send-email-lauraa@codeaurora.org>
-In-Reply-To: <1354824324-21993-1-git-send-email-lauraa@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 6 Dec 2012 16:11:07 -0500
+X-IronPort-AV: E=Sophos;i="4.84,232,1355094000"; 
+   d="scan'208";a="165029376"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Lauro Ramos Venancio <lauro.venancio@openbossa.org>
+Cc: kernel-janitors@vger.kernel.org,
+        Aloisio Almeida Jr <aloisio.almeida@openbossa.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-wireless@vger.kernel.org,
+        linux-nfc@lists.01.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/nfc/nfcwilink.c: use devm_kzalloc
+Date: Thu,  6 Dec 2012 23:10:40 +0100
+Message-Id: <1354831840-21623-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/6/2012 12:05 PM, Laura Abbott wrote:
-> The current calculation in pfn_to_bitidx assumes that
-> (pfn - zone->zone_start_pfn) >> pageblock_order will return the
-> same bit for all pfn in a pageblock. If zone_start_pfn is not
-> aligned to pageblock_nr_pages, this may not always be correct.
->
-> Consider the following with pageblock order = 10, zone start 2MB:
->
-> pfn     | pfn - zone start | (pfn - zone start) >> page block order
-> ----------------------------------------------------------------
-> 0x26000 | 0x25e00	   |  0x97
-> 0x26100 | 0x25f00	   |  0x97
-> 0x26200 | 0x26000	   |  0x98
-> 0x26300 | 0x26100	   |  0x98
->
-> This means that calling {get,set}_pageblock_migratetype on a single
-> page will not set the migratetype for the full block. Fix this by
-> rounding down zone_start_pfn when doing the bitidx calculation.
->
-> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
-> ---
->   mm/page_alloc.c |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 92dd060..2e06abd 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -5422,7 +5422,7 @@ static inline int pfn_to_bitidx(struct zone *zone, unsigned long pfn)
->   	pfn &= (PAGES_PER_SECTION-1);
->   	return (pfn >> pageblock_order) * NR_PAGEBLOCK_BITS;
->   #else
-> -	pfn = pfn - zone->zone_start_pfn;
-> +	pfn = pfn - round_down(zone->start_pfn, pageblock_nr_pages);
->   	return (pfn >> pageblock_order) * NR_PAGEBLOCK_BITS;
->   #endif /* CONFIG_SPARSEMEM */
->   }
->
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Sorry for the spam, please ignore this one. This has a typo. Third times 
-the charm.
+devm_kzalloc allocates memory that is released when a driver detaches.
+This patch uses devm_kzalloc for data that is allocated in the probe
+function of a platform device and is only freed in the remove function.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
+---
+ drivers/nfc/nfcwilink.c |    9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/nfc/nfcwilink.c b/drivers/nfc/nfcwilink.c
+index 50b1ee4..c7c182d 100644
+--- a/drivers/nfc/nfcwilink.c
++++ b/drivers/nfc/nfcwilink.c
+@@ -526,7 +526,7 @@ static int nfcwilink_probe(struct platform_device *pdev)
+ 
+ 	nfc_dev_dbg(&pdev->dev, "probe entry");
+ 
+-	drv = kzalloc(sizeof(struct nfcwilink), GFP_KERNEL);
++	drv = devm_kzalloc(&pdev->dev, sizeof(struct nfcwilink), GFP_KERNEL);
+ 	if (!drv) {
+ 		rc = -ENOMEM;
+ 		goto exit;
+@@ -547,7 +547,7 @@ static int nfcwilink_probe(struct platform_device *pdev)
+ 	if (!drv->ndev) {
+ 		nfc_dev_err(&pdev->dev, "nci_allocate_device failed");
+ 		rc = -ENOMEM;
+-		goto free_exit;
++		goto exit;
+ 	}
+ 
+ 	nci_set_parent_dev(drv->ndev, &pdev->dev);
+@@ -566,9 +566,6 @@ static int nfcwilink_probe(struct platform_device *pdev)
+ free_dev_exit:
+ 	nci_free_device(drv->ndev);
+ 
+-free_exit:
+-	kfree(drv);
+-
+ exit:
+ 	return rc;
+ }
+@@ -588,8 +585,6 @@ static int nfcwilink_remove(struct platform_device *pdev)
+ 	nci_unregister_device(ndev);
+ 	nci_free_device(ndev);
+ 
+-	kfree(drv);
+-
+ 	dev_set_drvdata(&pdev->dev, NULL);
+ 
+ 	return 0;
+
