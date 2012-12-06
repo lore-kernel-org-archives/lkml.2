@@ -1,151 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184Ab2LFAPh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 19:15:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35766 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751522Ab2LFAPf (ORCPT
+	id S1753336Ab2LFAQB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 19:16:01 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34578 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753211Ab2LFAP6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 19:15:35 -0500
-Message-ID: <1354752930.2795.37.camel@fourier>
-Subject: Re: [PATCH v4 2/4] input: Cypress PS/2 Trackpad psmouse driver
-From: Kamal Mostafa <kamal@canonical.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Dudley Du <dudl@cypress.com>, David Solda <dso@cypress.com>,
-        Troy Abercrombia <ta@cypress.com>,
-        Kyle Fazzari <git@status.e4ward.com>,
-        Mario Limonciello <mario_limonciello@dell.com>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Herton Krzesinski <herton.krzesinski@canonical.com>
-Date: Wed, 05 Dec 2012 16:15:30 -0800
-In-Reply-To: <20121205200711.GA1025@polaris.bitmath.org>
-References: <1354674245-25768-1-git-send-email-kamal@canonical.com>
-	 <1354674245-25768-3-git-send-email-kamal@canonical.com>
-	 <20121205200711.GA1025@polaris.bitmath.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 5 Dec 2012 19:15:58 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121203200241.GG5906@thinkpad-t410>
+References: <1345739803-21017-1-git-send-email-mjg@redhat.com>
+	<CAErSpo6dn_0b8Ngx9VT=ARs_UXQftEx=2Kczeqemtmo0XyKzuQ@mail.gmail.com>
+	<20121203200241.GG5906@thinkpad-t410>
+Date: Wed, 5 Dec 2012 16:15:56 -0800
+X-Google-Sender-Auth: qvhByyPXFBD5iHkrlkx0l-f85P8
+Message-ID: <CAE9FiQVdpmmExrPrLf7HYVuo0cTY9Xjn6bWzObbuSSeQ-e1PbA@mail.gmail.com>
+Subject: Re: Use PCI ROMs from EFI boot services
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-efi@vger.kernel.org, mfleming@intel.com, dwmw2@infradead.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Henrik-
+On Mon, Dec 3, 2012 at 12:02 PM, Seth Forshee
+<seth.forshee@canonical.com> wrote:
+> On Thu, Oct 25, 2012 at 11:35:57AM -0600, Bjorn Helgaas wrote:
+>> On Thu, Aug 23, 2012 at 10:36 AM, Matthew Garrett <mjg@redhat.com> wrote:
+>> > V3 just fixes all the casting issues and incorporates David's change in
+>> > search ordering.
+>>
+>> I think there's still a section mismatch issue with these patches, so
+>> I haven't merged them yet.
+>>
+>> I rebased my pci/mjg-pci-roms-from-efi branch to v3.7-rc2, and if we
+>> get this issue fixed I'll put it in -next as v3.8 material.
+>
+> I still don't see this series in -next, so I take it the section
+> mismatch was never fixed? How about the following?
+>
+>
+>
+> From ece31852159a6b2cf9a059031638354e9817a6a6 Mon Sep 17 00:00:00 2001
+> From: Seth Forshee <seth.forshee@canonical.com>
+> Date: Mon, 3 Dec 2012 13:55:50 -0600
+> Subject: [PATCH] x86: Don't discard boot_params
+>
+> boot_params is now used at runtime on EFI systems to stash option ROMs
+> that aren't available after exiting boot services, so it can no longer
+> be marked __initdata.
+>
+> Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+> ---
+>  arch/x86/kernel/setup.c |    4 ----
+>  1 file changed, 4 deletions(-)
+>
+> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> index 468e98d..6e13035 100644
+> --- a/arch/x86/kernel/setup.c
+> +++ b/arch/x86/kernel/setup.c
+> @@ -143,11 +143,7 @@ int default_check_phys_apicid_present(int phys_apicid)
+>  }
+>  #endif
+>
+> -#ifndef CONFIG_DEBUG_BOOT_PARAMS
+> -struct boot_params __initdata boot_params;
+> -#else
+>  struct boot_params boot_params;
+> -#endif
+>
+>  /*
+>   * Machine setup..
 
-Thanks yet again, for your review.  I very much appreciate your time and
-efforts to get the driver closer to acceptance.  Dmitry and Dudley, my
-thanks to you as well.
+No, that is not a right fix
 
-Henrik, the forthcoming PATCH v5 includes all of your change requests
-from this round.  See below for additional notes on those changes.
+We should only cache pointer to setup_data.
 
-
-On Wed, 2012-12-05 at 21:07 +0100, Henrik Rydberg wrote:
-
-> > +#undef CYTP_RELATIVE_SUPPORT  /* define to enable unused EV_REL code */
-> 
-> Code inside a local ifdef which is off by default is very rare in the
-> kernel, and will likely bitrot. If you want to preserve the
-> information, why not add it to the documentation, and remove the code
-> here?
-
-For PATCH v5, I have removed all that #ifdef'd relative-mode code.
-
-
-> > +		/*
-> > +		 * send extension command 0xE8 or 0xF3,
-> > +		 * if send extension command failed,
-> > +		 * try to send recovery command to make
-> > +		 * trackpad device return to ready wait command state.
-> > +		 * It alwasy success based on this recovery commands.
-> > +		 */
-> 
-> This still reads the same, please change the wording of the last sentence.
-
-
-The comment has been changed to:
-
-                /*
-                 * Send extension command byte (0xE8 or 0xF3).
-                 * If sending the command fails, send recovery command
-                 * to make the device return to the ready state.
-                 */
-
-
-> > +	if (cmd == CYTP_CMD_READ_VITAL_STATISTICS)
-> > +		psmouse->pktsize = 8;
-> 
-> This still reads statistics, which is a misnomer.
-
-
-All the "vital_stat{ist}ics" references have been changed to
-"tp_metrics".
-
-
-> > +		if (cytp->tp_res_x && cytp->tp_res_y) {
-> > +			input_abs_set_res(input, ABS_X, cytp->tp_res_x);
-> > +			input_abs_set_res(input, ABS_Y, cytp->tp_res_y);
-> > +
-> > +			input_abs_set_res(input, ABS_MT_POSITION_X,
-> > +					  cytp->tp_res_x);
-> > +			input_abs_set_res(input, ABS_MT_POSITION_Y,
-> > +					  cytp->tp_res_y);
-> > +
-> > +		}
-> 
-> If the above block is not executed, the device will not function
-> properly. Please return error or check preconditions again.
+at the same time we should export setup_data into /sys, so kexec could
+append this pointer to command of
+second kernel, just like kexec append acpi_rsdp.
+That should address DavidW's concern.
 
 
-I have fixed this check (it now checks at the top of the routine, and
-returns an error if x or y are insane).
-
-
-> > +		/* Remove HSCROLL bit */
-> > +		if (report_data->contact_cnt == 4)
-> > +			header_byte &= ~(ABS_HSCROLL_BIT);
-> 
-> Why should this not be removed when contact_cnt is 5 ?
-
-
-You're right: That bit should be removed if (contact_cnt & 0x4) ...
-
-But you later pointed out that the vscroll/hscroll code isn't actually
-used.  So having dropped that code, this clause can actually just be
-dropped as well, which I've done.
-
-
-> > +
-> > +	if (report_data->contact_cnt <= 0)
-> > +		return 0;
-> 
-> How can this happen?
-
-
-It can be == 0 in the palm detection case (never <0).  I fixed and moved
-that check up higher in the routine and commented it.
-
-
-> > +#define CYTP_MAX_CONTACTS 2
-> > +#define CYTP_MAX_MT_SLOTS 2
-> 
-> Code seems to depend on both being the same, please skip one.
-
-
-CYTP_MAX_CONTACTS has been dropped.
-
-
-> > +	signed char vscroll;
-> > +	signed char hscroll;
-> 
-> The above two are only used for debug output.
-
-
-They've been dropped.
-
-
- -Kamal
-
-
+Yinghai
