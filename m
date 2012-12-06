@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754947Ab2LFKrg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 05:47:36 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:58313 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754926Ab2LFKrf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 05:47:35 -0500
-Date: Thu, 6 Dec 2012 10:47:10 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        "swarren@nvidia.com" <swarren@nvidia.com>,
-        "nico@linaro.org" <nico@linaro.org>,
-        Armando Visconti <armando.visconti@st.com>,
-        spear-devel <spear-devel@list.st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hsweeten@visionengravers.com" <hsweeten@visionengravers.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] nommu: Enable the strict alignment (CR_A) bit only if
- ARCH < v6
-Message-ID: <20121206104710.GB749@mudshark.cambridge.arm.com>
-References: <1354187042-28568-1-git-send-email-armando.visconti@st.com>
- <50BCD6DB.2030200@st.com>
- <20121203172553.GC14363@n2100.arm.linux.org.uk>
- <20121203174617.GL20074@mudshark.cambridge.arm.com>
- <20121205195134.GD3384@pengutronix.de>
+	id S965075Ab2LFKuc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 05:50:32 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52547 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965008Ab2LFKub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 05:50:31 -0500
+Message-ID: <50C07871.5060404@suse.cz>
+Date: Thu, 06 Dec 2012 11:50:25 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20121205195134.GD3384@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Yacine Belkadi <yacine.belkadi.1@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Daniel Santos <daniel.santos@pobox.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>
+Subject: Re: [PATCHv2 2/2] scripts/kernel-doc: check that non-void fcts describe
+ their return value
+References: <1353964883-3121-1-git-send-email-yacine.belkadi.1@gmail.com> <1353964947-3152-1-git-send-email-yacine.belkadi.1@gmail.com> <50B41AC7.8030904@infradead.org>
+In-Reply-To: <50B41AC7.8030904@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 05, 2012 at 07:51:34PM +0000, Uwe Kleine-König wrote:
-> Hello,
+On 27.11.2012 02:43, Randy Dunlap wrote:
+> On 11/26/2012 01:22 PM, Yacine Belkadi wrote:
+> 
+>> If a function has a return value, but its kernel-doc comment doesn't contain a
+>> "Return" section, then emit the following warning:
+>>
+>>    Warning(file.h:129): No description found for return value of 'fct'
+>>
+>> Note: This check emits a lot of warnings at the moment, because many functions
+>> don't have a 'Return' doc section. So until the number of warnings goes
+>> sufficiently down, the check is only performed in verbose mode.
+>>
+>> Signed-off-by: Yacine Belkadi <yacine.belkadi.1@gmail.com>
+> 
+> 
+> Both patches:
+> Acked-by: Randy Dunlap <rdunlap@infradead.org>
+> 
+> Michal, please merge patches 1 and 2.
 
-Hi Uwe,
+Done.
 
-> On Mon, Dec 03, 2012 at 05:46:17PM +0000, Will Deacon wrote:
-> > I think Uwe also requires some of the stuff there for his M3 port.
-> I didn't check more context than available in the patch and I also
-> didn't double-check the M3-docs, but AFAIK the M3 doesn't have a cp15
-> and I noopt this code out.
-
-I was thinking more about the word-at-a-time stuff, which relies on
-efficient unaligned access for the dcache accesses.
-
-Will
+Michal
