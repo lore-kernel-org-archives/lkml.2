@@ -1,111 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946893Ab2LFTJk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 14:09:40 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43799 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1424565Ab2LFTJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 14:09:38 -0500
-Date: Thu, 6 Dec 2012 19:01:14 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Henrik Rydberg <rydberg@euromail.se>, Jan Kara <jack@suse.cz>,
-        linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Oops in 3.7-rc8 isolate_free_pages_block()
-Message-ID: <20121206190114.GE17258@suse.de>
-References: <20121206091744.GA1397@polaris.bitmath.org>
- <20121206144821.GC18547@quack.suse.cz>
- <20121206161934.GA17258@suse.de>
- <CA+55aFw9WQN-MYFKzoGXF9Z70h1XsMu5X4hLy0GPJopBVuE=Yg@mail.gmail.com>
- <20121206175451.GC17258@suse.de>
- <CA+55aFwDZHXf2FkWugCy4DF+mPTjxvjZH87ydhE5cuFFcJ-dJg@mail.gmail.com>
- <20121206183259.GA591@polaris.bitmath.org>
- <CA+55aFzievpA_b5p-bXwW11a89eC-ucpzKUuSqb2PNQOLrqaPg@mail.gmail.com>
+	id S1946916Ab2LFTTG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 14:19:06 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:47806 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946899Ab2LFTTD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 14:19:03 -0500
+Message-ID: <50C0EF49.8050700@linux.vnet.ibm.com>
+Date: Fri, 07 Dec 2012 00:47:29 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzievpA_b5p-bXwW11a89eC-ucpzKUuSqb2PNQOLrqaPg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Oleg Nesterov <oleg@redhat.com>
+CC: tj@kernel.org, tglx@linutronix.de, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, namhyung@kernel.org,
+        vincent.guittot@linaro.org, sbw@mit.edu, amit.kucheria@linaro.org,
+        rostedt@goodmis.org, rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v2 01/10] CPU hotplug: Provide APIs for "light"	atomic
+ readers to prevent CPU offline
+References: <20121205184041.3750.64945.stgit@srivatsabhat.in.ibm.com> <20121205184258.3750.31879.stgit@srivatsabhat.in.ibm.com> <50BF96DF.3000500@linux.vnet.ibm.com> <50BF979A.50304@linux.vnet.ibm.com> <50BF982D.7090704@linux.vnet.ibm.com> <50BF98F7.3030600@linux.vnet.ibm.com> <50BF999C.6030707@linux.vnet.ibm.com> <50BFAB17.3090603@linux.vnet.ibm.com> <20121206161850.GA6710@redhat.com> <50C0E88E.9050909@linux.vnet.ibm.com>
+In-Reply-To: <50C0E88E.9050909@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12120619-6102-0000-0000-000002AD59DE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 06, 2012 at 10:41:14AM -0800, Linus Torvalds wrote:
-> On Thu, Dec 6, 2012 at 10:32 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
-> >>
-> >> Henrik, does that - corrected - patch (*instead* of the previous one,
-> >> not in addition to) also fix your issue?
-> >
-> > Yes - I can no longer trigger the failpath, so it seems to work. Mel,
-> > enjoy the rest of the talk. ;-)
-> >
-> > Generally, I am a bit surprised that noone hit this before, given that
-> > it was quite easy to trigger. I will check 3.6 as well.
+On 12/07/2012 12:18 AM, Srivatsa S. Bhat wrote:
+> On 12/06/2012 09:48 PM, Oleg Nesterov wrote:
+>> On 12/06, Srivatsa S. Bhat wrote:
+>>>
+>>> +void get_online_cpus_atomic(void)
+>>> +{
+>>> +	int c, old;
+>>> +
+>>> +	preempt_disable();
+>>> +	read_lock(&hotplug_rwlock);
+>>
+>> Confused... Why it also takes hotplug_rwlock?
 > 
-> Actually, looking at it some more, I think that two-liner patch had
-> *ANOTHER* bug.
+> To avoid ABBA deadlocks.
 > 
-> Because the other line seems buggy as well.
+> hotplug_rwlock was meant for the "light" readers.
+> The atomic counters were meant for the "heavy/full" readers.
+> I wanted them to be able to nest in any manner they wanted,
+> such as:
 > 
-> Instead of
+> Full inside light:
 > 
->         end_pfn = ALIGN(pfn + pageblock_nr_pages, pageblock_nr_pages);
+> get_online_cpus_atomic_light()
+> 	...
+> 	get_online_cpus_atomic_full()
+> 	...
+> 	put_online_cpus_atomic_full()
+> 	...
+> put_online_cpus_atomic_light()
 > 
-> I think it should be
+> Or, light inside full:
 > 
->         end_pfn = ALIGN(pfn+1, pageblock_nr_pages);
+> get_online_cpus_atomic_full()
+> 	...
+> 	get_online_cpus_atomic_light()
+> 	...
+> 	put_online_cpus_atomic_light()
+> 	...
+> put_online_cpus_atomic_full()
 > 
-> instead. ALIGN() already aligns upwards (but the "+1" is needed in
-> case pfn is already at a pageblock_nr_pages boundary, at which point
-> ALIGN() would have just returned that same boundary.
+> To allow this, I made the two sets of APIs take the locks
+> in the same order internally.
 > 
-> Hmm? Mel, please confirm.
+> (I had some more description of this logic in the changelog
+> of 2/10; the only difference there is that instead of atomic
+> counters, I used rwlocks for the full-readers as well.
+> https://lkml.org/lkml/2012/12/5/320)
+> 
 
-FFS. Yes, confirmed.
+One of the reasons why I changed everybody to global rwlocks
+instead of per-cpu atomic counters was to avoid lock ordering
+related deadlocks associated with per-cpu locking.
 
-In answer to Henrik's wondering why others have reported this -- reproducing
-this requires a large enough hole with the right aligment to have compaction
-walk into a PFN range with no memmap. Size and alignment depends in the
-memory model - 4M for FLATMEM and 128M for SPARSEMEM on x86. It needs a
-"lucky" machine.
+Eg:
 
----8<---
-mm: compaction: check pfn_valid when entering a new MAX_ORDER_NR_PAGES block during isolation for free
+CPU 0                         CPU 1
+------                        ------
 
-Commit 0bf380bc (mm: compaction: check pfn_valid when entering a new
-MAX_ORDER_NR_PAGES block during isolation for migration) added a check
-for pfn_valid() when isolating pages for migration as the scanner does not
-necessarily start pageblock-aligned. Since commit c89511ab (mm: compaction:
-Restart compaction from near where it left off), the free scanner has
-the same problem. This patch makes sure that the pfn range passed to
-isolate_freepages_block() is within the same block so that pfn_valid()
-checks are unnecessary.
+1. Acquire lock A             Increment CPU1's
+                              atomic counter
 
-Reported-by: Henrik Rydberg <rydberg@euromail.se>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/compaction.c |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)
 
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 9eef558..694eaab 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -713,7 +713,15 @@ static void isolate_freepages(struct zone *zone,
- 
- 		/* Found a block suitable for isolating free pages from */
- 		isolated = 0;
--		end_pfn = min(pfn + pageblock_nr_pages, zone_end_pfn);
-+
-+		/*
-+		 * As pfn may not start aligned, pfn+pageblock_nr_page
-+		 * may cross a MAX_ORDER_NR_PAGES boundary and miss
-+		 * a pfn_valid check. Ensure isolate_freepages_block()
-+		 * only scans within a pageblock
-+		 */
-+		end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
-+		end_pfn = min(end_pfn, zone_end_pfn);
- 		isolated = isolate_freepages_block(cc, pfn, end_pfn,
- 						   freelist, false);
- 		nr_freepages += isolated;
+
+2. Increment CPU0's            Try to acquire lock A
+   atomic counter
+
+
+Now consider what happens if a hotplug writer (cpu_down) begins,
+and starts looking at CPU0, to try to decrement its atomic counter,
+in between steps 1 and 2.
+
+The hotplug writer will be successful in CPU0 because CPU0 hasn't
+yet incremented its counter. So, now CPU0 spins waiting for the
+hotplug writer to reset the atomic counter again.
+
+When the hotplug writer looks at CPU1, it can't decrement the
+atomic counter because CPU1 has already incremented it. So the
+hotplug writer waits. CPU1 goes ahead, only to start spinning on
+lock A which was acquired by CPU0. So we end up in a deadlock due
+to circular locking dependency between the 3 entities.
+
+One way to deal with this would be that the writer should abort
+its loop of trying to atomic_dec per-cpu counters, whenever it has
+to wait. But that might prove to be too wasteful (and overly
+paranoid) in practice.
+
+So, instead, if we have global locks (like global rwlocks that I
+finally used when posting out this v2), then we won't end up in
+such messy issues.
+
+And why exactly was I concerned about all this?
+Because, the current code uses the extremely flexible preempt_disable()
+/preempt_enable() pair which impose absolutely no ordering
+restrictions. And probably the existing code _depends_ on that.
+So if our new APIs that replace preempt_disable/enable start
+imposing ordering restrictions, I feared that they might become
+unusable. Hence I used global rwlocks, thereby trading cache-line
+bouncing (due to global rwlocks) for lock-safety and flexibility.
+
+Regards,
+Srivatsa S. Bhat
+
