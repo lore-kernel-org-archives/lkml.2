@@ -1,94 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485Ab2LFCa1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 21:30:27 -0500
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:49519 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754275Ab2LFCaZ (ORCPT
+	id S1754515Ab2LFCgW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 21:36:22 -0500
+Received: from mail-ia0-f174.google.com ([209.85.210.174]:33801 "EHLO
+	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753838Ab2LFCgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 21:30:25 -0500
-Message-ID: <50C00336.8010307@linux.vnet.ibm.com>
-Date: Thu, 06 Dec 2012 10:30:14 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	Wed, 5 Dec 2012 21:36:21 -0500
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH] KVM: MMU: optimize for set_spte
-References: <50BD32F7.5080601@linux.vnet.ibm.com> <20121205210919.GA20260@amt.cnet>
-In-Reply-To: <20121205210919.GA20260@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12120602-1396-0000-0000-0000024216E3
+In-Reply-To: <20121205224203.691153E0E22@localhost>
+References: <2dcd7cb4c4022fa24b5328974e4226f5aaf89419.1354199865.git.viresh.kumar@linaro.org>
+	<121653def4e985b0c1b59045637dd4518f97e73a.1354199865.git.viresh.kumar@linaro.org>
+	<20121130105731.GN3176@sortiz-mobl>
+	<20121130154542.GG23648@gmail.com>
+	<CAKohpokLVEH+4F_VXh5auUm48cWWe0mumZME8yOCcAezcwJbCQ@mail.gmail.com>
+	<20121205224203.691153E0E22@localhost>
+Date: Thu, 6 Dec 2012 08:06:20 +0530
+Message-ID: <CAKohponBkA+bg7B4TKaU6WbcVBNDHPe4AWqAEE6JGD7zctoULw@mail.gmail.com>
+Subject: Re: [PATCH V5 2/2] mfd: stmpe: Update DT support in stmpe driver
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        rabin.vincent@stericsson.com, shiraz.hashim@st.com,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, linus.walleij@linaro.org,
+        Vipul Kumar Samar <vipulkumar.samar@st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2012 05:09 AM, Marcelo Tosatti wrote:
-> On Tue, Dec 04, 2012 at 07:17:11AM +0800, Xiao Guangrong wrote:
->> There are two cases we need to adjust page size in set_spte:
->> 1): the one is other vcpu creates new sp in the window between mapping_level()
->>     and acquiring mmu-lock.
->> 2): the another case is the new sp is created by itself (page-fault path) when
->>     guest uses the target gfn as its page table.
->>
->> In current code, set_spte drop the spte and emulate the access for these case,
->> it works not good:
->> - for the case 1, it may destroy the mapping established by other vcpu, and
->>   do expensive instruction emulation.
->> - for the case 2, it may emulate the access even if the guest is accessing
->>   the page which not used as page table. There is a example, 0~2M is used as
->>   huge page in guest, in this huge page, only page 3 used as page table, then
->>   guest read/writes on other pages can cause instruction emulation.
->>
->> Both of these cases can be fixed by allowing guest to retry the access, it
->> will refault, then we can establish the mapping by using small page
->>
->> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
->> ---
->>  arch/x86/kvm/mmu.c |   16 ++++++++++++----
->>  1 files changed, 12 insertions(+), 4 deletions(-)
->>
->> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
->> index b875a9e..01d7c2a 100644
->> --- a/arch/x86/kvm/mmu.c
->> +++ b/arch/x86/kvm/mmu.c
->> @@ -2382,12 +2382,20 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
->>  	    || (!vcpu->arch.mmu.direct_map && write_fault
->>  		&& !is_write_protection(vcpu) && !user_fault)) {
->>
->> +		/*
->> +		 * There are two cases:
->> +		 * - the one is other vcpu creates new sp in the window
->> +		 *   between mapping_level() and acquiring mmu-lock.
->> +		 * - the another case is the new sp is created by itself
->> +		 *   (page-fault path) when guest uses the target gfn as
->> +		 *   its page table.
->> +		 * Both of these cases can be fixed by allowing guest to
->> +		 * retry the access, it will refault, then we can establish
->> +		 * the mapping by using small page.
->> +		 */
->>  		if (level > PT_PAGE_TABLE_LEVEL &&
->> -		    has_wrprotected_page(vcpu->kvm, gfn, level)) {
->> -			ret = 1;
->> -			drop_spte(vcpu->kvm, sptep);
->> +		    has_wrprotected_page(vcpu->kvm, gfn, level))
->>  			goto done;
->> -		}
->>
->>  		spte |= PT_WRITABLE_MASK | SPTE_MMU_WRITEABLE;
->>
->> -- 
->> 1.7.7.6
-> 
-> ACK.
-> 
-> Does it fix your testcase?
+On 6 December 2012 04:12, Grant Likely <grant.likely@secretlab.ca> wrote:
+> On Sat, 1 Dec 2012 00:33:46 +0530, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>> This first tries to match the table my patch added, _BUT_ the string will
+>> never match as we had "st,stmpe810" in table and "stmpe810" in dev.
+>
+> of_driver_match_device() matches against the compatible list in
+> dev->of_node, not against the device name. So, if the compatible
+> property has a string that is in the table, then it really should match
+> against it.
 
-No.
-I will post the new version patch of improving reexecute_instruction.
+Grant, but isn't it true that the final device's name would not be the DT
+way of names? It would simply be "stmpe810" for us and so if we have
+multiple instances of stmpe on a board, we need to distinguish them
+ourselves? One way for that was passing id for these instances, which
+would finally be used, when we create platform devices for sub-modules
+of stmpe (gpio, keypad, ts, etc).
 
-
-
+--
+viresh
