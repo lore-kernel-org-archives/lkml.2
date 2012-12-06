@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422797Ab2LFURc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 15:17:32 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51491 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753167Ab2LFUR3 (ORCPT
+	id S1947133Ab2LFUTu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 15:19:50 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:60397 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1947046Ab2LFUTs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 15:17:29 -0500
-Date: Thu, 6 Dec 2012 12:17:24 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, Michal Marek <mmarek@suse.cz>,
-        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Subject: Re: [PATCH 036/270] kbuild: Do not package /boot and /lib in make
- tar-pkg
-Message-ID: <20121206201724.GB10874@kroah.com>
-References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
- <1353949160-26803-37-git-send-email-herton.krzesinski@canonical.com>
- <1353983187.4266.40.camel@deadeye.wl.decadent.org.uk>
- <20121130013843.GB13478@kroah.com>
- <1354241989.7995.26.camel@deadeye.wl.decadent.org.uk>
+	Thu, 6 Dec 2012 15:19:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354241989.7995.26.camel@deadeye.wl.decadent.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1354779918-4028-2-git-send-email-acourbot@nvidia.com>
+References: <1354779918-4028-1-git-send-email-acourbot@nvidia.com>
+	<1354779918-4028-2-git-send-email-acourbot@nvidia.com>
+Date: Thu, 6 Dec 2012 21:19:47 +0100
+Message-ID: <CACRpkdY3mJL00e0Yq7RBRyHxR9AKMTj7um4Upq3Mh2kxMPqdww@mail.gmail.com>
+Subject: Re: [RFC] gpiolib: introduce descriptor-based GPIO interface
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, gnurou@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 30, 2012 at 02:19:49AM +0000, Ben Hutchings wrote:
-> On Thu, 2012-11-29 at 17:38 -0800, Greg Kroah-Hartman wrote:
-> > On Tue, Nov 27, 2012 at 02:26:27AM +0000, Ben Hutchings wrote:
-> > > On Mon, 2012-11-26 at 14:55 -0200, Herton Ronaldo Krzesinski wrote:
-> > > > 3.5.7u1 -stable review patch.  If anyone has any objections, please let me know.
-> > > > 
-> > > > ------------------
-> > > > 
-> > > > From: Michal Marek <mmarek@suse.cz>
-> > > > 
-> > > > commit fe04ddf7c2910362f3817c8156e41cbd6c0ee35d upstream.
-> > > > 
-> > > > There were reports of users destroying their Fedora installs by a kernel
-> > > > tarball that replaces the /lib -> /usr/lib symlink. Let's remove the
-> > > > toplevel directories from the tarball to prevent this from happening.
-> > > > 
-> > > > Reported-by: Andi Kleen <andi@firstfloor.org>
-> > > > Suggested-by: Ben Hutchings <ben@decadent.org.uk>
-> > > > Signed-off-by: Michal Marek <mmarek@suse.cz>
-> > > > [ herton: dropped unrelated changes to arch/x86/Makefile and
-> > > >   scripts/Makefile.fwinst, which don't apply anyway on 3.5, see commit
-> > > >   3ce9e53e788881da0d5f3912f80e0dd6b501f304 upstream ]
-> > > > Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-> > > 
-> > > This is missing from 3.4.
-> > 
-> > I don't think it is needed, as 3ce9e53e788881da0d5f3912f80e0dd6b501f304
-> > didn't go into 3.4, so all should be good for now.
-> 
-> No, 3ce9e53e788881da0d5f3912f80e0dd6b501f304 was later and reverted
-> unintended changes in fe04ddf7c2910362f3817c8156e41cbd6c0ee35d.  You
-> should probably combine the two.
-> 
-> See these stable commits:
-> 
-> 3.2: 0767530 kbuild: Do not package /boot and /lib in make tar-pkg
-> 3.6: 4bb50fa kbuild: Do not package /boot and /lib in make tar-pkg
-> 3.6: 0a7f602 kbuild: Fix accidental revert in commit fe04ddf
+On Thu, Dec 6, 2012 at 8:45 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
 
-Ah, thanks, that makes more sense, I think I have it straightened out
-now.
+> With the current API, GPIOs are manipulated through an integer which
+> represents their unique number across the system. This poses problems in
+> terms of portability, scalability and flexibility: for instance, the
+> number of valid GPIOs for a given system is fixed at system time, and a
+> large array of that size is statically allocated to hold the GPIO
+> descriptors. Worse, GPIOs can be used without being properly allocated.
+>
+> In order to improve the situation, the integer namespace must first get
+> away. This patch introduces an alternative GPIO API that uses opaque
+> handlers and refactor gpiolib's internals to work with these handlers
+> instead of GPIO numbers. The former integer-based API is still available
+> as a light wrapper around this new API.
+>
+> This first step will then us to build more improvements for gpiolib,
+> like proper GPIO lookup functions per device and provider, and getting
+> rid of the static GPIO array and the ARCH_NR_GPIO configuration option.
+>
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 
-greg k-h
+I really like this. It is looking very good.
+
+Especially it's nice that it makes GPIO descriptors the norm
+rather than a bolt-on, and the old linear GPIO space is turned
+into a comaptibility layer using static inlines.
+
+I'd like to see some love for Documentation/gpio.txt to reflect
+the changes, plus considering Grants note, and I will be happy
+to add Reviewed-by on this.
+
+Especially the lookups will be nice to see going forward!
+
+Yours,
+Linus Walleij
