@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423907Ab2LFPej (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 10:34:39 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:23662 "EHLO relay.sw.ru"
+	id S965191Ab2LFPeM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 10:34:12 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:16799 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423892Ab2LFPee (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 10:34:34 -0500
-Subject: [PATCH 6/6] nfsd: enable NFSv4 state in containers
+	id S965164Ab2LFPeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 10:34:09 -0500
+Subject: [PATCH 1/6] nfsd: pass proper net to nfsd_destroy() from NFSd kthreads
 To: bfields@fieldses.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Thu, 06 Dec 2012 18:35:07 +0300
-Message-ID: <20121206153507.30693.72204.stgit@localhost.localdomain>
+Date: Thu, 06 Dec 2012 18:34:42 +0300
+Message-ID: <20121206153442.30693.25959.stgit@localhost.localdomain>
 In-Reply-To: <20121206153204.30693.11408.stgit@localhost.localdomain>
 References: <20121206153204.30693.11408.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -22,33 +22,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, NFSd is ready to operate in network namespace based containers.
-So let's drop check for "init_net" and make it able to fly.
+Since NFSd service is per-net now, we have to pass proper network context in
+nfsd_shutdown() from NFSd kthreads.
+The simlies way I found is to get proper net from one of transports with
+permanent sockets.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
- fs/nfsd/nfs4state.c |   10 ----------
- 1 files changed, 0 insertions(+), 10 deletions(-)
+ fs/nfsd/nfssvc.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index 39605c1..b3b6daa 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -4866,16 +4866,6 @@ nfs4_state_start_net(struct net *net)
- 	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
- 	int ret;
+diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
+index 2cfd9c6..cee62ab 100644
+--- a/fs/nfsd/nfssvc.c
++++ b/fs/nfsd/nfssvc.c
+@@ -541,6 +541,8 @@ static int
+ nfsd(void *vrqstp)
+ {
+ 	struct svc_rqst *rqstp = (struct svc_rqst *) vrqstp;
++	struct svc_xprt *perm_sock = list_entry(rqstp->rq_server->sv_permsocks.next, typeof(struct svc_xprt), xpt_list);
++	struct net *net = perm_sock->xpt_net;
+ 	int err;
  
--	/*
--	 * FIXME: For now, we hang most of the pernet global stuff off of
--	 * init_net until nfsd is fully containerized. Eventually, we'll
--	 * need to pass a net pointer into this function, take a reference
--	 * to that instead and then do most of the rest of this on a per-net
--	 * basis.
--	 */
--	if (net != &init_net)
--		return -EINVAL;
--
- 	ret = nfs4_state_create_net(net);
- 	if (ret)
- 		return ret;
+ 	/* Lock module and set up kernel thread */
+@@ -605,7 +607,7 @@ out:
+ 	/* Release the thread */
+ 	svc_exit_thread(rqstp);
+ 
+-	nfsd_destroy(&init_net);
++	nfsd_destroy(net);
+ 
+ 	/* Release module */
+ 	mutex_unlock(&nfsd_mutex);
 
