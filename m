@@ -1,34 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752686Ab2LFFgB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 00:36:01 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:15996 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752554Ab2LFFgA (ORCPT
+	id S1752792Ab2LFFhj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 00:37:39 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33932 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751818Ab2LFFhj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 00:36:00 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 05 Dec 2012 21:35:59 -0800
-Message-ID: <50C02EBF.2080506@nvidia.com>
-Date: Thu, 6 Dec 2012 11:05:59 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+	Thu, 6 Dec 2012 00:37:39 -0500
+Date: Thu, 6 Dec 2012 14:37:33 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] spi: Remove SPI_BUFSIZ restriction on
+ spi_write_then_read()
+Message-ID: <20121206053732.GD10867@opensource.wolfsonmicro.com>
+References: <1354420465-29315-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <20121206000026.A620D3E0E22@localhost>
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@ingics.com>
-CC: Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mfd: tps80031: Add terminating entry for tps80031_id_table
-References: <1354712340.4261.0.camel@phoenix>
-In-Reply-To: <1354712340.4261.0.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121206000026.A620D3E0E22@localhost>
+X-Cookie: Exercise caution in your daily affairs.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 05 December 2012 06:29 PM, Axel Lin wrote:
-> The i2c_device_id table is supposed to be zero-terminated.
->
-> Signed-off-by: Axel Lin<axel.lin@ingics.com>
+On Thu, Dec 06, 2012 at 12:00:26AM +0000, Grant Likely wrote:
 
-Acked-by: Laxman Dewangan <ldewangan@nvidia.com>
+> Looks good to me. Probably 3.9 material though.
+
+> Acked-by: Grant Likely <grant.likely@secretlab.ca>
+
+Hrm, I'd be inclined to apply it now - it's isolated enough that it can
+be reverted if it explodes and we have the -rc cycle to notice any
+problems.
