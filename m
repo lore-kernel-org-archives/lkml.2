@@ -1,132 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424204Ab2LFQMB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 11:12:01 -0500
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:3798 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1424189Ab2LFQL6 (ORCPT
+	id S1424328Ab2LFQQJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 11:16:09 -0500
+Received: from server505g.appriver.com ([98.129.35.12]:4529 "EHLO
+	server505.appriver.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1423988Ab2LFQQH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 11:11:58 -0500
-Message-ID: <1354809803.21116.4.camel@misato.fc.hp.com>
-Subject: Re: [RFC PATCH v3 0/3] acpi: Introduce prepare_remove device
- operation
-From: Toshi Kani <toshi.kani@hp.com>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Hanjun Guo <guohanjun@huawei.com>,
-        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com, rjw@sisk.pl, lenb@kernel.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Tang Chen <tangchen@cn.fujitsu.com>
-Date: Thu, 06 Dec 2012 09:03:23 -0700
-In-Reply-To: <50C0C13A.1040905@gmail.com>
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
-	  <50B5EFE9.3040206@huawei.com>
-	 <1354128096.26955.276.camel@misato.fc.hp.com> <50C0C13A.1040905@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 6 Dec 2012 11:16:07 -0500
+X-Note-AR-ScanTimeLocal: 12/6/2012 10:16:06 AM
+X-Policy: GLOBAL - coraid.com
+X-Policy: GLOBAL - coraid.com
+X-Primary: ecashin@coraid.com
+X-Note: This Email was scanned by AppRiver SecureTide
+X-ALLOW: @coraid.com ALLOWED
+X-Virus-Scan: V-
+X-Note: Spam Tests Failed: 
+X-Country-Path: UNKNOWN->UNITED STATES->UNITED STATES
+X-Note-Sending-IP: 98.129.35.1
+X-Note-Reverse-DNS: smtp.exg5.exghost.com
+X-Note-Return-Path: ecashin@coraid.com
+X-Note: User Rule Hits: 
+X-Note: Global Rule Hits: G328 G329 G330 G331 G335 G336 G347 G443 
+X-Note: Encrypt Rule Hits: 
+X-Note: Mail Class: ALLOWEDSENDER
+X-Note: Headers Injected
+From: Ed Cashin <ecashin@coraid.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 6 Dec 2012 10:16:02 -0600
+Subject: Re: [PATCH 2/7] aoe: avoid races between device destruction and
+ discovery
+Thread-Topic: [PATCH 2/7] aoe: avoid races between device destruction and
+ discovery
+Thread-Index: Ac3TzPygwQmf8zTTTSei60hmQeneyw==
+Message-ID: <CCC74268-5C66-446F-A81F-F9892CC0CAA0@coraid.com>
+References: <cover.1354501189.git.ecashin@coraid.com>
+ <d3095fd2ad59a9e1fffe9208c34e8b35e7a8b5e5.1354501189.git.ecashin@coraid.com>
+ <20121204154534.7fb65f2b.akpm@linux-foundation.org>
+In-Reply-To: <20121204154534.7fb65f2b.akpm@linux-foundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-12-07 at 00:00 +0800, Jiang Liu wrote:
-> On 11/29/2012 02:41 AM, Toshi Kani wrote:
-> > On Wed, 2012-11-28 at 19:05 +0800, Hanjun Guo wrote:
-> >> On 2012/11/24 1:50, Vasilis Liaskovitis wrote:
-> >>> As discussed in https://patchwork.kernel.org/patch/1581581/
-> >>> the driver core remove function needs to always succeed. This means we need
-> >>> to know that the device can be successfully removed before acpi_bus_trim / 
-> >>> acpi_bus_hot_remove_device are called. This can cause panics when OSPM-initiated
-> >>> or SCI-initiated eject of memory devices fail e.g with:
-> >>> echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
-> >>>
-> >>> since the ACPI core goes ahead and ejects the device regardless of whether the
-> >>> the memory is still in use or not.
-> >>>
-> >>> For this reason a new acpi_device operation called prepare_remove is introduced.
-> >>> This operation should be registered for acpi devices whose removal (from kernel
-> >>> perspective) can fail.  Memory devices fall in this category.
-> >>>
-> >>> acpi_bus_remove() is changed to handle removal in 2 steps:
-> >>> - preparation for removal i.e. perform part of removal that can fail. Should
-> >>>   succeed for device and all its children.
-> >>> - if above step was successfull, proceed to actual device removal
-> >>
-> >> Hi Vasilis,
-> >> We met the same problem when we doing computer node hotplug, It is a good idea
-> >> to introduce prepare_remove before actual device removal.
-> >>
-> >> I think we could do more in prepare_remove, such as rollback. In most cases, we can
-> >> offline most of memory sections except kernel used pages now, should we rollback
-> >> and online the memory sections when prepare_remove failed ?
-> > 
-> > I think hot-plug operation should have all-or-nothing semantics.  That
-> > is, an operation should either complete successfully, or rollback to the
-> > original state.
-> > 
-> >> As you may know, the ACPI based hotplug framework we are working on already addressed
-> >> this problem, and the way we slove this problem is a bit like yours.
-> >>
-> >> We introduce hp_ops in struct acpi_device_ops:
-> >> struct acpi_device_ops {
-> >> 	acpi_op_add add;
-> >> 	acpi_op_remove remove;
-> >> 	acpi_op_start start;
-> >> 	acpi_op_bind bind;
-> >> 	acpi_op_unbind unbind;
-> >> 	acpi_op_notify notify;
-> >> #ifdef	CONFIG_ACPI_HOTPLUG
-> >> 	struct acpihp_dev_ops *hp_ops;
-> >> #endif	/* CONFIG_ACPI_HOTPLUG */
-> >> };
-> >>
-> >> in hp_ops, we divide the prepare_remove into six small steps, that is:
-> >> 1) pre_release(): optional step to mark device going to be removed/busy
-> >> 2) release(): reclaim device from running system
-> >> 3) post_release(): rollback if cancelled by user or error happened
-> >> 4) pre_unconfigure(): optional step to solve possible dependency issue
-> >> 5) unconfigure(): remove devices from running system
-> >> 6) post_unconfigure(): free resources used by devices
-> >>
-> >> In this way, we can easily rollback if error happens.
-> >> How do you think of this solution, any suggestion ? I think we can achieve
-> >> a better way for sharing ideas. :)
-> > 
-> > Yes, sharing idea is good. :)  I do not know if we need all 6 steps (I
-> > have not looked at all your changes yet..), but in my mind, a hot-plug
-> > operation should be composed with the following 3 phases.
-> > 
-> > 1. Validate phase - Verify if the request is a supported operation.  All
-> > known restrictions are verified at this phase.  For instance, if a
-> > hot-remove request involves kernel memory, it is failed in this phase.
-> > Since this phase makes no change, no rollback is necessary to fail.  
-> > 
-> > 2. Execute phase - Perform hot-add / hot-remove operation that can be
-> > rolled-back in case of error or cancel.
-> > 
-> > 3. Commit phase - Perform the final hot-add / hot-remove operation that
-> > cannot be rolled-back.  No error / cancel is allowed in this phase.  For
-> > instance, eject operation is performed at this phase.  
-> Hi Toshi,
-> 	There are one more step needed. Linux provides sysfs interfaces to
-> online/offline CPU/memory sections, so we need to protect from concurrent
-> operations from those interfaces when doing physical hotplug. Think about
-> following sequence:
-> Thread 1
-> 1. validate conditions for hot-removal
-> 2. offline memory section A
-> 3.						online memory section A			
-> 4. offline memory section B
-> 5 hot-remove memory device hosting A and B.
+On Dec 4, 2012, at 6:45 PM, Andrew Morton wrote:
 
-Hi Gerry,
+> On Mon, 3 Dec 2012 20:42:56 -0500
+> Ed Cashin <ecashin@coraid.com> wrote:
+> 
+>> This change avoids a race that could result in a NULL pointer
+>> derference following a WARNing from kobject_add_internal, "don't
+>> try to register things with the same name in the same directory."
+...
+>> The check for a bad aoedev pointer remains from a time when about
+>> half of this patch was done, and it was possible for the
+>> bdev->bd_disk->private_data to become corrupted.  The check
+>> should be removed eventually, but it is not expected to add
+>> significant overhead, occurring in the aoeblk_open routine.
+...
+>> --- a/drivers/block/aoe/aoeblk.c
+>> +++ b/drivers/block/aoe/aoeblk.c
+>> @@ -147,9 +147,18 @@ aoeblk_open(struct block_device *bdev, fmode_t mode)
+>> 	struct aoedev *d = bdev->bd_disk->private_data;
+>> 	ulong flags;
+>> 
+>> +	if (!virt_addr_valid(d)) {
+>> +		pr_crit("aoe: invalid device pointer in %s\n",
+>> +			__func__);
+>> +		WARN_ON(1);
+>> +		return -ENODEV;
+>> +	}
+> 
+> Can this ever happen?
 
-I agree.  And I am working on a proposal that tries to address this
-issue by integrating both sysfs and hotplug operations into a framework.
+This is the check mentioned in the last paragraph of the changelog
+message.  I don't think it can happen now.  Folks have been using
+it like this and nobody has seen the invalid device pointer message.
 
+I'll go ahead and remove the check and resubmit the patch.
 
-Thanks,
--Toshi
+...
+>> @@ -259,6 +268,18 @@ aoeblk_gdalloc(void *vp)
+>> 	struct request_queue *q;
+>> 	enum { KB = 1024, MB = KB * KB, READ_AHEAD = 2 * MB, };
+>> 	ulong flags;
+>> +	int late = 0;
+>> +
+>> +	spin_lock_irqsave(&d->lock, flags);
+>> +	if (d->flags & DEVFL_GDALLOC
+>> +	&& !(d->flags & DEVFL_TKILL)
+>> +	&& !(d->flags & DEVFL_GD_NOW))
+> 
+> That's pretty sickly-looking code layout.
+> 
+> We often do
+> 
+> 	if ((d->flags & (DEVFL_GDALLOC|DEVFL_TKILL|DEVFL_GD_NOW)) ==
+> 		DEVFL_GDALLOC)
+> 
+> in these cases.
+
+OK.  When I'm resubmitting these patches, I'm planning to submit
+the series of 7 patches and include info in the cover letter about
+what has changed in the resubmission.
+
+-- 
+  Ed Cashin
+  ecashin@coraid.com
+
 
