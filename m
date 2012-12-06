@@ -1,117 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932361Ab2LFHho (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 02:37:44 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:60781 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932316Ab2LFHhm convert rfc822-to-8bit (ORCPT
+	id S964816Ab2LFHmW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 02:42:22 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46721 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964784Ab2LFHmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 02:37:42 -0500
+	Thu, 6 Dec 2012 02:42:21 -0500
+Date: Thu, 6 Dec 2012 08:42:15 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Lothar =?iso-8859-15?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pwm: i.MX: eliminate build warning
+Message-ID: <20121206074215.GS10369@pengutronix.de>
+References: <1354721681-31843-1-git-send-email-LW@KARO-electronics.de>
 MIME-Version: 1.0
-In-Reply-To: <87pq2owvf9.fsf@devron.myhome.or.jp>
-References: <1353504277-5947-1-git-send-email-linkinjeon@gmail.com>
-	<87hao35uqz.fsf@devron.myhome.or.jp>
-	<CAKYAXd_X8Jkq=PdV+dVPTO_EAPHoZ37MynpjvkrPTDahWyUOTA@mail.gmail.com>
-	<87obia17zr.fsf@devron.myhome.or.jp>
-	<CAKYAXd-8ay4m6vsH1ztmomOrnXN+ThDi3w+jASyyUGOO12v6YA@mail.gmail.com>
-	<871uf4yizs.fsf@devron.myhome.or.jp>
-	<CAKYAXd_T2yGRXd3bk5HXXuVhx_ikO1xzinOy0d8TobokyiCRsA@mail.gmail.com>
-	<87pq2owvf9.fsf@devron.myhome.or.jp>
-Date: Thu, 6 Dec 2012 16:37:41 +0900
-Message-ID: <CAKYAXd-CAhBDNYRTF22Yh8iGDb1_6+0V-U2wJsSuAjU3Q4q-SQ@mail.gmail.com>
-Subject: Re: [PATCH v5 5/8] fat: restructure export_operations
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1354721681-31843-1-git-send-email-LW@KARO-electronics.de>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 08:41:49 up 165 days, 22:53, 48 users,  load average: 0.74, 0.69,
+ 0.77
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/12/5, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
->
->>> I can understand what is doing. I'm asking why there is difference.
->>>
->>> 1) generic_fh_to_dentry() allows (*_PARENT && fh_len == 2).
->>> 2) fat_fh_to_dentry_nostale() doesn't allows (*_PARENT && fh_len == 3).
->>>
->>> Why does logic has difference?
->>
->> When we consider the generic routine of encode_fh() and the structure
->> ‘fid’
->>
->> struct fid {
->>       struct {
->>             u32 ino;
->>             u32 gen;
->>             u32 parent_ino;
->>             u32 parent_gen;
->>       } i32;
->> };
->>
->> fh_len= 2(without parent)
->> fh_len=4(with parent)
->>
->> Condition checking in export_encode_fh()
->> {
->>
->>    if (parent && (len < 4)) {
->>                 *max_len = 4;
->>                 return FILEID_INVALID;
->>         } else if (len < 2) {
->>                 *max_len = 2;
->>                 return FILEID_INVALID;
->>         }
->>         ...
->>                 len = 2;
->>         ...
->>                 if (parent) {
->> ..
->>                                 len = 4;
->>                                 type = FILEID_INO32_GEN_PARENT;
->>                 }
->> …
->> }
->>
->> The logic does take care of altering the length for the ‘2’ cases
->> with/without parent.
->> So, while encoding -> the care has been taken for length checking but
->> while decoding(generic_fh_to_dentry) the length check is not put in
->> place.
->> I think it should be done in the generic routine also.
->>
->> It should be:
->> if ((fh_len != 2 && fh_len != 4) ||
->>                 (fh_type != FILEID_INO32_GEN && fh_type !=
->> FILEID_INO32_GEN_PARENT))
->>     return NULL;
->>
->> Please share your opinion.
->
-> I know encode_fh(). But NFS is network protocol, and network can input
-> any data, and I guess the userland interface (open_by_handle()?) can be
-> any too.
->
-> And generic_fh_to_dentry()'s input verify choose to check the minimum
-> length only. But your logic choose the exact length.
->
-> I think the both is sane and correct. But I wonder why did you changed it.
-There was no particular reason for us to put those conditions. It is
-just we knew what fh lengths we have chosen for the 2 cases
-WITH/WITHOUT parent.
-i.e., we checked with encoded length.
-Now, when I check the export functions of other filesystems(btrfs,
-nilfs2, udf). They also adopt the same method of checking the exact
-length and type.
-If there is any particular reason, we will look into that and can also
-updated on that.
+On Wed, Dec 05, 2012 at 04:34:41PM +0100, Lothar Wa�mann wrote:
+> compiling the i.MX pwm driver produces the following warning:
+> |drivers/pwm/pwm-imx.c: In function 'imx_pwm_probe':
+> |drivers/pwm/pwm-imx.c:281:7: warning: assignment discards qualifiers from pointer target type
+> 
+> Apply a 'const' attribute to the affected variable declaration.
+> 
+> Signed-off-by: Lothar Wa�mann <LW@KARO-electronics.de>
 
-Thanks.
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->
+Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+
+Sascha
+
+> ---
+>  drivers/pwm/pwm-imx.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/pwm/pwm-imx.c b/drivers/pwm/pwm-imx.c
+> index 8f26e9f..65a86bd 100644
+> --- a/drivers/pwm/pwm-imx.c
+> +++ b/drivers/pwm/pwm-imx.c
+> @@ -235,7 +235,7 @@ static int imx_pwm_probe(struct platform_device *pdev)
+>  {
+>  	const struct of_device_id *of_id =
+>  			of_match_device(imx_pwm_dt_ids, &pdev->dev);
+> -	struct imx_pwm_data *data;
+> +	const struct imx_pwm_data *data;
+>  	struct imx_chip *imx;
+>  	struct resource *r;
+>  	int ret = 0;
+> -- 
+> 1.7.2.5
+> 
+> 
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
