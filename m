@@ -1,212 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423454Ab2LFMsF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 07:48:05 -0500
-Received: from www.linutronix.de ([62.245.132.108]:51733 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423414Ab2LFMrh (ORCPT
+	id S1423472Ab2LFMz3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 07:55:29 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:51341 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755005Ab2LFMz2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 07:47:37 -0500
-From: Benedikt Spranger <b.spranger@linutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: hjk@hansjkoch.de, gregkh@linuxfoundation.org,
-        Alexander.Frank@eberspaecher.com,
-        Benedikt Spranger <b.spranger@linutronix.de>
-Subject: [PATCH 1/2] uio: be aware of open(), mmap(), close()
-Date: Thu,  6 Dec 2012 13:44:56 +0100
-Message-Id: <1354797897-23423-2-git-send-email-b.spranger@linutronix.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1354797897-23423-1-git-send-email-b.spranger@linutronix.de>
-References: <1354797897-23423-1-git-send-email-b.spranger@linutronix.de>
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 6 Dec 2012 07:55:28 -0500
+MIME-Version: 1.0
+In-Reply-To: <1354792983-8120-1-git-send-email-snsehahn@cip.cs.fau.de>
+References: <20121206070131.GL22569@mwanda>
+	<1354792983-8120-1-git-send-email-snsehahn@cip.cs.fau.de>
+Date: Thu, 6 Dec 2012 07:55:27 -0500
+Message-ID: <CAHdPZaPGKPGDB-1=3KX3zrop9Hr42JB-GcD4F-wLKRi5SygqdQ@mail.gmail.com>
+Subject: Re: [PATCH 3/6 v2] staging/rtl8192u: indent with tabs, not spaces
+From: "devendra.aaru" <devendra.aaru@gmail.com>
+To: Sebastian Hahn <snsehahn@cip.cs.fau.de>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org, amwang@redhat.com,
+        Jennifer.Naumann@informatik.stud.uni-erlangen.de, jkosina@suse.cz,
+        linux-kernel@vger.kernel.org, Julia.Lawall@lip6.fr,
+        yongjun_wei@trendmicro.com.cn, justinmattock@gmail.com,
+        joe@perches.com, adam.buchbinder@gmail.com, dan.carpenter@oracle.com,
+        linux-kernel@i4.informatik.uni-erlangen.de
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After open(), mmap(), close() the mmaped pointer is valid. Removing the
-underlaying module causes a Oops or other strange effects. Keep all structures
-valid till the last user is gone.
+Hi,
 
-Signed-off-by: Benedikt Spranger <b.spranger@linutronix.de>
----
- drivers/uio/uio.c             |   59 ++++++++++++++++++++++++++++++-----------
- drivers/uio/uio_pdrv_genirq.c |    4 +--
- include/linux/uio_driver.h    |    4 +--
- 3 files changed, 48 insertions(+), 19 deletions(-)
+>From the next time onward while you put a patch with updated code
+change as mentioned by reviewers, you tell what changed in the next
+interation.
 
-diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
-index 5110f36..b96499a 100644
---- a/drivers/uio/uio.c
-+++ b/drivers/uio/uio.c
-@@ -433,8 +433,22 @@ static irqreturn_t uio_interrupt(int irq, void *dev_id)
- struct uio_listener {
- 	struct uio_device *dev;
- 	s32 event_count;
-+	struct kref kref;
- };
- 
-+static void uio_release_listener(struct kref *kref)
-+{
-+	struct uio_listener *listener = container_of(kref, struct uio_listener,
-+						     kref);
-+	struct uio_device *idev = listener->dev;
-+
-+	if (idev->info->release)
-+		idev->info->release(idev->info);
-+
-+	module_put(idev->owner);
-+	kfree(listener);
-+}
-+
- static int uio_open(struct inode *inode, struct file *filep)
- {
- 	struct uio_device *idev;
-@@ -465,10 +479,13 @@ static int uio_open(struct inode *inode, struct file *filep)
- 	filep->private_data = listener;
- 
- 	if (idev->info->open) {
--		ret = idev->info->open(idev->info, inode);
-+		ret = idev->info->open(idev->info);
- 		if (ret)
- 			goto err_infoopen;
- 	}
-+
-+	kref_init(&listener->kref);
-+
- 	return 0;
- 
- err_infoopen:
-@@ -491,16 +508,11 @@ static int uio_fasync(int fd, struct file *filep, int on)
- 
- static int uio_release(struct inode *inode, struct file *filep)
- {
--	int ret = 0;
- 	struct uio_listener *listener = filep->private_data;
--	struct uio_device *idev = listener->dev;
- 
--	if (idev->info->release)
--		ret = idev->info->release(idev->info, inode);
-+	kref_put(&listener->kref, uio_release_listener);
- 
--	module_put(idev->owner);
--	kfree(listener);
--	return ret;
-+	return 0;
- }
- 
- static unsigned int uio_poll(struct file *filep, poll_table *wait)
-@@ -605,19 +617,22 @@ static int uio_find_mem_index(struct vm_area_struct *vma)
- 
- static void uio_vma_open(struct vm_area_struct *vma)
- {
--	struct uio_device *idev = vma->vm_private_data;
--	idev->vma_count++;
-+	struct uio_listener *listener = vma->vm_private_data;
-+
-+	kref_get(&listener->kref);
- }
- 
- static void uio_vma_close(struct vm_area_struct *vma)
- {
--	struct uio_device *idev = vma->vm_private_data;
--	idev->vma_count--;
-+	struct uio_listener *listener = vma->vm_private_data;
-+
-+	kref_put(&listener->kref, uio_release_listener);
- }
- 
- static int uio_vma_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
- {
--	struct uio_device *idev = vma->vm_private_data;
-+	struct uio_listener *listener = vma->vm_private_data;
-+	struct uio_device *idev = listener->dev;
- 	struct page *page;
- 	unsigned long offset;
- 
-@@ -646,20 +661,34 @@ static const struct vm_operations_struct uio_vm_ops = {
- 	.fault = uio_vma_fault,
- };
- 
-+static const struct vm_operations_struct uio_phys_ops = {
-+	.open = uio_vma_open,
-+	.close = uio_vma_close,
-+};
-+
- static int uio_mmap_physical(struct vm_area_struct *vma)
- {
- 	struct uio_device *idev = vma->vm_private_data;
- 	int mi = uio_find_mem_index(vma);
-+	int ret;
-+
- 	if (mi < 0)
- 		return -EINVAL;
- 
- 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
-+	vma->vm_ops = &uio_phys_ops;
- 
--	return remap_pfn_range(vma,
-+	ret = remap_pfn_range(vma,
- 			       vma->vm_start,
- 			       idev->info->mem[mi].addr >> PAGE_SHIFT,
- 			       vma->vm_end - vma->vm_start,
- 			       vma->vm_page_prot);
-+	if (ret)
-+		return ret;
-+
-+	uio_vma_open(vma);
-+
-+	return 0;
- }
- 
- static int uio_mmap_logical(struct vm_area_struct *vma)
-@@ -681,7 +710,7 @@ static int uio_mmap(struct file *filep, struct vm_area_struct *vma)
- 	if (vma->vm_end < vma->vm_start)
- 		return -EINVAL;
- 
--	vma->vm_private_data = idev;
-+	vma->vm_private_data = listener;
- 
- 	mi = uio_find_mem_index(vma);
- 	if (mi < 0)
-diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
-index 42202cd..a4e32fa 100644
---- a/drivers/uio/uio_pdrv_genirq.c
-+++ b/drivers/uio/uio_pdrv_genirq.c
-@@ -37,7 +37,7 @@ struct uio_pdrv_genirq_platdata {
- 	struct platform_device *pdev;
- };
- 
--static int uio_pdrv_genirq_open(struct uio_info *info, struct inode *inode)
-+static int uio_pdrv_genirq_open(struct uio_info *info)
- {
- 	struct uio_pdrv_genirq_platdata *priv = info->priv;
- 
-@@ -46,7 +46,7 @@ static int uio_pdrv_genirq_open(struct uio_info *info, struct inode *inode)
- 	return 0;
- }
- 
--static int uio_pdrv_genirq_release(struct uio_info *info, struct inode *inode)
-+static int uio_pdrv_genirq_release(struct uio_info *info)
- {
- 	struct uio_pdrv_genirq_platdata *priv = info->priv;
- 
-diff --git a/include/linux/uio_driver.h b/include/linux/uio_driver.h
-index 1ad4724..1bc6493 100644
---- a/include/linux/uio_driver.h
-+++ b/include/linux/uio_driver.h
-@@ -92,8 +92,8 @@ struct uio_info {
- 	void			*priv;
- 	irqreturn_t (*handler)(int irq, struct uio_info *dev_info);
- 	int (*mmap)(struct uio_info *info, struct vm_area_struct *vma);
--	int (*open)(struct uio_info *info, struct inode *inode);
--	int (*release)(struct uio_info *info, struct inode *inode);
-+	int (*open)(struct uio_info *info);
-+	void (*release)(struct uio_info *info);
- 	int (*irqcontrol)(struct uio_info *info, s32 irq_on);
- };
- 
--- 
-1.7.10.4
+like the below,
 
+otherthan that your patch is good,
+
+On Thu, Dec 6, 2012 at 6:23 AM, Sebastian Hahn <snsehahn@cip.cs.fau.de> wrote:
+> Converted staging/rtl8187se to use tabs instead of spaces for
+> indentation to fix the checkpatch error "code indent should use tabs
+> where possible".
+>
+> Signed-off-by: Sebastian Hahn <snsehahn@cip.cs.fau.de>
+> ---
+V2:
+    Removed .c.bak file as suggested by Dan.
+
+>  drivers/staging/rtl8192u/ieee80211/ieee80211.h     |   14 +-
+>  drivers/staging/rtl8192u/ieee80211/ieee80211_rx.c  |  370 ++++++++++----------
+>  .../staging/rtl8192u/ieee80211/ieee80211_softmac.c |    4 +-
+>  drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c  |   14 +-
+>  drivers/staging/rtl8192u/ieee80211/rtl_crypto.h    |   84 ++---
+>  drivers/staging/rtl8192u/r8180_93cx6.c             |    2 +-
+>  drivers/staging/rtl8192u/r8180_pm.h                |    2 +-
+>  drivers/staging/rtl8192u/r8192U.h                  |  198 +++++------
+>  drivers/staging/rtl8192u/r8192U_core.c             |   42 +--
+>  9 files changed, 365 insertions(+), 365 deletions(-)
+>
+
+> devel mailing list
+> devel@linuxdriverproject.org
+> http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
