@@ -1,148 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754406Ab2LFBy3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 20:54:29 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:44110 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752097Ab2LFBy2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 20:54:28 -0500
-X-IronPort-AV: E=Sophos;i="4.84,226,1355068800"; 
-   d="scan'208";a="6341542"
-Message-ID: <50BFF443.3090504@cn.fujitsu.com>
-Date: Thu, 06 Dec 2012 09:26:27 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
-MIME-Version: 1.0
-To: Jiang Liu <liuj97@gmail.com>
-CC: hpa@zytor.com, akpm@linux-foundation.org, rob@landley.net,
-        isimatu.yasuaki@jp.fujitsu.com, laijs@cn.fujitsu.com,
-        wency@cn.fujitsu.com, linfeng@cn.fujitsu.com, jiang.liu@huawei.com,
-        yinghai@kernel.org, kosaki.motohiro@jp.fujitsu.com,
-        minchan.kim@gmail.com, mgorman@suse.de, rientjes@google.com,
-        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH v2 4/5] page_alloc: Make movablecore_map has higher priority
-References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <1353667445-7593-5-git-send-email-tangchen@cn.fujitsu.com> <50BF6BA0.8060505@gmail.com>
-In-Reply-To: <50BF6BA0.8060505@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/06 09:26:44,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/06 09:27:10,
-	Serialize complete at 2012/12/06 09:27:10
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1754470Ab2LFBzp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 20:55:45 -0500
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:37291 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751980Ab2LFBzo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 20:55:44 -0500
+From: Qing Xu <qingx@marvell.com>
+To: qingx@marvell.com, sameo@linux.intel.com, haojian.zhuang@gmail.com,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com, rob@landley.net,
+        zhouqiao@marvell.com, cxie4@marvell.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] mfd: 88pm80x: add dt support
+Date: Thu,  6 Dec 2012 09:55:49 +0800
+Message-Id: <1354758949-29186-1-git-send-email-qingx@marvell.com>
+X-Mailer: git-send-email 1.7.0.4
+X-OriginalArrivalTime: 06 Dec 2012 01:55:39.0785 (UTC) FILETIME=[CADDA790:01CDD354]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2012 11:43 PM, Jiang Liu wrote:
-> If we make "movablecore_map" take precedence over "movablecore/kernelcore",
-> the logic could be simplified. I think it's not so attractive to support
-> both "movablecore_map" and "movablecore/kernelcore" at the same time.
+From: Qing Xu <qingx@marvell.com>
 
-Hi Liu,
+add dt support for 88pm800 and 88pm805
 
-Thanks for you advice. :)
+Signed-off-by: Qing Xu <qingx@marvell.com>
+---
+ Documentation/devicetree/bindings/mfd/88pm80x.txt |   52 +++++++++++++++++++++
+ drivers/mfd/88pm800.c                             |   26 +++++++++-
+ drivers/mfd/88pm805.c                             |   26 +++++++++-
+ drivers/mfd/88pm80x.c                             |   32 +++++++++++++
+ include/linux/mfd/88pm80x.h                       |    3 +
+ 5 files changed, 133 insertions(+), 6 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/88pm80x.txt
 
-Memory hotplug needs different support on different hardware. We are
-trying to figure out a way to satisfy as many users as we can.
-Since it is a little difficult, it may take sometime. :)
-
-But I still think we need a boot option to support it. Just a metter of
-how to make it easier to use. :)
-
-Thanks. :)
-
->
-> On 11/23/2012 06:44 PM, Tang Chen wrote:
->> If kernelcore or movablecore is specified at the same time
->> with movablecore_map, movablecore_map will have higher
->> priority to be satisfied.
->> This patch will make find_zone_movable_pfns_for_nodes()
->> calculate zone_movable_pfn[] with the limit from
->> zone_movable_limit[].
->>
->> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
->> Reviewed-by: Wen Congyang<wency@cn.fujitsu.com>
->> Reviewed-by: Lai Jiangshan<laijs@cn.fujitsu.com>
->> Tested-by: Lin Feng<linfeng@cn.fujitsu.com>
->> ---
->>   mm/page_alloc.c |   35 +++++++++++++++++++++++++++++++----
->>   1 files changed, 31 insertions(+), 4 deletions(-)
->>
->> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->> index f23d76a..05bafbb 100644
->> --- a/mm/page_alloc.c
->> +++ b/mm/page_alloc.c
->> @@ -4800,12 +4800,25 @@ static void __init find_zone_movable_pfns_for_nodes(void)
->>   		required_kernelcore = max(required_kernelcore, corepages);
->>   	}
->>
->> -	/* If kernelcore was not specified, there is no ZONE_MOVABLE */
->> -	if (!required_kernelcore)
->> +	/*
->> +	 * No matter kernelcore/movablecore was limited or not, movable_zone
->> +	 * should always be set to a usable zone index.
->> +	 */
->> +	find_usable_zone_for_movable();
->> +
->> +	/*
->> +	 * If neither kernelcore/movablecore nor movablecore_map is specified,
->> +	 * there is no ZONE_MOVABLE. But if movablecore_map is specified, the
->> +	 * start pfn of ZONE_MOVABLE has been stored in zone_movable_limit[].
->> +	 */
->> +	if (!required_kernelcore) {
->> +		if (movablecore_map.nr_map)
->> +			memcpy(zone_movable_pfn, zone_movable_limit,
->> +				sizeof(zone_movable_pfn));
->>   		goto out;
->> +	}
->>
->>   	/* usable_startpfn is the lowest possible pfn ZONE_MOVABLE can be at */
->> -	find_usable_zone_for_movable();
->>   	usable_startpfn = arch_zone_lowest_possible_pfn[movable_zone];
->>
->>   restart:
->> @@ -4833,10 +4846,24 @@ restart:
->>   		for_each_mem_pfn_range(i, nid,&start_pfn,&end_pfn, NULL) {
->>   			unsigned long size_pages;
->>
->> +			/*
->> +			 * Find more memory for kernelcore in
->> +			 * [zone_movable_pfn[nid], zone_movable_limit[nid]).
->> +			 */
->>   			start_pfn = max(start_pfn, zone_movable_pfn[nid]);
->>   			if (start_pfn>= end_pfn)
->>   				continue;
->>
->> +			if (zone_movable_limit[nid]) {
->> +				end_pfn = min(end_pfn, zone_movable_limit[nid]);
->> +				/* No range left for kernelcore in this node */
->> +				if (start_pfn>= end_pfn) {
->> +					zone_movable_pfn[nid] =
->> +							zone_movable_limit[nid];
->> +					break;
->> +				}
->> +			}
->> +
->>   			/* Account for what is only usable for kernelcore */
->>   			if (start_pfn<  usable_startpfn) {
->>   				unsigned long kernel_pages;
->> @@ -4896,12 +4923,12 @@ restart:
->>   	if (usable_nodes&&  required_kernelcore>  usable_nodes)
->>   		goto restart;
->>
->> +out:
->>   	/* Align start of ZONE_MOVABLE on all nids to MAX_ORDER_NR_PAGES */
->>   	for (nid = 0; nid<  MAX_NUMNODES; nid++)
->>   		zone_movable_pfn[nid] =
->>   			roundup(zone_movable_pfn[nid], MAX_ORDER_NR_PAGES);
->>
->> -out:
->>   	/* restore the node_state */
->>   	node_states[N_HIGH_MEMORY] = saved_node_state;
->>   }
->>
->
->
+diff --git a/Documentation/devicetree/bindings/mfd/88pm80x.txt b/Documentation/devicetree/bindings/mfd/88pm80x.txt
+new file mode 100644
+index 0000000..8a0ed07
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/88pm80x.txt
+@@ -0,0 +1,52 @@
++* Marvell 88pm80x Power Management IC
++
++Required parent device properties:
++- compatible : "marvell,88pm80x"
++- reg : the I2C slave address for the 88pm80x chip
++- interrupts : IRQ line for the 88pm80x chip
++- interrupt-controller: describes the 88pm80x as an interrupt controller (has its own domain)
++- #interrupt-cells : should be 1.
++	- The cell is the 88pm80x local IRQ number
++
++Optional parent device properties:
++- marvell,88pm80x-irqmode: inicates whether interrupt status is cleared by read
++- marvell,88pm80x-poweraddr: 88pm80x are multi-chips solution. <reg> stores the I2C address
++				of one chip, and this property stores the I2C address of
++				power related chip.
++- marvell,88pm80x-gpadcaddr: 88pm80x are multi-chips solution. <reg> stores the I2C address
++				of one chip, and this property stores the I2C address of
++				gpadc related chip.
++
++88pm80x consists of various groups of sub-devices:
++
++Device			 Supply Names	 Description
++------			 ------------	 -----------
++88pm80x-onkey		:		: On key
++88pm80x-rtc		:		: RTC
++
++Example:
++	pmic: 88pm800@30 {
++		compatible = "marvell,88pm80x";
++		reg = <0x30>;
++		interrupts = <4>;
++		interrupt-parent = <&intc>;
++		interrupt-controller;
++		#interrupt-cells = <1>;
++
++		marvell,88pm80x-irqmode = 0;
++		marvell,88pm80x-poweraddr = <0x31>;
++		marvell,88pm80x-gpadcaddr = <0x32>;
++	};
++
++
++	pmic: 88pm805@38 {
++		compatible = "marvell,88pm80x";
++		reg = <0x38>;
++		interrupts = <124>;
++		interrupt-parent = <&gpio>;
++		interrupt-controller;
++		#interrupt-cells = <1>;
++
++		marvell,88pm80x-irqmode = 0;
++	};
++
+diff --git a/drivers/mfd/88pm800.c b/drivers/mfd/88pm800.c
+index 3fcc8dd..20b67d7 100644
+--- a/drivers/mfd/88pm800.c
++++ b/drivers/mfd/88pm800.c
+@@ -506,6 +506,22 @@ static int __devinit pm800_probe(struct i2c_client *client,
+ 	struct pm80x_chip *chip;
+ 	struct pm80x_platform_data *pdata = client->dev.platform_data;
+ 	struct pm80x_subchip *subchip;
++	struct device_node *node = client->dev.of_node;
++
++	if (node && !pdata) {
++		/* parse DT to get platform data */
++		pdata = devm_kzalloc(&client->dev,
++				     sizeof(struct pm80x_platform_data),
++				     GFP_KERNEL);
++		if (!pdata)
++			return -ENOMEM;
++		ret = pm80x_dt_init(node, &client->dev, pdata);
++		if (ret)
++			return -EINVAL;
++	} else if (!pdata) {
++		pr_info("No platform data in %s!\n", __func__);
++		return -EINVAL;
++	}
+ 
+ 	ret = pm80x_init(client, id);
+ 	if (ret) {
+@@ -540,9 +556,6 @@ static int __devinit pm800_probe(struct i2c_client *client,
+ 		goto err_800_init;
+ 	}
+ 
+-	if (pdata->plat_config)
+-		pdata->plat_config(chip, pdata);
+-
+ 	return 0;
+ 
+ err_800_init:
+@@ -570,11 +583,18 @@ static int __devexit pm800_remove(struct i2c_client *client)
+ 	return 0;
+ }
+ 
++static const struct of_device_id pm800_dt_ids[] = {
++	{ .compatible = "marvell,88pm800", },
++	{},
++};
++MODULE_DEVICE_TABLE(of, pm800_dt_ids);
++
+ static struct i2c_driver pm800_driver = {
+ 	.driver = {
+ 		.name = "88PM800",
+ 		.owner = THIS_MODULE,
+ 		.pm = &pm80x_pm_ops,
++		.of_match_table	= of_match_ptr(pm800_dt_ids),
+ 		},
+ 	.probe = pm800_probe,
+ 	.remove = __devexit_p(pm800_remove),
+diff --git a/drivers/mfd/88pm805.c b/drivers/mfd/88pm805.c
+index 39a91bd..b0fb3ff 100644
+--- a/drivers/mfd/88pm805.c
++++ b/drivers/mfd/88pm805.c
+@@ -239,6 +239,22 @@ static int __devinit pm805_probe(struct i2c_client *client,
+ 	int ret = 0;
+ 	struct pm80x_chip *chip;
+ 	struct pm80x_platform_data *pdata = client->dev.platform_data;
++	struct device_node *node = client->dev.of_node;
++
++	if (node && !pdata) {
++		/* parse DT to get platform data */
++		pdata = devm_kzalloc(&client->dev,
++				     sizeof(struct pm80x_platform_data),
++				     GFP_KERNEL);
++		if (!pdata)
++			return -ENOMEM;
++		ret = pm80x_dt_init(node, &client->dev, pdata);
++		if (ret)
++			return -EINVAL;
++	} else if (!pdata) {
++		pr_info("No platform data in %s!\n", __func__);
++		return -EINVAL;
++	}
+ 
+ 	ret = pm80x_init(client, id);
+ 	if (ret) {
+@@ -254,9 +270,6 @@ static int __devinit pm805_probe(struct i2c_client *client,
+ 		goto err_805_init;
+ 	}
+ 
+-	if (pdata->plat_config)
+-		pdata->plat_config(chip, pdata);
+-
+ 	return 0;
+ 
+ err_805_init:
+@@ -277,11 +290,18 @@ static int __devexit pm805_remove(struct i2c_client *client)
+ 	return 0;
+ }
+ 
++static const struct of_device_id pm805_dt_ids[] = {
++	{ .compatible = "marvell,88pm805", },
++	{},
++};
++MODULE_DEVICE_TABLE(of, pm805_dt_ids);
++
+ static struct i2c_driver pm805_driver = {
+ 	.driver = {
+ 		.name = "88PM805",
+ 		.owner = THIS_MODULE,
+ 		.pm = &pm80x_pm_ops,
++		.of_match_table	= of_match_ptr(pm805_dt_ids),
+ 		},
+ 	.probe = pm805_probe,
+ 	.remove = __devexit_p(pm805_remove),
+diff --git a/drivers/mfd/88pm80x.c b/drivers/mfd/88pm80x.c
+index 1adb355..ad42d2a 100644
+--- a/drivers/mfd/88pm80x.c
++++ b/drivers/mfd/88pm80x.c
+@@ -111,6 +111,38 @@ int pm80x_deinit(struct i2c_client *client)
+ }
+ EXPORT_SYMBOL_GPL(pm80x_deinit);
+ 
++int pm80x_dt_init(struct device_node *np,
++				    struct device *dev,
++				    struct pm80x_platform_data *pdata)
++{
++	int ret;
++	ret = of_property_read_u32(np, "marvell,88pm80x-irqmode",
++				   &pdata->irq_mode);
++	if (ret) {
++		dev_err(dev, "Not found \"marvell,88pm80x-irqmode\" "
++			"property\n");
++		return -EINVAL;
++	}
++
++	ret = of_property_read_u32(np, "marvell,88pm80x-poweraddr",
++				   (u32*)(&pdata->power_page_addr));
++	if (ret) {
++		dev_err(dev, "Not found \"marvell,88pm80x-poweraddr\" "
++			"property\n");
++		return 0;
++	}
++
++	ret = of_property_read_u32(np, "marvell,88pm80x-gpadcaddr",
++				   (u32*)(&pdata->gpadc_page_addr));
++	if (ret) {
++		dev_err(dev, "Not found \"marvell,88pm80x-gpadcaddr\" "
++			"property\n");
++		return 0;
++	}
++	return 0;
++}
++EXPORT_SYMBOL_GPL(pm80x_dt_init);
++
+ #ifdef CONFIG_PM_SLEEP
+ static int pm80x_suspend(struct device *dev)
+ {
+diff --git a/include/linux/mfd/88pm80x.h b/include/linux/mfd/88pm80x.h
+index 904efb9..153f492 100644
+--- a/include/linux/mfd/88pm80x.h
++++ b/include/linux/mfd/88pm80x.h
+@@ -367,4 +367,7 @@ static inline int pm80x_dev_resume(struct device *dev)
+ extern int pm80x_init(struct i2c_client *client,
+ 			     const struct i2c_device_id *id) __devinit;
+ extern int pm80x_deinit(struct i2c_client *client);
++extern int pm80x_dt_init(struct device_node *np,
++						struct device *dev,
++						struct pm80x_platform_data *pdata);
+ #endif /* __LINUX_MFD_88PM80X_H */
+-- 
+1.7.0.4
 
