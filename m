@@ -1,60 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422908Ab2LFJu3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 04:50:29 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62883 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753468Ab2LFJuZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 04:50:25 -0500
-Date: Thu, 6 Dec 2012 09:50:19 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Samuel Ortiz <sameo@linux.intel.com>, rabin.vincent@stericsson.com,
-        shiraz.hashim@st.com, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, spear-devel@list.st.com,
-        linus.walleij@linaro.org, Vipul Kumar Samar <vipulkumar.samar@st.com>
-Subject: Re: [PATCH V5 2/2] mfd: stmpe: Update DT support in stmpe driver
-Message-ID: <20121206095019.GN2718@gmail.com>
-References: <2dcd7cb4c4022fa24b5328974e4226f5aaf89419.1354199865.git.viresh.kumar@linaro.org>
- <121653def4e985b0c1b59045637dd4518f97e73a.1354199865.git.viresh.kumar@linaro.org>
- <20121130105731.GN3176@sortiz-mobl>
- <20121130154542.GG23648@gmail.com>
- <CAKohpokLVEH+4F_VXh5auUm48cWWe0mumZME8yOCcAezcwJbCQ@mail.gmail.com>
- <20121205224203.691153E0E22@localhost>
- <CAKohponjLp214EPKgNHqP2N8Tje9U8ZxgywUTSvsjE-TqHy+xw@mail.gmail.com>
+	id S965008Ab2LFJy2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 04:54:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49889 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932322Ab2LFJyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 04:54:25 -0500
+Date: Thu, 6 Dec 2012 10:54:23 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: azurIt <azurit@pobox.sk>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH for 3.2.34] memcg: do not trigger OOM from
+ add_to_page_cache_locked
+Message-ID: <20121206095423.GB10931@dhcp22.suse.cz>
+References: <20121130144427.51A09169@pobox.sk>
+ <20121130144431.GI29317@dhcp22.suse.cz>
+ <20121130160811.6BB25BDD@pobox.sk>
+ <20121130153942.GL29317@dhcp22.suse.cz>
+ <20121130165937.F9564EBE@pobox.sk>
+ <20121130161923.GN29317@dhcp22.suse.cz>
+ <20121203151601.GA17093@dhcp22.suse.cz>
+ <20121205023644.18C3006B@pobox.sk>
+ <20121205141722.GA9714@dhcp22.suse.cz>
+ <20121206012924.FE077FD7@pobox.sk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAKohponjLp214EPKgNHqP2N8Tje9U8ZxgywUTSvsjE-TqHy+xw@mail.gmail.com>
+In-Reply-To: <20121206012924.FE077FD7@pobox.sk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > But regardless, it is the responsiblity of the probe function to go and
-> > look if of_driver_match_device() matches against anything if it cares
-> > about the of_match_table entries (for instance, if there is extra data
-> > attached).
+On Thu 06-12-12 01:29:24, azurIt wrote:
+> >OK, so the ENOMEM seems to be leaking from mem_cgroup_newpage_charge.
+> >This can only happen if this was an atomic allocation request
+> >(!__GFP_WAIT) or if oom is not allowed which is the case only for
+> >transparent huge page allocation.
+> >The first case can be excluded (in the clean 3.2 stable kernel) because
+> >all callers of mem_cgroup_newpage_charge use GFP_KERNEL. The later one
+> >should be OK because the page fault should fallback to a regular page if
+> >THP allocation/charge fails.
+> >[/me goes to double check]
+> >Hmm do_huge_pmd_wp_page seems to charge a huge page and fails with
+> >VM_FAULT_OOM without any fallback. We should do_huge_pmd_wp_page_fallback
+> >instead. This has been fixed in 3.5-rc1 by 1f1d06c3 (thp, memcg: split
+> >hugepage for memcg oom on cow) but it hasn't been backported to 3.2. The
+> >patch applies to 3.2 without any further modifications. I didn't have
+> >time to test it but if it helps you we should push this to the stable
+> >tree.
 > 
-> Ok, so filling .data field in of_device_id[] is not required for our case as
-> we aren't doing anything special in our drivers.
+> 
+> This, unfortunately, didn't fix the problem :(
+> http://www.watchdog.sk/lkml/oom_mysqld3
 
-This is exactly my point, and the reason I bought it up in the
-first place. Normally when you specify an ID table and populate
-the .data attribute, you parse for it in the code and then cast
-it back to some kind of useful data. However, you're not doing
-that, which is precisely why I wondered if the table was
-necessary at all. In all my testing, the DT portion worked and
-the correct STMPE chip was identified without it.
+Dohh. The very same stack mem_cgroup_newpage_charge called from the page
+fault. The heavy inlining is not particularly helping here... So there
+must be some other THP charge leaking out.
+[/me is diving into the code again]
 
-So, are you adding the table for good reason, or because you
-think it's the right thing to do?
+* do_huge_pmd_anonymous_page falls back to handle_pte_fault
+* do_huge_pmd_wp_page_fallback falls back to simple pages so it doesn't
+  charge the huge page
+* do_huge_pmd_wp_page splits the huge page and retries with fallback to
+  handle_pte_fault
+* collapse_huge_page is not called in the page fault path
+* do_wp_page, do_anonymous_page and __do_fault  operate on a single page
+  so the memcg charging cannot return ENOMEM
+
+There are no other callers AFAICS so I am getting clueless. Maybe more
+debugging will tell us something (the inlining has been reduced for thp
+paths which can reduce performance in thp page fault heavy workloads but
+this will give us better traces - I hope).
+
+Anyway do you see the same problem if transparent huge pages are
+disabled?
+echo never > /sys/kernel/mm/transparent_hugepage/enabled)
+---
+>From 93a30140b50d8474a047b91c698f4880149635db Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Thu, 6 Dec 2012 10:40:17 +0100
+Subject: [PATCH] more debugging
+
+---
+ mm/huge_memory.c |    6 +++---
+ mm/memcontrol.c  |    2 +-
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 470cbb4..01a11f1 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -671,7 +671,7 @@ static inline struct page *alloc_hugepage(int defrag)
+ }
+ #endif
+ 
+-int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
++noinline int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			       unsigned long address, pmd_t *pmd,
+ 			       unsigned int flags)
+ {
+@@ -790,7 +790,7 @@ pgtable_t get_pmd_huge_pte(struct mm_struct *mm)
+ 	return pgtable;
+ }
+ 
+-static int do_huge_pmd_wp_page_fallback(struct mm_struct *mm,
++static noinline int do_huge_pmd_wp_page_fallback(struct mm_struct *mm,
+ 					struct vm_area_struct *vma,
+ 					unsigned long address,
+ 					pmd_t *pmd, pmd_t orig_pmd,
+@@ -883,7 +883,7 @@ out_free_pages:
+ 	goto out;
+ }
+ 
+-int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
++noinline int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			unsigned long address, pmd_t *pmd, pmd_t orig_pmd)
+ {
+ 	int ret = 0;
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 9e5b56b..1986c65 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2397,7 +2397,7 @@ done:
+ 	return 0;
+ nomem:
+ 	*ptr = NULL;
+-	__WARN();
++	__WARN_printf("gfp_mask:%u nr_pages:%u oom:%d ret:%d\n", gfp_mask, nr_pages, oom, ret);
+ 	return -ENOMEM;
+ bypass:
+ 	*ptr = NULL;
+-- 
+1.7.10.4
 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Michal Hocko
+SUSE Labs
