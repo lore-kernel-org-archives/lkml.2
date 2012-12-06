@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946916Ab2LFUNa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 15:13:30 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:48240 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751667Ab2LFUN3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 15:13:29 -0500
-X-Sasl-enc: 8VOQLneY4dUUpjys4RwLUPm8T8D9d9SULCXhQWe1AfXx 1354824808
-Date: Thu, 6 Dec 2012 12:13:26 -0800
-From: Greg KH <greg@kroah.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, stable <stable@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [v3.0 stable version][PATCH 1/2] ring-buffer: Fix NULL pointer
- if rb_set_head_page() fails
-Message-ID: <20121206201326.GA10874@kroah.com>
-References: <20121130161238.909829067@goodmis.org>
- <20121130161333.983378567@goodmis.org>
- <1354292203.6276.159.camel@gandalf.local.home>
+	id S1946999Ab2LFUNw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 15:13:52 -0500
+Received: from fn.samba.org ([216.83.154.106]:33097 "EHLO mail.samba.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751361Ab2LFUNu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 15:13:50 -0500
+Date: Thu, 6 Dec 2012 12:13:47 -0800
+From: Jeremy Allison <jra@samba.org>
+To: Jeremy Allison <jra@samba.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Pavel Shilovsky <piastry@etersoft.ru>,
+        linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, wine-devel@winehq.org,
+        linux-nfs@vger.kernel.org
+Subject: Re: [PATCH 0/3] Add O_DENY* flags to fcntl and cifs
+Message-ID: <20121206201347.GB18585@samba2>
+Reply-To: Jeremy Allison <jra@samba.org>
+References: <1354818391-7968-1-git-send-email-piastry@etersoft.ru>
+ <20121206194949.7ab20d56@pyramind.ukuu.org.uk>
+ <20121206195752.GA18585@samba2>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1354292203.6276.159.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121206195752.GA18585@samba2>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 30, 2012 at 11:16:43AM -0500, Steven Rostedt wrote:
-> The function rb_set_head_page() searches the list of ring buffer
-> pages for a the page that has the HEAD page flag set. If it does
-> not find it, it will do a WARN_ON(), disable the ring buffer and
-> return NULL, as this should never happen.
+On Thu, Dec 06, 2012 at 11:57:52AM -0800, Jeremy Allison wrote:
+> On Thu, Dec 06, 2012 at 07:49:49PM +0000, Alan Cox wrote:
+> > On Thu,  6 Dec 2012 22:26:28 +0400
+> > Pavel Shilovsky <piastry@etersoft.ru> wrote:
+> > 
+> > > Network filesystems CIFS, SMB2.0, SMB3.0 and NFSv4 have such flags - this change can benefit cifs and nfs modules. While this change is ok for network filesystems, itsn't not targeted for local filesystems due security problems (e.g. when a user process can deny root to delete a file).
+> > 
+> > If I have my root fs on NFS then the same applies does it not.
+> > 
+> > Your patches fail to describe the security semantics and what file rights
+> > I must have to apply each option. How do I track down a lock user, what
+> > tools are provided ? How do the new options interact with the security
+> > layer?
+> > 
+> > I don't have a problem with the idea, but it needs a lot more clear
+> > description of how it works so the model can be checked and if need be
+> > things tweaked (eg needing write to denywrite etc)
 > 
-> But if this bug happens to happen, not all callers of this function
-> can handle a NULL pointer being returned from it. That needs to be
-> fixed.
+> And this is where things get really ugly of course :-).
 > 
-> Cc: stable@vger.kernel.org # 3.0+
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  kernel/trace/ring_buffer.c |    9 +++++++--
->  1 files changed, 7 insertions(+), 2 deletions(-)
+> For the CIFSFS client they're expecting to be able to
+> just ship them to a Windows server, where they'll
+> get the (insane) Windows semantics. These semantics
+> are not what would be wanted on a local filesystem.
+> 
+> So unless we just say "these things have Windows
+> semantics" (where openers of files can lock out others
+> under dubious circumstances) there'll be this horrible
+> difference between (I'm assuming) the sane semantics that
+> are defined for local filesystems and the insane ones
+> that you get when you're connecting remotely.
+> 
+> I don't know a good way to fix that, but I'm pretty
+> sure you don't want the Windows semantics defined
+> locally :-).
 
-I don't understand why you sent these to stable@ right now, I don't see
-them in Linus's tree, so why are they needed here?
+You could just flags these as "ignored on local filesystems"
+of course, exact semantics defined by the remote filesystem.
 
-Care to resend them when they hit Linus's tree?
+That's really what applications will get anyway. But it's not
+condusive to writing documentation on what these things do :-).
 
-thanks,
-
-greg k-h
+Jeremy.
