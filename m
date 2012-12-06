@@ -1,107 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932519Ab2LFNSS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 08:18:18 -0500
-Received: from mga01.intel.com ([192.55.52.88]:63115 "EHLO mga01.intel.com"
+	id S1754621Ab2LFNU4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 08:20:56 -0500
+Received: from tundra.namei.org ([65.99.196.166]:51318 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932265Ab2LFNSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 08:18:16 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,230,1355126400"; 
-   d="scan'208";a="259901476"
-From: Dongxiao Xu <dongxiao.xu@intel.com>
-To: konrad.wilk@oracle.com, xen-devel@lists.xen.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] xen/swiotlb: Exchange to contiguous memory for map_sg hook
-Date: Thu,  6 Dec 2012 21:08:42 +0800
-Message-Id: <1354799322-6000-1-git-send-email-dongxiao.xu@intel.com>
-X-Mailer: git-send-email 1.7.1
+	id S1752093Ab2LFNUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 08:20:54 -0500
+Date: Fri, 7 Dec 2012 00:25:48 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+cc: Casey Schaufler <casey@schaufler-ca.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: linux-next: unusual update of the security tree
+In-Reply-To: <20121128110132.0082c87680b9b714b8c0689c@canb.auug.org.au>
+Message-ID: <alpine.LRH.2.02.1212070024460.4693@tundra.namei.org>
+References: <20121128101635.d5e864dffc4252ef9d5e1664@canb.auug.org.au> <50B5508D.7050409@schaufler-ca.com> <20121128110132.0082c87680b9b714b8c0689c@canb.auug.org.au>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While mapping sg buffers, checking to cross page DMA buffer is
-also needed. If the guest DMA buffer crosses page boundary, Xen
-should exchange contiguous memory for it.
+Any suggestions on how to fix this?  That branch is public, and what 
+people use to develop against, so I can't rebase it.
 
-Besides, it is needed to backup the original page contents
-and copy it back after memory exchange is done.
 
-This fixes issues if device DMA into software static buffers,
-and in case the static buffer cross page boundary which pages are
-not contiguous in real hardware.
 
-Signed-off-by: Dongxiao Xu <dongxiao.xu@intel.com>
-Signed-off-by: Xiantao Zhang <xiantao.zhang@intel.com>
----
- drivers/xen/swiotlb-xen.c |   47 ++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 46 insertions(+), 1 deletions(-)
+On Wed, 28 Nov 2012, Stephen Rothwell wrote:
 
-diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-index 58db6df..e8f0cfb 100644
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -461,6 +461,22 @@ xen_swiotlb_sync_single_for_device(struct device *hwdev, dma_addr_t dev_addr,
- }
- EXPORT_SYMBOL_GPL(xen_swiotlb_sync_single_for_device);
- 
-+static bool
-+check_continguous_region(unsigned long vstart, unsigned long order)
-+{
-+	unsigned long prev_ma = xen_virt_to_bus((void *)vstart);
-+	unsigned long next_ma;
-+	int i;
-+
-+	for (i = 1; i < (1 << order); i++) {
-+		next_ma = xen_virt_to_bus((void *)(vstart + i * PAGE_SIZE));
-+		if (next_ma != prev_ma + PAGE_SIZE)
-+			return false;
-+		prev_ma = next_ma;
-+	}
-+	return true;
-+}
-+
- /*
-  * Map a set of buffers described by scatterlist in streaming mode for DMA.
-  * This is the scatter-gather version of the above xen_swiotlb_map_page
-@@ -489,7 +505,36 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
- 
- 	for_each_sg(sgl, sg, nelems, i) {
- 		phys_addr_t paddr = sg_phys(sg);
--		dma_addr_t dev_addr = xen_phys_to_bus(paddr);
-+		unsigned long vstart, order;
-+		dma_addr_t dev_addr;
-+
-+		/*
-+		 * While mapping sg buffers, checking to cross page DMA buffer
-+		 * is also needed. If the guest DMA buffer crosses page
-+		 * boundary, Xen should exchange contiguous memory for it.
-+		 * Besides, it is needed to backup the original page contents
-+		 * and copy it back after memory exchange is done.
-+		 */
-+		if (range_straddles_page_boundary(paddr, sg->length)) {
-+			vstart = (unsigned long)__va(paddr & PAGE_MASK);
-+			order = get_order(sg->length + (paddr & ~PAGE_MASK));
-+			if (!check_continguous_region(vstart, order)) {
-+				unsigned long buf;
-+				buf = __get_free_pages(GFP_KERNEL, order);
-+				memcpy((void *)buf, (void *)vstart,
-+					PAGE_SIZE * (1 << order));
-+				if (xen_create_contiguous_region(vstart, order,
-+						fls64(paddr))) {
-+					free_pages(buf, order);
-+					return 0;
-+				}
-+				memcpy((void *)vstart, (void *)buf,
-+					PAGE_SIZE * (1 << order));
-+				free_pages(buf, order);
-+			}
-+		}
-+
-+		dev_addr = xen_phys_to_bus(paddr);
- 
- 		if (swiotlb_force ||
- 		    !dma_capable(hwdev, dev_addr, sg->length) ||
+> Hi Casey,
+> 
+> On Tue, 27 Nov 2012 15:45:17 -0800 Casey Schaufler <casey@schaufler-ca.com> wrote:
+> >
+> > On 11/27/2012 3:16 PM, Stephen Rothwell wrote:
+> > 
+> > > The security tree
+> > > (git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security.git#next)
+> > > looks a bit strange today ... It appears to have been created by Casey
+> > > Schaufler (cc'd) and contains some quite old commits and back merges of
+> > > your tree.  I *guess* you have merged in Casey's tree after he merged in
+> > > your tree from yesterday.
+> > 
+> > I *thought* that I had used the same procedures that worked before.
+> > In fact, I still do think that, but if it's a problem I can purge my
+> > smack-next tree and start over.
+> > 
+> > James, the two changes that came from smack-next are pretty minor. I
+> > don't think you should hesitate to back them out if that helps.
+> 
+> This is the shortlog for the changes in the security tree between
+> yesterday and today;
+> 
+> Casey Schaufler (32):
+>       Commit 272cd7a8c67dd40a31ecff76a503bbb84707f757 introduced     a change to the way rule lists are handled and reported in     the smackfs filesystem. One of the issues addressed had to     do with the termination of read requests on /smack/load.     This change introduced a error in /smack/cipso, which shares     some of the same list processing code.
+>       Revert "Commit 272cd7a8c67dd40a31ecff76a503bbb84707f757 introduced"
+>       Smack: smackfs cipso seq read repair
+>       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
+>       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
+>       Smack: recursive tramsmute
+>       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
+>       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
+>       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
+>       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
+>       Smack: allow for significantly longer Smack labels v4
+>       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
+>       Smack: fix smack_new_inode bogosities
+>       Smack: Maintainer Record
+>       Smack: onlycap limits on CAP_MAC_ADMIN
+>       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
+>       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
+>       Smack: user access check bounds
+>       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
+>       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
+>       Smack: remove task_wait() hook.
+>       Smack: setprocattr memory leak fix
+>       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
+>       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
+>       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
+>       Merge branch 'for-1209'
+>       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
+>       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
+>       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security
+>       Merge branch 'next' of git://git.kernel.org/.../jmorris/linux-security into for-1211
+>       Smack: use select not depends in Kconfig
+>       Smack: create a sysfs mount point for smackfs
+> 
+> Rafal Krypa (2):
+>       Smack: don't show empty rules when /smack/load or /smack/load2 is read
+>       Smack: implement revoking all rules for a subject label
+> 
+> Tetsuo Handa (1):
+>       gfp flags for security_inode_alloc()?
+> 
+> It's a bit of a mess :-(
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+
 -- 
-1.7.1
-
+James Morris
+<jmorris@namei.org>
