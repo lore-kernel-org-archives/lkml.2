@@ -1,91 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964848Ab2LFWQI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 17:16:08 -0500
-Received: from www.hansjkoch.de ([178.63.77.200]:51530 "EHLO www.hansjkoch.de"
+	id S1755028Ab2LFWUn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 17:20:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53140 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752069Ab2LFWQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 17:16:06 -0500
-Date: Thu, 6 Dec 2012 23:15:59 +0100
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Vitalii Demianets <vitas@nppfactor.kiev.ua>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Cong Ding <dinggnu@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v2] drivers/uio/uio_pdrv_genirq.c: Fix memory freeing
- issues
-Message-ID: <20121206221559.GB2611@local>
-References: <201211271929.32315.vitas@nppfactor.kiev.ua>
- <201212051122.57724.vitas@nppfactor.kiev.ua>
- <20121206024101.GB7175@local>
- <201212061111.39057.vitas@nppfactor.kiev.ua>
+	id S1752554Ab2LFWUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 17:20:40 -0500
+Subject: [PATCH 01/10] kvm: Restrict non-existing slot state transitions
+To: mtosatti@redhat.com, gleb@redhat.com
+From: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Date: Thu, 06 Dec 2012 15:20:20 -0700
+Message-ID: <20121206222019.24968.92027.stgit@bling.home>
+In-Reply-To: <20121206214722.24968.6043.stgit@bling.home>
+References: <20121206214722.24968.6043.stgit@bling.home>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201212061111.39057.vitas@nppfactor.kiev.ua>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 06, 2012 at 11:11:38AM +0200, Vitalii Demianets wrote:
-> On Thursday 06 December 2012 04:41:01 Hans J. Koch wrote:
-> > > @@ -63,7 +68,7 @@ static irqreturn_t uio_pdrv_genirq_handler(int irq, 
-> struct uio_info *dev_info)
-> > >  	 * remember the state so we can allow user space to enable it later.
-> > >  	 */
-> > >  
-> > > -	if (!test_and_set_bit(0, &priv->flags))
-> > > +	if (!test_and_set_bit(UIO_IRQ_DISABLED, &priv->flags))
-> > >  		disable_irq_nosync(irq);
-> > 
-> > That is not safe. That flag can only be changed by userspace, and if the
-> > userspace part is not running, the CPU on which the irq is pending will
-> > hang. 
-> > The handler has to disable the interrupt in any case.
-> > (The original version had the same problem, I know...)
-> > 
-> 
-> Perhaps I'm missing something here, but I don't see your point. If userspace 
-> is not (implicitly) calling uio_pdrv_genirq_irqcontrol() by writing to the 
-> device file, then on the first invocation of interrupt handler that IRQ is 
-> disabled by disable_irq_nosync() and that's the end of story - no more irqs, 
-> no problems. Until userspace writes non-zero to the device file, of course.
+The API documentation states:
 
-If you run into the irq handler, the interrupt was obviously enabled. Since
-irq sharing is not supported by this driver, you ALWAYS have to disable it
-because it IS your interrupt. Storing the enabled/disabled status in a
-variable is not needed at all here. Or am I missing something?
+	When changing an existing slot, it may be moved in the guest
+	physical memory space, or its flags may be modified.
 
-> 
-> > >  	priv->uioinfo = uioinfo;
-> > >  	spin_lock_init(&priv->lock);
-> > > -	priv->flags = 0; /* interrupt is enabled to begin with */
-> > > +	/* interrupt is enabled to begin with */
-> > > +	priv->flags = uioinfo_alloced ? (1 << UIO_INFO_ALLOCED) : 0;
-> > 
-> > The comment doesn't describe the line it's supposed to comment.
-> > 
-> 
-> The comment draws attention to the fact that UIO_IRQ_DISABLED is not set 
-> initially, and this is done on purpose.
+An "existing slot" requires a non-zero npages (memory_size).  The only
+transition we should therefore allow for a non-existing slot should be
+to create the slot, which includes setting a non-zero memory_size.  We
+currently allow calls to modify non-existing slots, which is pointless,
+confusing, and possibly wrong.
 
-And that's right because the interrupt is initially enabled by
-uio_register_device().
+With this we know that the invalidation path of __kvm_set_memory_region
+is always for a delete or move and never for adding a zero size slot.
 
-> Particularly it is done because of 
-> the potential problem you noted earlier - if userspace is never setting this 
-> flag, the interrupt handler will disable irq on the first invocation thanks 
-> to the absence of the flag (if(!test_and_set_bit(UIO_IRQ_DISABLED,...) will 
-> succeed).
-> So, I think we really need some comment explaining how the things are arranged 
-> here; after all even you haven't got the whole picture on the first glance.
-> Maybe the current wording of the comment is not the best. I've just left what 
-> was there before.
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+---
+ virt/kvm/kvm_main.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-OK, but we humans tend to read a text from top to bottom, so a comment should
-describe the code immediately following it. And that is a line that deals with
-memory allocation, not with interrupts.
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 6e8fa7e..e426704 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -753,10 +753,15 @@ int __kvm_set_memory_region(struct kvm *kvm,
+ 	new.npages = npages;
+ 	new.flags = mem->flags;
+ 
+-	/* Disallow changing a memory slot's size. */
++	/*
++	 * Disallow changing a memory slot's size or changing anything about
++	 * zero sized slots that doesn't involve making them non-zero.
++	 */
+ 	r = -EINVAL;
+ 	if (npages && old.npages && npages != old.npages)
+ 		goto out_free;
++	if (!npages && !old.npages)
++		goto out_free;
+ 
+ 	/* Check for overlaps */
+ 	r = -EEXIST;
+@@ -775,7 +780,7 @@ int __kvm_set_memory_region(struct kvm *kvm,
+ 	r = -ENOMEM;
+ 
+ 	/* Allocate if a slot is being created */
+-	if (npages && !old.npages) {
++	if (!old.npages) {
+ 		new.user_alloc = user_alloc;
+ 		new.userspace_addr = mem->userspace_addr;
+ 
 
-Thanks,
-Hans
