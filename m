@@ -1,190 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964874Ab2LFWzt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 17:55:49 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:10803 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754748Ab2LFWzr (ORCPT
+	id S964951Ab2LFXCN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 18:02:13 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:36894 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753563Ab2LFXCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 17:55:47 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6918"; a="12231901"
-From: Stepan Moskovchenko <stepanm@codeaurora.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Rob Herring <rob.herring@calxeda.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, Bryan Huntsman <bryanh@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        David Brown <davidb@codeaurora.org>, mbohan@codeaurora.org,
-        Stepan Moskovchenko <stepanm@codeaurora.org>
-Subject: [PATCH v3] of: Output devicetree alias names in uevent
-Date: Thu,  6 Dec 2012 14:55:41 -0800
-Message-Id: <1354834541-26765-1-git-send-email-stepanm@codeaurora.org>
-X-Mailer: git-send-email 1.7.8.3
-In-Reply-To: <20121206192500.0BF073E3A5E@localhost>
-References: <20121206192500.0BF073E3A5E@localhost>
+	Thu, 6 Dec 2012 18:02:12 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAM3j68q7LPJM1aUZbwHJkyive3UcRYwg-yF-O=UXmfsi98E6dA@mail.gmail.com>
+References: <1354210800-27230-1-git-send-email-dinggnu@gmail.com>
+	<20121130001304.GB2590@local>
+	<CAM3j68q7LPJM1aUZbwHJkyive3UcRYwg-yF-O=UXmfsi98E6dA@mail.gmail.com>
+Date: Fri, 7 Dec 2012 00:02:11 +0100
+X-Google-Sender-Auth: vn7VGxa5-05JINtY_eeVHxMqkmk
+Message-ID: <CAM3j68pwEanEC3v=thNs=_95S4BqyXdCoi-kUZ06+-50X-+qGw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/1] uio.c: solve memory leak
+From: Cong Ding <dinggnu@gmail.com>
+To: "Hans J. Koch" <hjk@hansjkoch.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In some situations, userspace may want to resolve a
-device by function and logical number (ie, "serial0")
-rather than by the base address or full device path. Being
-able to resolve a device by alias frees userspace from the
-burden of otherwise having to maintain a mapping between
-device addresses and their logical assignments on each
-platform when multiple instances of the same hardware block
-are present in the system.
+ping Hans, did you have any comment on this?
 
-Although the uevent device attribute contains devicetree
-compatible information and the full device path, the uevent
-does not list the alises that may have been defined for the
-device.
+- cong
 
-Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
----
-v3: Fix copyright/license message on of_platform.h to match
-    the messages in the file the code came from.
-
-I also noticed that some of the comments in the original
-header might no longer apply, but I copied the header in
-its entirety. I can try to trim these down if you like.
-
- drivers/of/base.c       |   23 +++--------------------
- drivers/of/device.c     |   17 +++++++++++++++++
- drivers/of/of_private.h |   41 +++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 61 insertions(+), 20 deletions(-)
- create mode 100644 drivers/of/of_private.h
-
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index 5806449..715aef2 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -24,32 +24,15 @@
- #include <linux/slab.h>
- #include <linux/proc_fs.h>
-
--/**
-- * struct alias_prop - Alias property in 'aliases' node
-- * @link:	List node to link the structure in aliases_lookup list
-- * @alias:	Alias property name
-- * @np:		Pointer to device_node that the alias stands for
-- * @id:		Index value from end of alias name
-- * @stem:	Alias string without the index
-- *
-- * The structure represents one alias property of 'aliases' node as
-- * an entry in aliases_lookup list.
-- */
--struct alias_prop {
--	struct list_head link;
--	const char *alias;
--	struct device_node *np;
--	int id;
--	char stem[0];
--};
-+#include "of_private.h"
-
--static LIST_HEAD(aliases_lookup);
-+LIST_HEAD(aliases_lookup);
-
- struct device_node *allnodes;
- struct device_node *of_chosen;
- struct device_node *of_aliases;
-
--static DEFINE_MUTEX(of_aliases_mutex);
-+DEFINE_MUTEX(of_aliases_mutex);
-
- /* use when traversing tree through the allnext, child, sibling,
-  * or parent members of struct device_node.
-diff --git a/drivers/of/device.c b/drivers/of/device.c
-index 4c74e4f..b8d31db 100644
---- a/drivers/of/device.c
-+++ b/drivers/of/device.c
-@@ -8,6 +8,7 @@
- #include <linux/slab.h>
-
- #include <asm/errno.h>
-+#include "of_private.h"
-
- /**
-  * of_match_device - Tell if a struct device matches an of_device_id list
-@@ -131,6 +132,7 @@ ssize_t of_device_get_modalias(struct device *dev, char *str, ssize_t len)
- void of_device_uevent(struct device *dev, struct kobj_uevent_env *env)
- {
- 	const char *compat;
-+	struct alias_prop *app;
- 	int seen = 0, cplen, sl;
-
- 	if ((!dev) || (!dev->of_node))
-@@ -153,6 +155,21 @@ void of_device_uevent(struct device *dev, struct kobj_uevent_env *env)
- 		seen++;
- 	}
- 	add_uevent_var(env, "OF_COMPATIBLE_N=%d", seen);
-+
-+	seen = 0;
-+	mutex_lock(&of_aliases_mutex);
-+	list_for_each_entry(app, &aliases_lookup, link) {
-+		if (dev->of_node == app->np) {
-+			add_uevent_var(env, "OF_ALIAS_%d=%s", seen,
-+				       app->alias);
-+			seen++;
-+		}
-+	}
-+
-+	if (seen)
-+		add_uevent_var(env, "OF_ALIAS_N=%d", seen);
-+
-+	mutex_unlock(&of_aliases_mutex);
- }
-
- int of_device_uevent_modalias(struct device *dev, struct kobj_uevent_env *env)
-diff --git a/drivers/of/of_private.h b/drivers/of/of_private.h
-new file mode 100644
-index 0000000..b38415c
---- /dev/null
-+++ b/drivers/of/of_private.h
-@@ -0,0 +1,41 @@
-+/*
-+ * Procedures for creating, accessing and interpreting the device tree.
-+ *
-+ * Paul Mackerras	August 1996.
-+ * Copyright (C) 1996-2005 Paul Mackerras.
-+ *
-+ *  Adapted for 64bit PowerPC by Dave Engebretsen and Peter Bergner.
-+ *    {engebret|bergner}@us.ibm.com
-+ *
-+ *  Adapted for sparc and sparc64 by David S. Miller davem@davemloft.net
-+ *
-+ *  Reconsolidated from arch/x/kernel/prom.c by Stephen Rothwell and
-+ *  Grant Likely.
-+ *
-+ *      This program is free software; you can redistribute it and/or
-+ *      modify it under the terms of the GNU General Public License
-+ *      as published by the Free Software Foundation; either version
-+ *      2 of the License, or (at your option) any later version.
-+ */
-+
-+/**
-+ * struct alias_prop - Alias property in 'aliases' node
-+ * @link:	List node to link the structure in aliases_lookup list
-+ * @alias:	Alias property name
-+ * @np:		Pointer to device_node that the alias stands for
-+ * @id:		Index value from end of alias name
-+ * @stem:	Alias string without the index
-+ *
-+ * The structure represents one alias property of 'aliases' node as
-+ * an entry in aliases_lookup list.
-+ */
-+struct alias_prop {
-+	struct list_head link;
-+	const char *alias;
-+	struct device_node *np;
-+	int id;
-+	char stem[0];
-+};
-+
-+extern struct mutex of_aliases_mutex;
-+extern struct list_head aliases_lookup;
---
-The Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
-
+On Fri, Nov 30, 2012 at 12:03 PM, Cong Ding <dinggnu@gmail.com> wrote:
+> Hi Hans, I think the memory allocated with kzalloc is properly freed
+> by calling kobject_put.
+>
+> I can give a simple explanation.
+>
+> 1)  when we call kobject_init, the parameter portio_attr_type is
+> passed in. portio_attr_type includes a function pointer to
+> portio_release, which releases the memory of portio.
+>
+> 2) when we call kobject_put, kref_put is called with the pointer of
+> function kobject_release.
+> 3) kref_put calls kref_sub, with the same pointer of function kobject_release.
+> 4) and kref_put calls the function kboject_release if
+> atomic_sub_and_test returns true
+>
+> 5) let's look at what kobject_release is. it calls kobject_cleanup,
+> and kobject_cleanup calls t->release(kobj) where t->release is exactly
+> the function we passed in through portio_init at step (1). so function
+> portio_release is called, and the memory allocated with kzalloc is
+> freed.
+>
+> If there are anything wrong in my analysis, please feel free to let me know.
+>
+> Personally, I suggest to add a function to create and release
+> uio_portio, which is similar as kobject_create and kobject_put in file
+> lib/kobject.c. In this way, it avoid other readers thinking the memory
+> is not freed (and we should add some comments here). For example,
+> uio_portio_create call kzalloc and kboject_init, and returns
+> uio_portio, which is similar as function kobject_create; and
+> uio_portio_release calls kobject_put to release the memory. And we do
+> same thing for uio_map.
+>
+> The usage here is quite strange, but it works. If I write this
+> function from zero, I will use a pointer to kobject in uio_portio
+> struct instead of kobject struct itself. In this case I can call
+> kobject_create instead of kobject_init, and then we do both
+> kzalloc(uio_portio) and kfree(uio_portio) in the file uio.c.
+>
+> Best,
+> Cong
+>
+> On Fri, Nov 30, 2012 at 1:13 AM, Hans J. Koch <hjk@hansjkoch.de> wrote:
+>> There's still another bug: The memory allocated with kzalloc is
+>> never freed.
