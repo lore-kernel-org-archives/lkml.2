@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424854Ab2LFV2U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 16:28:20 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:58282 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1424822Ab2LFV2S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 16:28:18 -0500
+	id S1424871Ab2LFVbr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 16:31:47 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:37209 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1424779Ab2LFVbp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 16:31:45 -0500
+Date: Thu, 6 Dec 2012 16:31:33 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Jeremy Allison <jra@samba.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Pavel Shilovsky <piastry@etersoft.ru>,
+        linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, wine-devel@winehq.org,
+        linux-nfs@vger.kernel.org
+Subject: Re: [PATCH 0/3] Add O_DENY* flags to fcntl and cifs
+Message-ID: <20121206213133.GB4821@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Jeremy Allison <jra@samba.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+	Pavel Shilovsky <piastry@etersoft.ru>, linux-cifs@vger.kernel.org,
+	linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+	wine-devel@winehq.org, linux-nfs@vger.kernel.org
+References: <1354818391-7968-1-git-send-email-piastry@etersoft.ru>
+ <20121206194949.7ab20d56@pyramind.ukuu.org.uk>
+ <20121206195752.GA18585@samba2>
 MIME-Version: 1.0
-In-Reply-To: <20121206160052.GB32620@linux-mips.org>
-References: <20121206160052.GB32620@linux-mips.org>
-Date: Thu, 6 Dec 2012 15:28:17 -0600
-Message-ID: <CACoURw7JTFMzmcRZHmBchcWPC8x5LFFfC1nGH-Xxc8f3KjNE2Q@mail.gmail.com>
-Subject: Re: RM9000 / E9000, MSP71xx class processors, SOCs and eval boards
-From: Shane McDonald <mcdonald.shane@gmail.com>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips <linux-mips@linux-mips.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121206195752.GA18585@samba2>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 6, 2012 at 10:00 AM, Ralf Baechle <ralf@linux-mips.org> wrote:
-> Folks,
->
-> since many years the support code for those devices is rusting away in
-> the lmo git tree and frankly, I'd get rid of it because there's been
-> very few patch submissions or any kind of indication that somebody
-> still cares.  In short, this has turned into a waste of resource not
-> least my time.
->
-> So, is anybody still interested in maintaining that code?  If so, you
-> better attach a bunch of patches to your reply.
->
->   Ralf
->
+On Thu, Dec 06, 2012 at 11:57:52AM -0800, Jeremy Allison wrote:
+> 
+> And this is where things get really ugly of course :-).
+> 
+> For the CIFSFS client they're expecting to be able to
+> just ship them to a Windows server, where they'll
+> get the (insane) Windows semantics. These semantics
+> are not what would be wanted on a local filesystem.
 
-I'm interested in the MSP71xx eval board, although I may be
-the only person in the world who cares.  Specifically, I use the
-msp71xx_defconfig.  3.7-rc8 compiles with gcc-4.6.3
-without requiring any patches.
+I'm confused; why would a userspace application need to be able to
+request this behavior?  I can understand why an SMB client might
+depend on this so it can use Windows' insane cache coherency scheme.
+Are you trying to let Samba act as a middle man, where a remote file
+system is mounted on Linux, and then Samba will try to act as a SMB
+server, so you want to be able to pass through these semantics, i.e.:
 
-I don't know when the last time the RM9000 was compilable,
-but I have no interest in that, nor do I have interest in the
-FPGA or eval board versions of the MSP7120 (no hardware to
-test with).
+   Windows SMB Server <--->  Linux cifs remote file system <--->
+      Linux Samba server <---> Windows SMB client
 
-I had hoped that someone from PMC-Sierra would respond, but
-maybe they don't care anymore...
+Is this somewhat contrivuewd example the intended use case?  Or
+something else?
 
-Shane McDonald
+					- Ted
