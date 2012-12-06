@@ -1,84 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754720Ab2LFHMo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 02:12:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64950 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753975Ab2LFHMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 02:12:43 -0500
-Date: Thu, 6 Dec 2012 09:12:39 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH] KVM: MMU: optimize for set_spte
-Message-ID: <20121206071239.GZ19514@redhat.com>
-References: <50BD32F7.5080601@linux.vnet.ibm.com>
+	id S1754348Ab2LFH2J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 02:28:09 -0500
+Received: from ngcobalt02.manitu.net ([217.11.48.102]:42321 "EHLO
+	ngcobalt02.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751471Ab2LFH2I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 02:28:08 -0500
+X-manitu-Original-Sender-IP: 79.230.44.69
+X-manitu-Original-Receiver-Name: ngcobalt02.manitu.net
+Message-ID: <50C04902.7010505@grandegger.com>
+Date: Thu, 06 Dec 2012 08:28:02 +0100
+From: Wolfgang Grandegger <wg@grandegger.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50BD32F7.5080601@linux.vnet.ibm.com>
+To: Roland Stigge <stigge@antcom.de>
+CC: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
+        jbe@pengutronix.de, plagnioj@jcrosoft.com, highguy@gmail.com,
+        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
+        rmallon@gmail.com, tru@work-microwave.de, sr@denx.de
+Subject: Re: [PATCH 3/6 v9] gpio: Add userland device interface to block GPIO
+References: <1354653588-4018-1-git-send-email-stigge@antcom.de> <1354653588-4018-4-git-send-email-stigge@antcom.de> <50BF99F3.4060207@grandegger.com> <50BFC8C9.5070504@antcom.de>
+In-Reply-To: <50BFC8C9.5070504@antcom.de>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 04, 2012 at 07:17:11AM +0800, Xiao Guangrong wrote:
-> There are two cases we need to adjust page size in set_spte:
-> 1): the one is other vcpu creates new sp in the window between mapping_level()
->     and acquiring mmu-lock.
-> 2): the another case is the new sp is created by itself (page-fault path) when
->     guest uses the target gfn as its page table.
+On 12/05/2012 11:20 PM, Roland Stigge wrote:
+> Hi Wolfgang,
 > 
-> In current code, set_spte drop the spte and emulate the access for these case,
-> it works not good:
-> - for the case 1, it may destroy the mapping established by other vcpu, and
->   do expensive instruction emulation.
-> - for the case 2, it may emulate the access even if the guest is accessing
->   the page which not used as page table. There is a example, 0~2M is used as
->   huge page in guest, in this huge page, only page 3 used as page table, then
->   guest read/writes on other pages can cause instruction emulation.
+> On 05/12/12 20:01, Wolfgang Grandegger wrote:
+>>> +	for (i = 0; i < block->ngpio; i++) {
+>>> +		status = gpio_request(block->gpio[i], "gpioblock dev");
+>>
+>> You could use the name of the GPIO block.
 > 
-> Both of these cases can be fixed by allowing guest to retry the access, it
-> will refault, then we can establish the mapping by using small page
+> OK.
 > 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Applied to queue. Thanks.
+>>> +		if (status)
+>>> +			goto err1;
+>>> +
+>>> +		irq = gpio_to_irq(block->gpio[i]);
+>>> +		if (irq >= 0 &&
+>>> +		    !test_bit(FLAG_IS_OUT, &gpio_desc[block->gpio[i]].flags) &&
+>>> +		    !gpio_block_is_irq_duplicate(block, i)) {
+>>> +			status = request_irq(irq, gpio_block_irq_handler,
+>>> +					     IRQF_TRIGGER_FALLING,
+>>> +					     block->name, block);
+>>> +			if (status)
+>>> +				goto err2;
+>>> +
+>>> +			block->irq_controlled = true;
+>>> +		}
+>>> +	}
+>>
+>> There is no need to request IRQs if "O_NONBLOCK" is specified.
+> 
+> Sure? Regarding this, I found: "The poll() function shall not be
+> affected by the O_NONBLOCK flag." [1]
 
-> ---
->  arch/x86/kvm/mmu.c |   16 ++++++++++++----
->  1 files changed, 12 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index b875a9e..01d7c2a 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -2382,12 +2382,20 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
->  	    || (!vcpu->arch.mmu.direct_map && write_fault
->  		&& !is_write_protection(vcpu) && !user_fault)) {
-> 
-> +		/*
-> +		 * There are two cases:
-> +		 * - the one is other vcpu creates new sp in the window
-> +		 *   between mapping_level() and acquiring mmu-lock.
-> +		 * - the another case is the new sp is created by itself
-> +		 *   (page-fault path) when guest uses the target gfn as
-> +		 *   its page table.
-> +		 * Both of these cases can be fixed by allowing guest to
-> +		 * retry the access, it will refault, then we can establish
-> +		 * the mapping by using small page.
-> +		 */
->  		if (level > PT_PAGE_TABLE_LEVEL &&
-> -		    has_wrprotected_page(vcpu->kvm, gfn, level)) {
-> -			ret = 1;
-> -			drop_spte(vcpu->kvm, sptep);
-> +		    has_wrprotected_page(vcpu->kvm, gfn, level))
->  			goto done;
-> -		}
-> 
->  		spte |= PT_WRITABLE_MASK | SPTE_MMU_WRITEABLE;
-> 
-> -- 
-> 1.7.7.6
+Ah, didn't know that.
 
---
-			Gleb.
+>> I observed that the read returns once immediately (without blocking)
+>> after reboot. I did not look into that yet.
+> 
+> Didn't happen to me. Can you tell how this can be reproduced?
+
+I think there is an interrupt pending for some reason. It might not be
+the case with your setup.
+
+Feel free to add my:
+
+"Tested by: Wolfgang Grandegger <wg@grandegger.com>".
+
+Will do some more tests when time permits, especially with mixed GPIO
+input and output.
+
+Wolfgang.
+
