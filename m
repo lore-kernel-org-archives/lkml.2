@@ -1,74 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424711Ab2LFUYc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 15:24:32 -0500
-Received: from mail.tpi.com ([70.99.223.143]:1654 "EHLO mail.tpi.com"
+	id S1424797Ab2LFUZU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 15:25:20 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:42189 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422940Ab2LFUYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 15:24:31 -0500
-From: Tim Gardner <tim.gardner@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Tim Gardner <tim.gardner@canonical.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Don Fry <donald.h.fry@intel.com>, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [PATCH wireless-next] iwlwifi: iwlagn_request_scan: Fix check for NULL priv->scan_request
-Date: Thu,  6 Dec 2012 13:24:05 -0700
-Message-Id: <1354825445-79551-1-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1423238Ab2LFUZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 15:25:16 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Toshi Kani <toshi.kani@hp.com>, Hanjun Guo <guohanjun@huawei.com>,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
+        wency@cn.fujitsu.com, lenb@kernel.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Tang Chen <tangchen@cn.fujitsu.com>, Liujiang <jiang.liu@huawei.com>,
+        Huxinwei <huxinwei@huawei.com>
+Subject: Re: [RFC PATCH v3 0/3] acpi: Introduce prepare_remove device operation
+Date: Thu, 06 Dec 2012 21:30:06 +0100
+Message-ID: <1759496.HMVHC2ECHC@vostro.rjw.lan>
+User-Agent: KMail/4.9.3 (Linux/3.7.0-rc8; KDE/4.9.3; x86_64; ; )
+In-Reply-To: <50C0CA90.7010608@gmail.com>
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com> <1354579848.21585.54.camel@misato.fc.hp.com> <50C0CA90.7010608@gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The WARN_ON_ONCE() check for scan_request will not correctly detect
-a NULL pointer for scan_type == IWL_SCAN_NORMAL. Make it explicit
-that the check only applies to normal scans.
+On Friday, December 07, 2012 12:40:48 AM Jiang Liu wrote:
+> On 12/04/2012 08:10 AM, Toshi Kani wrote:
+> > On Mon, 2012-12-03 at 12:25 +0800, Hanjun Guo wrote:
+> >> On 2012/11/30 6:27, Toshi Kani wrote:
+> >>> On Thu, 2012-11-29 at 12:48 +0800, Hanjun Guo wrote:
+> >>>> On 2012/11/29 2:41, Toshi Kani wrote:
+> >>>>> On Wed, 2012-11-28 at 19:05 +0800, Hanjun Guo wrote:
+> >>>>>> On 2012/11/24 1:50, Vasilis Liaskovitis wrote:
+> >>>>>> As you may know, the ACPI based hotplug framework we are working on already addressed
+> >>>>>> this problem, and the way we slove this problem is a bit like yours.
+> >>>>>>
+> >>>>>> We introduce hp_ops in struct acpi_device_ops:
+> >>>>>> struct acpi_device_ops {
+> >>>>>> 	acpi_op_add add;
+> >>>>>> 	acpi_op_remove remove;
+> >>>>>> 	acpi_op_start start;
+> >>>>>> 	acpi_op_bind bind;
+> >>>>>> 	acpi_op_unbind unbind;
+> >>>>>> 	acpi_op_notify notify;
+> >>>>>> #ifdef	CONFIG_ACPI_HOTPLUG
+> >>>>>> 	struct acpihp_dev_ops *hp_ops;
+> >>>>>> #endif	/* CONFIG_ACPI_HOTPLUG */
+> >>>>>> };
+> >>>>>>
+> >>>>>> in hp_ops, we divide the prepare_remove into six small steps, that is:
+> >>>>>> 1) pre_release(): optional step to mark device going to be removed/busy
+> >>>>>> 2) release(): reclaim device from running system
+> >>>>>> 3) post_release(): rollback if cancelled by user or error happened
+> >>>>>> 4) pre_unconfigure(): optional step to solve possible dependency issue
+> >>>>>> 5) unconfigure(): remove devices from running system
+> >>>>>> 6) post_unconfigure(): free resources used by devices
+> >>>>>>
+> >>>>>> In this way, we can easily rollback if error happens.
+> >>>>>> How do you think of this solution, any suggestion ? I think we can achieve
+> >>>>>> a better way for sharing ideas. :)
+> >>>>>
+> >>>>> Yes, sharing idea is good. :)  I do not know if we need all 6 steps (I
+> >>>>> have not looked at all your changes yet..), but in my mind, a hot-plug
+> >>>>> operation should be composed with the following 3 phases.
+> >>>>
+> >>>> Good idea ! we also implement a hot-plug operation in 3 phases:
+> >>>> 1) acpihp_drv_pre_execute
+> >>>> 2) acpihp_drv_execute
+> >>>> 3) acpihp_drv_post_execute
+> >>>> you may refer to :
+> >>>> https://lkml.org/lkml/2012/11/4/79
+> >>>
+> >>> Great.  Yes, I will take a look.
+> >>
+> >> Thanks, any comments are welcomed :)
+> > 
+> > If I read the code right, the framework calls ACPI drivers differently
+> > at boot-time and hot-add as follows.  That is, the new entry points are
+> > called at hot-add only, but .add() is called at both cases.  This
+> > requires .add() to work differently.
+> > 
+> > Boot    : .add()
+> > Hot-Add : .add(), .pre_configure(), configure(), etc.
+> > 
+> > I think the boot-time and hot-add initialization should be done
+> > consistently.  While there is difficulty with the current boot sequence,
+> > the framework should be designed to allow them consistent, not make them
+> > diverged.
+> Hi Toshi,
+> 	We have separated hotplug operations from driver binding/unbinding interface
+> due to following considerations.
+> 1) Physical CPU and memory devices are initialized/used before the ACPI subsystem
+>    is initialized. So under normal case, .add() of processor and acpi_memhotplug only
+>    figures out information about device already in working state instead of starting
+>    the device.
+> 2) It's impossible to rmmod the processor and acpi_memhotplug driver at runtime 
+>    if .remove() of CPU and memory drivers do really remove the CPU/memory device
+>    from the system. And the ACPI processor driver also implements CPU PM funcitonality
+>    other than hotplug.
+> 
+> And recently Rafael has mentioned that he has a long term view to get rid of the
+> concept of "ACPI device". If that happens, we could easily move the hotplug
+> logic from ACPI device drivers into the hotplug framework if the hotplug logic
+> is separated from the .add()/.remove() callbacks. Actually we could even move all
+> hotplug only logic into the hotplug framework and don't rely on any ACPI device
+> driver any more. So we could get rid of all these messy things. We could achieve
+> that by:
+> 1) moving code shared by ACPI device drivers and the hotplug framework into the core.
+> 2) moving hotplug only code to the framework.
+> 
+> Hi Rafael, what's your thoughts here?
 
-Convert WARN_ON_ONCE to WARN_ON since priv->scan_request really _can't_
-be NULL for normal scans. If it is then we should emit frequent warnings.
+I think that sounds good at the high level, but we need to get there
+incrementally.  This way it will be easier to maintain backwards
+compatibility and follow the changes.  Also, it will be easier for all of
+the interested people from different companies to participate in the
+development and make sure that everyones needs are going to be met this
+way.
 
-This smatch warning led to scrutiny of iwlagn_request_scan():
+At this point, I'd like to see where the Toshi Kani's proposal is going to
+take us.
 
-drivers/net/wireless/iwlwifi/dvm/scan.c:894 iwlagn_request_scan() error: we previously assumed 'priv->scan_request' could be null (see line 792)
+Thanks,
+Rafael
 
-Cc: Johannes Berg <johannes.berg@intel.com>
-Cc: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-Cc: Intel Linux Wireless <ilw@linux.intel.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>
-Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Cc: Don Fry <donald.h.fry@intel.com>
-Cc: linux-wireless@vger.kernel.org
-Cc: netdev@vger.kernel.org
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
 
-This patch does apply to 3.6.y, but it doesn't fix an existing
-bug so I don't think it qualifies. This patch simply makes
-the driver more robust for future development.
-
- drivers/net/wireless/iwlwifi/dvm/scan.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/wireless/iwlwifi/dvm/scan.c b/drivers/net/wireless/iwlwifi/dvm/scan.c
-index bb9f625..e5cbcca 100644
---- a/drivers/net/wireless/iwlwifi/dvm/scan.c
-+++ b/drivers/net/wireless/iwlwifi/dvm/scan.c
-@@ -673,8 +673,9 @@ static int iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
- 	const u8 *ssid = NULL;
- 	u8 ssid_len = 0;
- 
--	if (WARN_ON_ONCE(priv->scan_request &&
--			 priv->scan_request->n_channels > MAX_SCAN_CHANNEL))
-+	if (WARN_ON(priv->scan_type == IWL_SCAN_NORMAL &&
-+		(!priv->scan_request ||
-+		priv->scan_request->n_channels > MAX_SCAN_CHANNEL)))
- 		return -EINVAL;
- 
- 	lockdep_assert_held(&priv->mutex);
 -- 
-1.7.9.5
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
