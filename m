@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946604Ab2LFS1Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 13:27:24 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:57893 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946536Ab2LFS0t (ORCPT
+	id S1946636Ab2LFS16 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 13:27:58 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:39448 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946537Ab2LFS0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 13:26:49 -0500
+	Thu, 6 Dec 2012 13:26:44 -0500
 From: Pavel Shilovsky <piastry@etersoft.ru>
 To: linux-cifs@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         wine-devel@winehq.org, linux-nfs@vger.kernel.org
-Subject: [PATCH 3/3] CIFS: Use NT_CREATE_ANDX command for forcemand mounts
-Date: Thu,  6 Dec 2012 22:26:31 +0400
-Message-Id: <1354818391-7968-4-git-send-email-piastry@etersoft.ru>
+Subject: [PATCH 1/3] fcntl: Introduce new O_DENY* open flags for network filesystems
+Date: Thu,  6 Dec 2012 22:26:29 +0400
+Message-Id: <1354818391-7968-2-git-send-email-piastry@etersoft.ru>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1354818391-7968-1-git-send-email-piastry@etersoft.ru>
 References: <1354818391-7968-1-git-send-email-piastry@etersoft.ru>
@@ -21,55 +21,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-forcemand mount option now lets us use Windows mandatory style of
-byte-range locks even if server supports posix ones - switches on
-Windows locking mechanism. Share flags is another locking mehanism
-provided by Windows semantic that can be used by NT_CREATE_ANDX
-command. This patch combines all Windows locking mechanism in one
-mount option by using NT_CREATE_ANDX to open files if forcemand is on.
+This patch adds 3 flags:
+1) O_DENYREAD that doesn't permit read access
+2) O_DENYWRITE that doesn't permit write access
+3) O_DENYDELETE that doesn't permit delete or rename
+
+Network filesystems CIFS, SMB2.0, SMB3.0 and NFSv4 have such flags -
+this change can benefit cifs and nfs modules. While this change is ok
+for network filesystems, itsn't not targeted for local filesystems due
+to security problems (e.g. when a user process can deny root to delete
+a file).
 
 Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
 ---
- fs/cifs/dir.c  |    1 +
- fs/cifs/file.c |    6 ++++--
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ fs/fcntl.c                       |    5 +++--
+ include/uapi/asm-generic/fcntl.h |   11 +++++++++++
+ 2 files changed, 14 insertions(+), 2 deletions(-)
 
-diff --git a/fs/cifs/dir.c b/fs/cifs/dir.c
-index 4784d53..8edd950 100644
---- a/fs/cifs/dir.c
-+++ b/fs/cifs/dir.c
-@@ -216,6 +216,7 @@ cifs_do_create(struct inode *inode, struct dentry *direntry, unsigned int xid,
- 	}
+diff --git a/fs/fcntl.c b/fs/fcntl.c
+index 71a600a..7abce5a 100644
+--- a/fs/fcntl.c
++++ b/fs/fcntl.c
+@@ -730,14 +730,15 @@ static int __init fcntl_init(void)
+ 	 * Exceptions: O_NONBLOCK is a two bit define on parisc; O_NDELAY
+ 	 * is defined as O_NONBLOCK on some platforms and not on others.
+ 	 */
+-	BUILD_BUG_ON(19 - 1 /* for O_RDONLY being 0 */ != HWEIGHT32(
++	BUILD_BUG_ON(22 - 1 /* for O_RDONLY being 0 */ != HWEIGHT32(
+ 		O_RDONLY	| O_WRONLY	| O_RDWR	|
+ 		O_CREAT		| O_EXCL	| O_NOCTTY	|
+ 		O_TRUNC		| O_APPEND	| /* O_NONBLOCK	| */
+ 		__O_SYNC	| O_DSYNC	| FASYNC	|
+ 		O_DIRECT	| O_LARGEFILE	| O_DIRECTORY	|
+ 		O_NOFOLLOW	| O_NOATIME	| O_CLOEXEC	|
+-		__FMODE_EXEC	| O_PATH
++		__FMODE_EXEC	| O_PATH	| O_DENYREAD	|
++		O_DENYWRITE	| O_DENYDELETE
+ 		));
  
- 	if (tcon->unix_ext && cap_unix(tcon->ses) && !tcon->broken_posix_open &&
-+	    ((cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NOPOSIXBRL) == 0) &&
- 	    (CIFS_UNIX_POSIX_PATH_OPS_CAP &
- 			le64_to_cpu(tcon->fsUnixInfo.Capability))) {
- 		rc = cifs_posix_open(full_path, &newinode, inode->i_sb, mode,
-diff --git a/fs/cifs/file.c b/fs/cifs/file.c
-index e2614b9..8cfda53 100644
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -426,8 +426,9 @@ int cifs_open(struct inode *inode, struct file *file)
- 	else
- 		oplock = 0;
+ 	fasync_cache = kmem_cache_create("fasync_cache",
+diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
+index a48937d..5ac0d49 100644
+--- a/include/uapi/asm-generic/fcntl.h
++++ b/include/uapi/asm-generic/fcntl.h
+@@ -84,6 +84,17 @@
+ #define O_PATH		010000000
+ #endif
  
--	if (!tcon->broken_posix_open && tcon->unix_ext &&
--	    cap_unix(tcon->ses) && (CIFS_UNIX_POSIX_PATH_OPS_CAP &
-+	if (!tcon->broken_posix_open && tcon->unix_ext && cap_unix(tcon->ses)
-+	    && ((cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NOPOSIXBRL) == 0) &&
-+	    (CIFS_UNIX_POSIX_PATH_OPS_CAP &
- 				le64_to_cpu(tcon->fsUnixInfo.Capability))) {
- 		/* can not refresh inode info since size could be stale */
- 		rc = cifs_posix_open(full_path, &inode, inode->i_sb,
-@@ -595,6 +596,7 @@ cifs_reopen_file(struct cifsFileInfo *cfile, bool can_flush)
- 		oplock = 0;
- 
- 	if (tcon->unix_ext && cap_unix(tcon->ses) &&
-+	    ((cifs_sb->mnt_cifs_flags & CIFS_MOUNT_NOPOSIXBRL) == 0) &&
- 	    (CIFS_UNIX_POSIX_PATH_OPS_CAP &
- 				le64_to_cpu(tcon->fsUnixInfo.Capability))) {
- 		/*
++#ifndef O_DENYREAD
++#define O_DENYREAD	020000000	/* Do not permit read access */
++#endif
++#ifndef O_DENYWRITE
++#define O_DENYWRITE	040000000	/* Do not permit write access */
++#endif
++/* FMODE_NONOTIFY	0100000000 */
++#ifndef O_DENYDELETE
++#define O_DENYDELETE	0200000000	/* Do not permit delete or rename */
++#endif
++
+ #ifndef O_NDELAY
+ #define O_NDELAY	O_NONBLOCK
+ #endif
 -- 
 1.7.10.4
 
