@@ -1,74 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932849Ab2LFQZp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 11:25:45 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:53838 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932820Ab2LFQZn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 11:25:43 -0500
+	id S1424404Ab2LFQ0A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 11:26:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17592 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1424131Ab2LFQZ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 11:25:57 -0500
+Date: Thu, 6 Dec 2012 17:25:43 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 3/5] perf hists: Link hist entries before inserting to an
+ output tree
+Message-ID: <20121206162543.GC1080@krava.brq.redhat.com>
+References: <1354806581-5316-1-git-send-email-namhyung@kernel.org>
+ <1354806581-5316-4-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LRH.2.02.1212070024460.4693@tundra.namei.org>
-References: <20121128101635.d5e864dffc4252ef9d5e1664@canb.auug.org.au>
- <50B5508D.7050409@schaufler-ca.com> <20121128110132.0082c87680b9b714b8c0689c@canb.auug.org.au>
- <alpine.LRH.2.02.1212070024460.4693@tundra.namei.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 6 Dec 2012 08:25:21 -0800
-X-Google-Sender-Auth: xC5dbGKlC7Bu6YbQFRNwIE1UzoQ
-Message-ID: <CA+55aFwJDtofV36R_ot8qj31BCGwBgDsGOKRkMRhRLamf5M+mw@mail.gmail.com>
-Subject: Re: linux-next: unusual update of the security tree
-To: James Morris <jmorris@namei.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Casey Schaufler <casey@schaufler-ca.com>, linux-next@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354806581-5316-4-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 6, 2012 at 5:25 AM, James Morris <jmorris@namei.org> wrote:
-> Any suggestions on how to fix this?  That branch is public, and what
-> people use to develop against, so I can't rebase it.
+On Fri, Dec 07, 2012 at 12:09:39AM +0900, Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> For matching and/or linking hist entries, they need to be sorted by
+> given sort keys.  However current hists__match/link did this on the
+> output trees, so that the entries in the output tree need to be resort
+> before doing it.
+> 
+> This looks not so good since we have trees for collecting or
+> collapsing entries before passing them to an output tree and they're
+> already sorted by the given sort keys.  Since we don't need to print
+> anything at the time of matching/linking, we can use these internal
+> trees directly instead of bothering with double resort on the output
+> tree.
 
-Quite frankly, I really am not going to pull that. It has random crazy
-merges for no reason what-so-ever. This is *exactly* the kind of stuff
-I used to speak out against years ago, and I thought we had long since
-put behind us. Do
+this patch also makes diff working over collapsed entries,
+which was not possible before.. nice ;)
 
-    git fetch git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/linux-security
-next
-    gitk ..FETCH_HEAD
+outputs like:
 
-from mainline to see what I'm talking about. It has all those random
-merges interspersed with random sporadic development. This is not how
-we make history make sense.
+[jolsa@krava perf]$ ./perf diff  -s comm
+# Event 'cycles:u'
+#
+# Baseline    Delta          Command
+# ........  .......  ...............
+#
+     5.24%  +68.96%          firefox
+     2.34%   +5.66%                X
+    48.51%  -41.53%             mocp
+    14.98%  -11.53%            skype
+    18.01%  -15.35%  plugin-containe
+     1.03%   +1.48%            xchat
+     5.54%   -4.61%          gkrellm
+     1.41%   -0.93%            xterm
+             +0.33%  xmonad-x86_64-l
+             +0.23%              vim
+             +0.07%     xscreensaver
+     0.19%   -0.14%          swapper
+     1.00%   -0.97%   NetworkManager
+     0.28%   -0.25%              ssh
+     0.11%   -0.09%            sleep
+     0.84%   -0.83%      dbus-daemon
+     0.02%   -0.01%             perf
+     0.40%   -0.40%   wpa_supplicant
+     0.05%   -0.05%              gpm
+     0.04%   -0.04%            crond
 
-It looks like Casey has for the last year+ just had his own tree, done
-his own thing, and then pulled from the 'next' branch of security at
-random points to intermix his occasional commits with everything
-else.So now all his sporadic commits are randomly intermixed together
-with *everything* else that happened over the last year. It's kind of
-the epitome of not-a-feature-branch.
 
-There are 26 "normal" commits spread out over the year, coupled with
-22 merges that have been done bi-weekly or something, and have
-altogether brought in 13 *thousand* commits that have very little to
-do with the 26 commits that are new work. And with many of the merges
-done despite that development tree having *no* development in it of
-its own, so you have those repeated "let's merge upstream code" pulls
-that only add upstream code with no development in between.
+small nitpick below, otherwise
 
-This is the kind of development that should be kept private, and maybe
-using a "git pull --rebase" to maintain the private commits on top of
-whatever upstream. NOT be used to say "ok, I now have more than a year
-of messy development history of 22 changes randomly interspersed with
-the thirteen thousand commits that went into mainline during that
-year+ time".
+Acked-by: Jiri Olsa <jolsa@redhat.com>
 
-Or it should just have been a development branch that only did its own
-development and never pulled from upstream.
 
-Have people pulled that thing into anything else? Because quite
-frankly, I think it's unsalvageable except with a rebase.
+> 
+> Its only user - at the time of this writing - perf diff can be easily
+> converted to use the internal tree and can save some lines too by
+> getting rid of unnecessary resorting codes.
+> 
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> Cc: Stephane Eranian <eranian@google.com>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/builtin-diff.c |   65 ++++++++++++---------------------------------
+>  tools/perf/util/hist.c    |   49 +++++++++++++++++++++++++---------
+>  2 files changed, 54 insertions(+), 60 deletions(-)
+> 
+> diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+> index b2e7d39f099b..044ad99dcc90 100644
+> --- a/tools/perf/builtin-diff.c
+> +++ b/tools/perf/builtin-diff.c
+> @@ -275,43 +275,6 @@ static struct perf_tool tool = {
+>  	return NULL;A
 
-                  Linus
+SNIP
+
+>  }
+>  
+> -static void perf_evlist__resort_hists(struct perf_evlist *evlist, bool name)
+> +static void perf_evlist__resort_hists(struct perf_evlist *evlist)
+
+this could be called 'perf_evlist__collapse_resort' now
+
+>  {
+>  	struct perf_evsel *evsel;
+>  
+>  	list_for_each_entry(evsel, &evlist->entries, node) {
+>  		struct hists *hists = &evsel->hists;
+>  
+> -		hists__output_resort(hists);
+> -
+> -		if (name)
+> -			hists__name_resort(hists);
+> +		hists__collapse_resort(hists);
+>  	}
+>  }
+
+SNIP
