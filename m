@@ -1,99 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424480Ab2LFQ40 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 11:56:26 -0500
-Received: from smtprelay-h21.telenor.se ([195.54.99.196]:39924 "EHLO
-	smtprelay-h21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1424328Ab2LFQ4Z (ORCPT
+	id S1946129Ab2LFQ4b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 11:56:31 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:47822 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1424328Ab2LFQ42 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 11:56:25 -0500
-X-SENDER-IP: [85.230.168.206]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnhKAPHMwFBV5qjOPGdsb2JhbABEhUuFI7M7FwMBAQEBODSCHgEBBAEnExwTAQ8FCwgDDjgUJQoaE4gKCsI+FJAHYQOWAoV7g1OJbg
-X-IronPort-AV: E=Sophos;i="4.84,230,1355094000"; 
-   d="scan'208";a="165391500"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Thu, 6 Dec 2012 17:58:29 +0100
-To: Mel Gorman <mgorman@suse.de>
-Cc: Jan Kara <jack@suse.cz>, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-mm@kvack.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Oops in 3.7-rc8 isolate_free_pages_block()
-Message-ID: <20121206165829.GA392@polaris.bitmath.org>
-References: <20121206091744.GA1397@polaris.bitmath.org>
- <20121206144821.GC18547@quack.suse.cz>
- <20121206161934.GA17258@suse.de>
+	Thu, 6 Dec 2012 11:56:28 -0500
+Message-ID: <50C0CE36.1060009@gmail.com>
+Date: Fri, 07 Dec 2012 00:56:22 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121206161934.GA17258@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: linux-acpi@vger.kernel.org, Toshi Kani <toshi.kani@hp.com>,
+        Hanjun Guo <guohanjun@huawei.com>,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com, lenb@kernel.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Tang Chen <tangchen@cn.fujitsu.com>
+Subject: Re: [RFC PATCH v3 0/3] acpi: Introduce prepare_remove device operation
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com> <50B5EFE9.3040206@huawei.com> <1354128096.26955.276.camel@misato.fc.hp.com> <75241306.UQIr1RW8Qh@vostro.rjw.lan>
+In-Reply-To: <75241306.UQIr1RW8Qh@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mel,
-
-> Still travelling and am not in a position to test this properly :(.
-> However, this bug feels very similar to a bug in the migration scanner where
-> a pfn_valid check is missed because the start is not aligned.  Henrik, when
-> did this start happening? I would be a little surprised if it started between
-> 3.6 and 3.7-rcX but maybe it's just easier to hit now for some reason.
-
-I started using transparent hugepages when moving to 3.7-rc1, so it is
-quite possible that the problem was there already in 3.6.
-
-> How reproducible is this? Is there anything in particular you do to
-> trigger the oops?
-
-Unfortunately nothing special, and it is rare. IIRC, it has happened
-after a long uptime, but I guess that only means the probability of
-the oops is higher then.
-
-> Does the following patch help any? It's only compile tested I'm afraid.
+On 11/29/2012 06:15 PM, Rafael J. Wysocki wrote:
+> On Wednesday, November 28, 2012 11:41:36 AM Toshi Kani wrote:
+>> On Wed, 2012-11-28 at 19:05 +0800, Hanjun Guo wrote:
+>>> On 2012/11/24 1:50, Vasilis Liaskovitis wrote:
+>>>> As discussed in https://patchwork.kernel.org/patch/1581581/
+>>>> the driver core remove function needs to always succeed. This means we need
+>>>> to know that the device can be successfully removed before acpi_bus_trim / 
+>>>> acpi_bus_hot_remove_device are called. This can cause panics when OSPM-initiated
+>>>> or SCI-initiated eject of memory devices fail e.g with:
+>>>> echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
+>>>>
+>>>> since the ACPI core goes ahead and ejects the device regardless of whether the
+>>>> the memory is still in use or not.
+>>>>
+>>>> For this reason a new acpi_device operation called prepare_remove is introduced.
+>>>> This operation should be registered for acpi devices whose removal (from kernel
+>>>> perspective) can fail.  Memory devices fall in this category.
+>>>>
+>>>> acpi_bus_remove() is changed to handle removal in 2 steps:
+>>>> - preparation for removal i.e. perform part of removal that can fail. Should
+>>>>   succeed for device and all its children.
+>>>> - if above step was successfull, proceed to actual device removal
+>>>
+>>> Hi Vasilis,
+>>> We met the same problem when we doing computer node hotplug, It is a good idea
+>>> to introduce prepare_remove before actual device removal.
+>>>
+>>> I think we could do more in prepare_remove, such as rollback. In most cases, we can
+>>> offline most of memory sections except kernel used pages now, should we rollback
+>>> and online the memory sections when prepare_remove failed ?
+>>
+>> I think hot-plug operation should have all-or-nothing semantics.  That
+>> is, an operation should either complete successfully, or rollback to the
+>> original state.
 > 
-> ---8<---
-> mm: compaction: check pfn_valid when entering a new MAX_ORDER_NR_PAGES block during isolation for free
+> That's correct.
 > 
-> Commit 0bf380bc (mm: compaction: check pfn_valid when entering a new
-> MAX_ORDER_NR_PAGES block during isolation for migration) added a check
-> for pfn_valid() when isolating pages for migration as the scanner does
-> not necessarily start pageblock-aligned. However, the free scanner has
-> the same problem. If it encounters a hole, it can also trigger an oops
-> when is calls PageBuddy(page) on a page that is within an hole.
+>>> As you may know, the ACPI based hotplug framework we are working on already addressed
+>>> this problem, and the way we slove this problem is a bit like yours.
+>>>
+>>> We introduce hp_ops in struct acpi_device_ops:
+>>> struct acpi_device_ops {
+>>> 	acpi_op_add add;
+>>> 	acpi_op_remove remove;
+>>> 	acpi_op_start start;
+>>> 	acpi_op_bind bind;
+>>> 	acpi_op_unbind unbind;
+>>> 	acpi_op_notify notify;
+>>> #ifdef	CONFIG_ACPI_HOTPLUG
+>>> 	struct acpihp_dev_ops *hp_ops;
+>>> #endif	/* CONFIG_ACPI_HOTPLUG */
+>>> };
+>>>
+>>> in hp_ops, we divide the prepare_remove into six small steps, that is:
+>>> 1) pre_release(): optional step to mark device going to be removed/busy
+>>> 2) release(): reclaim device from running system
+>>> 3) post_release(): rollback if cancelled by user or error happened
+>>> 4) pre_unconfigure(): optional step to solve possible dependency issue
+>>> 5) unconfigure(): remove devices from running system
+>>> 6) post_unconfigure(): free resources used by devices
+>>>
+>>> In this way, we can easily rollback if error happens.
+>>> How do you think of this solution, any suggestion ? I think we can achieve
+>>> a better way for sharing ideas. :)
+>>
+>> Yes, sharing idea is good. :)  I do not know if we need all 6 steps (I
+>> have not looked at all your changes yet..), but in my mind, a hot-plug
+>> operation should be composed with the following 3 phases.
+>>
+>> 1. Validate phase - Verify if the request is a supported operation.  All
+>> known restrictions are verified at this phase.  For instance, if a
+>> hot-remove request involves kernel memory, it is failed in this phase.
+>> Since this phase makes no change, no rollback is necessary to fail.  
 > 
-> Reported-by: Henrik Rydberg <rydberg@euromail.se>
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> Cc: stable@vger.kernel.org
-> ---
->  mm/compaction.c |   10 ++++++++++
->  1 files changed, 10 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 9eef558..7d85ad485 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -298,6 +298,16 @@ static unsigned long isolate_freepages_block(struct compact_control *cc,
->  			continue;
->  		if (!valid_page)
->  			valid_page = page;
-> +
-> +		/*
-> +		 * As blockpfn may not start aligned, blockpfn->end_pfn
-> +		 * may cross a MAX_ORDER_NR_PAGES boundary and a pfn_valid
-> +		 * check is necessary. If the pfn is not valid, stop
-> +		 * isolation.
-> +		 */
-> +		if ((blockpfn & (MAX_ORDER_NR_PAGES - 1)) == 0 &&
-> +		    !pfn_valid(blockpfn))
-> +			break;
->  		if (!PageBuddy(page))
->  			continue;
->  
+> Actually, we can't do it this way, because the conditions may change between
+> the check and the execution.  So the first phase needs to involve execution
+> to some extent, although only as far as it remains reversible.
+Hi Rafael,
+	A possible way to solve this issue is:
+1) mark device busy
+2) check condition and mark device as normal if condition check fails.
+3) reclaim the device and mark device as normal if reclaim fails.
+4) remove the device.
 
-I am running with it now, adding a printout to see if the case happens
-at all. Might take a while, will try to stress the machine a bit.
+> 
+>> 2. Execute phase - Perform hot-add / hot-remove operation that can be
+>> rolled-back in case of error or cancel.
+> 
+> I would just merge 1 and 2.
+> 
+>> 3. Commit phase - Perform the final hot-add / hot-remove operation that
+>> cannot be rolled-back.  No error / cancel is allowed in this phase.  For
+>> instance, eject operation is performed at this phase.  
+> 
+> Yup.
+> 
+> Thanks,
+> Rafael
+> 
+> 
 
-Thanks,
-Henrik
