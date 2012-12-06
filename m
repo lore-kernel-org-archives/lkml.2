@@ -1,136 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932359Ab2LFWPf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 17:15:35 -0500
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:42012 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753526Ab2LFWPd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 17:15:33 -0500
-X-IronPort-AV: E=Sophos;i="4.84,233,1355094000"; 
-   d="scan'208";a="185000426"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Evgeniy Polyakov <zbr@ioremap.net>
-Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] drivers/w1/masters/mxc_w1.c: use devm_ functions
-Date: Fri,  7 Dec 2012 00:15:24 +0100
-Message-Id: <1354835724-26945-2-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.8.6
+	id S964848Ab2LFWQI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 17:16:08 -0500
+Received: from www.hansjkoch.de ([178.63.77.200]:51530 "EHLO www.hansjkoch.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752069Ab2LFWQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 17:16:06 -0500
+Date: Thu, 6 Dec 2012 23:15:59 +0100
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Vitalii Demianets <vitas@nppfactor.kiev.ua>
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Cong Ding <dinggnu@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v2] drivers/uio/uio_pdrv_genirq.c: Fix memory freeing
+ issues
+Message-ID: <20121206221559.GB2611@local>
+References: <201211271929.32315.vitas@nppfactor.kiev.ua>
+ <201212051122.57724.vitas@nppfactor.kiev.ua>
+ <20121206024101.GB7175@local>
+ <201212061111.39057.vitas@nppfactor.kiev.ua>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201212061111.39057.vitas@nppfactor.kiev.ua>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Thu, Dec 06, 2012 at 11:11:38AM +0200, Vitalii Demianets wrote:
+> On Thursday 06 December 2012 04:41:01 Hans J. Koch wrote:
+> > > @@ -63,7 +68,7 @@ static irqreturn_t uio_pdrv_genirq_handler(int irq, 
+> struct uio_info *dev_info)
+> > >  	 * remember the state so we can allow user space to enable it later.
+> > >  	 */
+> > >  
+> > > -	if (!test_and_set_bit(0, &priv->flags))
+> > > +	if (!test_and_set_bit(UIO_IRQ_DISABLED, &priv->flags))
+> > >  		disable_irq_nosync(irq);
+> > 
+> > That is not safe. That flag can only be changed by userspace, and if the
+> > userspace part is not running, the CPU on which the irq is pending will
+> > hang. 
+> > The handler has to disable the interrupt in any case.
+> > (The original version had the same problem, I know...)
+> > 
+> 
+> Perhaps I'm missing something here, but I don't see your point. If userspace 
+> is not (implicitly) calling uio_pdrv_genirq_irqcontrol() by writing to the 
+> device file, then on the first invocation of interrupt handler that IRQ is 
+> disabled by disable_irq_nosync() and that's the end of story - no more irqs, 
+> no problems. Until userspace writes non-zero to the device file, of course.
 
-The various devm_ functions allocate memory that is released when a driver
-detaches.  This patch uses these functions for data that is allocated in
-the probe function of a platform device and is only freed in the remove
-function.
+If you run into the irq handler, the interrupt was obviously enabled. Since
+irq sharing is not supported by this driver, you ALWAYS have to disable it
+because it IS your interrupt. Storing the enabled/disabled status in a
+variable is not needed at all here. Or am I missing something?
 
-At the same time, this fixes two faults.  First, mdev, the result of
-kzalloc, was never freed.  Second, on failure of ioremap, 0 was returned.
-This has been replaced by -EBUSY, which was the failure value for the call
-to request_mem_region, with which the call to ioremap has been combined.
+> 
+> > >  	priv->uioinfo = uioinfo;
+> > >  	spin_lock_init(&priv->lock);
+> > > -	priv->flags = 0; /* interrupt is enabled to begin with */
+> > > +	/* interrupt is enabled to begin with */
+> > > +	priv->flags = uioinfo_alloced ? (1 << UIO_INFO_ALLOCED) : 0;
+> > 
+> > The comment doesn't describe the line it's supposed to comment.
+> > 
+> 
+> The comment draws attention to the fact that UIO_IRQ_DISABLED is not set 
+> initially, and this is done on purpose.
 
-The warning message on failure of ioremap is dropped, because
-devm_request_and_ioremap already gives such messages on failure.
+And that's right because the interrupt is initially enabled by
+uio_register_device().
 
-Finally, the initial call to platform_get_resource is moved closer to the
-call to devm_request_and_ioremap, which takes care of checking whether its
-result is NULL, implying that a test on the result of this call to
-platform_get_resource is not needed.
+> Particularly it is done because of 
+> the potential problem you noted earlier - if userspace is never setting this 
+> flag, the interrupt handler will disable irq on the first invocation thanks 
+> to the absence of the flag (if(!test_and_set_bit(UIO_IRQ_DISABLED,...) will 
+> succeed).
+> So, I think we really need some comment explaining how the things are arranged 
+> here; after all even you haven't got the whole picture on the first glance.
+> Maybe the current wording of the comment is not the best. I've just left what 
+> was there before.
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+OK, but we humans tend to read a text from top to bottom, so a comment should
+describe the code immediately following it. And that is a line that deals with
+memory allocation, not with interrupts.
 
----
- drivers/w1/masters/mxc_w1.c |   49 ++++++++------------------------------------
- 1 file changed, 10 insertions(+), 39 deletions(-)
-
-diff --git a/drivers/w1/masters/mxc_w1.c b/drivers/w1/masters/mxc_w1.c
-index d338b56..999a30c 100644
---- a/drivers/w1/masters/mxc_w1.c
-+++ b/drivers/w1/masters/mxc_w1.c
-@@ -109,34 +109,21 @@ static int mxc_w1_probe(struct platform_device *pdev)
- 	struct resource *res;
- 	int err = 0;
- 
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!res)
--		return -ENODEV;
--
--	mdev = kzalloc(sizeof(struct mxc_w1_device), GFP_KERNEL);
-+	mdev = devm_kzalloc(&pdev->dev, sizeof(struct mxc_w1_device),
-+			    GFP_KERNEL);
- 	if (!mdev)
- 		return -ENOMEM;
- 
--	mdev->clk = clk_get(&pdev->dev, NULL);
--	if (IS_ERR(mdev->clk)) {
--		err = PTR_ERR(mdev->clk);
--		goto failed_clk;
--	}
-+	mdev->clk = devm_clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(mdev->clk))
-+		return PTR_ERR(mdev->clk);
- 
- 	mdev->clkdiv = (clk_get_rate(mdev->clk) / 1000000) - 1;
- 
--	res = request_mem_region(res->start, resource_size(res),
--				"mxc_w1");
--	if (!res) {
--		err = -EBUSY;
--		goto failed_req;
--	}
--
--	mdev->regs = ioremap(res->start, resource_size(res));
--	if (!mdev->regs) {
--		dev_err(&pdev->dev, "Cannot map mxc_w1 registers\n");
--		goto failed_ioremap;
--	}
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	mdev->regs = devm_request_and_ioremap(&pdev->dev, res);
-+	if (!mdev->regs)
-+		return -EBUSY;
- 
- 	clk_prepare_enable(mdev->clk);
- 	__raw_writeb(mdev->clkdiv, mdev->regs + MXC_W1_TIME_DIVIDER);
-@@ -148,20 +135,10 @@ static int mxc_w1_probe(struct platform_device *pdev)
- 	err = w1_add_master_device(&mdev->bus_master);
- 
- 	if (err)
--		goto failed_add;
-+		return err;
- 
- 	platform_set_drvdata(pdev, mdev);
- 	return 0;
--
--failed_add:
--	iounmap(mdev->regs);
--failed_ioremap:
--	release_mem_region(res->start, resource_size(res));
--failed_req:
--	clk_put(mdev->clk);
--failed_clk:
--	kfree(mdev);
--	return err;
- }
- 
- /*
-@@ -170,16 +147,10 @@ failed_clk:
- static int mxc_w1_remove(struct platform_device *pdev)
- {
- 	struct mxc_w1_device *mdev = platform_get_drvdata(pdev);
--	struct resource *res;
--
--	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 
- 	w1_remove_master_device(&mdev->bus_master);
- 
--	iounmap(mdev->regs);
--	release_mem_region(res->start, resource_size(res));
- 	clk_disable_unprepare(mdev->clk);
--	clk_put(mdev->clk);
- 
- 	platform_set_drvdata(pdev, NULL);
- 
-
+Thanks,
+Hans
