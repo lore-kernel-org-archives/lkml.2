@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946734Ab2LFSlg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 13:41:36 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:35280 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946405Ab2LFSlf (ORCPT
+	id S1946750Ab2LFSmM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 13:42:12 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39681 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1946405Ab2LFSmJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 13:41:35 -0500
+	Thu, 6 Dec 2012 13:42:09 -0500
+Date: Thu, 6 Dec 2012 10:42:04 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        alan@lxorguk.ukuu.org.uk, Yang Wei <wei.yang@windriver.com>,
+        Robert Richter <robert.richter@amd.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Jun Zhang <jun.zhang@intel.com>
+Subject: Re: [ 09/56] x86-32: Fix invalid stack address while in softirq
+Message-ID: <20121206184204.GE2862@kroah.com>
+References: <20121130185118.302752929@linuxfoundation.org>
+ <20121130185119.291181076@linuxfoundation.org>
+ <20121204135646.GE2984@herton-Z68MA-D2H-B3>
 MIME-Version: 1.0
-In-Reply-To: <20121206183259.GA591@polaris.bitmath.org>
-References: <20121206091744.GA1397@polaris.bitmath.org> <20121206144821.GC18547@quack.suse.cz>
- <20121206161934.GA17258@suse.de> <CA+55aFw9WQN-MYFKzoGXF9Z70h1XsMu5X4hLy0GPJopBVuE=Yg@mail.gmail.com>
- <20121206175451.GC17258@suse.de> <CA+55aFwDZHXf2FkWugCy4DF+mPTjxvjZH87ydhE5cuFFcJ-dJg@mail.gmail.com>
- <20121206183259.GA591@polaris.bitmath.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 6 Dec 2012 10:41:14 -0800
-X-Google-Sender-Auth: p3Jpp9v6ClWtejObkzHRZWLOgzA
-Message-ID: <CA+55aFzievpA_b5p-bXwW11a89eC-ucpzKUuSqb2PNQOLrqaPg@mail.gmail.com>
-Subject: Re: Oops in 3.7-rc8 isolate_free_pages_block()
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Mel Gorman <mgorman@suse.de>, Jan Kara <jack@suse.cz>,
-        linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121204135646.GE2984@herton-Z68MA-D2H-B3>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 6, 2012 at 10:32 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
->>
->> Henrik, does that - corrected - patch (*instead* of the previous one,
->> not in addition to) also fix your issue?
->
-> Yes - I can no longer trigger the failpath, so it seems to work. Mel,
-> enjoy the rest of the talk. ;-)
->
-> Generally, I am a bit surprised that noone hit this before, given that
-> it was quite easy to trigger. I will check 3.6 as well.
+On Tue, Dec 04, 2012 at 11:56:46AM -0200, Herton Ronaldo Krzesinski wrote:
+> On Fri, Nov 30, 2012 at 10:55:01AM -0800, Greg Kroah-Hartman wrote:
+> > 3.4-stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Robert Richter <robert.richter@amd.com>
+> > 
+> > commit 1022623842cb72ee4d0dbf02f6937f38c92c3f41 upstream.
+> > 
+> > In 32 bit the stack address provided by kernel_stack_pointer() may
+> > point to an invalid range causing NULL pointer access or page faults
+> > while in NMI (see trace below). This happens if called in softirq
+> > context and if the stack is empty. The address at &regs->sp is then
+> > out of range.
+> > 
+> > Fixing this by checking if regs and &regs->sp are in the same stack
+> > context. Otherwise return the previous stack pointer stored in struct
+> > thread_info. If that address is invalid too, return address of regs.
+> > 
+> 
+> This also makes latest 3.4.y build fail with oprofile on i386, needs
+> also EXPORT_SYMBOL for kernel_stack_pointer (commit
+> cb57a2b4cff7edf2a4e32c0163200e9434807e0a)
 
-Actually, looking at it some more, I think that two-liner patch had
-*ANOTHER* bug.
-
-Because the other line seems buggy as well.
-
-Instead of
-
-        end_pfn = ALIGN(pfn + pageblock_nr_pages, pageblock_nr_pages);
-
-I think it should be
-
-        end_pfn = ALIGN(pfn+1, pageblock_nr_pages);
-
-instead. ALIGN() already aligns upwards (but the "+1" is needed in
-case pfn is already at a pageblock_nr_pages boundary, at which point
-ALIGN() would have just returned that same boundary.
-
-Hmm? Mel, please confirm. And Henrik, it might be good to test that
-doubly-fixed patch. Because reading the patch and trying to fix bugs
-in it that way is *not* the same as actually verifying it ;)
-
-                 Linus
+Sorry, now fixed with 3.4.22
