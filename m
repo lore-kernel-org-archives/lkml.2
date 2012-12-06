@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424368Ab2LFQTj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 11:19:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33561 "EHLO mx1.redhat.com"
+	id S1424382Ab2LFQUY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 11:20:24 -0500
+Received: from mail.tpi.com ([70.99.223.143]:4518 "EHLO mail.tpi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423988Ab2LFQTi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 11:19:38 -0500
-Date: Thu, 6 Dec 2012 17:18:50 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: tj@kernel.org, tglx@linutronix.de, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org,
-        vincent.guittot@linaro.org, sbw@mit.edu, amit.kucheria@linaro.org,
-        rostedt@goodmis.org, rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v2 01/10] CPU hotplug: Provide APIs for "light"
-	atomic readers to prevent CPU offline
-Message-ID: <20121206161850.GA6710@redhat.com>
-References: <20121205184041.3750.64945.stgit@srivatsabhat.in.ibm.com> <20121205184258.3750.31879.stgit@srivatsabhat.in.ibm.com> <50BF96DF.3000500@linux.vnet.ibm.com> <50BF979A.50304@linux.vnet.ibm.com> <50BF982D.7090704@linux.vnet.ibm.com> <50BF98F7.3030600@linux.vnet.ibm.com> <50BF999C.6030707@linux.vnet.ibm.com> <50BFAB17.3090603@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50BFAB17.3090603@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1424087Ab2LFQUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 11:20:23 -0500
+From: Tim Gardner <tim.gardner@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Tim Gardner <tim.gardner@canonical.com>, David Airlie <airlied@linux.ie>,
+        Dave Airlie <airlied@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Zhao Yakui <yakui.zhao@intel.com>, David Howells <dhowells@redhat.com>,
+        dri-devel@lists.freedesktop.org
+Subject: [PATCH 3.7-rc8] ttm: Fix possible _manager memory allocation oops
+Date: Thu,  6 Dec 2012 09:20:06 -0700
+Message-Id: <1354810806-81681-1-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06, Srivatsa S. Bhat wrote:
->
-> +void get_online_cpus_atomic(void)
-> +{
-> +	int c, old;
-> +
-> +	preempt_disable();
-> +	read_lock(&hotplug_rwlock);
+Memory for _manager is allocated using kzalloc() but the result is not checked.
 
-Confused... Why it also takes hotplug_rwlock?
+Free _manager on error lest memory become orphaned.
 
-> +
-> +	for (;;) {
-> +		c = atomic_read(&__get_cpu_var(atomic_reader_refcount));
-> +		if (unlikely(writer_active(c))) {
-> +			cpu_relax();
-> +			continue;
-> +		}
-> +
-> +		old = atomic_cmpxchg(&__get_cpu_var(atomic_reader_refcount),
-> +				     c, c + 1);
-> +
-> +		if (likely(old == c))
-> +			break;
-> +
-> +		c = old;
-> +	}
-> +}
+I was led to scrutinize ttm_page_alloc_init() from a smatch warning:
 
-	while (!atomic_inc_unless_negative(...))
-		cpu_relax();
-	
-and atomic_dec_unless_positive() in disable_atomic_reader().
+drivers/gpu/drm/ttm/ttm_page_alloc.c:799 ttm_page_alloc_init() error: potential null dereference '_manager'.  (kzalloc returns null)
 
+Cc: David Airlie <airlied@linux.ie>
+Cc: Dave Airlie <airlied@redhat.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Zhao Yakui <yakui.zhao@intel.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: dri-devel@lists.freedesktop.org
+Cc: stable@vger.kernel.org # 3.5+
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+---
 
-Obviously you can't use get_online_cpus_atomic() under rq->lock or
-task->pi_lock or any other lock CPU_DYING can take. Probably this is
-fine, but perhaps it makes sense to add the lockdep annotations.
+This patch applies to stable 3.5 and newer.
 
-Oleg.
+ drivers/gpu/drm/ttm/ttm_page_alloc.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c b/drivers/gpu/drm/ttm/ttm_page_alloc.c
+index bd2a3b4..2c73d0a 100644
+--- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
++++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
+@@ -798,6 +798,10 @@ int ttm_page_alloc_init(struct ttm_mem_global *glob, unsigned max_pages)
+ 	pr_info("Initializing pool allocator\n");
+ 
+ 	_manager = kzalloc(sizeof(*_manager), GFP_KERNEL);
++	if (!_manager) {
++		pr_err("ttm: Could not allocate _manager.\n");
++		return -ENOMEM;
++	}
+ 
+ 	ttm_page_pool_init_locked(&_manager->wc_pool, GFP_HIGHUSER, "wc");
+ 
+@@ -817,6 +821,7 @@ int ttm_page_alloc_init(struct ttm_mem_global *glob, unsigned max_pages)
+ 				   &glob->kobj, "pool");
+ 	if (unlikely(ret != 0)) {
+ 		kobject_put(&_manager->kobj);
++		kfree(_manager);
+ 		_manager = NULL;
+ 		return ret;
+ 	}
+-- 
+1.7.9.5
 
