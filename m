@@ -1,85 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754348Ab2LFH2J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 02:28:09 -0500
-Received: from ngcobalt02.manitu.net ([217.11.48.102]:42321 "EHLO
-	ngcobalt02.manitu.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751471Ab2LFH2I (ORCPT
+	id S932361Ab2LFHho (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 02:37:44 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:60781 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932316Ab2LFHhm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 02:28:08 -0500
-X-manitu-Original-Sender-IP: 79.230.44.69
-X-manitu-Original-Receiver-Name: ngcobalt02.manitu.net
-Message-ID: <50C04902.7010505@grandegger.com>
-Date: Thu, 06 Dec 2012 08:28:02 +0100
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 6 Dec 2012 02:37:42 -0500
 MIME-Version: 1.0
-To: Roland Stigge <stigge@antcom.de>
-CC: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
-        jbe@pengutronix.de, plagnioj@jcrosoft.com, highguy@gmail.com,
-        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
-        rmallon@gmail.com, tru@work-microwave.de, sr@denx.de
-Subject: Re: [PATCH 3/6 v9] gpio: Add userland device interface to block GPIO
-References: <1354653588-4018-1-git-send-email-stigge@antcom.de> <1354653588-4018-4-git-send-email-stigge@antcom.de> <50BF99F3.4060207@grandegger.com> <50BFC8C9.5070504@antcom.de>
-In-Reply-To: <50BFC8C9.5070504@antcom.de>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <87pq2owvf9.fsf@devron.myhome.or.jp>
+References: <1353504277-5947-1-git-send-email-linkinjeon@gmail.com>
+	<87hao35uqz.fsf@devron.myhome.or.jp>
+	<CAKYAXd_X8Jkq=PdV+dVPTO_EAPHoZ37MynpjvkrPTDahWyUOTA@mail.gmail.com>
+	<87obia17zr.fsf@devron.myhome.or.jp>
+	<CAKYAXd-8ay4m6vsH1ztmomOrnXN+ThDi3w+jASyyUGOO12v6YA@mail.gmail.com>
+	<871uf4yizs.fsf@devron.myhome.or.jp>
+	<CAKYAXd_T2yGRXd3bk5HXXuVhx_ikO1xzinOy0d8TobokyiCRsA@mail.gmail.com>
+	<87pq2owvf9.fsf@devron.myhome.or.jp>
+Date: Thu, 6 Dec 2012 16:37:41 +0900
+Message-ID: <CAKYAXd-CAhBDNYRTF22Yh8iGDb1_6+0V-U2wJsSuAjU3Q4q-SQ@mail.gmail.com>
+Subject: Re: [PATCH v5 5/8] fat: restructure export_operations
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2012 11:20 PM, Roland Stigge wrote:
-> Hi Wolfgang,
-> 
-> On 05/12/12 20:01, Wolfgang Grandegger wrote:
->>> +	for (i = 0; i < block->ngpio; i++) {
->>> +		status = gpio_request(block->gpio[i], "gpioblock dev");
+2012/12/5, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
+> Namjae Jeon <linkinjeon@gmail.com> writes:
+>
+>>> I can understand what is doing. I'm asking why there is difference.
+>>>
+>>> 1) generic_fh_to_dentry() allows (*_PARENT && fh_len == 2).
+>>> 2) fat_fh_to_dentry_nostale() doesn't allows (*_PARENT && fh_len == 3).
+>>>
+>>> Why does logic has difference?
 >>
->> You could use the name of the GPIO block.
-> 
-> OK.
-> 
->>> +		if (status)
->>> +			goto err1;
->>> +
->>> +		irq = gpio_to_irq(block->gpio[i]);
->>> +		if (irq >= 0 &&
->>> +		    !test_bit(FLAG_IS_OUT, &gpio_desc[block->gpio[i]].flags) &&
->>> +		    !gpio_block_is_irq_duplicate(block, i)) {
->>> +			status = request_irq(irq, gpio_block_irq_handler,
->>> +					     IRQF_TRIGGER_FALLING,
->>> +					     block->name, block);
->>> +			if (status)
->>> +				goto err2;
->>> +
->>> +			block->irq_controlled = true;
->>> +		}
->>> +	}
+>> When we consider the generic routine of encode_fh() and the structure
+>> ‘fid’
 >>
->> There is no need to request IRQs if "O_NONBLOCK" is specified.
-> 
-> Sure? Regarding this, I found: "The poll() function shall not be
-> affected by the O_NONBLOCK flag." [1]
+>> struct fid {
+>>       struct {
+>>             u32 ino;
+>>             u32 gen;
+>>             u32 parent_ino;
+>>             u32 parent_gen;
+>>       } i32;
+>> };
+>>
+>> fh_len= 2(without parent)
+>> fh_len=4(with parent)
+>>
+>> Condition checking in export_encode_fh()
+>> {
+>>
+>>    if (parent && (len < 4)) {
+>>                 *max_len = 4;
+>>                 return FILEID_INVALID;
+>>         } else if (len < 2) {
+>>                 *max_len = 2;
+>>                 return FILEID_INVALID;
+>>         }
+>>         ...
+>>                 len = 2;
+>>         ...
+>>                 if (parent) {
+>> ..
+>>                                 len = 4;
+>>                                 type = FILEID_INO32_GEN_PARENT;
+>>                 }
+>> …
+>> }
+>>
+>> The logic does take care of altering the length for the ‘2’ cases
+>> with/without parent.
+>> So, while encoding -> the care has been taken for length checking but
+>> while decoding(generic_fh_to_dentry) the length check is not put in
+>> place.
+>> I think it should be done in the generic routine also.
+>>
+>> It should be:
+>> if ((fh_len != 2 && fh_len != 4) ||
+>>                 (fh_type != FILEID_INO32_GEN && fh_type !=
+>> FILEID_INO32_GEN_PARENT))
+>>     return NULL;
+>>
+>> Please share your opinion.
+>
+> I know encode_fh(). But NFS is network protocol, and network can input
+> any data, and I guess the userland interface (open_by_handle()?) can be
+> any too.
+>
+> And generic_fh_to_dentry()'s input verify choose to check the minimum
+> length only. But your logic choose the exact length.
+>
+> I think the both is sane and correct. But I wonder why did you changed it.
+There was no particular reason for us to put those conditions. It is
+just we knew what fh lengths we have chosen for the 2 cases
+WITH/WITHOUT parent.
+i.e., we checked with encoded length.
+Now, when I check the export functions of other filesystems(btrfs,
+nilfs2, udf). They also adopt the same method of checking the exact
+length and type.
+If there is any particular reason, we will look into that and can also
+updated on that.
 
-Ah, didn't know that.
-
->> I observed that the read returns once immediately (without blocking)
->> after reboot. I did not look into that yet.
-> 
-> Didn't happen to me. Can you tell how this can be reproduced?
-
-I think there is an interrupt pending for some reason. It might not be
-the case with your setup.
-
-Feel free to add my:
-
-"Tested by: Wolfgang Grandegger <wg@grandegger.com>".
-
-Will do some more tests when time permits, especially with mixed GPIO
-input and output.
-
-Wolfgang.
-
+Thanks.
+> --
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+>
