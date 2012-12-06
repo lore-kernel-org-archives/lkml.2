@@ -1,73 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424515Ab2LFRAG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 12:00:06 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:40524 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1424328Ab2LFRAD (ORCPT
+	id S1424537Ab2LFRB5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 12:01:57 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:56503 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1424524Ab2LFRBy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 12:00:03 -0500
-Date: Thu, 6 Dec 2012 08:59:58 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Cong Ding <dinggnu@gmail.com>
-Cc: Bin Wang <wbin00@gmail.com>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org
-Subject: Re: [PATCH RFC -next] Fix the trailing blank space issue
-Message-ID: <20121206165958.GA9301@kroah.com>
-References: <1354784936-5647-1-git-send-email-wbin00@gmail.com>
- <20121206154219.GA24788@gmail.com>
- <20121206160606.GA15256@kroah.com>
- <20121206163138.GC2510@gmail.com>
+	Thu, 6 Dec 2012 12:01:54 -0500
+Message-ID: <50C0CF7C.7010006@gmail.com>
+Date: Fri, 07 Dec 2012 01:01:48 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121206163138.GC2510@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Toshi Kani <toshi.kani@hp.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
+        Hanjun Guo <guohanjun@huawei.com>,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        isimatu.yasuaki@jp.fujitsu.com, wency@cn.fujitsu.com, lenb@kernel.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Tang Chen <tangchen@cn.fujitsu.com>
+Subject: Re: [RFC PATCH v3 0/3] acpi: Introduce prepare_remove device operation
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>  <50B5EFE9.3040206@huawei.com> <1354128096.26955.276.camel@misato.fc.hp.com>  <75241306.UQIr1RW8Qh@vostro.rjw.lan> <1354208592.26955.429.camel@misato.fc.hp.com>
+In-Reply-To: <1354208592.26955.429.camel@misato.fc.hp.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 06, 2012 at 04:31:39PM +0000, Cong Ding wrote:
-> On Thu, Dec 06, 2012 at 08:06:06AM -0800, Greg Kroah-Hartman wrote:
-> > On Thu, Dec 06, 2012 at 03:42:20PM +0000, Cong Ding wrote:
-> > > On Thu, Dec 06, 2012 at 05:08:56PM +0800, Bin Wang wrote:
-> > > > This patch removes the trailing white space in fs/sysfs/mount.c.
-> > > > 
-> > > > Signed-off-by: Bin Wang <wbin00@gmail.com>
-> > > > ---
-> > > >  fs/sysfs/mount.c | 2 +-
-> > > >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > > > 
-> > > Hi Greg,
-> > > 
-> > > I am not sure it is really necessary to remove all the trailing blank spaces
-> > > in the project. I have done a try by this shell command
-> > > $ find . -iname '*.[ch]' | xargs sed 's/\s\+$//g' -i
-> > > and find there are 2812 files/31712 lines with this issue. 
-> > 
-> > That's very true, why would you want to do this?
-> > 
-> > This comes up every 6 months or so on the linux-kernel mailing list,
-> > please see the archives for previous responses to the topic.
-> > 
-> > If you want, just slowly send patches to the different subsystem
-> > maintainers, to clean the issue up.
-> sorry for forgetting press "reply all" in the former email...
+On 11/30/2012 01:03 AM, Toshi Kani wrote:
+> On Thu, 2012-11-29 at 11:15 +0100, Rafael J. Wysocki wrote:
+>> On Wednesday, November 28, 2012 11:41:36 AM Toshi Kani wrote:
+>>> On Wed, 2012-11-28 at 19:05 +0800, Hanjun Guo wrote:
+>>>> On 2012/11/24 1:50, Vasilis Liaskovitis wrote:
+>>>>> As discussed in https://patchwork.kernel.org/patch/1581581/
+>>>>> the driver core remove function needs to always succeed. This means we need
+>>>>> to know that the device can be successfully removed before acpi_bus_trim / 
+>>>>> acpi_bus_hot_remove_device are called. This can cause panics when OSPM-initiated
+>>>>> or SCI-initiated eject of memory devices fail e.g with:
+>>>>> echo 1 >/sys/bus/pci/devices/PNP0C80:XX/eject
+>>>>>
+>>>>> since the ACPI core goes ahead and ejects the device regardless of whether the
+>>>>> the memory is still in use or not.
+>>>>>
+>>>>> For this reason a new acpi_device operation called prepare_remove is introduced.
+>>>>> This operation should be registered for acpi devices whose removal (from kernel
+>>>>> perspective) can fail.  Memory devices fall in this category.
+>>>>>
+>>>>> acpi_bus_remove() is changed to handle removal in 2 steps:
+>>>>> - preparation for removal i.e. perform part of removal that can fail. Should
+>>>>>   succeed for device and all its children.
+>>>>> - if above step was successfull, proceed to actual device removal
+>>>>
+>>>> Hi Vasilis,
+>>>> We met the same problem when we doing computer node hotplug, It is a good idea
+>>>> to introduce prepare_remove before actual device removal.
+>>>>
+>>>> I think we could do more in prepare_remove, such as rollback. In most cases, we can
+>>>> offline most of memory sections except kernel used pages now, should we rollback
+>>>> and online the memory sections when prepare_remove failed ?
+>>>
+>>> I think hot-plug operation should have all-or-nothing semantics.  That
+>>> is, an operation should either complete successfully, or rollback to the
+>>> original state.
+>>
+>> That's correct.
+>>
+>>>> As you may know, the ACPI based hotplug framework we are working on already addressed
+>>>> this problem, and the way we slove this problem is a bit like yours.
+>>>>
+>>>> We introduce hp_ops in struct acpi_device_ops:
+>>>> struct acpi_device_ops {
+>>>> 	acpi_op_add add;
+>>>> 	acpi_op_remove remove;
+>>>> 	acpi_op_start start;
+>>>> 	acpi_op_bind bind;
+>>>> 	acpi_op_unbind unbind;
+>>>> 	acpi_op_notify notify;
+>>>> #ifdef	CONFIG_ACPI_HOTPLUG
+>>>> 	struct acpihp_dev_ops *hp_ops;
+>>>> #endif	/* CONFIG_ACPI_HOTPLUG */
+>>>> };
+>>>>
+>>>> in hp_ops, we divide the prepare_remove into six small steps, that is:
+>>>> 1) pre_release(): optional step to mark device going to be removed/busy
+>>>> 2) release(): reclaim device from running system
+>>>> 3) post_release(): rollback if cancelled by user or error happened
+>>>> 4) pre_unconfigure(): optional step to solve possible dependency issue
+>>>> 5) unconfigure(): remove devices from running system
+>>>> 6) post_unconfigure(): free resources used by devices
+>>>>
+>>>> In this way, we can easily rollback if error happens.
+>>>> How do you think of this solution, any suggestion ? I think we can achieve
+>>>> a better way for sharing ideas. :)
+>>>
+>>> Yes, sharing idea is good. :)  I do not know if we need all 6 steps (I
+>>> have not looked at all your changes yet..), but in my mind, a hot-plug
+>>> operation should be composed with the following 3 phases.
+>>>
+>>> 1. Validate phase - Verify if the request is a supported operation.  All
+>>> known restrictions are verified at this phase.  For instance, if a
+>>> hot-remove request involves kernel memory, it is failed in this phase.
+>>> Since this phase makes no change, no rollback is necessary to fail.  
+>>
+>> Actually, we can't do it this way, because the conditions may change between
+>> the check and the execution.  So the first phase needs to involve execution
+>> to some extent, although only as far as it remains reversible.
 > 
-> Sending them slowly to different subsystem maintainers is a very bad idea,
-> because it wastes lots of time for both me and them. But the current situation
-> is that there are some people send this kind of patches in random time which
-> also is a kind of wasting their time.
-> 
-> I think we'd better to find a solution, not only for the blank space issue,
-> but also all the coding style issues able to be fixed by scripts.
-> 
-> I would suggest to write a series of scripts. And then announce a date
-> (preferably some holiday like Xmas) to run these scripts. The announce is to
-> avoid conflicts with other developers. It will save both developers' and
-> subsystem maintains' time, do you agree?
+> For memory hot-remove, we can check if the target memory ranges are
+> within ZONE_MOVABLE.  We should not allow user to change this setup
+> during hot-remove operation.  Other things may be to check if a target
+> node contains cpu0 (until it is supported), the console UART (assuming
+> we cannot delete it), etc.  We should avoid doing rollback as much as we
+> can.
+Fengguang from Intel is working on a patchset to hot-remove CPU0(BSP)
+on x86 platforms and he has posted several versions. Maybe we could eventually
+remove CPU0 on x86.
 
-No I do not, it's not a big issue at all.  As I said, look in the
-archives, this comes up every six months or so.
+> 
+> Thanks,
+> -Toshi
+> 
+> 
+>>> 2. Execute phase - Perform hot-add / hot-remove operation that can be
+>>> rolled-back in case of error or cancel.
+>>
+>> I would just merge 1 and 2.
+>>
+>>> 3. Commit phase - Perform the final hot-add / hot-remove operation that
+>>> cannot be rolled-back.  No error / cancel is allowed in this phase.  For
+>>> instance, eject operation is performed at this phase.  
+>>
+>> Yup.
+>>
+>> Thanks,
+>> Rafael
+>>
+>>
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-greg k-h
