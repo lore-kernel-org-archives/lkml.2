@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423810Ab2LFPeP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 10:34:15 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:17599 "EHLO relay.sw.ru"
+	id S1423862Ab2LFPeV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 10:34:21 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:40217 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965164Ab2LFPeN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 10:34:13 -0500
-Subject: [PATCH 2/6] nfsd: swap fs root in NFSd kthreads
+	id S1423825Ab2LFPeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 10:34:18 -0500
+Subject: [PATCH 3/6] nfsd: make containerise NFSd filesystem
 To: bfields@fieldses.org
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org, devel@openvz.org
-Date: Thu, 06 Dec 2012 18:34:47 +0300
-Message-ID: <20121206153447.30693.54128.stgit@localhost.localdomain>
+Date: Thu, 06 Dec 2012 18:34:52 +0300
+Message-ID: <20121206153452.30693.55597.stgit@localhost.localdomain>
 In-Reply-To: <20121206153204.30693.11408.stgit@localhost.localdomain>
 References: <20121206153204.30693.11408.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -22,94 +22,192 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NFSd does lookup. Lookup is done starting from current->fs->root.
-NFSd is a kthread, cloned by kthreadd, and thus have global (but luckely
-unshared) root.
-So we have to swap root to those, which process, started NFSd, has. Because
-that process can be in a container with it's own root.
+This patch makes NFSD file system superblock to be created per net.
+This makes possible to get proper network namespace from superblock instead of
+using hard-coded "init_net".
+
+Note: NFSd fs super-block holds network namespace. This garantees, that
+network namespace won't disappear from underneath of it.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 ---
- fs/nfsd/netns.h  |    1 +
- fs/nfsd/nfssvc.c |   33 ++++++++++++++++++++++++++++++++-
- 2 files changed, 33 insertions(+), 1 deletions(-)
+ fs/nfsd/nfsctl.c |   46 +++++++++++++++++++++++++++++++++-------------
+ fs/nfsd/nfssvc.c |    5 ++---
+ 2 files changed, 35 insertions(+), 16 deletions(-)
 
-diff --git a/fs/nfsd/netns.h b/fs/nfsd/netns.h
-index abfc97c..5c423c6 100644
---- a/fs/nfsd/netns.h
-+++ b/fs/nfsd/netns.h
-@@ -101,6 +101,7 @@ struct nfsd_net {
- 	struct timeval nfssvc_boot;
+diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
+index 7493428..873438f 100644
+--- a/fs/nfsd/nfsctl.c
++++ b/fs/nfsd/nfsctl.c
+@@ -220,6 +220,7 @@ static ssize_t write_unlock_ip(struct file *file, char *buf, size_t size)
+ 	struct sockaddr *sap = (struct sockaddr *)&address;
+ 	size_t salen = sizeof(address);
+ 	char *fo_path;
++	struct net *net = file->f_dentry->d_sb->s_fs_info;
  
- 	struct svc_serv *nfsd_serv;
-+	struct path	root;
+ 	/* sanity check */
+ 	if (size == 0)
+@@ -232,7 +233,7 @@ static ssize_t write_unlock_ip(struct file *file, char *buf, size_t size)
+ 	if (qword_get(&buf, fo_path, size) < 0)
+ 		return -EINVAL;
+ 
+-	if (rpc_pton(&init_net, fo_path, size, sap, salen) == 0)
++	if (rpc_pton(net, fo_path, size, sap, salen) == 0)
+ 		return -EINVAL;
+ 
+ 	return nlmsvc_unlock_all_by_ip(sap);
+@@ -317,6 +318,7 @@ static ssize_t write_filehandle(struct file *file, char *buf, size_t size)
+ 	int len;
+ 	struct auth_domain *dom;
+ 	struct knfsd_fh fh;
++	struct net *net = file->f_dentry->d_sb->s_fs_info;
+ 
+ 	if (size == 0)
+ 		return -EINVAL;
+@@ -352,7 +354,7 @@ static ssize_t write_filehandle(struct file *file, char *buf, size_t size)
+ 	if (!dom)
+ 		return -ENOMEM;
+ 
+-	len = exp_rootfh(&init_net, dom, path, &fh,  maxsize);
++	len = exp_rootfh(net, dom, path, &fh,  maxsize);
+ 	auth_domain_put(dom);
+ 	if (len)
+ 		return len;
+@@ -396,7 +398,7 @@ static ssize_t write_threads(struct file *file, char *buf, size_t size)
+ {
+ 	char *mesg = buf;
+ 	int rv;
+-	struct net *net = &init_net;
++	struct net *net = file->f_dentry->d_sb->s_fs_info;
+ 
+ 	if (size > 0) {
+ 		int newthreads;
+@@ -447,7 +449,7 @@ static ssize_t write_pool_threads(struct file *file, char *buf, size_t size)
+ 	int len;
+ 	int npools;
+ 	int *nthreads;
+-	struct net *net = &init_net;
++	struct net *net = file->f_dentry->d_sb->s_fs_info;
+ 
+ 	mutex_lock(&nfsd_mutex);
+ 	npools = nfsd_nrpools(net);
+@@ -510,7 +512,7 @@ static ssize_t __write_versions(struct file *file, char *buf, size_t size)
+ 	unsigned minor;
+ 	ssize_t tlen = 0;
+ 	char *sep;
+-	struct net *net = &init_net;
++	struct net *net = file->f_dentry->d_sb->s_fs_info;
+ 	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
+ 
+ 	if (size>0) {
+@@ -792,7 +794,7 @@ static ssize_t __write_ports(struct file *file, char *buf, size_t size,
+ static ssize_t write_ports(struct file *file, char *buf, size_t size)
+ {
+ 	ssize_t rv;
+-	struct net *net = &init_net;
++	struct net *net = file->f_dentry->d_sb->s_fs_info;
+ 
+ 	mutex_lock(&nfsd_mutex);
+ 	rv = __write_ports(file, buf, size, net);
+@@ -827,7 +829,7 @@ int nfsd_max_blksize;
+ static ssize_t write_maxblksize(struct file *file, char *buf, size_t size)
+ {
+ 	char *mesg = buf;
+-	struct net *net = &init_net;
++	struct net *net = file->f_dentry->d_sb->s_fs_info;
+ 	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
+ 
+ 	if (size > 0) {
+@@ -923,7 +925,8 @@ static ssize_t nfsd4_write_time(struct file *file, char *buf, size_t size,
+  */
+ static ssize_t write_leasetime(struct file *file, char *buf, size_t size)
+ {
+-	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
++	struct net *net = file->f_dentry->d_sb->s_fs_info;
++	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
+ 	return nfsd4_write_time(file, buf, size, &nn->nfsd4_lease, nn);
+ }
+ 
+@@ -939,7 +942,8 @@ static ssize_t write_leasetime(struct file *file, char *buf, size_t size)
+  */
+ static ssize_t write_gracetime(struct file *file, char *buf, size_t size)
+ {
+-	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
++	struct net *net = file->f_dentry->d_sb->s_fs_info;
++	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
+ 	return nfsd4_write_time(file, buf, size, &nn->nfsd4_grace, nn);
+ }
+ 
+@@ -995,7 +999,8 @@ static ssize_t __write_recoverydir(struct file *file, char *buf, size_t size,
+ static ssize_t write_recoverydir(struct file *file, char *buf, size_t size)
+ {
+ 	ssize_t rv;
+-	struct nfsd_net *nn = net_generic(&init_net, nfsd_net_id);
++	struct net *net = file->f_dentry->d_sb->s_fs_info;
++	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
+ 
+ 	mutex_lock(&nfsd_mutex);
+ 	rv = __write_recoverydir(file, buf, size, nn);
+@@ -1037,20 +1042,35 @@ static int nfsd_fill_super(struct super_block * sb, void * data, int silent)
+ #endif
+ 		/* last one */ {""}
+ 	};
+-	return simple_fill_super(sb, 0x6e667364, nfsd_files);
++	struct net *net = data;
++	int ret;
++
++	ret = simple_fill_super(sb, 0x6e667364, nfsd_files);
++	if (ret)
++		return ret;
++	sb->s_fs_info = get_net(net);
++	return 0;
+ }
+ 
+ static struct dentry *nfsd_mount(struct file_system_type *fs_type,
+ 	int flags, const char *dev_name, void *data)
+ {
+-	return mount_single(fs_type, flags, data, nfsd_fill_super);
++	return mount_ns(fs_type, flags, current->nsproxy->net_ns, nfsd_fill_super);
++}
++
++static void nfsd_umount(struct super_block *sb)
++{
++	struct net *net = sb->s_fs_info;
++
++	kill_litter_super(sb);
++	put_net(net);
+ }
+ 
+ static struct file_system_type nfsd_fs_type = {
+ 	.owner		= THIS_MODULE,
+ 	.name		= "nfsd",
+ 	.mount		= nfsd_mount,
+-	.kill_sb	= kill_litter_super,
++	.kill_sb	= nfsd_umount,
  };
  
- extern int nfsd_net_id;
+ #ifdef CONFIG_PROC_FS
 diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
-index cee62ab..177bb60 100644
+index 177bb60..bf1c4d3 100644
 --- a/fs/nfsd/nfssvc.c
 +++ b/fs/nfsd/nfssvc.c
-@@ -392,6 +392,7 @@ int nfsd_create_serv(struct net *net)
+@@ -734,8 +734,7 @@ nfsd_dispatch(struct svc_rqst *rqstp, __be32 *statp)
+ int nfsd_pool_stats_open(struct inode *inode, struct file *file)
+ {
+ 	int ret;
+-	struct net *net = &init_net;
+-	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
++	struct nfsd_net *nn = net_generic(inode->i_sb->s_fs_info, nfsd_net_id);
  
- 	set_max_drc();
- 	do_gettimeofday(&nn->nfssvc_boot);		/* record boot time */
-+	get_fs_root(current->fs, &nn->root);
- 	return 0;
- }
+ 	mutex_lock(&nfsd_mutex);
+ 	if (nn->nfsd_serv == NULL) {
+@@ -752,7 +751,7 @@ int nfsd_pool_stats_open(struct inode *inode, struct file *file)
+ int nfsd_pool_stats_release(struct inode *inode, struct file *file)
+ {
+ 	int ret = seq_release(inode, file);
+-	struct net *net = &init_net;
++	struct net *net = inode->i_sb->s_fs_info;
  
-@@ -426,8 +427,10 @@ void nfsd_destroy(struct net *net)
- 	if (destroy)
- 		svc_shutdown_net(nn->nfsd_serv, net);
- 	svc_destroy(nn->nfsd_serv);
--	if (destroy)
-+	if (destroy) {
-+		path_put(&nn->root);
- 		nn->nfsd_serv = NULL;
-+	}
- }
- 
- int nfsd_set_nrthreads(int n, int *nthreads, struct net *net)
-@@ -533,6 +536,25 @@ out:
- 	return error;
- }
- 
-+/*
-+ * This function is actually slightly modified set_fs_root()<F9>
-+ */
-+static void nfsd_swap_root(struct net *net)
-+{
-+	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
-+	struct fs_struct *fs = current->fs;
-+	struct path old_root;
-+
-+	path_get(&nn->root);
-+	spin_lock(&fs->lock);
-+	write_seqcount_begin(&fs->seq);
-+	old_root = fs->root;
-+	fs->root = nn->root;
-+	write_seqcount_end(&fs->seq);
-+	spin_unlock(&fs->lock);
-+	if (old_root.dentry)
-+		path_put(&old_root);
-+}
- 
- /*
-  * This is the NFS server kernel thread
-@@ -559,6 +581,15 @@ nfsd(void *vrqstp)
- 	current->fs->umask = 0;
- 
- 	/*
-+	 * We have to swap NFSd kthread's fs->root.
-+	 * Why so? Because NFSd can be started in container, which has it's own
-+	 * root.
-+	 * And so what? NFSd lookup files, and lookup start from
-+	 * current->fs->root.
-+	 */
-+	nfsd_swap_root(net);
-+
-+	/*
- 	 * thread is spawned with all signals set to SIG_IGN, re-enable
- 	 * the ones that will bring down the thread
- 	 */
+ 	mutex_lock(&nfsd_mutex);
+ 	/* this function really, really should have been called svc_put() */
 
