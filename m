@@ -1,201 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754538Ab2LFClQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 21:41:16 -0500
-Received: from www.hansjkoch.de ([178.63.77.200]:51521 "EHLO www.hansjkoch.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753811Ab2LFClO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 21:41:14 -0500
-Date: Thu, 6 Dec 2012 03:41:01 +0100
-From: "Hans J. Koch" <hjk@hansjkoch.de>
-To: Vitalii Demianets <vitas@nppfactor.kiev.ua>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Cong Ding <dinggnu@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v2] drivers/uio/uio_pdrv_genirq.c: Fix memory freeing
- issues
-Message-ID: <20121206024101.GB7175@local>
-References: <201211271929.32315.vitas@nppfactor.kiev.ua>
- <201211291347.28273.vitas@nppfactor.kiev.ua>
- <20121204210440.GA4720@local>
- <201212051122.57724.vitas@nppfactor.kiev.ua>
+	id S1754564Ab2LFCpI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 21:45:08 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:38481 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754060Ab2LFCpG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 21:45:06 -0500
+Date: Wed, 5 Dec 2012 18:45:01 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@vger.kernel.org
+Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
+Subject: Linux 3.0.55
+Message-ID: <20121206024501.GA20682@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qMm9M+Fa2AknHoGS"
 Content-Disposition: inline
-In-Reply-To: <201212051122.57724.vitas@nppfactor.kiev.ua>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 05, 2012 at 11:22:57AM +0200, Vitalii Demianets wrote:
-> 1. uioinfo was kfreed based on the presence of pdev->dev.of_node, which was
-> obviously wrong and unrelated to the fact if uioinfo was allocated statically
-> or dynamically. This patch introduces new flag which clearly shows if uioinfo
-> was allocated dynamically and kfrees uioinfo based on that flag;
-> 2. Fix: priv data was not freed in case platform_get_irq() failed. As it was
-> caused mainly by improper exit labels naming, labels were renamed too;
-> 3. The case of uioinfo AND pdev->dev.of_node both NULL (not initialized
-> in platform data) was not treated properly.
 
-I noticed two more issues. See below.
+--qMm9M+Fa2AknHoGS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> 
-> Signed-off-by: Vitalii Demianets <vitas@nppfactor.kiev.ua>
-> 
-> ---
-> v2: Constants naming style
-> 
-> ---
->  drivers/uio/uio_pdrv_genirq.c |   44 ++++++++++++++++++++++++----------------
->  1 files changed, 26 insertions(+), 18 deletions(-)
-> 
-> diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
-> index 42202cd..75aaeee 100644
-> --- a/drivers/uio/uio_pdrv_genirq.c
-> +++ b/drivers/uio/uio_pdrv_genirq.c
-> @@ -30,6 +30,11 @@
->  
->  #define DRIVER_NAME "uio_pdrv_genirq"
->  
-> +enum {
-> +	UIO_IRQ_DISABLED = 0,
-> +	UIO_INFO_ALLOCED = 1,
-> +};
-> +
->  struct uio_pdrv_genirq_platdata {
->  	struct uio_info *uioinfo;
->  	spinlock_t lock;
-> @@ -63,7 +68,7 @@ static irqreturn_t uio_pdrv_genirq_handler(int irq, struct uio_info *dev_info)
->  	 * remember the state so we can allow user space to enable it later.
->  	 */
->  
-> -	if (!test_and_set_bit(0, &priv->flags))
-> +	if (!test_and_set_bit(UIO_IRQ_DISABLED, &priv->flags))
->  		disable_irq_nosync(irq);
+I'm announcing the release of the 3.0.55 kernel.
 
-That is not safe. That flag can only be changed by userspace, and if the
-userspace part is not running, the CPU on which the irq is pending will hang.
-The handler has to disable the interrupt in any case.
-(The original version had the same problem, I know...)
+This only fixes a build error that some people have reported from the
+3.0.54 kernel, if you don't have a problem with 3.0.54 then don't worry
+about upgrading at this point in time.
 
->  
->  	return IRQ_HANDLED;
-> @@ -83,10 +88,10 @@ static int uio_pdrv_genirq_irqcontrol(struct uio_info *dev_info, s32 irq_on)
->  
->  	spin_lock_irqsave(&priv->lock, flags);
->  	if (irq_on) {
-> -		if (test_and_clear_bit(0, &priv->flags))
-> +		if (test_and_clear_bit(UIO_IRQ_DISABLED, &priv->flags))
->  			enable_irq(dev_info->irq);
->  	} else {
-> -		if (!test_and_set_bit(0, &priv->flags))
-> +		if (!test_and_set_bit(UIO_IRQ_DISABLED, &priv->flags))
->  			disable_irq(dev_info->irq);
->  	}
->  	spin_unlock_irqrestore(&priv->lock, flags);
-> @@ -101,8 +106,9 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
->  	struct uio_mem *uiomem;
->  	int ret = -EINVAL;
->  	int i;
-> +	bool uioinfo_alloced = false;
->  
-> -	if (!uioinfo) {
-> +	if (!uioinfo && pdev->dev.of_node) {
->  		int irq;
->  
->  		/* alloc uioinfo for one device */
-> @@ -110,10 +116,11 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
->  		if (!uioinfo) {
->  			ret = -ENOMEM;
->  			dev_err(&pdev->dev, "unable to kmalloc\n");
-> -			goto bad2;
-> +			goto out;
->  		}
->  		uioinfo->name = pdev->dev.of_node->name;
->  		uioinfo->version = "devicetree";
-> +		uioinfo_alloced = true;
->  
->  		/* Multiple IRQs are not supported */
->  		irq = platform_get_irq(pdev, 0);
-> @@ -125,32 +132,33 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
->  
->  	if (!uioinfo || !uioinfo->name || !uioinfo->version) {
->  		dev_err(&pdev->dev, "missing platform_data\n");
-> -		goto bad0;
-> +		goto out_uioinfo;
->  	}
->  
->  	if (uioinfo->handler || uioinfo->irqcontrol ||
->  	    uioinfo->irq_flags & IRQF_SHARED) {
->  		dev_err(&pdev->dev, "interrupt configuration error\n");
-> -		goto bad0;
-> +		goto out_uioinfo;
->  	}
->  
->  	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
->  	if (!priv) {
->  		ret = -ENOMEM;
->  		dev_err(&pdev->dev, "unable to kmalloc\n");
-> -		goto bad0;
-> +		goto out_uioinfo;
->  	}
->  
->  	priv->uioinfo = uioinfo;
->  	spin_lock_init(&priv->lock);
-> -	priv->flags = 0; /* interrupt is enabled to begin with */
-> +	/* interrupt is enabled to begin with */
-> +	priv->flags = uioinfo_alloced ? (1 << UIO_INFO_ALLOCED) : 0;
+The updated 3.0.y git tree can be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linux-3.0.y
+and can be browsed at the normal kernel.org git web browser:
+        http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=summary
 
-The comment doesn't describe the line it's supposed to comment.
+thanks,
 
->  	priv->pdev = pdev;
->  
->  	if (!uioinfo->irq) {
->  		ret = platform_get_irq(pdev, 0);
->  		if (ret < 0) {
->  			dev_err(&pdev->dev, "failed to get IRQ\n");
-> -			goto bad0;
-> +			goto out_priv;
->  		}
->  		uioinfo->irq = ret;
->  	}
-> @@ -205,19 +213,19 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
->  	ret = uio_register_device(&pdev->dev, priv->uioinfo);
->  	if (ret) {
->  		dev_err(&pdev->dev, "unable to register uio device\n");
-> -		goto bad1;
-> +		goto out_pm;
->  	}
->  
->  	platform_set_drvdata(pdev, priv);
->  	return 0;
-> - bad1:
-> -	kfree(priv);
-> +out_pm:
->  	pm_runtime_disable(&pdev->dev);
-> - bad0:
-> -	/* kfree uioinfo for OF */
-> -	if (pdev->dev.of_node)
-> +out_priv:
-> +	kfree(priv);
-> +out_uioinfo:
-> +	if (uioinfo_alloced)
->  		kfree(uioinfo);
-> - bad2:
-> +out:
->  	return ret;
->  }
->  
-> @@ -232,7 +240,7 @@ static int uio_pdrv_genirq_remove(struct platform_device *pdev)
->  	priv->uioinfo->irqcontrol = NULL;
->  
->  	/* kfree uioinfo for OF */
-> -	if (pdev->dev.of_node)
-> +	if (priv->flags & (1 << UIO_INFO_ALLOCED))
->  		kfree(priv->uioinfo);
->  
->  	kfree(priv);
-> -- 
-> 1.7.8.6
-> 
+greg k-h
+
+------------
+
+ Makefile                 |    2 +-
+ arch/x86/kernel/ptrace.c |    2 ++
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+
+Greg Kroah-Hartman (1):
+      Linux 3.0.55
+
+H. Peter Anvin (1):
+      x86-32: Export kernel_stack_pointer() for modules
+
+
+--qMm9M+Fa2AknHoGS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQwAatAAoJEDjbvchgkmk+4loP+weZmi/kQFy5O3v9UmFjsamS
+B2gHWlJ1QL1AuLk3Vw4+ZjVMQD1atFIZT7E+U0Tl+cFCRLnmJnKgACjHjdBR/vTF
+RO/J7cYg0jGDM64nk7CdAday8XukJ5syUR94v0VRngazIJHbwi1SMqE+sgYxDBUC
+dyDys7CujUlgUdbgmTc8ghAC0DA6OSxfCt19cKsSLgZ3PeinYHn/yOZBzMqnnL03
+0KnYNkYagDFyYAckLaIvAwaUiNTAlf9zLjaCVujsOqp+yJgjUVFvhu/ZlOeLQiEH
+hDQ4yY5Hm4Z/1UifFtQwC/7yb4NIsBfVRgH+gsb3JX59Gr9GciZMsemDsFwrhfGV
+EBzAoLcmGFy7z4lKVFxKQ+Jp/NVzp2cKPFPltPqKWVd0DmTQqRxX+Lf6NyBXwlNL
+FdVHesk6q8SC/Po1+G+y4Ti/Id5TpzKSFkvQJymjxpuMkrEvbvnVRoMQb6tpOWtt
+pHv++F+bpTCjAa3elsztIbmzFhEpaWawLRI54PM4SJ0NCRw/gx7eDerfZITbaOAU
+6+6Aej3LlJIEoZplTJ65lCUqdvXh4YIc8jLr21tLdcqrUQklJigh/d3PrQt5kNV7
+lOBAeLwqlzCu2s+dsWrpyFrboL0acZvDHcc1YQXX5lZOyUvnXoSX5/9y+pqIaZZE
+WM4y1pHyFfnrGHxFfnpl
+=eelV
+-----END PGP SIGNATURE-----
+
+--qMm9M+Fa2AknHoGS--
