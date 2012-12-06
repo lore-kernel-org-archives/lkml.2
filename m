@@ -1,90 +1,314 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754350Ab2LFAm5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 19:42:57 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:8055 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932087Ab2LFAmy (ORCPT
+	id S1754337Ab2LFApi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 19:45:38 -0500
+Received: from atl4mhfb02.myregisteredsite.com ([209.17.115.56]:34060 "EHLO
+	atl4mhfb02.myregisteredsite.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753921Ab2LFAph (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 19:42:54 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlUMADjpv1B5LLKS/2dsb2JhbABEDrgXhgAXc4IeAQEEATocKAsIAxEDAQIBLhQlAxMOARKICgUNwlkUjCODYGEDlgKBHY8rgjVR
-Date: Thu, 6 Dec 2012 11:42:34 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Martin Steigerwald <Martin@lichtvoll.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
- UAPI
-Message-ID: <20121206004234.GA27172@dastard>
-References: <1353366267-15629-1-git-send-email-david@fromorbit.com>
- <201212051718.44017.Martin@lichtvoll.de>
- <20121205163303.GG18885@thunk.org>
- <201212051824.05621.Martin@lichtvoll.de>
- <20121205173415.GI18885@thunk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121205173415.GI18885@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 5 Dec 2012 19:45:37 -0500
+Subject: [patch] propagate name change to comments in kernel source
+From: Nadia Yvette Chambers <nyc@holomorphy.com>
+To: linux-next@vger.kernel.org
+Cc: sfr@canb.auug.org.au, linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary="=-zL/XsWofA+AXzNbI6L88"
+Date: Wed, 05 Dec 2012 19:44:28 -0500
+Message-ID: <1354754668.9720.198.camel@tisifone>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 05, 2012 at 12:34:15PM -0500, Theodore Ts'o wrote:
-> Because it's the on-disk encoding, when btrfs uses extra bits for its
-> btrfs-specific inode flags, it means that I need to avoid using those
-> bits in ext4, if it's a flag that needs to also be exposed via
-> chattr/lsattr.
 
-What, you mean the ones they posted to -fsdevel for peer review?
+--=-zL/XsWofA+AXzNbI6L88
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 
-http://marc.info/?t=129914133000001&r=1&w=2
+I've legally changed my name with New York State, the US Social Security
+Administration, et al. This patch propagates the name change and change
+in initials and login to comments in the kernel source as well.
 
-> P.S.  The main reason why it would have been better for btrfs
-> developers to have consulted me is that they also depend on
-> lsattr/chattr, and those programs are part of e2fsprogs.
+vs. next-20121205
 
-They did consult you directly, Ted. Here's the header from V2 of the
-patch indicating that you are directly cc'd:
+Signed-off-by: Nadia Yvette Chambers <nyc@holomorphy.com>
 
-  Message-ID: <4D871243.2060001@cn.fujitsu.com>
-  Date: Mon, 21 Mar 2011 16:54:27 +0800
-  From: liubo <liubo2009@cn.fujitsu.com>
-  User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US;
-          rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11
-          Thunderbird/3.0b2
-  MIME-Version: 1.0
-  To: Linux Btrfs <linux-btrfs@vger.kernel.org>
-  CC: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-          Andreas Dilger <adilger@dilger.ca>, Christoph Hellwig <hch@lst.de>,
-          tytso <tytso@mit.edu>, Chris Mason <chris.mason@oracle.com>
-  Subject: [PATCH 1/2 v2] Btrfs: add datacow flag in inode flag
 
-Apples and oranges, Ted. You didn't post your change anywhere,
-unlike the btrfs guys who did the right thing. Please stop trying to
-blame someone else for your actions.
+--=-zL/XsWofA+AXzNbI6L88
+Content-Disposition: attachment; filename="wli-nyc-name_change.patch"
+Content-Type: text/x-patch; name="wli-nyc-name_change.patch"; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 
-> That being said, you'll note that unlike Dave, I have
-> **not** thrown a hissy fit when btrfs grabbed bits from the inode
-> field, even though quite a bit more bits allocated for the inode flags
-> than the fallocate flags.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 26c7b01..b3055a2 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -3659,7 +3659,7 @@ S:	Maintained
+ F:	drivers/input/touchscreen/htcpen.c
+ 
+ HUGETLB FILESYSTEM
+-M:	William Irwin <wli@holomorphy.com>
++M:	Nadia Yvette Chambers <nyc@holomorphy.com>
+ S:	Maintained
+ F:	fs/hugetlbfs/
+ 
+diff --git a/arch/alpha/include/asm/mmzone.h b/arch/alpha/include/asm/mmzone.h
+index 445dc42..c5b5d6b 100644
+--- a/arch/alpha/include/asm/mmzone.h
++++ b/arch/alpha/include/asm/mmzone.h
+@@ -66,7 +66,7 @@ PLAT_NODE_DATA_LOCALNR(unsigned long p, int n)
+     ((unsigned long)__va(NODE_DATA(kvaddr_to_nid(kaddr))->node_start_pfn  \
+ 			 << PAGE_SHIFT))
+ 
+-/* XXX: FIXME -- wli */
++/* XXX: FIXME -- nyc */
+ #define kern_addr_valid(kaddr)	(0)
+ 
+ #define virt_to_page(kaddr)	pfn_to_page(__pa(kaddr) >> PAGE_SHIFT)
+diff --git a/arch/frv/mm/pgalloc.c b/arch/frv/mm/pgalloc.c
+index 4fb63a3..f6084bc 100644
+--- a/arch/frv/mm/pgalloc.c
++++ b/arch/frv/mm/pgalloc.c
+@@ -77,7 +77,7 @@ void __set_pmd(pmd_t *pmdptr, unsigned long pmd)
+  * checks at dup_mmap(), exec(), and other mmlist addition points
+  * could be used. The locking scheme was chosen on the basis of
+  * manfred's recommendations and having no core impact whatsoever.
+- * -- wli
++ * -- nyc
+  */
+ DEFINE_SPINLOCK(pgd_lock);
+ struct page *pgd_list;
+diff --git a/arch/mn10300/mm/pgtable.c b/arch/mn10300/mm/pgtable.c
+index 4ebf117..bd9ada6 100644
+--- a/arch/mn10300/mm/pgtable.c
++++ b/arch/mn10300/mm/pgtable.c
+@@ -95,7 +95,7 @@ struct page *pte_alloc_one(struct mm_struct *mm, unsigned long address)
+  * checks at dup_mmap(), exec(), and other mmlist addition points
+  * could be used. The locking scheme was chosen on the basis of
+  * manfred's recommendations and having no core impact whatsoever.
+- * -- wli
++ * -- nyc
+  */
+ DEFINE_SPINLOCK(pgd_lock);
+ struct page *pgd_list;
+diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
+index 7353de3..e27fbf8 100644
+--- a/arch/x86/mm/pgtable.c
++++ b/arch/x86/mm/pgtable.c
+@@ -137,7 +137,7 @@ static void pgd_dtor(pgd_t *pgd)
+  * against pageattr.c; it is the unique case in which a valid change
+  * of kernel pagetables can't be lazily synchronized by vmalloc faults.
+  * vmalloc faults work because attached pagetables are never freed.
+- * -- wli
++ * -- nyc
+  */
+ 
+ #ifdef CONFIG_X86_PAE
+diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
+index 4a55f35..78bde32 100644
+--- a/fs/hugetlbfs/inode.c
++++ b/fs/hugetlbfs/inode.c
+@@ -1,7 +1,7 @@
+ /*
+  * hugetlbpage-backed filesystem.  Based on ramfs.
+  *
+- * William Irwin, 2002
++ * Nadia Yvette Chambers, 2002
+  *
+  * Copyright (C) 2002 Linus Torvalds.
+  */
+diff --git a/fs/ncpfs/mmap.c b/fs/ncpfs/mmap.c
+index be20a7e..63d14a9 100644
+--- a/fs/ncpfs/mmap.c
++++ b/fs/ncpfs/mmap.c
+@@ -89,7 +89,7 @@ static int ncp_file_mmap_fault(struct vm_area_struct *area,
+ 	/*
+ 	 * If I understand ncp_read_kernel() properly, the above always
+ 	 * fetches from the network, here the analogue of disk.
+-	 * -- wli
++	 * -- nyc
+ 	 */
+ 	count_vm_event(PGMAJFAULT);
+ 	mem_cgroup_count_vm_event(area->vm_mm, PGMAJFAULT);
+diff --git a/include/linux/hash.h b/include/linux/hash.h
+index 24df9e7..61c97ae 100644
+--- a/include/linux/hash.h
++++ b/include/linux/hash.h
+@@ -1,7 +1,7 @@
+ #ifndef _LINUX_HASH_H
+ #define _LINUX_HASH_H
+ /* Fast hashing routine for ints,  longs and pointers.
+-   (C) 2002 William Lee Irwin III, IBM */
++   (C) 2002 Nadia Yvette Chambers, IBM */
+ 
+ /*
+  * Knuth recommends primes in approximately golden ratio to the maximum
+diff --git a/kernel/pid.c b/kernel/pid.c
+index e8750f9..36aa02f 100644
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -1,8 +1,8 @@
+ /*
+  * Generic pidhash and scalable, time-bounded PID allocator
+  *
+- * (C) 2002-2003 William Irwin, IBM
+- * (C) 2004 William Irwin, Oracle
++ * (C) 2002-2003 Nadia Yvette Chambers, IBM
++ * (C) 2004 Nadia Yvette Chambers, Oracle
+  * (C) 2002-2004 Ingo Molnar, Red Hat
+  *
+  * pid-structures are backing objects for tasks sharing a given ID to chain
+diff --git a/kernel/profile.c b/kernel/profile.c
+index 76b8e77..1f39181 100644
+--- a/kernel/profile.c
++++ b/kernel/profile.c
+@@ -8,9 +8,10 @@
+  *  Scheduler profiling support, Arjan van de Ven and Ingo Molnar,
+  *	Red Hat, July 2004
+  *  Consolidation of architecture support code for profiling,
+- *	William Irwin, Oracle, July 2004
++ *	Nadia Yvette Chambers, Oracle, July 2004
+  *  Amortized hit count accounting via per-cpu open-addressed hashtables
+- *	to resolve timer interrupt livelocks, William Irwin, Oracle, 2004
++ *	to resolve timer interrupt livelocks, Nadia Yvette Chambers,
++ *	Oracle, 2004
+  */
+ 
+ #include <linux/export.h>
+@@ -256,7 +257,7 @@ EXPORT_SYMBOL_GPL(unregister_timer_hook);
+  * pagetable hash functions, but uses a full hashtable full of finite
+  * collision chains, not just pairs of them.
+  *
+- * -- wli
++ * -- nyc
+  */
+ static void __profile_flip_buffers(void *unused)
+ {
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 7693aaf..afd092d 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -10,7 +10,7 @@
+  * Based on code in the latency_tracer, that is:
+  *
+  *  Copyright (C) 2004-2006 Ingo Molnar
+- *  Copyright (C) 2004 William Lee Irwin III
++ *  Copyright (C) 2004 Nadia Yvette Chambers
+  */
+ 
+ #include <linux/stop_machine.h>
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 5bc3590..e512567 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -9,7 +9,7 @@
+  *
+  * Based on code from the latency_tracer, that is:
+  *  Copyright (C) 2004-2006 Ingo Molnar
+- *  Copyright (C) 2004 William Lee Irwin III
++ *  Copyright (C) 2004 Nadia Yvette Chambers
+  */
+ #include <linux/ring_buffer.h>
+ #include <generated/utsrelease.h>
+diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
+index bb227e3..8e3ad80 100644
+--- a/kernel/trace/trace_functions.c
++++ b/kernel/trace/trace_functions.c
+@@ -7,7 +7,7 @@
+  * Based on code from the latency_tracer, that is:
+  *
+  *  Copyright (C) 2004-2006 Ingo Molnar
+- *  Copyright (C) 2004 William Lee Irwin III
++ *  Copyright (C) 2004 Nadia Yvette Chambers
+  */
+ #include <linux/ring_buffer.h>
+ #include <linux/debugfs.h>
+diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
+index 5ffce7b..713a2ca 100644
+--- a/kernel/trace/trace_irqsoff.c
++++ b/kernel/trace/trace_irqsoff.c
+@@ -7,7 +7,7 @@
+  * From code in the latency_tracer, that is:
+  *
+  *  Copyright (C) 2004-2006 Ingo Molnar
+- *  Copyright (C) 2004 William Lee Irwin III
++ *  Copyright (C) 2004 Nadia Yvette Chambers
+  */
+ #include <linux/kallsyms.h>
+ #include <linux/debugfs.h>
+diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_wakeup.c
+index bc64fc1..9fe45fc 100644
+--- a/kernel/trace/trace_sched_wakeup.c
++++ b/kernel/trace/trace_sched_wakeup.c
+@@ -7,7 +7,7 @@
+  * Based on code from the latency_tracer, that is:
+  *
+  *  Copyright (C) 2004-2006 Ingo Molnar
+- *  Copyright (C) 2004 William Lee Irwin III
++ *  Copyright (C) 2004 Nadia Yvette Chambers
+  */
+ #include <linux/module.h>
+ #include <linux/fs.h>
+diff --git a/kernel/wait.c b/kernel/wait.c
+index 7fdd9ea..6698e0c 100644
+--- a/kernel/wait.c
++++ b/kernel/wait.c
+@@ -1,7 +1,7 @@
+ /*
+  * Generic waiting primitives.
+  *
+- * (C) 2004 William Irwin, Oracle
++ * (C) 2004 Nadia Yvette Chambers, Oracle
+  */
+ #include <linux/init.h>
+ #include <linux/export.h>
+diff --git a/lib/bitmap.c b/lib/bitmap.c
+index 06fdfa1..06f7e4f 100644
+--- a/lib/bitmap.c
++++ b/lib/bitmap.c
+@@ -353,7 +353,7 @@ again:
+ EXPORT_SYMBOL(bitmap_find_next_zero_area);
+ 
+ /*
+- * Bitmap printing & parsing functions: first version by Bill Irwin,
++ * Bitmap printing & parsing functions: first version by Nadia Yvette Chambers,
+  * second version by Paul Jackson, third by Joe Korty.
+  */
+ 
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 8518efc..cf6a869 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -1,6 +1,6 @@
+ /*
+  * Generic hugetlb support.
+- * (C) William Irwin, April 2004
++ * (C) Nadia Yvette Chambers, April 2004
+  */
+ #include <linux/list.h>
+ #include <linux/init.h>
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 965f003..2247089 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -525,7 +525,7 @@ static inline int page_is_buddy(struct page *page, struct page *buddy,
+  * If a block is freed, and its buddy is also free, then this
+  * triggers coalescing into a block of larger size.
+  *
+- * -- wli
++ * -- nyc
+  */
+ 
+ static inline void __free_one_page(struct page *page,
+@@ -792,7 +792,7 @@ void __init init_cma_reserved_pageblock(struct page *page)
+  * large block of memory acted on by a series of small allocations.
+  * This behavior is a critical factor in sglist merging's success.
+  *
+- * -- wli
++ * -- nyc
+  */
+ static inline void expand(struct zone *zone, struct page *page,
+ 	int low, int high, struct free_area *area,
 
-IOWs, pointing out that the standard peer review process has been
-bypassed is "throwing a hissy fit"? And Linus calls it "being a
-pissy bitch". To me this is acknoweldgement of the fact that
-something wrong was done, but the actors can't bring themselves to
-directly admit it and so are resorting to name calling and
-blame-shifting to discredit the messenger and therefore the message.
+--=-zL/XsWofA+AXzNbI6L88--
 
-Or perhaps Linus has given us the go-ahead to push random unreviewed
-syscall changes through subsystem trees after holding private
-discussions between a handful of developers like has happened here.
-
-Cheers.
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
