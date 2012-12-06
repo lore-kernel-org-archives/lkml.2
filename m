@@ -1,87 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946636Ab2LFS16 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 13:27:58 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:39448 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1946537Ab2LFS0o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 13:26:44 -0500
-From: Pavel Shilovsky <piastry@etersoft.ru>
-To: linux-cifs@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        wine-devel@winehq.org, linux-nfs@vger.kernel.org
-Subject: [PATCH 1/3] fcntl: Introduce new O_DENY* open flags for network filesystems
-Date: Thu,  6 Dec 2012 22:26:29 +0400
-Message-Id: <1354818391-7968-2-git-send-email-piastry@etersoft.ru>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1354818391-7968-1-git-send-email-piastry@etersoft.ru>
-References: <1354818391-7968-1-git-send-email-piastry@etersoft.ru>
+	id S1946657Ab2LFS31 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 13:29:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42381 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1946537Ab2LFS30 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 13:29:26 -0500
+Date: Thu, 6 Dec 2012 18:21:03 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, Henrik Rydberg <rydberg@euromail.se>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Oops in 3.7-rc8 isolate_free_pages_block()
+Message-ID: <20121206182103.GD17258@suse.de>
+References: <20121206091744.GA1397@polaris.bitmath.org>
+ <20121206144821.GC18547@quack.suse.cz>
+ <20121206161934.GA17258@suse.de>
+ <CA+55aFw9WQN-MYFKzoGXF9Z70h1XsMu5X4hLy0GPJopBVuE=Yg@mail.gmail.com>
+ <20121206175451.GC17258@suse.de>
+ <CA+55aFwDZHXf2FkWugCy4DF+mPTjxvjZH87ydhE5cuFFcJ-dJg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwDZHXf2FkWugCy4DF+mPTjxvjZH87ydhE5cuFFcJ-dJg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds 3 flags:
-1) O_DENYREAD that doesn't permit read access
-2) O_DENYWRITE that doesn't permit write access
-3) O_DENYDELETE that doesn't permit delete or rename
+On Thu, Dec 06, 2012 at 10:19:35AM -0800, Linus Torvalds wrote:
+> On Thu, Dec 6, 2012 at 9:55 AM, Mel Gorman <mgorman@suse.de> wrote:
+> >
+> > Yeah. I was listening to a talk while I was writing it, a bit cranky and
+> > didn't see why I should suffer alone.
+> 
+> Makes sense.
+> 
+> > Quasimoto strikes again
+> 
+> Is that Quasimodo's Japanese cousin?
+> 
 
-Network filesystems CIFS, SMB2.0, SMB3.0 and NFSv4 have such flags -
-this change can benefit cifs and nfs modules. While this change is ok
-for network filesystems, itsn't not targeted for local filesystems due
-to security problems (e.g. when a user process can deny root to delete
-a file).
+Yes, he's tried to escape his terrible legacy with a name change.
 
-Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
----
- fs/fcntl.c                       |    5 +++--
- include/uapi/asm-generic/fcntl.h |   11 +++++++++++
- 2 files changed, 14 insertions(+), 2 deletions(-)
+> > -               end_pfn = min(pfn + pageblock_nr_pages, zone_end_pfn);
+> > +
+> > +               /*
+> > +                * As pfn may not start aligned, pfn+pageblock_nr_page
+> > +                * may cross a MAX_ORDER_NR_PAGES boundary and miss
+> > +                * a pfn_valid check. Ensure isolate_freepages_block()
+> > +                * only scans within a pageblock.
+> > +                */
+> > +               end_pfn = ALIGN(pfn + pageblock_nr_pages, pageblock_nr_pages);
+> > +               end_pfn = min(end_pfn, end_pfn);
+> 
+> Ok, this looks much nicer, except it's obviously buggy. The
+> min(end_pfn, end_pfn) thing is insane, and I'm sure you meant for that
+> line to be
+> 
+> +               end_pfn = min(end_pfn, zone_end_pfn);
+> 
 
-diff --git a/fs/fcntl.c b/fs/fcntl.c
-index 71a600a..7abce5a 100644
---- a/fs/fcntl.c
-+++ b/fs/fcntl.c
-@@ -730,14 +730,15 @@ static int __init fcntl_init(void)
- 	 * Exceptions: O_NONBLOCK is a two bit define on parisc; O_NDELAY
- 	 * is defined as O_NONBLOCK on some platforms and not on others.
- 	 */
--	BUILD_BUG_ON(19 - 1 /* for O_RDONLY being 0 */ != HWEIGHT32(
-+	BUILD_BUG_ON(22 - 1 /* for O_RDONLY being 0 */ != HWEIGHT32(
- 		O_RDONLY	| O_WRONLY	| O_RDWR	|
- 		O_CREAT		| O_EXCL	| O_NOCTTY	|
- 		O_TRUNC		| O_APPEND	| /* O_NONBLOCK	| */
- 		__O_SYNC	| O_DSYNC	| FASYNC	|
- 		O_DIRECT	| O_LARGEFILE	| O_DIRECTORY	|
- 		O_NOFOLLOW	| O_NOATIME	| O_CLOEXEC	|
--		__FMODE_EXEC	| O_PATH
-+		__FMODE_EXEC	| O_PATH	| O_DENYREAD	|
-+		O_DENYWRITE	| O_DENYDELETE
- 		));
- 
- 	fasync_cache = kmem_cache_create("fasync_cache",
-diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
-index a48937d..5ac0d49 100644
---- a/include/uapi/asm-generic/fcntl.h
-+++ b/include/uapi/asm-generic/fcntl.h
-@@ -84,6 +84,17 @@
- #define O_PATH		010000000
- #endif
- 
-+#ifndef O_DENYREAD
-+#define O_DENYREAD	020000000	/* Do not permit read access */
-+#endif
-+#ifndef O_DENYWRITE
-+#define O_DENYWRITE	040000000	/* Do not permit write access */
-+#endif
-+/* FMODE_NONOTIFY	0100000000 */
-+#ifndef O_DENYDELETE
-+#define O_DENYDELETE	0200000000	/* Do not permit delete or rename */
-+#endif
-+
- #ifndef O_NDELAY
- #define O_NDELAY	O_NONBLOCK
- #endif
+*sigh* Yes, I did. Thanks.
+
 -- 
-1.7.10.4
-
+Mel Gorman
+SUSE Labs
