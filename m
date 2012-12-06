@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424300Ab2LFQNG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 11:13:06 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:55812 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1424224Ab2LFQMF (ORCPT
+	id S1424287Ab2LFQNE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 11:13:04 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:59636 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1424234Ab2LFQMM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 11:12:05 -0500
+	Thu, 6 Dec 2012 11:12:12 -0500
 From: Joonsoo Kim <js1304@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Russell King <rmk+kernel@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
         linux-mm@kvack.org, kexec@lists.infradead.org,
         Joonsoo Kim <js1304@gmail.com>
-Subject: [RFC PATCH 4/8] mm, vmalloc: iterate vmap_area_list, instead of vmlist in vread/vwrite()
-Date: Fri,  7 Dec 2012 01:09:31 +0900
-Message-Id: <1354810175-4338-5-git-send-email-js1304@gmail.com>
+Subject: [RFC PATCH 6/8] mm, vmalloc: iterate vmap_area_list, instead of vmlist, in vmallocinfo()
+Date: Fri,  7 Dec 2012 01:09:33 +0900
+Message-Id: <1354810175-4338-7-git-send-email-js1304@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1354810175-4338-1-git-send-email-js1304@gmail.com>
 References: <1354810175-4338-1-git-send-email-js1304@gmail.com>
@@ -22,130 +22,173 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, when we hold a vmap_area_lock, va->vm can't be discarded. So we can
-safely access to va->vm when iterating a vmap_area_list with holding a
-vmap_area_lock. With this property, change iterating vmlist codes in
-vread/vwrite() to iterating vmap_area_list.
+This patch is preparing step for removing vmlist entirely.
+For above purpose, we change iterating a vmap_list codes to iterating a
+vmap_area_list. It is somewhat trivial change, but just one thing
+should be noticed.
 
-There is a little difference relate to lock, because vmlist_lock is mutex,
-but, vmap_area_lock is spin_lock. It may introduce a spinning overhead
-during vread/vwrite() is executing. But, these are debug-oriented
-functions, so this overhead is not real problem for common case.
+Using vmap_area_list in vmallocinfo() introduce ordering problem in SMP
+system. In s_show(), we retrieve some values from vm_struct. vm_struct's
+values is not fully setup when va->vm is assigned. Full setup is notified
+by removing VM_UNLIST flag without holding a lock. When we see that
+VM_UNLIST is removed, it is not ensured that vm_struct has proper values
+in view of other CPUs. So we need smp_[rw]mb for ensuring that proper
+values is assigned when we see that VM_UNLIST is removed.
+
+Therefore, this patch not only change a iteration list, but also add a
+appropriate smp_[rw]mb to right places.
 
 Signed-off-by: Joonsoo Kim <js1304@gmail.com>
 
 diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index a0b85a6..d21167f 100644
+index f7f4a35..f134950 100644
 --- a/mm/vmalloc.c
 +++ b/mm/vmalloc.c
-@@ -2009,7 +2009,8 @@ static int aligned_vwrite(char *buf, char *addr, unsigned long count)
- 
- long vread(char *buf, char *addr, unsigned long count)
+@@ -1304,7 +1304,14 @@ static void insert_vmalloc_vmlist(struct vm_struct *vm)
  {
--	struct vm_struct *tmp;
+ 	struct vm_struct *tmp, **p;
+ 
++	/*
++	 * Before removing VM_UNLIST,
++	 * we should make sure that vm has proper values.
++	 * Pair with smp_rmb() in show_numa_info().
++	 */
++	smp_wmb();
+ 	vm->flags &= ~VM_UNLIST;
++
+ 	write_lock(&vmlist_lock);
+ 	for (p = &vmlist; (tmp = *p) != NULL; p = &tmp->next) {
+ 		if (tmp->addr >= vm->addr)
+@@ -2539,19 +2546,19 @@ void pcpu_free_vm_areas(struct vm_struct **vms, int nr_vms)
+ 
+ #ifdef CONFIG_PROC_FS
+ static void *s_start(struct seq_file *m, loff_t *pos)
+-	__acquires(&vmlist_lock)
++	__acquires(&vmap_area_lock)
+ {
+ 	loff_t n = *pos;
+-	struct vm_struct *v;
 +	struct vmap_area *va;
-+	struct vm_struct *vm;
- 	char *vaddr, *buf_start = buf;
- 	unsigned long buflen = count;
- 	unsigned long n;
-@@ -2018,10 +2019,17 @@ long vread(char *buf, char *addr, unsigned long count)
- 	if ((unsigned long) addr + count < count)
- 		count = -(unsigned long) addr;
  
 -	read_lock(&vmlist_lock);
--	for (tmp = vmlist; count && tmp; tmp = tmp->next) {
--		vaddr = (char *) tmp->addr;
--		if (addr >= vaddr + tmp->size - PAGE_SIZE)
+-	v = vmlist;
+-	while (n > 0 && v) {
 +	spin_lock(&vmap_area_lock);
-+	list_for_each_entry(va, &vmap_area_list, list) {
-+		if (!count)
-+			break;
-+
-+		if (!(va->flags & VM_VM_AREA))
-+			continue;
-+
-+		vm = va->vm;
-+		vaddr = (char *) vm->addr;
-+		if (addr >= vaddr + vm->size - PAGE_SIZE)
- 			continue;
- 		while (addr < vaddr) {
- 			if (count == 0)
-@@ -2031,10 +2039,10 @@ long vread(char *buf, char *addr, unsigned long count)
- 			addr++;
- 			count--;
- 		}
--		n = vaddr + tmp->size - PAGE_SIZE - addr;
-+		n = vaddr + vm->size - PAGE_SIZE - addr;
- 		if (n > count)
- 			n = count;
--		if (!(tmp->flags & VM_IOREMAP))
-+		if (!(vm->flags & VM_IOREMAP))
- 			aligned_vread(buf, addr, n);
- 		else /* IOREMAP area is treated as memory hole */
- 			memset(buf, 0, n);
-@@ -2043,7 +2051,7 @@ long vread(char *buf, char *addr, unsigned long count)
- 		count -= n;
++	va = list_entry((&vmap_area_list)->next, typeof(*va), list);
++	while (n > 0 && &va->list != &vmap_area_list) {
+ 		n--;
+-		v = v->next;
++		va = list_entry(va->list.next, typeof(*va), list);
  	}
- finished:
--	read_unlock(&vmlist_lock);
-+	spin_unlock(&vmap_area_lock);
+-	if (!n)
+-		return v;
++	if (!n && &va->list != &vmap_area_list)
++		return va;
  
- 	if (buf == buf_start)
- 		return 0;
-@@ -2082,7 +2090,8 @@ finished:
+ 	return NULL;
  
- long vwrite(char *buf, char *addr, unsigned long count)
+@@ -2559,16 +2566,20 @@ static void *s_start(struct seq_file *m, loff_t *pos)
+ 
+ static void *s_next(struct seq_file *m, void *p, loff_t *pos)
  {
--	struct vm_struct *tmp;
-+	struct vmap_area *va;
-+	struct vm_struct *vm;
- 	char *vaddr;
- 	unsigned long n, buflen;
- 	int copied = 0;
-@@ -2092,10 +2101,17 @@ long vwrite(char *buf, char *addr, unsigned long count)
- 		count = -(unsigned long) addr;
- 	buflen = count;
+-	struct vm_struct *v = p;
++	struct vmap_area *va = p, *next;
  
--	read_lock(&vmlist_lock);
--	for (tmp = vmlist; count && tmp; tmp = tmp->next) {
--		vaddr = (char *) tmp->addr;
--		if (addr >= vaddr + tmp->size - PAGE_SIZE)
-+	spin_lock(&vmap_area_lock);
-+	list_for_each_entry(va, &vmap_area_list, list) {
-+		if (!count)
-+			break;
+ 	++*pos;
+-	return v->next;
++	next = list_entry(va->list.next, typeof(*va), list);
++	if (&next->list != &vmap_area_list)
++		return next;
 +
-+		if (!(va->flags & VM_VM_AREA))
-+			continue;
-+
-+		vm = va->vm;
-+		vaddr = (char *) vm->addr;
-+		if (addr >= vaddr + vm->size - PAGE_SIZE)
- 			continue;
- 		while (addr < vaddr) {
- 			if (count == 0)
-@@ -2104,10 +2120,10 @@ long vwrite(char *buf, char *addr, unsigned long count)
- 			addr++;
- 			count--;
- 		}
--		n = vaddr + tmp->size - PAGE_SIZE - addr;
-+		n = vaddr + vm->size - PAGE_SIZE - addr;
- 		if (n > count)
- 			n = count;
--		if (!(tmp->flags & VM_IOREMAP)) {
-+		if (!(vm->flags & VM_IOREMAP)) {
- 			aligned_vwrite(buf, addr, n);
- 			copied++;
- 		}
-@@ -2116,7 +2132,7 @@ long vwrite(char *buf, char *addr, unsigned long count)
- 		count -= n;
- 	}
- finished:
++	return NULL;
+ }
+ 
+ static void s_stop(struct seq_file *m, void *p)
+-	__releases(&vmlist_lock)
++	__releases(&vmap_area_lock)
+ {
 -	read_unlock(&vmlist_lock);
 +	spin_unlock(&vmap_area_lock);
- 	if (!copied)
- 		return 0;
- 	return buflen;
+ }
+ 
+ static void show_numa_info(struct seq_file *m, struct vm_struct *v)
+@@ -2579,6 +2590,11 @@ static void show_numa_info(struct seq_file *m, struct vm_struct *v)
+ 		if (!counters)
+ 			return;
+ 
++		/* Pair with smp_wmb() in insert_vmalloc_vmlist() */
++		smp_rmb();
++		if (v->flags & VM_UNLIST)
++			return;
++
+ 		memset(counters, 0, nr_node_ids * sizeof(unsigned int));
+ 
+ 		for (nr = 0; nr < v->nr_pages; nr++)
+@@ -2592,36 +2608,50 @@ static void show_numa_info(struct seq_file *m, struct vm_struct *v)
+ 
+ static int s_show(struct seq_file *m, void *p)
+ {
+-	struct vm_struct *v = p;
++	struct vmap_area *va = p;
++	struct vm_struct *vm;
++
++	if (!(va->flags & VM_VM_AREA)) {
++		seq_printf(m, "0x%pK-0x%pK %7ld",
++			(void *)va->va_start, (void *)va->va_end,
++					va->va_end - va->va_start);
++		if (va->flags & (VM_LAZY_FREE | VM_LAZY_FREEING))
++			seq_printf(m, " (freeing)");
++
++		seq_putc(m, '\n');
++		return 0;
++	}
++
++	vm = va->vm;
+ 
+ 	seq_printf(m, "0x%pK-0x%pK %7ld",
+-		v->addr, v->addr + v->size, v->size);
++		vm->addr, vm->addr + vm->size, vm->size);
+ 
+-	if (v->caller)
+-		seq_printf(m, " %pS", v->caller);
++	if (vm->caller)
++		seq_printf(m, " %pS", vm->caller);
+ 
+-	if (v->nr_pages)
+-		seq_printf(m, " pages=%d", v->nr_pages);
++	if (vm->nr_pages)
++		seq_printf(m, " pages=%d", vm->nr_pages);
+ 
+-	if (v->phys_addr)
+-		seq_printf(m, " phys=%llx", (unsigned long long)v->phys_addr);
++	if (vm->phys_addr)
++		seq_printf(m, " phys=%llx", (unsigned long long)vm->phys_addr);
+ 
+-	if (v->flags & VM_IOREMAP)
++	if (vm->flags & VM_IOREMAP)
+ 		seq_printf(m, " ioremap");
+ 
+-	if (v->flags & VM_ALLOC)
++	if (vm->flags & VM_ALLOC)
+ 		seq_printf(m, " vmalloc");
+ 
+-	if (v->flags & VM_MAP)
++	if (vm->flags & VM_MAP)
+ 		seq_printf(m, " vmap");
+ 
+-	if (v->flags & VM_USERMAP)
++	if (vm->flags & VM_USERMAP)
+ 		seq_printf(m, " user");
+ 
+-	if (v->flags & VM_VPAGES)
++	if (vm->flags & VM_VPAGES)
+ 		seq_printf(m, " vpages");
+ 
+-	show_numa_info(m, v);
++	show_numa_info(m, vm);
+ 	seq_putc(m, '\n');
+ 	return 0;
+ }
 -- 
 1.7.9.5
 
