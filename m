@@ -1,107 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755256Ab2LFSLR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 13:11:17 -0500
-Received: from smarthost04.mail.zen.net.uk ([212.23.1.4]:50602 "EHLO
-	smarthost04.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755244Ab2LFSLP (ORCPT
+	id S1946465Ab2LFSNS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 13:13:18 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:37489 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755259Ab2LFSNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 13:11:15 -0500
-Message-ID: <1354817466.30905.13.camel@linaro1.home>
-Subject: [PATCH] ARM: ftrace: Ensure code modifications are synchronised
- across all cpus
-From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Rabin Vincent <rabin@rab.in>,
-        linux-kernel@vger.kernel.org
-Date: Thu, 06 Dec 2012 18:11:06 +0000
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-Smarthost04-IP: [82.69.122.217]
+	Thu, 6 Dec 2012 13:13:17 -0500
+Date: Thu, 6 Dec 2012 10:13:10 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>, Zach Brown <zab@redhat.com>,
+        Peter Zijlstra <pzijlstr@redhat.com>, Ingo <mingo@redhat.com>
+Subject: Re: [patch,v2] bdi: add a user-tunable cpu_list for the bdi flusher
+ threads
+Message-ID: <20121206181310.GR19802@htj.dyndns.org>
+References: <x49lidfnf0s.fsf@segfault.boston.devel.redhat.com>
+ <50BE5988.3050501@fusionio.com>
+ <x498v9dpnwu.fsf@segfault.boston.devel.redhat.com>
+ <50BE5C99.6070703@fusionio.com>
+ <x494nk1pi7h.fsf@segfault.boston.devel.redhat.com>
+ <20121206180150.GQ19802@htj.dyndns.org>
+ <x494njzxdd9.fsf@segfault.boston.devel.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <x494njzxdd9.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the generic ftrace implementation modifies code for trace-points it
-uses stop_machine() to call ftrace_modify_all_code() on one CPU. This
-ultimately calls the ARM specific function ftrace_modify_code() which
-updates the instruction and then does flush_icache_range(). As this
-cache flushing only operates on the local CPU then other cores may end
-up executing the old instruction if it's still in their icaches.
+Hello,
 
-This may or may not cause problems for the use of ftrace on kernels
-compiled for ARM instructions. However, Thumb2 instructions can straddle
-two cache lines so its possible for half the old instruction to be in
-the cache and half the new one, leading to the CPU executing garbage.
+On Thu, Dec 06, 2012 at 01:08:18PM -0500, Jeff Moyer wrote:
+> > As for the original patch, I think it's a bit too much to expose to
+> > userland.  It's probably a good idea to bind the flusher to the local
+> > node but do we really need to expose an interface to let userland
+> > control the affinity directly?  Do we actually have a use case at
+> > hand?
+> 
+> Yeah, folks pinning realtime processes to a particular cpu don't want
+> the flusher threads interfering with their latency.  I don't have any
+> performance numbers on hand to convince you of the benefit, though.
 
-This patch fixes this situation by providing an arch-specific
-implementation of arch_ftrace_update_code() which ensures that after one
-core has modified all the code, the other cores invalidate their icaches
-before continuing.
+What I don't get is, RT tasks win over bdi flushers every time and I'm
+skeptical allowing bdi or not on a particular CPU would make a big
+difference on non-RT kernels anyway.  If the use case calls for
+stricter isolation, there's isolcpus.  While I can see why someone
+might think that they need something like this, I'm not sure it's
+actually something necessary.
 
-Signed-off-by: Jon Medhurst <tixy@linaro.org>
----
- arch/arm/kernel/ftrace.c |   34 ++++++++++++++++++++++++++++++++++
- 1 file changed, 34 insertions(+)
+And, even if it's actually something necessary, I think we'll probably
+be better off with adding a mechanism to notify userland of new
+kthreads and let userland adjust affinity using the usual mechanism
+rather than adding dedicated knobs for each kthread users.
 
-diff --git a/arch/arm/kernel/ftrace.c b/arch/arm/kernel/ftrace.c
-index 34e5664..38b670c 100644
---- a/arch/arm/kernel/ftrace.c
-+++ b/arch/arm/kernel/ftrace.c
-@@ -14,6 +14,7 @@
- 
- #include <linux/ftrace.h>
- #include <linux/uaccess.h>
-+#include <linux/stop_machine.h>
- 
- #include <asm/cacheflush.h>
- #include <asm/opcodes.h>
-@@ -156,6 +157,39 @@ int ftrace_make_nop(struct module *mod,
- 	return ret;
- }
- 
-+struct afmc_data {
-+	int command;
-+	atomic_t cpu;
-+	atomic_t done;
-+};
-+
-+static int __arch_ftrace_modify_code(void *data)
-+{
-+	struct afmc_data *afmcd = data;
-+
-+	if (atomic_inc_return(&afmcd->cpu) == num_online_cpus()) {
-+		/* Last cpu to get into this function does the actual work */
-+		ftrace_modify_all_code(afmcd->command);
-+		wmb();
-+		atomic_set(&afmcd->done, true);
-+	} else {
-+		/* Other cpus wait for the code modifications to be done */
-+		rmb();
-+		while (!atomic_read(&afmcd->done))
-+			cpu_relax();
-+		/* Ensure icache is consistent with the code changes */
-+		__flush_icache_all();
-+	}
-+
-+	return 0;
-+}
-+
-+void arch_ftrace_update_code(int command)
-+{
-+	struct afmc_data afmcd = { command };
-+	stop_machine(__arch_ftrace_modify_code, &afmcd, cpu_online_mask);
-+}
-+
- int __init ftrace_dyn_arch_init(void *data)
- {
- 	*(unsigned long *)data = 0;
+Thanks.
+
 -- 
-1.7.10.4
-
-
-
+tejun
