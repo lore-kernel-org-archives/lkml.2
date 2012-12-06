@@ -1,34 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751818Ab2LFFSt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 00:18:49 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:34235 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751451Ab2LFFSs (ORCPT
+	id S1752301Ab2LFFds (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 00:33:48 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33801 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752003Ab2LFFdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 00:18:48 -0500
+	Thu, 6 Dec 2012 00:33:47 -0500
+Date: Thu, 6 Dec 2012 14:33:41 +0900
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Daniel Jeong <gshark.jeong@gmail.com>
+Cc: Liam Girdwood <lrg@ti.com>, daniel.jeong@ti.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1 resend] regulator: new driver for LP8755
+Message-ID: <20121206053340.GC10867@opensource.wolfsonmicro.com>
+References: <1354770463-4629-1-git-send-email-gshark.jeong@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20121205184316.GA18227@elgon.mountain>
-References: <20121205184316.GA18227@elgon.mountain>
-Date: Thu, 6 Dec 2012 06:18:46 +0100
-Message-ID: <CAJSP0QU91tbs1NciKJtExszbuEjUhLR_nY--1+6aKkZmKoCO+w@mail.gmail.com>
-Subject: Re: [patch 1/2] staging: line6: delete an unused function
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Markus Grabner <grabner@icg.tugraz.at>,
-        Johannes Thumshirn <morbidrsa@googlemail.com>,
-        devel@driverdev.osuosl.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354770463-4629-1-git-send-email-gshark.jeong@gmail.com>
+X-Cookie: Exercise caution in your daily affairs.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 5, 2012 at 7:43 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> line6_send_sysex_message_async() isn't called from anywhere.
->
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+On Thu, Dec 06, 2012 at 02:07:43PM +0900, Daniel Jeong wrote:
+> This driver is a general version for lp8755 regulator driver of TI.
+> 
+> LP8755 :
+> The LP8755 is a high performance power management unit.It contains
+> six step-down DC-DC converters which can can be filexibly bundled
+> together in multiphase converters as required by application.
+> www.ti.com
 
-Reviewed-by: Stefan Hajnoczi <stefanha@gmail.com>
+You've resent this after about 24 hours, please allow sane times for a
+response.
