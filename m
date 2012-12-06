@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946999Ab2LFUNw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 15:13:52 -0500
-Received: from fn.samba.org ([216.83.154.106]:33097 "EHLO mail.samba.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751361Ab2LFUNu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 15:13:50 -0500
-Date: Thu, 6 Dec 2012 12:13:47 -0800
-From: Jeremy Allison <jra@samba.org>
-To: Jeremy Allison <jra@samba.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Pavel Shilovsky <piastry@etersoft.ru>,
-        linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, wine-devel@winehq.org,
-        linux-nfs@vger.kernel.org
-Subject: Re: [PATCH 0/3] Add O_DENY* flags to fcntl and cifs
-Message-ID: <20121206201347.GB18585@samba2>
-Reply-To: Jeremy Allison <jra@samba.org>
-References: <1354818391-7968-1-git-send-email-piastry@etersoft.ru>
- <20121206194949.7ab20d56@pyramind.ukuu.org.uk>
- <20121206195752.GA18585@samba2>
+	id S1422797Ab2LFURc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 15:17:32 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:51491 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753167Ab2LFUR3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 15:17:29 -0500
+Date: Thu, 6 Dec 2012 12:17:24 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com, Michal Marek <mmarek@suse.cz>,
+        Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+Subject: Re: [PATCH 036/270] kbuild: Do not package /boot and /lib in make
+ tar-pkg
+Message-ID: <20121206201724.GB10874@kroah.com>
+References: <1353949160-26803-1-git-send-email-herton.krzesinski@canonical.com>
+ <1353949160-26803-37-git-send-email-herton.krzesinski@canonical.com>
+ <1353983187.4266.40.camel@deadeye.wl.decadent.org.uk>
+ <20121130013843.GB13478@kroah.com>
+ <1354241989.7995.26.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121206195752.GA18585@samba2>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1354241989.7995.26.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 06, 2012 at 11:57:52AM -0800, Jeremy Allison wrote:
-> On Thu, Dec 06, 2012 at 07:49:49PM +0000, Alan Cox wrote:
-> > On Thu,  6 Dec 2012 22:26:28 +0400
-> > Pavel Shilovsky <piastry@etersoft.ru> wrote:
+On Fri, Nov 30, 2012 at 02:19:49AM +0000, Ben Hutchings wrote:
+> On Thu, 2012-11-29 at 17:38 -0800, Greg Kroah-Hartman wrote:
+> > On Tue, Nov 27, 2012 at 02:26:27AM +0000, Ben Hutchings wrote:
+> > > On Mon, 2012-11-26 at 14:55 -0200, Herton Ronaldo Krzesinski wrote:
+> > > > 3.5.7u1 -stable review patch.  If anyone has any objections, please let me know.
+> > > > 
+> > > > ------------------
+> > > > 
+> > > > From: Michal Marek <mmarek@suse.cz>
+> > > > 
+> > > > commit fe04ddf7c2910362f3817c8156e41cbd6c0ee35d upstream.
+> > > > 
+> > > > There were reports of users destroying their Fedora installs by a kernel
+> > > > tarball that replaces the /lib -> /usr/lib symlink. Let's remove the
+> > > > toplevel directories from the tarball to prevent this from happening.
+> > > > 
+> > > > Reported-by: Andi Kleen <andi@firstfloor.org>
+> > > > Suggested-by: Ben Hutchings <ben@decadent.org.uk>
+> > > > Signed-off-by: Michal Marek <mmarek@suse.cz>
+> > > > [ herton: dropped unrelated changes to arch/x86/Makefile and
+> > > >   scripts/Makefile.fwinst, which don't apply anyway on 3.5, see commit
+> > > >   3ce9e53e788881da0d5f3912f80e0dd6b501f304 upstream ]
+> > > > Signed-off-by: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
+> > > 
+> > > This is missing from 3.4.
 > > 
-> > > Network filesystems CIFS, SMB2.0, SMB3.0 and NFSv4 have such flags - this change can benefit cifs and nfs modules. While this change is ok for network filesystems, itsn't not targeted for local filesystems due security problems (e.g. when a user process can deny root to delete a file).
-> > 
-> > If I have my root fs on NFS then the same applies does it not.
-> > 
-> > Your patches fail to describe the security semantics and what file rights
-> > I must have to apply each option. How do I track down a lock user, what
-> > tools are provided ? How do the new options interact with the security
-> > layer?
-> > 
-> > I don't have a problem with the idea, but it needs a lot more clear
-> > description of how it works so the model can be checked and if need be
-> > things tweaked (eg needing write to denywrite etc)
+> > I don't think it is needed, as 3ce9e53e788881da0d5f3912f80e0dd6b501f304
+> > didn't go into 3.4, so all should be good for now.
 > 
-> And this is where things get really ugly of course :-).
+> No, 3ce9e53e788881da0d5f3912f80e0dd6b501f304 was later and reverted
+> unintended changes in fe04ddf7c2910362f3817c8156e41cbd6c0ee35d.  You
+> should probably combine the two.
 > 
-> For the CIFSFS client they're expecting to be able to
-> just ship them to a Windows server, where they'll
-> get the (insane) Windows semantics. These semantics
-> are not what would be wanted on a local filesystem.
+> See these stable commits:
 > 
-> So unless we just say "these things have Windows
-> semantics" (where openers of files can lock out others
-> under dubious circumstances) there'll be this horrible
-> difference between (I'm assuming) the sane semantics that
-> are defined for local filesystems and the insane ones
-> that you get when you're connecting remotely.
-> 
-> I don't know a good way to fix that, but I'm pretty
-> sure you don't want the Windows semantics defined
-> locally :-).
+> 3.2: 0767530 kbuild: Do not package /boot and /lib in make tar-pkg
+> 3.6: 4bb50fa kbuild: Do not package /boot and /lib in make tar-pkg
+> 3.6: 0a7f602 kbuild: Fix accidental revert in commit fe04ddf
 
-You could just flags these as "ignored on local filesystems"
-of course, exact semantics defined by the remote filesystem.
+Ah, thanks, that makes more sense, I think I have it straightened out
+now.
 
-That's really what applications will get anyway. But it's not
-condusive to writing documentation on what these things do :-).
-
-Jeremy.
+greg k-h
