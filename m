@@ -1,157 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754576Ab2LFGxe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 01:53:34 -0500
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:54078 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752673Ab2LFGxc (ORCPT
+	id S1754655Ab2LFHAl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 02:00:41 -0500
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:45227 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754613Ab2LFHAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 01:53:32 -0500
-Message-ID: <50C040C3.5000408@linux.vnet.ibm.com>
-Date: Thu, 06 Dec 2012 12:22:51 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Thu, 6 Dec 2012 02:00:40 -0500
+Message-ID: <50C04236.4020406@linux.vnet.ibm.com>
+Date: Thu, 06 Dec 2012 12:29:02 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>
-CC: Alex Shi <lkml.alex@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Paul Turner <pjt@google.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Venkatesh Pallipadi <venki@google.com>, Tejun Heo <tj@kernel.org>
-Subject: Re: weakness of runnable load tracking?
-References: <CAGjg+kFZ2+tzxOS4SVo3PTzEDJJ=B0gZJ0aEOhNHvTycFuVT6Q@mail.gmail.com> <50C00D41.1010800@intel.com>
-In-Reply-To: <50C00D41.1010800@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Srikar <srikar@linux.vnet.ibm.com>,
+        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
+        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
+        Chegu Vinod <chegu_vinod@hp.com>,
+        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
+        Andrew Jones <drjones@redhat.com>
+Subject: Re: [PATCH V3 RFC 2/2] kvm: Handle yield_to failure return code for
+ potential undercommit case
+References: <20121126120740.2595.33651.sendpatchset@codeblue> <20121126120804.2595.20280.sendpatchset@codeblue> <20121128011228.GH8295@amt.cnet> <50B59CE0.70305@linux.vnet.ibm.com> <20121203195620.GB590@amt.cnet>
+In-Reply-To: <20121203195620.GB590@amt.cnet>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12120606-3864-0000-0000-000005DFB800
+x-cbid: 12120607-5564-0000-0000-000005A8E528
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
-> Hi Paul & Ingo:
-> 
-> In a short word of this issue: burst forking/waking tasks have no time
-> accumulate the load contribute, their runnable load are taken as zero.
-
-On performing certain experiments on the way PJT's metric calculates the
-load,I observed a few things.Based on these observations let me see if i
-can address the issue of why PJT's metric is calculating the load of
-bursty tasks as 0.
-
-When we speak about a burst waking task(I will not go into forking
-here),we should also speak about its duty cycle-it burst wakes for 1ms
-for a 10ms duty cycle or burst wakes 9s out of a 10s duty cycle-both
-being 10% tasks wrt their duty cycles.Lets see how load is calculated by
-PJT's metric in each of the above cases.
-           --
-          |  |
-          |  |
-__________|  |
-          A  B
-          1ms
-          <->
-      10ms
-<------------>
-          Example 1
-
-When the task wakes up at A,it is not yet runnable,and an update of the
-task load takes place.Its runtime so far is 0,and its existing time is
-10ms.Hence the load is 0/10*1024.Since a scheduler tick happens at B( a
-scheduler tick happens for every 1ms,10ms or 4ms.Let us assume 1ms),an
-update of the load takes place.PJT's metric divides the time elapsed
-into 1ms windows.There is just 1ms window,and hence the runtime is 1ms
-and the load is 1ms/10ms*1024.
-
-*If the time elapsed between A and B were to be < 1ms,then PJT's metric
-will not capture it*.
-
-And under these circumstances the load remains 0/10ms*1024=0.This is the
-situation you are pointing out.Let us assume that these cycle continues
-throughout the lifetime of the load,then the load remains at 0.The
-question is if such tasks which run for periods<1ms is ok to be termed
-as 0 workloads.If it is fine,then what PJT's metric is doing is
-right.Maybe we should ignore such workloads because they hardly
-contribute to the load.Otherwise we will need to reduce the window of
-load update to < 1ms to capture such loads.
-
-
-Just for some additional info so that we know what happens to different
-kinds of loads with PJT's metric,consider the below situation:
-                             ------
-                            |      |
-                            |      |
-____________________________|      |
-                            A      B
-                               1s
-                            <------>
-<----------------------------------->
-      10s
-<------------>
-                           Example 2
-
-Here at A,the task wakes,just like in Example1 and the load is termed 0.
-In between A and B for every scheduler tick if we consider the load to
-get updated,then the load slowly increases from 0 to 1024 at B.It is
-1024 here,although this is also a 10% task,whereas in Example1 the load
-is 102.4 - a 10% task.So what is fishy?
-
-In my opinion,PJT's metric gives the tasks some time to prove their
-activeness after they wake up.In Example2 the task has stayed awake too
-long-1s; irrespective of what % of the total run time it is.Therefore it
-calculates the load to be big enough to balance.
-
-In the example that you have quoted,the tasks may not have run long
-enough to consider them as candidates for load balance.
-
-So,essentially what PJT's metric is doing is characterising a task by
-the amount it has run so far.
-
-
-> that make select_task_rq do a wrong decision on which group is idlest.
-> 
-> There is still 3 kinds of solution is helpful for this issue.
-> 
-> a, set a unzero minimum value for the long time sleeping task. but it
-> seems unfair for other tasks these just sleep a short while.
-> 
-> b, just use runnable load contrib in load balance. Still using
-> nr_running to judge idlest group in select_task_rq_fair. but that may
-> cause a bit more migrations in future load balance.
-> 
-> c, consider both runnable load and nr_running in the group: like in the
-> searching domain, the nr_running number increased a certain number, like
-> double of the domain span, in a certain time. we will think it's a burst
-> forking/waking happened, then just count the nr_running as the idlest
-> group criteria.
-> 
-> IMHO, I like the 3rd one a bit more. as to the certain time to judge if
-> a burst happened, since we will calculate the runnable avg at very tick,
-> so if increased nr_running is beyond sd->span_weight in 2 ticks, means
-> burst happening. What's your opinion of this?
-> 
-> Any comments are appreciated!
-
-
-So Pjt's metric rightly seems to be capturing the load of these bursty
-tasks but you are right in pointing out that when too many such loads
-queue up on the cpu,this metric will consider the load on the cpu as
-0,which might not be such a good idea.
-
-It is true that we need to bring in nr_running somewhere.Let me now go
-through your suggestions on where to include nr_running and get back on
-this.I had planned on including nr_running while selecting the busy
-group in update_sd_lb_stats,but select_task_rq_fair is yet another place
-to do this, thats right.Good that this issue was brought up :)
-
-> Regards!
-> Alex
+On 12/04/2012 01:26 AM, Marcelo Tosatti wrote:
+> On Wed, Nov 28, 2012 at 10:40:56AM +0530, Raghavendra K T wrote:
+>> On 11/28/2012 06:42 AM, Marcelo Tosatti wrote:
+>>>
+>>> Don't understand the reasoning behind why 3 is a good choice.
 >>
+>> Here is where I came from. (explaining from scratch for
+>> completeness, forgive me :))
+>> In moderate overcommits, we can falsely exit from ple handler even when
+>> we have preempted task of same VM waiting on other cpus. To reduce this
+>> problem, we try few times before exiting.
+>> The problem boils down to:
+>> what is the probability that we exit ple handler even when we have more
+>> than 1 task in other cpus. Theoretical worst case should be around 1.5x
+>> overcommit (As also pointed by Andrew Theurer). [But practical
+>> worstcase may be around 2x,3x overcommits as indicated by the results
+>> for the patch series]
 >>
-> 
+>> So if p is the probability of finding rq length one on a particular cpu,
+>> and if we do n tries, then probability of exiting ple handler is:
+>>
+>>   p^(n+1) [ because we would have come across one source with rq length
+>> 1 and n target cpu rqs  with length 1 ]
+>>
+>> so
+>> num tries:         probability of aborting ple handler (1.5x overcommit)
+>>   1                 1/4
+>>   2                 1/8
+>>   3                 1/16
+>>
+>> We can increase this probability with more tries, but the problem is
+>> the overhead.
+>> Also, If we have tried three times that means we would have iterated
+>> over 3 good eligible vcpus along with many non-eligible candidates. In
+>> worst case if we iterate all the vcpus, we reduce 1x performance and
+>> overcommit performance get hit. [ as in results ].
+>>
+>> I have tried num_tries = 1,2,3 and n already ( not 4 yet). So I
+>> concluded 3 is enough.
+>>
+>> Infact I have also run kernbench and hackbench which are giving 5-20%
+>> improvement.
+>>
+>> [ As a side note , I also thought how about having num_tries = f(n) =
+>> ceil ( log(num_online_cpus)/2 ) But I thought calculation is too much
+>> overhead and also there is no point in probably making it dependent on
+>> online cpus ]
+>>
+>> Please let me know if you are happy with this rationale/ or correct me
+>> if you foresee some problem. (Infact Avi, Rik's concern about false
+>> exiting made me arrive at 'try' logic which I did not have earlier).
+>>
+>> I am currently trying out the result for 1.5x overcommit will post the
+>> result.
+>
+> Raghavendra
+>
+> Makes sense to me. Thanks.
+>
 
-Regards
-Preeti U Murthy
+Marcelo,
+Do you think this can be considered for next merge window? or you are
+expecting anything else on this patchset.
 
