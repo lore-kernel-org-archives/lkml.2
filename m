@@ -1,85 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423339Ab2LFLoB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 06:44:01 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:56888 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423208Ab2LFLn7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 06:43:59 -0500
-Message-ID: <50C084FC.8040104@imgtec.com>
-Date: Thu, 6 Dec 2012 11:43:56 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1752537Ab2LFMFj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 07:05:39 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:55070
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750826Ab2LFMFh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 07:05:37 -0500
+Date: Thu, 6 Dec 2012 07:05:33 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Martin Steigerwald <Martin@lichtvoll.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
+ UAPI
+Message-ID: <20121206120532.GA14100@infradead.org>
+References: <1353366267-15629-1-git-send-email-david@fromorbit.com>
+ <20121126025520.GC22858@thunk.org>
+ <20121126091202.GO32450@dastard>
+ <201212051148.28039.Martin@lichtvoll.de>
+ <CA+55aFzgP29WfB1yvnj+Q9-TsbX+b-TCCjTS_vPJ16DxMy6aDQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "Arnd Bergmann" <arnd@arndb.de>
-Subject: Re: [PATCH v2 23/44] metag: Traps
-References: <1354723742-6195-1-git-send-email-james.hogan@imgtec.com> <1354723742-6195-24-git-send-email-james.hogan@imgtec.com> <20121205174035.GX4939@ZenIV.linux.org.uk>
-In-Reply-To: <20121205174035.GX4939@ZenIV.linux.org.uk>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2012_12_06_11_43_57
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzgP29WfB1yvnj+Q9-TsbX+b-TCCjTS_vPJ16DxMy6aDQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Al,
-
-On 05/12/12 17:40, Al Viro wrote:
-> On Wed, Dec 05, 2012 at 04:08:41PM +0000, James Hogan wrote:
->> +TBIRES tail_end(TBIRES State, unsigned long orig_syscall)
->> +{
->> +	struct pt_regs *regs = (struct pt_regs *)State.Sig.pCtx;
->> +	unsigned long flags;
->> +
->> +	if (user_mode(regs)) {
->> +		local_irq_enable();
->> +		/* This is actually a crucial little line - if the process
->> +		 * needs swapping out, then this is where it happens!
->> +		 */
->> +		if (need_resched())
->> +			schedule();
->> +
->> +		flags = current_thread_info()->flags;
->> +		if (flags & (_TIF_SIGPENDING | _TIF_NOTIFY_RESUME)) {
->> +			/* Note the passing in of the original syscall number.
->> +			 * This is used for implementing signal restart.
->> +			 */
->> +			do_notify_resume(regs, orig_syscall != 0,
->> +					 orig_syscall, flags);
+On Wed, Dec 05, 2012 at 07:45:39AM -0800, Linus Torvalds wrote:
+> On Wed, Dec 5, 2012 at 2:48 AM, Martin Steigerwald <Martin@lichtvoll.de> wrote:
+> >
+> > Linus, while I am interested in an answer I think that Dave and Christoph
+> > as Linux filesystem developers actually deserve one (instead of silently
+> > being ignored which is also a decision in this matter).
+> >
+> > I did not see an answer in linux-2.6 commit log as of today so far.
 > 
-> Owww....  So
-> 	a) you can't get there with !user_mode(regs)
-> 	b) you handle only one signal (what happens if you fail sigframe
-> allocation, BTW?  Sure, you get SIGSEGV delivered.  And don't handle it.)
+> Christ guys. This whole thread is retarded.
+> 
+> The *ONLY* reason people seem to have for reverting that is a "ooh, my
+> feelings are hurt by how this was done, and now I'm a pissy bitch and
+> I want to get this reverted".
+> 
+> Stop the f*cking around already.
+> 
+> If you want something reverted, you show me the *technical* reason for
+> it. Not the "ooh, I'm so annoyed by how this was done" reason for it.
+> 
+> And if your little feelings got hurt, get your mommy to tuck you in,
+> don't email me about it. Because I'm not exactly known for my deep
+> emotional understanding and supportive personality, am I?
 
-I see, this indeed looks wrong.
-
-If I understand correctly the second go around the loop when it asked
-for the next signal should either stop process (SIGSEGV), or try to
-invoke signal handler for SIGSEGV, and if allocation failed again it
-would see it's already in a SIGSEGV (in force_sigsegv), change handler
-to default, so that on the third go around the loop the process would
-get stopped.
-
-> 	c) you read ->flags with no protection whatsoever.  It should be
-> done *before* you enable interrupts, and rechecked after you've done
-> do_notify_resume() and redisabled them.  The same for schedule().  It really
-> should be a loop; take a look at how it's done on arm and alpha - there that
-> loop is in C, not in asm glue.
-
-Thanks for pointing to ARM/alpha versions. This definitely needs some work.
-
-> 	d) looks like your sigreturn is, indeed, broken.  It should *not* have
-> syscall restart logics triggered at all.
-
-I presume this is related to the other email about preventing syscall
-restart logic for sigreturn. I can't see how any other arches prevent it
-though.
-
-Thanks a lot
-James
+No, the problem is that the thing is not just a) wrong, but b) only made
+it in through sneaky ways.
 
