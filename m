@@ -1,66 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424456Ab2LFQes (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 11:34:48 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:42847 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1424176Ab2LFQeq (ORCPT
+	id S1945933Ab2LFQfB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 11:35:01 -0500
+Received: from mail.windriver.com ([147.11.1.11]:52485 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1945920Ab2LFQfA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 11:34:46 -0500
-Date: Thu, 6 Dec 2012 08:34:40 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Alexandra Chin <alexandra.chin@tw.synaptics.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
-        Mahesh Srinivasan <msrinivasan@synaptics.com>,
-        Alex Chang <alex.chang@tw.synaptics.com>,
-        Scott Lin <scott.lin@tw.synaptics.com>,
-        Christopher Heiny <Cheiny@synaptics.com>
-Subject: Re: [PATCH v6] staging: ste_rmi4: Convert to Type-B support
-Message-ID: <20121206163440.GB8052@kroah.com>
-References: <20121103013623.0f3a1b28168a9a42881b0b00@tw.synaptics.com>
- <20121116163146.f4b53f6965ee08ca1a1fc96c@tw.synaptics.com>
- <20121116195433.GA573@polaris.bitmath.org>
- <20121116195008.GA9153@kroah.com>
- <CC51EC7B5B7F984AA566DC102237848896F73163@hkdcw-mail2.synaptics-inc.local>
+	Thu, 6 Dec 2012 11:35:00 -0500
+Date: Thu, 6 Dec 2012 11:34:39 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Borislav Petkov <bp@alien8.de>
+CC: <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        <rob@landley.net>
+Subject: Re: [PATCH] x86: ptrace.c only needs export.h and not the full
+ module.h
+Message-ID: <20121206163439.GA10797@windriver.com>
+References: <1354793622-8497-1-git-send-email-paul.gortmaker@windriver.com>
+ <20121206161725.GA10351@liondog.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <CC51EC7B5B7F984AA566DC102237848896F73163@hkdcw-mail2.synaptics-inc.local>
+In-Reply-To: <20121206161725.GA10351@liondog.tnic>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 06, 2012 at 11:30:55AM +0000, Alexandra Chin wrote:
-> Hi Greg,
-> 
-> > > For next time: Once you have received an acked-by or reviewed-by, you
-> > > may add that line under your own signed-off-by in subsequent
-> > > mails. That way, the status of the patch can be tracked properly,
-> > > making life easier for everyone.
-> > >
-> > > Greg, I think we are ready now. :-)
+[Re: [PATCH] x86: ptrace.c only needs export.h and not the full module.h] On 06/12/2012 (Thu 17:17) Borislav Petkov wrote:
+
+> On Thu, Dec 06, 2012 at 06:33:42AM -0500, Paul Gortmaker wrote:
+> > Commit cb57a2b4cff7edf2a4e32c0163200e9434807e0a ("x86-32: Export
+> > kernel_stack_pointer() for modules") added an include of the
+> > module.h header in conjunction with adding an EXPORT_SYMBOL_GPL
+> > of kernel_stack_pointer.
 > > 
-> > All applied.
+> > But module.h should be avoided for simple exports, since it in turn
+> > includes the world.  Swap the module.h for export.h instead.
 > 
-> There are coming patches which needs to be updated and based on this patch,
-> but I noticed that this patch has not been submitted in recent mainline
-> archives (3.7-rc7/3.7-rc8).
+> If this is the preferred include for EXPORT_SYMBOL* stuff now, maybe we
+> should hold this down somewhere in writing or add it to checkpatch?
 
-That is because they were new features, and not regressions, so they
-will be showing up in Linus's tree for 3.8-rc1.
+Good point.  Fixed below.
 
-> May I know status of this patch? Please let me know if there is anything I 
-> should do.
+Thanks,
+Paul.
 
-Didn't you get an email when I applied the patches saying where the
-patches could be seen and when they would be merged to Linus?
 
-thanks,
+>From 6d7ea827572bf4a5b7c0bd6ae3f12f5be0a7c7c2 Mon Sep 17 00:00:00 2001
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Thu, 6 Dec 2012 11:26:53 -0500
+Subject: [PATCH] DocBook: update EXPORT_SYMBOL entry to point at export.h
 
-greg k-h
+Previously we used to get EXPORT_SYMBOL and friends from
+module.h but we moved away from that since module.h largely
+includes the entire header space one way or another.
+
+As most users just wanted the simple export related macros,
+they were spun off into a separate new header -- export.h
+Update the docs to reflect that.
+
+Suggested-by: Borislav Petkov <bp@alien8.de>
+Cc: Rob Landley <rob@landley.net>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ Documentation/DocBook/kernel-hacking.tmpl | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/DocBook/kernel-hacking.tmpl b/Documentation/DocBook/kernel-hacking.tmpl
+index eee7142..a23bc37 100644
+--- a/Documentation/DocBook/kernel-hacking.tmpl
++++ b/Documentation/DocBook/kernel-hacking.tmpl
+@@ -945,7 +945,7 @@ printk(KERN_INFO "my ip: %pI4\n", &amp;ipaddress);
+ 
+   <sect1 id="sym-exportsymbols">
+    <title><function>EXPORT_SYMBOL()</function>
+-    <filename class="headerfile">include/linux/module.h</filename></title>
++    <filename class="headerfile">include/linux/export.h</filename></title>
+ 
+    <para>
+     This is the classic method of exporting a symbol: dynamically
+@@ -955,7 +955,7 @@ printk(KERN_INFO "my ip: %pI4\n", &amp;ipaddress);
+ 
+   <sect1 id="sym-exportsymbols-gpl">
+    <title><function>EXPORT_SYMBOL_GPL()</function>
+-    <filename class="headerfile">include/linux/module.h</filename></title>
++    <filename class="headerfile">include/linux/export.h</filename></title>
+ 
+    <para>
+     Similar to <function>EXPORT_SYMBOL()</function> except that the
+-- 
+1.8.0
+
