@@ -1,153 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423362Ab2LFM0R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 07:26:17 -0500
-Received: from zimbra.linbit.com ([212.69.161.123]:57818 "EHLO
-	zimbra.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932079Ab2LFM0P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 07:26:15 -0500
-From: Philipp Reisner <philipp.reisner@linbit.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
-Subject: [GIT PULL] drbd Kconfig update and minor fixes
-Date: Thu, 06 Dec 2012 13:26:12 +0100
-Message-ID: <1885288.8qXv8iGatm@fat-tyre>
-User-Agent: KMail/4.8.5 (Linux/3.2.0-32-generic; KDE/4.8.5; x86_64; ; )
+	id S1423374Ab2LFMgl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 07:36:41 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:41431 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751485Ab2LFMgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 07:36:40 -0500
+Message-ID: <50C0913B.9070802@ti.com>
+Date: Thu, 6 Dec 2012 13:36:11 +0100
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        <linux-leds@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH v2 3/3] leds: leds-pwm: Add device tree bindings
+References: <1352731270-27534-1-git-send-email-peter.ujfalusi@ti.com> <1352731270-27534-4-git-send-email-peter.ujfalusi@ti.com> <20121206100052.EC8293E0E22@localhost>
+In-Reply-To: <20121206100052.EC8293E0E22@localhost>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 84ad6845fbb1248228d3beab8084e4b5f6f82b1d:
+Hi Grant,
 
-  Merge branch 'stable/for-jens-3.8' of git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen into for-3.8/drivers (2012-12-01 09:42:41 +0100)
+On 12/06/2012 11:00 AM, Grant Likely wrote:
+> On Mon, 12 Nov 2012 15:41:10 +0100, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
+>> Support for device tree booted kernel.
+>> When the kernel is booted with DeviceTree blob we support one led per
+>> leds-pwm device to have cleaner integration with the PWM subsystem.
+>>
+>> For usage see:
+>> Documentation/devicetree/bindings/leds/leds-pwm.txt
+>>
+>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+>> ---
+>>  .../devicetree/bindings/leds/leds-pwm.txt          |  34 ++++++
+>>  drivers/leds/leds-pwm.c                            | 125 +++++++++++++++------
+>>  2 files changed, 127 insertions(+), 32 deletions(-)
+>>  create mode 100644 Documentation/devicetree/bindings/leds/leds-pwm.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/leds/leds-pwm.txt b/Documentation/devicetree/bindings/leds/leds-pwm.txt
+>> new file mode 100644
+>> index 0000000..9fe3040
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/leds/leds-pwm.txt
+>> @@ -0,0 +1,34 @@
+>> +LED connected to PWM
+>> +
+>> +Required properties:
+>> +- compatible : should be "pwm-leds".
+>> +- pwms : PWM property, please refer to: 
+>> +  Documentation/devicetree/bindings/pwm/pwm.txt
+>> +- pwm-names : (optional) Name to be used by the PWM subsystem for the PWM device
+>> +- label : (optional) The label for this LED.  If omitted, the label is
+>> +  taken from the node name (excluding the unit address).
+>> +- max-brightness : Maximum brightness possible for the LED
+>> +- linux,default-trigger :  (optional) This parameter, if present, is a
+>> +  string defining the trigger assigned to the LED.  Current triggers are:
+>> +    "backlight" - LED will act as a back-light, controlled by the framebuffer
+>> +		  system
+>> +    "default-on" - LED will turn on, but see "default-state" below
+>> +    "heartbeat" - LED "double" flashes at a load average based rate
+>> +    "ide-disk" - LED indicates disk activity
+>> +    "timer" - LED flashes at a fixed, configurable rate
+> 
+> The binding mostly looks good. However, it seems to be gratuitously
+> different from the gpio-leds binding and it duplicates property
+> definitions. Please match the gpio-leds behaviour with each led defined
+> as a sub node of the pwm-leds node.
 
-are available in the git repository at:
+The GPIO and PWM bindings are substantially different. For start in pwm we do
+not have of_get_pwm* helpers. To get the PWM itself we need to use wpm_get()
+which uses the pwms = <>; pwm-names = <>; properties on the device's main node.
+This is what I could do at the moment:
+
+twl_pwm: pwm {
+	compatible = "ti,twl4030-pwm";
+	#pwm-cells = <2>;
+};
+
+twl_led: pwmled {
+	compatible = "ti,twl4030-pwmled";
+	#pwm-cells = <2>;
+};
+
+pwmleds {
+	compatible = "pwm-leds";
+	pwms = <&twl_pwm 0 7812500
+		&twl_pwmled 0 7812500>;
+	pwm-names = "omap4::keypad",
+		    "omap4:green:chrg";
+	kpad {
+		label = "omap4::keypad";
+		max-brightness = <127>;
+	};
+
+	charging {
+		label = "omap4:green:chrg";
+		max-brightness = <255>;
+	};
 
 
-  git://git.drbd.org/linux-drbd.git for-jens
+};
 
-for you to fetch changes up to d2ec180c23a5a1bfe34d8638b0342a47c00cf70f:
+The string in pwm-names and under the led section's label must match in order
+to be able to get the correct PWM for the led to drive it.
+If this is good, I can make the change and resend the series soon.
 
-  drbd: update Kconfig to match current dependencies (2012-12-06 13:08:29 +0100)
+> Also, please reference the common properties in bindings/leds/common.txt
+> (This is a new file in linux-next. See how leds-gpio references it).
 
-----------------------------------------------------------------
-Lars Ellenberg (2):
-      drbd: respect no-md-barriers setting also when changed online via disk-options
-      drbd: update Kconfig to match current dependencies
+Will do that.
 
-Philipp Reisner (3):
-      drbd: Remove obsolete check
-      drbd: close race between drbd_set_role and drbd_connect
-      drbd: Fix drbdsetup wait-connect, wait-sync etc... commands
-
- drivers/block/drbd/Kconfig         |   10 ++++++----
- drivers/block/drbd/drbd_main.c     |    2 +-
- drivers/block/drbd/drbd_nl.c       |   16 +++++++++++-----
- drivers/block/drbd/drbd_receiver.c |   10 ++++++++++
- 4 files changed, 28 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/block/drbd/Kconfig b/drivers/block/drbd/Kconfig
-index df09837..7845bd6 100644
---- a/drivers/block/drbd/Kconfig
-+++ b/drivers/block/drbd/Kconfig
-@@ -2,13 +2,14 @@
- # DRBD device driver configuration
- #
- 
--comment "DRBD disabled because PROC_FS, INET or CONNECTOR not selected"
--	depends on PROC_FS='n' || INET='n' || CONNECTOR='n'
-+comment "DRBD disabled because PROC_FS or INET not selected"
-+	depends on PROC_FS='n' || INET='n'
- 
- config BLK_DEV_DRBD
- 	tristate "DRBD Distributed Replicated Block Device support"
--	depends on PROC_FS && INET && CONNECTOR
-+	depends on PROC_FS && INET
- 	select LRU_CACHE
-+	select LIBCRC32C
- 	default n
- 	help
- 
-@@ -58,7 +59,8 @@ config DRBD_FAULT_INJECTION
- 	  32	data read
- 	  64	read ahead
- 	  128	kmalloc of bitmap
--	  256	allocation of EE (epoch_entries)
-+	  256	allocation of peer_requests
-+	  512	insert data corruption on receiving side
- 
- 	  fault_devs: bitmask of minor numbers
- 	  fault_rate: frequency in percent
-diff --git a/drivers/block/drbd/drbd_main.c b/drivers/block/drbd/drbd_main.c
-index 52de26d..8c13eeb 100644
---- a/drivers/block/drbd/drbd_main.c
-+++ b/drivers/block/drbd/drbd_main.c
-@@ -840,7 +840,7 @@ int _drbd_send_uuids(struct drbd_conf *mdev, u64 uuid_flags)
- 	}
- 	spin_lock_irq(&mdev->ldev->md.uuid_lock);
- 	for (i = UI_CURRENT; i < UI_SIZE; i++)
--		p->uuid[i] = mdev->ldev ? cpu_to_be64(mdev->ldev->md.uuid[i]) : 0;
-+		p->uuid[i] = cpu_to_be64(mdev->ldev->md.uuid[i]);
- 	spin_unlock_irq(&mdev->ldev->md.uuid_lock);
- 
- 	mdev->comm_bm_set = drbd_bm_total_weight(mdev);
-diff --git a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
-index 76bb3a6..2af26fc 100644
---- a/drivers/block/drbd/drbd_nl.c
-+++ b/drivers/block/drbd/drbd_nl.c
-@@ -1230,6 +1230,11 @@ int drbd_adm_disk_opts(struct sk_buff *skb, struct genl_info *info)
- 	else
- 		mdev->ldev->md.flags |= MDF_AL_DISABLED;
- 
-+	if (new_disk_conf->md_flushes)
-+		clear_bit(MD_NO_FUA, &mdev->flags);
-+	else
-+		set_bit(MD_NO_FUA, &mdev->flags);
-+
- 	drbd_bump_write_ordering(mdev->tconn, WO_bdev_flush);
- 
- 	drbd_md_sync(mdev);
-@@ -3292,11 +3297,12 @@ void drbd_bcast_event(struct drbd_conf *mdev, const struct sib_info *sib)
- 	unsigned seq;
- 	int err = -ENOMEM;
- 
--	if (sib->sib_reason == SIB_SYNC_PROGRESS &&
--	    time_after(jiffies, mdev->rs_last_bcast + HZ))
--		mdev->rs_last_bcast = jiffies;
--	else
--		return;
-+	if (sib->sib_reason == SIB_SYNC_PROGRESS) {
-+		if (time_after(jiffies, mdev->rs_last_bcast + HZ))
-+			mdev->rs_last_bcast = jiffies;
-+		else
-+			return;
-+	}
- 
- 	seq = atomic_inc_return(&drbd_genl_seq);
- 	msg = genlmsg_new(NLMSG_GOODSIZE, GFP_NOIO);
-diff --git a/drivers/block/drbd/drbd_receiver.c b/drivers/block/drbd/drbd_receiver.c
-index 1599a1a..a9eccfc 100644
---- a/drivers/block/drbd/drbd_receiver.c
-+++ b/drivers/block/drbd/drbd_receiver.c
-@@ -1037,6 +1037,16 @@ randomize:
- 	rcu_read_lock();
- 	idr_for_each_entry(&tconn->volumes, mdev, vnr) {
- 		kref_get(&mdev->kref);
-+		/* Prevent a race between resync-handshake and
-+		 * being promoted to Primary.
-+		 *
-+		 * Grab and release the state mutex, so we know that any current
-+		 * drbd_set_role() is finished, and any incoming drbd_set_role
-+		 * will see the STATE_SENT flag, and wait for it to be cleared.
-+		 */
-+		mutex_lock(mdev->state_mutex);
-+		mutex_unlock(mdev->state_mutex);
-+
- 		rcu_read_unlock();
- 
- 		if (discard_my_data)
-
+-- 
+Péter
