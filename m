@@ -1,136 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423940Ab2LFPnd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 10:43:33 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:59696 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423910Ab2LFPnc (ORCPT
+	id S1423959Ab2LFPnq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 10:43:46 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:47839 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423945Ab2LFPnm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 10:43:32 -0500
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: sameo@linux.intel.com
-Cc: lee.jones@linaro.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, spear-devel@list.st.com,
-        Vipul Kumar Samar <vipulkumar.samar@st.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V6] mfd: stmpe: Update DT support for stmpe driver
-Date: Thu,  6 Dec 2012 21:13:23 +0530
-Message-Id: <3db3266122f4c54f624477b3fb6763e5821bd3d0.1354807084.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+	Thu, 6 Dec 2012 10:43:42 -0500
+Message-ID: <50C0BD26.2010408@gmail.com>
+Date: Thu, 06 Dec 2012 23:43:34 +0800
+From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+CC: kexec@lists.infradead.org, "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v11 2/2] KVM-INTEL: provide the vmclear function and a
+ bitmap to support VMCLEAR in kdump
+References: <50C0BB90.1080804@gmail.com>
+In-Reply-To: <50C0BB90.1080804@gmail.com>
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vipul Kumar Samar <vipulkumar.samar@st.com>
+From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 
-This patch extends existing DT support for stmpe devices. This updates:
-- missing header files in stmpe.c
-- stmpe_of_probe() with pwm, rotator and new bindings.
-- Bindings are updated in binding document.
+The vmclear function will be assigned to the callback function pointer
+when loading kvm-intel module. And the bitmap indicates whether we
+should do VMCLEAR operation in kdump. The bits in the bitmap are
+set/unset according to different conditions.
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Vipul Kumar Samar <vipulkumar.samar@st.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 ---
-Hi Samuel,
+ arch/x86/kvm/vmx.c |   67 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 67 insertions(+), 0 deletions(-)
 
-I have added acked by Lee as he earlier Acked this patch, most of the part is
-still the same. And nothing new added.
-
-V5->V6:
-- Removed of_devide_id tables from stmpe-i2c[spi].c
-
- Documentation/devicetree/bindings/mfd/stmpe.txt |  9 ++++++---
- drivers/mfd/stmpe.c                             | 27 +++++++++++++++++++------
- 2 files changed, 27 insertions(+), 9 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/mfd/stmpe.txt b/Documentation/devicetree/bindings/mfd/stmpe.txt
-index 8f0aeda..d2d88d9 100644
---- a/Documentation/devicetree/bindings/mfd/stmpe.txt
-+++ b/Documentation/devicetree/bindings/mfd/stmpe.txt
-@@ -1,8 +1,11 @@
--* STMPE Multi-Functional Device
-+* ST Microelectronics STMPE Multi-Functional Device
-+
-+STMPE is an MFD device which may expose following inbuilt devices: gpio, keypad,
-+touchscreen, adc, pwm, rotator.
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 94833e2..1a30fd5 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -42,6 +42,7 @@
+ #include <asm/i387.h>
+ #include <asm/xcr.h>
+ #include <asm/perf_event.h>
++#include <asm/kexec.h>
  
- Required properties:
-- - compatible                   : "st,stmpe[811|1601|2401|2403]"
-- - reg                          : I2C address of the device
-+ - compatible                   : "st,stmpe[610|801|811|1601|2401|2403]"
-+ - reg                          : I2C/SPI address of the device
+ #include "trace.h"
  
- Optional properties:
-  - interrupts                   : The interrupt outputs from the controller
-diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
-index 34408b4..bb2dfdb 100644
---- a/drivers/mfd/stmpe.c
-+++ b/drivers/mfd/stmpe.c
-@@ -7,12 +7,15 @@
-  * Author: Rabin Vincent <rabin.vincent@stericsson.com> for ST-Ericsson
-  */
- 
-+#include <linux/err.h>
- #include <linux/gpio.h>
- #include <linux/export.h>
- #include <linux/kernel.h>
- #include <linux/interrupt.h>
- #include <linux/irq.h>
- #include <linux/irqdomain.h>
-+#include <linux/of.h>
-+#include <linux/of_gpio.h>
- #include <linux/pm.h>
- #include <linux/slab.h>
- #include <linux/mfd/core.h>
-@@ -1019,6 +1022,14 @@ void __devinit stmpe_of_probe(struct stmpe_platform_data *pdata,
- {
- 	struct device_node *child;
- 
-+	/*
-+	 * Distinct names of same cell-type within multiple instances of stmpe
-+	 * will be guaranteed by DT.
-+	 */
-+	pdata->id = -1;
-+
-+	pdata->irq_trigger = IRQF_TRIGGER_NONE;
-+
- 	of_property_read_u32(np, "st,autosleep-timeout",
- 			&pdata->autosleep_timeout);
- 
-@@ -1027,15 +1038,16 @@ void __devinit stmpe_of_probe(struct stmpe_platform_data *pdata,
- 	for_each_child_of_node(np, child) {
- 		if (!strcmp(child->name, "stmpe_gpio")) {
- 			pdata->blocks |= STMPE_BLOCK_GPIO;
--		}
--		if (!strcmp(child->name, "stmpe_keypad")) {
-+		} else if (!strcmp(child->name, "stmpe_keypad")) {
- 			pdata->blocks |= STMPE_BLOCK_KEYPAD;
--		}
--		if (!strcmp(child->name, "stmpe_touchscreen")) {
-+		} else if (!strcmp(child->name, "stmpe_touchscreen")) {
- 			pdata->blocks |= STMPE_BLOCK_TOUCHSCREEN;
--		}
--		if (!strcmp(child->name, "stmpe_adc")) {
-+		} else if (!strcmp(child->name, "stmpe_adc")) {
- 			pdata->blocks |= STMPE_BLOCK_ADC;
-+		} else if (!strcmp(child->name, "stmpe_pwm")) {
-+			pdata->blocks |= STMPE_BLOCK_PWM;
-+		} else if (!strcmp(child->name, "stmpe_rotator")) {
-+			pdata->blocks |= STMPE_BLOCK_ROTATOR;
- 		}
- 	}
+@@ -987,6 +988,46 @@ static void vmcs_load(struct vmcs *vmcs)
+ 		       vmcs, phys_addr);
  }
-@@ -1106,6 +1118,9 @@ int __devinit stmpe_probe(struct stmpe_client_info *ci, int partnum)
- 			return -ENODEV;
- 		}
- 		stmpe->variant = stmpe_noirq_variant_info[stmpe->partnum];
-+	} else if (pdata->irq_trigger == IRQF_TRIGGER_NONE) {
-+		pdata->irq_trigger =
-+			irqd_get_trigger_type(irq_get_irq_data(stmpe->irq));
- 	}
  
- 	ret = stmpe_chip_init(stmpe);
++#ifdef CONFIG_KEXEC
++/*
++ * This bitmap is used to indicate whether the vmclear
++ * operation is enabled on all cpus. All disabled by
++ * default.
++ */
++static cpumask_t crash_vmclear_enabled_bitmap = CPU_MASK_NONE;
++
++static inline void crash_enable_local_vmclear(int cpu)
++{
++	cpumask_set_cpu(cpu, &crash_vmclear_enabled_bitmap);
++}
++
++static inline void crash_disable_local_vmclear(int cpu)
++{
++	cpumask_clear_cpu(cpu, &crash_vmclear_enabled_bitmap);
++}
++
++static inline int crash_local_vmclear_enabled(int cpu)
++{
++	return cpumask_test_cpu(cpu, &crash_vmclear_enabled_bitmap);
++}
++
++static void crash_vmclear_local_loaded_vmcss(void)
++{
++	int cpu = raw_smp_processor_id();
++	struct loaded_vmcs *v;
++
++	if (!crash_local_vmclear_enabled(cpu))
++		return;
++
++	list_for_each_entry(v, &per_cpu(loaded_vmcss_on_cpu, cpu),
++			    loaded_vmcss_on_cpu_link)
++		vmcs_clear(v->vmcs);
++}
++#else
++static inline void crash_enable_local_vmclear(int cpu) { }
++static inline void crash_disable_local_vmclear(int cpu) { }
++#endif /* CONFIG_KEXEC */
++
+ static void __loaded_vmcs_clear(void *arg)
+ {
+ 	struct loaded_vmcs *loaded_vmcs = arg;
+@@ -996,6 +1037,7 @@ static void __loaded_vmcs_clear(void *arg)
+ 		return; /* vcpu migration can race with cpu offline */
+ 	if (per_cpu(current_vmcs, cpu) == loaded_vmcs->vmcs)
+ 		per_cpu(current_vmcs, cpu) = NULL;
++	crash_disable_local_vmclear(cpu);
+ 	list_del(&loaded_vmcs->loaded_vmcss_on_cpu_link);
+ 
+ 	/*
+@@ -1007,6 +1049,7 @@ static void __loaded_vmcs_clear(void *arg)
+ 	smp_wmb();
+ 
+ 	loaded_vmcs_init(loaded_vmcs);
++	crash_enable_local_vmclear(cpu);
+ }
+ 
+ static void loaded_vmcs_clear(struct loaded_vmcs *loaded_vmcs)
+@@ -1530,6 +1573,7 @@ static void vmx_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+ 
+ 		kvm_make_request(KVM_REQ_TLB_FLUSH, vcpu);
+ 		local_irq_disable();
++		crash_disable_local_vmclear(cpu);
+ 
+ 		/*
+ 		 * Read loaded_vmcs->cpu should be before fetching
+@@ -1540,6 +1584,7 @@ static void vmx_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+ 
+ 		list_add(&vmx->loaded_vmcs->loaded_vmcss_on_cpu_link,
+ 			 &per_cpu(loaded_vmcss_on_cpu, cpu));
++		crash_enable_local_vmclear(cpu);
+ 		local_irq_enable();
+ 
+ 		/*
+@@ -2353,6 +2398,18 @@ static int hardware_enable(void *garbage)
+ 		return -EBUSY;
+ 
+ 	INIT_LIST_HEAD(&per_cpu(loaded_vmcss_on_cpu, cpu));
++
++	/*
++	 * Now we can enable the vmclear operation in kdump
++	 * since the loaded_vmcss_on_cpu list on this cpu
++	 * has been initialized.
++	 *
++	 * Though the cpu is not in VMX operation now, there
++	 * is no problem to enable the vmclear operation
++	 * for the loaded_vmcss_on_cpu list is empty!
++	 */
++	crash_enable_local_vmclear(cpu);
++
+ 	rdmsrl(MSR_IA32_FEATURE_CONTROL, old);
+ 
+ 	test_bits = FEATURE_CONTROL_LOCKED;
+@@ -7383,6 +7440,11 @@ static int __init vmx_init(void)
+ 	if (r)
+ 		goto out3;
+ 
++#ifdef CONFIG_KEXEC
++	rcu_assign_pointer(crash_vmclear_loaded_vmcss,
++			   crash_vmclear_local_loaded_vmcss);
++#endif
++
+ 	vmx_disable_intercept_for_msr(MSR_FS_BASE, false);
+ 	vmx_disable_intercept_for_msr(MSR_GS_BASE, false);
+ 	vmx_disable_intercept_for_msr(MSR_KERNEL_GS_BASE, true);
+@@ -7420,6 +7482,11 @@ static void __exit vmx_exit(void)
+ 	free_page((unsigned long)vmx_io_bitmap_b);
+ 	free_page((unsigned long)vmx_io_bitmap_a);
+ 
++#ifdef CONFIG_KEXEC
++	rcu_assign_pointer(crash_vmclear_loaded_vmcss, NULL);
++	synchronize_rcu();
++#endif
++
+ 	kvm_exit();
+ }
+ 
 -- 
-1.7.12.rc2.18.g61b472e
+1.7.1
 
