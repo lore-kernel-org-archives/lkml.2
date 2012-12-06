@@ -1,97 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423678Ab2LFPDx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 10:03:53 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:56806 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423662Ab2LFPDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 10:03:52 -0500
-Message-ID: <50C0B3D5.50707@imgtec.com>
-Date: Thu, 6 Dec 2012 15:03:49 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1423691Ab2LFPHw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 10:07:52 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:38039 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423646Ab2LFPHv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 10:07:51 -0500
+Date: Thu, 6 Dec 2012 09:06:45 -0600
+From: Kent Yoder <key@linux.vnet.ibm.com>
+To: Peter =?iso-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>
+Cc: Mathias LEBLANC <Mathias.LEBLANC@st.com>,
+        Jean-Luc BLANC <jean-luc.blanc@st.com>,
+        "Sirrix@jasper.es" <Sirrix@jasper.es>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rajiv Andrade <mail@srajiv.net>,
+        "tpmdd-devel@lists.sourceforge.net" 
+	<tpmdd-devel@lists.sourceforge.net>,
+        Kent Yoder <shpedoikal@gmail.com>
+Subject: Re: [tpmdd-devel] [PATCH 1/1] TPM: STMicroelectronics ST33 I2C
+ KERNEL 3.x.x
+Message-ID: <20121206150645.GA27430@ennui.austin.ibm.com>
+References: <1353363322-2923-1-git-send-email-mathias.leblanc@st.com>
+ <201212052214.48840.PeterHuewe@gmx.de>
+ <20121205230941.GA30394@ennui.austin.ibm.com>
+ <201212060110.32227.PeterHuewe@gmx.de>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "Arnd Bergmann" <arnd@arndb.de>
-Subject: Re: [PATCH v2 12/44] metag: TBX source
-References: <1354723742-6195-1-git-send-email-james.hogan@imgtec.com>  <1354723742-6195-13-git-send-email-james.hogan@imgtec.com>  <1354733607.8320.3.camel@joe-AO722> <50C066D9.9010700@imgtec.com> <1354798778.17565.8.camel@joe-AO722>
-In-Reply-To: <1354798778.17565.8.camel@joe-AO722>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2012_12_06_15_03_50
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201212060110.32227.PeterHuewe@gmx.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12120615-5406-0000-0000-000002D114BB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/12/12 12:59, Joe Perches wrote:
-> On Thu, 2012-12-06 at 09:35 +0000, James Hogan wrote:
->> On 05/12/12 18:53, Joe Perches wrote:
->>> On Wed, 2012-12-05 at 16:08 +0000, James Hogan wrote:
->>>> Add source files from the Thread Binary Interface (TBI) library which
->>>> provides useful low level operations and traps/context management.
->>> []
->>>>  arch/metag/tbx/tbicache.c  |  462 ++++++++++++++++++++++++++++++++++++++++++++
->>>
->>> Could you please run checkpatch on this file?
->>
->> Hi Joe,
->>
->> Thanks for taking a look.
->>
->> I'd prefer to avoid making style modifications to the tbx/ files if
->> possible to ease maintenance, as the code is shared with other projects
->> and maintained by a separate group.
->>
->> Of course if cleaning up the style is deemed absolutely necessary then
->> so be it.
+On Thu, Dec 06, 2012 at 01:10:32AM +0100, Peter Hüwe wrote:
+> Am Donnerstag, 6. Dezember 2012, 00:09:41 schrieb Kent Yoder:
+> > > 
+> > > > static int tpm_st33_i2c_pm_suspend(struct i2c_client *client,
+> > > > pm_message_t mesg)
+> > > >
+> > > >...
+> > > >
+> > > > static int tpm_st33_i2c_pm_resume(struct i2c_client *client)
+> > > >
+> > > >,,,
+> > > >static struct i2c_driver tpm_st33_i2c_driver = {
+> > > >
+> > > >	.driver = {
+> > > >	
+> > > >		   .owner = THIS_MODULE,
+> > > >		   .name = TPM_ST33_I2C,
+> > > >		   },
+> > > >	
+> > > >	.probe = tpm_st33_i2c_probe,
+> > > >	.remove = tpm_st33_i2c_remove,
+> > > >	.resume = tpm_st33_i2c_pm_resume,
+> > > >	.suspend = tpm_st33_i2c_pm_suspend,
+> > > >	.id_table = tpm_st33_i2c_id
+> > > >
+> > > >};
+> > > 
+> > > Please convert resume/suspend  to .driver.pm
+> > > 
+> > > It's pretty easy.
+> > > See this post  for details
+> > > http://sourceforge.net/mailarchive/message.php?msg_id=29516784
+> > > Rafael did spent quite a lot of effort to convert almost every driver
+> > > back then, so we should 'fix' new ones.
+> > 
+> > Not sure how easy this will be considering these routines are
+> > i2c-specific -- they don't just call the tpm_tpm_* functions like the
+> > other drivers.
 > 
-> Your choice though the file looks to me to be linux
-> specific as it uses #include <linux/stddef.h>
+> Why are they really i2c-specific?
+> The only i2c specific part is the i2c_get_clientdata - which calls 
+> get_dev_drvdata internally.
+> And I since we already get the correct struct device we don't need to use 
+> TPM_VPRIV in order to access the platform data. 
 
-Yes, I have rearranged the TBX headers and includes a bit, including
-this one to get the definition of NULL, but have avoided making changes
-to the actual code so far.
+ I was referring to the power mgmt stuff. Those functions take struct
+device, not a i2c_client *.
 
-> 
-> Also, two functions, __TBIDataCacheFlush and
-> __TBICodeCacheFlush, have an unnecessary indentation
-> level after a test and return.
+Kent
 
-> void __TBICodeCacheFlush( const void *pStart, int Bytes )
-> {
-> 	volatile int *pCtrl = (volatile int *) SYSC_CACHE_MMU_CONFIG;
+> I'll send a patch - see next email.
+> @Matthias: can you please test this? As I cannot do this.
 > 
-> 	if ( !__TBICacheDoneInit )
-> 		__TBICacheInit();
 > 
-> 	if ( (pCtrl[0] & SYSC_CMMUCFG_IC_ON_BIT) == 0 )
-> 	{
-> 		/* No need to flush the code cache it's not actually enabled */
-> 		return;
-> 	} 
+> Thanks,
+> Peter
 > 
-> 	{
-> 		/* Use a sequence of writes to flush the cache region requested */	
-> 		int Loops, Step;
 > 
-> 		etc.
-> 
-> I believe the automatics in the second blocks should
-> be moved to the start of the function and the
-> unnecessary braces and extra indentation removed.
-> 
-
-TBI_GETREG reads a control register so the compiler won't be able to
-move it, so these should probably be kept in the same order, but yes I
-agree with moving the declarations to the top and getting rid of the
-extra indentation.
-
-tbh since there are only 2 tbx/*.c files and they're both small, I'll
-clean them both up properly.
-
-Thanks
-James
 
