@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423589Ab2LFPLy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 10:11:54 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:36311 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753462Ab2LFPLv (ORCPT
+	id S1423716Ab2LFPL6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 10:11:58 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:50351 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423702Ab2LFPL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 10:11:51 -0500
+	Thu, 6 Dec 2012 10:11:56 -0500
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
         LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 1/5] perf diff: Removing displacement output option
-Date: Fri,  7 Dec 2012 00:09:37 +0900
-Message-Id: <1354806581-5316-2-git-send-email-namhyung@kernel.org>
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 3/5] perf hists: Link hist entries before inserting to an output tree
+Date: Fri,  7 Dec 2012 00:09:39 +0900
+Message-Id: <1354806581-5316-4-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1354806581-5316-1-git-send-email-namhyung@kernel.org>
 References: <1354806581-5316-1-git-send-email-namhyung@kernel.org>
@@ -27,189 +24,247 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-Removing displacement output option. It seems not very useful,
-because it's possible and event more convenient to lookup related
-symbol by name. Also the output value for both 'baseline' and
-'new' data is quite apparent from diff output.
+For matching and/or linking hist entries, they need to be sorted by
+given sort keys.  However current hists__match/link did this on the
+output trees, so that the entries in the output tree need to be resort
+before doing it.
 
-And above all it complicates hist code factoring ;)
+This looks not so good since we have trees for collecting or
+collapsing entries before passing them to an output tree and they're
+already sorted by the given sort keys.  Since we don't need to print
+anything at the time of matching/linking, we can use these internal
+trees directly instead of bothering with double resort on the output
+tree.
 
-Ditching out PERF_HPP__DISPL column with related output functions.
+Its only user - at the time of this writing - perf diff can be easily
+converted to use the internal tree and can save some lines too by
+getting rid of unnecessary resorting codes.
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Stephane Eranian <eranian@google.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/Documentation/perf-diff.txt |    4 ----
- tools/perf/builtin-diff.c              |   29 +++++++----------------------
- tools/perf/ui/hist.c                   |   25 -------------------------
- tools/perf/util/hist.h                 |    1 -
- 4 files changed, 7 insertions(+), 52 deletions(-)
+ tools/perf/builtin-diff.c |   65 ++++++++++++---------------------------------
+ tools/perf/util/hist.c    |   49 +++++++++++++++++++++++++---------
+ 2 files changed, 54 insertions(+), 60 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-diff.txt b/tools/perf/Documentation/perf-diff.txt
-index 194f37d635df..5b3123d5721f 100644
---- a/tools/perf/Documentation/perf-diff.txt
-+++ b/tools/perf/Documentation/perf-diff.txt
-@@ -22,10 +22,6 @@ specified perf.data files.
- 
- OPTIONS
- -------
---M::
----displacement::
--        Show position displacement relative to baseline.
--
- -D::
- --dump-raw-trace::
-         Dump raw trace in ASCII.
 diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index d869029fb75e..b2e7d39f099b 100644
+index b2e7d39f099b..044ad99dcc90 100644
 --- a/tools/perf/builtin-diff.c
 +++ b/tools/perf/builtin-diff.c
-@@ -23,7 +23,6 @@ static char const *input_old = "perf.data.old",
- 		  *input_new = "perf.data";
- static char	  diff__default_sort_order[] = "dso,symbol";
- static bool  force;
--static bool show_displacement;
- static bool show_period;
- static bool show_formula;
- static bool show_baseline_only;
-@@ -296,9 +295,8 @@ static void insert_hist_entry_by_name(struct rb_root *root,
- 	rb_insert_color(&he->rb_node, root);
- }
- 
--static void hists__name_resort(struct hists *self, bool sort)
-+static void hists__name_resort(struct hists *self)
- {
--	unsigned long position = 1;
- 	struct rb_root tmp = RB_ROOT;
- 	struct rb_node *next = rb_first(&self->entries);
- 
-@@ -306,16 +304,12 @@ static void hists__name_resort(struct hists *self, bool sort)
- 		struct hist_entry *n = rb_entry(next, struct hist_entry, rb_node);
- 
- 		next = rb_next(&n->rb_node);
--		n->position = position++;
- 
--		if (sort) {
--			rb_erase(&n->rb_node, &self->entries);
--			insert_hist_entry_by_name(&tmp, n);
--		}
-+		rb_erase(&n->rb_node, &self->entries);
-+		insert_hist_entry_by_name(&tmp, n);
- 	}
- 
--	if (sort)
--		self->entries = tmp;
-+	self->entries = tmp;
- }
- 
- static struct perf_evsel *evsel_match(struct perf_evsel *evsel,
-@@ -339,12 +333,8 @@ static void perf_evlist__resort_hists(struct perf_evlist *evlist, bool name)
- 
- 		hists__output_resort(hists);
- 
--		/*
--		 * The hists__name_resort only sets possition
--		 * if name is false.
--		 */
--		if (name || ((!name) && show_displacement))
--			hists__name_resort(hists, name);
-+		if (name)
-+			hists__name_resort(hists);
- 	}
- }
- 
-@@ -549,8 +539,6 @@ static const char * const diff_usage[] = {
- static const struct option options[] = {
- 	OPT_INCR('v', "verbose", &verbose,
- 		    "be more verbose (show symbol address, etc)"),
--	OPT_BOOLEAN('M', "displacement", &show_displacement,
--		    "Show position displacement relative to baseline"),
- 	OPT_BOOLEAN('b', "baseline-only", &show_baseline_only,
- 		    "Show only items with match in baseline"),
- 	OPT_CALLBACK('c', "compute", &compute,
-@@ -585,7 +573,7 @@ static const struct option options[] = {
- static void ui_init(void)
- {
- 	/*
--	 * Display baseline/delta/ratio/displacement/
-+	 * Display baseline/delta/ratio
- 	 * formula/periods columns.
- 	 */
- 	perf_hpp__column_enable(PERF_HPP__BASELINE);
-@@ -604,9 +592,6 @@ static void ui_init(void)
- 		BUG_ON(1);
- 	};
- 
--	if (show_displacement)
--		perf_hpp__column_enable(PERF_HPP__DISPL);
--
- 	if (show_formula)
- 		perf_hpp__column_enable(PERF_HPP__FORMULA);
- 
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 1785bab7adfd..1889c12ca81f 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -351,30 +351,6 @@ static int hpp__entry_wdiff(struct perf_hpp *hpp, struct hist_entry *he)
- 	return scnprintf(hpp->buf, hpp->size, fmt, buf);
- }
- 
--static int hpp__header_displ(struct perf_hpp *hpp)
--{
--	return scnprintf(hpp->buf, hpp->size, "Displ.");
--}
--
--static int hpp__width_displ(struct perf_hpp *hpp __maybe_unused)
--{
--	return 6;
--}
--
--static int hpp__entry_displ(struct perf_hpp *hpp,
--			    struct hist_entry *he)
--{
--	struct hist_entry *pair = hist_entry__next_pair(he);
--	long displacement = pair ? pair->position - he->position : 0;
--	const char *fmt = symbol_conf.field_sep ? "%s" : "%6.6s";
--	char buf[32] = " ";
--
--	if (displacement)
--		scnprintf(buf, sizeof(buf), "%+4ld", displacement);
--
--	return scnprintf(hpp->buf, hpp->size, fmt, buf);
--}
--
- static int hpp__header_formula(struct perf_hpp *hpp)
- {
- 	const char *fmt = symbol_conf.field_sep ? "%s" : "%70s";
-@@ -427,7 +403,6 @@ struct perf_hpp_fmt perf_hpp__format[] = {
- 	HPP__PRINT_FNS(delta),
- 	HPP__PRINT_FNS(ratio),
- 	HPP__PRINT_FNS(wdiff),
--	HPP__PRINT_FNS(displ),
- 	HPP__PRINT_FNS(formula)
+@@ -275,43 +275,6 @@ static struct perf_tool tool = {
+ 	.ordering_requires_timestamps = true,
  };
  
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index c1b2fade8e70..5b3b0075be64 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -154,7 +154,6 @@ enum {
- 	PERF_HPP__DELTA,
- 	PERF_HPP__RATIO,
- 	PERF_HPP__WEIGHTED_DIFF,
--	PERF_HPP__DISPL,
- 	PERF_HPP__FORMULA,
+-static void insert_hist_entry_by_name(struct rb_root *root,
+-				      struct hist_entry *he)
+-{
+-	struct rb_node **p = &root->rb_node;
+-	struct rb_node *parent = NULL;
+-	struct hist_entry *iter;
+-
+-	while (*p != NULL) {
+-		parent = *p;
+-		iter = rb_entry(parent, struct hist_entry, rb_node);
+-		if (hist_entry__cmp(he, iter) < 0)
+-			p = &(*p)->rb_left;
+-		else
+-			p = &(*p)->rb_right;
+-	}
+-
+-	rb_link_node(&he->rb_node, parent, p);
+-	rb_insert_color(&he->rb_node, root);
+-}
+-
+-static void hists__name_resort(struct hists *self)
+-{
+-	struct rb_root tmp = RB_ROOT;
+-	struct rb_node *next = rb_first(&self->entries);
+-
+-	while (next != NULL) {
+-		struct hist_entry *n = rb_entry(next, struct hist_entry, rb_node);
+-
+-		next = rb_next(&n->rb_node);
+-
+-		rb_erase(&n->rb_node, &self->entries);
+-		insert_hist_entry_by_name(&tmp, n);
+-	}
+-
+-	self->entries = tmp;
+-}
+-
+ static struct perf_evsel *evsel_match(struct perf_evsel *evsel,
+ 				      struct perf_evlist *evlist)
+ {
+@@ -324,30 +287,34 @@ static struct perf_evsel *evsel_match(struct perf_evsel *evsel,
+ 	return NULL;
+ }
  
- 	PERF_HPP__MAX_INDEX
+-static void perf_evlist__resort_hists(struct perf_evlist *evlist, bool name)
++static void perf_evlist__resort_hists(struct perf_evlist *evlist)
+ {
+ 	struct perf_evsel *evsel;
+ 
+ 	list_for_each_entry(evsel, &evlist->entries, node) {
+ 		struct hists *hists = &evsel->hists;
+ 
+-		hists__output_resort(hists);
+-
+-		if (name)
+-			hists__name_resort(hists);
++		hists__collapse_resort(hists);
+ 	}
+ }
+ 
+ static void hists__baseline_only(struct hists *hists)
+ {
+-	struct rb_node *next = rb_first(&hists->entries);
++	struct rb_root *root;
++	struct rb_node *next;
++
++	if (sort__need_collapse)
++		root = &hists->entries_collapsed;
++	else
++		root = hists->entries_in;
+ 
++	next = rb_first(root);
+ 	while (next != NULL) {
+-		struct hist_entry *he = rb_entry(next, struct hist_entry, rb_node);
++		struct hist_entry *he = rb_entry(next, struct hist_entry, rb_node_in);
+ 
+-		next = rb_next(&he->rb_node);
++		next = rb_next(&he->rb_node_in);
+ 		if (!hist_entry__next_pair(he)) {
+-			rb_erase(&he->rb_node, &hists->entries);
++			rb_erase(&he->rb_node_in, root);
+ 			hist_entry__free(he);
+ 		}
+ 	}
+@@ -471,6 +438,8 @@ static void hists__process(struct hists *old, struct hists *new)
+ 	else
+ 		hists__link(new, old);
+ 
++	hists__output_resort(new);
++
+ 	if (sort_compute) {
+ 		hists__precompute(new);
+ 		hists__compute_resort(new);
+@@ -505,8 +474,8 @@ static int __cmd_diff(void)
+ 	evlist_old = older->evlist;
+ 	evlist_new = newer->evlist;
+ 
+-	perf_evlist__resort_hists(evlist_old, true);
+-	perf_evlist__resort_hists(evlist_new, false);
++	perf_evlist__resort_hists(evlist_old);
++	perf_evlist__resort_hists(evlist_new);
+ 
+ 	list_for_each_entry(evsel, &evlist_new->entries, node) {
+ 		struct perf_evsel *evsel_old;
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index d4471c21ed17..b0c9952d7c3f 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -720,16 +720,24 @@ void hists__inc_nr_events(struct hists *hists, u32 type)
+ static struct hist_entry *hists__add_dummy_entry(struct hists *hists,
+ 						 struct hist_entry *pair)
+ {
+-	struct rb_node **p = &hists->entries.rb_node;
++	struct rb_root *root;
++	struct rb_node **p;
+ 	struct rb_node *parent = NULL;
+ 	struct hist_entry *he;
+ 	int cmp;
+ 
++	if (sort__need_collapse)
++		root = &hists->entries_collapsed;
++	else
++		root = hists->entries_in;
++
++	p = &root->rb_node;
++
+ 	while (*p != NULL) {
+ 		parent = *p;
+-		he = rb_entry(parent, struct hist_entry, rb_node);
++		he = rb_entry(parent, struct hist_entry, rb_node_in);
+ 
+-		cmp = hist_entry__cmp(he, pair);
++		cmp = hist_entry__collapse(he, pair);
+ 
+ 		if (!cmp)
+ 			goto out;
+@@ -744,8 +752,8 @@ static struct hist_entry *hists__add_dummy_entry(struct hists *hists,
+ 	if (he) {
+ 		memset(&he->stat, 0, sizeof(he->stat));
+ 		he->hists = hists;
+-		rb_link_node(&he->rb_node, parent, p);
+-		rb_insert_color(&he->rb_node, &hists->entries);
++		rb_link_node(&he->rb_node_in, parent, p);
++		rb_insert_color(&he->rb_node_in, root);
+ 		hists__inc_nr_entries(hists, he);
+ 	}
+ out:
+@@ -755,11 +763,16 @@ out:
+ static struct hist_entry *hists__find_entry(struct hists *hists,
+ 					    struct hist_entry *he)
+ {
+-	struct rb_node *n = hists->entries.rb_node;
++	struct rb_node *n;
++
++	if (sort__need_collapse)
++		n = hists->entries_collapsed.rb_node;
++	else
++		n = hists->entries_in->rb_node;
+ 
+ 	while (n) {
+-		struct hist_entry *iter = rb_entry(n, struct hist_entry, rb_node);
+-		int64_t cmp = hist_entry__cmp(iter, he);
++		struct hist_entry *iter = rb_entry(n, struct hist_entry, rb_node_in);
++		int64_t cmp = hist_entry__collapse(iter, he);
+ 
+ 		if (cmp < 0)
+ 			n = n->rb_left;
+@@ -777,11 +790,17 @@ static struct hist_entry *hists__find_entry(struct hists *hists,
+  */
+ void hists__match(struct hists *leader, struct hists *other)
+ {
++	struct rb_root *root;
+ 	struct rb_node *nd;
+ 	struct hist_entry *pos, *pair;
+ 
+-	for (nd = rb_first(&leader->entries); nd; nd = rb_next(nd)) {
+-		pos  = rb_entry(nd, struct hist_entry, rb_node);
++	if (sort__need_collapse)
++		root = &leader->entries_collapsed;
++	else
++		root = leader->entries_in;
++
++	for (nd = rb_first(root); nd; nd = rb_next(nd)) {
++		pos  = rb_entry(nd, struct hist_entry, rb_node_in);
+ 		pair = hists__find_entry(other, pos);
+ 
+ 		if (pair)
+@@ -796,11 +815,17 @@ void hists__match(struct hists *leader, struct hists *other)
+  */
+ int hists__link(struct hists *leader, struct hists *other)
+ {
++	struct rb_root *root;
+ 	struct rb_node *nd;
+ 	struct hist_entry *pos, *pair;
+ 
+-	for (nd = rb_first(&other->entries); nd; nd = rb_next(nd)) {
+-		pos = rb_entry(nd, struct hist_entry, rb_node);
++	if (sort__need_collapse)
++		root = &other->entries_collapsed;
++	else
++		root = other->entries_in;
++
++	for (nd = rb_first(root); nd; nd = rb_next(nd)) {
++		pos = rb_entry(nd, struct hist_entry, rb_node_in);
+ 
+ 		if (!hist_entry__has_pairs(pos)) {
+ 			pair = hists__add_dummy_entry(leader, pos);
 -- 
 1.7.9.2
 
