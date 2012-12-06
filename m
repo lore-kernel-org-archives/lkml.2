@@ -1,100 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964823Ab2LFDMu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 22:12:50 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:38342 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752101Ab2LFDMt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 22:12:49 -0500
+	id S964844Ab2LFDPX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 22:15:23 -0500
+Received: from mga01.intel.com ([192.55.52.88]:62931 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964830Ab2LFDPV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 22:15:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,227,1355126400"; 
+   d="scan'208";a="257949564"
+Message-ID: <50C00D41.1010800@intel.com>
+Date: Thu, 06 Dec 2012 11:13:05 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <50BFFB6E.5080108@zytor.com>
-References: <50BFFB6E.5080108@zytor.com>
-Date: Wed, 5 Dec 2012 19:12:47 -0800
-X-Google-Sender-Auth: oTjIxWGTRmjeTpE8x_TqOWY4S94
-Message-ID: <CAE9FiQU9mZpqhwX_a4Sv0a0aiReTxJfyJqNRVXTTXvjkFLrVZA@mail.gmail.com>
-Subject: Re: kexec and struct boot_params
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+To: Alex Shi <lkml.alex@gmail.com>
+CC: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Paul Turner <pjt@google.com>, lkml <linux-kernel@vger.kernel.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Venkatesh Pallipadi <venki@google.com>, Tejun Heo <tj@kernel.org>,
+        Alex Shi <alex.shi@intel.com>
+Subject: Re: weakness of runnable load tracking?
+References: <CAGjg+kFZ2+tzxOS4SVo3PTzEDJJ=B0gZJ0aEOhNHvTycFuVT6Q@mail.gmail.com>
+In-Reply-To: <CAGjg+kFZ2+tzxOS4SVo3PTzEDJJ=B0gZJ0aEOhNHvTycFuVT6Q@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 5, 2012 at 5:57 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> Hi Eric,
->
-> Could you give a list of struct boot_params field which are initialized
-> properly by kexec?  I think we need to do the sentinel hack, and want to
-> know what to whitelist.
+On 12/05/2012 11:19 PM, Alex Shi wrote:
+> Hi Paul&Ingo:
+> 
+> Runnable load tracking patch set introduce a good way to tracking each
+> entity/rq's running time.
+> But when I try to enable it in load balance, I found burst forking
+> many new tasks will make just few cpu heavy while other cpu has no
+> much task assigned. That is due to the new forked task's
+> load_avg_contrib is zero after just created. then no matter how many
+> tasks assigned to a CPU can not increase the cfs_rq->runnable_load_avg
+> or rq->avg.load_avg_contrib if this cpu idle.
+> Actually, if just for new task issue, we can set new task's initial
+> load_avg same as load_weight. but if we want to burst wake up many
+> long time sleeping tasks, it has the same issue here since their were
+> decayed to zero. So what solution I can thought is recording the se's
+> load_avg_contrib just before dequeue, and don't decay the value, when
+> it was waken up, add this value to new cfs_rq. but if so, the runnable
+> load tracking is total meaningless.
+> So do you have some idea of burst wakeup balancing with runnable load tracking?
 
-the one with *
-? means set only when lfb_depth > 8
-also
-   0xa2 to 0x1df is not set
+Hi Paul & Ingo:
 
-struct x86_linux_param_header {
-	uint8_t  orig_x;			/* 0x00 */  *
-	uint8_t  orig_y;			/* 0x01 */  *
-	uint16_t ext_mem_k;			/* 0x02 -- EXT_MEM_K sits here */   *
-	uint16_t orig_video_page;		/* 0x04 */  *
-	uint8_t  orig_video_mode;		/* 0x06 */  *
-	uint8_t  orig_video_cols;		/* 0x07 */  *
-	uint16_t unused2;			/* 0x08 */
-	uint16_t orig_video_ega_bx;		/* 0x0a */  *
-	uint16_t unused3;			/* 0x0c */
-	uint8_t	 orig_video_lines;		/* 0x0e */  *
-	uint8_t	 orig_video_isVGA;		/* 0x0f */   *
-	uint16_t orig_video_points;		/* 0x10 */   *
+In a short word of this issue: burst forking/waking tasks have no time
+accumulate the load contribute, their runnable load are taken as zero.
+that make select_task_rq do a wrong decision on which group is idlest.
 
-	/* VESA graphic mode -- linear frame buffer */
-	uint16_t lfb_width;			/* 0x12 */   *
-	uint16_t lfb_height;			/* 0x14 */   *
-	uint16_t lfb_depth;			/* 0x16 */   *
-	uint32_t lfb_base;			/* 0x18 */   *
-	uint32_t lfb_size;			/* 0x1c */   *
-	uint16_t cl_magic;			/* 0x20 */   *
-#define CL_MAGIC_VALUE 0xA33F
-	uint16_t cl_offset;			/* 0x22 */   *
-	uint16_t lfb_linelength;		/* 0x24 */   *
-	uint8_t	 red_size;			/* 0x26 */   ?
-	uint8_t	 red_pos;			/* 0x27 */   ?
-	uint8_t	 green_size;			/* 0x28 */   ?
-	uint8_t	 green_pos;			/* 0x29 */   ?
-	uint8_t	 blue_size;			/* 0x2a */   ?
-	uint8_t	 blue_pos;			/* 0x2b */   ?
-	uint8_t	 rsvd_size;			/* 0x2c */   ?
-	uint8_t	 rsvd_pos;			/* 0x2d */   ?
-	uint16_t vesapm_seg;			/* 0x2e */   *
-	uint16_t vesapm_off;			/* 0x30 */
-	uint16_t pages;				/* 0x32 */   *
-	uint8_t  reserved4[12];			/* 0x34 -- 0x3f reserved for future expansion */
+There is still 3 kinds of solution is helpful for this issue.
 
-	struct apm_bios_info apm_bios_info;	/* 0x40 */   *
-	struct drive_info_struct drive_info;	/* 0x80 */   *
-	struct sys_desc_table sys_desc_table;	/* 0xa0 */   * only .length =
-0, aka 0xa2 to 0x1df is not set
-	uint32_t alt_mem_k;			/* 0x1e0 */  *
-	uint8_t  reserved5[4];			/* 0x1e4 */
-	uint8_t  e820_map_nr;			/* 0x1e8 */  *
-	uint8_t  eddbuf_entries;		/* 0x1e9 */  *
-	uint8_t  edd_mbr_sig_buf_entries;	/* 0x1ea */  *
-	uint8_t  reserved6[6];			/* 0x1eb */
-	HEADER.....					    copied and or meset 0 and set.
-	uint8_t  reserved16[0x290 - 0x248];	/* 0x248 */
-	uint32_t edd_mbr_sig_buffer[EDD_MBR_SIG_MAX];	/* 0x290 */  *
-#endif
-	struct 	e820entry e820_map[E820MAX];	/* 0x2d0 */   *
-	uint8_t _pad8[48];			/* 0xcd0 */
-	struct 	edd_info eddbuf[EDDMAXNR];	/* 0xd00 */   *
-						/* 0xeec */
-#define COMMAND_LINE_SIZE 2048
-};
+a, set a unzero minimum value for the long time sleeping task. but it
+seems unfair for other tasks these just sleep a short while.
 
+b, just use runnable load contrib in load balance. Still using
+nr_running to judge idlest group in select_task_rq_fair. but that may
+cause a bit more migrations in future load balance.
 
->
-> Also, does kexec set a bootloader ID?
+c, consider both runnable load and nr_running in the group: like in the
+searching domain, the nr_running number increased a certain number, like
+double of the domain span, in a certain time. we will think it's a burst
+forking/waking happened, then just count the nr_running as the idlest
+group criteria.
 
-no, 0xff
+IMHO, I like the 3rd one a bit more. as to the certain time to judge if
+a burst happened, since we will calculate the runnable avg at very tick,
+so if increased nr_running is beyond sd->span_weight in 2 ticks, means
+burst happening. What's your opinion of this?
+
+Any comments are appreciated!
+
+Regards!
+Alex
+> 
+> 
+
