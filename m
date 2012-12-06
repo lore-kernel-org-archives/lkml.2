@@ -1,151 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755389Ab2LFTZH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 14:25:07 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:56676 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755353Ab2LFTZF (ORCPT
+	id S1424696Ab2LFT0l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 14:26:41 -0500
+Received: from smtprelay-h22.telenor.se ([195.54.99.197]:57333 "EHLO
+	smtprelay-h22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423240Ab2LFT0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 14:25:05 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v2] of: Output devicetree alias names in uevent
-To: Stepan Moskovchenko <stepanm@codeaurora.org>
-Cc: Rob Herring <rob.herring@calxeda.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, Bryan Huntsman <bryanh@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        David Brown <davidb@codeaurora.org>, mbohan@codeaurora.org,
-        Stepan Moskovchenko <stepanm@codeaurora.org>
-In-Reply-To: <1354780165-872-1-git-send-email-stepanm@codeaurora.org>
-References: <20121205230318.013053E0E22@localhost> <1354780165-872-1-git-send-email-stepanm@codeaurora.org>
-Date: Thu, 06 Dec 2012 19:24:59 +0000
-Message-Id: <20121206192500.0BF073E3A5E@localhost>
+	Thu, 6 Dec 2012 14:26:40 -0500
+X-SENDER-IP: [85.230.168.206]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnNKAAfxwFBV5qjOPGdsb2JhbABEhUuFI7M5FwMBAQEBODSCHgEBBAE6HCMFCwgDRhQlChqIHQrCbBSMLoNZYQOWAoV7g1OJboFj
+X-IronPort-AV: E=Sophos;i="4.84,231,1355094000"; 
+   d="scan'208";a="239084959"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Thu, 6 Dec 2012 20:28:45 +0100
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>, Jan Kara <jack@suse.cz>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Oops in 3.7-rc8 isolate_free_pages_block()
+Message-ID: <20121206192845.GA599@polaris.bitmath.org>
+References: <20121206091744.GA1397@polaris.bitmath.org>
+ <20121206144821.GC18547@quack.suse.cz>
+ <20121206161934.GA17258@suse.de>
+ <CA+55aFw9WQN-MYFKzoGXF9Z70h1XsMu5X4hLy0GPJopBVuE=Yg@mail.gmail.com>
+ <20121206175451.GC17258@suse.de>
+ <CA+55aFwDZHXf2FkWugCy4DF+mPTjxvjZH87ydhE5cuFFcJ-dJg@mail.gmail.com>
+ <20121206183259.GA591@polaris.bitmath.org>
+ <CA+55aFzievpA_b5p-bXwW11a89eC-ucpzKUuSqb2PNQOLrqaPg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzievpA_b5p-bXwW11a89eC-ucpzKUuSqb2PNQOLrqaPg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  5 Dec 2012 23:49:25 -0800, Stepan Moskovchenko <stepanm@codeaurora.org> wrote:
-> In some situations, userspace may want to resolve a
-> device by function and logical number (ie, "serial0")
-> rather than by the base address or full device path. Being
-> able to resolve a device by alias frees userspace from the
-> burden of otherwise having to maintain a mapping between
-> device addresses and their logical assignments on each
-> platform when multiple instances of the same hardware block
-> are present in the system.
+> Actually, looking at it some more, I think that two-liner patch had
+> *ANOTHER* bug.
 > 
-> Although the uevent device attribute contains devicetree
-> compatible information and the full device path, the uevent
-> does not list the alises that may have been defined for the
-> device.
+> Because the other line seems buggy as well.
 > 
-> Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
-> ---
-> v2: Create of_private.h and move struct alias_prop there
->     Add alias uevent variables from of_device_uevent
->     Use app->alias instead of app->stem / app->id directly
->     Expose alias_lookup and of_alias_mutex
+> Instead of
 > 
->  drivers/of/base.c       |   23 +++--------------------
->  drivers/of/device.c     |   17 +++++++++++++++++
->  drivers/of/of_private.h |   33 +++++++++++++++++++++++++++++++++
->  3 files changed, 53 insertions(+), 20 deletions(-)
->  create mode 100644 drivers/of/of_private.h
+>         end_pfn = ALIGN(pfn + pageblock_nr_pages, pageblock_nr_pages);
 > 
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index 5806449..715aef2 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -24,32 +24,15 @@
->  #include <linux/slab.h>
->  #include <linux/proc_fs.h>
+> I think it should be
 > 
-> -/**
-> - * struct alias_prop - Alias property in 'aliases' node
-> - * @link:	List node to link the structure in aliases_lookup list
-> - * @alias:	Alias property name
-> - * @np:		Pointer to device_node that the alias stands for
-> - * @id:		Index value from end of alias name
-> - * @stem:	Alias string without the index
-> - *
-> - * The structure represents one alias property of 'aliases' node as
-> - * an entry in aliases_lookup list.
-> - */
-> -struct alias_prop {
-> -	struct list_head link;
-> -	const char *alias;
-> -	struct device_node *np;
-> -	int id;
-> -	char stem[0];
-> -};
-> +#include "of_private.h"
+>         end_pfn = ALIGN(pfn+1, pageblock_nr_pages);
 > 
-> -static LIST_HEAD(aliases_lookup);
-> +LIST_HEAD(aliases_lookup);
-> 
->  struct device_node *allnodes;
->  struct device_node *of_chosen;
->  struct device_node *of_aliases;
-> 
-> -static DEFINE_MUTEX(of_aliases_mutex);
-> +DEFINE_MUTEX(of_aliases_mutex);
-> 
->  /* use when traversing tree through the allnext, child, sibling,
->   * or parent members of struct device_node.
-> diff --git a/drivers/of/device.c b/drivers/of/device.c
-> index 4c74e4f..b8d31db 100644
-> --- a/drivers/of/device.c
-> +++ b/drivers/of/device.c
-> @@ -8,6 +8,7 @@
->  #include <linux/slab.h>
-> 
->  #include <asm/errno.h>
-> +#include "of_private.h"
-> 
->  /**
->   * of_match_device - Tell if a struct device matches an of_device_id list
-> @@ -131,6 +132,7 @@ ssize_t of_device_get_modalias(struct device *dev, char *str, ssize_t len)
->  void of_device_uevent(struct device *dev, struct kobj_uevent_env *env)
->  {
->  	const char *compat;
-> +	struct alias_prop *app;
->  	int seen = 0, cplen, sl;
-> 
->  	if ((!dev) || (!dev->of_node))
-> @@ -153,6 +155,21 @@ void of_device_uevent(struct device *dev, struct kobj_uevent_env *env)
->  		seen++;
->  	}
->  	add_uevent_var(env, "OF_COMPATIBLE_N=%d", seen);
-> +
-> +	seen = 0;
-> +	mutex_lock(&of_aliases_mutex);
-> +	list_for_each_entry(app, &aliases_lookup, link) {
-> +		if (dev->of_node == app->np) {
-> +			add_uevent_var(env, "OF_ALIAS_%d=%s", seen,
-> +				       app->alias);
-> +			seen++;
-> +		}
-> +	}
-> +
-> +	if (seen)
-> +		add_uevent_var(env, "OF_ALIAS_N=%d", seen);
-> +
-> +	mutex_unlock(&of_aliases_mutex);
->  }
-> 
->  int of_device_uevent_modalias(struct device *dev, struct kobj_uevent_env *env)
-> diff --git a/drivers/of/of_private.h b/drivers/of/of_private.h
-> new file mode 100644
-> index 0000000..031608f
-> --- /dev/null
-> +++ b/drivers/of/of_private.h
-> @@ -0,0 +1,33 @@
-> +/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
+> instead. ALIGN() already aligns upwards (but the "+1" is needed in
+> case pfn is already at a pageblock_nr_pages boundary, at which point
+> ALIGN() would have just returned that same boundary.
 
-Oops, that doesn't look right. You need to preserve the copyright
-messages from the file this came from. You didn't write this code, you
-only moved it about.
+Ah, and now the two callers treat the pointers the same way.
 
-Otherwise the patch looks good. Can you please respin with that change?
+> Hmm? Mel, please confirm. And Henrik, it might be good to test that
+> doubly-fixed patch. Because reading the patch and trying to fix bugs
+> in it that way is *not* the same as actually verifying it ;)
 
-g.
+Confirmed, working. I also checked 3.6, but could not trigger the
+original problem there. The code also looks different, so it makes
+sense. To be explicit, this is what I tested on top of v3.7-rc8:
+
+---
+ mm/compaction.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 9eef558..ff1c483 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -713,7 +713,15 @@ static void isolate_freepages(struct zone *zone,
+ 
+ 		/* Found a block suitable for isolating free pages from */
+ 		isolated = 0;
+-		end_pfn = min(pfn + pageblock_nr_pages, zone_end_pfn);
++
++		/*
++		 * As pfn may not start aligned, pfn+pageblock_nr_page
++		 * may cross a MAX_ORDER_NR_PAGES boundary and miss
++		 * a pfn_valid check. Ensure isolate_freepages_block()
++		 * only scans within a pageblock.
++		 */
++		end_pfn = ALIGN(pfn + 1, pageblock_nr_pages);
++		end_pfn = min(end_pfn, zone_end_pfn);
+ 		isolated = isolate_freepages_block(cc, pfn, end_pfn,
+ 						   freelist, false);
+ 		nr_freepages += isolated;
+-- 
+1.8.0.1
+
+Hopefully, that's a wrap. :-)
+
+Henrik
