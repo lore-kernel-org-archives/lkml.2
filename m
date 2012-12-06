@@ -1,155 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932121Ab2LFBWE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 5 Dec 2012 20:22:04 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:41933 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752908Ab2LFBV7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 5 Dec 2012 20:21:59 -0500
-X-IronPort-AV: E=Sophos;i="4.84,225,1355068800"; 
-   d="scan'208";a="6341258"
-Message-ID: <50BFF2F8.3050405@cn.fujitsu.com>
-Date: Thu, 06 Dec 2012 09:20:56 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S932125Ab2LFB2j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 5 Dec 2012 20:28:39 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:47107 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752362Ab2LFB2h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 5 Dec 2012 20:28:37 -0500
 MIME-Version: 1.0
-To: Jiang Liu <liuj97@gmail.com>
-CC: hpa@zytor.com, akpm@linux-foundation.org, rob@landley.net,
-        isimatu.yasuaki@jp.fujitsu.com, laijs@cn.fujitsu.com,
-        wency@cn.fujitsu.com, linfeng@cn.fujitsu.com, jiang.liu@huawei.com,
-        yinghai@kernel.org, kosaki.motohiro@jp.fujitsu.com,
-        minchan.kim@gmail.com, mgorman@suse.de, rientjes@google.com,
-        rusty@rustcorp.com.au, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH v2 3/5] page_alloc: Introduce zone_movable_limit[] to
- keep movable limit for nodes
-References: <1353667445-7593-1-git-send-email-tangchen@cn.fujitsu.com> <1353667445-7593-4-git-send-email-tangchen@cn.fujitsu.com> <50BF6C57.1050805@gmail.com>
-In-Reply-To: <50BF6C57.1050805@gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/06 09:21:13,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/06 09:21:18,
-	Serialize complete at 2012/12/06 09:21:18
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+In-Reply-To: <CAN1soZxkqFFb-1YrwGoCYcLp734BOcLcgBZD8nTEQcjoQ05XSg@mail.gmail.com>
+References: <1354690149-3043-1-git-send-email-chao.xie@marvell.com>
+	<1354690149-3043-2-git-send-email-chao.xie@marvell.com>
+	<CAN1soZxkqFFb-1YrwGoCYcLp734BOcLcgBZD8nTEQcjoQ05XSg@mail.gmail.com>
+Date: Thu, 6 Dec 2012 09:28:36 +0800
+Message-ID: <CADApbehmSpa+uLSEBeM5TD+wON=NT_jPJbO7QxGLYLVFLBS5-A@mail.gmail.com>
+Subject: Re: [V2 PATCH 2/2] rtc: pxa: add pxa95x rtc support
+From: Chao Xie <xiechao.mail@gmail.com>
+To: Haojian Zhuang <haojian.zhuang@gmail.com>
+Cc: Chao Xie <chao.xie@marvell.com>, Linux Russell <linux@arm.linux.org.uk>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Robert Jarzmik <robert.jarzmik@free.fr>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2012 11:46 PM, Jiang Liu wrote:
-> On 11/23/2012 06:44 PM, Tang Chen wrote:
->> This patch introduces a new array zone_movable_limit[] to store the
->> ZONE_MOVABLE limit from movablecore_map boot option for all nodes.
->> The function sanitize_zone_movable_limit() will find out to which
->> node the ranges in movable_map.map[] belongs, and calculates the
->> low boundary of ZONE_MOVABLE for each node.
+On Wed, Dec 5, 2012 at 3:04 PM, Haojian Zhuang <haojian.zhuang@gmail.com> wrote:
+> On Wed, Dec 5, 2012 at 2:49 PM, Chao Xie <chao.xie@marvell.com> wrote:
+>> the pxa95x rtc need access PBSR register before write to
+>> RTTR, RCNR, RDCR, and RYCR registers.
 >>
->> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
->> Reviewed-by: Wen Congyang<wency@cn.fujitsu.com>
->> Reviewed-by: Lai Jiangshan<laijs@cn.fujitsu.com>
->> Tested-by: Lin Feng<linfeng@cn.fujitsu.com>
+>> Signed-off-by: Chao Xie <chao.xie@marvell.com>
 >> ---
->>   mm/page_alloc.c |   55 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
->>   1 files changed, 55 insertions(+), 0 deletions(-)
+>>  drivers/rtc/rtc-pxa.c |  100 +++++++++++++++++++++++++++++++++++++++++-------
+>>  1 files changed, 85 insertions(+), 15 deletions(-)
 >>
->> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->> index fb5cf12..f23d76a 100644
->> --- a/mm/page_alloc.c
->> +++ b/mm/page_alloc.c
->> @@ -206,6 +206,7 @@ static unsigned long __meminitdata arch_zone_highest_possible_pfn[MAX_NR_ZONES];
->>   static unsigned long __initdata required_kernelcore;
->>   static unsigned long __initdata required_movablecore;
->>   static unsigned long __meminitdata zone_movable_pfn[MAX_NUMNODES];
->> +static unsigned long __meminitdata zone_movable_limit[MAX_NUMNODES];
+>> diff --git a/drivers/rtc/rtc-pxa.c b/drivers/rtc/rtc-pxa.c
+>> index f771b2e..aee23cb 100644
+>> --- a/drivers/rtc/rtc-pxa.c
+>> +++ b/drivers/rtc/rtc-pxa.c
+>> @@ -29,6 +29,7 @@
+>>  #include <linux/slab.h>
+>>  #include <linux/of.h>
+>>  #include <linux/of_device.h>
+>> +#include <linux/delay.h>
 >>
->>   /* movable_zone is the "real" zone pages in ZONE_MOVABLE are taken from */
->>   int movable_zone;
->> @@ -4323,6 +4324,55 @@ static unsigned long __meminit zone_absent_pages_in_node(int nid,
->>   	return __absent_pages_in_range(nid, zone_start_pfn, zone_end_pfn);
->>   }
+>>  #include <mach/hardware.h>
 >>
->> +/**
->> + * sanitize_zone_movable_limit - Sanitize the zone_movable_limit array.
->> + *
->> + * zone_movable_limit is initialized as 0. This function will try to get
->> + * the first ZONE_MOVABLE pfn of each node from movablecore_map, and
->> + * assigne them to zone_movable_limit.
->> + * zone_movable_limit[nid] == 0 means no limit for the node.
->> + *
->> + * Note: Each range is represented as [start_pfn, end_pfn)
->> + */
->> +static void __meminit sanitize_zone_movable_limit(void)
->> +{
->> +	int map_pos = 0, i, nid;
->> +	unsigned long start_pfn, end_pfn;
+>> @@ -77,14 +78,28 @@
+>>  #define RTCPICR                0x34
+>>  #define PIAR           0x38
+>>
+>> +#define PSBR_RTC       0x00
 >> +
->> +	if (!movablecore_map.nr_map)
->> +		return;
+>>  #define rtc_readl(pxa_rtc, reg)        \
+>>         __raw_readl((pxa_rtc)->base + (reg))
+>>  #define rtc_writel(pxa_rtc, reg, value)        \
+>>         __raw_writel((value), (pxa_rtc)->base + (reg))
+>> +#define rtc_readl_psbr(pxa_rtc, reg)   \
+>> +       __raw_readl((pxa_rtc)->base_psbr + (reg))
+>> +#define rtc_writel_psbr(pxa_rtc, reg, value)   \
+>> +       __raw_writel((value), (pxa_rtc)->base_psbr + (reg))
 >> +
->> +	/* Iterate all ranges from minimum to maximum */
->> +	for_each_mem_pfn_range(i, MAX_NUMNODES,&start_pfn,&end_pfn,&nid) {
->> +		/*
->> +		 * If we have found lowest pfn of ZONE_MOVABLE of the node
->> +		 * specified by user, just go on to check next range.
->> +		 */
->> +		if (zone_movable_limit[nid])
->> +			continue;
-> Need special handling of low memory here on systems with highmem, otherwise
-> it will cause us to configure both lowmem and highmem as movable_zone.
-
-Hi Liu,
-
-Yes, and also the DMA address checking you mentioned before.
-
-Thanks. :)
-
+>> +enum {
+>> +       RTC_PXA27X,
+>> +       RTC_PXA95X,
+>> +};
+>>
+>>  struct pxa_rtc {
+>>         struct resource *ress;
+>> +       struct resource *ress_psbr;
+>> +       unsigned int            id;
+>>         void __iomem            *base;
+>> +       void __iomem            *base_psbr;
+>>         int                     irq_1Hz;
+>>         int                     irq_Alrm;
+>>         struct rtc_device       *rtc;
+>> @@ -242,9 +257,26 @@ static int pxa_rtc_set_time(struct device *dev, struct rtc_time *tm)
+>>  {
+>>         struct pxa_rtc *pxa_rtc = dev_get_drvdata(dev);
+>>
+>> +       /*
+>> +        * sequence to wirte pxa rtc register RCNR RDCR RYCR is
+>> +        * 1. set PSBR[RWE] bit, take 2x32-khz to complete
+>> +        * 2. write to RTC register,take 2x32-khz to complete
+>> +        * 3. clear PSBR[RWE] bit,take 2x32-khz to complete
+>> +        */
+>> +       if (pxa_rtc->id == RTC_PXA95X) {
+>> +               rtc_writel_psbr(pxa_rtc, PSBR_RTC, 0x01);
+>> +               udelay(100);
+>> +       }
+>
+> How about define PSBP operation as a new clock, rtc interface clock.
+> Then you could put
+> the enable/disable into clock framework. And you only need to check
+> whether the interface
+> clock is NULL or not at here. If it's available, you can call
+> clk_prepare_enable().
 >
 >> +
->> +		while (map_pos<  movablecore_map.nr_map) {
->> +			if (end_pfn<= movablecore_map.map[map_pos].start)
->> +				break;
->> +
->> +			if (start_pfn>= movablecore_map.map[map_pos].end) {
->> +				map_pos++;
->> +				continue;
->> +			}
->> +
->> +			/*
->> +			 * The start_pfn of ZONE_MOVABLE is either the minimum
->> +			 * pfn specified by movablecore_map, or 0, which means
->> +			 * the node has no ZONE_MOVABLE.
->> +			 */
->> +			zone_movable_limit[nid] = max(start_pfn,
->> +					movablecore_map.map[map_pos].start);
->> +
->> +			break;
->> +		}
->> +	}
->> +}
->> +
->>   #else /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
->>   static inline unsigned long __meminit zone_spanned_pages_in_node(int nid,
->>   					unsigned long zone_type,
->> @@ -4341,6 +4391,10 @@ static inline unsigned long __meminit zone_absent_pages_in_node(int nid,
->>   	return zholes_size[zone_type];
->>   }
+>>         rtc_writel(pxa_rtc, RYCR, ryxr_calc(tm));
+>>         rtc_writel(pxa_rtc, RDCR, rdxr_calc(tm));
 >>
->> +static void __meminit sanitize_zone_movable_limit(void)
->> +{
->> +}
+>> +       if (pxa_rtc->id == RTC_PXA95X) {
+>> +               udelay(100);
+>> +               rtc_writel_psbr(pxa_rtc, PSBR_RTC, 0x00);
+>> +               udelay(100);
+>> +       }
 >> +
->>   #endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
+>>         return 0;
+>>  }
 >>
->>   static void __meminit calculate_node_totalpages(struct pglist_data *pgdat,
->> @@ -4906,6 +4960,7 @@ void __init free_area_init_nodes(unsigned long *max_zone_pfn)
+>> @@ -310,6 +342,20 @@ static const struct rtc_class_ops pxa_rtc_ops = {
+>>         .proc = pxa_rtc_proc,
+>>  };
 >>
->>   	/* Find the PFNs that ZONE_MOVABLE begins at in each node */
->>   	memset(zone_movable_pfn, 0, sizeof(zone_movable_pfn));
->> +	sanitize_zone_movable_limit();
->>   	find_zone_movable_pfns_for_nodes();
+>> +static struct of_device_id pxa_rtc_dt_ids[] = {
+>> +       { .compatible = "marvell,pxa-rtc", .data = (void *)RTC_PXA27X },
+>> +       { .compatible = "marvell,pxa95x-rtc", .data = (void *)RTC_PXA95X },
+>> +       {}
+>> +};
+>> +MODULE_DEVICE_TABLE(of, pxa_rtc_dt_ids);
+>> +
+>> +static const struct platform_device_id pxa_rtc_id_table[] = {
+>> +       { "pxa-rtc", RTC_PXA27X },
+>> +       { "pxa95x-rtc", RTC_PXA95X },
+>> +       { },
+>> +};
+>> +MODULE_DEVICE_TABLE(platform, pxa_rtc_id_table);
+>> +
+>>  static int __init pxa_rtc_probe(struct platform_device *pdev)
+>>  {
+>>         struct device *dev = &pdev->dev;
+>> @@ -324,13 +370,34 @@ static int __init pxa_rtc_probe(struct platform_device *pdev)
+>>         spin_lock_init(&pxa_rtc->lock);
+>>         platform_set_drvdata(pdev, pxa_rtc);
 >>
->>   	/* Print out the zone ranges */
+>> +       if (pdev->dev.of_node) {
+>> +               const struct of_device_id *of_id =
+>> +                               of_match_device(pxa_rtc_dt_ids, &pdev->dev);
+>> +
+>> +               pxa_rtc->id = (unsigned int)(of_id->data);
+>> +       } else {
+>> +               const struct platform_device_id *id =
+>> +                               platform_get_device_id(pdev);
+>> +
+>> +               pxa_rtc->id = id->driver_data;
+>> +       }
+>> +
+>>         ret = -ENXIO;
+>>         pxa_rtc->ress = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>>         if (!pxa_rtc->ress) {
+>> -               dev_err(dev, "No I/O memory resource defined\n");
+>> +               dev_err(dev, "No I/O memory resource(id=0) defined\n");
+>>                 goto err_ress;
+>>         }
 >>
->
->
-
+>> +       if (pxa_rtc->id == RTC_PXA95X) {
+>> +               pxa_rtc->ress_psbr =
+>> +                       platform_get_resource(pdev, IORESOURCE_MEM, 1);
+>> +               if (!pxa_rtc->ress_psbr) {
+>> +                       dev_err(dev, "No I/O memory resource(id=1) defined\n");
+>> +                       goto err_ress;
+>> +               }
+>> +       }
+>> +
+>>         pxa_rtc->irq_1Hz = platform_get_irq(pdev, 0);
+>>         if (pxa_rtc->irq_1Hz < 0) {
+>>                 dev_err(dev, "No 1Hz IRQ resource defined\n");
+>> @@ -347,7 +414,17 @@ static int __init pxa_rtc_probe(struct platform_device *pdev)
+>>                                 resource_size(pxa_rtc->ress));
+>>         if (!pxa_rtc->base) {
+>>                 dev_err(&pdev->dev, "Unable to map pxa RTC I/O memory\n");
+>> -               goto err_map;
+>> +               goto err_map_base;
+>> +       }
+>> +
+>> +       if (pxa_rtc->id == RTC_PXA95X) {
+>> +               pxa_rtc->base_psbr = ioremap(pxa_rtc->ress_psbr->start,
+>> +                                       resource_size(pxa_rtc->ress_psbr));
+>> +               if (!pxa_rtc->base_psbr) {
+>> +                       dev_err(&pdev->dev,
+>> +                               "Unable to map pxa RTC PSBR I/O memory\n");
+>> +                       goto err_map_base_psbr;
+>> +               }
+>>         }
+>>
+>>         /*
+>> @@ -376,9 +453,12 @@ static int __init pxa_rtc_probe(struct platform_device *pdev)
+>>         return 0;
+>>
+>>  err_rtc_reg:
+>> +       if (pxa_rtc->id == RTC_PXA95X)
+>> +               iounmap(pxa_rtc->base_psbr);
+>> +err_map_base_psbr:
+>>          iounmap(pxa_rtc->base);
+>> +err_map_base:
+>>  err_ress:
+>> -err_map:
+>>         kfree(pxa_rtc);
+>>         return ret;
+>>  }
+>> @@ -398,14 +478,6 @@ static int __exit pxa_rtc_remove(struct platform_device *pdev)
+>>         return 0;
+>>  }
+>>
+>> -#ifdef CONFIG_OF
+>> -static struct of_device_id pxa_rtc_dt_ids[] = {
+>> -       { .compatible = "marvell,pxa-rtc" },
+>> -       {}
+>> -};
+>> -MODULE_DEVICE_TABLE(of, pxa_rtc_dt_ids);
+>> -#endif
+>> -
+>>  #ifdef CONFIG_PM
+>>  static int pxa_rtc_suspend(struct device *dev)
+>>  {
+>> @@ -440,14 +512,12 @@ static struct platform_driver pxa_rtc_driver = {
+>>                 .pm     = &pxa_rtc_pm_ops,
+>>  #endif
+>>         },
+>> +       .id_table       = pxa_rtc_id_table,
+>>  };
+>>
+>>  static int __init pxa_rtc_init(void)
+>>  {
+>> -       if (cpu_is_pxa27x() || cpu_is_pxa3xx())
+>> -               return platform_driver_probe(&pxa_rtc_driver, pxa_rtc_probe);
+>> -
+>> -       return -ENODEV;
+>> +       return platform_driver_probe(&pxa_rtc_driver, pxa_rtc_probe);
+>>  }
+>>
+>>  static void __exit pxa_rtc_exit(void)
+>> --
+>> 1.7.4.1
+>>
+I do not think so.
+First, from solicon, PBSR is not a clock. it only prorect RDCR, RYCR,
+RNCR. There are still some other registers that do not need its
+protection.
+Second, in fact, the RTC has its own clock which is similar with
+sa1100-rtc. define PBSR operation in the clock will finally make the
+driver to handle two clocks. It will make the driver harder to handle
+it, and even impact the clock device tree support for devices.
