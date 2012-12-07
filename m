@@ -1,64 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424004Ab2LGTd0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 14:33:26 -0500
-Received: from mga09.intel.com ([134.134.136.24]:58080 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423102Ab2LGTdY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 14:33:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,240,1355126400"; 
-   d="scan'208";a="253764057"
-Date: Fri, 7 Dec 2012 11:41:46 -0800 (PST)
-From: Joseph Gasparakis <joseph.gasparakis@intel.com>
-X-X-Sender: jgaspara@morpheus.jf.intel.com
-To: David Miller <davem@davemloft.net>
-cc: joseph.gasparakis@intel.com, bhutchings@solarflare.com,
-        alexander.h.duyck@intel.com, shemminger@vyatta.com,
-        chrisw@sous-sol.org, gospo@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmitry@broadcom.com,
-        saeed.bishara@gmail.com, peter.p.waskiewicz.jr@intel.com
-Subject: Re: [PATCH v3 1/4] net: Add support for hardware-offloaded
- encapsulation
-In-Reply-To: <20121207.142845.1145515122357569641.davem@davemloft.net>
-Message-ID: <alpine.LFD.2.02.1212071139190.4985@morpheus.jf.intel.com>
-References: <50C21D21.5040101@intel.com> <1354900385.2707.42.camel@bwh-desktop.uk.solarflarecom.com> <alpine.LFD.2.02.1212071013200.30243@morpheus.jf.intel.com> <20121207.142845.1145515122357569641.davem@davemloft.net>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-ReplyTo: "Joseph Gasparakis" <joseph.gasparakis@intel.com>
+	id S1424023Ab2LGTfG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 14:35:06 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:33319 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1424006Ab2LGTfE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 14:35:04 -0500
+Date: Fri, 7 Dec 2012 20:35:01 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Ying Han <yinghan@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <htejun@gmail.com>,
+        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>
+Subject: Re: [patch v2 3/6] memcg: rework mem_cgroup_iter to use cgroup
+ iterators
+Message-ID: <20121207193501.GA10988@dhcp22.suse.cz>
+References: <1353955671-14385-1-git-send-email-mhocko@suse.cz>
+ <1353955671-14385-4-git-send-email-mhocko@suse.cz>
+ <CALWz4ixQR0vHp+mGJdi2q77dMHaG8BZmb+iKfMmT=T0V8X8rAg@mail.gmail.com>
+ <CALWz4iwrJtG-YUkA8ZpQC=JDMs3_ZRqwjrg+OEEO+_HA_KM9UA@mail.gmail.com>
+ <20121207085839.GB31938@dhcp22.suse.cz>
+ <CALWz4iwP5vzqE8O0uyCuBnOwbJX_07CB=CsGpP3yzrtQDkr2Qw@mail.gmail.com>
+ <20121207172734.GG31938@dhcp22.suse.cz>
+ <CALWz4ixB79DWXBA=DOayRx6X6AT0k2ntYbC4S9WVrBqWL3mmxw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALWz4ixB79DWXBA=DOayRx6X6AT0k2ntYbC4S9WVrBqWL3mmxw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Fri, 7 Dec 2012, David Miller wrote:
-
-> From: Joseph Gasparakis <joseph.gasparakis@intel.com>
-> Date: Fri, 7 Dec 2012 10:24:17 -0800 (PST)
+On Fri 07-12-12 11:16:23, Ying Han wrote:
+> On Fri, Dec 7, 2012 at 9:27 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> > On Fri 07-12-12 09:12:25, Ying Han wrote:
+> >> On Fri, Dec 7, 2012 at 12:58 AM, Michal Hocko <mhocko@suse.cz> wrote:
+> >> > On Thu 06-12-12 19:43:52, Ying Han wrote:
+> >> > [...]
+> >> >> Forgot to mention, I was testing 3.7-rc6 with the two cgroup changes :
+> >> >
+> >> > Could you give a try to -mm tree as well. There are some changes for
+> >> > memcgs removal in that tree which are not in Linus's tree.
+> >>
+> >> I will give a try, which patchset you have in mind so i can double check?
+> >
+> > Have a look at ba5e0e6be1c76fd37508b2825372b28a90a5b729 in my tree.
 > 
-> > So the idea here is that the driver will use the headers for checksumming 
-> > if the skb->encapsulation bit is on. The bit should be set in the protocol 
-> > driver.
-> > 
-> > To answer the second comment, the flags that we use in this series of 
-> > patches is NETIF_F_IP_CSUM, NETIF_F_IPV6_CSUM and NETIF_F_SG. These are 
-> > the bits that we propose will be used for checksumming of encapsulation. 
-> > As per a previous comment in v2, the hw_enc_features field should be used 
-> > also in the future when NICs have more encap offloads, so one could
-> > indicate these features there from the driver.
-> > 
-> > Furthermore, I submitted a patch for Rx checksumming, where NETIF_F_RXCSUM 
-> > is used, again in conjunction with skb->encapsulation flag. As I mention 
-> > in my logs, the driver is expected to set the ip_summed to UNNECESSARY and 
-> > turn the skb->encapsulation on, to indicate that the inner headers are 
-> > already HW checksummed.
-> > 
-> 
-> This is the kind of language that belongs in the commit message and
-> code comments.
-> 
-Sure. I'll wait to gather some more feedback if there is any and I will 
-re-spin this off adding more code comments and clarify this in the logs.
+> Tried the tag: mmotm-2012-12-05-16-59 which includes the commit above.
+> The test runs better. Thank you for the pointer.
 
+Interesting.
+
+> Looking into the patch itself, it includes 9 patchset where 6 from
+> cgroup and 3 from memcg.
+> 
+>     Michal Hocko (3):
+>           memcg: make mem_cgroup_reparent_charges non failing
+>           hugetlb: do not fail in hugetlb_cgroup_pre_destroy
+>           Merge remote-tracking branch
+> 'tj-cgroups/cgroup-rmdir-updates' into mmotm
+
+These are just follow up fixes. The core memcg changes were merged
+earlier cad5c694dce67d8aa307a919d247c6a7e1354264. The commit I referred
+to above is the finish of that effort.
+
+>     Tejun Heo (6):
+>           cgroup: kill cgroup_subsys->__DEPRECATED_clear_css_refs
+>           cgroup: kill CSS_REMOVED
+>           cgroup: use cgroup_lock_live_group(parent) in cgroup_create()
+>           cgroup: deactivate CSS's and mark cgroup dead before
+> invoking ->pre_destroy()
+>           cgroup: remove CGRP_WAIT_ON_RMDIR, cgroup_exclude_rmdir()
+> and cgroup_release_and_wakeup_rmdir()
+>           cgroup: make ->pre_destroy() return void
+> 
+> Any suggestion of the minimal patchset I need to apply for testing
+> this patchset? (hopefully not all of them)
+
+The patches shouldn't make a difference but maybe there was a hidden
+bug in the previous code which got visible by the iterators rework (we
+stored only css id into the cached cookie so if the group went away in
+the meantime would just skip it without noticing). Dunno...
+
+Myabe you can start with cad5c694dce67d8aa307a919d247c6a7e1354264 and
+move to cgroup changes after that?
+
+[...]
+
+Thanks!
+-- 
+Michal Hocko
+SUSE Labs
