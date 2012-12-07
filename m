@@ -1,40 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755899Ab2LGJ7R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 04:59:17 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:56154 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754475Ab2LGJ7O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 04:59:14 -0500
-Date: Fri, 7 Dec 2012 10:04:38 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Woody Wu <narkewoody@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: 8250 UART doesn't work
-Message-ID: <20121207100438.136dd968@pyramind.ukuu.org.uk>
-In-Reply-To: <slrnkc2o7b.2ck.narkewoody@zuhnb712.local.com>
-References: <slrnkc0jqu.4ir.narkewoody@zuhnb712.local.com>
-	<50C0E737.2000201@zytor.com>
-	<slrnkc2o7b.2ck.narkewoody@zuhnb712.local.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932440Ab2LGKEr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 05:04:47 -0500
+Received: from mga01.intel.com ([192.55.52.88]:5819 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932320Ab2LGKEq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 05:04:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,236,1355126400"; 
+   d="scan'208";a="260403821"
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: linux-acpi@vger.kernel.org
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH] ACPI: add Haswell LPSS devices to acpi_platform_device_ids list
+Date: Fri,  7 Dec 2012 12:08:02 +0200
+Message-Id: <1354874882-1162-1-git-send-email-mika.westerberg@linux.intel.com>
+X-Mailer: git-send-email 1.7.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The UART controller is EXAR ST16C554D.  It claims as a 16550
-> compatible controller. Each ST16C554D module contains 4 UART, each of
-> them can be selected via two chip select pad. I think the board
-> hardware, via a CPLD, make the chip selection transparent to the CPU, so
-> by a 5-bit address, CPU can addressing individual 8 16550 compatible
-> registers of each UART.
+All devices behind Haswell LPSS (Low Power Subsystem) should be represented
+as platform devices so add them to the acpi_platform_device_ids list.
 
-The EXAR should work. Make sure you have all the addressing and setup
-right would be my first suggestion - then poke at the registers by hand
-and double check.
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+---
+ drivers/acpi/scan.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-Alan
+diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+index 67a7fa6..8ee379e 100644
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -37,6 +37,16 @@ static const struct acpi_device_id acpi_platform_device_ids[] = {
+ 
+ 	{ "PNP0D40" },
+ 
++	/* Haswell LPSS devices */
++	{ "INT33C0", 0 },
++	{ "INT33C1", 0 },
++	{ "INT33C2", 0 },
++	{ "INT33C3", 0 },
++	{ "INT33C4", 0 },
++	{ "INT33C5", 0 },
++	{ "INT33C6", 0 },
++	{ "INT33C7", 0 },
++
+ 	{ }
+ };
+ 
+-- 
+1.7.10.4
+
