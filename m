@@ -1,40 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932549Ab2LGK4L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 05:56:11 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:56290 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752109Ab2LGK4J (ORCPT
+	id S933552Ab2LGK4r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 05:56:47 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:46279 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932596Ab2LGK4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 05:56:09 -0500
-Date: Fri, 7 Dec 2012 11:01:26 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-acpi@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI: add Haswell LPSS devices to
- acpi_platform_device_ids list
-Message-ID: <20121207110126.53cd97e7@pyramind.ukuu.org.uk>
-In-Reply-To: <1354874882-1162-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1354874882-1162-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 7 Dec 2012 05:56:45 -0500
+Date: Fri, 7 Dec 2012 13:56:22 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>
+Cc: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>, support@lsi.com,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Rolf Eike Beer <eike-kernel@sf-tec.de>
+Subject: [patch v2] [SCSI] mpt3sas: cut and paste bug storing trigger mpi
+Message-ID: <20121207105622.GA9230@elgon.mountain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <953b00ff89996c4a3681b3c8f425462b@sf-mail.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  7 Dec 2012 12:08:02 +0200
-Mika Westerberg <mika.westerberg@linux.intel.com> wrote:
+ioc->diag_trigger_mpi is an SL_WH_MPI_TRIGGERS_T struct.
 
-> All devices behind Haswell LPSS (Low Power Subsystem) should be represented
-> as platform devices 
+There is a cut and paste error here and SL_WH_EVENT_TRIGGERS_T is used
+instead of SL_WH_MPI_TRIGGERS_T.  Since the SL_WH_EVENT_TRIGGERS_T is
+smaller than SL_WH_MPI_TRIGGERS_T, it means we only clear part of the
+buffer.
 
-What about the bus heirarchy ? What about making sure they appear in the
-PCI resource heirarchy so we don't mash them up if we reassign or
-allocate other resources on the bus ?
+I've changed it to use sizeof(ioc->diag_trigger_mpi) which is a bit
+simpler.
 
-Alan
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+---
+v2: Style tweak.
+
+Only needed in linux-next.
+
+This is a static analysis patch.  Even though I'm pretty sure it's
+correct, I'm not able to test it.
+
+diff --git a/drivers/scsi/mpt3sas/mpt3sas_ctl.c b/drivers/scsi/mpt3sas/mpt3sas_ctl.c
+index 8af944d..3e35e64 100644
+--- a/drivers/scsi/mpt3sas/mpt3sas_ctl.c
++++ b/drivers/scsi/mpt3sas/mpt3sas_ctl.c
+@@ -3136,7 +3136,7 @@ _ctl_diag_trigger_mpi_store(struct device *cdev,
+ 	spin_lock_irqsave(&ioc->diag_trigger_lock, flags);
+ 	sz = min(sizeof(struct SL_WH_MPI_TRIGGERS_T), count);
+ 	memset(&ioc->diag_trigger_mpi, 0,
+-	    sizeof(struct SL_WH_EVENT_TRIGGERS_T));
++	    sizeof(ioc->diag_trigger_mpi));
+ 	memcpy(&ioc->diag_trigger_mpi, buf, sz);
+ 	if (ioc->diag_trigger_mpi.ValidEntries > NUM_VALID_ENTRIES)
+ 		ioc->diag_trigger_mpi.ValidEntries = NUM_VALID_ENTRIES;
+
