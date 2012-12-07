@@ -1,305 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932791Ab2LGBhH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 20:37:07 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:16468 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932169Ab2LGBhF (ORCPT
+	id S932824Ab2LGBjN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 20:39:13 -0500
+Received: from mail-ia0-f169.google.com ([209.85.210.169]:55401 "EHLO
+	mail-ia0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932169Ab2LGBjM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 20:37:05 -0500
-From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
-To: "Desroches, Ludovic" <Ludovic.Desroches@atmel.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "richard.genoud@gmail.com" <richard.genoud@gmail.com>,
-        "Lin, JM" <JM.Lin@atmel.com>,
-        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>
-Subject: RE: [v2 PATCH 13/14] ARM: dts: add spi nodes for atmel SoC
-Thread-Topic: [v2 PATCH 13/14] ARM: dts: add spi nodes for atmel SoC
-Thread-Index: AQHN0fWPufj8ex0uHEaViHHL/ie5upgLde+AgAEY2LA=
-Date: Fri, 7 Dec 2012 01:34:01 +0000
-Message-ID: <B256D81BAE5131468A838E5D7A2436413A01DEF5@penmbx01>
-References: <1354607640-13229-1-git-send-email-wenyou.yang@atmel.com>
- <1354607640-13229-14-git-send-email-wenyou.yang@atmel.com>
- <50C0C9C9.9000108@atmel.com>
-In-Reply-To: <50C0C9C9.9000108@atmel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.168.5.13]
-Content-Type: text/plain; charset="gb2312"
+	Thu, 6 Dec 2012 20:39:12 -0500
 MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1212070057240.22351@utopia.booyaka.com>
+References: <20121204154203.f0e7e87d1ae99e5c528434f8@canb.auug.org.au>
+	<20121204110655.GE18368@8bytes.org>
+	<CAK=WgbYDKN1deDTw3KvymvhoE1h_apX2E8zK=cDbu68+Gwcayw@mail.gmail.com>
+	<CAJ6Av5OBhpsSRiZNOa1a65yMT04Evaja6j8qPBiSuVM1DPdB1Q@mail.gmail.com>
+	<alpine.DEB.2.00.1212070057240.22351@utopia.booyaka.com>
+Date: Thu, 6 Dec 2012 19:39:11 -0600
+Message-ID: <CAJ6Av5NqFtr9g+oB0s2ncDSvGuriqPW6iHvpmKH_+58hF5q1Pw@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the iommu tree
+From: Omar Ramirez Luna <omar.ramirez@copitl.com>
+To: Paul Walmsley <paul@pwsan.com>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>, Joerg Roedel <joro@8bytes.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        linux-next@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mike Turquette <mturquette@ti.com>, Tony Lindgren <tony@atomide.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qB71b9K5023869
 
-Hi Ludovic,
+Hi Paul,
 
-> -----Original Message-----
-> From: Desroches, Ludovic
-> Sent: 2012Äê12ÔÂ7ÈÕ 0:37
-> To: Yang, Wenyou
-> Cc: linux-arm-kernel@lists.infradead.org; linux@arm.linux.org.uk;
-> richard.genoud@gmail.com; Lin, JM; Ferre, Nicolas; linux-kernel@vger.kernel.org;
-> plagnioj@jcrosoft.com; Desroches, Ludovic
-> Subject: Re: [v2 PATCH 13/14] ARM: dts: add spi nodes for atmel SoC
-> 
-> Hi,
-> 
-> On 12/04/2012 08:53 AM, Wenyou Yang wrote:
-> > From: Richard Genoud <richard.genoud@gmail.com>
-> >
-> > Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
-> > [wenyou.yang@atmel.com: add spi nodes for other atmel SOC]
-> > Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-> > Cc: linux@arm.linux.org.uk
-> > ---
-> >   arch/arm/boot/dts/at91sam9260.dtsi |   30
-> ++++++++++++++++++++++++++++++
-> >   arch/arm/boot/dts/at91sam9263.dtsi |   30
-> ++++++++++++++++++++++++++++++
-> >   arch/arm/boot/dts/at91sam9g45.dtsi |   30
-> ++++++++++++++++++++++++++++++
-> >   arch/arm/boot/dts/at91sam9n12.dtsi |   30
-> ++++++++++++++++++++++++++++++
-> >   arch/arm/boot/dts/at91sam9x5.dtsi  |   30
-> ++++++++++++++++++++++++++++++
-> >   5 files changed, 150 insertions(+)
-> >
-> > diff --git a/arch/arm/boot/dts/at91sam9260.dtsi
-> b/arch/arm/boot/dts/at91sam9260.dtsi
-> > index d410581..87254aa 100644
-> > --- a/arch/arm/boot/dts/at91sam9260.dtsi
-> > +++ b/arch/arm/boot/dts/at91sam9260.dtsi
-> > @@ -212,6 +212,36 @@
-> >   				status = "disabled";
-> >   			};
-> >
-> > +			spi0: spi@fffc8000 {
-> > +				#address-cells = <1>;
-> > +				#size-cells = <0>;
-> > +				compatible = "atmel,at91sam9260-spi";
-> > +				reg = <0xfffc8000 0x200>;
-> > +				interrupts = <12 4 3>;
-> > +				cs-gpios = <&pioA 3 0
-> > +					    &pioC 11 0
-> > +					    &pioC 16 0
-> > +					    &pioC 17 0
-> > +					   >;
-> 
->  From my point of view, the cs-gpios stuff should be in board dts files
-> instead of the SoC dtsi file.
-> 
-> These pios can be shared with other devices. If only one chip select
-> gpio is used on the board, it could avoid some useless pin conflicts.
-> 
-Thanks
-These pins are defined as CS0, CS1, CS2 and CS3 for SoC. it is selected for the board.
-And it will not be configured unless it is selected. So it doesn't cause pin conficts.
-
-> Regards
-> 
-> Ludovic
+On Thu, Dec 6, 2012 at 6:59 PM, Paul Walmsley <paul@pwsan.com> wrote:
+> Hi Omar,
 >
-Best Regards,
-Wenyou Yang
- 
-> > +				dma-mask = <0xffffffff>;
-> > +				status = "disabled";
-> > +			};
-> > +
-> > +			spi1: spi@fffcc000 {
-> > +				#address-cells = <1>;
-> > +				#size-cells = <0>;
-> > +				compatible = "atmel,at91sam9260-spi";
-> > +				reg = <0xfffcc000 0x200>;
-> > +				interrupts = <13 4 3>;
-> > +				cs-gpios = <&pioB 3 0
-> > +					    &pioC 5 0
-> > +					    &pioC 4 0
-> > +					    &pioC 3 0
-> > +					   >;
-> > +				dma-mask = <0xffffffff>;
-> > +				status = "disabled";
-> > +			};
-> > +
-> >   			adc0: adc@fffe0000 {
-> >   				compatible = "atmel,at91sam9260-adc";
-> >   				reg = <0xfffe0000 0x100>;
-> > diff --git a/arch/arm/boot/dts/at91sam9263.dtsi
-> b/arch/arm/boot/dts/at91sam9263.dtsi
-> > index 3e6e5c1..528395d 100644
-> > --- a/arch/arm/boot/dts/at91sam9263.dtsi
-> > +++ b/arch/arm/boot/dts/at91sam9263.dtsi
-> > @@ -195,6 +195,36 @@
-> >   				#size-cells = <0>;
-> >   				status = "disabled";
-> >   			};
-> > +
-> > +			spi0: spi@fffa4000 {
-> > +				#address-cells = <1>;
-> > +				#size-cells = <0>;
-> > +				compatible = "atmel,at91sam9260-spi";
-> > +				reg = <0xfffa4000 0x200>;
-> > +				interrupts = <14 4 3>;
-> > +				cs-gpios = <&pioA 5 0
-> > +					    &pioA 3 0
-> > +					    &pioA 4 0
-> > +					    &pioB 11 0
-> > +					   >;
-> > +				dma-mask = <0xffffffff>;
-> > +				status = "disabled";
-> > +			};
-> > +
-> > +			spi1: spi@fffa8000 {
-> > +				#address-cells = <1>;
-> > +				#size-cells = <0>;
-> > +				compatible = "atmel,at91sam9260-spi";
-> > +				reg = <0xfffa8000 0x200>;
-> > +				interrupts = <15 4 3>;
-> > +				cs-gpios = <&pioB 15 0
-> > +					    &pioB 16 0
-> > +					    &pioB 17 0
-> > +					    &pioB 18 0
-> > +					   >;
-> > +				dma-mask = <0xffffffff>;
-> > +				status = "disabled";
-> > +			};
-> >   		};
-> >
-> >   		nand0: nand@40000000 {
-> > diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi
-> b/arch/arm/boot/dts/at91sam9g45.dtsi
-> > index 3add030..8a6aae92 100644
-> > --- a/arch/arm/boot/dts/at91sam9g45.dtsi
-> > +++ b/arch/arm/boot/dts/at91sam9g45.dtsi
-> > @@ -262,6 +262,36 @@
-> >   					trigger-value = <0x6>;
-> >   				};
-> >   			};
-> > +
-> > +			spi0: spi@fffa4000 {
-> > +				#address-cells = <1>;
-> > +				#size-cells = <0>;
-> > +				compatible = "atmel,at91sam9260-spi";
-> > +				reg = <0xfffa4000 0x200>;
-> > +				interrupts = <14 4 3>;
-> > +				cs-gpios = <&pioB 3 0
-> > +					    &pioB 18 0
-> > +					    &pioB 19 0
-> > +					    &pioD 27 0
-> > +					   >;
-> > +				dma-mask = <0xffffffff>;
-> > +				status = "disabled";
-> > +			};
-> > +
-> > +			spi1: spi@fffa8000 {
-> > +				#address-cells = <1>;
-> > +				#size-cells = <0>;
-> > +				compatible = "atmel,at91sam9260-spi";
-> > +				reg = <0xfffa8000 0x200>;
-> > +				interrupts = <15 4 3>;
-> > +				cs-gpios = <&pioB 17 0
-> > +					    &pioD 28 0
-> > +					    &pioD 18 0
-> > +					    &pioD 19 0
-> > +					   >;
-> > +				dma-mask = <0xffffffff>;
-> > +				status = "disabled";
-> > +			};
-> >   		};
-> >
-> >   		nand0: nand@40000000 {
-> > diff --git a/arch/arm/boot/dts/at91sam9n12.dtsi
-> b/arch/arm/boot/dts/at91sam9n12.dtsi
-> > index 82508d6..183cacf 100644
-> > --- a/arch/arm/boot/dts/at91sam9n12.dtsi
-> > +++ b/arch/arm/boot/dts/at91sam9n12.dtsi
-> > @@ -202,6 +202,36 @@
-> >   				#size-cells = <0>;
-> >   				status = "disabled";
-> >   			};
-> > +
-> > +			spi0: spi@f0000000 {
-> > +				#address-cells = <1>;
-> > +				#size-cells = <0>;
-> > +				compatible = "atmel,at91sam9x5-spi";
-> > +				reg = <0xf0000000 0x100>;
-> > +				interrupts = <13 4 3>;
-> > +				cs-gpios = <&pioA 14 0
-> > +					    &pioA 7 0
-> > +					    &pioA 1 0
-> > +					    &pioB 3 0
-> > +					   >;
-> > +				dma-mask = <0xffffffff>;
-> > +				status = "disabled";
-> > +			};
-> > +
-> > +			spi1: spi@f0004000 {
-> > +				#address-cells = <1>;
-> > +				#size-cells = <0>;
-> > +				compatible = "atmel,at91sam9x5-spi";
-> > +				reg = <0xf0004000 0x100>;
-> > +				interrupts = <14 4 3>;
-> > +				cs-gpios = <&pioA 8 0
-> > +					    &pioA 0 0
-> > +					    &pioA 31 0
-> > +					    &pioA 30 0
-> > +					   >;
-> > +				dma-mask = <0xffffffff>;
-> > +				status = "disabled";
-> > +			};
-> >   		};
-> >
-> >   		nand0: nand@40000000 {
-> > diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi
-> b/arch/arm/boot/dts/at91sam9x5.dtsi
-> > index 03fc136..95b55fd 100644
-> > --- a/arch/arm/boot/dts/at91sam9x5.dtsi
-> > +++ b/arch/arm/boot/dts/at91sam9x5.dtsi
-> > @@ -263,6 +263,36 @@
-> >   					trigger-value = <0x6>;
-> >   				};
-> >   			};
-> > +
-> > +			spi0: spi@f0000000 {
-> > +				#address-cells = <1>;
-> > +				#size-cells = <0>;
-> > +				compatible = "atmel,at91sam9x5-spi";
-> > +				reg = <0xf0000000 0x100>;
-> > +				interrupts = <13 4 3>;
-> > +				cs-gpios = <&pioA 14 0
-> > +					    &pioA 7 0 /* conflicts with TXD2 */
-> > +					    &pioA 1 0 /* conflicts with RXD0 */
-> > +					    &pioB 3 0 /* conflicts with ERXDV */
-> > +					   >;
-> > +				dma-mask = <0xffffffff>;
-> > +				status = "disabled";
-> > +			};
-> > +
-> > +			spi1: spi@f0004000 {
-> > +				#address-cells = <1>;
-> > +				#size-cells = <0>;
-> > +				compatible = "atmel,at91sam9x5-spi";
-> > +				reg = <0xf0004000 0x100>;
-> > +				interrupts = <14 4 3>;
-> > +				cs-gpios = <&pioA 8 0 /* conflitcs with RXD2 */
-> > +					    &pioA 0 0 /* conflitcs with TXD0 */
-> > +					    &pioA 31 0 /* conflitcs with TWCK0 */
-> > +					    &pioA 30 0 /* conflitcs with TWD0 */
-> > +					   >;
-> > +				dma-mask = <0xffffffff>;
-> > +				status = "disabled";
-> > +			};
-> >   		};
-> >
-> >   		nand0: nand@40000000 {
-> >
+> On Thu, 6 Dec 2012, Omar Ramirez Luna wrote:
+>
+>> I have checked next-20121206, it's OK to delete that file as the patch
+>> from Paul is doing that for common clock framework migration; now the
+>> only missing hunk from my original patch should apply to
+>> arch/arm/mach-omap2/cclock44xx_data.c which is the file that now has
+>> ipu_fck and dsp_fck (unused) clocks, I can send a patch to remove them
+>> through linux-omap tree.
+>
+> OK, will you add the mach-omap2/omap_hwmod_44xx_data.c changes in the same
+> patch?
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I was planning to wait until linux-omap had the changes from iommu
+tree (probably at rc1), if the merge conflict resulted in
+arch/arm/mach-omap2/cclock44xx_data.c still having ipu and dsp clocks,
+in this case the hwmod data changes wouldn't be needed in the patch.
+
+Cheers,
+
+Omar
