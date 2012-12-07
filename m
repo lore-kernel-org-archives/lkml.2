@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755823Ab2LGWoc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 17:44:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43110 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751471Ab2LGWob (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 17:44:31 -0500
-Date: Fri, 7 Dec 2012 14:44:28 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH] Debugging: Keep track of page owners
-Message-Id: <20121207144428.98b3eaf4.akpm@linux-foundation.org>
-In-Reply-To: <50C26FA7.9010000@linux.vnet.ibm.com>
-References: <20121207212417.FAD8DAED@kernel.stglabs.ibm.com>
-	<20121207142614.428b8a54.akpm@linux-foundation.org>
-	<50C26FA7.9010000@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755860Ab2LGWou (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 17:44:50 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:36367 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755835Ab2LGWot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 17:44:49 -0500
+Date: Fri, 7 Dec 2012 15:44:46 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
+        Wim Van Sebroeck <wim@iguana.be>
+Subject: [PATCH] ARM: Orion: Fix possible null-deference in orion_wdt_probe
+Message-ID: <20121207224446.GA29262@obsidianresearch.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 07 Dec 2012 14:37:27 -0800
-Dave Hansen <dave@linux.vnet.ibm.com> wrote:
+If the DT does not include a regs parameter then the null res
+would be dereferenced.
 
-> On 12/07/2012 02:26 PM, Andrew Morton wrote:\
-> > I have cunningly divined the intention of your update and have queued
-> > the below incremental.  The change to
-> > pagetypeinfo_showmixedcount_print() was a surprise.  What's that there
-> > for?
-> 
-> Do you mean to ask why it's being modified at all here in this patch?
-> It's referenced in the changelog a bit.  I believe it came from Mel at
-> some point.  I didn't do much to that portion, but I happily drug those
-> hunks along with my forward port.  I believe it's virtually all the same
-> as what you posted here:
-> 
-> 	https://bugzilla.kernel.org/show_bug.cgi?id=50181
+Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+---
+ drivers/watchdog/orion_wdt.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-I'm now deeply confused.
-
-Two days ago I merged a version which you sent me.  It is presently at
-http://ozlabs.org/~akpm/mmotm/broken-out/debugging-keep-track-of-page-owners.patch.
-
-Today you sent a new version.  My earlier email showed the difference
-between these two versions.
-
-AFACIT that difference was undescribed.  I can see that the new version
-uses the stack-tracing infrastructure, but the change to
-pagetypeinfo_showmixedcount_print() is a mystery.
+diff --git a/drivers/watchdog/orion_wdt.c b/drivers/watchdog/orion_wdt.c
+index c20f96b..140a1e3 100644
+--- a/drivers/watchdog/orion_wdt.c
++++ b/drivers/watchdog/orion_wdt.c
+@@ -156,6 +156,8 @@ static int __devinit orion_wdt_probe(struct platform_device *pdev)
+ 	wdt_tclk = clk_get_rate(clk);
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res)
++		return -ENODEV;
+ 	wdt_reg = devm_ioremap(&pdev->dev, res->start, resource_size(res));
+ 	if (!wdt_reg)
+ 		return -ENOMEM;
+-- 
+1.7.5.4
 
