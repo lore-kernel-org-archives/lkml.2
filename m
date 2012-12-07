@@ -1,82 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423668Ab2LGTDQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 14:03:16 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61467 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755756Ab2LGTDN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 14:03:13 -0500
-Date: Fri, 7 Dec 2012 19:02:44 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rabin Vincent <rabin@rab.in>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: ftrace: Ensure code modifications are synchronised
- across all cpus
-Message-ID: <20121207190244.GB29618@mudshark.cambridge.arm.com>
-References: <1354872138.3176.15.camel@computer5.home>
- <1354888985.17101.41.camel@gandalf.local.home>
- <1354892111.13000.50.camel@linaro1.home>
- <1354894134.17101.44.camel@gandalf.local.home>
- <20121207162346.GW14363@n2100.arm.linux.org.uk>
- <1354898200.17101.50.camel@gandalf.local.home>
- <20121207164530.GX14363@n2100.arm.linux.org.uk>
- <1354900436.17101.58.camel@gandalf.local.home>
- <20121207181309.GY14363@n2100.arm.linux.org.uk>
- <1354905805.17101.86.camel@gandalf.local.home>
+	id S1423202Ab2LGTDM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 14:03:12 -0500
+Received: from mx1.fusionio.com ([66.114.96.30]:60449 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755756Ab2LGTDJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 14:03:09 -0500
+X-ASG-Debug-ID: 1354906987-03d6a559e0872010001-xx1T2L
+X-Barracuda-Envelope-From: clmason@fusionio.com
+Date: Fri, 7 Dec 2012 14:03:06 -0500
+From: Chris Mason <chris.mason@fusionio.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Ric Wheeler <rwheeler@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Martin Steigerwald <Martin@lichtvoll.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
+ UAPI
+Message-ID: <20121207190306.GB14972@shiny>
+X-ASG-Orig-Subj: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
+ UAPI
+Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Ric Wheeler <rwheeler@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+	Christoph Hellwig <hch@infradead.org>,
+	Martin Steigerwald <Martin@lichtvoll.de>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Dave Chinner <david@fromorbit.com>, Theodore Ts'o <tytso@mit.edu>,
+	linux-fsdevel <linux-fsdevel@vger.kernel.org>
+References: <1353366267-15629-1-git-send-email-david@fromorbit.com>
+ <20121126025520.GC22858@thunk.org>
+ <20121126091202.GO32450@dastard>
+ <201212051148.28039.Martin@lichtvoll.de>
+ <CA+55aFzgP29WfB1yvnj+Q9-TsbX+b-TCCjTS_vPJ16DxMy6aDQ@mail.gmail.com>
+ <20121206120532.GA14100@infradead.org>
+ <20121207011628.GB16373@gmail.com>
+ <50C22923.90102@redhat.com>
+ <alpine.LFD.2.02.1212070956310.23641@air.linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1354905805.17101.86.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LFD.2.02.1212070956310.23641@air.linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2011-07-01)
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1354906987
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -1.30
+X-Barracuda-Spam-Status: No, SCORE=-1.30 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=CN_BODY_332, COMMA_SUBJECT
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.116366
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	0.60 COMMA_SUBJECT          Subject is like 'Re: FDSDS, this is a subject'
+	0.12 CN_BODY_332            BODY: CN_BODY_332
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steve,
-
-On Fri, Dec 07, 2012 at 06:43:25PM +0000, Steven Rostedt wrote:
-> On Fri, 2012-12-07 at 18:13 +0000, Russell King - ARM Linux wrote:
-> > Even changing it to a breakpoint is potentially problematical.  So we'd
-> > need to ensure that no other CPU was executing the code while we modify
-> > it.
+On Fri, Dec 07, 2012 at 11:18:00AM -0700, Linus Torvalds wrote:
 > 
-> This is not the same as x86, I guess because x86 has a one byte
-> breakpoint. Thus, it is stated in the x86 architecture (I believe,
-> Peter, you can correct me if I'm wrong), that the only "safe" thing that
-> can modify code, is a software breakpoint.
 > 
-> Are you saying that thumb does not guarantee even software breakpoints
-> from being added atomically? Doesn't that kill the purpose of a
-> breakpoint?
+> On Fri, 7 Dec 2012, Ric Wheeler wrote:
+> > 
+> > Review is part of the way we work as a community and we should figure out how
+> > to fix our review process so that we can have meaningful results from the
+> > review or we lose confidence in the process and it makes it much harder to get
+> > reviewers to spend time reviewing when their reviews are ultimately ignored.
+> 
+> Christ, I promised myself to not respond any more to this thread, but the 
+> insanity just continues, from people who damn well should know better.
+> 
+> The code wasn't merged. The review worked.
+> 
+> What you (and Dave, and Christoph) are trying to do is shut down a feature 
+> that somebody else decided they needed. That's not what code review is all 
+> about, and dammit, don't try to even claim it is.
+> 
+> So stop these dishonest and disingenious arguments. They are full of crap.
+> 
+> No amount of "review" has any meaning what-so-ever on whether somebody 
+> else decides they need a feature or not. You can review all you want, but 
+> it's irrelevant - if some company decides they are going to ship or use a 
+> feature, it's out of your hands.
+> 
+> What got merged was a ONE-LINER to make sure that possible future 
+> development didn't unnecessarily make things any more confusing, with the 
+> knowledge that there was a user of the code you didn't like. 
+> 
+> Every single argument I've heard of from the "please revert" camp has been 
+> inane. And they've been *transparently* inane, to the point where I don't 
+> understand how you can make them with a straght face and not be ashamed.
 
-For ARMv7, there are small subsets of instructions for ARM and Thumb which
-are guaranteed to be atomic wrt concurrent modification and execution of
-the instruction stream between different processors:
+I really agree with Dave's statement that we should ioctl for private
+features and system call for features other filesystems are likely to
+implement.  So we really shouldn't have private bits in fallocate in use
+in production systems.
 
-Thumb:	The 16-bit encodings of the B, NOP, BKPT, and SVC instructions.
-ARM:	The B, BL, NOP, BKPT, SVC, HVC, and SMC instructions.
+That's not what happened though, and the right way forward from here is
+to give the bit to the feature, maybe with a generic name like
+FALLOCATE_WITHOUT_BEING_HORRIBLY_SLOW.  It should have been done
+differently, but it wasn't.  And it's a problem we all have, so it makes
+sense that we'll all want to address it somehow.
 
-but before your eyes light up at the presence of the BKPT instruction in
-that list; we don't actually use that in Linux and instead leave it for
-external (i.e. JTAG) debuggers so that they can operate without getting
-tangled up with spurious traps from the OS. Linux actually picks its own
-undefined instructions, which are obviously not included in the lists above.
+On a single flash drive doing random 4K writes, xfs does 950MB/s into
+regular extents but only 400MB/s into preallocated extents.
 
-Also note that the 16-bit limitation for Thumb instructions above can
-actually be used to modify *half* of a BL instruction but, to keep things
-exciting, the PC-relative immediate is split across the two halves. However,
-you could in theory mess around with bottom 10 bits or so, depending on the
-exact encoding...
+http://masoncoding.com/presentation/perf-linuxcon12/fallocate.png
 
-Obviously this doesn't preclude the need for cache maintenance on both D and
-I side, but the atomicity guarantees are as I've described above.
+ext4 has a bigger hit, but there's a little room for improvement all
+around.
 
-Will
+Maybe we should use this thread as the starting point for the proper
+12-18 months of bike shedding for a real fix?
+
+-chris
+
