@@ -1,67 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755038Ab2LGItK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 03:49:10 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:14530 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753571Ab2LGItJ (ORCPT
+	id S1755511Ab2LGIxN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 03:53:13 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50094 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750979Ab2LGIxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 03:49:09 -0500
-Message-ID: <50C1AD6D.7010709@huawei.com>
-Date: Fri, 7 Dec 2012 16:48:45 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Fri, 7 Dec 2012 03:53:12 -0500
+X-AuditID: 9c930179-b7b25ae0000031c2-b5-50c1ae762091
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 4/5] perf diff: Use internal rb tree for compute resort
+References: <1354806581-5316-1-git-send-email-namhyung@kernel.org>
+	<1354806581-5316-5-git-send-email-namhyung@kernel.org>
+	<20121206165136.GA27199@krava.brq.redhat.com>
+Date: Fri, 07 Dec 2012 17:53:10 +0900
+In-Reply-To: <20121206165136.GA27199@krava.brq.redhat.com> (Jiri Olsa's
+	message of "Thu, 6 Dec 2012 17:51:36 +0100")
+Message-ID: <87vcceckg9.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: WuJianguo <wujianguo@huawei.com>, Xishi Qiu <qiuxishi@huawei.com>,
-        Liujiang <jiang.liu@huawei.com>, <Vyacheslav.Dubeyko@huawei.com>,
-        Borislav Petkov <bp@alien8.de>, <andi@firstfloor.org>,
-        <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH V2] MCE: fix an error of mce_bad_pages statistics
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.135.74.196]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On x86 platform, if we use "/sys/devices/system/memory/soft_offline_page" to offline a
-free page twice, the value of mce_bad_pages will be added twice. So this is an error,
-since the page was already marked HWPoison, we should skip the page and don't add the
-value of mce_bad_pages.
+On Thu, 6 Dec 2012 17:51:36 +0100, Jiri Olsa wrote:
+> On Fri, Dec 07, 2012 at 12:09:40AM +0900, Namhyung Kim wrote:
+>> From: Namhyung Kim <namhyung.kim@lge.com>
+>> 
+>> There's no reason to run hists_compute_resort() using output tree.
+>> Convert it to use internal tree so that it can remove unnecessary
+>> _output_resort.
+>
+> I have another patch in queue ommiting dummy entries to display
+> number in the compute column, so we don't have confusing 'sorted'
+> outputs like:
+>
+> [jolsa@krava perf]$ ./perf diff -c+delta
+> # Event 'cycles:u'
+> #
+> # Baseline    Delta  Shared Object                      Symbol
+> # ........  .......  .............  ..........................
+> #
+>     17.92%  -17.92%  libc-2.15.so   [.] _IO_link_in           
+>             +77.54%  libc-2.15.so   [.] __fprintf_chk         
+>     15.64%  -15.64%  libc-2.15.so   [.] _dl_addr              
+>      0.08%   +0.61%  ld-2.15.so     [.] _start                
+>     12.16%  -12.16%  ld-2.15.so     [.] dl_main               
+>     15.39%  -15.39%  ld-2.15.so     [.] _dl_check_map_versions
+>     38.81%  -17.04%  [kernel.kallsyms]  [k] page_fault            
+>
+> just in case anyone actualy tries and wonders ;)
 
-$ cat /proc/meminfo | grep HardwareCorrupted
+Sounds great!
 
-soft_offline_page()
-	get_any_page()
-		atomic_long_add(1, &mce_bad_pages)
+>
+> We need following change as well, because output resort does
+> also col width recalc. Please add it if you respin, or I can
+> send it later.
 
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-﻿Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
----
- mm/memory-failure.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+Okay, I'll resend a new version after getting a reply on the patch 2/5
+from Arnaldo.  It'd be better if you send me a formal patch for this.
 
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 8b20278..de760ca 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1582,8 +1582,11 @@ int soft_offline_page(struct page *page, int flags)
- 		return ret;
+>
+> other than that:
+>
+> Acked-by: Jiri Olsa <jolsa@redhat.com>
 
- done:
--	atomic_long_add(1, &mce_bad_pages);
--	SetPageHWPoison(page);
- 	/* keep elevated page count for bad page */
-+	if (!PageHWPoison(page)) {
-+		atomic_long_add(1, &mce_bad_pages);
-+		SetPageHWPoison(page);
-+	}
-+
- 	return ret;
- }
--- 
-1.7.6.1
+Thanks,
+Namhyung
 
-
+>
+> ---
+> diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+> index f66968e..6f56f78 100644
+> --- a/tools/perf/builtin-diff.c
+> +++ b/tools/perf/builtin-diff.c
+> @@ -425,12 +425,15 @@ static void hists__compute_resort(struct hists *hists)
+>  	hists->entries = RB_ROOT;
+>  	next = rb_first(root);
+>  
+> +	hists__reset_col_len(hists);
+> +
+>  	while (next != NULL) {
+>  		struct hist_entry *he;
+>  
+>  		he = rb_entry(next, struct hist_entry, rb_node_in);
+>  		next = rb_next(&he->rb_node_in);
+>  
+> +		hists__calc_col_len(hists, he);
+>  		insert_hist_entry_by_compute(&hists->entries, he, compute);
+>  	}
+>  }
