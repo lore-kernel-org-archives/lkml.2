@@ -1,323 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424462Ab2LGBt5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 20:49:57 -0500
-Received: from mga02.intel.com ([134.134.136.20]:10898 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1424264Ab2LGBsw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 20:48:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,234,1355126400"; 
-   d="scan'208";a="230116460"
-From: Joseph Gasparakis <joseph.gasparakis@intel.com>
-To: davem@davemloft.net, shemminger@vyatta.com, chrisw@sous-sol.org,
-        gospo@redhat.com
-Cc: Joseph Gasparakis <joseph.gasparakis@intel.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmitry@broadcom.com,
-        saeed.bishara@gmail.com,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>
-Subject: [PATCH v3 1/4] net: Add support for hardware-offloaded encapsulation
-Date: Thu,  6 Dec 2012 17:56:56 -0800
-Message-Id: <1354845419-22483-2-git-send-email-joseph.gasparakis@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1354845419-22483-1-git-send-email-joseph.gasparakis@intel.com>
-References: <1354845419-22483-1-git-send-email-joseph.gasparakis@intel.com>
+	id S1424370Ab2LGB5P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 20:57:15 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:45961 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1422905Ab2LGB5N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 20:57:13 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmANAIZLwVB5LHa//2dsb2JhbABEDrgshXoXc4IeAQEEATocEhYLCAMYLhQlAyEBEhQHh28FwnMUjCWDYmEDlgKQSII1UoFQBw
+Date: Fri, 7 Dec 2012 12:57:09 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Christoph Hellwig <hch@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Martin Steigerwald <Martin@lichtvoll.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
+ UAPI
+Message-ID: <20121207015709.GE27172@dastard>
+References: <1353366267-15629-1-git-send-email-david@fromorbit.com>
+ <201212051148.28039.Martin@lichtvoll.de>
+ <CA+55aFzgP29WfB1yvnj+Q9-TsbX+b-TCCjTS_vPJ16DxMy6aDQ@mail.gmail.com>
+ <201212051718.44017.Martin@lichtvoll.de>
+ <CA+55aFxsPBo4TZEPq+14NBE8Snmd9qiTjAiEP0fFXBzaJ9y+gw@mail.gmail.com>
+ <20121206011402.GB27172@dastard>
+ <20121206120645.GB14100@infradead.org>
+ <20121206165024.GA30273@thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121206165024.GA30273@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support in the kernel for offloading in the NIC Tx and Rx
-checksumming for encapsulated packets (such as VXLAN and IP GRE).
+On Thu, Dec 06, 2012 at 11:50:24AM -0500, Theodore Ts'o wrote:
+> On Thu, Dec 06, 2012 at 07:06:45AM -0500, Christoph Hellwig wrote:
+> > 
+> > Also the only conference outcome I remember is that everyone at LSF
+> > except for Ted basically said "no fucking way".
+> > 
+> 
+> At LSF, that's correct.  And as a result, the people who need this --
+> Google and Tao Bao -- have decided to keep the patch as an out-of-tree
+> patch, much like the Android wakelock patch was out of tree, and for
+> similar reasons --- because the community has rejected the
+> functionality.
 
-Signed-off-by: Joseph Gasparakis <joseph.gasparakis@intel.com>
-Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
----
- include/linux/ip.h        |    5 ++
- include/linux/ipv6.h      |    5 ++
- include/linux/netdevice.h |    2 +
- include/linux/skbuff.h    |   90 ++++++++++++++++++++++++++++++++++++++++++++-
- include/linux/tcp.h       |   10 +++++
- include/linux/udp.h       |    5 ++
- net/core/skbuff.c         |    9 ++++
- 7 files changed, 125 insertions(+), 1 deletions(-)
+Sure. But your association argument can be shown to be a fallacy
+very easily.  There was agreement that wakelock-like functionality
+was needed, the problems were with the proposed implementation and
+that everyone would work together on a solution. Hence the mainline
+kernel now has integrated wakelock support.
 
-diff --git a/include/linux/ip.h b/include/linux/ip.h
-index 58b82a2..492bc65 100644
---- a/include/linux/ip.h
-+++ b/include/linux/ip.h
-@@ -25,6 +25,11 @@ static inline struct iphdr *ip_hdr(const struct sk_buff *skb)
- 	return (struct iphdr *)skb_network_header(skb);
- }
- 
-+static inline struct iphdr *inner_ip_hdr(const struct sk_buff *skb)
-+{
-+	return (struct iphdr *)skb_inner_network_header(skb);
-+}
-+
- static inline struct iphdr *ipip_hdr(const struct sk_buff *skb)
- {
- 	return (struct iphdr *)skb_transport_header(skb);
-diff --git a/include/linux/ipv6.h b/include/linux/ipv6.h
-index 5e11905..eded08c 100644
---- a/include/linux/ipv6.h
-+++ b/include/linux/ipv6.h
-@@ -67,6 +67,11 @@ static inline struct ipv6hdr *ipv6_hdr(const struct sk_buff *skb)
- 	return (struct ipv6hdr *)skb_network_header(skb);
- }
- 
-+static inline struct ipv6hdr *inner_ipv6_hdr(const struct sk_buff *skb)
-+{
-+	return (struct ipv6hdr *)skb_inner_network_header(skb);
-+}
-+
- static inline struct ipv6hdr *ipipv6_hdr(const struct sk_buff *skb)
- {
- 	return (struct ipv6hdr *)skb_transport_header(skb);
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index e9929ab..58530bc 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -1063,6 +1063,8 @@ struct net_device {
- 	netdev_features_t	wanted_features;
- 	/* mask of features inheritable by VLAN devices */
- 	netdev_features_t	vlan_features;
-+	/* mask of features inherited by encapsulating devices */
-+	netdev_features_t	hw_enc_features;
- 
- 	/* Interface index. Unique device identifier	*/
- 	int			ifindex;
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index f2af494..d6933a0 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -376,6 +376,8 @@ typedef unsigned char *sk_buff_data_t;
-  *	@mark: Generic packet mark
-  *	@dropcount: total number of sk_receive_queue overflows
-  *	@vlan_tci: vlan tag control information
-+ *	@inner_transport_header: Inner transport layer header (encapsulation)
-+ *	@inner_network_header: Network layer header (encapsulation)
-  *	@transport_header: Transport layer header
-  *	@network_header: Network layer header
-  *	@mac_header: Link layer header
-@@ -471,7 +473,8 @@ struct sk_buff {
- 	__u8			wifi_acked:1;
- 	__u8			no_fcs:1;
- 	__u8			head_frag:1;
--	/* 8/10 bit hole (depending on ndisc_nodetype presence) */
-+	__u8			encapsulation:1;
-+	/* 7/9 bit hole (depending on ndisc_nodetype presence) */
- 	kmemcheck_bitfield_end(flags2);
- 
- #ifdef CONFIG_NET_DMA
-@@ -486,6 +489,8 @@ struct sk_buff {
- 		__u32		avail_size;
- 	};
- 
-+	sk_buff_data_t		inner_transport_header;
-+	sk_buff_data_t		inner_network_header;
- 	sk_buff_data_t		transport_header;
- 	sk_buff_data_t		network_header;
- 	sk_buff_data_t		mac_header;
-@@ -1435,12 +1440,53 @@ static inline void skb_reserve(struct sk_buff *skb, int len)
- 	skb->tail += len;
- }
- 
-+static inline void skb_reset_inner_headers(struct sk_buff *skb)
-+{
-+	skb->inner_network_header = skb->network_header;
-+	skb->inner_transport_header = skb->transport_header;
-+}
-+
- static inline void skb_reset_mac_len(struct sk_buff *skb)
- {
- 	skb->mac_len = skb->network_header - skb->mac_header;
- }
- 
- #ifdef NET_SKBUFF_DATA_USES_OFFSET
-+static inline unsigned char *skb_inner_transport_header(const struct sk_buff
-+							*skb)
-+{
-+	return skb->head + skb->inner_transport_header;
-+}
-+
-+static inline void skb_reset_inner_transport_header(struct sk_buff *skb)
-+{
-+	skb->inner_transport_header = skb->data - skb->head;
-+}
-+
-+static inline void skb_set_inner_transport_header(struct sk_buff *skb,
-+						   const int offset)
-+{
-+	skb_reset_inner_transport_header(skb);
-+	skb->inner_transport_header += offset;
-+}
-+
-+static inline unsigned char *skb_inner_network_header(const struct sk_buff *skb)
-+{
-+	return skb->head + skb->inner_network_header;
-+}
-+
-+static inline void skb_reset_inner_network_header(struct sk_buff *skb)
-+{
-+	skb->inner_network_header = skb->data - skb->head;
-+}
-+
-+static inline void skb_set_inner_network_header(struct sk_buff *skb,
-+						const int offset)
-+{
-+	skb_reset_inner_network_header(skb);
-+	skb->inner_network_header += offset;
-+}
-+
- static inline unsigned char *skb_transport_header(const struct sk_buff *skb)
- {
- 	return skb->head + skb->transport_header;
-@@ -1496,6 +1542,38 @@ static inline void skb_set_mac_header(struct sk_buff *skb, const int offset)
- }
- 
- #else /* NET_SKBUFF_DATA_USES_OFFSET */
-+static inline unsigned char *skb_inner_transport_header(const struct sk_buff
-+							*skb)
-+{
-+	return skb->inner_transport_header;
-+}
-+
-+static inline void skb_reset_inner_transport_header(struct sk_buff *skb)
-+{
-+	skb->inner_transport_header = skb->data;
-+}
-+
-+static inline void skb_set_inner_transport_header(struct sk_buff *skb,
-+						   const int offset)
-+{
-+	skb->inner_transport_header = skb->data + offset;
-+}
-+
-+static inline unsigned char *skb_inner_network_header(const struct sk_buff *skb)
-+{
-+	return skb->inner_network_header;
-+}
-+
-+static inline void skb_reset_inner_network_header(struct sk_buff *skb)
-+{
-+	skb->inner_network_header = skb->data;
-+}
-+
-+static inline void skb_set_inner_network_header(struct sk_buff *skb,
-+						const int offset)
-+{
-+	skb->inner_network_header = skb->data + offset;
-+}
- 
- static inline unsigned char *skb_transport_header(const struct sk_buff *skb)
- {
-@@ -1574,11 +1652,21 @@ static inline u32 skb_network_header_len(const struct sk_buff *skb)
- 	return skb->transport_header - skb->network_header;
- }
- 
-+static inline u32 skb_inner_network_header_len(const struct sk_buff *skb)
-+{
-+	return skb->inner_transport_header - skb->inner_network_header;
-+}
-+
- static inline int skb_network_offset(const struct sk_buff *skb)
- {
- 	return skb_network_header(skb) - skb->data;
- }
- 
-+static inline int skb_inner_network_offset(const struct sk_buff *skb)
-+{
-+	return skb_inner_network_header(skb) - skb->data;
-+}
-+
- static inline int pskb_network_may_pull(struct sk_buff *skb, unsigned int len)
- {
- 	return pskb_may_pull(skb, skb_network_offset(skb) + len);
-diff --git a/include/linux/tcp.h b/include/linux/tcp.h
-index 60b7aac..4e1d228 100644
---- a/include/linux/tcp.h
-+++ b/include/linux/tcp.h
-@@ -35,6 +35,16 @@ static inline unsigned int tcp_hdrlen(const struct sk_buff *skb)
- 	return tcp_hdr(skb)->doff * 4;
- }
- 
-+static inline struct tcphdr *inner_tcp_hdr(const struct sk_buff *skb)
-+{
-+	return (struct tcphdr *)skb_inner_transport_header(skb);
-+}
-+
-+static inline unsigned int inner_tcp_hdrlen(const struct sk_buff *skb)
-+{
-+	return inner_tcp_hdr(skb)->doff * 4;
-+}
-+
- static inline unsigned int tcp_optlen(const struct sk_buff *skb)
- {
- 	return (tcp_hdr(skb)->doff - 5) * 4;
-diff --git a/include/linux/udp.h b/include/linux/udp.h
-index 0b67d77..9d81de1 100644
---- a/include/linux/udp.h
-+++ b/include/linux/udp.h
-@@ -27,6 +27,11 @@ static inline struct udphdr *udp_hdr(const struct sk_buff *skb)
- 	return (struct udphdr *)skb_transport_header(skb);
- }
- 
-+static inline struct udphdr *inner_udp_hdr(const struct sk_buff *skb)
-+{
-+	return (struct udphdr *)skb_inner_transport_header(skb);
-+}
-+
- #define UDP_HTABLE_SIZE_MIN		(CONFIG_BASE_SMALL ? 128 : 256)
- 
- static inline int udp_hashfn(struct net *net, unsigned num, unsigned mask)
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 880722e2..ccbabf5 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -682,11 +682,14 @@ static void __copy_skb_header(struct sk_buff *new, const struct sk_buff *old)
- 	new->transport_header	= old->transport_header;
- 	new->network_header	= old->network_header;
- 	new->mac_header		= old->mac_header;
-+	new->inner_transport_header = old->inner_transport_header;
-+	new->inner_network_header = old->inner_transport_header;
- 	skb_dst_copy(new, old);
- 	new->rxhash		= old->rxhash;
- 	new->ooo_okay		= old->ooo_okay;
- 	new->l4_rxhash		= old->l4_rxhash;
- 	new->no_fcs		= old->no_fcs;
-+	new->encapsulation	= old->encapsulation;
- #ifdef CONFIG_XFRM
- 	new->sp			= secpath_get(old->sp);
- #endif
-@@ -892,6 +895,8 @@ static void copy_skb_header(struct sk_buff *new, const struct sk_buff *old)
- 	new->network_header   += offset;
- 	if (skb_mac_header_was_set(new))
- 		new->mac_header	      += offset;
-+	new->inner_transport_header += offset;
-+	new->inner_network_header   += offset;
- #endif
- 	skb_shinfo(new)->gso_size = skb_shinfo(old)->gso_size;
- 	skb_shinfo(new)->gso_segs = skb_shinfo(old)->gso_segs;
-@@ -1089,6 +1094,8 @@ int pskb_expand_head(struct sk_buff *skb, int nhead, int ntail,
- 	skb->network_header   += off;
- 	if (skb_mac_header_was_set(skb))
- 		skb->mac_header += off;
-+	skb->inner_transport_header += off;
-+	skb->inner_network_header += off;
- 	/* Only adjust this if it actually is csum_start rather than csum */
- 	if (skb->ip_summed == CHECKSUM_PARTIAL)
- 		skb->csum_start += nhead;
-@@ -1188,6 +1195,8 @@ struct sk_buff *skb_copy_expand(const struct sk_buff *skb,
- 	n->network_header   += off;
- 	if (skb_mac_header_was_set(skb))
- 		n->mac_header += off;
-+	n->inner_transport_header += off;
-+	n->inner_network_header	   += off;
- #endif
- 
- 	return n;
+Compare that to stale-no-hide: the -concept- was given a fairly
+unanimous "not a chance in hell" send-off. There was no "lets rework
+it into something acceptable" compromise - the concept was
+rejected and so you simply cannot compare it to wakelocks.
+
+> At this point, I've only asked that the bit be reserved, so we don't
+
+Really? We wouldn't be having this discussion if you'd just asked...
+
+> have to worry about codepoint collisions.  (We'd have the same issue
+> with an ioctl, BTW --- we would need to reserve an ioctl number to
+> avoid collisions, although granted there are ways to cleverly choose
+> an ioctl number that would reduce the chance of collisions even if it
+> isn't formally reserved.)
+
+struct ext4_ioc_falloc {
+...
+};
+
+/* security hole reserved for out-of-tree patches. */
+#define EXT4_IOC_FALLOC_NOHIDE		_IOW('f', 10000, struct ext4_ioc_falloc)
+
+Done. Not so hard, is it?
+
+Cheers,
+
+Dave.
 -- 
-1.7.6.4
-
+Dave Chinner
+david@fromorbit.com
