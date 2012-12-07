@@ -1,123 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965069Ab2LGSju (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 13:39:50 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:51341 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964944Ab2LGSjr (ORCPT
+	id S965213Ab2LGSn2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 13:43:28 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19033 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755130Ab2LGSn1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 13:39:47 -0500
-MIME-Version: 1.0
-In-Reply-To: <CALQRfL6c2nOSOR00YsBhgC=KWSWB-xOsDTJiLzbtmj6Zv1Mr2Q@mail.gmail.com>
-References: <CALQRfL5EeqRFykLGVLJx3pfKdP4iF8r-8Ys7pVadOaCc3j1=iQ@mail.gmail.com>
- <CALCETrXYPjow3geVBnYK_ZOhnuU_wZkdebumJ=Hv3-T=fHaPNA@mail.gmail.com>
- <CALQRfL7e160D+vzVhT-fUS-_Yp55wqnWkRFJdDTOOVjjStd9Jw@mail.gmail.com>
- <CALCETrXUSz9EN-tGMfJkw9+1kO0hfmQk4E5XPF0cg9nmpPXepg@mail.gmail.com>
- <20121204135445.GA7420@mail.hallyn.com> <CALCETrW05JtRZSSJ0v=jz8B7_av1QS+D5qux5=q8aO3iWZHB1A@mail.gmail.com>
- <20121205210528.GA9047@sergelap> <CALCETrVsrJSt8oYnh+y32Lrxw6Yk=Cp_e07Qf=fLbVfORvzUNg@mail.gmail.com>
- <20121205222040.GB14884@sergelap> <50C13F0E.5010401@schaufler-ca.com>
- <20121207144233.GA6681@mail.hallyn.com> <CALQRfL6c2nOSOR00YsBhgC=KWSWB-xOsDTJiLzbtmj6Zv1Mr2Q@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 7 Dec 2012 10:39:26 -0800
-Message-ID: <CALCETrUwVO6YjO-VzwBO59z4L2zB+-Zd_V-ontciMEFzRHzDFQ@mail.gmail.com>
-Subject: Re: [RFC] Capabilities still can't be inherited by normal programs
-To: "Andrew G. Morgan" <morgan@kernel.org>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@redhat.com>,
-        "Serge E. Hallyn" <serge@canonical.com>,
-        Markku Savela <msa@moth.iki.fi>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 7 Dec 2012 13:43:27 -0500
+X-Authority-Analysis: v=2.0 cv=dttZ+ic4 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=0q0mCv_Vr9gA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=lrIq2vSOvhQA:10 a=x7HaIhc6LHu1aINb5bsA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1354905805.17101.86.camel@gandalf.local.home>
+Subject: Re: [PATCH] ARM: ftrace: Ensure code modifications are synchronised
+ across all cpus
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Rabin Vincent <rabin@rab.in>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>
+Date: Fri, 07 Dec 2012 13:43:25 -0500
+In-Reply-To: <20121207181309.GY14363@n2100.arm.linux.org.uk>
+References: <1354817466.30905.13.camel@linaro1.home>
+	 <1354821581.17101.17.camel@gandalf.local.home>
+	 <1354872138.3176.15.camel@computer5.home>
+	 <1354888985.17101.41.camel@gandalf.local.home>
+	 <1354892111.13000.50.camel@linaro1.home>
+	 <1354894134.17101.44.camel@gandalf.local.home>
+	 <20121207162346.GW14363@n2100.arm.linux.org.uk>
+	 <1354898200.17101.50.camel@gandalf.local.home>
+	 <20121207164530.GX14363@n2100.arm.linux.org.uk>
+	 <1354900436.17101.58.camel@gandalf.local.home>
+	 <20121207181309.GY14363@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 7, 2012 at 9:07 AM, Andrew G. Morgan <morgan@kernel.org> wrote:
-> I'm still missing something with the problem definition.
->
-> So far if I follow the discussion we have determined that inheritance
-> as implemented is OK except for the fact that giving user an
-> inheritable pI bit which gives them default permission to use all
-> binaries endowed with the corresponding file fI bit.
+[ Added hpa, as he knows a bit about x86, and breakpoints ]
 
-This is IMO part of the problem but not the entire problem.
+On Fri, 2012-12-07 at 18:13 +0000, Russell King - ARM Linux wrote:
 
->
-> Is this the problem a different inheritance model is supposed to
-> address? Serge suggested that the binary could authenticate the
-> user... This seems like its putting the protection in the best
-> place... Each app can control its sub functions with the richest
-> semantics.
->
-> That being said...
->
-> To me this looks like it's an access control problem... Namely use
-> acls to limit which users (groups) can execute each privileged binary.
-> Serge's option 2 seems like a similar approach.
->
+> So, you're asking me to wave hands in the air, make guesses and hope that
+> I hit the situation you're knowledgable of without actually telling me
+> anything.  Great - you really know how to frustrate people...
 
-The issue is (as I see it) with non-privileged binaries.  If a given
-program (correctly) has a permitted capability and is not root, then
-the only way that it can pass that capability on to children (e.g.
-helper programs) is to set it into pI.  This only works if the child
-has the same bit set in fI.
+Sorry, I thought I was telling you something. I guess we have a bit of a
+disconnect. Jon did hit what I was trying to ask.
 
-This is doable but annoying -- every program that a privileged program
-runs needs to be authorized by the administrator.
+> 
+> If you're saying that the nop was created at _compile_ time, to be a 32-bit
 
-It breaks down because, currently, users with nonzero pI have no
-direct ability to wield the capabilities.  That means that every
-single binary with fI bits set needs to be as careful as a setuid-root
-binary to avoid leaking privilege to the caller.  (Obviously, binaries
-with fP set need to be careful.  IMO binaries with only fI set should
-not need to exercise any particular care to defend themselves from
-their callers.)
+Actually the call is created at compile time. When compiled with -pg,
+gcc will insert branch and link calls to a special function (actually
+implemented in assembly) to "mcount". Looking at the arm implementation,
+it seems that the branch and link is 32bits (just confirming). On boot
+up, all calls to mcount are converted to 32bit nops.
+
+> instruction then maybe - but you have a problem.  That 32-bit instruction
+> may stradle a 32-bit boundary (worse if it stradles a page), and _any_
+> changes to that instruction will not be atomic - other CPUs will see the
+> store as two separate operations which, given the right timing may create
+> an illegal instruction.
+
+This is the same as x86.
+
+> 
+> Even changing it to a breakpoint is potentially problematical.  So we'd
+> need to ensure that no other CPU was executing the code while we modify
+> it.
+
+This is not the same as x86, I guess because x86 has a one byte
+breakpoint. Thus, it is stated in the x86 architecture (I believe,
+Peter, you can correct me if I'm wrong), that the only "safe" thing that
+can modify code, is a software breakpoint.
+
+Are you saying that thumb does not guarantee even software breakpoints
+from being added atomically? Doesn't that kill the purpose of a
+breakpoint?
+
+> 
+> Now, if you're going to say that ftrace inserts a 32-bit nop with
+> appropriate alignment constraints at _compile_ time, then maybe that would
+> work, but then your update to the instruction might as well just be NOP->BL
+> because that's a word-write to an aligned address which will be atomic (in
+> so far as either the entire instruction has been updated _or_ none of the
+> instruction has been updated.)
+
+That's how it's done on powerpc.
+
+> 
+> In a previous email you intimated that these NOPs are inserted by ftrace at
+> boot time.  Given that these NOPs would have to be 32-bit instructions, I'd
+> hope that they're also replacing 32-bit instructions and not two 16-bit
+> instructions which might be prefixed by a "if-then" instruction.
+
+At compile time, it's a call to mcount, inserted by gcc, and at the
+beginning of functions, thus they should never be prefixed by a
+"if-then".
+
+> 
+> Maybe now you'll provide some information on how ftrace works as you should
+> now realise that your "simple question" doesn't have a simple answer.
+
+Maybe, I've described it above, but I'll repeat it in more detail here.
+
+Ftrace uses the gcc -pg option that adds a call to 'mcount' to the
+beginning of almost every function. It does not add mcount to inlined
+functions, so these functions are truly functions and not inlined into
+other functions. Also some functions are manually ignored in the kernel
+when we annotate them with 'notrace'. Just to make things consistent, as
+gcc doesn't always honor the 'inline' code, I've defined inline to also
+contain 'notrace' as well.
+
+The 'mcount' function has to be written in assembly. On arm, it's
+implemented in arch/arm/kernel/entry-common.S. It looks like this:
+
+ENTRY(mcount)
+        stmdb   sp!, {lr}
+        ldr     lr, [fp, #-4]
+        ldmia   sp!, {pc}
+ENDPROC(mcount)
+
+Note, I removed the #ifdef/#else of CONFIG_DYNAMIC_FTRACE, because this
+modification only happens with that config enabled. So I only showed
+that version.
+
+During compile time, the recordmcount.c code is run against all .o
+files, and records the location of the mcount callers. It then creates a
+table of those locations and links them back into the .o file.
+
+On boot up (before SMP starts), this table is referenced, and all the
+calls to mcount are converted into 32 bit nops. Before this conversion,
+any code that hits the call will simply return back (as you can see by
+the above mcount definition).
+
+When we enable tracing, currently we use stop_machine(), all the nops in
+functions to be traced are then converted to another call, but not to
+mcount (as that just returns), but instead to 'ftrace_caller'. This
+function is also written in assembly and it handles the tracing when
+hit.
+
+When tracing is disabled, the same thing happens but we convert the call
+sites into nops.
+
+Does this make more sense?
+
+> 
+> > >   That's something
+> > > other people use and deal with.  Last (and only) time I used the built-in
+> > > kernel tracing facilities I ended up giving up with it and going back to
+> > > using my sched-clock+record+printk based approaches instead on account
+> > > of the kernels built-in tracing being far too heavy.
+> > 
+> > Too bad. Which tracing facilities did you use? Function tracing? And
+> > IIRC, ARM originally had only the static tracing, which was extremely
+> > heavy weight. Have you tried tracepoints? Also, have you tried my
+> > favorite way of debugging: trace_printk(). It acts just like printk but
+> > instead of recording to the console, it records into the ftrace buffer
+> > which can be read via the /debug/tracing/trace or dumped to the console
+> > with a sysrq-z.
+> 
+> TBH I don't remember, it was a few years ago that I last had to measure
+> stuff.
+
+Yeah, things have improved since then :-)
+
+-- Steve
 
 
-I'm obviously missing some fundamental (and probably historical) issue
-here, so let me ask the following straw-man question.  Suppose
-capabilities worked like this on exec:
-
-pP' = pI | (fP & pB)  (i.e. the current way, except that fI always has
-all bits set for every binary on the system)
-pI' = pI (unless !SECURE_NOROOT and uid == 0 or euid == 0, in which
-case pI' = pP')
-
-with the added restriction that pI is always a subset of pP (i.e.
-dropping a bit from pP (on exec or otherwise) drops that bit from pI).
-
-What would be wrong with this model?  (Let's pretend for now that
-capabilities had always worked this way, so there's no change of
-behavior to worry about.)
-
- - The sendmail capability bug wouldn't happen: pI has no effect on
-setuid-root binaries.
-
- - There would be no difference between a user being trusted with a
-capability and being inh-trusted with that capability, since the
-latter concept wouldn't really exist.
-
- - Totally unprivileged users couldn't engage in any funny business.
-Their pI masks would be zero, and they would have no way of changing
-that.
-
- - Partially privileged users would work just fine.  They could wield
-their capabilities (subject to some possible fiddling with pE) from
-bash or from anything else.  They could also freely drop those
-capabilities.
-
- - Privileged programs would require less thought: to grant a program,
-you set its privilege in fP.  There is no fI, so there's nothing
-special to think about.
-
-
-
-NB:  This is not a real proposal because there *are* capability-aware
-programs out there.  I want to understand why the current system is so
-different.
-
---Andy
