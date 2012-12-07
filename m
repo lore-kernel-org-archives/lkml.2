@@ -1,93 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424046Ab2LGCkS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 21:40:18 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:44737 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1422709Ab2LGCkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 21:40:16 -0500
-Message-ID: <1354848015.22463.17.camel@joe-AO722>
-Subject: Re: [PATCH] printk: Fix print_time length computation when no
- buffer is given
-From: Joe Perches <joe@perches.com>
-To: Sylvain Munaut <s.munaut@whatever-company.com>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Kay Sievers <kay@vrfy.org>, stable@kernel.org
-Date: Thu, 06 Dec 2012 18:40:15 -0800
-In-Reply-To: <1354813775-32451-1-git-send-email-s.munaut@whatever-company.com>
-References: <CAF6-1L7qDULSvzaB2G=8y9Jkyd=SfcDBnNTxTuN0xSQxG94CHg@mail.gmail.com>
-	 <1354813775-32451-1-git-send-email-s.munaut@whatever-company.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1423919Ab2LGCkz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 21:40:55 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:61099 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1422709Ab2LGCkx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 21:40:53 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Al8NAHFWwVB5LHa//2dsb2JhbABEuDqFehdzgh4BAQQBOhwjBQsIAw4KLhQlAyETiAoFwm4UjCWDYmEDlgKQSIMH
+Date: Fri, 7 Dec 2012 13:40:49 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Martin Steigerwald <Martin@lichtvoll.de>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
+ UAPI
+Message-ID: <20121207024049.GF27172@dastard>
+References: <1353366267-15629-1-git-send-email-david@fromorbit.com>
+ <20121206011402.GB27172@dastard>
+ <CA+55aFzjOr1tw4UAdWazgvzOu6if8hOc4PqgLeX4Um_k-kuguw@mail.gmail.com>
+ <201212061037.56597.Martin@lichtvoll.de>
+ <20121207010837.GA16373@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121207010837.GA16373@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-12-06 at 18:09 +0100, Sylvain Munaut wrote:
-> The "%5lu" part of the sprintf only guarantees a minimum length,
-> not a maximum one. This patch should make it correct for any
-> possible timestamp.
+On Fri, Dec 07, 2012 at 02:08:37AM +0100, Ingo Molnar wrote:
 > 
-> This problem dates back from the printk conversion to records AFAICT.
+> * Martin Steigerwald <Martin@lichtvoll.de> wrote:
 > 
-> I've tested this locally both by verifying 'dmesg' no longer
-> segfaulted and also by checking that before this patch the
-> buffer was overrun by exactly the number of char corresponding to
-> extra digits in the timestamps.
+> > > The thing that people are complaining about is exactly the 
+> > > reverse of this. It's *protecting* us from making mistakes, 
+> > > and doesn't actually add any new interfaces in itself.
+> > >
+> > > This is why I'm so annoyed with this stupid thread. It's 
+> > > been going on forever, and reverting that change WOULD BE 
+> > > OBJECTIVELY A BAD IDEA.
+> > 
+> > See, thats where you have a problem with "reality".
+> > 
+> > It seems you cannot accept the fact that some developers 
+> > disliked the process in which this change was pushed. [...]
 > 
-> Cc: Kay Sievers <kay@vrfy.org>
-> Cc: stable@kernel.org
-> Signed-off-by: Sylvain Munaut <s.munaut@whatever-company.com>
-> ---
->  kernel/printk.c |   13 +++++++++++--
->  1 file changed, 11 insertions(+), 2 deletions(-)
+> I don't think you have understood Linus's argument above.
 > 
-> diff --git a/kernel/printk.c b/kernel/printk.c
-> index 66a2ea3..2ceceea 100644
-> --- a/kernel/printk.c
-> +++ b/kernel/printk.c
-> @@ -847,8 +847,17 @@ static size_t print_time(u64 ts, char *buf)
->  	if (!printk_time)
->  		return 0;
->  
-> -	if (!buf)
-> -		return 15;
-> +	if (!buf) {
-> +		size_t len = 15;
-> +		u64 ts_limit = (u64)100000 * (u64)1000000000;
-> +
-> +		while ((ts > ts_limit) && (len < 21)) {
-> +			len++;
-> +			ts_limit = 10 * ts_limit;
-> +		}
+> The "process" does not change the object technical merits of a 
+> patch. Ever. This patch is _good_, and objectively good. No 
+> amount of 'bad process' can make this patch bad.
 
-Perhaps use snprintf for sizing something like below?
-(untested/uncompiled)
+Yeah, Linus asserted the patch is good, and you're parroting that.
+There isn't even any agreement on that level, let alone the other
+problems like the fact it introduced undocumented changes to a
+syscall API. people get raked over the coals frequently for doing
+this sort of stuff, but in this case it's "good because Linus said
+so".
 
-static size_t print_time(u64 ts, char *buf)
-{
-	unsigned long rem_nsec;
-	char *tmpbuf = buf;
-	int size = 15;			/* expected size of non-null buf */
-	char local_buf[1];
+Review gives the opportunity to make patches *better*. It might be
+a good concept with a bad implementation (which is how I'd
+categorise this patch), and review gives us the opportunity to sort
+out those problems before we end up in a situation like this.
 
-	if (!printk_time)
-		return 0;
+Especially for changes to syscall APIs....
 
-	if (!buf) {			/* emit to a dummy buf instead */
-		tmpbuf = local_buf;
-		size = sizeof(local_buf);
-	}
-	
-	rem_nsec = do_div(ts, 1000000000);
+> Now, hypothetically, if this was an objectively bad patch, then 
+> any "bad process" used to push it would add insult to injury and 
+> it could be reason enough to flame Tytso twice as hard.
 
-	return snprintf(tmpbuf, size, "[%5lu.%06lu] ",
-			(unsigned long)ts, rem_nsec / 1000);
-}
+Assumption: the patch is good
 
-It's perhaps unfortunate that print_time doesn't take a
-a buffer and a size_t of buffer.
+Reality: the concept is worthy, but the implmentation and and the
+taken were terrible. Patch could be a lot better, but improvement
+needs time and for syscall changes already in mainline we don't have
+that time. either we revert it or we are stuck with it.
 
+Right now, we're stuck with it....
 
+> But it turns out the patch was right and good, so kudos to Tytso 
+> for cutting through the bike shed painting and politicks of 
+> fsdevel - which "process" would have deprived us of a good 
+> patch...
+
+Assumption: a) it's a good patch and b) review would have prevented
+the patch from proceeding.
+
+Reality: a) see above. b) Who can say - it never occurred?
+Personally, I'm not opposed to reserving a bit but it needs
+documentation and clarification over future scope and kernel
+implementation, which review would have caught and the discussion
+would have been in that context....
+
+If you can't stand the heat, get out of the kitchen. IOWs, if you
+can't defend your change on it's merits, then it shouldn't be made.
+Sending your patch through a back door becuse you don't think you
+can't defend it as you pass through the front door is simply *not
+acceptable*.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
