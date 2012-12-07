@@ -1,104 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424068Ab2LGDT5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 22:19:57 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:56536 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752722Ab2LGDTz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 22:19:55 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Al8NAGlfwVB5LHa//2dsb2JhbABEuDmFehdzgh4BAQQBOhwjBQsIAw4KLhQlAyETiAoFwnoUjCWEQwOWApBIgwc
-Date: Fri, 7 Dec 2012 14:19:51 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
- UAPI
-Message-ID: <20121207031951.GG27172@dastard>
-References: <1353366267-15629-1-git-send-email-david@fromorbit.com>
- <20121126025520.GC22858@thunk.org>
- <20121126091202.GO32450@dastard>
- <201212051148.28039.Martin@lichtvoll.de>
- <CA+55aFzgP29WfB1yvnj+Q9-TsbX+b-TCCjTS_vPJ16DxMy6aDQ@mail.gmail.com>
- <20121206120532.GA14100@infradead.org>
- <20121207011628.GB16373@gmail.com>
-MIME-Version: 1.0
+	id S1424106Ab2LGDXg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 22:23:36 -0500
+Received: from plane.gmane.org ([80.91.229.3]:53564 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1424079Ab2LGDXf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 22:23:35 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Woody Wu <narkewoody@gmail.com>
+Subject: Re: 8250 UART doesn't work
+Date: Fri, 7 Dec 2012 03:23:18 +0000 (UTC)
+Message-ID: <slrnkc2o7b.2ck.narkewoody@zuhnb712.local.com>
+References: <slrnkc0jqu.4ir.narkewoody@zuhnb712.local.com>
+ <50C0E737.2000201@zytor.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121207011628.GB16373@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: 59.37.26.98
+User-Agent: slrn/0.9.9p1 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 07, 2012 at 02:16:28AM +0100, Ingo Molnar wrote:
-> 
-> * Christoph Hellwig <hch@infradead.org> wrote:
-> 
-> > No, the problem is that the thing is not just a) wrong, but b) 
-> > only made it in through sneaky ways.
-> 
-> People disagree with a), and b) only really matters if a) is 
-> true.
+On 2012-12-06, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 12/05/2012 11:56 PM, Woody Wu wrote:
+>> Hi, list
+>>
+>> Does anyone here familiar to the serial 8250 driver?
+>>
+>> I enabled two uart ports in my board definition, but the ports doesn't
+>> appear after I loaded the kernel (3.4.19).  I discovered, it failed at
+>> the UART port auto configuration stage, the exact function is
+>> autoconfig(...) in drivers/tty/serial/8250.c.
+>>
+>
+> Sounds like you're using some kind of buggy UART IP... sharing which one 
+> might help people identify the problem, if they have seen it before.
+>
+> 	-hpa
+>
 
-Wow.
+The UART controller is EXAR ST16C554D.  It claims as a 16550
+compatible controller. Each ST16C554D module contains 4 UART, each of
+them can be selected via two chip select pad. I think the board
+hardware, via a CPLD, make the chip selection transparent to the CPU, so
+by a 5-bit address, CPU can addressing individual 8 16550 compatible
+registers of each UART.
 
-Let me paraphrase that logic:
+I am not one hundred  percent sure I understood right, but this is all I
+can say.  You experts can also judge whether this kind of hardware setup
+is normal in embedded multi-serial ports solutions.
 
-If (maintainer thinks their patch is right) {
-	patch doesn't need review
-} else {
-	/* maintainer thinks the patch is wrong. */
-	/* XXX: why would you think your own patch is wrong? */
-	patch needs review
-}
-
-Ok, if you were to disagree with the maintainer of a *different
-subsystem* about whether the patch is right or not, how would you
-know that the maintainer has made the change in the first place? It
-hasn't been posted anywhere public like everyone who is not a
-maintainer does....
-
-Indeed, it is Ted's application of your logic that is the *exact
-problem* that started this thread. Restating it as justification
-for what has happened is a circular argument.
-
-> You never gave a technical reason for why protecting against 
-> future ABI clashes is 'wrong'. It looks like a marginally 
-> useful, practical patch to me.
-
-The concept isn't wrong - but the implementation is definitely
-sub-optimal. We document syscall API changes, write tests for them,
-and explain when and where filesystems need to implement
-functionality, etc, and none of this has been done. I'd call that a
-good technical argument for reverting the change, especially as
-review would have picked this up and it would have been corrected
-before proceeding with the change.
-
-Simply put:
-
-(concept == good) != (implementation == good)
-
-And that's why we have review - to make sure the implementation is
-as good as it can possibly be.
-
-When you bypass review with the justification of "the concept is
-good", then you are basically saying code review is irrelevant to the
-implementation quality. Nothing could be further from the truth, and
-that's why b) matters more than a). And in this case, we haven't
-even got past the question of whether the concept is good or not
-because it hasn't even been asked....
-
-Cheers,
-
-Dave.
+Many thanks!
 
 -- 
-Dave Chinner
-david@fromorbit.com
+woody
+I can't go back to yesterday - because I was a different person then.
+
