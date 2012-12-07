@@ -1,94 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424501Ab2LGU7l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 15:59:41 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:44454 "EHLO hydra.sisk.pl"
+	id S1424524Ab2LGVBj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 16:01:39 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:44861 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1424420Ab2LGU7j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 15:59:39 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Myron Stowe <myron.stowe@redhat.com>, linux-pci@vger.kernel.org,
-        yinghai@kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/15] PCI, acpiphp: Separate out hot-add support of pci host bridge
-Date: Fri, 07 Dec 2012 22:04:35 +0100
-Message-ID: <1601199.4gTPfZEF7o@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc8; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <CAErSpo6MEtx6hsYhY=h0+eXqQcnZuG2vq=z_8Oz8tnksKZd7DA@mail.gmail.com>
-References: <20121207062454.11051.12739.stgit@amt.stowe> <20121207062500.11051.44198.stgit@amt.stowe> <CAErSpo6MEtx6hsYhY=h0+eXqQcnZuG2vq=z_8Oz8tnksKZd7DA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1424506Ab2LGVBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 16:01:37 -0500
+From: Jay Vosburgh <fubar@us.ibm.com>
+To: Linda Walsh <lkml@tlinx.org>
+cc: Cong Wang <xiyou.wangcong@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linux Kernel Network Developers <netdev@vger.kernel.org>
+Subject: Re: BUG: scheduling while atomic: ifup-bonding/3711/0x00000002 -- V3.6.7
+In-reply-to: <50C24C44.8000809@tlinx.org>
+References: <50B5248A.5010908@tlinx.org> <CAM_iQpUW2Oz9p0K0gGKc6JoD7WAu0kJtRa4uBSe+WfXg0Nn3jA@mail.gmail.com> <50B67F6B.6050008@tlinx.org> <50B6B4B6.3070304@tlinx.org> <4913.1354154236@death.nxdomain> <50C24C44.8000809@tlinx.org>
+Comments: In-reply-to Linda Walsh <lkml@tlinx.org>
+   message dated "Fri, 07 Dec 2012 12:06:28 -0800."
+X-Mailer: MH-E 8.2; nmh 1.4; GNU Emacs 23.4.1
+Date: Fri, 07 Dec 2012 13:00:54 -0800
+Message-ID: <1013.1354914054@death.nxdomain>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12120721-5806-0000-0000-00001CB29FA9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, December 07, 2012 12:32:46 PM Bjorn Helgaas wrote:
-> On Thu, Dec 6, 2012 at 11:25 PM, Myron Stowe <myron.stowe@redhat.com> wrote:
-> > From: Yinghai Lu <yinghai@kernel.org>
-> >
-> > It causes confusion.
-> 
-> I completely agree that acpiphp causes confusion  :)
-> 
-> > We may only need acpi hp for pci host bridge.
-> >
-> > Split host bridge hot-add support to pci_root_hp, and keep acpiphp simple.
-> >
-> > -v2: put back pci_root_hp change in one patch
-> > -v3: add pcibios_resource_survey_bus() calling
-> > -v4: remove not needed code with remove_bridge
-> > -v5: put back support for acpiphp support for slots just on root bus.
-> > -v6: change some functions to *_p2p_* to make it more clean.
-> > -v7: split hot_added change out.
-> >
-> > Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> > Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
-> > ---
-> >
-> >  drivers/acpi/Makefile              |    1
-> >  drivers/acpi/pci_root_hp.c         |  228 ++++++++++++++++++++++++++++++++++++
-> >  drivers/pci/hotplug/acpiphp_glue.c |   59 ++-------
-> >  3 files changed, 244 insertions(+), 44 deletions(-)
-> >  create mode 100644 drivers/acpi/pci_root_hp.c
-> >
-> > diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
-> > index 82422fe..4edfe41 100644
-> > --- a/drivers/acpi/Makefile
-> > +++ b/drivers/acpi/Makefile
-> > @@ -36,6 +36,7 @@ acpi-y                                += processor_core.o
-> >  acpi-y                         += ec.o
-> >  acpi-$(CONFIG_ACPI_DOCK)       += dock.o
-> >  acpi-y                         += pci_root.o pci_link.o pci_irq.o pci_bind.o
-> > +acpi-$(CONFIG_HOTPLUG)         += pci_root_hp.o
-> 
-> I absolutely, 110% agree with splitting out the host bridge hotplug
-> code from the PCI device hotplug code.
-> 
-> But I don't want to put this in a separate file; I think it should go
-> directly in pci_root.c.  Putting it in a separate file gives the
-> illusion that hotplug is something we only do in unusual
-> circumstances.  But that's wrong -- even at boot-time we should be
-> using the same hot-plug flow as we do later.
-> 
-> Plus, I want people to be forced to look at the ugliness of this code
-> every time they look at pci_root.c.  Maybe that will help get it
-> cleaned up eventually.
-> 
-> For example, as soon as you put this code in pci_root.c instead of
-> pci_root_hp.c, it becomes obvious that we're keeping a list of host
-> bridges in both places, and we probably don't need two lists.  And it
-> seems dubious that acpi_pci_root_hp_init() is an initcall that walks
-> the namespace looking for host bridges, when acpi_pci_root_add()
-> already exists and is called for every host bridge.
+Linda Walsh <lkml@tlinx.org> wrote:
 
-Agreed.
+>Sorry for the delay.... my distro (Suse) has made rebooting my system
+>a chore (have to often boot from rescue to get it to come up because
+>they put mount libs in /usr/lib expecting they will always boot
+>from their ram disk -- preventing those of use who boot directly
+>from disk from doing so easily...grrr.
+>
+>Jay Vosburgh wrote:
+>> 	The miimon functionality is used to check link state and notice
+>> when slaves lose carrier.
+>---
+>   If I am running 'rr' on 2 channels -- specifically for the purpose
+>of link speed aggregation (getting 1 20Gb channel out of 2 10Gb channels)
+>I'm not sure I see how miimon would provide benefit.  -- if 1 link dies,
+>the other, being on the same card is likely to be dead too, so would
+>it really serve a purpose?
 
-Thanks,
-Rafael
+	Perhaps, but if the link partner experiences a failure, that may
+be a different situation.  Not all failures will necessarily cause both
+links to fail simultaneously.
 
+>>   Running without it will not detect failure of
+>> the bonding slaves, which is likely not what you want.  The mode,
+>> balance-rr in your case, is what selects the load balance to use, and is
+>> separate from the miimon.
+>>   
+>----
+>   Wouldn't the entire link die if a slave dies -- like RAID0, 1 disk
+>dies, the entire link goes down? 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+	No; failure of a single slave does not cause the entire bond to
+fail (unless that is the last available slave).  For round robin, a
+failed slave is taken out of the set used to transmit traffic, and any
+remaining slaves continue to round robin amongst themselves.
+
+>   The other end (windows) doesn't dynamically config for a static-link
+>aggregation, so I don't think it would provide benefit.
+
+	So it (windows) has no means to disable (and discontinue use of)
+one channel of the aggregation should it fail, even in a static link
+aggregation?
+
+>> 	That said, the problem you're seeing appears to be caused by two
+>> things: bonding holds a lock (in addition to RTNL) when calling
+>> __ethtool_get_settings, and an ixgbe function in the call path to
+>> retrieve the settings, ixgbe_acquire_swfw_sync_X540, can sleep.
+>>
+>> 	The test patch above handles one case in bond_enslave, but there
+>> is another case in bond_miimon_commit when a slave changes link state
+>> from down to up, which will occur shortly after the slave is added.
+>>   
+>----
+>   Added your 2nd patch -- no more error messages...
+>
+>   however -- likely unrelated, the max speed read or write I am seeing
+>is about 500MB/s, and that is rare -- usually it's barely <3x a 1Gb
+>network speed. (119/125 MB R/W).  I'm not at all sure it's really
+>combining the links
+>properly.  Anyway to verify that?
+
+	How are you testing the throughput?  If you configure the
+aggregation with just one link, how does the throughput compare to the
+aggregation with both links?
+
+	It most likely is combining links properly, but any link
+aggregation scheme has tradeoffs, and the best load balance algorithm to
+use depends upon the work load.  Two aggregated 10G links are not
+interchangable with a single 20G link.
+
+	For a round robin transmission scheme, issues arise because
+packets are delivered at the other end out of order.  This in turn
+triggers various TCP behaviors to deal with what is perceived to be
+transmission errors or lost packets (TCP fast retransmit being the most
+notable).  This usually results in a single TCP connection being unable
+to completely saturate a round-robin aggregated set of links.
+
+	There are a few parameters on linux that can be adjusted.  I
+don't know what the windows equivalents might be.
+
+	On linux, adjusting the net.ipv4.tcp_reordering sysctl value
+will increase the tolerance for out of order delivery.  
+
+	The sysctl is adjusted via something like
+
+sysctl -w net.ipv4.tcp_reordering=10
+
+	the default value is 3, and higher values increase the tolerance
+for out of order delivery.  If memory serves, the setting is applied to
+connections as they are created, so existing connections will not see
+changes.
+
+	Also, adjusting the packet coalescing setting for the receiving
+devices may also permit higher throughput. The packet coalescing setting
+is adjusted via ethtool; the current settings can be viewed via
+
+ethtool -c eth0
+
+	and then adjusted via something like
+
+ethtool -C eth0 rx-usecs 30
+
+	I've seen reports that raising the "rx-usecs" parameter at the
+receiver can increase the round-robin throughput.  My recollection is
+that the value used was 30, but the best settings will likely be
+dependent upon your particular hardware and configuration.
+
+>   On the windows side it shows the bond-link as a 20Gb connection, but
+>I don't see anyplace for something similar on linux. 
+
+	There isn't any such indicator; bonding does not advertise its
+link speed as the sum of its slaves link speeds.
+
+	-J
+
+---
+	-Jay Vosburgh, IBM Linux Technology Center, fubar@us.ibm.com
+
