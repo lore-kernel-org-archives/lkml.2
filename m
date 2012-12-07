@@ -1,477 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755762Ab2LGHgJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 02:36:09 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:54985 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751361Ab2LGHgE (ORCPT
+	id S1755789Ab2LGHgb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 02:36:31 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:61470 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755765Ab2LGHga (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 02:36:04 -0500
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        David Gibson <david@gibson.dropbear.id.au>
-Subject: [PATCH] vfio powerpc: enabled on powernv platform
-Date: Fri,  7 Dec 2012 18:35:50 +1100
-Message-Id: <1354865750-8104-1-git-send-email-aik@ozlabs.ru>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1354636299.1809.431.camel@bling.home>
-References: <1354636299.1809.431.camel@bling.home>
+	Fri, 7 Dec 2012 02:36:30 -0500
+Message-ID: <50C19C33.9030502@huawei.com>
+Date: Fri, 7 Dec 2012 15:35:15 +0800
+From: Xishi Qiu <qiuxishi@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>, WuJianguo <wujianguo@huawei.com>,
+        Liujiang <jiang.liu@huawei.com>, <andi@firstfloor.org>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <akpm@linux-foundation.org>
+Subject: Re: [PATCH] MCE: fix an error of mce_bad_pages statistics
+References: <50C15A35.5020007@huawei.com> <20121207072541.GA27708@liondog.tnic>
+In-Reply-To: <20121207072541.GA27708@liondog.tnic>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.135.74.196]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch initializes IOMMU groups based on the IOMMU
-configuration discovered during the PCI scan on POWERNV
-(POWER non virtualized) platform. The IOMMU groups are
-to be used later by VFIO driver (PCI pass through).
+On 2012/12/7 15:25, Borislav Petkov wrote:
 
-It also implements an API for mapping/unmapping pages for
-guest PCI drivers and providing DMA window properties.
-This API is going to be used later by QEMU-VFIO to handle
-h_put_tce hypercalls from the KVM guest.
+> On Fri, Dec 07, 2012 at 10:53:41AM +0800, Xishi Qiu wrote:
+>> On x86 platform, if we use "/sys/devices/system/memory/soft_offline_page" to offline a
+>> free page twice, the value of mce_bad_pages will be added twice. So this is an error,
+>> since the page was already marked HWPoison, we should skip the page and don't add the
+>> value of mce_bad_pages.
+>>
+>> $ cat /proc/meminfo | grep HardwareCorrupted
+>>
+>> soft_offline_page()
+>> 	get_any_page()
+>> 		atomic_long_add(1, &mce_bad_pages)
+>>
+>> The free page which marked HWPoison is still managed by page buddy allocator. So when
+>> offlining it again, get_any_page() always returns 0 with
+>> "pr_info("%s: %#lx free buddy page\n", __func__, pfn);".
+>>
+>> When page is allocated, the PageBuddy is removed in bad_page(), then get_any_page()
+>> returns -EIO with pr_info("%s: %#lx: unknown zero refcount page type %lx\n", so
+>> mce_bad_pages will not be added.
+>>
+>> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+>> ﻿Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+>> ---
+>>  mm/memory-failure.c |    5 +++++
+>>  1 files changed, 5 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+>> index 8b20278..02a522e 100644
+>> --- a/mm/memory-failure.c
+>> +++ b/mm/memory-failure.c
+>> @@ -1375,6 +1375,11 @@ static int get_any_page(struct page *p, unsigned long pfn, int flags)
+>>  	if (flags & MF_COUNT_INCREASED)
+>>  		return 1;
+>>
+>> +	if (PageHWPoison(p)) {
+>> +		pr_info("%s: %#lx page already poisoned\n", __func__, pfn);
+>> +		return -EBUSY;
+>> +	}
+> 
+> Shouldn't this be done in soft_offline_page() instead, like it is done
+> in soft_offline_huge_page() for hugepages?
+> 
+> Thanks.
+> 
 
-Although this driver has been tested only on the POWERNV
-platform, it should work on any platform which supports
-TCE tables.
+Hi Borislav, you mean we should move this to the beginning of soft_offline_page()?
 
-To enable VFIO on POWER, enable SPAPR_TCE_IOMMU config
-option and configure VFIO as required.
+soft_offline_page()
+{
+	...
+	get_any_page()
+	...
+	/*
+	 * Synchronized using the page lock with memory_failure()
+	 */
+	if (PageHWPoison(page)) {
+		unlock_page(page);
+		put_page(page);
+		pr_info("soft offline: %#lx page already poisoned\n", pfn);
+		return -EBUSY;
+	}
+	...
+}
 
-Cc: David Gibson <david@gibson.dropbear.id.au>
-Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
----
- arch/powerpc/include/asm/iommu.h     |   10 ++
- arch/powerpc/kernel/iommu.c          |  214 ++++++++++++++++++++++++++++++++++
- arch/powerpc/platforms/powernv/pci.c |  134 +++++++++++++++++++++
- drivers/iommu/Kconfig                |    8 ++
- 4 files changed, 366 insertions(+)
+Thanks
+Xishi Qiu
 
-diff --git a/arch/powerpc/include/asm/iommu.h b/arch/powerpc/include/asm/iommu.h
-index cbfe678..be3b11b 100644
---- a/arch/powerpc/include/asm/iommu.h
-+++ b/arch/powerpc/include/asm/iommu.h
-@@ -76,6 +76,9 @@ struct iommu_table {
- 	struct iommu_pool large_pool;
- 	struct iommu_pool pools[IOMMU_NR_POOLS];
- 	unsigned long *it_map;       /* A simple allocation bitmap for now */
-+#ifdef CONFIG_IOMMU_API
-+	struct iommu_group *it_group;
-+#endif
- };
- 
- struct scatterlist;
-@@ -147,5 +150,12 @@ static inline void iommu_restore(void)
- }
- #endif
- 
-+extern void iommu_reset_table(struct iommu_table *tbl, bool release);
-+extern long iommu_clear_tces(struct iommu_table *tbl, unsigned long entry,
-+		unsigned long pages);
-+extern long iommu_put_tces(struct iommu_table *tbl, unsigned long entry,
-+		uint64_t tce, enum dma_data_direction direction,
-+		unsigned long pages);
-+
- #endif /* __KERNEL__ */
- #endif /* _ASM_IOMMU_H */
-diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
-index ff5a6ce..123431a 100644
---- a/arch/powerpc/kernel/iommu.c
-+++ b/arch/powerpc/kernel/iommu.c
-@@ -44,6 +44,7 @@
- #include <asm/kdump.h>
- #include <asm/fadump.h>
- #include <asm/vio.h>
-+#include <asm/tce.h>
- 
- #define DBG(...)
- 
-@@ -856,3 +857,216 @@ void iommu_free_coherent(struct iommu_table *tbl, size_t size,
- 		free_pages((unsigned long)vaddr, get_order(size));
- 	}
- }
-+
-+#ifdef CONFIG_IOMMU_API
-+/*
-+ * SPAPR TCE API
-+ */
-+
-+/*
-+ * iommu_reset_table is called when it started/stopped being used
-+ */
-+void iommu_reset_table(struct iommu_table *tbl, bool release)
-+{
-+	/*
-+	 * Page at 0 is marked as used in iommu_init_table,
-+	 * so here we clear it when called with release=false...
-+	 */
-+	if (!release && (tbl->it_offset == 0))
-+		clear_bit(0, tbl->it_map);
-+
-+	iommu_clear_tces(tbl, tbl->it_offset, tbl->it_size);
-+
-+	memset(tbl->it_map, 0, (tbl->it_size + 7) >> 3);
-+
-+	/*
-+	 * ... or restore when release=true
-+	 */
-+	if (release && (tbl->it_offset == 0))
-+		set_bit(0, tbl->it_map);
-+}
-+EXPORT_SYMBOL_GPL(iommu_reset_table);
-+
-+/*
-+ * Returns the number of used IOMMU pages (4K) within
-+ * the same system page (4K or 64K).
-+ * bitmap_weight is not used as it does not support bigendian maps.
-+ * "offset" is an IOMMU page number relative to DMA window start.
-+ */
-+static int syspage_weight(unsigned long *map, unsigned long offset)
-+{
-+	int ret = 0, nbits = PAGE_SIZE/IOMMU_PAGE_SIZE;
-+
-+	/* Aligns TCE entry number to system page boundary */
-+	offset &= PAGE_MASK >> IOMMU_PAGE_SHIFT;
-+
-+	/* Count used 4K pages */
-+	while (nbits) {
-+		if (test_bit(offset, map))
-+			++ret;
-+		--nbits;
-+		++offset;
-+	}
-+
-+	return ret;
-+}
-+
-+static void tce_flush(struct iommu_table *tbl)
-+{
-+	/* Flush/invalidate TLB caches if necessary */
-+	if (ppc_md.tce_flush)
-+		ppc_md.tce_flush(tbl);
-+
-+	/* Make sure updates are seen by hardware */
-+	mb();
-+}
-+
-+/*
-+ * iommu_clear_tces clears tces and returned the number of system pages
-+ * which it called put_page() on
-+ */
-+static long clear_tces_nolock(struct iommu_table *tbl, unsigned long entry,
-+		unsigned long pages)
-+{
-+	int i, retpages = 0, clr;
-+	unsigned long oldtce, oldweight;
-+	struct page *page;
-+
-+	for (i = 0; i < pages; ++i) {
-+		if (!test_bit(entry + i - tbl->it_offset, tbl->it_map))
-+			continue;
-+
-+		oldtce = ppc_md.tce_get(tbl, entry + i);
-+		ppc_md.tce_free(tbl, entry + i, 1);
-+
-+		oldweight = syspage_weight(tbl->it_map,
-+				entry + i - tbl->it_offset);
-+		clr = __test_and_clear_bit(entry + i - tbl->it_offset,
-+				tbl->it_map);
-+
-+		if (WARN_ON(!(oldtce & (TCE_PCI_WRITE | TCE_PCI_READ))))
-+			continue;
-+
-+		page = pfn_to_page(oldtce >> PAGE_SHIFT);
-+
-+		if (WARN_ON(!page))
-+			continue;
-+
-+		if (oldtce & TCE_PCI_WRITE)
-+			SetPageDirty(page);
-+
-+		put_page(page);
-+
-+		/* That was the last IOMMU page within the system page */
-+		if ((oldweight == 1) && clr)
-+			++retpages;
-+	}
-+
-+	return retpages;
-+}
-+
-+/*
-+ * iommu_clear_tces clears tces and returned the number
-+ * of released system pages
-+ */
-+long iommu_clear_tces(struct iommu_table *tbl, unsigned long entry,
-+		unsigned long pages)
-+{
-+	int ret;
-+	struct iommu_pool *pool = get_pool(tbl, entry);
-+
-+	spin_lock(&(pool->lock));
-+	ret = clear_tces_nolock(tbl, entry, pages);
-+	tce_flush(tbl);
-+	spin_unlock(&(pool->lock));
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(iommu_clear_tces);
-+
-+static int put_tce(struct iommu_table *tbl, unsigned long entry,
-+		uint64_t tce, enum dma_data_direction direction)
-+{
-+	int ret;
-+	struct page *page = NULL;
-+	unsigned long kva, offset, oldweight;
-+
-+	/* Map new TCE */
-+	offset = (tce & IOMMU_PAGE_MASK) - (tce & PAGE_MASK);
-+	ret = get_user_pages_fast(tce & PAGE_MASK, 1,
-+			direction != DMA_TO_DEVICE, &page);
-+	if (ret != 1) {
-+		pr_err("tce_vfio: get_user_pages_fast failed tce=%llx ioba=%lx ret=%d\n",
-+				tce, entry << IOMMU_PAGE_SHIFT, ret);
-+		return -EFAULT;
-+	}
-+
-+	kva = (unsigned long) page_address(page);
-+	kva += offset;
-+
-+	/* tce_build receives a virtual address */
-+	ret = ppc_md.tce_build(tbl, entry, 1, kva, direction, NULL);
-+
-+	/* tce_build() only returns non-zero for transient errors */
-+	if (unlikely(ret)) {
-+		pr_err("tce_vfio: tce_put failed on tce=%llx ioba=%lx kva=%lx ret=%d\n",
-+				tce, entry << IOMMU_PAGE_SHIFT, kva, ret);
-+		put_page(page);
-+		return -EIO;
-+	}
-+
-+	/* Calculate if new system page has been locked */
-+	oldweight = syspage_weight(tbl->it_map, entry - tbl->it_offset);
-+	__set_bit(entry - tbl->it_offset, tbl->it_map);
-+
-+	return (oldweight == 0) ? 1 : 0;
-+}
-+
-+/*
-+ * iommu_put_tces builds tces and returned the number of actually
-+ * locked system pages
-+ */
-+long iommu_put_tces(struct iommu_table *tbl, unsigned long entry,
-+		uint64_t tce, enum dma_data_direction direction,
-+		unsigned long pages)
-+{
-+	int i, ret = 0, retpages = 0;
-+	struct iommu_pool *pool = get_pool(tbl, entry);
-+
-+	BUILD_BUG_ON(PAGE_SIZE < IOMMU_PAGE_SIZE);
-+	BUG_ON(direction == DMA_NONE);
-+
-+	spin_lock(&(pool->lock));
-+
-+	/* Check if any is in use */
-+	for (i = 0; i < pages; ++i) {
-+		if (test_bit(entry + i - tbl->it_offset, tbl->it_map)) {
-+			spin_unlock(&(pool->lock));
-+			return -EBUSY;
-+		}
-+	}
-+
-+	/* Put tces to the table */
-+	for (i = 0; (i < pages) && (ret >= 0); ++i, tce += IOMMU_PAGE_SIZE) {
-+		ret = put_tce(tbl, entry + i, tce, direction);
-+		if (ret == 1)
-+			++retpages;
-+	}
-+
-+	/*
-+	 * If failed, release locked pages, otherwise return the number
-+	 * of locked system pages
-+	 */
-+	if (ret < 0)
-+		clear_tces_nolock(tbl, entry, i);
-+	else
-+		ret = retpages;
-+
-+	tce_flush(tbl);
-+	spin_unlock(&(pool->lock));
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(iommu_put_tces);
-+
-+#endif /* CONFIG_IOMMU_API */
-diff --git a/arch/powerpc/platforms/powernv/pci.c b/arch/powerpc/platforms/powernv/pci.c
-index 05205cf..1b970bf 100644
---- a/arch/powerpc/platforms/powernv/pci.c
-+++ b/arch/powerpc/platforms/powernv/pci.c
-@@ -20,6 +20,7 @@
- #include <linux/irq.h>
- #include <linux/io.h>
- #include <linux/msi.h>
-+#include <linux/iommu.h>
- 
- #include <asm/sections.h>
- #include <asm/io.h>
-@@ -613,3 +614,136 @@ void __init pnv_pci_init(void)
- 	ppc_md.teardown_msi_irqs = pnv_teardown_msi_irqs;
- #endif
- }
-+
-+#ifdef CONFIG_IOMMU_API
-+/*
-+ * IOMMU groups support required by VFIO
-+ */
-+static int add_device(struct device *dev)
-+{
-+	struct iommu_table *tbl;
-+	int ret = 0;
-+
-+	if (WARN_ON(dev->iommu_group)) {
-+		pr_warn("tce_vfio: device %s is already in iommu group %d, skipping\n",
-+				dev_name(dev),
-+				iommu_group_id(dev->iommu_group));
-+		return -EBUSY;
-+	}
-+
-+	tbl = get_iommu_table_base(dev);
-+	if (!tbl) {
-+		pr_debug("tce_vfio: skipping device %s with no tbl\n",
-+				dev_name(dev));
-+		return 0;
-+	}
-+
-+	pr_debug("tce_vfio: adding %s to iommu group %d\n",
-+			dev_name(dev), iommu_group_id(tbl->it_group));
-+
-+	ret = iommu_group_add_device(tbl->it_group, dev);
-+	if (ret < 0)
-+		pr_err("tce_vfio: %s has not been added, ret=%d\n",
-+				dev_name(dev), ret);
-+
-+	return ret;
-+}
-+
-+static void del_device(struct device *dev)
-+{
-+	iommu_group_remove_device(dev);
-+}
-+
-+static int iommu_bus_notifier(struct notifier_block *nb,
-+			      unsigned long action, void *data)
-+{
-+	struct device *dev = data;
-+
-+	switch (action) {
-+	case BUS_NOTIFY_ADD_DEVICE:
-+		return add_device(dev);
-+	case BUS_NOTIFY_DEL_DEVICE:
-+		del_device(dev);
-+		return 0;
-+	default:
-+		return 0;
-+	}
-+}
-+
-+static struct notifier_block tce_iommu_bus_nb = {
-+	.notifier_call = iommu_bus_notifier,
-+};
-+
-+static void group_release(void *iommu_data)
-+{
-+	struct iommu_table *tbl = iommu_data;
-+	tbl->it_group = NULL;
-+}
-+
-+static int __init tce_iommu_init(void)
-+{
-+	struct pci_dev *pdev = NULL;
-+	struct iommu_table *tbl;
-+	struct iommu_group *grp;
-+
-+	/* Allocate and initialize IOMMU groups */
-+	for_each_pci_dev(pdev) {
-+		tbl = get_iommu_table_base(&pdev->dev);
-+		if (!tbl)
-+			continue;
-+
-+		/* Skip already initialized */
-+		if (tbl->it_group)
-+			continue;
-+
-+		grp = iommu_group_alloc();
-+		if (IS_ERR(grp)) {
-+			pr_info("tce_vfio: cannot create new IOMMU group, ret=%ld\n",
-+					PTR_ERR(grp));
-+			return PTR_ERR(grp);
-+		}
-+		tbl->it_group = grp;
-+		iommu_group_set_iommudata(grp, tbl, group_release);
-+	}
-+
-+	bus_register_notifier(&pci_bus_type, &tce_iommu_bus_nb);
-+
-+	/* Add PCI devices to VFIO groups */
-+	for_each_pci_dev(pdev)
-+		add_device(&pdev->dev);
-+
-+	return 0;
-+}
-+
-+static void __exit tce_iommu_cleanup(void)
-+{
-+	struct pci_dev *pdev = NULL;
-+	struct iommu_table *tbl;
-+	struct iommu_group *grp = NULL;
-+
-+	bus_unregister_notifier(&pci_bus_type, &tce_iommu_bus_nb);
-+
-+	/* Delete PCI devices from VFIO groups */
-+	for_each_pci_dev(pdev)
-+		del_device(&pdev->dev);
-+
-+	/* Release VFIO groups */
-+	for_each_pci_dev(pdev) {
-+		tbl = get_iommu_table_base(&pdev->dev);
-+		if (!tbl)
-+			continue;
-+		grp = tbl->it_group;
-+
-+		/* Skip (already) uninitialized */
-+		if (!grp)
-+			continue;
-+
-+		/* Do actual release, group_release() is expected to work */
-+		iommu_group_put(grp);
-+		BUG_ON(tbl->it_group);
-+	}
-+}
-+
-+module_init(tce_iommu_init);
-+module_exit(tce_iommu_cleanup);
-+#endif /* CONFIG_IOMMU_API */
-diff --git a/drivers/iommu/Kconfig b/drivers/iommu/Kconfig
-index 9f69b56..29d11dc 100644
---- a/drivers/iommu/Kconfig
-+++ b/drivers/iommu/Kconfig
-@@ -187,4 +187,12 @@ config EXYNOS_IOMMU_DEBUG
- 
- 	  Say N unless you need kernel log message for IOMMU debugging
- 
-+config SPAPR_TCE_IOMMU
-+	bool "sPAPR TCE IOMMU Support"
-+	depends on PPC_POWERNV
-+	select IOMMU_API
-+	help
-+	  Enables bits of IOMMU API required by VFIO. The iommu_ops is
-+	  still not implemented.
-+
- endif # IOMMU_SUPPORT
--- 
-1.7.10.4
+
+
+
+
+
+
+
+
+
+
+
 
