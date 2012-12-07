@@ -1,53 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030933Ab2LGVaX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 16:30:23 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:55193 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030916Ab2LGVaU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 16:30:20 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAErSpo6MEtx6hsYhY=h0+eXqQcnZuG2vq=z_8Oz8tnksKZd7DA@mail.gmail.com>
-References: <20121207062454.11051.12739.stgit@amt.stowe>
-	<20121207062500.11051.44198.stgit@amt.stowe>
-	<CAErSpo6MEtx6hsYhY=h0+eXqQcnZuG2vq=z_8Oz8tnksKZd7DA@mail.gmail.com>
-Date: Fri, 7 Dec 2012 13:30:18 -0800
-X-Google-Sender-Auth: HdtRe2l7oKSrfoZ6zL0hEtDNDCg
-Message-ID: <CAE9FiQV6L2ZUEVHM2CCdqZfB9Yij7OGYZ-xsEpzCdXU2hSHnsQ@mail.gmail.com>
-Subject: Re: [PATCH 01/15] PCI, acpiphp: Separate out hot-add support of pci
- host bridge
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Myron Stowe <myron.stowe@redhat.com>, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1030945Ab2LGVac (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 16:30:32 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:46498 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753029Ab2LGVa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 16:30:29 -0500
+Subject: [RFCv2][PATCH 1/3] create slow_virt_to_phys()
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, Gleb Natapov <gleb@redhat.com>,
+        Avi Kivity <avi@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+Date: Fri, 07 Dec 2012 16:30:23 -0500
+Message-Id: <20121207213023.AA3AFF11@kernel.stglabs.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12120721-7182-0000-0000-000003A0D76C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 7, 2012 at 11:32 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Thu, Dec 6, 2012 at 11:25 PM, Myron Stowe <myron.stowe@redhat.com> wrote:
->> From: Yinghai Lu <yinghai@kernel.org>
->>
->>
-> For example, as soon as you put this code in pci_root.c instead of
-> pci_root_hp.c, it becomes obvious that we're keeping a list of host
-> bridges in both places, and we probably don't need two lists.  And it
-> seems dubious that acpi_pci_root_hp_init() is an initcall that walks
-> the namespace looking for host bridges, when acpi_pci_root_add()
-> already exists and is called for every host bridge.
 
-removed the duplicated interface in following patch.
+This is necessary because __pa() does not work on some kinds of
+memory, like vmalloc() or the alloc_remap() areas on 32-bit
+NUMA systems.  We have some functions to do conversions _like_
+this in the vmalloc() code (like vmalloc_to_page()), but they
+do not work on sizes other than 4k pages.  We would potentially
+need to be able to handle all the page sizes that we use for
+the kernel linear mapping (4k, 2M, 1G).
 
-http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=shortlog;h=refs/heads/for-pci-split-pci-root-hp-2
+In practice, on 32-bit NUMA systems, the percpu areas get stuck
+in the alloc_remap() area.  Any __pa() call on them will break
+and basically return garbage.
 
-http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=a1d1ef3f5e4932bc672d96dedd11c5d58f7f20f5
+This patch introduces a new function slow_virt_to_phys(), which
+walks the kernel page tables on x86 and should do precisely
+the same logical thing as __pa(), but actually work on a wider
+range of memory.  It should work on the normal linear mapping,
+vmalloc(), kmap(), etc...
 
-| [PATCH] PCI, ACPI: remove acpi_root_bridge in pci_root_hp
-|
-| Tang noticed that hotplug through container will not update acpi_root_bridge
-| list.
-|
-| After closely checking, we don't need that for struct for tracking and
-| could use acpi_pci_root directly.
+
+Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+---
+
+ linux-2.6.git-dave/arch/x86/include/asm/pgtable_types.h |    1 
+ linux-2.6.git-dave/arch/x86/mm/pageattr.c               |   47 ++++++++++++++++
+ 2 files changed, 48 insertions(+)
+
+diff -puN arch/x86/include/asm/pgtable_types.h~create-slow_virt_to_phys arch/x86/include/asm/pgtable_types.h
+--- linux-2.6.git/arch/x86/include/asm/pgtable_types.h~create-slow_virt_to_phys	2012-12-07 16:25:16.317592189 -0500
++++ linux-2.6.git-dave/arch/x86/include/asm/pgtable_types.h	2012-12-07 16:25:16.321592224 -0500
+@@ -332,6 +332,7 @@ static inline void update_page_count(int
+  * as a pte too.
+  */
+ extern pte_t *lookup_address(unsigned long address, unsigned int *level);
++extern phys_addr_t slow_virt_to_phys(void *__address);
+ 
+ #endif	/* !__ASSEMBLY__ */
+ 
+diff -puN arch/x86/mm/pageattr.c~create-slow_virt_to_phys arch/x86/mm/pageattr.c
+--- linux-2.6.git/arch/x86/mm/pageattr.c~create-slow_virt_to_phys	2012-12-07 16:25:16.317592189 -0500
++++ linux-2.6.git-dave/arch/x86/mm/pageattr.c	2012-12-07 16:28:20.675189758 -0500
+@@ -364,6 +364,53 @@ pte_t *lookup_address(unsigned long addr
+ EXPORT_SYMBOL_GPL(lookup_address);
+ 
+ /*
++ * This is necessary because __pa() does not work on some
++ * kinds of memory, like vmalloc() or the alloc_remap()
++ * areas on 32-bit NUMA systems.  The percpu areas can
++ * end up in this kind of memory, for instance.
++ *
++ * This could be optimized, but it is only intended to be
++ * used at inititalization time, and keeping it
++ * unoptimized should increase the testing coverage for
++ * the more obscure platforms.
++ */
++phys_addr_t slow_virt_to_phys(void *__virt_addr)
++{
++	unsigned long virt_addr = (unsigned long)__virt_addr;
++	phys_addr_t phys_addr;
++	unsigned long offset;
++	unsigned int level = -1;
++	unsigned long psize = 0;
++	unsigned long pmask = 0;
++	pte_t *pte;
++
++	pte = lookup_address(virt_addr, &level);
++	BUG_ON(!pte);
++	switch (level) {
++	case PG_LEVEL_4K:
++		psize = PAGE_SIZE;
++		pmask = PAGE_MASK;
++		break;
++	case PG_LEVEL_2M:
++		psize = PMD_PAGE_SIZE;
++		pmask = PMD_PAGE_MASK;
++		break;
++#ifdef CONFIG_X86_64
++	case PG_LEVEL_1G:
++		psize = PUD_PAGE_SIZE;
++		pmask = PUD_PAGE_MASK;
++		break;
++#endif
++	default:
++		BUG();
++	}
++	offset = virt_addr & ~pmask;
++	phys_addr = pte_pfn(*pte) << PAGE_SHIFT;
++	return (phys_addr | offset);
++}
++EXPORT_SYMBOL_GPL(slow_virt_to_phys);
++
++/*
+  * Set the new pmd in all the pgds we know about:
+  */
+ static void __set_pmd_pte(pte_t *kpte, unsigned long address, pte_t pte)
+_
+
