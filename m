@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933193Ab2LGK0m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 05:26:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42441 "EHLO mx2.suse.de"
+	id S933221Ab2LGK1X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 05:27:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42417 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933084Ab2LGKZO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 05:25:14 -0500
+	id S933089Ab2LGKZL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 05:25:11 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -21,9 +21,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 45/49] mm: numa: Add THP migration for the NUMA working set scanning fault case build fix
-Date: Fri,  7 Dec 2012 10:23:48 +0000
-Message-Id: <1354875832-9700-46-git-send-email-mgorman@suse.de>
+Subject: [PATCH 43/49] mm: sched: numa: Delay PTE scanning until a task is scheduled on a new node
+Date: Fri,  7 Dec 2012 10:23:46 +0000
+Message-Id: <1354875832-9700-44-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1354875832-9700-1-git-send-email-mgorman@suse.de>
 References: <1354875832-9700-1-git-send-email-mgorman@suse.de>
@@ -31,85 +31,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit "Add THP migration for the NUMA working set scanning fault case"
-breaks the build because HPAGE_PMD_SHIFT and HPAGE_PMD_MASK defined to
-explode without CONFIG_TRANSPARENT_HUGEPAGE:
+Due to the fact that migrations are driven by the CPU a task is running
+on there is no point tracking NUMA faults until one task runs on a new
+node. This patch tracks the first node used by an address space. Until
+it changes, PTE scanning is disabled and no NUMA hinting faults are
+trapped. This should help workloads that are short-lived, do not care
+about NUMA placement or have bound themselves to a single node.
 
-mm/migrate.c: In function 'migrate_misplaced_transhuge_page_put':
-mm/migrate.c:1549: error: call to '__build_bug_failed' declared with attribute error: BUILD_BUG failed
-mm/migrate.c:1564: error: call to '__build_bug_failed' declared with attribute error: BUILD_BUG failed
-mm/migrate.c:1566: error: call to '__build_bug_failed' declared with attribute error: BUILD_BUG failed
-mm/migrate.c:1573: error: call to '__build_bug_failed' declared with attribute error: BUILD_BUG failed
-mm/migrate.c:1606: error: call to '__build_bug_failed' declared with attribute error: BUILD_BUG failed
-mm/migrate.c:1648: error: call to '__build_bug_failed' declared with attribute error: BUILD_BUG failed
+This takes advantage of the logic in "mm: sched: numa: Implement slow
+start for working set sampling" to delay when the checks are made. This
+will take advantage of processes that set their CPU and node bindings
+early in their lifetime. It will also potentially allow any initial load
+balancing to take place.
 
-CONFIG_NUMA_BALANCING allows compilation without enabling transparent
-hugepages, so define the dummy function for such a configuration and only
-define migrate_misplaced_transhuge_page_put() when transparent hugepages
-are enabled.
-
-Signed-off-by: David Rientjes <rientjes@google.com>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/migrate.h |   16 +++++++++-------
- mm/migrate.c            |    2 ++
- 2 files changed, 11 insertions(+), 7 deletions(-)
+ include/linux/mm_types.h |   10 ++++++++++
+ kernel/fork.c            |    3 +++
+ kernel/sched/fair.c      |   18 ++++++++++++++++++
+ kernel/sched/features.h  |    4 +++-
+ 4 files changed, 34 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-index ed5a6c5..6c15d4a 100644
---- a/include/linux/migrate.h
-+++ b/include/linux/migrate.h
-@@ -79,12 +79,6 @@ static inline int migrate_huge_page_move_mapping(struct address_space *mapping,
- extern int migrate_misplaced_page(struct page *page, int node);
- extern int migrate_misplaced_page(struct page *page, int node);
- extern bool migrate_ratelimited(int node);
--extern int migrate_misplaced_transhuge_page(struct mm_struct *mm,
--			struct vm_area_struct *vma,
--			pmd_t *pmd, pmd_t entry,
--			unsigned long address,
--			struct page *page, int node);
--
- #else
- static inline int migrate_misplaced_page(struct page *page, int node)
- {
-@@ -94,7 +88,15 @@ static inline bool migrate_ratelimited(int node)
- {
- 	return false;
- }
-+#endif /* CONFIG_BALANCE_NUMA */
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index 62d18a9..e4551c1 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -418,10 +418,20 @@ struct mm_struct {
  
-+#if defined(CONFIG_BALANCE_NUMA) && defined(CONFIG_TRANSPARENT_HUGEPAGE)
-+extern int migrate_misplaced_transhuge_page(struct mm_struct *mm,
-+			struct vm_area_struct *vma,
-+			pmd_t *pmd, pmd_t entry,
-+			unsigned long address,
-+			struct page *page, int node);
-+#else
- static inline int migrate_misplaced_transhuge_page(struct mm_struct *mm,
- 			struct vm_area_struct *vma,
- 			pmd_t *pmd, pmd_t entry,
-@@ -103,6 +105,6 @@ static inline int migrate_misplaced_transhuge_page(struct mm_struct *mm,
+ 	/* numa_scan_seq prevents two threads setting pte_numa */
+ 	int numa_scan_seq;
++
++	/*
++	 * The first node a task was scheduled on. If a task runs on
++	 * a different node than Make PTE Scan Go Now.
++	 */
++	int first_nid;
+ #endif
+ 	struct uprobes_state uprobes_state;
+ };
+ 
++/* first nid will either be a valid NID or one of these values */
++#define NUMA_PTE_SCAN_INIT	-1
++#define NUMA_PTE_SCAN_ACTIVE	-2
++
+ static inline void mm_init_cpumask(struct mm_struct *mm)
  {
- 	return -EAGAIN;
- }
--#endif /* CONFIG_BALANCE_NUMA */
-+#endif /* CONFIG_BALANCE_NUMA && CONFIG_TRANSPARENT_HUGEPAGE*/
+ #ifdef CONFIG_CPUMASK_OFFSTACK
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 8b20ab7..e39111a 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -821,6 +821,9 @@ struct mm_struct *dup_mm(struct task_struct *tsk)
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 	mm->pmd_huge_pte = NULL;
+ #endif
++#ifdef CONFIG_BALANCE_NUMA
++	mm->first_nid = NUMA_PTE_SCAN_INIT;
++#endif
+ 	if (!mm_init(mm, tsk))
+ 		goto fail_nomem;
  
- #endif /* _LINUX_MIGRATE_H */
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 4b1b239..b6fe2d2 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -1602,7 +1602,9 @@ int migrate_misplaced_page(struct page *page, int node)
- out:
- 	return isolated;
- }
-+#endif /* CONFIG_BALANCE_NUMA */
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index b4bc459..fd9c78c 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -861,6 +861,24 @@ void task_numa_work(struct callback_head *work)
+ 		return;
  
-+#if defined(CONFIG_BALANCE_NUMA) && defined(CONFIG_TRANSPARENT_HUGEPAGE)
- int migrate_misplaced_transhuge_page(struct mm_struct *mm,
- 				struct vm_area_struct *vma,
- 				pmd_t *pmd, pmd_t entry,
+ 	/*
++	 * We do not care about task placement until a task runs on a node
++	 * other than the first one used by the address space. This is
++	 * largely because migrations are driven by what CPU the task
++	 * is running on. If it's never scheduled on another node, it'll
++	 * not migrate so why bother trapping the fault.
++	 */
++	if (mm->first_nid == NUMA_PTE_SCAN_INIT)
++		mm->first_nid = numa_node_id();
++	if (mm->first_nid != NUMA_PTE_SCAN_ACTIVE) {
++		/* Are we running on a new node yet? */
++		if (numa_node_id() == mm->first_nid &&
++		    !sched_feat_numa(NUMA_FORCE))
++			return;
++
++		mm->first_nid = NUMA_PTE_SCAN_ACTIVE;
++	}
++
++	/*
+ 	 * Reset the scan period if enough time has gone by. Objective is that
+ 	 * scanning will be reduced if pages are properly placed. As tasks
+ 	 * can enter different phases this needs to be re-examined. Lacking
+diff --git a/kernel/sched/features.h b/kernel/sched/features.h
+index d402368..c3c86fd 100644
+--- a/kernel/sched/features.h
++++ b/kernel/sched/features.h
+@@ -65,8 +65,10 @@ SCHED_FEAT(LB_MIN, false)
+ /*
+  * Apply the automatic NUMA scheduling policy. Enabled automatically
+  * at runtime if running on a NUMA machine. Can be controlled via
+- * balancenuma=
++ * balancenuma=. Allow PTE scanning to be forced on UMA machines
++ * for debugging the core machinery.
+  */
+ #ifdef CONFIG_BALANCE_NUMA
+ SCHED_FEAT(NUMA,	false)
++SCHED_FEAT(NUMA_FORCE,	false)
+ #endif
 -- 
 1.7.9.2
 
