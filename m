@@ -1,89 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755431Ab2LGHP7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 02:15:59 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:2474 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754533Ab2LGHP5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 02:15:57 -0500
-From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        "Lin, JM" <JM.Lin@atmel.com>,
-        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "wim@iguana.be" <wim@iguana.be>,
-        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>
-Subject: RE: [v2 PATCH 6/8] watchdog/at91sam9_wdt: Use
- module_platform_driver()
-Thread-Topic: [v2 PATCH 6/8] watchdog/at91sam9_wdt: Use
- module_platform_driver()
-Thread-Index: AQHN0olow+9cdvYrbEuRdCMwtXBTlpgLkFcAgAFfGnA=
-Date: Fri, 7 Dec 2012 07:12:54 +0000
-Message-ID: <B256D81BAE5131468A838E5D7A2436413A01DF81@penmbx01>
-References: <1354671267-19277-1-git-send-email-wenyou.yang@atmel.com>
- <1354671267-19277-7-git-send-email-wenyou.yang@atmel.com>
- <50C0E0E8.3020809@mvista.com>
-In-Reply-To: <50C0E0E8.3020809@mvista.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.168.5.13]
-Content-Type: text/plain; charset="gb2312"
+	id S1755453Ab2LGHZq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 02:25:46 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:47796 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752845Ab2LGHZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 02:25:45 -0500
+Date: Fri, 7 Dec 2012 08:25:41 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Xishi Qiu <qiuxishi@huawei.com>
+Cc: WuJianguo <wujianguo@huawei.com>, Liujiang <jiang.liu@huawei.com>,
+        andi@firstfloor.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] MCE: fix an error of mce_bad_pages statistics
+Message-ID: <20121207072541.GA27708@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Xishi Qiu <qiuxishi@huawei.com>, WuJianguo <wujianguo@huawei.com>,
+	Liujiang <jiang.liu@huawei.com>, andi@firstfloor.org,
+	linux-mm@kvack.org, linux-kernel@vger.kernel.org
+References: <50C15A35.5020007@huawei.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <50C15A35.5020007@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qB77G4hA025013
 
-Hi,
+On Fri, Dec 07, 2012 at 10:53:41AM +0800, Xishi Qiu wrote:
+> On x86 platform, if we use "/sys/devices/system/memory/soft_offline_page" to offline a
+> free page twice, the value of mce_bad_pages will be added twice. So this is an error,
+> since the page was already marked HWPoison, we should skip the page and don't add the
+> value of mce_bad_pages.
+> 
+> $ cat /proc/meminfo | grep HardwareCorrupted
+> 
+> soft_offline_page()
+> 	get_any_page()
+> 		atomic_long_add(1, &mce_bad_pages)
+> 
+> The free page which marked HWPoison is still managed by page buddy allocator. So when
+> offlining it again, get_any_page() always returns 0 with
+> "pr_info("%s: %#lx free buddy page\n", __func__, pfn);".
+> 
+> When page is allocated, the PageBuddy is removed in bad_page(), then get_any_page()
+> returns -EIO with pr_info("%s: %#lx: unknown zero refcount page type %lx\n", so
+> mce_bad_pages will not be added.
+> 
+> Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
+> ï»¿Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> ---
+>  mm/memory-failure.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+> index 8b20278..02a522e 100644
+> --- a/mm/memory-failure.c
+> +++ b/mm/memory-failure.c
+> @@ -1375,6 +1375,11 @@ static int get_any_page(struct page *p, unsigned long pfn, int flags)
+>  	if (flags & MF_COUNT_INCREASED)
+>  		return 1;
+> 
+> +	if (PageHWPoison(p)) {
+> +		pr_info("%s: %#lx page already poisoned\n", __func__, pfn);
+> +		return -EBUSY;
+> +	}
 
-> -----Original Message-----
-> From: Sergei Shtylyov [mailto:sshtylyov@mvista.com]
-> Sent: 2012Äê12ÔÂ7ÈÕ 2:16
-> To: Yang, Wenyou
-> Cc: linux-arm-kernel@lists.infradead.org; linux-watchdog@vger.kernel.org; Lin, JM;
-> Ferre, Nicolas; linux-kernel@vger.kernel.org; wim@iguana.be;
-> plagnioj@jcrosoft.com
-> Subject: Re: [v2 PATCH 6/8] watchdog/at91sam9_wdt: Use
-> module_platform_driver()
-> 
-> Hello.
-> 
-> On 12/05/2012 04:34 AM, Wenyou Yang wrote:
-> 
-> > Using module_platform_driver() replaces module_init() and module_exit()
-> > and makes the code simpler.
-> 
-> > Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-> > Cc: wim@iguana.be
-> > Cc: linux-watchdog@vger.kernel.org
-> > Cc: linux-kernel@vger.kernel.org
-> > ---
-> >  drivers/watchdog/at91sam9_wdt.c |   14 ++------------
-> >  1 file changed, 2 insertions(+), 12 deletions(-)
-> >
-> > diff --git a/drivers/watchdog/at91sam9_wdt.c b/drivers/watchdog/at91sam9_wdt.c
-> > index 5afd3fb..a7c0881 100644
-> > --- a/drivers/watchdog/at91sam9_wdt.c
-> > +++ b/drivers/watchdog/at91sam9_wdt.c
-> > @@ -278,6 +278,7 @@ MODULE_DEVICE_TABLE(of, at91_wdt_dt_ids);
-> >  #endif
-> >
-> >  static struct platform_driver at91wdt_driver = {
-> > +	.probe		= at91wdt_probe,
-> 
->    You also need to remove '__init' annotation from that function since the
-> driver becomes hot-plug aware now.
-Thanks, I got it.
-> 
-> WBR, Sergei
+Shouldn't this be done in soft_offline_page() instead, like it is done
+in soft_offline_huge_page() for hugepages?
 
-Best Regards,
-Wenyou Yang
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
