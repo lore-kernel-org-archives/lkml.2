@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423852Ab2LGSbt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 13:31:49 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:39686 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423749Ab2LGSbr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 13:31:47 -0500
-Date: Fri, 7 Dec 2012 10:31:41 -0800
-From: Tejun Heo <tj@kernel.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
-        namhyung@kernel.org, vincent.guittot@linaro.org, oleg@redhat.com,
-        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
-        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v3 1/9] CPU hotplug: Provide APIs to prevent CPU
- offline from atomic context
-Message-ID: <20121207183141.GC2821@htj.dyndns.org>
-References: <20121207173702.27305.1486.stgit@srivatsabhat.in.ibm.com>
- <20121207173759.27305.84316.stgit@srivatsabhat.in.ibm.com>
- <20121207175724.GA2821@htj.dyndns.org>
- <50C23441.7020309@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50C23441.7020309@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1423873Ab2LGScM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 13:32:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49539 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1423749Ab2LGScK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 13:32:10 -0500
+Message-ID: <1354905128.3224.98.camel@bling.home>
+Subject: Re: [PATCH 02/10] kvm: Check userspace_addr when modifying a memory
+ slot
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Jason Baron <jbaron@redhat.com>
+Cc: mtosatti@redhat.com, gleb@redhat.com, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Date: Fri, 07 Dec 2012 11:32:08 -0700
+In-Reply-To: <20121207181725.GB13053@redhat.com>
+References: <20121206214722.24968.6043.stgit@bling.home>
+	 <20121206222037.24968.13698.stgit@bling.home>
+	 <20121207181725.GB13053@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Srivatsa.
-
-On Fri, Dec 07, 2012 at 11:54:01PM +0530, Srivatsa S. Bhat wrote:
-> > lg_lock doesn't do local nesting and I'm not sure how big a deal that
-> > is as I don't know how many should be converted.  But if nesting is an
-> > absolute necessity, it would be much better to implement generic
-> > rwlock variant (say, lg_rwlock) rather than implementing unusual
-> > cpuhotplug-specific percpu synchronization construct.
+On Fri, 2012-12-07 at 13:17 -0500, Jason Baron wrote:
+> On Thu, Dec 06, 2012 at 03:20:37PM -0700, Alex Williamson wrote:
+> > The API documents that only flags and guest physical memory space can
+> > be modified on an existing slot, but we don't enforce that the
+> > userspace address cannot be modified.  Instead we just ignore it.
+> > This means that a user may think they've successfully moved both the
+> > guest and user addresses, when in fact only the guest address changed.
+> > Check and error instead.
+> > 
+> > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> > ---
+> >  virt/kvm/kvm_main.c |    8 +++++++-
+> >  1 file changed, 7 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> > index e426704..93213e1 100644
+> > --- a/virt/kvm/kvm_main.c
+> > +++ b/virt/kvm/kvm_main.c
+> > @@ -779,13 +779,19 @@ int __kvm_set_memory_region(struct kvm *kvm,
+> >  
+> >  	r = -ENOMEM;
+> >  
+> > -	/* Allocate if a slot is being created */
+> > +	/*
+> > +	 * Allocate if a slot is being created.  If modifying a slot,
+> > +	 * the userspace_addr cannot change.
+> > +	 */
+> >  	if (!old.npages) {
+> >  		new.user_alloc = user_alloc;
+> >  		new.userspace_addr = mem->userspace_addr;
+> >  
+> >  		if (kvm_arch_create_memslot(&new, npages))
+> >  			goto out_free;
+> > +	} else if (mem->userspace_addr != old.userspace_addr) {
+> > +		r = -EINVAL;
+> > +		goto out_free;
+> >  	}
+> >  
+> >  	/* Allocate page dirty bitmap if needed */
+> > 
 > 
-> To be honest, at a certain point in time while designing this, I did
-> realize that this was getting kinda overly complicated ;-) ... but I
-> wanted to see how this would actually work out when finished and get
-> some feedback on the same, hence I posted it out. But this also proves
-> that we _can_ actually compete with the flexibility of preempt_disable()
-> and still be safe with respect to locking, if we really want to ;-)
+> hmmm...does this mean that on a 'destroy', where npages is 0, the user
+> has to set up userspace_addr correctly? If so, that would appear to be
+> an unwanted change in semantics here.
 
-I got confused by comparison to preempt_disable() but you're right
-that percpu rwlock shouldn't be able to introduce locking dependency
-which doesn't exist with non-percpu rwlock.  ie. write locking should
-be atomic w.r.t. to all readers.  At the simplest, this can be
-implemented by writer backing out all the way if try-locking any CPU
-fails and retrying the whole thing.  That should be correct but has
-the potential of starving the writer.
+Good point, it does change that.  We could make this be (npages &&
+mem->userspace_addr != old.userspace_addr) to avoid that case.  Thanks,
 
-What we need here is a generic percpu-rwlock.  I don't know which
-exact implementation strategy we should choose.  Maybe your switching
-to global rwlock is the right solution.  But, at any rate, I think it
-would be best to implement proper percpu-rwlock and then apply it to
-CPU hotplug.  It's actually gonna be pretty fitting as
-get_online_cpus() is being converted to percpu-rwsem.  IIUC, Oleg has
-been working on this for a while now.  Oleg, what do you think?
+Alex
 
-Thanks.
-
--- 
-tejun
