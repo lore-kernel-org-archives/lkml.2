@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423486Ab2LGA7k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 19:59:40 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:61365 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422904Ab2LGA7g (ORCPT
+	id S1424067Ab2LGBFz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 20:05:55 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:40159 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423480Ab2LGA7j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 19:59:36 -0500
+	Thu, 6 Dec 2012 19:59:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jianguo Wu <wujianguo@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
         Johannes Weiner <hannes@cmpxchg.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
+        George Spelvin <linux@horizon.com>,
+        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
+        Tomas Racek <tracek@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 06/27] mm/vmemmap: fix wrong use of virt_to_page
-Date: Thu,  6 Dec 2012 16:58:50 -0800
-Message-Id: <20121207005827.295300505@linuxfoundation.org>
+Subject: [ 07/27] mm: vmscan: fix endless loop in kswapd balancing
+Date: Thu,  6 Dec 2012 16:58:51 -0800
+Message-Id: <20121207005827.599339384@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121207005825.232489605@linuxfoundation.org>
 References: <20121207005825.232489605@linuxfoundation.org>
@@ -31,80 +31,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jianguo Wu <wujianguo@huawei.com>
+From: Johannes Weiner <hannes@cmpxchg.org>
 
-commit ae64ffcac35de0db628ba9631edf8ff34c5cd7ac upstream.
+commit 60cefed485a02bd99b6299dad70666fe49245da7 upstream.
 
-I enable CONFIG_DEBUG_VIRTUAL and CONFIG_SPARSEMEM_VMEMMAP, when doing
-memory hotremove, there is a kernel BUG at arch/x86/mm/physaddr.c:20.
+Kswapd does not in all places have the same criteria for a balanced
+zone.  Zones are only being reclaimed when their high watermark is
+breached, but compaction checks loop over the zonelist again when the
+zone does not meet the low watermark plus two times the size of the
+allocation.  This gets kswapd stuck in an endless loop over a small
+zone, like the DMA zone, where the high watermark is smaller than the
+compaction requirement.
 
-It is caused by free_section_usemap()->virt_to_page(), virt_to_page() is
-only used for kernel direct mapping address, but sparse-vmemmap uses
-vmemmap address, so it is going wrong here.
+Add a function, zone_balanced(), that checks the watermark, and, for
+higher order allocations, if compaction has enough free memory.  Then
+use it uniformly to check for balanced zones.
 
-  ------------[ cut here ]------------
-  kernel BUG at arch/x86/mm/physaddr.c:20!
-  invalid opcode: 0000 [#1] SMP
-  Modules linked in: acpihp_drv acpihp_slot edd cpufreq_conservative cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf fuse vfat fat loop dm_mod coretemp kvm crc32c_intel ipv6 ixgbe igb iTCO_wdt i7core_edac edac_core pcspkr iTCO_vendor_support ioatdma microcode joydev sr_mod i2c_i801 dca lpc_ich mfd_core mdio tpm_tis i2c_core hid_generic tpm cdrom sg tpm_bios rtc_cmos button ext3 jbd mbcache usbhid hid uhci_hcd ehci_hcd usbcore usb_common sd_mod crc_t10dif processor thermal_sys hwmon scsi_dh_alua scsi_dh_hp_sw scsi_dh_rdac scsi_dh_emc scsi_dh ata_generic ata_piix libata megaraid_sas scsi_mod
-  CPU 39
-  Pid: 6454, comm: sh Not tainted 3.7.0-rc1-acpihp-final+ #45 QCI QSSC-S4R/QSSC-S4R
-  RIP: 0010:[<ffffffff8103c908>]  [<ffffffff8103c908>] __phys_addr+0x88/0x90
-  RSP: 0018:ffff8804440d7c08  EFLAGS: 00010006
-  RAX: 0000000000000006 RBX: ffffea0012000000 RCX: 000000000000002c
-  ...
+This makes sure that when the compaction watermark is not met, at least
+reclaim happens and progress is made - or the zone is declared
+unreclaimable at some point and skipped entirely.
 
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Reviewd-by: Wen Congyang <wency@cn.fujitsu.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Reported-by: George Spelvin <linux@horizon.com>
+Reported-by: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
+Reported-by: Tomas Racek <tracek@redhat.com>
+Tested-by: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/sparse.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ mm/vmscan.c |   27 ++++++++++++++++++---------
+ 1 file changed, 18 insertions(+), 9 deletions(-)
 
---- a/mm/sparse.c
-+++ b/mm/sparse.c
-@@ -617,7 +617,7 @@ static void __kfree_section_memmap(struc
- {
- 	return; /* XXX: Not implemented yet */
- }
--static void free_map_bootmem(struct page *page, unsigned long nr_pages)
-+static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
- {
- }
- #else
-@@ -658,10 +658,11 @@ static void __kfree_section_memmap(struc
- 			   get_order(sizeof(struct page) * nr_pages));
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2383,6 +2383,19 @@ static void age_active_anon(struct zone
+ 	} while (memcg);
  }
  
--static void free_map_bootmem(struct page *page, unsigned long nr_pages)
-+static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
- {
- 	unsigned long maps_section_nr, removing_section_nr, i;
- 	unsigned long magic;
-+	struct page *page = virt_to_page(memmap);
++static bool zone_balanced(struct zone *zone, int order,
++			  unsigned long balance_gap, int classzone_idx)
++{
++	if (!zone_watermark_ok_safe(zone, order, high_wmark_pages(zone) +
++				    balance_gap, classzone_idx, 0))
++		return false;
++
++	if (COMPACTION_BUILD && order && !compaction_suitable(zone, order))
++		return false;
++
++	return true;
++}
++
+ /*
+  * pgdat_balanced is used when checking if a node is balanced for high-order
+  * allocations. Only zones that meet watermarks and are in a zone allowed
+@@ -2461,8 +2474,7 @@ static bool prepare_kswapd_sleep(pg_data
+ 			continue;
+ 		}
  
- 	for (i = 0; i < nr_pages; i++, page++) {
- 		magic = (unsigned long) page->lru.next;
-@@ -710,13 +711,10 @@ static void free_section_usemap(struct p
- 	 */
+-		if (!zone_watermark_ok_safe(zone, order, high_wmark_pages(zone),
+-							i, 0))
++		if (!zone_balanced(zone, order, 0, i))
+ 			all_zones_ok = false;
+ 		else
+ 			balanced += zone->present_pages;
+@@ -2571,8 +2583,7 @@ loop_again:
+ 				break;
+ 			}
  
- 	if (memmap) {
--		struct page *memmap_page;
--		memmap_page = virt_to_page(memmap);
--
- 		nr_pages = PAGE_ALIGN(PAGES_PER_SECTION * sizeof(struct page))
- 			>> PAGE_SHIFT;
+-			if (!zone_watermark_ok_safe(zone, order,
+-					high_wmark_pages(zone), 0, 0)) {
++			if (!zone_balanced(zone, order, 0, 0)) {
+ 				end_zone = i;
+ 				break;
+ 			} else {
+@@ -2648,9 +2659,8 @@ loop_again:
+ 				testorder = 0;
  
--		free_map_bootmem(memmap_page, nr_pages);
-+		free_map_bootmem(memmap, nr_pages);
- 	}
- }
+ 			if ((buffer_heads_over_limit && is_highmem_idx(i)) ||
+-				    !zone_watermark_ok_safe(zone, testorder,
+-					high_wmark_pages(zone) + balance_gap,
+-					end_zone, 0)) {
++			    !zone_balanced(zone, testorder,
++					   balance_gap, end_zone)) {
+ 				shrink_zone(zone, &sc);
  
+ 				reclaim_state->reclaimed_slab = 0;
+@@ -2677,8 +2687,7 @@ loop_again:
+ 				continue;
+ 			}
+ 
+-			if (!zone_watermark_ok_safe(zone, testorder,
+-					high_wmark_pages(zone), end_zone, 0)) {
++			if (!zone_balanced(zone, testorder, 0, end_zone)) {
+ 				all_zones_ok = 0;
+ 				/*
+ 				 * We are still under min water mark.  This
 
 
