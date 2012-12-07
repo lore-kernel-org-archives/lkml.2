@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422887Ab2LGQpZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 11:45:25 -0500
-Received: from mga14.intel.com ([143.182.124.37]:38814 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422760Ab2LGQpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 11:45:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,239,1355126400"; 
-   d="scan'208";a="228071998"
-Message-ID: <50C21D21.5040101@intel.com>
-Date: Fri, 07 Dec 2012 08:45:21 -0800
-From: Alexander Duyck <alexander.h.duyck@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1422901Ab2LGQsq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 11:48:46 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56287 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422686Ab2LGQso (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 11:48:44 -0500
+Date: Fri, 7 Dec 2012 16:45:30 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, Ingo Molnar <mingo@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Rabin Vincent <rabin@rab.in>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: ftrace: Ensure code modifications are
+	synchronised across all cpus
+Message-ID: <20121207164530.GX14363@n2100.arm.linux.org.uk>
+References: <1354817466.30905.13.camel@linaro1.home> <1354821581.17101.17.camel@gandalf.local.home> <1354872138.3176.15.camel@computer5.home> <1354888985.17101.41.camel@gandalf.local.home> <1354892111.13000.50.camel@linaro1.home> <1354894134.17101.44.camel@gandalf.local.home> <20121207162346.GW14363@n2100.arm.linux.org.uk> <1354898200.17101.50.camel@gandalf.local.home>
 MIME-Version: 1.0
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: Joseph Gasparakis <joseph.gasparakis@intel.com>, davem@davemloft.net,
-        shemminger@vyatta.com, chrisw@sous-sol.org, gospo@redhat.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmitry@broadcom.com, saeed.bishara@gmail.com,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-Subject: Re: [PATCH v3 1/4] net: Add support for hardware-offloaded encapsulation
-References: <1354845419-22483-1-git-send-email-joseph.gasparakis@intel.com>  <1354845419-22483-2-git-send-email-joseph.gasparakis@intel.com> <1354874847.20838.49.camel@deadeye.wl.decadent.org.uk>
-In-Reply-To: <1354874847.20838.49.camel@deadeye.wl.decadent.org.uk>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354898200.17101.50.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/2012 02:07 AM, Ben Hutchings wrote:
-> On Thu, 2012-12-06 at 17:56 -0800, Joseph Gasparakis wrote:
->> This patch adds support in the kernel for offloading in the NIC Tx and Rx
->> checksumming for encapsulated packets (such as VXLAN and IP GRE).
-> [...]
->> --- a/include/linux/netdevice.h
->> +++ b/include/linux/netdevice.h
->> @@ -1063,6 +1063,8 @@ struct net_device {
->>  	netdev_features_t	wanted_features;
->>  	/* mask of features inheritable by VLAN devices */
->>  	netdev_features_t	vlan_features;
->> +	/* mask of features inherited by encapsulating devices */
->> +	netdev_features_t	hw_enc_features;
-> [...]
+On Fri, Dec 07, 2012 at 11:36:40AM -0500, Steven Rostedt wrote:
+> On Fri, 2012-12-07 at 16:23 +0000, Russell King - ARM Linux wrote:
 > 
-> How will the networking core know *which* encapsulations this applies
-> to?  I notice that your implementation in ixgbe does not set
-> NETIF_F_HW_CSUM here, so presumably the hardware will parse headers to
-> find which ranges should be checksummed and it won't cover the next
-> encapsulation protocol that comes along.
+> > That's fine if there are better ways.  If your view is that this would
+> > bring things "up to the future" consider this: what you suggest is possible
+> > with the standard ARM 32-bit instruction set.  With the more modern Thumb
+> > instruction set, because we now effectively have prefixes, where those
+> > prefixes control the execution of the following instructions, what you
+> > suggest becomes no longer possible.
+> > 
+> > So, it's not a question of bringing stuff up to the future at all... you
+> > can call it a design regression of you will, but you're really making
+> > demands about how CPUs work which are outside of your remit.
+> > 
+> > Think of this a bit like you changing the opcodes immediately following a
+> > 'LOCK' prefix on x86.  I suspect divorsing the following opcodes from its
+> > prefix would be very bad for the instructions atomicity.
 > 
-> Ben.
+> But what about the limitations that the function tracer imposes on the
+> code that gets modified by stop_machine()?
 > 
+> 1) the original code is simply a call to mcount
+> 
+> 2) on boot up, that call gets converted into a nop
+> 
+> 3) the code that gets changed will only be converting a nop to a call
+> into the function tracer, and back again.
+> 
+> IOW, it's a very limited subset of the ARM assembly that gets touched.
+> I'm not sure what the op codes are for the above, but I can imagine they
+> don't impose the prefixes as you described.
+> 
+> If that's the case, is it still possible to change to the breakpoint
+> method?
 
-Actually the offload is generic to any encapsulation that does not
-compute a checksum on the inner headers.  So as long as you can treat
-the outer headers as one giant L2 header you can pretty much ignore what
-is in there as long as the inner network and transport header values are
-set.  There are a number of tunnels that fall into that category since
-most just use IP as the L2 and the L3 usually doesn't contain any checksum.
-
-Thanks,
-
-Alex
-
-
-
-
+I have no idea; I've no idea how ftrace works on ARM.  That's something
+other people use and deal with.  Last (and only) time I used the built-in
+kernel tracing facilities I ended up giving up with it and going back to
+using my sched-clock+record+printk based approaches instead on account
+of the kernels built-in tracing being far too heavy.
