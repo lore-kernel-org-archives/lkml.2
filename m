@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932353Ab2LFX7w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 18:59:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1686 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932077Ab2LFX7v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 18:59:51 -0500
-Date: Thu, 6 Dec 2012 21:59:49 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: kvm@vger.kernel.org, gleb@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 5/6] kvm: Re-introduce memslots->nmemslots
-Message-ID: <20121206235949.GA30775@amt.cnet>
-References: <20121203231912.3661.57179.stgit@bling.home>
- <20121203233936.3661.69261.stgit@bling.home>
- <20121205212629.GD20260@amt.cnet>
- <1354748573.3224.63.camel@bling.home>
- <20121206014507.GA9890@amt.cnet>
- <1354765897.3224.71.camel@bling.home>
- <20121206235848.GA30582@amt.cnet>
+	id S1754957Ab2LGAFU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 19:05:20 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:43217 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753462Ab2LGAFS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 19:05:18 -0500
+Date: Fri, 7 Dec 2012 00:05:12 +0000
+From: Cong Ding <dinggnu@gmail.com>
+To: Patrick Trantham <patrick.trantham@fuel7.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Otavio Salvador <otavio@ossystems.com.br>,
+        Javier Martinez Canillas <javier@dowhile0.org>,
+        Jiri Kosina <jkosina@suse.cz>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fix initializer entry defined twice issue
+Message-ID: <20121207000511.GD2510@gmail.com>
+References: <1354835928-617-1-git-send-email-dinggnu@gmail.com>
+ <50C13159.2070901@fuel7.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121206235848.GA30582@amt.cnet>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50C13159.2070901@fuel7.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 06, 2012 at 09:58:48PM -0200, Marcelo Tosatti wrote:
-> On Wed, Dec 05, 2012 at 08:51:37PM -0700, Alex Williamson wrote:
-> > > > id_to_memslot seems like a good place to catch all the users since
-> > > > that's the only way to get a slot from a slot id after the array is
-> > > > sorted.  We need to check both is the slot in bounds (EINVAL), but also
-> > > > is it allocated (ENOENT).  id_to_memslot could both of these if we
-> > > > wanted to switch it to ERR_PTR.  Thanks,
-> > > > 
-> > > > Alex
-> > > 
-> > > There should never be a reference to a slot out of bounds by KVM itself
-> > > (BUG_ON). Only userspace can attempt a reference to such slot.
-> > 
-> > If I understand correctly, you're saying this last chunk is unique
-> > because kvm_get_dirty_log() is an internal interface and the test should
-> > be restricted to callers from userspace interfaces, namely
-> > kvm_vm_ioctl_get_dirty_log().  That sounds reasonable; book3s_pr seems
-> > to be the only caller that relies on kvm_get_dirty_log() validating the
-> > slot.  Thanks,
-> > 
-> > Alex
+On Thu, Dec 06, 2012 at 05:59:21PM -0600, Patrick Trantham wrote:
+> On 12/06/2012 05:16 PM, Cong Ding wrote:
+> >the ".config_intr" is defined twice in both line 208 and 212.
+> >
+> >Signed-off-by: Cong Ding <dinggnu@gmail.com>
+> >---
+> >  drivers/net/phy/smsc.c |    1 -
+> >  1 files changed, 0 insertions(+), 1 deletions(-)
+> >
+> >diff --git a/drivers/net/phy/smsc.c b/drivers/net/phy/smsc.c
+> >index 16dceed..5cee6bd 100644
+> >--- a/drivers/net/phy/smsc.c
+> >+++ b/drivers/net/phy/smsc.c
+> >@@ -205,7 +205,6 @@ static struct phy_driver smsc_phy_driver[] = {
+> >  	/* basic functions */
+> >  	.config_aneg	= genphy_config_aneg,
+> >  	.read_status	= lan87xx_read_status,
+> >-	.config_intr	= smsc_phy_config_intr,
+> >  	/* IRQ related */
+> >  	.ack_interrupt	= smsc_phy_ack_interrupt,
 > 
-> Yep - so you can move the check to such userspace interfaces, and bug on 
-> on WARN otherwise (in id_to_memslot).
-
-WARN_ON. The point is, if its not a valid condition, it should be
-explicitly so.
-
-> Does that make sense??
+> Hi Cong,
 > 
+> That looks like a mistake from my previous patch to that file.  Copy
+> and paste fail.
+> 
+> The line should read:
+> .config_init    = smsc_phy_config_init,
+> 
+> I can submit a patch once I get off work unless you beat me to it.
+Thanks for the note. It's better that you submit a patch together with your
+code.
+
+- cong
