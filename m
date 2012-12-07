@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424196Ab2LGBKf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 20:10:35 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:64094 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422954Ab2LGAzS (ORCPT
+	id S1422952Ab2LGAzR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 19:55:17 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52707 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422930Ab2LGAzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 19:55:18 -0500
+	Thu, 6 Dec 2012 19:55:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "George Spelvin" <linux@horizon.com>, NeilBrown <neilb@suse.de>
-Subject: [ 11/20] md/raid10: close race that lose writes lost when replacement completes.
-Date: Thu,  6 Dec 2012 16:54:26 -0800
-Message-Id: <20121207005235.942443092@linuxfoundation.org>
+        Vincent Palatin <vpalatin@chromium.org>,
+        Duncan Laurie <dlaurie@chromium.org>,
+        Olof Johansson <olofj@chromium.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 09/20] x86, fpu: Avoid FPU lazy restore after suspend
+Date: Thu,  6 Dec 2012 16:54:24 -0800
+Message-Id: <20121207005235.381635650@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121207005232.756641002@linuxfoundation.org>
 References: <20121207005232.756641002@linuxfoundation.org>
@@ -26,171 +29,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Vincent Palatin <vpalatin@chromium.org>
 
-commit e7c0c3fa29280d62aa5e11101a674bb3064bd791 upstream.
+commit 644c154186386bb1fa6446bc5e037b9ed098db46 upstream.
 
-When a replacement operation completes there is a small window
-when the original device is marked 'faulty' and the replacement
-still looks like a replacement.  The faulty should be removed and
-the replacement moved in place very quickly, bit it isn't instant.
+When a cpu enters S3 state, the FPU state is lost.
+After resuming for S3, if we try to lazy restore the FPU for a process running
+on the same CPU, this will result in a corrupted FPU context.
 
-So the code write out to the array must handle the possibility that
-the only working device for some slot in the replacement - but it
-doesn't.  If the primary device is faulty it just gives up.  This
-can lead to corruption.
+Ensure that "fpu_owner_task" is properly invalided when (re-)initializing a CPU,
+so nobody will try to lazy restore a state which doesn't exist in the hardware.
 
-So make the code more robust: if either  the primary or the
-replacement is present and working, write to them.  Only when
-neither are present do we give up.
+Tested with a 64-bit kernel on a 4-core Ivybridge CPU with eagerfpu=off,
+by doing thousands of suspend/resume cycles with 4 processes doing FPU
+operations running. Without the patch, a process is killed after a
+few hundreds cycles by a SIGFPE.
 
-This bug has been present since replacement was introduced in
-3.3, so it is suitable for any -stable kernel since then.
-
-Reported-by: "George Spelvin" <linux@horizon.com>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
+Cc: Duncan Laurie <dlaurie@chromium.org>
+Cc: Olof Johansson <olofj@chromium.org>
+Link: http://lkml.kernel.org/r/1354306532-1014-1-git-send-email-vpalatin@chromium.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/raid10.c |  104 +++++++++++++++++++++++++++-------------------------
- 1 file changed, 55 insertions(+), 49 deletions(-)
+ arch/x86/include/asm/fpu-internal.h |   15 +++++++++------
+ arch/x86/kernel/smpboot.c           |    5 +++++
+ 2 files changed, 14 insertions(+), 6 deletions(-)
 
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -1182,18 +1182,21 @@ retry_write:
- 			blocked_rdev = rrdev;
- 			break;
- 		}
-+		if (rdev && (test_bit(Faulty, &rdev->flags)
-+			     || test_bit(Unmerged, &rdev->flags)))
-+			rdev = NULL;
- 		if (rrdev && (test_bit(Faulty, &rrdev->flags)
- 			      || test_bit(Unmerged, &rrdev->flags)))
- 			rrdev = NULL;
+--- a/arch/x86/include/asm/fpu-internal.h
++++ b/arch/x86/include/asm/fpu-internal.h
+@@ -334,14 +334,17 @@ static inline void __thread_fpu_begin(st
+ typedef struct { int preload; } fpu_switch_t;
  
- 		r10_bio->devs[i].bio = NULL;
- 		r10_bio->devs[i].repl_bio = NULL;
--		if (!rdev || test_bit(Faulty, &rdev->flags) ||
--		    test_bit(Unmerged, &rdev->flags)) {
+ /*
+- * FIXME! We could do a totally lazy restore, but we need to
+- * add a per-cpu "this was the task that last touched the FPU
+- * on this CPU" variable, and the task needs to have a "I last
+- * touched the FPU on this CPU" and check them.
++ * Must be run with preemption disabled: this clears the fpu_owner_task,
++ * on this CPU.
+  *
+- * We don't do that yet, so "fpu_lazy_restore()" always returns
+- * false, but some day..
++ * This will disable any lazy FPU state restore of the current FPU state,
++ * but if the current thread owns the FPU, it will still be saved by.
+  */
++static inline void __cpu_disable_lazy_restore(unsigned int cpu)
++{
++	per_cpu(fpu_owner_task, cpu) = NULL;
++}
 +
-+		if (!rdev && !rrdev) {
- 			set_bit(R10BIO_Degraded, &r10_bio->state);
- 			continue;
- 		}
--		if (test_bit(WriteErrorSeen, &rdev->flags)) {
-+		if (rdev && test_bit(WriteErrorSeen, &rdev->flags)) {
- 			sector_t first_bad;
- 			sector_t dev_sector = r10_bio->devs[i].addr;
- 			int bad_sectors;
-@@ -1235,8 +1238,10 @@ retry_write:
- 					max_sectors = good_sectors;
- 			}
- 		}
--		r10_bio->devs[i].bio = bio;
--		atomic_inc(&rdev->nr_pending);
-+		if (rdev) {
-+			r10_bio->devs[i].bio = bio;
-+			atomic_inc(&rdev->nr_pending);
-+		}
- 		if (rrdev) {
- 			r10_bio->devs[i].repl_bio = bio;
- 			atomic_inc(&rrdev->nr_pending);
-@@ -1292,51 +1297,52 @@ retry_write:
- 	for (i = 0; i < conf->copies; i++) {
- 		struct bio *mbio;
- 		int d = r10_bio->devs[i].devnum;
--		if (!r10_bio->devs[i].bio)
--			continue;
--
--		mbio = bio_clone_mddev(bio, GFP_NOIO, mddev);
--		md_trim_bio(mbio, r10_bio->sector - bio->bi_sector,
--			    max_sectors);
--		r10_bio->devs[i].bio = mbio;
--
--		mbio->bi_sector	= (r10_bio->devs[i].addr+
--				   conf->mirrors[d].rdev->data_offset);
--		mbio->bi_bdev = conf->mirrors[d].rdev->bdev;
--		mbio->bi_end_io	= raid10_end_write_request;
--		mbio->bi_rw = WRITE | do_sync | do_fua;
--		mbio->bi_private = r10_bio;
--
--		atomic_inc(&r10_bio->remaining);
--		spin_lock_irqsave(&conf->device_lock, flags);
--		bio_list_add(&conf->pending_bio_list, mbio);
--		conf->pending_count++;
--		spin_unlock_irqrestore(&conf->device_lock, flags);
--
--		if (!r10_bio->devs[i].repl_bio)
--			continue;
-+		if (r10_bio->devs[i].bio) {
-+			struct md_rdev *rdev = conf->mirrors[d].rdev;
-+			mbio = bio_clone_mddev(bio, GFP_NOIO, mddev);
-+			md_trim_bio(mbio, r10_bio->sector - bio->bi_sector,
-+				    max_sectors);
-+			r10_bio->devs[i].bio = mbio;
-+
-+			mbio->bi_sector	= (r10_bio->devs[i].addr+
-+					   rdev->data_offset);
-+			mbio->bi_bdev = rdev->bdev;
-+			mbio->bi_end_io	= raid10_end_write_request;
-+			mbio->bi_rw = WRITE | do_sync | do_fua;
-+			mbio->bi_private = r10_bio;
-+
-+			atomic_inc(&r10_bio->remaining);
-+			spin_lock_irqsave(&conf->device_lock, flags);
-+			bio_list_add(&conf->pending_bio_list, mbio);
-+			conf->pending_count++;
-+			spin_unlock_irqrestore(&conf->device_lock, flags);
-+		}
+ static inline int fpu_lazy_restore(struct task_struct *new, unsigned int cpu)
+ {
+ 	return new == percpu_read_stable(fpu_owner_task) &&
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -66,6 +66,8 @@
+ #include <asm/mwait.h>
+ #include <asm/apic.h>
+ #include <asm/io_apic.h>
++#include <asm/i387.h>
++#include <asm/fpu-internal.h>
+ #include <asm/setup.h>
+ #include <asm/uv/uv.h>
+ #include <linux/mc146818rtc.h>
+@@ -851,6 +853,9 @@ int __cpuinit native_cpu_up(unsigned int
  
--		mbio = bio_clone_mddev(bio, GFP_NOIO, mddev);
--		md_trim_bio(mbio, r10_bio->sector - bio->bi_sector,
--			    max_sectors);
--		r10_bio->devs[i].repl_bio = mbio;
--
--		/* We are actively writing to the original device
--		 * so it cannot disappear, so the replacement cannot
--		 * become NULL here
--		 */
--		mbio->bi_sector	= (r10_bio->devs[i].addr+
--				   conf->mirrors[d].replacement->data_offset);
--		mbio->bi_bdev = conf->mirrors[d].replacement->bdev;
--		mbio->bi_end_io	= raid10_end_write_request;
--		mbio->bi_rw = WRITE | do_sync | do_fua;
--		mbio->bi_private = r10_bio;
--
--		atomic_inc(&r10_bio->remaining);
--		spin_lock_irqsave(&conf->device_lock, flags);
--		bio_list_add(&conf->pending_bio_list, mbio);
--		conf->pending_count++;
--		spin_unlock_irqrestore(&conf->device_lock, flags);
-+		if (r10_bio->devs[i].repl_bio) {
-+			struct md_rdev *rdev = conf->mirrors[d].replacement;
-+			if (rdev == NULL) {
-+				/* Replacement just got moved to main 'rdev' */
-+				smp_mb();
-+				rdev = conf->mirrors[d].rdev;
-+			}
-+			mbio = bio_clone_mddev(bio, GFP_NOIO, mddev);
-+			md_trim_bio(mbio, r10_bio->sector - bio->bi_sector,
-+				    max_sectors);
-+			r10_bio->devs[i].repl_bio = mbio;
-+
-+			mbio->bi_sector	= (r10_bio->devs[i].addr+
-+					   rdev->data_offset);
-+			mbio->bi_bdev = rdev->bdev;
-+			mbio->bi_end_io	= raid10_end_write_request;
-+			mbio->bi_rw = WRITE | do_sync | do_fua;
-+			mbio->bi_private = r10_bio;
-+
-+			atomic_inc(&r10_bio->remaining);
-+			spin_lock_irqsave(&conf->device_lock, flags);
-+			bio_list_add(&conf->pending_bio_list, mbio);
-+			conf->pending_count++;
-+			spin_unlock_irqrestore(&conf->device_lock, flags);
-+		}
- 	}
+ 	per_cpu(cpu_state, cpu) = CPU_UP_PREPARE;
  
- 	/* Don't remove the bias on 'remaining' (one_write_done) until
++	/* the FPU context is blank, nobody can own it */
++	__cpu_disable_lazy_restore(cpu);
++
+ 	err = do_boot_cpu(apicid, cpu);
+ 	if (err) {
+ 		pr_debug("do_boot_cpu failed %d\n", err);
 
 
