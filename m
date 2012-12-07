@@ -1,82 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031007Ab2LGXDI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 18:03:08 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:63976 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751552Ab2LGXDH (ORCPT
+	id S1757012Ab2LGXEq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 18:04:46 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:48435 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310Ab2LGXEp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 18:03:07 -0500
-Date: Fri, 7 Dec 2012 23:03:03 +0000
-From: Cong Ding <dinggnu@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arch/x86/tools/gen-insn-attr-x86.awk: remove duplicate
- const
-Message-ID: <20121207230302.GB6179@gmail.com>
-References: <1354920151-4461-1-git-send-email-dinggnu@gmail.com>
- <3c1e54bc-31ec-4a38-b6d3-58b25760f9cb@email.android.com>
- <20121207224949.GA6179@gmail.com>
- <50C27410.7050101@zytor.com>
+	Fri, 7 Dec 2012 18:04:45 -0500
+Message-ID: <50C2760A.9070406@gmail.com>
+Date: Sat, 08 Dec 2012 00:04:42 +0100
+From: Mircea Gherzan <mgherzan@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121122 Icedove/10.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50C27410.7050101@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Nicolas Schichan <nschichan@freebox.fr>
+CC: rmk+kernel@arm.linux.org.uk, Russell King <linux@arm.linux.org.uk>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] ARM: net: bpf_jit_32: fix kzalloc gfp/size mismatch.
+References: <1354804718-1662-1-git-send-email-nschichan@freebox.fr>
+In-Reply-To: <1354804718-1662-1-git-send-email-nschichan@freebox.fr>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 07, 2012 at 02:56:16PM -0800, H. Peter Anvin wrote:
-> On 12/07/2012 02:49 PM, Cong Ding wrote:
-> >On Fri, Dec 07, 2012 at 02:45:43PM -0800, H. Peter Anvin wrote:
-> >>Patch description please?
-> >there are 2 consts in the definition of one variable
-> >
+Am 06.12.2012 15:38, schrieb Nicolas Schichan:
+> Official prototype for kzalloc is:
 > 
-> Please put in an actual patch description.  The first line (subject
-> line) is a title; the patch should make sense without it.
-sorry for that. so like this is fine?
+> void *kzalloc(size_t, gfp_t);
+> 
+> The ARM bpf_jit code was having the assumption that it was:
+> 
+> void *kzalloc(gfp_t, size);
+> 
+> This was resulting the use of some random GFP flags depending on the
+> size requested and some random overflows once the really needed size
+> was more than the value of GFP_KERNEL.
+> 
+> This bug was present since the original inclusion of bpf_jit for ARM
+> (ddecdfce: ARM: 7259/3: net: JIT compiler for packet filters).
+> 
+> Signed-off-by: Nicolas Schichan <nschichan@freebox.fr>
+> ---
+>  arch/arm/net/bpf_jit_32.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/net/bpf_jit_32.c b/arch/arm/net/bpf_jit_32.c
+> index c641fb6..a64d349 100644
+> --- a/arch/arm/net/bpf_jit_32.c
+> +++ b/arch/arm/net/bpf_jit_32.c
+> @@ -845,7 +845,7 @@ void bpf_jit_compile(struct sk_filter *fp)
+>  	ctx.skf		= fp;
+>  	ctx.ret0_fp_idx = -1;
+>  
+> -	ctx.offsets = kzalloc(GFP_KERNEL, 4 * (ctx.skf->len + 1));
+> +	ctx.offsets = kzalloc(4 * (ctx.skf->len + 1), GFP_KERNEL);
+>  	if (ctx.offsets == NULL)
+>  		return;
+>  
+> @@ -864,7 +864,7 @@ void bpf_jit_compile(struct sk_filter *fp)
+>  
+>  	ctx.idx += ctx.imm_count;
+>  	if (ctx.imm_count) {
+> -		ctx.imms = kzalloc(GFP_KERNEL, 4 * ctx.imm_count);
+> +		ctx.imms = kzalloc(4 * ctx.imm_count, GFP_KERNEL);
+>  		if (ctx.imms == NULL)
+>  			goto out;
+>  	}
 
--cong
-
----
->From 1abfab824ed2dc0af6e283ea0b7a6c45541d4fd1 Mon Sep 17 00:00:00 2001
-From: Cong Ding <dinggnu@gmail.com>
-Date: Fri, 7 Dec 2012 22:41:09 +0000
-Subject: [PATCH] arch/x86/tools/gen-insn-attr-x86.awk: remove duplicate const
-
-there are two const in the definition of one variable, we should delete one.
-
-Signed-off-by: Cong Ding <dinggnu@gmail.com>
----
- arch/x86/tools/gen-insn-attr-x86.awk |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/tools/gen-insn-attr-x86.awk b/arch/x86/tools/gen-insn-attr-x86.awk
-index ddcf39b..d1d9cfa 100644
---- a/arch/x86/tools/gen-insn-attr-x86.awk
-+++ b/arch/x86/tools/gen-insn-attr-x86.awk
-@@ -356,7 +356,7 @@ END {
- 		exit 1
- 	# print escape opcode map's array
- 	print "/* Escape opcode map array */"
--	print "const insn_attr_t const *inat_escape_tables[INAT_ESC_MAX + 1]" \
-+	print "const insn_attr_t *inat_escape_tables[INAT_ESC_MAX + 1]" \
- 	      "[INAT_LSTPFX_MAX + 1] = {"
- 	for (i = 0; i < geid; i++)
- 		for (j = 0; j < max_lprefix; j++)
-@@ -365,7 +365,7 @@ END {
- 	print "};\n"
- 	# print group opcode map's array
- 	print "/* Group opcode map array */"
--	print "const insn_attr_t const *inat_group_tables[INAT_GRP_MAX + 1]"\
-+	print "const insn_attr_t *inat_group_tables[INAT_GRP_MAX + 1]"\
- 	      "[INAT_LSTPFX_MAX + 1] = {"
- 	for (i = 0; i < ggid; i++)
- 		for (j = 0; j < max_lprefix; j++)
--- 
-1.7.4.5
-
+Acked-by: Mircea Gherzan <mgherzan@gmail.com>
