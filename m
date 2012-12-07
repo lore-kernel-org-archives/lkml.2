@@ -1,98 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756615Ab2LGPmp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 10:42:45 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:38360 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755348Ab2LGPmo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 10:42:44 -0500
-Message-ID: <1354894964.29937.38.camel@joe-AO722>
-Subject: Re: [PATCH v2 00/14] printk() fixes, optimizations, and clean ups
-From: Joe Perches <joe@perches.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "\"Jan H." =?ISO-8859-1?Q?Sch=F6nherr=22?= 
-	<schnhrr@cs.tu-berlin.de>,
-        Andrew Morton <akpm@linux-foundation.org>, Kay Sievers <kay@vrfy.org>,
-        linux-kernel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Sylvain Munaut <s.munaut@whatever-company.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>
-Date: Fri, 07 Dec 2012 07:42:44 -0800
-In-Reply-To: <20121207150448.GC20369@kroah.com>
-References: <1354813571-11253-1-git-send-email-schnhrr@cs.tu-berlin.de>
-	 <20121206133907.37c255e9.akpm@linux-foundation.org>
-	 <1354837050.22463.4.camel@joe-AO722>
-	 <20121206161943.78633125.akpm@linux-foundation.org>
-	 <1354848669.22463.23.camel@joe-AO722> <50C1D758.1080007@cs.tu-berlin.de>
-	 <20121207150448.GC20369@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
+	id S1030384Ab2LGPsK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 10:48:10 -0500
+Received: from fn.samba.org ([216.83.154.106]:51890 "EHLO mail.samba.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756543Ab2LGPsI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 10:48:08 -0500
+X-Greylist: delayed 621 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Dec 2012 10:48:08 EST
+Message-ID: <1354894665.14719.87.camel@pico.ipa.ssimo.org>
+Subject: Re: [PATCH 0/3] Add O_DENY* flags to fcntl and cifs
+From: simo <idra@samba.org>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Pavel Shilovsky <piastry@etersoft.ru>, linux-cifs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        wine-devel@winehq.org, linux-nfs@vger.kernel.org
+Date: Fri, 07 Dec 2012 10:37:45 -0500
+In-Reply-To: <20121207145206.GF17115@fieldses.org>
+References: <1354818391-7968-1-git-send-email-piastry@etersoft.ru>
+	 <CAKywueQ3d=wdq2nw5f-QS-D9PY70Axa3Cn0gi5GRk4Xso+iquA@mail.gmail.com>
+	 <20121207145206.GF17115@fieldses.org>
+Organization: Samba Team
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-12-07 at 07:04 -0800, Greg Kroah-Hartman wrote:
-> On Fri, Dec 07, 2012 at 12:47:36PM +0100, "Jan H. Schönherr" wrote:
-> > Am 07.12.2012 03:51, schrieb Joe Perches:
-> > > On Thu, 2012-12-06 at 16:19 -0800, Andrew Morton wrote:
-> > >> On Thu, 06 Dec 2012 15:37:30 -0800
-> > >> Joe Perches <joe@perches.com> wrote:
-> > >>> Can you please pick this up for -next now and I'll
-> > >>> redo my patches against -next for -rc1 so I'm not
-> > >>> delayed until 3.9?
-> > >>
-> > >> It would be better to do things in the other order.
-> > >>
-> > >> a) Your patches perform mainly code-movement which doesn't cause
-> > >>    functional changes.  Jan's patches are functional changes which
-> > >>    require more thought and testing and possible fixups.
-> > > 
-> > > Fine by me.  Jan?
+On Fri, 2012-12-07 at 09:52 -0500, J. Bruce Fields wrote:
+> On Fri, Dec 07, 2012 at 01:08:46PM +0400, Pavel Shilovsky wrote:
+> > 2012/12/6 Pavel Shilovsky <piastry@etersoft.ru>:
+> > > Network filesystems CIFS, SMB2.0, SMB3.0 and NFSv4 have such flags - this change can benefit cifs and nfs modules. While this change is ok for network filesystems, itsn't not targeted for local filesystems due security problems (e.g. when a user process can deny root to delete a file).
+> > >
+> > > Share flags are used by Windows applications and WINE have to deal with them too. While WINE can process open share flags itself on local filesystems, it can't do it if a file stored on a network share and is used by several clients. This patchset makes it possible for CIFS/SMB2.0/SMB3.0.
+> > >
+> > > Pavel Shilovsky (3):
+> > >   fcntl: Introduce new O_DENY* open flags for network filesystems
+> > >   CIFS: Add O_DENY* open flags support
+> > >   CIFS: Use NT_CREATE_ANDX command for forcemand mounts
+> > >
+> > >  fs/cifs/cifsacl.c                |   10 ++++----
+> > >  fs/cifs/cifsglob.h               |   11 ++++++++-
+> > >  fs/cifs/cifsproto.h              |    9 ++++----
+> > >  fs/cifs/cifssmb.c                |   47 ++++++++++++++++++++------------------
+> > >  fs/cifs/dir.c                    |   14 ++++++++----
+> > >  fs/cifs/file.c                   |   18 ++++++++++-----
+> > >  fs/cifs/inode.c                  |   11 +++++----
+> > >  fs/cifs/link.c                   |   10 ++++----
+> > >  fs/cifs/readdir.c                |    2 +-
+> > >  fs/cifs/smb1ops.c                |   15 ++++++------
+> > >  fs/cifs/smb2file.c               |   10 ++++----
+> > >  fs/cifs/smb2inode.c              |    4 ++--
+> > >  fs/cifs/smb2ops.c                |   10 ++++----
+> > >  fs/cifs/smb2pdu.c                |    6 ++---
+> > >  fs/cifs/smb2proto.h              |   14 +++++++-----
+> > >  fs/fcntl.c                       |    5 ++--
+> > >  include/uapi/asm-generic/fcntl.h |   11 +++++++++
+> > >  17 files changed, 125 insertions(+), 82 deletions(-)
+> > >
+> > > --
+> > > 1.7.10.4
+> > >
 > > 
-> > No problem.
+> > First of all, sorry for being unclear at this proposal.
 > > 
-> > I agree with Andrew, that patches 9 to 14 could use indeed some
-> > more eyeballs.
 > > 
-> > Patches 1 to 8 are more straight-forward, and I would consider
-> > these ready. However, they are also those, where I probably won't
-> > have any trouble rebasing them on top of your changes.
+> > I am not from Wine team but I am working on things related to
+> > Wine+CIFS-client+Samba.
 > > 
-> > Anyway. Until now I always thought my patches will end up in the
-> > queue of some maintainer, so that I don't have to bother about
-> > _when_ posting my patches. Therefore: when should I repost a
-> > version rebased on top of Joe's changes?
+> > We (at Etersoft) need to organize the work of Wine applications
+> > through cifs-client share mounted to Samba (or Windows server). They
+> > are related to accounting (mostly Russian ones - e.g.
+> > http://www.1c.ru/eng/title.htm). So, the problem is that such
+> > applications use share flags to control the parallel access to the
+> > same files of several clients on a remote share. Also, there can be a
+> > situation where Windows (native) clients and Wine clients are working
+> > together in the same time.
+> > 
+> > That's why we need such flags in the kernel (patch #1). With these
+> > flags Wine can pass them to every open and they will be used by CIFS
+> > (and probably NFS) file systems to pass to the Samba server. In the
+> > same time if the file is on local filesystem - these flags will be
+> > simply ignored (not implemented).
 > 
-> You are correct, I'll end up queuing these up to my tree when 3.8-rc1 is
-> out,
+> NFS supports the deny-read and deny-write bits but not deny-delete.
+> 
+> If we could do such opens in-kernel on local and clustered filesystems,
+> that could also be useful for multi-protocol (Samba and NFS) and
+> clustered exports.
+> 
+> Currently knfsd tries to enforce deny bits in the nfsd code, which is a
+> bit ugly.
+> 
+> And knfsd currently requires write permissions for deny-read.  My
+> understanding is that Windows considers that wrong, but I'd be curious
+> to know whether that breaks Windows applications in practice.
 
-Andrew suggested I send my patches at -rc2.
+It probably does if you look hard enough.
+IIRC Deny-reads are very loosely like read locks, and you can take read
+locks if you have read-only access.
+Why does knfsd restrict deny-read to read-write access ?
 
-> they will live in linux-next until 3.8-final is out, and then go to
-> Linus for 3.9-rc1.  Right now, my trees are frozen due to the merge
-> window about to open up.  Your patience is appreciated.
+Simo.
 
-I think it'd be easier for a single downstream
-maintainer to coordinate these patch sets sequencing.
-
-You or Andrew might be better than you and Andrew.
-
-There is a small patch to printk that should likely
-be applied in some form for -rc1 or earlier:
-
-Sylvain Munaut's (cc'd) print_time fix:
-https://patchwork.kernel.org/patch/1845971/
-
-I don't know of anything else that likely will
-or should be applied before -rc1.
-
-Frederic Weisbecker (also cc'd) has a printk nohz
-patch series that merits some consideration too.
-https://lkml.org/lkml/2012/10/20/94
-https://lkml.org/lkml/2012/11/14/646
-I don't know if Ingo pulled it in somewhere or not.
-
-cheers, Joe
+-- 
+Simo Sorce
+Samba Team GPL Compliance Officer <simo@samba.org>
+Principal Software Engineer at Red Hat, Inc. <simo@redhat.com>
 
