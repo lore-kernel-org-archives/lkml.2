@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424137Ab2LGBIp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 20:08:45 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:54346 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422942Ab2LGBIn (ORCPT
+	id S1423018Ab2LGAzc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 19:55:32 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:51059 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423000Ab2LGAz1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 20:08:43 -0500
-Date: Fri, 7 Dec 2012 02:08:37 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Martin Steigerwald <Martin@lichtvoll.de>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
- UAPI
-Message-ID: <20121207010837.GA16373@gmail.com>
-References: <1353366267-15629-1-git-send-email-david@fromorbit.com>
- <20121206011402.GB27172@dastard>
- <CA+55aFzjOr1tw4UAdWazgvzOu6if8hOc4PqgLeX4Um_k-kuguw@mail.gmail.com>
- <201212061037.56597.Martin@lichtvoll.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201212061037.56597.Martin@lichtvoll.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 6 Dec 2012 19:55:27 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Ariel Elior <ariele@broadcom.com>,
+        Eilon Greenstein <eilong@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>, CAI Qian <caiqian@redhat.com>
+Subject: [ 14/20] bnx2x: remove redundant warning log
+Date: Thu,  6 Dec 2012 16:54:29 -0800
+Message-Id: <20121207005236.806969351@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.0.197.g5a90748
+In-Reply-To: <20121207005232.756641002@linuxfoundation.org>
+References: <20121207005232.756641002@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-* Martin Steigerwald <Martin@lichtvoll.de> wrote:
+------------------
 
-> > The thing that people are complaining about is exactly the 
-> > reverse of this. It's *protecting* us from making mistakes, 
-> > and doesn't actually add any new interfaces in itself.
-> >
-> > This is why I'm so annoyed with this stupid thread. It's 
-> > been going on forever, and reverting that change WOULD BE 
-> > OBJECTIVELY A BAD IDEA.
-> 
-> See, thats where you have a problem with "reality".
-> 
-> It seems you cannot accept the fact that some developers 
-> disliked the process in which this change was pushed. [...]
+From: Ariel Elior <ariele@broadcom.com>
 
-I don't think you have understood Linus's argument above.
+commit 4a25417c20fac00b3afd58ce27408f964d19e708 upstream.
 
-The "process" does not change the object technical merits of a 
-patch. Ever. This patch is _good_, and objectively good. No 
-amount of 'bad process' can make this patch bad.
+fix bug where a register which was only meant to be read in 578xx/57712
+devices causes a bogus error message to be logged when read from other
+devices.
 
-Now, hypothetically, if this was an objectively bad patch, then 
-any "bad process" used to push it would add insult to injury and 
-it could be reason enough to flame Tytso twice as hard.
+Signed-off-by: Ariel Elior <ariele@broadcom.com>
+Signed-off-by: Eilon Greenstein <eilong@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: CAI Qian <caiqian@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-But it turns out the patch was right and good, so kudos to Tytso 
-for cutting through the bike shed painting and politicks of 
-fsdevel - which "process" would have deprived us of a good 
-patch...
+---
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-Thanks,
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
+@@ -9131,10 +9131,13 @@ static int __devinit bnx2x_prev_unload_c
+  */
+ static void __devinit bnx2x_prev_interrupted_dmae(struct bnx2x *bp)
+ {
+-	u32 val = REG_RD(bp, PGLUE_B_REG_PGLUE_B_INT_STS);
+-	if (val & PGLUE_B_PGLUE_B_INT_STS_REG_WAS_ERROR_ATTN) {
+-		BNX2X_ERR("was error bit was found to be set in pglueb upon startup. Clearing");
+-		REG_WR(bp, PGLUE_B_REG_WAS_ERROR_PF_7_0_CLR, 1 << BP_FUNC(bp));
++	if (!CHIP_IS_E1x(bp)) {
++		u32 val = REG_RD(bp, PGLUE_B_REG_PGLUE_B_INT_STS);
++		if (val & PGLUE_B_PGLUE_B_INT_STS_REG_WAS_ERROR_ATTN) {
++			BNX2X_ERR("was error bit was found to be set in pglueb upon startup. Clearing");
++			REG_WR(bp, PGLUE_B_REG_WAS_ERROR_PF_7_0_CLR,
++			       1 << BP_FUNC(bp));
++		}
+ 	}
+ }
+ 
 
-	Ingo
+
