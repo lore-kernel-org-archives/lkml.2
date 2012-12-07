@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932106Ab2LGW7L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 17:59:11 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:34731 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751737Ab2LGW7J (ORCPT
+	id S1031007Ab2LGXDI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 18:03:08 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:63976 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751552Ab2LGXDH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 17:59:09 -0500
-Message-ID: <50C274B1.90408@linux.vnet.ibm.com>
-Date: Fri, 07 Dec 2012 14:58:57 -0800
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Fri, 7 Dec 2012 18:03:07 -0500
+Date: Fri, 7 Dec 2012 23:03:03 +0000
+From: Cong Ding <dinggnu@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arch/x86/tools/gen-insn-attr-x86.awk: remove duplicate
+ const
+Message-ID: <20121207230302.GB6179@gmail.com>
+References: <1354920151-4461-1-git-send-email-dinggnu@gmail.com>
+ <3c1e54bc-31ec-4a38-b6d3-58b25760f9cb@email.android.com>
+ <20121207224949.GA6179@gmail.com>
+ <50C27410.7050101@zytor.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH] Debugging: Keep track of page owners
-References: <20121207212417.FAD8DAED@kernel.stglabs.ibm.com> <20121207142614.428b8a54.akpm@linux-foundation.org> <50C26FA7.9010000@linux.vnet.ibm.com> <20121207144428.98b3eaf4.akpm@linux-foundation.org>
-In-Reply-To: <20121207144428.98b3eaf4.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12120722-4834-0000-0000-000001389840
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50C27410.7050101@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/2012 02:44 PM, Andrew Morton wrote:
-> AFACIT that difference was undescribed.  I can see that the new version
-> uses the stack-tracing infrastructure, but the change to
-> pagetypeinfo_showmixedcount_print() is a mystery.
+On Fri, Dec 07, 2012 at 02:56:16PM -0800, H. Peter Anvin wrote:
+> On 12/07/2012 02:49 PM, Cong Ding wrote:
+> >On Fri, Dec 07, 2012 at 02:45:43PM -0800, H. Peter Anvin wrote:
+> >>Patch description please?
+> >there are 2 consts in the definition of one variable
+> >
+> 
+> Please put in an actual patch description.  The first line (subject
+> line) is a title; the patch should make sense without it.
+sorry for that. so like this is fine?
 
-Ahhh, I assume you're talking about this hunk:
+-cong
 
->> @@ -976,10 +976,7 @@ static void pagetypeinfo_showmixedcount_print(struct seq_file *m,
->>  
->>                         pagetype = allocflags_to_migratetype(page->gfp_mask);
->>                         if (pagetype != mtype) {
->> -                               if (is_migrate_cma(pagetype))
->> -                                       count[MIGRATE_MOVABLE]++;
->> -                               else
->> -                                       count[mtype]++;
->> +                               count[mtype]++;
->>                                 break;
->>                         }
+---
+>From 1abfab824ed2dc0af6e283ea0b7a6c45541d4fd1 Mon Sep 17 00:00:00 2001
+From: Cong Ding <dinggnu@gmail.com>
+Date: Fri, 7 Dec 2012 22:41:09 +0000
+Subject: [PATCH] arch/x86/tools/gen-insn-attr-x86.awk: remove duplicate const
 
-That was to fix the comment that Laura Abbott made about it miscounting
-MIGRATE_CMA pages.
+there are two const in the definition of one variable, we should delete one.
 
-My patch-sending scripts were choking a bit on the text description in
-your patch.  I'm using a long-ago-forked copy of your patch-utils and
-the DESC/EDESC in the patch I imported is giving them fits when I send
-via email and stripping large parts of the description.  I'm happy to
-resend via email, too, but here, the raw patch (will the full description):
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
+---
+ arch/x86/tools/gen-insn-attr-x86.awk |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-	https://www.sr71.net/~dave/linux/pageowner.patch
-
-The important description that the scripts managed to strip out when
-emailed was this:
-
-Updated 12/4/2012 - should apply to 3.7 kernels.  I did a quick
-sniff-test to make sure that this boots and produces some sane
-output, but it's not been exhaustively tested.
-
- * Moved file over to debugfs (no reason to keep polluting /proc)
- * Now using generic stack tracking infrastructure
- * Added check for MIGRATE_CMA pages to explicitly count them
-   as movable.
-
-The new snprint_stack_trace() probably belongs in its own patch
-if this were to get merged, but it won't kill anyone as it stands.
-
------
+diff --git a/arch/x86/tools/gen-insn-attr-x86.awk b/arch/x86/tools/gen-insn-attr-x86.awk
+index ddcf39b..d1d9cfa 100644
+--- a/arch/x86/tools/gen-insn-attr-x86.awk
++++ b/arch/x86/tools/gen-insn-attr-x86.awk
+@@ -356,7 +356,7 @@ END {
+ 		exit 1
+ 	# print escape opcode map's array
+ 	print "/* Escape opcode map array */"
+-	print "const insn_attr_t const *inat_escape_tables[INAT_ESC_MAX + 1]" \
++	print "const insn_attr_t *inat_escape_tables[INAT_ESC_MAX + 1]" \
+ 	      "[INAT_LSTPFX_MAX + 1] = {"
+ 	for (i = 0; i < geid; i++)
+ 		for (j = 0; j < max_lprefix; j++)
+@@ -365,7 +365,7 @@ END {
+ 	print "};\n"
+ 	# print group opcode map's array
+ 	print "/* Group opcode map array */"
+-	print "const insn_attr_t const *inat_group_tables[INAT_GRP_MAX + 1]"\
++	print "const insn_attr_t *inat_group_tables[INAT_GRP_MAX + 1]"\
+ 	      "[INAT_LSTPFX_MAX + 1] = {"
+ 	for (i = 0; i < ggid; i++)
+ 		for (j = 0; j < max_lprefix; j++)
+-- 
+1.7.4.5
 
