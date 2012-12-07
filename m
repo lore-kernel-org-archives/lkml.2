@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933246Ab2LGK2K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 05:28:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42341 "EHLO mx2.suse.de"
+	id S933263Ab2LGK2d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 05:28:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42325 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933062Ab2LGKZC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 05:25:02 -0500
+	id S933055Ab2LGKZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 05:25:01 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -21,9 +21,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 38/49] mm: numa: migrate: Set last_nid on newly allocated page
-Date: Fri,  7 Dec 2012 10:23:41 +0000
-Message-Id: <1354875832-9700-39-git-send-email-mgorman@suse.de>
+Subject: [PATCH 37/49] mm: numa: split_huge_page: Transfer last_nid on tail page
+Date: Fri,  7 Dec 2012 10:23:40 +0000
+Message-Id: <1354875832-9700-38-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1354875832-9700-1-git-send-email-mgorman@suse.de>
 References: <1354875832-9700-1-git-send-email-mgorman@suse.de>
@@ -33,28 +33,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Hillf Danton <dhillf@gmail.com>
 
-Pass last_nid from misplaced page to newly allocated migration target page.
+Pass last_nid from head page to tail page.
 
 Signed-off-by: Hillf Danton <dhillf@gmail.com>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/migrate.c |    3 +++
- 1 file changed, 3 insertions(+)
+ mm/huge_memory.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 2c8310c..6bc9745 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -1457,6 +1457,9 @@ static struct page *alloc_misplaced_dst_page(struct page *page,
- 					  __GFP_NOMEMALLOC | __GFP_NORETRY |
- 					  __GFP_NOWARN) &
- 					 ~GFP_IOFS, 0);
-+	if (newpage)
-+		page_xchg_last_nid(newpage, page_last_nid(page));
-+
- 	return newpage;
- }
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+index 66e73cc..4c6efa8 100644
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1361,6 +1361,7 @@ static void __split_huge_page_refcount(struct page *page)
+ 		page_tail->mapping = page->mapping;
  
+ 		page_tail->index = page->index + i;
++		page_xchg_last_nid(page_tail, page_last_nid(page));
+ 
+ 		BUG_ON(!PageAnon(page_tail));
+ 		BUG_ON(!PageUptodate(page_tail));
 -- 
 1.7.9.2
 
