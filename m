@@ -1,87 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424370Ab2LGB5P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 20:57:15 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:45961 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1422905Ab2LGB5N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 20:57:13 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmANAIZLwVB5LHa//2dsb2JhbABEDrgshXoXc4IeAQEEATocEhYLCAMYLhQlAyEBEhQHh28FwnMUjCWDYmEDlgKQSII1UoFQBw
-Date: Fri, 7 Dec 2012 12:57:09 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, Christoph Hellwig <hch@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
- UAPI
-Message-ID: <20121207015709.GE27172@dastard>
-References: <1353366267-15629-1-git-send-email-david@fromorbit.com>
- <201212051148.28039.Martin@lichtvoll.de>
- <CA+55aFzgP29WfB1yvnj+Q9-TsbX+b-TCCjTS_vPJ16DxMy6aDQ@mail.gmail.com>
- <201212051718.44017.Martin@lichtvoll.de>
- <CA+55aFxsPBo4TZEPq+14NBE8Snmd9qiTjAiEP0fFXBzaJ9y+gw@mail.gmail.com>
- <20121206011402.GB27172@dastard>
- <20121206120645.GB14100@infradead.org>
- <20121206165024.GA30273@thunk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121206165024.GA30273@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1945911Ab2LGB5i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 20:57:38 -0500
+Received: from mga02.intel.com ([134.134.136.20]:7305 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1422905Ab2LGB5g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 20:57:36 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,234,1355126400"; 
+   d="scan'208";a="230119286"
+From: Joseph Gasparakis <joseph.gasparakis@intel.com>
+To: davem@davemloft.net, shemminger@vyatta.com, chrisw@sous-sol.org,
+        gospo@redhat.com
+Cc: Joseph Gasparakis <joseph.gasparakis@intel.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, alexander.h.duyck@intel.com,
+        peter.p.waskiewicz.jr@intel.com
+Subject: [PATCH] vxlan: Add capability of Rx checksum offload for inner packet
+Date: Thu,  6 Dec 2012 18:05:53 -0800
+Message-Id: <1354845953-23424-1-git-send-email-joseph.gasparakis@intel.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 06, 2012 at 11:50:24AM -0500, Theodore Ts'o wrote:
-> On Thu, Dec 06, 2012 at 07:06:45AM -0500, Christoph Hellwig wrote:
-> > 
-> > Also the only conference outcome I remember is that everyone at LSF
-> > except for Ted basically said "no fucking way".
-> > 
-> 
-> At LSF, that's correct.  And as a result, the people who need this --
-> Google and Tao Bao -- have decided to keep the patch as an out-of-tree
-> patch, much like the Android wakelock patch was out of tree, and for
-> similar reasons --- because the community has rejected the
-> functionality.
+This patch adds capability in vxlan to identify received
+checksummed inner packets and signal them to the upper layers of
+the stack. The driver needs to set the skb->encapsulation bit
+and also set the skb->ip_summed to CHECKSUM_UNNECESSARY.
 
-Sure. But your association argument can be shown to be a fallacy
-very easily.  There was agreement that wakelock-like functionality
-was needed, the problems were with the proposed implementation and
-that everyone would work together on a solution. Hence the mainline
-kernel now has integrated wakelock support.
+Signed-off-by: Joseph Gasparakis <joseph.gasparakis@intel.com>
+---
+ drivers/net/vxlan.c |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
 
-Compare that to stale-no-hide: the -concept- was given a fairly
-unanimous "not a chance in hell" send-off. There was no "lets rework
-it into something acceptable" compromise - the concept was
-rejected and so you simply cannot compare it to wakelocks.
-
-> At this point, I've only asked that the bit be reserved, so we don't
-
-Really? We wouldn't be having this discussion if you'd just asked...
-
-> have to worry about codepoint collisions.  (We'd have the same issue
-> with an ioctl, BTW --- we would need to reserve an ioctl number to
-> avoid collisions, although granted there are ways to cleverly choose
-> an ioctl number that would reduce the chance of collisions even if it
-> isn't formally reserved.)
-
-struct ext4_ioc_falloc {
-...
-};
-
-/* security hole reserved for out-of-tree patches. */
-#define EXT4_IOC_FALLOC_NOHIDE		_IOW('f', 10000, struct ext4_ioc_falloc)
-
-Done. Not so hard, is it?
-
-Cheers,
-
-Dave.
+diff --git a/drivers/net/vxlan.c b/drivers/net/vxlan.c
+index 88b31f2..cf0231d 100644
+--- a/drivers/net/vxlan.c
++++ b/drivers/net/vxlan.c
+@@ -607,7 +607,12 @@ static int vxlan_udp_encap_recv(struct sock *sk, struct sk_buff *skb)
+ 
+ 	__skb_tunnel_rx(skb, vxlan->dev);
+ 	skb_reset_network_header(skb);
+-	skb->ip_summed = CHECKSUM_NONE;
++
++	if (skb->ip_summed != CHECKSUM_UNNECESSARY || !skb->encapsulation ||
++	    !(vxlan->dev->features & NETIF_F_RXCSUM))
++		skb->ip_summed = CHECKSUM_NONE;
++
++	skb->encapsulation = 0;
+ 
+ 	err = IP_ECN_decapsulate(oip, skb);
+ 	if (unlikely(err)) {
+@@ -1175,7 +1180,9 @@ static void vxlan_setup(struct net_device *dev)
+ 	dev->features	|= NETIF_F_LLTX;
+ 	dev->features	|= NETIF_F_NETNS_LOCAL;
+ 	dev->features	|= NETIF_F_SG | NETIF_F_HW_CSUM;
+-	dev->hw_features |= NETIF_F_SG | NETIF_F_HW_CSUM;
++	dev->features   |= NETIF_F_RXCSUM;
++
++	dev->hw_features |= NETIF_F_SG | NETIF_F_HW_CSUM | NETIF_F_RXCSUM;
+ 	dev->priv_flags	&= ~IFF_XMIT_DST_RELEASE;
+ 
+ 	spin_lock_init(&vxlan->hash_lock);
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.6.4
+
