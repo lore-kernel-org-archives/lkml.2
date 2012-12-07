@@ -1,82 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424397Ab2LGFnA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 00:43:00 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:27898 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1424218Ab2LGFm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 00:42:58 -0500
-X-IronPort-AV: E=Sophos;i="4.84,235,1355068800"; 
-   d="scan'208";a="6350840"
-Message-ID: <50C18168.305@cn.fujitsu.com>
-Date: Fri, 07 Dec 2012 13:40:56 +0800
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.8) Gecko/20121012 Thunderbird/10.0.8
-MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Gleb Natapov <gleb@redhat.com>
-CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kbuild test robot <fengguang.wu@intel.com>
-Subject: [PATCH] x86/kexec: crash_vmclear_local_vmcss needs __rcu
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/07 13:42:14,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/07 13:42:14,
-	Serialize complete at 2012/12/07 13:42:14
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1424431Ab2LGFtK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 00:49:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2757 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932419Ab2LGFtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 00:49:09 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi.kleen@intel.com>, Tony Luck <tony.luck@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 1/3] HWPOISON, hugetlbfs: fix warning on freeing hwpoisoned hugepage
+Date: Fri,  7 Dec 2012 00:48:57 -0500
+Message-Id: <1354859337-11612-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20121206182024.5f3b47be.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This removes the sparse warning:
-arch/x86/kernel/crash.c:49:32: sparse: incompatible types in comparison expression (different address spaces)
+On Thu, Dec 06, 2012 at 06:20:24PM -0800, Andrew Morton wrote:
+> On Thu,  6 Dec 2012 21:03:44 -0500 Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+> 
+> > This patch fixes the warning from __list_del_entry() which is triggered
+> > when a process tries to do free_huge_page() for a hwpoisoned hugepage.
+> > 
+> > ChangeLog v2:
+> >  - simply use list_del_init instead of introducing new hugepage list
+> > 
+> > Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> > ---
+> >  mm/hugetlb.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> > index 59a0059..9308752 100644
+> > --- a/mm/hugetlb.c
+> > +++ b/mm/hugetlb.c
+> > @@ -3170,7 +3170,7 @@ int dequeue_hwpoisoned_huge_page(struct page *hpage)
+> >  
+> >  	spin_lock(&hugetlb_lock);
+> >  	if (is_hugepage_on_freelist(hpage)) {
+> > -		list_del(&hpage->lru);
+> > +		list_del_init(&hpage->lru);
+> 
+> Can we please have a code comment in here explaining why
+> list_del_init() is used?
 
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
+OK, I added it.
 ---
- arch/x86/include/asm/kexec.h |    4 +++-
- arch/x86/kernel/crash.c      |    4 ++--
- 2 files changed, 5 insertions(+), 3 deletions(-)
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Date: Thu, 6 Dec 2012 20:54:30 -0500
+Subject: [PATCH v3] HWPOISON, hugetlbfs: fix warning on freeing hwpoisoned
+ hugepage
 
-diff --git a/arch/x86/include/asm/kexec.h b/arch/x86/include/asm/kexec.h
-index 28feeba..16882cd 100644
---- a/arch/x86/include/asm/kexec.h
-+++ b/arch/x86/include/asm/kexec.h
-@@ -163,7 +163,9 @@ struct kimage_arch {
- };
- #endif
+This patch fixes the warning from __list_del_entry() which is triggered
+when a process tries to do free_huge_page() for a hwpoisoned hugepage.
+
+ChangeLog v3:
+ - add comment
+
+ChangeLog v2:
+ - simply use list_del_init instead of introducing new hugepage list
+
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ mm/hugetlb.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 59a0059..df03345 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -3170,7 +3170,12 @@ int dequeue_hwpoisoned_huge_page(struct page *hpage)
  
--extern void (*crash_vmclear_loaded_vmcss)(void);
-+extern void __rcu (*crash_vmclear_loaded_vmcss)(void);
-+#define vmclear_func_rcu(vmclear_func) \
-+	((void (*)(void)) rcu_dereference(vmclear_func))
- 
- #endif /* __ASSEMBLY__ */
- 
-diff --git a/arch/x86/kernel/crash.c b/arch/x86/kernel/crash.c
-index 2f6b8e8..50ce1d6 100644
---- a/arch/x86/kernel/crash.c
-+++ b/arch/x86/kernel/crash.c
-@@ -38,7 +38,7 @@ int in_crash_kexec;
-  *
-  * protected by rcu.
-  */
--void (*crash_vmclear_loaded_vmcss)(void) = NULL;
-+void __rcu (*crash_vmclear_loaded_vmcss)(void) = NULL;
- EXPORT_SYMBOL_GPL(crash_vmclear_loaded_vmcss);
- 
- static inline void cpu_crash_vmclear_loaded_vmcss(void)
-@@ -46,7 +46,7 @@ static inline void cpu_crash_vmclear_loaded_vmcss(void)
- 	void (*do_vmclear_operation)(void) = NULL;
- 
- 	rcu_read_lock();
--	do_vmclear_operation = rcu_dereference(crash_vmclear_loaded_vmcss);
-+	do_vmclear_operation = vmclear_func_rcu(crash_vmclear_loaded_vmcss);
- 	if (do_vmclear_operation)
- 		do_vmclear_operation();
- 	rcu_read_unlock();
+ 	spin_lock(&hugetlb_lock);
+ 	if (is_hugepage_on_freelist(hpage)) {
+-		list_del(&hpage->lru);
++		/* 
++		 * Hwpoisoned hugepage isn't linked to activelist or freelist,
++		 * but dangling hpage->lru can trigger list-debug warnings,
++		 * so let it point to itself with list_del_init().
++		 */
++		list_del_init(&hpage->lru);
+ 		set_page_refcounted(hpage);
+ 		h->free_huge_pages--;
+ 		h->free_huge_pages_node[nid]--;
 -- 
-1.7.1
+1.7.11.7
+
