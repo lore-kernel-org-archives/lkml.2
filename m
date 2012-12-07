@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423998Ab2LGBEQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 20:04:16 -0500
+	id S1424021Ab2LGBEl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 20:04:41 -0500
 Received: from mail-da0-f46.google.com ([209.85.210.46]:43888 "EHLO
 	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423573Ab2LGBAB (ORCPT
+	with ESMTP id S1423549Ab2LGA7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 20:00:01 -0500
+	Thu, 6 Dec 2012 19:59:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Felix Liao <Felix.Liao@watchguard.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 14/27] mac80211: fix remain-on-channel (non-)cancelling
-Date: Thu,  6 Dec 2012 16:58:58 -0800
-Message-Id: <20121207005829.826364131@linuxfoundation.org>
+        Vincent Palatin <vpalatin@chromium.org>,
+        Duncan Laurie <dlaurie@chromium.org>,
+        Olof Johansson <olofj@chromium.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 12/27] x86, fpu: Avoid FPU lazy restore after suspend
+Date: Thu,  6 Dec 2012 16:58:56 -0800
+Message-Id: <20121207005829.192265076@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121207005825.232489605@linuxfoundation.org>
 References: <20121207005825.232489605@linuxfoundation.org>
@@ -28,41 +29,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Vincent Palatin <vpalatin@chromium.org>
 
-commit 6bdd253f635f7b2ef027d116933a6c9ec148b87f upstream.
+commit 644c154186386bb1fa6446bc5e037b9ed098db46 upstream.
 
-Felix Liao reported that when an interface is set DOWN
-while another interface is executing a ROC, the warning
-in ieee80211_start_next_roc() (about the first item on
-the list having started already) triggers.
+When a cpu enters S3 state, the FPU state is lost.
+After resuming for S3, if we try to lazy restore the FPU for a process running
+on the same CPU, this will result in a corrupted FPU context.
 
-This is because ieee80211_roc_purge() calls it even if
-it never actually changed the list of ROC items. To fix
-this, simply remove the function call. If it is needed
-then it will be done by the ieee80211_sw_roc_work()
-function when the ROC item that is being removed while
-active is cleaned up.
+Ensure that "fpu_owner_task" is properly invalided when (re-)initializing a CPU,
+so nobody will try to lazy restore a state which doesn't exist in the hardware.
 
-Reported-by: Felix Liao <Felix.Liao@watchguard.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Tested with a 64-bit kernel on a 4-core Ivybridge CPU with eagerfpu=off,
+by doing thousands of suspend/resume cycles with 4 processes doing FPU
+operations running. Without the patch, a process is killed after a
+few hundreds cycles by a SIGFPE.
+
+Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
+Cc: Duncan Laurie <dlaurie@chromium.org>
+Cc: Olof Johansson <olofj@chromium.org>
+Link: http://lkml.kernel.org/r/1354306532-1014-1-git-send-email-vpalatin@chromium.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/offchannel.c |    2 --
- 1 file changed, 2 deletions(-)
+ arch/x86/include/asm/fpu-internal.h |   15 +++++++++------
+ arch/x86/kernel/smpboot.c           |    5 +++++
+ 2 files changed, 14 insertions(+), 6 deletions(-)
 
---- a/net/mac80211/offchannel.c
-+++ b/net/mac80211/offchannel.c
-@@ -453,8 +453,6 @@ void ieee80211_roc_purge(struct ieee8021
- 		list_move_tail(&roc->list, &tmp_list);
- 		roc->abort = true;
- 	}
--
--	ieee80211_start_next_roc(local);
- 	mutex_unlock(&local->mtx);
+--- a/arch/x86/include/asm/fpu-internal.h
++++ b/arch/x86/include/asm/fpu-internal.h
+@@ -334,14 +334,17 @@ static inline void __thread_fpu_begin(st
+ typedef struct { int preload; } fpu_switch_t;
  
- 	list_for_each_entry_safe(roc, tmp, &tmp_list, list) {
+ /*
+- * FIXME! We could do a totally lazy restore, but we need to
+- * add a per-cpu "this was the task that last touched the FPU
+- * on this CPU" variable, and the task needs to have a "I last
+- * touched the FPU on this CPU" and check them.
++ * Must be run with preemption disabled: this clears the fpu_owner_task,
++ * on this CPU.
+  *
+- * We don't do that yet, so "fpu_lazy_restore()" always returns
+- * false, but some day..
++ * This will disable any lazy FPU state restore of the current FPU state,
++ * but if the current thread owns the FPU, it will still be saved by.
+  */
++static inline void __cpu_disable_lazy_restore(unsigned int cpu)
++{
++	per_cpu(fpu_owner_task, cpu) = NULL;
++}
++
+ static inline int fpu_lazy_restore(struct task_struct *new, unsigned int cpu)
+ {
+ 	return new == this_cpu_read_stable(fpu_owner_task) &&
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -68,6 +68,8 @@
+ #include <asm/mwait.h>
+ #include <asm/apic.h>
+ #include <asm/io_apic.h>
++#include <asm/i387.h>
++#include <asm/fpu-internal.h>
+ #include <asm/setup.h>
+ #include <asm/uv/uv.h>
+ #include <linux/mc146818rtc.h>
+@@ -817,6 +819,9 @@ int __cpuinit native_cpu_up(unsigned int
+ 
+ 	per_cpu(cpu_state, cpu) = CPU_UP_PREPARE;
+ 
++	/* the FPU context is blank, nobody can own it */
++	__cpu_disable_lazy_restore(cpu);
++
+ 	err = do_boot_cpu(apicid, cpu, tidle);
+ 	if (err) {
+ 		pr_debug("do_boot_cpu failed %d\n", err);
 
 
