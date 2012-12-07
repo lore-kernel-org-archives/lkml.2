@@ -1,148 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932668Ab2LGLol (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 06:44:41 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:42692 "EHLO bear.ext.ti.com"
+	id S933088Ab2LGLq4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 06:46:56 -0500
+Received: from mga02.intel.com ([134.134.136.20]:7323 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932540Ab2LGLoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 06:44:37 -0500
-From: Afzal Mohammed <afzal@ti.com>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-CC: Vaibhav Hiremath <hvaibhav@ti.com>, Sekhar Nori <nsekhar@ti.com>,
-        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Afzal Mohammed <afzal@ti.com>
-Subject: [PATCH 10/10] video: da8xx-fb: fb_set_par support
-Date: Fri, 7 Dec 2012 17:14:31 +0530
-Message-ID: <be3711f2c6005dc73704e6147372ea0be2466595.1354874432.git.afzal@ti.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <cover.1354874432.git.afzal@ti.com>
-References: <cover.1354874432.git.afzal@ti.com>
+	id S932675Ab2LGLqz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 06:46:55 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,236,1355126400"; 
+   d="scan'208";a="230290877"
+From: Jani Nikula <jani.nikula@linux.intel.com>
+To: Tim Gardner <tim.gardner@canonical.com>, linux-kernel@vger.kernel.org
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH linux-next] i915: intel_set_mode: Reduce stack allocation from 500 bytes to 2 pointers
+In-Reply-To: <1354815755-83271-1-git-send-email-tim.gardner@canonical.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+References: <1354815755-83271-1-git-send-email-tim.gardner@canonical.com>
+User-Agent: Notmuch/0.14+142~gf454854 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Fri, 07 Dec 2012 13:47:46 +0200
+Message-ID: <87zk1qm6cd.fsf@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fb_set_par helps in runtime configuration of lcd controller like
-changing resolution, pixel clock etc. (eg. using fbset utility)
 
-Reconfigure lcd controller based on information passed by framework.
-Enable raster back if it was already enabled.
+On Thu, 06 Dec 2012, Tim Gardner <tim.gardner@canonical.com> wrote:
+> smatch warning:
+>
+> drivers/gpu/drm/i915/intel_display.c:7019 intel_set_mode() warn: function puts
+> 500 bytes on stack
+>
+> Refactor so that saved_mode and saved_hwmode are dynamically allocated as opposed
+> to being automatic variables. 500 bytes seems like it could run the potential for blowing
+> the kernel stack, especially if struct drm_display_mode ever grows significantly.
 
-As fb_set_par would get invoked indirectly from probe via fb_set_var,
-remove existing lcdc initialization in probe and do lcdc reset in
-probe so that reset happens only at the begining.
+Hi Tim, seems reasonable, but please find a few comments inline.
 
-Signed-off-by: Afzal Mohammed <afzal@ti.com>
----
- drivers/video/da8xx-fb.c | 60 +++++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 49 insertions(+), 11 deletions(-)
+BR,
+Jani.
 
-diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
-index c7393f1..1293ab9 100644
---- a/drivers/video/da8xx-fb.c
-+++ b/drivers/video/da8xx-fb.c
-@@ -247,6 +247,11 @@ static struct fb_videomode known_lcd_panels[] = {
- 	},
- };
- 
-+static inline bool da8xx_fb_is_raster_enabled(void)
-+{
-+	return !!(lcdc_read(LCD_RASTER_CTRL_REG) & LCD_RASTER_ENABLE);
-+}
-+
- /* Enable the Raster Engine of the LCD Controller */
- static inline void lcd_enable_raster(void)
- {
-@@ -669,9 +674,6 @@ static int fb_setcolreg(unsigned regno, unsigned red, unsigned green,
- 
- static void da8xx_fb_lcd_reset(void)
- {
--	/* Disable the Raster if previously Enabled */
--	lcd_disable_raster(false);
--
- 	/* DMA has to be disabled */
- 	lcdc_write(0, LCD_DMA_CTRL_REG);
- 	lcdc_write(0, LCD_RASTER_CTRL_REG);
-@@ -724,8 +726,6 @@ static int lcd_init(struct da8xx_fb_par *par, const struct lcd_ctrl_config *cfg,
- 	u32 bpp;
- 	int ret = 0;
- 
--	da8xx_fb_lcd_reset();
--
- 	da8xx_fb_calc_config_clk_divider(par, panel);
- 
- 	if (panel->sync & FB_SYNC_CLK_INVERT)
-@@ -1205,9 +1205,52 @@ static int da8xx_pan_display(struct fb_var_screeninfo *var,
- 	return ret;
- }
- 
-+static int da8xxfb_set_par(struct fb_info *info)
-+{
-+	struct da8xx_fb_par *par = info->par;
-+	int ret;
-+	bool raster = da8xx_fb_is_raster_enabled();
-+
-+	if (raster)
-+		lcd_disable_raster(false);
-+	else
-+		lcd_disable_raster(true);
-+
-+	fb_var_to_videomode(&par->mode, &info->var);
-+
-+	par->cfg.bpp = info->var.bits_per_pixel;
-+
-+	info->fix.visual = (par->cfg.bpp <= 8) ?
-+				FB_VISUAL_PSEUDOCOLOR : FB_VISUAL_TRUECOLOR;
-+	info->fix.line_length = (par->mode.xres * par->cfg.bpp) / 8;
-+
-+	ret = lcd_init(par, &par->cfg, &par->mode);
-+	if (ret < 0) {
-+		dev_err(par->dev, "lcd init failed\n");
-+		return ret;
-+	}
-+
-+	par->dma_start = info->fix.smem_start +
-+			 info->var.yoffset * info->fix.line_length +
-+			 info->var.xoffset * info->var.bits_per_pixel / 8;
-+	par->dma_end   = par->dma_start +
-+			 info->var.yres * info->fix.line_length - 1;
-+
-+	lcdc_write(par->dma_start, LCD_DMA_FRM_BUF_BASE_ADDR_0_REG);
-+	lcdc_write(par->dma_end, LCD_DMA_FRM_BUF_CEILING_ADDR_0_REG);
-+	lcdc_write(par->dma_start, LCD_DMA_FRM_BUF_BASE_ADDR_1_REG);
-+	lcdc_write(par->dma_end, LCD_DMA_FRM_BUF_CEILING_ADDR_1_REG);
-+
-+	if (raster)
-+		lcd_enable_raster();
-+
-+	return 0;
-+}
-+
- static struct fb_ops da8xx_fb_ops = {
- 	.owner = THIS_MODULE,
- 	.fb_check_var = fb_check_var,
-+	.fb_set_par = da8xxfb_set_par,
- 	.fb_setcolreg = fb_setcolreg,
- 	.fb_pan_display = da8xx_pan_display,
- 	.fb_ioctl = fb_ioctl,
-@@ -1316,14 +1359,9 @@ static int __devinit fb_probe(struct platform_device *device)
- 	}
- 
- 	fb_videomode_to_var(&da8xx_fb_var, lcdc_info);
--	fb_var_to_videomode(&par->mode, &da8xx_fb_var);
- 	par->cfg = *lcd_cfg;
- 
--	if (lcd_init(par, lcd_cfg, lcdc_info) < 0) {
--		dev_err(&device->dev, "lcd_init failed\n");
--		ret = -EFAULT;
--		goto err_release_fb;
--	}
-+	da8xx_fb_lcd_reset();
- 
- 	/* allocate frame buffer */
- 	par->vram_size = lcdc_info->xres * lcdc_info->yres * lcd_cfg->bpp;
--- 
-1.7.12
+>
+> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+> Cc: David Airlie <airlied@linux.ie>
+> Cc: dri-devel@lists.freedesktop.org
+> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+> ---
+>  drivers/gpu/drm/i915/intel_display.c |   18 +++++++++++++-----
+>  1 file changed, 13 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+> index de51489..f8754d6 100644
+> --- a/drivers/gpu/drm/i915/intel_display.c
+> +++ b/drivers/gpu/drm/i915/intel_display.c
+> @@ -7739,11 +7739,18 @@ bool intel_set_mode(struct drm_crtc *crtc,
+>  {
+>  	struct drm_device *dev = crtc->dev;
+>  	drm_i915_private_t *dev_priv = dev->dev_private;
+> -	struct drm_display_mode *adjusted_mode, saved_mode, saved_hwmode;
+> +	struct drm_display_mode *adjusted_mode, *saved_mode, *saved_hwmode;
+>  	struct intel_crtc *intel_crtc;
+>  	unsigned disable_pipes, prepare_pipes, modeset_pipes;
+>  	bool ret = true;
+>  
+> +	saved_mode = kmalloc(2*sizeof(*saved_mode), GFP_KERNEL);
 
+Style nitpick, missing spaces around the first *.
+
+> +	if (!saved_mode) {
+> +		pr_err("i915: Could not allocate saved display mode.\n");
+
+Please use DRM_ERROR().
+
+> +		return false;
+> +	}
+> +	saved_hwmode = saved_mode + 1;
+> +
+>  	intel_modeset_affected_pipes(crtc, &modeset_pipes,
+>  				     &prepare_pipes, &disable_pipes);
+>  
+> @@ -7753,8 +7760,8 @@ bool intel_set_mode(struct drm_crtc *crtc,
+>  	for_each_intel_crtc_masked(dev, disable_pipes, intel_crtc)
+>  		intel_crtc_disable(&intel_crtc->base);
+>  
+> -	saved_hwmode = crtc->hwmode;
+> -	saved_mode = crtc->mode;
+> +	*saved_hwmode = crtc->hwmode;
+> +	*saved_mode = crtc->mode;
+>  
+>  	/* Hack: Because we don't (yet) support global modeset on multiple
+>  	 * crtcs, we don't keep track of the new mode for more than one crtc.
+
+You are missing a kfree in the adjusted_mode error path after this hunk.
+
+> @@ -7817,12 +7824,13 @@ bool intel_set_mode(struct drm_crtc *crtc,
+>  done:
+>  	drm_mode_destroy(dev, adjusted_mode);
+>  	if (!ret && crtc->enabled) {
+> -		crtc->hwmode = saved_hwmode;
+> -		crtc->mode = saved_mode;
+> +		crtc->hwmode = *saved_hwmode;
+> +		crtc->mode = *saved_mode;
+>  	} else {
+>  		intel_modeset_check_state(dev);
+>  	}
+>  
+> +	kfree(saved_mode);
+>  	return ret;
+>  }
+>  
+> -- 
+> 1.7.9.5
+>
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
