@@ -1,88 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424083Ab2LGTwp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 14:52:45 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:58169 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756780Ab2LGTwo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 14:52:44 -0500
-Date: Fri, 07 Dec 2012 14:52:39 -0500 (EST)
-Message-Id: <20121207.145239.1408511750725975741.davem@davemloft.net>
-To: joseph.gasparakis@intel.com
-Cc: bhutchings@solarflare.com, alexander.h.duyck@intel.com,
-        shemminger@vyatta.com, chrisw@sous-sol.org, gospo@redhat.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmitry@broadcom.com, saeed.bishara@gmail.com,
-        peter.p.waskiewicz.jr@intel.com
-Subject: Re: [PATCH v3 1/4] net: Add support for hardware-offloaded
- encapsulation
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LFD.2.02.1212071149150.4985@morpheus.jf.intel.com>
-References: <alpine.LFD.2.02.1212071139190.4985@morpheus.jf.intel.com>
-	<20121207.143725.1501926484331042018.davem@davemloft.net>
-	<alpine.LFD.2.02.1212071149150.4985@morpheus.jf.intel.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1756798Ab2LGT4c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 14:56:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57658 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750971Ab2LGT4a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 14:56:30 -0500
+Date: Fri, 7 Dec 2012 20:56:29 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: tj@kernel.org, tglx@linutronix.de, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
+        akpm@linux-foundation.org, namhyung@kernel.org,
+        vincent.guittot@linaro.org, sbw@mit.edu, amit.kucheria@linaro.org,
+        rostedt@goodmis.org, rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v2 01/10] CPU hotplug: Provide APIs for "light"
+	atomic readers to prevent CPU offline
+Message-ID: <20121207195629.GA13238@redhat.com>
+References: <20121205184041.3750.64945.stgit@srivatsabhat.in.ibm.com> <20121205184258.3750.31879.stgit@srivatsabhat.in.ibm.com> <50BF96DF.3000500@linux.vnet.ibm.com> <50BF979A.50304@linux.vnet.ibm.com> <50BF982D.7090704@linux.vnet.ibm.com> <50BF98F7.3030600@linux.vnet.ibm.com> <50BF999C.6030707@linux.vnet.ibm.com> <50BFAB17.3090603@linux.vnet.ibm.com> <20121206161850.GA6710@redhat.com> <50C0E88E.9050909@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50C0E88E.9050909@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joseph Gasparakis <joseph.gasparakis@intel.com>
-Date: Fri, 7 Dec 2012 11:52:43 -0800 (PST)
+On 12/07, Srivatsa S. Bhat wrote:
+>
+> On 12/06/2012 09:48 PM, Oleg Nesterov wrote:
+> > On 12/06, Srivatsa S. Bhat wrote:
+> >>
+> >> +void get_online_cpus_atomic(void)
+> >> +{
+> >> +	int c, old;
+> >> +
+> >> +	preempt_disable();
+> >> +	read_lock(&hotplug_rwlock);
+> >
+> > Confused... Why it also takes hotplug_rwlock?
+>
+> To avoid ABBA deadlocks.
+>
+> hotplug_rwlock was meant for the "light" readers.
+> The atomic counters were meant for the "heavy/full" readers.
 
-> 
-> 
-> On Fri, 7 Dec 2012, David Miller wrote:
-> 
->> From: Joseph Gasparakis <joseph.gasparakis@intel.com>
->> Date: Fri, 7 Dec 2012 11:41:46 -0800 (PST)
->> 
->> > 
->> > 
->> > On Fri, 7 Dec 2012, David Miller wrote:
->> > 
->> >> From: Joseph Gasparakis <joseph.gasparakis@intel.com>
->> >> Date: Fri, 7 Dec 2012 10:24:17 -0800 (PST)
->> >> 
->> >> > So the idea here is that the driver will use the headers for checksumming 
->> >> > if the skb->encapsulation bit is on. The bit should be set in the protocol 
->> >> > driver.
->> >> > 
->> >> > To answer the second comment, the flags that we use in this series of 
->> >> > patches is NETIF_F_IP_CSUM, NETIF_F_IPV6_CSUM and NETIF_F_SG. These are 
->> >> > the bits that we propose will be used for checksumming of encapsulation. 
->> >> > As per a previous comment in v2, the hw_enc_features field should be used 
->> >> > also in the future when NICs have more encap offloads, so one could
->> >> > indicate these features there from the driver.
->> >> > 
->> >> > Furthermore, I submitted a patch for Rx checksumming, where NETIF_F_RXCSUM 
->> >> > is used, again in conjunction with skb->encapsulation flag. As I mention 
->> >> > in my logs, the driver is expected to set the ip_summed to UNNECESSARY and 
->> >> > turn the skb->encapsulation on, to indicate that the inner headers are 
->> >> > already HW checksummed.
->> >> > 
->> >> 
->> >> This is the kind of language that belongs in the commit message and
->> >> code comments.
->> >> 
->> > Sure. I'll wait to gather some more feedback if there is any and I will 
->> > re-spin this off adding more code comments and clarify this in the logs.
->> 
->> Great.
->> 
->> Please note that this request applies to your receive side change too.
->> 
-> I believe the logs are sufficient in the rx patch:
-> 
-> This patch adds capability in vxlan to identify received
-> checksummed inner packets and signal them to the upper layers of
-> the stack. The driver needs to set the skb->encapsulation bit
-> and also set the skb->ip_summed to CHECKSUM_UNNECESSARY.
-> 
-> ...but I can add more comments to the code if this is what you are 
-> referring to.
+OK, I got lost a bit. I'll try to read v3 tomorrow.
 
-Yes, please do.
+> > Obviously you can't use get_online_cpus_atomic() under rq->lock or
+> > task->pi_lock or any other lock CPU_DYING can take. Probably this is
+> > fine, but perhaps it makes sense to add the lockdep annotations.
+>
+> Hmm, you are right. We can't use _atomic() in the CPU_DYING path.
+
+Not sure I undestand... I simply meant that, say,
+get_online_cpus_atomic() under task->pi_lock can obviously deadlock
+with take_cpu_down() which can want the same task->pi_lock after
+disable_atomic_reader().
+
+Oleg.
+
