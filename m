@@ -1,81 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964847Ab2LGJZV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 04:25:21 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:47668 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964789Ab2LGJZT (ORCPT
+	id S1754856Ab2LGJ3k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 04:29:40 -0500
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:53280
+	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754099Ab2LGJ3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 04:25:19 -0500
-Message-ID: <1354872313.15243.3.camel@phoenix>
-Subject: [PATCH 2/2] regulator: lp8788-buck: Kill _gpio_request function
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: "Milo(Woogyom) Kim" <milo.kim@ti.com>, Liam Girdwood <lrg@ti.com>,
+	Fri, 7 Dec 2012 04:29:39 -0500
+X-IronPort-AV: E=Sophos;i="4.84,236,1355094000"; 
+   d="scan'208";a="165080714"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: kernel-janitors@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date: Fri, 07 Dec 2012 17:25:13 +0800
-In-Reply-To: <1354872181.15243.1.camel@phoenix>
-References: <1354872181.15243.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Subject: [PATCH] drivers/thermal/spear_thermal.c: use devm_clk_get
+Date: Fri,  7 Dec 2012 11:29:32 +0100
+Message-Id: <1354876172-1634-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simply use devm_gpio_request_one() instead.
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
+devm_clk_get allocates a resource that is released when a driver detaches.
+This patch uses devm_clk_get for data that is allocated in the probe
+function of a platform device and is only released in the remove function.
+
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
 ---
- drivers/regulator/lp8788-buck.c |   18 ++++--------------
- 1 file changed, 4 insertions(+), 14 deletions(-)
+I was not able to compile this code.  At one point, devm_clk_get was not
+supported for all architectures.  If that is still the case, and the code
+doesn't compile, then just ignore the patch.
 
-diff --git a/drivers/regulator/lp8788-buck.c b/drivers/regulator/lp8788-buck.c
-index d33b81a..369b034 100644
---- a/drivers/regulator/lp8788-buck.c
-+++ b/drivers/regulator/lp8788-buck.c
-@@ -429,18 +429,6 @@ static struct regulator_desc lp8788_buck_desc[] = {
- 	},
- };
+ drivers/thermal/spear_thermal.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/thermal/spear_thermal.c b/drivers/thermal/spear_thermal.c
+index 6b2d8b2..3c5ee56 100644
+--- a/drivers/thermal/spear_thermal.c
++++ b/drivers/thermal/spear_thermal.c
+@@ -131,7 +131,7 @@ static int spear_thermal_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
  
--static int _gpio_request(struct lp8788_buck *buck, int gpio, char *name)
--{
--	struct device *dev = buck->lp->dev;
--
--	if (!gpio_is_valid(gpio)) {
--		dev_err(dev, "invalid gpio: %d\n", gpio);
--		return -EINVAL;
--	}
--
--	return devm_gpio_request_one(dev, gpio, DVS_LOW, name);
--}
--
- static int lp8788_dvs_gpio_request(struct lp8788_buck *buck,
- 				enum lp8788_buck_id id)
- {
-@@ -452,7 +440,8 @@ static int lp8788_dvs_gpio_request(struct lp8788_buck *buck,
- 	switch (id) {
- 	case BUCK1:
- 		gpio = pdata->buck1_dvs->gpio;
--		ret = _gpio_request(buck, gpio, b1_name);
-+		ret = devm_gpio_request_one(buck->lp->dev, gpio, DVS_LOW,
-+					    b1_name);
- 		if (ret)
- 			return ret;
+-	stdev->clk = clk_get(&pdev->dev, NULL);
++	stdev->clk = devm_clk_get(&pdev->dev, NULL);
+ 	if (IS_ERR(stdev->clk)) {
+ 		dev_err(&pdev->dev, "Can't get clock\n");
+ 		return PTR_ERR(stdev->clk);
+@@ -140,7 +140,7 @@ static int spear_thermal_probe(struct platform_device *pdev)
+ 	ret = clk_enable(stdev->clk);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "Can't enable clock\n");
+-		goto put_clk;
++		return ret;
+ 	}
  
-@@ -461,7 +450,8 @@ static int lp8788_dvs_gpio_request(struct lp8788_buck *buck,
- 	case BUCK2:
- 		for (i = 0 ; i < LP8788_NUM_BUCK2_DVS ; i++) {
- 			gpio = pdata->buck2_dvs->gpio[i];
--			ret = _gpio_request(buck, gpio, b2_name[i]);
-+			ret = devm_gpio_request_one(buck->lp->dev, gpio,
-+						    DVS_LOW, b2_name[i]);
- 			if (ret)
- 				return ret;
- 		}
--- 
-1.7.9.5
-
-
+ 	stdev->flags = val;
+@@ -163,8 +163,6 @@ static int spear_thermal_probe(struct platform_device *pdev)
+ 
+ disable_clk:
+ 	clk_disable(stdev->clk);
+-put_clk:
+-	clk_put(stdev->clk);
+ 
+ 	return ret;
+ }
+@@ -183,7 +181,6 @@ static int spear_thermal_exit(struct platform_device *pdev)
+ 	writel_relaxed(actual_mask & ~stdev->flags, stdev->thermal_base);
+ 
+ 	clk_disable(stdev->clk);
+-	clk_put(stdev->clk);
+ 
+ 	return 0;
+ }
 
