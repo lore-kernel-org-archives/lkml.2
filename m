@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422952Ab2LGAzR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 19:55:17 -0500
+	id S1423132Ab2LGBK6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 20:10:58 -0500
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:52707 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422930Ab2LGAzM (ORCPT
+	with ESMTP id S1422931Ab2LGAzP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 19:55:12 -0500
+	Thu, 6 Dec 2012 19:55:15 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Duncan Laurie <dlaurie@chromium.org>,
-        Olof Johansson <olofj@chromium.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 09/20] x86, fpu: Avoid FPU lazy restore after suspend
-Date: Thu,  6 Dec 2012 16:54:24 -0800
-Message-Id: <20121207005235.381635650@linuxfoundation.org>
+        Mike Galbraith <mgalbraith@suse.de>, Tejun Heo <tj@kernel.org>
+Subject: [ 10/20] workqueue: exit rescuer_thread() as TASK_RUNNING
+Date: Thu,  6 Dec 2012 16:54:25 -0800
+Message-Id: <20121207005235.686524792@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121207005232.756641002@linuxfoundation.org>
 References: <20121207005232.756641002@linuxfoundation.org>
@@ -29,80 +26,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vincent Palatin <vpalatin@chromium.org>
+From: Mike Galbraith <mgalbraith@suse.de>
 
-commit 644c154186386bb1fa6446bc5e037b9ed098db46 upstream.
+commit 412d32e6c98527078779e5b515823b2810e40324 upstream.
 
-When a cpu enters S3 state, the FPU state is lost.
-After resuming for S3, if we try to lazy restore the FPU for a process running
-on the same CPU, this will result in a corrupted FPU context.
+A rescue thread exiting TASK_INTERRUPTIBLE can lead to a task scheduling
+off, never to be seen again.  In the case where this occurred, an exiting
+thread hit reiserfs homebrew conditional resched while holding a mutex,
+bringing the box to its knees.
 
-Ensure that "fpu_owner_task" is properly invalided when (re-)initializing a CPU,
-so nobody will try to lazy restore a state which doesn't exist in the hardware.
+PID: 18105  TASK: ffff8807fd412180  CPU: 5   COMMAND: "kdmflush"
+ #0 [ffff8808157e7670] schedule at ffffffff8143f489
+ #1 [ffff8808157e77b8] reiserfs_get_block at ffffffffa038ab2d [reiserfs]
+ #2 [ffff8808157e79a8] __block_write_begin at ffffffff8117fb14
+ #3 [ffff8808157e7a98] reiserfs_write_begin at ffffffffa0388695 [reiserfs]
+ #4 [ffff8808157e7ad8] generic_perform_write at ffffffff810ee9e2
+ #5 [ffff8808157e7b58] generic_file_buffered_write at ffffffff810eeb41
+ #6 [ffff8808157e7ba8] __generic_file_aio_write at ffffffff810f1a3a
+ #7 [ffff8808157e7c58] generic_file_aio_write at ffffffff810f1c88
+ #8 [ffff8808157e7cc8] do_sync_write at ffffffff8114f850
+ #9 [ffff8808157e7dd8] do_acct_process at ffffffff810a268f
+    [exception RIP: kernel_thread_helper]
+    RIP: ffffffff8144a5c0  RSP: ffff8808157e7f58  RFLAGS: 00000202
+    RAX: 0000000000000000  RBX: 0000000000000000  RCX: 0000000000000000
+    RDX: 0000000000000000  RSI: ffffffff8107af60  RDI: ffff8803ee491d18
+    RBP: 0000000000000000   R8: 0000000000000000   R9: 0000000000000000
+    R10: 0000000000000000  R11: 0000000000000000  R12: 0000000000000000
+    R13: 0000000000000000  R14: 0000000000000000  R15: 0000000000000000
+    ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
 
-Tested with a 64-bit kernel on a 4-core Ivybridge CPU with eagerfpu=off,
-by doing thousands of suspend/resume cycles with 4 processes doing FPU
-operations running. Without the patch, a process is killed after a
-few hundreds cycles by a SIGFPE.
-
-Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
-Cc: Duncan Laurie <dlaurie@chromium.org>
-Cc: Olof Johansson <olofj@chromium.org>
-Link: http://lkml.kernel.org/r/1354306532-1014-1-git-send-email-vpalatin@chromium.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Mike Galbraith <mgalbraith@suse.de>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/fpu-internal.h |   15 +++++++++------
- arch/x86/kernel/smpboot.c           |    5 +++++
- 2 files changed, 14 insertions(+), 6 deletions(-)
+ kernel/workqueue.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/arch/x86/include/asm/fpu-internal.h
-+++ b/arch/x86/include/asm/fpu-internal.h
-@@ -334,14 +334,17 @@ static inline void __thread_fpu_begin(st
- typedef struct { int preload; } fpu_switch_t;
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2040,8 +2040,10 @@ static int rescuer_thread(void *__wq)
+ repeat:
+ 	set_current_state(TASK_INTERRUPTIBLE);
  
- /*
-- * FIXME! We could do a totally lazy restore, but we need to
-- * add a per-cpu "this was the task that last touched the FPU
-- * on this CPU" variable, and the task needs to have a "I last
-- * touched the FPU on this CPU" and check them.
-+ * Must be run with preemption disabled: this clears the fpu_owner_task,
-+ * on this CPU.
-  *
-- * We don't do that yet, so "fpu_lazy_restore()" always returns
-- * false, but some day..
-+ * This will disable any lazy FPU state restore of the current FPU state,
-+ * but if the current thread owns the FPU, it will still be saved by.
-  */
-+static inline void __cpu_disable_lazy_restore(unsigned int cpu)
-+{
-+	per_cpu(fpu_owner_task, cpu) = NULL;
-+}
-+
- static inline int fpu_lazy_restore(struct task_struct *new, unsigned int cpu)
- {
- 	return new == percpu_read_stable(fpu_owner_task) &&
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -66,6 +66,8 @@
- #include <asm/mwait.h>
- #include <asm/apic.h>
- #include <asm/io_apic.h>
-+#include <asm/i387.h>
-+#include <asm/fpu-internal.h>
- #include <asm/setup.h>
- #include <asm/uv/uv.h>
- #include <linux/mc146818rtc.h>
-@@ -851,6 +853,9 @@ int __cpuinit native_cpu_up(unsigned int
+-	if (kthread_should_stop())
++	if (kthread_should_stop()) {
++		__set_current_state(TASK_RUNNING);
+ 		return 0;
++	}
  
- 	per_cpu(cpu_state, cpu) = CPU_UP_PREPARE;
- 
-+	/* the FPU context is blank, nobody can own it */
-+	__cpu_disable_lazy_restore(cpu);
-+
- 	err = do_boot_cpu(apicid, cpu);
- 	if (err) {
- 		pr_debug("do_boot_cpu failed %d\n", err);
+ 	/*
+ 	 * See whether any cpu is asking for help.  Unbounded
 
 
