@@ -1,79 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423336Ab2LGA6J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 19:58:09 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:44913 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423306Ab2LGA5v (ORCPT
+	id S1423304Ab2LGA5u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 19:57:50 -0500
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:49507 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1423263Ab2LGA5p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 19:57:51 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        James Bottomley <JBottomley@parallels.com>, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@kernel.dk>,
-        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
-        linux-scsi@vger.kernel.org
-Subject: [ 11/11] scsi: Silence unnecessary warnings about ioctl to partition
-Date: Thu,  6 Dec 2012 16:57:07 -0800
-Message-Id: <20121207005616.809919764@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121207005613.189054768@linuxfoundation.org>
-References: <20121207005613.189054768@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Thu, 6 Dec 2012 19:57:45 -0500
+Message-ID: <1354841855.3026.7.camel@thor>
+Subject: Re: [PATCH -next 0/9] tty: Fix buffer work access-after-free
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Alan Cox <alan@linux.intel.com>
+Cc: Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <levinsasha928@gmail.com>
+Date: Thu, 06 Dec 2012 19:57:35 -0500
+In-Reply-To: <1354604865-10278-1-git-send-email-peter@hurleysoftware.com>
+References: <1354604865-10278-1-git-send-email-peter@hurleysoftware.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.4-0build1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Authenticated-User: 125194 peter@hurleysoftware.com
+X-MT-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Tue, 2012-12-04 at 02:07 -0500, Peter Hurley wrote:
+> This patch series addresses the causes of flush_to_ldisc accessing
+> the tty after freeing.
 
-------------------
+Well, there's going to be a v2 of this series.
 
-From: Jan Kara <jack@suse.cz>
+Sasha found that PATCH 3/9 is an insufficient fix. I've already worked
+out the correct solution but I've been plagued by the kswapd/flush
+problem so that's making this more challenging then it ought to be.
 
-commit 6d9359280753d2955f86d6411047516a9431eb51 upstream.
+Plus I tripped across a GP fault in the SLUB allocator which turns out
+to be a free list corruption (probably because of the low memory
+condition brought on by the kswapd problem. Good times...)
 
-Sometimes, warnings about ioctls to partition happen often enough that they
-form majority of the warnings in the kernel log and users complain. In some
-cases warnings are about ioctls such as SG_IO so it's not good to get rid of
-the warnings completely as they can ease debugging of userspace problems
-when ioctl is refused.
+There is also going to be a v3 because I just came up with an idea to
+clean up the whole ldisc ref situation, but I'm going to take some time
+testing it out first.
 
-Since I have seen warnings from lots of commands, including some proprietary
-userspace applications, I don't think disallowing the ioctls for processes
-with CAP_SYS_RAWIO will happen in the near future if ever. So lets just
-stop warning for processes with CAP_SYS_RAWIO for which ioctl is allowed.
+Anyway, just wanted to hold this off for another respin.
 
-Acked-by: Paolo Bonzini <pbonzini@redhat.com>
-CC: James Bottomley <JBottomley@parallels.com>
-CC: linux-scsi@vger.kernel.org
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
-Cc: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- block/scsi_ioctl.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -722,11 +722,14 @@ int scsi_verify_blk_ioctl(struct block_d
- 		break;
- 	}
- 
-+	if (capable(CAP_SYS_RAWIO))
-+		return 0;
-+
- 	/* In particular, rule out all resets and host-specific ioctls.  */
- 	printk_ratelimited(KERN_WARNING
- 			   "%s: sending ioctl %x to a partition!\n", current->comm, cmd);
- 
--	return capable(CAP_SYS_RAWIO) ? 0 : -ENOTTY;
-+	return -ENOTTY;
- }
- EXPORT_SYMBOL(scsi_verify_blk_ioctl);
- 
-
+Regards,
+Peter Hurley
 
