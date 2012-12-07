@@ -1,140 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030383Ab2LGNfA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 08:35:00 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:33532 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030370Ab2LGNe6 (ORCPT
+	id S1030393Ab2LGNfu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 08:35:50 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:60459 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030286Ab2LGNft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 08:34:58 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v2 3/3] leds: leds-pwm: Add device tree bindings
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        linux-leds@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Linus Walleij <linus.walleij@linaro.org>
-In-Reply-To: <50C0913B.9070802@ti.com>
-References: <1352731270-27534-1-git-send-email-peter.ujfalusi@ti.com> <1352731270-27534-4-git-send-email-peter.ujfalusi@ti.com> <20121206100052.EC8293E0E22@localhost> <50C0913B.9070802@ti.com>
-Date: Fri, 07 Dec 2012 13:34:53 +0000
-Message-Id: <20121207133453.800C43E0B87@localhost>
+	Fri, 7 Dec 2012 08:35:49 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAA_GA1fiQfOqApE05oh=2Wr-GejbHtOd4o7sqcGdQFH6cxWPpQ@mail.gmail.com>
+References: <1354810175-4338-1-git-send-email-js1304@gmail.com>
+	<CAA_GA1fiQfOqApE05oh=2Wr-GejbHtOd4o7sqcGdQFH6cxWPpQ@mail.gmail.com>
+Date: Fri, 7 Dec 2012 22:35:48 +0900
+Message-ID: <CAAmzW4O0EY=-ZBytrWmGVax47_ygNh+hcGpbGOCt9cnXH7HU-g@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/8] remove vm_struct list management
+From: JoonSoo Kim <js1304@gmail.com>
+To: Bob Liu <lliubbo@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        kexec@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Dec 2012 13:36:11 +0100, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
-> Hi Grant,
-> 
-> On 12/06/2012 11:00 AM, Grant Likely wrote:
-> > On Mon, 12 Nov 2012 15:41:10 +0100, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
-> >> Support for device tree booted kernel.
-> >> When the kernel is booted with DeviceTree blob we support one led per
-> >> leds-pwm device to have cleaner integration with the PWM subsystem.
-> >>
-> >> For usage see:
-> >> Documentation/devicetree/bindings/leds/leds-pwm.txt
-> >>
-> >> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> >> ---
-> >>  .../devicetree/bindings/leds/leds-pwm.txt          |  34 ++++++
-> >>  drivers/leds/leds-pwm.c                            | 125 +++++++++++++++------
-> >>  2 files changed, 127 insertions(+), 32 deletions(-)
-> >>  create mode 100644 Documentation/devicetree/bindings/leds/leds-pwm.txt
-> >>
-> >> diff --git a/Documentation/devicetree/bindings/leds/leds-pwm.txt b/Documentation/devicetree/bindings/leds/leds-pwm.txt
-> >> new file mode 100644
-> >> index 0000000..9fe3040
-> >> --- /dev/null
-> >> +++ b/Documentation/devicetree/bindings/leds/leds-pwm.txt
-> >> @@ -0,0 +1,34 @@
-> >> +LED connected to PWM
-> >> +
-> >> +Required properties:
-> >> +- compatible : should be "pwm-leds".
-> >> +- pwms : PWM property, please refer to: 
-> >> +  Documentation/devicetree/bindings/pwm/pwm.txt
-> >> +- pwm-names : (optional) Name to be used by the PWM subsystem for the PWM device
-> >> +- label : (optional) The label for this LED.  If omitted, the label is
-> >> +  taken from the node name (excluding the unit address).
-> >> +- max-brightness : Maximum brightness possible for the LED
-> >> +- linux,default-trigger :  (optional) This parameter, if present, is a
-> >> +  string defining the trigger assigned to the LED.  Current triggers are:
-> >> +    "backlight" - LED will act as a back-light, controlled by the framebuffer
-> >> +		  system
-> >> +    "default-on" - LED will turn on, but see "default-state" below
-> >> +    "heartbeat" - LED "double" flashes at a load average based rate
-> >> +    "ide-disk" - LED indicates disk activity
-> >> +    "timer" - LED flashes at a fixed, configurable rate
-> > 
-> > The binding mostly looks good. However, it seems to be gratuitously
-> > different from the gpio-leds binding and it duplicates property
-> > definitions. Please match the gpio-leds behaviour with each led defined
-> > as a sub node of the pwm-leds node.
-> 
-> The GPIO and PWM bindings are substantially different. For start in pwm we do
-> not have of_get_pwm* helpers. To get the PWM itself we need to use wpm_get()
+Hello, Bob.
 
-That's just the implementation. I'm talking about the binding. :-)
+2012/12/7 Bob Liu <lliubbo@gmail.com>:
+> Hi Joonsoo,
+>
+> On Fri, Dec 7, 2012 at 12:09 AM, Joonsoo Kim <js1304@gmail.com> wrote:
+>> This patchset remove vm_struct list management after initializing vmalloc.
+>> Adding and removing an entry to vmlist is linear time complexity, so
+>> it is inefficient. If we maintain this list, overall time complexity of
+>> adding and removing area to vmalloc space is O(N), although we use
+>> rbtree for finding vacant place and it's time complexity is just O(logN).
+>>
+>> And vmlist and vmlist_lock is used many places of outside of vmalloc.c.
+>> It is preferable that we hide this raw data structure and provide
+>> well-defined function for supporting them, because it makes that they
+>> cannot mistake when manipulating theses structure and it makes us easily
+>> maintain vmalloc layer.
+>>
+>> I'm not sure that "7/8: makes vmlist only for kexec" is fine.
+>> Because it is related to userspace program.
+>> As far as I know, makedumpfile use kexec's output information and it only
+>> need first address of vmalloc layer. So my implementation reflect this
+>> fact, but I'm not sure. And now, I don't fully test this patchset.
+>> Basic operation work well, but I don't test kexec. So I send this
+>> patchset with 'RFC'.
+>>
+>> Please let me know what I am missing.
+>>
+>
+> Nice work!
+> I also thought about this several weeks ago but I think the efficiency
+> may be a problem.
+>
+> As you know two locks(vmap_area_lock and vmlist_lock) are used
+> currently so that some
+> work may be done in parallel(not proved).
+> If removed vmlist, i'm afraid vmap_area_lock will become a bottleneck
+> which will reduce the efficiency.
 
-Implementation should follow binding design, not the other way around.
-Both bindings use the same pattern. There isn't a of_get_pwm helper now,
-but there is nothing preventing one from being created if you need it.
+Thanks for comment!
 
-in the controller:
-	#gpio-cells  vs. #pwm-cells
-in the user:
-	gpios = <[gpio specifier]> vs. pwms = <pwm specifier>
+Yes, there were some place that work may be done in parallel.
+For example, access to '/proc/meminfo', '/proc/vmallocinfo' and '/proc/kcore'
+may be done in parallel. But, access to these are not main
+functionality of vmalloc layer.
+Optimizing main function like vmalloc, vfree is more preferable than above.
+And this patchset optimize main function with removing vmlist iteration.
 
-The PWM binding states that pwm-names is optional.
-
-> which uses the pwms = <>; pwm-names = <>; properties on the device's main node.
-> This is what I could do at the moment:
-> 
-> twl_pwm: pwm {
-> 	compatible = "ti,twl4030-pwm";
-> 	#pwm-cells = <2>;
-> };
-> 
-> twl_led: pwmled {
-> 	compatible = "ti,twl4030-pwmled";
-> 	#pwm-cells = <2>;
-> };
-> 
-> pwmleds {
-> 	compatible = "pwm-leds";
-> 	pwms = <&twl_pwm 0 7812500
-> 		&twl_pwmled 0 7812500>;
-> 	pwm-names = "omap4::keypad",
-> 		    "omap4:green:chrg";
-> 	kpad {
-> 		label = "omap4::keypad";
-> 		max-brightness = <127>;
-> 	};
-> 
-> 	charging {
-> 		label = "omap4:green:chrg";
-> 		max-brightness = <255>;
-> 	};
-
-That's just a goofy extra layer of indirection and still doesn't follow
-the lead of the gpio-leds pattern. That makes it worse that your
-original binding, not better.
-
-It really needs to look like this:
-
-pwmleds {
-	compatible = "pwm-leds";
-	kpad {
-		label = "omap4::keypad";
-		max-brightness = <127>;
-		pwms = <&twl_pwm 0 7812500>;
-	};
-	charging {
-		label = "omap4:green:chrg";
-		max-brightness = <255>;
-		pwms = <&twl_pwmled 0 7812500>;
-	};
-};
-
-g.
+Thanks.
