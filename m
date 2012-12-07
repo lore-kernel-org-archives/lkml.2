@@ -1,65 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756798Ab2LGT4c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 14:56:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57658 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750971Ab2LGT4a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 14:56:30 -0500
-Date: Fri, 7 Dec 2012 20:56:29 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: tj@kernel.org, tglx@linutronix.de, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, rusty@rustcorp.com.au, mingo@kernel.org,
-        akpm@linux-foundation.org, namhyung@kernel.org,
-        vincent.guittot@linaro.org, sbw@mit.edu, amit.kucheria@linaro.org,
-        rostedt@goodmis.org, rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v2 01/10] CPU hotplug: Provide APIs for "light"
-	atomic readers to prevent CPU offline
-Message-ID: <20121207195629.GA13238@redhat.com>
-References: <20121205184041.3750.64945.stgit@srivatsabhat.in.ibm.com> <20121205184258.3750.31879.stgit@srivatsabhat.in.ibm.com> <50BF96DF.3000500@linux.vnet.ibm.com> <50BF979A.50304@linux.vnet.ibm.com> <50BF982D.7090704@linux.vnet.ibm.com> <50BF98F7.3030600@linux.vnet.ibm.com> <50BF999C.6030707@linux.vnet.ibm.com> <50BFAB17.3090603@linux.vnet.ibm.com> <20121206161850.GA6710@redhat.com> <50C0E88E.9050909@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50C0E88E.9050909@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756825Ab2LGUBp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 15:01:45 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29798 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751170Ab2LGUBo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 15:01:44 -0500
+X-Authority-Analysis: v=2.0 cv=f9bK9ZOM c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=0q0mCv_Vr9gA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=lrIq2vSOvhQA:10 a=2AmJpYytKEAYMiNU5bAA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1354910502.17101.89.camel@gandalf.local.home>
+Subject: Re: [PATCH] ARM: ftrace: Ensure code modifications are synchronised
+ across all cpus
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rabin Vincent <rabin@rab.in>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Fri, 07 Dec 2012 15:01:42 -0500
+In-Reply-To: <20121207190244.GB29618@mudshark.cambridge.arm.com>
+References: <1354872138.3176.15.camel@computer5.home>
+	 <1354888985.17101.41.camel@gandalf.local.home>
+	 <1354892111.13000.50.camel@linaro1.home>
+	 <1354894134.17101.44.camel@gandalf.local.home>
+	 <20121207162346.GW14363@n2100.arm.linux.org.uk>
+	 <1354898200.17101.50.camel@gandalf.local.home>
+	 <20121207164530.GX14363@n2100.arm.linux.org.uk>
+	 <1354900436.17101.58.camel@gandalf.local.home>
+	 <20121207181309.GY14363@n2100.arm.linux.org.uk>
+	 <1354905805.17101.86.camel@gandalf.local.home>
+	 <20121207190244.GB29618@mudshark.cambridge.arm.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07, Srivatsa S. Bhat wrote:
->
-> On 12/06/2012 09:48 PM, Oleg Nesterov wrote:
-> > On 12/06, Srivatsa S. Bhat wrote:
-> >>
-> >> +void get_online_cpus_atomic(void)
-> >> +{
-> >> +	int c, old;
-> >> +
-> >> +	preempt_disable();
-> >> +	read_lock(&hotplug_rwlock);
-> >
-> > Confused... Why it also takes hotplug_rwlock?
->
-> To avoid ABBA deadlocks.
->
-> hotplug_rwlock was meant for the "light" readers.
-> The atomic counters were meant for the "heavy/full" readers.
+On Fri, 2012-12-07 at 19:02 +0000, Will Deacon wrote:
 
-OK, I got lost a bit. I'll try to read v3 tomorrow.
+> For ARMv7, there are small subsets of instructions for ARM and Thumb which
+> are guaranteed to be atomic wrt concurrent modification and execution of
+> the instruction stream between different processors:
+> 
+> Thumb:	The 16-bit encodings of the B, NOP, BKPT, and SVC instructions.
+> ARM:	The B, BL, NOP, BKPT, SVC, HVC, and SMC instructions.
+> 
+> but before your eyes light up at the presence of the BKPT instruction in
+> that list; we don't actually use that in Linux and instead leave it for
+> external (i.e. JTAG) debuggers so that they can operate without getting
+> tangled up with spurious traps from the OS. Linux actually picks its own
+> undefined instructions, which are obviously not included in the lists above.
 
-> > Obviously you can't use get_online_cpus_atomic() under rq->lock or
-> > task->pi_lock or any other lock CPU_DYING can take. Probably this is
-> > fine, but perhaps it makes sense to add the lockdep annotations.
->
-> Hmm, you are right. We can't use _atomic() in the CPU_DYING path.
+My eyes actually lit up with the B instruction :-)  As Jon showed, we
+could use a 16bit jump instead. Add the B to jump over the other half of
+the call (to all places that you want to modify). Send a sync to all
+CPUs to flush their caches. Modify the other half of the call, send
+another sync, and then modify the first half.
 
-Not sure I undestand... I simply meant that, say,
-get_online_cpus_atomic() under task->pi_lock can obviously deadlock
-with take_cpu_down() which can want the same task->pi_lock after
-disable_atomic_reader().
+> 
+> Also note that the 16-bit limitation for Thumb instructions above can
+> actually be used to modify *half* of a BL instruction but, to keep things
+> exciting, the PC-relative immediate is split across the two halves. However,
+> you could in theory mess around with bottom 10 bits or so, depending on the
+> exact encoding...
+> 
+> Obviously this doesn't preclude the need for cache maintenance on both D and
+> I side, but the atomicity guarantees are as I've described above.
 
-Oleg.
+Right. Thanks for the update.
+
+-- Steve
+
 
