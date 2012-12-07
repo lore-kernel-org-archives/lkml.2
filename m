@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423221Ab2LGA52 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 19:57:28 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61767 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423182Ab2LGA5Z (ORCPT
+	id S1423242Ab2LGA5b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 19:57:31 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:47201 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423217Ab2LGA52 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 19:57:25 -0500
+	Thu, 6 Dec 2012 19:57:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [ 02/11] Dove: Fix irq_to_pmu()
-Date: Thu,  6 Dec 2012 16:56:58 -0800
-Message-Id: <20121207005613.930702915@linuxfoundation.org>
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi@firstfloor.org>, Tony Luck <tony.luck@intel.com>,
+        Andi Kleen <andi.kleen@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 04/11] mm: soft offline: split thp at the beginning of soft_offline_page()
+Date: Thu,  6 Dec 2012 16:57:00 -0800
+Message-Id: <20121207005614.531743440@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121207005613.189054768@linuxfoundation.org>
 References: <20121207005613.189054768@linuxfoundation.org>
@@ -27,34 +31,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-commit d356cf5a74afa32b40decca3c9dd88bc3cd63eb5 upstream.
+commit 783657a7dc20e5c0efbc9a09a9dd38e238a723da upstream.
 
-PMU interrupts start at IRQ_DOVE_PMU_START, not IRQ_DOVE_PMU_START + 1.
-Fix the condition.  (It may have been less likely to occur had the code
-been written "if (irq >= IRQ_DOVE_PMU_START" which imho is the easier
-to understand notation, and matches the normal way of thinking about
-these things.)
+When we try to soft-offline a thp tail page, put_page() is called on the
+tail page unthinkingly and VM_BUG_ON is triggered in put_compound_page().
 
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+This patch splits thp before going into the main body of soft-offlining.
+
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Andi Kleen <andi.kleen@intel.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-dove/include/mach/pm.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/memory-failure.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/arch/arm/mach-dove/include/mach/pm.h
-+++ b/arch/arm/mach-dove/include/mach/pm.h
-@@ -45,7 +45,7 @@ static inline int pmu_to_irq(int pin)
- 
- static inline int irq_to_pmu(int irq)
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1382,9 +1382,17 @@ int soft_offline_page(struct page *page,
  {
--	if (IRQ_DOVE_PMU_START < irq && irq < NR_IRQS)
-+	if (IRQ_DOVE_PMU_START <= irq && irq < NR_IRQS)
- 		return irq - IRQ_DOVE_PMU_START;
+ 	int ret;
+ 	unsigned long pfn = page_to_pfn(page);
++	struct page *hpage = compound_trans_head(page);
  
- 	return -EINVAL;
+ 	if (PageHuge(page))
+ 		return soft_offline_huge_page(page, flags);
++	if (PageTransHuge(hpage)) {
++		if (PageAnon(hpage) && unlikely(split_huge_page(hpage))) {
++			pr_info("soft offline: %#lx: failed to split THP\n",
++				pfn);
++			return -EBUSY;
++		}
++	}
+ 
+ 	ret = get_any_page(page, pfn, flags);
+ 	if (ret < 0)
 
 
