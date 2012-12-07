@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423132Ab2LGBK6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 20:10:58 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:52707 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422931Ab2LGAzP (ORCPT
+	id S1423357Ab2LGBLa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 20:11:30 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:64094 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422883Ab2LGAzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 19:55:15 -0500
+	Thu, 6 Dec 2012 19:55:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mike Galbraith <mgalbraith@suse.de>, Tejun Heo <tj@kernel.org>
-Subject: [ 10/20] workqueue: exit rescuer_thread() as TASK_RUNNING
-Date: Thu,  6 Dec 2012 16:54:25 -0800
-Message-Id: <20121207005235.686524792@linuxfoundation.org>
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi@firstfloor.org>, Tony Luck <tony.luck@intel.com>,
+        Andi Kleen <andi.kleen@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 07/20] mm: soft offline: split thp at the beginning of soft_offline_page()
+Date: Thu,  6 Dec 2012 16:54:22 -0800
+Message-Id: <20121207005234.885301524@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121207005232.756641002@linuxfoundation.org>
 References: <20121207005232.756641002@linuxfoundation.org>
@@ -26,56 +31,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Galbraith <mgalbraith@suse.de>
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-commit 412d32e6c98527078779e5b515823b2810e40324 upstream.
+commit 783657a7dc20e5c0efbc9a09a9dd38e238a723da upstream.
 
-A rescue thread exiting TASK_INTERRUPTIBLE can lead to a task scheduling
-off, never to be seen again.  In the case where this occurred, an exiting
-thread hit reiserfs homebrew conditional resched while holding a mutex,
-bringing the box to its knees.
+When we try to soft-offline a thp tail page, put_page() is called on the
+tail page unthinkingly and VM_BUG_ON is triggered in put_compound_page().
 
-PID: 18105  TASK: ffff8807fd412180  CPU: 5   COMMAND: "kdmflush"
- #0 [ffff8808157e7670] schedule at ffffffff8143f489
- #1 [ffff8808157e77b8] reiserfs_get_block at ffffffffa038ab2d [reiserfs]
- #2 [ffff8808157e79a8] __block_write_begin at ffffffff8117fb14
- #3 [ffff8808157e7a98] reiserfs_write_begin at ffffffffa0388695 [reiserfs]
- #4 [ffff8808157e7ad8] generic_perform_write at ffffffff810ee9e2
- #5 [ffff8808157e7b58] generic_file_buffered_write at ffffffff810eeb41
- #6 [ffff8808157e7ba8] __generic_file_aio_write at ffffffff810f1a3a
- #7 [ffff8808157e7c58] generic_file_aio_write at ffffffff810f1c88
- #8 [ffff8808157e7cc8] do_sync_write at ffffffff8114f850
- #9 [ffff8808157e7dd8] do_acct_process at ffffffff810a268f
-    [exception RIP: kernel_thread_helper]
-    RIP: ffffffff8144a5c0  RSP: ffff8808157e7f58  RFLAGS: 00000202
-    RAX: 0000000000000000  RBX: 0000000000000000  RCX: 0000000000000000
-    RDX: 0000000000000000  RSI: ffffffff8107af60  RDI: ffff8803ee491d18
-    RBP: 0000000000000000   R8: 0000000000000000   R9: 0000000000000000
-    R10: 0000000000000000  R11: 0000000000000000  R12: 0000000000000000
-    R13: 0000000000000000  R14: 0000000000000000  R15: 0000000000000000
-    ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
+This patch splits thp before going into the main body of soft-offlining.
 
-Signed-off-by: Mike Galbraith <mgalbraith@suse.de>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Andi Kleen <andi.kleen@intel.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/workqueue.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ mm/memory-failure.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -2040,8 +2040,10 @@ static int rescuer_thread(void *__wq)
- repeat:
- 	set_current_state(TASK_INTERRUPTIBLE);
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1481,9 +1481,17 @@ int soft_offline_page(struct page *page,
+ {
+ 	int ret;
+ 	unsigned long pfn = page_to_pfn(page);
++	struct page *hpage = compound_trans_head(page);
  
--	if (kthread_should_stop())
-+	if (kthread_should_stop()) {
-+		__set_current_state(TASK_RUNNING);
- 		return 0;
+ 	if (PageHuge(page))
+ 		return soft_offline_huge_page(page, flags);
++	if (PageTransHuge(hpage)) {
++		if (PageAnon(hpage) && unlikely(split_huge_page(hpage))) {
++			pr_info("soft offline: %#lx: failed to split THP\n",
++				pfn);
++			return -EBUSY;
++		}
 +	}
  
- 	/*
- 	 * See whether any cpu is asking for help.  Unbounded
+ 	ret = get_any_page(page, pfn, flags);
+ 	if (ret < 0)
 
 
