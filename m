@@ -1,138 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423892Ab2LGC6l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 21:58:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56940 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423570Ab2LGC6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 21:58:39 -0500
-Date: Thu, 6 Dec 2012 21:58:34 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file.rdu.redhat.com
-To: Sasha Levin <sasha.levin@oracle.com>
-cc: axboe@kernel.dk,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
-        Dave Jones <davej@redhat.com>
-Subject: Re: blk: bd_block_size_semaphore related lockdep warning
-In-Reply-To: <50BA6BA7.7000304@oracle.com>
-Message-ID: <Pine.LNX.4.64.1212062157330.1475@file.rdu.redhat.com>
-References: <50BA6BA7.7000304@oracle.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1424015Ab2LGDGW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 22:06:22 -0500
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:26633 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423699Ab2LGDGU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 22:06:20 -0500
+Message-ID: <1354849065.21116.61.camel@misato.fc.hp.com>
+Subject: Re: [RFC PATCH v3 0/3] acpi: Introduce prepare_remove device
+ operation
+From: Toshi Kani <toshi.kani@hp.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Hanjun Guo <guohanjun@huawei.com>,
+        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
+        linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
+        wency@cn.fujitsu.com, lenb@kernel.org, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Tang Chen <tangchen@cn.fujitsu.com>, Liujiang <jiang.liu@huawei.com>,
+        Huxinwei <huxinwei@huawei.com>
+Date: Thu, 06 Dec 2012 19:57:45 -0700
+In-Reply-To: <50C0CA90.7010608@gmail.com>
+References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
+	    <50B5EFE9.3040206@huawei.com>
+	   <1354128096.26955.276.camel@misato.fc.hp.com>
+	  <50B6E936.2080308@huawei.com> <1354228028.7776.56.camel@misato.fc.hp.com>
+	  <50BC29C6.6050706@huawei.com> <1354579848.21585.54.camel@misato.fc.hp.com>
+	 <50C0CA90.7010608@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Fri, 2012-12-07 at 00:40 +0800, Jiang Liu wrote:
+> On 12/04/2012 08:10 AM, Toshi Kani wrote:
+> > On Mon, 2012-12-03 at 12:25 +0800, Hanjun Guo wrote:
+> >> On 2012/11/30 6:27, Toshi Kani wrote:
+> >>> On Thu, 2012-11-29 at 12:48 +0800, Hanjun Guo wrote:
+> >>>> On 2012/11/29 2:41, Toshi Kani wrote:
+> >>>>> On Wed, 2012-11-28 at 19:05 +0800, Hanjun Guo wrote:
+> >>>>>> On 2012/11/24 1:50, Vasilis Liaskovitis wrote:
+> >>>>>> As you may know, the ACPI based hotplug framework we are working on already addressed
+> >>>>>> this problem, and the way we slove this problem is a bit like yours.
+> >>>>>>
+> >>>>>> We introduce hp_ops in struct acpi_device_ops:
+> >>>>>> struct acpi_device_ops {
+> >>>>>> 	acpi_op_add add;
+> >>>>>> 	acpi_op_remove remove;
+> >>>>>> 	acpi_op_start start;
+> >>>>>> 	acpi_op_bind bind;
+> >>>>>> 	acpi_op_unbind unbind;
+> >>>>>> 	acpi_op_notify notify;
+> >>>>>> #ifdef	CONFIG_ACPI_HOTPLUG
+> >>>>>> 	struct acpihp_dev_ops *hp_ops;
+> >>>>>> #endif	/* CONFIG_ACPI_HOTPLUG */
+> >>>>>> };
+> >>>>>>
+> >>>>>> in hp_ops, we divide the prepare_remove into six small steps, that is:
+> >>>>>> 1) pre_release(): optional step to mark device going to be removed/busy
+> >>>>>> 2) release(): reclaim device from running system
+> >>>>>> 3) post_release(): rollback if cancelled by user or error happened
+> >>>>>> 4) pre_unconfigure(): optional step to solve possible dependency issue
+> >>>>>> 5) unconfigure(): remove devices from running system
+> >>>>>> 6) post_unconfigure(): free resources used by devices
+> >>>>>>
+> >>>>>> In this way, we can easily rollback if error happens.
+> >>>>>> How do you think of this solution, any suggestion ? I think we can achieve
+> >>>>>> a better way for sharing ideas. :)
+> >>>>>
+> >>>>> Yes, sharing idea is good. :)  I do not know if we need all 6 steps (I
+> >>>>> have not looked at all your changes yet..), but in my mind, a hot-plug
+> >>>>> operation should be composed with the following 3 phases.
+> >>>>
+> >>>> Good idea ! we also implement a hot-plug operation in 3 phases:
+> >>>> 1) acpihp_drv_pre_execute
+> >>>> 2) acpihp_drv_execute
+> >>>> 3) acpihp_drv_post_execute
+> >>>> you may refer to :
+> >>>> https://lkml.org/lkml/2012/11/4/79
+> >>>
+> >>> Great.  Yes, I will take a look.
+> >>
+> >> Thanks, any comments are welcomed :)
+> > 
+> > If I read the code right, the framework calls ACPI drivers differently
+> > at boot-time and hot-add as follows.  That is, the new entry points are
+> > called at hot-add only, but .add() is called at both cases.  This
+> > requires .add() to work differently.
+> > 
+> > Boot    : .add()
+> > Hot-Add : .add(), .pre_configure(), configure(), etc.
+> > 
+> > I think the boot-time and hot-add initialization should be done
+> > consistently.  While there is difficulty with the current boot sequence,
+> > the framework should be designed to allow them consistent, not make them
+> > diverged.
+> Hi Toshi,
+> 	We have separated hotplug operations from driver binding/unbinding interface
+> due to following considerations.
+> 1) Physical CPU and memory devices are initialized/used before the ACPI subsystem
+>    is initialized. So under normal case, .add() of processor and acpi_memhotplug only
+>    figures out information about device already in working state instead of starting
+>    the device.
 
-It should be fixed in 3.7-rc8
+I agree that the current boot sequence is not very hot-plug friendly...
 
-Mikulas
+> 2) It's impossible to rmmod the processor and acpi_memhotplug driver at runtime 
+>    if .remove() of CPU and memory drivers do really remove the CPU/memory device
+>    from the system. And the ACPI processor driver also implements CPU PM funcitonality
+>    other than hotplug.
 
+Agreed.
 
-On Sat, 1 Dec 2012, Sasha Levin wrote:
+> And recently Rafael has mentioned that he has a long term view to get rid of the
+> concept of "ACPI device". If that happens, we could easily move the hotplug
+> logic from ACPI device drivers into the hotplug framework if the hotplug logic
+> is separated from the .add()/.remove() callbacks. Actually we could even move all
+> hotplug only logic into the hotplug framework and don't rely on any ACPI device
+> driver any more. So we could get rid of all these messy things. We could achieve
+> that by:
+> 1) moving code shared by ACPI device drivers and the hotplug framework into the core.
+> 2) moving hotplug only code to the framework.
 
-> Hi all,
+Yes, the framework should allow such future work.  I also think that the
+framework itself should be independent from such ACPI issue.  Ideally,
+it should be able to support non-ACPI platforms.
+
+> Hi Rafael, what's your thoughts here?
 > 
-> While fuzzing with trinity inside a KVM tools guest, running latest -next, I've
-> stumbled on:
-> 
-> [ 3130.099477] ======================================================
-> [ 3130.104862] [ INFO: possible circular locking dependency detected ]
-> [ 3130.104862] 3.7.0-rc7-next-20121130-sasha-00015-g06fcc7a-dirty #2 Tainted: G        W
-> [ 3130.104862] -------------------------------------------------------
-> [ 3130.104862] trinity-child77/12730 is trying to acquire lock:
-> [ 3130.104862]  (&sb->s_type->i_mutex_key#17/1){+.+.+.}, at: [<ffffffff8128a605>] pipe_lock_nested.isra.2+0x15/0x20
-> [ 3130.104862]
-> [ 3130.104862] but task is already holding lock:
-> [ 3130.104862]  (sb_writers#16){.+.+..}, at: [<ffffffff812b439f>] generic_file_splice_write+0x6f/0x170
-> [ 3130.104862]
-> [ 3130.104862] which lock already depends on the new lock.
-> [ 3130.104862]
-> [ 3130.104862]
-> [ 3130.104862] the existing dependency chain (in reverse order) is:
-> [ 3130.104862]
-> -> #3 (sb_writers#16){.+.+..}:
-> [ 3130.104862]        [<ffffffff8118a34a>] lock_acquire+0x1aa/0x240
-> [ 3130.104862]        [<ffffffff81285dd6>] __sb_start_write+0x146/0x1b0
-> [ 3130.104862]        [<ffffffff812b439f>] generic_file_splice_write+0x6f/0x170
-> [ 3130.104862]        [<ffffffff812be0ca>] blkdev_splice_write+0x5a/0x80
-> [ 3130.104862]        [<ffffffff812b2983>] do_splice_from+0x83/0xb0
-> [ 3130.104862]        [<ffffffff812b4de2>] sys_splice+0x492/0x690
-> [ 3130.104862]        [<ffffffff83cb1358>] tracesys+0xe1/0xe6
-> [ 3130.104862]
-> -> #2 (&ei->bdev.bd_block_size_semaphore){++++.+}:
-> [ 3130.104862]        [<ffffffff8118a34a>] lock_acquire+0x1aa/0x240
-> [ 3130.104862]        [<ffffffff81a0ec15>] percpu_down_read+0x55/0x90
-> [ 3130.104862]        [<ffffffff812be123>] blkdev_mmap+0x33/0x60
-> [ 3130.104862]        [<ffffffff8123ec9b>] mmap_region+0x31b/0x600
-> [ 3130.104862]        [<ffffffff8123f237>] do_mmap_pgoff+0x2b7/0x330
-> [ 3130.104862]        [<ffffffff81228b9a>] vm_mmap_pgoff+0x7a/0xa0
-> [ 3130.104862]        [<ffffffff8123d70e>] sys_mmap_pgoff+0x16e/0x1b0
-> [ 3130.104862]        [<ffffffff8107492d>] sys_mmap+0x1d/0x20
-> [ 3130.104862]        [<ffffffff83cb1358>] tracesys+0xe1/0xe6
-> [ 3130.104862]
-> -> #1 (&mm->mmap_sem){++++++}:
-> [ 3130.104862]        [<ffffffff8118a34a>] lock_acquire+0x1aa/0x240
-> [ 3130.104862]        [<ffffffff81239d6b>] might_fault+0x7b/0xa0
-> [ 3130.104862]        [<ffffffff812b4805>] sys_vmsplice+0xd5/0x220
-> [ 3130.104862]        [<ffffffff83cb1358>] tracesys+0xe1/0xe6
-> [ 3130.104862]
-> -> #0 (&sb->s_type->i_mutex_key#17/1){+.+.+.}:
-> [ 3130.104862]        [<ffffffff8118759f>] __lock_acquire+0x147f/0x1c30
-> [ 3130.104862]        [<ffffffff8118a34a>] lock_acquire+0x1aa/0x240
-> [ 3130.104862]        [<ffffffff83cac6d9>] __mutex_lock_common+0x59/0x5a0
-> [ 3130.104862]        [<ffffffff83cacc5f>] mutex_lock_nested+0x3f/0x50
-> [ 3130.104862]        [<ffffffff8128a605>] pipe_lock_nested.isra.2+0x15/0x20
-> [ 3130.104862]        [<ffffffff8128a6f5>] pipe_lock+0x15/0x20
-> [ 3130.104862]        [<ffffffff812b43a7>] generic_file_splice_write+0x77/0x170
-> [ 3130.104862]        [<ffffffff812be0ca>] blkdev_splice_write+0x5a/0x80
-> [ 3130.104862]        [<ffffffff812b2983>] do_splice_from+0x83/0xb0
-> [ 3130.104862]        [<ffffffff812b4de2>] sys_splice+0x492/0x690
-> [ 3130.104862]        [<ffffffff83cb1358>] tracesys+0xe1/0xe6
-> [ 3130.104862]
-> [ 3130.104862] other info that might help us debug this:
-> [ 3130.104862]
-> [ 3130.104862] Chain exists of:
->   &sb->s_type->i_mutex_key#17/1 --> &ei->bdev.bd_block_size_semaphore --> sb_writers#16
-> [ 3130.104862]  Possible unsafe locking scenario:
-> [ 3130.104862]
-> [ 3130.104862]        CPU0                    CPU1
-> [ 3130.104862]        ----                    ----
-> [ 3130.104862]   lock(sb_writers#16);
-> [ 3130.104862]                                lock(&ei->bdev.bd_block_size_semaphore);
-> [ 3130.104862]                                lock(sb_writers#16);
-> [ 3130.104862]   lock(&sb->s_type->i_mutex_key#17/1);
-> [ 3130.104862]
-> [ 3130.104862]  *** DEADLOCK ***
-> [ 3130.104862]
-> [ 3130.104862] 2 locks held by trinity-child77/12730:
-> [ 3130.104862]  #0:  (&ei->bdev.bd_block_size_semaphore){++++.+}, at: [<ffffffff812be0b5>] blkdev_splice_write+0x45/0x80
-> [ 3130.104862]  #1:  (sb_writers#16){.+.+..}, at: [<ffffffff812b439f>] generic_file_splice_write+0x6f/0x170
-> [ 3130.104862]
-> [ 3130.104862] stack backtrace:
-> [ 3130.104862] Pid: 12730, comm: trinity-child77 Tainted: G        W    3.7.0-rc7-next-20121130-sasha-00015-g06fcc7a-dirty #2
-> [ 3130.104862] Call Trace:
-> [ 3130.104862]  [<ffffffff83c54d8a>] print_circular_bug+0x1fb/0x20c
-> [ 3130.104862]  [<ffffffff8118759f>] __lock_acquire+0x147f/0x1c30
-> [ 3130.104862]  [<ffffffff8118a34a>] lock_acquire+0x1aa/0x240
-> [ 3130.104862]  [<ffffffff8128a605>] ? pipe_lock_nested.isra.2+0x15/0x20
-> [ 3130.104862]  [<ffffffff83cac6d9>] __mutex_lock_common+0x59/0x5a0
-> [ 3130.104862]  [<ffffffff8128a605>] ? pipe_lock_nested.isra.2+0x15/0x20
-> [ 3130.104862]  [<ffffffff81185d8a>] ? __lock_is_held+0x5a/0x80
-> [ 3130.104862]  [<ffffffff8128a605>] ? pipe_lock_nested.isra.2+0x15/0x20
-> [ 3130.104862]  [<ffffffff83cacc5f>] mutex_lock_nested+0x3f/0x50
-> [ 3130.104862]  [<ffffffff8128a605>] pipe_lock_nested.isra.2+0x15/0x20
-> [ 3130.104862]  [<ffffffff8128a6f5>] pipe_lock+0x15/0x20
-> [ 3130.104862]  [<ffffffff812b43a7>] generic_file_splice_write+0x77/0x170
-> [ 3130.104862]  [<ffffffff812be0ca>] blkdev_splice_write+0x5a/0x80
-> [ 3130.104862]  [<ffffffff812b2983>] do_splice_from+0x83/0xb0
-> [ 3130.104862]  [<ffffffff812b4de2>] sys_splice+0x492/0x690
-> [ 3130.104862]  [<ffffffff8107eaf0>] ? syscall_trace_enter+0x20/0x2e0
-> [ 3130.104862]  [<ffffffff83cb1358>] tracesys+0xe1/0xe6
-> 
-> 
-> Thanks,
-> sasha
-> 
+> > 
+> >>>>> 1. Validate phase - Verify if the request is a supported operation.  All
+> >>>>> known restrictions are verified at this phase.  For instance, if a
+> >>>>> hot-remove request involves kernel memory, it is failed in this phase.
+> >>>>> Since this phase makes no change, no rollback is necessary to fail. 
+> >>>>
+> >>>> Yes, we have done this in acpihp_drv_pre_execute, and check following things:
+> >>>>
+> >>>> 1) Hot-plugble or not. the instance kernel memory you mentioned is also checked
+> >>>>    when memory device remove;
+> >>>
+> >>> Agreed.
+> >>>
+> >>>> 2) Dependency check involved. For instance, if hot-add a memory device,
+> >>>>    processor should be added first, otherwise it's not valid to this operation.
+> >>>
+> >>> I think FW should be the one that assures such dependency.  That is,
+> >>> when a memory device object is marked as present/enabled/functioning, it
+> >>> should be ready for the OS to use.
+> >>
+> >> Yes, BIOS should do something for the dependency, because BIOS knows the
+> >> actual hardware topology. 
+> > 
+> > Right.
+> > 
+> >> The ACPI specification provides _EDL method to
+> >> tell OS the eject device list, but still has no method to tell OS the add device
+> >> list now.
+> > 
+> > Yes, but I do not think the OS needs special handling for add...
+> We have a plan to support triggering hot-adding events from OS provided interfaces,
+> so we also need to solve dependency issues when handling requests from those interfaces.
+> For need to power on the physical processor before powering on a memory device if
+> the memory device is attached to a physical processor.
+
+I am afraid that this issue is platform-specific, and I am not sure if
+there is a common way to handle such things in general.  I'd recommend
+to work with FW folks to implement such platform-specific validation
+code in FW.
+
+> >> For some cases, OS should analyze the dependency in the validate phase. For example,
+> >> when hot remove a node (container device), OS should analyze the dependency to get
+> >> the remove order as following:
+> >> 1) Host bridge;
+> >> 2) Memory devices;
+> >> 3) Processor devices;
+> >> 4) Container device itself;
+> > 
+> > This may be off-topic, but how do you plan to delete I/O devices under a
+> > node?  Are you planning to delete all I/O devices along with the node?
+> > 
+> > On other OS, we made a separate step called I/O chassis delete, which
+> > off-lines all I/O devices under the node, and is required before a node
+> > hot-remove.  It basically triggers PCIe hot-remove to detach drivers
+> > from all devices.  It does not eject the devices so that they do not
+> > have to be on hot-plug slots.  This step runs user-space scripts to
+> > verify if the devices can be off-lined without disrupting user's
+> > applications, and provides comprehensive reports if any of them are in
+> > use.  Not sure if Linux's PCI hot-remove has such check, but I thought
+> > I'd mention it. :)
+> Yinghai is working on PCI host bridge hotplug, which just stops all PCI devices
+> under the host bridge. That's really a little dangerous and we do need help
+> from userspace to check whether the hot-removal operaitons is fatal, 
+> e.g. removing PCI device hosting the rootfs.
+
+Agreed.
+
+> So in our framework, we have an option to relay hotplug event from firmware
+> to userspace, so the userspace has a chance to reject the hotplug operations
+> if it may cause unacceptable disturbance to userspace services.
+
+I think validation from user-space is necessary for deleting I/O
+devices.  For CPU and memory, the kernel check works fine.
+
+Thanks,
+-Toshi
+
