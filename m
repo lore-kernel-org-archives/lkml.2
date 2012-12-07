@@ -1,73 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756367Ab2LGPCm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 10:02:42 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:49328 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752586Ab2LGPCl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 10:02:41 -0500
-Date: Fri, 7 Dec 2012 07:04:48 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: =?iso-8859-1?B?IkphbiBILiBTY2j2bmhlcnIi?= <schnhrr@cs.tu-berlin.de>
-Cc: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH v2 00/14] printk() fixes, optimizations, and clean ups
-Message-ID: <20121207150448.GC20369@kroah.com>
-References: <1354813571-11253-1-git-send-email-schnhrr@cs.tu-berlin.de>
- <20121206133907.37c255e9.akpm@linux-foundation.org>
- <1354837050.22463.4.camel@joe-AO722>
- <20121206161943.78633125.akpm@linux-foundation.org>
- <1354848669.22463.23.camel@joe-AO722>
- <50C1D758.1080007@cs.tu-berlin.de>
+	id S1756397Ab2LGPDF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 10:03:05 -0500
+Received: from fieldses.org ([174.143.236.118]:33644 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752216Ab2LGPDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 10:03:02 -0500
+Date: Fri, 7 Dec 2012 10:02:59 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
+        linux-kernel@vger.kernel.org, devel@openvz.org, jlayton@redhat.com
+Subject: Re: [PATCH] nfsd: make NFSv4 recovery client tracking options per net
+Message-ID: <20121207150259.GG17115@fieldses.org>
+References: <20121204112925.23999.28249.stgit@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <50C1D758.1080007@cs.tu-berlin.de>
+In-Reply-To: <20121204112925.23999.28249.stgit@localhost.localdomain>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 07, 2012 at 12:47:36PM +0100, "Jan H. Schönherr" wrote:
-> Am 07.12.2012 03:51, schrieb Joe Perches:
-> > On Thu, 2012-12-06 at 16:19 -0800, Andrew Morton wrote:
-> >> On Thu, 06 Dec 2012 15:37:30 -0800
-> >> Joe Perches <joe@perches.com> wrote:
-> >>> Can you please pick this up for -next now and I'll
-> >>> redo my patches against -next for -rc1 so I'm not
-> >>> delayed until 3.9?
-> >>
-> >> It would be better to do things in the other order.
-> >>
-> >> a) Your patches perform mainly code-movement which doesn't cause
-> >>    functional changes.  Jan's patches are functional changes which
-> >>    require more thought and testing and possible fixups.
-> > 
-> > Fine by me.  Jan?
-> 
-> No problem.
-> 
-> I agree with Andrew, that patches 9 to 14 could use indeed some
-> more eyeballs.
-> 
-> Patches 1 to 8 are more straight-forward, and I would consider
-> these ready. However, they are also those, where I probably won't
-> have any trouble rebasing them on top of your changes.
-> 
-> 
-> Anyway. Until now I always thought my patches will end up in the
-> queue of some maintainer, so that I don't have to bother about
-> _when_ posting my patches. Therefore: when should I repost a
-> version rebased on top of Joe's changes?
+On Tue, Dec 04, 2012 at 02:29:27PM +0300, Stanislav Kinsbursky wrote:
+> Pointer to client tracking operations - client_tracking_ops - have to be
+> containerized, because different environment can support different trackers
+> (for example, legacy tracker currently is not suported in container).
 
-You are correct, I'll end up queuing these up to my tree when 3.8-rc1 is
-out, they will live in linux-next until 3.8-final is out, and then go to
-Linus for 3.9-rc1.  Right now, my trees are frozen due to the merge
-window about to open up.  Your patience is appreciated.
+OK, applying.
 
-thanks,
+--b.
 
-greg k-h
+> 
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> ---
+>  fs/nfsd/netns.h       |    2 ++
+>  fs/nfsd/nfs4recover.c |   48 ++++++++++++++++++++++++++++--------------------
+>  2 files changed, 30 insertions(+), 20 deletions(-)
+> 
+> diff --git a/fs/nfsd/netns.h b/fs/nfsd/netns.h
+> index 2c4b2e2..bca789d 100644
+> --- a/fs/nfsd/netns.h
+> +++ b/fs/nfsd/netns.h
+> @@ -35,6 +35,7 @@
+>  #define SESSION_HASH_SIZE	512
+>  
+>  struct cld_net;
+> +struct nfsd4_client_tracking_ops;
+>  
+>  struct nfsd_net {
+>  	struct cld_net *cld_net;
+> @@ -87,6 +88,7 @@ struct nfsd_net {
+>  
+>  	struct file *rec_file;
+>  	bool in_grace;
+> +	struct nfsd4_client_tracking_ops *client_tracking_ops;
+>  
+>  	time_t nfsd4_lease;
+>  	time_t nfsd4_grace;
+> diff --git a/fs/nfsd/nfs4recover.c b/fs/nfsd/nfs4recover.c
+> index 359793f..ba6fdd4 100644
+> --- a/fs/nfsd/nfs4recover.c
+> +++ b/fs/nfsd/nfs4recover.c
+> @@ -63,7 +63,6 @@ struct nfsd4_client_tracking_ops {
+>  
+>  /* Globals */
+>  static char user_recovery_dirname[PATH_MAX] = "/var/lib/nfs/v4recovery";
+> -static struct nfsd4_client_tracking_ops *client_tracking_ops;
+>  
+>  static int
+>  nfs4_save_creds(const struct cred **original_creds)
+> @@ -1262,17 +1261,18 @@ nfsd4_client_tracking_init(struct net *net)
+>  {
+>  	int status;
+>  	struct path path;
+> +	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
+>  
+>  	/* just run the init if it the method is already decided */
+> -	if (client_tracking_ops)
+> +	if (nn->client_tracking_ops)
+>  		goto do_init;
+>  
+>  	/*
+>  	 * First, try a UMH upcall. It should succeed or fail quickly, so
+>  	 * there's little harm in trying that first.
+>  	 */
+> -	client_tracking_ops = &nfsd4_umh_tracking_ops;
+> -	status = client_tracking_ops->init(net);
+> +	nn->client_tracking_ops = &nfsd4_umh_tracking_ops;
+> +	status = nn->client_tracking_ops->init(net);
+>  	if (!status)
+>  		return status;
+>  
+> @@ -1280,7 +1280,7 @@ nfsd4_client_tracking_init(struct net *net)
+>  	 * See if the recoverydir exists and is a directory. If it is,
+>  	 * then use the legacy ops.
+>  	 */
+> -	client_tracking_ops = &nfsd4_legacy_tracking_ops;
+> +	nn->client_tracking_ops = &nfsd4_legacy_tracking_ops;
+>  	status = kern_path(nfs4_recoverydir(), LOOKUP_FOLLOW, &path);
+>  	if (!status) {
+>  		status = S_ISDIR(path.dentry->d_inode->i_mode);
+> @@ -1290,16 +1290,16 @@ nfsd4_client_tracking_init(struct net *net)
+>  	}
+>  
+>  	/* Finally, try to use nfsdcld */
+> -	client_tracking_ops = &nfsd4_cld_tracking_ops;
+> +	nn->client_tracking_ops = &nfsd4_cld_tracking_ops;
+>  	printk(KERN_WARNING "NFSD: the nfsdcld client tracking upcall will be "
+>  			"removed in 3.10. Please transition to using "
+>  			"nfsdcltrack.\n");
+>  do_init:
+> -	status = client_tracking_ops->init(net);
+> +	status = nn->client_tracking_ops->init(net);
+>  	if (status) {
+>  		printk(KERN_WARNING "NFSD: Unable to initialize client "
+>  				    "recovery tracking! (%d)\n", status);
+> -		client_tracking_ops = NULL;
+> +		nn->client_tracking_ops = NULL;
+>  	}
+>  	return status;
+>  }
+> @@ -1307,32 +1307,40 @@ do_init:
+>  void
+>  nfsd4_client_tracking_exit(struct net *net)
+>  {
+> -	if (client_tracking_ops) {
+> -		if (client_tracking_ops->exit)
+> -			client_tracking_ops->exit(net);
+> -		client_tracking_ops = NULL;
+> +	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
+> +
+> +	if (nn->client_tracking_ops) {
+> +		if (nn->client_tracking_ops->exit)
+> +			nn->client_tracking_ops->exit(net);
+> +		nn->client_tracking_ops = NULL;
+>  	}
+>  }
+>  
+>  void
+>  nfsd4_client_record_create(struct nfs4_client *clp)
+>  {
+> -	if (client_tracking_ops)
+> -		client_tracking_ops->create(clp);
+> +	struct nfsd_net *nn = net_generic(clp->net, nfsd_net_id);
+> +
+> +	if (nn->client_tracking_ops)
+> +		nn->client_tracking_ops->create(clp);
+>  }
+>  
+>  void
+>  nfsd4_client_record_remove(struct nfs4_client *clp)
+>  {
+> -	if (client_tracking_ops)
+> -		client_tracking_ops->remove(clp);
+> +	struct nfsd_net *nn = net_generic(clp->net, nfsd_net_id);
+> +
+> +	if (nn->client_tracking_ops)
+> +		nn->client_tracking_ops->remove(clp);
+>  }
+>  
+>  int
+>  nfsd4_client_record_check(struct nfs4_client *clp)
+>  {
+> -	if (client_tracking_ops)
+> -		return client_tracking_ops->check(clp);
+> +	struct nfsd_net *nn = net_generic(clp->net, nfsd_net_id);
+> +
+> +	if (nn->client_tracking_ops)
+> +		return nn->client_tracking_ops->check(clp);
+>  
+>  	return -EOPNOTSUPP;
+>  }
+> @@ -1340,8 +1348,8 @@ nfsd4_client_record_check(struct nfs4_client *clp)
+>  void
+>  nfsd4_record_grace_done(struct nfsd_net *nn, time_t boot_time)
+>  {
+> -	if (client_tracking_ops)
+> -		client_tracking_ops->grace_done(nn, boot_time);
+> +	if (nn->client_tracking_ops)
+> +		nn->client_tracking_ops->grace_done(nn, boot_time);
+>  }
+>  
+>  static int
+> 
