@@ -1,72 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756260Ab2LGO7e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 09:59:34 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:53488 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755083Ab2LGO7c (ORCPT
+	id S1756296Ab2LGO7t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 09:59:49 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:46737 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756279Ab2LGO7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 09:59:32 -0500
-X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
-  Fri, 07 Dec 2012 08:59:31 -0600
-X-Originating-IP: 108.223.40.66
-Date: Fri, 7 Dec 2012 06:59:55 -0800
-From: Guenter Roeck <groeck-dsl@sbcglobal.net>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH] gpio: export 'debounce' attribute if supported by the
- gpio chip
-Message-ID: <20121207145955.GA28704@roeck-us.net>
-References: <1354775567-17408-1-git-send-email-linux@roeck-us.net>
- <CACRpkdYDLJDwv97Z0agZBbzCtEdeb5Y-83K2HkZRtLP1Cz_QiA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdYDLJDwv97Z0agZBbzCtEdeb5Y-83K2HkZRtLP1Cz_QiA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 7 Dec 2012 09:59:47 -0500
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: sameo@linux.intel.com
+Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, lee.jones@linaro.org,
+        linus.walleij@linaro.org, Vipul Kumar Samar <vipulkumar.samar@st.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V7] mfd: stmpe: Update DT support for stmpe driver
+Date: Fri,  7 Dec 2012 20:29:37 +0530
+Message-Id: <91449dfa3338a603f443765b0948aa2e1b98a600.1354892244.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 07, 2012 at 09:07:28AM +0100, Linus Walleij wrote:
-> On Thu, Dec 6, 2012 at 7:32 AM, Guenter Roeck <linux@roeck-us.net> wrote:
-> 
-> > Create a 'debounce' attribute if debounce is supported by the gpio
-> > chip and a gpio pin is exported.
-> >
-> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> 
-> Can you describe the usecase for this?
-> 
-> I have this problem when working as a back-up GPIO maintainer that
-> I don't really understand the userspace apps doing this.
-> 
-> I would guess something like a userspace app reading a GPIO switch
-> and needing to set this to avoid key bounces, but it'd be nice to know
-> if this is really the case.
-> 
-Yes, that is one if the use cases. Button pressed on the chassis/board
-requesting user space action. Another is board presence detect pins which
-require rebounce support and are handled in user space. Yes, the later should be
-handled in the kernel, and most of them are, but there are some which don't need
-immediate kernel activity and are handled completely by applications.
+From: Vipul Kumar Samar <vipulkumar.samar@st.com>
 
-There may be other use cases - there are hundreds of gpio pins in the system I
-am working on, and I have not looked into all of them.
+This patch extends existing DT support for stmpe devices. This updates:
+- missing header files in stmpe.c
+- stmpe_of_probe() with pwm, rotator and new bindings.
+- Bindings are updated in binding document.
 
-> If this is the usecase I am slightly concerned why these are not used:
-> drivers/input/keyboard/gpio_keys_polled.c
-> drivers/input/keyboard/gpio_keys.c
-> 
-> The latter even uses the in-kernel debounce interface.
-> 
-> I'd agree if this is not user input at all but something like a switch
-> in a factory production line.
-> 
-I could imagine declaring the activity request buttons to be "input", but for
-presence detects it is a bit far fetched and would add too much complexity.
+Acked-by: Lee Jones <lee.jones@linaro.org>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Vipul Kumar Samar <vipulkumar.samar@st.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+V6->V7:
+- Minor grammer correction in stmpe.txt
+- Removed comment over pdata->id = -1
 
-Thanks,
-Guenter
+ Documentation/devicetree/bindings/mfd/stmpe.txt |  9 ++++++---
+ drivers/mfd/stmpe.c                             | 22 ++++++++++++++++------
+ 2 files changed, 22 insertions(+), 9 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/mfd/stmpe.txt b/Documentation/devicetree/bindings/mfd/stmpe.txt
+index 8f0aeda..9fc1715 100644
+--- a/Documentation/devicetree/bindings/mfd/stmpe.txt
++++ b/Documentation/devicetree/bindings/mfd/stmpe.txt
+@@ -1,8 +1,11 @@
+-* STMPE Multi-Functional Device
++* ST Microelectronics STMPE Multi-Functional Device
++
++STMPE is an MFD device which may expose the following inbuilt devices: gpio,
++keypad, touchscreen, adc, pwm, rotator.
+ 
+ Required properties:
+- - compatible                   : "st,stmpe[811|1601|2401|2403]"
+- - reg                          : I2C address of the device
++ - compatible                   : "st,stmpe[610|801|811|1601|2401|2403]"
++ - reg                          : I2C/SPI address of the device
+ 
+ Optional properties:
+  - interrupts                   : The interrupt outputs from the controller
+diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
+index 34408b4..48c4f18 100644
+--- a/drivers/mfd/stmpe.c
++++ b/drivers/mfd/stmpe.c
+@@ -7,12 +7,15 @@
+  * Author: Rabin Vincent <rabin.vincent@stericsson.com> for ST-Ericsson
+  */
+ 
++#include <linux/err.h>
+ #include <linux/gpio.h>
+ #include <linux/export.h>
+ #include <linux/kernel.h>
+ #include <linux/interrupt.h>
+ #include <linux/irq.h>
+ #include <linux/irqdomain.h>
++#include <linux/of.h>
++#include <linux/of_gpio.h>
+ #include <linux/pm.h>
+ #include <linux/slab.h>
+ #include <linux/mfd/core.h>
+@@ -1019,6 +1022,9 @@ void __devinit stmpe_of_probe(struct stmpe_platform_data *pdata,
+ {
+ 	struct device_node *child;
+ 
++	pdata->id = -1;
++	pdata->irq_trigger = IRQF_TRIGGER_NONE;
++
+ 	of_property_read_u32(np, "st,autosleep-timeout",
+ 			&pdata->autosleep_timeout);
+ 
+@@ -1027,15 +1033,16 @@ void __devinit stmpe_of_probe(struct stmpe_platform_data *pdata,
+ 	for_each_child_of_node(np, child) {
+ 		if (!strcmp(child->name, "stmpe_gpio")) {
+ 			pdata->blocks |= STMPE_BLOCK_GPIO;
+-		}
+-		if (!strcmp(child->name, "stmpe_keypad")) {
++		} else if (!strcmp(child->name, "stmpe_keypad")) {
+ 			pdata->blocks |= STMPE_BLOCK_KEYPAD;
+-		}
+-		if (!strcmp(child->name, "stmpe_touchscreen")) {
++		} else if (!strcmp(child->name, "stmpe_touchscreen")) {
+ 			pdata->blocks |= STMPE_BLOCK_TOUCHSCREEN;
+-		}
+-		if (!strcmp(child->name, "stmpe_adc")) {
++		} else if (!strcmp(child->name, "stmpe_adc")) {
+ 			pdata->blocks |= STMPE_BLOCK_ADC;
++		} else if (!strcmp(child->name, "stmpe_pwm")) {
++			pdata->blocks |= STMPE_BLOCK_PWM;
++		} else if (!strcmp(child->name, "stmpe_rotator")) {
++			pdata->blocks |= STMPE_BLOCK_ROTATOR;
+ 		}
+ 	}
+ }
+@@ -1106,6 +1113,9 @@ int __devinit stmpe_probe(struct stmpe_client_info *ci, int partnum)
+ 			return -ENODEV;
+ 		}
+ 		stmpe->variant = stmpe_noirq_variant_info[stmpe->partnum];
++	} else if (pdata->irq_trigger == IRQF_TRIGGER_NONE) {
++		pdata->irq_trigger =
++			irqd_get_trigger_type(irq_get_irq_data(stmpe->irq));
+ 	}
+ 
+ 	ret = stmpe_chip_init(stmpe);
+-- 
+1.7.12.rc2.18.g61b472e
+
