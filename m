@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422882Ab2LGAfy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 19:35:54 -0500
-Received: from mga09.intel.com ([134.134.136.24]:53961 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752109Ab2LGAfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 19:35:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,233,1355126400"; 
-   d="scan'208";a="230090218"
-Message-ID: <50C13960.5010901@intel.com>
-Date: Fri, 07 Dec 2012 08:33:36 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1422904Ab2LGAgr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 19:36:47 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:58648 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1422886Ab2LGAgp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 19:36:45 -0500
+X-Sasl-enc: CIbydZX1n4v+kHdMC5XJivkkCOJQ/SDiYLstmlWfEKe+ 1354840604
+Date: Thu, 6 Dec 2012 16:36:43 -0800
+From: Greg KH <greg@kroah.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, stable <stable@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [v3.0 stable version][PATCH 1/2] ring-buffer: Fix NULL pointer
+ if rb_set_head_page() fails
+Message-ID: <20121207003643.GA30526@kroah.com>
+References: <20121130161238.909829067@goodmis.org>
+ <20121130161333.983378567@goodmis.org>
+ <1354292203.6276.159.camel@gandalf.local.home>
+ <20121206201326.GA10874@kroah.com>
+ <1354830115.17101.28.camel@gandalf.local.home>
 MIME-Version: 1.0
-To: Alex Shi <lkml.alex@gmail.com>
-CC: npiggin@kernel.dk, mingo@redhat.com, peterz@infradead.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        "Van De Ven, Arjan" <arjan.van.de.ven@intel.com>,
-        Mike Galbraith <efault@gmx.de>
-Subject: Re: [PATCH 0/4] sched: fork/exec/wake clean up
-References: <1354542848-29638-1-git-send-email-alex.shi@intel.com> <CAGjg+kE9dFSfnridN_5ngtuC1r5rbnkLVfyqkdTwWCE0LOG4OQ@mail.gmail.com>
-In-Reply-To: <CAGjg+kE9dFSfnridN_5ngtuC1r5rbnkLVfyqkdTwWCE0LOG4OQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354830115.17101.28.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2012 03:09 PM, Alex Shi wrote:
-> On Mon, Dec 3, 2012 at 9:54 PM, Alex Shi <alex.shi@intel.com> wrote:
->> This patchset try to clean up select_task_rq_fair which used for
->> fork/exec/wake scheduling.
->>
->> With this patchset, our system NHM EX and SNB EP 4 socket machine
->> has 10% hackbench performance increase.
+On Thu, Dec 06, 2012 at 04:41:55PM -0500, Steven Rostedt wrote:
+> On Thu, 2012-12-06 at 12:13 -0800, Greg KH wrote:
+> > On Fri, Nov 30, 2012 at 11:16:43AM -0500, Steven Rostedt wrote:
+> > > The function rb_set_head_page() searches the list of ring buffer
+> > > pages for a the page that has the HEAD page flag set. If it does
+> > > not find it, it will do a WARN_ON(), disable the ring buffer and
+> > > return NULL, as this should never happen.
+> > > 
+> > > But if this bug happens to happen, not all callers of this function
+> > > can handle a NULL pointer being returned from it. That needs to be
+> > > fixed.
+> > > 
+> > > Cc: stable@vger.kernel.org # 3.0+
+> > > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> > > ---
+> > >  kernel/trace/ring_buffer.c |    9 +++++++--
+> > >  1 files changed, 7 insertions(+), 2 deletions(-)
+> > 
+> > I don't understand why you sent these to stable@ right now, I don't see
+> > them in Linus's tree, so why are they needed here?
 > 
-> Any comments for this patchset?
-
-Nick & Ingo:
-Would you like to give some comments for this?
-
-
-CC to more experts :)
-
-Thanks!
-Alex
->>
->> Regards
->> Alex
->>
->> [PATCH 01/4] sched: select_task_rq_fair clean up
->> [PATCH 02/4] sched: fix find_idlest_group mess logical
->> [PATCH 03/4] sched: don't need go to smaller sched domain
->> [PATCH 04/4] sched: remove domain iterations in fork/exec/wake
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+> Answer below.
 > 
+> > 
+> > Care to resend them when they hit Linus's tree?
 > 
+> I'll try to remember, but I will most likely forget :-)
 > 
+> I wrote the patches for each stable version while they were still fresh
+> in my mind. I posted them so they would be there when they get into
+> mainline and be easier to port for stable. By the time they are in
+> mainline, they will be completely out of my mind :-)
 
+Ok, if they are that important, consider them forgotten from my mind as
+well :)
+
+greg k-h
