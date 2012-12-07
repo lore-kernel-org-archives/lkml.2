@@ -1,105 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566Ab2LGJJA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 04:09:00 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:39113 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754891Ab2LGJIr convert rfc822-to-8bit (ORCPT
+	id S1755619Ab2LGJWH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 04:22:07 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:56676 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752099Ab2LGJWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 04:08:47 -0500
+	Fri, 7 Dec 2012 04:22:04 -0500
 MIME-Version: 1.0
-In-Reply-To: <1354818391-7968-1-git-send-email-piastry@etersoft.ru>
-References: <1354818391-7968-1-git-send-email-piastry@etersoft.ru>
-Date: Fri, 7 Dec 2012 13:08:46 +0400
-X-Google-Sender-Auth: jZ2YUco_KZqtk8Qb8MZrDLq6fkM
-Message-ID: <CAKywueQ3d=wdq2nw5f-QS-D9PY70Axa3Cn0gi5GRk4Xso+iquA@mail.gmail.com>
-Subject: Re: [PATCH 0/3] Add O_DENY* flags to fcntl and cifs
-From: Pavel Shilovsky <piastry@etersoft.ru>
-To: linux-cifs@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        wine-devel@winehq.org, linux-nfs@vger.kernel.org
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+In-Reply-To: <20121206170938.GC30273@thunk.org>
+References: <1351075240-2725-1-git-send-email-ashish.sangwan2@gmail.com>
+	<CAKYAXd_6pHdPtOgOS4=_c6naWwPdMhna29OOKD919HrYM-+kaA@mail.gmail.com>
+	<CAOiN93nKkFAc_t6J+c1w4F3V-MYaq9cv2wfAq3hyniWz5wYFMw@mail.gmail.com>
+	<20121206170938.GC30273@thunk.org>
+Date: Fri, 7 Dec 2012 14:52:02 +0530
+Message-ID: <CAOiN93n_5t4WD5yzijhDxJ9sZfk6M=baBRnDg5u7Xo+mdX=upQ@mail.gmail.com>
+Subject: Re: [PATCH, RFC] Ext4: Mount partition as read only if during orphan
+ cleanup truncate fails to obtain journal handle.
+From: Ashish Sangwan <ashishsangwan2@gmail.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Namjae Jeon <linkinjeon@gmail.com>,
+        ext4 development <linux-ext4@vger.kernel.org>,
+        =?ISO-8859-2?Q?Luk=E1=B9_Czerner?= <lczerner@redhat.com>,
+        Eric Sandeen <sandeen@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/12/6 Pavel Shilovsky <piastry@etersoft.ru>:
-> Network filesystems CIFS, SMB2.0, SMB3.0 and NFSv4 have such flags - this change can benefit cifs and nfs modules. While this change is ok for network filesystems, itsn't not targeted for local filesystems due security problems (e.g. when a user process can deny root to delete a file).
+On Thu, Dec 6, 2012 at 10:39 PM, Theodore Ts'o <tytso@mit.edu> wrote:
+> On Thu, Dec 06, 2012 at 04:59:43PM +0530, Ashish Sangwan wrote:
+>>
+>> Did you get any time to look into this patch?
+>> This problem is with ext4 only as ext4_truncate does not clean the
+>> orphan list unlike that of ext3_truncate.
+>> Instead, in case of failure to obtain handle, orphan list cleanup is
+>> done in ext4_setattr.
+>> But during mount, ext4_truncate is not called via ext4_setattr and
+>> hence the problem.
+>> What do you think?
 >
-> Share flags are used by Windows applications and WINE have to deal with them too. While WINE can process open share flags itself on local filesystems, it can't do it if a file stored on a network share and is used by several clients. This patchset makes it possible for CIFS/SMB2.0/SMB3.0.
+> In the patch description, you mentioned that this occurs when the
+> there is a failure to obtain a journal handle.  Is this a hypothetical
+> thing that you exposed via some kind of tester which checks to see
+> what happens if kmalloc() randomly fails some number of allocation
+> requests?  Or was it happening in real life?  And if it is happening
+> in real life, do we understand why it's happening, and is there
+> something we should be doing to mitigate against the root cause of the
+> failure?
 >
-> Pavel Shilovsky (3):
->   fcntl: Introduce new O_DENY* open flags for network filesystems
->   CIFS: Add O_DENY* open flags support
->   CIFS: Use NT_CREATE_ANDX command for forcemand mounts
+Thanks for looking into the patch.
+Yes, you are right. The situation is hypothetical.
+We were checking about Ext4's behavior when it returns error at
+different points in truncate/hole punch path and that's when we
+stumbled on to this.
+In real, we cannot re-produce this scenario without modifying Ext4's
+code and hence an extra RFC added with the patch.
+If you think that obtaining journal handle could never fail at mount
+time, than please ignore this patch.
+
+> The alternative to your patch is to do something similar to what ext3
+> does.  That is, if there are any inodes left on the orphan list, to
+> iterate through them all and then clean up the orphan list.  Perhaps
+> we should then also call ext4_error() since technically the file
+> system may very well be inconsistent (there may be allocated inodes
+> holding blocks which are no longer connected the directory hierarchy,
+> which e2fsck would be able to clean up).  But that could potentially
+> cause the system to panic or remount the file system read-only,
+> depending on what the errors= behavior is set to.  Which is why I go
+> back to the original question; do we understand why ext4_truncate()
+> was failing during orphan cleanup in the first place?
 >
->  fs/cifs/cifsacl.c                |   10 ++++----
->  fs/cifs/cifsglob.h               |   11 ++++++++-
->  fs/cifs/cifsproto.h              |    9 ++++----
->  fs/cifs/cifssmb.c                |   47 ++++++++++++++++++++------------------
->  fs/cifs/dir.c                    |   14 ++++++++----
->  fs/cifs/file.c                   |   18 ++++++++++-----
->  fs/cifs/inode.c                  |   11 +++++----
->  fs/cifs/link.c                   |   10 ++++----
->  fs/cifs/readdir.c                |    2 +-
->  fs/cifs/smb1ops.c                |   15 ++++++------
->  fs/cifs/smb2file.c               |   10 ++++----
->  fs/cifs/smb2inode.c              |    4 ++--
->  fs/cifs/smb2ops.c                |   10 ++++----
->  fs/cifs/smb2pdu.c                |    6 ++---
->  fs/cifs/smb2proto.h              |   14 +++++++-----
->  fs/fcntl.c                       |    5 ++--
->  include/uapi/asm-generic/fcntl.h |   11 +++++++++
->  17 files changed, 125 insertions(+), 82 deletions(-)
->
-> --
-> 1.7.10.4
->
+>                                                - Ted
 
-First of all, sorry for being unclear at this proposal.
+Right, using ext4_error() would have been a better choice than
+explicitly setting RO flag.
+I wonder why ext4_truncate does not clear the orphan_list in case of
+failure to obtain journal handle unlike that of ext3_truncate?
+We would not have to bother about explicitly clearing the orphan list
+in the first place if we could just add a lable like out_notrans (as
+in ext3)=>
+ if (IS_ERR(handle))
+                goto out_notrans;
 
+ out_notrans:
+        /*
+         * Delete the inode from orphan list so that it doesn't stay there
+         * forever and trigger assertion on umount.
+         */
+        if (inode->i_nlink)
+                ext3_orphan_del(NULL, inode);
 
-I am not from Wine team but I am working on things related to
-Wine+CIFS-client+Samba.
-
-We (at Etersoft) need to organize the work of Wine applications
-through cifs-client share mounted to Samba (or Windows server). They
-are related to accounting (mostly Russian ones - e.g.
-http://www.1c.ru/eng/title.htm). So, the problem is that such
-applications use share flags to control the parallel access to the
-same files of several clients on a remote share. Also, there can be a
-situation where Windows (native) clients and Wine clients are working
-together in the same time.
-
-That's why we need such flags in the kernel (patch #1). With these
-flags Wine can pass them to every open and they will be used by CIFS
-(and probably NFS) file systems to pass to the Samba server. In the
-same time if the file is on local filesystem - these flags will be
-simply ignored (not implemented).
-
-Now we have to make our own builds of cifs module for every kernel
-that use these flags passed by our build of Wine - this scheme is
-working but requires merging every time new kernel is released.
-Getting things into mainline let Wine supports more applications.
-
-As for the security layer, I don't think that we need any extra bits
-to switch these flags on or off - it will be switched on/off by an
-underlying filesystem. Since, this change is targeted for a network
-purpose only, a tool, that shows us what process/user locks a file,
-doesn't help a lot because the file can be locked remotely.
-
-As was said above, this change let us give Wine application share
-flags possibility for both Samba and Windows servers. Patch #2 enables
-share flags support for cifs mounts of Windows servers or Samba
-servers with nounix mount option. But we already have forcemand mount
-option in cifs module that switches on mandatory byte-range locking
-semantic for Samba without nounix. Since share flags capability is a
-kind of 'mandatory' locking scheme, I suggest that this option should
-switch on share flags for Samba without nounix too (by using
-NTCreateAndX command for open rather than transaction2) - that is what
-patch #3 does.
-
--- 
-Best regards,
-Pavel Shilovsky.
+Regards,
+Ashish
