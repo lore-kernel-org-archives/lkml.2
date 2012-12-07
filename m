@@ -1,43 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424213Ab2LGD0B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 22:26:01 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:50703 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1424136Ab2LGD0A (ORCPT
+	id S1755727Ab2LGDhe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 22:37:34 -0500
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:45228 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755347Ab2LGDhd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 22:26:00 -0500
-Date: Thu, 06 Dec 2012 22:25:56 -0500 (EST)
-Message-Id: <20121206.222556.600775306911649606.davem@davemloft.net>
-To: dinggnu@gmail.com
-Cc: ebiederm@xmission.com, edumazet@google.com, xemul@parallels.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: core: fix unused variable sparse warning
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20121207001545.GE2510@gmail.com>
-References: <1354838913-20084-1-git-send-email-dinggnu@gmail.com>
-	<20121207001545.GE2510@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-7
+	Thu, 6 Dec 2012 22:37:33 -0500
+MIME-Version: 1.0
+In-Reply-To: <1354810175-4338-1-git-send-email-js1304@gmail.com>
+References: <1354810175-4338-1-git-send-email-js1304@gmail.com>
+Date: Fri, 7 Dec 2012 11:37:30 +0800
+Message-ID: <CAA_GA1fiQfOqApE05oh=2Wr-GejbHtOd4o7sqcGdQFH6cxWPpQ@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/8] remove vm_struct list management
+From: Bob Liu <lliubbo@gmail.com>
+To: Joonsoo Kim <js1304@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        kexec@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qB73Q3I5024261
 
-From: Cong Ding <dinggnu@gmail.com>
-Date: Fri, 7 Dec 2012 00:15:47 +0000
+Hi Joonsoo,
 
-> On Fri, Dec 07, 2012 at 12:06:44AM +0000, Cong Ding wrote:
->> the variables zero and unres_qlen_max are only used when CONFIG_SYSCTL is
->> defined, otherwise it causes the following sparse warning when we turn on
->> CONFIG_SYSCTL.
-> sorry for disturbing again, the sparse warning is
-> net/core/neighbour.c:65:12: warning: ¡zero¢ defined but not used [-Wunused-variable]
-> net/core/neighbour.c:66:12: warning: ¡unres_qlen_max¢ defined but not used [-Wunused-variable]
-> 
-> it happens if we turn off CONFIG_SYSCTL.
+On Fri, Dec 7, 2012 at 12:09 AM, Joonsoo Kim <js1304@gmail.com> wrote:
+> This patchset remove vm_struct list management after initializing vmalloc.
+> Adding and removing an entry to vmlist is linear time complexity, so
+> it is inefficient. If we maintain this list, overall time complexity of
+> adding and removing area to vmalloc space is O(N), although we use
+> rbtree for finding vacant place and it's time complexity is just O(logN).
+>
+> And vmlist and vmlist_lock is used many places of outside of vmalloc.c.
+> It is preferable that we hide this raw data structure and provide
+> well-defined function for supporting them, because it makes that they
+> cannot mistake when manipulating theses structure and it makes us easily
+> maintain vmalloc layer.
+>
+> I'm not sure that "7/8: makes vmlist only for kexec" is fine.
+> Because it is related to userspace program.
+> As far as I know, makedumpfile use kexec's output information and it only
+> need first address of vmalloc layer. So my implementation reflect this
+> fact, but I'm not sure. And now, I don't fully test this patchset.
+> Basic operation work well, but I don't test kexec. So I send this
+> patchset with 'RFC'.
+>
+> Please let me know what I am missing.
+>
 
-A patch for this has already in my tree for nearly a whole day.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Nice work!
+I also thought about this several weeks ago but I think the efficiency
+may be a problem.
+
+As you know two locks(vmap_area_lock and vmlist_lock) are used
+currently so that some
+work may be done in parallel(not proved).
+If removed vmlist, i'm afraid vmap_area_lock will become a bottleneck
+which will reduce the efficiency.
+
+> This series based on v3.7-rc7 and on top of submitted patchset for ARM.
+> 'introduce static_vm for ARM-specific static mapped area'
+> https://lkml.org/lkml/2012/11/27/356
+> But, running properly on x86 without ARM patchset.
+>
+> Joonsoo Kim (8):
+>   mm, vmalloc: change iterating a vmlist to find_vm_area()
+>   mm, vmalloc: move get_vmalloc_info() to vmalloc.c
+>   mm, vmalloc: protect va->vm by vmap_area_lock
+>   mm, vmalloc: iterate vmap_area_list, instead of vmlist in
+>     vread/vwrite()
+>   mm, vmalloc: iterate vmap_area_list in get_vmalloc_info()
+>   mm, vmalloc: iterate vmap_area_list, instead of vmlist, in
+>     vmallocinfo()
+>   mm, vmalloc: makes vmlist only for kexec
+>   mm, vmalloc: remove list management operation after initializing
+>     vmalloc
+>
+>  arch/tile/mm/pgtable.c      |    7 +-
+>  arch/unicore32/mm/ioremap.c |   17 +--
+>  arch/x86/mm/ioremap.c       |    7 +-
+>  fs/proc/Makefile            |    2 +-
+>  fs/proc/internal.h          |   18 ---
+>  fs/proc/meminfo.c           |    1 +
+>  fs/proc/mmu.c               |   60 ----------
+>  include/linux/vmalloc.h     |   19 +++-
+>  mm/vmalloc.c                |  258 +++++++++++++++++++++++++++++--------------
+>  9 files changed, 204 insertions(+), 185 deletions(-)
+>  delete mode 100644 fs/proc/mmu.c
+>
+> --
+> 1.7.9.5
+>
+
+-- 
+Regards,
+--Bob
