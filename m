@@ -1,80 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030248Ab2LGNEW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 08:04:22 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:43453 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030208Ab2LGNEV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1030262Ab2LGNEg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 08:04:36 -0500
+Received: from fieldses.org ([174.143.236.118]:40931 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1030214Ab2LGNEV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 7 Dec 2012 08:04:21 -0500
+Date: Fri, 7 Dec 2012 08:04:18 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Abhijit Pawar <abhi.c.pawar@gmail.com>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] include/sunrpc: remove obsolete simple_strto<foo>
+Message-ID: <20121207130418.GC17115@fieldses.org>
+References: <1354881096-23480-1-git-send-email-abhi.c.pawar@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CANeycqqO06+u6Qy3zL=G_a=_sTYDOzUYf8wu7B7RGFJfuGNoRg@mail.gmail.com>
-References: <20120524021429.GB12557@kroah.com>
-	<Pine.LNX.4.44L0.1205241029260.1349-100000@iolanthe.rowland.org>
-	<CACVXFVPu_nbVCVR_HTt9H764+4JKC3=GPyhsf8Lpsch4Fa=xqQ@mail.gmail.com>
-	<CANeycqo8sFVeWVEeW3mdPPVRt35+kfkdUzenLB+YgNs4y-T7Cg@mail.gmail.com>
-	<CACVXFVPbpbb-PAJAweoLj8uec=KgoUKvybSey+R=L=oY16Ozbw@mail.gmail.com>
-	<CANeycqq177AzPdYfBr-VU+ksh+Jwd9i4aLpZo6VwxcO+Xx6ETg@mail.gmail.com>
-	<CACVXFVPH=yw_Y3AcnTXUqVd5A0yGiw+hju8__-g7dymAe-Q8dA@mail.gmail.com>
-	<CANeycqqO06+u6Qy3zL=G_a=_sTYDOzUYf8wu7B7RGFJfuGNoRg@mail.gmail.com>
-Date: Fri, 7 Dec 2012 21:04:19 +0800
-Message-ID: <CACVXFVMOxQEJ-nrvGQ-PkevqKkLnXu+QjHgeswkbzFjqOVYCdQ@mail.gmail.com>
-Subject: Re: Race condition between driver_probe_device and device_shutdown
-From: Ming Lei <ming.lei@canonical.com>
-To: Wedson Almeida Filho <wedsonaf@gmail.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Linux PM List <linux-pm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354881096-23480-1-git-send-email-abhi.c.pawar@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 7, 2012 at 8:16 PM, Wedson Almeida Filho <wedsonaf@gmail.com> wrote:
->> Because device_del() will put reference count of the parent, and the patch
->> only focuses on race between probe/release and shutdown.
->
-> Right. device_del() puts the reference count of the parent -- is it
-> guaranteed that device_del() won't ever reassign dev->parent though
-> (e.g., to NULL)? I don't think it is, so I think that patch should
-> also save the pointer to the parent and use it (instead of what
-> happens to be in than dev->parent) to release the lock and put the
-> ref.
->
->> As far as device_move() concerned, looks it might be a problem.
->> The problem even exits on driver attach vs. device open/release,
->> if device_move is called in open() and open() happens before driver
->> attach completes.
->
-> Yeah, the pattern of locking the parent followed by the device occurs
-> in a few places. It looks like they were added by Alan with commit
-> bf74ad5bc41727d5f2f1c6bedb2c1fac394de731. (And as Greg mentioned,
-> might be occurring often enough to merit being moved into a common
-> function.)
+On Fri, Dec 07, 2012 at 05:21:36PM +0530, Abhijit Pawar wrote:
+> This patch replace the obsolete simple_strto<foo> with kstrto<foo>
 
-In fact, there is no shutdown callback defined for usb driver, so holding
-the parent lock in device_shutdown() might be removed.
+No, we can't apply this as is--see the recent revert of a similar
+change, below.
 
->
-> I guess the question is whether the callee is allowed to call
-> device_move(), if not, we're good.
+kstrtoint does not have the same behavior as simple_strtol, so don't
+blindly replace one by the other.  At a bare minimum the changelog
+should have a note about the differences to help maintainers determine
+if the change will cause problems.
 
-Not only the callee, and other contexts can change device->parent
-too. Looks rfcomm_tty_open() which calls device_move() is called
-in open() context, so the parent might be changed before unlock(dev->parent)
-in __driver_attach().
+--b.
 
->
->> Your concern on device_remove() might be correct. Also, I am wondering
->> if we can walk the 'dpm_list' backwards for device shutdown, which should
->> be simpler and more reasonable.
->
-> How would that help?
+> Signed-off-by: Abhijit Pawar <abhi.c.pawar@gmail.com>
+> ---
+>  include/linux/sunrpc/cache.h |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/include/linux/sunrpc/cache.h b/include/linux/sunrpc/cache.h
+> index 5dc9ee4..96d2545 100644
+> --- a/include/linux/sunrpc/cache.h
+> +++ b/include/linux/sunrpc/cache.h
+> @@ -218,7 +218,7 @@ static inline int get_int(char **bpp, int *anint)
+>  {
+>  	char buf[50];
+>  	char *ep;
+> -	int rv;
+> +	int rv, rc;
+>  	int len = qword_get(bpp, buf, sizeof(buf));
+>  
+>  	if (len < 0)
+> @@ -226,8 +226,8 @@ static inline int get_int(char **bpp, int *anint)
+>  	if (len == 0)
+>  		return -ENOENT;
+>  
+> -	rv = simple_strtol(buf, &ep, 0);
+> -	if (*ep)
+> +	rc = kstrtoint(buf, 0, &rv);
+> +	if (rc)
+>  		return -EINVAL;
+>  
+>  	*anint = rv;
 
-device_pm_lock() can prevent device_move() from being running.
+commit 621eb19ce1ec216e03ad354cb0c4061736b2a436
+Author: J. Bruce Fields <bfields@redhat.com>
+Date:   Wed Nov 14 10:48:05 2012 -0500
 
-Thanks,
---
-Ming Lei
+    svcrpc: Revert "sunrpc/cache.h: replace simple_strtoul"
+    
+    Commit bbf43dc888833ac0539e437dbaeb28bfd4fbab9f "sunrpc/cache.h: replace
+    simple_strtoul" introduced new range-checking which could cause get_int
+    to fail on unsigned integers too large to be represented as an int.
+    
+    We could parse them as unsigned instead--but it turns out svcgssd is
+    actually passing down "-1" in some cases.  Which is perhaps stupid, but
+    there's nothing we can do about it now.
+    
+    So just revert back to the previous "sloppy" behavior that accepts
+    either representation.
+    
+    Cc: stable@vger.kernel.org
+    Reported-by: Sven Geggus <lists@fuchsschwanzdomain.de>
+    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+
+diff --git a/include/linux/sunrpc/cache.h b/include/linux/sunrpc/cache.h
+index f792794..5dc9ee4 100644
+--- a/include/linux/sunrpc/cache.h
++++ b/include/linux/sunrpc/cache.h
+@@ -217,6 +217,8 @@ extern int qword_get(char **bpp, char *dest, int bufsize);
+ static inline int get_int(char **bpp, int *anint)
+ {
+ 	char buf[50];
++	char *ep;
++	int rv;
+ 	int len = qword_get(bpp, buf, sizeof(buf));
+ 
+ 	if (len < 0)
+@@ -224,9 +226,11 @@ static inline int get_int(char **bpp, int *anint)
+ 	if (len == 0)
+ 		return -ENOENT;
+ 
+-	if (kstrtoint(buf, 0, anint))
++	rv = simple_strtol(buf, &ep, 0);
++	if (*ep)
+ 		return -EINVAL;
+ 
++	*anint = rv;
+ 	return 0;
+ }
+ 
