@@ -1,270 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932345Ab2LGJ5g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 04:57:36 -0500
-Received: from mga02.intel.com ([134.134.136.20]:31879 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932316Ab2LGJ5d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 04:57:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,236,1355126400"; 
-   d="scan'208";a="253502348"
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: linux-acpi@vger.kernel.org
-Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH] ACPI: add documentation about ACPI 5 enumeration
-Date: Fri,  7 Dec 2012 12:00:44 +0200
-Message-Id: <1354874444-30788-1-git-send-email-mika.westerberg@linux.intel.com>
-X-Mailer: git-send-email 1.7.9.1
+	id S932375Ab2LGJ6F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 04:58:05 -0500
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:39634 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932347Ab2LGJ6C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 04:58:02 -0500
+Date: Fri, 7 Dec 2012 10:59:07 +0100
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        alan@lxorguk.ukuu.org.uk, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        CAI Qian <caiqian@redhat.com>
+Subject: Re: [ 15/20] s390/mm: have 16 byte aligned struct pages
+Message-ID: <20121207095907.GA5129@osiris.de.ibm.com>
+References: <20121207005232.756641002@linuxfoundation.org>
+ <20121207005237.110422582@linuxfoundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121207005237.110422582@linuxfoundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12120709-5024-0000-0000-0000049D5040
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a document that describes how to take advantage of ACPI enumeration for
-buses like platform, I2C and SPI. In addition to that we document how to
-translate ACPI GpioIo and GpioInt resources to be useful in Linux device
-drivers.
+On Thu, Dec 06, 2012 at 04:54:30PM -0800, Greg Kroah-Hartman wrote:
+> 3.4-stable review patch.  If anyone has any objections, please let me know.
+> 
+> ------------------
+> 
+> From: Heiko Carstens <heiko.carstens@de.ibm.com>
+> 
+> commit 4bffbb3455372a26816e364fb4448810f7014452 upstream.
+> 
+> Select HAVE_ALIGNED_STRUCT_PAGE on s390, so that the slub allocator can make
+> use of compare and swap double for lockless updates. This increases the size
 
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
----
- Documentation/acpi/enumeration.txt |  227 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 227 insertions(+)
- create mode 100644 Documentation/acpi/enumeration.txt
+The s390 implementation of compare and swap and double was merged for 3.7:
+b1d6b40c "s390/cmpxchg,percpu: implement cmpxchg_double()".
+It is not part of 3.4. So putting this into stable makes not much sense.
 
-diff --git a/Documentation/acpi/enumeration.txt b/Documentation/acpi/enumeration.txt
-new file mode 100644
-index 0000000..4f27785
---- /dev/null
-+++ b/Documentation/acpi/enumeration.txt
-@@ -0,0 +1,227 @@
-+ACPI based device enumeration
-+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-+ACPI 5 introduced a set of new resources (UartTSerialBus, I2cSerialBus,
-+SpiSerialBus, GpioIo and GpioInt) which can be used in enumerating slave
-+devices behind serial bus controllers.
-+
-+In addition we are starting to see peripherals integrated in the
-+SoC/Chipset to appear only in ACPI namespace. These are typically devices
-+that are accessed through memory-mapped registers.
-+
-+In order to support this and re-use the existing drivers as much as
-+possible we decided to do following:
-+
-+	o Devices that have no bus connector resource are represented as
-+	  platform devices.
-+
-+	o Devices behind real busses where there is a connector resource
-+	  are represented as struct spi_device or struct i2c_device
-+	  (standard UARTs are not busses so there is no struct uart_device).
-+
-+As both ACPI and Device Tree represent a tree of devices (and their
-+resources) this implementation follows the Device Tree way as much as
-+possible.
-+
-+The ACPI implementation enumerates devices behind busses (platform, SPI and
-+I2C), creates the physical devices and binds them to their ACPI handle in
-+the ACPI namespace.
-+
-+This means that when ACPI_HANDLE(dev) returns non-NULL the device was
-+enumerated from ACPI namespace. This handle can be used to extract other
-+device-specific configuration. There is an example of this below.
-+
-+Platform bus support
-+~~~~~~~~~~~~~~~~~~~~
-+Since we are using platform devices to represent devices that are not
-+connected to any physical bus we only need to implement a platform driver
-+for the device and add supported ACPI IDs. If this same IP-block is used on
-+some other non-ACPI platform, the driver might work out of the box or needs
-+some minor changes.
-+
-+Adding ACPI support for an existing driver should be pretty
-+straightforward. Here is the simplest example:
-+
-+	#ifdef CONFIG_ACPI
-+	static struct acpi_device_id mydrv_acpi_match[] = {
-+		/* ACPI IDs here */
-+		{ }
-+	};
-+	MODULE_DEVICE_TABLE(acpi, mydrv_acpi_match);
-+	#endif
-+
-+	static struct platform_driver my_driver = {
-+		...
-+		.driver = {
-+			.acpi_match_table = ACPI_PTR(mydrv_acpi_match),
-+		},
-+	};
-+
-+If the driver needs to perform more complex initialization like getting and
-+configuring GPIOs it can get its ACPI handle and extract this information
-+from ACPI tables.
-+
-+Currently the kernel is not able to automatically determine from which ACPI
-+device it should make the corresponding platform device so we need to add
-+the ACPI device explicitly to acpi_platform_device_ids list defined in
-+drivers/acpi/scan.c. This limitation is only for the platform devices, SPI
-+and I2C devices are created automatically as described below.
-+
-+SPI serial bus support
-+~~~~~~~~~~~~~~~~~~~~~~
-+Slave devices behind SPI bus have SpiSerialBus resource attached to them.
-+This is extracted automatically by the SPI core and the slave devices are
-+enumerated once spi_register_master() is called by the bus driver.
-+
-+Here is what the ACPI namespace for a SPI slave might look like:
-+
-+	Device (EEP0)
-+	{
-+		Name (_ADR, 1)
-+		Name (_CID, Package() {
-+			"ATML0025",
-+			"AT25",
-+		})
-+		...
-+		Method (_CRS, 0, NotSerialized)
-+		{
-+			SPISerialBus(1, PolarityLow, FourWireMode, 8,
-+				ControllerInitiated, 1000000, ClockPolarityLow,
-+				ClockPhaseFirst, "\\_SB.PCI0.SPI1",)
-+		}
-+		...
-+
-+The SPI device drivers only need to add ACPI IDs in a similar way than with
-+the platform device drivers. Below is an example where we add ACPI support
-+to at25 SPI eeprom driver (this is meant for the above ACPI snippet):
-+
-+	#ifdef CONFIG_ACPI
-+	static struct acpi_device_id at25_acpi_match[] = {
-+		{ "AT25", 0 },
-+		{ },
-+	};
-+	MODULE_DEVICE_TABLE(acpi, at25_acpi_match);
-+	#endif
-+
-+	static struct spi_driver at25_driver = {
-+		.driver = {
-+			...
-+			.acpi_match_table = ACPI_PTR(at25_acpi_match),
-+		},
-+	};
-+
-+Note that this driver actually needs more information like page size of the
-+eeprom etc. but at the time writing this there is no standard way of
-+passing those. One idea is to return this in _DSM method like:
-+
-+	Device (EEP0)
-+	{
-+		...
-+		Method (_DSM, 4, NotSerialized)
-+		{
-+			Store (Package (6)
-+			{
-+				"byte-len", 1024,
-+				"addr-mode", 2,
-+				"page-size, 32
-+			}, Local0)
-+
-+			// Check UUIDs etc.
-+
-+			Return (Local0)
-+		}
-+
-+Then the at25 SPI driver can get this configation by calling _DSM on its
-+ACPI handle like:
-+
-+	struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
-+	struct acpi_object_list input;
-+	acpi_status status;
-+
-+	/* Fill in the input buffer */
-+
-+	status = acpi_evaluate_object(ACPI_HANDLE(&spi->dev), "_DSM",
-+				      &input, &output);
-+	if (ACPI_FAILURE(status))
-+		/* Handle the error */
-+
-+	/* Extract the data here */
-+
-+	kfree(output.pointer);
-+
-+I2C serial bus support
-+~~~~~~~~~~~~~~~~~~~~~~
-+The slaves behind I2C bus controller only need to add the ACPI IDs like
-+with the platform and SPI drivers. However the I2C bus controller driver
-+needs to call acpi_i2c_register_devices() after it has added the adapter.
-+
-+An I2C bus (controller) driver does:
-+
-+	...
-+	ret = i2c_add_numbered_adapter(adapter);
-+	if (ret)
-+		/* handle error */
-+
-+	of_i2c_register_devices(adapter);
-+	/* Enumerate the slave devices behind this bus via ACPI */
-+	acpi_i2c_register_devices(adapter);
-+
-+Below is an example of how to add ACPI support to the existing mpu3050
-+input driver:
-+
-+	#ifdef CONFIG_ACPI
-+	static struct acpi_device_id mpu3050_acpi_match[] = {
-+		{ "MPU3050", 0 },
-+		{ },
-+	};
-+	MODULE_DEVICE_TABLE(acpi, mpu3050_acpi_match);
-+	#endif
-+
-+	static struct i2c_driver mpu3050_i2c_driver = {
-+		.driver	= {
-+			.name	= "mpu3050",
-+			.owner	= THIS_MODULE,
-+			.pm	= &mpu3050_pm,
-+			.of_match_table = mpu3050_of_match,
-+			.acpi_match_table  ACPI_PTR(mpu3050_acpi_match),
-+		},
-+		.probe		= mpu3050_probe,
-+		.remove		= __devexit_p(mpu3050_remove),
-+		.id_table	= mpu3050_ids,
-+	};
-+
-+GPIO support
-+~~~~~~~~~~~~
-+ACPI 5 introduced two new resources to describe GPIO connections: GpioIo
-+and GpioInt. These resources are used be used to pass GPIO numbers used by
-+the device to the driver. For example:
-+
-+	Method (_CRS, 0, NotSerialized)
-+	{
-+		Name (SBUF, ResourceTemplate()
-+		{
-+			GpioIo (Exclusive, PullDefault, 0x0000, 0x0000,
-+				IoRestrictionOutputOnly, "\\_SB.PCI0.GPI0",
-+				0x00, ResourceConsumer,,)
-+			{
-+				// Pin List
-+				0x0055
-+			}
-+			...
-+
-+			Return (SBUF)
-+		}
-+	}
-+
-+These GPIO numbers are controller relative and path "\\_SB.PCI0.GPI0"
-+specifies the path to the controller. In order to use these GPIOs in Linux
-+we need to translate them to the Linux GPIO numbers.
-+
-+The driver can do this by including <linux/acpi_gpio.h> and then calling
-+acpi_get_gpio(path, gpio). This will return the Linux GPIO number or
-+negative errno if there was no translation found.
-+
-+Other GpioIo parameters must be converted first by the driver to be
-+suitable to the gpiolib before passing them.
-+
-+In case of GpioInt resource an additional call to gpio_to_irq() must be
-+done before calling request_irq().
--- 
-1.7.10.4
+> of struct page to 64 bytes (instead of 56 bytes), however the performance gain
+> justifies the increased size:
+> 
+> - now excactly four struct pages fit into a single cache line; the
+>   case that accessing a struct page causes two cache line loads
+>   does not exist anymore.
+> - calculating the offset of a struct page within the memmap array
+>   is only a simple shift instead of a more expensive multiplication.
+
+This is obviously still true, but I've made no measurements if we still
+see any (significant) performance gain if the slub allocator doesn't make
+use of compare and swap double or if it's just a waste of memory.
+
+So I'd prefer to not have this patch in stable.
+
+> A "hackbench 200 process 200" run on a 32 cpu system did show an 8% runtime
+> improvement.
+> 
+> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+> Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> Signed-off-by: CAI Qian <caiqian@redhat.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> ---
+>  arch/s390/Kconfig |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> --- a/arch/s390/Kconfig
+> +++ b/arch/s390/Kconfig
+> @@ -93,6 +93,7 @@ config S390
+>  	select ARCH_SAVE_PAGE_KEYS if HIBERNATION
+>  	select HAVE_MEMBLOCK
+>  	select HAVE_MEMBLOCK_NODE_MAP
+> +	select HAVE_ALIGNED_STRUCT_PAGE if SLUB
+>  	select ARCH_DISCARD_MEMBLOCK
+>  	select ARCH_INLINE_SPIN_TRYLOCK
+>  	select ARCH_INLINE_SPIN_TRYLOCK_BH
 
