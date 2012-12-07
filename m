@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423520Ab2LGA7p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 19:59:45 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:46480 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423502Ab2LGA7n (ORCPT
+	id S1423558Ab2LGA7z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 19:59:55 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:39598 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423518Ab2LGA7q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 19:59:43 -0500
+	Thu, 6 Dec 2012 19:59:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andi Kleen <andi@firstfloor.org>, Tony Luck <tony.luck@intel.com>,
-        Andi Kleen <andi.kleen@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 08/27] mm: soft offline: split thp at the beginning of soft_offline_page()
-Date: Thu,  6 Dec 2012 16:58:52 -0800
-Message-Id: <20121207005827.935818988@linuxfoundation.org>
+        Roland Dreier <roland@purestorage.com>,
+        Nicholas Bellinger <nab@risingtidesystems.com>
+Subject: [ 09/27] target: Fix handling of aborted commands
+Date: Thu,  6 Dec 2012 16:58:53 -0800
+Message-Id: <20121207005828.262252687@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121207005825.232489605@linuxfoundation.org>
 References: <20121207005825.232489605@linuxfoundation.org>
@@ -31,47 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+From: Roland Dreier <roland@purestorage.com>
 
-commit 783657a7dc20e5c0efbc9a09a9dd38e238a723da upstream.
+commit 3ea160b3e8f0de8161861995d9901f61192fc0b0 upstream.
 
-When we try to soft-offline a thp tail page, put_page() is called on the
-tail page unthinkingly and VM_BUG_ON is triggered in put_compound_page().
+- If we stop processing an already-aborted command in
+  target_execute_cmd(), then we need to complete t_transport_stop_comp
+  to wake up the the TMR handling thread, or else it will end up
+  waiting forever.
 
-This patch splits thp before going into the main body of soft-offlining.
+- If we've a already sent an "aborted" status for a command in
+  transport_check_aborted_status() then we should bail out of
+  transport_send_task_abort() to avoid freeing the command twice.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Andi Kleen <andi.kleen@intel.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Nicholas Bellinger <nab@risingtidesystems.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memory-failure.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/target/target_core_transport.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1474,9 +1474,17 @@ int soft_offline_page(struct page *page,
- {
- 	int ret;
- 	unsigned long pfn = page_to_pfn(page);
-+	struct page *hpage = compound_trans_head(page);
- 
- 	if (PageHuge(page))
- 		return soft_offline_huge_page(page, flags);
-+	if (PageTransHuge(hpage)) {
-+		if (PageAnon(hpage) && unlikely(split_huge_page(hpage))) {
-+			pr_info("soft offline: %#lx: failed to split THP\n",
-+				pfn);
-+			return -EBUSY;
-+		}
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -1756,8 +1756,10 @@ void target_execute_cmd(struct se_cmd *c
+ 	/*
+ 	 * If the received CDB has aleady been aborted stop processing it here.
+ 	 */
+-	if (transport_check_aborted_status(cmd, 1))
++	if (transport_check_aborted_status(cmd, 1)) {
++		complete(&cmd->t_transport_stop_comp);
+ 		return;
 +	}
  
- 	ret = get_any_page(page, pfn, flags);
- 	if (ret < 0)
+ 	/*
+ 	 * Determine if IOCTL context caller in requesting the stopping of this
+@@ -3029,7 +3031,7 @@ void transport_send_task_abort(struct se
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&cmd->t_state_lock, flags);
+-	if (cmd->se_cmd_flags & SCF_SENT_CHECK_CONDITION) {
++	if (cmd->se_cmd_flags & (SCF_SENT_CHECK_CONDITION | SCF_SENT_DELAYED_TAS)) {
+ 		spin_unlock_irqrestore(&cmd->t_state_lock, flags);
+ 		return;
+ 	}
 
 
