@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423937Ab2LGBDg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 20:03:36 -0500
+	id S1423977Ab2LGBEA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 20:04:00 -0500
 Received: from mail-pa0-f46.google.com ([209.85.220.46]:61365 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423599Ab2LGBAK (ORCPT
+	with ESMTP id S1423583Ab2LGBAH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 20:00:10 -0500
+	Thu, 6 Dec 2012 20:00:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@kernel.org>,
-        Yong Zhang <yong.zhang0@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 17/27] Revert "sched, autogroup: Stop going ahead if autogroup is disabled"
-Date: Thu,  6 Dec 2012 16:59:01 -0800
-Message-Id: <20121207005830.838566702@linuxfoundation.org>
+        Jean Delvare <jdelvare@suse.de>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Doug Thompson <dougthompson@xmission.com>
+Subject: [ 16/27] i7300_edac: Fix error flag testing
+Date: Thu,  6 Dec 2012 16:59:00 -0800
+Message-Id: <20121207005830.523517702@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121207005825.232489605@linuxfoundation.org>
 References: <20121207005825.232489605@linuxfoundation.org>
@@ -29,89 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Galbraith <efault@gmx.de>
+From: Jean Delvare <jdelvare@suse.de>
 
-commit fd8ef11730f1d03d5d6555aa53126e9e34f52f12 upstream.
+commit 7e06b7a3333f5c7a0cec12aff20d39c5c87c0795 upstream.
 
-This reverts commit 800d4d30c8f20bd728e5741a3b77c4859a613f7c.
+* Right-shift the values in GET_FBD_FAT_IDX and GET_FBD_NF_IDX, so
+  that the callers get the result they expect.
+* Fix definition of FERR_FAT_FBD_ERR_MASK.
+* Call GET_FBD_NF_IDX, not GET_FBD_FAT_IDX, when operating on
+  register FERR_NF_FBD. We were lucky they have the same definition.
 
-Between commits 8323f26ce342 ("sched: Fix race in task_group()") and
-800d4d30c8f2 ("sched, autogroup: Stop going ahead if autogroup is
-disabled"), autogroup is a wreck.
+This fixes kernel bug #44131:
+https://bugzilla.kernel.org/show_bug.cgi?id=44131
 
-With both applied, all you have to do to crash a box is disable
-autogroup during boot up, then reboot..  boom, NULL pointer dereference
-due to commit 800d4d30c8f2 not allowing autogroup to move things, and
-commit 8323f26ce342 making that the only way to switch runqueues:
-
-  BUG: unable to handle kernel NULL pointer dereference at           (null)
-  IP: [<ffffffff81063ac0>] effective_load.isra.43+0x50/0x90
-  Pid: 7047, comm: systemd-user-se Not tainted 3.6.8-smp #7 MEDIONPC MS-7502/MS-7502
-  RIP: effective_load.isra.43+0x50/0x90
-  Process systemd-user-se (pid: 7047, threadinfo ffff880221dde000, task ffff88022618b3a0)
-  Call Trace:
-    select_task_rq_fair+0x255/0x780
-    try_to_wake_up+0x156/0x2c0
-    wake_up_state+0xb/0x10
-    signal_wake_up+0x28/0x40
-    complete_signal+0x1d6/0x250
-    __send_signal+0x170/0x310
-    send_signal+0x40/0x80
-    do_send_sig_info+0x47/0x90
-    group_send_sig_info+0x4a/0x70
-    kill_pid_info+0x3a/0x60
-    sys_kill+0x97/0x1a0
-    ? vfs_read+0x120/0x160
-    ? sys_read+0x45/0x90
-    system_call_fastpath+0x16/0x1b
-  Code: 49 0f af 41 50 31 d2 49 f7 f0 48 83 f8 01 48 0f 46 c6 48 2b 07 48 8b bf 40 01 00 00 48 85 ff 74 3a 45 31 c0 48 8b 8f 50 01 00 00 <48> 8b 11 4c 8b 89 80 00 00 00 49 89 d2 48 01 d0 45 8b 59 58 4c
-  RIP  [<ffffffff81063ac0>] effective_load.isra.43+0x50/0x90
-   RSP <ffff880221ddfbd8>
-  CR2: 0000000000000000
-
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Cc: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Acked-by: Doug Thompson <dougthompson@xmission.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/auto_group.c |    4 ----
- kernel/sched/auto_group.h |    5 -----
- 2 files changed, 9 deletions(-)
+ drivers/edac/i7300_edac.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/kernel/sched/auto_group.c
-+++ b/kernel/sched/auto_group.c
-@@ -143,15 +143,11 @@ autogroup_move_group(struct task_struct
+--- a/drivers/edac/i7300_edac.c
++++ b/drivers/edac/i7300_edac.c
+@@ -197,8 +197,8 @@ static const char *ferr_fat_fbd_name[] =
+ 	[0]  = "Memory Write error on non-redundant retry or "
+ 	       "FBD configuration Write error on retry",
+ };
+-#define GET_FBD_FAT_IDX(fbderr)	(fbderr & (3 << 28))
+-#define FERR_FAT_FBD_ERR_MASK ((1 << 0) | (1 << 1) | (1 << 2) | (1 << 3))
++#define GET_FBD_FAT_IDX(fbderr)	(((fbderr) >> 28) & 3)
++#define FERR_FAT_FBD_ERR_MASK ((1 << 0) | (1 << 1) | (1 << 2) | (1 << 22))
  
- 	p->signal->autogroup = autogroup_kref_get(ag);
+ #define FERR_NF_FBD	0xa0
+ static const char *ferr_nf_fbd_name[] = {
+@@ -225,7 +225,7 @@ static const char *ferr_nf_fbd_name[] =
+ 	[1]  = "Aliased Uncorrectable Non-Mirrored Demand Data ECC",
+ 	[0]  = "Uncorrectable Data ECC on Replay",
+ };
+-#define GET_FBD_NF_IDX(fbderr)	(fbderr & (3 << 28))
++#define GET_FBD_NF_IDX(fbderr)	(((fbderr) >> 28) & 3)
+ #define FERR_NF_FBD_ERR_MASK ((1 << 24) | (1 << 23) | (1 << 22) | (1 << 21) |\
+ 			      (1 << 18) | (1 << 17) | (1 << 16) | (1 << 15) |\
+ 			      (1 << 14) | (1 << 13) | (1 << 11) | (1 << 10) |\
+@@ -464,7 +464,7 @@ static void i7300_process_fbd_error(stru
+ 		errnum = find_first_bit(&errors,
+ 					ARRAY_SIZE(ferr_nf_fbd_name));
+ 		specific = GET_ERR_FROM_TABLE(ferr_nf_fbd_name, errnum);
+-		branch = (GET_FBD_FAT_IDX(error_reg) == 2) ? 1 : 0;
++		branch = (GET_FBD_NF_IDX(error_reg) == 2) ? 1 : 0;
  
--	if (!ACCESS_ONCE(sysctl_sched_autogroup_enabled))
--		goto out;
--
- 	t = p;
- 	do {
- 		sched_move_task(t);
- 	} while_each_thread(p, t);
- 
--out:
- 	unlock_task_sighand(p, &flags);
- 	autogroup_kref_put(prev);
- }
---- a/kernel/sched/auto_group.h
-+++ b/kernel/sched/auto_group.h
-@@ -4,11 +4,6 @@
- #include <linux/rwsem.h>
- 
- struct autogroup {
--	/*
--	 * reference doesn't mean how many thread attach to this
--	 * autogroup now. It just stands for the number of task
--	 * could use this autogroup.
--	 */
- 	struct kref		kref;
- 	struct task_group	*tg;
- 	struct rw_semaphore	lock;
+ 		pci_read_config_dword(pvt->pci_dev_16_1_fsb_addr_map,
+ 			REDMEMA, &syndrome);
 
 
