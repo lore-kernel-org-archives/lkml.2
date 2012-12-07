@@ -1,78 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965290Ab2LHAHV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 19:07:21 -0500
-Received: from mga09.intel.com ([134.134.136.24]:52956 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754099Ab2LHAGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 19:06:03 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,241,1355126400"; 
-   d="scan'208";a="230560362"
-From: Joseph Gasparakis <joseph.gasparakis@intel.com>
-To: davem@davemloft.net, shemminger@vyatta.com, chrisw@sous-sol.org,
-        gospo@redhat.com
-Cc: Joseph Gasparakis <joseph.gasparakis@intel.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmitry@broadcom.com,
-        saeed.bishara@gmail.com, bhutchings@solarflare.com,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>
-Subject: [PATCH v4 3/5] vxlan: capture inner headers during encapsulation
-Date: Fri,  7 Dec 2012 16:14:16 -0800
-Message-Id: <1354925658-24115-4-git-send-email-joseph.gasparakis@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1354925658-24115-1-git-send-email-joseph.gasparakis@intel.com>
-References: <1354925658-24115-1-git-send-email-joseph.gasparakis@intel.com>
+	id S1755861Ab2LHAJI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 19:09:08 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7999 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755602Ab2LHAJD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 19:09:03 -0500
+X-Authority-Analysis: v=2.0 cv=ZNdVaAHb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=u4kN9zTzO2kA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=yptpm8wNvhUA:10 a=yY-IUfAz-ee8wHmZXb4A:9 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20121208000900.489002301@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Fri, 07 Dec 2012 18:56:17 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Clark Williams <clark.williams@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [RFC][PATCH RT 2/4] sched/rt: Try to migrate task if preempting pinned rt task
+References: <20121207235615.206108556@goodmis.org>
+Content-Disposition: inline; filename=fix-post-sched-push.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow VXLAN to make use of Tx checksum offloading and Tx scatter-gather.
-The advantage to these two changes is that it also allows the VXLAN to
-make use of GSO.
+If a higher priority task is about to preempt a task that has been
+pinned to a CPU. Try to first see if the higher priority task can
+preempt another task instead.
 
-Signed-off-by: Joseph Gasparakis <joseph.gasparakis@intel.com>
-Signed-off-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
----
- drivers/net/vxlan.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+That is, a high priority process wakes up on a CPU while a currently
+running task can still migrate, it will miss pushing that high priority
+task to another CPU. If by the time the task schedules, the task
+that it's about to preempt could have changed its affinity and
+is pinned. At this time, it may be better to move the task to another
+CPU if one exists that is currently running a lower priority task
+than the one about to be preempted.
 
-diff --git a/drivers/net/vxlan.c b/drivers/net/vxlan.c
-index ce77b8b..88b31f2 100644
---- a/drivers/net/vxlan.c
-+++ b/drivers/net/vxlan.c
-@@ -876,6 +876,11 @@ static netdev_tx_t vxlan_xmit(struct sk_buff *skb, struct net_device *dev)
- 		goto drop;
- 	}
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+Index: linux-rt.git/kernel/sched/rt.c
+===================================================================
+--- linux-rt.git.orig/kernel/sched/rt.c
++++ linux-rt.git/kernel/sched/rt.c
+@@ -1804,8 +1804,22 @@ skip:
  
-+	if (!skb->encapsulation) {
-+		skb_reset_inner_headers(skb);
-+		skb->encapsulation = 1;
+ static void pre_schedule_rt(struct rq *rq, struct task_struct *prev)
+ {
++	struct task_struct *p = prev;
++
++	/*
++	 * If we are preempting a migrate disabled task
++	 * see if we can push the higher tasks first.
++	 */
++	if (prev->on_rq && (prev->nr_cpus_allowed <= 1 || prev->migrate_disable) &&
++	    has_pushable_tasks(rq) && rq->rt.highest_prio.next < prev->prio) {
++		p = _pick_next_task_rt(rq);
++
++		if (p != prev && p->nr_cpus_allowed > 1 && push_rt_task(rq))
++			p = _pick_next_task_rt(rq);
 +	}
 +
- 	/* Need space for new headers (invalidates iph ptr) */
- 	if (skb_cow_head(skb, VXLAN_HEADROOM))
- 		goto drop;
-@@ -947,7 +952,8 @@ static netdev_tx_t vxlan_xmit(struct sk_buff *skb, struct net_device *dev)
- 	vxlan_set_owner(dev, skb);
+ 	/* Try to pull RT tasks here if we lower this rq's prio */
+-	if (rq->rt.highest_prio.curr > prev->prio)
++	if (rq->rt.highest_prio.curr > p->prio)
+ 		pull_rt_task(rq);
+ }
  
- 	/* See iptunnel_xmit() */
--	skb->ip_summed = CHECKSUM_NONE;
-+	if (skb->ip_summed != CHECKSUM_PARTIAL)
-+		skb->ip_summed = CHECKSUM_NONE;
- 	ip_select_ident(iph, &rt->dst, NULL);
- 
- 	err = ip_local_out(skb);
-@@ -1168,6 +1174,8 @@ static void vxlan_setup(struct net_device *dev)
- 	dev->tx_queue_len = 0;
- 	dev->features	|= NETIF_F_LLTX;
- 	dev->features	|= NETIF_F_NETNS_LOCAL;
-+	dev->features	|= NETIF_F_SG | NETIF_F_HW_CSUM;
-+	dev->hw_features |= NETIF_F_SG | NETIF_F_HW_CSUM;
- 	dev->priv_flags	&= ~IFF_XMIT_DST_RELEASE;
- 
- 	spin_lock_init(&vxlan->hash_lock);
--- 
-1.7.11.7
 
