@@ -1,101 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab2LGWLG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 17:11:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42899 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753508Ab2LGWLE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 17:11:04 -0500
-Date: Fri, 7 Dec 2012 14:11:02 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Xishi Qiu <qiuxishi@huawei.com>
-Cc: WuJianguo <wujianguo@huawei.com>, Liujiang <jiang.liu@huawei.com>,
-        <Vyacheslav.Dubeyko@huawei.com>, Borislav Petkov <bp@alien8.de>,
-        <andi@firstfloor.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH V2] MCE: fix an error of mce_bad_pages statistics
-Message-Id: <20121207141102.4fda582d.akpm@linux-foundation.org>
-In-Reply-To: <50C1AD6D.7010709@huawei.com>
-References: <50C1AD6D.7010709@huawei.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1424680Ab2LGWLZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 17:11:25 -0500
+Received: from sandeen.net ([63.231.237.45]:41451 "EHLO sandeen.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754713Ab2LGWLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 17:11:21 -0500
+Message-ID: <50C2674F.1060305@sandeen.net>
+Date: Fri, 07 Dec 2012 16:01:51 -0600
+From: Eric Sandeen <sandeen@sandeen.net>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: "Theodore Ts'o" <tytso@mit.edu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ric Wheeler <rwheeler@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Martin Steigerwald <Martin@lichtvoll.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
+ UAPI
+References: <1353366267-15629-1-git-send-email-david@fromorbit.com> <20121126025520.GC22858@thunk.org> <20121126091202.GO32450@dastard> <201212051148.28039.Martin@lichtvoll.de> <CA+55aFzgP29WfB1yvnj+Q9-TsbX+b-TCCjTS_vPJ16DxMy6aDQ@mail.gmail.com> <20121206120532.GA14100@infradead.org> <20121207011628.GB16373@gmail.com> <50C22923.90102@redhat.com> <alpine.LFD.2.02.1212070956310.23641@air.linux-foundation.org> <20121207193019.GA31591@home.goodmis.org> <20121207211440.GD29435@thunk.org>
+In-Reply-To: <20121207211440.GD29435@thunk.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 7 Dec 2012 16:48:45 +0800
-Xishi Qiu <qiuxishi@huawei.com> wrote:
-
-> On x86 platform, if we use "/sys/devices/system/memory/soft_offline_page" to offline a
-> free page twice, the value of mce_bad_pages will be added twice. So this is an error,
-> since the page was already marked HWPoison, we should skip the page and don't add the
-> value of mce_bad_pages.
+On 12/7/12 3:14 PM, Theodore Ts'o wrote:
+> On Fri, Dec 07, 2012 at 02:30:19PM -0500, Steven Rostedt wrote:
+>> How is this similar? By adding this bit, we removed incentive from a
+>> group of developers that have the means to fix the real issue at hand
+>> (the performance problem with ext4). Thus, it means that they have a work
+>> around that's good enough for them, but the rest of us suffer.
 > 
-> $ cat /proc/meminfo | grep HardwareCorrupted
-> 
-> soft_offline_page()
-> 	get_any_page()
-> 		atomic_long_add(1, &mce_bad_pages)
-> 
-> ...
->
-> --- a/mm/memory-failure.c
-> +++ b/mm/memory-failure.c
-> @@ -1582,8 +1582,11 @@ int soft_offline_page(struct page *page, int flags)
->  		return ret;
-> 
->  done:
-> -	atomic_long_add(1, &mce_bad_pages);
-> -	SetPageHWPoison(page);
->  	/* keep elevated page count for bad page */
-> +	if (!PageHWPoison(page)) {
-> +		atomic_long_add(1, &mce_bad_pages);
-> +		SetPageHWPoison(page);
-> +	}
-> +
->  	return ret;
->  }
+> That assumes that there **is** a way to claw back the performance
+> loss, and Chris Mason has demonstrated the performance hit exists with
+> xfs as well (950 MB/s vs. 400 MB/s; that's more than a factor of two).
 
-A few things:
+But he has not demonstrated that it can't be improved in XFS; I don't
+think that anyone in the XFS community has even begun to look at
+whether it can be improved ...
 
-- soft_offline_page() already checks for this case:
+> Sometimes, you have to make the engineering tradeoffs.  That's why
+> we're engineers, for goodness sakes.  Sometimes, it's just not
+> possible to square the circle.
 
-	if (PageHWPoison(page)) {
-		unlock_page(page);
-		put_page(page);
-		pr_info("soft offline: %#lx page already poisoned\n", pfn);
-		return -EBUSY;
-	}
+... so this strikes me as a bit premature.
 
-  so why didn't this check work for you?
+> I don't believe that the technique of forcing people who need that
+> performance to suffer in order to induce them to try to engineer a
+> solution which may or may not exist is really the best or fairest way
+> to go about things.
 
-  Presumably because one of the earlier "goto done" branches was
-  taken.  Which one, any why?
+Have we exhausted efforts to improve ext4 as well?  Have we even identified
+the performance bottlenecks yet via profiling?
 
-  This function is an utter mess.  It contains six return points
-  randomly intermingled with three "goto done" return points.
+What this seems to be is behavior nobody has asked for (expose
+other users' stale data) in the name of solving a performance problem
+(fine-grained conversion of unwritten extents comes at a non-negligible cost).
 
-  This mess is probably the cause of the bug you have observed.  Can
-  we please fix it up somehow?  It *seems* that the design (lol) of
-  this function is "for errors, return immediately.  For success, goto
-  done".  In which case "done" should have been called "success".  But
-  if you just look at the function you'll see that this approach didn't
-  work.  I suggest it be converted to have two return points - one for
-  the success path, one for the failure path.  Or something.
+-Eric
 
-- soft_offline_huge_page() is a miniature copy of soft_offline_page()
-  and might suffer the same bug.
+> 					- Ted
 
-- A cleaner, shorter and possibly faster implementation is
-
-	if (!TestSetPageHWPoison(page))
-		atomic_long_add(1, &mce_bad_pages);
-
-- We have atomic_long_inc().  Use it?
-
-- Why do we have a variable called "mce_bad_pages"?  MCE is an x86
-  concept, and this code is in mm/.  Lights are flashing, bells are
-  ringing and a loudspeaker is blaring "layering violation" at us!
