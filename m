@@ -1,115 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030262Ab2LGNEg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 08:04:36 -0500
-Received: from fieldses.org ([174.143.236.118]:40931 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030214Ab2LGNEV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 08:04:21 -0500
-Date: Fri, 7 Dec 2012 08:04:18 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Abhijit Pawar <abhi.c.pawar@gmail.com>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] include/sunrpc: remove obsolete simple_strto<foo>
-Message-ID: <20121207130418.GC17115@fieldses.org>
-References: <1354881096-23480-1-git-send-email-abhi.c.pawar@gmail.com>
+	id S1030278Ab2LGNFG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 08:05:06 -0500
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:39537 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030214Ab2LGNFE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 08:05:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354881096-23480-1-git-send-email-abhi.c.pawar@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121206144534.23d26318.akpm@linux-foundation.org>
+References: <1354810175-4338-1-git-send-email-js1304@gmail.com>
+	<20121206144534.23d26318.akpm@linux-foundation.org>
+Date: Fri, 7 Dec 2012 22:05:04 +0900
+Message-ID: <CAAmzW4OUivQy+KUuDMhL7Dkgdb2yGAxjUC-R5a5+RGViMJJ-fA@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/8] remove vm_struct list management
+From: JoonSoo Kim <js1304@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Russell King <rmk+kernel@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, kexec@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 07, 2012 at 05:21:36PM +0530, Abhijit Pawar wrote:
-> This patch replace the obsolete simple_strto<foo> with kstrto<foo>
+Hello, Andrew.
 
-No, we can't apply this as is--see the recent revert of a similar
-change, below.
+2012/12/7 Andrew Morton <akpm@linux-foundation.org>:
+> On Fri,  7 Dec 2012 01:09:27 +0900
+> Joonsoo Kim <js1304@gmail.com> wrote:
+>
+>> This patchset remove vm_struct list management after initializing vmalloc.
+>> Adding and removing an entry to vmlist is linear time complexity, so
+>> it is inefficient. If we maintain this list, overall time complexity of
+>> adding and removing area to vmalloc space is O(N), although we use
+>> rbtree for finding vacant place and it's time complexity is just O(logN).
+>>
+>> And vmlist and vmlist_lock is used many places of outside of vmalloc.c.
+>> It is preferable that we hide this raw data structure and provide
+>> well-defined function for supporting them, because it makes that they
+>> cannot mistake when manipulating theses structure and it makes us easily
+>> maintain vmalloc layer.
+>>
+>> I'm not sure that "7/8: makes vmlist only for kexec" is fine.
+>> Because it is related to userspace program.
+>> As far as I know, makedumpfile use kexec's output information and it only
+>> need first address of vmalloc layer. So my implementation reflect this
+>> fact, but I'm not sure. And now, I don't fully test this patchset.
+>> Basic operation work well, but I don't test kexec. So I send this
+>> patchset with 'RFC'.
+>>
+>> Please let me know what I am missing.
+>>
+>> This series based on v3.7-rc7 and on top of submitted patchset for ARM.
+>> 'introduce static_vm for ARM-specific static mapped area'
+>> https://lkml.org/lkml/2012/11/27/356
+>> But, running properly on x86 without ARM patchset.
+>
+> This all looks rather nice, but not mergeable into anything at this
+> stage in the release cycle.
+>
+> What are the implications of "on top of submitted patchset for ARM"?
+> Does it depens on the ARM patches in any way, or it it independently
+> mergeable and testable?
+>
 
-kstrtoint does not have the same behavior as simple_strtol, so don't
-blindly replace one by the other.  At a bare minimum the changelog
-should have a note about the differences to help maintainers determine
-if the change will cause problems.
+Yes. It depends on ARM patches.
+There is a code to manipulate a vmlist in ARM.
+So without applying ARM patches, this patchset makes compile error for ARM.
+But, build for x86 works fine with this patchset :)
 
---b.
-
-> Signed-off-by: Abhijit Pawar <abhi.c.pawar@gmail.com>
-> ---
->  include/linux/sunrpc/cache.h |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/include/linux/sunrpc/cache.h b/include/linux/sunrpc/cache.h
-> index 5dc9ee4..96d2545 100644
-> --- a/include/linux/sunrpc/cache.h
-> +++ b/include/linux/sunrpc/cache.h
-> @@ -218,7 +218,7 @@ static inline int get_int(char **bpp, int *anint)
->  {
->  	char buf[50];
->  	char *ep;
-> -	int rv;
-> +	int rv, rc;
->  	int len = qword_get(bpp, buf, sizeof(buf));
->  
->  	if (len < 0)
-> @@ -226,8 +226,8 @@ static inline int get_int(char **bpp, int *anint)
->  	if (len == 0)
->  		return -ENOENT;
->  
-> -	rv = simple_strtol(buf, &ep, 0);
-> -	if (*ep)
-> +	rc = kstrtoint(buf, 0, &rv);
-> +	if (rc)
->  		return -EINVAL;
->  
->  	*anint = rv;
-
-commit 621eb19ce1ec216e03ad354cb0c4061736b2a436
-Author: J. Bruce Fields <bfields@redhat.com>
-Date:   Wed Nov 14 10:48:05 2012 -0500
-
-    svcrpc: Revert "sunrpc/cache.h: replace simple_strtoul"
-    
-    Commit bbf43dc888833ac0539e437dbaeb28bfd4fbab9f "sunrpc/cache.h: replace
-    simple_strtoul" introduced new range-checking which could cause get_int
-    to fail on unsigned integers too large to be represented as an int.
-    
-    We could parse them as unsigned instead--but it turns out svcgssd is
-    actually passing down "-1" in some cases.  Which is perhaps stupid, but
-    there's nothing we can do about it now.
-    
-    So just revert back to the previous "sloppy" behavior that accepts
-    either representation.
-    
-    Cc: stable@vger.kernel.org
-    Reported-by: Sven Geggus <lists@fuchsschwanzdomain.de>
-    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-
-diff --git a/include/linux/sunrpc/cache.h b/include/linux/sunrpc/cache.h
-index f792794..5dc9ee4 100644
---- a/include/linux/sunrpc/cache.h
-+++ b/include/linux/sunrpc/cache.h
-@@ -217,6 +217,8 @@ extern int qword_get(char **bpp, char *dest, int bufsize);
- static inline int get_int(char **bpp, int *anint)
- {
- 	char buf[50];
-+	char *ep;
-+	int rv;
- 	int len = qword_get(bpp, buf, sizeof(buf));
- 
- 	if (len < 0)
-@@ -224,9 +226,11 @@ static inline int get_int(char **bpp, int *anint)
- 	if (len == 0)
- 		return -ENOENT;
- 
--	if (kstrtoint(buf, 0, anint))
-+	rv = simple_strtol(buf, &ep, 0);
-+	if (*ep)
- 		return -EINVAL;
- 
-+	*anint = rv;
- 	return 0;
- }
- 
+In ARM patches, a method used for removing vmlist related code is same
+as 1/8 of this patchset.
+But, it includes some optimization for ARM, so I sent it separately.
+If it can't be accepted, I can rework ARM patches like as 1/8 of this patchset.
