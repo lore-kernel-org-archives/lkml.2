@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932689Ab2LGAnC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 19:43:02 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:59458 "EHLO
+	id S932707Ab2LGAtT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 19:49:19 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:56077 "EHLO
 	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752721Ab2LGAnA (ORCPT
+	by vger.kernel.org with ESMTP id S1754710Ab2LGAtS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 19:43:00 -0500
+	Thu, 6 Dec 2012 19:49:18 -0500
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Al4NAIo6wVB5LHa//2dsb2JhbABEuECFehdzgh4BAQQBOhwjBQsIAxguFCUDIROICgXCehSMJYNiYQOWApBIgwc
-Date: Fri, 7 Dec 2012 11:42:55 +1100
+X-IronPort-Anti-Spam-Result: Al4NALs7wVB5LHa//2dsb2JhbABEuECFehdzgh4BAQU6HCMQCAMOCi4UJQMhE4gPwn0UjCUKg1hhA5YCkEiDBw
+Date: Fri, 7 Dec 2012 11:49:10 +1100
 From: Dave Chinner <david@fromorbit.com>
-To: Alun <alun.linux@ty-penguin.org.uk>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: PATCH reduce impact of FIFREEZE on userland processes
-Message-ID: <20121207004255.GC27172@dastard>
-References: <20121205211707.7ca3b94b@aspire.ty-penguin.org.uk>
+To: Andreas Dilger <adilger@whamcloud.com>
+Cc: yangsheng <sickamd@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "adilger@dilger.ca" <adilger@dilger.ca>
+Subject: Re: [PATCH] Update atime from future.
+Message-ID: <20121207004910.GD27172@dastard>
+References: <1354557399-6202-1-git-send-email-sickamd@gmail.com>
+ <20121204202416.GB9451@dastard>
+ <424C1F3A-E96F-485B-BAE5-02CE41C0DBFF@whamcloud.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121205211707.7ca3b94b@aspire.ty-penguin.org.uk>
+In-Reply-To: <424C1F3A-E96F-485B-BAE5-02CE41C0DBFF@whamcloud.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 05, 2012 at 09:17:07PM +0000, Alun wrote:
+On Tue, Dec 04, 2012 at 05:22:32PM -0700, Andreas Dilger wrote:
+> The point is that the behaviour before the relatime patch was that
+> the kernel updated the atime to the current time as the kernel
+> knows about it, it didn't make any decision about "the past" or
+> "the future".
 > 
-> This patch is against kernel version 3.7-rc7.
-> 
-> The FIFREEZE ioctl blocks userland writes, then calls sync_filesystem.
-> If there is a large amount of dirty data, this sync can take a
-> substantial time to complete, with corresponding loss of responsiveness
-> to any userland processes wishing to write.
-> 
-> This patch simply adds an extra call to sync_filesystem prior to
-> blocking writes, so that (hopefully) the majority of outstanding dirty
-> data has been flushed before we impact on userland.
+> Relatime is about reducing the frequency of atime updates, not
+> about deciding that one timestamp is more correct than another. 
 
-The problem wth doing this is that the sync can delay the freeze
-process by quite some time under the exact conditions you describe.
-If you want freeze to take effect immediately (i.e instantly stop
-new modifications), then adding a sync will break this semantic.
-THere are existing users of freeze that require this behaviour...
+That makes sense.
 
-> I'm a complete kernel newbie and have only done some pretty minimal
-> testing on my own machine, but with the patch in place the impact of
-> running "fsfreeze -f" immediately followed by "fsfreeze -u" on a
-> moderately loaded filesystem (as measured by time taken for a write()
-> to complete) was reduced from 2.5 to 0.2 seconds.
-
-That, to me, is irrelevant, because something is normally done while
-the filesystem is frozen. It's not uncommon for freeze periods to
-extend to minutes while work is done by whatever required the
-freeze. Hence the few seconds it takes to acheive the frozen state is
-mostly irrelevant.
-
-If you are really concerned by minimising the amount of time it
-takes to freeze, then "syncfs; fsfreeze -f; fsfreeze -u" will get
-you exactly the same result as your patch, without having any bad
-side effects for other users....
+Indeed, that's what the commit message should say rather than
+drawing arbitrary lines in the sand about what is a valid atime
+without further justification.
 
 Cheers,
 
