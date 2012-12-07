@@ -1,94 +1,509 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423344Ab2LGRhK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 12:37:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48139 "EHLO mx1.redhat.com"
+	id S1423366Ab2LGRiz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 12:38:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36218 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1423269Ab2LGRhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 12:37:08 -0500
-Message-ID: <50C22923.90102@redhat.com>
-Date: Fri, 07 Dec 2012 12:36:35 -0500
-From: Ric Wheeler <rwheeler@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: Christoph Hellwig <hch@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
- UAPI
-References: <1353366267-15629-1-git-send-email-david@fromorbit.com> <20121126025520.GC22858@thunk.org> <20121126091202.GO32450@dastard> <201212051148.28039.Martin@lichtvoll.de> <CA+55aFzgP29WfB1yvnj+Q9-TsbX+b-TCCjTS_vPJ16DxMy6aDQ@mail.gmail.com> <20121206120532.GA14100@infradead.org> <20121207011628.GB16373@gmail.com>
-In-Reply-To: <20121207011628.GB16373@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1423089Ab2LGRix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 12:38:53 -0500
+Message-ID: <1354901926.3224.96.camel@bling.home>
+Subject: Re: [PATCH] vfio powerpc: enabled on powernv platform
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        David Gibson <david@gibson.dropbear.id.au>
+Date: Fri, 07 Dec 2012 10:38:46 -0700
+In-Reply-To: <1354865750-8104-1-git-send-email-aik@ozlabs.ru>
+References: <1354636299.1809.431.camel@bling.home>
+	 <1354865750-8104-1-git-send-email-aik@ozlabs.ru>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2012 08:16 PM, Ingo Molnar wrote:
-> * Christoph Hellwig <hch@infradead.org> wrote:
->
->> No, the problem is that the thing is not just a) wrong, but b)
->> only made it in through sneaky ways.
-> People disagree with a), and b) only really matters if a) is
-> true.
->
-> You never gave a technical reason for why protecting against
-> future ABI clashes is 'wrong'. It looks like a marginally
-> useful, practical patch to me.
->
-> Thanks,
->
-> 	Ingo
->
+On Fri, 2012-12-07 at 18:35 +1100, Alexey Kardashevskiy wrote:
+> This patch initializes IOMMU groups based on the IOMMU
+> configuration discovered during the PCI scan on POWERNV
+> (POWER non virtualized) platform. The IOMMU groups are
+> to be used later by VFIO driver (PCI pass through).
+> 
+> It also implements an API for mapping/unmapping pages for
+> guest PCI drivers and providing DMA window properties.
+> This API is going to be used later by QEMU-VFIO to handle
+> h_put_tce hypercalls from the KVM guest.
+> 
+> Although this driver has been tested only on the POWERNV
+> platform, it should work on any platform which supports
+> TCE tables.
+> 
+> To enable VFIO on POWER, enable SPAPR_TCE_IOMMU config
+> option and configure VFIO as required.
+> 
+> Cc: David Gibson <david@gibson.dropbear.id.au>
+> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+> ---
+>  arch/powerpc/include/asm/iommu.h     |   10 ++
+>  arch/powerpc/kernel/iommu.c          |  214 ++++++++++++++++++++++++++++++++++
+>  arch/powerpc/platforms/powernv/pci.c |  134 +++++++++++++++++++++
+>  drivers/iommu/Kconfig                |    8 ++
+>  4 files changed, 366 insertions(+)
+> 
+> diff --git a/arch/powerpc/include/asm/iommu.h b/arch/powerpc/include/asm/iommu.h
+> index cbfe678..be3b11b 100644
+> --- a/arch/powerpc/include/asm/iommu.h
+> +++ b/arch/powerpc/include/asm/iommu.h
+> @@ -76,6 +76,9 @@ struct iommu_table {
+>  	struct iommu_pool large_pool;
+>  	struct iommu_pool pools[IOMMU_NR_POOLS];
+>  	unsigned long *it_map;       /* A simple allocation bitmap for now */
+> +#ifdef CONFIG_IOMMU_API
+> +	struct iommu_group *it_group;
+> +#endif
+>  };
+>  
+>  struct scatterlist;
+> @@ -147,5 +150,12 @@ static inline void iommu_restore(void)
+>  }
+>  #endif
+>  
+> +extern void iommu_reset_table(struct iommu_table *tbl, bool release);
+> +extern long iommu_clear_tces(struct iommu_table *tbl, unsigned long entry,
+> +		unsigned long pages);
+> +extern long iommu_put_tces(struct iommu_table *tbl, unsigned long entry,
+> +		uint64_t tce, enum dma_data_direction direction,
+> +		unsigned long pages);
+> +
+>  #endif /* __KERNEL__ */
+>  #endif /* _ASM_IOMMU_H */
+> diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
+> index ff5a6ce..123431a 100644
+> --- a/arch/powerpc/kernel/iommu.c
+> +++ b/arch/powerpc/kernel/iommu.c
+> @@ -44,6 +44,7 @@
+>  #include <asm/kdump.h>
+>  #include <asm/fadump.h>
+>  #include <asm/vio.h>
+> +#include <asm/tce.h>
+>  
+>  #define DBG(...)
+>  
+> @@ -856,3 +857,216 @@ void iommu_free_coherent(struct iommu_table *tbl, size_t size,
+>  		free_pages((unsigned long)vaddr, get_order(size));
+>  	}
+>  }
+> +
+> +#ifdef CONFIG_IOMMU_API
+> +/*
+> + * SPAPR TCE API
+> + */
+> +
+> +/*
+> + * iommu_reset_table is called when it started/stopped being used
+> + */
+> +void iommu_reset_table(struct iommu_table *tbl, bool release)
+> +{
+> +	/*
+> +	 * Page at 0 is marked as used in iommu_init_table,
+> +	 * so here we clear it when called with release=false...
+> +	 */
+> +	if (!release && (tbl->it_offset == 0))
+> +		clear_bit(0, tbl->it_map);
 
-Hi Ingo,
+Isn't this redundant to the memset below?
 
-The historical roots of the argument are not quite as clear here as you posit 
-above. The need for the interface/ABI itself was the subject of the review.
+> +
+> +	iommu_clear_tces(tbl, tbl->it_offset, tbl->it_size);
+> +
+> +	memset(tbl->it_map, 0, (tbl->it_size + 7) >> 3);
+> +
+> +	/*
+> +	 * ... or restore when release=true
+> +	 */
+> +	if (release && (tbl->it_offset == 0))
+> +		set_bit(0, tbl->it_map);
 
-The interface proposed - expose any deleted data without zeroing it - was 
-requested not to enable a tool or fix a specific need. It was proposed in order 
-to avoid tripping over an ext4 performance problem that occurs when we change 
-allocated-but-unwritten extents into allocated and written.
+"release" to me implies something is freed, maybe this should just be
+called "restore".
 
-This is a huge break with very long standing file system semantics - normally, 
-we always promise to return to the application only data that you wrote or 
-return zeroed blocks of data if you allocated it and did not write it.
+> +}
+> +EXPORT_SYMBOL_GPL(iommu_reset_table);
+> +
+> +/*
+> + * Returns the number of used IOMMU pages (4K) within
+> + * the same system page (4K or 64K).
+> + * bitmap_weight is not used as it does not support bigendian maps.
+> + * "offset" is an IOMMU page number relative to DMA window start.
+> + */
+> +static int syspage_weight(unsigned long *map, unsigned long offset)
+> +{
+> +	int ret = 0, nbits = PAGE_SIZE/IOMMU_PAGE_SIZE;
+> +
+> +	/* Aligns TCE entry number to system page boundary */
+> +	offset &= PAGE_MASK >> IOMMU_PAGE_SHIFT;
+> +
+> +	/* Count used 4K pages */
+> +	while (nbits) {
+> +		if (test_bit(offset, map))
+> +			++ret;
+> +		--nbits;
+> +		++offset;
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+> +static void tce_flush(struct iommu_table *tbl)
+> +{
+> +	/* Flush/invalidate TLB caches if necessary */
+> +	if (ppc_md.tce_flush)
+> +		ppc_md.tce_flush(tbl);
+> +
+> +	/* Make sure updates are seen by hardware */
+> +	mb();
+> +}
+> +
+> +/*
+> + * iommu_clear_tces clears tces and returned the number of system pages
+> + * which it called put_page() on
+> + */
+> +static long clear_tces_nolock(struct iommu_table *tbl, unsigned long entry,
+> +		unsigned long pages)
+> +{
+> +	int i, retpages = 0, clr;
+> +	unsigned long oldtce, oldweight;
+> +	struct page *page;
+> +
+> +	for (i = 0; i < pages; ++i) {
 
-This allows you to fallocate all unused space on disk, seek around and poke for 
-other peoples' deleted data.  Aside from the obvious violation of expected 
-privacy of deleted data (for non-root users at least), it could also break 
-things that have the original expectations in place.
+Any reason not to increment "entry" and avoid the 5 cases of "entry + i"
+below?
 
-After LSF, we did try to reproduce the use case (not with a lot of success) and 
-had several proposed ways to fix the ext4 performance challenge instead of using 
-this hack to avoid it.
+> +		if (!test_bit(entry + i - tbl->it_offset, tbl->it_map))
+> +			continue;
+> +
+> +		oldtce = ppc_md.tce_get(tbl, entry + i);
+> +		ppc_md.tce_free(tbl, entry + i, 1);
+> +
+> +		oldweight = syspage_weight(tbl->it_map,
+> +				entry + i - tbl->it_offset);
+> +		clr = __test_and_clear_bit(entry + i - tbl->it_offset,
+> +				tbl->it_map);
+> +
+> +		if (WARN_ON(!(oldtce & (TCE_PCI_WRITE | TCE_PCI_READ))))
+> +			continue;
+> +
+> +		page = pfn_to_page(oldtce >> PAGE_SHIFT);
+> +
+> +		if (WARN_ON(!page))
+> +			continue;
+> +
+> +		if (oldtce & TCE_PCI_WRITE)
+> +			SetPageDirty(page);
+> +
+> +		put_page(page);
+> +
+> +		/* That was the last IOMMU page within the system page */
+> +		if ((oldweight == 1) && clr)
+> +			++retpages;
+> +	}
+> +
+> +	return retpages;
+> +}
+> +
+> +/*
+> + * iommu_clear_tces clears tces and returned the number
+> + * of released system pages
+> + */
+> +long iommu_clear_tces(struct iommu_table *tbl, unsigned long entry,
+> +		unsigned long pages)
+> +{
+> +	int ret;
+> +	struct iommu_pool *pool = get_pool(tbl, entry);
+> +
+> +	spin_lock(&(pool->lock));
+> +	ret = clear_tces_nolock(tbl, entry, pages);
+> +	tce_flush(tbl);
+> +	spin_unlock(&(pool->lock));
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(iommu_clear_tces);
+> +
+> +static int put_tce(struct iommu_table *tbl, unsigned long entry,
+> +		uint64_t tce, enum dma_data_direction direction)
+> +{
+> +	int ret;
+> +	struct page *page = NULL;
+> +	unsigned long kva, offset, oldweight;
+> +
+> +	/* Map new TCE */
+> +	offset = (tce & IOMMU_PAGE_MASK) - (tce & PAGE_MASK);
+> +	ret = get_user_pages_fast(tce & PAGE_MASK, 1,
+> +			direction != DMA_TO_DEVICE, &page);
+> +	if (ret != 1) {
+> +		pr_err("tce_vfio: get_user_pages_fast failed tce=%llx ioba=%lx ret=%d\n",
+> +				tce, entry << IOMMU_PAGE_SHIFT, ret);
+> +		return -EFAULT;
+> +	}
+> +
+> +	kva = (unsigned long) page_address(page);
+> +	kva += offset;
+> +
+> +	/* tce_build receives a virtual address */
+> +	ret = ppc_md.tce_build(tbl, entry, 1, kva, direction, NULL);
+> +
+> +	/* tce_build() only returns non-zero for transient errors */
+> +	if (unlikely(ret)) {
+> +		pr_err("tce_vfio: tce_put failed on tce=%llx ioba=%lx kva=%lx ret=%d\n",
+> +				tce, entry << IOMMU_PAGE_SHIFT, kva, ret);
+> +		put_page(page);
+> +		return -EIO;
+> +	}
+> +
+> +	/* Calculate if new system page has been locked */
+> +	oldweight = syspage_weight(tbl->it_map, entry - tbl->it_offset);
+> +	__set_bit(entry - tbl->it_offset, tbl->it_map);
+> +
+> +	return (oldweight == 0) ? 1 : 0;
 
-I would prefer to fix the performance issue in ext4 rather than add an interface 
-that has no actual users of the actual feature - it exists for applications that 
-want to avoid an unfortunate performance hit from something that we could work 
-around.
+It seems like there's an optimization for syspage_weight since you only
+care about two cases, ie. syspage_weight_one and syspage_weight_zero.
+The zero test is easy, just mask and return !! the value.  Testing
+weight 1 means you don't have to find more than 2 bits set.  I won't
+hold you to that optimization, just fyi.
 
-If there are legitimate needs to expose the data to non-root users, it would be 
-good to have that debate in the open and clarify the correct interface.
+> +}
+> +
+> +/*
+> + * iommu_put_tces builds tces and returned the number of actually
+> + * locked system pages
+> + */
+> +long iommu_put_tces(struct iommu_table *tbl, unsigned long entry,
+> +		uint64_t tce, enum dma_data_direction direction,
+> +		unsigned long pages)
+> +{
+> +	int i, ret = 0, retpages = 0;
+> +	struct iommu_pool *pool = get_pool(tbl, entry);
+> +
+> +	BUILD_BUG_ON(PAGE_SIZE < IOMMU_PAGE_SIZE);
+> +	BUG_ON(direction == DMA_NONE);
+> +
+> +	spin_lock(&(pool->lock));
+> +
+> +	/* Check if any is in use */
+> +	for (i = 0; i < pages; ++i) {
+> +		if (test_bit(entry + i - tbl->it_offset, tbl->it_map)) {
 
-The process issue exposed is not one where "bike shedding" occurred - the 
-proposed feature was discussed in person at LSF and on the mailing lists and 
-debated and rejected.
+Again, seems like there's an optimization here that avoids individually
+testing bits since you only care about zero or non-zero for a sequential
+run.
 
-Review is part of the way we work as a community and we should figure out how to 
-fix our review process so that we can have meaningful results from the review or 
-we lose confidence in the process and it makes it much harder to get reviewers 
-to spend time reviewing when their reviews are ultimately ignored.
+> +			spin_unlock(&(pool->lock));
+> +			return -EBUSY;
+> +		}
+> +	}
+> +
+> +	/* Put tces to the table */
+> +	for (i = 0; (i < pages) && (ret >= 0); ++i, tce += IOMMU_PAGE_SIZE) {
+> +		ret = put_tce(tbl, entry + i, tce, direction);
+> +		if (ret == 1)
+> +			++retpages;
+> +	}
+> +
+> +	/*
+> +	 * If failed, release locked pages, otherwise return the number
+> +	 * of locked system pages
+> +	 */
+> +	if (ret < 0)
+> +		clear_tces_nolock(tbl, entry, i);
+> +	else
+> +		ret = retpages;
+> +
+> +	tce_flush(tbl);
+> +	spin_unlock(&(pool->lock));
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(iommu_put_tces);
+> +
+> +#endif /* CONFIG_IOMMU_API */
+> diff --git a/arch/powerpc/platforms/powernv/pci.c b/arch/powerpc/platforms/powernv/pci.c
+> index 05205cf..1b970bf 100644
+> --- a/arch/powerpc/platforms/powernv/pci.c
+> +++ b/arch/powerpc/platforms/powernv/pci.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/irq.h>
+>  #include <linux/io.h>
+>  #include <linux/msi.h>
+> +#include <linux/iommu.h>
+>  
+>  #include <asm/sections.h>
+>  #include <asm/io.h>
+> @@ -613,3 +614,136 @@ void __init pnv_pci_init(void)
+>  	ppc_md.teardown_msi_irqs = pnv_teardown_msi_irqs;
+>  #endif
+>  }
+> +
+> +#ifdef CONFIG_IOMMU_API
+> +/*
+> + * IOMMU groups support required by VFIO
+> + */
+> +static int add_device(struct device *dev)
+> +{
+> +	struct iommu_table *tbl;
+> +	int ret = 0;
+> +
+> +	if (WARN_ON(dev->iommu_group)) {
+> +		pr_warn("tce_vfio: device %s is already in iommu group %d, skipping\n",
+> +				dev_name(dev),
+> +				iommu_group_id(dev->iommu_group));
+> +		return -EBUSY;
+> +	}
+> +
+> +	tbl = get_iommu_table_base(dev);
+> +	if (!tbl) {
+> +		pr_debug("tce_vfio: skipping device %s with no tbl\n",
+> +				dev_name(dev));
+> +		return 0;
+> +	}
+> +
+> +	pr_debug("tce_vfio: adding %s to iommu group %d\n",
+> +			dev_name(dev), iommu_group_id(tbl->it_group));
+> +
+> +	ret = iommu_group_add_device(tbl->it_group, dev);
+> +	if (ret < 0)
+> +		pr_err("tce_vfio: %s has not been added, ret=%d\n",
+> +				dev_name(dev), ret);
+> +
+> +	return ret;
+> +}
+> +
+> +static void del_device(struct device *dev)
+> +{
+> +	iommu_group_remove_device(dev);
+> +}
+> +
+> +static int iommu_bus_notifier(struct notifier_block *nb,
+> +			      unsigned long action, void *data)
+> +{
+> +	struct device *dev = data;
+> +
+> +	switch (action) {
+> +	case BUS_NOTIFY_ADD_DEVICE:
+> +		return add_device(dev);
+> +	case BUS_NOTIFY_DEL_DEVICE:
+> +		del_device(dev);
+> +		return 0;
+> +	default:
+> +		return 0;
+> +	}
+> +}
+> +
+> +static struct notifier_block tce_iommu_bus_nb = {
+> +	.notifier_call = iommu_bus_notifier,
+> +};
+> +
+> +static void group_release(void *iommu_data)
+> +{
+> +	struct iommu_table *tbl = iommu_data;
+> +	tbl->it_group = NULL;
+> +}
+> +
+> +static int __init tce_iommu_init(void)
+> +{
+> +	struct pci_dev *pdev = NULL;
+> +	struct iommu_table *tbl;
+> +	struct iommu_group *grp;
+> +
+> +	/* Allocate and initialize IOMMU groups */
+> +	for_each_pci_dev(pdev) {
+> +		tbl = get_iommu_table_base(&pdev->dev);
+> +		if (!tbl)
+> +			continue;
+> +
+> +		/* Skip already initialized */
+> +		if (tbl->it_group)
+> +			continue;
+> +
+> +		grp = iommu_group_alloc();
+> +		if (IS_ERR(grp)) {
+> +			pr_info("tce_vfio: cannot create new IOMMU group, ret=%ld\n",
+> +					PTR_ERR(grp));
+> +			return PTR_ERR(grp);
+> +		}
+> +		tbl->it_group = grp;
+> +		iommu_group_set_iommudata(grp, tbl, group_release);
 
-Regards,
+BTW, groups have a name property that shows up in sysfs that can be set
+with iommu_group_set_name().  IIRC, this was a feature David requested
+for PEs.  It'd be nice if it was used for PEs...  Thanks,
 
-Ric
+Alex
 
+> +	}
+> +
+> +	bus_register_notifier(&pci_bus_type, &tce_iommu_bus_nb);
+> +
+> +	/* Add PCI devices to VFIO groups */
+> +	for_each_pci_dev(pdev)
+> +		add_device(&pdev->dev);
+> +
+> +	return 0;
+> +}
+> +
+> +static void __exit tce_iommu_cleanup(void)
+> +{
+> +	struct pci_dev *pdev = NULL;
+> +	struct iommu_table *tbl;
+> +	struct iommu_group *grp = NULL;
+> +
+> +	bus_unregister_notifier(&pci_bus_type, &tce_iommu_bus_nb);
+> +
+> +	/* Delete PCI devices from VFIO groups */
+> +	for_each_pci_dev(pdev)
+> +		del_device(&pdev->dev);
+> +
+> +	/* Release VFIO groups */
+> +	for_each_pci_dev(pdev) {
+> +		tbl = get_iommu_table_base(&pdev->dev);
+> +		if (!tbl)
+> +			continue;
+> +		grp = tbl->it_group;
+> +
+> +		/* Skip (already) uninitialized */
+> +		if (!grp)
+> +			continue;
+> +
+> +		/* Do actual release, group_release() is expected to work */
+> +		iommu_group_put(grp);
+> +		BUG_ON(tbl->it_group);
+> +	}
+> +}
+> +
+> +module_init(tce_iommu_init);
+> +module_exit(tce_iommu_cleanup);
+> +#endif /* CONFIG_IOMMU_API */
+> diff --git a/drivers/iommu/Kconfig b/drivers/iommu/Kconfig
+> index 9f69b56..29d11dc 100644
+> --- a/drivers/iommu/Kconfig
+> +++ b/drivers/iommu/Kconfig
+> @@ -187,4 +187,12 @@ config EXYNOS_IOMMU_DEBUG
+>  
+>  	  Say N unless you need kernel log message for IOMMU debugging
+>  
+> +config SPAPR_TCE_IOMMU
+> +	bool "sPAPR TCE IOMMU Support"
+> +	depends on PPC_POWERNV
+> +	select IOMMU_API
+> +	help
+> +	  Enables bits of IOMMU API required by VFIO. The iommu_ops is
+> +	  still not implemented.
+> +
+>  endif # IOMMU_SUPPORT
 
 
 
