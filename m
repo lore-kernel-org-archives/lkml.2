@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423476Ab2LGRmG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 12:42:06 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:37399 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756662Ab2LGRmD (ORCPT
+	id S1423498Ab2LGRnu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 12:43:50 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:44956 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423351Ab2LGRns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 12:42:03 -0500
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [RFC PATCH v3 9/9] cpu: No more __stop_machine() in _cpu_down()
-To: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
-        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
-        oleg@redhat.com
-Cc: sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org, rjw@sisk.pl,
-        srivatsa.bhat@linux.vnet.ibm.com, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 07 Dec 2012 23:10:23 +0530
-Message-ID: <20121207174018.27305.63045.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20121207173702.27305.1486.stgit@srivatsabhat.in.ibm.com>
-References: <20121207173702.27305.1486.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
+	Fri, 7 Dec 2012 12:43:48 -0500
+Message-ID: <50C22AB0.8060405@canonical.com>
+Date: Fri, 07 Dec 2012 12:43:12 -0500
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121017 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>
+CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        alan@lxorguk.ukuu.org.uk, Mike Galbraith <efault@gmx.de>,
+        Ingo Molnar <mingo@kernel.org>, Yong Zhang <yong.zhang0@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [ 17/27] Revert "sched, autogroup: Stop going ahead if autogroup
+ is disabled"
+References: <20121207005825.232489605@linuxfoundation.org> <20121207005830.838566702@linuxfoundation.org> <50C225D0.9030902@canonical.com> <20121207173117.GA18986@kroah.com>
+In-Reply-To: <20121207173117.GA18986@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12120717-2000-0000-0000-00000A2D0957
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul E. McKenney <paul.mckenney@linaro.org>
+On 12/07/2012 12:31 PM, Greg Kroah-Hartman wrote:
+> On Fri, Dec 07, 2012 at 12:22:24PM -0500, Joseph Salisbury wrote:
+>> Will you also be including this patch in v3.5 stable?
+> There is no v3.5-stable kernel tree anymore, it has been end-of-life for a while.
+>
+> There is a 3.5-stable tree that Canonical is doing, but no one on the
+>   Cc: you sent this to is in control of that one.
+>
+> Sorry,
+>
+> greg k-h
 
-The _cpu_down() function invoked as part of the CPU-hotplug offlining
-process currently invokes __stop_machine(), which is slow and inflicts
-substantial real-time latencies on the entire system.  This patch
-substitutes stop_one_cpu() for __stop_machine() in order to improve
-both performance and real-time latency.
+Sorry about the typo, I meant to request v3.2-stable.
 
-This is currently unsafe, because there are a number of uses of
-preempt_disable() that are intended to block CPU-hotplug offlining.
-These will be fixed by using get/put_online_cpus_atomic(), but in the
-meantime, this commit is one way to help locate them.
+Thanks,
 
-Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-[ srivatsa.bhat@linux.vnet.ibm.com: Refer to the new sync primitives for
-  readers (in the changelog), and s/stop_cpus/stop_one_cpu ]
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
-
- kernel/cpu.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index d2076fa..71c65dc 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -532,7 +532,7 @@ static int __ref _cpu_down(unsigned int cpu, int tasks_frozen)
- 	}
- 	smpboot_park_threads(cpu);
- 
--	err = __stop_machine(take_cpu_down, &tcd_param, cpumask_of(cpu));
-+	err = stop_one_cpu(cpu, take_cpu_down, &tcd_param);
- 	if (err) {
- 		/* CPU didn't die: tell everyone.  Can't complain. */
- 		smpboot_unpark_threads(cpu);
-
+Joe
