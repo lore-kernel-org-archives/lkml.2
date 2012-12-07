@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932444Ab2LGAGn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 19:06:43 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:37236 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932077Ab2LGAGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 19:06:41 -0500
-Date: Thu, 6 Dec 2012 19:06:33 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: zwu.kernel@gmail.com, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: Re: [PATCH] ext4: remove some unused code lines
-Message-ID: <20121207000633.GA8896@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>, zwu.kernel@gmail.com,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-	Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-References: <1354183200-8628-1-git-send-email-zwu.kernel@gmail.com>
- <20121202122726.GA14852@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121202122726.GA14852@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S932512Ab2LGAHK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 19:07:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50824 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932263Ab2LGAHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 19:07:08 -0500
+Message-ID: <1354838827.3124.1.camel@ul30vt.home>
+Subject: Re: [RFC PATCH 5/6] kvm: Re-introduce memslots->nmemslots
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: kvm@vger.kernel.org, gleb@redhat.com, linux-kernel@vger.kernel.org
+Date: Thu, 06 Dec 2012 17:07:07 -0700
+In-Reply-To: <20121206235949.GA30775@amt.cnet>
+References: <20121203231912.3661.57179.stgit@bling.home>
+	 <20121203233936.3661.69261.stgit@bling.home>
+	 <20121205212629.GD20260@amt.cnet> <1354748573.3224.63.camel@bling.home>
+	 <20121206014507.GA9890@amt.cnet> <1354765897.3224.71.camel@bling.home>
+	 <20121206235848.GA30582@amt.cnet> <20121206235949.GA30775@amt.cnet>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 02, 2012 at 08:27:26PM +0800, Zheng Liu wrote:
-> On Thu, Nov 29, 2012 at 06:00:00PM +0800, zwu.kernel@gmail.com wrote:
-> > From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On Thu, 2012-12-06 at 21:59 -0200, Marcelo Tosatti wrote:
+> On Thu, Dec 06, 2012 at 09:58:48PM -0200, Marcelo Tosatti wrote:
+> > On Wed, Dec 05, 2012 at 08:51:37PM -0700, Alex Williamson wrote:
+> > > > > id_to_memslot seems like a good place to catch all the users since
+> > > > > that's the only way to get a slot from a slot id after the array is
+> > > > > sorted.  We need to check both is the slot in bounds (EINVAL), but also
+> > > > > is it allocated (ENOENT).  id_to_memslot could both of these if we
+> > > > > wanted to switch it to ERR_PTR.  Thanks,
+> > > > > 
+> > > > > Alex
+> > > > 
+> > > > There should never be a reference to a slot out of bounds by KVM itself
+> > > > (BUG_ON). Only userspace can attempt a reference to such slot.
+> > > 
+> > > If I understand correctly, you're saying this last chunk is unique
+> > > because kvm_get_dirty_log() is an internal interface and the test should
+> > > be restricted to callers from userspace interfaces, namely
+> > > kvm_vm_ioctl_get_dirty_log().  That sounds reasonable; book3s_pr seems
+> > > to be the only caller that relies on kvm_get_dirty_log() validating the
+> > > slot.  Thanks,
+> > > 
+> > > Alex
+> > 
+> > Yep - so you can move the check to such userspace interfaces, and bug on 
+> > on WARN otherwise (in id_to_memslot).
 > 
-> Please write a commit log to describe this patch, even though it is
-> quite simple and straightfoward
+> WARN_ON. The point is, if its not a valid condition, it should be
+> explicitly so.
 > 
-> Otherwise, it looks good to me.
-> 
-> Reviewed-by: Zheng Liu <wenqing.lz@taobao.com>
+> > Does that make sense??
 
-I've applied this patch with the description:
+Yep, I'll add that if we decide to go that route.  This patch isn't
+necessary with the series I just posted since the array is still static.
+Thanks,
 
-    ext4: remove unused variable from ext4_ext_in_cache()
+Alex
 
-					- Ted
+
