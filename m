@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422904Ab2LGAgr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 19:36:47 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:58648 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1422886Ab2LGAgp (ORCPT
+	id S932689Ab2LGAnC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 19:43:02 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:59458 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752721Ab2LGAnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 19:36:45 -0500
-X-Sasl-enc: CIbydZX1n4v+kHdMC5XJivkkCOJQ/SDiYLstmlWfEKe+ 1354840604
-Date: Thu, 6 Dec 2012 16:36:43 -0800
-From: Greg KH <greg@kroah.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, stable <stable@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [v3.0 stable version][PATCH 1/2] ring-buffer: Fix NULL pointer
- if rb_set_head_page() fails
-Message-ID: <20121207003643.GA30526@kroah.com>
-References: <20121130161238.909829067@goodmis.org>
- <20121130161333.983378567@goodmis.org>
- <1354292203.6276.159.camel@gandalf.local.home>
- <20121206201326.GA10874@kroah.com>
- <1354830115.17101.28.camel@gandalf.local.home>
+	Thu, 6 Dec 2012 19:43:00 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Al4NAIo6wVB5LHa//2dsb2JhbABEuECFehdzgh4BAQQBOhwjBQsIAxguFCUDIROICgXCehSMJYNiYQOWApBIgwc
+Date: Fri, 7 Dec 2012 11:42:55 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Alun <alun.linux@ty-penguin.org.uk>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: PATCH reduce impact of FIFREEZE on userland processes
+Message-ID: <20121207004255.GC27172@dastard>
+References: <20121205211707.7ca3b94b@aspire.ty-penguin.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1354830115.17101.28.camel@gandalf.local.home>
+In-Reply-To: <20121205211707.7ca3b94b@aspire.ty-penguin.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 06, 2012 at 04:41:55PM -0500, Steven Rostedt wrote:
-> On Thu, 2012-12-06 at 12:13 -0800, Greg KH wrote:
-> > On Fri, Nov 30, 2012 at 11:16:43AM -0500, Steven Rostedt wrote:
-> > > The function rb_set_head_page() searches the list of ring buffer
-> > > pages for a the page that has the HEAD page flag set. If it does
-> > > not find it, it will do a WARN_ON(), disable the ring buffer and
-> > > return NULL, as this should never happen.
-> > > 
-> > > But if this bug happens to happen, not all callers of this function
-> > > can handle a NULL pointer being returned from it. That needs to be
-> > > fixed.
-> > > 
-> > > Cc: stable@vger.kernel.org # 3.0+
-> > > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> > > ---
-> > >  kernel/trace/ring_buffer.c |    9 +++++++--
-> > >  1 files changed, 7 insertions(+), 2 deletions(-)
-> > 
-> > I don't understand why you sent these to stable@ right now, I don't see
-> > them in Linus's tree, so why are they needed here?
+On Wed, Dec 05, 2012 at 09:17:07PM +0000, Alun wrote:
 > 
-> Answer below.
+> This patch is against kernel version 3.7-rc7.
 > 
-> > 
-> > Care to resend them when they hit Linus's tree?
+> The FIFREEZE ioctl blocks userland writes, then calls sync_filesystem.
+> If there is a large amount of dirty data, this sync can take a
+> substantial time to complete, with corresponding loss of responsiveness
+> to any userland processes wishing to write.
 > 
-> I'll try to remember, but I will most likely forget :-)
-> 
-> I wrote the patches for each stable version while they were still fresh
-> in my mind. I posted them so they would be there when they get into
-> mainline and be easier to port for stable. By the time they are in
-> mainline, they will be completely out of my mind :-)
+> This patch simply adds an extra call to sync_filesystem prior to
+> blocking writes, so that (hopefully) the majority of outstanding dirty
+> data has been flushed before we impact on userland.
 
-Ok, if they are that important, consider them forgotten from my mind as
-well :)
+The problem wth doing this is that the sync can delay the freeze
+process by quite some time under the exact conditions you describe.
+If you want freeze to take effect immediately (i.e instantly stop
+new modifications), then adding a sync will break this semantic.
+THere are existing users of freeze that require this behaviour...
 
-greg k-h
+> I'm a complete kernel newbie and have only done some pretty minimal
+> testing on my own machine, but with the patch in place the impact of
+> running "fsfreeze -f" immediately followed by "fsfreeze -u" on a
+> moderately loaded filesystem (as measured by time taken for a write()
+> to complete) was reduced from 2.5 to 0.2 seconds.
+
+That, to me, is irrelevant, because something is normally done while
+the filesystem is frozen. It's not uncommon for freeze periods to
+extend to minutes while work is done by whatever required the
+freeze. Hence the few seconds it takes to acheive the frozen state is
+mostly irrelevant.
+
+If you are really concerned by minimising the amount of time it
+takes to freeze, then "syncfs; fsfreeze -f; fsfreeze -u" will get
+you exactly the same result as your patch, without having any bad
+side effects for other users....
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
