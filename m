@@ -1,57 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422839Ab2LGQhI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 11:37:08 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:49469 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422824Ab2LGQhG (ORCPT
+	id S1422866Ab2LGQnz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 11:43:55 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:56652 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422760Ab2LGQny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 11:37:06 -0500
-Date: Fri, 7 Dec 2012 08:37:02 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Calvin Walton <calvin.walton@kepstin.ca>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        alan@lxorguk.ukuu.org.uk, Peter Huewe <peterhuewe@gmx.de>
-Subject: Re: [ 24/27] i915: Quirk no_lvds on Gigabyte GA-D525TUD ITX
- motherboard
-Message-ID: <20121207163702.GA15361@kroah.com>
-References: <20121207005825.232489605@linuxfoundation.org>
- <20121207005833.008375861@linuxfoundation.org>
- <CAF1iTgtAtu6PbGab4Pt3ppMQs0U9nmxzUsQV-ZapCNArofmtnw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAF1iTgtAtu6PbGab4Pt3ppMQs0U9nmxzUsQV-ZapCNArofmtnw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 7 Dec 2012 11:43:54 -0500
+Date: Fri, 7 Dec 2012 16:49:06 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Guenter Roeck <groeck-dsl@sbcglobal.net>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH] gpio: export 'debounce' attribute if supported by the
+ gpio chip
+Message-ID: <20121207164906.08b65046@pyramind.ukuu.org.uk>
+In-Reply-To: <20121207145955.GA28704@roeck-us.net>
+References: <1354775567-17408-1-git-send-email-linux@roeck-us.net>
+	<CACRpkdYDLJDwv97Z0agZBbzCtEdeb5Y-83K2HkZRtLP1Cz_QiA@mail.gmail.com>
+	<20121207145955.GA28704@roeck-us.net>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 06, 2012 at 11:36:16PM -0500, Calvin Walton wrote:
-> Sorry, dropped the CCs when I replied... I don't normally use the
-> Gmail web interface :)
-> 
-> On Thu, Dec 6, 2012 at 7:59 PM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
-> > 3.6-stable review patch.  If anyone has any objections, please let me know.
-> >
-> > ------------------
-> >
-> > From: Calvin Walton <calvin.walton@kepstin.ca>
-> >
-> > commit a51d4ed01e5bb39d2cf36a12f9976ab08872c192 upstream.
-> >
-> > This board is incorrectly detected as having an LVDS connector,
-> 
-> $ git describe --contains a51d4ed01e5bb39d2cf36a12f9976ab08872c192
-> v3.6-rc4~5^2~3^2
-> 
-> This patch was already included in Linus's 3.6 upstream release, so it
-> doesn't need to be (re-)applied to the 3.6.x stable tree. I'm
-> surprised it applied at all, it must need some fuzz to add the
-> duplicate entry...?
+> I could imagine declaring the activity request buttons to be "input", but for
+> presence detects it is a bit far fetched and would add too much complexity.
 
-Ah, yes, it did, thanks for catching that, I've now dropped this from
-the 3.6-stable tree.
+Android tries to address this with its switch class driver, but I'm not
+sure its actually got anything over making them input devices.
 
-greg k-h
+Alan
