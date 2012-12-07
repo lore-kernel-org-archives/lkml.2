@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933315Ab2LGK34 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 05:29:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42204 "EHLO mx2.suse.de"
+	id S933342Ab2LGKao (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 05:30:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42164 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932967Ab2LGKYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 05:24:48 -0500
+	id S932987Ab2LGKYn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 05:24:43 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -21,9 +21,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 30/49] mm: numa: Migrate on reference policy
-Date: Fri,  7 Dec 2012 10:23:33 +0000
-Message-Id: <1354875832-9700-31-git-send-email-mgorman@suse.de>
+Subject: [PATCH 27/49] sched, numa, mm: Count WS scanning against present PTEs, not virtual memory ranges
+Date: Fri,  7 Dec 2012 10:23:30 +0000
+Message-Id: <1354875832-9700-28-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1354875832-9700-1-git-send-email-mgorman@suse.de>
 References: <1354875832-9700-1-git-send-email-mgorman@suse.de>
@@ -31,107 +31,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the simplest possible policy that still does something of note.
-When a pte_numa is faulted, it is moved immediately. Any replacement
-policy must at least do better than this and in all likelihood this
-policy regresses normal workloads.
+By accounting against the present PTEs, scanning speed reflects the
+actual present (mapped) memory.
 
+Suggested-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Rik van Riel <riel@redhat.com>
 ---
- include/uapi/linux/mempolicy.h |    1 +
- mm/mempolicy.c                 |   38 ++++++++++++++++++++++++++++++++++++--
- 2 files changed, 37 insertions(+), 2 deletions(-)
+ kernel/sched/fair.c |   36 +++++++++++++++++++++---------------
+ 1 file changed, 21 insertions(+), 15 deletions(-)
 
-diff --git a/include/uapi/linux/mempolicy.h b/include/uapi/linux/mempolicy.h
-index 16fb4e6..0d11c3d 100644
---- a/include/uapi/linux/mempolicy.h
-+++ b/include/uapi/linux/mempolicy.h
-@@ -67,6 +67,7 @@ enum mpol_rebind_step {
- #define MPOL_F_LOCAL   (1 << 1)	/* preferred local allocation */
- #define MPOL_F_REBINDING (1 << 2)	/* identify policies in rebinding */
- #define MPOL_F_MOF	(1 << 3) /* this policy wants migrate on fault */
-+#define MPOL_F_MORON	(1 << 4) /* Migrate On pte_numa Reference On Node */
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 66d8bd2..773ef97 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -827,8 +827,8 @@ void task_numa_work(struct callback_head *work)
+ 	struct task_struct *p = current;
+ 	struct mm_struct *mm = p->mm;
+ 	struct vm_area_struct *vma;
+-	unsigned long offset, end;
+-	long length;
++	unsigned long start, end;
++	long pages;
  
+ 	WARN_ON_ONCE(p != container_of(work, struct task_struct, numa_work));
  
- #endif /* _UAPI_LINUX_MEMPOLICY_H */
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 516491f..4c1c8d8 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -118,6 +118,26 @@ static struct mempolicy default_policy = {
- 	.flags = MPOL_F_LOCAL,
- };
+@@ -858,18 +858,20 @@ void task_numa_work(struct callback_head *work)
+ 	if (cmpxchg(&mm->numa_next_scan, migrate, next_scan) != migrate)
+ 		return;
  
-+static struct mempolicy preferred_node_policy[MAX_NUMNODES];
-+
-+static struct mempolicy *get_task_policy(struct task_struct *p)
-+{
-+	struct mempolicy *pol = p->mempolicy;
-+	int node;
-+
-+	if (!pol) {
-+		node = numa_node_id();
-+		if (node != -1)
-+			pol = &preferred_node_policy[node];
-+
-+		/* preferred_node_policy is not initialised early in boot */
-+		if (!pol->mode)
-+			pol = NULL;
-+	}
-+
-+	return pol;
-+}
-+
- static const struct mempolicy_operations {
- 	int (*create)(struct mempolicy *pol, const nodemask_t *nodes);
- 	/*
-@@ -1598,7 +1618,7 @@ asmlinkage long compat_sys_mbind(compat_ulong_t start, compat_ulong_t len,
- struct mempolicy *get_vma_policy(struct task_struct *task,
- 		struct vm_area_struct *vma, unsigned long addr)
- {
--	struct mempolicy *pol = task->mempolicy;
-+	struct mempolicy *pol = get_task_policy(task);
+-	offset = mm->numa_scan_offset;
+-	length = sysctl_balance_numa_scan_size;
+-	length <<= 20;
++	start = mm->numa_scan_offset;
++	pages = sysctl_balance_numa_scan_size;
++	pages <<= 20 - PAGE_SHIFT; /* MB in pages */
++	if (!pages)
++		return;
  
- 	if (vma) {
- 		if (vma->vm_ops && vma->vm_ops->get_policy) {
-@@ -2021,7 +2041,7 @@ retry_cpuset:
-  */
- struct page *alloc_pages_current(gfp_t gfp, unsigned order)
- {
--	struct mempolicy *pol = current->mempolicy;
-+	struct mempolicy *pol = get_task_policy(current);
- 	struct page *page;
- 	unsigned int cpuset_mems_cookie;
- 
-@@ -2295,6 +2315,11 @@ int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long
- 	default:
- 		BUG();
+ 	down_read(&mm->mmap_sem);
+-	vma = find_vma(mm, offset);
++	vma = find_vma(mm, start);
+ 	if (!vma) {
+ 		reset_ptenuma_scan(p);
+-		offset = 0;
++		start = 0;
+ 		vma = mm->mmap;
  	}
-+
-+	/* Migrate the page towards the node whose CPU is referencing it */
-+	if (pol->flags & MPOL_F_MORON)
-+		polnid = numa_node_id();
-+
- 	if (curnid != polnid)
- 		ret = polnid;
- out:
-@@ -2483,6 +2508,15 @@ void __init numa_policy_init(void)
- 				     sizeof(struct sp_node),
- 				     0, SLAB_PANIC, NULL);
+-	for (; vma && length > 0; vma = vma->vm_next) {
++	for (; vma; vma = vma->vm_next) {
+ 		if (!vma_migratable(vma))
+ 			continue;
  
-+	for_each_node(nid) {
-+		preferred_node_policy[nid] = (struct mempolicy) {
-+			.refcnt = ATOMIC_INIT(1),
-+			.mode = MPOL_PREFERRED,
-+			.flags = MPOL_F_MOF | MPOL_F_MORON,
-+			.v = { .preferred_node = nid, },
-+		};
-+	}
-+
+@@ -877,15 +879,19 @@ void task_numa_work(struct callback_head *work)
+ 		if (((vma->vm_end - vma->vm_start) >> PAGE_SHIFT) < HPAGE_PMD_NR)
+ 			continue;
+ 
+-		offset = max(offset, vma->vm_start);
+-		end = min(ALIGN(offset + length, HPAGE_SIZE), vma->vm_end);
+-		length -= end - offset;
+-
+-		change_prot_numa(vma, offset, end);
++		do {
++			start = max(start, vma->vm_start);
++			end = ALIGN(start + (pages << PAGE_SHIFT), HPAGE_SIZE);
++			end = min(end, vma->vm_end);
++			pages -= change_prot_numa(vma, start, end);
+ 
+-		offset = end;
++			start = end;
++			if (pages <= 0)
++				goto out;
++		} while (end != vma->vm_end);
+ 	}
+ 
++out:
  	/*
- 	 * Set interleaving policy for system init. Interleaving is only
- 	 * enabled across suitably sized nodes (default is >= 16MB), or
+ 	 * It is possible to reach the end of the VMA list but the last few VMAs are
+ 	 * not guaranteed to the vma_migratable. If they are not, we would find the
+@@ -893,7 +899,7 @@ void task_numa_work(struct callback_head *work)
+ 	 * so check it now.
+ 	 */
+ 	if (vma)
+-		mm->numa_scan_offset = offset;
++		mm->numa_scan_offset = start;
+ 	else
+ 		reset_ptenuma_scan(p);
+ 	up_read(&mm->mmap_sem);
 -- 
 1.7.9.2
 
