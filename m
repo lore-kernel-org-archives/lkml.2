@@ -1,82 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965020Ab2LGSjp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 13:39:45 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:33245 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964944Ab2LGSjn (ORCPT
+	id S965069Ab2LGSju (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 13:39:50 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:51341 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964944Ab2LGSjr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 13:39:43 -0500
-Message-ID: <50C23789.9000705@linux.vnet.ibm.com>
-Date: Sat, 08 Dec 2012 00:08:01 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Fri, 7 Dec 2012 13:39:47 -0500
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
-        namhyung@kernel.org, vincent.guittot@linaro.org, oleg@redhat.com,
-        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
-        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v3 1/9] CPU hotplug: Provide APIs to prevent CPU offline
- from atomic context
-References: <20121207173702.27305.1486.stgit@srivatsabhat.in.ibm.com> <20121207173759.27305.84316.stgit@srivatsabhat.in.ibm.com> <20121207175724.GA2821@htj.dyndns.org> <50C23441.7020309@linux.vnet.ibm.com> <20121207183141.GC2821@htj.dyndns.org>
-In-Reply-To: <20121207183141.GC2821@htj.dyndns.org>
+In-Reply-To: <CALQRfL6c2nOSOR00YsBhgC=KWSWB-xOsDTJiLzbtmj6Zv1Mr2Q@mail.gmail.com>
+References: <CALQRfL5EeqRFykLGVLJx3pfKdP4iF8r-8Ys7pVadOaCc3j1=iQ@mail.gmail.com>
+ <CALCETrXYPjow3geVBnYK_ZOhnuU_wZkdebumJ=Hv3-T=fHaPNA@mail.gmail.com>
+ <CALQRfL7e160D+vzVhT-fUS-_Yp55wqnWkRFJdDTOOVjjStd9Jw@mail.gmail.com>
+ <CALCETrXUSz9EN-tGMfJkw9+1kO0hfmQk4E5XPF0cg9nmpPXepg@mail.gmail.com>
+ <20121204135445.GA7420@mail.hallyn.com> <CALCETrW05JtRZSSJ0v=jz8B7_av1QS+D5qux5=q8aO3iWZHB1A@mail.gmail.com>
+ <20121205210528.GA9047@sergelap> <CALCETrVsrJSt8oYnh+y32Lrxw6Yk=Cp_e07Qf=fLbVfORvzUNg@mail.gmail.com>
+ <20121205222040.GB14884@sergelap> <50C13F0E.5010401@schaufler-ca.com>
+ <20121207144233.GA6681@mail.hallyn.com> <CALQRfL6c2nOSOR00YsBhgC=KWSWB-xOsDTJiLzbtmj6Zv1Mr2Q@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 7 Dec 2012 10:39:26 -0800
+Message-ID: <CALCETrUwVO6YjO-VzwBO59z4L2zB+-Zd_V-ontciMEFzRHzDFQ@mail.gmail.com>
+Subject: Re: [RFC] Capabilities still can't be inherited by normal programs
+To: "Andrew G. Morgan" <morgan@kernel.org>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@redhat.com>,
+        "Serge E. Hallyn" <serge@canonical.com>,
+        Markku Savela <msa@moth.iki.fi>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12120718-0260-0000-0000-000002443608
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/08/2012 12:01 AM, Tejun Heo wrote:
-> Hello, Srivatsa.
-> 
-> On Fri, Dec 07, 2012 at 11:54:01PM +0530, Srivatsa S. Bhat wrote:
->>> lg_lock doesn't do local nesting and I'm not sure how big a deal that
->>> is as I don't know how many should be converted.  But if nesting is an
->>> absolute necessity, it would be much better to implement generic
->>> rwlock variant (say, lg_rwlock) rather than implementing unusual
->>> cpuhotplug-specific percpu synchronization construct.
->>
->> To be honest, at a certain point in time while designing this, I did
->> realize that this was getting kinda overly complicated ;-) ... but I
->> wanted to see how this would actually work out when finished and get
->> some feedback on the same, hence I posted it out. But this also proves
->> that we _can_ actually compete with the flexibility of preempt_disable()
->> and still be safe with respect to locking, if we really want to ;-)
-> 
-> I got confused by comparison to preempt_disable() but you're right
-> that percpu rwlock shouldn't be able to introduce locking dependency
-> which doesn't exist with non-percpu rwlock.  ie. write locking should
-> be atomic w.r.t. to all readers.
+On Fri, Dec 7, 2012 at 9:07 AM, Andrew G. Morgan <morgan@kernel.org> wrote:
+> I'm still missing something with the problem definition.
+>
+> So far if I follow the discussion we have determined that inheritance
+> as implemented is OK except for the fact that giving user an
+> inheritable pI bit which gives them default permission to use all
+> binaries endowed with the corresponding file fI bit.
 
-Yep!
+This is IMO part of the problem but not the entire problem.
 
->  At the simplest, this can be
-> implemented by writer backing out all the way if try-locking any CPU
-> fails and retrying the whole thing.  That should be correct but has
-> the potential of starving the writer.
-> 
+>
+> Is this the problem a different inheritance model is supposed to
+> address? Serge suggested that the binary could authenticate the
+> user... This seems like its putting the protection in the best
+> place... Each app can control its sub functions with the richest
+> semantics.
+>
+> That being said...
+>
+> To me this looks like it's an access control problem... Namely use
+> acls to limit which users (groups) can execute each privileged binary.
+> Serge's option 2 seems like a similar approach.
+>
 
-Exactly! This is what I mentioned yesterday in the link below, and said
-that its not good because of writer starvation ("too wasteful"):
-https://lkml.org/lkml/2012/12/6/290
+The issue is (as I see it) with non-privileged binaries.  If a given
+program (correctly) has a permitted capability and is not root, then
+the only way that it can pass that capability on to children (e.g.
+helper programs) is to set it into pI.  This only works if the child
+has the same bit set in fI.
 
-> What we need here is a generic percpu-rwlock.  I don't know which
-> exact implementation strategy we should choose.  Maybe your switching
-> to global rwlock is the right solution.  But, at any rate, I think it
-> would be best to implement proper percpu-rwlock and then apply it to
-> CPU hotplug.  It's actually gonna be pretty fitting as
-> get_online_cpus() is being converted to percpu-rwsem.  IIUC, Oleg has
-> been working on this for a while now.  Oleg, what do you think?
-> 
+This is doable but annoying -- every program that a privileged program
+runs needs to be authorized by the administrator.
 
-Hmm, that sounds good.
+It breaks down because, currently, users with nonzero pI have no
+direct ability to wield the capabilities.  That means that every
+single binary with fI bits set needs to be as careful as a setuid-root
+binary to avoid leaking privilege to the caller.  (Obviously, binaries
+with fP set need to be careful.  IMO binaries with only fI set should
+not need to exercise any particular care to defend themselves from
+their callers.)
 
-Regards,
-Srivatsa S. Bhat
 
+I'm obviously missing some fundamental (and probably historical) issue
+here, so let me ask the following straw-man question.  Suppose
+capabilities worked like this on exec:
+
+pP' = pI | (fP & pB)  (i.e. the current way, except that fI always has
+all bits set for every binary on the system)
+pI' = pI (unless !SECURE_NOROOT and uid == 0 or euid == 0, in which
+case pI' = pP')
+
+with the added restriction that pI is always a subset of pP (i.e.
+dropping a bit from pP (on exec or otherwise) drops that bit from pI).
+
+What would be wrong with this model?  (Let's pretend for now that
+capabilities had always worked this way, so there's no change of
+behavior to worry about.)
+
+ - The sendmail capability bug wouldn't happen: pI has no effect on
+setuid-root binaries.
+
+ - There would be no difference between a user being trusted with a
+capability and being inh-trusted with that capability, since the
+latter concept wouldn't really exist.
+
+ - Totally unprivileged users couldn't engage in any funny business.
+Their pI masks would be zero, and they would have no way of changing
+that.
+
+ - Partially privileged users would work just fine.  They could wield
+their capabilities (subject to some possible fiddling with pE) from
+bash or from anything else.  They could also freely drop those
+capabilities.
+
+ - Privileged programs would require less thought: to grant a program,
+you set its privilege in fP.  There is no fI, so there's nothing
+special to think about.
+
+
+
+NB:  This is not a real proposal because there *are* capability-aware
+programs out there.  I want to understand why the current system is so
+different.
+
+--Andy
