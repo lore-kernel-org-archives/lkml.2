@@ -1,195 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423245Ab2LGRPe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 12:15:34 -0500
-Received: from mail-ia0-f177.google.com ([209.85.210.177]:57044 "EHLO
-	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423172Ab2LGRPc (ORCPT
+	id S1423258Ab2LGRQX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 12:16:23 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:58252 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422952Ab2LGRQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 12:15:32 -0500
-X-Greylist: delayed 475 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Dec 2012 12:15:32 EST
+	Fri, 7 Dec 2012 12:16:22 -0500
+Date: Fri, 7 Dec 2012 09:16:18 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Bill Pemberton <wfp5p@viridian.itc.virginia.edu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 000/493] remove CONFIG_HOTPLUG as an option
+Message-ID: <20121207171618.GA18054@kroah.com>
+References: <20121122010723.F111E80150@viridian.itc.virginia.edu>
+ <20121206002742.80C2A3E0E22@localhost>
+ <20121206003923.GA18947@kroah.com>
+ <20121207134748.B7C133E0B87@localhost>
 MIME-Version: 1.0
-In-Reply-To: <20121207144233.GA6681@mail.hallyn.com>
-References: <CALQRfL5EeqRFykLGVLJx3pfKdP4iF8r-8Ys7pVadOaCc3j1=iQ@mail.gmail.com>
-	<CALCETrXYPjow3geVBnYK_ZOhnuU_wZkdebumJ=Hv3-T=fHaPNA@mail.gmail.com>
-	<CALQRfL7e160D+vzVhT-fUS-_Yp55wqnWkRFJdDTOOVjjStd9Jw@mail.gmail.com>
-	<CALCETrXUSz9EN-tGMfJkw9+1kO0hfmQk4E5XPF0cg9nmpPXepg@mail.gmail.com>
-	<20121204135445.GA7420@mail.hallyn.com>
-	<CALCETrW05JtRZSSJ0v=jz8B7_av1QS+D5qux5=q8aO3iWZHB1A@mail.gmail.com>
-	<20121205210528.GA9047@sergelap>
-	<CALCETrVsrJSt8oYnh+y32Lrxw6Yk=Cp_e07Qf=fLbVfORvzUNg@mail.gmail.com>
-	<20121205222040.GB14884@sergelap>
-	<50C13F0E.5010401@schaufler-ca.com>
-	<20121207144233.GA6681@mail.hallyn.com>
-Date: Fri, 7 Dec 2012 09:07:35 -0800
-X-Google-Sender-Auth: lc8U4Y71zccK4krNLf-i0uvro2E
-Message-ID: <CALQRfL6c2nOSOR00YsBhgC=KWSWB-xOsDTJiLzbtmj6Zv1Mr2Q@mail.gmail.com>
-Subject: Re: [RFC] Capabilities still can't be inherited by normal programs
-From: "Andrew G. Morgan" <morgan@kernel.org>
-To: "Serge E. Hallyn" <serge@hallyn.com>
-Cc: Casey Schaufler <casey@schaufler-ca.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@redhat.com>,
-        "Serge E. Hallyn" <serge@canonical.com>,
-        Markku Savela <msa@moth.iki.fi>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121207134748.B7C133E0B87@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm still missing something with the problem definition.
+On Fri, Dec 07, 2012 at 01:47:48PM +0000, Grant Likely wrote:
+> On Wed, 5 Dec 2012 16:39:23 -0800, Greg KH <gregkh@linuxfoundation.org> wrote:
+> > On Thu, Dec 06, 2012 at 12:27:42AM +0000, Grant Likely wrote:
+> > > On Wed, 21 Nov 2012 20:07:23 -0500, wfp5p@viridian.itc.virginia.edu (Bill Pemberton) wrote:
+> > > > Grant Likely writes:
+> > > > > 
+> > > > > You mean this series wasn't created with a script? You did this by
+> > > > > hand? If so then I must say kudos on your dedication!
+> > > > >
+> > > > > But it makes me more nervous about the series. Too easy to fat
+> > > > > finger many things when touching that many files.
+> > > > >
+> > > > 
+> > > > No, I didn't do them by hand, it was a script.  Originally, it was a
+> > > > couple, all basically the same, but removing each __dev*.  Then I'd do
+> > > > a word diff to eyeball them to make sure the script didn't do
+> > > > something goofy.
+> > > > 
+> > > > The whack-a-mole part came along because I was working against
+> > > > linux-next and whatever patch series was right for one day wouldn't be
+> > > > right for the next day because of some of the faster moving trees.
+> > > > 
+> > > > 
+> > > > > Please do write a script and post that for review.
+> > > > > 
+> > > > 
+> > > > The all-in-one version of the script:
+> > > > 
+> > > > #! /usr/bin/perl
+> > > > 
+> > > > use strict;
+> > > > use IO::InSitu;
+> > > > 
+> > > > sub processfile
+> > > > {
+> > > >     my $fn = shift;
+> > > > 
+> > > >     my ($in, $out) = open_rw($fn, $fn);
+> > > > 
+> > > >     while (<$in>) {
+> > > > 	s|__devexit_p\(([^)]+)\)|$1|;
+> > > > 	s|\s__devexit\b||;
+> > > > 	s|\s__devinitconst\b||;
+> > > > 	s|\s__devinitdata\b||;
+> > > > 	s|\s__devinit\b||;
+> > > 
+> > > Pretty straight forward, and works against the files I tried.  :-)
+> > > 
+> > > Greg, I'd much rather see the change applied all at once in this manner.
+> > > If that isn't possible, then at the least I'll use the script against
+> > > the code that I maintain and push th result out to Linus.
+> > 
+> > Given that there are a lot of patches already in linux-next from Bill
+> > due to this work, I'm not going to do this for all files right now,
+> > sorry.
+> > 
+> > But, if you want to use this for the files you maintain and push that
+> > out for 3.8-rc1, that would be great.  I'll be walking the tree after
+> > 3.8-rc1 is out to catch the stragglers with a script like this.
+> 
+> Okay. Can you drop any commits you have against drivers/{spi,gpio,of}?
 
-So far if I follow the discussion we have determined that inheritance
-as implemented is OK except for the fact that giving user an
-inheritable pI bit which gives them default permission to use all
-binaries endowed with the corresponding file fI bit.
+Hm, I only applied the gpio ones to my tree, you got an email when that
+happened.  I didn't apply the spi or of ones.
 
-Is this the problem a different inheritance model is supposed to
-address? Serge suggested that the binary could authenticate the
-user... This seems like its putting the protection in the best
-place... Each app can control its sub functions with the richest
-semantics.
+> Or are they in a tree that you will not rebase?
 
-That being said...
+They are in my driver-core.git tree, the driver-core-next branch, which
+will not be rebased, and has been in linux-next for a while now.
 
-To me this looks like it's an access control problem... Namely use
-acls to limit which users (groups) can execute each privileged binary.
-Serge's option 2 seems like a similar approach.
+I can revert the 5 gpio patches if you want me to, just let me know.
 
-Cheers
+thanks,
 
-Andrew
-
-On Fri, Dec 7, 2012 at 6:42 AM, Serge E. Hallyn <serge@hallyn.com> wrote:
-> Quoting Casey Schaufler (casey@schaufler-ca.com):
->> On 12/5/2012 2:20 PM, Serge Hallyn wrote:
->> > Quoting Andy Lutomirski (luto@amacapital.net):
->> >> On Wed, Dec 5, 2012 at 1:05 PM, Serge Hallyn <serge.hallyn@canonical.com> wrote:
->> >>> Quoting Andy Lutomirski (luto@amacapital.net):
->> >>>> On Tue, Dec 4, 2012 at 5:54 AM, Serge E. Hallyn <serge@hallyn.com> wrote:
->> >>>>> Quoting Andy Lutomirski (luto@amacapital.net):
->> >>>>>>>> d) If I really wanted, I could emulate execve without actually doing
->> >>>>>>>> execve, and capabilities would be inherited.
->> >>>>>>> If you could modify the executable properties of the binary that has
->> >>>>>>> the privilege to wield a privilege then you are either exploiting an
->> >>>>>>> app bug, or doing something the privileged binary has been trusted to
->> >>>>>>> do.
->> >>>>>> That's not what I mean.  I would:
->> >>>>>>
->> >>>>>> fork()
->> >>>>>> munmap everything
->> >>>>>> mmap ld.so
->> >>>>>> set up a fake initial stack and the right fd or mapping or whatever
->> >>>>>> just to ld-linux.so
->> >>>>>>
->> >>>>>> That's almost execve, and privilege inheritance works.
->> >>>>> But of course that is why you only want to fill fI on programs you trust
->> >>>>> not to do that.  What you are arguing is that you want to give fI on
->> >>>>> programs you don't trust anyway, and so heck why not just give it on
->> >>>>> everything.
->> >>>>>
->> >>>> Huh?  I'd set fP on a program I expect to do *exactly* that (or use
->> >>>> actual in-kernel capability inheritance, which I would find vastly
->> >>>> more pleasant).  If I give a program a capability (via fP or fI & pI),
->> >>>> then I had better trust it not to abuse that capability.  Having it
->> >>>> pass that capability on to a child helper process would be just fine
->> >>>> with me *because it already has that capability*.
->> >>>>
->> >>>> The problem with the current inheritance mechanism is that it's very
->> >>>> difficult to understand what it means for an fI bit or a pI bit to be
->> >>>> set.  Saying "set a pI bit using pam if you want to grant permission
->> >>>> to that user to run a particular program with fI set" is crap -- it
->> >>>> only works if there is exactly one binary on the system with that bit
->> >>>> set.  In any case, a different administrator or package might use it
->> >>>> for something different.
->> >>>>
->> >>>> Suppose I use the (apparently) current suggested approach: I install a
->> >>>> fI=cap_net_raw copy of tcpdump somewhere.  Then I write a helper that
->> >>>> has fP=cap_new_raw and invokes that copy of tcpdump after appropriate
->> >>>> validation of parameters.  All is well.
->> >>> Since you're writing a special helper, you can surely have it validate
->> >>> the userid and make it so the calling user doesn't have to have
->> >>> cap_net_raw in pI?
->> >> I can and did.
->> > Oh, oops, I mis-understood what you meant was the problem.
->> >
->> > Yup, that is a real limitation.
->> >
->> > Yes, with the posix file caps you will be disappointed unless you see
->> > pI=X as "this user may run any program which is Inh-trusted with X" and
->> > fI=X as "this program may be run with X by any user Inh-trusted with X".
->> >
->> > It almost makes me want to say that there should be an execve-analogue
->> > to prctl(PR_SET_KEEPCAPS), which says caps will remain unchanged for one
->> > execve.  Or perhaps an intermediate securebits state between
->> > !SECBIT_NOROOT and SECBIT_NOROOT, which automatically transitions after
->> > the first execve to SECBIT_NOROOT.
->> >
->> >> The mere presence of a cap_net_raw+i tcpdump binary is more or less
->> >> equivalent to saying that users with cap_net_raw in pI can capture
->> >> packets.  I've just prevented pI=cap_net_raw from meaning anything
->> >> less than "can capture packets".  So I think we should bite the bullet
->> >> and just let programs opt in (via some appropriately careful
->> >> mechanism) to real capability inheritance.
->> > By real you mean more precise.  I think it'd be very interesting to get
->> > together with Markku and learn more from the N9 experiment!
->> >
->> > Markku, are there any post-mortem analysis papers we can read for
->> > starters?  Andy would not be trying to restrict root in general, so
->> > the ramification you cited may not necessarily be relevant.
->> >
->> > -serge
->>
->> http://wt.tuxomania.net/publications/posix.1e/download.html
->>
->> Everyone should read the capabilities rationale. It answers most
->> of the questions on this thread, and a bunch more. The capabilities
->> mechanism has to support what are currently setuid-root programs
->> without change and allow for new programs that use the mechanism
->> wisely and fully.
->
-> How to put this delicately...   that is not enjoyable reading :)
->
-> As I understood it, the draft supports setuid-root programs, but
-> does not support a !SECBIT_NOROOT environment.  If that is not the
-> case, can you point to where in the draft that is described?
->
-> Regardless,
->
-> 1. Andy describes a problem which AFAICT can't be solved with the
-> current capabilities support.  An intermediate state between
-> !SECBIT_NOROOT and SECBIT_NOROOT (which itself is IIUC already an
-> extension beyond the above draft) seems an interesting feature to
-> consider which would support the wrapper case - but not something
-> to run into blindly without considering all the ramifications.
->
-> 2. The N9 folks have experimented with other inheritence properties,
-> and the details their experience would be educational.
->
-> There are two other ways the wrappered privileged tcpdump could be
-> achieved:
->
-> 1. Have the privileged wrapper create a new user and network
-> namespace and pass the network device into the new network
-> namespace and run tcpdump there with privilege.  This doesn't
-> work if the specific device also needs to be used in the original
-> network namespace (but passing a device bridged with the one of
-> interest might suffice?).
->
-> 2. Have the privileged wrapper create a small tmpfs mount in a
-> (non-ms-shared) new mounts namespace, copy tcpdump into that mount
-> and give it fI=CAP_NET_RAW, then execute the child with
-> pI=CAP_NET_RAW.  A bit hacky, but prevents the issue of other
-> users with pI=CAP_NET_RAW from executing that tcpdump.  Since
-> the child will have pP=CAP_NET_RAW, the other users should be
-> prevented from getting to the modified tcpdump binary through
-> the child's /proc/pid/fd/N.
->
-> Not saying these are ideal, just trying to think of ways of
-> solving the problem...
->
-> -serge
+greg k-h
