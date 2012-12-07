@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932485Ab2LGKHe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 05:07:34 -0500
-Received: from webmail.solarflare.com ([12.187.104.25]:9124 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932320Ab2LGKHc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 05:07:32 -0500
-Message-ID: <1354874847.20838.49.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH v3 1/4] net: Add support for hardware-offloaded
- encapsulation
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Joseph Gasparakis <joseph.gasparakis@intel.com>
-CC: <davem@davemloft.net>, <shemminger@vyatta.com>, <chrisw@sous-sol.org>,
-        <gospo@redhat.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <dmitry@broadcom.com>,
-        <saeed.bishara@gmail.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Alexander Duyck <alexander.h.duyck@intel.com>
-Date: Fri, 7 Dec 2012 10:07:27 +0000
-In-Reply-To: <1354845419-22483-2-git-send-email-joseph.gasparakis@intel.com>
-References: <1354845419-22483-1-git-send-email-joseph.gasparakis@intel.com>
-	 <1354845419-22483-2-git-send-email-joseph.gasparakis@intel.com>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	id S932509Ab2LGKOn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 05:14:43 -0500
+Received: from smtp2.goneo.de ([212.90.139.82]:62476 "EHLO smtp2.goneo.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754960Ab2LGKOl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 05:14:41 -0500
+X-Spam-Flag: NO
+X-Spam-Score: -2.897
+From: Lars Poeschel <poeschel@lemonage.de>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Subject: Re: [PATCH RFC] misc/at24: distinguish between eeprom and fram chips
+Date: Fri, 7 Dec 2012 11:14:28 +0100
+User-Agent: KMail/1.13.7 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org
+References: <201212041758.38600.poeschel@lemonage.de> <201212051043.07460.poeschel@lemonage.de> <20121205164153.GA5011@pengutronix.de>
+In-Reply-To: <20121205164153.GA5011@pengutronix.de>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [88.96.1.126]
+Message-Id: <201212071114.29034.poeschel@lemonage.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-12-06 at 17:56 -0800, Joseph Gasparakis wrote:
-> This patch adds support in the kernel for offloading in the NIC Tx and Rx
-> checksumming for encapsulated packets (such as VXLAN and IP GRE).
-[...]
-> --- a/include/linux/netdevice.h
-> +++ b/include/linux/netdevice.h
-> @@ -1063,6 +1063,8 @@ struct net_device {
->  	netdev_features_t	wanted_features;
->  	/* mask of features inheritable by VLAN devices */
->  	netdev_features_t	vlan_features;
-> +	/* mask of features inherited by encapsulating devices */
-> +	netdev_features_t	hw_enc_features;
-[...]
+> > > > I wanted to use a fm24c04 i2c fram chip with linux. I grepped the
+> > > > source and found nothing. I later found that my chip can be handled
+> > > > by at24 eeprom driver. It creates a sysfs file called eeprom to
+> > > > read from and write to the chip. Userspace has no chance to
+> > > > distinguish if it is writing an eeprom or a fram chip.
+> > > 
+> > > Why should it?
+> > 
+> > Because writes are much faster and it doesn't have to take care on erase
+> > cycles. It could use other write strategies on such devices and update
+> > informations that have to survive power downs more often.
+> 
+> I agree. I think that a seperate attribute named e.g. 'page_size' would
+> be more helpful than renaming the binary file to fram?
 
-How will the networking core know *which* encapsulations this applies
-to?  I notice that your implementation in ixgbe does not set
-NETIF_F_HW_CSUM here, so presumably the hardware will parse headers to
-find which ranges should be checksummed and it won't cover the next
-encapsulation protocol that comes along.
+Yes, this is a much better solution! Adding a seperate sysfs file page_size 
+and a file for the type of device which would read eeprom, fram, etc then.
+If you also think this is the way to go, I would spent one of my next free 
+timeslots to this.
 
-Ben.
+> > > The method of accessing EEPROMs is used by way more chips than FRAMs.
+> > > So, I'd prefer to have the text updated more generic like "EEPROMs and
+> > > similar devices like RAMs, ROMs, etc...". Describing setting .flags in
+> > > Kconfig is overkill.
+> > 
+> > A patch updating Kconfig is below.
+> 
+> Looks good from a glimpse, will apply it later.
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+Thank you!
 
+Lars
