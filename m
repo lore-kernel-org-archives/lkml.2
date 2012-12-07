@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424393Ab2LGEB3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 23:01:29 -0500
-Received: from tw-mx2.synaptics.com.tw ([203.163.83.68]:9711 "EHLO
-	tw-mx2.synaptics.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422726Ab2LGEB2 convert rfc822-to-8bit (ORCPT
+	id S1755755Ab2LGEgv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 23:36:51 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:35375 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755161Ab2LGEgu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 23:01:28 -0500
-From: Alexandra Chin <alexandra.chin@tw.synaptics.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Henrik Rydberg <rydberg@euromail.se>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
-        Mahesh Srinivasan <msrinivasan@synaptics.com>,
-        Alex Chang <alex.chang@tw.synaptics.com>,
-        Scott Lin <scott.lin@tw.synaptics.com>,
-        Christopher Heiny <Cheiny@synaptics.com>
-Subject: RE: [PATCH v6] staging: ste_rmi4: Convert to Type-B support
-Thread-Topic: [PATCH v6] staging: ste_rmi4: Convert to Type-B support
-Thread-Index: AQHNxDQyP55Fi5kusUqcRvV/1BW2qJfsWKQAgB9p+cD//84LAIABQEMw
-Date: Fri, 7 Dec 2012 04:01:10 +0000
-Message-ID: <CC51EC7B5B7F984AA566DC102237848896F73300@hkdcw-mail2.synaptics-inc.local>
-References: <20121103013623.0f3a1b28168a9a42881b0b00@tw.synaptics.com>
- <20121116163146.f4b53f6965ee08ca1a1fc96c@tw.synaptics.com>
- <20121116195433.GA573@polaris.bitmath.org> <20121116195008.GA9153@kroah.com>
- <CC51EC7B5B7F984AA566DC102237848896F73163@hkdcw-mail2.synaptics-inc.local>
- <20121206163440.GB8052@kroah.com>
-In-Reply-To: <20121206163440.GB8052@kroah.com>
-Accept-Language: en-US, zh-TW
-Content-Language: zh-HK
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.14.51.94]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 6 Dec 2012 23:36:50 -0500
 MIME-Version: 1.0
+X-Originating-IP: [174.112.205.165]
+In-Reply-To: <20121207005833.008375861@linuxfoundation.org>
+References: <20121207005825.232489605@linuxfoundation.org> <20121207005833.008375861@linuxfoundation.org>
+From: Calvin Walton <calvin.walton@kepstin.ca>
+Date: Thu, 6 Dec 2012 23:36:16 -0500
+Message-ID: <CAF1iTgtAtu6PbGab4Pt3ppMQs0U9nmxzUsQV-ZapCNArofmtnw@mail.gmail.com>
+Subject: Re: [ 24/27] i915: Quirk no_lvds on Gigabyte GA-D525TUD ITX motherboard
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        alan@lxorguk.ukuu.org.uk, Peter Huewe <peterhuewe@gmx.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Sorry, dropped the CCs when I replied... I don't normally use the
+Gmail web interface :)
 
-> That is because they were new features, and not regressions, so they
-> will be showing up in Linus's tree for 3.8-rc1.
-> 
-> > May I know status of this patch? Please let me know if there is anything I
-> > should do.
-> 
-> Didn't you get an email when I applied the patches saying where the
-> patches could be seen and when they would be merged to Linus?
-> 
+On Thu, Dec 6, 2012 at 7:59 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> 3.6-stable review patch.  If anyone has any objections, please let me know.
+>
+> ------------------
+>
+> From: Calvin Walton <calvin.walton@kepstin.ca>
+>
+> commit a51d4ed01e5bb39d2cf36a12f9976ab08872c192 upstream.
+>
+> This board is incorrectly detected as having an LVDS connector,
 
-Yes, I've received an email saying that the patch will show up in the next
-release of the linux-next tree, but I was not aware that linux-next tree
-means 3.8-rc1.
-Now I understand, and really thank you for your prompt reply.
+$ git describe --contains a51d4ed01e5bb39d2cf36a12f9976ab08872c192
+v3.6-rc4~5^2~3^2
 
-Alexandra
+This patch was already included in Linus's 3.6 upstream release, so it
+doesn't need to be (re-)applied to the 3.6.x stable tree. I'm
+surprised it applied at all, it must need some fuzz to add the
+duplicate entry...?
+
+Anyways, it should only be applied to the 3.0 and 3.4 trees.
+
+Calvin.
