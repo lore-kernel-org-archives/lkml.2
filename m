@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946126Ab2LGG0F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 01:26:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43909 "EHLO mx1.redhat.com"
+	id S1946145Ab2LGG0N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 01:26:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43240 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1946003Ab2LGG0C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 01:26:02 -0500
+	id S1946003Ab2LGG0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 01:26:08 -0500
 From: Myron Stowe <myron.stowe@redhat.com>
-Subject: [PATCH 11/15] PCI/ACPI: Fix latent refcount issue in
-	acpi_pci_root_start()
+Subject: [PATCH 12/15] PCI/ACPI: Move where dmi_check_system() is called from
 To: bhelgaas@google.com
 Cc: linux-pci@vger.kernel.org, yinghai@kernel.org, linux-acpi@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date: Thu, 06 Dec 2012 23:25:59 -0700
-Message-ID: <20121207062559.11051.18764.stgit@amt.stowe>
+Date: Thu, 06 Dec 2012 23:26:05 -0700
+Message-ID: <20121207062605.11051.84910.stgit@amt.stowe>
 In-Reply-To: <20121207062454.11051.12739.stgit@amt.stowe>
 References: <20121207062454.11051.12739.stgit@amt.stowe>
 User-Agent: StGIT/0.14.3
@@ -24,71 +23,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During early boot, the kernel performs ACPI enumeration in which host
-bridges are discovered (subsys_initcall(acpi_pci_root_init)).  Later
-drivers, both built-in and modules such as the "ACPI PCI Slot Detection
-Driver ("pci_slot")", are loaded (module_init(acpi_pci_slot_init)) thus we
-end up with the following call chain:
-  acpi_pci_root_start
-    list_for_each_entry(..., acpi_pci_drivers, ...)
-      driver->add(root)		# always no-op; list empty
-    pci_bus_add_devices
-  acpi_pci_slot_init		# module_init
-    acpi_pci_register_driver(acpi_pci_slot_driver)
-      list_for_each_entry(..., &acpi_pci_roots, ...)
-        driver->add(root)	# acpi_pci_slot_add()
+This patch moves the call of dmi_check_system() from acpi_pci_slot_init()
+to acpi_pci_slot_add().  This is in preparation for converting the
+"pci_slot" sub-driver to being statically built into the kernel.
 
-Note that for host bridges present at boot time the 'acpi_pci_drivers'
-list is always empty when acpi_pci_root_start() runs.
-
-However, during a Host Bridge hot-add event, the "pci_slot" sub-driver is
-already on the 'acpi_pci_drivers' list and we end up calling
-acpi_pci_slot_add() before pci_bus_add_devices() and encounter the
-following refcount WARNING:
-  calling acpi_pci_slot_add():
-  pci_bus 0000:03: dev 00, created physical slot 1
-  ------------[ cut here ]------------
-  WARNING: at include/linux/kref.h:42 kobject_get+0x32/0x40()
-  Call Trace:
-   [<ffffffff812541d2>] kobject_get+0x32/0x40
-   [<ffffffff8133f0f9>] get_device+0x19/0x20
-   [<ffffffff812d9f11>] register_slot+0x216/0x26d
-   [<ffffffff812ce92f>] acpi_walk_namespace+0x8a/0xc4
-   [<ffffffff812d9cb9>] walk_p2p_bridge+0xf1/0x133
-   [<ffffffff812ce92f>] acpi_walk_namespace+0x8a/0xc4
-   [<ffffffff812d9b71>] acpi_pci_slot_add+0xe0/0x137
-   [<ffffffff812b8705>] acpi_pci_root_start+0x3e/0x59
-
-This patch fixes this latent issue by moving up pci_bus_add_devices() so
-that the refcount will be initialized before subsequent references, via
-driver additions from the 'acpi_pci_drivers' list, occur.
+No functional change.
 
 Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
 ---
 
- drivers/acpi/pci_root.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/acpi/pci_slot.c |   57 ++++++++++++++++++++++++++---------------------
+ 1 files changed, 31 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
-index d890322..f9be8fb 100644
---- a/drivers/acpi/pci_root.c
-+++ b/drivers/acpi/pci_root.c
-@@ -644,6 +644,8 @@ static int acpi_pci_root_start(struct acpi_device *device)
- 	struct acpi_pci_root *root = acpi_driver_data(device);
- 	struct acpi_pci_driver *driver;
- 
-+	pci_bus_add_devices(root->bus);
-+
- 	mutex_lock(&acpi_pci_root_lock);
- 	list_for_each_entry(driver, &acpi_pci_drivers, node)
- 		if (driver->add)
-@@ -651,8 +653,6 @@ static int acpi_pci_root_start(struct acpi_device *device)
- 	acpiphp_add_bridge(root);
- 	mutex_unlock(&acpi_pci_root_lock);
- 
--	pci_bus_add_devices(root->bus);
--
- 	return 0;
+diff --git a/drivers/acpi/pci_slot.c b/drivers/acpi/pci_slot.c
+index d22585f..efa58af 100644
+--- a/drivers/acpi/pci_slot.c
++++ b/drivers/acpi/pci_slot.c
+@@ -265,6 +265,31 @@ walk_root_bridge(struct acpi_pci_root *root, acpi_walk_callback user_function)
+ 	return status;
  }
  
++static int do_sta_before_sun(const struct dmi_system_id *d)
++{
++	info("%s detected: will evaluate _STA before calling _SUN\n", d->ident);
++	check_sta_before_sun = 1;
++	return 0;
++}
++
++static struct dmi_system_id acpi_pci_slot_dmi_table[] = {
++	/*
++	 * Fujitsu Primequest machines will return 1023 to indicate an
++	 * error if the _SUN method is evaluated on SxFy objects that
++	 * are not present (as indicated by _STA), so for those machines,
++	 * we want to check _STA before evaluating _SUN.
++	 */
++	{
++	 .callback = do_sta_before_sun,
++	 .ident = "Fujitsu PRIMEQUEST",
++	 .matches = {
++		DMI_MATCH(DMI_BIOS_VENDOR, "FUJITSU LIMITED"),
++		DMI_MATCH(DMI_BIOS_VERSION, "PRIMEQUEST"),
++		},
++	},
++	{}
++};
++
+ /*
+  * acpi_pci_slot_add
+  * @handle: points to an acpi_pci_root
+@@ -272,8 +297,14 @@ walk_root_bridge(struct acpi_pci_root *root, acpi_walk_callback user_function)
+ static int
+ acpi_pci_slot_add(struct acpi_pci_root *root)
+ {
++	static bool inited = false;
+ 	acpi_status status;
+ 
++	if (!inited) {
++		dmi_check_system(acpi_pci_slot_dmi_table);
++		inited = true;
++	}
++
+ 	status = walk_root_bridge(root, register_slot);
+ 	if (ACPI_FAILURE(status))
+ 		err("%s: register_slot failure - %d\n", __func__, status);
+@@ -305,35 +336,9 @@ acpi_pci_slot_remove(struct acpi_pci_root *root)
+ 	mutex_unlock(&slot_list_lock);
+ }
+ 
+-static int do_sta_before_sun(const struct dmi_system_id *d)
+-{
+-	info("%s detected: will evaluate _STA before calling _SUN\n", d->ident);
+-	check_sta_before_sun = 1;
+-	return 0;
+-}
+-
+-static struct dmi_system_id acpi_pci_slot_dmi_table[] __initdata = {
+-	/*
+-	 * Fujitsu Primequest machines will return 1023 to indicate an
+-	 * error if the _SUN method is evaluated on SxFy objects that
+-	 * are not present (as indicated by _STA), so for those machines,
+-	 * we want to check _STA before evaluating _SUN.
+-	 */
+-	{
+-	 .callback = do_sta_before_sun,
+-	 .ident = "Fujitsu PRIMEQUEST",
+-	 .matches = {
+-		DMI_MATCH(DMI_BIOS_VENDOR, "FUJITSU LIMITED"),
+-		DMI_MATCH(DMI_BIOS_VERSION, "PRIMEQUEST"),
+-		},
+-	},
+-	{}
+-};
+-
+ static int __init
+ acpi_pci_slot_init(void)
+ {
+-	dmi_check_system(acpi_pci_slot_dmi_table);
+ 	acpi_pci_register_driver(&acpi_pci_slot_driver);
+ 	return 0;
+ }
 
