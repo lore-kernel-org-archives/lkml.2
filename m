@@ -1,106 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755944Ab2LGKVK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 05:21:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41677 "EHLO mx2.suse.de"
+	id S932543Ab2LGKYB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 05:24:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41821 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755554Ab2LGKVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 05:21:08 -0500
-Date: Fri, 7 Dec 2012 11:21:02 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Gustavo Padovan <gustavo@padovan.org>
-Cc: "Lamarque V. Souza" <lamarque@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
-Subject: Re: [PATCH] Fixes kernel oops when turning bluetooth mouse on
-In-Reply-To: <20121206202448.GA11409@joana>
-Message-ID: <alpine.LNX.2.00.1212071120410.28002@pobox.suse.cz>
-References: <201212061239.55610.lamarque@gmail.com> <alpine.LNX.2.00.1212061548430.28002@pobox.suse.cz> <20121206202448.GA11409@joana>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932374Ab2LGKX7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 05:23:59 -0500
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
+Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Turner <pjt@google.com>, Hillf Danton <dhillf@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Alex Shi <lkml.alex@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 01/49] x86: mm: only do a local tlb flush in ptep_set_access_flags()
+Date: Fri,  7 Dec 2012 10:23:04 +0000
+Message-Id: <1354875832-9700-2-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1354875832-9700-1-git-send-email-mgorman@suse.de>
+References: <1354875832-9700-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Dec 2012, Gustavo Padovan wrote:
+From: Rik van Riel <riel@redhat.com>
 
-> > > diff -Nrup a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-> > > --- a/drivers/hid/hid-core.c	2012-12-05 01:43:45.000000000 -0200
-> > > +++ b/drivers/hid/hid-core.c	2012-12-05 01:26:57.000000000 -0200
-> > > @@ -2150,8 +2150,13 @@ static const struct hid_device_id hid_mo
-> > >  	{ }
-> > >  };
-> > >  
-> > > -static bool hid_ignore(struct hid_device *hdev)
-> > > +bool hid_ignore(struct hid_device *hdev)
-> > >  {
-> > > +	if (hdev->quirks & HID_QUIRK_NO_IGNORE)
-> > > +		return false;
-> > > +	if (hdev->quirks & HID_QUIRK_IGNORE)
-> > > +		return true;
-> > > +
-> > >  	switch (hdev->vendor) {
-> > >  	case USB_VENDOR_ID_CODEMERCS:
-> > >  		/* ignore all Code Mercenaries IOWarrior devices */
-> > > @@ -2197,6 +2202,7 @@ static bool hid_ignore(struct hid_device
-> > >  
-> > >  	return !!hid_match_id(hdev, hid_ignore_list);
-> > >  }
-> > > +EXPORT_SYMBOL_GPL(hid_ignore);
-> > >  
-> > >  int hid_add_device(struct hid_device *hdev)
-> > >  {
-> > > @@ -2208,8 +2214,7 @@ int hid_add_device(struct hid_device *hd
-> > >  
-> > >  	/* we need to kill them here, otherwise they will stay allocated to
-> > >  	 * wait for coming driver */
-> > > -	if (!(hdev->quirks & HID_QUIRK_NO_IGNORE)
-> > > -            && (hid_ignore(hdev) || (hdev->quirks & HID_QUIRK_IGNORE)))
-> > > +	if (hid_ignore(hdev))
-> > >  		return -ENODEV;
-> > >  
-> > >  	/*
-> > > diff -Nrup a/include/linux/hid.h b/include/linux/hid.h
-> > > --- a/include/linux/hid.h	2012-12-05 01:44:14.000000000 -0200
-> > > +++ b/include/linux/hid.h	2012-12-05 01:26:57.000000000 -0200
-> > > @@ -684,6 +684,7 @@ struct hid_ll_driver {
-> > >  
-> > >  extern int hid_debug;
-> > >  
-> > > +extern bool hid_ignore(struct hid_device *);
-> > >  extern int hid_add_device(struct hid_device *);
-> > >  extern void hid_destroy_device(struct hid_device *);
-> > >  
-> > > diff -Nrup a/net/bluetooth/hidp/core.c b/net/bluetooth/hidp/core.c
-> > > --- a/net/bluetooth/hidp/core.c	2012-12-05 01:43:15.000000000 -0200
-> > > +++ b/net/bluetooth/hidp/core.c	2012-12-05 02:29:49.000000000 -0200
-> > > @@ -941,6 +941,13 @@ static int hidp_setup_hid(struct hidp_se
-> > >  	hid->hid_get_raw_report = hidp_get_raw_report;
-> > >  	hid->hid_output_raw_report = hidp_output_raw_report;
-> > >  
-> > > +	/* True if device is blacklisted in drivers/hid/hid-core.c */
-> > > +	if (hid_ignore(hid)) {
-> > > +		hid_destroy_device(session->hid);
-> > > +		session->hid = NULL;
-> > > +		return -ENODEV;
-> > > +	}
-> > > +
-> > >  	return 0;
-> > >  
-> > >  fault:
-> > > @@ -1013,7 +1020,7 @@ int hidp_add_connection(struct hidp_conn
-> > >  
-> > >  	if (req->rd_size > 0) {
-> > >  		err = hidp_setup_hid(session, req);
-> > > -		if (err)
-> > > +		if (err && err != -ENODEV)
-> > >  			goto purge;
-> > >  	}
-> 
-> Acked-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+The function ptep_set_access_flags() is only ever invoked to set access
+flags or add write permission on a PTE.  The write bit is only ever set
+together with the dirty bit.
 
-Queuing in hid.git, thanks.
+Because we only ever upgrade a PTE, it is safe to skip flushing entries on
+remote TLBs. The worst that can happen is a spurious page fault on other
+CPUs, which would flush that TLB entry.
 
+Lazily letting another CPU incur a spurious page fault occasionally is
+(much!) cheaper than aggressively flushing everybody else's TLB.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+---
+ arch/x86/mm/pgtable.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/arch/x86/mm/pgtable.c b/arch/x86/mm/pgtable.c
+index 8573b83..be3bb46 100644
+--- a/arch/x86/mm/pgtable.c
++++ b/arch/x86/mm/pgtable.c
+@@ -301,6 +301,13 @@ void pgd_free(struct mm_struct *mm, pgd_t *pgd)
+ 	free_page((unsigned long)pgd);
+ }
+ 
++/*
++ * Used to set accessed or dirty bits in the page table entries
++ * on other architectures. On x86, the accessed and dirty bits
++ * are tracked by hardware. However, do_wp_page calls this function
++ * to also make the pte writeable at the same time the dirty bit is
++ * set. In that case we do actually need to write the PTE.
++ */
+ int ptep_set_access_flags(struct vm_area_struct *vma,
+ 			  unsigned long address, pte_t *ptep,
+ 			  pte_t entry, int dirty)
+@@ -310,7 +317,7 @@ int ptep_set_access_flags(struct vm_area_struct *vma,
+ 	if (changed && dirty) {
+ 		*ptep = entry;
+ 		pte_update_defer(vma->vm_mm, address, ptep);
+-		flush_tlb_page(vma, address);
++		__flush_tlb_one(address);
+ 	}
+ 
+ 	return changed;
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.9.2
+
