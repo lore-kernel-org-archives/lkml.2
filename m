@@ -1,261 +1,353 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752908Ab2LGIHN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 03:07:13 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:2759 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751068Ab2LGIHL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 03:07:11 -0500
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-Message-ID: <50C1A3A3.8030107@broadcom.com>
-Date: Fri, 7 Dec 2012 09:06:59 +0100
-From: "Piotr Haber" <phaber@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US;
- rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: "Steven Rostedt" <rostedt@goodmis.org>
-cc: "Frederic Weisbecker" <fweisbec@gmail.com>,
-        "Ingo Molnar" <mingo@redhat.com>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] ftrace: available_filter_functions empty after
- unloading module
-References: <50C0B236.4090200@broadcom.com>
- <1354817428.17101.10.camel@gandalf.local.home>
-In-Reply-To: <1354817428.17101.10.camel@gandalf.local.home>
-X-Enigmail-Version: 1.1.1
-X-WSS-ID: 7CDF7CB91QK16741338-01-01
-Content-Type: text/plain;
- charset=iso-8859-15
-Content-Transfer-Encoding: 7bit
+	id S1754578Ab2LGIHZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 03:07:25 -0500
+Received: from mo-p05-ob.rzone.de ([81.169.146.180]:51901 "EHLO
+	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068Ab2LGIHR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 03:07:17 -0500
+X-RZG-AUTH: :IW0NeWC7b/q2i6W/qstXb1SBUuFnrGohdvpEkce+Ub4+ReKfHD+mBj53PiAAaA==
+X-RZG-CLASS-ID: mo05
+From: Stefan Roese <sr@denx.de>
+To: linux-kernel@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH v5] misc: Add Lattice ECP3 FPGA configuration via SPI
+Date: Fri,  7 Dec 2012 09:06:59 +0100
+Message-Id: <1354867619-18522-1-git-send-email-sr@denx.de>
+X-Mailer: git-send-email 1.8.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/12 19:10, Steven Rostedt wrote:
-> On Thu, 2012-12-06 at 15:56 +0100, Piotr Haber wrote:
->> Hi,
->> not sure if this is a bug or just my misuse of ftrace.
->> I get this warring after unloading a module that i traced before (used
->> function tracer and 'brcmsmac*' as filter in set_ftrace_filter).
->> After that reading available_filter_functions gives "No such device".
->>
->> Regards
->> Piotr
->>
->> ------------[ cut here ]------------
-> 
-> We need to really remove that "cut here", because it causes people to
-> leave out other important information :-(  Or I could just add a print
-> that says...
-> 
-> 
-> *** Ignore the "cut here" below, and send the output after the end of
-> the cut as well *****
-> 
-> 
->> WARNING: at kernel/trace/ftrace.c:1564
->> __ftrace_hash_rec_update.part.34+0x20d/0x250()
->> Hardware name: Latitude E6420
->> Modules linked in: brcmsmac(O) brcmutil(O) bcma(O) mac80211(O)
->> cfg80211(O) rfkill(O) arc4 cordic fuse ip6table_filter ip6_tables
->> ebtable_nat ebtables nf_conntrack_ipv4 nf_defrag_ipv4 xt_state
->> nf_conntrack ipt_REJECT xt_CHECKSUM iptable_mangle iptable_filter
->> ip_tables bridge stp llc snd_hda_codec_hdmi snd_hda_codec_idt coretemp
->> kvm_intel snd_hda_intel kvm snd_hda_codec nouveau ttm drm_kms_helper drm
->> ghash_clmulni_intel aesni_intel snd_hwdep snd_pcm_oss snd_mixer_oss
->> snd_pcm ablk_helper snd_seq_dummy snd_seq_oss i2c_algo_bit i2c_core
->> mxm_wmi cryptd lrw pl2303 usbserial snd_seq_midi aes_x86_64 snd_rawmidi
->> xts snd_seq_midi_event gf128mul snd_seq video snd_timer ppdev
->> dell_laptop dell_wmi serio_raw sparse_keymap dcdbas snd_seq_device snd
->> microcode lpc_ich mfd_core parport_pc wmi soundcore snd_page_alloc lp
->> parport ipv6 ext4 mbcache jbd2 sd_mod crc_t10dif sr_mod cdrom
->> crc32c_intel ahci libahci sdhci_pci sdhci mmc_core e1000e [last
->> unloaded: rfkill]
->> Pid: 2498, comm: bash Tainted: G           O 3.7.0-rc8 #3
->> Call Trace:
->>  [<ffffffff810574ff>] warn_slowpath_common+0x7f/0xc0
->>  [<ffffffff8105755a>] warn_slowpath_null+0x1a/0x20
->>  [<ffffffff810fdd7d>] __ftrace_hash_rec_update.part.34+0x20d/0x250
->>  [<ffffffff810fea15>] ftrace_hash_move+0x1c5/0x1e0
->>  [<ffffffff81100388>] ftrace_regex_release+0x98/0x150
->>  [<ffffffff8118f7ac>] __fput+0xcc/0x290
->>  [<ffffffff8118f97e>] ____fput+0xe/0x10
->>  [<ffffffff810798e7>] task_work_run+0xa7/0xe0
->>  [<ffffffff81015a64>] do_notify_resume+0x74/0x80
->>  [<ffffffff81289eee>] ? trace_hardirqs_on_thunk+0x3a/0x3f
->>  [<ffffffff8157ed12>] int_signal+0x12/0x17
->> ---[ end trace 476f7270ba7905df ]---
-> 
-> I know the issue but not the cause. The report should show more
-> information after this blurb that tells me what went wrong. Do you still
-> have access to the dump? Can you send me that, or if not, can you
-> reproduce it and give me you full dmesg?
-> 
-> Thanks!
-> 
-> -- Steve
-Hi,
-sorry to disappoint you, but there is really nothing more around the
-warning.
-I know it is not helpful, maybe i can do some more tracing if you tell
-me how
+This patch adds support for bitstream configuration (programming /
+loading) of the Lattice ECP3 FPGA's via the SPI bus.
 
-Here it is with broader context:
+Here an example on my custom MPC5200 based board:
 
-Dec  6 15:22:27 lb-bun-52 kernel: cfg80211: Calling CRDA to update world
-regulatory domain
-Dec  6 15:22:27 lb-bun-52 kernel: cfg80211: World regulatory domain updated:
-Dec  6 15:22:27 lb-bun-52 kernel: cfg80211:   (start_freq - end_freq @
-bandwidth), (max_antenna_gain, max_eirp)
-Dec  6 15:22:27 lb-bun-52 kernel: cfg80211:   (2402000 KHz - 2472000 KHz
-@ 40000 KHz), (300 mBi, 2000 mBm)
-Dec  6 15:22:27 lb-bun-52 kernel: cfg80211:   (2457000 KHz - 2482000 KHz
-@ 20000 KHz), (300 mBi, 2000 mBm)
-Dec  6 15:22:27 lb-bun-52 kernel: cfg80211:   (2474000 KHz - 2494000 KHz
-@ 20000 KHz), (300 mBi, 2000 mBm)
-Dec  6 15:22:27 lb-bun-52 kernel: cfg80211:   (5170000 KHz - 5250000 KHz
-@ 40000 KHz), (300 mBi, 2000 mBm)
-Dec  6 15:22:27 lb-bun-52 kernel: cfg80211:   (5735000 KHz - 5835000 KHz
-@ 40000 KHz), (300 mBi, 2000 mBm)
-Dec  6 15:22:27 lb-bun-52 kernel: bcma: bus0: Found chip with id 0xA8D8,
-rev 0x01 and package 0x0A
-Dec  6 15:22:27 lb-bun-52 kernel: bcma: bus0: Core 0 found: ChipCommon
-(manuf 0x4BF, id 0x800, rev 0x22, class 0x0)
-Dec  6 15:22:27 lb-bun-52 kernel: bcma: bus0: Core 1 found: IEEE 802.11
-(manuf 0x4BF, id 0x812, rev 0x17, class 0x0)
-Dec  6 15:22:27 lb-bun-52 kernel: bcma: bus0: Core 2 found: PCIe (manuf
-0x4BF, id 0x820, rev 0x0F, class 0x0)
-Dec  6 15:22:27 lb-bun-52 kernel: bcma: bus0: Bus registered
-Dec  6 15:22:27 lb-bun-52 kernel: bcma: bus1: Found chip with id 0x4313,
-rev 0x01 and package 0x08
-Dec  6 15:22:27 lb-bun-52 kernel: bcma: bus1: Core 0 found: ChipCommon
-(manuf 0x4BF, id 0x800, rev 0x24, class 0x0)
-Dec  6 15:22:27 lb-bun-52 kernel: bcma: bus1: Core 1 found: IEEE 802.11
-(manuf 0x4BF, id 0x812, rev 0x18, class 0x0)
-Dec  6 15:22:27 lb-bun-52 kernel: bcma: bus1: Core 2 found: PCIe (manuf
-0x4BF, id 0x820, rev 0x11, class 0x0)
-Dec  6 15:22:27 lb-bun-52 kernel: bcma: bus1: Bus registered
-Dec  6 15:22:27 lb-bun-52 kernel: bcma: bus2: Found chip with id 0x4313,
-rev 0x01 and package 0x08
-Dec  6 15:22:27 lb-bun-52 kernel: bcma: bus2: Core 0 found: ChipCommon
-(manuf 0x4BF, id 0x800, rev 0x24, class 0x0)
-Dec  6 15:22:27 lb-bun-52 kernel: bcma: bus2: Core 1 found: IEEE 802.11
-(manuf 0x4BF, id 0x812, rev 0x18, class 0x0)
-Dec  6 15:22:27 lb-bun-52 kernel: bcma: bus2: Core 2 found: PCIe (manuf
-0x4BF, id 0x820, rev 0x11, class 0x0)
-Dec  6 15:22:27 lb-bun-52 kernel: bcma: bus2: Bus registered
-Dec  6 15:22:27 lb-bun-52 kernel: brcmsmac bcma0:0: mfg 4bf core 812 rev
-23 class 0 irq 16
-Dec  6 15:22:27 lb-bun-52 kernel: ieee80211 phy0: Selected rate control
-algorithm 'minstrel_ht'
-Dec  6 15:22:27 lb-bun-52 kernel: Registered led device: brcmsmac-phy0:radio
-Dec  6 15:22:27 lb-bun-52 kernel: brcmsmac bcma1:0: mfg 4bf core 812 rev
-24 class 0 irq 17
-Dec  6 15:22:27 lb-bun-52 kernel: ieee80211 phy1: Selected rate control
-algorithm 'minstrel_ht'
-Dec  6 15:22:27 lb-bun-52 kernel: Registered led device: brcmsmac-phy1:radio
-Dec  6 15:22:27 lb-bun-52 kernel: brcmsmac bcma2:0: mfg 4bf core 812 rev
-24 class 0 irq 16
-Dec  6 15:22:27 lb-bun-52 kernel: ieee80211 phy2: Selected rate control
-algorithm 'minstrel_ht'
-Dec  6 15:22:27 lb-bun-52 kernel: Registered led device: brcmsmac-phy2:radio
-Dec  6 15:22:34 lb-bun-52 kernel: ------------[ cut here ]------------
-Dec  6 15:22:34 lb-bun-52 kernel: WARNING: at kernel/trace/ftrace.c:1564
-__ftrace_hash_rec_update.part.34+0x20d/0x250()
-Dec  6 15:22:34 lb-bun-52 kernel: Hardware name: Latitude E6420
-Dec  6 15:22:34 lb-bun-52 kernel: Modules linked in: brcmsmac(O)
-brcmutil(O) bcma(O) mac80211(O) cfg80211(O) rfkill(O) arc4 cordic fuse
-ip6table_filter ip6_tables ebtable_nat ebtables nf_conntrack_i
-pv4 nf_defrag_ipv4 xt_state nf_conntrack ipt_REJECT xt_CHECKSUM
-iptable_mangle iptable_filter ip_tables bridge stp llc
-snd_hda_codec_hdmi snd_hda_codec_idt coretemp kvm_intel snd_hda_intel
-kvm snd_h
-da_codec nouveau ttm drm_kms_helper drm ghash_clmulni_intel aesni_intel
-snd_hwdep snd_pcm_oss snd_mixer_oss snd_pcm ablk_helper snd_seq_dummy
-snd_seq_oss i2c_algo_bit i2c_core mxm_wmi cryptd lrw pl2
-303 usbserial snd_seq_midi aes_x86_64 snd_rawmidi xts snd_seq_midi_event
-gf128mul snd_seq video snd_timer ppdev dell_laptop dell_wmi serio_raw
-sparse_keymap dcdbas snd_seq_device snd microcode lpc_i
-ch mfd_core parport_pc wmi soundcore snd_page_alloc lp parport ipv6 ext4
-mbcache jbd2 sd_mod crc_t10dif sr_mod cdrom crc32c_intel ahci libahci
-sdhci_pci sdhci mmc_core e1000e [last unloaded: rfkill]
-Dec  6 15:22:34 lb-bun-52 kernel: Pid: 2498, comm: bash Tainted: G
-     O 3.7.0-rc8 #3
-Dec  6 15:22:34 lb-bun-52 kernel: Call Trace:
-Dec  6 15:22:34 lb-bun-52 kernel: [<ffffffff810574ff>]
-warn_slowpath_common+0x7f/0xc0
-Dec  6 15:22:34 lb-bun-52 kernel: [<ffffffff8105755a>]
-warn_slowpath_null+0x1a/0x20
-Dec  6 15:22:34 lb-bun-52 kernel: [<ffffffff810fdd7d>]
-__ftrace_hash_rec_update.part.34+0x20d/0x250
-Dec  6 15:22:34 lb-bun-52 kernel: [<ffffffff810fea15>]
-ftrace_hash_move+0x1c5/0x1e0
-Dec  6 15:22:34 lb-bun-52 kernel: [<ffffffff81100388>]
-ftrace_regex_release+0x98/0x150
-Dec  6 15:22:34 lb-bun-52 kernel: [<ffffffff8118f7ac>] __fput+0xcc/0x290
-Dec  6 15:22:34 lb-bun-52 kernel: [<ffffffff8118f97e>] ____fput+0xe/0x10
-Dec  6 15:22:34 lb-bun-52 kernel: [<ffffffff810798e7>]
-task_work_run+0xa7/0xe0
-Dec  6 15:22:34 lb-bun-52 kernel: [<ffffffff81015a64>]
-do_notify_resume+0x74/0x80
-Dec  6 15:22:34 lb-bun-52 kernel: [<ffffffff81289eee>] ?
-trace_hardirqs_on_thunk+0x3a/0x3f
-Dec  6 15:22:34 lb-bun-52 kernel: [<ffffffff8157ed12>] int_signal+0x12/0x17
-Dec  6 15:22:34 lb-bun-52 kernel: ---[ end trace 476f7270ba7905df ]---
-Dec  6 15:35:41 lb-bun-52 kernel: cfg80211: Calling CRDA to update world
-regulatory domain
-Dec  6 15:35:41 lb-bun-52 kernel: cfg80211: World regulatory domain updated:
-Dec  6 15:35:41 lb-bun-52 kernel: cfg80211:   (start_freq - end_freq @
-bandwidth), (max_antenna_gain, max_eirp)
-Dec  6 15:35:41 lb-bun-52 kernel: cfg80211:   (2402000 KHz - 2472000 KHz
-@ 40000 KHz), (300 mBi, 2000 mBm)
-Dec  6 15:35:41 lb-bun-52 kernel: cfg80211:   (2457000 KHz - 2482000 KHz
-@ 20000 KHz), (300 mBi, 2000 mBm)
-Dec  6 15:35:41 lb-bun-52 kernel: cfg80211:   (2474000 KHz - 2494000 KHz
-@ 20000 KHz), (300 mBi, 2000 mBm)
-Dec  6 15:35:41 lb-bun-52 kernel: cfg80211:   (5170000 KHz - 5250000 KHz
-@ 40000 KHz), (300 mBi, 2000 mBm)
-Dec  6 15:35:41 lb-bun-52 kernel: cfg80211:   (5735000 KHz - 5835000 KHz
-@ 40000 KHz), (300 mBi, 2000 mBm)
-Dec  6 15:35:41 lb-bun-52 kernel: bcma: bus0: Found chip with id 0xA8D8,
-rev 0x01 and package 0x0A
-Dec  6 15:35:41 lb-bun-52 kernel: bcma: bus0: Core 0 found: ChipCommon
-(manuf 0x4BF, id 0x800, rev 0x22, class 0x0)
-Dec  6 15:35:41 lb-bun-52 kernel: bcma: bus0: Core 1 found: IEEE 802.11
-(manuf 0x4BF, id 0x812, rev 0x17, class 0x0)
-Dec  6 15:35:41 lb-bun-52 kernel: bcma: bus0: Core 2 found: PCIe (manuf
-0x4BF, id 0x820, rev 0x0F, class 0x0)
-Dec  6 15:35:41 lb-bun-52 kernel: bcma: bus0: Bus registered
-Dec  6 15:35:41 lb-bun-52 kernel: bcma: bus1: Found chip with id 0x4313,
-rev 0x01 and package 0x08
-Dec  6 15:35:41 lb-bun-52 kernel: bcma: bus1: Core 0 found: ChipCommon
-(manuf 0x4BF, id 0x800, rev 0x24, class 0x0)
-Dec  6 15:35:41 lb-bun-52 kernel: bcma: bus1: Core 1 found: IEEE 802.11
-(manuf 0x4BF, id 0x812, rev 0x18, class 0x0)
-Dec  6 15:35:41 lb-bun-52 kernel: bcma: bus1: Core 2 found: PCIe (manuf
-0x4BF, id 0x820, rev 0x11, class 0x0)
-Dec  6 15:35:41 lb-bun-52 kernel: bcma: bus1: Bus registered
-Dec  6 15:35:41 lb-bun-52 kernel: bcma: bus2: Found chip with id 0x4313,
-rev 0x01 and package 0x08
-Dec  6 15:35:41 lb-bun-52 kernel: bcma: bus2: Core 0 found: ChipCommon
-(manuf 0x4BF, id 0x800, rev 0x24, class 0x0)
-Dec  6 15:35:41 lb-bun-52 kernel: bcma: bus2: Core 1 found: IEEE 802.11
-(manuf 0x4BF, id 0x812, rev 0x18, class 0x0)
-Dec  6 15:35:41 lb-bun-52 kernel: bcma: bus2: Core 2 found: PCIe (manuf
-0x4BF, id 0x820, rev 0x11, class 0x0)
-Dec  6 15:35:41 lb-bun-52 kernel: bcma: bus2: Bus registered
-Dec  6 15:35:41 lb-bun-52 kernel: brcmsmac bcma0:0: mfg 4bf core 812 rev
-23 class 0 irq 16
-Dec  6 15:35:41 lb-bun-52 kernel: ieee80211 phy0: Selected rate control
-algorithm 'minstrel_ht'
-Dec  6 15:35:41 lb-bun-52 kernel: brcmsmac bcma1:0: mfg 4bf core 812 rev
-24 class 0 irq 17
-Dec  6 15:35:41 lb-bun-52 kernel: ieee80211 phy1: Selected rate control
-algorithm 'minstrel_ht'
-Dec  6 15:35:41 lb-bun-52 kernel: brcmsmac bcma2:0: mfg 4bf core 812 rev
-24 class 0 irq 16
-Dec  6 15:35:41 lb-bun-52 kernel: ieee80211 phy2: Selected rate control
-algorithm 'minstrel_ht'
-Dec  6 15:57:55 lb-bun-52 kernel: Kernel logging (proc) stopped.
+$ echo 1 > /sys/class/firmware/spi0.0/loading
+$ cat fpga_a4m2k.bit > /sys/class/firmware/spi0.0/data
+$ echo 0 > /sys/class/firmware/spi0.0/loading
 
+leads to these messages:
+
+lattice-ecp3 spi0.0: FPGA Lattice ECP3-35 detected
+lattice-ecp3 spi0.0: Configuring the FPGA...
+lattice-ecp3 spi0.0: FPGA succesfully configured!
+
+Signed-off-by: Stefan Roese <sr@denx.de>
+Acked-by: Ming Lei <ming.lei@canonical.com>
+Reviewed-by: Grant Likely <grant.likely@secretlab.ca>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+v5:
+- Moved to drivers/misc as suggested by Grant
+- Removed DRIVER_* macros
+- Added Acked-by from Ming Lei
+- Added Reviewed-by from Grant Likely
+
+v4:
+- Allocate per-device struct to store the completion
+  variable unique per device
+
+v3:
+- Removed unnecessary goto (return instead)
+- Added waiting for completion in remove
+
+v2:
+- Moved from drivers/firmware to drivers/spi as suggested by
+  Ming Lei
+- Removed pseudo device
+- Removed static buffer pointer usage
+
+ drivers/misc/Kconfig               |  11 ++
+ drivers/misc/Makefile              |   1 +
+ drivers/misc/lattice-ecp3-config.c | 243 +++++++++++++++++++++++++++++++++++++
+ 3 files changed, 255 insertions(+)
+ create mode 100644 drivers/misc/lattice-ecp3-config.c
+
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index b151b7c..50a0840 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -499,6 +499,17 @@ config USB_SWITCH_FSA9480
+ 	  stereo and mono audio, video, microphone and UART data to use
+ 	  a common connector port.
+ 
++config LATTICE_ECP3_CONFIG
++	tristate "Lattice ECP3 FPGA bitstream configuration via SPI"
++	depends on SPI && SYSFS
++	select FW_LOADER
++	default	n
++	help
++	  This option enables support for bitstream configuration (programming
++	  or loading) of the Lattice ECP3 FPGA family via SPI.
++
++	  If unsure, say N.
++
+ source "drivers/misc/c2port/Kconfig"
+ source "drivers/misc/eeprom/Kconfig"
+ source "drivers/misc/cb710/Kconfig"
+diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+index 2129377..d19d364 100644
+--- a/drivers/misc/Makefile
++++ b/drivers/misc/Makefile
+@@ -49,3 +49,4 @@ obj-y				+= carma/
+ obj-$(CONFIG_USB_SWITCH_FSA9480) += fsa9480.o
+ obj-$(CONFIG_ALTERA_STAPL)	+=altera-stapl/
+ obj-$(CONFIG_INTEL_MEI)		+= mei/
++obj-$(CONFIG_LATTICE_ECP3_CONFIG)	+= lattice-ecp3-config.o
+diff --git a/drivers/misc/lattice-ecp3-config.c b/drivers/misc/lattice-ecp3-config.c
+new file mode 100644
+index 0000000..ff3106c
+--- /dev/null
++++ b/drivers/misc/lattice-ecp3-config.c
+@@ -0,0 +1,243 @@
++/*
++ * Copyright (C) 2012 Stefan Roese <sr@denx.de>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#include <linux/device.h>
++#include <linux/firmware.h>
++#include <linux/module.h>
++#include <linux/errno.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/spi/spi.h>
++#include <linux/platform_device.h>
++#include <linux/delay.h>
++
++#define FIRMWARE_NAME	"lattice-ecp3.bit"
++
++/*
++ * The JTAG ID's of the supported FPGA's. The ID is 32bit wide
++ * reversed as noted in the manual.
++ */
++#define ID_ECP3_17	0xc2088080
++#define ID_ECP3_35	0xc2048080
++
++/* FPGA commands */
++#define FPGA_CMD_READ_ID	0x07	/* plus 24 bits */
++#define FPGA_CMD_READ_STATUS	0x09	/* plus 24 bits */
++#define FPGA_CMD_CLEAR		0x70
++#define FPGA_CMD_REFRESH	0x71
++#define FPGA_CMD_WRITE_EN	0x4a	/* plus 2 bits */
++#define FPGA_CMD_WRITE_DIS	0x4f	/* plus 8 bits */
++#define FPGA_CMD_WRITE_INC	0x41	/* plus 0 bits */
++
++/*
++ * The status register is 32bit revered, DONE is bit 17 from the TN1222.pdf
++ * (LatticeECP3 Slave SPI Port User's Guide)
++ */
++#define FPGA_STATUS_DONE	0x00004000
++#define FPGA_STATUS_CLEARED	0x00010000
++
++#define FPGA_CLEAR_TIMEOUT	5000	/* max. 5000ms for FPGA clear */
++#define FPGA_CLEAR_MSLEEP	10
++#define FPGA_CLEAR_LOOP_COUNT	(FPGA_CLEAR_TIMEOUT / FPGA_CLEAR_MSLEEP)
++
++struct fpga_data {
++	struct completion fw_loaded;
++};
++
++struct ecp3_dev {
++	u32 jedec_id;
++	char *name;
++};
++
++static const struct ecp3_dev ecp3_dev[] = {
++	{
++		.jedec_id = ID_ECP3_17,
++		.name = "Lattice ECP3-17",
++	},
++	{
++		.jedec_id = ID_ECP3_35,
++		.name = "Lattice ECP3-35",
++	},
++};
++
++static void firmware_load(const struct firmware *fw, void *context)
++{
++	struct spi_device *spi = (struct spi_device *)context;
++	struct fpga_data *data = dev_get_drvdata(&spi->dev);
++	u8 *buffer;
++	int ret;
++	u8 txbuf[8];
++	u8 rxbuf[8];
++	int rx_len = 8;
++	int i;
++	u32 jedec_id;
++	u32 status;
++
++	if (fw->size == 0) {
++		dev_err(&spi->dev, "Error: Firmware size is 0!\n");
++		return;
++	}
++
++	/* Fill dummy data (24 stuffing bits for commands) */
++	txbuf[1] = 0x00;
++	txbuf[2] = 0x00;
++	txbuf[3] = 0x00;
++
++	/* Trying to speak with the FPGA via SPI... */
++	txbuf[0] = FPGA_CMD_READ_ID;
++	ret = spi_write_then_read(spi, txbuf, 8, rxbuf, rx_len);
++	dev_dbg(&spi->dev, "FPGA JTAG ID=%08x\n", *(u32 *)&rxbuf[4]);
++	jedec_id = *(u32 *)&rxbuf[4];
++
++	for (i = 0; i < ARRAY_SIZE(ecp3_dev); i++) {
++		if (jedec_id == ecp3_dev[i].jedec_id)
++			break;
++	}
++	if (i == ARRAY_SIZE(ecp3_dev)) {
++		dev_err(&spi->dev,
++			"Error: No supported FPGA detected (JEDEC_ID=%08x)!\n",
++			jedec_id);
++		return;
++	}
++
++	dev_info(&spi->dev, "FPGA %s detected\n", ecp3_dev[i].name);
++
++	txbuf[0] = FPGA_CMD_READ_STATUS;
++	ret = spi_write_then_read(spi, txbuf, 8, rxbuf, rx_len);
++	dev_dbg(&spi->dev, "FPGA Status=%08x\n", *(u32 *)&rxbuf[4]);
++
++	buffer = kzalloc(fw->size + 8, GFP_KERNEL);
++	if (!buffer) {
++		dev_err(&spi->dev, "Error: Can't allocate memory!\n");
++		return;
++	}
++
++	/*
++	 * Insert WRITE_INC command into stream (one SPI frame)
++	 */
++	buffer[0] = FPGA_CMD_WRITE_INC;
++	buffer[1] = 0xff;
++	buffer[2] = 0xff;
++	buffer[3] = 0xff;
++	memcpy(buffer + 4, fw->data, fw->size);
++
++	txbuf[0] = FPGA_CMD_REFRESH;
++	ret = spi_write(spi, txbuf, 4);
++
++	txbuf[0] = FPGA_CMD_WRITE_EN;
++	ret = spi_write(spi, txbuf, 4);
++
++	txbuf[0] = FPGA_CMD_CLEAR;
++	ret = spi_write(spi, txbuf, 4);
++
++	/*
++	 * Wait for FPGA memory to become cleared
++	 */
++	for (i = 0; i < FPGA_CLEAR_LOOP_COUNT; i++) {
++		txbuf[0] = FPGA_CMD_READ_STATUS;
++		ret = spi_write_then_read(spi, txbuf, 8, rxbuf, rx_len);
++		status = *(u32 *)&rxbuf[4];
++		if (status == FPGA_STATUS_CLEARED)
++			break;
++
++		msleep(FPGA_CLEAR_MSLEEP);
++	}
++
++	if (i == FPGA_CLEAR_LOOP_COUNT) {
++		dev_err(&spi->dev,
++			"Error: Timeout waiting for FPGA to clear (status=%08x)!\n",
++			status);
++		kfree(buffer);
++		return;
++	}
++
++	dev_info(&spi->dev, "Configuring the FPGA...\n");
++	ret = spi_write(spi, buffer, fw->size + 8);
++
++	txbuf[0] = FPGA_CMD_WRITE_DIS;
++	ret = spi_write(spi, txbuf, 4);
++
++	txbuf[0] = FPGA_CMD_READ_STATUS;
++	ret = spi_write_then_read(spi, txbuf, 8, rxbuf, rx_len);
++	dev_dbg(&spi->dev, "FPGA Status=%08x\n", *(u32 *)&rxbuf[4]);
++	status = *(u32 *)&rxbuf[4];
++
++	/* Check result */
++	if (status & FPGA_STATUS_DONE)
++		dev_info(&spi->dev, "FPGA succesfully configured!\n");
++	else
++		dev_info(&spi->dev, "FPGA not configured (DONE not set)\n");
++
++	/*
++	 * Don't forget to release the firmware again
++	 */
++	release_firmware(fw);
++
++	kfree(buffer);
++
++	complete(&data->fw_loaded);
++}
++
++static int __devinit lattice_ecp3_probe(struct spi_device *spi)
++{
++	struct fpga_data *data;
++	int err;
++
++	data = devm_kzalloc(&spi->dev, sizeof(*data), GFP_KERNEL);
++	if (!data) {
++		dev_err(&spi->dev, "Memory allocation for fpga_data failed\n");
++		return -ENOMEM;
++	}
++	spi_set_drvdata(spi, data);
++
++	init_completion(&data->fw_loaded);
++	err = request_firmware_nowait(THIS_MODULE, FW_ACTION_NOHOTPLUG,
++				      FIRMWARE_NAME, &spi->dev,
++				      GFP_KERNEL, spi, firmware_load);
++	if (err) {
++		dev_err(&spi->dev, "Firmware loading failed with %d!\n", err);
++		return err;
++	}
++
++	dev_info(&spi->dev, "FPGA bitstream configuration driver registered\n");
++
++	return 0;
++}
++
++static int __devexit lattice_ecp3_remove(struct spi_device *spi)
++{
++	struct fpga_data *data = spi_get_drvdata(spi);
++
++	wait_for_completion(&data->fw_loaded);
++
++	return 0;
++}
++
++static const struct spi_device_id lattice_ecp3_id[] __devinitdata = {
++	{ "ecp3-17", 0 },
++	{ "ecp3-35", 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(spi, lattice_ecp3_id);
++
++static struct spi_driver lattice_ecp3_driver = {
++	.driver = {
++		.name = "lattice-ecp3",
++		.owner = THIS_MODULE,
++	},
++	.probe = lattice_ecp3_probe,
++	.remove = __devexit_p(lattice_ecp3_remove),
++	.id_table = lattice_ecp3_id,
++};
++
++module_spi_driver(lattice_ecp3_driver);
++
++MODULE_AUTHOR("Stefan Roese <sr@denx.de>");
++MODULE_DESCRIPTION("Lattice ECP3 FPGA configuration via SPI");
++MODULE_LICENSE("GPL");
+-- 
+1.8.0.1
 
