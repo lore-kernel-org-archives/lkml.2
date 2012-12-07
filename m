@@ -1,112 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1031000Ab2LGVla (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 16:41:30 -0500
-Received: from usindpps03.hds.com ([207.126.252.16]:39793 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030990Ab2LGVl2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 16:41:28 -0500
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>
-CC: "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
-        "ccross@android.com" <ccross@android.com>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: [RFC][PATCH] pstore: Skip spinlock when just one cpu is online
-Thread-Topic: [RFC][PATCH] pstore: Skip spinlock when just one cpu is online
-Thread-Index: Ac3UwvCZixvXisXmRfC/Xc8ha8nnHA==
-Date: Fri, 7 Dec 2012 21:41:13 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D414A1B7B2@USINDEM103.corp.hds.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.43.113]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755199Ab2LGVmS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 16:42:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55225 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751838Ab2LGVmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 16:42:17 -0500
+Message-ID: <50C262AE.5060701@redhat.com>
+Date: Fri, 07 Dec 2012 16:42:06 -0500
+From: Ric Wheeler <rwheeler@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8185,1.0.431,0.0.0000
- definitions=2012-12-07_04:2012-12-07,2012-12-07,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
- definitions=main-1212070211
+To: Chris Mason <chris.mason@fusionio.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <clmason@fusionio.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Christoph Hellwig <hch@infradead.org>,
+        Martin Steigerwald <Martin@lichtvoll.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
+ UAPI
+References: <20121126025520.GC22858@thunk.org> <20121126091202.GO32450@dastard> <201212051148.28039.Martin@lichtvoll.de> <CA+55aFzgP29WfB1yvnj+Q9-TsbX+b-TCCjTS_vPJ16DxMy6aDQ@mail.gmail.com> <20121206120532.GA14100@infradead.org> <20121207011628.GB16373@gmail.com> <50C22923.90102@redhat.com> <alpine.LFD.2.02.1212070956310.23641@air.linux-foundation.org> <20121207190306.GB14972@shiny> <20121207204325.GC29435@thunk.org> <20121207210932.GA25713@shiny>
+In-Reply-To: <20121207210932.GA25713@shiny>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Issue]
+On 12/07/2012 04:09 PM, Chris Mason wrote:
+> On Fri, Dec 07, 2012 at 01:43:25PM -0700, Theodore Ts'o wrote:
+>> On Fri, Dec 07, 2012 at 02:03:06PM -0500, Chris Mason wrote:
+>>> That's not what happened though, and the right way forward from here is
+>>> to give the bit to the feature, maybe with a generic name like
+>>> FALLOCATE_WITHOUT_BEING_HORRIBLY_SLOW.
+>> I don't think that's a good idea, because the current name explicitly
+>> calls out the fact that we are making a tradeoff between what
+>> ***might*** be a security exposure in some cases (but which might be
+>> perfectly fine in others) for performance.  Using the generic name
+>> would hide the fact that this tradeoff is being made, and the
+>> arguments (which I've never seen backed up with a specific design) is
+>> that it's possible to speed up random writes into preallocated space
+>> on a flash device without making any kind of tradeoff that might imply
+>> a security tradeoff.
+> Grin, we're really good at debating names.  But I do see what you mean.
+> I'd hope that whatever generic facility we put in doesn't have the
+> security implications.
 
-If one cpu ,which is taking a psinfo->buf_lock, 
-receive NMI from a panicked cpu via smp_send_stop(),
-the panicked cpu hangs up in pstore_dump() called by kmsg_dump(KMSG_DUMP_PANIC)
-because the psinfo->buf_lock is taken again in it.
+I would suggest a name like "let me see other peoples data, pronto"
 
-To avoid the deadlock, an easy solution is moving kmsg_dump above
-smp_send_stop() in panic path.
+>> If indeed it is possible to speed up this particular workload without
+>> making any kind of no-hide-stale tradeoff, then we won't need the bit
+>> --- writes into fallocated space will just get faster, with or without
+>> the bit
+>>
+>> I am sure it will be possible to do this in some cases (for example if
+>> you have a device that supports persistent trim which can quickly
+>> zeroize the blocks in question), but I would be very surprised if it's
+>> possible to completely eliminate the performance degradation for all
+>> devices and workloads.  (Not all storage devices support persistent
+>> trim, just for starters.)
+> Persistent trim is what I had in mind, but there are other ideas that do
+> imply a change in behavior as well.  Can we safely assume this feature
+> won't matter on spinning media?  New features like persistent
+> trim do make it much easier to solve securely, and using a bit for it
+> means we can toss back an error to the app if the underlying storage
+> isn't safe.
+>
+> If google wants to have a block device patch that pretends to persistent
+> trim on devices that can't, great.
 
-But, it is not safe to kick pstore while multiple cpus are running in panic case,
-because they may touch corrupted data/variables and unnecessary failures may happen.
-In that case, we can't guarantee that a panicked cpu can log messages reliably
-because it may have harmful effects due to the failures.
+The other things that I think we should try would be to convert over larger 
+chunks as we discussed on the list back in the summer (just because the user 
+writes 4KB does not mean that we cannot flip over 1MB and zero that).
 
-[Solution]
+>
+>> In answer's to Linus's question, the reason why people are
+>> hyperventilating so badly about this is that in some circles,
+>> revealing stale data is so horrible that anyone who even tries to
+>> suggest this should be excommunicated.  The mere existence of the
+>> code, or that people are using it, horribly offends those people.
+> So I've always said this was a real performance problem and that it
+> isn't just limited to ext4.  But can we please move past this part?  I
+> don't think it is completely accurate.
 
-This patch skips taking a psinfo->buf_lock when just one cpu is online
-because stopped cpus turn to offline via smp_send_stop()
-in some architectures like x86, powerpc or arm64.
+The thing that bothers me is that no one wants to use this "feature" to see the 
+stale data, just to benefit from a coincidental performance bump
 
-It may be a hack but solves my concern deadlocking in x86 architecture.
+Most features need to have a defined use case as opposed to a side effect as 
+their motivation.
 
-Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
----
- fs/pstore/platform.c |   14 +++++++++++---
- 1 files changed, 11 insertions(+), 3 deletions(-)
+Let's focus on fixing the performance in a way that would be useful to a broader 
+swath of users. To be clear, I certainly would never ship this in a distro I was 
+involved in.
 
-diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index 947fbe0..ca4d2ab 100644
---- a/fs/pstore/platform.c
-+++ b/fs/pstore/platform.c
-@@ -107,7 +107,7 @@ static void pstore_dump(struct kmsg_dumper *dumper,
- 	unsigned long	total = 0;
- 	const char	*why;
- 	u64		id;
--	unsigned int	part = 1;
-+	unsigned int	part = 1, cpu_num = num_online_cpus();
- 	unsigned long	flags = 0;
- 	int		is_locked = 0;
- 	int		ret;
-@@ -118,8 +118,14 @@ static void pstore_dump(struct kmsg_dumper *dumper,
- 		is_locked = spin_trylock(&psinfo->buf_lock);
- 		if (!is_locked)
- 			pr_err("pstore dump routine blocked in NMI, may corrupt error record\n");
--	} else
-+	} else if (cpu_num > 1) {
-+		/*
-+		 * Take a spin lock only when multiple cpus are online.
-+		 */
- 		spin_lock_irqsave(&psinfo->buf_lock, flags);
-+	} else
-+		local_irq_save(flags);
-+
- 	oopscount++;
- 	while (total < kmsg_bytes) {
- 		char *dst;
-@@ -146,8 +152,10 @@ static void pstore_dump(struct kmsg_dumper *dumper,
- 	if (in_nmi()) {
- 		if (is_locked)
- 			spin_unlock(&psinfo->buf_lock);
--	} else
-+	} else if (cpu_num > 1) {
- 		spin_unlock_irqrestore(&psinfo->buf_lock, flags);
-+	} else
-+		local_irq_restore(flags);
- }
- 
- static struct kmsg_dumper pstore_dumper = {
--- 1.7.1
+With or without the bit, we need to fix this properly if it is a meaningful 
+workload.
+
+ric
+
+
+
