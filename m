@@ -1,128 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756296Ab2LGO7t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 09:59:49 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:46737 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756279Ab2LGO7r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 09:59:47 -0500
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: sameo@linux.intel.com
-Cc: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, lee.jones@linaro.org,
-        linus.walleij@linaro.org, Vipul Kumar Samar <vipulkumar.samar@st.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V7] mfd: stmpe: Update DT support for stmpe driver
-Date: Fri,  7 Dec 2012 20:29:37 +0530
-Message-Id: <91449dfa3338a603f443765b0948aa2e1b98a600.1354892244.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+	id S1756339Ab2LGPA7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 10:00:59 -0500
+Received: from mx3.cyfra.ua ([62.80.160.182]:50572 "EHLO mx3.cyfra.ua"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756323Ab2LGPA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 10:00:58 -0500
+From: Vitalii Demianets <vitas@nppfactor.kiev.ua>
+Organization: Factor-SPE
+To: "Hans J. Koch" <hjk@hansjkoch.de>
+Subject: Re: [PATCH v2] drivers/uio/uio_pdrv_genirq.c: Fix memory freeing issues
+Date: Fri, 7 Dec 2012 17:00:54 +0200
+User-Agent: KMail/1.9.10
+Cc: Cong Ding <dinggnu@gmail.com>, linux-kernel@vger.kernel.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+References: <201211271929.32315.vitas@nppfactor.kiev.ua> <201212071141.45231.vitas@nppfactor.kiev.ua> <201212071551.02974.vitas@nppfactor.kiev.ua>
+In-Reply-To: <201212071551.02974.vitas@nppfactor.kiev.ua>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201212071700.54367.vitas@nppfactor.kiev.ua>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vipul Kumar Samar <vipulkumar.samar@st.com>
+On Friday 07 December 2012 15:51:02 Vitalii Demianets wrote:
+> On Friday 07 December 2012 11:41:45 Vitalii Demianets wrote:
+> > On Friday 07 December 2012 00:15:59 Hans J. Koch wrote:
+> > > On Thu, Dec 06, 2012 at 11:11:38AM +0200, Vitalii Demianets wrote:
+> > > > On Thursday 06 December 2012 04:41:01 Hans J. Koch wrote:
+> > > > > > @@ -63,7 +68,7 @@ static irqreturn_t uio_pdrv_genirq_handler(int
+> > > > > > irq,
+> > > >
+> > > > struct uio_info *dev_info)
+> > > >
+> > > > > >  	 * remember the state so we can allow user space to enable it
+> > > > > > later. */
+> > > > > >
+> > > > > > -	if (!test_and_set_bit(0, &priv->flags))
+> > > > > > +	if (!test_and_set_bit(UIO_IRQ_DISABLED, &priv->flags))
+> > > > > >  		disable_irq_nosync(irq);
+> > > > >
+> > > > > That is not safe. That flag can only be changed by userspace, and
+> > > > > if the userspace part is not running, the CPU on which the irq is
+> > > > > pending will hang.
+> > > > > The handler has to disable the interrupt in any case.
+> > > > > (The original version had the same problem, I know...)
+> > > >
+> > > > Perhaps I'm missing something here, but I don't see your point. If
+> > > > userspace is not (implicitly) calling uio_pdrv_genirq_irqcontrol() by
+> > > > writing to the device file, then on the first invocation of interrupt
+> > > > handler that IRQ is disabled by disable_irq_nosync() and that's the
+> > > > end of story - no more irqs, no problems. Until userspace writes
+> > > > non-zero to the device file, of course.
+> > >
+> > > If you run into the irq handler, the interrupt was obviously enabled.
+> > > Since irq sharing is not supported by this driver, you ALWAYS have to
+> > > disable it because it IS your interrupt. Storing the enabled/disabled
+> > > status in a variable is not needed at all here. Or am I missing
+> > > something?
+> >
+> > Good point. I agree that having UIO_IRQ_DISABLED flag is redundant.
+> > Inside the irq handler we know for sure that irq is enabled. In
+> > uio_pdrv_genirq_irqcontrol() this knowledge is not mandatory, we could
+> > enable/disable irq unconditionally.
+>
+> On second thought, we can't call enable_irq()/disable_irq() unconditionally
+> because of the potential disable counter (irq_desc->depth) disbalance.
+> That's why we need UIO_IRQ_DISABLED flag, and that's why we should check it
+> in uio_pdrv_genirq_irqcontrol().
+> On the other hand, you are right in that we don't need to check it inside
+> irq handler. Inside irq handler we can disable irq and set the flag
+> unconditionally, because:
+> a) We know for sure that irqs are enabled, because we are inside
+> (not-shared) irq handler;
+>  and
+> b) We are guarded from potential race conditions by spin_lock_irqsave()
+> call in uio_pdrv_genirq_irqcontrol().
+>
+> So,yes, we can get rid of costly atomic call to
+> test_and_set_bit(UIO_IRQ_DISABLED,..) inside irq handler. But I still don't
+> like the idea of mixing this optimization with bug fixes in a single patch.
 
-This patch extends existing DT support for stmpe devices. This updates:
-- missing header files in stmpe.c
-- stmpe_of_probe() with pwm, rotator and new bindings.
-- Bindings are updated in binding document.
+On the third thought, we can't ;)
+Imagine the SMP system where uio_pdrv_genirq_irqcontrol() is being executed on 
+CPU0 and irq handler is running concurrently on CPU1. To protect from 
+disable_irq counter disbalance we must first check current irq status, and in 
+atomic manner. Thus we prevent  double-disable, one from 
+uio_pdrv_genirq_irqcontrol() running on CPU0 and another form irq handler 
+running on CPU1.
+Above consideration justifies current code.
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Vipul Kumar Samar <vipulkumar.samar@st.com>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
-V6->V7:
-- Minor grammer correction in stmpe.txt
-- Removed comment over pdata->id = -1
+But it seems we have potential concurrency problem here anyway. Here is 
+theoretical scenario:
+1) Initial state: irq is enabled, uio_pdrv_genirq_irqcontrol() starts being 
+executed on CPU0 with irq_on=1 and at the same time, concurrently, irq 
+handler starts being executed on CPU1;
+2) irq handler executes line
+   if (!test_and_set_bit(UIO_IRQ_DISABLED, &priv->flags))
+as irq was enabled, the condition holds. And now UIO_IRQ_DISABLED is set.
+3) uio_pdrv_genirq_irqcontrol() executes line
+   if (test_and_clear_bit(UIO_IRQ_DISABLED, &priv->flags))
+as UIO_IRQ_DISABLED was set by CPU1, the condition holds. And now 
+UIO_IRQ_DISABLED is cleared.
+4) CPU0 executes enable_irq() . IRQ is enabled. "Unbalanced enable for 
+IRQ %d\n" warning is issued.
+5) irq handler on CPU1 executes disable_irq_nosync(). IRQ is disabled.
 
- Documentation/devicetree/bindings/mfd/stmpe.txt |  9 ++++++---
- drivers/mfd/stmpe.c                             | 22 ++++++++++++++++------
- 2 files changed, 22 insertions(+), 9 deletions(-)
+And now we are in situation where IRQ is disabled, but UIO_IRQ_DISABLED is 
+cleared. Bad.
 
-diff --git a/Documentation/devicetree/bindings/mfd/stmpe.txt b/Documentation/devicetree/bindings/mfd/stmpe.txt
-index 8f0aeda..9fc1715 100644
---- a/Documentation/devicetree/bindings/mfd/stmpe.txt
-+++ b/Documentation/devicetree/bindings/mfd/stmpe.txt
-@@ -1,8 +1,11 @@
--* STMPE Multi-Functional Device
-+* ST Microelectronics STMPE Multi-Functional Device
-+
-+STMPE is an MFD device which may expose the following inbuilt devices: gpio,
-+keypad, touchscreen, adc, pwm, rotator.
- 
- Required properties:
-- - compatible                   : "st,stmpe[811|1601|2401|2403]"
-- - reg                          : I2C address of the device
-+ - compatible                   : "st,stmpe[610|801|811|1601|2401|2403]"
-+ - reg                          : I2C/SPI address of the device
- 
- Optional properties:
-  - interrupts                   : The interrupt outputs from the controller
-diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
-index 34408b4..48c4f18 100644
---- a/drivers/mfd/stmpe.c
-+++ b/drivers/mfd/stmpe.c
-@@ -7,12 +7,15 @@
-  * Author: Rabin Vincent <rabin.vincent@stericsson.com> for ST-Ericsson
-  */
- 
-+#include <linux/err.h>
- #include <linux/gpio.h>
- #include <linux/export.h>
- #include <linux/kernel.h>
- #include <linux/interrupt.h>
- #include <linux/irq.h>
- #include <linux/irqdomain.h>
-+#include <linux/of.h>
-+#include <linux/of_gpio.h>
- #include <linux/pm.h>
- #include <linux/slab.h>
- #include <linux/mfd/core.h>
-@@ -1019,6 +1022,9 @@ void __devinit stmpe_of_probe(struct stmpe_platform_data *pdata,
- {
- 	struct device_node *child;
- 
-+	pdata->id = -1;
-+	pdata->irq_trigger = IRQF_TRIGGER_NONE;
-+
- 	of_property_read_u32(np, "st,autosleep-timeout",
- 			&pdata->autosleep_timeout);
- 
-@@ -1027,15 +1033,16 @@ void __devinit stmpe_of_probe(struct stmpe_platform_data *pdata,
- 	for_each_child_of_node(np, child) {
- 		if (!strcmp(child->name, "stmpe_gpio")) {
- 			pdata->blocks |= STMPE_BLOCK_GPIO;
--		}
--		if (!strcmp(child->name, "stmpe_keypad")) {
-+		} else if (!strcmp(child->name, "stmpe_keypad")) {
- 			pdata->blocks |= STMPE_BLOCK_KEYPAD;
--		}
--		if (!strcmp(child->name, "stmpe_touchscreen")) {
-+		} else if (!strcmp(child->name, "stmpe_touchscreen")) {
- 			pdata->blocks |= STMPE_BLOCK_TOUCHSCREEN;
--		}
--		if (!strcmp(child->name, "stmpe_adc")) {
-+		} else if (!strcmp(child->name, "stmpe_adc")) {
- 			pdata->blocks |= STMPE_BLOCK_ADC;
-+		} else if (!strcmp(child->name, "stmpe_pwm")) {
-+			pdata->blocks |= STMPE_BLOCK_PWM;
-+		} else if (!strcmp(child->name, "stmpe_rotator")) {
-+			pdata->blocks |= STMPE_BLOCK_ROTATOR;
- 		}
- 	}
- }
-@@ -1106,6 +1113,9 @@ int __devinit stmpe_probe(struct stmpe_client_info *ci, int partnum)
- 			return -ENODEV;
- 		}
- 		stmpe->variant = stmpe_noirq_variant_info[stmpe->partnum];
-+	} else if (pdata->irq_trigger == IRQF_TRIGGER_NONE) {
-+		pdata->irq_trigger =
-+			irqd_get_trigger_type(irq_get_irq_data(stmpe->irq));
- 	}
- 
- 	ret = stmpe_chip_init(stmpe);
--- 
-1.7.12.rc2.18.g61b472e
+The above scenario is purely theoretical, I have no means to check it in 
+hardware.
+The (theoretical) solution is to guard UIO_IRQ_DISABLED test and actual irq 
+disabling inside irq handler by priv->lock.
 
+What do you think about it? Is it worth worrying about?
