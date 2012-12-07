@@ -1,103 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424366Ab2LGUxA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 15:53:00 -0500
-Received: from mail.etersoft.ru ([87.249.47.46]:54532 "EHLO mail.etersoft.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1424343Ab2LGUw6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 15:52:58 -0500
-X-Greylist: delayed 581 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Dec 2012 15:52:58 EST
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 8bit
-Date: Sat, 08 Dec 2012 00:43:14 +0400
-From: Pavel Shilovsky <piastry@etersoft.ru>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: <linux-cifs@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-fsdevel@vger.kernel.org>, <wine-devel@winehq.org>,
-        <linux-nfs@vger.kernel.org>
-Subject: Re: [PATCH 0/3] Add =?UTF-8?Q?O=5FDENY*=20flags=20to=20fcntl=20an?=
- =?UTF-8?Q?d=20cifs?=
-In-Reply-To: <20121207161602.GA17710@infradead.org>
-References: <1354818391-7968-1-git-send-email-piastry@etersoft.ru>
- <20121207161602.GA17710@infradead.org>
-Message-ID: <495d17310e0a687d446afc86def0f058@office.etersoft.ru>
-User-Agent: Roundcube Webmail/0.7.1
+	id S1424397Ab2LGU4M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 15:56:12 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:61045 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1424380Ab2LGU4L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 15:56:11 -0500
+From: Ingo Molnar <mingo@kernel.org>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Announce: the 'perf bench numa mem' NUMA performance measurement tool
+Date: Fri,  7 Dec 2012 21:55:43 +0100
+Message-Id: <1354913744-29902-1-git-send-email-mingo@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Hellwig писал 07.12.2012 20:16:
-> On Thu, Dec 06, 2012 at 10:26:28PM +0400, Pavel Shilovsky wrote:
->> Network filesystems CIFS, SMB2.0, SMB3.0 and NFSv4 have such flags - 
->> this change can benefit cifs and nfs modules. While this change is ok 
->> for network filesystems, itsn't not targeted for local filesystems due 
->> security problems (e.g. when a user process can deny root to delete a 
->> file).
->>
->> Share flags are used by Windows applications and WINE have to deal 
->> with them too. While WINE can process open share flags itself on local 
->> filesystems, it can't do it if a file stored on a network share and is 
->> used by several clients. This patchset makes it possible for 
->> CIFS/SMB2.0/SMB3.0.
->
-> I don't think introducing user visible flags that are only supported 
-> on
-> a single network filesystem is a good idea.
+This is a NUMA performance measurement tool I've been honing for some time
+and people expressed interest in it so here's a tidied up version of it.
 
-It can bring benefits for both CIFS and NFS filesystems - so, at least 
-two ones.
+I also pushed it out into the tip:perf/bench branch:
 
->
-> I'm not even sure adding these flags does make a lot of sense, but
-> assuming we'd actually want this (and I'd like some more detailed
-> explanation) I think we'd at least need to make sure that:
->
->  a) opening files with the new modes gives a proper error message if 
-> not
->     supported
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf/bench
 
-It makes us add such checks for all other filesystems, if I understand 
-right, - not a problem, I think.
+Maybe others find it useful too. I'll post a couple of perf bench
+NUMA performance numbers in the next hour or so.
 
->  b) there needs to be local support for them as well
->  c) we need to think really hard when they should be supported, and 
-> need
->     a good rational for it.  I can't see how we could do it
->     unconditionally for all users as that would introduce easy denial
->     of services attacks the way I understand the semantics (correct 
-> me
->     if I'm wrong).  So a mount option like you currently do probably 
-> is
->     the least bad even if don't fell overly happy about that version.
->
-> What is the reason your special wine use case can't simply use a
-> userspace cifs client?  Given that wine uses windows filesystem
-> semantics and cifs does as well tunnelling it through a Posix-like 
-> API
-> inbetween is never going to be perfect.
+Thanks,
 
-Ideally we should not make any difference between underlying 
-filesystems in Wine: an application requests an open of the file and we 
-issue this open with flags it passed. Since Wineserver can process share 
-flags locally itself (for one linux user), we only need to add this 
-support for CIFS (that is actively used by Wine applications because of 
-it's Windows nature). Bringing these flags for local filesystems can 
-benefit Wine too: it will help in cases when Wine applications of 
-different users on the same machine use the same file and can make all 
-those things easier, of course.
+	Ingo
 
-The problem is the possibility of denial-of-service attacks here. We 
-can try to prevent them by:
-1) specifying an extra security bit on the file that indicates that 
-share flags are accepted (like we have for mandatory locks now) and 
-setting it for neccessary files only, or
-2) adding a special mount option (but it it probably makes sense if we 
-decided to add this support for CIFS and NFS only).
+------------>
+Ingo Molnar (1):
+  perf: Add 'perf bench numa mem' NUMA performance measurement suite
 
---
-Best regards,
-Pavel Shilovsky.
+ tools/perf/Makefile        |    3 +-
+ tools/perf/bench/bench.h   |    1 +
+ tools/perf/bench/numa.c    | 1731 ++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/builtin-bench.c |   13 +
+ tools/perf/util/hist.h     |    2 +-
+ 5 files changed, 1748 insertions(+), 2 deletions(-)
+ create mode 100644 tools/perf/bench/numa.c
 
+-- 
+1.7.11.7
 
