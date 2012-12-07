@@ -1,99 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933511Ab2LGKf7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 05:35:59 -0500
-Received: from mga01.intel.com ([192.55.52.88]:43941 "EHLO mga01.intel.com"
+	id S933526Ab2LGKgc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 05:36:32 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41875 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932509Ab2LGKfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 05:35:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,236,1355126400"; 
-   d="scan'208";a="260413395"
-From: markus.t.metzger@intel.com
-To: mingo@redhat.com, mingo@elte.hu
-Cc: markus.t.metzger@intel.com, linux-kernel@vger.kernel.org,
-        Mark Kettenis <kettenis@gnu.org>, Pedro Alves <palves@redhat.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>, gdb-patches@sourceware.org
-Subject: [PATCH] x86, perf, bts: disable BTS from Nehalem to Ivy Bridge
-Date: Fri,  7 Dec 2012 11:35:11 +0100
-Message-Id: <1354876511-25294-1-git-send-email-markus.t.metzger@intel.com>
-X-Mailer: git-send-email 1.7.0.7
+	id S932610Ab2LGKYG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 05:24:06 -0500
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
+Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Turner <pjt@google.com>, Hillf Danton <dhillf@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Alex Shi <lkml.alex@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: [PATCH 05/49] mm: Only flush the TLB when clearing an accessible pte
+Date: Fri,  7 Dec 2012 10:23:08 +0000
+Message-Id: <1354875832-9700-6-git-send-email-mgorman@suse.de>
+X-Mailer: git-send-email 1.7.9.2
+In-Reply-To: <1354875832-9700-1-git-send-email-mgorman@suse.de>
+References: <1354875832-9700-1-git-send-email-mgorman@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Metzger <markus.t.metzger@intel.com>
+From: Rik van Riel <riel@redhat.com>
 
-Starting with Nehalem, the BTS "from" information may in some cases be
-incorrect (AAJ122).
+If ptep_clear_flush() is called to clear a page table entry that is
+accessible anyway by the CPU, eg. a _PAGE_PROTNONE page table entry,
+there is no need to flush the TLB on remote CPUs.
 
-This has been detected while adding branch tracing support to gdb, where it
-results in sporadic test fails.
-
-Disable BTS support on Nehalem, Westmere, Sandy Bridge, and Ivy Bridge.
-
-CC: Mark Kettenis <kettenis@gnu.org>
-CC: Pedro Alves <palves@redhat.com>
-CC: Jan Kratochvil <jan.kratochvil@redhat.com>
-CC: gdb-patches@sourceware.org
-Signed-off-by: Markus Metzger <markus.t.metzger@intel.com>
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/n/tip-vm3rkzevahelwhejx5uwm8ex@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/cpu/perf_event_intel.c |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
+ mm/pgtable-generic.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 6bca492..e72aac9 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1893,6 +1893,16 @@ static __init void intel_nehalem_quirk(void)
- 	}
- }
- 
-+static __init void intel_disable_bts(void)
-+{
-+	/*
-+	 * Erratum AAJ122: LBR, BTM, or BTS records may have incorrect branch
-+	 * "from" information afer an EIST transition, T-states, C1E, or
-+	 * Adaptive Thermal Throttling.
-+	 */
-+	x86_pmu.bts = 0;
-+}
-+
- __init int intel_pmu_init(void)
+diff --git a/mm/pgtable-generic.c b/mm/pgtable-generic.c
+index d8397da..0c8323f 100644
+--- a/mm/pgtable-generic.c
++++ b/mm/pgtable-generic.c
+@@ -88,7 +88,8 @@ pte_t ptep_clear_flush(struct vm_area_struct *vma, unsigned long address,
  {
- 	union cpuid10_edx edx;
-@@ -2003,6 +2013,7 @@ __init int intel_pmu_init(void)
- 			X86_CONFIG(.event=0xb1, .umask=0x3f, .inv=1, .cmask=1);
- 
- 		x86_add_quirk(intel_nehalem_quirk);
-+		intel_disable_bts();
- 
- 		pr_cont("Nehalem events, ");
- 		break;
-@@ -2042,6 +2053,7 @@ __init int intel_pmu_init(void)
- 		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_BACKEND] =
- 			X86_CONFIG(.event=0xb1, .umask=0x3f, .inv=1, .cmask=1);
- 
-+		intel_disable_bts();
- 		pr_cont("Westmere events, ");
- 		break;
- 
-@@ -2070,6 +2082,7 @@ __init int intel_pmu_init(void)
- 		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_BACKEND] =
- 			X86_CONFIG(.event=0xb1, .umask=0x01, .inv=1, .cmask=1);
- 
-+		intel_disable_bts();
- 		pr_cont("SandyBridge events, ");
- 		break;
- 	case 58: /* IvyBridge */
-@@ -2092,6 +2105,7 @@ __init int intel_pmu_init(void)
- 		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND] =
- 			X86_CONFIG(.event=0x0e, .umask=0x01, .inv=1, .cmask=1);
- 
-+		intel_disable_bts();
- 		pr_cont("IvyBridge events, ");
- 		break;
- 
+ 	pte_t pte;
+ 	pte = ptep_get_and_clear((vma)->vm_mm, address, ptep);
+-	flush_tlb_page(vma, address);
++	if (pte_accessible(pte))
++		flush_tlb_page(vma, address);
+ 	return pte;
+ }
+ #endif
 -- 
-1.7.1
+1.7.9.2
 
