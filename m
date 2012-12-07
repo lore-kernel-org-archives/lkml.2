@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932512Ab2LGAHK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 19:07:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50824 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932263Ab2LGAHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 19:07:08 -0500
-Message-ID: <1354838827.3124.1.camel@ul30vt.home>
-Subject: Re: [RFC PATCH 5/6] kvm: Re-introduce memslots->nmemslots
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: kvm@vger.kernel.org, gleb@redhat.com, linux-kernel@vger.kernel.org
-Date: Thu, 06 Dec 2012 17:07:07 -0700
-In-Reply-To: <20121206235949.GA30775@amt.cnet>
-References: <20121203231912.3661.57179.stgit@bling.home>
-	 <20121203233936.3661.69261.stgit@bling.home>
-	 <20121205212629.GD20260@amt.cnet> <1354748573.3224.63.camel@bling.home>
-	 <20121206014507.GA9890@amt.cnet> <1354765897.3224.71.camel@bling.home>
-	 <20121206235848.GA30582@amt.cnet> <20121206235949.GA30775@amt.cnet>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754981Ab2LGAJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 19:09:57 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:59323 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753975Ab2LGAJz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 19:09:55 -0500
+MIME-Version: 1.0
+In-Reply-To: <CACVXFVPbpbb-PAJAweoLj8uec=KgoUKvybSey+R=L=oY16Ozbw@mail.gmail.com>
+References: <20120524021429.GB12557@kroah.com>
+	<Pine.LNX.4.44L0.1205241029260.1349-100000@iolanthe.rowland.org>
+	<CACVXFVPu_nbVCVR_HTt9H764+4JKC3=GPyhsf8Lpsch4Fa=xqQ@mail.gmail.com>
+	<CANeycqo8sFVeWVEeW3mdPPVRt35+kfkdUzenLB+YgNs4y-T7Cg@mail.gmail.com>
+	<CACVXFVPbpbb-PAJAweoLj8uec=KgoUKvybSey+R=L=oY16Ozbw@mail.gmail.com>
+Date: Thu, 6 Dec 2012 16:09:54 -0800
+Message-ID: <CANeycqq177AzPdYfBr-VU+ksh+Jwd9i4aLpZo6VwxcO+Xx6ETg@mail.gmail.com>
+Subject: Re: Race condition between driver_probe_device and device_shutdown
+From: Wedson Almeida Filho <wedsonaf@gmail.com>
+To: Ming Lei <ming.lei@canonical.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Linux PM List <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-12-06 at 21:59 -0200, Marcelo Tosatti wrote:
-> On Thu, Dec 06, 2012 at 09:58:48PM -0200, Marcelo Tosatti wrote:
-> > On Wed, Dec 05, 2012 at 08:51:37PM -0700, Alex Williamson wrote:
-> > > > > id_to_memslot seems like a good place to catch all the users since
-> > > > > that's the only way to get a slot from a slot id after the array is
-> > > > > sorted.  We need to check both is the slot in bounds (EINVAL), but also
-> > > > > is it allocated (ENOENT).  id_to_memslot could both of these if we
-> > > > > wanted to switch it to ERR_PTR.  Thanks,
-> > > > > 
-> > > > > Alex
-> > > > 
-> > > > There should never be a reference to a slot out of bounds by KVM itself
-> > > > (BUG_ON). Only userspace can attempt a reference to such slot.
-> > > 
-> > > If I understand correctly, you're saying this last chunk is unique
-> > > because kvm_get_dirty_log() is an internal interface and the test should
-> > > be restricted to callers from userspace interfaces, namely
-> > > kvm_vm_ioctl_get_dirty_log().  That sounds reasonable; book3s_pr seems
-> > > to be the only caller that relies on kvm_get_dirty_log() validating the
-> > > slot.  Thanks,
-> > > 
-> > > Alex
-> > 
-> > Yep - so you can move the check to such userspace interfaces, and bug on 
-> > on WARN otherwise (in id_to_memslot).
-> 
-> WARN_ON. The point is, if its not a valid condition, it should be
-> explicitly so.
-> 
-> > Does that make sense??
+I don't have the setup anymore, I'll give it a shot if I ever get back it back.
 
-Yep, I'll add that if we decide to go that route.  This patch isn't
-necessary with the series I just posted since the array is still static.
-Thanks,
+I have a question though: why do we need to get a reference to the
+parent? If the assumption is that the callee can release its reference
+to the parent, then one may also expect callees to reassign
+dev->parent (e.g., by calling device_move), so it wouldn't be safe to
+later call device_unlock on the potentially different dev->parent.
 
-Alex
+If we expect dev->parent to remain unchanged, then there's no need to
+get an extra reference to the parent as the device itself already
+holds one (and we hold an extra one on the device).
 
+What am I missing?
 
+Thanks
+
+On Thu, Dec 6, 2012 at 2:52 AM, Ming Lei <ming.lei@canonical.com> wrote:
+> On Thu, Dec 6, 2012 at 5:11 PM, Wedson Almeida Filho <wedsonaf@gmail.com> wrote:
+>> [Sorry for taking so long to respond, after a week of silence I
+>> assumed I wouldn't get any responses, plus I had moved on to other
+>> things.]
+>>
+>> I happen to still have the logs, the relevant part is pasted at the end.
+>>
+>> Answering some of the questions: the driver is on the platform bus, in
+>> fact, it's drivers/usb/host/ehci-tegra.c; after seeing the oops below,
+>> I added printks when entering and exiting tegra_ehci_probe to try to
+>> understand it better.
+>>
+>> Note that in the log we see some thread entering tegra_ehci_probe, but
+>> nothing indicates that it has exited before we get the oops.
+>
+> The commit d1c6c030fcec6f860d9bb6c632a3ebe62e28440b(driver core:
+> fix shutdown races with probe/remove(v3)) has been merged to v3.6, so
+> device_shutdown will wait for completing of probe.
+>
+> Could you test kernel 3.6 or the latest kernel to see if the problem can be
+> reproduced?
+>
+> Thanks,
+> --
+> Ming Lei
