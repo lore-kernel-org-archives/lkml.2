@@ -1,122 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424569Ab2LGVJi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 16:09:38 -0500
-Received: from mx1.fusionio.com ([66.114.96.30]:50079 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1424546Ab2LGVJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 16:09:36 -0500
-X-ASG-Debug-ID: 1354914575-03d6a50cb5d383e0001-xx1T2L
-X-Barracuda-Envelope-From: clmason@fusionio.com
-Date: Fri, 7 Dec 2012 16:09:32 -0500
-From: Chris Mason <chris.mason@fusionio.com>
-To: "Theodore Ts'o" <tytso@mit.edu>
-CC: Chris Mason <clmason@fusionio.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ric Wheeler <rwheeler@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Chinner <david@fromorbit.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
- UAPI
-Message-ID: <20121207210932.GA25713@shiny>
-X-ASG-Orig-Subj: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
- UAPI
-Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
-	Theodore Ts'o <tytso@mit.edu>, Chris Mason <clmason@fusionio.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Ric Wheeler <rwheeler@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-	Christoph Hellwig <hch@infradead.org>,
-	Martin Steigerwald <Martin@lichtvoll.de>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Dave Chinner <david@fromorbit.com>,
-	linux-fsdevel <linux-fsdevel@vger.kernel.org>
-References: <20121126025520.GC22858@thunk.org>
- <20121126091202.GO32450@dastard>
- <201212051148.28039.Martin@lichtvoll.de>
- <CA+55aFzgP29WfB1yvnj+Q9-TsbX+b-TCCjTS_vPJ16DxMy6aDQ@mail.gmail.com>
- <20121206120532.GA14100@infradead.org>
- <20121207011628.GB16373@gmail.com>
- <50C22923.90102@redhat.com>
- <alpine.LFD.2.02.1212070956310.23641@air.linux-foundation.org>
- <20121207190306.GB14972@shiny>
- <20121207204325.GC29435@thunk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20121207204325.GC29435@thunk.org>
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1354914575
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
-X-Barracuda-Spam-Score: -1.42
-X-Barracuda-Spam-Status: No, SCORE=-1.42 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=COMMA_SUBJECT
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.116374
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.60 COMMA_SUBJECT          Subject is like 'Re: FDSDS, this is a subject'
+	id S1424588Ab2LGVKm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 16:10:42 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:56971 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1424546Ab2LGVKk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 16:10:40 -0500
+Date: Fri, 7 Dec 2012 21:16:06 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Michal Simek <monstr@monstr.eu>
+Cc: linux-arch@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Using IO functions across ARM, PPC and Microblaze architectures
+Message-ID: <20121207211606.6c5d5bc8@pyramind.ukuu.org.uk>
+In-Reply-To: <CAHTX3d+VNDVQjnTnAB=Ywxo7odvNmCPu=wGZ03-xWLecSMsS9A@mail.gmail.com>
+References: <CAHTX3d+VNDVQjnTnAB=Ywxo7odvNmCPu=wGZ03-xWLecSMsS9A@mail.gmail.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 07, 2012 at 01:43:25PM -0700, Theodore Ts'o wrote:
-> On Fri, Dec 07, 2012 at 02:03:06PM -0500, Chris Mason wrote:
-> > 
-> > That's not what happened though, and the right way forward from here is
-> > to give the bit to the feature, maybe with a generic name like
-> > FALLOCATE_WITHOUT_BEING_HORRIBLY_SLOW.  
-> 
-> I don't think that's a good idea, because the current name explicitly
-> calls out the fact that we are making a tradeoff between what
-> ***might*** be a security exposure in some cases (but which might be
-> perfectly fine in others) for performance.  Using the generic name
-> would hide the fact that this tradeoff is being made, and the
-> arguments (which I've never seen backed up with a specific design) is
-> that it's possible to speed up random writes into preallocated space
-> on a flash device without making any kind of tradeoff that might imply
-> a security tradeoff.
+> Because I need to use IO functions which will behave
+> on arm as little endian and on powerpc as big endian
+> and on microblaze depends on endian setting.
+> I haven't found any IO function which I could use by 3 architectures
+> without using preprocessor macros or runtime detection
 
-Grin, we're really good at debating names.  But I do see what you mean.
-I'd hope that whatever generic facility we put in doesn't have the
-security implications.
+Its a rather weird mix. We can do "always big" and "always little"
 
-> 
-> If indeed it is possible to speed up this particular workload without
-> making any kind of no-hide-stale tradeoff, then we won't need the bit
-> --- writes into fallocated space will just get faster, with or without
-> the bit
-> 
-> I am sure it will be possible to do this in some cases (for example if
-> you have a device that supports persistent trim which can quickly
-> zeroize the blocks in question), but I would be very surprised if it's
-> possible to completely eliminate the performance degradation for all
-> devices and workloads.  (Not all storage devices support persistent
-> trim, just for starters.)
+> 1. Using helper function + preprocessor macros
+> (using static inline function also possible)
 
-Persistent trim is what I had in mind, but there are other ideas that do
-imply a change in behavior as well.  Can we safely assume this feature
-won't matter on spinning media?  New features like persistent
-trim do make it much easier to solve securely, and using a bit for it
-means we can toss back an error to the app if the underlying storage
-isn't safe.
+Then someone comes along and sticks a daughterboard into the system with
+the same device the other way around and there are years
 
-If google wants to have a block device patch that pretends to persistent
-trim on devices that can't, great.
+> 2. Using function pointers
 
-> 
-> In answer's to Linus's question, the reason why people are
-> hyperventilating so badly about this is that in some circles,
-> revealing stale data is so horrible that anyone who even tries to
-> suggest this should be excommunicated.  The mere existence of the
-> code, or that people are using it, horribly offends those people.
+Probably smarter. 8250.c works this way and it has to handle some
+extremely bizarre mappings.
+ 
+> b) Runtime initialization - here is the question if there is
+> any standard function which I could use.
 
-So I've always said this was a real performance problem and that it
-isn't just limited to ext4.  But can we please move past this part?  I
-don't think it is completely accurate.
+Set the pointers up and pass them as data with your platform device, that
+way the function definitions are buried in your platform code where they
+depend.
 
--chris
+Alan
