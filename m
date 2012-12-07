@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423637Ab2LGBAU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 20:00:20 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:46480 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423581Ab2LGBAN (ORCPT
+	id S1423711Ab2LGBAk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 20:00:40 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:43888 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423693Ab2LGBAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 20:00:13 -0500
+	Thu, 6 Dec 2012 20:00:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ariel Elior <ariele@broadcom.com>,
-        Eilon Greenstein <eilong@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>, CAI Qian <caiqian@redhat.com>
-Subject: [ 18/27] bnx2x: remove redundant warning log
-Date: Thu,  6 Dec 2012 16:59:02 -0800
-Message-Id: <20121207005831.101223486@linuxfoundation.org>
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Peter Huewe <peterhuewe@gmx.de>
+Subject: [ 25/27] drm/i915: Add no-lvds quirk for Supermicro X7SPA-H
+Date: Thu,  6 Dec 2012 16:59:09 -0800
+Message-Id: <20121207005833.301622554@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121207005825.232489605@linuxfoundation.org>
 References: <20121207005825.232489605@linuxfoundation.org>
@@ -28,43 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ariel Elior <ariele@broadcom.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 4a25417c20fac00b3afd58ce27408f964d19e708 upstream.
+commit c31407a3672aaebb4acddf90944a114fa5c8af7b upstream.
 
-fix bug where a register which was only meant to be read in 578xx/57712
-devices causes a bogus error message to be logged when read from other
-devices.
-
-Signed-off-by: Ariel Elior <ariele@broadcom.com>
-Signed-off-by: Eilon Greenstein <eilong@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: CAI Qian <caiqian@redhat.com>
+Reported-and-tested-by: Francois Tigeot <ftigeot@wolfpond.org>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=55375
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/i915/intel_lvds.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-@@ -9545,10 +9545,13 @@ static int __devinit bnx2x_prev_unload_c
-  */
- static void __devinit bnx2x_prev_interrupted_dmae(struct bnx2x *bp)
- {
--	u32 val = REG_RD(bp, PGLUE_B_REG_PGLUE_B_INT_STS);
--	if (val & PGLUE_B_PGLUE_B_INT_STS_REG_WAS_ERROR_ATTN) {
--		BNX2X_ERR("was error bit was found to be set in pglueb upon startup. Clearing");
--		REG_WR(bp, PGLUE_B_REG_WAS_ERROR_PF_7_0_CLR, 1 << BP_FUNC(bp));
-+	if (!CHIP_IS_E1x(bp)) {
-+		u32 val = REG_RD(bp, PGLUE_B_REG_PGLUE_B_INT_STS);
-+		if (val & PGLUE_B_PGLUE_B_INT_STS_REG_WAS_ERROR_ATTN) {
-+			BNX2X_ERR("was error bit was found to be set in pglueb upon startup. Clearing");
-+			REG_WR(bp, PGLUE_B_REG_WAS_ERROR_PF_7_0_CLR,
-+			       1 << BP_FUNC(bp));
-+		}
- 	}
- }
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -796,6 +796,14 @@ static const struct dmi_system_id intel_
+ 			DMI_MATCH(DMI_BOARD_NAME, "D525TUD"),
+ 		},
+ 	},
++	{
++		.callback = intel_no_lvds_dmi_callback,
++		.ident = "Supermicro X7SPA-H",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Supermicro"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "X7SPA-H"),
++		},
++	},
  
+ 	{ }	/* terminating entry */
+ };
 
 
