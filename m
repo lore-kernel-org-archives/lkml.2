@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933087Ab2LGKZH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 05:25:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42354 "EHLO mx2.suse.de"
+	id S933123Ab2LGKZS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 05:25:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42403 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933024Ab2LGKZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 05:25:04 -0500
+	id S933024Ab2LGKZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 05:25:09 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -21,9 +21,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 39/49] mm: numa: Use a two-stage filter to restrict pages being migrated for unlikely task<->node relationships
-Date: Fri,  7 Dec 2012 10:23:42 +0000
-Message-Id: <1354875832-9700-40-git-send-email-mgorman@suse.de>
+Subject: [PATCH 42/49] mm: sched: numa: Control enabling and disabling of NUMA balancing if !SCHED_DEBUG
+Date: Fri,  7 Dec 2012 10:23:45 +0000
+Message-Id: <1354875832-9700-43-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1354875832-9700-1-git-send-email-mgorman@suse.de>
 References: <1354875832-9700-1-git-send-email-mgorman@suse.de>
@@ -31,71 +31,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Note: This two-stage filter was taken directly from the sched/numa patch
-	"sched, numa, mm: Add the scanning page fault machinery" but is
-	only a partial extraction. As the end result is not necessarily
-	recognisable, the signed-offs-by had to be removed. Will be added
-	back if requested.
-
-While it is desirable that all threads in a process run on its home
-node, this is not always possible or necessary. There may be more
-threads than exist within the node or the node might over-subscribed
-with unrelated processes.
-
-This can cause a situation whereby a page gets migrated off its home
-node because the threads clearing pte_numa were running off-node. This
-patch uses page->last_nid to build a two-stage filter before pages get
-migrated to avoid problems with short or unlikely task<->node
-relationships.
+The "mm: sched: numa: Control enabling and disabling of NUMA balancing"
+depends on scheduling debug being enabled but it's perfectly legimate to
+disable automatic NUMA balancing even without this option. This should
+take care of it.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/mempolicy.c |   30 +++++++++++++++++++++++++++++-
- 1 file changed, 29 insertions(+), 1 deletion(-)
+ kernel/sched/core.c  |    9 +++++++++
+ kernel/sched/sched.h |    8 +++++++-
+ 2 files changed, 16 insertions(+), 1 deletion(-)
 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 4c1c8d8..fd20e28 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2317,9 +2317,37 @@ int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long
- 	}
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 4841f4f..161079c 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1558,6 +1558,7 @@ static void __sched_fork(struct task_struct *p)
+ }
  
- 	/* Migrate the page towards the node whose CPU is referencing it */
--	if (pol->flags & MPOL_F_MORON)
-+	if (pol->flags & MPOL_F_MORON) {
-+		int last_nid;
+ #ifdef CONFIG_BALANCE_NUMA
++#ifdef CONFIG_SCHED_DEBUG
+ void set_balancenuma_state(bool enabled)
+ {
+ 	if (enabled)
+@@ -1565,6 +1566,14 @@ void set_balancenuma_state(bool enabled)
+ 	else
+ 		sched_feat_set("NO_NUMA");
+ }
++#else
++__read_mostly bool balancenuma_enabled;
 +
- 		polnid = numa_node_id();
++void set_balancenuma_state(bool enabled)
++{
++	balancenuma_enabled = enabled;
++}
++#endif /* CONFIG_SCHED_DEBUG */
+ #endif /* CONFIG_BALANCE_NUMA */
  
-+		/*
-+		 * Multi-stage node selection is used in conjunction
-+		 * with a periodic migration fault to build a temporal
-+		 * task<->page relation. By using a two-stage filter we
-+		 * remove short/unlikely relations.
-+		 *
-+		 * Using P(p) ~ n_p / n_t as per frequentist
-+		 * probability, we can equate a task's usage of a
-+		 * particular page (n_p) per total usage of this
-+		 * page (n_t) (in a given time-span) to a probability.
-+		 *
-+		 * Our periodic faults will sample this probability and
-+		 * getting the same result twice in a row, given these
-+		 * samples are fully independent, is then given by
-+		 * P(n)^2, provided our sample period is sufficiently
-+		 * short compared to the usage pattern.
-+		 *
-+		 * This quadric squishes small probabilities, making
-+		 * it less likely we act on an unlikely task<->page
-+		 * relation.
-+		 */
-+		last_nid = page_xchg_last_nid(page, polnid);
-+		if (last_nid != polnid)
-+			goto out;
-+	}
-+
- 	if (curnid != polnid)
- 		ret = polnid;
- out:
+ /*
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 9a43241..03dce73 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -650,9 +650,15 @@ extern struct static_key sched_feat_keys[__SCHED_FEAT_NR];
+ 
+ #ifdef CONFIG_BALANCE_NUMA
+ #define sched_feat_numa(x) sched_feat(x)
++#ifdef CONFIG_SCHED_DEBUG
++#define balancenuma_enabled sched_feat_numa(NUMA)
++#else
++extern bool balancenuma_enabled;
++#endif /* CONFIG_SCHED_DEBUG */
+ #else
+ #define sched_feat_numa(x) (0)
+-#endif
++#define balancenuma_enabled (0)
++#endif /* CONFIG_BALANCE_NUMA */
+ 
+ static inline u64 global_rt_period(void)
+ {
 -- 
 1.7.9.2
 
