@@ -1,93 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423218Ab2LGROD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 12:14:03 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22513 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423124Ab2LGRN6 (ORCPT
+	id S1423245Ab2LGRPe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 12:15:34 -0500
+Received: from mail-ia0-f177.google.com ([209.85.210.177]:57044 "EHLO
+	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423172Ab2LGRPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 12:13:58 -0500
-X-Authority-Analysis: v=2.0 cv=ZNdVaAHb c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=0q0mCv_Vr9gA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=lrIq2vSOvhQA:10 a=fUGAhBWXZ_aTiXflodUA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1354900436.17101.58.camel@gandalf.local.home>
-Subject: Re: [PATCH] ARM: ftrace: Ensure code modifications are synchronised
- across all cpus
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Rabin Vincent <rabin@rab.in>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 07 Dec 2012 12:13:56 -0500
-In-Reply-To: <20121207164530.GX14363@n2100.arm.linux.org.uk>
-References: <1354817466.30905.13.camel@linaro1.home>
-	 <1354821581.17101.17.camel@gandalf.local.home>
-	 <1354872138.3176.15.camel@computer5.home>
-	 <1354888985.17101.41.camel@gandalf.local.home>
-	 <1354892111.13000.50.camel@linaro1.home>
-	 <1354894134.17101.44.camel@gandalf.local.home>
-	 <20121207162346.GW14363@n2100.arm.linux.org.uk>
-	 <1354898200.17101.50.camel@gandalf.local.home>
-	 <20121207164530.GX14363@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 7 Dec 2012 12:15:32 -0500
+X-Greylist: delayed 475 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Dec 2012 12:15:32 EST
+MIME-Version: 1.0
+In-Reply-To: <20121207144233.GA6681@mail.hallyn.com>
+References: <CALQRfL5EeqRFykLGVLJx3pfKdP4iF8r-8Ys7pVadOaCc3j1=iQ@mail.gmail.com>
+	<CALCETrXYPjow3geVBnYK_ZOhnuU_wZkdebumJ=Hv3-T=fHaPNA@mail.gmail.com>
+	<CALQRfL7e160D+vzVhT-fUS-_Yp55wqnWkRFJdDTOOVjjStd9Jw@mail.gmail.com>
+	<CALCETrXUSz9EN-tGMfJkw9+1kO0hfmQk4E5XPF0cg9nmpPXepg@mail.gmail.com>
+	<20121204135445.GA7420@mail.hallyn.com>
+	<CALCETrW05JtRZSSJ0v=jz8B7_av1QS+D5qux5=q8aO3iWZHB1A@mail.gmail.com>
+	<20121205210528.GA9047@sergelap>
+	<CALCETrVsrJSt8oYnh+y32Lrxw6Yk=Cp_e07Qf=fLbVfORvzUNg@mail.gmail.com>
+	<20121205222040.GB14884@sergelap>
+	<50C13F0E.5010401@schaufler-ca.com>
+	<20121207144233.GA6681@mail.hallyn.com>
+Date: Fri, 7 Dec 2012 09:07:35 -0800
+X-Google-Sender-Auth: lc8U4Y71zccK4krNLf-i0uvro2E
+Message-ID: <CALQRfL6c2nOSOR00YsBhgC=KWSWB-xOsDTJiLzbtmj6Zv1Mr2Q@mail.gmail.com>
+Subject: Re: [RFC] Capabilities still can't be inherited by normal programs
+From: "Andrew G. Morgan" <morgan@kernel.org>
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Casey Schaufler <casey@schaufler-ca.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@redhat.com>,
+        "Serge E. Hallyn" <serge@canonical.com>,
+        Markku Savela <msa@moth.iki.fi>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-12-07 at 16:45 +0000, Russell King - ARM Linux wrote:
-> On Fri, Dec 07, 2012 at 11:36:40AM -0500, Steven Rostedt wrote:
+I'm still missing something with the problem definition.
 
-> > But what about the limitations that the function tracer imposes on the
-> > code that gets modified by stop_machine()?
-> > 
-> > 1) the original code is simply a call to mcount
-> > 
-> > 2) on boot up, that call gets converted into a nop
-> > 
-> > 3) the code that gets changed will only be converting a nop to a call
-> > into the function tracer, and back again.
-> > 
-> > IOW, it's a very limited subset of the ARM assembly that gets touched.
-> > I'm not sure what the op codes are for the above, but I can imagine they
-> > don't impose the prefixes as you described.
-> > 
-> > If that's the case, is it still possible to change to the breakpoint
-> > method?
-> 
-> I have no idea; I've no idea how ftrace works on ARM.
+So far if I follow the discussion we have determined that inheritance
+as implemented is OK except for the fact that giving user an
+inheritable pI bit which gives them default permission to use all
+binaries endowed with the corresponding file fI bit.
 
-I know how ftrace works on ARM, I'm just asking about the way the
-architecture works in general. So to answer my question, you don't need
-to know anything about ftrace. I'll make my question more general:
+Is this the problem a different inheritance model is supposed to
+address? Serge suggested that the binary could authenticate the
+user... This seems like its putting the protection in the best
+place... Each app can control its sub functions with the richest
+semantics.
 
-If I have a nop, that is a size of a call (branch and link), which is
-near the beginning of a function and not part of any conditional, and I
-want to convert it into a call (branch and link), would adding a
-breakpoint to it, modifying it to the call, and then removing the
-breakpoint be possible? Of course it would require syncing in between
-steps, but my question is, if the above is possible on a thumb2 ARM
-processor?
+That being said...
 
+To me this looks like it's an access control problem... Namely use
+acls to limit which users (groups) can execute each privileged binary.
+Serge's option 2 seems like a similar approach.
 
->   That's something
-> other people use and deal with.  Last (and only) time I used the built-in
-> kernel tracing facilities I ended up giving up with it and going back to
-> using my sched-clock+record+printk based approaches instead on account
-> of the kernels built-in tracing being far too heavy.
+Cheers
 
-Too bad. Which tracing facilities did you use? Function tracing? And
-IIRC, ARM originally had only the static tracing, which was extremely
-heavy weight. Have you tried tracepoints? Also, have you tried my
-favorite way of debugging: trace_printk(). It acts just like printk but
-instead of recording to the console, it records into the ftrace buffer
-which can be read via the /debug/tracing/trace or dumped to the console
-with a sysrq-z.
+Andrew
 
--- Steve
-
-
+On Fri, Dec 7, 2012 at 6:42 AM, Serge E. Hallyn <serge@hallyn.com> wrote:
+> Quoting Casey Schaufler (casey@schaufler-ca.com):
+>> On 12/5/2012 2:20 PM, Serge Hallyn wrote:
+>> > Quoting Andy Lutomirski (luto@amacapital.net):
+>> >> On Wed, Dec 5, 2012 at 1:05 PM, Serge Hallyn <serge.hallyn@canonical.com> wrote:
+>> >>> Quoting Andy Lutomirski (luto@amacapital.net):
+>> >>>> On Tue, Dec 4, 2012 at 5:54 AM, Serge E. Hallyn <serge@hallyn.com> wrote:
+>> >>>>> Quoting Andy Lutomirski (luto@amacapital.net):
+>> >>>>>>>> d) If I really wanted, I could emulate execve without actually doing
+>> >>>>>>>> execve, and capabilities would be inherited.
+>> >>>>>>> If you could modify the executable properties of the binary that has
+>> >>>>>>> the privilege to wield a privilege then you are either exploiting an
+>> >>>>>>> app bug, or doing something the privileged binary has been trusted to
+>> >>>>>>> do.
+>> >>>>>> That's not what I mean.  I would:
+>> >>>>>>
+>> >>>>>> fork()
+>> >>>>>> munmap everything
+>> >>>>>> mmap ld.so
+>> >>>>>> set up a fake initial stack and the right fd or mapping or whatever
+>> >>>>>> just to ld-linux.so
+>> >>>>>>
+>> >>>>>> That's almost execve, and privilege inheritance works.
+>> >>>>> But of course that is why you only want to fill fI on programs you trust
+>> >>>>> not to do that.  What you are arguing is that you want to give fI on
+>> >>>>> programs you don't trust anyway, and so heck why not just give it on
+>> >>>>> everything.
+>> >>>>>
+>> >>>> Huh?  I'd set fP on a program I expect to do *exactly* that (or use
+>> >>>> actual in-kernel capability inheritance, which I would find vastly
+>> >>>> more pleasant).  If I give a program a capability (via fP or fI & pI),
+>> >>>> then I had better trust it not to abuse that capability.  Having it
+>> >>>> pass that capability on to a child helper process would be just fine
+>> >>>> with me *because it already has that capability*.
+>> >>>>
+>> >>>> The problem with the current inheritance mechanism is that it's very
+>> >>>> difficult to understand what it means for an fI bit or a pI bit to be
+>> >>>> set.  Saying "set a pI bit using pam if you want to grant permission
+>> >>>> to that user to run a particular program with fI set" is crap -- it
+>> >>>> only works if there is exactly one binary on the system with that bit
+>> >>>> set.  In any case, a different administrator or package might use it
+>> >>>> for something different.
+>> >>>>
+>> >>>> Suppose I use the (apparently) current suggested approach: I install a
+>> >>>> fI=cap_net_raw copy of tcpdump somewhere.  Then I write a helper that
+>> >>>> has fP=cap_new_raw and invokes that copy of tcpdump after appropriate
+>> >>>> validation of parameters.  All is well.
+>> >>> Since you're writing a special helper, you can surely have it validate
+>> >>> the userid and make it so the calling user doesn't have to have
+>> >>> cap_net_raw in pI?
+>> >> I can and did.
+>> > Oh, oops, I mis-understood what you meant was the problem.
+>> >
+>> > Yup, that is a real limitation.
+>> >
+>> > Yes, with the posix file caps you will be disappointed unless you see
+>> > pI=X as "this user may run any program which is Inh-trusted with X" and
+>> > fI=X as "this program may be run with X by any user Inh-trusted with X".
+>> >
+>> > It almost makes me want to say that there should be an execve-analogue
+>> > to prctl(PR_SET_KEEPCAPS), which says caps will remain unchanged for one
+>> > execve.  Or perhaps an intermediate securebits state between
+>> > !SECBIT_NOROOT and SECBIT_NOROOT, which automatically transitions after
+>> > the first execve to SECBIT_NOROOT.
+>> >
+>> >> The mere presence of a cap_net_raw+i tcpdump binary is more or less
+>> >> equivalent to saying that users with cap_net_raw in pI can capture
+>> >> packets.  I've just prevented pI=cap_net_raw from meaning anything
+>> >> less than "can capture packets".  So I think we should bite the bullet
+>> >> and just let programs opt in (via some appropriately careful
+>> >> mechanism) to real capability inheritance.
+>> > By real you mean more precise.  I think it'd be very interesting to get
+>> > together with Markku and learn more from the N9 experiment!
+>> >
+>> > Markku, are there any post-mortem analysis papers we can read for
+>> > starters?  Andy would not be trying to restrict root in general, so
+>> > the ramification you cited may not necessarily be relevant.
+>> >
+>> > -serge
+>>
+>> http://wt.tuxomania.net/publications/posix.1e/download.html
+>>
+>> Everyone should read the capabilities rationale. It answers most
+>> of the questions on this thread, and a bunch more. The capabilities
+>> mechanism has to support what are currently setuid-root programs
+>> without change and allow for new programs that use the mechanism
+>> wisely and fully.
+>
+> How to put this delicately...   that is not enjoyable reading :)
+>
+> As I understood it, the draft supports setuid-root programs, but
+> does not support a !SECBIT_NOROOT environment.  If that is not the
+> case, can you point to where in the draft that is described?
+>
+> Regardless,
+>
+> 1. Andy describes a problem which AFAICT can't be solved with the
+> current capabilities support.  An intermediate state between
+> !SECBIT_NOROOT and SECBIT_NOROOT (which itself is IIUC already an
+> extension beyond the above draft) seems an interesting feature to
+> consider which would support the wrapper case - but not something
+> to run into blindly without considering all the ramifications.
+>
+> 2. The N9 folks have experimented with other inheritence properties,
+> and the details their experience would be educational.
+>
+> There are two other ways the wrappered privileged tcpdump could be
+> achieved:
+>
+> 1. Have the privileged wrapper create a new user and network
+> namespace and pass the network device into the new network
+> namespace and run tcpdump there with privilege.  This doesn't
+> work if the specific device also needs to be used in the original
+> network namespace (but passing a device bridged with the one of
+> interest might suffice?).
+>
+> 2. Have the privileged wrapper create a small tmpfs mount in a
+> (non-ms-shared) new mounts namespace, copy tcpdump into that mount
+> and give it fI=CAP_NET_RAW, then execute the child with
+> pI=CAP_NET_RAW.  A bit hacky, but prevents the issue of other
+> users with pI=CAP_NET_RAW from executing that tcpdump.  Since
+> the child will have pP=CAP_NET_RAW, the other users should be
+> prevented from getting to the modified tcpdump binary through
+> the child's /proc/pid/fd/N.
+>
+> Not saying these are ideal, just trying to think of ways of
+> solving the problem...
+>
+> -serge
