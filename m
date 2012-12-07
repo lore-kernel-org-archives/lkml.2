@@ -1,107 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932272Ab2LGJlz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 04:41:55 -0500
-Received: from mx3.cyfra.ua ([62.80.160.182]:54747 "EHLO mx3.cyfra.ua"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753788Ab2LGJlx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 04:41:53 -0500
-From: Vitalii Demianets <vitas@nppfactor.kiev.ua>
-Organization: Factor-SPE
-To: "Hans J. Koch" <hjk@hansjkoch.de>
-Subject: Re: [PATCH v2] drivers/uio/uio_pdrv_genirq.c: Fix memory freeing issues
-Date: Fri, 7 Dec 2012 11:41:45 +0200
-User-Agent: KMail/1.9.10
-Cc: Cong Ding <dinggnu@gmail.com>, linux-kernel@vger.kernel.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-References: <201211271929.32315.vitas@nppfactor.kiev.ua> <201212061111.39057.vitas@nppfactor.kiev.ua> <20121206221559.GB2611@local>
-In-Reply-To: <20121206221559.GB2611@local>
+	id S1755659Ab2LGJpM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 04:45:12 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:42510 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754245Ab2LGJpJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 04:45:09 -0500
+Message-ID: <50C1BA9D.5010406@monstr.eu>
+Date: Fri, 07 Dec 2012 10:45:01 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Michal Simek <michal.simek@xilinx.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        linux-arch@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        John Linn <John.Linn@xilinx.com>, John Williams <jwilliams@xilinx.com>,
+        linux-pci@vger.kernel.org
+Subject: Re: Sharing PCIE driver between Microblaze and Arm zynq
+References: <CAHTX3dLxbVxn+D+AV7L0VsGYFOjas3AJ_3M_xncVfxp02FCy=Q@mail.gmail.com> <CAErSpo6xRdwzTuPPqnmvmHSp7awnV7=Z85eWFfktb_hm9Aad_A@mail.gmail.com>
+In-Reply-To: <CAErSpo6xRdwzTuPPqnmvmHSp7awnV7=Z85eWFfktb_hm9Aad_A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201212071141.45231.vitas@nppfactor.kiev.ua>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 December 2012 00:15:59 Hans J. Koch wrote:
-> On Thu, Dec 06, 2012 at 11:11:38AM +0200, Vitalii Demianets wrote:
-> > On Thursday 06 December 2012 04:41:01 Hans J. Koch wrote:
-> > > > @@ -63,7 +68,7 @@ static irqreturn_t uio_pdrv_genirq_handler(int irq,
-> >
-> > struct uio_info *dev_info)
-> >
-> > > >  	 * remember the state so we can allow user space to enable it
-> > > > later. */
-> > > >
-> > > > -	if (!test_and_set_bit(0, &priv->flags))
-> > > > +	if (!test_and_set_bit(UIO_IRQ_DISABLED, &priv->flags))
-> > > >  		disable_irq_nosync(irq);
-> > >
-> > > That is not safe. That flag can only be changed by userspace, and if
-> > > the userspace part is not running, the CPU on which the irq is pending
-> > > will hang.
-> > > The handler has to disable the interrupt in any case.
-> > > (The original version had the same problem, I know...)
-> >
-> > Perhaps I'm missing something here, but I don't see your point. If
-> > userspace is not (implicitly) calling uio_pdrv_genirq_irqcontrol() by
-> > writing to the device file, then on the first invocation of interrupt
-> > handler that IRQ is disabled by disable_irq_nosync() and that's the end
-> > of story - no more irqs, no problems. Until userspace writes non-zero to
-> > the device file, of course.
+On 12/06/2012 10:27 PM, Bjorn Helgaas wrote:
+> [+cc linux-pci]
 >
-> If you run into the irq handler, the interrupt was obviously enabled. Since
-> irq sharing is not supported by this driver, you ALWAYS have to disable it
-> because it IS your interrupt. Storing the enabled/disabled status in a
-> variable is not needed at all here. Or am I missing something?
+> On Thu, Dec 6, 2012 at 7:23 AM, Michal Simek <michal.simek@xilinx.com> wrote:
+>> Hi guys,
+>>
+>> I have a question regarding to sharing generic OF pcie driver between
+>> two architectures MB and ARM Zynq.
+>> Is drivers/pci/pcie location good for it?
+>> Make no sense to have the same driver in two locations.
 >
+> I think you're talking about a PCI host bridge driver.  It would
+> definitely be nice to move toward a generic, shared driver.  Host
+> bridge drivers are responsible for enumerating the PCI hierarchy below
+> the bridge.  Enumeration is not really PCIe-specific, so I wouldn't
+> put it in drivers/pci/pcie.
 
-Good point. I agree that having UIO_IRQ_DISABLED flag is redundant. Inside the 
-irq handler we know for sure that irq is enabled. In 
-uio_pdrv_genirq_irqcontrol() this knowledge is not mandatory, we could 
-enable/disable irq unconditionally.
+Not a PCI expert, just trying to find out the proper location for this shared driver.
 
-The only question: I feel uncomfortable mixing in one patch bug fixes (i.e. 
-memory freeing issues) and optimization (removing UIO_IRQ_DISABLED flag). 
-What do you think is the best course of action:
-a) respin the current patch to the v3 with removing UIO_IRQ_DISABLED flag;
- or
-b) do the removing of the flag in a separate patch, dependent on the "Fix 
-memory freeing issues"?
 
-> > > >  	priv->uioinfo = uioinfo;
-> > > >  	spin_lock_init(&priv->lock);
-> > > > -	priv->flags = 0; /* interrupt is enabled to begin with */
-> > > > +	/* interrupt is enabled to begin with */
-> > > > +	priv->flags = uioinfo_alloced ? (1 << UIO_INFO_ALLOCED) : 0;
-> > >
-> > > The comment doesn't describe the line it's supposed to comment.
-> >
-> > The comment draws attention to the fact that UIO_IRQ_DISABLED is not set
-> > initially, and this is done on purpose.
+>> Is using readl/writel IO functions in this driver the best option
+>> which we can have?
+>> Or is there any other recommendation?
 >
-> And that's right because the interrupt is initially enabled by
-> uio_register_device().
->
-> > Particularly it is done because of
-> > the potential problem you noted earlier - if userspace is never setting
-> > this flag, the interrupt handler will disable irq on the first invocation
-> > thanks to the absence of the flag
-> > (if(!test_and_set_bit(UIO_IRQ_DISABLED,...) will succeed).
-> > So, I think we really need some comment explaining how the things are
-> > arranged here; after all even you haven't got the whole picture on the
-> > first glance. Maybe the current wording of the comment is not the best.
-> > I've just left what was there before.
->
-> OK, but we humans tend to read a text from top to bottom, so a comment
-> should describe the code immediately following it. And that is a line that
-> deals with memory allocation, not with interrupts.
->
+> I'm not really a driver person, but if you're writing a new driver,
+> wouldn't you use the iomap interfaces (ioremap(), ioread32(), etc)
+> rather than readl()?
 
-That line deals with initialization of flags. The comment draws attention to 
-the fact that UIO_IRQ_DISABLED flag is initialized to zero.
-Anyways, if we agreed on the removing of that flag altogether, this would be 
-no issue and the comment would be simply removed.
+That driver exists but it is not in mainline and it is better to directly
+add it to proper location with correct io functions.
+The question is if ioread/iowrite functions are correct one.
+PowerPC io-defs.h suggests that readl/writel should be used for PCI.
+
+
+>> Also just want to check if it is correct to use pcie device_type.
+>
+> I don't know what you're asking here.  Can you elaborate or give a
+> specific example?
+
+If node property device_type pcie should be used.
+device_type = "pcie";
+
+For pci it is device_type = "pci";
+For network it is device_type = "network"
+the same for serial, watchdogs.
+
+Do we have any list of device_types which we should use?
+
+Thanks,
+Michal
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
