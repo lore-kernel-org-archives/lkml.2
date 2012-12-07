@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424680Ab2LGWLZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 17:11:25 -0500
-Received: from sandeen.net ([63.231.237.45]:41451 "EHLO sandeen.net"
+	id S1755234Ab2LGWLX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 17:11:23 -0500
+Received: from smtp.enix.org ([193.19.211.146]:50238 "EHLO smtp.enix.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754713Ab2LGWLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 17:11:21 -0500
-Message-ID: <50C2674F.1060305@sandeen.net>
-Date: Fri, 07 Dec 2012 16:01:51 -0600
-From: Eric Sandeen <sandeen@sandeen.net>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ric Wheeler <rwheeler@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Chinner <david@fromorbit.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
- UAPI
-References: <1353366267-15629-1-git-send-email-david@fromorbit.com> <20121126025520.GC22858@thunk.org> <20121126091202.GO32450@dastard> <201212051148.28039.Martin@lichtvoll.de> <CA+55aFzgP29WfB1yvnj+Q9-TsbX+b-TCCjTS_vPJ16DxMy6aDQ@mail.gmail.com> <20121206120532.GA14100@infradead.org> <20121207011628.GB16373@gmail.com> <50C22923.90102@redhat.com> <alpine.LFD.2.02.1212070956310.23641@air.linux-foundation.org> <20121207193019.GA31591@home.goodmis.org> <20121207211440.GD29435@thunk.org>
-In-Reply-To: <20121207211440.GD29435@thunk.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754707Ab2LGWLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 17:11:20 -0500
+X-Greylist: delayed 348 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Dec 2012 17:11:20 EST
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Lior Amsalem <alior@marvell.com>, Maen Suleiman <maen@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Shadi Ammouri <shadi@marvell.com>,
+        Eran Ben-Avi <benavi@marvell.com>,
+        Yehuda Yitschak <yehuday@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org
+Subject: [RFC v1 01/16] lib: devres: don't enclose pcim_*() functions in CONFIG_HAS_IOPORT
+Date: Fri,  7 Dec 2012 23:04:24 +0100
+Message-Id: <1354917879-32073-2-git-send-email-thomas.petazzoni@free-electrons.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1354917879-32073-1-git-send-email-thomas.petazzoni@free-electrons.com>
+References: <1354917879-32073-1-git-send-email-thomas.petazzoni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/7/12 3:14 PM, Theodore Ts'o wrote:
-> On Fri, Dec 07, 2012 at 02:30:19PM -0500, Steven Rostedt wrote:
->> How is this similar? By adding this bit, we removed incentive from a
->> group of developers that have the means to fix the real issue at hand
->> (the performance problem with ext4). Thus, it means that they have a work
->> around that's good enough for them, but the rest of us suffer.
-> 
-> That assumes that there **is** a way to claw back the performance
-> loss, and Chris Mason has demonstrated the performance hit exists with
-> xfs as well (950 MB/s vs. 400 MB/s; that's more than a factor of two).
+The pcim_*() functions are used by the libata-sff subsystem, and this
+subsystem is used for many SATA drivers on ARM platforms that do not
+necessarily have I/O ports.
 
-But he has not demonstrated that it can't be improved in XFS; I don't
-think that anyone in the XFS community has even begun to look at
-whether it can be improved ...
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+---
+ lib/devres.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> Sometimes, you have to make the engineering tradeoffs.  That's why
-> we're engineers, for goodness sakes.  Sometimes, it's just not
-> possible to square the circle.
-
-... so this strikes me as a bit premature.
-
-> I don't believe that the technique of forcing people who need that
-> performance to suffer in order to induce them to try to engineer a
-> solution which may or may not exist is really the best or fairest way
-> to go about things.
-
-Have we exhausted efforts to improve ext4 as well?  Have we even identified
-the performance bottlenecks yet via profiling?
-
-What this seems to be is behavior nobody has asked for (expose
-other users' stale data) in the name of solving a performance problem
-(fine-grained conversion of unwritten extents comes at a non-negligible cost).
-
--Eric
-
-> 					- Ted
+diff --git a/lib/devres.c b/lib/devres.c
+index 80b9c76..5639c3e 100644
+--- a/lib/devres.c
++++ b/lib/devres.c
+@@ -195,6 +195,7 @@ void devm_ioport_unmap(struct device *dev, void __iomem *addr)
+ 			       devm_ioport_map_match, (void *)addr));
+ }
+ EXPORT_SYMBOL(devm_ioport_unmap);
++#endif /* CONFIG_HAS_IOPORT */
+ 
+ #ifdef CONFIG_PCI
+ /*
+@@ -400,4 +401,3 @@ void pcim_iounmap_regions(struct pci_dev *pdev, int mask)
+ }
+ EXPORT_SYMBOL(pcim_iounmap_regions);
+ #endif /* CONFIG_PCI */
+-#endif /* CONFIG_HAS_IOPORT */
+-- 
+1.7.9.5
 
