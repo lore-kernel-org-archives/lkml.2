@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753625Ab2LGWqM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 17:46:12 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:42795 "EHLO mail.zytor.com"
+	id S1753930Ab2LGWsM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 17:48:12 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:59355 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751361Ab2LGWqL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 17:46:11 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <1354920151-4461-1-git-send-email-dinggnu@gmail.com>
-References: <1354920151-4461-1-git-send-email-dinggnu@gmail.com>
+	id S1751676Ab2LGWsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 17:48:10 -0500
+Date: Fri, 7 Dec 2012 23:41:10 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Xishi Qiu <qiuxishi@huawei.com>, WuJianguo <wujianguo@huawei.com>,
+        Liujiang <jiang.liu@huawei.com>, Vyacheslav.Dubeyko@huawei.com,
+        andi@firstfloor.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] MCE: fix an error of mce_bad_pages statistics
+Message-ID: <20121207224110.GA32115@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Xishi Qiu <qiuxishi@huawei.com>, WuJianguo <wujianguo@huawei.com>,
+	Liujiang <jiang.liu@huawei.com>, Vyacheslav.Dubeyko@huawei.com,
+	andi@firstfloor.org, linux-mm@kvack.org,
+	linux-kernel@vger.kernel.org
+References: <50C1AD6D.7010709@huawei.com>
+ <20121207141102.4fda582d.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] arch/x86/tools/gen-insn-attr-x86.awk: remove duplicate const
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Fri, 07 Dec 2012 14:45:43 -0800
-To: Cong Ding <dinggnu@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel@vger.kernel.org
-Message-ID: <3c1e54bc-31ec-4a38-b6d3-58b25760f9cb@email.android.com>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20121207141102.4fda582d.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch description please?
+On Fri, Dec 07, 2012 at 02:11:02PM -0800, Andrew Morton wrote:
+> A few things:
+> 
+> - soft_offline_page() already checks for this case:
+> 
+> 	if (PageHWPoison(page)) {
+> 		unlock_page(page);
+> 		put_page(page);
+> 		pr_info("soft offline: %#lx page already poisoned\n", pfn);
+> 		return -EBUSY;
+> 	}
 
-Cong Ding <dinggnu@gmail.com> wrote:
+Oh, so we do this check after all. But later in the function. Why? Why
+not at the beginning so that when a page is marked poisoned already we
+can exit early?
 
->
->Signed-off-by: Cong Ding <dinggnu@gmail.com>
->---
-> arch/x86/tools/gen-insn-attr-x86.awk |    4 ++--
-> 1 files changed, 2 insertions(+), 2 deletions(-)
->
->diff --git a/arch/x86/tools/gen-insn-attr-x86.awk
->b/arch/x86/tools/gen-insn-attr-x86.awk
->index ddcf39b..d1d9cfa 100644
->--- a/arch/x86/tools/gen-insn-attr-x86.awk
->+++ b/arch/x86/tools/gen-insn-attr-x86.awk
->@@ -356,7 +356,7 @@ END {
-> 		exit 1
-> 	# print escape opcode map's array
-> 	print "/* Escape opcode map array */"
->-	print "const insn_attr_t const *inat_escape_tables[INAT_ESC_MAX + 1]"
->\
->+	print "const insn_attr_t *inat_escape_tables[INAT_ESC_MAX + 1]" \
-> 	      "[INAT_LSTPFX_MAX + 1] = {"
-> 	for (i = 0; i < geid; i++)
-> 		for (j = 0; j < max_lprefix; j++)
->@@ -365,7 +365,7 @@ END {
-> 	print "};\n"
-> 	# print group opcode map's array
-> 	print "/* Group opcode map array */"
->-	print "const insn_attr_t const *inat_group_tables[INAT_GRP_MAX + 1]"\
->+	print "const insn_attr_t *inat_group_tables[INAT_GRP_MAX + 1]"\
-> 	      "[INAT_LSTPFX_MAX + 1] = {"
-> 	for (i = 0; i < ggid; i++)
-> 		for (j = 0; j < max_lprefix; j++)
+Strange.
 
 -- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+Regards/Gruss,
+    Boris.
