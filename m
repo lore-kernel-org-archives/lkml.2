@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1946108Ab2LGGZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 01:25:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45846 "EHLO mx1.redhat.com"
+	id S1946126Ab2LGG0F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 01:26:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43909 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1946003Ab2LGGZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 01:25:56 -0500
+	id S1946003Ab2LGG0C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 01:26:02 -0500
 From: Myron Stowe <myron.stowe@redhat.com>
-Subject: [PATCH 10/15] PCI/acpiphp: Change acpiphp_add_bridge() to return void
-	instead of 0
+Subject: [PATCH 11/15] PCI/ACPI: Fix latent refcount issue in
+	acpi_pci_root_start()
 To: bhelgaas@google.com
 Cc: linux-pci@vger.kernel.org, yinghai@kernel.org, linux-acpi@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date: Thu, 06 Dec 2012 23:25:54 -0700
-Message-ID: <20121207062554.11051.74801.stgit@amt.stowe>
+Date: Thu, 06 Dec 2012 23:25:59 -0700
+Message-ID: <20121207062559.11051.18764.stgit@amt.stowe>
 In-Reply-To: <20121207062454.11051.12739.stgit@amt.stowe>
 References: <20121207062454.11051.12739.stgit@amt.stowe>
 User-Agent: StGIT/0.14.3
@@ -24,69 +24,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-acpiphp_add_bridge() always returns 0.  This patch changes the return
-type from an 'int' to 'void'.
+During early boot, the kernel performs ACPI enumeration in which host
+bridges are discovered (subsys_initcall(acpi_pci_root_init)).  Later
+drivers, both built-in and modules such as the "ACPI PCI Slot Detection
+Driver ("pci_slot")", are loaded (module_init(acpi_pci_slot_init)) thus we
+end up with the following call chain:
+  acpi_pci_root_start
+    list_for_each_entry(..., acpi_pci_drivers, ...)
+      driver->add(root)		# always no-op; list empty
+    pci_bus_add_devices
+  acpi_pci_slot_init		# module_init
+    acpi_pci_register_driver(acpi_pci_slot_driver)
+      list_for_each_entry(..., &acpi_pci_roots, ...)
+        driver->add(root)	# acpi_pci_slot_add()
 
-No functional change.
+Note that for host bridges present at boot time the 'acpi_pci_drivers'
+list is always empty when acpi_pci_root_start() runs.
+
+However, during a Host Bridge hot-add event, the "pci_slot" sub-driver is
+already on the 'acpi_pci_drivers' list and we end up calling
+acpi_pci_slot_add() before pci_bus_add_devices() and encounter the
+following refcount WARNING:
+  calling acpi_pci_slot_add():
+  pci_bus 0000:03: dev 00, created physical slot 1
+  ------------[ cut here ]------------
+  WARNING: at include/linux/kref.h:42 kobject_get+0x32/0x40()
+  Call Trace:
+   [<ffffffff812541d2>] kobject_get+0x32/0x40
+   [<ffffffff8133f0f9>] get_device+0x19/0x20
+   [<ffffffff812d9f11>] register_slot+0x216/0x26d
+   [<ffffffff812ce92f>] acpi_walk_namespace+0x8a/0xc4
+   [<ffffffff812d9cb9>] walk_p2p_bridge+0xf1/0x133
+   [<ffffffff812ce92f>] acpi_walk_namespace+0x8a/0xc4
+   [<ffffffff812d9b71>] acpi_pci_slot_add+0xe0/0x137
+   [<ffffffff812b8705>] acpi_pci_root_start+0x3e/0x59
+
+This patch fixes this latent issue by moving up pci_bus_add_devices() so
+that the refcount will be initialized before subsequent references, via
+driver additions from the 'acpi_pci_drivers' list, occur.
 
 Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
 ---
 
- drivers/pci/hotplug/acpiphp_glue.c |    8 +++-----
- include/linux/pci-acpi.h           |    4 ++--
- 2 files changed, 5 insertions(+), 7 deletions(-)
+ drivers/acpi/pci_root.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-index a4218cb..fe2aac6 100644
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -489,7 +489,7 @@ find_p2p_bridge(acpi_handle handle, u32 lvl, void *context, void **rv)
+diff --git a/drivers/acpi/pci_root.c b/drivers/acpi/pci_root.c
+index d890322..f9be8fb 100644
+--- a/drivers/acpi/pci_root.c
++++ b/drivers/acpi/pci_root.c
+@@ -644,6 +644,8 @@ static int acpi_pci_root_start(struct acpi_device *device)
+ 	struct acpi_pci_root *root = acpi_driver_data(device);
+ 	struct acpi_pci_driver *driver;
  
++	pci_bus_add_devices(root->bus);
++
+ 	mutex_lock(&acpi_pci_root_lock);
+ 	list_for_each_entry(driver, &acpi_pci_drivers, node)
+ 		if (driver->add)
+@@ -651,8 +653,6 @@ static int acpi_pci_root_start(struct acpi_device *device)
+ 	acpiphp_add_bridge(root);
+ 	mutex_unlock(&acpi_pci_root_lock);
  
- /* find hot-pluggable slots, and then find P2P bridge */
--int acpiphp_add_bridge(struct acpi_pci_root *root)
-+void acpiphp_add_bridge(struct acpi_pci_root *root)
- {
- 	acpi_status status;
- 	unsigned long long tmp;
-@@ -502,11 +502,11 @@ int acpiphp_add_bridge(struct acpi_pci_root *root)
- 		status = acpi_evaluate_integer(handle, "_STA", NULL, &tmp);
- 		if (ACPI_FAILURE(status)) {
- 			dbg("%s: _STA evaluation failure\n", __func__);
--			return 0;
-+			return;
- 		}
- 		if ((tmp & ACPI_STA_FUNCTIONING) == 0)
- 			/* don't register this object */
--			return 0;
-+			return;
- 	}
- 
- 	/* check if this bridge has ejectable slots */
-@@ -521,8 +521,6 @@ int acpiphp_add_bridge(struct acpi_pci_root *root)
- 
- 	if (ACPI_FAILURE(status))
- 		warn("find_p2p_bridge failed (error code = 0x%x)\n", status);
+-	pci_bus_add_devices(root->bus);
 -
--	return 0;
+ 	return 0;
  }
- 
- static struct acpiphp_bridge *acpiphp_handle_to_bridge(acpi_handle handle)
-diff --git a/include/linux/pci-acpi.h b/include/linux/pci-acpi.h
-index 3197070..bc5b763 100644
---- a/include/linux/pci-acpi.h
-+++ b/include/linux/pci-acpi.h
-@@ -50,10 +50,10 @@ static inline bool aer_acpi_firmware_first(void) { return false; }
- #endif
- 
- #ifdef CONFIG_HOTPLUG_PCI_ACPI
--extern int acpiphp_add_bridge(struct acpi_pci_root *root);
-+extern void acpiphp_add_bridge(struct acpi_pci_root *root);
- extern void acpiphp_remove_bridge(struct acpi_pci_root *root);
- #else /* !CONFIG_HOTPLUG_PCI_ACPI */
--static inline int acpiphp_add_bridge(struct acpi_pci_root *) { return 0; }
-+static inline void acpiphp_add_bridge(struct acpi_pci_root *) { }
- static inline void acpiphp_remove_bridge(struct acpi_pci_root *) { }
- #endif /* !CONFIG_HOTPLUG_PCI_ACPI */
  
 
