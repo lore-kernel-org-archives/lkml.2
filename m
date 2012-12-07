@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757105Ab2LGXP5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 18:15:57 -0500
-Received: from mga02.intel.com ([134.134.136.20]:27248 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754701Ab2LGXP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 18:15:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,241,1355126400"; 
-   d="asc'?scan'208";a="230541875"
-Message-ID: <50C278AA.6020902@gmail.com>
-Date: Fri, 07 Dec 2012 15:15:54 -0800
-From: Jeff Kirsher <tarbal@gmail.com>
-Reply-To: jeffrey.t.kirsher@intel.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1757128Ab2LGXQF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 18:16:05 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:42258 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757111Ab2LGXQA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 18:16:00 -0500
+Message-ID: <50C278AC.5050205@gmail.com>
+Date: Sat, 08 Dec 2012 00:15:56 +0100
+From: Mircea Gherzan <mgherzan@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121122 Icedove/10.0.11
 MIME-Version: 1.0
-To: Joseph Gasparakis <joseph.gasparakis@intel.com>
-CC: davem@davemloft.net, shemminger@vyatta.com, chrisw@sous-sol.org,
-        gospo@redhat.com, Alexander Duyck <alexander.h.duyck@intel.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmitry@broadcom.com, saeed.bishara@gmail.com
-Subject: Re: [PATCH v3 2/4] net: Handle encapsulated offloads before fragmentation
- or handing to lower dev
-References: <1354845419-22483-1-git-send-email-joseph.gasparakis@intel.com> <1354845419-22483-3-git-send-email-joseph.gasparakis@intel.com>
-In-Reply-To: <1354845419-22483-3-git-send-email-joseph.gasparakis@intel.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="------------enig6DF46FBF22522B3C5EA03758"
+To: Nicolas Schichan <nschichan@freebox.fr>
+CC: rmk+kernel@arm.linux.org.uk, Russell King <linux@arm.linux.org.uk>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ARM: net: bpf_jit_32: fix sp-relative load/stores
+ offsets.
+References: <1354804718-1662-1-git-send-email-nschichan@freebox.fr> <1354804718-1662-2-git-send-email-nschichan@freebox.fr>
+In-Reply-To: <1354804718-1662-2-git-send-email-nschichan@freebox.fr>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig6DF46FBF22522B3C5EA03758
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
-
-On 12/06/2012 05:56 PM, Joseph Gasparakis wrote:
-> From: Alexander Duyck <alexander.h.duyck@intel.com>
->
-> This change allows the VXLAN to enable Tx checksum offloading even on
-> devices that do not support encapsulated checksum offloads. The
-> advantage to this is that it allows for the lower device to change due
-> to routing table changes without impacting features on the VXLAN itself=
-=2E
->
-> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+Am 06.12.2012 15:38, schrieb Nicolas Schichan:
+> The offset must be multiplied by 4 to be sure to access the correct
+> 32bit word in the stack scratch space.
+> 
+> For instance, a store at scratch memory cell #1 was generating the
+> following:
+> 
+> st	r4, [sp, #1]
+> 
+> While the correct code for this is:
+> 
+> st	r4, [sp, #4]
+> 
+> To reproduce the bug (assuming your system has a NIC with the mac
+> address 52:54:00:12:34:56):
+> 
+> echo 0 > /proc/sys/net/core/bpf_jit_enable
+> tcpdump -ni eth0 "ether[1] + ether[2] - ether[3] * ether[4] - ether[5] \
+> 	== -0x3AA" # this will capture packets as expected
+> 
+> echo 1 > /proc/sys/net/core/bpf_jit_enable
+> tcpdump -ni eth0 "ether[1] + ether[2] - ether[3] * ether[4] - ether[5] \
+> 	== -0x3AA" # this will not.
+> 
+> This bug was present since the original inclusion of bpf_jit for ARM
+> (ddecdfce: ARM: 7259/3: net: JIT compiler for packet filters).
+> 
+> Signed-off-by: Nicolas Schichan <nschichan@freebox.fr>
 > ---
->  net/core/dev.c       |   15 +++++++++++++--
->  net/ipv4/ip_output.c |    4 ++++
->  2 files changed, 17 insertions(+), 2 deletions(-)
-Acked-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+>  arch/arm/net/bpf_jit_32.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/arm/net/bpf_jit_32.c b/arch/arm/net/bpf_jit_32.c
+> index a64d349..b6f305e 100644
+> --- a/arch/arm/net/bpf_jit_32.c
+> +++ b/arch/arm/net/bpf_jit_32.c
+> @@ -42,7 +42,7 @@
+>  #define r_skb_hl	ARM_R8
+>  
+>  #define SCRATCH_SP_OFFSET	0
+> -#define SCRATCH_OFF(k)		(SCRATCH_SP_OFFSET + (k))
+> +#define SCRATCH_OFF(k)		(SCRATCH_SP_OFFSET + 4 * (k))
+>  
+>  #define SEEN_MEM		((1 << BPF_MEMWORDS) - 1)
+>  #define SEEN_MEM_WORD(k)	(1 << (k))
 
-
---------------enig6DF46FBF22522B3C5EA03758
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with undefined - http://www.enigmail.net/
-
-iQIcBAEBCgAGBQJQwniqAAoJEOVv75VaS+3ODBUP/1tcHnL5NmfppIhChwX3s9eL
-8L7a01GiqKK80Ez/S9ZUzfnmXgS5w3HILO1RyfjXiU+QjT9IkDYd0tnwM6rqvTaq
-eVW9mEXgNTzNxHSTmbeqpHIqOHhIqNaeEdOW26GZgJGt0n0CMOBcLTFZhGFvD3ZD
-/8sEmxTRrIqnrShxux82RxoEyWDqX75CBfkB+Bx6nwwYZSnpQ3EmTtQ+c/92b0th
-b/PH7XUQ0/HQfD+JN+MF/O654ID9iafAjdP6UyGvKhQmZ1ya9JceDz/oatzQUKRz
-W+DlupjW1Y/K8VNa2tXnvS/KcqI8RJmslgWj5t/tWbZle8M9ujSU9spcVs5fPwqs
-ov2tcynq+Kv/sjPxiGyFAkQw+QxnicwbaOe4p+OyFG0MT3UhmtTUosLNleXWAaJo
-hlToNFh2BAZQAHJJ07t+6lk5eobG4/6G1pZ1NJr2APElD9FY5s723y2udUS4Jq/+
-ZY72FjNNpHn2C7rTd2Ls4tDLxBPnAi8y7y79eHDLscFBDUzBt+Iny8Q1l30HYXPY
-a19FHEVo3jpMmzUBb6ZNCquWWFs1G43TMmXbV1winoN33+9z5lk+TaWSO5rpXu+i
-khuOOTkvtnkNF5MZRgjYCFN1T8vPrP9eNAeoEn6Hogo35/42+Fub+Rqp/Jl2G2dB
-kcAGNKBpJN5ckGBxJur/
-=3ZH9
------END PGP SIGNATURE-----
-
---------------enig6DF46FBF22522B3C5EA03758--
+Acked-by: Mircea Gherzan <mgherzan@gmail.com>
