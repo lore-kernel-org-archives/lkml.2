@@ -1,59 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030453Ab2LGNo2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 08:44:28 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:40859 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030393Ab2LGNo1 (ORCPT
+	id S1030470Ab2LGNrz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 08:47:55 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:35397 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030393Ab2LGNry (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 08:44:27 -0500
+	Fri, 7 Dec 2012 08:47:54 -0500
 From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH V5 2/2] mfd: stmpe: Update DT support in stmpe driver
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        rabin.vincent@stericsson.com, shiraz.hashim@st.com,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, linus.walleij@linaro.org,
-        Vipul Kumar Samar <vipulkumar.samar@st.com>
-In-Reply-To: <CAKohponBkA+bg7B4TKaU6WbcVBNDHPe4AWqAEE6JGD7zctoULw@mail.gmail.com>
-References: <2dcd7cb4c4022fa24b5328974e4226f5aaf89419.1354199865.git.viresh.kumar@linaro.org> <121653def4e985b0c1b59045637dd4518f97e73a.1354199865.git.viresh.kumar@linaro.org> <20121130105731.GN3176@sortiz-mobl> <20121130154542.GG23648@gmail.com> <CAKohpokLVEH+4F_VXh5auUm48cWWe0mumZME8yOCcAezcwJbCQ@mail.gmail.com> <20121205224203.691153E0E22@localhost> <CAKohponBkA+bg7B4TKaU6WbcVBNDHPe4AWqAEE6JGD7zctoULw@mail.gmail.com>
-Date: Fri, 07 Dec 2012 13:44:22 +0000
-Message-Id: <20121207134422.738A23E0B87@localhost>
+Subject: Re: [PATCH 000/493] remove CONFIG_HOTPLUG as an option
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Bill Pemberton <wfp5p@viridian.itc.virginia.edu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20121206003923.GA18947@kroah.com>
+References: <20121122010723.F111E80150@viridian.itc.virginia.edu> <20121206002742.80C2A3E0E22@localhost> <20121206003923.GA18947@kroah.com>
+Date: Fri, 07 Dec 2012 13:47:48 +0000
+Message-Id: <20121207134748.B7C133E0B87@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Dec 2012 08:06:20 +0530, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> On 6 December 2012 04:12, Grant Likely <grant.likely@secretlab.ca> wrote:
-> > On Sat, 1 Dec 2012 00:33:46 +0530, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> >> This first tries to match the table my patch added, _BUT_ the string will
-> >> never match as we had "st,stmpe810" in table and "stmpe810" in dev.
-> >
-> > of_driver_match_device() matches against the compatible list in
-> > dev->of_node, not against the device name. So, if the compatible
-> > property has a string that is in the table, then it really should match
-> > against it.
+On Wed, 5 Dec 2012 16:39:23 -0800, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Thu, Dec 06, 2012 at 12:27:42AM +0000, Grant Likely wrote:
+> > On Wed, 21 Nov 2012 20:07:23 -0500, wfp5p@viridian.itc.virginia.edu (Bill Pemberton) wrote:
+> > > Grant Likely writes:
+> > > > 
+> > > > You mean this series wasn't created with a script? You did this by
+> > > > hand? If so then I must say kudos on your dedication!
+> > > >
+> > > > But it makes me more nervous about the series. Too easy to fat
+> > > > finger many things when touching that many files.
+> > > >
+> > > 
+> > > No, I didn't do them by hand, it was a script.  Originally, it was a
+> > > couple, all basically the same, but removing each __dev*.  Then I'd do
+> > > a word diff to eyeball them to make sure the script didn't do
+> > > something goofy.
+> > > 
+> > > The whack-a-mole part came along because I was working against
+> > > linux-next and whatever patch series was right for one day wouldn't be
+> > > right for the next day because of some of the faster moving trees.
+> > > 
+> > > 
+> > > > Please do write a script and post that for review.
+> > > > 
+> > > 
+> > > The all-in-one version of the script:
+> > > 
+> > > #! /usr/bin/perl
+> > > 
+> > > use strict;
+> > > use IO::InSitu;
+> > > 
+> > > sub processfile
+> > > {
+> > >     my $fn = shift;
+> > > 
+> > >     my ($in, $out) = open_rw($fn, $fn);
+> > > 
+> > >     while (<$in>) {
+> > > 	s|__devexit_p\(([^)]+)\)|$1|;
+> > > 	s|\s__devexit\b||;
+> > > 	s|\s__devinitconst\b||;
+> > > 	s|\s__devinitdata\b||;
+> > > 	s|\s__devinit\b||;
+> > 
+> > Pretty straight forward, and works against the files I tried.  :-)
+> > 
+> > Greg, I'd much rather see the change applied all at once in this manner.
+> > If that isn't possible, then at the least I'll use the script against
+> > the code that I maintain and push th result out to Linus.
 > 
-> Grant, but isn't it true that the final device's name would not be the DT
-> way of names? It would simply be "stmpe810" for us and so if we have
-> multiple instances of stmpe on a board, we need to distinguish them
-> ourselves? One way for that was passing id for these instances, which
-> would finally be used, when we create platform devices for sub-modules
-> of stmpe (gpio, keypad, ts, etc).
+> Given that there are a lot of patches already in linux-next from Bill
+> due to this work, I'm not going to do this for all files right now,
+> sorry.
+> 
+> But, if you want to use this for the files you maintain and push that
+> out for 3.8-rc1, that would be great.  I'll be walking the tree after
+> 3.8-rc1 is out to catch the stragglers with a script like this.
 
-of_modalias_node() is based on a *heruistic*. It is a best-effort
-attempt to convert the node's compatible lists into a string that will
-match against an existing driver. In the simple case it works because
-historically i2c has used the chip name for the driver name. We get
-lucky and a lot of drivers will work with DT without changes.
-
-However, it is in no way guaranteed. Sometimes the strings won't line up
-or a certain silicon vendor will have an extra errata or feature. In
-that case it makes sense to use a DT match table that can parse the
-entries in the compatible list. Or a driver can call of_ helper
-functions. For example, it might call of_alias_get_id() to figure out
-which device id it needs. That's why the full DT parsing exists. It's
-the fallback when the simple heuristic fails. Only use it when you need
-to.
+Okay. Can you drop any commits you have against drivers/{spi,gpio,of}?
+Or are they in a tree that you will not rebase?
 
 g.
