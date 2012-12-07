@@ -1,123 +1,349 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755336Ab2LGHGp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 02:06:45 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:20368 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753493Ab2LGHGm (ORCPT
+	id S1755363Ab2LGHG5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 02:06:57 -0500
+Received: from mo5.mail-out.ovh.net ([178.32.228.5]:36297 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753493Ab2LGHGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 02:06:42 -0500
-Message-ID: <50C19568.7080500@huawei.com>
-Date: Fri, 7 Dec 2012 15:06:16 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Fri, 7 Dec 2012 02:06:53 -0500
+Date: Fri, 7 Dec 2012 07:58:13 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Wenyou Yang <wenyou.yang@atmel.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        nicolas.ferre@atmel.com, richard.genoud@gmail.com, JM.Lin@atmel.com,
+        devicetree-discuss@lists.ozlabs.org,
+        spi-devel-general@lists.sourceforge.net, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, rob@landley.net, linux-doc@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [v2 PATCH 07/14] spi/atmel_spi: add DT support
+Message-ID: <20121207065813.GH4398@game.jcrosoft.org>
+References: <1354607640-13229-1-git-send-email-wenyou.yang@atmel.com>
+ <1354607640-13229-8-git-send-email-wenyou.yang@atmel.com>
 MIME-Version: 1.0
-To: Tang Chen <tangchen@cn.fujitsu.com>
-CC: Wen Congyang <wency@cn.fujitsu.com>, <x86@kernel.org>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>,
-        <linux-s390@vger.kernel.org>, <linux-sh@vger.kernel.org>,
-        <linux-ia64@vger.kernel.org>, <cmetcalf@tilera.com>,
-        <sparclinux@vger.kernel.org>, David Rientjes <rientjes@google.com>,
-        Jiang Liu <liuj97@gmail.com>, Len Brown <len.brown@intel.com>,
-        <benh@kernel.crashing.org>, <paulus@samba.org>,
-        Christoph Lameter <cl@linux.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>
-Subject: Re: [Patch v4 09/12] memory-hotplug: remove page table of x86_64
- architecture
-References: <1354010422-19648-1-git-send-email-wency@cn.fujitsu.com> <1354010422-19648-10-git-send-email-wency@cn.fujitsu.com> <50C19022.9000501@cn.fujitsu.com>
-In-Reply-To: <50C19022.9000501@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.74.216]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354607640-13229-8-git-send-email-wenyou.yang@atmel.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 10665649818216278917
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehiedrtdejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehiedrudegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012/12/7 14:43, Tang Chen wrote:
+On 15:53 Tue 04 Dec     , Wenyou Yang wrote:
+> From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> 
+> The atmel_spi use only gpio for chip select.
+no this patch need go on the TOP of mine
 
-> On 11/27/2012 06:00 PM, Wen Congyang wrote:
->> For hot removing memory, we sholud remove page table about the memory.
->> So the patch searches a page table about the removed memory, and clear
->> page table.
-> 
-> (snip)
-> 
->> +void __meminit
->> +kernel_physical_mapping_remove(unsigned long start, unsigned long end)
->> +{
->> +    unsigned long next;
->> +    bool pgd_changed = false;
->> +
->> +    start = (unsigned long)__va(start);
->> +    end = (unsigned long)__va(end);
-> 
-> Hi Wu,
-> 
-> Here, you expect start and end are physical addresses. But in
-> phys_xxx_remove() function, I think using virtual addresses is just
-> fine. Functions like pmd_addr_end() and pud_index() only calculate
-> an offset.
->
+that is plan for 3.8
 
-Hi Tang,
-
- 
-
-Virtual addresses will work fine, I used physical addresses in order to
-keep consistent with phys_pud[pmd/pte]_init(), So I think we should keep this.
-
-Thanks,
-Jianguo Wu
-
-> So, would you please tell me if we have to use physical addresses here ?
+Best Regards,
+J.
 > 
-> Thanks. :)
+> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> [wenyou.yang@atmel.com: Add driver data and compatible "atmel,at91sam9260-spi", "atmel,at91sam9x5-spi"]
+> Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+> Cc: devicetree-discuss@lists.ozlabs.org
+> Cc: spi-devel-general@lists.sourceforge.net
+> Cc: grant.likely@secretlab.ca
+> Cc: rob.herring@calxeda.com
+> Cc: rob@landley.net
+> Cc: linux-doc@vger.kernel.org
+> Cc: richard.genoud@gmail.com
+> ---
+> Hi, Richard,
 > 
->> +
->> +    for (; start<  end; start = next) {
->> +        pgd_t *pgd = pgd_offset_k(start);
->> +        pud_t *pud;
->> +
->> +        next = pgd_addr_end(start, end);
->> +
->> +        if (!pgd_present(*pgd))
->> +            continue;
->> +
->> +        pud = map_low_page((pud_t *)pgd_page_vaddr(*pgd));
->> +        phys_pud_remove(pud, __pa(start), __pa(next));
->> +        if (free_pud_table(pud, pgd))
->> +            pgd_changed = true;
->> +        unmap_low_page(pud);
->> +    }
->> +
->> +    if (pgd_changed)
->> +        sync_global_pgds(start, end - 1);
->> +
->> +    flush_tlb_all();
->> +}
->> +
->>   #ifdef CONFIG_MEMORY_HOTREMOVE
->>   int __ref arch_remove_memory(u64 start, u64 size)
->>   {
->> @@ -692,6 +921,8 @@ int __ref arch_remove_memory(u64 start, u64 size)
->>       ret = __remove_pages(zone, start_pfn, nr_pages);
->>       WARN_ON_ONCE(ret);
->>
->> +    kernel_physical_mapping_remove(start, start + size);
->> +
->>       return ret;
->>   }
->>   #endif
+> This patches is based on the original patch from Jean-Christophe
+> 	[PATCH] spi/atmel: add DT support
+> and merge the patch from Richard Genoud
+> 	[PATCH] spi-atmel OF: complete documentation
+> ane wenyou yang add more compatible "atmel,at91sam9260-spi", "atmel,at91sam9x5-spi", 
+> 	add driver data to get IP version and dma support.
 > 
+> Could you sign your signature in this patch?
 > 
+> Best Regards,
+> Wenyou Yang
 > 
-> .
+>  .../devicetree/bindings/spi/spi_atmel.txt          |   23 +++++
+>  drivers/spi/spi-atmel.c                            |  102 +++++++++++++++++---
+>  2 files changed, 113 insertions(+), 12 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/spi/spi_atmel.txt
 > 
-
-
-
+> diff --git a/Documentation/devicetree/bindings/spi/spi_atmel.txt b/Documentation/devicetree/bindings/spi/spi_atmel.txt
+> new file mode 100644
+> index 0000000..20cdc91
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/spi/spi_atmel.txt
+> @@ -0,0 +1,23 @@
+> +Atmel SPI device
+> +
+> +Required properties:
+> +- compatible : should be "atmel,at91rm9200-spi".
+> +- reg: Address and length of the register set for the device
+> +- interrupts: Should contain macb interrupt
+> +- cs-gpio: Should contain the GPIOs used for chipselect.
+> +- dma-mask: device coherent dma mask.
+> +
+> +spi0: spi@f0000000 {
+> +	#address-cells = <1>;
+> +	#size-cells = <0>;
+> +	compatible = "atmel,at91rm9200-spi";
+> +	reg = <0xf0000000 0x100>;
+> +	interrupts = <13 4>;
+> +	cs-gpios = <&pioA 14 0
+> +		    &pioA 7 0 /* conflicts with TXD2 */
+> +		    &pioA 1 0 /* conflicts with RXD0 */
+> +		    &pioB 3 0 /* conflicts with ERXDV */
+> +		   >;
+> +	dma-mask = <0xffffffff>;
+> +	status = "disabled";
+> +};
+> diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
+> index 37f54c3..e032e3d 100644
+> --- a/drivers/spi/spi-atmel.c
+> +++ b/drivers/spi/spi-atmel.c
+> @@ -19,6 +19,7 @@
+>  #include <linux/interrupt.h>
+>  #include <linux/spi/spi.h>
+>  #include <linux/slab.h>
+> +#include <linux/of.h>
+>  
+>  #include <asm/io.h>
+>  #include <mach/board.h>
+> @@ -185,6 +186,10 @@
+>   * DMA transfers; transfer queue progress is driven by IRQs.  The clock
+>   * framework provides the base clock, subdivided for each spi_device.
+>   */
+> +struct atmel_spi_pdata {
+> +	u8			version;
+> +};
+> +
+>  struct atmel_spi {
+>  	spinlock_t		lock;
+>  	unsigned long		flags;
+> @@ -203,6 +208,7 @@ struct atmel_spi {
+>  	struct spi_transfer	*next_transfer;
+>  	unsigned long		next_remaining_bytes;
+>  	int			done_status;
+> +	struct atmel_spi_pdata	*pdata;
+>  
+>  	void			*buffer;
+>  	dma_addr_t		buffer_dma;
+> @@ -217,6 +223,51 @@ struct atmel_spi_device {
+>  #define BUFFER_SIZE		PAGE_SIZE
+>  #define INVALID_DMA_ADDRESS	0xffffffff
+>  
+> +static struct atmel_spi_pdata at91rm9200_config = {
+> +	.version = 1,
+> +};
+> +
+> +static struct atmel_spi_pdata at91sam9260_config = {
+> +	.version = 2,
+> +};
+> +
+> +static struct atmel_spi_pdata at91sam9x5_config = {
+> +	.version = 2,
+> +};
+> +
+> +static const struct platform_device_id atmel_spi_devtypes[] = {
+> +	{
+> +		.name = "spi-at91rm9200",
+> +		.driver_data = (unsigned long) &at91rm9200_config,
+> +	}, {
+> +		.name = "spi-at91sam9260",
+> +		.driver_data = (unsigned long) &at91sam9260_config,
+> +	}, {
+> +		.name = "spi-at91sam9x5",
+> +		.driver_data = (unsigned long) &at91sam9x5_config,
+> +	}, {
+> +		/* sentinel */
+> +	}
+> +};
+> +
+> +#if defined(CONFIG_OF)
+> +static const struct of_device_id atmel_spi_dt_ids[] = {
+> +	{
+> +		.compatible = "atmel,at91rm9200-spi",
+> +		.data = &at91rm9200_config,
+> +	} , {
+> +		.compatible = "atmel,at91sam9260-spi",
+> +		.data = &at91sam9260_config,
+> +	} , {
+> +		.compatible = "atmel,at91sam9x5-spi",
+> +		.data = &at91sam9x5_config,
+> +	}, {
+> +		/* sentinel */
+> +	}
+> +};
+> +MODULE_DEVICE_TABLE(of, atmel_spi_dt_ids);
+> +#endif
+> +
+>  /*
+>   * Version 2 of the SPI controller has
+>   *  - CR.LASTXFER
+> @@ -229,11 +280,15 @@ struct atmel_spi_device {
+>   * register, but I haven't checked that it exists on all chips, and
+>   * this is cheaper anyway.
+>   */
+> -static bool atmel_spi_is_v2(void)
+> +static bool atmel_spi_is_v2(struct atmel_spi *as)
+>  {
+> -	return !cpu_is_at91rm9200();
+> +	if (as->pdata->version == 2)
+> +		return true;
+> +	else
+> +		return false;
+>  }
+>  
+> +
+>  /*
+>   * Earlier SPI controllers (e.g. on at91rm9200) have a design bug whereby
+>   * they assume that spi slave device state will not change on deselect, so
+> @@ -265,7 +320,7 @@ static void cs_activate(struct atmel_spi *as, struct spi_device *spi)
+>  	unsigned active = spi->mode & SPI_CS_HIGH;
+>  	u32 mr;
+>  
+> -	if (atmel_spi_is_v2()) {
+> +	if (atmel_spi_is_v2(as)) {
+>  		/*
+>  		 * Always use CSR0. This ensures that the clock
+>  		 * switches to the correct idle polarity before we
+> @@ -320,7 +375,7 @@ static void cs_deactivate(struct atmel_spi *as, struct spi_device *spi)
+>  			asd->npcs_pin, active ? " (low)" : "",
+>  			mr);
+>  
+> -	if (atmel_spi_is_v2() || spi->chip_select != 0)
+> +	if (atmel_spi_is_v2(as) || spi->chip_select != 0)
+>  		gpio_set_value(asd->npcs_pin, !active);
+>  }
+>  
+> @@ -710,7 +765,7 @@ static int atmel_spi_setup(struct spi_device *spi)
+>  	u32			scbr, csr;
+>  	unsigned int		bits = spi->bits_per_word;
+>  	unsigned long		bus_hz;
+> -	unsigned int		npcs_pin;
+> +	int			npcs_pin;
+>  	int			ret;
+>  
+>  	as = spi_master_get_devdata(spi->master);
+> @@ -733,7 +788,7 @@ static int atmel_spi_setup(struct spi_device *spi)
+>  	}
+>  
+>  	/* see notes above re chipselect */
+> -	if (!atmel_spi_is_v2()
+> +	if (!atmel_spi_is_v2(as)
+>  			&& spi->chip_select == 0
+>  			&& (spi->mode & SPI_CS_HIGH)) {
+>  		dev_dbg(&spi->dev, "setup: can't be active-high\n");
+> @@ -742,7 +797,7 @@ static int atmel_spi_setup(struct spi_device *spi)
+>  
+>  	/* v1 chips start out at half the peripheral bus speed. */
+>  	bus_hz = clk_get_rate(as->clk);
+> -	if (!atmel_spi_is_v2())
+> +	if (!atmel_spi_is_v2(as))
+>  		bus_hz /= 2;
+>  
+>  	if (spi->max_speed_hz) {
+> @@ -782,7 +837,9 @@ static int atmel_spi_setup(struct spi_device *spi)
+>  	csr |= SPI_BF(DLYBCT, 0);
+>  
+>  	/* chipselect must have been muxed as GPIO (e.g. in board setup) */
+> -	npcs_pin = (unsigned int)spi->controller_data;
+> +	if (!gpio_is_valid(spi->cs_gpio))
+> +		spi->cs_gpio = (int)spi->controller_data;
+> +	npcs_pin = spi->cs_gpio;
+>  	asd = spi->controller_state;
+>  	if (!asd) {
+>  		asd = kzalloc(sizeof(struct atmel_spi_device), GFP_KERNEL);
+> @@ -812,7 +869,7 @@ static int atmel_spi_setup(struct spi_device *spi)
+>  		"setup: %lu Hz bpw %u mode 0x%x -> csr%d %08x\n",
+>  		bus_hz / scbr, bits, spi->mode, spi->chip_select, csr);
+>  
+> -	if (!atmel_spi_is_v2())
+> +	if (!atmel_spi_is_v2(as))
+>  		spi_writel(as, CSR0 + 4 * spi->chip_select, csr);
+>  
+>  	return 0;
+> @@ -899,7 +956,7 @@ static void atmel_spi_cleanup(struct spi_device *spi)
+>  {
+>  	struct atmel_spi	*as = spi_master_get_devdata(spi->master);
+>  	struct atmel_spi_device	*asd = spi->controller_state;
+> -	unsigned		gpio = (unsigned) spi->controller_data;
+> +	unsigned		gpio = spi->cs_gpio;
+>  
+>  	if (!asd)
+>  		return;
+> @@ -916,6 +973,21 @@ static void atmel_spi_cleanup(struct spi_device *spi)
+>  	kfree(asd);
+>  }
+>  
+> +static struct atmel_spi_pdata * __devinit atmel_spi_get_driver_data(
+> +					struct platform_device *pdev)
+> +{
+> +	if (pdev->dev.of_node) {
+> +		const struct of_device_id *match;
+> +		match = of_match_node(atmel_spi_dt_ids, pdev->dev.of_node);
+> +		if (!match)
+> +			return NULL;
+> +		return (struct atmel_spi_pdata *) match->data;
+> +	}
+> +
+> +	return (struct atmel_spi_pdata *)
+> +			platform_get_device_id(pdev)->driver_data;
+> +}
+> +
+>  /*-------------------------------------------------------------------------*/
+>  
+>  static int __devinit atmel_spi_probe(struct platform_device *pdev)
+> @@ -949,7 +1021,8 @@ static int __devinit atmel_spi_probe(struct platform_device *pdev)
+>  	master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_CS_HIGH;
+>  
+>  	master->bus_num = pdev->id;
+> -	master->num_chipselect = 4;
+> +	master->dev.of_node = pdev->dev.of_node;
+> +	master->num_chipselect = master->dev.of_node ? 0 : 4;
+>  	master->setup = atmel_spi_setup;
+>  	master->transfer = atmel_spi_transfer;
+>  	master->cleanup = atmel_spi_cleanup;
+> @@ -981,6 +1054,10 @@ static int __devinit atmel_spi_probe(struct platform_device *pdev)
+>  	if (ret)
+>  		goto out_unmap_regs;
+>  
+> +	as->pdata = atmel_spi_get_driver_data(pdev);
+> +	if (!as->pdata)
+> +		goto out_unmap_regs;
+> +
+>  	/* Initialize the hardware */
+>  	clk_enable(clk);
+>  	spi_writel(as, CR, SPI_BIT(SWRST));
+> @@ -1078,12 +1155,13 @@ static int atmel_spi_resume(struct platform_device *pdev)
+>  #define	atmel_spi_resume	NULL
+>  #endif
+>  
+> -
+>  static struct platform_driver atmel_spi_driver = {
+>  	.driver		= {
+>  		.name	= "atmel_spi",
+>  		.owner	= THIS_MODULE,
+> +		.of_match_table	= of_match_ptr(atmel_spi_dt_ids),
+>  	},
+> +	.id_table	= atmel_spi_devtypes,
+>  	.suspend	= atmel_spi_suspend,
+>  	.resume		= atmel_spi_resume,
+>  	.probe		= atmel_spi_probe,
+> -- 
+> 1.7.9.5
+> 
