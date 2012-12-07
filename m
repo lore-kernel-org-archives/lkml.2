@@ -1,193 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965132Ab2LGPXT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 10:23:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32805 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964865Ab2LGPXS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 10:23:18 -0500
-Date: Fri, 7 Dec 2012 10:23:01 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: bfields@fieldses.org, linux-nfs@vger.kernel.org,
-        Trond.Myklebust@netapp.com, linux-kernel@vger.kernel.org,
-        devel@openvz.org
-Subject: Re: [PATCH] nfsd: make NFSv4 recovery client tracking options per
- net
-Message-ID: <20121207102301.7cafcbdc@tlielax.poochiereds.net>
-In-Reply-To: <20121204112925.23999.28249.stgit@localhost.localdomain>
-References: <20121204112925.23999.28249.stgit@localhost.localdomain>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S965155Ab2LGPXr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 10:23:47 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:39176 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964865Ab2LGPXp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 10:23:45 -0500
+Date: Fri, 7 Dec 2012 10:22:16 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Abhijit Pawar <abhi.c.pawar@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Cong Wang <amwang@redhat.com>, Eric Dumazet <edumazet@google.com>,
+        Joe Perches <joe@perches.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        linux-wireless@vger.kernel.org
+Subject: Re: [PATCH 2/4] net: remove obsolete simple_strto<foo>
+Message-ID: <20121207152216.GC29819@shamino.rdu.redhat.com>
+References: <1354880998-23417-1-git-send-email-abhi.c.pawar@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1354880998-23417-1-git-send-email-abhi.c.pawar@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 04 Dec 2012 14:29:27 +0300
-Stanislav Kinsbursky <skinsbursky@parallels.com> wrote:
-
-> Pointer to client tracking operations - client_tracking_ops - have to be
-> containerized, because different environment can support different trackers
-> (for example, legacy tracker currently is not suported in container).
+On Fri, Dec 07, 2012 at 05:19:58PM +0530, Abhijit Pawar wrote:
+> This patch replace the obsolete simple_strto<foo> with kstrto<foo>
 > 
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> Signed-off-by: Abhijit Pawar <abhi.c.pawar@gmail.com>
 > ---
->  fs/nfsd/netns.h       |    2 ++
->  fs/nfsd/nfs4recover.c |   48 ++++++++++++++++++++++++++++--------------------
->  2 files changed, 30 insertions(+), 20 deletions(-)
+>  net/core/netpoll.c                 |    9 +++++++--
+>  net/ipv4/netfilter/ipt_CLUSTERIP.c |    9 +++++++--
+>  net/mac80211/debugfs_sta.c         |    4 +++-
+>  net/netfilter/nf_conntrack_core.c  |    6 ++++--
+>  4 files changed, 21 insertions(+), 7 deletions(-)
 > 
-> diff --git a/fs/nfsd/netns.h b/fs/nfsd/netns.h
-> index 2c4b2e2..bca789d 100644
-> --- a/fs/nfsd/netns.h
-> +++ b/fs/nfsd/netns.h
-> @@ -35,6 +35,7 @@
->  #define SESSION_HASH_SIZE	512
+> diff --git a/net/core/netpoll.c b/net/core/netpoll.c
+> index 77a0388..596b127 100644
+> --- a/net/core/netpoll.c
+> +++ b/net/core/netpoll.c
+> @@ -668,13 +668,16 @@ EXPORT_SYMBOL(netpoll_print_options);
 >  
->  struct cld_net;
-> +struct nfsd4_client_tracking_ops;
->  
->  struct nfsd_net {
->  	struct cld_net *cld_net;
-> @@ -87,6 +88,7 @@ struct nfsd_net {
->  
->  	struct file *rec_file;
->  	bool in_grace;
-> +	struct nfsd4_client_tracking_ops *client_tracking_ops;
->  
->  	time_t nfsd4_lease;
->  	time_t nfsd4_grace;
-> diff --git a/fs/nfsd/nfs4recover.c b/fs/nfsd/nfs4recover.c
-> index 359793f..ba6fdd4 100644
-> --- a/fs/nfsd/nfs4recover.c
-> +++ b/fs/nfsd/nfs4recover.c
-> @@ -63,7 +63,6 @@ struct nfsd4_client_tracking_ops {
->  
->  /* Globals */
->  static char user_recovery_dirname[PATH_MAX] = "/var/lib/nfs/v4recovery";
-> -static struct nfsd4_client_tracking_ops *client_tracking_ops;
->  
->  static int
->  nfs4_save_creds(const struct cred **original_creds)
-> @@ -1262,17 +1261,18 @@ nfsd4_client_tracking_init(struct net *net)
+>  int netpoll_parse_options(struct netpoll *np, char *opt)
 >  {
->  	int status;
->  	struct path path;
-> +	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
+> +	int rc;
+>  	char *cur=opt, *delim;
 >  
->  	/* just run the init if it the method is already decided */
-> -	if (client_tracking_ops)
-> +	if (nn->client_tracking_ops)
->  		goto do_init;
->  
->  	/*
->  	 * First, try a UMH upcall. It should succeed or fail quickly, so
->  	 * there's little harm in trying that first.
->  	 */
-> -	client_tracking_ops = &nfsd4_umh_tracking_ops;
-> -	status = client_tracking_ops->init(net);
-> +	nn->client_tracking_ops = &nfsd4_umh_tracking_ops;
-> +	status = nn->client_tracking_ops->init(net);
->  	if (!status)
->  		return status;
->  
-> @@ -1280,7 +1280,7 @@ nfsd4_client_tracking_init(struct net *net)
->  	 * See if the recoverydir exists and is a directory. If it is,
->  	 * then use the legacy ops.
->  	 */
-> -	client_tracking_ops = &nfsd4_legacy_tracking_ops;
-> +	nn->client_tracking_ops = &nfsd4_legacy_tracking_ops;
->  	status = kern_path(nfs4_recoverydir(), LOOKUP_FOLLOW, &path);
->  	if (!status) {
->  		status = S_ISDIR(path.dentry->d_inode->i_mode);
-> @@ -1290,16 +1290,16 @@ nfsd4_client_tracking_init(struct net *net)
+>  	if (*cur != '@') {
+>  		if ((delim = strchr(cur, '@')) == NULL)
+>  			goto parse_failed;
+>  		*delim = 0;
+> -		np->local_port = simple_strtol(cur, NULL, 10);
+> +		rc = kstrtol(cur, 10, &np->local_port);
+> +		if (rc)
+> +			goto parse_failed;
+Perhaps consolidate this to:
+if (kstrtol(cur, 10, &np->local_port)
+	goto parse_failed
+
+Then you don't have to declare the new stack variable
+
+>  		cur = delim;
 >  	}
->  
->  	/* Finally, try to use nfsdcld */
-> -	client_tracking_ops = &nfsd4_cld_tracking_ops;
-> +	nn->client_tracking_ops = &nfsd4_cld_tracking_ops;
->  	printk(KERN_WARNING "NFSD: the nfsdcld client tracking upcall will be "
->  			"removed in 3.10. Please transition to using "
->  			"nfsdcltrack.\n");
->  do_init:
-> -	status = client_tracking_ops->init(net);
-> +	status = nn->client_tracking_ops->init(net);
->  	if (status) {
->  		printk(KERN_WARNING "NFSD: Unable to initialize client "
->  				    "recovery tracking! (%d)\n", status);
-> -		client_tracking_ops = NULL;
-> +		nn->client_tracking_ops = NULL;
+>  	cur++;
+> @@ -705,7 +708,9 @@ int netpoll_parse_options(struct netpoll *np, char *opt)
+>  		*delim = 0;
+>  		if (*cur == ' ' || *cur == '\t')
+>  			np_info(np, "warning: whitespace is not allowed\n");
+> -		np->remote_port = simple_strtol(cur, NULL, 10);
+> +		rc = kstrtol(cur, 10, &np->remote_port);
+> +		if (rc)
+> +			goto parse_failed;
+>  		cur = delim;
+Ditto
+
 >  	}
->  	return status;
->  }
-> @@ -1307,32 +1307,40 @@ do_init:
->  void
->  nfsd4_client_tracking_exit(struct net *net)
->  {
-> -	if (client_tracking_ops) {
-> -		if (client_tracking_ops->exit)
-> -			client_tracking_ops->exit(net);
-> -		client_tracking_ops = NULL;
-> +	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
-> +
-> +	if (nn->client_tracking_ops) {
-> +		if (nn->client_tracking_ops->exit)
-> +			nn->client_tracking_ops->exit(net);
-> +		nn->client_tracking_ops = NULL;
->  	}
->  }
+>  	cur++;
+> diff --git a/net/ipv4/netfilter/ipt_CLUSTERIP.c b/net/ipv4/netfilter/ipt_CLUSTERIP.c
+> index fe5daea..55e7b73 100644
+> --- a/net/ipv4/netfilter/ipt_CLUSTERIP.c
+> +++ b/net/ipv4/netfilter/ipt_CLUSTERIP.c
+> @@ -661,6 +661,7 @@ static ssize_t clusterip_proc_write(struct file *file, const char __user *input,
+>  #define PROC_WRITELEN	10
+>  	char buffer[PROC_WRITELEN+1];
+>  	unsigned long nodenum;
+> +	int rc;
 >  
->  void
->  nfsd4_client_record_create(struct nfs4_client *clp)
->  {
-> -	if (client_tracking_ops)
-> -		client_tracking_ops->create(clp);
-> +	struct nfsd_net *nn = net_generic(clp->net, nfsd_net_id);
-> +
-> +	if (nn->client_tracking_ops)
-> +		nn->client_tracking_ops->create(clp);
->  }
+>  	if (size > PROC_WRITELEN)
+>  		return -EIO;
+> @@ -669,11 +670,15 @@ static ssize_t clusterip_proc_write(struct file *file, const char __user *input,
+>  	buffer[size] = 0;
 >  
->  void
->  nfsd4_client_record_remove(struct nfs4_client *clp)
->  {
-> -	if (client_tracking_ops)
-> -		client_tracking_ops->remove(clp);
-> +	struct nfsd_net *nn = net_generic(clp->net, nfsd_net_id);
-> +
-> +	if (nn->client_tracking_ops)
-> +		nn->client_tracking_ops->remove(clp);
->  }
+>  	if (*buffer == '+') {
+> -		nodenum = simple_strtoul(buffer+1, NULL, 10);
+> +		rc = kstrtoul(buffer+1, 10, &nodenum);
+> +		if (rc)
+> +			return -EINVAL;
+>  		if (clusterip_add_node(c, nodenum))
+>  			return -ENOMEM;
+>  	} else if (*buffer == '-') {
+> -		nodenum = simple_strtoul(buffer+1, NULL,10);
+> +		rc = kstrtoul(buffer+1, 10, &nodenum);
+> +		if (rc)
+> +			return -EINVAL;
+>  		if (clusterip_del_node(c, nodenum))
+>  			return -ENOENT;
+Same deal with the rc variable, although in this case it might make sense to
+return rc if kstrtoul fails, instead of just filtering it all down to -EINVAL.
+
+>  	} else
+> diff --git a/net/mac80211/debugfs_sta.c b/net/mac80211/debugfs_sta.c
+> index 89281d2..18754fd 100644
+> --- a/net/mac80211/debugfs_sta.c
+> +++ b/net/mac80211/debugfs_sta.c
+> @@ -219,7 +219,9 @@ static ssize_t sta_agg_status_write(struct file *file, const char __user *userbu
+>  	} else
+>  		return -EINVAL;
 >  
->  int
->  nfsd4_client_record_check(struct nfs4_client *clp)
->  {
-> -	if (client_tracking_ops)
-> -		return client_tracking_ops->check(clp);
-> +	struct nfsd_net *nn = net_generic(clp->net, nfsd_net_id);
-> +
-> +	if (nn->client_tracking_ops)
-> +		return nn->client_tracking_ops->check(clp);
+> -	tid = simple_strtoul(buf, NULL, 0);
+> +	ret = kstrtoul(buf, 0, &tid);
+> +	if (ret)
+> +		return -EINVAL;
 >  
->  	return -EOPNOTSUPP;
->  }
-> @@ -1340,8 +1348,8 @@ nfsd4_client_record_check(struct nfs4_client *clp)
->  void
->  nfsd4_record_grace_done(struct nfsd_net *nn, time_t boot_time)
->  {
-> -	if (client_tracking_ops)
-> -		client_tracking_ops->grace_done(nn, boot_time);
-> +	if (nn->client_tracking_ops)
-> +		nn->client_tracking_ops->grace_done(nn, boot_time);
->  }
+>  	if (tid >= IEEE80211_NUM_TIDS)
+>  		return -EINVAL;
+> diff --git a/net/netfilter/nf_conntrack_core.c b/net/netfilter/nf_conntrack_core.c
+> index af17516..18ce24b 100644
+> --- a/net/netfilter/nf_conntrack_core.c
+> +++ b/net/netfilter/nf_conntrack_core.c
+> @@ -1409,7 +1409,7 @@ EXPORT_SYMBOL_GPL(nf_ct_alloc_hashtable);
 >  
->  static int
+>  int nf_conntrack_set_hashsize(const char *val, struct kernel_param *kp)
+>  {
+> -	int i, bucket;
+> +	int i, bucket, rc;
+>  	unsigned int hashsize, old_size;
+>  	struct hlist_nulls_head *hash, *old_hash;
+>  	struct nf_conntrack_tuple_hash *h;
+> @@ -1422,7 +1422,9 @@ int nf_conntrack_set_hashsize(const char *val, struct kernel_param *kp)
+>  	if (!nf_conntrack_htable_size)
+>  		return param_set_uint(val, kp);
+>  
+> -	hashsize = simple_strtoul(val, NULL, 0);
+> +	rc = kstrtouint(val, 0, &hashsize);
+> +	if (rc)
+> +		return -EINVAL;
+>  	if (!hashsize)
+>  		return -EINVAL;
+>  
+As above, these call points might benefit from returning rc rather than just
+EINVAL.
+
+Neil
+
+> -- 
+> 1.7.7.6
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-Looks reasonable...
-
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
