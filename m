@@ -1,138 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755070Ab2LGAym (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 19:54:42 -0500
+	id S932730Ab2LGAyt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 19:54:49 -0500
 Received: from mail-pa0-f46.google.com ([209.85.220.46]:40591 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755054Ab2LGAyj (ORCPT
+	with ESMTP id S932713Ab2LGAyr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 19:54:39 -0500
+	Thu, 6 Dec 2012 19:54:47 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [ 00/20] 3.4.23-stable review
-Date: Thu,  6 Dec 2012 16:54:15 -0800
-Message-Id: <20121207005232.756641002@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [ 01/20] Dove: Attempt to fix PMU/RTC interrupts
+Date: Thu,  6 Dec 2012 16:54:16 -0800
+Message-Id: <20121207005233.140702122@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
+In-Reply-To: <20121207005232.756641002@linuxfoundation.org>
+References: <20121207005232.756641002@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.4.23 release.
-There are 20 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Sun Dec  9 00:50:03 UTC 2012.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.23-rc1.gz
-and the diffstat can be found below.
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
 
-thanks,
+commit 5d3df935426271016b895aecaa247101b4bfa35e upstream.
 
-greg k-h
+Fix the acknowledgement of PMU interrupts on Dove: some Dove hardware
+has not been sensibly designed so that interrupts can be handled in a
+race free manner.  The PMU is one such instance.
 
--------------
-Pseudo-Shortlog of commits:
+The pending (aka 'cause') register is a bunch of RW bits, meaning that
+these bits can be both cleared and set by software (confirmed on the
+Armada-510 on the cubox.)
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.4.23-rc1
+Hardware sets the appropriate bit when an interrupt is asserted, and
+software is required to clear the bits which are to be processed.  If
+we write ~(1 << bit), then we end up asserting every other interrupt
+except the one we're processing.  So, we need to do a read-modify-write
+cycle to clear the asserted bit.
 
-Michal Marek <mmarek@suse.cz>
-    kbuild: Do not package /boot and /lib in make tar-pkg
+However, any interrupts which occur in the middle of this cycle will
+also be written back as zero, which will also clear the new interrupts.
 
-Peng Tao <bergwolf@gmail.com>
-    pnfsblock: fix partial page buffer wirte
+The upshot of this is: there is _no_ way to safely clear down interrupts
+in this register (and other similarly behaving interrupt pending
+registers on this device.)  The patch below at least stops us creating
+new interrupts.
 
-Chris Wilson <chris@chris-wilson.co.uk>
-    drm/i915: Add no-lvds quirk for Supermicro X7SPA-H
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Calvin Walton <calvin.walton@kepstin.ca>
-    i915: Quirk no_lvds on Gigabyte GA-D525TUD ITX motherboard
+---
+ arch/arm/mach-dove/irq.c |   14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
-Alan Cox <alan@linux.intel.com>
-    ACPI: missing break
-
-Heiko Carstens <heiko.carstens@de.ibm.com>
-    s390/mm: have 16 byte aligned struct pages
-
-Ariel Elior <ariele@broadcom.com>
-    bnx2x: remove redundant warning log
-
-Mike Galbraith <efault@gmx.de>
-    Revert "sched, autogroup: Stop going ahead if autogroup is disabled"
-
-Jean Delvare <jdelvare@suse.de>
-    i7300_edac: Fix error flag testing
-
-NeilBrown <neilb@suse.de>
-    md/raid10: close race that lose writes lost when replacement completes.
-
-Mike Galbraith <mgalbraith@suse.de>
-    workqueue: exit rescuer_thread() as TASK_RUNNING
-
-Vincent Palatin <vpalatin@chromium.org>
-    x86, fpu: Avoid FPU lazy restore after suspend
-
-Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-    ARM: Kirkwood: Update PCI-E fixup
-
-Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-    mm: soft offline: split thp at the beginning of soft_offline_page()
-
-Jianguo Wu <wujianguo@huawei.com>
-    mm/vmemmap: fix wrong use of virt_to_page
-
-Alex Deucher <alexander.deucher@amd.com>
-    drm/radeon: properly track the crtc not_enabled case evergreen_mc_stop()
-
-Alex Deucher <alexander.deucher@amd.com>
-    drm/radeon: properly handle mc_stop/mc_resume on evergreen+ (v2)
-
-Alex Deucher <alexander.deucher@amd.com>
-    drm/radeon/dce4+: don't use radeon_crtc for vblank callback
-
-Russell King - ARM Linux <linux@arm.linux.org.uk>
-    Dove: Fix irq_to_pmu()
-
-Russell King - ARM Linux <linux@arm.linux.org.uk>
-    Dove: Attempt to fix PMU/RTC interrupts
-
-
--------------
-
-Diffstat:
-
- Makefile                                         |   4 +-
- arch/arm/Kconfig                                 |   1 +
- arch/arm/mach-dove/include/mach/pm.h             |   2 +-
- arch/arm/mach-dove/irq.c                         |  14 ++-
- arch/arm/mach-kirkwood/pcie.c                    |  11 ++-
- arch/s390/Kconfig                                |   1 +
- arch/x86/include/asm/fpu-internal.h              |  15 +--
- arch/x86/kernel/smpboot.c                        |   5 +
- drivers/acpi/processor_driver.c                  |   1 +
- drivers/edac/i7300_edac.c                        |   8 +-
- drivers/gpu/drm/i915/intel_lvds.c                |  16 ++++
- drivers/gpu/drm/radeon/evergreen.c               | 191 +++++++++++++++++++------------------
- drivers/gpu/drm/radeon/evergreen_reg.h           |   2 +
- drivers/gpu/drm/radeon/evergreend.h              |   7 ++
- drivers/gpu/drm/radeon/radeon_asic.h             |   1 +
- drivers/md/raid10.c                              | 100 ++++++++++---------
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c |  11 ++-
- fs/nfs/blocklayout/blocklayout.c                 | 176 +++++++++++++++++++++++++++++++---
- fs/nfs/blocklayout/blocklayout.h                 |   1 +
- kernel/sched/auto_group.c                        |   4 -
- kernel/sched/auto_group.h                        |   5 -
- kernel/workqueue.c                               |   4 +-
- mm/memory-failure.c                              |   8 ++
- mm/sparse.c                                      |  10 +-
- scripts/package/buildtar                         |   2 +-
- 25 files changed, 408 insertions(+), 192 deletions(-)
+--- a/arch/arm/mach-dove/irq.c
++++ b/arch/arm/mach-dove/irq.c
+@@ -61,8 +61,20 @@ static void pmu_irq_ack(struct irq_data
+ 	int pin = irq_to_pmu(d->irq);
+ 	u32 u;
+ 
++	/*
++	 * The PMU mask register is not RW0C: it is RW.  This means that
++	 * the bits take whatever value is written to them; if you write
++	 * a '1', you will set the interrupt.
++	 *
++	 * Unfortunately this means there is NO race free way to clear
++	 * these interrupts.
++	 *
++	 * So, let's structure the code so that the window is as small as
++	 * possible.
++	 */
+ 	u = ~(1 << (pin & 31));
+-	writel(u, PMU_INTERRUPT_CAUSE);
++	u &= readl_relaxed(PMU_INTERRUPT_CAUSE);
++	writel_relaxed(u, PMU_INTERRUPT_CAUSE);
+ }
+ 
+ static struct irq_chip pmu_irq_chip = {
 
 
