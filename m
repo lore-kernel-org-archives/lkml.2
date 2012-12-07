@@ -1,71 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965073Ab2LGCyK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 21:54:10 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:50356 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964966Ab2LGCyI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 21:54:08 -0500
-Message-ID: <50C15A35.5020007@huawei.com>
-Date: Fri, 7 Dec 2012 10:53:41 +0800
-From: Xishi Qiu <qiuxishi@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1423892Ab2LGC6l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 21:58:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56940 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1423570Ab2LGC6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 21:58:39 -0500
+Date: Thu, 6 Dec 2012 21:58:34 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file.rdu.redhat.com
+To: Sasha Levin <sasha.levin@oracle.com>
+cc: axboe@kernel.dk,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, Al Viro <viro@ZenIV.linux.org.uk>,
+        Dave Jones <davej@redhat.com>
+Subject: Re: blk: bd_block_size_semaphore related lockdep warning
+In-Reply-To: <50BA6BA7.7000304@oracle.com>
+Message-ID: <Pine.LNX.4.64.1212062157330.1475@file.rdu.redhat.com>
+References: <50BA6BA7.7000304@oracle.com>
 MIME-Version: 1.0
-To: WuJianguo <wujianguo@huawei.com>, Xishi Qiu <qiuxishi@huawei.com>,
-        Liujiang <jiang.liu@huawei.com>, <andi@firstfloor.org>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] MCE: fix an error of mce_bad_pages statistics
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.135.74.196]
-X-CFilter-Loop: Reflected
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On x86 platform, if we use "/sys/devices/system/memory/soft_offline_page" to offline a
-free page twice, the value of mce_bad_pages will be added twice. So this is an error,
-since the page was already marked HWPoison, we should skip the page and don't add the
-value of mce_bad_pages.
+Hi
 
-$ cat /proc/meminfo | grep HardwareCorrupted
+It should be fixed in 3.7-rc8
 
-soft_offline_page()
-	get_any_page()
-		atomic_long_add(1, &mce_bad_pages)
-
-The free page which marked HWPoison is still managed by page buddy allocator. So when
-offlining it again, get_any_page() always returns 0 with
-"pr_info("%s: %#lx free buddy page\n", __func__, pfn);".
-
-When page is allocated, the PageBuddy is removed in bad_page(), then get_any_page()
-returns -EIO with pr_info("%s: %#lx: unknown zero refcount page type %lx\n", so
-mce_bad_pages will not be added.
-
-Signed-off-by: Xishi Qiu <qiuxishi@huawei.com>
-﻿Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
----
- mm/memory-failure.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 8b20278..02a522e 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1375,6 +1375,11 @@ static int get_any_page(struct page *p, unsigned long pfn, int flags)
- 	if (flags & MF_COUNT_INCREASED)
- 		return 1;
-
-+	if (PageHWPoison(p)) {
-+		pr_info("%s: %#lx page already poisoned\n", __func__, pfn);
-+		return -EBUSY;
-+	}
-+
- 	/*
- 	 * The lock_memory_hotplug prevents a race with memory hotplug.
- 	 * This is a big hammer, a better would be nicer.
--- 
-1.7.6.1
+Mikulas
 
 
+On Sat, 1 Dec 2012, Sasha Levin wrote:
+
+> Hi all,
+> 
+> While fuzzing with trinity inside a KVM tools guest, running latest -next, I've
+> stumbled on:
+> 
+> [ 3130.099477] ======================================================
+> [ 3130.104862] [ INFO: possible circular locking dependency detected ]
+> [ 3130.104862] 3.7.0-rc7-next-20121130-sasha-00015-g06fcc7a-dirty #2 Tainted: G        W
+> [ 3130.104862] -------------------------------------------------------
+> [ 3130.104862] trinity-child77/12730 is trying to acquire lock:
+> [ 3130.104862]  (&sb->s_type->i_mutex_key#17/1){+.+.+.}, at: [<ffffffff8128a605>] pipe_lock_nested.isra.2+0x15/0x20
+> [ 3130.104862]
+> [ 3130.104862] but task is already holding lock:
+> [ 3130.104862]  (sb_writers#16){.+.+..}, at: [<ffffffff812b439f>] generic_file_splice_write+0x6f/0x170
+> [ 3130.104862]
+> [ 3130.104862] which lock already depends on the new lock.
+> [ 3130.104862]
+> [ 3130.104862]
+> [ 3130.104862] the existing dependency chain (in reverse order) is:
+> [ 3130.104862]
+> -> #3 (sb_writers#16){.+.+..}:
+> [ 3130.104862]        [<ffffffff8118a34a>] lock_acquire+0x1aa/0x240
+> [ 3130.104862]        [<ffffffff81285dd6>] __sb_start_write+0x146/0x1b0
+> [ 3130.104862]        [<ffffffff812b439f>] generic_file_splice_write+0x6f/0x170
+> [ 3130.104862]        [<ffffffff812be0ca>] blkdev_splice_write+0x5a/0x80
+> [ 3130.104862]        [<ffffffff812b2983>] do_splice_from+0x83/0xb0
+> [ 3130.104862]        [<ffffffff812b4de2>] sys_splice+0x492/0x690
+> [ 3130.104862]        [<ffffffff83cb1358>] tracesys+0xe1/0xe6
+> [ 3130.104862]
+> -> #2 (&ei->bdev.bd_block_size_semaphore){++++.+}:
+> [ 3130.104862]        [<ffffffff8118a34a>] lock_acquire+0x1aa/0x240
+> [ 3130.104862]        [<ffffffff81a0ec15>] percpu_down_read+0x55/0x90
+> [ 3130.104862]        [<ffffffff812be123>] blkdev_mmap+0x33/0x60
+> [ 3130.104862]        [<ffffffff8123ec9b>] mmap_region+0x31b/0x600
+> [ 3130.104862]        [<ffffffff8123f237>] do_mmap_pgoff+0x2b7/0x330
+> [ 3130.104862]        [<ffffffff81228b9a>] vm_mmap_pgoff+0x7a/0xa0
+> [ 3130.104862]        [<ffffffff8123d70e>] sys_mmap_pgoff+0x16e/0x1b0
+> [ 3130.104862]        [<ffffffff8107492d>] sys_mmap+0x1d/0x20
+> [ 3130.104862]        [<ffffffff83cb1358>] tracesys+0xe1/0xe6
+> [ 3130.104862]
+> -> #1 (&mm->mmap_sem){++++++}:
+> [ 3130.104862]        [<ffffffff8118a34a>] lock_acquire+0x1aa/0x240
+> [ 3130.104862]        [<ffffffff81239d6b>] might_fault+0x7b/0xa0
+> [ 3130.104862]        [<ffffffff812b4805>] sys_vmsplice+0xd5/0x220
+> [ 3130.104862]        [<ffffffff83cb1358>] tracesys+0xe1/0xe6
+> [ 3130.104862]
+> -> #0 (&sb->s_type->i_mutex_key#17/1){+.+.+.}:
+> [ 3130.104862]        [<ffffffff8118759f>] __lock_acquire+0x147f/0x1c30
+> [ 3130.104862]        [<ffffffff8118a34a>] lock_acquire+0x1aa/0x240
+> [ 3130.104862]        [<ffffffff83cac6d9>] __mutex_lock_common+0x59/0x5a0
+> [ 3130.104862]        [<ffffffff83cacc5f>] mutex_lock_nested+0x3f/0x50
+> [ 3130.104862]        [<ffffffff8128a605>] pipe_lock_nested.isra.2+0x15/0x20
+> [ 3130.104862]        [<ffffffff8128a6f5>] pipe_lock+0x15/0x20
+> [ 3130.104862]        [<ffffffff812b43a7>] generic_file_splice_write+0x77/0x170
+> [ 3130.104862]        [<ffffffff812be0ca>] blkdev_splice_write+0x5a/0x80
+> [ 3130.104862]        [<ffffffff812b2983>] do_splice_from+0x83/0xb0
+> [ 3130.104862]        [<ffffffff812b4de2>] sys_splice+0x492/0x690
+> [ 3130.104862]        [<ffffffff83cb1358>] tracesys+0xe1/0xe6
+> [ 3130.104862]
+> [ 3130.104862] other info that might help us debug this:
+> [ 3130.104862]
+> [ 3130.104862] Chain exists of:
+>   &sb->s_type->i_mutex_key#17/1 --> &ei->bdev.bd_block_size_semaphore --> sb_writers#16
+> [ 3130.104862]  Possible unsafe locking scenario:
+> [ 3130.104862]
+> [ 3130.104862]        CPU0                    CPU1
+> [ 3130.104862]        ----                    ----
+> [ 3130.104862]   lock(sb_writers#16);
+> [ 3130.104862]                                lock(&ei->bdev.bd_block_size_semaphore);
+> [ 3130.104862]                                lock(sb_writers#16);
+> [ 3130.104862]   lock(&sb->s_type->i_mutex_key#17/1);
+> [ 3130.104862]
+> [ 3130.104862]  *** DEADLOCK ***
+> [ 3130.104862]
+> [ 3130.104862] 2 locks held by trinity-child77/12730:
+> [ 3130.104862]  #0:  (&ei->bdev.bd_block_size_semaphore){++++.+}, at: [<ffffffff812be0b5>] blkdev_splice_write+0x45/0x80
+> [ 3130.104862]  #1:  (sb_writers#16){.+.+..}, at: [<ffffffff812b439f>] generic_file_splice_write+0x6f/0x170
+> [ 3130.104862]
+> [ 3130.104862] stack backtrace:
+> [ 3130.104862] Pid: 12730, comm: trinity-child77 Tainted: G        W    3.7.0-rc7-next-20121130-sasha-00015-g06fcc7a-dirty #2
+> [ 3130.104862] Call Trace:
+> [ 3130.104862]  [<ffffffff83c54d8a>] print_circular_bug+0x1fb/0x20c
+> [ 3130.104862]  [<ffffffff8118759f>] __lock_acquire+0x147f/0x1c30
+> [ 3130.104862]  [<ffffffff8118a34a>] lock_acquire+0x1aa/0x240
+> [ 3130.104862]  [<ffffffff8128a605>] ? pipe_lock_nested.isra.2+0x15/0x20
+> [ 3130.104862]  [<ffffffff83cac6d9>] __mutex_lock_common+0x59/0x5a0
+> [ 3130.104862]  [<ffffffff8128a605>] ? pipe_lock_nested.isra.2+0x15/0x20
+> [ 3130.104862]  [<ffffffff81185d8a>] ? __lock_is_held+0x5a/0x80
+> [ 3130.104862]  [<ffffffff8128a605>] ? pipe_lock_nested.isra.2+0x15/0x20
+> [ 3130.104862]  [<ffffffff83cacc5f>] mutex_lock_nested+0x3f/0x50
+> [ 3130.104862]  [<ffffffff8128a605>] pipe_lock_nested.isra.2+0x15/0x20
+> [ 3130.104862]  [<ffffffff8128a6f5>] pipe_lock+0x15/0x20
+> [ 3130.104862]  [<ffffffff812b43a7>] generic_file_splice_write+0x77/0x170
+> [ 3130.104862]  [<ffffffff812be0ca>] blkdev_splice_write+0x5a/0x80
+> [ 3130.104862]  [<ffffffff812b2983>] do_splice_from+0x83/0xb0
+> [ 3130.104862]  [<ffffffff812b4de2>] sys_splice+0x492/0x690
+> [ 3130.104862]  [<ffffffff8107eaf0>] ? syscall_trace_enter+0x20/0x2e0
+> [ 3130.104862]  [<ffffffff83cb1358>] tracesys+0xe1/0xe6
+> 
+> 
+> Thanks,
+> sasha
+> 
