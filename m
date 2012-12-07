@@ -1,122 +1,283 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755206Ab2LGG5u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 01:57:50 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:55685 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754137Ab2LGG5t (ORCPT
+	id S1755241Ab2LGG6j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 01:58:39 -0500
+Received: from 19.mo5.mail-out.ovh.net ([46.105.35.78]:33546 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753149Ab2LGG6h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 01:57:49 -0500
+	Fri, 7 Dec 2012 01:58:37 -0500
+Date: Fri, 7 Dec 2012 07:56:45 +0100
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: "ludovic.desroches" <ludovic.desroches@atmel.com>
+Cc: Wenyou Yang <wenyou.yang@atmel.com>, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, richard.genoud@gmail.com, JM.Lin@atmel.com,
+        nicolas.ferre@atmel.com, linux-kernel@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [v2 PATCH 13/14] ARM: dts: add spi nodes for atmel SoC
+Message-ID: <20121207065645.GG4398@game.jcrosoft.org>
+References: <1354607640-13229-1-git-send-email-wenyou.yang@atmel.com>
+ <1354607640-13229-14-git-send-email-wenyou.yang@atmel.com>
+ <50C0C9C9.9000108@atmel.com>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQU9mZpqhwX_a4Sv0a0aiReTxJfyJqNRVXTTXvjkFLrVZA@mail.gmail.com>
-References: <50BFFB6E.5080108@zytor.com>
-	<CAE9FiQU9mZpqhwX_a4Sv0a0aiReTxJfyJqNRVXTTXvjkFLrVZA@mail.gmail.com>
-Date: Thu, 6 Dec 2012 22:57:47 -0800
-X-Google-Sender-Auth: AOZcavlndXYKLaiBGn7HGfsTg7Y
-Message-ID: <CAE9FiQXofExFJtPZZqynDGDZV6Kk2zpUwPcME9rB7L-AX5RLog@mail.gmail.com>
-Subject: Re: kexec and struct boot_params
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50C0C9C9.9000108@atmel.com>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 10640880020101508005
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehiedrtdejucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehiedrudegucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenucfhrhhomheplfgvrghnqdevhhhrihhsthhophhhvgcurffntefipffkqffnqdggkffnnfettfffuceophhlrghgnhhiohhjsehjtghrohhsohhfthdrtghomheqnecujfgurhepfffhvffukfhfgggtuggjfgesthdttfdttdervd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 5, 2012 at 7:12 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Wed, Dec 5, 2012 at 5:57 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> Hi Eric,
->>
->> Could you give a list of struct boot_params field which are initialized
->> properly by kexec?  I think we need to do the sentinel hack, and want to
->> know what to whitelist.
->
-> the one with *
-> ? means set only when lfb_depth > 8
-> also
->    0xa2 to 0x1df is not set
->
-> struct x86_linux_param_header {
->         uint8_t  orig_x;                        /* 0x00 */  *
->         uint8_t  orig_y;                        /* 0x01 */  *
->         uint16_t ext_mem_k;                     /* 0x02 -- EXT_MEM_K sits here */   *
->         uint16_t orig_video_page;               /* 0x04 */  *
->         uint8_t  orig_video_mode;               /* 0x06 */  *
->         uint8_t  orig_video_cols;               /* 0x07 */  *
->         uint16_t unused2;                       /* 0x08 */
->         uint16_t orig_video_ega_bx;             /* 0x0a */  *
->         uint16_t unused3;                       /* 0x0c */
->         uint8_t  orig_video_lines;              /* 0x0e */  *
->         uint8_t  orig_video_isVGA;              /* 0x0f */   *
->         uint16_t orig_video_points;             /* 0x10 */   *
->
->         /* VESA graphic mode -- linear frame buffer */
->         uint16_t lfb_width;                     /* 0x12 */   *
->         uint16_t lfb_height;                    /* 0x14 */   *
->         uint16_t lfb_depth;                     /* 0x16 */   *
->         uint32_t lfb_base;                      /* 0x18 */   *
->         uint32_t lfb_size;                      /* 0x1c */   *
->         uint16_t cl_magic;                      /* 0x20 */   *
-> #define CL_MAGIC_VALUE 0xA33F
->         uint16_t cl_offset;                     /* 0x22 */   *
->         uint16_t lfb_linelength;                /* 0x24 */   *
->         uint8_t  red_size;                      /* 0x26 */   ?
->         uint8_t  red_pos;                       /* 0x27 */   ?
->         uint8_t  green_size;                    /* 0x28 */   ?
->         uint8_t  green_pos;                     /* 0x29 */   ?
->         uint8_t  blue_size;                     /* 0x2a */   ?
->         uint8_t  blue_pos;                      /* 0x2b */   ?
->         uint8_t  rsvd_size;                     /* 0x2c */   ?
->         uint8_t  rsvd_pos;                      /* 0x2d */   ?
->         uint16_t vesapm_seg;                    /* 0x2e */   *
->         uint16_t vesapm_off;                    /* 0x30 */
->         uint16_t pages;                         /* 0x32 */   *
->         uint8_t  reserved4[12];                 /* 0x34 -- 0x3f reserved for future expansion */
->
->         struct apm_bios_info apm_bios_info;     /* 0x40 */   *
->         struct drive_info_struct drive_info;    /* 0x80 */   *
->         struct sys_desc_table sys_desc_table;   /* 0xa0 */   * only .length =
-> 0, aka 0xa2 to 0x1df is not set
->         uint32_t alt_mem_k;                     /* 0x1e0 */  *
->         uint8_t  reserved5[4];                  /* 0x1e4 */
->         uint8_t  e820_map_nr;                   /* 0x1e8 */  *
->         uint8_t  eddbuf_entries;                /* 0x1e9 */  *
->         uint8_t  edd_mbr_sig_buf_entries;       /* 0x1ea */  *
->         uint8_t  reserved6[6];                  /* 0x1eb */
->         HEADER.....                                         copied and or meset 0 and set.
->         uint8_t  reserved16[0x290 - 0x248];     /* 0x248 */
->         uint32_t edd_mbr_sig_buffer[EDD_MBR_SIG_MAX];   /* 0x290 */  *
-> #endif
->         struct  e820entry e820_map[E820MAX];    /* 0x2d0 */   *
->         uint8_t _pad8[48];                      /* 0xcd0 */
->         struct  edd_info eddbuf[EDDMAXNR];      /* 0xd00 */   *
->                                                 /* 0xeec */
-> #define COMMAND_LINE_SIZE 2048
-> };
->
->
->>
->> Also, does kexec set a bootloader ID?
->
-> no, 0xff
+On 17:37 Thu 06 Dec     , ludovic.desroches wrote:
+> Hi,
+> 
+> On 12/04/2012 08:53 AM, Wenyou Yang wrote:
+> >From: Richard Genoud <richard.genoud@gmail.com>
+> >
+> >Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
+> >[wenyou.yang@atmel.com: add spi nodes for other atmel SOC]
+> >Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+> >Cc: linux@arm.linux.org.uk
+> >---
+> >  arch/arm/boot/dts/at91sam9260.dtsi |   30 ++++++++++++++++++++++++++++++
+> >  arch/arm/boot/dts/at91sam9263.dtsi |   30 ++++++++++++++++++++++++++++++
+> >  arch/arm/boot/dts/at91sam9g45.dtsi |   30 ++++++++++++++++++++++++++++++
+> >  arch/arm/boot/dts/at91sam9n12.dtsi |   30 ++++++++++++++++++++++++++++++
+> >  arch/arm/boot/dts/at91sam9x5.dtsi  |   30 ++++++++++++++++++++++++++++++
+> >  5 files changed, 150 insertions(+)
+> >
+> >diff --git a/arch/arm/boot/dts/at91sam9260.dtsi b/arch/arm/boot/dts/at91sam9260.dtsi
+> >index d410581..87254aa 100644
+> >--- a/arch/arm/boot/dts/at91sam9260.dtsi
+> >+++ b/arch/arm/boot/dts/at91sam9260.dtsi
+> >@@ -212,6 +212,36 @@
+> >  				status = "disabled";
+> >  			};
+> >
+> >+			spi0: spi@fffc8000 {
+> >+				#address-cells = <1>;
+> >+				#size-cells = <0>;
+> >+				compatible = "atmel,at91sam9260-spi";
+> >+				reg = <0xfffc8000 0x200>;
+> >+				interrupts = <12 4 3>;
+> >+				cs-gpios = <&pioA 3 0
+> >+					    &pioC 11 0
+> >+					    &pioC 16 0
+> >+					    &pioC 17 0
+> >+					   >;
+> 
+> From my point of view, the cs-gpios stuff should be in board dts
+> files instead of the SoC dtsi file.
+> 
+> These pios can be shared with other devices. If only one chip select
+> gpio is used on the board, it could avoid some useless pin
+> conflicts.
+agree and you MUST based on work on what I send on the ML and Grant applyed
 
-Hi, Peter,
-
-What's your decision about this?
-
-Do you mean have one boot_params mask in initdata and AND that with
-boot_params from bootloader
-to clean not used bytes?
-
-So later will not need to check
-    if (boot_params.hdr.xloadflags & USE_EXT_BOOT_PARAMS)
-?
-
-I worked out other patches that remove kdump 896M limitation.
-would like to post those patches to get more testing.
-those are needed for bigger system with lots of pcie devices.
-
-Thanks
-
-Yinghai
+Best Regards,
+J.
+> 
+> Regards
+> 
+> Ludovic
+> 
+> >+				dma-mask = <0xffffffff>;
+> >+				status = "disabled";
+> >+			};
+> >+
+> >+			spi1: spi@fffcc000 {
+> >+				#address-cells = <1>;
+> >+				#size-cells = <0>;
+> >+				compatible = "atmel,at91sam9260-spi";
+> >+				reg = <0xfffcc000 0x200>;
+> >+				interrupts = <13 4 3>;
+> >+				cs-gpios = <&pioB 3 0
+> >+					    &pioC 5 0
+> >+					    &pioC 4 0
+> >+					    &pioC 3 0
+> >+					   >;
+> >+				dma-mask = <0xffffffff>;
+> >+				status = "disabled";
+> >+			};
+> >+
+> >  			adc0: adc@fffe0000 {
+> >  				compatible = "atmel,at91sam9260-adc";
+> >  				reg = <0xfffe0000 0x100>;
+> >diff --git a/arch/arm/boot/dts/at91sam9263.dtsi b/arch/arm/boot/dts/at91sam9263.dtsi
+> >index 3e6e5c1..528395d 100644
+> >--- a/arch/arm/boot/dts/at91sam9263.dtsi
+> >+++ b/arch/arm/boot/dts/at91sam9263.dtsi
+> >@@ -195,6 +195,36 @@
+> >  				#size-cells = <0>;
+> >  				status = "disabled";
+> >  			};
+> >+
+> >+			spi0: spi@fffa4000 {
+> >+				#address-cells = <1>;
+> >+				#size-cells = <0>;
+> >+				compatible = "atmel,at91sam9260-spi";
+> >+				reg = <0xfffa4000 0x200>;
+> >+				interrupts = <14 4 3>;
+> >+				cs-gpios = <&pioA 5 0
+> >+					    &pioA 3 0
+> >+					    &pioA 4 0
+> >+					    &pioB 11 0
+> >+					   >;
+> >+				dma-mask = <0xffffffff>;
+> >+				status = "disabled";
+> >+			};
+> >+
+> >+			spi1: spi@fffa8000 {
+> >+				#address-cells = <1>;
+> >+				#size-cells = <0>;
+> >+				compatible = "atmel,at91sam9260-spi";
+> >+				reg = <0xfffa8000 0x200>;
+> >+				interrupts = <15 4 3>;
+> >+				cs-gpios = <&pioB 15 0
+> >+					    &pioB 16 0
+> >+					    &pioB 17 0
+> >+					    &pioB 18 0
+> >+					   >;
+> >+				dma-mask = <0xffffffff>;
+> >+				status = "disabled";
+> >+			};
+> >  		};
+> >
+> >  		nand0: nand@40000000 {
+> >diff --git a/arch/arm/boot/dts/at91sam9g45.dtsi b/arch/arm/boot/dts/at91sam9g45.dtsi
+> >index 3add030..8a6aae92 100644
+> >--- a/arch/arm/boot/dts/at91sam9g45.dtsi
+> >+++ b/arch/arm/boot/dts/at91sam9g45.dtsi
+> >@@ -262,6 +262,36 @@
+> >  					trigger-value = <0x6>;
+> >  				};
+> >  			};
+> >+
+> >+			spi0: spi@fffa4000 {
+> >+				#address-cells = <1>;
+> >+				#size-cells = <0>;
+> >+				compatible = "atmel,at91sam9260-spi";
+> >+				reg = <0xfffa4000 0x200>;
+> >+				interrupts = <14 4 3>;
+> >+				cs-gpios = <&pioB 3 0
+> >+					    &pioB 18 0
+> >+					    &pioB 19 0
+> >+					    &pioD 27 0
+> >+					   >;
+> >+				dma-mask = <0xffffffff>;
+> >+				status = "disabled";
+> >+			};
+> >+
+> >+			spi1: spi@fffa8000 {
+> >+				#address-cells = <1>;
+> >+				#size-cells = <0>;
+> >+				compatible = "atmel,at91sam9260-spi";
+> >+				reg = <0xfffa8000 0x200>;
+> >+				interrupts = <15 4 3>;
+> >+				cs-gpios = <&pioB 17 0
+> >+					    &pioD 28 0
+> >+					    &pioD 18 0
+> >+					    &pioD 19 0
+> >+					   >;
+> >+				dma-mask = <0xffffffff>;
+> >+				status = "disabled";
+> >+			};
+> >  		};
+> >
+> >  		nand0: nand@40000000 {
+> >diff --git a/arch/arm/boot/dts/at91sam9n12.dtsi b/arch/arm/boot/dts/at91sam9n12.dtsi
+> >index 82508d6..183cacf 100644
+> >--- a/arch/arm/boot/dts/at91sam9n12.dtsi
+> >+++ b/arch/arm/boot/dts/at91sam9n12.dtsi
+> >@@ -202,6 +202,36 @@
+> >  				#size-cells = <0>;
+> >  				status = "disabled";
+> >  			};
+> >+
+> >+			spi0: spi@f0000000 {
+> >+				#address-cells = <1>;
+> >+				#size-cells = <0>;
+> >+				compatible = "atmel,at91sam9x5-spi";
+> >+				reg = <0xf0000000 0x100>;
+> >+				interrupts = <13 4 3>;
+> >+				cs-gpios = <&pioA 14 0
+> >+					    &pioA 7 0
+> >+					    &pioA 1 0
+> >+					    &pioB 3 0
+> >+					   >;
+> >+				dma-mask = <0xffffffff>;
+> >+				status = "disabled";
+> >+			};
+> >+
+> >+			spi1: spi@f0004000 {
+> >+				#address-cells = <1>;
+> >+				#size-cells = <0>;
+> >+				compatible = "atmel,at91sam9x5-spi";
+> >+				reg = <0xf0004000 0x100>;
+> >+				interrupts = <14 4 3>;
+> >+				cs-gpios = <&pioA 8 0
+> >+					    &pioA 0 0
+> >+					    &pioA 31 0
+> >+					    &pioA 30 0
+> >+					   >;
+> >+				dma-mask = <0xffffffff>;
+> >+				status = "disabled";
+> >+			};
+> >  		};
+> >
+> >  		nand0: nand@40000000 {
+> >diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
+> >index 03fc136..95b55fd 100644
+> >--- a/arch/arm/boot/dts/at91sam9x5.dtsi
+> >+++ b/arch/arm/boot/dts/at91sam9x5.dtsi
+> >@@ -263,6 +263,36 @@
+> >  					trigger-value = <0x6>;
+> >  				};
+> >  			};
+> >+
+> >+			spi0: spi@f0000000 {
+> >+				#address-cells = <1>;
+> >+				#size-cells = <0>;
+> >+				compatible = "atmel,at91sam9x5-spi";
+> >+				reg = <0xf0000000 0x100>;
+> >+				interrupts = <13 4 3>;
+> >+				cs-gpios = <&pioA 14 0
+> >+					    &pioA 7 0 /* conflicts with TXD2 */
+> >+					    &pioA 1 0 /* conflicts with RXD0 */
+> >+					    &pioB 3 0 /* conflicts with ERXDV */
+> >+					   >;
+> >+				dma-mask = <0xffffffff>;
+> >+				status = "disabled";
+> >+			};
+> >+
+> >+			spi1: spi@f0004000 {
+> >+				#address-cells = <1>;
+> >+				#size-cells = <0>;
+> >+				compatible = "atmel,at91sam9x5-spi";
+> >+				reg = <0xf0004000 0x100>;
+> >+				interrupts = <14 4 3>;
+> >+				cs-gpios = <&pioA 8 0 /* conflitcs with RXD2 */
+> >+					    &pioA 0 0 /* conflitcs with TXD0 */
+> >+					    &pioA 31 0 /* conflitcs with TWCK0 */
+> >+					    &pioA 30 0 /* conflitcs with TWD0 */
+> >+					   >;
+> >+				dma-mask = <0xffffffff>;
+> >+				status = "disabled";
+> >+			};
+> >  		};
+> >
+> >  		nand0: nand@40000000 {
+> >
+> 
