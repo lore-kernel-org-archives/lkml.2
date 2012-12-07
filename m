@@ -1,60 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932509Ab2LGKOn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 05:14:43 -0500
-Received: from smtp2.goneo.de ([212.90.139.82]:62476 "EHLO smtp2.goneo.de"
+	id S1755913Ab2LGKTG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 05:19:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48856 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754960Ab2LGKOl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 05:14:41 -0500
-X-Spam-Flag: NO
-X-Spam-Score: -2.897
-From: Lars Poeschel <poeschel@lemonage.de>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Subject: Re: [PATCH RFC] misc/at24: distinguish between eeprom and fram chips
-Date: Fri, 7 Dec 2012 11:14:28 +0100
-User-Agent: KMail/1.13.7 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org
-References: <201212041758.38600.poeschel@lemonage.de> <201212051043.07460.poeschel@lemonage.de> <20121205164153.GA5011@pengutronix.de>
-In-Reply-To: <20121205164153.GA5011@pengutronix.de>
+	id S1755050Ab2LGKTF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 05:19:05 -0500
+Date: Fri, 7 Dec 2012 11:18:53 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 2/5] perf hists: Exchange order of comparing items when
+ collapsing hists
+Message-ID: <20121207101853.GA1015@krava.brq.redhat.com>
+References: <1354806581-5316-1-git-send-email-namhyung@kernel.org>
+ <1354806581-5316-3-git-send-email-namhyung@kernel.org>
+ <20121206165325.GE1080@krava.brq.redhat.com>
+ <20121206190920.GA1899@ghostprotocols.net>
+ <874njydzpd.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201212071114.29034.poeschel@lemonage.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <874njydzpd.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > > I wanted to use a fm24c04 i2c fram chip with linux. I grepped the
-> > > > source and found nothing. I later found that my chip can be handled
-> > > > by at24 eeprom driver. It creates a sysfs file called eeprom to
-> > > > read from and write to the chip. Userspace has no chance to
-> > > > distinguish if it is writing an eeprom or a fram chip.
-> > > 
-> > > Why should it?
-> > 
-> > Because writes are much faster and it doesn't have to take care on erase
-> > cycles. It could use other write strategies on such devices and update
-> > informations that have to survive power downs more often.
+On Fri, Dec 07, 2012 at 05:38:22PM +0900, Namhyung Kim wrote:
+> Hi Arnaldo,
 > 
-> I agree. I think that a seperate attribute named e.g. 'page_size' would
-> be more helpful than renaming the binary file to fram?
 
-Yes, this is a much better solution! Adding a seperate sysfs file page_size 
-and a file for the type of device which would read eeprom, fram, etc then.
-If you also think this is the way to go, I would spent one of my next free 
-timeslots to this.
+SNIP
 
-> > > The method of accessing EEPROMs is used by way more chips than FRAMs.
-> > > So, I'd prefer to have the text updated more generic like "EEPROMs and
-> > > similar devices like RAMs, ROMs, etc...". Describing setting .flags in
-> > > Kconfig is overkill.
-> > 
-> > A patch updating Kconfig is below.
+> @@ -739,6 +739,10 @@ static struct hist_entry *hists__add_dummy_entry(struct hists *hists,
+>  
+>                 cmp = hist_entry__collapse(he, pair);
+>  
+> +               if (sort__need_collapse)
+> +                       cmp = hist_entry__collapse(he, pair);
+> +               else
+> +                       cmp = hist_entry__cmp(pair, he);
+>                 if (!cmp)
+>                         goto out;
+>  
+> @@ -772,7 +776,12 @@ static struct hist_entry *hists__find_entry(struct hists *hists,
+>  
+>         while (n) {
+>                 struct hist_entry *iter = rb_entry(n, struct hist_entry, rb_node_in);
+> -               int64_t cmp = hist_entry__collapse(iter, he);
+> +               int64_t cmp;
+> +
+> +               if (sort__need_collapse)
+> +                       cmp = hist_entry__collapse(iter, he);
+> +               else
+> +                       cmp = hist_entry__cmp(he, iter);
+>  
+>                 if (cmp < 0)
+>                         n = n->rb_left;
 > 
-> Looks good from a glimpse, will apply it later.
+> It doesn't look good, especially hist_entry__collapse will be same as
+> hist_entry__cmp if 'sort__need_collapse' is false.  If we can make the
+> order consistent, it'd be converted to a sigle _collapse() call
+> without the conditional.
+> 
+> Thanks,
+> Namhyung
 
-Thank you!
+I've got non matching entries in diff after applying just patch 2/5,
+and it's caused by missing he/iter swap in initial name resort in
+insert_hist_entry_by_name function.
 
-Lars
+I understand that function goes away in your next patch while
+add_hist_entry (swap ok) being the one doing initial name resort,
+but still.. took me some time to figure this out ;)
+
+jirka
+
+---
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index b2e7d39..4dda6f4 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -285,7 +285,7 @@ static void insert_hist_entry_by_name(struct rb_root *root,
+ 	while (*p != NULL) {
+ 		parent = *p;
+ 		iter = rb_entry(parent, struct hist_entry, rb_node);
+-		if (hist_entry__cmp(he, iter) < 0)
++		if (hist_entry__cmp(iter, he) < 0)
+ 			p = &(*p)->rb_left;
+ 		else
+ 			p = &(*p)->rb_right;
