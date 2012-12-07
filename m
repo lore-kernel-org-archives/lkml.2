@@ -1,481 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422739Ab2LGHfM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 02:35:12 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:53268 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932085Ab2LGHfJ (ORCPT
+	id S1755479Ab2LGHfx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 02:35:53 -0500
+Received: from DMZ-MAILSEC-SCANNER-2.MIT.EDU ([18.9.25.13]:44421 "EHLO
+	dmz-mailsec-scanner-2.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754825Ab2LGHfv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 02:35:09 -0500
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        David Gibson <david@gibson.dropbear.id.au>
-Subject: [PATCH] vfio powerpc: implemented IOMMU driver for VFIO
-Date: Fri,  7 Dec 2012 18:34:53 +1100
-Message-Id: <1354865693-8060-1-git-send-email-aik@ozlabs.ru>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1354557206.1809.377.camel@bling.home>
-References: <1354557206.1809.377.camel@bling.home>
+	Fri, 7 Dec 2012 02:35:51 -0500
+X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Dec 2012 02:35:51 EST
+X-AuditID: 1209190d-b7f266d00000092b-b5-50c19b293f2b
+Date: Fri, 7 Dec 2012 02:30:44 -0500
+From: Greg Price <price@MIT.EDU>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>
+Subject: [PATCH] perf report: Add option to collapse undesired parts of
+ call graph
+Message-ID: <20121207072726.GY22203@biohazard-cafe.mit.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnleLIzCtJLcpLzFFi42IR4hTV1tWafTDA4OhWRouLbRfZLA48PsBi
+	sXXvGxaLo2f/Mllc3jWHzeLSgQVMFmuOLGZ3YPe48pTD43SPnsfOWXfZPd7vu8rmMXdXH6PH
+	501yAWxRXDYpqTmZZalF+nYJXBknryoXzHKpeHKok7mB8YdRFyMnh4SAicS8qYcZIWwxiQv3
+	1rN1MXJxCAnsY5SYfuAnO4SznlFi7uxZrBDOD0aJTydnsYG0sAioSNz+8ooFxGYTUJD4MX8d
+	M4gtAmRv7n0G1sAs8IdRorFpJVARB4ewQIjE9gZGEJNXwFqiYak1SDmvgKDEyZlPwMYwC2hJ
+	3Pj3kgmkhFlAWmL5Pw6QsCjQpmv729kmMPLPQtIxC0nHLISOBYzMqxhlU3KrdHMTM3OKU5N1
+	i5MT8/JSi3SN9HIzS/RSU0o3MYLDW5J3B+O7g0qHGAU4GJV4eAXOHwgQYk0sK67MPcQoycGk
+	JMorPO1ggBBfUn5KZUZicUZ8UWlOavEhRgkOZiUR3o4+oBxvSmJlVWpRPkxKmoNFSZz3SspN
+	fyGB9MSS1OzU1ILUIpisDAeHkgRv9kygRsGi1PTUirTMnBKENBMHJ8hwHqDhESA1vMUFibnF
+	mekQ+VOMilLivMdBEgIgiYzSPLheWPp5xSgO9Iow7yaQKh5g6oLrfgU0mAlocBT7fpDBJYkI
+	KakGRk+Og+ylzJ7lRjVqUs3MX158ur7rTLVGaMMHwevvlk/o3zynje2NWf+6niXO8x//y2tf
+	ECzz6cHj6R/nbnIIVV+w8OiCN4t7ArtC9bSc/jWbuu/6/WLugoZrZ870ZN/ev/nOeTMFnZmL
+	W1avXOex82zgWbMdkS1HFjVv9jUUfTTVUFGhW6BwnYQSS3FGoqEWc1FxIgDOH2s+GgMAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-VFIO implements platform independent stuff such as
-a PCI driver, BAR access (via read/write on a file descriptor
-or direct mapping when possible) and IRQ signaling.
+If an application has an expensive function implemented with a large
+tree of calls to helper functions, the default call-graph presentation
+will be dominated by the many different call-chains within that
+function.  By treating the function as a black box, we can collect the
+call-chains leading into the function and compactly identify what to
+blame for expensive calls.
 
-The platform dependent part includes IOMMU initialization
-and handling. This patch implements an IOMMU driver for VFIO
-which does mapping/unmapping pages for the guest IO and
-provides information about DMA window (required by a POWERPC
-guest).
+For example, in this report the callers of garbage_collect() are
+scattered across the tree:
+$ perf report -d ruby 2>- | grep -m10 ^[^#]*[a-z]
+    22.03%     ruby  [.] gc_mark
+               --- gc_mark
+                  |--59.40%-- mark_keyvalue
+                  |          st_foreach
+                  |          gc_mark_children
+                  |          |--99.75%-- rb_gc_mark
+                  |          |          rb_vm_mark
+                  |          |          gc_mark_children
+                  |          |          gc_marks
+                  |          |          |--99.00%-- garbage_collect
 
-The counterpart in QEMU is required to support this functionality.
+If we make garbage_collect() a black box, its callers are coalesced:
+$ perf report --blackbox garbage_collect -d ruby 2>- | grep -m10 ^[^#]*[a-z]
+    72.92%     ruby  [.] garbage_collect
+               --- garbage_collect
+                   vm_xmalloc
+                  |--47.08%-- ruby_xmalloc
+                  |          st_insert2
+                  |          rb_hash_aset
+                  |          |--98.45%-- features_index_add
+                  |          |          rb_provide_feature
+                  |          |          rb_require_safe
+                  |          |          vm_call_method
 
-Cc: David Gibson <david@gibson.dropbear.id.au>
-Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: David Ahern <dsahern@gmail.com>
+Signed-off-by: Greg Price <price@mit.edu>
 ---
- drivers/vfio/Kconfig                |    6 +
- drivers/vfio/Makefile               |    1 +
- drivers/vfio/vfio_iommu_spapr_tce.c |  348 +++++++++++++++++++++++++++++++++++
- include/linux/vfio.h                |   30 +++
- 4 files changed, 385 insertions(+)
- create mode 100644 drivers/vfio/vfio_iommu_spapr_tce.c
+ tools/perf/builtin-report.c | 17 +++++++++++++++--
+ tools/perf/builtin-top.c    |  3 +--
+ tools/perf/util/map.h       |  4 +++-
+ tools/perf/util/session.c   | 29 ++++++++++++++++++-----------
+ tools/perf/util/session.h   |  5 +++++
+ 5 files changed, 42 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/vfio/Kconfig b/drivers/vfio/Kconfig
-index 7cd5dec..b464687 100644
---- a/drivers/vfio/Kconfig
-+++ b/drivers/vfio/Kconfig
-@@ -3,10 +3,16 @@ config VFIO_IOMMU_TYPE1
- 	depends on VFIO
- 	default n
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index a61725d..3bbda35 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -70,7 +70,7 @@ static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
+ 	if ((sort__has_parent || symbol_conf.use_callchain)
+ 	    && sample->callchain) {
+ 		err = machine__resolve_callchain(machine, evsel, al->thread,
+-						 sample, &parent);
++						 sample, &parent, al);
+ 		if (err)
+ 			return err;
+ 	}
+@@ -141,7 +141,7 @@ static int perf_evsel__add_hist_entry(struct perf_evsel *evsel,
  
-+config VFIO_IOMMU_SPAPR_TCE
-+	tristate
-+	depends on VFIO && SPAPR_TCE_IOMMU
-+	default n
-+
- menuconfig VFIO
- 	tristate "VFIO Non-Privileged userspace driver framework"
- 	depends on IOMMU_API
- 	select VFIO_IOMMU_TYPE1 if X86
-+	select VFIO_IOMMU_SPAPR_TCE if PPC_POWERNV
- 	help
- 	  VFIO provides a framework for secure userspace device drivers.
- 	  See Documentation/vfio.txt for more details.
-diff --git a/drivers/vfio/Makefile b/drivers/vfio/Makefile
-index 2398d4a..72bfabc 100644
---- a/drivers/vfio/Makefile
-+++ b/drivers/vfio/Makefile
-@@ -1,3 +1,4 @@
- obj-$(CONFIG_VFIO) += vfio.o
- obj-$(CONFIG_VFIO_IOMMU_TYPE1) += vfio_iommu_type1.o
-+obj-$(CONFIG_VFIO_IOMMU_SPAPR_TCE) += vfio_iommu_spapr_tce.o
- obj-$(CONFIG_VFIO_PCI) += pci/
-diff --git a/drivers/vfio/vfio_iommu_spapr_tce.c b/drivers/vfio/vfio_iommu_spapr_tce.c
-new file mode 100644
-index 0000000..b0f81fe
---- /dev/null
-+++ b/drivers/vfio/vfio_iommu_spapr_tce.c
-@@ -0,0 +1,348 @@
-+/*
-+ * VFIO: IOMMU DMA mapping support for TCE on POWER
-+ *
-+ * Copyright (C) 2012 IBM Corp.  All rights reserved.
-+ *     Author: Alexey Kardashevskiy <aik@ozlabs.ru>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Derived from original vfio_iommu_type1.c:
-+ * Copyright (C) 2012 Red Hat, Inc.  All rights reserved.
-+ *     Author: Alex Williamson <alex.williamson@redhat.com>
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/pci.h>
-+#include <linux/slab.h>
-+#include <linux/uaccess.h>
-+#include <linux/err.h>
-+#include <linux/vfio.h>
-+#include <asm/iommu.h>
-+
-+#define DRIVER_VERSION  "0.1"
-+#define DRIVER_AUTHOR   "aik@ozlabs.ru"
-+#define DRIVER_DESC     "VFIO IOMMU SPAPR TCE"
-+
-+static void tce_iommu_detach_group(void *iommu_data,
-+		struct iommu_group *iommu_group);
-+
-+/*
-+ * VFIO IOMMU fd for SPAPR_TCE IOMMU implementation
-+ */
-+
-+/*
-+ * This code handles mapping and unmapping of user data buffers
-+ * into DMA'ble space using the IOMMU
-+ */
-+
-+#define NPAGE_TO_SIZE(npage)	((size_t)(npage) << PAGE_SHIFT)
-+
-+struct vwork {
-+	struct mm_struct	*mm;
-+	long			npage;
-+	struct work_struct	work;
-+};
-+
-+/* delayed decrement/increment for locked_vm */
-+static void lock_acct_bg(struct work_struct *work)
-+{
-+	struct vwork *vwork = container_of(work, struct vwork, work);
-+	struct mm_struct *mm;
-+
-+	mm = vwork->mm;
-+	down_write(&mm->mmap_sem);
-+	mm->locked_vm += vwork->npage;
-+	up_write(&mm->mmap_sem);
-+	mmput(mm);
-+	kfree(vwork);
-+}
-+
-+static void lock_acct(long npage)
-+{
-+	struct vwork *vwork;
-+	struct mm_struct *mm;
-+
-+	if (!current->mm)
-+		return; /* process exited */
-+
-+	if (down_write_trylock(&current->mm->mmap_sem)) {
-+		current->mm->locked_vm += npage;
-+		up_write(&current->mm->mmap_sem);
-+		return;
-+	}
-+
-+	/*
-+	 * Couldn't get mmap_sem lock, so must setup to update
-+	 * mm->locked_vm later. If locked_vm were atomic, we
-+	 * wouldn't need this silliness
-+	 */
-+	vwork = kmalloc(sizeof(struct vwork), GFP_KERNEL);
-+	if (!vwork)
-+		return;
-+	mm = get_task_mm(current);
-+	if (!mm) {
-+		kfree(vwork);
-+		return;
-+	}
-+	INIT_WORK(&vwork->work, lock_acct_bg);
-+	vwork->mm = mm;
-+	vwork->npage = npage;
-+	schedule_work(&vwork->work);
-+}
-+
-+/*
-+ * The container descriptor supports only a single group per container.
-+ * Required by the API as the container is not supplied with the IOMMU group
-+ * at the moment of initialization.
-+ */
-+struct tce_container {
-+	struct mutex lock;
-+	struct iommu_table *tbl;
-+};
-+
-+static void *tce_iommu_open(unsigned long arg)
-+{
-+	struct tce_container *container;
-+
-+	if (arg != VFIO_SPAPR_TCE_IOMMU) {
-+		pr_err("tce_vfio: Wrong IOMMU type\n");
-+		return ERR_PTR(-EINVAL);
-+	}
-+
-+	container = kzalloc(sizeof(*container), GFP_KERNEL);
-+	if (!container)
-+		return ERR_PTR(-ENOMEM);
-+
-+	mutex_init(&container->lock);
-+
-+	return container;
-+}
-+
-+static void tce_iommu_release(void *iommu_data)
-+{
-+	struct tce_container *container = iommu_data;
-+
-+	WARN_ON(container->tbl && !container->tbl->it_group);
-+	if (container->tbl && container->tbl->it_group)
-+		tce_iommu_detach_group(iommu_data, container->tbl->it_group);
-+
-+	mutex_destroy(&container->lock);
-+
-+	kfree(container);
-+}
-+
-+static long tce_iommu_ioctl(void *iommu_data,
-+				 unsigned int cmd, unsigned long arg)
-+{
-+	struct tce_container *container = iommu_data;
-+	unsigned long minsz;
-+	long ret;
-+
-+	switch (cmd) {
-+	case VFIO_CHECK_EXTENSION:
-+		return (arg == VFIO_SPAPR_TCE_IOMMU) ? 1 : 0;
-+
-+ 	case VFIO_IOMMU_SPAPR_TCE_GET_INFO: {
-+		struct vfio_iommu_spapr_tce_info info;
-+		struct iommu_table *tbl = container->tbl;
-+
-+		if (WARN_ON(!tbl))
-+			return -ENXIO;
-+
-+		minsz = offsetofend(struct vfio_iommu_spapr_tce_info,
-+				dma32_window_size);
-+
-+		if (copy_from_user(&info, (void __user *)arg, minsz))
-+			return -EFAULT;
-+
-+		if (info.argsz < minsz)
-+			return -EINVAL;
-+
-+		info.dma32_window_start = tbl->it_offset << IOMMU_PAGE_SHIFT;
-+		info.dma32_window_size = tbl->it_size << IOMMU_PAGE_SHIFT;
-+		info.flags = 0;
-+
-+		if (copy_to_user((void __user *)arg, &info, minsz))
-+			return -EFAULT;
-+
-+		return 0;
-+	}
-+	case VFIO_IOMMU_MAP_DMA: {
-+		vfio_iommu_spapr_tce_dma_map param;
-+		struct iommu_table *tbl = container->tbl;
-+		enum dma_data_direction direction;
-+		unsigned long locked, lock_limit;
-+
-+		if (WARN_ON(!tbl))
-+			return -ENXIO;
-+
-+		minsz = offsetofend(vfio_iommu_spapr_tce_dma_map, size);
-+
-+		if (copy_from_user(&param, (void __user *)arg, minsz))
-+			return -EFAULT;
-+
-+		if (param.argsz < minsz)
-+			return -EINVAL;
-+
-+		if ((param.flags & VFIO_DMA_MAP_FLAG_READ) &&
-+				(param.flags & VFIO_DMA_MAP_FLAG_WRITE))
-+			direction = DMA_BIDIRECTIONAL;
-+		else if (param.flags & VFIO_DMA_MAP_FLAG_READ)
-+			direction = DMA_TO_DEVICE;
-+		else if (param.flags & VFIO_DMA_MAP_FLAG_WRITE)
-+			direction = DMA_FROM_DEVICE;
-+		else
-+			return -EINVAL;
-+
-+		if ((param.size & ~IOMMU_PAGE_MASK) ||
-+				(param.iova & ~IOMMU_PAGE_MASK) ||
-+				(param.vaddr & ~IOMMU_PAGE_MASK))
-+			return -EINVAL;
-+
-+		if ((param.iova + param.size) >
-+				((tbl->it_offset + tbl->it_size)
-+				<< IOMMU_PAGE_SHIFT))
-+			return -EINVAL;
-+
-+		if (param.iova < (tbl->it_offset << IOMMU_PAGE_SHIFT))
-+			return -EINVAL;
-+
-+		/* Account for locked pages */
-+		locked = current->mm->locked_vm +
-+			(param.size >> PAGE_SHIFT);
-+		lock_limit = rlimit(RLIMIT_MEMLOCK) >> PAGE_SHIFT;
-+		if (locked > lock_limit && !capable(CAP_IPC_LOCK)) {
-+			pr_warn("RLIMIT_MEMLOCK (%ld) exceeded\n",
-+					rlimit(RLIMIT_MEMLOCK));
-+			return -ENOMEM;
+ 	if ((sort__has_parent || symbol_conf.use_callchain) && sample->callchain) {
+ 		err = machine__resolve_callchain(machine, evsel, al->thread,
+-						 sample, &parent);
++						 sample, &parent, al);
+ 		if (err)
+ 			return err;
+ 	}
+@@ -607,6 +607,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		     "Default: fractal,0.5,callee", &parse_callchain_opt, callchain_default_opt),
+ 	OPT_BOOLEAN('G', "inverted", &report.inverted_callchain,
+ 		    "alias for inverted call graph"),
++	OPT_STRING(0, "blackbox", &blackbox_pattern, "regex",
++		   "functions to treat as black boxes in call graphs, collapsing callees"),
+ 	OPT_STRING('d', "dsos", &symbol_conf.dso_list_str, "dso[,dso...]",
+ 		   "only consider symbols in these dsos"),
+ 	OPT_STRING('c', "comms", &symbol_conf.comm_list_str, "comm[,comm...]",
+@@ -687,6 +689,17 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 
+ 	}
+ 
++	if (blackbox_pattern) {
++		int err = regcomp(&blackbox_regex, blackbox_pattern, REG_EXTENDED);
++		if (err) {
++			char buf[BUFSIZ];
++			regerror(err, &blackbox_regex, buf, sizeof(buf));
++			pr_err("Invalid blackbox regex: %s\n%s", blackbox_pattern, buf);
++			goto error;
 +		}
-+
-+		ret = iommu_put_tces(tbl, param.iova >> IOMMU_PAGE_SHIFT,
-+				param.vaddr, direction,
-+				param.size >> IOMMU_PAGE_SHIFT);
-+
-+		if (ret > 0)
-+			lock_acct(ret);
-+
-+		return ret;
-+	}
-+	case VFIO_IOMMU_UNMAP_DMA: {
-+		vfio_iommu_spapr_tce_dma_unmap param;
-+		struct iommu_table *tbl = container->tbl;
-+
-+		if (WARN_ON(!tbl))
-+			return -ENXIO;
-+
-+		minsz = offsetofend(vfio_iommu_spapr_tce_dma_unmap, size);
-+
-+		if (copy_from_user(&param, (void __user *)arg, minsz))
-+			return -EFAULT;
-+
-+		if (param.argsz < minsz)
-+			return -EINVAL;
-+
-+		if ((param.size & ~IOMMU_PAGE_MASK) ||
-+				(param.iova & ~IOMMU_PAGE_MASK))
-+			return -EINVAL;
-+
-+		if ((param.iova + param.size) >
-+				((tbl->it_offset + tbl->it_size)
-+				<< IOMMU_PAGE_SHIFT))
-+			return -EINVAL;
-+
-+		if (param.iova < (tbl->it_offset << IOMMU_PAGE_SHIFT))
-+			return -EINVAL;
-+
-+		ret = iommu_clear_tces(tbl, param.iova >> IOMMU_PAGE_SHIFT,
-+				param.size >> IOMMU_PAGE_SHIFT);
-+
-+		if (ret > 0)
-+			lock_acct(-ret);
-+
-+		return ret;
-+	}
-+	default:
-+		pr_warn("tce_vfio: unexpected cmd %x\n", cmd);
++		have_blackbox = 1;
 +	}
 +
-+	return -ENOTTY;
-+}
-+
-+static int tce_iommu_attach_group(void *iommu_data,
-+		struct iommu_group *iommu_group)
-+{
-+	struct tce_container *container = iommu_data;
-+	struct iommu_table *tbl = iommu_group_get_iommudata(iommu_group);
-+
-+	BUG_ON(!tbl);
-+	mutex_lock(&container->lock);
-+	pr_debug("tce_vfio: Attaching group #%u to iommu %p\n",
-+			iommu_group_id(iommu_group), iommu_group);
-+	if (container->tbl) {
-+		pr_warn("tce_vfio: Only one group per IOMMU container is allowed, existing id=%d, attaching id=%d\n",
-+				iommu_group_id(container->tbl->it_group),
-+				iommu_group_id(iommu_group));
-+		mutex_unlock(&container->lock);
-+		return -EBUSY;
-+	}
-+
-+	container->tbl = tbl;
-+	iommu_reset_table(tbl, false);
-+	mutex_unlock(&container->lock);
-+
-+	return 0;
-+}
-+
-+static void tce_iommu_detach_group(void *iommu_data,
-+		struct iommu_group *iommu_group)
-+{
-+	struct tce_container *container = iommu_data;
-+	struct iommu_table *tbl = iommu_group_get_iommudata(iommu_group);
-+
-+	BUG_ON(!tbl);
-+	mutex_lock(&container->lock);
-+	if (tbl != container->tbl) {
-+		pr_warn("tce_vfio: detaching group #%u, expected group is #%u\n",
-+				iommu_group_id(iommu_group),
-+				iommu_group_id(tbl->it_group));
-+	} else {
-+
-+		pr_debug("tce_vfio: detaching group #%u from iommu %p\n",
-+				iommu_group_id(iommu_group), iommu_group);
-+
-+		container->tbl = NULL;
-+		iommu_reset_table(tbl, true);
-+	}
-+	mutex_unlock(&container->lock);
-+}
-+
-+const struct vfio_iommu_driver_ops tce_iommu_driver_ops = {
-+	.name		= "iommu-vfio-powerpc",
-+	.owner		= THIS_MODULE,
-+	.open		= tce_iommu_open,
-+	.release	= tce_iommu_release,
-+	.ioctl		= tce_iommu_ioctl,
-+	.attach_group	= tce_iommu_attach_group,
-+	.detach_group	= tce_iommu_detach_group,
-+};
-+
-+static int __init tce_iommu_init(void)
-+{
-+	return vfio_register_iommu_driver(&tce_iommu_driver_ops);
-+}
-+
-+static void __exit tce_iommu_cleanup(void)
-+{
-+	vfio_unregister_iommu_driver(&tce_iommu_driver_ops);
-+}
-+
-+module_init(tce_iommu_init);
-+module_exit(tce_iommu_cleanup);
-+
-+MODULE_VERSION(DRIVER_VERSION);
-+MODULE_LICENSE("GPL v2");
-+MODULE_AUTHOR(DRIVER_AUTHOR);
-+MODULE_DESCRIPTION(DRIVER_DESC);
-+
-diff --git a/include/linux/vfio.h b/include/linux/vfio.h
-index 0a4f180..23cfc79 100644
---- a/include/linux/vfio.h
-+++ b/include/linux/vfio.h
-@@ -99,6 +99,7 @@ extern void vfio_unregister_iommu_driver(
- /* Extensions */
+ 	if (strcmp(report.input_name, "-") != 0)
+ 		setup_browser(true);
+ 	else {
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index ff6db80..ee969b5 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -786,8 +786,7 @@ static void perf_event__process_sample(struct perf_tool *tool,
+ 		    sample->callchain) {
+ 			err = machine__resolve_callchain(machine, evsel,
+ 							 al.thread, sample,
+-							 &parent);
+-
++							 &parent, NULL);
+ 			if (err)
+ 				return;
+ 		}
+diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
+index d2250fc..6d1b8e1 100644
+--- a/tools/perf/util/map.h
++++ b/tools/perf/util/map.h
+@@ -23,6 +23,7 @@ struct ref_reloc_sym;
+ struct map_groups;
+ struct machine;
+ struct perf_evsel;
++struct addr_location;
  
- #define VFIO_TYPE1_IOMMU		1
-+#define VFIO_SPAPR_TCE_IOMMU		2
+ struct map {
+ 	union {
+@@ -163,7 +164,8 @@ int machine__resolve_callchain(struct machine *machine,
+ 			       struct perf_evsel *evsel,
+ 			       struct thread *thread,
+ 			       struct perf_sample *sample,
+-			       struct symbol **parent);
++			       struct symbol **parent,
++			       struct addr_location *root_al);
+ int maps__set_kallsyms_ref_reloc_sym(struct map **maps, const char *symbol_name,
+ 				     u64 addr);
  
- /*
-  * The IOCTL interface is designed for extensibility by embedding the
-@@ -442,4 +443,33 @@ struct vfio_iommu_type1_dma_unmap {
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 8cdd232..9a8798c 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -19,6 +19,10 @@
+ #include "unwind.h"
+ #include "vdso.h"
  
- #define VFIO_IOMMU_UNMAP_DMA _IO(VFIO_TYPE, VFIO_BASE + 14)
++regex_t blackbox_regex;
++const char *blackbox_pattern;
++int have_blackbox = 0;
++
+ static int perf_session__open(struct perf_session *self, bool force)
+ {
+ 	struct stat input_stat;
+@@ -226,11 +230,10 @@ void machine__remove_thread(struct machine *self, struct thread *th)
+ 	list_add_tail(&th->node, &self->dead_threads);
+ }
  
-+/* -------- Additional API for SPAPR TCE (Server POWERPC) IOMMU -------- */
+-static bool symbol__match_parent_regex(struct symbol *sym)
++static bool symbol__match_regex(struct symbol *sym, regex_t *regex)
+ {
+-	if (sym->name && !regexec(&parent_regex, sym->name, 0, NULL, 0))
++	if (sym->name && !regexec(regex, sym->name, 0, NULL, 0))
+ 		return 1;
+-
+ 	return 0;
+ }
+ 
+@@ -295,8 +298,8 @@ struct branch_info *machine__resolve_bstack(struct machine *self,
+ static int machine__resolve_callchain_sample(struct machine *machine,
+ 					     struct thread *thread,
+ 					     struct ip_callchain *chain,
+-					     struct symbol **parent)
+-
++					     struct symbol **parent,
++					     struct addr_location *root_al)
+ {
+ 	u8 cpumode = PERF_RECORD_MISC_USER;
+ 	unsigned int i;
+@@ -347,8 +350,13 @@ static int machine__resolve_callchain_sample(struct machine *machine,
+ 					   MAP__FUNCTION, ip, &al, NULL);
+ 		if (al.sym != NULL) {
+ 			if (sort__has_parent && !*parent &&
+-			    symbol__match_parent_regex(al.sym))
++			    symbol__match_regex(al.sym, &parent_regex))
+ 				*parent = al.sym;
++			else if (have_blackbox && root_al &&
++			         symbol__match_regex(al.sym, &blackbox_regex)) {
++				*root_al = al;
++				callchain_cursor_reset(&callchain_cursor);
++			}
+ 			if (!symbol_conf.use_callchain)
+ 				break;
+ 		}
+@@ -373,15 +381,15 @@ int machine__resolve_callchain(struct machine *machine,
+ 			       struct perf_evsel *evsel,
+ 			       struct thread *thread,
+ 			       struct perf_sample *sample,
+-			       struct symbol **parent)
+-
++			       struct symbol **parent,
++			       struct addr_location *root_al)
+ {
+ 	int ret;
+ 
+ 	callchain_cursor_reset(&callchain_cursor);
+ 
+ 	ret = machine__resolve_callchain_sample(machine, thread,
+-						sample->callchain, parent);
++	                                        sample->callchain, parent, root_al);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -1603,9 +1611,8 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
+ 
+ 	if (symbol_conf.use_callchain && sample->callchain) {
+ 
+-
+ 		if (machine__resolve_callchain(machine, evsel, al.thread,
+-					       sample, NULL) != 0) {
++					       sample, NULL, NULL) != 0) {
+ 			if (verbose)
+ 				error("Failed to resolve callchain. Skipping\n");
+ 			return;
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 0eae00a..6db3e55 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -1,6 +1,7 @@
+ #ifndef __PERF_SESSION_H
+ #define __PERF_SESSION_H
+ 
++#include <regex.h>
+ #include "hist.h"
+ #include "event.h"
+ #include "header.h"
+@@ -9,6 +10,10 @@
+ #include <linux/rbtree.h>
+ #include <linux/perf_event.h>
+ 
++extern regex_t blackbox_regex;
++extern const char *blackbox_pattern;
++extern int have_blackbox;
 +
-+/*
-+ * The SPAPR TCE info struct provides the information about the PCI bus
-+ * address ranges available for DMA, these values are programmed into
-+ * the hardware so the guest has to know that information.
-+ *
-+ * The DMA 32 bit window start is an absolute PCI bus address.
-+ * The IOVA address passed via map/unmap ioctls are absolute PCI bus
-+ * addresses too so the window works as a filter rather than an offset
-+ * for IOVA addresses.
-+ *
-+ * At the momen the IOMMU page size is 4K.
-+ */
-+struct vfio_iommu_spapr_tce_info {
-+	__u32 argsz;
-+	__u32 flags;			/* reserved for future use */
-+	__u32 dma32_window_start;	/* 32 bit window start (bytes) */
-+	__u32 dma32_window_size;	/* 32 bit window size (bytes) */
-+};
-+
-+#define VFIO_IOMMU_SPAPR_TCE_GET_INFO	_IO(VFIO_TYPE, VFIO_BASE + 12)
-+
-+/* Reuse type1 map/unmap structs as they are the same at the moment */
-+typedef struct vfio_iommu_type1_dma_map vfio_iommu_spapr_tce_dma_map;
-+typedef struct vfio_iommu_type1_dma_unmap vfio_iommu_spapr_tce_dma_unmap;
-+
-+/* ***************************************************************** */
-+
- #endif /* VFIO_H */
+ struct sample_queue;
+ struct ip_callchain;
+ struct thread;
 -- 
-1.7.10.4
+1.7.11.3
 
