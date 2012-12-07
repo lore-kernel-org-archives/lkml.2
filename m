@@ -1,75 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030278Ab2LGNFG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 08:05:06 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:39537 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030214Ab2LGNFE (ORCPT
+	id S1030286Ab2LGNOM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 08:14:12 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:60986 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030216Ab2LGNOL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 08:05:04 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121206144534.23d26318.akpm@linux-foundation.org>
-References: <1354810175-4338-1-git-send-email-js1304@gmail.com>
-	<20121206144534.23d26318.akpm@linux-foundation.org>
-Date: Fri, 7 Dec 2012 22:05:04 +0900
-Message-ID: <CAAmzW4OUivQy+KUuDMhL7Dkgdb2yGAxjUC-R5a5+RGViMJJ-fA@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/8] remove vm_struct list management
-From: JoonSoo Kim <js1304@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, kexec@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 7 Dec 2012 08:14:11 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH resend] spi: Add support for specifying 3-wire mode via device tree
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Rob Herring <rob.herring@calxeda.com>, devicetree-discuss@lists.ozlabs.org,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Lars-Peter Clausen <lars@metafoo.de>
+In-Reply-To: <1354809333-18364-1-git-send-email-lars@metafoo.de>
+References: <1354809333-18364-1-git-send-email-lars@metafoo.de>
+Date: Fri, 07 Dec 2012 13:14:05 +0000
+Message-Id: <20121207131405.EBFDE3E0B87@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Andrew.
+On Thu,  6 Dec 2012 16:55:33 +0100, Lars-Peter Clausen <lars@metafoo.de> wrote:
+> This patch allows to specify that a SPI device is connected in 3-wire mode via
+> device tree.
+> 
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> Acked-by: Rob Herring <rob.herring@calxeda.com>
 
-2012/12/7 Andrew Morton <akpm@linux-foundation.org>:
-> On Fri,  7 Dec 2012 01:09:27 +0900
-> Joonsoo Kim <js1304@gmail.com> wrote:
->
->> This patchset remove vm_struct list management after initializing vmalloc.
->> Adding and removing an entry to vmlist is linear time complexity, so
->> it is inefficient. If we maintain this list, overall time complexity of
->> adding and removing area to vmalloc space is O(N), although we use
->> rbtree for finding vacant place and it's time complexity is just O(logN).
->>
->> And vmlist and vmlist_lock is used many places of outside of vmalloc.c.
->> It is preferable that we hide this raw data structure and provide
->> well-defined function for supporting them, because it makes that they
->> cannot mistake when manipulating theses structure and it makes us easily
->> maintain vmalloc layer.
->>
->> I'm not sure that "7/8: makes vmlist only for kexec" is fine.
->> Because it is related to userspace program.
->> As far as I know, makedumpfile use kexec's output information and it only
->> need first address of vmalloc layer. So my implementation reflect this
->> fact, but I'm not sure. And now, I don't fully test this patchset.
->> Basic operation work well, but I don't test kexec. So I send this
->> patchset with 'RFC'.
->>
->> Please let me know what I am missing.
->>
->> This series based on v3.7-rc7 and on top of submitted patchset for ARM.
->> 'introduce static_vm for ARM-specific static mapped area'
->> https://lkml.org/lkml/2012/11/27/356
->> But, running properly on x86 without ARM patchset.
->
-> This all looks rather nice, but not mergeable into anything at this
-> stage in the release cycle.
->
-> What are the implications of "on top of submitted patchset for ARM"?
-> Does it depens on the ARM patches in any way, or it it independently
-> mergeable and testable?
->
+Applied, thanks.
 
-Yes. It depends on ARM patches.
-There is a code to manipulate a vmlist in ARM.
-So without applying ARM patches, this patchset makes compile error for ARM.
-But, build for x86 works fine with this patchset :)
+g.
 
-In ARM patches, a method used for removing vmlist related code is same
-as 1/8 of this patchset.
-But, it includes some optimization for ARM, so I sent it separately.
-If it can't be accepted, I can rework ARM patches like as 1/8 of this patchset.
+> ---
+>  Documentation/devicetree/bindings/spi/spi-bus.txt | 2 ++
+>  drivers/spi/spi.c                                 | 2 ++
+>  2 files changed, 4 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/spi/spi-bus.txt b/Documentation/devicetree/bindings/spi/spi-bus.txt
+> index 77a8b0d..296015e 100644
+> --- a/Documentation/devicetree/bindings/spi/spi-bus.txt
+> +++ b/Documentation/devicetree/bindings/spi/spi-bus.txt
+> @@ -53,6 +53,8 @@ contain the following properties.
+>      		shifted clock phase (CPHA) mode
+>  - spi-cs-high     - (optional) Empty property indicating device requires
+>      		chip select active high
+> +- spi-3wire       - (optional) Empty property indicating device requires
+> +    		    3-wire mode.
+>  
+>  If a gpio chipselect is used for the SPI slave the gpio number will be passed
+>  via the cs_gpio
+> diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+> index 22c71e2..cb61ada 100644
+> --- a/drivers/spi/spi.c
+> +++ b/drivers/spi/spi.c
+> @@ -861,6 +861,8 @@ static void of_register_spi_devices(struct spi_master *master)
+>  			spi->mode |= SPI_CPOL;
+>  		if (of_find_property(nc, "spi-cs-high", NULL))
+>  			spi->mode |= SPI_CS_HIGH;
+> +		if (of_find_property(nc, "spi-3wire", NULL))
+> +			spi->mode |= SPI_3WIRE;
+>  
+>  		/* Device speed */
+>  		prop = of_get_property(nc, "spi-max-frequency", &len);
+> -- 
+> 1.8.0
+> 
+
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
