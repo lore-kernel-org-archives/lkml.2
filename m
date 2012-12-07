@@ -1,38 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030408Ab2LGNgh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 08:36:37 -0500
-Received: from plane.gmane.org ([80.91.229.3]:44849 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030286Ab2LGNgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 08:36:36 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: "Holger Hoffstaette" <holger.hoffstaette@googlemail.com>
-Subject: Re: [ 00/27] 3.6.10-stable review
-Date: Fri, 07 Dec 2012 14:36:26 +0100
-Organization: The Fists of the White Lotus
-Message-ID: <pan.2012.12.07.13.36.26.63683@googlemail.com>
-References: <20121207005825.232489605@linuxfoundation.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: p5086ac2d.dip.t-dialin.net
-User-Agent: Pan/0.13.91 (Before we let euphoria convince us we are free)
-Cc: stable@vger.kernel.org
+	id S1030421Ab2LGNhM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 08:37:12 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:47087 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030286Ab2LGNhL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 08:37:11 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH V5 2/2] mfd: stmpe: Update DT support in stmpe driver
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        rabin.vincent@stericsson.com, shiraz.hashim@st.com,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, linus.walleij@linaro.org,
+        Vipul Kumar Samar <vipulkumar.samar@st.com>
+In-Reply-To: <CAKohponjLp214EPKgNHqP2N8Tje9U8ZxgywUTSvsjE-TqHy+xw@mail.gmail.com>
+References: <2dcd7cb4c4022fa24b5328974e4226f5aaf89419.1354199865.git.viresh.kumar@linaro.org> <121653def4e985b0c1b59045637dd4518f97e73a.1354199865.git.viresh.kumar@linaro.org> <20121130105731.GN3176@sortiz-mobl> <20121130154542.GG23648@gmail.com> <CAKohpokLVEH+4F_VXh5auUm48cWWe0mumZME8yOCcAezcwJbCQ@mail.gmail.com> <20121205224203.691153E0E22@localhost> <CAKohponjLp214EPKgNHqP2N8Tje9U8ZxgywUTSvsjE-TqHy+xw@mail.gmail.com>
+Date: Fri, 07 Dec 2012 13:37:05 +0000
+Message-Id: <20121207133705.59AC03E0B87@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 06 Dec 2012 16:58:44 -0800, Greg Kroah-Hartman wrote:
+On Thu, 6 Dec 2012 07:28:22 +0530, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> First of all, thanks for explaining :)
+> 
+> On 6 December 2012 04:12, Grant Likely <grant.likely@secretlab.ca> wrote:
+> > On Sat, 1 Dec 2012 00:33:46 +0530, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> >> This first tries to match the table my patch added, _BUT_ the string will
+> >> never match as we had "st,stmpe810" in table and "stmpe810" in dev.
+> >
+> > of_driver_match_device() matches against the compatible list in
+> > dev->of_node, not against the device name. So, if the compatible
+> > property has a string that is in the table, then it really should match
+> > against it.
+> 
+> How could i misread it? Yes you are correct.
+> 
+> >> static int i2c_device_probe(struct device *dev)
+> >> {
+> >>         .....
+> >>       status = driver->probe(client, i2c_match_id(driver->id_table, client));
+> >
+> > Here things are a bit wonky. Even if matched against the table, it is
+> 
+> table means of_device_id table ?
 
-> This is the start of the stable review cycle for the 3.6.10 release.
+yes
 
-Patched against 3.6.9/builds/works fine on 3 Gentoo ~x86 machines, two
-generic i5/i7 boxes (one ATI with Evergreen chip) and an old T60 Thinkpad.
-No borkage detected so far.
+> 
+> > possible that it also matches against i2c_match_id() and that data is
+> > passed to the driver.
+> 
+> It is a possibility or guarantee ? And so whatever device name we got from
+> modalias routine, should match with the names in driver->id_table.
 
--h
+possibility. If the generated alias name does match something in
+driver->id_table, then that pointer will be returned here.
 
+> > But regardless, it is the responsiblity of the probe function to go and
+> > look if of_driver_match_device() matches against anything if it cares
+> > about the of_match_table entries (for instance, if there is extra data
+> > attached).
+> 
+> Ok, so filling .data field in of_device_id[] is not required for our case as
+> we aren't doing anything special in our drivers.
 
+As long as things are simple, correct.
+
+g.
