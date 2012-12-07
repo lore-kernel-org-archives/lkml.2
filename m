@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030421Ab2LGNhM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 08:37:12 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:47087 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030286Ab2LGNhL (ORCPT
+	id S1030437Ab2LGNkM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 08:40:12 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:53693 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030424Ab2LGNkK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 08:37:11 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH V5 2/2] mfd: stmpe: Update DT support in stmpe driver
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        rabin.vincent@stericsson.com, shiraz.hashim@st.com,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, linus.walleij@linaro.org,
-        Vipul Kumar Samar <vipulkumar.samar@st.com>
-In-Reply-To: <CAKohponjLp214EPKgNHqP2N8Tje9U8ZxgywUTSvsjE-TqHy+xw@mail.gmail.com>
-References: <2dcd7cb4c4022fa24b5328974e4226f5aaf89419.1354199865.git.viresh.kumar@linaro.org> <121653def4e985b0c1b59045637dd4518f97e73a.1354199865.git.viresh.kumar@linaro.org> <20121130105731.GN3176@sortiz-mobl> <20121130154542.GG23648@gmail.com> <CAKohpokLVEH+4F_VXh5auUm48cWWe0mumZME8yOCcAezcwJbCQ@mail.gmail.com> <20121205224203.691153E0E22@localhost> <CAKohponjLp214EPKgNHqP2N8Tje9U8ZxgywUTSvsjE-TqHy+xw@mail.gmail.com>
-Date: Fri, 07 Dec 2012 13:37:05 +0000
-Message-Id: <20121207133705.59AC03E0B87@localhost>
+	Fri, 7 Dec 2012 08:40:10 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAOJsxLFy5TP_xJ0GcqYdpsZ_Lj+Sf2Bfn99CqCqOv8P21N8+UA@mail.gmail.com>
+References: <1354810175-4338-1-git-send-email-js1304@gmail.com>
+	<1354810175-4338-2-git-send-email-js1304@gmail.com>
+	<CAOJsxLFy5TP_xJ0GcqYdpsZ_Lj+Sf2Bfn99CqCqOv8P21N8+UA@mail.gmail.com>
+Date: Fri, 7 Dec 2012 22:40:10 +0900
+Message-ID: <CAAmzW4PDmL-1U6SVFohS_du-7uJngbR-4EBa4UUSWa-xs66Lmw@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/8] mm, vmalloc: change iterating a vmlist to find_vm_area()
+From: JoonSoo Kim <js1304@gmail.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        kexec@lists.infradead.org, Chris Metcalf <cmetcalf@tilera.com>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Dec 2012 07:28:22 +0530, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> First of all, thanks for explaining :)
-> 
-> On 6 December 2012 04:12, Grant Likely <grant.likely@secretlab.ca> wrote:
-> > On Sat, 1 Dec 2012 00:33:46 +0530, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> >> This first tries to match the table my patch added, _BUT_ the string will
-> >> never match as we had "st,stmpe810" in table and "stmpe810" in dev.
-> >
-> > of_driver_match_device() matches against the compatible list in
-> > dev->of_node, not against the device name. So, if the compatible
-> > property has a string that is in the table, then it really should match
-> > against it.
-> 
-> How could i misread it? Yes you are correct.
-> 
-> >> static int i2c_device_probe(struct device *dev)
-> >> {
-> >>         .....
-> >>       status = driver->probe(client, i2c_match_id(driver->id_table, client));
-> >
-> > Here things are a bit wonky. Even if matched against the table, it is
-> 
-> table means of_device_id table ?
+Hello, Pekka.
 
-yes
+2012/12/7 Pekka Enberg <penberg@kernel.org>:
+> On Thu, Dec 6, 2012 at 6:09 PM, Joonsoo Kim <js1304@gmail.com> wrote:
+>> The purpose of iterating a vmlist is finding vm area with specific
+>> virtual address. find_vm_area() is provided for this purpose
+>> and more efficient, because it uses a rbtree.
+>> So change it.
+>
+> You no longer take the 'vmlist_lock'. This is safe, because...?
 
-> 
-> > possible that it also matches against i2c_match_id() and that data is
-> > passed to the driver.
-> 
-> It is a possibility or guarantee ? And so whatever device name we got from
-> modalias routine, should match with the names in driver->id_table.
+As Bob mentioned, find_vm_area() hold a 'vmap_area_lock' during
+searching a area.
+When we hold a 'vmap_area_lock', area can't be removed.
+So this change is safe.
 
-possibility. If the generated alias name does match something in
-driver->id_table, then that pointer will be returned here.
-
-> > But regardless, it is the responsiblity of the probe function to go and
-> > look if of_driver_match_device() matches against anything if it cares
-> > about the of_match_table entries (for instance, if there is extra data
-> > attached).
-> 
-> Ok, so filling .data field in of_device_id[] is not required for our case as
-> we aren't doing anything special in our drivers.
-
-As long as things are simple, correct.
-
-g.
+Thanks.
