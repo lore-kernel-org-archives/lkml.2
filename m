@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753930Ab2LGWsM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 17:48:12 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:59355 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751676Ab2LGWsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 17:48:10 -0500
-Date: Fri, 7 Dec 2012 23:41:10 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Xishi Qiu <qiuxishi@huawei.com>, WuJianguo <wujianguo@huawei.com>,
-        Liujiang <jiang.liu@huawei.com>, Vyacheslav.Dubeyko@huawei.com,
-        andi@firstfloor.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] MCE: fix an error of mce_bad_pages statistics
-Message-ID: <20121207224110.GA32115@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Xishi Qiu <qiuxishi@huawei.com>, WuJianguo <wujianguo@huawei.com>,
-	Liujiang <jiang.liu@huawei.com>, Vyacheslav.Dubeyko@huawei.com,
-	andi@firstfloor.org, linux-mm@kvack.org,
-	linux-kernel@vger.kernel.org
-References: <50C1AD6D.7010709@huawei.com>
- <20121207141102.4fda582d.akpm@linux-foundation.org>
+	id S1754215Ab2LGWuD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 17:50:03 -0500
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:46371 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752539Ab2LGWuC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 17:50:02 -0500
+Date: Fri, 7 Dec 2012 22:49:51 +0000
+From: Cong Ding <dinggnu@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arch/x86/tools/gen-insn-attr-x86.awk: remove duplicate
+ const
+Message-ID: <20121207224949.GA6179@gmail.com>
+References: <1354920151-4461-1-git-send-email-dinggnu@gmail.com>
+ <3c1e54bc-31ec-4a38-b6d3-58b25760f9cb@email.android.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121207141102.4fda582d.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <3c1e54bc-31ec-4a38-b6d3-58b25760f9cb@email.android.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 07, 2012 at 02:11:02PM -0800, Andrew Morton wrote:
-> A few things:
+On Fri, Dec 07, 2012 at 02:45:43PM -0800, H. Peter Anvin wrote:
+> Patch description please?
+there are 2 consts in the definition of one variable
+
+- cong
 > 
-> - soft_offline_page() already checks for this case:
+> Cong Ding <dinggnu@gmail.com> wrote:
 > 
-> 	if (PageHWPoison(page)) {
-> 		unlock_page(page);
-> 		put_page(page);
-> 		pr_info("soft offline: %#lx page already poisoned\n", pfn);
-> 		return -EBUSY;
-> 	}
-
-Oh, so we do this check after all. But later in the function. Why? Why
-not at the beginning so that when a page is marked poisoned already we
-can exit early?
-
-Strange.
-
--- 
-Regards/Gruss,
-    Boris.
+> >
+> >Signed-off-by: Cong Ding <dinggnu@gmail.com>
+> >---
+> > arch/x86/tools/gen-insn-attr-x86.awk |    4 ++--
+> > 1 files changed, 2 insertions(+), 2 deletions(-)
+> >
+> >diff --git a/arch/x86/tools/gen-insn-attr-x86.awk
+> >b/arch/x86/tools/gen-insn-attr-x86.awk
+> >index ddcf39b..d1d9cfa 100644
+> >--- a/arch/x86/tools/gen-insn-attr-x86.awk
+> >+++ b/arch/x86/tools/gen-insn-attr-x86.awk
+> >@@ -356,7 +356,7 @@ END {
+> > 		exit 1
+> > 	# print escape opcode map's array
+> > 	print "/* Escape opcode map array */"
+> >-	print "const insn_attr_t const *inat_escape_tables[INAT_ESC_MAX + 1]"
+> >\
+> >+	print "const insn_attr_t *inat_escape_tables[INAT_ESC_MAX + 1]" \
+> > 	      "[INAT_LSTPFX_MAX + 1] = {"
+> > 	for (i = 0; i < geid; i++)
+> > 		for (j = 0; j < max_lprefix; j++)
+> >@@ -365,7 +365,7 @@ END {
+> > 	print "};\n"
+> > 	# print group opcode map's array
+> > 	print "/* Group opcode map array */"
+> >-	print "const insn_attr_t const *inat_group_tables[INAT_GRP_MAX + 1]"\
+> >+	print "const insn_attr_t *inat_group_tables[INAT_GRP_MAX + 1]"\
+> > 	      "[INAT_LSTPFX_MAX + 1] = {"
+> > 	for (i = 0; i < ggid; i++)
+> > 		for (j = 0; j < max_lprefix; j++)
+> 
+> -- 
+> Sent from my mobile phone. Please excuse brevity and lack of formatting.
