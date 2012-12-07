@@ -1,122 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030974Ab2LGVaw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 16:30:52 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:48103 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030947Ab2LGVau (ORCPT
+	id S1756860Ab2LGVck (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 16:32:40 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:60458 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753848Ab2LGVci (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 16:30:50 -0500
-Subject: [RFCv2][PATCH 2/3] fix kvm's use of __pa() on percpu areas
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, Gleb Natapov <gleb@redhat.com>,
-        Avi Kivity <avi@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-Date: Fri, 07 Dec 2012 16:30:24 -0500
-References: <20121207213023.AA3AFF11@kernel.stglabs.ibm.com>
-In-Reply-To: <20121207213023.AA3AFF11@kernel.stglabs.ibm.com>
-Message-Id: <20121207213024.105B3C00@kernel.stglabs.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12120721-7606-0000-0000-0000063F63E9
+	Fri, 7 Dec 2012 16:32:38 -0500
+MIME-Version: 1.0
+In-Reply-To: <1354614984-6094-1-git-send-email-daniel@numascale-asia.com>
+References: <1354614984-6094-1-git-send-email-daniel@numascale-asia.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 7 Dec 2012 14:32:16 -0700
+Message-ID: <CAErSpo5kMfLz86coDVmyakuuNkFYrb7EQzoN_LEt4MeJXM=BhQ@mail.gmail.com>
+Subject: Re: [PATCH v3] Add NumaChip remote PCI support
+To: Daniel J Blueman <daniel@numascale-asia.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Steffen Persvold <sp@numascale.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Dec 4, 2012 at 2:56 AM, Daniel J Blueman
+<daniel@numascale-asia.com> wrote:
+> Add NumaChip-specific PCI access mechanism via MMCONFIG cycles, but
+> preventing access to AMD Northbridges which shouldn't respond.
+>
+> v2: Use PCI_DEVFN in precomputed constant limit; drop unneeded includes
+> v3: Express dependency on MMCONFIG
+>
+> Signed-off-by: Daniel J Blueman <daniel@numascale-asia.com>
 
-In short, it is illegal to call __pa() on an address holding
-a percpu variable.  The times when this actually matters are
-pretty obscure (certain 32-bit NUMA systems), but it _does_
-happen.  It is important to keep KVM guests working on these
-systems because the real hardware is getting harder and
-harder to find.
+I applied this to my -next branch, headed for v3.8.
 
-This bug manifested first by me seeing a plain hang at boot
-after this message:
+Thanks!
 
-	CPU 0 irqstacks, hard=f3018000 soft=f301a000
-
-or, sometimes, it would actually make it out to the console:
-
-[    0.000000] BUG: unable to handle kernel paging request at ffffffff
-
-I eventually traced it down to the KVM async pagefault code.
-This can be worked around by disabling that code either at
-compile-time, or on the kernel command-line.
-
-The kvm async pagefault code was injecting page faults in
-to the guest which the guest misinterpreted because its
-"reason" was not being properly sent from the host.
-
-The guest passes a physical address of an per-cpu async page
-fault structure via an MSR to the host.  Since __pa() is
-broken on percpu data, the physical address it sent was
-bascially bogus and the host went scribbling on random data.
-The guest never saw the real reason for the page fault (it
-was injected by the host), assumed that the kernel had taken
-a _real_ page fault, and panic()'d.
-
-Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
----
-
- linux-2.6.git-dave/arch/x86/kernel/kvm.c      |    9 +++++----
- linux-2.6.git-dave/arch/x86/kernel/kvmclock.c |    4 ++--
- 2 files changed, 7 insertions(+), 6 deletions(-)
-
-diff -puN arch/x86/kernel/kvm.c~fix-kvm-__pa-use-on-percpu-areas arch/x86/kernel/kvm.c
---- linux-2.6.git/arch/x86/kernel/kvm.c~fix-kvm-__pa-use-on-percpu-areas	2012-11-30 16:09:03.562055643 -0500
-+++ linux-2.6.git-dave/arch/x86/kernel/kvm.c	2012-11-30 16:09:03.586055841 -0500
-@@ -284,9 +284,9 @@ static void kvm_register_steal_time(void
- 
- 	memset(st, 0, sizeof(*st));
- 
--	wrmsrl(MSR_KVM_STEAL_TIME, (__pa(st) | KVM_MSR_ENABLED));
-+	wrmsrl(MSR_KVM_STEAL_TIME, (slow_virt_to_phys(st) | KVM_MSR_ENABLED));
- 	printk(KERN_INFO "kvm-stealtime: cpu %d, msr %lx\n",
--		cpu, __pa(st));
-+		cpu, slow_virt_to_phys(st));
- }
- 
- static DEFINE_PER_CPU(unsigned long, kvm_apic_eoi) = KVM_PV_EOI_DISABLED;
-@@ -311,7 +311,7 @@ void __cpuinit kvm_guest_cpu_init(void)
- 		return;
- 
- 	if (kvm_para_has_feature(KVM_FEATURE_ASYNC_PF) && kvmapf) {
--		u64 pa = __pa(&__get_cpu_var(apf_reason));
-+		u64 pa = slow_virt_to_phys(&__get_cpu_var(apf_reason));
- 
- #ifdef CONFIG_PREEMPT
- 		pa |= KVM_ASYNC_PF_SEND_ALWAYS;
-@@ -327,7 +327,8 @@ void __cpuinit kvm_guest_cpu_init(void)
- 		/* Size alignment is implied but just to make it explicit. */
- 		BUILD_BUG_ON(__alignof__(kvm_apic_eoi) < 4);
- 		__get_cpu_var(kvm_apic_eoi) = 0;
--		pa = __pa(&__get_cpu_var(kvm_apic_eoi)) | KVM_MSR_ENABLED;
-+		pa = slow_virt_to_phys(&__get_cpu_var(kvm_apic_eoi))
-+			| KVM_MSR_ENABLED;
- 		wrmsrl(MSR_KVM_PV_EOI_EN, pa);
- 	}
- 
-diff -puN arch/x86/kernel/kvmclock.c~fix-kvm-__pa-use-on-percpu-areas arch/x86/kernel/kvmclock.c
---- linux-2.6.git/arch/x86/kernel/kvmclock.c~fix-kvm-__pa-use-on-percpu-areas	2012-11-30 16:09:03.562055643 -0500
-+++ linux-2.6.git-dave/arch/x86/kernel/kvmclock.c	2012-11-30 16:09:03.586055841 -0500
-@@ -142,8 +142,8 @@ int kvm_register_clock(char *txt)
- 	int cpu = smp_processor_id();
- 	int low, high, ret;
- 
--	low = (int)__pa(&per_cpu(hv_clock, cpu)) | 1;
--	high = ((u64)__pa(&per_cpu(hv_clock, cpu)) >> 32);
-+	low = (int)slow_virt_to_phys(&per_cpu(hv_clock, cpu)) | 1;
-+	high = ((u64)slow_virt_to_phys(&per_cpu(hv_clock, cpu)) >> 32);
- 	ret = native_write_msr_safe(msr_kvm_system_time, low, high);
- 	printk(KERN_INFO "kvm-clock: cpu %d, msr %x:%x, %s\n",
- 	       cpu, high, low, txt);
-diff -puN include/linux/percpu-defs.h~fix-kvm-__pa-use-on-percpu-areas include/linux/percpu-defs.h
-diff -puN mm/percpu-vm.c~fix-kvm-__pa-use-on-percpu-areas mm/percpu-vm.c
-diff -puN mm/percpu.c~fix-kvm-__pa-use-on-percpu-areas mm/percpu.c
-diff -puN include/linux/percpu.h~fix-kvm-__pa-use-on-percpu-areas include/linux/percpu.h
-diff -puN include/asm-generic/percpu.h~fix-kvm-__pa-use-on-percpu-areas include/asm-generic/percpu.h
-diff -puN arch/x86/include/asm/segment.h~fix-kvm-__pa-use-on-percpu-areas arch/x86/include/asm/segment.h
-diff -puN arch/x86/kernel/entry_32.S~fix-kvm-__pa-use-on-percpu-areas arch/x86/kernel/entry_32.S
-diff -puN drivers/base/cpu.c~fix-kvm-__pa-use-on-percpu-areas drivers/base/cpu.c
-_
-
+> ---
+>  arch/x86/Kconfig                         |    2 +
+>  arch/x86/include/asm/numachip/numachip.h |   20 +++++
+>  arch/x86/kernel/apic/apic_numachip.c     |    2 +
+>  arch/x86/pci/Makefile                    |    1 +
+>  arch/x86/pci/numachip.c                  |  129 ++++++++++++++++++++++++++++++
+>  5 files changed, 154 insertions(+)
+>  create mode 100644 arch/x86/include/asm/numachip/numachip.h
+>  create mode 100644 arch/x86/pci/numachip.c
+>
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index 46c3bff..50e8700 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -374,6 +374,7 @@ config X86_NUMACHIP
+>         depends on NUMA
+>         depends on SMP
+>         depends on X86_X2APIC
+> +       depends on PCI_MMCONFIG
+>         ---help---
+>           Adds support for Numascale NumaChip large-SMP systems. Needed to
+>           enable more than ~168 cores.
+> diff --git a/arch/x86/include/asm/numachip/numachip.h b/arch/x86/include/asm/numachip/numachip.h
+> new file mode 100644
+> index 0000000..fe7f60c
+> --- /dev/null
+> +++ b/arch/x86/include/asm/numachip/numachip.h
+> @@ -0,0 +1,20 @@
+> +/*
+> + * This file is subject to the terms and conditions of the GNU General Public
+> + * License.  See the file "COPYING" in the main directory of this archive
+> + * for more details.
+> + *
+> + * Numascale NumaConnect-specific header file
+> + *
+> + * Copyright (C) 2012 Numascale AS. All rights reserved.
+> + *
+> + * Send feedback to <support@numascale.com>
+> + *
+> + */
+> +
+> +#ifndef _ASM_X86_NUMACHIP_NUMACHIP_H
+> +#define _ASM_X86_NUMACHIP_NUMACHIP_H
+> +
+> +extern int __init pci_numachip_init(void);
+> +
+> +#endif /* _ASM_X86_NUMACHIP_NUMACHIP_H */
+> +
+> diff --git a/arch/x86/kernel/apic/apic_numachip.c b/arch/x86/kernel/apic/apic_numachip.c
+> index a65829a..9c2aa89 100644
+> --- a/arch/x86/kernel/apic/apic_numachip.c
+> +++ b/arch/x86/kernel/apic/apic_numachip.c
+> @@ -22,6 +22,7 @@
+>  #include <linux/hardirq.h>
+>  #include <linux/delay.h>
+>
+> +#include <asm/numachip/numachip.h>
+>  #include <asm/numachip/numachip_csr.h>
+>  #include <asm/smp.h>
+>  #include <asm/apic.h>
+> @@ -179,6 +180,7 @@ static int __init numachip_system_init(void)
+>                 return 0;
+>
+>         x86_cpuinit.fixup_cpu_id = fixup_cpu_id;
+> +       x86_init.pci.arch_init = pci_numachip_init;
+>
+>         map_csrs();
+>
+> diff --git a/arch/x86/pci/Makefile b/arch/x86/pci/Makefile
+> index 3af5a1e..ee0af58 100644
+> --- a/arch/x86/pci/Makefile
+> +++ b/arch/x86/pci/Makefile
+> @@ -16,6 +16,7 @@ obj-$(CONFIG_STA2X11)           += sta2x11-fixup.o
+>  obj-$(CONFIG_X86_VISWS)                += visws.o
+>
+>  obj-$(CONFIG_X86_NUMAQ)                += numaq_32.o
+> +obj-$(CONFIG_X86_NUMACHIP)     += numachip.o
+>
+>  obj-$(CONFIG_X86_INTEL_MID)    += mrst.o
+>
+> diff --git a/arch/x86/pci/numachip.c b/arch/x86/pci/numachip.c
+> new file mode 100644
+> index 0000000..7307d9d
+> --- /dev/null
+> +++ b/arch/x86/pci/numachip.c
+> @@ -0,0 +1,129 @@
+> +/*
+> + * This file is subject to the terms and conditions of the GNU General Public
+> + * License.  See the file "COPYING" in the main directory of this archive
+> + * for more details.
+> + *
+> + * Numascale NumaConnect-specific PCI code
+> + *
+> + * Copyright (C) 2012 Numascale AS. All rights reserved.
+> + *
+> + * Send feedback to <support@numascale.com>
+> + *
+> + * PCI accessor functions derived from mmconfig_64.c
+> + *
+> + */
+> +
+> +#include <linux/pci.h>
+> +#include <asm/pci_x86.h>
+> +
+> +static u8 limit __read_mostly;
+> +
+> +static inline char __iomem *pci_dev_base(unsigned int seg, unsigned int bus, unsigned int devfn)
+> +{
+> +       struct pci_mmcfg_region *cfg = pci_mmconfig_lookup(seg, bus);
+> +
+> +       if (cfg && cfg->virt)
+> +               return cfg->virt + (PCI_MMCFG_BUS_OFFSET(bus) | (devfn << 12));
+> +       return NULL;
+> +}
+> +
+> +static int pci_mmcfg_read_numachip(unsigned int seg, unsigned int bus,
+> +                         unsigned int devfn, int reg, int len, u32 *value)
+> +{
+> +       char __iomem *addr;
+> +
+> +       /* Why do we have this when nobody checks it. How about a BUG()!? -AK */
+> +       if (unlikely((bus > 255) || (devfn > 255) || (reg > 4095))) {
+> +err:           *value = -1;
+> +               return -EINVAL;
+> +       }
+> +
+> +       /* Ensure AMD Northbridges don't decode reads to other devices */
+> +       if (unlikely(bus == 0 && devfn >= limit)) {
+> +               *value = -1;
+> +               return 0;
+> +       }
+> +
+> +       rcu_read_lock();
+> +       addr = pci_dev_base(seg, bus, devfn);
+> +       if (!addr) {
+> +               rcu_read_unlock();
+> +               goto err;
+> +       }
+> +
+> +       switch (len) {
+> +       case 1:
+> +               *value = mmio_config_readb(addr + reg);
+> +               break;
+> +       case 2:
+> +               *value = mmio_config_readw(addr + reg);
+> +               break;
+> +       case 4:
+> +               *value = mmio_config_readl(addr + reg);
+> +               break;
+> +       }
+> +       rcu_read_unlock();
+> +
+> +       return 0;
+> +}
+> +
+> +static int pci_mmcfg_write_numachip(unsigned int seg, unsigned int bus,
+> +                          unsigned int devfn, int reg, int len, u32 value)
+> +{
+> +       char __iomem *addr;
+> +
+> +       /* Why do we have this when nobody checks it. How about a BUG()!? -AK */
+> +       if (unlikely((bus > 255) || (devfn > 255) || (reg > 4095)))
+> +               return -EINVAL;
+> +
+> +       /* Ensure AMD Northbridges don't decode writes to other devices */
+> +       if (unlikely(bus == 0 && devfn >= limit))
+> +               return 0;
+> +
+> +       rcu_read_lock();
+> +       addr = pci_dev_base(seg, bus, devfn);
+> +       if (!addr) {
+> +               rcu_read_unlock();
+> +               return -EINVAL;
+> +       }
+> +
+> +       switch (len) {
+> +       case 1:
+> +               mmio_config_writeb(addr + reg, value);
+> +               break;
+> +       case 2:
+> +               mmio_config_writew(addr + reg, value);
+> +               break;
+> +       case 4:
+> +               mmio_config_writel(addr + reg, value);
+> +               break;
+> +       }
+> +       rcu_read_unlock();
+> +
+> +       return 0;
+> +}
+> +
+> +const struct pci_raw_ops pci_mmcfg_numachip = {
+> +       .read = pci_mmcfg_read_numachip,
+> +       .write = pci_mmcfg_write_numachip,
+> +};
+> +
+> +int __init pci_numachip_init(void)
+> +{
+> +       int ret = 0;
+> +       u32 val;
+> +
+> +       /* For remote I/O, restrict bus 0 access to the actual number of AMD
+> +          Northbridges, which starts at device number 0x18 */
+> +       ret = raw_pci_read(0, 0, PCI_DEVFN(0x18, 0), 0x60, sizeof(val), &val);
+> +       if (ret)
+> +               goto out;
+> +
+> +       /* HyperTransport fabric size in bits 6:4 */
+> +       limit = PCI_DEVFN(0x18 + ((val >> 4) & 7) + 1, 0);
+> +
+> +       /* Use NumaChip PCI accessors for non-extended and extended access */
+> +       raw_pci_ops = raw_pci_ext_ops = &pci_mmcfg_numachip;
+> +out:
+> +       return ret;
+> +}
+> --
+> 1.7.10.4
+>
