@@ -1,282 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755367Ab2LGWX4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 17:23:56 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:44642 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753971Ab2LGWXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 17:23:54 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: linux-acpi@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI: add documentation about ACPI 5 enumeration
-Date: Fri, 07 Dec 2012 23:28:50 +0100
-Message-ID: <1922913.jX8FRbvbSQ@vostro.rjw.lan>
-User-Agent: KMail/4.9.3 (Linux/3.7.0-rc8; KDE/4.9.3; x86_64; ; )
-In-Reply-To: <1354874444-30788-1-git-send-email-mika.westerberg@linux.intel.com>
-References: <1354874444-30788-1-git-send-email-mika.westerberg@linux.intel.com>
+	id S1755398Ab2LGWYQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 17:24:16 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:51439 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753971Ab2LGWYN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 17:24:13 -0500
+Date: Fri, 7 Dec 2012 22:23:58 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: linux-kernel@vger.kernel.org
+Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        David Howells <dhowells@redhat.com>, Tony Luck <tony.luck@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Michal Simek <monstr@monstr.eu>, Jonas Bonn <jonas@southpole.se>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Richard Kuo <rkuo@codeaurora.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Lennox Wu <lennox.wu@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Paul Mundt <lethal@linux-sh.org>, Chris Zankel <chris@zankel.net>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>
+Subject: Re: [update] Re: new execve/kernel_thread design
+Message-ID: <20121207222358.GB4939@ZenIV.linux.org.uk>
+References: <20121016223508.GR2616@ZenIV.linux.org.uk>
+ <20121026183107.GQ2616@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121026183107.GQ2616@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, December 07, 2012 12:00:44 PM Mika Westerberg wrote:
-> Add a document that describes how to take advantage of ACPI enumeration for
-> buses like platform, I2C and SPI. In addition to that we document how to
-> translate ACPI GpioIo and GpioInt resources to be useful in Linux device
-> drivers.
-> 
-> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Current situation:
 
-Applied.
+* most of the architectures are OK - alpha arm arm64 c6x frv hexagon ia64 m68k
+microblaze mips openrisc parisc sparc s390 tile um unicore32 x86 xtensa
 
-Thanks,
-Rafael
+* powerpc *still* awaits an ACK from maintainers; no reports of any breakage
+on linux-next and seems to be doing fine on my tests.
 
+* sh - still nothing from Paul; I'm going to assume that what we have in
+linux-next is OK
 
-> ---
->  Documentation/acpi/enumeration.txt |  227 ++++++++++++++++++++++++++++++++++++
->  1 file changed, 227 insertions(+)
->  create mode 100644 Documentation/acpi/enumeration.txt
-> 
-> diff --git a/Documentation/acpi/enumeration.txt b/Documentation/acpi/enumeration.txt
-> new file mode 100644
-> index 0000000..4f27785
-> --- /dev/null
-> +++ b/Documentation/acpi/enumeration.txt
-> @@ -0,0 +1,227 @@
-> +ACPI based device enumeration
-> +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> +ACPI 5 introduced a set of new resources (UartTSerialBus, I2cSerialBus,
-> +SpiSerialBus, GpioIo and GpioInt) which can be used in enumerating slave
-> +devices behind serial bus controllers.
-> +
-> +In addition we are starting to see peripherals integrated in the
-> +SoC/Chipset to appear only in ACPI namespace. These are typically devices
-> +that are accessed through memory-mapped registers.
-> +
-> +In order to support this and re-use the existing drivers as much as
-> +possible we decided to do following:
-> +
-> +	o Devices that have no bus connector resource are represented as
-> +	  platform devices.
-> +
-> +	o Devices behind real busses where there is a connector resource
-> +	  are represented as struct spi_device or struct i2c_device
-> +	  (standard UARTs are not busses so there is no struct uart_device).
-> +
-> +As both ACPI and Device Tree represent a tree of devices (and their
-> +resources) this implementation follows the Device Tree way as much as
-> +possible.
-> +
-> +The ACPI implementation enumerates devices behind busses (platform, SPI and
-> +I2C), creates the physical devices and binds them to their ACPI handle in
-> +the ACPI namespace.
-> +
-> +This means that when ACPI_HANDLE(dev) returns non-NULL the device was
-> +enumerated from ACPI namespace. This handle can be used to extract other
-> +device-specific configuration. There is an example of this below.
-> +
-> +Platform bus support
-> +~~~~~~~~~~~~~~~~~~~~
-> +Since we are using platform devices to represent devices that are not
-> +connected to any physical bus we only need to implement a platform driver
-> +for the device and add supported ACPI IDs. If this same IP-block is used on
-> +some other non-ACPI platform, the driver might work out of the box or needs
-> +some minor changes.
-> +
-> +Adding ACPI support for an existing driver should be pretty
-> +straightforward. Here is the simplest example:
-> +
-> +	#ifdef CONFIG_ACPI
-> +	static struct acpi_device_id mydrv_acpi_match[] = {
-> +		/* ACPI IDs here */
-> +		{ }
-> +	};
-> +	MODULE_DEVICE_TABLE(acpi, mydrv_acpi_match);
-> +	#endif
-> +
-> +	static struct platform_driver my_driver = {
-> +		...
-> +		.driver = {
-> +			.acpi_match_table = ACPI_PTR(mydrv_acpi_match),
-> +		},
-> +	};
-> +
-> +If the driver needs to perform more complex initialization like getting and
-> +configuring GPIOs it can get its ACPI handle and extract this information
-> +from ACPI tables.
-> +
-> +Currently the kernel is not able to automatically determine from which ACPI
-> +device it should make the corresponding platform device so we need to add
-> +the ACPI device explicitly to acpi_platform_device_ids list defined in
-> +drivers/acpi/scan.c. This limitation is only for the platform devices, SPI
-> +and I2C devices are created automatically as described below.
-> +
-> +SPI serial bus support
-> +~~~~~~~~~~~~~~~~~~~~~~
-> +Slave devices behind SPI bus have SpiSerialBus resource attached to them.
-> +This is extracted automatically by the SPI core and the slave devices are
-> +enumerated once spi_register_master() is called by the bus driver.
-> +
-> +Here is what the ACPI namespace for a SPI slave might look like:
-> +
-> +	Device (EEP0)
-> +	{
-> +		Name (_ADR, 1)
-> +		Name (_CID, Package() {
-> +			"ATML0025",
-> +			"AT25",
-> +		})
-> +		...
-> +		Method (_CRS, 0, NotSerialized)
-> +		{
-> +			SPISerialBus(1, PolarityLow, FourWireMode, 8,
-> +				ControllerInitiated, 1000000, ClockPolarityLow,
-> +				ClockPhaseFirst, "\\_SB.PCI0.SPI1",)
-> +		}
-> +		...
-> +
-> +The SPI device drivers only need to add ACPI IDs in a similar way than with
-> +the platform device drivers. Below is an example where we add ACPI support
-> +to at25 SPI eeprom driver (this is meant for the above ACPI snippet):
-> +
-> +	#ifdef CONFIG_ACPI
-> +	static struct acpi_device_id at25_acpi_match[] = {
-> +		{ "AT25", 0 },
-> +		{ },
-> +	};
-> +	MODULE_DEVICE_TABLE(acpi, at25_acpi_match);
-> +	#endif
-> +
-> +	static struct spi_driver at25_driver = {
-> +		.driver = {
-> +			...
-> +			.acpi_match_table = ACPI_PTR(at25_acpi_match),
-> +		},
-> +	};
-> +
-> +Note that this driver actually needs more information like page size of the
-> +eeprom etc. but at the time writing this there is no standard way of
-> +passing those. One idea is to return this in _DSM method like:
-> +
-> +	Device (EEP0)
-> +	{
-> +		...
-> +		Method (_DSM, 4, NotSerialized)
-> +		{
-> +			Store (Package (6)
-> +			{
-> +				"byte-len", 1024,
-> +				"addr-mode", 2,
-> +				"page-size, 32
-> +			}, Local0)
-> +
-> +			// Check UUIDs etc.
-> +
-> +			Return (Local0)
-> +		}
-> +
-> +Then the at25 SPI driver can get this configation by calling _DSM on its
-> +ACPI handle like:
-> +
-> +	struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
-> +	struct acpi_object_list input;
-> +	acpi_status status;
-> +
-> +	/* Fill in the input buffer */
-> +
-> +	status = acpi_evaluate_object(ACPI_HANDLE(&spi->dev), "_DSM",
-> +				      &input, &output);
-> +	if (ACPI_FAILURE(status))
-> +		/* Handle the error */
-> +
-> +	/* Extract the data here */
-> +
-> +	kfree(output.pointer);
-> +
-> +I2C serial bus support
-> +~~~~~~~~~~~~~~~~~~~~~~
-> +The slaves behind I2C bus controller only need to add the ACPI IDs like
-> +with the platform and SPI drivers. However the I2C bus controller driver
-> +needs to call acpi_i2c_register_devices() after it has added the adapter.
-> +
-> +An I2C bus (controller) driver does:
-> +
-> +	...
-> +	ret = i2c_add_numbered_adapter(adapter);
-> +	if (ret)
-> +		/* handle error */
-> +
-> +	of_i2c_register_devices(adapter);
-> +	/* Enumerate the slave devices behind this bus via ACPI */
-> +	acpi_i2c_register_devices(adapter);
-> +
-> +Below is an example of how to add ACPI support to the existing mpu3050
-> +input driver:
-> +
-> +	#ifdef CONFIG_ACPI
-> +	static struct acpi_device_id mpu3050_acpi_match[] = {
-> +		{ "MPU3050", 0 },
-> +		{ },
-> +	};
-> +	MODULE_DEVICE_TABLE(acpi, mpu3050_acpi_match);
-> +	#endif
-> +
-> +	static struct i2c_driver mpu3050_i2c_driver = {
-> +		.driver	= {
-> +			.name	= "mpu3050",
-> +			.owner	= THIS_MODULE,
-> +			.pm	= &mpu3050_pm,
-> +			.of_match_table = mpu3050_of_match,
-> +			.acpi_match_table  ACPI_PTR(mpu3050_acpi_match),
-> +		},
-> +		.probe		= mpu3050_probe,
-> +		.remove		= __devexit_p(mpu3050_remove),
-> +		.id_table	= mpu3050_ids,
-> +	};
-> +
-> +GPIO support
-> +~~~~~~~~~~~~
-> +ACPI 5 introduced two new resources to describe GPIO connections: GpioIo
-> +and GpioInt. These resources are used be used to pass GPIO numbers used by
-> +the device to the driver. For example:
-> +
-> +	Method (_CRS, 0, NotSerialized)
-> +	{
-> +		Name (SBUF, ResourceTemplate()
-> +		{
-> +			GpioIo (Exclusive, PullDefault, 0x0000, 0x0000,
-> +				IoRestrictionOutputOnly, "\\_SB.PCI0.GPI0",
-> +				0x00, ResourceConsumer,,)
-> +			{
-> +				// Pin List
-> +				0x0055
-> +			}
-> +			...
-> +
-> +			Return (SBUF)
-> +		}
-> +	}
-> +
-> +These GPIO numbers are controller relative and path "\\_SB.PCI0.GPI0"
-> +specifies the path to the controller. In order to use these GPIOs in Linux
-> +we need to translate them to the Linux GPIO numbers.
-> +
-> +The driver can do this by including <linux/acpi_gpio.h> and then calling
-> +acpi_get_gpio(path, gpio). This will return the Linux GPIO number or
-> +negative errno if there was no translation found.
-> +
-> +Other GpioIo parameters must be converted first by the driver to be
-> +suitable to the gpiolib before passing them.
-> +
-> +In case of GpioInt resource an additional call to gpio_to_irq() must be
-> +done before calling request_irq().
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+* mn10300 - untested, AFAIK
+* avr32, blackfin, cris, h8300, score - maintainers seem to be MIA
+* m32r - maintainer is not MIA, but I'm not sure if anyone, including
+maintainer, has working m32r test boxen anymore...  Anyway, not a word on
+m32r patches in that pile.
+
+Folks, this is the final warning - I *will* send a pull request on the
+stuff currently in linux-next as soon as the merge window opens.  It had
+been sitting there for a long time by now and you've all been Cc'd on
+that thread all along.
