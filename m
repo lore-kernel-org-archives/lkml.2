@@ -1,287 +1,477 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755479Ab2LGHfx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 02:35:53 -0500
-Received: from DMZ-MAILSEC-SCANNER-2.MIT.EDU ([18.9.25.13]:44421 "EHLO
-	dmz-mailsec-scanner-2.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754825Ab2LGHfv (ORCPT
+	id S1755762Ab2LGHgJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 02:36:09 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:54985 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751361Ab2LGHgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 02:35:51 -0500
-X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Dec 2012 02:35:51 EST
-X-AuditID: 1209190d-b7f266d00000092b-b5-50c19b293f2b
-Date: Fri, 7 Dec 2012 02:30:44 -0500
-From: Greg Price <price@MIT.EDU>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>
-Subject: [PATCH] perf report: Add option to collapse undesired parts of
- call graph
-Message-ID: <20121207072726.GY22203@biohazard-cafe.mit.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnleLIzCtJLcpLzFFi42IR4hTV1tWafTDA4OhWRouLbRfZLA48PsBi
-	sXXvGxaLo2f/Mllc3jWHzeLSgQVMFmuOLGZ3YPe48pTD43SPnsfOWXfZPd7vu8rmMXdXH6PH
-	501yAWxRXDYpqTmZZalF+nYJXBknryoXzHKpeHKok7mB8YdRFyMnh4SAicS8qYcZIWwxiQv3
-	1rN1MXJxCAnsY5SYfuAnO4SznlFi7uxZrBDOD0aJTydnsYG0sAioSNz+8ooFxGYTUJD4MX8d
-	M4gtAmRv7n0G1sAs8IdRorFpJVARB4ewQIjE9gZGEJNXwFqiYak1SDmvgKDEyZlPwMYwC2hJ
-	3Pj3kgmkhFlAWmL5Pw6QsCjQpmv729kmMPLPQtIxC0nHLISOBYzMqxhlU3KrdHMTM3OKU5N1
-	i5MT8/JSi3SN9HIzS/RSU0o3MYLDW5J3B+O7g0qHGAU4GJV4eAXOHwgQYk0sK67MPcQoycGk
-	JMorPO1ggBBfUn5KZUZicUZ8UWlOavEhRgkOZiUR3o4+oBxvSmJlVWpRPkxKmoNFSZz3SspN
-	fyGB9MSS1OzU1ILUIpisDAeHkgRv9kygRsGi1PTUirTMnBKENBMHJ8hwHqDhESA1vMUFibnF
-	mekQ+VOMilLivMdBEgIgiYzSPLheWPp5xSgO9Iow7yaQKh5g6oLrfgU0mAlocBT7fpDBJYkI
-	KakGRk+Og+ylzJ7lRjVqUs3MX158ur7rTLVGaMMHwevvlk/o3zynje2NWf+6niXO8x//y2tf
-	ECzz6cHj6R/nbnIIVV+w8OiCN4t7ArtC9bSc/jWbuu/6/WLugoZrZ870ZN/ev/nOeTMFnZmL
-	W1avXOex82zgWbMdkS1HFjVv9jUUfTTVUFGhW6BwnYQSS3FGoqEWc1FxIgDOH2s+GgMAAA==
+	Fri, 7 Dec 2012 02:36:04 -0500
+From: Alexey Kardashevskiy <aik@ozlabs.ru>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        David Gibson <david@gibson.dropbear.id.au>
+Subject: [PATCH] vfio powerpc: enabled on powernv platform
+Date: Fri,  7 Dec 2012 18:35:50 +1100
+Message-Id: <1354865750-8104-1-git-send-email-aik@ozlabs.ru>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1354636299.1809.431.camel@bling.home>
+References: <1354636299.1809.431.camel@bling.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If an application has an expensive function implemented with a large
-tree of calls to helper functions, the default call-graph presentation
-will be dominated by the many different call-chains within that
-function.  By treating the function as a black box, we can collect the
-call-chains leading into the function and compactly identify what to
-blame for expensive calls.
+This patch initializes IOMMU groups based on the IOMMU
+configuration discovered during the PCI scan on POWERNV
+(POWER non virtualized) platform. The IOMMU groups are
+to be used later by VFIO driver (PCI pass through).
 
-For example, in this report the callers of garbage_collect() are
-scattered across the tree:
-$ perf report -d ruby 2>- | grep -m10 ^[^#]*[a-z]
-    22.03%     ruby  [.] gc_mark
-               --- gc_mark
-                  |--59.40%-- mark_keyvalue
-                  |          st_foreach
-                  |          gc_mark_children
-                  |          |--99.75%-- rb_gc_mark
-                  |          |          rb_vm_mark
-                  |          |          gc_mark_children
-                  |          |          gc_marks
-                  |          |          |--99.00%-- garbage_collect
+It also implements an API for mapping/unmapping pages for
+guest PCI drivers and providing DMA window properties.
+This API is going to be used later by QEMU-VFIO to handle
+h_put_tce hypercalls from the KVM guest.
 
-If we make garbage_collect() a black box, its callers are coalesced:
-$ perf report --blackbox garbage_collect -d ruby 2>- | grep -m10 ^[^#]*[a-z]
-    72.92%     ruby  [.] garbage_collect
-               --- garbage_collect
-                   vm_xmalloc
-                  |--47.08%-- ruby_xmalloc
-                  |          st_insert2
-                  |          rb_hash_aset
-                  |          |--98.45%-- features_index_add
-                  |          |          rb_provide_feature
-                  |          |          rb_require_safe
-                  |          |          vm_call_method
+Although this driver has been tested only on the POWERNV
+platform, it should work on any platform which supports
+TCE tables.
 
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>
-Signed-off-by: Greg Price <price@mit.edu>
+To enable VFIO on POWER, enable SPAPR_TCE_IOMMU config
+option and configure VFIO as required.
+
+Cc: David Gibson <david@gibson.dropbear.id.au>
+Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
 ---
- tools/perf/builtin-report.c | 17 +++++++++++++++--
- tools/perf/builtin-top.c    |  3 +--
- tools/perf/util/map.h       |  4 +++-
- tools/perf/util/session.c   | 29 ++++++++++++++++++-----------
- tools/perf/util/session.h   |  5 +++++
- 5 files changed, 42 insertions(+), 16 deletions(-)
+ arch/powerpc/include/asm/iommu.h     |   10 ++
+ arch/powerpc/kernel/iommu.c          |  214 ++++++++++++++++++++++++++++++++++
+ arch/powerpc/platforms/powernv/pci.c |  134 +++++++++++++++++++++
+ drivers/iommu/Kconfig                |    8 ++
+ 4 files changed, 366 insertions(+)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index a61725d..3bbda35 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -70,7 +70,7 @@ static int perf_report__add_branch_hist_entry(struct perf_tool *tool,
- 	if ((sort__has_parent || symbol_conf.use_callchain)
- 	    && sample->callchain) {
- 		err = machine__resolve_callchain(machine, evsel, al->thread,
--						 sample, &parent);
-+						 sample, &parent, al);
- 		if (err)
- 			return err;
- 	}
-@@ -141,7 +141,7 @@ static int perf_evsel__add_hist_entry(struct perf_evsel *evsel,
+diff --git a/arch/powerpc/include/asm/iommu.h b/arch/powerpc/include/asm/iommu.h
+index cbfe678..be3b11b 100644
+--- a/arch/powerpc/include/asm/iommu.h
++++ b/arch/powerpc/include/asm/iommu.h
+@@ -76,6 +76,9 @@ struct iommu_table {
+ 	struct iommu_pool large_pool;
+ 	struct iommu_pool pools[IOMMU_NR_POOLS];
+ 	unsigned long *it_map;       /* A simple allocation bitmap for now */
++#ifdef CONFIG_IOMMU_API
++	struct iommu_group *it_group;
++#endif
+ };
  
- 	if ((sort__has_parent || symbol_conf.use_callchain) && sample->callchain) {
- 		err = machine__resolve_callchain(machine, evsel, al->thread,
--						 sample, &parent);
-+						 sample, &parent, al);
- 		if (err)
- 			return err;
- 	}
-@@ -607,6 +607,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
- 		     "Default: fractal,0.5,callee", &parse_callchain_opt, callchain_default_opt),
- 	OPT_BOOLEAN('G', "inverted", &report.inverted_callchain,
- 		    "alias for inverted call graph"),
-+	OPT_STRING(0, "blackbox", &blackbox_pattern, "regex",
-+		   "functions to treat as black boxes in call graphs, collapsing callees"),
- 	OPT_STRING('d', "dsos", &symbol_conf.dso_list_str, "dso[,dso...]",
- 		   "only consider symbols in these dsos"),
- 	OPT_STRING('c', "comms", &symbol_conf.comm_list_str, "comm[,comm...]",
-@@ -687,6 +689,17 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ struct scatterlist;
+@@ -147,5 +150,12 @@ static inline void iommu_restore(void)
+ }
+ #endif
  
- 	}
++extern void iommu_reset_table(struct iommu_table *tbl, bool release);
++extern long iommu_clear_tces(struct iommu_table *tbl, unsigned long entry,
++		unsigned long pages);
++extern long iommu_put_tces(struct iommu_table *tbl, unsigned long entry,
++		uint64_t tce, enum dma_data_direction direction,
++		unsigned long pages);
++
+ #endif /* __KERNEL__ */
+ #endif /* _ASM_IOMMU_H */
+diff --git a/arch/powerpc/kernel/iommu.c b/arch/powerpc/kernel/iommu.c
+index ff5a6ce..123431a 100644
+--- a/arch/powerpc/kernel/iommu.c
++++ b/arch/powerpc/kernel/iommu.c
+@@ -44,6 +44,7 @@
+ #include <asm/kdump.h>
+ #include <asm/fadump.h>
+ #include <asm/vio.h>
++#include <asm/tce.h>
  
-+	if (blackbox_pattern) {
-+		int err = regcomp(&blackbox_regex, blackbox_pattern, REG_EXTENDED);
-+		if (err) {
-+			char buf[BUFSIZ];
-+			regerror(err, &blackbox_regex, buf, sizeof(buf));
-+			pr_err("Invalid blackbox regex: %s\n%s", blackbox_pattern, buf);
-+			goto error;
-+		}
-+		have_blackbox = 1;
+ #define DBG(...)
+ 
+@@ -856,3 +857,216 @@ void iommu_free_coherent(struct iommu_table *tbl, size_t size,
+ 		free_pages((unsigned long)vaddr, get_order(size));
+ 	}
+ }
++
++#ifdef CONFIG_IOMMU_API
++/*
++ * SPAPR TCE API
++ */
++
++/*
++ * iommu_reset_table is called when it started/stopped being used
++ */
++void iommu_reset_table(struct iommu_table *tbl, bool release)
++{
++	/*
++	 * Page at 0 is marked as used in iommu_init_table,
++	 * so here we clear it when called with release=false...
++	 */
++	if (!release && (tbl->it_offset == 0))
++		clear_bit(0, tbl->it_map);
++
++	iommu_clear_tces(tbl, tbl->it_offset, tbl->it_size);
++
++	memset(tbl->it_map, 0, (tbl->it_size + 7) >> 3);
++
++	/*
++	 * ... or restore when release=true
++	 */
++	if (release && (tbl->it_offset == 0))
++		set_bit(0, tbl->it_map);
++}
++EXPORT_SYMBOL_GPL(iommu_reset_table);
++
++/*
++ * Returns the number of used IOMMU pages (4K) within
++ * the same system page (4K or 64K).
++ * bitmap_weight is not used as it does not support bigendian maps.
++ * "offset" is an IOMMU page number relative to DMA window start.
++ */
++static int syspage_weight(unsigned long *map, unsigned long offset)
++{
++	int ret = 0, nbits = PAGE_SIZE/IOMMU_PAGE_SIZE;
++
++	/* Aligns TCE entry number to system page boundary */
++	offset &= PAGE_MASK >> IOMMU_PAGE_SHIFT;
++
++	/* Count used 4K pages */
++	while (nbits) {
++		if (test_bit(offset, map))
++			++ret;
++		--nbits;
++		++offset;
 +	}
 +
- 	if (strcmp(report.input_name, "-") != 0)
- 		setup_browser(true);
- 	else {
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index ff6db80..ee969b5 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -786,8 +786,7 @@ static void perf_event__process_sample(struct perf_tool *tool,
- 		    sample->callchain) {
- 			err = machine__resolve_callchain(machine, evsel,
- 							 al.thread, sample,
--							 &parent);
--
-+							 &parent, NULL);
- 			if (err)
- 				return;
- 		}
-diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-index d2250fc..6d1b8e1 100644
---- a/tools/perf/util/map.h
-+++ b/tools/perf/util/map.h
-@@ -23,6 +23,7 @@ struct ref_reloc_sym;
- struct map_groups;
- struct machine;
- struct perf_evsel;
-+struct addr_location;
- 
- struct map {
- 	union {
-@@ -163,7 +164,8 @@ int machine__resolve_callchain(struct machine *machine,
- 			       struct perf_evsel *evsel,
- 			       struct thread *thread,
- 			       struct perf_sample *sample,
--			       struct symbol **parent);
-+			       struct symbol **parent,
-+			       struct addr_location *root_al);
- int maps__set_kallsyms_ref_reloc_sym(struct map **maps, const char *symbol_name,
- 				     u64 addr);
- 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 8cdd232..9a8798c 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -19,6 +19,10 @@
- #include "unwind.h"
- #include "vdso.h"
- 
-+regex_t blackbox_regex;
-+const char *blackbox_pattern;
-+int have_blackbox = 0;
++	return ret;
++}
 +
- static int perf_session__open(struct perf_session *self, bool force)
- {
- 	struct stat input_stat;
-@@ -226,11 +230,10 @@ void machine__remove_thread(struct machine *self, struct thread *th)
- 	list_add_tail(&th->node, &self->dead_threads);
- }
- 
--static bool symbol__match_parent_regex(struct symbol *sym)
-+static bool symbol__match_regex(struct symbol *sym, regex_t *regex)
- {
--	if (sym->name && !regexec(&parent_regex, sym->name, 0, NULL, 0))
-+	if (sym->name && !regexec(regex, sym->name, 0, NULL, 0))
- 		return 1;
--
- 	return 0;
- }
- 
-@@ -295,8 +298,8 @@ struct branch_info *machine__resolve_bstack(struct machine *self,
- static int machine__resolve_callchain_sample(struct machine *machine,
- 					     struct thread *thread,
- 					     struct ip_callchain *chain,
--					     struct symbol **parent)
--
-+					     struct symbol **parent,
-+					     struct addr_location *root_al)
- {
- 	u8 cpumode = PERF_RECORD_MISC_USER;
- 	unsigned int i;
-@@ -347,8 +350,13 @@ static int machine__resolve_callchain_sample(struct machine *machine,
- 					   MAP__FUNCTION, ip, &al, NULL);
- 		if (al.sym != NULL) {
- 			if (sort__has_parent && !*parent &&
--			    symbol__match_parent_regex(al.sym))
-+			    symbol__match_regex(al.sym, &parent_regex))
- 				*parent = al.sym;
-+			else if (have_blackbox && root_al &&
-+			         symbol__match_regex(al.sym, &blackbox_regex)) {
-+				*root_al = al;
-+				callchain_cursor_reset(&callchain_cursor);
-+			}
- 			if (!symbol_conf.use_callchain)
- 				break;
- 		}
-@@ -373,15 +381,15 @@ int machine__resolve_callchain(struct machine *machine,
- 			       struct perf_evsel *evsel,
- 			       struct thread *thread,
- 			       struct perf_sample *sample,
--			       struct symbol **parent)
--
-+			       struct symbol **parent,
-+			       struct addr_location *root_al)
- {
- 	int ret;
- 
- 	callchain_cursor_reset(&callchain_cursor);
- 
- 	ret = machine__resolve_callchain_sample(machine, thread,
--						sample->callchain, parent);
-+	                                        sample->callchain, parent, root_al);
- 	if (ret)
- 		return ret;
- 
-@@ -1603,9 +1611,8 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
- 
- 	if (symbol_conf.use_callchain && sample->callchain) {
- 
--
- 		if (machine__resolve_callchain(machine, evsel, al.thread,
--					       sample, NULL) != 0) {
-+					       sample, NULL, NULL) != 0) {
- 			if (verbose)
- 				error("Failed to resolve callchain. Skipping\n");
- 			return;
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index 0eae00a..6db3e55 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -1,6 +1,7 @@
- #ifndef __PERF_SESSION_H
- #define __PERF_SESSION_H
- 
-+#include <regex.h>
- #include "hist.h"
- #include "event.h"
- #include "header.h"
-@@ -9,6 +10,10 @@
- #include <linux/rbtree.h>
- #include <linux/perf_event.h>
- 
-+extern regex_t blackbox_regex;
-+extern const char *blackbox_pattern;
-+extern int have_blackbox;
++static void tce_flush(struct iommu_table *tbl)
++{
++	/* Flush/invalidate TLB caches if necessary */
++	if (ppc_md.tce_flush)
++		ppc_md.tce_flush(tbl);
 +
- struct sample_queue;
- struct ip_callchain;
- struct thread;
++	/* Make sure updates are seen by hardware */
++	mb();
++}
++
++/*
++ * iommu_clear_tces clears tces and returned the number of system pages
++ * which it called put_page() on
++ */
++static long clear_tces_nolock(struct iommu_table *tbl, unsigned long entry,
++		unsigned long pages)
++{
++	int i, retpages = 0, clr;
++	unsigned long oldtce, oldweight;
++	struct page *page;
++
++	for (i = 0; i < pages; ++i) {
++		if (!test_bit(entry + i - tbl->it_offset, tbl->it_map))
++			continue;
++
++		oldtce = ppc_md.tce_get(tbl, entry + i);
++		ppc_md.tce_free(tbl, entry + i, 1);
++
++		oldweight = syspage_weight(tbl->it_map,
++				entry + i - tbl->it_offset);
++		clr = __test_and_clear_bit(entry + i - tbl->it_offset,
++				tbl->it_map);
++
++		if (WARN_ON(!(oldtce & (TCE_PCI_WRITE | TCE_PCI_READ))))
++			continue;
++
++		page = pfn_to_page(oldtce >> PAGE_SHIFT);
++
++		if (WARN_ON(!page))
++			continue;
++
++		if (oldtce & TCE_PCI_WRITE)
++			SetPageDirty(page);
++
++		put_page(page);
++
++		/* That was the last IOMMU page within the system page */
++		if ((oldweight == 1) && clr)
++			++retpages;
++	}
++
++	return retpages;
++}
++
++/*
++ * iommu_clear_tces clears tces and returned the number
++ * of released system pages
++ */
++long iommu_clear_tces(struct iommu_table *tbl, unsigned long entry,
++		unsigned long pages)
++{
++	int ret;
++	struct iommu_pool *pool = get_pool(tbl, entry);
++
++	spin_lock(&(pool->lock));
++	ret = clear_tces_nolock(tbl, entry, pages);
++	tce_flush(tbl);
++	spin_unlock(&(pool->lock));
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(iommu_clear_tces);
++
++static int put_tce(struct iommu_table *tbl, unsigned long entry,
++		uint64_t tce, enum dma_data_direction direction)
++{
++	int ret;
++	struct page *page = NULL;
++	unsigned long kva, offset, oldweight;
++
++	/* Map new TCE */
++	offset = (tce & IOMMU_PAGE_MASK) - (tce & PAGE_MASK);
++	ret = get_user_pages_fast(tce & PAGE_MASK, 1,
++			direction != DMA_TO_DEVICE, &page);
++	if (ret != 1) {
++		pr_err("tce_vfio: get_user_pages_fast failed tce=%llx ioba=%lx ret=%d\n",
++				tce, entry << IOMMU_PAGE_SHIFT, ret);
++		return -EFAULT;
++	}
++
++	kva = (unsigned long) page_address(page);
++	kva += offset;
++
++	/* tce_build receives a virtual address */
++	ret = ppc_md.tce_build(tbl, entry, 1, kva, direction, NULL);
++
++	/* tce_build() only returns non-zero for transient errors */
++	if (unlikely(ret)) {
++		pr_err("tce_vfio: tce_put failed on tce=%llx ioba=%lx kva=%lx ret=%d\n",
++				tce, entry << IOMMU_PAGE_SHIFT, kva, ret);
++		put_page(page);
++		return -EIO;
++	}
++
++	/* Calculate if new system page has been locked */
++	oldweight = syspage_weight(tbl->it_map, entry - tbl->it_offset);
++	__set_bit(entry - tbl->it_offset, tbl->it_map);
++
++	return (oldweight == 0) ? 1 : 0;
++}
++
++/*
++ * iommu_put_tces builds tces and returned the number of actually
++ * locked system pages
++ */
++long iommu_put_tces(struct iommu_table *tbl, unsigned long entry,
++		uint64_t tce, enum dma_data_direction direction,
++		unsigned long pages)
++{
++	int i, ret = 0, retpages = 0;
++	struct iommu_pool *pool = get_pool(tbl, entry);
++
++	BUILD_BUG_ON(PAGE_SIZE < IOMMU_PAGE_SIZE);
++	BUG_ON(direction == DMA_NONE);
++
++	spin_lock(&(pool->lock));
++
++	/* Check if any is in use */
++	for (i = 0; i < pages; ++i) {
++		if (test_bit(entry + i - tbl->it_offset, tbl->it_map)) {
++			spin_unlock(&(pool->lock));
++			return -EBUSY;
++		}
++	}
++
++	/* Put tces to the table */
++	for (i = 0; (i < pages) && (ret >= 0); ++i, tce += IOMMU_PAGE_SIZE) {
++		ret = put_tce(tbl, entry + i, tce, direction);
++		if (ret == 1)
++			++retpages;
++	}
++
++	/*
++	 * If failed, release locked pages, otherwise return the number
++	 * of locked system pages
++	 */
++	if (ret < 0)
++		clear_tces_nolock(tbl, entry, i);
++	else
++		ret = retpages;
++
++	tce_flush(tbl);
++	spin_unlock(&(pool->lock));
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(iommu_put_tces);
++
++#endif /* CONFIG_IOMMU_API */
+diff --git a/arch/powerpc/platforms/powernv/pci.c b/arch/powerpc/platforms/powernv/pci.c
+index 05205cf..1b970bf 100644
+--- a/arch/powerpc/platforms/powernv/pci.c
++++ b/arch/powerpc/platforms/powernv/pci.c
+@@ -20,6 +20,7 @@
+ #include <linux/irq.h>
+ #include <linux/io.h>
+ #include <linux/msi.h>
++#include <linux/iommu.h>
+ 
+ #include <asm/sections.h>
+ #include <asm/io.h>
+@@ -613,3 +614,136 @@ void __init pnv_pci_init(void)
+ 	ppc_md.teardown_msi_irqs = pnv_teardown_msi_irqs;
+ #endif
+ }
++
++#ifdef CONFIG_IOMMU_API
++/*
++ * IOMMU groups support required by VFIO
++ */
++static int add_device(struct device *dev)
++{
++	struct iommu_table *tbl;
++	int ret = 0;
++
++	if (WARN_ON(dev->iommu_group)) {
++		pr_warn("tce_vfio: device %s is already in iommu group %d, skipping\n",
++				dev_name(dev),
++				iommu_group_id(dev->iommu_group));
++		return -EBUSY;
++	}
++
++	tbl = get_iommu_table_base(dev);
++	if (!tbl) {
++		pr_debug("tce_vfio: skipping device %s with no tbl\n",
++				dev_name(dev));
++		return 0;
++	}
++
++	pr_debug("tce_vfio: adding %s to iommu group %d\n",
++			dev_name(dev), iommu_group_id(tbl->it_group));
++
++	ret = iommu_group_add_device(tbl->it_group, dev);
++	if (ret < 0)
++		pr_err("tce_vfio: %s has not been added, ret=%d\n",
++				dev_name(dev), ret);
++
++	return ret;
++}
++
++static void del_device(struct device *dev)
++{
++	iommu_group_remove_device(dev);
++}
++
++static int iommu_bus_notifier(struct notifier_block *nb,
++			      unsigned long action, void *data)
++{
++	struct device *dev = data;
++
++	switch (action) {
++	case BUS_NOTIFY_ADD_DEVICE:
++		return add_device(dev);
++	case BUS_NOTIFY_DEL_DEVICE:
++		del_device(dev);
++		return 0;
++	default:
++		return 0;
++	}
++}
++
++static struct notifier_block tce_iommu_bus_nb = {
++	.notifier_call = iommu_bus_notifier,
++};
++
++static void group_release(void *iommu_data)
++{
++	struct iommu_table *tbl = iommu_data;
++	tbl->it_group = NULL;
++}
++
++static int __init tce_iommu_init(void)
++{
++	struct pci_dev *pdev = NULL;
++	struct iommu_table *tbl;
++	struct iommu_group *grp;
++
++	/* Allocate and initialize IOMMU groups */
++	for_each_pci_dev(pdev) {
++		tbl = get_iommu_table_base(&pdev->dev);
++		if (!tbl)
++			continue;
++
++		/* Skip already initialized */
++		if (tbl->it_group)
++			continue;
++
++		grp = iommu_group_alloc();
++		if (IS_ERR(grp)) {
++			pr_info("tce_vfio: cannot create new IOMMU group, ret=%ld\n",
++					PTR_ERR(grp));
++			return PTR_ERR(grp);
++		}
++		tbl->it_group = grp;
++		iommu_group_set_iommudata(grp, tbl, group_release);
++	}
++
++	bus_register_notifier(&pci_bus_type, &tce_iommu_bus_nb);
++
++	/* Add PCI devices to VFIO groups */
++	for_each_pci_dev(pdev)
++		add_device(&pdev->dev);
++
++	return 0;
++}
++
++static void __exit tce_iommu_cleanup(void)
++{
++	struct pci_dev *pdev = NULL;
++	struct iommu_table *tbl;
++	struct iommu_group *grp = NULL;
++
++	bus_unregister_notifier(&pci_bus_type, &tce_iommu_bus_nb);
++
++	/* Delete PCI devices from VFIO groups */
++	for_each_pci_dev(pdev)
++		del_device(&pdev->dev);
++
++	/* Release VFIO groups */
++	for_each_pci_dev(pdev) {
++		tbl = get_iommu_table_base(&pdev->dev);
++		if (!tbl)
++			continue;
++		grp = tbl->it_group;
++
++		/* Skip (already) uninitialized */
++		if (!grp)
++			continue;
++
++		/* Do actual release, group_release() is expected to work */
++		iommu_group_put(grp);
++		BUG_ON(tbl->it_group);
++	}
++}
++
++module_init(tce_iommu_init);
++module_exit(tce_iommu_cleanup);
++#endif /* CONFIG_IOMMU_API */
+diff --git a/drivers/iommu/Kconfig b/drivers/iommu/Kconfig
+index 9f69b56..29d11dc 100644
+--- a/drivers/iommu/Kconfig
++++ b/drivers/iommu/Kconfig
+@@ -187,4 +187,12 @@ config EXYNOS_IOMMU_DEBUG
+ 
+ 	  Say N unless you need kernel log message for IOMMU debugging
+ 
++config SPAPR_TCE_IOMMU
++	bool "sPAPR TCE IOMMU Support"
++	depends on PPC_POWERNV
++	select IOMMU_API
++	help
++	  Enables bits of IOMMU API required by VFIO. The iommu_ops is
++	  still not implemented.
++
+ endif # IOMMU_SUPPORT
 -- 
-1.7.11.3
+1.7.10.4
 
