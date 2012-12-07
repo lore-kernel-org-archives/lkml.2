@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423498Ab2LGRnu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 12:43:50 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:44956 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423351Ab2LGRns (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 12:43:48 -0500
-Message-ID: <50C22AB0.8060405@canonical.com>
-Date: Fri, 07 Dec 2012 12:43:12 -0500
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121017 Thunderbird/16.0.1
+	id S1423520Ab2LGRoM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 12:44:12 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:40031 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1423351Ab2LGRoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 12:44:09 -0500
+Date: Fri, 7 Dec 2012 18:44:05 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Andreas Mohr <andi@lisas.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        Li Shaohua <shaohua.li@intel.com>, linux-acpi@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: Look Ma, da kernel is b0rken
+Message-ID: <20121207174405.GF27523@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Andreas Mohr <andi@lisas.de>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+	Li Shaohua <shaohua.li@intel.com>, linux-acpi@vger.kernel.org,
+	Bjorn Helgaas <bhelgaas@google.com>
+References: <20121205070901.GA12123@rhlx01.hs-esslingen.de>
+ <20121205142935.GA12119@liondog.tnic>
+ <20121205152756.5afec12c@pyramind.ukuu.org.uk>
+ <20121205153121.GA28556@liondog.tnic>
+ <20121205133853.770451ca.akpm@linux-foundation.org>
+ <20121207165218.GA13421@rhlx01.hs-esslingen.de>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ben Hutchings <ben@decadent.org.uk>
-CC: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        alan@lxorguk.ukuu.org.uk, Mike Galbraith <efault@gmx.de>,
-        Ingo Molnar <mingo@kernel.org>, Yong Zhang <yong.zhang0@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [ 17/27] Revert "sched, autogroup: Stop going ahead if autogroup
- is disabled"
-References: <20121207005825.232489605@linuxfoundation.org> <20121207005830.838566702@linuxfoundation.org> <50C225D0.9030902@canonical.com> <20121207173117.GA18986@kroah.com>
-In-Reply-To: <20121207173117.GA18986@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20121207165218.GA13421@rhlx01.hs-esslingen.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/2012 12:31 PM, Greg Kroah-Hartman wrote:
-> On Fri, Dec 07, 2012 at 12:22:24PM -0500, Joseph Salisbury wrote:
->> Will you also be including this patch in v3.5 stable?
-> There is no v3.5-stable kernel tree anymore, it has been end-of-life for a while.
+On Fri, Dec 07, 2012 at 05:52:18PM +0100, Andreas Mohr wrote:
+> I hate having to rain on the parade again ;) I just developed
+> some doubts, by accident again, by getting dangerously near
+> sound/isa/als100.c snd_als100_pnpids: there are many IDs with '@'
+> embedded (at least in this ISA-based PnP code), thus I guess that
+> code may have had its justification (unless ACPI 5.0 is clearly fully
+> authoritative for this space and thus '@' does not have any business
+> there any more).
 >
-> There is a 3.5-stable tree that Canonical is doing, but no one on the
->   Cc: you sent this to is in control of that one.
+> Dito e.g. isa/cmi8330.c.
 >
-> Sorry,
->
-> greg k-h
+> Hmm, anyone deeply familiar with ISA PnP ID magic? :)
 
-Sorry about the typo, I meant to request v3.2-stable.
+Even if this is violating the ACPI spec, any fix for this needs to be
+tested on the hardware (and I can very well imagine that the hardware
+might be violating the spec too, nothing new here).
 
-Thanks,
+So even if you had a fix, you need to run it on the hardware to verify
+that it actually works.
 
-Joe
+So the actual practical question turns into: do you have such hardware
+to verify your or anyone else's fix on?
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
