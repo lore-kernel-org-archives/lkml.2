@@ -1,120 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756339Ab2LGPA7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 10:00:59 -0500
-Received: from mx3.cyfra.ua ([62.80.160.182]:50572 "EHLO mx3.cyfra.ua"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756323Ab2LGPA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 10:00:58 -0500
-From: Vitalii Demianets <vitas@nppfactor.kiev.ua>
-Organization: Factor-SPE
-To: "Hans J. Koch" <hjk@hansjkoch.de>
-Subject: Re: [PATCH v2] drivers/uio/uio_pdrv_genirq.c: Fix memory freeing issues
-Date: Fri, 7 Dec 2012 17:00:54 +0200
-User-Agent: KMail/1.9.10
-Cc: Cong Ding <dinggnu@gmail.com>, linux-kernel@vger.kernel.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-References: <201211271929.32315.vitas@nppfactor.kiev.ua> <201212071141.45231.vitas@nppfactor.kiev.ua> <201212071551.02974.vitas@nppfactor.kiev.ua>
-In-Reply-To: <201212071551.02974.vitas@nppfactor.kiev.ua>
+	id S1756367Ab2LGPCm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 10:02:42 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:49328 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752586Ab2LGPCl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 10:02:41 -0500
+Date: Fri, 7 Dec 2012 07:04:48 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: =?iso-8859-1?B?IkphbiBILiBTY2j2bmhlcnIi?= <schnhrr@cs.tu-berlin.de>
+Cc: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Kay Sievers <kay@vrfy.org>, linux-kernel@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH v2 00/14] printk() fixes, optimizations, and clean ups
+Message-ID: <20121207150448.GC20369@kroah.com>
+References: <1354813571-11253-1-git-send-email-schnhrr@cs.tu-berlin.de>
+ <20121206133907.37c255e9.akpm@linux-foundation.org>
+ <1354837050.22463.4.camel@joe-AO722>
+ <20121206161943.78633125.akpm@linux-foundation.org>
+ <1354848669.22463.23.camel@joe-AO722>
+ <50C1D758.1080007@cs.tu-berlin.de>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-Message-Id: <201212071700.54367.vitas@nppfactor.kiev.ua>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <50C1D758.1080007@cs.tu-berlin.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 07 December 2012 15:51:02 Vitalii Demianets wrote:
-> On Friday 07 December 2012 11:41:45 Vitalii Demianets wrote:
-> > On Friday 07 December 2012 00:15:59 Hans J. Koch wrote:
-> > > On Thu, Dec 06, 2012 at 11:11:38AM +0200, Vitalii Demianets wrote:
-> > > > On Thursday 06 December 2012 04:41:01 Hans J. Koch wrote:
-> > > > > > @@ -63,7 +68,7 @@ static irqreturn_t uio_pdrv_genirq_handler(int
-> > > > > > irq,
-> > > >
-> > > > struct uio_info *dev_info)
-> > > >
-> > > > > >  	 * remember the state so we can allow user space to enable it
-> > > > > > later. */
-> > > > > >
-> > > > > > -	if (!test_and_set_bit(0, &priv->flags))
-> > > > > > +	if (!test_and_set_bit(UIO_IRQ_DISABLED, &priv->flags))
-> > > > > >  		disable_irq_nosync(irq);
-> > > > >
-> > > > > That is not safe. That flag can only be changed by userspace, and
-> > > > > if the userspace part is not running, the CPU on which the irq is
-> > > > > pending will hang.
-> > > > > The handler has to disable the interrupt in any case.
-> > > > > (The original version had the same problem, I know...)
-> > > >
-> > > > Perhaps I'm missing something here, but I don't see your point. If
-> > > > userspace is not (implicitly) calling uio_pdrv_genirq_irqcontrol() by
-> > > > writing to the device file, then on the first invocation of interrupt
-> > > > handler that IRQ is disabled by disable_irq_nosync() and that's the
-> > > > end of story - no more irqs, no problems. Until userspace writes
-> > > > non-zero to the device file, of course.
-> > >
-> > > If you run into the irq handler, the interrupt was obviously enabled.
-> > > Since irq sharing is not supported by this driver, you ALWAYS have to
-> > > disable it because it IS your interrupt. Storing the enabled/disabled
-> > > status in a variable is not needed at all here. Or am I missing
-> > > something?
-> >
-> > Good point. I agree that having UIO_IRQ_DISABLED flag is redundant.
-> > Inside the irq handler we know for sure that irq is enabled. In
-> > uio_pdrv_genirq_irqcontrol() this knowledge is not mandatory, we could
-> > enable/disable irq unconditionally.
->
-> On second thought, we can't call enable_irq()/disable_irq() unconditionally
-> because of the potential disable counter (irq_desc->depth) disbalance.
-> That's why we need UIO_IRQ_DISABLED flag, and that's why we should check it
-> in uio_pdrv_genirq_irqcontrol().
-> On the other hand, you are right in that we don't need to check it inside
-> irq handler. Inside irq handler we can disable irq and set the flag
-> unconditionally, because:
-> a) We know for sure that irqs are enabled, because we are inside
-> (not-shared) irq handler;
->  and
-> b) We are guarded from potential race conditions by spin_lock_irqsave()
-> call in uio_pdrv_genirq_irqcontrol().
->
-> So,yes, we can get rid of costly atomic call to
-> test_and_set_bit(UIO_IRQ_DISABLED,..) inside irq handler. But I still don't
-> like the idea of mixing this optimization with bug fixes in a single patch.
+On Fri, Dec 07, 2012 at 12:47:36PM +0100, "Jan H. Schönherr" wrote:
+> Am 07.12.2012 03:51, schrieb Joe Perches:
+> > On Thu, 2012-12-06 at 16:19 -0800, Andrew Morton wrote:
+> >> On Thu, 06 Dec 2012 15:37:30 -0800
+> >> Joe Perches <joe@perches.com> wrote:
+> >>> Can you please pick this up for -next now and I'll
+> >>> redo my patches against -next for -rc1 so I'm not
+> >>> delayed until 3.9?
+> >>
+> >> It would be better to do things in the other order.
+> >>
+> >> a) Your patches perform mainly code-movement which doesn't cause
+> >>    functional changes.  Jan's patches are functional changes which
+> >>    require more thought and testing and possible fixups.
+> > 
+> > Fine by me.  Jan?
+> 
+> No problem.
+> 
+> I agree with Andrew, that patches 9 to 14 could use indeed some
+> more eyeballs.
+> 
+> Patches 1 to 8 are more straight-forward, and I would consider
+> these ready. However, they are also those, where I probably won't
+> have any trouble rebasing them on top of your changes.
+> 
+> 
+> Anyway. Until now I always thought my patches will end up in the
+> queue of some maintainer, so that I don't have to bother about
+> _when_ posting my patches. Therefore: when should I repost a
+> version rebased on top of Joe's changes?
 
-On the third thought, we can't ;)
-Imagine the SMP system where uio_pdrv_genirq_irqcontrol() is being executed on 
-CPU0 and irq handler is running concurrently on CPU1. To protect from 
-disable_irq counter disbalance we must first check current irq status, and in 
-atomic manner. Thus we prevent  double-disable, one from 
-uio_pdrv_genirq_irqcontrol() running on CPU0 and another form irq handler 
-running on CPU1.
-Above consideration justifies current code.
+You are correct, I'll end up queuing these up to my tree when 3.8-rc1 is
+out, they will live in linux-next until 3.8-final is out, and then go to
+Linus for 3.9-rc1.  Right now, my trees are frozen due to the merge
+window about to open up.  Your patience is appreciated.
 
-But it seems we have potential concurrency problem here anyway. Here is 
-theoretical scenario:
-1) Initial state: irq is enabled, uio_pdrv_genirq_irqcontrol() starts being 
-executed on CPU0 with irq_on=1 and at the same time, concurrently, irq 
-handler starts being executed on CPU1;
-2) irq handler executes line
-   if (!test_and_set_bit(UIO_IRQ_DISABLED, &priv->flags))
-as irq was enabled, the condition holds. And now UIO_IRQ_DISABLED is set.
-3) uio_pdrv_genirq_irqcontrol() executes line
-   if (test_and_clear_bit(UIO_IRQ_DISABLED, &priv->flags))
-as UIO_IRQ_DISABLED was set by CPU1, the condition holds. And now 
-UIO_IRQ_DISABLED is cleared.
-4) CPU0 executes enable_irq() . IRQ is enabled. "Unbalanced enable for 
-IRQ %d\n" warning is issued.
-5) irq handler on CPU1 executes disable_irq_nosync(). IRQ is disabled.
+thanks,
 
-And now we are in situation where IRQ is disabled, but UIO_IRQ_DISABLED is 
-cleared. Bad.
-
-The above scenario is purely theoretical, I have no means to check it in 
-hardware.
-The (theoretical) solution is to guard UIO_IRQ_DISABLED test and actual irq 
-disabling inside irq handler by priv->lock.
-
-What do you think about it? Is it worth worrying about?
+greg k-h
