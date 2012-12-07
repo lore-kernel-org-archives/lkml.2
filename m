@@ -1,47 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755307Ab2LGHDa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 02:03:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53084 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755252Ab2LGHD2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 02:03:28 -0500
-Message-ID: <50C19534.2000705@redhat.com>
-Date: Fri, 07 Dec 2012 15:05:24 +0800
-From: Asias He <asias@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S964777Ab2LGHEf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 02:04:35 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:53721 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755310Ab2LGHEd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 02:04:33 -0500
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
-        Christoph Hellwig <hch@infradead.org>,
-        "David S. Miller" <davem@davemloft.net>, kvm@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] vhost-blk: Add vhost-blk support v6
-References: <1354412033-32372-1-git-send-email-asias@redhat.com> <20121206130004.GA21312@redhat.com>
-In-Reply-To: <20121206130004.GA21312@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1354833773-22845-7-git-send-email-mark.langsdorf@calxeda.com>
+References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com>
+ <1354833773-22845-1-git-send-email-mark.langsdorf@calxeda.com> <1354833773-22845-7-git-send-email-mark.langsdorf@calxeda.com>
+From: Mike Turquette <mturquette@linaro.org>
+Date: Thu, 6 Dec 2012 23:04:12 -0800
+Message-ID: <CAPtuhTi3Gvb0CQFiAe_bNRQ4k0xfzN9amQvwTeUsaJ7HLJsNHQ@mail.gmail.com>
+Subject: Re: [PATCH 6/6 v9] cpufreq, highbank: add support for highbank cpufreq
+To: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/06/2012 09:00 PM, Michael S. Tsirkin wrote:
-> On Sun, Dec 02, 2012 at 09:33:53AM +0800, Asias He wrote:
->> diff --git a/drivers/vhost/Kconfig.blk b/drivers/vhost/Kconfig.blk
->> new file mode 100644
->> index 0000000..ff8ab76
->> --- /dev/null
->> +++ b/drivers/vhost/Kconfig.blk
->> @@ -0,0 +1,10 @@
->> +config VHOST_BLK
->> +	tristate "Host kernel accelerator for virtio blk (EXPERIMENTAL)"
->> +	depends on BLOCK &&  EXPERIMENTAL && m
-> 
-> 
-> should depend on eventfd as well.
+On Thu, Dec 6, 2012 at 2:42 PM, Mark Langsdorf
+<mark.langsdorf@calxeda.com> wrote:
+> Highbank processors depend on the external ECME to perform voltage
+> management based on a requested frequency. Communication between the
+> A9 cores and the ECME happens over the pl320 IPC channel.
+>
+> Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
+> Reviewed-by: Shawn Guo <shawn.guo@linaro.org>
+> Cc: mturquette@linaro.org
 
-Okay, added.
+Looks good to me.
 
--- 
-Asias
+Reviewed-by: Mike Turquette <mturquette@linaro.org>
+
+Regards,
+Mike
