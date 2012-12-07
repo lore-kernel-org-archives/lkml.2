@@ -1,110 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423357Ab2LGA6h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 19:58:37 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:47201 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423294Ab2LGA5s (ORCPT
+	id S1423379Ab2LGA6w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 19:58:52 -0500
+Received: from smtp108.biz.mail.ne1.yahoo.com ([98.138.207.15]:40722 "HELO
+	smtp108.biz.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1423274Ab2LGA5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 19:57:48 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jianguo Wu <wujianguo@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 03/11] mm/vmemmap: fix wrong use of virt_to_page
-Date: Thu,  6 Dec 2012 16:56:59 -0800
-Message-Id: <20121207005614.242765098@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.0.197.g5a90748
-In-Reply-To: <20121207005613.189054768@linuxfoundation.org>
-References: <20121207005613.189054768@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	Thu, 6 Dec 2012 19:57:43 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: vOF3KYoVM1kRsh2dQnFEgyDlxxZs7ptpwIbRD6q37_9p1aK
+ asYhaU_TcBU5zqhJHpUjG7R_sTG6M9DnCKWgI3BqzqYg8Ye5Yfk2ehTdJXLj
+ 3DyP4B92cKXUY2IbXbNcBlpTIouYn_YxzOKj73jOoJwL6y2eC_Z3Dcq045pM
+ pMApqIpVbaMGnapp.7Z39tUnPwliF1eYVQ7Sq.tvByCbW.5vaE4zPX7k2cym
+ monP2UYGRWRH9f.JcFqKN.GWzXw1joVb9Al9vT0G9P6f26bajlx02kgIadTP
+ XXoLifp0kpLXKU587jqnmby3JsKnOaFOc.IzfVlekRzj7HiZ3P9RJgMzbciT
+ 4.lSBVxZ_UAjRk19ZJe4BobPU3opAMIxARJKN4oE1gTmSG7ENap66PUS8fhZ
+ 5HvITFIKx2A9EcqcUJUsh9gv01DNEfPG2L6M8.sMeDqoL0Lk_J2XWx0x0.qy
+ bQipkE6v5GAILFFzPztu.gRcv4_T1w1geLTDNY8s_SgQyKxGuxZ_CMsGu7bP
+ MkQUCDG2rJlK8nZlhVfRwF45mFIaq3y8Ja2lCM2JUCKgUkbFmAJYO78V5HwQ
+ CnOm2i.w161ac000N5InsJ3VENreyNmHmqqe0Ut1aspEA.JKBtW_yR6UD3vo
+ 6.Qo6vJhhKmuy1fuw
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <50C13F0E.5010401@schaufler-ca.com>
+Date: Thu, 06 Dec 2012 16:57:50 -0800
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Serge Hallyn <serge.hallyn@canonical.com>
+CC: Andy Lutomirski <luto@amacapital.net>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        "Andrew G. Morgan" <morgan@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@redhat.com>,
+        "Serge E. Hallyn" <serge@canonical.com>,
+        Markku Savela <msa@moth.iki.fi>,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [RFC] Capabilities still can't be inherited by normal programs
+References: <CALQRfL67LX5owxo=SMuRNAm1Jds53zY-moLpXE=wCTF4Epu4_w@mail.gmail.com> <CALCETrXyX2aYjbLRCpzp-h_CXBb=K7OWkO1b+tVTRz9LQQOzdQ@mail.gmail.com> <CALQRfL5EeqRFykLGVLJx3pfKdP4iF8r-8Ys7pVadOaCc3j1=iQ@mail.gmail.com> <CALCETrXYPjow3geVBnYK_ZOhnuU_wZkdebumJ=Hv3-T=fHaPNA@mail.gmail.com> <CALQRfL7e160D+vzVhT-fUS-_Yp55wqnWkRFJdDTOOVjjStd9Jw@mail.gmail.com> <CALCETrXUSz9EN-tGMfJkw9+1kO0hfmQk4E5XPF0cg9nmpPXepg@mail.gmail.com> <20121204135445.GA7420@mail.hallyn.com> <CALCETrW05JtRZSSJ0v=jz8B7_av1QS+D5qux5=q8aO3iWZHB1A@mail.gmail.com> <20121205210528.GA9047@sergelap> <CALCETrVsrJSt8oYnh+y32Lrxw6Yk=Cp_e07Qf=fLbVfORvzUNg@mail.gmail.com> <20121205222040.GB14884@sergelap>
+In-Reply-To: <20121205222040.GB14884@sergelap>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On 12/5/2012 2:20 PM, Serge Hallyn wrote:
+> Quoting Andy Lutomirski (luto@amacapital.net):
+>> On Wed, Dec 5, 2012 at 1:05 PM, Serge Hallyn <serge.hallyn@canonical.com> wrote:
+>>> Quoting Andy Lutomirski (luto@amacapital.net):
+>>>> On Tue, Dec 4, 2012 at 5:54 AM, Serge E. Hallyn <serge@hallyn.com> wrote:
+>>>>> Quoting Andy Lutomirski (luto@amacapital.net):
+>>>>>>>> d) If I really wanted, I could emulate execve without actually doing
+>>>>>>>> execve, and capabilities would be inherited.
+>>>>>>> If you could modify the executable properties of the binary that has
+>>>>>>> the privilege to wield a privilege then you are either exploiting an
+>>>>>>> app bug, or doing something the privileged binary has been trusted to
+>>>>>>> do.
+>>>>>> That's not what I mean.  I would:
+>>>>>>
+>>>>>> fork()
+>>>>>> munmap everything
+>>>>>> mmap ld.so
+>>>>>> set up a fake initial stack and the right fd or mapping or whatever
+>>>>>> just to ld-linux.so
+>>>>>>
+>>>>>> That's almost execve, and privilege inheritance works.
+>>>>> But of course that is why you only want to fill fI on programs you trust
+>>>>> not to do that.  What you are arguing is that you want to give fI on
+>>>>> programs you don't trust anyway, and so heck why not just give it on
+>>>>> everything.
+>>>>>
+>>>> Huh?  I'd set fP on a program I expect to do *exactly* that (or use
+>>>> actual in-kernel capability inheritance, which I would find vastly
+>>>> more pleasant).  If I give a program a capability (via fP or fI & pI),
+>>>> then I had better trust it not to abuse that capability.  Having it
+>>>> pass that capability on to a child helper process would be just fine
+>>>> with me *because it already has that capability*.
+>>>>
+>>>> The problem with the current inheritance mechanism is that it's very
+>>>> difficult to understand what it means for an fI bit or a pI bit to be
+>>>> set.  Saying "set a pI bit using pam if you want to grant permission
+>>>> to that user to run a particular program with fI set" is crap -- it
+>>>> only works if there is exactly one binary on the system with that bit
+>>>> set.  In any case, a different administrator or package might use it
+>>>> for something different.
+>>>>
+>>>> Suppose I use the (apparently) current suggested approach: I install a
+>>>> fI=cap_net_raw copy of tcpdump somewhere.  Then I write a helper that
+>>>> has fP=cap_new_raw and invokes that copy of tcpdump after appropriate
+>>>> validation of parameters.  All is well.
+>>> Since you're writing a special helper, you can surely have it validate
+>>> the userid and make it so the calling user doesn't have to have
+>>> cap_net_raw in pI?
+>> I can and did.
+> Oh, oops, I mis-understood what you meant was the problem.
+>
+> Yup, that is a real limitation.
+>
+> Yes, with the posix file caps you will be disappointed unless you see
+> pI=X as "this user may run any program which is Inh-trusted with X" and
+> fI=X as "this program may be run with X by any user Inh-trusted with X".
+>
+> It almost makes me want to say that there should be an execve-analogue
+> to prctl(PR_SET_KEEPCAPS), which says caps will remain unchanged for one
+> execve.  Or perhaps an intermediate securebits state between
+> !SECBIT_NOROOT and SECBIT_NOROOT, which automatically transitions after
+> the first execve to SECBIT_NOROOT.
+>
+>> The mere presence of a cap_net_raw+i tcpdump binary is more or less
+>> equivalent to saying that users with cap_net_raw in pI can capture
+>> packets.  I've just prevented pI=cap_net_raw from meaning anything
+>> less than "can capture packets".  So I think we should bite the bullet
+>> and just let programs opt in (via some appropriately careful
+>> mechanism) to real capability inheritance.
+> By real you mean more precise.  I think it'd be very interesting to get
+> together with Markku and learn more from the N9 experiment!
+>
+> Markku, are there any post-mortem analysis papers we can read for
+> starters?  Andy would not be trying to restrict root in general, so
+> the ramification you cited may not necessarily be relevant.
+>
+> -serge
 
-------------------
+http://wt.tuxomania.net/publications/posix.1e/download.html
 
-From: Jianguo Wu <wujianguo@huawei.com>
+Everyone should read the capabilities rationale. It answers most
+of the questions on this thread, and a bunch more. The capabilities
+mechanism has to support what are currently setuid-root programs
+without change and allow for new programs that use the mechanism
+wisely and fully.
 
-commit ae64ffcac35de0db628ba9631edf8ff34c5cd7ac upstream.
 
-I enable CONFIG_DEBUG_VIRTUAL and CONFIG_SPARSEMEM_VMEMMAP, when doing
-memory hotremove, there is a kernel BUG at arch/x86/mm/physaddr.c:20.
-
-It is caused by free_section_usemap()->virt_to_page(), virt_to_page() is
-only used for kernel direct mapping address, but sparse-vmemmap uses
-vmemmap address, so it is going wrong here.
-
-  ------------[ cut here ]------------
-  kernel BUG at arch/x86/mm/physaddr.c:20!
-  invalid opcode: 0000 [#1] SMP
-  Modules linked in: acpihp_drv acpihp_slot edd cpufreq_conservative cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf fuse vfat fat loop dm_mod coretemp kvm crc32c_intel ipv6 ixgbe igb iTCO_wdt i7core_edac edac_core pcspkr iTCO_vendor_support ioatdma microcode joydev sr_mod i2c_i801 dca lpc_ich mfd_core mdio tpm_tis i2c_core hid_generic tpm cdrom sg tpm_bios rtc_cmos button ext3 jbd mbcache usbhid hid uhci_hcd ehci_hcd usbcore usb_common sd_mod crc_t10dif processor thermal_sys hwmon scsi_dh_alua scsi_dh_hp_sw scsi_dh_rdac scsi_dh_emc scsi_dh ata_generic ata_piix libata megaraid_sas scsi_mod
-  CPU 39
-  Pid: 6454, comm: sh Not tainted 3.7.0-rc1-acpihp-final+ #45 QCI QSSC-S4R/QSSC-S4R
-  RIP: 0010:[<ffffffff8103c908>]  [<ffffffff8103c908>] __phys_addr+0x88/0x90
-  RSP: 0018:ffff8804440d7c08  EFLAGS: 00010006
-  RAX: 0000000000000006 RBX: ffffea0012000000 RCX: 000000000000002c
-  ...
-
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Reviewd-by: Wen Congyang <wency@cn.fujitsu.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- mm/sparse.c |   10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
-
---- a/mm/sparse.c
-+++ b/mm/sparse.c
-@@ -619,7 +619,7 @@ static void __kfree_section_memmap(struc
- {
- 	return; /* XXX: Not implemented yet */
- }
--static void free_map_bootmem(struct page *page, unsigned long nr_pages)
-+static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
- {
- }
- #else
-@@ -660,10 +660,11 @@ static void __kfree_section_memmap(struc
- 			   get_order(sizeof(struct page) * nr_pages));
- }
- 
--static void free_map_bootmem(struct page *page, unsigned long nr_pages)
-+static void free_map_bootmem(struct page *memmap, unsigned long nr_pages)
- {
- 	unsigned long maps_section_nr, removing_section_nr, i;
- 	unsigned long magic;
-+	struct page *page = virt_to_page(memmap);
- 
- 	for (i = 0; i < nr_pages; i++, page++) {
- 		magic = (unsigned long) page->lru.next;
-@@ -712,13 +713,10 @@ static void free_section_usemap(struct p
- 	 */
- 
- 	if (memmap) {
--		struct page *memmap_page;
--		memmap_page = virt_to_page(memmap);
--
- 		nr_pages = PAGE_ALIGN(PAGES_PER_SECTION * sizeof(struct page))
- 			>> PAGE_SHIFT;
- 
--		free_map_bootmem(memmap_page, nr_pages);
-+		free_map_bootmem(memmap, nr_pages);
- 	}
- }
- 
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
