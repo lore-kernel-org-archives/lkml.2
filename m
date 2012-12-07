@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933036Ab2LGKY4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 05:24:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42240 "EHLO mx2.suse.de"
+	id S933087Ab2LGKZH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 05:25:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42354 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932996Ab2LGKYv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 05:24:51 -0500
+	id S933024Ab2LGKZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 05:25:04 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -21,9 +21,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 32/49] mm: numa: Structures for Migrate On Fault per NUMA migration rate limiting
-Date: Fri,  7 Dec 2012 10:23:35 +0000
-Message-Id: <1354875832-9700-33-git-send-email-mgorman@suse.de>
+Subject: [PATCH 39/49] mm: numa: Use a two-stage filter to restrict pages being migrated for unlikely task<->node relationships
+Date: Fri,  7 Dec 2012 10:23:42 +0000
+Message-Id: <1354875832-9700-40-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1354875832-9700-1-git-send-email-mgorman@suse.de>
 References: <1354875832-9700-1-git-send-email-mgorman@suse.de>
@@ -31,59 +31,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+Note: This two-stage filter was taken directly from the sched/numa patch
+	"sched, numa, mm: Add the scanning page fault machinery" but is
+	only a partial extraction. As the end result is not necessarily
+	recognisable, the signed-offs-by had to be removed. Will be added
+	back if requested.
 
-This defines the per-node data used by Migrate On Fault in order to
-rate limit the migration. The rate limiting is applied independently
-to each destination node.
+While it is desirable that all threads in a process run on its home
+node, this is not always possible or necessary. There may be more
+threads than exist within the node or the node might over-subscribed
+with unrelated processes.
 
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+This can cause a situation whereby a page gets migrated off its home
+node because the threads clearing pte_numa were running off-node. This
+patch uses page->last_nid to build a two-stage filter before pages get
+migrated to avoid problems with short or unlikely task<->node
+relationships.
+
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/mmzone.h |   13 +++++++++++++
- mm/page_alloc.c        |    5 +++++
- 2 files changed, 18 insertions(+)
+ mm/mempolicy.c |   30 +++++++++++++++++++++++++++++-
+ 1 file changed, 29 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index a23923b..1ed16e5 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -717,6 +717,19 @@ typedef struct pglist_data {
- 	struct task_struct *kswapd;	/* Protected by lock_memory_hotplug() */
- 	int kswapd_max_order;
- 	enum zone_type classzone_idx;
-+#ifdef CONFIG_BALANCE_NUMA
-+	/*
-+	 * Lock serializing the per destination node AutoNUMA memory
-+	 * migration rate limiting data.
-+	 */
-+	spinlock_t balancenuma_migrate_lock;
-+
-+	/* Rate limiting time interval */
-+	unsigned long balancenuma_migrate_next_window;
-+
-+	/* Number of pages migrated during the rate limiting time interval */
-+	unsigned long balancenuma_migrate_nr_pages;
-+#endif
- } pg_data_t;
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 4c1c8d8..fd20e28 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2317,9 +2317,37 @@ int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long
+ 	}
  
- #define node_present_pages(nid)	(NODE_DATA(nid)->node_present_pages)
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 5953dc2..df58654 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -4449,6 +4449,11 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
- 	int ret;
+ 	/* Migrate the page towards the node whose CPU is referencing it */
+-	if (pol->flags & MPOL_F_MORON)
++	if (pol->flags & MPOL_F_MORON) {
++		int last_nid;
++
+ 		polnid = numa_node_id();
  
- 	pgdat_resize_init(pgdat);
-+#ifdef CONFIG_BALANCE_NUMA
-+	spin_lock_init(&pgdat->balancenuma_migrate_lock);
-+	pgdat->balancenuma_migrate_nr_pages = 0;
-+	pgdat->balancenuma_migrate_next_window = jiffies;
-+#endif
- 	init_waitqueue_head(&pgdat->kswapd_wait);
- 	init_waitqueue_head(&pgdat->pfmemalloc_wait);
- 	pgdat_page_cgroup_init(pgdat);
++		/*
++		 * Multi-stage node selection is used in conjunction
++		 * with a periodic migration fault to build a temporal
++		 * task<->page relation. By using a two-stage filter we
++		 * remove short/unlikely relations.
++		 *
++		 * Using P(p) ~ n_p / n_t as per frequentist
++		 * probability, we can equate a task's usage of a
++		 * particular page (n_p) per total usage of this
++		 * page (n_t) (in a given time-span) to a probability.
++		 *
++		 * Our periodic faults will sample this probability and
++		 * getting the same result twice in a row, given these
++		 * samples are fully independent, is then given by
++		 * P(n)^2, provided our sample period is sufficiently
++		 * short compared to the usage pattern.
++		 *
++		 * This quadric squishes small probabilities, making
++		 * it less likely we act on an unlikely task<->page
++		 * relation.
++		 */
++		last_nid = page_xchg_last_nid(page, polnid);
++		if (last_nid != polnid)
++			goto out;
++	}
++
+ 	if (curnid != polnid)
+ 		ret = polnid;
+ out:
 -- 
 1.7.9.2
 
