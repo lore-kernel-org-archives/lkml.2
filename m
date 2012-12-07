@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424021Ab2LGBEl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 20:04:41 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:43888 "EHLO
+	id S1423541Ab2LGA7w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 19:59:52 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:44852 "EHLO
 	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423549Ab2LGA7y (ORCPT
+	with ESMTP id S1423523Ab2LGA7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 19:59:54 -0500
+	Thu, 6 Dec 2012 19:59:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Duncan Laurie <dlaurie@chromium.org>,
-        Olof Johansson <olofj@chromium.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 12/27] x86, fpu: Avoid FPU lazy restore after suspend
-Date: Thu,  6 Dec 2012 16:58:56 -0800
-Message-Id: <20121207005829.192265076@linuxfoundation.org>
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [ 10/27] iwlwifi: fix the basic CCK rates calculation
+Date: Thu,  6 Dec 2012 16:58:54 -0800
+Message-Id: <20121207005828.556393847@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121207005825.232489605@linuxfoundation.org>
 References: <20121207005825.232489605@linuxfoundation.org>
@@ -29,80 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vincent Palatin <vpalatin@chromium.org>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 644c154186386bb1fa6446bc5e037b9ed098db46 upstream.
+commit 5edd0b946a0afeb1d0364a3654328b046fb818a2 upstream.
 
-When a cpu enters S3 state, the FPU state is lost.
-After resuming for S3, if we try to lazy restore the FPU for a process running
-on the same CPU, this will result in a corrupted FPU context.
+Fix a copy paste error in iwl_calc_basic_rates which leads
+to a wrong calculation of CCK basic rates.
 
-Ensure that "fpu_owner_task" is properly invalided when (re-)initializing a CPU,
-so nobody will try to lazy restore a state which doesn't exist in the hardware.
-
-Tested with a 64-bit kernel on a 4-core Ivybridge CPU with eagerfpu=off,
-by doing thousands of suspend/resume cycles with 4 processes doing FPU
-operations running. Without the patch, a process is killed after a
-few hundreds cycles by a SIGFPE.
-
-Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
-Cc: Duncan Laurie <dlaurie@chromium.org>
-Cc: Olof Johansson <olofj@chromium.org>
-Link: http://lkml.kernel.org/r/1354306532-1014-1-git-send-email-vpalatin@chromium.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/fpu-internal.h |   15 +++++++++------
- arch/x86/kernel/smpboot.c           |    5 +++++
- 2 files changed, 14 insertions(+), 6 deletions(-)
+ drivers/net/wireless/iwlwifi/dvm/rxon.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/arch/x86/include/asm/fpu-internal.h
-+++ b/arch/x86/include/asm/fpu-internal.h
-@@ -334,14 +334,17 @@ static inline void __thread_fpu_begin(st
- typedef struct { int preload; } fpu_switch_t;
+--- a/drivers/net/wireless/iwlwifi/dvm/rxon.c
++++ b/drivers/net/wireless/iwlwifi/dvm/rxon.c
+@@ -1012,12 +1012,12 @@ static void iwl_calc_basic_rates(struct
+ 	 * As a consequence, it's not as complicated as it sounds, just add
+ 	 * any lower rates to the ACK rate bitmap.
+ 	 */
+-	if (IWL_RATE_11M_INDEX < lowest_present_ofdm)
+-		ofdm |= IWL_RATE_11M_MASK >> IWL_FIRST_CCK_RATE;
+-	if (IWL_RATE_5M_INDEX < lowest_present_ofdm)
+-		ofdm |= IWL_RATE_5M_MASK >> IWL_FIRST_CCK_RATE;
+-	if (IWL_RATE_2M_INDEX < lowest_present_ofdm)
+-		ofdm |= IWL_RATE_2M_MASK >> IWL_FIRST_CCK_RATE;
++	if (IWL_RATE_11M_INDEX < lowest_present_cck)
++		cck |= IWL_RATE_11M_MASK >> IWL_FIRST_CCK_RATE;
++	if (IWL_RATE_5M_INDEX < lowest_present_cck)
++		cck |= IWL_RATE_5M_MASK >> IWL_FIRST_CCK_RATE;
++	if (IWL_RATE_2M_INDEX < lowest_present_cck)
++		cck |= IWL_RATE_2M_MASK >> IWL_FIRST_CCK_RATE;
+ 	/* 1M already there or needed so always add */
+ 	cck |= IWL_RATE_1M_MASK >> IWL_FIRST_CCK_RATE;
  
- /*
-- * FIXME! We could do a totally lazy restore, but we need to
-- * add a per-cpu "this was the task that last touched the FPU
-- * on this CPU" variable, and the task needs to have a "I last
-- * touched the FPU on this CPU" and check them.
-+ * Must be run with preemption disabled: this clears the fpu_owner_task,
-+ * on this CPU.
-  *
-- * We don't do that yet, so "fpu_lazy_restore()" always returns
-- * false, but some day..
-+ * This will disable any lazy FPU state restore of the current FPU state,
-+ * but if the current thread owns the FPU, it will still be saved by.
-  */
-+static inline void __cpu_disable_lazy_restore(unsigned int cpu)
-+{
-+	per_cpu(fpu_owner_task, cpu) = NULL;
-+}
-+
- static inline int fpu_lazy_restore(struct task_struct *new, unsigned int cpu)
- {
- 	return new == this_cpu_read_stable(fpu_owner_task) &&
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -68,6 +68,8 @@
- #include <asm/mwait.h>
- #include <asm/apic.h>
- #include <asm/io_apic.h>
-+#include <asm/i387.h>
-+#include <asm/fpu-internal.h>
- #include <asm/setup.h>
- #include <asm/uv/uv.h>
- #include <linux/mc146818rtc.h>
-@@ -817,6 +819,9 @@ int __cpuinit native_cpu_up(unsigned int
- 
- 	per_cpu(cpu_state, cpu) = CPU_UP_PREPARE;
- 
-+	/* the FPU context is blank, nobody can own it */
-+	__cpu_disable_lazy_restore(cpu);
-+
- 	err = do_boot_cpu(apicid, cpu, tidle);
- 	if (err) {
- 		pr_debug("do_boot_cpu failed %d\n", err);
 
 
