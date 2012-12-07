@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423116Ab2LGAzy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 19:55:54 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:42772 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423056Ab2LGAzm (ORCPT
+	id S1423094Ab2LGAzv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 19:55:51 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:40591 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423046Ab2LGAzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 19:55:42 -0500
+	Thu, 6 Dec 2012 19:55:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Peng Tao <tao.peng@emc.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 19/20] pnfsblock: fix partial page buffer wirte
-Date: Thu,  6 Dec 2012 16:54:34 -0800
-Message-Id: <20121207005238.296501608@linuxfoundation.org>
+        Jean Delvare <jdelvare@suse.de>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Doug Thompson <dougthompson@xmission.com>
+Subject: [ 12/20] i7300_edac: Fix error flag testing
+Date: Thu,  6 Dec 2012 16:54:27 -0800
+Message-Id: <20121207005236.199502286@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121207005232.756641002@linuxfoundation.org>
 References: <20121207005232.756641002@linuxfoundation.org>
@@ -27,299 +28,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peng Tao <bergwolf@gmail.com>
+From: Jean Delvare <jdelvare@suse.de>
 
-commit fe6e1e8d9fad86873eb74a26e80a8f91f9e870b5 upstream.
+commit 7e06b7a3333f5c7a0cec12aff20d39c5c87c0795 upstream.
 
-If applications use flock to protect its write range, generic NFS
-will not do read-modify-write cycle at page cache level. Therefore
-LD should know how to handle non-sector aligned writes. Otherwise
-there will be data corruption.
+* Right-shift the values in GET_FBD_FAT_IDX and GET_FBD_NF_IDX, so
+  that the callers get the result they expect.
+* Fix definition of FERR_FAT_FBD_ERR_MASK.
+* Call GET_FBD_NF_IDX, not GET_FBD_FAT_IDX, when operating on
+  register FERR_NF_FBD. We were lucky they have the same definition.
 
-Signed-off-by: Peng Tao <tao.peng@emc.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+This fixes kernel bug #44131:
+https://bugzilla.kernel.org/show_bug.cgi?id=44131
+
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Doug Thompson <dougthompson@xmission.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- fs/nfs/blocklayout/blocklayout.c |  176 ++++++++++++++++++++++++++++++++++++---
- fs/nfs/blocklayout/blocklayout.h |    1 
- 2 files changed, 165 insertions(+), 12 deletions(-)
 
---- a/fs/nfs/blocklayout/blocklayout.c
-+++ b/fs/nfs/blocklayout/blocklayout.c
-@@ -162,25 +162,39 @@ static struct bio *bl_alloc_init_bio(int
- 	return bio;
- }
+---
+ drivers/edac/i7300_edac.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+--- a/drivers/edac/i7300_edac.c
++++ b/drivers/edac/i7300_edac.c
+@@ -215,8 +215,8 @@ static const char *ferr_fat_fbd_name[] =
+ 	[0]  = "Memory Write error on non-redundant retry or "
+ 	       "FBD configuration Write error on retry",
+ };
+-#define GET_FBD_FAT_IDX(fbderr)	(fbderr & (3 << 28))
+-#define FERR_FAT_FBD_ERR_MASK ((1 << 0) | (1 << 1) | (1 << 2) | (1 << 3))
++#define GET_FBD_FAT_IDX(fbderr)	(((fbderr) >> 28) & 3)
++#define FERR_FAT_FBD_ERR_MASK ((1 << 0) | (1 << 1) | (1 << 2) | (1 << 22))
  
--static struct bio *bl_add_page_to_bio(struct bio *bio, int npg, int rw,
-+static struct bio *do_add_page_to_bio(struct bio *bio, int npg, int rw,
- 				      sector_t isect, struct page *page,
- 				      struct pnfs_block_extent *be,
- 				      void (*end_io)(struct bio *, int err),
--				      struct parallel_io *par)
-+				      struct parallel_io *par,
-+				      unsigned int offset, int len)
- {
-+	isect = isect + (offset >> SECTOR_SHIFT);
-+	dprintk("%s: npg %d rw %d isect %llu offset %u len %d\n", __func__,
-+		npg, rw, (unsigned long long)isect, offset, len);
- retry:
- 	if (!bio) {
- 		bio = bl_alloc_init_bio(npg, isect, be, end_io, par);
- 		if (!bio)
- 			return ERR_PTR(-ENOMEM);
- 	}
--	if (bio_add_page(bio, page, PAGE_CACHE_SIZE, 0) < PAGE_CACHE_SIZE) {
-+	if (bio_add_page(bio, page, len, offset) < len) {
- 		bio = bl_submit_bio(rw, bio);
- 		goto retry;
- 	}
- 	return bio;
- }
+ #define FERR_NF_FBD	0xa0
+ static const char *ferr_nf_fbd_name[] = {
+@@ -243,7 +243,7 @@ static const char *ferr_nf_fbd_name[] =
+ 	[1]  = "Aliased Uncorrectable Non-Mirrored Demand Data ECC",
+ 	[0]  = "Uncorrectable Data ECC on Replay",
+ };
+-#define GET_FBD_NF_IDX(fbderr)	(fbderr & (3 << 28))
++#define GET_FBD_NF_IDX(fbderr)	(((fbderr) >> 28) & 3)
+ #define FERR_NF_FBD_ERR_MASK ((1 << 24) | (1 << 23) | (1 << 22) | (1 << 21) |\
+ 			      (1 << 18) | (1 << 17) | (1 << 16) | (1 << 15) |\
+ 			      (1 << 14) | (1 << 13) | (1 << 11) | (1 << 10) |\
+@@ -485,7 +485,7 @@ static void i7300_process_fbd_error(stru
+ 		errnum = find_first_bit(&errors,
+ 					ARRAY_SIZE(ferr_nf_fbd_name));
+ 		specific = GET_ERR_FROM_TABLE(ferr_nf_fbd_name, errnum);
+-		branch = (GET_FBD_FAT_IDX(error_reg) == 2) ? 1 : 0;
++		branch = (GET_FBD_NF_IDX(error_reg) == 2) ? 1 : 0;
  
-+static struct bio *bl_add_page_to_bio(struct bio *bio, int npg, int rw,
-+				      sector_t isect, struct page *page,
-+				      struct pnfs_block_extent *be,
-+				      void (*end_io)(struct bio *, int err),
-+				      struct parallel_io *par)
-+{
-+	return do_add_page_to_bio(bio, npg, rw, isect, page, be,
-+				  end_io, par, 0, PAGE_CACHE_SIZE);
-+}
-+
- /* This is basically copied from mpage_end_io_read */
- static void bl_end_io_read(struct bio *bio, int err)
- {
-@@ -443,6 +457,107 @@ map_block(struct buffer_head *bh, sector
- 	return;
- }
- 
-+static void
-+bl_read_single_end_io(struct bio *bio, int error)
-+{
-+	struct bio_vec *bvec = bio->bi_io_vec + bio->bi_vcnt - 1;
-+	struct page *page = bvec->bv_page;
-+
-+	/* Only one page in bvec */
-+	unlock_page(page);
-+}
-+
-+static int
-+bl_do_readpage_sync(struct page *page, struct pnfs_block_extent *be,
-+		    unsigned int offset, unsigned int len)
-+{
-+	struct bio *bio;
-+	struct page *shadow_page;
-+	sector_t isect;
-+	char *kaddr, *kshadow_addr;
-+	int ret = 0;
-+
-+	dprintk("%s: offset %u len %u\n", __func__, offset, len);
-+
-+	shadow_page = alloc_page(GFP_NOFS | __GFP_HIGHMEM);
-+	if (shadow_page == NULL)
-+		return -ENOMEM;
-+
-+	bio = bio_alloc(GFP_NOIO, 1);
-+	if (bio == NULL)
-+		return -ENOMEM;
-+
-+	isect = (page->index << PAGE_CACHE_SECTOR_SHIFT) +
-+		(offset / SECTOR_SIZE);
-+
-+	bio->bi_sector = isect - be->be_f_offset + be->be_v_offset;
-+	bio->bi_bdev = be->be_mdev;
-+	bio->bi_end_io = bl_read_single_end_io;
-+
-+	lock_page(shadow_page);
-+	if (bio_add_page(bio, shadow_page,
-+			 SECTOR_SIZE, round_down(offset, SECTOR_SIZE)) == 0) {
-+		unlock_page(shadow_page);
-+		bio_put(bio);
-+		return -EIO;
-+	}
-+
-+	submit_bio(READ, bio);
-+	wait_on_page_locked(shadow_page);
-+	if (unlikely(!test_bit(BIO_UPTODATE, &bio->bi_flags))) {
-+		ret = -EIO;
-+	} else {
-+		kaddr = kmap_atomic(page);
-+		kshadow_addr = kmap_atomic(shadow_page);
-+		memcpy(kaddr + offset, kshadow_addr + offset, len);
-+		kunmap_atomic(kshadow_addr);
-+		kunmap_atomic(kaddr);
-+	}
-+	__free_page(shadow_page);
-+	bio_put(bio);
-+
-+	return ret;
-+}
-+
-+static int
-+bl_read_partial_page_sync(struct page *page, struct pnfs_block_extent *be,
-+			  unsigned int dirty_offset, unsigned int dirty_len,
-+			  bool full_page)
-+{
-+	int ret = 0;
-+	unsigned int start, end;
-+
-+	if (full_page) {
-+		start = 0;
-+		end = PAGE_CACHE_SIZE;
-+	} else {
-+		start = round_down(dirty_offset, SECTOR_SIZE);
-+		end = round_up(dirty_offset + dirty_len, SECTOR_SIZE);
-+	}
-+
-+	dprintk("%s: offset %u len %d\n", __func__, dirty_offset, dirty_len);
-+	if (!be) {
-+		zero_user_segments(page, start, dirty_offset,
-+				   dirty_offset + dirty_len, end);
-+		if (start == 0 && end == PAGE_CACHE_SIZE &&
-+		    trylock_page(page)) {
-+			SetPageUptodate(page);
-+			unlock_page(page);
-+		}
-+		return ret;
-+	}
-+
-+	if (start != dirty_offset)
-+		ret = bl_do_readpage_sync(page, be, start,
-+					  dirty_offset - start);
-+
-+	if (!ret && (dirty_offset + dirty_len < end))
-+		ret = bl_do_readpage_sync(page, be, dirty_offset + dirty_len,
-+					  end - dirty_offset - dirty_len);
-+
-+	return ret;
-+}
-+
- /* Given an unmapped page, zero it or read in page for COW, page is locked
-  * by caller.
-  */
-@@ -476,7 +591,6 @@ init_page_for_write(struct page *page, s
- 	SetPageUptodate(page);
- 
- cleanup:
--	bl_put_extent(cow_read);
- 	if (bh)
- 		free_buffer_head(bh);
- 	if (ret) {
-@@ -547,6 +661,7 @@ bl_write_pagelist(struct nfs_write_data
- 	struct parallel_io *par;
- 	loff_t offset = wdata->args.offset;
- 	size_t count = wdata->args.count;
-+	unsigned int pg_offset, pg_len, saved_len;
- 	struct page **pages = wdata->args.pages;
- 	struct page *page;
- 	pgoff_t index;
-@@ -651,10 +766,11 @@ next_page:
- 		if (!extent_length) {
- 			/* We've used up the previous extent */
- 			bl_put_extent(be);
-+			bl_put_extent(cow_read);
- 			bio = bl_submit_bio(WRITE, bio);
- 			/* Get the next one */
- 			be = bl_find_get_extent(BLK_LSEG2EXT(wdata->lseg),
--					     isect, NULL);
-+						isect, &cow_read);
- 			if (!be || !is_writable(be, isect)) {
- 				wdata->pnfs_error = -EINVAL;
- 				goto out;
-@@ -671,7 +787,26 @@ next_page:
- 			extent_length = be->be_length -
- 			    (isect - be->be_f_offset);
- 		}
--		if (be->be_state == PNFS_BLOCK_INVALID_DATA) {
-+
-+		dprintk("%s offset %lld count %Zu\n", __func__, offset, count);
-+		pg_offset = offset & ~PAGE_CACHE_MASK;
-+		if (pg_offset + count > PAGE_CACHE_SIZE)
-+			pg_len = PAGE_CACHE_SIZE - pg_offset;
-+		else
-+			pg_len = count;
-+
-+		saved_len = pg_len;
-+		if (be->be_state == PNFS_BLOCK_INVALID_DATA &&
-+		    !bl_is_sector_init(be->be_inval, isect)) {
-+			ret = bl_read_partial_page_sync(pages[i], cow_read,
-+						pg_offset, pg_len, true);
-+			if (ret) {
-+				dprintk("%s bl_read_partial_page_sync fail %d\n",
-+					__func__, ret);
-+				wdata->pnfs_error = ret;
-+				goto out;
-+			}
-+
- 			ret = bl_mark_sectors_init(be->be_inval, isect,
- 						       PAGE_CACHE_SECTORS);
- 			if (unlikely(ret)) {
-@@ -680,15 +815,33 @@ next_page:
- 				wdata->pnfs_error = ret;
- 				goto out;
- 			}
-+
-+			/* Expand to full page write */
-+			pg_offset = 0;
-+			pg_len = PAGE_CACHE_SIZE;
-+		} else if ((pg_offset & (SECTOR_SIZE - 1)) ||
-+			    (pg_len & (SECTOR_SIZE - 1))) {
-+			/* ahh, nasty case. We have to do sync full sector
-+			 * read-modify-write cycles.
-+			 */
-+			unsigned int saved_offset = pg_offset;
-+			ret = bl_read_partial_page_sync(pages[i], be, pg_offset,
-+							pg_len, false);
-+			pg_offset = round_down(pg_offset, SECTOR_SIZE);
-+			pg_len = round_up(saved_offset + pg_len, SECTOR_SIZE)
-+				 - pg_offset;
- 		}
--		bio = bl_add_page_to_bio(bio, wdata->npages - i, WRITE,
-+		bio = do_add_page_to_bio(bio, wdata->npages - i, WRITE,
- 					 isect, pages[i], be,
--					 bl_end_io_write, par);
-+					 bl_end_io_write, par,
-+					 pg_offset, pg_len);
- 		if (IS_ERR(bio)) {
- 			wdata->pnfs_error = PTR_ERR(bio);
- 			bio = NULL;
- 			goto out;
- 		}
-+		offset += saved_len;
-+		count -= saved_len;
- 		isect += PAGE_CACHE_SECTORS;
- 		last_isect = isect;
- 		extent_length -= PAGE_CACHE_SECTORS;
-@@ -706,17 +859,16 @@ next_page:
- 	}
- 
- write_done:
--	wdata->res.count = (last_isect << SECTOR_SHIFT) - (offset);
--	if (count < wdata->res.count) {
--		wdata->res.count = count;
--	}
-+	wdata->res.count = wdata->args.count;
- out:
- 	bl_put_extent(be);
-+	bl_put_extent(cow_read);
- 	bl_submit_bio(WRITE, bio);
- 	put_parallel(par);
- 	return PNFS_ATTEMPTED;
- out_mds:
- 	bl_put_extent(be);
-+	bl_put_extent(cow_read);
- 	kfree(par);
- 	return PNFS_NOT_ATTEMPTED;
- }
---- a/fs/nfs/blocklayout/blocklayout.h
-+++ b/fs/nfs/blocklayout/blocklayout.h
-@@ -41,6 +41,7 @@
- 
- #define PAGE_CACHE_SECTORS (PAGE_CACHE_SIZE >> SECTOR_SHIFT)
- #define PAGE_CACHE_SECTOR_SHIFT (PAGE_CACHE_SHIFT - SECTOR_SHIFT)
-+#define SECTOR_SIZE (1 << SECTOR_SHIFT)
- 
- struct block_mount_id {
- 	spinlock_t			bm_lock;    /* protects list */
+ 		pci_read_config_dword(pvt->pci_dev_16_1_fsb_addr_map,
+ 			REDMEMA, &syndrome);
 
 
