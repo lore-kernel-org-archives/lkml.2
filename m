@@ -1,67 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1945911Ab2LGB5i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 20:57:38 -0500
-Received: from mga02.intel.com ([134.134.136.20]:7305 "EHLO mga02.intel.com"
+	id S1424553Ab2LGCDz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 21:03:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5116 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1422905Ab2LGB5g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 20:57:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,234,1355126400"; 
-   d="scan'208";a="230119286"
-From: Joseph Gasparakis <joseph.gasparakis@intel.com>
-To: davem@davemloft.net, shemminger@vyatta.com, chrisw@sous-sol.org,
-        gospo@redhat.com
-Cc: Joseph Gasparakis <joseph.gasparakis@intel.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, alexander.h.duyck@intel.com,
-        peter.p.waskiewicz.jr@intel.com
-Subject: [PATCH] vxlan: Add capability of Rx checksum offload for inner packet
-Date: Thu,  6 Dec 2012 18:05:53 -0800
-Message-Id: <1354845953-23424-1-git-send-email-joseph.gasparakis@intel.com>
-X-Mailer: git-send-email 1.7.11.7
+	id S1422905Ab2LGCDy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 21:03:54 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andi Kleen <andi.kleen@intel.com>, Tony Luck <tony.luck@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 1/3] HWPOISON, hugetlbfs: fix warning on freeing hwpoisoned hugepage
+Date: Thu,  6 Dec 2012 21:03:44 -0500
+Message-Id: <1354845824-5734-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <20121206143652.29c4922f.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds capability in vxlan to identify received
-checksummed inner packets and signal them to the upper layers of
-the stack. The driver needs to set the skb->encapsulation bit
-and also set the skb->ip_summed to CHECKSUM_UNNECESSARY.
+On Thu, Dec 06, 2012 at 02:36:52PM -0800, Andrew Morton wrote:
+> On Wed,  5 Dec 2012 16:47:36 -0500
+> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+> 
+> > This patch fixes the warning from __list_del_entry() which is triggered
+> > when a process tries to do free_huge_page() for a hwpoisoned hugepage.
+> > 
+> > Originally, page->lru of hugetlbfs head page was dangling when the
+> > hugepage was in use. This behavior has changed by commit 0edaecfab218d7
+> > ("hugetlb: add a list for tracking in-use HugeTLB pages"), where hugepages
+> > in use are linked to hugepage_activelist. HWpoisoned hugepages should not
+> > be charged to any process, so we introduce another list to link hwpoisoned
+> > hugepages.
+> > 
+> > ...
+> >
+> > --- v3.7-rc8.orig/include/linux/hugetlb.h
+> > +++ v3.7-rc8/include/linux/hugetlb.h
+> > @@ -230,6 +230,9 @@ struct hstate {
+> >  	unsigned long nr_overcommit_huge_pages;
+> >  	struct list_head hugepage_activelist;
+> >  	struct list_head hugepage_freelists[MAX_NUMNODES];
+> > +#ifdef CONFIG_MEMORY_FAILURE
+> > +	struct list_head hugepage_hwpoisonedlist;
+> > +#endif
+> >  	unsigned int nr_huge_pages_node[MAX_NUMNODES];
+> >  	unsigned int free_huge_pages_node[MAX_NUMNODES];
+> >  	unsigned int surplus_huge_pages_node[MAX_NUMNODES];
+> > diff --git v3.7-rc8.orig/mm/hugetlb.c v3.7-rc8/mm/hugetlb.c
+> > index 59a0059..e61a749 100644
+> > --- v3.7-rc8.orig/mm/hugetlb.c
+> > +++ v3.7-rc8/mm/hugetlb.c
+> > @@ -1939,6 +1939,7 @@ void __init hugetlb_add_hstate(unsigned order)
+> >  	for (i = 0; i < MAX_NUMNODES; ++i)
+> >  		INIT_LIST_HEAD(&h->hugepage_freelists[i]);
+> >  	INIT_LIST_HEAD(&h->hugepage_activelist);
+> > +	INIT_LIST_HEAD(&h->hugepage_hwpoisonedlist);
+> >  	h->next_nid_to_alloc = first_node(node_states[N_HIGH_MEMORY]);
+> >  	h->next_nid_to_free = first_node(node_states[N_HIGH_MEMORY]);
+> >  	snprintf(h->name, HSTATE_NAME_LEN, "hugepages-%lukB",
+> > @@ -3170,7 +3171,7 @@ int dequeue_hwpoisoned_huge_page(struct page *hpage)
+> >  
+> >  	spin_lock(&hugetlb_lock);
+> >  	if (is_hugepage_on_freelist(hpage)) {
+> > -		list_del(&hpage->lru);
+> > +		list_move(&hpage->lru, &h->hugepage_hwpoisonedlist);
+> >  		set_page_refcounted(hpage);
+> >  		h->free_huge_pages--;
+> >  		h->free_huge_pages_node[nid]--;
+> 
+> Do we actually need to new list?  We could use list_del_init() to leave
+> the page's list_head pointing at itself.  In this state, it is its own
+> list_head and further list_del()s are a no-op.
 
-Signed-off-by: Joseph Gasparakis <joseph.gasparakis@intel.com>
+OK, it's better, thanks.
+
+> I don't know whether this would trigger list-debug warnings.
+
+I tested your idea (with attached patch) and confirmed that
+we never get the warnings.
+
+Thanks,
+Naoya
 ---
- drivers/net/vxlan.c |   11 +++++++++--
- 1 files changed, 9 insertions(+), 2 deletions(-)
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Date: Thu, 6 Dec 2012 20:54:30 -0500
+Subject: [PATCH v2] HWPOISON, hugetlbfs: fix warning on freeing hwpoisoned
+ hugepage
 
-diff --git a/drivers/net/vxlan.c b/drivers/net/vxlan.c
-index 88b31f2..cf0231d 100644
---- a/drivers/net/vxlan.c
-+++ b/drivers/net/vxlan.c
-@@ -607,7 +607,12 @@ static int vxlan_udp_encap_recv(struct sock *sk, struct sk_buff *skb)
+This patch fixes the warning from __list_del_entry() which is triggered
+when a process tries to do free_huge_page() for a hwpoisoned hugepage.
+
+ChangeLog v2:
+ - simply use list_del_init instead of introducing new hugepage list
+
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ mm/hugetlb.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 59a0059..9308752 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -3170,7 +3170,7 @@ int dequeue_hwpoisoned_huge_page(struct page *hpage)
  
- 	__skb_tunnel_rx(skb, vxlan->dev);
- 	skb_reset_network_header(skb);
--	skb->ip_summed = CHECKSUM_NONE;
-+
-+	if (skb->ip_summed != CHECKSUM_UNNECESSARY || !skb->encapsulation ||
-+	    !(vxlan->dev->features & NETIF_F_RXCSUM))
-+		skb->ip_summed = CHECKSUM_NONE;
-+
-+	skb->encapsulation = 0;
- 
- 	err = IP_ECN_decapsulate(oip, skb);
- 	if (unlikely(err)) {
-@@ -1175,7 +1180,9 @@ static void vxlan_setup(struct net_device *dev)
- 	dev->features	|= NETIF_F_LLTX;
- 	dev->features	|= NETIF_F_NETNS_LOCAL;
- 	dev->features	|= NETIF_F_SG | NETIF_F_HW_CSUM;
--	dev->hw_features |= NETIF_F_SG | NETIF_F_HW_CSUM;
-+	dev->features   |= NETIF_F_RXCSUM;
-+
-+	dev->hw_features |= NETIF_F_SG | NETIF_F_HW_CSUM | NETIF_F_RXCSUM;
- 	dev->priv_flags	&= ~IFF_XMIT_DST_RELEASE;
- 
- 	spin_lock_init(&vxlan->hash_lock);
+ 	spin_lock(&hugetlb_lock);
+ 	if (is_hugepage_on_freelist(hpage)) {
+-		list_del(&hpage->lru);
++		list_del_init(&hpage->lru);
+ 		set_page_refcounted(hpage);
+ 		h->free_huge_pages--;
+ 		h->free_huge_pages_node[nid]--;
 -- 
-1.7.6.4
+1.7.11.7
 
