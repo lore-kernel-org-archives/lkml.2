@@ -1,748 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030895Ab2LGVY0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 16:24:26 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:46567 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030866Ab2LGVYX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 16:24:23 -0500
-Subject: [PATCH] Debugging: Keep track of page owners
-To: akpm@osdl.org
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-Date: Fri, 07 Dec 2012 16:24:17 -0500
-Message-Id: <20121207212417.FAD8DAED@kernel.stglabs.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12120721-5406-0000-0000-000002D91967
+	id S1756725Ab2LGV1x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 16:27:53 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:37399 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751783Ab2LGV1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 16:27:52 -0500
+Date: Fri, 7 Dec 2012 16:27:43 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Chris Mason <chris.mason@fusionio.com>, Chris Mason <clmason@fusionio.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ric Wheeler <rwheeler@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Martin Steigerwald <Martin@lichtvoll.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
+ UAPI
+Message-ID: <20121207212743.GE29435@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Chris Mason <chris.mason@fusionio.com>,
+	Chris Mason <clmason@fusionio.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Ric Wheeler <rwheeler@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+	Christoph Hellwig <hch@infradead.org>,
+	Martin Steigerwald <Martin@lichtvoll.de>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Dave Chinner <david@fromorbit.com>,
+	linux-fsdevel <linux-fsdevel@vger.kernel.org>
+References: <20121126091202.GO32450@dastard>
+ <201212051148.28039.Martin@lichtvoll.de>
+ <CA+55aFzgP29WfB1yvnj+Q9-TsbX+b-TCCjTS_vPJ16DxMy6aDQ@mail.gmail.com>
+ <20121206120532.GA14100@infradead.org>
+ <20121207011628.GB16373@gmail.com>
+ <50C22923.90102@redhat.com>
+ <alpine.LFD.2.02.1212070956310.23641@air.linux-foundation.org>
+ <20121207190306.GB14972@shiny>
+ <20121207204325.GC29435@thunk.org>
+ <20121207210932.GA25713@shiny>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121207210932.GA25713@shiny>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: mel@skynet.ie (Mel Gorman)
+On Fri, Dec 07, 2012 at 04:09:32PM -0500, Chris Mason wrote:
+> Persistent trim is what I had in mind, but there are other ideas that do
+> imply a change in behavior as well.  Can we safely assume this feature
+> won't matter on spinning media?  New features like persistent
+> trim do make it much easier to solve securely, and using a bit for it
+> means we can toss back an error to the app if the underlying storage
+> isn't safe.
 
-PAGE_OWNER tracks free pages by setting page->order to -1.  However, it is
-set during __free_pages() which is not the only free path as
-__pagevec_free() and free_compound_page() do not go through __free_pages().
- This leads to a situation where free pages are visible in page_owner
-which is confusing and might be interpreted as a memory leak.
+We originally implemented no hide stale for spinning media.  Some
+folks have claimed that for XFS their superior technology means that
+no hide stale doesn't buy them anything for HDD's.  I'm not entirely
+sure I buy this, since if you need to update metadata, it means at
+least one extra seek for each random write into 4k preallocated space,
+and 7200 RPM disks only have about 200 seeks per second.
 
-This patch sets page->owner when PageBuddy is set.  It also prints a
-warning to the kernel log if a free page is found that does not appear free
-to PAGE_OWNER.  This should be considered a fix to
-page-owner-tracking-leak-detector.patch.
+One of the problems that I've seen is that as disks get bigger, the
+number of seeks per second have remained constant, and so an
+application which required N TB spread out over a large number of
+disks might now only require a fraction of the number of disks --- so
+it's very easy for a cluster file system to become seek constrained by
+the number of spindles that you have, and not capacity constrained.
 
-This only applies to -mm as PAGE_OWNER is not in mainline.
+This to me seems to be a fundamental problem, and I don't think it's
+possible to wave one's hands to get rid of it.  All you can say is
+that the people who care about this are crazy (that's OK, I don't mind
+when Christoph or Dave call me crazy :-), and that their workload
+doesn't matter.  But if you are trying to optimize out every last
+seek, because you desperately care about latency and seeks are a
+precious and scarce resource[1], then I don't see around away the
+technique of not requiring an update to the metadata at the time that
+you write the data block, and that kinda implies no-hide-stale.
 
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Acked-by: Andy Whitcroft <apw@shadowen.org>
-DESC
-Print out PAGE_OWNER statistics in relation to fragmentation avoidance
-EDESC
-From: Mel Gorman <mel@csn.ul.ie>
+Regards,
 
-When PAGE_OWNER is set, more information is available of relevance to
-fragmentation avoidance.  A second line is added to 'page_owner' showing
-the PFN, the pageblock number, the mobility type of the page based on its
-allocation flags, whether the allocation is improperly placed and the flags. 
-A sample entry looks like
+					- Ted
 
-Page allocated via order 0, mask 0x1280d2
-PFN 7355 Block 7 type 3 Fallback Flags      LA
-[0xc01528c6] __handle_mm_fault+598
-[0xc0320427] do_page_fault+279
-[0xc031ed9a] error_code+114
-
-This information can be used to identify pages that are improperly placed.  As
-the format of PAGE_OWNER data is now different, the comment at the top of
-Documentation/page_owner.c is updated with new instructions.
-
-As PAGE_OWNER tracks the GFP flags used to allocate the pages,
-/proc/pagetypeinfo is enhanced to contain how many mixed blocks exist.  The
-additional output looks like
-
-Number of mixed blocks    Unmovable  Reclaimable      Movable      Reserve
-Node 0, zone      DMA            0            1            2            1
-Node 0, zone   Normal            2           11           33            0
-
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Acked-by: Andy Whitcroft <apw@shadowen.org>
-Acked-by: Christoph Lameter <cl@linux-foundation.org>
-DESC
-Allow PAGE_OWNER to be set on any architecture
-EDESC
-From: Mel Gorman <mel@csn.ul.ie>
-
-Currently PAGE_OWNER depends on CONFIG_X86.  This appears to be due to
-pfn_to_page() being called in an inappropriate for many memory models and
-the presense of memory holes.  This patch ensures that pfn_valid() and
-pfn_valid_within() is called at the appropriate places and the offsets
-correctly updated so that PAGE_OWNER is safe on any architecture.
-
-In situations where CONFIG_HOLES_IN_ZONES is set (IA64 with
-VIRTUAL_MEM_MAP), there may be cases where pages allocated within a
-MAX_ORDER_NR_PAGES block of pages may not be displayed in 'page_owner'
-if the hole is at the start of the block.  Addressing this would be quite
-complex, perform slowly and is of no clear benefit.
-
-Once PAGE_OWNER is allowed on all architectures, the statistics for
-grouping pages by mobility that declare how many pageblocks contain mixed
-page types becomes optionally available on all arches.
-
-This patch was tested successfully on x86, x86_64, ppc64 and IA64 machines.
-
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Acked-by: Andy Whitcroft <apw@shadowen.org>
-DESC
-allow-page_owner-to-be-set-on-any-architecture-fix
-EDESC
-From: Andrew Morton <akpm@linux-foundation.org>
-
-Cc: Andy Whitcroft <apw@shadowen.org>
-Cc: Mel Gorman <mel@csn.ul.ie>
-DESC
-allow-page_owner-to-be-set-on-any-architecture-fix fix
-EDESC
-From: mel@skynet.ie (Mel Gorman)
-
-Page-owner-tracking stores the a backtrace of an allocation in the struct
-page.  How the stack trace is generated depends on whether
-CONFIG_FRAME_POINTER is set or not.  If CONFIG_FRAME_POINTER is set, the
-frame pointer must be read using some inline assembler which is not
-available for all architectures.
-
-This patch uses the frame pointer where it is available but has a fallback
-where it is not.
-
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-Cc: Andy Whitcroft <apw@shadowen.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- linux-2.6.git-dave/Documentation/page_owner.c |  141 ++++++++++++++++++++++
- linux-2.6.git-dave/include/linux/mm_types.h   |    7 +
- linux-2.6.git-dave/include/linux/stacktrace.h |    3 
- linux-2.6.git-dave/kernel/stacktrace.c        |   23 +++
- linux-2.6.git-dave/lib/Kconfig.debug          |   12 +
- linux-2.6.git-dave/mm/Makefile                |    1 
- linux-2.6.git-dave/mm/page_alloc.c            |   29 ++++
- linux-2.6.git-dave/mm/pageowner.c             |  163 ++++++++++++++++++++++++++
- linux-2.6.git-dave/mm/vmstat.c                |   96 +++++++++++++++
- 9 files changed, 475 insertions(+)
-
-diff -puN /dev/null Documentation/page_owner.c
---- /dev/null	2012-06-13 15:09:09.708529931 -0400
-+++ linux-2.6.git-dave/Documentation/page_owner.c	2012-12-07 16:22:43.872270758 -0500
-@@ -0,0 +1,141 @@
-+/*
-+ * User-space helper to sort the output of /sys/kernel/debug/page_owner
-+ *
-+ * Example use:
-+ * cat /sys/kernel/debug/page_owner > page_owner_full.txt
-+ * grep -v ^PFN page_owner_full.txt > page_owner.txt
-+ * ./sort page_owner.txt sorted_page_owner.txt
-+*/
-+
-+#include <stdio.h>
-+#include <stdlib.h>
-+#include <sys/types.h>
-+#include <sys/stat.h>
-+#include <fcntl.h>
-+#include <unistd.h>
-+#include <string.h>
-+
-+struct block_list {
-+	char *txt;
-+	int len;
-+	int num;
-+};
-+
-+
-+static struct block_list *list;
-+static int list_size;
-+static int max_size;
-+
-+struct block_list *block_head;
-+
-+int read_block(char *buf, FILE *fin)
-+{
-+	int ret = 0;
-+	int hit = 0;
-+	char *curr = buf;
-+
-+	for (;;) {
-+		*curr = getc(fin);
-+		if (*curr == EOF) return -1;
-+
-+		ret++;
-+		if (*curr == '\n' && hit == 1)
-+			return ret - 1;
-+		else if (*curr == '\n')
-+			hit = 1;
-+		else
-+			hit = 0;
-+		curr++;
-+	}
-+}
-+
-+static int compare_txt(struct block_list *l1, struct block_list *l2)
-+{
-+	return strcmp(l1->txt, l2->txt);
-+}
-+
-+static int compare_num(struct block_list *l1, struct block_list *l2)
-+{
-+	return l2->num - l1->num;
-+}
-+
-+static void add_list(char *buf, int len)
-+{
-+	if (list_size != 0 &&
-+	    len == list[list_size-1].len &&
-+	    memcmp(buf, list[list_size-1].txt, len) == 0) {
-+		list[list_size-1].num++;
-+		return;
-+	}
-+	if (list_size == max_size) {
-+		printf("max_size too small??\n");
-+		exit(1);
-+	}
-+	list[list_size].txt = malloc(len+1);
-+	list[list_size].len = len;
-+	list[list_size].num = 1;
-+	memcpy(list[list_size].txt, buf, len);
-+	list[list_size].txt[len] = 0;
-+	list_size++;
-+	if (list_size % 1000 == 0) {
-+		printf("loaded %d\r", list_size);
-+		fflush(stdout);
-+	}
-+}
-+
-+int main(int argc, char **argv)
-+{
-+	FILE *fin, *fout;
-+	char buf[1024];
-+	int ret, i, count;
-+	struct block_list *list2;
-+	struct stat st;
-+
-+	fin = fopen(argv[1], "r");
-+	fout = fopen(argv[2], "w");
-+	if (!fin || !fout) {
-+		printf("Usage: ./program <input> <output>\n");
-+		perror("open: ");
-+		exit(2);
-+	}
-+
-+	fstat(fileno(fin), &st);
-+	max_size = st.st_size / 100; /* hack ... */
-+
-+	list = malloc(max_size * sizeof(*list));
-+
-+	for(;;) {
-+		ret = read_block(buf, fin);
-+		if (ret < 0)
-+			break;
-+
-+		buf[ret] = '\0';
-+		add_list(buf, ret);
-+	}
-+
-+	printf("loaded %d\n", list_size);
-+
-+	printf("sorting ....\n");
-+
-+	qsort(list, list_size, sizeof(list[0]), compare_txt);
-+
-+	list2 = malloc(sizeof(*list) * list_size);
-+
-+	printf("culling\n");
-+
-+	for (i=count=0;i<list_size;i++) {
-+		if (count == 0 ||
-+		    strcmp(list2[count-1].txt, list[i].txt) != 0) {
-+			list2[count++] = list[i];
-+		} else {
-+			list2[count-1].num += list[i].num;
-+		}
-+	}
-+
-+	qsort(list2, count, sizeof(list[0]), compare_num);
-+
-+	for (i=0;i<count;i++) {
-+		fprintf(fout, "%d times:\n%s\n", list2[i].num, list2[i].txt);
-+	}
-+	return 0;
-+}
-diff -puN include/linux/mm_types.h~pageowner include/linux/mm_types.h
---- linux-2.6.git/include/linux/mm_types.h~pageowner	2012-12-07 16:22:43.856270620 -0500
-+++ linux-2.6.git-dave/include/linux/mm_types.h	2012-12-07 16:22:43.872270758 -0500
-@@ -12,6 +12,7 @@
- #include <linux/cpumask.h>
- #include <linux/page-debug-flags.h>
- #include <linux/uprobes.h>
-+#include <linux/stacktrace.h>
- #include <asm/page.h>
- #include <asm/mmu.h>
- 
-@@ -175,6 +176,12 @@ struct page {
- 	 */
- 	void *shadow;
- #endif
-+#ifdef CONFIG_PAGE_OWNER
-+	int order;
-+	unsigned int gfp_mask;
-+	struct stack_trace trace;
-+	unsigned long trace_entries[8];
-+#endif
- }
- /*
-  * The struct page can be forced to be double word aligned so that atomic ops
-diff -puN include/linux/stacktrace.h~pageowner include/linux/stacktrace.h
---- linux-2.6.git/include/linux/stacktrace.h~pageowner	2012-12-07 16:22:43.856270620 -0500
-+++ linux-2.6.git-dave/include/linux/stacktrace.h	2012-12-07 16:22:43.872270758 -0500
-@@ -20,6 +20,8 @@ extern void save_stack_trace_tsk(struct
- 				struct stack_trace *trace);
- 
- extern void print_stack_trace(struct stack_trace *trace, int spaces);
-+extern int  snprint_stack_trace(char *buf, int buf_len,
-+				struct stack_trace *trace, int spaces);
- 
- #ifdef CONFIG_USER_STACKTRACE_SUPPORT
- extern void save_stack_trace_user(struct stack_trace *trace);
-@@ -32,6 +34,7 @@ extern void save_stack_trace_user(struct
- # define save_stack_trace_tsk(tsk, trace)		do { } while (0)
- # define save_stack_trace_user(trace)			do { } while (0)
- # define print_stack_trace(trace, spaces)		do { } while (0)
-+# define snprint_stack_trace(buf, len, trace, spaces)	do { } while (0)
- #endif
- 
- #endif
-diff -puN kernel/stacktrace.c~pageowner kernel/stacktrace.c
---- linux-2.6.git/kernel/stacktrace.c~pageowner	2012-12-07 16:22:43.860270654 -0500
-+++ linux-2.6.git-dave/kernel/stacktrace.c	2012-12-07 16:22:43.876270793 -0500
-@@ -11,6 +11,29 @@
- #include <linux/kallsyms.h>
- #include <linux/stacktrace.h>
- 
-+int snprint_stack_trace(char *buf, int buf_len, struct stack_trace *trace,
-+			int spaces)
-+{
-+	int ret = 0;
-+	int i;
-+
-+	if (WARN_ON(!trace->entries))
-+		return 0;
-+
-+	for (i = 0; i < trace->nr_entries; i++) {
-+		unsigned long ip = trace->entries[i];
-+		int printed = snprintf(buf, buf_len, "%*c[<%p>] %pS\n",
-+				1 + spaces, ' ',
-+				(void *) ip, (void *) ip);
-+		buf_len -= printed;
-+		ret += printed;
-+		buf += printed;
-+	}
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(snprint_stack_trace);
-+
- void print_stack_trace(struct stack_trace *trace, int spaces)
- {
- 	int i;
-diff -puN lib/Kconfig.debug~pageowner lib/Kconfig.debug
---- linux-2.6.git/lib/Kconfig.debug~pageowner	2012-12-07 16:22:43.860270654 -0500
-+++ linux-2.6.git-dave/lib/Kconfig.debug	2012-12-07 16:22:43.876270793 -0500
-@@ -99,6 +99,18 @@ config UNUSED_SYMBOLS
- 	  you really need it, and what the merge plan to the mainline kernel for
- 	  your module is.
- 
-+config PAGE_OWNER
-+	bool "Track page owner"
-+	depends on DEBUG_KERNEL
-+	select DEBUG_FS
-+	select STACKTRACE
-+	help
-+	  This keeps track of what call chain is the owner of a page, may
-+	  help to find bare alloc_page(s) leaks. Eats a fair amount of memory.
-+	  See Documentation/page_owner.c for user-space helper.
-+
-+	  If unsure, say N.
-+
- config DEBUG_FS
- 	bool "Debug Filesystem"
- 	help
-diff -puN mm/Makefile~pageowner mm/Makefile
---- linux-2.6.git/mm/Makefile~pageowner	2012-12-07 16:22:43.864270689 -0500
-+++ linux-2.6.git-dave/mm/Makefile	2012-12-07 16:22:43.876270793 -0500
-@@ -57,3 +57,4 @@ obj-$(CONFIG_DEBUG_KMEMLEAK) += kmemleak
- obj-$(CONFIG_DEBUG_KMEMLEAK_TEST) += kmemleak-test.o
- obj-$(CONFIG_CLEANCACHE) += cleancache.o
- obj-$(CONFIG_MEMORY_ISOLATION) += page_isolation.o
-+obj-$(CONFIG_PAGE_OWNER) += pageowner.o
-diff -puN mm/page_alloc.c~pageowner mm/page_alloc.c
---- linux-2.6.git/mm/page_alloc.c~pageowner	2012-12-07 16:22:43.868270724 -0500
-+++ linux-2.6.git-dave/mm/page_alloc.c	2012-12-07 16:22:43.876270793 -0500
-@@ -437,6 +437,9 @@ static inline void set_page_order(struct
- {
- 	set_page_private(page, order);
- 	__SetPageBuddy(page);
-+#ifdef CONFIG_PAGE_OWNER
-+	page->order = -1;
-+#endif
- }
- 
- static inline void rmv_page_order(struct page *page)
-@@ -2250,6 +2253,22 @@ __perform_reclaim(gfp_t gfp_mask, unsign
- 	return progress;
- }
- 
-+static void set_page_owner(struct page *page, unsigned int order,
-+			unsigned int gfp_mask)
-+{
-+#ifdef CONFIG_PAGE_OWNER
-+	struct stack_trace *trace = &page->trace;
-+	trace->nr_entries = 0;
-+	trace->max_entries = ARRAY_SIZE(page->trace_entries);
-+	trace->entries = &page->trace_entries[0];
-+	trace->skip = 3;
-+	save_stack_trace(&page->trace);
-+
-+	page->order = (int) order;
-+	page->gfp_mask = gfp_mask;
-+#endif /* CONFIG_PAGE_OWNER */
-+}
-+
- /* The really slow allocator path where we enter direct reclaim */
- static inline struct page *
- __alloc_pages_direct_reclaim(gfp_t gfp_mask, unsigned int order,
-@@ -2285,6 +2304,8 @@ retry:
- 		goto retry;
- 	}
- 
-+	if (page)
-+		set_page_owner(page, order, gfp_mask);
- 	return page;
- }
- 
-@@ -2593,6 +2614,8 @@ nopage:
- 	warn_alloc_failed(gfp_mask, order, NULL);
- 	return page;
- got_pg:
-+	if (page)
-+		set_page_owner(page, order, gfp_mask);
- 	if (kmemcheck_enabled)
- 		kmemcheck_pagealloc_alloc(page, order, gfp_mask);
- 
-@@ -2665,6 +2688,9 @@ out:
- 	if (unlikely(!put_mems_allowed(cpuset_mems_cookie) && !page))
- 		goto retry_cpuset;
- 
-+	if (page)
-+		set_page_owner(page, order, gfp_mask);
-+
- 	return page;
- }
- EXPORT_SYMBOL(__alloc_pages_nodemask);
-@@ -3869,6 +3895,9 @@ void __meminit memmap_init_zone(unsigned
- 		if (!is_highmem_idx(zone))
- 			set_page_address(page, __va(pfn << PAGE_SHIFT));
- #endif
-+#ifdef CONFIG_PAGE_OWNER
-+		page->order = -1;
-+#endif
- 	}
- }
- 
-diff -puN /dev/null mm/pageowner.c
---- /dev/null	2012-06-13 15:09:09.708529931 -0400
-+++ linux-2.6.git-dave/mm/pageowner.c	2012-12-07 16:22:43.876270793 -0500
-@@ -0,0 +1,163 @@
-+#include <linux/debugfs.h>
-+#include <linux/mm.h>
-+#include <linux/hugetlb.h>
-+#include <linux/huge_mm.h>
-+#include <linux/mount.h>
-+#include <linux/seq_file.h>
-+#include <linux/highmem.h>
-+#include <linux/ptrace.h>
-+#include <linux/slab.h>
-+#include <linux/pagemap.h>
-+#include <linux/mempolicy.h>
-+#include <linux/rmap.h>
-+#include <linux/swap.h>
-+#include <linux/swapops.h>
-+
-+#include <asm/elf.h>
-+#include <asm/uaccess.h>
-+#include <asm/tlbflush.h>
-+#include "internal.h"
-+
-+#include <linux/bootmem.h>
-+#include <linux/kallsyms.h>
-+
-+static ssize_t
-+read_page_owner(struct file *file, char __user *buf, size_t count, loff_t *ppos)
-+{
-+	unsigned long pfn;
-+	struct page *page;
-+	char *kbuf;
-+	int ret = 0;
-+	ssize_t num_written = 0;
-+	int blocktype = 0, pagetype = 0;
-+
-+	page = NULL;
-+	pfn = min_low_pfn + *ppos;
-+
-+	/* Find a valid PFN or the start of a MAX_ORDER_NR_PAGES area */
-+	while (!pfn_valid(pfn) && (pfn & (MAX_ORDER_NR_PAGES - 1)) != 0)
-+		pfn++;
-+
-+	//printk("pfn: %ld max_pfn: %ld\n", pfn, max_pfn);
-+	/* Find an allocated page */
-+	for (; pfn < max_pfn; pfn++) {
-+		/*
-+		 * If the new page is in a new MAX_ORDER_NR_PAGES area,
-+		 * validate the area as existing, skip it if not
-+		 */
-+		if ((pfn & (MAX_ORDER_NR_PAGES - 1)) == 0 && !pfn_valid(pfn)) {
-+			pfn += MAX_ORDER_NR_PAGES - 1;
-+			continue;
-+		}
-+
-+		/* Check for holes within a MAX_ORDER area */
-+		if (!pfn_valid_within(pfn))
-+			continue;
-+
-+		page = pfn_to_page(pfn);
-+
-+		/* Catch situations where free pages have a bad ->order  */
-+		if (page->order >= 0 && PageBuddy(page))
-+			printk(KERN_WARNING
-+				"PageOwner info inaccurate for PFN %lu\n",
-+				pfn);
-+
-+		/* Stop search if page is allocated and has trace info */
-+		if (page->order >= 0 && page->trace.nr_entries) {
-+			//intk("stopped search at pfn: %ld\n", pfn);
-+			break;
-+		}
-+	}
-+
-+	if (!pfn_valid(pfn))
-+		return 0;
-+	/*
-+	 * If memory does not end at a SECTION_SIZE boundary, then
-+	 * we might have a pfn_valid() above max_pfn
-+	 */
-+	if (pfn >= max_pfn)
-+		return 0;
-+
-+	/* Record the next PFN to read in the file offset */
-+	*ppos = (pfn - min_low_pfn) + 1;
-+
-+	kbuf = kmalloc(count, GFP_KERNEL);
-+	if (!kbuf)
-+		return -ENOMEM;
-+
-+	//printk("page: %p\n", page);
-+	ret = snprintf(kbuf, count, "Page allocated via order %d, mask 0x%x\n",
-+			page->order, page->gfp_mask);
-+	if (ret >= count) {
-+		ret = -ENOMEM;
-+		goto out;
-+	}
-+
-+	/* Print information relevant to grouping pages by mobility */
-+	blocktype = get_pageblock_migratetype(page);
-+	pagetype  = allocflags_to_migratetype(page->gfp_mask);
-+	ret += snprintf(kbuf+ret, count-ret,
-+			"PFN %lu Block %lu type %d %s "
-+			"Flags %s%s%s%s%s%s%s%s%s%s%s%s\n",
-+			pfn,
-+			pfn >> pageblock_order,
-+			blocktype,
-+			blocktype != pagetype ? "Fallback" : "        ",
-+			PageLocked(page)	? "K" : " ",
-+			PageError(page)		? "E" : " ",
-+			PageReferenced(page)	? "R" : " ",
-+			PageUptodate(page)	? "U" : " ",
-+			PageDirty(page)		? "D" : " ",
-+			PageLRU(page)		? "L" : " ",
-+			PageActive(page)	? "A" : " ",
-+			PageSlab(page)		? "S" : " ",
-+			PageWriteback(page)	? "W" : " ",
-+			PageCompound(page)	? "C" : " ",
-+			PageSwapCache(page)	? "B" : " ",
-+			PageMappedToDisk(page)	? "M" : " ");
-+	if (ret >= count) {
-+		ret = -ENOMEM;
-+		goto out;
-+	}
-+
-+	num_written = ret;
-+
-+	ret = snprint_stack_trace(kbuf + num_written, count - num_written,
-+				  &page->trace, 0);
-+	if (ret >= count - num_written) {
-+		ret = -ENOMEM;
-+		goto out;
-+	}
-+	num_written += ret;
-+
-+	ret = snprintf(kbuf + num_written, count - num_written, "\n");
-+	if (ret >= count - num_written) {
-+		ret = -ENOMEM;
-+		goto out;
-+	}
-+
-+	num_written += ret;
-+	ret = num_written;
-+
-+	if (copy_to_user(buf, kbuf, ret))
-+		ret = -EFAULT;
-+out:
-+	kfree(kbuf);
-+	return ret;
-+}
-+
-+static struct file_operations proc_page_owner_operations = {
-+	.read		= read_page_owner,
-+};
-+
-+static int __init pageowner_init(void)
-+{
-+	struct dentry *dentry;
-+
-+	dentry = debugfs_create_file("page_owner", S_IRUSR, NULL,
-+			NULL, &proc_page_owner_operations);
-+	if (IS_ERR(dentry))
-+		return PTR_ERR(dentry);
-+	return 0;
-+}
-+module_init(pageowner_init)
-diff -puN mm/vmstat.c~pageowner mm/vmstat.c
---- linux-2.6.git/mm/vmstat.c~pageowner	2012-12-07 16:22:43.868270724 -0500
-+++ linux-2.6.git-dave/mm/vmstat.c	2012-12-07 16:22:43.880270828 -0500
-@@ -19,6 +19,7 @@
- #include <linux/math64.h>
- #include <linux/writeback.h>
- #include <linux/compaction.h>
-+#include "internal.h"
- 
- #ifdef CONFIG_VM_EVENT_COUNTERS
- DEFINE_PER_CPU(struct vm_event_state, vm_event_states) = {{0}};
-@@ -921,6 +922,100 @@ static int pagetypeinfo_showblockcount(s
- 	return 0;
- }
- 
-+#ifdef CONFIG_PAGE_OWNER
-+static void pagetypeinfo_showmixedcount_print(struct seq_file *m,
-+							pg_data_t *pgdat,
-+							struct zone *zone)
-+{
-+	int mtype, pagetype;
-+	unsigned long pfn;
-+	unsigned long start_pfn = zone->zone_start_pfn;
-+	unsigned long end_pfn = start_pfn + zone->spanned_pages;
-+	unsigned long count[MIGRATE_TYPES] = { 0, };
-+
-+	/* Align PFNs to pageblock_nr_pages boundary */
-+	pfn = start_pfn & ~(pageblock_nr_pages-1);
-+
-+	/*
-+	 * Walk the zone in pageblock_nr_pages steps. If a page block spans
-+	 * a zone boundary, it will be double counted between zones. This does
-+	 * not matter as the mixed block count will still be correct
-+	 */
-+	for (; pfn < end_pfn; pfn += pageblock_nr_pages) {
-+		struct page *page;
-+		unsigned long offset = 0;
-+
-+		/* Do not read before the zone start, use a valid page */
-+		if (pfn < start_pfn)
-+			offset = start_pfn - pfn;
-+
-+		if (!pfn_valid(pfn + offset))
-+			continue;
-+
-+		page = pfn_to_page(pfn + offset);
-+		mtype = get_pageblock_migratetype(page);
-+
-+		/* Check the block for bad migrate types */
-+		for (; offset < pageblock_nr_pages; offset++) {
-+			/* Do not past the end of the zone */
-+			if (pfn + offset >= end_pfn)
-+				break;
-+
-+			if (!pfn_valid_within(pfn + offset))
-+				continue;
-+
-+			page = pfn_to_page(pfn + offset);
-+
-+			/* Skip free pages */
-+			if (PageBuddy(page)) {
-+				offset += (1UL << page_order(page)) - 1UL;
-+				continue;
-+			}
-+			if (page->order < 0)
-+				continue;
-+
-+			pagetype = allocflags_to_migratetype(page->gfp_mask);
-+			if (pagetype != mtype) {
-+				if (is_migrate_cma(pagetype))
-+					count[MIGRATE_MOVABLE]++;
-+				else
-+					count[mtype]++;
-+				break;
-+			}
-+
-+			/* Move to end of this allocation */
-+			offset += (1 << page->order) - 1;
-+		}
-+	}
-+
-+	/* Print counts */
-+	seq_printf(m, "Node %d, zone %8s ", pgdat->node_id, zone->name);
-+	for (mtype = 0; mtype < MIGRATE_TYPES; mtype++)
-+		seq_printf(m, "%12lu ", count[mtype]);
-+	seq_putc(m, '\n');
-+}
-+#endif /* CONFIG_PAGE_OWNER */
-+
-+/*
-+ * Print out the number of pageblocks for each migratetype that contain pages
-+ * of other types. This gives an indication of how well fallbacks are being
-+ * contained by rmqueue_fallback(). It requires information from PAGE_OWNER
-+ * to determine what is going on
-+ */
-+static void pagetypeinfo_showmixedcount(struct seq_file *m, pg_data_t *pgdat)
-+{
-+#ifdef CONFIG_PAGE_OWNER
-+	int mtype;
-+
-+	seq_printf(m, "\n%-23s", "Number of mixed blocks ");
-+	for (mtype = 0; mtype < MIGRATE_TYPES; mtype++)
-+		seq_printf(m, "%12s ", migratetype_names[mtype]);
-+	seq_putc(m, '\n');
-+
-+	walk_zones_in_node(m, pgdat, pagetypeinfo_showmixedcount_print);
-+#endif /* CONFIG_PAGE_OWNER */
-+}
-+
- /*
-  * This prints out statistics in relation to grouping pages by mobility.
-  * It is expensive to collect so do not constantly read the file.
-@@ -938,6 +1033,7 @@ static int pagetypeinfo_show(struct seq_
- 	seq_putc(m, '\n');
- 	pagetypeinfo_showfree(m, pgdat);
- 	pagetypeinfo_showblockcount(m, pgdat);
-+	pagetypeinfo_showmixedcount(m, pgdat);
- 
- 	return 0;
- }
-_
+[1] Even if you don't care about the latency of the write operation,
+the fact that the write operation has to do two seeks and not one can
+very well slow down a subsequent high priority read request, where you
+*do* care about latency.  The problem is that you only have about 200
+seeks per spindle.
 
