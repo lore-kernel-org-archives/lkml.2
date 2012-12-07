@@ -1,187 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756397Ab2LGPDF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 10:03:05 -0500
-Received: from fieldses.org ([174.143.236.118]:33644 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752216Ab2LGPDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 10:03:02 -0500
-Date: Fri, 7 Dec 2012 10:02:59 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, Trond.Myklebust@netapp.com,
-        linux-kernel@vger.kernel.org, devel@openvz.org, jlayton@redhat.com
-Subject: Re: [PATCH] nfsd: make NFSv4 recovery client tracking options per net
-Message-ID: <20121207150259.GG17115@fieldses.org>
-References: <20121204112925.23999.28249.stgit@localhost.localdomain>
+	id S1756438Ab2LGPE4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 10:04:56 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:42965 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756420Ab2LGPEz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 10:04:55 -0500
+Date: Fri, 7 Dec 2012 07:07:04 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>, CAI Qian <caiqian@redhat.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        alan@lxorguk.ukuu.org.uk, Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [ 20/27] s390/mm: have 16 byte aligned struct pages
+Message-ID: <20121207150704.GD20369@kroah.com>
+References: <20121207005825.232489605@linuxfoundation.org>
+ <20121207005831.786407731@linuxfoundation.org>
+ <20121207100007.GB5129@osiris.de.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121204112925.23999.28249.stgit@localhost.localdomain>
+In-Reply-To: <20121207100007.GB5129@osiris.de.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 04, 2012 at 02:29:27PM +0300, Stanislav Kinsbursky wrote:
-> Pointer to client tracking operations - client_tracking_ops - have to be
-> containerized, because different environment can support different trackers
-> (for example, legacy tracker currently is not suported in container).
-
-OK, applying.
-
---b.
-
+On Fri, Dec 07, 2012 at 11:00:07AM +0100, Heiko Carstens wrote:
+> On Thu, Dec 06, 2012 at 04:59:04PM -0800, Greg Kroah-Hartman wrote:
+> > 3.6-stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Heiko Carstens <heiko.carstens@de.ibm.com>
+> > 
+> > commit 4bffbb3455372a26816e364fb4448810f7014452 upstream.
+> > 
+> > Select HAVE_ALIGNED_STRUCT_PAGE on s390, so that the slub allocator can make
+> > use of compare and swap double for lockless updates. This increases the size
+> > of struct page to 64 bytes (instead of 56 bytes), however the performance gain
+> > justifies the increased size:
+> > 
+> > - now excactly four struct pages fit into a single cache line; the
+> >   case that accessing a struct page causes two cache line loads
+> >   does not exist anymore.
+> > - calculating the offset of a struct page within the memmap array
+> >   is only a simple shift instead of a more expensive multiplication.
+> > 
+> > A "hackbench 200 process 200" run on a 32 cpu system did show an 8% runtime
+> > improvement.
+> > 
+> > Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+> > Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> > Signed-off-by: CAI Qian <caiqian@redhat.com>
+> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 > 
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-> ---
->  fs/nfsd/netns.h       |    2 ++
->  fs/nfsd/nfs4recover.c |   48 ++++++++++++++++++++++++++++--------------------
->  2 files changed, 30 insertions(+), 20 deletions(-)
-> 
-> diff --git a/fs/nfsd/netns.h b/fs/nfsd/netns.h
-> index 2c4b2e2..bca789d 100644
-> --- a/fs/nfsd/netns.h
-> +++ b/fs/nfsd/netns.h
-> @@ -35,6 +35,7 @@
->  #define SESSION_HASH_SIZE	512
->  
->  struct cld_net;
-> +struct nfsd4_client_tracking_ops;
->  
->  struct nfsd_net {
->  	struct cld_net *cld_net;
-> @@ -87,6 +88,7 @@ struct nfsd_net {
->  
->  	struct file *rec_file;
->  	bool in_grace;
-> +	struct nfsd4_client_tracking_ops *client_tracking_ops;
->  
->  	time_t nfsd4_lease;
->  	time_t nfsd4_grace;
-> diff --git a/fs/nfsd/nfs4recover.c b/fs/nfsd/nfs4recover.c
-> index 359793f..ba6fdd4 100644
-> --- a/fs/nfsd/nfs4recover.c
-> +++ b/fs/nfsd/nfs4recover.c
-> @@ -63,7 +63,6 @@ struct nfsd4_client_tracking_ops {
->  
->  /* Globals */
->  static char user_recovery_dirname[PATH_MAX] = "/var/lib/nfs/v4recovery";
-> -static struct nfsd4_client_tracking_ops *client_tracking_ops;
->  
->  static int
->  nfs4_save_creds(const struct cred **original_creds)
-> @@ -1262,17 +1261,18 @@ nfsd4_client_tracking_init(struct net *net)
->  {
->  	int status;
->  	struct path path;
-> +	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
->  
->  	/* just run the init if it the method is already decided */
-> -	if (client_tracking_ops)
-> +	if (nn->client_tracking_ops)
->  		goto do_init;
->  
->  	/*
->  	 * First, try a UMH upcall. It should succeed or fail quickly, so
->  	 * there's little harm in trying that first.
->  	 */
-> -	client_tracking_ops = &nfsd4_umh_tracking_ops;
-> -	status = client_tracking_ops->init(net);
-> +	nn->client_tracking_ops = &nfsd4_umh_tracking_ops;
-> +	status = nn->client_tracking_ops->init(net);
->  	if (!status)
->  		return status;
->  
-> @@ -1280,7 +1280,7 @@ nfsd4_client_tracking_init(struct net *net)
->  	 * See if the recoverydir exists and is a directory. If it is,
->  	 * then use the legacy ops.
->  	 */
-> -	client_tracking_ops = &nfsd4_legacy_tracking_ops;
-> +	nn->client_tracking_ops = &nfsd4_legacy_tracking_ops;
->  	status = kern_path(nfs4_recoverydir(), LOOKUP_FOLLOW, &path);
->  	if (!status) {
->  		status = S_ISDIR(path.dentry->d_inode->i_mode);
-> @@ -1290,16 +1290,16 @@ nfsd4_client_tracking_init(struct net *net)
->  	}
->  
->  	/* Finally, try to use nfsdcld */
-> -	client_tracking_ops = &nfsd4_cld_tracking_ops;
-> +	nn->client_tracking_ops = &nfsd4_cld_tracking_ops;
->  	printk(KERN_WARNING "NFSD: the nfsdcld client tracking upcall will be "
->  			"removed in 3.10. Please transition to using "
->  			"nfsdcltrack.\n");
->  do_init:
-> -	status = client_tracking_ops->init(net);
-> +	status = nn->client_tracking_ops->init(net);
->  	if (status) {
->  		printk(KERN_WARNING "NFSD: Unable to initialize client "
->  				    "recovery tracking! (%d)\n", status);
-> -		client_tracking_ops = NULL;
-> +		nn->client_tracking_ops = NULL;
->  	}
->  	return status;
->  }
-> @@ -1307,32 +1307,40 @@ do_init:
->  void
->  nfsd4_client_tracking_exit(struct net *net)
->  {
-> -	if (client_tracking_ops) {
-> -		if (client_tracking_ops->exit)
-> -			client_tracking_ops->exit(net);
-> -		client_tracking_ops = NULL;
-> +	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
-> +
-> +	if (nn->client_tracking_ops) {
-> +		if (nn->client_tracking_ops->exit)
-> +			nn->client_tracking_ops->exit(net);
-> +		nn->client_tracking_ops = NULL;
->  	}
->  }
->  
->  void
->  nfsd4_client_record_create(struct nfs4_client *clp)
->  {
-> -	if (client_tracking_ops)
-> -		client_tracking_ops->create(clp);
-> +	struct nfsd_net *nn = net_generic(clp->net, nfsd_net_id);
-> +
-> +	if (nn->client_tracking_ops)
-> +		nn->client_tracking_ops->create(clp);
->  }
->  
->  void
->  nfsd4_client_record_remove(struct nfs4_client *clp)
->  {
-> -	if (client_tracking_ops)
-> -		client_tracking_ops->remove(clp);
-> +	struct nfsd_net *nn = net_generic(clp->net, nfsd_net_id);
-> +
-> +	if (nn->client_tracking_ops)
-> +		nn->client_tracking_ops->remove(clp);
->  }
->  
->  int
->  nfsd4_client_record_check(struct nfs4_client *clp)
->  {
-> -	if (client_tracking_ops)
-> -		return client_tracking_ops->check(clp);
-> +	struct nfsd_net *nn = net_generic(clp->net, nfsd_net_id);
-> +
-> +	if (nn->client_tracking_ops)
-> +		return nn->client_tracking_ops->check(clp);
->  
->  	return -EOPNOTSUPP;
->  }
-> @@ -1340,8 +1348,8 @@ nfsd4_client_record_check(struct nfs4_client *clp)
->  void
->  nfsd4_record_grace_done(struct nfsd_net *nn, time_t boot_time)
->  {
-> -	if (client_tracking_ops)
-> -		client_tracking_ops->grace_done(nn, boot_time);
-> +	if (nn->client_tracking_ops)
-> +		nn->client_tracking_ops->grace_done(nn, boot_time);
->  }
->  
->  static int
-> 
+> Same as for 3.4: compare and swap double is not available for 3.6 on s390.
+
+Thanks for letting me know, and the review, much appreciated, I'll drop
+these from 3.4 and 3.6 now.
+
+CAI, your track record here isn't very good, I'm going to now require
+you to get an ACK from the maintainer of all patches you are suggesting
+for the stable kernels, before I will take them.  Please do that in the
+future, as this has wasted a lot of developer time, myself especially.
+
+thanks,
+
+greg k-h
