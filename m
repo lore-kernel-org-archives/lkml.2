@@ -1,204 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423818Ab2LGSVL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 13:21:11 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:34042 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932284Ab2LGSVJ (ORCPT
+	id S1423841Ab2LGSZg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 13:25:36 -0500
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:53011 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932284Ab2LGSZf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 13:21:09 -0500
-From: Andy Lutomirski <luto@amacapital.net>
-To: James Morris <james.l.morris@oracle.com>,
-        linux-security-module@vger.kernel.org
-Cc: Casey Schaufler <casey@schaufler-ca.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>,
-        "Andrew G. Morgan" <morgan@kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: =?UTF-8?q?=5BPATCH=5D=20Document=20how=20capability=20bits=20work?=
-Date: Fri,  7 Dec 2012 10:20:59 -0800
-Message-Id: <3c3146b8bea5d8590ebc40ca1d22a562a5172873.1354904275.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.7.11.7
+	Fri, 7 Dec 2012 13:25:35 -0500
+Message-ID: <50C23441.7020309@linux.vnet.ibm.com>
+Date: Fri, 07 Dec 2012 23:54:01 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Tejun Heo <tj@kernel.org>
+CC: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
+        namhyung@kernel.org, vincent.guittot@linaro.org, oleg@redhat.com,
+        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
+        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v3 1/9] CPU hotplug: Provide APIs to prevent CPU offline
+ from atomic context
+References: <20121207173702.27305.1486.stgit@srivatsabhat.in.ibm.com> <20121207173759.27305.84316.stgit@srivatsabhat.in.ibm.com> <20121207175724.GA2821@htj.dyndns.org>
+In-Reply-To: <20121207175724.GA2821@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12120718-5490-0000-0000-0000029C8D00
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- Documentation/security/capabilities.txt | 161 ++++++++++++++++++++++++++++++++
- 1 file changed, 161 insertions(+)
- create mode 100644 Documentation/security/capabilities.txt
+On 12/07/2012 11:27 PM, Tejun Heo wrote:
+> On Fri, Dec 07, 2012 at 11:08:13PM +0530, Srivatsa S. Bhat wrote:
+>> 4. No deadlock possibilities
+>>
+>>    Per-cpu locking is not the way to go if we want to have relaxed rules
+>>    for lock-ordering. Because, we can end up in circular-locking dependencies
+>>    as explained in https://lkml.org/lkml/2012/12/6/290
+>>
+>>    So, avoid per-cpu locking schemes (per-cpu locks/per-cpu atomic counters
+>>    with spin-on-contention etc) as much as possible.
+> 
+> I really can't say I like this approach.  percpu locking is very
+> tricky to get right and difficult to get right and we should try our
+> best to avoid implementing subsystem specific ones as much as
+> possible.  Also, I think the right approach would be auditing each
+> get_online_cpus_atomic() callsites and figure out proper locking order
+> rather than implementing a construct this unusual especially as
+> hunting down the incorrect cases shouldn't be difficult given proper
+> lockdep annotation.
+> 
+> lg_lock doesn't do local nesting and I'm not sure how big a deal that
+> is as I don't know how many should be converted.  But if nesting is an
+> absolute necessity, it would be much better to implement generic
+> rwlock variant (say, lg_rwlock) rather than implementing unusual
+> cpuhotplug-specific percpu synchronization construct.
+>
 
-diff --git a/Documentation/security/capabilities.txt b/Documentation/security/capabilities.txt
-new file mode 100644
-index 0000000..dc7bc34
---- /dev/null
-+++ b/Documentation/security/capabilities.txt
-@@ -0,0 +1,161 @@
-+			  Linux capabilities
-+
-+
-+==== What are capabilities ====
-+
-+Various system calls check for appropriate privileges.  For example, a program
-+may bypass normal file permission checking if it has the CAP_DAC_OVERRIDE
-+capability.  There are a lot of capabilities; the complete list is in
-+include/uapi/linux/capability.h.
-+
-+When reading this description, do not assume anything about the word
-+"inheritable".  It probably does not do what you expect.
-+
-+Every task has the following pieces of capability-related state.
-+
-+ * Four capability bit masks:
-+   * The effective set (pE).  Privileged operations check this set.
-+   * The permitted set (pP).  Tasks may set these bits in pE.
-+   * The inheritable set (pI).  This set is complicated.
-+   * The bounding set (pB).  This partially limits new permitted capabilities.
-+
-+ * Secure bits.  Each bit has a corresponding "lock" bit.
-+   * SECURE_NONROOT: Makes uid==0 and euid==0 less special at exec time.
-+   * SECURE_KEEP_CAPS: Prevents setresuid() from removing permitted caps.
-+   * SECURE_NO_SETUID_FIXUP: Makes setresuid() entirely nonmagical.
-+
-+ * no_new_privs: See Documentation/prctl/no_new_privs.txt
-+
-+There is one invariant: pE ⊆ pP.
-+
-+In addition, files can have capabilities.  If a file has capabilities, it
-+specifies two masks and one bit:
-+ * fP: The permitted or forced set.
-+ * fI: The inheritable set.
-+ * fE (a single bit): Supposedly true for "legacy" programs.
-+
-+libcap's setcap tool pretends that fE is a bitmask.  It's not.
-+
-+At the most basic level, only pE matters.  All of the complexity is in how
-+pE and the other masks can change.  (This is a slight lie -- user namespaces
-+change this.)
-+
-+==== System calls ====
-+
-+Capabilities and related state are affected by these syscalls:
-+ * capset: Change capabilities directly.
-+ * set[res]uid: Sometimes changes capabilities for legacy compatibility.
-+ * prctl(PR_SET_KEEPCAPS): Used to twiddle SECURE_KEEP_CAPS.
-+ * prctl(PR_SET_SECUREBITS): Used to twiddle securebits in general.
-+ * prctl(PR_SET_NO_NEW_PRIVS): Used to set no_new_privs.
-+ * prctl(PR_CAPBSET_DROP): Used to remove bits from pB.
-+ * execve: Does all kinds of magic.
-+
-+==== capset ====
-+
-+capset changes pI, pP, and pE as requested, subject to:
-+
-+ - (CAP_SETPCAP ∈ pE or euid is namespace owner) or pI' ⊆ pI | pP
-+ - pI' ⊆ pI | pB
-+ - pP' ⊆ pP
-+ - pE' ⊆ pE
-+
-+In the event that pI ⊆ pB, the first two conditions simplify to pI' ⊆ pI | pP.
-+
-+==== set*uid ====
-+
-+After set[res]uid, if !SECURE_NO_SETUID_FIXUP, a fixup happens.  This fixup
-+does two things:
-+
-+ - If !SECURE_KEEP_CAPS and some old uid was 0 and no new uid is 0, then
-+   pP and pE are cleared.
-+ - If euid becomes zero, the pE = pP.  Conversely, if euid becomes nonzero,
-+   then pE' = 0.  (Note that this is independent of SECURE_KEEP_CAPS.)
-+
-+setfsuid has similar logic to tweak the fs-related pE bits.
-+
-+====  prctl ====
-+
-+---- PR_SET_KEEPCAPS ----
-+
-+This changes SECURE_KEEP_CAPS as long as !SECURE_KEEP_CAPS_LOCKED.
-+CAP_SETPCAP is not required.
-+
-+---- PR_SET_SECUREBITS ----
-+
-+This changes securebits, subject to:
-+ - The caller must have CAP_SETPCAP.
-+ - The *_LOCKED bits can be set but not cleared.
-+ - A locked bit cannot be changed.
-+
-+Note that an unprivileged process can change SECURE_KEEP_CAPS via
-+PR_SET_KEEPCAPS but not via PR_SET_SECUREBITS.
-+
-+---- PR_SET_NO_NEW_PRIVS ----
-+
-+Sets the no_new_privs bit.  No privilege is required.  It is impossible
-+to clear the no_new_privs bit.
-+
-+---- PR_CAPBSET_DROP ----
-+
-+Clears a single bit of pB.  Doing this requires CAP_SETPCAP.  There is no
-+way to set a cleared bit of pB.
-+
-+==== execve ====
-+
-+execve's behavior is rather complicated.  It does this:
-+
-+Step 1: Load fI, fP, and fE.  If the file has no capabilities (the xattr
-+is malformed or absent), then set fI = 0, fP = 0, and fE = false.  (In theory,
-+fE is set on "legacy" binaries that don't know how to check their own
-+capability sets.)
-+
-+Step 2: Apply the basic pP update rule:
-+
-+   pP' = (pB & fP) | (pI & fI)
-+
-+Step 3: If fE and pP ⊈ fP, then abort.  (This prevents legacy binaries from
-+malfunctioning dangerously if pB is missing important bits.)
-+
-+Step 4: Apply a fixup for root if !SECURE_NOROOT.  The fixup is:
-+
-+ - If vfs caps were present, uid != 0, and euid == 0, then warn once per boot.
-+ - Otherwise:
-+   - If euid == 0 or uid == 0, then pP' = pB | pI.
-+   - If euid == 0, then set fE = true.  (This does not affect the check
-+      in step 2.)
-+
-+Step 5: Apply no_new_privs
-+
-+If no_new_privs is set (or if new euid != old uid or new egit != old gid and
-+an unprivileged ptracer is attached), then set euid = uid, egid = gid,
-+and set pP' = pP' & pP.  (Note: If CAP_SETUID is effective (in the old context)
-+and no_new_privs is not set, then the euid and egid changes are skipped.)
-+
-+Step 6: Compute pE
-+
-+If fE, then pE' = pP'.  Else pE' = 0.
-+
-+Step 7: Clear SECURE_KEEP_CAPS.
-+
-+This happens regardless of the setting of SECURE_KEEP_CAPS_LOCKED.  Setting
-+SECURE_KEEP_CAPS_LOCKED is therefore probably a mistake unless
-+SECURE_NO_SETUID_FIXUP is set.
-+
-+
-+In the absence of something like no_new_privs, then either
-+
-+pP' = (pB & fP) | (pI & fI)  (the normal case)
-+
-+or
-+
-+pP' = pB | pI (if euid or uid == 0)
-+
-+The latter condition means that, if euid or uid is zero, then execve acts
-+(in part) as though fP = fI = <all bits set>.
-+
-+
-+The upshot: pI bits can result in actual (pP or pE) privilege if you exec a
-+program that has that fI bit set *or* you have !issecure(SECURE_NOROOT) and
-+(euid == 0 || uid == 0).  (That latter case is possibly better understood
-+as promoting pB bits to pP.)
--- 
-1.7.11.7
+To be honest, at a certain point in time while designing this, I did
+realize that this was getting kinda overly complicated ;-) ... but I
+wanted to see how this would actually work out when finished and get
+some feedback on the same, hence I posted it out. But this also proves
+that we _can_ actually compete with the flexibility of preempt_disable()
+and still be safe with respect to locking, if we really want to ;-)
+
+Regards,
+Srivatsa S. Bhat
 
