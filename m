@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768Ab2LGWwI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 17:52:08 -0500
-Received: from sandeen.net ([63.231.237.45]:42455 "EHLO sandeen.net"
+	id S1756957Ab2LGWwX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 17:52:23 -0500
+Received: from sandeen.net ([63.231.237.45]:42470 "EHLO sandeen.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754582Ab2LGWwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 17:52:06 -0500
-Message-ID: <50C272F5.9040301@sandeen.net>
-Date: Fri, 07 Dec 2012 16:51:33 -0600
+	id S1754582Ab2LGWwQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 17:52:16 -0500
+Message-ID: <50C2731D.6090902@sandeen.net>
+Date: Fri, 07 Dec 2012 16:52:13 -0600
 From: Eric Sandeen <sandeen@sandeen.net>
 User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
