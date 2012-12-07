@@ -1,97 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755913Ab2LGKTG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 05:19:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48856 "EHLO mx1.redhat.com"
+	id S1755944Ab2LGKVK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 05:21:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41677 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755050Ab2LGKTF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 05:19:05 -0500
-Date: Fri, 7 Dec 2012 11:18:53 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 2/5] perf hists: Exchange order of comparing items when
- collapsing hists
-Message-ID: <20121207101853.GA1015@krava.brq.redhat.com>
-References: <1354806581-5316-1-git-send-email-namhyung@kernel.org>
- <1354806581-5316-3-git-send-email-namhyung@kernel.org>
- <20121206165325.GE1080@krava.brq.redhat.com>
- <20121206190920.GA1899@ghostprotocols.net>
- <874njydzpd.fsf@sejong.aot.lge.com>
+	id S1755554Ab2LGKVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 05:21:08 -0500
+Date: Fri, 7 Dec 2012 11:21:02 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Gustavo Padovan <gustavo@padovan.org>
+Cc: "Lamarque V. Souza" <lamarque@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
+Subject: Re: [PATCH] Fixes kernel oops when turning bluetooth mouse on
+In-Reply-To: <20121206202448.GA11409@joana>
+Message-ID: <alpine.LNX.2.00.1212071120410.28002@pobox.suse.cz>
+References: <201212061239.55610.lamarque@gmail.com> <alpine.LNX.2.00.1212061548430.28002@pobox.suse.cz> <20121206202448.GA11409@joana>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <874njydzpd.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 07, 2012 at 05:38:22PM +0900, Namhyung Kim wrote:
-> Hi Arnaldo,
+On Thu, 6 Dec 2012, Gustavo Padovan wrote:
+
+> > > diff -Nrup a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+> > > --- a/drivers/hid/hid-core.c	2012-12-05 01:43:45.000000000 -0200
+> > > +++ b/drivers/hid/hid-core.c	2012-12-05 01:26:57.000000000 -0200
+> > > @@ -2150,8 +2150,13 @@ static const struct hid_device_id hid_mo
+> > >  	{ }
+> > >  };
+> > >  
+> > > -static bool hid_ignore(struct hid_device *hdev)
+> > > +bool hid_ignore(struct hid_device *hdev)
+> > >  {
+> > > +	if (hdev->quirks & HID_QUIRK_NO_IGNORE)
+> > > +		return false;
+> > > +	if (hdev->quirks & HID_QUIRK_IGNORE)
+> > > +		return true;
+> > > +
+> > >  	switch (hdev->vendor) {
+> > >  	case USB_VENDOR_ID_CODEMERCS:
+> > >  		/* ignore all Code Mercenaries IOWarrior devices */
+> > > @@ -2197,6 +2202,7 @@ static bool hid_ignore(struct hid_device
+> > >  
+> > >  	return !!hid_match_id(hdev, hid_ignore_list);
+> > >  }
+> > > +EXPORT_SYMBOL_GPL(hid_ignore);
+> > >  
+> > >  int hid_add_device(struct hid_device *hdev)
+> > >  {
+> > > @@ -2208,8 +2214,7 @@ int hid_add_device(struct hid_device *hd
+> > >  
+> > >  	/* we need to kill them here, otherwise they will stay allocated to
+> > >  	 * wait for coming driver */
+> > > -	if (!(hdev->quirks & HID_QUIRK_NO_IGNORE)
+> > > -            && (hid_ignore(hdev) || (hdev->quirks & HID_QUIRK_IGNORE)))
+> > > +	if (hid_ignore(hdev))
+> > >  		return -ENODEV;
+> > >  
+> > >  	/*
+> > > diff -Nrup a/include/linux/hid.h b/include/linux/hid.h
+> > > --- a/include/linux/hid.h	2012-12-05 01:44:14.000000000 -0200
+> > > +++ b/include/linux/hid.h	2012-12-05 01:26:57.000000000 -0200
+> > > @@ -684,6 +684,7 @@ struct hid_ll_driver {
+> > >  
+> > >  extern int hid_debug;
+> > >  
+> > > +extern bool hid_ignore(struct hid_device *);
+> > >  extern int hid_add_device(struct hid_device *);
+> > >  extern void hid_destroy_device(struct hid_device *);
+> > >  
+> > > diff -Nrup a/net/bluetooth/hidp/core.c b/net/bluetooth/hidp/core.c
+> > > --- a/net/bluetooth/hidp/core.c	2012-12-05 01:43:15.000000000 -0200
+> > > +++ b/net/bluetooth/hidp/core.c	2012-12-05 02:29:49.000000000 -0200
+> > > @@ -941,6 +941,13 @@ static int hidp_setup_hid(struct hidp_se
+> > >  	hid->hid_get_raw_report = hidp_get_raw_report;
+> > >  	hid->hid_output_raw_report = hidp_output_raw_report;
+> > >  
+> > > +	/* True if device is blacklisted in drivers/hid/hid-core.c */
+> > > +	if (hid_ignore(hid)) {
+> > > +		hid_destroy_device(session->hid);
+> > > +		session->hid = NULL;
+> > > +		return -ENODEV;
+> > > +	}
+> > > +
+> > >  	return 0;
+> > >  
+> > >  fault:
+> > > @@ -1013,7 +1020,7 @@ int hidp_add_connection(struct hidp_conn
+> > >  
+> > >  	if (req->rd_size > 0) {
+> > >  		err = hidp_setup_hid(session, req);
+> > > -		if (err)
+> > > +		if (err && err != -ENODEV)
+> > >  			goto purge;
+> > >  	}
 > 
+> Acked-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 
-SNIP
+Queuing in hid.git, thanks.
 
-> @@ -739,6 +739,10 @@ static struct hist_entry *hists__add_dummy_entry(struct hists *hists,
->  
->                 cmp = hist_entry__collapse(he, pair);
->  
-> +               if (sort__need_collapse)
-> +                       cmp = hist_entry__collapse(he, pair);
-> +               else
-> +                       cmp = hist_entry__cmp(pair, he);
->                 if (!cmp)
->                         goto out;
->  
-> @@ -772,7 +776,12 @@ static struct hist_entry *hists__find_entry(struct hists *hists,
->  
->         while (n) {
->                 struct hist_entry *iter = rb_entry(n, struct hist_entry, rb_node_in);
-> -               int64_t cmp = hist_entry__collapse(iter, he);
-> +               int64_t cmp;
-> +
-> +               if (sort__need_collapse)
-> +                       cmp = hist_entry__collapse(iter, he);
-> +               else
-> +                       cmp = hist_entry__cmp(he, iter);
->  
->                 if (cmp < 0)
->                         n = n->rb_left;
-> 
-> It doesn't look good, especially hist_entry__collapse will be same as
-> hist_entry__cmp if 'sort__need_collapse' is false.  If we can make the
-> order consistent, it'd be converted to a sigle _collapse() call
-> without the conditional.
-> 
-> Thanks,
-> Namhyung
-
-I've got non matching entries in diff after applying just patch 2/5,
-and it's caused by missing he/iter swap in initial name resort in
-insert_hist_entry_by_name function.
-
-I understand that function goes away in your next patch while
-add_hist_entry (swap ok) being the one doing initial name resort,
-but still.. took me some time to figure this out ;)
-
-jirka
-
----
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index b2e7d39..4dda6f4 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -285,7 +285,7 @@ static void insert_hist_entry_by_name(struct rb_root *root,
- 	while (*p != NULL) {
- 		parent = *p;
- 		iter = rb_entry(parent, struct hist_entry, rb_node);
--		if (hist_entry__cmp(he, iter) < 0)
-+		if (hist_entry__cmp(iter, he) < 0)
- 			p = &(*p)->rb_left;
- 		else
- 			p = &(*p)->rb_right;
+-- 
+Jiri Kosina
+SUSE Labs
