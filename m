@@ -1,95 +1,404 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424111Ab2LGUJm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 15:09:42 -0500
-Received: from mga01.intel.com ([192.55.52.88]:63439 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1424085Ab2LGUJl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 15:09:41 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,240,1355126400"; 
-   d="scan'208";a="260650505"
-Date: Fri, 7 Dec 2012 12:18:03 -0800 (PST)
-From: Joseph Gasparakis <joseph.gasparakis@intel.com>
-X-X-Sender: jgaspara@morpheus.jf.intel.com
-To: David Miller <davem@davemloft.net>
-cc: joseph.gasparakis@intel.com, bhutchings@solarflare.com,
-        alexander.h.duyck@intel.com, shemminger@vyatta.com,
-        chrisw@sous-sol.org, gospo@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmitry@broadcom.com,
-        saeed.bishara@gmail.com, peter.p.waskiewicz.jr@intel.com
-Subject: Re: [PATCH v3 1/4] net: Add support for hardware-offloaded
- encapsulation
-In-Reply-To: <20121207.145239.1408511750725975741.davem@davemloft.net>
-Message-ID: <alpine.LFD.2.02.1212071217420.4985@morpheus.jf.intel.com>
-References: <alpine.LFD.2.02.1212071139190.4985@morpheus.jf.intel.com> <20121207.143725.1501926484331042018.davem@davemloft.net> <alpine.LFD.2.02.1212071149150.4985@morpheus.jf.intel.com> <20121207.145239.1408511750725975741.davem@davemloft.net>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-ReplyTo: "Joseph Gasparakis" <joseph.gasparakis@intel.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1424144Ab2LGUUV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 15:20:21 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:52573 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753047Ab2LGUUT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 15:20:19 -0500
+From: tobetter@gmail.com
+Cc: Dongjin Kim <tobetter@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        =?UTF-8?q?Ren=C3=A9=20B=C3=BCrgel?= <rene.buergel@sohard.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] USB: misc: Add USB3503 High-Speed Hub Controller
+Date: Sat,  8 Dec 2012 05:18:44 +0900
+Message-Id: <1354911537-32684-1-git-send-email-dongjin.kim@agreeyamobility.net>
+X-Mailer: git-send-email 1.7.9.5
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Dongjin Kim <tobetter@gmail.com>
 
+This patch adds new driver of SMSC USB3503 USB 2.0 hub controller with HSIC
+upstream connectivity and three USB 2.0 downstream ports. The specification
+can be found from 'http://www.smsc.com/index.php?tid=295&pid=325'.
 
-On Fri, 7 Dec 2012, David Miller wrote:
+The current version have been tested very basic features switching the modes,
+HUB-MODE and STANDBY-MODE.
 
-> From: Joseph Gasparakis <joseph.gasparakis@intel.com>
-> Date: Fri, 7 Dec 2012 11:52:43 -0800 (PST)
-> 
-> > 
-> > 
-> > On Fri, 7 Dec 2012, David Miller wrote:
-> > 
-> >> From: Joseph Gasparakis <joseph.gasparakis@intel.com>
-> >> Date: Fri, 7 Dec 2012 11:41:46 -0800 (PST)
-> >> 
-> >> > 
-> >> > 
-> >> > On Fri, 7 Dec 2012, David Miller wrote:
-> >> > 
-> >> >> From: Joseph Gasparakis <joseph.gasparakis@intel.com>
-> >> >> Date: Fri, 7 Dec 2012 10:24:17 -0800 (PST)
-> >> >> 
-> >> >> > So the idea here is that the driver will use the headers for checksumming 
-> >> >> > if the skb->encapsulation bit is on. The bit should be set in the protocol 
-> >> >> > driver.
-> >> >> > 
-> >> >> > To answer the second comment, the flags that we use in this series of 
-> >> >> > patches is NETIF_F_IP_CSUM, NETIF_F_IPV6_CSUM and NETIF_F_SG. These are 
-> >> >> > the bits that we propose will be used for checksumming of encapsulation. 
-> >> >> > As per a previous comment in v2, the hw_enc_features field should be used 
-> >> >> > also in the future when NICs have more encap offloads, so one could
-> >> >> > indicate these features there from the driver.
-> >> >> > 
-> >> >> > Furthermore, I submitted a patch for Rx checksumming, where NETIF_F_RXCSUM 
-> >> >> > is used, again in conjunction with skb->encapsulation flag. As I mention 
-> >> >> > in my logs, the driver is expected to set the ip_summed to UNNECESSARY and 
-> >> >> > turn the skb->encapsulation on, to indicate that the inner headers are 
-> >> >> > already HW checksummed.
-> >> >> > 
-> >> >> 
-> >> >> This is the kind of language that belongs in the commit message and
-> >> >> code comments.
-> >> >> 
-> >> > Sure. I'll wait to gather some more feedback if there is any and I will 
-> >> > re-spin this off adding more code comments and clarify this in the logs.
-> >> 
-> >> Great.
-> >> 
-> >> Please note that this request applies to your receive side change too.
-> >> 
-> > I believe the logs are sufficient in the rx patch:
-> > 
-> > This patch adds capability in vxlan to identify received
-> > checksummed inner packets and signal them to the upper layers of
-> > the stack. The driver needs to set the skb->encapsulation bit
-> > and also set the skb->ip_summed to CHECKSUM_UNNECESSARY.
-> > 
-> > ...but I can add more comments to the code if this is what you are 
-> > referring to.
-> 
-> Yes, please do.
-> 
-I will! Thanks.
+Signed-off-by: Dongjin Kim <tobetter@gmail.com>
+---
+ drivers/usb/misc/Kconfig              |    6 +
+ drivers/usb/misc/Makefile             |    1 +
+ drivers/usb/misc/usb3503.c            |  303 +++++++++++++++++++++++++++++++++
+ include/linux/platform_data/usb3503.h |   19 +++
+ 4 files changed, 329 insertions(+)
+ create mode 100644 drivers/usb/misc/usb3503.c
+ create mode 100644 include/linux/platform_data/usb3503.h
+
+diff --git a/drivers/usb/misc/Kconfig b/drivers/usb/misc/Kconfig
+index a8f0523..98081bc 100644
+--- a/drivers/usb/misc/Kconfig
++++ b/drivers/usb/misc/Kconfig
+@@ -249,3 +249,9 @@ config USB_EZUSB_FX2
+ 	help
+ 	  Say Y here if you need EZUSB device support.
+ 	  (Cypress FX/FX2/FX2LP microcontrollers)
++
++config USB_HSIC_USB3503
++       tristate "USB3503 HSIC to USB20 Driver"
++       depends on I2C
++       help
++         This option enables support for SMSC USB3503 HSIC to USB 2.0 Driver.
+diff --git a/drivers/usb/misc/Makefile b/drivers/usb/misc/Makefile
+index 3e99a64..3e1bd70 100644
+--- a/drivers/usb/misc/Makefile
++++ b/drivers/usb/misc/Makefile
+@@ -26,5 +26,6 @@ obj-$(CONFIG_USB_TRANCEVIBRATOR)	+= trancevibrator.o
+ obj-$(CONFIG_USB_USS720)		+= uss720.o
+ obj-$(CONFIG_USB_SEVSEG)		+= usbsevseg.o
+ obj-$(CONFIG_USB_YUREX)			+= yurex.o
++obj-$(CONFIG_USB_HSIC_USB3503)		+= usb3503.o
+ 
+ obj-$(CONFIG_USB_SISUSBVGA)		+= sisusbvga/
+diff --git a/drivers/usb/misc/usb3503.c b/drivers/usb/misc/usb3503.c
+new file mode 100644
+index 0000000..796d58c
+--- /dev/null
++++ b/drivers/usb/misc/usb3503.c
+@@ -0,0 +1,303 @@
++/*
++ * Driver for SMSC USB3503 USB 2.0 hub controller driver
++ *
++ * Copyright (c) 2012-2013 Dongjin Kim (tobetter@gmail.com)
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
++
++#include <linux/i2c.h>
++#include <linux/gpio.h>
++#include <linux/delay.h>
++#include <linux/slab.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/platform_data/usb3503.h>
++
++#define USB3503_VIDL		0x00
++#define USB3503_VIDM		0x01
++#define USB3503_PIDL		0x02
++#define USB3503_PIDM		0x03
++#define USB3503_DIDL		0x04
++#define USB3503_DIDM		0x05
++
++#define USB3503_CFG1		0x06
++#define USB3503_SELF_BUS_PWR	(1 << 7)
++
++#define USB3503_CFG2		0x07
++#define USB3503_CFG3		0x08
++#define USB3503_NRD		0x09
++
++#define USB3503_PDS		0x0a
++#define USB3503_PORT1		(1 << 1)
++#define USB3503_PORT2		(1 << 2)
++#define USB3503_PORT3		(1 << 3)
++
++#define USB3503_SP_ILOCK	0xe7
++#define USB3503_SPILOCK_CONNECT	(1 << 1)
++#define USB3503_SPILOCK_CONFIG	(1 << 0)
++
++#define USB3503_CFGP		0xee
++#define USB3503_CLKSUSP		(1 << 7)
++
++struct usb3503 {
++	enum usb3503_mode	mode;
++	struct i2c_client	*client;
++	int	gpio_intn;
++	int	gpio_reset;
++	int	gpio_connect;
++};
++
++static int usb3503_write_register(struct i2c_client *client,
++		char reg, char data)
++{
++	return i2c_smbus_write_byte_data(client, reg, data);
++}
++
++static int usb3503_read_register(struct i2c_client *client, char reg)
++{
++	return i2c_smbus_read_byte_data(client, reg);
++}
++
++static int usb3503_set_bits(struct i2c_client *client, char reg, char req)
++{
++	int err;
++
++	err = usb3503_read_register(client, reg);
++	if (err < 0)
++		return err;
++
++	err = usb3503_write_register(client, reg, err | req);
++	if (err < 0)
++		return err;
++
++	return 0;
++}
++
++static int usb3503_clear_bits(struct i2c_client *client, char reg, char req)
++{
++	int err;
++
++	err = usb3503_read_register(client, reg);
++	if (err < 0)
++		return err;
++
++	err = usb3503_write_register(client, reg, err & ~req);
++	if (err < 0)
++		return err;
++
++	return 0;
++}
++
++static int usb3503_reset(int gpio_reset, int state)
++{
++	if (gpio_is_valid(gpio_reset))
++		gpio_set_value(gpio_reset, state);
++
++	/* Wait RefClk when RESET_N is released, otherwise Hub will
++	 * not transition to Hub Communication Stage.
++	 */
++	if (state)
++		msleep(100);
++
++	return 0;
++}
++
++static int usb3503_switch_mode(struct usb3503 *hub, enum usb3503_mode mode)
++{
++	struct i2c_client *i2c = hub->client;
++	int err = 0;
++
++	switch (mode) {
++	case USB3503_MODE_HUB:
++		usb3503_reset(hub->gpio_reset, 1);
++
++		/* SP_ILOCK: set connect_n, config_n for config */
++		err = usb3503_write_register(i2c, USB3503_SP_ILOCK,
++				(USB3503_SPILOCK_CONNECT
++				 | USB3503_SPILOCK_CONFIG));
++		if (err < 0) {
++			dev_err(&i2c->dev, "SP_ILOCK failed (%d)\n", err);
++			goto err_hubmode;
++		}
++
++		/* PDS : Port2,3 Disable For Self Powered Operation */
++		err = usb3503_set_bits(i2c, USB3503_PDS,
++				(USB3503_PORT2 | USB3503_PORT3));
++		if (err < 0) {
++			dev_err(&i2c->dev, "PDS failed (%d)\n", err);
++			goto err_hubmode;
++		}
++
++		/* CFG1 : SELF_BUS_PWR -> Self-Powerd operation */
++		err = usb3503_set_bits(i2c, USB3503_CFG1, USB3503_SELF_BUS_PWR);
++		if (err < 0) {
++			dev_err(&i2c->dev, "CFG1 failed (%d)\n", err);
++			goto err_hubmode;
++		}
++
++		/* SP_LOCK: clear connect_n, config_n for hub connect */
++		err = usb3503_clear_bits(i2c, USB3503_SP_ILOCK,
++				(USB3503_SPILOCK_CONNECT
++				 | USB3503_SPILOCK_CONFIG));
++		if (err < 0) {
++			dev_err(&i2c->dev, "SP_ILOCK failed (%d)\n", err);
++			goto err_hubmode;
++		}
++
++		hub->mode = mode;
++		dev_info(&i2c->dev, "switched to HUB mode\n");
++		break;
++
++	case USB3503_MODE_STANDBY:
++		usb3503_reset(hub->gpio_reset, 0);
++
++		hub->mode = mode;
++		dev_info(&i2c->dev, "switched to STANDBY mode\n");
++		break;
++
++	default:
++		dev_err(&i2c->dev, "unknown mode is request\n");
++		err = -EINVAL;
++		break;
++	}
++
++err_hubmode:
++	return err;
++}
++
++int usb3503_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
++{
++	struct usb3503_platform_data *pdata = i2c->dev.platform_data;
++	struct usb3503 *hub;
++	int err;
++
++	hub = kzalloc(sizeof(struct usb3503), GFP_KERNEL);
++	if (!hub) {
++		dev_err(&i2c->dev, "private data alloc fail\n");
++		return -ENOMEM;
++	}
++
++	i2c_set_clientdata(i2c, hub);
++	hub->client = i2c;
++
++	if (!pdata) {
++		dev_dbg(&i2c->dev, "missing platform data\n");
++	} else {
++		hub->gpio_intn		= pdata->gpio_intn;
++		hub->gpio_connect	= pdata->gpio_connect;
++		hub->gpio_reset		= pdata->gpio_reset;
++		hub->mode		= pdata->initial_mode;
++	}
++
++	if (gpio_is_valid(hub->gpio_intn)) {
++		err = gpio_request_one(hub->gpio_intn,
++				GPIOF_OUT_INIT_HIGH, "usb3503 intn");
++		if (err) {
++			dev_err(&i2c->dev,
++					"unable to request GPIO %d as connect pin (%d)\n",
++					hub->gpio_intn, err);
++			goto err_gpio_intn;
++		}
++	}
++
++	if (gpio_is_valid(hub->gpio_connect)) {
++		err = gpio_request_one(hub->gpio_connect,
++				GPIOF_OUT_INIT_HIGH, "usb3503 connect");
++		if (err) {
++			dev_err(&i2c->dev,
++					"unable to request GPIO %d as connect pin (%d)\n",
++					hub->gpio_connect, err);
++			goto err_gpio_connect;
++		}
++	}
++
++	if (gpio_is_valid(hub->gpio_reset)) {
++		err = gpio_request_one(hub->gpio_reset,
++				GPIOF_OUT_INIT_LOW, "usb3503 reset");
++		if (err) {
++			dev_err(&i2c->dev,
++					"unable to request GPIO %d as reset pin (%d)\n",
++					hub->gpio_reset, err);
++			goto err_gpio_reset;
++		}
++	}
++
++	usb3503_switch_mode(hub, pdata->initial_mode);
++
++	dev_info(&i2c->dev, "%s: probed on  %s mode\n", __func__,
++			(hub->mode == USB3503_MODE_HUB) ? "hub" : "standby");
++
++	return 0;
++
++err_gpio_reset:
++	if (gpio_is_valid(hub->gpio_connect))
++		gpio_free(hub->gpio_connect);
++err_gpio_connect:
++	if (gpio_is_valid(hub->gpio_intn))
++		gpio_free(hub->gpio_intn);
++err_gpio_intn:
++	kfree(hub);
++
++	return err;
++}
++
++static int usb3503_remove(struct i2c_client *i2c)
++{
++	struct usb3503 *hub = i2c_get_clientdata(i2c);
++
++	if (gpio_is_valid(hub->gpio_intn))
++		gpio_free(hub->gpio_intn);
++	if (gpio_is_valid(hub->gpio_connect))
++		gpio_free(hub->gpio_connect);
++	if (gpio_is_valid(hub->gpio_reset))
++		gpio_free(hub->gpio_reset);
++
++	kfree(hub);
++
++	return 0;
++}
++
++static const struct i2c_device_id usb3503_id[] = {
++	{ USB3503_I2C_NAME, 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, usb3503_id);
++
++static struct i2c_driver usb3503_driver = {
++	.driver = {
++		.name = USB3503_I2C_NAME,
++	},
++	.probe		= usb3503_probe,
++	.remove		= usb3503_remove,
++	.id_table	= usb3503_id,
++};
++
++static int __init usb3503_init(void)
++{
++	return i2c_add_driver(&usb3503_driver);
++}
++
++static void __exit usb3503_exit(void)
++{
++	i2c_del_driver(&usb3503_driver);
++}
++
++module_init(usb3503_init);
++module_exit(usb3503_exit);
++
++MODULE_AUTHOR("Dongjin Kim <tobetter@gmail.com>");
++MODULE_DESCRIPTION("USB3503 USB HUB driver");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/platform_data/usb3503.h b/include/linux/platform_data/usb3503.h
+new file mode 100644
+index 0000000..85dcc70
+--- /dev/null
++++ b/include/linux/platform_data/usb3503.h
+@@ -0,0 +1,19 @@
++#ifndef __USB3503_H__
++#define __USB3503_H__
++
++#define USB3503_I2C_NAME	"usb3503"
++
++enum usb3503_mode {
++	USB3503_MODE_UNKNOWN,
++	USB3503_MODE_HUB,
++	USB3503_MODE_STANDBY,
++};
++
++struct usb3503_platform_data {
++	enum usb3503_mode	initial_mode;
++	int	gpio_intn;
++	int	gpio_connect;
++	int	gpio_reset;
++};
++
++#endif
+-- 
+1.7.9.5
+
