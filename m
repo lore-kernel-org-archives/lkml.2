@@ -1,66 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964788Ab2LGWKf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 17:10:35 -0500
-Received: from mail.free-electrons.com ([88.190.12.23]:34599 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752761Ab2LGWKe (ORCPT
+	id S1754637Ab2LGWLG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 17:11:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42899 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753508Ab2LGWLE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 17:10:34 -0500
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Lior Amsalem <alior@marvell.com>, Maen Suleiman <maen@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Shadi Ammouri <shadi@marvell.com>,
-        Eran Ben-Avi <benavi@marvell.com>,
-        Yehuda Yitschak <yehuday@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org
-Subject: [RFC v1 RESEND 01/16] lib: devres: don't enclose pcim_*() functions in CONFIG_HAS_IOPORT
-Date: Fri,  7 Dec 2012 23:10:04 +0100
-Message-Id: <1354918219-32364-2-git-send-email-thomas.petazzoni@free-electrons.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1354918219-32364-1-git-send-email-thomas.petazzoni@free-electrons.com>
-References: <1354918219-32364-1-git-send-email-thomas.petazzoni@free-electrons.com>
+	Fri, 7 Dec 2012 17:11:04 -0500
+Date: Fri, 7 Dec 2012 14:11:02 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Xishi Qiu <qiuxishi@huawei.com>
+Cc: WuJianguo <wujianguo@huawei.com>, Liujiang <jiang.liu@huawei.com>,
+        <Vyacheslav.Dubeyko@huawei.com>, Borislav Petkov <bp@alien8.de>,
+        <andi@firstfloor.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2] MCE: fix an error of mce_bad_pages statistics
+Message-Id: <20121207141102.4fda582d.akpm@linux-foundation.org>
+In-Reply-To: <50C1AD6D.7010709@huawei.com>
+References: <50C1AD6D.7010709@huawei.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pcim_*() functions are used by the libata-sff subsystem, and this
-subsystem is used for many SATA drivers on ARM platforms that do not
-necessarily have I/O ports.
+On Fri, 7 Dec 2012 16:48:45 +0800
+Xishi Qiu <qiuxishi@huawei.com> wrote:
 
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: linux-kernel@vger.kernel.org
----
- lib/devres.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> On x86 platform, if we use "/sys/devices/system/memory/soft_offline_page" to offline a
+> free page twice, the value of mce_bad_pages will be added twice. So this is an error,
+> since the page was already marked HWPoison, we should skip the page and don't add the
+> value of mce_bad_pages.
+> 
+> $ cat /proc/meminfo | grep HardwareCorrupted
+> 
+> soft_offline_page()
+> 	get_any_page()
+> 		atomic_long_add(1, &mce_bad_pages)
+> 
+> ...
+>
+> --- a/mm/memory-failure.c
+> +++ b/mm/memory-failure.c
+> @@ -1582,8 +1582,11 @@ int soft_offline_page(struct page *page, int flags)
+>  		return ret;
+> 
+>  done:
+> -	atomic_long_add(1, &mce_bad_pages);
+> -	SetPageHWPoison(page);
+>  	/* keep elevated page count for bad page */
+> +	if (!PageHWPoison(page)) {
+> +		atomic_long_add(1, &mce_bad_pages);
+> +		SetPageHWPoison(page);
+> +	}
+> +
+>  	return ret;
+>  }
 
-diff --git a/lib/devres.c b/lib/devres.c
-index 80b9c76..5639c3e 100644
---- a/lib/devres.c
-+++ b/lib/devres.c
-@@ -195,6 +195,7 @@ void devm_ioport_unmap(struct device *dev, void __iomem *addr)
- 			       devm_ioport_map_match, (void *)addr));
- }
- EXPORT_SYMBOL(devm_ioport_unmap);
-+#endif /* CONFIG_HAS_IOPORT */
- 
- #ifdef CONFIG_PCI
- /*
-@@ -400,4 +401,3 @@ void pcim_iounmap_regions(struct pci_dev *pdev, int mask)
- }
- EXPORT_SYMBOL(pcim_iounmap_regions);
- #endif /* CONFIG_PCI */
--#endif /* CONFIG_HAS_IOPORT */
--- 
-1.7.9.5
+A few things:
 
+- soft_offline_page() already checks for this case:
+
+	if (PageHWPoison(page)) {
+		unlock_page(page);
+		put_page(page);
+		pr_info("soft offline: %#lx page already poisoned\n", pfn);
+		return -EBUSY;
+	}
+
+  so why didn't this check work for you?
+
+  Presumably because one of the earlier "goto done" branches was
+  taken.  Which one, any why?
+
+  This function is an utter mess.  It contains six return points
+  randomly intermingled with three "goto done" return points.
+
+  This mess is probably the cause of the bug you have observed.  Can
+  we please fix it up somehow?  It *seems* that the design (lol) of
+  this function is "for errors, return immediately.  For success, goto
+  done".  In which case "done" should have been called "success".  But
+  if you just look at the function you'll see that this approach didn't
+  work.  I suggest it be converted to have two return points - one for
+  the success path, one for the failure path.  Or something.
+
+- soft_offline_huge_page() is a miniature copy of soft_offline_page()
+  and might suffer the same bug.
+
+- A cleaner, shorter and possibly faster implementation is
+
+	if (!TestSetPageHWPoison(page))
+		atomic_long_add(1, &mce_bad_pages);
+
+- We have atomic_long_inc().  Use it?
+
+- Why do we have a variable called "mce_bad_pages"?  MCE is an x86
+  concept, and this code is in mm/.  Lights are flashing, bells are
+  ringing and a loudspeaker is blaring "layering violation" at us!
