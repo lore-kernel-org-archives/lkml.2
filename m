@@ -1,47 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755860Ab2LGWou (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 17:44:50 -0500
-Received: from quartz.orcorp.ca ([184.70.90.242]:36367 "EHLO quartz.orcorp.ca"
+	id S1753625Ab2LGWqM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 17:46:12 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:42795 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755835Ab2LGWot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 17:44:49 -0500
-Date: Fri, 7 Dec 2012 15:44:46 -0700
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        Wim Van Sebroeck <wim@iguana.be>
-Subject: [PATCH] ARM: Orion: Fix possible null-deference in orion_wdt_probe
-Message-ID: <20121207224446.GA29262@obsidianresearch.com>
+	id S1751361Ab2LGWqL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 17:46:11 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1354920151-4461-1-git-send-email-dinggnu@gmail.com>
+References: <1354920151-4461-1-git-send-email-dinggnu@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.162
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] arch/x86/tools/gen-insn-attr-x86.awk: remove duplicate const
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Fri, 07 Dec 2012 14:45:43 -0800
+To: Cong Ding <dinggnu@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel@vger.kernel.org
+Message-ID: <3c1e54bc-31ec-4a38-b6d3-58b25760f9cb@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the DT does not include a regs parameter then the null res
-would be dereferenced.
+Patch description please?
 
-Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
----
- drivers/watchdog/orion_wdt.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Cong Ding <dinggnu@gmail.com> wrote:
 
-diff --git a/drivers/watchdog/orion_wdt.c b/drivers/watchdog/orion_wdt.c
-index c20f96b..140a1e3 100644
---- a/drivers/watchdog/orion_wdt.c
-+++ b/drivers/watchdog/orion_wdt.c
-@@ -156,6 +156,8 @@ static int __devinit orion_wdt_probe(struct platform_device *pdev)
- 	wdt_tclk = clk_get_rate(clk);
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res)
-+		return -ENODEV;
- 	wdt_reg = devm_ioremap(&pdev->dev, res->start, resource_size(res));
- 	if (!wdt_reg)
- 		return -ENOMEM;
+>
+>Signed-off-by: Cong Ding <dinggnu@gmail.com>
+>---
+> arch/x86/tools/gen-insn-attr-x86.awk |    4 ++--
+> 1 files changed, 2 insertions(+), 2 deletions(-)
+>
+>diff --git a/arch/x86/tools/gen-insn-attr-x86.awk
+>b/arch/x86/tools/gen-insn-attr-x86.awk
+>index ddcf39b..d1d9cfa 100644
+>--- a/arch/x86/tools/gen-insn-attr-x86.awk
+>+++ b/arch/x86/tools/gen-insn-attr-x86.awk
+>@@ -356,7 +356,7 @@ END {
+> 		exit 1
+> 	# print escape opcode map's array
+> 	print "/* Escape opcode map array */"
+>-	print "const insn_attr_t const *inat_escape_tables[INAT_ESC_MAX + 1]"
+>\
+>+	print "const insn_attr_t *inat_escape_tables[INAT_ESC_MAX + 1]" \
+> 	      "[INAT_LSTPFX_MAX + 1] = {"
+> 	for (i = 0; i < geid; i++)
+> 		for (j = 0; j < max_lprefix; j++)
+>@@ -365,7 +365,7 @@ END {
+> 	print "};\n"
+> 	# print group opcode map's array
+> 	print "/* Group opcode map array */"
+>-	print "const insn_attr_t const *inat_group_tables[INAT_GRP_MAX + 1]"\
+>+	print "const insn_attr_t *inat_group_tables[INAT_GRP_MAX + 1]"\
+> 	      "[INAT_LSTPFX_MAX + 1] = {"
+> 	for (i = 0; i < ggid; i++)
+> 		for (j = 0; j < max_lprefix; j++)
+
 -- 
-1.7.5.4
-
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
