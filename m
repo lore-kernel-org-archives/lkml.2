@@ -1,49 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965033Ab2LGMu0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 07:50:26 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:65353 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964900Ab2LGMuZ (ORCPT
+	id S1030248Ab2LGNEW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 08:04:22 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:43453 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030208Ab2LGNEV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 07:50:25 -0500
+	Fri, 7 Dec 2012 08:04:21 -0500
 MIME-Version: 1.0
-Date: Fri, 7 Dec 2012 07:50:23 -0500
-Message-ID: <CAPgLHd-65GoO=4D++ir2tq5hv=PtgYzEk4AB6_tyi-SRtsENYg@mail.gmail.com>
-Subject: [PATCH -next] drm/exynos/iommu: fix return value check in drm_create_iommu_mapping()
-From: Wei Yongjun <weiyj.lk@gmail.com>
-To: inki.dae@samsung.com, jy0922.shim@samsung.com, sw0312.kim@samsung.com,
-        kyungmin.park@samsung.com, airlied@linux.ie
-Cc: yongjun_wei@trendmicro.com.cn, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <CANeycqqO06+u6Qy3zL=G_a=_sTYDOzUYf8wu7B7RGFJfuGNoRg@mail.gmail.com>
+References: <20120524021429.GB12557@kroah.com>
+	<Pine.LNX.4.44L0.1205241029260.1349-100000@iolanthe.rowland.org>
+	<CACVXFVPu_nbVCVR_HTt9H764+4JKC3=GPyhsf8Lpsch4Fa=xqQ@mail.gmail.com>
+	<CANeycqo8sFVeWVEeW3mdPPVRt35+kfkdUzenLB+YgNs4y-T7Cg@mail.gmail.com>
+	<CACVXFVPbpbb-PAJAweoLj8uec=KgoUKvybSey+R=L=oY16Ozbw@mail.gmail.com>
+	<CANeycqq177AzPdYfBr-VU+ksh+Jwd9i4aLpZo6VwxcO+Xx6ETg@mail.gmail.com>
+	<CACVXFVPH=yw_Y3AcnTXUqVd5A0yGiw+hju8__-g7dymAe-Q8dA@mail.gmail.com>
+	<CANeycqqO06+u6Qy3zL=G_a=_sTYDOzUYf8wu7B7RGFJfuGNoRg@mail.gmail.com>
+Date: Fri, 7 Dec 2012 21:04:19 +0800
+Message-ID: <CACVXFVMOxQEJ-nrvGQ-PkevqKkLnXu+QjHgeswkbzFjqOVYCdQ@mail.gmail.com>
+Subject: Re: Race condition between driver_probe_device and device_shutdown
+From: Ming Lei <ming.lei@canonical.com>
+To: Wedson Almeida Filho <wedsonaf@gmail.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Linux PM List <linux-pm@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+On Fri, Dec 7, 2012 at 8:16 PM, Wedson Almeida Filho <wedsonaf@gmail.com> wrote:
+>> Because device_del() will put reference count of the parent, and the patch
+>> only focuses on race between probe/release and shutdown.
+>
+> Right. device_del() puts the reference count of the parent -- is it
+> guaranteed that device_del() won't ever reassign dev->parent though
+> (e.g., to NULL)? I don't think it is, so I think that patch should
+> also save the pointer to the parent and use it (instead of what
+> happens to be in than dev->parent) to release the lock and put the
+> ref.
+>
+>> As far as device_move() concerned, looks it might be a problem.
+>> The problem even exits on driver attach vs. device open/release,
+>> if device_move is called in open() and open() happens before driver
+>> attach completes.
+>
+> Yeah, the pattern of locking the parent followed by the device occurs
+> in a few places. It looks like they were added by Alan with commit
+> bf74ad5bc41727d5f2f1c6bedb2c1fac394de731. (And as Greg mentioned,
+> might be occurring often enough to merit being moved into a common
+> function.)
 
-In case of error, function arm_iommu_create_mapping() returns
-ERR_PTR() and never returns NULL. The NULL test in the return
-value check should be replaced with IS_ERR().
+In fact, there is no shutdown callback defined for usb driver, so holding
+the parent lock in device_shutdown() might be removed.
 
-Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
----
- drivers/gpu/drm/exynos/exynos_drm_iommu.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> I guess the question is whether the callee is allowed to call
+> device_move(), if not, we're good.
 
-diff --git a/drivers/gpu/drm/exynos/exynos_drm_iommu.c b/drivers/gpu/drm/exynos/exynos_drm_iommu.c
-index 09db198..3b3d3a6 100644
---- a/drivers/gpu/drm/exynos/exynos_drm_iommu.c
-+++ b/drivers/gpu/drm/exynos/exynos_drm_iommu.c
-@@ -56,7 +56,7 @@ int drm_create_iommu_mapping(struct drm_device *drm_dev)
- 	mapping = arm_iommu_create_mapping(&platform_bus_type, priv->da_start,
- 						priv->da_space_size,
- 						priv->da_space_order);
--	if (!mapping)
-+	if (IS_ERR(mapping))
- 		return -ENOMEM;
- 
- 	dev->dma_parms = devm_kzalloc(dev, sizeof(*dev->dma_parms),
+Not only the callee, and other contexts can change device->parent
+too. Looks rfcomm_tty_open() which calls device_move() is called
+in open() context, so the parent might be changed before unlock(dev->parent)
+in __driver_attach().
 
+>
+>> Your concern on device_remove() might be correct. Also, I am wondering
+>> if we can walk the 'dpm_list' backwards for device shutdown, which should
+>> be simpler and more reasonable.
+>
+> How would that help?
 
+device_pm_lock() can prevent device_move() from being running.
+
+Thanks,
+--
+Ming Lei
