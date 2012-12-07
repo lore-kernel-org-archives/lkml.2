@@ -1,98 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423184Ab2LGA5R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 19:57:17 -0500
+	id S1423200Ab2LGA5U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 19:57:20 -0500
 Received: from mail-pb0-f46.google.com ([209.85.160.46]:61767 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423029Ab2LGA5L (ORCPT
+	with ESMTP id S1423182Ab2LGA5R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 19:57:11 -0500
+	Thu, 6 Dec 2012 19:57:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [ 00/11] 3.0.56-stable review
-Date: Thu,  6 Dec 2012 16:56:56 -0800
-Message-Id: <20121207005613.189054768@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [ 01/11] Dove: Attempt to fix PMU/RTC interrupts
+Date: Thu,  6 Dec 2012 16:56:57 -0800
+Message-Id: <20121207005613.560597622@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
+In-Reply-To: <20121207005613.189054768@linuxfoundation.org>
+References: <20121207005613.189054768@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.0.56 release.
-There are 11 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Sun Dec  9 00:55:07 UTC 2012.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.56-rc1.gz
-and the diffstat can be found below.
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
 
-thanks,
+commit 5d3df935426271016b895aecaa247101b4bfa35e upstream.
 
-greg k-h
+Fix the acknowledgement of PMU interrupts on Dove: some Dove hardware
+has not been sensibly designed so that interrupts can be handled in a
+race free manner.  The PMU is one such instance.
 
--------------
-Pseudo-Shortlog of commits:
+The pending (aka 'cause') register is a bunch of RW bits, meaning that
+these bits can be both cleared and set by software (confirmed on the
+Armada-510 on the cubox.)
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.0.56-rc1
+Hardware sets the appropriate bit when an interrupt is asserted, and
+software is required to clear the bits which are to be processed.  If
+we write ~(1 << bit), then we end up asserting every other interrupt
+except the one we're processing.  So, we need to do a read-modify-write
+cycle to clear the asserted bit.
 
-Jan Kara <jack@suse.cz>
-    scsi: Silence unnecessary warnings about ioctl to partition
+However, any interrupts which occur in the middle of this cycle will
+also be written back as zero, which will also clear the new interrupts.
 
-Chris Wilson <chris@chris-wilson.co.uk>
-    drm/i915: Add no-lvds quirk for Supermicro X7SPA-H
+The upshot of this is: there is _no_ way to safely clear down interrupts
+in this register (and other similarly behaving interrupt pending
+registers on this device.)  The patch below at least stops us creating
+new interrupts.
 
-Calvin Walton <calvin.walton@kepstin.ca>
-    i915: Quirk no_lvds on Gigabyte GA-D525TUD ITX motherboard
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Alan Cox <alan@linux.intel.com>
-    ACPI: missing break
+---
+ arch/arm/mach-dove/irq.c |   14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
 
-Michal Kubecek <mkubecek@suse.cz>
-    route: release dst_entry.hh_cache when handling redirects
-
-Mike Galbraith <efault@gmx.de>
-    Revert "sched, autogroup: Stop going ahead if autogroup is disabled"
-
-Mike Galbraith <mgalbraith@suse.de>
-    workqueue: exit rescuer_thread() as TASK_RUNNING
-
-Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-    mm: soft offline: split thp at the beginning of soft_offline_page()
-
-Jianguo Wu <wujianguo@huawei.com>
-    mm/vmemmap: fix wrong use of virt_to_page
-
-Russell King - ARM Linux <linux@arm.linux.org.uk>
-    Dove: Fix irq_to_pmu()
-
-Russell King - ARM Linux <linux@arm.linux.org.uk>
-    Dove: Attempt to fix PMU/RTC interrupts
-
-
--------------
-
-Diffstat:
-
- Makefile                             |  4 ++--
- arch/arm/mach-dove/include/mach/pm.h |  2 +-
- arch/arm/mach-dove/irq.c             | 14 +++++++++++++-
- block/scsi_ioctl.c                   |  5 ++++-
- drivers/acpi/processor_driver.c      |  1 +
- drivers/gpu/drm/i915/intel_lvds.c    | 16 ++++++++++++++++
- kernel/sched_autogroup.c             |  4 ----
- kernel/sched_autogroup.h             |  5 -----
- kernel/workqueue.c                   |  4 +++-
- mm/memory-failure.c                  |  8 ++++++++
- mm/sparse.c                          | 10 ++++------
- net/ipv4/route.c                     |  4 ++++
- 12 files changed, 56 insertions(+), 21 deletions(-)
+--- a/arch/arm/mach-dove/irq.c
++++ b/arch/arm/mach-dove/irq.c
+@@ -61,8 +61,20 @@ static void pmu_irq_ack(struct irq_data
+ 	int pin = irq_to_pmu(d->irq);
+ 	u32 u;
+ 
++	/*
++	 * The PMU mask register is not RW0C: it is RW.  This means that
++	 * the bits take whatever value is written to them; if you write
++	 * a '1', you will set the interrupt.
++	 *
++	 * Unfortunately this means there is NO race free way to clear
++	 * these interrupts.
++	 *
++	 * So, let's structure the code so that the window is as small as
++	 * possible.
++	 */
+ 	u = ~(1 << (pin & 31));
+-	writel(u, PMU_INTERRUPT_CAUSE);
++	u &= readl_relaxed(PMU_INTERRUPT_CAUSE);
++	writel_relaxed(u, PMU_INTERRUPT_CAUSE);
+ }
+ 
+ static struct irq_chip pmu_irq_chip = {
 
 
