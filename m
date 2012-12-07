@@ -1,28 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423664Ab2LGBA0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 20:00:26 -0500
+	id S1423689Ab2LGBAc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 20:00:32 -0500
 Received: from mail-pa0-f46.google.com ([209.85.220.46]:61365 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423622Ab2LGBAW (ORCPT
+	with ESMTP id S1423622Ab2LGBA2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 20:00:22 -0500
+	Thu, 6 Dec 2012 20:00:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        "David S. Miller" <davem@davemloft.net>,
-        Peter Huewe <peterhuewe@gmx.de>
-Subject: [ 21/27] net: qmi_wwan: adding more ZTE devices
-Date: Thu,  6 Dec 2012 16:59:05 -0800
-Message-Id: <20121207005832.086272105@linuxfoundation.org>
+        Torsten Kaiser <just.for.lkml@googlemail.com>,
+        Peter Maloney <peter.maloney@brockmann-consult.de>,
+        NeilBrown <neilb@suse.de>
+Subject: [ 15/27] md/raid1{,0}: fix deadlock in bitmap_unplug.
+Date: Thu,  6 Dec 2012 16:58:59 -0800
+Message-Id: <20121207005830.182431944@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121207005825.232489605@linuxfoundation.org>
 References: <20121207005825.232489605@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,140 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: NeilBrown <neilb@suse.de>
 
-commit c6846ee148e07e4cfae4de486532efb02d238938 upstream.
+commit 874807a83139abc094f939e93623c5623573d543 upstream.
 
-Analyzed a few Windows driver description files, supporting
-this long list of devices:
+If the raid1 or raid10 unplug function gets called
+from a make_request function (which is very possible) when
+there are bios on the current->bio_list list, then it will not
+be able to successfully call bitmap_unplug() and it could
+need to submit more bios and wait for them to complete.
+But they won't complete while current->bio_list is non-empty.
 
-%ztewwan.DeviceDesc0002%    = ztewwan.ndi, USB\VID_19D2&PID_0002&MI_01
-%ztewwan.DeviceDesc0012%    = ztewwan.ndi, USB\VID_19D2&PID_0012&MI_01
-%ztewwan.DeviceDesc0017%    = ztewwan.ndi, USB\VID_19D2&PID_0017&MI_03
-%ztewwan.DeviceDesc0021%    = ztewwan.ndi, USB\VID_19D2&PID_0021&MI_04
-%ztewwan.DeviceDesc0025%    = ztewwan.ndi, USB\VID_19D2&PID_0025&MI_01
-%ztewwan.DeviceDesc0031%    = ztewwan.ndi, USB\VID_19D2&PID_0031&MI_04
-%ztewwan.DeviceDesc0042%    = ztewwan.ndi, USB\VID_19D2&PID_0042&MI_04
-%ztewwan.DeviceDesc0049%    = ztewwan.ndi, USB\VID_19D2&PID_0049&MI_05
-%ztewwan.DeviceDesc0052%    = ztewwan.ndi, USB\VID_19D2&PID_0052&MI_04
-%ztewwan.DeviceDesc0055%    = ztewwan.ndi, USB\VID_19D2&PID_0055&MI_01
-%ztewwan.DeviceDesc0058%    = ztewwan.ndi, USB\VID_19D2&PID_0058&MI_04
-%ztewwan.DeviceDesc0063%    = ztewwan.ndi, USB\VID_19D2&PID_0063&MI_04
-%ztewwan.DeviceDesc2002%    = ztewwan.ndi, USB\VID_19D2&PID_2002&MI_04
-%ztewwan.DeviceDesc0104%    = ztewwan.ndi, USB\VID_19D2&PID_0104&MI_04
-%ztewwan.DeviceDesc0113%    = ztewwan.ndi, USB\VID_19D2&PID_0113&MI_05
-%ztewwan.DeviceDesc0118%    = ztewwan.ndi, USB\VID_19D2&PID_0118&MI_05
-%ztewwan.DeviceDesc0121%    = ztewwan.ndi, USB\VID_19D2&PID_0121&MI_05
-%ztewwan.DeviceDesc0123%    = ztewwan.ndi, USB\VID_19D2&PID_0123&MI_04
-%ztewwan.DeviceDesc0124%    = ztewwan.ndi, USB\VID_19D2&PID_0124&MI_05
-%ztewwan.DeviceDesc0125%    = ztewwan.ndi, USB\VID_19D2&PID_0125&MI_06
-%ztewwan.DeviceDesc0126%    = ztewwan.ndi, USB\VID_19D2&PID_0126&MI_05
-%ztewwan.DeviceDesc1008%    = ztewwan.ndi, USB\VID_19D2&PID_1008&MI_04
-%ztewwan.DeviceDesc1010%    = ztewwan.ndi, USB\VID_19D2&PID_1010&MI_04
-%ztewwan.DeviceDesc1012%    = ztewwan.ndi, USB\VID_19D2&PID_1012&MI_04
-%ztewwan.DeviceDesc1402%    = ztewwan.ndi, USB\VID_19D2&PID_1402&MI_02
-%ztewwan.DeviceDesc0157%    = ztewwan.ndi, USB\VID_19D2&PID_0157&MI_05
-%ztewwan.DeviceDesc0158%    = ztewwan.ndi, USB\VID_19D2&PID_0158&MI_03
-%ztewwan.DeviceDesc1401%    = ztewwan.ndi, USB\VID_19D2&PID_1401&MI_02
-%ztewwan.DeviceDesc0130%    = ztewwan.ndi, USB\VID_19D2&PID_0130&MI_01
-%ztewwan.DeviceDesc0133%    = ztewwan.ndi, USB\VID_19D2&PID_0133&MI_03
-%ztewwan.DeviceDesc0176%    = ztewwan.ndi, USB\VID_19D2&PID_0176&MI_03
-%ztewwan.DeviceDesc0178%    = ztewwan.ndi, USB\VID_19D2&PID_0178&MI_03
-%ztewwan.DeviceDesc0168%    = ztewwan.ndi, USB\VID_19D2&PID_0168&MI_04
-;EuFi890
-%ztewwan.DeviceDesc0191%    = ztewwan.ndi, USB\VID_19D2&PID_0191&MI_04
-;AL621
-%ztewwan.DeviceDesc0167%    = ztewwan.ndi, USB\VID_19D2&PID_0167&MI_04
-;MF821
-%ztewwan.DeviceDesc0199%    = ztewwan.ndi, USB\VID_19D2&PID_0199&MI_01
-%ztewwan.DeviceDesc0200%    = ztewwan.ndi, USB\VID_19D2&PID_0200&MI_01
-%ztewwan.DeviceDesc0257%    = ztewwan.ndi, USB\VID_19D2&PID_0257&MI_03
-;MF821V
-%ztewwan.DeviceDesc1018%    = ztewwan.ndi, USB\VID_19D2&PID_1018&MI_03
-;MF91
-%ztewwan.DeviceDesc1426%    = ztewwan.ndi, USB\VID_19D2&PID_1426&MI_02
-;0141
-%ztewwan.DeviceDesc1247%    = ztewwan.ndi, USB\VID_19D2&PID_1247&MI_04
-%ztewwan.DeviceDesc1425%    = ztewwan.ndi, USB\VID_19D2&PID_1425&MI_02
-%ztewwan.DeviceDesc1424%    = ztewwan.ndi, USB\VID_19D2&PID_1424&MI_02
-%ztewwan.DeviceDesc1252%    = ztewwan.ndi, USB\VID_19D2&PID_1252&MI_04
-%ztewwan.DeviceDesc1254%    = ztewwan.ndi, USB\VID_19D2&PID_1254&MI_04
-%ztewwan.DeviceDesc1255A%   = ztewwan.ndi, USB\VID_19D2&PID_1255&MI_03
-%ztewwan.DeviceDesc1255B%   = ztewwan.ndi, USB\VID_19D2&PID_1255&MI_04
-%ztewwan.DeviceDesc1256%    = ztewwan.ndi, USB\VID_19D2&PID_1256&MI_04
-%ztewwan.DeviceDesc1245%    = ztewwanCombB.ndi, USB\VID_19D2&PID_1245&MI_04
-%ztewwan.DeviceDesc1021%    = ztewwan.ndi, USB\VID_19D2&PID_1021&MI_02
+So detect that case and handle the unplugging off to another thread
+just like we already do when called from within the scheduler.
 
-Adding the ones we were missing.
+RAID1 version of bug was introduced in 3.6, so that part of fix is
+suitable for 3.6.y.  RAID10 part won't apply.
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+Reported-by: Torsten Kaiser <just.for.lkml@googlemail.com>
+Reported-by: Peter Maloney <peter.maloney@brockmann-consult.de>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/usb/qmi_wwan.c |   41 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 41 insertions(+)
+ drivers/md/raid1.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/usb/qmi_wwan.c
-+++ b/drivers/net/usb/qmi_wwan.c
-@@ -398,16 +398,57 @@ static const struct usb_device_id produc
- 	},
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -958,7 +958,7 @@ static void raid1_unplug(struct blk_plug
+ 	struct r1conf *conf = mddev->private;
+ 	struct bio *bio;
  
- 	/* 3. Combined interface devices matching on interface number */
-+	{QMI_FIXED_INTF(0x19d2, 0x0002, 1)},
-+	{QMI_FIXED_INTF(0x19d2, 0x0012, 1)},
-+	{QMI_FIXED_INTF(0x19d2, 0x0017, 3)},
-+	{QMI_FIXED_INTF(0x19d2, 0x0021, 4)},
-+	{QMI_FIXED_INTF(0x19d2, 0x0025, 1)},
-+	{QMI_FIXED_INTF(0x19d2, 0x0031, 4)},
-+	{QMI_FIXED_INTF(0x19d2, 0x0042, 4)},
-+	{QMI_FIXED_INTF(0x19d2, 0x0049, 5)},
-+	{QMI_FIXED_INTF(0x19d2, 0x0052, 4)},
- 	{QMI_FIXED_INTF(0x19d2, 0x0055, 1)},	/* ZTE (Vodafone) K3520-Z */
-+	{QMI_FIXED_INTF(0x19d2, 0x0058, 4)},
- 	{QMI_FIXED_INTF(0x19d2, 0x0063, 4)},	/* ZTE (Vodafone) K3565-Z */
- 	{QMI_FIXED_INTF(0x19d2, 0x0104, 4)},	/* ZTE (Vodafone) K4505-Z */
-+	{QMI_FIXED_INTF(0x19d2, 0x0113, 5)},
-+	{QMI_FIXED_INTF(0x19d2, 0x0118, 5)},
-+	{QMI_FIXED_INTF(0x19d2, 0x0121, 5)},
-+	{QMI_FIXED_INTF(0x19d2, 0x0123, 4)},
-+	{QMI_FIXED_INTF(0x19d2, 0x0124, 5)},
-+	{QMI_FIXED_INTF(0x19d2, 0x0125, 6)},
-+	{QMI_FIXED_INTF(0x19d2, 0x0126, 5)},
-+	{QMI_FIXED_INTF(0x19d2, 0x0130, 1)},
-+	{QMI_FIXED_INTF(0x19d2, 0x0133, 3)},
-+	{QMI_FIXED_INTF(0x19d2, 0x0141, 5)},
- 	{QMI_FIXED_INTF(0x19d2, 0x0157, 5)},	/* ZTE MF683 */
-+	{QMI_FIXED_INTF(0x19d2, 0x0158, 3)},
- 	{QMI_FIXED_INTF(0x19d2, 0x0167, 4)},	/* ZTE MF820D */
-+	{QMI_FIXED_INTF(0x19d2, 0x0168, 4)},
-+	{QMI_FIXED_INTF(0x19d2, 0x0176, 3)},
-+	{QMI_FIXED_INTF(0x19d2, 0x0178, 3)},
-+	{QMI_FIXED_INTF(0x19d2, 0x0191, 4)},	/* ZTE EuFi890 */
-+	{QMI_FIXED_INTF(0x19d2, 0x0199, 1)},	/* ZTE MF820S */
-+	{QMI_FIXED_INTF(0x19d2, 0x0200, 1)},
-+	{QMI_FIXED_INTF(0x19d2, 0x0257, 3)},	/* ZTE MF821 */
- 	{QMI_FIXED_INTF(0x19d2, 0x0326, 4)},	/* ZTE MF821D */
- 	{QMI_FIXED_INTF(0x19d2, 0x1008, 4)},	/* ZTE (Vodafone) K3570-Z */
- 	{QMI_FIXED_INTF(0x19d2, 0x1010, 4)},	/* ZTE (Vodafone) K3571-Z */
-+	{QMI_FIXED_INTF(0x19d2, 0x1012, 4)},
- 	{QMI_FIXED_INTF(0x19d2, 0x1018, 3)},	/* ZTE (Vodafone) K5006-Z */
-+	{QMI_FIXED_INTF(0x19d2, 0x1021, 2)},
-+	{QMI_FIXED_INTF(0x19d2, 0x1245, 4)},
-+	{QMI_FIXED_INTF(0x19d2, 0x1247, 4)},
-+	{QMI_FIXED_INTF(0x19d2, 0x1252, 4)},
-+	{QMI_FIXED_INTF(0x19d2, 0x1254, 4)},
-+	{QMI_FIXED_INTF(0x19d2, 0x1255, 3)},
-+	{QMI_FIXED_INTF(0x19d2, 0x1255, 4)},
-+	{QMI_FIXED_INTF(0x19d2, 0x1256, 4)},
-+	{QMI_FIXED_INTF(0x19d2, 0x1401, 2)},
- 	{QMI_FIXED_INTF(0x19d2, 0x1402, 2)},	/* ZTE MF60 */
-+	{QMI_FIXED_INTF(0x19d2, 0x1424, 2)},
-+	{QMI_FIXED_INTF(0x19d2, 0x1425, 2)},
-+	{QMI_FIXED_INTF(0x19d2, 0x1426, 2)},	/* ZTE MF91 */
- 	{QMI_FIXED_INTF(0x19d2, 0x2002, 4)},	/* ZTE (Vodafone) K3765-Z */
- 	{QMI_FIXED_INTF(0x0f3d, 0x68a2, 8)},    /* Sierra Wireless MC7700 */
- 	{QMI_FIXED_INTF(0x114f, 0x68a2, 8)},    /* Sierra Wireless MC7750 */
+-	if (from_schedule) {
++	if (from_schedule || current->bio_list) {
+ 		spin_lock_irq(&conf->device_lock);
+ 		bio_list_merge(&conf->pending_bio_list, &plug->pending);
+ 		conf->pending_count += plug->pending_cnt;
 
 
