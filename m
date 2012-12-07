@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756534Ab2LGPIL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 10:08:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55178 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756519Ab2LGPIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 10:08:09 -0500
-Date: Fri, 7 Dec 2012 10:08:05 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Atsushi Kumagai <kumagai-atsushi@mxc.nes.nec.co.jp>
-Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Subject: Re: [PATCH] Add the values related to buddy system for filtering
- free pages
-Message-ID: <20121207150805.GC4928@redhat.com>
-References: <20121121170247.6b57465f2fc1d7f91cd1cddf@mxc.nes.nec.co.jp>
+	id S1756299Ab2LGPNd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 10:13:33 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:50199 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754293Ab2LGPNb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 10:13:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121121170247.6b57465f2fc1d7f91cd1cddf@mxc.nes.nec.co.jp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LNX.2.00.1212061101100.28002@pobox.suse.cz>
+References: <1354716176-12558-1-git-send-email-benjamin.tissoires@gmail.com>
+	<1354716176-12558-5-git-send-email-benjamin.tissoires@gmail.com>
+	<20121205205926.143070ef@endymion.delvare>
+	<alpine.LNX.2.00.1212061101100.28002@pobox.suse.cz>
+Date: Fri, 7 Dec 2012 16:13:29 +0100
+Message-ID: <CAN+gG=EWdZcTFNJxhcCB8Lw+mLAgb5NNV6eCb9RpWf+nt+ebzw@mail.gmail.com>
+Subject: Re: [PATCH v2 4/4] HID: i2c-hid: fix i2c_hid_get_raw_report count mismatches
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Jean Delvare <khali@linux-fr.org>, linux-input@vger.kernel.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 21, 2012 at 05:02:47PM +0900, Atsushi Kumagai wrote:
-> This patch adds the values related to buddy system to vmcoreinfo data
-> so that makedumpfile (dump filtering command) can filter out all free
-> pages with the new logic.
-> It's faster than the current logic because it can distinguish free page
-> by analyzing page structure at the same time as filtering for other
-> unnecessary pages (e.g. anonymous page).
-> OTOH, the current logic has to trace free_list to distinguish free 
-> pages while analyzing page structure to filter out other unnecessary
-> pages.
-> 
-> The new logic uses the fact that buddy page is marked by _mapcount == 
-> PAGE_BUDDY_MAPCOUNT_VALUE. The values below are required to distinguish
-> it.
-> 
-> Required values:
->   - OFFSET(page._mapcount)
->   - OFFSET(page.private)
->   - SIZE(pageflags)
->   - NUMBER(PG_slab)
->   - NUMBER(PAGE_BUDDY_MAPCOUNT_VALUE)
->   
+On Thu, Dec 6, 2012 at 11:01 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+>> > -   count = ihid->inbuf[0] | (ihid->inbuf[1] << 8);
+>> > +   ret_count = ihid->inbuf[0] | (ihid->inbuf[1] << 8);
+>> >
+>> > +   if (!ret_count)
+>>
+>> I'd make this (ret_count <= 2), as this would let you call memcpy with a
+>> null or even negative length.
+>
+> Good catch, it doesn't account for the 2 bytes needed for storing the
+> reply size.
+>
+> I have fixed that and applied the patch, thanks everybody!
+>
 
-As per your explanation, you should just need to export page._mapcount
-offset and PAGE_BUDDY_MAPCOUNT_VALUE value so that you can figure out
-if a page is free or not.
+Hi Jiri, Jean,
 
-Why do we need rest of the three fields.
+thank you very much for the work done. I was in a meeting past two
+days, so I was not able to answer sooner.
 
-- OFFSET(page.private)
-- SIZE(pageflags)
-- NUMBER(PG_slab)
-
-Thanks
-Vivek
+Cheers,
+Benjamin
