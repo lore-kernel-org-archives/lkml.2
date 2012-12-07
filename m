@@ -1,24 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423798Ab2LGBBs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 20:01:48 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:44852 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423673Ab2LGBAb (ORCPT
+	id S1423825Ab2LGBCR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 20:02:17 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:61365 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423650Ab2LGBAZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 20:00:31 -0500
+	Thu, 6 Dec 2012 20:00:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Calvin Walton <calvin.walton@kepstin.ca>,
+        =?UTF-8?q?Thomas=20Sch=C3=A4fer?= <tschaefer@t-online.de>,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        "David S. Miller" <davem@davemloft.net>,
         Peter Huewe <peterhuewe@gmx.de>
-Subject: [ 24/27] i915: Quirk no_lvds on Gigabyte GA-D525TUD ITX motherboard
-Date: Thu,  6 Dec 2012 16:59:08 -0800
-Message-Id: <20121207005833.008375861@linuxfoundation.org>
+Subject: [ 22/27] net: qmi_wwan: add Huawei E173
+Date: Thu,  6 Dec 2012 16:59:06 -0800
+Message-Id: <20121207005832.391616764@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121207005825.232489605@linuxfoundation.org>
 References: <20121207005825.232489605@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,46 +32,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Calvin Walton <calvin.walton@kepstin.ca>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit a51d4ed01e5bb39d2cf36a12f9976ab08872c192 upstream.
+commit ba695af067f9cadfec84457ac06b44e3fa849b15 upstream.
 
-This board is incorrectly detected as having an LVDS connector,
-resulting in the VGA output (the only available output on the board)
-showing the console only in the top-left 1024x768 pixels, and an extra
-LVDS connector appearing in X.
+The Huawei E173 is a QMI/wwan device which normally appear
+as 12d1:1436 in Linux. The descriptors displayed in that
+mode will be picked up by cdc_ether.  But the modem has
+another mode with a different device ID and a slightly
+different set of descriptors. This is the mode used by
+Windows like this:
 
-It's a desktop Mini-ITX board using an Atom D525 CPU with an NM10
-chipset.
+3Modem:      USB\VID_12D1&PID_140C&MI_00\6&3A1D2012&0&0000
+Networkcard: USB\VID_12D1&PID_140C&MI_01\6&3A1D2012&0&0001
+Appli.Inter: USB\VID_12D1&PID_140C&MI_02\6&3A1D2012&0&0002
+PC UI Inter: USB\VID_12D1&PID_140C&MI_03\6&3A1D2012&0&0003
 
-I've had this board for about a year, but this is the first time I
-noticed the issue because I've been running it headless for most of its
-life.
-
-Signed-off-by: Calvin Walton <calvin.walton@kepstin.ca>
+Reported-by: Thomas Schäfer <tschaefer@t-online.de>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_lvds.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/net/usb/qmi_wwan.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -788,6 +788,14 @@ static const struct dmi_system_id intel_
- 			DMI_MATCH(DMI_BOARD_NAME, "D525TUD"),
- 		},
+--- a/drivers/net/usb/qmi_wwan.c
++++ b/drivers/net/usb/qmi_wwan.c
+@@ -398,6 +398,7 @@ static const struct usb_device_id produc
  	},
-+	{
-+		.callback = intel_no_lvds_dmi_callback,
-+		.ident = "Gigabyte GA-D525TUD",
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "Gigabyte Technology Co., Ltd."),
-+			DMI_MATCH(DMI_BOARD_NAME, "D525TUD"),
-+		},
-+	},
  
- 	{ }	/* terminating entry */
- };
+ 	/* 3. Combined interface devices matching on interface number */
++	{QMI_FIXED_INTF(0x12d1, 0x140c, 1)},	/* Huawei E173 */
+ 	{QMI_FIXED_INTF(0x19d2, 0x0002, 1)},
+ 	{QMI_FIXED_INTF(0x19d2, 0x0012, 1)},
+ 	{QMI_FIXED_INTF(0x19d2, 0x0017, 3)},
 
 
