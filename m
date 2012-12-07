@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423094Ab2LGAzv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 19:55:51 -0500
+	id S1423132Ab2LGA40 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 19:56:26 -0500
 Received: from mail-pa0-f46.google.com ([209.85.220.46]:40591 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423046Ab2LGAzp (ORCPT
+	with ESMTP id S1423077Ab2LGAzs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 19:55:45 -0500
+	Thu, 6 Dec 2012 19:55:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jean Delvare <jdelvare@suse.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Doug Thompson <dougthompson@xmission.com>
-Subject: [ 12/20] i7300_edac: Fix error flag testing
-Date: Thu,  6 Dec 2012 16:54:27 -0800
-Message-Id: <20121207005236.199502286@linuxfoundation.org>
+        Andi Kleen <andi@firstfloor.org>, Ben Hutchings <ben@decadent.org.uk>,
+        Michal Marek <mmarek@suse.cz>
+Subject: [ 20/20] kbuild: Do not package /boot and /lib in make tar-pkg
+Date: Thu,  6 Dec 2012 16:54:35 -0800
+Message-Id: <20121207005238.643334078@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121207005232.756641002@linuxfoundation.org>
 References: <20121207005232.756641002@linuxfoundation.org>
@@ -28,59 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <jdelvare@suse.de>
+From: Michal Marek <mmarek@suse.cz>
 
-commit 7e06b7a3333f5c7a0cec12aff20d39c5c87c0795 upstream.
+commit fe04ddf7c2910362f3817c8156e41cbd6c0ee35d upstream.
 
-* Right-shift the values in GET_FBD_FAT_IDX and GET_FBD_NF_IDX, so
-  that the callers get the result they expect.
-* Fix definition of FERR_FAT_FBD_ERR_MASK.
-* Call GET_FBD_NF_IDX, not GET_FBD_FAT_IDX, when operating on
-  register FERR_NF_FBD. We were lucky they have the same definition.
+There were reports of users destroying their Fedora installs by a kernel
+tarball that replaces the /lib -> /usr/lib symlink. Let's remove the
+toplevel directories from the tarball to prevent this from happening.
 
-This fixes kernel bug #44131:
-https://bugzilla.kernel.org/show_bug.cgi?id=44131
-
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Doug Thompson <dougthompson@xmission.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Reported-by: Andi Kleen <andi@firstfloor.org>
+Suggested-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+[bwh: Fold in commit 3ce9e53e788881da0d5f3912f80e0dd6b501f304 to avoid
+ conflicts]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/edac/i7300_edac.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ scripts/package/buildtar |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/edac/i7300_edac.c
-+++ b/drivers/edac/i7300_edac.c
-@@ -215,8 +215,8 @@ static const char *ferr_fat_fbd_name[] =
- 	[0]  = "Memory Write error on non-redundant retry or "
- 	       "FBD configuration Write error on retry",
- };
--#define GET_FBD_FAT_IDX(fbderr)	(fbderr & (3 << 28))
--#define FERR_FAT_FBD_ERR_MASK ((1 << 0) | (1 << 1) | (1 << 2) | (1 << 3))
-+#define GET_FBD_FAT_IDX(fbderr)	(((fbderr) >> 28) & 3)
-+#define FERR_FAT_FBD_ERR_MASK ((1 << 0) | (1 << 1) | (1 << 2) | (1 << 22))
+--- a/scripts/package/buildtar
++++ b/scripts/package/buildtar
+@@ -109,7 +109,7 @@ esac
+ 	if tar --owner=root --group=root --help >/dev/null 2>&1; then
+ 		opts="--owner=root --group=root"
+ 	fi
+-	tar cf - . $opts | ${compress} > "${tarball}${file_ext}"
++	tar cf - boot/* lib/* $opts | ${compress} > "${tarball}${file_ext}"
+ )
  
- #define FERR_NF_FBD	0xa0
- static const char *ferr_nf_fbd_name[] = {
-@@ -243,7 +243,7 @@ static const char *ferr_nf_fbd_name[] =
- 	[1]  = "Aliased Uncorrectable Non-Mirrored Demand Data ECC",
- 	[0]  = "Uncorrectable Data ECC on Replay",
- };
--#define GET_FBD_NF_IDX(fbderr)	(fbderr & (3 << 28))
-+#define GET_FBD_NF_IDX(fbderr)	(((fbderr) >> 28) & 3)
- #define FERR_NF_FBD_ERR_MASK ((1 << 24) | (1 << 23) | (1 << 22) | (1 << 21) |\
- 			      (1 << 18) | (1 << 17) | (1 << 16) | (1 << 15) |\
- 			      (1 << 14) | (1 << 13) | (1 << 11) | (1 << 10) |\
-@@ -485,7 +485,7 @@ static void i7300_process_fbd_error(stru
- 		errnum = find_first_bit(&errors,
- 					ARRAY_SIZE(ferr_nf_fbd_name));
- 		specific = GET_ERR_FROM_TABLE(ferr_nf_fbd_name, errnum);
--		branch = (GET_FBD_FAT_IDX(error_reg) == 2) ? 1 : 0;
-+		branch = (GET_FBD_NF_IDX(error_reg) == 2) ? 1 : 0;
- 
- 		pci_read_config_dword(pvt->pci_dev_16_1_fsb_addr_map,
- 			REDMEMA, &syndrome);
+ echo "Tarball successfully created in ${tarball}${file_ext}"
 
 
