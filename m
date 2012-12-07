@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423018Ab2LGAzc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 19:55:32 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:51059 "EHLO
+	id S1424150Ab2LGBJj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 20:09:39 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:40591 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423000Ab2LGAz1 (ORCPT
+	with ESMTP id S1423002Ab2LGAza (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 19:55:27 -0500
+	Thu, 6 Dec 2012 19:55:30 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ariel Elior <ariele@broadcom.com>,
-        Eilon Greenstein <eilong@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>, CAI Qian <caiqian@redhat.com>
-Subject: [ 14/20] bnx2x: remove redundant warning log
-Date: Thu,  6 Dec 2012 16:54:29 -0800
-Message-Id: <20121207005236.806969351@linuxfoundation.org>
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        CAI Qian <caiqian@redhat.com>
+Subject: [ 15/20] s390/mm: have 16 byte aligned struct pages
+Date: Thu,  6 Dec 2012 16:54:30 -0800
+Message-Id: <20121207005237.110422582@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121207005232.756641002@linuxfoundation.org>
 References: <20121207005232.756641002@linuxfoundation.org>
@@ -28,43 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ariel Elior <ariele@broadcom.com>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit 4a25417c20fac00b3afd58ce27408f964d19e708 upstream.
+commit 4bffbb3455372a26816e364fb4448810f7014452 upstream.
 
-fix bug where a register which was only meant to be read in 578xx/57712
-devices causes a bogus error message to be logged when read from other
-devices.
+Select HAVE_ALIGNED_STRUCT_PAGE on s390, so that the slub allocator can make
+use of compare and swap double for lockless updates. This increases the size
+of struct page to 64 bytes (instead of 56 bytes), however the performance gain
+justifies the increased size:
 
-Signed-off-by: Ariel Elior <ariele@broadcom.com>
-Signed-off-by: Eilon Greenstein <eilong@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+- now excactly four struct pages fit into a single cache line; the
+  case that accessing a struct page causes two cache line loads
+  does not exist anymore.
+- calculating the offset of a struct page within the memmap array
+  is only a simple shift instead of a more expensive multiplication.
+
+A "hackbench 200 process 200" run on a 32 cpu system did show an 8% runtime
+improvement.
+
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ arch/s390/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-+++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c
-@@ -9131,10 +9131,13 @@ static int __devinit bnx2x_prev_unload_c
-  */
- static void __devinit bnx2x_prev_interrupted_dmae(struct bnx2x *bp)
- {
--	u32 val = REG_RD(bp, PGLUE_B_REG_PGLUE_B_INT_STS);
--	if (val & PGLUE_B_PGLUE_B_INT_STS_REG_WAS_ERROR_ATTN) {
--		BNX2X_ERR("was error bit was found to be set in pglueb upon startup. Clearing");
--		REG_WR(bp, PGLUE_B_REG_WAS_ERROR_PF_7_0_CLR, 1 << BP_FUNC(bp));
-+	if (!CHIP_IS_E1x(bp)) {
-+		u32 val = REG_RD(bp, PGLUE_B_REG_PGLUE_B_INT_STS);
-+		if (val & PGLUE_B_PGLUE_B_INT_STS_REG_WAS_ERROR_ATTN) {
-+			BNX2X_ERR("was error bit was found to be set in pglueb upon startup. Clearing");
-+			REG_WR(bp, PGLUE_B_REG_WAS_ERROR_PF_7_0_CLR,
-+			       1 << BP_FUNC(bp));
-+		}
- 	}
- }
- 
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -93,6 +93,7 @@ config S390
+ 	select ARCH_SAVE_PAGE_KEYS if HIBERNATION
+ 	select HAVE_MEMBLOCK
+ 	select HAVE_MEMBLOCK_NODE_MAP
++	select HAVE_ALIGNED_STRUCT_PAGE if SLUB
+ 	select ARCH_DISCARD_MEMBLOCK
+ 	select ARCH_INLINE_SPIN_TRYLOCK
+ 	select ARCH_INLINE_SPIN_TRYLOCK_BH
 
 
