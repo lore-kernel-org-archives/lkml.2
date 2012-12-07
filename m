@@ -1,54 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030630Ab2LGOFQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 09:05:16 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:48255 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030437Ab2LGOFO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 09:05:14 -0500
-Message-ID: <50C1F783.6090501@ti.com>
-Date: Fri, 7 Dec 2012 15:04:51 +0100
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1030644Ab2LGOFo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 09:05:44 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:39642 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030437Ab2LGOFn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 09:05:43 -0500
+Date: Fri, 7 Dec 2012 09:05:28 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Liu, Jinsong" <jinsong.liu@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "lenb@kernel.org" <lenb@kernel.org>
+Subject: Re: [PATCH V1 1/2] Xen acpi memory hotplug driver
+Message-ID: <20121207140528.GA3140@phenom.dumpdata.com>
+References: <DE8DF0795D48FD4CA783C40EC82923353942F9@SHSMSX101.ccr.corp.intel.com>
+ <20121128192601.GA15871@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC829233539AC1D@SHSMSX101.ccr.corp.intel.com>
+ <20121205174307.GC16072@phenom.dumpdata.com>
+ <DE8DF0795D48FD4CA783C40EC82923353A2366@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        <linux-leds@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH v2 3/3] leds: leds-pwm: Add device tree bindings
-References: <1352731270-27534-1-git-send-email-peter.ujfalusi@ti.com> <1352731270-27534-4-git-send-email-peter.ujfalusi@ti.com> <20121206100052.EC8293E0E22@localhost> <50C0913B.9070802@ti.com> <20121207133453.800C43E0B87@localhost>
-In-Reply-To: <20121207133453.800C43E0B87@localhost>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <DE8DF0795D48FD4CA783C40EC82923353A2366@SHSMSX101.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/2012 02:34 PM, Grant Likely wrote:
-> It really needs to look like this:
+On Thu, Dec 06, 2012 at 04:27:36AM +0000, Liu, Jinsong wrote:
+> >>>> diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
+> >>>> index 126d8ce..abd0396 100644
+> >>>> --- a/drivers/xen/Kconfig
+> >>>> +++ b/drivers/xen/Kconfig
+> >>>> @@ -206,4 +206,15 @@ config XEN_MCE_LOG
+> >>>>  	  Allow kernel fetching MCE error from Xen platform and
+> >>>>  	  converting it into Linux mcelog format for mcelog tools
+> >>>> 
+> >>>> +config XEN_ACPI_MEMORY_HOTPLUG
+> >>>> +	bool "Xen ACPI memory hotplug"
+> >>> 
+> >>> There should be a way to make this a module.
+> >> 
+> >> I have some concerns to make it a module:
+> >> 1. xen and native memhotplug driver both work as module, while we
+> >> need early load xen driver. 
+> >> 2. if possible, a xen stub driver may solve load sequence issue, but
+> >>   it may involve other issues * if xen driver load then unload,
+> >> native driver may have chance to load successfully; 
+> > 
+> > The stub driver would still "occupy" the ACPI bus for the memory
+> > hotplug PnP, so I think this would not be a problem.
+> > 
 > 
-> pwmleds {
-> 	compatible = "pwm-leds";
-> 	kpad {
-> 		label = "omap4::keypad";
-> 		max-brightness = <127>;
-> 		pwms = <&twl_pwm 0 7812500>;
-> 	};
-> 	charging {
-> 		label = "omap4:green:chrg";
-> 		max-brightness = <255>;
-> 		pwms = <&twl_pwmled 0 7812500>;
-> 	};
-> };
+> I'm not quite clear your mean here, do you mean it has
+> 1. xen_stub driver + xen_memhoplug driver, then xen_strub driver unload and entirely replaced by xen_memhotplug driver, or
+> 2. xen_stub driver (w/ stub ops) + xen_memhotplug ops (not driver), then xen_stub driver keep occupying but its stub ops later replaced by xen_memhotplug ops?
 
-OK.
-So What we need to do is export the of_pwm_request() from drivers/pwm/core.c
-Client drivers us of_pwm_request(node, NULL); to get the pwm when booted with DT.
-Works fine on my setup this way and the DTS section looks just as you have
-described.
-Now I need to clean them up and resubmit.
+#2
+> 
+> If in way #1, it has risk that native driver may load (if xen driver unload).
+> If in way #2, xen_memhotplug ops lose the chance to probe/add/bind existed memory devices (since it's done when driver registerred).
 
--- 
-Péter
+Could the stub driver have a queue of events?
+
+> 
+> >>   * if xen driver load --> unload --> load again, then it will lose
+> >> hotplug notification during unload period; 
+> > 
+> > Sure. But I think we can do it with this driver? After all the
+> > function of 
+> > it is to just tell the firmware to turn on/off sockets - and if we
+> > miss 
+> > one notification we won't take advantage of the power savings - but we
+> > can do that later on.
+> > 
+> 
+> Not only inform firmware.
+> Hotplug notify callback will invoke acpi_bus_add -> ... -> implicitly invoke drv->ops.add method to add the hotadded memory device.
+
+Gotcha.
+> 
+> > 
+> >>   * if xen driver load --> unload --> load again, then it will
+> >> re-add all memory devices, but the handle for 'booting memory
+> >> device' and 'hotplug memory device' are different while we have no
+> >> way to distinguish these 2 kind of devices.   
+> > 
+> > Wouldn't the stub driver hold onto that?
+> > 
+> 
+> Same question as comment #1. Do you mean it has a xen_stub driver (w/ stub ops) and a xen_memhotplug ops?
+
+Correct.
+> 
+> >> 
+> >> IMHO I think to make xen hotplug logic as module may involves
+> >> unexpected result. Is there any obvious advantages of doing so?
+> >> after all we have provided config choice to user. Thoughts?  
+> > 
+> > Yes, it becomes a module - which is what we want.
+> > 
+> 
+> What I meant here is, module will bring some unexpected issues for xen hotplug.
+> We can provide user 'bool' config choice, let them decide to build-in or not, but not 'tristate' choice.
+
+What would be involved in making it an tristate choice?
+> 
+> Thanks
+> Jinsong
