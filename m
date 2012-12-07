@@ -1,43 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933423Ab2LGKcf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 05:32:35 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:56246 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932890Ab2LGKcd (ORCPT
+	id S932925Ab2LGKY0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 05:24:26 -0500
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:36942 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932832Ab2LGKYL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 05:32:33 -0500
-Date: Fri, 7 Dec 2012 10:36:43 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Roland Stigge <stigge@antcom.de>
-Cc: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
-        jbe@pengutronix.de, plagnioj@jcrosoft.com, highguy@gmail.com,
-        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
-        rmallon@gmail.com, tru@work-microwave.de, sr@denx.de,
-        wg@grandegger.com
-Subject: Re: [PATCH 0/6 v10] gpio: Add block GPIO
-Message-ID: <20121207103643.34ca6dc5@pyramind.ukuu.org.uk>
-In-Reply-To: <1354830456-17590-1-git-send-email-stigge@antcom.de>
-References: <1354830456-17590-1-git-send-email-stigge@antcom.de>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 7 Dec 2012 05:24:11 -0500
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate UAPI
+Date: Fri, 7 Dec 2012 11:24:04 +0100
+User-Agent: KMail/1.13.7 (Linux/3.7.0-rc8-f2fs-tp520+; KDE/4.8.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        "linux-fsdevel" <linux-fsdevel@vger.kernel.org>
+References: <1353366267-15629-1-git-send-email-david@fromorbit.com> <201212061037.56597.Martin@lichtvoll.de> <20121207010837.GA16373@gmail.com> (sfid-20121207_103129_818557_818C137B)
+In-Reply-To: <20121207010837.GA16373@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201212071124.04589.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> * Device interface for userland access (alternative to sysfs)
+Am Freitag, 7. Dezember 2012 schrieb Ingo Molnar:
 
-Currently we can set different permissions on different GPIO lines. Your
-driver change drives a truck through this facility.
+> * Martin Steigerwald <Martin@lichtvoll.de> wrote:
+> 
+> > > The thing that people are complaining about is exactly the 
+> > > reverse of this. It's *protecting* us from making mistakes, 
+> > > and doesn't actually add any new interfaces in itself.
+> > >
+> > > This is why I'm so annoyed with this stupid thread. It's 
+> > > been going on forever, and reverting that change WOULD BE 
+> > > OBJECTIVELY A BAD IDEA.
+> > 
+> > See, thats where you have a problem with "reality".
+> > 
+> > It seems you cannot accept the fact that some developers 
+> > disliked the process in which this change was pushed. [...]
+> 
+> I don't think you have understood Linus's argument above.
+> 
+> The "process" does not change the object technical merits of a 
+> patch. Ever. This patch is _good_, and objectively good. No 
+> amount of 'bad process' can make this patch bad.
 
-I'm not sure there is an elegant way to snoop on the permissions set
-on the sysfs gpio nodes and the driver also breaks managing GPIO rights
-via smack/selinux/apparmor and assigning specific gpio lines to specific
-pieces of user space code.
+A patch can´t be objectively good or bad. Unlike one of you developers see
+yourself as a god who actually *really* knows it. Cause individual
+developers write patches, review patches, have oppinions about patches.
+Anything a subject created can´t be objective at all. Saying that one
+patch is *objectively* good IMO carries a message like "I know it better
+than you, go away" with it.
 
-Alan
+There have been different oppinions about the patch quality. And that
+is what the review process was made for. At least so I thought.
+
+> Now, hypothetically, if this was an objectively bad patch, then 
+> any "bad process" used to push it would add insult to injury and 
+> it could be reason enough to flame Tytso twice as hard.
+
+I agree to Dave´s view here. If its good, why fear and bypass the review
+process upsetting other developers? Actually my argument is that using
+the review process the process can be more fluent.
+
+This way comments of other kernel developers can contribute to
+make this patch better than it is currently.
+
+And if in the end the subsystem maintainer wants to take a patch despite
+NACKs, he / she can still do it. At least thats how I understood it. But
+then he / shes does it openly instead of sneaking a patch in, possibly hoping
+other developers do not read git logs that closely.
+
+
+Granted the patch can still be improved and actually I do think the patch flag
+allocation deverses a better in source code comment about it.
+
+So I suggest:
+
+- On a next occasion Ted (or any other developer) goes through the
+review process again. Especially put controversial patches through
+the review process!
+
+- For this time discuss constructively how to make the bit reservation
+patch acceptable to Dave and Christoph, i.e. by adding some documentation.
+As I read out of it Dave and Christoph can basically agree with the bit
+reservation. Thus there is room for improving the patch.
+
+> But it turns out the patch was right and good, so kudos to Tytso 
+> for cutting through the bike shed painting and politicks of 
+> fsdevel - which "process" would have deprived us of a good 
+> patch...
+
+I am astonished by the lack of confidence you seem to put into the review
+process, Ingo.
+
+Thanks,
+-- 
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
