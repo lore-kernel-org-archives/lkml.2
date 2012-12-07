@@ -1,144 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423771Ab2LGBlR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 20:41:17 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49020 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1423073Ab2LGBlQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 20:41:16 -0500
-Message-ID: <1354844463.20838.33.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 06/89] device_cgroup: fix RCU usage
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Herton Ronaldo Krzesinski <herton.krzesinski@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Aristeu Rozanski <aris@redhat.com>, Li Zefan <lizefan@huawei.com>
-Date: Fri, 07 Dec 2012 01:41:03 +0000
-In-Reply-To: <20121206193602.GD3034@herton-Z68MA-D2H-B3>
-References: <20121203143146.549859007@decadent.org.uk>
-	 <20121203143147.609467839@decadent.org.uk>
-	 <20121206193602.GD3034@herton-Z68MA-D2H-B3>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-V9KwnbxfphfqBSpD9XFo"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1424074Ab2LGBnT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 20:43:19 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:43403 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1423243Ab2LGBnQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 20:43:16 -0500
+X-IronPort-AV: E=Sophos;i="4.84,234,1355068800"; 
+   d="scan'208";a="6349285"
+Message-ID: <50C14976.2050606@cn.fujitsu.com>
+Date: Fri, 07 Dec 2012 09:42:14 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Jianguo Wu <wujianguo@huawei.com>
+CC: Wen Congyang <wency@cn.fujitsu.com>, x86@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
+        cmetcalf@tilera.com, sparclinux@vger.kernel.org,
+        David Rientjes <rientjes@google.com>, Jiang Liu <liuj97@gmail.com>,
+        Len Brown <len.brown@intel.com>, benh@kernel.crashing.org,
+        paulus@samba.org, Christoph Lameter <cl@linux.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Subject: Re: [Patch v4 08/12] memory-hotplug: remove memmap of sparse-vmemmap
+References: <1354010422-19648-1-git-send-email-wency@cn.fujitsu.com> <1354010422-19648-9-git-send-email-wency@cn.fujitsu.com> <50B5DC00.20103@huawei.com> <50B80FB1.6040906@cn.fujitsu.com> <50BC0D2D.8040008@huawei.com>
+In-Reply-To: <50BC0D2D.8040008@huawei.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/07 09:42:29,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/07 09:42:33,
+	Serialize complete at 2012/12/07 09:42:33
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Wu,
 
---=-V9KwnbxfphfqBSpD9XFo
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I met some problems when I was digging into the code. It's very
+kind of you if you could help me with that. :)
 
-On Thu, 2012-12-06 at 17:36 -0200, Herton Ronaldo Krzesinski wrote:
-> On Mon, Dec 03, 2012 at 02:31:52PM +0000, Ben Hutchings wrote:
-> > 3.2-stable review patch.  If anyone has any objections, please let me k=
-now.
-> >=20
-> > ------------------
-> >=20
-> > From: Tejun Heo <tj@kernel.org>
-> >=20
-> > commit 201e72acb2d3821e2de9ce6091e98859c316b29a upstream.
-> >=20
-> > dev_cgroup->exceptions is protected with devcgroup_mutex for writes
-> > and RCU for reads; however, RCU usage isn't correct.
-> >=20
-> > * dev_exception_clean() doesn't use RCU variant of list_del() and
-> >   kfree().  The function can race with may_access() and may_access()
-> >   may end up dereferencing already freed memory.  Use list_del_rcu()
-> >   and kfree_rcu() instead.
-> >=20
-> > * may_access() may be called only with RCU read locked but doesn't use
-> >   RCU safe traversal over ->exceptions.  Use list_for_each_entry_rcu().
-> >=20
-> > Signed-off-by: Tejun Heo <tj@kernel.org>
-> > Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
-> > Cc: Aristeu Rozanski <aris@redhat.com>
-> > Cc: Li Zefan <lizefan@huawei.com>
-> > [bwh: Backported to 3.2:
-> >  - Adjust context
-> >  - Exception list is called whitelist]
-> > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
->=20
-> I belive this backport is uneeded for 3.2 (or any stable <=3D 3.6), since
-> may_access_whitelist (may_access now in mainline) isn't called under
-> rcu_read_lock.
+If I misunderstood your code, please tell me.
+Please see below. :)
 
-I think you're right.  There are other readers that do rely on
-rcu_read_lock(), but I don't think any of them can race with
-devcgroup_destroy() (and if they can, it would have to use
-kfree_rcu(dev_cgroup) as well).
+On 12/03/2012 10:23 AM, Jianguo Wu wrote:
+> Signed-off-by: Jianguo Wu<wujianguo@huawei.com>
+> Signed-off-by: Jiang Liu<jiang.liu@huawei.com>
+> ---
+>   include/linux/mm.h  |    1 +
+>   mm/sparse-vmemmap.c |  231 +++++++++++++++++++++++++++++++++++++++++++++++++++
+>   mm/sparse.c         |    3 +-
+>   3 files changed, 234 insertions(+), 1 deletions(-)
+>
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index 5657670..1f26af5 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -1642,6 +1642,7 @@ int vmemmap_populate(struct page *start_page, unsigned long pages, int node);
+>   void vmemmap_populate_print_last(void);
+>   void register_page_bootmem_memmap(unsigned long section_nr, struct page *map,
+>   				  unsigned long size);
+> +void vmemmap_free(struct page *memmap, unsigned long nr_pages);
+>
+>   enum mf_flags {
+>   	MF_COUNT_INCREASED = 1<<  0,
+> diff --git a/mm/sparse-vmemmap.c b/mm/sparse-vmemmap.c
+> index 1b7e22a..748732d 100644
+> --- a/mm/sparse-vmemmap.c
+> +++ b/mm/sparse-vmemmap.c
+> @@ -29,6 +29,10 @@
+>   #include<asm/pgalloc.h>
+>   #include<asm/pgtable.h>
+>
+> +#ifdef CONFIG_MEMORY_HOTREMOVE
+> +#include<asm/tlbflush.h>
+> +#endif
+> +
+>   /*
+>    * Allocate a block of memory to be used to back the virtual memory map
+>    * or to back the page tables that are used to create the mapping.
+> @@ -224,3 +228,230 @@ void __init sparse_mem_maps_populate_node(struct page **map_map,
+>   		vmemmap_buf_end = NULL;
+>   	}
+>   }
+> +
+> +#ifdef CONFIG_MEMORY_HOTREMOVE
+> +
+> +#define PAGE_INUSE 0xFD
+> +
+> +static void vmemmap_free_pages(struct page *page, int order)
+> +{
+> +	struct zone *zone;
+> +	unsigned long magic;
+> +
+> +	magic = (unsigned long) page->lru.next;
+> +	if (magic == SECTION_INFO || magic == MIX_SECTION_INFO) {
+> +		put_page_bootmem(page);
+> +
+> +		zone = page_zone(page);
+> +		zone_span_writelock(zone);
+> +		zone->present_pages++;
+> +		zone_span_writeunlock(zone);
+> +		totalram_pages++;
+> +	} else
+> +		free_pages((unsigned long)page_address(page), order);
 
-You were too late for 3.2.35 but I'll revert this in the next update.
+Here, I think SECTION_INFO and MIX_SECTION_INFO pages are all allocated
+by bootmem, so I put this function this way.
 
-Ben.
+I'm not sure if parameter order is necessary here. It will always be 0
+in your code. Is this OK to you ?
 
-> > ---
-> >  security/device_cgroup.c |    6 +++---
-> >  1 file changed, 3 insertions(+), 3 deletions(-)
-> >=20
-> > --- a/security/device_cgroup.c
-> > +++ b/security/device_cgroup.c
-> > @@ -202,8 +202,8 @@ static void devcgroup_destroy(struct cgr
-> > =20
-> >  	dev_cgroup =3D cgroup_to_devcgroup(cgroup);
-> >  	list_for_each_entry_safe(wh, tmp, &dev_cgroup->whitelist, list) {
-> > -		list_del(&wh->list);
-> > -		kfree(wh);
-> > +		list_del_rcu(&wh->list);
-> > +		kfree_rcu(wh, rcu);
-> >  	}
-> >  	kfree(dev_cgroup);
-> >  }
-> > @@ -278,7 +278,7 @@ static int may_access_whitelist(struct d
-> >  {
-> >  	struct dev_whitelist_item *whitem;
-> > =20
-> > -	list_for_each_entry(whitem, &c->whitelist, list) {
-> > +	list_for_each_entry_rcu(whitem, &c->whitelist, list) {
-> >  		if (whitem->type & DEV_ALL)
-> >  			return 1;
-> >  		if ((refwh->type & DEV_BLOCK) && !(whitem->type & DEV_BLOCK))
-> >=20
-> >=20
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe stable" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >=20
->=20
+static void free_pagetable(struct page *page)
+{
+         struct zone *zone;
+         bool bootmem = false;
+         unsigned long magic;
 
---=20
-Ben Hutchings
-Computers are not intelligent.	They only think they are.
+         /* bootmem page has reserved flag */
+         if (PageReserved(page)) {
+                 __ClearPageReserved(page);
+                 bootmem = true;
+         }
 
---=-V9KwnbxfphfqBSpD9XFo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+         magic = (unsigned long) page->lru.next;
+         if (magic == SECTION_INFO || magic == MIX_SECTION_INFO)
+                 put_page_bootmem(page);
+         else
+                 __free_page(page);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+         /*
+          * SECTION_INFO pages and MIX_SECTION_INFO pages
+          * are all allocated by bootmem.
+          */
+         if (bootmem) {
+                 zone = page_zone(page);
+                 zone_span_writelock(zone);
+                 zone->present_pages++;
+                 zone_span_writeunlock(zone);
+                 totalram_pages++;
+         }
+}
 
-iQIVAwUAUMFJL+e/yOyVhhEJAQqI6w//d0hED75RNkDYF1ZYapRsm2LTirbDvO2J
-Y1HaEh35GtPtLIoNEOFo7FvQAPPV9VGvqjtrpeAoHO4NEIHNxyLPrt07VFGpvo1Q
-eZVJoeRbx6W1R7Sf7utwni9/Tlw4Wzb62deu+SSxeSjs+0QJCWhbQpU1413ND7Fz
-J8YhA5PBSZN/ui+ZmDa9+4TTX9ra/8WJsHVhxOLG7lO0WP+LVMojejRLKWoZ0Vbc
-GAZQEk33obOtmKNIzx2oF0YjxmBJfIviTs/ktZyzRlli0gJU/8AOD4/j8l8EyeBE
-hnPZplMXMHwHEYK3O5eMCP9bR7RuqYvLhYkDHYddU9WLpF2zola6+vdjBFghm93t
-YePRVr2ctICmop5VB5iwRAfZhwRG18nSL1HbMOgdydlMxXlabrzpV8KKYdH2osK5
-5UoYiyMzNRnP+BNykvwh8SgJCEAeenW63cIdE3UpaqOh/dJNs5bmlFONxF1Oipn9
-YKditvkOtUXkpmNESihCdW17rsy/yfxnXJrkr+BnhuxB5pVMOnNka55ZVdvAWzbO
-UBBKGXXk1+8mY8u9Z29hkHVSyoiFhhHpUhW62noaoHSJq/NMspOqUF4dPdjqaJqg
-8mllTrETjhYQsjpi62wfNLZZeXSVcPi+h/hH02lyVatRHjg0Pe2IMPTQUquKjkJ/
-cbeF3Rv6OSQ=
-=AsJq
------END PGP SIGNATURE-----
+(snip)
 
---=-V9KwnbxfphfqBSpD9XFo--
+> +
+> +static void vmemmap_pte_remove(pmd_t *pmd, unsigned long addr, unsigned long end)
+> +{
+> +	pte_t *pte;
+> +	unsigned long next;
+> +	void *page_addr;
+> +
+> +	pte = pte_offset_kernel(pmd, addr);
+> +	for (; addr<  end; pte++, addr += PAGE_SIZE) {
+> +		next = (addr + PAGE_SIZE)&  PAGE_MASK;
+> +		if (next>  end)
+> +			next = end;
+> +
+> +		if (pte_none(*pte))
+
+Here, you checked xxx_none() in your vmemmap_xxx_remove(), but you used
+!xxx_present() in your x86_64 patches. Is it OK if I only check
+!xxx_present() ?
+
+> +			continue;
+> +		if (IS_ALIGNED(addr, PAGE_SIZE)&&
+> +		    IS_ALIGNED(next, PAGE_SIZE)) {
+> +			vmemmap_free_pages(pte_page(*pte), 0);
+> +			spin_lock(&init_mm.page_table_lock);
+> +			pte_clear(&init_mm, addr, pte);
+> +			spin_unlock(&init_mm.page_table_lock);
+> +		} else {
+> +			/*
+> +			 * Removed page structs are filled with 0xFD.
+> +			 */
+> +			memset((void *)addr, PAGE_INUSE, next - addr);
+> +			page_addr = page_address(pte_page(*pte));
+> +
+> +			if (!memchr_inv(page_addr, PAGE_INUSE, PAGE_SIZE)) {
+> +				spin_lock(&init_mm.page_table_lock);
+> +				pte_clear(&init_mm, addr, pte);
+> +				spin_unlock(&init_mm.page_table_lock);
+
+Here, since we clear pte, we should also free the page, right ?
+
+> +			}
+> +		}
+> +	}
+> +
+> +	free_pte_table(pmd);
+> +	__flush_tlb_all();
+> +}
+> +
+> +static void vmemmap_pmd_remove(pud_t *pud, unsigned long addr, unsigned long end)
+> +{
+> +	unsigned long next;
+> +	pmd_t *pmd;
+> +
+> +	pmd = pmd_offset(pud, addr);
+> +	for (; addr<  end; addr = next, pmd++) {
+> +		next = (addr, end);
+
+And by the way, there isn't pte_addr_end() in kernel, why ?
+I saw you calculated it like this:
+
+                 next = (addr + PAGE_SIZE) & PAGE_MASK;
+                 if (next > end)
+                         next = end;
+
+This logic is very similar to {pmd|pud|pgd}_addr_end(). Shall we add a
+pte_addr_end() or something ? :)
+Since there is no such code in kernel for a long time, I think there
+must be some reasons.
+
+I merged free_xxx_table() and remove_xxx_table() as common interfaces.
+
+And again, thanks for your patient and nice explanation. :)
+
+(snip)
