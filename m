@@ -1,79 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423958Ab2LGCdy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 21:33:54 -0500
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:43685 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1422821Ab2LGCdx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 21:33:53 -0500
-Message-ID: <1354847118.21116.33.camel@misato.fc.hp.com>
-Subject: Re: [RFC PATCH v3 0/3] acpi: Introduce prepare_remove device
- operation
-From: Toshi Kani <toshi.kani@hp.com>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Hanjun Guo <guohanjun@huawei.com>,
-        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com, rjw@sisk.pl, lenb@kernel.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Tang Chen <tangchen@cn.fujitsu.com>,
-        Liujiang <jiang.liu@huawei.com>, Huxinwei <huxinwei@huawei.com>
-Date: Thu, 06 Dec 2012 19:25:18 -0700
-In-Reply-To: <50C0CC2A.1010603@gmail.com>
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
-	     <50B5EFE9.3040206@huawei.com>
-	    <1354128096.26955.276.camel@misato.fc.hp.com>
-	   <50B6E936.2080308@huawei.com> <1354228028.7776.56.camel@misato.fc.hp.com>
-	   <50BC29C6.6050706@huawei.com>
-	 <1354579848.21585.54.camel@misato.fc.hp.com>  <50BDBF5A.8040407@huawei.com>
-	 <1354663411.21585.135.camel@misato.fc.hp.com> <50C0CC2A.1010603@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+	id S1424046Ab2LGCkS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 21:40:18 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:44737 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1422709Ab2LGCkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 6 Dec 2012 21:40:16 -0500
+Message-ID: <1354848015.22463.17.camel@joe-AO722>
+Subject: Re: [PATCH] printk: Fix print_time length computation when no
+ buffer is given
+From: Joe Perches <joe@perches.com>
+To: Sylvain Munaut <s.munaut@whatever-company.com>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Kay Sievers <kay@vrfy.org>, stable@kernel.org
+Date: Thu, 06 Dec 2012 18:40:15 -0800
+In-Reply-To: <1354813775-32451-1-git-send-email-s.munaut@whatever-company.com>
+References: <CAF6-1L7qDULSvzaB2G=8y9Jkyd=SfcDBnNTxTuN0xSQxG94CHg@mail.gmail.com>
+	 <1354813775-32451-1-git-send-email-s.munaut@whatever-company.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-12-07 at 00:47 +0800, Jiang Liu wrote:
-> On 12/05/2012 07:23 AM, Toshi Kani wrote:
-> > On Tue, 2012-12-04 at 17:16 +0800, Hanjun Guo wrote:
-> >> On 2012/12/4 8:10, Toshi Kani wrote:
-> >>> On Mon, 2012-12-03 at 12:25 +0800, Hanjun Guo wrote:
-> >>>> On 2012/11/30 6:27, Toshi Kani wrote:
-> >>>>> On Thu, 2012-11-29 at 12:48 +0800, Hanjun Guo wrote:
-> >>>>>> On 2012/11/29 2:41, Toshi Kani wrote:
-:
-> >>>> The ACPI specification provides _EDL method to
-> >>>> tell OS the eject device list, but still has no method to tell OS the add device
-> >>>> list now.
-> >>>
-> >>> Yes, but I do not think the OS needs special handling for add...
-> >>
-> >> Hmm, how about trigger a hot add operation by OS ? we have eject interface for OS, but
-> >> have no add interface now, do you think this feature is useful? If it is, I think OS
-> >> should analyze the dependency first and tell the user.
-> > 
-> > The OS can eject an ACPI device because a target device is owned by the
-> > OS (i.e. enabled).  For hot-add, a target ACPI device is not owned by
-> > the OS (i.e. disabled).  Therefore, the OS is not supposed to change its
-> > state.  So, I do not think we should support a hot-add operation by the
-> > OS.
-> We depends on the firmware to provide an interface to actually hot-add the device.
-> The sequence is:
-> 1) user trigger hot-add request by sysfs interfaces.
-> 2) hotplug framework validates conditions for hot-adding (dependency)
-> 3) hotplug framework invokes firmware interfaces to request a hot-adding operation.
-> 4) firmware sends an ACPI notificaitons after powering on/initializing the device
-> 5) OS adds the devices into running system.
+On Thu, 2012-12-06 at 18:09 +0100, Sylvain Munaut wrote:
+> The "%5lu" part of the sprintf only guarantees a minimum length,
+> not a maximum one. This patch should make it correct for any
+> possible timestamp.
+> 
+> This problem dates back from the printk conversion to records AFAICT.
+> 
+> I've tested this locally both by verifying 'dmesg' no longer
+> segfaulted and also by checking that before this patch the
+> buffer was overrun by exactly the number of char corresponding to
+> extra digits in the timestamps.
+> 
+> Cc: Kay Sievers <kay@vrfy.org>
+> Cc: stable@kernel.org
+> Signed-off-by: Sylvain Munaut <s.munaut@whatever-company.com>
+> ---
+>  kernel/printk.c |   13 +++++++++++--
+>  1 file changed, 11 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/printk.c b/kernel/printk.c
+> index 66a2ea3..2ceceea 100644
+> --- a/kernel/printk.c
+> +++ b/kernel/printk.c
+> @@ -847,8 +847,17 @@ static size_t print_time(u64 ts, char *buf)
+>  	if (!printk_time)
+>  		return 0;
+>  
+> -	if (!buf)
+> -		return 15;
+> +	if (!buf) {
+> +		size_t len = 15;
+> +		u64 ts_limit = (u64)100000 * (u64)1000000000;
+> +
+> +		while ((ts > ts_limit) && (len < 21)) {
+> +			len++;
+> +			ts_limit = 10 * ts_limit;
+> +		}
 
-Interesting...  In this sequence, I think FW must validate and check the
-dependency before sending a SCI.  FW owns unassigned resources and is
-responsible for the procedure necessary to enable resources on the
-platform.  Such steps are basically platform-specific.  So, I do not
-think the common OS code should step into such business.
+Perhaps use snprintf for sizing something like below?
+(untested/uncompiled)
 
-Thanks,
--Toshi
+static size_t print_time(u64 ts, char *buf)
+{
+	unsigned long rem_nsec;
+	char *tmpbuf = buf;
+	int size = 15;			/* expected size of non-null buf */
+	char local_buf[1];
+
+	if (!printk_time)
+		return 0;
+
+	if (!buf) {			/* emit to a dummy buf instead */
+		tmpbuf = local_buf;
+		size = sizeof(local_buf);
+	}
+	
+	rem_nsec = do_div(ts, 1000000000);
+
+	return snprintf(tmpbuf, size, "[%5lu.%06lu] ",
+			(unsigned long)ts, rem_nsec / 1000);
+}
+
+It's perhaps unfortunate that print_time doesn't take a
+a buffer and a size_t of buffer.
+
 
