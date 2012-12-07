@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933020Ab2LGKYu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 05:24:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42173 "EHLO mx2.suse.de"
+	id S933051Ab2LGKY6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 05:24:58 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42259 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932996Ab2LGKYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 05:24:45 -0500
+	id S933024Ab2LGKYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 05:24:54 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -21,9 +21,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 28/49] mm: sched: numa: Implement slow start for working set sampling
-Date: Fri,  7 Dec 2012 10:23:31 +0000
-Message-Id: <1354875832-9700-29-git-send-email-mgorman@suse.de>
+Subject: [PATCH 33/49] mm: numa: Rate limit the amount of memory that is migrated between nodes
+Date: Fri,  7 Dec 2012 10:23:36 +0000
+Message-Id: <1354875832-9700-34-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1354875832-9700-1-git-send-email-mgorman@suse.de>
 References: <1354875832-9700-1-git-send-email-mgorman@suse.de>
@@ -31,135 +31,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+NOTE: This is very heavily based on similar logic in autonuma. It should
+	be signed off by Andrea but because there was no standalone
+	patch and it's sufficiently different from what he did that
+	the signed-off is omitted. Will be added back if requested.
 
-Add a 1 second delay before starting to scan the working set of
-a task and starting to balance it amongst nodes.
+If a large number of pages are misplaced then the memory bus can be
+saturated just migrating pages between nodes. This patch rate-limits
+the amount of memory that can be migrating between nodes.
 
-[ note that before the constant per task WSS sampling rate patch
-  the initial scan would happen much later still, in effect that
-  patch caused this regression. ]
-
-The theory is that short-run tasks benefit very little from NUMA
-placement: they come and go, and they better stick to the node
-they were started on. As tasks mature and rebalance to other CPUs
-and nodes, so does their NUMA placement have to change and so
-does it start to matter more and more.
-
-In practice this change fixes an observable kbuild regression:
-
-   # [ a perf stat --null --repeat 10 test of ten bzImage builds to /dev/shm ]
-
-   !NUMA:
-   45.291088843 seconds time elapsed                                          ( +-  0.40% )
-   45.154231752 seconds time elapsed                                          ( +-  0.36% )
-
-   +NUMA, no slow start:
-   46.172308123 seconds time elapsed                                          ( +-  0.30% )
-   46.343168745 seconds time elapsed                                          ( +-  0.25% )
-
-   +NUMA, 1 sec slow start:
-   45.224189155 seconds time elapsed                                          ( +-  0.25% )
-   45.160866532 seconds time elapsed                                          ( +-  0.17% )
-
-and it also fixes an observable perf bench (hackbench) regression:
-
-   # perf stat --null --repeat 10 perf bench sched messaging
-
-   -NUMA:
-
-   -NUMA:                  0.246225691 seconds time elapsed                   ( +-  1.31% )
-   +NUMA no slow start:    0.252620063 seconds time elapsed                   ( +-  1.13% )
-
-   +NUMA 1sec delay:       0.248076230 seconds time elapsed                   ( +-  1.35% )
-
-The implementation is simple and straightforward, most of the patch
-deals with adding the /proc/sys/kernel/balance_numa_scan_delay_ms tunable
-knob.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-[ Wrote the changelog, ran measurements, tuned the default. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Rik van Riel <riel@redhat.com>
 ---
- include/linux/sched.h |    1 +
- kernel/sched/core.c   |    2 +-
- kernel/sched/fair.c   |    5 +++++
- kernel/sysctl.c       |    7 +++++++
- 4 files changed, 14 insertions(+), 1 deletion(-)
+ mm/migrate.c |   30 +++++++++++++++++++++++++++++-
+ 1 file changed, 29 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index abb1c70..a2b06ea 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2006,6 +2006,7 @@ enum sched_tunable_scaling {
- };
- extern enum sched_tunable_scaling sysctl_sched_tunable_scaling;
- 
-+extern unsigned int sysctl_balance_numa_scan_delay;
- extern unsigned int sysctl_balance_numa_scan_period_min;
- extern unsigned int sysctl_balance_numa_scan_period_max;
- extern unsigned int sysctl_balance_numa_scan_size;
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 81fa185..047e3c7 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1543,7 +1543,7 @@ static void __sched_fork(struct task_struct *p)
- 	p->node_stamp = 0ULL;
- 	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
- 	p->numa_migrate_seq = p->mm ? p->mm->numa_scan_seq - 1 : 0;
--	p->numa_scan_period = sysctl_balance_numa_scan_period_min;
-+	p->numa_scan_period = sysctl_balance_numa_scan_delay;
- 	p->numa_work.next = &p->numa_work;
- #endif /* CONFIG_BALANCE_NUMA */
+diff --git a/mm/migrate.c b/mm/migrate.c
+index 4f55694..b2e6d4c 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -1461,12 +1461,21 @@ static struct page *alloc_misplaced_dst_page(struct page *page,
  }
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 773ef97..2e65f44 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -788,6 +788,9 @@ unsigned int sysctl_balance_numa_scan_period_max = 100*16;
- /* Portion of address space to scan in MB */
- unsigned int sysctl_balance_numa_scan_size = 256;
  
-+/* Scan @scan_size MB every @scan_period after an initial @scan_delay in ms */
-+unsigned int sysctl_balance_numa_scan_delay = 1000;
+ /*
++ * page migration rate limiting control.
++ * Do not migrate more than @pages_to_migrate in a @migrate_interval_millisecs
++ * window of time. Default here says do not migrate more than 1280M per second.
++ */
++static unsigned int migrate_interval_millisecs __read_mostly = 100;
++static unsigned int ratelimit_pages __read_mostly = 128 << (20 - PAGE_SHIFT);
 +
- static void task_numa_placement(struct task_struct *p)
++/*
+  * Attempt to migrate a misplaced page to the specified destination
+  * node. Caller is expected to have an elevated reference count on
+  * the page that will be dropped by this function before returning.
+  */
+ int migrate_misplaced_page(struct page *page, int node)
  {
- 	int seq = ACCESS_ONCE(p->mm->numa_scan_seq);
-@@ -929,6 +932,8 @@ void task_tick_numa(struct rq *rq, struct task_struct *curr)
- 	period = (u64)curr->numa_scan_period * NSEC_PER_MSEC;
++	pg_data_t *pgdat = NODE_DATA(node);
+ 	int isolated = 0;
+ 	LIST_HEAD(migratepages);
  
- 	if (now - curr->node_stamp > period) {
-+		if (!curr->node_stamp)
-+			curr->numa_scan_period = sysctl_balance_numa_scan_period_min;
- 		curr->node_stamp = now;
+@@ -1479,8 +1488,27 @@ int migrate_misplaced_page(struct page *page, int node)
+ 		goto out;
+ 	}
  
- 		if (!time_before(jiffies, curr->mm->numa_next_scan)) {
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index d191203..5ee587d 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -353,6 +353,13 @@ static struct ctl_table kern_table[] = {
- #endif /* CONFIG_SMP */
- #ifdef CONFIG_BALANCE_NUMA
- 	{
-+		.procname	= "balance_numa_scan_delay_ms",
-+		.data		= &sysctl_balance_numa_scan_delay,
-+		.maxlen		= sizeof(unsigned int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{
- 		.procname	= "balance_numa_scan_period_min_ms",
- 		.data		= &sysctl_balance_numa_scan_period_min,
- 		.maxlen		= sizeof(unsigned int),
++	/*
++	 * Rate-limit the amount of data that is being migrated to a node.
++	 * Optimal placement is no good if the memory bus is saturated and
++	 * all the time is being spent migrating!
++	 */
++	spin_lock(&pgdat->balancenuma_migrate_lock);
++	if (time_after(jiffies, pgdat->balancenuma_migrate_next_window)) {
++		pgdat->balancenuma_migrate_nr_pages = 0;
++		pgdat->balancenuma_migrate_next_window = jiffies +
++			msecs_to_jiffies(migrate_interval_millisecs);
++	}
++	if (pgdat->balancenuma_migrate_nr_pages > ratelimit_pages) {
++		spin_unlock(&pgdat->balancenuma_migrate_lock);
++		put_page(page);
++		goto out;
++	}
++	pgdat->balancenuma_migrate_nr_pages++;
++	spin_unlock(&pgdat->balancenuma_migrate_lock);
++
+ 	/* Avoid migrating to a node that is nearly full */
+-	if (migrate_balanced_pgdat(NODE_DATA(node), 1)) {
++	if (migrate_balanced_pgdat(pgdat, 1)) {
+ 		int page_lru;
+ 
+ 		if (isolate_lru_page(page)) {
 -- 
 1.7.9.2
 
