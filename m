@@ -1,97 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030606Ab2LGODI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 09:03:08 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:29592 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030510Ab2LGODG (ORCPT
+	id S1030624Ab2LGOEs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 09:04:48 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:40898 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030510Ab2LGOEr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 09:03:06 -0500
-X-Authority-Analysis: v=2.0 cv=dttZ+ic4 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=0q0mCv_Vr9gA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=lrIq2vSOvhQA:10 a=3wj6tTq13JYz_zGn5rYA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1354888985.17101.41.camel@gandalf.local.home>
-Subject: Re: [PATCH] ARM: ftrace: Ensure code modifications are synchronised
- across all cpus
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Rabin Vincent <rabin@rab.in>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 07 Dec 2012 09:03:05 -0500
-In-Reply-To: <1354872138.3176.15.camel@computer5.home>
-References: <1354817466.30905.13.camel@linaro1.home>
-	 <1354821581.17101.17.camel@gandalf.local.home>
-	 <1354872138.3176.15.camel@computer5.home>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 7 Dec 2012 09:04:47 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH] spi: Remove SPI_BUFSIZ restriction on spi_write_then_read()
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+In-Reply-To: <20121207034140.GB26070@opensource.wolfsonmicro.com>
+References: <1354420465-29315-1-git-send-email-broonie@opensource.wolfsonmicro.com> <20121206000026.A620D3E0E22@localhost> <20121206053732.GD10867@opensource.wolfsonmicro.com> <20121206140427.8E5673E089D@localhost> <20121207034140.GB26070@opensource.wolfsonmicro.com>
+Date: Fri, 07 Dec 2012 14:04:34 +0000
+Message-Id: <20121207140434.64B5D3E0B87@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-12-07 at 09:22 +0000, Jon Medhurst (Tixy) wrote:
-> On Thu, 2012-12-06 at 14:19 -0500, Steven Rostedt wrote:
-> > Hmm, your use of "may or may not" seems as you may not know this answer.
-> > I wonder if you can use the break point method as x86 does now, and
-> > remove the stop machine completely. Basically this is how it works:
-> > 
-> > add sw breakpoints to all locations to modify (the bp handler just does
-> > a nop over the instruction).
-> > 
-> > send an IPI to all CPUs to flush their icache.
-> > 
-> > Modify the non breakpoint part of the instruction with the new
-> > instruction.
-> > 
-> > send an IPI to all CPUs to flush their icache
-> > 
-> > Replace the breakpoint with the finished instruction.
+On Fri, 7 Dec 2012 12:41:41 +0900, Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
+> On Thu, Dec 06, 2012 at 02:04:27PM +0000, Grant Likely wrote:
 > 
-> If I understand correctly then this method can't work on ARM because a
-> 'software breakpoint' is 'replace an instruction with a known undefined
-> instruction _of the same size_'. It haa to be the same size because code
-> like this:
+> > Alright, applied. I've also merged in your spi-next tree. Let me know if
+> > that causes problems because it needs to be rebased.
 > 
-> 	it eq       /* If condition code 'eq' true */
->         insA        /* then execute this instruction */
->         insB        /* Always execute this */
-> 
-> if we replace insA with a breakpoint which is shorter, then we have
-> 
-> 	it eq       /* If condition code 'eq' true */
->         bkpt        /* then execute the breakpoint */
->         insA-part2  /* Always execute this garbage */
+> No problem - do you just want to take over the SPI tree again or should
+> I carry on applying things?
 
-Why always execute the garbage? Do what we do in x86, where the
-breakpoint is only 1 byte and the instruction being replaced is 5 bytes.
-The breakpoint handler returns to the instruction after the
-"garbage" (insB).
+Yes, please keep doing what you're doing! It's a huge help.
 
->         insB        /* Always execute this */
-> 
-> and to complicate matters more, the 'it' instruction can make up to the
-> next four instructions conditional, so you can't reverse decode the
-> instruction stream reliably to even detect such code.
-> 
-> And further, it's implementation defined (up to who every creates the
-> silicon) whether an undefined instructions actually causes an abort when
-> it occurs in such an 'it' block, it may just execute as a nop.
-> 
-> Welcome to the work of ARM :-)
-> 
+Whenever I sit down to do patch maintenance, I'll pull in your tree
+first. As long as your tree doesn't get rebased then that should work
+well. I also promise to not rebase my tree without talking to you first
+so you can pull in mine before applying more patches on top.
 
-But also realize that function tracing is special :-) We have no cases
-like this. The instruction being replaced is a call to mcount. In fact,
-we replace it at boot with a nop. And this method only replaces that nop
-into a call to function tracer, or replaces the call to function tracer
-back to a nop. Always at the start of the function, and never involved
-with conditionals. This limitation that function tracing imposes on what
-we replace makes things a bit more sane in how we replace it.
+It's a huge help to be reading through the mailing list and be able to
+ignore any messages that I've seen you've already replied to or applied.
 
--- Steve
+g.
 
-
+-- 
+Grant Likely, B.Sc, P.Eng.
+Secret Lab Technologies, Ltd.
