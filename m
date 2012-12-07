@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933788Ab2LGMQh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 07:16:37 -0500
-Received: from antcom.de ([188.40.178.216]:51902 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933774Ab2LGMQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 07:16:35 -0500
-Message-ID: <50C1DE21.8050709@antcom.de>
-Date: Fri, 07 Dec 2012 13:16:33 +0100
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM IT Research & Development
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:10.0.11) Gecko/20121123 Icedove/10.0.11
+	id S964978Ab2LGMd6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 07:33:58 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56099 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964818Ab2LGMd5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 07:33:57 -0500
+Date: Fri, 7 Dec 2012 12:33:43 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: Giridhar Maruthy <giridhar.maruthy@linaro.org>,
+        linux-samsung-soc@vger.kernel.org, w.sang@pengutronix.de,
+        linux-kernel@vger.kernel.org, kgene.kim@samsung.com,
+        linux-i2c@vger.kernel.org, ben-linux@fluff.org, khali@linux-fr.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] I2C: EXYNOS: Add slave support to i2c
+Message-ID: <20121207123343.GU14363@n2100.arm.linux.org.uk>
+References: <1354354961-28833-1-git-send-email-giridhar.maruthy@linaro.org> <CAHuqX+EQ0pZnm27yAVqC=NRX8huQ5EvbC8PGn2G3xYw4D71gQA@mail.gmail.com> <50C1DB05.7090500@linaro.org>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
-        jbe@pengutronix.de, plagnioj@jcrosoft.com, highguy@gmail.com,
-        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
-        rmallon@gmail.com, tru@work-microwave.de, sr@denx.de,
-        wg@grandegger.com
-Subject: Re: [PATCH 0/6 v10] gpio: Add block GPIO
-References: <1354830456-17590-1-git-send-email-stigge@antcom.de> <20121207103643.34ca6dc5@pyramind.ukuu.org.uk> <50C1DBD4.1040007@antcom.de>
-In-Reply-To: <50C1DBD4.1040007@antcom.de>
-X-Enigmail-Version: 1.4
-OpenPGP: url=subkeys.pgp.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50C1DB05.7090500@linaro.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/2012 01:06 PM, Roland Stigge wrote:
-> On 12/07/2012 11:36 AM, Alan Cox wrote:
->>> * Device interface for userland access (alternative to sysfs)
->>
->> Currently we can set different permissions on different GPIO lines. Your
->> driver change drives a truck through this facility.
+On Fri, Dec 07, 2012 at 05:33:17PM +0530, Tushar Behera wrote:
+> On 12/03/2012 05:46 PM, Giridhar Maruthy wrote:
+> > This patch adds slave support to i2c. The dt entry i2c-mode
+> > decides at probe time if the controller needs to work in
+> > slave mode and the controller is accordingly programmed.
 
-What I maybe misread in your concern: The dev interface is actually an
-"alternative to sysfs for block GPIO", not considered as a replacement
-for the current sysfs interface for _single_ GPIOs.
+(I don't have the original patches.)
 
-The fate of the latter one can be discussed separately.
+Hmm.  How has slave-mode support been tested?
 
-Also, the sysfs interface for block GPIO can be left out of my patch
-series, if necessary.
+Remembering that I2C slave devices do not initiate bus accesses, all
+accesses will be started by some other master.  How are you dealing
+with the bytes received from the master, and how are you returning a
+response to the master in reply to a read request?
 
-Roland
+We had support for this on PXA I2C through a callback from the driver
+into PXA code (used for the Psion Teklogix Netbook device) and it worked
+really well, but what you can't do is use the standard I2C interfaces
+for slave mode.
