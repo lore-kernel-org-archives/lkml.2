@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423323Ab2LGA5x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 19:57:53 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:57000 "EHLO
+	id S1423336Ab2LGA6J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 19:58:09 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:44913 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423287Ab2LGA5p (ORCPT
+	with ESMTP id S1423306Ab2LGA5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 19:57:45 -0500
+	Thu, 6 Dec 2012 19:57:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Peter Huewe <peterhuewe@gmx.de>
-Subject: [ 10/11] drm/i915: Add no-lvds quirk for Supermicro X7SPA-H
-Date: Thu,  6 Dec 2012 16:57:06 -0800
-Message-Id: <20121207005616.497628230@linuxfoundation.org>
+        Paolo Bonzini <pbonzini@redhat.com>,
+        James Bottomley <JBottomley@parallels.com>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>,
+        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
+        linux-scsi@vger.kernel.org
+Subject: [ 11/11] scsi: Silence unnecessary warnings about ioctl to partition
+Date: Thu,  6 Dec 2012 16:57:07 -0800
+Message-Id: <20121207005616.809919764@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121207005613.189054768@linuxfoundation.org>
 References: <20121207005613.189054768@linuxfoundation.org>
@@ -28,37 +30,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Jan Kara <jack@suse.cz>
 
-commit c31407a3672aaebb4acddf90944a114fa5c8af7b upstream.
+commit 6d9359280753d2955f86d6411047516a9431eb51 upstream.
 
-Reported-and-tested-by: Francois Tigeot <ftigeot@wolfpond.org>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=55375
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+Sometimes, warnings about ioctls to partition happen often enough that they
+form majority of the warnings in the kernel log and users complain. In some
+cases warnings are about ioctls such as SG_IO so it's not good to get rid of
+the warnings completely as they can ease debugging of userspace problems
+when ioctl is refused.
+
+Since I have seen warnings from lots of commands, including some proprietary
+userspace applications, I don't think disallowing the ioctls for processes
+with CAP_SYS_RAWIO will happen in the near future if ever. So lets just
+stop warning for processes with CAP_SYS_RAWIO for which ioctl is allowed.
+
+Acked-by: Paolo Bonzini <pbonzini@redhat.com>
+CC: James Bottomley <JBottomley@parallels.com>
+CC: linux-scsi@vger.kernel.org
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Cc: Satoru Takeuchi <satoru.takeuchi@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_lvds.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ block/scsi_ioctl.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -767,6 +767,14 @@ static const struct dmi_system_id intel_
- 			DMI_MATCH(DMI_BOARD_NAME, "D525TUD"),
- 		},
- 	},
-+	{
-+		.callback = intel_no_lvds_dmi_callback,
-+		.ident = "Supermicro X7SPA-H",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Supermicro"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "X7SPA-H"),
-+		},
-+	},
+--- a/block/scsi_ioctl.c
++++ b/block/scsi_ioctl.c
+@@ -722,11 +722,14 @@ int scsi_verify_blk_ioctl(struct block_d
+ 		break;
+ 	}
  
- 	{ }	/* terminating entry */
- };
++	if (capable(CAP_SYS_RAWIO))
++		return 0;
++
+ 	/* In particular, rule out all resets and host-specific ioctls.  */
+ 	printk_ratelimited(KERN_WARNING
+ 			   "%s: sending ioctl %x to a partition!\n", current->comm, cmd);
+ 
+-	return capable(CAP_SYS_RAWIO) ? 0 : -ENOTTY;
++	return -ENOTTY;
+ }
+ EXPORT_SYMBOL(scsi_verify_blk_ioctl);
+ 
 
 
