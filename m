@@ -1,79 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754934Ab2LGXnU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 18:43:20 -0500
-Received: from usindpps06.hds.com ([207.126.252.19]:34100 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853Ab2LGXnT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 18:43:19 -0500
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "Luck, Tony" <tony.luck@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "cbouatmailru@gmail.com" <cbouatmailru@gmail.com>,
-        "ccross@android.com" <ccross@android.com>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: RE: [RFC][PATCH] pstore: Skip spinlock when just one cpu is online
-Thread-Topic: [RFC][PATCH] pstore: Skip spinlock when just one cpu is online
-Thread-Index: Ac3UwvCZixvXisXmRfC/Xc8ha8nnHAABPNzwAABk6xA=
-Date: Fri, 7 Dec 2012 23:43:03 +0000
-Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D414A1B936@USINDEM103.corp.hds.com>
-References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A1B7B2@USINDEM103.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28F1C9658B1@ORSMSX108.amr.corp.intel.com>
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F1C9658B1@ORSMSX108.amr.corp.intel.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.74.43.113]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755349Ab2LGXr3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 18:47:29 -0500
+Received: from www.hansjkoch.de ([178.63.77.200]:51553 "EHLO www.hansjkoch.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754996Ab2LGXr2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 18:47:28 -0500
+Date: Sat, 8 Dec 2012 00:47:21 +0100
+From: "Hans J. Koch" <hjk@hansjkoch.de>
+To: Vitalii Demianets <vitas@nppfactor.kiev.ua>
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>, Cong Ding <dinggnu@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v2] drivers/uio/uio_pdrv_genirq.c: Fix memory freeing
+ issues
+Message-ID: <20121207234720.GB3786@local>
+References: <201211271929.32315.vitas@nppfactor.kiev.ua>
+ <201212071141.45231.vitas@nppfactor.kiev.ua>
+ <201212071551.02974.vitas@nppfactor.kiev.ua>
+ <201212071700.54367.vitas@nppfactor.kiev.ua>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8185,1.0.431,0.0.0000
- definitions=2012-12-07_04:2012-12-07,2012-12-07,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=2 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1203120001
- definitions=main-1212070246
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201212071700.54367.vitas@nppfactor.kiev.ua>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Can all these things really happen (did you run into this problem on a real system?). Or is this just a theoretical problem.  Ugly (but
-> practical) hacks might be OK to solve real problems. 
+On Fri, Dec 07, 2012 at 05:00:54PM +0200, Vitalii Demianets wrote:
+> >
+> > On second thought, we can't call enable_irq()/disable_irq() unconditionally
+> > because of the potential disable counter (irq_desc->depth) disbalance.
+> > That's why we need UIO_IRQ_DISABLED flag, and that's why we should check it
+> > in uio_pdrv_genirq_irqcontrol().
+> > On the other hand, you are right in that we don't need to check it inside
+> > irq handler. Inside irq handler we can disable irq and set the flag
+> > unconditionally, because:
+> > a) We know for sure that irqs are enabled, because we are inside
+> > (not-shared) irq handler;
+> >  and
+> > b) We are guarded from potential race conditions by spin_lock_irqsave()
+> > call in uio_pdrv_genirq_irqcontrol().
+> >
+> > So,yes, we can get rid of costly atomic call to
+> > test_and_set_bit(UIO_IRQ_DISABLED,..) inside irq handler. But I still don't
+> > like the idea of mixing this optimization with bug fixes in a single patch.
+> 
+> On the third thought, we can't ;)
+> Imagine the SMP system where uio_pdrv_genirq_irqcontrol() is being executed on 
+> CPU0 and irq handler is running concurrently on CPU1. To protect from 
+> disable_irq counter disbalance we must first check current irq status, and in 
+> atomic manner. Thus we prevent  double-disable, one from 
+> uio_pdrv_genirq_irqcontrol() running on CPU0 and another form irq handler 
+> running on CPU1.
+> Above consideration justifies current code.
+> 
+> But it seems we have potential concurrency problem here anyway. Here is 
+> theoretical scenario:
+> 1) Initial state: irq is enabled, uio_pdrv_genirq_irqcontrol() starts being 
+> executed on CPU0 with irq_on=1 and at the same time, concurrently, irq 
+> handler starts being executed on CPU1;
+> 2) irq handler executes line
+>    if (!test_and_set_bit(UIO_IRQ_DISABLED, &priv->flags))
+> as irq was enabled, the condition holds. And now UIO_IRQ_DISABLED is set.
+> 3) uio_pdrv_genirq_irqcontrol() executes line
+>    if (test_and_clear_bit(UIO_IRQ_DISABLED, &priv->flags))
+> as UIO_IRQ_DISABLED was set by CPU1, the condition holds. And now 
+> UIO_IRQ_DISABLED is cleared.
+> 4) CPU0 executes enable_irq() . IRQ is enabled. "Unbalanced enable for 
+> IRQ %d\n" warning is issued.
+> 5) irq handler on CPU1 executes disable_irq_nosync(). IRQ is disabled.
+> 
+> And now we are in situation where IRQ is disabled, but UIO_IRQ_DISABLED is 
+> cleared. Bad.
+> 
+> The above scenario is purely theoretical, I have no means to check it in 
+> hardware.
+> The (theoretical) solution is to guard UIO_IRQ_DISABLED test and actual irq 
+> disabling inside irq handler by priv->lock.
+> 
+> What do you think about it? Is it worth worrying about?
 
-It is a theoretical problem right now.
-But it is a timing issue and there is a possibility to happen actually.
+Hi Vitalii,
+thanks a lot for analyzing the problem so thoroughly. It made me review
+uio_pdrv_genirq.c again, and I noticed several issues and came to the
+following conclusions:
 
-> But do we really want them to fix problems that actually never happen?
+1.) priv->lock is completely unnecessary. It is only used in one function,
+so there's nothing it could possibly protect.
 
-If we find a problem (even if it is theoretical), we can't say "It actually never happen.".
+2.) All these "test_and_clear_bit" and "test_and_set_bit" calls are also
+unnecessary. We can simply use enable_irq and disable_irq in both the
+irq handler and in uio_pdrv_genirq_irqcontrol.
 
-I have some reasons to submit this patch before reproducing actually.
+We should go "back to the roots" and have a look at how UIO works.
+The workflow it is intended for is like this:
 
-1)
-It is too late if we fix a problem after it actually happened in case where we apply Linux, including pstore, 
-to mission critical systems, because the failure of those systems has a great impact on a whole society.
-Customers in this area ask us to fix a problem as soon as possible.
-On the other hand, this kind of timing issue is hard to reproduce.
-So, our support service engineers often work all night to reproduce it.
-It is a nightmare for us.
+1.) Hardware is in Reset State (e.g. after boot). Any decent hardware
+has its interrupt disabled at that time.
 
-If we can fix it with a small patch in adance, it is really helpful for us.
+2.) uio_pdrv_genirq is loaded. Kernel enables the irq.
 
-2)
-In the long term, I plan to add a kmsg_dump to a kexec path because kdump may fail in the real world.
-In that case, we need another troubleshooting material like pstore to detect a root cause of failure.
+3.) Userspace part of the driver comes up. It will initialize the hardware
+(including setting the bits that enable the interrupt).
 
-Actually, someone blamed for a reliability of kdump in LinuxCON Europe.
-http://events.linuxfoundation.org/images/stories/pdf/lceu2012_holzheu.pdf
+4.) Userspace will then issue a blocking read() on /dev/uioX. Typically,
+there'll be a loop or a thread with this blocking read() at the beginning
+(usually using the select() call).
 
-To convince a kexec maintainer to add a kmsg_dump, I need to prove that there is no problem in pstore code
-causing a failure of kdump.
+5.) At some time, a hardware interrupt will occur. The irq handler in kernel
+space will be called, only to disable the irq. This will also cause the UIO
+core to make /dev/uioX readable.
 
-Seiji
+6.) Userspace's blocking read returns. Userspace does its work by
+reading/writing device memory.
+
+7.) As the last thing, Userspace writes a "1" to /dev/uioX, which causes
+uio_pdrv_genirq_irqcontrol to be called, re-enabling the interrupt.
+
+8.) Goto 4.)
+
+We should also remember that uio_pdrv_genirq_handler() is NOT a real hardware
+irq handler. The real handler is in the UIO core, which will increment the
+event number and wake up userspace.
+
+So, although your scenario clearly shows a subtle race condition, there is
+none. If userspace does stupid things, no harm will be done to the kernel.
+If userspace is designed the way described above (and in the documentation),
+it will always wake up with its interrupt disabled, do its work, and then
+re-enable the interrupt. You can probably think of a few things userspace
+could do to screw things up. But that's not our problem.
+
+Could you hack up a patch for that? I think it should start with removing
+uio_pdrv_genirq_platdata->lock and uio_pdrv_genirq_platdata->flags...
+
+Thanks again for your work. What do you think about my theory?
+
+Thanks,
+Hans
 
