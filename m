@@ -1,56 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422660Ab2LGQQG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 11:16:06 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:33423
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1161012Ab2LGQQE (ORCPT
+	id S1422686Ab2LGQUN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 11:20:13 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:56618 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161012Ab2LGQUM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 11:16:04 -0500
-Date: Fri, 7 Dec 2012 11:16:02 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Pavel Shilovsky <piastry@etersoft.ru>
-Cc: linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, wine-devel@winehq.org,
-        linux-nfs@vger.kernel.org
-Subject: Re: [PATCH 0/3] Add O_DENY* flags to fcntl and cifs
-Message-ID: <20121207161602.GA17710@infradead.org>
-References: <1354818391-7968-1-git-send-email-piastry@etersoft.ru>
+	Fri, 7 Dec 2012 11:20:12 -0500
+X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
+  Fri, 07 Dec 2012 10:20:11 -0600
+X-Originating-IP: 108.223.40.66
+Date: Fri, 7 Dec 2012 08:20:35 -0800
+From: Guenter Roeck <groeck-dsl@sbcglobal.net>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH] gpio: export 'debounce' attribute if supported by the
+ gpio chip
+Message-ID: <20121207162035.GA10306@roeck-us.net>
+References: <1354775567-17408-1-git-send-email-linux@roeck-us.net>
+ <CACRpkdYDLJDwv97Z0agZBbzCtEdeb5Y-83K2HkZRtLP1Cz_QiA@mail.gmail.com>
+ <20121207145955.GA28704@roeck-us.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1354818391-7968-1-git-send-email-piastry@etersoft.ru>
+In-Reply-To: <20121207145955.GA28704@roeck-us.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 06, 2012 at 10:26:28PM +0400, Pavel Shilovsky wrote:
-> Network filesystems CIFS, SMB2.0, SMB3.0 and NFSv4 have such flags - this change can benefit cifs and nfs modules. While this change is ok for network filesystems, itsn't not targeted for local filesystems due security problems (e.g. when a user process can deny root to delete a file).
+On Fri, Dec 07, 2012 at 06:59:55AM -0800, Guenter Roeck wrote:
+> On Fri, Dec 07, 2012 at 09:07:28AM +0100, Linus Walleij wrote:
+> > On Thu, Dec 6, 2012 at 7:32 AM, Guenter Roeck <linux@roeck-us.net> wrote:
+> > 
+> > > Create a 'debounce' attribute if debounce is supported by the gpio
+> > > chip and a gpio pin is exported.
+> > >
+> > > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> > 
+> > Can you describe the usecase for this?
+> > 
+> > I have this problem when working as a back-up GPIO maintainer that
+> > I don't really understand the userspace apps doing this.
+> > 
+> > I would guess something like a userspace app reading a GPIO switch
+> > and needing to set this to avoid key bounces, but it'd be nice to know
+> > if this is really the case.
+> > 
+> Yes, that is one if the use cases. Button pressed on the chassis/board
+> requesting user space action. Another is board presence detect pins which
+> require rebounce support and are handled in user space. Yes, the later should be
+> handled in the kernel, and most of them are, but there are some which don't need
+> immediate kernel activity and are handled completely by applications.
 > 
-> Share flags are used by Windows applications and WINE have to deal with them too. While WINE can process open share flags itself on local filesystems, it can't do it if a file stored on a network share and is used by several clients. This patchset makes it possible for CIFS/SMB2.0/SMB3.0.
+> There may be other use cases - there are hundreds of gpio pins in the system I
+> am working on, and I have not looked into all of them.
+> 
+There are three use cases, all related to each other.
 
-I don't think introducing user visible flags that are only supported on
-a single network filesystem is a good idea.
+- board present (connector pin)
+- board removal request (button)
+- board voltage good (connector pin)
 
-I'm not even sure adding these flags does make a lot of sense, but
-assuming we'd actually want this (and I'd like some more detailed
-explanation) I think we'd at least need to make sure that:
+Guenter
 
- a) opening files with the new modes gives a proper error message if not
-    supported
- b) there needs to be local support for them as well
- c) we need to think really hard when they should be supported, and need
-    a good rational for it.  I can't see how we could do it
-    unconditionally for all users as that would introduce easy denial
-    of services attacks the way I understand the semantics (correct me
-    if I'm wrong).  So a mount option like you currently do probably is
-    the least bad even if don't fell overly happy about that version.
-
-What is the reason your special wine use case can't simply use a
-userspace cifs client?  Given that wine uses windows filesystem
-semantics and cifs does as well tunnelling it through a Posix-like API
-inbetween is never going to be perfect.
-
+> > If this is the usecase I am slightly concerned why these are not used:
+> > drivers/input/keyboard/gpio_keys_polled.c
+> > drivers/input/keyboard/gpio_keys.c
+> > 
+> > The latter even uses the in-kernel debounce interface.
+> > 
+> > I'd agree if this is not user input at all but something like a switch
+> > in a factory production line.
+> > 
+> I could imagine declaring the activity request buttons to be "input", but for
+> presence detects it is a bit far fetched and would add too much complexity.
+> 
+> Thanks,
+> Guenter
+> 
