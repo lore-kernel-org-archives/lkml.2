@@ -1,95 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756725Ab2LGV1x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 16:27:53 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:37399 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751783Ab2LGV1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 16:27:52 -0500
-Date: Fri, 7 Dec 2012 16:27:43 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Chris Mason <chris.mason@fusionio.com>, Chris Mason <clmason@fusionio.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ric Wheeler <rwheeler@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Chinner <david@fromorbit.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
- UAPI
-Message-ID: <20121207212743.GE29435@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Chris Mason <chris.mason@fusionio.com>,
-	Chris Mason <clmason@fusionio.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Ric Wheeler <rwheeler@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-	Christoph Hellwig <hch@infradead.org>,
-	Martin Steigerwald <Martin@lichtvoll.de>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Dave Chinner <david@fromorbit.com>,
-	linux-fsdevel <linux-fsdevel@vger.kernel.org>
-References: <20121126091202.GO32450@dastard>
- <201212051148.28039.Martin@lichtvoll.de>
- <CA+55aFzgP29WfB1yvnj+Q9-TsbX+b-TCCjTS_vPJ16DxMy6aDQ@mail.gmail.com>
- <20121206120532.GA14100@infradead.org>
- <20121207011628.GB16373@gmail.com>
- <50C22923.90102@redhat.com>
- <alpine.LFD.2.02.1212070956310.23641@air.linux-foundation.org>
- <20121207190306.GB14972@shiny>
- <20121207204325.GC29435@thunk.org>
- <20121207210932.GA25713@shiny>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121207210932.GA25713@shiny>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1030907Ab2LGVaD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 16:30:03 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:57008 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751271Ab2LGVaA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 16:30:00 -0500
+Date: Fri, 7 Dec 2012 21:35:20 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Pavel Shilovsky <piastry@etersoft.ru>
+Cc: Christoph Hellwig <hch@infradead.org>, <linux-cifs@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
+        <wine-devel@winehq.org>, <linux-nfs@vger.kernel.org>
+Subject: Re: [PATCH 0/3] Add O_DENY* flags to fcntl and cifs
+Message-ID: <20121207213520.05dd5a3b@pyramind.ukuu.org.uk>
+In-Reply-To: <495d17310e0a687d446afc86def0f058@office.etersoft.ru>
+References: <1354818391-7968-1-git-send-email-piastry@etersoft.ru>
+	<20121207161602.GA17710@infradead.org>
+	<495d17310e0a687d446afc86def0f058@office.etersoft.ru>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 07, 2012 at 04:09:32PM -0500, Chris Mason wrote:
-> Persistent trim is what I had in mind, but there are other ideas that do
-> imply a change in behavior as well.  Can we safely assume this feature
-> won't matter on spinning media?  New features like persistent
-> trim do make it much easier to solve securely, and using a bit for it
-> means we can toss back an error to the app if the underlying storage
-> isn't safe.
+> The problem is the possibility of denial-of-service attacks here. We 
+> can try to prevent them by:
+> 1) specifying an extra security bit on the file that indicates that 
+> share flags are accepted (like we have for mandatory locks now) and 
+> setting it for neccessary files only, or
+> 2) adding a special mount option (but it it probably makes sense if we 
+> decided to add this support for CIFS and NFS only).
 
-We originally implemented no hide stale for spinning media.  Some
-folks have claimed that for XFS their superior technology means that
-no hide stale doesn't buy them anything for HDD's.  I'm not entirely
-sure I buy this, since if you need to update metadata, it means at
-least one extra seek for each random write into 4k preallocated space,
-and 7200 RPM disks only have about 200 seeks per second.
+3) making it a property that the process opts into - the same fs can have
+Linux and wine users at once.
 
-One of the problems that I've seen is that as disks get bigger, the
-number of seeks per second have remained constant, and so an
-application which required N TB spread out over a large number of
-disks might now only require a fraction of the number of disks --- so
-it's very easy for a cluster file system to become seek constrained by
-the number of spindles that you have, and not capacity constrained.
+But for such a big set of changes and with the kind of potential fallout
+you need to demonstrate a good practical use case IMHO, not just a "neat
+idea I had".
 
-This to me seems to be a fundamental problem, and I don't think it's
-possible to wave one's hands to get rid of it.  All you can say is
-that the people who care about this are crazy (that's OK, I don't mind
-when Christoph or Dave call me crazy :-), and that their workload
-doesn't matter.  But if you are trying to optimize out every last
-seek, because you desperately care about latency and seeks are a
-precious and scarce resource[1], then I don't see around away the
-technique of not requiring an update to the metadata at the time that
-you write the data block, and that kinda implies no-hide-stale.
-
-Regards,
-
-					- Ted
-
-[1] Even if you don't care about the latency of the write operation,
-the fact that the write operation has to do two seeks and not one can
-very well slow down a subsequent high priority read request, where you
-*do* care about latency.  The problem is that you only have about 200
-seeks per spindle.
-
+Alan
