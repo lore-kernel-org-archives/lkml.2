@@ -1,29 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423825Ab2LGBCR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 20:02:17 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:61365 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423650Ab2LGBAZ (ORCPT
+	id S1423871Ab2LGBCn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 20:02:43 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:43888 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1423625Ab2LGBAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 20:00:25 -0500
+	Thu, 6 Dec 2012 20:00:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Thomas=20Sch=C3=A4fer?= <tschaefer@t-online.de>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        "David S. Miller" <davem@davemloft.net>,
-        Peter Huewe <peterhuewe@gmx.de>
-Subject: [ 22/27] net: qmi_wwan: add Huawei E173
-Date: Thu,  6 Dec 2012 16:59:06 -0800
-Message-Id: <20121207005832.391616764@linuxfoundation.org>
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        CAI Qian <caiqian@redhat.com>
+Subject: [ 20/27] s390/mm: have 16 byte aligned struct pages
+Date: Thu,  6 Dec 2012 16:59:04 -0800
+Message-Id: <20121207005831.786407731@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121207005825.232489605@linuxfoundation.org>
 References: <20121207005825.232489605@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,41 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit ba695af067f9cadfec84457ac06b44e3fa849b15 upstream.
+commit 4bffbb3455372a26816e364fb4448810f7014452 upstream.
 
-The Huawei E173 is a QMI/wwan device which normally appear
-as 12d1:1436 in Linux. The descriptors displayed in that
-mode will be picked up by cdc_ether.  But the modem has
-another mode with a different device ID and a slightly
-different set of descriptors. This is the mode used by
-Windows like this:
+Select HAVE_ALIGNED_STRUCT_PAGE on s390, so that the slub allocator can make
+use of compare and swap double for lockless updates. This increases the size
+of struct page to 64 bytes (instead of 56 bytes), however the performance gain
+justifies the increased size:
 
-3Modem:      USB\VID_12D1&PID_140C&MI_00\6&3A1D2012&0&0000
-Networkcard: USB\VID_12D1&PID_140C&MI_01\6&3A1D2012&0&0001
-Appli.Inter: USB\VID_12D1&PID_140C&MI_02\6&3A1D2012&0&0002
-PC UI Inter: USB\VID_12D1&PID_140C&MI_03\6&3A1D2012&0&0003
+- now excactly four struct pages fit into a single cache line; the
+  case that accessing a struct page causes two cache line loads
+  does not exist anymore.
+- calculating the offset of a struct page within the memmap array
+  is only a simple shift instead of a more expensive multiplication.
 
-Reported-by: Thomas Schäfer <tschaefer@t-online.de>
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+A "hackbench 200 process 200" run on a 32 cpu system did show an 8% runtime
+improvement.
+
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/usb/qmi_wwan.c |    1 +
+ arch/s390/Kconfig |    1 +
  1 file changed, 1 insertion(+)
 
---- a/drivers/net/usb/qmi_wwan.c
-+++ b/drivers/net/usb/qmi_wwan.c
-@@ -398,6 +398,7 @@ static const struct usb_device_id produc
- 	},
- 
- 	/* 3. Combined interface devices matching on interface number */
-+	{QMI_FIXED_INTF(0x12d1, 0x140c, 1)},	/* Huawei E173 */
- 	{QMI_FIXED_INTF(0x19d2, 0x0002, 1)},
- 	{QMI_FIXED_INTF(0x19d2, 0x0012, 1)},
- 	{QMI_FIXED_INTF(0x19d2, 0x0017, 3)},
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -89,6 +89,7 @@ config S390
+ 	select HAVE_MEMBLOCK
+ 	select HAVE_MEMBLOCK_NODE_MAP
+ 	select HAVE_CMPXCHG_LOCAL
++	select HAVE_ALIGNED_STRUCT_PAGE if SLUB
+ 	select ARCH_DISCARD_MEMBLOCK
+ 	select BUILDTIME_EXTABLE_SORT
+ 	select ARCH_INLINE_SPIN_TRYLOCK
 
 
