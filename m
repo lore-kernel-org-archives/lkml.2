@@ -1,73 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932111Ab2LGI4F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 03:56:05 -0500
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:22219
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751741Ab2LGI4E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 03:56:04 -0500
-X-IronPort-AV: E=Sophos;i="4.84,236,1355094000"; 
-   d="scan'208";a="165075282"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Rodolfo Giometti <giometti@enneenne.com>
-Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/pps/clients/pps-gpio.c: use devm_kzalloc
-Date: Fri,  7 Dec 2012 10:55:57 +0100
-Message-Id: <1354874157-30932-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.8.6
+	id S1752688Ab2LGI6p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 03:58:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37729 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751443Ab2LGI6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 03:58:44 -0500
+Date: Fri, 7 Dec 2012 09:58:39 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Ying Han <yinghan@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <htejun@gmail.com>,
+        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>
+Subject: Re: [patch v2 3/6] memcg: rework mem_cgroup_iter to use cgroup
+ iterators
+Message-ID: <20121207085839.GB31938@dhcp22.suse.cz>
+References: <1353955671-14385-1-git-send-email-mhocko@suse.cz>
+ <1353955671-14385-4-git-send-email-mhocko@suse.cz>
+ <CALWz4ixQR0vHp+mGJdi2q77dMHaG8BZmb+iKfMmT=T0V8X8rAg@mail.gmail.com>
+ <CALWz4iwrJtG-YUkA8ZpQC=JDMs3_ZRqwjrg+OEEO+_HA_KM9UA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALWz4iwrJtG-YUkA8ZpQC=JDMs3_ZRqwjrg+OEEO+_HA_KM9UA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Thu 06-12-12 19:43:52, Ying Han wrote:
+[...]
+> Forgot to mention, I was testing 3.7-rc6 with the two cgroup changes :
 
-devm_kzalloc allocates memory that is released when a driver detaches.
-This patch uses devm_kzalloc for data that is allocated in the probe
-function of a platform device and is only freed in the remove function.
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
----
- drivers/pps/clients/pps-gpio.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/pps/clients/pps-gpio.c b/drivers/pps/clients/pps-gpio.c
-index 6550555..25b234d 100644
---- a/drivers/pps/clients/pps-gpio.c
-+++ b/drivers/pps/clients/pps-gpio.c
-@@ -128,7 +128,8 @@ static int pps_gpio_probe(struct platform_device *pdev)
- 	}
- 
- 	/* allocate space for device info */
--	data = kzalloc(sizeof(struct pps_gpio_device_data), GFP_KERNEL);
-+	data = devm_kzalloc(&pdev->dev, sizeof(struct pps_gpio_device_data),
-+			    GFP_KERNEL);
- 	if (data == NULL) {
- 		err = -ENOMEM;
- 		goto return_error;
-@@ -150,7 +151,6 @@ static int pps_gpio_probe(struct platform_device *pdev)
- 		pps_default_params |= PPS_CAPTURECLEAR | PPS_OFFSETCLEAR;
- 	data->pps = pps_register_source(&data->info, pps_default_params);
- 	if (data->pps == NULL) {
--		kfree(data);
- 		pr_err("failed to register IRQ %d as PPS source\n", irq);
- 		err = -EINVAL;
- 		goto return_error;
-@@ -164,7 +164,6 @@ static int pps_gpio_probe(struct platform_device *pdev)
- 			get_irqf_trigger_flags(pdata), data->info.name, data);
- 	if (ret) {
- 		pps_unregister_source(data->pps);
--		kfree(data);
- 		pr_err("failed to acquire IRQ %d\n", irq);
- 		err = -EINVAL;
- 		goto return_error;
-@@ -190,7 +189,6 @@ static int pps_gpio_remove(struct platform_device *pdev)
- 	gpio_free(pdata->gpio_pin);
- 	pps_unregister_source(data->pps);
- 	pr_info("removed IRQ %d as PPS source\n", data->irq);
--	kfree(data);
- 	return 0;
- }
- 
-
+Could you give a try to -mm tree as well. There are some changes for
+memcgs removal in that tree which are not in Linus's tree.
+-- 
+Michal Hocko
+SUSE Labs
