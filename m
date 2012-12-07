@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932566Ab2LGATl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 19:19:41 -0500
+	id S932593Ab2LGATp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 19:19:45 -0500
 Received: from mail-ea0-f174.google.com ([209.85.215.174]:61318 "EHLO
 	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932528Ab2LGATj (ORCPT
+	with ESMTP id S932528Ab2LGATm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 19:19:39 -0500
+	Thu, 6 Dec 2012 19:19:42 -0500
 From: Ingo Molnar <mingo@kernel.org>
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
@@ -18,9 +18,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>,
         Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>
-Subject: [PATCH 1/9] numa, sched: Fix NUMA tick ->numa_shared setting
-Date: Fri,  7 Dec 2012 01:19:18 +0100
-Message-Id: <1354839566-15697-2-git-send-email-mingo@kernel.org>
+Subject: [PATCH 3/9] numa, sched: Implement wake-cpu migration support
+Date: Fri,  7 Dec 2012 01:19:20 +0100
+Message-Id: <1354839566-15697-4-git-send-email-mingo@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1354839566-15697-1-git-send-email-mingo@kernel.org>
 References: <1354839566-15697-1-git-send-email-mingo@kernel.org>
@@ -28,9 +28,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split out an unlocked variant of __sched_setnuma(),
-and use it in the NUMA tick when we are modifying
-p->numa_shared.
+Task flipping via sched_rebalance_to() was only partially successful
+in a number of cases, especially with modified preemption options.
+
+The reason was that when we'd migrate over to the target node,
+with the right timing the source task might already be sleeping
+waiting for the migration thread to run - which prevented it
+from changing its target CPU.
+
+But we cannot simply set the CPU in the migration handler, because
+our per entity load average calculations rely on tasks spending
+their sleeping time on the CPU they went to sleep and only being
+requeued at wakeup.
+
+So introduce a ->wake_cpu construct to allow the migration at
+wakeup time. This gives us maximum information while still
+preserving the task-flipping destination.
+
+( Also make sure we don't wake up to CPUs that are outside
+  the hard affinity ->cpus_allowed CPU mask. )
 
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
@@ -41,76 +57,92 @@ Cc: Mel Gorman <mgorman@suse.de>
 Cc: Hugh Dickins <hughd@google.com>
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/core.c  | 19 +++++++++++++++----
- kernel/sched/fair.c  |  2 +-
- kernel/sched/sched.h |  1 +
- 3 files changed, 17 insertions(+), 5 deletions(-)
+ include/linux/init_task.h |  3 ++-
+ include/linux/sched.h     |  1 +
+ kernel/sched/core.c       |  3 +++
+ kernel/sched/fair.c       | 14 +++++++++++---
+ 4 files changed, 17 insertions(+), 4 deletions(-)
 
+diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+index a5da0fc..ec31d7b 100644
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -146,7 +146,8 @@ extern struct task_group root_task_group;
+ #ifdef CONFIG_NUMA_BALANCING
+ # define INIT_TASK_NUMA(tsk)						\
+ 	.numa_shared = -1,						\
+-	.numa_shared_enqueue = -1
++	.numa_shared_enqueue = -1,					\
++	.wake_cpu = -1,
+ #else
+ # define INIT_TASK_NUMA(tsk)
+ #endif
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index ee39f6b..1c3cc50 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1502,6 +1502,7 @@ struct task_struct {
+ 	short il_next;
+ 	short pref_node_fork;
+ #endif
++	int wake_cpu;
+ #ifdef CONFIG_NUMA_BALANCING
+ 	int numa_shared;
+ 	int numa_shared_enqueue;
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 69b18b3..cce84c3 100644
+index a7f0000..cfa8426 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -6091,13 +6091,10 @@ static struct sched_domain_topology_level *sched_domain_topology = default_topol
- /*
-  * Change a task's NUMA state - called from the placement tick.
-  */
--void sched_setnuma(struct task_struct *p, int node, int shared)
-+void __sched_setnuma(struct rq *rq, struct task_struct *p, int node, int shared)
- {
--	unsigned long flags;
- 	int on_rq, running;
--	struct rq *rq;
- 
--	rq = task_rq_lock(p, &flags);
- 	on_rq = p->on_rq;
- 	running = task_current(rq, p);
- 
-@@ -6113,6 +6110,20 @@ void sched_setnuma(struct task_struct *p, int node, int shared)
- 		p->sched_class->set_curr_task(rq);
- 	if (on_rq)
- 		enqueue_task(rq, p, 0);
-+}
-+
-+/*
-+ * Change a task's NUMA state - called from the placement tick.
-+ */
-+void sched_setnuma(struct task_struct *p, int node, int shared)
-+{
-+	unsigned long flags;
-+	struct rq *rq;
-+
-+	rq = task_rq_lock(p, &flags);
-+
-+	__sched_setnuma(rq, p, node, shared);
-+
- 	task_rq_unlock(rq, p, &flags);
- 
- 	/*
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 21c10f7..0c83689 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2540,7 +2540,7 @@ static void task_tick_numa(struct rq *rq, struct task_struct *curr)
- 	/* Cheap checks first: */
- 	if (!task_numa_candidate(curr)) {
- 		if (curr->numa_shared >= 0)
--			curr->numa_shared = -1;
-+			__sched_setnuma(rq, curr, -1, -1);
- 		return;
- 	}
- 
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 0fdd304..f75bf06 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -513,6 +513,7 @@ DECLARE_PER_CPU(struct rq, runqueues);
- #define raw_rq()		(&__raw_get_cpu_var(runqueues))
+@@ -1546,6 +1546,7 @@ static void __sched_fork(struct task_struct *p)
+ #ifdef CONFIG_PREEMPT_NOTIFIERS
+ 	INIT_HLIST_HEAD(&p->preempt_notifiers);
+ #endif
++	p->wake_cpu = -1;
  
  #ifdef CONFIG_NUMA_BALANCING
-+extern void __sched_setnuma(struct rq *rq, struct task_struct *p, int node, int shared);
- extern void sched_setnuma(struct task_struct *p, int node, int shared);
- static inline void task_numa_free(struct task_struct *p)
- {
+ 	if (p->mm && atomic_read(&p->mm->mm_users) == 1) {
+@@ -4782,6 +4783,8 @@ static int __migrate_task(struct task_struct *p, int src_cpu, int dest_cpu)
+ 		set_task_cpu(p, dest_cpu);
+ 		enqueue_task(rq_dest, p, 0);
+ 		check_preempt_curr(rq_dest, p, 0);
++	} else {
++		p->wake_cpu = dest_cpu;
+ 	}
+ done:
+ 	ret = 1;
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 8cdbfde..8664f39 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -4963,6 +4963,12 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+ 	int new_cpu = cpu;
+ 	int want_affine = 0;
+ 	int sync = wake_flags & WF_SYNC;
++	int wake_cpu = p->wake_cpu;
++
++	if (wake_cpu != -1 && cpumask_test_cpu(wake_cpu, tsk_cpus_allowed(p))) {
++		p->wake_cpu = -1;
++		return wake_cpu;
++	}
+ 
+ 	if (p->nr_cpus_allowed == 1)
+ 		return prev_cpu;
+@@ -5044,10 +5050,12 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int wake_flags)
+ 		/* while loop will break here if sd == NULL */
+ 	}
+ unlock:
+-	rcu_read_unlock();
++	if (!numa_allow_migration(p, prev0_cpu, new_cpu)) {
++		if (cpumask_test_cpu(prev0_cpu, tsk_cpus_allowed(p)))
++			new_cpu = prev0_cpu;
++	}
+ 
+-	if (!numa_allow_migration(p, prev0_cpu, new_cpu))
+-		return prev0_cpu;
++	rcu_read_unlock();
+ 
+ 	return new_cpu;
+ }
 -- 
 1.7.11.7
 
