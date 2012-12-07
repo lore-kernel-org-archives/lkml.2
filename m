@@ -1,101 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755511Ab2LGIxN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 03:53:13 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50094 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750979Ab2LGIxM (ORCPT
+	id S932111Ab2LGI4F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 03:56:05 -0500
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:22219
+	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751741Ab2LGI4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 03:53:12 -0500
-X-AuditID: 9c930179-b7b25ae0000031c2-b5-50c1ae762091
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 4/5] perf diff: Use internal rb tree for compute resort
-References: <1354806581-5316-1-git-send-email-namhyung@kernel.org>
-	<1354806581-5316-5-git-send-email-namhyung@kernel.org>
-	<20121206165136.GA27199@krava.brq.redhat.com>
-Date: Fri, 07 Dec 2012 17:53:10 +0900
-In-Reply-To: <20121206165136.GA27199@krava.brq.redhat.com> (Jiri Olsa's
-	message of "Thu, 6 Dec 2012 17:51:36 +0100")
-Message-ID: <87vcceckg9.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 7 Dec 2012 03:56:04 -0500
+X-IronPort-AV: E=Sophos;i="4.84,236,1355094000"; 
+   d="scan'208";a="165075282"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Rodolfo Giometti <giometti@enneenne.com>
+Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/pps/clients/pps-gpio.c: use devm_kzalloc
+Date: Fri,  7 Dec 2012 10:55:57 +0100
+Message-Id: <1354874157-30932-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 6 Dec 2012 17:51:36 +0100, Jiri Olsa wrote:
-> On Fri, Dec 07, 2012 at 12:09:40AM +0900, Namhyung Kim wrote:
->> From: Namhyung Kim <namhyung.kim@lge.com>
->> 
->> There's no reason to run hists_compute_resort() using output tree.
->> Convert it to use internal tree so that it can remove unnecessary
->> _output_resort.
->
-> I have another patch in queue ommiting dummy entries to display
-> number in the compute column, so we don't have confusing 'sorted'
-> outputs like:
->
-> [jolsa@krava perf]$ ./perf diff -c+delta
-> # Event 'cycles:u'
-> #
-> # Baseline    Delta  Shared Object                      Symbol
-> # ........  .......  .............  ..........................
-> #
->     17.92%  -17.92%  libc-2.15.so   [.] _IO_link_in           
->             +77.54%  libc-2.15.so   [.] __fprintf_chk         
->     15.64%  -15.64%  libc-2.15.so   [.] _dl_addr              
->      0.08%   +0.61%  ld-2.15.so     [.] _start                
->     12.16%  -12.16%  ld-2.15.so     [.] dl_main               
->     15.39%  -15.39%  ld-2.15.so     [.] _dl_check_map_versions
->     38.81%  -17.04%  [kernel.kallsyms]  [k] page_fault            
->
-> just in case anyone actualy tries and wonders ;)
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Sounds great!
+devm_kzalloc allocates memory that is released when a driver detaches.
+This patch uses devm_kzalloc for data that is allocated in the probe
+function of a platform device and is only freed in the remove function.
 
->
-> We need following change as well, because output resort does
-> also col width recalc. Please add it if you respin, or I can
-> send it later.
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-Okay, I'll resend a new version after getting a reply on the patch 2/5
-from Arnaldo.  It'd be better if you send me a formal patch for this.
+---
+ drivers/pps/clients/pps-gpio.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
->
-> other than that:
->
-> Acked-by: Jiri Olsa <jolsa@redhat.com>
+diff --git a/drivers/pps/clients/pps-gpio.c b/drivers/pps/clients/pps-gpio.c
+index 6550555..25b234d 100644
+--- a/drivers/pps/clients/pps-gpio.c
++++ b/drivers/pps/clients/pps-gpio.c
+@@ -128,7 +128,8 @@ static int pps_gpio_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	/* allocate space for device info */
+-	data = kzalloc(sizeof(struct pps_gpio_device_data), GFP_KERNEL);
++	data = devm_kzalloc(&pdev->dev, sizeof(struct pps_gpio_device_data),
++			    GFP_KERNEL);
+ 	if (data == NULL) {
+ 		err = -ENOMEM;
+ 		goto return_error;
+@@ -150,7 +151,6 @@ static int pps_gpio_probe(struct platform_device *pdev)
+ 		pps_default_params |= PPS_CAPTURECLEAR | PPS_OFFSETCLEAR;
+ 	data->pps = pps_register_source(&data->info, pps_default_params);
+ 	if (data->pps == NULL) {
+-		kfree(data);
+ 		pr_err("failed to register IRQ %d as PPS source\n", irq);
+ 		err = -EINVAL;
+ 		goto return_error;
+@@ -164,7 +164,6 @@ static int pps_gpio_probe(struct platform_device *pdev)
+ 			get_irqf_trigger_flags(pdata), data->info.name, data);
+ 	if (ret) {
+ 		pps_unregister_source(data->pps);
+-		kfree(data);
+ 		pr_err("failed to acquire IRQ %d\n", irq);
+ 		err = -EINVAL;
+ 		goto return_error;
+@@ -190,7 +189,6 @@ static int pps_gpio_remove(struct platform_device *pdev)
+ 	gpio_free(pdata->gpio_pin);
+ 	pps_unregister_source(data->pps);
+ 	pr_info("removed IRQ %d as PPS source\n", data->irq);
+-	kfree(data);
+ 	return 0;
+ }
+ 
 
-Thanks,
-Namhyung
-
->
-> ---
-> diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-> index f66968e..6f56f78 100644
-> --- a/tools/perf/builtin-diff.c
-> +++ b/tools/perf/builtin-diff.c
-> @@ -425,12 +425,15 @@ static void hists__compute_resort(struct hists *hists)
->  	hists->entries = RB_ROOT;
->  	next = rb_first(root);
->  
-> +	hists__reset_col_len(hists);
-> +
->  	while (next != NULL) {
->  		struct hist_entry *he;
->  
->  		he = rb_entry(next, struct hist_entry, rb_node_in);
->  		next = rb_next(&he->rb_node_in);
->  
-> +		hists__calc_col_len(hists, he);
->  		insert_hist_entry_by_compute(&hists->entries, he, compute);
->  	}
->  }
