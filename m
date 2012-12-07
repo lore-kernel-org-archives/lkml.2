@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423784Ab2LGSR3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 13:17:29 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:25775 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423574Ab2LGSR1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 13:17:27 -0500
-X-Authority-Analysis: v=2.0 cv=f9bK9ZOM c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=0q0mCv_Vr9gA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=lrIq2vSOvhQA:10 a=FwqeT2Wgn1AdykfBn74A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1354904245.17101.66.camel@gandalf.local.home>
-Subject: Re: [PATCH] ARM: ftrace: Ensure code modifications are synchronised
- across all cpus
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Rabin Vincent <rabin@rab.in>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 07 Dec 2012 13:17:25 -0500
-In-Reply-To: <1354903568.17101.65.camel@gandalf.local.home>
-References: <1354817466.30905.13.camel@linaro1.home>
-	 <1354821581.17101.17.camel@gandalf.local.home>
-	 <1354872138.3176.15.camel@computer5.home>
-	 <1354888985.17101.41.camel@gandalf.local.home>
-	 <1354892111.13000.50.camel@linaro1.home>
-	 <1354894134.17101.44.camel@gandalf.local.home>
-	 <20121207162346.GW14363@n2100.arm.linux.org.uk>
-	 <1354898200.17101.50.camel@gandalf.local.home>
-	 <20121207164530.GX14363@n2100.arm.linux.org.uk>
-	 <1354900436.17101.58.camel@gandalf.local.home>
-	 <1354902347.8263.12.camel@linaro1.home>
-	 <1354903568.17101.65.camel@gandalf.local.home>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1423767Ab2LGSR2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 13:17:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43143 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1423563Ab2LGSR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 13:17:26 -0500
+Date: Fri, 7 Dec 2012 13:17:25 -0500
+From: Jason Baron <jbaron@redhat.com>
+To: Alex Williamson <alex.williamson@redhat.com>
+Cc: mtosatti@redhat.com, gleb@redhat.com, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH 02/10] kvm: Check userspace_addr when modifying a memory
+ slot
+Message-ID: <20121207181725.GB13053@redhat.com>
+References: <20121206214722.24968.6043.stgit@bling.home>
+ <20121206222037.24968.13698.stgit@bling.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121206222037.24968.13698.stgit@bling.home>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-12-07 at 13:06 -0500, Steven Rostedt wrote:
-
-> If you can get away with that, sure. Or better yet. If the arch supports
-> it, you can do what I did with powerpc. That was just replace the nop
-> with the 32bit branch, and the 32bit branch with a 32bit nop. No nops.
-
-s/No nops/No breakpoints/
-
-> No multiple steps in between. I just did the swap of all function
-> tracepoints in one fell swoop, and then did the icache sync.
+On Thu, Dec 06, 2012 at 03:20:37PM -0700, Alex Williamson wrote:
+> The API documents that only flags and guest physical memory space can
+> be modified on an existing slot, but we don't enforce that the
+> userspace address cannot be modified.  Instead we just ignore it.
+> This means that a user may think they've successfully moved both the
+> guest and user addresses, when in fact only the guest address changed.
+> Check and error instead.
+> 
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> ---
+>  virt/kvm/kvm_main.c |    8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
+> 
+> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> index e426704..93213e1 100644
+> --- a/virt/kvm/kvm_main.c
+> +++ b/virt/kvm/kvm_main.c
+> @@ -779,13 +779,19 @@ int __kvm_set_memory_region(struct kvm *kvm,
+>  
+>  	r = -ENOMEM;
+>  
+> -	/* Allocate if a slot is being created */
+> +	/*
+> +	 * Allocate if a slot is being created.  If modifying a slot,
+> +	 * the userspace_addr cannot change.
+> +	 */
+>  	if (!old.npages) {
+>  		new.user_alloc = user_alloc;
+>  		new.userspace_addr = mem->userspace_addr;
+>  
+>  		if (kvm_arch_create_memslot(&new, npages))
+>  			goto out_free;
+> +	} else if (mem->userspace_addr != old.userspace_addr) {
+> +		r = -EINVAL;
+> +		goto out_free;
+>  	}
+>  
+>  	/* Allocate page dirty bitmap if needed */
 > 
 
--- Steve
+hmmm...does this mean that on a 'destroy', where npages is 0, the user
+has to set up userspace_addr correctly? If so, that would appear to be
+an unwanted change in semantics here.
 
+Thanks,
 
+-Jason
