@@ -1,109 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933500Ab2LGKfu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 05:35:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41901 "EHLO mx2.suse.de"
+	id S933511Ab2LGKf7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 05:35:59 -0500
+Received: from mga01.intel.com ([192.55.52.88]:43941 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932509Ab2LGKYJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 05:24:09 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
-Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>, Hillf Danton <dhillf@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Alex Shi <lkml.alex@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 07/49] mm: Optimize the TLB flush of sys_mprotect() and change_protection() users
-Date: Fri,  7 Dec 2012 10:23:10 +0000
-Message-Id: <1354875832-9700-8-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1354875832-9700-1-git-send-email-mgorman@suse.de>
-References: <1354875832-9700-1-git-send-email-mgorman@suse.de>
+	id S932509Ab2LGKfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 05:35:53 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,236,1355126400"; 
+   d="scan'208";a="260413395"
+From: markus.t.metzger@intel.com
+To: mingo@redhat.com, mingo@elte.hu
+Cc: markus.t.metzger@intel.com, linux-kernel@vger.kernel.org,
+        Mark Kettenis <kettenis@gnu.org>, Pedro Alves <palves@redhat.com>,
+        Jan Kratochvil <jan.kratochvil@redhat.com>, gdb-patches@sourceware.org
+Subject: [PATCH] x86, perf, bts: disable BTS from Nehalem to Ivy Bridge
+Date: Fri,  7 Dec 2012 11:35:11 +0100
+Message-Id: <1354876511-25294-1-git-send-email-markus.t.metzger@intel.com>
+X-Mailer: git-send-email 1.7.0.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ingo Molnar <mingo@kernel.org>
+From: Markus Metzger <markus.t.metzger@intel.com>
 
-Reuse the NUMA code's 'modified page protections' count that
-change_protection() computes and skip the TLB flush if there's
-no changes to a range that sys_mprotect() modifies.
+Starting with Nehalem, the BTS "from" information may in some cases be
+incorrect (AAJ122).
 
-Given that mprotect() already optimizes the same-flags case
-I expected this optimization to dominantly trigger on
-CONFIG_NUMA_BALANCING=y kernels - but even with that feature
-disabled it triggers rather often.
+This has been detected while adding branch tracing support to gdb, where it
+results in sporadic test fails.
 
-There's two reasons for that:
+Disable BTS support on Nehalem, Westmere, Sandy Bridge, and Ivy Bridge.
 
-1)
-
-While sys_mprotect() already optimizes the same-flag case:
-
-        if (newflags == oldflags) {
-                *pprev = vma;
-                return 0;
-        }
-
-and this test works in many cases, but it is too sharp in some
-others, where it differentiates between protection values that the
-underlying PTE format makes no distinction about, such as
-PROT_EXEC == PROT_READ on x86.
-
-2)
-
-Even where the pte format over vma flag changes necessiates a
-modification of the pagetables, there might be no pagetables
-yet to modify: they might not be instantiated yet.
-
-During a regular desktop bootup this optimization hits a couple
-of hundred times. During a Java test I measured thousands of
-hits.
-
-So this optimization improves sys_mprotect() in general, not just
-CONFIG_NUMA_BALANCING=y kernels.
-
-[ We could further increase the efficiency of this optimization if
-  change_pte_range() and change_huge_pmd() was a bit smarter about
-  recognizing exact-same-value protection masks - when the hardware
-  can do that safely. This would probably further speed up mprotect(). ]
-
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+CC: Mark Kettenis <kettenis@gnu.org>
+CC: Pedro Alves <palves@redhat.com>
+CC: Jan Kratochvil <jan.kratochvil@redhat.com>
+CC: gdb-patches@sourceware.org
+Signed-off-by: Markus Metzger <markus.t.metzger@intel.com>
 ---
- mm/mprotect.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/x86/kernel/cpu/perf_event_intel.c |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
-diff --git a/mm/mprotect.c b/mm/mprotect.c
-index 1e265be..7c3628a 100644
---- a/mm/mprotect.c
-+++ b/mm/mprotect.c
-@@ -153,7 +153,9 @@ static unsigned long change_protection_range(struct vm_area_struct *vma,
- 				 dirty_accountable);
- 	} while (pgd++, addr = next, addr != end);
- 
--	flush_tlb_range(vma, start, end);
-+	/* Only flush the TLB if we actually modified any entries: */
-+	if (pages)
-+		flush_tlb_range(vma, start, end);
- 
- 	return pages;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 6bca492..e72aac9 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -1893,6 +1893,16 @@ static __init void intel_nehalem_quirk(void)
+ 	}
  }
+ 
++static __init void intel_disable_bts(void)
++{
++	/*
++	 * Erratum AAJ122: LBR, BTM, or BTS records may have incorrect branch
++	 * "from" information afer an EIST transition, T-states, C1E, or
++	 * Adaptive Thermal Throttling.
++	 */
++	x86_pmu.bts = 0;
++}
++
+ __init int intel_pmu_init(void)
+ {
+ 	union cpuid10_edx edx;
+@@ -2003,6 +2013,7 @@ __init int intel_pmu_init(void)
+ 			X86_CONFIG(.event=0xb1, .umask=0x3f, .inv=1, .cmask=1);
+ 
+ 		x86_add_quirk(intel_nehalem_quirk);
++		intel_disable_bts();
+ 
+ 		pr_cont("Nehalem events, ");
+ 		break;
+@@ -2042,6 +2053,7 @@ __init int intel_pmu_init(void)
+ 		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_BACKEND] =
+ 			X86_CONFIG(.event=0xb1, .umask=0x3f, .inv=1, .cmask=1);
+ 
++		intel_disable_bts();
+ 		pr_cont("Westmere events, ");
+ 		break;
+ 
+@@ -2070,6 +2082,7 @@ __init int intel_pmu_init(void)
+ 		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_BACKEND] =
+ 			X86_CONFIG(.event=0xb1, .umask=0x01, .inv=1, .cmask=1);
+ 
++		intel_disable_bts();
+ 		pr_cont("SandyBridge events, ");
+ 		break;
+ 	case 58: /* IvyBridge */
+@@ -2092,6 +2105,7 @@ __init int intel_pmu_init(void)
+ 		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND] =
+ 			X86_CONFIG(.event=0x0e, .umask=0x01, .inv=1, .cmask=1);
+ 
++		intel_disable_bts();
+ 		pr_cont("IvyBridge events, ");
+ 		break;
+ 
 -- 
-1.7.9.2
+1.7.1
 
