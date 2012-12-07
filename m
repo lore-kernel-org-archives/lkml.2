@@ -1,193 +1,508 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423022Ab2LGRAJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 12:00:09 -0500
-Received: from smtp103.biz.mail.gq1.yahoo.com ([98.137.12.178]:48567 "HELO
-	smtp103.biz.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1422980Ab2LGRAF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 12:00:05 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: hLugH2UVM1nzXAVLgfKbrCkxdy0KQ2IDwKcD1LyVfFNf0ar
- Dt1IOiCQg4WH6joe2BGZnngphIR2kLZUCPFLYYcU_0IIkcaf8UUPCT8i5b9F
- lAvr.W5xBeCzwBK9myA.XsVesvuVqxvpLiKErSZBAusYJaGzS9Lp5JclJT_0
- qbtBV2KCn.vip8P6t19_rxaRFheZuwg_WsjX3nY_2APO_pD_kuDT.ycDTFH.
- cKAqs1T4C7kgt7xTMIpoE1Vx.l2SKT.luaGAALDLjrYWT6QDC2T4etwZN.r0
- ejp8GqrLYyxyLvjtngs5fx5aspJushUf3yne1iwFplsAqvg244kQzS4GjFII
- vttJXlhVyWUAD5ITThjKZ_960A9pJDt64OYKfl6jooBtajnIBD_q.Ari7eP8
- hiSKAo32fBp1x1F58cLCIpvSDvo3apx1ghYtyYoptQiTInHKoMRCTplROWEo
- iTnDi5kxlHqIcbgT5JbKp0HwGAJBrCEs3vK5Lm82eKymIojEisTOGm3rvw5i
- RI8a5DXI9l0wSfGwjYmxmOEXb9ixm0uHTu3w1PB.x5kU_zaIhZvuW8656_MO
- wUD8WRko3PwElhsu_QYRvibsCkJfgoMGsCbBqu8yUxBOHhqfwInWYWeBMK8S
- JILv46_Ay4nz3k.3mA3cxIIMpbfjsJ1spunE-
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <50C2209E.7060306@schaufler-ca.com>
-Date: Fri, 07 Dec 2012 09:00:14 -0800
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: "Serge E. Hallyn" <serge@hallyn.com>
-CC: Serge Hallyn <serge.hallyn@canonical.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "Andrew G. Morgan" <morgan@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        Kees Cook <keescook@chromium.org>,
-        James Morris <james.l.morris@oracle.com>,
-        Eric Paris <eparis@redhat.com>,
-        "Serge E. Hallyn" <serge@canonical.com>,
-        Markku Savela <msa@moth.iki.fi>,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [RFC] Capabilities still can't be inherited by normal programs
-References: <CALQRfL5EeqRFykLGVLJx3pfKdP4iF8r-8Ys7pVadOaCc3j1=iQ@mail.gmail.com> <CALCETrXYPjow3geVBnYK_ZOhnuU_wZkdebumJ=Hv3-T=fHaPNA@mail.gmail.com> <CALQRfL7e160D+vzVhT-fUS-_Yp55wqnWkRFJdDTOOVjjStd9Jw@mail.gmail.com> <CALCETrXUSz9EN-tGMfJkw9+1kO0hfmQk4E5XPF0cg9nmpPXepg@mail.gmail.com> <20121204135445.GA7420@mail.hallyn.com> <CALCETrW05JtRZSSJ0v=jz8B7_av1QS+D5qux5=q8aO3iWZHB1A@mail.gmail.com> <20121205210528.GA9047@sergelap> <CALCETrVsrJSt8oYnh+y32Lrxw6Yk=Cp_e07Qf=fLbVfORvzUNg@mail.gmail.com> <20121205222040.GB14884@sergelap> <50C13F0E.5010401@schaufler-ca.com> <20121207144233.GA6681@mail.hallyn.com>
-In-Reply-To: <20121207144233.GA6681@mail.hallyn.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756624Ab2LGRCD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 12:02:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49333 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754671Ab2LGRCA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 12:02:00 -0500
+Message-ID: <1354899707.3224.86.camel@bling.home>
+Subject: Re: [PATCH] vfio powerpc: implemented IOMMU driver for VFIO
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        David Gibson <david@gibson.dropbear.id.au>
+Date: Fri, 07 Dec 2012 10:01:47 -0700
+In-Reply-To: <1354865693-8060-1-git-send-email-aik@ozlabs.ru>
+References: <1354557206.1809.377.camel@bling.home>
+	 <1354865693-8060-1-git-send-email-aik@ozlabs.ru>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/7/2012 6:42 AM, Serge E. Hallyn wrote:
-> Quoting Casey Schaufler (casey@schaufler-ca.com):
->> On 12/5/2012 2:20 PM, Serge Hallyn wrote:
->>> Quoting Andy Lutomirski (luto@amacapital.net):
->>>> On Wed, Dec 5, 2012 at 1:05 PM, Serge Hallyn <serge.hallyn@canonical.com> wrote:
->>>>> Quoting Andy Lutomirski (luto@amacapital.net):
->>>>>> On Tue, Dec 4, 2012 at 5:54 AM, Serge E. Hallyn <serge@hallyn.com> wrote:
->>>>>>> Quoting Andy Lutomirski (luto@amacapital.net):
->>>>>>>>>> d) If I really wanted, I could emulate execve without actually doing
->>>>>>>>>> execve, and capabilities would be inherited.
->>>>>>>>> If you could modify the executable properties of the binary that has
->>>>>>>>> the privilege to wield a privilege then you are either exploiting an
->>>>>>>>> app bug, or doing something the privileged binary has been trusted to
->>>>>>>>> do.
->>>>>>>> That's not what I mean.  I would:
->>>>>>>>
->>>>>>>> fork()
->>>>>>>> munmap everything
->>>>>>>> mmap ld.so
->>>>>>>> set up a fake initial stack and the right fd or mapping or whatever
->>>>>>>> just to ld-linux.so
->>>>>>>>
->>>>>>>> That's almost execve, and privilege inheritance works.
->>>>>>> But of course that is why you only want to fill fI on programs you trust
->>>>>>> not to do that.  What you are arguing is that you want to give fI on
->>>>>>> programs you don't trust anyway, and so heck why not just give it on
->>>>>>> everything.
->>>>>>>
->>>>>> Huh?  I'd set fP on a program I expect to do *exactly* that (or use
->>>>>> actual in-kernel capability inheritance, which I would find vastly
->>>>>> more pleasant).  If I give a program a capability (via fP or fI & pI),
->>>>>> then I had better trust it not to abuse that capability.  Having it
->>>>>> pass that capability on to a child helper process would be just fine
->>>>>> with me *because it already has that capability*.
->>>>>>
->>>>>> The problem with the current inheritance mechanism is that it's very
->>>>>> difficult to understand what it means for an fI bit or a pI bit to be
->>>>>> set.  Saying "set a pI bit using pam if you want to grant permission
->>>>>> to that user to run a particular program with fI set" is crap -- it
->>>>>> only works if there is exactly one binary on the system with that bit
->>>>>> set.  In any case, a different administrator or package might use it
->>>>>> for something different.
->>>>>>
->>>>>> Suppose I use the (apparently) current suggested approach: I install a
->>>>>> fI=cap_net_raw copy of tcpdump somewhere.  Then I write a helper that
->>>>>> has fP=cap_new_raw and invokes that copy of tcpdump after appropriate
->>>>>> validation of parameters.  All is well.
->>>>> Since you're writing a special helper, you can surely have it validate
->>>>> the userid and make it so the calling user doesn't have to have
->>>>> cap_net_raw in pI?
->>>> I can and did.
->>> Oh, oops, I mis-understood what you meant was the problem.
->>>
->>> Yup, that is a real limitation.
->>>
->>> Yes, with the posix file caps you will be disappointed unless you see
->>> pI=X as "this user may run any program which is Inh-trusted with X" and
->>> fI=X as "this program may be run with X by any user Inh-trusted with X".
->>>
->>> It almost makes me want to say that there should be an execve-analogue
->>> to prctl(PR_SET_KEEPCAPS), which says caps will remain unchanged for one
->>> execve.  Or perhaps an intermediate securebits state between
->>> !SECBIT_NOROOT and SECBIT_NOROOT, which automatically transitions after
->>> the first execve to SECBIT_NOROOT.
->>>
->>>> The mere presence of a cap_net_raw+i tcpdump binary is more or less
->>>> equivalent to saying that users with cap_net_raw in pI can capture
->>>> packets.  I've just prevented pI=cap_net_raw from meaning anything
->>>> less than "can capture packets".  So I think we should bite the bullet
->>>> and just let programs opt in (via some appropriately careful
->>>> mechanism) to real capability inheritance.
->>> By real you mean more precise.  I think it'd be very interesting to get
->>> together with Markku and learn more from the N9 experiment!
->>>
->>> Markku, are there any post-mortem analysis papers we can read for
->>> starters?  Andy would not be trying to restrict root in general, so
->>> the ramification you cited may not necessarily be relevant.
->>>
->>> -serge
->> http://wt.tuxomania.net/publications/posix.1e/download.html
->>
->> Everyone should read the capabilities rationale. It answers most
->> of the questions on this thread, and a bunch more. The capabilities
->> mechanism has to support what are currently setuid-root programs
->> without change and allow for new programs that use the mechanism
->> wisely and fully.
-> How to put this delicately...   that is not enjoyable reading :)
+On Fri, 2012-12-07 at 18:34 +1100, Alexey Kardashevskiy wrote:
+> VFIO implements platform independent stuff such as
+> a PCI driver, BAR access (via read/write on a file descriptor
+> or direct mapping when possible) and IRQ signaling.
+> 
+> The platform dependent part includes IOMMU initialization
+> and handling. This patch implements an IOMMU driver for VFIO
+> which does mapping/unmapping pages for the guest IO and
+> provides information about DMA window (required by a POWERPC
+> guest).
+> 
+> The counterpart in QEMU is required to support this functionality.
+> 
+> Cc: David Gibson <david@gibson.dropbear.id.au>
+> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+> ---
+>  drivers/vfio/Kconfig                |    6 +
+>  drivers/vfio/Makefile               |    1 +
+>  drivers/vfio/vfio_iommu_spapr_tce.c |  348 +++++++++++++++++++++++++++++++++++
+>  include/linux/vfio.h                |   30 +++
+>  4 files changed, 385 insertions(+)
+>  create mode 100644 drivers/vfio/vfio_iommu_spapr_tce.c
+> 
+> diff --git a/drivers/vfio/Kconfig b/drivers/vfio/Kconfig
+> index 7cd5dec..b464687 100644
+> --- a/drivers/vfio/Kconfig
+> +++ b/drivers/vfio/Kconfig
+> @@ -3,10 +3,16 @@ config VFIO_IOMMU_TYPE1
+>  	depends on VFIO
+>  	default n
+>  
+> +config VFIO_IOMMU_SPAPR_TCE
+> +	tristate
+> +	depends on VFIO && SPAPR_TCE_IOMMU
+> +	default n
+> +
+>  menuconfig VFIO
+>  	tristate "VFIO Non-Privileged userspace driver framework"
+>  	depends on IOMMU_API
+>  	select VFIO_IOMMU_TYPE1 if X86
+> +	select VFIO_IOMMU_SPAPR_TCE if PPC_POWERNV
+>  	help
+>  	  VFIO provides a framework for secure userspace device drivers.
+>  	  See Documentation/vfio.txt for more details.
+> diff --git a/drivers/vfio/Makefile b/drivers/vfio/Makefile
+> index 2398d4a..72bfabc 100644
+> --- a/drivers/vfio/Makefile
+> +++ b/drivers/vfio/Makefile
+> @@ -1,3 +1,4 @@
+>  obj-$(CONFIG_VFIO) += vfio.o
+>  obj-$(CONFIG_VFIO_IOMMU_TYPE1) += vfio_iommu_type1.o
+> +obj-$(CONFIG_VFIO_IOMMU_SPAPR_TCE) += vfio_iommu_spapr_tce.o
+>  obj-$(CONFIG_VFIO_PCI) += pci/
+> diff --git a/drivers/vfio/vfio_iommu_spapr_tce.c b/drivers/vfio/vfio_iommu_spapr_tce.c
+> new file mode 100644
+> index 0000000..b0f81fe
+> --- /dev/null
+> +++ b/drivers/vfio/vfio_iommu_spapr_tce.c
+> @@ -0,0 +1,348 @@
+> +/*
+> + * VFIO: IOMMU DMA mapping support for TCE on POWER
+> + *
+> + * Copyright (C) 2012 IBM Corp.  All rights reserved.
+> + *     Author: Alexey Kardashevskiy <aik@ozlabs.ru>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * Derived from original vfio_iommu_type1.c:
+> + * Copyright (C) 2012 Red Hat, Inc.  All rights reserved.
+> + *     Author: Alex Williamson <alex.williamson@redhat.com>
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/pci.h>
+> +#include <linux/slab.h>
+> +#include <linux/uaccess.h>
+> +#include <linux/err.h>
+> +#include <linux/vfio.h>
+> +#include <asm/iommu.h>
+> +
+> +#define DRIVER_VERSION  "0.1"
+> +#define DRIVER_AUTHOR   "aik@ozlabs.ru"
+> +#define DRIVER_DESC     "VFIO IOMMU SPAPR TCE"
+> +
+> +static void tce_iommu_detach_group(void *iommu_data,
+> +		struct iommu_group *iommu_group);
+> +
+> +/*
+> + * VFIO IOMMU fd for SPAPR_TCE IOMMU implementation
+> + */
+> +
+> +/*
+> + * This code handles mapping and unmapping of user data buffers
+> + * into DMA'ble space using the IOMMU
+> + */
+> +
+> +#define NPAGE_TO_SIZE(npage)	((size_t)(npage) << PAGE_SHIFT)
+> +
+> +struct vwork {
+> +	struct mm_struct	*mm;
+> +	long			npage;
+> +	struct work_struct	work;
+> +};
+> +
+> +/* delayed decrement/increment for locked_vm */
+> +static void lock_acct_bg(struct work_struct *work)
+> +{
+> +	struct vwork *vwork = container_of(work, struct vwork, work);
+> +	struct mm_struct *mm;
+> +
+> +	mm = vwork->mm;
+> +	down_write(&mm->mmap_sem);
+> +	mm->locked_vm += vwork->npage;
+> +	up_write(&mm->mmap_sem);
+> +	mmput(mm);
+> +	kfree(vwork);
+> +}
+> +
+> +static void lock_acct(long npage)
+> +{
+> +	struct vwork *vwork;
+> +	struct mm_struct *mm;
+> +
+> +	if (!current->mm)
+> +		return; /* process exited */
+> +
+> +	if (down_write_trylock(&current->mm->mmap_sem)) {
+> +		current->mm->locked_vm += npage;
+> +		up_write(&current->mm->mmap_sem);
+> +		return;
+> +	}
+> +
+> +	/*
+> +	 * Couldn't get mmap_sem lock, so must setup to update
+> +	 * mm->locked_vm later. If locked_vm were atomic, we
+> +	 * wouldn't need this silliness
+> +	 */
+> +	vwork = kmalloc(sizeof(struct vwork), GFP_KERNEL);
+> +	if (!vwork)
+> +		return;
+> +	mm = get_task_mm(current);
+> +	if (!mm) {
+> +		kfree(vwork);
+> +		return;
+> +	}
+> +	INIT_WORK(&vwork->work, lock_acct_bg);
+> +	vwork->mm = mm;
+> +	vwork->npage = npage;
+> +	schedule_work(&vwork->work);
+> +}
+> +
+> +/*
+> + * The container descriptor supports only a single group per container.
+> + * Required by the API as the container is not supplied with the IOMMU group
+> + * at the moment of initialization.
+> + */
+> +struct tce_container {
+> +	struct mutex lock;
+> +	struct iommu_table *tbl;
+> +};
+> +
+> +static void *tce_iommu_open(unsigned long arg)
+> +{
+> +	struct tce_container *container;
+> +
+> +	if (arg != VFIO_SPAPR_TCE_IOMMU) {
+> +		pr_err("tce_vfio: Wrong IOMMU type\n");
+> +		return ERR_PTR(-EINVAL);
+> +	}
+> +
+> +	container = kzalloc(sizeof(*container), GFP_KERNEL);
+> +	if (!container)
+> +		return ERR_PTR(-ENOMEM);
+> +
+> +	mutex_init(&container->lock);
+> +
+> +	return container;
+> +}
+> +
+> +static void tce_iommu_release(void *iommu_data)
+> +{
+> +	struct tce_container *container = iommu_data;
+> +
+> +	WARN_ON(container->tbl && !container->tbl->it_group);
+> +	if (container->tbl && container->tbl->it_group)
+> +		tce_iommu_detach_group(iommu_data, container->tbl->it_group);
+> +
+> +	mutex_destroy(&container->lock);
+> +
+> +	kfree(container);
+> +}
+> +
+> +static long tce_iommu_ioctl(void *iommu_data,
+> +				 unsigned int cmd, unsigned long arg)
+> +{
+> +	struct tce_container *container = iommu_data;
+> +	unsigned long minsz;
+> +	long ret;
+> +
+> +	switch (cmd) {
+> +	case VFIO_CHECK_EXTENSION:
+> +		return (arg == VFIO_SPAPR_TCE_IOMMU) ? 1 : 0;
+> +
+> + 	case VFIO_IOMMU_SPAPR_TCE_GET_INFO: {
+> +		struct vfio_iommu_spapr_tce_info info;
+> +		struct iommu_table *tbl = container->tbl;
+> +
+> +		if (WARN_ON(!tbl))
+> +			return -ENXIO;
+> +
+> +		minsz = offsetofend(struct vfio_iommu_spapr_tce_info,
+> +				dma32_window_size);
+> +
+> +		if (copy_from_user(&info, (void __user *)arg, minsz))
+> +			return -EFAULT;
+> +
+> +		if (info.argsz < minsz)
+> +			return -EINVAL;
+> +
+> +		info.dma32_window_start = tbl->it_offset << IOMMU_PAGE_SHIFT;
+> +		info.dma32_window_size = tbl->it_size << IOMMU_PAGE_SHIFT;
+> +		info.flags = 0;
+> +
+> +		if (copy_to_user((void __user *)arg, &info, minsz))
+> +			return -EFAULT;
+> +
+> +		return 0;
+> +	}
+> +	case VFIO_IOMMU_MAP_DMA: {
+> +		vfio_iommu_spapr_tce_dma_map param;
+> +		struct iommu_table *tbl = container->tbl;
+> +		enum dma_data_direction direction;
+> +		unsigned long locked, lock_limit;
+> +
+> +		if (WARN_ON(!tbl))
+> +			return -ENXIO;
+> +
+> +		minsz = offsetofend(vfio_iommu_spapr_tce_dma_map, size);
+> +
+> +		if (copy_from_user(&param, (void __user *)arg, minsz))
+> +			return -EFAULT;
+> +
+> +		if (param.argsz < minsz)
+> +			return -EINVAL;
+> +
+> +		if ((param.flags & VFIO_DMA_MAP_FLAG_READ) &&
+> +				(param.flags & VFIO_DMA_MAP_FLAG_WRITE))
+> +			direction = DMA_BIDIRECTIONAL;
+> +		else if (param.flags & VFIO_DMA_MAP_FLAG_READ)
+> +			direction = DMA_TO_DEVICE;
+> +		else if (param.flags & VFIO_DMA_MAP_FLAG_WRITE)
+> +			direction = DMA_FROM_DEVICE;
+> +		else
+> +			return -EINVAL;
 
-It wasn't enjoyable writing, either! And the comment resolution
-process was ... long.
+flags needs to be sanitized too.  Return EINVAL if any unknown bit is
+set or else sloppy users may make it very difficult to make use of those
+flag bits later.
 
-> As I understood it, the draft supports setuid-root programs, but
-> does not support a !SECBIT_NOROOT environment.  If that is not the
-> case, can you point to where in the draft that is described?
+> +
+> +		if ((param.size & ~IOMMU_PAGE_MASK) ||
+> +				(param.iova & ~IOMMU_PAGE_MASK) ||
+> +				(param.vaddr & ~IOMMU_PAGE_MASK))
+> +			return -EINVAL;
+> +
+> +		if ((param.iova + param.size) >
+> +				((tbl->it_offset + tbl->it_size)
+> +				<< IOMMU_PAGE_SHIFT))
+> +			return -EINVAL;
+> +
+> +		if (param.iova < (tbl->it_offset << IOMMU_PAGE_SHIFT))
+> +			return -EINVAL;
+> +
+> +		/* Account for locked pages */
+> +		locked = current->mm->locked_vm +
+> +			(param.size >> PAGE_SHIFT);
 
-The draft describes interfaces, not systems. This was how POSIX was
-set up, and specific use cases were explicitly beyond the scope of
-the document. The committee represented a number of vendors and the
-various uses were discussed, but by rule could not go into the document.
+If a user were to map only IOMMU_PAGE_SIZE entries on a 64k PAGE_SIZE
+system, they'd circumvent this test.
 
-So you're correct, the draft does not address the issue directly.
-It appeared that some of the arguments being made included assumptions
-about the behavior and derivation of Linux capabilities that were
-not accurate. I hope that providing the link helps some of the people
-who are unfamiliar with that.
+> +		lock_limit = rlimit(RLIMIT_MEMLOCK) >> PAGE_SHIFT;
+> +		if (locked > lock_limit && !capable(CAP_IPC_LOCK)) {
+> +			pr_warn("RLIMIT_MEMLOCK (%ld) exceeded\n",
+> +					rlimit(RLIMIT_MEMLOCK));
+> +			return -ENOMEM;
+> +		}
+> +
+> +		ret = iommu_put_tces(tbl, param.iova >> IOMMU_PAGE_SHIFT,
+> +				param.vaddr, direction,
+> +				param.size >> IOMMU_PAGE_SHIFT);
+> +
+> +		if (ret > 0)
+> +			lock_acct(ret);
+> +
+> +		return ret;
+> +	}
+> +	case VFIO_IOMMU_UNMAP_DMA: {
+> +		vfio_iommu_spapr_tce_dma_unmap param;
+> +		struct iommu_table *tbl = container->tbl;
+> +
+> +		if (WARN_ON(!tbl))
+> +			return -ENXIO;
+> +
+> +		minsz = offsetofend(vfio_iommu_spapr_tce_dma_unmap, size);
+> +
+> +		if (copy_from_user(&param, (void __user *)arg, minsz))
+> +			return -EFAULT;
+> +
+> +		if (param.argsz < minsz)
+> +			return -EINVAL;
+> +
+> +		if ((param.size & ~IOMMU_PAGE_MASK) ||
+> +				(param.iova & ~IOMMU_PAGE_MASK))
+> +			return -EINVAL;
+> +
+> +		if ((param.iova + param.size) >
+> +				((tbl->it_offset + tbl->it_size)
+> +				<< IOMMU_PAGE_SHIFT))
+> +			return -EINVAL;
+> +
+> +		if (param.iova < (tbl->it_offset << IOMMU_PAGE_SHIFT))
+> +			return -EINVAL;
+
+Sanitize flags here too.
+
+> +
+> +		ret = iommu_clear_tces(tbl, param.iova >> IOMMU_PAGE_SHIFT,
+> +				param.size >> IOMMU_PAGE_SHIFT);
+> +
+> +		if (ret > 0)
+> +			lock_acct(-ret);
+> +
+> +		return ret;
+> +	}
+> +	default:
+> +		pr_warn("tce_vfio: unexpected cmd %x\n", cmd);
+
+This is unnecessary additional future maintenance.  You only support
+EXTENSION, INFO, MAP, and UNMAP.  It doesn't matter what else gets added
+later.
+
+> +	}
+> +
+> +	return -ENOTTY;
+> +}
+> +
+> +static int tce_iommu_attach_group(void *iommu_data,
+> +		struct iommu_group *iommu_group)
+> +{
+> +	struct tce_container *container = iommu_data;
+> +	struct iommu_table *tbl = iommu_group_get_iommudata(iommu_group);
+> +
+> +	BUG_ON(!tbl);
+> +	mutex_lock(&container->lock);
+> +	pr_debug("tce_vfio: Attaching group #%u to iommu %p\n",
+> +			iommu_group_id(iommu_group), iommu_group);
+> +	if (container->tbl) {
+> +		pr_warn("tce_vfio: Only one group per IOMMU container is allowed, existing id=%d, attaching id=%d\n",
+> +				iommu_group_id(container->tbl->it_group),
+> +				iommu_group_id(iommu_group));
+> +		mutex_unlock(&container->lock);
+> +		return -EBUSY;
+> +	}
+> +
+> +	container->tbl = tbl;
+> +	iommu_reset_table(tbl, false);
+> +	mutex_unlock(&container->lock);
+> +
+> +	return 0;
+> +}
+> +
+> +static void tce_iommu_detach_group(void *iommu_data,
+> +		struct iommu_group *iommu_group)
+> +{
+> +	struct tce_container *container = iommu_data;
+> +	struct iommu_table *tbl = iommu_group_get_iommudata(iommu_group);
+> +
+> +	BUG_ON(!tbl);
+> +	mutex_lock(&container->lock);
+> +	if (tbl != container->tbl) {
+> +		pr_warn("tce_vfio: detaching group #%u, expected group is #%u\n",
+> +				iommu_group_id(iommu_group),
+> +				iommu_group_id(tbl->it_group));
+> +	} else {
+> +
+> +		pr_debug("tce_vfio: detaching group #%u from iommu %p\n",
+> +				iommu_group_id(iommu_group), iommu_group);
+> +
+> +		container->tbl = NULL;
+> +		iommu_reset_table(tbl, true);
+> +	}
+> +	mutex_unlock(&container->lock);
+> +}
+> +
+> +const struct vfio_iommu_driver_ops tce_iommu_driver_ops = {
+> +	.name		= "iommu-vfio-powerpc",
+> +	.owner		= THIS_MODULE,
+> +	.open		= tce_iommu_open,
+> +	.release	= tce_iommu_release,
+> +	.ioctl		= tce_iommu_ioctl,
+> +	.attach_group	= tce_iommu_attach_group,
+> +	.detach_group	= tce_iommu_detach_group,
+> +};
+> +
+> +static int __init tce_iommu_init(void)
+> +{
+> +	return vfio_register_iommu_driver(&tce_iommu_driver_ops);
+> +}
+> +
+> +static void __exit tce_iommu_cleanup(void)
+> +{
+> +	vfio_unregister_iommu_driver(&tce_iommu_driver_ops);
+> +}
+> +
+> +module_init(tce_iommu_init);
+> +module_exit(tce_iommu_cleanup);
+> +
+> +MODULE_VERSION(DRIVER_VERSION);
+> +MODULE_LICENSE("GPL v2");
+> +MODULE_AUTHOR(DRIVER_AUTHOR);
+> +MODULE_DESCRIPTION(DRIVER_DESC);
+> +
+> diff --git a/include/linux/vfio.h b/include/linux/vfio.h
+> index 0a4f180..23cfc79 100644
+> --- a/include/linux/vfio.h
+> +++ b/include/linux/vfio.h
+> @@ -99,6 +99,7 @@ extern void vfio_unregister_iommu_driver(
+>  /* Extensions */
+>  
+>  #define VFIO_TYPE1_IOMMU		1
+> +#define VFIO_SPAPR_TCE_IOMMU		2
+>  
+>  /*
+>   * The IOCTL interface is designed for extensibility by embedding the
+> @@ -442,4 +443,33 @@ struct vfio_iommu_type1_dma_unmap {
+>  
+>  #define VFIO_IOMMU_UNMAP_DMA _IO(VFIO_TYPE, VFIO_BASE + 14)
+>  
+> +/* -------- Additional API for SPAPR TCE (Server POWERPC) IOMMU -------- */
+> +
+> +/*
+> + * The SPAPR TCE info struct provides the information about the PCI bus
+> + * address ranges available for DMA, these values are programmed into
+> + * the hardware so the guest has to know that information.
+> + *
+> + * The DMA 32 bit window start is an absolute PCI bus address.
+> + * The IOVA address passed via map/unmap ioctls are absolute PCI bus
+> + * addresses too so the window works as a filter rather than an offset
+> + * for IOVA addresses.
+> + *
+> + * At the momen the IOMMU page size is 4K.
+
+s/momen/moment/
+
+A flag will need to be added if other page sizes are supported, so as
+defined here, it's always 4k.  Thanks,
+
+Alex
+
+> + */
+> +struct vfio_iommu_spapr_tce_info {
+> +	__u32 argsz;
+> +	__u32 flags;			/* reserved for future use */
+> +	__u32 dma32_window_start;	/* 32 bit window start (bytes) */
+> +	__u32 dma32_window_size;	/* 32 bit window size (bytes) */
+> +};
+> +
+> +#define VFIO_IOMMU_SPAPR_TCE_GET_INFO	_IO(VFIO_TYPE, VFIO_BASE + 12)
+> +
+> +/* Reuse type1 map/unmap structs as they are the same at the moment */
+> +typedef struct vfio_iommu_type1_dma_map vfio_iommu_spapr_tce_dma_map;
+> +typedef struct vfio_iommu_type1_dma_unmap vfio_iommu_spapr_tce_dma_unmap;
+> +
+> +/* ***************************************************************** */
+> +
+>  #endif /* VFIO_H */
 
 
->
-> Regardless,
->
-> 1. Andy describes a problem which AFAICT can't be solved with the
-> current capabilities support.  An intermediate state between
-> !SECBIT_NOROOT and SECBIT_NOROOT (which itself is IIUC already an
-> extension beyond the above draft) seems an interesting feature to
-> consider which would support the wrapper case - but not something
-> to run into blindly without considering all the ramifications.
->
-> 2. The N9 folks have experimented with other inheritence properties,
-> and the details their experience would be educational.
->
-> There are two other ways the wrappered privileged tcpdump could be
-> achieved:
->
-> 1. Have the privileged wrapper create a new user and network
-> namespace and pass the network device into the new network
-> namespace and run tcpdump there with privilege.  This doesn't
-> work if the specific device also needs to be used in the original
-> network namespace (but passing a device bridged with the one of
-> interest might suffice?).
->
-> 2. Have the privileged wrapper create a small tmpfs mount in a
-> (non-ms-shared) new mounts namespace, copy tcpdump into that mount
-> and give it fI=CAP_NET_RAW, then execute the child with
-> pI=CAP_NET_RAW.  A bit hacky, but prevents the issue of other
-> users with pI=CAP_NET_RAW from executing that tcpdump.  Since
-> the child will have pP=CAP_NET_RAW, the other users should be
-> prevented from getting to the modified tcpdump binary through
-> the child's /proc/pid/fd/N.
->
-> Not saying these are ideal, just trying to think of ways of
-> solving the problem...
->
-> -serge
->
 
