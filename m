@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933288Ab2LGK3L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 05:29:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42277 "EHLO mx2.suse.de"
+	id S933302Ab2LGK3g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 05:29:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42220 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933030Ab2LGKYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 05:24:55 -0500
+	id S933015Ab2LGKYu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 05:24:50 -0500
 From: Mel Gorman <mgorman@suse.de>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>
@@ -21,9 +21,9 @@ Cc: Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 34/49] mm: numa: Rate limit setting of pte_numa if node is saturated
-Date: Fri,  7 Dec 2012 10:23:37 +0000
-Message-Id: <1354875832-9700-35-git-send-email-mgorman@suse.de>
+Subject: [PATCH 31/49] mm: numa: Migrate pages handled during a pmd_numa hinting fault
+Date: Fri,  7 Dec 2012 10:23:34 +0000
+Message-Id: <1354875832-9700-32-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.9.2
 In-Reply-To: <1354875832-9700-1-git-send-email-mgorman@suse.de>
 References: <1354875832-9700-1-git-send-email-mgorman@suse.de>
@@ -31,104 +31,213 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If there are a large number of NUMA hinting faults and all of them
-are resulting in migrations it may indicate that memory is just
-bouncing uselessly around. NUMA balancing cost is likely exceeding
-any benefit from locality. Rate limit the PTE updates if the node
-is migration rate-limited. As noted in the comments, this distorts
-the NUMA faulting statistics.
+To say that the PMD handling code was incorrectly transferred from autonuma
+is an understatement. The intention was to handle a PMDs worth of pages
+in the same fault and effectively batch the taking of the PTL and page
+migration. The copied version instead has the impact of clearing a number
+of pte_numa PTE entries and whether any page migration takes place depends
+on racing. This just happens to work in some cases.
+
+This patch handles pte_numa faults in batch when a pmd_numa fault is
+handled. The pages are migrated if they are currently misplaced.
+Essentially this is making an assumption that NUMA locality is
+on a PMD boundary but that could be addressed by only setting
+pmd_numa if all the pages within that PMD are on the same node
+if necessary.
 
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- include/linux/migrate.h |    6 ++++++
- kernel/sched/fair.c     |    9 +++++++++
- mm/migrate.c            |   20 ++++++++++++++++++++
- 3 files changed, 35 insertions(+)
+ mm/memory.c   |   51 ++++++++++++++++++++++++++++++++++-----------------
+ mm/mprotect.c |   25 ++++++++++++++++++++-----
+ 2 files changed, 54 insertions(+), 22 deletions(-)
 
-diff --git a/include/linux/migrate.h b/include/linux/migrate.h
-index 2923135..6229177 100644
---- a/include/linux/migrate.h
-+++ b/include/linux/migrate.h
-@@ -77,11 +77,17 @@ static inline int migrate_huge_page_move_mapping(struct address_space *mapping,
- 
- #ifdef CONFIG_BALANCE_NUMA
- extern int migrate_misplaced_page(struct page *page, int node);
-+extern int migrate_misplaced_page(struct page *page, int node);
-+extern bool migrate_ratelimited(int node);
- #else
- static inline int migrate_misplaced_page(struct page *page, int node)
- {
- 	return -EAGAIN; /* can't migrate now */
+diff --git a/mm/memory.c b/mm/memory.c
+index 47f5dd1..6a1e534 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3449,6 +3449,18 @@ static int do_nonlinear_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	return __do_fault(mm, vma, address, pmd, pgoff, flags, orig_pte);
  }
-+static inline bool migrate_ratelimited(int node)
+ 
++int numa_migrate_prep(struct page *page, struct vm_area_struct *vma,
++				unsigned long addr, int current_nid)
 +{
-+	return false;
-+}
- #endif /* CONFIG_BALANCE_NUMA */
- 
- #endif /* _LINUX_MIGRATE_H */
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 2e65f44..357057c 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -27,6 +27,7 @@
- #include <linux/profile.h>
- #include <linux/interrupt.h>
- #include <linux/mempolicy.h>
-+#include <linux/migrate.h>
- #include <linux/task_work.h>
- 
- #include <trace/events/sched.h>
-@@ -861,6 +862,14 @@ void task_numa_work(struct callback_head *work)
- 	if (cmpxchg(&mm->numa_next_scan, migrate, next_scan) != migrate)
- 		return;
- 
-+	/*
-+	 * Do not set pte_numa if the current running node is rate-limited.
-+	 * This loses statistics on the fault but if we are unwilling to
-+	 * migrate to this node, it is less likely we can do useful work
-+	 */
-+	if (migrate_ratelimited(numa_node_id()))
-+		return;
++	get_page(page);
 +
- 	start = mm->numa_scan_offset;
- 	pages = sysctl_balance_numa_scan_size;
- 	pages <<= 20 - PAGE_SHIFT; /* MB in pages */
-diff --git a/mm/migrate.c b/mm/migrate.c
-index b2e6d4c..2c8310c 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -1464,10 +1464,30 @@ static struct page *alloc_misplaced_dst_page(struct page *page,
-  * page migration rate limiting control.
-  * Do not migrate more than @pages_to_migrate in a @migrate_interval_millisecs
-  * window of time. Default here says do not migrate more than 1280M per second.
-+ * If a node is rate-limited then PTE NUMA updates are also rate-limited. However
-+ * as it is faults that reset the window, pte updates will happen unconditionally
-+ * if there has not been a fault since @pteupdate_interval_millisecs after the
-+ * throttle window closed.
-  */
- static unsigned int migrate_interval_millisecs __read_mostly = 100;
-+static unsigned int pteupdate_interval_millisecs __read_mostly = 1000;
- static unsigned int ratelimit_pages __read_mostly = 128 << (20 - PAGE_SHIFT);
- 
-+/* Returns true if NUMA migration is currently rate limited */
-+bool migrate_ratelimited(int node)
-+{
-+	pg_data_t *pgdat = NODE_DATA(node);
++	count_vm_numa_event(NUMA_HINT_FAULTS);
++	if (current_nid == numa_node_id())
++		count_vm_numa_event(NUMA_HINT_FAULTS_LOCAL);
 +
-+	if (time_after(jiffies, pgdat->balancenuma_migrate_next_window +
-+				msecs_to_jiffies(pteupdate_interval_millisecs)))
-+		return false;
-+
-+	if (pgdat->balancenuma_migrate_nr_pages < ratelimit_pages)
-+		return false;
-+
-+	return true;
++	return mpol_misplaced(page, vma, addr);
 +}
 +
- /*
-  * Attempt to migrate a misplaced page to the specified destination
-  * node. Caller is expected to have an elevated reference count on
+ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		   unsigned long addr, pte_t pte, pte_t *ptep, pmd_t *pmd)
+ {
+@@ -3477,18 +3489,14 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	set_pte_at(mm, addr, ptep, pte);
+ 	update_mmu_cache(vma, addr, ptep);
+ 
+-	count_vm_numa_event(NUMA_HINT_FAULTS);
+ 	page = vm_normal_page(vma, addr, pte);
+ 	if (!page) {
+ 		pte_unmap_unlock(ptep, ptl);
+ 		return 0;
+ 	}
+ 
+-	get_page(page);
+ 	current_nid = page_to_nid(page);
+-	if (current_nid == numa_node_id())
+-		count_vm_numa_event(NUMA_HINT_FAULTS_LOCAL);
+-	target_nid = mpol_misplaced(page, vma, addr);
++	target_nid = numa_migrate_prep(page, vma, addr, current_nid);
+ 	pte_unmap_unlock(ptep, ptl);
+ 	if (target_nid == -1) {
+ 		/*
+@@ -3505,7 +3513,8 @@ int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		current_nid = target_nid;
+ 
+ out:
+-	task_numa_fault(current_nid, 1);
++	if (current_nid != -1)
++		task_numa_fault(current_nid, 1);
+ 	return 0;
+ }
+ 
+@@ -3521,8 +3530,6 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	spinlock_t *ptl;
+ 	bool numa = false;
+ 	int local_nid = numa_node_id();
+-	unsigned long nr_faults = 0;
+-	unsigned long nr_faults_local = 0;
+ 
+ 	spin_lock(&mm->page_table_lock);
+ 	pmd = *pmdp;
+@@ -3545,7 +3552,8 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	for (addr = _addr + offset; addr < _addr + PMD_SIZE; pte++, addr += PAGE_SIZE) {
+ 		pte_t pteval = *pte;
+ 		struct page *page;
+-		int curr_nid;
++		int curr_nid = local_nid;
++		int target_nid;
+ 		if (!pte_present(pteval))
+ 			continue;
+ 		if (!pte_numa(pteval))
+@@ -3566,21 +3574,30 @@ static int do_pmd_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		/* only check non-shared pages */
+ 		if (unlikely(page_mapcount(page) != 1))
+ 			continue;
+-		pte_unmap_unlock(pte, ptl);
+ 
+-		curr_nid = page_to_nid(page);
+-		task_numa_fault(curr_nid, 1);
++		/*
++		 * Note that the NUMA fault is later accounted to either
++		 * the node that is currently running or where the page is
++		 * migrated to.
++		 */
++		curr_nid = local_nid;
++		target_nid = numa_migrate_prep(page, vma, addr,
++					       page_to_nid(page));
++		if (target_nid == -1) {
++			put_page(page);
++			continue;
++		}
+ 
+-		nr_faults++;
+-		if (curr_nid == local_nid)
+-			nr_faults_local++;
++		/* Migrate to the requested node */
++		pte_unmap_unlock(pte, ptl);
++		if (migrate_misplaced_page(page, target_nid))
++			curr_nid = target_nid;
++		task_numa_fault(curr_nid, 1);
+ 
+ 		pte = pte_offset_map_lock(mm, pmdp, addr, &ptl);
+ 	}
+ 	pte_unmap_unlock(orig_pte, ptl);
+ 
+-	count_vm_numa_events(NUMA_HINT_FAULTS, nr_faults);
+-	count_vm_numa_events(NUMA_HINT_FAULTS_LOCAL, nr_faults_local);
+ 	return 0;
+ }
+ #else
+diff --git a/mm/mprotect.c b/mm/mprotect.c
+index 8abf7c6..629dba1 100644
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -37,12 +37,14 @@ static inline pgprot_t pgprot_modify(pgprot_t oldprot, pgprot_t newprot)
+ 
+ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+ 		unsigned long addr, unsigned long end, pgprot_t newprot,
+-		int dirty_accountable, int prot_numa)
++		int dirty_accountable, int prot_numa, bool *ret_all_same_node)
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	pte_t *pte, oldpte;
+ 	spinlock_t *ptl;
+ 	unsigned long pages = 0;
++	bool all_same_node = true;
++	int last_nid = -1;
+ 
+ 	pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
+ 	arch_enter_lazy_mmu_mode();
+@@ -61,6 +63,12 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+ 
+ 				page = vm_normal_page(vma, addr, oldpte);
+ 				if (page) {
++					int this_nid = page_to_nid(page);
++					if (last_nid == -1)
++						last_nid = this_nid;
++					if (last_nid != this_nid)
++						all_same_node = false;
++
+ 					/* only check non-shared pages */
+ 					if (!pte_numa(oldpte) &&
+ 					    page_mapcount(page) == 1) {
+@@ -81,7 +89,6 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+ 
+ 			if (updated)
+ 				pages++;
+-
+ 			ptep_modify_prot_commit(mm, addr, pte, ptent);
+ 		} else if (IS_ENABLED(CONFIG_MIGRATION) && !pte_file(oldpte)) {
+ 			swp_entry_t entry = pte_to_swp_entry(oldpte);
+@@ -101,6 +108,7 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+ 	arch_leave_lazy_mmu_mode();
+ 	pte_unmap_unlock(pte - 1, ptl);
+ 
++	*ret_all_same_node = all_same_node;
+ 	return pages;
+ }
+ 
+@@ -127,6 +135,7 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma, pud_t *
+ 	pmd_t *pmd;
+ 	unsigned long next;
+ 	unsigned long pages = 0;
++	bool all_same_node;
+ 
+ 	pmd = pmd_offset(pud, addr);
+ 	do {
+@@ -143,9 +152,15 @@ static inline unsigned long change_pmd_range(struct vm_area_struct *vma, pud_t *
+ 		if (pmd_none_or_clear_bad(pmd))
+ 			continue;
+ 		pages += change_pte_range(vma, pmd, addr, next, newprot,
+-				 dirty_accountable, prot_numa);
+-
+-		if (prot_numa)
++				 dirty_accountable, prot_numa, &all_same_node);
++
++		/*
++		 * If we are changing protections for NUMA hinting faults then
++		 * set pmd_numa if the examined pages were all on the same
++		 * node. This allows a regular PMD to be handled as one fault
++		 * and effectively batches the taking of the PTL
++		 */
++		if (prot_numa && all_same_node)
+ 			change_pmd_protnuma(vma->vm_mm, addr, pmd);
+ 	} while (pmd++, addr = next, addr != end);
+ 
 -- 
 1.7.9.2
 
