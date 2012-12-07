@@ -1,86 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965231Ab2LGSoG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 13:44:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44623 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755130Ab2LGSoE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 13:44:04 -0500
-Date: Fri, 7 Dec 2012 13:44:01 -0500
-From: Jason Baron <jbaron@redhat.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: mtosatti@redhat.com, gleb@redhat.com, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH 02/10] kvm: Check userspace_addr when modifying a memory
- slot
-Message-ID: <20121207184400.GC13053@redhat.com>
-References: <20121206214722.24968.6043.stgit@bling.home>
- <20121206222037.24968.13698.stgit@bling.home>
- <20121207181725.GB13053@redhat.com>
- <1354905128.3224.98.camel@bling.home>
+	id S1756672Ab2LGSwU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 13:52:20 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:48484 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755174Ab2LGSwS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 13:52:18 -0500
+Message-ID: <50C23ADF.3060607@monstr.eu>
+Date: Fri, 07 Dec 2012 19:52:15 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354905128.3224.98.camel@bling.home>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Michal Simek <michal.simek@xilinx.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        linux-arch@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        John Williams <jwilliams@xilinx.com>
+Subject: Re: Sharing PCIE driver between Microblaze and Arm zynq
+References: <CAHTX3dLxbVxn+D+AV7L0VsGYFOjas3AJ_3M_xncVfxp02FCy=Q@mail.gmail.com> <20121207131706.EC9273E0B87@localhost>
+In-Reply-To: <20121207131706.EC9273E0B87@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 07, 2012 at 11:32:08AM -0700, Alex Williamson wrote:
-> On Fri, 2012-12-07 at 13:17 -0500, Jason Baron wrote:
-> > On Thu, Dec 06, 2012 at 03:20:37PM -0700, Alex Williamson wrote:
-> > > The API documents that only flags and guest physical memory space can
-> > > be modified on an existing slot, but we don't enforce that the
-> > > userspace address cannot be modified.  Instead we just ignore it.
-> > > This means that a user may think they've successfully moved both the
-> > > guest and user addresses, when in fact only the guest address changed.
-> > > Check and error instead.
-> > > 
-> > > Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> > > ---
-> > >  virt/kvm/kvm_main.c |    8 +++++++-
-> > >  1 file changed, 7 insertions(+), 1 deletion(-)
-> > > 
-> > > diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> > > index e426704..93213e1 100644
-> > > --- a/virt/kvm/kvm_main.c
-> > > +++ b/virt/kvm/kvm_main.c
-> > > @@ -779,13 +779,19 @@ int __kvm_set_memory_region(struct kvm *kvm,
-> > >  
-> > >  	r = -ENOMEM;
-> > >  
-> > > -	/* Allocate if a slot is being created */
-> > > +	/*
-> > > +	 * Allocate if a slot is being created.  If modifying a slot,
-> > > +	 * the userspace_addr cannot change.
-> > > +	 */
-> > >  	if (!old.npages) {
-> > >  		new.user_alloc = user_alloc;
-> > >  		new.userspace_addr = mem->userspace_addr;
-> > >  
-> > >  		if (kvm_arch_create_memslot(&new, npages))
-> > >  			goto out_free;
-> > > +	} else if (mem->userspace_addr != old.userspace_addr) {
-> > > +		r = -EINVAL;
-> > > +		goto out_free;
-> > >  	}
-> > >  
-> > >  	/* Allocate page dirty bitmap if needed */
-> > > 
-> > 
-> > hmmm...does this mean that on a 'destroy', where npages is 0, the user
-> > has to set up userspace_addr correctly? If so, that would appear to be
-> > an unwanted change in semantics here.
-> 
-> Good point, it does change that.  We could make this be (npages &&
-> mem->userspace_addr != old.userspace_addr) to avoid that case.  Thanks,
-> 
-> Alex
-> 
+On 12/07/2012 02:17 PM, Grant Likely wrote:
+> On Thu, 6 Dec 2012 15:23:14 +0100, Michal Simek <michal.simek@xilinx.com> wrote:
+>> Hi guys,
+>>
+>> I have a question regarding to sharing generic OF pcie driver between
+>> two architectures MB and ARM Zynq.
+>> Is drivers/pci/pcie location good for it?
+>> Make no sense to have the same driver in two locations.
+>> Is using readl/writel IO functions in this driver the best option
+>> which we can have?
+>> Or is there any other recommendation?
 
-Yup, that works for me.
+Grant: What do you think about readl/iowrite usage in connection to PCI?
+
+>> Also just want to check if it is correct to use pcie device_type.
+>> The rest should be the same with pci description:
+>> (http://devicetree.org/MPC5200:PCI#PCI_Address_Translation).
+>
+> Yes. device_type may be deprecated, but the PCI binding predates that.
+
+If it is deprecated, there could be probably problem with early_init_dt_scan_memory()
+which is checking memory device_type (drivers/of/fdt.c).
+
+
+> PowerPC uses pcie in the device type. arch/powerpc/kernel/of_platform.c
+
+ok. I see.
+
+> Some of that powerpc DT PCI support code really should be made generic.
+
+yep.
 
 Thanks,
+Michal
 
--Jason
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
