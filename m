@@ -1,95 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424333Ab2LGUnl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 15:43:41 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:37375 "EHLO
-	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1424123Ab2LGUnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 15:43:40 -0500
-Date: Fri, 7 Dec 2012 15:43:25 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Chris Mason <chris.mason@fusionio.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ric Wheeler <rwheeler@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Chinner <david@fromorbit.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
- UAPI
-Message-ID: <20121207204325.GC29435@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Chris Mason <chris.mason@fusionio.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Ric Wheeler <rwheeler@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-	Christoph Hellwig <hch@infradead.org>,
-	Martin Steigerwald <Martin@lichtvoll.de>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Dave Chinner <david@fromorbit.com>,
-	linux-fsdevel <linux-fsdevel@vger.kernel.org>
-References: <1353366267-15629-1-git-send-email-david@fromorbit.com>
- <20121126025520.GC22858@thunk.org>
- <20121126091202.GO32450@dastard>
- <201212051148.28039.Martin@lichtvoll.de>
- <CA+55aFzgP29WfB1yvnj+Q9-TsbX+b-TCCjTS_vPJ16DxMy6aDQ@mail.gmail.com>
- <20121206120532.GA14100@infradead.org>
- <20121207011628.GB16373@gmail.com>
- <50C22923.90102@redhat.com>
- <alpine.LFD.2.02.1212070956310.23641@air.linux-foundation.org>
- <20121207190306.GB14972@shiny>
+	id S1424366Ab2LGUxA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 15:53:00 -0500
+Received: from mail.etersoft.ru ([87.249.47.46]:54532 "EHLO mail.etersoft.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1424343Ab2LGUw6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 15:52:58 -0500
+X-Greylist: delayed 581 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Dec 2012 15:52:58 EST
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121207190306.GB14972@shiny>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 8bit
+Date: Sat, 08 Dec 2012 00:43:14 +0400
+From: Pavel Shilovsky <piastry@etersoft.ru>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: <linux-cifs@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-fsdevel@vger.kernel.org>, <wine-devel@winehq.org>,
+        <linux-nfs@vger.kernel.org>
+Subject: Re: [PATCH 0/3] Add =?UTF-8?Q?O=5FDENY*=20flags=20to=20fcntl=20an?=
+ =?UTF-8?Q?d=20cifs?=
+In-Reply-To: <20121207161602.GA17710@infradead.org>
+References: <1354818391-7968-1-git-send-email-piastry@etersoft.ru>
+ <20121207161602.GA17710@infradead.org>
+Message-ID: <495d17310e0a687d446afc86def0f058@office.etersoft.ru>
+User-Agent: Roundcube Webmail/0.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 07, 2012 at 02:03:06PM -0500, Chris Mason wrote:
-> 
-> That's not what happened though, and the right way forward from here is
-> to give the bit to the feature, maybe with a generic name like
-> FALLOCATE_WITHOUT_BEING_HORRIBLY_SLOW.  
+Christoph Hellwig писал 07.12.2012 20:16:
+> On Thu, Dec 06, 2012 at 10:26:28PM +0400, Pavel Shilovsky wrote:
+>> Network filesystems CIFS, SMB2.0, SMB3.0 and NFSv4 have such flags - 
+>> this change can benefit cifs and nfs modules. While this change is ok 
+>> for network filesystems, itsn't not targeted for local filesystems due 
+>> security problems (e.g. when a user process can deny root to delete a 
+>> file).
+>>
+>> Share flags are used by Windows applications and WINE have to deal 
+>> with them too. While WINE can process open share flags itself on local 
+>> filesystems, it can't do it if a file stored on a network share and is 
+>> used by several clients. This patchset makes it possible for 
+>> CIFS/SMB2.0/SMB3.0.
+>
+> I don't think introducing user visible flags that are only supported 
+> on
+> a single network filesystem is a good idea.
 
-I don't think that's a good idea, because the current name explicitly
-calls out the fact that we are making a tradeoff between what
-***might*** be a security exposure in some cases (but which might be
-perfectly fine in others) for performance.  Using the generic name
-would hide the fact that this tradeoff is being made, and the
-arguments (which I've never seen backed up with a specific design) is
-that it's possible to speed up random writes into preallocated space
-on a flash device without making any kind of tradeoff that might imply
-a security tradeoff.
+It can bring benefits for both CIFS and NFS filesystems - so, at least 
+two ones.
 
-If indeed it is possible to speed up this particular workload without
-making any kind of no-hide-stale tradeoff, then we won't need the bit
---- writes into fallocated space will just get faster, with or without
-the bit
+>
+> I'm not even sure adding these flags does make a lot of sense, but
+> assuming we'd actually want this (and I'd like some more detailed
+> explanation) I think we'd at least need to make sure that:
+>
+>  a) opening files with the new modes gives a proper error message if 
+> not
+>     supported
 
-I am sure it will be possible to do this in some cases (for example if
-you have a device that supports persistent trim which can quickly
-zeroize the blocks in question), but I would be very surprised if it's
-possible to completely eliminate the performance degradation for all
-devices and workloads.  (Not all storage devices support persistent
-trim, just for starters.)
+It makes us add such checks for all other filesystems, if I understand 
+right, - not a problem, I think.
 
-In answer's to Linus's question, the reason why people are
-hyperventilating so badly about this is that in some circles,
-revealing stale data is so horrible that anyone who even tries to
-suggest this should be excommunicated.  The mere existence of the
-code, or that people are using it, horribly offends those people.
+>  b) there needs to be local support for them as well
+>  c) we need to think really hard when they should be supported, and 
+> need
+>     a good rational for it.  I can't see how we could do it
+>     unconditionally for all users as that would introduce easy denial
+>     of services attacks the way I understand the semantics (correct 
+> me
+>     if I'm wrong).  So a mount option like you currently do probably 
+> is
+>     the least bad even if don't fell overly happy about that version.
+>
+> What is the reason your special wine use case can't simply use a
+> userspace cifs client?  Given that wine uses windows filesystem
+> semantics and cifs does as well tunnelling it through a Posix-like 
+> API
+> inbetween is never going to be perfect.
 
-(Witness how people reacted when Linus changed the default of ext3 to
-data=writeback many years ago in order to solve a performance problem
-that was impacting him and other desktop users very badly.  At the
-time, I understood why he made that change, but I know a lot of people
-were horrified.  These days we have a better solution which is used by
-ext4, but for desktop users at that time, it was a completely fair
-engineering choice to make.)
+Ideally we should not make any difference between underlying 
+filesystems in Wine: an application requests an open of the file and we 
+issue this open with flags it passed. Since Wineserver can process share 
+flags locally itself (for one linux user), we only need to add this 
+support for CIFS (that is actively used by Wine applications because of 
+it's Windows nature). Bringing these flags for local filesystems can 
+benefit Wine too: it will help in cases when Wine applications of 
+different users on the same machine use the same file and can make all 
+those things easier, of course.
 
-						- Ted
+The problem is the possibility of denial-of-service attacks here. We 
+can try to prevent them by:
+1) specifying an extra security bit on the file that indicates that 
+share flags are accepted (like we have for mandatory locks now) and 
+setting it for neccessary files only, or
+2) adding a special mount option (but it it probably makes sense if we 
+decided to add this support for CIFS and NFS only).
+
+--
+Best regards,
+Pavel Shilovsky.
+
+
