@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933554Ab2LGLBA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 06:01:00 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:37117 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755813Ab2LGLA6 (ORCPT
+	id S1756042Ab2LGLBW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 06:01:22 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:45726 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754981Ab2LGLBS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 06:00:58 -0500
-Date: Fri, 7 Dec 2012 14:00:43 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Rolf Eike Beer <eike-kernel@sf-tec.de>
-Cc: Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>,
-        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>, support@lsi.com,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] [SCSI] mpt3sas: cut and paste bug storing trigger mpi
-Message-ID: <20121207110043.GO22569@mwanda>
-References: <20121207062801.GD18220@elgon.mountain>
- <953b00ff89996c4a3681b3c8f425462b@sf-mail.de>
+	Fri, 7 Dec 2012 06:01:18 -0500
+Date: Fri, 7 Dec 2012 12:01:13 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Hillf Danton <dhillf@gmail.com>, David Rientjes <rientjes@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Alex Shi <lkml.alex@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/49] Automatic NUMA Balancing v10
+Message-ID: <20121207110113.GB21482@gmail.com>
+References: <1354875832-9700-1-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <953b00ff89996c4a3681b3c8f425462b@sf-mail.de>
+In-Reply-To: <1354875832-9700-1-git-send-email-mgorman@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 07, 2012 at 09:41:56AM +0100, Rolf Eike Beer wrote:
-> > 	memset(&ioc->diag_trigger_mpi, 0,
-> >-	    sizeof(struct SL_WH_EVENT_TRIGGERS_T));
-> >+	    sizeof(struct SL_WH_MPI_TRIGGERS_T));
-> > 	memcpy(&ioc->diag_trigger_mpi, buf, sz);
-> > 	if (ioc->diag_trigger_mpi.ValidEntries > NUM_VALID_ENTRIES)
-> > 		ioc->diag_trigger_mpi.ValidEntries = NUM_VALID_ENTRIES;
-> 
-> Then just use sizeof(ioc->diag_trigger_mpi), then it's irrelevant
-> how that type is ever called.
-> 
 
-Yeah, that's the way I would have prefered to write this as well.
-It took me a while to verify that the intent here was not to clear
-only part of the struct.  Using sizeof(variable_name) instead of
-sizeof(type) is more readable.
+* Mel Gorman <mgorman@suse.de> wrote:
 
-But then you get into the thing where the line before uses
-sizeof(type)...
+> This is a full release of all the patches so apologies for the 
+> flood. [...]
 
-Oh well, I've sent both styles and the maintainer can choose.  :)
+I have yet to process all your mails, but assuming I address all 
+your review feedback and the latest unified tree in tip:master 
+shows no regression in your testing, would you be willing to 
+start using it for ongoing work?
 
-regards,
-dan carpenter
+It would make it much easier for me to pick up your 
+enhancements, fixes, etc.
 
+> Changelog since V9
+>   o Migration scalability                                             (mingo)
+
+To *really* see migration scalability bottlenecks you need to 
+remove the migration-bandwidth throttling kludge from your tree 
+(or configure it up very high if you want to do it simple).
+
+Some (certainly not all) of the performance regressions you 
+reported were certainly due to numa/core code hitting the 
+migration codepaths as aggressively as the workload demanded - 
+and hitting scalability bottlenecks.
+
+The right approach is to hit scalability bottlenecks and fix 
+them.
+
+Thanks,
+
+	Ingo
