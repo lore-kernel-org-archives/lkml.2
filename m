@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1423042Ab2LGAzh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 6 Dec 2012 19:55:37 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:55441 "EHLO
+	id S1423072Ab2LGAzn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 6 Dec 2012 19:55:43 -0500
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52707 "EHLO
 	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1423022Ab2LGAzd (ORCPT
+	with ESMTP id S1423046Ab2LGAzi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 6 Dec 2012 19:55:33 -0500
+	Thu, 6 Dec 2012 19:55:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alan Cox <alan@linux.intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
         Peter Huewe <peterhuewe@gmx.de>
-Subject: [ 16/20] ACPI: missing break
-Date: Thu,  6 Dec 2012 16:54:31 -0800
-Message-Id: <20121207005237.431079810@linuxfoundation.org>
+Subject: [ 18/20] drm/i915: Add no-lvds quirk for Supermicro X7SPA-H
+Date: Thu,  6 Dec 2012 16:54:33 -0800
+Message-Id: <20121207005238.015567573@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.0.197.g5a90748
 In-Reply-To: <20121207005232.756641002@linuxfoundation.org>
 References: <20121207005232.756641002@linuxfoundation.org>
@@ -28,31 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Cox <alan@linux.intel.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 879dca019dc43a1622edca3e7dde644b14b5acc5 upstream.
+commit c31407a3672aaebb4acddf90944a114fa5c8af7b upstream.
 
-We handle NOTIFY_THROTTLING so don't then fall through to unsupported event.
-
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Reported-and-tested-by: Francois Tigeot <ftigeot@wolfpond.org>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=55375
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/acpi/processor_driver.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/gpu/drm/i915/intel_lvds.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/acpi/processor_driver.c
-+++ b/drivers/acpi/processor_driver.c
-@@ -407,6 +407,7 @@ static void acpi_processor_notify(struct
- 		acpi_bus_generate_proc_event(device, event, 0);
- 		acpi_bus_generate_netlink_event(device->pnp.device_class,
- 						  dev_name(&device->dev), event, 0);
-+		break;
- 	default:
- 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
- 				  "Unsupported event [0x%x]\n", event));
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -793,6 +793,14 @@ static const struct dmi_system_id intel_
+ 			DMI_MATCH(DMI_BOARD_NAME, "D525TUD"),
+ 		},
+ 	},
++	{
++		.callback = intel_no_lvds_dmi_callback,
++		.ident = "Supermicro X7SPA-H",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Supermicro"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "X7SPA-H"),
++		},
++	},
+ 
+ 	{ }	/* terminating entry */
+ };
 
 
