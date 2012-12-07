@@ -1,124 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424071Ab2LGTqr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 14:46:47 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:45798 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753632Ab2LGTqp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 14:46:45 -0500
-Date: Fri, 7 Dec 2012 14:46:35 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Olaf Hering <olaf@aepfle.de>, xen-devel@lists.xen.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] xen/blkback: prevent leak of mode during multiple
- backend_changed calls
-Message-ID: <20121207194635.GA8782@phenom.dumpdata.com>
-References: <1354701697-5815-1-git-send-email-olaf@aepfle.de>
- <50BF2E3802000078000AE162@nat28.tlf.novell.com>
- <20121206162304.GA3989@aepfle.de>
- <50C0DDCA02000078000AEBA9@nat28.tlf.novell.com>
+	id S965259Ab2LGTwI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 14:52:08 -0500
+Received: from mail.fuel7.com ([74.222.0.51]:43957 "EHLO mail.fuel7.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753632Ab2LGTwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 14:52:07 -0500
+Message-ID: <50C248BD.6080803@fuel7.com>
+Date: Fri, 07 Dec 2012 13:51:25 -0600
+From: Patrick Trantham <patrick.trantham@fuel7.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50C0DDCA02000078000AEBA9@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+To: Cong Ding <dinggnu@gmail.com>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Otavio Salvador <otavio@ossystems.com.br>,
+        Javier Martinez Canillas <javier@dowhile0.org>,
+        Jiri Kosina <jkosina@suse.cz>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fix initializer entry defined twice issue
+References: <1354835928-617-1-git-send-email-dinggnu@gmail.com> <50C13159.2070901@fuel7.com> <20121207000511.GD2510@gmail.com>
+In-Reply-To: <20121207000511.GD2510@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 06, 2012 at 05:02:50PM +0000, Jan Beulich wrote:
-> >>> On 06.12.12 at 17:23, Olaf Hering <olaf@aepfle.de> wrote:
-> > On Wed, Dec 05, Jan Beulich wrote:
-> > 
-> >> >>> On 05.12.12 at 11:01, Olaf Hering <olaf@aepfle.de> wrote:
-> >> > backend_changed might be called multiple times, which will leak
-> >> > be->mode. free the previous value before storing the current mode value.
-> >> 
-> >> As said before - this is one possible route to take. But did you
-> >> consider at all the alternative of preventing the function from
-> >> getting called more than once for a given device? As also said
-> >> before, I think that would have other bad effects, and hence
-> >> should be preferred (and would likely also result in a smaller
-> >> patch).
-> > 
-> > Maybe it could be done like this, adding a flag to the backend device
-> > and exit early if its called twice.
-> 
-> Maybe, but it looks odd to me. But then again I had hoped Konrad
-> would have an opinion here...
+On 12/06/2012 06:05 PM, Cong Ding wrote:
+> On Thu, Dec 06, 2012 at 05:59:21PM -0600, Patrick Trantham wrote:
+>> On 12/06/2012 05:16 PM, Cong Ding wrote:
+>>> the ".config_intr" is defined twice in both line 208 and 212.
+>>>
+>>> Signed-off-by: Cong Ding <dinggnu@gmail.com>
+>>> ---
+>>>   drivers/net/phy/smsc.c |    1 -
+>>>   1 files changed, 0 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/drivers/net/phy/smsc.c b/drivers/net/phy/smsc.c
+>>> index 16dceed..5cee6bd 100644
+>>> --- a/drivers/net/phy/smsc.c
+>>> +++ b/drivers/net/phy/smsc.c
+>>> @@ -205,7 +205,6 @@ static struct phy_driver smsc_phy_driver[] = {
+>>>   	/* basic functions */
+>>>   	.config_aneg	= genphy_config_aneg,
+>>>   	.read_status	= lan87xx_read_status,
+>>> -	.config_intr	= smsc_phy_config_intr,
+>>>   	/* IRQ related */
+>>>   	.ack_interrupt	= smsc_phy_ack_interrupt,
+>> Hi Cong,
+>>
+>> That looks like a mistake from my previous patch to that file.  Copy
+>> and paste fail.
+>>
+>> The line should read:
+>> .config_init    = smsc_phy_config_init,
+>>
+>> I can submit a patch once I get off work unless you beat me to it.
+> Thanks for the note. It's better that you submit a patch together with your
+> code.
+>
+> - cong
 
-Sorry - was lurking around and hadn't paid any attention to this thread.
-And it does not help that next week I am out :-)
+Patch submitted, thanks for pointing this out!
 
-> 
-> Also I don't see why you need to free be->mode now on all error
-> paths - afaict it would still get freed when "be" gets freed (with
-> your earlier patch).
-> 
-> Jan
-> 
-> > --- a/drivers/block/xen-blkback/xenbus.c
-> > +++ b/drivers/block/xen-blkback/xenbus.c
-> > @@ -28,6 +28,7 @@ struct backend_info {
-> >  	unsigned		major;
-> >  	unsigned		minor;
-> >  	char			*mode;
-> > +	unsigned		alive;
-> >  };
-> >  
-> >  static struct kmem_cache *xen_blkif_cachep;
-> > @@ -506,6 +507,9 @@ static void backend_changed(struct xenbus_watch *watch,
-> >  
-> >  	DPRINTK("");
-> >  
-> > +	if (be->alive)
-> > +		return;
-> > +
-> >  	err = xenbus_scanf(XBT_NIL, dev->nodename, "physical-device", "%x:%x",
-> >  			   &major, &minor);
-> >  	if (XENBUS_EXIST_ERR(err)) {
-> > @@ -548,8 +552,11 @@ static void backend_changed(struct xenbus_watch *watch,
-> >  		char *p = strrchr(dev->otherend, '/') + 1;
-> >  		long handle;
-> >  		err = strict_strtoul(p, 0, &handle);
-> > -		if (err)
-> > +		if (err) {
-> > +			kfree(be->mode);
-> > +			be->mode = NULL;
-> >  			return;
-> > +		}
-> >  
-> >  		be->major = major;
-> >  		be->minor = minor;
-> > @@ -560,6 +567,8 @@ static void backend_changed(struct xenbus_watch *watch,
-> >  			be->major = 0;
-> >  			be->minor = 0;
-> >  			xenbus_dev_fatal(dev, err, "creating vbd structure");
-> > +			kfree(be->mode);
-> > +			be->mode = NULL;
-> >  			return;
-> >  		}
-> >  
-> > @@ -569,10 +578,13 @@ static void backend_changed(struct xenbus_watch 
-> > *watch,
-> >  			be->major = 0;
-> >  			be->minor = 0;
-> >  			xenbus_dev_fatal(dev, err, "creating sysfs entries");
-> > +			kfree(be->mode);
-> > +			be->mode = NULL;
-> >  			return;
-> >  		}
-> >  
-> >  		/* We're potentially connected now */
-> > +		be->alive = 1;
-> >  		xen_update_blkif_status(be->blkif);
-> >  	}
-> >  }
-> > -- 
-> > 1.8.0.1
-> 
-> 
-> 
+- Patrick
