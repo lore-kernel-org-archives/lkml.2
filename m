@@ -1,404 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1424144Ab2LGUUV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 15:20:21 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:52573 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753047Ab2LGUUT (ORCPT
+	id S1424161Ab2LGUU1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 15:20:27 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:29323 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753047Ab2LGUUY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 15:20:19 -0500
-From: tobetter@gmail.com
-Cc: Dongjin Kim <tobetter@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        =?UTF-8?q?Ren=C3=A9=20B=C3=BCrgel?= <rene.buergel@sohard.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] USB: misc: Add USB3503 High-Speed Hub Controller
-Date: Sat,  8 Dec 2012 05:18:44 +0900
-Message-Id: <1354911537-32684-1-git-send-email-dongjin.kim@agreeyamobility.net>
-X-Mailer: git-send-email 1.7.9.5
-To: unlisted-recipients:; (no To-header on input)
+	Fri, 7 Dec 2012 15:20:24 -0500
+Date: Fri, 7 Dec 2012 15:20:03 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Roger Pau Monne <roger.pau@citrix.com>, akpm@linux-foundation.org,
+        sfr@canb.auug.org.au, peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org, Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        xen-devel@lists.xen.org
+Subject: Re: [Xen-devel] [PATCH 2/2] xen-blkfront: implement safe version of
+ llist_for_each_entry
+Message-ID: <20121207202003.GA9462@phenom.dumpdata.com>
+References: <1354630913-17287-1-git-send-email-roger.pau@citrix.com>
+ <1354630913-17287-2-git-send-email-roger.pau@citrix.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1354630913-17287-2-git-send-email-roger.pau@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dongjin Kim <tobetter@gmail.com>
+On Tue, Dec 04, 2012 at 03:21:53PM +0100, Roger Pau Monne wrote:
+> Implement a safe version of llist_for_each_entry, and use it in
+> blkif_free. Previously grants where freed while iterating the list,
+> which lead to dereferences when trying to fetch the next item.
 
-This patch adds new driver of SMSC USB3503 USB 2.0 hub controller with HSIC
-upstream connectivity and three USB 2.0 downstream ports. The specification
-can be found from 'http://www.smsc.com/index.php?tid=295&pid=325'.
+Looks like xen-blkfront is the only user of this llist_for_each_entry.
 
-The current version have been tested very basic features switching the modes,
-HUB-MODE and STANDBY-MODE.
+Would it be more prudent to put the macro in the llist.h file?
 
-Signed-off-by: Dongjin Kim <tobetter@gmail.com>
----
- drivers/usb/misc/Kconfig              |    6 +
- drivers/usb/misc/Makefile             |    1 +
- drivers/usb/misc/usb3503.c            |  303 +++++++++++++++++++++++++++++++++
- include/linux/platform_data/usb3503.h |   19 +++
- 4 files changed, 329 insertions(+)
- create mode 100644 drivers/usb/misc/usb3503.c
- create mode 100644 include/linux/platform_data/usb3503.h
-
-diff --git a/drivers/usb/misc/Kconfig b/drivers/usb/misc/Kconfig
-index a8f0523..98081bc 100644
---- a/drivers/usb/misc/Kconfig
-+++ b/drivers/usb/misc/Kconfig
-@@ -249,3 +249,9 @@ config USB_EZUSB_FX2
- 	help
- 	  Say Y here if you need EZUSB device support.
- 	  (Cypress FX/FX2/FX2LP microcontrollers)
-+
-+config USB_HSIC_USB3503
-+       tristate "USB3503 HSIC to USB20 Driver"
-+       depends on I2C
-+       help
-+         This option enables support for SMSC USB3503 HSIC to USB 2.0 Driver.
-diff --git a/drivers/usb/misc/Makefile b/drivers/usb/misc/Makefile
-index 3e99a64..3e1bd70 100644
---- a/drivers/usb/misc/Makefile
-+++ b/drivers/usb/misc/Makefile
-@@ -26,5 +26,6 @@ obj-$(CONFIG_USB_TRANCEVIBRATOR)	+= trancevibrator.o
- obj-$(CONFIG_USB_USS720)		+= uss720.o
- obj-$(CONFIG_USB_SEVSEG)		+= usbsevseg.o
- obj-$(CONFIG_USB_YUREX)			+= yurex.o
-+obj-$(CONFIG_USB_HSIC_USB3503)		+= usb3503.o
- 
- obj-$(CONFIG_USB_SISUSBVGA)		+= sisusbvga/
-diff --git a/drivers/usb/misc/usb3503.c b/drivers/usb/misc/usb3503.c
-new file mode 100644
-index 0000000..796d58c
---- /dev/null
-+++ b/drivers/usb/misc/usb3503.c
-@@ -0,0 +1,303 @@
-+/*
-+ * Driver for SMSC USB3503 USB 2.0 hub controller driver
-+ *
-+ * Copyright (c) 2012-2013 Dongjin Kim (tobetter@gmail.com)
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+
-+#include <linux/i2c.h>
-+#include <linux/gpio.h>
-+#include <linux/delay.h>
-+#include <linux/slab.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/platform_data/usb3503.h>
-+
-+#define USB3503_VIDL		0x00
-+#define USB3503_VIDM		0x01
-+#define USB3503_PIDL		0x02
-+#define USB3503_PIDM		0x03
-+#define USB3503_DIDL		0x04
-+#define USB3503_DIDM		0x05
-+
-+#define USB3503_CFG1		0x06
-+#define USB3503_SELF_BUS_PWR	(1 << 7)
-+
-+#define USB3503_CFG2		0x07
-+#define USB3503_CFG3		0x08
-+#define USB3503_NRD		0x09
-+
-+#define USB3503_PDS		0x0a
-+#define USB3503_PORT1		(1 << 1)
-+#define USB3503_PORT2		(1 << 2)
-+#define USB3503_PORT3		(1 << 3)
-+
-+#define USB3503_SP_ILOCK	0xe7
-+#define USB3503_SPILOCK_CONNECT	(1 << 1)
-+#define USB3503_SPILOCK_CONFIG	(1 << 0)
-+
-+#define USB3503_CFGP		0xee
-+#define USB3503_CLKSUSP		(1 << 7)
-+
-+struct usb3503 {
-+	enum usb3503_mode	mode;
-+	struct i2c_client	*client;
-+	int	gpio_intn;
-+	int	gpio_reset;
-+	int	gpio_connect;
-+};
-+
-+static int usb3503_write_register(struct i2c_client *client,
-+		char reg, char data)
-+{
-+	return i2c_smbus_write_byte_data(client, reg, data);
-+}
-+
-+static int usb3503_read_register(struct i2c_client *client, char reg)
-+{
-+	return i2c_smbus_read_byte_data(client, reg);
-+}
-+
-+static int usb3503_set_bits(struct i2c_client *client, char reg, char req)
-+{
-+	int err;
-+
-+	err = usb3503_read_register(client, reg);
-+	if (err < 0)
-+		return err;
-+
-+	err = usb3503_write_register(client, reg, err | req);
-+	if (err < 0)
-+		return err;
-+
-+	return 0;
-+}
-+
-+static int usb3503_clear_bits(struct i2c_client *client, char reg, char req)
-+{
-+	int err;
-+
-+	err = usb3503_read_register(client, reg);
-+	if (err < 0)
-+		return err;
-+
-+	err = usb3503_write_register(client, reg, err & ~req);
-+	if (err < 0)
-+		return err;
-+
-+	return 0;
-+}
-+
-+static int usb3503_reset(int gpio_reset, int state)
-+{
-+	if (gpio_is_valid(gpio_reset))
-+		gpio_set_value(gpio_reset, state);
-+
-+	/* Wait RefClk when RESET_N is released, otherwise Hub will
-+	 * not transition to Hub Communication Stage.
-+	 */
-+	if (state)
-+		msleep(100);
-+
-+	return 0;
-+}
-+
-+static int usb3503_switch_mode(struct usb3503 *hub, enum usb3503_mode mode)
-+{
-+	struct i2c_client *i2c = hub->client;
-+	int err = 0;
-+
-+	switch (mode) {
-+	case USB3503_MODE_HUB:
-+		usb3503_reset(hub->gpio_reset, 1);
-+
-+		/* SP_ILOCK: set connect_n, config_n for config */
-+		err = usb3503_write_register(i2c, USB3503_SP_ILOCK,
-+				(USB3503_SPILOCK_CONNECT
-+				 | USB3503_SPILOCK_CONFIG));
-+		if (err < 0) {
-+			dev_err(&i2c->dev, "SP_ILOCK failed (%d)\n", err);
-+			goto err_hubmode;
-+		}
-+
-+		/* PDS : Port2,3 Disable For Self Powered Operation */
-+		err = usb3503_set_bits(i2c, USB3503_PDS,
-+				(USB3503_PORT2 | USB3503_PORT3));
-+		if (err < 0) {
-+			dev_err(&i2c->dev, "PDS failed (%d)\n", err);
-+			goto err_hubmode;
-+		}
-+
-+		/* CFG1 : SELF_BUS_PWR -> Self-Powerd operation */
-+		err = usb3503_set_bits(i2c, USB3503_CFG1, USB3503_SELF_BUS_PWR);
-+		if (err < 0) {
-+			dev_err(&i2c->dev, "CFG1 failed (%d)\n", err);
-+			goto err_hubmode;
-+		}
-+
-+		/* SP_LOCK: clear connect_n, config_n for hub connect */
-+		err = usb3503_clear_bits(i2c, USB3503_SP_ILOCK,
-+				(USB3503_SPILOCK_CONNECT
-+				 | USB3503_SPILOCK_CONFIG));
-+		if (err < 0) {
-+			dev_err(&i2c->dev, "SP_ILOCK failed (%d)\n", err);
-+			goto err_hubmode;
-+		}
-+
-+		hub->mode = mode;
-+		dev_info(&i2c->dev, "switched to HUB mode\n");
-+		break;
-+
-+	case USB3503_MODE_STANDBY:
-+		usb3503_reset(hub->gpio_reset, 0);
-+
-+		hub->mode = mode;
-+		dev_info(&i2c->dev, "switched to STANDBY mode\n");
-+		break;
-+
-+	default:
-+		dev_err(&i2c->dev, "unknown mode is request\n");
-+		err = -EINVAL;
-+		break;
-+	}
-+
-+err_hubmode:
-+	return err;
-+}
-+
-+int usb3503_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
-+{
-+	struct usb3503_platform_data *pdata = i2c->dev.platform_data;
-+	struct usb3503 *hub;
-+	int err;
-+
-+	hub = kzalloc(sizeof(struct usb3503), GFP_KERNEL);
-+	if (!hub) {
-+		dev_err(&i2c->dev, "private data alloc fail\n");
-+		return -ENOMEM;
-+	}
-+
-+	i2c_set_clientdata(i2c, hub);
-+	hub->client = i2c;
-+
-+	if (!pdata) {
-+		dev_dbg(&i2c->dev, "missing platform data\n");
-+	} else {
-+		hub->gpio_intn		= pdata->gpio_intn;
-+		hub->gpio_connect	= pdata->gpio_connect;
-+		hub->gpio_reset		= pdata->gpio_reset;
-+		hub->mode		= pdata->initial_mode;
-+	}
-+
-+	if (gpio_is_valid(hub->gpio_intn)) {
-+		err = gpio_request_one(hub->gpio_intn,
-+				GPIOF_OUT_INIT_HIGH, "usb3503 intn");
-+		if (err) {
-+			dev_err(&i2c->dev,
-+					"unable to request GPIO %d as connect pin (%d)\n",
-+					hub->gpio_intn, err);
-+			goto err_gpio_intn;
-+		}
-+	}
-+
-+	if (gpio_is_valid(hub->gpio_connect)) {
-+		err = gpio_request_one(hub->gpio_connect,
-+				GPIOF_OUT_INIT_HIGH, "usb3503 connect");
-+		if (err) {
-+			dev_err(&i2c->dev,
-+					"unable to request GPIO %d as connect pin (%d)\n",
-+					hub->gpio_connect, err);
-+			goto err_gpio_connect;
-+		}
-+	}
-+
-+	if (gpio_is_valid(hub->gpio_reset)) {
-+		err = gpio_request_one(hub->gpio_reset,
-+				GPIOF_OUT_INIT_LOW, "usb3503 reset");
-+		if (err) {
-+			dev_err(&i2c->dev,
-+					"unable to request GPIO %d as reset pin (%d)\n",
-+					hub->gpio_reset, err);
-+			goto err_gpio_reset;
-+		}
-+	}
-+
-+	usb3503_switch_mode(hub, pdata->initial_mode);
-+
-+	dev_info(&i2c->dev, "%s: probed on  %s mode\n", __func__,
-+			(hub->mode == USB3503_MODE_HUB) ? "hub" : "standby");
-+
-+	return 0;
-+
-+err_gpio_reset:
-+	if (gpio_is_valid(hub->gpio_connect))
-+		gpio_free(hub->gpio_connect);
-+err_gpio_connect:
-+	if (gpio_is_valid(hub->gpio_intn))
-+		gpio_free(hub->gpio_intn);
-+err_gpio_intn:
-+	kfree(hub);
-+
-+	return err;
-+}
-+
-+static int usb3503_remove(struct i2c_client *i2c)
-+{
-+	struct usb3503 *hub = i2c_get_clientdata(i2c);
-+
-+	if (gpio_is_valid(hub->gpio_intn))
-+		gpio_free(hub->gpio_intn);
-+	if (gpio_is_valid(hub->gpio_connect))
-+		gpio_free(hub->gpio_connect);
-+	if (gpio_is_valid(hub->gpio_reset))
-+		gpio_free(hub->gpio_reset);
-+
-+	kfree(hub);
-+
-+	return 0;
-+}
-+
-+static const struct i2c_device_id usb3503_id[] = {
-+	{ USB3503_I2C_NAME, 0 },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, usb3503_id);
-+
-+static struct i2c_driver usb3503_driver = {
-+	.driver = {
-+		.name = USB3503_I2C_NAME,
-+	},
-+	.probe		= usb3503_probe,
-+	.remove		= usb3503_remove,
-+	.id_table	= usb3503_id,
-+};
-+
-+static int __init usb3503_init(void)
-+{
-+	return i2c_add_driver(&usb3503_driver);
-+}
-+
-+static void __exit usb3503_exit(void)
-+{
-+	i2c_del_driver(&usb3503_driver);
-+}
-+
-+module_init(usb3503_init);
-+module_exit(usb3503_exit);
-+
-+MODULE_AUTHOR("Dongjin Kim <tobetter@gmail.com>");
-+MODULE_DESCRIPTION("USB3503 USB HUB driver");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/platform_data/usb3503.h b/include/linux/platform_data/usb3503.h
-new file mode 100644
-index 0000000..85dcc70
---- /dev/null
-+++ b/include/linux/platform_data/usb3503.h
-@@ -0,0 +1,19 @@
-+#ifndef __USB3503_H__
-+#define __USB3503_H__
-+
-+#define USB3503_I2C_NAME	"usb3503"
-+
-+enum usb3503_mode {
-+	USB3503_MODE_UNKNOWN,
-+	USB3503_MODE_HUB,
-+	USB3503_MODE_STANDBY,
-+};
-+
-+struct usb3503_platform_data {
-+	enum usb3503_mode	initial_mode;
-+	int	gpio_intn;
-+	int	gpio_connect;
-+	int	gpio_reset;
-+};
-+
-+#endif
--- 
-1.7.9.5
-
+> 
+> Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+> Signed-off-by: Roger Pau Monné <roger.pau@citrix.com>
+> Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>
+> Cc: xen-devel@lists.xen.org
+> ---
+>  drivers/block/xen-blkfront.c |   10 +++++++++-
+>  1 files changed, 9 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+> index 96e9b00..df21b05 100644
+> --- a/drivers/block/xen-blkfront.c
+> +++ b/drivers/block/xen-blkfront.c
+> @@ -143,6 +143,13 @@ static DEFINE_SPINLOCK(minor_lock);
+>  
+>  #define DEV_NAME	"xvd"	/* name in /dev */
+>  
+> +#define llist_for_each_entry_safe(pos, n, node, member)		\
+> +	for ((pos) = llist_entry((node), typeof(*(pos)), member),	\
+> +	     (n) = (pos)->member.next;					\
+> +	     &(pos)->member != NULL;					\
+> +	     (pos) = llist_entry(n, typeof(*(pos)), member),		\
+> +	     (n) = (&(pos)->member != NULL) ? (pos)->member.next : NULL)
+> +
+>  static int get_id_from_freelist(struct blkfront_info *info)
+>  {
+>  	unsigned long free = info->shadow_free;
+> @@ -792,6 +799,7 @@ static void blkif_free(struct blkfront_info *info, int suspend)
+>  {
+>  	struct llist_node *all_gnts;
+>  	struct grant *persistent_gnt;
+> +	struct llist_node *n;
+>  
+>  	/* Prevent new requests being issued until we fix things up. */
+>  	spin_lock_irq(&info->io_lock);
+> @@ -804,7 +812,7 @@ static void blkif_free(struct blkfront_info *info, int suspend)
+>  	/* Remove all persistent grants */
+>  	if (info->persistent_gnts_c) {
+>  		all_gnts = llist_del_all(&info->persistent_gnts);
+> -		llist_for_each_entry(persistent_gnt, all_gnts, node) {
+> +		llist_for_each_entry_safe(persistent_gnt, n, all_gnts, node) {
+>  			gnttab_end_foreign_access(persistent_gnt->gref, 0, 0UL);
+>  			__free_page(pfn_to_page(persistent_gnt->pfn));
+>  			kfree(persistent_gnt);
+> -- 
+> 1.7.7.5 (Apple Git-26)
+> 
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
+> 
