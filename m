@@ -1,101 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030750Ab2LGPwJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 10:52:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37763 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932172Ab2LGPwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 10:52:06 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: aneesh.kumar@linux.vnet.ibm.com
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi.kleen@intel.com>, Tony Luck <tony.luck@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 1/3] HWPOISON, hugetlbfs: fix warning on freeing hwpoisoned hugepage
-Date: Fri,  7 Dec 2012 10:49:57 -0500
-Message-Id: <1354895397-21736-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <878v9acn5m.fsf@linux.vnet.ibm.com>
+	id S965166Ab2LGP6V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 10:58:21 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:41422 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932201Ab2LGP6U convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 10:58:20 -0500
+MIME-Version: 1.0
+In-Reply-To: <1354894964.29937.38.camel@joe-AO722>
+References: <1354813571-11253-1-git-send-email-schnhrr@cs.tu-berlin.de>
+	<20121206133907.37c255e9.akpm@linux-foundation.org>
+	<1354837050.22463.4.camel@joe-AO722>
+	<20121206161943.78633125.akpm@linux-foundation.org>
+	<1354848669.22463.23.camel@joe-AO722>
+	<50C1D758.1080007@cs.tu-berlin.de>
+	<20121207150448.GC20369@kroah.com>
+	<1354894964.29937.38.camel@joe-AO722>
+Date: Fri, 7 Dec 2012 16:58:18 +0100
+Message-ID: <CAFTL4hwjt=w+JmecMvgxFgiOaWjKQh61=1UEOGA5AtB9aDjfJg@mail.gmail.com>
+Subject: Re: [PATCH v2 00/14] printk() fixes, optimizations, and clean ups
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "\"Jan H." <schnhrr@cs.tu-berlin.de>,
+        Andrew Morton <akpm@linux-foundation.org>, Kay Sievers <kay@vrfy.org>,
+        linux-kernel@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Sylvain Munaut <s.munaut@whatever-company.com>,
+        Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 07, 2012 at 01:24:45PM +0530, Aneesh Kumar K.V wrote:
-> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
-> 
-> > On Fri, Dec 07, 2012 at 11:06:41AM +0530, Aneesh Kumar K.V wrote:
-> > ...
-> >> > From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> >> > Date: Thu, 6 Dec 2012 20:54:30 -0500
-> >> > Subject: [PATCH v2] HWPOISON, hugetlbfs: fix warning on freeing hwpoisoned
-> >> >  hugepage
-> >> >
-> >> > This patch fixes the warning from __list_del_entry() which is triggered
-> >> > when a process tries to do free_huge_page() for a hwpoisoned hugepage.
-> >> 
-> >> 
-> >> Can you get a dump stack for that. I am confused because the page was
-> >> already in freelist, and we deleted it from the list and set the
-> >> refcount to 1. So how are we reaching free_huge_page() again ?
-> >
-> > free_huge_page() can be called for hwpoisoned hugepage from unpoison_memory().
-> > This function gets refcount once and clears PageHWPoison, and then puts
-> > refcount twice to return the hugepage back to free pool.
-> > The second put_page() finally reaches free_huge_page().
-> >
-> 
-> Can we add this also to the commit message ?. With that you can add
-> 
-> Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+2012/12/7 Joe Perches <joe@perches.com>:
+> On Fri, 2012-12-07 at 07:04 -0800, Greg Kroah-Hartman wrote:
+>> On Fri, Dec 07, 2012 at 12:47:36PM +0100, "Jan H. Schönherr" wrote:
+>> > Am 07.12.2012 03:51, schrieb Joe Perches:
+>> > > On Thu, 2012-12-06 at 16:19 -0800, Andrew Morton wrote:
+>> > >> On Thu, 06 Dec 2012 15:37:30 -0800
+>> > >> Joe Perches <joe@perches.com> wrote:
+>> > >>> Can you please pick this up for -next now and I'll
+>> > >>> redo my patches against -next for -rc1 so I'm not
+>> > >>> delayed until 3.9?
+>> > >>
+>> > >> It would be better to do things in the other order.
+>> > >>
+>> > >> a) Your patches perform mainly code-movement which doesn't cause
+>> > >>    functional changes.  Jan's patches are functional changes which
+>> > >>    require more thought and testing and possible fixups.
+>> > >
+>> > > Fine by me.  Jan?
+>> >
+>> > No problem.
+>> >
+>> > I agree with Andrew, that patches 9 to 14 could use indeed some
+>> > more eyeballs.
+>> >
+>> > Patches 1 to 8 are more straight-forward, and I would consider
+>> > these ready. However, they are also those, where I probably won't
+>> > have any trouble rebasing them on top of your changes.
+>> >
+>> > Anyway. Until now I always thought my patches will end up in the
+>> > queue of some maintainer, so that I don't have to bother about
+>> > _when_ posting my patches. Therefore: when should I repost a
+>> > version rebased on top of Joe's changes?
+>>
+>> You are correct, I'll end up queuing these up to my tree when 3.8-rc1 is
+>> out,
+>
+> Andrew suggested I send my patches at -rc2.
+>
+>> they will live in linux-next until 3.8-final is out, and then go to
+>> Linus for 3.9-rc1.  Right now, my trees are frozen due to the merge
+>> window about to open up.  Your patience is appreciated.
+>
+> I think it'd be easier for a single downstream
+> maintainer to coordinate these patch sets sequencing.
+>
+> You or Andrew might be better than you and Andrew.
+>
+> There is a small patch to printk that should likely
+> be applied in some form for -rc1 or earlier:
+>
+> Sylvain Munaut's (cc'd) print_time fix:
+> https://patchwork.kernel.org/patch/1845971/
+>
+> I don't know of anything else that likely will
+> or should be applied before -rc1.
+>
+> Frederic Weisbecker (also cc'd) has a printk nohz
+> patch series that merits some consideration too.
+> https://lkml.org/lkml/2012/10/20/94
+> https://lkml.org/lkml/2012/11/14/646
+> I don't know if Ingo pulled it in somewhere or not.
 
-OK, I added it.
-Thanks for the review!
-
-Naoya
----
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Date: Thu, 6 Dec 2012 20:54:30 -0500
-Subject: [PATCH v4] HWPOISON, hugetlbfs: fix warning on freeing hwpoisoned
- hugepage
-
-This patch fixes the warning from __list_del_entry() which is triggered
-when a process tries to do free_huge_page() for a hwpoisoned hugepage.
-
-ChangeLog v4:
- - Add comment about when the warning is triggered
-
-ChangeLog v3:
- - Add comment
-
-ChangeLog v2:
- - simply use list_del_init instead of introducing new hugepage list
-
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
----
- mm/hugetlb.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
-
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 59a0059..2511bcb 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -3170,7 +3170,13 @@ int dequeue_hwpoisoned_huge_page(struct page *hpage)
- 
- 	spin_lock(&hugetlb_lock);
- 	if (is_hugepage_on_freelist(hpage)) {
--		list_del(&hpage->lru);
-+		/* 
-+		 * Hwpoisoned hugepage isn't linked to activelist or freelist,
-+		 * but dangling hpage->lru can trigger list-debug warnings
-+		 * (this happens when we call unpoison_memory() on it),
-+		 * so let it point to itself with list_del_init().
-+		 */
-+		list_del_init(&hpage->lru);
- 		set_page_refcounted(hpage);
- 		h->free_huge_pages--;
- 		h->free_huge_pages_node[nid]--;
--- 
-1.7.11.7
-
+He has not yet pulled. But it's ready to be pulled and is on linux-next.
