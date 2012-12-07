@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1422686Ab2LGQUN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 11:20:13 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:56618 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161012Ab2LGQUM (ORCPT
+	id S1422723Ab2LGQWE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 11:22:04 -0500
+Received: from rmail.zodiacaerospace.com ([195.101.36.5]:33179 "EHLO
+	rmail.zodiacaerospace.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422698Ab2LGQWC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 11:20:12 -0500
-X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
-  Fri, 07 Dec 2012 10:20:11 -0600
-X-Originating-IP: 108.223.40.66
-Date: Fri, 7 Dec 2012 08:20:35 -0800
-From: Guenter Roeck <groeck-dsl@sbcglobal.net>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH] gpio: export 'debounce' attribute if supported by the
- gpio chip
-Message-ID: <20121207162035.GA10306@roeck-us.net>
-References: <1354775567-17408-1-git-send-email-linux@roeck-us.net>
- <CACRpkdYDLJDwv97Z0agZBbzCtEdeb5Y-83K2HkZRtLP1Cz_QiA@mail.gmail.com>
- <20121207145955.GA28704@roeck-us.net>
+	Fri, 7 Dec 2012 11:22:02 -0500
+X-Greylist: delayed 1176 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Dec 2012 11:22:01 EST
+X-Disclaimed: 1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121207145955.GA28704@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Importance: Normal
+X-Priority: 3 (Normal)
+In-Reply-To: 
+References: 
+Subject: alc262 streams synchronization
+From: Jonathan.Klee@zodiacaerospace.com
+To: linux-kernel@vger.kernel.org
+Cc: tiwai@suse.se, david.henningsson@canonical.com
+Message-ID: <OF16C35AAD.E6009EAC-ONC1257ACD.005802AE-C1257ACD.00580416@zodiacaerospace.com>
+Date: Fri, 7 Dec 2012 17:01:22 +0100
+X-Mailer: Lotus Domino Web Server Release 8.5.2FP2 March 22, 2011
+X-MIMETrack: Serialize by HTTP Server on SISS-DOM1/GROUP/ZODIAC(Release 8.5.2FP2|March
+ 22, 2011) at 07/12/2012 17:01:22,
+	Serialize complete at 07/12/2012 17:01:22,
+	Itemize by HTTP Server on SISS-DOM1/GROUP/ZODIAC(Release 8.5.2FP2|March 22, 2011) at
+ 07/12/2012 17:01:22,
+	Serialize by Router on ZODIAC_EUROPE_1/ZODIAC(Release 8.5.2FP2|Mar 22, 2011) at
+ 12/07/2012 16:59:23,
+	Serialize complete at 12/07/2012 16:59:23
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8185,1.0.431,0.0.0000
+ definitions=2012-12-06_08:2012-12-06,2012-12-06,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=1
+ phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=6.0.2-1211240000 definitions=main-1212070123
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 07, 2012 at 06:59:55AM -0800, Guenter Roeck wrote:
-> On Fri, Dec 07, 2012 at 09:07:28AM +0100, Linus Walleij wrote:
-> > On Thu, Dec 6, 2012 at 7:32 AM, Guenter Roeck <linux@roeck-us.net> wrote:
-> > 
-> > > Create a 'debounce' attribute if debounce is supported by the gpio
-> > > chip and a gpio pin is exported.
-> > >
-> > > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> > 
-> > Can you describe the usecase for this?
-> > 
-> > I have this problem when working as a back-up GPIO maintainer that
-> > I don't really understand the userspace apps doing this.
-> > 
-> > I would guess something like a userspace app reading a GPIO switch
-> > and needing to set this to avoid key bounces, but it'd be nice to know
-> > if this is really the case.
-> > 
-> Yes, that is one if the use cases. Button pressed on the chassis/board
-> requesting user space action. Another is board presence detect pins which
-> require rebounce support and are handled in user space. Yes, the later should be
-> handled in the kernel, and most of them are, but there are some which don't need
-> immediate kernel activity and are handled completely by applications.
-> 
-> There may be other use cases - there are hundreds of gpio pins in the system I
-> am working on, and I have not looked into all of them.
-> 
-There are three use cases, all related to each other.
 
-- board present (connector pin)
-- board removal request (button)
-- board voltage good (connector pin)
+Hello,
 
-Guenter
+I have faced the following issue with alc262 codec on kernel 3.2.34 :
 
-> > If this is the usecase I am slightly concerned why these are not used:
-> > drivers/input/keyboard/gpio_keys_polled.c
-> > drivers/input/keyboard/gpio_keys.c
-> > 
-> > The latter even uses the in-kernel debounce interface.
-> > 
-> > I'd agree if this is not user input at all but something like a switch
-> > in a factory production line.
-> > 
-> I could imagine declaring the activity request buttons to be "input", but for
-> presence detects it is a bit far fetched and would add too much complexity.
-> 
-> Thanks,
-> Guenter
-> 
+Trying to play a file through vlc (libvlc/emotion), I did not have any sound on the speakers. Having a look at my kernel logs, I have noticed 2 calls to snd_hda_codec_setup_stream() separated by a call to __snd_hda_codec_cleanup_stream().
+
+Nevertheless, adding some debug prints, I have noticed only one call to snd_hda_codec_write() in snd_hda_codec_setup_stream() to set the stream id. It seems like the stream id of the codec was not synchronized with the flag p->active the kernel maintains for the codec.
+
+Setting the no_sticky_stream field in patch_alc262.c solved the issue. What about setting that field ? Am I the only one who faced that issue ?
+
+
+--- a/sound/pci/hda/patch_realtek.c     2012-12-04 12:46:22.000000000 +0100
++++ b/sound/pci/hda/patch_realtek.c     2012-12-04 13:52:37.000000000 +0100
+@@ -4490,6 +4490,8 @@
+        if (spec == NULL)
+                return -ENOMEM;
+
++       codec->no_sticky_stream=1;
++       printk(KERN_INFO "hda_codec: no sticky stream set\n");
+        codec->spec = spec;
+
+   
+--
+Jonathan Klee 
+
+Embedded Software Engineer
+Zodiac IFE
+Tel: +33 1 61 34 11 71
+http://www.zodiacaerospace.com
