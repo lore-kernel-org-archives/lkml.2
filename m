@@ -1,103 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757592Ab2LHBjy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 20:39:54 -0500
-Received: from mx1.fusionio.com ([66.114.96.30]:49732 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757547Ab2LHBjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 20:39:52 -0500
-X-ASG-Debug-ID: 1354930791-03d6a50cb5d40520001-xx1T2L
-X-Barracuda-Envelope-From: clmason@fusionio.com
-Date: Fri, 7 Dec 2012 20:39:49 -0500
-From: Chris Mason <chris.mason@fusionio.com>
-To: Dave Chinner <david@fromorbit.com>
-CC: Chris Mason <clmason@fusionio.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ric Wheeler <rwheeler@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
- UAPI
-Message-ID: <20121208013949.GD25713@shiny>
-X-ASG-Orig-Subj: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
- UAPI
-Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
-	Dave Chinner <david@fromorbit.com>,
-	Chris Mason <clmason@fusionio.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Ric Wheeler <rwheeler@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-	Christoph Hellwig <hch@infradead.org>,
-	Martin Steigerwald <Martin@lichtvoll.de>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Theodore Ts'o <tytso@mit.edu>,
-	linux-fsdevel <linux-fsdevel@vger.kernel.org>
-References: <20121126025520.GC22858@thunk.org>
- <20121126091202.GO32450@dastard>
- <201212051148.28039.Martin@lichtvoll.de>
- <CA+55aFzgP29WfB1yvnj+Q9-TsbX+b-TCCjTS_vPJ16DxMy6aDQ@mail.gmail.com>
- <20121206120532.GA14100@infradead.org>
- <20121207011628.GB16373@gmail.com>
- <50C22923.90102@redhat.com>
- <alpine.LFD.2.02.1212070956310.23641@air.linux-foundation.org>
- <20121207190306.GB14972@shiny>
- <20121208001705.GO27172@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20121208001705.GO27172@dastard>
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1354930791
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0158 1.0000 -1.9184
-X-Barracuda-Spam-Score: -1.19
-X-Barracuda-Spam-Status: No, SCORE=-1.19 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=CN_BODY_332, COMMA_SUBJECT
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.116392
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.60 COMMA_SUBJECT          Subject is like 'Re: FDSDS, this is a subject'
-	0.12 CN_BODY_332            BODY: CN_BODY_332
+	id S1757606Ab2LHBlr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 20:41:47 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:45109 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757547Ab2LHBlq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 20:41:46 -0500
+From: Cong Ding <dinggnu@gmail.com>
+To: Alan Cox <alan@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, Cong Ding <dinggnu@gmail.com>
+Subject: [PATCH 1/2] tty: remove trailing spaces in tty/hvc
+Date: Sat,  8 Dec 2012 01:41:23 +0000
+Message-Id: <1354930884-20913-1-git-send-email-dinggnu@gmail.com>
+X-Mailer: git-send-email 1.7.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 07, 2012 at 05:17:05PM -0700, Dave Chinner wrote:
-> On Fri, Dec 07, 2012 at 02:03:06PM -0500, Chris Mason wrote:
+remove trailing blank spaces in tty/hvc by shell command:
+sed 's/\s\+$//g' -i
 
-[ dead and beaten fallocate ponies ]
+I have manually reviewed that everything is correct.
 
-> 
-> > On a single flash drive doing random 4K writes, xfs does 950MB/s into
-> > regular extents but only 400MB/s into preallocated extents.
-> > 
-> > http://masoncoding.com/presentation/perf-linuxcon12/fallocate.png
-> 
-> This is bordering on irrelevancy, but can you provide the workload
-> you were running to generate this graph?  Random 4k writes could be
-> anything, really.
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
+---
+ drivers/tty/hvc/hvc_console.c |    6 +++---
+ drivers/tty/hvc/hvc_xen.c     |    2 +-
+ drivers/tty/hvc/hvcs.c        |    4 ++--
+ 3 files changed, 6 insertions(+), 6 deletions(-)
 
-This one was fio aio/dio, I'll dig out the job file and rerun it on
-3.7-rc on Monday.  Any real random write is going to show this with
-enough load.
+diff --git a/drivers/tty/hvc/hvc_console.c b/drivers/tty/hvc/hvc_console.c
+index 13ee53b..088fdfc 100644
+--- a/drivers/tty/hvc/hvc_console.c
++++ b/drivers/tty/hvc/hvc_console.c
+@@ -11,12 +11,12 @@
+  * it under the terms of the GNU General Public License as published by
+  * the Free Software Foundation; either version 2 of the License, or
+  * (at your option) any later version.
+- * 
++ *
+  * This program is distributed in the hope that it will be useful,
+  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  * GNU General Public License for more details.
+- * 
++ *
+  * You should have received a copy of the GNU General Public License
+  * along with this program; if not, write to the Free Software
+  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+@@ -187,7 +187,7 @@ static struct tty_driver *hvc_console_device(struct console *c, int *index)
+ }
+ 
+ static int __init hvc_console_setup(struct console *co, char *options)
+-{	
++{
+ 	if (co->index < 0 || co->index >= MAX_NR_HVC_CONSOLES)
+ 		return -ENODEV;
+ 
+diff --git a/drivers/tty/hvc/hvc_xen.c b/drivers/tty/hvc/hvc_xen.c
+index 19843ec..c598d55 100644
+--- a/drivers/tty/hvc/hvc_xen.c
++++ b/drivers/tty/hvc/hvc_xen.c
+@@ -126,7 +126,7 @@ static int domU_write_console(uint32_t vtermno, const char *data, int len)
+ 	 */
+ 	while (len) {
+ 		int sent = __write_console(cons, data, len);
+-		
++
+ 		data += sent;
+ 		len -= sent;
+ 
+diff --git a/drivers/tty/hvc/hvcs.c b/drivers/tty/hvc/hvcs.c
+index 8776357..5f5ddf5 100644
+--- a/drivers/tty/hvc/hvcs.c
++++ b/drivers/tty/hvc/hvcs.c
+@@ -166,8 +166,8 @@ MODULE_VERSION(HVCS_DRIVER_VERSION);
+ /*
+  * The hcall interface involves putting 8 chars into each of two registers.
+  * We load up those 2 registers (in arch/powerpc/platforms/pseries/hvconsole.c)
+- * by casting char[16] to long[2].  It would work without __ALIGNED__, but a 
+- * little (tiny) bit slower because an unaligned load is slower than aligned 
++ * by casting char[16] to long[2].  It would work without __ALIGNED__, but a
++ * little (tiny) bit slower because an unaligned load is slower than aligned
+  * load.
+  */
+ #define __ALIGNED__	__attribute__((__aligned__(8)))
+-- 
+1.7.4.5
 
-> 
-> In my experience, applications that actually do processing between
-> random write IOs don't see anywhere near the same degradation as
-> such micro-benchmarks tend to indicate can occur with unwritten
-> extents. Are you seeing this level of degradation in real-world applications?
-> If you give me a reason to fix it (and the hardware to test it on),
-> I'm pretty sure I can bring the overhead down to just a few percent
-> on fully featured SSDs like FusionIO devices...
-
-We should have a card I can send, drop me the address.
-
-For the workload...that's harder.  We can talk all day about what a
-normal random write workload is, but if you have a fio job that you
-think represents real world, I can run that.
-
-[ much nodding ;) ]
