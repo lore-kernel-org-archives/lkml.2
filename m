@@ -1,62 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030244Ab2LHTnP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Dec 2012 14:43:15 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:51147 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030221Ab2LHTnN (ORCPT
+	id S1030265Ab2LHToA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Dec 2012 14:44:00 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:50300 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030221Ab2LHTn7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Dec 2012 14:43:13 -0500
-Date: Sat, 8 Dec 2012 11:45:28 -0800
+	Sat, 8 Dec 2012 14:43:59 -0500
+Date: Sat, 8 Dec 2012 11:46:13 -0800
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] mm: add node physical memory range to sysfs
-Message-ID: <20121208194528.GB3897@kroah.com>
-References: <1354919696.2523.6.camel@buesod1.americas.hpqcorp.net>
+To: Shuah Khan <shuahkhan@gmail.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [ 00/20] 3.4.23-stable review
+Message-ID: <20121208194613.GC3897@kroah.com>
+References: <20121207005232.756641002@linuxfoundation.org>
+ <CAKocOOM-QZ88+sV40C8OJWAN89W4QkDKx+gLjrmZEeUs=CJ57g@mail.gmail.com>
+ <CAKocOOOKAeD=BuRnDa6U7KtHOXAK7b-VCibQohPGkAB-ZYX4aA@mail.gmail.com>
+ <CAKocOOO8bJ+vBuG3Dwx_-EnAqcVJ00G69Rc764eFTuhgszJntQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1354919696.2523.6.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <CAKocOOO8bJ+vBuG3Dwx_-EnAqcVJ00G69Rc764eFTuhgszJntQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 07, 2012 at 02:34:56PM -0800, Davidlohr Bueso wrote:
-> This patch adds a new 'memrange' file that shows the starting and
-> ending physical addresses that are associated to a node. This is
-> useful for identifying specific DIMMs within the system.
+On Fri, Dec 07, 2012 at 05:59:24PM -0700, Shuah Khan wrote:
+> On Fri, Dec 7, 2012 at 5:52 PM, Shuah Khan <shuahkhan@gmail.com> wrote:
+> > On Fri, Dec 7, 2012 at 5:49 PM, Shuah Khan <shuahkhan@gmail.com> wrote:
+> >> On Thu, Dec 6, 2012 at 5:54 PM, Greg Kroah-Hartman
+> >> <gregkh@linuxfoundation.org> wrote:
+> >>> This is the start of the stable review cycle for the 3.4.23 release.
+> >>> There are 20 patches in this series, all will be posted as a response
+> >>> to this one.  If anyone has any issues with these being applied, please
+> >>> let me know.
+> >>>
+> >>> Responses should be made by Sun Dec  9 00:50:03 UTC 2012.
+> >>> Anything received after that time might be too late.
+> >>>
+> >>> The whole patch series can be found in one patch at:
+> >>>         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.23-rc1.gz
+> >>> and the diffstat can be found below.
+> >>>
+> >>> thanks,
+> >>>
+> >>> greg k-h
+> >>
+> >> Patche applied cleanly and compiled and booted on the following systems:
+> >>
+> >> HP EliteBook 6930p Intel(R) Core(TM)2 Duo CPU     T9400  @ 2.53GHz
+> >> HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
+> >>
+> >> Cross-compile tests
+> >> alpha: defconfig passed
+> >> arm: defconfig passed
+> >> c6x: defconfig passed
+> >> mips: defconfig passed
+> >> mipsel: defconfig passed
+> >> powerpc: wii_defconfig passed
+> >> sh: defconfig passed
+> >> sparc: defconfig passed
+> >> tile: tilegx_defconfig passed
+> >
+> > Correction.
+> > tile: tilegx_defconfig failed:
+> >
+> > tile tilegx_defconfig
+> >
+> > Just a snippet, I can send a full log.
+> >
+> >  LD      init/built-in.o
+> >   HOSTCC  usr/gen_init_cpio
+> >   /home/shuah/lkml/linux_stable_testing_3.0.56/scripts/gen_initramfs_list.sh:
+> > Cannot open 'usr/contents.txt'
+> > make[1]: *** [usr/initramfs_data.cpio] Error 1
+> > make: *** [usr] Error 2
+> >
+> > Didn't get a chance to investigate.
 > 
-> Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
-> ---
->  drivers/base/node.c | 15 +++++++++++++++
->  1 file changed, 15 insertions(+)
-> 
-> diff --git a/drivers/base/node.c b/drivers/base/node.c
-> index af1a177..f165a0a 100644
-> --- a/drivers/base/node.c
-> +++ b/drivers/base/node.c
-> @@ -211,6 +211,19 @@ static ssize_t node_read_distance(struct device *dev,
->  }
->  static DEVICE_ATTR(distance, S_IRUGO, node_read_distance, NULL);
->  
-> +static ssize_t node_read_memrange(struct device *dev,
-> +				  struct device_attribute *attr, char *buf)
-> +{
-> +	int nid = dev->id;
-> +	unsigned long start_pfn = NODE_DATA(nid)->node_start_pfn;
-> +	unsigned long end_pfn = start_pfn + NODE_DATA(nid)->node_spanned_pages;
-> +
-> +	return sprintf(buf, "%#010Lx-%#010Lx\n",
-> +		       (unsigned long long) start_pfn << PAGE_SHIFT,
-> +		       (unsigned long long) (end_pfn << PAGE_SHIFT) - 1);
-> +}
-> +static DEVICE_ATTR(memrange, S_IRUGO, node_read_memrange, NULL);
+> Sorry tile failure is for 3.0.56
 
-As you're adding a new sysfs file, we need a Documentation/ABI/ entry as
-well.  Yes, the existing ones aren't there already, as Andrew points
-out, sorry, but that means you get to document them all :)
+Is that caused by something new in 3.0.56, or has it always been that
+way?
 
 thanks,
 
