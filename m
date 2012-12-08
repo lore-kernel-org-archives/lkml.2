@@ -1,142 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757695Ab2LHBrH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 20:47:07 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:47552 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757678Ab2LHBrE (ORCPT
+	id S1757711Ab2LHB46 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 20:56:58 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:34654 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757530Ab2LHB45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 20:47:04 -0500
-MIME-Version: 1.0
-In-Reply-To: <20121207005613.189054768@linuxfoundation.org>
-References: <20121207005613.189054768@linuxfoundation.org>
-Date: Sat, 8 Dec 2012 10:47:02 +0900
-Message-ID: <CAMym5ws0zv1B4mc+7c9Wkoo9nppLMr_=0vjKASUHf_4fODSOzA@mail.gmail.com>
-Subject: Re: [ 00/11] 3.0.56-stable review
-From: satoru takeuchi <satoru.takeuchi@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 7 Dec 2012 20:56:57 -0500
+Message-ID: <1354931808.6623.0.camel@phoenix>
+Subject: [PATCH] regulator: lp872x: Kill _rdev_to_offset() function
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: "Milo(Woogyom) Kim" <milo.kim@ti.com>, Liam Girdwood <lrg@ti.com>,
+        linux-kernel@vger.kernel.org
+Date: Sat, 08 Dec 2012 09:56:48 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+There is only one user calling _rdev_to_offset() function.
+Remove _rdev_to_offset() makes the code simpler.
 
-2012/12/7 Greg Kroah-Hartman <gregkh@linuxfoundation.org>:
-> This is the start of the stable review cycle for the 3.0.56 release.
-> There are 11 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/lp872x.c |   36 +++++++-----------------------------
+ 1 file changed, 7 insertions(+), 29 deletions(-)
 
-This kernel can be built and boot without any problem.
-Building a kernel with this kernel also works fine.
+diff --git a/drivers/regulator/lp872x.c b/drivers/regulator/lp872x.c
+index 9289ead..8e3c7ae 100644
+--- a/drivers/regulator/lp872x.c
++++ b/drivers/regulator/lp872x.c
+@@ -181,20 +181,6 @@ static inline int lp872x_update_bits(struct lp872x *lp, u8 addr,
+ 	return regmap_update_bits(lp->regmap, addr, mask, data);
+ }
+ 
+-static int _rdev_to_offset(struct regulator_dev *rdev)
+-{
+-	enum lp872x_regulator_id id = rdev_get_id(rdev);
+-
+-	switch (id) {
+-	case LP8720_ID_LDO1 ... LP8720_ID_BUCK:
+-		return id;
+-	case LP8725_ID_LDO1 ... LP8725_ID_BUCK2:
+-		return id - LP8725_ID_BASE;
+-	default:
+-		return -EINVAL;
+-	}
+-}
+-
+ static int lp872x_get_timestep_usec(struct lp872x *lp)
+ {
+ 	enum lp872x_id chip = lp->chipid;
+@@ -234,28 +220,20 @@ static int lp872x_get_timestep_usec(struct lp872x *lp)
+ static int lp872x_regulator_enable_time(struct regulator_dev *rdev)
+ {
+ 	struct lp872x *lp = rdev_get_drvdata(rdev);
+-	enum lp872x_regulator_id regulator = rdev_get_id(rdev);
++	enum lp872x_regulator_id rid = rdev_get_id(rdev);
+ 	int time_step_us = lp872x_get_timestep_usec(lp);
+-	int ret, offset;
++	int ret;
+ 	u8 addr, val;
+ 
+ 	if (time_step_us < 0)
+ 		return -EINVAL;
+ 
+-	switch (regulator) {
+-	case LP8720_ID_LDO1 ... LP8720_ID_LDO5:
+-	case LP8725_ID_LDO1 ... LP8725_ID_LILO2:
+-		offset = _rdev_to_offset(rdev);
+-		if (offset < 0)
+-			return -EINVAL;
+-
+-		addr = LP872X_LDO1_VOUT + offset;
+-		break;
+-	case LP8720_ID_BUCK:
+-		addr = LP8720_BUCK_VOUT1;
++	switch (rid) {
++	case LP8720_ID_LDO1 ... LP8720_ID_BUCK:
++		addr = LP872X_LDO1_VOUT + rid;
+ 		break;
+-	case LP8725_ID_BUCK1:
+-		addr = LP8725_BUCK1_VOUT1;
++	case LP8725_ID_LDO1 ... LP8725_ID_BUCK1:
++		addr = LP872X_LDO1_VOUT + rid - LP8725_ID_BASE;
+ 		break;
+ 	case LP8725_ID_BUCK2:
+ 		addr = LP8725_BUCK2_VOUT1;
+-- 
+1.7.9.5
 
- - Build Machine: debian wheezy x86_64
-   CPU: Intel(R) Core(TM) i5-2400 CPU @ 3.10GHz x 4
-   memory: 8GB
 
- - Test machine: debian wheezy x86_64(KVM guest on the Build Machine)
-   vCPU: x2
-   memory: 2GB
 
-I reviewed the following patches and it looks good to me.
-
-> Jan Kara <jack@suse.cz>
->    scsi: Silence unnecessary warnings about ioctl to partition
->
-> Alan Cox <alan@linux.intel.com>
->     ACPI: missing break
->
-> Mike Galbraith <efault@gmx.de>
->     Revert "sched, autogroup: Stop going ahead if autogroup is disabled"
->
-> Mike Galbraith <mgalbraith@suse.de>
->     workqueue: exit rescuer_thread() as TASK_RUNNING
->
-> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
->     mm: soft offline: split thp at the beginning of soft_offline_page()
->
-> Jianguo Wu <wujianguo@huawei.com>
->     mm/vmemmap: fix wrong use of virt_to_page
-
-Thanks,
-Satoru
-
->
-> Responses should be made by Sun Dec  9 00:55:07 UTC 2012.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
->         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.56-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
->
-> -------------
-> Pseudo-Shortlog of commits:
->
-> Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->     Linux 3.0.56-rc1
->
-> Jan Kara <jack@suse.cz>
->     scsi: Silence unnecessary warnings about ioctl to partition
->
-> Chris Wilson <chris@chris-wilson.co.uk>
->     drm/i915: Add no-lvds quirk for Supermicro X7SPA-H
->
-> Calvin Walton <calvin.walton@kepstin.ca>
->     i915: Quirk no_lvds on Gigabyte GA-D525TUD ITX motherboard
->
-> Alan Cox <alan@linux.intel.com>
->     ACPI: missing break
->
-> Michal Kubecek <mkubecek@suse.cz>
->     route: release dst_entry.hh_cache when handling redirects
->
-> Mike Galbraith <efault@gmx.de>
->     Revert "sched, autogroup: Stop going ahead if autogroup is disabled"
->
-> Mike Galbraith <mgalbraith@suse.de>
->     workqueue: exit rescuer_thread() as TASK_RUNNING
->
-> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
->     mm: soft offline: split thp at the beginning of soft_offline_page()
->
-> Jianguo Wu <wujianguo@huawei.com>
->     mm/vmemmap: fix wrong use of virt_to_page
->
-> Russell King - ARM Linux <linux@arm.linux.org.uk>
->     Dove: Fix irq_to_pmu()
->
-> Russell King - ARM Linux <linux@arm.linux.org.uk>
->     Dove: Attempt to fix PMU/RTC interrupts
->
->
-> -------------
->
-> Diffstat:
->
->  Makefile                             |  4 ++--
->  arch/arm/mach-dove/include/mach/pm.h |  2 +-
->  arch/arm/mach-dove/irq.c             | 14 +++++++++++++-
->  block/scsi_ioctl.c                   |  5 ++++-
->  drivers/acpi/processor_driver.c      |  1 +
->  drivers/gpu/drm/i915/intel_lvds.c    | 16 ++++++++++++++++
->  kernel/sched_autogroup.c             |  4 ----
->  kernel/sched_autogroup.h             |  5 -----
->  kernel/workqueue.c                   |  4 +++-
->  mm/memory-failure.c                  |  8 ++++++++
->  mm/sparse.c                          | 10 ++++------
->  net/ipv4/route.c                     |  4 ++++
->  12 files changed, 56 insertions(+), 21 deletions(-)
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
