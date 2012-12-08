@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964872Ab2LHQhr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Dec 2012 11:37:47 -0500
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:35751 "EHLO
+	id S964978Ab2LHRB1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Dec 2012 12:01:27 -0500
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:60953 "EHLO
 	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933030Ab2LHQhq (ORCPT
+	by vger.kernel.org with ESMTP id S964908Ab2LHRB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Dec 2012 11:37:46 -0500
+	Sat, 8 Dec 2012 12:01:26 -0500
 X-IronPort-AV: E=Sophos;i="4.84,243,1355094000"; 
-   d="scan'208";a="185239313"
-Date: Sat, 8 Dec 2012 17:37:45 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: cbou@mail.ru, dwmw2@infradead.org, linux-kernel@vger.kernel.org
-Subject: question about drivers/power/88pm860x_charger.c
-Message-ID: <alpine.DEB.2.02.1212081731080.1984@hadrien>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+   d="scan'208";a="185240480"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Liam Girdwood <lrg@ti.com>, matthias@kaehlcke.net
+Cc: kernel-janitors@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] sound/soc/soc-core.c: drop kfree of devm_kzalloc's data
+Date: Sat,  8 Dec 2012 19:01:20 +0100
+Message-Id: <1354989680-25794-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function pm860x_charger_probe in the file 
-drivers/power/88pm860x_charger.c contains the following code:
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-         count = pdev->num_resources;
-         for (i = 0, j = 0; i < count; i++) {
-                 info->irq[j] = platform_get_irq(pdev, i);
-                 if (info->irq[j] < 0)
-                         continue;
-                 j++;
-         }
-         info->irq_nums = j;
+Using kfree to free data allocated with devm_kzalloc causes double frees.
 
-and then later the following code:
+The semantic patch that fixes this problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-        for (i = 0; i < ARRAY_SIZE(info->irq); i++) {
-                 ret = request_threaded_irq(info->irq[i], NULL,
-                         pm860x_irq_descs[i].handler,
-                         IRQF_ONESHOT, pm860x_irq_descs[i].name, info);
- 		...
-         }
+// <smpl>
+@@
+expression x;
+@@
 
-and finally, in the function pm860x_charger_remove, the code:
+x = devm_kzalloc(...)
+...
+?-kfree(x);
+// </smpl>
 
-         free_irq(info->irq[0], info);
-         for (i = 0; i < info->irq_nums; i++)
-                 free_irq(info->irq[i], info);
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-It looks like the irq_nums field is being used to record how many 
-platform_get_irq calls were successful, but this information is not used 
-in the second block of code, where request_threaded_irq is called.  So it 
-would seem that all of the requested irqs should be freed, and not just 
-the first irq_nums of them.
+---
+The kfrees were introduced in b761c0ca.
+I sent this a few months ago, and I still think it should be applied...
 
-The remove code also looks like a double free of info->irq[0].
+ sound/soc/soc-core.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-Could I just get rid of the irq_nums field completely?  It doesn't seem to 
-be used elsewhere.  Also, I was planning to use devm_request_threaded_irq, 
-so then there won't be a need for the explicit frees at all.
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index f81c597..86d7a36 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -4136,7 +4136,6 @@ int snd_soc_of_parse_audio_routing(struct snd_soc_card *card,
+ 			dev_err(card->dev,
+ 				"Property '%s' index %d could not be read: %d\n",
+ 				propname, 2 * i, ret);
+-			kfree(routes);
+ 			return -EINVAL;
+ 		}
+ 		ret = of_property_read_string_index(np, propname,
+@@ -4145,7 +4144,6 @@ int snd_soc_of_parse_audio_routing(struct snd_soc_card *card,
+ 			dev_err(card->dev,
+ 				"Property '%s' index %d could not be read: %d\n",
+ 				propname, (2 * i) + 1, ret);
+-			kfree(routes);
+ 			return -EINVAL;
+ 		}
+ 	}
 
-This file also contains a kfree of devm_kzalloc'd data, which is why I 
-looked at it in the first place.
-
-thanks,
-julia
