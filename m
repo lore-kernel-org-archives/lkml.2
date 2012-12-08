@@ -1,110 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932965Ab2LHD7q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 22:59:46 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:48940 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932588Ab2LHD7o (ORCPT
+	id S932997Ab2LHEFJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 23:05:09 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:44529 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932974Ab2LHEFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 22:59:44 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1+ew104ZUeeJ9FdozbU/BkfMbc5b8ak2tmVVtaShs
-	6QoCohB/MDINqL
-From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: Kent Yoder <key@linux.vnet.ibm.com>
-Subject: Re: [tpmdd-devel] [PATCH 1/1] TPM: STMicroelectronics ST33 I2C KERNEL 3.x.x OOPS!
-Date: Sat, 8 Dec 2012 05:00:26 +0100
-User-Agent: KMail/1.13.7 (Linux/3.6.9; KDE/4.8.5; x86_64; ; )
-Cc: Mathias LEBLANC <Mathias.LEBLANC@st.com>,
-        "Jean-Luc BLANC" <jean-luc.blanc@st.com>,
-        "Sirrix@jasper.es" <Sirrix@jasper.es>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rajiv Andrade <mail@srajiv.net>,
-        "tpmdd-devel@lists.sourceforge.net" 
-	<tpmdd-devel@lists.sourceforge.net>,
-        Kent Yoder <shpedoikal@gmail.com>
-References: <1353363322-2923-1-git-send-email-mathias.leblanc@st.com> <201212060110.32227.PeterHuewe@gmx.de> <20121206150645.GA27430@ennui.austin.ibm.com>
-In-Reply-To: <20121206150645.GA27430@ennui.austin.ibm.com>
+	Fri, 7 Dec 2012 23:05:07 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AloNABS8wlB5LHa//2dsb2JhbABEDoU+swaFeRdzgh4BAQQBOhwoCwgDDgouFCUDIQESHodtBcERFIwrg2JhA5YEkEmCNVI
+Date: Sat, 8 Dec 2012 15:04:35 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Ric Wheeler <rwheeler@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@fusionio.com>,
+        Chris Mason <clmason@fusionio.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Christoph Hellwig <hch@infradead.org>,
+        Martin Steigerwald <Martin@lichtvoll.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
+ UAPI
+Message-ID: <20121208040435.GB15784@dastard>
+References: <50C22923.90102@redhat.com>
+ <alpine.LFD.2.02.1212070956310.23641@air.linux-foundation.org>
+ <20121207190306.GB14972@shiny>
+ <20121207204325.GC29435@thunk.org>
+ <20121207210932.GA25713@shiny>
+ <50C262AE.5060701@redhat.com>
+ <20121207215727.GF29435@thunk.org>
+ <50C26778.7000500@redhat.com>
+ <20121208003936.GP27172@dastard>
+ <20121208025250.GP22789@localhost>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201212080500.27146.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121208025250.GP22789@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Dec 07, 2012 at 06:52:51PM -0800, Joel Becker wrote:
+> On Sat, Dec 08, 2012 at 11:39:36AM +1100, Dave Chinner wrote:
+> > On Fri, Dec 07, 2012 at 05:02:32PM -0500, Ric Wheeler wrote:
+> > > On 12/07/2012 04:57 PM, Theodore Ts'o wrote:
+> > > >On Fri, Dec 07, 2012 at 04:42:06PM -0500, Ric Wheeler wrote:
+> > > >>The other things that I think we should try would be to convert over
+> > > >>larger chunks as we discussed on the list back in the summer (just
+> > > >>because the user writes 4KB does not mean that we cannot flip over
+> > > >>1MB and zero that).
+> > > >Writing a megabyte is not free.  If you assume that your HDD has a
+> > > >sustained write throughput of 100-125 MB/s, writing a megabyte will
+> > > >take 8-10ms.  It might be a win if you amortize it over a large number
+> > > >of writes, but it doesn't help your 99.9 percentile latency numbers.
+> > > >(99.9 percentile latency numbers matters because eventually you'll
+> > > >have a user request which hits multiple serial long latency
+> > > >operations, and then the delay looks **really** user visible.)
+> > > >
+> > > >	    	     	       	     		- Ted
+> > > 
+> > > Writing 4KB at a time to a disk cost XX units of time.
+> > > 
+> > > Writing to the same sector (especially for a HDD), cost XX units + a small amount.
+> > > 
+> > > I suggest that we try it out.
+> > > 
+> > > For SSD's, much better to use specific HW offload commands if
+> > > possible like WRITE_SAME (zeroed) or UNMAP/TRIM to get that
+> > > performance boost since no actual data is moved...
+> > 
+> > Yup, that could be done quite trivially in XFS. Just mark the
+> > preallocated extents as "busy" rather than unwritten, mark the
+> > transaction as synchronous and the transaction commit will issue a
+> > discard on the preallocated ranges before returning to userspace.
+> > The extra overhead to the preallocation command is unlikely to be
+> > noticed, and unwritten extent conversion overhead just goes away...
+> > 
+> > No fallocate() API changes necessary, though I think it would be
+> > better if the user application gave a hint that it preferred "writing
+> > zeros" (i.e. FALLOC_FL_WRITE_ZEROS) to allocating unwritten extents
+> > as there are workloads where one will always be clearly better than
+> > the other...
+> 
+> 	Wait, I missed something.  We're letting fallocate be dumb?
+> Let's not do that, then.
 
-since I don't have a tpm I simply tried out whether the handling without a tpm 
-is correct, which it unfortunately isn't as my kernel oopses.
+No, not at all. Read again. There are workloads where explicitly
+using unwritten extents are the best thing to do. For others,
+zeroing rather than using unwritten extents may be better. All I
+suggested was an additional flag that allows applications to tell
+the filesystem preallocate zero space, but to do it via writing
+zeros rather than unwritten extents.
 
-Steps to reproduce:
-# insmod  /data/data-old/linux-2.6/drivers/char/tpm/tpm_i2c_stm_st33.ko
-# echo st33zp24_i2c 0x20 /sys/bus/i2c/devices/i2c-1/new_device 
+> 	Over in ocfs2-land, we CoW in 1MB hunks.  That's the entire
+> extent if it is 1MB or less, or some MB multiple if it is large enough
+> to slice it.  This is for very similar reasons to unwritten clearing,
+> with the added benefit of less fragmentation from CoW.
+> 	On spinning media, any read/write of up to 1MB is roughly about
+> the same penalty as reading/writing a sector.  You're already paying the
+> seek.
 
+Sure, but that's filesystem implementation details, and something
+that I don't care about. Every filesystem implements preallocation
+via fallocate in a similar manner (i.e. all have copied XFS's
+unwritten extents technique) but that doesn't mean it's optimal for
+every workload that needs preallocation.
 
+The deficiencies of ext4's unwritten extent implementation is what
+Ted has been trying to address by exposing stale data, rather than
+looking at the problem as "is there a better way to preallocate for
+this workload?"
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000018
-IP: [<ffffffffa02ff4ad>] tpm_st33_i2c_probe+0x87/0x21a [tpm_i2c_stm_st33]
-PGD 3dcbbe067 PUD 3e994b067 PMD 0
-Oops: 0002 [#1] PREEMPT SMP
-Modules linked in: tpm_i2c_stm_st33(O) tpm(O) tpm_bios(O) w83627ehf hwmon_vid 
-ipv6 snd_hda_codec_hdmi snd_hda_codec_realtek joydev usbhid coretemp kvm_intel 
-kvm ghash_clmulni_intel sg pcspkr snd_hda_intel snd_hda_codec snd_hwdep 
-snd_pcm snd_timer snd i2c_i801 snd_page_alloc mei [last unloaded: 
-tpm_i2c_stm_st33]
-CPU 2
-Pid: 4454, comm: bash Tainted: G        W  O 3.6.9 #14 To Be Filled By O.E.M. 
-To Be Filled By O.E.M./Z77 Pro4
-RIP: 0010:[<ffffffffa02ff4ad>]  [<ffffffffa02ff4ad>] tpm_st33_i2c_probe+0x87/0x21a 
-[tpm_i2c_stm_st33]
-RSP: 0018:ffff8803dcb87c18  EFLAGS: 00010286
-RAX: ffff8803eb0d1800 RBX: ffff8803ff710400 RCX: 0000000000000000
-RDX: 0000000000000000 RSI: ffff88041d0026d0 RDI: 0000000000000001
-RBP: ffff8803dcb87c38 R08: 000000000000000b R09: 0000000000000001
-R10: 0000000000000001 R11: ffff8803ff710400 R12: 0000000000000000
-R13: ffff8803ff710c00 R14: ffff8803ff710c28 R15: ffff8803ff710c04
-FS:  00007f520567a700(0000) GS:ffff88041f280000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000018 CR3: 00000003e48b0000 CR4: 00000000001407e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process bash (pid: 4454, threadinfo ffff8803dcb86000, task ffff8803c87226c0)
-Stack:
- ffff8803ff710c28 ffffffffa02ffb80 ffffffffa02ff426 ffff8803ff710c00
- ffff8803dcb87c78 ffffffff8134079a ffffffffa02ffe00 ffff8803ff710c28
- 00000000ffffffed ffffffffa02ffe00 0000000000000000 ffff88040ebe4460
-Call Trace:
- [<ffffffffa02ff426>] ? request_locality+0xc2/0xc2 [tpm_i2c_stm_st33]
- [<ffffffff8134079a>] i2c_device_probe+0xa4/0xcd
- [<ffffffff812b9c24>] driver_probe_device+0xa9/0x1bf
- [<ffffffff812b9de9>] __device_attach+0x35/0x3a
- [<ffffffff812b9db4>] ? __driver_attach+0x7a/0x7a
- [<ffffffff812b84d7>] bus_for_each_drv+0x51/0x87
- [<ffffffff812b9b3f>] device_attach+0x6e/0x8e
- [<ffffffff812b91b0>] bus_probe_device+0x2d/0x98
- [<ffffffff812b7ace>] device_add+0x3e1/0x548
- [<ffffffff812bf2b3>] ? device_pm_init+0x60/0x84
- [<ffffffff812b7c4c>] device_register+0x17/0x1b
- [<ffffffff813410c4>] i2c_new_device+0x12b/0x175
- [<ffffffff813411e4>] i2c_sysfs_new_device+0xd6/0x15a
- [<ffffffff812b6394>] dev_attr_store+0x1b/0x1d
- [<ffffffff81136f39>] sysfs_write_file+0xef/0x12b
- [<ffffffff810e4ac3>] vfs_write+0xa9/0x119
- [<ffffffff810e4cfa>] sys_write+0x45/0x6c
- [<ffffffff814005a2>] system_call_fastpath+0x16/0x1b
-Code: ff 48 c7 c6 a7 fa 2f a0 48 85 c0 48 89 c3 74 cd 48 8b 3d d7 d0 2a e1 be 
-d0 00 00 00 4d 8b a5 c8 00 00 00 e8 3b 32 de e0 48 85 c0 <49> 89 44 24 18 0f 
-84 5a 01 00 00 48 8b 3d b1 d0 2a e1 be d0 00
-RIP  [<ffffffffa02ff4ad>] tpm_st33_i2c_probe+0x87/0x21a [tpm_i2c_stm_st33]
- RSP <ffff8803dcb87c18>
-CR2: 0000000000000018
----[ end trace ddc5676681e8ed72 ]---
+That's where:
 
+> On SSD, WRITE_SAME is *way* better than leaking data.
 
+TRIM/WRITE_SAME can be used. It's way faster than actually writing
+zeros, but from the user perspective, that's exactly how it appears
+to them. IOWs, filesystems can implement the FALLOC_FL_WRITE_ZEROS method 
+using this hardware offload, just be dumb and write zeros through
+the page cache or ignore it altogether and just use unwritten
+extents anyway...
 
+> 	At the end of the day, you have to pay for zeroing.  You can do
+> it up front, or you can do it at write time.
 
-Thanks,
-Peter
+And the application should be able to tell us which it prefers....
+
+....
+
+> 	We should not be leaking data so that we can be lazy.
+
+You're in violent agreement with me about that.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
