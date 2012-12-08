@@ -1,108 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757292Ab2LHAvN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 19:51:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49368 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757275Ab2LHAvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 19:51:11 -0500
-Date: Fri, 7 Dec 2012 22:49:34 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Ingo Molnar <mingo@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Srikar <srikar@linux.vnet.ibm.com>,
-        "Nikunj A. Dadhania" <nikunj@linux.vnet.ibm.com>,
-        KVM <kvm@vger.kernel.org>, Jiannan Ouyang <ouyang@cs.pitt.edu>,
-        Chegu Vinod <chegu_vinod@hp.com>,
-        "Andrew M. Theurer" <habanero@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Srivatsa Vaddagiri <srivatsa.vaddagiri@gmail.com>,
-        Andrew Jones <drjones@redhat.com>
-Subject: Re: [PATCH V3 RFC 2/2] kvm: Handle yield_to failure return code for
- potential undercommit case
-Message-ID: <20121208004934.GA7235@amt.cnet>
-References: <20121126120740.2595.33651.sendpatchset@codeblue>
- <20121126120804.2595.20280.sendpatchset@codeblue>
- <20121128011228.GH8295@amt.cnet>
- <50B59CE0.70305@linux.vnet.ibm.com>
- <20121203195620.GB590@amt.cnet>
- <50C04236.4020406@linux.vnet.ibm.com>
+	id S1757305Ab2LHAwQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 19:52:16 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:42907 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755881Ab2LHAwP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 19:52:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50C04236.4020406@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKocOOM-QZ88+sV40C8OJWAN89W4QkDKx+gLjrmZEeUs=CJ57g@mail.gmail.com>
+References: <20121207005232.756641002@linuxfoundation.org>
+	<CAKocOOM-QZ88+sV40C8OJWAN89W4QkDKx+gLjrmZEeUs=CJ57g@mail.gmail.com>
+Date: Fri, 7 Dec 2012 17:52:14 -0700
+Message-ID: <CAKocOOOKAeD=BuRnDa6U7KtHOXAK7b-VCibQohPGkAB-ZYX4aA@mail.gmail.com>
+Subject: Re: [ 00/20] 3.4.23-stable review
+From: Shuah Khan <shuahkhan@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 06, 2012 at 12:29:02PM +0530, Raghavendra K T wrote:
-> On 12/04/2012 01:26 AM, Marcelo Tosatti wrote:
-> >On Wed, Nov 28, 2012 at 10:40:56AM +0530, Raghavendra K T wrote:
-> >>On 11/28/2012 06:42 AM, Marcelo Tosatti wrote:
-> >>>
-> >>>Don't understand the reasoning behind why 3 is a good choice.
-> >>
-> >>Here is where I came from. (explaining from scratch for
-> >>completeness, forgive me :))
-> >>In moderate overcommits, we can falsely exit from ple handler even when
-> >>we have preempted task of same VM waiting on other cpus. To reduce this
-> >>problem, we try few times before exiting.
-> >>The problem boils down to:
-> >>what is the probability that we exit ple handler even when we have more
-> >>than 1 task in other cpus. Theoretical worst case should be around 1.5x
-> >>overcommit (As also pointed by Andrew Theurer). [But practical
-> >>worstcase may be around 2x,3x overcommits as indicated by the results
-> >>for the patch series]
-> >>
-> >>So if p is the probability of finding rq length one on a particular cpu,
-> >>and if we do n tries, then probability of exiting ple handler is:
-> >>
-> >>  p^(n+1) [ because we would have come across one source with rq length
-> >>1 and n target cpu rqs  with length 1 ]
-> >>
-> >>so
-> >>num tries:         probability of aborting ple handler (1.5x overcommit)
-> >>  1                 1/4
-> >>  2                 1/8
-> >>  3                 1/16
-> >>
-> >>We can increase this probability with more tries, but the problem is
-> >>the overhead.
-> >>Also, If we have tried three times that means we would have iterated
-> >>over 3 good eligible vcpus along with many non-eligible candidates. In
-> >>worst case if we iterate all the vcpus, we reduce 1x performance and
-> >>overcommit performance get hit. [ as in results ].
-> >>
-> >>I have tried num_tries = 1,2,3 and n already ( not 4 yet). So I
-> >>concluded 3 is enough.
-> >>
-> >>Infact I have also run kernbench and hackbench which are giving 5-20%
-> >>improvement.
-> >>
-> >>[ As a side note , I also thought how about having num_tries = f(n) =
-> >>ceil ( log(num_online_cpus)/2 ) But I thought calculation is too much
-> >>overhead and also there is no point in probably making it dependent on
-> >>online cpus ]
-> >>
-> >>Please let me know if you are happy with this rationale/ or correct me
-> >>if you foresee some problem. (Infact Avi, Rik's concern about false
-> >>exiting made me arrive at 'try' logic which I did not have earlier).
-> >>
-> >>I am currently trying out the result for 1.5x overcommit will post the
-> >>result.
-> >
-> >Raghavendra
-> >
-> >Makes sense to me. Thanks.
-> >
-> 
-> Marcelo,
-> Do you think this can be considered for next merge window? or you are
-> expecting anything else on this patchset.
+On Fri, Dec 7, 2012 at 5:49 PM, Shuah Khan <shuahkhan@gmail.com> wrote:
+> On Thu, Dec 6, 2012 at 5:54 PM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+>> This is the start of the stable review cycle for the 3.4.23 release.
+>> There are 20 patches in this series, all will be posted as a response
+>> to this one.  If anyone has any issues with these being applied, please
+>> let me know.
+>>
+>> Responses should be made by Sun Dec  9 00:50:03 UTC 2012.
+>> Anything received after that time might be too late.
+>>
+>> The whole patch series can be found in one patch at:
+>>         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.23-rc1.gz
+>> and the diffstat can be found below.
+>>
+>> thanks,
+>>
+>> greg k-h
+>
+> Patche applied cleanly and compiled and booted on the following systems:
+>
+> HP EliteBook 6930p Intel(R) Core(TM)2 Duo CPU     T9400  @ 2.53GHz
+> HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
+>
+> Cross-compile tests
+> alpha: defconfig passed
+> arm: defconfig passed
+> c6x: defconfig passed
+> mips: defconfig passed
+> mipsel: defconfig passed
+> powerpc: wii_defconfig passed
+> sh: defconfig passed
+> sparc: defconfig passed
+> tile: tilegx_defconfig passed
 
-Nope, not expecting anything else. About merge window, depends on
-upstream.
+Correction.
+tile: tilegx_defconfig failed:
 
+tile tilegx_defconfig
+
+Just a snippet, I can send a full log.
+
+ LD      init/built-in.o
+  HOSTCC  usr/gen_init_cpio
+  /home/shuah/lkml/linux_stable_testing_3.0.56/scripts/gen_initramfs_list.sh:
+Cannot open 'usr/contents.txt'
+make[1]: *** [usr/initramfs_data.cpio] Error 1
+make: *** [usr] Error 2
+
+Didn't get a chance to investigate.
+
+-- Shuah
