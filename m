@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751528Ab2LHFKu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Dec 2012 00:10:50 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:59481 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744Ab2LHFKt (ORCPT
+	id S1751856Ab2LHFkF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Dec 2012 00:40:05 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:59987 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751686Ab2LHFkD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Dec 2012 00:10:49 -0500
+	Sat, 8 Dec 2012 00:40:03 -0500
 MIME-Version: 1.0
-In-Reply-To: <20121207005232.756641002@linuxfoundation.org>
-References: <20121207005232.756641002@linuxfoundation.org>
-Date: Sat, 8 Dec 2012 14:10:47 +0900
-Message-ID: <CAMym5wtzyTxuTtgqnmXna1QqnQGfbQ-wE2YYxhYyB9M8fB9-sQ@mail.gmail.com>
-Subject: Re: [ 00/20] 3.4.23-stable review
+In-Reply-To: <20121207005825.232489605@linuxfoundation.org>
+References: <20121207005825.232489605@linuxfoundation.org>
+Date: Sat, 8 Dec 2012 14:40:01 +0900
+Message-ID: <CAMym5wsPbe3ZDqK-frHRskVqNzD0TDSiyK9R6RchJMqTAyXNAQ@mail.gmail.com>
+Subject: Re: [ 00/27] 3.6.10-stable review
 From: satoru takeuchi <satoru.takeuchi@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
@@ -26,17 +26,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Hi Greg,
 
 2012/12/7 Greg Kroah-Hartman <gregkh@linuxfoundation.org>:
-> This is the start of the stable review cycle for the 3.4.23 release.
-> There are 20 patches in this series, all will be posted as a response
+> This is the start of the stable review cycle for the 3.6.10 release.
+> There are 27 patches in this series, all will be posted as a response
 > to this one.  If anyone has any issues with these being applied, please
 > let me know.
->
-> Responses should be made by Sun Dec  9 00:50:03 UTC 2012.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
->         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.23-rc1.gz
-> and the diffstat can be found below.
 
 This kernel can be built and boot without any problem.
 Building a kernel with this kernel also works fine.
@@ -81,25 +74,30 @@ Satoru
 >  arch/arm/mach-kirkwood/pcie.c                    |  11 ++-
 >  arch/s390/Kconfig                                |   1 +
 >  arch/x86/include/asm/fpu-internal.h              |  15 +--
+>  arch/x86/kernel/cpu/amd.c                        |  14 +++
 >  arch/x86/kernel/smpboot.c                        |   5 +
 >  drivers/acpi/processor_driver.c                  |   1 +
 >  drivers/edac/i7300_edac.c                        |   8 +-
+>  drivers/edac/i7core_edac.c                       |   6 +-
 >  drivers/gpu/drm/i915/intel_lvds.c                |  16 ++++
 >  drivers/gpu/drm/radeon/evergreen.c               | 191 +++++++++++++++++++------------------
 >  drivers/gpu/drm/radeon/evergreen_reg.h           |   2 +
 >  drivers/gpu/drm/radeon/evergreend.h              |   7 ++
 >  drivers/gpu/drm/radeon/radeon_asic.h             |   1 +
->  drivers/md/raid10.c                              | 100 ++++++++++---------
+>  drivers/md/raid1.c                               |   2 +-
 >  drivers/net/ethernet/broadcom/bnx2x/bnx2x_main.c |  11 ++-
->  fs/nfs/blocklayout/blocklayout.c                 | 176 +++++++++++++++++++++++++++++++---
->  fs/nfs/blocklayout/blocklayout.h                 |   1 +
+>  drivers/net/ethernet/realtek/8139cp.c            |  22 ++---
+>  drivers/net/usb/qmi_wwan.c                       |  42 ++++++++
+>  drivers/net/wireless/iwlwifi/dvm/rxon.c          |  12 +--
+>  drivers/target/target_core_transport.c           |   6 +-
 >  kernel/sched/auto_group.c                        |   4 -
 >  kernel/sched/auto_group.h                        |   5 -
 >  kernel/workqueue.c                               |   4 +-
 >  mm/memory-failure.c                              |   8 ++
 >  mm/sparse.c                                      |  10 +-
->  scripts/package/buildtar                         |   2 +-
->  25 files changed, 408 insertions(+), 192 deletions(-)
+>  mm/vmscan.c                                      |  27 ++++--
+>  net/mac80211/offchannel.c                        |   2 -
+>  30 files changed, 288 insertions(+), 166 deletions(-)
 >
 >
 > --
