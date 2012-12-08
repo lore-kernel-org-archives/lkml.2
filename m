@@ -1,210 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757461Ab2LHBRc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 20:17:32 -0500
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:37499 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755931Ab2LHBRa (ORCPT
+	id S1757519Ab2LHBUe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 20:20:34 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:43463 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757481Ab2LHBUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 20:17:30 -0500
-Message-ID: <1354928933.28379.37.camel@misato.fc.hp.com>
-Subject: Re: [RFC PATCH v3 0/3] acpi: Introduce prepare_remove device
- operation
-From: Toshi Kani <toshi.kani@hp.com>
-To: Jiang Liu <jiang.liu@huawei.com>
-Cc: Jiang Liu <liuj97@gmail.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Hanjun Guo <guohanjun@huawei.com>,
-        Vasilis Liaskovitis <vasilis.liaskovitis@profitbricks.com>,
-        linux-acpi@vger.kernel.org, isimatu.yasuaki@jp.fujitsu.com,
-        wency@cn.fujitsu.com, lenb@kernel.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Tang Chen <tangchen@cn.fujitsu.com>, Huxinwei <huxinwei@huawei.com>
-Date: Fri, 07 Dec 2012 18:08:53 -0700
-In-Reply-To: <50C1852D.3000104@huawei.com>
-References: <1353693037-21704-1-git-send-email-vasilis.liaskovitis@profitbricks.com>
-	     <50B5EFE9.3040206@huawei.com>
-	    <1354128096.26955.276.camel@misato.fc.hp.com>
-	   <50B6E936.2080308@huawei.com> <1354228028.7776.56.camel@misato.fc.hp.com>
-	   <50BC29C6.6050706@huawei.com>
-	 <1354579848.21585.54.camel@misato.fc.hp.com>  <50C0CA90.7010608@gmail.com>
-	 <1354849065.21116.61.camel@misato.fc.hp.com> <50C1852D.3000104@huawei.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 7 Dec 2012 20:20:33 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AloNAM2UwlB5LHa//2dsb2JhbAA9B4VMsnmFeRdzgh4BAQQBOhwjBQsIAxguFCUDDQETE4gLBcEoFIwrIQGEIQOWBJBJgweBUAEfAw
+Date: Sat, 8 Dec 2012 12:20:29 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Alun <alun.linux@ty-penguin.org.uk>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: PATCH reduce impact of FIFREEZE on userland processes
+Message-ID: <20121208012029.GR27172@dastard>
+References: <20121205211707.7ca3b94b@aspire.ty-penguin.org.uk>
+ <20121207004255.GC27172@dastard>
+ <20121207085952.57ee1f22@pcebbj.staff.aber.ac.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121207085952.57ee1f22@pcebbj.staff.aber.ac.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-12-07 at 13:57 +0800, Jiang Liu wrote:
-> On 2012-12-7 10:57, Toshi Kani wrote:
-> > On Fri, 2012-12-07 at 00:40 +0800, Jiang Liu wrote:
-> >> On 12/04/2012 08:10 AM, Toshi Kani wrote:
-> >>> On Mon, 2012-12-03 at 12:25 +0800, Hanjun Guo wrote:
-> >>>> On 2012/11/30 6:27, Toshi Kani wrote:
-> >>>>> On Thu, 2012-11-29 at 12:48 +0800, Hanjun Guo wrote:
- :
-> >>>
-> >>> If I read the code right, the framework calls ACPI drivers differently
-> >>> at boot-time and hot-add as follows.  That is, the new entry points are
-> >>> called at hot-add only, but .add() is called at both cases.  This
-> >>> requires .add() to work differently.
-> >>>
-> >>> Boot    : .add()
-> >>> Hot-Add : .add(), .pre_configure(), configure(), etc.
-> >>>
-> >>> I think the boot-time and hot-add initialization should be done
-> >>> consistently.  While there is difficulty with the current boot sequence,
-> >>> the framework should be designed to allow them consistent, not make them
-> >>> diverged.
-> >> Hi Toshi,
-> >> 	We have separated hotplug operations from driver binding/unbinding interface
-> >> due to following considerations.
-> >> 1) Physical CPU and memory devices are initialized/used before the ACPI subsystem
-> >>    is initialized. So under normal case, .add() of processor and acpi_memhotplug only
-> >>    figures out information about device already in working state instead of starting
-> >>    the device.
+On Fri, Dec 07, 2012 at 08:59:52AM +0000, Alun wrote:
+> Dave Chinner <david@fromorbit.com> said, in message
+> 20121207004255.GC27172@dastard:
 > > 
-> > I agree that the current boot sequence is not very hot-plug friendly...
-> > 
-> >> 2) It's impossible to rmmod the processor and acpi_memhotplug driver at runtime 
-> >>    if .remove() of CPU and memory drivers do really remove the CPU/memory device
-> >>    from the system. And the ACPI processor driver also implements CPU PM funcitonality
-> >>    other than hotplug.
-> > 
-> > Agreed.
-> > 
-> >> And recently Rafael has mentioned that he has a long term view to get rid of the
-> >> concept of "ACPI device". If that happens, we could easily move the hotplug
-> >> logic from ACPI device drivers into the hotplug framework if the hotplug logic
-> >> is separated from the .add()/.remove() callbacks. Actually we could even move all
-> >> hotplug only logic into the hotplug framework and don't rely on any ACPI device
-> >> driver any more. So we could get rid of all these messy things. We could achieve
-> >> that by:
-> >> 1) moving code shared by ACPI device drivers and the hotplug framework into the core.
-> >> 2) moving hotplug only code to the framework.
-> > 
-> > Yes, the framework should allow such future work.  I also think that the
-> > framework itself should be independent from such ACPI issue.  Ideally,
-> > it should be able to support non-ACPI platforms.
-> The same point here. The ACPI based hotplug framework is designed as:
-> 1) an ACPI based hotplug slot driver to handle platform specific logic.
->    Platform may provide platform specific slot drivers to discover, manage
->    hotplug slots. We have provided a default implementation of slot driver
->    according to the ACPI spec.
+> > The problem wth doing this is that the sync can delay the freeze
+> > process by quite some time under the exact conditions you describe.
+> > If you want freeze to take effect immediately (i.e instantly stop
+> > new modifications), then adding a sync will break this semantic.
+> > THere are existing users of freeze that require this behaviour...
+> 
+> Ahh, that would be the subtlety I was worried might exist! Thanks.
+> 
+> The specific issue that brought me here was that, on a fairly heavily
+> loaded file server (>1000 connected Windows clients), taking an LVM
+> snapshot caused enough of an interruption to service that many of the
+> Windows clients disconnected and reconnected, so causing a huge process
+> load on the server - enough that we'd completely lose service and have
+> to reboot. Chasing this down, I noticed that FIFREEZE does a filesystem
+> sync, and it seemed to me that adding another one prior to blocking
+> writes was an easy hit. 
 
-The ACPI spec does not define that _EJ0 is required to receive a hot-add
-request, i.e. bus/device check.  This is a major issue.  Since Windows
-only supports hot-add, I think there are platforms that only support
-hot-add today.
+Yup, that's typical.
 
-> 2) an ACPI based hotplug manager driver, which is a platform independent
->    driver and manages all hotplug slot created by the slot driver.
+> I'm not trying to argue my case here - you've convinced me that this
+> change in semantics is risky and removes flexibility.
+> 
+> I'll try and chase this up by submitting patches to lvcreate and
+> fsfreeze (in the former case, I think there's no reason not to run
+> syncfs; in the latter perhaps it should be a command line option).
 
-It is surely impressive work, but I think is is a bit overdoing.  I
-expect hot-pluggable servers come with management console and/or GUI
-where a user can manage hardware units and initiate hot-plug operations.
-I do not think the kernel needs to step into such area since it tends to
-be platform-specific. 
+Is that even necesary? users can issue the sync themselves if
+necessary....
 
-> We haven't gone further enough to provide an ACPI independent hotplug framework
-> because we only have experience with x86 and Itanium, both are ACPI based.
-> We may try to implement an ACPI independent hotplug framework by pushing all
-> ACPI specific logic into the slot driver, I think it's doable. But we need
-> suggestions from experts of other architectures, such as SPARC and Power.
-> But seems Power already have some sorts of hotplug framework, right?
+> > That, to me, is irrelevant, because something is normally done while
+> > the filesystem is frozen. It's not uncommon for freeze periods to
+> > extend to minutes while work is done by whatever required the
+> > freeze. Hence the few seconds it takes to acheive the frozen state is
+> > mostly irrelevant.
+> 
+> You've referred twice to existing systems that would break in the
+> presence of this change.  I'm really having trouble thinking of a
+> situation where it's critical to have writes suspended *NOW* and where
+> it's valid to keep them suspended for minutes.
 
-I do not know about the Linux hot-plug support on other architectures.
-PA-RISC SuperDome also supports Node hot-plug, but it is not supported
-by Linux.  Since ARM is getting used by servers, I would not surprise if
-there will be an ARM based server with hot-plug support in future.
+Say you get your filesystem reporting a read error in a directory.
+There are people out there that will immediately freeze the
+filesystem (to prevent potential damage from being propagated) while
+they investigate the problem and determine their next action. This
+may even involve running non-modifying fsck on the underlying block
+device while the filesystem is frozen...
 
-> >> Hi Rafael, what's your thoughts here?
-> >>
-> >>>
-> >>>>>>> 1. Validate phase - Verify if the request is a supported operation.  All
-> >>>>>>> known restrictions are verified at this phase.  For instance, if a
-> >>>>>>> hot-remove request involves kernel memory, it is failed in this phase.
-> >>>>>>> Since this phase makes no change, no rollback is necessary to fail. 
-> >>>>>>
-> >>>>>> Yes, we have done this in acpihp_drv_pre_execute, and check following things:
-> >>>>>>
-> >>>>>> 1) Hot-plugble or not. the instance kernel memory you mentioned is also checked
-> >>>>>>    when memory device remove;
-> >>>>>
-> >>>>> Agreed.
-> >>>>>
-> >>>>>> 2) Dependency check involved. For instance, if hot-add a memory device,
-> >>>>>>    processor should be added first, otherwise it's not valid to this operation.
-> >>>>>
-> >>>>> I think FW should be the one that assures such dependency.  That is,
-> >>>>> when a memory device object is marked as present/enabled/functioning, it
-> >>>>> should be ready for the OS to use.
-> >>>>
-> >>>> Yes, BIOS should do something for the dependency, because BIOS knows the
-> >>>> actual hardware topology. 
-> >>>
-> >>> Right.
-> >>>
-> >>>> The ACPI specification provides _EDL method to
-> >>>> tell OS the eject device list, but still has no method to tell OS the add device
-> >>>> list now.
-> >>>
-> >>> Yes, but I do not think the OS needs special handling for add...
-> >> We have a plan to support triggering hot-adding events from OS provided interfaces,
-> >> so we also need to solve dependency issues when handling requests from those interfaces.
-> >> For need to power on the physical processor before powering on a memory device if
-> >> the memory device is attached to a physical processor.
-> > 
-> > I am afraid that this issue is platform-specific, and I am not sure if
-> > there is a common way to handle such things in general.  I'd recommend
-> > to work with FW folks to implement such platform-specific validation
-> > code in FW.
-> You are right, we may rely on firmware to validate the dependency.
+Then there is systems like HA servers that share a filesystem in a
+primary/secondary setup - freezes are often used in failover
+situations. This ensures all cached dirty data is written to disk
+in preparation for the other node to mount it. Freezing the
+filesystem ensures that spurious errors are not returned to
+applications/clients while the failover takes place. Hence the
+filesystem can remain frozen for some time while everything on the
+new primary node is started up and fences/STONITHs the frozen
+node....
 
-Great!
+Then there's co-ordinating management operations on filesystems that
+span multiple storage arrays (e.g. for hardware based snapshots,
+cloning, etc), VM guest migration between two physical hosts, and so
+on. Freeze is use for a lot more things than LVM snapshots...
 
-> >>>> For some cases, OS should analyze the dependency in the validate phase. For example,
-> >>>> when hot remove a node (container device), OS should analyze the dependency to get
-> >>>> the remove order as following:
-> >>>> 1) Host bridge;
-> >>>> 2) Memory devices;
-> >>>> 3) Processor devices;
-> >>>> 4) Container device itself;
-> >>>
-> >>> This may be off-topic, but how do you plan to delete I/O devices under a
-> >>> node?  Are you planning to delete all I/O devices along with the node?
-> >>>
-> >>> On other OS, we made a separate step called I/O chassis delete, which
-> >>> off-lines all I/O devices under the node, and is required before a node
-> >>> hot-remove.  It basically triggers PCIe hot-remove to detach drivers
-> >>> from all devices.  It does not eject the devices so that they do not
-> >>> have to be on hot-plug slots.  This step runs user-space scripts to
-> >>> verify if the devices can be off-lined without disrupting user's
-> >>> applications, and provides comprehensive reports if any of them are in
-> >>> use.  Not sure if Linux's PCI hot-remove has such check, but I thought
-> >>> I'd mention it. :)
-> >> Yinghai is working on PCI host bridge hotplug, which just stops all PCI devices
-> >> under the host bridge. That's really a little dangerous and we do need help
-> >> from userspace to check whether the hot-removal operaitons is fatal, 
-> >> e.g. removing PCI device hosting the rootfs.
-> > 
-> > Agreed.
-> > 
-> >> So in our framework, we have an option to relay hotplug event from firmware
-> >> to userspace, so the userspace has a chance to reject the hotplug operations
-> >> if it may cause unacceptable disturbance to userspace services.
-> > 
-> > I think validation from user-space is necessary for deleting I/O
-> > devices.  For CPU and memory, the kernel check works fine.
-> Agreed. But we may need help from userspace to handle cgroup/cpuset/cpuisol
-> etc for cpu and memory hot-removal. Especially for telecom applications, they
-> have strong dependency on cgroup/cpuisol to guarantee latency.
+> I'd have thought that,
+> in the vast majority of cases, the critical thing was to minimise the
+> time for which writes were suspended.
 
-I have not looked at the code, but isn't these cpu attributes managed in
-the kernel?
+In the obvious use cases, yes. Once you look outside snapshots to
+consider applications that need a stable, unchanging filesystem in
+an application transparent manner, you'll find lots of interesting
+uses for FIFREEZE....
 
-Thanks,
--Toshi
+Cheers,
 
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
