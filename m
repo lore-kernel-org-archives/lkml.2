@@ -1,67 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757327Ab2LHA5i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 19:57:38 -0500
+	id S1757333Ab2LHA6E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 19:58:04 -0500
 Received: from mail-pa0-f46.google.com ([209.85.220.46]:58669 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755042Ab2LHA5h (ORCPT
+	with ESMTP id S1754964Ab2LHA6B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 19:57:37 -0500
+	Fri, 7 Dec 2012 19:58:01 -0500
+Date: Fri, 7 Dec 2012 16:57:48 -0800 (PST)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+X-X-Sender: torvalds@air.linux-foundation.org
+To: Milan Broz <mbroz@redhat.com>
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Read O_DIRECT regression in 3.7-rc8 (bisected)
+In-Reply-To: <alpine.LFD.2.02.1212071640510.24455@air.linux-foundation.org>
+Message-ID: <alpine.LFD.2.02.1212071656190.4272@air.linux-foundation.org>
+References: <50C2820B.5060005@redhat.com> <alpine.LFD.2.02.1212071640510.24455@air.linux-foundation.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20121207005613.189054768@linuxfoundation.org>
-References: <20121207005613.189054768@linuxfoundation.org>
-Date: Fri, 7 Dec 2012 17:57:36 -0700
-Message-ID: <CAKocOON=mAhDU6naqOi0pPdraRe__HKzhadYae6=Mp0bVFYcBA@mail.gmail.com>
-Subject: Re: [ 00/11] 3.0.56-stable review
-From: Shuah Khan <shuahkhan@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 6, 2012 at 5:56 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> This is the start of the stable review cycle for the 3.0.56 release.
-> There are 11 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Sun Dec  9 00:55:07 UTC 2012.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
->         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.56-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
 
-Patches and compiled and booted on the following systems:
 
-HP EliteBook 6930p Intel(R) Core(TM)2 Duo CPU     T9400  @ 2.53GHz
-HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
+On Fri, 7 Dec 2012, Linus Torvalds wrote:
+> 
+> This (TOTALLY UNTESTED) patch adds it the same iov_shorten() logic that 
+> the write side has. It does it differently (in fs/block_dev.c rather than 
+> in mm/filemap.c), but I actually suspect this is a nicer way to do it, and 
+> maybe we should do the write side truncation this way too.
 
-Cross-compile tests
-alpha: defconfig passed
-arm: defconfig passed
-c6x: not applicable to 3.0.56
-mips: defconfig passed
-mipsel: defconfig passed
-powerpc: wii_defconfig failed on 3.0.56 - sending a patch
-sh: defconfig passed on all
-sparc: defconfig passed on all
-tile: tilegx_defconfig failed:
+Ok, rebooted and tested with your test-case, and it seems to work fine. 
+But I presume that you actually found the problem some other way, so you'd 
+want to verify that it fixes whatever original bigger issue you hit.
 
- LD      init/built-in.o
-  HOSTCC  usr/gen_init_cpio
-  /home/shuah/lkml/linux_stable_testing_3.0.56/scripts/gen_initramfs_list.sh:
-Cannot open 'usr/contents.txt'
-make[1]: *** [usr/initramfs_data.cpio] Error 1
-make: *** [usr] Error 2
-
--- Shuah
+Thanks,
+            Linus
