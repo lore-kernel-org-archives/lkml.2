@@ -1,39 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933682Ab2LHPs3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Dec 2012 10:48:29 -0500
-Received: from smtp.domeneshop.no ([194.63.252.54]:60642 "EHLO
-	smtp.domeneshop.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933621Ab2LHPs2 (ORCPT
+	id S933695Ab2LHPwo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Dec 2012 10:52:44 -0500
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:37249 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933088Ab2LHPwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Dec 2012 10:48:28 -0500
-Message-ID: <50C3DFD9.4000408@paradoxuncreated.com>
-Date: Sat, 08 Dec 2012 16:48:25 -0800
-From: Ove Karlsen <ove.karlsen@paradoxuncreated.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Sat, 8 Dec 2012 10:52:43 -0500
+X-IronPort-AV: E=Sophos;i="4.84,243,1355094000"; 
+   d="scan'208";a="185237021"
+Date: Sat, 8 Dec 2012 16:52:42 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@hadrien
+To: plagnioj@jcrosoft.com, linus.walleij@linaro.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: question about drivers/pinctrl/pinctrl-at91.c
+Message-ID: <alpine.DEB.2.02.1212081643590.1984@hadrien>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: peoples@linuxlist
-CC: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: Re: [ANNOUNCE] 3.6.9-rt21
-References: <alpine.LFD.2.02.1212051659160.2701@ionos> <201212061535.37585.tstone@iss.tu-darmstadt.de>
-In-Reply-To: <201212061535.37585.tstone@iss.tu-darmstadt.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Heya. As some may remember, I said I was going to build an E5 machine. 
-Well I did, well atleast ordered the most similar to what I wanted, and 
-exchanged the graphics-card (pcie3.0) only. I was completely correct in 
-that this machine, would have low-jitter
-/low-latency. And it completely lives up to expectations. So if you want 
-low-jitter (think amiga, if that references means something to you), 
-definately get an E5 (with direct i/o).
+The function at91_dt_node_to_map in drivers/pinctrl/pinctrl-at91.c 
+contains the following code:
 
-Threadirqs also works on this computer.
+        new_map = devm_kzalloc(pctldev->dev, sizeof(*new_map) * map_num, GFP_KERNEL);
+         if (!new_map)
+                 return -ENOMEM;
 
-Peace Be With You.
+         *map = new_map;
+         *num_maps = map_num;
 
+         /* create mux map */
+         parent = of_get_parent(np);
+         if (!parent) {
+                 kfree(new_map);
+                 return -EINVAL;
+         }
 
+This is clearly not correct, because the combination of devm_kzalloc and 
+kfree risks creating a double free.  But I am not sure how best to fix it. 
+Is the data structure intended to normally exist until the driver's remove 
+function is called?  If so, perhaps the devm_kzalloc is OK.  If I just 
+remove the kfree, then the structure will persist until the remove 
+function is called, even though there was an error, which is perhaps not 
+good.  So I could change the kfree to devm_kfree?
+
+thanks,
+julia
