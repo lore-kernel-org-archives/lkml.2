@@ -1,82 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757375Ab2LHA71 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 19:59:27 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:60173 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757358Ab2LHA7Z (ORCPT
+	id S1757383Ab2LHBAw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 20:00:52 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27059 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755920Ab2LHBAv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 19:59:25 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAKocOOOKAeD=BuRnDa6U7KtHOXAK7b-VCibQohPGkAB-ZYX4aA@mail.gmail.com>
-References: <20121207005232.756641002@linuxfoundation.org>
-	<CAKocOOM-QZ88+sV40C8OJWAN89W4QkDKx+gLjrmZEeUs=CJ57g@mail.gmail.com>
-	<CAKocOOOKAeD=BuRnDa6U7KtHOXAK7b-VCibQohPGkAB-ZYX4aA@mail.gmail.com>
-Date: Fri, 7 Dec 2012 17:59:24 -0700
-Message-ID: <CAKocOOO8bJ+vBuG3Dwx_-EnAqcVJ00G69Rc764eFTuhgszJntQ@mail.gmail.com>
-Subject: Re: [ 00/20] 3.4.23-stable review
-From: Shuah Khan <shuahkhan@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 7 Dec 2012 20:00:51 -0500
+X-Authority-Analysis: v=2.0 cv=f9bK9ZOM c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=O7yW5i6_SjkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=apWNB6VHehcA:10 a=bnE-k_R9Slzgsdyh0psA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1354928449.17101.104.camel@gandalf.local.home>
+Subject: Re: [PATCH v2 -tip 3/4] tracing: make a snapshot feature available
+ from userspace
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Hiraku Toyooka <hiraku.toyooka.gu@hitachi.com>
+Cc: yrl.pp-manager.tt@hitachi.com, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        Li Zefan <lizf@cn.fujitsu.com>
+Date: Fri, 07 Dec 2012 20:00:49 -0500
+In-Reply-To: <50C14F5A.50807@hitachi.com>
+References: <20121017025608.2627.87497.stgit@falsita>
+			 <20121017025619.2627.96794.stgit@falsita>
+		 <1353030384.9391.19.camel@gandalf.local.home>
+		 <50B84822.6010409@hitachi.com>
+	 <1354285026.6276.157.camel@gandalf.local.home> <50C14F5A.50807@hitachi.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 7, 2012 at 5:52 PM, Shuah Khan <shuahkhan@gmail.com> wrote:
-> On Fri, Dec 7, 2012 at 5:49 PM, Shuah Khan <shuahkhan@gmail.com> wrote:
->> On Thu, Dec 6, 2012 at 5:54 PM, Greg Kroah-Hartman
->> <gregkh@linuxfoundation.org> wrote:
->>> This is the start of the stable review cycle for the 3.4.23 release.
->>> There are 20 patches in this series, all will be posted as a response
->>> to this one.  If anyone has any issues with these being applied, please
->>> let me know.
->>>
->>> Responses should be made by Sun Dec  9 00:50:03 UTC 2012.
->>> Anything received after that time might be too late.
->>>
->>> The whole patch series can be found in one patch at:
->>>         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.23-rc1.gz
->>> and the diffstat can be found below.
->>>
->>> thanks,
->>>
->>> greg k-h
->>
->> Patche applied cleanly and compiled and booted on the following systems:
->>
->> HP EliteBook 6930p Intel(R) Core(TM)2 Duo CPU     T9400  @ 2.53GHz
->> HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
->>
->> Cross-compile tests
->> alpha: defconfig passed
->> arm: defconfig passed
->> c6x: defconfig passed
->> mips: defconfig passed
->> mipsel: defconfig passed
->> powerpc: wii_defconfig passed
->> sh: defconfig passed
->> sparc: defconfig passed
->> tile: tilegx_defconfig passed
->
-> Correction.
-> tile: tilegx_defconfig failed:
->
-> tile tilegx_defconfig
->
-> Just a snippet, I can send a full log.
->
->  LD      init/built-in.o
->   HOSTCC  usr/gen_init_cpio
->   /home/shuah/lkml/linux_stable_testing_3.0.56/scripts/gen_initramfs_list.sh:
-> Cannot open 'usr/contents.txt'
-> make[1]: *** [usr/initramfs_data.cpio] Error 1
-> make: *** [usr] Error 2
->
-> Didn't get a chance to investigate.
+On Fri, 2012-12-07 at 11:07 +0900, Hiraku Toyooka wrote:
+> Hi, Steven,
+> 
+> (2012/11/30 23:17), Steven Rostedt wrote:
+> [snip]
+>  >
+>  > Actually, I would have:
+>  >
+>  >   status\input |     0      |     1      |    else    |
+>  >  --------------+------------+------------+------------+
+>  >  not allocated |(do nothing)| alloc+swap |   EINVAL   |
+>  >  --------------+------------+------------+------------+
+>  >    allocated   |    free    |   swap     |   clear    |
+>  >  --------------+------------+------------+------------+
+>  >
+>  > Perhaps we don't need to do the clear on swap, just let the trace
+>  > continue where it left off? But in case we should swap...
+>  >
+> 
+> I think we don't need the clear on swap too.
+> I'll update my patches like this table.
+> 
+>  > There's a fast way to clear the tracer. Look at what the wakeup tracer
+>  > does. We can make that generic. If you want, I can write that code up
+>  > too. Hmm, maybe I'll do that, as it will speed things up for
+>  > everyone :-)
+>  >
+> 
+> (I looked over the wakeup tracer, but I couldn't find that code...)
 
-Sorry tile failure is for 3.0.56
+Heh, sorry, you needed to look at the "update_max_tr()" in
+kernel/trace/trace.c. Where we update the time_start value. Then the
+output skips all timestamps before that start. This is much more
+efficient than a 'reset', as we don't need to sync or anything. Just
+record the timestamp of where we want to consider the buffer started,
+and ignore any event before that.
 
--- Shuah
+
+> I think that seq_read() calls s_stop() even if s_start() failed.
+> 
+> seq_read()@fs/seq_file.c:
+> 
+>          p = m->op->start(m, &pos);
+>          while (1) {
+>                  err = PTR_ERR(p);
+>                  if (!p || IS_ERR(p))
+>                          break;
+>                  ...
+>          }
+>          m->op->stop(m, p);
+> 
+> So, I think we need the check in s_stop(), don't we?
+
+Crap, you're right. Hmm, why was I thinking that it didn't. I better go
+and review some of my recent code to make sure that I didn't have that
+wrong assumption.
+
+-- Steve
+
+
