@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933639Ab2LHPKd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Dec 2012 10:10:33 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49802 "EHLO
+	id S933656Ab2LHPKy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Dec 2012 10:10:54 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49817 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933588Ab2LHPKc (ORCPT
+	with ESMTP id S933588Ab2LHPKx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Dec 2012 10:10:32 -0500
-Date: Sat, 8 Dec 2012 07:08:14 -0800
-From: tip-bot for David Howells <dhowells@redhat.com>
-Message-ID: <tip-9db48cd5ccd0d127e991c15509a0241a18043e91@git.kernel.org>
+	Sat, 8 Dec 2012 10:10:53 -0500
+Date: Sat, 8 Dec 2012 07:10:19 -0800
+From: tip-bot for Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Message-ID: <tip-1483c2ae90738e7453bfe446a3bbcdd0ba9abf36@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, torvalds@linux-foundation.org,
-        namhyung@gmail.com, bp@amd64.org, dhowells@redhat.com,
-        tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com,
-        torvalds@linux-foundation.org, bp@amd64.org, namhyung@gmail.com,
-        dhowells@redhat.com, tglx@linutronix.de
-In-Reply-To: <1378.1352379110@warthog.procyon.org.uk>
-References: <1378.1352379110@warthog.procyon.org.uk>
+        mingo@redhat.com, hpa@zytor.com, mingo@kernel.org,
+        a.p.zijlstra@chello.nl, robert.richter@amd.com, dhowells@redhat.com,
+        anton@au1.ibm.com, tglx@linutronix.de, sukadev@linux.vnet.ibm.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
+        robert.richter@amd.com, dhowells@redhat.com, anton@au1.ibm.com,
+        sukadev@linux.vnet.ibm.com, tglx@linutronix.de
+In-Reply-To: <20121107191818.GA16211@us.ibm.com>
+References: <20121107191818.GA16211@us.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tools: Honour the O=
-  flag when tool build called from a higher Makefile
-Git-Commit-ID: 9db48cd5ccd0d127e991c15509a0241a18043e91
+Subject: [tip:perf/core] perf powerpc: Use uapi/
+ unistd.h to fix build error
+Git-Commit-ID: 1483c2ae90738e7453bfe446a3bbcdd0ba9abf36
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,122 +32,46 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 08 Dec 2012 07:08:20 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 08 Dec 2012 07:10:33 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9db48cd5ccd0d127e991c15509a0241a18043e91
-Gitweb:     http://git.kernel.org/tip/9db48cd5ccd0d127e991c15509a0241a18043e91
-Author:     David Howells <dhowells@redhat.com>
-AuthorDate: Mon, 5 Nov 2012 21:02:08 +0000
+Commit-ID:  1483c2ae90738e7453bfe446a3bbcdd0ba9abf36
+Gitweb:     http://git.kernel.org/tip/1483c2ae90738e7453bfe446a3bbcdd0ba9abf36
+Author:     Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+AuthorDate: Wed, 31 Oct 2012 11:21:28 -0700
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 14 Nov 2012 16:53:22 -0300
+CommitDate: Wed, 14 Nov 2012 16:53:39 -0300
 
-tools: Honour the O= flag when tool build called from a higher Makefile
+perf powerpc: Use uapi/unistd.h to fix build error
 
-Honour the O= flag that was passed to a higher level Makefile and then passed
-down as part of a tool build.
+Use the 'unistd.h' from arch/powerpc/include/uapi to build the perf tool.
 
-To make this work, the top-level Makefile passes the original O= flag and
-subdir=tools to the tools/Makefile, and that in turn passes
-subdir=$(O)/$(subdir)/foodir when building tool foo in directory
-$(O)/$(subdir)/foodir (where the intervening slashes aren't added if an
-element is missing).
-
-For example, take perf.  This is found in tools/perf/.  Assume we're building
-into directory ~/zebra/, so we pass O=~/zebra to make.  Dependening on where
-we run the build from, we see:
-
-	make run in dir		$(OUTPUT) dir
-	=======================	==================
-	linux			~/zebra/tools/perf/
-	linux/tools		~/zebra/perf/
-	linux/tools/perf	~/zebra/
-
-and if O= is not set, we get:
-
-	make run in dir		$(OUTPUT) dir
-	=======================	==================
-	linux			linux/tools/perf/
-	linux/tools		linux/tools/perf/
-	linux/tools/perf	linux/tools/perf/
-
-The output directories are created by the descend function if they don't
-already exist.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Cc: Borislav Petkov <bp@amd64.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Namhyung Kim <namhyung@gmail.com>
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Acked-by: David Howells <dhowells@redhat.com>
+Cc: Anton Blanchard <anton@au1.ibm.com>
+Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Link: http://lkml.kernel.org/r/1378.1352379110@warthog.procyon.org.uk
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Robert Richter <robert.richter@amd.com>
+Cc: linuxppc-dev@ozlabs.org
+Link: http://lkml.kernel.org/r/20121107191818.GA16211@us.ibm.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- Makefile                       |  6 ++++--
- tools/scripts/Makefile.include | 17 +++++++++++++----
- 2 files changed, 17 insertions(+), 6 deletions(-)
+ tools/perf/perf.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/Makefile b/Makefile
-index 14c93b3..08a31d8 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1321,10 +1321,12 @@ kernelversion:
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 0047264..f53ee0b 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -26,7 +26,7 @@ void get_term_dimensions(struct winsize *ws);
+ #endif
  
- # Clear a bunch of variables before executing the submake
- tools/: FORCE
--	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS= -C $(src)/tools/
-+	$(Q)mkdir -p $(objtree)/tools
-+	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS= O=$(objtree) subdir=tools -C $(src)/tools/
- 
- tools/%: FORCE
--	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS= -C $(src)/tools/ $*
-+	$(Q)mkdir -p $(objtree)/tools
-+	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS= O=$(objtree) subdir=tools -C $(src)/tools/ $*
- 
- # Single targets
- # ---------------------------------------------------------------------------
-diff --git a/tools/scripts/Makefile.include b/tools/scripts/Makefile.include
-index 4a9e317..87467b1 100644
---- a/tools/scripts/Makefile.include
-+++ b/tools/scripts/Makefile.include
-@@ -1,8 +1,11 @@
--ifeq ("$(origin O)", "command line")
-+ifeq ($(origin O), command line)
- 	dummy := $(if $(shell test -d $(O) || echo $(O)),$(error O=$(O) does not exist),)
- 	ABSOLUTE_O := $(shell cd $(O) ; pwd)
--	OUTPUT := $(ABSOLUTE_O)/
-+	OUTPUT := $(ABSOLUTE_O)/$(if $(subdir),$(subdir)/)
- 	COMMAND_O := O=$(ABSOLUTE_O)
-+ifeq ($(objtree),)
-+	objtree := $(O)
-+endif
- endif
- 
- ifneq ($(OUTPUT),)
-@@ -47,9 +50,10 @@ endif
- # Call by doing: $(call descend,directory[,target])
- #
- descend = \
--	$(QUIET_SUBDIR0)$(1) $(QUIET_SUBDIR1) $(2)
-+	+mkdir -p $(OUTPUT)$(1) && \
-+	$(MAKE) $(COMMAND_O) subdir=$(if $(subdir),$(subdir)/$(1),$(1)) $(PRINT_DIR) -C $(1)
- 
--QUIET_SUBDIR0  = +$(MAKE) -C # space to separate -C and subdir
-+QUIET_SUBDIR0  = +$(MAKE) $(COMMAND_O) -C # space to separate -C and subdir
- QUIET_SUBDIR1  =
- 
- ifneq ($(findstring $(MAKEFLAGS),s),s)
-@@ -64,5 +68,10 @@ ifndef V
- 			 $(MAKE) $(PRINT_DIR) -C $$subdir
- 	QUIET_FLEX     = @echo '   ' FLEX $@;
- 	QUIET_BISON    = @echo '   ' BISON $@;
-+
-+	descend = \
-+		@echo '   ' DESCEND $(1); \
-+		mkdir -p $(OUTPUT)$(1) && \
-+		$(MAKE) $(COMMAND_O) subdir=$(if $(subdir),$(subdir)/$(1),$(1)) $(PRINT_DIR) -C $(1)
- endif
- endif
+ #ifdef __powerpc__
+-#include "../../arch/powerpc/include/asm/unistd.h"
++#include "../../arch/powerpc/include/uapi/asm/unistd.h"
+ #define rmb()		asm volatile ("sync" ::: "memory")
+ #define cpu_relax()	asm volatile ("" ::: "memory");
+ #define CPUINFO_PROC	"cpu"
