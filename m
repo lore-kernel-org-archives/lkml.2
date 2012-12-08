@@ -1,187 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757436Ab2LHBLP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 20:11:15 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:27955 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757377Ab2LHBLN (ORCPT
+	id S1757449Ab2LHBPY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 20:15:24 -0500
+Received: from mail-ia0-f172.google.com ([209.85.210.172]:63100 "EHLO
+	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757270Ab2LHBPX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 20:11:13 -0500
-Date: Fri, 7 Dec 2012 17:09:58 -0800
-From: "Darrick J. Wong" <darrick.wong@oracle.com>
-To: Jan Kara <jack@suse.cz>
-Cc: NeilBrown <neilb@suse.de>, axboe@kernel.dk, lucho@ionkov.net,
-        ericvh@gmail.com, tytso@mit.edu, rminnich@sandia.gov,
-        viro@zeniv.linux.org.uk, martin.petersen@oracle.com,
-        david@fromorbit.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, adilger.kernel@dilger.ca,
-        bharrosh@panasas.com, jlayton@samba.org,
-        v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 4/4] ext3: Warn if mounting rw on a disk requiring stable
- page writes
-Message-ID: <20121208010958.GB22952@blackbox.djwong.org>
-References: <20121121020027.10225.43206.stgit@blackbox.djwong.org>
- <20121121020056.10225.15220.stgit@blackbox.djwong.org>
- <20121121021543.GI10507@quack.suse.cz>
- <20121121211319.GA32202@blackbox.djwong.org>
- <20121121213333.GF30250@quack.suse.cz>
- <20121122084713.69e5b1fc@notabene.brown>
- <20121122014755.GH8740@blackbox.djwong.org>
- <20121122091240.GA11154@quack.suse.cz>
- <20121127021740.GA11869@blackbox.djwong.org>
- <20121205121228.GB5706@quack.suse.cz>
+	Fri, 7 Dec 2012 20:15:23 -0500
+X-Greylist: delayed 1396 seconds by postgrey-1.27 at vger.kernel.org; Fri, 07 Dec 2012 20:15:23 EST
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121205121228.GB5706@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <20121203075226.GA4065@blaptop>
+References: <1354258489-2703-1-git-send-email-ngupta@vflare.org>
+	<20121130135124.GA22196@blaptop>
+	<BA4DD5DA-0E4F-470E-98F5-DDA937636189@vflare.org>
+	<20121203075226.GA4065@blaptop>
+Date: Fri, 7 Dec 2012 16:45:53 -0800
+Message-ID: <CAPkvG_fRC4xU4wXE=0O_Qtv=C0if4gW_2jSgNp06NpxQ+YQzCA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] zsmalloc: add function to query object size
+From: Nitin Gupta <ngupta@vflare.org>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Greg KH <greg@kroah.com>, Jerome Marchand <jmarchan@redhat.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Sam Hansen <solid.se7en@gmail.com>,
+        Linux Driver Project <devel@linuxdriverproject.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 05, 2012 at 01:12:28PM +0100, Jan Kara wrote:
-> On Mon 26-11-12 18:17:40, Darrick J. Wong wrote:
-> > On Thu, Nov 22, 2012 at 10:12:40AM +0100, Jan Kara wrote:
-> > > On Wed 21-11-12 17:47:55, Darrick J. Wong wrote:
-> > > > On Thu, Nov 22, 2012 at 08:47:13AM +1100, NeilBrown wrote:
-> > > > > On Wed, 21 Nov 2012 22:33:33 +0100 Jan Kara <jack@suse.cz> wrote:
-> > > > > 
-> > > > > > On Wed 21-11-12 13:13:19, Darrick J. Wong wrote:
-> > > > > > > On Wed, Nov 21, 2012 at 03:15:43AM +0100, Jan Kara wrote:
-> > > > > > > > On Tue 20-11-12 18:00:56, Darrick J. Wong wrote:
-> > > > > > > > > ext3 doesn't properly isolate pages from changes during writeback.  Since the
-> > > > > > > > > recommended fix is to use ext4, for now we'll just print a warning if the user
-> > > > > > > > > tries to mount in write mode.
-> > > > > > > > > 
-> > > > > > > > > Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
-> > > > > > > > > ---
-> > > > > > > > >  fs/ext3/super.c |    8 ++++++++
-> > > > > > > > >  1 file changed, 8 insertions(+)
-> > > > > > > > > 
-> > > > > > > > > 
-> > > > > > > > > diff --git a/fs/ext3/super.c b/fs/ext3/super.c
-> > > > > > > > > index 5366393..5b3725d 100644
-> > > > > > > > > --- a/fs/ext3/super.c
-> > > > > > > > > +++ b/fs/ext3/super.c
-> > > > > > > > > @@ -1325,6 +1325,14 @@ static int ext3_setup_super(struct super_block *sb, struct ext3_super_block *es,
-> > > > > > > > >  			"forcing read-only mode");
-> > > > > > > > >  		res = MS_RDONLY;
-> > > > > > > > >  	}
-> > > > > > > > > +	if (!read_only &&
-> > > > > > > > > +	    queue_requires_stable_pages(bdev_get_queue(sb->s_bdev))) {
-> > > > > > > > > +		ext3_msg(sb, KERN_ERR,
-> > > > > > > > > +			"error: ext3 cannot safely write data to a disk "
-> > > > > > > > > +			"requiring stable pages writes; forcing read-only "
-> > > > > > > > > +			"mode.  Upgrading to ext4 is recommended.");
-> > > > > > > > > +		res = MS_RDONLY;
-> > > > > > > > > +	}
-> > > > > > > > >  	if (read_only)
-> > > > > > > > >  		return res;
-> > > > > > > > >  	if (!(sbi->s_mount_state & EXT3_VALID_FS))
-> > > > > > > >   Why this? ext3 should be fixed by your change to
-> > > > > > > > filemap_page_mkwrite()... Or does testing show otherwise?
-> > > > > > > 
-> > > > > > > Yes, it's still broken even with this new set of changes.  Now that I think
-> > > > > > > about it a little more, I recall that writeback mode was actually fine, so this
-> > > > > > > is a little harsh.
-> > > > > > > 
-> > > > > > > Hm... looking at the ordered code a little more, it looks like
-> > > > > > > ext3_ordered_write_end is calling journal_dirty_data_fn, which (I guess?) tries
-> > > > > > > to write mapped buffers back through the journal?  Taking it out seems to fix
-> > > > > > > ordered mode, though I have a suspicion that it might very well break ordered
-> > > > > > > mode too.
-> > > > > >   Oh, right. kjournald writing buffers directly (without setting
-> > > > > > PageWriteback) will break things. So please, change warning to:
-> > > > 
-> > > > Maybe we should just fix this anyway?
-> > > > 
-> > > > I still have the patch that adds PG_stable (and changes the
-> > > > wait_for_page_stable() test to use this flag instead of PG_writeback) kicking
-> > > > around in my tree.  I wrote a patch to jbd that changes journal_do_submit_data
-> > > > to set PG_stable, call clear_page_dirty_for_io(), and unsets the stable bit in
-> > > > the end_io processing.
-> > > > 
-> > > > It seems to get rid of the checksum-after-write errors, though I'm not
-> > > > convinced it's correct.  But, I'll send both patches along.
-> > >   I'll check the patches. Fixing PageWriteback logic for ext3 is not easily
-> > > doable due to lock ranking constraints - PageWriteback has to be set under
-> > > PageLocked but that ranks above transaction start so kjournald cannot grab
-> > > page locks so it cannot set PageWriteback... And changing the lock ordering
-> > > is a major surgery.
-> > > 
-> > > What could be doable is waiting for buffer locks from ext3's ->write_begin
-> > > and ->page_mkwrite implementations in case stable writes are required. If
-> > > your approach with a separate page bit doesn't work out (and I have some
-> > > doubts about that as mm people are *really* thrifty with page bits).
-> > > 
-> > > > > > 	/*
-> > > > > > 	 * In data=ordered mode, kjournald writes buffers without setting
-> > > > > > 	 * PageWriteback bit thus generic code does not properly wait for
-> > > > > > 	 * writeback of those buffers to finish.
-> > > > > > 	 */
-> > > > > > 	if (!read_only &&
-> > > > > > 	    test_opt(sb, DATA_FLAGS) == EXT3_MOUNT_ORDERED_DATA &&
-> > > > 
-> > > > test_opt(sb, DATA_FLAGS) != EXT3_MOUNT_WRITEBACK_DATA
-> > > > 
-> > > > since I bet data=journal mode is also borken wrt PageWriteback.
-> > >   It is broken wrt PageWriteback but it actually waits for buffer locks in
-> > > ->write_begin() so at least write path should be properly protected. But
-> > > mmap is not handled properly there (although that wouldn't be that hard to
-> > > fix). So I agree the condition should rather be what you suggest.
->   Sorry for late reply. I was on vacation...
+On Sun, Dec 2, 2012 at 11:52 PM, Minchan Kim <minchan@kernel.org> wrote:
+> On Sun, Dec 02, 2012 at 11:20:42PM -0800, Nitin Gupta wrote:
+>>
+>>
+>> On Nov 30, 2012, at 5:54 AM, Minchan Kim <minchan.kernel.2@gmail.com> wrote:
+>>
+>> > On Thu, Nov 29, 2012 at 10:54:48PM -0800, Nitin Gupta wrote:
+>> >> Changelog v2 vs v1:
+>> >> - None
+>> >>
+>> >> Adds zs_get_object_size(handle) which provides the size of
+>> >> the given object. This is useful since the user (zram etc.)
+>> >> now do not have to maintain object sizes separately, saving
+>> >> on some metadata size (4b per page).
+>> >>
+>> >> The object handle encodes <page, offset> pair which currently points
+>> >> to the start of the object. Now, the handle implicitly stores the size
+>> >> information by pointing to the object's end instead. Since zsmalloc is
+>> >> a slab based allocator, the start of the object can be easily determined
+>> >> and the difference between the end offset encoded in the handle and the
+>> >> start gives us the object size.
+>> >>
+>> >> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+>> > Acked-by: Minchan Kim <minchan@kernel.org>
+>> >
+>> > I already had a few comment in your previous versoin.
+>> > I'm OK although you ignore them because I can make follow up patch about
+>> > my nitpick but could you answer below my question?
+>> >
+>> >> ---
+>> >> drivers/staging/zsmalloc/zsmalloc-main.c |  177 +++++++++++++++++++++---------
+>> >> drivers/staging/zsmalloc/zsmalloc.h      |    1 +
+>> >> 2 files changed, 127 insertions(+), 51 deletions(-)
+>> >>
+>> >> diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
+>> >> index 09a9d35..65c9d3b 100644
+>> >> --- a/drivers/staging/zsmalloc/zsmalloc-main.c
+>> >> +++ b/drivers/staging/zsmalloc/zsmalloc-main.c
+>> >> @@ -112,20 +112,20 @@
+>> >> #define MAX_PHYSMEM_BITS 36
+>> >> #else /* !CONFIG_HIGHMEM64G */
+>> >> /*
+>> >> - * If this definition of MAX_PHYSMEM_BITS is used, OBJ_INDEX_BITS will just
+>> >> + * If this definition of MAX_PHYSMEM_BITS is used, OFFSET_BITS will just
+>> >>  * be PAGE_SHIFT
+>> >>  */
+>> >> #define MAX_PHYSMEM_BITS BITS_PER_LONG
+>> >> #endif
+>> >> #endif
+>> >> #define _PFN_BITS        (MAX_PHYSMEM_BITS - PAGE_SHIFT)
+>> >> -#define OBJ_INDEX_BITS    (BITS_PER_LONG - _PFN_BITS)
+>> >> -#define OBJ_INDEX_MASK    ((_AC(1, UL) << OBJ_INDEX_BITS) - 1)
+>> >> +#define OFFSET_BITS    (BITS_PER_LONG - _PFN_BITS)
+>> >> +#define OFFSET_MASK    ((_AC(1, UL) << OFFSET_BITS) - 1)
+>> >>
+>> >> #define MAX(a, b) ((a) >= (b) ? (a) : (b))
+>> >> /* ZS_MIN_ALLOC_SIZE must be multiple of ZS_ALIGN */
+>> >> #define ZS_MIN_ALLOC_SIZE \
+>> >> -    MAX(32, (ZS_MAX_PAGES_PER_ZSPAGE << PAGE_SHIFT >> OBJ_INDEX_BITS))
+>> >> +    MAX(32, (ZS_MAX_PAGES_PER_ZSPAGE << PAGE_SHIFT >> OFFSET_BITS))
+>> >> #define ZS_MAX_ALLOC_SIZE    PAGE_SIZE
+>> >>
+>> >> /*
+>> >> @@ -256,6 +256,11 @@ static int is_last_page(struct page *page)
+>> >>    return PagePrivate2(page);
+>> >> }
+>> >>
+>> >> +static unsigned long get_page_index(struct page *page)
+>> >> +{
+>> >> +    return is_first_page(page) ? 0 : page->index;
+>> >> +}
+>> >> +
+>> >> static void get_zspage_mapping(struct page *page, unsigned int *class_idx,
+>> >>                enum fullness_group *fullness)
+>> >> {
+>> >> @@ -433,39 +438,86 @@ static struct page *get_next_page(struct page *page)
+>> >>    return next;
+>> >> }
+>> >>
+>> >> -/* Encode <page, obj_idx> as a single handle value */
+>> >> -static void *obj_location_to_handle(struct page *page, unsigned long obj_idx)
+>> >> +static struct page *get_prev_page(struct page *page)
+>> >> {
+>> >> -    unsigned long handle;
+>> >> +    struct page *prev, *first_page;
+>> >>
+>> >> -    if (!page) {
+>> >> -        BUG_ON(obj_idx);
+>> >> -        return NULL;
+>> >> -    }
+>> >> +    first_page = get_first_page(page);
+>> >> +    if (page == first_page)
+>> >> +        prev = NULL;
+>> >> +    else if (page == (struct page *)first_page->private)
+>> >> +        prev = first_page;
+>> >> +    else
+>> >> +        prev = list_entry(page->lru.prev, struct page, lru);
+>> >>
+>> >> -    handle = page_to_pfn(page) << OBJ_INDEX_BITS;
+>> >> -    handle |= (obj_idx & OBJ_INDEX_MASK);
+>> >> +    return prev;
+>> >>
+>> >> -    return (void *)handle;
+>> >> }
+>> >>
+>> >> -/* Decode <page, obj_idx> pair from the given object handle */
+>> >> -static void obj_handle_to_location(unsigned long handle, struct page **page,
+>> >> -                unsigned long *obj_idx)
+>> >> +static void *encode_ptr(struct page *page, unsigned long offset)
+>> >> {
+>> >> -    *page = pfn_to_page(handle >> OBJ_INDEX_BITS);
+>> >> -    *obj_idx = handle & OBJ_INDEX_MASK;
+>> >> +    unsigned long ptr;
+>> >> +    ptr = page_to_pfn(page) << OFFSET_BITS;
+>> >> +    ptr |= offset & OFFSET_MASK;
+>> >> +    return (void *)ptr;
+>> >> +}
+>> >> +
+>> >> +static void decode_ptr(unsigned long ptr, struct page **page,
+>> >> +                    unsigned int *offset)
+>> >> +{
+>> >> +    *page = pfn_to_page(ptr >> OFFSET_BITS);
+>> >> +    *offset = ptr & OFFSET_MASK;
+>> >> +}
+>> >> +
+>> >> +static struct page *obj_handle_to_page(unsigned long handle)
+>> >> +{
+>> >> +    struct page *page;
+>> >> +    unsigned int offset;
+>> >> +
+>> >> +    decode_ptr(handle, &page, &offset);
+>> >> +    if (offset < get_page_index(page))
+>> >> +        page = get_prev_page(page);
+>> >> +
+>> >> +    return page;
+>> >> +}
+>> >> +
+>> >> +static unsigned int obj_handle_to_offset(unsigned long handle,
+>> >> +                    unsigned int class_size)
+>> >> +{
+>> >> +    struct page *page;
+>> >> +    unsigned int offset;
+>> >> +
+>> >> +    decode_ptr(handle, &page, &offset);
+>> >> +    if (offset < get_page_index(page))
+>> >> +        offset = PAGE_SIZE - class_size + get_page_index(page);
+>> >> +    else
+>> >> +        offset = roundup(offset, class_size) - class_size;
+>> >> +
+>> >> +    return offset;
+>> >> }
+>> >>
+>> >> -static unsigned long obj_idx_to_offset(struct page *page,
+>> >> -                unsigned long obj_idx, int class_size)
+>> >> +/* Encode <page, offset, size> as a single handle value */
+>> >> +static void *obj_location_to_handle(struct page *page, unsigned int offset,
+>> >> +                unsigned int size, unsigned int class_size)
+>> >> {
+>> >> -    unsigned long off = 0;
+>> >> +    struct page *endpage;
+>> >> +    unsigned int endoffset;
+>> >>
+>> >> -    if (!is_first_page(page))
+>> >> -        off = page->index;
+>> >> +    if (!page) {
+>> >> +        BUG_ON(offset);
+>> >> +        return NULL;
+>> >> +    }
+>> >
+>> > What do you expect to catch with above check?
+>> >
+>> >
+>>
+>> This would catch cases where, say, user passes handle to a zero page to this function. In general, just a sanity check since pfn 0 and any non-zero offset is invalid.
+>
+> You mean zero_page is always pfn 0?
+> No, we can't assume it.
+>
 
-No worries; I have plenty of other patchsets to work on. :)
+Sorry, missed this point.    Though it's not correct to embed the
+assumption that the zero-page handle will have pfn of 0, but in
+general, PFN 0 is always invalid. However, for 0 size requests
+zsmalloc returns NULL, so user should be also to pass <PFN=0,offset=0>
+pair to this function. However, <PFN=0, offset!=0> is invalid and this
+is what this assert checks.
 
-> > Hm.  In journal mode, write_begin calls do_journal_get_write_access on each
-> > buffer for a given page, and in turn, jbd's do_get_write_access calls
-> > lock_buffer.  Is that what you're referring to by "actually waits for buffer
-> > locks"?  I'm wondering how that helps us, since afaict PG_writeback doesn't get
-> > set in that path, and I think it's a little early to be setting PG_writeback
-> > anyway.
->   It does help us. In ext3 data writeback is done either by flusher thread,
-> that happens under PG_Writeback and generic code waits for that as need, or
-> by kjournald - that happens under buffer lock and as you properly observed
-> do_get_write_access() waits for that (and actually copies data that should
-> go to disk to a separate buffer if needed).
-
-Hm.  jbd2 calls generic_writepages to flush those buffers out, which sets
-PG_writeback like you'd expect.  It'd be nice if you could do that like ext4
-does... but then the ext3 writepage functions can call journal start/stop.
-
-Maybe we could call block_write_full_page directly?
-
-> > If the page has to be locked before the transaction starts, how much of a
-> > problem is it to set PG_writeback?  Even though that seems a bit early to be
-> > doing that?
->   Well, what you would need to make things consistent is to set
-> PG_writeback from kjournald so that all writeback happens with PG_writeback
-> set on the page. But setting has to happen while the page is locked and
-> kjournald can never block on page lock because that would cause
-> deadlocks...
-
-Right now we try to submit_bh() everything on commit->t_sync_datalist without
-the page lock.  I guess we could try to lock (and set writeback on) every page
-on that list, and anything that we can lock then goes on a new
-t_locked_for_sync list.  If we find a page that's already locked, simply back
-out to the main kjournald loop and try the whole mess again.  Once all the
-pages are on the locked_for_sync list, then we can unlock the pages and
-actually commit the transaction.
-
-But, uck, that feels like courting disaster.  Do people sleep with a page
-locked?  I'm unsure of the wisdom of making jbd do that.  Can we stall out
-forever if someone keeps shoving pages onto t_sync_data?
-
-I actually tried a dumb trylock_page loop in journal_do_submit_data, but it
-quickly stalled.
-
-Ok, enough rambling, I'll give a few of my harebrained suggestions a try and
-see what results.
-
---D
-> 
-> 									Honza
-> -- 
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
+Thanks,
+Nitin
