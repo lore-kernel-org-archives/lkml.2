@@ -1,89 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932784Ab2LHAjk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 19:39:40 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:33790 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932282Ab2LHAjj (ORCPT
+	id S932799Ab2LHAqi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 19:46:38 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:51871 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932227Ab2LHAqg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 19:39:39 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlkNAB2LwlB5LHa//2dsb2JhbABEhUyyeYV5F3OCHgEBBTocIxAIAw4KLhQlAyETHodywSIUjCuEQwOWBJBJgwc
-Date: Sat, 8 Dec 2012 11:39:36 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Ric Wheeler <rwheeler@redhat.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Chris Mason <chris.mason@fusionio.com>,
-        Chris Mason <clmason@fusionio.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Christoph Hellwig <hch@infradead.org>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH, 3.7-rc7, RESEND] fs: revert commit bbdd6808 to fallocate
- UAPI
-Message-ID: <20121208003936.GP27172@dastard>
-References: <20121206120532.GA14100@infradead.org>
- <20121207011628.GB16373@gmail.com>
- <50C22923.90102@redhat.com>
- <alpine.LFD.2.02.1212070956310.23641@air.linux-foundation.org>
- <20121207190306.GB14972@shiny>
- <20121207204325.GC29435@thunk.org>
- <20121207210932.GA25713@shiny>
- <50C262AE.5060701@redhat.com>
- <20121207215727.GF29435@thunk.org>
- <50C26778.7000500@redhat.com>
+	Fri, 7 Dec 2012 19:46:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50C26778.7000500@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121207005825.232489605@linuxfoundation.org>
+References: <20121207005825.232489605@linuxfoundation.org>
+Date: Fri, 7 Dec 2012 17:46:35 -0700
+Message-ID: <CAKocOOMkwXyp4uUDyhSj=LMiCoAMk0mqTb+Z3m0uxR218hmaRw@mail.gmail.com>
+Subject: Re: [ 00/27] 3.6.10-stable review
+From: Shuah Khan <shuahkhan@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 07, 2012 at 05:02:32PM -0500, Ric Wheeler wrote:
-> On 12/07/2012 04:57 PM, Theodore Ts'o wrote:
-> >On Fri, Dec 07, 2012 at 04:42:06PM -0500, Ric Wheeler wrote:
-> >>The other things that I think we should try would be to convert over
-> >>larger chunks as we discussed on the list back in the summer (just
-> >>because the user writes 4KB does not mean that we cannot flip over
-> >>1MB and zero that).
-> >Writing a megabyte is not free.  If you assume that your HDD has a
-> >sustained write throughput of 100-125 MB/s, writing a megabyte will
-> >take 8-10ms.  It might be a win if you amortize it over a large number
-> >of writes, but it doesn't help your 99.9 percentile latency numbers.
-> >(99.9 percentile latency numbers matters because eventually you'll
-> >have a user request which hits multiple serial long latency
-> >operations, and then the delay looks **really** user visible.)
-> >
-> >	    	     	       	     		- Ted
-> 
-> Writing 4KB at a time to a disk cost XX units of time.
-> 
-> Writing to the same sector (especially for a HDD), cost XX units + a small amount.
-> 
-> I suggest that we try it out.
-> 
-> For SSD's, much better to use specific HW offload commands if
-> possible like WRITE_SAME (zeroed) or UNMAP/TRIM to get that
-> performance boost since no actual data is moved...
+On Thu, Dec 6, 2012 at 5:58 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> This is the start of the stable review cycle for the 3.6.10 release.
+> There are 27 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Sun Dec  9 00:57:22 UTC 2012.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+>         kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.6.10-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
 
-Yup, that could be done quite trivially in XFS. Just mark the
-preallocated extents as "busy" rather than unwritten, mark the
-transaction as synchronous and the transaction commit will issue a
-discard on the preallocated ranges before returning to userspace.
-The extra overhead to the preallocation command is unlikely to be
-noticed, and unwritten extent conversion overhead just goes away...
+Patch applied cleanly and compiled and booted on the following systems:
 
-No fallocate() API changes necessary, though I think it would be
-better if the user application gave a hint that it preferred "writing
-zeros" (i.e. FALLOC_FL_WRITE_ZEROS) to allocating unwritten extents
-as there are workloads where one will always be clearly better than
-the other...
+HP EliteBook 6930p Intel(R) Core(TM)2 Duo CPU     T9400  @ 2.53GHz
+HP ProBook 6475b AMD A10-4600M APU with Radeon(tm) HD Graphics
 
-Cheers,
+Cross-compile tests
+alpha: defconfig passed
+arm: defconfig passed
+c6x: not applicable
+mips: defconfig passed
+mipsel: defconfig passed
+powerpc: wii_defconfig failed on 3.0.56 - fixed it and sending a patch.
+sh: defconfig passed on all
+sparc: defconfig passed on all
+tile: tilegx_defconfig passed on all
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+-- Shuah
