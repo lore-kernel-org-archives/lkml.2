@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757889Ab2LHGCr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Dec 2012 01:02:47 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:56407 "EHLO
+	id S1757919Ab2LHGuI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Dec 2012 01:50:08 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:59387 "EHLO
 	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751902Ab2LHGCp (ORCPT
+	with ESMTP id S1757904Ab2LHGuH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Dec 2012 01:02:45 -0500
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: tj@kernel.org, lizefan@huawei.com
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: [PATCH] Documentation: cgroup: update the index file
-Date: Sat,  8 Dec 2012 15:02:36 +0900
-Message-Id: <1354946557-7938-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sat, 8 Dec 2012 01:50:07 -0500
+Subject: Re: A typo about kernelcore= ?
+From: anish kumar <anish198519851985@gmail.com>
+To: Han Pingtian <hanpt@linux.vnet.ibm.com>, mgorman@suse.de
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <20121207070241.GA2464@localhost.localdomain>
+References: <20121207070241.GA2464@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 07 Dec 2012 22:48:56 -0800
+Message-ID: <1354949336.22178.4.camel@anish-Inspiron-N5050>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+On Fri, 2012-12-07 at 15:02 +0800, Han Pingtian wrote:
+> Hi there,
+> 
+> I'm wondering this is a typo in Documentation/kernel-parameters.txt
+> about "kernelcore=":
+>     
+>     .... In the event, a node is too small to have both
+>     kernelcore and Movable pages, kernelcore pages will
+>     take priority and other nodes will have a larger number
+>     of kernelcore pages.
+> 
+> I think it should be 
+> 
+>     .... In the event, a node is too small to have both
+>     kernelcore and Movable pages, kernelcore pages will
+>     take priority and other nodes will have a larger number
+>     of *Movable* pages.
+> 
+> Is it right? Thanks in advance!
+adding the maintainer.
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-There are new files added to cgroup documentation. Lets
-update the index file listing all the remaining files
-
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
----
- Documentation/cgroups/00-INDEX |    8 ++++++++
- 1 file changed, 8 insertions(+)
-
-diff --git a/Documentation/cgroups/00-INDEX b/Documentation/cgroups/00-INDEX
-index 3f58fa3..f78b90a 100644
---- a/Documentation/cgroups/00-INDEX
-+++ b/Documentation/cgroups/00-INDEX
-@@ -1,7 +1,11 @@
- 00-INDEX
- 	- this file
-+blkio-controller.txt
-+	- Description for Block IO Controller, implementation and usage details.
- cgroups.txt
- 	- Control Groups definition, implementation details, examples and API.
-+cgroup_event_listener.c
-+	- A user program for cgroup listener.
- cpuacct.txt
- 	- CPU Accounting Controller; account CPU usage for groups of tasks.
- cpusets.txt
-@@ -10,9 +14,13 @@ devices.txt
- 	- Device Whitelist Controller; description, interface and security.
- freezer-subsystem.txt
- 	- checkpointing; rationale to not use signals, interface.
-+hugetlb.txt
-+	- HugeTLB Controller implementation and usage details.
- memcg_test.txt
- 	- Memory Resource Controller; implementation details.
- memory.txt
- 	- Memory Resource Controller; design, accounting, interface, testing.
-+net_prio.txt
-+	- Network priority cgroups details and usages.
- resource_counter.txt
- 	- Resource Counter API.
--- 
-1.7.9.5
 
