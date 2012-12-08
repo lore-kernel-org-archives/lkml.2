@@ -1,340 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945Ab2LHOpa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Dec 2012 09:45:30 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49369 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752568Ab2LHOp3 (ORCPT
+	id S933324Ab2LHOp5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Dec 2012 09:45:57 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:36585 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933287Ab2LHOp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Dec 2012 09:45:29 -0500
-Date: Sat, 8 Dec 2012 06:44:52 -0800
-From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-cfffae2ef7029d38e71d337fbc2a9c6cf1fa5aaf@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1352508412-16914-8-git-send-email-jolsa@redhat.com>
-References: <1352508412-16914-8-git-send-email-jolsa@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tests:
-  Move perf_evsel__roundtrip_name_test into separate object
-Git-Commit-ID: cfffae2ef7029d38e71d337fbc2a9c6cf1fa5aaf
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sat, 8 Dec 2012 09:45:56 -0500
+Date: Sat, 8 Dec 2012 15:45:51 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [GIT PULL] cputime: cleanups
+Message-ID: <20121208144551.GE12011@gmail.com>
+References: <1353426161-18866-1-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 08 Dec 2012 06:44:58 -0800 (PST)
+In-Reply-To: <1353426161-18866-1-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cfffae2ef7029d38e71d337fbc2a9c6cf1fa5aaf
-Gitweb:     http://git.kernel.org/tip/cfffae2ef7029d38e71d337fbc2a9c6cf1fa5aaf
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Sat, 10 Nov 2012 01:46:47 +0100
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 14 Nov 2012 16:49:56 -0300
 
-perf tests: Move perf_evsel__roundtrip_name_test into separate object
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-Separating perf_evsel__roundtrip_name_test test from the builtin-test
-into evsel-roundtrip-name object.
+> Ingo,
+> 
+> Please pull the latest sched cleanups branch that can be found at
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+> 	tags/sched-cputime-for-mingo
+> 
+> for you to pull the HEAD 1b2852b152be5150fbef7b585388ec43cf6f4415
+> ("vtime: Warn if irqs aren't disabled on system time accounting APIs")
+> 
+> Thanks.
+> 
+> ---
+> Some more cputime cleanups:
+> 
+> * Get rid of underscores polluting the vtime namespace
+> 
+> * Consolidate context switch and tick handling
+> 
+> * Improve debuggability by detecting irq unsafe callers
+> 
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> ---
+> 
+> Frederic Weisbecker (5):
+>   vtime: Remove the underscore prefix invasion
+>   vtime: Explicitly account pending user time on process tick
+>   vtime: Consolidate a bit the ctx switch code
+>   vtime: No need to disable irqs on vtime_account()
+>   vtime: Warn if irqs aren't disabled on system time accounting APIs
+> 
+>  arch/ia64/include/asm/cputime.h    |    2 ++
+>  arch/ia64/kernel/time.c            |   26 ++++++--------------------
+>  arch/powerpc/include/asm/cputime.h |    2 ++
+>  arch/powerpc/kernel/time.c         |   24 ++++++++++--------------
+>  arch/s390/include/asm/cputime.h    |    1 +
+>  arch/s390/kernel/vtime.c           |   13 ++++++++++---
+>  include/linux/kernel_stat.h        |    8 ++++++++
+>  include/linux/kvm_host.h           |    4 ++--
+>  include/linux/vtime.h              |    9 +++++----
+>  kernel/sched/cputime.c             |   31 +++++++++++++++++++------------
+>  10 files changed, 65 insertions(+), 55 deletions(-)
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1352508412-16914-8-git-send-email-jolsa@redhat.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Makefile                     |   1 +
- tools/perf/tests/builtin-test.c         | 112 +------------------------------
- tools/perf/tests/evsel-roundtrip-name.c | 114 ++++++++++++++++++++++++++++++++
- tools/perf/tests/tests.h                |   1 +
- 4 files changed, 117 insertions(+), 111 deletions(-)
+Pulled, thanks Frederic!
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 2e5197a..ad6fcb5 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -437,6 +437,7 @@ LIB_OBJS += $(OUTPUT)tests/open-syscall-all-cpus.o
- LIB_OBJS += $(OUTPUT)tests/mmap-basic.o
- LIB_OBJS += $(OUTPUT)tests/perf-record.o
- LIB_OBJS += $(OUTPUT)tests/rdpmc.o
-+LIB_OBJS += $(OUTPUT)tests/evsel-roundtrip-name.o
- LIB_OBJS += $(OUTPUT)tests/util.o
- 
- BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 1e9a0ea..93f5e91 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -35,116 +35,6 @@ static int test__perf_pmu(void)
- 	return perf_pmu__test();
- }
- 
--static int perf_evsel__roundtrip_cache_name_test(void)
--{
--	char name[128];
--	int type, op, err = 0, ret = 0, i, idx;
--	struct perf_evsel *evsel;
--        struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
--
--        if (evlist == NULL)
--                return -ENOMEM;
--
--	for (type = 0; type < PERF_COUNT_HW_CACHE_MAX; type++) {
--		for (op = 0; op < PERF_COUNT_HW_CACHE_OP_MAX; op++) {
--			/* skip invalid cache type */
--			if (!perf_evsel__is_cache_op_valid(type, op))
--				continue;
--
--			for (i = 0; i < PERF_COUNT_HW_CACHE_RESULT_MAX; i++) {
--				__perf_evsel__hw_cache_type_op_res_name(type, op, i,
--									name, sizeof(name));
--				err = parse_events(evlist, name, 0);
--				if (err)
--					ret = err;
--			}
--		}
--	}
--
--	idx = 0;
--	evsel = perf_evlist__first(evlist);
--
--	for (type = 0; type < PERF_COUNT_HW_CACHE_MAX; type++) {
--		for (op = 0; op < PERF_COUNT_HW_CACHE_OP_MAX; op++) {
--			/* skip invalid cache type */
--			if (!perf_evsel__is_cache_op_valid(type, op))
--				continue;
--
--			for (i = 0; i < PERF_COUNT_HW_CACHE_RESULT_MAX; i++) {
--				__perf_evsel__hw_cache_type_op_res_name(type, op, i,
--									name, sizeof(name));
--				if (evsel->idx != idx)
--					continue;
--
--				++idx;
--
--				if (strcmp(perf_evsel__name(evsel), name)) {
--					pr_debug("%s != %s\n", perf_evsel__name(evsel), name);
--					ret = -1;
--				}
--
--				evsel = perf_evsel__next(evsel);
--			}
--		}
--	}
--
--	perf_evlist__delete(evlist);
--	return ret;
--}
--
--static int __perf_evsel__name_array_test(const char *names[], int nr_names)
--{
--	int i, err;
--	struct perf_evsel *evsel;
--        struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
--
--        if (evlist == NULL)
--                return -ENOMEM;
--
--	for (i = 0; i < nr_names; ++i) {
--		err = parse_events(evlist, names[i], 0);
--		if (err) {
--			pr_debug("failed to parse event '%s', err %d\n",
--				 names[i], err);
--			goto out_delete_evlist;
--		}
--	}
--
--	err = 0;
--	list_for_each_entry(evsel, &evlist->entries, node) {
--		if (strcmp(perf_evsel__name(evsel), names[evsel->idx])) {
--			--err;
--			pr_debug("%s != %s\n", perf_evsel__name(evsel), names[evsel->idx]);
--		}
--	}
--
--out_delete_evlist:
--	perf_evlist__delete(evlist);
--	return err;
--}
--
--#define perf_evsel__name_array_test(names) \
--	__perf_evsel__name_array_test(names, ARRAY_SIZE(names))
--
--static int perf_evsel__roundtrip_name_test(void)
--{
--	int err = 0, ret = 0;
--
--	err = perf_evsel__name_array_test(perf_evsel__hw_names);
--	if (err)
--		ret = err;
--
--	err = perf_evsel__name_array_test(perf_evsel__sw_names);
--	if (err)
--		ret = err;
--
--	err = perf_evsel__roundtrip_cache_name_test();
--	if (err)
--		ret = err;
--
--	return ret;
--}
--
- static int perf_evsel__test_field(struct perf_evsel *evsel, const char *name,
- 				  int size, bool should_be_signed)
- {
-@@ -382,7 +272,7 @@ static struct test {
- 	},
- 	{
- 		.desc = "roundtrip evsel->name check",
--		.func = perf_evsel__roundtrip_name_test,
-+		.func = test__perf_evsel__roundtrip_name_test,
- 	},
- 	{
- 		.desc = "Check parsing of sched tracepoints fields",
-diff --git a/tools/perf/tests/evsel-roundtrip-name.c b/tools/perf/tests/evsel-roundtrip-name.c
-new file mode 100644
-index 0000000..e61fc82
---- /dev/null
-+++ b/tools/perf/tests/evsel-roundtrip-name.c
-@@ -0,0 +1,114 @@
-+#include "evlist.h"
-+#include "evsel.h"
-+#include "parse-events.h"
-+#include "tests.h"
-+
-+static int perf_evsel__roundtrip_cache_name_test(void)
-+{
-+	char name[128];
-+	int type, op, err = 0, ret = 0, i, idx;
-+	struct perf_evsel *evsel;
-+        struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
-+
-+        if (evlist == NULL)
-+                return -ENOMEM;
-+
-+	for (type = 0; type < PERF_COUNT_HW_CACHE_MAX; type++) {
-+		for (op = 0; op < PERF_COUNT_HW_CACHE_OP_MAX; op++) {
-+			/* skip invalid cache type */
-+			if (!perf_evsel__is_cache_op_valid(type, op))
-+				continue;
-+
-+			for (i = 0; i < PERF_COUNT_HW_CACHE_RESULT_MAX; i++) {
-+				__perf_evsel__hw_cache_type_op_res_name(type, op, i,
-+									name, sizeof(name));
-+				err = parse_events(evlist, name, 0);
-+				if (err)
-+					ret = err;
-+			}
-+		}
-+	}
-+
-+	idx = 0;
-+	evsel = perf_evlist__first(evlist);
-+
-+	for (type = 0; type < PERF_COUNT_HW_CACHE_MAX; type++) {
-+		for (op = 0; op < PERF_COUNT_HW_CACHE_OP_MAX; op++) {
-+			/* skip invalid cache type */
-+			if (!perf_evsel__is_cache_op_valid(type, op))
-+				continue;
-+
-+			for (i = 0; i < PERF_COUNT_HW_CACHE_RESULT_MAX; i++) {
-+				__perf_evsel__hw_cache_type_op_res_name(type, op, i,
-+									name, sizeof(name));
-+				if (evsel->idx != idx)
-+					continue;
-+
-+				++idx;
-+
-+				if (strcmp(perf_evsel__name(evsel), name)) {
-+					pr_debug("%s != %s\n", perf_evsel__name(evsel), name);
-+					ret = -1;
-+				}
-+
-+				evsel = perf_evsel__next(evsel);
-+			}
-+		}
-+	}
-+
-+	perf_evlist__delete(evlist);
-+	return ret;
-+}
-+
-+static int __perf_evsel__name_array_test(const char *names[], int nr_names)
-+{
-+	int i, err;
-+	struct perf_evsel *evsel;
-+        struct perf_evlist *evlist = perf_evlist__new(NULL, NULL);
-+
-+        if (evlist == NULL)
-+                return -ENOMEM;
-+
-+	for (i = 0; i < nr_names; ++i) {
-+		err = parse_events(evlist, names[i], 0);
-+		if (err) {
-+			pr_debug("failed to parse event '%s', err %d\n",
-+				 names[i], err);
-+			goto out_delete_evlist;
-+		}
-+	}
-+
-+	err = 0;
-+	list_for_each_entry(evsel, &evlist->entries, node) {
-+		if (strcmp(perf_evsel__name(evsel), names[evsel->idx])) {
-+			--err;
-+			pr_debug("%s != %s\n", perf_evsel__name(evsel), names[evsel->idx]);
-+		}
-+	}
-+
-+out_delete_evlist:
-+	perf_evlist__delete(evlist);
-+	return err;
-+}
-+
-+#define perf_evsel__name_array_test(names) \
-+	__perf_evsel__name_array_test(names, ARRAY_SIZE(names))
-+
-+int test__perf_evsel__roundtrip_name_test(void)
-+{
-+	int err = 0, ret = 0;
-+
-+	err = perf_evsel__name_array_test(perf_evsel__hw_names);
-+	if (err)
-+		ret = err;
-+
-+	err = perf_evsel__name_array_test(perf_evsel__sw_names);
-+	if (err)
-+		ret = err;
-+
-+	err = perf_evsel__roundtrip_cache_name_test();
-+	if (err)
-+		ret = err;
-+
-+	return ret;
-+}
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index 03d428d..5897dd1 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -8,6 +8,7 @@ int test__open_syscall_event_on_all_cpus(void);
- int test__basic_mmap(void);
- int test__PERF_RECORD(void);
- int test__rdpmc(void);
-+int test__perf_evsel__roundtrip_name_test(void);
- 
- /* Util */
- int trace_event__id(const char *evname);
+	Ingo
