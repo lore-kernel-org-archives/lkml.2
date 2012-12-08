@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965550Ab2LHTb2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Dec 2012 14:31:28 -0500
-Received: from nm11-vm10.bullet.mail.gq1.yahoo.com ([98.136.218.127]:33319
-	"EHLO nm11-vm10.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751958Ab2LHTb1 (ORCPT
+	id S1030201Ab2LHTbq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Dec 2012 14:31:46 -0500
+Received: from nm3-vm6.bullet.mail.ne1.yahoo.com ([98.138.91.96]:32514 "EHLO
+	nm3-vm6.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965552Ab2LHTbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Dec 2012 14:31:27 -0500
-X-Greylist: delayed 324 seconds by postgrey-1.27 at vger.kernel.org; Sat, 08 Dec 2012 14:31:27 EST
+	Sat, 8 Dec 2012 14:31:44 -0500
+X-Greylist: delayed 354 seconds by postgrey-1.27 at vger.kernel.org; Sat, 08 Dec 2012 14:31:43 EST
 X-Yahoo-Newman-Property: ymail-5
-X-Yahoo-Newman-Id: 815481.70232.bm@omp1022.access.mail.sp2.yahoo.com
-X-YMail-OSG: MfNjzmQVM1mAdQBg2yB908htnWuNdEhJyY.wmjkhv0fOxZW
- x5E3U6AW1YEpP28uC8c8drOuw69F7FeClDWpqgKb0PGGD4pP6_dR7DqwwrpL
- X.FXHWxvzsKG.oj84TR9se8QCf1pOWBd7tUMstZbsDBm3BMsRWHpbZDXEF0P
- BdurXSusORqwHVJ2.CwvKkY3xCC4MxxNrR2i8pTCdyKmgOfaz6l07gEE3Wcl
- 5XNBR3bKZcejdegeDIIbLv._spY3zI1HslL_1XkiBlz.Dzi99aIfjuLn17mv
- V6DawyZQpJ.Zm9itZaW20j3uDJYzr1MIEWlYmay_NdRSxIqMdXRqnsM3qner
- IkpfVWUWWpzcxLj2ZGtD0D.EENSzFXzV_QWnbllETAy16Qn1yBvHndZhQKlV
- VSGnf04FELyt8JGltkGkYJFZH6IyE0KXa7YMDooQSnw8v.DJEYOpc
+X-Yahoo-Newman-Id: 263543.92185.bm@omp1014.access.mail.mud.yahoo.com
+X-YMail-OSG: UI_4YfIVM1ngsKEvOkj2tSGqmGdUxoDY1aPOPL.yE3Aos.x
+ s5TMjcvO9zL.beOKw_v7TAAk6BhzYYglTBbZfdSJp6k4NksGg2p6vcTu78zI
+ 3hOV6KUz0pM7mEx_wJC_q7H_vPiTiQTYYzxbnXDP0Bzf3oDVBYiWNb8qFecg
+ KpIzbP1jt7qObHxW0tg62jdS30GDMh0E6KYMT98XKHl8yc_C.8I2X1h35vUm
+ uh31PojJWsskTP1aKgxMwLr3kPBUc4Jg5YJ1ILUaKXcJfkF6_l9.jqtfMVL3
+ hOG0eL2.Wcu7e02cFp5.laDqafLExVwdnT8bwJoYb3eA5ZvanIKAhTuh5hdM
+ KoVAM0YLd_lyUM7xDhfldbau5CTE8jDDHoJ7gir83WHnWSWL._rDbstKKSA7
+ JtKZ4A2XZMTHwsqqJcxZx6x_dJj5l5ipBaOYFqRtTLG69PGuiPyiNoYPPQxj
+ nuEVgii2NOTi0iI8DXoHM6thAHCsenGjjvLWYnmE-
 X-Rocket-MIMEInfo: 001.001,CgEwAQEBAQ--
 X-RocketYMMF: webmember730
 X-Mailer: YahooMailRC/718 YahooMailWebService/0.8.128.478
-Message-ID: <1354994761.31915.YahooMailRC@web5702.biz.mail.ne1.yahoo.com>
-Date: Sat, 8 Dec 2012 11:26:01 -0800 (PST)
+Message-ID: <1354994746.16649.YahooMailRC@web5715.biz.mail.ne1.yahoo.com>
+Date: Sat, 8 Dec 2012 11:25:46 -0800 (PST)
 From: "Mrs. Keyondria Nkiambi" <group2partner@gmail.com>
 Reply-To: "Mrs. Keyondria Nkiambi" <keyondrian@gmail.com>
 Subject: Open the attached file for Partnership & Investment. Confidential.
 To: undisclosed recipients:;
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="-1206156689-350988908-1354994761=:31915"
+Content-Type: multipart/mixed; boundary="1178294230-1194122253-1354994746=:16649"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----1206156689-350988908-1354994761=:31915
+--1178294230-1194122253-1354994746=:16649
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: quoted-printable
 
 =0A
----1206156689-350988908-1354994761=:31915
+--1178294230-1194122253-1354994746=:16649
 Content-Type: application/msword; name=Keyondria
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="Keyondria Nkiambi & Son.doc"
@@ -648,4 +649,4 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AA==
 
----1206156689-350988908-1354994761=:31915--
+--1178294230-1194122253-1354994746=:16649--
