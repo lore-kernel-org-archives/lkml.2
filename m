@@ -1,248 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756095Ab2LHOtm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Dec 2012 09:49:42 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49433 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753169Ab2LHOtk (ORCPT
+	id S933367Ab2LHOtx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Dec 2012 09:49:53 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:41659 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753169Ab2LHOtt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Dec 2012 09:49:40 -0500
-Date: Sat, 8 Dec 2012 06:49:16 -0800
-From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-c81251e808fe2386e71990ecd49c408bb7cb4666@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
-        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1352508412-16914-12-git-send-email-jolsa@redhat.com>
-References: <1352508412-16914-12-git-send-email-jolsa@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tests: Final cleanup for builtin-test move
-Git-Commit-ID: c81251e808fe2386e71990ecd49c408bb7cb4666
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sat, 8 Dec 2012 09:49:49 -0500
+Date: Sat, 8 Dec 2012 15:49:44 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: David Howells <dhowells@redhat.com>
+Cc: Ingo Molnar <mingo.kernel.org@gmail.com>, hpa@zytor.com,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] UAPI: Disintegrate arch/x86/include/asm
+Message-ID: <20121208144944.GF12011@gmail.com>
+References: <26921.1354542035@warthog.procyon.org.uk>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 08 Dec 2012 06:49:22 -0800 (PST)
+In-Reply-To: <26921.1354542035@warthog.procyon.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c81251e808fe2386e71990ecd49c408bb7cb4666
-Gitweb:     http://git.kernel.org/tip/c81251e808fe2386e71990ecd49c408bb7cb4666
-Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Sat, 10 Nov 2012 01:46:51 +0100
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 14 Nov 2012 16:50:24 -0300
 
-perf tests: Final cleanup for builtin-test move
+* David Howells <dhowells@redhat.com> wrote:
 
-Final function renames to match test__* style and include cleanup.
+> 
+> Hi Ingo, Peter, Thomas,
+> 
+> Could you merge the x86 arch include disintegration into the tip git tree now
+> that the perf stuff has been dealt with?
+> 
+> Many thanks,
+> David
+> ---
+> The following changes since commit 7e5530af11be68f3109672aed59243f82e1272f0:
+> 
+>   Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2012-12-02 16:39:00 -0800)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.infradead.org/users/dhowells/linux-headers.git tags/disintegrate-x86-20121203
+> 
+> for you to fetch changes up to 7c258580403f18c0b326290253a04a8e38379663:
+> 
+>   UAPI: (Scripted) Disintegrate arch/x86/include/asm (2012-12-03 12:32:55 +0000)
+> 
+> ----------------------------------------------------------------
+> UAPI disintegration 2012-12-03
+> 
+> ----------------------------------------------------------------
+> David Howells (1):
+>       UAPI: (Scripted) Disintegrate arch/x86/include/asm
+> 
+>  arch/x86/include/asm/Kbuild                       |  26 ---
+>  arch/x86/include/asm/boot.h                       |   9 +-
+>  arch/x86/include/asm/debugreg.h                   |  79 +-------
+>  arch/x86/include/asm/e820.h                       |  74 +-------
+>  arch/x86/include/asm/hw_breakpoint.h              |   5 +-
+>  arch/x86/include/asm/ist.h                        |  17 +-
+>  arch/x86/include/asm/kvm_para.h                   |  99 +---------
+>  arch/x86/include/asm/mce.h                        | 119 +-----------
+>  arch/x86/include/asm/msr.h                        |  11 +-
+>  arch/x86/include/asm/mtrr.h                       |  93 +--------
+>  arch/x86/include/asm/posix_types.h                |  10 -
+>  arch/x86/include/asm/processor-flags.h            |  97 +---------
+>  arch/x86/include/asm/ptrace.h                     |  75 +-------
+>  arch/x86/include/asm/setup.h                      |   5 +-
+>  arch/x86/include/asm/sigcontext.h                 | 216 +--------------------
+>  arch/x86/include/asm/signal.h                     | 140 +-------------
+>  arch/x86/include/asm/svm.h                        | 132 +------------
+>  arch/x86/include/asm/unistd.h                     |  14 +-
+>  arch/x86/include/asm/vm86.h                       | 128 +------------
+>  arch/x86/include/asm/vmx.h                        |  89 +--------
+>  arch/x86/include/asm/vsyscall.h                   |  16 +-
+>  arch/x86/include/uapi/asm/Kbuild                  |  58 ++++++
+>  arch/x86/include/{ => uapi}/asm/a.out.h           |   0
+>  arch/x86/include/{ => uapi}/asm/auxvec.h          |   0
+>  arch/x86/include/{ => uapi}/asm/bitsperlong.h     |   0
+>  arch/x86/include/uapi/asm/boot.h                  |  10 +
+>  arch/x86/include/{ => uapi}/asm/bootparam.h       |   0
+>  arch/x86/include/{ => uapi}/asm/byteorder.h       |   0
+>  arch/x86/include/uapi/asm/debugreg.h              |  80 ++++++++
+>  arch/x86/include/uapi/asm/e820.h                  |  75 ++++++++
+>  arch/x86/include/{ => uapi}/asm/errno.h           |   0
+>  arch/x86/include/{ => uapi}/asm/fcntl.h           |   0
+>  arch/x86/include/{ => uapi}/asm/hyperv.h          |   0
+>  arch/x86/include/{ => uapi}/asm/ioctl.h           |   0
+>  arch/x86/include/{ => uapi}/asm/ioctls.h          |   0
+>  arch/x86/include/{ => uapi}/asm/ipcbuf.h          |   0
+>  arch/x86/include/uapi/asm/ist.h                   |  29 +++
+>  arch/x86/include/{ => uapi}/asm/kvm.h             |   0
+>  arch/x86/include/uapi/asm/kvm_para.h              | 100 ++++++++++
+>  arch/x86/include/{ => uapi}/asm/ldt.h             |   0
+>  arch/x86/include/uapi/asm/mce.h                   | 121 ++++++++++++
+>  arch/x86/include/{ => uapi}/asm/mman.h            |   0
+>  arch/x86/include/{ => uapi}/asm/msgbuf.h          |   0
+>  arch/x86/include/{ => uapi}/asm/msr-index.h       |   0
+>  arch/x86/include/uapi/asm/msr.h                   |  15 ++
+>  arch/x86/include/uapi/asm/mtrr.h                  | 117 ++++++++++++
+>  arch/x86/include/{ => uapi}/asm/param.h           |   0
+>  arch/x86/include/{ => uapi}/asm/perf_regs.h       |   0
+>  arch/x86/include/{ => uapi}/asm/poll.h            |   0
+>  arch/x86/include/uapi/asm/posix_types.h           |   9 +
+>  arch/x86/include/{ => uapi}/asm/posix_types_32.h  |   0
+>  arch/x86/include/{ => uapi}/asm/posix_types_64.h  |   0
+>  arch/x86/include/{ => uapi}/asm/posix_types_x32.h |   0
+>  arch/x86/include/{ => uapi}/asm/prctl.h           |   0
+>  arch/x86/include/uapi/asm/processor-flags.h       |  99 ++++++++++
+>  arch/x86/include/{ => uapi}/asm/ptrace-abi.h      |   0
+>  arch/x86/include/uapi/asm/ptrace.h                |  78 ++++++++
+>  arch/x86/include/{ => uapi}/asm/resource.h        |   0
+>  arch/x86/include/{ => uapi}/asm/sembuf.h          |   0
+>  arch/x86/include/{ => uapi}/asm/shmbuf.h          |   0
+>  arch/x86/include/uapi/asm/sigcontext.h            | 221 ++++++++++++++++++++++
+>  arch/x86/include/{ => uapi}/asm/sigcontext32.h    |   0
+>  arch/x86/include/{ => uapi}/asm/siginfo.h         |   0
+>  arch/x86/include/uapi/asm/signal.h                | 145 ++++++++++++++
+>  arch/x86/include/{ => uapi}/asm/socket.h          |   0
+>  arch/x86/include/{ => uapi}/asm/sockios.h         |   0
+>  arch/x86/include/{ => uapi}/asm/stat.h            |   0
+>  arch/x86/include/{ => uapi}/asm/statfs.h          |   0
+>  arch/x86/include/uapi/asm/svm.h                   | 132 +++++++++++++
+>  arch/x86/include/{ => uapi}/asm/swab.h            |   0
+>  arch/x86/include/{ => uapi}/asm/termbits.h        |   0
+>  arch/x86/include/{ => uapi}/asm/termios.h         |   0
+>  arch/x86/include/{ => uapi}/asm/types.h           |   0
+>  arch/x86/include/{ => uapi}/asm/ucontext.h        |   0
+>  arch/x86/include/uapi/asm/unistd.h                |  17 ++
+>  arch/x86/include/uapi/asm/vm86.h                  | 129 +++++++++++++
+>  arch/x86/include/uapi/asm/vmx.h                   | 109 +++++++++++
+>  arch/x86/include/uapi/asm/vsyscall.h              |  17 ++
+>  78 files changed, 1587 insertions(+), 1428 deletions(-)
+>  rename arch/x86/include/{ => uapi}/asm/a.out.h (100%)
+>  rename arch/x86/include/{ => uapi}/asm/auxvec.h (100%)
+>  rename arch/x86/include/{ => uapi}/asm/bitsperlong.h (100%)
+>  create mode 100644 arch/x86/include/uapi/asm/boot.h
+>  rename arch/x86/include/{ => uapi}/asm/bootparam.h (100%)
+>  rename arch/x86/include/{ => uapi}/asm/byteorder.h (100%)
+>  create mode 100644 arch/x86/include/uapi/asm/debugreg.h
+>  create mode 100644 arch/x86/include/uapi/asm/e820.h
+>  rename arch/x86/include/{ => uapi}/asm/errno.h (100%)
+>  rename arch/x86/include/{ => uapi}/asm/fcntl.h (100%)
+>  create mode 100644 arch/x86/include/uapi/asm/hw_breakpoint.h
+>  rename arch/x86/include/{ => uapi}/asm/hyperv.h (100%)
+>  rename arch/x86/include/{ => uapi}/asm/ioctl.h (100%)
+>  rename arch/x86/include/{ => uapi}/asm/ioctls.h (100%)
+>  rename arch/x86/include/{ => uapi}/asm/ipcbuf.h (100%)
+>  create mode 100644 arch/x86/include/uapi/asm/ist.h
+>  rename arch/x86/include/{ => uapi}/asm/kvm.h (100%)
+>  create mode 100644 arch/x86/include/uapi/asm/kvm_para.h
+>  rename arch/x86/include/{ => uapi}/asm/ldt.h (100%)
+>  create mode 100644 arch/x86/include/uapi/asm/mce.h
+>  rename arch/x86/include/{ => uapi}/asm/mman.h (100%)
+>  rename arch/x86/include/{ => uapi}/asm/msgbuf.h (100%)
+>  rename arch/x86/include/{ => uapi}/asm/msr-index.h (100%)
+>  create mode 100644 arch/x86/include/uapi/asm/msr.h
+>  create mode 100644 arch/x86/include/uapi/asm/mtrr.h
+>  rename arch/x86/include/{ => uapi}/asm/param.h (100%)
+>  rename arch/x86/include/{ => uapi}/asm/perf_regs.h (100%)
+>  rename arch/x86/include/{ => uapi}/asm/poll.h (100%)
+>  create mode 100644 arch/x86/include/uapi/asm/posix_types.h
+>  rename arch/x86/include/{ => uapi}/asm/posix_types_32.h (100%)
+>  rename arch/x86/include/{ => uapi}/asm/posix_types_64.h (100%)
+>  rename arch/x86/include/{ => uapi}/asm/posix_types_x32.h (100%)
+>  rename arch/x86/include/{ => uapi}/asm/prctl.h (100%)
+>  create mode 100644 arch/x86/include/uapi/asm/processor-flags.h
+>  rename arch/x86/include/{ => uapi}/asm/ptrace-abi.h (100%)
+>  create mode 100644 arch/x86/include/uapi/asm/ptrace.h
+>  rename arch/x86/include/{ => uapi}/asm/resource.h (100%)
+>  rename arch/x86/include/{ => uapi}/asm/sembuf.h (100%)
+>  create mode 100644 arch/x86/include/uapi/asm/setup.h
+>  rename arch/x86/include/{ => uapi}/asm/shmbuf.h (100%)
+>  create mode 100644 arch/x86/include/uapi/asm/sigcontext.h
+>  rename arch/x86/include/{ => uapi}/asm/sigcontext32.h (100%)
+>  rename arch/x86/include/{ => uapi}/asm/siginfo.h (100%)
+>  create mode 100644 arch/x86/include/uapi/asm/signal.h
+>  rename arch/x86/include/{ => uapi}/asm/socket.h (100%)
+>  rename arch/x86/include/{ => uapi}/asm/sockios.h (100%)
+>  rename arch/x86/include/{ => uapi}/asm/stat.h (100%)
+>  rename arch/x86/include/{ => uapi}/asm/statfs.h (100%)
+>  create mode 100644 arch/x86/include/uapi/asm/svm.h
+>  rename arch/x86/include/{ => uapi}/asm/swab.h (100%)
+>  rename arch/x86/include/{ => uapi}/asm/termbits.h (100%)
+>  rename arch/x86/include/{ => uapi}/asm/termios.h (100%)
+>  rename arch/x86/include/{ => uapi}/asm/types.h (100%)
+>  rename arch/x86/include/{ => uapi}/asm/ucontext.h (100%)
+>  create mode 100644 arch/x86/include/uapi/asm/unistd.h
+>  create mode 100644 arch/x86/include/uapi/asm/vm86.h
+>  create mode 100644 arch/x86/include/uapi/asm/vmx.h
+>  create mode 100644 arch/x86/include/uapi/asm/vsyscall.h
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1352508412-16914-12-git-send-email-jolsa@redhat.com
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/perf.h               |  1 -
- tools/perf/tests/attr.c         |  3 ++-
- tools/perf/tests/builtin-test.c | 34 +++++++---------------------------
- tools/perf/tests/dso-data.c     |  3 ++-
- tools/perf/tests/parse-events.c |  3 ++-
- tools/perf/tests/tests.h        |  3 +++
- tools/perf/util/parse-events.h  |  1 -
- tools/perf/util/symbol.h        |  1 -
- 8 files changed, 16 insertions(+), 33 deletions(-)
+So, I test-merged this and also the older version in 
+tip:x86/uapi into the same -git base, and got the following 
+differences:
 
-diff --git a/tools/perf/perf.h b/tools/perf/perf.h
-index 054182e..0047264 100644
---- a/tools/perf/perf.h
-+++ b/tools/perf/perf.h
-@@ -178,7 +178,6 @@ extern bool test_attr__enabled;
- void test_attr__init(void);
- void test_attr__open(struct perf_event_attr *attr, pid_t pid, int cpu,
- 		     int fd, int group_fd, unsigned long flags);
--int  test_attr__run(void);
- 
- static inline int
- sys_perf_event_open(struct perf_event_attr *attr,
-diff --git a/tools/perf/tests/attr.c b/tools/perf/tests/attr.c
-index 6e2feee..25638a9 100644
---- a/tools/perf/tests/attr.c
-+++ b/tools/perf/tests/attr.c
-@@ -27,6 +27,7 @@
- #include "../perf.h"
- #include "util.h"
- #include "exec_cmd.h"
-+#include "tests.h"
- 
- #define ENV "PERF_TEST_ATTR"
- 
-@@ -151,7 +152,7 @@ static int run_dir(const char *d, const char *perf)
- 	return system(cmd);
- }
- 
--int test_attr__run(void)
-+int test__attr(void)
- {
- 	struct stat st;
- 	char path_perf[PATH_MAX];
-diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index d3b95e0..186f675 100644
---- a/tools/perf/tests/builtin-test.c
-+++ b/tools/perf/tests/builtin-test.c
-@@ -4,31 +4,11 @@
-  * Builtin regression testing command: ever growing number of sanity tests
-  */
- #include "builtin.h"
--
--#include "util/cache.h"
--#include "util/color.h"
--#include "util/debug.h"
--#include "util/debugfs.h"
--#include "util/evlist.h"
--#include "util/machine.h"
--#include "util/parse-options.h"
--#include "util/parse-events.h"
--#include "util/symbol.h"
--#include "util/thread_map.h"
--#include "util/pmu.h"
--#include "event-parse.h"
--#include "../../include/linux/hw_breakpoint.h"
--
--#include <sys/mman.h>
--
--#include "util/cpumap.h"
--#include "util/evsel.h"
--#include <sys/types.h>
--
- #include "tests.h"
--
--#include <sched.h>
--
-+#include "debug.h"
-+#include "color.h"
-+#include "parse-options.h"
-+#include "symbol.h"
- 
- static struct test {
- 	const char *desc;
-@@ -52,7 +32,7 @@ static struct test {
- 	},
- 	{
- 		.desc = "parse events tests",
--		.func = parse_events__test,
-+		.func = test__parse_events,
- 	},
- #if defined(__x86_64__) || defined(__i386__)
- 	{
-@@ -70,7 +50,7 @@ static struct test {
- 	},
- 	{
- 		.desc = "Test dso data interface",
--		.func = dso__test_data,
-+		.func = test__dso_data,
- 	},
- 	{
- 		.desc = "roundtrip evsel->name check",
-@@ -86,7 +66,7 @@ static struct test {
- 	},
- 	{
- 		.desc = "struct perf_event_attr setup",
--		.func = test_attr__run,
-+		.func = test__attr,
- 	},
- 	{
- 		.func = NULL,
-diff --git a/tools/perf/tests/dso-data.c b/tools/perf/tests/dso-data.c
-index 0cd42fc..b5198f5 100644
---- a/tools/perf/tests/dso-data.c
-+++ b/tools/perf/tests/dso-data.c
-@@ -8,6 +8,7 @@
- 
- #include "machine.h"
- #include "symbol.h"
-+#include "tests.h"
- 
- #define TEST_ASSERT_VAL(text, cond) \
- do { \
-@@ -95,7 +96,7 @@ struct test_data_offset offsets[] = {
- 	},
- };
- 
--int dso__test_data(void)
-+int test__dso_data(void)
- {
- 	struct machine machine;
- 	struct dso *dso;
-diff --git a/tools/perf/tests/parse-events.c b/tools/perf/tests/parse-events.c
-index b49c2ee..f2a82d0 100644
---- a/tools/perf/tests/parse-events.c
-+++ b/tools/perf/tests/parse-events.c
-@@ -4,6 +4,7 @@
- #include "evlist.h"
- #include "sysfs.h"
- #include "../../../include/linux/hw_breakpoint.h"
-+#include "tests.h"
- 
- #define TEST_ASSERT_VAL(text, cond) \
- do { \
-@@ -1086,7 +1087,7 @@ static int test_pmu_events(void)
- 	return ret;
- }
- 
--int parse_events__test(void)
-+int test__parse_events(void)
- {
- 	int ret1, ret2 = 0;
- 
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
-index 88a55df..fc121ed 100644
---- a/tools/perf/tests/tests.h
-+++ b/tools/perf/tests/tests.h
-@@ -12,6 +12,9 @@ int test__perf_evsel__roundtrip_name_test(void);
- int test__perf_evsel__tp_sched_test(void);
- int test__syscall_open_tp_fields(void);
- int test__pmu(void);
-+int test__attr(void);
-+int test__dso_data(void);
-+int test__parse_events(void);
- 
- /* Util */
- int trace_event__id(const char *evname);
-diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
-index ac9a6aa..f639937 100644
---- a/tools/perf/util/parse-events.h
-+++ b/tools/perf/util/parse-events.h
-@@ -99,7 +99,6 @@ void parse_events__set_leader(char *name, struct list_head *list);
- void parse_events_update_lists(struct list_head *list_event,
- 			       struct list_head *list_all);
- void parse_events_error(void *data, void *scanner, char const *msg);
--int parse_events__test(void);
- 
- void print_events(const char *event_glob, bool name_only);
- void print_events_type(u8 type);
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 04ccf29..de68f98 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -224,7 +224,6 @@ size_t symbol__fprintf_symname(const struct symbol *sym, FILE *fp);
- size_t symbol__fprintf(struct symbol *sym, FILE *fp);
- bool symbol_type__is_a(char symbol_type, enum map_type map_type);
- 
--int dso__test_data(void);
- int dso__load_sym(struct dso *dso, struct map *map, struct symsrc *syms_ss,
- 		  struct symsrc *runtime_ss, symbol_filter_t filter,
- 		  int kmodule);
+ arch/x86/include/asm/Kbuild           |   7 ++
+ arch/x86/include/asm/perf_regs.h      |  33 ---------
+ arch/x86/include/asm/svm.h            | 132 +---------------------------------
+ arch/x86/include/asm/vmx.h            |  89 +----------------------
+ arch/x86/include/uapi/asm/Kbuild      |   3 +
+ arch/x86/include/uapi/asm/perf_regs.h |  33 +++++++++
+ arch/x86/include/uapi/asm/svm.h       | 132 ++++++++++++++++++++++++++++++++++
+ arch/x86/include/uapi/asm/vmx.h       | 109 ++++++++++++++++++++++++++++
+ 8 files changed, 289 insertions(+), 249 deletions(-)
+
+What are these changes - it seems perf and KVM related.
+
+Is the latest version above 100% bug-free, with no known 
+problems whatsoever?
+
+Thanks,
+
+	Ingo
