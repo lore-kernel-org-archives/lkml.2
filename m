@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932916Ab2LHDn2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 22:43:28 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44935 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932887Ab2LHDn1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 22:43:27 -0500
-Message-ID: <50C2B751.5000507@zytor.com>
-Date: Fri, 07 Dec 2012 19:43:13 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S932944Ab2LHDzI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 22:55:08 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:45895 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932927Ab2LHDzG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 7 Dec 2012 22:55:06 -0500
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1+V6mBGIp6VHl5YSgQdprNqZs7Pk/1p1bDZz0QYgo
+	Aj0RGdWUb5pVld
+From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
+To: Kent Yoder <key@linux.vnet.ibm.com>
+Subject: Re: [PATCH] char/tpm: Use struct dev_pm_ops for power management
+Date: Sat, 8 Dec 2012 04:55:47 +0100
+User-Agent: KMail/1.13.7 (Linux/3.6.9; KDE/4.8.5; x86_64; ; )
+Cc: Mathias LEBLANC <Mathias.LEBLANC@st.com>,
+        "Jean-Luc BLANC" <jean-luc.blanc@st.com>,
+        "Sirrix@jasper.es" <Sirrix@jasper.es>, linux-kernel@vger.kernel.org,
+        Rajiv Andrade <mail@srajiv.net>,
+        "tpmdd-devel@lists.sourceforge.net" 
+	<tpmdd-devel@lists.sourceforge.net>,
+        Kent Yoder <shpedoikal@gmail.com>
+References: <20121205230941.GA30394@ennui.austin.ibm.com> <1354753251-27561-1-git-send-email-peterhuewe@gmx.de> <20121206162702.GC27430@ennui.austin.ibm.com>
+In-Reply-To: <20121206162702.GC27430@ennui.austin.ibm.com>
 MIME-Version: 1.0
-To: James Hogan <james.hogan@imgtec.com>
-CC: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Balbir Singh <bsingharora@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Paris <eparis@redhat.com>, Will Drewry <wad@chromium.org>,
-        James Morris <james.l.morris@oracle.com>
-Subject: Re: [PATCH v2 03/44] Add CONFIG_HAVE_64BIT_ALIGNED_STRUCT for taskstats
-References: <1354723742-6195-1-git-send-email-james.hogan@imgtec.com> <1354723742-6195-4-git-send-email-james.hogan@imgtec.com>
-In-Reply-To: <1354723742-6195-4-git-send-email-james.hogan@imgtec.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201212080455.47586.PeterHuewe@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/05/2012 08:08 AM, James Hogan wrote:
-> On 64 bit architectures with no efficient unaligned access, taskstats
-> has to add some padding to a reply to prevent unaligned access warnings.
-> However this also needs to apply to 32 bit architectures with 64 bit
-> struct alignment such as metag (which has 64 bit memory accesses).
+Am Donnerstag, 6. Dezember 2012, 17:27:02 schrieb Kent Yoder:
+> On Thu, Dec 06, 2012 at 01:20:51AM +0100, Peter Huewe wrote:
+> > This patch converts the suspend and resume functions for
+> > tpm_i2c_stm_st33 to the new dev_pm_ops.
+> > 
+> > Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+> 
+>   One minor tweak, the PM funcs need to be inside CONFIG_PM_SLEEP to
+> avoid warnings when compiled without PM support.  Applied with that
+> change only.
+> 
+> Thanks Peter!
+> Kent
+Great to hear!
 
-Wait... 64-bit struct alignment on structures with only 32-bit members? 
-  That might be... interesting... in a number of places...
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Peter
