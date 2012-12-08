@@ -1,105 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758026Ab2LHLQi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Dec 2012 06:16:38 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:44762 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756665Ab2LHLQg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Dec 2012 06:16:36 -0500
-Date: Sat, 8 Dec 2012 12:16:29 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Eric =?iso-8859-15?Q?B=E9nard?= <ebenard@eukrea.com>
-Subject: Re: [PATCH v2] ARM: eukrea_mbimx27-baseboard - use stock
- get_pendown_state() in ads7846
-Message-ID: <20121208111629.GG10369@pengutronix.de>
-References: <20121124082529.GA7687@core.coreip.homeip.net>
- <20121127074209.GL10369@pengutronix.de>
- <20121127090356.GA25658@core.coreip.homeip.net>
+	id S932630Ab2LHL0x (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Dec 2012 06:26:53 -0500
+Received: from londo.lunn.ch ([80.238.139.98]:56137 "EHLO londo.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751603Ab2LHL0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Dec 2012 06:26:51 -0500
+Date: Sat, 8 Dec 2012 12:26:24 +0100
+From: Andrew Lunn <andrew@lunn.ch>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Olof Johansson <olof@lixom.net>,
+        Mike Turquette <mturquette@linaro.org>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@googlemail.com>
+Subject: Re: [PATCH] ARM: Orion: Hoist bridge interrupt handling out of the
+ timer
+Message-ID: <20121208112624.GD25315@lunn.ch>
+References: <20121207225507.GB29262@obsidianresearch.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121127090356.GA25658@core.coreip.homeip.net>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 12:16:21 up 168 days,  2:28, 21 users,  load average: 1.74, 1.70,
- 3.37
+In-Reply-To: <20121207225507.GB29262@obsidianresearch.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 27, 2012 at 01:03:56AM -0800, Dmitry Torokhov wrote:
-> The default implementation matches exactly our custom one so we can switch
-> to using the default one. As a bonus the driver will take care of setting
-> GPIO line for us.
+On Fri, Dec 07, 2012 at 03:55:07PM -0700, Jason Gunthorpe wrote:
+> The intent of this patch is to expose the other bridge cause
+> interrupts to users in the kernel.
 > 
-> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> - Add orion_bridge_irq_init to create a new edge triggered interrupt
+>   chip based on the bridge cause register
+> - Remove all interrupt register code from time.c and use normal
+>   interrupt functions instead
+> - Update the machines that use orion_time_init to call
+>   orion_bridge_irq_init and use the new signature
 
-Applied, thanks
+Hi Jason
 
-Sascha
+I like the idea, but i think it needs to go a bit further. 
 
-> ---
-> 
-> Adjusted to use IMX_GPIO_NR() macro.
-> 
->  arch/arm/mach-imx/eukrea_mbimx27-baseboard.c |   19 +------------------
->  1 file changed, 1 insertion(+), 18 deletions(-)
-> 
-> diff --git a/arch/arm/mach-imx/eukrea_mbimx27-baseboard.c b/arch/arm/mach-imx/eukrea_mbimx27-baseboard.c
-> index 98aef57..f361143 100644
-> --- a/arch/arm/mach-imx/eukrea_mbimx27-baseboard.c
-> +++ b/arch/arm/mach-imx/eukrea_mbimx27-baseboard.c
-> @@ -238,24 +238,8 @@ static const struct imxuart_platform_data uart_pdata __initconst = {
->  	.flags = IMXUART_HAVE_RTSCTS,
->  };
+1) It should have an IRQ domain, like the other IRQ chips we have.
+2) It should have a DT binding, like the other IRQ chips we have.
+3) We then pass the timer interrupt via DT to the timer driver.
+4) We than pass the watchdog interrupt via DT.
+
+We plan to remove old style platforms in the next few cycles, so its
+important that changes like this are orientated towards DT but have
+the necessary backward compatibility for the old ways for the boards
+not yet converted. I think for Dove all boards are DT based...
+
+3) is not so simple, because we currently don't have a timer binding
+for Orion SoC. However, with this cleanup, we are much closer to being
+able to use the 370/XP timer code.
+
+
+> @@ -534,8 +535,9 @@ static void __init kirkwood_timer_init(void)
+>  {
+>  	kirkwood_tclk = kirkwood_find_tclk();
 >  
-> -#define ADS7846_PENDOWN (GPIO_PORTD | 25)
-> -
-> -static void __maybe_unused ads7846_dev_init(void)
-> -{
-> -	if (gpio_request(ADS7846_PENDOWN, "ADS7846 pendown") < 0) {
-> -		printk(KERN_ERR "can't get ads7846 pen down GPIO\n");
-> -		return;
-> -	}
-> -	gpio_direction_input(ADS7846_PENDOWN);
-> -}
-> -
-> -static int ads7846_get_pendown_state(void)
-> -{
-> -	return !gpio_get_value(ADS7846_PENDOWN);
-> -}
-> -
->  static struct ads7846_platform_data ads7846_config __initdata = {
-> -	.get_pendown_state	= ads7846_get_pendown_state,
-> +	.gpio_pendown		= IMX_GPIO_NR(4, 25),
->  	.keep_vref_on		= 1,
->  };
->  
-> @@ -323,7 +307,6 @@ void __init eukrea_mbimx27_baseboard_init(void)
->  	|| defined(CONFIG_TOUCHSCREEN_ADS7846_MODULE)
->  	/* ADS7846 Touchscreen controller init */
->  	mxc_gpio_mode(GPIO_PORTD | 25 | GPIO_GPIO | GPIO_IN);
-> -	ads7846_dev_init();
->  #endif
->  
->  	/* SPI_CS0 init */
-> 
+> -	orion_time_init(BRIDGE_VIRT_BASE, BRIDGE_INT_TIMER1_CLR,
+> -			IRQ_KIRKWOOD_BRIDGE, kirkwood_tclk);
+> +	orion_bridge_irq_init(IRQ_KIRKWOOD_BRIDGE, IRQ_KIRKWOOD_BRIDGE_START,
+> +			      BRIDGE_CAUSE);
+> +	orion_time_init(IRQ_KIRKWOOD_BRIDGE_TIMER1, kirkwood_tclk);
+>  }
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+I think it would be better to do this in kirkwood_init_irq(). Same for
+the other platforms. 
+
+> +static void bridge_irq_handler(unsigned irq, struct irq_desc *desc)
+> +{
+> +	struct irq_chip_generic *gc = irq_get_handler_data(irq);
+> +	u32 cause;
+> +	int i;
+> +
+> +	cause = readl(gc->reg_base) & readl(gc->reg_base + 4);
+
+Could you add a #define for this 4. I guess its an interrupt enable
+mask? Could regs.mask be used?
+
+> +	for (i = 0; i < 6; i++)
+> +		if ((cause & (1 << i)))
+> +			generic_handle_irq(i + gc->irq_base);
+> +}
+> +
+> +static void irq_gc_eoi_inv(struct irq_data *d)
+> +{
+> +	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+> +	u32 mask = 1 << (d->irq - gc->irq_base);
+> +	struct irq_chip_regs *regs;
+> +
+> +	regs = &container_of(d->chip, struct irq_chip_type, chip)->regs;
+> +	irq_gc_lock(gc);
+> +	irq_reg_writel(~mask, gc->reg_base + regs->eoi);
+> +	irq_gc_unlock(gc);
+> +}
+> +
+> +void __init orion_bridge_irq_init(unsigned int bridge_irq,
+> +				  unsigned int irq_start,
+> +				  void __iomem *causeaddr)
+> +{
+> +	struct irq_chip_generic *gc;
+> +	struct irq_chip_type *ct;
+> +
+> +	gc = irq_alloc_generic_chip("orion_irq_edge", 1, irq_start,
+
+Maybe the name orion_bridge would be better?
+
+Thanks
+      Andrew
