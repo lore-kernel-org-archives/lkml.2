@@ -1,113 +1,315 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933080Ab2LHMMf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Dec 2012 07:12:35 -0500
-Received: from mga03.intel.com ([143.182.124.21]:65189 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932225Ab2LHMMe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Dec 2012 07:12:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,243,1355126400"; 
-   d="scan'208";a="177854020"
-Message-ID: <50C32E92.1060906@intel.com>
-Date: Sat, 08 Dec 2012 20:12:02 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S933098Ab2LHMPF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Dec 2012 07:15:05 -0500
+Received: from nm13.bullet.mail.bf1.yahoo.com ([98.139.212.172]:20447 "EHLO
+	nm13.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932325Ab2LHMPB convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 8 Dec 2012 07:15:01 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 251948.71774.bm@omp1061.mail.bf1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=qGRCcNlkS5E9rfaYOGmCleG8By8rcUhZY9IjwkVW6ldYn6wwxRKk1UuRoMQMoDNzgXG4Yi/J7OCh9y/4k5ifuRdJfgTebDtYqtGyvjlwihQIw4pCMBzgmPrGGgOm7PtXoVUP6zy7LcIl4Ni6OZeNKmRlM0n7wJKMMuyXKL9pdVs=;
+X-YMail-OSG: 4o1ehvwVM1nCQ4_pEPP3ln60Jcf4XNpUELpLnJ4kWhHd45I
+ c4Nqo7NqBm6db2_kRN0ineoFPbKAaQBniax7p.2Yh9XBAXnnnfMI8G4f57cj
+ 0ctXTqYVrRXDdoIuB1ofBVpwxffnB86nAcrEcKZp8rOjOa7HJBnrafgQsvDL
+ OXyILUimVyEFore7Ox9szvJYMTM8DypYuhlGPez8SedFZ4_595aE50fLQggo
+ LC7b6x6sg7SCNIOZ_8xQHdwT9PkmEX4w0D1wTjKOXWn.O4Y5LFeQN8DNU4_k
+ QnNb6e1k.tY21ifEqw2LilIfIHxm5stF6bb_hwEKhpc41r7L3jJYRr2x3V5k
+ UaciF2caaykajR8_hug9pp9wKU4ENyHzQncG4CtOJb5arn6AAS8TDEABLc8U
+ phxfb07__5uE1tZXQuFQQ805.ZxhwHYEzxfnBOUUaVEszcKLxi555an5gd8B
+ jJwlKNGVVRLxLOLVmg3S1pDO.bhGycmTbXzjnDn55PRH27dx0yIiF4oCWAAI
+ HiCwzaTUknxs2d0faZu23L443F29IWRnRU9TFxje9RYQkMGzyK0LLnnOBvgX
+ XLptVXE5nfiqUEqY79BH4NopSYd90DoiCgwZhmOYOqACot1UxoVkd14LBUwP
+ uVCfSwMBvrQCNE1sTjpo4olJR8OZjGkOJnZnsjJ7v1WSCkr_9ii1XA0eNWnH
+ h.QmS5PIdDmQJjcSov1gDJyxE3yhSO8xcR4xwInkiJEQuphpMVpLp8BEH9l2
+ rkpQLQEY_93vbmQuoJmmn3Hg.rQh2.pQnB1tjnBU6ikWQWHXKh_8-
+X-Rocket-MIMEInfo: 001.001,UGxlYXNlIGNjIG1lIG9uIHJlcGxpZXMgYXMgSSBhbSBub3QgYSByZWd1bGFyIHN1YnNjcmliZXIgdG8gbGttbC4gwqBUaGFuayB5b3UuCgoKCkkgdGVzdGVkIHRoZSBhdHRhY2hlZCBwYXRjaCB3cml0dGVuwqBieSBBbmRyw6kgUmFtbml0esKgdXNpbmcgdGhyZWUgZGlmZmVyZW50IG1hY2hpbmVzIHJ1bm5pbmcgYSBnZW5lcmljIHg4Ni02NCBrZXJuZWwgYW5kIGFuIG90aGVyd2lzZSBpZGVudGljYWwga2VybmVsIHJ1bm5pbmcgd2l0aCB0aGUgb3B0aW1pemVkIGdjYyBvcHRpb25zLsKgCgpDb25jbHVzaW9uOiABMAEBAQE-
+X-Mailer: YahooMailWebService/0.8.128.478
+References: <1354745355.79857.YahooMailNeo@web140001.mail.bf1.yahoo.com> <20121205222738.GB6239@liondog.tnic> <1354748412.17691.YahooMailNeo@web140005.mail.bf1.yahoo.com> <20121205230835.GF6222@liondog.tnic>
+Message-ID: <1354968839.35825.YahooMailNeo@web140006.mail.bf1.yahoo.com>
+Date: Sat, 8 Dec 2012 04:13:59 -0800 (PST)
+From: John <da_audiophile@yahoo.com>
+Reply-To: John <da_audiophile@yahoo.com>
+Subject: [PATCH] Expand CPU compiler options
+To: Borislav Petkov <bp@alien8.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20121205230835.GF6222@liondog.tnic>
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: npiggin@kernel.dk, mingo@redhat.com, peterz@infradead.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Mike Galbraith <efault@gmx.de>
-Subject: Re: [PATCH 02/10] sched: fix find_idlest_group mess logical
-References: <1354542848-29638-1-git-send-email-alex.shi@intel.com> <1354542848-29638-3-git-send-email-alex.shi@intel.com> <CAFTL4hz=PQZuSsF_6--i5BmiJGVxXngdQjDRD4gx4-SwDk36zw@mail.gmail.com> <50C14747.9060707@intel.com> <CAFTL4hyVx6otU=PBsXLbd3dqsdem9CXPaxetp_zz+8UhqsS=hw@mail.gmail.com>
-In-Reply-To: <CAFTL4hyVx6otU=PBsXLbd3dqsdem9CXPaxetp_zz+8UhqsS=hw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/07/2012 04:33 PM, Frederic Weisbecker wrote:
-> 2012/12/7 Alex Shi <alex.shi@intel.com>:
->> On 12/07/2012 08:56 AM, Frederic Weisbecker wrote:
->>> 2012/12/3 Alex Shi <alex.shi@intel.com>:
->>>> There is 4 situations in the function:
->>>> 1, no task allowed group;
->>>>         so min_load = ULONG_MAX, this_load = 0, idlest = NULL
->>>> 2, only local group task allowed;
->>>>         so min_load = ULONG_MAX, this_load assigned, idlest = NULL
->>>> 3, only non-local task group allowed;
->>>>         so min_load assigned, this_load = 0, idlest != NULL
->>>> 4, local group + another group are task allowed.
->>>>         so min_load assigned, this_load assigned, idlest != NULL
->>>>
->>>> Current logical will return NULL in first 3 kinds of scenarios.
->>>> And still return NULL, if idlest group is heavier then the
->>>> local group in the 4th situation.
->>>>
->>>> Actually, I thought groups in situation 2,3 are also eligible to host
->>>> the task. And in 4th situation, agree to bias toward local group.
->>>> So, has this patch.
->>>
->>> The way I understand the loop that use this in select_task_rq_fair() is:
->>>
->>> a) start from the highest domain level we are allowed to run to
->>> migrate the task in
->>> b) from that top level domain, find the idlest group. If the idlest
->>> group contains current CPU, zoom in the child domain and repeat b). If
->>> the idlest group doesn't contain the current CPU, pick the idlest CPU
->>> from that group.
->>> c) In the end if we found no idler target than current CPU, then take it.
->>>
->>> So if you also return a group that contains current CPU from
->>> find_idlest_group(), you don't recursively zoom in the child domain
->>> anymore. find_idlest_cpu() will fix that for you but it may come with
->>> some cost because now it iterates through every CPUs, or may be half
->>> of them.
->>
->> Not exactly, the old logical won't select cpu from group of situation 2
->> and 3. That is wrong. and may cause the task keep stay on prev_cpu even
->> there are still other idler and allowed cpu exist.
-> 
-> For situation 2 I don't understand the issue. If current CPU belong to
-> idlest group we want to zoom in our lookup until we find something an
-> idler group than the current CPU's? If we eventually don't find it,
-> then we fallback to current CPU, don't we?
-
-fallback to current CPU is not the best choice here. :)
-The meaning to release situation 2 is that this_cpu may not the idlest
-cpu even in local group. there maybe other idlers in the  local group.
-But the old logical will refuse to select idlest cpu from the local
-group, just there is no other group eligible. that is the problem.
-
-> 
-> I just have a doubt to express. How does the final leaf child domain
-> look like? Is it made of current CPU only or can it contain other
-> siblings? In the first case we are fine. In the second one, if this
-> domain is made of only one group of several CPUs, we are skipping the
-> find_idlest_cpu() call for that group and choose this_cpu by default.
-> Which is probably suboptimized?
-
-In most of time, the domain is not leaf child domain. and even with leaf
-child and single group domain, find_idlest_cpu will return quickly, that
-should not cause much trouble.
-> 
-> Concerning situation 3, if this_cpu is not a CPU allowed by the task,
-> we may indeed have an issue because find_idlest_group() doesn't seem
-> to be selecting non-local groups in this case.
-
-thanks!
-
- But your current fix
-> still breaks the recursive find_idlest_group() on other cases and may
-> not scale with big number of CPUs.
-> 
-
-I don't understand recursive fig can scale with big number CPU. :)
-Actually, this patch set just show 10+% performance gain on hackbench
-with big machines, while just 0~2% performance gain on 2 sockets machine.
+Please cc me on replies as I am not a regular subscriber to lkml.  Thank you.
 
 
--- 
-Thanks
-    Alex
+
+I tested the attached patch written by André Ramnitz using three different machines running a generic x86-64 kernel and an otherwise identical kernel running with the optimized gcc options. 
+
+Conclusion: There are small but real speed increases using a make endpoint to running with this patch.
+
+Details:
+1) Three test machines: Intel Xeon X3360, Intel i7-2620M, Intel Core i7-3660K.
+
+2) All ran the make benchmark (linked below) 35 times while booted into a 'generic' kernel. Then all ran the same make benchmark 35 times after booting into an optimized kernel. Below are the optimizations chosen for each machine.
+2a) X3360 = core2
+2b) i7-2620M = corei7-avx
+2c) i7-3660K = core-avx-i
+3) Analyzed resulting distributions for statistical significance via ANOVA plots that clearly show statistically significant albeit small differences.
+
+Links to ANOVA plots:
+http://s19.postimage.org/68urcofzn/corei7_avx.png
+http://s19.postimage.org/ozwomuak3/core_avx_i.png
+
+http://s19.postimage.org/d0l6fj4z7/core2.png
+
+
+References:
+
+Bash script that controls the benchmark: https://github.com/graysky2/bin/blob/master/bench
+Log file generated by script: http://repo-ck.com/bench/compile_time_optimization.txt.gz
+
+---
+--- linux-3.6/arch/x86/include/asm/module.h2012-04-29 18:43:58.239336240 -0700
++++ linux-3.6.mod/arch/x86/include/asm/module.h2012-04-29 18:43:41.609545221 -0700
+@@ -17,6 +17,14 @@
+ #define MODULE_PROC_FAMILY "586MMX "
+ #elif defined CONFIG_MCORE2
+ #define MODULE_PROC_FAMILY "CORE2 "
++#elif defined CONFIG_MCOREI7
++#define MODULE_PROC_FAMILY "COREI7 "
++#elif defined CONFIG_MCOREI7AVX
++#define MODULE_PROC_FAMILY "COREI7AVX "
++#elif defined CONFIG_MCOREAVXI
++#define MODULE_PROC_FAMILY "COREAVXI "
++#elif defined CONFIG_MCOREAVX2
++#define MODULE_PROC_FAMILY "COREAVX2 "
+ #elif defined CONFIG_MATOM
+ #define MODULE_PROC_FAMILY "ATOM "
+ #elif defined CONFIG_M686
+@@ -35,6 +43,14 @@
+ #define MODULE_PROC_FAMILY "K7 "
+ #elif defined CONFIG_MK8
+ #define MODULE_PROC_FAMILY "K8 "
++#elif defined CONFIG_MBARCELONA
++#define MODULE_PROC_FAMILY "BARCELONA "
++#elif defined CONFIG_MBOBCAT
++#define MODULE_PROC_FAMILY "BOBCAT "
++#elif defined CONFIG_MBULLDOZER
++#define MODULE_PROC_FAMILY "BULLDOZER "
++#elif defined CONFIG_MPILEDRIVER
++#define MODULE_PROC_FAMILY "PILEDRIVER "
+ #elif defined CONFIG_MELAN
+ #define MODULE_PROC_FAMILY "ELAN "
+ #elif defined CONFIG_MCRUSOE
+--- linux-3.6/arch/x86/Kconfig.cpu2012-04-29 18:43:58.249336198 -0700
++++ linux-3.6.mod/arch/x86/Kconfig.cpu2012-04-29 18:40:46.091751798 -0700
+@@ -147,7 +147,7 @@
+ 
+ 
+ config MK6
+-bool "K6/K6-II/K6-III"
++bool "AMD K6/K6-II/K6-III"
+ depends on X86_32
+ ---help---
+   Select this for an AMD K6-family processor.  Enables use of
+@@ -155,7 +155,7 @@
+   flags to GCC.
+ 
+ config MK7
+-bool "Athlon/Duron/K7"
++bool "AMD Athlon/Duron/K7"
+ depends on X86_32
+ ---help---
+   Select this for an AMD Athlon K7-family processor.  Enables use of
+@@ -163,12 +163,40 @@
+   flags to GCC.
+ 
+ config MK8
+-bool "Opteron/Athlon64/Hammer/K8"
++bool "AMD Opteron/Athlon64/Hammer/K8"
+ ---help---
+   Select this for an AMD Opteron or Athlon64 Hammer-family processor.
+   Enables use of some extended instructions, and passes appropriate
+   optimization flags to GCC.
+ 
++config MBARCELONA
++bool "AMD Barcelona"
++---help---
++  Select this for AMD Barcelona and newer processors.
++
++  Enables -march=barcelona
++
++config MBOBCAT
++bool "AMD Bobcat"
++---help---
++  Select this for AMD Bobcat processors.
++
++  Enables -march=btver1
++
++config MBULLDOZER
++bool "AMD Bulldozer"
++---help---
++  Select this for AMD Bulldozer processors.
++
++  Enables -march=bdver1
++
++config MPILEDRIVER
++bool "AMD Piledriver"
++---help---
++  Select this for AMD Piledriver processors.
++
++  Enables -march=bdver2
++
+ config MCRUSOE
+ bool "Crusoe"
+ depends on X86_32
+@@ -260,7 +288,7 @@
+   in /proc/cpuinfo. Family 15 is an older Xeon, Family 6 a newer one.
+ 
+ config MCORE2
+-bool "Core 2/newer Xeon"
++bool "Intel Core 2"
+ ---help---
+ 
+   Select this for Intel Core 2 and newer Core 2 Xeons (Xeon 51xx and
+@@ -268,6 +296,41 @@
+   family in /proc/cpuinfo. Newer ones have 6 and older ones 15
+   (not a typo)
+ 
++  Enables -march=core2
++
++config MCOREI7
++bool "Intel Core i7"
++---help---
++
++  Select this for the Intel Nehalem platform. Intel Nehalem proecessors
++  include Core i3, i5, i7, Xeon: 34xx, 35xx, 55xx, 56xx, 75xx processors.
++
++  Enables -march=corei7
++
++config MCOREI7AVX
++bool "Intel Core 2nd Gen AVX"
++---help---
++
++  Select this for 2nd Gen Core processors including Sandy Bridge.
++
++  Enables -march=corei7-avx
++
++config MCOREAVXI
++bool "Intel Core 3rd Gen AVX"
++---help---
++
++  Select this for 3rd Gen Core processors including Ivy Bridge.
++
++  Enables -march=core-avx-i
++
++config MCOREAVX2
++bool "Intel Core AVX-2"
++---help---
++
++  Select this for AVX-2 enabled processors including Haswell.
++
++  Enables -march=corei7-avx-2
++
+ config MATOM
+ bool "Intel Atom"
+ ---help---
+@@ -312,7 +375,7 @@
+ config X86_L1_CACHE_SHIFT
+ int
+ default "7" if MPENTIUM4 || MPSC
+-default "6" if MK7 || MK8 || MPENTIUMM || MCORE2 || MATOM || MVIAC7 || X86_GENERIC || GENERIC_CPU
++default "6" if MK7 || MK8 || MBARCELONA || MBOBCAT || MBULLDOZER || MPILEDRIVER || MPENTIUMM || MCORE2 || MCOREI7 || MCOREI7AVX || MCOREAVXI || MCOREAVX2 || MATOM || MVIAC7 || X86_GENERIC || GENERIC_CPU
+ default "4" if MELAN || M486 || M386 || MGEODEGX1
+ default "5" if MWINCHIP3D || MWINCHIPC6 || MCRUSOE || MEFFICEON || MCYRIXIII || MK6 || MPENTIUMIII || MPENTIUMII || M686 || M586MMX || M586TSC || M586 || MVIAC3_2 || MGEODE_LX
+ 
+@@ -363,11 +426,11 @@
+ 
+ config X86_INTEL_USERCOPY
+ def_bool y
+-depends on MPENTIUM4 || MPENTIUMM || MPENTIUMIII || MPENTIUMII || M586MMX || X86_GENERIC || MK8 || MK7 || MEFFICEON || MCORE2
++depends on MPENTIUM4 || MPENTIUMM || MPENTIUMIII || MPENTIUMII || M586MMX || X86_GENERIC || MK8 || MK7 || MBARCELONA || MEFFICEON || MCORE2 || MCOREI7 || MCOREI7AVX || MCOREAVXI || MCOREAVX2
+ 
+ config X86_USE_PPRO_CHECKSUM
+ def_bool y
+-depends on MWINCHIP3D || MWINCHIPC6 || MCYRIXIII || MK7 || MK6 || MPENTIUM4 || MPENTIUMM || MPENTIUMIII || MPENTIUMII || M686 || MK8 || MVIAC3_2 || MVIAC7 || MEFFICEON || MGEODE_LX || MCORE2 || MATOM
++depends on MWINCHIP3D || MWINCHIPC6 || MCYRIXIII || MK7 || MK6 || MPENTIUM4 || MPENTIUMM || MPENTIUMIII || MPENTIUMII || M686 || MK8 || MVIAC3_2 || MVIAC7 || MEFFICEON || MGEODE_LX || MCORE2 || MCOREI7 || MCOREI7AVX || MCOREAVXI || MCOREAVX2 || MATOM
+ 
+ config X86_USE_3DNOW
+ def_bool y
+@@ -395,17 +458,17 @@
+ 
+ config X86_TSC
+ def_bool y
+-depends on ((MWINCHIP3D || MCRUSOE || MEFFICEON || MCYRIXIII || MK7 || MK6 || MPENTIUM4 || MPENTIUMM || MPENTIUMIII || MPENTIUMII || M686 || M586MMX || M586TSC || MK8 || MVIAC3_2 || MVIAC7 || MGEODEGX1 || MGEODE_LX || MCORE2 || MATOM) && !X86_NUMAQ) || X86_64
++depends on ((MWINCHIP3D || MCRUSOE || MEFFICEON || MCYRIXIII || MK7 || MK6 || MPENTIUM4 || MPENTIUMM || MPENTIUMIII || MPENTIUMII || M686 || M586MMX || M586TSC || MK8 || MBARCELONA || MBOBCAT || MBULLDOZER || MPILEDRIVER || MVIAC3_2 || MVIAC7 || MGEODEGX1 || MGEODE_LX || MCORE2 || MCOREI7 || MCOREI7-AVX || MATOM) && !X86_NUMAQ) || X86_64
+ 
+ config X86_CMPXCHG64
+ def_bool y
+-depends on X86_PAE || X86_64 || MCORE2 || MPENTIUM4 || MPENTIUMM || MPENTIUMIII || MPENTIUMII || M686 || MATOM
++depends on X86_PAE || X86_64 || MCORE2 || MCOREI7 || MCOREI7AVX || MCOREAVXI || MCOREAVX2 || MPENTIUM4 || MPENTIUMM || MPENTIUMIII || MPENTIUMII || M686 || MATOM
+ 
+ # this should be set for all -march=.. options where the compiler
+ # generates cmov.
+ config X86_CMOV
+ def_bool y
+-depends on (MK8 || MK7 || MCORE2 || MPENTIUM4 || MPENTIUMM || MPENTIUMIII || MPENTIUMII || M686 || MVIAC3_2 || MVIAC7 || MCRUSOE || MEFFICEON || X86_64 || MATOM || MGEODE_LX)
++depends on (MK8 || MBARCELONA || MBOBCAT || MBULLDOZER || MPILEDRIVER || MK7 || MCORE2 || MCOREI7 || MCOREI7AVX || MCOREAVXI || MCOREAVX2 || MPENTIUM4 || MPENTIUMM || MPENTIUMIII || MPENTIUMII || M686 || MVIAC3_2 || MVIAC7 || MCRUSOE || MEFFICEON || X86_64 || MATOM || MGEODE_LX)
+ 
+ config X86_MINIMUM_CPU_FAMILY
+ int
+--- linux-3.6/arch/x86/Makefile2012-04-29 18:43:58.249336198 -0700
++++ linux-3.6.mod/arch/x86/Makefile2012-04-29 18:41:51.260932642 -0700
+@@ -51,10 +51,22 @@
+ 
+         # FIXME - should be integrated in Makefile.cpu (Makefile_32.cpu)
+         cflags-$(CONFIG_MK8) += $(call cc-option,-march=k8)
++        cflags-$(CONFIG_MBARCELONA) += $(call cc-option,-march=barcelona)
++        cflags-$(CONFIG_MBOBCAT) += $(call cc-option,-march=btver1)
++        cflags-$(CONFIG_MBULLDOZER) += $(call cc-option,-march=bdver1)
++        cflags-$(CONFIG_MPILEDRIVER) += $(call cc-option,-march=bdver2)
+         cflags-$(CONFIG_MPSC) += $(call cc-option,-march=nocona)
+ 
+         cflags-$(CONFIG_MCORE2) += \
+-                $(call cc-option,-march=core2,$(call cc-option,-mtune=generic))
++                $(call cc-option,-march=core2,$(call cc-option,-mtune=core2))
++        cflags-$(CONFIG_MCOREI7) += \
++                $(call cc-option,-march=corei7,$(call cc-option,-mtune=corei7))
++        cflags-$(CONFIG_MCOREI7AVX) += \
++                $(call cc-option,-march=corei7-avx,$(call cc-option,-mtune=corei7-avx))
++        cflags-$(CONFIG_MCOREAVXI) += \
++                $(call cc-option,-march=core-avx-i,$(call cc-option,-mtune=core-avx-i))
++        cflags-$(CONFIG_MCOREAVX2) += \
++                $(call cc-option,-march=core-avx2,$(call cc-option,-mtune=core-avx2))
+ cflags-$(CONFIG_MATOM) += $(call cc-option,-march=atom) \
+ $(call cc-option,-mtune=atom,$(call cc-option,-mtune=generic))
+         cflags-$(CONFIG_GENERIC_CPU) += $(call cc-option,-mtune=generic)
+--- linux-3.6/arch/x86/Makefile_32.cpu2012-04-29 18:43:58.269335977 -0700
++++ linux-3.6.mod/arch/x86/Makefile_32.cpu2012-04-29 18:42:39.120330975 -0700
+@@ -25,6 +25,10 @@
+ # They make zero difference whatsosever to performance at this time.
+ cflags-$(CONFIG_MK7)+= -march=athlon
+ cflags-$(CONFIG_MK8)+= $(call cc-option,-march=k8,-march=athlon)
++cflags-$(CONFIG_MBARCELONA)+= $(call cc-option,-march=barcelona,-march=athlon)
++cflags-$(CONFIG_MBOBCAT)+= $(call cc-option,-march=btver1,-march=athlon)
++cflags-$(CONFIG_MBULLDOZER)+= $(call cc-option,-march=bdver1,-march=athlon)
++cflags-$(CONFIG_MPILEDRIVER)+= $(call cc-option,-march=bdver2,-march=athlon)
+ cflags-$(CONFIG_MCRUSOE)+= -march=i686 $(align)-functions=0 $(align)-jumps=0 $(align)-loops=0
+ cflags-$(CONFIG_MEFFICEON)+= -march=i686 $(call tune,pentium3) $(align)-functions=0 $(align)-jumps=0 $(align)-loops=0
+ cflags-$(CONFIG_MWINCHIPC6)+= $(call cc-option,-march=winchip-c6,-march=i586)
+@@ -33,6 +37,10 @@
+ cflags-$(CONFIG_MVIAC3_2)+= $(call cc-option,-march=c3-2,-march=i686)
+ cflags-$(CONFIG_MVIAC7)+= -march=i686
+ cflags-$(CONFIG_MCORE2)+= -march=i686 $(call tune,core2)
++cflags-$(CONFIG_MCOREI7)+= -march=i686 $(call tune,corei7)
++cflags-$(CONFIG_MCOREI7AVX)+= -march=i686 $(call tune,corei7-avx)
++cflags-$(CONFIG_MCOREAVXI)+= -march=i686 $(call tune,core-avx-i)
++cflags-$(CONFIG_MCOREAVX2)+= -march=i686 $(call tune,core-avx-2)
+ cflags-$(CONFIG_MATOM)+= $(call cc-option,-march=atom,$(call cc-option,-march=core2,-march=i686)) \
+ $(call cc-option,-mtune=atom,$(call cc-option,-mtune=generic))
