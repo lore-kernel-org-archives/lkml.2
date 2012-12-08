@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933620Ab2LHPJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Dec 2012 10:09:29 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49775 "EHLO
+	id S933639Ab2LHPKd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Dec 2012 10:10:33 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49802 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752099Ab2LHPJ1 (ORCPT
+	with ESMTP id S933588Ab2LHPKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Dec 2012 10:09:27 -0500
-Date: Sat, 8 Dec 2012 07:07:11 -0800
+	Sat, 8 Dec 2012 10:10:32 -0500
+Date: Sat, 8 Dec 2012 07:08:14 -0800
 From: tip-bot for David Howells <dhowells@redhat.com>
-Message-ID: <tip-0bca6cff89c6e7d1e383993cccf0f59146874a34@git.kernel.org>
+Message-ID: <tip-9db48cd5ccd0d127e991c15509a0241a18043e91@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         hpa@zytor.com, mingo@kernel.org, torvalds@linux-foundation.org,
         namhyung@gmail.com, bp@amd64.org, dhowells@redhat.com,
@@ -21,9 +21,9 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
 In-Reply-To: <1378.1352379110@warthog.procyon.org.uk>
 References: <1378.1352379110@warthog.procyon.org.uk>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tools:
-  Define a Makefile function to do subdir processing
-Git-Commit-ID: 0bca6cff89c6e7d1e383993cccf0f59146874a34
+Subject: [tip:perf/core] tools: Honour the O=
+  flag when tool build called from a higher Makefile
+Git-Commit-ID: 9db48cd5ccd0d127e991c15509a0241a18043e91
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,25 +32,49 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 08 Dec 2012 07:07:18 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 08 Dec 2012 07:08:20 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0bca6cff89c6e7d1e383993cccf0f59146874a34
-Gitweb:     http://git.kernel.org/tip/0bca6cff89c6e7d1e383993cccf0f59146874a34
+Commit-ID:  9db48cd5ccd0d127e991c15509a0241a18043e91
+Gitweb:     http://git.kernel.org/tip/9db48cd5ccd0d127e991c15509a0241a18043e91
 Author:     David Howells <dhowells@redhat.com>
-AuthorDate: Mon, 5 Nov 2012 15:15:24 +0000
+AuthorDate: Mon, 5 Nov 2012 21:02:08 +0000
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 14 Nov 2012 16:53:11 -0300
+CommitDate: Wed, 14 Nov 2012 16:53:22 -0300
 
-tools: Define a Makefile function to do subdir processing
+tools: Honour the O= flag when tool build called from a higher Makefile
 
-Define a Makefile function that can be called with $(call ...) to wrap
-the subdir make invocations in tools/Makefile.
+Honour the O= flag that was passed to a higher level Makefile and then passed
+down as part of a tool build.
 
-This will allow us in the next patch to insert bits in there to honour
-O= flags when called from the top-level Makefile.
+To make this work, the top-level Makefile passes the original O= flag and
+subdir=tools to the tools/Makefile, and that in turn passes
+subdir=$(O)/$(subdir)/foodir when building tool foo in directory
+$(O)/$(subdir)/foodir (where the intervening slashes aren't added if an
+element is missing).
+
+For example, take perf.  This is found in tools/perf/.  Assume we're building
+into directory ~/zebra/, so we pass O=~/zebra to make.  Dependening on where
+we run the build from, we see:
+
+	make run in dir		$(OUTPUT) dir
+	=======================	==================
+	linux			~/zebra/tools/perf/
+	linux/tools		~/zebra/perf/
+	linux/tools/perf	~/zebra/
+
+and if O= is not set, we get:
+
+	make run in dir		$(OUTPUT) dir
+	=======================	==================
+	linux			linux/tools/perf/
+	linux/tools		linux/tools/perf/
+	linux/tools/perf	linux/tools/perf/
+
+The output directories are created by the descend function if they don't
+already exist.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 Cc: Borislav Petkov <bp@amd64.org>
@@ -62,87 +86,68 @@ Cc: Thomas Gleixner <tglx@linutronix.de>
 Link: http://lkml.kernel.org/r/1378.1352379110@warthog.procyon.org.uk
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/Makefile                 | 24 ++++++++++++------------
- tools/scripts/Makefile.include |  8 ++++++++
- 2 files changed, 20 insertions(+), 12 deletions(-)
+ Makefile                       |  6 ++++--
+ tools/scripts/Makefile.include | 17 +++++++++++++----
+ 2 files changed, 17 insertions(+), 6 deletions(-)
 
-diff --git a/tools/Makefile b/tools/Makefile
-index 3ae4394..1f9a529 100644
---- a/tools/Makefile
-+++ b/tools/Makefile
-@@ -31,44 +31,44 @@ help:
- 	@echo '  clean: a summary clean target to clean _all_ folders'
+diff --git a/Makefile b/Makefile
+index 14c93b3..08a31d8 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1321,10 +1321,12 @@ kernelversion:
  
- cpupower: FORCE
--	$(QUIET_SUBDIR0)power/$@/ $(QUIET_SUBDIR1)
-+	$(call descend,power/$@)
+ # Clear a bunch of variables before executing the submake
+ tools/: FORCE
+-	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS= -C $(src)/tools/
++	$(Q)mkdir -p $(objtree)/tools
++	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS= O=$(objtree) subdir=tools -C $(src)/tools/
  
- firewire lguest perf usb virtio vm: FORCE
--	$(QUIET_SUBDIR0)$@/ $(QUIET_SUBDIR1)
-+	$(call descend,$@)
+ tools/%: FORCE
+-	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS= -C $(src)/tools/ $*
++	$(Q)mkdir -p $(objtree)/tools
++	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS= O=$(objtree) subdir=tools -C $(src)/tools/ $*
  
- selftests: FORCE
--	$(QUIET_SUBDIR0)testing/$@/ $(QUIET_SUBDIR1)
-+	$(call descend,testing/$@)
- 
- turbostat x86_energy_perf_policy: FORCE
--	$(QUIET_SUBDIR0)power/x86/$@/ $(QUIET_SUBDIR1)
-+	$(call descend,power/x86/$@)
- 
- cpupower_install:
--	$(QUIET_SUBDIR0)power/$(@:_install=)/ $(QUIET_SUBDIR1) install
-+	$(call descend,power/$(@:_install=),install)
- 
- firewire_install lguest_install perf_install usb_install virtio_install vm_install:
--	$(QUIET_SUBDIR0)$(@:_install=)/ $(QUIET_SUBDIR1) install
-+	$(call descend,$(@:_install=),install)
- 
- selftests_install:
--	$(QUIET_SUBDIR0)testing/$(@:_clean=)/ $(QUIET_SUBDIR1) install
-+	$(call descend,testing/$(@:_clean=),install)
- 
- turbostat_install x86_energy_perf_policy_install:
--	$(QUIET_SUBDIR0)power/x86/$(@:_install=)/ $(QUIET_SUBDIR1) install
-+	$(call descend,power/x86/$(@:_install=),install)
- 
- install: cpupower_install firewire_install lguest_install perf_install \
- 		selftests_install turbostat_install usb_install virtio_install \
- 		vm_install x86_energy_perf_policy_install
- 
- cpupower_clean:
--	$(QUIET_SUBDIR0)power/cpupower/ $(QUIET_SUBDIR1) clean
-+	$(call descend,power/cpupower,clean)
- 
- firewire_clean lguest_clean perf_clean usb_clean virtio_clean vm_clean:
--	$(QUIET_SUBDIR0)$(@:_clean=)/ $(QUIET_SUBDIR1) clean
-+	$(call descend,$(@:_clean=),clean)
- 
- selftests_clean:
--	$(QUIET_SUBDIR0)testing/$(@:_clean=)/ $(QUIET_SUBDIR1) clean
-+	$(call descend,testing/$(@:_clean=),clean)
- 
- turbostat_clean x86_energy_perf_policy_clean:
--	$(QUIET_SUBDIR0)power/x86/$(@:_clean=)/ $(QUIET_SUBDIR1) clean
-+	$(call descend,power/x86/$(@:_clean=),clean)
- 
- clean: cpupower_clean firewire_clean lguest_clean perf_clean selftests_clean \
- 		turbostat_clean usb_clean virtio_clean vm_clean \
+ # Single targets
+ # ---------------------------------------------------------------------------
 diff --git a/tools/scripts/Makefile.include b/tools/scripts/Makefile.include
-index 96ce80a..4a9e317 100644
+index 4a9e317..87467b1 100644
 --- a/tools/scripts/Makefile.include
 +++ b/tools/scripts/Makefile.include
-@@ -41,6 +41,14 @@ else
- NO_SUBDIR = :
+@@ -1,8 +1,11 @@
+-ifeq ("$(origin O)", "command line")
++ifeq ($(origin O), command line)
+ 	dummy := $(if $(shell test -d $(O) || echo $(O)),$(error O=$(O) does not exist),)
+ 	ABSOLUTE_O := $(shell cd $(O) ; pwd)
+-	OUTPUT := $(ABSOLUTE_O)/
++	OUTPUT := $(ABSOLUTE_O)/$(if $(subdir),$(subdir)/)
+ 	COMMAND_O := O=$(ABSOLUTE_O)
++ifeq ($(objtree),)
++	objtree := $(O)
++endif
  endif
  
-+#
-+# Define a callable command for descending to a new directory
-+#
-+# Call by doing: $(call descend,directory[,target])
-+#
-+descend = \
-+	$(QUIET_SUBDIR0)$(1) $(QUIET_SUBDIR1) $(2)
-+
- QUIET_SUBDIR0  = +$(MAKE) -C # space to separate -C and subdir
+ ifneq ($(OUTPUT),)
+@@ -47,9 +50,10 @@ endif
+ # Call by doing: $(call descend,directory[,target])
+ #
+ descend = \
+-	$(QUIET_SUBDIR0)$(1) $(QUIET_SUBDIR1) $(2)
++	+mkdir -p $(OUTPUT)$(1) && \
++	$(MAKE) $(COMMAND_O) subdir=$(if $(subdir),$(subdir)/$(1),$(1)) $(PRINT_DIR) -C $(1)
+ 
+-QUIET_SUBDIR0  = +$(MAKE) -C # space to separate -C and subdir
++QUIET_SUBDIR0  = +$(MAKE) $(COMMAND_O) -C # space to separate -C and subdir
  QUIET_SUBDIR1  =
  
+ ifneq ($(findstring $(MAKEFLAGS),s),s)
+@@ -64,5 +68,10 @@ ifndef V
+ 			 $(MAKE) $(PRINT_DIR) -C $$subdir
+ 	QUIET_FLEX     = @echo '   ' FLEX $@;
+ 	QUIET_BISON    = @echo '   ' BISON $@;
++
++	descend = \
++		@echo '   ' DESCEND $(1); \
++		mkdir -p $(OUTPUT)$(1) && \
++		$(MAKE) $(COMMAND_O) subdir=$(if $(subdir),$(subdir)/$(1),$(1)) $(PRINT_DIR) -C $(1)
+ endif
+ endif
