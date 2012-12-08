@@ -1,98 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932914Ab2LHPCS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Dec 2012 10:02:18 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49663 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932129Ab2LHPCP (ORCPT
+	id S1757861Ab2LHPC6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Dec 2012 10:02:58 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:37976 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755162Ab2LHPC5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Dec 2012 10:02:15 -0500
-Date: Sat, 8 Dec 2012 07:01:53 -0800
-From: tip-bot for Namhyung Kim <namhyung.kim@lge.com>
-Message-ID: <tip-7da5c85dd34dd67846fec965e4bf1f761eecca05@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, penberg@kernel.org,
-        namhyung.kim@lge.com, namhyung@kernel.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, penberg@kernel.org, peterz@infradead.org,
-        namhyung.kim@lge.com, tglx@linutronix.de, namhyung@kernel.org
-In-Reply-To: <1352813436-14173-1-git-send-email-namhyung@kernel.org>
-References: <1352813436-14173-1-git-send-email-namhyung@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf ui tui: Move progress.c under ui/
- tui directory
-Git-Commit-ID: 7da5c85dd34dd67846fec965e4bf1f761eecca05
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sat, 8 Dec 2012 10:02:57 -0500
+Date: Sat, 8 Dec 2012 16:02:52 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Anish Kumar <anish198519851985@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [GIT PULL v2] printk: Make it usable on nohz cpus
+Message-ID: <20121208150252.GI12011@gmail.com>
+References: <1353200692-6039-1-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 08 Dec 2012 07:01:59 -0800 (PST)
+In-Reply-To: <1353200692-6039-1-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7da5c85dd34dd67846fec965e4bf1f761eecca05
-Gitweb:     http://git.kernel.org/tip/7da5c85dd34dd67846fec965e4bf1f761eecca05
-Author:     Namhyung Kim <namhyung.kim@lge.com>
-AuthorDate: Tue, 13 Nov 2012 22:30:31 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 14 Nov 2012 16:52:33 -0300
 
-perf ui tui: Move progress.c under ui/tui directory
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-Current ui_progress functions are implemented for TUI only.  So move the
-file under the tui directory.  This is needed for providing an UI-
-agnostic wrapper.
+> Ingo,
+> 
+> Please pull the printk support in dynticks mode patches that can
+> be found at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git tags/printk-dynticks-for-mingo-v2
+> 
+> for you to fetch changes up to 74876a98a87a115254b3a66a14b27320b7f0acaa:
+> 
+>   printk: Wake up klogd using irq_work (2012-11-18 01:01:49 +0100)
+> 
+> It is based on v3.7-rc4.
+> 
+> Changes since previous pull request include support for irq 
+> work flush on CPU offlining and acks from Steve. The rest 
+> hasn't changed except some comment fix.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1352813436-14173-1-git-send-email-namhyung@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/Makefile                | 2 +-
- tools/perf/ui/{ => tui}/progress.c | 8 ++++----
- 2 files changed, 5 insertions(+), 5 deletions(-)
+Since this changes kernel/printk.c it needs Linus's ack.
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 9af012f..50e85c8 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -617,11 +617,11 @@ ifndef NO_NEWT
- 		LIB_OBJS += $(OUTPUT)ui/browsers/hists.o
- 		LIB_OBJS += $(OUTPUT)ui/browsers/map.o
- 		LIB_OBJS += $(OUTPUT)ui/browsers/scripts.o
--		LIB_OBJS += $(OUTPUT)ui/progress.o
- 		LIB_OBJS += $(OUTPUT)ui/util.o
- 		LIB_OBJS += $(OUTPUT)ui/tui/setup.o
- 		LIB_OBJS += $(OUTPUT)ui/tui/util.o
- 		LIB_OBJS += $(OUTPUT)ui/tui/helpline.o
-+		LIB_OBJS += $(OUTPUT)ui/tui/progress.o
- 		LIB_H += ui/browser.h
- 		LIB_H += ui/browsers/map.h
- 		LIB_H += ui/keysyms.h
-diff --git a/tools/perf/ui/progress.c b/tools/perf/ui/tui/progress.c
-similarity index 88%
-rename from tools/perf/ui/progress.c
-rename to tools/perf/ui/tui/progress.c
-index 13aa64e..f8dc986 100644
---- a/tools/perf/ui/progress.c
-+++ b/tools/perf/ui/tui/progress.c
-@@ -1,8 +1,8 @@
- #include "../cache.h"
--#include "progress.h"
--#include "libslang.h"
--#include "ui.h"
--#include "browser.h"
-+#include "../progress.h"
-+#include "../libslang.h"
-+#include "../ui.h"
-+#include "../browser.h"
- 
- void ui_progress__update(u64 curr, u64 total, const char *title)
- {
+I looked through the older submissions but found no good summary 
+of these changes: it would be nice if you could write up a good 
+high level description of these changes - why has printk based 
+kernel message logging become problematic on nohz, what are the 
+symptoms to users, and what are the solution alternatives you 
+found and please justify the irq_work extension variant you 
+picked.
+
+I more or less accept the fact that fixes are needed here, but 
+the linecount appears a bit high. It's possibly unavoidable, but 
+would be nice to have a discussion of it, as printk is something 
+we really, really want to keep as simple as possible.
+
+Thanks,
+
+	Ingo
