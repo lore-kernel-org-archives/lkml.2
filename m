@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028Ab2LHOi1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Dec 2012 09:38:27 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49235 "EHLO
+	id S933228Ab2LHOjT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Dec 2012 09:39:19 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49253 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753068Ab2LHOiZ (ORCPT
+	with ESMTP id S933210Ab2LHOjS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Dec 2012 09:38:25 -0500
-Date: Sat, 8 Dec 2012 06:37:40 -0800
+	Sat, 8 Dec 2012 09:39:18 -0500
+Date: Sat, 8 Dec 2012 06:38:54 -0800
 From: tip-bot for Jiri Olsa <jolsa@redhat.com>
-Message-ID: <tip-0a4e1ae6808a28a92573550603121b146b11312e@git.kernel.org>
+Message-ID: <tip-d3b59a38bcdab4248134023c2c5dfabee5a4878e@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
         hpa@zytor.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
         jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
@@ -18,12 +18,12 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
         linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
         jolsa@redhat.com, fweisbec@gmail.com, tglx@linutronix.de,
         cjashfor@linux.vnet.ibm.com, mingo@elte.hu
-In-Reply-To: <1352508412-16914-2-git-send-email-jolsa@redhat.com>
-References: <1352508412-16914-2-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1352508412-16914-3-git-send-email-jolsa@redhat.com>
+References: <1352508412-16914-3-git-send-email-jolsa@redhat.com>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/core] perf tests:
-  Move test__vmlinux_matches_kallsyms into separate object
-Git-Commit-ID: 0a4e1ae6808a28a92573550603121b146b11312e
+  Move test__open_syscall_event into separate object
+Git-Commit-ID: d3b59a38bcdab4248134023c2c5dfabee5a4878e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,22 +32,25 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 08 Dec 2012 06:37:48 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 08 Dec 2012 06:39:00 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0a4e1ae6808a28a92573550603121b146b11312e
-Gitweb:     http://git.kernel.org/tip/0a4e1ae6808a28a92573550603121b146b11312e
+Commit-ID:  d3b59a38bcdab4248134023c2c5dfabee5a4878e
+Gitweb:     http://git.kernel.org/tip/d3b59a38bcdab4248134023c2c5dfabee5a4878e
 Author:     Jiri Olsa <jolsa@redhat.com>
-AuthorDate: Sat, 10 Nov 2012 01:46:41 +0100
+AuthorDate: Sat, 10 Nov 2012 01:46:42 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Wed, 14 Nov 2012 16:48:35 -0300
+CommitDate: Wed, 14 Nov 2012 16:49:17 -0300
 
-perf tests: Move test__vmlinux_matches_kallsyms into separate object
+perf tests: Move test__open_syscall_event into separate object
 
-Separating test__vmlinux_matches_kallsyms test from the builtin-test
-into vmlinux-kallsyms object.
+Separating test__open_syscall_event test from the builtin-test into
+open-syscall object.
+
+Adding util object under tests directory to gather help functions common
+to more tests.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -55,510 +58,245 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1352508412-16914-2-git-send-email-jolsa@redhat.com
+Link: http://lkml.kernel.org/r/1352508412-16914-3-git-send-email-jolsa@redhat.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile                 |   1 +
- tools/perf/tests/builtin-test.c     | 223 +---------------------------------
- tools/perf/tests/tests.h            |   6 +
- tools/perf/tests/vmlinux-kallsyms.c | 230 ++++++++++++++++++++++++++++++++++++
- 4 files changed, 239 insertions(+), 221 deletions(-)
+ tools/perf/Makefile             |  2 +
+ tools/perf/tests/builtin-test.c | 84 -----------------------------------------
+ tools/perf/tests/open-syscall.c | 66 ++++++++++++++++++++++++++++++++
+ tools/perf/tests/tests.h        |  5 +++
+ tools/perf/tests/util.c         | 30 +++++++++++++++
+ 5 files changed, 103 insertions(+), 84 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index cca5bb8..7c7ba4d 100644
+index 7c7ba4d..69f582c 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -431,6 +431,7 @@ LIB_OBJS += $(OUTPUT)arch/common.o
- LIB_OBJS += $(OUTPUT)tests/parse-events.o
+@@ -432,6 +432,8 @@ LIB_OBJS += $(OUTPUT)tests/parse-events.o
  LIB_OBJS += $(OUTPUT)tests/dso-data.o
  LIB_OBJS += $(OUTPUT)tests/attr.o
-+LIB_OBJS += $(OUTPUT)tests/vmlinux-kallsyms.o
+ LIB_OBJS += $(OUTPUT)tests/vmlinux-kallsyms.o
++LIB_OBJS += $(OUTPUT)tests/open-syscall.o
++LIB_OBJS += $(OUTPUT)tests/util.o
  
  BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
  BUILTIN_OBJS += $(OUTPUT)builtin-bench.o
 diff --git a/tools/perf/tests/builtin-test.c b/tools/perf/tests/builtin-test.c
-index 5d4354e..5bc9063 100644
+index 5bc9063..b6b1e46 100644
 --- a/tools/perf/tests/builtin-test.c
 +++ b/tools/perf/tests/builtin-test.c
-@@ -21,231 +21,12 @@
+@@ -27,90 +27,6 @@
  
- #include <sys/mman.h>
+ #include "tests.h"
  
--static int vmlinux_matches_kallsyms_filter(struct map *map __maybe_unused,
--					   struct symbol *sym)
+-static int trace_event__id(const char *evname)
 -{
--	bool *visited = symbol__priv(sym);
--	*visited = true;
--	return 0;
--}
+-	char *filename;
+-	int err = -1, fd;
 -
--static int test__vmlinux_matches_kallsyms(void)
--{
--	int err = -1;
--	struct rb_node *nd;
--	struct symbol *sym;
--	struct map *kallsyms_map, *vmlinux_map;
--	struct machine kallsyms, vmlinux;
--	enum map_type type = MAP__FUNCTION;
--	struct ref_reloc_sym ref_reloc_sym = { .name = "_stext", };
--
--	/*
--	 * Step 1:
--	 *
--	 * Init the machines that will hold kernel, modules obtained from
--	 * both vmlinux + .ko files and from /proc/kallsyms split by modules.
--	 */
--	machine__init(&kallsyms, "", HOST_KERNEL_ID);
--	machine__init(&vmlinux, "", HOST_KERNEL_ID);
--
--	/*
--	 * Step 2:
--	 *
--	 * Create the kernel maps for kallsyms and the DSO where we will then
--	 * load /proc/kallsyms. Also create the modules maps from /proc/modules
--	 * and find the .ko files that match them in /lib/modules/`uname -r`/.
--	 */
--	if (machine__create_kernel_maps(&kallsyms) < 0) {
--		pr_debug("machine__create_kernel_maps ");
+-	if (asprintf(&filename,
+-		     "%s/syscalls/%s/id",
+-		     tracing_events_path, evname) < 0)
 -		return -1;
+-
+-	fd = open(filename, O_RDONLY);
+-	if (fd >= 0) {
+-		char id[16];
+-		if (read(fd, id, sizeof(id)) > 0)
+-			err = atoi(id);
+-		close(fd);
 -	}
 -
--	/*
--	 * Step 3:
--	 *
--	 * Load and split /proc/kallsyms into multiple maps, one per module.
--	 */
--	if (machine__load_kallsyms(&kallsyms, "/proc/kallsyms", type, NULL) <= 0) {
--		pr_debug("dso__load_kallsyms ");
--		goto out;
--	}
--
--	/*
--	 * Step 4:
--	 *
--	 * kallsyms will be internally on demand sorted by name so that we can
--	 * find the reference relocation * symbol, i.e. the symbol we will use
--	 * to see if the running kernel was relocated by checking if it has the
--	 * same value in the vmlinux file we load.
--	 */
--	kallsyms_map = machine__kernel_map(&kallsyms, type);
--
--	sym = map__find_symbol_by_name(kallsyms_map, ref_reloc_sym.name, NULL);
--	if (sym == NULL) {
--		pr_debug("dso__find_symbol_by_name ");
--		goto out;
--	}
--
--	ref_reloc_sym.addr = sym->start;
--
--	/*
--	 * Step 5:
--	 *
--	 * Now repeat step 2, this time for the vmlinux file we'll auto-locate.
--	 */
--	if (machine__create_kernel_maps(&vmlinux) < 0) {
--		pr_debug("machine__create_kernel_maps ");
--		goto out;
--	}
--
--	vmlinux_map = machine__kernel_map(&vmlinux, type);
--	map__kmap(vmlinux_map)->ref_reloc_sym = &ref_reloc_sym;
--
--	/*
--	 * Step 6:
--	 *
--	 * Locate a vmlinux file in the vmlinux path that has a buildid that
--	 * matches the one of the running kernel.
--	 *
--	 * While doing that look if we find the ref reloc symbol, if we find it
--	 * we'll have its ref_reloc_symbol.unrelocated_addr and then
--	 * maps__reloc_vmlinux will notice and set proper ->[un]map_ip routines
--	 * to fixup the symbols.
--	 */
--	if (machine__load_vmlinux_path(&vmlinux, type,
--				       vmlinux_matches_kallsyms_filter) <= 0) {
--		pr_debug("machine__load_vmlinux_path ");
--		goto out;
--	}
--
--	err = 0;
--	/*
--	 * Step 7:
--	 *
--	 * Now look at the symbols in the vmlinux DSO and check if we find all of them
--	 * in the kallsyms dso. For the ones that are in both, check its names and
--	 * end addresses too.
--	 */
--	for (nd = rb_first(&vmlinux_map->dso->symbols[type]); nd; nd = rb_next(nd)) {
--		struct symbol *pair, *first_pair;
--		bool backwards = true;
--
--		sym  = rb_entry(nd, struct symbol, rb_node);
--
--		if (sym->start == sym->end)
--			continue;
--
--		first_pair = machine__find_kernel_symbol(&kallsyms, type, sym->start, NULL, NULL);
--		pair = first_pair;
--
--		if (pair && pair->start == sym->start) {
--next_pair:
--			if (strcmp(sym->name, pair->name) == 0) {
--				/*
--				 * kallsyms don't have the symbol end, so we
--				 * set that by using the next symbol start - 1,
--				 * in some cases we get this up to a page
--				 * wrong, trace_kmalloc when I was developing
--				 * this code was one such example, 2106 bytes
--				 * off the real size. More than that and we
--				 * _really_ have a problem.
--				 */
--				s64 skew = sym->end - pair->end;
--				if (llabs(skew) < page_size)
--					continue;
--
--				pr_debug("%#" PRIx64 ": diff end addr for %s v: %#" PRIx64 " k: %#" PRIx64 "\n",
--					 sym->start, sym->name, sym->end, pair->end);
--			} else {
--				struct rb_node *nnd;
--detour:
--				nnd = backwards ? rb_prev(&pair->rb_node) :
--						  rb_next(&pair->rb_node);
--				if (nnd) {
--					struct symbol *next = rb_entry(nnd, struct symbol, rb_node);
--
--					if (next->start == sym->start) {
--						pair = next;
--						goto next_pair;
--					}
--				}
--
--				if (backwards) {
--					backwards = false;
--					pair = first_pair;
--					goto detour;
--				}
--
--				pr_debug("%#" PRIx64 ": diff name v: %s k: %s\n",
--					 sym->start, sym->name, pair->name);
--			}
--		} else
--			pr_debug("%#" PRIx64 ": %s not on kallsyms\n", sym->start, sym->name);
--
--		err = -1;
--	}
--
--	if (!verbose)
--		goto out;
--
--	pr_info("Maps only in vmlinux:\n");
--
--	for (nd = rb_first(&vmlinux.kmaps.maps[type]); nd; nd = rb_next(nd)) {
--		struct map *pos = rb_entry(nd, struct map, rb_node), *pair;
--		/*
--		 * If it is the kernel, kallsyms is always "[kernel.kallsyms]", while
--		 * the kernel will have the path for the vmlinux file being used,
--		 * so use the short name, less descriptive but the same ("[kernel]" in
--		 * both cases.
--		 */
--		pair = map_groups__find_by_name(&kallsyms.kmaps, type,
--						(pos->dso->kernel ?
--							pos->dso->short_name :
--							pos->dso->name));
--		if (pair)
--			pair->priv = 1;
--		else
--			map__fprintf(pos, stderr);
--	}
--
--	pr_info("Maps in vmlinux with a different name in kallsyms:\n");
--
--	for (nd = rb_first(&vmlinux.kmaps.maps[type]); nd; nd = rb_next(nd)) {
--		struct map *pos = rb_entry(nd, struct map, rb_node), *pair;
--
--		pair = map_groups__find(&kallsyms.kmaps, type, pos->start);
--		if (pair == NULL || pair->priv)
--			continue;
--
--		if (pair->start == pos->start) {
--			pair->priv = 1;
--			pr_info(" %" PRIx64 "-%" PRIx64 " %" PRIx64 " %s in kallsyms as",
--				pos->start, pos->end, pos->pgoff, pos->dso->name);
--			if (pos->pgoff != pair->pgoff || pos->end != pair->end)
--				pr_info(": \n*%" PRIx64 "-%" PRIx64 " %" PRIx64 "",
--					pair->start, pair->end, pair->pgoff);
--			pr_info(" %s\n", pair->dso->name);
--			pair->priv = 1;
--		}
--	}
--
--	pr_info("Maps only in kallsyms:\n");
--
--	for (nd = rb_first(&kallsyms.kmaps.maps[type]);
--	     nd; nd = rb_next(nd)) {
--		struct map *pos = rb_entry(nd, struct map, rb_node);
--
--		if (!pos->priv)
--			map__fprintf(pos, stderr);
--	}
--out:
+-	free(filename);
 -	return err;
 -}
 -
- #include "util/cpumap.h"
- #include "util/evsel.h"
- #include <sys/types.h>
+-static int test__open_syscall_event(void)
+-{
+-	int err = -1, fd;
+-	struct thread_map *threads;
+-	struct perf_evsel *evsel;
+-	struct perf_event_attr attr;
+-	unsigned int nr_open_calls = 111, i;
+-	int id = trace_event__id("sys_enter_open");
+-
+-	if (id < 0) {
+-		pr_debug("is debugfs mounted on /sys/kernel/debug?\n");
+-		return -1;
+-	}
+-
+-	threads = thread_map__new(-1, getpid(), UINT_MAX);
+-	if (threads == NULL) {
+-		pr_debug("thread_map__new\n");
+-		return -1;
+-	}
+-
+-	memset(&attr, 0, sizeof(attr));
+-	attr.type = PERF_TYPE_TRACEPOINT;
+-	attr.config = id;
+-	evsel = perf_evsel__new(&attr, 0);
+-	if (evsel == NULL) {
+-		pr_debug("perf_evsel__new\n");
+-		goto out_thread_map_delete;
+-	}
+-
+-	if (perf_evsel__open_per_thread(evsel, threads) < 0) {
+-		pr_debug("failed to open counter: %s, "
+-			 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
+-			 strerror(errno));
+-		goto out_evsel_delete;
+-	}
+-
+-	for (i = 0; i < nr_open_calls; ++i) {
+-		fd = open("/etc/passwd", O_RDONLY);
+-		close(fd);
+-	}
+-
+-	if (perf_evsel__read_on_cpu(evsel, 0, 0) < 0) {
+-		pr_debug("perf_evsel__read_on_cpu\n");
+-		goto out_close_fd;
+-	}
+-
+-	if (evsel->counts->cpu[0].val != nr_open_calls) {
+-		pr_debug("perf_evsel__read_on_cpu: expected to intercept %d calls, got %" PRIu64 "\n",
+-			 nr_open_calls, evsel->counts->cpu[0].val);
+-		goto out_close_fd;
+-	}
+-
+-	err = 0;
+-out_close_fd:
+-	perf_evsel__close_fd(evsel, 1, threads->nr);
+-out_evsel_delete:
+-	perf_evsel__delete(evsel);
+-out_thread_map_delete:
+-	thread_map__delete(threads);
+-	return err;
+-}
+-
+ #include <sched.h>
  
-+#include "tests.h"
-+
- static int trace_event__id(const char *evname)
- {
- 	char *filename;
-diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
+ static int test__open_syscall_event_on_all_cpus(void)
+diff --git a/tools/perf/tests/open-syscall.c b/tools/perf/tests/open-syscall.c
 new file mode 100644
-index 0000000..2223de5
+index 0000000..98be8b5
 --- /dev/null
-+++ b/tools/perf/tests/tests.h
-@@ -0,0 +1,6 @@
-+#ifndef TESTS_H
-+#define TESTS_H
-+
-+int test__vmlinux_matches_kallsyms(void);
-+
-+#endif /* TESTS_H */
-diff --git a/tools/perf/tests/vmlinux-kallsyms.c b/tools/perf/tests/vmlinux-kallsyms.c
-new file mode 100644
-index 0000000..0d1cdbe
---- /dev/null
-+++ b/tools/perf/tests/vmlinux-kallsyms.c
-@@ -0,0 +1,230 @@
-+#include <linux/compiler.h>
-+#include <linux/rbtree.h>
-+#include <string.h>
-+#include "map.h"
-+#include "symbol.h"
-+#include "util.h"
-+#include "tests.h"
++++ b/tools/perf/tests/open-syscall.c
+@@ -0,0 +1,66 @@
++#include "thread_map.h"
++#include "evsel.h"
 +#include "debug.h"
-+#include "machine.h"
++#include "tests.h"
 +
-+static int vmlinux_matches_kallsyms_filter(struct map *map __maybe_unused,
-+					   struct symbol *sym)
++int test__open_syscall_event(void)
 +{
-+	bool *visited = symbol__priv(sym);
-+	*visited = true;
-+	return 0;
-+}
++	int err = -1, fd;
++	struct thread_map *threads;
++	struct perf_evsel *evsel;
++	struct perf_event_attr attr;
++	unsigned int nr_open_calls = 111, i;
++	int id = trace_event__id("sys_enter_open");
 +
-+int test__vmlinux_matches_kallsyms(void)
-+{
-+	int err = -1;
-+	struct rb_node *nd;
-+	struct symbol *sym;
-+	struct map *kallsyms_map, *vmlinux_map;
-+	struct machine kallsyms, vmlinux;
-+	enum map_type type = MAP__FUNCTION;
-+	struct ref_reloc_sym ref_reloc_sym = { .name = "_stext", };
-+
-+	/*
-+	 * Step 1:
-+	 *
-+	 * Init the machines that will hold kernel, modules obtained from
-+	 * both vmlinux + .ko files and from /proc/kallsyms split by modules.
-+	 */
-+	machine__init(&kallsyms, "", HOST_KERNEL_ID);
-+	machine__init(&vmlinux, "", HOST_KERNEL_ID);
-+
-+	/*
-+	 * Step 2:
-+	 *
-+	 * Create the kernel maps for kallsyms and the DSO where we will then
-+	 * load /proc/kallsyms. Also create the modules maps from /proc/modules
-+	 * and find the .ko files that match them in /lib/modules/`uname -r`/.
-+	 */
-+	if (machine__create_kernel_maps(&kallsyms) < 0) {
-+		pr_debug("machine__create_kernel_maps ");
++	if (id < 0) {
++		pr_debug("is debugfs mounted on /sys/kernel/debug?\n");
 +		return -1;
 +	}
 +
-+	/*
-+	 * Step 3:
-+	 *
-+	 * Load and split /proc/kallsyms into multiple maps, one per module.
-+	 */
-+	if (machine__load_kallsyms(&kallsyms, "/proc/kallsyms", type, NULL) <= 0) {
-+		pr_debug("dso__load_kallsyms ");
-+		goto out;
++	threads = thread_map__new(-1, getpid(), UINT_MAX);
++	if (threads == NULL) {
++		pr_debug("thread_map__new\n");
++		return -1;
 +	}
 +
-+	/*
-+	 * Step 4:
-+	 *
-+	 * kallsyms will be internally on demand sorted by name so that we can
-+	 * find the reference relocation * symbol, i.e. the symbol we will use
-+	 * to see if the running kernel was relocated by checking if it has the
-+	 * same value in the vmlinux file we load.
-+	 */
-+	kallsyms_map = machine__kernel_map(&kallsyms, type);
-+
-+	sym = map__find_symbol_by_name(kallsyms_map, ref_reloc_sym.name, NULL);
-+	if (sym == NULL) {
-+		pr_debug("dso__find_symbol_by_name ");
-+		goto out;
++	memset(&attr, 0, sizeof(attr));
++	attr.type = PERF_TYPE_TRACEPOINT;
++	attr.config = id;
++	evsel = perf_evsel__new(&attr, 0);
++	if (evsel == NULL) {
++		pr_debug("perf_evsel__new\n");
++		goto out_thread_map_delete;
 +	}
 +
-+	ref_reloc_sym.addr = sym->start;
-+
-+	/*
-+	 * Step 5:
-+	 *
-+	 * Now repeat step 2, this time for the vmlinux file we'll auto-locate.
-+	 */
-+	if (machine__create_kernel_maps(&vmlinux) < 0) {
-+		pr_debug("machine__create_kernel_maps ");
-+		goto out;
++	if (perf_evsel__open_per_thread(evsel, threads) < 0) {
++		pr_debug("failed to open counter: %s, "
++			 "tweak /proc/sys/kernel/perf_event_paranoid?\n",
++			 strerror(errno));
++		goto out_evsel_delete;
 +	}
 +
-+	vmlinux_map = machine__kernel_map(&vmlinux, type);
-+	map__kmap(vmlinux_map)->ref_reloc_sym = &ref_reloc_sym;
++	for (i = 0; i < nr_open_calls; ++i) {
++		fd = open("/etc/passwd", O_RDONLY);
++		close(fd);
++	}
 +
-+	/*
-+	 * Step 6:
-+	 *
-+	 * Locate a vmlinux file in the vmlinux path that has a buildid that
-+	 * matches the one of the running kernel.
-+	 *
-+	 * While doing that look if we find the ref reloc symbol, if we find it
-+	 * we'll have its ref_reloc_symbol.unrelocated_addr and then
-+	 * maps__reloc_vmlinux will notice and set proper ->[un]map_ip routines
-+	 * to fixup the symbols.
-+	 */
-+	if (machine__load_vmlinux_path(&vmlinux, type,
-+				       vmlinux_matches_kallsyms_filter) <= 0) {
-+		pr_debug("machine__load_vmlinux_path ");
-+		goto out;
++	if (perf_evsel__read_on_cpu(evsel, 0, 0) < 0) {
++		pr_debug("perf_evsel__read_on_cpu\n");
++		goto out_close_fd;
++	}
++
++	if (evsel->counts->cpu[0].val != nr_open_calls) {
++		pr_debug("perf_evsel__read_on_cpu: expected to intercept %d calls, got %" PRIu64 "\n",
++			 nr_open_calls, evsel->counts->cpu[0].val);
++		goto out_close_fd;
 +	}
 +
 +	err = 0;
-+	/*
-+	 * Step 7:
-+	 *
-+	 * Now look at the symbols in the vmlinux DSO and check if we find all of them
-+	 * in the kallsyms dso. For the ones that are in both, check its names and
-+	 * end addresses too.
-+	 */
-+	for (nd = rb_first(&vmlinux_map->dso->symbols[type]); nd; nd = rb_next(nd)) {
-+		struct symbol *pair, *first_pair;
-+		bool backwards = true;
++out_close_fd:
++	perf_evsel__close_fd(evsel, 1, threads->nr);
++out_evsel_delete:
++	perf_evsel__delete(evsel);
++out_thread_map_delete:
++	thread_map__delete(threads);
++	return err;
++}
+diff --git a/tools/perf/tests/tests.h b/tools/perf/tests/tests.h
+index 2223de5..bac133e 100644
+--- a/tools/perf/tests/tests.h
++++ b/tools/perf/tests/tests.h
+@@ -1,6 +1,11 @@
+ #ifndef TESTS_H
+ #define TESTS_H
+ 
++/* Tests */
+ int test__vmlinux_matches_kallsyms(void);
++int test__open_syscall_event(void);
 +
-+		sym  = rb_entry(nd, struct symbol, rb_node);
++/* Util */
++int trace_event__id(const char *evname);
+ 
+ #endif /* TESTS_H */
+diff --git a/tools/perf/tests/util.c b/tools/perf/tests/util.c
+new file mode 100644
+index 0000000..748f2e8
+--- /dev/null
++++ b/tools/perf/tests/util.c
+@@ -0,0 +1,30 @@
++#include <stdio.h>
++#include <unistd.h>
++#include <stdlib.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <fcntl.h>
++#include "tests.h"
++#include "debugfs.h"
 +
-+		if (sym->start == sym->end)
-+			continue;
++int trace_event__id(const char *evname)
++{
++	char *filename;
++	int err = -1, fd;
 +
-+		first_pair = machine__find_kernel_symbol(&kallsyms, type, sym->start, NULL, NULL);
-+		pair = first_pair;
++	if (asprintf(&filename,
++		     "%s/syscalls/%s/id",
++		     tracing_events_path, evname) < 0)
++		return -1;
 +
-+		if (pair && pair->start == sym->start) {
-+next_pair:
-+			if (strcmp(sym->name, pair->name) == 0) {
-+				/*
-+				 * kallsyms don't have the symbol end, so we
-+				 * set that by using the next symbol start - 1,
-+				 * in some cases we get this up to a page
-+				 * wrong, trace_kmalloc when I was developing
-+				 * this code was one such example, 2106 bytes
-+				 * off the real size. More than that and we
-+				 * _really_ have a problem.
-+				 */
-+				s64 skew = sym->end - pair->end;
-+				if (llabs(skew) < page_size)
-+					continue;
-+
-+				pr_debug("%#" PRIx64 ": diff end addr for %s v: %#" PRIx64 " k: %#" PRIx64 "\n",
-+					 sym->start, sym->name, sym->end, pair->end);
-+			} else {
-+				struct rb_node *nnd;
-+detour:
-+				nnd = backwards ? rb_prev(&pair->rb_node) :
-+						  rb_next(&pair->rb_node);
-+				if (nnd) {
-+					struct symbol *next = rb_entry(nnd, struct symbol, rb_node);
-+
-+					if (next->start == sym->start) {
-+						pair = next;
-+						goto next_pair;
-+					}
-+				}
-+
-+				if (backwards) {
-+					backwards = false;
-+					pair = first_pair;
-+					goto detour;
-+				}
-+
-+				pr_debug("%#" PRIx64 ": diff name v: %s k: %s\n",
-+					 sym->start, sym->name, pair->name);
-+			}
-+		} else
-+			pr_debug("%#" PRIx64 ": %s not on kallsyms\n", sym->start, sym->name);
-+
-+		err = -1;
++	fd = open(filename, O_RDONLY);
++	if (fd >= 0) {
++		char id[16];
++		if (read(fd, id, sizeof(id)) > 0)
++			err = atoi(id);
++		close(fd);
 +	}
 +
-+	if (!verbose)
-+		goto out;
-+
-+	pr_info("Maps only in vmlinux:\n");
-+
-+	for (nd = rb_first(&vmlinux.kmaps.maps[type]); nd; nd = rb_next(nd)) {
-+		struct map *pos = rb_entry(nd, struct map, rb_node), *pair;
-+		/*
-+		 * If it is the kernel, kallsyms is always "[kernel.kallsyms]", while
-+		 * the kernel will have the path for the vmlinux file being used,
-+		 * so use the short name, less descriptive but the same ("[kernel]" in
-+		 * both cases.
-+		 */
-+		pair = map_groups__find_by_name(&kallsyms.kmaps, type,
-+						(pos->dso->kernel ?
-+							pos->dso->short_name :
-+							pos->dso->name));
-+		if (pair)
-+			pair->priv = 1;
-+		else
-+			map__fprintf(pos, stderr);
-+	}
-+
-+	pr_info("Maps in vmlinux with a different name in kallsyms:\n");
-+
-+	for (nd = rb_first(&vmlinux.kmaps.maps[type]); nd; nd = rb_next(nd)) {
-+		struct map *pos = rb_entry(nd, struct map, rb_node), *pair;
-+
-+		pair = map_groups__find(&kallsyms.kmaps, type, pos->start);
-+		if (pair == NULL || pair->priv)
-+			continue;
-+
-+		if (pair->start == pos->start) {
-+			pair->priv = 1;
-+			pr_info(" %" PRIx64 "-%" PRIx64 " %" PRIx64 " %s in kallsyms as",
-+				pos->start, pos->end, pos->pgoff, pos->dso->name);
-+			if (pos->pgoff != pair->pgoff || pos->end != pair->end)
-+				pr_info(": \n*%" PRIx64 "-%" PRIx64 " %" PRIx64 "",
-+					pair->start, pair->end, pair->pgoff);
-+			pr_info(" %s\n", pair->dso->name);
-+			pair->priv = 1;
-+		}
-+	}
-+
-+	pr_info("Maps only in kallsyms:\n");
-+
-+	for (nd = rb_first(&kallsyms.kmaps.maps[type]);
-+	     nd; nd = rb_next(nd)) {
-+		struct map *pos = rb_entry(nd, struct map, rb_node);
-+
-+		if (!pos->priv)
-+			map__fprintf(pos, stderr);
-+	}
-+out:
++	free(filename);
 +	return err;
 +}
