@@ -1,244 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758231Ab2LHVm3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 8 Dec 2012 16:42:29 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:57635 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758211Ab2LHVm1 (ORCPT
+	id S1758247Ab2LHWdt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 8 Dec 2012 17:33:49 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:52330 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095Ab2LHWdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 8 Dec 2012 16:42:27 -0500
-Message-ID: <1355002958.14981.11.camel@gitbox>
-Subject: Re: [PATCH] drivers/video/wm8505fb.c: use devm_ functions
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: linux-fbdev@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Date: Sun, 09 Dec 2012 10:42:38 +1300
-In-Reply-To: <1354984288-773-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1354984288-773-1-git-send-email-Julia.Lawall@lip6.fr>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sat, 8 Dec 2012 17:33:47 -0500
+MIME-Version: 1.0
+In-Reply-To: <CALCETrUwVO6YjO-VzwBO59z4L2zB+-Zd_V-ontciMEFzRHzDFQ@mail.gmail.com>
+References: <CALQRfL5EeqRFykLGVLJx3pfKdP4iF8r-8Ys7pVadOaCc3j1=iQ@mail.gmail.com>
+	<CALCETrXYPjow3geVBnYK_ZOhnuU_wZkdebumJ=Hv3-T=fHaPNA@mail.gmail.com>
+	<CALQRfL7e160D+vzVhT-fUS-_Yp55wqnWkRFJdDTOOVjjStd9Jw@mail.gmail.com>
+	<CALCETrXUSz9EN-tGMfJkw9+1kO0hfmQk4E5XPF0cg9nmpPXepg@mail.gmail.com>
+	<20121204135445.GA7420@mail.hallyn.com>
+	<CALCETrW05JtRZSSJ0v=jz8B7_av1QS+D5qux5=q8aO3iWZHB1A@mail.gmail.com>
+	<20121205210528.GA9047@sergelap>
+	<CALCETrVsrJSt8oYnh+y32Lrxw6Yk=Cp_e07Qf=fLbVfORvzUNg@mail.gmail.com>
+	<20121205222040.GB14884@sergelap>
+	<50C13F0E.5010401@schaufler-ca.com>
+	<20121207144233.GA6681@mail.hallyn.com>
+	<CALQRfL6c2nOSOR00YsBhgC=KWSWB-xOsDTJiLzbtmj6Zv1Mr2Q@mail.gmail.com>
+	<CALCETrUwVO6YjO-VzwBO59z4L2zB+-Zd_V-ontciMEFzRHzDFQ@mail.gmail.com>
+Date: Sat, 8 Dec 2012 14:33:46 -0800
+X-Google-Sender-Auth: dhK4qpvXs2mEbFJQuLy6nncuoY8
+Message-ID: <CALQRfL4iaHQgQ_PY44xYsyZc3fn4J+9Aw3bMfpPMSbE=4AymSA@mail.gmail.com>
+Subject: Re: [RFC] Capabilities still can't be inherited by normal programs
+From: "Andrew G. Morgan" <morgan@kernel.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: "Serge E. Hallyn" <serge@hallyn.com>,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Kees Cook <keescook@chromium.org>,
+        James Morris <james.l.morris@oracle.com>,
+        Eric Paris <eparis@redhat.com>,
+        "Serge E. Hallyn" <serge@canonical.com>,
+        Markku Savela <msa@moth.iki.fi>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-12-08 at 17:31 +0100, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> The various devm_ functions allocate memory that is released when a driver
-> detaches.  This patch uses these functions for data that is allocated in
-> the probe function of a platform device and is only freed in the remove
-> function.
-> 
-> The patch makes some other cleanups.  First, the original code used
-> devm_kzalloc, but kfree.  This would lead to a double free.  The problem
-> was found using the following semantic match (http://coccinelle.lip6.fr/):
-> 
-> // <smpl>
-> @@
-> expression x,e;
-> @@
-> x = devm_kzalloc(...)
-> ... when != x = e
-> ?-kfree(x,...);
-> // </smpl>
-> 
-> The error-handling code for the call to dma_alloc_coherent is copied to the
-> end of the function, like the other error-handling code.  Given the
-> introduction of the devm functions, this is just for uniformity, because
-> the label at the end of the function now just returns the error code.
-> 
-> A semicolon is removed at the end of this error handling code.
-> 
-> The call platform_set_drvdata(pdev, NULL); is moved up under the label
-> failed_free_cmap, because platform_set_drvdata(pdev, fbi); doesn't happen
-> in the function until after gotos to this label are reached.
-> 
-> The initializations of fbi and ret are not necessary and are removed.
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> ---
->  drivers/video/wm8505fb.c |   44 ++++++++------------------------------------
->  1 file changed, 8 insertions(+), 36 deletions(-)
-> 
-> diff --git a/drivers/video/wm8505fb.c b/drivers/video/wm8505fb.c
-> index 77539c1..3bad805 100644
-> --- a/drivers/video/wm8505fb.c
-> +++ b/drivers/video/wm8505fb.c
-> @@ -274,9 +274,6 @@ static int __devinit wm8505fb_probe(struct platform_device *pdev)
->  	unsigned long fb_mem_len;
->  	void *fb_mem_virt;
->  
-> -	ret = -ENOMEM;
-> -	fbi = NULL;
-> -
->  	fbi = devm_kzalloc(&pdev->dev, sizeof(struct wm8505fb_info) +
->  			sizeof(u32) * 16, GFP_KERNEL);
->  	if (!fbi) {
-> @@ -308,31 +305,19 @@ static int __devinit wm8505fb_probe(struct platform_device *pdev)
->  	fbi->fb.pseudo_palette	= addr;
->  
->  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -	if (res == NULL) {
-> -		dev_err(&pdev->dev, "no I/O memory resource defined\n");
-> -		ret = -ENODEV;
-> -		goto failed_fbi;
-> -	}
-> -
-> -	res = request_mem_region(res->start, resource_size(res), DRIVER_NAME);
-> -	if (res == NULL) {
-> -		dev_err(&pdev->dev, "failed to request I/O memory\n");
-> -		ret = -EBUSY;
-> -		goto failed_fbi;
-> -	}
->  
-> -	fbi->regbase = ioremap(res->start, resource_size(res));
-> +	fbi->regbase = devm_request_and_ioremap(&pdev->dev, res);
->  	if (fbi->regbase == NULL) {
->  		dev_err(&pdev->dev, "failed to map I/O memory\n");
->  		ret = -EBUSY;
-> -		goto failed_free_res;
-> +		goto failed;
->  	}
->  
->  	np = of_parse_phandle(pdev->dev.of_node, "default-mode", 0);
->  	if (!np) {
->  		pr_err("%s: No display description in Device Tree\n", __func__);
->  		ret = -EINVAL;
-> -		goto failed_free_res;
-> +		goto failed;
->  	}
->  
->  	/*
-> @@ -351,7 +336,7 @@ static int __devinit wm8505fb_probe(struct platform_device *pdev)
->  	ret |= of_property_read_u32(np, "bpp", &bpp);
->  	if (ret) {
->  		pr_err("%s: Unable to read display properties\n", __func__);
-> -		goto failed_free_res;
-> +		goto failed;
->  	}
->  
->  	of_mode.vmode = FB_VMODE_NONINTERLACED;
-> @@ -369,8 +354,9 @@ static int __devinit wm8505fb_probe(struct platform_device *pdev)
->  				GFP_KERNEL);
->  	if (!fb_mem_virt) {
->  		pr_err("%s: Failed to allocate framebuffer\n", __func__);
-> -		return -ENOMEM;
-> -	};
-> +		ret = -ENOMEM;
-> +		goto failed;
-> +	}
->  
->  	fbi->fb.var.xres_virtual	= of_mode.xres;
->  	fbi->fb.var.yres_virtual	= of_mode.yres * 2;
-> @@ -384,7 +370,7 @@ static int __devinit wm8505fb_probe(struct platform_device *pdev)
->  	if (fb_alloc_cmap(&fbi->fb.cmap, 256, 0) < 0) {
->  		dev_err(&pdev->dev, "Failed to allocate color map\n");
->  		ret = -ENOMEM;
-> -		goto failed_free_io;
-> +		goto failed;
->  	}
->  
->  	wm8505fb_init_hw(&fbi->fb);
-> @@ -420,13 +406,7 @@ static int __devinit wm8505fb_probe(struct platform_device *pdev)
->  failed_free_cmap:
->  	if (fbi->fb.cmap.len)
->  		fb_dealloc_cmap(&fbi->fb.cmap);
-> -failed_free_io:
-> -	iounmap(fbi->regbase);
-> -failed_free_res:
-> -	release_mem_region(res->start, resource_size(res));
-> -failed_fbi:
->  	platform_set_drvdata(pdev, NULL);
-> -	kfree(fbi);
->  failed:
->  	return ret;
->  }
-> @@ -434,7 +414,6 @@ failed:
->  static int __devexit wm8505fb_remove(struct platform_device *pdev)
->  {
->  	struct wm8505fb_info *fbi = platform_get_drvdata(pdev);
-> -	struct resource *res;
->  
->  	device_remove_file(&pdev->dev, &dev_attr_contrast);
->  
-> @@ -445,13 +424,6 @@ static int __devexit wm8505fb_remove(struct platform_device *pdev)
->  	if (fbi->fb.cmap.len)
->  		fb_dealloc_cmap(&fbi->fb.cmap);
->  
-> -	iounmap(fbi->regbase);
-> -
-> -	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -	release_mem_region(res->start, resource_size(res));
-> -
-> -	kfree(fbi);
-> -
->  	return 0;
->  }
->  
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+On Fri, Dec 7, 2012 at 10:39 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Fri, Dec 7, 2012 at 9:07 AM, Andrew G. Morgan <morgan@kernel.org> wrote:
+>> I'm still missing something with the problem definition.
+>>
+>> So far if I follow the discussion we have determined that inheritance
+>> as implemented is OK except for the fact that giving user an
+>> inheritable pI bit which gives them default permission to use all
+>> binaries endowed with the corresponding file fI bit.
+>
+> This is IMO part of the problem but not the entire problem.
+>
+>>
+>> Is this the problem a different inheritance model is supposed to
+>> address? Serge suggested that the binary could authenticate the
+>> user... This seems like its putting the protection in the best
+>> place... Each app can control its sub functions with the richest
+>> semantics.
+>>
+>> That being said...
+>>
+>> To me this looks like it's an access control problem... Namely use
+>> acls to limit which users (groups) can execute each privileged binary.
+>> Serge's option 2 seems like a similar approach.
+>>
+>
+> The issue is (as I see it) with non-privileged binaries.  If a given
+> program (correctly) has a permitted capability and is not root, then
+> the only way that it can pass that capability on to children (e.g.
+> helper programs) is to set it into pI.  This only works if the child
+> has the same bit set in fI.
 
-Julia,
+Yes.
 
-Thanks for the cleanup on this driver. Perhaps I could suggest just one
-additional thing.
+> This is doable but annoying -- every program that a privileged program
+> runs needs to be authorized by the administrator.
 
-There are only two paths which lead to failed_free_cmap. Moving
+Yes.
 
-...
-	fbi->contrast = 0x80;
-	ret = wm8505fb_set_par(&fbi->fb);
-	if (ret) {
-		dev_err(&pdev->dev, "Failed to set parameters\n");
-		goto failed_free_cmap;
-	}
-...
+> It breaks down because, currently, users with nonzero pI have no
+> direct ability to wield the capabilities.  That means that every
+> single binary with fI bits set needs to be as careful as a setuid-root
+> binary to avoid leaking privilege to the caller.  (Obviously, binaries
+> with fP set need to be careful.  IMO binaries with only fI set should
+> not need to exercise any particular care to defend themselves from
+> their callers.)
 
-above the following line removes the need to have the failed_free_cmap
-path at all.
+True. But what about protecting the system from privileges they didn't
+expect to have?
 
-...
-if (fb_alloc_cmap(&fbi->fb.cmap, 256, 0) < 0) {
-...
+> I'm obviously missing some fundamental (and probably historical) issue
+> here, so let me ask the following straw-man question.  Suppose
+> capabilities worked like this on exec:
+>
+> pP' = pI | (fP & pB)  (i.e. the current way, except that fI always has
+> all bits set for every binary on the system)
+> pI' = pI (unless !SECURE_NOROOT and uid == 0 or euid == 0, in which
+> case pI' = pP')
+>
+> with the added restriction that pI is always a subset of pP (i.e.
+> dropping a bit from pP (on exec or otherwise) drops that bit from pI).
+>
+> What would be wrong with this model?  (Let's pretend for now that
+> capabilities had always worked this way, so there's no change of
+> behavior to worry about.)
+>
+>  - The sendmail capability bug wouldn't happen: pI has no effect on
+> setuid-root binaries.
 
+Are you saying that setuid-root is required for a program like
+sendmail to work? Forever?
 
+>  - There would be no difference between a user being trusted with a
+> capability and being inh-trusted with that capability, since the
+> latter concept wouldn't really exist.
 
-If that is done, only this code leads to the failed_free_cmap path:
-...
-ret = register_framebuffer(&fbi->fb);
-	if (ret < 0) {
-		dev_err(&pdev->dev,
-			"Failed to register framebuffer device: %d\n", ret);
-		goto failed_free_cmap;
-	}
-...
+See below. It's key to see that it is not people, but programs that
+require privilege.
 
+>  - Totally unprivileged users couldn't engage in any funny business.
+> Their pI masks would be zero, and they would have no way of changing
+> that.
+>
+>  - Partially privileged users would work just fine.  They could wield
+> their capabilities (subject to some possible fiddling with pE) from
+> bash or from anything else.  They could also freely drop those
+> capabilities.
+>
+>  - Privileged programs would require less thought: to grant a program,
+> you set its privilege in fP.  There is no fI, so there's nothing
+> special to think about.
+>
+>
+>
+> NB:  This is not a real proposal because there *are* capability-aware
+> programs out there.  I want to understand why the current system is so
+> different.
 
-Rather than the goto, add the fail path code in directly, and return.
+I think you have correctly determined a key difference (a fundamental
+feature!) of the model.
 
+For an explanation, please search for "key insight" in the OLS paper:
 
-ret = register_framebuffer(&fbi->fb);
-if (ret < 0) {
-  dev_err(&pdev->dev,
-  "Failed to register framebuffer device: %d\n", ret);
-  if (fbi->fb.cmap.len)
-    fb_dealloc_cmap(&fbi->fb.cmap);
-  return ret;
-}
+  http://ols.fedoraproject.org/OLS/Reprints-2008/hallyn-reprint.pdf
 
-Now there is no need for any goto commands, and all the rest can be
-replaced with 'return ret' or equiv.
+Also, see p310+ of the first document linked to on the page Casey pointed to:
 
+  http://wt.tuxomania.net/publications/posix.1e/download.html
 
-Regards
-Tony P
+which has quite an elaborate explanation of how this model was
+designed, and what the authors were trying to achieve.
 
+Cheers
+
+Andrew
+
+>
+> --Andy
