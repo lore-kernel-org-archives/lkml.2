@@ -1,111 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757519Ab2LHBUe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 7 Dec 2012 20:20:34 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:43463 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757481Ab2LHBUd (ORCPT
+	id S1757529Ab2LHBYQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 7 Dec 2012 20:24:16 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:3351 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757465Ab2LHBYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 7 Dec 2012 20:20:33 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AloNAM2UwlB5LHa//2dsb2JhbAA9B4VMsnmFeRdzgh4BAQQBOhwjBQsIAxguFCUDDQETE4gLBcEoFIwrIQGEIQOWBJBJgweBUAEfAw
-Date: Sat, 8 Dec 2012 12:20:29 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Alun <alun.linux@ty-penguin.org.uk>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: PATCH reduce impact of FIFREEZE on userland processes
-Message-ID: <20121208012029.GR27172@dastard>
-References: <20121205211707.7ca3b94b@aspire.ty-penguin.org.uk>
- <20121207004255.GC27172@dastard>
- <20121207085952.57ee1f22@pcebbj.staff.aber.ac.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121207085952.57ee1f22@pcebbj.staff.aber.ac.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 7 Dec 2012 20:24:14 -0500
+X-Authority-Analysis: v=2.0 cv=dttZ+ic4 c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=u9ToMuZyKG8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=KTMpUcITluEA:10 a=r_1tXGB3AAAA:8 a=pGLkceISAAAA:8 a=20KFwNOVAAAA:8 a=2aemuAASldm4hqe6c4sA:9 a=PUjeQqilurYA:10 a=EDSpbFuiShEA:10 a=jeBq3FmKZ4MA:10 a=MSl-tDqOz04A:10 a=jEp0ucaQiEUA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1354929851.17101.105.camel@gandalf.local.home>
+Subject: Re: [PATCH v2 04/44] trace/ring_buffer: handle 64bit aligned structs
+From: Steven Rostedt <rostedt@goodmis.org>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+Date: Fri, 07 Dec 2012 20:24:11 -0500
+In-Reply-To: <1354723742-6195-5-git-send-email-james.hogan@imgtec.com>
+References: <1354723742-6195-1-git-send-email-james.hogan@imgtec.com>
+	 <1354723742-6195-5-git-send-email-james.hogan@imgtec.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 07, 2012 at 08:59:52AM +0000, Alun wrote:
-> Dave Chinner <david@fromorbit.com> said, in message
-> 20121207004255.GC27172@dastard:
-> > 
-> > The problem wth doing this is that the sync can delay the freeze
-> > process by quite some time under the exact conditions you describe.
-> > If you want freeze to take effect immediately (i.e instantly stop
-> > new modifications), then adding a sync will break this semantic.
-> > THere are existing users of freeze that require this behaviour...
+On Wed, 2012-12-05 at 16:08 +0000, James Hogan wrote:
+> Some 32 bit architectures have 64 bit struct alignment (for example
+> Meta which has 64 bit read/write instructions). These require 8 byte
+> alignment of event data too, so use CONFIG_HAVE_64BIT_ALIGNED_STRUCT
+> instead of CONFIG_64BIT to decide alignment, and align
+> buffer_data_page::data accordingly.
 > 
-> Ahh, that would be the subtlety I was worried might exist! Thanks.
+> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+
+-- Steve
+
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> ---
+>  kernel/trace/ring_buffer.c |    7 +++++--
+>  1 files changed, 5 insertions(+), 2 deletions(-)
 > 
-> The specific issue that brought me here was that, on a fairly heavily
-> loaded file server (>1000 connected Windows clients), taking an LVM
-> snapshot caused enough of an interruption to service that many of the
-> Windows clients disconnected and reconnected, so causing a huge process
-> load on the server - enough that we'd completely lose service and have
-> to reboot. Chasing this down, I noticed that FIFREEZE does a filesystem
-> sync, and it seemed to me that adding another one prior to blocking
-> writes was an easy hit. 
+> diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+> index b979426..c4dc029 100644
+> --- a/kernel/trace/ring_buffer.c
+> +++ b/kernel/trace/ring_buffer.c
+> @@ -177,7 +177,8 @@ void tracing_off_permanent(void)
+>  #define RB_MAX_SMALL_DATA	(RB_ALIGNMENT * RINGBUF_TYPE_DATA_TYPE_LEN_MAX)
+>  #define RB_EVNT_MIN_SIZE	8U	/* two 32bit words */
+>  
+> -#if !defined(CONFIG_64BIT) || defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+> +#if !defined(CONFIG_HAVE_64BIT_ALIGNED_STRUCT) || \
+> +	defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+>  # define RB_FORCE_8BYTE_ALIGNMENT	0
+>  # define RB_ARCH_ALIGNMENT		RB_ALIGNMENT
+>  #else
+> @@ -185,6 +186,8 @@ void tracing_off_permanent(void)
+>  # define RB_ARCH_ALIGNMENT		8U
+>  #endif
+>  
+> +#define RB_ALIGN_DATA		__aligned(RB_ARCH_ALIGNMENT)
+> +
+>  /* define RINGBUF_TYPE_DATA for 'case RINGBUF_TYPE_DATA:' */
+>  #define RINGBUF_TYPE_DATA 0 ... RINGBUF_TYPE_DATA_TYPE_LEN_MAX
+>  
+> @@ -333,7 +336,7 @@ EXPORT_SYMBOL_GPL(ring_buffer_event_data);
+>  struct buffer_data_page {
+>  	u64		 time_stamp;	/* page time stamp */
+>  	local_t		 commit;	/* write committed index */
+> -	unsigned char	 data[];	/* data of buffer page */
+> +	unsigned char	 data[] RB_ALIGN_DATA;	/* data of buffer page */
+>  };
+>  
+>  /*
 
-Yup, that's typical.
 
-> I'm not trying to argue my case here - you've convinced me that this
-> change in semantics is risky and removes flexibility.
-> 
-> I'll try and chase this up by submitting patches to lvcreate and
-> fsfreeze (in the former case, I think there's no reason not to run
-> syncfs; in the latter perhaps it should be a command line option).
-
-Is that even necesary? users can issue the sync themselves if
-necessary....
-
-> > That, to me, is irrelevant, because something is normally done while
-> > the filesystem is frozen. It's not uncommon for freeze periods to
-> > extend to minutes while work is done by whatever required the
-> > freeze. Hence the few seconds it takes to acheive the frozen state is
-> > mostly irrelevant.
-> 
-> You've referred twice to existing systems that would break in the
-> presence of this change.  I'm really having trouble thinking of a
-> situation where it's critical to have writes suspended *NOW* and where
-> it's valid to keep them suspended for minutes.
-
-Say you get your filesystem reporting a read error in a directory.
-There are people out there that will immediately freeze the
-filesystem (to prevent potential damage from being propagated) while
-they investigate the problem and determine their next action. This
-may even involve running non-modifying fsck on the underlying block
-device while the filesystem is frozen...
-
-Then there is systems like HA servers that share a filesystem in a
-primary/secondary setup - freezes are often used in failover
-situations. This ensures all cached dirty data is written to disk
-in preparation for the other node to mount it. Freezing the
-filesystem ensures that spurious errors are not returned to
-applications/clients while the failover takes place. Hence the
-filesystem can remain frozen for some time while everything on the
-new primary node is started up and fences/STONITHs the frozen
-node....
-
-Then there's co-ordinating management operations on filesystems that
-span multiple storage arrays (e.g. for hardware based snapshots,
-cloning, etc), VM guest migration between two physical hosts, and so
-on. Freeze is use for a lot more things than LVM snapshots...
-
-> I'd have thought that,
-> in the vast majority of cases, the critical thing was to minimise the
-> time for which writes were suspended.
-
-In the obvious use cases, yes. Once you look outside snapshots to
-consider applications that need a stable, unchanging filesystem in
-an application transparent manner, you'll find lots of interesting
-uses for FIFREEZE....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
